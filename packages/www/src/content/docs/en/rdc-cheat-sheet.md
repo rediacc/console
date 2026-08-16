@@ -22,6 +22,8 @@ Not every `rdc` command is listed here, just the ones that come up on every depl
 | `rdc repo fork <repo>@<machine> --tag <tag>` | Fork a repository (near-instant, BTRFS reflink) |
 | `rdc repo promote <repo>:<tag>` | Promote a validated fork to production under its parent's name |
 | `rdc repo list` | List all repositories with name and GUID |
+| `rdc repo resize <repo> --size <size>` | Resize a stopped repository's volume |
+| `rdc repo expand <repo> --size <size>` | Grow a running repository's volume in place |
 
 ## Per-repo Secrets
 
@@ -101,6 +103,8 @@ Write-only deploy-time credentials. `get` returns the digest only. The value is 
 | `rdc machine status <machine> --block-devices` | Block device info only |
 | `rdc machine list` | List all machines in config |
 | `rdc machine setup <machine>` | Run initial machine provisioning |
+| `rdc machine health <machine>` | Health check a machine |
+| `rdc machine scan-keys <machine>` | Refresh SSH host keys after a rebuild |
 | `rdc machine prune <machine>` | Remove unused resources from machine |
 | `rdc machine deprovision <machine>` | Fully deprovision a machine |
 
@@ -116,12 +120,17 @@ Write-only deploy-time credentials. `get` returns the digest only. The value is 
 | `rdc repo sync download <repo>@<machine> --local <dir>` | Download repository directory locally |
 | `rdc repo sync download <repo>@<machine> --remote-file <path> --local <dir>` | Download a single remote file into a local dir |
 | `rdc vscode connect <repo>@<machine>` | Open VS Code Remote SSH session |
+| `rdc vscode list` | List SSH configs created by `vscode connect` |
+| `rdc vscode cleanup --all` | Remove every SSH config `vscode connect` wrote |
+| `rdc repo tunnel <repo> -c <container> --port <port>` | Forward a container port over SSH |
 
 ## Configuration
 
 | Command | Description |
 |---------|-------------|
 | `rdc config init <name>` | Create a named config file |
+| `rdc config list` | List every config on this machine |
+| `rdc config set machine <alias>` | Point an alias at a different machine |
 | `rdc machine add <machine> --ip <host> --user <user>` | Add a machine to config |
 | `rdc storage import rclone.conf` | Import storage providers from rclone config |
 | `rdc storage list` | List configured storage providers |
@@ -132,6 +141,9 @@ Write-only deploy-time credentials. `get` returns the digest only. The value is 
 
 | Command | Description |
 |---------|-------------|
+| `rdc repo logs <repo>@<machine> -c <container> --lines 200 --follow` | Stream container logs (preferred) |
+| `rdc repo exec <repo>@<machine> -c <container> -- <command>` | Run a command in a container (preferred) |
+| `rdc repo exec <repo>@<machine> -c <container> -i -- bash` | Attach an interactive container shell |
 | `rdc term connect <repo>@<machine> -c "docker ps"` | List containers in a repository |
 | `rdc term connect <repo>@<machine> -c "docker logs <name>"` | Fetch container logs |
 | `rdc term connect <repo>@<machine> -c "docker exec <name> <cmd>"` | Execute command in container |

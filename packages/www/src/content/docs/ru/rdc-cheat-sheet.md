@@ -5,8 +5,8 @@ category: Guides
 order: 3
 cardGrid: true
 language: ru
-sourceHash: "ae49dd7fbc179d35"
-sourceCommit: "522dceadb04b6a3e7f4ea60ac1e47308f6a1a600"
+sourceHash: "26e60c6b486eadd0"
+sourceCommit: "45cd71f8a80949d4cd621f233377c48715bbf531"
 ---
 
 # Шпаргалка по CLI RDC
@@ -24,6 +24,8 @@ sourceCommit: "522dceadb04b6a3e7f4ea60ac1e47308f6a1a600"
 | `rdc repo fork <repo>@<machine> --tag <tag>` | Создать форк репозитория (мгновенно, BTRFS reflink) |
 | `rdc repo promote <repo>:<tag>` | Повысить проверенный форк до продакшена под именем родительского репозитория |
 | `rdc repo list` | Список всех репозиториев с именем и GUID |
+| `rdc repo resize <repo> --size <size>` | Изменить размер тома остановленного репозитория |
+| `rdc repo expand <repo> --size <size>` | Увеличить том работающего репозитория на месте |
 
 ## Секреты репозитория
 
@@ -103,6 +105,8 @@ sourceCommit: "522dceadb04b6a3e7f4ea60ac1e47308f6a1a600"
 | `rdc machine status <machine> --block-devices` | Только информация о блочных устройствах |
 | `rdc machine list` | Вывести список всех машин в конфигурации |
 | `rdc machine setup <machine>` | Запустить первоначальное развертывание машины |
+| `rdc machine health <machine>` | Проверить состояние машины |
+| `rdc machine scan-keys <machine>` | Обновить SSH-ключи хоста после пересборки |
 | `rdc machine prune <machine>` | Удалить неиспользуемые ресурсы с машины |
 | `rdc machine deprovision <machine>` | Полностью депровизионировать машину |
 
@@ -118,12 +122,17 @@ sourceCommit: "522dceadb04b6a3e7f4ea60ac1e47308f6a1a600"
 | `rdc repo sync download <repo>@<machine> --local <dir>` | Скачать каталог репозитория локально |
 | `rdc repo sync download <repo>@<machine> --remote-file <path> --local <dir>` | Скачать один файл из репозитория в локальный каталог |
 | `rdc vscode connect <repo>@<machine>` | Открыть сеанс VS Code Remote SSH |
+| `rdc vscode list` | Список SSH-конфигураций, созданных `vscode connect` |
+| `rdc vscode cleanup --all` | Удалить все SSH-конфигурации, записанные `vscode connect` |
+| `rdc repo tunnel <repo> -c <container> --port <port>` | Перенаправить порт контейнера через SSH |
 
 ## Конфигурация
 
 | Команда | Описание |
 |---------|----------|
 | `rdc config init <name>` | Создать именованный файл конфигурации |
+| `rdc config list` | Вывести список всех конфигураций на этой машине |
+| `rdc config set machine <alias>` | Направить алиас на другую машину |
 | `rdc machine add <machine> --ip <host> --user <user>` | Добавить машину в конфигурацию |
 | `rdc storage import rclone.conf` | Импортировать провайдеров хранилища из конфигурации rclone |
 | `rdc storage list` | Вывести список настроенных провайдеров хранилища |
@@ -134,6 +143,9 @@ sourceCommit: "522dceadb04b6a3e7f4ea60ac1e47308f6a1a600"
 
 | Команда | Описание |
 |---------|----------|
+| `rdc repo logs <repo>@<machine> -c <container> --lines 200 --follow` | Транслировать журналы контейнера (рекомендуется) |
+| `rdc repo exec <repo>@<machine> -c <container> -- <command>` | Выполнить команду в контейнере (рекомендуется) |
+| `rdc repo exec <repo>@<machine> -c <container> -i -- bash` | Открыть интерактивную оболочку контейнера |
 | `rdc term connect <repo>@<machine> -c "docker ps"` | Вывести список контейнеров в репозитории |
 | `rdc term connect <repo>@<machine> -c "docker logs <name>"` | Получить журналы контейнера |
 | `rdc term connect <repo>@<machine> -c "docker exec <name> <cmd>"` | Выполнить команду в контейнере |

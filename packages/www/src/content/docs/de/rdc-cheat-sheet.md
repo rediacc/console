@@ -5,8 +5,8 @@ category: Guides
 order: 3
 cardGrid: true
 language: de
-sourceHash: "ae49dd7fbc179d35"
-sourceCommit: "522dceadb04b6a3e7f4ea60ac1e47308f6a1a600"
+sourceHash: "26e60c6b486eadd0"
+sourceCommit: "45cd71f8a80949d4cd621f233377c48715bbf531"
 ---
 
 # RDC CLI Cheat Sheet
@@ -24,6 +24,8 @@ Nicht alle `rdc`-Befehle sind hier aufgelistet, nur die, die bei jeder Bereitste
 | `rdc repo fork <repo>@<machine> --tag <tag>` | Repository forken (nahezu sofort, BTRFS-Reflink) |
 | `rdc repo promote <repo>:<tag>` | Einen validierten Fork unter dem Namen des übergeordneten Repositorys in Produktion überführen |
 | `rdc repo list` | Alle Repositories mit Name und GUID auflisten |
+| `rdc repo resize <repo> --size <size>` | Das Volume eines gestoppten Repositorys in der Größe anpassen |
+| `rdc repo expand <repo> --size <size>` | Das Volume eines laufenden Repositorys im laufenden Betrieb vergrößern |
 
 ## Per-Repository-Geheimnisse
 
@@ -103,6 +105,8 @@ Schreibgeschützte Anmeldedaten zur Bereitstellungszeit. `get` gibt nur den Dige
 | `rdc machine status <machine> --block-devices` | Nur Block-Geräteinformationen |
 | `rdc machine list` | Alle Maschinen in der Konfiguration auflisten |
 | `rdc machine setup <machine>` | Erstmalige Maschinenbereitstellung ausführen |
+| `rdc machine health <machine>` | Zustand einer Maschine prüfen |
+| `rdc machine scan-keys <machine>` | SSH-Host-Schlüssel nach einem Neuaufbau aktualisieren |
 | `rdc machine prune <machine>` | Ungenutzte Ressourcen von der Maschine entfernen |
 | `rdc machine deprovision <machine>` | Maschine vollständig deprovisionieren |
 
@@ -118,12 +122,17 @@ Schreibgeschützte Anmeldedaten zur Bereitstellungszeit. `get` gibt nur den Dige
 | `rdc repo sync download <repo>@<machine> --local <dir>` | Repository-Verzeichnis lokal herunterladen |
 | `rdc repo sync download <repo>@<machine> --remote-file <path> --local <dir>` | Einzelne Remote-Datei in ein lokales Verzeichnis herunterladen |
 | `rdc vscode connect <repo>@<machine>` | VS Code Remote SSH-Sitzung öffnen |
+| `rdc vscode list` | SSH-Konfigurationen auflisten, die von `vscode connect` erstellt wurden |
+| `rdc vscode cleanup --all` | Alle von `vscode connect` geschriebenen SSH-Konfigurationen entfernen |
+| `rdc repo tunnel <repo> -c <container> --port <port>` | Einen Container-Port über SSH weiterleiten |
 
 ## Konfiguration
 
 | Befehl | Beschreibung |
 |--------|--------------|
 | `rdc config init <name>` | Benannte Konfigurationsdatei erstellen |
+| `rdc config list` | Alle Konfigurationen auf dieser Maschine auflisten |
+| `rdc config set machine <alias>` | Einen Alias auf eine andere Maschine verweisen lassen |
 | `rdc machine add <machine> --ip <host> --user <user>` | Maschine zur Konfiguration hinzufügen |
 | `rdc storage import rclone.conf` | Speicheranbieter aus rclone-Konfiguration importieren |
 | `rdc storage list` | Konfigurierte Speicheranbieter auflisten |
@@ -134,6 +143,9 @@ Schreibgeschützte Anmeldedaten zur Bereitstellungszeit. `get` gibt nur den Dige
 
 | Befehl | Beschreibung |
 |--------|--------------|
+| `rdc repo logs <repo>@<machine> -c <container> --lines 200 --follow` | Container-Logs streamen (bevorzugt) |
+| `rdc repo exec <repo>@<machine> -c <container> -- <command>` | Einen Befehl in einem Container ausführen (bevorzugt) |
+| `rdc repo exec <repo>@<machine> -c <container> -i -- bash` | Eine interaktive Container-Shell öffnen |
 | `rdc term connect <repo>@<machine> -c "docker ps"` | Container in einem Repository auflisten |
 | `rdc term connect <repo>@<machine> -c "docker logs <name>"` | Container-Logs abrufen |
 | `rdc term connect <repo>@<machine> -c "docker exec <name> <cmd>"` | Befehl in Container ausführen |
