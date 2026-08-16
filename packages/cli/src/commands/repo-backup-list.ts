@@ -12,6 +12,14 @@ export interface BackupListEntry {
   isDirectory?: boolean;
   size?: number;
   modTime?: string;
+  /**
+   * The subdirectory the artifact was found in, relative to the datastore's
+   * repositories/ root, empty at the root itself.
+   *
+   * renet ENUMERATES now rather than being told which fixed directory to probe,
+   * so the caller can no longer tag an entry with the directory it asked for.
+   */
+  path?: string;
 }
 
 export interface TaggedBackupEntry extends BackupListEntry {
@@ -65,7 +73,12 @@ function extractBackupListPayload(stdout: string): BackupListPayload | undefined
 }
 
 async function assertBackupFromExists(fromName: string, sourceType: unknown): Promise<void> {
-  if (sourceType === 'machine') {
+  // `local` names the machine whose OWN datastore is read, so it validates as
+  // a machine exactly like `machine` does. Spelled out rather than left to the
+  // fall-through below: that branch probes machine-then-storage and would
+  // happen to succeed, which is the kind of accident that rots into a bug the
+  // day storage stops resolving.
+  if (sourceType === 'local' || sourceType === 'machine') {
     await assertMachineExists(fromName);
     return;
   }
@@ -113,11 +126,18 @@ export async function fetchBackupList(
   });
 
   if (!result.success) {
+    // THROW rather than render-and-return-[]. Returning an empty array printed
+    // an error line and then an EMPTY TABLE underneath it, so a failed listing
+    // and a datastore with no backups looked identical to a reader scanning
+    // output -- and one of those means your backups are missing. The caller's
+    // handleError renders this, and the engine's own words are carried along
+    // so the operator still sees what renet said.
     renderLocalExecutionFailure(
       result,
       t('commands.shortcuts.run.failedLocal', { error: result.error })
     );
-    return [];
+    const tail = (result.stderr ?? result.error ?? '').toString().trim().slice(-400);
+    throw new Error(tail ? `backup list failed: ${tail}` : 'backup list failed');
   }
 
   const payload = extractBackupListPayload(result.stdout ?? '');
@@ -135,8 +155,11 @@ export async function renderBackupList(entries: TaggedBackupEntry[]): Promise<vo
   const { formatSizeBytes } = await import('@rediacc/shared/renet-contract');
   const resolve = createGuidResolver(await loadGuidMap());
 
+  // NO isDirectory filter. `backup push` writes a FILE for a LUKS repo and a
+  // DIRECTORY for a directory-backed (kube) repo (backup_push.go branches on
+  // exactly that), so filtering directories silently discarded every pushed
+  // kube repo before it was ever printed.
   const rows = entries
-    .filter((e) => !e.isDirectory)
     .map((e) => {
       const resolvedName = resolve(e.name);
       const isResolved = resolvedName !== e.name;
