@@ -4297,7 +4297,7 @@
   {
     "id": "search-6864",
     "content": "8.3 list",
-    "body": "{{t:cli.commands.backup.list.description}} rdc backup list [artifact-ref] [options] | {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} | |------|-------------|----------|---------| | -m, --machine <name> | {{t:cli.options.machine}} | {{t:cli.docs.optionLabels.no}} | - | | --storage <name> | {{t:cli.commands.backup.list.optionStorage}} | {{t:cli.docs.optionLabels.no}} | - | | --path <subdir> | {{t:cli.commands.backup.list.optionPath}} | {{t:cli.docs.optionLabels.no}} | - | | --debug | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - | <a id=\"cli-local-backup-manifests\"></a>",
+    "body": "{{t:cli.commands.backup.list.description}} rdc backup list [artifact-ref] [options] | {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} | |------|-------------|----------|---------| | -m, --machine <name> | {{t:cli.options.machine}} | {{t:cli.docs.optionLabels.no}} | - | | --path <subdir> | {{t:cli.commands.backup.list.optionPath}} | {{t:cli.docs.optionLabels.no}} | - | | --debug | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - | <a id=\"cli-local-backup-manifests\"></a>",
     "excerpt": "{{t:cli.commands.backup.list.description}} rdc backup list [artifact-ref] [options] | {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.des...",
     "category": "Documentation",
     "page": "/et/docs/cli-application",
@@ -9708,8 +9708,8 @@
   {
     "id": "search-7361",
     "content": "4. Tõmba kaugelt",
-    "body": "# Tõmba hoidla pilvemassinalt oma kohalikku serverisse rdc repo pull my-app@my-local-server --from cloud-server # Tõmba pilvemälust rdc repo pull my-app@my-local-server --from my-s3-backup # Tõmba ja käivita kohe rdc repo pull my-app@my-local-server --from my-s3-backup --up Miks tõmmata? Sinu kohalik masin on NAT taga. Pilv ei saa sulle lükata. Aga sina saad pilve jõuda. Tõmbamine toob hoidla koju. Täielik tsükkel: Loo arenduses → lükka pilve → tõmba tootmises → --up. Üks hoidla, mis tahes masin, mis tahes pilv. Ajakava seadistamine, automatiseeritud varukoopiad, taastamine: Varundus ja taastamine. ---",
-    "excerpt": "# Tõmba hoidla pilvemassinalt oma kohalikku serverisse rdc repo pull my-app@my-local-server --from cloud-server # Tõmba pilvemälust rdc repo pull my-a...",
+    "body": "# Tõmba hoidla pilvemassinalt oma kohalikku serverisse rdc repo pull my-app@my-local-server --from cloud-server # Tõmba ja käivita kohe rdc repo pull my-app@my-local-server --from cloud-server --up # Selle asemel taasta kindel ajahetk tükksalvestusest rdc backup restore my-app --at <snapshot> --as my-app --up Miks tõmmata? Sinu kohalik masin on NAT taga. Pilv ei saa sulle lükata. Aga sina saad pilve jõuda. Tõmbamine toob hoidla koju. Täielik tsükkel: Loo arenduses → lükka pilve → tõmba tootmises → --up. Üks hoidla, mis tahes masin, mis tahes pilv. Ajakava seadistamine, automatiseeritud varukoopiad, taastamine: Varundus ja taastamine. ---",
+    "excerpt": "# Tõmba hoidla pilvemassinalt oma kohalikku serverisse rdc repo pull my-app@my-local-server --from cloud-server # Tõmba ja käivita kohe rdc repo pull...",
     "category": "Documentation",
     "page": "/et/docs/quick-start",
     "path": "docs.quick-start.content",

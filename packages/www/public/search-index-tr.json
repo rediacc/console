@@ -4297,7 +4297,7 @@
   {
     "id": "search-16021",
     "content": "8.3 list",
-    "body": "{{t:cli.commands.backup.list.description}} rdc backup list [artifact-ref] [options] | {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} | |------|-------------|----------|---------| | -m, --machine <name> | {{t:cli.options.machine}} | {{t:cli.docs.optionLabels.no}} | - | | --storage <name> | {{t:cli.commands.backup.list.optionStorage}} | {{t:cli.docs.optionLabels.no}} | - | | --path <subdir> | {{t:cli.commands.backup.list.optionPath}} | {{t:cli.docs.optionLabels.no}} | - | | --debug | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - | <a id=\"cli-local-backup-manifests\"></a>",
+    "body": "{{t:cli.commands.backup.list.description}} rdc backup list [artifact-ref] [options] | {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} | |------|-------------|----------|---------| | -m, --machine <name> | {{t:cli.options.machine}} | {{t:cli.docs.optionLabels.no}} | - | | --path <subdir> | {{t:cli.commands.backup.list.optionPath}} | {{t:cli.docs.optionLabels.no}} | - | | --debug | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - | <a id=\"cli-local-backup-manifests\"></a>",
     "excerpt": "{{t:cli.commands.backup.list.description}} rdc backup list [artifact-ref] [options] | {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.des...",
     "category": "Documentation",
     "page": "/tr/docs/cli-application",
@@ -9686,8 +9686,8 @@
   {
     "id": "search-16516",
     "content": "4. Uzaktan Çekme",
-    "body": "# Bir bulut makinesinden yerel sunucunuza repo çekin rdc repo pull my-app@my-local-server --from cloud-server # Bulut depolamadan çekin rdc repo pull my-app@my-local-server --from my-s3-backup # Çek ve hemen başlat rdc repo pull my-app@my-local-server --from my-s3-backup --up Neden pull? Yerel makineniz NAT arkasındadır. Bulut size push yapamaz. Ama siz buluta ulaşabilirsiniz. Pull, repoyu eve getirir. Tam döngü: Geliştirmede oluştur → buluta gönder → üretimde çek → --up. Tek repo, herhangi bir makine, herhangi bir bulut. Zamanlama, otomatik yedekleme, geri yükleme: Yedekleme ve Geri Yükleme. ---",
-    "excerpt": "# Bir bulut makinesinden yerel sunucunuza repo çekin rdc repo pull my-app@my-local-server --from cloud-server # Bulut depolamadan çekin rdc repo pull...",
+    "body": "# Bir bulut makinesinden yerel sunucunuza repo çekin rdc repo pull my-app@my-local-server --from cloud-server # Çek ve hemen başlat rdc repo pull my-app@my-local-server --from cloud-server --up # Bunun yerine parça depolamadan belirli bir zaman noktasını geri yükle rdc backup restore my-app --at <snapshot> --as my-app --up Neden pull? Yerel makineniz NAT arkasındadır. Bulut size push yapamaz. Ama siz buluta ulaşabilirsiniz. Pull, repoyu eve getirir. Tam döngü: Geliştirmede oluştur → buluta gönder → üretimde çek → --up. Tek repo, herhangi bir makine, herhangi bir bulut. Zamanlama, otomatik yedekleme, geri yükleme: Yedekleme ve Geri Yükleme. ---",
+    "excerpt": "# Bir bulut makinesinden yerel sunucunuza repo çekin rdc repo pull my-app@my-local-server --from cloud-server # Çek ve hemen başlat rdc repo pull my-a...",
     "category": "Documentation",
     "page": "/tr/docs/quick-start",
     "path": "docs.quick-start.content",

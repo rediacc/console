@@ -4297,7 +4297,7 @@
   {
     "id": "search-10789",
     "content": "8.3 list",
-    "body": "{{t:cli.commands.backup.list.description}} rdc backup list [artifact-ref] [options] | {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} | |------|-------------|----------|---------| | -m, --machine <name> | {{t:cli.options.machine}} | {{t:cli.docs.optionLabels.no}} | - | | --storage <name> | {{t:cli.commands.backup.list.optionStorage}} | {{t:cli.docs.optionLabels.no}} | - | | --path <subdir> | {{t:cli.commands.backup.list.optionPath}} | {{t:cli.docs.optionLabels.no}} | - | | --debug | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - | <a id=\"cli-local-backup-manifests\"></a>",
+    "body": "{{t:cli.commands.backup.list.description}} rdc backup list [artifact-ref] [options] | {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} | |------|-------------|----------|---------| | -m, --machine <name> | {{t:cli.options.machine}} | {{t:cli.docs.optionLabels.no}} | - | | --path <subdir> | {{t:cli.commands.backup.list.optionPath}} | {{t:cli.docs.optionLabels.no}} | - | | --debug | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - | <a id=\"cli-local-backup-manifests\"></a>",
     "excerpt": "{{t:cli.commands.backup.list.description}} rdc backup list [artifact-ref] [options] | {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.des...",
     "category": "Documentation",
     "page": "/ja/docs/cli-application",
@@ -9686,8 +9686,8 @@
   {
     "id": "search-11284",
     "content": "4. リモートからのプル",
-    "body": "# クラウドマシンからローカルサーバーにリポジトリをプル rdc repo pull my-app@my-local-server --from cloud-server # クラウドストレージからプル rdc repo pull my-app@my-local-server --from my-s3-backup # プルして即座に起動 rdc repo pull my-app@my-local-server --from my-s3-backup --up なぜプルするのか? ローカルマシンは NAT の背後にあります。クラウドからプッシュすることはできません。しかし、クラウドには到達できます。プルでリポジトリを手元に持ってきます。 フルサイクル: 開発環境で作成 → クラウドにプッシュ → 本番環境でプル → --up。1つのリポジトリ、どのマシンでも、どのクラウドでも。 スケジュール設定、自動バックアップ、リストア: バックアップとリストア。 ---",
-    "excerpt": "# クラウドマシンからローカルサーバーにリポジトリをプル rdc repo pull my-app@my-local-server --from cloud-server # クラウドストレージからプル rdc repo pull my-app@my-local-server --from my-s...",
+    "body": "# クラウドマシンからローカルサーバーにリポジトリをプル rdc repo pull my-app@my-local-server --from cloud-server # プルして即座に起動 rdc repo pull my-app@my-local-server --from cloud-server --up # 代わりにチャンクストレージから特定時点を復元 rdc backup restore my-app --at <snapshot> --as my-app --up なぜプルするのか? ローカルマシンは NAT の背後にあります。クラウドからプッシュすることはできません。しかし、クラウドには到達できます。プルでリポジトリを手元に持ってきます。 フルサイクル: 開発環境で作成 → クラウドにプッシュ → 本番環境でプル → --up。1つのリポジトリ、どのマシンでも、どのクラウドでも。 スケジュール設定、自動バックアップ、リストア: バックアップとリストア。 ---",
+    "excerpt": "# クラウドマシンからローカルサーバーにリポジトリをプル rdc repo pull my-app@my-local-server --from cloud-server # プルして即座に起動 rdc repo pull my-app@my-local-server --from cloud-se...",
     "category": "Documentation",
     "page": "/ja/docs/quick-start",
     "path": "docs.quick-start.content",

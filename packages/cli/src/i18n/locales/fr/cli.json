@@ -28,14 +28,11 @@
         "description": "Lister les artefacts de sauvegarde sur une machine.",
         "examples": {
           "basic": "Lister les sauvegardes stockées pour une machine.",
-          "byStorage": "Lister les sauvegardes d'un backend de stockage spécifique."
+          "byPath": "Lister un seul sous-répertoire du datastore"
         },
         "listing": "Listage des sauvegardes...",
-        "optionPath": "Sous-répertoire dans la racine du stockage. Si omis, hot/ et cold/ sont listés et fusionnés.",
-        "optionStorage": "RETIRÉ : le listage du stockage a disparu avec le bras rclone",
-        "placementExclusive": "Passez exactement l'un de --machine ou --storage, pas les deux.",
-        "placementRequired": "Spécifiez --machine <m> ou --storage <s> pour indiquer d'où lister.",
-        "storageRetired": "Lister un backend de stockage est retiré : le bras cloud rclone a été supprimé. Les instantanés du magasin de blocs se listent avec `rdc backup manifests`, les artefacts d'une machine avec `rdc backup list -m <machine>`"
+        "optionPath": "Limiter le listage à un sous-répertoire ; omettre pour lister tout le datastore",
+        "placementRequired": "Spécifiez -m <machine> pour nommer la machine dont vous voulez lister les sauvegardes."
       },
       "manifests": {
         "description": "Lister les manifestes d'instantanés de sauvegarde enregistrés sur le serveur",

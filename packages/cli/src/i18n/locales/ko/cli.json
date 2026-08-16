@@ -28,14 +28,11 @@
         "description": "머신의 백업 아티팩트를 나열합니다",
         "examples": {
           "basic": "머신에 저장된 백업을 나열합니다.",
-          "byStorage": "특정 스토리지 백엔드의 백업을 나열합니다."
+          "byPath": "데이터스토어의 하위 디렉터리 하나만 나열합니다"
         },
         "listing": "백업을 나열하는 중...",
-        "optionPath": "스토리지 루트 내 하위 디렉터리. 생략하면 hot/과 cold/를 모두 나열해 병합합니다",
-        "optionStorage": "종료됨: 스토리지 목록 조회는 rclone 계열과 함께 제거되었습니다",
-        "placementExclusive": "--machine 또는 --storage 중 하나만 지정하세요 (둘 다는 불가)",
-        "placementRequired": "어디서 나열할지 --machine <m> 또는 --storage <s>로 지정하세요",
-        "storageRetired": "스토리지 백엔드 목록 조회는 종료되었습니다. rclone 클라우드 계열이 제거되었기 때문입니다. 청크 저장소 스냅숏은 `rdc backup manifests`로, 머신의 아티팩트는 `rdc backup list -m <machine>`으로 봅니다"
+        "optionPath": "나열 범위를 하위 디렉터리 하나로 제한합니다. 생략하면 데이터스토어 전체를 나열합니다",
+        "placementRequired": "백업을 나열할 머신을 지정하려면 -m <machine>을 지정하세요."
       },
       "manifests": {
         "description": "서버에 기록된 백업 스냅샷 매니페스트를 나열합니다",

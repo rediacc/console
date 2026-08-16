@@ -28,14 +28,11 @@
         "description": "Loetle varukoopia artefaktid masinal.",
         "examples": {
           "basic": "Loetle masina jaoks salvestatud varukoopiad.",
-          "byStorage": "Loetle konkreetse salvestusruumi varukoopiad."
+          "byPath": "Loetle ainult üks andmehoidla alamkataloog"
         },
         "listing": "Varukoopiate loetlemine...",
-        "optionPath": "Alamkataloog salvestuse juures. Kui jäetakse välja, loetletakse ja ühendatakse hot/ ja cold/.",
-        "optionStorage": "LÕPETATUD: salvestusteenuse loetelu eemaldati koos rclone'i haruga",
-        "placementExclusive": "Anna täpselt üks: --machine või --storage, mitte mõlemad.",
-        "placementRequired": "Määra --machine <m> või --storage <s>, et öelda, kust loetleda.",
-        "storageRetired": "Salvestusteenuse sisu loetlemine on lõpetatud: rclone'i pilveharu eemaldati. Tükihoidla hetktõmmised loetle käsuga `rdc backup manifests`, masinal olevad artefaktid käsuga `rdc backup list -m <machine>`"
+        "optionPath": "Piira loend ühe alamkataloogiga; jäta välja, et loetleda kogu andmehoidla",
+        "placementRequired": "Määra -m <machine>, et nimetada masin, mille varukoopiaid soovid loetleda."
       },
       "manifests": {
         "description": "Serverisse salvestatud varukoopia hetktõmmiste manifestide loendamine",

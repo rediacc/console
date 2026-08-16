@@ -6,7 +6,7 @@ order: 2
 language: ar
 generated: true
 generatedFrom: packages/cli/src/i18n/locales/ar/cli.json
-sourceHash: "34672cdde84ddf14"
+sourceHash: "bb3ff8daf0bc61cb"
 ---
 
 <!-- THIS FILE IS AUTO-GENERATED. Do not edit manually. -->
@@ -2180,7 +2180,6 @@ rdc backup list [artifact-ref] [options]
 | {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
 |------|-------------|----------|---------|
 | `-m, --machine <name>` | {{t:cli.options.machine}} | {{t:cli.docs.optionLabels.no}} | - |
-| `--storage <name>` | {{t:cli.commands.backup.list.optionStorage}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--path <subdir>` | {{t:cli.commands.backup.list.optionPath}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--debug` | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - |
 

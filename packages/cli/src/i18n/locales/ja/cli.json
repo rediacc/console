@@ -28,14 +28,11 @@
         "description": "マシン上のバックアップアーティファクトを一覧表示する",
         "examples": {
           "basic": "マシンに保存されたバックアップを一覧表示する",
-          "byStorage": "特定のストレージバックエンド内のバックアップを一覧表示する"
+          "byPath": "データストアの1つのサブディレクトリのみを一覧表示する"
         },
         "listing": "バックアップを一覧表示中...",
-        "optionPath": "ストレージルート内のサブディレクトリ。省略時は hot/ と cold/ の両方を一覧表示してマージする",
-        "optionStorage": "廃止: ストレージ一覧は rclone 系統とともに削除されました",
-        "placementExclusive": "--machine か --storage のどちらか一方のみを指定してください（両方は不可）",
-        "placementRequired": "どこから一覧表示するか、--machine <m> または --storage <s> で指定してください",
-        "storageRetired": "ストレージバックエンドの一覧表示は廃止されました。rclone のクラウド系統が削除されたためです。チャンクストアのスナップショットは `rdc backup manifests`、マシン上の成果物は `rdc backup list -m <machine>` で一覧します"
+        "optionPath": "一覧表示を1つのサブディレクトリに絞り込む。省略するとデータストア全体を一覧表示する",
+        "placementRequired": "バックアップを一覧表示したいマシンを指定するには -m <machine> を指定してください"
       },
       "manifests": {
         "description": "サーバーに記録されたバックアップスナップショットのマニフェストを一覧表示する",

@@ -4297,7 +4297,7 @@
   {
     "id": "search-1623",
     "content": "8.3 list",
-    "body": "{{t:cli.commands.backup.list.description}} rdc backup list [artifact-ref] [options] | {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} | |------|-------------|----------|---------| | -m, --machine <name> | {{t:cli.options.machine}} | {{t:cli.docs.optionLabels.no}} | - | | --storage <name> | {{t:cli.commands.backup.list.optionStorage}} | {{t:cli.docs.optionLabels.no}} | - | | --path <subdir> | {{t:cli.commands.backup.list.optionPath}} | {{t:cli.docs.optionLabels.no}} | - | | --debug | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - | <a id=\"cli-local-backup-manifests\"></a>",
+    "body": "{{t:cli.commands.backup.list.description}} rdc backup list [artifact-ref] [options] | {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} | |------|-------------|----------|---------| | -m, --machine <name> | {{t:cli.options.machine}} | {{t:cli.docs.optionLabels.no}} | - | | --path <subdir> | {{t:cli.commands.backup.list.optionPath}} | {{t:cli.docs.optionLabels.no}} | - | | --debug | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - | <a id=\"cli-local-backup-manifests\"></a>",
     "excerpt": "{{t:cli.commands.backup.list.description}} rdc backup list [artifact-ref] [options] | {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.des...",
     "category": "Documentation",
     "page": "/ar/docs/cli-application",
@@ -9686,8 +9686,8 @@
   {
     "id": "search-2118",
     "content": "4. السحب من مصدر بعيد",
-    "body": "# سحب مستودع من جهاز سحابي إلى خادمك المحلي rdc repo pull my-app@my-local-server --from cloud-server # سحب من التخزين السحابي rdc repo pull my-app@my-local-server --from my-s3-backup # سحب وتشغيل فوري rdc repo pull my-app@my-local-server --from my-s3-backup --up لماذا السحب؟ جهازك المحلي خلف NAT. السحابة لا تستطيع الدفع إليك. لكنك تستطيع الوصول إلى السحابة. السحب يجلب المستودع إلى بيئتك. الدورة الكاملة: أنشئ على بيئة التطوير ثم ادفع إلى السحابة ثم اسحب إلى الإنتاج ثم --up. مستودع واحد، أي جهاز، أي سحابة. الجدولة، النسخ الاحتياطي التلقائي، الاستعادة: النسخ الاحتياطي والاستعادة. ---",
-    "excerpt": "# سحب مستودع من جهاز سحابي إلى خادمك المحلي rdc repo pull my-app@my-local-server --from cloud-server # سحب من التخزين السحابي rdc repo pull my-app@my-...",
+    "body": "# سحب مستودع من جهاز سحابي إلى خادمك المحلي rdc repo pull my-app@my-local-server --from cloud-server # سحب وتشغيل فوري rdc repo pull my-app@my-local-server --from cloud-server --up # استعادة نقطة زمنية محددة من التخزين المجزّأ بدلاً من ذلك rdc backup restore my-app --at <snapshot> --as my-app --up لماذا السحب؟ جهازك المحلي خلف NAT. السحابة لا تستطيع الدفع إليك. لكنك تستطيع الوصول إلى السحابة. السحب يجلب المستودع إلى بيئتك. الدورة الكاملة: أنشئ على بيئة التطوير ثم ادفع إلى السحابة ثم اسحب إلى الإنتاج ثم --up. مستودع واحد، أي جهاز، أي سحابة. الجدولة، النسخ الاحتياطي التلقائي، الاستعادة: النسخ الاحتياطي والاستعادة. ---",
+    "excerpt": "# سحب مستودع من جهاز سحابي إلى خادمك المحلي rdc repo pull my-app@my-local-server --from cloud-server # سحب وتشغيل فوري rdc repo pull my-app@my-local-s...",
     "category": "Documentation",
     "page": "/ar/docs/quick-start",
     "path": "docs.quick-start.content",
