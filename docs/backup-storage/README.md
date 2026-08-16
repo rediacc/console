@@ -89,6 +89,17 @@ Fable-tier pieces of this program:
 - `storage browse`: the customer-rclone-remote READ surface stays exactly as it
   is. (Note it shells out to an `rclone` on the operator's PATH; the embedded
   copy went with the retirement, and `storage-browser.ts` says so on ENOENT.)
+- ADDITION 2026-08-16: `rdc backup browse` is IN, and is a different noun from
+  the line above. Retiring the rclone arm took `storage browse` off the backup
+  path and left no way to ask what a backup contains. That listing cannot be
+  served from the chunk store at any cost — the manifest maps grid cells to the
+  SHA-256 of their CIPHERTEXT and carries no filesystem data — so it comes from
+  opening the repository image read-only and walking it. Local, no server, no
+  network, no credentials. Two design agents on opposite angles converged on
+  this shape, including the server-first one arguing against its own angle
+  (a server-side plaintext table of contents is a zero-knowledge regression).
+  Synthesis and the staged plan for remote browse:
+  `docs/agent/backup-storage/PLAN-chunk-store-browse-DECISION.md`.
 - CORRECTION 2026-08-16: `rdc repo push/pull --to/--from <storage>` did NOT stay.
   Both now refuse a storage destination (`packages/cli/src/commands/repo-backup.ts:183`)
   and name the chunk store instead. Only the machine form survives. This line
