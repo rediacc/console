@@ -96,6 +96,23 @@ export class OpsVMExecutor {
   /**
    * Check if renet is installed on a VM
    */
+  /**
+   * Why a worker is not usable as a Ceph client, or null when it is.
+   *
+   * `ceph health` CANNOT answer this. A cluster with healthy mons and every OSD
+   * up reports HEALTH_OK whether or not a worker ever received /etc/ceph, so the
+   * only honest probe is on the worker itself.
+   */
+  async cephClientBlocker(ip: string): Promise<string | null> {
+    const conf = await this.executeOnVM(ip, 'test -f /etc/ceph/ceph.conf');
+    if (conf.code !== 0) return 'no /etc/ceph/ceph.conf';
+
+    const rbd = await this.executeOnVM(ip, 'command -v rbd');
+    if (rbd.code !== 0 || rbd.stdout.trim().length === 0) return 'no rbd binary (ceph-common not installed)';
+
+    return null;
+  }
+
   async isRenetInstalledOnVM(ip: string): Promise<boolean> {
     const result = await this.executeOnVM(ip, 'which renet || command -v renet');
     return result.code === 0 && result.stdout.trim().length > 0;
