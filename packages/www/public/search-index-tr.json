@@ -9772,7 +9772,7 @@
   {
     "id": "search-16524",
     "content": "Depo Yaşam Döngüsü",
-    "body": "| Komut | Açıklama | |-------|----------| | rdc repo create <repo> -m <machine> | Bir makinede yeni depo oluştur | | rdc repo up <repo>@<machine> | Depoyu dağıt veya güncelle | | rdc repo down <repo>@<machine> | Depoyu durdur | | rdc repo delete <repo>@<machine> | Depoyu sil | | rdc repo fork <repo>@<machine> --tag <tag> | Depoyu çatalla (neredeyse anında, BTRFS reflink) | | rdc repo promote <repo>:<tag> | Doğrulanmış bir fork'u üst deponun adıyla üretime yükselt | | rdc repo list | Ad ve GUID ile tüm depoları listele |",
+    "body": "| Komut | Açıklama | |-------|----------| | rdc repo create <repo> -m <machine> | Bir makinede yeni depo oluştur | | rdc repo up <repo>@<machine> | Depoyu dağıt veya güncelle | | rdc repo down <repo>@<machine> | Depoyu durdur | | rdc repo delete <repo>@<machine> | Depoyu sil | | rdc repo fork <repo>@<machine> --tag <tag> | Depoyu çatalla (neredeyse anında, BTRFS reflink) | | rdc repo promote <repo>:<tag> | Doğrulanmış bir fork'u üst deponun adıyla üretime yükselt | | rdc repo list | Ad ve GUID ile tüm depoları listele | | rdc repo resize <repo> --size <size> | Durdurulmuş bir deponun birim boyutunu değiştir | | rdc repo expand <repo> --size <size> | Çalışan bir deponun birimini yerinde büyüt |",
     "excerpt": "| Komut | Açıklama | |-------|----------| | rdc repo create <repo> -m <machine> | Bir makinede yeni depo oluştur | | rdc repo up <repo>@<machine> | De...",
     "category": "Documentation",
     "page": "/tr/docs/rdc-cheat-sheet",
@@ -9838,7 +9838,7 @@
   {
     "id": "search-16530",
     "content": "Makine Yönetimi",
-    "body": "| Komut | Açıklama | |-------|----------| | rdc machine status <machine> | Tam makine durumu (sistem, konteynerler, servisler, depolar, ağ) | | rdc machine status <machine> --system | Yalnızca sistem bilgisi | | rdc machine status <machine> --containers | Yalnızca konteyner listesi | | rdc machine status <machine> --repositories | Yalnızca depo listesi | | rdc machine status <machine> --services | Yalnızca servis listesi | | rdc machine status <machine> --network | Yalnızca ağ bilgisi | | rdc machine status <machine> --block-devices | Yalnızca blok cihaz bilgisi | | rdc machine list | Yapılandırmadaki tüm makineleri listele | | rdc machine setup <machine> | İlk makine hazırlığını çalıştır | | rdc machine prune <machine> | Makineden kullanılmayan kaynakları kaldır | | rdc machine deprovision <machine> | Makineyi tamamen kaldır |",
+    "body": "| Komut | Açıklama | |-------|----------| | rdc machine status <machine> | Tam makine durumu (sistem, konteynerler, servisler, depolar, ağ) | | rdc machine status <machine> --system | Yalnızca sistem bilgisi | | rdc machine status <machine> --containers | Yalnızca konteyner listesi | | rdc machine status <machine> --repositories | Yalnızca depo listesi | | rdc machine status <machine> --services | Yalnızca servis listesi | | rdc machine status <machine> --network | Yalnızca ağ bilgisi | | rdc machine status <machine> --block-devices | Yalnızca blok cihaz bilgisi | | rdc machine list | Yapılandırmadaki tüm makineleri listele | | rdc machine setup <machine> | İlk makine hazırlığını çalıştır | | rdc machine health <machine> | Bir makinenin sağlığını kontrol et | | rdc machine scan-keys <machine> | Yeniden kurulumdan sonra SSH ana bilgisayar anahtarlarını yenile | | rdc machine prune <machine> | Makineden kullanılmayan kaynakları kaldır | | rdc machine deprovision <machine> | Makineyi tamamen kaldır |",
     "excerpt": "| Komut | Açıklama | |-------|----------| | rdc machine status <machine> | Tam makine durumu (sistem, konteynerler, servisler, depolar, ağ) | | rdc ma...",
     "category": "Documentation",
     "page": "/tr/docs/rdc-cheat-sheet",
@@ -9849,7 +9849,7 @@
   {
     "id": "search-16531",
     "content": "Terminal ve Senkronizasyon",
-    "body": "| Komut | Açıklama | |-------|----------| | rdc term connect <machine> | Makineye SSH terminali aç | | rdc term connect <repo>@<machine> | Depoya SSH terminali aç (DOCKER_HOST ayarlar) | | rdc term connect <machine> -c \"<command>\" | Makinede komut çalıştır | | rdc repo sync upload <repo>@<machine> --local <paths...> | Bir veya daha fazla yerel dosya/dizini depoya yükle | | rdc repo sync upload <repo>@<machine> --local <file> --remote-file <path> | Tek bir yerel dosyayı belirli bir uzak yola yükle | | rdc repo sync download <repo>@<machine> --local <dir> | Depo dizinini yerel olarak indir | | rdc repo sync download <repo>@<machine> --remote-file <path> --local <dir> | Tek bir uzak dosyayı yerel bir dizine indir | | rdc vscode connect <repo>@<machine> | VS Code Remote SSH oturumunu aç |",
+    "body": "| Komut | Açıklama | |-------|----------| | rdc term connect <machine> | Makineye SSH terminali aç | | rdc term connect <repo>@<machine> | Depoya SSH terminali aç (DOCKER_HOST ayarlar) | | rdc term connect <machine> -c \"<command>\" | Makinede komut çalıştır | | rdc repo sync upload <repo>@<machine> --local <paths...> | Bir veya daha fazla yerel dosya/dizini depoya yükle | | rdc repo sync upload <repo>@<machine> --local <file> --remote-file <path> | Tek bir yerel dosyayı belirli bir uzak yola yükle | | rdc repo sync download <repo>@<machine> --local <dir> | Depo dizinini yerel olarak indir | | rdc repo sync download <repo>@<machine> --remote-file <path> --local <dir> | Tek bir uzak dosyayı yerel bir dizine indir | | rdc vscode connect <repo>@<machine> | VS Code Remote SSH oturumunu aç | | rdc vscode list | vscode connect tarafından oluşturulan SSH yapılandırmalarını listele | | rdc vscode cleanup --all | vscode connect tarafından yazılan tüm SSH yapılandırmalarını kaldır | | rdc repo tunnel <repo> -c <container> --port <port> | Bir konteyner portunu SSH üzerinden yönlendir |",
     "excerpt": "| Komut | Açıklama | |-------|----------| | rdc term connect <machine> | Makineye SSH terminali aç | | rdc term connect <repo>@<machine> | Depoya SSH...",
     "category": "Documentation",
     "page": "/tr/docs/rdc-cheat-sheet",
@@ -9860,8 +9860,8 @@
   {
     "id": "search-16532",
     "content": "Yapılandırma",
-    "body": "| Komut | Açıklama | |-------|----------| | rdc config init <name> | Adlandırılmış yapılandırma dosyası oluştur | | rdc machine add <machine> --ip <host> --user <user> | Yapılandırmaya makine ekle | | rdc storage import rclone.conf | rclone yapılandırmasından depolama sağlayıcıları içe aktar | | rdc storage list | Yapılandırılmış depolama sağlayıcılarını listele | | rdc backup strategy set ... | Adlandırılmış yedekleme stratejisi tanımla | | rdc --config <name> <command> | Adlandırılmış yapılandırma dosyası kullan |",
-    "excerpt": "| Komut | Açıklama | |-------|----------| | rdc config init <name> | Adlandırılmış yapılandırma dosyası oluştur | | rdc machine add <machine> --ip <ho...",
+    "body": "| Komut | Açıklama | |-------|----------| | rdc config init <name> | Adlandırılmış yapılandırma dosyası oluştur | | rdc config list | Bu makinedeki tüm yapılandırmaları listele | | rdc config set machine <alias> | Bir takma adı farklı bir makineye yönlendir | | rdc machine add <machine> --ip <host> --user <user> | Yapılandırmaya makine ekle | | rdc storage import rclone.conf | rclone yapılandırmasından depolama sağlayıcıları içe aktar | | rdc storage list | Yapılandırılmış depolama sağlayıcılarını listele | | rdc backup strategy set ... | Adlandırılmış yedekleme stratejisi tanımla | | rdc --config <name> <command> | Adlandırılmış yapılandırma dosyası kullan |",
+    "excerpt": "| Komut | Açıklama | |-------|----------| | rdc config init <name> | Adlandırılmış yapılandırma dosyası oluştur | | rdc config list | Bu makinedeki tü...",
     "category": "Documentation",
     "page": "/tr/docs/rdc-cheat-sheet",
     "path": "docs.rdc-cheat-sheet.content",
@@ -9871,8 +9871,8 @@
   {
     "id": "search-16533",
     "content": "Hata Ayıklama ve Doğrudan Erişim",
-    "body": "| Komut | Açıklama | |-------|----------| | rdc term connect <repo>@<machine> -c \"docker ps\" | Depodaki konteynerleri listele | | rdc term connect <repo>@<machine> -c \"docker logs <name>\" | Konteyner günlüklerini al | | rdc term connect <repo>@<machine> -c \"docker exec <name> <cmd>\" | Konteynerde komut çalıştır | | rdc term connect <repo>@<machine> -c \"docker restart <name>\" | Konteyneri yeniden başlat |",
-    "excerpt": "| Komut | Açıklama | |-------|----------| | rdc term connect <repo>@<machine> -c \"docker ps\" | Depodaki konteynerleri listele | | rdc term connect <re...",
+    "body": "| Komut | Açıklama | |-------|----------| | rdc repo logs <repo>@<machine> -c <container> --lines 200 --follow | Konteyner günlüklerini akışla izle (tercih edilen) | | rdc repo exec <repo>@<machine> -c <container> -- <command> | Konteynerde bir komut çalıştır (tercih edilen) | | rdc repo exec <repo>@<machine> -c <container> -i -- bash | Etkileşimli bir konteyner kabuğuna bağlan | | rdc term connect <repo>@<machine> -c \"docker ps\" | Depodaki konteynerleri listele | | rdc term connect <repo>@<machine> -c \"docker logs <name>\" | Konteyner günlüklerini al | | rdc term connect <repo>@<machine> -c \"docker exec <name> <cmd>\" | Konteynerde komut çalıştır | | rdc term connect <repo>@<machine> -c \"docker restart <name>\" | Konteyneri yeniden başlat |",
+    "excerpt": "| Komut | Açıklama | |-------|----------| | rdc repo logs <repo>@<machine> -c <container> --lines 200 --follow | Konteyner günlüklerini akışla izle (t...",
     "category": "Documentation",
     "page": "/tr/docs/rdc-cheat-sheet",
     "path": "docs.rdc-cheat-sheet.content",

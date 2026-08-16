@@ -9794,7 +9794,7 @@
   {
     "id": "search-7369",
     "content": "Hoidla elutsükkel",
-    "body": "| Käsk | Kirjeldus | |---------|-------------| | rdc repo create <repo> -m <machine> | Loo uus hoidla masinal | | rdc repo up <repo>@<machine> | Juuruta või uuenda hoidlat | | rdc repo down <repo>@<machine> | Peata hoidla | | rdc repo delete <repo>@<machine> | Kustuta hoidla | | rdc repo fork <repo>@<machine> --tag <tag> | Tee hoidlast fork (peaaegu kohene, BTRFS reflink) | | rdc repo promote <repo>:<tag> | Tõsta valideeritud fork emahoidla nime all tootmisse | | rdc repo list | Loenda kõik hoidlad nime ja GUID-iga |",
+    "body": "| Käsk | Kirjeldus | |---------|-------------| | rdc repo create <repo> -m <machine> | Loo uus hoidla masinal | | rdc repo up <repo>@<machine> | Juuruta või uuenda hoidlat | | rdc repo down <repo>@<machine> | Peata hoidla | | rdc repo delete <repo>@<machine> | Kustuta hoidla | | rdc repo fork <repo>@<machine> --tag <tag> | Tee hoidlast fork (peaaegu kohene, BTRFS reflink) | | rdc repo promote <repo>:<tag> | Tõsta valideeritud fork emahoidla nime all tootmisse | | rdc repo list | Loenda kõik hoidlad nime ja GUID-iga | | rdc repo resize <repo> --size <size> | Muuda peatatud hoidla köite suurust | | rdc repo expand <repo> --size <size> | Kasvata töötava hoidla köidet kohapeal |",
     "excerpt": "| Käsk | Kirjeldus | |---------|-------------| | rdc repo create <repo> -m <machine> | Loo uus hoidla masinal | | rdc repo up <repo>@<machine> | Juuru...",
     "category": "Documentation",
     "page": "/et/docs/rdc-cheat-sheet",
@@ -9860,7 +9860,7 @@
   {
     "id": "search-7375",
     "content": "Masina haldamine",
-    "body": "| Käsk | Kirjeldus | |---------|-------------| | rdc machine status <machine> | Täielik masina olek (süsteem, konteinerid, teenused, hoidlad, võrk) | | rdc machine status <machine> --system | Ainult süsteemi teave | | rdc machine status <machine> --containers | Ainult konteinerite loend | | rdc machine status <machine> --repositories | Ainult hoidlate loend | | rdc machine status <machine> --services | Ainult teenuste loend | | rdc machine status <machine> --network | Ainult võrgoteave | | rdc machine status <machine> --block-devices | Ainult plokiseadmete teave | | rdc machine list | Loenda kõik masinad konfiguratsioonis | | rdc machine setup <machine> | Käivita masina algne provisioneerimine | | rdc machine prune <machine> | Eemalda kasutamata ressursid masinalt | | rdc machine deprovision <machine> | Tühjenda masin täielikult |",
+    "body": "| Käsk | Kirjeldus | |---------|-------------| | rdc machine status <machine> | Täielik masina olek (süsteem, konteinerid, teenused, hoidlad, võrk) | | rdc machine status <machine> --system | Ainult süsteemi teave | | rdc machine status <machine> --containers | Ainult konteinerite loend | | rdc machine status <machine> --repositories | Ainult hoidlate loend | | rdc machine status <machine> --services | Ainult teenuste loend | | rdc machine status <machine> --network | Ainult võrgoteave | | rdc machine status <machine> --block-devices | Ainult plokiseadmete teave | | rdc machine list | Loenda kõik masinad konfiguratsioonis | | rdc machine setup <machine> | Käivita masina algne provisioneerimine | | rdc machine health <machine> | Kontrolli masina seisukorda | | rdc machine scan-keys <machine> | Värskenda SSH hosti võtmeid pärast taasehitust | | rdc machine prune <machine> | Eemalda kasutamata ressursid masinalt | | rdc machine deprovision <machine> | Tühjenda masin täielikult |",
     "excerpt": "| Käsk | Kirjeldus | |---------|-------------| | rdc machine status <machine> | Täielik masina olek (süsteem, konteinerid, teenused, hoidlad, võrk) |...",
     "category": "Documentation",
     "page": "/et/docs/rdc-cheat-sheet",
@@ -9871,7 +9871,7 @@
   {
     "id": "search-7376",
     "content": "Terminal ja sünkroonimine",
-    "body": "| Käsk | Kirjeldus | |---------|-------------| | rdc term connect <machine> | Ava SSH-terminal masinale | | rdc term connect <repo>@<machine> | Ava SSH-terminal hoidlale (seab DOCKER_HOST) | | rdc term connect <machine> -c \"<command>\" | Käivita käsk masinal | | rdc repo sync upload <repo>@<machine> --local <paths...> | Laadi üles üks või mitu kohalikku faili/kataloogi hoidlasse | | rdc repo sync upload <repo>@<machine> --local <file> --remote-file <path> | Laadi üles üks kohalik fail sõnaselgele kaugteele | | rdc repo sync download <repo>@<machine> --local <dir> | Laadi hoidla kataloog kohalikult alla | | rdc repo sync download <repo>@<machine> --remote-file <path> --local <dir> | Laadi üks kaugfail kohalikku kataloogi | | rdc vscode connect <repo>@<machine> | Ava VS Code kaugühenduse SSH seanss |",
+    "body": "| Käsk | Kirjeldus | |---------|-------------| | rdc term connect <machine> | Ava SSH-terminal masinale | | rdc term connect <repo>@<machine> | Ava SSH-terminal hoidlale (seab DOCKER_HOST) | | rdc term connect <machine> -c \"<command>\" | Käivita käsk masinal | | rdc repo sync upload <repo>@<machine> --local <paths...> | Laadi üles üks või mitu kohalikku faili/kataloogi hoidlasse | | rdc repo sync upload <repo>@<machine> --local <file> --remote-file <path> | Laadi üles üks kohalik fail sõnaselgele kaugteele | | rdc repo sync download <repo>@<machine> --local <dir> | Laadi hoidla kataloog kohalikult alla | | rdc repo sync download <repo>@<machine> --remote-file <path> --local <dir> | Laadi üks kaugfail kohalikku kataloogi | | rdc vscode connect <repo>@<machine> | Ava VS Code kaugühenduse SSH seanss | | rdc vscode list | Loenda vscode connect loodud SSH konfiguratsioonid | | rdc vscode cleanup --all | Eemalda kõik vscode connect kirjutatud SSH konfiguratsioonid | | rdc repo tunnel <repo> -c <container> --port <port> | Suuna konteineri port SSH kaudu edasi |",
     "excerpt": "| Käsk | Kirjeldus | |---------|-------------| | rdc term connect <machine> | Ava SSH-terminal masinale | | rdc term connect <repo>@<machine> | Ava SS...",
     "category": "Documentation",
     "page": "/et/docs/rdc-cheat-sheet",
@@ -9882,8 +9882,8 @@
   {
     "id": "search-7377",
     "content": "Konfigureerimine",
-    "body": "| Käsk | Kirjeldus | |---------|-------------| | rdc config init <name> | Loo nimega konfiguratsioonifail | | rdc machine add <machine> --ip <host> --user <user> | Lisa masin konfiguratsiooni | | rdc storage import rclone.conf | Impordi mälupakkujad rclone'i konfiguratsioonist | | rdc storage list | Loenda konfigureeritud mälupakkujad | | rdc backup strategy set ... | Defineeri nimega varundussstrateegia | | rdc --config <name> <command> | Kasuta nimega konfiguratsioonifaili |",
-    "excerpt": "| Käsk | Kirjeldus | |---------|-------------| | rdc config init <name> | Loo nimega konfiguratsioonifail | | rdc machine add <machine> --ip <host> --...",
+    "body": "| Käsk | Kirjeldus | |---------|-------------| | rdc config init <name> | Loo nimega konfiguratsioonifail | | rdc config list | Loenda kõik selle masina konfiguratsioonid | | rdc config set machine <alias> | Suuna alias teisele masinale | | rdc machine add <machine> --ip <host> --user <user> | Lisa masin konfiguratsiooni | | rdc storage import rclone.conf | Impordi mälupakkujad rclone'i konfiguratsioonist | | rdc storage list | Loenda konfigureeritud mälupakkujad | | rdc backup strategy set ... | Defineeri nimega varundussstrateegia | | rdc --config <name> <command> | Kasuta nimega konfiguratsioonifaili |",
+    "excerpt": "| Käsk | Kirjeldus | |---------|-------------| | rdc config init <name> | Loo nimega konfiguratsioonifail | | rdc config list | Loenda kõik selle masi...",
     "category": "Documentation",
     "page": "/et/docs/rdc-cheat-sheet",
     "path": "docs.rdc-cheat-sheet.content",
@@ -9893,8 +9893,8 @@
   {
     "id": "search-7378",
     "content": "Silumine ja pääsetee",
-    "body": "| Käsk | Kirjeldus | |---------|-------------| | rdc term connect <repo>@<machine> -c \"docker ps\" | Loenda konteinerid hoidlas | | rdc term connect <repo>@<machine> -c \"docker logs <name>\" | Hangi konteineri logid | | rdc term connect <repo>@<machine> -c \"docker exec <name> <cmd>\" | Käivita käsk konteineris | | rdc term connect <repo>@<machine> -c \"docker restart <name>\" | Taaskäivita konteiner |",
-    "excerpt": "| Käsk | Kirjeldus | |---------|-------------| | rdc term connect <repo>@<machine> -c \"docker ps\" | Loenda konteinerid hoidlas | | rdc term connect <r...",
+    "body": "| Käsk | Kirjeldus | |---------|-------------| | rdc repo logs <repo>@<machine> -c <container> --lines 200 --follow | Voogesita konteineri logisid (eelistatud) | | rdc repo exec <repo>@<machine> -c <container> -- <command> | Käivita käsk konteineris (eelistatud) | | rdc repo exec <repo>@<machine> -c <container> -i -- bash | Ava interaktiivne konteineri shell | | rdc term connect <repo>@<machine> -c \"docker ps\" | Loenda konteinerid hoidlas | | rdc term connect <repo>@<machine> -c \"docker logs <name>\" | Hangi konteineri logid | | rdc term connect <repo>@<machine> -c \"docker exec <name> <cmd>\" | Käivita käsk konteineris | | rdc term connect <repo>@<machine> -c \"docker restart <name>\" | Taaskäivita konteiner |",
+    "excerpt": "| Käsk | Kirjeldus | |---------|-------------| | rdc repo logs <repo>@<machine> -c <container> --lines 200 --follow | Voogesita konteineri logisid (ee...",
     "category": "Documentation",
     "page": "/et/docs/rdc-cheat-sheet",
     "path": "docs.rdc-cheat-sheet.content",

@@ -9772,7 +9772,7 @@
   {
     "id": "search-17831",
     "content": "仓库生命周期",
-    "body": "| 命令 | 说明 | |------|------| | rdc repo create <repo> -m <machine> | 在机器上创建新仓库 | | rdc repo up <repo>@<machine> | 部署或更新仓库 | | rdc repo down <repo>@<machine> | 停止仓库 | | rdc repo delete <repo>@<machine> | 删除仓库 | | rdc repo fork <repo>@<machine> --tag <tag> | 派生仓库（近乎瞬时，BTRFS reflink） | | rdc repo promote <repo>:<tag> | 将已验证的派生仓库以父仓库的名称提升为生产仓库 | | rdc repo list | 列出所有仓库及其名称和 GUID |",
+    "body": "| 命令 | 说明 | |------|------| | rdc repo create <repo> -m <machine> | 在机器上创建新仓库 | | rdc repo up <repo>@<machine> | 部署或更新仓库 | | rdc repo down <repo>@<machine> | 停止仓库 | | rdc repo delete <repo>@<machine> | 删除仓库 | | rdc repo fork <repo>@<machine> --tag <tag> | 派生仓库（近乎瞬时，BTRFS reflink） | | rdc repo promote <repo>:<tag> | 将已验证的派生仓库以父仓库的名称提升为生产仓库 | | rdc repo list | 列出所有仓库及其名称和 GUID | | rdc repo resize <repo> --size <size> | 调整已停止仓库卷的大小 | | rdc repo expand <repo> --size <size> | 原地扩展正在运行的仓库的卷 |",
     "excerpt": "| 命令 | 说明 | |------|------| | rdc repo create <repo> -m <machine> | 在机器上创建新仓库 | | rdc repo up <repo>@<machine> | 部署或更新仓库 | | rdc repo down <repo>@<mac...",
     "category": "Documentation",
     "page": "/zh/docs/rdc-cheat-sheet",
@@ -9838,7 +9838,7 @@
   {
     "id": "search-17837",
     "content": "机器管理",
-    "body": "| 命令 | 说明 | |------|------| | rdc machine status <machine> | 完整机器状态（系统、容器、服务、仓库、网络） | | rdc machine status <machine> --system | 仅系统信息 | | rdc machine status <machine> --containers | 仅容器列表 | | rdc machine status <machine> --repositories | 仅仓库列表 | | rdc machine status <machine> --services | 仅服务列表 | | rdc machine status <machine> --network | 仅网络信息 | | rdc machine status <machine> --block-devices | 仅块设备信息 | | rdc machine list | 列出配置中的所有机器 | | rdc machine setup <machine> | 运行机器初始配置 | | rdc machine prune <machine> | 从机器中删除未使用的资源 | | rdc machine deprovision <machine> | 完全取消配置机器 |",
+    "body": "| 命令 | 说明 | |------|------| | rdc machine status <machine> | 完整机器状态（系统、容器、服务、仓库、网络） | | rdc machine status <machine> --system | 仅系统信息 | | rdc machine status <machine> --containers | 仅容器列表 | | rdc machine status <machine> --repositories | 仅仓库列表 | | rdc machine status <machine> --services | 仅服务列表 | | rdc machine status <machine> --network | 仅网络信息 | | rdc machine status <machine> --block-devices | 仅块设备信息 | | rdc machine list | 列出配置中的所有机器 | | rdc machine setup <machine> | 运行机器初始配置 | | rdc machine health <machine> | 检查机器的健康状况 | | rdc machine scan-keys <machine> | 重建后刷新 SSH 主机密钥 | | rdc machine prune <machine> | 从机器中删除未使用的资源 | | rdc machine deprovision <machine> | 完全取消配置机器 |",
     "excerpt": "| 命令 | 说明 | |------|------| | rdc machine status <machine> | 完整机器状态（系统、容器、服务、仓库、网络） | | rdc machine status <machine> --system | 仅系统信息 | | rdc machine...",
     "category": "Documentation",
     "page": "/zh/docs/rdc-cheat-sheet",
@@ -9849,7 +9849,7 @@
   {
     "id": "search-17838",
     "content": "终端与同步",
-    "body": "| 命令 | 说明 | |------|------| | rdc term connect <machine> | 打开到机器的 SSH 终端 | | rdc term connect <repo>@<machine> | 打开到仓库的 SSH 终端（设置 DOCKER_HOST） | | rdc term connect <machine> -c \"<command>\" | 在机器上运行命令 | | rdc repo sync upload <repo>@<machine> --local <paths...> | 将一个或多个本地文件或目录上传到仓库 | | rdc repo sync upload <repo>@<machine> --local <file> --remote-file <path> | 将单个本地文件上传到指定的远程路径 | | rdc repo sync download <repo>@<machine> --local <dir> | 将仓库目录下载到本地 | | rdc repo sync download <repo>@<machine> --remote-file <path> --local <dir> | 将单个远程文件下载到本地目录 | | rdc vscode connect <repo>@<machine> | 打开 VS Code Remote SSH 会话 |",
+    "body": "| 命令 | 说明 | |------|------| | rdc term connect <machine> | 打开到机器的 SSH 终端 | | rdc term connect <repo>@<machine> | 打开到仓库的 SSH 终端（设置 DOCKER_HOST） | | rdc term connect <machine> -c \"<command>\" | 在机器上运行命令 | | rdc repo sync upload <repo>@<machine> --local <paths...> | 将一个或多个本地文件或目录上传到仓库 | | rdc repo sync upload <repo>@<machine> --local <file> --remote-file <path> | 将单个本地文件上传到指定的远程路径 | | rdc repo sync download <repo>@<machine> --local <dir> | 将仓库目录下载到本地 | | rdc repo sync download <repo>@<machine> --remote-file <path> --local <dir> | 将单个远程文件下载到本地目录 | | rdc vscode connect <repo>@<machine> | 打开 VS Code Remote SSH 会话 | | rdc vscode list | 列出 vscode connect 创建的 SSH 配置 | | rdc vscode cleanup --all | 移除 vscode connect 写入的所有 SSH 配置 | | rdc repo tunnel <repo> -c <container> --port <port> | 通过 SSH 转发容器端口 |",
     "excerpt": "| 命令 | 说明 | |------|------| | rdc term connect <machine> | 打开到机器的 SSH 终端 | | rdc term connect <repo>@<machine> | 打开到仓库的 SSH 终端（设置 DOCKER_HOST） | | rdc...",
     "category": "Documentation",
     "page": "/zh/docs/rdc-cheat-sheet",
@@ -9860,8 +9860,8 @@
   {
     "id": "search-17839",
     "content": "配置",
-    "body": "| 命令 | 说明 | |------|------| | rdc config init <name> | 创建命名配置文件 | | rdc machine add <machine> --ip <host> --user <user> | 向配置中添加机器 | | rdc storage import rclone.conf | 从 rclone 配置导入存储提供商 | | rdc storage list | 列出已配置的存储提供商 | | rdc backup strategy set ... | 定义命名备份策略 | | rdc --config <name> <command> | 使用命名配置文件 |",
-    "excerpt": "| 命令 | 说明 | |------|------| | rdc config init <name> | 创建命名配置文件 | | rdc machine add <machine> --ip <host> --user <user> | 向配置中添加机器 | | rdc storage imp...",
+    "body": "| 命令 | 说明 | |------|------| | rdc config init <name> | 创建命名配置文件 | | rdc config list | 列出此机器上的所有配置 | | rdc config set machine <alias> | 将别名指向另一台机器 | | rdc machine add <machine> --ip <host> --user <user> | 向配置中添加机器 | | rdc storage import rclone.conf | 从 rclone 配置导入存储提供商 | | rdc storage list | 列出已配置的存储提供商 | | rdc backup strategy set ... | 定义命名备份策略 | | rdc --config <name> <command> | 使用命名配置文件 |",
+    "excerpt": "| 命令 | 说明 | |------|------| | rdc config init <name> | 创建命名配置文件 | | rdc config list | 列出此机器上的所有配置 | | rdc config set machine <alias> | 将别名指向另一台机器 | |...",
     "category": "Documentation",
     "page": "/zh/docs/rdc-cheat-sheet",
     "path": "docs.rdc-cheat-sheet.content",
@@ -9871,8 +9871,8 @@
   {
     "id": "search-17840",
     "content": "调试与直接访问",
-    "body": "| 命令 | 说明 | |------|------| | rdc term connect <repo>@<machine> -c \"docker ps\" | 列出仓库中的容器 | | rdc term connect <repo>@<machine> -c \"docker logs <name>\" | 获取容器日志 | | rdc term connect <repo>@<machine> -c \"docker exec <name> <cmd>\" | 在容器中执行命令 | | rdc term connect <repo>@<machine> -c \"docker restart <name>\" | 重启容器 |",
-    "excerpt": "| 命令 | 说明 | |------|------| | rdc term connect <repo>@<machine> -c \"docker ps\" | 列出仓库中的容器 | | rdc term connect <repo>@<machine> -c \"docker logs <name>...",
+    "body": "| 命令 | 说明 | |------|------| | rdc repo logs <repo>@<machine> -c <container> --lines 200 --follow | 流式查看容器日志（推荐） | | rdc repo exec <repo>@<machine> -c <container> -- <command> | 在容器中运行命令（推荐） | | rdc repo exec <repo>@<machine> -c <container> -i -- bash | 连接交互式容器 shell | | rdc term connect <repo>@<machine> -c \"docker ps\" | 列出仓库中的容器 | | rdc term connect <repo>@<machine> -c \"docker logs <name>\" | 获取容器日志 | | rdc term connect <repo>@<machine> -c \"docker exec <name> <cmd>\" | 在容器中执行命令 | | rdc term connect <repo>@<machine> -c \"docker restart <name>\" | 重启容器 |",
+    "excerpt": "| 命令 | 说明 | |------|------| | rdc repo logs <repo>@<machine> -c <container> --lines 200 --follow | 流式查看容器日志（推荐） | | rdc repo exec <repo>@<machine> -c...",
     "category": "Documentation",
     "page": "/zh/docs/rdc-cheat-sheet",
     "path": "docs.rdc-cheat-sheet.content",

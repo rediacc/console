@@ -9794,7 +9794,7 @@
   {
     "id": "search-12601",
     "content": "리포지터리 수명 주기",
-    "body": "| 명령 | 설명 | |---------|-------------| | rdc repo create <repo> -m <machine> | 머신에 새 리포지터리 생성 | | rdc repo up <repo>@<machine> | 리포지터리 배포 또는 업데이트 | | rdc repo down <repo>@<machine> | 리포지터리 중지 | | rdc repo delete <repo>@<machine> | 리포지터리 삭제 | | rdc repo fork <repo>@<machine> --tag <tag> | 리포지터리 포크 (거의 즉각적, BTRFS reflink) | | rdc repo promote <repo>:<tag> | 검증된 포크를 상위 리포지터리 이름으로 프로덕션에 승격 | | rdc repo list | 이름 및 GUID와 함께 모든 리포지터리 나열 |",
+    "body": "| 명령 | 설명 | |---------|-------------| | rdc repo create <repo> -m <machine> | 머신에 새 리포지터리 생성 | | rdc repo up <repo>@<machine> | 리포지터리 배포 또는 업데이트 | | rdc repo down <repo>@<machine> | 리포지터리 중지 | | rdc repo delete <repo>@<machine> | 리포지터리 삭제 | | rdc repo fork <repo>@<machine> --tag <tag> | 리포지터리 포크 (거의 즉각적, BTRFS reflink) | | rdc repo promote <repo>:<tag> | 검증된 포크를 상위 리포지터리 이름으로 프로덕션에 승격 | | rdc repo list | 이름 및 GUID와 함께 모든 리포지터리 나열 | | rdc repo resize <repo> --size <size> | 중지된 리포지터리의 볼륨 크기 조정 | | rdc repo expand <repo> --size <size> | 실행 중인 리포지터리의 볼륨을 그 자리에서 확장 |",
     "excerpt": "| 명령 | 설명 | |---------|-------------| | rdc repo create <repo> -m <machine> | 머신에 새 리포지터리 생성 | | rdc repo up <repo>@<machine> | 리포지터리 배포 또는 업데이트 | | r...",
     "category": "Documentation",
     "page": "/ko/docs/rdc-cheat-sheet",
@@ -9860,7 +9860,7 @@
   {
     "id": "search-12607",
     "content": "머신 관리",
-    "body": "| 명령 | 설명 | |---------|-------------| | rdc machine status <machine> | 전체 머신 상태 (시스템, 컨테이너, 서비스, 리포지터리, 네트워크) | | rdc machine status <machine> --system | 시스템 정보만 | | rdc machine status <machine> --containers | 컨테이너 목록만 | | rdc machine status <machine> --repositories | 리포지터리 목록만 | | rdc machine status <machine> --services | 서비스 목록만 | | rdc machine status <machine> --network | 네트워크 정보만 | | rdc machine status <machine> --block-devices | 블록 디바이스 정보만 | | rdc machine list | config의 모든 머신 나열 | | rdc machine setup <machine> | 초기 머신 프로비저닝 실행 | | rdc machine prune <machine> | 머신에서 사용하지 않는 리소스 제거 | | rdc machine deprovision <machine> | 머신 완전히 디프로비저닝 |",
+    "body": "| 명령 | 설명 | |---------|-------------| | rdc machine status <machine> | 전체 머신 상태 (시스템, 컨테이너, 서비스, 리포지터리, 네트워크) | | rdc machine status <machine> --system | 시스템 정보만 | | rdc machine status <machine> --containers | 컨테이너 목록만 | | rdc machine status <machine> --repositories | 리포지터리 목록만 | | rdc machine status <machine> --services | 서비스 목록만 | | rdc machine status <machine> --network | 네트워크 정보만 | | rdc machine status <machine> --block-devices | 블록 디바이스 정보만 | | rdc machine list | config의 모든 머신 나열 | | rdc machine setup <machine> | 초기 머신 프로비저닝 실행 | | rdc machine health <machine> | 머신 상태 확인 | | rdc machine scan-keys <machine> | 재구축 후 SSH 호스트 키 새로 고침 | | rdc machine prune <machine> | 머신에서 사용하지 않는 리소스 제거 | | rdc machine deprovision <machine> | 머신 완전히 디프로비저닝 |",
     "excerpt": "| 명령 | 설명 | |---------|-------------| | rdc machine status <machine> | 전체 머신 상태 (시스템, 컨테이너, 서비스, 리포지터리, 네트워크) | | rdc machine status <machine> --syste...",
     "category": "Documentation",
     "page": "/ko/docs/rdc-cheat-sheet",
@@ -9871,7 +9871,7 @@
   {
     "id": "search-12608",
     "content": "터미널 및 동기화",
-    "body": "| 명령 | 설명 | |---------|-------------| | rdc term connect <machine> | 머신으로 SSH 터미널 열기 | | rdc term connect <repo>@<machine> | 리포지터리로 SSH 터미널 열기 (DOCKER_HOST 설정) | | rdc term connect <machine> -c \"<command>\" | 머신에서 명령 실행 | | rdc repo sync upload <repo>@<machine> --local <paths...> | 하나 이상의 로컬 파일/디렉터리를 리포지터리에 업로드 | | rdc repo sync upload <repo>@<machine> --local <file> --remote-file <path> | 단일 로컬 파일을 명시적인 원격 경로에 업로드 | | rdc repo sync download <repo>@<machine> --local <dir> | 리포지터리 디렉터리를 로컬에 다운로드 | | rdc repo sync download <repo>@<machine> --remote-file <path> --local <dir> | 단일 원격 파일을 로컬 디렉터리로 다운로드 | | rdc vscode connect <repo>@<machine> | VS Code Remote SSH 세션 열기 |",
+    "body": "| 명령 | 설명 | |---------|-------------| | rdc term connect <machine> | 머신으로 SSH 터미널 열기 | | rdc term connect <repo>@<machine> | 리포지터리로 SSH 터미널 열기 (DOCKER_HOST 설정) | | rdc term connect <machine> -c \"<command>\" | 머신에서 명령 실행 | | rdc repo sync upload <repo>@<machine> --local <paths...> | 하나 이상의 로컬 파일/디렉터리를 리포지터리에 업로드 | | rdc repo sync upload <repo>@<machine> --local <file> --remote-file <path> | 단일 로컬 파일을 명시적인 원격 경로에 업로드 | | rdc repo sync download <repo>@<machine> --local <dir> | 리포지터리 디렉터리를 로컬에 다운로드 | | rdc repo sync download <repo>@<machine> --remote-file <path> --local <dir> | 단일 원격 파일을 로컬 디렉터리로 다운로드 | | rdc vscode connect <repo>@<machine> | VS Code Remote SSH 세션 열기 | | rdc vscode list | vscode connect가 생성한 SSH 설정 나열 | | rdc vscode cleanup --all | vscode connect가 작성한 모든 SSH 설정 제거 | | rdc repo tunnel <repo> -c <container> --port <port> | SSH를 통해 컨테이너 포트 전달 |",
     "excerpt": "| 명령 | 설명 | |---------|-------------| | rdc term connect <machine> | 머신으로 SSH 터미널 열기 | | rdc term connect <repo>@<machine> | 리포지터리로 SSH 터미널 열기 (DOCKER...",
     "category": "Documentation",
     "page": "/ko/docs/rdc-cheat-sheet",
@@ -9882,8 +9882,8 @@
   {
     "id": "search-12609",
     "content": "구성",
-    "body": "| 명령 | 설명 | |---------|-------------| | rdc config init <name> | 명명된 config 파일 생성 | | rdc machine add <machine> --ip <host> --user <user> | config에 머신 추가 | | rdc storage import rclone.conf | rclone config에서 스토리지 공급자 가져오기 | | rdc storage list | 구성된 스토리지 공급자 나열 | | rdc backup strategy set ... | 명명된 백업 전략 정의 | | rdc --config <name> <command> | 명명된 config 파일 사용 |",
-    "excerpt": "| 명령 | 설명 | |---------|-------------| | rdc config init <name> | 명명된 config 파일 생성 | | rdc machine add <machine> --ip <host> --user <user> | config에 머신...",
+    "body": "| 명령 | 설명 | |---------|-------------| | rdc config init <name> | 명명된 config 파일 생성 | | rdc config list | 이 머신의 모든 config 나열 | | rdc config set machine <alias> | 별칭이 다른 머신을 가리키도록 설정 | | rdc machine add <machine> --ip <host> --user <user> | config에 머신 추가 | | rdc storage import rclone.conf | rclone config에서 스토리지 공급자 가져오기 | | rdc storage list | 구성된 스토리지 공급자 나열 | | rdc backup strategy set ... | 명명된 백업 전략 정의 | | rdc --config <name> <command> | 명명된 config 파일 사용 |",
+    "excerpt": "| 명령 | 설명 | |---------|-------------| | rdc config init <name> | 명명된 config 파일 생성 | | rdc config list | 이 머신의 모든 config 나열 | | rdc config set machine...",
     "category": "Documentation",
     "page": "/ko/docs/rdc-cheat-sheet",
     "path": "docs.rdc-cheat-sheet.content",
@@ -9893,8 +9893,8 @@
   {
     "id": "search-12610",
     "content": "디버그 및 이스케이프 해치",
-    "body": "| 명령 | 설명 | |---------|-------------| | rdc term connect <repo>@<machine> -c \"docker ps\" | 리포지터리의 컨테이너 나열 | | rdc term connect <repo>@<machine> -c \"docker logs <name>\" | 컨테이너 로그 가져오기 | | rdc term connect <repo>@<machine> -c \"docker exec <name> <cmd>\" | 컨테이너에서 명령 실행 | | rdc term connect <repo>@<machine> -c \"docker restart <name>\" | 컨테이너 재시작 |",
-    "excerpt": "| 명령 | 설명 | |---------|-------------| | rdc term connect <repo>@<machine> -c \"docker ps\" | 리포지터리의 컨테이너 나열 | | rdc term connect <repo>@<machine> -c \"do...",
+    "body": "| 명령 | 설명 | |---------|-------------| | rdc repo logs <repo>@<machine> -c <container> --lines 200 --follow | 컨테이너 로그 스트리밍 (권장) | | rdc repo exec <repo>@<machine> -c <container> -- <command> | 컨테이너에서 명령 실행 (권장) | | rdc repo exec <repo>@<machine> -c <container> -i -- bash | 대화형 컨테이너 셸 연결 | | rdc term connect <repo>@<machine> -c \"docker ps\" | 리포지터리의 컨테이너 나열 | | rdc term connect <repo>@<machine> -c \"docker logs <name>\" | 컨테이너 로그 가져오기 | | rdc term connect <repo>@<machine> -c \"docker exec <name> <cmd>\" | 컨테이너에서 명령 실행 | | rdc term connect <repo>@<machine> -c \"docker restart <name>\" | 컨테이너 재시작 |",
+    "excerpt": "| 명령 | 설명 | |---------|-------------| | rdc repo logs <repo>@<machine> -c <container> --lines 200 --follow | 컨테이너 로그 스트리밍 (권장) | | rdc repo exec <repo...",
     "category": "Documentation",
     "page": "/ko/docs/rdc-cheat-sheet",
     "path": "docs.rdc-cheat-sheet.content",
