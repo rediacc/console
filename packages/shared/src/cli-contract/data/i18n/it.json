@@ -1,6 +1,6 @@
 {
   "commands.backup.browse.completed": "{{name}} elencato",
-  "commands.backup.browse.description": "Elenca i file contenuti in un repository. Una scansione locale in sola lettura dell'immagine del repository: nessun server, nessuna credenziale, e un repository in esecuzione non viene mai disturbato. Non può elencare uno snapshot che esiste solo nel chunk store; ripristinalo prima, poi esplora il risultato.",
+  "commands.backup.browse.description": "Elenca i file contenuti in un repository. Una scansione locale in sola lettura dell'immagine del repository: nessun server account e nessuna rete. Un repository cifrato deve essere montato, o avere il proprio keyfile distribuito, prima di poter essere aperto; browse lo segnala invece di mostrare un elenco vuoto. Non può elencare uno snapshot che esiste solo nel chunk store; ripristinalo prima, poi esplora il risultato.",
   "commands.backup.browse.empty": "{{name}} non contiene file.",
   "commands.backup.browse.failed": "Impossibile elencare {{name}}",
   "commands.backup.browse.optionDepth": "Limita la discesa a N livelli (0 per illimitato)",

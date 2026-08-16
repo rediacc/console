@@ -5,7 +5,7 @@
   "commands": {
     "backup": {
       "browse": {
-        "description": "Lista los archivos que contiene un repositorio. Un recorrido local de solo lectura de la imagen del repositorio: sin servidor, sin credenciales, y un repositorio en ejecución nunca se ve afectado. No puede listar una instantánea que solo existe en el almacén de bloques; restáurela primero y luego explore el resultado.",
+        "description": "Lista los archivos que contiene un repositorio. Un recorrido local de solo lectura de la imagen del repositorio: sin servidor de cuenta y sin red. Un repositorio cifrado debe estar montado, o tener desplegado su archivo de claves, antes de poder abrirse; browse lo indica en vez de mostrar una lista vacía. No puede listar una instantánea que solo existe en el almacén de bloques; restáurela primero y luego explore el resultado.",
         "optionPath": "Limitar el listado a este subárbol",
         "optionDepth": "Limitar el descenso a N niveles (0 para ilimitado)",
         "optionLimit": "Número máximo de entradas a devolver (0 para ilimitado)",

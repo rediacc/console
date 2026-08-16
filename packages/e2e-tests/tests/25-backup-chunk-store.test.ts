@@ -156,6 +156,51 @@ function parseSnapshotRecords(stdout: string): SnapshotRecord[] {
   return records;
 }
 
+/** One entry of `renet backup browse` (pkg/repodiff/browse.go). */
+interface BrowseEntry {
+  path: string;
+  type: string;
+  size: number;
+  modTime: string;
+}
+
+interface BrowseListing {
+  source: string;
+  entries: BrowseEntry[];
+  truncated: boolean;
+  totalSize: number;
+}
+
+/**
+ * Parse the browse listing, from EITHER shape, for the same reason
+ * parseVerifyRecords does: through `renet functions once` the verb's stdout is
+ * swallowed and re-emitted on STDERR inside a log line with the quotes escaped.
+ * Keyed on `source` AND `entries` so a verify record travelling the same pipe
+ * cannot be mistaken for a listing -- that would print an empty table and call
+ * it a repository with no files.
+ */
+function parseBrowseListing(stream: string): BrowseListing | undefined {
+  let found: BrowseListing | undefined;
+  for (const rawLine of stream.split('\n')) {
+    let line = rawLine;
+    const wrapped = /msg="\[[a-z_]+\] (\{.*?\})"\s*$/.exec(rawLine.trim());
+    if (wrapped) {
+      line = wrapped[1].replaceAll('\\"', '"');
+    }
+    const trimmed = line.trim();
+    if (!trimmed.startsWith('{') || !trimmed.includes('"entries"')) continue;
+    try {
+      const parsed = JSON.parse(trimmed) as BrowseListing;
+      if (parsed && Array.isArray(parsed.entries) && typeof parsed.source === 'string') {
+        found = parsed;
+      }
+    } catch {
+      // the dispatcher's own --debug JSON logging shares this stream
+    }
+  }
+  return found;
+}
+
 test.describe
   .serial('Chunk-store backup: the machine surface @bridge @backup', () => {
     if (verdict.kind === 'undeclared') {
@@ -189,6 +234,17 @@ test.describe
           .withDatastore(DS);
         if (level) vault.withParams({ level });
         return runner.executeWithVault('backup_verify', vault);
+      };
+
+      const browseViaFunction = async (guid: string, params?: Record<string, string>) => {
+        const vault = new VaultBuilder()
+          .withFunction('backup_browse')
+          .withTeam(TEST_TEAM)
+          .withRepository(guid, guid)
+          .withMachine(runner.getTargetVM(), TEST_USER, DS)
+          .withDatastore(DS);
+        if (params) vault.withParams(params);
+        return runner.executeWithVault('backup_browse', vault);
       };
 
       test.beforeAll(async () => {
@@ -417,6 +473,64 @@ test.describe
         // touching anything. A partial restore of the wrong point in time is
         // the failure mode the loud refusal exists to prevent.
         expect(await imageSha(REPO_GUID), 'the refused restore modified the image').toBe(before);
+      });
+
+      test('9. browse REFUSES a repository it cannot open, and names the remedy', async () => {
+        // This repo is created encrypted and left unmounted, which is the state
+        // most of this suite runs in. openRepoReadOnly needs the LUKS keyfile,
+        // so browse cannot read it -- and that is the CORRECT outcome. What
+        // matters is that it refuses loudly and says what to do, rather than
+        // printing an empty listing that reads as "this backup has no files".
+        const result = await browseViaFunction(REPO_GUID);
+        expect(result.code, 'browse of an unopenable repo appeared to succeed').not.toBe(0);
+        const output = runner.getCombinedOutput(result);
+        expect(output).toContain('keyfile');
+        expect(output, 'the refusal must tell the operator what to do').toMatch(
+          /deploy the repo|enable autostart/i
+        );
+      });
+
+      test('10. browse lists a MOUNTED repository, with no server and no credentials', async () => {
+        // The real path, and the reason Stage 1 exists: a mounted repo is read
+        // in place, so this needs no account server, no credentials and no
+        // bytes leaving the machine.
+        const mounted = await runner.repositoryMount(REPO_GUID, TEST_PASSWORD, DS);
+        expect(
+          runner.isSuccess(mounted),
+          `could not mount ${REPO_GUID}: ${runner.getCombinedOutput(mounted).slice(-500)}`
+        ).toBe(true);
+        try {
+          const marker = `browse-proof-${stamp}.txt`;
+          await runner.executeViaBridge(
+            `sudo sh -c 'echo browse-proof > "${DS}/mounts/${REPO_GUID}/${marker}"'`
+          );
+
+          const result = await browseViaFunction(REPO_GUID);
+          expect(
+            result.code,
+            `backup_browse exited ${result.code}:\n${result.stderr.slice(-800)}`
+          ).toBe(0);
+
+          const listing = parseBrowseListing(result.stdout + result.stderr);
+          expect(listing, `no browse listing:\n${result.stdout.slice(-800)}`).toBeTruthy();
+          // A listing that does not say what it lists is how the wrong snapshot
+          // gets restored.
+          expect(listing?.source ?? '').toContain(REPO_GUID);
+          // The file we just wrote must be IN it. Without this the test would
+          // pass on an empty listing, which is the failure mode it exists for.
+          const paths = (listing?.entries ?? []).map((e) => e.path);
+          expect(paths, `browse did not list ${marker}; got ${paths.join(', ')}`).toContain(
+            `/${marker}`
+          );
+          // Renet scaffolding must NOT appear: browse and diff have to agree
+          // about what a repository contains.
+          for (const path of paths) {
+            expect(path.startsWith('/.rediacc'), `scaffolding leaked: ${path}`).toBe(false);
+            expect(path).not.toBe('/CLAUDE.md');
+          }
+        } finally {
+          await runner.repositoryUnmount(REPO_GUID, DS).catch(() => {});
+        }
       });
     }
   });

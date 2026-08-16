@@ -1,6 +1,6 @@
 {
   "commands.backup.browse.completed": "{{name}} listado",
-  "commands.backup.browse.description": "Lista os ficheiros que um repositório contém. Uma leitura local só de leitura da imagem do repositório: sem servidor, sem credenciais, e um repositório em execução nunca é perturbado. Não consegue listar um snapshot que existe apenas no chunk store; restaure-o primeiro e depois explore o resultado.",
+  "commands.backup.browse.description": "Lista os ficheiros que um repositório contém. Uma leitura local só de leitura da imagem do repositório: sem servidor de conta e sem rede. Um repositório encriptado tem de estar montado, ou ter o seu ficheiro de chave implementado, antes de poder ser aberto; o browse comunica isso em vez de mostrar uma lista vazia. Não consegue listar um snapshot que existe apenas no chunk store; restaure-o primeiro e depois explore o resultado.",
   "commands.backup.browse.empty": "{{name}} não contém ficheiros.",
   "commands.backup.browse.failed": "Não foi possível listar {{name}}",
   "commands.backup.browse.optionDepth": "Limitar a descida a N níveis (0 para ilimitado)",
