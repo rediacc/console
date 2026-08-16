@@ -120,3 +120,30 @@ rests on.
 Stage 1 is small, credential-free, and unblocks the tutorial. I recommend
 building it now. Stage 2 and 3 change the upload path and add a stored object,
 so they belong with the cutover work rather than ahead of it.
+
+## Follow-up: the tutorial leg, deliberately NOT taken in this wave
+
+`rdc backup browse` is shipped and tested but is NOT demonstrated in
+`tutorial-backup-restore`. Both browse plans recommend it belongs there, and it
+is the natural strengthening of step 7 ("prove the data survived"): instead of
+only `cat orders.txt`, browse can show the file is present in the restored
+repository without opening it.
+
+**Why it was not added:** the cast had just been re-recorded to 8 markers, and a
+9th step means re-recording again plus redoing the storyboard, transcript, mdx
+and 12 locales, then a fresh narration pass. Per CLAUDE.md the 13-locale
+re-narration chain costs real TTS GPU time, so this is a spend decision rather
+than a code one, and the feature is fully shipped either way. The operator was
+asked and the default (wait) executed unanswered.
+
+**The trigger:** fold this in at the NEXT re-record of `tutorial-backup-restore`,
+whatever causes it. Concretely, add a step running
+
+    rdc backup browse my-app
+
+after the restore is proven, and let the existing 8-step structure become 9.
+
+**What NOT to do:** do not add the step without re-recording. The storyboard is
+compared against the cast marker-for-marker (`check-tutorial-parity.ts:203`), so
+a 9th card against an 8-marker cast fails parity in a way that reads like a docs
+defect rather than a missing recording.
