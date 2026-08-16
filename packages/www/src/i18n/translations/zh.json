@@ -4745,7 +4745,7 @@
           "title": "您将获得什么"
         },
         "bottomCta": {
-          "command": "rdc backup list --storage backup-vault",
+          "command": "rdc backup verify my-app",
           "description": "从免费的社区版开始。一分钟内验证你的第一个备份。",
           "primaryCta": "免费开始使用社区版",
           "tierBadge": "无需信用卡",

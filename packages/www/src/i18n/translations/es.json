@@ -4782,7 +4782,7 @@
           "title": "Lo que obtienes"
         },
         "bottomCta": {
-          "command": "rdc backup list --storage backup-vault",
+          "command": "rdc backup verify my-app",
           "description": "Comienza con la edición Community gratuita. Verifica tu primera copia en menos de un minuto.",
           "primaryCta": "Empieza gratis con Community",
           "tierBadge": "Sin tarjeta de crédito",

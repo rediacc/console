@@ -4297,7 +4297,7 @@
   {
     "id": "search-12096",
     "content": "8.3 list",
-    "body": "{{t:cli.commands.backup.list.description}} rdc backup list [artifact-ref] [options] | {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} | |------|-------------|----------|---------| | -m, --machine <name> | {{t:cli.options.machine}} | {{t:cli.docs.optionLabels.no}} | - | | --storage <name> | {{t:cli.commands.backup.list.optionStorage}} | {{t:cli.docs.optionLabels.no}} | - | | --path <subdir> | {{t:cli.commands.backup.list.optionPath}} | {{t:cli.docs.optionLabels.no}} | - | | --debug | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - | <a id=\"cli-local-backup-manifests\"></a>",
+    "body": "{{t:cli.commands.backup.list.description}} rdc backup list [artifact-ref] [options] | {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} | |------|-------------|----------|---------| | -m, --machine <name> | {{t:cli.options.machine}} | {{t:cli.docs.optionLabels.no}} | - | | --path <subdir> | {{t:cli.commands.backup.list.optionPath}} | {{t:cli.docs.optionLabels.no}} | - | | --debug | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - | <a id=\"cli-local-backup-manifests\"></a>",
     "excerpt": "{{t:cli.commands.backup.list.description}} rdc backup list [artifact-ref] [options] | {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.des...",
     "category": "Documentation",
     "page": "/ko/docs/cli-application",
@@ -9708,8 +9708,8 @@
   {
     "id": "search-12593",
     "content": "4. 원격에서 풀",
-    "body": "# 클라우드 머신에서 로컬 서버로 리포지터리 풀 rdc repo pull my-app@my-local-server --from cloud-server # 클라우드 스토리지에서 풀 rdc repo pull my-app@my-local-server --from my-s3-backup # 풀하고 즉시 시작 rdc repo pull my-app@my-local-server --from my-s3-backup --up 왜 풀인가요? 로컬 머신이 NAT 뒤에 있습니다. 클라우드가 푸시할 수 없습니다. 하지만 클라우드에는 접근할 수 있습니다. 풀은 리포지터리를 집으로 가져옵니다. 전체 사이클: 개발에서 생성 → 클라우드로 푸시 → 프로덕션에서 풀 → --up. 리포지터리 하나, 어떤 머신이든, 어떤 클라우드든. 예약, 자동화된 백업, 복원: 백업 및 복원. ---",
-    "excerpt": "# 클라우드 머신에서 로컬 서버로 리포지터리 풀 rdc repo pull my-app@my-local-server --from cloud-server # 클라우드 스토리지에서 풀 rdc repo pull my-app@my-local-server --from my-s3-...",
+    "body": "# 클라우드 머신에서 로컬 서버로 리포지터리 풀 rdc repo pull my-app@my-local-server --from cloud-server # 풀하고 즉시 시작 rdc repo pull my-app@my-local-server --from cloud-server --up # 대신 청크 스토리지에서 특정 시점을 복원 rdc backup restore my-app --at <snapshot> --as my-app --up 왜 풀인가요? 로컬 머신이 NAT 뒤에 있습니다. 클라우드가 푸시할 수 없습니다. 하지만 클라우드에는 접근할 수 있습니다. 풀은 리포지터리를 집으로 가져옵니다. 전체 사이클: 개발에서 생성 → 클라우드로 푸시 → 프로덕션에서 풀 → --up. 리포지터리 하나, 어떤 머신이든, 어떤 클라우드든. 예약, 자동화된 백업, 복원: 백업 및 복원. ---",
+    "excerpt": "# 클라우드 머신에서 로컬 서버로 리포지터리 풀 rdc repo pull my-app@my-local-server --from cloud-server # 풀하고 즉시 시작 rdc repo pull my-app@my-local-server --from cloud-serv...",
     "category": "Documentation",
     "page": "/ko/docs/quick-start",
     "path": "docs.quick-start.content",

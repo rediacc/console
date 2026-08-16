@@ -4297,7 +4297,7 @@
   {
     "id": "search-9480",
     "content": "8.3 list",
-    "body": "{{t:cli.commands.backup.list.description}} rdc backup list [artifact-ref] [options] | {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} | |------|-------------|----------|---------| | -m, --machine <name> | {{t:cli.options.machine}} | {{t:cli.docs.optionLabels.no}} | - | | --storage <name> | {{t:cli.commands.backup.list.optionStorage}} | {{t:cli.docs.optionLabels.no}} | - | | --path <subdir> | {{t:cli.commands.backup.list.optionPath}} | {{t:cli.docs.optionLabels.no}} | - | | --debug | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - | <a id=\"cli-local-backup-manifests\"></a>",
+    "body": "{{t:cli.commands.backup.list.description}} rdc backup list [artifact-ref] [options] | {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} | |------|-------------|----------|---------| | -m, --machine <name> | {{t:cli.options.machine}} | {{t:cli.docs.optionLabels.no}} | - | | --path <subdir> | {{t:cli.commands.backup.list.optionPath}} | {{t:cli.docs.optionLabels.no}} | - | | --debug | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - | <a id=\"cli-local-backup-manifests\"></a>",
     "excerpt": "{{t:cli.commands.backup.list.description}} rdc backup list [artifact-ref] [options] | {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.des...",
     "category": "Documentation",
     "page": "/it/docs/cli-application",
@@ -9708,8 +9708,8 @@
   {
     "id": "search-9977",
     "content": "4. Scarica da Remoto",
-    "body": "# Scarica la repository da una macchina cloud al tuo server locale rdc repo pull my-app@my-local-server --from cloud-server # Scarica dall'archiviazione cloud rdc repo pull my-app@my-local-server --from my-s3-backup # Scarica e avvia immediatamente rdc repo pull my-app@my-local-server --from my-s3-backup --up Perché scaricare? La tua macchina locale è dietro NAT. Il cloud non può caricare da te. Ma tu puoi raggiungere il cloud. Il pull porta la repository a casa. Ciclo completo: Crea in sviluppo -> carica sul cloud -> scarica in produzione -> --up. Una repository, qualsiasi macchina, qualsiasi cloud. Pianificazione, backup automatici, ripristino: Backup & Restore. ---",
-    "excerpt": "# Scarica la repository da una macchina cloud al tuo server locale rdc repo pull my-app@my-local-server --from cloud-server # Scarica dall'archiviazio...",
+    "body": "# Scarica la repository da una macchina cloud al tuo server locale rdc repo pull my-app@my-local-server --from cloud-server # Scarica e avvia immediatamente rdc repo pull my-app@my-local-server --from cloud-server --up # Ripristina invece un momento puntuale dallo storage a chunk rdc backup restore my-app --at <snapshot> --as my-app --up Perché scaricare? La tua macchina locale è dietro NAT. Il cloud non può caricare da te. Ma tu puoi raggiungere il cloud. Il pull porta la repository a casa. Ciclo completo: Crea in sviluppo -> carica sul cloud -> scarica in produzione -> --up. Una repository, qualsiasi macchina, qualsiasi cloud. Pianificazione, backup automatici, ripristino: Backup & Restore. ---",
+    "excerpt": "# Scarica la repository da una macchina cloud al tuo server locale rdc repo pull my-app@my-local-server --from cloud-server # Scarica e avvia immediat...",
     "category": "Documentation",
     "page": "/it/docs/quick-start",
     "path": "docs.quick-start.content",

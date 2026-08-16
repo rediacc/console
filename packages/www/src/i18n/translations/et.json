@@ -4798,7 +4798,7 @@
           "title": "Mida saate"
         },
         "bottomCta": {
-          "command": "rdc backup list --storage backup-vault",
+          "command": "rdc backup verify my-app",
           "description": "Alustage tasuta Community väljaandega. Kontrollige esimene varukoopia alla minutiga.",
           "primaryCta": "Alusta tasuta Community väljaandega",
           "tierBadge": "Krediitkaart ei ole vajalik",

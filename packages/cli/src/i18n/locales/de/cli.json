@@ -28,14 +28,11 @@
         "description": "Backup-Artefakte auf einer Maschine auflisten.",
         "examples": {
           "basic": "Die für eine Maschine gespeicherten Backups auflisten.",
-          "byStorage": "Die Backups in einem bestimmten Speicher-Backend auflisten."
+          "byPath": "Nur ein Unterverzeichnis des Datenspeichers auflisten"
         },
         "listing": "Backups werden aufgelistet...",
-        "optionPath": "Unterverzeichnis innerhalb des Speicher-Stammverzeichnisses. Wenn weggelassen, werden hot/ und cold/ aufgelistet und zusammengeführt.",
-        "optionStorage": "EINGESTELLT: das Storage-Listing wurde mit dem rclone-Arm entfernt",
-        "placementExclusive": "Geben Sie genau eines von --machine oder --storage an, nicht beides.",
-        "placementRequired": "Geben Sie --machine <m> oder --storage <s> an, um festzulegen, woher aufgelistet werden soll.",
-        "storageRetired": "Das Auflisten eines Storage-Backends ist eingestellt: der rclone-Cloud-Arm wurde entfernt. Chunk-Store-Snapshots listest du mit `rdc backup manifests`, Artefakte auf einer Maschine mit `rdc backup list -m <machine>`"
+        "optionPath": "Auflistung auf ein Unterverzeichnis beschränken; weglassen, um den gesamten Datenspeicher aufzulisten",
+        "placementRequired": "Geben Sie -m <machine> an, um die Maschine zu benennen, deren Backups aufgelistet werden sollen."
       },
       "manifests": {
         "description": "Auf dem Server erfasste Backup-Snapshot-Manifeste auflisten",
