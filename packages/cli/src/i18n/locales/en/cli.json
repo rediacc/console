@@ -1187,7 +1187,7 @@
         "storageRetired": "Pushing to a storage backend is retired: the rclone cloud arm has been removed. Point-in-time backup is `rdc backup snapshot` (upload) and `rdc backup restore <repo> --at <snapshot>` (download), both over the chunk store. Machine-to-machine transfer is unaffected: use --to-machine"
       },
       "pull": {
-        "description": "Pull repository from another machine. Storage sources are retired; use `rdc backup restore` for point-in-time restore. Omit name to pull all repos. The source type is auto-detected from config. Use --up to deploy after pull",
+        "description": "Pull repository from another machine. Storage sources are retired; use `rdc backup restore` for point-in-time restore. The source type is auto-detected from config. Use --up to deploy after pull",
         "descriptionShort": "Pull repository from a remote (machine or storage)",
         "optionFrom": "Source machine name (auto-detected from config)",
         "optionForce": "Force overwrite existing repository",
@@ -1522,7 +1522,9 @@
         "storageRetired": "Restoring from a storage backend is retired: the rclone cloud arm has been removed. Point-in-time restore is `rdc backup restore <repo> --at <snapshot>` over the chunk store"
       },
       "retention": {
-        "clearDescription": "Remove the policy, so every snapshot of this repository is kept.",
+        "clear": {
+          "description": "Remove the policy, so every snapshot of this repository is kept."
+        },
         "cleared": "Retention policy removed for {{name}}. Every snapshot is kept from now on.",
         "description": "Show the snapshot retention policy the server is enforcing.",
         "empty": "No retention policy is declared, so every snapshot is kept.",
@@ -1534,8 +1536,10 @@
         "optionKeepMonthly": "Keep the newest snapshot from each of this many months",
         "optionKeepWeekly": "Keep the newest snapshot from each of this many weeks",
         "optionKeepYearly": "Keep the newest snapshot from each of this many years",
-        "set": "Retention policy set for {{name}} ({{count}} rule(s)). Snapshots outside it are deleted by the next sweep.",
-        "setDescription": "Declare how many snapshots to keep. Every knob is replaced, not merged."
+        "set": {
+          "description": "Declare how many snapshots to keep. Every knob is replaced, not merged.",
+          "success": "Retention policy set for {{name}} ({{count}} rule(s)). Snapshots outside it are deleted by the next sweep."
+        }
       },
       "run": {
         "description": "Run a backup now.",

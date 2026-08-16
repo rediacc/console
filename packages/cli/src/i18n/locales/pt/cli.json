@@ -60,7 +60,9 @@
         "targetExists": "\"{{name}}\" já existe. Restaure com outro nome (--as) ou elimine primeiro o repositório existente."
       },
       "retention": {
-        "clearDescription": "Remove a política, para que todos os snapshots deste repositório sejam mantidos.",
+        "clear": {
+          "description": "Remove a política, para que todos os snapshots deste repositório sejam mantidos."
+        },
         "cleared": "Política de retenção removida para {{name}}. A partir de agora, todos os snapshots são mantidos.",
         "description": "Mostra a política de retenção de snapshots aplicada pelo servidor.",
         "empty": "Não há política de retenção declarada, pelo que todos os snapshots são mantidos.",
@@ -72,8 +74,10 @@
         "optionKeepMonthly": "Manter o snapshot mais recente de cada um destes meses",
         "optionKeepWeekly": "Manter o snapshot mais recente de cada uma destas semanas",
         "optionKeepYearly": "Manter o snapshot mais recente de cada um destes anos",
-        "set": "Política de retenção definida para {{name}} ({{count}} regra(s)). Os snapshots fora dela são eliminados na próxima limpeza.",
-        "setDescription": "Indique quantos snapshots manter. Cada campo é substituído por completo, nunca combinado."
+        "set": {
+          "description": "Indique quantos snapshots manter. Cada campo é substituído por completo, nunca combinado.",
+          "success": "Política de retenção definida para {{name}} ({{count}} regra(s)). Os snapshots fora dela são eliminados na próxima limpeza."
+        }
       },
       "run": {
         "description": "Acionar uma cópia de segurança imediatamente numa máquina remota",

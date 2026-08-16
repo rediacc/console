@@ -463,7 +463,7 @@ export const CLI_CONTRACT: CliContract = {
       "domain": "backup",
       "group": "INFRASTRUCTURE",
       "plane": "other",
-      "descriptionKey": "commands.backup.retention.clearDescription",
+      "descriptionKey": "commands.backup.retention.clear.description",
       "label": "Remove the policy, so every snapshot of this repository is kept.",
       "options": [],
       "positionals": [
@@ -497,7 +497,7 @@ export const CLI_CONTRACT: CliContract = {
       "domain": "backup",
       "group": "INFRASTRUCTURE",
       "plane": "other",
-      "descriptionKey": "commands.backup.retention.setDescription",
+      "descriptionKey": "commands.backup.retention.set.description",
       "label": "Declare how many snapshots to keep. Every knob is replaced, not merged.",
       "options": [
         {

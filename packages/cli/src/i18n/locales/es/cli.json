@@ -60,7 +60,9 @@
         "targetExists": "\"{{name}}\" ya existe. Restaura con otro nombre (--as) o elimina primero el repositorio existente."
       },
       "retention": {
-        "clearDescription": "Elimina la política, de modo que se conserve cada instantánea de este repositorio.",
+        "clear": {
+          "description": "Elimina la política, de modo que se conserve cada instantánea de este repositorio."
+        },
         "cleared": "Política de retención eliminada para {{name}}. A partir de ahora se conserva cada instantánea.",
         "description": "Muestra la política de retención de instantáneas que aplica el servidor.",
         "empty": "No hay ninguna política de retención declarada, así que se conserva cada instantánea.",
@@ -72,8 +74,10 @@
         "optionKeepMonthly": "Conservar la instantánea más reciente de cada uno de estos meses",
         "optionKeepWeekly": "Conservar la instantánea más reciente de cada una de estas semanas",
         "optionKeepYearly": "Conservar la instantánea más reciente de cada uno de estos años",
-        "set": "Política de retención establecida para {{name}} ({{count}} regla(s)). Las instantáneas fuera de ella se eliminan en la próxima limpieza.",
-        "setDescription": "Indica cuántas instantáneas conservar. Cada opción se reemplaza por completo, no se combina."
+        "set": {
+          "description": "Indica cuántas instantáneas conservar. Cada opción se reemplaza por completo, no se combina.",
+          "success": "Política de retención establecida para {{name}} ({{count}} regla(s)). Las instantáneas fuera de ella se eliminan en la próxima limpieza."
+        }
       },
       "run": {
         "description": "Ejecutar un respaldo inmediatamente en una máquina remota",
