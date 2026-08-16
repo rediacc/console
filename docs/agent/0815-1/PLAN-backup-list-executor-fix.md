@@ -1,7 +1,7 @@
 # PLAN: backup list reads the machine it runs on, locally
 Status: executing
 Owner: 97604f47
-Updated: 2026-08-16
+Updated: 2026-08-16 (Step 0 landed; 1-7 sequenced after the wave push)
 
 ## TL;DR
 
@@ -481,3 +481,41 @@ Then `./rdc.sh backup list -m <machine> --path nope` must exit non-zero and name
   per-entry `Stat` error as a skipped-with-warning entry rather than a fatal listing error;
   I did not verify how the existing SSH script behaves there (`stat -c %s ... || echo 0`
   suggests it silently reports 0).
+
+## Execution record, 2026-08-16
+
+**Step 0 is DONE and pushed.** `private/renet` commit `8ef4f3e`, contained in
+`origin/0815-1` (verified with `git branch -r --contains`, because an unpushed
+submodule pointer is what made run 31915022281 die at Initialize and skip 23
+jobs earlier in this wave).
+
+What landed:
+
+- `sourceTypeLocal` in `cmd/renet/backup_pull.go`, next to the existing
+  machine/storage constants.
+- `BackupListEntry.Path`, carrying the subdirectory an entry was found in.
+  Additive, so the SSH arm's payloads stay valid.
+- `listLocal` (enumerates one level: GUID-named entries file OR directory are
+  artifacts; a non-GUID directory is a container whose GUID children are
+  emitted tagged; everything else, including the in-flight `.<guid>`, skipped)
+  and `listLocalScoped` (honours an explicit `--path` AND distinguishes a
+  missing directory from a broken listing).
+- The `case sourceTypeLocal:` arm, which requires no `--src-host` and builds no
+  ssh command.
+- Six tests in `cmd/renet/backup_list_local_test.go`, each naming the defect it
+  is planted against, mutation-proven: restoring the hot/cold-only behaviour
+  fails the root-artifact test, dropping directory entries fails the kube-shape
+  test, and collapsing the missing-path error fails the one asserting it names
+  the path.
+
+**Steps 1 to 7 are NOT done, and the reason is sequencing rather than doubt.**
+They add i18n keys, and the wave's push was blocked ON i18n at the time; adding
+a new key set would have extended that block rather than shortened it. They are
+next after the push lands.
+
+**One design note the plan did not anticipate.** Root cause C (the renderer
+dropping directory-shaped artifacts) is fixed at BOTH ends deliberately: renet
+now emits directory-shaped GUID entries, and the CLI-side filter still has to
+stop discarding them in Step 4. Fixing only the engine would leave a kube repo
+listed by renet and dropped by the renderer, which looks identical to the
+original bug from the operator's seat.
