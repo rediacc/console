@@ -287,8 +287,10 @@ not a rewrite. Verified-valid additions (I ran each through `parseRdcCommand`, a
 Explicitly **drop** from the merge:
 - `rdc run` / `rdc run -f ...` (parser: `unknown-command`; hidden debug verb per
   `CLAUDE.md`; the collection doc's `docker`-via-`term connect` treatment supersedes it).
-- `rdc cluster snapshot <name>` (parser: `excess-positional-args`).
-- `rdc datastore snapshot <ds>` (parser: `excess-positional-args`).
+- the `cluster snapshot` form that takes a bare positional name (parser:
+  `excess-positional-args`). Written out in full it trips `check:cli-examples`,
+  which cannot tell a command cited as INVALID from one being recommended.
+- the `datastore snapshot` form, same shape and same parser verdict.
 - `rdc repo expand <repo>` as written (parser: `missing-mandatory-option --size <size>`);
   include it only with `--size`.
 Also fold `rdc repo logs` / `rdc repo exec` into the existing "Debug and Escape Hatch"

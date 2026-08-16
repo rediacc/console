@@ -161,8 +161,16 @@ describe('CLI contract', () => {
     // for; it was caught by wiring `packages/shared`'s tests into the LOCAL
     // gate set (they ran in CI and nowhere else, so nothing failed until a
     // push).
+    // 84 -> 85: `backup browse` landed. It reads rather than writes, but the
+    // read happens where the repository image is: it opens the LUKS image on
+    // the machine and walks its filesystem, exactly as `backup verify` opens
+    // the anchor there. Machine-plane and non-interactive, so proxy-capable
+    // for the same reason. Note that "local" in its help means "no account
+    // server, no network, no credentials" — it does NOT mean the caller's
+    // laptop, and reading it that way is how a reviewer would talk themselves
+    // into `other`-plane, which would then refuse to run through a proxy.
     // Update this only when the surface genuinely changes.
-    expect(proxyCapableCommands().length).toBe(84);
+    expect(proxyCapableCommands().length).toBe(85);
   });
 
   it('every refusal carries a reason, and every proxyable command carries none', () => {
