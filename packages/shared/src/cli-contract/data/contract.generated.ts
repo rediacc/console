@@ -125,7 +125,7 @@ export const CLI_CONTRACT: CliContract = {
           ],
           "tier": "common",
           "descriptionKey": "commands.backup.list.optionStorage",
-          "label": "List artifacts on this storage endpoint"
+          "label": "RETIRED: storage listing was removed with the rclone arm"
         },
         {
           "flags": "--path <subdir>",

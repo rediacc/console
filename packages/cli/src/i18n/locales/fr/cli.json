@@ -19,7 +19,6 @@
           "basic": "Lister les sauvegardes stockées pour une machine.",
           "byStorage": "Lister les sauvegardes d'un backend de stockage spécifique."
         },
-        "executorAmbiguous": "Plusieurs machines sont enregistrées ; précisez le listage du stockage avec @<machine> pour indiquer laquelle l'exécute.",
         "listing": "Listage des sauvegardes...",
         "optionPath": "Sous-répertoire dans la racine du stockage. Si omis, hot/ et cold/ sont listés et fusionnés.",
         "optionStorage": "RETIRÉ : le listage du stockage a disparu avec le bras rclone",

@@ -19,7 +19,6 @@
           "basic": "Loetle masina jaoks salvestatud varukoopiad.",
           "byStorage": "Loetle konkreetse salvestusruumi varukoopiad."
         },
-        "executorAmbiguous": "Registreeritud on rohkem kui üks masin; täpsusta salvestuse loetelu lipuga @<machine>, et öelda, milline seda käitab.",
         "listing": "Varukoopiate loetlemine...",
         "optionPath": "Alamkataloog salvestuse juures. Kui jäetakse välja, loetletakse ja ühendatakse hot/ ja cold/.",
         "optionStorage": "LÕPETATUD: salvestusteenuse loetelu eemaldati koos rclone'i haruga",
