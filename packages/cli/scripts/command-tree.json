@@ -1247,6 +1247,45 @@
           "subcommands": []
         },
         {
+          "name": "browse",
+          "descriptionKey": "commands.backup.browse.description",
+          "options": [
+            {
+              "flags": "--path <subdir>",
+              "descriptionKey": "commands.backup.browse.optionPath",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--depth <n>",
+              "descriptionKey": "commands.backup.browse.optionDepth",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--limit <n>",
+              "descriptionKey": "commands.backup.browse.optionLimit",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--debug",
+              "descriptionKey": "options.debug",
+              "mandatory": false,
+              "defaultValue": null
+            }
+          ],
+          "arguments": [
+            {
+              "name": "repo-ref",
+              "required": true,
+              "variadic": false,
+              "defaultValue": null
+            }
+          ],
+          "subcommands": []
+        },
+        {
           "name": "snapshot",
           "descriptionKey": "commands.backup.snapshot.description",
           "options": [
@@ -1300,7 +1339,7 @@
           "subcommands": [
             {
               "name": "set",
-              "descriptionKey": "commands.backup.retention.setDescription",
+              "descriptionKey": "commands.backup.retention.set.description",
               "options": [
                 {
                   "flags": "--keep-last <n>",
@@ -1351,7 +1390,7 @@
             },
             {
               "name": "clear",
-              "descriptionKey": "commands.backup.retention.clearDescription",
+              "descriptionKey": "commands.backup.retention.clear.description",
               "options": [],
               "arguments": [
                 {

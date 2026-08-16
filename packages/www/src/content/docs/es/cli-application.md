@@ -6,7 +6,7 @@ order: 2
 language: es
 generated: true
 generatedFrom: packages/cli/src/i18n/locales/es/cli.json
-sourceHash: "5b9b07c52875fd1e"
+sourceHash: "34672cdde84ddf14"
 ---
 
 <!-- THIS FILE IS AUTO-GENERATED. Do not edit manually. -->
@@ -2136,8 +2136,25 @@ rdc job gc [options]
 
 {{t:cli.commands.backup.description}}
 
+<a id="cli-local-backup-browse"></a>
+### 8.1 browse
+
+{{t:cli.commands.backup.browse.description}}
+
+```bash
+rdc backup browse <repo-ref> [options]
+```
+
+| {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
+|------|-------------|----------|---------|
+| `--path <subdir>` | {{t:cli.commands.backup.browse.optionPath}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--depth <n>` | {{t:cli.commands.backup.browse.optionDepth}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--limit <n>` | {{t:cli.commands.backup.browse.optionLimit}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--debug` | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - |
+
+
 <a id="cli-local-backup-cancel"></a>
-### 8.1 cancel
+### 8.2 cancel
 
 {{t:cli.commands.backup.cancel.description}}
 
@@ -2152,7 +2169,7 @@ rdc backup cancel [strategy] [options]
 
 
 <a id="cli-local-backup-list"></a>
-### 8.2 list
+### 8.3 list
 
 {{t:cli.commands.backup.list.description}}
 
@@ -2169,7 +2186,7 @@ rdc backup list [artifact-ref] [options]
 
 
 <a id="cli-local-backup-manifests"></a>
-### 8.3 manifests
+### 8.4 manifests
 
 {{t:cli.commands.backup.manifests.description}}
 
@@ -2178,7 +2195,7 @@ rdc backup manifests [repo-ref]
 ```
 
 <a id="cli-local-backup-restore"></a>
-### 8.4 restore
+### 8.5 restore
 
 {{t:cli.commands.backup.restore.description}}
 
@@ -2200,16 +2217,40 @@ rdc backup restore <artifact-ref> [options]
 
 
 <a id="cli-local-backup-retention"></a>
-### 8.5 retention
+### 8.6 retention
 
 {{t:cli.commands.backup.retention.description}}
 
+<a id="cli-local-backup-retention-clear"></a>
+#### clear
+
+{{t:cli.commands.backup.retention.clear.description}}
+
 ```bash
-rdc backup retention [repo-ref]
+rdc backup retention clear <repo-ref>
 ```
 
+<a id="cli-local-backup-retention-set"></a>
+#### set
+
+{{t:cli.commands.backup.retention.set.description}}
+
+```bash
+rdc backup retention set <repo-ref> [options]
+```
+
+| {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
+|------|-------------|----------|---------|
+| `--keep-last <n>` | {{t:cli.commands.backup.retention.optionKeepLast}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--keep-hourly <n>` | {{t:cli.commands.backup.retention.optionKeepHourly}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--keep-daily <n>` | {{t:cli.commands.backup.retention.optionKeepDaily}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--keep-weekly <n>` | {{t:cli.commands.backup.retention.optionKeepWeekly}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--keep-monthly <n>` | {{t:cli.commands.backup.retention.optionKeepMonthly}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--keep-yearly <n>` | {{t:cli.commands.backup.retention.optionKeepYearly}} | {{t:cli.docs.optionLabels.no}} | - |
+
+
 <a id="cli-local-backup-run"></a>
-### 8.6 run
+### 8.7 run
 
 {{t:cli.commands.backup.run.description}}
 
@@ -2224,7 +2265,7 @@ rdc backup run [strategy] [options]
 
 
 <a id="cli-local-backup-schedule"></a>
-### 8.7 schedule
+### 8.8 schedule
 
 {{t:cli.commands.backup.schedule.description}}
 
@@ -2242,7 +2283,7 @@ rdc backup schedule [options]
 
 
 <a id="cli-local-backup-snapshot"></a>
-### 8.8 snapshot
+### 8.9 snapshot
 
 {{t:cli.commands.backup.snapshot.description}}
 
@@ -2259,7 +2300,7 @@ rdc backup snapshot <repo-ref> [options]
 
 
 <a id="cli-local-backup-status"></a>
-### 8.9 status
+### 8.10 status
 
 {{t:cli.commands.backup.status.description}}
 
@@ -2274,7 +2315,7 @@ rdc backup status [strategy] [options]
 
 
 <a id="cli-local-backup-strategy"></a>
-### 8.10 strategy
+### 8.11 strategy
 
 {{t:cli.commands.backup.strategy.description}}
 
@@ -2362,7 +2403,7 @@ rdc backup strategy show [strategy]
 ```
 
 <a id="cli-local-backup-usage"></a>
-### 8.11 usage
+### 8.12 usage
 
 {{t:cli.commands.backup.usage.description}}
 
@@ -2371,7 +2412,7 @@ rdc backup usage
 ```
 
 <a id="cli-local-backup-verify"></a>
-### 8.12 verify
+### 8.13 verify
 
 {{t:cli.commands.backup.verify.description}}
 

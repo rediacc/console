@@ -134,12 +134,33 @@ Live migration via CRIU has the following constraints:
 
 | Limit | Value |
 |-------|-------|
-| Backup destinations per repository | Unlimited |
-| Simultaneous backup jobs | 1 per repository (jobs queue if triggered concurrently) |
+| Snapshots per repository | No limit beyond your storage quota. Every snapshot is independently restorable, so keeping more of them costs storage and nothing else |
+| Simultaneous snapshots of one repository | 1. A second run finds the repository's staging lock held and is **skipped**, not queued: it reports that another run holds it and exits. Run it again afterwards |
 | Simultaneous cold snapshots | 1 per datastore; a second `renet backup snapshot --cold` is refused straight away and stops nothing |
 | Backup frequency | No minimum interval enforced; limited by your storage bandwidth. Use `rdc backup strategy set <name> --bwlimit "6M"` to cap upload speed |
-| Retention | Declared with `rdc backup retention set` (GFS knobs: `--keep-last`, `--keep-hourly`, `--keep-daily`, `--keep-weekly`, `--keep-monthly`, `--keep-yearly`) and enforced server-side; `rdc backup retention clear` removes it. Chunk storage is metered against a plan quota as physical unique stored bytes, so deduplication between snapshots and across a fork family counts once: Community 10 GiB, Professional 100 GiB, Business 500 GiB, Enterprise 2 TiB, checked with `rdc backup usage`. The legacy storage-push path has no retention of its own and is governed by your provider. |
+| Retention | Declared with `rdc backup retention set` (`--keep-last`, `--keep-hourly`, `--keep-daily`, `--keep-weekly`, `--keep-monthly`, `--keep-yearly`) and enforced server-side; `rdc backup retention clear` removes it, after which every snapshot is kept |
 | Cross-machine backup | Supported; destination machine must have sufficient datastore space |
+
+### Backup storage quota
+
+Snapshots go to chunk storage, which is metered per subscription in **physical unique stored bytes**: what is actually held after deduplication, not the sum of what your snapshots logically represent. Snapshots that share data, and repositories in the same fork family, count that data once.
+
+| Plan | Quota | Shown by `rdc backup usage` as |
+|------|-------|-------------------------------|
+| Community | 10 GB | `10G` |
+| Professional | 100 GB | `100G` |
+| Business | 500 GB | `500G` |
+| Enterprise | 2 TB | `2T` |
+
+These are plan defaults. A subscription can carry its own override, so check `rdc backup usage` rather than assuming the row above.
+
+The quota is enforced before any data moves: a snapshot that would exceed it is refused when the machine asks for permission to upload, rather than partway through the transfer. Landing exactly on the quota is allowed; one byte over is refused. What counts as used includes uploads still in flight, so two concurrent runs cannot both squeeze under the cap.
+
+Going over quota never deletes anything. It stops new uploads, and the snapshots you already have stay where they are.
+
+If a subscription lapses, backup storage becomes read-only: existing snapshots stay readable and no new ones can be uploaded. That data is kept for **60 days** after the lapse, after which one sweep removes it. An open refund on the organization freezes that sweep rather than running it.
+
+Machine-to-machine copies made with `rdc repo push` do not touch this quota. They land in the destination machine's datastore and are bounded by its free space.
 
 ---
 

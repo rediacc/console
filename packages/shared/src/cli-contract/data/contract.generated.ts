@@ -27,6 +27,87 @@ export const CLI_CONTRACT: CliContract = {
     {
       "path": [
         "backup",
+        "browse"
+      ],
+      "pathKey": "backup browse",
+      "domain": "backup",
+      "group": "INFRASTRUCTURE",
+      "plane": "machine",
+      "descriptionKey": "commands.backup.browse.description",
+      "label": "List the files a repository contains. A local read-only walk of the repository image: no server, no credentials, and a running repository is never disturbed. It cannot list a snapshot that exists only in chunk storage; restore it first, then browse the result.",
+      "options": [
+        {
+          "flags": "--path <subdir>",
+          "long": "path",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "format": "path",
+          "tier": "advanced",
+          "descriptionKey": "commands.backup.browse.optionPath",
+          "label": "Limit the listing to this subtree"
+        },
+        {
+          "flags": "--depth <n>",
+          "long": "depth",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.backup.browse.optionDepth",
+          "label": "Limit descent to N levels (0 for unlimited)"
+        },
+        {
+          "flags": "--limit <n>",
+          "long": "limit",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.backup.browse.optionLimit",
+          "label": "Maximum entries to return (0 for unlimited)"
+        },
+        {
+          "flags": "--debug",
+          "long": "debug",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "options.debug",
+          "label": "Enable debug output"
+        }
+      ],
+      "positionals": [
+        {
+          "name": "repo-ref",
+          "kind": "repo-ref",
+          "required": true,
+          "variadic": false,
+          "descriptionKey": "options.repoRef",
+          "label": "Repository ref: name, or name:tag, optionally with @machine (for example shop or shop:test)"
+        }
+      ],
+      "hasSubcommands": false,
+      "destructive": false,
+      "idempotent": true,
+      "timeout": "read",
+      "timeoutMs": 120000,
+      "interactive": false,
+      "proxyCapable": true,
+      "detachable": true,
+      "machineOption": null,
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": "repo-ref"
+    },
+    {
+      "path": [
+        "backup",
         "cancel"
       ],
       "pathKey": "backup cancel",
@@ -96,7 +177,7 @@ export const CLI_CONTRACT: CliContract = {
       "group": "INFRASTRUCTURE",
       "plane": "machine",
       "descriptionKey": "commands.backup.list.description",
-      "label": "List backup artifacts on a machine or storage.",
+      "label": "List backup artifacts on a machine.",
       "options": [
         {
           "flags": "-m, --machine <name>",
@@ -9935,7 +10016,7 @@ export const CLI_CONTRACT: CliContract = {
       "group": "REPOSITORIES",
       "plane": "machine",
       "descriptionKey": "commands.repo.pull.description",
-      "label": "Pull repository from another machine. Storage sources are retired; use `rdc backup restore` for point-in-time restore. Omit name to pull all repos. The source type is auto-detected from config. Use --up to deploy after pull",
+      "label": "Pull repository from another machine. Storage sources are retired; use `rdc backup restore` for point-in-time restore. The source type is auto-detected from config. Use --up to deploy after pull",
       "options": [
         {
           "flags": "--from <remote>",

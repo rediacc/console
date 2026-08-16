@@ -158,8 +158,8 @@ describe('command plane coverage', () => {
     // against the control plane, never a machine. Inheriting the backup
     // domain's machine default would have made them proxyCapable, offering
     // the command that decides what gets DELETED for remote execution.
-    expect(COMMANDS.length).toBe(174);
-    expect(counts).toEqual({ config: 54, machine: 95, other: 25 });
+    expect(COMMANDS.length).toBe(175);
+    expect(counts).toEqual({ config: 54, machine: 96, other: 25 });
   });
 
   it('records the interactive commands', () => {
@@ -215,7 +215,11 @@ describe('command plane coverage', () => {
     // backup_verify verb runs on the machine that holds the anchor).
     // 90 -> 91: `backup snapshot` is machine-plane and non-interactive, so a
     // remote executor can run it, exactly like its `backup verify` sibling.
-    expect(machineNonInteractive.length).toBe(91);
+    // 91 -> 92: `backup browse` reads the repository IMAGE, which only exists on
+    // the machine holding it, so it is machine-plane for the same reason
+    // `backup verify` is. Note it is NOT `other` like `usage`/`manifests`: those
+    // ask the account server, this one cannot be answered without the image.
+    expect(machineNonInteractive.length).toBe(92);
   });
 
   it('plane and interactive entries all point at real commands', () => {

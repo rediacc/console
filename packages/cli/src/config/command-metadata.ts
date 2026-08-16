@@ -160,6 +160,13 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
   'backup verify': {
     mcp: { destructive: false, idempotent: true, timeout: 'read', excludeOptions: ['debug'] },
   },
+  // Opts IN as a read, like its `verify` sibling: it opens the repository image
+  // read-only and lists it, mutating nothing. Idempotent because the same
+  // repository yields the same listing until somebody changes the repository,
+  // and the walk itself never writes.
+  'backup browse': {
+    mcp: { destructive: false, idempotent: true, timeout: 'read', excludeOptions: ['debug'] },
+  },
   // Opts IN, unlike the strategy mutations: it is a machine-plane, non-interactive
   // command an agent legitimately runs. NOT idempotent, because each run mints a
   // new snapshot id and charges quota for whatever it uploads; not destructive,

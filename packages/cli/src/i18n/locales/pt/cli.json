@@ -14,7 +14,7 @@
       "descriptionShort": "Gerir cópias de segurança",
       "drNudge": "O armazenamento de configuração não está registado: as suas credenciais de repositório (frases-passe LUKS) só existem neste anfitrião, pelo que uma restauração bare-metal não as consegue recuperar. Registe-o com \"rdc config remote enable\" para as sincronizar dentro do blob de configuração encriptado.",
       "list": {
-        "description": "Listar artefactos de cópia de segurança numa máquina ou armazenamento.",
+        "description": "Listar artefactos de cópia de segurança numa máquina.",
         "examples": {
           "basic": "Lista as cópias de segurança guardadas de uma máquina.",
           "byStorage": "Lista as cópias de segurança de um backend de armazenamento específico."
@@ -1467,29 +1467,29 @@
         "deployFailed": "Falha ao implementar \"{{repo}}\" após recepção",
         "deployed": "Repositório \"{{repo}}\" implementado em {{machine}}",
         "deploying": "A implementar \"{{repo}}\" em {{machine}}...",
-        "description": "Receber repositório de um destino remoto (máquina ou armazenamento). Omita o nome para receber todos os repositórios. O tipo de origem é detectado automaticamente a partir da configuração. Use --up para implementar após a recepção.",
-        "descriptionShort": "Receber repositório de um destino remoto (máquina ou armazenamento)",
+        "description": "Receber repositório de outra máquina. As origens de armazenamento foram descontinuadas; use `rdc backup restore` para uma restauração pontual. O tipo de origem é detectado automaticamente a partir da configuração. Use --up para implementar após a recepção.",
+        "descriptionShort": "Receber repositório de outra máquina",
         "examples": {
           "andStart": "Traz um repositório e arranca-o de imediato.",
-          "basic": "Traz um repositório de um backend de armazenamento."
+          "basic": "Traz um repositório de outra máquina."
         },
         "optionBwlimit": "Limite de largura de banda para transferência rsync (por ex., \"6M\", \"10M\")",
         "optionDeltaBase": "GUID de base imutável presente byte-a-byte idêntico em ambas as máquinas; receber apenas os blocos alterados (máquina de origem)",
         "optionForce": "Forçar substituição do repositório existente",
-        "optionFrom": "Máquina ou nome de armazenamento de origem (detectado automaticamente a partir da configuração)",
+        "optionFrom": "Nome da máquina de origem (detectado automaticamente a partir da configuração)",
         "optionStrategy": "Estratégia de delta de blocos ao usar uma base de delta: auto, physical ou shared",
         "optionUp": "Após a recepção, montar e implementar o repositório nesta máquina",
         "pulling": "A receber cópia de segurança de \"{{repo}}\"...",
-        "sourceRequired": "Especifique --from <remoto> (máquina ou nome de armazenamento da configuração)",
+        "sourceRequired": "Especifique --from <machine> (nome de máquina da configuração)",
         "storageRetired": "Baixar de um backend de armazenamento foi descontinuado: o braço de nuvem do rclone foi removido. A restauração pontual é feita com `rdc backup restore <repo> --at <snapshot>` sobre o chunk store. A transferência entre máquinas continua igual: use --from-machine"
       },
       "push": {
         "deployFailed": "Falha ao implementar \"{{repo}}\" após envio",
         "deployed": "Repositório \"{{repo}}\" implementado em {{machine}}",
         "deploying": "A implementar \"{{repo}}\" em {{machine}}...",
-        "description": "Enviar repositório para um destino remoto (máquina ou armazenamento). O tipo de destino é detectado automaticamente a partir da configuração. Para transferência entre máquinas, a imagem encriptada do repositório é copiada com o MESMO GUID -- trata-se de uma cópia de segurança/migração, não de um fork. Para criar um fork independente, use 'repo fork' primeiro e depois envie. Uma cópia enviada fica como um ARTEFACTO de cópia de segurança: arranque-o no destino com 'backup restore <ref> --as <name> -m <target> --up'",
-        "descriptionShort": "Enviar repositório para um destino remoto (máquina ou armazenamento)",
-        "destRequired": "Especifique --to <remoto> (máquina ou nome de armazenamento da configuração)",
+        "description": "Enviar repositório para outra máquina. Os destinos de armazenamento foram descontinuados; use `rdc backup snapshot` para uma cópia de segurança pontual. Para transferência entre máquinas, a imagem encriptada do repositório é copiada com o MESMO GUID -- trata-se de uma cópia de segurança ou migração, não de um fork. Para criar um fork independente, use 'repo fork' primeiro e depois envie. Uma cópia enviada fica como um ARTEFACTO de cópia de segurança: arranque-o no destino com 'backup restore <ref> --as <name> -m <target> --up'",
+        "descriptionShort": "Enviar repositório para outra máquina",
+        "destRequired": "Especifique --to <machine> (nome de máquina da configuração)",
         "examples": {
           "toMachine": "Envia um repositório para outra máquina."
         },
@@ -1499,7 +1499,7 @@
         "optionForce": "Forçar substituição de cópia de segurança existente",
         "optionProvision": "Aprovisionar automaticamente a máquina de destino via fornecedor de cloud se não existir",
         "optionStrategy": "Estratégia de delta de blocos ao usar uma base de delta: auto, physical ou shared",
-        "optionTo": "Máquina ou nome de armazenamento de destino (detectado automaticamente a partir da configuração)",
+        "optionTo": "Nome da máquina de destino (detectado automaticamente a partir da configuração)",
         "pushing": "A enviar cópia de segurança de \"{{repo}}\" para {{dest}}...",
         "statsDelta": "\"{{repo}}\" enviado para {{machine}} — {{transferred}} transferidos em {{duration}} (delta sobre a base {{base}}, imagem {{image}})",
         "statsFull": "\"{{repo}}\" enviado para {{machine}} — {{transferred}} transferidos em {{duration}} (transferência completa)",

@@ -227,6 +227,150 @@ export function parseVerifyVerdict(stdout: string | undefined): VerifyVerdict | 
   return found;
 }
 
+/** One filesystem object as `renet backup browse` reports it. */
+export interface BrowseEntry {
+  path: string;
+  type: string;
+  size: number;
+  modTime: string;
+}
+
+/** The listing plus what it is a listing OF. */
+export interface BrowseListing {
+  source: string;
+  entries: BrowseEntry[];
+  truncated: boolean;
+  totalSize: number;
+}
+
+/**
+ * Recover the listing from the verb's captured stdout.
+ *
+ * Exported for testing. Two shapes have to be handled, and the second is the
+ * one that bit this wave already: a verb's stdout can arrive WRAPPED inside a
+ * log line as `msg="[backup_browse] {...}"` with the quotes escaped, in which
+ * case scanning for a bare `{` finds the brace but JSON.parse chokes on the
+ * escapes. A parser that accepts only the bare form reports "no listing" for a
+ * listing that was produced correctly.
+ *
+ * Returns undefined rather than throwing, so an unparseable buffer surfaces as
+ * a named error instead of a stack trace.
+ */
+export function parseBrowseResult(stdout: string | undefined): BrowseListing | undefined {
+  if (!stdout) return undefined;
+  let found: BrowseListing | undefined;
+  for (const raw of stdout.split('\n')) {
+    const line = raw.trim();
+    const candidates: string[] = [];
+    const wrapped = /msg="\[[a-z_]+\] (\{.*?\})"\s*$/.exec(line);
+    if (wrapped) candidates.push(wrapped[1].replaceAll('\\"', '"'));
+    const start = line.indexOf('{');
+    if (start !== -1) candidates.push(line.slice(start));
+    for (const candidate of candidates) {
+      try {
+        const parsed: unknown = JSON.parse(candidate);
+        if (parsed && typeof parsed === 'object' && 'entries' in parsed && 'source' in parsed) {
+          found = parsed as BrowseListing;
+        }
+      } catch {
+        // Not JSON, or a partial line. Keep scanning: a stray log line must not
+        // hide a listing that appears later in the buffer.
+      }
+    }
+  }
+  return found;
+}
+
+
+/**
+ * `backup browse <repo-ref> [--path]` -- list what a repository contains.
+ *
+ * A LOCAL read on the machine holding the image. The chunk store cannot answer
+ * this question at all: a manifest maps grid cells to the hash of their
+ * CIPHERTEXT, so it carries no filesystem information and no listing is
+ * derivable from it. The only way to list files is to open the image and walk
+ * it, which is what renet does here.
+ *
+ * Uses resolveRepoRef, not resolveRepoRefLocal: unlike `backup manifests`,
+ * which reads the server index, this must reach a machine to read an image.
+ */
+function registerBackupBrowse(backup: Command): void {
+  backup
+    .command('browse')
+    .argument('<repo-ref>', t('options.repoRef'))
+    .description(t('commands.backup.browse.description'))
+    .option('--path <subdir>', t('commands.backup.browse.optionPath'))
+    .option('--depth <n>', t('commands.backup.browse.optionDepth'))
+    .option('--limit <n>', t('commands.backup.browse.optionLimit'))
+    .option('--debug', t('options.debug'))
+    .action(
+      async (
+        repoRef: string,
+        options: { path?: string; depth?: string; limit?: string; debug?: boolean }
+      ) => {
+        try {
+          const { repoKey, machineName } = await resolveRepoRef(repoRef);
+          const result = await executeRepoFunction(
+            'backup_browse',
+            repoKey,
+            machineName,
+            {
+              path: options.path ?? '',
+              depth: options.depth ?? '0',
+              limit: options.limit ?? '10000',
+            },
+            // captureOutput for the same reason as backup verify: the listing
+            // IS the answer, and without it the step detector drops the verb's
+            // JSON and browse exits 0 with EMPTY stdout.
+            { debug: options.debug, captureOutput: true },
+            {
+              starting: t('commands.backup.browse.starting', { name: repoKey }),
+              completed: t('commands.backup.browse.completed', { name: repoKey }),
+              failed: t('commands.backup.browse.failed', { name: repoKey }),
+            }
+          );
+
+          const listing = parseBrowseResult(result.stdout);
+          if (!listing) {
+            throw new Error(`browse returned no listing for "${repoKey}"`);
+          }
+          if (listing.entries.length === 0) {
+            outputService.info(t('commands.backup.browse.empty', { name: repoKey }));
+            return;
+          }
+
+          const { formatSizeBytes } = await import('@rediacc/shared/renet-contract');
+          const rows = listing.entries.map((e) => ({
+            name: e.path,
+            type: e.type,
+            size: e.type === 'file' ? formatSizeBytes(e.size) : '-',
+            modified: e.modTime.replace('T', ' ').replace(/\..*$/, ''),
+          }));
+          // Columns are name/type/size/modified, byte-for-byte what the retired
+          // `storage browse` produced, so an operator who lost that verb gets
+          // the same shape back rather than a new one to learn.
+          outputService.print(
+            outputService.format(rows, getOutputFormat(), [
+              { key: 'name', header: 'Name' },
+              { key: 'type', header: 'Type' },
+              { key: 'size', header: 'Size', align: 'right' as const },
+              { key: 'modified', header: 'Modified' },
+            ])
+          );
+          // A truncated listing that does not say so is how somebody concludes
+          // a file is absent from a backup when it is present.
+          if (listing.truncated) {
+            outputService.warn(
+              t('commands.backup.browse.truncated', { limit: options.limit ?? '10000' })
+            );
+          }
+        } catch (error) {
+          handleError(error);
+        }
+      }
+    );
+}
+
 /** `backup verify <repo> [--deep]` — executor-side anchor verification. */
 function registerBackupVerify(backup: Command): void {
   backup
@@ -513,6 +657,7 @@ export function registerBackupStorageCommands(backup: Command): void {
   registerBackupUsage(backup);
   registerBackupManifests(backup);
   registerBackupVerify(backup);
+  registerBackupBrowse(backup);
   registerBackupSnapshot(backup);
   registerBackupRetention(backup);
 }
