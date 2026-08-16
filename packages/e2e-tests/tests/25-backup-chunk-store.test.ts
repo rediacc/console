@@ -283,10 +283,16 @@ test.describe
         // An anchor or journal conjured by a READ is the state a later
         // incremental would trust — and it would describe a snapshot that was
         // never uploaded.
+        // CASE MATTERS HERE. getCombinedOutput() LOWERCASES (TestHelpers.ts:15),
+        // so a literal carrying a capital can never match no matter what the
+        // machine did. `/No such file/` was exactly that: the anchor directory
+        // was correctly absent and the assertion still went red, because only
+        // the `total 0` arm was alive. Every matcher in this file is
+        // case-insensitive for that reason -- do not "tidy" the flags away.
         const anchors = await runner.executeViaBridge(
           `sudo ls -la "${DS}/.chunk-anchors" 2>&1 || true`
         );
-        expect(runner.getCombinedOutput(anchors)).toMatch(/No such file|total 0/);
+        expect(runner.getCombinedOutput(anchors)).toMatch(/no such file|total 0/i);
 
         const journal = await runner.executeViaBridge(
           `sudo ls /var/lib/rediacc/backup-journal/ 2>/dev/null | grep -c "${REPO_GUID}" || true`
@@ -304,7 +310,7 @@ test.describe
         expect(
           runner.getCombinedOutput(wrongName),
           '.backup-anchors exists; the pruner deletes anything matching .backup-*'
-        ).toContain('ABSENT');
+        ).toMatch(/absent/i);
       });
 
       test('6. `backup snapshot --dry-run` plans without a session, and writes no state', async () => {
@@ -365,7 +371,7 @@ test.describe
           `sudo ls -la "${DS}/.chunk-anchors" 2>&1 || true`
         );
         expect(runner.getCombinedOutput(anchors), 'the dry run left an anchor behind').toMatch(
-          /No such file|total 0/
+          /no such file|total 0/i
         );
       });
 
