@@ -31,7 +31,7 @@ class OpsExecutorService {
    * Assert that the current platform supports ops commands.
    * Only Linux and macOS are supported.
    */
-  assertSupportedPlatform(): void {
+  private assertSupportedPlatform(): void {
     if (
       process.platform !== 'linux' &&
       process.platform !== 'darwin' &&
@@ -47,7 +47,7 @@ class OpsExecutorService {
    * Detect the appropriate VM backend for the current platform.
    * macOS uses QEMU with HVF, Windows uses Hyper-V, Linux uses KVM via libvirt.
    */
-  detectBackend(): OpsBackend {
+  private detectBackend(): OpsBackend {
     this.assertSupportedPlatform();
     if (process.platform === 'darwin') return 'qemu';
     if (process.platform === 'win32') return 'hyperv';

@@ -359,50 +359,6 @@ class CliTelemetryService {
     }
   }
 
-  trackApiCall(
-    method: string,
-    url: string,
-    status: number | undefined,
-    duration: number,
-    error?: string
-  ): void {
-    if (!this.isEnabled || !this.tracer) {
-      return;
-    }
-
-    try {
-      const span = this.tracer.startSpan('cli.api.call');
-      const endpoint = extractApiEndpoint(url);
-
-      span.setAttributes({
-        'http.method': method.toUpperCase(),
-        'http.url': url,
-        'http.status_code': status ?? 0,
-        'http.duration_ms': duration,
-        'api.endpoint': endpoint,
-        'session.id': this.sessionId,
-        ...this.getUserAttributes(),
-      });
-
-      if (error) {
-        span.setAttributes({ 'http.error': error });
-        span.setStatus({ code: SpanStatusCode.ERROR, message: error });
-      } else {
-        span.setStatus({ code: SpanStatusCode.OK });
-      }
-
-      span.end();
-
-      // Record API metrics
-      this.apiCallDuration?.record(duration, {
-        'http.method': method.toUpperCase(),
-        'api.endpoint': endpoint,
-        'http.status_code': status ?? 0,
-      });
-    } catch {
-      // Fail silently
-    }
-  }
 
   trackError(error: unknown, context?: Record<string, unknown>): void {
     if (!this.isEnabled || !this.tracer) {
@@ -443,28 +399,6 @@ class CliTelemetryService {
     }
   }
 
-  trackMetric(name: string, value: number, unit?: string): void {
-    if (!this.isEnabled || !this.tracer) {
-      return;
-    }
-
-    try {
-      // Record as a trace span for correlation
-      const span = this.tracer.startSpan('cli.metric');
-
-      span.setAttributes({
-        'metric.name': name,
-        'metric.value': value,
-        'metric.unit': unit ?? DEFAULTS.TELEMETRY.UNIT,
-        'session.id': this.sessionId,
-      });
-
-      span.setStatus({ code: SpanStatusCode.OK });
-      span.end();
-    } catch {
-      // Fail silently
-    }
-  }
 
   private emitLog(
     severity: SeverityNumber,
