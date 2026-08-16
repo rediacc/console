@@ -6,6 +6,7 @@
     "backup": {
       "browse": {
         "description": "Lista os ficheiros que um repositório contém. Uma leitura local só de leitura da imagem do repositório: sem servidor de conta e sem rede. Um repositório encriptado tem de estar montado, ou ter o seu ficheiro de chave implementado, antes de poder ser aberto; o browse comunica isso em vez de mostrar uma lista vazia. Não consegue listar um snapshot que existe apenas no chunk store; restaure-o primeiro e depois explore o resultado.",
+        "descriptionShort": "Listar os ficheiros de um repositório (local, só leitura)",
         "optionPath": "Limitar a listagem a esta subárvore",
         "optionDepth": "Limitar a descida a N níveis (0 para ilimitado)",
         "optionLimit": "Número máximo de entradas a devolver (0 para ilimitado)",

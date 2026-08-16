@@ -2,13 +2,14 @@
   "$meta": {
     "algorithm": "crc32",
     "sourceLanguage": "en",
-    "keyCount": 1762,
+    "keyCount": 1763,
     "sourceCommit": "d00c35b09fadfbf1a9bb8ff0541308d614f13a0a"
   },
   "hashes": {
     "cli.description": "201cb399",
     "commands.backup.browse.completed": "9bd602ea",
     "commands.backup.browse.description": "ac551748",
+    "commands.backup.browse.descriptionShort": "1240187a",
     "commands.backup.browse.empty": "9194b1e3",
     "commands.backup.browse.failed": "5c3983a7",
     "commands.backup.browse.optionDepth": "0b65f792",

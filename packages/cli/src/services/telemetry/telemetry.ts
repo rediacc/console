@@ -21,7 +21,6 @@ import {
   anonymizeArgs,
   anonymizeObject,
   errorToAttributes,
-  extractApiEndpoint,
   generateSessionId,
 } from '@rediacc/shared/telemetry';
 

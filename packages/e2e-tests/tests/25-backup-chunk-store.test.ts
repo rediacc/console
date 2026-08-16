@@ -190,9 +190,18 @@ function parseBrowseListing(stream: string): BrowseListing | undefined {
     const trimmed = line.trim();
     if (!trimmed.startsWith('{') || !trimmed.includes('"entries"')) continue;
     try {
-      const parsed = JSON.parse(trimmed) as BrowseListing;
-      if (parsed && Array.isArray(parsed.entries) && typeof parsed.source === 'string') {
-        found = parsed;
+      // Parsed as unknown, then narrowed. Casting to BrowseListing first made
+      // the guard below dead code in the type system's eyes -- it "knew" the
+      // value was a listing because I told it so, which is exactly the shape of
+      // assertion this suite exists to distrust.
+      const parsed: unknown = JSON.parse(trimmed);
+      if (
+        parsed !== null &&
+        typeof parsed === 'object' &&
+        Array.isArray((parsed as BrowseListing).entries) &&
+        typeof (parsed as BrowseListing).source === 'string'
+      ) {
+        found = parsed as BrowseListing;
       }
     } catch {
       // the dispatcher's own --debug JSON logging shares this stream
