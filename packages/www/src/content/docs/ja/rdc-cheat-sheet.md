@@ -5,8 +5,8 @@ category: Guides
 order: 3
 cardGrid: true
 language: ja
-sourceHash: "ae49dd7fbc179d35"
-sourceCommit: "522dceadb04b6a3e7f4ea60ac1e47308f6a1a600"
+sourceHash: "26e60c6b486eadd0"
+sourceCommit: "45cd71f8a80949d4cd621f233377c48715bbf531"
 ---
 
 # RDC CLI チートシート
@@ -24,6 +24,8 @@ sourceCommit: "522dceadb04b6a3e7f4ea60ac1e47308f6a1a600"
 | `rdc repo fork <repo>@<machine> --tag <tag>` | リポジトリをフォークする (ほぼ瞬時、BTRFS reflink) |
 | `rdc repo promote <repo>:<tag>` | 検証済みのフォークを親リポジトリの名前で本番環境に昇格する |
 | `rdc repo list` | 名前と GUID を含む全リポジトリを一覧表示する |
+| `rdc repo resize <repo> --size <size>` | 停止中のリポジトリのボリュームサイズを変更する |
+| `rdc repo expand <repo> --size <size>` | 稼働中のリポジトリのボリュームをその場で拡張する |
 
 ## リポジトリごとのシークレット
 
@@ -103,6 +105,8 @@ sourceCommit: "522dceadb04b6a3e7f4ea60ac1e47308f6a1a600"
 | `rdc machine status <machine> --block-devices` | ブロックデバイス情報のみ |
 | `rdc machine list` | 設定内の全マシンを一覧表示する |
 | `rdc machine setup <machine>` | マシンの初期プロビジョニングを実行する |
+| `rdc machine health <machine>` | マシンのヘルスチェックを実行する |
+| `rdc machine scan-keys <machine>` | 再構築後に SSH ホストキーを更新する |
 | `rdc machine prune <machine>` | マシンから未使用リソースを削除する |
 | `rdc machine deprovision <machine>` | マシンを完全にデプロビジョニングする |
 
@@ -118,12 +122,17 @@ sourceCommit: "522dceadb04b6a3e7f4ea60ac1e47308f6a1a600"
 | `rdc repo sync download <repo>@<machine> --local <dir>` | リポジトリディレクトリをローカルにダウンロードする |
 | `rdc repo sync download <repo>@<machine> --remote-file <path> --local <dir>` | 単一のリモートファイルをローカルディレクトリにダウンロードする |
 | `rdc vscode connect <repo>@<machine>` | VS Code Remote SSH セッションを開く |
+| `rdc vscode list` | `vscode connect` が作成した SSH 設定を一覧表示する |
+| `rdc vscode cleanup --all` | `vscode connect` が書き込んだ SSH 設定をすべて削除する |
+| `rdc repo tunnel <repo> -c <container> --port <port>` | コンテナのポートを SSH 経由で転送する |
 
 ## 設定
 
 | コマンド | 説明 |
 |---------|------|
 | `rdc config init <name>` | 名前付き設定ファイルを作成する |
+| `rdc config list` | このマシン上のすべての設定を一覧表示する |
+| `rdc config set machine <alias>` | エイリアスを別のマシンに向ける |
 | `rdc machine add <machine> --ip <host> --user <user>` | 設定にマシンを追加する |
 | `rdc storage import rclone.conf` | rclone 設定からストレージプロバイダをインポートする |
 | `rdc storage list` | 設定済みストレージプロバイダを一覧表示する |
@@ -134,6 +143,9 @@ sourceCommit: "522dceadb04b6a3e7f4ea60ac1e47308f6a1a600"
 
 | コマンド | 説明 |
 |---------|------|
+| `rdc repo logs <repo>@<machine> -c <container> --lines 200 --follow` | コンテナのログをストリーミングする (推奨) |
+| `rdc repo exec <repo>@<machine> -c <container> -- <command>` | コンテナ内でコマンドを実行する (推奨) |
+| `rdc repo exec <repo>@<machine> -c <container> -i -- bash` | インタラクティブなコンテナシェルに接続する |
 | `rdc term connect <repo>@<machine> -c "docker ps"` | リポジトリ内のコンテナを一覧表示する |
 | `rdc term connect <repo>@<machine> -c "docker logs <name>"` | コンテナのログを取得する |
 | `rdc term connect <repo>@<machine> -c "docker exec <name> <cmd>"` | コンテナ内でコマンドを実行する |

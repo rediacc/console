@@ -5,8 +5,8 @@ category: Guides
 order: 3
 cardGrid: true
 language: zh
-sourceHash: "ae49dd7fbc179d35"
-sourceCommit: "522dceadb04b6a3e7f4ea60ac1e47308f6a1a600"
+sourceHash: "26e60c6b486eadd0"
+sourceCommit: "45cd71f8a80949d4cd621f233377c48715bbf531"
 ---
 
 # RDC CLI 快速参考
@@ -24,6 +24,8 @@ sourceCommit: "522dceadb04b6a3e7f4ea60ac1e47308f6a1a600"
 | `rdc repo fork <repo>@<machine> --tag <tag>` | 派生仓库（近乎瞬时，BTRFS reflink） |
 | `rdc repo promote <repo>:<tag>` | 将已验证的派生仓库以父仓库的名称提升为生产仓库 |
 | `rdc repo list` | 列出所有仓库及其名称和 GUID |
+| `rdc repo resize <repo> --size <size>` | 调整已停止仓库卷的大小 |
+| `rdc repo expand <repo> --size <size>` | 原地扩展正在运行的仓库的卷 |
 
 ## 仓库机密
 
@@ -103,6 +105,8 @@ sourceCommit: "522dceadb04b6a3e7f4ea60ac1e47308f6a1a600"
 | `rdc machine status <machine> --block-devices` | 仅块设备信息 |
 | `rdc machine list` | 列出配置中的所有机器 |
 | `rdc machine setup <machine>` | 运行机器初始配置 |
+| `rdc machine health <machine>` | 检查机器的健康状况 |
+| `rdc machine scan-keys <machine>` | 重建后刷新 SSH 主机密钥 |
 | `rdc machine prune <machine>` | 从机器中删除未使用的资源 |
 | `rdc machine deprovision <machine>` | 完全取消配置机器 |
 
@@ -118,12 +122,17 @@ sourceCommit: "522dceadb04b6a3e7f4ea60ac1e47308f6a1a600"
 | `rdc repo sync download <repo>@<machine> --local <dir>` | 将仓库目录下载到本地 |
 | `rdc repo sync download <repo>@<machine> --remote-file <path> --local <dir>` | 将单个远程文件下载到本地目录 |
 | `rdc vscode connect <repo>@<machine>` | 打开 VS Code Remote SSH 会话 |
+| `rdc vscode list` | 列出 `vscode connect` 创建的 SSH 配置 |
+| `rdc vscode cleanup --all` | 移除 `vscode connect` 写入的所有 SSH 配置 |
+| `rdc repo tunnel <repo> -c <container> --port <port>` | 通过 SSH 转发容器端口 |
 
 ## 配置
 
 | 命令 | 说明 |
 |------|------|
 | `rdc config init <name>` | 创建命名配置文件 |
+| `rdc config list` | 列出此机器上的所有配置 |
+| `rdc config set machine <alias>` | 将别名指向另一台机器 |
 | `rdc machine add <machine> --ip <host> --user <user>` | 向配置中添加机器 |
 | `rdc storage import rclone.conf` | 从 rclone 配置导入存储提供商 |
 | `rdc storage list` | 列出已配置的存储提供商 |
@@ -134,6 +143,9 @@ sourceCommit: "522dceadb04b6a3e7f4ea60ac1e47308f6a1a600"
 
 | 命令 | 说明 |
 |------|------|
+| `rdc repo logs <repo>@<machine> -c <container> --lines 200 --follow` | 流式查看容器日志（推荐） |
+| `rdc repo exec <repo>@<machine> -c <container> -- <command>` | 在容器中运行命令（推荐） |
+| `rdc repo exec <repo>@<machine> -c <container> -i -- bash` | 连接交互式容器 shell |
 | `rdc term connect <repo>@<machine> -c "docker ps"` | 列出仓库中的容器 |
 | `rdc term connect <repo>@<machine> -c "docker logs <name>"` | 获取容器日志 |
 | `rdc term connect <repo>@<machine> -c "docker exec <name> <cmd>"` | 在容器中执行命令 |

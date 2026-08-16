@@ -5,8 +5,8 @@ category: Guides
 order: 3
 cardGrid: true
 language: tr
-sourceHash: "ae49dd7fbc179d35"
-sourceCommit: "522dceadb04b6a3e7f4ea60ac1e47308f6a1a600"
+sourceHash: "26e60c6b486eadd0"
+sourceCommit: "45cd71f8a80949d4cd621f233377c48715bbf531"
 ---
 
 # RDC CLI Hızlı Referans
@@ -24,6 +24,8 @@ Burada her `rdc` komutu listelenmemiştir, yalnızca her dağıtımda ortaya ç�
 | `rdc repo fork <repo>@<machine> --tag <tag>` | Depoyu çatalla (neredeyse anında, BTRFS reflink) |
 | `rdc repo promote <repo>:<tag>` | Doğrulanmış bir fork'u üst deponun adıyla üretime yükselt |
 | `rdc repo list` | Ad ve GUID ile tüm depoları listele |
+| `rdc repo resize <repo> --size <size>` | Durdurulmuş bir deponun birim boyutunu değiştir |
+| `rdc repo expand <repo> --size <size>` | Çalışan bir deponun birimini yerinde büyüt |
 
 ## Depo Gizli Anahtarları
 
@@ -103,6 +105,8 @@ Yalnızca dağıtım sırasında yazılabilen kimlik bilgileri. `get` komutu yal
 | `rdc machine status <machine> --block-devices` | Yalnızca blok cihaz bilgisi |
 | `rdc machine list` | Yapılandırmadaki tüm makineleri listele |
 | `rdc machine setup <machine>` | İlk makine hazırlığını çalıştır |
+| `rdc machine health <machine>` | Bir makinenin sağlığını kontrol et |
+| `rdc machine scan-keys <machine>` | Yeniden kurulumdan sonra SSH ana bilgisayar anahtarlarını yenile |
 | `rdc machine prune <machine>` | Makineden kullanılmayan kaynakları kaldır |
 | `rdc machine deprovision <machine>` | Makineyi tamamen kaldır |
 
@@ -118,12 +122,17 @@ Yalnızca dağıtım sırasında yazılabilen kimlik bilgileri. `get` komutu yal
 | `rdc repo sync download <repo>@<machine> --local <dir>` | Depo dizinini yerel olarak indir |
 | `rdc repo sync download <repo>@<machine> --remote-file <path> --local <dir>` | Tek bir uzak dosyayı yerel bir dizine indir |
 | `rdc vscode connect <repo>@<machine>` | VS Code Remote SSH oturumunu aç |
+| `rdc vscode list` | `vscode connect` tarafından oluşturulan SSH yapılandırmalarını listele |
+| `rdc vscode cleanup --all` | `vscode connect` tarafından yazılan tüm SSH yapılandırmalarını kaldır |
+| `rdc repo tunnel <repo> -c <container> --port <port>` | Bir konteyner portunu SSH üzerinden yönlendir |
 
 ## Yapılandırma
 
 | Komut | Açıklama |
 |-------|----------|
 | `rdc config init <name>` | Adlandırılmış yapılandırma dosyası oluştur |
+| `rdc config list` | Bu makinedeki tüm yapılandırmaları listele |
+| `rdc config set machine <alias>` | Bir takma adı farklı bir makineye yönlendir |
 | `rdc machine add <machine> --ip <host> --user <user>` | Yapılandırmaya makine ekle |
 | `rdc storage import rclone.conf` | rclone yapılandırmasından depolama sağlayıcıları içe aktar |
 | `rdc storage list` | Yapılandırılmış depolama sağlayıcılarını listele |
@@ -134,6 +143,9 @@ Yalnızca dağıtım sırasında yazılabilen kimlik bilgileri. `get` komutu yal
 
 | Komut | Açıklama |
 |-------|----------|
+| `rdc repo logs <repo>@<machine> -c <container> --lines 200 --follow` | Konteyner günlüklerini akışla izle (tercih edilen) |
+| `rdc repo exec <repo>@<machine> -c <container> -- <command>` | Konteynerde bir komut çalıştır (tercih edilen) |
+| `rdc repo exec <repo>@<machine> -c <container> -i -- bash` | Etkileşimli bir konteyner kabuğuna bağlan |
 | `rdc term connect <repo>@<machine> -c "docker ps"` | Depodaki konteynerleri listele |
 | `rdc term connect <repo>@<machine> -c "docker logs <name>"` | Konteyner günlüklerini al |
 | `rdc term connect <repo>@<machine> -c "docker exec <name> <cmd>"` | Konteynerde komut çalıştır |

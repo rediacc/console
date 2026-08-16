@@ -5,8 +5,8 @@ category: Guides
 order: 3
 cardGrid: true
 language: ar
-sourceHash: "ae49dd7fbc179d35"
-sourceCommit: "522dceadb04b6a3e7f4ea60ac1e47308f6a1a600"
+sourceHash: "26e60c6b486eadd0"
+sourceCommit: "45cd71f8a80949d4cd621f233377c48715bbf531"
 ---
 
 # ورقة مرجعية لـ RDC CLI
@@ -24,6 +24,8 @@ sourceCommit: "522dceadb04b6a3e7f4ea60ac1e47308f6a1a600"
 | `rdc repo fork <repo>@<machine> --tag <tag>` | تفريع مستودع (شبه فوري، باستخدام BTRFS reflink) |
 | `rdc repo promote <repo>:<tag>` | ترقية فرع تم التحقق منه إلى مستودع الإنتاج باسم المستودع الأصل |
 | `rdc repo list` | عرض جميع المستودعات باسمها ومعرف GUID |
+| `rdc repo resize <repo> --size <size>` | تغيير حجم وحدة تخزين مستودع متوقف |
+| `rdc repo expand <repo> --size <size>` | توسيع وحدة تخزين مستودع قيد التشغيل أثناء العمل |
 
 ## أسرار المستودع
 
@@ -103,6 +105,8 @@ sourceCommit: "522dceadb04b6a3e7f4ea60ac1e47308f6a1a600"
 | `rdc machine status <machine> --block-devices` | معلومات أجهزة التخزين فقط |
 | `rdc machine list` | عرض جميع الأجهزة في الإعدادات |
 | `rdc machine setup <machine>` | تشغيل التجهيز الأولي للجهاز |
+| `rdc machine health <machine>` | فحص صحة جهاز |
+| `rdc machine scan-keys <machine>` | تحديث مفاتيح مضيف SSH بعد إعادة البناء |
 | `rdc machine prune <machine>` | إزالة الموارد غير المستخدمة من الجهاز |
 | `rdc machine deprovision <machine>` | إلغاء تجهيز الجهاز بالكامل |
 
@@ -118,12 +122,17 @@ sourceCommit: "522dceadb04b6a3e7f4ea60ac1e47308f6a1a600"
 | `rdc repo sync download <repo>@<machine> --local <dir>` | تنزيل مجلد المستودع محلياً |
 | `rdc repo sync download <repo>@<machine> --remote-file <path> --local <dir>` | تنزيل ملف واحد من المستودع إلى مجلد محلي |
 | `rdc vscode connect <repo>@<machine>` | فتح جلسة VS Code Remote SSH |
+| `rdc vscode list` | عرض إعدادات SSH التي أنشأها `vscode connect` |
+| `rdc vscode cleanup --all` | إزالة كل إعدادات SSH التي كتبها `vscode connect` |
+| `rdc repo tunnel <repo> -c <container> --port <port>` | توجيه منفذ حاوية عبر SSH |
 
 ## الإعدادات
 
 | الأمر | الوصف |
 |-------|-------|
 | `rdc config init <name>` | إنشاء ملف إعدادات مسمى |
+| `rdc config list` | عرض جميع الإعدادات على هذا الجهاز |
+| `rdc config set machine <alias>` | توجيه اسم مستعار إلى جهاز مختلف |
 | `rdc machine add <machine> --ip <host> --user <user>` | إضافة جهاز إلى الإعدادات |
 | `rdc storage import rclone.conf` | استيراد مزودي التخزين من إعدادات rclone |
 | `rdc storage list` | عرض مزودي التخزين المهيأين |
@@ -134,6 +143,9 @@ sourceCommit: "522dceadb04b6a3e7f4ea60ac1e47308f6a1a600"
 
 | الأمر | الوصف |
 |-------|-------|
+| `rdc repo logs <repo>@<machine> -c <container> --lines 200 --follow` | بث سجلات الحاوية (مفضّل) |
+| `rdc repo exec <repo>@<machine> -c <container> -- <command>` | تشغيل أمر داخل حاوية (مفضّل) |
+| `rdc repo exec <repo>@<machine> -c <container> -i -- bash` | فتح واجهة تفاعلية داخل الحاوية |
 | `rdc term connect <repo>@<machine> -c "docker ps"` | عرض الحاويات في مستودع |
 | `rdc term connect <repo>@<machine> -c "docker logs <name>"` | جلب سجلات الحاوية |
 | `rdc term connect <repo>@<machine> -c "docker exec <name> <cmd>"` | تنفيذ أمر داخل حاوية |
