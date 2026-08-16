@@ -21,33 +21,6 @@ import { accountServerFetch } from '../services/account/account-client.js';
 import { registerBackupStrategyCommands } from './backup-strategy.js';
 import { fetchBackupList, renderBackupList, type TaggedBackupEntry } from './repo-backup-list.js';
 
-/**
- * Resolve the executor machine for `backup list`.
- *
- * SYNCHRONOUS since the storage arm was retired: the only await here was the
- * sole-machine lookup that branch needed, and with the branch gone the async
- * was a leftover promising work it no longer does.
- */
-function resolveListExecutor(opts: { machine?: string; storage?: string }): {
-  machine: string;
-  sourceType: 'machine' | 'storage';
-  from: string;
-} {
-  if (opts.machine) {
-    return { machine: opts.machine, sourceType: 'machine', from: opts.machine };
-  }
-  if (opts.storage) {
-    // RETIRED. The comment this replaces said "a storage listing still runs
-    // rclone on a machine", which stopped being true when the rclone arm was
-    // removed: renet answers a storage source with errStorageRetired("list").
-    // Refusing here rather than on the machine saves an SSH round trip and,
-    // more importantly, stops the CLI from advertising a path its engine
-    // rejects -- the gap that had the backup-restore tutorial failing in CI.
-    throw new ValidationError(t('commands.backup.list.storageRetired'));
-  }
-  throw new ValidationError(t('commands.backup.list.placementRequired'));
-}
-
 /** `backup list [artifact-ref]` — list backup artifacts on a machine or storage. */
 function registerBackupList(backup: Command): void {
   backup
@@ -55,7 +28,6 @@ function registerBackupList(backup: Command): void {
     .argument('[artifact-ref]', t('options.artifactRef'))
     .description(t('commands.backup.list.description'))
     .option('-m, --machine <name>', t('options.machine'))
-    .option('--storage <name>', t('commands.backup.list.optionStorage'))
     .option('--path <subdir>', t('commands.backup.list.optionPath'))
     .option('--debug', t('options.debug'))
     .action(
@@ -63,50 +35,35 @@ function registerBackupList(backup: Command): void {
         artifactRef: string | undefined,
         options: {
           machine?: string;
-          storage?: string;
           path?: string;
           debug?: boolean;
         }
       ) => {
         try {
-          if (options.machine && options.storage) {
-            throw new ValidationError(t('commands.backup.list.placementExclusive'));
+          if (!options.machine) {
+            throw new ValidationError(t('commands.backup.list.placementRequired'));
           }
+          const machine = options.machine;
           const ref = artifactRef ? parseRef(artifactRef) : undefined;
-          // `place` is no longer passed: the ref's @place was only ever read by
-          // the storage branch, to pick which machine ran rclone. The machine
-          // path has always required --machine, so dropping it changes nothing
-          // that still exists -- and an argument a function accepts but never
-          // reads is how a guard survives the feature it guarded.
-          const { machine, sourceType, from } = resolveListExecutor({
-            machine: options.machine,
-            storage: options.storage,
-          });
 
-          const baseParams: Record<string, unknown> = { sourceType, from };
+          // sourceType 'local' means the executor machine reads its OWN
+          // datastore. It used to be 'machine' with from = the same machine,
+          // which asked that machine to SSH to itself to read its own disk.
+          const baseParams: Record<string, unknown> = { sourceType: 'local', from: machine };
           const explicitPath =
             typeof options.path === 'string' && options.path.trim().length > 0
               ? options.path.trim()
               : undefined;
+          if (explicitPath) baseParams.path = explicitPath;
 
           outputService.info(t('commands.backup.list.listing'));
-          const runOpts = { machine, debug: options.debug };
-          const tagged: TaggedBackupEntry[] = explicitPath
-            ? (await fetchBackupList({ ...baseParams, path: explicitPath }, runOpts)).map((e) => ({
-                ...e,
-                mode: explicitPath,
-              }))
-            : (
-                await Promise.all(
-                  ['hot', 'cold'].map(async (mode) => {
-                    const entries = await fetchBackupList(
-                      { ...baseParams, path: mode },
-                      runOpts
-                    ).catch(() => []);
-                    return entries.map((e) => ({ ...e, mode }));
-                  })
-                )
-              ).flat();
+          // ONE call, and no hot/cold probe. renet enumerates the datastore now,
+          // which is what makes an artifact left by `repo push` at the root
+          // visible; the old pair of probes only ever looked where SCHEDULED
+          // runs write, so a real copy reported an empty table. The per-entry
+          // subdirectory comes back on the entry itself.
+          const entries = await fetchBackupList(baseParams, { machine, debug: options.debug });
+          const tagged: TaggedBackupEntry[] = entries.map((e) => ({ ...e, mode: e.path ?? '' }));
 
           const filtered = ref
             ? tagged.filter((e) => e.name === ref.name || e.name.startsWith(ref.name))
