@@ -128,7 +128,14 @@ test.describe('Storage arm is RETIRED @bridge @storage', () => {
 
     const output = await pushOutput(runner, vault);
 
-    expect(output).toContain('storage is retired');
+    // ASSERTED ON WHAT BOTH REFUSALS SHARE. There are two retirement messages,
+    // not one: cmd/renet's errStorageRetired says "backup push --to storage is
+    // retired", while the bridge functions layer this test drives says
+    // "backup_push with a 'storage' destination is retired". The first version
+    // of this test pinned `storage is retired`, which only the CLI wording
+    // contains, so it failed against the layer it actually exercises.
+    expect(output).toContain('is retired');
+    expect(output).toContain('rclone cloud arm');
     // The sentence must carry the operator somewhere, or a refusal is just a
     // dead end with better grammar.
     //
@@ -162,7 +169,8 @@ test.describe('Storage arm is RETIRED @bridge @storage', () => {
     const result = await runner.pullWithVault(vault);
     const output = result.stdout + result.stderr;
 
-    expect(output).toContain('storage is retired');
+    expect(output).toContain('is retired');
+    expect(output).toContain('rclone cloud arm');
     expect(output).toContain('chunk store');
     expect(output).not.toContain('--rclone-backend');
   });
@@ -181,7 +189,7 @@ test.describe('Storage arm is RETIRED @bridge @storage', () => {
 
     const output = await pushOutput(runner, vault);
 
-    expect(output).not.toContain('storage is retired');
+    expect(output).not.toContain('rclone cloud arm');
   });
 });
 
