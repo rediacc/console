@@ -3,6 +3,7 @@ title: ورقة مرجعية لـ RDC CLI
 description: "مرجع سريع لـ rdc: الإعدادات والمستودعات والأجهزة ومزامنة الملفات والحاويات. للحصول على الخيارات الكاملة، أضف --help إلى أي أمر."
 category: Guides
 order: 3
+cardGrid: true
 language: ar
 sourceHash: "ae49dd7fbc179d35"
 sourceCommit: "522dceadb04b6a3e7f4ea60ac1e47308f6a1a600"

@@ -3,6 +3,7 @@ title: RDC CLI Cheat Sheet
 description: "Kurzreferenz für rdc: Konfigurationen, Repos, Maschinen, Dateisynchronisierung und Container. Vollständiger Optionssatz: füge --help zu einem beliebigen Befehl hinzu."
 category: Guides
 order: 3
+cardGrid: true
 language: de
 sourceHash: "ae49dd7fbc179d35"
 sourceCommit: "522dceadb04b6a3e7f4ea60ac1e47308f6a1a600"

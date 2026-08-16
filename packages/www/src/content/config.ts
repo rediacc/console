@@ -27,6 +27,9 @@ const docsCollection = defineCollection({
     subcategory: z.enum(['essentials', 'advanced']).optional(),
     order: z.number().optional(),
     toc: z.boolean().default(true),
+    // Render the page as a printable cheat-sheet card grid instead of a
+    // regular article (see components/CheatSheetGrid.astro).
+    cardGrid: z.boolean().default(false),
     language: z.enum(LANGUAGES).default('en'),
     sourceHash: z.string().optional(),
   }),
