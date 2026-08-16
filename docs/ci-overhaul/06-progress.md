@@ -3631,3 +3631,80 @@ by `existsSync`/`skipIf` is optional, not broken.
 - **A weak mutation is indistinguishable from a vacuous test.** Checking whether the cold
   barrier's refusal test was sound, the first mutation stopped a `nil` repo list, which
   logs nothing, so it passed. The test was fine; the instrument was not.
+
+## Round 16-25, 2026-08-16: five more gates, and the class each one closes
+
+Eight commits added or fixed gates in this stretch. They are grouped here by the SHAPE
+of the defect rather than by commit, because the shapes repeat and the commits do not.
+
+### Gates added
+
+| gate | the class it closes |
+|---|---|
+| `check:ci-workflow-submodule-deps` | a job reads submodule source without checking it out |
+| `check:ci-python-gate-deps` | a workflow runs a Python script whose imports it never installs |
+| `check:ci-tutorial-cli-validity` | a tutorial names a command or flag the CLI does not have |
+| `check:ci-e2e-case-blind` | an assertion compares an uppercase literal against lowercased output |
+| `check:ci-tutorial-no-skips` | a tutorial excludes itself from the sequence |
+| `check:ci-dead-service-methods` | an unused public method on an exported singleton |
+
+### The dominant failure shape, again
+
+**A check that runs where you tested it and means nothing where it matters.** Every
+instrument failure in this stretch is a variant:
+
+- `check:ci-e2e-case-blind` exists because `getCombinedOutput()` returns
+  `(stdout + stderr).toLowerCase()`, so `/No such file/` and `toContain('ABSENT')` could
+  never match whatever the machine did. FOUR shipped. They did not fail loudly: they
+  reported the PRODUCT broken while it behaved correctly, across five distros.
+- The hand sweep that found the first three reported the population as "exactly 3". It
+  was wrong. It only examined the FIRST matcher after each `getCombinedOutput()` call, so
+  the ordinary `const text = ...` idiom hid every later assertion, and CI found the
+  fourth. **A confident wrong number from a hand sweep is why that sweep is now a gate.**
+- `check:ci-dead-service-methods` exists because knip has no class-member issue type at
+  all, so an unused method on an exported singleton is invisible to it BY CONSTRUCTION.
+  Proven rather than assumed: a planted unused public method left `lint:unused` at
+  exit 0. Nine dead methods had accumulated across five services.
+- That gate then shipped with two false positives of its own, both caught by RUNNING it:
+  `new Set([...])` satisfied a bare `= new X(` test, and a lint fixture's STRING literal
+  containing `export const c = new SFTPClient();` made that file look like a service.
+  A gate that cries wolf is worse than none, so those cost a rewrite rather than an
+  allowlist entry.
+
+### Two gates whose green meant nothing until they were mutated
+
+- A brace-balance check flagged `local-executor.ts` after a scripted edit. The file is
+  imbalanced at HEAD too, because template literals contain braces. **The checker was
+  wrong, not the edit** — and the same scripted edit HAD genuinely broken a second file,
+  which is why the whole-file re-verify rule exists.
+- Seven new `repodiff.Browse` tests passed on the first run. Mutating three properties
+  (the scaffolding skip, the truncation flag, the error's path naming) proved each could
+  fail. **First-run green is when a suite deserves the most suspicion.**
+
+### Skipping is now structurally impossible
+
+A retired tutorial was marked `# TUTORIAL_DRAFT:` and dropped from the sequence. When the
+operator saw it the ruling was blunt: *skipping strictly denied*. The first instinct had
+been to make the skip SAFER (an expiry anchor plus a liveness gate), which is still a
+hole with better paperwork. The marker, the runner's skip block and the liveness gate
+were all deleted and replaced by `check:ci-tutorial-no-skips`, which FAILS on any
+self-exclusion marker and on a runner that honours one. `TUTORIAL_ONLY` stays legal: it
+is operator-typed and cannot silently shrink a CI run.
+
+### The local loop, which is the biggest process change here
+
+The operator stopped the CI round-trip: *"See ops-vms and discover how to run E2E tests
+locally. Then fix them all locally first."* This mattered because the watchdog cancels
+the matrix after the first distro falls, so each round surfaced ONE distro's failure and
+serialised diagnosis. Four rounds were spent on four one-line test bugs.
+
+Locally the full ubuntu worker suite ran 365 passed / 0 failed / 0 skipped. The recipe
+and its three local-only traps are now `.claude/agents/e2e-local.md`: `bin/renet` is a
+CI-only artifact, `CI=true` in the generated `.env` steals renet's data dir to
+`/tmp/renet` (symptom is a quiet "using default SSH" line, not an error), and the VMs
+authorise the renet-staged `id_rsa`. None of the three is visible in the workflow.
+
+Adding that agent file turned `check_agent_hint_liveness.py` red, correctly: every agent
+must carry a specimen proving the stop hook's matcher can reach it, and the specimen must
+WIN its agent at `MIN_SCORE=2 MIN_MARGIN=1` against the others. So the fix also proved
+the description discriminates rather than merely existing.
