@@ -479,7 +479,7 @@ List backup artifacts on a machine or storage.
 **Options:**
 
 - `-m, --machine <name>` — Machine name
-- `--storage <name>` — List artifacts on this storage endpoint
+- `--storage <name>` — RETIRED: storage listing was removed with the rclone arm
 - `--path <subdir>` — Subdirectory within the storage root. When omitted, hot/ and cold/ are listed and merged.
 - `--debug` — Enable debug output
 
@@ -1279,11 +1279,11 @@ Show the stored machine default, the repository override (with a ref), and the e
 
 ### rdc repo push <ref>
 
-Push repository to a remote (machine or storage). The target type is auto-detected from config. For machine-to-machine transfer, the encrypted repo image is copied with the SAME GUID — this is a backup/migration, not a fork. To create an independent fork, use 'repo fork' first, then push. A pushed copy lands as a backup ARTIFACT: boot it on the target with 'backup restore <ref> --as <name> -m <target> --up'
+Push repository to another machine. Storage destinations are retired; use `rdc backup snapshot` for point-in-time backup. For machine-to-machine transfer, the encrypted repo image is copied with the SAME GUID — this is a backup/migration, not a fork. To create an independent fork, use 'repo fork' first, then push. A pushed copy lands as a backup ARTIFACT: boot it on the target with 'backup restore <ref> --as <name> -m <target> --up'
 
 **Options:**
 
-- `--to <remote>` — Destination machine or storage name (auto-detected from config)
+- `--to <remote>` — Destination machine name (auto-detected from config)
 - `--to-machine <machine>` — 
 - `--provision <provider>` — Auto-provision target machine via cloud provider if it doesn't exist
 - `--checkpoint` — Create CRIU checkpoint before backup (captures process memory state for live migration)
@@ -1298,11 +1298,11 @@ Push repository to a remote (machine or storage). The target type is auto-detect
 
 ### rdc repo pull <ref>
 
-Pull repository from a remote (machine or storage). Omit name to pull all repos. The source type is auto-detected from config. Use --up to deploy after pull
+Pull repository from another machine. Storage sources are retired; use `rdc backup restore` for point-in-time restore. Omit name to pull all repos. The source type is auto-detected from config. Use --up to deploy after pull
 
 **Options:**
 
-- `--from <remote>` — Source machine or storage name (auto-detected from config)
+- `--from <remote>` — Source machine name (auto-detected from config)
 - `--from-machine <machine>` — 
 - `--force` — Force overwrite existing repository
 - `--up` — After pull, mount and deploy repository on this machine

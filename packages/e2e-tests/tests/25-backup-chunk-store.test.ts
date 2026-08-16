@@ -399,13 +399,19 @@ test.describe
         const before = await imageSha(REPO_GUID);
         expect(before, 'could not hash the repository image').toMatch(/^[0-9a-f]{64}$/);
 
+        // RFC3339 carries a capital T and Z, and getCombinedOutput() lowercases
+        // (TestHelpers.ts:15), so the literal cannot be compared as written --
+        // the engine quotes the timestamp back correctly and the assertion
+        // still fails. Lowercase the EXPECTED value rather than the received
+        // one, so the command line and the assertion stay one constant.
+        const at = '2026-01-01T00:00:00Z';
         const result = await runner.executeViaBridge(
-          `sudo renet backup pull --name "${REPO_GUID}" --datastore "${DS}" --at 2026-01-01T00:00:00Z`
+          `sudo renet backup pull --name "${REPO_GUID}" --datastore "${DS}" --at ${at}`
         );
         expect(result.code, 'a snapshot-addressed restore appeared to succeed').not.toBe(0);
         const text = runner.getCombinedOutput(result);
         expect(text).toContain('snapshot-addressed restore');
-        expect(text, 'the refusal must quote what was asked for').toContain('2026-01-01T00:00:00Z');
+        expect(text, 'the refusal must quote what was asked for').toContain(at.toLowerCase());
 
         // The half that matters: refusing is only safe if it refused BEFORE
         // touching anything. A partial restore of the wrong point in time is
