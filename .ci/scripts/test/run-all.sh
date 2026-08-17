@@ -111,6 +111,15 @@ done
 WRITER_TESTS=(
     test-gate-paths-exist.sh
     test-gate-anti-vacuity.sh
+    # Swaps the REAL .ci/scripts/version/resolve-version.sh for a stub and
+    # restores it (two sites: test-generate-tag-inputs.sh:289 and :311), because
+    # generate-tag.sh is invoked via `cd "$REPO_ROOT"` and has no fixture seam.
+    # It was classified T on the strength of its own comment at :277-279, which
+    # says the test "cannot disturb a shared tree" -- true of the tag namespace
+    # it avoids writing, false of the working tree it overwrites. Left in T it
+    # reddened gate-test:claude-hooks with a bash syntax error in a file that
+    # parses clean, because a concurrent gate read a script mid-restore.
+    test-generate-tag-inputs.sh
 )
 
 # S: reads or copies the real .ci/scripts / scripts tree, directly or through

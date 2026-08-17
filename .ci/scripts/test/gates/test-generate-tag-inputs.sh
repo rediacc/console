@@ -275,8 +275,16 @@ test_closure_tag_moves_when_the_released_version_moves() {
     # and self-perpetuating, not a race: nothing on the branch could move the key.
     #
     # Driven by swapping the RESOLVER rather than by cutting a git tag, so the
-    # test needs no write access to the real tag namespace and cannot disturb a
-    # shared tree.
+    # test needs no write access to the real tag namespace.
+    #
+    # IT DOES DISTURB A SHARED TREE, despite what this comment claimed until
+    # 2026-08-17. It overwrites the REAL resolve-version.sh below and restores it
+    # a second later, and generate-tag.sh gives it no fixture seam to do that in
+    # (it is invoked via `cd "$REPO_ROOT"`). A gate reading a script in that
+    # window sees a half-written file: this reddened gate-test:claude-hooks with
+    # a bash syntax error in a file that parses clean and passes 884/0 serially.
+    # The safety this comment asserted is why the test was classified T rather
+    # than W. It is now in WRITER_TESTS in run-all.sh -- keep it there.
     local real="$REPO_ROOT/.ci/scripts/version/resolve-version.sh"
     local backup="$FIXTURE/resolve-version.real"
     mkdir -p "$FIXTURE"
