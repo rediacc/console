@@ -52,7 +52,7 @@ them silently is the failure this rule exists to prevent.
   immediately and say you did. Bigger than that: ask the machinery
   (`worklist.py --triage <me> <finding...>` answers INLINE, PLAN+SUBAGENT, or
   OPERATOR-ONLY with the exact next command), have a Plan agent write the design
-  to `docs/agent/<branch>/PLAN-<slug>.md` (committed, survives compaction), then
+  to `agent/<branch>/PLAN-<slug>.md` (committed, survives compaction), then
   implement it THIS session: via a writer sub-agent when the fix's file set is
   disjoint from your current work or your context is heavy (disjoint ownership,
   max 2, rule 4), inline otherwise. The fix rides the current PR when
@@ -590,16 +590,16 @@ Auth: `SES_AK_ID`/`SES_AK_SECRET` for AWS IAM admin, `CLOUDFLARE_API_TOKEN` (or 
 `npm run ci` runs the checks CI runs. Three things live in their own files because
 they are lookup material, not standing rules:
 
-- **[docs/agent/ci-gates.md](docs/agent/ci-gates.md)** — what `npm run ci` covers,
+- **[docs/agent-reference/ci-gates.md](docs/agent-reference/ci-gates.md)** — what `npm run ci` covers,
   the quick fix for each gate, CI failure triage, the fix cycle, watchdog and
   auto-retry semantics, and the rule against pushing `main` or releasing unasked.
   **Read it when a gate fails or before touching CI.**
-- **[docs/agent/suppressions.md](docs/agent/suppressions.md)** — every escape hatch
+- **[docs/agent-reference/suppressions.md](docs/agent-reference/suppressions.md)** — every escape hatch
   (allowlists, blocklists, overrides) and the `BLOCKER:` reason each one must carry,
   plus the liveness gate that proves a reason is still true.
   **Read it before adding an entry to any allowlist, and never suppress a gate to
   get past it.**
-- **[docs/agent/TRAPS.md](docs/agent/TRAPS.md)** — ways a session gets FOOLED rather
+- **[docs/agent-reference/TRAPS.md](docs/agent-reference/TRAPS.md)** — ways a session gets FOOLED rather
   than blocked: a check that cannot fail, a ruling taken on faith, a comment that
   invites the deletion of the line it guards, an error that was only ever hiding
   the next one. **Read it when a result looks clean and you have not yet asked what

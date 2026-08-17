@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { parseVerifyVerdict } from '../backup-storage.js';
+import { parseVerifyVerdict } from '../backup-storage-parser.js';
 
 // REGRESSION, found on a live fleet 2026-08-15: `rdc backup verify` exited 0
 // with EMPTY stdout in BOTH text and json modes while the renet verb underneath

@@ -287,6 +287,51 @@ test_docs_only_delta_reduces_everything() {
     log_pass "a docs-only delta reduces every scoped job, and only then"
 }
 
+test_agent_notes_tree_is_a_zero_job_module() {
+    # `agent/` is the TRACKED agent working-notes root: agent/<branch>/<session
+    # prefix>/STATE.md, agent/<branch>/PLAN-*.md, agent/programs/<slug>/. It is
+    # tracked, so every write lands in the delta, and STATE.md is rewritten many
+    # times per session. Unclassified it would be full CI each time -- the exact
+    # cost this rule exists to remove.
+    {
+        printf 'agent/0815-1/97604f47/STATE.md\n'
+        printf 'agent/0815-1/PLAN-agent-folder-migration.md\n'
+        printf 'agent/programs/backup-storage/CHECKLIST.md\n'
+    } | plan
+    assert_eq "$(pget 'p.mode')" "reduced" "an agent/-only delta is reduced, never full"
+    assert_eq "$(pget 'p.modules')" '["agent"]' "and lands in its OWN module, not docs"
+    assert_eq "$(pget 'Object.values(p.jobs).every(j => j.run === false)')" "true" \
+        "with every scoped job out of scope (agent is zero-job)"
+
+    # CONTROL A: the module is real, i.e. no JOB_SURFACES entry names it. A
+    # surface that picked it up would make this tree expensive again while every
+    # assertion above still passed on the day it was written.
+    local surfaced
+    surfaced="$(node -e '
+const m = require(process.argv[1]);
+const hits = Object.entries(m.JOB_SURFACES).filter(([, s]) => s.includes("agent")).map(([j]) => j);
+process.stdout.write(hits.length ? hits.join(",") : "none");
+' "$MAP")"
+    assert_eq "$surfaced" "none" "no job surface names the agent module"
+
+    # CONTROL B: the rule is a PREFIX, not a substring, and a sibling tree does
+    # NOT inherit the zero-job answer. Without this the same green could come
+    # from a rule matching far more than it should.
+    printf 'agents/roster.md\n' | plan
+    assert_eq "$(pget 'p.mode')" "full" "a sibling tree named agents/ still fails closed"
+    assert_contains "$(pget 'p.full_reasons')" "unclassified:agents/roster.md" \
+        "as unclassified, exactly as any new top-level tree does"
+
+    # CONTROL C: zero jobs is earned per-delta, not a constant for this rule.
+    # One cli file riding along pulls the cli keys back in.
+    {
+        printf 'agent/0815-1/97604f47/STATE.md\n'
+        printf 'packages/cli/src/index.ts\n'
+    } | plan
+    assert_eq "$(pget 'p.jobs.unit.run')" "true" "a cli path beside the notes pulls unit back in"
+    log_pass "the tracked agent/ notes tree is its own zero-job module (and only that tree)"
+}
+
 test_full_mode_runs_every_job() {
     # The consumer side of fail-closed: whenever mode is full, the vector must
     # say run for EVERY job, so a consumer reading it can never skip on a
@@ -603,6 +648,17 @@ test_representative_deltas_classify_to_pinned_verdicts() {
     expect_classify "gate source only" "reduced|18|" 'scripts/check-embed-credits.ts'
     expect_classify "gate lib only" "reduced|18|" 'scripts/lib/blocker-validator.ts'
     expect_classify "ci-runner only" "reduced|18|" 'scripts/ci-runner/manifest.ts'
+    # The tracked agent/ notes root. STATE.md is rewritten many times per
+    # session, so this row is the one that decides whether a session costs
+    # nothing or seventy minutes a write.
+    expect_classify "agent session state only" "reduced|18|" 'agent/0815-1/97604f47/STATE.md'
+    expect_classify "agent plan + program suite" "reduced|18|" \
+        'agent/0815-1/PLAN-agent-folder-migration.md' \
+        'agent/programs/backup-storage/CHECKLIST.md'
+    # The over-eager-skip direction for the same tree: session notes must not
+    # SUPPRESS a real module riding in the same delta.
+    expect_classify "MIXED agent notes + one cli file" "reduced|18|$cli_keys" \
+        'agent/0815-1/97604f47/STATE.md' 'packages/cli/src/commands/repo.ts'
     # The over-eager-skip direction: a gate source must not SUPPRESS a real
     # module that another file in the same delta pulls in.
     expect_classify "MIXED gate source + one cli file" "reduced|18|$cli_keys" \
@@ -678,6 +734,7 @@ test_workflow_closure_is_computed_not_name_matched
 test_vm_e2e_surfaces_carry_the_mandated_inputs
 test_submodule_pointer_classifies_like_content
 test_docs_only_delta_reduces_everything
+test_agent_notes_tree_is_a_zero_job_module
 test_full_mode_runs_every_job
 test_classify_mode_is_pure
 test_baseline_helpers_refuse_weak_baselines

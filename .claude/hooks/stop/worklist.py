@@ -14,7 +14,7 @@ synced INBOX, so nothing written there is ever silently ignored); every item
 carries start and last-update stamps; in-flight claims are verified against
 the OS and walked up a 45/90/120-minute ladder (wl_liveness); deferrals
 execute their DEFAULT after an autonomy window instead of nagging forever
-(wl_checks); the compact-recovery document is .agent/<branch>/STATE.md with world-keyed
+(wl_checks); the compact-recovery document is agent/<branch>/<me>/STATE.md with world-keyed
 staleness; and the judge caches identical verdicts (wl_judge). The one
 3600-line file became nine modules; worklist_messages.py remains the
 catalogue of user-facing prose.
@@ -72,7 +72,7 @@ MODULE MAP:
     wl_reggate    v7/v8 regression-gate machinery
     wl_email      the operator email channel (SES digests of open questions)
     wl_judge      the stop-legitimacy judge and its verdict cache
-    wl_checklist  the /handoff checklist gate over docs/<slug>/CHECKLIST.md
+    wl_checklist  the /handoff checklist gate over agent/programs/<slug>/CHECKLIST.md
     wl_checks     the static battery and the Stop orchestration (run_stop)
     worklist_messages  every user-facing string (arity-pinned by the suite)
 
@@ -410,7 +410,7 @@ def _triage_cli(argv, worklist, me, die):
     if kind == "plan-subagent":
         slug = PLAN_SLUG_RE.sub("-", str(verdict.get("plan_slug", "")).lower()).strip("-")
         slug = slug[:60] or item_id
-        plan = "docs/agent/%s/PLAN-%s.md" % (branch or "<branch>", slug)
+        plan = "agent/%s/PLAN-%s.md" % (branch or "<branch>", slug)
         S.triage_item(worklist, me, item_id, kind, reason, plan)
         print(
             M.CLI_TRIAGE_PLAN
@@ -878,10 +878,14 @@ def main():
         if not branch:
             sys.stderr.write(M.CLI_STATE_NO_BRANCH % root)
             sys.exit(2)
-        if not S.agent_branch_dir(root, branch).is_dir():
+        if not S.agent_session_dir(root, branch, prefix).is_dir():
             # NEVER auto-created (operator decision 2026-07-30): the RULES.md
-            # copy-forward is a judgement call a tool must not make.
-            sys.stderr.write(M.CLI_STATE_NO_DIR % (branch, branch, branch))
+            # copy-forward is a judgement call a tool must not make. MY OWN
+            # directory since the split, not merely the branch's: a session
+            # joining a branch a peer bootstrapped still has nowhere of its own
+            # to write, and creating it for them would make that copy-forward
+            # decision on their behalf.
+            sys.stderr.write(M.CLI_STATE_NO_DIR % (branch, prefix, branch, prefix, branch))
             sys.exit(2)
         # isatty FIRST: reading an interactive terminal is the hang this verb
         # was reported for, and refusing beats blocking even now that a bare
@@ -920,12 +924,14 @@ def main():
                 % (verdict, detail, S.AGENT_STATE_MIN_CHARS, S.AGENT_STATE_MAX_CHARS)
             )
             sys.exit(2)
-        target = S.agent_state_path(root, branch)
+        target = S.agent_state_path(root, branch, prefix)
         # Branch-scoped since the review round of 2026-07-31 (findings
         # 3688784930/3688787780): a shared slot let a write on ANOTHER branch
-        # destroy this branch's only backup.
-        backup = S.agent_state_backup_path(wl, branch)
-        reaped_path = S.agent_state_reaped_path(wl, branch)
+        # destroy this branch's only backup. Session-scoped too since the tree
+        # split: with one STATE.md per session a branch-wide slot lets a PEER's
+        # write destroy the only copy of my replaced body.
+        backup = S.agent_state_backup_path(wl, branch, prefix)
+        reaped_path = S.agent_state_reaped_path(wl, branch, prefix)
         pdir = C.projects_dir(root)
         backed_up = had_prev = False
         replaced = ""

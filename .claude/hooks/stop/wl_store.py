@@ -56,7 +56,7 @@ grepping the hook directory for with_suffix call sites enumerates the truth.
 Add new sidecars HERE when you add them, and keep the parenthesised shape the
 parser depends on (no nested parentheses: the parser stops at the first `)`).
 The compact-recovery document itself lives in the repo at
-.agent/<branch>/STATE.md (gitignored), not in TMPDIR.
+agent/<branch>/<session>/STATE.md (tracked), not in TMPDIR.
 """
 
 try:
@@ -108,7 +108,7 @@ def _flock(handle, flags):
 SESSION_BRIEF_MAX = 200
 SESSION_BRIEF_STALE_MIN = int(os.environ.get("WORKLIST_BRIEF_STALE_MIN", "90"))
 
-# The compact-recovery document is `.agent/<branch>/STATE.md` (operator
+# The compact-recovery document is `agent/<branch>/<session>/STATE.md` (operator
 # redesign, 2026-07-30, replacing the single per-session handover). The split
 # is BY LIFETIME: STATE.md is rewritten and freshness-gated; RULES.md is
 # sharpened and never age-gated; TRAPS.md is shared, append-only, and feeds the
@@ -221,32 +221,150 @@ def loop_path(worklist):
 
 
 def agent_root(root):
-    return pathlib.Path(root) / ".agent"
+    return pathlib.Path(root) / "agent"
 
 
 def agent_branch_dir(root, branch):
     return agent_root(root) / branch
 
 
-def agent_state_path(root, branch):
-    return agent_branch_dir(root, branch) / "STATE.md"
+def agent_session_slug(me):
+    """The DIRECTORY NAME one session owns under agent/<branch>/.
+
+    Sanitised and truncated to 8 characters, because the SAME session arrives
+    here as a full uuid on the Stop event and as a short prefix from the CLI.
+    An untruncated name would give one session TWO directories -- the exact
+    split-brain the per-session layout exists to remove -- and the [:8] rule is
+    the one `state_path` above already uses, so a session's store sidecar and
+    its notes directory carry one name.
+    """
+    return re.sub(r"[^A-Za-z0-9._-]", "_", str(me or "unknown"))[:8] or "unknown"
 
 
-def agent_rules_path(root, branch):
-    return agent_branch_dir(root, branch) / "RULES.md"
+def agent_session_dir(root, branch, me):
+    """agent/<branch>/<session>/ -- ONE session's own notes, and the reason the
+    tree moved out of a single shared STATE.md on 2026-08-14: a peer can no
+    longer overwrite what it cannot address. Peers stay VISIBLE as siblings
+    (agent_peer_sections below); they simply stop being writable."""
+    return agent_branch_dir(root, branch) / agent_session_slug(me)
+
+
+def agent_state_path(root, branch, me):
+    return agent_session_dir(root, branch, me) / "STATE.md"
+
+
+def agent_rules_path(root, branch, me):
+    """RULES.md, YOURS if you keep one, otherwise the BRANCH's.
+
+    STATE.md is per session because two sessions writing one file destroyed a
+    live document. RULES.md is not that: it holds settled facts about the
+    branch's work, it is copied forward branch to branch and sharpened in
+    place, and nothing about it is per session -- which is why every migrated
+    branch in this repo carries exactly one, at branch level, and no session
+    directory carries any (verified against the tree, not assumed).
+
+    So the session copy WINS if it exists and the branch copy is the answer
+    otherwise. Two places rather than one is a real cost, paid because the
+    alternative was a PostCompact briefing that silently reported "(none for
+    this branch)" for a file sitting one directory up.
+    """
+    own = agent_session_dir(root, branch, me) / "RULES.md"
+    return own if own.exists() else agent_branch_dir(root, branch) / "RULES.md"
+
+
+def agent_plan_dir(root, branch):
+    """BRANCH level, deliberately one level ABOVE the session directories: a
+    plan belongs to the branch's work rather than to whoever happened to write
+    it, and --triage names the path before any session owns it."""
+    return agent_branch_dir(root, branch)
 
 
 def agent_traps_path(root):
-    return agent_root(root) / "TRAPS.md"
+    # NOT under agent_root: TRAPS is branch-independent standing reference, not
+    # per-session working state, so it lives with the other human-facing docs.
+    #
+    # The merge it was waiting for has landed. Two corpora existed, ~90% apart:
+    # a 272-line gitignored file the hook actually READ, and a 631-line tracked
+    # file that reached nobody programmatically. 18 headings against 22, three
+    # shared. The machine briefed every session from the shorter, staler one --
+    # and among the 15 entries only that file held was "A background agent goes
+    # idle WITHOUT sending its report", which happened three times in the
+    # session that found it. Merged to 838 lines / 37 headings, nothing lost
+    # from either side, and this now points at the corpus a human also reads.
+    return pathlib.Path(root) / "docs" / "agent-reference" / "TRAPS.md"
+
+
+def agent_session_dirs(root, branch):
+    """Every session directory under agent/<branch>/, name-sorted. [] when the
+    branch tree is absent or unreadable, never an exception: peer visibility is
+    a courtesy to the reader and must never be able to fail a stop."""
+    if not branch:
+        return []
+    try:
+        return sorted(
+            (p for p in agent_branch_dir(root, branch).iterdir() if p.is_dir()),
+            key=lambda p: p.name,
+        )
+    except OSError:
+        return []
+
+
+def agent_peer_sections(root, branch, session_id):
+    """Every OTHER session's sections on this branch, read from the SIBLING
+    directories.
+
+    This is what peer visibility became when the shared document was split
+    (2026-08-14). Before, every section sat in one file and a whole-file write
+    could delete the lot; now each session owns a directory, and a peer's
+    STATE.md is READ-ONLY to everyone else by construction. Losing sight of
+    them was never the goal: a session that cannot see what its peers are doing
+    duplicates their work, or edits under them.
+
+    Each file is parsed against ITS OWN mtime, so an unstamped peer document
+    ages by its own clock rather than by whoever wrote last -- the per-file
+    version of the per-section fix that made the old shared document honest.
+    """
+    out = []
+    for d in agent_session_dirs(root, branch):
+        if C.same_session(d.name, session_id):
+            continue
+        p = d / "STATE.md"
+        try:
+            text = p.read_text(encoding="utf-8", errors="replace")
+            mtime = p.stat().st_mtime
+        except OSError:
+            continue
+        for s in agent_state_parse(text, mtime):
+            if C.same_session(s["owner"], session_id):
+                continue
+            # An unowned (legacy) section in a peer's directory is attributed to
+            # the DIRECTORY, which is now the authoritative owner: reporting it
+            # as `legacy` would hide which session a reader must not disturb.
+            if s["owner"] == AGENT_STATE_LEGACY_OWNER:
+                # New binding rather than rebinding the loop variable: ruff's
+                # PLW2901 objects because a reader scanning the loop cannot tell
+                # which `s` a later line means.
+                out.append(dict(s, owner=d.name))
+            else:
+                out.append(s)
+    return out
 
 
 def agent_state_lock_path(worklist):
-    # In TMPDIR beside the store, NOT under .agent/: the notes tree stays free
+    # In TMPDIR beside the store, NOT under agent/: the notes tree stays free
     # of machine artifacts, and the lock shares the store's lifetime.
     return worklist.with_suffix(".agentstate.lock")
 
 
-def agent_state_backup_path(worklist, branch=""):
+def _agent_slot_suffix(branch, me):
+    """`.<branch>` or `.<branch>.<session>` for the sidecar slots below, or ''
+    when the caller names neither. Sanitised, because a branch name is free
+    text and a slash in a suffix is a path, not a name."""
+    parts = [re.sub(r"[^A-Za-z0-9._-]", "_", str(x)) for x in (branch, me) if x]
+    return "." + ".".join(parts) if parts else ""
+
+
+def agent_state_backup_path(worklist, branch="", me=""):
     """The ONE previous STATE.md, so a clobber is undoable.
 
     Per-branch last-write-wins is deliberate (see worklist.py --state): a
@@ -263,16 +381,21 @@ def agent_state_backup_path(worklist, branch=""):
     branch-A write silently destroyed the only copy of branch-B's replaced
     body -- the exact loss the backup exists to prevent. The branch rides
     the suffix; a branchless caller keeps the legacy name.
+
+    SESSION-SCOPED TOO since the tree split (2026-08-14), for the SAME reason
+    one level down. While every session wrote one shared document, a peer's
+    backup held that whole document including my section, so a shared slot lost
+    nothing. Once each session writes its own STATE.md, a branch-only slot means
+    my peer's next write overwrites the only copy of MY replaced body -- the
+    cross-branch defect above, reincarnated cross-session by the migration that
+    was supposed to stop sessions destroying each other's state.
     """
-    if branch:
-        safe = re.sub(r"[^A-Za-z0-9._-]", "_", str(branch))
-        return worklist.with_suffix(".agentstate.prev.%s.md" % safe)
-    return worklist.with_suffix(".agentstate.prev.md")
+    return worklist.with_suffix(".agentstate.prev%s.md" % _agent_slot_suffix(branch, me))
 
 
-def agent_state_reaped_path(worklist, branch=""):
-    """APPEND-ONLY archive of sections reaped as dead. Same branch-sanitising
-    rule as the backup slot beside it.
+def agent_state_reaped_path(worklist, branch="", me=""):
+    """APPEND-ONLY archive of sections reaped as dead. Same branch- and
+    session-scoping rule as the backup slot beside it.
 
     Separate from `.prev` and strictly stronger, because the hazard is
     different. `.prev` covers one generation of a document a session CHOSE to
@@ -281,10 +404,7 @@ def agent_state_reaped_path(worklist, branch=""):
     small enough that unbounded growth is the right trade against ever losing
     the last words of a session that died mid-campaign.
     """
-    if branch:
-        safe = re.sub(r"[^A-Za-z0-9._-]", "_", str(branch))
-        return worklist.with_suffix(".agentstate.reaped.%s.md" % safe)
-    return worklist.with_suffix(".agentstate.reaped.md")
+    return worklist.with_suffix(".agentstate.reaped%s.md" % _agent_slot_suffix(branch, me))
 
 
 def trap_headings(root):
@@ -1152,7 +1272,7 @@ def compact(worklist):
         print("events log compacted to %d record(s)" % len(out))
 
 
-# ---- briefs / loop / agent-state (.agent/<branch>/STATE.md) ------------------
+# ---- briefs / loop / agent-state (agent/<branch>/<session>/STATE.md) --------
 
 
 def read_briefs(worklist):
@@ -1316,7 +1436,7 @@ def agent_state_stamp(epoch):
 
 
 # A stamp this far in the FUTURE is not a stamp, it is a wrong clock. Found on
-# the live .agent/main/STATE.md while driving this code for the first time: a
+# the live main-branch STATE.md while driving this code for the first time: a
 # session's hand-written heading read 101 minutes ahead, almost certainly local
 # time written with a Z. Trusting it would make that section PERMANENTLY fresh,
 # which is a strictly worse failure than the unstamped fallback -- the whole
@@ -1481,13 +1601,17 @@ def agent_state_state(root, branch, session_id="", cur_sig=None, saved_sig=None)
     document the tool did not write; the reap path still bounds it at 24 hours.
 
     OSError degrades to "missing", which BLOCKS: a permissions problem on
-    .agent/ must not read as a clean bill.
+    agent/ must not read as a clean bill.
     """
     if not branch:
         return "no-branch", None, ""
-    if not agent_branch_dir(root, branch).is_dir():
+    # MY OWN directory, not merely the branch's: since the split each session
+    # owns one, and the tool still never creates it (the RULES.md copy-forward
+    # is a judgement call). A session joining a branch a peer already bootstrapped
+    # must still make its own, or it would have nowhere to write.
+    if not agent_session_dir(root, branch, session_id).is_dir():
         return "no-dir", None, ""
-    p = agent_state_path(root, branch)
+    p = agent_state_path(root, branch, session_id)
     if not p.exists():
         return "missing", None, ""
     try:
@@ -1527,33 +1651,39 @@ def agent_state_briefing(root, branch, session_id, projects_dir=""):
     """(own_body_or_None, peers_rendered, n_live_peers) for PostCompact and for
     the Stop check's peer note.
 
+    Two READS, not one, since the tree split: my own body comes from my own
+    directory, and the peers come from the sibling directories beside it. A
+    missing or unreadable file of my own must NOT cost me the peer block --
+    the two failures are unrelated, and a compacted session with no document
+    of its own is exactly the one that most needs to see what else is running.
+
     Dead sections are SKIPPED here, never removed: a read-only path that
-    mutates the shared document is the fastest route to the next clobber. Only
-    the write path reaps.
+    deletes anything in a peer's directory is the fastest route to the next
+    clobber. Only the write path prunes, and only inside its own document.
     """
     if not branch:
         return None, "", 0
-    p = agent_state_path(root, branch)
+    mine = None
+    p = agent_state_path(root, branch, session_id)
     try:
         text = p.read_text(encoding="utf-8", errors="replace")
         mtime = p.stat().st_mtime
     except OSError:
-        return None, "", 0
-    sections = agent_state_parse(text, mtime)
-    mine = agent_state_mine(sections, session_id)
-    if mine is None:
-        mine = next((s for s in sections if s["owner"] == AGENT_STATE_LEGACY_OWNER), None)
-    live, _dead = agent_state_dead(sections, session_id, projects_dir)
+        text, mtime = "", 0.0
+    if text:
+        sections = agent_state_parse(text, mtime)
+        mine = agent_state_mine(sections, session_id)
+        if mine is None:
+            mine = next((s for s in sections if s["owner"] == AGENT_STATE_LEGACY_OWNER), None)
+    live, _dead = agent_state_dead(
+        agent_peer_sections(root, branch, session_id), session_id, projects_dir
+    )
     now = time.time()
-    rows = []
-    for s in live:
-        if s is mine:
-            continue
-        rows.append(
-            "--- SESSION %s, written %d minutes ago. NOT YOURS: read it, never "
-            "rewrite or delete it.\n%s"
-            % (s["owner"], int(max(0.0, (now - s["ts"]) / 60.0)), s["body"])
-        )
+    rows = [
+        "--- SESSION %s, written %d minutes ago. NOT YOURS: read it, never "
+        "rewrite or delete it.\n%s" % (s["owner"], int(max(0.0, (now - s["ts"]) / 60.0)), s["body"])
+        for s in live
+    ]
     return (mine["body"] if mine else None), "\n\n".join(rows), len(rows)
 
 

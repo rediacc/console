@@ -438,6 +438,19 @@ Verify a repository's backup anchor against the chunk store
 
 > MCP tool
 
+### rdc backup browse <repo-ref>
+
+List the files a repository contains. A local read-only walk of the repository image: no account server and no network. An encrypted repository must be mounted, or have its keyfile deployed, before it can be opened; browse says so rather than listing nothing. It cannot list a snapshot that exists only in chunk storage; restore it first, then browse the result.
+
+**Options:**
+
+- `--path <subdir>` — Limit the listing to this subtree
+- `--depth <n>` — Limit descent to N levels (0 for unlimited)
+- `--limit <n>` — Maximum entries to return (0 for unlimited)
+- `--debug` — Enable debug output
+
+> MCP tool
+
 ### rdc backup snapshot <repo-ref>
 
 Upload a chunk-store snapshot: full inventory first, changed cells after
@@ -474,13 +487,12 @@ Remove the policy, so every snapshot of this repository is kept.
 
 ### rdc backup list [artifact-ref]
 
-List backup artifacts on a machine or storage.
+List backup artifacts on a machine.
 
 **Options:**
 
 - `-m, --machine <name>` — Machine name
-- `--storage <name>` — RETIRED: storage listing was removed with the rclone arm
-- `--path <subdir>` — Subdirectory within the storage root. When omitted, hot/ and cold/ are listed and merged.
+- `--path <subdir>` — Limit the listing to one subdirectory; omit to enumerate the whole datastore
 - `--debug` — Enable debug output
 
 > MCP tool

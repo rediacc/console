@@ -28,7 +28,7 @@
 # two halves of one wire: either half alone is dead.
 #
 # THE EXEMPT SET IS A HOLE, so every entry carries a BLOCKER reason validated by
-# the shared validator (see docs/agent/suppressions.md). It lives inline rather
+# the shared validator (see docs/agent-reference/suppressions.md). It lives inline rather
 # than in a tracked dotfile: it describes the shape of THIS workflow's DAG, it is
 # only meaningful next to the four checks above, and a repo-root suppression file
 # would need a liveness probe whose oracle is exactly the parsing done here.
@@ -274,7 +274,7 @@ dead_exemptions=()
 # Liveness. A BLOCKER proves a reason existed once; it cannot prove the reason
 # is still true. An exemption for a job that no longer exists is a hole held
 # open by nothing, and it is invisible unless something asks. See the liveness
-# section of docs/agent/suppressions.md.
+# section of docs/agent-reference/suppressions.md.
 for e in "${!EXEMPT_ENTRIES[@]}"; do
     [[ -z "${IS_JOB[$e]:-}" ]] && dead_exemptions+=("$e")
 done

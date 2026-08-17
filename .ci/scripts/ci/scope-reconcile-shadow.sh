@@ -86,7 +86,7 @@ emit() {
 # property of this script, not a nicety.
 #
 # This runs inside ci-complete, which is `runs-on: ubuntu-slim` with
-# `timeout-minutes: 5`. Per docs/agent/ci-gates.md, a slim job that runs out of
+# `timeout-minutes: 5`. Per docs/agent-reference/ci-gates.md, a slim job that runs out of
 # time is marked CANCELLED with NO failed step, "which reads as neither pass nor
 # fail and poisons CI Complete" -- the pipeline's single required check. So a
 # hung `gh` retry or a slow artifact download here could cancel the required

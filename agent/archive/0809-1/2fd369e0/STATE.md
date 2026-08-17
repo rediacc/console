@@ -1,0 +1,9 @@
+
+
+## SESSION 2fd369e0 (babysitter mid-/pr-merge, 2026-08-09T17:35Z)
+
+**True now**: LANDING PR #561. Done: account PR rediacc/account#78 MERGED (rebased tip 9cde3ea, tree-identity verified; its review report answered — block-admin-merge hook caught it unanswered, a real console-side GAP: submodule-PR REPORTS posted after the last console run are unchecked by CI, only threads are; FOLLOW-UP owed: extend the submodule hygiene gate to demand a reply to each linked sub-PR's newest report). Console pointer bumped (074c06d77) and pushed; fast-path run 31318159420 IN FLIGHT (watch b2c8c3cec; waiter bva0xlc7x; merge-watch cron 5114c151 at :13). Review state: marker at 3be94bbf (review budget exhausted after 4 passes); Review Complete on current heads = success via the exhausted-cap pass-with-warning path (designed, batch-5-tested). Labels: bump-none LIVE on #561 — the merge to main must SKIP the release.
+
+## Next action
+
+When run 31318159420 goes terminal green: gh pr merge 561 --repo rediacc/console --rebase --auto (Review Complete may need a nudge comment for the pointer-bump head — gitlink-only diffs are reviewed-equivalent). Then: git fetch/checkout main/ff-only/submodule update; watch the MAIN push run; VERIFY THE BUMP-NONE SKIP: expect finalize-release-sentinel ::notice naming PR #561, NO Release workflow run, NO new tag (v1.2.23 stays latest) — this is the feature's first live proof; if a Release run appears anyway, that is a bump-none defect: investigate before it deploys. Then re-sync main (CD pushes 0 commits this time if skip works — verify!), hand back on main read-only. Post-merge: cron 5114c151 executes Part C (app check 5 repos, flips ALLOW_STATE→FINISH→MODEL→PUSH→SUBMODULES, canary 1 scratch-PR, canary 2 renet red, baseline refresh, tick #4defc0d0). Plus the follow-up gate extension above on a fresh branch.

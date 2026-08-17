@@ -8,7 +8,10 @@
 #
 # Found live, twice, and the second one is why this exists as a HOOK rather
 # than a paragraph:
-#   - `.agent/TRAPS.md:146`: sweep cefa43ca7 sucked in another session's
+#   - docs/agent-reference/TRAPS.md, "A blanket `git add -A` sweep imports
+#     other sessions' half-landed work" (cited by heading, not line: the two
+#     trap corpora were merged into that one file and every line moved):
+#     sweep cefa43ca7 sucked in another session's
 #     check-solution-video-engine.ts, which then failed 273 of 273 on branch
 #     0730-2 (run 30554973713, job 90913300683). The sweep looked clean; the
 #     failure surfaced a full CI round later, on someone else's code.

@@ -7,7 +7,7 @@
 # `#` comment lines do NOT reset it, which is how the per-workflow subheadings
 # below stay inside their group). Reasons are parsed and quality-checked by the
 # shared validator in .ci/scripts/lib/blocker-validator.sh, exactly like every
-# other allowlist in this repo -- see docs/agent/suppressions.md.
+# other allowlist in this repo -- see docs/agent-reference/suppressions.md.
 #
 # THIS LIST CAN ONLY SHRINK. The gate re-derives its own oracle every run and
 # rejects an entry the moment it stops suppressing something real: a job that

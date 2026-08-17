@@ -45,6 +45,17 @@ const TARGET_GLOBS = [
   // Root project docs
   'CLAUDE.md',
   'docs/**/*.{md,mdx}',
+  // The tracked agent notes tree follows docs/ here, and this is NOT optional
+  // coverage. Plans are written in `rdc` commands, and this gate has already
+  // earned its keep on one: PLAN-localize-cheat-sheet-rendering.md cited two
+  // invocations that the parser REJECTS, and this scan is what caught them.
+  // Moving plans out of docs/ without moving the glob would silence the gate on
+  // exactly the file class where it has a proven catch -- a gate that keeps
+  // passing because it stopped looking.
+  //
+  // Yes, this surfaces findings from session notes. That is the point: a plan
+  // teaching a command that does not run is how the next session learns it.
+  'agent/**/*.{md,mdx}',
   '.claude/skills/rdc/*.md',
 
   // CLI source (help text strings)
@@ -142,9 +153,9 @@ const COMMAND_PATH_IGNORE = /(?:__tests__|\.test\.ts$|\.spec\.ts$)/;
  */
 const EXCLUDED_FILES = new Set<string>([
   'docs/design/spec/11-p4-gate-review.md',
-  'docs/agent/backup-storage/PLAN-lint-rule-matrix-probe.md',
-  'docs/agent/backup-storage/PLAN-agent-hints-implementation.md',
-  'docs/agent/backup-storage/PLAN-agent-hints-in-stop-hook.md',
+  'agent/backup-storage/PLAN-lint-rule-matrix-probe.md',
+  'agent/backup-storage/PLAN-agent-hints-implementation.md',
+  'agent/backup-storage/PLAN-agent-hints-in-stop-hook.md',
 ]);
 
 /**

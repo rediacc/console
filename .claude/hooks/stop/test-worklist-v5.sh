@@ -114,7 +114,10 @@ setup() {
     # for every case after it, and the absence assertions would still pass.
     unset WORKLIST_AGENT_HINT WORKLIST_AGENT_HINT_MAX_PER_SESSION
     unset WORKLIST_AGENT_HINT_MIN_SCORE WORKLIST_AGENT_HINT_MIN_MARGIN
-    mkdir -p "$BASE/proj/.agent/agenttest"
+    # ONE DIRECTORY PER SESSION under agent/<branch>/, plus the legacy dotted
+    # root that still holds TRAPS.md. `deadbeef` is this suite's default
+    # session; a fixture acting as a PEER makes its own (see state_as).
+    mkdir -p "$BASE/proj/agent/agenttest/deadbeef" "$BASE/proj/.agent"
     WL="$BASE/tmp/claude-worklist/$(echo "$BASE/proj" | sed 's|[^A-Za-z0-9._-]|_|g' | sed 's/^_//').md"
     : >"$WL"
     printf '%s\n' '{"type":"user","message":{"content":"go"}}' >"$BASE/t.jsonl"
@@ -168,14 +171,14 @@ task() { # task <id> <status> <subject> [blockedBy-csv]
 # exercise the mtime FALLBACK rather than the heading stamp, so any case whose
 # subject is AGE must use age_state on a real stamped section instead.
 plant_state() { # plant_state <body>
-    printf '%s' "$1" >"$BASE/proj/.agent/agenttest/STATE.md"
+    printf '%s' "$1" >"$BASE/proj/agent/agenttest/deadbeef/STATE.md"
 }
 
 # The same raw plant, named for what the new cases use it for: a whole
 # DOCUMENT (possibly multi-section) placed on disk without going through the
 # merge, which is the only way to fabricate a peer's section for a read case.
 plant_doc() { # plant_doc <text>
-    printf '%s' "$1" >"$BASE/proj/.agent/agenttest/STATE.md"
+    printf '%s' "$1" >"$BASE/proj/agent/agenttest/deadbeef/STATE.md"
 }
 
 mk_section() { # mk_section <owner> <minutes-ago> <body> -> one stamped section
@@ -191,6 +194,23 @@ section_now() { # section_now <owner> <body> -> one section stamped now
     mk_section "$1" 0 "$2"
 }
 
+# owner_state_file <owner> -- the file that OWNS <owner>'s section.
+#
+# Since the tree split there are two kinds of owner in this suite and they live
+# in different files: a real session (deadbeef, cafe1234) writes its own
+# agent/agenttest/<owner>/STATE.md, while a PLANTED pseudo-owner (legacy,
+# ghost1234, live5678) exists only as a heading inside the default session's
+# document, which is exactly how those cases fabricate a peer without running
+# one. Resolving by existence keeps every call site below unchanged and, more
+# importantly, keeps each case pointed at the file whose behaviour it is about.
+owner_state_file() {
+    if [[ -f "$BASE/proj/agent/agenttest/$1/STATE.md" ]]; then
+        printf '%s' "$BASE/proj/agent/agenttest/$1/STATE.md"
+    else
+        printf '%s' "$BASE/proj/agent/agenttest/deadbeef/STATE.md"
+    fi
+}
+
 age_state() { # age_state <owner> <minutes-ago> -- backdate that section's stamp
     # The heading stamp is the age source now, so `touch -d` no longer ages a
     # section written by --state: it moves the file's mtime, which is only the
@@ -198,7 +218,7 @@ age_state() { # age_state <owner> <minutes-ago> -- backdate that section's stamp
     # would silently test the fallback instead of the rule, so this helper
     # EXITS NON-ZERO when the owner's heading is not there rather than aging
     # nothing and passing quietly.
-    python3 - "$BASE/proj/.agent/agenttest/STATE.md" "$1" "$2" <<'PYEOF'
+    python3 - "$(owner_state_file "$1")" "$1" "$2" <<'PYEOF'
 import re, sys, time
 path, owner, mins = sys.argv[1], sys.argv[2], float(sys.argv[3])
 stamp = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(time.time() - mins * 60))
@@ -215,7 +235,7 @@ PYEOF
 }
 
 section_of() { # section_of <owner> -- that section rendered, or nothing
-    python3 - "$(dirname "$HOOK")" "$BASE/proj/.agent/agenttest/STATE.md" "$1" <<'PYEOF'
+    python3 - "$(dirname "$HOOK")" "$(owner_state_file "$1")" "$1" <<'PYEOF'
 import os, sys
 sys.path.insert(0, sys.argv[1])
 import wl_store as S
@@ -230,7 +250,13 @@ for s in S.agent_state_parse(text, mtime):
 PYEOF
 }
 
-state_as() { # state_as <prefix> <body> -- merge a section as ANOTHER session
+state_as() { # state_as <prefix> <body> -- write STATE.md as ANOTHER session
+    # MKDIR FIRST, because the tool refuses to create a session folder and a
+    # peer's folder is not the default fixture's: without this every peer write
+    # in the suite would be refused, and (before the loud rc check below) the
+    # cases built on them would have asserted the absence of a document that
+    # was never written.
+    mkdir -p "$BASE/proj/agent/agenttest/$1"
     # LOUD ON FAILURE, deliberately. The first draft swallowed stderr, and a
     # peer body two characters under the 250-char floor was silently refused:
     # three cases then asserted the ABSENCE of a section that had never been
@@ -716,8 +742,9 @@ fi
 echo "== 20. PostCompact hands back STATE.md, RULES.md AND the trap titles =="
 setup
 hand_now
-printf 'settled fact: the reconciler exists, never rebuild it\n' >"$BASE/proj/.agent/agenttest/RULES.md"
-printf '# Traps\n\n## The review tooling comes from main\n\nbody detail here\n' >"$BASE/proj/.agent/TRAPS.md"
+printf 'settled fact: the reconciler exists, never rebuild it\n' >"$BASE/proj/agent/agenttest/deadbeef/RULES.md"
+mkdir -p "$BASE/proj/docs/agent-reference"
+printf '# Traps\n\n## The review tooling comes from main\n\nbody detail here\n' >"$BASE/proj/docs/agent-reference/TRAPS.md"
 out="$(printf '{"session_id":"%s","cwd":"%s"}' "$SID" "$BASE/proj" |
     TMPDIR="$BASE/tmp" CLAUDE_PROJECT_DIR="$BASE/proj" WORKLIST_AGENT_BRANCH=agenttest \
         python3 "$HOOK" --post-compact 2>/dev/null)"
@@ -776,7 +803,7 @@ hand_now
 out="$(printf '{"session_id":"%s","cwd":"%s"}' "$SID" "$BASE/proj" |
     TMPDIR="$BASE/tmp" CLAUDE_PROJECT_DIR="$BASE/proj" WORKLIST_AGENT_BRANCH=agenttest \
         python3 "$HOOK" --post-compact 2>/dev/null)"
-if grep -qF "ci-overhaul session" <<<"$out" && ! grep -qF "OTHER SESSIONS' SECTIONS" <<<"$out"; then
+if grep -qF "ci-overhaul session" <<<"$out" && ! grep -qF "OTHER SESSIONS'" <<<"$out"; then
     pass "21b CONTROL: a solo document produces no peers block"
 else
     fail "21b CONTROL: a peers block appeared with no peers: ${out:0:300}"
@@ -897,7 +924,7 @@ task 7 pending "thing"
 check "the confirmed operator-block is accepted" allow ""
 
 echo "== 29. a BLOATED STATE.md is rejected (it is a prompt, not a report) =="
-# .agent split: the cap moved 1500 -> 4000. Rules and traps left the budget,
+# agent-notes split: the cap moved 1500 -> 4000. Rules and traps left the budget,
 # so STATE.md needs room for state alone; 4000 still refuses a pasted
 # transcript. The boundary pair pins the new edge, and both bodies carry the
 # '## Next action' section so length is the ONLY variable under test.
@@ -958,7 +985,7 @@ echo "== 29b. --state REFUSES a bad body instead of accepting then blocking =="
 setup
 brief_now
 hand_now # a GOOD STATE.md is already on disk; a refused write must not destroy it
-STATE_FILE="$BASE/proj/.agent/agenttest/STATE.md"
+STATE_FILE="$BASE/proj/agent/agenttest/deadbeef/STATE.md"
 cp "$STATE_FILE" "$BASE/state.before"
 refuse() { # refuse <label> <body-producing-command...>
     local label="$1"
@@ -1030,10 +1057,16 @@ if [[ -n "$A_BEFORE" && "$A_BEFORE" == "$A_AFTER" ]]; then
 else
     fail "29f: B's write MUTATED A's section: before='${A_BEFORE:0:80}' after='${A_AFTER:0:80}'"
 fi
-if grep -qF "This is session B" "$STATE_FILE" && grep -qF "ci-overhaul session" "$STATE_FILE"; then
-    pass "29f: the merged document carries BOTH sections"
+# BOTH DOCUMENTS SURVIVE, which is what the merge used to buy inside one file
+# and the directory layout now buys by construction. The third clause is the
+# one with teeth: B's text must be ABSENT from A's file, because a tool that
+# still wrote everything into one document would satisfy the first two.
+B_FILE="$BASE/proj/agent/agenttest/cafe1234/STATE.md"
+if grep -qF "This is session B" "$B_FILE" && grep -qF "ci-overhaul session" "$STATE_FILE" &&
+    ! grep -qF "This is session B" "$STATE_FILE"; then
+    pass "29f: each session's document holds its own body and nothing of the other's"
 else
-    fail "29f: a section is missing from the merged document: $(head -c 200 "$STATE_FILE")"
+    fail "29f: the two documents are not separate: A=$(head -c 120 "$STATE_FILE") B=$(head -c 120 "$B_FILE" 2>&1)"
 fi
 # CONTROL: B writing AGAIN replaces only B's section. Without this the case
 # would pass on a tool that merely refused to write anything at all.
@@ -1042,11 +1075,113 @@ sleep 1 # so an advanced stamp is observable at second resolution
 state_as cafe1234 "${B_BODY/session B/session B, round two}"
 if [[ "$(section_of deadbeef)" == "$A_BEFORE" ]] &&
     [[ "$(section_of cafe1234)" != "$B_ONE" ]] &&
-    grep -qF "round two" "$STATE_FILE"; then
+    grep -qF "round two" "$B_FILE"; then
     pass "29f CONTROL: a second write replaces only its own section, A untouched"
 else
     fail "29f CONTROL: the second write hit the wrong section"
 fi
+
+echo "== 29k. the STOP hook still names the peer sessions after the split =="
+# THE HALF OF THE SPLIT THAT COULD HAVE BEEN LOST SILENTLY. Peers used to be
+# `## SESSION` headings inside one shared file, and this note read them from
+# there. Once each session owns a directory, code that keeps reading only its
+# OWN file goes quiet -- while every assertion about MY OWN document keeps
+# passing, because mine is the file it still reads. Nothing in this suite
+# covered this note before the move, which is exactly the shape of gap a
+# migration slips through.
+#
+# Peers stopped being writable on purpose; they must not stop being VISIBLE. A
+# session that cannot see its peers sweeps their uncommitted files.
+setup
+brief_now
+hand_now
+brief_other cafe1234
+PEER_29K='Session cafe1234 is mid-migration on the chunk-store cold path and owns every uncommitted file under packages/cli/src/services/backup. Sweeping them into another commit is the concrete harm this note exists to prevent, so it has to be visible from a stop, not only after a compaction.
+
+## Next action
+Finish the cold-path cutover and hand the file list back to the lead.'
+state_as cafe1234 "$PEER_29K"
+say "answer
+
+## Remaining
+- #7 thing (pending)"
+task 7 pending "thing"
+export WORKLIST_REPORT_PER_STOP=9
+OUT="$(run)"
+if grep -qF "under agent/agenttest/" <<<"$OUT" && grep -qE "cafe1234 +[0-9]+ min old" <<<"$OUT"; then
+    pass "29k FIRE: a peer's session directory is named on an ordinary stop, with its age"
+else
+    fail "29k: the peer went invisible after the split: ${OUT:0:400}"
+fi
+# CONTROL, one planted fact different: no peer directory, no note. Without it
+# the FIRE could be satisfied by boilerplate printed on every stop.
+setup
+brief_now
+hand_now
+say "answer
+
+## Remaining
+- #7 thing (pending)"
+task 7 pending "thing"
+OUT="$(run)"
+if ! grep -qF "under agent/agenttest/" <<<"$OUT"; then
+    pass "29k CONTROL: a session alone on its branch is told about no peers"
+else
+    fail "29k CONTROL: a peers note appeared with no peer directory: ${OUT:0:300}"
+fi
+# And the liveness marker: a peer whose owner is past the dead horizon is
+# labelled, because "12 minutes old" and "gone since yesterday" ask different
+# things of the reader. NOT called reap-eligible any more: nothing prunes
+# another session's directory, and a label promising a sweep that never comes
+# is a check that cannot fire.
+setup
+brief_now
+hand_now
+brief_other cafe1234
+state_as cafe1234 "$PEER_29K"
+age_state cafe1234 1800 # 30 hours, past WORKLIST_DEAD_HOURS, no transcript
+mkdir -p "$BASE/projects"
+export WORKLIST_PROJECTS_DIR="$BASE/projects"
+say "answer
+
+## Remaining
+- #7 thing (pending)"
+task 7 pending "thing"
+OUT="$(run)"
+# THE ROW, not the word: the note's own prose explains the marker, so a bare
+# grep for it passes on the explanation alone -- which is how a control ends up
+# testing a paragraph instead of a verdict.
+if grep -qE "cafe1234 +[0-9]+ min old +ABANDONED" <<<"$OUT"; then
+    pass "29k: a peer past the dead horizon is marked ABANDONED rather than silently equal"
+else
+    fail "29k: the dead peer read as a live one: ${OUT:0:400}"
+fi
+# CONTROL: the same fixture with ONE fact changed, the peer's stamp. It gets
+# its own setup rather than a second stop in the same session, because a
+# class-2 section is released once per stop and a repeat stop would report its
+# absence for a reason that has nothing to do with the marker.
+setup
+brief_now
+hand_now
+brief_other cafe1234
+state_as cafe1234 "$PEER_29K"
+age_state cafe1234 5 # minutes, so the owner is alive by any horizon
+say "answer
+
+## Remaining
+- #7 thing (pending)"
+task 7 pending "thing"
+OUT="$(run)"
+# No `$` anchor: the note travels inside a JSON string, where the row ends in a
+# literal backslash-n rather than a newline. An anchored pattern would never
+# match and this control would pass on any output at all.
+if grep -qE "cafe1234 +[0-9]+ min old" <<<"$OUT" &&
+    ! grep -qE "min old +ABANDONED" <<<"$OUT"; then
+    pass "29k CONTROL: a fresh peer is listed WITHOUT the abandoned marker"
+else
+    fail "29k CONTROL: the marker is unconditional, so it says nothing: ${OUT:0:400}"
+fi
+unset WORKLIST_PROJECTS_DIR WORKLIST_REPORT_PER_STOP
 
 echo "== 29g. --state REFUSES a body carrying a '## SESSION' heading =="
 # The old habit is pasting the WHOLE document, and that habit is what destroyed
@@ -1109,7 +1244,7 @@ $(mk_section ghost1234 1800 "$DEAD_BODY")
 $(mk_section live5678 1800 "$LIVE_BODY")"
 : >"$BASE/projects/live5678-1111-2222-3333-444444444444.jsonl" # a fresh transcript
 REAPED="$(TMPDIR="$BASE/tmp" CLAUDE_PROJECT_DIR="$BASE/proj" python3 "$HOOK" --path)"
-REAPED="${REAPED%.md}.agentstate.reaped.agenttest.md"
+REAPED="${REAPED%.md}.agentstate.reaped.agenttest.deadbeef.md"
 age_state deadbeef 1800 # the writer's OWN section is 30h old too
 out="$(printf '%s' "$STATE_BODY" | TMPDIR="$BASE/tmp" CLAUDE_PROJECT_DIR="$BASE/proj" \
     WORKLIST_TASKS_DIR="$BASE/tasks" WORKLIST_AGENT_BRANCH=agenttest \
@@ -1166,7 +1301,7 @@ fi
 mkdir -p "$BASE/projects"
 export WORKLIST_PROJECTS_DIR="$BASE/projects"
 REAPED="$(TMPDIR="$BASE/tmp" CLAUDE_PROJECT_DIR="$BASE/proj" python3 "$HOOK" --path)"
-REAPED="${REAPED%.md}.agentstate.reaped.agenttest.md"
+REAPED="${REAPED%.md}.agentstate.reaped.agenttest.deadbeef.md"
 age_state legacy 1800
 printf '%s' "$STATE_BODY" | TMPDIR="$BASE/tmp" CLAUDE_PROJECT_DIR="$BASE/proj" \
     WORKLIST_TASKS_DIR="$BASE/tasks" WORKLIST_AGENT_BRANCH=agenttest \
@@ -1188,7 +1323,7 @@ brief_now
 JUNK='half a sentence with no heading and no next action, well under the floor'
 plant_doc "$JUNK"
 BACKUP="$(TMPDIR="$BASE/tmp" CLAUDE_PROJECT_DIR="$BASE/proj" python3 "$HOOK" --path)"
-BACKUP="${BACKUP%.md}.agentstate.prev.agenttest.md"
+BACKUP="${BACKUP%.md}.agentstate.prev.agenttest.deadbeef.md"
 printf '%s' "$STATE_BODY" | TMPDIR="$BASE/tmp" CLAUDE_PROJECT_DIR="$BASE/proj" \
     WORKLIST_TASKS_DIR="$BASE/tasks" WORKLIST_AGENT_BRANCH=agenttest \
     python3 "$HOOK" --state deadbeef >/dev/null 2>&1
@@ -1268,18 +1403,25 @@ echo "== 29c. the OUTGOING document is recoverable from the backup =="
 #
 # Since the merge (2026-08-09) a peer write cannot clobber anything, so this
 # case is no longer about a clobber: 29f owns that property. What is left for
-# the backup to cover is a bug in the MERGE itself, which is why the copy is of
+# the backup to cover is a bug in the WRITE itself, which is why the copy is of
 # the whole outgoing document and why one slot is enough. The assertions moved
-# from `== $VICTIM` to "contains VICTIM", because the outgoing document now
-# holds every section rather than just the one being replaced.
+# from `== $VICTIM` to "contains VICTIM", because the outgoing document may hold
+# more than the section being replaced.
+#
+# BOTH WRITES ARE THE SAME SESSION since the tree split (2026-08-14). They used
+# to be two, which read as the stronger fixture and stopped being a fixture at
+# all the moment each session got its own file: a peer's write now lands in a
+# peer's slot, so the assertion below would have been checking a slot nothing
+# had written. The property under test was never "a peer overwrote me" -- it is
+# "the body I replaced is still on disk somewhere".
 setup
 brief_now
 hand_now # writes STATE_BODY
-STATE_FILE="$BASE/proj/.agent/agenttest/STATE.md"
+STATE_FILE="$BASE/proj/agent/agenttest/deadbeef/STATE.md"
 BACKUP="$(TMPDIR="$BASE/tmp" CLAUDE_PROJECT_DIR="$BASE/proj" python3 "$HOOK" --path)"
 # Branch-scoped since the 2026-07-31 review round: one shared slot let a
 # write on ANOTHER branch destroy this branch's only backup.
-BACKUP="${BACKUP%.md}.agentstate.prev.agenttest.md"
+BACKUP="${BACKUP%.md}.agentstate.prev.agenttest.deadbeef.md"
 VICTIM='This is the document a SECOND session wrote and must be able to get back. It carries the one fact that would otherwise die with it: PR #547 merged to main at 01:30Z, so the nightly is now watchable on main rather than on the branch.
 
 ## Next action
@@ -1289,7 +1431,7 @@ printf '%s' "$VICTIM" |
         python3 "$HOOK" --state deadbeef >/dev/null 2>&1
 out="$(printf '%s' "$STATE_BODY" |
     TMPDIR="$BASE/tmp" CLAUDE_PROJECT_DIR="$BASE/proj" WORKLIST_AGENT_BRANCH=agenttest \
-        WORKLIST_SESSION_ID="$(peer_id cafe1234)" python3 "$HOOK" --state cafe1234 2>&1)"
+        python3 "$HOOK" --state deadbeef 2>&1)"
 if grep -qF "PR #547 merged to main at 01:30Z" "$BACKUP" 2>/dev/null; then
     pass "the outgoing document is recoverable from the backup"
 else
@@ -1322,40 +1464,67 @@ else
     pass "CONTROL: a first write advertises no backup"
 fi
 
-echo "== 29d. the backup slot is BRANCH-scoped, and a failed copy is confessed =="
+echo "== 29d. the backup slot is BRANCH- and SESSION-scoped, and a failed copy is confessed =="
 # Review findings 3688784930/3688787780 (shared slot across branches) and
 # 3688770247/3688779150/3688787850 (success line claimed a backup the failed
 # write never created).
+#
+# THE SESSION HALF ARRIVED WITH THE TREE SPLIT (2026-08-14) and is the same
+# defect one level down. While every session wrote one shared document, a
+# peer's backup held that document INCLUDING my section, so a branch-wide slot
+# lost nothing. Once each session owns its own STATE.md, a branch-wide slot
+# means my peer's next write overwrites the only copy of MY replaced body --
+# the cross-branch loss above, reincarnated cross-session by the very migration
+# meant to stop sessions destroying each other's state.
 setup
 brief_now
 hand_now # branch agenttest, STATE_BODY
-STATE_A="$BASE/proj/.agent/agenttest/STATE.md"
+STATE_A="$BASE/proj/agent/agenttest/deadbeef/STATE.md"
 BACKUP_A="$(TMPDIR="$BASE/tmp" CLAUDE_PROJECT_DIR="$BASE/proj" python3 "$HOOK" --path)"
-BACKUP_B="${BACKUP_A%.md}.agentstate.prev.otherbranch.md"
-BACKUP_A="${BACKUP_A%.md}.agentstate.prev.agenttest.md"
+BACKUP_B="${BACKUP_A%.md}.agentstate.prev.otherbranch.deadbeef.md"
+BACKUP_A="${BACKUP_A%.md}.agentstate.prev.agenttest.deadbeef.md"
 VICT_A='Branch A victim body, deliberately long enough for the shape gate to accept it as a real state document (the gate refuses anything under 250 characters as thin, and an earlier draft of this very fixture was refused exactly that way, which is why this sentence exists). It carries the one fact only this branch-A document holds.
 
 ## Next action
 Recover me from the branch-A backup and nothing else.'
+# Branch A: write VICT_A, then write over it, so A's slot holds VICT_A.
 printf '%s' "$VICT_A" |
     TMPDIR="$BASE/tmp" CLAUDE_PROJECT_DIR="$BASE/proj" WORKLIST_AGENT_BRANCH=agenttest \
         python3 "$HOOK" --state deadbeef >/dev/null 2>&1
 printf '%s' "$STATE_BODY" |
     TMPDIR="$BASE/tmp" CLAUDE_PROJECT_DIR="$BASE/proj" WORKLIST_AGENT_BRANCH=agenttest \
-        WORKLIST_SESSION_ID="$(peer_id cafe1234)" python3 "$HOOK" --state cafe1234 >/dev/null 2>&1
-mkdir -p "$BASE/proj/.agent/otherbranch"
+        python3 "$HOOK" --state deadbeef >/dev/null 2>&1
+# Branch B, same session: two writes there must not touch A's slot.
+mkdir -p "$BASE/proj/agent/otherbranch/deadbeef" "$BASE/proj/agent/otherbranch/cafe1234"
 printf '%s' "$STATE_BODY" |
     TMPDIR="$BASE/tmp" CLAUDE_PROJECT_DIR="$BASE/proj" WORKLIST_AGENT_BRANCH=otherbranch \
         python3 "$HOOK" --state deadbeef >/dev/null 2>&1
 printf '%s' "$VICT_A" |
     TMPDIR="$BASE/tmp" CLAUDE_PROJECT_DIR="$BASE/proj" WORKLIST_AGENT_BRANCH=otherbranch \
-        WORKLIST_SESSION_ID="$(peer_id cafe1234)" python3 "$HOOK" --state cafe1234 >/dev/null 2>&1
+        python3 "$HOOK" --state deadbeef >/dev/null 2>&1
 if grep -qF "Recover me from the branch-A backup" "$BACKUP_A" 2>/dev/null &&
     grep -qF "Round 23 went red" "$BACKUP_B" 2>/dev/null &&
     ! grep -qF "Recover me from the branch-A backup" "$BACKUP_B" 2>/dev/null; then
     pass "29d: each branch keeps its own backup; a write elsewhere cannot destroy it"
 else
     fail "29d: cross-branch write clobbered the backup (A: $(head -c 40 "$BACKUP_A" 2>&1))"
+fi
+# THE SESSION SCOPE, on the SAME branch and therefore invisible to the case
+# above: a peer writing twice on branch A must leave A's deadbeef slot alone.
+# Two writes, because the first has nothing to replace and would leave an
+# unwritten slot looking exactly like a respected one.
+mkdir -p "$BASE/proj/agent/agenttest/cafe1234"
+BACKUP_PEER="${BACKUP_A%.agenttest.deadbeef.md}.agenttest.cafe1234.md"
+for i in 1 2; do
+    printf '%s' "$STATE_BODY" |
+        TMPDIR="$BASE/tmp" CLAUDE_PROJECT_DIR="$BASE/proj" WORKLIST_AGENT_BRANCH=agenttest \
+            WORKLIST_SESSION_ID="$(peer_id cafe1234)" python3 "$HOOK" --state cafe1234 >/dev/null 2>&1
+done
+if grep -qF "Recover me from the branch-A backup" "$BACKUP_A" 2>/dev/null &&
+    grep -qF "Round 23 went red" "$BACKUP_PEER" 2>/dev/null; then
+    pass "29d2: a PEER's two writes on the same branch keep their own slot and leave mine intact"
+else
+    fail "29d2: a peer write took the branch slot (mine: $(head -c 40 "$BACKUP_A" 2>&1), theirs: $(head -c 40 "$BACKUP_PEER" 2>&1))"
 fi
 # A failed backup copy must be CONFESSED, not advertised as a recovery path.
 rm -f "$BACKUP_A"
@@ -1772,7 +1941,7 @@ fi
 
 echo "== 44c. a FUTURE heading stamp cannot buy permanent freshness =="
 # FOUND ON THE LIVE DOCUMENT, not imagined: driving this code against the real
-# .agent/main/STATE.md for the first time showed a peer's hand-written heading
+# main-branch STATE.md for the first time showed a peer's hand-written heading
 # stamped 101 minutes AHEAD -- almost certainly local time written with a Z. A
 # trusted future stamp makes that section permanently fresh, which is worse
 # than the unstamped fallback it would otherwise have taken, because the entire
@@ -1786,8 +1955,8 @@ say "answer
 ## Remaining
 | #7 | thing | pending, me |"
 task 7 pending "thing"
-age_state deadbeef -60                                           # stamped an hour AHEAD
-touch -d '40 minutes ago' "$BASE/proj/.agent/agenttest/STATE.md" # the honest age
+age_state deadbeef -60                                                   # stamped an hour AHEAD
+touch -d '40 minutes ago' "$BASE/proj/agent/agenttest/deadbeef/STATE.md" # the honest age
 check "44c FIRE: a future-stamped section falls back to mtime and goes stale" block "STATE.md is stale"
 # CONTROL 1: a stamp inside the tolerated skew is still TRUSTED, so this is a
 # rule about wrong clocks rather than a blanket distrust of the future.
@@ -1796,7 +1965,7 @@ check "44c CONTROL: a stamp 2 minutes ahead is inside the skew and stays fresh" 
 # CONTROL 2: and the fallback is really the mtime, not a hardcoded stale. Same
 # future stamp, fresh file: allowed.
 age_state deadbeef -60
-touch -d '1 minute ago' "$BASE/proj/.agent/agenttest/STATE.md"
+touch -d '1 minute ago' "$BASE/proj/agent/agenttest/deadbeef/STATE.md"
 task 8 pending "moved"
 newturn
 say "answer
@@ -3104,8 +3273,9 @@ ARITY = {
     "V_NO_POLL_CRON": ("m", "m"), "V_NO_WAITER": (2, "p", "m"),
     "N_WAITER_NUDGE": (2, "p", "m", 60), "V_MANY_WORK_CRONS": (2, "l"),
     "V_MANY_POLL_CRONS": (2,),
-    "V_AGENT_STATE": ("b", "s", "", 250, 4000, "m"),
-    "V_AGENT_BOOTSTRAP": ("b", "b", "b"), "V_AGENT_STILL_ABSENT": ("b",),
+    "V_AGENT_STATE": ("b", "me", "s", "", 250, 4000, "b", "m"),
+    "V_AGENT_BOOTSTRAP": ("b", "me", "b", "me", "b"),
+    "V_AGENT_STILL_ABSENT": ("b", "me"),
     "N_AGENT_BLIND": ("r",), "CLI_STATE_REFUSED": ("v", "d", 250, 4000),
     "N_AGENT_PEERS": ("br", "rows"), "CLI_STATE_WHOLE_DOC": ("m",),
     "N_UNREAD_REPORTS": (2, "b", "rows", "p", "p", "m"),
@@ -3115,7 +3285,7 @@ ARITY = {
     "CLI_BRIEF_LOOKS_LIKE_ID": ("v",),
     "V_JUDGE_ORDER_REJECTED": ("v", "v"),
     "V_LADDER_INVESTIGATE_GONE": ("rows", "facts", "m", "m"),
-    "CLI_STATE_NO_DIR": ("b", "b", "b"), "CLI_STATE_NO_BRANCH": ("r",),
+    "CLI_STATE_NO_DIR": ("b", "me", "b", "me", "b"), "CLI_STATE_NO_BRANCH": ("r",),
     "CLI_STATE_USAGE": (), "CLI_STATE_NO_BODY": ("x", "p"),
     "V_DOCS_DRIFT": (3, "s", "d"), "V_UNCONFIRMED": ("#1",),
     "V_BROKEN_SCHEDULE": (2, "rows"),
@@ -3151,7 +3321,7 @@ ARITY = {
     "CLI_TRIAGE_SELF": {"id": "i", "me": "m", "why": "", "context": "c",
                         "branch": "b"},
     "TRIAGE_PROMPT": {"finding": "f", "context": "c"},
-    # v20: the /handoff checklist gate (wl_checklist, docs/<slug>/CHECKLIST.md).
+    # v20: the /handoff checklist gate (wl_checklist, agent/programs/<slug>/CHECKLIST.md).
     "V_CL_SHAPE": ("d", "rows"), "V_CL_UNREADABLE": ("e",),
     "V_CL_PRODUCING": ("s", 0, 1, "rows", "d"), "V_CL_PRODUCING_DONE": ("s", "d"),
     "V_CL_FLIP": ("d", "executing", "rows", "d"), "V_CL_WAVES": ("s", "d", "rows"),
@@ -4678,7 +4848,7 @@ else
     fail "an unfired blocking rung was swallowed by the fast path"
 fi
 
-echo "== 153a. T1/T2: a missing .agent/<branch>/ blocks with the bootstrap, ONCE as a wall =="
+echo "== 153a. T1/T2: a missing agent/<branch>/<me>/ blocks with the bootstrap, ONCE as a wall =="
 # Decision 5: block with the exact bootstrap commands, NEVER auto-create (the
 # RULES.md copy-forward is a judgement call a hook must not make). The WALL is
 # shown once per branch per session, latched on agent_boot_told; the follow-up
@@ -4690,16 +4860,16 @@ say "answer
 ## Remaining
 - #7 thing (pending)"
 task 7 pending "thing"
-rm -rf "$BASE/proj/.agent/agenttest"
+rm -rf "$BASE/proj/agent/agenttest/deadbeef"
 OUT="$(run)"
-if grep -qF '"decision": "block"' <<<"$OUT" && grep -qF "mkdir -p .agent/agenttest" <<<"$OUT" &&
+if grep -qF '"decision": "block"' <<<"$OUT" && grep -qF "mkdir -p agent/agenttest/deadbeef" <<<"$OUT" &&
     grep -qF "RULES.md" <<<"$OUT"; then
-    pass "T1 FIRE: a missing branch dir blocks with the exact bootstrap commands"
+    pass "T1 FIRE: a missing session dir blocks with the exact bootstrap commands"
 else
     fail "T1: bootstrap wall absent or wrong: ${OUT:0:200}"
 fi
-if [[ -d "$BASE/proj/.agent/agenttest" ]]; then
-    fail "T1: the hook AUTO-CREATED the branch dir (decision 5 violated)"
+if [[ -d "$BASE/proj/agent/agenttest/deadbeef" ]]; then
+    fail "T1: the hook AUTO-CREATED the session dir (decision 5 violated)"
 else
     pass "T1: the hook did not auto-create the directory"
 fi
@@ -4710,7 +4880,7 @@ say "answer
 - #7 thing (pending)"
 OUT2="$(run)"
 if grep -qF '"decision": "block"' <<<"$OUT2" && grep -qF "still absent" <<<"$OUT2" &&
-    ! grep -qF "mkdir -p .agent/agenttest" <<<"$OUT2"; then
+    ! grep -qF "mkdir -p agent/agenttest/deadbeef" <<<"$OUT2"; then
     pass "T2: the second stop still blocks but the wall is not repeated"
 else
     fail "T2: second-stop shape wrong: ${OUT2:0:200}"
@@ -4718,7 +4888,7 @@ fi
 # SILENT control: with the dir restored and a fresh STATE.md the wall is gone.
 # The world is moved first (task 8) or the third consecutive unmoved stop
 # would trip the STUCK detector and this control would test the wrong gate.
-mkdir -p "$BASE/proj/.agent/agenttest"
+mkdir -p "$BASE/proj/agent/agenttest/deadbeef"
 task 8 pending "moved"
 hand_now
 newturn
@@ -4744,8 +4914,8 @@ say "answer
 ## Remaining
 - #7 thing (pending)"
 task 7 pending "thing"
-printf '%s' "$STATE_BODY" >"$BASE/proj/.agent/agenttest/STATE.md" # planted: NO signature banked
-touch -d '30 minutes ago' "$BASE/proj/.agent/agenttest/STATE.md"
+printf '%s' "$STATE_BODY" >"$BASE/proj/agent/agenttest/deadbeef/STATE.md" # planted: NO signature banked
+touch -d '30 minutes ago' "$BASE/proj/agent/agenttest/deadbeef/STATE.md"
 check "T7a: an unsigned 30-minute document is ADOPTED, not rewritten" allow ""
 if python3 -c "
 import json, sys
@@ -4764,8 +4934,8 @@ say "answer
 ## Remaining
 - #7 thing (pending)"
 task 7 pending "thing"
-printf '%s' "$STATE_BODY" >"$BASE/proj/.agent/agenttest/STATE.md"
-touch -d '90 minutes ago' "$BASE/proj/.agent/agenttest/STATE.md"
+printf '%s' "$STATE_BODY" >"$BASE/proj/agent/agenttest/deadbeef/STATE.md"
+touch -d '90 minutes ago' "$BASE/proj/agent/agenttest/deadbeef/STATE.md"
 check "T7b FIRE: an unsigned 90-minute document is past the adopt horizon" block "STATE.md is stale"
 newturn
 say "answer
@@ -4807,8 +4977,8 @@ say "answer
 ## Remaining
 - #7 thing (pending)"
 task 7 pending "thing"
-printf '%s' "$STATE_BODY" >"$BASE/proj/.agent/agenttest/STATE.md"
-touch -d '30 minutes ago' "$BASE/proj/.agent/agenttest/STATE.md"
+printf '%s' "$STATE_BODY" >"$BASE/proj/agent/agenttest/deadbeef/STATE.md"
+touch -d '30 minutes ago' "$BASE/proj/agent/agenttest/deadbeef/STATE.md"
 check "153b2 SETUP: the document is adopted and its signature banked" allow ""
 # A DIFFERENT session adds its own item. Peer bookkeeping, not my world.
 reqcli --add cafe1234 "peer item nobody else owns" >/dev/null
@@ -4876,7 +5046,8 @@ fi
 
 echo "== 153d. T10/T11: trap TITLES feed the judge; bodies and ### never do =="
 setup
-printf '# Traps\n\n## Real trap title one\n\nsecret body line\n\n### a sub-heading\n\n## Second title\n' >"$BASE/proj/.agent/TRAPS.md"
+mkdir -p "$BASE/proj/docs/agent-reference"
+printf '# Traps\n\n## Real trap title one\n\nsecret body line\n\n### a sub-heading\n\n## Second title\n' >"$BASE/proj/docs/agent-reference/TRAPS.md"
 OUT=$(
     python3 - "$(dirname "$HOOK")" "$BASE/proj" <<'PYEOF'
 import sys
@@ -6952,7 +7123,7 @@ BG='[]'
 # v16 (cases 164+): the fix-in-session rule. A finding is fixed by the session
 # that finds it, so --triage answers the size question and hands back the exact
 # next command, --tick refuses a completion whose only evidence is an issue
-# reference, and docs/agent/<branch>/PLAN-*.md becomes a durable design record
+# reference, and agent/<branch>/PLAN-*.md becomes a durable design record
 # the SessionStart and PostCompact hooks hand back. Every FIRE case is paired
 # with a SILENT control differing by one planted fact.
 # ---------------------------------------------------------------------------
@@ -7004,7 +7175,7 @@ EVENTS="${WL%.md}.events.jsonl"
 OUT=$(triage off deadbeef "the fork path copies .env into the child repo" 2>&1)
 RC=$?
 if [[ "$RC" -eq 0 ]] && grep -qF "INLINE" <<<"$OUT" && grep -qF "PLAN+SUBAGENT" <<<"$OUT" &&
-    grep -qF "OPERATOR-ONLY" <<<"$OUT" && grep -qF "docs/agent/" <<<"$OUT"; then
+    grep -qF "OPERATOR-ONLY" <<<"$OUT" && grep -qF "agent/agenttest/PLAN-<slug>.md" <<<"$OUT"; then
     pass "a judge-off triage hands back all three recipes and exits 0"
 else
     fail "degraded triage wrong (rc=$RC): ${OUT:0:300}"
@@ -7053,13 +7224,13 @@ shim_judge_out '{"verdict":"plan-subagent","reason":"multi-file","plan_slug":"fi
 OUT=$(triage on deadbeef "renet forks inherit the parent buildkit session" 2>&1)
 RC=$?
 if [[ "$RC" -eq 0 ]] && grep -qF "PLAN+SUBAGENT" <<<"$OUT" &&
-    grep -qF "docs/agent/agenttest/PLAN-fix-x.md" <<<"$OUT"; then
+    grep -qF "agent/agenttest/PLAN-fix-x.md" <<<"$OUT"; then
     pass "a plan-subagent verdict prints the prefilled plan path and the recipe"
 else
     fail "plan-subagent recipe wrong (rc=$RC): ${OUT:0:300}"
 fi
 if grep -q '"ev":"triage"' "$EVENTS" && grep -qF '"v":"plan-subagent"' "$EVENTS" &&
-    grep -qF '"plan":"docs/agent/agenttest/PLAN-fix-x.md"' "$EVENTS"; then
+    grep -qF '"plan":"agent/agenttest/PLAN-fix-x.md"' "$EVENTS"; then
     pass "the verdict is RECORDED with its plan path"
 else
     fail "triage event missing or wrong: $(tail -c 300 "$EVENTS")"
@@ -7089,21 +7260,21 @@ EVENTS="${WL%.md}.events.jsonl"
 NOW=$(date -u +%Y-%m-%dT%H:%M:%SZ)
 printf '{"ev":"add","id":"deadbee1","at":"%s","by":"deadbeef","s":" ","o":"deadbeef","t":"forks leak the parent secrets"}\n' \
     "$NOW" >>"$EVENTS"
-printf '{"ev":"triage","id":"deadbee1","at":"%s","by":"deadbeef","v":"plan-subagent","reason":"multi-file","plan":"docs/agent/agenttest/PLAN-big.md"}\n' \
+printf '{"ev":"triage","id":"deadbee1","at":"%s","by":"deadbeef","v":"plan-subagent","reason":"multi-file","plan":"agent/agenttest/PLAN-big.md"}\n' \
     "$NOW" >>"$EVENTS"
 OUT=$(reqcli --list --open deadbeef 2>&1)
-if grep -qF "TRIAGED BIG, plan file missing: docs/agent/agenttest/PLAN-big.md" <<<"$OUT" &&
+if grep -qF "TRIAGED BIG, plan file missing: agent/agenttest/PLAN-big.md" <<<"$OUT" &&
     grep -qF -- "--triage deadbeef --id deadbee1" <<<"$OUT"; then
     pass "a big finding whose design was never written is demanded, with both exits"
 else
     fail "the plan follow-through never fired: ${OUT:0:300}"
 fi
-mkdir -p "$BASE/proj/docs/agent/agenttest"
+mkdir -p "$BASE/proj/agent/agenttest"
 printf '# PLAN: big\nStatus: draft\nOwner: t\nUpdated: 2026-07-31\n' \
-    >"$BASE/proj/docs/agent/agenttest/PLAN-big.md"
+    >"$BASE/proj/agent/agenttest/PLAN-big.md"
 OUT=$(reqcli --list --open deadbeef 2>&1)
 if ! grep -qF "TRIAGED BIG" <<<"$OUT" &&
-    grep -qF "plan: docs/agent/agenttest/PLAN-big.md" <<<"$OUT"; then
+    grep -qF "plan: agent/agenttest/PLAN-big.md" <<<"$OUT"; then
     pass "168 CONTROL: writing the plan silences the demand and advertises the path"
 else
     fail "168 CONTROL: the probe does not read the disk: ${OUT:0:300}"
@@ -7154,23 +7325,23 @@ fi
 
 echo "== 170. SessionStart lists non-done plans, with NO design-docs dir =="
 setup
-mkdir -p "$BASE/proj/docs/agent/agenttest"
+mkdir -p "$BASE/proj/agent/agenttest"
 printf '# PLAN: a\nStatus: draft\nOwner: t\nUpdated: 2026-07-31\n\nbody\n' \
-    >"$BASE/proj/docs/agent/agenttest/PLAN-a.md"
+    >"$BASE/proj/agent/agenttest/PLAN-a.md"
 printf '# PLAN: b\nStatus: done\nOwner: t\nUpdated: 2026-07-31\n\nbody\n' \
-    >"$BASE/proj/docs/agent/agenttest/PLAN-b.md"
+    >"$BASE/proj/agent/agenttest/PLAN-b.md"
 printf '# PLAN: c\nOwner: t\nUpdated: 2026-07-31\n\nbody\n' \
-    >"$BASE/proj/docs/agent/agenttest/PLAN-c.md"
+    >"$BASE/proj/agent/agenttest/PLAN-c.md"
 out="$(printf '{"session_id":"%s","cwd":"%s"}' "$SID" "$BASE/proj" |
     TMPDIR="$BASE/tmp" CLAUDE_PROJECT_DIR="$BASE/proj" WORKLIST_AGENT_BRANCH=agenttest \
         python3 "$HOOK" --session-start 2>/dev/null)"
-if grep -qF "docs/agent/agenttest/PLAN-a.md [draft]" <<<"$out" &&
+if grep -qF "agent/agenttest/PLAN-a.md [draft]" <<<"$out" &&
     ! grep -qF "PLAN-b.md" <<<"$out" && grep -qF "1 done or superseded plan(s)" <<<"$out"; then
     pass "draft plans are listed, executed ones collapse to a count"
 else
     fail "the plans listing is wrong: ${out:0:400}"
 fi
-if grep -qF "docs/agent/agenttest/PLAN-c.md [UNKNOWN]" <<<"$out"; then
+if grep -qF "agent/agenttest/PLAN-c.md [UNKNOWN]" <<<"$out"; then
     pass "a plan with no readable Status line surfaces LOUDLY as [UNKNOWN]"
 else
     fail "an unparseable Status was hidden: ${out:0:400}"
@@ -7185,7 +7356,10 @@ else
     fail "170 CONTROL: the two blocks are still coupled: ${out:0:400}"
 fi
 # And the reverse: with NEITHER, SessionStart stays silent as it always did.
+# The plans left docs/ when the tree moved, so removing docs/ alone no longer
+# removes them -- and this control would then fail for the right reason.
 rm -rf "$BASE/proj/docs"
+rm -f "$BASE/proj/agent/agenttest"/PLAN-*.md
 out="$(printf '{"session_id":"%s","cwd":"%s"}' "$SID" "$BASE/proj" |
     TMPDIR="$BASE/tmp" CLAUDE_PROJECT_DIR="$BASE/proj" WORKLIST_AGENT_BRANCH=agenttest \
         python3 "$HOOK" --session-start 2>/dev/null)"
@@ -7198,11 +7372,11 @@ fi
 echo "== 171. PostCompact hands back the executing plan's ## Status cursor =="
 setup
 hand_now
-mkdir -p "$BASE/proj/docs/agent/agenttest"
+mkdir -p "$BASE/proj/agent/agenttest"
 printf '# PLAN: exec\nStatus: executing\nOwner: t\nUpdated: 2026-07-31\n\n## Status\n\nMARKER_EXEC_CURSOR wave two landed, wave three is next.\n\n## Detail\n\nnot the cursor\n' \
-    >"$BASE/proj/docs/agent/agenttest/PLAN-exec.md"
+    >"$BASE/proj/agent/agenttest/PLAN-exec.md"
 printf '# PLAN: old\nStatus: done\nOwner: t\nUpdated: 2026-07-31\n\n## Status\n\nMARKER_DONE_PLAN must never be handed back.\n' \
-    >"$BASE/proj/docs/agent/agenttest/PLAN-old.md"
+    >"$BASE/proj/agent/agenttest/PLAN-old.md"
 out="$(printf '{"session_id":"%s","cwd":"%s"}' "$SID" "$BASE/proj" |
     TMPDIR="$BASE/tmp" CLAUDE_PROJECT_DIR="$BASE/proj" WORKLIST_AGENT_BRANCH=agenttest \
         python3 "$HOOK" --post-compact 2>/dev/null)"
@@ -7994,10 +8168,10 @@ echo "== 182. SessionStart source=compact does NOT re-inject the docs blurb =="
 # handle_post_compact's job (cases 20, 21, 171): it already re-points at the
 # design docs AND hands back the branch's plans, so SessionStart must stay quiet.
 setup
-mkdir -p "$BASE/proj/docs/ci-overhaul" "$BASE/proj/docs/agent/agenttest"
+mkdir -p "$BASE/proj/docs/ci-overhaul" "$BASE/proj/agent/agenttest"
 printf '# doc\nbody\n' >"$BASE/proj/docs/ci-overhaul/01-design.md"
 printf '# PLAN: a\nStatus: draft\nOwner: t\nUpdated: 2026-08-04\n\nbody\n' \
-    >"$BASE/proj/docs/agent/agenttest/PLAN-a.md"
+    >"$BASE/proj/agent/agenttest/PLAN-a.md"
 ss_out() { # ss_out <source-json-fragment>
     printf '{"session_id":"%s","cwd":"%s","hook_event_name":"SessionStart"%s}' \
         "$SID" "$BASE/proj" "$1" |
@@ -8818,7 +8992,7 @@ echo "== 191. root resolution must not walk into a repo NESTED in the repo =="
 # (private/renet) and gitignored non-submodule siblings (private/growth). Every
 # root resolution started from that cwd, so project_root() stopped at the NESTED
 # repo and the branch check read ITS branch: a session on 0804-1 was ordered to
-# bootstrap .agent/main/ because private/growth happened to be on main.
+# bootstrap agent/main/ because private/growth happened to be on main.
 #
 # CONTROL FIRST, and it is the pre-fix expression itself rather than a mutation:
 # if `event.cwd or getcwd()` does NOT resolve to the nested repo on this
@@ -8936,7 +9110,7 @@ else
 fi
 
 # ---------------------------------------------------------------------------
-# 193-203 v20: the /handoff checklist gate (docs/<slug>/CHECKLIST.md).
+# 193-203 v20: the /handoff checklist gate (agent/programs/<slug>/CHECKLIST.md).
 #
 # THE GAP THESE PIN: /handoff wrote a design suite and then TOLD the next
 # session, in prose inside PROMPT.md, to seed the worklist. Prose gates
@@ -8948,9 +9122,13 @@ fi
 # case below is paired with a clean-fixture control, because a gate nobody has
 # watched stay silent is a gate nobody knows fires for the right reason.
 
-clfile() { # clfile <slug>  -- body on stdin, written to docs/<slug>/CHECKLIST.md
-    mkdir -p "$BASE/proj/docs/$1"
-    cat >"$BASE/proj/docs/$1/CHECKLIST.md"
+clfile() { # clfile <slug>  -- body on stdin, written to agent/programs/<slug>/CHECKLIST.md
+    # Follows wl_checklist.py's glob, which moved out of docs/ with the rest of
+    # the agent working tree. Left behind, these fixtures write somewhere the
+    # gate no longer looks and every case below passes over an empty scan --
+    # which is why case 193 exists to prove the silence is cheap, not dead.
+    mkdir -p "$BASE/proj/agent/programs/$1"
+    cat >"$BASE/proj/agent/programs/$1/CHECKLIST.md"
 }
 
 cldeliver() { # cldeliver <relpath> [content] -- a deliverable file under the repo
@@ -8969,7 +9147,7 @@ brief_now
 hand_now
 OUT="$(run)"
 if ! grep -qi "handoff" <<<"$OUT" && ! grep -qF "CHECKLIST" <<<"$OUT"; then
-    pass "193: no docs/<slug>/CHECKLIST.md means not one word about handoffs"
+    pass "193: no agent/programs/<slug>/CHECKLIST.md means not one word about handoffs"
 else
     fail "193: the gate talked about checklists that do not exist: ${OUT:0:300}"
 fi
@@ -8985,7 +9163,7 @@ Owner: deadbeef
 - [ ] w1 Wave A: wire the thing
 MD
 OUT="$(run)"
-if grep -qF "docs/demo/CHECKLIST.md" <<<"$OUT" && grep -qi "handoff" <<<"$OUT"; then
+if grep -qF "agent/programs/demo/CHECKLIST.md" <<<"$OUT" && grep -qi "handoff" <<<"$OUT"; then
     pass "193 CONTROL-FOR-THE-CONTROL: one planted checklist and the same fixture speaks"
 else
     fail "193 CONTROL: the silence above was a DEAD gate, not a cheap one: ${OUT:0:300}"
@@ -9064,7 +9242,7 @@ echo "== 195b. the same checklist, owner's transcript DEAD: adopt or supersede =
 touch -d '-48 hours' "$BASE/cafe0000-dead.jsonl"
 OUT="$(run)"
 if grep -qF "adopt it by editing the 'Owner:' line" <<<"$OUT" &&
-    grep -qF "docs/demo/CHECKLIST.md" <<<"$OUT" && grep -qF "superseded" <<<"$OUT"; then
+    grep -qF "agent/programs/demo/CHECKLIST.md" <<<"$OUT" && grep -qF "superseded" <<<"$OUT"; then
     pass "195b: a dead owner turns the advisory into an adoption offer"
 else
     fail "195b: no adoption hint for an abandoned handoff: ${OUT:0:500}"
@@ -9194,7 +9372,7 @@ IID=$(reqcli --add deadbeef "cl:demo/w1 Wave A: wire the thing" | grep -oE '#[0-
 reqcli --tick deadbeef "$IID" "wave A landed, suite run green, exit 0" >/dev/null
 OUT="$(run)"
 if grep -qF "w1 DONE-BUT-UNTICKED" <<<"$OUT" && grep -qF "#$IID" <<<"$OUT" &&
-    grep -qF "tick '- [x] w1' in docs/demo/CHECKLIST.md" <<<"$OUT"; then
+    grep -qF "tick '- [x] w1' in agent/programs/demo/CHECKLIST.md" <<<"$OUT"; then
     pass "198: a ticked store item with an unticked box is called out with the box to tick"
 else
     fail "198: the settled wave did not demand its tick: ${OUT:0:500}"
@@ -9373,8 +9551,8 @@ if grep -qF "is MALFORMED" <<<"$OUT" && [[ "$NROWS" -ge 3 ]]; then
 else
     fail "200: shape diagnosis is thin (rows=$NROWS): ${OUT:0:600}"
 fi
-if grep -qF "docs/broken/CHECKLIST.md is MALFORMED" <<<"$OUT" &&
-    ! grep -qF "docs/good/CHECKLIST.md" <<<"$OUT"; then
+if grep -qF "agent/programs/broken/CHECKLIST.md is MALFORMED" <<<"$OUT" &&
+    ! grep -qF "agent/programs/good/CHECKLIST.md" <<<"$OUT"; then
     pass "200 CONTROL: the clean checklist beside it is never mentioned"
 else
     fail "200 CONTROL: the shape verdict smeared onto a healthy file: ${OUT:0:600}"
@@ -9498,9 +9676,9 @@ echo "== 202. checklists_sig() is STAT-ONLY, and the unreadable file proves it =
 # for the reason case 204 pins: one unreadable checklist must not evict a
 # second one from the rotation.
 setup
-mkdir -p "$BASE/proj/docs/locked"
-printf 'Status: executing\n' >"$BASE/proj/docs/locked/CHECKLIST.md"
-chmod 000 "$BASE/proj/docs/locked/CHECKLIST.md"
+mkdir -p "$BASE/proj/agent/programs/locked"
+printf 'Status: executing\n' >"$BASE/proj/agent/programs/locked/CHECKLIST.md"
+chmod 000 "$BASE/proj/agent/programs/locked/CHECKLIST.md"
 OUT=$(
     cd "$(dirname "$HOOK")" && CLROOT="$BASE/proj" python3 - <<'PYEOF'
 import os
@@ -9510,7 +9688,7 @@ sys.path.insert(0, ".")
 import wl_checklist as CL
 
 root = os.environ["CLROOT"]
-path = os.path.join(root, "docs", "locked", "CHECKLIST.md")
+path = os.path.join(root, "agent", "programs", "locked", "CHECKLIST.md")
 try:
     open(path).read()
     print("READABLE yes")
@@ -9522,7 +9700,7 @@ print("V", v[0][0], v[0][1], live)
 print("TEXT", "THIS IS A HOOK BUG" in v[0][2])
 PYEOF
 )
-chmod 644 "$BASE/proj/docs/locked/CHECKLIST.md"
+chmod 644 "$BASE/proj/agent/programs/locked/CHECKLIST.md"
 if grep -q "^READABLE no$" <<<"$OUT"; then
     pass "202 CONTROL: the fixture really is unreadable, so the leg below means something"
 else
@@ -9538,7 +9716,7 @@ if grep -q "^V cl-shape:locked True 1$" <<<"$OUT" && grep -q "^TEXT True$" <<<"$
 else
     fail "202: an unreadable checklist did not fail closed: ${OUT:0:300}"
 fi
-rm -f "$BASE/proj/docs/locked/CHECKLIST.md"
+rm -f "$BASE/proj/agent/programs/locked/CHECKLIST.md"
 
 echo "== 203. SessionStart hands a new session the live checklists =="
 setup
@@ -9559,7 +9737,7 @@ out="$(printf '{"session_id":"%s","cwd":"%s"}' "$SID" "$BASE/proj" |
     TMPDIR="$BASE/tmp" CLAUDE_PROJECT_DIR="$BASE/proj" WORKLIST_AGENT_BRANCH=agenttest \
         python3 "$HOOK" --session-start 2>/dev/null)"
 if grep -qF "LIVE HANDOFF CHECKLISTS" <<<"$out" &&
-    grep -qF "docs/demo/CHECKLIST.md [executing] owner=cafe0000 deliverables 1/1 verified, waves 1/2 settled" <<<"$out"; then
+    grep -qF "agent/programs/demo/CHECKLIST.md [executing] owner=cafe0000 deliverables 1/1 verified, waves 1/2 settled" <<<"$out"; then
     pass "203: the listing carries status, owner and both progress fractions"
 else
     fail "203: SessionStart did not hand back the live checklist: ${out:0:400}"
@@ -9634,8 +9812,8 @@ Status: executing
 MD
 OUT1="$(run)"
 OUT2="$(run)"
-if grep -qF "handoff 'alpha' (docs/alpha/CHECKLIST.md)" <<<"$OUT1$OUT2" &&
-    grep -qF "handoff 'beta' (docs/beta/CHECKLIST.md)" <<<"$OUT1$OUT2"; then
+if grep -qF "handoff 'alpha' (agent/programs/alpha/CHECKLIST.md)" <<<"$OUT1$OUT2" &&
+    grep -qF "handoff 'beta' (agent/programs/beta/CHECKLIST.md)" <<<"$OUT1$OUT2"; then
     pass "204: two uncovered waves in one check class are both itemized across two stops"
 else
     fail "204: one handoff starved the other in the rotation: 1=${OUT1:0:300} 2=${OUT2:0:300}"
@@ -9682,8 +9860,8 @@ Owner: cafe0000
 - [ ] w1 Wave A: wire the alpha thing
 MD
 OUT="$(run)"
-if grep -qF "docs/alpha/CHECKLIST.md is 'Status: producing'" <<<"$OUT" &&
-    ! grep -qF "docs/beta/CHECKLIST.md" <<<"$OUT"; then
+if grep -qF "agent/programs/alpha/CHECKLIST.md is 'Status: producing'" <<<"$OUT" &&
+    ! grep -qF "agent/programs/beta/CHECKLIST.md" <<<"$OUT"; then
     pass "205 CONTROL: one foreign handoff, one advisory, and beta's needle can be absent"
 else
     fail "205 CONTROL: the single-checklist baseline is not what it claims: ${OUT:0:400}"
@@ -9717,8 +9895,8 @@ Owner: cafe0000
 MD
 OUT="$(run)"
 RC=$?
-if [[ "$RC" -eq 0 ]] && grep -qF "docs/alpha/CHECKLIST.md is 'Status: producing'" <<<"$OUT" &&
-    grep -qF "docs/beta/CHECKLIST.md is 'Status: producing'" <<<"$OUT"; then
+if [[ "$RC" -eq 0 ]] && grep -qF "agent/programs/alpha/CHECKLIST.md is 'Status: producing'" <<<"$OUT" &&
+    grep -qF "agent/programs/beta/CHECKLIST.md is 'Status: producing'" <<<"$OUT"; then
     pass "205: both foreign handoffs ride the report; neither advisory overwrites the other"
 else
     fail "205: one foreign advisory replaced the other in the queue: ${OUT:0:600}"
@@ -10499,14 +10677,14 @@ say "answer
 - stuff"
 brief_now
 hand_now
-mkdir -p "$BASE/proj/docs/agent/agenttest"
-cat >"$BASE/proj/docs/agent/agenttest/PLAN-thing.md" <<'MD'
+mkdir -p "$BASE/proj/agent/agenttest"
+cat >"$BASE/proj/agent/agenttest/PLAN-thing.md" <<'MD'
 # PLAN: the thing
 Status: executing
 MD
 # Backdate the plan, then move MY work after it. The trigger is the work, never
 # the clock: a plan a week old on a branch where nothing moved is accurate.
-touch -d '-2 hours' "$BASE/proj/docs/agent/agenttest/PLAN-thing.md"
+touch -d '-2 hours' "$BASE/proj/agent/agenttest/PLAN-thing.md"
 # A TICKED item, deliberately. It stamps `upd` (which is what "my work moved"
 # reads) without leaving anything open, so plan-drift is the ONLY rotating check
 # outstanding. The focused block surfaces exactly one of those, so an open item
@@ -10533,12 +10711,12 @@ say "answer
 - stuff"
 brief_now
 hand_now
-mkdir -p "$BASE/proj/docs/agent/agenttest"
-cat >"$BASE/proj/docs/agent/agenttest/PLAN-thing.md" <<'MD'
+mkdir -p "$BASE/proj/agent/agenttest"
+cat >"$BASE/proj/agent/agenttest/PLAN-thing.md" <<'MD'
 # PLAN: the thing
 Status: executing
 MD
-touch -d '-2 hours' "$BASE/proj/docs/agent/agenttest/PLAN-thing.md"
+touch -d '-2 hours' "$BASE/proj/agent/agenttest/PLAN-thing.md"
 PID="$(reqcli --add deadbeef 'one small thing' | grep -o '#[0-9a-f]*' | head -1 | tr -d '#')"
 reqcli --tick deadbeef "$PID" "landed, exit 0" >/dev/null
 OUT="$(run)"
@@ -10551,7 +10729,7 @@ fi
 echo "== 215b. CONTROL: the same plan, touched AFTER the work, is silent =="
 # Without this the check could be firing on the mere existence of a plan file,
 # which would make it noise within a day.
-touch "$BASE/proj/docs/agent/agenttest/PLAN-thing.md"
+touch "$BASE/proj/agent/agenttest/PLAN-thing.md"
 newturn
 say "still working
 
@@ -10566,11 +10744,11 @@ fi
 
 echo "== 215c. CONTROL: a DONE plan is history and is never flagged =="
 # Demanding edits to history is how a check earns its way into being ignored.
-cat >"$BASE/proj/docs/agent/agenttest/PLAN-thing.md" <<'MD'
+cat >"$BASE/proj/agent/agenttest/PLAN-thing.md" <<'MD'
 # PLAN: the thing
 Status: done
 MD
-touch -d '-2 hours' "$BASE/proj/docs/agent/agenttest/PLAN-thing.md"
+touch -d '-2 hours' "$BASE/proj/agent/agenttest/PLAN-thing.md"
 newturn
 say "still working
 
@@ -10611,16 +10789,16 @@ say "answer
 - stuff"
 brief_now
 hand_now
-mkdir -p "$BASE/proj/docs/agent/agenttest"
-cat >"$BASE/proj/docs/agent/agenttest/PLAN-mystery.md" <<'MD'
+mkdir -p "$BASE/proj/agent/agenttest"
+cat >"$BASE/proj/agent/agenttest/PLAN-mystery.md" <<'MD'
 # PLAN: the mystery subject
 
 **Status (dated parenthetical): this shape does not parse**
 
 The work lives in pkg/chunkstore/pipeline_linux.go and pkg/chunkstore/pipeline_linux.go
-again, plus cmd/renet/backup_snapshot.go. A passing mention of docs/agent/README.md.
+again, plus cmd/renet/backup_snapshot.go. A passing mention of docs/agent-reference/ci-gates.md.
 MD
-touch -d '-2 hours' "$BASE/proj/docs/agent/agenttest/PLAN-mystery.md"
+touch -d '-2 hours' "$BASE/proj/agent/agenttest/PLAN-mystery.md"
 for n in 1 2 3 4; do
     PID="$(reqcli --add deadbeef "work $n" | grep -o '#[0-9a-f]*' | head -1 | tr -d '#')"
     reqcli --tick deadbeef "$PID" "landed, exit 0" >/dev/null
@@ -10635,7 +10813,7 @@ fi
 echo "== 216b. CONTROL: the most-mentioned file leads, and the plan itself is never listed =="
 # A plan's own path is not a pointer to anywhere useful, and a file mentioned
 # once is a passing reference rather than the subject.
-if ! grep -qF "PLAN-mystery.md; opens" <<<"$OUT" && ! grep -qF "opens: docs/agent/README.md" <<<"$OUT"; then
+if ! grep -qF "PLAN-mystery.md; opens" <<<"$OUT" && ! grep -qF "opens: docs/agent-reference/ci-gates.md" <<<"$OUT"; then
     pass "216b CONTROL: self-reference excluded and ranking puts the subject first"
 else
     fail "216b CONTROL: bad pointer list: ${OUT:0:320}"
@@ -10644,13 +10822,13 @@ fi
 echo "== 216c. CONTROL: a plan with a READABLE status gets no orientation =="
 # The orientation is for UNKNOWN specifically. If it appeared on every row it
 # would just be noise on plans whose state is already clear.
-cat >"$BASE/proj/docs/agent/agenttest/PLAN-mystery.md" <<'MD'
+cat >"$BASE/proj/agent/agenttest/PLAN-mystery.md" <<'MD'
 # PLAN: the mystery subject
 Status: executing
 
 The work lives in pkg/chunkstore/pipeline_linux.go.
 MD
-touch -d '-2 hours' "$BASE/proj/docs/agent/agenttest/PLAN-mystery.md"
+touch -d '-2 hours' "$BASE/proj/agent/agenttest/PLAN-mystery.md"
 newturn
 say "still working
 

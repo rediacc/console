@@ -31,7 +31,7 @@ otherwise fires. If any planted defect passes, this gate declares itself broken
 and exits non-zero WITHOUT issuing a verdict on the real corpus. A verdict from
 an instrument that cannot fail is worse than no verdict.
 
-Design: docs/agent/backup-storage/PLAN-agent-hints-implementation.md (sections 5 and 6).
+Design: agent/backup-storage/PLAN-agent-hints-implementation.md (sections 5 and 6).
 """
 
 from __future__ import annotations

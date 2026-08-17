@@ -60,7 +60,7 @@ if [ "$MODE" = "soft" ]; then
             echo ""
             echo "Scheduled runs report external drift (new upstream releases,"
             echo "new advisories) as a warning instead of a red; the identical"
-            echo "failure blocks on a pull request. See docs/agent/ci-gates.md."
+            echo "failure blocks on a pull request. See docs/agent-reference/ci-gates.md."
         } >>"$GITHUB_STEP_SUMMARY"
     fi
     exit 0

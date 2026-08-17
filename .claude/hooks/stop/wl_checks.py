@@ -376,7 +376,7 @@ def bank_pollbase(worklist, session_id, sig, clsig="", cl_live=-1):
     moves and the battery returns on its own.
 
     v20 banks the handoff-checklist world beside it: `clsig` is the stat-only
-    signature of every docs/<slug>/CHECKLIST.md and `cl_live` is how many of
+    signature of every agent/programs/<slug>/CHECKLIST.md and `cl_live` is how many of
     them could block. The defaults are the FAIL-SAFE values, not neutral ones
     -- cl_live=-1 reads as "unknown, forfeit the silent path", so a future
     call site that forgets these arguments (and an old baseline written before
@@ -758,7 +758,7 @@ def docs_drift(root):
 # TRIAGED item is the only plan-related work on the stop path.
 #
 # HANDOFF CHECKLISTS ARE THE EXCEPTION, and deliberately so (v20,
-# wl_checklist). docs/<slug>/CHECKLIST.md IS the enforcement point, so the
+# wl_checklist). agent/programs/<slug>/CHECKLIST.md IS the enforcement point, so the
 # full Stop battery does read those files -- a gate that refuses to look at
 # its own subject is not a gate. The poll fast path still never opens one:
 # checklists_sig() is stat-only and its result is banked in the pollbase
@@ -1709,7 +1709,6 @@ def handle_post_compact(event):
             msg = M.CTX_POSTCOMPACT_MISSING % (
                 S.agent_state_path(root, branch, sid),
                 branch,
-                S.agent_session_slug(sid),
                 (sid or "unknown")[:8],
             )
         else:
@@ -3086,9 +3085,7 @@ def run_stop(event, event_ok, worklist, hook_file):
                 "agent-bootstrap",
                 True,
                 M.V_AGENT_BOOTSTRAP
-                % (
-                    (agent_branch, S.agent_session_slug(session_id)) * 3
-                ),
+                % ((agent_branch, S.agent_session_slug(session_id)) * 2 + (agent_branch,)),
             )
             state_doc["agent_boot_told"] = agent_branch
             S.save_state(worklist, session_id, state_doc)
@@ -3218,7 +3215,7 @@ def run_stop(event, event_ok, worklist, hook_file):
     dstate, ddrift, ddir = docs_drift(root)
     if dstate == "drifted":
         vadd("docs-drift", False, M.V_DOCS_DRIFT % (ddrift, " ".join(PROGRAM_SURFACE), ddir))
-    # ---- v20: the /handoff checklist gate (docs/<slug>/CHECKLIST.md) --------
+    # ---- v20: the /handoff checklist gate (agent/programs/<slug>/CHECKLIST.md) --------
     # WHY: /handoff wrote a design suite and INSTRUCTED, in prose, that the
     # next session seed the worklist. Prose gates nothing, so a handoff whose
     # PROMPT.md was ignored or compacted away dropped program work silently

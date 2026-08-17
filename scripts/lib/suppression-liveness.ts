@@ -1,7 +1,7 @@
 /**
  * Shared machinery for "is this suppression entry still load-bearing?".
  *
- * The BLOCKER convention (see docs/agent/suppressions.md) validates that every allowlist /
+ * The BLOCKER convention (see docs/agent-reference/suppressions.md) validates that every allowlist /
  * blocklist / override entry HAS a substantive reason. It does not validate
  * that the reason is still TRUE, or that the thing being suppressed still
  * exists. That gap is not theoretical: Electron was removed from the product,
