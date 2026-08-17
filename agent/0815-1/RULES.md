@@ -110,3 +110,22 @@ Five uncommitted hardenings that rode across the branch switch, all built
   REPORT must be answered (closes the account#78 hole).
 
 Everything else dirty in this tree belongs to other sessions.
+
+## The operator's WIP is in this tree. Do not commit it, do not discard it.
+
+Stated by the operator on 2026-08-17, during the `/pr-merge` hold: *"there are my
+local changes. do not commit or do not discard any of them. WIP"*.
+
+At the time that meant `docs/www-simplification/` and `agent/0815-1/e6500e92/`,
+both untracked, but the rule is about the INSTRUCTION and not that snapshot --
+the set will drift, so re-read `git status` rather than trusting this list.
+
+What follows from it, and none of it is new, only sharpened:
+
+- Never `git add -A`, never stage a bare directory. Name every path.
+- Never `git checkout`, `restore`, `stash` or `clean` a path you did not create.
+- Re-read `git diff --cached` immediately BEFORE every commit, not after. The
+  index is what gets committed, not the paths named on the command line.
+
+The pending `/pr-merge` runs `git checkout main`, which untracked files survive.
+The danger is not that step; it is a careless stage before it.
