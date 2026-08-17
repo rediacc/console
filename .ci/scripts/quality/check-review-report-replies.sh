@@ -106,11 +106,37 @@ echo "Checking review report replies for PR #${PR_NUMBER}..."
 # blip. gh_json retries twice and names the probe that failed.
 if ! COMMENTS=$(gh_json "issue comments for PR #${PR_NUMBER}" -- \
     api "repos/${REPO}/issues/${PR_NUMBER}/comments" --paginate); then
-    echo "" >&2
-    echo "Cannot certify that the review report was addressed, because the PR's" >&2
-    echo "issue comments could not be fetched. Failing closed rather than" >&2
-    echo "reporting a clean PR." >&2
-    exit 1
+    # A SECOND INSTRUMENT, not a softer verdict. The REST issues endpoint
+    # answers 404 for a PRIVATE repo under some token configurations: observed
+    # 2026-08-17 with a classic PAT carrying full `repo` scope, where
+    # repos/rediacc/{renet,account,elite}/issues/<n>[/comments] returned 404
+    # while the PUBLIC rediacc/console returned 200, and pulls/<n> plus the
+    # issues LIST worked on every one of them with the same token. That made
+    # this gate permanently UNRUNNABLE for every submodule PR -- and a gate that
+    # cannot run does not judge a merge, it blocks all of them.
+    #
+    # GraphQL reads the same comment thread and works in both cases. It is a
+    # different transport for identical data, so it cannot turn a failing PR
+    # into a passing one: if BOTH instruments fail we still fail closed below.
+    #
+    # Two shape notes, both already tolerated by the logic beneath: GraphQL
+    # reports the bot as `github-actions` where REST says `github-actions[bot]`
+    # (the filter uses contains(), so either matches), and `first: 100` caps a
+    # single page -- far above any real PR here, and an under-read can only
+    # HIDE a reply, i.e. fail closed, never invent one.
+    GQL='query($owner:String!,$name:String!,$number:Int!){repository(owner:$owner,name:$name){pullRequest(number:$number){comments(first:100){nodes{databaseId body createdAt author{login}}}}}}'
+    if ! RAW_GQL=$(gh_json "issue comments for PR #${PR_NUMBER} (graphql fallback)" -- \
+        api graphql -f query="$GQL" \
+        -f owner="${REPO%%/*}" -f name="${REPO##*/}" -F number="${PR_NUMBER}"); then
+        echo "" >&2
+        echo "Cannot certify that the review report was addressed, because the PR's" >&2
+        echo "issue comments could not be fetched by EITHER the REST issues endpoint" >&2
+        echo "or the GraphQL fallback. Failing closed rather than reporting a clean PR." >&2
+        exit 1
+    fi
+    COMMENTS=$(echo "$RAW_GQL" | jq -c '[.data.repository.pullRequest.comments.nodes[]
+        | {id: .databaseId, body: .body, created_at: .createdAt,
+           user: {login: (.author.login // "")}}]')
 fi
 
 # Newest finished report: posted by github-actions, carrying the report header.
