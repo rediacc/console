@@ -102,6 +102,23 @@ const ALLOWLISTED_DOMAINS = new Set([
   // host is unreachable from runner IPs (not fixable, hence this entry).
   // Same class as www.planalto.gov.br above.
   'azure.microsoft.com',
+  // VS Code Marketplace extension pages - BROKEN [503] on run 32000731266
+  // (Quality/Content), after this checker's own two retries and its last-chance
+  // GET. Measured rather than assumed, with this file's own browser User-Agent:
+  // HEAD answers 404 three times out of three (~0.2s) and GET times out at 20s
+  // three times out of three, while the domain ROOT answers 503 -- so this is
+  // the whole host refusing automated clients, not a dead item page. An
+  // unauthenticated GET without the UA returned 200 once and 503 twice in the
+  // same minute, which is the same refusal arriving non-deterministically.
+  // The URL itself is correct: ms-vscode-remote.remote-ssh is the canonical
+  // Remote-SSH extension id, referenced from the cli-contract i18n data in all
+  // 13 locales. It predates this wave; nothing in 09654cc45 touched those files.
+  // Same class as azure.microsoft.com above -- HEAD unimplemented AND the host
+  // unreachable from automated clients, and only the first half is fixable here.
+  // Recheck by removing this line: the liveness audit below warns when an
+  // allowlisted domain starts answering again, so the exemption cannot outlive
+  // its reason quietly.
+  'marketplace.visualstudio.com',
   // Own infrastructure -- only available after releases, not during CI
   'releases.rediacc.com',
   // SSL.com's reseller site. Surfaced by widening the scan to docs/. Measured
