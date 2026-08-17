@@ -1,20 +1,35 @@
-# `.agent/` — working notes for AI sessions
+# `agent/` — working notes for AI sessions
 
-Gitignored on purpose. These are working notes, not documentation: they must
-never land in a PR diff, never be policed by the CI gates, and never become a
+TRACKED, on purpose, and this note records the reversal because the tree used to
+be a gitignored `.agent/` for the opposite reason. Hiding them kept them out of
+PR diffs, and also kept every session's STATE.md out of review and out of CI's
+reach entirely. They are now committed, and the CI cost is paid by a zero-job
+`agent` module in `.ci/scripts/ci/scope-map.cjs` rather than by hiding the tree
+from git.
+
+The original worry stands and is worth restating: these must never become a
 committed lie the way `docs/ci-overhaul/` did when it drifted 44 commits behind
-the code it described.
+the code it described. Being tracked makes that failure MORE visible, not less --
+this very file was caught describing a layout the same change had replaced.
 
 ## Layout
 
-    .agent/
-      README.md          this file
-      TRAPS.md           shared across every branch. APPEND ONLY.
+    agent/
+      README.md              this file
       <branch>/
-        STATE.md         what is true NOW and what happens next. REWRITE.
-        RULES.md         settled facts and standing constraints. SHARPEN.
+        RULES.md             settled facts and standing constraints. SHARPEN.
+        PLAN-<slug>.md       durable designs; survive compaction.
+        <session-prefix>/
+          STATE.md           what is true NOW and what happens next. REWRITE.
+      programs/
+        <slug>/              /handoff program suites
       archive/
-        <branch>/        moved here when a branch merges
+        <branch>/            moved here when a branch merges
+
+`TRAPS.md` is NOT here. The standing lookup material -- TRAPS.md, ci-gates.md,
+suppressions.md -- lives in `docs/agent-reference/`, because it is reference
+prose that outlives every branch, while everything under `agent/` is per-branch
+or per-session state.
 
 ## The one idea
 
@@ -24,9 +39,9 @@ budget:
 
 | Lives for | Goes in | Discipline |
 |---|---|---|
-| Minutes | `<branch>/STATE.md` | Rewrite every time |
+| Minutes | `<branch>/<session>/STATE.md` | Rewrite every time |
 | The branch | `<branch>/RULES.md` | Sharpen; edit in place when wrong |
-| Forever | `TRAPS.md` | Append; never prune |
+| Forever | `docs/agent-reference/TRAPS.md` | Append; never prune |
 | History | `archive/<branch>/` | Frozen at merge |
 
 Measured on the old scheme: about 40% of every handover was standing rules being
@@ -53,11 +68,12 @@ timeless.
 
 ## Starting a new branch
 
-    mkdir -p .agent/<branch>
-    cp .agent/<previous-branch>/RULES.md .agent/<branch>/RULES.md   # then sharpen
-    # write a fresh STATE.md; never copy one forward
+    mkdir -p agent/<branch>
+    cp agent/<previous-branch>/RULES.md agent/<branch>/RULES.md   # then sharpen
+    # write a fresh STATE.md via `worklist.py --state`; never copy one forward
 
-`TRAPS.md` is shared, so it carries over by doing nothing. That is the point.
+`docs/agent-reference/TRAPS.md` is shared across every branch, so it carries over
+by doing nothing. That is the point.
 
 ## When a branch merges
 
@@ -80,17 +96,22 @@ timestamped sections:
 Rules that follow from it:
 
 - **You send ONE section body, never the document.** `worklist.py --state <me>`
-  reads your body from stdin and MERGES it in place under a lock; every other
-  section comes out byte-identical. The tool writes your `## SESSION` heading
-  and its timestamp for you, and refuses a body that already carries one.
+  reads your body from stdin and writes it to YOUR OWN file at
+  `agent/<branch>/<session-prefix>/STATE.md`. The tool writes your `## SESSION`
+  heading and its timestamp for you, and refuses a body that already carries one.
+  Since 2026-08-14 there is no shared document to merge into: the single file was
+  SPLIT precisely because a whole-file write could delete every peer's section at
+  once (`wl_store.agent_session_dir`). A peer cannot overwrite what it cannot
+  address.
 - **Freshness is yours alone.** The 15-minute clock reads YOUR section's
   heading stamp, so a peer writing cannot silence your obligation and your
   stale section cannot hide behind their fresh one. It is still world-keyed:
   an unchanged world never stales anything.
-- **A peer's section is never your problem and never yours to touch.** A
-  malformed peer section does not block you. Read theirs for cross-session
-  context (which files they own and you must not sweep); never rewrite or
-  delete one.
+- **A peer's STATE.md is never your problem and never yours to touch.** It is a
+  sibling DIRECTORY, and read-only to you by construction rather than by
+  etiquette (`wl_store.agent_peer_sections`). A malformed peer file does not
+  block you. Read theirs for cross-session context (which files they own and you
+  must not sweep); never rewrite or delete one.
 - **Dead sections are reaped, not lost.** A section whose owner has been silent
   for `WORKLIST_DEAD_HOURS` (24) is dropped by the next write, and its body is
   appended to `<worklist>.agentstate.reaped.<branch>.md` first. Your own
@@ -114,7 +135,7 @@ write to STATE.md is DENIED** by a PreToolUse guard
 (`block-agent-state-shape.sh`): `Write`, `Edit`, `MultiEdit` and
 `NotebookEdit` alike. A shape-valid whole-file `Write` destroys peers exactly
 as thoroughly as the old CLI did, and no shell guard can enforce a merge, so
-the one writer that can merge is the only writer. A missing `.agent/<branch>/`
+the one writer that owns the path is the only writer. A missing `agent/<branch>/`
 blocks once with the bootstrap commands and is never auto-created. A detached
 HEAD makes the check report-only (set `WORKLIST_AGENT_BRANCH` to re-enable it
-mid-rebase). The judge is fed the `## ` titles of `TRAPS.md`, never bodies.
+mid-rebase). The judge is fed the `## ` titles of `docs/agent-reference/TRAPS.md`, never bodies.
