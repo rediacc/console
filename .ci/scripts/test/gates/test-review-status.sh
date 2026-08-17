@@ -850,9 +850,22 @@ write_fake_gh_comments() {
 # Anything else is an error, never an empty list: a silently-served [] is the
 # exact shape of blindness these tests exist to catch.
 set -uo pipefail
+# GH_FAIL_ISSUE_COMMENTS=1 makes the REST issues route fail the way a degraded
+# API does. It exists so the GraphQL fallback in check-review-report-replies.sh
+# can be exercised WITHOUT depending on GitHub actually being unwell -- a test
+# that waited for a real outage would never run, and one that hit the live API
+# would be flaky by construction.
 for a in "$@"; do
     case "$a" in
+        graphql)
+            [ -f "$GH_FIXTURES/graphql-comments.json" ] || { echo "missing graphql-comments fixture" >&2; exit 4; }
+            exec cat "$GH_FIXTURES/graphql-comments.json" ;;
         */issues/*/comments)
+            if [ "${GH_FAIL_ISSUE_COMMENTS:-0}" = "1" ]; then
+                echo '{"message":"Not Found","status":"404"}' >&2
+                echo "gh: Not Found (HTTP 404)" >&2
+                exit 1
+            fi
             [ -f "$GH_FIXTURES/issue-comments.json" ] || { echo "missing issue-comments fixture" >&2; exit 4; }
             exec cat "$GH_FIXTURES/issue-comments.json" ;;
         */pulls/*/comments)
@@ -1221,6 +1234,80 @@ test_report_unreadable_comments_fail_closed() {
 }
 
 # ---------------------------------------------------------------------------
+# THE GRAPHQL FALLBACK, and why it is tested at all.
+#
+# On 2026-08-17 a GitHub incident made repos/<r>/issues/<n>/comments fail most
+# calls. This gate then could not RUN, and a gate that cannot run does not judge
+# a merge -- it blocks every one of them, which is what happened to a live
+# submodule land. The fix reads the same thread over GraphQL when REST fails.
+#
+# NOTE WHAT IS *NOT* BEING ASSERTED. The endpoint's failure had nothing to do
+# with the repo being private, though it looked exactly like that at the time:
+# sampled 8 calls per repo, the private one passed ONCE and the public 8/8, and
+# a single success rules an access-level cause out. So these cases inject a
+# TRANSPORT failure and say nothing about visibility -- pinning a public/private
+# distinction here would encode a diagnosis that measurement disproved.
+#
+# The fallback must not become a softer verdict, so all three directions are
+# pinned: it recovers, it still DETECTS, and losing both instruments still
+# fails closed.
+# ---------------------------------------------------------------------------
+
+# graphql_comments_fixture <dir> <json-object...>
+# The same comment objects in GraphQL's shape, so the fixture cannot drift from
+# what the fallback actually parses: databaseId/createdAt/author.login rather
+# than id/created_at/user.login.
+graphql_comments_fixture() {
+    local dir="$1"
+    shift
+    printf '%s\n' "$@" | jq -s '{data: {repository: {pullRequest: {comments: {nodes:
+        [.[] | {databaseId: .id, body: .body, createdAt: .created_at,
+                author: {login: .user.login}}]}}}}}' >"$dir/fixtures/graphql-comments.json"
+}
+
+test_report_graphql_fallback_recovers_when_rest_fails() {
+    local t="$1"
+    setup_comments "$t"
+    local answered=(
+        "$(report_comment 901 2026-08-05T08:07:03Z)"
+        "$(chatter_comment 903 2026-08-05T10:29:55Z mfbayraktar "$(human_answer_body)")"
+    )
+    comments_fixture "$t" "${answered[@]}"
+    graphql_comments_fixture "$t" "${answered[@]}"
+    run_report_gate "$t" GH_FAIL_ISSUE_COMMENTS=1
+    assert_exit_code 0 "$LAST_RC" \
+        "with REST down the gate must still RUN via GraphQL, not block a merge it cannot judge"
+    assert_contains "$LAST_OUT" "903" "and it names the answering comment it found over GraphQL"
+    log_pass "PLANTED REST 404 + answered report => GraphQL fallback RUNS and passes"
+}
+
+# THE CONTROL. Without this the case above proves only that the gate went quiet.
+test_report_graphql_fallback_still_detects_unanswered() {
+    local t="$1"
+    setup_comments "$t"
+    local unanswered=("$(report_comment 901 2026-08-05T08:07:03Z)")
+    comments_fixture "$t" "${unanswered[@]}"
+    graphql_comments_fixture "$t" "${unanswered[@]}"
+    run_report_gate "$t" GH_FAIL_ISSUE_COMMENTS=1
+    assert_exit_code 1 "$LAST_RC" \
+        "the fallback is a different TRANSPORT, not a softer verdict: an unanswered report must still block"
+    assert_contains "$LAST_OUT" "issuecomment-901" "and still links the exact unanswered report"
+    log_pass "PLANTED REST 404 + UNANSWERED report => GraphQL fallback still BLOCKS"
+}
+
+test_report_both_instruments_down_fails_closed() {
+    local t="$1"
+    setup_comments "$t"
+    comments_fixture "$t" "$(report_comment 901 2026-08-05T08:07:03Z)"
+    rm -f "$t/fixtures/graphql-comments.json"
+    run_report_gate "$t" GH_FAIL_ISSUE_COMMENTS=1
+    assert_exit_code 1 "$LAST_RC" \
+        "losing BOTH instruments must fail closed; a fallback that swallows its own failure is worse than no fallback"
+    assert_contains "$LAST_OUT" "Failing closed" "the abort still says it is failing closed"
+    log_pass "PLANTED REST 404 + GraphQL unreadable => FAILS CLOSED"
+}
+
+# ---------------------------------------------------------------------------
 # THE PROPERTY THAT MAKES TWO GATES DEFENSIBLE.
 #
 # One review pass leaves two top-level comments, and the two gates own one
@@ -1369,6 +1456,9 @@ with_temp_dir test_report_answered_passes
 with_temp_dir test_report_bot_self_reply_does_not_count
 with_temp_dir test_report_ordinary_chatter_is_ignored
 with_temp_dir test_report_unreadable_comments_fail_closed
+with_temp_dir test_report_graphql_fallback_recovers_when_rest_fails
+with_temp_dir test_report_graphql_fallback_still_detects_unanswered
+with_temp_dir test_report_both_instruments_down_fails_closed
 with_temp_dir test_one_reply_clears_both_gates
 
 # ---------------------------------------------------------------------------
