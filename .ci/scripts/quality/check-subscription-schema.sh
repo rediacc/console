@@ -42,11 +42,29 @@ if ! npx biome format --stdin-file-path="packages/shared/src/subscription/schema
     cp "$TEMP_DIR/schema.fresh.json" "$TEMP_DIR/schema.formatted.json"
 fi
 
-if [[ -f "$SCHEMA_FILE" ]] && diff -q "$SCHEMA_FILE" "$TEMP_DIR/schema.formatted.json" >/dev/null 2>&1; then
-    log_info "Subscription schema is up-to-date"
-else
-    log_warn "Subscription schema is STALE: regenerate with 'npx tsx packages/shared/scripts/generate-subscription-schema.ts'"
+# THIS COMPARISON IS THE GATE, so it EXITS rather than warning.
+#
+# It used to warn, which was survivable only because phase 1 regenerated
+# $SCHEMA_FILE in place and phase 3's `git diff` against HEAD then failed on the
+# difference. Generating out of tree removed that side effect and, with it, the
+# only path that could fail a stale schema: phase 3 now diffs an untouched file
+# and is clean no matter how stale the committed output is. A gate whose green
+# no longer depends on the thing it checks is worse than no gate.
+if [[ ! -f "$SCHEMA_FILE" ]]; then
+    log_error "Subscription schema is MISSING at $SCHEMA_FILE"
+    log_error "  regenerate with: npx tsx packages/shared/scripts/generate-subscription-schema.ts"
+    exit 1
 fi
+if ! diff -q "$SCHEMA_FILE" "$TEMP_DIR/schema.formatted.json" >/dev/null 2>&1; then
+    log_error "Subscription schema is STALE: the committed file does not match what the"
+    log_error "TypeScript source generates today."
+    log_error ""
+    diff -u "$SCHEMA_FILE" "$TEMP_DIR/schema.formatted.json" | head -40 || true
+    log_error ""
+    log_error "  regenerate and commit: npx tsx packages/shared/scripts/generate-subscription-schema.ts"
+    exit 1
+fi
+log_info "Subscription schema is up-to-date"
 
 # Phase 2: Run Go tests to validate schema consistency
 require_submodule "$RENET_DIR" "Renet submodule (Go schema validation)" || exit 0
@@ -72,8 +90,8 @@ cd "$REPO_ROOT"
 if ! git diff --quiet "$SCHEMA_FILE" 2>/dev/null; then
     log_error "Schema file has uncommitted changes"
     log_error ""
-    log_error "This step ALREADY regenerated it for you (phase 1). There is nothing"
-    log_error "left to run: review the diff and commit it."
+    log_error "Phase 1 verified the content is CURRENT but does NOT write this file,"
+    log_error "so these are your own edits: review the diff and commit it."
     log_error "  git diff $SCHEMA_FILE"
     log_error ""
     log_error "This compares against git HEAD, so it stays red in a working tree that"
