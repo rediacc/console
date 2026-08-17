@@ -3708,3 +3708,76 @@ Adding that agent file turned `check_agent_hint_liveness.py` red, correctly: eve
 must carry a specimen proving the stop hook's matcher can reach it, and the specimen must
 WIN its agent at `MIN_SCORE=2 MIN_MARGIN=1` against the others. So the fix also proved
 the description discriminates rather than merely existing.
+
+## Round 26 — the gates that could not fail, and the clock
+
+Five reds in one endgame, and only one of them was a code defect. The pattern worth
+keeping is that the other four were the CI machinery telling the truth about itself.
+
+### A gate that writes the real tree while the pool reads it
+
+`gate-test:claude-hooks` failed with a bash syntax error in a file that parses clean and
+scores 884/0 serially. `test-generate-tag-inputs.sh:289,311` swaps the REAL
+`.ci/scripts/version/resolve-version.sh` for a stub and `cp`s it back a second later
+(`generate-tag.sh` runs via `cd "$REPO_ROOT"` and has no fixture seam), and `run-all.sh`
+had it in T -- "isolated by construction, safe to run against anything" -- so it ran
+against everything. It is now W.
+
+Two things made it invisible. Neither write site names the file: both go through a `$real`
+variable, so every grep for the filename found the callers and no writer. And the
+misclassification had a CAUSE -- the test's own comment claimed it "cannot disturb a
+shared tree", true of the tag namespace it avoids and false of the working tree it
+overwrites. A comment asserting safety is not evidence of safety, and this one actively
+produced the wrong tier.
+
+Diagnosis was by MTIME, not by reading: a tracked file whose mtime lands inside the run
+while `git status` calls it unmodified was rewritten with identical content. Two false
+starts are recorded in TRAPS.md -- a `find | head` that truncated away the decisive hits,
+and a process snapshot that showed the SURVIVORS rather than the culprit, because
+poll-then-`ps` misses a child that has already exited. Reproducing "the three gates that
+were running" proved nothing; none of them was the writer.
+
+### Fixing a race deleted the enforcement it was protecting
+
+`check-subscription-schema.sh` regenerated a tracked file in place and `biome format
+--write` it -- the same hazard class, second instance. Generating out of tree removed the
+race and, unnoticed, the gate's only failing path: phase 1 had always merely warned, and
+what actually failed a stale schema was phase 3's `git diff` against HEAD, which worked
+ONLY as a side effect of phase 1 writing the file. Phase 3 then diffed an untouched file
+and was clean however stale the committed output was.
+
+The control that missed it is the lesson. The stale path WAS tested before the commit and
+printed STALE -- but the difference had been planted in the TRACKED file, which made it
+dirty, so phase 3 failed for an unrelated reason, and the MESSAGE was read instead of the
+exit code. The honest control mutates the GENERATOR so fresh output differs while the
+committed file stays clean against HEAD. Caught by review, not by the author.
+
+### Two reds that were the calendar
+
+`check:ci-go-deps` and the npm audit gate are both time-sensitive, so a branch nobody
+touched goes red as releases age into being mandatory. testify v1.12.0 crossed the
+threshold; separately GHSA-5p4m-2wfm-xmqj fired because its allowlist entry rested on "no
+patched 3.x exists -- the fix was NOT backported", and js-yaml 3.15.1 had shipped ~17 days
+earlier with the affected range stopping at 3.15.0. The vulnerable node was found by
+asking `npm audit` (`gray-matter/node_modules/js-yaml`), not by assuming.
+
+Fixing it then required a second step the gate demanded on its own: with the advisory no
+longer firing, its allowlist entry was STALE, and suppression-liveness fails the build on
+a stale entry. The suppression could not outlive its reason quietly. That is the rule
+working, and it is why the entry and its whole comment group were deleted rather than
+left as documentation of a solved problem.
+
+### Two review-pipeline shapes that look like defects and are not
+
+`Quality / Submodule Branches` reported "1 unreplied review comment" for a thread that had
+been answered substantively and RESOLVED. `check-submodule-branches.sh:295-340` reads the
+pull-request REVIEW COMMENTS api and wants a reply whose `in_reply_to_id` points at the
+original; a top-level PR comment is a different api and a resolve is not a reply. An
+answered-and-resolved thread can still be unreplied as far as CI is concerned.
+
+`Review Complete` red on a fresh push is ORDERING, not failure. It is posted by
+`review-status.yml` as an observer check-run, and the console review gates on CI Complete
+being green -- so a manual dispatch before CI is green no-ops silently. The sequence is
+self-resolving (CI green, review stamps, observer turns green) and `review-status.yml`'s
+header explains why nothing in CI may wait on it: the pipeline that produces the review
+would deadlock on its own output.
