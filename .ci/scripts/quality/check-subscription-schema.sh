@@ -24,22 +24,28 @@ log_step "Generating fresh subscription schema..."
 TEMP_DIR="$(mktemp -d)"
 trap 'rm -rf "$TEMP_DIR"' EXIT
 
-# Copy current schema for comparison
-if [[ -f "$SCHEMA_FILE" ]]; then
-    cp "$SCHEMA_FILE" "$TEMP_DIR/schema.before.json"
+# GENERATE OUT OF TREE. This used to regenerate $SCHEMA_FILE in place and then
+# `biome format --write` it, which made this gate a WRITER of a tracked file
+# while the ~8.7x-parallel pool read the same tree -- the hazard class in
+# scripts/ci-runner/manifest.ts:346-365, observed live with this exact file
+# stamped mid-battery. The check only ever needed something to DIFF against, so
+# it writes to $TEMP_DIR and the tracked file is never touched.
+SUBSCRIPTION_SCHEMA_OUT="$TEMP_DIR/schema.fresh.json" \
+    npx tsx packages/shared/scripts/generate-subscription-schema.ts >/dev/null
+
+# Format through STDIN rather than --write, so biome still resolves this repo's
+# config for the file's real path without that path being written.
+if ! npx biome format --stdin-file-path="packages/shared/src/subscription/schema.generated.json" \
+    <"$TEMP_DIR/schema.fresh.json" >"$TEMP_DIR/schema.formatted.json" 2>/dev/null; then
+    # Formatting is cosmetic here; an unformatted comparison is still a valid
+    # staleness check, and failing the gate on a formatter hiccup would be worse.
+    cp "$TEMP_DIR/schema.fresh.json" "$TEMP_DIR/schema.formatted.json"
 fi
 
-# Generate fresh schema
-npx tsx packages/shared/scripts/generate-subscription-schema.ts
-
-# Format the generated schema to match biome's style
-npx biome format --write "$SCHEMA_FILE" >/dev/null 2>&1 || true
-
-# Check if schema changed
-if [[ -f "$TEMP_DIR/schema.before.json" ]] && diff -q "$SCHEMA_FILE" "$TEMP_DIR/schema.before.json" >/dev/null 2>&1; then
+if [[ -f "$SCHEMA_FILE" ]] && diff -q "$SCHEMA_FILE" "$TEMP_DIR/schema.formatted.json" >/dev/null 2>&1; then
     log_info "Subscription schema is up-to-date"
 else
-    log_warn "Subscription schema was regenerated (file changed)"
+    log_warn "Subscription schema is STALE: regenerate with 'npx tsx packages/shared/scripts/generate-subscription-schema.ts'"
 fi
 
 # Phase 2: Run Go tests to validate schema consistency
