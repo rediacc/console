@@ -18,7 +18,18 @@ import { fileURLToPath } from 'node:url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const subscriptionDir = path.join(__dirname, '../src/subscription');
-const outputPath = path.join(subscriptionDir, 'schema.generated.json');
+
+// Default is the tracked file, so a developer regenerating the schema by hand
+// keeps the behaviour the error messages tell them to expect.
+//
+// SUBSCRIPTION_SCHEMA_OUT redirects the write, which exists for CI: the
+// up-to-date check only needs something to DIFF against, and regenerating in
+// place made a quality gate write a tracked file while the gate pool read the
+// same tree in parallel. Writing somewhere else is the fix that removes the
+// race rather than scheduling around it.
+const outputPath = process.env.SUBSCRIPTION_SCHEMA_OUT
+  ? path.resolve(process.env.SUBSCRIPTION_SCHEMA_OUT)
+  : path.join(subscriptionDir, 'schema.generated.json');
 
 // Import subscription constants dynamically to get actual values
 import {
