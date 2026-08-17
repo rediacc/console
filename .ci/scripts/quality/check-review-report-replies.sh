@@ -106,17 +106,22 @@ echo "Checking review report replies for PR #${PR_NUMBER}..."
 # blip. gh_json retries twice and names the probe that failed.
 if ! COMMENTS=$(gh_json "issue comments for PR #${PR_NUMBER}" -- \
     api "repos/${REPO}/issues/${PR_NUMBER}/comments" --paginate); then
-    # A SECOND INSTRUMENT, not a softer verdict. The REST issues endpoint
-    # answers 404 for a PRIVATE repo under some token configurations: observed
-    # 2026-08-17 with a classic PAT carrying full `repo` scope, where
-    # repos/rediacc/{renet,account,elite}/issues/<n>[/comments] returned 404
-    # while the PUBLIC rediacc/console returned 200, and pulls/<n> plus the
-    # issues LIST worked on every one of them with the same token. That made
-    # this gate permanently UNRUNNABLE for every submodule PR -- and a gate that
-    # cannot run does not judge a merge, it blocks all of them.
+    # A SECOND INSTRUMENT, not a softer verdict: it keeps this gate RUNNABLE
+    # while the REST API is degraded, and a gate that cannot run does not judge
+    # a merge, it blocks every one of them.
     #
-    # GraphQL reads the same comment thread and works in both cases. It is a
-    # different transport for identical data, so it cannot turn a failing PR
+    # Added during the GitHub incident of 2026-08-17 (status page: "Issues is
+    # experiencing degraded performance", ~20% error rates site-wide). This
+    # endpoint returned 404 for repos/rediacc/{renet,account,elite}/issues/<n>
+    # while the public rediacc/console answered 200, which looks exactly like a
+    # private-repo permissions property and is NOT one: sampled 8x per repo, the
+    # private repo passed ONCE and failed seven times while the public one
+    # passed 8/8. One success is the whole proof -- a token that lacked access
+    # would have failed all eight. So the split was load, not visibility, and
+    # the earlier version of this comment said otherwise. Do not "fix" a token.
+    #
+    # GraphQL reads the same comment thread and kept answering throughout. It is
+    # a different transport for identical data, so it cannot turn a failing PR
     # into a passing one: if BOTH instruments fail we still fail closed below.
     #
     # Two shape notes, both already tolerated by the logic beneath: GraphQL
