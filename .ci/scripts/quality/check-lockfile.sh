@@ -131,4 +131,4 @@ if [[ ${#FAILED[@]} -gt 0 ]]; then
 fi
 
 log_info "All ${#LOCKFILES[@]} lockfile(s): supply-chain clean and resolvable by $CI_NPM"
-log_warn "Note the limit: --dry-run does NOT run the reify peer check. This proves npm 10 can RESOLVE these lockfiles, not that it can install them (round-9 ERESOLVE, see docs/agent/ci-gates.md)."
+log_warn "Note the limit: --dry-run does NOT run the reify peer check. This proves npm 10 can RESOLVE these lockfiles, not that it can install them (round-9 ERESOLVE, see docs/agent-reference/ci-gates.md)."

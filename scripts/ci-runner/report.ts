@@ -13,7 +13,7 @@
  * point of the runner is that one run surfaces every failure instead of the
  * `&&` chain's first one.
  *
- * See docs/agent/0731-2/PLAN-npm-ci-parallel-parity.md section 4.4.
+ * See agent/0731-2/PLAN-npm-ci-parallel-parity.md section 4.4.
  */
 import type { GateResult } from './pool';
 

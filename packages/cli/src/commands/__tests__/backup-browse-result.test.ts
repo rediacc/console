@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { parseBrowseResult } from '../backup-storage.js';
+import { parseBrowseResult } from '../backup-storage-parser.js';
 
 const listing = {
   source: 'repository demo',

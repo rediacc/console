@@ -109,7 +109,13 @@ def _response_text(resp):
 
 
 def rule_cancelled_run_not_passed(cmd, out, _root, _resp):
-    """A cancelled run is not a passed run (docs/agent/TRAPS.md:147).
+    """A cancelled run is not a passed run.
+
+    Corpus entry: docs/agent-reference/TRAPS.md, "A cancelled run is not a
+    passed run, and it is not a failed one either". Cited by HEADING rather
+    than by line: the two trap corpora were merged into that one file, so every
+    line number in it moved, and a citation that silently drifts one entry over
+    is worse than none.
 
     Cost when missed: three consecutive CI rounds that measured nothing while
     being counted as "did not recur". The watchdog cancels siblings on the first
@@ -165,7 +171,11 @@ def rule_cancelled_run_not_passed(cmd, out, _root, _resp):
 
 
 def rule_phantom_deletion_diff(cmd, out, root, _resp):
-    """An all-deletions diff for a file that is still on disk (TRAPS.md:184).
+    """An all-deletions diff for a file that is still on disk.
+
+    Corpus entry: docs/agent-reference/TRAPS.md, "`git diff <branch>` reads as
+    DELETED for a file the worktree never tracked". By heading, not line, for
+    the reason given on rule_cancelled_run_not_passed above.
 
     Observed 2026-08-09: an intact 462-line wl_checklist.py printed
     `1 file changed, 462 deletions(-)` because the branch was built with git

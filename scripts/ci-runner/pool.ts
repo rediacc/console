@@ -12,7 +12,7 @@
  * achievable floor is the longest single gate, not the sum, so the critical
  * path has to start in the first wave.
  *
- * See docs/agent/0731-2/PLAN-npm-ci-parallel-parity.md sections 3 and 4.2.
+ * See agent/0731-2/PLAN-npm-ci-parallel-parity.md sections 3 and 4.2.
  */
 import type { GateSpec } from './manifest';
 import type { ExecOutcome } from './exec';

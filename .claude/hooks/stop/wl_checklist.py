@@ -1,6 +1,6 @@
-"""wl_checklist: the /handoff checklist gate over docs/<slug>/CHECKLIST.md.
+"""wl_checklist: the /handoff checklist gate over agent/programs/<slug>/CHECKLIST.md.
 
-WHY THIS EXISTS: /handoff distills a session into a docs/<slug>/ design suite
+WHY THIS EXISTS: /handoff distills a session into an agent/programs/<slug>/ suite
 and then told the FUTURE session, in prose inside PROMPT.md, to seed the
 worklist. Prose is not a gate. Nothing verified that the producing session
 actually wrote every deliverable, and nothing verified that the consuming
@@ -67,9 +67,9 @@ CL_STATES = ("producing", "executing", "done", "superseded")
 
 
 def checklist_paths(root):
-    """Every docs/<slug>/CHECKLIST.md, sorted. One glob is the entire cost of
-    this module for a repo that keeps no handoffs."""
-    return sorted(glob.glob(os.path.join(str(root), "docs", "*", "CHECKLIST.md")))
+    """Every agent/programs/<slug>/CHECKLIST.md, sorted. One glob is the entire
+    cost of this module for a repo that keeps no handoffs."""
+    return sorted(glob.glob(os.path.join(str(root), "agent", "programs", "*", "CHECKLIST.md")))
 
 
 def _rel(root, path):

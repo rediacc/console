@@ -3,7 +3,7 @@
  * check-suppression-liveness.ts — are our suppressions still load-bearing?
  *
  * Every allowlist / blocklist / override in this repo must carry a BLOCKER
- * reason (see docs/agent/suppressions.md). That convention proves a reason EXISTS; it cannot
+ * reason (see docs/agent-reference/suppressions.md). That convention proves a reason EXISTS; it cannot
  * prove the reason is still TRUE. This gate closes the other half: for each
  * entry it asks whether the thing being suppressed still exists at all.
  *

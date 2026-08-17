@@ -1,9 +1,9 @@
-# canonical: rediacc/console@f95533298f3a7a0cf643ef5fcc111f673190f701
-# generated: 2026-07-28T10:14:04Z
+# canonical: rediacc/console@16d2fe5a25c8180e4a3b0917c7515cdd16278363
+# generated: 2026-08-16T19:43:08Z
 7ee12fc903b5a3da597d5a87803119e276e7ce5cc69cdfda36ffa1eb88173443  docker/Caddyfile
-171d3a85fb5100d1573e58eca2710fe24a19e87ee356f3a1867f36eacabd4c4e  lib/breakpoint-blocker.sh
+2025fcbb3384eb42d93caa2a4add6f9fce3c0a89dd81717b7b0fb46cc78f4077  lib/breakpoint-blocker.sh
 e70e63241b60a17671bd79c68b4e6022f396737ffdc5479fbc720b16ef15de03  lib/breakpoint-common.sh
-b0783cfe3dd54e69620bff52050172291ddd309d734cf1ed671f02f90838bcd6  scripts/check-breakpoint-drift.sh
+65e08b0f2cb2daa225e199a8fc10337988c5117f6273cefa42e869b4e69c80f2  scripts/check-breakpoint-drift.sh
 0856166898d4e858af039113d716ad7712638a07857f30bb82d4fd328135983c  scripts/derive-descriptor.sh
 0170f752908dd3ff4e0c53a3c969bb013723d3fab32bba97c131954917569d3f  scripts/desktop-ctl.sh
 4441d8103562c8b87fc02f8394a5ec486b22f446f1263e5b79fdcc765d2e8453  scripts/hold-breakpoint.sh

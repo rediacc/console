@@ -25,4 +25,4 @@
 # rejected. So is an entry naming a path that is not in MANIFEST.sha256 -- a
 # stale accept is reported as a hard failure rather than lingering forever,
 # which is the lesson from the 101 dead entries documented in
-# docs/agent/suppressions.md.
+# docs/agent-reference/suppressions.md.

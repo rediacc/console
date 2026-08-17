@@ -21,7 +21,7 @@
  *                                [--changed] [--json] [--list]
  *                                [--merge-output] [--verbose] [--selftest]
  *
- * See docs/agent/0731-2/PLAN-npm-ci-parallel-parity.md section 4.
+ * See agent/0731-2/PLAN-npm-ci-parallel-parity.md section 4.
  */
 import fs from 'node:fs';
 import os from 'node:os';
