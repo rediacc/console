@@ -7,7 +7,7 @@
  * package.json `scripts.ci`. Two gates parsed that string as their input, so
  * the moment `scripts.ci` became a runner invocation they would have read an
  * empty chain and gone green over everything -- the exact failure class of
- * rediacc/console#549, at scale. See docs/agent/0731-2/PLAN-npm-ci-parallel-parity.md
+ * rediacc/console#549, at scale. See agent/0731-2/PLAN-npm-ci-parallel-parity.md
  * section 6.1.
  *
  * Precedent for the shape is .ci/scripts/ci/scope-map.cjs: a hand-verified

@@ -21,7 +21,7 @@
 # vs HEAD is the WRONG target. The right target is "identical to what was there
 # before I arrived", and the two coincide only in a tree with no uncommitted
 # work, which is never true here. The command had reset PAST the prior state, so
-# the file looked cleaner than correct. See docs/agent/TRAPS.md, "Clean vs HEAD
+# the file looked cleaner than correct. See docs/agent-reference/TRAPS.md, "Clean vs HEAD
 # is the wrong baseline in a tree that was already dirty".
 #
 # WHAT TO DO INSTEAD: repair forward. Edit the value back to what it should be.

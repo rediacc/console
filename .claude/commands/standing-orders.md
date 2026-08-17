@@ -72,13 +72,14 @@ must outlive this context.** Route it through exactly one of three doors, say ou
 one and why, and confirm in a line.
 
 - **Door A, standing guidance** (posture, ordering, a constraint, a "do not touch X", a
-  pre-answered decision). Merge it into THIS session's own STATE.md section, the one artifact
+  pre-answered decision). Merge it into THIS session's own STATE.md, the one artifact
   the harness hands back verbatim on every compaction:
 
   ```bash
-  # READ .agent/<branch>/STATE.md FIRST. Take your own '## SESSION <me> ...' section body,
-  # insert or REPLACE a single '## Operator hints (this session)' block inside it, and keep
-  # every other line byte-for-byte. Then:
+  # READ agent/<branch>/<me>/STATE.md FIRST -- your own folder, never a peer's. Take the
+  # body under its '## SESSION <me> ...' heading, insert or REPLACE a single
+  # '## Operator hints (this session)' block inside it, and keep every other line
+  # byte-for-byte. Then:
   python3 .claude/hooks/stop/worklist.py --state <me> <<'EOF'
   <the whole merged body, with no '## SESSION' heading; the tool writes that>
   EOF
@@ -87,7 +88,7 @@ one and why, and confirm in a line.
   Enforced, not advisory: 250 to 4000 characters, a `## Next action` section is required, a
   body carrying its own `## SESSION` heading is refused, and a direct `Write`/`Edit` to
   STATE.md is denied by a pre-edit hook, because a whole-file write once destroyed a peer
-  session's live state. **`--state` REPLACES your section, so read before you write or you
+  session's live state. **`--state` REPLACES your document, so read before you write or you
   will delete your own situation report.**
 
 - **Door B, the hint names work.** `--add` it as a real open item tagged with your prefix,

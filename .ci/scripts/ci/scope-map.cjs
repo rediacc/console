@@ -44,6 +44,20 @@ const KNOWN_MODULES = [
   // `docs`: a future edit that gives docs a job surface must not silently drag
   // the gate sources with it.
   'gates',
+  // The tracked agent working-notes root: agent/<branch>/<session-prefix>/
+  // (STATE.md, RULES.md, reports), agent/<branch>/PLAN-*.md, and the /handoff
+  // program suites under agent/programs/<slug>/. A ZERO-JOB module for the same
+  // reason as docs and gates: nothing in this tree is an input to any build,
+  // test or gate, so no JOB_SURFACES entry names it.
+  //
+  // It gets its OWN module rather than reusing `docs` for the reason the gates
+  // entry above states: a future edit that gives docs a job surface must not
+  // silently drag an unrelated tree in with it.
+  //
+  // Without a rule here this tree would be `unclassified` = FULL CI, and
+  // STATE.md is rewritten many times in a single session -- exactly the shape
+  // that makes a false full run expensive rather than merely conservative.
+  'agent',
   'renet', // private/renet submodule
   'account', // private/account submodule
   'elite', // private/elite submodule
@@ -172,6 +186,11 @@ const RULES = [
   // removed submodule (case 14 at the pointer level) must never skip anything.
 
   { name: 'docs', match: matchPrefix('docs/'), modules: ['docs'] },
+  // The tracked agent working-notes root. matchPrefix('agent/') is a PREFIX,
+  // not a substring: `agents/x.md` or `agentic/x.md` still falls through to
+  // unclassified = full, which is what keeps a new sibling tree from inheriting
+  // this tree's zero-job answer by accident.
+  { name: 'agent-notes', match: matchPrefix('agent/'), modules: ['agent'] },
   // .claude/.gemini/.idx/.vscode cannot affect CI (the CI action restores
   // .claude from origin/main regardless); editor metadata likewise.
   { name: 'agent-docs', match: matchPrefix('.claude/'), modules: ['docs'] },

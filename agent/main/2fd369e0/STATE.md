@@ -1,0 +1,10 @@
+
+
+## SESSION 2fd369e0 (Part C: canary 2 round in flight; 2026-08-09T22:35Z)
+
+**True now**: CANARY 1 FULL LOOP LIVE-PROVEN on PR #562: planted red -> gate classify -> model fix -> validated bot push (79b77bd8c, later operator-rebased to ceeac4f69) -> ledger r1+sig campaign:open -> CI green -> AUTONOMOUS ready-flip (Finish success, draft=false, zero dispatches). CANARY 2 = PR #564 (0809-canary2: renet pointer at planted gofmt red 16fb9cd): its CI redded on Quality/Submodule Branches (no linked renet PR - fires before the gofmt gate), which is UNFIXABLE from the checkout, so the EXPECTED model outcome is a VOLUNTARY escalate (the untested decision); autopilot dispatched, watch bl0cef9vs. Main at 560836e23 + my 3 pushed main-only fixes (slurp split, file-tool permissions, handoff-contract exclusion). v1.2.24 released via sentinel fail-open on a direct push (reported). Uncommitted on main (deliberate): label-cap check, slurp-jq lint, file-tools invariant + mutation case, lockfile noise. Checkout ON MAIN.
+
+## Next action
+
+(1) Canary-2 round terminal (bl0cef9vs): expect Round success with outcome=escalate — verify the ESCALATION COMMENT carries a model-authored reason naming the submodule/PR constraint (vs the harness-forced escalations seen before) + latch applied. Either escalate or no-change is CORRECT; a push attempt would be a tier violation to investigate. (2) Then wrap: baseline refresh (python3 .ci/scripts/quality/check_runner_advice.py --refresh --branch main --runs 20, file stays uncommitted), CLEANUP (close PRs #562 #564, delete branches 0809-canary/-canary2 + renet 0809-canary2, remove any autopilot-blocked leftovers), tick #4defc0d0 with the full evidence, delete crons 5114c151 + de3ad848, FINAL REPORT: live-proven list (bump-none skip, gate no-gos, escalation latch x3, full fix loop, autonomous ready-flip, model-voluntary escalate if proven) vs fixture-only list (submodule push path - structurally unreachable live for private submodules), the 3 main-only fixes, the v1.2.24 note + direct-push-release design question, and the uncommitted local gate fixes awaiting the operator's packaging.
+

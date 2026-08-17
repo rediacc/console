@@ -361,7 +361,17 @@ if [[ "${1:-}" == "--apply-labels" ]]; then
         # the wrong tool: classify() answers "which CI jobs must run", and
         # .github/ and .ci/ paths yield full-CI REASONS there rather than
         # modules, so its output does not map onto PR kinds at all.
-        if ! grep -qvE '(^docs/|^packages/www/src/content/docs/|^CLAUDE\.md$|^LICENSE$|\.md$)' <<<"$changed"; then
+        # `^agent/` is the tracked agent working-notes root (session STATE.md and
+        # RULES.md, agent/<branch>/PLAN-*.md, the /handoff program suites under
+        # agent/programs/<slug>/). It is named EXPLICITLY rather than left to the
+        # trailing `\.md$` alternative, which is the shape it arrived in: while
+        # every file under that tree happened to end in .md the docs label landed
+        # by accident, and the first checklist sidecar, fixture or script under
+        # agent/ would have silently turned a notes-only PR into an unlabelled
+        # one. The tree ships nothing and is a zero-job module in
+        # .ci/scripts/ci/scope-map.cjs, so "entirely agent notes" is a
+        # documentation PR by the same reasoning `^docs/` already is.
+        if ! grep -qvE '(^docs/|^agent/|^packages/www/src/content/docs/|^CLAUDE\.md$|^LICENSE$|\.md$)' <<<"$changed"; then
             add_desired documentation
         fi
         if ! grep -qvE '(^\.github/|^\.ci/|^scripts/ci-runner/)' <<<"$changed"; then

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Deny EVERY direct tool write to .agent/<branch>/STATE.md.
+# Deny EVERY direct tool write to agent/<branch>/<session>/STATE.md.
 #
 # WHY THIS EXISTS. The old compact-recovery handover lived at a TMPDIR path
 # nobody would ever open with Write, so a CLI-side refusal was a complete gate.
@@ -29,13 +29,38 @@
 #
 # RULES.md and TRAPS.md are deliberately untouched: RULES.md is sharpened by
 # normal edits, TRAPS.md is appended by hand, and neither has a shape gate.
+#
+# WHY A REGEX AND NOT A `case` GLOB (2026-08-14, when the tree moved from
+# .agent/<branch>/ to agent/<branch>/<session>/). `case` globs are not
+# path-segment aware -- `*` happily eats `/` -- so `*/agent/*/STATE.md` does
+# match the deeper path, and would ALSO match anything anywhere whose path
+# merely contains a directory called `agent`. That breadth mattered little
+# while the leading dot made `.agent/` unmistakable; without it, `agent` is an
+# ordinary word this repo uses in `docs/agent/`, `.claude/agents/` and agent
+# source trees. This hook FAILS OPEN by design (the `exit 0` below), so an
+# over-broad pattern is not a loud mistake, it is a guard that blocks writes
+# nobody was making while looking exactly as green as a correct one.
+#
+# The regex is segment-aware: `agent` (or the legacy `.agent`) must start a
+# path component, and STATE.md must sit exactly one or two components below it
+# -- <branch>/<session>/STATE.md, the live shape, or <branch>/STATE.md, the
+# pre-split shape, which is blocked too because writing THERE is the same
+# mistake arriving one directory early. The docs trees are excluded outright:
+# standing prose lives in docs/agent-reference/ and docs/agent/ is what it was
+# called before, and neither is this hook's business.
+#
+# NAMED RESIDUAL: an unrelated `<something>/agent/<x>/<y>/STATE.md` in some
+# other tree is denied too, because the payload carries a path and no repo
+# root, and anchoring on CLAUDE_PROJECT_DIR would silently stop guarding every
+# SUBMODULE's own agent/ tree. Denying a write nobody makes costs one message;
+# missing one costs a document.
 IN=$(cat)
 FILE=$(jq -r '.tool_input.file_path // .tool_input.notebook_path // empty' <<<"$IN" 2>/dev/null)
 
 case "$FILE" in
-    */.agent/*/STATE.md) ;;
-    *) exit 0 ;;
+    docs/agent/* | */docs/agent/* | docs/agent-reference/* | */docs/agent-reference/*) exit 0 ;;
 esac
+[[ "$FILE" =~ (^|/)\.?agent/[^/]+/([^/]+/)?STATE\.md$ ]] || exit 0
 
-echo "❌ BLOCKED: STATE.md is not written by tools. It holds ONE OWNED SECTION PER SESSION, and only worklist.py can merge yours in without destroying a peer's. A whole-file Write deletes every other session's section, which is how a live campaign's state document was lost on 2026-08-09. Send YOUR SECTION'S BODY ALONE (250-4000 chars, with a '## Next action' section, no '## SESSION' heading -- the tool writes that) on stdin:  .claude/hooks/stop/worklist.py --state <your-prefix> <<'EOF' ... EOF   See .agent/README.md if present (that tree is gitignored, so a fresh clone will not have it; this message is the contract)." >&2
+echo "❌ BLOCKED: STATE.md is not written by tools. It lives at agent/<branch>/<your-prefix>/STATE.md and only worklist.py writes it -- with the heading, the stamp and the lock that make it recoverable. A tool write puts an unstamped document at a path a peer may not even be the owner of, which is how a live campaign's state document was lost on 2026-08-09. Send YOUR BODY ALONE (250-4000 chars, with a '## Next action' section, no '## SESSION' heading -- the tool writes that) on stdin:  .claude/hooks/stop/worklist.py --state <your-prefix> <<'EOF' ... EOF   See agent/README.md (that tree is tracked, so it is in every clone; this message is the contract)." >&2
 exit 2

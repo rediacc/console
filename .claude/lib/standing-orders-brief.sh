@@ -101,8 +101,10 @@ echo
 
 branch=$(git branch --show-current 2>/dev/null || echo '')
 if [ -n "$branch" ]; then
-    plans=$(ls -1 "docs/agent/${branch}"/PLAN-*.md 2>/dev/null | wc -l | tr -d ' ')
-    state_age=$(stat -c %y ".agent/${branch}/STATE.md" 2>/dev/null | cut -d. -f1 || echo 'MISSING')
-    echo "DURABLE CONTEXT: STATE.md ${state_age}; ${plans} plan file(s) under docs/agent/${branch}/"
+    plans=$(ls -1 "agent/${branch}"/PLAN-*.md 2>/dev/null | wc -l | tr -d ' ')
+    state_age=$(stat -c %y "agent/${branch}/${ME}/STATE.md" 2>/dev/null | cut -d. -f1 || echo 'MISSING')
+    peers=$(find "agent/${branch}" -mindepth 1 -maxdepth 1 -type d ! -name "${ME}" 2>/dev/null | wc -l | tr -d ' ')
+    echo "DURABLE CONTEXT: my STATE.md ${state_age}; ${plans} plan file(s) under agent/${branch}/"
+    echo "  ${peers} peer session folder(s) beside mine under agent/${branch}/. Theirs to write, mine to read."
     echo "  These survive a reboot. The worklist store lives under \$TMPDIR and does not."
 fi

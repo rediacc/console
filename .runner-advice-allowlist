@@ -8,7 +8,7 @@
 # is PRESENT; its prose is held to the same bar as every other allowlist in the
 # repo by the shared validator in .ci/scripts/lib/blocker-validator.sh, applied
 # to this file by .ci/scripts/test/gates/test-runner-advice.sh. See
-# docs/agent/suppressions.md.
+# docs/agent-reference/suppressions.md.
 #
 # ONLY THE COST DIRECTION IS WAIVABLE HERE. An entry suppresses a MOVE_TO_SLIM
 # finding, which costs core-minutes. It does NOT suppress the reliability

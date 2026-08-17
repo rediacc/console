@@ -1,13 +1,13 @@
 ---
-description: Distill the current session into a durable handoff - a hook-enforced docs/<slug>/CHECKLIST.md, a docs/<slug>/ design suite (README + numbered docs + PROMPT.md), a seeded program-state dir (MANIFEST/reports/checkpoints), and a memory pointer - then print the concise pointer prompt for a fresh session. First token of the arguments is the slug; if docs/<slug>/ already exists this runs in update mode (refresh stale sections, re-verify the checklist, regenerate PROMPT.md, report the delta).
-argument-hint: "[slug] (kebab-case dir under docs/; omit and one is proposed; existing dir = update mode)"
+description: Distill the current session into a durable handoff - a hook-enforced agent/programs/<slug>/CHECKLIST.md, an agent/programs/<slug>/ design suite (README + numbered docs + PROMPT.md), a seeded program-state dir (MANIFEST/reports/checkpoints), and a memory pointer - then print the concise pointer prompt for a fresh session. First token of the arguments is the slug; if agent/programs/<slug>/ already exists this runs in update mode (refresh stale sections, re-verify the checklist, regenerate PROMPT.md, report the delta).
+argument-hint: "[slug] (kebab-case dir under agent/programs/; omit and one is proposed; existing dir = update mode)"
 disable-model-invocation: true
 allowed-tools: Bash(ls:*), Bash(git branch:*), Bash(git status:*), Bash(date:*)
 ---
 
 ## Current state
 
-- Existing docs dirs: !`ls docs/`
+- Existing program suites (empty = none yet): !`ls agent/programs/ 2>/dev/null`
 - Branch: !`git branch --show-current`
 - UTC now: !`date -u +%Y-%m-%dT%H:%MZ`
 
@@ -15,7 +15,7 @@ allowed-tools: Bash(ls:*), Bash(git branch:*), Bash(git status:*), Bash(date:*)
 
 The first whitespace-delimited token of `$ARGUMENTS` is the slug. No slug given:
 propose one from the session's dominant topic and state it; use AskUserQuestion only
-if genuinely ambiguous. If `docs/<slug>/` exists: UPDATE mode (re-verify and refresh
+if genuinely ambiguous. If `agent/programs/<slug>/` exists: UPDATE mode (re-verify and refresh
 stale sections, regenerate PROMPT.md wholesale, report exactly what changed).
 Otherwise CREATE mode.
 
@@ -40,7 +40,7 @@ not revived.
    Anything not re-verifiable is labeled a hypothesis. Never write a confident claim
    from memory; never trust a zero from an instrument without a planted control.
 
-3. **Write `docs/<slug>/CHECKLIST.md` before any other file.** It is the first write
+3. **Write `agent/programs/<slug>/CHECKLIST.md` before any other file.** It is the first write
    of the invocation, not a wrap-up at the end. `Status: producing`; `Owner:` your
    8-char session prefix (the same one you tag worklist items with); one `dN` line per
    deliverable you are about to write (README, `01-verified-context.md`, every
@@ -54,8 +54,8 @@ not revived.
    Owner: 99ccf057              <- 8-char session prefix, required while producing
 
    ## Deliverables
-   - [ ] d1 file:docs/<slug>/README.md
-   - [ ] d2 file:docs/<slug>/PROMPT.md
+   - [ ] d1 file:agent/programs/<slug>/README.md
+   - [ ] d2 file:agent/programs/<slug>/PROMPT.md
    - [ ] d3 file:~/.claude/projects/-home-muhammed-monorepo-console/programs/<slug>/MANIFEST.md
 
    ## Waves
@@ -67,7 +67,7 @@ not revived.
    session stop until every `file:` verifies AND you flip `Status: producing` to
    `Status: executing` -- that is exactly why it is written first.
 
-4. **Write `docs/<slug>/` adaptively** (typical 3-7 files; do not pad):
+4. **Write `agent/programs/<slug>/` adaptively** (typical 3-7 files; do not pad):
    - `README.md` with the mandatory sections: title + scope paragraph (names the
      source session, links the memory file and program-state dir); `## Read order`;
      `## Non-negotiable working ethos` (see step 5); `## Staffing` (see step 6);
@@ -124,11 +124,11 @@ not revived.
    `- [x]` only after probing the artifact; queued future waves stay NOTE lines
    promoted when they start.
 
-9. **Write `docs/<slug>/PROMPT.md` and print it verbatim in chat.** Contents, kept
-   concise: mission sentence pointing at `docs/<slug>/README.md` and its read order;
+9. **Write `agent/programs/<slug>/PROMPT.md` and print it verbatim in chat.** Contents, kept
+   concise: mission sentence pointing at `agent/programs/<slug>/README.md` and its read order;
    two-sentence validation ethos; ask-the-decision-points-early instruction; the
    staffing section from step 6; the program-state paths from step 7; the
-   `docs/<slug>/CHECKLIST.md` path plus the worklist seeding instruction from step 8,
+   `agent/programs/<slug>/CHECKLIST.md` path plus the worklist seeding instruction from step 8,
    spelled out with the literal token format `cl:<slug>/<wN>` so the consuming session
    can seed without reading anything else; the local-and-uncommitted line; the testing
    emphasis; the definition of done.
@@ -145,7 +145,7 @@ not revived.
 
 ## Constraints
 
-This invocation writes ONLY under `docs/<slug>/` (including `docs/<slug>/CHECKLIST.md`,
+This invocation writes ONLY under `agent/programs/<slug>/` (including `agent/programs/<slug>/CHECKLIST.md`,
 which is written first and is the one file this command must never skip), the
 `programs/<slug>/` state dir, and the single MEMORY.md pointer line. It never touches
 code and never commits. If it delegates verification sweeps, they are held as leased

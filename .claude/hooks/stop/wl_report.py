@@ -113,10 +113,16 @@ def store_root(start):
     the repo root, so two worktrees of one repo stay separate WITHOUT inventing a
     second naming scheme that could disagree with the first.
 
-    Not `/tmp`: reboot deletes it. Not tracked `docs/agent/<branch>/`: roughly 142
-    machine-written files per session would land in every PR diff. Not
-    `.agent/<branch>/`: it dies with the worktree, and a report is most wanted
-    after the branch is gone.
+    Not `/tmp`: reboot deletes it.
+
+    Not the repo's `agent/<branch>/<session>/` tree either, and the migration of
+    2026-08-14 STRENGTHENED that rather than weakening it. There used to be two
+    objections to two different trees: a tracked `docs/agent/<branch>/` would put
+    roughly 142 machine-written files per session into every PR diff, and a
+    gitignored `.agent/<branch>/` would die with the worktree while a report is
+    most wanted after the branch is gone. Those trees are now ONE tree, and it is
+    tracked -- so the diff-noise objection applies to all of it, with nothing
+    left to trade against. Reports stay outside the repo.
     """
     env = os.environ.get("WORKLIST_REPORTS_DIR")
     if env:

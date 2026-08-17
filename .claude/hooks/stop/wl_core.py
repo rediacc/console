@@ -206,7 +206,8 @@ def resolve_session_id():
     suppression flag -- the test suite declares its fixture id with it, and an
     operator acting for a dead session declares that session's id. A boolean
     bypass was rejected: it would suppress the check without stating a claim,
-    which is the exact shape docs/agent/suppressions.md exists to prevent, and
+    which is the exact shape docs/agent-reference/suppressions.md exists to prevent,
+    and
     it would be reachable by a session trying to get past its own mistake.
 
     CLAUDE_CODE_SESSION_ID, not CLAUDE_SESSION_ID. The latter DOES NOT EXIST;
@@ -378,7 +379,7 @@ def project_start(event=None):
     session last worked, and this tree has repos INSIDE the repo: submodules
     (private/renet) and gitignored non-submodule siblings (private/growth).
     Resolving from cwd walked project_root() straight into one of those and
-    read ITS branch -- a session on 0804-1 was told to bootstrap `.agent/main/`
+    read ITS branch -- a session on 0804-1 was told to bootstrap `agent/main/`
     because private/growth happened to be on main. Confirmed twice, on both
     kinds of nested repo, so it is not a submodule quirk.
 
@@ -460,13 +461,13 @@ def git_branch(root):
     `symbolic-ref --short -q` and NOT `rev-parse --abbrev-ref HEAD`. The latter
     returns the LITERAL STRING "HEAD" on a detached HEAD, and that string slugs
     to a perfectly valid directory name, so it would silently seed a junk
-    `.agent/HEAD/` universe during every interactive rebase. Measured on this
+    `agent/HEAD/` universe during every interactive rebase. Measured on this
     worktree: `private/renet` is detached, where abbrev-ref returns "HEAD" and
     symbolic-ref returns empty. Empty is the honest answer, and callers treat it
     as "cannot resolve a branch" rather than as a branch name.
 
     Slugged because a branch may contain a slash: `feature/foo` would otherwise
-    create a NESTED `.agent/feature/foo/`, which no caller expects and which the
+    create a NESTED `agent/feature/foo/`, which no caller expects and which the
     bootstrap message could not name in one `mkdir`.
 
     WORKLIST_AGENT_BRANCH is not decoration. It is how the test suite drives

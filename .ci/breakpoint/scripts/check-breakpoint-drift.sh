@@ -248,7 +248,7 @@ done <"$MANIFEST"
 
 # Accept list. Parsed and BLOCKER-validated with the vendored subset of the
 # canonical validator, so the same "no lazy suppressions" rule from
-# docs/agent/suppressions.md applies here as to every other escape hatch.
+# docs/agent-reference/suppressions.md applies here as to every other escape hatch.
 declare -A ACCEPTED=()
 # An accept entry that never FIRES is not the same as one that fired: the count
 # line below is the anti-vacuity evidence for this gate, so it reports what the

@@ -177,7 +177,7 @@ function loadBlocklist(): Map<string, BlocklistEntry> {
 
   // Use the shared BLOCKER parser/validator rather than a bespoke one, so this
   // suppression mechanism is held to the same standard as every other list in
-  // the repo (see docs/agent/suppressions.md, "Suppression mechanisms and the BLOCKER
+  // the repo (see docs/agent-reference/suppressions.md, "Suppression mechanisms and the BLOCKER
   // convention"). Previously this file accepted any trailing comment — or none
   // at all — as a "reason", which is how it stayed outside the convention.
   // Mirrors loadBlocklist() in check-deps.ts.

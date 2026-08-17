@@ -368,7 +368,7 @@ test_managed_set_excludes_bump_major_by_construction() {
 test_hallucinated_kind_invalidates_the_whole_verdict() {
     local t="$1"
     setup "$t"
-    files_fixture "$t" "docs/agent/notes.md"
+    files_fixture "$t" "docs/agent-reference/TRAPS.md"
     execution_file "$t" "$(report_with_verdict '{"bump": "minor", "kind": ["security"], "why": "made this up"}')"
     run_apply "$t"
     assert_not_contains "$(cat "$t/capture.txt")" "security" "an invented label name never reaches the API"
@@ -424,7 +424,7 @@ test_missing_execution_file_still_applies_mechanical_labels() {
 test_docs_only_diff_yields_documentation() {
     local t="$1"
     setup "$t"
-    files_fixture "$t" "docs/agent/ci-gates.md" "CLAUDE.md" "packages/cli/src/commands/repo.ts"
+    files_fixture "$t" "docs/agent-reference/ci-gates.md" "CLAUDE.md" "packages/cli/src/commands/repo.ts"
     execution_file "$t" "$(report_with_verdict "")"
     assert_eq "$(added "$t")" "" "precondition: nothing captured yet"
     run_apply "$t"
@@ -433,11 +433,47 @@ test_docs_only_diff_yields_documentation() {
     assert_eq "$(added "$t")" "" "a single non-matching path disqualifies the all-files rule"
 
     setup "$t"
-    files_fixture "$t" "docs/agent/ci-gates.md" "CLAUDE.md" "LICENSE" "packages/www/src/content/docs/x.mdx"
+    files_fixture "$t" "docs/agent-reference/ci-gates.md" "CLAUDE.md" "LICENSE" "packages/www/src/content/docs/x.mdx"
     execution_file "$t" "$(report_with_verdict "")"
     run_apply "$t"
     assert_eq "$(added "$t")" "documentation" "CONTROL: an all-docs list DOES earn the label"
     log_pass "the documentation rule is all-files (one stray path disqualifies it; the control still fires)"
+}
+
+test_agent_notes_tree_is_documentation_whatever_the_extension() {
+    # The tracked agent working-notes root. This arm exists SEPARATELY from the
+    # `\.md$` alternative on purpose, and only a non-.md path can tell them
+    # apart: while everything under agent/ was markdown the documentation label
+    # landed by coincidence, and the first sidecar with another extension would
+    # have quietly produced an unlabelled PR.
+    local t="$1"
+    setup "$t"
+    files_fixture "$t" \
+        "agent/0815-1/97604f47/STATE.md" \
+        "agent/programs/backup-storage/CHECKLIST.md" \
+        "agent/0815-1/97604f47/report.json"
+    execution_file "$t" "$(report_with_verdict "")"
+    run_apply "$t"
+    assert_eq "$(added "$t")" "documentation" \
+        "a notes-only diff earns documentation even with a non-.md file in it"
+
+    # CONTROL A: the new arm is anchored to the tree, not to "any extension".
+    # The SAME non-.md basename outside agent/ earns nothing, so the pass above
+    # is the ^agent/ alternative and not a rule that stopped discriminating.
+    setup "$t"
+    files_fixture "$t" "report.json"
+    execution_file "$t" "$(report_with_verdict "")"
+    run_apply "$t"
+    assert_eq "$(added "$t")" "" "the same file outside agent/ earns no label"
+
+    # CONTROL B: all-files is still all-files. One real source file disqualifies
+    # the whole diff however much of it is session notes.
+    setup "$t"
+    files_fixture "$t" "agent/0815-1/97604f47/STATE.md" "packages/cli/src/commands/repo.ts"
+    execution_file "$t" "$(report_with_verdict "")"
+    run_apply "$t"
+    assert_eq "$(added "$t")" "" "one source file disqualifies an otherwise notes-only diff"
+    log_pass "the agent/ notes tree is documentation by path, not by file extension"
 }
 
 test_mixed_diff_earns_no_mechanical_label() {
@@ -821,6 +857,7 @@ with_temp_dir test_too_many_kinds_is_rejected
 
 with_temp_dir test_missing_execution_file_still_applies_mechanical_labels
 with_temp_dir test_docs_only_diff_yields_documentation
+with_temp_dir test_agent_notes_tree_is_documentation_whatever_the_extension
 with_temp_dir test_mixed_diff_earns_no_mechanical_label
 with_temp_dir test_unreadable_file_list_skips_the_mechanical_floor
 

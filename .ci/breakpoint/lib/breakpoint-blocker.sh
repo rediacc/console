@@ -11,7 +11,7 @@
 # when the canonical file is absent, i.e. downstream), so the copy cannot rot in
 # the one repo that is able to notice.
 #
-# Why validate at all: docs/agent/suppressions.md calls BLOCKER "the single
+# Why validate at all: docs/agent-reference/suppressions.md calls BLOCKER "the single
 # escape mechanism". An unvalidated accept-list fills up with "# ok" inside a
 # month, and then the drift gate is decorative.
 #

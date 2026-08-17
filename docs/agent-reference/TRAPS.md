@@ -836,3 +836,47 @@ every `.py` a workflow step runs and requires a `pip install` in the same job to
 name what is not stdlib or first-party. It covers itself. It does NOT follow
 imports transitively, so a gate that grows a helper with its own third-party
 import is one hop outside what it sees.
+
+## A gate failure the serial rerun cannot reproduce is a CONCURRENCY artifact, not a flake
+
+`npm run ci` runs its gates ~8.7x parallel. Something in that pool rewrites
+tracked source files in place while other gates are reading them, so a reader
+can catch a half-written file. The 2026-08-17 battery failed
+`gate-test:claude-hooks` with
+
+    .claude/hooks/test-hooks.sh: line 545: syntax error near unexpected token `fi'
+
+for a file that parses clean and scores 884/0 exit 0 when run directly, twice.
+
+Diagnose it by MTIME, not by re-reading the file, because by the time you look
+the file is whole again:
+
+    find .claude .ci scripts packages -type f \
+      -newermt '<battery start>' ! -newermt '<battery end>' \
+      -not -path '*/node_modules/*' -printf '%TH:%TM:%TS %p\n' | sort
+
+A tracked file whose mtime lands inside the window while `git status` reports it
+UNMODIFIED is the signature: a gate rewrote it with identical content. Do not
+"fix" the file. Rerun the gate serially on a quiet tree; if it passes, the
+failure was the race, and the real defect is the writer.
+
+Two ways this bites the reader rather than the writer. First, `| head` on the
+`find` output hides the decisive hit, because the interesting file is usually
+LAST in a sorted-ascending list dominated by `node_modules` churn -- this is the
+truncated-instrument trap wearing a timestamp. Second, the innocent explanation
+is genuinely common: build artifacts, generated search indexes and
+`.tsbuildinfo` legitimately move. Filter those out before concluding anything.
+
+## A dangerous line in a gate is not a fired line
+
+`.ci/scripts/quality/check-branch.sh:84-88` runs `git rebase origin/main` and
+`git checkout <sha>` against the LIVE working tree. In a shared checkout holding
+300+ uncommitted files from several sessions that reads like a catastrophe, and
+it is a real latent hazard -- but it is guarded: the script exits at line 62
+when the branch is not behind the base, which is the normal case.
+
+Before attributing an observed effect to scary-looking code, prove the code RAN.
+`git rev-list --left-right --count origin/main...HEAD` answers the guard's own
+question, and `git reflog` shows whether a rebase actually happened. Blaming the
+alarming line without that check produces a confident, wrong root cause and
+leaves the real writer unfound.
