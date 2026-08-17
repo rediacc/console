@@ -856,9 +856,31 @@ the file is whole again:
       -not -path '*/node_modules/*' -printf '%TH:%TM:%TS %p\n' | sort
 
 A tracked file whose mtime lands inside the window while `git status` reports it
-UNMODIFIED is the signature: a gate rewrote it with identical content. Do not
+UNMODIFIED is the signature: something rewrote it with identical content. Do not
 "fix" the file. Rerun the gate serially on a quiet tree; if it passes, the
 failure was the race, and the real defect is the writer.
+
+THE 2026-08-17 CASE, SOLVED, because the answer generalises. The writer was
+`.ci/scripts/test/gates/test-generate-tag-inputs.sh:289` and `:311`, which
+overwrite the REAL `resolve-version.sh` with a stub and `cp` it back a second
+later (`generate-tag.sh` runs via `cd "$REPO_ROOT"` and offers no fixture seam).
+No literal path appears at either write site -- both go through a `$real`
+variable -- so every grep for the filename missed them. It was classified T
+("isolated by construction") rather than W in `run-all.sh` on the strength of
+its own comment claiming it "cannot disturb a shared tree": true of the tag
+namespace it avoids, false of the working tree it overwrites. A comment
+asserting safety is not evidence of safety, and here it actively caused the
+misclassification.
+
+TWO WAYS THIS MISLEADS THE INVESTIGATOR. First, a process snapshot taken when
+the mtime moves shows the SURVIVORS, not the culprit: poll-then-`ps` misses a
+child that has already exited, and reproducing "the three gates that were
+running" proved nothing because none of them was the writer. Second, and more
+embarrassing, A CONCURRENT AGENT EDITING FILES PRODUCES THE IDENTICAL SIGNATURE.
+Two of the three "victims" in this case were a peer session's own whole-file
+rewrites, each followed immediately by `bash -n` and a suite run -- the same
+write-execute shape, landing in the same window. Before hunting a gate, ask who
+else is working in the tree.
 
 Two ways this bites the reader rather than the writer. First, `| head` on the
 `find` output hides the decisive hit, because the interesting file is usually
