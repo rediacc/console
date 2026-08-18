@@ -18,9 +18,9 @@ Kärpimine eemaldab olekud, mis ei vasta enam elusale ressursile. Kolm käsku ka
 | `rdc machine prune <machine>` | Masinal olevad andmehoidla artefaktid (alati); orvuks jäänud või tundmatud hoidlakujutised (valikuline) | Kohalik CLI konfiguratsioon + masina `.interim/state` peegel |
 | `rdc config prune` | Kohaliku konfiguratsiooni jäänukid (serdi vahemälu, aegunud arhiivid, rippuvad ristviited) | Ainult kohalik CLI konfiguratsioon |
 
-Need kolm on sõltumatud. Saad käivitada mis tahes ühe ilma teisteta. Need jagavad ühist ohutusmudelit, mida kirjeldatakse allpool jaotises [Ohutus](#ohutusmudel).
+Need kolm on sõltumatud. Saad käivitada mis tahes ühe ilma teisteta. Need jagavad ühist ohutusmudelit, mida kirjeldatakse allpool jaotises [Ohutus](#safety-model).
 
-Kärpimine eemaldab oleku, mille on jätnud maha kustutatud ressursid. *Elavate* repositooriumite hõivatud ruumi tagasinõudmiseks (plokid, mille nende failisüsteemid on vabastanud, kuid bassein endiselt hoiab), kasuta selle asemel [`rdc repo trim`](/et/docs/repositories#ruumi-tagasinõudmine-trim); need kaks täiendavad teineteist.
+Kärpimine eemaldab oleku, mille on jätnud maha kustutatud ressursid. *Elavate* repositooriumite hõivatud ruumi tagasinõudmiseks (plokid, mille nende failisüsteemid on vabastanud, kuid bassein endiselt hoiab), kasuta selle asemel [`rdc repo trim`](/et/docs/repositories#reclaim-space-trim); need kaks täiendavad teineteist.
 
 ## Ühendamise ohutuse eelkontroll
 

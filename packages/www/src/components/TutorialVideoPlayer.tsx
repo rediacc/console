@@ -14,9 +14,22 @@
 
 import Plyr from 'plyr';
 import type { FC } from 'react';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { getLanguageName, SUPPORTED_LANGUAGES } from '../i18n/language-utils';
+import { useTranslation } from '../i18n/react';
+import type { Language } from '../i18n/types';
+import LanguageMenu from './LanguageMenu';
 import 'plyr/dist/plyr.css';
 import '../styles/tutorial-video.css';
+
+/** One locale's five assets, as emitted in the `data-sources` attribute. */
+export interface TutorialSourceSet {
+  mp4: string;
+  poster: string;
+  vtt: string;
+  chapters: string;
+  words: string;
+}
 
 interface TutorialVideoPlayerProps {
   src: string;
@@ -26,6 +39,11 @@ interface TutorialVideoPlayerProps {
   wordsSrc: string;
   title: string;
   lang: string;
+  /**
+   * Every locale this tutorial is published in. Absent (or a single entry) hides the
+   * language picker and the player behaves exactly as it did before it existed.
+   */
+  sources?: Record<string, TutorialSourceSet | undefined>;
 }
 
 // Shape mirrors the `.words.json` sidecar emitted by
@@ -55,21 +73,6 @@ interface WordsDoc {
 // the active word aligned with what the viewer hears. Leading the audio is
 // worse than trailing — don't push this higher than ~80 ms.
 const HIGHLIGHT_LEAD_SEC = 0.06;
-
-const LANG_LABELS: Record<string, string> = {
-  en: 'English',
-  de: 'Deutsch',
-  es: 'Español',
-  fr: 'Français',
-  it: 'Italiano',
-  ja: '日本語',
-  ko: '한국어',
-  pt: 'Português',
-  ru: 'Русский',
-  tr: 'Türkçe',
-  zh: '中文',
-  ar: 'العربية',
-};
 
 function paintChapterOverlay(
   video: HTMLVideoElement,
@@ -164,6 +167,46 @@ function renderCueIntoOverlay(el: HTMLDivElement, cue: CueEntry, activeWordIdx: 
   }
 }
 
+/** Plyr's persisted-preferences key. One entry holds volume, speed, captions and language. */
+const PLYR_STORAGE_KEY = 'plyr-tutorial';
+
+/**
+ * Point Plyr's stored caption language at the language we are about to mount.
+ *
+ * `captions.setup` reads `storage.get('language')` FIRST and only falls back to
+ * `config.captions.language` (plyr.js:3085), so a value left there by an earlier player
+ * wins over the one we pass. Every instance here carries exactly ONE subtitles track, so a
+ * stale value means `languageExists` is false in `captions.update`, Plyr sets a language it
+ * has no track for, and the CC button switches itself off -- which also hides our word
+ * overlay, since that listens for `captionsdisabled`.
+ *
+ * Writing the key before construction keeps the volume/speed/captions-on-off preferences
+ * shared (they are language independent) while making the language dimension follow the
+ * picker. Doing it through `player.language = lang` after construction is NOT equivalent:
+ * on `ready` the track metadata Plyr matches against is still being populated, and a miss
+ * there calls `captions.toggle(false, false)`, which persists captions:false.
+ */
+function alignPlyrCaptionLanguage(lang: string): void {
+  try {
+    const raw = window.localStorage.getItem(PLYR_STORAGE_KEY);
+    const stored = raw ? (JSON.parse(raw) as Record<string, unknown>) : {};
+    stored.language = lang;
+    window.localStorage.setItem(PLYR_STORAGE_KEY, JSON.stringify(stored));
+  } catch {
+    // localStorage can be unavailable (private mode, blocked cookies). Plyr degrades to
+    // config.captions.language in that case, which is already the value we want.
+  }
+}
+
+/** Playback state carried across a language swap. */
+interface PlaybackSnapshot {
+  time: number;
+  paused: boolean;
+  volume: number;
+  muted: boolean;
+  rate: number;
+}
+
 const TutorialVideoPlayer: FC<TutorialVideoPlayerProps> = ({
   src,
   posterSrc,
@@ -172,27 +215,79 @@ const TutorialVideoPlayer: FC<TutorialVideoPlayerProps> = ({
   wordsSrc,
   title,
   lang,
+  sources,
 }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const chapterOverlayRef = useRef<HTMLDivElement>(null);
   const captionRef = useRef<HTMLDivElement>(null);
   const playerRef = useRef<Plyr | null>(null);
-  const [wordsDoc, setWordsDoc] = useState<WordsDoc | null>(null);
+  const restoreRef = useRef<PlaybackSnapshot | null>(null);
+  // The fetched sidecar is stored WITH the URL it came from. Clearing it on a language
+  // change would mean calling setState from an effect body (react-hooks/set-state-in-effect,
+  // and a cascading render); carrying the source instead lets the consumer below simply
+  // ignore a document that does not belong to the video currently loaded, which also closes
+  // the window where the overlay painted the old language's words against the new clock.
+  const [words, setWords] = useState<{ src: string; doc: WordsDoc } | null>(null);
+  const [activeLang, setActiveLang] = useState<string>(lang);
+  // Chrome around the video stays in the PAGE's language; only the media follows the picker.
+  const { t } = useTranslation(lang as Language);
+
+  // The picker offers what the manifest published for THIS cast, ordered by the site's own
+  // locale list rather than by JSON key order, and disappears below two entries.
+  const pickerLangs = useMemo<Language[]>(
+    () => (sources ? SUPPORTED_LANGUAGES.filter((l) => Boolean(sources[l])) : []),
+    [sources]
+  );
+
+  // The five URLs in play. `sources` is the whole truth once present; the individual props
+  // stay the fallback so a page built before the attribute existed still plays.
+  const active = sources?.[activeLang];
+  const activeSrc = active?.mp4 ?? src;
+  const activePoster = active?.poster ?? posterSrc;
+  const activeSubtitles = active?.vtt ?? subtitlesSrc;
+  const activeChapters = active?.chapters ?? chaptersSrc;
+  const activeWords = active?.words ?? wordsSrc;
+
+  /**
+   * Snapshot playback BEFORE the state change, not in the Plyr effect's cleanup.
+   *
+   * React commits DOM mutations before it runs effects, so by the time cleanup reads
+   * `video.currentTime` the new `src` attribute has already been written and the media
+   * element load algorithm has already reset the clock to 0. Capturing here is what makes
+   * "switch language, keep your place" work at all.
+   */
+  const handleLanguageChange = useCallback((next: Language) => {
+    const video = videoRef.current;
+    if (video) {
+      restoreRef.current = {
+        time: video.currentTime,
+        paused: video.paused,
+        volume: video.volume,
+        muted: video.muted,
+        rate: video.playbackRate,
+      };
+    }
+    setActiveLang(next);
+  }, []);
 
   // Fetch words.json once per source change.
   useEffect(() => {
-    if (!wordsSrc) return;
+    if (!activeWords) return;
     let cancelled = false;
-    fetch(wordsSrc)
+    const url = activeWords;
+    fetch(url)
       .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`))))
       .then((doc: WordsDoc) => {
-        if (!cancelled) setWordsDoc(doc);
+        if (!cancelled) setWords({ src: url, doc });
       })
       .catch(() => undefined);
     return () => {
       cancelled = true;
     };
-  }, [wordsSrc]);
+  }, [activeWords]);
+
+  // Null until the sidecar for the CURRENT video has landed.
+  const wordsDoc = words?.src === activeWords ? words.doc : null;
 
   // Plyr lifecycle + chapter overlay.
   useEffect(() => {
@@ -203,6 +298,8 @@ const TutorialVideoPlayer: FC<TutorialVideoPlayerProps> = ({
     // captionRef.current after render (react-hooks/exhaustive-deps); the node
     // is rendered once and stable for the life of this effect.
     const captionNode = captionRef.current;
+
+    alignPlyrCaptionLanguage(activeLang);
 
     const player = new Plyr(video, {
       controls: [
@@ -219,10 +316,10 @@ const TutorialVideoPlayer: FC<TutorialVideoPlayerProps> = ({
         'fullscreen',
       ],
       settings: ['captions', 'speed'],
-      captions: { active: true, language: lang, update: true },
+      captions: { active: true, language: activeLang, update: true },
       keyboard: { focused: true, global: false },
       tooltips: { controls: true, seek: true },
-      storage: { enabled: true, key: 'plyr-tutorial' },
+      storage: { enabled: true, key: PLYR_STORAGE_KEY },
       iconUrl: '/assets/plyr.svg',
     });
     playerRef.current = player;
@@ -273,6 +370,28 @@ const TutorialVideoPlayer: FC<TutorialVideoPlayerProps> = ({
       host?.appendChild(caption);
     };
 
+    // Put the viewer back where they were. The snapshot is taken in
+    // handleLanguageChange; `readyState` is 0 here because the src attribute changed in the
+    // same commit, so the restore waits for metadata of the NEW file.
+    const pending = restoreRef.current;
+    restoreRef.current = null;
+    const applyRestore = () => {
+      if (!pending) return;
+      try {
+        if (Number.isFinite(pending.time) && pending.time > 0) video.currentTime = pending.time;
+        video.volume = pending.volume;
+        video.muted = pending.muted;
+        video.playbackRate = pending.rate;
+        if (!pending.paused) void video.play();
+      } catch {
+        // A restore is a nicety; never let it break the player.
+      }
+    };
+    if (pending) {
+      if (video.readyState >= HTMLMediaElement.HAVE_METADATA) applyRestore();
+      else video.addEventListener('loadedmetadata', applyRestore, { once: true });
+    }
+
     let detachChapterOverlay: (() => void) | undefined;
     player.on('ready', () => {
       detachChapterOverlay = mountChapterOverlay();
@@ -280,6 +399,7 @@ const TutorialVideoPlayer: FC<TutorialVideoPlayerProps> = ({
     });
 
     return () => {
+      video.removeEventListener('loadedmetadata', applyRestore);
       detachChapterOverlay?.();
       // Return the caption to .tvp-root before Plyr.destroy() tears down the
       // .plyr wrapper, so React still finds the node to unmount cleanly.
@@ -295,7 +415,7 @@ const TutorialVideoPlayer: FC<TutorialVideoPlayerProps> = ({
       }
       playerRef.current = null;
     };
-  }, [src, lang]);
+  }, [activeSrc, activeLang]);
 
   // Word-by-word caption overlay driven by RAF + Plyr CC events.
   useEffect(() => {
@@ -393,7 +513,7 @@ const TutorialVideoPlayer: FC<TutorialVideoPlayerProps> = ({
     // Initialize from Plyr's persisted preference (default on).
     const stored = (() => {
       try {
-        return JSON.parse(window.localStorage.getItem('plyr-tutorial') ?? '{}');
+        return JSON.parse(window.localStorage.getItem(PLYR_STORAGE_KEY) ?? '{}');
       } catch {
         return {};
       }
@@ -404,26 +524,76 @@ const TutorialVideoPlayer: FC<TutorialVideoPlayerProps> = ({
       video.removeEventListener('captionsenabled', enable);
       video.removeEventListener('captionsdisabled', disable);
     };
-  }, []);
+    // activeLang, because the <video> below is keyed on it: after a switch this effect's
+    // captured node is a detached one, and the CC button would stop reaching the overlay.
+  }, [activeLang]);
 
-  const langLabel = LANG_LABELS[lang.split('-')[0].toLowerCase()] ?? lang.toUpperCase();
+  const raw = activeLang.split('-')[0].toLowerCase();
+  const isSiteLocale = (SUPPORTED_LANGUAGES as readonly string[]).includes(raw);
+  const base = (isSiteLocale ? raw : 'en') as Language;
+  // getLanguageName, not a local table: the one this component used to carry had twelve
+  // entries and no `et`, so Estonian rendered as a raw "ET" next to twelve real names.
+  const langLabel = isSiteLocale ? getLanguageName(base) : raw.toUpperCase();
+  const selectLabel = t('navigation.selectLanguage');
 
   return (
-    <div className="tvp-root" aria-label={title}>
-      <video
-        ref={videoRef}
-        src={src}
-        poster={posterSrc}
-        preload="metadata"
-        playsInline
-        crossOrigin="anonymous"
-        data-poster={posterSrc}
-      >
-        <track kind="subtitles" src={subtitlesSrc} srcLang={lang} label={langLabel} default />
-        <track kind="chapters" src={chaptersSrc} srcLang={lang} label="Chapters" />
-      </video>
-      <div ref={chapterOverlayRef} className="tvp-chapter-overlay" aria-hidden="true" />
-      <div ref={captionRef} className="tvp-caption" aria-live="polite" aria-atomic="true" />
+    <div className="tvp-shell">
+      {pickerLangs.length > 1 && (
+        <div className="tvp-toolbar">
+          <svg
+            className="tvp-toolbar-icon"
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            aria-hidden="true"
+          >
+            <circle cx="12" cy="12" r="9" />
+            <path d="M12 3c-2.5 3-2.5 15 0 18M12 3c2.5 3 2.5 15 0 18" />
+            <path d="M3 12h18" />
+          </svg>
+          <LanguageMenu
+            variant="flag-name"
+            currentLang={base}
+            languages={pickerLangs}
+            position="top"
+            navigationMode="button"
+            onLanguageChange={handleLanguageChange}
+            persistPreference={false}
+            ariaLabel={selectLabel}
+          />
+        </div>
+      )}
+      {/*
+        `key` forces React to build a FRESH subtree on every language change, and it is
+        load-bearing rather than a re-render hint.
+
+        Plyr.destroy() does not hand the element back: it snapshots a CLONE of the media at
+        construction time and, on teardown, replaces its whole `.plyr` container with that
+        clone. The node React created is left detached, so React's tree and the document
+        disagree from then on -- measured live: after one switch, `.tvp-root` held a bare
+        `<video>` still pointing at the previous language's mp4, `.plyr` was gone entirely,
+        and the src/poster/track attributes React wrote landed on a node nobody could see.
+        Discarding the whole subtree is what keeps the two in step.
+      */}
+      <div key={activeLang} className="tvp-root" aria-label={title}>
+        <video
+          ref={videoRef}
+          src={activeSrc}
+          poster={activePoster}
+          preload="metadata"
+          playsInline
+          crossOrigin="anonymous"
+          data-poster={activePoster}
+        >
+          <track kind="subtitles" src={activeSubtitles} srcLang={base} label={langLabel} default />
+          <track kind="chapters" src={activeChapters} srcLang={base} label="Chapters" />
+        </video>
+        <div ref={chapterOverlayRef} className="tvp-chapter-overlay" aria-hidden="true" />
+        <div ref={captionRef} className="tvp-caption" aria-live="polite" aria-atomic="true" />
+      </div>
     </div>
   );
 };

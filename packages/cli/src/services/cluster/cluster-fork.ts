@@ -302,7 +302,7 @@ export async function forkCluster(
   outputService.success(
     `Cluster "${clusterName}" forked as "${options.tag}" onto "${options.cluster}" ` +
       `(${clusterDatastores.length} datastore(s), ${dstAgents.length} agent(s), writes=${writes}, ` +
-      `role=${role}) — PKI re-minted, parent untouched.`
+      `role=${role}). PKI re-minted, parent untouched.`
   );
   return {
     destControl: dstControl.name,
@@ -419,7 +419,7 @@ export async function rehearseCluster(
     `Rehearsal "${clusterName}" [${tag}] passed the health gate (secretless, role=rehearsal). Discarding...`
   );
   await discardRehearsal(result.destControl, clusterName, tag, options.debug, result);
-  outputService.success(`Rehearsal "${clusterName}" [${tag}] discarded — no residue.`);
+  outputService.success(`Rehearsal "${clusterName}" [${tag}] discarded with no residue.`);
 }
 
 /**
@@ -682,7 +682,7 @@ async function verifyDatastoreRegistered(
   if (!records.some((r) => r.name === name)) {
     throw new Error(
       `Migrate pre-flight failed: after adopt, "${name}" is still not registered on ${machineName}. ` +
-        `Refusing to down the source — nothing destructive has happened.`
+        `Refusing to down the source. Nothing destructive has happened.`
     );
   }
 }

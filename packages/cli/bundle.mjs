@@ -91,7 +91,7 @@ const result = await esbuild.build({
   loader: { '.py': 'text' },
   logLevel: 'silent',
   define: {
-    '__CLI_VERSION__': JSON.stringify(process.env.CLI_VERSION || '0.0.0-dev'),
+    __CLI_VERSION__: JSON.stringify(process.env.CLI_VERSION || '0.0.0-dev'),
   },
 });
 

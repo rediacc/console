@@ -82,7 +82,7 @@ rdc repo resize my-app --size 20G  # Set to exact size
 rdc repo expand my-app --size 5G  # Add 5G to current size
 ```
 
-> Yeniden boyutlandırmadan önce deponun çıkarılmış olması gerekir. `repo expand` çevrimiçi çalışır. Yeniden boyutlandırma deponun maksimum boyutunu değiştirir; maksimumu değiştirmeden serbest kalan blokları havuza geri vermek için bunun yerine [`repo trim`](#alan-kazanma-trim) kullanın.
+> Yeniden boyutlandırmadan önce deponun çıkarılmış olması gerekir. `repo expand` çevrimiçi çalışır. Yeniden boyutlandırma deponun maksimum boyutunu değiştirir; maksimumu değiştirmeden serbest kalan blokları havuza geri vermek için bunun yerine [`repo trim`](#reclaim-space-trim) kullanın.
 
 ## Alan Kazanma (trim)
 
@@ -129,7 +129,7 @@ Politika alanları:
 | `--auto-trim` | Zamanlanmış trim'leri çalıştır | kapalı |
 | `--trim-interval` | Otomatik trim'ler arasındaki minimum saat sayısı | 24 |
 
-Güvenceler: otomatik büyüme, havuzun boş alanı bir rezervin (havuzun 10 GB veya %5'i, hangisi daha büyükse) altına düştüğünde reddeder; aynı deponun ardışık büyümeleri arasında en az 30 dakika bekler ve `--max-quota` değerini asla aşmaz. Otomatik küçültme yoktur: deponun maksimum boyutunu azaltmak her zaman elle, çevrimdışı bir [`repo resize`](#yeniden-boyutlandirma) işlemidir.
+Güvenceler: otomatik büyüme, havuzun boş alanı bir rezervin (havuzun 10 GB veya %5'i, hangisi daha büyükse) altına düştüğünde reddeder; aynı deponun ardışık büyümeleri arasında en az 30 dakika bekler ve `--max-quota` değerini asla aşmaz. Otomatik küçültme yoktur: deponun maksimum boyutunu azaltmak her zaman elle, çevrimdışı bir [`repo resize`](#resize) işlemidir.
 
 Depo başına ayarlar, makine genelindeki varsayılanı geçersiz kılar. Tekrarlanan `policy set` çağrıları yalnızca ilettiğiniz bayrakları değiştirir.
 

@@ -152,10 +152,86 @@ function isAllowed(text: string): boolean {
 
 // ─── Astro Template Scanner ──────────────────────────────────────────────────
 
+/**
+ * Which lines sit inside a BLOCK comment.
+ *
+ * The scan below is line-based and stripped only `//`, so a line in the middle of a
+ * `<!-- ... -->` or a `/* ... *\/` block carries no marker of its own and was read as
+ * prose. Five explanatory comments in `BaseLayout.astro` reddened this gate that way,
+ * describing the very refactor that had just landed. Punishing a good comment is worse
+ * than the finding it produced.
+ *
+ * Returns a boolean per line so callers keep their existing line numbers.
+ */
+export function commentLineMask(content: string): boolean[] {
+  const lines = content.split('\n');
+  const mask = new Array<boolean>(lines.length).fill(false);
+  let inHtml = false;
+  let inBlock = false;
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    const startedInside = inHtml || inBlock;
+    let scan = line;
+    // Text on this line that is OUTSIDE any comment. Accumulating it is the whole fix:
+    // the previous version judged the line by whatever `scan` happened to hold when the
+    // loop broke, and when a line OPENS a block that does not close, `scan` holds the
+    // comment's own prose. So `{/* Server-rendered trigger, not part of the React island`
+    // was read as "a comment plus trailing code" and un-masked, and the gate reported the
+    // comment's first line as a hardcoded user-facing string. Three such lines in
+    // DocsLayout.astro and DocsSidebar.astro made the CI-blocking `check:i18n` chain red.
+    let codeOutside = '';
+    // Consume opens and closes left to right so a one-line block does not latch.
+    for (;;) {
+      if (inHtml) {
+        const end = scan.indexOf('-->');
+        if (end < 0) {
+          scan = '';
+          break;
+        }
+        scan = scan.slice(end + 3);
+        inHtml = false;
+        continue;
+      }
+      if (inBlock) {
+        const end = scan.indexOf('*/');
+        if (end < 0) {
+          scan = '';
+          break;
+        }
+        scan = scan.slice(end + 2);
+        inBlock = false;
+        continue;
+      }
+      const h = scan.indexOf('<!--');
+      const b = scan.indexOf('/*');
+      if (h < 0 && b < 0) {
+        codeOutside += scan;
+        break;
+      }
+      if (h >= 0 && (b < 0 || h < b)) {
+        codeOutside += scan.slice(0, h);
+        scan = scan.slice(h + 4);
+        inHtml = true;
+      } else {
+        codeOutside += scan.slice(0, b);
+        scan = scan.slice(b + 2);
+        inBlock = true;
+      }
+    }
+    // Comment-only when the line touches a comment and everything outside it is
+    // punctuation. The braces of an Astro/JSX `{/* ... */}` wrapper are stripped because
+    // they are the expression container, not content.
+    const bare = codeOutside.replace(/[{}]/g, '').trim();
+    mask[i] = (startedInside || inHtml || inBlock) && bare.length === 0;
+  }
+  return mask;
+}
+
 function scanAstroFile(filePath: string, relPath: string): Issue[] {
   const issues: Issue[] = [];
   const content = fs.readFileSync(filePath, 'utf-8');
   const lines = content.split('\n');
+  const commentMask = commentLineMask(content);
 
   // Find template section (after second ---)
   let fenceCount = 0;
@@ -180,15 +256,27 @@ function scanAstroFile(filePath: string, relPath: string): Issue[] {
   for (let i = templateStart; i < lines.length; i++) {
     const line = lines[i];
     const lineNum = i + 1;
-
+    if (commentMask[i]) continue; // inside a block comment, not user-facing text
 
     // Track block state
-    if (/<script[\s>]/i.test(line) && !/<\/script>/i.test(line)) { inScript = true; continue; }
-    if (/<\/script>/i.test(line)) { inScript = false; continue; }
+    if (/<script[\s>]/i.test(line) && !/<\/script>/i.test(line)) {
+      inScript = true;
+      continue;
+    }
+    if (/<\/script>/i.test(line)) {
+      inScript = false;
+      continue;
+    }
     if (/<style[\s>]/i.test(line)) inStyle = true;
-    if (/<\/style>/i.test(line)) { inStyle = false; continue; }
+    if (/<\/style>/i.test(line)) {
+      inStyle = false;
+      continue;
+    }
     if (/<code[\s>]/i.test(line) || /<pre[\s>]/i.test(line)) inCodeBlock = true;
-    if (/<\/code>/i.test(line) || /<\/pre>/i.test(line)) { inCodeBlock = false; continue; }
+    if (/<\/code>/i.test(line) || /<\/pre>/i.test(line)) {
+      inCodeBlock = false;
+      continue;
+    }
 
     if (inScript || inStyle || inCodeBlock) continue;
 
@@ -242,11 +330,12 @@ function scanTsxFile(filePath: string, relPath: string): Issue[] {
   const issues: Issue[] = [];
   const content = fs.readFileSync(filePath, 'utf-8');
   const lines = content.split('\n');
+  const commentMask = commentLineMask(content);
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
     const lineNum = i + 1;
-
+    if (commentMask[i]) continue; // inside a block comment, not user-facing text
 
     // Check translatable attributes with hardcoded strings (not using {t(...)})
     const attrPattern = /\b(aria-label|title|alt|placeholder)="([^"]+)"/g;

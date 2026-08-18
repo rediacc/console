@@ -113,7 +113,9 @@ function main(): void {
       }
       if (entry.build === 'download') {
         if (!entry.url?.startsWith('https://')) {
-          errors.push(`${where}: build=download but url is not https (${entry.url ?? '<missing>'})`);
+          errors.push(
+            `${where}: build=download but url is not https (${entry.url ?? '<missing>'})`
+          );
         }
         if (!entry.sha256 || !SHA256_RE.test(entry.sha256)) {
           errors.push(`${where}: build=download but sha256 is missing or malformed`);
@@ -142,9 +144,7 @@ function main(): void {
   if (errors.length > 0) {
     console.error(`${RED}✗ embed arch parity failed:${NC}`);
     for (const e of errors) console.error(`  ${e}`);
-    console.error(
-      `\n${YELLOW}Source of truth: ${path.relative(CONSOLE_ROOT, LOCKFILE)}${NC}`
-    );
+    console.error(`\n${YELLOW}Source of truth: ${path.relative(CONSOLE_ROOT, LOCKFILE)}${NC}`);
     process.exit(1);
   }
 

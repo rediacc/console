@@ -153,7 +153,7 @@ export function collectPublicTagEntries(repoRoot: string): BlockeredEntry[] {
           // This validator's own source mentions @public in patterns and docs.
           ':(exclude)scripts/check-knip-blockers.ts',
         ],
-        { cwd: root, encoding: 'utf-8' },
+        { cwd: root, encoding: 'utf-8' }
       );
     } catch {
       continue; // git grep exits 1 when there are no matches
@@ -193,13 +193,13 @@ function main(): void {
   if (failures.length > 0) {
     for (const failure of failures) console.error(failure);
     console.error(
-      `\ncheck-knip-blockers: ${failures.length} suppression entr${failures.length === 1 ? 'y' : 'ies'} without a valid BLOCKER in ${configPath}`,
+      `\ncheck-knip-blockers: ${failures.length} suppression entr${failures.length === 1 ? 'y' : 'ies'} without a valid BLOCKER in ${configPath}`
     );
     process.exit(1);
   }
 
   console.log(
-    `check-knip-blockers: ${entries.length} suppression entries validated in ${path.basename(configPath)}`,
+    `check-knip-blockers: ${entries.length} suppression entries validated in ${path.basename(configPath)}`
   );
 }
 

@@ -1,6 +1,6 @@
 {
   "announcement": {
-    "enabled": true,
+    "enabled": false,
     "link": "/account/",
     "text": "新登場：14日間の無料トライアルでRediaccを始めよう。"
   },
@@ -29,7 +29,6 @@
   "common": {
     "aria": {
       "breadcrumbNavigation": "パンくずナビゲーション",
-      "clickToEnlarge": "クリックして画像を拡大",
       "closeImageModal": "画像モーダルを閉じる",
       "docsSections": "ドキュメントセクション",
       "documentationNavigation": "ドキュメントナビゲーション",
@@ -40,37 +39,23 @@
       "previousImage": "前の画像",
       "rediaccHome": "Rediacc ホーム",
       "resetZoom": "ズームをリセットする",
-      "selectPlanToCompare": "比較するプランを選択",
-      "statusMessage": "ステータスメッセージ",
       "tableOfContents": "目次",
       "zoomIn": "ズームイン",
       "zoomOut": "ズームアウト"
     },
     "buttons": {
       "close": "閉じる",
-      "contactSupport": "サポートに連絡する",
       "getStarted": "今すぐ始める",
-      "goToHomepage": "ホームページへ行く",
-      "learnMore": "もっと詳しく知る",
-      "sendMessage": "メッセージを送信"
+      "learnMore": "もっと詳しく知る"
     },
     "close": "閉じる",
-    "contentNotAvailable": "このコンテンツは{{language}}では利用できません。英語版を表示しています。",
-    "copied": "コピーしました！",
-    "copyLink": "このセクションへのリンクをコピー",
-    "exploreSolutions": "他のソリューションを探す",
     "logoAlt": "Rediacc - インフラストラクチャ自動化プラットフォーム",
-    "platformPreview": "プラットフォームプレビュー",
-    "realStory": "実際の事例",
     "search": {
       "closeModal": "検索を閉じる",
-      "keyboardShortcut": "⌘Kで検索",
-      "navigate": "ナビゲート",
       "noResults": "結果が見つかりませんでした",
       "placeholder": "ドキュメント、ソリューション、機能を検索...",
       "results": "検索結果",
       "searching": "検索中...",
-      "select": "選択",
       "suggestions": {
         "browseSolutions": "ソリューションページの閲覧",
         "checkSpelling": "スペルをチェックする",
@@ -81,15 +66,11 @@
       "unavailable": "検索が利用できません",
       "unavailableMessage": "検索インデックスを読み込めませんでした。ページを更新するか、問題が続く場合はサポートにお問い合わせください。"
     },
-    "section": "セクション",
-    "siteName": "Rediacc",
     "skipNavigation": {
       "skipToFooter": "フッターにスキップ",
       "skipToMainContent": "メインコンテンツにスキップ",
       "skipToNavigation": "ナビゲーションにスキップ"
-    },
-    "terminalSimulationDisclaimer": "出力は例示です。実行時には追加ログが出る場合があります。",
-    "theProblem": "問題点"
+    }
   },
   "contactModal": {
     "close": "閉じる",
@@ -102,8 +83,7 @@
       "messagePlaceholder": "プロジェクトやご質問についてお聞かせください...",
       "name": "お名前",
       "namePlaceholder": "お名前を入力",
-      "subject": "件名",
-      "subjectPlaceholder": "件名を選択"
+      "subject": "件名"
     },
     "sending": "送信中...",
     "subjects": {
@@ -118,6 +98,12 @@
     "title": "お問い合わせ"
   },
   "documentation": {
+    "theme": {
+      "label": "テーマ",
+      "light": "ライト",
+      "dark": "ダーク",
+      "auto": "自動"
+    },
     "categories": {
       "concepts": "コンセプト",
       "guides": "ガイド",
@@ -129,43 +115,22 @@
     "cliReference": "CLIリファレンス",
     "cliReferenceLabel": "CLIリファレンス：",
     "copied": "コピーしました！",
+    "copyCode": "コードをコピー",
     "copyAsMarkdown": "Markdownとしてコピー",
-    "copyAsMarkdownSection": "Markdownとしてコピー",
-    "copyAsMarkdownSectionDesc": "セクションのMarkdownコンテンツをコピー",
     "copyFullPageAriaLabel": "ページ全体をMarkdownとしてコピー",
-    "copySection": "セクションをコピー",
-    "copySectionLink": "セクションリンクをコピー",
-    "copySectionLinkDesc": "ダイレクトURLをクリップボードにコピー",
     "openInNewTab": "新しいタブで開く",
     "searchDocs": "ドキュメントを検索",
-    "shareSection": "セクションを共有",
     "subcategories": {
       "advanced": "応用",
       "essentials": "基本"
-    },
-    "viewAsMarkdown": "Markdownでページを表示",
-    "viewAsMarkdownDesc": "Markdownファイルを新しいタブで開く"
-  },
-  "featureShowcase": {
-    "categoryDescriptions": {
-      "backups": "毎週テストするバックアップ。ただ保存するんじゃなく、本当に復元できることを確認済み。監査が要求する期間、きちんと保持。",
-      "defense": "本番をクローンしたら、セキュリティテストをそこに向ける。見つかった問題を直す。クローンは捨てる。",
-      "dev-env": "本番をそのままクローン、チームで使える。データは同じ、追加ストレージなし。本番に傷をつけず、安全にテスト。",
-      "encryption": "すべてのシステムをLUKSでロック。保存時も移動時も暗号化。監査ログは完全。サイト間の移動も安心。",
-      "multi-cloud": "Amazon、Microsoft、自社サーバー — どこにでも移動でき、ロックインなし。クラウド障害時は別に即座に切り替え。テスト済みで確実に動く。",
-      "ransomware": "ランサムウェアが手を出せないバックアップ。改ざんされていないことを証明するフィンガープリント付き。システム全体を60秒で復旧。"
-    },
-    "subtitle": "ランサムウェアに強い、ずっとオンライン、データは自分たちのもの。6つの方法でこの3つを叶える。",
-    "title": "Rediaccで実現できること"
+    }
   },
   "footer": {
     "columns": {
       "legal": "法務",
       "organization": "会社",
-      "product": "製品",
-      "support": "サポート"
+      "product": "製品"
     },
-    "copyright": "{{year}} Rediacc。著作権所有。",
     "legalDisclosure": {
       "fullLegalInformation": "詳細な法務情報",
       "summary": "{{companyName}} | 登録番号 {{registryCode}} | VAT {{vatNumber}} |"
@@ -177,10 +142,6 @@
       "refundPolicy": "返金ポリシー",
       "telemetryPolicy": "テレメトリポリシー",
       "termsOfService": "利用規約"
-    },
-    "links": {
-      "contactSupport": "お問い合わせ",
-      "returnToHome": "ホームに戻る"
     },
     "organizationLinks": {
       "aboutUs": "当社について",
@@ -194,128 +155,36 @@
       "pricing": "料金",
       "professionalServices": "プロフェッショナルサービス",
       "solutions": "ソリューション"
-    },
-    "supportLinks": {
-      "contactSupport": "お問い合わせ",
-      "helpCenter": "ヘルプセンター"
-    },
-    "tagline": "自社サーバーで実現するバックアップと障害復旧"
+    }
   },
   "getStarted": {
-    "benefits": [
-      "私たちのチームと直接協力しましょう",
-      "フル機能プラットフォーム",
-      "優先サポート",
-      "継続的な機能更新"
-    ],
     "cta": {
       "primary": "Rediaccを無料でインストール",
       "secondary": "営業に相談"
-    },
-    "form": {
-      "fields": {
-        "email": {
-          "autoComplete": "電子メール",
-          "label": "メール *"
-        },
-        "message": {
-          "label": "メッセージ",
-          "placeholder": "あなたのニーズについてお聞かせください..."
-        },
-        "name": {
-          "autoComplete": "名前",
-          "label": "名前 *"
-        },
-        "organization": {
-          "autoComplete": "組織",
-          "label": "組織"
-        },
-        "role": {
-          "autoComplete": "組織のタイトル",
-          "label": "役割"
-        },
-        "useCase": {
-          "label": "主な関心事",
-          "options": {
-            "aiSafeOperations": "サイバーセキュリティ",
-            "developmentAcceleration": "開発",
-            "disasterRecovery": "災害復旧",
-            "multiple": "複数",
-            "other": "その他",
-            "placeholder": "1つ選択してください"
-          }
-        }
-      },
-      "submit": "始めましょう"
-    },
-    "notice": {
-      "description": "「送信」をクリックするとメールが開きます。48時間以内にお返事します。",
-      "emailLabel": "contact@rediacc.com",
-      "title": "提出方法"
     },
     "subtitle": "偽のステージング環境でテストして祈るのはもう終わり。本番をコピーして秒単位でテスト。危険な変更も本データで試せます。本番には影響ゼロ。",
     "title": "最初のスタックをクローンする準備はできましたか？"
   },
   "hero": {
     "cta": {
-      "benefits": "無制限チーム•14日間の無料トライアル",
-      "bookDemo": "デモを予約する",
-      "contactUs": "すべてのインストール方法を見る",
-      "freeBadge": "14日間の無料トライアル·いつでも解約可能",
-      "getStarted": "無料で始める",
-      "learnMore": "動き方を見る",
-      "readDocs": "ドキュメントを読む",
-      "seeDetails": "詳細を見る"
+      "getStarted": "無料で始める"
     },
-    "eyebrow": "セルフホスト型·あなたのサーバーで動く",
     "install": {
-      "alt": {
-        "apt": "apt",
-        "brew": "brew",
-        "docker": "docker",
-        "more": "もっと見る →"
-      },
-      "ariaLabel": "インストールコマンド",
-      "copied": "コピーしました！",
-      "copy": "クリップボードにコピー",
       "tabs": {
         "linux": "Linux",
         "macos": "macOS",
         "windows": "Windows"
-      },
-      "tabsLabel": "OSを選択"
+      }
     },
-    "subtitle": "Rediaccはあなたのサーバーにインストールするソフトウェア。本番環境全体（アプリ、データベース、設定）を数秒でコピー。テスト、バックアップ、素早い復旧が可能。",
+    "subtitle": "Rediaccはあなたのサーバーにインストールするソフトウェア。本番環境全体（アプリ、データベース、設定）を数秒でコピー。",
     "title": "本番環境をクローン。",
     "titleHighlight": " 何も壊さない。"
-  },
-  "integrations": {
-    "items": [
-      "Docker",
-      "PostgreSQL",
-      "MySQL",
-      "MariaDB",
-      "Git",
-      "GitLab",
-      "Jenkins",
-      "Prometheus",
-      "S3",
-      "btrfs",
-      "LUKS",
-      "systemd",
-      "Kubernetes",
-      "Ceph",
-      "k3s"
-    ],
-    "migrationMessage": "Rediacc がアプリ、データベース、設定をひとつのファイルにまとめます。どこにでも移行できます。Docker をすでに使ってますか？なら、もう大半は済んでます。Kubernetes を運用中なら、クラスタ全体も同じ方法でフォークや移行ができます。",
-    "title": "いま使ってるシステムとそのまま連携"
   },
   "layout": {
     "meta": {
       "author": "Rediacc",
       "defaultDescription": "開発運用を加速するために設計されたインフラストラクチャ自動化プラットフォーム。 インスタント開発環境と次世代の災害復旧。",
       "defaultKeywords": "インフラストラクチャの自動化、AI 運用、災害復旧、開発環境、モデル コンテキスト プロトコル、DevOps、CI/CD",
-      "locale": "ja_JP",
       "siteName": "Rediacc",
       "twitter": {
         "creator": "@rediacc",
@@ -323,31 +192,8 @@
       }
     }
   },
-  "logoWall": {
-    "categories": ["Git", "CI/CD", "コンテナ", "データベース", "モニタリング", "ストレージ"],
-    "title": "お使いのインフラと連携"
-  },
-  "metrics": {
-    "items": [
-      {
-        "label": "60秒以内でコピー完了",
-        "number": "241 GB"
-      },
-      {
-        "label": "追加ストレージ",
-        "number": "0 bytes"
-      },
-      {
-        "label": "復旧時間",
-        "number": "< 1 min"
-      },
-      {
-        "label": "Whole Kubernetes cluster fork",
-        "number": "46s"
-      }
-    ]
-  },
   "navigation": {
+    "moreOptions": "その他のオプション",
     "account": "アカウント",
     "blog": "ブログ",
     "builtForYou": "あなたに合わせて",
@@ -389,9 +235,7 @@
     "search": "検索",
     "selectLanguage": "言語を選択してください",
     "solutions": "ソリューション",
-    "solutionsMegaMenu": "ソリューションメニュー",
     "toggleMenu": "メニューの切り替え",
-    "toggleTheme": "テーマを切り替える",
     "viewAllSolutions": "すべてのソリューションを表示"
   },
   "newsletter": {
@@ -417,9 +261,6 @@
       "description": "メールアドレスを入力すると、詳細なコスト内訳と削減額がわかります。",
       "title": "詳細なROIレポートで削減効果を確認",
       "unlock": "レポートを確認"
-    },
-    "stickyBar": {
-      "text": "セルフホスティングのヒントをメールで受け取る"
     },
     "subscribe": "購読する",
     "successMessage": "受信トレイを確認して、購読を確定してください。",
@@ -455,19 +296,12 @@
   "pages": {
     "blog": {
       "allArticles": "すべての記事",
-      "backToBlog": "ブログに戻る",
-      "byAuthor": "投稿者: {{author}}",
-      "category": "カテゴリ",
       "featured": "注目の記事",
       "meta": {
         "description": "ランサムウェアが手も出せないバックアップ。復旧がずっと速い。自分たちのサーバーで眠れない夜とさようなら。",
         "keywords": "インフラストラクチャ自動化ブログ、DevOps ガイド、分散システム、タスク実行、クラウド インフラストラクチャ",
         "title": "ブログ | Rediacc - インフラ自動化の実践ノウハウ"
       },
-      "published": "公開日",
-      "readMore": "続きを読む",
-      "relatedArticles": "関連記事",
-      "sharingIs": "シェアは愛",
       "subtitle": "バックアップ、リカバリー、サーバー運用のガイド",
       "title": "ブログ"
     },
@@ -554,53 +388,11 @@
       }
     },
     "contact": {
-      "breadcrumb": {
-        "contact": "お問い合わせ",
-        "home": "ホーム"
-      },
-      "form": {
-        "ariaLabel": "お問い合わせフォーム",
-        "fields": {
-          "email": {
-            "label": "メールアドレス *"
-          },
-          "message": {
-            "label": "お問い合わせ内容 *",
-            "placeholder": "ご要望やお困りなことをお聞かせください…"
-          },
-          "name": {
-            "label": "お名前 *"
-          },
-          "subject": {
-            "label": "*に興味があります",
-            "options": {
-              "disasterRecovery": "災害復旧",
-              "general": "一般的な",
-              "other": "その他",
-              "partnership": "パートナーシップ",
-              "placeholder": "1つ選択してください",
-              "technical": "技術的なご質問"
-            }
-          }
-        },
-        "legend": "お問い合わせ情報",
-        "submit": "始めましょう"
-      },
-      "hero": {
-        "subtitle": "フォームにご記入ください。48時間以内にご返信いたします。",
-        "title": "お問い合わせ"
-      },
       "info": {
         "description": "エンジニアリングチームと直接つながります。ほとんどの返信は24時間以内です。",
         "methods": {
           "general": {
-            "email": "contact@rediacc.com",
             "title": "ご質問ですか？"
-          },
-          "getStarted": {
-            "description": "無料のコミュニティプラン。優先サポート付き。",
-            "link": "もっと詳しく知る",
-            "title": "さっそく始める"
           },
           "technicalSupport": {
             "description": "サポートチームに直接ご連絡ください。",
@@ -613,11 +405,6 @@
         "description": "災害復旧、パートナーシップ、技術的なご質問など、Rediaccチームへのお問い合わせはこちら。48時間以内にお返事いたします。",
         "keywords": "Rediacc お問い合わせ、災害復旧プラットフォーム、検証済みバックアップ",
         "title": "Rediaccへのお問い合わせください | チームと直接相談できます"
-      },
-      "notice": {
-        "description": "「送信」をクリックするとメールが開きます。ご質問は",
-        "emailLabel": "contact@rediacc.com",
-        "title": "提出方法"
       }
     },
     "cookiePolicy": {
@@ -736,19 +523,19 @@
             "question": "プランのアップグレードまたはダウングレードはいつでもできますか？"
           },
           {
-            "answer": "Visa、MasterCard、American Express対応。エンタープライズプランの年間契約なら請求書払いも可能です。",
+            "answer": "Visa、MasterCard、American Express をご利用いただけます。年間のリカバリー顧問契約では請求書払いにも対応しています。",
             "question": "どの支払い方法に対応していますか？"
           },
           {
-            "answer": "はい。ProフェッショナルとBusinessは両方とも14日間の無料トライアルで始まります。サインアップ時にカード情報を登録すれば、トライアル終了時に初めて課金されます。その前にキャンセルすれば料金はかかりませんし、アカウントは無料のCommunityプランに戻ります。",
+            "answer": "はい。リカバリー診断とリカバリープログラムはどちらも 14 日間の無料トライアルから始まります。登録時にカードを登録し、課金はトライアル終了時のみです。それまでに解約すれば費用はかかりません。",
             "question": "無料トライアルはありますか？"
           },
           {
-            "answer": "コミュニティプランはコミュニティサポートとセルフサービスドキュメントを提供します。プロフェッショナルプランではメール・チャットサポートが追加されます。ビジネスプランではさらに電話サポートと専任のアカウントマネージャーが含まれます。エンタープライズプランでは24時間年中無休のホワイトグローブサポートと経営層への直接アクセスを提供します。",
+            "answer": "リカバリー診断にはメールとチャットのサポートが含まれます。リカバリープログラムでは電話サポートと専任のアカウントマネージャーが加わります。リカバリー顧問契約では 24/7/365 の直接サポートと上級スタッフへの直通窓口が付きます。",
             "question": "サポート内容は何ですか？"
           },
           {
-            "answer": "復旧時間はご利用のプランによって異なります。コミュニティプランでは最新のバックアップを数分で復旧できます。プロフェッショナルプランでは過去24時間以内の任意の時点に復旧できます。ビジネスプランでは4時間での復旧を保証します。エンタープライズプランでは15～60分のカスタムスケジュールでオンラインに復帰できます。",
+            "answer": "復旧までの時間は契約内容によって変わります。リカバリー診断では過去 24 時間の任意の時点に戻せます。リカバリープログラムは 4 時間での復旧を保証します。リカバリー顧問契約ではお客様のスケジュールに合わせて 15 分から 60 分で復旧します。",
             "question": "災害からどれくらい早く復旧できますか？"
           },
           {
@@ -779,71 +566,14 @@
         "title": "ディザスタリカバリサービスの料金プラン - あらゆる規模の企業向け | Rediacc"
       },
       "plans": {
-        "business": {
-          "description": "エキスパートセットアップ付き。失わせない完全保護。",
-          "features": [
-            "Businessのすべて+",
-            "9,999ドルのセットアップクレジット付き（ローンチオファー）",
-            "3リージョンでストレージ。1つの障害では止まらない。",
-            "継続的なデータ保護。データ損失ほぼゼロ。",
-            "4時間のリカバリSLA（保証）",
-            "無制限のアプリ、各500 GB",
-            "アクティブ7/予約済み3",
-            "監査ログ90日間保持",
-            "ロールベースのアクセス制御と完全な監査ログ",
-            "コンプライアンス対応監査レポート",
-            "専任カスタマーサクセスマネージャー",
-            "電話サポート+コラボレーションスペース"
-          ],
-          "name": "仕事"
+        "program": {
+          "name": "リカバリープログラム"
         },
-        "community": {
-          "description": "初日から本番対応。無料のフォールバックプランです。",
-          "features": [
-            "ユーザーもチームも無制限。自由に協業。",
-            "最新バックアップを数分で復元。障害からすぐ復旧。",
-            "無制限のアプリ、各10 GB",
-            "2時間のジョブタイムアウト、アクティブ2/予約済み1",
-            "監査ログ7日間保持",
-            "手動バックアップスケジュール",
-            "コミュニティSlackアクセス",
-            "セルフサービスサポートとドキュメント",
-            "「Rediacc提供」表示"
-          ],
-          "name": "コミュニティ"
+        "retainer": {
+          "name": "リカバリー顧問契約"
         },
-        "enterprise": {
-          "description": "大規模・複雑な運用向けの全面サポート災害復旧。",
-          "features": [
-            "Businessのすべて+",
-            "カスタムSLA（15～60分で復旧）。お客様要件が当社の約束。",
-            "あなた専用の環境。最大限のセキュリティとパフォーマンス。",
-            "24時間365日のエキスパートサポート。いつでも対応。",
-            "無制限のアプリ、各1 TB以上",
-            "96時間以上のジョブウィンドウ（アクティブ10+/予約済み5+）",
-            "監査ログ1年以上保持",
-            "四半期ごとの災害復旧訓練。本当に必要になる前に準備を確認。",
-            "エグゼクティブエスカレーションホットライン",
-            "カスタム統合&ワークフロー",
-            "監査文書サポート&セキュリティレビュー"
-          ],
-          "name": "企業"
-        },
-        "professional": {
-          "description": "本格的な災害復旧。エンタープライズの煩雑さなし。",
-          "features": [
-            "Communityのすべて+",
-            "自動バックアップスケジュール。設定して忘れるだけ。",
-            "ポイントインタイムリカバリ（24時間）",
-            "無制限のアプリ、各100 GB",
-            "24時間のジョブタイムアウト、アクティブ3/予約済み2",
-            "監査ログ30日間保持",
-            "メール+チャットサポート",
-            "SlackとPagerDuty通知",
-            "「Rediacc提供」表示なし",
-            "統合APIアクセス"
-          ],
-          "name": "プロ"
+        "assessment": {
+          "name": "リカバリー診断"
         }
       },
       "psTeaser": {
@@ -854,8 +584,8 @@
       "strategy": {
         "copy": "さあ、今のあなたから始めよう。ほとんどのチームはそこに留まる。復旧遅延がビジネスに響いたら上げるだけ。製品は全プラン同じ。Kubernetesを運用中？クラスタ全体も同じ方法で、短時間の計測されたカットオーバーで移行できる。",
         "distribution": [
-          "プロ→ビジネス：バックアップは別拠点保管。変更は即座に保存。4時間復旧を保証。専任サポート付き。",
-          "ビジネス→エンタープライズ：復旧速度を選べる。15～60分のカスタム設定。本番環境と隔離された別環境で実行。必要な時に専任サポート。"
+          "リカバリー診断からリカバリープログラムへ: バックアップは 2 つ目の拠点に保管されます。変更は発生したその瞬間に保存されます。4 時間以内の復旧が保証されます。専任のサポート担当者が付きます。",
+          "リカバリープログラムからリカバリー顧問契約へ: 復旧までの時間をお客様が決められます。その幅は 15 分から 60 分です。復旧は本番システムが触れられない完全に分離された環境で行われ、いざというときに人が直接支援します。"
         ],
         "heading": "あらゆるステージに対応"
       },
@@ -878,22 +608,17 @@
         ],
         "recoveryNote": "RPO（目標復旧時点）: 災害時に失ってもいいデータ量を、時間で表したもの。例えば RPO が15分なら、最大15分間のデータが失われる可能性があります。\n\nRTO（目標復旧時間）: 災害後、ビジネスを再開するまでの時間。例えば RTO が4時間なら、4時間以内にシステムが復旧されます。",
         "values": {
-          "business": {
+          "program": {
             "auditLogs": "90日",
             "rpo": "約5分（継続）",
             "rto": "4時間（保証付き）"
           },
-          "community": {
-            "auditLogs": "7日間",
-            "rpo": "ベストエフォート",
-            "rto": "ベストエフォート"
-          },
-          "enterprise": {
+          "retainer": {
             "auditLogs": "1年以上",
             "rpo": "カスタム（ほぼゼロ）",
             "rto": "15～60分（カスタム）"
           },
-          "professional": {
+          "assessment": {
             "auditLogs": "30日",
             "rpo": "約15分",
             "rto": "任意時点への復元"
@@ -901,79 +626,34 @@
         }
       },
       "trust": {
-        "heading": "セキュリティと信頼性",
         "items": ["AES-256暗号化規格", "99.99% の稼働率を保証"]
       },
       "ui": {
-        "anchor": "戦略的アンカー",
-        "bestValue": "最高コスパ",
-        "contactSales": "営業に相談",
         "contactUs": "お問い合わせ",
         "contactUsSub": "カスタム制限と条件",
         "cta": {
-          "business": {
-            "launchBadge": "限定ローンチオファー",
-            "primary": "無料トライアルを開始",
-            "secondary": "営業に相談",
-            "valueNote": "$9,999のセットアップクレジット付き"
+          "program": {
+            "primary": "無料トライアルを開始"
           },
-          "community": {
-            "note": "無料のフォールバックプラン",
-            "primary": "Rediaccをお試し",
-            "secondary": "詳細を確認"
+          "retainer": {
+            "primary": "デモを予約"
           },
-          "enterprise": {
-            "primary": "デモを予約",
-            "secondary": "営業に相談",
-            "subtext": "カスタムSLA・専任サポート"
-          },
-          "professional": {
-            "primary": "無料トライアルを開始",
-            "secondary": "営業に相談"
+          "assessment": {
+            "primary": "無料トライアルを開始"
           }
-        },
-        "foreverFree": "ずっと無料",
-        "getStarted": "今すぐインストール",
-        "guarantees": {
-          "cancelAnytime": "いつでも解約できる",
-          "freeTrial": "14日間の無料トライアル",
-          "noContracts": "長期契約なし"
-        },
-        "keyBenefits": "主な特徴",
-        "learnMore": "プランを比較",
-        "limitedOffer": "限定ローンチオファー",
-        "monthOrYear": "月額 / 年間 {{price}}",
-        "popular": "一番選ばれています",
-        "startingAt": "*最安",
-        "taxDisclaimer": "すべての価格は米ドル建て、税金は別途かかります。",
-        "whatsIncluded": "含まれる内容:"
+        }
       }
     },
     "docs": {
-      "allDocumentation": "すべてのドキュメント",
-      "backToDocs": "ドキュメントに戻る",
-      "cliReference": "CLI リファレンス",
-      "cliReferenceDesc": "Rediacc をターミナルから実行するために必要なすべてのコマンド。フラグと例はここで確認できます。",
       "fallbackNotice": {
-        "helpTranslate": "このページの翻訳を手伝ってください",
         "message": "このページは選択した言語ではまだ利用できません。英語版を表示しています。",
         "title": "翻訳は利用できません"
       },
       "gettingStarted": "はじめに",
       "gettingStartedDesc": "Rediacc は初めてですか？ここから始めましょう。基本を学び、最初のバックアップを素早く実行できます。",
-      "meta": {
-        "description": "Rediacc のドキュメント：セットアップガイド、CLI リファレンス、API ドキュメント、段階的なデプロイメント手順。",
-        "keywords": "ドキュメント、API リファレンス、ガイド、インフラストラクチャ自動化、CLI リファレンス、キュー システム",
-        "title": "ドキュメント | Rediacc - サーバーバックアップ・リカバリ"
-      },
-      "queueSystem": "複数のサーバーで作業",
-      "queueSystemDesc": "このセクションでは、Rediacc が複数のサーバーにわたって作業をどのように処理するかについて説明します。1 台のマシンだけで運用している場合は、現在のところスキップしてください。",
       "searchPlaceholder": "ドキュメントを検索...",
-      "subtitle": "Rediacc を使い、サーバーをバックアップして素早く復旧する方法を学びましょう。",
       "tableOfContents": "このページの内容",
-      "title": "ドキュメント",
-      "welcome": "Rediacc ドキュメントへようこそ",
-      "welcomeDescription": "Rediacc はあなたのサーバー上で動作し、各 Docker アプリケーション、データベース、設定をロックされたバックアップとして保持します。サーバーが故障した際、ゼロからの再構築ではなく、バックアップから復旧できます。初めてですか？Getting Started ガイドから開始してください。既に実行していますか？コマンドリファレンスにお進みください。"
+      "title": "ドキュメント"
     },
     "downloads": {
       "actions": {
@@ -990,7 +670,6 @@
         "title": "自動更新について"
       },
       "cli": {
-        "binary": "バイナリ",
         "description": "ターミナルで実行する軽量で高速なツールです。画面のないサーバーの管理や、複数のマシンで同じコマンドを一度に実行するのに向いています。サーバーへの接続、コマンドの実行、更新の配信ができ、ブラウザは不要です。"
       },
       "hero": {
@@ -1024,9 +703,6 @@
       }
     },
     "home": {
-      "imageModal": {
-        "indicator": "{{current}} / {{total}}"
-      },
       "meta": {
         "description": "本番環境を60秒でクローン。5分以内に災害から復旧。セルフホスト型で、あなたのハードウェアで安全に管理。",
         "keywords": "インフラストラクチャ自動化、開発環境、災害復旧、DevOps 自動化、CI/CD パイプライン、クラウド インフラストラクチャ、開発運用、モデル コンテキスト プロトコル、AI セーフ インフラストラクチャ",
@@ -1162,7 +838,6 @@
       "description": "申し訳ございませんが、お探しのページは存在しないか、移動されました。 これは、古いリンクをたどった場合、または URL を間違って入力した場合に発生する可能性があります。",
       "help": {
         "description": "これがエラーであると思われる場合、またはここにコンテンツがあることを期待していた場合は、サポート チームにご連絡ください。 あなたが探しているものを見つけるお手伝いをします。",
-        "link": "サポートチームにお問い合わせください",
         "title": "助けが必要ですか?"
       },
       "meta": {
@@ -1173,17 +848,10 @@
       "suggestions": {
         "getInTouchPrefix": "こちらからお問い合わせください：",
         "goBackPrefix": "こちらに戻る：",
-        "items": [
-          "URL にタイプミスがないか確認してください",
-          "ホームページに戻る",
-          "当社のインフラストラクチャ自動化ソリューションについて学ぶ",
-          "お問い合わせページからご連絡ください",
-          "今日からRediaccを使い始めましょう"
-        ],
+        "items": ["URL にタイプミスがないか確認してください"],
         "learnAboutPrefix": "詳しくはこちら：",
         "links": {
           "contact": "お問い合わせページ",
-          "getStarted": "Rediacc",
           "homepage": "ホームページ",
           "solutions": "インフラ自動化ソリューション"
         },
@@ -1396,9 +1064,7 @@
           "title": "AI エージェントにインフラ管理を任せましょう"
         },
         "hero": {
-          "badge": "AI エージェント対応",
           "primaryCta": "無料で試す",
-          "secondaryCta": "ドキュメントを読む",
           "subtitle": "CLI 優先。SSH ベース。JSON デフォルト。rdc はすべて自律型エージェント向け。GUI 不要、ブラウザ自動化不要、カスタム統合不要。",
           "title": "AI エージェントなら使い慣れたインフラ。"
         },
@@ -1488,19 +1154,16 @@
           "statCallouts": [
             {
               "number": "73%",
-              "ref": 1,
               "source": "GitHub 2025",
               "text": "の開発者が2026年までにインフラタスクでAIエージェント活用を予定"
             },
             {
               "number": "4x",
-              "ref": 2,
               "source": "業界分析",
               "text": "非構造化出力のコンテキストウィンドウ使用量（JSON比）"
             },
             {
               "number": "0%",
-              "ref": 3,
               "source": "市場調査",
               "text": "AIエージェント向けに設計された従来のインフラプラットフォーム"
             }
@@ -1582,63 +1245,6 @@
           ],
           "title": "rdcがAIエージェント向けに構築されている理由",
           "traditionalLabel": "従来のプラットフォーム"
-        },
-        "terminal": {
-          "lines": [
-            {
-              "cmd": "rdc machine status prod-1",
-              "flag": "-o",
-              "prompt": "$",
-              "type": "command",
-              "value": "json"
-            },
-            {
-              "type": "spacer"
-            },
-            {
-              "result": "done",
-              "text": "SSH接続確立済み",
-              "type": "check"
-            },
-            {
-              "result": "done",
-              "text": "renetデーモンに問い合わせ中",
-              "type": "check"
-            },
-            {
-              "result": "すべて正常",
-              "text": "12リポジトリ、47コンテナ",
-              "type": "check"
-            },
-            {
-              "type": "spacer"
-            },
-            {
-              "text": "{\"success\": true, \"command\": \"machine info\", \"data\": {...}}",
-              "type": "success"
-            },
-            {
-              "pairs": [
-                {
-                  "label": "フォーマット",
-                  "value": "JSON"
-                },
-                {
-                  "label": "レイテンシ",
-                  "value": "142ms"
-                },
-                {
-                  "label": "認証",
-                  "value": "SSH"
-                },
-                {
-                  "label": "トークン",
-                  "value": "~200"
-                }
-              ],
-              "type": "summary"
-            }
-          ]
         }
       },
       "forCeos": {
@@ -1697,9 +1303,7 @@
           "withTag": "Rediaccの場合"
         },
         "hero": {
-          "badge": "CEO向け",
           "primaryCta": "料金を見る",
-          "secondaryCta": "営業に相談",
           "subtitle": "自社サーバーであなたのビジネスを守ります。マシンあたりの一律料金で、シート単価も、予想外のクラウド請求も、ベンダーロックインもなし。",
           "title": "マシンあたり一律料金。データはあなたのもの。"
         },
@@ -1714,19 +1318,16 @@
           "statCallouts": [
             {
               "number": "20%",
-              "ref": 1,
               "source": "Flexera 2025",
               "text": "平均クラウド支出の年間増加率"
             },
             {
               "number": "98%",
-              "ref": 2,
               "source": "TrustRadius 2024",
               "text": "のSMB技術決定がトップエグゼクティブから直接行われている"
             },
             {
               "number": "$9.36M",
-              "ref": 3,
               "source": "IBM 2024",
               "text": "データ侵害の平均コスト"
             }
@@ -1798,69 +1399,7 @@
             "label": "シート単価",
             "number": "0"
           }
-        ],
-        "terminal": {
-          "lines": [
-            {
-              "cmd": "rdc machine status production",
-              "flag": "",
-              "prompt": "$",
-              "type": "command",
-              "value": ""
-            },
-            {
-              "type": "spacer"
-            },
-            {
-              "result": "正常",
-              "text": "3台のマシンを監視中",
-              "type": "check"
-            },
-            {
-              "result": "全バックアップ済み",
-              "text": "47個のリポジトリを保護中",
-              "type": "check"
-            },
-            {
-              "result": "2時間前",
-              "text": "最後のバックアップを検証済み",
-              "type": "check"
-            },
-            {
-              "result": "5分未満",
-              "text": "復旧態勢",
-              "type": "check"
-            },
-            {
-              "type": "spacer"
-            },
-            {
-              "text": "全システム安全。今期無事件。",
-              "type": "success"
-            },
-            {
-              "pairs": [
-                {
-                  "label": "稼働率",
-                  "value": "99.99%"
-                },
-                {
-                  "label": "保護済み",
-                  "value": "2.4 TB"
-                },
-                {
-                  "label": "月額コスト",
-                  "value": "$204"
-                },
-                {
-                  "label": "クラウド比",
-                  "value": "−62%"
-                }
-              ],
-              "type": "summary"
-            }
-          ]
-        }
+        ]
       },
       "forCtos": {
         "benefits": {
@@ -1954,9 +1493,7 @@
           "title": "Rediaccとの比較"
         },
         "hero": {
-          "badge": "CTO必見",
           "primaryCta": "デモを予約",
-          "secondaryCta": "ROI試算",
           "subtitle": "セルフホストで完全な保護。クラウド料金なし、ユーザー数課金なし、復旧は数分で（数時間ではなく）。",
           "title": "インフラTCO60%削減。自社ハードウェアで運用。"
         },
@@ -1971,19 +1508,16 @@
           "statCallouts": [
             {
               "number": "17%",
-              "ref": 1,
               "source": "Flexera 2025",
               "text": "エンタープライズ全体の平均クラウド予算超過額"
             },
             {
               "number": "76%",
-              "ref": 2,
               "source": "Veeam 2024",
               "text": "の企業が過去1年間に重大なダウンタイムを経験している"
             },
             {
               "number": "$9.36M",
-              "ref": 3,
               "source": "IBM 2024",
               "text": "2024年のデータ侵害による平均被害額"
             }
@@ -2084,68 +1618,6 @@
           ],
           "title": "Rediaccがインフラを守る仕組み",
           "traditionalLabel": "クラウド/従来型DR"
-        },
-        "terminal": {
-          "lines": [
-            {
-              "cmd": "rdc config backup-strategy set",
-              "flag": "",
-              "prompt": "$",
-              "type": "command",
-              "value": ""
-            },
-            {
-              "type": "spacer"
-            },
-            {
-              "result": "完了",
-              "text": "47個のリポジトリを3台のマシンでスキャン中",
-              "type": "check"
-            },
-            {
-              "result": "47/47",
-              "text": "btrfsの不変スナップショットを作成中",
-              "type": "check"
-            },
-            {
-              "result": "合格",
-              "text": "バックアップの整合性を検証中（復元テスト）",
-              "type": "check"
-            },
-            {
-              "result": "同期完了",
-              "text": "スタンバイノードに複製中",
-              "type": "check"
-            },
-            {
-              "type": "spacer"
-            },
-            {
-              "text": "全リポジトリが保護されました。次回実行: 明日 02:00 UTC",
-              "type": "success"
-            },
-            {
-              "pairs": [
-                {
-                  "label": "リポジトリ数",
-                  "value": "47"
-                },
-                {
-                  "label": "合計サイズ",
-                  "value": "2.4 TB"
-                },
-                {
-                  "label": "処理時間",
-                  "value": "3.2s"
-                },
-                {
-                  "label": "ストレージ増分",
-                  "value": "+12 GB"
-                }
-              ],
-              "type": "summary"
-            }
-          ]
         }
       },
       "forDevops": {
@@ -2177,9 +1649,7 @@
           "title": "自分で試してみる"
         },
         "hero": {
-          "badge": "DevOps エンジニア向け",
           "primaryCta": "無料で試す",
-          "secondaryCta": "ドキュメントを読む",
           "subtitle": "本番環境を60秒でクローン、5分以内にロールバック。自社ハードウェア上で動作するCLIファースト基盤。チケット不要。待ち時間なし。データはすべてあなたのもの。",
           "title": "本番を1分でクローン。5分で復旧。もうチケットは不要。"
         },
@@ -2269,19 +1739,16 @@
           "statCallouts": [
             {
               "number": "69%",
-              "ref": 1,
               "source": "Atlassian 2024",
               "text": "の開発者がツール周りの非効率性で、毎週8時間以上を失っている"
             },
             {
               "number": "3日",
-              "ref": 2,
               "source": "業界調査",
               "text": "エンタープライズチームで新環境のセットアップに要する平均時間"
             },
             {
               "number": "$50K/年",
-              "ref": 3,
               "source": "業界総合",
               "text": "1人の開発者あたり、コンテキスト切り替えで失う時間"
             }
@@ -2375,242 +1842,53 @@
           ],
           "title": "60秒でクローンが作れる理由",
           "traditionalLabel": "従来のアプローチ"
-        },
-        "terminal": {
-          "lines": [
-            {
-              "cmd": "rdc repo fork production",
-              "flag": "",
-              "prompt": "$",
-              "type": "command",
-              "value": ""
-            },
-            {
-              "type": "spacer"
-            },
-            {
-              "result": "完了",
-              "text": "本番をスナップショット中（btrfs CoW）",
-              "type": "check"
-            },
-            {
-              "result": "完了",
-              "text": "8つのコンテナとDBを複製中",
-              "type": "check"
-            },
-            {
-              "result": "完了",
-              "text": "暗号化ストレージをマウント中（380 GB）",
-              "type": "check"
-            },
-            {
-              "result": "8/8 成功",
-              "text": "ヘルスチェック実行中",
-              "type": "check"
-            },
-            {
-              "type": "spacer"
-            },
-            {
-              "text": "クローン準備完了: feature-auth-v2.internal",
-              "type": "success"
-            },
-            {
-              "pairs": [
-                {
-                  "label": "時間",
-                  "value": "52s"
-                },
-                {
-                  "label": "コンテナ",
-                  "value": "8"
-                },
-                {
-                  "label": "サイズ",
-                  "value": "380 GB"
-                },
-                {
-                  "label": "使用容量",
-                  "value": "1.8 GB (CoW)"
-                }
-              ],
-              "type": "summary"
-            }
-          ]
         }
       }
     },
     "pricing": {
       "comparison": {
-        "allPlansInclude": "全プラン共通機能：無制限ユーザー・チーム、無制限リポジトリ、スナップショット復元、ダークモード、9言語",
-        "categories": {
-          "automation": {
-            "label": "スケジューリングと自動化",
-            "rows": [
-              {
-                "business": "✓",
-                "community": "✓",
-                "enterprise": "✓",
-                "label": "手動スケジューリング",
-                "professional": "✓"
-              },
-              {
-                "business": "✓",
-                "community": "✓",
-                "enterprise": "✓",
-                "label": "自動スケジューリング",
-                "professional": "✓"
-              },
-              {
-                "business": "✓",
-                "community": "✓",
-                "enterprise": "✓",
-                "label": "連携 API",
-                "professional": "✓"
-              },
-              {
-                "business": "—",
-                "community": "—",
-                "enterprise": "✓",
-                "label": "カスタム ワークフロー",
-                "professional": "—"
-              }
-            ]
+        "allPlansInclude": "すべてのプランに含まれるもの: ユーザーとチーム無制限、リポジトリ無制限、スナップショットからの復元、継続的データ保護、地理冗長ストレージ、LUKS 暗号化、監査ログ、ロールベースアクセス、手動および自動スケジュール、連携 API。",
+        "rows": [
+          {
+            "label": "専任アカウント マネージャー",
+            "professional": false,
+            "business": true,
+            "enterprise": true
           },
-          "dataProtection": {
-            "label": "データ保護",
-            "rows": [
-              {
-                "business": "✓",
-                "community": "✓",
-                "enterprise": "✓",
-                "label": "スナップショット復元",
-                "professional": "✓"
-              },
-              {
-                "business": "✓",
-                "community": "✓",
-                "enterprise": "✓",
-                "label": "継続的データ保護",
-                "professional": "✓"
-              },
-              {
-                "business": "✓",
-                "community": "✓",
-                "enterprise": "✓",
-                "label": "地理的冗長ストレージ",
-                "professional": "✓"
-              }
-            ]
+          {
+            "label": "電話サポート",
+            "professional": false,
+            "business": true,
+            "enterprise": true
           },
-          "infrastructure": {
-            "label": "インフラ",
-            "rows": [
-              {
-                "business": "10",
-                "community": "2",
-                "enterprise": "25+",
-                "label": "フローティング ライセンス（マシン数）",
-                "professional": "3"
-              },
-              {
-                "business": "10,000",
-                "community": "100",
-                "enterprise": "25,000+",
-                "label": "月間のサーバーセットアップ数（1回につきFloatingライセンス1つ）",
-                "professional": "1,000"
-              },
-              {
-                "business": "200 GB",
-                "community": "10 GB",
-                "enterprise": "1 TB+",
-                "label": "リポジトリ容量",
-                "professional": "50 GB"
-              }
-            ]
+          {
+            "label": "24時間365日サポート",
+            "professional": false,
+            "business": false,
+            "enterprise": true
           },
-          "security": {
-            "label": "セキュリティとコンプライアンス",
-            "rows": [
-              {
-                "business": "✓",
-                "community": "✓",
-                "enterprise": "✓",
-                "label": "RBAC と権限グループ",
-                "professional": "✓"
-              },
-              {
-                "business": "✓",
-                "community": "✓",
-                "enterprise": "✓",
-                "label": "監査ログ",
-                "professional": "✓"
-              },
-              {
-                "business": "✓",
-                "community": "✓",
-                "enterprise": "✓",
-                "label": "LUKS暗号化",
-                "professional": "✓"
-              },
-              {
-                "business": "—",
-                "community": "—",
-                "enterprise": "✓",
-                "label": "セキュリティ監査",
-                "professional": "—"
-              }
-            ]
+          {
+            "label": "経営層へのエスカレーション",
+            "professional": false,
+            "business": false,
+            "enterprise": true
           },
-          "support": {
-            "label": "サポート",
-            "rows": [
-              {
-                "business": "✓",
-                "community": "✓",
-                "enterprise": "✓",
-                "label": "コミュニティSlack",
-                "professional": "✓"
-              },
-              {
-                "business": "✓",
-                "community": "—",
-                "enterprise": "✓",
-                "label": "メール・チャットサポート",
-                "professional": "✓"
-              },
-              {
-                "business": "✓",
-                "community": "—",
-                "enterprise": "✓",
-                "label": "専任アカウント マネージャー",
-                "professional": "—"
-              },
-              {
-                "business": "✓",
-                "community": "—",
-                "enterprise": "✓",
-                "label": "電話サポート",
-                "professional": "—"
-              },
-              {
-                "business": "—",
-                "community": "—",
-                "enterprise": "✓",
-                "label": "24時間365日サポート",
-                "professional": "—"
-              },
-              {
-                "business": "—",
-                "community": "—",
-                "enterprise": "✓",
-                "label": "経営層へのエスカレーション",
-                "professional": "—"
-              }
-            ]
+          {
+            "label": "セキュリティ監査",
+            "professional": false,
+            "business": false,
+            "enterprise": true
+          },
+          {
+            "label": "カスタム ワークフロー",
+            "professional": false,
+            "business": false,
+            "enterprise": true
           }
-        },
-        "heading": "プラン詳細を比較"
+        ],
+        "heading": "プラン詳細を比較",
+        "included": "含まれます",
+        "notIncluded": "含まれません"
       },
       "edgeChannel": {
         "cta": "無料で始める",
@@ -2653,10 +1931,6 @@
             "question": "各プランには何台のマシンが含まれますか？"
           },
           {
-            "answer": "Communityは無料のフォールバックプランで、1台のマシン、リポジトリあたり10 GB、月100回のセットアップ、コミュニティサポートが含まれます。Professionalは14日間の無料トライアル付きの有料プランで、1台のマシン、リポジトリあたり100 GB、月2,000回以上のセットアップ、自動スケジューリング、過去24時間分の復元履歴、より迅速なサポート、APIアクセスが含まれます。",
-            "question": "CommunityとProfessionalの違いは何ですか？"
-          },
-          {
             "answer": "Enterpriseはお客様のセットアップに合わせて構築され、パートナー経由で提供されます。条件はお客様が決められ、複数のマシンで運用でき、専用のサーバースペース、カスタムの復旧保証、24時間365日のサポートが付きます。さらにセキュリティレビューと定期的な訓練も実施します。",
             "question": "Enterpriseには何が含まれますか？"
           },
@@ -2694,66 +1968,14 @@
       "plans": {
         "business": {
           "description": "より大容量のリポジトリ、高度な管理機能、4時間復元保証。",
-          "features": [
-            "Professionalプランのすべてに加えて",
-            "1つのFloatingライセンス",
-            "リポジトリあたり500 GB",
-            "月間5,000回以上のサーバーセットアップ",
-            "複数リージョン対応ストレージ（3リージョン）",
-            "継続的なデータ保護",
-            "4時間復元SLA",
-            "ロールベースアクセス制御と監査ログ",
-            "コンプライアンス対応レポート機能",
-            "電話サポート+コラボレーションスペース"
-          ],
           "name": "仕事"
-        },
-        "community": {
-          "description": "無料のフォールバックプラン。トライアルや有料プランの終了後も、1台のマシンを稼働させ続けます。",
-          "features": [
-            "無制限のユーザーとチーム",
-            "無制限のリポジトリ",
-            "月間100回のサーバーセットアップ（1セットアップにつきFloatingライセンス1つ）",
-            "1つのFloatingライセンス",
-            "バックアップからの復元機能",
-            "手動スケジュール実行",
-            "コミュニティSlackへのアクセス",
-            "セルフサービスサポートとドキュメント"
-          ],
-          "name": "コミュニティ"
         },
         "enterprise": {
           "description": "複数マシンでの展開に対応。パートナー経由で提供され、専任サポートとカスタム条件が付きます。",
-          "features": [
-            "Businessプランのすべてに加えて",
-            "複数マシン対応のFloatingライセンス",
-            "無制限のリポジトリ",
-            "月間15,000回以上のサーバーセットアップ",
-            "復元時間保証付きカスタムSLA",
-            "専用のサーバースペース",
-            "24時間365日専任サポート",
-            "専任のカスタマーサクセスマネージャー",
-            "四半期ごとのレディネス訓練",
-            "役員向けエスカレーション専用窓口",
-            "カスタムインテグレーションとワークフロー",
-            "監査ドキュメント作成支援とセキュリティレビュー"
-          ],
           "name": "企業"
         },
         "professional": {
           "description": "本番マシン1台向けの自動化とスケジューリング機能。",
-          "features": [
-            "Communityプランの全機能に加えて",
-            "1つのFloatingライセンス",
-            "リポジトリあたり100 GB",
-            "月間2,000回以上のサーバーセットアップ",
-            "スケジューリングの自動化",
-            "過去24時間内の任意のポイントから復元",
-            "メールとチャットサポート",
-            "SlackおよびPagerDutyへの通知",
-            "「Powered by Rediacc」のクレジット表記なし",
-            "インテグレーションAPIへのアクセス"
-          ],
           "name": "プロ"
         }
       },
@@ -2773,8 +1995,6 @@
           ]
         },
         "categories": {
-          "heading": "提供サービス",
-          "intro": "すべての案件はまず対話から始まり、お客様の環境に最適なチームとスケジュールを設定します。",
           "items": [
             {
               "description": "ガイド付きのセットアップ手順解説から、高度なワークフローやインシデント対応手順を網羅する数日間のワークショップまで、実践的なトレーニングをご用意しています。",
@@ -2809,14 +2029,10 @@
           ]
         },
         "cta": {
-          "button": "お問い合わせ",
           "description": "すべての案件はお客様の環境に合わせてスコープを設定します。お問い合わせいただければ、一緒に最適なプランを考えます。",
           "heading": "専門家のサポートが必要ですか？"
         },
         "header": {
-          "badge": "すべてのステージで専門家がいる",
-          "eligibility": "どのプランでもプロフェッショナルサービスをご利用いただけます。お問い合わせいただければ、お客様の環境に最適な案件をスコープします。",
-          "subtitle": "必要なときに、すぐ専門家がサポート",
           "title": "プロフェッショナルサービス"
         }
       },
@@ -2825,8 +2041,6 @@
         "heading": "どのプランが合うか分からない場合は？"
       },
       "technicalSummary": {
-        "description": "すべてのプランの主要なインフラ制限の比較。",
-        "heading": "プラン比較",
         "metrics": [
           {
             "key": "repositories",
@@ -2883,10 +2097,6 @@
           }
         }
       },
-      "trust": {
-        "heading": "セキュリティと信頼性",
-        "items": ["AES-256 暗号化標準", "99.99% のアップタイム SLA"]
-      },
       "trustSection": {
         "corporateGuarantee": "Rediaccが合わない場合、移行をサポートします。",
         "heading": "あなたのインフラ、あなたのルール。",
@@ -2916,69 +2126,24 @@
             "title": "ハードウェア変更時も40日間は安全。"
           }
         ],
-        "subtitle": "Rediaccのライセンスなら、ロックインの心配はありません。実際にどういうことかを説明します。",
-        "svg": {
-          "allOperations": "すべての操作",
-          "newMachineId": "新しいマシンID",
-          "noLicenseNeeded": "ライセンス不要",
-          "noLicenseRequired": "ライセンス不要 — 常に動作",
-          "reposKeepRunning": "サーバーは稼働し続けます。操作は不要。",
-          "requiredOnlyHere": "ここだけ必要",
-          "slotsAutoRelease": "5時間の非アクティブ状態でFloatingライセンスが解放されます",
-          "slotsCreateFork": "Floatingライセンスは新規・コピー時のみ使用。日常の運用は常に無料。"
-        }
+        "subtitle": "Rediaccのライセンスなら、ロックインの心配はありません。実際にどういうことかを説明します。"
       },
       "ui": {
-        "anchor": "戦略的アンカー",
-        "bestValue": "最高コスパ",
         "billingToggle": {
           "annual": "年額払い",
           "annualSavings": "15%節約",
           "ariaLabel": "請求周期",
           "monthly": "月額払い"
         },
-        "contactSales": "営業にお問い合わせ",
         "contactUs": "お問い合わせ",
         "contactUsSub": "カスタム制限と条件",
         "cta": {
-          "business": {
-            "launchBadge": "期間限定キャンペーン",
-            "primary": "無料トライアルを開始",
-            "secondary": "営業に相談する",
-            "valueNote": "9,999ドルのセットアップクレジット付き"
-          },
-          "community": {
-            "note": "無料のフォールバックプラン",
-            "primary": "Rediaccを試す",
-            "secondary": "含まれる機能を見る"
-          },
           "enterprise": {
-            "primary": "営業にお問い合わせ",
-            "secondary": "営業に相談する",
-            "subtext": "カスタムSLA・専任サポート"
-          },
-          "professional": {
-            "primary": "無料トライアルを開始",
-            "secondary": "営業に相談する"
+            "primary": "営業にお問い合わせ"
           }
         },
-        "edgeLimitsNote": "edgeチャンネルの制限値です。stableチャンネルはその半分です。",
-        "foreverFree": "永遠に無料",
-        "getStarted": "今すぐインストール",
-        "guarantees": {
-          "cancelAnytime": "いつでも解約可能",
-          "freeTrial": "14日間の無料トライアル",
-          "noContracts": "長期契約なし"
-        },
-        "keyBenefits": "主な特徴",
-        "learnMore": "プランを比較する",
-        "limitedOffer": "期間限定キャンペーン",
-        "monthOrYear": "月額または年額 {{price}}",
-        "popular": "人気No.1",
-        "startingAt": "*から",
         "startTrial": "14日間の無料トライアルを開始",
-        "taxDisclaimer": "すべての価格はUSD表示で、税金・関税は含まれていません。",
-        "whatsIncluded": "含まれる機能："
+        "taxDisclaimer": "すべての価格はUSD表示で、税金・関税は含まれていません。"
       }
     },
     "privacyPolicy": {
@@ -3807,44 +2972,6 @@
         "title": "インフラROI計算 — コスト削減を数値化 | Rediacc"
       },
       "overline": "ROIを計算する",
-      "references": {
-        "disclaimer": "すべての数値は公開された業界調査とベンダー公開資料に基づいています。TCO計算にはRediaccの参考価格を使用しています。実際の価格と削減額はデプロイ構成、契約条件、組織の要件により異なります。",
-        "items": [
-          {
-            "text": "ITIC「2024年ダウンタイムの時間当たりコスト報告書」中大企業の90%以上が時間当たりのダウンタイムコストが30万ドルを超えると報告。41%の企業が時間当たり100万～500万ドル超と報告。",
-            "url": "https://itic-corp.com/itic-2024-hourly-cost-of-downtime-report/"
-          },
-          {
-            "text": "IBM Security / Ponemon Institute「2024年データ侵害コスト報告書」データ侵害の平均コスト：488万ドル（前年比10%増）。インシデント対応チームが定期的に計画をテストした組織は侵害コストが58%低かった。",
-            "url": "https://newsroom.ibm.com/2024-07-30-ibm-report-escalating-data-breach-disruption-pushes-costs-to-new-highs"
-          },
-          {
-            "text": "Sophos「2024年ランサムウェアの現状」平均リカバリーコスト（身代金除く）273万ドル（2023年の182万ドルから50%増）。過去1年間でランサムウェアの標的になった組織は59%。",
-            "url": "https://www.sophos.com/en-us/content/state-of-ransomware"
-          },
-          {
-            "text": "Cortex「2024年開発者生産性の現状」新入社員の72%が最初の3つの有意なPRをサブミットするのに1ヶ月以上要する。エンジニアリングリーダーの58%は開発者が週5時間以上の非効率さで時間を失っていると報告。",
-            "url": "https://www.cortex.io/report/the-2024-state-of-developer-productivity"
-          },
-          {
-            "text": "KPMG「2023年KPMG SOX報告書」企業はSOXコンプライアンスプログラムに年間平均11,800時間と160万ドルを費やす。",
-            "url": "https://kpmg.com/us/en/articles/2023/kpmg-sox-report.html"
-          },
-          {
-            "text": "Veeam「2024年ランサムウェアトレンド報告書」ランサムウェア攻撃後、侵害されたデータの57%のみが回復可能で、43%は回復不可能。",
-            "url": "https://www.veeam.com/company/press-release/ransomware-continues-to-cause-mayhem-as-victims-are-unable-to-recover-43-percent-of-affected-data.html"
-          },
-          {
-            "text": "IDC「Worldwide Global DataSphere Forecast, 2024～2028」データ生成は2023年の132.4ZBから2028年の393.9ZBまで増加予想、約24%のCAGR。",
-            "url": "https://www.marketresearch.com/IDC-v2477/Worldwide-IDC-Global-DataSphere-Forecast-36971010/"
-          },
-          {
-            "text": "Veeam R&Dフォーラム2020～2024年。Socket-to-VULマイグレーションスレッドで既存顧客向けに2～3倍のコスト乗数を報告。高密度環境では最大6倍に達する。",
-            "url": "https://forums.veeam.com/veeam-backup-replication-f2/phasing-out-our-socket-based-licensing-t74168.html"
-          }
-        ],
-        "label": "出典・参考資料"
-      },
       "sizeSelect": {
         "enterprise": "エンタープライズ",
         "enterpriseDesc": "200～1000名",
@@ -3874,6 +3001,8 @@
     },
     "solutionPages": {
       "aiPentesting": {
+        "label": "AIペネトレーションテスト",
+        "blurb": "本番環境をクローン。AIに攻撃させる。",
         "benefits": {
           "items": [
             {
@@ -3927,72 +3056,8 @@
           },
           "withTag": "REDIACCあり"
         },
-        "explore": {
-          "solutions": [
-            {
-              "category": "Preemptive Defense",
-              "dataCategory": "defense",
-              "description": "本番環境をクローン。AIに攻撃させる。",
-              "slug": "ai-pentesting",
-              "title": "AIペネトレーションテスト"
-            },
-            {
-              "category": "Preemptive Defense",
-              "dataCategory": "defense",
-              "description": "年次ではなく継続的にセキュリティをテスト",
-              "slug": "continuous-security-testing",
-              "title": "継続的セキュリティテスト"
-            },
-            {
-              "category": "Preemptive Defense",
-              "dataCategory": "defense",
-              "description": "攻撃者が到着する前に脆弱性を修正",
-              "slug": "vulnerability-management",
-              "title": "脆弱性管理"
-            },
-            {
-              "category": "Ransomware Survival",
-              "dataCategory": "ransomware",
-              "description": "ランサムウェアが触れないバックアップ",
-              "slug": "immutable-backups",
-              "title": "イミュータブルバックアップ"
-            },
-            {
-              "category": "Multi-Cloud",
-              "dataCategory": "multi-cloud",
-              "description": "AWSがダウンしても、あなたはダウンしない",
-              "slug": "cloud-outage-protection",
-              "title": "クラウド障害対策"
-            },
-            {
-              "category": "Verified Backups",
-              "dataCategory": "backups",
-              "description": "すべてのバックアップを自動検証",
-              "slug": "backup-verification",
-              "title": "バックアップ検証"
-            },
-            {
-              "category": "Encryption Control",
-              "dataCategory": "encryption",
-              "description": "あなたの鍵。あなたの暗号化。例外なし。",
-              "slug": "encryption",
-              "title": "自分で管理する暗号化"
-            },
-            {
-              "category": "Development Environments",
-              "dataCategory": "dev-env",
-              "description": "本番環境を60秒でクローン",
-              "slug": "environment-cloning",
-              "title": "環境クローン"
-            }
-          ],
-          "title": "他のソリューションを探す"
-        },
         "hero": {
-          "badge": "予防的防御",
-          "differentiator": "すべてのセキュリティツールが脆弱性をスキャンします。実際のクローンを攻撃できるツールはありません。Rediaccはできます。",
           "primaryCta": "無料で始める",
-          "secondaryCta": "仕組みを見る →",
           "subtitle": "インフラの完全なコピーを作成し、AIによるペネトレーションテストを実行 — 本番を危険にさらさずに。",
           "title": "本番をクローン。AIに攻撃させる。"
         },
@@ -4122,7 +3187,6 @@
           "title": "リスクなしで本番のペネトレーションテストはできない"
         },
         "references": {
-          "disclaimer": "製品パフォーマンスの主張は、Rediaccのbtrfsコピーオンライトアーキテクチャに基づいています。計算機の見積もりは業界標準のコストモデルを使用しています。実際のコストは組織によって異なります。",
           "items": [
             {
               "text": "IBM Security, \"Cost of a Data Breach Report,\" July 2024. \"The global average cost of a data breach reached USD 4.88 million in 2024.\" \"The global average data breach lifecycle hit a 7-year low of 258 days (194 days to identify, 64 days to contain).\"",
@@ -4132,8 +3196,7 @@
               "text": "Verizon, \"2024 Data Breach Investigations Report,\" May 2024. \"The exploitation of vulnerabilities as an initial point of entry almost tripled from the previous year, accounting for 14% of all breaches.\"",
               "url": "https://www.verizon.com/about/news/feed/2024-data-breach-investigations-report-vulnerability-exploitation-boom"
             }
-          ],
-          "label": "出典・参考文献"
+          ]
         },
         "socialProof": {
           "author": "最高情報セキュリティ責任者",
@@ -4198,91 +3261,11 @@
             }
           ],
           "title": "これが機能する理由"
-        },
-        "techStrip": {
-          "label": "あらゆるコンテナ化ワークロードをテスト",
-          "note": "データベース、メールサーバー、CI/CD、CMS、監視、認証 — コンテナで動くものなら、Rediaccがクローンのペンテストを実行できます。"
-        },
-        "terminal": {
-          "lines": [
-            {
-              "cmd": "rdc term production security-scan",
-              "flag": "",
-              "type": "command",
-              "value": ""
-            },
-            {
-              "type": "spacer"
-            },
-            {
-              "text": "本番環境をクローン中............... 完了 (47秒)",
-              "type": "check"
-            },
-            {
-              "text": "→ スナップショット: 380 GB (btrfs CoW: 2.1 GB 使用)",
-              "type": "comment"
-            },
-            {
-              "text": "AIペンテストエンジンを初期化中................ 完了",
-              "type": "check"
-            },
-            {
-              "text": "→ エンジン: OWASP ZAP + Nuclei + カスタムルール",
-              "type": "comment"
-            },
-            {
-              "type": "spacer"
-            },
-            {
-              "text": "攻撃シミュレーションを実行中...",
-              "type": "check"
-            },
-            {
-              "text": "→ ポートスキャン................................. 847ポート確認済み",
-              "type": "comment"
-            },
-            {
-              "text": "→ Webアプリケーションテスト................... 12エンドポイント",
-              "type": "comment"
-            },
-            {
-              "text": "→ 認証テスト.................... 4サービス",
-              "type": "comment"
-            },
-            {
-              "text": "→ SQLインジェクションプローブ..................... 186クエリ",
-              "type": "comment"
-            },
-            {
-              "text": "→ XSS検出............................. 94ベクター",
-              "type": "comment"
-            },
-            {
-              "text": "→ CVEスキャン.............................. 2,847シグネチャ",
-              "type": "comment"
-            },
-            {
-              "type": "spacer"
-            },
-            {
-              "text": "ペンテスト完了: 7件の脆弱性を検出",
-              "type": "success"
-            },
-            {
-              "type": "spacer"
-            },
-            {
-              "text": "テストクローンを破棄中........................ 完了",
-              "type": "check"
-            },
-            {
-              "text": "本番は影響なし。リスクゼロ。レポート: ./pentest-2026-02-27.html",
-              "type": "summary"
-            }
-          ]
         }
       },
       "auditTrail": {
+        "label": "監査証跡",
+        "blurb": "すべてのアクションを記録。隠し事なし。",
         "benefits": {
           "items": [
             {
@@ -4381,72 +3364,8 @@
           "overline": "差別化",
           "title": "監査証跡の比較"
         },
-        "explore": {
-          "solutions": [
-            {
-              "category": "Encryption Control",
-              "dataCategory": "encryption",
-              "description": "あなたの鍵。あなたの暗号化。例外なし。",
-              "slug": "encryption",
-              "title": "自分で管理する暗号化"
-            },
-            {
-              "category": "Encryption Control",
-              "dataCategory": "encryption",
-              "description": "すべてのアクションを記録。隠し事なし。",
-              "slug": "audit-trail",
-              "title": "監査証跡"
-            },
-            {
-              "category": "Encryption Control",
-              "dataCategory": "encryption",
-              "description": "データを危険にさらさず移行",
-              "slug": "migration-safety",
-              "title": "移行の安全性"
-            },
-            {
-              "category": "Ransomware Survival",
-              "dataCategory": "ransomware",
-              "description": "ランサムウェアが触れないバックアップ",
-              "slug": "immutable-backups",
-              "title": "イミュータブルバックアップ"
-            },
-            {
-              "category": "Multi-Cloud",
-              "dataCategory": "multi-cloud",
-              "description": "AWSがダウンしても、あなたはダウンしない",
-              "slug": "cloud-outage-protection",
-              "title": "クラウド障害対策"
-            },
-            {
-              "category": "Verified Backups",
-              "dataCategory": "backups",
-              "description": "すべてのバックアップを自動検証",
-              "slug": "backup-verification",
-              "title": "バックアップ検証"
-            },
-            {
-              "category": "Development Environments",
-              "dataCategory": "dev-env",
-              "description": "本番環境を60秒でクローン",
-              "slug": "environment-cloning",
-              "title": "環境クローン"
-            },
-            {
-              "category": "Preemptive Defense",
-              "dataCategory": "defense",
-              "description": "本番環境をクローン。AIに攻撃させる。",
-              "slug": "ai-pentesting",
-              "title": "AIペネトレーションテスト"
-            }
-          ],
-          "title": "他のソリューションを探す"
-        },
         "hero": {
-          "badge": "暗号化制御",
-          "differentiator": "すべてのベンダーがバックアップをログに記録します。改ざん防止の暗号署名付き監査証跡を提供するベンダーはありません。Rediaccは提供します。",
           "primaryCta": "Communityで無料で始める",
-          "secondaryCta": "監査機能を見る →",
           "subtitle": "誰が何をいつなぜ行ったかの完全な可視性。すべての操作に対する改ざん防止監査ログ。",
           "title": "すべてのアクション記録。隠しごとなし。"
         },
@@ -4585,7 +3504,6 @@
           "title": "見えないものは守れない"
         },
         "references": {
-          "disclaimer": "製品パフォーマンスの主張は、Rediaccのbtrfsコピーオンライトアーキテクチャに基づいています。計算機の見積もりは業界標準のコストモデルを使用しています。実際のコストは組織によって異なります。",
           "items": [
             {
               "text": "IBM Security, \"Cost of a Data Breach Report 2024,\" July 2024. \"The average time to identify a breach was 204 days.\" \"More than one-third of breaches involved shadow data.\" \"Organizations with severe staffing shortages observed an average of $1.76 million in higher breach costs.\"",
@@ -4639,8 +3557,7 @@
               "text": "Commvault supports fully self-hosted on-premises deployments with CommServe, MediaAgent, and Access Node components.",
               "url": "https://documentation.commvault.com/v11/software/initial_setup_self_service_deployments.html"
             }
-          ],
-          "label": "出典・参考文献"
+          ]
         },
         "socialProof": {
           "author": "コンプライアンスディレクター",
@@ -4697,62 +3614,11 @@
             }
           ],
           "title": "アプリケーションログが監査証跡ではない理由"
-        },
-        "techStrip": {
-          "label": "あらゆるコンテナ化ワークロードを監査",
-          "note": "データベース、メールサーバー、CI/CD、CMS、監視、認証 — すべての操作がログ、署名、監査対応済み。"
-        },
-        "terminal": {
-          "lines": [
-            {
-              "text": "jq -r '.events[]' audit-export.json",
-              "type": "command"
-            },
-            {
-              "type": "spacer"
-            },
-            {
-              "text": "2026年2月1日〜27日の監査レポートを生成中...",
-              "type": "comment"
-            },
-            {
-              "type": "spacer"
-            },
-            {
-              "text": "TIMESTAMP              USER      ACTION           TARGET",
-              "type": "table-header"
-            },
-            {
-              "text": "2026-02-27 02:00:14    system    backup.create    production/daily-2026-02-27",
-              "type": "table-row"
-            },
-            {
-              "text": "2026-02-27 02:00:47    system    backup.verify    production/daily-2026-02-27",
-              "type": "table-row"
-            },
-            {
-              "text": "2026-02-26 14:22:08    admin     key.rotate       production.key → production-v2.key",
-              "type": "table-row"
-            },
-            {
-              "text": "2026-02-25 09:15:33    deploy    restore.clone    staging from daily-2026-02-25",
-              "type": "table-row"
-            },
-            {
-              "text": "2026-02-24 16:44:01    admin     access.grant     deploy → staging (read-only)",
-              "type": "table-row"
-            },
-            {
-              "type": "spacer"
-            },
-            {
-              "text": "期間: 27日   イベント: 1,847   ユーザー: 4   整合性: SHA-256 検証済み",
-              "type": "summary"
-            }
-          ]
         }
       },
       "backupVerification": {
+        "label": "バックアップ検証",
+        "blurb": "すべてのバックアップを自動検証",
         "benefits": {
           "items": [
             {
@@ -4784,7 +3650,7 @@
         "calculator": {
           "annualLabel": "年間データリスク",
           "description": "スライダーを環境に合わせてドラッグしてください。「バックアップ完了」を信頼する実際のコストをご覧ください。",
-          "footnote": "破損バックアップ：週次ジョブ×52×破損率。復旧失敗：破損バックアップ×復旧時間×$100/時間（スタッフ＋生産性損失）。データ損失：破損バックアップ×インシデントあたり8レコードのリスク×$173/レコード（IBM Cost of a Data Breach 2024）[3]。毎日の自動検証により、破損は24時間以内に検出されます — 蓄積される前に。",
+          "footnote": "破損バックアップ：週次ジョブ×52×破損率。復旧失敗：破損バックアップ×復旧時間×$100/時間（スタッフ＋生産性損失）。データ損失：破損バックアップ×インシデントあたり8レコードのリスク×$173/レコード（IBM Cost of a Data Breach 2024）。毎日の自動検証により、破損は24時間以内に検出されます — 蓄積される前に。",
           "headerTitle": "バックアップリスク被害額を計算する",
           "overline": "実際のコスト",
           "results": {
@@ -4852,73 +3718,8 @@
           "overline": "差別化",
           "title": "バックアップ検証の比較"
         },
-        "explore": {
-          "solutions": [
-            {
-              "category": "backups",
-              "categoryLabel": "検証済みバックアップ",
-              "current": true,
-              "description": "すべてのバックアップを自動検証",
-              "slug": "backup-verification",
-              "title": "バックアップ検証"
-            },
-            {
-              "category": "backups",
-              "categoryLabel": "検証済みバックアップ",
-              "description": "法律が求める期間データを保持",
-              "slug": "retention-compliance",
-              "title": "保持期間コンプライアンス"
-            },
-            {
-              "category": "backups",
-              "categoryLabel": "検証済みバックアップ",
-              "description": "数分で環境全体をリカバリ",
-              "slug": "instant-recovery",
-              "title": "即時リカバリ"
-            },
-            {
-              "category": "ransomware",
-              "categoryLabel": "ランサムウェア対策",
-              "description": "ランサムウェアが触れないバックアップ",
-              "slug": "immutable-backups",
-              "title": "イミュータブルバックアップ"
-            },
-            {
-              "category": "multi-cloud",
-              "categoryLabel": "マルチクラウド",
-              "description": "AWSがダウンしても、あなたはダウンしない",
-              "slug": "cloud-outage-protection",
-              "title": "クラウド障害対策"
-            },
-            {
-              "category": "encryption",
-              "categoryLabel": "暗号化管理",
-              "description": "あなたの鍵。あなたの暗号化。例外なし。",
-              "slug": "encryption",
-              "title": "自分で管理する暗号化"
-            },
-            {
-              "category": "dev-env",
-              "categoryLabel": "開発環境",
-              "description": "本番環境を60秒でクローン",
-              "slug": "environment-cloning",
-              "title": "環境クローン"
-            },
-            {
-              "category": "defense",
-              "categoryLabel": "予防的防御",
-              "description": "本番環境をクローン。AIに攻撃させる。",
-              "slug": "ai-pentesting",
-              "title": "AIペネトレーションテスト"
-            }
-          ],
-          "title": "他のソリューションを探す"
-        },
         "hero": {
-          "badge": "検証済みバックアップ",
-          "differentiator": "すべてのベンダーがデータをバックアップします。復元が機能することを検証するベンダーはありません。Rediaccは毎日検証します。",
           "primaryCta": "Communityで無料で始める",
-          "secondaryCta": "検証の動作を見る →",
           "subtitle": "災害が起きてからバックアップが破損していることに気づくのでは遅すぎます。Rediaccは作成された瞬間にすべてのバックアップをチェックします。",
           "title": "すべてのバックアップを自動検証。"
         },
@@ -5011,19 +3812,19 @@
             {
               "number": "58%",
               "ref": 1,
-              "source": "Veeam Data Protection Trends Report 2021 [1]",
+              "source": "Veeam Data Protection Trends Report 2021",
               "text": "のデータバックアップがリストア試行時に失敗"
             },
             {
               "number": "わずか13%",
               "ref": 2,
-              "source": "Veeam Data Protection Trends Report 2024 [2]",
+              "source": "Veeam Data Protection Trends Report 2024",
               "text": "の組織が災害時にリカバリをオーケストレーションできる"
             },
             {
               "number": "$173/レコード",
               "ref": 3,
-              "source": "IBM Cost of a Data Breach Report 2024 [3]",
+              "source": "IBM Cost of a Data Breach Report 2024",
               "text": "侵害されたレコードあたりの平均コスト"
             }
           ],
@@ -5057,7 +3858,6 @@
           "title": "破損したバックアップはバックアップなしより悪い"
         },
         "references": {
-          "disclaimer": "製品パフォーマンスの主張は、Rediaccのbtrfsコピーオンライトアーキテクチャに基づいています。計算機の見積もりは業界標準のコストモデルを使用しています。実際のコストは組織によって異なります。",
           "items": [
             {
               "text": "Veeam, “Data Protection Trends Report,” 2021. “58% of data backups are failing, creating data protection challenges.”",
@@ -5119,8 +3919,7 @@
               "text": "Commvault supports fully self-hosted on-premises deployments with CommServe, MediaAgent, and Access Node components.",
               "url": "https://documentation.commvault.com/v11/software/initial_setup_self_service_deployments.html"
             }
-          ],
-          "label": "出典・参考文献"
+          ]
         },
         "socialProof": {
           "author": "インフラストラクチャリーダー",
@@ -5179,92 +3978,11 @@
           ],
           "title": "「バックアップ完了」では不十分な理由",
           "traditionalLabel": "従来のバックアップ検証"
-        },
-        "techStrip": {
-          "label": "あらゆるコンテナ化ワークロードを検証",
-          "note": "データベース、メールサーバー、CI/CD、CMS、監視、認証 — コンテナで動くものなら、Rediaccが検証します。"
-        },
-        "terminal": {
-          "lines": [
-            {
-              "cmd": "rdc backup list",
-              "flag": "",
-              "prompt": "$",
-              "type": "command",
-              "value": ""
-            },
-            {
-              "type": "spacer"
-            },
-            {
-              "text": "バックアップ daily-2026-02-27 を検証中...",
-              "type": "comment"
-            },
-            {
-              "result": "done",
-              "text": "分離環境にリストア中",
-              "type": "check"
-            },
-            {
-              "result": "8/8 実行中",
-              "text": "8個のコンテナを起動中",
-              "type": "check"
-            },
-            {
-              "result": "合格",
-              "text": "ヘルスチェック: nginx (HTTP 200)",
-              "type": "check"
-            },
-            {
-              "result": "合格",
-              "text": "ヘルスチェック: mariadb (SELECT 1)",
-              "type": "check"
-            },
-            {
-              "result": "合格",
-              "text": "ヘルスチェック: api-server (/health)",
-              "type": "check"
-            },
-            {
-              "result": "PONG",
-              "text": "ヘルスチェック: redis (PING)",
-              "type": "check"
-            },
-            {
-              "type": "spacer"
-            },
-            {
-              "text": "バックアップ検証完了: 8/8サービス正常、破損0件検出",
-              "type": "success"
-            },
-            {
-              "type": "spacer"
-            },
-            {
-              "pairs": [
-                {
-                  "label": "Backup",
-                  "value": "daily-2026-02-27"
-                },
-                {
-                  "label": "Services",
-                  "value": "8/8"
-                },
-                {
-                  "label": "Time",
-                  "value": "47s"
-                },
-                {
-                  "label": "Integrity",
-                  "value": "100%"
-                }
-              ],
-              "type": "summary"
-            }
-          ]
         }
       },
       "cloudOutageProtection": {
+        "label": "クラウド障害対策",
+        "blurb": "AWSがダウンしても、あなたはダウンしない",
         "benefits": {
           "items": [
             {
@@ -5296,7 +4014,7 @@
         "calculator": {
           "annualLabel": "年間障害コスト",
           "description": "スライダーをビジネスに合わせてドラッグしてください。シングルクラウド依存の実際のコストをご覧ください。",
-          "footnote": "収益損失：時間あたり収益×障害時間。フェイルオーバー人件費：エンジニア3名×フェイルオーバー時間×$200/時間×インシデント数。顧客離反：直接収益損失の20%（控えめな見積もり）。SLAペナルティ：収益損失の10%。ITIC 2024によると、企業の41%が1時間あたりのダウンタイムコストを$1M～$5Mと報告[1]。Rediaccの30秒未満の自動フェイルオーバーで長時間の障害ウィンドウを排除。",
+          "footnote": "収益損失：時間あたり収益×障害時間。フェイルオーバー人件費：エンジニア3名×フェイルオーバー時間×$200/時間×インシデント数。顧客離反：直接収益損失の20%（控えめな見積もり）。SLAペナルティ：収益損失の10%。ITIC 2024によると、企業の41%が1時間あたりのダウンタイムコストを$1M～$5Mと報告。Rediaccの30秒未満の自動フェイルオーバーで長時間の障害ウィンドウを排除。",
           "headerTitle": "障害被害額を計算する",
           "overline": "実際のコスト",
           "results": {
@@ -5364,79 +4082,8 @@
           "overline": "差別化",
           "title": "クラウド間で数秒でフェイルオーバーできるツールは他にない"
         },
-        "explore": {
-          "solutions": [
-            {
-              "category": "multi-cloud",
-              "categoryLabel": "マルチクラウド",
-              "current": true,
-              "description": "AWSがダウンしても、あなたはダウンしない",
-              "slug": "cloud-outage-protection",
-              "title": "クラウド障害対策"
-            },
-            {
-              "category": "multi-cloud",
-              "categoryLabel": "マルチクラウド",
-              "description": "あなたのインフラ。あなたの選択。常に。",
-              "slug": "vendor-lock-in",
-              "title": "ベンダーロックインからの解放"
-            },
-            {
-              "category": "multi-cloud",
-              "categoryLabel": "マルチクラウド",
-              "description": "必要になる前にフェイルオーバーをテスト",
-              "slug": "failover-testing",
-              "title": "フェイルオーバーテスト"
-            },
-            {
-              "category": "ransomware",
-              "categoryLabel": "ランサムウェア対策",
-              "description": "ランサムウェアが触れないバックアップ",
-              "slug": "immutable-backups",
-              "title": "イミュータブルバックアップ"
-            },
-            {
-              "category": "backups",
-              "categoryLabel": "検証済みバックアップ",
-              "description": "すべてのバックアップを自動検証",
-              "slug": "backup-verification",
-              "title": "バックアップ検証"
-            },
-            {
-              "category": "encryption",
-              "categoryLabel": "暗号化管理",
-              "description": "あなたの鍵。あなたの暗号化。例外なし。",
-              "slug": "encryption",
-              "title": "自分で管理する暗号化"
-            },
-            {
-              "category": "dev-env",
-              "categoryLabel": "開発環境",
-              "description": "本番環境を60秒でクローン",
-              "slug": "environment-cloning",
-              "title": "環境クローン"
-            },
-            {
-              "category": "defense",
-              "categoryLabel": "予防的防御",
-              "description": "本番環境をクローン。AIに攻撃させる。",
-              "slug": "ai-pentesting",
-              "title": "AIペネトレーションテスト"
-            },
-            {
-              "category": "multi-cloud",
-              "description": "実行中のクラスタをデータごとフォークまたは移動",
-              "slug": "kubernetes-cluster-mobility",
-              "title": "Kubernetesクラスタの可搬性"
-            }
-          ],
-          "title": "他のソリューションを探す"
-        },
         "hero": {
-          "badge": "マルチクラウド",
-          "differentiator": "すべてのクラウドにバックアップがあります。数分で別のクラウドにフェイルオーバーできるものはありません。Rediaccはできます。",
           "primaryCta": "Communityで無料で始める",
-          "secondaryCta": "フェイルオーバーの動作を見る →",
           "subtitle": "インフラは複数のクラウドで稼働。1つが障害を起こしても、他が自動的に引き継ぎます。",
           "title": "AWSがダウンしても、あなたはダウンしない"
         },
@@ -5524,25 +4171,25 @@
           "title": "クラウド障害保護 — AWSがダウンしても、あなたはダウンしない | Rediacc"
         },
         "problem": {
-          "description": "重大なクラウド障害イベントは2024年に前年比18%増加し、18.7%長期化し、68%がヒューマンエラーに起因しました[2]。唯一のクラウドがダウンすると、すべてがダウンします。顧客、収益、評判。すべてが他者のインフラに人質に取られます。",
+          "description": "重大なクラウド障害イベントは2024年に前年比18%増加し、18.7%長期化し、68%がヒューマンエラーに起因しました。唯一のクラウドがダウンすると、すべてがダウンします。顧客、収益、評判。すべてが他者のインフラに人質に取られます。",
           "overline": "問題点",
           "statCallouts": [
             {
               "number": "$300K+",
               "ref": 1,
-              "source": "ITIC 2024 Hourly Cost of Downtime Survey [1]",
+              "source": "ITIC 2024 Hourly Cost of Downtime Survey",
               "text": "中〜大規模企業の90%におけるダウンタイム1時間あたりのコスト"
             },
             {
               "number": "18%",
               "ref": 2,
-              "source": "Parametrix 2024 Cloud Outage Risk Report [2]",
+              "source": "Parametrix 2024 Cloud Outage Risk Report",
               "text": "2024年の重大クラウド障害イベントの増加"
             },
             {
               "number": "$400B",
               "ref": 3,
-              "source": "Splunk / Oxford Economics 2024 [3]",
+              "source": "Splunk / Oxford Economics 2024",
               "text": "Global 2000企業の年間ダウンタイムコスト"
             }
           ],
@@ -5576,7 +4223,6 @@
           "title": "シングルクラウドは単一障害点"
         },
         "references": {
-          "disclaimer": "製品パフォーマンスの主張は、Rediaccのbtrfsコピーオンライトアーキテクチャに基づいています。計算機の見積もりは業界標準のコストモデルを使用しています。実際のコストは組織によって異なります。",
           "items": [
             {
               "text": "ITIC, “2024 Hourly Cost of Downtime Report,” 2024. “The average cost of a single hour of downtime now exceeds $300,000 for over 90% of mid-size and large enterprises.”",
@@ -5634,8 +4280,7 @@
               "text": "Zerto Virtual Protection Groups replicate multi-VM application stacks as a single consistent unit with write-order fidelity.",
               "url": "https://help.zerto.com/bundle/Admin.VC.HTML/page/ProtectingVirtualMachinesfrom.htm"
             }
-          ],
-          "label": "出典・参考文献"
+          ]
         },
         "socialProof": {
           "author": "インフラストラクチャ担当VP",
@@ -5694,95 +4339,11 @@
           ],
           "title": "クロスクラウドレプリケーションが高速かつ安価な理由",
           "traditionalLabel": "従来のアプローチ"
-        },
-        "techStrip": {
-          "label": "あらゆるコンテナ化ワークロードをレプリケート",
-          "note": "データベース、CI/CD、CMS、監視、認証、ストレージ — コンテナで動くものなら、Rediaccがクラウド間でレプリケートします。"
-        },
-        "terminal": {
-          "lines": [
-            {
-              "cmd": "rdc repo sync push-all",
-              "flag": "",
-              "prompt": "$",
-              "type": "command",
-              "value": ""
-            },
-            {
-              "type": "spacer"
-            },
-            {
-              "result": "done",
-              "text": "増分差分を計算中",
-              "type": "check"
-            },
-            {
-              "result": "done",
-              "text": "デルタを転送中 (380 GB中2.4 GB)",
-              "type": "check"
-            },
-            {
-              "result": "done",
-              "text": "セカンダリにスナップショットを適用中",
-              "type": "check"
-            },
-            {
-              "result": "8/8 healthy",
-              "text": "8個のコンテナを検証中",
-              "type": "check"
-            },
-            {
-              "type": "spacer"
-            },
-            {
-              "text": "レプリケーション完了: secondary-dc 同期済み",
-              "type": "success"
-            },
-            {
-              "type": "spacer"
-            },
-            {
-              "text": "アラート: プライマリのヘルスチェック失敗 (us-east-1 到達不可)",
-              "type": "warn"
-            },
-            {
-              "result": "done",
-              "text": "フェイルオーバーを開始",
-              "type": "check"
-            },
-            {
-              "result": "伝播完了",
-              "text": "DNSをsecondary-dcに更新",
-              "type": "check"
-            },
-            {
-              "type": "spacer"
-            },
-            {
-              "pairs": [
-                {
-                  "label": "Delta",
-                  "value": "2.4 GB"
-                },
-                {
-                  "label": "Failover",
-                  "value": "22s"
-                },
-                {
-                  "label": "Services",
-                  "value": "8/8 オンライン"
-                },
-                {
-                  "label": "Downtime",
-                  "value": "0"
-                }
-              ],
-              "type": "summary"
-            }
-          ]
         }
       },
       "continuousSecurityTesting": {
+        "label": "継続的セキュリティテスト",
+        "blurb": "年次ではなく継続的にセキュリティをテスト",
         "benefits": {
           "items": [
             {
@@ -5836,72 +4397,8 @@
           },
           "withTag": "継続的（REDIACC）"
         },
-        "explore": {
-          "solutions": [
-            {
-              "category": "Preemptive Defense",
-              "dataCategory": "defense",
-              "description": "本番環境をクローン。AIに攻撃させる。",
-              "slug": "ai-pentesting",
-              "title": "AIペネトレーションテスト"
-            },
-            {
-              "category": "Preemptive Defense",
-              "dataCategory": "defense",
-              "description": "年次ではなく継続的にセキュリティをテスト",
-              "slug": "continuous-security-testing",
-              "title": "継続的セキュリティテスト"
-            },
-            {
-              "category": "Preemptive Defense",
-              "dataCategory": "defense",
-              "description": "攻撃者が到着する前に脆弱性を修正",
-              "slug": "vulnerability-management",
-              "title": "脆弱性管理"
-            },
-            {
-              "category": "Ransomware Survival",
-              "dataCategory": "ransomware",
-              "description": "ランサムウェアが触れないバックアップ",
-              "slug": "immutable-backups",
-              "title": "イミュータブルバックアップ"
-            },
-            {
-              "category": "Multi-Cloud",
-              "dataCategory": "multi-cloud",
-              "description": "AWSがダウンしても、あなたはダウンしない",
-              "slug": "cloud-outage-protection",
-              "title": "クラウド障害対策"
-            },
-            {
-              "category": "Verified Backups",
-              "dataCategory": "backups",
-              "description": "すべてのバックアップを自動検証",
-              "slug": "backup-verification",
-              "title": "バックアップ検証"
-            },
-            {
-              "category": "Encryption Control",
-              "dataCategory": "encryption",
-              "description": "あなたの鍵。あなたの暗号化。例外なし。",
-              "slug": "encryption",
-              "title": "自分で管理する暗号化"
-            },
-            {
-              "category": "Development Environments",
-              "dataCategory": "dev-env",
-              "description": "本番環境を60秒でクローン",
-              "slug": "environment-cloning",
-              "title": "環境クローン"
-            }
-          ],
-          "title": "他のソリューションを探す"
-        },
         "hero": {
-          "badge": "予防的防御",
-          "differentiator": "すべてのセキュリティツールが脆弱性をスキャンします。実際のクローンを攻撃できるツールはありません。Rediaccは毎日自動的に実行します。",
           "primaryCta": "無料で始める",
-          "secondaryCta": "テストスケジュールを見る →",
           "subtitle": "毎日新鮮な本番クローンでセキュリティテストを実行。脆弱性が現れた時に発見 — 数ヶ月後ではなく。",
           "title": "セキュリティを継続的にテスト。年1回ではなく。"
         },
@@ -6026,7 +4523,6 @@
           "title": "年1回のペンテストは364日の露出を残す"
         },
         "references": {
-          "disclaimer": "製品パフォーマンスの主張は、Rediaccのbtrfsコピーオンライトアーキテクチャに基づいています。計算機の見積もりは業界標準のコストモデルを使用しています。実際のコストは組織によって異なります。",
           "items": [
             {
               "text": "Qualys, \"TruRisk Research Report,\" 2023. \"On average, weaponized vulnerabilities are patched within 30.6 days yet only patched an average of 57.7% of the time.\"",
@@ -6036,8 +4532,7 @@
               "text": "IBM Security, \"Cost of a Data Breach Report,\" July 2024. \"The global average cost of a data breach reached USD 4.88 million in 2024.\"",
               "url": "https://newsroom.ibm.com/2024-07-30-ibm-report-escalating-data-breach-disruption-pushes-costs-to-new-highs"
             }
-          ],
-          "label": "出典・参考文献"
+          ]
         },
         "socialProof": {
           "author": "セキュリティエンジニアリング担当VP",
@@ -6102,74 +4597,11 @@
             }
           ],
           "title": "継続的テストが機能する理由"
-        },
-        "techStrip": {
-          "label": "あらゆるコンテナ化ワークロードをテスト",
-          "note": "データベース、メールサーバー、CI/CD、CMS、監視、認証 — コンテナで動くものなら、Rediaccが毎日新鮮なクローンをテストします。"
-        },
-        "terminal": {
-          "lines": [
-            {
-              "cmd": "rdc config backup-strategy set",
-              "flag": "",
-              "type": "command",
-              "value": ""
-            },
-            {
-              "type": "spacer"
-            },
-            {
-              "text": "スケジュール設定完了: 毎日 02:00 UTC......... 完了",
-              "type": "check"
-            },
-            {
-              "text": "通知チャネル: #security-alerts.......... 完了",
-              "type": "check"
-            },
-            {
-              "type": "spacer"
-            },
-            {
-              "text": "── スキャン #147 (2026-02-27 02:00 UTC) ──",
-              "type": "comment"
-            },
-            {
-              "type": "spacer"
-            },
-            {
-              "text": "本番をクローン中........................... 完了 (47秒)",
-              "type": "check"
-            },
-            {
-              "text": "AIペンテストスイートを実行中..................... 完了 (8分12秒)",
-              "type": "check"
-            },
-            {
-              "text": "テストクローンを破棄中........................ 完了",
-              "type": "check"
-            },
-            {
-              "type": "spacer"
-            },
-            {
-              "text": "スキャン #147 完了: 3件の脆弱性を検出",
-              "type": "success"
-            },
-            {
-              "text": "  Critical: 0 | High: 1 | Medium: 1 | Low: 1",
-              "type": "table-row"
-            },
-            {
-              "type": "spacer"
-            },
-            {
-              "text": "トレンド (4週間): 23 → 12 → 7 → 3 · 87% 削減",
-              "type": "summary"
-            }
-          ]
         }
       },
       "dataSovereignty": {
+        "label": "データ主権",
+        "blurb": "あなたのサーバー、あなたの鍵、あなたの管轄。",
         "benefits": {
           "items": [
             {
@@ -6266,78 +4698,8 @@
           "overline": "差異",
           "title": "主権の比較"
         },
-        "explore": {
-          "solutions": [
-            {
-              "category": "Encryption Control",
-              "dataCategory": "encryption",
-              "description": "あなたの鍵。あなたの暗号化。例外なし。",
-              "slug": "encryption",
-              "title": "自分で管理する暗号化"
-            },
-            {
-              "category": "Encryption Control",
-              "dataCategory": "encryption",
-              "description": "すべてのアクションを記録。隠し事なし。",
-              "slug": "audit-trail",
-              "title": "監査証跡"
-            },
-            {
-              "category": "Encryption Control",
-              "dataCategory": "encryption",
-              "description": "データを危険にさらさず移行",
-              "slug": "migration-safety",
-              "title": "移行の安全性"
-            },
-            {
-              "category": "Ransomware Survival",
-              "dataCategory": "ransomware",
-              "description": "ランサムウェアが触れないバックアップ",
-              "slug": "immutable-backups",
-              "title": "イミュータブルバックアップ"
-            },
-            {
-              "category": "Multi-Cloud",
-              "dataCategory": "multi-cloud",
-              "description": "AWSがダウンしても、あなたはダウンしない",
-              "slug": "cloud-outage-protection",
-              "title": "クラウド障害対策"
-            },
-            {
-              "category": "Verified Backups",
-              "dataCategory": "backups",
-              "description": "どのベンダーからでも退出できます。データは保持されます。",
-              "slug": "vendor-lock-in",
-              "title": "ベンダーロックインからの解放"
-            },
-            {
-              "category": "Verified Backups",
-              "dataCategory": "backups",
-              "description": "すべての保持要件を自動的に満たす",
-              "slug": "retention-compliance",
-              "title": "保持期間コンプライアンス"
-            },
-            {
-              "category": "Development Environments",
-              "dataCategory": "dev-env",
-              "description": "本番環境を60秒でクローン",
-              "slug": "environment-cloning",
-              "title": "環境クローン"
-            },
-            {
-              "category": "multi-cloud",
-              "description": "実行中のクラスタをデータごとフォークまたは移動",
-              "slug": "kubernetes-cluster-mobility",
-              "title": "Kubernetesクラスタの可搬性"
-            }
-          ],
-          "title": "他のソリューションを探す"
-        },
         "hero": {
-          "badge": "暗号化制御",
-          "differentiator": "すべてのハイパースケーラーが主権を謳います。しかし誰も、あなたのデータが米国の裁判所命令の対象外であることを保証できません。Rediaccはできます。",
           "primaryCta": "Communityで無料で始める",
-          "secondaryCta": "主権機能を見る →",
           "subtitle": "あなたがホストします。鍵はあなたが保持します。米国司法管轄のプロバイダーは、持っていないものを提出させられることはありません。",
           "title": "証明書ではなく、アーキテクチャによるソブリン。"
         },
@@ -6476,7 +4838,6 @@
           "title": "クラウドプロバイダーはあなたのデータを提出できます。あなたには知らされません。"
         },
         "references": {
-          "disclaimer": "計算機の推定は業界標準のコストモデルを使用しています。実際の露出は管轄、契約構造、侵害シナリオによって異なります。",
           "items": [
             {
               "text": "Microsoft France公共法務部長アントン・カルニオ、公共調達とデジタル主権に関するフランス上院調査、2025年6月18日: 「いいえ、保証できません。ただし、これまで一度も起きたことはありません。」The Register、2025年7月25日報道。",
@@ -6530,8 +4891,7 @@
               "text": "Keepitのデータレジデンシーポリシー: 顧客データはEU域内のデータセンター(フランクフルト、アムステルダム、コペンハーゲン)にのみ保存。SaaS専用モデルで運用者および保存場所はEUのみ。",
               "url": "https://www.keepit.com/trust/"
             }
-          ],
-          "label": "出典と参考文献"
+          ]
         },
         "socialProof": {
           "author": "最高情報セキュリティ責任者（CISO）",
@@ -6592,55 +4952,6 @@
             }
           ],
           "title": "データ所在地がデータ主権でない理由"
-        },
-        "techStrip": {
-          "label": "あらゆるワークロードをセルフホスト、すべての鍵を手元に",
-          "note": "データベース、メールサーバー、CI/CD、ERP、CMS、AIモデルストア: すべてのワークロードが主権的で、すべての鍵があなたのものです。"
-        },
-        "terminal": {
-          "lines": [
-            {
-              "text": "jq -r '.keys[]' key-custody-report.json",
-              "type": "command"
-            },
-            {
-              "type": "spacer"
-            },
-            {
-              "text": "すべてのリポジトリの鍵管理チェーンを確認中...",
-              "type": "comment"
-            },
-            {
-              "type": "spacer"
-            },
-            {
-              "text": "鍵ID                    保管          HSM          エスクロー  管轄",
-              "type": "table-header"
-            },
-            {
-              "text": "prod-main-v3            顧客            YubiHSM 2    NO          顧客-構内",
-              "type": "table-row"
-            },
-            {
-              "text": "prod-db-v2              顧客            YubiHSM 2    NO          顧客-構内",
-              "type": "table-row"
-            },
-            {
-              "text": "staging-main-v1         顧客            software     NO          顧客-構内",
-              "type": "table-row"
-            },
-            {
-              "text": "backup-archive-v4       顧客            YubiHSM 2    NO          顧客-構内",
-              "type": "table-row"
-            },
-            {
-              "type": "spacer"
-            },
-            {
-              "text": "鍵: 4   保管: 100% 顧客   エスクロー: 0   米国-アクセス: 0   署名済み: 2026-05-11T09:14:33Z",
-              "type": "summary"
-            }
-          ]
         }
       },
       "downloadGated": {
@@ -6659,6 +4970,8 @@
         "title": "お時間がありませんか？"
       },
       "encryption": {
+        "label": "自分で管理する暗号化",
+        "blurb": "あなたの鍵。あなたの暗号化。例外なし。",
         "benefits": {
           "items": [
             {
@@ -6757,72 +5070,8 @@
           "overline": "差別化",
           "title": "暗号化制御の比較"
         },
-        "explore": {
-          "solutions": [
-            {
-              "category": "Encryption Control",
-              "dataCategory": "encryption",
-              "description": "あなたの鍵。あなたの暗号化。例外なし。",
-              "slug": "encryption",
-              "title": "自分で管理する暗号化"
-            },
-            {
-              "category": "Encryption Control",
-              "dataCategory": "encryption",
-              "description": "すべてのアクションを記録。隠し事なし。",
-              "slug": "audit-trail",
-              "title": "監査証跡"
-            },
-            {
-              "category": "Encryption Control",
-              "dataCategory": "encryption",
-              "description": "データを危険にさらさず移行",
-              "slug": "migration-safety",
-              "title": "移行の安全性"
-            },
-            {
-              "category": "Ransomware Survival",
-              "dataCategory": "ransomware",
-              "description": "ランサムウェアが触れないバックアップ",
-              "slug": "immutable-backups",
-              "title": "イミュータブルバックアップ"
-            },
-            {
-              "category": "Multi-Cloud",
-              "dataCategory": "multi-cloud",
-              "description": "AWSがダウンしても、あなたはダウンしない",
-              "slug": "cloud-outage-protection",
-              "title": "クラウド障害対策"
-            },
-            {
-              "category": "Verified Backups",
-              "dataCategory": "backups",
-              "description": "すべてのバックアップを自動検証",
-              "slug": "backup-verification",
-              "title": "バックアップ検証"
-            },
-            {
-              "category": "Development Environments",
-              "dataCategory": "dev-env",
-              "description": "本番環境を60秒でクローン",
-              "slug": "environment-cloning",
-              "title": "環境クローン"
-            },
-            {
-              "category": "Preemptive Defense",
-              "dataCategory": "defense",
-              "description": "本番環境をクローン。AIに攻撃させる。",
-              "slug": "ai-pentesting",
-              "title": "AIペネトレーションテスト"
-            }
-          ],
-          "title": "他のソリューションを探す"
-        },
         "hero": {
-          "badge": "暗号化制御",
-          "differentiator": "すべてのベンダーがデータを暗号化します。唯一の鍵をあなたに持たせるベンダーはありません。Rediaccは持たせます。",
           "primaryCta": "Communityで無料で始める",
-          "secondaryCta": "暗号化の詳細を見る",
           "subtitle": "すべてのバックアップがあなたが所有する鍵で暗号化されます。ベンダーの鍵ではありません。共有鍵ではありません。あなただけの鍵です。",
           "title": "あなたの鍵。あなたの暗号化。例外なし。"
         },
@@ -6961,7 +5210,6 @@
           "title": "ベンダー管理の鍵は本当にあなたのものではない"
         },
         "references": {
-          "disclaimer": "製品パフォーマンスの主張は、Rediaccのbtrfsコピーオンライトアーキテクチャに基づいています。計算機の見積もりは業界標準のコストモデルを使用しています。実際のコストは組織によって異なります。",
           "items": [
             {
               "text": "Thales, \"2025 Cloud Security Study,\" conducted by S&P Global 451 Research, 2025. \"Only 8% of organizations encrypt 80% or more of their cloud data.\" \"57% use five or more encryption key managers.\"",
@@ -7047,8 +5295,7 @@
               "text": "Commvault supports fully self-hosted on-premises deployments with CommServe, MediaAgent, and Access Node components.",
               "url": "https://documentation.commvault.com/v11/software/initial_setup_self_service_deployments.html"
             }
-          ],
-          "label": "出典・参考文献"
+          ]
         },
         "socialProof": {
           "author": "最高セキュリティ責任者",
@@ -7105,68 +5352,11 @@
             }
           ],
           "title": "ベンダー管理暗号化が失敗する理由"
-        },
-        "techStrip": {
-          "label": "あらゆるコンテナ化ワークロードを暗号化",
-          "note": "データベース、メールサーバー、CI/CD、CMS、監視、認証 — コンテナで動くものなら、Rediaccがあなたの鍵で暗号化します。"
-        },
-        "terminal": {
-          "lines": [
-            {
-              "cmd": "rdc repo up production",
-              "flag": "",
-              "type": "command",
-              "value": ""
-            },
-            {
-              "type": "spacer"
-            },
-            {
-              "text": "すべてのリポジトリをAES-256-GCMで暗号化中...",
-              "type": "comment"
-            },
-            {
-              "text": "鍵を読み込み: production.key (4096-bit RSA).......... 有効",
-              "type": "check"
-            },
-            {
-              "text": "暗号化中: gitlab (42 GB)...................... シール済み",
-              "type": "check"
-            },
-            {
-              "text": "暗号化中: nextcloud (128 GB).................. シール済み",
-              "type": "check"
-            },
-            {
-              "text": "暗号化中: mailcow (84 GB)..................... シール済み",
-              "type": "check"
-            },
-            {
-              "text": "暗号化中: mariadb (96 GB)..................... シール済み",
-              "type": "check"
-            },
-            {
-              "text": "整合性チェックサムを検証中................... すべて一致",
-              "type": "check"
-            },
-            {
-              "type": "spacer"
-            },
-            {
-              "text": "すべてのリポジトリ暗号化完了: 4/4 シール済み、ゼロ知識検証済み",
-              "type": "success"
-            },
-            {
-              "type": "spacer"
-            },
-            {
-              "text": "Cipher: AES-256-GCM   Key: production.key   Repos: 4/4   Total: 350 GB",
-              "type": "summary"
-            }
-          ]
         }
       },
       "environmentCloning": {
+        "label": "環境クローン",
+        "blurb": "本番環境を60秒でクローン",
         "benefits": {
           "items": [
             {
@@ -7261,77 +5451,8 @@
           "overline": "差別化",
           "title": "フルスタックをクローンできるツールは他にない"
         },
-        "explore": {
-          "solutions": [
-            {
-              "category": "dev-env",
-              "current": true,
-              "description": "本番環境を60秒でクローン",
-              "slug": "environment-cloning",
-              "title": "環境クローン"
-            },
-            {
-              "category": "dev-env",
-              "description": "本番環境と完全に一致する開発環境",
-              "slug": "production-parity",
-              "title": "本番環境の同一性"
-            },
-            {
-              "category": "dev-env",
-              "description": "アイドル環境への課金を停止",
-              "slug": "infrastructure-costs",
-              "title": "インフラコスト"
-            },
-            {
-              "category": "dev-env",
-              "description": "既存のワークフローにプラグイン",
-              "slug": "integrations",
-              "title": "CI/CD統合"
-            },
-            {
-              "category": "ransomware",
-              "description": "ランサムウェアが触れないバックアップ",
-              "slug": "immutable-backups",
-              "title": "イミュータブルバックアップ"
-            },
-            {
-              "category": "multi-cloud",
-              "description": "AWSがダウンしても、あなたはダウンしない",
-              "slug": "cloud-outage-protection",
-              "title": "クラウド障害対策"
-            },
-            {
-              "category": "backups",
-              "description": "すべてのバックアップを自動検証",
-              "slug": "backup-verification",
-              "title": "バックアップ検証"
-            },
-            {
-              "category": "encryption",
-              "description": "あなたの鍵。あなたの暗号化。例外なし。",
-              "slug": "encryption",
-              "title": "自分で管理する暗号化"
-            },
-            {
-              "category": "defense",
-              "description": "本番環境をクローン。AIに攻撃させる。",
-              "slug": "ai-pentesting",
-              "title": "AIペネトレーションテスト"
-            },
-            {
-              "category": "multi-cloud",
-              "description": "実行中のクラスタをデータごとフォークまたは移動",
-              "slug": "kubernetes-cluster-mobility",
-              "title": "Kubernetesクラスタの可搬性"
-            }
-          ],
-          "title": "他のソリューションを探す"
-        },
         "hero": {
-          "badge": "開発環境",
-          "differentiator": "あらゆる開発ツールがコードをクローンします。データまでクローンするツールはありません。Rediaccは両方をクローンします。",
           "primaryCta": "Communityで無料で始める",
-          "secondaryCta": "クローンの動作を見る",
           "subtitle": "本番環境の完全なコピー（アプリケーション、データベース、設定）を開発・テスト用に即座に作成。チケット不要。待ち時間なし。",
           "title": "本番環境を60秒でクローン"
         },
@@ -7476,7 +5597,6 @@
           "title": "開発者は環境の待ち時間で何日も無駄にしている"
         },
         "references": {
-          "disclaimer": "製品パフォーマンスの主張は、Rediaccのbtrfsコピーオンライトアーキテクチャに基づいています。計算機の見積もりは業界標準のコストモデルを使用しています。実際のコストは組織によって異なります。",
           "items": [
             {
               "text": "Atlassian, DX & Wakefield Research, \"State of Developer Experience Report,\" 2024. \"Sixty-nine percent of developers are losing eight hours or more per week to inefficiencies.\" \"For an organization with 500 developers, losing 8 hours per week costs roughly $6.9 million over the course of a year.\"",
@@ -7538,8 +5658,7 @@
               "text": "Neon branches include all parent data by default providing instant production-identical copies.",
               "url": "https://neon.com/docs/introduction/branching"
             }
-          ],
-          "label": "出典・参考文献"
+          ]
         },
         "socialProof": {
           "author": "シニアDevOpsエンジニア",
@@ -7598,83 +5717,11 @@
           ],
           "title": "60秒クローンが可能な理由",
           "traditionalLabel": "従来のアプローチ"
-        },
-        "techStrip": {
-          "label": "あらゆるコンテナ化ワークロードをクローン",
-          "note": "データベース、メールサーバー、CI/CD、CMS、監視、認証 — コンテナで動くものなら、Rediaccがクローンします。"
-        },
-        "terminal": {
-          "lines": [
-            {
-              "cmd": "rdc repo fork production",
-              "flag": "",
-              "prompt": "$",
-              "type": "command",
-              "value": ""
-            },
-            {
-              "type": "spacer"
-            },
-            {
-              "result": "done",
-              "text": "本番環境のスナップショットを作成中",
-              "type": "check"
-            },
-            {
-              "result": "done",
-              "text": "12個のコンテナを複製中",
-              "type": "check"
-            },
-            {
-              "result": "done",
-              "text": "設定をコピー中 (241 GB)",
-              "type": "check"
-            },
-            {
-              "result": "done",
-              "text": "暗号化ストレージをマウント中",
-              "type": "check"
-            },
-            {
-              "result": "12/12 合格",
-              "text": "ヘルスチェックを実行中",
-              "type": "check"
-            },
-            {
-              "type": "spacer"
-            },
-            {
-              "text": "クローン準備完了: dev-sarah.internal",
-              "type": "success"
-            },
-            {
-              "type": "spacer"
-            },
-            {
-              "pairs": [
-                {
-                  "label": "Time",
-                  "value": "47s"
-                },
-                {
-                  "label": "Containers",
-                  "value": "12"
-                },
-                {
-                  "label": "Size",
-                  "value": "241 GB"
-                },
-                {
-                  "label": "Status",
-                  "value": "正常"
-                }
-              ],
-              "type": "summary"
-            }
-          ]
         }
       },
       "failoverTesting": {
+        "label": "フェイルオーバーテスト",
+        "blurb": "必要になる前にフェイルオーバーをテスト",
         "benefits": {
           "items": [
             {
@@ -7706,7 +5753,7 @@
         "calculator": {
           "annualLabel": "年間DR障害リスク額",
           "description": "スライダーをビジネスに合わせてドラッグしてください。DRプランが機能することを祈るコストをご覧ください。",
-          "footnote": "収益リスク：時間あたり収益×予想ダウンタイム時間。復旧人件費：エンジニア3名×ダウンタイム時間×$200/時間×各3サービス。離反：リスク収益の20%（控えめな見積もり）。コンプライアンス：収益損失の10%。組織の13%のみがオーケストレーションされたDRワークフローを使用（Veeam 2024）[1]。月次自動テストにより、ギャップが重要になる前に発見・修正されます。",
+          "footnote": "収益リスク：時間あたり収益×予想ダウンタイム時間。復旧人件費：エンジニア3名×ダウンタイム時間×$200/時間×各3サービス。離反：リスク収益の20%（控えめな見積もり）。コンプライアンス：収益損失の10%。組織の13%のみがオーケストレーションされたDRワークフローを使用（Veeam 2024）。月次自動テストにより、ギャップが重要になる前に発見・修正されます。",
           "headerTitle": "DRテストギャップ被害額を計算する",
           "overline": "実際のコスト",
           "results": {
@@ -7774,79 +5821,8 @@
           "overline": "差別化",
           "title": "DRテストツールの比較"
         },
-        "explore": {
-          "solutions": [
-            {
-              "category": "multi-cloud",
-              "categoryLabel": "マルチクラウド",
-              "description": "AWSがダウンしても、あなたはダウンしない",
-              "slug": "cloud-outage-protection",
-              "title": "クラウド障害対策"
-            },
-            {
-              "category": "multi-cloud",
-              "categoryLabel": "マルチクラウド",
-              "description": "あなたのインフラ。あなたの選択。常に。",
-              "slug": "vendor-lock-in",
-              "title": "ベンダーロックインからの解放"
-            },
-            {
-              "category": "multi-cloud",
-              "categoryLabel": "マルチクラウド",
-              "current": true,
-              "description": "必要になる前にフェイルオーバーをテスト",
-              "slug": "failover-testing",
-              "title": "フェイルオーバーテスト"
-            },
-            {
-              "category": "ransomware",
-              "categoryLabel": "ランサムウェア対策",
-              "description": "ランサムウェアが触れないバックアップ",
-              "slug": "immutable-backups",
-              "title": "イミュータブルバックアップ"
-            },
-            {
-              "category": "backups",
-              "categoryLabel": "検証済みバックアップ",
-              "description": "すべてのバックアップを自動検証",
-              "slug": "backup-verification",
-              "title": "バックアップ検証"
-            },
-            {
-              "category": "encryption",
-              "categoryLabel": "暗号化管理",
-              "description": "あなたの鍵。あなたの暗号化。例外なし。",
-              "slug": "encryption",
-              "title": "自分で管理する暗号化"
-            },
-            {
-              "category": "dev-env",
-              "categoryLabel": "開発環境",
-              "description": "本番環境を60秒でクローン",
-              "slug": "environment-cloning",
-              "title": "環境クローン"
-            },
-            {
-              "category": "defense",
-              "categoryLabel": "予防的防御",
-              "description": "本番環境をクローン。AIに攻撃させる。",
-              "slug": "ai-pentesting",
-              "title": "AIペネトレーションテスト"
-            },
-            {
-              "category": "multi-cloud",
-              "description": "実行中のクラスタをデータごとフォークまたは移動",
-              "slug": "kubernetes-cluster-mobility",
-              "title": "Kubernetesクラスタの可搬性"
-            }
-          ],
-          "title": "他のソリューションを探す"
-        },
         "hero": {
-          "badge": "マルチクラウド",
-          "differentiator": "すべてのクラウドにバックアップがあります。リスクなしでフェイルオーバーをテストできるものはありません。Rediaccはできます。",
           "primaryCta": "Communityで無料で始める",
-          "secondaryCta": "テストの動作を見る →",
           "subtitle": "災害シミュレーションを安全に実行。復旧が実際に機能することを確認。最も重要な時にサプライズなし。",
           "title": "必要になる前にフェイルオーバーをテスト"
         },
@@ -7939,19 +5915,19 @@
             {
               "number": "わずか13%",
               "ref": 1,
-              "source": "Veeam 2024 Data Protection Trends Report [1]",
+              "source": "Veeam 2024 Data Protection Trends Report",
               "text": "の組織がオーケストレーションされたDRワークフローを使用"
             },
             {
               "number": "わずか32%",
               "ref": 1,
-              "source": "Veeam 2024 Data Protection Trends Report [1]",
+              "source": "Veeam 2024 Data Protection Trends Report",
               "text": "の組織が1営業週以内に50台のサーバーを復旧可能"
             },
             {
               "number": "わずか58%",
               "ref": 1,
-              "source": "Veeam 2024 Data Protection Trends Report [1]",
+              "source": "Veeam 2024 Data Protection Trends Report",
               "text": "のサーバーがリカバリテスト中にSLA内で再開"
             }
           ],
@@ -7985,7 +5961,6 @@
           "title": "テストされていないフェイルオーバーは単なる希望"
         },
         "references": {
-          "disclaimer": "製品パフォーマンスの主張は、Rediaccのbtrfsコピーオンライトアーキテクチャに基づいています。計算機の見積もりは業界標準のコストモデルを使用しています。実際のコストは組織によって異なります。",
           "items": [
             {
               "text": "Veeam, “2024 Data Protection Trends Report — BC/DR Trends,” 2024. “Only 13% of organizations utilize orchestrated workflow as part of their disaster recovery processes.” “Only 58% of servers met their recovery SLA during their last large-scale attack.” “Only 32% of organizations believe that they could recover 50 workloads within an entire business week.”",
@@ -8031,8 +6006,7 @@
               "text": "Zerto is deployed on-premises with a Zerto Virtual Manager and per-host Virtual Replication Appliances.",
               "url": "https://help.zerto.com/bundle/Install.VC.HTML/page/Installing_Zerto_Virtual_Replication_in_On-Premise_Environments.htm"
             }
-          ],
-          "label": "出典・参考文献"
+          ]
         },
         "socialProof": {
           "author": "プラットフォームエンジニアリング責任者",
@@ -8095,88 +6069,11 @@
           ],
           "title": "従来のDRテストが失敗する理由",
           "traditionalLabel": "従来のDRテスト"
-        },
-        "techStrip": {
-          "label": "あらゆるコンテナ化ワークロードをレプリケート",
-          "note": "データベース、メールサーバー、CI/CD、CMS、監視、認証 — コンテナで動くものなら、Rediaccがレプリケート・テストします。"
-        },
-        "terminal": {
-          "lines": [
-            {
-              "cmd": "rdc ops status",
-              "flag": "",
-              "prompt": "$",
-              "type": "command",
-              "value": ""
-            },
-            {
-              "type": "spacer"
-            },
-            {
-              "result": "done",
-              "text": "本番環境の状態をスナップショット",
-              "type": "check"
-            },
-            {
-              "result": "done",
-              "text": "プライマリ障害をシミュレーション中",
-              "type": "check"
-            },
-            {
-              "result": "done",
-              "text": "secondary-dcへのフェイルオーバーをトリガー中",
-              "type": "check"
-            },
-            {
-              "result": "8/8 healthy",
-              "text": "セカンダリで8個のコンテナを検証中",
-              "type": "check"
-            },
-            {
-              "result": "すべて合格",
-              "text": "ヘルスチェックを実行中",
-              "type": "check"
-            },
-            {
-              "result": "done",
-              "text": "プライマリにロールバック中",
-              "type": "check"
-            },
-            {
-              "type": "spacer"
-            },
-            {
-              "text": "フェイルオーバーテスト合格: 8/8サービスが22秒でリカバリ",
-              "type": "success"
-            },
-            {
-              "type": "spacer"
-            },
-            {
-              "pairs": [
-                {
-                  "label": "Duration",
-                  "value": "4m 12s"
-                },
-                {
-                  "label": "RTO",
-                  "value": "22s"
-                },
-                {
-                  "label": "Services",
-                  "value": "8/8"
-                },
-                {
-                  "label": "Data loss",
-                  "value": "0 bytes"
-                }
-              ],
-              "type": "summary"
-            }
-          ]
         }
       },
       "immutableBackups": {
+        "label": "イミュータブルバックアップ",
+        "blurb": "ランサムウェアが触れないバックアップ",
         "benefits": {
           "items": [
             {
@@ -8208,7 +6105,7 @@
         "calculator": {
           "annualLabel": "年間リスク額",
           "description": "スライダーをインフラに合わせてドラッグしてください。数字はすぐに膨れ上がります。",
-          "footnote": "リスク収益は$9,000/分の平均ダウンタイムコスト（Splunk/Oxford Economics 2024）[4]に基づく。復旧人件費：6人のエンジニア×復旧時間×$200/時間の混合レート。評判コストは直接コストに対する割合として推定（業界推定）。Rediaccを使えば、イミュータブルスナップショットが5分以内に復元 — ダウンタイムはほぼゼロに。",
+          "footnote": "リスク収益は$9,000/分の平均ダウンタイムコスト（Splunk/Oxford Economics 2024）に基づく。復旧人件費：6人のエンジニア×復旧時間×$200/時間の混合レート。評判コストは直接コストに対する割合として推定（業界推定）。Rediaccを使えば、イミュータブルスナップショットが5分以内に復元 — ダウンタイムはほぼゼロに。",
           "headerTitle": "ランサムウェア被害額を計算する",
           "overline": "実際のコスト",
           "results": {
@@ -8276,73 +6173,8 @@
           "overline": "差別化",
           "title": "ファイルシステムレベルのイミュータビリティを持つ唯一のバックアップ"
         },
-        "explore": {
-          "solutions": [
-            {
-              "category": "ransomware",
-              "categoryLabel": "ランサムウェア対策",
-              "current": true,
-              "description": "ランサムウェアが触れないバックアップ",
-              "slug": "immutable-backups",
-              "title": "イミュータブルバックアップ"
-            },
-            {
-              "category": "ransomware",
-              "categoryLabel": "ランサムウェア対策",
-              "description": "日単位ではなく分単位で復旧",
-              "slug": "rapid-recovery",
-              "title": "高速リカバリ"
-            },
-            {
-              "category": "ransomware",
-              "categoryLabel": "ランサムウェア対策",
-              "description": "リスクなしでOSアップデートをテスト",
-              "slug": "safe-os-testing",
-              "title": "安全なOSテスト"
-            },
-            {
-              "category": "multi-cloud",
-              "categoryLabel": "マルチクラウド",
-              "description": "AWSがダウンしても、あなたはダウンしない",
-              "slug": "cloud-outage-protection",
-              "title": "クラウド障害対策"
-            },
-            {
-              "category": "backups",
-              "categoryLabel": "検証済みバックアップ",
-              "description": "すべてのバックアップを自動検証",
-              "slug": "backup-verification",
-              "title": "バックアップ検証"
-            },
-            {
-              "category": "encryption",
-              "categoryLabel": "暗号化管理",
-              "description": "あなたの鍵。あなたの暗号化。例外なし。",
-              "slug": "encryption",
-              "title": "自分で管理する暗号化"
-            },
-            {
-              "category": "dev-env",
-              "categoryLabel": "開発環境",
-              "description": "本番環境を60秒でクローン",
-              "slug": "environment-cloning",
-              "title": "環境クローン"
-            },
-            {
-              "category": "defense",
-              "categoryLabel": "予防的防御",
-              "description": "本番環境をクローン。AIに攻撃させる。",
-              "slug": "ai-pentesting",
-              "title": "AIペネトレーションテスト"
-            }
-          ],
-          "title": "他のソリューションを探す"
-        },
         "hero": {
-          "badge": "ランサムウェア対策",
-          "differentiator": "すべてのバックアップベンダーがリカバリーを約束します。毎日それを証明するベンダーはありません。Rediaccは証明します。",
           "primaryCta": "Communityで無料で始める",
-          "secondaryCta": "仕組みを見る →",
           "subtitle": "バックアップは作成された瞬間からイミュータブル（不変）です。ハッカーも、あなた自身も変更できません。",
           "title": "ランサムウェアが触れないバックアップ"
         },
@@ -8435,19 +6267,19 @@
             {
               "number": "94%",
               "ref": 1,
-              "source": "Sophos 2024 [1]",
+              "source": "Sophos 2024",
               "text": "の攻撃がバックアップを標的にしている"
             },
             {
               "number": "$4.88M",
               "ref": 2,
-              "source": "IBM Cost of a Data Breach 2024 [2]",
+              "source": "IBM Cost of a Data Breach 2024",
               "text": "データ侵害の平均コスト"
             },
             {
               "number": "24日間",
               "ref": 3,
-              "source": "Coveware Quarterly Report [3]",
+              "source": "Coveware Quarterly Report",
               "text": "平均復旧時間"
             }
           ],
@@ -8481,7 +6313,6 @@
           "title": "ランサムウェアはまずバックアップを狙う"
         },
         "references": {
-          "disclaimer": "製品パフォーマンスの主張は、Rediaccのbtrfsコピーオンライトアーキテクチャに基づいています。計算機の見積もりは業界標準のコストモデルを使用しています。実際のコストは組織によって異なります。",
           "items": [
             {
               "text": "Sophos, “The Impact of Compromised Backups on Ransomware Outcomes,” March 2024. “94% of organizations hit by ransomware in the past year said that the cybercriminals attempted to compromise their backups during the attack.”",
@@ -8571,8 +6402,7 @@
               "text": "Zerto is deployed on-premises with a Zerto Virtual Manager and per-host Virtual Replication Appliances.",
               "url": "https://help.zerto.com/bundle/Install.VC.HTML/page/Installing_Zerto_Virtual_Replication_in_On-Premise_Environments.htm"
             }
-          ],
-          "label": "出典・参考文献"
+          ]
         },
         "socialProof": {
           "author": "インフラストラクチャリーダー",
@@ -8631,83 +6461,11 @@
           ],
           "title": "ランサムウェアがこれらのバックアップを暗号化できない理由",
           "traditionalLabel": "従来のバックアップツール"
-        },
-        "techStrip": {
-          "label": "あらゆるコンテナ化ワークロードを保護",
-          "note": "データベース、メールサーバー、CI/CD、CMS、監視、Vault — コンテナで動くものなら、Rediaccが保護します。"
-        },
-        "terminal": {
-          "lines": [
-            {
-              "cmd": "rdc repo push production",
-              "flag": "",
-              "prompt": "$",
-              "type": "command",
-              "value": ""
-            },
-            {
-              "type": "spacer"
-            },
-            {
-              "result": "done",
-              "text": "ファイルシステム状態のスナップショット作成中",
-              "type": "check"
-            },
-            {
-              "result": "done",
-              "text": "イミュータブルbtrfsスナップショットを作成中",
-              "type": "check"
-            },
-            {
-              "result": "done",
-              "text": "書き込み保護ロックでシール中",
-              "type": "check"
-            },
-            {
-              "result": "done",
-              "text": "スナップショットの整合性を検証中",
-              "type": "check"
-            },
-            {
-              "result": "合格",
-              "text": "自動リストアテストを実行中",
-              "type": "check"
-            },
-            {
-              "type": "spacer"
-            },
-            {
-              "text": "バックアップシール完了: production-2026-02-27T03:00",
-              "type": "success"
-            },
-            {
-              "type": "spacer"
-            },
-            {
-              "pairs": [
-                {
-                  "label": "Time",
-                  "value": "48s"
-                },
-                {
-                  "label": "Size",
-                  "value": "380 GB"
-                },
-                {
-                  "label": "Status",
-                  "value": "イミュータブル"
-                },
-                {
-                  "label": "Verified",
-                  "value": "✓"
-                }
-              ],
-              "type": "summary"
-            }
-          ]
         }
       },
       "infrastructureCosts": {
+        "label": "インフラコスト",
+        "blurb": "アイドル環境への課金を停止",
         "benefits": {
           "items": [
             {
@@ -8804,71 +6562,8 @@
           "overline": "差別化",
           "title": "他社がアイドル容量に課金しているもの"
         },
-        "explore": {
-          "solutions": [
-            {
-              "category": "dev-env",
-              "description": "本番環境を60秒でクローン",
-              "slug": "environment-cloning",
-              "title": "環境クローン"
-            },
-            {
-              "category": "dev-env",
-              "description": "本番環境と完全に一致する開発環境",
-              "slug": "production-parity",
-              "title": "本番環境の同一性"
-            },
-            {
-              "category": "dev-env",
-              "current": true,
-              "description": "アイドル環境への課金を停止",
-              "slug": "infrastructure-costs",
-              "title": "インフラコスト"
-            },
-            {
-              "category": "dev-env",
-              "description": "既存のワークフローにプラグイン",
-              "slug": "integrations",
-              "title": "CI/CD統合"
-            },
-            {
-              "category": "ransomware",
-              "description": "ランサムウェアが触れないバックアップ",
-              "slug": "immutable-backups",
-              "title": "イミュータブルバックアップ"
-            },
-            {
-              "category": "multi-cloud",
-              "description": "AWSがダウンしても、あなたはダウンしない",
-              "slug": "cloud-outage-protection",
-              "title": "クラウド障害対策"
-            },
-            {
-              "category": "encryption",
-              "description": "あなたの鍵。あなたの暗号化。例外なし。",
-              "slug": "encryption",
-              "title": "自分で管理する暗号化"
-            },
-            {
-              "category": "defense",
-              "description": "本番環境をクローン。AIに攻撃させる。",
-              "slug": "ai-pentesting",
-              "title": "AIペネトレーションテスト"
-            },
-            {
-              "category": "multi-cloud",
-              "description": "実行中のクラスタをデータごとフォークまたは移動",
-              "slug": "kubernetes-cluster-mobility",
-              "title": "Kubernetesクラスタの可搬性"
-            }
-          ],
-          "title": "他のソリューションを探す"
-        },
         "hero": {
-          "badge": "開発環境",
-          "differentiator": "すべてのクラウドベンダーは常時稼働のインフラに課金します。クローン間でストレージブロックを共有するベンダーはありません。Rediaccは共有します。",
           "primaryCta": "無料で始める",
-          "secondaryCta": "コスト比較を見る →",
           "subtitle": "必要に応じて環境を作成。使い終わったら破棄。実際に使った分だけ支払い。",
           "title": "アイドル環境への支払いをやめる"
         },
@@ -9005,7 +6700,6 @@
           "title": "常時稼働の環境はお金を浪費する"
         },
         "references": {
-          "disclaimer": "製品パフォーマンスの主張は、Rediaccのbtrfsコピーオンライトアーキテクチャに基づいています。計算機の見積もりは業界標準のコストモデルを使用しています。実際のコストは組織によって異なります。",
           "items": [
             {
               "text": "Industry composite from vendor surveys and published benchmarks (ParkMyCloud, Release.com, Northflank). \"60–80% of staging environments sit idle at any given time.\"",
@@ -9043,8 +6737,7 @@
               "text": "Railway provides instant previews with auto-config and automatic build-and-package upon source changes.",
               "url": "https://docs.railway.com/deployments/reference"
             }
-          ],
-          "label": "出典・参考文献"
+          ]
         },
         "socialProof": {
           "author": "プラットフォームエンジニアリングディレクター",
@@ -9103,80 +6796,11 @@
           ],
           "title": "フルコピー vs. コピーオンライト",
           "traditionalLabel": "従来方式（フルコピー）"
-        },
-        "techStrip": {
-          "label": "あらゆるコンテナ化ワークロードをクローン",
-          "note": "データベース、メールサーバー、CI/CD、CMS、監視、認証 — コンテナで動くものなら、Rediaccがオンデマンドでクローンします。"
-        },
-        "terminal": {
-          "lines": [
-            {
-              "cmd": "rdc repo fork production",
-              "flag": "",
-              "prompt": "$",
-              "type": "command",
-              "value": ""
-            },
-            {
-              "type": "spacer"
-            },
-            {
-              "result": "380 GB",
-              "text": "本番環境のスナップショット作成中 (btrfs CoW)",
-              "type": "check"
-            },
-            {
-              "result": "2.1 GB used",
-              "text": "ゼロコピークローンを作成中",
-              "type": "check"
-            },
-            {
-              "result": "4リポジトリ",
-              "text": "Dockerデーモンを起動中",
-              "type": "check"
-            },
-            {
-              "result": "TTL: 4時間",
-              "text": "自動クリーンアップを設定中",
-              "type": "check"
-            },
-            {
-              "result": "すべて正常",
-              "text": "ヘルスチェック合格",
-              "type": "check"
-            },
-            {
-              "type": "spacer"
-            },
-            {
-              "text": "クローン dev-loadtest 準備完了 — 4時間後に自動破棄",
-              "type": "success"
-            },
-            {
-              "pairs": [
-                {
-                  "label": "capacity",
-                  "value": "380 GB"
-                },
-                {
-                  "label": "actual disk",
-                  "value": "2.1 GB (0.6%)"
-                },
-                {
-                  "label": "cost",
-                  "value": "$0.003/hr"
-                },
-                {
-                  "label": "time",
-                  "value": "52s"
-                }
-              ],
-              "type": "summary"
-            }
-          ]
         }
       },
       "instantRecovery": {
+        "label": "即時リカバリ",
+        "blurb": "数分で環境全体をリカバリ",
         "benefits": {
           "items": [
             {
@@ -9278,79 +6902,8 @@
           "overline": "差別化",
           "title": "復旧能力の比較"
         },
-        "explore": {
-          "solutions": [
-            {
-              "category": "backups",
-              "categoryLabel": "検証済みバックアップ",
-              "description": "すべてのバックアップを自動検証",
-              "slug": "backup-verification",
-              "title": "バックアップ検証"
-            },
-            {
-              "category": "backups",
-              "categoryLabel": "検証済みバックアップ",
-              "description": "法律が求める期間データを保持",
-              "slug": "retention-compliance",
-              "title": "保持期間コンプライアンス"
-            },
-            {
-              "category": "backups",
-              "categoryLabel": "検証済みバックアップ",
-              "current": true,
-              "description": "数分で環境全体をリカバリ",
-              "slug": "instant-recovery",
-              "title": "即時リカバリ"
-            },
-            {
-              "category": "ransomware",
-              "categoryLabel": "ランサムウェア対策",
-              "description": "ランサムウェアが触れないバックアップ",
-              "slug": "immutable-backups",
-              "title": "イミュータブルバックアップ"
-            },
-            {
-              "category": "multi-cloud",
-              "categoryLabel": "マルチクラウド",
-              "description": "AWSがダウンしても、あなたはダウンしない",
-              "slug": "cloud-outage-protection",
-              "title": "クラウド障害対策"
-            },
-            {
-              "category": "encryption",
-              "categoryLabel": "暗号化管理",
-              "description": "あなたの鍵。あなたの暗号化。例外なし。",
-              "slug": "encryption",
-              "title": "自分で管理する暗号化"
-            },
-            {
-              "category": "dev-env",
-              "categoryLabel": "開発環境",
-              "description": "本番環境を60秒でクローン",
-              "slug": "environment-cloning",
-              "title": "環境クローン"
-            },
-            {
-              "category": "defense",
-              "categoryLabel": "予防的防御",
-              "description": "本番環境をクローン。AIに攻撃させる。",
-              "slug": "ai-pentesting",
-              "title": "AIペネトレーションテスト"
-            },
-            {
-              "category": "multi-cloud",
-              "description": "実行中のクラスタをデータごとフォークまたは移動",
-              "slug": "kubernetes-cluster-mobility",
-              "title": "Kubernetesクラスタの可搬性"
-            }
-          ],
-          "title": "他のソリューションを探す"
-        },
         "hero": {
-          "badge": "検証済みバックアップ",
-          "differentiator": "すべてのベンダーがファイルを復元します。実行中の環境全体を復元するベンダーはありません。Rediaccは5分以内に実現します。",
           "primaryCta": "Communityで無料で始める",
-          "secondaryCta": "復旧速度を見る →",
           "subtitle": "ファイルだけではありません。環境全体 — サーバー、設定、データベース — が数分で復元・稼働します。",
           "title": "数分で環境全体を復旧"
         },
@@ -9443,19 +6996,19 @@
             {
               "number": "3.4 weeks",
               "ref": 1,
-              "source": "Sophos State of Ransomware 2024 [1]",
+              "source": "Sophos State of Ransomware 2024",
               "text": "ランサムウェア復旧の平均時間"
             },
             {
               "number": "$300K+/hr",
               "ref": 2,
-              "source": "ITIC Hourly Cost of Downtime Survey 2024 [2]",
+              "source": "ITIC Hourly Cost of Downtime Survey 2024",
               "text": "中〜大規模企業の90%におけるダウンタイムコスト"
             },
             {
               "number": "わずか13%",
               "ref": 3,
-              "source": "Veeam Data Protection Trends Report 2024 [3]",
+              "source": "Veeam Data Protection Trends Report 2024",
               "text": "の組織が災害時にリカバリをオーケストレーションできる"
             }
           ],
@@ -9489,7 +7042,6 @@
           "title": "ファイルレベルの復旧では不十分"
         },
         "references": {
-          "disclaimer": "製品パフォーマンスの主張は、Rediaccのbtrfsコピーオンライトアーキテクチャに基づいています。計算機の見積もりは業界標準のコストモデルを使用しています。実際のコストは組織によって異なります。",
           "items": [
             {
               "text": "Sophos, “The State of Ransomware 2024,” April 2024. “The average recovery time was 3.4 weeks; recovery costs averaged $2.73 million excluding ransom payments.”",
@@ -9547,8 +7099,7 @@
               "text": "Commvault supports fully self-hosted on-premises deployments with CommServe, MediaAgent, and Access Node components.",
               "url": "https://documentation.commvault.com/v11/software/initial_setup_self_service_deployments.html"
             }
-          ],
-          "label": "出典・参考文献"
+          ]
         },
         "socialProof": {
           "author": "インフラストラクチャ担当VP",
@@ -9607,92 +7158,11 @@
           ],
           "title": "ファイルレベルの復元が失敗する理由",
           "traditionalLabel": "従来の復旧"
-        },
-        "techStrip": {
-          "label": "あらゆるコンテナ化ワークロードを復元",
-          "note": "データベース、メールサーバー、CI/CD、CMS、監視、認証 — コンテナで動くものなら、Rediaccが復元します。"
-        },
-        "terminal": {
-          "lines": [
-            {
-              "cmd": "rdc repo pull production",
-              "flag": "",
-              "prompt": "$",
-              "type": "command",
-              "value": ""
-            },
-            {
-              "type": "spacer"
-            },
-            {
-              "text": "スナップショット daily-2026-02-27 から本番環境をリストア中...",
-              "type": "comment"
-            },
-            {
-              "result": "done",
-              "text": "スナップショットからbtrfsクローンを作成中",
-              "type": "check"
-            },
-            {
-              "result": "done",
-              "text": "リストアしたボリュームをマウント中",
-              "type": "check"
-            },
-            {
-              "result": "実行中",
-              "text": "Dockerデーモンを起動中 (127.0.4.0/26)",
-              "type": "check"
-            },
-            {
-              "result": "8/8 実行中",
-              "text": "8個のコンテナを起動中",
-              "type": "check"
-            },
-            {
-              "result": "すべて合格",
-              "text": "ヘルスチェック: nginx, mariadb, api, redis",
-              "type": "check"
-            },
-            {
-              "result": "done",
-              "text": "ネットワークルートをリストア中",
-              "type": "check"
-            },
-            {
-              "type": "spacer"
-            },
-            {
-              "text": "環境全体をリストア完了: 8サービス稼働中、すべてのヘルスチェック合格",
-              "type": "success"
-            },
-            {
-              "type": "spacer"
-            },
-            {
-              "pairs": [
-                {
-                  "label": "Snapshot",
-                  "value": "daily-2026-02-27"
-                },
-                {
-                  "label": "Size",
-                  "value": "380 GB"
-                },
-                {
-                  "label": "Services",
-                  "value": "8/8"
-                },
-                {
-                  "label": "Time",
-                  "value": "3m 47s"
-                }
-              ],
-              "type": "summary"
-            }
-          ]
         }
       },
       "integrations": {
+        "label": "CI/CD統合",
+        "blurb": "既存のワークフローにプラグイン",
         "benefits": {
           "items": [
             {
@@ -9785,71 +7255,8 @@
           "overline": "差別化",
           "title": "テストフィクスチャ vs. 本番クローン"
         },
-        "explore": {
-          "solutions": [
-            {
-              "category": "dev-env",
-              "description": "本番環境を60秒でクローン",
-              "slug": "environment-cloning",
-              "title": "環境クローン"
-            },
-            {
-              "category": "dev-env",
-              "description": "本番環境と完全に一致する開発環境",
-              "slug": "production-parity",
-              "title": "本番環境の同一性"
-            },
-            {
-              "category": "dev-env",
-              "description": "アイドル環境への課金を停止",
-              "slug": "infrastructure-costs",
-              "title": "インフラコスト"
-            },
-            {
-              "category": "dev-env",
-              "current": true,
-              "description": "既存のワークフローにプラグイン",
-              "slug": "integrations",
-              "title": "CI/CD統合"
-            },
-            {
-              "category": "ransomware",
-              "description": "ランサムウェアが触れないバックアップ",
-              "slug": "immutable-backups",
-              "title": "イミュータブルバックアップ"
-            },
-            {
-              "category": "multi-cloud",
-              "description": "AWSがダウンしても、あなたはダウンしない",
-              "slug": "cloud-outage-protection",
-              "title": "クラウド障害対策"
-            },
-            {
-              "category": "encryption",
-              "description": "あなたの鍵。あなたの暗号化。例外なし。",
-              "slug": "encryption",
-              "title": "自分で管理する暗号化"
-            },
-            {
-              "category": "defense",
-              "description": "本番環境をクローン。AIに攻撃させる。",
-              "slug": "ai-pentesting",
-              "title": "AIペネトレーションテスト"
-            },
-            {
-              "category": "multi-cloud",
-              "description": "実行中のクラスタをデータごとフォークまたは移動",
-              "slug": "kubernetes-cluster-mobility",
-              "title": "Kubernetesクラスタの可搬性"
-            }
-          ],
-          "title": "他のソリューションを探す"
-        },
         "hero": {
-          "badge": "開発環境",
-          "differentiator": "すべてのCIツールはコンテナをプロビジョニングします。実データを持つ本番同一クローンをプロビジョニングするツールはありません。Rediaccはそれを実現します。",
           "primaryCta": "無料で始める",
-          "secondaryCta": "統合機能を見る →",
           "subtitle": "Git pushで新しい環境がトリガーされます。本番クローンでテストが実行されます。CI/CDがそのまま動きます — カスタムスクリプト不要。",
           "title": "既存のワークフローに接続"
         },
@@ -9901,7 +7308,7 @@
             {
               "description": "CIパイプラインが本番同一クローンでテストを実行。テスト完了後に自動破棄。",
               "icon": "check-circle",
-              "title": "Test"
+              "title": "テスト"
             }
           ],
           "title": "1コマンド。スクリプトゼロ。"
@@ -9964,7 +7371,6 @@
           "title": "カスタムCI/CDスクリプトは壊れ、誰もメンテナンスしない"
         },
         "references": {
-          "disclaimer": "製品パフォーマンスの主張は、Rediaccのbtrfsコピーオンライトアーキテクチャに基づいています。計算機の見積もりは業界標準のコストモデルを使用しています。実際のコストは組織によって異なります。",
           "items": [
             {
               "text": "Atlassian, DX & Wakefield Research, \"State of Developer Experience Report,\" 2024. \"Sixty-nine percent of developers are losing eight hours or more per week to inefficiencies.\" \"For an organization with 500 developers, losing 8 hours per week costs roughly $6.9 million over the course of a year.\"",
@@ -10014,8 +7420,7 @@
               "text": "Coder is a self-hosted open-source (AGPL v3.0) platform deployed in private data centers or cloud services.",
               "url": "https://coder.com/docs/about"
             }
-          ],
-          "label": "出典・参考文献"
+          ]
         },
         "socialProof": {
           "author": "シニアDevOpsエンジニア",
@@ -10070,92 +7475,11 @@
           ],
           "title": "カスタムスクリプト vs. ネイティブ統合",
           "traditionalLabel": "カスタムCIスクリプト"
-        },
-        "techStrip": {
-          "label": "あらゆるコンテナ化ワークロードをクローン",
-          "note": "データベース、メールサーバー、CI/CD、CMS、監視、認証 — コンテナで動くものなら、Rediaccがパイプライン用にクローンします。"
-        },
-        "terminal": {
-          "lines": [
-            {
-              "text": "# .gitlab-ci.yml — 1行追加で本番クローンをパイプラインに統合",
-              "type": "comment"
-            },
-            {
-              "type": "spacer"
-            },
-            {
-              "cmd": "git push",
-              "flag": "origin",
-              "prompt": "$",
-              "type": "command",
-              "value": "feature/auth-v2"
-            },
-            {
-              "type": "spacer"
-            },
-            {
-              "result": "feature/auth-v2",
-              "text": "Webhook受信",
-              "type": "check"
-            },
-            {
-              "result": "380 GB → 2.1 GB",
-              "text": "本番環境をクローン中 (btrfs CoW)",
-              "type": "check"
-            },
-            {
-              "result": "4リポジトリ稼働中",
-              "text": "クローンを起動中: ci-auth-v2",
-              "type": "check"
-            },
-            {
-              "result": "247件合格",
-              "text": "テストスイートを実行中",
-              "type": "check"
-            },
-            {
-              "result": "38件合格",
-              "text": "インテグレーションテストを実行中",
-              "type": "check"
-            },
-            {
-              "result": "クリーンアップ完了",
-              "text": "クローンを自動破棄中",
-              "type": "check"
-            },
-            {
-              "type": "spacer"
-            },
-            {
-              "text": "パイプライン合格: 本番同一クローンで285テスト実行",
-              "type": "success"
-            },
-            {
-              "pairs": [
-                {
-                  "label": "trigger",
-                  "value": "git push"
-                },
-                {
-                  "label": "clone",
-                  "value": "52s"
-                },
-                {
-                  "label": "tests",
-                  "value": "3m 14s"
-                },
-                {
-                  "label": "total",
-                  "value": "4m 06s"
-                }
-              ],
-              "type": "summary"
-            }
-          ]
         }
       },
       "kubernetesClusterMobility": {
+        "label": "Kubernetesクラスタの可搬性",
+        "blurb": "実行中のクラスタをデータごとフォークまたは移動",
         "benefits": {
           "items": [
             {
@@ -10221,65 +7545,8 @@
           "overline": "差別化",
           "title": "稼働中のクラスタをデータごと移動できるのはRediaccだけ"
         },
-        "explore": {
-          "solutions": [
-            {
-              "category": "multi-cloud",
-              "current": true,
-              "description": "実行中のクラスタをデータごとフォークまたは移動",
-              "slug": "kubernetes-cluster-mobility",
-              "title": "Kubernetesクラスタの可搬性"
-            },
-            {
-              "category": "multi-cloud",
-              "description": "あなたのインフラ。あなたの選択。常に。",
-              "slug": "vendor-lock-in",
-              "title": "ベンダーロックインからの解放"
-            },
-            {
-              "category": "multi-cloud",
-              "description": "AWSがダウンしても、あなたはダウンしない",
-              "slug": "cloud-outage-protection",
-              "title": "クラウド障害対策"
-            },
-            {
-              "category": "multi-cloud",
-              "description": "必要になる前にフェイルオーバーをテスト",
-              "slug": "failover-testing",
-              "title": "フェイルオーバーテスト"
-            },
-            {
-              "category": "encryption",
-              "description": "データを危険にさらさず移行",
-              "slug": "migration-safety",
-              "title": "移行の安全性"
-            },
-            {
-              "category": "dev-env",
-              "description": "本番環境を60秒でクローン",
-              "slug": "environment-cloning",
-              "title": "環境クローン"
-            },
-            {
-              "category": "backups",
-              "description": "数分で環境全体をリカバリ",
-              "slug": "instant-recovery",
-              "title": "即時リカバリ"
-            },
-            {
-              "category": "encryption",
-              "description": "あなたの鍵。あなたの暗号化。例外なし。",
-              "slug": "encryption",
-              "title": "自分で管理する暗号化"
-            }
-          ],
-          "title": "他のソリューションを探す"
-        },
         "hero": {
-          "badge": "MULTI-CLOUD",
-          "differentiator": "Veleroはバックアップを復元。Cluster APIは形だけを複製。Rediaccは稼働中のクラスタをデータごと移動します。",
           "primaryCta": "無料トライアルを開始",
-          "secondaryCta": "実測データを見る →",
           "subtitle": "クラスタはノード、設定、データを一式まとめて移動します。別のマシンへ、別のデータセンターへ。カットオーバーは週末仕事ではなく、秒単位で完了します。",
           "title": "稼働中のKubernetesクラスタをフォーク、または移動"
         },
@@ -10418,7 +7685,6 @@
           "title": "クラスタは構築した場所に固定される"
         },
         "references": {
-          "disclaimer": "フォークと移行の所要時間は、RediaccのKVM検証環境で2ノードクラスタを対象にエンドツーエンドで実測されたものです。デフォルトの整合性はクラッシュコンシステント、つまり電源断と同じ意味論です。移行のカットオーバー中、ワークロードは移行先で再起動します。",
           "items": [
             {
               "text": "Flexera, \"2024 State of the Cloud Report,\" 2024. \"27% of cloud spend continues to be wasted.\"",
@@ -10460,8 +7726,7 @@
               "text": "Ceph RBD mirroring is asynchronous, based on journaling or periodic snapshots, and is designed for disaster recovery.",
               "url": "https://docs.ceph.com/en/latest/rbd/rbd-mirroring/"
             }
-          ],
-          "label": "Sources & References"
+          ]
         },
         "stats": [
           {
@@ -10502,64 +7767,6 @@
             }
           ],
           "title": "クラスタがファイルのように移動できる理由"
-        },
-        "techStrip": {
-          "label": "Runs the apps you already ship",
-          "note": "データベース、CI/CD、CMS、監視、ログイン、ストレージ。Kubernetes上で動くものなら、Rediaccはデータごとフォークして移動できます。"
-        },
-        "terminal": {
-          "lines": [
-            {
-              "cmd": "rdc cluster fork prod",
-              "type": "command",
-              "value": "--tag staging"
-            },
-            {
-              "type": "spacer"
-            },
-            {
-              "text": "ノードイメージを複製中（コピーオンライト）........... 完了",
-              "type": "check"
-            },
-            {
-              "text": "Ceph RBDボリュームを複製中...................... 完了",
-              "type": "check"
-            },
-            {
-              "text": "新しいIP向けにノードIDを書き換え中........... 完了",
-              "type": "check"
-            },
-            {
-              "type": "spacer"
-            },
-            {
-              "text": "✓ フォーク完了（46秒）：prod-stagingが起動。親クラスタは無傷。",
-              "type": "success"
-            },
-            {
-              "type": "spacer"
-            },
-            {
-              "cmd": "rdc cluster migrate prod",
-              "type": "command",
-              "value": "--to fsn1-dc2"
-            },
-            {
-              "text": "クラスタ稼働中に事前コピー...... 完了",
-              "type": "check"
-            },
-            {
-              "text": "カットオーバー：停止、最終差分、再起動........... 16秒",
-              "type": "check"
-            },
-            {
-              "type": "spacer"
-            },
-            {
-              "text": "フォーク：46秒   移行カットオーバー：16秒   整合性：クラッシュコンシステント",
-              "type": "summary"
-            }
-          ]
         }
       },
       "leadMagnetButton": {
@@ -10583,6 +7790,8 @@
         "title": "技術概要書を入手する"
       },
       "migrationSafety": {
+        "label": "移行の安全性",
+        "blurb": "データを危険にさらさず移行",
         "benefits": {
           "items": [
             {
@@ -10614,7 +7823,7 @@
         "calculator": {
           "annualLabel": "年間移行リスク",
           "description": "エンドツーエンド暗号化なしのすべての移行は、コンプライアンスインシデントが発生するのを待っている状態です。",
-          "footnote": "再暗号化設定の人件費$200/時間、侵害プレミアム$4,880/TB（IBM 2024）[3]、露出ウィンドウあたり1%の侵害確率を想定。Rediaccは全工程で暗号化を維持 — 露出ウィンドウゼロ、再暗号化不要。",
+          "footnote": "再暗号化設定の人件費$200/時間、侵害プレミアム$4,880/TB（IBM 2024）、露出ウィンドウあたり1%の侵害確率を想定。Rediaccは全工程で暗号化を維持 — 露出ウィンドウゼロ、再暗号化不要。",
           "headerTitle": "移行リスク計算機",
           "overline": "実際のコスト",
           "results": {
@@ -10680,79 +7889,8 @@
           "overline": "差別化",
           "title": "他社が移行中にできないこと"
         },
-        "explore": {
-          "solutions": [
-            {
-              "category": "encryption",
-              "categoryLabel": "暗号化管理",
-              "description": "あなたの鍵。あなたの暗号化。例外なし。",
-              "slug": "encryption",
-              "title": "自分で管理する暗号化"
-            },
-            {
-              "category": "encryption",
-              "categoryLabel": "暗号化管理",
-              "description": "すべてのアクションを記録。隠し事なし。",
-              "slug": "audit-trail",
-              "title": "監査証跡"
-            },
-            {
-              "category": "encryption",
-              "categoryLabel": "暗号化管理",
-              "current": true,
-              "description": "データを危険にさらさず移行",
-              "slug": "migration-safety",
-              "title": "移行の安全性"
-            },
-            {
-              "category": "ransomware",
-              "categoryLabel": "ランサムウェア対策",
-              "description": "ランサムウェアが触れないバックアップ",
-              "slug": "immutable-backups",
-              "title": "イミュータブルバックアップ"
-            },
-            {
-              "category": "multi-cloud",
-              "categoryLabel": "マルチクラウド",
-              "description": "AWSがダウンしても、あなたはダウンしない",
-              "slug": "cloud-outage-protection",
-              "title": "クラウド障害対策"
-            },
-            {
-              "category": "backups",
-              "categoryLabel": "検証済みバックアップ",
-              "description": "すべてのバックアップを自動検証",
-              "slug": "backup-verification",
-              "title": "バックアップ検証"
-            },
-            {
-              "category": "dev-env",
-              "categoryLabel": "開発環境",
-              "description": "本番環境を60秒でクローン",
-              "slug": "environment-cloning",
-              "title": "環境クローン"
-            },
-            {
-              "category": "defense",
-              "categoryLabel": "予防的防御",
-              "description": "本番環境をクローン。AIに攻撃させる。",
-              "slug": "ai-pentesting",
-              "title": "AIペネトレーションテスト"
-            },
-            {
-              "category": "multi-cloud",
-              "description": "実行中のクラスタをデータごとフォークまたは移動",
-              "slug": "kubernetes-cluster-mobility",
-              "title": "Kubernetesクラスタの可搬性"
-            }
-          ],
-          "title": "他のソリューションを探す"
-        },
         "hero": {
-          "badge": "暗号化制御",
-          "differentiator": "すべてのベンダーがデータを移動します。転送中に暗号化を維持するベンダーはありません。Rediaccは維持します。",
           "primaryCta": "無料で始める",
-          "secondaryCta": "移行機能を見る →",
           "subtitle": "サーバー間、クラウド間、プロバイダー間の移行？暗号化バックアップが安全に移動します。露出なし。データ損失なし。",
           "title": "データを危険にさらさずに移行"
         },
@@ -10845,19 +7983,19 @@
             {
               "number": "89%",
               "ref": 2,
-              "source": "Flexera 2024 [1] / Thales 2025 [2]",
+              "source": "Flexera 2024 / Thales 2025",
               "text": "の企業がマルチクラウドを運用しているが、クラウドデータの80%以上を暗号化しているのはわずか8%"
             },
             {
               "number": "$4.88M",
               "ref": 3,
-              "source": "IBM Cost of Data Breach 2024 [3]",
+              "source": "IBM Cost of Data Breach 2024",
               "text": "世界平均のデータ侵害コスト"
             },
             {
               "number": "$90K–$300K",
               "ref": 4,
-              "source": "Cloud provider pricing [4]",
+              "source": "Cloud provider pricing",
               "text": "クラウド間で暗号化データを移行する際のペタバイトあたりのエグレスコスト"
             }
           ],
@@ -10891,7 +8029,6 @@
           "title": "移行はデータが最も脆弱になるタイミング"
         },
         "references": {
-          "disclaimer": "製品パフォーマンスの主張は、Rediaccのbtrfsコピーオンライトアーキテクチャに基づいています。計算機の見積もりは業界標準のコストモデルを使用しています。実際のコストは組織によって異なります。",
           "items": [
             {
               "text": "Flexera, “2024 State of the Cloud Report,” 2024. “Multi-cloud usage up from 87% last year to 89% this year.”",
@@ -10945,8 +8082,7 @@
               "text": "Commvault Undo Failover automatically rolls back to pre-failover state by restoring original VM configuration.",
               "url": "https://documentation.commvault.com/v11/software/undoing_failover.html"
             }
-          ],
-          "label": "出典・参考文献"
+          ]
         },
         "socialProof": {
           "author": "インフラストラクチャ責任者",
@@ -11009,95 +8145,11 @@
           ],
           "title": "復号-転送-再暗号化 vs. ゼロ露出移行",
           "traditionalLabel": "従来の移行"
-        },
-        "techStrip": {
-          "label": "あらゆるコンテナ化ワークロードを暗号化",
-          "note": "データベース、メールサーバー、CI/CD、ファイルストレージ、認証、監視 — コンテナで動くものなら、Rediaccが暗号化して移行します。"
-        },
-        "terminal": {
-          "lines": [
-            {
-              "cmd": "rdc repo sync push-all",
-              "flag": "",
-              "prompt": "$",
-              "type": "command",
-              "value": ""
-            },
-            {
-              "type": "spacer"
-            },
-            {
-              "result": "4リポジトリ",
-              "text": "リポジトリを列挙中",
-              "type": "check"
-            },
-            {
-              "result": "暗号化済み",
-              "text": "gitlab のスナップショット作成中 (42 GB)",
-              "type": "check"
-            },
-            {
-              "result": "暗号化済み",
-              "text": "nextcloud のスナップショット作成中 (128 GB)",
-              "type": "check"
-            },
-            {
-              "result": "暗号化済み",
-              "text": "mailcow のスナップショット作成中 (84 GB)",
-              "type": "check"
-            },
-            {
-              "result": "暗号化済み",
-              "text": "mariadb のスナップショット作成中 (96 GB)",
-              "type": "check"
-            },
-            {
-              "result": "350 GB 送信済み",
-              "text": "暗号化チャネル経由で転送中",
-              "type": "check"
-            },
-            {
-              "result": "SHA-256 一致",
-              "text": "セカンダリで整合性を検証中",
-              "type": "check"
-            },
-            {
-              "result": "4リポジトリ稼働中",
-              "text": "セカンダリでリストア中",
-              "type": "check"
-            },
-            {
-              "type": "spacer"
-            },
-            {
-              "text": "移行完了: 4リポジトリをセカンダリに移行済み",
-              "type": "success"
-            },
-            {
-              "pairs": [
-                {
-                  "label": "Transferred",
-                  "value": "350 GB"
-                },
-                {
-                  "label": "Encryption",
-                  "value": "100%"
-                },
-                {
-                  "label": "Exposure",
-                  "value": "zero"
-                },
-                {
-                  "label": "Time",
-                  "value": "12m 34s"
-                }
-              ],
-              "type": "summary"
-            }
-          ]
         }
       },
       "productionParity": {
+        "label": "本番環境の同一性",
+        "blurb": "本番環境と完全に一致する開発環境",
         "benefits": {
           "items": [
             {
@@ -11195,71 +8247,8 @@
           "overline": "差別化",
           "title": "コードクローン vs. 環境クローン"
         },
-        "explore": {
-          "solutions": [
-            {
-              "category": "dev-env",
-              "description": "本番環境を60秒でクローン",
-              "slug": "environment-cloning",
-              "title": "環境クローン"
-            },
-            {
-              "category": "dev-env",
-              "current": true,
-              "description": "本番環境と完全に一致する開発環境",
-              "slug": "production-parity",
-              "title": "本番環境の同一性"
-            },
-            {
-              "category": "dev-env",
-              "description": "アイドル環境への課金を停止",
-              "slug": "infrastructure-costs",
-              "title": "インフラコスト"
-            },
-            {
-              "category": "dev-env",
-              "description": "既存のワークフローにプラグイン",
-              "slug": "integrations",
-              "title": "CI/CD統合"
-            },
-            {
-              "category": "ransomware",
-              "description": "ランサムウェアが触れないバックアップ",
-              "slug": "immutable-backups",
-              "title": "イミュータブルバックアップ"
-            },
-            {
-              "category": "multi-cloud",
-              "description": "AWSがダウンしても、あなたはダウンしない",
-              "slug": "cloud-outage-protection",
-              "title": "クラウド障害対策"
-            },
-            {
-              "category": "encryption",
-              "description": "あなたの鍵。あなたの暗号化。例外なし。",
-              "slug": "encryption",
-              "title": "自分で管理する暗号化"
-            },
-            {
-              "category": "defense",
-              "description": "本番環境をクローン。AIに攻撃させる。",
-              "slug": "ai-pentesting",
-              "title": "AIペネトレーションテスト"
-            },
-            {
-              "category": "multi-cloud",
-              "description": "実行中のクラスタをデータごとフォークまたは移動",
-              "slug": "kubernetes-cluster-mobility",
-              "title": "Kubernetesクラスタの可搬性"
-            }
-          ],
-          "title": "他のソリューションを探す"
-        },
         "hero": {
-          "badge": "開発環境",
-          "differentiator": "あらゆる開発ツールがコードをクローンします。データまでクローンするツールはありません。Rediaccは両方をクローンします。",
           "primaryCta": "無料で始める",
-          "secondaryCta": "一致の仕組みを見る →",
           "subtitle": "「自分の環境では動く」はもう終わり。すべての開発環境が本番環境の完全なクローンです。",
           "title": "本番環境と完全に一致する開発環境。"
         },
@@ -11396,7 +8385,6 @@
           "title": "環境の違いが本番環境のバグを引き起こす"
         },
         "references": {
-          "disclaimer": "製品パフォーマンスの主張は、Rediaccのbtrfsコピーオンライトアーキテクチャに基づいています。計算機の見積もりは業界標準のコストモデルを使用しています。実際のコストは組織によって異なります。",
           "items": [
             {
               "text": "DORA (Google Cloud), \"Accelerate State of DevOps Report,\" 2024. \"Elite performers deploy 182 times more frequently, suffer an 8 times lower change failure rate, and recover from failed deployments 2,293 times faster than their low-performing peers.\"",
@@ -11430,8 +8418,7 @@
               "text": "Railway provides instant previews with auto-config and automatic build-and-package upon source changes.",
               "url": "https://docs.railway.com/deployments/reference"
             }
-          ],
-          "label": "出典・参考文献"
+          ]
         },
         "socialProof": {
           "author": "エンジニアリング担当VP",
@@ -11490,95 +8477,11 @@
           ],
           "title": "近似 vs. 完全クローン",
           "traditionalLabel": "従来の開発セットアップ"
-        },
-        "techStrip": {
-          "label": "あらゆるコンテナ化ワークロードをクローン",
-          "note": "データベース、メールサーバー、CI/CD、CMS、監視、認証 — コンテナで動くものなら、Rediaccが100%の一致でクローンします。"
-        },
-        "terminal": {
-          "lines": [
-            {
-              "cmd": "rdc backup restore dev-sarah --as dev-sarah-verify --up",
-              "flag": "",
-              "prompt": "$",
-              "type": "command",
-              "value": ""
-            },
-            {
-              "type": "spacer"
-            },
-            {
-              "result": "380 GB",
-              "text": "本番環境のスナップショット作成中 (btrfs CoW)",
-              "type": "check"
-            },
-            {
-              "result": "同一",
-              "text": "gitlab をクローン中 (42 GB)",
-              "type": "check"
-            },
-            {
-              "result": "同一",
-              "text": "nextcloud をクローン中 (128 GB)",
-              "type": "check"
-            },
-            {
-              "result": "同一",
-              "text": "mariadb をクローン中 (96 GB)",
-              "type": "check"
-            },
-            {
-              "result": "同一",
-              "text": "mailcow をクローン中 (84 GB)",
-              "type": "check"
-            },
-            {
-              "result": "100% 一致",
-              "text": "設定の同一性を検証中",
-              "type": "check"
-            },
-            {
-              "result": "100% 一致",
-              "text": "OS + ライブラリバージョンを検証中",
-              "type": "check"
-            },
-            {
-              "result": "4リポジトリ稼働中",
-              "text": "Dockerデーモンを起動中",
-              "type": "check"
-            },
-            {
-              "type": "spacer"
-            },
-            {
-              "text": "クローン dev-sarah 準備完了: 100% 本番同一性確認済み",
-              "type": "success"
-            },
-            {
-              "pairs": [
-                {
-                  "label": "cloned",
-                  "value": "380 GB"
-                },
-                {
-                  "label": "disk used",
-                  "value": "2.1 GB (CoW)"
-                },
-                {
-                  "label": "config drift",
-                  "value": "0"
-                },
-                {
-                  "label": "time",
-                  "value": "47s"
-                }
-              ],
-              "type": "summary"
-            }
-          ]
         }
       },
       "rapidRecovery": {
+        "label": "高速リカバリ",
+        "blurb": "日単位ではなく分単位で復旧",
         "benefits": {
           "items": [
             {
@@ -11672,78 +8575,8 @@
           "overline": "差別化",
           "title": "これほど速く復旧できるツールは他にない"
         },
-        "explore": {
-          "solutions": [
-            {
-              "category": "Ransomware Survival",
-              "dataCategory": "ransomware",
-              "description": "ランサムウェアが触れないバックアップ",
-              "slug": "immutable-backups",
-              "title": "イミュータブルバックアップ"
-            },
-            {
-              "category": "Ransomware Survival",
-              "dataCategory": "ransomware",
-              "description": "日単位ではなく分単位で復旧",
-              "slug": "rapid-recovery",
-              "title": "高速リカバリ"
-            },
-            {
-              "category": "Ransomware Survival",
-              "dataCategory": "ransomware",
-              "description": "リスクなしでOSアップデートをテスト",
-              "slug": "safe-os-testing",
-              "title": "安全なOSテスト"
-            },
-            {
-              "category": "Multi-Cloud",
-              "dataCategory": "multi-cloud",
-              "description": "AWSがダウンしても、あなたはダウンしない",
-              "slug": "cloud-outage-protection",
-              "title": "クラウド障害対策"
-            },
-            {
-              "category": "Verified Backups",
-              "dataCategory": "backups",
-              "description": "すべてのバックアップを自動検証",
-              "slug": "backup-verification",
-              "title": "バックアップ検証"
-            },
-            {
-              "category": "Encryption Control",
-              "dataCategory": "encryption",
-              "description": "あなたの鍵。あなたの暗号化。例外なし。",
-              "slug": "encryption",
-              "title": "自分で管理する暗号化"
-            },
-            {
-              "category": "Development Environments",
-              "dataCategory": "dev-env",
-              "description": "本番環境を60秒でクローン",
-              "slug": "environment-cloning",
-              "title": "環境クローン"
-            },
-            {
-              "category": "Preemptive Defense",
-              "dataCategory": "defense",
-              "description": "本番環境をクローン。AIに攻撃させる。",
-              "slug": "ai-pentesting",
-              "title": "AIペネトレーションテスト"
-            },
-            {
-              "category": "multi-cloud",
-              "description": "実行中のクラスタをデータごとフォークまたは移動",
-              "slug": "kubernetes-cluster-mobility",
-              "title": "Kubernetesクラスタの可搬性"
-            }
-          ],
-          "title": "他のソリューションを探す"
-        },
         "hero": {
-          "badge": "ランサムウェア対策",
-          "differentiator": "すべてのバックアップベンダーがリカバリーを約束します。毎日それを証明するベンダーはありません。Rediaccは証明します。",
           "primaryCta": "Communityで無料で始める",
-          "secondaryCta": "復旧の動作を見る →",
           "subtitle": "ランサムウェアが襲来した時、1分ごとにコストがかかります。Rediaccは被害が広がる前にオンラインに復帰させます。",
           "title": "数日ではなく数分で復旧。"
         },
@@ -11883,7 +8716,6 @@
           "title": "遅い復旧は攻撃自体よりコストがかかる"
         },
         "references": {
-          "disclaimer": "製品パフォーマンスの主張は、Rediaccのbtrfsコピーオンライトアーキテクチャに基づいています。計算機の見積もりは業界標準のコストモデルを使用しています。実際のコストは組織によって異なります。",
           "items": [
             {
               "text": "Coveware, \"Quarterly Ransomware Report Q2 2022,\" July 2022. \"In Q2, the average days of downtime was measured at 24 days, a decrease of 8% from Q1 2022.\"",
@@ -11957,8 +8789,7 @@
               "text": "Zerto is deployed on-premises with a Zerto Virtual Manager and per-host Virtual Replication Appliances.",
               "url": "https://help.zerto.com/bundle/Install.VC.HTML/page/Installing_Zerto_Virtual_Replication_in_On-Premise_Environments.htm"
             }
-          ],
-          "label": "出典・参考文献"
+          ]
         },
         "socialProof": {
           "author": "エンジニアリング担当VP",
@@ -12015,60 +8846,11 @@
             }
           ],
           "title": "復旧が数日ではなく数分で済む理由"
-        },
-        "techStrip": {
-          "label": "あらゆるコンテナ化ワークロードを保護",
-          "note": "データベース、メールサーバー、CI/CD、CMS、監視、Vault — コンテナで動くものなら、Rediaccが復旧します。"
-        },
-        "terminal": {
-          "lines": [
-            {
-              "cmd": "rdc repo pull production",
-              "flag": "",
-              "type": "command",
-              "value": ""
-            },
-            {
-              "type": "spacer"
-            },
-            {
-              "text": "クリーンなリストアポイントを特定中.............. 完了",
-              "type": "check"
-            },
-            {
-              "text": "イミュータブルスナップショットをマウント中................... 完了",
-              "type": "check"
-            },
-            {
-              "text": "8個のコンテナをリストア中....................... 完了",
-              "type": "check"
-            },
-            {
-              "text": "ネットワーク設定を適用中............... 完了",
-              "type": "check"
-            },
-            {
-              "text": "ヘルスチェックを実行中........................ 8/8 合格",
-              "type": "check"
-            },
-            {
-              "type": "spacer"
-            },
-            {
-              "text": "環境リストア完了: production",
-              "type": "success"
-            },
-            {
-              "type": "spacer"
-            },
-            {
-              "text": "時間: 3分12秒   コンテナ: 8   ポイント: 02:55:00   状態: 正常",
-              "type": "summary"
-            }
-          ]
         }
       },
       "retentionCompliance": {
+        "label": "保持期間コンプライアンス",
+        "blurb": "法律が求める期間データを保持",
         "benefits": {
           "items": [
             {
@@ -12100,7 +8882,7 @@
         "calculator": {
           "annualLabel": "年間コンプライアンスコスト",
           "description": "スライダーを環境に合わせてドラッグしてください。手動保持管理の実際のコストをご覧ください。",
-          "footnote": "準備時間：監査回数×監査あたりの時間。ギャップ：手動管理データ5 TBあたり1件（控えめな見積もり）。ペナルティ：ギャップあたり$50K（中小企業向けGDPR罰金の中央値）。人件費：準備時間×$200/時間（シニアエンジニア）。平均データ侵害コストは$4.88M（IBM 2024）[1]。Rediaccは監査対応レポートを即座に生成 — 監査あたり2時間、自動ポリシー適用。",
+          "footnote": "準備時間：監査回数×監査あたりの時間。ギャップ：手動管理データ5 TBあたり1件（控えめな見積もり）。ペナルティ：ギャップあたり$50K（中小企業向けGDPR罰金の中央値）。人件費：準備時間×$200/時間（シニアエンジニア）。平均データ侵害コストは$4.88M（IBM 2024）。Rediaccは監査対応レポートを即座に生成 — 監査あたり2時間、自動ポリシー適用。",
           "headerTitle": "コンプライアンスリスク被害額を計算する",
           "overline": "実際のコスト",
           "results": {
@@ -12168,73 +8950,8 @@
           "overline": "差別化",
           "title": "保持コンプライアンスの比較"
         },
-        "explore": {
-          "solutions": [
-            {
-              "category": "backups",
-              "categoryLabel": "検証済みバックアップ",
-              "description": "すべてのバックアップを自動検証",
-              "slug": "backup-verification",
-              "title": "バックアップ検証"
-            },
-            {
-              "category": "backups",
-              "categoryLabel": "検証済みバックアップ",
-              "current": true,
-              "description": "法律が求める期間データを保持",
-              "slug": "retention-compliance",
-              "title": "保持期間コンプライアンス"
-            },
-            {
-              "category": "backups",
-              "categoryLabel": "検証済みバックアップ",
-              "description": "数分で環境全体をリカバリ",
-              "slug": "instant-recovery",
-              "title": "即時リカバリ"
-            },
-            {
-              "category": "ransomware",
-              "categoryLabel": "ランサムウェア対策",
-              "description": "ランサムウェアが触れないバックアップ",
-              "slug": "immutable-backups",
-              "title": "イミュータブルバックアップ"
-            },
-            {
-              "category": "multi-cloud",
-              "categoryLabel": "マルチクラウド",
-              "description": "AWSがダウンしても、あなたはダウンしない",
-              "slug": "cloud-outage-protection",
-              "title": "クラウド障害対策"
-            },
-            {
-              "category": "encryption",
-              "categoryLabel": "暗号化管理",
-              "description": "あなたの鍵。あなたの暗号化。例外なし。",
-              "slug": "encryption",
-              "title": "自分で管理する暗号化"
-            },
-            {
-              "category": "dev-env",
-              "categoryLabel": "開発環境",
-              "description": "本番環境を60秒でクローン",
-              "slug": "environment-cloning",
-              "title": "環境クローン"
-            },
-            {
-              "category": "defense",
-              "categoryLabel": "予防的防御",
-              "description": "本番環境をクローン。AIに攻撃させる。",
-              "slug": "ai-pentesting",
-              "title": "AIペネトレーションテスト"
-            }
-          ],
-          "title": "他のソリューションを探す"
-        },
         "hero": {
-          "badge": "検証済みバックアップ",
-          "differentiator": "すべてのベンダーがデータをバックアップします。復元が機能することを検証するベンダーはありません。Rediaccは毎日検証します。",
           "primaryCta": "Communityで無料で始める",
-          "secondaryCta": "コンプライアンス機能を見る →",
           "subtitle": "コンプライアンス要件を満たす設定可能な保持ポリシー。HIPAA、SOC2、GDPR — デフォルトで対応。",
           "title": "法律で求められる期間データを保持"
         },
@@ -12328,19 +9045,19 @@
             {
               "number": "$4.88M",
               "ref": 1,
-              "source": "IBM Cost of Data Breach 2024 [1]",
+              "source": "IBM Cost of Data Breach 2024",
               "text": "世界平均のデータ侵害コスト"
             },
             {
               "number": "$2.13M",
               "ref": 2,
-              "source": "HHS HIPAA Enforcement [2]",
+              "source": "HHS HIPAA Enforcement",
               "text": "HIPAA違反カテゴリごとの年間最大罰則金"
             },
             {
               "number": "€1.2B",
               "ref": 3,
-              "source": "CMS GDPR Enforcement Tracker 2024/2025 [3]",
+              "source": "CMS GDPR Enforcement Tracker 2024/2025",
               "text": "2024年だけで欧州全域で課されたGDPR罰金"
             }
           ],
@@ -12374,7 +9091,6 @@
           "title": "コンプライアンス違反は高くつく"
         },
         "references": {
-          "disclaimer": "製品パフォーマンスの主張は、Rediaccのbtrfsコピーオンライトアーキテクチャに基づいています。計算機の見積もりは業界標準のコストモデルを使用しています。実際のコストは組織によって異なります。",
           "items": [
             {
               "text": "IBM Security, “Cost of a Data Breach Report 2024,” July 2024. “The global average cost of a data breach reached $4.88 million in 2024.”",
@@ -12464,8 +9180,7 @@
               "text": "Commvault supports fully self-hosted on-premises deployments with CommServe, MediaAgent, and Access Node components.",
               "url": "https://documentation.commvault.com/v11/software/initial_setup_self_service_deployments.html"
             }
-          ],
-          "label": "出典・参考文献"
+          ]
         },
         "socialProof": {
           "author": "コンプライアンスオフィサー",
@@ -12524,94 +9239,11 @@
           ],
           "title": "スプレッドシートによるコンプライアンスが失敗する理由",
           "traditionalLabel": "手動保持管理"
-        },
-        "techStrip": {
-          "label": "あらゆるコンテナ化ワークロードを検証",
-          "note": "データベース、メールサーバー、CI/CD、CMS、監視、認証 — コンテナで動くものなら、Rediaccが保持・検証します。"
-        },
-        "terminal": {
-          "lines": [
-            {
-              "cmd": "rdc config backup-strategy set",
-              "flag": "",
-              "prompt": "$",
-              "type": "command",
-              "value": ""
-            },
-            {
-              "type": "spacer"
-            },
-            {
-              "result": "done",
-              "text": "ポリシー \"hipaa\" を設定済み",
-              "type": "check"
-            },
-            {
-              "result": "set",
-              "text": "保持期間: 7年",
-              "type": "check"
-            },
-            {
-              "result": "アクティブ",
-              "text": "自動クリーンアップ: 有効",
-              "type": "check"
-            },
-            {
-              "result": "記録中",
-              "text": "監査証跡: 有効",
-              "type": "check"
-            },
-            {
-              "type": "spacer"
-            },
-            {
-              "cmd": "rdc config backup-strategy show",
-              "prompt": "$",
-              "type": "command"
-            },
-            {
-              "type": "spacer"
-            },
-            {
-              "text": "POLICY      KEEP    BACKUPS   OLDEST         STATUS",
-              "type": "table-header"
-            },
-            {
-              "text": "hipaa       7y      2,555     2019-02-27     compliant",
-              "type": "table-row"
-            },
-            {
-              "text": "soc2        5y      1,825     2021-02-27     compliant",
-              "type": "table-row"
-            },
-            {
-              "text": "gdpr        3y      1,095     2023-02-27     compliant",
-              "type": "table-row"
-            },
-            {
-              "type": "spacer"
-            },
-            {
-              "pairs": [
-                {
-                  "label": "Policies",
-                  "value": "3件アクティブ"
-                },
-                {
-                  "label": "Total backups",
-                  "value": "5,475"
-                },
-                {
-                  "label": "Compliance",
-                  "value": "100%"
-                }
-              ],
-              "type": "summary"
-            }
-          ]
         }
       },
       "safeOsTesting": {
+        "label": "安全なOSテスト",
+        "blurb": "リスクなしでOSアップデートをテスト",
         "benefits": {
           "items": [
             {
@@ -12643,7 +9275,7 @@
         "calculator": {
           "annualLabel": "年間リスク被害額",
           "description": "スライダーをインフラに合わせてドラッグしてください。テストされていないアップデートのリスクをご覧ください。",
-          "footnote": "露出日数：延期パッチ数×平均30日間のパッチ間隔。アップデート失敗ダウンタイム：復旧時間×$9,000/分（Splunk/Oxford Economics 2024）[3]×10%の失敗率。復旧人件費：エンジニア3名×復旧時間×$200/時間。侵害リスク：平均侵害コスト$4.88M（IBM 2024）[4]×サーバー数に応じた未パッチ確率。すべて控えめな見積もりです。",
+          "footnote": "露出日数：延期パッチ数×平均30日間のパッチ間隔。アップデート失敗ダウンタイム：復旧時間×$9,000/分（Splunk/Oxford Economics 2024）×10%の失敗率。復旧人件費：エンジニア3名×復旧時間×$200/時間。侵害リスク：平均侵害コスト$4.88M（IBM 2024）×サーバー数に応じた未パッチ確率。すべて控えめな見積もりです。",
           "headerTitle": "パッチリスク被害額を計算する",
           "overline": "実際のコスト",
           "results": {
@@ -12711,73 +9343,8 @@
           "overline": "差別化",
           "title": "実際の本番データでパッチをテストできるツールは他にない"
         },
-        "explore": {
-          "solutions": [
-            {
-              "category": "ransomware",
-              "categoryLabel": "ランサムウェア対策",
-              "description": "ランサムウェアが触れないバックアップ",
-              "slug": "immutable-backups",
-              "title": "イミュータブルバックアップ"
-            },
-            {
-              "category": "ransomware",
-              "categoryLabel": "ランサムウェア対策",
-              "description": "日単位ではなく分単位で復旧",
-              "slug": "rapid-recovery",
-              "title": "高速リカバリ"
-            },
-            {
-              "category": "ransomware",
-              "categoryLabel": "ランサムウェア対策",
-              "current": true,
-              "description": "リスクなしでOSアップデートをテスト",
-              "slug": "safe-os-testing",
-              "title": "安全なOSテスト"
-            },
-            {
-              "category": "multi-cloud",
-              "categoryLabel": "マルチクラウド",
-              "description": "AWSがダウンしても、あなたはダウンしない",
-              "slug": "cloud-outage-protection",
-              "title": "クラウド障害対策"
-            },
-            {
-              "category": "backups",
-              "categoryLabel": "検証済みバックアップ",
-              "description": "すべてのバックアップを自動検証",
-              "slug": "backup-verification",
-              "title": "バックアップ検証"
-            },
-            {
-              "category": "encryption",
-              "categoryLabel": "暗号化管理",
-              "description": "あなたの鍵。あなたの暗号化。例外なし。",
-              "slug": "encryption",
-              "title": "自分で管理する暗号化"
-            },
-            {
-              "category": "dev-env",
-              "categoryLabel": "開発環境",
-              "description": "本番環境を60秒でクローン",
-              "slug": "environment-cloning",
-              "title": "環境クローン"
-            },
-            {
-              "category": "defense",
-              "categoryLabel": "予防的防御",
-              "description": "本番環境をクローン。AIに攻撃させる。",
-              "slug": "ai-pentesting",
-              "title": "AIペネトレーションテスト"
-            }
-          ],
-          "title": "他のソリューションを探す"
-        },
         "hero": {
-          "badge": "ランサムウェア対策",
-          "differentiator": "すべてのバックアップベンダーがリカバリーを約束します。毎日それを証明するベンダーはありません。Rediaccは証明します。",
           "primaryCta": "Communityで無料で始める",
-          "secondaryCta": "クローンの仕組みを見る →",
           "subtitle": "本番環境をクローン。パッチを適用。何が壊れるか確認。必要なら元に戻す。本番環境に一切触れずに。",
           "title": "リスクなしでOSアップデートをテスト"
         },
@@ -12848,7 +9415,7 @@
             {
               "description": "パッチ、アップグレード、カーネルアップデートを適用。自由に壊してOK。本番環境には影響なし。",
               "icon": "flask",
-              "title": "Test"
+              "title": "テスト"
             },
             {
               "description": "ヘルスチェック合格？自信を持って本番に適用。失敗？クローンを破棄。何も起きていません。",
@@ -12870,19 +9437,19 @@
             {
               "number": "3x",
               "ref": 1,
-              "source": "Verizon DBIR 2024 [1]",
+              "source": "Verizon DBIR 2024",
               "text": "初期アクセスベクターとしての脆弱性悪用の急増"
             },
             {
               "number": "45%",
               "ref": 2,
-              "source": "Uptime Institute 2023 [2]",
+              "source": "Uptime Institute 2023",
               "text": "設定/変更管理に起因するネットワーク障害"
             },
             {
               "number": "$9,000/min",
               "ref": 3,
-              "source": "Splunk/Oxford Economics 2024 [3]",
+              "source": "Splunk/Oxford Economics 2024",
               "text": "ITダウンタイムの平均コスト"
             }
           ],
@@ -12916,7 +9483,6 @@
           "title": "テストされていないアップデートが障害を引き起こす"
         },
         "references": {
-          "disclaimer": "製品パフォーマンスの主張は、Rediaccのbtrfsコピーオンライトアーキテクチャに基づいています。計算機の見積もりは業界標準のコストモデルを使用しています。実際のコストは組織によって異なります。",
           "items": [
             {
               "text": "Verizon, “2024 Data Breach Investigations Report,” May 2024. “The exploitation of vulnerabilities as an initial point of entry almost tripled from the previous year, accounting for 14% of all breaches.”",
@@ -12974,8 +9540,7 @@
               "text": "Zerto is deployed on-premises with a Zerto Virtual Manager and per-host Virtual Replication Appliances.",
               "url": "https://help.zerto.com/bundle/Install.VC.HTML/page/Installing_Zerto_Virtual_Replication_in_On-Premise_Environments.htm"
             }
-          ],
-          "label": "出典・参考文献"
+          ]
         },
         "socialProof": {
           "author": "リードSRE",
@@ -13034,98 +9599,11 @@
           ],
           "title": "ファイルシステムレベルで安全なテストが機能する理由",
           "traditionalLabel": "従来のアプローチ"
-        },
-        "techStrip": {
-          "label": "あらゆるコンテナ化ワークロードを保護",
-          "note": "データベース、メールサーバー、CI/CD、CMS、監視、シークレット — コンテナで動くものなら、Rediaccが保護します。"
-        },
-        "terminal": {
-          "lines": [
-            {
-              "cmd": "rdc repo fork production",
-              "flag": "",
-              "prompt": "$",
-              "type": "command",
-              "value": ""
-            },
-            {
-              "type": "spacer"
-            },
-            {
-              "result": "done",
-              "text": "本番環境のスナップショットを作成中",
-              "type": "check"
-            },
-            {
-              "result": "done",
-              "text": "8個のコンテナを複製中 (380 GB)",
-              "type": "check"
-            },
-            {
-              "result": "done",
-              "text": "分離ネットワークをマウント中",
-              "type": "check"
-            },
-            {
-              "result": "8/8 合格",
-              "text": "ヘルスチェックを実行中",
-              "type": "check"
-            },
-            {
-              "type": "spacer"
-            },
-            {
-              "text": "クローン準備完了: patch-test-ubuntu-24.internal",
-              "type": "success"
-            },
-            {
-              "type": "spacer"
-            },
-            {
-              "cmd": "rdc term connect patch-test-ubuntu-24",
-              "flag": "-c",
-              "prompt": "$",
-              "type": "command",
-              "value": "\"apt upgrade -y\""
-            },
-            {
-              "result": "done",
-              "text": "47パッケージをアップグレード中",
-              "type": "check"
-            },
-            {
-              "result": "8/8 合格",
-              "text": "ヘルスチェックを実行中",
-              "type": "check"
-            },
-            {
-              "type": "spacer"
-            },
-            {
-              "pairs": [
-                {
-                  "label": "Clone",
-                  "value": "52s"
-                },
-                {
-                  "label": "Patch",
-                  "value": "47パッケージ"
-                },
-                {
-                  "label": "Health",
-                  "value": "8/8 合格"
-                },
-                {
-                  "label": "Production",
-                  "value": "影響なし"
-                }
-              ],
-              "type": "summary"
-            }
-          ]
         }
       },
       "vendorLockIn": {
+        "label": "ベンダーロックインからの解放",
+        "blurb": "あなたのインフラ。あなたの選択。常に。",
         "benefits": {
           "items": [
             {
@@ -13224,78 +9702,8 @@
           "overline": "差別化",
           "title": "フルスタックを数分で移行できるツールは他にない"
         },
-        "explore": {
-          "solutions": [
-            {
-              "category": "Multi-Cloud",
-              "dataCategory": "multi-cloud",
-              "description": "AWSがダウンしても、あなたはダウンしない",
-              "slug": "cloud-outage-protection",
-              "title": "クラウド障害対策"
-            },
-            {
-              "category": "Multi-Cloud",
-              "dataCategory": "multi-cloud",
-              "description": "あなたのインフラ。あなたの選択。常に。",
-              "slug": "vendor-lock-in",
-              "title": "ベンダーロックインからの解放"
-            },
-            {
-              "category": "Multi-Cloud",
-              "dataCategory": "multi-cloud",
-              "description": "必要になる前にフェイルオーバーをテスト",
-              "slug": "failover-testing",
-              "title": "フェイルオーバーテスト"
-            },
-            {
-              "category": "Ransomware Survival",
-              "dataCategory": "ransomware",
-              "description": "ランサムウェアが触れないバックアップ",
-              "slug": "immutable-backups",
-              "title": "イミュータブルバックアップ"
-            },
-            {
-              "category": "Verified Backups",
-              "dataCategory": "backups",
-              "description": "すべてのバックアップを自動検証",
-              "slug": "backup-verification",
-              "title": "バックアップ検証"
-            },
-            {
-              "category": "Encryption Control",
-              "dataCategory": "encryption",
-              "description": "あなたの鍵。あなたの暗号化。例外なし。",
-              "slug": "encryption",
-              "title": "自分で管理する暗号化"
-            },
-            {
-              "category": "Development Environments",
-              "dataCategory": "dev-env",
-              "description": "本番環境を60秒でクローン",
-              "slug": "environment-cloning",
-              "title": "環境クローン"
-            },
-            {
-              "category": "Preemptive Defense",
-              "dataCategory": "defense",
-              "description": "本番環境をクローン。AIに攻撃させる。",
-              "slug": "ai-pentesting",
-              "title": "AIペネトレーションテスト"
-            },
-            {
-              "category": "multi-cloud",
-              "description": "実行中のクラスタをデータごとフォークまたは移動",
-              "slug": "kubernetes-cluster-mobility",
-              "title": "Kubernetesクラスタの可搬性"
-            }
-          ],
-          "title": "他のソリューションを探す"
-        },
         "hero": {
-          "badge": "マルチクラウド",
-          "differentiator": "すべてのクラウドにバックアップがあります。数分で別のクラウドにフェイルオーバーできるものはありません。Rediaccはできます。",
           "primaryCta": "Communityで無料で始める",
-          "secondaryCta": "移行の動作を見る →",
           "subtitle": "どこにでもデプロイ。いつでも移行。ロックイン契約なし。独自フォーマットなし。データはあなたのもの。",
           "title": "あなたのインフラ。あなたの選択。常に。"
         },
@@ -13435,7 +9843,6 @@
           "title": "ベンダーロックインは不当な価格で捕らえる"
         },
         "references": {
-          "disclaimer": "製品パフォーマンスの主張は、Rediaccのbtrfsコピーオンライトアーキテクチャに基づいています。計算機の見積もりは業界標準のコストモデルを使用しています。実際のコストは組織によって異なります。",
           "items": [
             {
               "text": "Flexera, \"2024 State of the Cloud Report,\" 2024. \"27% of cloud spend continues to be wasted.\"",
@@ -13481,8 +9888,7 @@
               "text": "Zerto continuous replication ensures near-zero downtime migration with real-time VM replication and minute-level cutover.",
               "url": "https://help.zerto.com/bundle/Admin.HV.HTML/page/Live_Migration.htm"
             }
-          ],
-          "label": "出典・参考文献"
+          ]
         },
         "socialProof": {
           "author": "CTO",
@@ -13543,64 +9949,11 @@
             }
           ],
           "title": "移行が数ヶ月ではなく数分で済む理由"
-        },
-        "techStrip": {
-          "label": "あらゆるコンテナ化ワークロードをレプリケート",
-          "note": "データベース、CI/CD、CMS、監視、認証、ストレージ — コンテナで動くものなら、Rediaccがプロバイダー間で移行します。"
-        },
-        "terminal": {
-          "lines": [
-            {
-              "cmd": "rdc repo sync push-all",
-              "flag": "",
-              "type": "command",
-              "value": ""
-            },
-            {
-              "type": "spacer"
-            },
-            {
-              "text": "現在の環境をスナップショット中.............. 完了",
-              "type": "check"
-            },
-            {
-              "text": "増分差分を計算中.................... 3.8 GBのデルタ",
-              "type": "check"
-            },
-            {
-              "text": "hetzner-fsnに転送中................... 完了",
-              "type": "check"
-            },
-            {
-              "text": "ターゲットにスナップショットを適用中................... 完了",
-              "type": "check"
-            },
-            {
-              "text": "10個のコンテナを起動中........................ 10/10 正常",
-              "type": "check"
-            },
-            {
-              "text": "DNSレコードを更新中.......................... 伝播完了",
-              "type": "check"
-            },
-            {
-              "type": "spacer"
-            },
-            {
-              "text": "移行完了: 本番環境はhetzner-fsnで稼働中",
-              "type": "success"
-            },
-            {
-              "type": "spacer"
-            },
-            {
-              "text": "転送: 3.8 GB   時間: 38分   コンテナ: 10/10   ダウンタイム: 0",
-              "type": "summary"
-            }
-          ]
         }
       },
       "vulnerabilityManagement": {
+        "label": "脆弱性管理",
+        "blurb": "攻撃者が到着する前に脆弱性を修正",
         "benefits": {
           "items": [
             {
@@ -13650,73 +10003,8 @@
           "withResults": {},
           "withTag": "Rediaccあり"
         },
-        "explore": {
-          "solutions": [
-            {
-              "category": "defense",
-              "categoryLabel": "予防的防御",
-              "description": "本番環境をクローン。AIに攻撃させる。",
-              "slug": "ai-pentesting",
-              "title": "AIペネトレーションテスト"
-            },
-            {
-              "category": "defense",
-              "categoryLabel": "予防的防御",
-              "description": "年次ではなく継続的にセキュリティをテスト",
-              "slug": "continuous-security-testing",
-              "title": "継続的セキュリティテスト"
-            },
-            {
-              "category": "defense",
-              "categoryLabel": "予防的防御",
-              "current": true,
-              "description": "攻撃者が到着する前に脆弱性を修正",
-              "slug": "vulnerability-management",
-              "title": "脆弱性管理"
-            },
-            {
-              "category": "ransomware",
-              "categoryLabel": "ランサムウェア対策",
-              "description": "ランサムウェアが触れないバックアップ",
-              "slug": "immutable-backups",
-              "title": "イミュータブルバックアップ"
-            },
-            {
-              "category": "multi-cloud",
-              "categoryLabel": "マルチクラウド",
-              "description": "AWSがダウンしても、あなたはダウンしない",
-              "slug": "cloud-outage-protection",
-              "title": "クラウド障害対策"
-            },
-            {
-              "category": "backups",
-              "categoryLabel": "検証済みバックアップ",
-              "description": "すべてのバックアップを自動検証",
-              "slug": "backup-verification",
-              "title": "バックアップ検証"
-            },
-            {
-              "category": "encryption",
-              "categoryLabel": "暗号化管理",
-              "description": "あなたの鍵。あなたの暗号化。例外なし。",
-              "slug": "encryption",
-              "title": "自分で管理する暗号化"
-            },
-            {
-              "category": "dev-env",
-              "categoryLabel": "開発環境",
-              "description": "本番環境を60秒でクローン",
-              "slug": "environment-cloning",
-              "title": "環境クローン"
-            }
-          ],
-          "title": "他のソリューションを探す"
-        },
         "hero": {
-          "badge": "予防的防御",
-          "differentiator": "すべてのセキュリティツールが脆弱性を発見します。実際のクローンで先に修正をテストできるツールはありません。Rediaccはできます。",
           "primaryCta": "無料で始める",
-          "secondaryCta": "ワークフローを見る →",
           "subtitle": "安全なクローン上でセキュリティギャップを発見、テスト、パッチ適用。自信を持って本番にデプロイ。",
           "title": "攻撃者より先に脆弱性を修正"
         },
@@ -13800,19 +10088,19 @@
             {
               "number": "30.6 days",
               "ref": 1,
-              "source": "Qualys TruRisk Research Report 2023 [1]",
+              "source": "Qualys TruRisk Research Report 2023",
               "text": "武器化された脆弱性の修復までの平均時間"
             },
             {
               "number": "180%",
               "ref": 2,
-              "source": "Verizon DBIR 2024 [2]",
+              "source": "Verizon DBIR 2024",
               "text": "初期侵入ベクターとしての脆弱性悪用の増加"
             },
             {
               "number": "$4.88M",
               "ref": 3,
-              "source": "IBM Cost of a Data Breach 2024 [3]",
+              "source": "IBM Cost of a Data Breach 2024",
               "text": "データ侵害の平均コスト"
             }
           ],
@@ -13846,7 +10134,6 @@
           "title": "本番でのパッチ適用はギャンブル"
         },
         "references": {
-          "disclaimer": "製品パフォーマンスの主張は、Rediaccのbtrfsコピーオンライトアーキテクチャに基づいています。計算機の見積もりは業界標準のコストモデルを使用しています。実際のコストは組織によって異なります。",
           "items": [
             {
               "text": "Qualys, “TruRisk Research Report,” 2023. “On average, weaponized vulnerabilities are patched within 30.6 days yet only patched an average of 57.7% of the time.”",
@@ -13860,8 +10147,7 @@
               "text": "IBM Security, “Cost of a Data Breach Report,” July 2024. “The global average cost of a data breach reached USD 4.88 million in 2024.”",
               "url": "https://newsroom.ibm.com/2024-07-30-ibm-report-escalating-data-breach-disruption-pushes-costs-to-new-highs"
             }
-          ],
-          "label": "出典・参考文献"
+          ]
         },
         "socialProof": {
           "author": "インフラセキュリティ責任者",
@@ -13920,106 +10206,7 @@
           ],
           "title": "クローンベースのパッチ適用が機能する理由",
           "traditionalLabel": "従来のパッチ適用"
-        },
-        "techStrip": {
-          "label": "あらゆるコンテナ化ワークロードをテスト",
-          "note": "データベース、メールサーバー、CI/CD、CMS、監視、認証 — コンテナで動くものなら、Rediaccがクローン、パッチ、検証できます。"
-        },
-        "terminal": {
-          "lines": [
-            {
-              "cmd": "rdc term production cve-2026-1234-fix",
-              "flag": "",
-              "prompt": "$",
-              "type": "command",
-              "value": ""
-            },
-            {
-              "type": "spacer"
-            },
-            {
-              "result": "完了 (47秒)",
-              "text": "本番環境をクローン中",
-              "type": "check"
-            },
-            {
-              "text": "→ クローン: prod-vuln-fix-1234 (380 GB, btrfs CoW: 2.1 GB)",
-              "type": "comment"
-            },
-            {
-              "type": "spacer"
-            },
-            {
-              "result": "done",
-              "text": "パッチを適用中: OpenSSL 3.0.8 → 3.0.15",
-              "type": "check"
-            },
-            {
-              "result": "完了 (12秒)",
-              "text": "影響を受けるサービスを再起動中",
-              "type": "check"
-            },
-            {
-              "text": "→ Keycloak 再起動 · Nextcloud 再起動 · GitLab 再起動",
-              "type": "comment"
-            },
-            {
-              "type": "spacer"
-            },
-            {
-              "result": "",
-              "text": "検証スイートを実行中",
-              "type": "check"
-            },
-            {
-              "text": "→ CVE-2026-1234 再スキャン: パッチ適用済み",
-              "type": "comment"
-            },
-            {
-              "text": "→ サービスヘルスチェック: すべて合格",
-              "type": "comment"
-            },
-            {
-              "text": "→ リグレッションテスト (247アサーション): 0件の失敗",
-              "type": "comment"
-            },
-            {
-              "text": "→ TLSハンドシェイク検証: 有効",
-              "type": "comment"
-            },
-            {
-              "type": "spacer"
-            },
-            {
-              "text": "パッチ検証完了。本番へのデプロイは安全です。",
-              "type": "success"
-            },
-            {
-              "pairs": [
-                {
-                  "label": "Time",
-                  "value": "3m 41s"
-                },
-                {
-                  "label": "CVE",
-                  "value": "パッチ適用済み"
-                },
-                {
-                  "label": "Services",
-                  "value": "3/3 healthy"
-                }
-              ],
-              "type": "summary"
-            }
-          ]
         }
-      }
-    },
-    "solutionsIndex": {
-      "meta": {
-        "description": "ランサムウェア復旧、マルチクラウド可搬性、Kubernetesの可搬性、検証済みバックアップ、暗号化、高速な開発環境まで、Rediaccのすべてのソリューションを1か所に。",
-        "keywords": "Rediaccソリューション, ランサムウェア復旧, マルチクラウド, Kubernetesクラスタの可搬性, 検証済みバックアップ, 暗号化管理, 開発環境",
-        "title": "Solutions - Business Continuity Software | Rediacc"
       }
     },
     "telemetryPolicy": {
@@ -14503,31 +10690,24 @@
     "subtitle": "無料で始める。成長に合わせてステップアップ。",
     "title": "明快な料金設定。隠れたコストなし。"
   },
-  "problem": {
-    "reality": {
-      "imageAlt": "従来のインフラストラクチャ ワークフローの課題を示す図: 環境のプロビジョニングを待ってイライラする開発者、より迅速な展開を要求する関係者、サンドボックスの更新が遅いためにチームが危険な実稼働テストに頼っている",
-      "title": "実際に起きること：疲れたチーム、危険な近道"
-    },
-    "solution": {
-      "imageAlt": "Rediacc プラットフォーム ソリューションの図: 自動化されたインフラストラクチャ プロビジョニング、即時本番環境のような環境クローン、合理化された開発者ワークフロー、モデル コンテキスト プロトコル統合による AI 安全な運用",
-      "title": "Rediacc がそれをどのように解決するか"
-    },
-    "subtitle": "本番環境のデータはテラバイト級。テスト環境の更新は月1回。チームは古いテストデータか本番環境での危険なテストか、どちらかしかない。",
-    "title": "あなたのチームが本番環境でテストを続ける理由"
-  },
   "regionPicker": {
     "footer": "最寄りのリージョン、または組織が必要とするリージョンを選択してください。",
     "footerNote": "登録後は変更できません。",
-    "locations": {
-      "asia": "東京、日本",
-      "eu": "フランクフルト、ドイツ",
-      "us": "バージニア、アメリカ"
-    },
     "reassurance": "サーバーデータとバックアップはお客様のインフラに残ります。",
     "subtitle": "アカウント、請求、設定は選択したリージョンに保存されます。",
     "title": "アカウントリージョンを選択"
   },
   "solutions": {
+    "roles": {
+      "copy": "コピー",
+      "test": "テスト",
+      "recover": "復旧",
+      "property": "プラットフォーム"
+    },
+    "constellation": {
+      "centre": "すべてのソリューションは、あなたの本番のコピーに対するひとつの操作です。",
+      "title": "他のソリューションを探す"
+    },
     "categories": {
       "backups": "検証済みバックアップ",
       "defense": "先制防御",
@@ -14536,30 +10716,10 @@
       "multi-cloud": "マルチクラウド",
       "ransomware": "ランサムウェア対策"
     },
-    "subtitle": "ランサムウェアに強い。止まらない。データを守る。6つの対策で実現。",
     "title": "事業継続をどう実現するか"
   },
-  "team": {
-    "video": {
-      "ccLabel": "字幕",
-      "personaHeadline": "あなたへのメッセージ",
-      "playLabel": "動画を見る"
-    }
-  },
-  "tutorial": {
-    "audioControls": "文字起こし音声コントロール",
-    "audioVolume": "文字起こし音声ボリューム",
-    "muteAudio": "文字起こし音声をミュート",
-    "subtitlesControls": "文字起こし字幕コントロール",
-    "unmuteAudio": "文字起こし音声のミュートを解除"
-  },
   "video": {
-    "disableCaptions": "字幕を無効にする",
-    "enableCaptions": "字幕を有効にする",
-    "playVideo": "動画を再生",
-    "toggleFullscreen": "フルスクリーン切替",
-    "volume": "音量",
-    "youtubeTitle": "製品紹介"
+    "playVideo": "動画を再生"
   },
   "whyNow": {
     "cards": [

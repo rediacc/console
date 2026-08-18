@@ -37,8 +37,7 @@ const ROOT = join(fileURLToPath(new URL('.', import.meta.url)), '..');
 const ALLOWLIST: Record<string, string> = {};
 
 /** SCREAMING_SNAKE consts and get<Something>ForPlan accessors. */
-const EXPORT_RE =
-  /^export\s+(?:const|function)\s+([A-Z][A-Z0-9_]{2,}|get[A-Za-z0-9]*ForPlan)\b/gm;
+const EXPORT_RE = /^export\s+(?:const|function)\s+([A-Z][A-Z0-9_]{2,}|get[A-Za-z0-9]*ForPlan)\b/gm;
 
 interface Found {
   name: string;

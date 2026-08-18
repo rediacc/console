@@ -1,86 +1,47 @@
 ---
-import type { Language } from '../../i18n/types';
-import { createTranslator } from '../../i18n/utils';
-import SPTerminalMockup from './SPTerminalMockup.astro';
-import YouTubeEmbed from '../YouTubeEmbed.astro';
-
+/**
+ * The hero shared by 21 solution pages and 4 persona pages.
+ *
+ * It used to stack six things before the fold: an uppercase eyebrow pill, the
+ * h1, a subtitle, a differentiator line, two CTAs, and a full simulated
+ * terminal with a disclaimer apologising for being simulated. This is the same
+ * cut `SPHomeHero.astro` already made for the homepage, applied to the other 25
+ * pages: title, one sentence, one action.
+ *
+ * What left, and why:
+ *   - the eyebrow pill, which repeated the category in shouted caps and, at
+ *     390px, showed a fragment of it;
+ *   - the simulated terminal, the largest object above the fold on every one of
+ *     these pages, which shipped its own disclaimer;
+ *   - the differentiator line, a second subtitle;
+ *   - the secondary CTA, so one action reads as the action;
+ *   - the `youtubeVideoId` / `.sp-hero--split` branch, which no caller ever
+ *     passed.
+ *
+ * The height now comes from the content. `min-height: 100dvh` with
+ * `justify-content: center` is gone from `.sp-hero`: on a page whose hero is
+ * three short elements it reserved a whole viewport to centre them in, which is
+ * exactly the measurement that took the homepage hero apart.
+ */
 interface Props {
-  lang: Language;
   hero: {
-    badge: string;
     title: string;
     subtitle: string;
-    differentiator?: string;
     primaryCta: string;
-    secondaryCta?: string;
   };
   ctaHref: string;
-  secondaryCtaHref?: string;
-  terminal?: {
-    lines: any[];
-  };
-  youtubeVideoId?: string;
 }
 
-const { lang, hero, ctaHref, secondaryCtaHref, terminal, youtubeVideoId } = Astro.props;
-const { t } = createTranslator(lang);
-const hasSplit = !!youtubeVideoId;
+const { hero, ctaHref } = Astro.props;
 ---
 
-<section class:list={['sp-hero', { 'sp-hero--split': hasSplit }]}>
+<section class="sp-hero">
   <div class="sp-hero-content">
-    <div class="sp-hero-text">
-      <div class="sp-hero-badge">
-        <span class="sp-hero-badge-dot"></span>
-        {hero.badge}
-      </div>
-      <h1>{hero.title}</h1>
-      <p class="sp-hero-sub">{hero.subtitle}</p>
-      {hero.differentiator && (
-        <p class="sp-hero-differentiator">{hero.differentiator}</p>
-      )}
-      <div class="sp-hero-ctas">
-        <a href={ctaHref} class="sp-btn-primary">
-          {hero.primaryCta}
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8h10m0 0L9 4m4 4L9 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        </a>
-        {hero.secondaryCta && (
-          <a href={secondaryCtaHref ?? '#problem'} class="sp-btn-secondary-dark">{hero.secondaryCta} &rarr;</a>
-        )}
-      </div>
-    </div>
-    {youtubeVideoId && (
-      <div class="sp-hero-video">
-        <YouTubeEmbed videoId={youtubeVideoId} title={t('video.youtubeTitle')} playLabel={t('video.playVideo')} lang={lang} />
-      </div>
-    )}
-    {!youtubeVideoId && terminal && <SPTerminalMockup lines={terminal.lines} lang={lang} />}
+    <h1>{hero.title}</h1>
+    <p class="sp-hero-sub">{hero.subtitle}</p>
+    <a href={ctaHref} class="sp-btn-primary">
+      {hero.primaryCta}
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8h10m0 0L9 4m4 4L9 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </a>
   </div>
 </section>
-
-<style>
-  .sp-hero--split .sp-hero-content {
-    max-width: 1200px;
-    display: grid;
-    grid-template-columns: 1fr 1.1fr;
-    gap: 56px;
-    align-items: center;
-    text-align: left;
-  }
-
-  .sp-hero-video {
-    display: flex;
-    justify-content: center;
-  }
-
-  .sp-hero-video :global(.tv-player--compact) {
-    max-width: 100%;
-  }
-
-  @media (max-width: 768px) {
-    .sp-hero--split .sp-hero-content {
-      grid-template-columns: 1fr;
-      gap: 24px;
-    }
-  }
-</style>

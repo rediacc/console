@@ -37,7 +37,7 @@
  * Control: npx tsx scripts/__tests__/check-page-locale-imports.control.ts
  */
 
-import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -167,7 +167,7 @@ function classify(spec: string): Pick<Violation, 'rule' | 'why'> | null {
       rule: 'english-content',
       why:
         'this names the ENGLISH copy of a translated document by path, so the twelve other ' +
-        'locale routes render English. Select the entry for the route\'s own `lang`.',
+        "locale routes render English. Select the entry for the route's own `lang`.",
     };
   }
   return null;
@@ -190,7 +190,9 @@ function scanFile(rel: string, src: string): Violation[] {
 function control(): void {
   const fail = (why: string): never => {
     console.error(`${RED}CONTROL FAILED${NC}: ${why}`);
-    console.error('  The real scan did not run: a rule that cannot fire proves nothing by passing.');
+    console.error(
+      '  The real scan did not run: a rule that cannot fire proves nothing by passing.'
+    );
     process.exit(1);
   };
   const hits = (src: string): Violation[] => scanFile('control.astro', src);
@@ -209,11 +211,13 @@ function control(): void {
   if (real.length !== 1) {
     fail(`expected exactly the markdown ?raw import to be reported, got ${JSON.stringify(real)}`);
   }
-  if (real[0]?.line !== 4) fail(`the reported line was ${real[0]?.line}, not the markdown import's line 4`);
+  if (real[0]?.line !== 4)
+    fail(`the reported line was ${real[0]?.line}, not the markdown import's line 4`);
   if (real[0]?.rule !== 'markdown-raw') fail(`wrong rule: ${real[0]?.rule}`);
 
   // A comment is prose. Blanking it must not also break the line numbering above.
-  if (hits('// import x from "./a.md?raw";\n').length !== 0) fail('a COMMENTED-OUT import was reported');
+  if (hits('// import x from "./a.md?raw";\n').length !== 0)
+    fail('a COMMENTED-OUT import was reported');
 
   // The English-content half.
   if (hits("import d from '../../content/docs/en/rdc-cheat-sheet.md';\n").length !== 1) {
@@ -224,7 +228,9 @@ function control(): void {
     fail('an ordinary import was reported');
   }
   if (hits("import d from '../../content/docs/de/rdc-cheat-sheet.md';\n").length !== 0) {
-    fail('a non-English locale path was reported; the rule is about hardcoding EN, not about content imports');
+    fail(
+      'a non-English locale path was reported; the rule is about hardcoding EN, not about content imports'
+    );
   }
 
   console.log('  control  reports a `?raw` markdown import, at its real line');
@@ -258,11 +264,15 @@ function main(): void {
   const files: string[] = [];
   for (const rel of SCANNED_ROOTS) {
     const dir = path.join(ROOT, rel);
-    if (!existsSync(dir)) refuse(`${rel} does not exist.`, 'A renamed route root leaves this gate scanning nothing.');
+    if (!existsSync(dir))
+      refuse(`${rel} does not exist.`, 'A renamed route root leaves this gate scanning nothing.');
     walk(dir, files);
   }
   if (files.length === 0) {
-    refuse(`${SCANNED_ROOTS.join(' and ')} hold no scannable files.`, 'The walk is blind; every assertion below would pass while checking nothing.');
+    refuse(
+      `${SCANNED_ROOTS.join(' and ')} hold no scannable files.`,
+      'The walk is blind; every assertion below would pass while checking nothing.'
+    );
   }
 
   const violations: Violation[] = [];

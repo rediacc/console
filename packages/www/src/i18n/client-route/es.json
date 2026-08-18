@@ -1,0 +1,175 @@
+{
+  "hero": {
+    "install": {
+      "tabs": {
+        "linux": "Linux",
+        "macos": "macOS",
+        "windows": "Windows"
+      }
+    }
+  },
+  "pages": {
+    "downloads": {
+      "meta": {
+        "title": "Descarga Rediacc CLI para Todos los Sistemas | Rediacc",
+        "description": "Descarga la Rediacc CLI para Windows, macOS y Linux.",
+        "keywords": "Descarga Rediacc, aplicación de escritorio, CLI, app Windows, app macOS, app Linux"
+      },
+      "hero": {
+        "title": "Descarga Rediacc CLI",
+        "subtitle": "Rediacc CLI",
+        "released": "Lanzado"
+      },
+      "sections": {
+        "cli": "Interfaz de línea de comandos (CLI)"
+      },
+      "platforms": {
+        "windows": "Windows",
+        "macos": "macOS",
+        "linux": "Linux"
+      },
+      "architectures": {
+        "x64": "x64 (64 bits)",
+        "x64_intel": "Intel (x64)",
+        "arm64": "ARM64",
+        "arm64_apple": "Apple Silicon (ARM64)"
+      },
+      "actions": {
+        "download": "Descargar"
+      },
+      "cli": {
+        "description": "Una herramienta pequeña y rápida que ejecutas en una ventana de terminal. Ideal para servidores que administras sin pantalla o para ejecutar el mismo comando en muchas máquinas a la vez. Conéctate a servidores, ejecuta comandos, envía actualizaciones. No necesitas navegador."
+      },
+      "noReleases": "De momento no hay versiones disponibles. Vuelve en unos días.",
+      "autoUpdate": {
+        "title": "Información sobre actualizaciones automáticas",
+        "description": "La Rediacc CLI se actualiza sola. Revisa si hay versiones nuevas y las instala por ti, así siempre usas la última versión."
+      },
+      "installation": {
+        "title": "Instrucciones de instalación",
+        "cli": "CLI: Descarga el binario para tu sistema. En Linux/macOS, abre la terminal, ejecuta 'chmod +x nombre-archivo' y muévelo a /usr/local/bin."
+      },
+      "requirements": {
+        "title": "Requisitos del sistema",
+        "windows": "Windows 10 o posterior (64 bits)",
+        "macos": "macOS 11 (Big Sur) o posterior",
+        "linux": "Distribución Linux moderna con glibc 2.28+"
+      }
+    },
+    "install": {
+      "meta": {
+        "title": "Instala Rediacc CLI: Guía de instalación rápida",
+        "description": "Instala Rediacc CLI en Linux, macOS o Windows con APT, DNF, npm o descarga directa",
+        "keywords": "instalar rediacc, apt install, dnf install, npm install, instalación CLI"
+      },
+      "hero": {
+        "title": "Instala Rediacc CLI",
+        "subtitle": "Elige tu método de instalación",
+        "downloadsNote": "¿Buscas los binarios directos de la CLI?",
+        "downloadsLink": "Visita la página de descargas"
+      },
+      "methods": {
+        "quick": {
+          "title": "Instalación rápida",
+          "description": "Recomendado: instala y actualiza la CLI automáticamente"
+        },
+        "apt": {
+          "title": "APT (Debian / Ubuntu)",
+          "description": "Para Debian, Ubuntu y derivados"
+        },
+        "dnf": {
+          "title": "DNF (Fedora / RHEL)",
+          "description": "Para Fedora, RHEL, CentOS, Rocky Linux"
+        },
+        "apk": {
+          "title": "APK (Alpine Linux)",
+          "description": "Para Alpine Linux y derivados"
+        },
+        "pacman": {
+          "title": "Pacman (Arch Linux)",
+          "description": "Para Arch Linux y derivados"
+        },
+        "homebrew": {
+          "title": "Homebrew (macOS / Linux)",
+          "description": "Para usuarios de macOS y Linux con Homebrew"
+        },
+        "binary": {
+          "title": "Descarga directa",
+          "description": "Binario ejecutable, sin gestor de paquetes"
+        },
+        "docker": {
+          "title": "Docker",
+          "description": "Para usuarios de Docker"
+        }
+      },
+      "verify": {
+        "title": "Verificar instalación"
+      },
+      "architectures": {
+        "title": "Arquitecturas compatibles",
+        "method": "Método",
+        "platform": "Plataforma"
+      },
+      "copy": "Copiar",
+      "copied": "¡Copiado!",
+      "platformFilter": {
+        "all": "Todos los métodos",
+        "label": "Filtrar por plataforma"
+      }
+    },
+    "partners": {
+      "form": {
+        "fields": {
+          "contactName": "Tu nombre",
+          "contactNamePlaceholder": "Nombre y apellidos",
+          "jobTitle": "Cargo",
+          "jobTitlePlaceholder": "Tu puesto",
+          "email": "Email de trabajo",
+          "emailPlaceholder": "tu@empresa.com",
+          "phone": "Teléfono",
+          "phonePlaceholder": "Opcional",
+          "company": "Nombre de la empresa",
+          "companyPlaceholder": "Tu empresa",
+          "website": "Sitio web",
+          "websitePlaceholder": "https://ejemplo.com",
+          "country": "País",
+          "countryPlaceholder": "Selecciona tu país",
+          "partnerTypes": "¿Cómo vendes? Marca todo lo que corresponda.",
+          "isDistributor": "Trabajamos como distribuidor y revendemos a través de otros partners.",
+          "howHeard": "¿Cómo nos conociste?",
+          "howHeardPlaceholder": "Selecciona una opción",
+          "message": "¿Algo más?",
+          "messagePlaceholder": "Cuéntanos sobre tu negocio y los clientes a los que atiendes.",
+          "consent": "Acepto que me contacten sobre el programa de partners de Rediacc."
+        },
+        "partnerTypeOptions": {
+          "reseller": "Revendedor",
+          "msp": "Proveedor de servicios gestionados",
+          "consultant": "Consultor",
+          "distributor": "Distribuidor",
+          "referral": "Partner de referidos"
+        },
+        "howHeardOptions": {
+          "search": "Buscador",
+          "referral": "Un colega o amigo",
+          "event": "Un evento o webinar",
+          "socialMedia": "Redes sociales",
+          "blog": "Blog o artículo",
+          "other": "Otra cosa"
+        },
+        "submit": "Enviar solicitud",
+        "sending": "Enviando...",
+        "success": {
+          "title": "Solicitud recibida",
+          "body": "Gracias por tu interés. Leemos todas las solicitudes y te responderemos por email pronto."
+        },
+        "errors": {
+          "requiredFields": "Rellena tu nombre, email de trabajo, empresa, país y al menos una forma de venta.",
+          "consent": "Acepta que te contactemos para poder responder a tu solicitud.",
+          "captcha": "Completa el captcha para continuar.",
+          "generic": "Algo salió mal. Inténtalo de nuevo."
+        }
+      }
+    }
+  }
+}

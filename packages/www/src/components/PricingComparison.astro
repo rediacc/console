@@ -6,130 +6,67 @@ interface Props {
   lang?: Language;
 }
 
+type PlanKey = 'professional' | 'business' | 'enterprise';
+
 const { lang = 'en' } = Astro.props;
 const { t, to } = createTranslator(lang);
 
 const comparison = to('pages.pricing.comparison');
-const categories = comparison?.categories as Record<
-  string,
-  {
-    label: string;
-    rows: Array<{
-      label: string;
-      community: string;
-      professional: string;
-      business: string;
-      enterprise: string;
-    }>;
-  }
-> | undefined;
+// Cells are booleans, not glyphs. Storing the tick and dash characters as
+// translated values put a bare em dash in all 13 catalogs and made a screen
+// reader announce the dash character instead of "not included".
+const rows = comparison?.rows as
+  | Array<{ label: string } & Record<PlanKey, boolean>>
+  | undefined;
+const included = t('pages.pricing.comparison.included');
+const notIncluded = t('pages.pricing.comparison.notIncluded');
 
-const categoryOrder = [
-  'infrastructure',
-  'dataProtection',
-  'security',
-  'automation',
-  'support',
-];
-
-const planColumns = [
-  { key: 'community', label: t('pages.pricing.plans.community.name') },
+// The three buyable columns, in card order. Community is gone: it is the
+// post-cancellation fallback state, not a plan, and giving it a full column of
+// real values advertised something a visitor has no way to select.
+const planColumns: Array<{ key: PlanKey; label: string }> = [
   { key: 'professional', label: t('pages.pricing.plans.professional.name') },
   { key: 'business', label: t('pages.pricing.plans.business.name') },
   { key: 'enterprise', label: t('pages.pricing.plans.enterprise.name') },
-] as const;
+];
 ---
 
-<section class="comparison-section section-light" id="compare">
-  <div class="container">
-    <div class="comparison-header">
-      <h2>{comparison?.heading ?? 'Compare Plans in Detail'}</h2>
-    </div>
+{rows && rows.length > 0 && (
+  <section class="comparison-section section-light" id="compare">
+    <div class="container">
+      <div class="comparison-header">
+        <h2>{comparison?.heading}</h2>
+      </div>
 
-    <!-- Mobile plan toggle -->
-    <div class="comparison-plan-toggle" role="tablist" aria-label={t('common.aria.selectPlanToCompare')}>
-      {planColumns.map((plan, i) => (
-        <button
-          type="button"
-          role="tab"
-          class:list={['comparison-plan-toggle-btn', { active: i === 1 }]}
-          data-plan={plan.key}
-          aria-selected={i === 1 ? 'true' : 'false'}
-          data-track="cta_click"
-          data-track-label="pricing-toggle"
-          data-track-dest={plan.key}
-        >
-          {plan.label}
-        </button>
-      ))}
-    </div>
-
-    <div class="comparison-expandable">
-      {categoryOrder.map((catKey, catIndex) => {
-        const cat = categories?.[catKey];
-        if (!cat) return null;
-        return (
-          <details class="comparison-category" open={catIndex === 0}>
-            <summary>{cat.label}</summary>
-            <table class="comparison-category-table">
-              <thead>
-                <tr>
-                  <th></th>
-                  {planColumns.map((plan) => (
-                    <th class:list={[{ 'col-popular': plan.key === 'professional' }]}>
-                      {plan.label}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {cat.rows.map((row) => (
-                  <tr>
-                    <td>{row.label}</td>
-                    {planColumns.map((plan) => (
-                      <td
-                        data-plan={plan.key}
-                        class:list={[
-                          { 'col-popular': plan.key === 'professional' },
-                          { 'mobile-visible': plan.key === 'professional' },
-                        ]}
-                      >
-                        {row[plan.key as keyof typeof row]}
-                      </td>
-                    ))}
-                  </tr>
+      <!-- One flat table, no accordions and no mobile plan picker. It carried
+           20 rows across 5 collapsibles, of which 10 read identically in every
+           column and 3 more only repeated what the card already prints. What
+           is left is the set that actually decides between the plans. -->
+      <div class="comparison-table-wrapper">
+        <table class="comparison-table">
+          <thead>
+            <tr>
+              <td></td>
+              {planColumns.map((plan) => (
+                <th scope="col">{plan.label}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((row) => (
+              <tr>
+                <th scope="row" class="comparison-row-label">{row.label}</th>
+                {planColumns.map((plan) => (
+                  <td>
+                    <span aria-hidden="true">{row[plan.key] ? '\u2713' : '\u2014'}</span>
+                    <span class="sr-only">{row[plan.key] ? included : notIncluded}</span>
+                  </td>
                 ))}
-              </tbody>
-            </table>
-          </details>
-        );
-      })}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
-  </div>
-</section>
-
-<script>
-  // Mobile plan toggle for comparison table
-  document.addEventListener('DOMContentLoaded', () => {
-    const toggleBtns = document.querySelectorAll<HTMLButtonElement>('.comparison-plan-toggle-btn');
-    if (!toggleBtns.length) return;
-
-    toggleBtns.forEach((btn) => {
-      btn.addEventListener('click', () => {
-        const plan = btn.dataset.plan;
-        if (!plan) return;
-
-        // Update active toggle
-        toggleBtns.forEach((b) => {
-          b.classList.toggle('active', b === btn);
-          b.setAttribute('aria-selected', b === btn ? 'true' : 'false');
-        });
-
-        // Show selected plan column, hide others
-        document.querySelectorAll<HTMLElement>('.comparison-category-table td[data-plan]').forEach((td) => {
-          td.classList.toggle('mobile-visible', td.dataset.plan === plan);
-        });
-      });
-    });
-  });
-</script>
+  </section>
+)}

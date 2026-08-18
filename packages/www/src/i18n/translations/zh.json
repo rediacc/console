@@ -1,6 +1,6 @@
 {
   "announcement": {
-    "enabled": true,
+    "enabled": false,
     "link": "/account/",
     "text": "新功能：14 天免费试用，立即开始使用 Rediacc。"
   },
@@ -29,7 +29,6 @@
   "common": {
     "aria": {
       "breadcrumbNavigation": "面包屑导航",
-      "clickToEnlarge": "点击放大图片",
       "closeImageModal": "关闭图像模态",
       "docsSections": "文档章节",
       "documentationNavigation": "文档导航",
@@ -40,37 +39,23 @@
       "previousImage": "上一张图片",
       "rediaccHome": "Rediacc 首页",
       "resetZoom": "重置变焦",
-      "selectPlanToCompare": "选择要比较的方案",
-      "statusMessage": "状态信息",
       "tableOfContents": "目录",
       "zoomIn": "放大",
       "zoomOut": "缩小"
     },
     "buttons": {
       "close": "关闭",
-      "contactSupport": "联系支持人员",
       "getStarted": "立即开始",
-      "goToHomepage": "前往主页",
-      "learnMore": "了解更多",
-      "sendMessage": "发送消息"
+      "learnMore": "了解更多"
     },
     "close": "关闭",
-    "contentNotAvailable": "此内容暂无{{language}}版本，正在显示英文版。",
-    "copied": "已复制！",
-    "copyLink": "复制此章节的链接",
-    "exploreSolutions": "探索其他解决方案",
     "logoAlt": "Rediacc - 基础设施自动化平台",
-    "platformPreview": "平台预览",
-    "realStory": "真实案例",
     "search": {
       "closeModal": "关闭搜索",
-      "keyboardShortcut": "⌘K 进行搜索",
-      "navigate": "导航",
       "noResults": "没有找到结果",
       "placeholder": "搜索文档、解决方案、功能...",
       "results": "搜索结果",
       "searching": "正在寻找...",
-      "select": "选择",
       "suggestions": {
         "browseSolutions": "浏览我们的解决方案页面",
         "checkSpelling": "检查你的拼写",
@@ -81,15 +66,11 @@
       "unavailable": "搜索不可用",
       "unavailableMessage": "无法加载搜索索引。请尝试刷新页面，如果问题仍然存在，请联系支持团队。"
     },
-    "section": "部分",
-    "siteName": "Rediacc",
     "skipNavigation": {
       "skipToFooter": "跳至页脚",
       "skipToMainContent": "跳至主要内容",
       "skipToNavigation": "跳至导航"
-    },
-    "terminalSimulationDisclaimer": "输出仅作示例，实际运行可能有更多日志。",
-    "theProblem": "问题所在"
+    }
   },
   "contactModal": {
     "close": "关闭",
@@ -102,8 +83,7 @@
       "messagePlaceholder": "告诉我们您的项目或问题...",
       "name": "姓名",
       "namePlaceholder": "您的姓名",
-      "subject": "主题",
-      "subjectPlaceholder": "选择主题"
+      "subject": "主题"
     },
     "sending": "发送中...",
     "subjects": {
@@ -118,6 +98,12 @@
     "title": "联系我们"
   },
   "documentation": {
+    "theme": {
+      "label": "主题",
+      "light": "浅色",
+      "dark": "深色",
+      "auto": "自动"
+    },
     "categories": {
       "concepts": "概念",
       "guides": "指南",
@@ -129,43 +115,22 @@
     "cliReference": "CLI 参考",
     "cliReferenceLabel": "CLI参考：",
     "copied": "已复制！",
+    "copyCode": "复制代码",
     "copyAsMarkdown": "复制为Markdown",
-    "copyAsMarkdownSection": "复制为Markdown",
-    "copyAsMarkdownSectionDesc": "复制章节的Markdown内容",
     "copyFullPageAriaLabel": "将整页复制为Markdown",
-    "copySection": "复制章节",
-    "copySectionLink": "复制章节链接",
-    "copySectionLinkDesc": "将直接链接复制到剪贴板",
     "openInNewTab": "在新标签页中打开",
     "searchDocs": "搜索文档",
-    "shareSection": "分享章节",
     "subcategories": {
       "advanced": "进阶",
       "essentials": "基础"
-    },
-    "viewAsMarkdown": "以Markdown查看页面",
-    "viewAsMarkdownDesc": "在新标签页中打开Markdown文件"
-  },
-  "featureShowcase": {
-    "categoryDescriptions": {
-      "backups": "每周都测，不只是存。能恢复，已验证。保留周期足够满足审计。",
-      "defense": "克隆生产环境，对副本跑安全测试，修复发现的问题，测完就扔掉。",
-      "dev-env": "为团队瞬间克隆整个生产系统。数据完全一致，零额外存储。放心测试改动，不怕坏了真实环境。",
-      "encryption": "硬盘上被 LUKS 锁定，机器间传输加密。完整审计日志。跨站点迁移安全有保障。",
-      "multi-cloud": "在 Amazon、Microsoft 或自己的机房间迁移，零供应商锁定。一家宕机，马上切另一家。我们已经测过——需要时能用。",
-      "ransomware": "备份被锁死，勒索软件碰不了。每份都带指纹认证——保证没被篡改。60 秒内恢复整个系统。"
-    },
-    "subtitle": "六个方法抵御勒索软件、保持在线、数据永远属于你",
-    "title": "用 Rediacc 你能做什么"
+    }
   },
   "footer": {
     "columns": {
       "legal": "法律",
       "organization": "公司",
-      "product": "产品",
-      "support": "支持"
+      "product": "产品"
     },
-    "copyright": "{{year}} Rediacc. 版权所有。",
     "legalDisclosure": {
       "fullLegalInformation": "完整法律信息",
       "summary": "{{companyName}} | 注册号 {{registryCode}} | 增值税号 {{vatNumber}} |"
@@ -177,10 +142,6 @@
       "refundPolicy": "退款政策",
       "telemetryPolicy": "遥测政策",
       "termsOfService": "服务条款"
-    },
-    "links": {
-      "contactSupport": "联系支持",
-      "returnToHome": "返回首页"
     },
     "organizationLinks": {
       "aboutUs": "关于我们",
@@ -194,123 +155,36 @@
       "pricing": "定价",
       "professionalServices": "专业服务",
       "solutions": "解决方案"
-    },
-    "supportLinks": {
-      "contactSupport": "联系支持",
-      "helpCenter": "帮助中心"
-    },
-    "tagline": "自托管备份和灾难恢复"
+    }
   },
   "getStarted": {
-    "benefits": ["直接与我们团队合作", "功能完整的平台", "优先支持", "定期功能更新"],
     "cta": {
       "primary": "免费安装 Rediacc",
       "secondary": "联系销售"
-    },
-    "form": {
-      "fields": {
-        "email": {
-          "autoComplete": "电子邮件",
-          "label": "邮箱 *"
-        },
-        "message": {
-          "label": "备注",
-          "placeholder": "告诉我们你的需求..."
-        },
-        "name": {
-          "autoComplete": "姓名",
-          "label": "姓名 *"
-        },
-        "organization": {
-          "autoComplete": "组织",
-          "label": "公司 *"
-        },
-        "role": {
-          "autoComplete": "组织名称",
-          "label": "角色"
-        },
-        "useCase": {
-          "label": "主要需求",
-          "options": {
-            "aiSafeOperations": "网络安全",
-            "developmentAcceleration": "开发",
-            "disasterRecovery": "灾难恢复",
-            "multiple": "多项",
-            "other": "其他",
-            "placeholder": "选择一项"
-          }
-        }
-      },
-      "submit": "开始使用"
-    },
-    "notice": {
-      "description": "点击提交打开邮件，我们会在 48 小时内回复。",
-      "emailLabel": "contact@rediacc.com",
-      "title": "如何提交"
     },
     "subtitle": "别再靠虚拟测试环境碰运气了。秒级复制你的实时系统，在真实数据上跑风险变更，生产完全感觉不到。",
     "title": "准备克隆你的首个应用栈了吗？"
   },
   "hero": {
     "cta": {
-      "benefits": "无限团队 • 14 天免费试用",
-      "bookDemo": "预约演示",
-      "contactUs": "查看所有安装方式",
-      "freeBadge": "14 天免费试用 · 随时取消",
-      "getStarted": "开始免费试用",
-      "learnMore": "了解工作原理",
-      "readDocs": "阅读文档",
-      "seeDetails": "查看详情"
+      "getStarted": "开始免费试用"
     },
-    "eyebrow": "自托管 · 运行在您的服务器上",
     "install": {
-      "alt": {
-        "apt": "apt",
-        "brew": "brew",
-        "docker": "docker",
-        "more": "更多 →"
-      },
-      "ariaLabel": "安装命令",
-      "copied": "已复制！",
-      "copy": "复制到剪贴板",
       "tabs": {
         "linux": "Linux",
         "macos": "macOS",
         "windows": "Windows"
-      },
-      "tabsLabel": "选择操作系统"
+      }
     },
-    "subtitle": "Rediacc 是部署在您服务器上的软件，能在几秒内克隆您的整个生产环境——应用、数据库、配置一应俱全。随后可以安心测试、快速备份和恢复。",
+    "subtitle": "Rediacc 是部署在您服务器上的软件，能在几秒内克隆您的整个生产环境——应用、数据库、配置一应俱全。",
     "title": "克隆生产环境。",
     "titleHighlight": " 万无一失。"
-  },
-  "integrations": {
-    "items": [
-      "Docker",
-      "PostgreSQL",
-      "MySQL",
-      "MariaDB",
-      "Git",
-      "GitLab",
-      "Jenkins",
-      "Prometheus",
-      "S3",
-      "btrfs",
-      "LUKS",
-      "systemd",
-      "Kubernetes",
-      "Ceph",
-      "k3s"
-    ],
-    "migrationMessage": "Rediacc 把您的应用、数据库和配置打包成一个文件，随处可移。已经在用 Docker？您已经完成大半。已经在跑 Kubernetes？整个集群也能用同样的方式复刻或迁移。",
-    "title": "与您现有的技术栈兼容"
   },
   "layout": {
     "meta": {
       "author": "Rediacc",
       "defaultDescription": "基础设施自动化平台专为加速开发运营而设计。即时开发环境和下一代灾难恢复。",
       "defaultKeywords": "基础设施自动化、AI 运营、灾难恢复、开发环境、模型上下文协议、DevOps、CI/CD",
-      "locale": "zh_CN",
       "siteName": "Rediacc",
       "twitter": {
         "creator": "@rediacc",
@@ -318,31 +192,8 @@
       }
     }
   },
-  "logoWall": {
-    "categories": ["Git", "CI/CD", "容器", "数据库", "监控", "存储"],
-    "title": "与您的基础设施无缝协作"
-  },
-  "metrics": {
-    "items": [
-      {
-        "label": "60秒轻松复制",
-        "number": "241 GB"
-      },
-      {
-        "label": "扩展存储",
-        "number": "0 bytes"
-      },
-      {
-        "label": "快速恢复",
-        "number": "< 1 min"
-      },
-      {
-        "label": "Whole Kubernetes cluster fork",
-        "number": "46s"
-      }
-    ]
-  },
   "navigation": {
+    "moreOptions": "更多选项",
     "account": "账户",
     "blog": "博客",
     "builtForYou": "为您打造",
@@ -384,9 +235,7 @@
     "search": "搜索",
     "selectLanguage": "选择语言",
     "solutions": "解决方案",
-    "solutionsMegaMenu": "解决方案菜单",
     "toggleMenu": "切换菜单",
-    "toggleTheme": "切换主题",
     "viewAllSolutions": "查看所有解决方案"
   },
   "newsletter": {
@@ -412,9 +261,6 @@
       "description": "填写邮箱，查看完整的成本拆解和节省分析。",
       "title": "查看你的ROI报告",
       "unlock": "查看报告"
-    },
-    "stickyBar": {
-      "text": "把自托管秘诀送进你的邮箱"
     },
     "subscribe": "订阅",
     "successMessage": "请检查邮箱，确认订阅。",
@@ -450,19 +296,12 @@
   "pages": {
     "blog": {
       "allArticles": "所有文章",
-      "backToBlog": "返回博客",
-      "byAuthor": "作者：{{author}}",
-      "category": "类别",
       "featured": "精选文章",
       "meta": {
         "description": "无惧勒索软件侵害的备份保护方案。更快的恢复速度。自己独立管理和运维服务器，从此无需再为运维而焦虑失眠。",
         "keywords": "基础设施自动化博客、DevOps 指南、分布式系统、任务执行、云基础设施",
         "title": "博客 | Rediacc - 基础设施自动化与运维深度技术洞察及最佳实践指南"
       },
-      "published": "已发表",
-      "readMore": "阅读更多",
-      "relatedArticles": "相关文章",
-      "sharingIs": "分享就是关怀",
       "subtitle": "备份、恢复、自有服务器运维 - 完整指南",
       "title": "博客"
     },
@@ -549,53 +388,11 @@
       }
     },
     "contact": {
-      "breadcrumb": {
-        "contact": "联系",
-        "home": "首页"
-      },
-      "form": {
-        "ariaLabel": "联系表单",
-        "fields": {
-          "email": {
-            "label": "邮箱 *"
-          },
-          "message": {
-            "label": "留言 *",
-            "placeholder": "告诉我们您的需求..."
-          },
-          "name": {
-            "label": "姓名 *"
-          },
-          "subject": {
-            "label": "我对以下内容感兴趣 *",
-            "options": {
-              "disasterRecovery": "灾难恢复",
-              "general": "常规咨询",
-              "other": "其他",
-              "partnership": "合作",
-              "placeholder": "选择一项",
-              "technical": "技术问题"
-            }
-          }
-        },
-        "legend": "联系信息",
-        "submit": "开始使用"
-      },
-      "hero": {
-        "subtitle": "填写表格，我们将在 48 小时内与您联系。",
-        "title": "联系我们"
-      },
       "info": {
         "description": "直接联系工程团队。大多数回复在 24 小时内。",
         "methods": {
           "general": {
-            "email": "contact@rediacc.com",
             "title": "问题？"
-          },
-          "getStarted": {
-            "description": "免费社区版。优先支持。",
-            "link": "了解更多",
-            "title": "立即开始"
           },
           "technicalSupport": {
             "description": "直接联系您的支持团队。",
@@ -608,11 +405,6 @@
         "description": "与 Rediacc 的团队取得联系，咨询灾难恢复、商业合作伙伴关系或技术问题等相关事宜。我们的团队承诺在 48 小时内为您提供专业的回复与支持。",
         "keywords": "Rediacc 联系我们、灾难恢复平台、经过验证的备份",
         "title": "与 Rediacc 团队直接联系 | 获取快速的技术支持、专业产品咨询和完整的解决方案"
-      },
-      "notice": {
-        "description": "点击提交打开邮件。有疑问？发送邮件给我们",
-        "emailLabel": "contact@rediacc.com",
-        "title": "如何提交"
       }
     },
     "cookiePolicy": {
@@ -729,19 +521,19 @@
             "question": "我可以升级或降级我的计划吗？"
           },
           {
-            "answer": "我们接受 Visa、MasterCard 和 American Express。年度企业计划还支持发票计费。",
+            "answer": "我们接受 Visa、MasterCard 和 American Express。年度恢复顾问服务合同还可以选择开票结算。",
             "question": "您接受哪些付款方式？"
           },
           {
-            "answer": "有。Professional 和 Business 都提供 14 天免费试用，注册时需绑定信用卡，试用期结束后才会扣费。提前取消则完全免费，账户会自动降级为免费的 Community 方案。",
+            "answer": "可以。恢复评估和恢复计划都提供 14 天免费试用。注册时绑定银行卡，试用结束后才开始计费。在此之前取消则不产生任何费用。",
             "question": "有免费试用吗？"
           },
           {
-            "answer": "社区版有社区支持和自助文档。专业版增加邮件和聊天支持。商业版增加电话支持和专属客户经理。企业版提供 24/7/365 专人支持和高管直线接入。",
+            "answer": "恢复评估包含邮件和在线聊天支持。恢复计划增加电话支持和专属客户经理。恢复顾问服务提供 24/7/365 的直接支持，并可直接联系资深工程师。",
             "question": "支持包括什么？"
           },
           {
-            "answer": "取决于你的版本。社区版数分钟内恢复最新备份。专业版可恢复到过去 24 小时内的任意时刻。商业版保证 4 小时恢复。企业版在 15 至 60 分钟内恢复上线，时间可自定义。",
+            "answer": "恢复时间取决于你的合同。恢复评估可以回到过去 24 小时内的任意时间点。恢复计划保证 4 小时内恢复。恢复顾问服务按你自己的时间表，在 15 到 60 分钟内让你重新上线。",
             "question": "我能多快从灾难中恢复过来？"
           },
           {
@@ -772,71 +564,14 @@
         "title": "灾难恢复定价和基础保护方案 - 为企业提供简单透明的完整备份和业务恢复保护 | Rediacc"
       },
       "plans": {
-        "business": {
-          "description": "包含专家设置。守护您无法承受损失的系统。",
-          "features": [
-            "专业版全部功能，加强版",
-            "包含 $9,999 的实施代金（启动优惠）",
-            "存储跨越 3 个地域。一次故障无法阻止您。",
-            "持续数据保护。数据丢失接近零。",
-            "4 小时恢复 SLA（有保证）",
-            "无限应用，每个 500 GB",
-            "7 个活跃/3 个备用任务",
-            "90 天审计日志保留",
-            "基于角色的访问控制和完整审计日志",
-            "符合合规要求的审计报告",
-            "专属客户成功经理",
-            "电话支持和协作空间"
-          ],
-          "name": "商业"
+        "program": {
+          "name": "恢复计划"
         },
-        "community": {
-          "description": "从第一天起就具备生产级灾难恢复能力，免费的兜底方案。",
-          "features": [
-            "无限用户和团队。自由协作。",
-            "故障后几分钟内恢复最新备份。",
-            "无限应用，每个 10 GB",
-            "2 小时任务超时、2 个活跃/1 个备用任务",
-            "7 天审计日志保留",
-            "手动备份计划",
-            "社区 Slack 访问",
-            "自助文档和支持",
-            "\"由 Rediacc 提供支持\" 署名"
-          ],
-          "name": "社区"
+        "retainer": {
+          "name": "恢复顾问服务"
         },
-        "enterprise": {
-          "description": "为大型复杂运营量身定制的灾难恢复。",
-          "features": [
-            "商业版全部功能，加强版",
-            "定制服务级协议（15-60 分钟内恢复）。您的需求，我们的承诺。",
-            "您的专属环境。最高的安全性和性能。",
-            "24/7/365 专家支持，全年无休",
-            "无限应用，每个 1 TB+",
-            "96+ 小时任务窗口，10+ 个活跃/5+ 个备用任务",
-            "1 年+ 审计日志保留",
-            "季度灾难恢复演习。确保您随时准备好。",
-            "高管上报热线",
-            "自定义集成与工作流",
-            "审计文档支持和安全审查"
-          ],
-          "name": "企业"
-        },
-        "professional": {
-          "description": "专业级灾难恢复，无企业级的繁琐。",
-          "features": [
-            "社区版全部功能，加强版",
-            "自动备份计划——一次配置，永久省心。",
-            "24 小时内的时间点恢复",
-            "无限应用，每个 100 GB",
-            "24 小时任务超时、3 个活跃/2 个备用任务",
-            "30 天审计日志保留",
-            "邮件和聊天支持",
-            "Slack 和 PagerDuty 通知",
-            "无\"由 Rediacc 提供支持\"署名",
-            "集成 API 接口"
-          ],
-          "name": "专业的"
+        "assessment": {
+          "name": "恢复评估"
         }
       },
       "psTeaser": {
@@ -847,8 +582,8 @@
       "strategy": {
         "copy": "从现状开始就好。大多数团队停留的时间都比预期更久，只有当恢复变慢真正影响业务时，才需要升级，用的始终是同一个产品。跑 Kubernetes？整个集群也能用同样的方式迁移，切换过程短暂且可控。",
         "distribution": [
-          "从专业版升级到商业版：备份存储在第二个位置，每次变更即时保存，4小时恢复保证，专属支持联系人。",
-          "从商业版升级到企业版：选择恢复速度（15至60分钟）。恢复在完全独立的隔离环境中进行，您的生产系统无法接触它，在关键时刻提供人工支持。"
+          "从恢复评估到恢复计划：备份保存在第二个位置。每一次改动都会在发生的瞬间被保存。你可以获得 4 小时内恢复上线的保证。还包含一位专属支持联系人。",
+          "从恢复计划到恢复顾问服务：由你决定需要多快恢复上线，这个时间在 15 到 60 分钟之间。恢复在一个与线上系统完全隔离的环境中进行，关键时刻有人直接为你提供支持。"
         ],
         "heading": "专为每个阶段打造"
       },
@@ -871,22 +606,17 @@
         ],
         "recoveryNote": "RPO（恢复点目标）：您可以承受丢失多少数据，按时间衡量。例如，15分钟RPO意味着您可能会丢失最多15分钟的最近更改。\n\nRTO（恢复时间目标）：灾难发生后您需要多快恢复在线。例如，4小时RTO意味着您的系统将在4小时内恢复。",
         "values": {
-          "business": {
+          "program": {
             "auditLogs": "90天",
             "rpo": "~5 分钟（连续）",
             "rto": "4小时（保证）"
           },
-          "community": {
-            "auditLogs": "7天",
-            "rpo": "尽最大努力",
-            "rto": "尽最大努力"
-          },
-          "enterprise": {
+          "retainer": {
             "auditLogs": "1年以上",
             "rpo": "自定义（接近于零）",
             "rto": "15-60 分钟（定制）"
           },
-          "professional": {
+          "assessment": {
             "auditLogs": "30天",
             "rpo": "约 15 分钟",
             "rto": "时间点恢复"
@@ -894,79 +624,34 @@
         }
       },
       "trust": {
-        "heading": "安全与可靠性",
         "items": ["AES-256 加密标准", "99.99% 正常运行时间承诺"]
       },
       "ui": {
-        "anchor": "战略锚",
-        "bestValue": "最划算",
-        "contactSales": "联系销售",
         "contactUs": "联系我们",
         "contactUsSub": "自定义限制和条款",
         "cta": {
-          "business": {
-            "launchBadge": "限时首发特惠",
-            "primary": "开始免费试用",
-            "secondary": "联系销售",
-            "valueNote": "赠送 $9,999 配置额度"
+          "program": {
+            "primary": "开始免费试用"
           },
-          "community": {
-            "note": "无需信用卡",
-            "primary": "免费开始",
-            "secondary": "了解套餐内容"
+          "retainer": {
+            "primary": "预约演示"
           },
-          "enterprise": {
-            "primary": "预约演示",
-            "secondary": "联系销售",
-            "subtext": "定制 SLA · 专属支持"
-          },
-          "professional": {
-            "primary": "开始免费试用",
-            "secondary": "联系销售"
+          "assessment": {
+            "primary": "开始免费试用"
           }
-        },
-        "foreverFree": "永远免费",
-        "getStarted": "立即安装",
-        "guarantees": {
-          "cancelAnytime": "随时取消",
-          "freeTrial": "14 天免费试用",
-          "noContracts": "无长期合同"
-        },
-        "keyBenefits": "主要优点",
-        "learnMore": "对比方案",
-        "limitedOffer": "限时首发特惠",
-        "monthOrYear": "每月或每年 {{price}}",
-        "popular": "最受欢迎",
-        "startingAt": "*起价",
-        "taxDisclaimer": "所有价格以美元计，不包括适用的税费、征费和关税。",
-        "whatsIncluded": "包含内容："
+        }
       }
     },
     "docs": {
-      "allDocumentation": "所有文档",
-      "backToDocs": "返回文档",
-      "cliReference": "CLI 参考",
-      "cliReferenceDesc": "在终端运行 Rediacc 需要的所有命令。查看标志和示例。",
       "fallbackNotice": {
-        "helpTranslate": "帮助翻译此页面",
         "message": "此页面暂无你选择的语言版本。显示英文版本。",
         "title": "翻译不可用"
       },
       "gettingStarted": "入门",
       "gettingStartedDesc": "Rediacc 新手？从这里开始。学习基础知识，快速启动你的第一次备份。",
-      "meta": {
-        "description": "Rediacc 官方完整技术文档库：包括快速设置指南、命令行 CLI 参考、详尽的 API 文档以及详细的逐步部署帮助，帮您快速上手该平台。",
-        "keywords": "文档、API 参考、指南、基础设施自动化、CLI 参考、队列系统",
-        "title": "Rediacc 官方技术文档库 - 服务器备份恢复解决方案、完整操作指南和配置教程"
-      },
-      "queueSystem": "跨服务器工作",
-      "queueSystemDesc": "本节介绍 Rediacc 如何跨多台服务器协调工作。仅运行单台机器？现在可以跳过。",
       "searchPlaceholder": "搜索文档...",
-      "subtitle": "学会使用 Rediacc，快速备份和恢复你的服务器。",
       "tableOfContents": "本页内容",
-      "title": "文档",
-      "welcome": "欢迎来到 Rediacc 文档",
-      "welcomeDescription": "Rediacc 在你的服务器上运行，为每个 Docker 应用、数据库和配置保存一份锁定副本。服务器故障时，直接恢复即可，不用重新配置。初次使用？从入门指南开始。已在运行了？看看命令参考。"
+      "title": "文档"
     },
     "downloads": {
       "actions": {
@@ -983,7 +668,6 @@
         "title": "自动更新信息"
       },
       "cli": {
-        "binary": "二进制文件",
         "description": "一个在终端窗口中运行的小巧快速工具。适合管理没有屏幕的服务器，或者需要在多台机器上同时运行同一条命令的场景。连接服务器、执行命令、推送更新，无需浏览器。"
       },
       "hero": {
@@ -1017,9 +701,6 @@
       }
     },
     "home": {
-      "imageModal": {
-        "indicator": "{{current}} / {{total}}"
-      },
       "meta": {
         "description": "利用 Rediacc 的基础设施自动化能力实现开发流程转型。获得即时环境克隆、完整灾难恢复方案和 AI 驱动的安全运维能力。",
         "keywords": "基础设施自动化、开发环境、灾难恢复、DevOps 自动化、CI/CD 管道、云基础设施、开发运营、模型上下文协议、AI 安全基础设施",
@@ -1155,7 +836,6 @@
       "description": "抱歉，您要查找的页面不存在或已被移动。 如果您点击过时的链接或输入了错误的 URL，则可能会发生这种情况。",
       "help": {
         "description": "如果您认为这是一个错误或者您希望在此处找到内容，请联系我们的支持团队。 我们随时帮助您找到您想要的东西。",
-        "link": "联系我们的支持团队",
         "title": "需要帮助吗？"
       },
       "meta": {
@@ -1166,17 +846,10 @@
       "suggestions": {
         "getInTouchPrefix": "通过以下方式联系我们：",
         "goBackPrefix": "返回到",
-        "items": [
-          "检查 URL 是否有拼写错误",
-          "返回首页",
-          "了解我们的基础设施自动化解决方案",
-          "通过我们的联系页面取得联系",
-          "立即开始使用 Rediacc"
-        ],
+        "items": ["检查 URL 是否有拼写错误"],
         "learnAboutPrefix": "了解我们的",
         "links": {
           "contact": "联系页面",
-          "getStarted": "Rediacc",
           "homepage": "主页",
           "solutions": "基础设施自动化解决方案"
         },
@@ -1383,9 +1056,7 @@
           "title": "让 AI Agent 替你管理基础设施"
         },
         "hero": {
-          "badge": "AI AGENT 专属",
           "primaryCta": "开始免费试用",
-          "secondaryCta": "查看文档",
           "subtitle": "CLI 优先、SSH 直连、JSON 原生。rdc 的每条命令都为自主 Agent 量身打造——没有 GUI、没有浏览器自动化、没有自定义集成。",
           "title": "你的 AI Agent 已经懂的基础设施"
         },
@@ -1475,19 +1146,16 @@
           "statCallouts": [
             {
               "number": "73%",
-              "ref": 1,
               "source": "GitHub 2025",
               "text": "的开发者计划在 2026 年前用 AI Agent 处理基础设施任务"
             },
             {
               "number": "4x",
-              "ref": 2,
               "source": "Industry analysis",
               "text": "非结构化输出比 JSON 多消耗的上下文"
             },
             {
               "number": "0%",
-              "ref": 3,
               "source": "Market survey",
               "text": "的传统基础设施平台是为 AI Agent 而生的"
             }
@@ -1569,63 +1237,6 @@
           ],
           "title": "rdc 为何为 AI Agent 量身打造",
           "traditionalLabel": "传统平台"
-        },
-        "terminal": {
-          "lines": [
-            {
-              "cmd": "rdc machine status prod-1",
-              "flag": "-o",
-              "prompt": "$",
-              "type": "command",
-              "value": "json"
-            },
-            {
-              "type": "spacer"
-            },
-            {
-              "result": "done",
-              "text": "SSH 连接成功",
-              "type": "check"
-            },
-            {
-              "result": "done",
-              "text": "正在查询 renet 守护进程",
-              "type": "check"
-            },
-            {
-              "result": "全部运行正常",
-              "text": "12 个仓库，47 个容器",
-              "type": "check"
-            },
-            {
-              "type": "spacer"
-            },
-            {
-              "text": "{\"success\": true, \"command\": \"machine info\", \"data\": {...}}",
-              "type": "success"
-            },
-            {
-              "pairs": [
-                {
-                  "label": "格式",
-                  "value": "JSON"
-                },
-                {
-                  "label": "延迟",
-                  "value": "142ms"
-                },
-                {
-                  "label": "认证",
-                  "value": "SSH"
-                },
-                {
-                  "label": "令牌",
-                  "value": "~200"
-                }
-              ],
-              "type": "summary"
-            }
-          ]
         }
       },
       "forCeos": {
@@ -1684,9 +1295,7 @@
           "withTag": "使用 Rediacc"
         },
         "hero": {
-          "badge": "面向 CEO",
           "primaryCta": "查看定价",
-          "secondaryCta": "联系销售团队",
           "subtitle": "用您自有硬件保护业务数据。每台机器固定价格 — 无按席位费用，无意外云账单，供应商也拿不走您的数据。",
           "title": "每台服务器一个固定价格。您的数据始终属于您。"
         },
@@ -1701,19 +1310,16 @@
           "statCallouts": [
             {
               "number": "20%",
-              "ref": 1,
               "source": "Flexera 2025",
               "text": "云支出的年均增长率"
             },
             {
               "number": "98%",
-              "ref": 2,
               "source": "TrustRadius 2024",
               "text": "中小企业的技术决策权掌握在高管手中"
             },
             {
               "number": "$9.36M",
-              "ref": 3,
               "source": "IBM 2024",
               "text": "数据泄露的平均成本"
             }
@@ -1785,69 +1391,7 @@
             "label": "按席位费用",
             "number": "0"
           }
-        ],
-        "terminal": {
-          "lines": [
-            {
-              "cmd": "rdc machine status production",
-              "flag": "",
-              "prompt": "$",
-              "type": "command",
-              "value": ""
-            },
-            {
-              "type": "spacer"
-            },
-            {
-              "result": "健康",
-              "text": "已监控 3 台机器",
-              "type": "check"
-            },
-            {
-              "result": "全部已备份",
-              "text": "已保护 47 个仓库",
-              "type": "check"
-            },
-            {
-              "result": "2小时前",
-              "text": "最近备份已验证",
-              "type": "check"
-            },
-            {
-              "result": "< 5 min",
-              "text": "灾难恢复就绪",
-              "type": "check"
-            },
-            {
-              "type": "spacer"
-            },
-            {
-              "text": "系统安全无虞。本季度零事故。",
-              "type": "success"
-            },
-            {
-              "pairs": [
-                {
-                  "label": "运行时间",
-                  "value": "99.99%"
-                },
-                {
-                  "label": "已保护",
-                  "value": "2.4 TB"
-                },
-                {
-                  "label": "月成本",
-                  "value": "$204"
-                },
-                {
-                  "label": "对比云服务",
-                  "value": "−62%"
-                }
-              ],
-              "type": "summary"
-            }
-          ]
-        }
+        ]
       },
       "forCtos": {
         "benefits": {
@@ -1941,9 +1485,7 @@
           "title": "Rediacc的对比优势"
         },
         "hero": {
-          "badge": "面向CTO",
           "primaryCta": "预约演示",
-          "secondaryCta": "计算您的ROI",
           "subtitle": "自托管基础设施保护，消除云端加价，无按席位定价即可扩展，几分钟内从任何灾难中恢复 — 而非数小时。",
           "title": "降低基础设施TCO 60%。在您的硬件上扩展。"
         },
@@ -1958,19 +1500,16 @@
           "statCallouts": [
             {
               "number": "17%",
-              "ref": 1,
               "source": "Flexera 2025",
               "text": "企业云预算平均超支比例"
             },
             {
               "number": "76%",
-              "ref": 2,
               "source": "Veeam 2024",
               "text": "的组织在过去一年遭遇过严重停机"
             },
             {
               "number": "$9.36M",
-              "ref": 3,
               "source": "IBM 2024",
               "text": "2024 年数据泄露的平均成本"
             }
@@ -2071,68 +1610,6 @@
           ],
           "title": "Rediacc 如何保护您的基础设施",
           "traditionalLabel": "云/传统灾备"
-        },
-        "terminal": {
-          "lines": [
-            {
-              "cmd": "rdc config backup-strategy set",
-              "flag": "",
-              "prompt": "$",
-              "type": "command",
-              "value": ""
-            },
-            {
-              "type": "spacer"
-            },
-            {
-              "result": "done",
-              "text": "正在扫描 3 台机器上的 47 个仓库",
-              "type": "check"
-            },
-            {
-              "result": "47/47",
-              "text": "正在创建不可变 btrfs 快照",
-              "type": "check"
-            },
-            {
-              "result": "通过",
-              "text": "正在验证备份完整性（恢复测试）",
-              "type": "check"
-            },
-            {
-              "result": "已同步",
-              "text": "正在复制到备用节点",
-              "type": "check"
-            },
-            {
-              "type": "spacer"
-            },
-            {
-              "text": "所有仓库已保护。下次运行：明天 02:00 UTC",
-              "type": "success"
-            },
-            {
-              "pairs": [
-                {
-                  "label": "仓库",
-                  "value": "47"
-                },
-                {
-                  "label": "总大小",
-                  "value": "2.4 TB"
-                },
-                {
-                  "label": "快照耗时",
-                  "value": "3.2s"
-                },
-                {
-                  "label": "存储增量",
-                  "value": "+12 GB"
-                }
-              ],
-              "type": "summary"
-            }
-          ]
         }
       },
       "forDevops": {
@@ -2164,9 +1641,7 @@
           "title": "动手一试"
         },
         "hero": {
-          "badge": "为 DevOps 工程师打造",
           "primaryCta": "开始免费试用",
-          "secondaryCta": "查看文档",
           "subtitle": "CLI 优先的基础设施：60 秒克隆生产环境、5 分钟内完全恢复、运行在您自己的硬件上。无工单。无等待。数据掌控在您手。",
           "title": "一分钟内克隆。五分钟内恢复。永别工单地狱。"
         },
@@ -2256,19 +1731,16 @@
           "statCallouts": [
             {
               "number": "69%",
-              "ref": 1,
               "source": "Atlassian 2024",
               "text": "的开发者因工具低效每周损失 8+ 小时"
             },
             {
               "number": "3天",
-              "ref": 2,
               "source": "行业调查",
               "text": "企业团队获取新环境需要的平均等待时间"
             },
             {
               "number": "$50K/年",
-              "ref": 3,
               "source": "行业综合数据",
               "text": "每个开发者在上下文切换上损失的时间"
             }
@@ -2362,242 +1834,53 @@
           ],
           "title": "为什么能 60 秒克隆",
           "traditionalLabel": "传统方式"
-        },
-        "terminal": {
-          "lines": [
-            {
-              "cmd": "rdc repo fork production",
-              "flag": "",
-              "prompt": "$",
-              "type": "command",
-              "value": ""
-            },
-            {
-              "type": "spacer"
-            },
-            {
-              "result": "done",
-              "text": "生产快照中 (btrfs CoW)",
-              "type": "check"
-            },
-            {
-              "result": "done",
-              "text": "复制 8 个容器和数据库",
-              "type": "check"
-            },
-            {
-              "result": "done",
-              "text": "挂载加密存储 (380 GB)",
-              "type": "check"
-            },
-            {
-              "result": "8/8 通过",
-              "text": "运行健康检查",
-              "type": "check"
-            },
-            {
-              "type": "spacer"
-            },
-            {
-              "text": "克隆就绪 feature-auth-v2.internal",
-              "type": "success"
-            },
-            {
-              "pairs": [
-                {
-                  "label": "用时",
-                  "value": "52s"
-                },
-                {
-                  "label": "容器",
-                  "value": "8"
-                },
-                {
-                  "label": "大小",
-                  "value": "380 GB"
-                },
-                {
-                  "label": "磁盘占用",
-                  "value": "1.8 GB (CoW)"
-                }
-              ],
-              "type": "summary"
-            }
-          ]
         }
       }
     },
     "pricing": {
       "comparison": {
-        "allPlansInclude": "所有套餐都包含：无限用户和团队、无限代码仓库、快照还原、深色模式、9 种语言",
-        "categories": {
-          "automation": {
-            "label": "调度与自动化",
-            "rows": [
-              {
-                "business": "✓",
-                "community": "✓",
-                "enterprise": "✓",
-                "label": "手动调度",
-                "professional": "✓"
-              },
-              {
-                "business": "✓",
-                "community": "✓",
-                "enterprise": "✓",
-                "label": "自动调度",
-                "professional": "✓"
-              },
-              {
-                "business": "✓",
-                "community": "✓",
-                "enterprise": "✓",
-                "label": "集成接口",
-                "professional": "✓"
-              },
-              {
-                "business": "—",
-                "community": "—",
-                "enterprise": "✓",
-                "label": "自定义工作流",
-                "professional": "—"
-              }
-            ]
+        "allPlansInclude": "所有方案均包含：用户与团队不限、仓库数量不限、快照恢复、持续数据保护、地理冗余存储、LUKS 加密、审计日志、基于角色的访问、手动与自动调度，以及集成 API。",
+        "rows": [
+          {
+            "label": "专属客户经理",
+            "professional": false,
+            "business": true,
+            "enterprise": true
           },
-          "dataProtection": {
-            "label": "数据保护",
-            "rows": [
-              {
-                "business": "✓",
-                "community": "✓",
-                "enterprise": "✓",
-                "label": "快照还原",
-                "professional": "✓"
-              },
-              {
-                "business": "✓",
-                "community": "✓",
-                "enterprise": "✓",
-                "label": "持续数据保护",
-                "professional": "✓"
-              },
-              {
-                "business": "✓",
-                "community": "✓",
-                "enterprise": "✓",
-                "label": "地域冗余存储",
-                "professional": "✓"
-              }
-            ]
+          {
+            "label": "电话支持",
+            "professional": false,
+            "business": true,
+            "enterprise": true
           },
-          "infrastructure": {
-            "label": "基础设施",
-            "rows": [
-              {
-                "business": "10",
-                "community": "2",
-                "enterprise": "25+",
-                "label": "Floating Licenses (Machines)",
-                "professional": "3"
-              },
-              {
-                "business": "10,000",
-                "community": "100",
-                "enterprise": "25,000+",
-                "label": "每月服务器配置次数（每次 1 个浮动许可证）",
-                "professional": "1,000"
-              },
-              {
-                "business": "200 GB",
-                "community": "10 GB",
-                "enterprise": "1 TB+",
-                "label": "Repository size",
-                "professional": "50 GB"
-              }
-            ]
+          {
+            "label": "24/7/365 全天候支持",
+            "professional": false,
+            "business": false,
+            "enterprise": true
           },
-          "security": {
-            "label": "安全与合规",
-            "rows": [
-              {
-                "business": "✓",
-                "community": "✓",
-                "enterprise": "✓",
-                "label": "角色访问控制和权限组",
-                "professional": "✓"
-              },
-              {
-                "business": "✓",
-                "community": "✓",
-                "enterprise": "✓",
-                "label": "审计日志",
-                "professional": "✓"
-              },
-              {
-                "business": "✓",
-                "community": "✓",
-                "enterprise": "✓",
-                "label": "LUKS 数据加密",
-                "professional": "✓"
-              },
-              {
-                "business": "—",
-                "community": "—",
-                "enterprise": "✓",
-                "label": "安全评审",
-                "professional": "—"
-              }
-            ]
+          {
+            "label": "高管支持升级",
+            "professional": false,
+            "business": false,
+            "enterprise": true
           },
-          "support": {
-            "label": "技术支持",
-            "rows": [
-              {
-                "business": "✓",
-                "community": "✓",
-                "enterprise": "✓",
-                "label": "社区 Slack",
-                "professional": "✓"
-              },
-              {
-                "business": "✓",
-                "community": "—",
-                "enterprise": "✓",
-                "label": "邮件和在线聊天支持",
-                "professional": "✓"
-              },
-              {
-                "business": "✓",
-                "community": "—",
-                "enterprise": "✓",
-                "label": "专属客户经理",
-                "professional": "—"
-              },
-              {
-                "business": "✓",
-                "community": "—",
-                "enterprise": "✓",
-                "label": "电话支持",
-                "professional": "—"
-              },
-              {
-                "business": "—",
-                "community": "—",
-                "enterprise": "✓",
-                "label": "24/7/365 全天候支持",
-                "professional": "—"
-              },
-              {
-                "business": "—",
-                "community": "—",
-                "enterprise": "✓",
-                "label": "高管支持升级",
-                "professional": "—"
-              }
-            ]
+          {
+            "label": "安全评审",
+            "professional": false,
+            "business": false,
+            "enterprise": true
+          },
+          {
+            "label": "自定义工作流",
+            "professional": false,
+            "business": false,
+            "enterprise": true
           }
-        },
-        "heading": "查看套餐详细对比"
+        ],
+        "heading": "查看套餐详细对比",
+        "included": "包含",
+        "notIncluded": "不包含"
       },
       "edgeChannel": {
         "cta": "探索 Edge 渠道",
@@ -2640,10 +1923,6 @@
             "question": "每个方案支持多少台机器？"
           },
           {
-            "answer": "Community 是免费的兜底方案：一台机器，每个仓库 10 GB，每月 100 次设置，并提供社区支持。Professional 是提供 14 天免费试用的付费方案：一台机器，每个仓库 100 GB，每月 2,000+ 次设置，支持自动调度、24 小时恢复记录、更快的支持响应以及 API 访问。",
-            "question": "Community 和 Professional 有什么区别？"
-          },
-          {
             "answer": "Enterprise 专为您的部署定制，通过合作伙伴销售。您可以自行商定条款，在多台机器上运行，并获得专属服务器空间、定制化恢复承诺以及 24/7/365 支持，此外还包括安全审查与定期演练。",
             "question": "Enterprise 方案包括什么？"
           },
@@ -2681,66 +1960,14 @@
       "plans": {
         "business": {
           "description": "更大的仓库容量、进阶管理功能，以及 4 小时恢复承诺。",
-          "features": [
-            "包含Professional所有功能，此外还有：",
-            "1 个浮动许可证",
-            "每个仓库 500 GB",
-            "每月 5,000+ 次服务器配置",
-            "跨地域冗余存储（3 个区域）",
-            "持续数据保护",
-            "4 小时恢复 SLA",
-            "基于角色的访问控制与审计日志",
-            "合规就绪报告",
-            "电话支持 + 协作空间"
-          ],
           "name": "商业"
-        },
-        "community": {
-          "description": "永久免费的兜底方案。试用或付费方案到期后，仍可让一台机器持续运行。",
-          "features": [
-            "无限用户和团队",
-            "无限仓库",
-            "每月 100 次服务器配置（每次配置消耗 1 个浮动许可证）",
-            "1 个浮动许可证",
-            "备份和恢复",
-            "支持手动调度",
-            "社区Slack频道访问",
-            "自助支持和文档"
-          ],
-          "name": "社区"
         },
         "enterprise": {
           "description": "多机部署，通过合作伙伴销售，提供专属支持与定制条款。",
-          "features": [
-            "包含Business所有功能，此外还有：",
-            "多机浮动许可证",
-            "无限仓库",
-            "每月 15,000+ 次服务器配置",
-            "自定义SLA和保证的恢复时间",
-            "您专属的隔离基础设施",
-            "24/7/365专属支持",
-            "专属客户成功经理",
-            "季度就绪演练",
-            "行政级升级热线",
-            "自定义集成和工作流",
-            "审计文档支持和安全审查"
-          ],
           "name": "企业"
         },
         "professional": {
           "description": "面向单台生产机器的自动化与调度",
-          "features": [
-            "包含Community所有功能，此外还有：",
-            "1 个浮动许可证",
-            "每个仓库 100 GB",
-            "每月 2,000+ 次服务器配置",
-            "支持自动调度",
-            "支持从过去24小时内任意时间点恢复",
-            "邮件和聊天支持",
-            "Slack和PagerDuty通知",
-            "移除\"Powered by Rediacc\"品牌标识",
-            "开放集成API权限"
-          ],
           "name": "专业的"
         }
       },
@@ -2760,8 +1987,6 @@
           ]
         },
         "categories": {
-          "heading": "可选服务",
-          "intro": "每次合作都从一次沟通开始，以便我们根据你的环境确定合适的团队和时间线。",
           "items": [
             {
               "description": "为团队提供实操培训，从引导式配置演示到覆盖高级工作流和事件响应流程的多天工作坊。",
@@ -2796,14 +2021,10 @@
           ]
         },
         "cta": {
-          "button": "联系我们",
           "description": "每次合作都根据你的环境量身定制。联系我们，我们会一起确定合适的方案。",
           "heading": "需要专业帮助？"
         },
         "header": {
-          "badge": "全程专家支持",
-          "eligibility": "所有套餐都可以使用我们的专业服务。联系我们，我们会为你的环境量身定制合适的合作方案。",
-          "subtitle": "关键时刻，专家为你出手",
           "title": "专业服务"
         }
       },
@@ -2812,8 +2033,6 @@
         "heading": "拿不准怎么选？"
       },
       "technicalSummary": {
-        "description": "各方案的核心配额对比一览。",
-        "heading": "方案对比",
         "metrics": [
           {
             "key": "repositories",
@@ -2870,10 +2089,6 @@
           }
         }
       },
-      "trust": {
-        "heading": "安全可靠",
-        "items": ["AES-256 加密标准", "99.99% 正常运行时间承诺"]
-      },
       "trustSection": {
         "corporateGuarantee": "如果 Rediacc 不适合你，我们会协助你迁移回去。",
         "heading": "你的基础设施，你的规则。",
@@ -2903,69 +2118,24 @@
             "title": "硬件变更享受 40 天缓冲"
           }
         ],
-        "subtitle": "Rediacc 许可证的设计让你永远不会被困住。这在实际中意味着什么呢？我们来一一说明。",
-        "svg": {
-          "allOperations": "所有操作",
-          "newMachineId": "新机器 ID",
-          "noLicenseNeeded": "无需许可证",
-          "noLicenseRequired": "无需许可证，永远可用",
-          "reposKeepRunning": "应用一直在运行。无需手工干预。",
-          "requiredOnlyHere": "仅此处需要",
-          "slotsAutoRelease": "浮动许可证闲置 5 小时后自动释放",
-          "slotsCreateFork": "浮动许可证仅用于新建和复制的服务器。日常操作始终免费。"
-        }
+        "subtitle": "Rediacc 许可证的设计让你永远不会被困住。这在实际中意味着什么呢？我们来一一说明。"
       },
       "ui": {
-        "anchor": "战略锚",
-        "bestValue": "最划算",
         "billingToggle": {
           "annual": "年付",
           "annualSavings": "节省 15%",
           "ariaLabel": "计费周期",
           "monthly": "月付"
         },
-        "contactSales": "联系销售",
         "contactUs": "联系我们",
         "contactUsSub": "自定义限制和条款",
         "cta": {
-          "business": {
-            "launchBadge": "限量首发优惠",
-            "primary": "开始免费试用",
-            "secondary": "联系销售",
-            "valueNote": "包含 9,999 美元的配置额度"
-          },
-          "community": {
-            "note": "免费兜底方案",
-            "primary": "试用 Rediacc",
-            "secondary": "查看包含内容"
-          },
           "enterprise": {
-            "primary": "联系销售",
-            "secondary": "联系销售",
-            "subtext": "定制 SLA · 专属支持"
-          },
-          "professional": {
-            "primary": "开始免费试用",
-            "secondary": "联系销售"
+            "primary": "联系销售"
           }
         },
-        "edgeLimitsNote": "显示的是 edge 频道的限制。stable 频道的限制是这里的一半。",
-        "foreverFree": "永远免费",
-        "getStarted": "立即安装",
-        "guarantees": {
-          "cancelAnytime": "随时取消",
-          "freeTrial": "14 天免费试用",
-          "noContracts": "无长期合约"
-        },
-        "keyBenefits": "核心优势",
-        "learnMore": "对比方案",
-        "limitedOffer": "限量首发优惠",
-        "monthOrYear": "每月或 {{price}} 每年",
-        "popular": "最热门",
-        "startingAt": "*起价",
         "startTrial": "开始 14 天免费试用",
-        "taxDisclaimer": "所有价格均以美元计价，不含税款、关税等。",
-        "whatsIncluded": "包含内容："
+        "taxDisclaimer": "所有价格均以美元计价，不含税款、关税等。"
       }
     },
     "privacyPolicy": {
@@ -3777,44 +2947,6 @@
         "title": "ROI 计算器 - 精准计算您的基础设施成本节省 | Rediacc"
       },
       "overline": "算一算能省多少",
-      "references": {
-        "disclaimer": "所有数据来自公开的行业研究和供应商文档。TCO 示例使用 Rediacc 的标准定价。你的实际价格和节省金额因具体部署、协议条款和团队需求而异。",
-        "items": [
-          {
-            "text": "ITIC, \"2024 Hourly Cost of Downtime Report.\" Over 90% of mid-large enterprises report downtime costs exceeding $300,000/hour. 41% of enterprises report $1M–$5M+ per hour.",
-            "url": "https://itic-corp.com/itic-2024-hourly-cost-of-downtime-report/"
-          },
-          {
-            "text": "IBM Security / Ponemon Institute, \"Cost of a Data Breach Report 2024.\" Average data breach cost: $4.88M (10% YoY increase). Organizations with IR teams that regularly tested their plans had 58% lower breach costs.",
-            "url": "https://newsroom.ibm.com/2024-07-30-ibm-report-escalating-data-breach-disruption-pushes-costs-to-new-highs"
-          },
-          {
-            "text": "Sophos, \"The State of Ransomware 2024.\" Average recovery cost (excl. ransom): $2.73M, a 50% increase from $1.82M in 2023. 59% of organizations were hit by ransomware in the past year.",
-            "url": "https://www.sophos.com/en-us/content/state-of-ransomware"
-          },
-          {
-            "text": "Cortex, \"The 2024 State of Developer Productivity.\" 72% of new hires take 1+ month to submit first 3 meaningful PRs. 58% of engineering leaders report developers lose 5+ hours/week to inefficiencies.",
-            "url": "https://www.cortex.io/report/the-2024-state-of-developer-productivity"
-          },
-          {
-            "text": "KPMG, \"The 2023 KPMG SOX Report.\" Companies spend an average of 11,800 hours and $1.6M annually on SOX compliance programs.",
-            "url": "https://kpmg.com/us/en/articles/2023/kpmg-sox-report.html"
-          },
-          {
-            "text": "Veeam, \"2024 Ransomware Trends Report.\" Only 57% of compromised data is recoverable after a ransomware attack, leaving 43% unrecoverable.",
-            "url": "https://www.veeam.com/company/press-release/ransomware-continues-to-cause-mayhem-as-victims-are-unable-to-recover-43-percent-of-affected-data.html"
-          },
-          {
-            "text": "IDC, \"Worldwide Global DataSphere Forecast, 2024–2028.\" Data creation projected from 132.4 ZB (2023) to 393.9 ZB (2028), ~24% CAGR.",
-            "url": "https://www.marketresearch.com/IDC-v2477/Worldwide-IDC-Global-DataSphere-Forecast-36971010/"
-          },
-          {
-            "text": "Veeam R&D Forums, 2020–2024. Socket-to-VUL migration threads report 2x–3x cost multipliers for existing customers, with some high-density environments reaching up to 6x.",
-            "url": "https://forums.veeam.com/veeam-backup-replication-f2/phasing-out-our-socket-based-licensing-t74168.html"
-          }
-        ],
-        "label": "参考资源"
-      },
       "sizeSelect": {
         "enterprise": "企业",
         "enterpriseDesc": "200–1,000 名员工",
@@ -3844,6 +2976,8 @@
     },
     "solutionPages": {
       "aiPentesting": {
+        "label": "AI 渗透测试",
+        "blurb": "克隆生产环境，让 AI 发起攻击。",
         "benefits": {
           "items": [
             {
@@ -3897,72 +3031,8 @@
           },
           "withTag": "使用 REDIACC"
         },
-        "explore": {
-          "solutions": [
-            {
-              "category": "Preemptive Defense",
-              "dataCategory": "defense",
-              "description": "克隆生产环境，让 AI 发起攻击。",
-              "slug": "ai-pentesting",
-              "title": "AI 渗透测试"
-            },
-            {
-              "category": "Preemptive Defense",
-              "dataCategory": "defense",
-              "description": "持续测试安全性，而非每年一次",
-              "slug": "continuous-security-testing",
-              "title": "持续安全测试"
-            },
-            {
-              "category": "Preemptive Defense",
-              "dataCategory": "defense",
-              "description": "在攻击者到来之前修复漏洞",
-              "slug": "vulnerability-management",
-              "title": "漏洞管理"
-            },
-            {
-              "category": "Ransomware Survival",
-              "dataCategory": "ransomware",
-              "description": "勒索软件无法触及的备份",
-              "slug": "immutable-backups",
-              "title": "不可变备份"
-            },
-            {
-              "category": "Multi-Cloud",
-              "dataCategory": "multi-cloud",
-              "description": "AWS 宕机时，您不受影响",
-              "slug": "cloud-outage-protection",
-              "title": "云故障保护"
-            },
-            {
-              "category": "Verified Backups",
-              "dataCategory": "backups",
-              "description": "每次备份自动验证",
-              "slug": "backup-verification",
-              "title": "备份验证"
-            },
-            {
-              "category": "Encryption Control",
-              "dataCategory": "encryption",
-              "description": "您的密钥，您的加密，没有例外。",
-              "slug": "encryption",
-              "title": "您掌控的加密"
-            },
-            {
-              "category": "Development Environments",
-              "dataCategory": "dev-env",
-              "description": "60 秒克隆生产环境",
-              "slug": "environment-cloning",
-              "title": "环境克隆"
-            }
-          ],
-          "title": "探索其他解决方案"
-        },
         "hero": {
-          "badge": "主动防御",
-          "differentiator": "每个安全工具都扫描漏洞。但没有一个让你攻击真实的克隆。Rediacc 可以。",
           "primaryCta": "免费开始",
-          "secondaryCta": "了解工作原理 →",
           "subtitle": "创建基础设施的完全副本，运行 AI 驱动的渗透测试——不影响生产环境。",
           "title": "克隆生产环境，让 AI 攻击它。"
         },
@@ -4092,7 +3162,6 @@
           "title": "无法零风险地对生产环境做渗透测试"
         },
         "references": {
-          "disclaimer": "产品性能声明基于 Rediacc 的 btrfs 写时复制架构。计算器估算使用行业标准成本模型；实际成本因组织而异。",
           "items": [
             {
               "text": "IBM Security, \"Cost of a Data Breach Report,\" July 2024. \"The global average cost of a data breach reached USD 4.88 million in 2024.\" \"The global average data breach lifecycle hit a 7-year low of 258 days (194 days to identify, 64 days to contain).\"",
@@ -4102,8 +3171,7 @@
               "text": "Verizon, \"2024 Data Breach Investigations Report,\" May 2024. \"The exploitation of vulnerabilities as an initial point of entry almost tripled from the previous year, accounting for 14% of all breaches.\"",
               "url": "https://www.verizon.com/about/news/feed/2024-data-breach-investigations-report-vulnerability-exploitation-boom"
             }
-          ],
-          "label": "来源与参考"
+          ]
         },
         "socialProof": {
           "author": "首席信息安全官",
@@ -4168,91 +3236,11 @@
             }
           ],
           "title": "为什么这种方式有效"
-        },
-        "techStrip": {
-          "label": "测试任何容器化工作负载",
-          "note": "数据库、邮件服务器、CI/CD、CMS、监控、认证——只要在容器中运行，Rediacc 就能对其克隆进行渗透测试。"
-        },
-        "terminal": {
-          "lines": [
-            {
-              "cmd": "rdc term production security-scan",
-              "flag": "",
-              "type": "command",
-              "value": ""
-            },
-            {
-              "type": "spacer"
-            },
-            {
-              "text": "正在克隆生产环境............... 完成 (47s)",
-              "type": "check"
-            },
-            {
-              "text": "→ 快照：380 GB (btrfs CoW: 2.1 GB 已用)",
-              "type": "comment"
-            },
-            {
-              "text": "正在初始化 AI 渗透测试引擎................ 完成",
-              "type": "check"
-            },
-            {
-              "text": "→ 引擎：OWASP ZAP + Nuclei + 自定义规则",
-              "type": "comment"
-            },
-            {
-              "type": "spacer"
-            },
-            {
-              "text": "正在运行攻击模拟...",
-              "type": "check"
-            },
-            {
-              "text": "→ 端口扫描................................. 已检查 847 个端口",
-              "type": "comment"
-            },
-            {
-              "text": "→ Web 应用测试................... 12 个端点",
-              "type": "comment"
-            },
-            {
-              "text": "→ 认证测试.................... 4 个服务",
-              "type": "comment"
-            },
-            {
-              "text": "→ SQL 注入探测..................... 186 个查询",
-              "type": "comment"
-            },
-            {
-              "text": "→ XSS 检测............................. 94 个向量",
-              "type": "comment"
-            },
-            {
-              "text": "→ CVE 扫描.............................. 2,847 个签名",
-              "type": "comment"
-            },
-            {
-              "type": "spacer"
-            },
-            {
-              "text": "渗透测试完成：发现 7 个漏洞",
-              "type": "success"
-            },
-            {
-              "type": "spacer"
-            },
-            {
-              "text": "正在销毁测试克隆........................ 完成",
-              "type": "check"
-            },
-            {
-              "text": "生产环境未受影响。零风险。报告：./pentest-2026-02-27.html",
-              "type": "summary"
-            }
-          ]
         }
       },
       "auditTrail": {
+        "label": "审计追踪",
+        "blurb": "每项操作都有记录，无任何隐藏。",
         "benefits": {
           "items": [
             {
@@ -4351,72 +3339,8 @@
           "overline": "差距对比",
           "title": "审计追踪对比"
         },
-        "explore": {
-          "solutions": [
-            {
-              "category": "Encryption Control",
-              "dataCategory": "encryption",
-              "description": "您的密钥，您的加密，没有例外。",
-              "slug": "encryption",
-              "title": "您掌控的加密"
-            },
-            {
-              "category": "Encryption Control",
-              "dataCategory": "encryption",
-              "description": "每项操作都有记录，无任何隐藏。",
-              "slug": "audit-trail",
-              "title": "审计追踪"
-            },
-            {
-              "category": "Encryption Control",
-              "dataCategory": "encryption",
-              "description": "迁移不冒数据风险",
-              "slug": "migration-safety",
-              "title": "迁移安全"
-            },
-            {
-              "category": "Ransomware Survival",
-              "dataCategory": "ransomware",
-              "description": "勒索软件无法触及的备份",
-              "slug": "immutable-backups",
-              "title": "不可变备份"
-            },
-            {
-              "category": "Multi-Cloud",
-              "dataCategory": "multi-cloud",
-              "description": "AWS 宕机时，您不受影响",
-              "slug": "cloud-outage-protection",
-              "title": "云故障保护"
-            },
-            {
-              "category": "Verified Backups",
-              "dataCategory": "backups",
-              "description": "每次备份自动验证",
-              "slug": "backup-verification",
-              "title": "备份验证"
-            },
-            {
-              "category": "Development Environments",
-              "dataCategory": "dev-env",
-              "description": "60 秒克隆生产环境",
-              "slug": "environment-cloning",
-              "title": "环境克隆"
-            },
-            {
-              "category": "Preemptive Defense",
-              "dataCategory": "defense",
-              "description": "克隆生产环境，让 AI 发起攻击。",
-              "slug": "ai-pentesting",
-              "title": "AI 渗透测试"
-            }
-          ],
-          "title": "探索其他解决方案"
-        },
         "hero": {
-          "badge": "加密控制",
-          "differentiator": "每家厂商都记录备份。但没有一家提供防篡改、加密签名的审计追踪。Rediacc 会。",
           "primaryCta": "免费开始使用社区版",
-          "secondaryCta": "查看审计功能 →",
           "subtitle": "全面了解谁在何时做了什么以及为什么。每项操作都有防篡改的审计日志。",
           "title": "每项操作都有记录，无处隐藏。"
         },
@@ -4555,7 +3479,6 @@
           "title": "看不到的就无法保护"
         },
         "references": {
-          "disclaimer": "产品性能声明基于 Rediacc 的 btrfs 写时复制架构。计算器估算使用行业标准成本模型；实际成本因组织而异。",
           "items": [
             {
               "text": "IBM Security, \"Cost of a Data Breach Report 2024,\" July 2024. \"The average time to identify a breach was 204 days.\" \"More than one-third of breaches involved shadow data.\" \"Organizations with severe staffing shortages observed an average of $1.76 million in higher breach costs.\"",
@@ -4609,8 +3532,7 @@
               "text": "Commvault supports fully self-hosted on-premises deployments with CommServe, MediaAgent, and Access Node components.",
               "url": "https://documentation.commvault.com/v11/software/initial_setup_self_service_deployments.html"
             }
-          ],
-          "label": "来源与参考"
+          ]
         },
         "socialProof": {
           "author": "合规总监",
@@ -4667,62 +3589,11 @@
             }
           ],
           "title": "为什么应用日志不是审计追踪"
-        },
-        "techStrip": {
-          "label": "审计任何容器化工作负载",
-          "note": "数据库、邮件服务器、CI/CD、CMS、监控、认证——每项操作都被记录、签名和审计就绪。"
-        },
-        "terminal": {
-          "lines": [
-            {
-              "text": "jq -r '.events[]' audit-export.json",
-              "type": "command"
-            },
-            {
-              "type": "spacer"
-            },
-            {
-              "text": "正在生成 2026 年 2 月 1-27 日的审计报告...",
-              "type": "comment"
-            },
-            {
-              "type": "spacer"
-            },
-            {
-              "text": "TIMESTAMP              USER      ACTION           TARGET",
-              "type": "table-header"
-            },
-            {
-              "text": "2026-02-27 02:00:14    system    backup.create    production/daily-2026-02-27",
-              "type": "table-row"
-            },
-            {
-              "text": "2026-02-27 02:00:47    system    backup.verify    production/daily-2026-02-27",
-              "type": "table-row"
-            },
-            {
-              "text": "2026-02-26 14:22:08    admin     key.rotate       production.key → production-v2.key",
-              "type": "table-row"
-            },
-            {
-              "text": "2026-02-25 09:15:33    deploy    restore.clone    staging from daily-2026-02-25",
-              "type": "table-row"
-            },
-            {
-              "text": "2026-02-24 16:44:01    admin     access.grant     deploy → staging (read-only)",
-              "type": "table-row"
-            },
-            {
-              "type": "spacer"
-            },
-            {
-              "text": "Period: 27 days   Events: 1,847   Users: 4   Integrity: SHA-256 verified",
-              "type": "summary"
-            }
-          ]
         }
       },
       "backupVerification": {
+        "label": "备份验证",
+        "blurb": "每次备份自动验证",
         "benefits": {
           "items": [
             {
@@ -4754,7 +3625,7 @@
         "calculator": {
           "annualLabel": "年度数据风险",
           "description": "拖动滑块以匹配你的环境。查看信任“备份完成”的真实成本。",
-          "footnote": "损坏备份数：每周任务数 × 52 × 损坏率。恢复失败：损坏备份数 × 恢复小时数 × $100/小时（人员 + 生产力损失）。数据丢失：损坏备份数 × 每次事故 8 条面临风险的记录 × $173/记录（IBM 数据泄露成本 2024）[3]。通过每日自动验证，损坏在 24 小时内被发现——在其累积之前。",
+          "footnote": "损坏备份数：每周任务数 × 52 × 损坏率。恢复失败：损坏备份数 × 恢复小时数 × $100/小时（人员 + 生产力损失）。数据丢失：损坏备份数 × 每次事故 8 条面临风险的记录 × $173/记录（IBM 数据泄露成本 2024）。通过每日自动验证，损坏在 24 小时内被发现——在其累积之前。",
           "headerTitle": "计算你的备份风险敞口",
           "overline": "真实成本",
           "results": {
@@ -4822,73 +3693,8 @@
           "overline": "差距对比",
           "title": "备份验证对比"
         },
-        "explore": {
-          "solutions": [
-            {
-              "category": "backups",
-              "categoryLabel": "备份验证",
-              "current": true,
-              "description": "每次备份自动验证",
-              "slug": "backup-verification",
-              "title": "备份验证"
-            },
-            {
-              "category": "backups",
-              "categoryLabel": "备份验证",
-              "description": "按法律要求保留数据",
-              "slug": "retention-compliance",
-              "title": "留存合规"
-            },
-            {
-              "category": "backups",
-              "categoryLabel": "备份验证",
-              "description": "分钟级完整环境恢复",
-              "slug": "instant-recovery",
-              "title": "即时恢复"
-            },
-            {
-              "category": "ransomware",
-              "categoryLabel": "勒索软件防御",
-              "description": "勒索软件无法触及的备份",
-              "slug": "immutable-backups",
-              "title": "不可变备份"
-            },
-            {
-              "category": "multi-cloud",
-              "categoryLabel": "多云",
-              "description": "AWS 宕机时，您不受影响",
-              "slug": "cloud-outage-protection",
-              "title": "云故障保护"
-            },
-            {
-              "category": "encryption",
-              "categoryLabel": "加密控制",
-              "description": "您的密钥，您的加密，没有例外。",
-              "slug": "encryption",
-              "title": "您掌控的加密"
-            },
-            {
-              "category": "dev-env",
-              "categoryLabel": "开发环境",
-              "description": "60 秒克隆生产环境",
-              "slug": "environment-cloning",
-              "title": "环境克隆"
-            },
-            {
-              "category": "defense",
-              "categoryLabel": "主动防御",
-              "description": "克隆生产环境，让 AI 发起攻击。",
-              "slug": "ai-pentesting",
-              "title": "AI 渗透测试"
-            }
-          ],
-          "title": "探索其他解决方案"
-        },
         "hero": {
-          "badge": "备份验证",
-          "differentiator": "每家厂商都备份你的数据。但没有一家验证恢复是否有效。Rediacc 每天验证。",
           "primaryCta": "免费开始使用社区版",
-          "secondaryCta": "查看验证演示 →",
           "subtitle": "不要等到灾难发生才发现备份已损坏。Rediacc 在创建时就检查每个备份。",
           "title": "每个备份都自动验证。"
         },
@@ -4981,19 +3787,19 @@
             {
               "number": "58%",
               "ref": 1,
-              "source": "Veeam Data Protection Trends Report 2021 [1]",
+              "source": "Veeam Data Protection Trends Report 2021",
               "text": "的数据备份在尝试恢复时失败"
             },
             {
               "number": "Only 13%",
               "ref": 2,
-              "source": "Veeam Data Protection Trends Report 2024 [2]",
+              "source": "Veeam Data Protection Trends Report 2024",
               "text": "的组织能够在灾难期间协调恢复"
             },
             {
               "number": "$173/record",
               "ref": 3,
-              "source": "IBM Cost of a Data Breach Report 2024 [3]",
+              "source": "IBM Cost of a Data Breach Report 2024",
               "text": "每条受损记录的平均成本"
             }
           ],
@@ -5027,7 +3833,6 @@
           "title": "损坏的备份比没有备份更糟"
         },
         "references": {
-          "disclaimer": "产品性能声明基于 Rediacc 的 btrfs 写时复制架构。计算器估算使用行业标准成本模型；实际成本因组织而异。",
           "items": [
             {
               "text": "Veeam, “Data Protection Trends Report,” 2021. “58% of data backups are failing, creating data protection challenges.”",
@@ -5089,8 +3894,7 @@
               "text": "Commvault supports fully self-hosted on-premises deployments with CommServe, MediaAgent, and Access Node components.",
               "url": "https://documentation.commvault.com/v11/software/initial_setup_self_service_deployments.html"
             }
-          ],
-          "label": "来源与参考"
+          ]
         },
         "socialProof": {
           "author": "基础设施负责人",
@@ -5149,92 +3953,11 @@
           ],
           "title": "为什么“备份完成”还不够",
           "traditionalLabel": "传统备份验证"
-        },
-        "techStrip": {
-          "label": "验证任何容器化工作负载",
-          "note": "数据库、邮件服务器、CI/CD、CMS、监控、认证——只要在容器中运行，Rediacc 就能验证它。"
-        },
-        "terminal": {
-          "lines": [
-            {
-              "cmd": "rdc backup list",
-              "flag": "",
-              "prompt": "$",
-              "type": "command",
-              "value": ""
-            },
-            {
-              "type": "spacer"
-            },
-            {
-              "text": "正在验证备份 daily-2026-02-27...",
-              "type": "comment"
-            },
-            {
-              "result": "done",
-              "text": "正在恢复到隔离环境",
-              "type": "check"
-            },
-            {
-              "result": "8/8 运行中",
-              "text": "正在启动 8 个容器",
-              "type": "check"
-            },
-            {
-              "result": "通过",
-              "text": "健康检查：nginx (HTTP 200)",
-              "type": "check"
-            },
-            {
-              "result": "通过",
-              "text": "健康检查：mariadb (SELECT 1)",
-              "type": "check"
-            },
-            {
-              "result": "通过",
-              "text": "健康检查：api-server (/health)",
-              "type": "check"
-            },
-            {
-              "result": "PONG",
-              "text": "健康检查：redis (PING)",
-              "type": "check"
-            },
-            {
-              "type": "spacer"
-            },
-            {
-              "text": "备份验证通过：8/8 服务健康，0 处损坏",
-              "type": "success"
-            },
-            {
-              "type": "spacer"
-            },
-            {
-              "pairs": [
-                {
-                  "label": "Backup",
-                  "value": "daily-2026-02-27"
-                },
-                {
-                  "label": "Services",
-                  "value": "8/8"
-                },
-                {
-                  "label": "Time",
-                  "value": "47s"
-                },
-                {
-                  "label": "Integrity",
-                  "value": "100%"
-                }
-              ],
-              "type": "summary"
-            }
-          ]
         }
       },
       "cloudOutageProtection": {
+        "label": "云故障保护",
+        "blurb": "AWS 宕机时，您不受影响",
         "benefits": {
           "items": [
             {
@@ -5266,7 +3989,7 @@
         "calculator": {
           "annualLabel": "年度故障成本",
           "description": "拖动滑块以匹配你的业务。查看单云依赖的真实成本。",
-          "footnote": "收入损失：小时收入 × 故障小时数。故障转移人力：3 名工程师 × 故障转移小时数 × $200/小时 × 事故次数。客户流失：直接收入损失的 20%（保守估计）。SLA 罚款：收入损失的 10%。ITIC 2024 发现 41% 的企业报告每小时停机成本为 $1M-$5M [1]。Rediacc 的 <30 秒自动故障转移消除了长时间停机窗口。",
+          "footnote": "收入损失：小时收入 × 故障小时数。故障转移人力：3 名工程师 × 故障转移小时数 × $200/小时 × 事故次数。客户流失：直接收入损失的 20%（保守估计）。SLA 罚款：收入损失的 10%。ITIC 2024 发现 41% 的企业报告每小时停机成本为 $1M-$5M。Rediacc 的 <30 秒自动故障转移消除了长时间停机窗口。",
           "headerTitle": "计算你的故障风险敞口",
           "overline": "真实成本",
           "results": {
@@ -5334,79 +4057,8 @@
           "overline": "差距对比",
           "title": "没有其他工具能在数秒内完成跨云故障转移"
         },
-        "explore": {
-          "solutions": [
-            {
-              "category": "multi-cloud",
-              "categoryLabel": "多云",
-              "current": true,
-              "description": "AWS 宕机时，您不受影响",
-              "slug": "cloud-outage-protection",
-              "title": "云故障保护"
-            },
-            {
-              "category": "multi-cloud",
-              "categoryLabel": "多云",
-              "description": "您的基础设施，您的选择，始终如此。",
-              "slug": "vendor-lock-in",
-              "title": "供应商锁定自由"
-            },
-            {
-              "category": "multi-cloud",
-              "categoryLabel": "多云",
-              "description": "在需要之前测试您的故障转移",
-              "slug": "failover-testing",
-              "title": "故障转移测试"
-            },
-            {
-              "category": "ransomware",
-              "categoryLabel": "勒索软件防御",
-              "description": "勒索软件无法触及的备份",
-              "slug": "immutable-backups",
-              "title": "不可变备份"
-            },
-            {
-              "category": "backups",
-              "categoryLabel": "备份验证",
-              "description": "每次备份自动验证",
-              "slug": "backup-verification",
-              "title": "备份验证"
-            },
-            {
-              "category": "encryption",
-              "categoryLabel": "加密控制",
-              "description": "您的密钥，您的加密，没有例外。",
-              "slug": "encryption",
-              "title": "您掌控的加密"
-            },
-            {
-              "category": "dev-env",
-              "categoryLabel": "开发环境",
-              "description": "60 秒克隆生产环境",
-              "slug": "environment-cloning",
-              "title": "环境克隆"
-            },
-            {
-              "category": "defense",
-              "categoryLabel": "主动防御",
-              "description": "克隆生产环境，让 AI 发起攻击。",
-              "slug": "ai-pentesting",
-              "title": "AI 渗透测试"
-            },
-            {
-              "category": "multi-cloud",
-              "description": "克隆或迁移正在运行的集群，数据一起带走",
-              "slug": "kubernetes-cluster-mobility",
-              "title": "Kubernetes 集群迁移"
-            }
-          ],
-          "title": "探索其他解决方案"
-        },
         "hero": {
-          "badge": "多云架构",
-          "differentiator": "每朵云都有备份。但没有一个能在几分钟内故障转移到另一朵云。Rediacc 可以。",
           "primaryCta": "免费开始使用社区版",
-          "secondaryCta": "查看故障转移演示 →",
           "subtitle": "你的基础设施运行在多个云上。当一个故障时，其他的自动接管。",
           "title": "AWS 宕机时，你不会"
         },
@@ -5494,25 +4146,25 @@
           "title": "云故障保护 - 多云架构部署确保服务持续不中断 | Rediacc"
         },
         "problem": {
-          "description": "2024 年关键云故障事件同比增长 18%，持续时间延长 18.7%，其中 68% 由人为错误导致 [2]。当你唯一的云宕机时，一切都宕机了。你的客户、你的收入、你的声誉——全部沦为他人基础设施的人质。",
+          "description": "2024 年关键云故障事件同比增长 18%，持续时间延长 18.7%，其中 68% 由人为错误导致。当你唯一的云宕机时，一切都宕机了。你的客户、你的收入、你的声誉——全部沦为他人基础设施的人质。",
           "overline": "问题所在",
           "statCallouts": [
             {
               "number": "$300K+",
               "ref": 1,
-              "source": "ITIC 2024 Hourly Cost of Downtime Survey [1]",
+              "source": "ITIC 2024 Hourly Cost of Downtime Survey",
               "text": "90% 中大型企业的每小时宕机成本"
             },
             {
               "number": "18%",
               "ref": 2,
-              "source": "Parametrix 2024 Cloud Outage Risk Report [2]",
+              "source": "Parametrix 2024 Cloud Outage Risk Report",
               "text": "2024 年关键云故障事件的增长"
             },
             {
               "number": "$400B",
               "ref": 3,
-              "source": "Splunk / Oxford Economics 2024 [3]",
+              "source": "Splunk / Oxford Economics 2024",
               "text": "全球 2000 强企业的年度宕机成本"
             }
           ],
@@ -5546,7 +4198,6 @@
           "title": "单云就是单点故障"
         },
         "references": {
-          "disclaimer": "产品性能声明基于 Rediacc 的 btrfs 写时复制架构。计算器估算使用行业标准成本模型；实际成本因组织而异。",
           "items": [
             {
               "text": "ITIC, “2024 Hourly Cost of Downtime Report,” 2024. “The average cost of a single hour of downtime now exceeds $300,000 for over 90% of mid-size and large enterprises.”",
@@ -5604,8 +4255,7 @@
               "text": "Zerto Virtual Protection Groups replicate multi-VM application stacks as a single consistent unit with write-order fidelity.",
               "url": "https://help.zerto.com/bundle/Admin.VC.HTML/page/ProtectingVirtualMachinesfrom.htm"
             }
-          ],
-          "label": "来源与参考"
+          ]
         },
         "socialProof": {
           "author": "基础设施副总裁",
@@ -5664,95 +4314,11 @@
           ],
           "title": "为什么跨云复制既快又便宜",
           "traditionalLabel": "传统方式"
-        },
-        "techStrip": {
-          "label": "复制任何容器化工作负载",
-          "note": "数据库、CI/CD、CMS、监控、认证、存储——只要在容器中运行，Rediacc 就能跨云复制它。"
-        },
-        "terminal": {
-          "lines": [
-            {
-              "cmd": "rdc repo sync push-all",
-              "flag": "",
-              "prompt": "$",
-              "type": "command",
-              "value": ""
-            },
-            {
-              "type": "spacer"
-            },
-            {
-              "result": "done",
-              "text": "正在计算增量差异",
-              "type": "check"
-            },
-            {
-              "result": "done",
-              "text": "正在传输增量数据 (380 GB 中的 2.4 GB)",
-              "type": "check"
-            },
-            {
-              "result": "done",
-              "text": "正在备用节点上应用快照",
-              "type": "check"
-            },
-            {
-              "result": "8/8 healthy",
-              "text": "正在验证 8 个容器",
-              "type": "check"
-            },
-            {
-              "type": "spacer"
-            },
-            {
-              "text": "复制完成：secondary-dc 已同步",
-              "type": "success"
-            },
-            {
-              "type": "spacer"
-            },
-            {
-              "text": "告警：主节点健康检查失败 (us-east-1 不可达)",
-              "type": "warn"
-            },
-            {
-              "result": "done",
-              "text": "故障转移已启动",
-              "type": "check"
-            },
-            {
-              "result": "已传播",
-              "text": "DNS 已更新至 secondary-dc",
-              "type": "check"
-            },
-            {
-              "type": "spacer"
-            },
-            {
-              "pairs": [
-                {
-                  "label": "Delta",
-                  "value": "2.4 GB"
-                },
-                {
-                  "label": "Failover",
-                  "value": "22s"
-                },
-                {
-                  "label": "Services",
-                  "value": "8/8 在线"
-                },
-                {
-                  "label": "Downtime",
-                  "value": "0"
-                }
-              ],
-              "type": "summary"
-            }
-          ]
         }
       },
       "continuousSecurityTesting": {
+        "label": "持续安全测试",
+        "blurb": "持续测试安全性，而非每年一次",
         "benefits": {
           "items": [
             {
@@ -5806,72 +4372,8 @@
           },
           "withTag": "持续测试（REDIACC）"
         },
-        "explore": {
-          "solutions": [
-            {
-              "category": "Preemptive Defense",
-              "dataCategory": "defense",
-              "description": "克隆生产环境，让 AI 发起攻击。",
-              "slug": "ai-pentesting",
-              "title": "AI 渗透测试"
-            },
-            {
-              "category": "Preemptive Defense",
-              "dataCategory": "defense",
-              "description": "持续测试安全性，而非每年一次",
-              "slug": "continuous-security-testing",
-              "title": "持续安全测试"
-            },
-            {
-              "category": "Preemptive Defense",
-              "dataCategory": "defense",
-              "description": "在攻击者到来之前修复漏洞",
-              "slug": "vulnerability-management",
-              "title": "漏洞管理"
-            },
-            {
-              "category": "Ransomware Survival",
-              "dataCategory": "ransomware",
-              "description": "勒索软件无法触及的备份",
-              "slug": "immutable-backups",
-              "title": "不可变备份"
-            },
-            {
-              "category": "Multi-Cloud",
-              "dataCategory": "multi-cloud",
-              "description": "AWS 宕机时，您不受影响",
-              "slug": "cloud-outage-protection",
-              "title": "云故障保护"
-            },
-            {
-              "category": "Verified Backups",
-              "dataCategory": "backups",
-              "description": "每次备份自动验证",
-              "slug": "backup-verification",
-              "title": "备份验证"
-            },
-            {
-              "category": "Encryption Control",
-              "dataCategory": "encryption",
-              "description": "您的密钥，您的加密，没有例外。",
-              "slug": "encryption",
-              "title": "您掌控的加密"
-            },
-            {
-              "category": "Development Environments",
-              "dataCategory": "dev-env",
-              "description": "60 秒克隆生产环境",
-              "slug": "environment-cloning",
-              "title": "环境克隆"
-            }
-          ],
-          "title": "探索其他解决方案"
-        },
         "hero": {
-          "badge": "主动防御",
-          "differentiator": "每个安全工具都扫描漏洞。但没有一个让你攻击真实的克隆。Rediacc 可以——每天自动。",
           "primaryCta": "免费开始",
-          "secondaryCta": "查看测试计划 →",
           "subtitle": "每天在新鲜的生产克隆上运行安全测试。在漏洞出现时发现它们——而非数月之后。",
           "title": "持续测试安全性，而非每年一次。"
         },
@@ -5996,7 +4498,6 @@
           "title": "年度渗透测试留下 364 天的暴露"
         },
         "references": {
-          "disclaimer": "产品性能声明基于 Rediacc 的 btrfs 写时复制架构。计算器估算使用行业标准成本模型；实际成本因组织而异。",
           "items": [
             {
               "text": "Qualys, \"TruRisk Research Report,\" 2023. \"On average, weaponized vulnerabilities are patched within 30.6 days yet only patched an average of 57.7% of the time.\"",
@@ -6006,8 +4507,7 @@
               "text": "IBM Security, \"Cost of a Data Breach Report,\" July 2024. \"The global average cost of a data breach reached USD 4.88 million in 2024.\"",
               "url": "https://newsroom.ibm.com/2024-07-30-ibm-report-escalating-data-breach-disruption-pushes-costs-to-new-highs"
             }
-          ],
-          "label": "来源与参考"
+          ]
         },
         "socialProof": {
           "author": "安全工程副总裁",
@@ -6072,74 +4572,11 @@
             }
           ],
           "title": "为什么持续测试有效"
-        },
-        "techStrip": {
-          "label": "测试任何容器化工作负载",
-          "note": "数据库、邮件服务器、CI/CD、CMS、监控、认证——只要在容器中运行，Rediacc 每天测试其新鲜克隆。"
-        },
-        "terminal": {
-          "lines": [
-            {
-              "cmd": "rdc config backup-strategy set",
-              "flag": "",
-              "type": "command",
-              "value": ""
-            },
-            {
-              "type": "spacer"
-            },
-            {
-              "text": "定时任务已配置：每日 02:00 UTC......... 完成",
-              "type": "check"
-            },
-            {
-              "text": "通知频道：#security-alerts.......... 完成",
-              "type": "check"
-            },
-            {
-              "type": "spacer"
-            },
-            {
-              "text": "── 扫描 #147 (2026-02-27 02:00 UTC) ──",
-              "type": "comment"
-            },
-            {
-              "type": "spacer"
-            },
-            {
-              "text": "正在克隆生产环境........................... 完成 (47s)",
-              "type": "check"
-            },
-            {
-              "text": "正在运行 AI 渗透测试套件..................... 完成 (8m 12s)",
-              "type": "check"
-            },
-            {
-              "text": "正在销毁测试克隆........................ 完成",
-              "type": "check"
-            },
-            {
-              "type": "spacer"
-            },
-            {
-              "text": "扫描 #147 完成：发现 3 个漏洞",
-              "type": "success"
-            },
-            {
-              "text": "  严重：0 | 高：1 | 中：1 | 低：1",
-              "type": "table-row"
-            },
-            {
-              "type": "spacer"
-            },
-            {
-              "text": "趋势（4 周）：23 → 12 → 7 → 3 · 减少 87%",
-              "type": "summary"
-            }
-          ]
         }
       },
       "dataSovereignty": {
+        "label": "数据主权",
+        "blurb": "您的服务器，您的密钥，您的司法管辖。",
         "benefits": {
           "items": [
             {
@@ -6236,78 +4673,8 @@
           "overline": "差距对比",
           "title": "主权对比"
         },
-        "explore": {
-          "solutions": [
-            {
-              "category": "Encryption Control",
-              "dataCategory": "encryption",
-              "description": "您的密钥，您的加密，没有例外。",
-              "slug": "encryption",
-              "title": "您掌控的加密"
-            },
-            {
-              "category": "Encryption Control",
-              "dataCategory": "encryption",
-              "description": "每项操作都有记录，无任何隐藏。",
-              "slug": "audit-trail",
-              "title": "审计追踪"
-            },
-            {
-              "category": "Encryption Control",
-              "dataCategory": "encryption",
-              "description": "迁移不冒数据风险",
-              "slug": "migration-safety",
-              "title": "迁移安全"
-            },
-            {
-              "category": "Ransomware Survival",
-              "dataCategory": "ransomware",
-              "description": "勒索软件无法触及的备份",
-              "slug": "immutable-backups",
-              "title": "不可变备份"
-            },
-            {
-              "category": "Multi-Cloud",
-              "dataCategory": "multi-cloud",
-              "description": "AWS 宕机时，您不受影响",
-              "slug": "cloud-outage-protection",
-              "title": "云故障保护"
-            },
-            {
-              "category": "Verified Backups",
-              "dataCategory": "backups",
-              "description": "从任何供应商退出。保留您的数据。",
-              "slug": "vendor-lock-in",
-              "title": "摆脱供应商锁定"
-            },
-            {
-              "category": "Verified Backups",
-              "dataCategory": "backups",
-              "description": "自动满足每项留存要求",
-              "slug": "retention-compliance",
-              "title": "留存合规"
-            },
-            {
-              "category": "Development Environments",
-              "dataCategory": "dev-env",
-              "description": "60 秒克隆生产环境",
-              "slug": "environment-cloning",
-              "title": "环境克隆"
-            },
-            {
-              "category": "multi-cloud",
-              "description": "克隆或迁移正在运行的集群，数据一起带走",
-              "slug": "kubernetes-cluster-mobility",
-              "title": "Kubernetes 集群迁移"
-            }
-          ],
-          "title": "探索其他解决方案"
-        },
         "hero": {
-          "badge": "加密控制",
-          "differentiator": "每家超大规模云商都在营销主权，但没有人能保证您的数据不受美国法院命令约束。Rediacc可以做到。",
           "primaryCta": "免费开始使用社区版",
-          "secondaryCta": "查看主权功能 →",
           "subtitle": "由您托管。由您持有密钥。美国司法管辖的提供商无法被强制交出其未持有的内容。",
           "title": "以架构实现主权，而非依赖证书。"
         },
@@ -6446,7 +4813,6 @@
           "title": "您的云提供商可以交出您的数据，而您不会得到任何通知。"
         },
         "references": {
-          "disclaimer": "计算器估算使用行业标准成本模型，实际风险敞口因司法管辖区、合同结构和违规场景而异。",
           "items": [
             {
               "text": "Microsoft France公共与法律事务总监Anton Carniaux，法国参议院关于公共采购和数字主权的调查，2025年6月18日：「不，我无法保证这一点，但同样，这从来没有发生过。」The Register于2025年7月25日报道。",
@@ -6500,8 +4866,7 @@
               "text": "Keepit 数据驻留政策：客户数据仅存储在欧盟数据中心（法兰克福、阿姆斯特丹、哥本哈根）。仅 SaaS 模式，运营商和存储均位于欧盟。",
               "url": "https://www.keepit.com/trust/"
             }
-          ],
-          "label": "来源与参考文献"
+          ]
         },
         "socialProof": {
           "author": "首席信息安全官",
@@ -6562,55 +4927,6 @@
             }
           ],
           "title": "为何数据驻留不等于数据主权"
-        },
-        "techStrip": {
-          "label": "自托管任何工作负载，持有每一把密钥",
-          "note": "数据库、邮件服务器、CI/CD、ERP、CMS和AI模型存储：每个工作负载都是主权的，每把密钥都是您的。"
-        },
-        "terminal": {
-          "lines": [
-            {
-              "text": "jq -r '.keys[]' key-custody-report.json",
-              "type": "command"
-            },
-            {
-              "type": "spacer"
-            },
-            {
-              "text": "正在检查所有存储库的密钥托管链...",
-              "type": "comment"
-            },
-            {
-              "type": "spacer"
-            },
-            {
-              "text": "密钥 ID                 保管          HSM          托管        管辖",
-              "type": "table-header"
-            },
-            {
-              "text": "prod-main-v3            客户            YubiHSM 2    NO          客户-本地",
-              "type": "table-row"
-            },
-            {
-              "text": "prod-db-v2              客户            YubiHSM 2    NO          客户-本地",
-              "type": "table-row"
-            },
-            {
-              "text": "staging-main-v1         客户            software     NO          客户-本地",
-              "type": "table-row"
-            },
-            {
-              "text": "backup-archive-v4       客户            YubiHSM 2    NO          客户-本地",
-              "type": "table-row"
-            },
-            {
-              "type": "spacer"
-            },
-            {
-              "text": "密钥: 4   保管: 100% 客户   托管: 0   美国-可访问: 0   已签名: 2026-05-11T09:14:33Z",
-              "type": "summary"
-            }
-          ]
         }
       },
       "downloadGated": {
@@ -6629,6 +4945,8 @@
         "title": "时间有限？"
       },
       "encryption": {
+        "label": "您掌控的加密",
+        "blurb": "您的密钥，您的加密，没有例外。",
         "benefits": {
           "items": [
             {
@@ -6727,72 +5045,8 @@
           "overline": "差距对比",
           "title": "加密控制对比"
         },
-        "explore": {
-          "solutions": [
-            {
-              "category": "Encryption Control",
-              "dataCategory": "encryption",
-              "description": "您的密钥，您的加密，没有例外。",
-              "slug": "encryption",
-              "title": "您掌控的加密"
-            },
-            {
-              "category": "Encryption Control",
-              "dataCategory": "encryption",
-              "description": "每项操作都有记录，无任何隐藏。",
-              "slug": "audit-trail",
-              "title": "审计追踪"
-            },
-            {
-              "category": "Encryption Control",
-              "dataCategory": "encryption",
-              "description": "迁移不冒数据风险",
-              "slug": "migration-safety",
-              "title": "迁移安全"
-            },
-            {
-              "category": "Ransomware Survival",
-              "dataCategory": "ransomware",
-              "description": "勒索软件无法触及的备份",
-              "slug": "immutable-backups",
-              "title": "不可变备份"
-            },
-            {
-              "category": "Multi-Cloud",
-              "dataCategory": "multi-cloud",
-              "description": "AWS 宕机时，您不受影响",
-              "slug": "cloud-outage-protection",
-              "title": "云故障保护"
-            },
-            {
-              "category": "Verified Backups",
-              "dataCategory": "backups",
-              "description": "每次备份自动验证",
-              "slug": "backup-verification",
-              "title": "备份验证"
-            },
-            {
-              "category": "Development Environments",
-              "dataCategory": "dev-env",
-              "description": "60 秒克隆生产环境",
-              "slug": "environment-cloning",
-              "title": "环境克隆"
-            },
-            {
-              "category": "Preemptive Defense",
-              "dataCategory": "defense",
-              "description": "克隆生产环境，让 AI 发起攻击。",
-              "slug": "ai-pentesting",
-              "title": "AI 渗透测试"
-            }
-          ],
-          "title": "探索其他解决方案"
-        },
         "hero": {
-          "badge": "加密控制",
-          "differentiator": "每家厂商都加密你的数据。但没有一家让你持有唯一的密钥。Rediacc 会。",
           "primaryCta": "免费开始使用社区版",
-          "secondaryCta": "查看加密详情",
           "subtitle": "每个备份都用你自己的密钥加密。不是厂商的密钥，不是共享密钥。只有你的。",
           "title": "你的密钥，你的加密，没有例外。"
         },
@@ -6931,7 +5185,6 @@
           "title": "厂商管理的密钥并非真正属于你"
         },
         "references": {
-          "disclaimer": "产品性能声明基于 Rediacc 的 btrfs 写时复制架构。计算器估算使用行业标准成本模型；实际成本因组织而异。",
           "items": [
             {
               "text": "Thales, \"2025 Cloud Security Study,\" conducted by S&P Global 451 Research, 2025. \"Only 8% of organizations encrypt 80% or more of their cloud data.\" \"57% use five or more encryption key managers.\"",
@@ -7017,8 +5270,7 @@
               "text": "Commvault supports fully self-hosted on-premises deployments with CommServe, MediaAgent, and Access Node components.",
               "url": "https://documentation.commvault.com/v11/software/initial_setup_self_service_deployments.html"
             }
-          ],
-          "label": "来源与参考"
+          ]
         },
         "socialProof": {
           "author": "首席安全官",
@@ -7075,68 +5327,11 @@
             }
           ],
           "title": "为什么厂商管理的加密会辜负你"
-        },
-        "techStrip": {
-          "label": "加密任何容器化工作负载",
-          "note": "数据库、邮件服务器、CI/CD、CMS、监控、认证——只要在容器中运行，Rediacc 就能用你的密钥加密它。"
-        },
-        "terminal": {
-          "lines": [
-            {
-              "cmd": "rdc repo up production",
-              "flag": "",
-              "type": "command",
-              "value": ""
-            },
-            {
-              "type": "spacer"
-            },
-            {
-              "text": "正在使用 AES-256-GCM 加密所有仓库...",
-              "type": "comment"
-            },
-            {
-              "text": "已加载密钥：production.key (4096-bit RSA).......... 有效",
-              "type": "check"
-            },
-            {
-              "text": "正在加密：gitlab (42 GB)...................... 已封存",
-              "type": "check"
-            },
-            {
-              "text": "正在加密：nextcloud (128 GB).................. 已封存",
-              "type": "check"
-            },
-            {
-              "text": "正在加密：mailcow (84 GB)..................... 已封存",
-              "type": "check"
-            },
-            {
-              "text": "正在加密：mariadb (96 GB)..................... 已封存",
-              "type": "check"
-            },
-            {
-              "text": "正在验证完整性校验和................... 全部匹配",
-              "type": "check"
-            },
-            {
-              "type": "spacer"
-            },
-            {
-              "text": "所有仓库已加密：4/4 已封存，零知识验证通过",
-              "type": "success"
-            },
-            {
-              "type": "spacer"
-            },
-            {
-              "text": "Cipher: AES-256-GCM   Key: production.key   Repos: 4/4   Total: 350 GB",
-              "type": "summary"
-            }
-          ]
         }
       },
       "environmentCloning": {
+        "label": "环境克隆",
+        "blurb": "60 秒克隆生产环境",
         "benefits": {
           "items": [
             {
@@ -7231,77 +5426,8 @@
           "overline": "差距对比",
           "title": "没有其他工具能克隆你的完整技术栈"
         },
-        "explore": {
-          "solutions": [
-            {
-              "category": "dev-env",
-              "current": true,
-              "description": "60 秒克隆生产环境",
-              "slug": "environment-cloning",
-              "title": "环境克隆"
-            },
-            {
-              "category": "dev-env",
-              "description": "与生产完全一致的开发环境",
-              "slug": "production-parity",
-              "title": "生产一致性"
-            },
-            {
-              "category": "dev-env",
-              "description": "不再为闲置环境付费",
-              "slug": "infrastructure-costs",
-              "title": "基础设施成本"
-            },
-            {
-              "category": "dev-env",
-              "description": "融入您现有的工作流程",
-              "slug": "integrations",
-              "title": "CI/CD 集成"
-            },
-            {
-              "category": "ransomware",
-              "description": "勒索软件无法触及的备份",
-              "slug": "immutable-backups",
-              "title": "不可变备份"
-            },
-            {
-              "category": "multi-cloud",
-              "description": "AWS 宕机时，您不受影响",
-              "slug": "cloud-outage-protection",
-              "title": "云故障保护"
-            },
-            {
-              "category": "backups",
-              "description": "每次备份自动验证",
-              "slug": "backup-verification",
-              "title": "备份验证"
-            },
-            {
-              "category": "encryption",
-              "description": "您的密钥，您的加密，没有例外。",
-              "slug": "encryption",
-              "title": "您掌控的加密"
-            },
-            {
-              "category": "defense",
-              "description": "克隆生产环境，让 AI 发起攻击。",
-              "slug": "ai-pentesting",
-              "title": "AI 渗透测试"
-            },
-            {
-              "category": "multi-cloud",
-              "description": "克隆或迁移正在运行的集群，数据一起带走",
-              "slug": "kubernetes-cluster-mobility",
-              "title": "Kubernetes 集群迁移"
-            }
-          ],
-          "title": "探索其他解决方案"
-        },
         "hero": {
-          "badge": "开发环境",
-          "differentiator": "所有开发工具都能克隆代码，但没有一个能克隆数据。Rediacc 两者皆可。",
           "primaryCta": "免费开始使用社区版",
-          "secondaryCta": "查看克隆演示",
           "subtitle": "快速创建生产环境的精确副本——应用、数据库和配置——用于开发和测试。无需工单，无需等待。",
           "title": "60 秒克隆生产环境"
         },
@@ -7446,7 +5572,6 @@
           "title": "开发人员浪费数天时间等待环境"
         },
         "references": {
-          "disclaimer": "产品性能声明基于 Rediacc 的 btrfs 写时复制架构。计算器估算使用行业标准成本模型；实际成本因组织而异。",
           "items": [
             {
               "text": "Atlassian, DX & Wakefield Research, \"State of Developer Experience Report,\" 2024. \"Sixty-nine percent of developers are losing eight hours or more per week to inefficiencies.\" \"For an organization with 500 developers, losing 8 hours per week costs roughly $6.9 million over the course of a year.\"",
@@ -7508,8 +5633,7 @@
               "text": "Neon branches include all parent data by default providing instant production-identical copies.",
               "url": "https://neon.com/docs/introduction/branching"
             }
-          ],
-          "label": "来源与参考"
+          ]
         },
         "socialProof": {
           "author": "高级 DevOps 工程师",
@@ -7568,83 +5692,11 @@
           ],
           "title": "为什么 60 秒克隆成为可能",
           "traditionalLabel": "传统方式"
-        },
-        "techStrip": {
-          "label": "克隆任何容器化工作负载",
-          "note": "数据库、邮件服务器、CI/CD、CMS、监控、认证——只要在容器中运行，Rediacc 就能克隆它。"
-        },
-        "terminal": {
-          "lines": [
-            {
-              "cmd": "rdc repo fork production",
-              "flag": "",
-              "prompt": "$",
-              "type": "command",
-              "value": ""
-            },
-            {
-              "type": "spacer"
-            },
-            {
-              "result": "done",
-              "text": "正在快照生产环境",
-              "type": "check"
-            },
-            {
-              "result": "done",
-              "text": "正在复制 12 个容器",
-              "type": "check"
-            },
-            {
-              "result": "done",
-              "text": "正在复制配置 (241 GB)",
-              "type": "check"
-            },
-            {
-              "result": "done",
-              "text": "正在挂载加密存储",
-              "type": "check"
-            },
-            {
-              "result": "12/12 通过",
-              "text": "正在运行健康检查",
-              "type": "check"
-            },
-            {
-              "type": "spacer"
-            },
-            {
-              "text": "克隆就绪：dev-sarah.internal",
-              "type": "success"
-            },
-            {
-              "type": "spacer"
-            },
-            {
-              "pairs": [
-                {
-                  "label": "Time",
-                  "value": "47s"
-                },
-                {
-                  "label": "Containers",
-                  "value": "12"
-                },
-                {
-                  "label": "Size",
-                  "value": "241 GB"
-                },
-                {
-                  "label": "Status",
-                  "value": "健康"
-                }
-              ],
-              "type": "summary"
-            }
-          ]
         }
       },
       "failoverTesting": {
+        "label": "故障转移测试",
+        "blurb": "在需要之前测试您的故障转移",
         "benefits": {
           "items": [
             {
@@ -7676,7 +5728,7 @@
         "calculator": {
           "annualLabel": "年度 DR 失败风险敞口",
           "description": "拖动滑块以匹配你的业务。查看寄希望于 DR 计划有效的真实成本。",
-          "footnote": "收入风险：小时收入 × 预期停机小时数。恢复人力：3 名工程师 × 停机小时数 × $200/小时 × 每人 3 个服务。流失：风险收入的 20%（保守估计）。合规：收入损失的 10%。只有 13% 的组织使用编排化 DR 工作流（Veeam 2024）[1]。通过每月自动化测试，差距在造成影响之前就被发现和修复。",
+          "footnote": "收入风险：小时收入 × 预期停机小时数。恢复人力：3 名工程师 × 停机小时数 × $200/小时 × 每人 3 个服务。流失：风险收入的 20%（保守估计）。合规：收入损失的 10%。只有 13% 的组织使用编排化 DR 工作流（Veeam 2024）。通过每月自动化测试，差距在造成影响之前就被发现和修复。",
           "headerTitle": "计算你的 DR 测试差距风险敞口",
           "overline": "真实成本",
           "results": {
@@ -7744,79 +5796,8 @@
           "overline": "差距对比",
           "title": "DR 测试工具对比"
         },
-        "explore": {
-          "solutions": [
-            {
-              "category": "multi-cloud",
-              "categoryLabel": "多云",
-              "description": "AWS 宕机时，您不受影响",
-              "slug": "cloud-outage-protection",
-              "title": "云故障保护"
-            },
-            {
-              "category": "multi-cloud",
-              "categoryLabel": "多云",
-              "description": "您的基础设施，您的选择，始终如此。",
-              "slug": "vendor-lock-in",
-              "title": "供应商锁定自由"
-            },
-            {
-              "category": "multi-cloud",
-              "categoryLabel": "多云",
-              "current": true,
-              "description": "在需要之前测试您的故障转移",
-              "slug": "failover-testing",
-              "title": "故障转移测试"
-            },
-            {
-              "category": "ransomware",
-              "categoryLabel": "勒索软件防御",
-              "description": "勒索软件无法触及的备份",
-              "slug": "immutable-backups",
-              "title": "不可变备份"
-            },
-            {
-              "category": "backups",
-              "categoryLabel": "备份验证",
-              "description": "每次备份自动验证",
-              "slug": "backup-verification",
-              "title": "备份验证"
-            },
-            {
-              "category": "encryption",
-              "categoryLabel": "加密控制",
-              "description": "您的密钥，您的加密，没有例外。",
-              "slug": "encryption",
-              "title": "您掌控的加密"
-            },
-            {
-              "category": "dev-env",
-              "categoryLabel": "开发环境",
-              "description": "60 秒克隆生产环境",
-              "slug": "environment-cloning",
-              "title": "环境克隆"
-            },
-            {
-              "category": "defense",
-              "categoryLabel": "主动防御",
-              "description": "克隆生产环境，让 AI 发起攻击。",
-              "slug": "ai-pentesting",
-              "title": "AI 渗透测试"
-            },
-            {
-              "category": "multi-cloud",
-              "description": "克隆或迁移正在运行的集群，数据一起带走",
-              "slug": "kubernetes-cluster-mobility",
-              "title": "Kubernetes 集群迁移"
-            }
-          ],
-          "title": "探索其他解决方案"
-        },
         "hero": {
-          "badge": "多云架构",
-          "differentiator": "每朵云都有备份。但没有一个让你零风险测试故障转移。Rediacc 可以。",
           "primaryCta": "免费开始使用社区版",
-          "secondaryCta": "查看测试演示 →",
           "subtitle": "安全地运行灾难模拟。确认你的恢复方案确实有效。在关键时刻不留意外。",
           "title": "在需要之前测试你的故障转移"
         },
@@ -7909,19 +5890,19 @@
             {
               "number": "Only 13%",
               "ref": 1,
-              "source": "Veeam 2024 Data Protection Trends Report [1]",
+              "source": "Veeam 2024 Data Protection Trends Report",
               "text": "的组织使用编排式灾难恢复工作流"
             },
             {
               "number": "Only 32%",
               "ref": 1,
-              "source": "Veeam 2024 Data Protection Trends Report [1]",
+              "source": "Veeam 2024 Data Protection Trends Report",
               "text": "的组织能在一个工作周内恢复 50 台服务器"
             },
             {
               "number": "Only 58%",
               "ref": 1,
-              "source": "Veeam 2024 Data Protection Trends Report [1]",
+              "source": "Veeam 2024 Data Protection Trends Report",
               "text": "的服务器在恢复测试中在 SLA 内恢复"
             }
           ],
@@ -7955,7 +5936,6 @@
           "title": "未经测试的故障转移只是一个希望"
         },
         "references": {
-          "disclaimer": "产品性能声明基于 Rediacc 的 btrfs 写时复制架构。计算器估算使用行业标准成本模型；实际成本因组织而异。",
           "items": [
             {
               "text": "Veeam, “2024 Data Protection Trends Report — BC/DR Trends,” 2024. “Only 13% of organizations utilize orchestrated workflow as part of their disaster recovery processes.” “Only 58% of servers met their recovery SLA during their last large-scale attack.” “Only 32% of organizations believe that they could recover 50 workloads within an entire business week.”",
@@ -8001,8 +5981,7 @@
               "text": "Zerto is deployed on-premises with a Zerto Virtual Manager and per-host Virtual Replication Appliances.",
               "url": "https://help.zerto.com/bundle/Install.VC.HTML/page/Installing_Zerto_Virtual_Replication_in_On-Premise_Environments.htm"
             }
-          ],
-          "label": "来源与参考"
+          ]
         },
         "socialProof": {
           "author": "平台工程负责人",
@@ -8065,88 +6044,11 @@
           ],
           "title": "为什么传统 DR 测试会失败",
           "traditionalLabel": "传统 DR 测试"
-        },
-        "techStrip": {
-          "label": "复制任何容器化工作负载",
-          "note": "数据库、邮件服务器、CI/CD、CMS、监控、认证——只要在容器中运行，Rediacc 就能复制和测试它。"
-        },
-        "terminal": {
-          "lines": [
-            {
-              "cmd": "rdc ops status",
-              "flag": "",
-              "prompt": "$",
-              "type": "command",
-              "value": ""
-            },
-            {
-              "type": "spacer"
-            },
-            {
-              "result": "done",
-              "text": "正在快照生产状态",
-              "type": "check"
-            },
-            {
-              "result": "done",
-              "text": "正在模拟主节点故障",
-              "type": "check"
-            },
-            {
-              "result": "done",
-              "text": "正在触发到 secondary-dc 的故障转移",
-              "type": "check"
-            },
-            {
-              "result": "8/8 healthy",
-              "text": "正在验证备用节点上的 8 个容器",
-              "type": "check"
-            },
-            {
-              "result": "全部通过",
-              "text": "正在运行健康检查",
-              "type": "check"
-            },
-            {
-              "result": "done",
-              "text": "正在回滚到主节点",
-              "type": "check"
-            },
-            {
-              "type": "spacer"
-            },
-            {
-              "text": "故障转移测试通过：8/8 服务在 22 秒内恢复",
-              "type": "success"
-            },
-            {
-              "type": "spacer"
-            },
-            {
-              "pairs": [
-                {
-                  "label": "Duration",
-                  "value": "4m 12s"
-                },
-                {
-                  "label": "RTO",
-                  "value": "22s"
-                },
-                {
-                  "label": "Services",
-                  "value": "8/8"
-                },
-                {
-                  "label": "Data loss",
-                  "value": "0 bytes"
-                }
-              ],
-              "type": "summary"
-            }
-          ]
         }
       },
       "immutableBackups": {
+        "label": "不可变备份",
+        "blurb": "勒索软件无法触及的备份",
         "benefits": {
           "items": [
             {
@@ -8178,7 +6080,7 @@
         "calculator": {
           "annualLabel": "年度风险敞口",
           "description": "拖动滑块以匹配你的基础设施。数字累加得很快。",
-          "footnote": "面临风险的收入基于平均每分钟停机成本 $9,000（Splunk/Oxford Economics 2024）[4]。恢复人力：6 名工程师 × 恢复小时数 × $200/小时混合费率。声誉成本按直接成本的百分比估算（行业估计）。使用 Rediacc：不可变快照在 5 分钟内恢复——停机时间趋近于零。",
+          "footnote": "面临风险的收入基于平均每分钟停机成本 $9,000（Splunk/Oxford Economics 2024）。恢复人力：6 名工程师 × 恢复小时数 × $200/小时混合费率。声誉成本按直接成本的百分比估算（行业估计）。使用 Rediacc：不可变快照在 5 分钟内恢复——停机时间趋近于零。",
           "headerTitle": "计算你的勒索软件风险敞口",
           "overline": "真实成本",
           "results": {
@@ -8246,73 +6148,8 @@
           "overline": "差距对比",
           "title": "唯一具备文件系统级不可变性的备份"
         },
-        "explore": {
-          "solutions": [
-            {
-              "category": "ransomware",
-              "categoryLabel": "勒索软件防御",
-              "current": true,
-              "description": "勒索软件无法触及的备份",
-              "slug": "immutable-backups",
-              "title": "不可变备份"
-            },
-            {
-              "category": "ransomware",
-              "categoryLabel": "勒索软件防御",
-              "description": "分钟级恢复，而非数天",
-              "slug": "rapid-recovery",
-              "title": "快速恢复"
-            },
-            {
-              "category": "ransomware",
-              "categoryLabel": "勒索软件防御",
-              "description": "无风险测试操作系统更新",
-              "slug": "safe-os-testing",
-              "title": "安全的操作系统测试"
-            },
-            {
-              "category": "multi-cloud",
-              "categoryLabel": "多云",
-              "description": "AWS 宕机时，您不受影响",
-              "slug": "cloud-outage-protection",
-              "title": "云故障保护"
-            },
-            {
-              "category": "backups",
-              "categoryLabel": "备份验证",
-              "description": "每次备份自动验证",
-              "slug": "backup-verification",
-              "title": "备份验证"
-            },
-            {
-              "category": "encryption",
-              "categoryLabel": "加密控制",
-              "description": "您的密钥，您的加密，没有例外。",
-              "slug": "encryption",
-              "title": "您掌控的加密"
-            },
-            {
-              "category": "dev-env",
-              "categoryLabel": "开发环境",
-              "description": "60 秒克隆生产环境",
-              "slug": "environment-cloning",
-              "title": "环境克隆"
-            },
-            {
-              "category": "defense",
-              "categoryLabel": "主动防御",
-              "description": "克隆生产环境，让 AI 发起攻击。",
-              "slug": "ai-pentesting",
-              "title": "AI 渗透测试"
-            }
-          ],
-          "title": "探索其他解决方案"
-        },
         "hero": {
-          "badge": "勒索软件防御",
-          "differentiator": "每家备份厂商都承诺恢复。但没有一家每天验证它。Rediacc 会。",
           "primaryCta": "免费开始使用社区版",
-          "secondaryCta": "了解工作原理 →",
           "subtitle": "您的备份从创建之日起即不可更改。没有人能修改它们。黑客不能，甚至你自己也不能。",
           "title": "勒索软件无法触及的备份"
         },
@@ -8405,19 +6242,19 @@
             {
               "number": "94%",
               "ref": 1,
-              "source": "Sophos 2024 [1]",
+              "source": "Sophos 2024",
               "text": "的攻击针对备份"
             },
             {
               "number": "$4.88M",
               "ref": 2,
-              "source": "IBM Cost of a Data Breach 2024 [2]",
+              "source": "IBM Cost of a Data Breach 2024",
               "text": "平均数据泄露成本"
             },
             {
               "number": "24 days",
               "ref": 3,
-              "source": "Coveware Quarterly Report [3]",
+              "source": "Coveware Quarterly Report",
               "text": "平均恢复时间"
             }
           ],
@@ -8451,7 +6288,6 @@
           "title": "勒索软件首先瞄准你的备份"
         },
         "references": {
-          "disclaimer": "产品性能声明基于 Rediacc 的 btrfs 写时复制架构。计算器估算使用行业标准成本模型；实际成本因组织而异。",
           "items": [
             {
               "text": "Sophos, “The Impact of Compromised Backups on Ransomware Outcomes,” March 2024. “94% of organizations hit by ransomware in the past year said that the cybercriminals attempted to compromise their backups during the attack.”",
@@ -8541,8 +6377,7 @@
               "text": "Zerto is deployed on-premises with a Zerto Virtual Manager and per-host Virtual Replication Appliances.",
               "url": "https://help.zerto.com/bundle/Install.VC.HTML/page/Installing_Zerto_Virtual_Replication_in_On-Premise_Environments.htm"
             }
-          ],
-          "label": "来源与参考"
+          ]
         },
         "socialProof": {
           "author": "基础设施负责人",
@@ -8601,83 +6436,11 @@
           ],
           "title": "为什么勒索软件无法加密这些备份",
           "traditionalLabel": "传统备份工具"
-        },
-        "techStrip": {
-          "label": "保护任何容器化工作负载",
-          "note": "数据库、邮件服务器、CI/CD、CMS、监控、密钥库——只要在容器中运行，Rediacc 就能保护它。"
-        },
-        "terminal": {
-          "lines": [
-            {
-              "cmd": "rdc repo push production",
-              "flag": "",
-              "prompt": "$",
-              "type": "command",
-              "value": ""
-            },
-            {
-              "type": "spacer"
-            },
-            {
-              "result": "done",
-              "text": "正在快照文件系统状态",
-              "type": "check"
-            },
-            {
-              "result": "done",
-              "text": "正在创建不可变 btrfs 快照",
-              "type": "check"
-            },
-            {
-              "result": "done",
-              "text": "正在使用写保护锁封存",
-              "type": "check"
-            },
-            {
-              "result": "done",
-              "text": "正在验证快照完整性",
-              "type": "check"
-            },
-            {
-              "result": "通过",
-              "text": "正在运行自动恢复测试",
-              "type": "check"
-            },
-            {
-              "type": "spacer"
-            },
-            {
-              "text": "备份已封存：production-2026-02-27T03:00",
-              "type": "success"
-            },
-            {
-              "type": "spacer"
-            },
-            {
-              "pairs": [
-                {
-                  "label": "Time",
-                  "value": "48s"
-                },
-                {
-                  "label": "Size",
-                  "value": "380 GB"
-                },
-                {
-                  "label": "Status",
-                  "value": "不可变"
-                },
-                {
-                  "label": "Verified",
-                  "value": "✓"
-                }
-              ],
-              "type": "summary"
-            }
-          ]
         }
       },
       "infrastructureCosts": {
+        "label": "基础设施成本",
+        "blurb": "不再为闲置环境付费",
         "benefits": {
           "items": [
             {
@@ -8774,71 +6537,8 @@
           "overline": "差距对比",
           "title": "其他厂商如何为闲置容量收费"
         },
-        "explore": {
-          "solutions": [
-            {
-              "category": "dev-env",
-              "description": "60 秒克隆生产环境",
-              "slug": "environment-cloning",
-              "title": "环境克隆"
-            },
-            {
-              "category": "dev-env",
-              "description": "与生产完全一致的开发环境",
-              "slug": "production-parity",
-              "title": "生产一致性"
-            },
-            {
-              "category": "dev-env",
-              "current": true,
-              "description": "不再为闲置环境付费",
-              "slug": "infrastructure-costs",
-              "title": "基础设施成本"
-            },
-            {
-              "category": "dev-env",
-              "description": "融入您现有的工作流程",
-              "slug": "integrations",
-              "title": "CI/CD 集成"
-            },
-            {
-              "category": "ransomware",
-              "description": "勒索软件无法触及的备份",
-              "slug": "immutable-backups",
-              "title": "不可变备份"
-            },
-            {
-              "category": "multi-cloud",
-              "description": "AWS 宕机时，您不受影响",
-              "slug": "cloud-outage-protection",
-              "title": "云故障保护"
-            },
-            {
-              "category": "encryption",
-              "description": "您的密钥，您的加密，没有例外。",
-              "slug": "encryption",
-              "title": "您掌控的加密"
-            },
-            {
-              "category": "defense",
-              "description": "克隆生产环境，让 AI 发起攻击。",
-              "slug": "ai-pentesting",
-              "title": "AI 渗透测试"
-            },
-            {
-              "category": "multi-cloud",
-              "description": "克隆或迁移正在运行的集群，数据一起带走",
-              "slug": "kubernetes-cluster-mobility",
-              "title": "Kubernetes 集群迁移"
-            }
-          ],
-          "title": "探索其他解决方案"
-        },
         "hero": {
-          "badge": "开发环境",
-          "differentiator": "每家云厂商都为始终在线的基础设施收费。没有一家能在克隆之间共享存储块。Rediacc 可以。",
           "primaryCta": "免费开始",
-          "secondaryCta": "查看成本对比 →",
           "subtitle": "按需创建环境。用完即销毁。只为实际使用的资源付费。",
           "title": "停止为闲置环境付费"
         },
@@ -8975,7 +6675,6 @@
           "title": "始终在线的环境在烧钱"
         },
         "references": {
-          "disclaimer": "产品性能声明基于 Rediacc 的 btrfs 写时复制架构。计算器估算使用行业标准成本模型；实际成本因组织而异。",
           "items": [
             {
               "text": "Industry composite from vendor surveys and published benchmarks (ParkMyCloud, Release.com, Northflank). \"60–80% of staging environments sit idle at any given time.\"",
@@ -9013,8 +6712,7 @@
               "text": "Railway provides instant previews with auto-config and automatic build-and-package upon source changes.",
               "url": "https://docs.railway.com/deployments/reference"
             }
-          ],
-          "label": "来源与参考"
+          ]
         },
         "socialProof": {
           "author": "平台工程总监",
@@ -9073,80 +6771,11 @@
           ],
           "title": "完整复制 vs. 写时复制",
           "traditionalLabel": "传统方式（完整复制）"
-        },
-        "techStrip": {
-          "label": "克隆任何容器化工作负载",
-          "note": "数据库、邮件服务器、CI/CD、CMS、监控、认证——只要在容器中运行，Rediacc 就能按需克隆它。"
-        },
-        "terminal": {
-          "lines": [
-            {
-              "cmd": "rdc repo fork production",
-              "flag": "",
-              "prompt": "$",
-              "type": "command",
-              "value": ""
-            },
-            {
-              "type": "spacer"
-            },
-            {
-              "result": "380 GB",
-              "text": "正在快照生产环境 (btrfs CoW)",
-              "type": "check"
-            },
-            {
-              "result": "2.1 GB used",
-              "text": "正在创建零拷贝克隆",
-              "type": "check"
-            },
-            {
-              "result": "4 个仓库",
-              "text": "正在启动 Docker 守护进程",
-              "type": "check"
-            },
-            {
-              "result": "TTL: 4 小时",
-              "text": "正在配置自动清理",
-              "type": "check"
-            },
-            {
-              "result": "全部通过",
-              "text": "健康检查通过",
-              "type": "check"
-            },
-            {
-              "type": "spacer"
-            },
-            {
-              "text": "克隆 dev-loadtest 就绪——4 小时后自动销毁",
-              "type": "success"
-            },
-            {
-              "pairs": [
-                {
-                  "label": "capacity",
-                  "value": "380 GB"
-                },
-                {
-                  "label": "actual disk",
-                  "value": "2.1 GB (0.6%)"
-                },
-                {
-                  "label": "cost",
-                  "value": "$0.003/hr"
-                },
-                {
-                  "label": "time",
-                  "value": "52s"
-                }
-              ],
-              "type": "summary"
-            }
-          ]
         }
       },
       "instantRecovery": {
+        "label": "即时恢复",
+        "blurb": "分钟级完整环境恢复",
         "benefits": {
           "items": [
             {
@@ -9248,79 +6877,8 @@
           "overline": "差距对比",
           "title": "恢复能力对比"
         },
-        "explore": {
-          "solutions": [
-            {
-              "category": "backups",
-              "categoryLabel": "备份验证",
-              "description": "每次备份自动验证",
-              "slug": "backup-verification",
-              "title": "备份验证"
-            },
-            {
-              "category": "backups",
-              "categoryLabel": "备份验证",
-              "description": "按法律要求保留数据",
-              "slug": "retention-compliance",
-              "title": "留存合规"
-            },
-            {
-              "category": "backups",
-              "categoryLabel": "备份验证",
-              "current": true,
-              "description": "分钟级完整环境恢复",
-              "slug": "instant-recovery",
-              "title": "即时恢复"
-            },
-            {
-              "category": "ransomware",
-              "categoryLabel": "勒索软件防御",
-              "description": "勒索软件无法触及的备份",
-              "slug": "immutable-backups",
-              "title": "不可变备份"
-            },
-            {
-              "category": "multi-cloud",
-              "categoryLabel": "多云",
-              "description": "AWS 宕机时，您不受影响",
-              "slug": "cloud-outage-protection",
-              "title": "云故障保护"
-            },
-            {
-              "category": "encryption",
-              "categoryLabel": "加密控制",
-              "description": "您的密钥，您的加密，没有例外。",
-              "slug": "encryption",
-              "title": "您掌控的加密"
-            },
-            {
-              "category": "dev-env",
-              "categoryLabel": "开发环境",
-              "description": "60 秒克隆生产环境",
-              "slug": "environment-cloning",
-              "title": "环境克隆"
-            },
-            {
-              "category": "defense",
-              "categoryLabel": "主动防御",
-              "description": "克隆生产环境，让 AI 发起攻击。",
-              "slug": "ai-pentesting",
-              "title": "AI 渗透测试"
-            },
-            {
-              "category": "multi-cloud",
-              "description": "克隆或迁移正在运行的集群，数据一起带走",
-              "slug": "kubernetes-cluster-mobility",
-              "title": "Kubernetes 集群迁移"
-            }
-          ],
-          "title": "探索其他解决方案"
-        },
         "hero": {
-          "badge": "备份验证",
-          "differentiator": "每家厂商都能恢复文件。但没有一家能恢复整个运行环境。Rediacc 可以——在 5 分钟内。",
           "primaryCta": "免费开始使用社区版",
-          "secondaryCta": "查看恢复速度 →",
           "subtitle": "不仅是文件。整个环境——服务器、配置、数据库——在几分钟内恢复并运行。",
           "title": "几分钟内完成全环境恢复"
         },
@@ -9413,19 +6971,19 @@
             {
               "number": "3.4 weeks",
               "ref": 1,
-              "source": "Sophos State of Ransomware 2024 [1]",
+              "source": "Sophos State of Ransomware 2024",
               "text": "平均勒索软件恢复时间"
             },
             {
               "number": "$300K+/hr",
               "ref": 2,
-              "source": "ITIC Hourly Cost of Downtime Survey 2024 [2]",
+              "source": "ITIC Hourly Cost of Downtime Survey 2024",
               "text": "90% 中大型企业的每小时宕机成本"
             },
             {
               "number": "Only 13%",
               "ref": 3,
-              "source": "Veeam Data Protection Trends Report 2024 [3]",
+              "source": "Veeam Data Protection Trends Report 2024",
               "text": "的组织能够在灾难期间协调恢复"
             }
           ],
@@ -9459,7 +7017,6 @@
           "title": "文件级恢复远远不够"
         },
         "references": {
-          "disclaimer": "产品性能声明基于 Rediacc 的 btrfs 写时复制架构。计算器估算使用行业标准成本模型；实际成本因组织而异。",
           "items": [
             {
               "text": "Sophos, “The State of Ransomware 2024,” April 2024. “The average recovery time was 3.4 weeks; recovery costs averaged $2.73 million excluding ransom payments.”",
@@ -9517,8 +7074,7 @@
               "text": "Commvault supports fully self-hosted on-premises deployments with CommServe, MediaAgent, and Access Node components.",
               "url": "https://documentation.commvault.com/v11/software/initial_setup_self_service_deployments.html"
             }
-          ],
-          "label": "来源与参考"
+          ]
         },
         "socialProof": {
           "author": "基础设施副总裁",
@@ -9577,92 +7133,11 @@
           ],
           "title": "为什么文件级恢复无法满足需求",
           "traditionalLabel": "传统恢复"
-        },
-        "techStrip": {
-          "label": "恢复任何容器化工作负载",
-          "note": "数据库、邮件服务器、CI/CD、CMS、监控、认证——只要在容器中运行，Rediacc 就能恢复它。"
-        },
-        "terminal": {
-          "lines": [
-            {
-              "cmd": "rdc repo pull production",
-              "flag": "",
-              "prompt": "$",
-              "type": "command",
-              "value": ""
-            },
-            {
-              "type": "spacer"
-            },
-            {
-              "text": "正在从快照 daily-2026-02-27 恢复生产环境...",
-              "type": "comment"
-            },
-            {
-              "result": "done",
-              "text": "正在从快照创建 btrfs 克隆",
-              "type": "check"
-            },
-            {
-              "result": "done",
-              "text": "正在挂载已恢复的卷",
-              "type": "check"
-            },
-            {
-              "result": "运行中",
-              "text": "正在启动 Docker 守护进程 (127.0.4.0/26)",
-              "type": "check"
-            },
-            {
-              "result": "8/8 运行中",
-              "text": "正在启动 8 个容器",
-              "type": "check"
-            },
-            {
-              "result": "全部通过",
-              "text": "健康检查：nginx, mariadb, api, redis",
-              "type": "check"
-            },
-            {
-              "result": "done",
-              "text": "正在恢复网络路由",
-              "type": "check"
-            },
-            {
-              "type": "spacer"
-            },
-            {
-              "text": "完整环境已恢复：8 个服务运行中，所有健康检查通过",
-              "type": "success"
-            },
-            {
-              "type": "spacer"
-            },
-            {
-              "pairs": [
-                {
-                  "label": "Snapshot",
-                  "value": "daily-2026-02-27"
-                },
-                {
-                  "label": "Size",
-                  "value": "380 GB"
-                },
-                {
-                  "label": "Services",
-                  "value": "8/8"
-                },
-                {
-                  "label": "Time",
-                  "value": "3m 47s"
-                }
-              ],
-              "type": "summary"
-            }
-          ]
         }
       },
       "integrations": {
+        "label": "CI/CD 集成",
+        "blurb": "融入您现有的工作流程",
         "benefits": {
           "items": [
             {
@@ -9755,71 +7230,8 @@
           "overline": "差距对比",
           "title": "测试夹具 vs. 生产克隆"
         },
-        "explore": {
-          "solutions": [
-            {
-              "category": "dev-env",
-              "description": "60 秒克隆生产环境",
-              "slug": "environment-cloning",
-              "title": "环境克隆"
-            },
-            {
-              "category": "dev-env",
-              "description": "与生产完全一致的开发环境",
-              "slug": "production-parity",
-              "title": "生产一致性"
-            },
-            {
-              "category": "dev-env",
-              "description": "不再为闲置环境付费",
-              "slug": "infrastructure-costs",
-              "title": "基础设施成本"
-            },
-            {
-              "category": "dev-env",
-              "current": true,
-              "description": "融入您现有的工作流程",
-              "slug": "integrations",
-              "title": "CI/CD 集成"
-            },
-            {
-              "category": "ransomware",
-              "description": "勒索软件无法触及的备份",
-              "slug": "immutable-backups",
-              "title": "不可变备份"
-            },
-            {
-              "category": "multi-cloud",
-              "description": "AWS 宕机时，您不受影响",
-              "slug": "cloud-outage-protection",
-              "title": "云故障保护"
-            },
-            {
-              "category": "encryption",
-              "description": "您的密钥，您的加密，没有例外。",
-              "slug": "encryption",
-              "title": "您掌控的加密"
-            },
-            {
-              "category": "defense",
-              "description": "克隆生产环境，让 AI 发起攻击。",
-              "slug": "ai-pentesting",
-              "title": "AI 渗透测试"
-            },
-            {
-              "category": "multi-cloud",
-              "description": "克隆或迁移正在运行的集群，数据一起带走",
-              "slug": "kubernetes-cluster-mobility",
-              "title": "Kubernetes 集群迁移"
-            }
-          ],
-          "title": "探索其他解决方案"
-        },
         "hero": {
-          "badge": "开发环境",
-          "differentiator": "每个 CI 工具都能配置容器。但没有一个能配置包含真实数据的生产级克隆。Rediacc 可以。",
           "primaryCta": "免费开始",
-          "secondaryCta": "查看集成 →",
           "subtitle": "Git 推送触发全新环境。测试在生产克隆上运行。CI/CD 开箱即用——无需自定义脚本。",
           "title": "无缝融入您的现有工作流"
         },
@@ -9871,7 +7283,7 @@
             {
               "description": "您的 CI 流水线在与生产一致的克隆上运行测试。测试完成后自动销毁。",
               "icon": "check-circle",
-              "title": "Test"
+              "title": "测试"
             }
           ],
           "title": "一条命令，零脚本。"
@@ -9934,7 +7346,6 @@
           "title": "自定义 CI/CD 脚本频繁崩溃且无人维护"
         },
         "references": {
-          "disclaimer": "产品性能声明基于 Rediacc 的 btrfs 写时复制架构。计算器估算使用行业标准成本模型；实际成本因组织而异。",
           "items": [
             {
               "text": "Atlassian, DX & Wakefield Research, \"State of Developer Experience Report,\" 2024. \"Sixty-nine percent of developers are losing eight hours or more per week to inefficiencies.\" \"For an organization with 500 developers, losing 8 hours per week costs roughly $6.9 million over the course of a year.\"",
@@ -9984,8 +7395,7 @@
               "text": "Coder is a self-hosted open-source (AGPL v3.0) platform deployed in private data centers or cloud services.",
               "url": "https://coder.com/docs/about"
             }
-          ],
-          "label": "来源与参考"
+          ]
         },
         "socialProof": {
           "author": "高级 DevOps 工程师",
@@ -10040,92 +7450,11 @@
           ],
           "title": "自定义脚本 vs. 原生集成",
           "traditionalLabel": "自定义 CI 脚本"
-        },
-        "techStrip": {
-          "label": "克隆任何容器化工作负载",
-          "note": "数据库、邮件服务器、CI/CD、CMS、监控、认证——只要在容器中运行，Rediacc 就能为你的流水线克隆它。"
-        },
-        "terminal": {
-          "lines": [
-            {
-              "text": "# .gitlab-ci.yml — 一行即可将生产克隆添加到您的流水线",
-              "type": "comment"
-            },
-            {
-              "type": "spacer"
-            },
-            {
-              "cmd": "git push",
-              "flag": "origin",
-              "prompt": "$",
-              "type": "command",
-              "value": "feature/auth-v2"
-            },
-            {
-              "type": "spacer"
-            },
-            {
-              "result": "feature/auth-v2",
-              "text": "已收到 Webhook",
-              "type": "check"
-            },
-            {
-              "result": "380 GB → 2.1 GB",
-              "text": "正在克隆生产环境 (btrfs CoW)",
-              "type": "check"
-            },
-            {
-              "result": "4 个仓库已上线",
-              "text": "正在启动克隆：ci-auth-v2",
-              "type": "check"
-            },
-            {
-              "result": "247 通过",
-              "text": "正在运行测试套件",
-              "type": "check"
-            },
-            {
-              "result": "38 通过",
-              "text": "正在运行集成测试",
-              "type": "check"
-            },
-            {
-              "result": "已清理",
-              "text": "正在自动销毁克隆",
-              "type": "check"
-            },
-            {
-              "type": "spacer"
-            },
-            {
-              "text": "流水线通过：285 个测试在与生产一致的克隆上运行",
-              "type": "success"
-            },
-            {
-              "pairs": [
-                {
-                  "label": "trigger",
-                  "value": "git push"
-                },
-                {
-                  "label": "clone",
-                  "value": "52s"
-                },
-                {
-                  "label": "tests",
-                  "value": "3m 14s"
-                },
-                {
-                  "label": "total",
-                  "value": "4m 06s"
-                }
-              ],
-              "type": "summary"
-            }
-          ]
         }
       },
       "kubernetesClusterMobility": {
+        "label": "Kubernetes 集群迁移",
+        "blurb": "克隆或迁移正在运行的集群，数据一起带走",
         "benefits": {
           "items": [
             {
@@ -10191,65 +7520,8 @@
           "overline": "差距对比",
           "title": "没有别的工具能带着数据迁移运行中的集群"
         },
-        "explore": {
-          "solutions": [
-            {
-              "category": "multi-cloud",
-              "current": true,
-              "description": "克隆或迁移正在运行的集群，数据一起带走",
-              "slug": "kubernetes-cluster-mobility",
-              "title": "Kubernetes 集群迁移"
-            },
-            {
-              "category": "multi-cloud",
-              "description": "您的基础设施，您的选择，始终如此。",
-              "slug": "vendor-lock-in",
-              "title": "供应商锁定自由"
-            },
-            {
-              "category": "multi-cloud",
-              "description": "AWS 宕机时，您不受影响",
-              "slug": "cloud-outage-protection",
-              "title": "云故障保护"
-            },
-            {
-              "category": "multi-cloud",
-              "description": "在需要之前测试您的故障转移",
-              "slug": "failover-testing",
-              "title": "故障转移测试"
-            },
-            {
-              "category": "encryption",
-              "description": "迁移不冒数据风险",
-              "slug": "migration-safety",
-              "title": "迁移安全"
-            },
-            {
-              "category": "dev-env",
-              "description": "60 秒克隆生产环境",
-              "slug": "environment-cloning",
-              "title": "环境克隆"
-            },
-            {
-              "category": "backups",
-              "description": "分钟级完整环境恢复",
-              "slug": "instant-recovery",
-              "title": "即时恢复"
-            },
-            {
-              "category": "encryption",
-              "description": "您的密钥，您的加密，没有例外。",
-              "slug": "encryption",
-              "title": "您掌控的加密"
-            }
-          ],
-          "title": "探索其他解决方案"
-        },
         "hero": {
-          "badge": "MULTI-CLOUD",
-          "differentiator": "Velero 只能恢复备份。Cluster API 只能克隆集群的骨架。Rediacc 能直接迁移运行中的集群，数据一起带走。",
           "primaryCta": "免费开始使用社区版",
-          "secondaryCta": "查看实测数据 →",
           "subtitle": "你的集群作为一个整体一起搬走：节点、配置和数据。搬到另一台机器，或者另一个数据中心。切换只需几秒实测完成，不用等一整个周末。",
           "title": "克隆或迁移正在运行的 Kubernetes 集群"
         },
@@ -10388,7 +7660,6 @@
           "title": "集群会被困在最初搭建的地方"
         },
         "references": {
-          "disclaimer": "克隆和迁移的耗时是在 Rediacc 的 KVM 测试实验室里，对一个 2 节点集群做端到端实测得出的。默认一致性为崩溃一致性，语义等同于一次断电重启。迁移切换期间，工作负载会在目标端重新启动。",
           "items": [
             {
               "text": "Flexera, \"2024 State of the Cloud Report,\" 2024. \"27% of cloud spend continues to be wasted.\"",
@@ -10430,8 +7701,7 @@
               "text": "Ceph RBD mirroring is asynchronous, based on journaling or periodic snapshots, and is designed for disaster recovery.",
               "url": "https://docs.ceph.com/en/latest/rbd/rbd-mirroring/"
             }
-          ],
-          "label": "Sources & References"
+          ]
         },
         "stats": [
           {
@@ -10472,64 +7742,6 @@
             }
           ],
           "title": "为什么集群能像文件一样说搬就搬"
-        },
-        "techStrip": {
-          "label": "Runs the apps you already ship",
-          "note": "数据库、CI/CD、CMS、监控系统、登录系统、存储服务——只要跑在 Kubernetes 上，Rediacc 就能克隆它、迁移它，数据一起带走。"
-        },
-        "terminal": {
-          "lines": [
-            {
-              "cmd": "rdc cluster fork prod",
-              "type": "command",
-              "value": "--tag staging"
-            },
-            {
-              "type": "spacer"
-            },
-            {
-              "text": "正在克隆节点镜像（写时复制）............... 完成",
-              "type": "check"
-            },
-            {
-              "text": "正在克隆 Ceph RBD 卷.......................... 完成",
-              "type": "check"
-            },
-            {
-              "text": "正在为新 IP 重写节点身份...................... 完成",
-              "type": "check"
-            },
-            {
-              "type": "spacer"
-            },
-            {
-              "text": "✓ 克隆在 46s 内完成：prod-staging 已启动，父级集群未受影响。",
-              "type": "success"
-            },
-            {
-              "type": "spacer"
-            },
-            {
-              "cmd": "rdc cluster migrate prod",
-              "type": "command",
-              "value": "--to fsn1-dc2"
-            },
-            {
-              "text": "集群运行时预先复制数据.......................... 完成",
-              "type": "check"
-            },
-            {
-              "text": "切换：停止服务、传输最终增量、重启................ 16s",
-              "type": "check"
-            },
-            {
-              "type": "spacer"
-            },
-            {
-              "text": "克隆：46s   迁移切换：16s   一致性：崩溃一致性",
-              "type": "summary"
-            }
-          ]
         }
       },
       "leadMagnetButton": {
@@ -10553,6 +7765,8 @@
         "title": "获取技术简报"
       },
       "migrationSafety": {
+        "label": "迁移安全",
+        "blurb": "迁移不冒数据风险",
         "benefits": {
           "items": [
             {
@@ -10584,7 +7798,7 @@
         "calculator": {
           "annualLabel": "年度迁移风险",
           "description": "每次没有端到端加密的迁移都是一个等待发生的合规事故。",
-          "footnote": "假设重新加密配置人力成本 $200/小时，$4,880/TB 泄露溢价（IBM 2024）[3]，以及每个暴露窗口 1% 的泄露概率。Rediacc 全程保持加密——零暴露窗口，零重新加密需求。",
+          "footnote": "假设重新加密配置人力成本 $200/小时，$4,880/TB 泄露溢价（IBM 2024），以及每个暴露窗口 1% 的泄露概率。Rediacc 全程保持加密——零暴露窗口，零重新加密需求。",
           "headerTitle": "迁移风险计算器",
           "overline": "真实成本",
           "results": {
@@ -10650,79 +7864,8 @@
           "overline": "差距对比",
           "title": "其他厂商在迁移过程中无法做到的"
         },
-        "explore": {
-          "solutions": [
-            {
-              "category": "encryption",
-              "categoryLabel": "加密控制",
-              "description": "您的密钥，您的加密，没有例外。",
-              "slug": "encryption",
-              "title": "您掌控的加密"
-            },
-            {
-              "category": "encryption",
-              "categoryLabel": "加密控制",
-              "description": "每项操作都有记录，无任何隐藏。",
-              "slug": "audit-trail",
-              "title": "审计追踪"
-            },
-            {
-              "category": "encryption",
-              "categoryLabel": "加密控制",
-              "current": true,
-              "description": "迁移不冒数据风险",
-              "slug": "migration-safety",
-              "title": "迁移安全"
-            },
-            {
-              "category": "ransomware",
-              "categoryLabel": "勒索软件防御",
-              "description": "勒索软件无法触及的备份",
-              "slug": "immutable-backups",
-              "title": "不可变备份"
-            },
-            {
-              "category": "multi-cloud",
-              "categoryLabel": "多云",
-              "description": "AWS 宕机时，您不受影响",
-              "slug": "cloud-outage-protection",
-              "title": "云故障保护"
-            },
-            {
-              "category": "backups",
-              "categoryLabel": "备份验证",
-              "description": "每次备份自动验证",
-              "slug": "backup-verification",
-              "title": "备份验证"
-            },
-            {
-              "category": "dev-env",
-              "categoryLabel": "开发环境",
-              "description": "60 秒克隆生产环境",
-              "slug": "environment-cloning",
-              "title": "环境克隆"
-            },
-            {
-              "category": "defense",
-              "categoryLabel": "主动防御",
-              "description": "克隆生产环境，让 AI 发起攻击。",
-              "slug": "ai-pentesting",
-              "title": "AI 渗透测试"
-            },
-            {
-              "category": "multi-cloud",
-              "description": "克隆或迁移正在运行的集群，数据一起带走",
-              "slug": "kubernetes-cluster-mobility",
-              "title": "Kubernetes 集群迁移"
-            }
-          ],
-          "title": "探索其他解决方案"
-        },
         "hero": {
-          "badge": "加密控制",
-          "differentiator": "每家厂商都能迁移数据。但没有一家能在传输过程中保持加密完整。Rediacc 可以。",
           "primaryCta": "免费开始",
-          "secondaryCta": "查看迁移功能 →",
           "subtitle": "在服务器、云或供应商之间迁移？您的加密备份安全传输。零暴露，零数据丢失。",
           "title": "无风险迁移数据"
         },
@@ -10815,19 +7958,19 @@
             {
               "number": "89%",
               "ref": 2,
-              "source": "Flexera 2024 [1] / Thales 2025 [2]",
+              "source": "Flexera 2024 / Thales 2025",
               "text": "的企业运营多云环境，但仅 8% 加密了 80% 以上的云数据"
             },
             {
               "number": "$4.88M",
               "ref": 3,
-              "source": "IBM Cost of Data Breach 2024 [3]",
+              "source": "IBM Cost of Data Breach 2024",
               "text": "全球数据泄露的平均成本"
             },
             {
               "number": "$90K–$300K",
               "ref": 4,
-              "source": "Cloud provider pricing [4]",
+              "source": "Cloud provider pricing",
               "text": "在云之间迁移加密数据的每 PB 出站流量成本"
             }
           ],
@@ -10861,7 +8004,6 @@
           "title": "迁移是数据最脆弱的时刻"
         },
         "references": {
-          "disclaimer": "产品性能声明基于 Rediacc 的 btrfs 写时复制架构。计算器估算使用行业标准成本模型；实际成本因组织而异。",
           "items": [
             {
               "text": "Flexera, “2024 State of the Cloud Report,” 2024. “Multi-cloud usage up from 87% last year to 89% this year.”",
@@ -10915,8 +8057,7 @@
               "text": "Commvault Undo Failover automatically rolls back to pre-failover state by restoring original VM configuration.",
               "url": "https://documentation.commvault.com/v11/software/undoing_failover.html"
             }
-          ],
-          "label": "来源与参考"
+          ]
         },
         "socialProof": {
           "author": "基础设施负责人",
@@ -10979,95 +8120,11 @@
           ],
           "title": "解密-传输-重新加密 vs. 零暴露迁移",
           "traditionalLabel": "传统迁移"
-        },
-        "techStrip": {
-          "label": "加密任何容器化工作负载",
-          "note": "数据库、邮件服务器、CI/CD、文件存储、认证、监控——只要在容器中运行，Rediacc 就能以加密方式迁移它。"
-        },
-        "terminal": {
-          "lines": [
-            {
-              "cmd": "rdc repo sync push-all",
-              "flag": "",
-              "prompt": "$",
-              "type": "command",
-              "value": ""
-            },
-            {
-              "type": "spacer"
-            },
-            {
-              "result": "4 个仓库",
-              "text": "正在枚举仓库",
-              "type": "check"
-            },
-            {
-              "result": "已加密",
-              "text": "正在快照 gitlab (42 GB)",
-              "type": "check"
-            },
-            {
-              "result": "已加密",
-              "text": "正在快照 nextcloud (128 GB)",
-              "type": "check"
-            },
-            {
-              "result": "已加密",
-              "text": "正在快照 mailcow (84 GB)",
-              "type": "check"
-            },
-            {
-              "result": "已加密",
-              "text": "正在快照 mariadb (96 GB)",
-              "type": "check"
-            },
-            {
-              "result": "已发送 350 GB",
-              "text": "正在通过加密通道传输",
-              "type": "check"
-            },
-            {
-              "result": "SHA-256 匹配",
-              "text": "正在备用节点上验证完整性",
-              "type": "check"
-            },
-            {
-              "result": "4 个仓库已上线",
-              "text": "正在备用节点上恢复",
-              "type": "check"
-            },
-            {
-              "type": "spacer"
-            },
-            {
-              "text": "迁移完成：4 个仓库已迁移到备用节点",
-              "type": "success"
-            },
-            {
-              "pairs": [
-                {
-                  "label": "Transferred",
-                  "value": "350 GB"
-                },
-                {
-                  "label": "Encryption",
-                  "value": "100%"
-                },
-                {
-                  "label": "Exposure",
-                  "value": "zero"
-                },
-                {
-                  "label": "Time",
-                  "value": "12m 34s"
-                }
-              ],
-              "type": "summary"
-            }
-          ]
         }
       },
       "productionParity": {
+        "label": "生产一致性",
+        "blurb": "与生产完全一致的开发环境",
         "benefits": {
           "items": [
             {
@@ -11165,71 +8222,8 @@
           "overline": "差距对比",
           "title": "代码克隆 vs. 环境克隆"
         },
-        "explore": {
-          "solutions": [
-            {
-              "category": "dev-env",
-              "description": "60 秒克隆生产环境",
-              "slug": "environment-cloning",
-              "title": "环境克隆"
-            },
-            {
-              "category": "dev-env",
-              "current": true,
-              "description": "与生产完全一致的开发环境",
-              "slug": "production-parity",
-              "title": "生产一致性"
-            },
-            {
-              "category": "dev-env",
-              "description": "不再为闲置环境付费",
-              "slug": "infrastructure-costs",
-              "title": "基础设施成本"
-            },
-            {
-              "category": "dev-env",
-              "description": "融入您现有的工作流程",
-              "slug": "integrations",
-              "title": "CI/CD 集成"
-            },
-            {
-              "category": "ransomware",
-              "description": "勒索软件无法触及的备份",
-              "slug": "immutable-backups",
-              "title": "不可变备份"
-            },
-            {
-              "category": "multi-cloud",
-              "description": "AWS 宕机时，您不受影响",
-              "slug": "cloud-outage-protection",
-              "title": "云故障保护"
-            },
-            {
-              "category": "encryption",
-              "description": "您的密钥，您的加密，没有例外。",
-              "slug": "encryption",
-              "title": "您掌控的加密"
-            },
-            {
-              "category": "defense",
-              "description": "克隆生产环境，让 AI 发起攻击。",
-              "slug": "ai-pentesting",
-              "title": "AI 渗透测试"
-            },
-            {
-              "category": "multi-cloud",
-              "description": "克隆或迁移正在运行的集群，数据一起带走",
-              "slug": "kubernetes-cluster-mobility",
-              "title": "Kubernetes 集群迁移"
-            }
-          ],
-          "title": "探索其他解决方案"
-        },
         "hero": {
-          "badge": "开发环境",
-          "differentiator": "所有开发工具都能克隆代码，但没有一个能克隆数据。Rediacc 两者皆可。",
           "primaryCta": "免费开始",
-          "secondaryCta": "了解一致性原理 →",
           "subtitle": "不再有“在我机器上能跑”的问题。每个开发环境都是生产环境的完全克隆。",
           "title": "开发环境与生产环境完全一致。"
         },
@@ -11366,7 +8360,6 @@
           "title": "环境差异导致生产环境 Bug"
         },
         "references": {
-          "disclaimer": "产品性能声明基于 Rediacc 的 btrfs 写时复制架构。计算器估算使用行业标准成本模型；实际成本因组织而异。",
           "items": [
             {
               "text": "DORA (Google Cloud), \"Accelerate State of DevOps Report,\" 2024. \"Elite performers deploy 182 times more frequently, suffer an 8 times lower change failure rate, and recover from failed deployments 2,293 times faster than their low-performing peers.\"",
@@ -11400,8 +8393,7 @@
               "text": "Railway provides instant previews with auto-config and automatic build-and-package upon source changes.",
               "url": "https://docs.railway.com/deployments/reference"
             }
-          ],
-          "label": "来源与参考"
+          ]
         },
         "socialProof": {
           "author": "工程副总裁",
@@ -11460,95 +8452,11 @@
           ],
           "title": "近似模拟 vs. 精确克隆",
           "traditionalLabel": "传统开发环境搭建"
-        },
-        "techStrip": {
-          "label": "克隆任何容器化工作负载",
-          "note": "数据库、邮件服务器、CI/CD、CMS、监控、认证——只要在容器中运行，Rediacc 就能以 100% 的一致性克隆它。"
-        },
-        "terminal": {
-          "lines": [
-            {
-              "cmd": "rdc backup restore dev-sarah --as dev-sarah-verify --up",
-              "flag": "",
-              "prompt": "$",
-              "type": "command",
-              "value": ""
-            },
-            {
-              "type": "spacer"
-            },
-            {
-              "result": "380 GB",
-              "text": "正在快照生产环境 (btrfs CoW)",
-              "type": "check"
-            },
-            {
-              "result": "一致",
-              "text": "正在克隆 gitlab (42 GB)",
-              "type": "check"
-            },
-            {
-              "result": "一致",
-              "text": "正在克隆 nextcloud (128 GB)",
-              "type": "check"
-            },
-            {
-              "result": "一致",
-              "text": "正在克隆 mariadb (96 GB)",
-              "type": "check"
-            },
-            {
-              "result": "一致",
-              "text": "正在克隆 mailcow (84 GB)",
-              "type": "check"
-            },
-            {
-              "result": "100% 匹配",
-              "text": "正在验证配置一致性",
-              "type": "check"
-            },
-            {
-              "result": "100% 匹配",
-              "text": "正在验证操作系统及库版本",
-              "type": "check"
-            },
-            {
-              "result": "4 个仓库已上线",
-              "text": "正在启动 Docker 守护进程",
-              "type": "check"
-            },
-            {
-              "type": "spacer"
-            },
-            {
-              "text": "克隆 dev-sarah 就绪：100% 生产一致性已确认",
-              "type": "success"
-            },
-            {
-              "pairs": [
-                {
-                  "label": "cloned",
-                  "value": "380 GB"
-                },
-                {
-                  "label": "disk used",
-                  "value": "2.1 GB (CoW)"
-                },
-                {
-                  "label": "config drift",
-                  "value": "0"
-                },
-                {
-                  "label": "time",
-                  "value": "47s"
-                }
-              ],
-              "type": "summary"
-            }
-          ]
         }
       },
       "rapidRecovery": {
+        "label": "快速恢复",
+        "blurb": "分钟级恢复，而非数天",
         "benefits": {
           "items": [
             {
@@ -11642,78 +8550,8 @@
           "overline": "差距对比",
           "title": "没有其他工具能如此快速恢复"
         },
-        "explore": {
-          "solutions": [
-            {
-              "category": "Ransomware Survival",
-              "dataCategory": "ransomware",
-              "description": "勒索软件无法触及的备份",
-              "slug": "immutable-backups",
-              "title": "不可变备份"
-            },
-            {
-              "category": "Ransomware Survival",
-              "dataCategory": "ransomware",
-              "description": "分钟级恢复，而非数天",
-              "slug": "rapid-recovery",
-              "title": "快速恢复"
-            },
-            {
-              "category": "Ransomware Survival",
-              "dataCategory": "ransomware",
-              "description": "无风险测试操作系统更新",
-              "slug": "safe-os-testing",
-              "title": "安全的操作系统测试"
-            },
-            {
-              "category": "Multi-Cloud",
-              "dataCategory": "multi-cloud",
-              "description": "AWS 宕机时，您不受影响",
-              "slug": "cloud-outage-protection",
-              "title": "云故障保护"
-            },
-            {
-              "category": "Verified Backups",
-              "dataCategory": "backups",
-              "description": "每次备份自动验证",
-              "slug": "backup-verification",
-              "title": "备份验证"
-            },
-            {
-              "category": "Encryption Control",
-              "dataCategory": "encryption",
-              "description": "您的密钥，您的加密，没有例外。",
-              "slug": "encryption",
-              "title": "您掌控的加密"
-            },
-            {
-              "category": "Development Environments",
-              "dataCategory": "dev-env",
-              "description": "60 秒克隆生产环境",
-              "slug": "environment-cloning",
-              "title": "环境克隆"
-            },
-            {
-              "category": "Preemptive Defense",
-              "dataCategory": "defense",
-              "description": "克隆生产环境，让 AI 发起攻击。",
-              "slug": "ai-pentesting",
-              "title": "AI 渗透测试"
-            },
-            {
-              "category": "multi-cloud",
-              "description": "克隆或迁移正在运行的集群，数据一起带走",
-              "slug": "kubernetes-cluster-mobility",
-              "title": "Kubernetes 集群迁移"
-            }
-          ],
-          "title": "探索其他解决方案"
-        },
         "hero": {
-          "badge": "勒索软件防御",
-          "differentiator": "每家备份厂商都承诺恢复。但没有一家每天验证它。Rediacc 会。",
           "primaryCta": "免费开始使用社区版",
-          "secondaryCta": "查看恢复演示 →",
           "subtitle": "当勒索软件来袭，每分钟都在烧钱。Rediacc 让你在损害扩散之前恢复上线。",
           "title": "几分钟内恢复，而非数天。"
         },
@@ -11853,7 +8691,6 @@
           "title": "缓慢恢复的代价超过攻击本身"
         },
         "references": {
-          "disclaimer": "产品性能声明基于 Rediacc 的 btrfs 写时复制架构。计算器估算使用行业标准成本模型；实际成本因组织而异。",
           "items": [
             {
               "text": "Coveware, \"Quarterly Ransomware Report Q2 2022,\" July 2022. \"In Q2, the average days of downtime was measured at 24 days, a decrease of 8% from Q1 2022.\"",
@@ -11927,8 +8764,7 @@
               "text": "Zerto is deployed on-premises with a Zerto Virtual Manager and per-host Virtual Replication Appliances.",
               "url": "https://help.zerto.com/bundle/Install.VC.HTML/page/Installing_Zerto_Virtual_Replication_in_On-Premise_Environments.htm"
             }
-          ],
-          "label": "来源与参考"
+          ]
         },
         "socialProof": {
           "author": "工程副总裁",
@@ -11985,60 +8821,11 @@
             }
           ],
           "title": "为什么恢复只需几分钟而非数天"
-        },
-        "techStrip": {
-          "label": "保护任何容器化工作负载",
-          "note": "数据库、邮件服务器、CI/CD、CMS、监控、密钥库——只要在容器中运行，Rediacc 就能恢复它。"
-        },
-        "terminal": {
-          "lines": [
-            {
-              "cmd": "rdc repo pull production",
-              "flag": "",
-              "type": "command",
-              "value": ""
-            },
-            {
-              "type": "spacer"
-            },
-            {
-              "text": "正在识别干净恢复点.............. 完成",
-              "type": "check"
-            },
-            {
-              "text": "正在挂载不可变快照................... 完成",
-              "type": "check"
-            },
-            {
-              "text": "正在恢复 8 个容器....................... 完成",
-              "type": "check"
-            },
-            {
-              "text": "正在应用网络配置............... 完成",
-              "type": "check"
-            },
-            {
-              "text": "正在运行健康检查........................ 8/8 通过",
-              "type": "check"
-            },
-            {
-              "type": "spacer"
-            },
-            {
-              "text": "环境已恢复：production",
-              "type": "success"
-            },
-            {
-              "type": "spacer"
-            },
-            {
-              "text": "Time: 3m 12s   Containers: 8   Point: 02:55:00   Status: healthy",
-              "type": "summary"
-            }
-          ]
         }
       },
       "retentionCompliance": {
+        "label": "留存合规",
+        "blurb": "按法律要求保留数据",
         "benefits": {
           "items": [
             {
@@ -12070,7 +8857,7 @@
         "calculator": {
           "annualLabel": "年度合规成本",
           "description": "拖动滑块以匹配你的环境。查看手动保留管理的真实成本。",
-          "footnote": "准备小时数：审计次数 × 每次审计小时数。差距：每 5 TB 手动管理数据 1 个差距（保守估计）。罚款：每个差距 $50K（中小企业 GDPR 罚款中位数）。人力：准备小时数 × $200/小时（高级工程师）。平均数据泄露成本 $4.88M（IBM 2024）[1]。Rediacc 即时生成审计报告——每次审计 2 小时，自动化策略执行。",
+          "footnote": "准备小时数：审计次数 × 每次审计小时数。差距：每 5 TB 手动管理数据 1 个差距（保守估计）。罚款：每个差距 $50K（中小企业 GDPR 罚款中位数）。人力：准备小时数 × $200/小时（高级工程师）。平均数据泄露成本 $4.88M（IBM 2024）。Rediacc 即时生成审计报告——每次审计 2 小时，自动化策略执行。",
           "headerTitle": "计算你的合规风险敞口",
           "overline": "真实成本",
           "results": {
@@ -12138,73 +8925,8 @@
           "overline": "差距对比",
           "title": "保留合规对比"
         },
-        "explore": {
-          "solutions": [
-            {
-              "category": "backups",
-              "categoryLabel": "备份验证",
-              "description": "每次备份自动验证",
-              "slug": "backup-verification",
-              "title": "备份验证"
-            },
-            {
-              "category": "backups",
-              "categoryLabel": "备份验证",
-              "current": true,
-              "description": "按法律要求保留数据",
-              "slug": "retention-compliance",
-              "title": "留存合规"
-            },
-            {
-              "category": "backups",
-              "categoryLabel": "备份验证",
-              "description": "分钟级完整环境恢复",
-              "slug": "instant-recovery",
-              "title": "即时恢复"
-            },
-            {
-              "category": "ransomware",
-              "categoryLabel": "勒索软件防御",
-              "description": "勒索软件无法触及的备份",
-              "slug": "immutable-backups",
-              "title": "不可变备份"
-            },
-            {
-              "category": "multi-cloud",
-              "categoryLabel": "多云",
-              "description": "AWS 宕机时，您不受影响",
-              "slug": "cloud-outage-protection",
-              "title": "云故障保护"
-            },
-            {
-              "category": "encryption",
-              "categoryLabel": "加密控制",
-              "description": "您的密钥，您的加密，没有例外。",
-              "slug": "encryption",
-              "title": "您掌控的加密"
-            },
-            {
-              "category": "dev-env",
-              "categoryLabel": "开发环境",
-              "description": "60 秒克隆生产环境",
-              "slug": "environment-cloning",
-              "title": "环境克隆"
-            },
-            {
-              "category": "defense",
-              "categoryLabel": "主动防御",
-              "description": "克隆生产环境，让 AI 发起攻击。",
-              "slug": "ai-pentesting",
-              "title": "AI 渗透测试"
-            }
-          ],
-          "title": "探索其他解决方案"
-        },
         "hero": {
-          "badge": "备份验证",
-          "differentiator": "每家厂商都备份你的数据。但没有一家验证恢复是否有效。Rediacc 每天验证。",
           "primaryCta": "免费开始使用社区版",
-          "secondaryCta": "查看合规功能 →",
           "subtitle": "可配置的保留策略满足合规要求。HIPAA、SOC2、GDPR——默认覆盖。",
           "title": "按法律要求保留数据"
         },
@@ -12298,19 +9020,19 @@
             {
               "number": "$4.88M",
               "ref": 1,
-              "source": "IBM Cost of Data Breach 2024 [1]",
+              "source": "IBM Cost of Data Breach 2024",
               "text": "全球数据泄露的平均成本"
             },
             {
               "number": "$2.13M",
               "ref": 2,
-              "source": "HHS HIPAA Enforcement [2]",
+              "source": "HHS HIPAA Enforcement",
               "text": "每个违规类别每年的最高 HIPAA 罚款"
             },
             {
               "number": "€1.2B",
               "ref": 3,
-              "source": "CMS GDPR Enforcement Tracker 2024/2025 [3]",
+              "source": "CMS GDPR Enforcement Tracker 2024/2025",
               "text": "仅 2024 年欧洲就开出的 GDPR 罚款总额"
             }
           ],
@@ -12344,7 +9066,6 @@
           "title": "合规失败代价高昂"
         },
         "references": {
-          "disclaimer": "产品性能声明基于 Rediacc 的 btrfs 写时复制架构。计算器估算使用行业标准成本模型；实际成本因组织而异。",
           "items": [
             {
               "text": "IBM Security, “Cost of a Data Breach Report 2024,” July 2024. “The global average cost of a data breach reached $4.88 million in 2024.”",
@@ -12434,8 +9155,7 @@
               "text": "Commvault supports fully self-hosted on-premises deployments with CommServe, MediaAgent, and Access Node components.",
               "url": "https://documentation.commvault.com/v11/software/initial_setup_self_service_deployments.html"
             }
-          ],
-          "label": "来源与参考"
+          ]
         },
         "socialProof": {
           "author": "合规官",
@@ -12494,94 +9214,11 @@
           ],
           "title": "为什么电子表格式合规会失败",
           "traditionalLabel": "手动保留管理"
-        },
-        "techStrip": {
-          "label": "验证任何容器化工作负载",
-          "note": "数据库、邮件服务器、CI/CD、CMS、监控、认证——只要在容器中运行，Rediacc 就能保留和验证它。"
-        },
-        "terminal": {
-          "lines": [
-            {
-              "cmd": "rdc config backup-strategy set",
-              "flag": "",
-              "prompt": "$",
-              "type": "command",
-              "value": ""
-            },
-            {
-              "type": "spacer"
-            },
-            {
-              "result": "done",
-              "text": "策略 \"hipaa\" 已配置",
-              "type": "check"
-            },
-            {
-              "result": "set",
-              "text": "留存期：7 年",
-              "type": "check"
-            },
-            {
-              "result": "激活",
-              "text": "自动清理：已启用",
-              "type": "check"
-            },
-            {
-              "result": "记录中",
-              "text": "审计追踪：已启用",
-              "type": "check"
-            },
-            {
-              "type": "spacer"
-            },
-            {
-              "cmd": "rdc config backup-strategy show",
-              "prompt": "$",
-              "type": "command"
-            },
-            {
-              "type": "spacer"
-            },
-            {
-              "text": "POLICY      KEEP    BACKUPS   OLDEST         STATUS",
-              "type": "table-header"
-            },
-            {
-              "text": "hipaa       7y      2,555     2019-02-27     compliant",
-              "type": "table-row"
-            },
-            {
-              "text": "soc2        5y      1,825     2021-02-27     compliant",
-              "type": "table-row"
-            },
-            {
-              "text": "gdpr        3y      1,095     2023-02-27     compliant",
-              "type": "table-row"
-            },
-            {
-              "type": "spacer"
-            },
-            {
-              "pairs": [
-                {
-                  "label": "Policies",
-                  "value": "3 个激活"
-                },
-                {
-                  "label": "Total backups",
-                  "value": "5,475"
-                },
-                {
-                  "label": "Compliance",
-                  "value": "100%"
-                }
-              ],
-              "type": "summary"
-            }
-          ]
         }
       },
       "safeOsTesting": {
+        "label": "安全的操作系统测试",
+        "blurb": "无风险测试操作系统更新",
         "benefits": {
           "items": [
             {
@@ -12613,7 +9250,7 @@
         "calculator": {
           "annualLabel": "年度风险敞口",
           "description": "拖动滑块以匹配你的基础设施。查看未测试更新的风险。",
-          "footnote": "暴露天数：推迟补丁数 × 补丁间平均 30 天。失败更新停机时间：恢复小时数 × $9,000/分钟（Splunk/Oxford Economics 2024）[3] × 10% 失败率。恢复人力：3 名工程师 × 恢复小时数 × $200/小时。泄露风险：$4.88M 平均泄露成本（IBM 2024）[4] × 按服务器数量缩放的未打补丁概率。所有数据为保守估计。",
+          "footnote": "暴露天数：推迟补丁数 × 补丁间平均 30 天。失败更新停机时间：恢复小时数 × $9,000/分钟（Splunk/Oxford Economics 2024） × 10% 失败率。恢复人力：3 名工程师 × 恢复小时数 × $200/小时。泄露风险：$4.88M 平均泄露成本（IBM 2024） × 按服务器数量缩放的未打补丁概率。所有数据为保守估计。",
           "headerTitle": "计算你的补丁风险敞口",
           "overline": "真实成本",
           "results": {
@@ -12681,73 +9318,8 @@
           "overline": "差距对比",
           "title": "没有其他工具能在真实生产数据上测试补丁"
         },
-        "explore": {
-          "solutions": [
-            {
-              "category": "ransomware",
-              "categoryLabel": "勒索软件防御",
-              "description": "勒索软件无法触及的备份",
-              "slug": "immutable-backups",
-              "title": "不可变备份"
-            },
-            {
-              "category": "ransomware",
-              "categoryLabel": "勒索软件防御",
-              "description": "分钟级恢复，而非数天",
-              "slug": "rapid-recovery",
-              "title": "快速恢复"
-            },
-            {
-              "category": "ransomware",
-              "categoryLabel": "勒索软件防御",
-              "current": true,
-              "description": "无风险测试操作系统更新",
-              "slug": "safe-os-testing",
-              "title": "安全的操作系统测试"
-            },
-            {
-              "category": "multi-cloud",
-              "categoryLabel": "多云",
-              "description": "AWS 宕机时，您不受影响",
-              "slug": "cloud-outage-protection",
-              "title": "云故障保护"
-            },
-            {
-              "category": "backups",
-              "categoryLabel": "备份验证",
-              "description": "每次备份自动验证",
-              "slug": "backup-verification",
-              "title": "备份验证"
-            },
-            {
-              "category": "encryption",
-              "categoryLabel": "加密控制",
-              "description": "您的密钥，您的加密，没有例外。",
-              "slug": "encryption",
-              "title": "您掌控的加密"
-            },
-            {
-              "category": "dev-env",
-              "categoryLabel": "开发环境",
-              "description": "60 秒克隆生产环境",
-              "slug": "environment-cloning",
-              "title": "环境克隆"
-            },
-            {
-              "category": "defense",
-              "categoryLabel": "主动防御",
-              "description": "克隆生产环境，让 AI 发起攻击。",
-              "slug": "ai-pentesting",
-              "title": "AI 渗透测试"
-            }
-          ],
-          "title": "探索其他解决方案"
-        },
         "hero": {
-          "badge": "勒索软件防御",
-          "differentiator": "每家备份厂商都承诺恢复。但没有一家每天验证它。Rediacc 会。",
           "primaryCta": "免费开始使用社区版",
-          "secondaryCta": "了解克隆原理 →",
           "subtitle": "克隆你的生产环境。应用补丁。查看哪里出了问题。必要时回滚。所有操作都不触及生产环境。",
           "title": "零风险测试 OS 更新"
         },
@@ -12818,7 +9390,7 @@
             {
               "description": "应用补丁、升级、内核更新。尽情折腾。生产环境不受影响。",
               "icon": "flask",
-              "title": "Test"
+              "title": "测试"
             },
             {
               "description": "健康检查通过？自信地应用到生产环境。失败了？丢弃克隆。什么都没发生。",
@@ -12840,19 +9412,19 @@
             {
               "number": "3x",
               "ref": 1,
-              "source": "Verizon DBIR 2024 [1]",
+              "source": "Verizon DBIR 2024",
               "text": "漏洞利用作为初始访问向量的激增"
             },
             {
               "number": "45%",
               "ref": 2,
-              "source": "Uptime Institute 2023 [2]",
+              "source": "Uptime Institute 2023",
               "text": "由配置/变更管理导致的网络中断比例"
             },
             {
               "number": "$9,000/min",
               "ref": 3,
-              "source": "Splunk/Oxford Economics 2024 [3]",
+              "source": "Splunk/Oxford Economics 2024",
               "text": "IT 停机的平均每分钟成本"
             }
           ],
@@ -12886,7 +9458,6 @@
           "title": "未经测试的更新导致宕机"
         },
         "references": {
-          "disclaimer": "产品性能声明基于 Rediacc 的 btrfs 写时复制架构。计算器估算使用行业标准成本模型；实际成本因组织而异。",
           "items": [
             {
               "text": "Verizon, “2024 Data Breach Investigations Report,” May 2024. “The exploitation of vulnerabilities as an initial point of entry almost tripled from the previous year, accounting for 14% of all breaches.”",
@@ -12944,8 +9515,7 @@
               "text": "Zerto is deployed on-premises with a Zerto Virtual Manager and per-host Virtual Replication Appliances.",
               "url": "https://help.zerto.com/bundle/Install.VC.HTML/page/Installing_Zerto_Virtual_Replication_in_On-Premise_Environments.htm"
             }
-          ],
-          "label": "来源与参考"
+          ]
         },
         "socialProof": {
           "author": "首席 SRE",
@@ -13004,98 +9574,11 @@
           ],
           "title": "为什么文件系统级安全测试可行",
           "traditionalLabel": "传统方式"
-        },
-        "techStrip": {
-          "label": "保护任何容器化工作负载",
-          "note": "数据库、邮件服务器、CI/CD、CMS、监控、密钥——只要在容器中运行，Rediacc 就能保护它。"
-        },
-        "terminal": {
-          "lines": [
-            {
-              "cmd": "rdc repo fork production",
-              "flag": "",
-              "prompt": "$",
-              "type": "command",
-              "value": ""
-            },
-            {
-              "type": "spacer"
-            },
-            {
-              "result": "done",
-              "text": "正在快照生产环境",
-              "type": "check"
-            },
-            {
-              "result": "done",
-              "text": "正在复制 8 个容器 (380 GB)",
-              "type": "check"
-            },
-            {
-              "result": "done",
-              "text": "正在挂载隔离网络",
-              "type": "check"
-            },
-            {
-              "result": "8/8 通过",
-              "text": "正在运行健康检查",
-              "type": "check"
-            },
-            {
-              "type": "spacer"
-            },
-            {
-              "text": "克隆就绪：patch-test-ubuntu-24.internal",
-              "type": "success"
-            },
-            {
-              "type": "spacer"
-            },
-            {
-              "cmd": "rdc term connect patch-test-ubuntu-24",
-              "flag": "-c",
-              "prompt": "$",
-              "type": "command",
-              "value": "\"apt upgrade -y\""
-            },
-            {
-              "result": "done",
-              "text": "正在升级 47 个软件包",
-              "type": "check"
-            },
-            {
-              "result": "8/8 通过",
-              "text": "正在运行健康检查",
-              "type": "check"
-            },
-            {
-              "type": "spacer"
-            },
-            {
-              "pairs": [
-                {
-                  "label": "Clone",
-                  "value": "52s"
-                },
-                {
-                  "label": "Patch",
-                  "value": "47 个包"
-                },
-                {
-                  "label": "Health",
-                  "value": "8/8 通过"
-                },
-                {
-                  "label": "Production",
-                  "value": "未受影响"
-                }
-              ],
-              "type": "summary"
-            }
-          ]
         }
       },
       "vendorLockIn": {
+        "label": "供应商锁定自由",
+        "blurb": "您的基础设施，您的选择，始终如此。",
         "benefits": {
           "items": [
             {
@@ -13194,78 +9677,8 @@
           "overline": "差距对比",
           "title": "没有其他工具能在几分钟内迁移你的完整技术栈"
         },
-        "explore": {
-          "solutions": [
-            {
-              "category": "Multi-Cloud",
-              "dataCategory": "multi-cloud",
-              "description": "AWS 宕机时，您不受影响",
-              "slug": "cloud-outage-protection",
-              "title": "云故障保护"
-            },
-            {
-              "category": "Multi-Cloud",
-              "dataCategory": "multi-cloud",
-              "description": "您的基础设施，您的选择，始终如此。",
-              "slug": "vendor-lock-in",
-              "title": "供应商锁定自由"
-            },
-            {
-              "category": "Multi-Cloud",
-              "dataCategory": "multi-cloud",
-              "description": "在需要之前测试您的故障转移",
-              "slug": "failover-testing",
-              "title": "故障转移测试"
-            },
-            {
-              "category": "Ransomware Survival",
-              "dataCategory": "ransomware",
-              "description": "勒索软件无法触及的备份",
-              "slug": "immutable-backups",
-              "title": "不可变备份"
-            },
-            {
-              "category": "Verified Backups",
-              "dataCategory": "backups",
-              "description": "每次备份自动验证",
-              "slug": "backup-verification",
-              "title": "备份验证"
-            },
-            {
-              "category": "Encryption Control",
-              "dataCategory": "encryption",
-              "description": "您的密钥，您的加密，没有例外。",
-              "slug": "encryption",
-              "title": "您掌控的加密"
-            },
-            {
-              "category": "Development Environments",
-              "dataCategory": "dev-env",
-              "description": "60 秒克隆生产环境",
-              "slug": "environment-cloning",
-              "title": "环境克隆"
-            },
-            {
-              "category": "Preemptive Defense",
-              "dataCategory": "defense",
-              "description": "克隆生产环境，让 AI 发起攻击。",
-              "slug": "ai-pentesting",
-              "title": "AI 渗透测试"
-            },
-            {
-              "category": "multi-cloud",
-              "description": "克隆或迁移正在运行的集群，数据一起带走",
-              "slug": "kubernetes-cluster-mobility",
-              "title": "Kubernetes 集群迁移"
-            }
-          ],
-          "title": "探索其他解决方案"
-        },
         "hero": {
-          "badge": "多云架构",
-          "differentiator": "每朵云都有备份。但没有一个能在几分钟内故障转移到另一朵云。Rediacc 可以。",
           "primaryCta": "免费开始使用社区版",
-          "secondaryCta": "查看迁移演示 →",
           "subtitle": "随处部署，随时迁移。无锁定合同，无专有格式。你的数据始终属于你。",
           "title": "你的基础设施，你的选择，始终如此。"
         },
@@ -13405,7 +9818,6 @@
           "title": "厂商锁定用高价困住你"
         },
         "references": {
-          "disclaimer": "产品性能声明基于 Rediacc 的 btrfs 写时复制架构。计算器估算使用行业标准成本模型；实际成本因组织而异。",
           "items": [
             {
               "text": "Flexera, \"2024 State of the Cloud Report,\" 2024. \"27% of cloud spend continues to be wasted.\"",
@@ -13451,8 +9863,7 @@
               "text": "Zerto continuous replication ensures near-zero downtime migration with real-time VM replication and minute-level cutover.",
               "url": "https://help.zerto.com/bundle/Admin.HV.HTML/page/Live_Migration.htm"
             }
-          ],
-          "label": "来源与参考"
+          ]
         },
         "socialProof": {
           "author": "CTO",
@@ -13513,64 +9924,11 @@
             }
           ],
           "title": "为什么迁移只需几分钟而非数月"
-        },
-        "techStrip": {
-          "label": "复制任何容器化工作负载",
-          "note": "数据库、CI/CD、CMS、监控、认证、存储——只要在容器中运行，Rediacc 就能在提供商之间迁移它。"
-        },
-        "terminal": {
-          "lines": [
-            {
-              "cmd": "rdc repo sync push-all",
-              "flag": "",
-              "type": "command",
-              "value": ""
-            },
-            {
-              "type": "spacer"
-            },
-            {
-              "text": "正在快照当前环境.............. 完成",
-              "type": "check"
-            },
-            {
-              "text": "正在计算增量差异.................... 3.8 GB 增量",
-              "type": "check"
-            },
-            {
-              "text": "正在传输到 hetzner-fsn................... 完成",
-              "type": "check"
-            },
-            {
-              "text": "正在目标上应用快照................... 完成",
-              "type": "check"
-            },
-            {
-              "text": "正在启动 10 个容器........................ 10/10 健康",
-              "type": "check"
-            },
-            {
-              "text": "正在更新 DNS 记录.......................... 已传播",
-              "type": "check"
-            },
-            {
-              "type": "spacer"
-            },
-            {
-              "text": "迁移完成：生产环境现在运行在 hetzner-fsn 上",
-              "type": "success"
-            },
-            {
-              "type": "spacer"
-            },
-            {
-              "text": "Transfer: 3.8 GB   Time: 38 min   Containers: 10/10   Downtime: 0",
-              "type": "summary"
-            }
-          ]
         }
       },
       "vulnerabilityManagement": {
+        "label": "漏洞管理",
+        "blurb": "在攻击者到来之前修复漏洞",
         "benefits": {
           "items": [
             {
@@ -13620,73 +9978,8 @@
           "withResults": {},
           "withTag": "使用 Rediacc"
         },
-        "explore": {
-          "solutions": [
-            {
-              "category": "defense",
-              "categoryLabel": "主动防御",
-              "description": "克隆生产环境，让 AI 发起攻击。",
-              "slug": "ai-pentesting",
-              "title": "AI 渗透测试"
-            },
-            {
-              "category": "defense",
-              "categoryLabel": "主动防御",
-              "description": "持续测试安全性，而非每年一次",
-              "slug": "continuous-security-testing",
-              "title": "持续安全测试"
-            },
-            {
-              "category": "defense",
-              "categoryLabel": "主动防御",
-              "current": true,
-              "description": "在攻击者到来之前修复漏洞",
-              "slug": "vulnerability-management",
-              "title": "漏洞管理"
-            },
-            {
-              "category": "ransomware",
-              "categoryLabel": "勒索软件防御",
-              "description": "勒索软件无法触及的备份",
-              "slug": "immutable-backups",
-              "title": "不可变备份"
-            },
-            {
-              "category": "multi-cloud",
-              "categoryLabel": "多云",
-              "description": "AWS 宕机时，您不受影响",
-              "slug": "cloud-outage-protection",
-              "title": "云故障保护"
-            },
-            {
-              "category": "backups",
-              "categoryLabel": "备份验证",
-              "description": "每次备份自动验证",
-              "slug": "backup-verification",
-              "title": "备份验证"
-            },
-            {
-              "category": "encryption",
-              "categoryLabel": "加密控制",
-              "description": "您的密钥，您的加密，没有例外。",
-              "slug": "encryption",
-              "title": "您掌控的加密"
-            },
-            {
-              "category": "dev-env",
-              "categoryLabel": "开发环境",
-              "description": "60 秒克隆生产环境",
-              "slug": "environment-cloning",
-              "title": "环境克隆"
-            }
-          ],
-          "title": "探索其他解决方案"
-        },
         "hero": {
-          "badge": "主动防御",
-          "differentiator": "每个安全工具都能发现漏洞。但没有一个让你先在真实克隆上测试修复。Rediacc 可以。",
           "primaryCta": "免费开始",
-          "secondaryCta": "查看工作流 →",
           "subtitle": "在安全的克隆上发现、测试和修补安全漏洞。满怀信心地将修复部署到生产环境。",
           "title": "在攻击者到来之前修复漏洞"
         },
@@ -13770,19 +10063,19 @@
             {
               "number": "30.6 days",
               "ref": 1,
-              "source": "Qualys TruRisk Research Report 2023 [1]",
+              "source": "Qualys TruRisk Research Report 2023",
               "text": "武器化漏洞的平均修复时间"
             },
             {
               "number": "180%",
               "ref": 2,
-              "source": "Verizon DBIR 2024 [2]",
+              "source": "Verizon DBIR 2024",
               "text": "漏洞利用作为初始入侵向量的增长"
             },
             {
               "number": "$4.88M",
               "ref": 3,
-              "source": "IBM Cost of a Data Breach 2024 [3]",
+              "source": "IBM Cost of a Data Breach 2024",
               "text": "数据泄露的平均成本"
             }
           ],
@@ -13816,7 +10109,6 @@
           "title": "在生产环境打补丁是一场赌博"
         },
         "references": {
-          "disclaimer": "产品性能声明基于 Rediacc 的 btrfs 写时复制架构。计算器估算使用行业标准成本模型；实际成本因组织而异。",
           "items": [
             {
               "text": "Qualys, “TruRisk Research Report,” 2023. “On average, weaponized vulnerabilities are patched within 30.6 days yet only patched an average of 57.7% of the time.”",
@@ -13830,8 +10122,7 @@
               "text": "IBM Security, “Cost of a Data Breach Report,” July 2024. “The global average cost of a data breach reached USD 4.88 million in 2024.”",
               "url": "https://newsroom.ibm.com/2024-07-30-ibm-report-escalating-data-breach-disruption-pushes-costs-to-new-highs"
             }
-          ],
-          "label": "来源与参考"
+          ]
         },
         "socialProof": {
           "author": "基础设施安全负责人",
@@ -13890,106 +10181,7 @@
           ],
           "title": "为什么基于克隆的打补丁有效",
           "traditionalLabel": "传统打补丁"
-        },
-        "techStrip": {
-          "label": "测试任何容器化工作负载",
-          "note": "数据库、邮件服务器、CI/CD、CMS、监控、认证——只要在容器中运行，Rediacc 就能克隆、修补和验证它。"
-        },
-        "terminal": {
-          "lines": [
-            {
-              "cmd": "rdc term production cve-2026-1234-fix",
-              "flag": "",
-              "prompt": "$",
-              "type": "command",
-              "value": ""
-            },
-            {
-              "type": "spacer"
-            },
-            {
-              "result": "完成 (47s)",
-              "text": "正在克隆生产环境",
-              "type": "check"
-            },
-            {
-              "text": "→ 克隆：prod-vuln-fix-1234 (380 GB, btrfs CoW: 2.1 GB)",
-              "type": "comment"
-            },
-            {
-              "type": "spacer"
-            },
-            {
-              "result": "done",
-              "text": "正在应用补丁：OpenSSL 3.0.8 → 3.0.15",
-              "type": "check"
-            },
-            {
-              "result": "完成 (12s)",
-              "text": "正在重启受影响的服务",
-              "type": "check"
-            },
-            {
-              "text": "→ Keycloak 已重启 · Nextcloud 已重启 · GitLab 已重启",
-              "type": "comment"
-            },
-            {
-              "type": "spacer"
-            },
-            {
-              "result": "",
-              "text": "正在运行验证套件",
-              "type": "check"
-            },
-            {
-              "text": "→ CVE-2026-1234 重新扫描：已修补",
-              "type": "comment"
-            },
-            {
-              "text": "→ 服务健康检查：全部通过",
-              "type": "comment"
-            },
-            {
-              "text": "→ 回归测试 (247 个断言)：0 个失败",
-              "type": "comment"
-            },
-            {
-              "text": "→ TLS 握手验证：有效",
-              "type": "comment"
-            },
-            {
-              "type": "spacer"
-            },
-            {
-              "text": "补丁已验证。可以安全部署到生产环境。",
-              "type": "success"
-            },
-            {
-              "pairs": [
-                {
-                  "label": "Time",
-                  "value": "3m 41s"
-                },
-                {
-                  "label": "CVE",
-                  "value": "已修补"
-                },
-                {
-                  "label": "Services",
-                  "value": "3/3 healthy"
-                }
-              ],
-              "type": "summary"
-            }
-          ]
         }
-      }
-    },
-    "solutionsIndex": {
-      "meta": {
-        "description": "Rediacc 全部解决方案一站式呈现：勒索软件恢复、多云迁移、Kubernetes 可移植性、已验证备份、加密，以及快速开发环境。",
-        "keywords": "Rediacc 解决方案, 勒索软件恢复, 多云, Kubernetes 集群迁移, 已验证备份, 加密控制, 开发环境",
-        "title": "Solutions - Business Continuity Software | Rediacc"
       }
     },
     "telemetryPolicy": {
@@ -14465,31 +10657,24 @@
     "subtitle": "免费开始，按需升级",
     "title": "价格清晰，绝无意外。"
   },
-  "problem": {
-    "reality": {
-      "imageAlt": "该图说明了传统基础设施工作流程的挑战：沮丧的开发人员等待环境配置，利益相关者要求更快的部署，以及团队由于沙箱更新缓慢而诉诸危险的生产测试",
-      "title": "真相：疲惫的团队，危险的办法"
-    },
-    "solution": {
-      "imageAlt": "Rediacc 平台解决方案图：自动化基础设施配置、即时生产环境克隆、简化的开发人员工作流程以及通过模型上下文协议集成实现 AI 安全操作",
-      "title": "Rediacc 如何解决"
-    },
-    "subtitle": "生产系统里数据量大，测试系统却一个月才更新一次。团队怎么办？要么拿着过时数据工作，要么在线上冒险。",
-    "title": "为什么你的团队总在生产环境测试"
-  },
   "regionPicker": {
     "footer": "选择离您最近的区域，或您的组织所要求的区域。",
     "footerNote": "注册后无法更改。",
-    "locations": {
-      "asia": "东京，日本",
-      "eu": "法兰克福，德国",
-      "us": "弗吉尼亚，美国"
-    },
     "reassurance": "您的服务器数据和备份保留在您自己的基础设施中。",
     "subtitle": "您的账户、账单和配置保留在您选择的区域中，",
     "title": "选择您的账户区域"
   },
   "solutions": {
+    "roles": {
+      "copy": "复制",
+      "test": "测试",
+      "recover": "恢复",
+      "property": "平台"
+    },
+    "constellation": {
+      "centre": "每个解决方案都是对您的生产环境副本执行的一件事。",
+      "title": "探索其他解决方案"
+    },
     "categories": {
       "backups": "可靠备份",
       "defense": "主动防御",
@@ -14498,30 +10683,10 @@
       "multi-cloud": "多云架构",
       "ransomware": "勒索危机应对"
     },
-    "subtitle": "防勒索、保在线、守数据——六大防护方案",
     "title": "让业务永不中断"
   },
-  "team": {
-    "video": {
-      "ccLabel": "字幕",
-      "personaHeadline": "给你的一条消息",
-      "playLabel": "观看视频"
-    }
-  },
-  "tutorial": {
-    "audioControls": "转录音频控制",
-    "audioVolume": "转录语音音量",
-    "muteAudio": "静音转录音频",
-    "subtitlesControls": "转录字幕控制",
-    "unmuteAudio": "取消静音转录音频"
-  },
   "video": {
-    "disableCaptions": "关闭字幕",
-    "enableCaptions": "开启字幕",
-    "playVideo": "播放视频",
-    "toggleFullscreen": "切换全屏",
-    "volume": "音量",
-    "youtubeTitle": "产品介绍"
+    "playVideo": "播放视频"
   },
   "whyNow": {
     "cards": [

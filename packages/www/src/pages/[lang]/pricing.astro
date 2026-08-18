@@ -6,63 +6,23 @@ import FAQSection from '../../components/FAQSection.astro';
 import { createTranslator } from '../../i18n/utils';
 import { getLanguagePaths } from '../../i18n/language-utils';
 import type { Language } from '../../i18n/types';
-import { PLAN_ORDER, PLAN_PRICING } from '@rediacc/shared/subscription';
 import { EXTERNAL_LINKS } from '../../config/constants';
 import LlmsInlineScript from '../../components/LlmsInlineScript.astro';
 import StructuredData from '../../components/StructuredData.astro';
 import PricingTrustSection from '../../components/PricingTrustSection.astro';
+import BillingToggle from '../../components/BillingToggle.astro';
+import { buildMetricsFor, buildPlans } from '../../components/pricing-plans';
 import '../../styles/pricing-page.css';
 
 export const getStaticPaths = getLanguagePaths;
 
 const { lang } = Astro.params as { lang: Language };
-const { t, ta, to } = createTranslator(lang);
+const { t, to } = createTranslator(lang);
 
 const ns = 'pages.pricing';
 
-const badgeConfig: Record<string, { isPopular?: boolean; badgeLabel?: string; badgeVariant?: string }> = {
-  professional: {
-    isPopular: true,
-    badgeLabel: t(`${ns}.ui.popular`),
-    badgeVariant: 'popular',
-  },
-  business: {
-    badgeLabel: t(`${ns}.ui.bestValue`),
-    badgeVariant: 'best-value',
-  },
-};
-
-const startingAtPlans = new Set(['enterprise']);
-
-// Community is the post-cancellation fallback floor, not a self-serve plan,
-// so the pricing grid shows the two paid plans plus the Enterprise contact
-// card. Annual prices come from the shared constants (an explicit 15%-off
-// value, not a 10x-monthly shortcut).
-const allPlans = PLAN_ORDER.filter((code) => code !== 'COMMUNITY').map((code) => {
-  const id = code.toLowerCase();
-  const monthly = PLAN_PRICING[code].monthlyPriceCents / 100;
-  const annual = PLAN_PRICING[code].annualPriceCents / 100;
-  const badge = badgeConfig[id];
-  return {
-    id,
-    monthly,
-    annual,
-    isPopular: badge?.isPopular ?? false,
-    badgeLabel: badge?.badgeLabel,
-    badgeVariant: badge?.badgeVariant,
-    startingAt: startingAtPlans.has(id),
-  };
-});
-
-const technicalMetrics = ta(`${ns}.technicalSummary.metrics`);
-const technicalValues = to(`${ns}.technicalSummary.values`);
-
-const buildMetrics = (planId: string) =>
-  technicalMetrics.map((metric: any) => ({
-    label: metric.label,
-    tooltip: metric.tooltip,
-    value: technicalValues?.[planId]?.[metric.key] ?? '—',
-  }));
+const allPlans = buildPlans();
+const buildMetrics = buildMetricsFor(lang);
 
 const comparison = to(`${ns}.comparison`);
 
@@ -106,41 +66,17 @@ const faqSchema = faqItems ? {
   />
 
   <article class="pricing-page">
-    <!-- Hero Section -->
-    <section id="pricing-hero" class="pricing-hero section-dark">
-      <div class="pricing-hero-content">
-        <h1>{t(`${ns}.hero.title`)}</h1>
-        <p class="hero-subtitle">{t(`${ns}.hero.subtitle`)}</p>
-      </div>
-    </section>
-
-    <!-- Billing Toggle & Pricing Cards -->
-    <section id="plans" class="pricing-content section-light">
+    <!-- Plans. There is no hero: a 900px dark band carrying two lines of text
+         pushed the first price to y=1226, so the page opened on everything
+         except the thing it sells. The title is a label above the cards. -->
+    <section id="plans" class="pricing-content section-light" data-pricing-scope>
       <div class="cf-pricing-container">
-        <!-- Billing Toggle -->
-        <div class="billing-toggle-wrapper">
-          <div class="billing-toggle" role="radiogroup" aria-label="Billing period">
-            <button
-              type="button"
-              role="radio"
-              class="billing-toggle-btn active"
-              data-period="monthly"
-              aria-checked="true"
-            >
-              {t(`${ns}.ui.billingToggle.monthly`)}
-            </button>
-            <button
-              type="button"
-              role="radio"
-              class="billing-toggle-btn"
-              data-period="annual"
-              aria-checked="false"
-            >
-              {t(`${ns}.ui.billingToggle.annual`)}
-            </button>
-          </div>
-          <span class="billing-toggle-savings">{t(`${ns}.ui.billingToggle.annualSavings`)}</span>
+        <div class="pricing-intro">
+          <h1>{t(`${ns}.hero.title`)}</h1>
+          <p>{t(`${ns}.hero.subtitle`)}</p>
         </div>
+
+        <BillingToggle lang={lang} />
 
         <!-- Pricing Cards -->
         <div class:list={['cf-pricing-grid', allPlans.length === 2 && 'two-up', allPlans.length === 3 && 'three-up']}>
@@ -237,46 +173,3 @@ const faqSchema = faqItems ? {
   </article>
   <LlmsInlineScript page="pricing" />
 </BaseLayout>
-
-<script>
-  // Billing toggle: swap between monthly and annual display
-  document.addEventListener('DOMContentLoaded', () => {
-    const section = document.getElementById('plans');
-    if (!section) return;
-
-    const toggleBtns = section.querySelectorAll<HTMLButtonElement>('.billing-toggle .billing-toggle-btn');
-    const savingsLabel = section.querySelector<HTMLElement>('.billing-toggle-savings');
-
-    if (!toggleBtns.length) return;
-
-    toggleBtns.forEach((btn) => {
-      btn.addEventListener('click', () => {
-        const period = btn.dataset.period;
-        if (!period) return;
-
-        // Update toggle state
-        toggleBtns.forEach((b) => {
-          const isActive = b === btn;
-          b.classList.toggle('active', isActive);
-          b.setAttribute('aria-checked', isActive ? 'true' : 'false');
-        });
-
-        // Show/hide savings label
-        if (savingsLabel) {
-          savingsLabel.classList.toggle('visible', period === 'annual');
-        }
-
-        // Update prices
-        section.querySelectorAll<HTMLElement>('.cf-price[data-monthly]').forEach((el) => {
-          el.textContent = period === 'annual' ? el.dataset.annual! : el.dataset.monthly!;
-        });
-        section.querySelectorAll<HTMLElement>('.cf-price-period[data-monthly]').forEach((el) => {
-          el.textContent = period === 'annual' ? el.dataset.annual! : el.dataset.monthly!;
-        });
-        section.querySelectorAll<HTMLElement>('.cf-annual-note[data-monthly]').forEach((el) => {
-          el.textContent = period === 'annual' ? el.dataset.annual! : el.dataset.monthly!;
-        });
-      });
-    });
-  });
-</script>

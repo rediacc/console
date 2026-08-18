@@ -32,6 +32,14 @@
 #   SES_KEY_<SUFFIX>               SES_SECRET_<SUFFIX>
 #   SES_KEY_EU                     SES_SECRET_EU  (ASIA borrows these)
 #   OTLP_CRED_<SUFFIX>
+#   BACKUP_S3_ENDPOINT             BACKUP_S3_BUCKET
+#   BACKUP_S3_ACCESS_KEY_ID        BACKUP_S3_SECRET_ACCESS_KEY
+#     The chunk-store backup plane. NOT region-suffixed: one bucket-scoped R2
+#     credential serves every region, because the store is content-addressed and
+#     the bucket is the unit of scoping, not the region. These select the
+#     PRESIGN MINTER path; `BACKUP_R2_PARENT_SECRET` must stay UNSET, since
+#     setting it selects the locally-signed-JWT minter that live R2 refused in
+#     every tested variant (docs/backup-storage/07-execution-record.md 6.1).
 #   VAR_SELLER_NAME                VAR_SELLER_VAT_NUMBER
 #   VAR_SELLER_REGISTRATION_NUMBER VAR_SELLER_ADDRESS_LINE1
 #   VAR_SELLER_ADDRESS_LINE2       VAR_SELLER_CITY
@@ -97,6 +105,10 @@ jq -n \
     --arg ses_cs "${VAR_SES_CONFIGURATION_SET:-}" \
     --arg turnstile "${SECRET_TURNSTILE_KEY:-}" \
     --arg otlp_creds "$SECRET_OTLP_CREDS" \
+    --arg backup_s3_endpoint "${BACKUP_S3_ENDPOINT:-}" \
+    --arg backup_s3_bucket "${BACKUP_S3_BUCKET:-}" \
+    --arg backup_s3_akid "${BACKUP_S3_ACCESS_KEY_ID:-}" \
+    --arg backup_s3_secret "${BACKUP_S3_SECRET_ACCESS_KEY:-}" \
     --arg seller_name "${VAR_SELLER_NAME:-}" \
     --arg seller_vat "${VAR_SELLER_VAT_NUMBER:-}" \
     --arg seller_reg "${VAR_SELLER_REGISTRATION_NUMBER:-}" \
@@ -123,6 +135,10 @@ jq -n \
         AWS_SES_CONFIGURATION_SET: $ses_cs,
         TURNSTILE_SECRET_KEY: $turnstile,
         OTLP_CLIENT_CREDENTIALS: $otlp_creds,
+        BACKUP_S3_ENDPOINT: $backup_s3_endpoint,
+        BACKUP_S3_BUCKET: $backup_s3_bucket,
+        BACKUP_S3_ACCESS_KEY_ID: $backup_s3_akid,
+        BACKUP_S3_SECRET_ACCESS_KEY: $backup_s3_secret,
         SELLER_NAME: $seller_name,
         SELLER_VAT_NUMBER: $seller_vat,
         SELLER_REGISTRATION_NUMBER: $seller_reg,

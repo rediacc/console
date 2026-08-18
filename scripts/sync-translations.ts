@@ -75,7 +75,10 @@ function sortKeys(obj: TranslationValue): TranslationValue {
  * Deep merge source into target, only adding missing keys
  * Handles structure mismatches by preferring source structure
  */
-function mergeTranslations(target: TranslationObject, source: TranslationObject): TranslationObject {
+function mergeTranslations(
+  target: TranslationObject,
+  source: TranslationObject
+): TranslationObject {
   const result = { ...target };
 
   for (const [key, value] of Object.entries(source)) {
@@ -101,10 +104,14 @@ function mergeTranslations(target: TranslationObject, source: TranslationObject)
           } else {
             const srcItem = sourceArr[i];
             const tgtItem = targetArr[i];
-            const srcIsObj = typeof srcItem === 'object' && srcItem !== null && !Array.isArray(srcItem);
-            const tgtIsObj = typeof tgtItem === 'object' && tgtItem !== null && !Array.isArray(tgtItem);
+            const srcIsObj =
+              typeof srcItem === 'object' && srcItem !== null && !Array.isArray(srcItem);
+            const tgtIsObj =
+              typeof tgtItem === 'object' && tgtItem !== null && !Array.isArray(tgtItem);
             if (srcIsObj && tgtIsObj) {
-              merged.push(mergeTranslations(tgtItem as TranslationObject, srcItem as TranslationObject));
+              merged.push(
+                mergeTranslations(tgtItem as TranslationObject, srcItem as TranslationObject)
+              );
             } else {
               // Keep target value (existing translation)
               merged.push(tgtItem);
@@ -172,10 +179,7 @@ function removeExtraKeys(target: TranslationObject, source: TranslationObject): 
       result[key] = cleaned;
     } else if (targetIsObject && sourceIsObject) {
       // Both are objects - recurse
-      result[key] = removeExtraKeys(
-        value as TranslationObject,
-        sourceVal as TranslationObject
-      );
+      result[key] = removeExtraKeys(value as TranslationObject, sourceVal as TranslationObject);
     } else {
       // Keep the value
       result[key] = value;

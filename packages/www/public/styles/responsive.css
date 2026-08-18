@@ -68,18 +68,22 @@
   }
 }
 
-/* Large Desktop (1440px and up) */
-@media (min-width: 90rem) {
-  :root {
-    --max-width: 1400px;
-  }
+/* Large Desktop (1440px and up).
+   The `:root { --max-width: 1400px }` that used to open this block was DEAD:
+   an unconditional `:root` later in the document re-pinned 1200px, so the
+   wide-desktop container has never once rendered at 1400px. Widening it is a
+   layout decision for the surfaces that would reflow, not a token fix, so the
+   dead rule is deleted rather than silently switched on.
 
+   The two type escalations here were 64px and 28px, neither of which is a
+   step on the eight-step ladder. */
+@media (min-width: 90rem) {
   .section-title {
-    font-size: 4rem;
+    font-size: var(--font-size-4xl);
   }
 
   .solution-title {
-    font-size: 1.75rem;
+    font-size: var(--font-size-xl);
   }
 }
 
@@ -142,7 +146,6 @@
   .sidebar-overlay,
   .footer-social,
   .hamburger-btn,
-  .search-btn,
   .search-modal,
   .image-modal {
     display: none !important;
@@ -218,6 +221,15 @@
 
   .docs-layout {
     grid-template-columns: 1fr !important;
+  }
+
+  /* One track for print, so the five-track screen grid's explicit placement in
+     DocsLayout.astro has to go too: a definite `grid-column: 3` in a one-track
+     grid invents two implicit tracks and prints the article off the page.
+     !important, not specificity: the rule it overrides is Astro-scoped, so this
+     sheet cannot match it by weight alone. */
+  .docs-layout > .docs-content {
+    grid-column: auto !important;
   }
 
   .article-container {

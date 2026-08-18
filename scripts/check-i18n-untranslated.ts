@@ -165,7 +165,9 @@ if (untranslated.size > 0 || problems.length > 0) {
   for (const [key, where] of [...untranslated].sort()) {
     const preview = english[key].replace(/\s+/g, ' ').slice(0, 88);
     console.error(`  ${key}\n      ${where.length}/${locales.length} locales: ${where.join(' ')}`);
-    console.error(`      en (${english[key].length} chars): "${preview}${english[key].length > 88 ? '…' : ''}"\n`);
+    console.error(
+      `      en (${english[key].length} chars): "${preview}${english[key].length > 88 ? '…' : ''}"\n`
+    );
   }
 
   const values = [...untranslated.values()].reduce((sum, where) => sum + where.length, 0);

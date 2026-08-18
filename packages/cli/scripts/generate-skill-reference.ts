@@ -103,7 +103,7 @@ function renderOptions(lines: string[], options: CommandCapability['options']): 
   lines.push(MD_OPTIONS_HEADING, '');
   for (const opt of options) {
     const def = opt.default === undefined ? '' : ` (default: ${opt.default})`;
-    lines.push(`- \`${opt.flags}\` — ${opt.description}${def}`);
+    lines.push(`- \`${opt.flags}\`: ${opt.description}${def}`);
   }
   lines.push('');
 }

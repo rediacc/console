@@ -1,0 +1,327 @@
+{
+  "captchaRequired": "يرجى إكمال التحقق من الكابتشا.",
+  "common": {
+    "close": "إغلاق",
+    "logoAlt": "Rediacc - منصة أتمتة البنية التحتية",
+    "buttons": {
+      "close": "إغلاق",
+      "learnMore": "اعرف المزيد",
+      "getStarted": "ابدأ الآن"
+    },
+    "search": {
+      "placeholder": "ابحث في الوثائق والحلول والميزات...",
+      "searching": "جارٍ البحث...",
+      "noResults": "لم يتم العثور على نتائج",
+      "closeModal": "إغلاق البحث",
+      "suggestions": {
+        "title": "يحاول:",
+        "differentKeywords": "كلمات رئيسية مختلفة أو مصطلحات أقصر",
+        "checkSpelling": "التدقيق الإملائي الخاص بك",
+        "browseSolutions": "تصفح صفحة الحلول لدينا",
+        "contactSupport": "الاتصال بفريق الدعم لدينا"
+      },
+      "results": "نتائج البحث",
+      "unavailable": "البحث غير متاح",
+      "unavailableMessage": "تعذّر تحميل فهرس البحث. يرجى تحديث الصفحة أو الاتصال بالدعم إذا استمرت المشكلة."
+    },
+    "aria": {
+      "mainNavigation": "الملاحة الرئيسية",
+      "previousImage": "الصورة السابقة",
+      "nextImage": "الصورة التالية",
+      "zoomIn": "تكبير",
+      "zoomOut": "تصغير",
+      "resetZoom": "إعادة ضبط التكبير",
+      "closeImageModal": "إغلاق الصورة مشروط",
+      "imageViewer": "عارض الصور",
+      "opensInNewTab": "يفتح في علامة تبويب جديدة",
+      "tableOfContents": "جدول المحتويات",
+      "docsSections": "أقسام المستندات",
+      "documentationNavigation": "التنقل في الوثائق",
+      "breadcrumbNavigation": "التنقل عبر مسار التصفح",
+      "rediaccHome": "الصفحة الرئيسية لـ Rediacc"
+    },
+    "skipNavigation": {
+      "skipToMainContent": "انتقل إلى المحتوى الرئيسي",
+      "skipToNavigation": "انتقل إلى الملاحة",
+      "skipToFooter": "انتقل إلى التذييل"
+    }
+  },
+  "contactModal": {
+    "title": "تواصل معنا",
+    "description": "هل لديك سؤال أو تريد مناقشة مشروع؟ أرسل لنا رسالة.",
+    "fields": {
+      "name": "الاسم",
+      "namePlaceholder": "اسمك",
+      "email": "البريد الإلكتروني",
+      "emailPlaceholder": "you@company.com",
+      "subject": "الموضوع",
+      "message": "الرسالة",
+      "messagePlaceholder": "أخبرنا عن مشروعك أو سؤالك..."
+    },
+    "subjects": {
+      "general": "استفسار عام",
+      "technical": "الدعم الفني",
+      "partnership": "شراكة",
+      "disasterRecovery": "التعافي من الكوارث",
+      "other": "أخرى"
+    },
+    "submit": "إرسال الرسالة",
+    "sending": "جارٍ الإرسال...",
+    "success": "تم إرسال الرسالة! سنعود إليك خلال 48 ساعة.",
+    "error": "حدث خطأ ما. يرجى المحاولة مرة أخرى.",
+    "close": "إغلاق"
+  },
+  "footer": {
+    "columns": {
+      "product": "المنتج",
+      "organization": "الشركة",
+      "legal": "قانوني"
+    },
+    "productLinks": {
+      "solutions": "الحلول",
+      "overview": "نظرة عامة",
+      "pricing": "التسعير",
+      "professionalServices": "الخدمات المهنية",
+      "partners": "برنامج الشركاء",
+      "disasterRecovery": "استعادة البيانات من الكوارث"
+    },
+    "organizationLinks": {
+      "aboutUs": "من نحن",
+      "company": "الشركة",
+      "contact": "اتصل بنا"
+    },
+    "legalLinks": {
+      "termsOfService": "شروط الخدمة",
+      "privacyPolicy": "سياسة الخصوصية",
+      "cookiePolicy": "سياسة ملفات تعريف الارتباط",
+      "refundPolicy": "سياسة الاسترداد",
+      "telemetryPolicy": "سياسة جمع بيانات الاستخدام",
+      "legalInformation": "المعلومات القانونية"
+    },
+    "legalDisclosure": {
+      "summary": "{{companyName}} | رقم السجل {{registryCode}} | ضريبة القيمة المضافة {{vatNumber}} |",
+      "fullLegalInformation": "المعلومات القانونية الكاملة"
+    }
+  },
+  "navigation": {
+    "moreOptions": "خيارات إضافية",
+    "home": "الرئيسية",
+    "blog": "مدونة",
+    "docs": "المستندات",
+    "contact": "اتصل بنا",
+    "downloads": "التنزيلات",
+    "install": "تثبيت",
+    "pricing": "التسعير",
+    "toggleMenu": "تبديل القائمة",
+    "search": "يبحث",
+    "selectLanguage": "اختر اللغة",
+    "languageSelectionMenu": "قائمة اختيار اللغة",
+    "login": "تسجيل الدخول",
+    "footerNavigation": "التنقل في الموقع",
+    "roiCalculator": "حاسبة العائد على الاستثمار",
+    "solutions": "الحلول",
+    "disasterRecovery": "استعادة الكوارث",
+    "viewAllSolutions": "عرض جميع الحلول",
+    "builtForYourRole": "مصمم لدورك",
+    "builtForYou": "مصمم لك",
+    "forDevops": "لمهندسي DevOps",
+    "forCtos": "للمدراء التقنيين",
+    "forCeos": "للرؤساء التنفيذيين والمؤسسين",
+    "partners": "الشركاء",
+    "personas": {
+      "devops": {
+        "tagline": "شحن أسرع. استعادة فورية. نوم أفضل.",
+        "cta": "ابدأ مجاناً"
+      },
+      "cto": {
+        "tagline": "خفض التكلفة الإجمالية بنسبة 60%. التوسع على أجهزتك.",
+        "cta": "جدولة عرض توضيحي"
+      },
+      "ceo": {
+        "tagline": "تكاليف يمكن التنبؤ بها. بدون تقييد بمورد.",
+        "cta": "عرض الأسعار"
+      },
+      "ai-agent": {
+        "tagline": "CLI أولاً. مخرجات JSON. مصمم للوكلاء.",
+        "cta": "اطّلع على المستندات"
+      }
+    },
+    "forAiAgents": "لوكلاء AI",
+    "account": "الحساب"
+  },
+  "newsletter": {
+    "title": "النشرة البريدية",
+    "description": "رسالة واحدة كل شهر. أحدث الميزات + نصائح استضافة ذاتية.",
+    "pageTitle": "ابقَ في الحلقة",
+    "pageDescription": "رسالة قصيرة كل شهر. الميزات الجديدة + نصائح الاستضافة الذاتية + دروس من واقع التجربة.",
+    "placeholder": "بريدك الإلكتروني",
+    "subscribe": "اشترك",
+    "successMessage": "تحقق من بريدك لتأكيد الاشتراك.",
+    "errorGeneric": "حدث خطأ. حاول مجدداً.",
+    "confirmed": "ممتاز! أهلاً بك.",
+    "unsubscribed": "تم إلغاء الاشتراك. نتمنى أن نراك قريباً.",
+    "blogCta": {
+      "title": "أعجبك المقال؟",
+      "description": "نرسل أدلة استضافة وأخبار المنتج كل شهر. تريد؟"
+    },
+    "roiGate": {
+      "title": "احسب توفيراتك",
+      "description": "أدخل بريدك لترى التحليل الكامل للتكاليف والتوفيرات.",
+      "unlock": "اعرض التقرير"
+    },
+    "returnPopup": {
+      "title": "تريد شرح كامل؟",
+      "description": "اشترك واحجز جلسة إعداد مباشرة مع الفريق.",
+      "cta": "اشترك واحجز جلسة",
+      "close": "أغلق",
+      "note": "نستخدم بريدك للتحديثات فقط. إلغاء الاشتراك سهل وقتما تشاء."
+    },
+    "privacyNote": "خصوصيتك أولويتنا. إلغاء الاشتراك في أي وقت."
+  },
+  "pages": {
+    "solutionPages": {
+      "leadMagnetButton": {
+        "title": "احصل على الملخص التقني",
+        "description": "ملف PDF مباشر وبلا حشو، كُتب لمسؤولي أمن المعلومات والمديرين التقنيين وكبار المهندسين. نرسل الرابط عبر البريد الإلكتروني لتتمكن من العثور عليه لاحقًا.",
+        "buttonLabel": "تنزيل الملخص",
+        "dismissLabel": "تجاهل"
+      },
+      "leadMagnetModal": {
+        "title": "احصل على الملخص التقني",
+        "description": "أدخل بريدك الإلكتروني المهني. سنرسل لك رابط PDF ونحتفظ بنسخة في صندوق الوارد.",
+        "emailLabel": "البريد الإلكتروني المهني",
+        "emailPlaceholder": "you@company.com",
+        "submitLabel": "أرسل لي ملف PDF",
+        "sendingLabel": "جارٍ الإرسال...",
+        "successTitle": "ملف PDF في الطريق إليك",
+        "successBody": "فتحناه في تبويب جديد وأرسلنا إليك الرابط بالبريد الإلكتروني. سيُغلق هذا تلقائيًا بعد لحظات.",
+        "errorGeneric": "حدث خطأ ما. يرجى المحاولة مجددًا أو التواصل معنا على support@rediacc.com.",
+        "captchaRequired": "يرجى إتمام التحقق من خلال Captcha.",
+        "disclaimer": "بريد إلكتروني واحد. لا قوائم تسويقية. إلغاء الاشتراك بنقرة واحدة.",
+        "closeLabel": "إغلاق"
+      },
+      "environmentCloning": {
+        "hero": {
+          "title": "انسخ بيئة الإنتاج في 60 ثانية"
+        }
+      },
+      "infrastructureCosts": {
+        "hero": {
+          "title": "توقف عن الدفع للبيئات الخاملة"
+        }
+      },
+      "productionParity": {
+        "hero": {
+          "title": "بيئات تطوير تتطابق مع الإنتاج. تماماً."
+        }
+      },
+      "integrations": {
+        "hero": {
+          "title": "ادمجها مع سير عملك الحالي"
+        }
+      },
+      "immutableBackups": {
+        "hero": {
+          "title": "نسخ احتياطية لا تستطيع برامج الفدية المساس بها"
+        }
+      },
+      "migrationSafety": {
+        "hero": {
+          "title": "رحّل بدون تعريض بياناتك للخطر"
+        }
+      },
+      "instantRecovery": {
+        "hero": {
+          "title": "استعادة كاملة للبيئة في دقائق"
+        }
+      },
+      "safeOsTesting": {
+        "hero": {
+          "title": "اختبر تحديثات نظام التشغيل بدون مخاطر"
+        }
+      },
+      "retentionCompliance": {
+        "hero": {
+          "title": "احتفظ ببياناتك طالما يتطلب القانون"
+        }
+      },
+      "cloudOutageProtection": {
+        "hero": {
+          "title": "عندما يتعطل AWS، أنت لا تتعطل"
+        }
+      },
+      "failoverTesting": {
+        "hero": {
+          "title": "اختبر انتقالك قبل أن تحتاجه"
+        }
+      },
+      "backupVerification": {
+        "hero": {
+          "title": "كل نسخة احتياطية مُتحقق منها. تلقائياً."
+        }
+      },
+      "vulnerabilityManagement": {
+        "hero": {
+          "title": "أصلح الثغرات قبل وصول المهاجمين"
+        }
+      },
+      "aiPentesting": {
+        "hero": {
+          "title": "انسخ الإنتاج. دع الذكاء الاصطناعي يهاجمه."
+        }
+      },
+      "encryption": {
+        "hero": {
+          "title": "مفاتيحك. تشفيرك. بدون استثناءات."
+        }
+      },
+      "continuousSecurityTesting": {
+        "hero": {
+          "title": "اختبر الأمن باستمرار. ليس سنوياً."
+        }
+      },
+      "auditTrail": {
+        "hero": {
+          "title": "كل إجراء مُسجّل. لا شيء مخفي."
+        }
+      },
+      "dataSovereignty": {
+        "hero": {
+          "title": "السيادة بالبنية المعمارية، لا بالشهادات."
+        }
+      },
+      "rapidRecovery": {
+        "hero": {
+          "title": "استعد في دقائق. ليس أياماً."
+        }
+      },
+      "kubernetesClusterMobility": {
+        "hero": {
+          "title": "افرع أو انقل كلاستر Kubernetes يعمل"
+        }
+      },
+      "vendorLockIn": {
+        "hero": {
+          "title": "بنيتك التحتية. اختيارك. دائماً."
+        }
+      }
+    }
+  },
+  "regionPicker": {
+    "title": "اختر منطقة حسابك",
+    "subtitle": "حسابك وفواتيرك وإعداداتك تبقى في المنطقة التي تختارها.",
+    "reassurance": "تبقى بيانات خوادمك ونسخك الاحتياطية على بنيتك التحتية الخاصة.",
+    "footer": "اختر المنطقة الأقرب إليك، أو التي تتطلبها مؤسستك.",
+    "footerNote": "لا يمكن تغييرها بعد التسجيل."
+  },
+  "solutions": {
+    "categories": {
+      "ransomware": "النجاة من برامج الفدية",
+      "multi-cloud": "السحابة المتعددة",
+      "backups": "نسخ احتياطية موثقة",
+      "encryption": "التحكم في التشفير",
+      "dev-env": "بيئات التطوير",
+      "defense": "الدفاع الاستباقي"
+    }
+  }
+}

@@ -76,7 +76,7 @@ one and why, and confirm in a line.
   the harness hands back verbatim on every compaction:
 
   ```bash
-  # READ agent/<branch>/<me>/STATE.md FIRST -- your own folder, never a peer's. Take the
+  # READ agent/<me>/STATE.md FIRST -- your own folder, never a peer's. Take the
   # body under its '## SESSION <me> ...' heading, insert or REPLACE a single
   # '## Operator hints (this session)' block inside it, and keep every other line
   # byte-for-byte. Then:

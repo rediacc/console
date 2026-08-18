@@ -361,8 +361,8 @@ if [[ "${1:-}" == "--apply-labels" ]]; then
         # the wrong tool: classify() answers "which CI jobs must run", and
         # .github/ and .ci/ paths yield full-CI REASONS there rather than
         # modules, so its output does not map onto PR kinds at all.
-        # `^agent/` is the tracked agent working-notes root (session STATE.md and
-        # RULES.md, agent/<branch>/PLAN-*.md, the /handoff program suites under
+        # `^agent/` is the tracked agent working-notes root (session STATE.md,
+        # agent/RULES.md, agent/PLAN-*.md, the /handoff program suites under
         # agent/programs/<slug>/). It is named EXPLICITLY rather than left to the
         # trailing `\.md$` alternative, which is the shape it arrived in: while
         # every file under that tree happened to end in .md the docs label landed

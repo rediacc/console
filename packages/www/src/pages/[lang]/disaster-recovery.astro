@@ -1,5 +1,6 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
+import BillingToggle from '../../components/BillingToggle.astro';
 import CfPricingCard from '../../components/CfPricingCard.astro';
 import FAQSection from '../../components/FAQSection.astro';
 import { createTranslator } from '../../i18n/utils';
@@ -20,33 +21,35 @@ const ns = 'pages.disasterRecovery';
 // "Save 15%" billing-toggle label.
 const annualFrom = (monthly: number) => Math.round(monthly * 12 * 0.85);
 
+// These are human-delivered recovery engagements, not software subscriptions,
+// so the tiers are named for the engagement. They used to reuse Professional /
+// Business / Enterprise from the platform plans, which put the same three names
+// against $1,299 and $3,999 one click away from the same names at $49 and $59.
+// The prices are correct and deliberate; only the labels were wrong.
 const allPlans = [
   {
-    id: 'professional',
+    id: 'assessment',
     monthly: 1299,
     annual: annualFrom(1299),
   },
   {
-    id: 'business',
+    id: 'program',
     monthly: 3999,
     annual: annualFrom(3999),
-    isPopular: true,
-    badgeLabel: t(`${ns}.ui.bestValue`),
-    badgeVariant: 'popular',
   },
   {
-    id: 'enterprise',
+    id: 'retainer',
+    // Quoted, not priced: 9999 is a placeholder the card never renders.
+    contactOnly: true,
     monthly: 9999,
     annual: annualFrom(9999),
-    badgeLabel: t(`${ns}.ui.anchor`),
-    badgeVariant: 'anchor',
   },
 ];
 
 const technicalMetrics = ta(`${ns}.technicalSummary.metrics`);
 const technicalValues = to(`${ns}.technicalSummary.values`);
 
-type PlanId = 'professional' | 'business' | 'enterprise';
+type PlanId = 'assessment' | 'program' | 'retainer';
 const buildMetrics = (planId: string) =>
   technicalMetrics.map((metric: any) => ({
     label: metric.label,
@@ -73,7 +76,7 @@ const buildMetrics = (planId: string) =>
     </section>
 
     <!-- Pricing Toggle & Cards -->
-    <section id="plans" class="pricing-content section-light">
+    <section id="plans" class="pricing-content section-light" data-pricing-scope>
       <div class="cf-pricing-container">
         <div class="pricing-overview">
           <div class="pricing-overview-copy">
@@ -87,34 +90,11 @@ const buildMetrics = (planId: string) =>
           </ul>
         </div>
 
-        <!-- Billing Toggle -->
-        <div class="billing-toggle-wrapper">
-          <div class="billing-toggle" role="radiogroup" aria-label={t('pages.pricing.ui.billingToggle.ariaLabel')}>
-            <button
-              type="button"
-              role="radio"
-              class="billing-toggle-btn active"
-              data-period="monthly"
-              aria-checked="true"
-            >
-              {t('pages.pricing.ui.billingToggle.monthly')}
-            </button>
-            <button
-              type="button"
-              role="radio"
-              class="billing-toggle-btn"
-              data-period="annual"
-              aria-checked="false"
-            >
-              {t('pages.pricing.ui.billingToggle.annual')}
-            </button>
-          </div>
-          <span class="billing-toggle-savings">{t('pages.pricing.ui.billingToggle.annualSavings')}</span>
-        </div>
+        <BillingToggle lang={lang} />
 
         <div class:list={['cf-pricing-grid', allPlans.length === 2 ? 'two-up' : 'three-up']}>
           {allPlans.map(plan => (
-            <CfPricingCard plan={plan} metrics={buildMetrics(plan.id)} lang={lang} ctaNamespace={ns} />
+            <CfPricingCard plan={plan} metrics={buildMetrics(plan.id)} lang={lang} namespace="disasterRecovery" />
           ))}
         </div>
 
@@ -219,43 +199,3 @@ const buildMetrics = (planId: string) =>
     </section>
   </article>
 </BaseLayout>
-
-<script>
-  // Billing toggle: swap between monthly and annual display
-  document.addEventListener('DOMContentLoaded', () => {
-    const section = document.getElementById('plans');
-    if (!section) return;
-
-    const toggleBtns = section.querySelectorAll<HTMLButtonElement>('.billing-toggle .billing-toggle-btn');
-    const savingsLabel = section.querySelector<HTMLElement>('.billing-toggle-savings');
-
-    if (!toggleBtns.length) return;
-
-    toggleBtns.forEach((btn) => {
-      btn.addEventListener('click', () => {
-        const period = btn.dataset.period;
-        if (!period) return;
-
-        toggleBtns.forEach((b) => {
-          const isActive = b === btn;
-          b.classList.toggle('active', isActive);
-          b.setAttribute('aria-checked', isActive ? 'true' : 'false');
-        });
-
-        if (savingsLabel) {
-          savingsLabel.classList.toggle('visible', period === 'annual');
-        }
-
-        section.querySelectorAll<HTMLElement>('.cf-price[data-monthly]').forEach((el) => {
-          el.textContent = period === 'annual' ? el.dataset.annual! : el.dataset.monthly!;
-        });
-        section.querySelectorAll<HTMLElement>('.cf-price-period[data-monthly]').forEach((el) => {
-          el.textContent = period === 'annual' ? el.dataset.annual! : el.dataset.monthly!;
-        });
-        section.querySelectorAll<HTMLElement>('.cf-annual-note[data-monthly]').forEach((el) => {
-          el.textContent = period === 'annual' ? el.dataset.annual! : el.dataset.monthly!;
-        });
-      });
-    });
-  });
-</script>

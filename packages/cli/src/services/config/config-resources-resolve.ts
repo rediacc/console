@@ -30,7 +30,7 @@ export class AmbiguousRepoTargetError extends Error {
       .map((c) => `  - ${c.key}  (${c.kind}; guid=${c.guid.slice(0, 8)})`)
       .join('\n');
     super(
-      `"${ref}" is ambiguous — multiple repositories share this base name:\n${lines}\nRe-run with an explicit --name <name>:<tag> to target one.`
+      `"${ref}" is ambiguous, because multiple repositories share this base name:\n${lines}\nRe-run with an explicit --name <name>:<tag> to target one.`
     );
     this.name = 'AmbiguousRepoTargetError';
     this.candidates = candidates;
@@ -153,7 +153,7 @@ export function assertRestoredForkKeyIsExplicit(
   const { name: base, tag } = parseRepoRef(restoredName);
   if (!restoredName.includes(':') || tag === RESERVED_GRAND_TAG) {
     throw new Error(
-      `Cannot restore fork "${archived.name}" under "${restoredName}" — forks must use an explicit non-"latest" tag (e.g. "${base}:restored"). Pass --new-name <name>:<tag>.`
+      `Cannot restore fork "${archived.name}" under "${restoredName}". Forks must use an explicit non-"latest" tag (e.g. "${base}:restored"). Pass --new-name <name>:<tag>.`
     );
   }
 }
@@ -178,7 +178,7 @@ export function resolveDestructiveTargetFromRepos(
   if (!resolvedKey) {
     if (isBare && candidates.length === 1) {
       throw new Error(
-        `Repository "${repoRef}" not found — did you mean "${candidates[0].key}"? Re-run with --name ${candidates[0].key}.`
+        `Repository "${repoRef}" not found. Did you mean "${candidates[0].key}"? Re-run with --name ${candidates[0].key}.`
       );
     }
     throw new Error(`Repository "${repoRef}" not found in context`);

@@ -14,7 +14,7 @@ sourceCommit: "20f014619af1ee41e75cd46a3c8e4abc5add0983"
 
 Diese Seite erklärt, wie Dienste, die in isolierten Docker-Daemons laufen, aus dem Internet erreichbar werden. Sie behandelt das Reverse-Proxy-System, Docker-Labels für das Routing, TLS-Zertifikate, DNS und TCP/UDP-Portweiterleitung.
 
-Wie Dienste ihre Loopback-IPs erhalten und das `.rediacc.json`-Slot-System funktioniert, erfahren Sie unter [Dienste](/de/docs/services#dienst-netzwerk-rediaccjson).
+Wie Dienste ihre Loopback-IPs erhalten und das `.rediacc.json`-Slot-System funktioniert, erfahren Sie unter [Dienste](/de/docs/services#service-networking-rediaccjson).
 
 ## Netzwerkisolierung
 
@@ -128,7 +128,7 @@ Diese verwenden die Standard-[Traefik v3 Label-Syntax](https://doc.traefik.io/tr
 
 ### Voraussetzungen
 
-1. Infrastruktur auf der Maschine konfiguriert ([Maschineneinrichtung, Infrastruktur-Konfiguration](/de/docs/setup#infrastruktur-konfiguration)):
+1. Infrastruktur auf der Maschine konfiguriert ([Maschineneinrichtung, Infrastruktur-Konfiguration](/de/docs/setup#infrastructure-configuration)):
 
    ```bash
    # Gemeinsame Zugangsdaten (einmal pro Konfiguration, gilt für alle Maschinen)
@@ -144,7 +144,7 @@ Diese verwenden die Standard-[Traefik v3 Label-Syntax](https://doc.traefik.io/tr
    rdc machine infra push server-1
    ```
 
-2. DNS-Einträge, die Ihre Domain auf die öffentliche IP des Servers verweisen (siehe [DNS-Konfiguration](#dns-konfiguration) unten).
+2. DNS-Einträge, die Ihre Domain auf die öffentliche IP des Servers verweisen (siehe [DNS-Konfiguration](#dns-configuration) unten).
 
 ### Labels hinzufügen
 

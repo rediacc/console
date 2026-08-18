@@ -1,0 +1,175 @@
+{
+  "hero": {
+    "install": {
+      "tabs": {
+        "linux": "Linux",
+        "macos": "macOS",
+        "windows": "Windows"
+      }
+    }
+  },
+  "pages": {
+    "downloads": {
+      "meta": {
+        "title": "احصل على Rediacc CLI لكل الأنظمة | Rediacc",
+        "description": "حمّل Rediacc CLI لأنظمة Windows وmacOS وLinux. تثبيت سريع مع تحديثات تلقائية.",
+        "keywords": "تنزيل Rediacc، تطبيق سطح المكتب، CLI، تطبيق Windows، تطبيق macOS، تطبيق Linux"
+      },
+      "hero": {
+        "title": "حمّل Rediacc CLI",
+        "subtitle": "Rediacc CLI",
+        "released": "صُدر"
+      },
+      "sections": {
+        "cli": "واجهة سطر الأوامر (CLI)"
+      },
+      "platforms": {
+        "windows": "Windows",
+        "macos": "macOS",
+        "linux": "Linux"
+      },
+      "architectures": {
+        "x64": "x64 (64 بت)",
+        "x64_intel": "Intel (x64)",
+        "arm64": "ARM64",
+        "arm64_apple": "Apple Silicon (ARM64)"
+      },
+      "actions": {
+        "download": "حمّل"
+      },
+      "cli": {
+        "description": "أداة صغيرة وسريعة تعمل من نافذة الطرفية. مناسبة للخوادم التي تديرها بدون شاشة، أو لتشغيل نفس الأمر على عدة أجهزة دفعة واحدة. اتصل بالخوادم، شغّل الأوامر، وادفع التحديثات. لا حاجة لمتصفح."
+      },
+      "noReleases": "لا توجد إصدارات الآن. حاول مجدداً قريباً.",
+      "autoUpdate": {
+        "title": "معلومات التحديث التلقائي",
+        "description": "تُحدّث Rediacc CLI نفسها تلقائياً. تتحقق من الإصدارات الجديدة وتثبّتها لك، لتستخدم دائماً أحدث إصدار."
+      },
+      "installation": {
+        "title": "تعليمات التثبيت",
+        "cli": "CLI: حمّل الملف لنظامك. على Linux/macOS، افتح المحطة الطرفية وشغّل chmod +x filename لجعله قابلاً للتنفيذ. ثم انقله إلى /usr/local/bin."
+      },
+      "requirements": {
+        "title": "متطلبات النظام",
+        "windows": "Windows 10 أو أحدث (64 بت)",
+        "macos": "macOS 11 (Big Sur) أو أحدث",
+        "linux": "توزيعة Linux حديثة مع glibc 2.28+"
+      }
+    },
+    "install": {
+      "meta": {
+        "title": "دليل التثبيت والإعداد السريع لـ Rediacc CLI",
+        "description": "ثبّت Rediacc CLI على Linux أو macOS أو Windows باستخدام APT أو DNF أو npm أو التنزيل المباشر.",
+        "keywords": "تثبيت rediacc, apt install, dnf install, npm install, تثبيت CLI"
+      },
+      "hero": {
+        "title": "تثبيت Rediacc CLI",
+        "subtitle": "اختر طريقة التثبيت المفضلة لديك",
+        "downloadsNote": "تبحث عن ملفات CLI التنفيذية مباشرة؟",
+        "downloadsLink": "زيارة صفحة التنزيلات"
+      },
+      "methods": {
+        "quick": {
+          "title": "التثبيت السريع",
+          "description": "موصى به - التثبيت والتحديثات التلقائية."
+        },
+        "apt": {
+          "title": "APT (Debian / Ubuntu)",
+          "description": "لـ Debian و Ubuntu والمشتقات"
+        },
+        "dnf": {
+          "title": "DNF (Fedora / RHEL)",
+          "description": "لـ Fedora و RHEL و CentOS و Rocky Linux"
+        },
+        "apk": {
+          "title": "APK (ألباين Linux)",
+          "description": "لألباين Linux ومشتقاته"
+        },
+        "pacman": {
+          "title": "Pacman (آرتش Linux)",
+          "description": "لآرتش Linux ومشتقاته"
+        },
+        "homebrew": {
+          "title": "Homebrew (macOS / Linux)",
+          "description": "لمستخدمي macOS وLinux مع Homebrew"
+        },
+        "binary": {
+          "title": "تنزيل مباشر",
+          "description": "ملف ثنائي مستقل، لا حاجة لمدير حزم"
+        },
+        "docker": {
+          "title": "Docker",
+          "description": "لمستخدمي Docker"
+        }
+      },
+      "verify": {
+        "title": "التحقق من التثبيت"
+      },
+      "architectures": {
+        "title": "المعماريات المدعومة",
+        "method": "الطريقة",
+        "platform": "المنصة"
+      },
+      "copy": "نسخ",
+      "copied": "تم النسخ!",
+      "platformFilter": {
+        "all": "جميع الطرق",
+        "label": "تصفية حسب المنصة"
+      }
+    },
+    "partners": {
+      "form": {
+        "fields": {
+          "contactName": "اسمك",
+          "contactNamePlaceholder": "الاسم الأول واسم العائلة",
+          "jobTitle": "المسمى الوظيفي",
+          "jobTitlePlaceholder": "دورك الوظيفي",
+          "email": "البريد الإلكتروني للعمل",
+          "emailPlaceholder": "you@company.com",
+          "phone": "الهاتف",
+          "phonePlaceholder": "اختياري",
+          "company": "اسم الشركة",
+          "companyPlaceholder": "اسم شركتك",
+          "website": "الموقع الإلكتروني",
+          "websitePlaceholder": "https://example.com",
+          "country": "الدولة",
+          "countryPlaceholder": "اختر دولتك",
+          "partnerTypes": "كيف تبيع؟ اختر كل ما ينطبق.",
+          "isDistributor": "نعمل كموزّع ونعيد البيع عبر شركاء آخرين.",
+          "howHeard": "كيف سمعت عنا؟",
+          "howHeardPlaceholder": "اختر خياراً",
+          "message": "هل هناك ما تود إضافته؟",
+          "messagePlaceholder": "أخبرنا عن نشاطك التجاري والعملاء الذين تخدمهم.",
+          "consent": "أوافق على التواصل معي بخصوص برنامج شركاء Rediacc."
+        },
+        "partnerTypeOptions": {
+          "reseller": "معيد بيع",
+          "msp": "مزوّد خدمات مُدارة",
+          "consultant": "استشاري",
+          "distributor": "موزّع",
+          "referral": "شريك إحالة"
+        },
+        "howHeardOptions": {
+          "search": "محرك بحث",
+          "referral": "زميل أو صديق",
+          "event": "فعالية أو ندوة إلكترونية",
+          "socialMedia": "وسائل التواصل الاجتماعي",
+          "blog": "مدونة أو مقال",
+          "other": "شيء آخر"
+        },
+        "submit": "إرسال الطلب",
+        "sending": "جارٍ الإرسال...",
+        "success": {
+          "title": "تم استلام الطلب",
+          "body": "شكراً لاهتمامك. نقرأ كل طلب وسنرد عليك عبر البريد الإلكتروني قريباً."
+        },
+        "errors": {
+          "requiredFields": "يرجى تعبئة الاسم والبريد الإلكتروني للعمل واسم الشركة والدولة وطريقة بيع واحدة على الأقل.",
+          "consent": "يرجى الموافقة على التواصل حتى نتمكن من الرد على طلبك.",
+          "captcha": "يرجى إكمال اختبار التحقق للمتابعة.",
+          "generic": "حدث خطأ ما. يرجى المحاولة مرة أخرى."
+        }
+      }
+    }
+  }
+}

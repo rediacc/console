@@ -69,7 +69,7 @@ export function renderStepCard(
   const png = path.join(ctx.tmp, `${sceneId}.png`);
   const mp4 = path.join(ctx.tmp, `${sceneId}.mp4`);
   const { subs, raw } = buildTitleCardSubs(ctx, activeIndex);
-  rasterizeSvgTo1080p(svgPath, png, subs, raw);
+  rasterizeSvgTo1080p(svgPath, png, ctx.lang, subs, raw);
   makeSilentFreezeMp4(png, durationSec, mp4, PAD_FILTER_CENTER);
   return mp4;
 }
@@ -172,7 +172,7 @@ function renderSvgSlide(
 ): string {
   const png = path.join(ctx.tmp, `${sceneId}.png`);
   const mp4 = path.join(ctx.tmp, `${sceneId}.mp4`);
-  rasterizeSvgTo1080p(svgPath, png, substitutions, rawSubstitutions);
+  rasterizeSvgTo1080p(svgPath, png, ctx.lang, substitutions, rawSubstitutions);
   const narration = ctx.narrations.get(narrationKey);
   const audioPath = ctx.narrations.resolvePath(narration.audioSrc);
   const duration = narration.audioDurationSec ?? 0;

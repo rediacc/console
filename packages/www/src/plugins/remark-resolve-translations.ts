@@ -12,11 +12,15 @@
  * The language is extracted from the document's frontmatter `language` field.
  */
 
-import fs from 'node:fs';
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 import type { Root, Strong, Text } from 'mdast';
 import { visit } from 'unist-util-visit';
+
+import {
+  DEFAULT_LANGUAGE,
+  extractLanguageFromContent,
+  hasTranslationKeys,
+  replaceTranslationKeys,
+} from './translation-keys.mjs';
 
 interface RemarkFile {
   data: Record<string, unknown>;
@@ -26,126 +30,16 @@ interface RemarkFile {
   path?: string;
 }
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-
-// Path to web locales (relative to this plugin at packages/www/src/plugins/)
-const WEB_LOCALES_PATH = path.resolve(__dirname, '../../../web/src/i18n/locales');
-
-// Path to CLI locales (for resolving CLI translation keys)
-const CLI_LOCALES_PATH = path.resolve(__dirname, '../../../cli/src/i18n/locales');
-
-// Default language when not specified
-const DEFAULT_LANGUAGE = 'en';
-
-// Pattern to match {{t:namespace.key.path}}
-const TRANSLATION_KEY_PATTERN = /\{\{t:([a-zA-Z]+)\.([a-zA-Z0-9_.]+)\}\}/g;
-
-// Cache for loaded translation files
-const translationCache = new Map<string, Record<string, unknown>>();
-
 /**
- * Load a translation namespace file for a given language
+ * The resolution itself lives in `./translation-keys.mjs` so that
+ * `scripts/generate-search-index.js` can use the SAME implementation. It could not import
+ * this file: the generator runs as plain `node` from `astro.config.mjs`. When the two were
+ * separate, the rendered page resolved every placeholder and the search index resolved
+ * none, and each locale's index shipped 2,122 raw `{{t:...}}` strings to readers.
+ *
+ * This module keeps only the remark-specific half: finding the document's language, and
+ * walking the mdast nodes that can carry a placeholder.
  */
-function loadTranslationFile(namespace: string, lang: string): Record<string, unknown> | null {
-  const cacheKey = `${lang}/${namespace}`;
-
-  if (translationCache.has(cacheKey)) {
-    return translationCache.get(cacheKey) ?? null;
-  }
-
-  // Try web locales first, then CLI locales
-  const paths = [
-    path.join(WEB_LOCALES_PATH, lang, `${namespace}.json`),
-    path.join(CLI_LOCALES_PATH, lang, `${namespace}.json`),
-  ];
-
-  for (const filePath of paths) {
-    if (fs.existsSync(filePath)) {
-      try {
-        const content = fs.readFileSync(filePath, 'utf-8');
-        const translations = JSON.parse(content) as Record<string, unknown>;
-        translationCache.set(cacheKey, translations);
-        return translations;
-      } catch {
-        console.error(`Failed to load translation file: ${filePath}`);
-      }
-    }
-  }
-
-  return null;
-}
-
-/**
- * Resolve a nested key path in a translation object
- * e.g., "users.modals.createTitle" -> translations.users.modals.createTitle
- */
-function resolveKeyPath(translations: Record<string, unknown>, keyPath: string): string | null {
-  const keys = keyPath.split('.');
-  let current: unknown = translations;
-
-  for (const key of keys) {
-    if (current === null || current === undefined || typeof current !== 'object') {
-      return null;
-    }
-    current = (current as Record<string, unknown>)[key];
-  }
-
-  if (typeof current === 'string') {
-    return current;
-  }
-
-  return null;
-}
-
-/**
- * Get a translation value for a full key (namespace.keyPath)
- */
-function getTranslation(namespace: string, keyPath: string, lang: string): string | null {
-  const translations = loadTranslationFile(namespace, lang);
-  if (!translations) {
-    return null;
-  }
-  return resolveKeyPath(translations, keyPath);
-}
-
-/**
- * Extract language from frontmatter content
- */
-function extractLanguageFromContent(content: string): string {
-  // Match frontmatter block
-  const frontmatterMatch = /^---\r?\n([\s\S]*?)\r?\n---/.exec(content);
-  if (!frontmatterMatch) {
-    return DEFAULT_LANGUAGE;
-  }
-
-  const frontmatter = frontmatterMatch[1];
-  // Match language field
-  const languageMatch = /^language:\s*['"]?([a-z]{2})['"]?\s*$/m.exec(frontmatter);
-  if (languageMatch) {
-    return languageMatch[1];
-  }
-
-  return DEFAULT_LANGUAGE;
-}
-
-/**
- * Replace all {{t:key}} patterns in a string with resolved translations
- */
-function replaceTranslationKeys(text: string, lang: string, filePath?: string): string {
-  return text.replace(TRANSLATION_KEY_PATTERN, (match, namespace, keyPath) => {
-    const resolved = getTranslation(namespace, keyPath, lang);
-    if (resolved === null) {
-      const location = filePath ? ` in ${filePath}` : '';
-      // Log warning but don't throw - allows build to continue
-      console.warn(
-        `[remark-resolve-translations] Translation key not found: ${namespace}.${keyPath} for language '${lang}'${location}`
-      );
-      // Return the original pattern so it's visible in output (helps debugging)
-      return match;
-    }
-    return resolved;
-  });
-}
 
 export interface RemarkResolveTranslationsOptions {
   /** Fallback language if not found in frontmatter */
@@ -182,17 +76,14 @@ export function remarkResolveTranslations(options: RemarkResolveTranslationsOpti
 
     // Visit all text nodes and replace translation keys
     visit(tree, 'text', (node: Text) => {
-      if (TRANSLATION_KEY_PATTERN.test(node.value)) {
-        // Reset lastIndex since we're using the pattern in test and replace
-        TRANSLATION_KEY_PATTERN.lastIndex = 0;
+      if (hasTranslationKeys(node.value)) {
         node.value = replaceTranslationKeys(node.value, language, file.path);
       }
     });
 
     // Also check inline code nodes (for cases like `{{t:key}}`)
     visit(tree, 'inlineCode', (node: { value: string }) => {
-      if (TRANSLATION_KEY_PATTERN.test(node.value)) {
-        TRANSLATION_KEY_PATTERN.lastIndex = 0;
+      if (hasTranslationKeys(node.value)) {
         node.value = replaceTranslationKeys(node.value, language, file.path);
       }
     });
@@ -200,8 +91,7 @@ export function remarkResolveTranslations(options: RemarkResolveTranslationsOpti
     // Also check strong/emphasis nodes (for cases like **{{t:key}}**)
     visit(tree, 'strong', (node: Strong) => {
       for (const child of node.children) {
-        if (child.type === 'text' && TRANSLATION_KEY_PATTERN.test(child.value)) {
-          TRANSLATION_KEY_PATTERN.lastIndex = 0;
+        if (child.type === 'text' && hasTranslationKeys(child.value)) {
           child.value = replaceTranslationKeys(child.value, language, file.path);
         }
       }

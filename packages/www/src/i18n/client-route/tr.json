@@ -1,0 +1,175 @@
+{
+  "hero": {
+    "install": {
+      "tabs": {
+        "linux": "Linux",
+        "macos": "macOS",
+        "windows": "Windows"
+      }
+    }
+  },
+  "pages": {
+    "downloads": {
+      "meta": {
+        "title": "Tüm Platformlar İçin Rediacc CLI'yi İndirin | Rediacc",
+        "description": "Rediacc CLI'yi Windows, macOS ve Linux için indirin.",
+        "keywords": "Rediacc indirme, masaüstü uygulaması, CLI, Windows uygulaması, macOS uygulaması, Linux uygulaması"
+      },
+      "hero": {
+        "title": "Rediacc CLI'yi İndirin",
+        "subtitle": "Rediacc CLI",
+        "released": "Yayınlandı"
+      },
+      "sections": {
+        "cli": "Komut Satırı Arayüzü (CLI)"
+      },
+      "platforms": {
+        "windows": "Windows",
+        "macos": "macOS",
+        "linux": "Linux"
+      },
+      "architectures": {
+        "x64": "x64 (64-bit)",
+        "x64_intel": "Intel (x64)",
+        "arm64": "ARM64",
+        "arm64_apple": "Apple Silicon (ARM64)"
+      },
+      "actions": {
+        "download": "İndir"
+      },
+      "cli": {
+        "description": "Terminalde çalıştırdığınız küçük ve hızlı bir araç. Ekransız yönettiğiniz sunucular için ya da aynı komutu birçok makinede birden çalıştırmak için ideal. Sunuculara bağlanın, komut çalıştırın, güncellemeleri gönderin. Tarayıcıya gerek yok."
+      },
+      "noReleases": "Şimdilik mevcut sürüm bulunmuyor. Lütfen daha sonra tekrar kontrol edin.",
+      "autoUpdate": {
+        "title": "Otomatik Güncelleme Bilgileri",
+        "description": "Rediacc CLI kendini günceller. Yeni sürümleri kontrol eder ve sizin için kurar, böylece her zaman en güncel sürümü kullanırsınız."
+      },
+      "installation": {
+        "title": "Kurulum Talimatları",
+        "cli": "CLI: Sisteminiz için dosyayı indirin. Linux/macOS'ta terminal açıp chmod +x dosyaadi komutu çalıştırarak çalıştırılabilir hale getirin. Sonra /usr/local/bin'e taşıyın."
+      },
+      "requirements": {
+        "title": "Sistem Gereksinimleri",
+        "windows": "Windows 10 veya üzeri (64-bit)",
+        "macos": "macOS 11 (Big Sur) veya üzeri",
+        "linux": "Modern Linux dağıtımı (glibc 2.28+)"
+      }
+    },
+    "install": {
+      "meta": {
+        "title": "Rediacc CLI Kurulumu: Hızlı Rehber",
+        "description": "Rediacc CLI'yi Linux, macOS ya da Windows'a APT, DNF, npm veya doğrudan indirme ile kur.",
+        "keywords": "rediacc yükle, apt install, dnf install, npm install, CLI kurulumu"
+      },
+      "hero": {
+        "title": "Rediacc CLI Yükle",
+        "subtitle": "Kurulum şeklini seç",
+        "downloadsNote": "Doğrudan CLI dosyalarını mı arıyorsunuz?",
+        "downloadsLink": "İndirmeleri gör"
+      },
+      "methods": {
+        "quick": {
+          "title": "Hızlı Kurulum",
+          "description": "Önerilen: Otomatik indirme ve güncelleme"
+        },
+        "apt": {
+          "title": "APT (Debian / Ubuntu)",
+          "description": "Debian, Ubuntu ve türevleri için"
+        },
+        "dnf": {
+          "title": "DNF (Fedora / RHEL)",
+          "description": "Fedora, RHEL, CentOS, Rocky Linux için"
+        },
+        "apk": {
+          "title": "APK (Alpine Linux)",
+          "description": "Alpine Linux ve türevleri için"
+        },
+        "pacman": {
+          "title": "Pacman (Arch Linux)",
+          "description": "Arch Linux ve türevleri için"
+        },
+        "homebrew": {
+          "title": "Homebrew (macOS / Linux)",
+          "description": "Homebrew kullanan macOS ve Linux kullanıcıları için"
+        },
+        "binary": {
+          "title": "Doğrudan İndirme",
+          "description": "Bağımsız ikili dosya, paket yöneticisi gerektirmez"
+        },
+        "docker": {
+          "title": "Docker",
+          "description": "Docker kullananları için"
+        }
+      },
+      "verify": {
+        "title": "Kurulumu Doğrula"
+      },
+      "architectures": {
+        "title": "Desteklenen Mimariler",
+        "method": "Yöntem",
+        "platform": "Platform"
+      },
+      "copy": "Kopyala",
+      "copied": "Kopyalandı!",
+      "platformFilter": {
+        "all": "Tüm Yöntemler",
+        "label": "Platforma göre filtrele"
+      }
+    },
+    "partners": {
+      "form": {
+        "fields": {
+          "contactName": "Adınız",
+          "contactNamePlaceholder": "Ad ve soyad",
+          "jobTitle": "Unvan",
+          "jobTitlePlaceholder": "Göreviniz",
+          "email": "İş e-postası",
+          "emailPlaceholder": "siz@sirket.com",
+          "phone": "Telefon",
+          "phonePlaceholder": "İsteğe bağlı",
+          "company": "Şirket adı",
+          "companyPlaceholder": "Şirketiniz",
+          "website": "Web sitesi",
+          "websitePlaceholder": "https://example.com",
+          "country": "Ülke",
+          "countryPlaceholder": "Ülkenizi seçin",
+          "partnerTypes": "Nasıl satış yapıyorsunuz? Uygun olanların hepsini seçin.",
+          "isDistributor": "Distribütör olarak çalışıyoruz ve diğer ortaklar aracılığıyla yeniden satış yapıyoruz.",
+          "howHeard": "Bizi nereden duydunuz?",
+          "howHeardPlaceholder": "Bir seçenek seçin",
+          "message": "Eklemek istediğiniz bir şey var mı?",
+          "messagePlaceholder": "İşletmenizden ve hizmet verdiğiniz müşterilerden bahsedin.",
+          "consent": "Rediacc ortaklık programı hakkında benimle iletişime geçilmesini kabul ediyorum."
+        },
+        "partnerTypeOptions": {
+          "reseller": "Bayi",
+          "msp": "Yönetilen hizmet sağlayıcı",
+          "consultant": "Danışman",
+          "distributor": "Distribütör",
+          "referral": "Yönlendirme ortağı"
+        },
+        "howHeardOptions": {
+          "search": "Arama motoru",
+          "referral": "Bir meslektaş veya arkadaş",
+          "event": "Bir etkinlik veya webinar",
+          "socialMedia": "Sosyal medya",
+          "blog": "Blog veya makale",
+          "other": "Başka bir şey"
+        },
+        "submit": "Başvuruyu Gönder",
+        "sending": "Gönderiliyor...",
+        "success": {
+          "title": "Başvurunuz Alındı",
+          "body": "İlginiz için teşekkürler. Her başvuruyu okuyoruz ve yakında e-posta ile yanıt vereceğiz."
+        },
+        "errors": {
+          "requiredFields": "Lütfen adınızı, iş e-postanızı, şirketinizi, ülkenizi ve en az bir satış yönteminizi girin.",
+          "consent": "Başvurunuza yanıt verebilmemiz için lütfen iletişime geçilmesini kabul edin.",
+          "captcha": "Devam etmek için lütfen captcha'yı tamamlayın.",
+          "generic": "Bir şeyler ters gitti. Lütfen tekrar deneyin."
+        }
+      }
+    }
+  }
+}

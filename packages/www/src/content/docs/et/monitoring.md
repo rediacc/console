@@ -113,7 +113,7 @@ rdc machine status server-1 --storage-health
 | Allocated | See, mida hõre kujutis basseinis hetkel tegelikult hõivab |
 | Unique | Tegelik unikaalne andmemaht, mis kuulub ainult sellele repositooriumile |
 | Shared | Andmeplokid, mida taaskasutatakse repositooriumite vahel BTRFS-i reflink'ide kaudu (tasuta koopiad) |
-| Reclaimable | Eraldatud ja kasutatud vahemaa, mille [`repo trim`](/et/docs/repositories#ruumi-tagasinõudmine-trim) saab basseinile tagastada. Näitab `-` lahtiühendatud repositooriumite puhul |
+| Reclaimable | Eraldatud ja kasutatud vahemaa, mille [`repo trim`](/et/docs/repositories#reclaim-space-trim) saab basseinile tagastada. Näitab `-` lahtiühendatud repositooriumite puhul |
 | Discards | Kas krüpteeritud maht edastab discard-käsud läbi (`on` iga repositooriumi puhul, mis on ühendatud praeguse versiooniga) |
 | Divergence | Protsent kujutisest, mis on selle repositooriumi jaoks unikaalne, mitte jagatud (kõrgem tähendab rohkem tagasinõutavat ruumi kustutamisel) |
 | Frag | Laiendeid GB kohta copy-on-write kujutises (ainult informatiivne) |

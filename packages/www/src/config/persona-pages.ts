@@ -1,15 +1,11 @@
 /**
  * Configuration for persona-targeted landing pages.
- * Parallel to solution-pages.ts — reuses the same SP* section components
+ * Parallel to solution-pages.ts. Reuses the same SP* section components
  * but with persona-specific config and translation namespace.
  */
 
-import type { ImageMetadata } from 'astro';
-import illustrationEnvironmentCloning from '../assets/images/illustrations/environment-cloning.svg';
-import illustrationInfrastructureCosts from '../assets/images/illustrations/infrastructure-costs.svg';
-import illustrationRapidRecovery from '../assets/images/illustrations/rapid-recovery.svg';
 import { ACCOUNT_PATH } from './constants';
-import type { SectionType, TechItem } from './solution-pages';
+import type { SectionType } from './solution-pages';
 
 /** Persona-specific section types (extends base SectionType) */
 type PersonaSectionType = SectionType | 'relatedSolutions' | 'shareWithTeam';
@@ -27,13 +23,8 @@ export interface PersonaPageConfig {
   calculatorPreset?: string;
   /** Competitor column headers for comparison table */
   competitors?: string[];
-  /** Tech strip items with category color coding */
-  techStrip?: TechItem[];
-  /** Problem section illustration */
-  illustration?: ImageMetadata;
-  /** Base slug of the illustration asset, for per-language + mobile resolution
-   * (the asset is shared across personas, so this is the illustration's own
-   * name, not the persona slug). */
+  /** Base slug of the shared problem-section illustration (textless, one file
+   * per slug under src/assets/images/illustrations/). */
   illustrationSlug?: string;
   /** Curated solution page slugs for the relatedSolutions section */
   relatedSolutions?: string[];
@@ -66,7 +57,6 @@ export const PERSONA_PAGES: Record<string, PersonaPageConfig> = {
       'relatedSolutions',
       'bottomCta',
     ],
-    illustration: illustrationEnvironmentCloning,
     illustrationSlug: 'environment-cloning',
     relatedSolutions: [
       'environment-cloning',
@@ -93,7 +83,6 @@ export const PERSONA_PAGES: Record<string, PersonaPageConfig> = {
     ],
     calculatorPreset: 'infrastructure-costs',
     competitors: ['Veeam', 'Rubrik', 'Commvault', 'Zerto'],
-    illustration: illustrationInfrastructureCosts,
     illustrationSlug: 'infrastructure-costs',
     relatedSolutions: [
       'immutable-backups',
@@ -118,7 +107,6 @@ export const PERSONA_PAGES: Record<string, PersonaPageConfig> = {
       'bottomCta',
     ],
     calculatorPreset: 'rapid-recovery',
-    illustration: illustrationRapidRecovery,
     illustrationSlug: 'rapid-recovery',
     relatedSolutions: ['rapid-recovery', 'vendor-lock-in', 'cloud-outage-protection'],
   },
@@ -135,7 +123,6 @@ export const PERSONA_PAGES: Record<string, PersonaPageConfig> = {
       'relatedSolutions',
       'bottomCta',
     ],
-    illustration: illustrationEnvironmentCloning,
     illustrationSlug: 'environment-cloning',
     relatedSolutions: ['environment-cloning', 'production-parity', 'integrations'],
   },

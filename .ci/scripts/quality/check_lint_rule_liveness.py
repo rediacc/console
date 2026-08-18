@@ -59,7 +59,7 @@ resolves to [...]"). And it buys nothing anyway -- scope-map.cjs:134 matches the
 whole of `.ci/` with `full: 'harness'`, so ANY edit under this directory already
 forces the full harness scope and reselects this gate.
 
-Design: agent/backup-storage/PLAN-lint-rule-matrix-probe.md
+Design: agent/PLAN-lint-rule-matrix-probe.md
 """
 
 import argparse

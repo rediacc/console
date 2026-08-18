@@ -149,7 +149,12 @@ function processLocaleDir(config: LocaleConfig): Record<string, string> | null {
 /**
  * Write hash manifest file
  */
-function writeHashManifest(dir: string, hashes: Record<string, string>, name: string, config: LocaleConfig): string {
+function writeHashManifest(
+  dir: string,
+  hashes: Record<string, string>,
+  name: string,
+  config: LocaleConfig
+): string {
   // Resolve sourceCommit: latest git commit that touched the English source files
   const repoRoot = path.resolve(__dirname, '..');
   const englishSourcePath = config.flatFiles

@@ -82,3 +82,7 @@ Das [Bundesgesetz 242-FZ](https://pd.rkn.gov.ru/) verlangt die Speicherung perso
 | Drittanbieter-Verarbeiter-Haftung | Ja | Nein |
 | Verschlüsselungskontrolle | Vom Anbieter verwaltete Schlüssel | Ihre LUKS-Anmeldedaten, lokal gespeichert |
 | Kloning-/Staging-Daten | Können Grenzen überschreiten oder Ihrer Kontrolle entgleiten | CoW auf derselben Maschine, derselben Jurisdiktion |
+
+## Gehosteter Dienst: Regionale Datenresidenz
+
+Für Nutzer des gehosteten Rediacc-Dienstes (nicht Self-Hosted) wird die Datenresidenz durch regionale Infrastruktur durchgesetzt. Drei Regionen stehen zur Verfügung: EU (Frankfurt), USA (Virginia) und Asien-Pazifik (Tokio). Jede Region betreibt unabhängige Datenbanken und Speicher ohne regionsübergreifende Datenflüsse. Transaktions-E-Mails werden über AWS SES zugestellt; EU und USA nutzen dedizierte regionale Endpunkte, Asien-Pazifik nutzt den EU-Endpunkt (eu-central-1). Die EU-Region setzt eine jurisdiktionelle Durchsetzung beim R2-Speicher ein. Die vollständige technische Aufschlüsselung finden Sie unter [Datenregionen](/de/docs/data-regions).

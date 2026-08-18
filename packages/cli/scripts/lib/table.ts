@@ -3,7 +3,7 @@
  * missing key is typed as present while yielding undefined at runtime. Every
  * absence check against one of the curated lookup tables guards a real runtime
  * case (most commands have no examples, no keywords, no metadata entry), and
- * going through this helper is what keeps those checks type-legal — annotating
+ * going through this helper is what keeps those checks type-legal. Annotating
  * the variable is not enough, because TypeScript narrows a const back to the
  * initializer's (lying) type.
  *

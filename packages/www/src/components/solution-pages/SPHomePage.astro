@@ -1,59 +1,65 @@
 ---
+/**
+ * The homepage. Nine body sections became five.
+ *
+ * Measured at 1440x900 and 390x844 against a built site, scrolled to the
+ * bottom and settled first, the page was 7,585px / 14,338px for 658 words:
+ * mostly pictures and padding, at 1.8x claude.com and 2.4x anthropic.com. It
+ * made ONE argument four times, in `sp-why-now`, `sp-not-a-slice`,
+ * `home-difference` and `metrics-bar`, and it shipped two chip strips of the
+ * same idea 3,400px apart.
+ *
+ * What left and why:
+ *   - `SPHero` -> `SPHomeHero`. The shared hero is pinned to
+ *     `min-height: 100dvh` for 25 other pages, so nothing real ever cleared
+ *     the fold here. See that file for the rest.
+ *   - `sp-why-now` moved to its own route, `/[lang]/why-now`. Neither
+ *     reference homepage carries an equivalent.
+ *   - `logo-wall` deleted. It was strictly subsumed by `integrations-strip`:
+ *     every one of its six categories has a concrete instance among the other
+ *     strip's fifteen chips, and it sat 3,400px earlier with no heading of its
+ *     own, reading as a page-break artifact.
+ *   - `metrics-bar` deleted. All four of its numbers were already prose in
+ *     `home-difference` 2,200px above it, and one of them ("241 GB in under
+ *     60 seconds") flatly contradicted the hero's "3.2 TB in 4.7s".
+ *
+ * The five 12-line `SPHome*` pass-through wrappers are gone with them. They
+ * forwarded `lang` and nothing else, and one of them renamed `HomeDifference`
+ * to `SPHomeBeforeAfter`, so the section had four names for one thing.
+ *
+ * What arrived since: the SOLUTION CONSTELLATION, at position 1 under the hero.
+ * The `/[lang]/solutions` index existed to hold exactly this figure and nothing
+ * else, so it was a click between the homepage and the only map of the 21
+ * pages. It carries `id="solutions"`, which is the target the header, the
+ * drawer, the footer and the 404 page now link to, and the fragment ids inside
+ * it (`#copy`, `#test`, `#recover`, `#platform`) are the ones the compact
+ * constellation on 24 other pages points at.
+ */
 import type { Language } from '../../i18n/types';
 import { createTranslator } from '../../i18n/utils';
-import { ACCOUNT_PATH } from '../../config/constants';
-import SPHero from './SPHero.astro';
-import SPHomeWhyNow from './SPHomeWhyNow.astro';
-import SPHomeLogoWall from './SPHomeLogoWall.astro';
+import SPHomeHero from './SPHomeHero.astro';
+import SolutionConstellation from './SolutionConstellation.astro';
 import SPHomeNotASlice from './SPHomeNotASlice.astro';
-import SPHomeBeforeAfter from './SPHomeBeforeAfter.astro';
-import SPHomeMetricsBar from './SPHomeMetricsBar.astro';
-import SPHomeIntegrationsStrip from './SPHomeIntegrationsStrip.astro';
-import SPHomePricingPreview from './SPHomePricingPreview.astro';
+import HomeDifference from '../HomeDifference.astro';
+import PricingPreview from '../PricingPreview.astro';
 import SPHomeBottomCta from './SPHomeBottomCta.astro';
-
-interface TerminalLine {
-  type: 'command' | 'check' | 'spacer' | 'success' | 'summary';
-  prompt?: string;
-  cmd?: string;
-  flag?: string;
-  value?: string;
-  text?: string;
-  result?: string;
-  pairs?: { label: string; value: string }[];
-}
 
 interface Props {
   lang: Language;
-  heroTerminalLines: TerminalLine[];
 }
 
-const { lang, heroTerminalLines } = Astro.props as Props;
+const { lang } = Astro.props as Props;
 const { t } = createTranslator(lang);
-
-const homeHero = {
-  badge: t('hero.eyebrow'),
-  title: `${t('hero.title')}${t('hero.titleHighlight')}`,
-  subtitle: t('hero.subtitle'),
-  primaryCta: t('hero.cta.getStarted'),
-  secondaryCta: t('hero.cta.readDocs'),
-};
 ---
 
 <div class="sp-page">
-  <SPHero
-    lang={lang}
-    hero={homeHero}
-    ctaHref={ACCOUNT_PATH}
-    secondaryCtaHref={`/${lang}/docs/quick-start`}
-    terminal={{ lines: heroTerminalLines }}
-  />
-  <SPHomeWhyNow lang={lang} />
-  <SPHomeLogoWall lang={lang} />
+  <SPHomeHero lang={lang} />
+  {/* `heading` is what makes this render an <h2> and take the .cx--boxed frame.
+      Without it the `full` preset emits no heading at all, and the homepage's
+      one <h1> is SPHomeHero's, so a second one here would be wrong anyway. */}
+  <SolutionConstellation lang={lang} id="solutions" preset="full" heading={t('solutions.title')} />
   <SPHomeNotASlice lang={lang} />
-  <SPHomeBeforeAfter lang={lang} />
-  <SPHomeMetricsBar lang={lang} />
-  <SPHomeIntegrationsStrip lang={lang} />
-  <SPHomePricingPreview lang={lang} />
+  <HomeDifference lang={lang} />
+  <PricingPreview lang={lang} />
   <SPHomeBottomCta lang={lang} />
 </div>

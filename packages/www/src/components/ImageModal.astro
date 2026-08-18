@@ -19,13 +19,13 @@ const { t } = createTranslator(lang);
   aria-label={t('common.aria.imageViewer')}
 >
   <div class="image-modal-content" id="image-modal-content">
-    <button class="image-modal-close" id="image-modal-close-btn" aria-label={t('common.aria.closeImageModal')}>×</button>
-    <button class="nav-btn nav-prev" id="image-modal-prev-btn" aria-label={t('common.aria.previousImage')}>‹</button>
-    <button class="nav-btn nav-next" id="image-modal-next-btn" aria-label={t('common.aria.nextImage')}>›</button>
+    <button class="btn--icon image-modal-close" id="image-modal-close-btn" aria-label={t('common.aria.closeImageModal')}>×</button>
+    <button class="btn--icon nav-btn nav-prev" id="image-modal-prev-btn" aria-label={t('common.aria.previousImage')}>‹</button>
+    <button class="btn--icon nav-btn nav-next" id="image-modal-next-btn" aria-label={t('common.aria.nextImage')}>›</button>
     <div class="zoom-controls">
-      <button class="zoom-btn zoom-in" id="image-modal-zoom-in-btn" aria-label={t('common.aria.zoomIn')}>+</button>
-      <button class="zoom-btn zoom-out" id="image-modal-zoom-out-btn" aria-label={t('common.aria.zoomOut')}>−</button>
-      <button class="zoom-btn zoom-reset" id="image-modal-zoom-reset-btn" aria-label={t('common.aria.resetZoom')}>⌂</button>
+      <button class="btn--icon zoom-btn zoom-in" id="image-modal-zoom-in-btn" aria-label={t('common.aria.zoomIn')}>+</button>
+      <button class="btn--icon zoom-btn zoom-out" id="image-modal-zoom-out-btn" aria-label={t('common.aria.zoomOut')}>−</button>
+      <button class="btn--icon zoom-btn zoom-reset" id="image-modal-zoom-reset-btn" aria-label={t('common.aria.resetZoom')}>⌂</button>
     </div>
     <div class="image-container">
       <img id="modal-image" src="" alt="" class="modal-image" loading="lazy" decoding="async" />
@@ -37,21 +37,38 @@ const { t } = createTranslator(lang);
 </div>
 
 <style>
+  /* THE aria-hidden-focus FIX.
+     This dialog is mounted on EVERY page of the site with aria-hidden="true"
+     while containing six focusable buttons, which axe-core reports as a
+     serious violation site-wide. The closed state used to be
+     `opacity: 0; pointer-events: none`, and neither of those takes an element
+     out of the tab order, so a keyboard user tabbed through six invisible
+     controls on every page. `visibility: hidden` does take them out, and the
+     zero-duration visibility transition is delayed on the way out so the
+     fade still plays. No JavaScript change: the same aria-hidden attribute
+     the existing script already toggles drives it. */
   .image-modal {
     position: fixed;
     inset: 0;
-    background: rgba(0, 0, 0, 0.88);
-    z-index: 10000;
+    z-index: var(--z-toast);
     display: flex;
     align-items: center;
     justify-content: center;
+    background: rgba(0, 0, 0, var(--opacity-85));
     opacity: 0;
+    visibility: hidden;
     pointer-events: none;
-    transition: opacity 0.2s ease;
+    transition:
+      opacity var(--transition-duration-base) ease,
+      visibility 0s linear var(--transition-duration-base);
   }
   .image-modal[aria-hidden='false'] {
     opacity: 1;
+    visibility: visible;
     pointer-events: auto;
+    transition:
+      opacity var(--transition-duration-base) ease,
+      visibility 0s;
   }
   .image-modal-content {
     position: relative;
@@ -78,75 +95,69 @@ const { t } = createTranslator(lang);
     max-height: 100%;
     object-fit: contain;
     transform-origin: center center;
-    transition: transform 0.15s ease;
+    transition: transform var(--transition-duration-fast) ease;
     user-select: none;
     -webkit-user-drag: none;
   }
+  /* Shape, hit area, focus ring and hover come from .btn--icon in main.css.
+     What is left is the skin these six need to be legible on a near-black
+     backdrop, which is the one thing the light-surface primitive cannot give
+     them. */
   .image-modal-close,
   .nav-btn,
   .zoom-btn {
     position: absolute;
-    background: rgba(255, 255, 255, 0.12);
-    border: 1px solid rgba(255, 255, 255, 0.25);
-    color: #fff;
-    font-size: 1.3rem;
-    line-height: 1;
-    cursor: pointer;
-    transition: background 0.15s ease, border-color 0.15s ease;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 4px;
+    background: rgba(255, 255, 255, var(--opacity-12));
+    border-color: var(--color-border-on-dark);
+    color: var(--gray-0);
   }
   .image-modal-close:hover,
   .nav-btn:hover:not(:disabled),
   .zoom-btn:hover {
-    background: rgba(255, 255, 255, 0.22);
-    border-color: rgba(255, 255, 255, 0.45);
+    background: rgba(255, 255, 255, var(--opacity-25));
+    border-color: rgba(255, 255, 255, var(--opacity-45));
+    color: var(--gray-0);
   }
   .image-modal-close {
-    top: -42px;
-    right: -8px;
-    width: 36px;
-    height: 36px;
-    font-size: 1.6rem;
+    top: calc(-1 * var(--space-10));
+    inset-inline-end: 0;
   }
   .nav-btn {
     top: 50%;
     transform: translateY(-50%);
-    width: 44px;
-    height: 60px;
-    font-size: 1.8rem;
+    height: var(--space-16);
   }
-  .nav-prev { left: -56px; }
-  .nav-next { right: -56px; }
+  .nav-prev {
+    inset-inline-start: calc(-1 * var(--space-16));
+  }
+  .nav-next {
+    inset-inline-end: calc(-1 * var(--space-16));
+  }
   .nav-btn:disabled {
-    opacity: 0.35;
+    opacity: var(--opacity-35);
     cursor: not-allowed;
   }
   .zoom-controls {
     position: absolute;
-    bottom: -48px;
+    bottom: calc(-1 * var(--space-12));
     left: 50%;
     transform: translateX(-50%);
     display: flex;
-    gap: 8px;
+    gap: var(--space-2);
   }
   .zoom-btn {
     position: static;
-    width: 36px;
-    height: 36px;
   }
   .image-indicator {
     position: absolute;
-    bottom: -48px;
-    right: 0;
-    color: rgba(255, 255, 255, 0.7);
-    font-size: 0.85rem;
-    font-family: ui-monospace, monospace;
+    bottom: calc(-1 * var(--space-12));
+    inset-inline-end: 0;
     display: flex;
     align-items: center;
-    height: 36px;
+    height: var(--touch-target-preferred);
+    color: var(--color-text-on-dark-muted);
+    font-size: var(--font-size-sm);
+    font-family: var(--font-family-mono);
   }
   .indicator-text:empty {
     display: none;
@@ -156,12 +167,27 @@ const { t } = createTranslator(lang);
   .image-modal[data-single='true'] .nav-next {
     display: none;
   }
-  @media (max-width: 768px) {
-    .image-modal-content { width: 96vw; height: 80vh; }
-    .nav-prev { left: 4px; }
-    .nav-next { right: 4px; }
-    .image-modal-close { top: 4px; right: 4px; }
-    .zoom-controls { bottom: 8px; }
-    .image-indicator { bottom: 8px; right: 8px; }
+  @media (max-width: 48rem) {
+    .image-modal-content {
+      width: 96vw;
+      height: 80vh;
+    }
+    .nav-prev {
+      inset-inline-start: var(--space-1);
+    }
+    .nav-next {
+      inset-inline-end: var(--space-1);
+    }
+    .image-modal-close {
+      top: var(--space-1);
+      inset-inline-end: var(--space-1);
+    }
+    .zoom-controls {
+      bottom: var(--space-2);
+    }
+    .image-indicator {
+      bottom: var(--space-2);
+      inset-inline-end: var(--space-2);
+    }
   }
 </style>

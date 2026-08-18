@@ -1,6 +1,7 @@
 import Fuse, { type FuseResultMatch } from 'fuse.js';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLanguage } from '../hooks/useLanguage';
+import Overlay from './Overlay';
 import { useTranslation } from '../i18n/react';
 import type { Language } from '../i18n/types';
 
@@ -11,14 +12,36 @@ interface SearchItem {
   excerpt: string;
   category: string;
   page: string;
+  /** Stable English heading fragment of the matched section, when it has one. */
+  fragment?: string;
   path: string;
   priority: number;
   language?: string;
 }
 
 interface SearchModalProps {
+  /** Locale from Navigation; authoritative on the server, where useLanguage() returns 'en'. */
+  lang?: Language;
   isOpen: boolean;
   onClose: () => void;
+  /**
+   * Restrict results to these index `category` values. Left undefined by the
+   * site-wide mount, which returns everything.
+   *
+   * This is a post-filter over the ONE Fuse index, not a second index built
+   * from a filtered corpus. A second index would mean fetching and parsing the
+   * same ~1.3 MB payload twice on a docs page, to save one Array.includes per
+   * hit. The cost of the filter is that a query whose first 50 hits are all
+   * blog posts returns fewer than 50 docs hits, which is why the loop below
+   * filters before it counts rather than after.
+   */
+  categories?: readonly string[];
+  /**
+   * Which surface this modal is. Every Plausible event carries it, because
+   * without it the docs search and the site-wide search are one undifferen-
+   * tiated funnel and neither can be judged.
+   */
+  scope?: string;
 }
 
 const EXCERPT_RADIUS = 60;
@@ -42,17 +65,23 @@ function buildResultExcerpt(item: SearchItem, matches?: readonly FuseResultMatch
   return { ...item, excerpt };
 }
 
-const SearchModal: React.FC<SearchModalProps> = ({ isOpen, onClose }) => {
+const SearchModal: React.FC<SearchModalProps> = ({
+  lang,
+  isOpen,
+  onClose,
+  categories,
+  scope = 'global',
+}) => {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<SearchItem[]>([]);
   const [selectedIndex, setSelectedIndex] = useState(-1);
   const [isLoading, setIsLoading] = useState(false);
   const [hasError, setHasError] = useState(false);
-  const currentLang = useLanguage();
+  const detectedLang = useLanguage();
+  const currentLang = lang ?? detectedLang;
   const { t } = useTranslation(currentLang);
   const inputRef = useRef<HTMLInputElement>(null);
   const resultsContainerRef = useRef<HTMLDivElement>(null);
-  const modalRef = useRef<HTMLDivElement>(null);
 
   // Per-locale Fuse cache. The combined index was 1.6 MB gzipped; per-locale
   // files are ~167-247 KB. We fetch on first modal open for the current
@@ -72,6 +101,15 @@ const SearchModal: React.FC<SearchModalProps> = ({ isOpen, onClose }) => {
   const inFlight = useRef<Map<Language, Promise<void>>>(new Map());
   const fuse = fuseByLang.get(currentLang) ?? null;
   const isLoadingIndex = loadingLocales.has(currentLang);
+
+  // Memoized on the array's CONTENTS, not its identity: a caller writing
+  // `categories={['Documentation']}` inline would otherwise hand us a fresh
+  // array on every render and rebuild handleSearch on each one.
+  const categoryKey = categories === undefined ? undefined : JSON.stringify(categories);
+  const allowedCategories = useMemo(
+    () => (categoryKey === undefined ? null : new Set<string>(JSON.parse(categoryKey) as string[])),
+    [categoryKey]
+  );
 
   // Lazy-load the locale-specific index the first time the user opens search
   // for that locale. No fetch happens for visitors who never open search.
@@ -144,30 +182,35 @@ const SearchModal: React.FC<SearchModalProps> = ({ isOpen, onClose }) => {
       setIsLoading(true);
       try {
         // Each per-locale file is pre-filtered, so no language check needed
-        // here — we only dedupe by page and slice to 50.
-        const seenPages = new Set<string>();
+        // here; we dedupe by destination and slice to 50. The destination
+        // includes the section fragment: two sections of one page are two
+        // different places to land, and deduping by bare page collapsed every
+        // section hit into a link to the top of the page.
+        const seenDestinations = new Set<string>();
         const searchResults: SearchItem[] = [];
         for (const result of fuse.search(value)) {
           const item = result.item;
-          if (seenPages.has(item.page)) continue;
-          seenPages.add(item.page);
+          if (allowedCategories && !allowedCategories.has(item.category)) continue;
+          const destination = `${item.page}#${item.fragment ?? ''}`;
+          if (seenDestinations.has(destination)) continue;
+          seenDestinations.add(destination);
           searchResults.push(buildResultExcerpt(item, result.matches));
           if (searchResults.length >= 50) break;
         }
         setResults(searchResults);
         if (value.trim().length >= 2) {
           window.plausible?.('search_query', {
-            props: { query: value.trim(), results: String(searchResults.length) },
+            props: { query: value.trim(), results: String(searchResults.length), scope },
           });
           if (searchResults.length === 0) {
-            window.plausible?.('search_no_results', { props: { query: value.trim() } });
+            window.plausible?.('search_no_results', { props: { query: value.trim(), scope } });
           }
         }
       } finally {
         setIsLoading(false);
       }
     },
-    [fuse]
+    [fuse, allowedCategories, scope]
   );
 
   // Re-run the active query when the user switches locale OR when the
@@ -204,31 +247,23 @@ const SearchModal: React.FC<SearchModalProps> = ({ isOpen, onClose }) => {
   // Navigate to result
   const navigateToResult = (result: SearchItem) => {
     window.plausible?.('search_result_click', {
-      props: { query: query.trim(), result_path: result.path, category: result.category },
+      props: {
+        query: query.trim(),
+        result_path: result.path,
+        category: result.category,
+        scope,
+      },
     });
-    window.location.href = result.page;
+    window.location.href = result.fragment ? `${result.page}#${result.fragment}` : result.page;
     onClose();
   };
 
   // Track search open
   useEffect(() => {
     if (isOpen) {
-      window.plausible?.('search_open', { props: { source: 'click' } });
+      window.plausible?.('search_open', { props: { source: 'click', scope } });
     }
-  }, [isOpen]);
-
-  // Focus input and lock body scroll when modal opens
-  useEffect(() => {
-    if (isOpen) {
-      inputRef.current?.focus();
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = '';
-    }
-    return () => {
-      document.body.style.overflow = '';
-    };
-  }, [isOpen]);
+  }, [isOpen, scope]);
 
   // Scroll selected item into view
   useEffect(() => {
@@ -239,48 +274,6 @@ const SearchModal: React.FC<SearchModalProps> = ({ isOpen, onClose }) => {
       selectedElement?.scrollIntoView({ block: 'nearest' });
     }
   }, [selectedIndex]);
-
-  // Focus trap - keep focus within modal
-  useEffect(() => {
-    if (!isOpen || !modalRef.current) return;
-
-    const modal = modalRef.current;
-    const focusableElements = modal.querySelectorAll(
-      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
-    );
-
-    if (focusableElements.length === 0) return;
-
-    const firstElement = focusableElements[0] as HTMLElement;
-    const lastElement = focusableElements[focusableElements.length - 1] as HTMLElement;
-
-    const handleTabKey = (e: KeyboardEvent) => {
-      if (e.key !== 'Tab') return;
-
-      if (e.shiftKey) {
-        if (document.activeElement === firstElement) {
-          e.preventDefault();
-          lastElement.focus();
-        }
-      } else if (document.activeElement === lastElement) {
-        e.preventDefault();
-        firstElement.focus();
-      }
-    };
-
-    modal.addEventListener('keydown', handleTabKey);
-
-    return () => {
-      modal.removeEventListener('keydown', handleTabKey);
-    };
-  }, [isOpen]);
-
-  // Handle backdrop click
-  const handleBackdropClick = (e: React.MouseEvent) => {
-    if (e.target === e.currentTarget) {
-      onClose();
-    }
-  };
 
   // Group results by category - memoized to prevent re-computation on every render
   const groupedResults = useMemo(() => {
@@ -316,24 +309,21 @@ const SearchModal: React.FC<SearchModalProps> = ({ isOpen, onClose }) => {
     }
   };
 
-  if (!isOpen) return null;
-
   return (
-    <div className="search-modal-backdrop" onClick={handleBackdropClick}>
-      <div
-        id="search-modal"
-        className="search-modal-content"
-        ref={modalRef}
-        role="dialog"
-        aria-modal="true"
-        aria-label={t('navigation.search')}
-      >
-        <div className="search-modal-header">
-          <div className="search-modal-input-wrapper">
+    <Overlay
+      open={isOpen}
+      onClose={onClose}
+      label={t('navigation.search')}
+      panelClassName="search-panel"
+      initialFocusRef={inputRef}
+    >
+      <div className="search-header">
+        <div className="search-input-wrapper" id="search-modal">
+          <div className="search-field">
             <input
               ref={inputRef}
               type="text"
-              className="search-modal-input"
+              className="form-input search-input"
               placeholder={t('common.search.placeholder')}
               value={query}
               onChange={(e) => handleSearch(e.target.value)}
@@ -347,123 +337,124 @@ const SearchModal: React.FC<SearchModalProps> = ({ isOpen, onClose }) => {
                 selectedIndex >= 0 ? `search-result-${selectedIndex}` : undefined
               }
             />
-            <button
-              className="search-modal-close"
-              onClick={onClose}
-              aria-label={t('common.search.closeModal')}
-              type="button"
-              data-track="cta_click"
-              data-track-label="search-close"
-            >
-              <kbd>Esc</kbd>
-            </button>
+            {/* The magnifier is anchored to the INPUT, not to the row. It used
+                to be a sibling of the close button and absolutely positioned
+                against the whole row, so it sat on top of the Esc key. */}
             <svg
-              className="search-modal-icon"
+              className="icon search-icon"
               width="20"
               height="20"
               viewBox="0 0 20 20"
               fill="none"
+              stroke="currentColor"
+              strokeLinecap="round"
+              aria-hidden="true"
               xmlns="http://www.w3.org/2000/svg"
             >
-              <circle cx="8" cy="8" r="6" stroke="currentColor" strokeWidth="2" />
-              <path
-                d="M12.5 12.5L17 17"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-              />
+              <circle cx="8" cy="8" r="6" />
+              <path d="M12.5 12.5L17 17" />
             </svg>
           </div>
-        </div>
-
-        <div
-          id="search-results"
-          className="search-modal-results"
-          ref={resultsContainerRef}
-          role="listbox"
-          aria-label={t('common.search.results')}
-        >
-          {hasError && (
-            <div className="search-modal-error" role="alert" aria-live="assertive">
-              <h3>{t('common.search.unavailable')}</h3>
-              <p>{t('common.search.unavailableMessage')}</p>
-            </div>
-          )}
-
-          {(isLoading || isLoadingIndex) && !hasError && (
-            <div className="search-modal-loading" role="status" aria-live="polite">
-              {t('common.search.searching')}
-            </div>
-          )}
-
-          {!isLoading && !isLoadingIndex && !hasError && query.trim() && results.length === 0 && (
-            <div className="search-modal-no-results" role="status" aria-live="polite">
-              <h3>
-                {t('common.search.noResults')} for &quot;{query}&quot;
-              </h3>
-              <div className="search-modal-suggestions">
-                <p>{t('common.search.suggestions.title')}</p>
-                <ul>
-                  <li>{t('common.search.suggestions.differentKeywords')}</li>
-                  <li>{t('common.search.suggestions.checkSpelling')}</li>
-                  <li>{t('common.search.suggestions.browseSolutions')}</li>
-                  <li>{t('common.search.suggestions.contactSupport')}</li>
-                </ul>
-              </div>
-            </div>
-          )}
-
-          {!isLoading && !hasError && results.length > 0 && (
-            <div className="sr-only" role="status" aria-live="polite">
-              {results.length} {results.length === 1 ? 'result' : 'results'} found
-            </div>
-          )}
-
-          {!isLoading &&
-            !hasError &&
-            Object.entries(groupedResults).map(([category, categoryResults]) => (
-              <div key={category} className="search-modal-category">
-                <h4 className="search-modal-category-title">{category}</h4>
-                <ul className="search-modal-results-list">
-                  {categoryResults.map((result, index) => {
-                    const overallIndex =
-                      Object.entries(groupedResults)
-                        .slice(0, Object.keys(groupedResults).indexOf(category))
-                        .reduce((sum, [, items]) => sum + items.length, 0) + index;
-
-                    return (
-                      <li
-                        id={`search-result-${overallIndex}`}
-                        key={result.id}
-                        className={`search-modal-result-item ${
-                          selectedIndex === overallIndex ? 'selected' : ''
-                        }`}
-                        role="option"
-                        aria-selected={selectedIndex === overallIndex}
-                        onClick={() => navigateToResult(result)}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter' || e.key === ' ') {
-                            e.preventDefault();
-                            navigateToResult(result);
-                          }
-                        }}
-                        tabIndex={-1}
-                      >
-                        <div className="search-modal-result-title">
-                          {highlightMatch(result.content, query)}
-                        </div>
-                        <div className="search-modal-result-excerpt">
-                          {highlightMatch(result.excerpt, query)}
-                        </div>
-                      </li>
-                    );
-                  })}
-                </ul>
-              </div>
-            ))}
+          <button
+            className="btn btn--secondary btn--sm"
+            onClick={onClose}
+            aria-label={t('common.search.closeModal')}
+            type="button"
+            data-track="cta_click"
+            data-track-label="search-close"
+          >
+            <kbd>Esc</kbd>
+          </button>
         </div>
       </div>
-    </div>
+
+      <div
+        id="search-results"
+        className="overlay-body--flush search-results"
+        ref={resultsContainerRef}
+        role="listbox"
+        aria-label={t('common.search.results')}
+      >
+        {hasError && (
+          <div className="search-message" role="alert" aria-live="assertive">
+            <h3>{t('common.search.unavailable')}</h3>
+            <p>{t('common.search.unavailableMessage')}</p>
+          </div>
+        )}
+
+        {(isLoading || isLoadingIndex) && !hasError && (
+          <div className="search-message" role="status" aria-live="polite">
+            {t('common.search.searching')}
+          </div>
+        )}
+
+        {!isLoading && !isLoadingIndex && !hasError && query.trim() && results.length === 0 && (
+          <div className="search-message" role="status" aria-live="polite">
+            <h3>
+              {t('common.search.noResults')} for &quot;{query}&quot;
+            </h3>
+            <div className="search-suggestions">
+              <p>{t('common.search.suggestions.title')}</p>
+              <ul>
+                <li>{t('common.search.suggestions.differentKeywords')}</li>
+                <li>{t('common.search.suggestions.checkSpelling')}</li>
+                <li>{t('common.search.suggestions.browseSolutions')}</li>
+                <li>{t('common.search.suggestions.contactSupport')}</li>
+              </ul>
+            </div>
+          </div>
+        )}
+
+        {!isLoading && !hasError && results.length > 0 && (
+          <div className="sr-only" role="status" aria-live="polite">
+            {results.length} {results.length === 1 ? 'result' : 'results'} found
+          </div>
+        )}
+
+        {!isLoading &&
+          !hasError &&
+          Object.entries(groupedResults).map(([category, categoryResults]) => (
+            <div key={category} className="search-category">
+              <h4 className="search-category-title">{category}</h4>
+              <ul className="search-results-list">
+                {categoryResults.map((result, index) => {
+                  const overallIndex =
+                    Object.entries(groupedResults)
+                      .slice(0, Object.keys(groupedResults).indexOf(category))
+                      .reduce((sum, [, items]) => sum + items.length, 0) + index;
+
+                  return (
+                    <li
+                      id={`search-result-${overallIndex}`}
+                      key={result.id}
+                      className={`search-result ${
+                        selectedIndex === overallIndex ? 'selected' : ''
+                      }`}
+                      role="option"
+                      aria-selected={selectedIndex === overallIndex}
+                      onClick={() => navigateToResult(result)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          navigateToResult(result);
+                        }
+                      }}
+                      tabIndex={-1}
+                    >
+                      <div className="search-result-title">
+                        {highlightMatch(result.content, query)}
+                      </div>
+                      <div className="search-result-excerpt">
+                        {highlightMatch(result.excerpt, query)}
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          ))}
+      </div>
+    </Overlay>
   );
 };
 

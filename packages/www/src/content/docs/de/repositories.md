@@ -84,7 +84,7 @@ rdc repo resize my-app --size 20G  # Auf exakte Größe setzen
 rdc repo expand my-app --size 5G  # Füge 5G zur aktuellen Größe hinzu
 ```
 
-> Das Repository muss vor der Größenänderung unmountet sein. `repo expand` funktioniert im laufenden Betrieb. Eine Größenänderung verändert die maximale Größe des Repositories. Um freigegebene Blöcke ohne Änderung der Maximalgröße an den Pool zurückzugeben, verwende stattdessen [`repo trim`](#speicherplatz-zuruckgewinnen-trim).
+> Das Repository muss vor der Größenänderung unmountet sein. `repo expand` funktioniert im laufenden Betrieb. Eine Größenänderung verändert die maximale Größe des Repositories. Um freigegebene Blöcke ohne Änderung der Maximalgröße an den Pool zurückzugeben, verwende stattdessen [`repo trim`](#reclaim-space-trim).
 
 ## Speicherplatz zurückgewinnen (trim)
 
@@ -131,7 +131,7 @@ Richtlinienfelder:
 | `--auto-trim` | Geplante Trims ausführen | aus |
 | `--trim-interval` | Mindeststunden zwischen automatischen Trims | 24 |
 
-Schutzmaßnahmen: Auto-Grow verweigert die Ausführung, wenn der freie Pool-Speicher unter eine Reserve fällt (10 GB oder 5 % des Pools, je nachdem was größer ist), wartet mindestens 30 Minuten zwischen Grows desselben Repositories und überschreitet niemals `--max-quota`. Es gibt kein automatisches Verkleinern: Das manuelle, offline durchzuführende [`repo resize`](#grosse-andern) ist der einzige Weg, die maximale Größe eines Repositories zu reduzieren.
+Schutzmaßnahmen: Auto-Grow verweigert die Ausführung, wenn der freie Pool-Speicher unter eine Reserve fällt (10 GB oder 5 % des Pools, je nachdem was größer ist), wartet mindestens 30 Minuten zwischen Grows desselben Repositories und überschreitet niemals `--max-quota`. Es gibt kein automatisches Verkleinern: Das manuelle, offline durchzuführende [`repo resize`](#resize) ist der einzige Weg, die maximale Größe eines Repositories zu reduzieren.
 
 Einstellungen pro Repository überschreiben den maschinenweiten Standard. Wiederholte `policy set`-Aufrufe ändern nur die übergebenen Flags.
 
@@ -147,7 +147,7 @@ Forks verwenden das name:tag-Modell: Der resultierende Fork heißt `my-app:stagi
 
 > Forks teilen die Daten des Parents über BTRFS Reflink, einschließlich aller auf der Festplatte gespeicherten Credentials. Siehe [What Rediacc does not isolate](/de/docs/ai-agents-safety#what-rediacc-does-not-isolate) für die Auswirkungen, wenn diese Credentials externe Services wie Stripe, AWS oder Railway autorisieren. Um Deploy-Zeit-Credentials vor dem Zugriff des Forks zu schützen, verwende [Per-Repo-Secrets](#secrets) statt Werte in `.env`-Dateien einzubacken.
 
-Beim Fork-Erstellen schreibt `repo fork` das [State-Mirror-Sidecar](#type-spalte-und-der-state-mirror) sofort unter `<datastore>/.interim/state/<fork-guid>/.rediacc.json`. Ohne das Volume zu entsperren. So wird der neue Fork korrekt als `is_fork: true` ab dem Moment der Erstellung identifiziert. Dies ermöglicht es geplanten Backups, ihn zu überspringen (Forks sind standardmäßig aus der Upload-Pipeline ausgeschlossen), auch wenn er nie gemountet wird. Beim Forken eines Forks wird `grand_guid` korrekt verkettet: Der Mirror des neuen Forks zeigt auf die ursprüngliche Grand-Parent-GUID, nicht auf den Zwischenfork.
+Beim Fork-Erstellen schreibt `repo fork` das [State-Mirror-Sidecar](#type-column-and-the-state-mirror) sofort unter `<datastore>/.interim/state/<fork-guid>/.rediacc.json`. Ohne das Volume zu entsperren. So wird der neue Fork korrekt als `is_fork: true` ab dem Moment der Erstellung identifiziert. Dies ermöglicht es geplanten Backups, ihn zu überspringen (Forks sind standardmäßig aus der Upload-Pipeline ausgeschlossen), auch wenn er nie gemountet wird. Beim Forken eines Forks wird `grand_guid` korrekt verkettet: Der Mirror des neuen Forks zeigt auf die ursprüngliche Grand-Parent-GUID, nicht auf den Zwischenfork.
 
 ### Fork und Start in einem Schritt
 

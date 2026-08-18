@@ -1,4 +1,5 @@
 #!/usr/bin/env tsx
+import { execFileSync } from 'node:child_process';
 /**
  * One source for the site's locale set, enforced.
  *
@@ -21,13 +22,24 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import process from 'node:process';
-import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
 const SITE_CODES = new Set([
-  'en', 'de', 'es', 'fr', 'ja', 'ar', 'ru', 'tr', 'zh', 'et', 'ko', 'pt', 'it',
+  'en',
+  'de',
+  'es',
+  'fr',
+  'ja',
+  'ar',
+  'ru',
+  'tr',
+  'zh',
+  'et',
+  'ko',
+  'pt',
+  'it',
 ]);
 
 /** An array of at least this many locale codes is a locale LIST, not a coincidence. */
@@ -39,7 +51,10 @@ const MIN_CODES = 5;
  */
 const ALLOWED: Array<{ file: string; reason: string }> = [
   { file: 'packages/locales/index.js', reason: 'THE source of truth' },
-  { file: 'packages/locales/index.d.ts', reason: 'hand-written literal tuple; the gate checks it matches index.js' },
+  {
+    file: 'packages/locales/index.d.ts',
+    reason: 'hand-written literal tuple; the gate checks it matches index.js',
+  },
   {
     file: 'packages/shared/src/i18n/types.ts',
     reason:
@@ -48,7 +63,8 @@ const ALLOWED: Array<{ file: string; reason: string }> = [
   },
   {
     file: 'packages/www/src/i18n/types.ts',
-    reason: 'LANGUAGES is a presentation ORDER, not a set; a compile-time assertion proves it is a permutation',
+    reason:
+      'LANGUAGES is a presentation ORDER, not a set; a compile-time assertion proves it is a permutation',
   },
   {
     file: 'scripts/check-locale-sources.ts',
@@ -170,7 +186,9 @@ function trackedFiles(root: string): string[] {
     ['ls-files', '--cached', '--others', '--exclude-standard', '*.ts', '*.js', '*.tsx', '*.mjs'],
     { cwd: root, encoding: 'utf-8', maxBuffer: 32 * 1024 * 1024 }
   );
-  return out.split('\n').filter((f) => f && !f.includes('node_modules') && !f.includes('/locales/'));
+  return out
+    .split('\n')
+    .filter((f) => f && !f.includes('node_modules') && !f.includes('/locales/'));
 }
 
 function selftest(): void {
@@ -178,7 +196,9 @@ function selftest(): void {
   const check = (name: string, actual: unknown, expected: unknown) => {
     if (JSON.stringify(actual) === JSON.stringify(expected)) console.log(`  PASS  ${name}`);
     else {
-      console.error(`  FAIL  ${name}\n        expected ${JSON.stringify(expected)}\n        got      ${JSON.stringify(actual)}`);
+      console.error(
+        `  FAIL  ${name}\n        expected ${JSON.stringify(expected)}\n        got      ${JSON.stringify(actual)}`
+      );
       failures.push(name);
     }
   };
@@ -197,15 +217,27 @@ function selftest(): void {
 
   // Control: a short list is a coincidence, not a locale set.
   w('src/short.ts', "const PAIR = ['en','de'];\n");
-  check('a 2-code list is NOT reported (control)', findStrayLocaleLists(root, ['src/short.ts']).length, 0);
+  check(
+    'a 2-code list is NOT reported (control)',
+    findStrayLocaleLists(root, ['src/short.ts']).length,
+    0
+  );
 
   // Control: codes that are not site locales are somebody else's enum.
   w('src/other.ts', "const X = ['aa','bb','cc','dd','ee','ff'];\n");
-  check('non-locale codes are NOT reported (control)', findStrayLocaleLists(root, ['src/other.ts']).length, 0);
+  check(
+    'non-locale codes are NOT reported (control)',
+    findStrayLocaleLists(root, ['src/other.ts']).length,
+    0
+  );
 
   // Control: importing the real source is the point, and must be clean.
   w('src/good.ts', "import { SITE_LOCALES } from '@rediacc/locales';\nconst L = SITE_LOCALES;\n");
-  check('importing the source is NOT reported (control)', findStrayLocaleLists(root, ['src/good.ts']).length, 0);
+  check(
+    'importing the source is NOT reported (control)',
+    findStrayLocaleLists(root, ['src/good.ts']).length,
+    0
+  );
 
   // Control: an allowlisted file is exempt.
   w('packages/shared/src/i18n/types.ts', "const L = ['en','de','es','fr','ja','ar'];\n");
@@ -218,7 +250,11 @@ function selftest(): void {
   // Control: a literal passed to subset() is the SANCTIONED form and must be exempt —
   // without this the gate condemns the exact pattern its own error message recommends.
   w('src/sub.ts', "const NIS2 = subset('nis2', ['en','de','es','fr','et','it','pt']);\n");
-  check('a subset() literal is NOT reported (control)', findStrayLocaleLists(root, ['src/sub.ts']).length, 0);
+  check(
+    'a subset() literal is NOT reported (control)',
+    findStrayLocaleLists(root, ['src/sub.ts']).length,
+    0
+  );
 
   // Control: generated artifacts are policed at their generator, not their output.
   w('src/thing.generated.ts', "const L = ['en','de','es','fr','ja','ar'];\n");
@@ -258,7 +294,9 @@ function selftest(): void {
       const hit = got.some((g) => expectMatch.test(g));
       if (hit) console.log(`  PASS  ${name}`);
       else {
-        console.error(`  FAIL  ${name}\n        expected /${expectMatch.source}/\n        got      ${JSON.stringify(got)}`);
+        console.error(
+          `  FAIL  ${name}\n        expected /${expectMatch.source}/\n        got      ${JSON.stringify(got)}`
+        );
         failures.push(name);
       }
     }

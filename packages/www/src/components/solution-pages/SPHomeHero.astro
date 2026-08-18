@@ -1,0 +1,95 @@
+---
+/**
+ * The homepage hero. Deliberately NOT `SPHero`.
+ *
+ * `SPHero` is shared with 21 solution pages and 4 persona pages, and it is
+ * locked to `min-height: 100dvh` by `.sp-hero` in `src/styles/solution-pages.css`,
+ * so nothing real ever cleared the fold here. The homepage wanted three things
+ * that only the homepage wants: no eyebrow pill, no simulated terminal, and a
+ * height set by its own content. Giving it its own component buys all three
+ * without changing what 25 other pages render.
+ *
+ * What left, and why (operator decision L5 plus the hero measurement):
+ *   - the fake terminal, the largest object above the fold. It failed contrast
+ *     in three classes against #1e1e1e, wrapped `Cloning production (3.2 TB)`
+ *     across three lines at 390px with the leader dots stranded, and shipped a
+ *     disclaimer apologising for being simulated. Neither reference site puts a
+ *     simulated artifact in its hero;
+ *   - the eyebrow pill, whose top 7px sat UNDER the fixed header at 1440 and
+ *     which showed only the word "SERVERS" at 390;
+ *   - the secondary CTA, so one action reads as the action.
+ *
+ * The CTA is the site primitive (`.btn.btn--primary`), not `.sp-btn-primary`.
+ * The primary CTA was built nine times across this site in two different
+ * greens; the homepage is not going to be the tenth.
+ */
+import type { Language } from '../../i18n/types';
+import { createTranslator } from '../../i18n/utils';
+import AccountLink from '../AccountLink.astro';
+
+interface Props {
+  lang: Language;
+}
+
+const { lang } = Astro.props as Props;
+const { t } = createTranslator(lang);
+---
+
+<section class="sp-home-hero">
+  <div class="sp-home-hero-inner">
+    <h1>{t('hero.title')}{t('hero.titleHighlight')}</h1>
+    <p class="sp-home-hero-sub">{t('hero.subtitle')}</p>
+    <AccountLink
+      label={t('hero.cta.getStarted')}
+      className="btn btn--primary"
+      trackEvent="cta_click"
+      trackLabel="home-hero-get-started"
+      trackDest="account"
+    />
+  </div>
+</section>
+
+<style>
+  /* Height comes from the content. The old hero pinned `min-height: 100dvh`
+     with `justify-content: center`, which is what put the first real section
+     at y=910 on a 900px viewport. The top padding clears the fixed header
+     the same way `.sp-page > nav.sp-breadcrumb` already does, rather than
+     letting the header overlap the first child. */
+  .sp-home-hero {
+    background: var(--sp-bg-hero);
+    padding: calc(var(--nav-top-offset, 3.5rem) + var(--space-16)) var(--space-12) var(--space-16);
+    text-align: center;
+  }
+
+  .sp-home-hero-inner {
+    max-width: var(--sp-hero-max);
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-5);
+  }
+
+  .sp-home-hero h1 {
+    margin: 0;
+    font-size: var(--font-size-4xl);
+    font-weight: 700;
+    line-height: 1.15;
+    letter-spacing: -0.03em;
+    color: var(--sp-text-white);
+  }
+
+  .sp-home-hero-sub {
+    margin: 0;
+    max-width: 600px;
+    font-size: var(--font-size-lg);
+    line-height: 1.5;
+    color: var(--sp-text-muted-dark);
+  }
+
+  @media (max-width: 900px) {
+    .sp-home-hero {
+      padding: calc(var(--nav-top-offset, 3.5rem) + var(--space-10)) var(--space-6) var(--space-10);
+    }
+  }
+</style>

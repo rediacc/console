@@ -1,0 +1,36 @@
+---
+/**
+ * The "why now" argument, moved off the homepage.
+ *
+ * It was the homepage's second section and cost 786px of desktop and 1,363px
+ * of mobile to make the page's fourth restatement of one thesis. Neither
+ * claude.com nor anthropic.com carries an equivalent on its homepage. The
+ * writing is real, so it moved here rather than being deleted (operator
+ * decision, README decision point 1).
+ *
+ * No new translation keys: the meta title and description reuse the two
+ * `whyNow.*` values the section already carries in all 13 catalogs.
+ */
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import SPWhyNow from '../../components/solution-pages/SPWhyNow.astro';
+import { createTranslator } from '../../i18n/utils';
+import { getLanguagePaths } from '../../i18n/language-utils';
+import type { Language } from '../../i18n/types';
+import '../../styles/solution-pages.css';
+
+export const getStaticPaths = getLanguagePaths;
+
+const { lang } = Astro.params as { lang: Language };
+const { t } = createTranslator(lang);
+---
+
+<BaseLayout
+  lang={lang}
+  title={t('whyNow.title')}
+  description={t('whyNow.footer')}
+  ogType="website"
+>
+  <div class="sp-page">
+    <SPWhyNow lang={lang} />
+  </div>
+</BaseLayout>

@@ -61,7 +61,8 @@ const METADATA: Record<string, string> = {
   cellBytes: 'grid geometry',
   imageBytes: 'grid geometry',
   createdAt: 'timestamp',
-  parent: 'parent SNAPSHOT id, not a chunk hash; the parent manifest is itself indexed, which is why no parent-chain walk is needed',
+  parent:
+    'parent SNAPSHOT id, not a chunk hash; the parent manifest is itself indexed, which is why no parent-chain walk is needed',
 };
 
 /** JSON tag names on the Go Manifest struct, in declaration order. */

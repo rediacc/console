@@ -8,10 +8,26 @@ import { useTranslation } from '../i18n/react';
 import LanguageMenu from './LanguageMenu';
 import NewsletterSignup from './NewsletterSignup';
 import '../styles/language-switcher.css';
+import type { Language } from '../i18n/types';
 
-const Footer: React.FC = () => {
+interface FooterProps {
+  /** Locale from BaseLayout; authoritative on the server. See the note above. */
+  lang?: Language;
+}
+
+/**
+ * `lang` is passed by BaseLayout and is AUTHORITATIVE on the server.
+ *
+ * `useLanguage()` reads `window.location.pathname`, and there is no `window` during SSR,
+ * so it returns 'en' for every locale. That made this island server-render English on all
+ * twelve non-English locales: crawlers and no-JS visitors saw an English nav, and everyone
+ * else got a flash of English until hydration corrected it. Astro knows the locale, so it
+ * hands it down; the hook stays as the fallback for any mount that does not.
+ */
+const Footer: React.FC<FooterProps> = ({ lang }) => {
   const currentYear = new Date().getFullYear();
-  const currentLang = useLanguage();
+  const detectedLang = useLanguage();
+  const currentLang = lang ?? detectedLang;
   const { t } = useTranslation(currentLang);
 
   return (
@@ -95,7 +111,7 @@ const Footer: React.FC = () => {
             <ul className="footer-list">
               <li>
                 <a
-                  href={`/${currentLang}/solutions`}
+                  href={`/${currentLang}#solutions`}
                   className="footer-link"
                   data-track="cta_click"
                   data-track-label="footer-product"

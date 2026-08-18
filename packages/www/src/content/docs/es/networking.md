@@ -14,7 +14,7 @@ sourceCommit: "20f014619af1ee41e75cd46a3c8e4abc5add0983"
 
 Esta página explica cómo los servicios ejecutándose dentro de daemons Docker aislados se hacen accesibles desde internet. Cubre el sistema de proxy inverso, las etiquetas Docker para enrutamiento, los certificados TLS, el DNS y la redirección de puertos TCP/UDP.
 
-Para saber cómo los servicios obtienen sus IPs de loopback y el sistema de slots de `.rediacc.json`, consulte [Servicios](/es/docs/services#red-de-servicios-rediaccjson).
+Para saber cómo los servicios obtienen sus IPs de loopback y el sistema de slots de `.rediacc.json`, consulte [Servicios](/es/docs/services#service-networking-rediaccjson).
 
 ## Aislamiento de Red
 
@@ -128,7 +128,7 @@ Estas usan la [sintaxis estándar de etiquetas de Traefik v3](https://doc.traefi
 
 ### Requisitos Previos
 
-1. Infraestructura configurada en la máquina ([Configuración de Máquinas, Configuración de Infraestructura](/es/docs/setup#configuración-de-infraestructura)):
+1. Infraestructura configurada en la máquina ([Configuración de Máquinas, Configuración de Infraestructura](/es/docs/setup#infrastructure-configuration)):
 
    ```bash
    # Credenciales compartidas (una vez por configuración, aplica a todas las máquinas)
@@ -144,7 +144,7 @@ Estas usan la [sintaxis estándar de etiquetas de Traefik v3](https://doc.traefi
    rdc machine infra push server-1
    ```
 
-2. Registros DNS apuntando su dominio a la IP pública del servidor (consulte [Configuración de DNS](#configuración-de-dns) más abajo).
+2. Registros DNS apuntando su dominio a la IP pública del servidor (consulte [Configuración de DNS](#dns-configuration) más abajo).
 
 ### Agregar Etiquetas
 

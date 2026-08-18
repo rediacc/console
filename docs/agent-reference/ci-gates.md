@@ -207,7 +207,7 @@ Two design points worth knowing before you edit a workflow:
 
 **The allowlist can only shrink.** `.profiler-coverage-allowlist` takes
 `<workflow>.yml:<job>` entries under the usual `# BLOCKER:` convention
-(`docs/agent/suppressions.md`). It currently carries the rollout ledger: 90
+(`docs/agent-reference/suppressions.md`). It currently carries the rollout ledger: 90
 jobs unwired as of 2026-08-05, plus `breakpoint.yml` (frozen in
 `.ci/breakpoint/MANIFEST.sha256`, so a console-only step would fail the drift
 gate) and `profiler-probe.yml`'s own experiment arms. Delete a job's line in the

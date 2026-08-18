@@ -58,7 +58,7 @@ A zone-level Cache Rule forces BYPASS for every request to `releases.rediacc.com
 | **Expression** | `(http.host eq "releases.rediacc.com")` |
 | **Action** | `set_cache_settings` with `cache: false` |
 
-Recreate via API (use `CLOUDFLARE_API_TOKEN` with Zone:Cache Purge + Zone:Cache Rules, or the legacy `CF_API_KEY`+`CF_EMAIL` global key):
+Recreate via API (use `CLOUDFLARE_API_TOKEN` with Zone:Cache Purge + Zone:Cache Rules, or the legacy `CF_GLOBAL_API_KEY`+`CF_EMAIL` global key):
 
 ```bash
 ZONE=9e802649c143c9cefd811d8fd671d31c

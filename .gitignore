@@ -147,8 +147,8 @@ packages/www/src/i18n/translations/*.lock
 
 # NO RULE FOR AGENT WORKING NOTES, deliberately, and this note is here so the
 # absence reads as a decision rather than an oversight. They used to live in a
-# gitignored `.agent/`; they now live in the TRACKED `agent/<branch>/<session
-# prefix>/` (plus `agent/<branch>/PLAN-*.md` and `agent/programs/<slug>/`), so
+# gitignored `.agent/`; they now live in the TRACKED `agent/<session-prefix>/`
+# (plus `agent/RULES.md`, `agent/PLAN-*.md` and `agent/programs/<slug>/`), so
 # the tree is reviewable and survives a worktree. Its CI cost is paid by a
 # zero-job `agent` module in .ci/scripts/ci/scope-map.cjs, NOT by hiding it from
 # git: an ignore rule here would make every session's STATE.md invisible to the

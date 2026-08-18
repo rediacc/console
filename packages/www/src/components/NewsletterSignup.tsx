@@ -133,13 +133,17 @@ const NewsletterSignup: React.FC<Props> = ({
           <input
             ref={inputRef}
             type="email"
-            className="newsletter-input"
+            className="form-input newsletter-input"
             placeholder={t('newsletter.placeholder')}
             required
             aria-label={t('newsletter.placeholder')}
             disabled={state === 'loading'}
           />
-          <button type="submit" className="newsletter-button" disabled={state === 'loading'}>
+          <button
+            type="submit"
+            className="btn btn--primary btn--sm newsletter-button"
+            disabled={state === 'loading'}
+          >
             {state === 'loading' ? (
               <span className="newsletter-spinner" aria-hidden="true" />
             ) : (
@@ -148,7 +152,7 @@ const NewsletterSignup: React.FC<Props> = ({
           </button>
         </div>
         {state === 'error' && (
-          <p className="newsletter-error" role="alert">
+          <p className="form-error" role="alert">
             {errorMsg}
           </p>
         )}

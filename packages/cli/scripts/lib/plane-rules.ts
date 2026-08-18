@@ -29,7 +29,7 @@ export const MACHINE_MARKERS = [
  * `-b` only bites inside `backgroundDecorator`, which wraps the executor handed
  * out by `getExecutor()`. A command that talks to a machine by some other route
  * (`machine status` goes over SSH directly) never crosses that seam, so `-b` is
- * a silent no-op there — which is exactly what the contract used to advertise
+ * a silent no-op there, which is exactly what the contract used to advertise
  * as `detachable: true`.
  */
 export const DETACH_SEAM_MARKERS = ['services/executor/executor-factory'] as const;

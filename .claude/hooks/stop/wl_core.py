@@ -458,17 +458,21 @@ AGENT_BRANCH_RE = re.compile(r"[^A-Za-z0-9._-]+")
 def git_branch(root):
     """The slugified current branch, or "" when HEAD is not on one.
 
+    NOTHING UNDER agent/ IS KEYED ON THIS ANY MORE (2026-08-18): the working
+    notes tree is per session, and the only remaining caller is the sub-agent
+    REPORT store in TMPDIR (wl_report), which keys per branch on purpose
+    because a report is most wanted after its branch is gone.
+
     `symbolic-ref --short -q` and NOT `rev-parse --abbrev-ref HEAD`. The latter
     returns the LITERAL STRING "HEAD" on a detached HEAD, and that string slugs
     to a perfectly valid directory name, so it would silently seed a junk
-    `agent/HEAD/` universe during every interactive rebase. Measured on this
-    worktree: `private/renet` is detached, where abbrev-ref returns "HEAD" and
+    `HEAD` universe during every interactive rebase. Measured on this worktree:
+    `private/renet` is detached, where abbrev-ref returns "HEAD" and
     symbolic-ref returns empty. Empty is the honest answer, and callers treat it
     as "cannot resolve a branch" rather than as a branch name.
 
-    Slugged because a branch may contain a slash: `feature/foo` would otherwise
-    create a NESTED `agent/feature/foo/`, which no caller expects and which the
-    bootstrap message could not name in one `mkdir`.
+    Slugged because a branch may contain a slash, which would otherwise nest a
+    directory one level deeper than any caller expects.
 
     WORKLIST_AGENT_BRANCH is not decoration. It is how the test suite drives
     this without a git repo (its fixture leaves `.git` unusable, so

@@ -30,6 +30,7 @@ import { existsSync as fsExistsSync, readFileSync } from 'node:fs';
 import { DIM, GREEN, NC, RED, YELLOW } from '../utils/console.js';
 
 const readFileUtf8 = (p: string): string => readFileSync(p, 'utf-8');
+
 import { type BlockeredEntry, parseBlockeredList } from './blocker-validator.js';
 
 /** The set of facts that keep entries alive, plus enough context to explain it. */

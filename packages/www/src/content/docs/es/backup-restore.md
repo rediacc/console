@@ -57,7 +57,7 @@ El push y el pull de máquina a máquina no necesitan ninguna de las dos cosas. 
 
 ### La vía de almacenamiento con rclone desapareció
 
-`rdc repo push --to <storage>` y sus variantes solían copiar un archivo de respaldo completo a un proveedor compatible con rclone que registrabas tú mismo. Ahora rechazan un destino de almacenamiento y nombran su reemplazo. La transferencia de máquina a máquina nunca pasó por rclone y no se ve afectada. Si aún necesitas leer un archivo escrito de esa forma, consulta [Leer un archivo escrito antes de la retirada](#leer-un-archivo-escrito-antes-de-la-retirada).
+`rdc repo push --to <storage>` y sus variantes solían copiar un archivo de respaldo completo a un proveedor compatible con rclone que registrabas tú mismo. Ahora rechazan un destino de almacenamiento y nombran su reemplazo. La transferencia de máquina a máquina nunca pasó por rclone y no se ve afectada. Si aún necesitas leer un archivo escrito de esa forma, consulta [Leer un archivo escrito antes de la retirada](#reading-an-archive-written-before-the-retirement).
 
 ### Comandos de almacenamiento fragmentado
 
@@ -343,7 +343,7 @@ rdc repo push shop:nightly@server-1 --to server-2
 rdc repo pull shop:nightly@server-1 --from server-2
 ```
 
-Las listas completas de opciones están en [Enviar un Respaldo a Otra Máquina](#enviar-un-respaldo-a-otra-máquina) y [Descargar un Respaldo desde Otra Máquina](#descargar-un-respaldo-desde-otra-máquina).
+Las listas completas de opciones están en [Enviar un Respaldo a Otra Máquina](#push-a-backup-to-another-machine) y [Descargar un Respaldo desde Otra Máquina](#pull-a-backup-from-another-machine).
 
 ## Respaldos Programados
 
@@ -436,7 +436,7 @@ Este comportamiento predeterminado es deliberado. Ejecutar dos respaldos en frí
 
 ### Snapshots, Interrupciones y Espacio en el Pool
 
-Cada envío trabaja a partir de un snapshot momentáneo del datastore, por lo que los datos cargados son consistentes incluso mientras los repositorios siguen escribiendo. Mientras el respaldo se ejecuta, ese snapshot sigue referenciando todos los bloques que comparte con los repositorios activos: las eliminaciones y los [trims](/es/docs/repositories#recuperar-espacio-trim) liberan menos espacio en el pool hasta que el ciclo termina y el snapshot se elimina. El [informe de salud del almacenamiento](/es/docs/monitoring#salud-del-almacenamiento) muestra cuánto espacio están anclando actualmente los snapshots de respaldo.
+Cada envío trabaja a partir de un snapshot momentáneo del datastore, por lo que los datos cargados son consistentes incluso mientras los repositorios siguen escribiendo. Mientras el respaldo se ejecuta, ese snapshot sigue referenciando todos los bloques que comparte con los repositorios activos: las eliminaciones y los [trims](/es/docs/repositories#reclaim-space-trim) liberan menos espacio en el pool hasta que el ciclo termina y el snapshot se elimina. El [informe de salud del almacenamiento](/es/docs/monitoring#storage-health) muestra cuánto espacio están anclando actualmente los snapshots de respaldo.
 
 Las interrupciones son seguras. Detener el servicio (o reiniciar la máquina) hace que el respaldo cancele su transferencia y elimine su snapshot antes de salir; la siguiente ejecución programada continúa donde se quedó, porque las celdas ya almacenadas no se vuelven a subir. Si el proceso se termina de forma tan abrupta que no puede limpiar (corte de energía), el snapshot huérfano es detectado y eliminado automáticamente por el mantenedor de almacenamiento en pocos minutos.
 
@@ -514,7 +514,7 @@ La vinculación se registra en tu configuración como una lista en la máquina, 
 }
 ```
 
-> **La vinculación es solo de configuración local.** Definir una estrategia y vincularla a una máquina no afecta a la máquina. Ejecuta `rdc backup schedule -m <machine>` (consulta [Desplegar Cronograma en la Máquina](#desplegar-cronograma-en-la-máquina)) para desplegar los temporizadores systemd, y vuelve a ejecutarlo tras cualquier cambio de estrategia o vinculación.
+> **La vinculación es solo de configuración local.** Definir una estrategia y vincularla a una máquina no afecta a la máquina. Ejecuta `rdc backup schedule -m <machine>` (consulta [Desplegar Cronograma en la Máquina](#deploy-schedule-to-machine)) para desplegar los temporizadores systemd, y vuelve a ejecutarlo tras cualquier cambio de estrategia o vinculación.
 
 ## Elegir entre Hot y Cold y Filtrado por Repositorio
 
@@ -529,7 +529,7 @@ La vinculación se registra en tu configuración como una lista en la máquina, 
 
 **Hot** es la opción predeterminada correcta para ejecuciones de alta frecuencia. Los servicios siguen en funcionamiento mientras se toma el snapshot, por lo que no hay tiempo de inactividad para tus aplicaciones. El snapshot es consistente ante fallos: es equivalente a lo que obtendrías tras un apagado incorrecto. Para la mayoría de las bases de datos modernas y colas de mensajes, esto es aceptable.
 
-**Cold** es apropiado cuando necesitas un snapshot consistente a nivel de aplicación garantizado y puedes aceptar un breve reinicio por repositorio. Los servicios se detienen antes del snapshot y se reinician antes de que comience la carga, así una carga lenta o fallida nunca prolonga la ventana de tiempo de inactividad. Consulta [Semántica del Respaldo en Frío](#semántica-del-respaldo-en-frío) para el modelo de garantía completo.
+**Cold** es apropiado cuando necesitas un snapshot consistente a nivel de aplicación garantizado y puedes aceptar un breve reinicio por repositorio. Los servicios se detienen antes del snapshot y se reinician antes de que comience la carga, así una carga lenta o fallida nunca prolonga la ventana de tiempo de inactividad. Consulta [Semántica del Respaldo en Frío](#cold-backup-semantics) para el modelo de garantía completo.
 
 Ambos modos escriben en el mismo almacenamiento fragmentado, y el modo trata de cómo se maneja el repositorio mientras la imagen está congelada, no de dónde termina la data. Un repositorio cubierto tanto por un cronograma hot cada hora como por uno cold cada semana almacena las celdas que comparten una sola vez en lugar de dos.
 
@@ -562,7 +562,7 @@ Nombra los repositorios que quieres en la ejecución de alta frecuencia, en luga
 - Un repositorio es grande y **totalmente regenerable** a partir de los datos de origen ya almacenados en el volumen, así cada respaldo horario gasta ancho de banda sin añadir valor de recuperación.
 - La ejecución del respaldo superaría su propio intervalo de cronograma a tu velocidad de carga disponible.
 
-**Ejemplo.** Un repositorio `analytics-demo` contiene aproximadamente 114 GB de tablas Postgres derivadas que pueden reconstruirse a partir de dumps CSV en bruto almacenados dentro del mismo volumen. Con un límite de carga de 6 MB/s, un primer snapshot de ese repositorio tarda más de 5 horas. Ejecutarlo cada hora significa que cada ejecución sigue en curso cuando se activa la siguiente, así que cada disparo posterior se descarta silenciosamente (consulta [Respaldos de Larga Duración y Cronogramas Superpuestos](#respaldos-de-larga-duración-y-cronogramas-superpuestos)). Listar los demás repositorios en `hourly-hot` y dejar `analytics-demo` para `weekly-cold` significa que se respalda una vez por semana en lugar de nunca.
+**Ejemplo.** Un repositorio `analytics-demo` contiene aproximadamente 114 GB de tablas Postgres derivadas que pueden reconstruirse a partir de dumps CSV en bruto almacenados dentro del mismo volumen. Con un límite de carga de 6 MB/s, un primer snapshot de ese repositorio tarda más de 5 horas. Ejecutarlo cada hora significa que cada ejecución sigue en curso cuando se activa la siguiente, así que cada disparo posterior se descarta silenciosamente (consulta [Respaldos de Larga Duración y Cronogramas Superpuestos](#long-running-backups-and-overlapping-schedules)). Listar los demás repositorios en `hourly-hot` y dejar `analytics-demo` para `weekly-cold` significa que se respalda una vez por semana en lugar de nunca.
 
 > **Si los datos son puramente regenerables**, considera si necesitas respaldarlos en absoluto. Una alternativa es respaldar solo las entradas de origen bruto (los dumps CSV en este ejemplo) y omitir por completo la copia derivada. Un respaldo en frío semanal de las entradas de origen es mucho más pequeño y totalmente suficiente para la recuperación.
 

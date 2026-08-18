@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+
 /**
  * Control harness for check-docs-render-parity.ts.
  *
@@ -29,10 +30,10 @@
  * Run: npx tsx scripts/__tests__/check-docs-render-parity.control.ts
  */
 
+import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { SITE_LOCALES } from '@rediacc/locales';
 
@@ -158,7 +159,11 @@ const CASES: Case[] = [
   {
     name: 'a built page with no .article-content container',
     plant: (root) => {
-      fs.writeFileSync(dePage(root), '<html><body><article>no container</article></body></html>', 'utf8');
+      fs.writeFileSync(
+        dePage(root),
+        '<html><body><article>no container</article></body></html>',
+        'utf8'
+      );
     },
     wantExit: 'non-zero',
     wantNamed: ['no .article-content container'],
@@ -204,22 +209,34 @@ function main(): void {
     failures += ok ? 0 : 1;
     console.log(`${ok ? '  ok  ' : '  FAIL'} ${c.name} — want ${c.wantExit}, got exit ${res.code}`);
     if (!exitOk) {
-      console.log(res.output.split('\n').map((l) => `        ${l}`).join('\n'));
+      console.log(
+        res.output
+          .split('\n')
+          .map((l) => `        ${l}`)
+          .join('\n')
+      );
     } else if (namedMissing.length > 0) {
       console.log(`        exit was right but the message never named: ${namedMissing.join(', ')}`);
-      console.log(res.output.split('\n').map((l) => `        ${l}`).join('\n'));
+      console.log(
+        res.output
+          .split('\n')
+          .map((l) => `        ${l}`)
+          .join('\n')
+      );
     }
   }
 
   if (failures > 0) {
     console.error(
       `\n✗ ${failures} control case(s) failed. check-docs-render-parity cannot be trusted:\n` +
-        '  either it no longer detects a page rendering another locale\'s document, or it\n' +
+        "  either it no longer detects a page rendering another locale's document, or it\n" +
         '  reports pages that are rendering correctly, and both make it useless.'
     );
     process.exit(1);
   }
-  console.log(`\n✓ ${CASES.length} control cases: the render-parity gate fires on the real defect, stays quiet on a correct page, and refuses rather than skips`);
+  console.log(
+    `\n✓ ${CASES.length} control cases: the render-parity gate fires on the real defect, stays quiet on a correct page, and refuses rather than skips`
+  );
 }
 
 main();

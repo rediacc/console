@@ -57,7 +57,7 @@ Masina-masina push ja pull ei vaja kumbagi. Need on otsene ülekanne kahe masina
 
 ### rclone salvestustee on kadunud
 
-`rdc repo push --to <storage>` ja tema sugulased kopeerisid varem terve varufaili pilveteenuse pakkujasse, mille sa ise registreerisid. Need keelduvad nüüd salvestussihtmärgist ja nimetavad selle asendaja. Masina-masina ülekanne ei käinud kunagi rclone kaudu ega ole mõjutatud. Kui pead endiselt lugema sel viisil kirjutatud arhiivi, vaata [Enne kaotamist kirjutatud arhiivi lugemine](#enne-kaotamist-kirjutatud-arhiivi-lugemine).
+`rdc repo push --to <storage>` ja tema sugulased kopeerisid varem terve varufaili pilveteenuse pakkujasse, mille sa ise registreerisid. Need keelduvad nüüd salvestussihtmärgist ja nimetavad selle asendaja. Masina-masina ülekanne ei käinud kunagi rclone kaudu ega ole mõjutatud. Kui pead endiselt lugema sel viisil kirjutatud arhiivi, vaata [Enne kaotamist kirjutatud arhiivi lugemine](#reading-an-archive-written-before-the-retirement).
 
 ### Tükksalvestuse käsud
 
@@ -343,7 +343,7 @@ rdc repo push shop:nightly@server-1 --to server-2
 rdc repo pull shop:nightly@server-1 --from server-2
 ```
 
-Täielikud valikute nimekirjad on [Varukoopia saatmine teise masinasse](#varukoopia-saatmine-teise-masinasse) ja [Varukoopia tõmbamine teisest masinast](#varukoopia-tõmbamine-teisest-masinast) all.
+Täielikud valikute nimekirjad on [Varukoopia saatmine teise masinasse](#push-a-backup-to-another-machine) ja [Varukoopia tõmbamine teisest masinast](#pull-a-backup-from-another-machine) all.
 
 ## Ajastatud varundamine
 
@@ -436,7 +436,7 @@ See vaikeväärtus on tahtlik. Kahe külma varukoopia paralleelne käivitamine s
 
 ### Hetktõmmised, katkestused ja basseini ruum
 
-Iga push töötab ajutise andmehoidla hetktõmmise põhjal, nii et üleslaaditud andmed on järjepidevad isegi siis, kui repositooriumid jätkavad kirjutamist. Varundamise ajal hoiab see hetktõmmis kõiki plokke, mida ta jagab elavate repositooriumidega: kustutamised ja [trimmimised](/et/docs/repositories#ruumi-tagasinõudmine-trim) vabastavad vähem basseiniruumi kuni tsükkel lõpeb ja hetktõmmis kustutatakse. [Salvestuse tervise raport](/et/docs/monitoring#salvestuse-tervis) näitab, kui palju ruumi varukoopia hetktõmmised parajasti kinni hoiavad.
+Iga push töötab ajutise andmehoidla hetktõmmise põhjal, nii et üleslaaditud andmed on järjepidevad isegi siis, kui repositooriumid jätkavad kirjutamist. Varundamise ajal hoiab see hetktõmmis kõiki plokke, mida ta jagab elavate repositooriumidega: kustutamised ja [trimmimised](/et/docs/repositories#reclaim-space-trim) vabastavad vähem basseiniruumi kuni tsükkel lõpeb ja hetktõmmis kustutatakse. [Salvestuse tervise raport](/et/docs/monitoring#storage-health) näitab, kui palju ruumi varukoopia hetktõmmised parajasti kinni hoiavad.
 
 Katkestused on ohutud. Teenuse peatamine (või masina taaskäivitamine) paneb varundamise oma ülekande katkestama ja hetktõmmise enne väljumist kustutama; järgmine ajastatud käivitus jätkab sealt, kus see pooleli jäi, kuna juba salvestatud rakke ei laadita uuesti üles. Kui protsess tapetakse liiga kõvasti puhastamiseks (toitekatkestus), tuvastatakse ja eemaldatakse orvuks jäänud hetktõmmis automaatselt salvestuse hooldaja poolt minutite jooksul.
 
@@ -514,7 +514,7 @@ Sidumine salvestatakse sinu konfiguratsioonis nimekirjana masinal, mida `rdc bac
 }
 ```
 
-> **Sidumine on ainult kohalik konfiguratsioon.** Strateegia määratlemine ja masinaga sidumine ei muuda masinat. Käivitage `rdc backup schedule -m <machine>` (vt [Ajakava juurutamine masinale](#ajakava-juurutamine-masinale)), et juurutada systemd-taimerid, ja käivitage see uuesti pärast iga strateegia või sidumise muudatust.
+> **Sidumine on ainult kohalik konfiguratsioon.** Strateegia määratlemine ja masinaga sidumine ei muuda masinat. Käivitage `rdc backup schedule -m <machine>` (vt [Ajakava juurutamine masinale](#deploy-schedule-to-machine)), et juurutada systemd-taimerid, ja käivitage see uuesti pärast iga strateegia või sidumise muudatust.
 
 ## Kuuma ja külma valimine ning repositooriumipõhine filtreerimine
 
@@ -529,7 +529,7 @@ Sidumine salvestatakse sinu konfiguratsioonis nimekirjana masinal, mida `rdc bac
 
 **Kuum** on kõrgsageduslike käivituste jaoks õige vaikevalik. Teenused jätkavad töötamist hetktõmmise tegemise ajal, nii et varundamisaken ei katkesta kasutajaid. Hetktõmmis on krahhi-järjepidev: see vastab sellele, mida saaksite pärast ebapuhast seiskamist. Enamiku kaasaegsete andmebaaside ja sõnumijärjekordade jaoks on see vastuvõetav.
 
-**Külm** on asjakohane, kui vajate garanteeritud rakenduse-järjepidevat hetktõmmist ja saate lubada lühikest repositooriumi kohast taaskäivitust. Teenused peatatakse enne hetktõmmist ja taaskäivitatakse enne üleslaadimise algust, nii et aeglane või ebaõnnestunud üleslaadimine ei pikenda seisakuaknit kunagi. Täieliku garantiimudeli jaoks vaadake [Külma varundamise semantika](#kulma-varundamise-semantika).
+**Külm** on asjakohane, kui vajate garanteeritud rakenduse-järjepidevat hetktõmmist ja saate lubada lühikest repositooriumi kohast taaskäivitust. Teenused peatatakse enne hetktõmmist ja taaskäivitatakse enne üleslaadimise algust, nii et aeglane või ebaõnnestunud üleslaadimine ei pikenda seisakuaknit kunagi. Täieliku garantiimudeli jaoks vaadake [Külma varundamise semantika](#cold-backup-semantics).
 
 Mõlemad režiimid kirjutavad samasse tükksalvestusse, ja režiim käib selle kohta, kuidas repositooriumi koheldakse, kui tõmmis on külmutatud, mitte selle kohta, kuhu andmed jõuavad. Repositoorium, mida katavad nii tunnine kuum kui iganädalane külm ajakava, salvestab jagatud rakud üks kord, mitte kaks korda.
 
@@ -562,7 +562,7 @@ Nimeta repositooriumid, mida soovid kõrgsageduslikus käivituses, selle asemel 
 - Repositoorium on suur ja **täielikult taasgenereeritav** köitel juba olevatest lähteandmetest, nii et iga tunnine varukoopia kulutab ribalaiust ilma taasteväärtust lisamata.
 - Varundamise käivitamine ületaks oma ajakavaintervalli teie saadaoleval üleslaadimiskiirusel.
 
-**Näide.** Repositoorium `analytics-demo` sisaldab ligikaudu 114 GB tuletatud Postgres-tabeleid, mida saab taastada samas köites juba salvestatud toorest CSV-dumpi failidest. 6 MB/s üleslaadimispiiriga võtab selle repositooriumi esimene hetktõmmis üle 5 tunni. Selle tunnine käivitamine tähendab, et iga käivitamine on veel pooleli, kui järgmine käivitub, mis põhjustab iga järgneva käivituse vaikse mahajätmise (vaadake [Pikalt kestvad varukopiad ja kattuvad ajakavad](#pikalt-kestvad-varukopiad-ja-kattuvad-ajakavad)). Teiste repositooriumide loetlemine `hourly-hot`-is ja `analytics-demo` jätmine `weekly-cold`-i jaoks tähendab, et see varundatakse kord nädalas mitte kunagi asemel.
+**Näide.** Repositoorium `analytics-demo` sisaldab ligikaudu 114 GB tuletatud Postgres-tabeleid, mida saab taastada samas köites juba salvestatud toorest CSV-dumpi failidest. 6 MB/s üleslaadimispiiriga võtab selle repositooriumi esimene hetktõmmis üle 5 tunni. Selle tunnine käivitamine tähendab, et iga käivitamine on veel pooleli, kui järgmine käivitub, mis põhjustab iga järgneva käivituse vaikse mahajätmise (vaadake [Pikalt kestvad varukopiad ja kattuvad ajakavad](#long-running-backups-and-overlapping-schedules)). Teiste repositooriumide loetlemine `hourly-hot`-is ja `analytics-demo` jätmine `weekly-cold`-i jaoks tähendab, et see varundatakse kord nädalas mitte kunagi asemel.
 
 > **Kui andmed on puhtalt taasgenereeritavad**, kaaluge, kas peate neid üldse varundama. Alternatiiviks on varundada ainult toorallikate sisendid (CSV-dumpid selles näites) ja jätta tuletatud koopia täielikult vahele. Toorallikate sisendite nädalane külm varukoopia on palju väiksem ja taaste jaoks täiesti piisav.
 

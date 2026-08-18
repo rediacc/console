@@ -101,6 +101,138 @@ function hasDynamicParts(suffix: string): boolean {
   return /\$\{/.test(suffix);
 }
 
+/**
+ * Blank out comments while preserving every byte position and every newline.
+ *
+ * WHY THIS IS NEEDED. `extractCalls` below is LINE-BASED and matched `t('...')` anywhere
+ * on a line, comments included. An explanatory comment naming a key that no longer exists
+ * -- exactly the comment someone writes while removing the key -- reddened this gate and
+ * pointed at a line with no call on it. The reader then has to prove a negative, which is
+ * the most expensive kind of false positive a gate can produce.
+ *
+ * IT REPLACES RATHER THAN DELETES, because the gate reports LINE NUMBERS. Stripping the
+ * text would renumber every line below the comment and send the reader to the wrong place,
+ * which trades one confusing diagnostic for another.
+ *
+ * STRINGS ARE TRACKED FIRST, and that ordering is the whole correctness argument: `//` is
+ * three characters into every `https://` URL in the tree, and a URL sits inside a string
+ * literal. A stripper that blanked from the first `//` it saw would delete the rest of the
+ * line -- including any real `t()` call after it -- and turn a false POSITIVE into a false
+ * NEGATIVE, which is strictly worse. An escape outside a string is consumed too, so the
+ * `\/` pairs inside a regex literal such as /^https:\/\// cannot be misread as a comment.
+ */
+export function stripComments(content: string): string {
+  const out = content.split('');
+  let quote: string | null = null;
+  for (let i = 0; i < content.length; i++) {
+    const c = content[i];
+    if (quote) {
+      if (c === '\\') i++;
+      else if (c === quote) quote = null;
+      continue;
+    }
+    if (c === '"' || c === "'" || c === '`') {
+      quote = c;
+      continue;
+    }
+    if (c === '\\') {
+      i++;
+      continue;
+    }
+    // HTML comments, because .astro files are markup and this gate scans them.
+    // The JS-comment branches below never see `<!-- ... -->`, so an explanatory
+    // comment written in Astro markup still reddened the gate after the JS fix
+    // landed. Same blanking rule, so line numbers survive. Checked outside a
+    // string for the same reason as `//`: `<!--` can legitimately appear inside
+    // a string literal.
+    if (c === '<' && content.startsWith('<!--', i)) {
+      const end = content.indexOf('-->', i + 4);
+      const stop = end < 0 ? content.length : end + 3;
+      for (let j = i; j < stop; j++) if (out[j] !== '\n') out[j] = ' ';
+      i = stop - 1;
+      continue;
+    }
+    if (c !== '/') continue;
+    const next = content[i + 1];
+    if (next === '/') {
+      let j = i;
+      while (j < content.length && content[j] !== '\n') out[j++] = ' ';
+      i = j - 1;
+    } else if (next === '*') {
+      const end = content.indexOf('*/', i + 2);
+      const stop = end < 0 ? content.length : end + 2;
+      for (let j = i; j < stop; j++) if (out[j] !== '\n') out[j] = ' ';
+      i = stop - 1;
+    }
+  }
+  return out.join('');
+}
+
+/**
+ * CONTROL for the stripper, inline on every invocation.
+ *
+ * Both directions, because each failure mode is worse than the bug it replaces: a
+ * comment must be blanked (the false positive this fixes), and a string containing `//`
+ * must survive intact (a false negative, which would hide a genuinely missing key).
+ */
+function controlStripComments(): void {
+  const failures: string[] = [];
+  const expect = (name: string, ok: boolean, detail = '') => {
+    if (!ok) failures.push(`${name}${detail ? ` -- ${detail}` : ''}`);
+  };
+  const keys = (src: string) => extractCalls('control.tsx', stripComments(src)).map((c) => c.key);
+
+  expect(
+    'a call inside a // comment is not extracted',
+    keys("// the old code called to('pages.gone.away')\n").length === 0
+  );
+  expect(
+    'a call inside a /* */ block is not extracted',
+    keys("/* was: t('pages.gone.away') */\n").length === 0
+  );
+  expect(
+    'a call inside a JSX {/* */} comment is not extracted',
+    keys("<div>{/* t('pages.gone.away') */}</div>\n").length === 0
+  );
+  expect(
+    'a real call is still extracted',
+    keys("<p>{t('pages.real.key')}</p>\n").join(',') === 'pages.real.key',
+    keys("<p>{t('pages.real.key')}</p>\n").join(',')
+  );
+  // The dangerous direction. `//` appears inside every URL in the tree.
+  expect(
+    'a // inside a string does NOT blank the rest of the line',
+    keys("const u = 'https://x.example'; const a = t('pages.real.key');\n").join(',') ===
+      'pages.real.key',
+    keys("const u = 'https://x.example'; const a = t('pages.real.key');\n").join(',')
+  );
+  expect(
+    'an escaped slash in a regex does NOT start a comment',
+    keys("const r = /^https:\\/\\//; const a = t('pages.real.key');\n").join(',') ===
+      'pages.real.key',
+    keys("const r = /^https:\\/\\//; const a = t('pages.real.key');\n").join(',')
+  );
+  // Line numbers must survive, or the diagnostic sends the reader to the wrong line.
+  const numbered = extractCalls(
+    'control.tsx',
+    stripComments("// a\n// b\n<p>{t('pages.real.key')}</p>\n")
+  );
+  expect('line numbers are preserved', numbered[0]?.line === 3, String(numbered[0]?.line));
+  // A namespace constant declared inside a comment must not be resolvable either.
+  expect(
+    'a namespace constant inside a comment is not resolved',
+    keys("// const ns = 'pages.gone';\nconst x = t(`${ns}.away`);\n").length === 0
+  );
+
+  if (failures.length > 0) {
+    console.error('\x1b[31m✗\x1b[0m CONTROL FAILED: the comment stripper is broken, so this');
+    console.error('  gate is either reporting keys that appear only in comments, or silently');
+    console.error('  dropping real calls that follow a URL.');
+    for (const f of failures) console.error(`    ${f}`);
+    process.exit(1);
+  }
+}
+
 function extractCalls(filePath: string, content: string): TranslationCall[] {
   const calls: TranslationCall[] = [];
   const lines = content.split('\n');
@@ -144,18 +276,47 @@ function main(): void {
   console.log('Translation Key Usage Check');
   console.log('============================================================\n');
 
+  // CONTROL FIRST. If the stripper is wrong in either direction the verdict below is not
+  // evidence: a broken blank hides real calls, a missing blank invents them.
+  controlStripComments();
+
   // Load en.json
   const enJson = JSON.parse(fs.readFileSync(EN_JSON, 'utf-8')) as Record<string, JsonValue>;
 
   // Scan all .astro and .tsx files
   const files = globSync('**/*.{astro,tsx}', { cwd: WWW_SRC, absolute: true });
+
+  // A leftover control fixture is NOT a missing key, and saying so is the whole point.
+  // scripts/__tests__/check-translation-key-usage.control.ts writes __control_probe__.tsx
+  // into real source and unlinks it in a `finally`, so an ordinary failure cleans up but a
+  // SIGKILL mid-run does not. That control already refuses to run against a leftover; this
+  // scan did not, and reported the probe's deliberately-nonexistent key as a genuine
+  // defect. It cost a session real time chasing it, and it will happen again to whoever's
+  // run dies next, so the diagnosis belongs here rather than in anyone's memory.
+  // The control itself sets REDIACC_KEY_USAGE_PROBE while its fixture is legitimately on
+  // disk, so a live probe scans normally and only an ORPHAN is diagnosed. Without that
+  // opt-in this check refuses the control's own nine cases.
+  const probing = process.env.REDIACC_KEY_USAGE_PROBE === '1';
+  const leftover = probing
+    ? undefined
+    : files.find((f) => path.basename(f) === '__control_probe__.tsx');
+  if (leftover !== undefined) {
+    console.error(`\x1b[31m✗\x1b[0m ${path.relative(WWW_SRC, leftover)} is a leftover TEST FIXTURE, not source.`);
+    console.error('  A control run was killed before its `finally` could unlink it. The key it');
+    console.error('  references is meant not to exist. Delete the file and re-run:');
+    console.error(`    rm ${path.relative(process.cwd(), leftover)}`);
+    process.exit(1);
+  }
+
   console.log(`Scanning ${files.length} files...\n`);
 
   const missing: TranslationCall[] = [];
   let totalChecked = 0;
 
   for (const file of files) {
-    const content = fs.readFileSync(file, 'utf-8');
+    // Comments are blanked before extraction: a key named only in an explanatory comment
+    // is not a reference, and reporting one sends the reader to a line with no call on it.
+    const content = stripComments(fs.readFileSync(file, 'utf-8'));
     const calls = extractCalls(file, content);
 
     for (const call of calls) {

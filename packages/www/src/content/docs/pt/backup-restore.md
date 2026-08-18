@@ -58,7 +58,7 @@ O envio e receção máquina a máquina não precisam de nenhum dos dois. São u
 
 ### O caminho de armazenamento rclone desapareceu
 
-`rdc repo push --to <storage>` e afins costumavam copiar um ficheiro de backup inteiro para um fornecedor na nuvem que registava você mesmo. Agora recusam um destino de armazenamento e indicam o substituto. A transferência máquina a máquina nunca passou por rclone e não é afetada. Se ainda precisar de ler um arquivo escrito dessa forma, veja [Ler um Arquivo Escrito Antes da Retirada](#ler-um-arquivo-escrito-antes-da-retirada).
+`rdc repo push --to <storage>` e afins costumavam copiar um ficheiro de backup inteiro para um fornecedor na nuvem que registava você mesmo. Agora recusam um destino de armazenamento e indicam o substituto. A transferência máquina a máquina nunca passou por rclone e não é afetada. Se ainda precisar de ler um arquivo escrito dessa forma, veja [Ler um Arquivo Escrito Antes da Retirada](#reading-an-archive-written-before-the-retirement).
 
 ### Comandos de armazenamento em chunks
 
@@ -347,8 +347,8 @@ rdc repo pull shop:nightly@server-1 --from server-2
 ```
 
 As listas completas de opções estão em [Enviar um Backup para Outra
-Máquina](#enviar-um-backup-para-outra-máquina) e [Receber um Backup de Outra
-Máquina](#receber-um-backup-de-outra-máquina).
+Máquina](#push-a-backup-to-another-machine) e [Receber um Backup de Outra
+Máquina](#pull-a-backup-from-another-machine).
 
 ## Backups Agendados
 
@@ -441,7 +441,7 @@ Esta predefinição é deliberada. Correr dois backups a frio em paralelo contra
 
 ### Snapshots, Interrupções, e Espaço na Pool
 
-Cada push trabalha a partir de um snapshot momentâneo do datastore, pelo que os dados enviados são consistentes mesmo enquanto os repositórios continuam a escrever. Enquanto o backup corre, esse snapshot continua a referenciar todo bloco que partilha com repositórios em produção: eliminações e [trims](/pt/docs/repositories#recuperar-espaço-trim) libertam menos espaço na pool até o ciclo terminar e o snapshot ser apagado. O [relatório de saúde do armazenamento](/pt/docs/monitoring#saúde-do-armazenamento) mostra quanto espaço os snapshots de backup estão atualmente a reter.
+Cada push trabalha a partir de um snapshot momentâneo do datastore, pelo que os dados enviados são consistentes mesmo enquanto os repositórios continuam a escrever. Enquanto o backup corre, esse snapshot continua a referenciar todo bloco que partilha com repositórios em produção: eliminações e [trims](/pt/docs/repositories#reclaim-space-trim) libertam menos espaço na pool até o ciclo terminar e o snapshot ser apagado. O [relatório de saúde do armazenamento](/pt/docs/monitoring#storage-health) mostra quanto espaço os snapshots de backup estão atualmente a reter.
 
 Interrupções são seguras. Parar o serviço (ou reiniciar a máquina) faz o backup abortar a sua transferência e apagar o seu snapshot antes de terminar; a próxima execução agendada retoma de onde ficou, porque as células já armazenadas não são reenviadas. Se o processo for morto de forma demasiado brusca para limpar (perda de energia), o snapshot órfão é detetado e removido automaticamente pelo mantenedor de armazenamento em minutos.
 
@@ -519,7 +519,7 @@ O vínculo é registado na sua configuração como uma lista na máquina, que é
 }
 ```
 
-> **O vínculo é apenas na configuração local.** Definir uma estratégia e vinculá-la a uma máquina não toca na máquina. Execute `rdc backup schedule -m <machine>` (veja [Implementar Agendamento numa Máquina](#implementar-agendamento-numa-máquina)) para implementar os temporizadores systemd, e volte a executá-lo depois de qualquer alteração de estratégia ou vínculo.
+> **O vínculo é apenas na configuração local.** Definir uma estratégia e vinculá-la a uma máquina não toca na máquina. Execute `rdc backup schedule -m <machine>` (veja [Implementar Agendamento numa Máquina](#deploy-schedule-to-machine)) para implementar os temporizadores systemd, e volte a executá-lo depois de qualquer alteração de estratégia ou vínculo.
 
 ## Escolher Entre Quente e Frio, e Filtragem por Repositório
 
@@ -534,7 +534,7 @@ O vínculo é registado na sua configuração como uma lista na máquina, que é
 
 **Quente** é a predefinição certa para execuções de alta frequência. Os serviços continuam a correr enquanto o snapshot é feito, pelo que não há interrupção para as suas apps. O snapshot é consistente com falha: equivalente ao que obteria depois de um desligamento abrupto. Para a maioria das bases de dados modernas e filas de mensagens, isso está bem.
 
-**Frio** é adequado quando precisa de um snapshot garantidamente consistente com a aplicação e pode aceitar um breve reinício por repositório. Os serviços são parados antes do snapshot e reiniciados antes de o envio começar, pelo que um envio lento ou falhado nunca prolonga a janela de interrupção. Veja [Semântica do Backup a Frio](#semântica-do-backup-a-frio) para o modelo completo de garantias.
+**Frio** é adequado quando precisa de um snapshot garantidamente consistente com a aplicação e pode aceitar um breve reinício por repositório. Os serviços são parados antes do snapshot e reiniciados antes de o envio começar, pelo que um envio lento ou falhado nunca prolonga a janela de interrupção. Veja [Semântica do Backup a Frio](#cold-backup-semantics) para o modelo completo de garantias.
 
 Ambos os modos escrevem no mesmo armazenamento em chunks, e o modo diz respeito a como o repositório é tratado enquanto a imagem está congelada, não a onde os dados ficam. Um repositório coberto tanto por um agendamento quente horário como por um frio semanal armazena os blocos que partilham uma vez, não duas.
 
@@ -567,7 +567,7 @@ Nomeie os repositórios que quer na execução de alta frequência, em vez de a 
 - Um repositório é grande e **totalmente regenerável** a partir de dados de origem já presentes no volume, pelo que todo backup horário gasta largura de banda sem acrescentar valor de recuperação.
 - A execução de backup ultrapassaria o seu próprio intervalo de agendamento à velocidade de envio disponível.
 
-**Exemplo.** Um repositório `analytics-demo` guarda aproximadamente 114 GB de tabelas Postgres derivadas que podem ser reconstruídas a partir de dumps CSV em bruto guardados dentro do mesmo volume. Com um limite de envio de 6 MB/s, um primeiro snapshot desse repositório demora mais de 5 horas. Correr isso a cada hora significa que cada execução ainda está em curso quando a seguinte dispara, pelo que todo disparo subsequente é descartado silenciosamente (veja [Backups de Longa Duração e Horários Sobrepostos](#backups-de-longa-duração-e-horários-sobrepostos)). Listar os outros repositórios em `hourly-hot` e deixar `analytics-demo` para `weekly-cold` significa que tem backup uma vez por semana em vez de nunca.
+**Exemplo.** Um repositório `analytics-demo` guarda aproximadamente 114 GB de tabelas Postgres derivadas que podem ser reconstruídas a partir de dumps CSV em bruto guardados dentro do mesmo volume. Com um limite de envio de 6 MB/s, um primeiro snapshot desse repositório demora mais de 5 horas. Correr isso a cada hora significa que cada execução ainda está em curso quando a seguinte dispara, pelo que todo disparo subsequente é descartado silenciosamente (veja [Backups de Longa Duração e Horários Sobrepostos](#long-running-backups-and-overlapping-schedules)). Listar os outros repositórios em `hourly-hot` e deixar `analytics-demo` para `weekly-cold` significa que tem backup uma vez por semana em vez de nunca.
 
 > **Se os dados forem puramente regeneráveis**, considere se sequer precisa de fazer backup deles. Uma alternativa é fazer backup apenas dos inputs de origem em bruto (os dumps CSV, neste exemplo) e saltar completamente a cópia derivada. Um backup a frio semanal dos inputs de origem é muito mais pequeno e totalmente suficiente para recuperação.
 

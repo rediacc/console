@@ -19,14 +19,14 @@ const PlatformTabs = <T extends string>({
   onTabChange,
   ariaLabel,
 }: PlatformTabsProps<T>) => (
-  <div className="platform-tabs" role="tablist" aria-label={ariaLabel}>
+  <div className="segmented" role="tablist" aria-label={ariaLabel}>
     {tabs.map(({ key, label, icon: Icon }) => (
       <button
         type="button"
         key={key}
         role="tab"
         aria-selected={activeTab === key}
-        className={`platform-tab${activeTab === key ? ' platform-tab--active' : ''}`}
+        className="segmented__item"
         onClick={() => onTabChange(key)}
         data-track="cta_click"
         data-track-label="platform-tab"

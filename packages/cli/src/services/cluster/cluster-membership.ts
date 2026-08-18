@@ -214,8 +214,8 @@ export async function evictCluster(
     // datastore must be recovered/fenced separately (it will not detach cleanly).
     if (options.force) {
       outputService.warn(
-        `--force: evicting "${machineName}" despite held datastore(s) ${held.join(', ')} — ` +
-          `they must be moved/fenced separately (rdc datastore attach <ds> --to <other> --force).`
+        `--force: evicting "${machineName}" despite held datastore(s) ${held.join(', ')}. ` +
+          `They must be moved/fenced separately (rdc datastore attach <ds> --to <other> --force).`
       );
     } else {
       throw new Error(

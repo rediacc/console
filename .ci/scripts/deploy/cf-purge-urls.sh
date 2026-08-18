@@ -7,7 +7,7 @@
 #
 # Auth (in order tried):
 #   1. $CLOUDFLARE_API_TOKEN  -> Authorization: Bearer
-#   2. $CF_API_KEY + $CF_EMAIL -> X-Auth-Key + X-Auth-Email (global key)
+#   2. $CF_GLOBAL_API_KEY + $CF_EMAIL -> X-Auth-Key + X-Auth-Email (global key)
 #
 # Why: releases.rediacc.com is an R2 bucket exposed via a CF custom domain.
 # Even when uploads now set Cache-Control: no-cache, any pre-existing CF
@@ -68,15 +68,15 @@ if [[ $TOTAL -eq 0 ]]; then
 fi
 
 # Pick auth method. CLOUDFLARE_API_TOKEN must have Zone.Cache Purge perm
-# on the target zone; CF_API_KEY + CF_EMAIL is the global-key fallback.
+# on the target zone; CF_GLOBAL_API_KEY + CF_EMAIL is the global-key fallback.
 AUTH_HEADERS=()
 if [[ -n "${CLOUDFLARE_API_TOKEN:-}" ]]; then
     AUTH_HEADERS=(-H "Authorization: Bearer $CLOUDFLARE_API_TOKEN")
-elif [[ -n "${CF_API_KEY:-}" && -n "${CF_EMAIL:-}" ]]; then
-    AUTH_HEADERS=(-H "X-Auth-Email: $CF_EMAIL" -H "X-Auth-Key: $CF_API_KEY")
+elif [[ -n "${CF_GLOBAL_API_KEY:-}" && -n "${CF_EMAIL:-}" ]]; then
+    AUTH_HEADERS=(-H "X-Auth-Email: $CF_EMAIL" -H "X-Auth-Key: $CF_GLOBAL_API_KEY")
 else
     echo "::warning::cf-purge-urls.sh: no Cloudflare credentials in env" \
-        "(set CLOUDFLARE_API_TOKEN, or CF_API_KEY+CF_EMAIL); skipping purge" >&2
+        "(set CLOUDFLARE_API_TOKEN, or CF_GLOBAL_API_KEY+CF_EMAIL); skipping purge" >&2
     exit 0
 fi
 

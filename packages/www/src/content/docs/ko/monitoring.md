@@ -113,7 +113,7 @@ rdc machine status server-1 --storage-health
 | Allocated | 스파스 이미지가 현재 풀에서 실제로 점유하는 크기 |
 | Unique | 이 리포지터리만 소유하는 실제 고유 데이터 |
 | Shared | BTRFS reflink을 통해 리포지터리 간에 재사용되는 데이터 블록(무료 복사) |
-| Reclaimable | [`repo trim`](/ko/docs/repositories#공간-회수-trim)으로 풀에 반환할 수 있는 할당 대 사용 격차. 마운트되지 않은 리포지터리는 `-`로 표시 |
+| Reclaimable | [`repo trim`](/ko/docs/repositories#reclaim-space-trim)으로 풀에 반환할 수 있는 할당 대 사용 격차. 마운트되지 않은 리포지터리는 `-`로 표시 |
 | Discards | 암호화된 볼륨이 discard를 통과시키는지 여부(최신 버전으로 마운트된 리포지터리는 `on`) |
 | Divergence | 공유되지 않고 이 리포지터리에만 고유한 이미지 비율(높을수록 삭제 시 더 많은 공간 회수 가능) |
 | Frag | copy-on-write 이미지의 GB당 익스텐트 수(정보 제공용) |

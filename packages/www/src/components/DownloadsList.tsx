@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import type { Platform } from '../config/install';
 import { detectPlatform, PLATFORMS } from '../config/install';
-import { useTranslation } from '../i18n/react';
+// Route-scoped translations: this island hydrates on ONE page, so its strings ride
+// this component's chunk instead of the catalog every route downloads.
+import { useRouteTranslation } from '../i18n/react-route';
 import type { Language } from '../i18n/types';
 import type { CLIFile, ReleaseData } from '../utils/release-parser';
 import { PLATFORM_ICON_MAP } from './icons/PlatformIcons';
@@ -22,7 +24,7 @@ function archLabel(t: (key: string) => string, file: CLIFile): string {
 }
 
 const DownloadsList: React.FC<DownloadsListProps> = ({ lang, releaseData }) => {
-  const { t } = useTranslation(lang);
+  const { t } = useRouteTranslation(lang);
   const [activePlatform, setActivePlatform] = useState<Platform>(detectPlatform);
 
   const tabs = PLATFORMS.map(({ key }) => ({

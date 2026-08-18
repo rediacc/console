@@ -5,7 +5,7 @@
 # WHAT THIS DOES AND DOES NOT PROTECT, stated plainly because the distinction is
 # the whole reason this gate is small. It does NOT force anyone to run a mutation
 # for every new test case; that is not gateable (see the rebuttal in
-# agent/main/PLAN-promote-mutation-runner.md, section "Gate or tool?").
+# agent/PLAN-promote-mutation-runner.md, section "Gate or tool?").
 # What it protects is the INSTRUMENT: mutate-check.sh must keep producing the
 # right verdict for each of its four outcomes, so it cannot silently rot into
 # something that always says OK. An instrument nobody is forced to use is still

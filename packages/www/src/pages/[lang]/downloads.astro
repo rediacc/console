@@ -5,6 +5,7 @@ import { getLanguagePaths } from '../../i18n/language-utils';
 import type { Language } from '../../i18n/types';
 import { GITHUB_REPO } from '../../config/constants';
 import { parseGitHubRelease, type ReleaseData } from '../../utils/release-parser';
+import { fetchLatestRelease } from '../../utils/latest-release';
 import DownloadsList from '../../components/DownloadsList';
 import '../../styles/downloads-page.css';
 
@@ -13,18 +14,25 @@ export const getStaticPaths = getLanguagePaths;
 const { lang } = Astro.params as { lang: Language };
 const { t } = createTranslator(lang);
 
-// Fetch release data at build time
-let releaseData: ReleaseData | null = null;
-try {
-  const response = await fetch(`https://api.github.com/repos/${GITHUB_REPO}/releases/latest`);
-  if (response.ok) {
-    const release = await response.json();
-    releaseData = parseGitHubRelease(release, lang);
-  }
-} catch (error) {
-  if (import.meta.env.DEV) {
-    console.error('Failed to fetch GitHub release:', error);
-  }
+// Fetch release data at build time.
+//
+// This used to be a per-page fetch wrapped in a catch whose only effect was a
+// DEV-gated console.error. That shipped a page reading "No releases available
+// right now." from a build that exited 0, silently, in production, and it hit an
+// unauthenticated GitHub endpoint once PER LOCALE (13 times per build), which is
+// how it started failing intermittently in the first place.
+//
+// Now: one fetch per build, shared across every locale, and a production build
+// FAILS rather than shipping an empty page. Dev still degrades gracefully,
+// because a developer without network access should not be blocked.
+const release = await fetchLatestRelease();
+const releaseData: ReleaseData | null = release === null ? null : parseGitHubRelease(release, lang);
+
+if (releaseData === null && !import.meta.env.DEV) {
+  throw new Error(
+    `downloads.astro: no GitHub release data for ${GITHUB_REPO}. Refusing to build a ` +
+      'downloads page with no downloads on it. Set GITHUB_TOKEN if this is rate limiting.',
+  );
 }
 ---
 

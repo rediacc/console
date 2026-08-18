@@ -21,18 +21,28 @@ const posts = allPosts
       new Date(a.data.publishedDate).getTime()
   );
 
-// Get featured posts
+// ONE ordering principle: newest first, with the category carried as a tag on each
+// entry. This replaced a grouping by category, which split an already short list (eight
+// posts per locale) into several shorter ones and left the reader no way to see what was
+// most recent. The shape is a lead story, a small featured row, then the archive.
 const featuredPosts = posts.filter((post) => post.data.featured);
 
-// Group posts by category
-const postsByCategory = posts.reduce((acc, post) => {
-  const category = post.data.category || 'other';
-  if (!acc[category]) acc[category] = [];
-  acc[category].push(post);
-  return acc;
-}, {} as Record<string, typeof posts>);
+// The lead is the newest FEATURED post, falling back to the newest post of any kind, so
+// the slot is never empty on a locale where nothing is flagged featured.
+const leadPost = featuredPosts[0] ?? posts[0];
+const secondaryPosts = posts.filter((post) => post !== leadPost && post.data.featured).slice(0, 3);
+const restPosts = posts.filter((post) => post !== leadPost && !secondaryPosts.includes(post));
 
-const categories = Object.keys(postsByCategory).sort();
+/**
+ * Dates in the READER's locale.
+ *
+ * This used to be `lang === 'es' ? 'es-ES' : 'en-US'`, so Spanish got Spanish dates and
+ * the other eleven non-English locales silently got US ones: an Arabic or Japanese reader
+ * saw `Aug 18, 2026`. Our locale codes are already valid BCP-47 language subtags, so the
+ * language itself is the correct argument and every locale formats natively.
+ */
+const formatDate = (value: string | Date): string =>
+  new Date(value).toLocaleDateString(lang, { year: 'numeric', month: 'short', day: 'numeric' });
 ---
 
 <BaseLayout lang={lang} title={t('pages.blog.meta.title')} description={t('pages.blog.meta.description')} keywords={t('pages.blog.meta.keywords')}>
@@ -42,58 +52,54 @@ const categories = Object.keys(postsByCategory).sort();
       <p>{t('pages.blog.subtitle')}</p>
     </header>
 
-    {featuredPosts.length > 0 && (
+    {leadPost && (
+      <section class="blog-lead">
+        <article class="lead-card">
+          <div class="card-meta">
+            <span class="category">{leadPost.data.category}</span>
+            <span>{formatDate(leadPost.data.publishedDate)}</span>
+          </div>
+          <h2><a href={`/${lang}/blog/${getBaseSlug(leadPost.slug)}`}>{leadPost.data.title}</a></h2>
+          <p class="description">{leadPost.data.description}</p>
+        </article>
+      </section>
+    )}
+
+    {secondaryPosts.length > 0 && (
       <section class="featured-posts">
         <h2>{t('pages.blog.featured')}</h2>
         <div class="featured-grid">
-          {featuredPosts.slice(0, 3).map(post => (
+          {secondaryPosts.map(post => (
             <article class="featured-card">
-              <div class="card-content">
-                <h3><a href={`/${lang}/blog/${getBaseSlug(post.slug)}`}>{post.data.title}</a></h3>
-                <p class="description">{post.data.description}</p>
-                <div class="card-meta">
-                  <span class="date">
-                    {new Date(post.data.publishedDate).toLocaleDateString(lang === 'es' ? 'es-ES' : 'en-US', {
-                      year: 'numeric',
-                      month: 'short',
-                      day: 'numeric'
-                    })}
-                  </span>
-                  <span class="category">{post.data.category}</span>
-                </div>
+              <div class="card-meta">
+                <span class="category">{post.data.category}</span>
+                <span>{formatDate(post.data.publishedDate)}</span>
               </div>
+              <h3><a href={`/${lang}/blog/${getBaseSlug(post.slug)}`}>{post.data.title}</a></h3>
+              <p class="description">{post.data.description}</p>
             </article>
           ))}
         </div>
       </section>
     )}
 
-    <section class="posts-section">
-      <h2>{t('pages.blog.allArticles')}</h2>
+    {restPosts.length > 0 && (
+      <section class="posts-section">
+        <h2>{t('pages.blog.allArticles')}</h2>
+        <ul class="posts-list" role="list">
+          {restPosts.map(post => (
+            <li class="post-row">
+              <a class="post-row-link" href={`/${lang}/blog/${getBaseSlug(post.slug)}`}>
+                <span class="post-row-date">{formatDate(post.data.publishedDate)}</span>
+                <span class="post-row-category">{post.data.category}</span>
+                <span class="post-row-title">{post.data.title}</span>
+              </a>
+            </li>
+          ))}
+        </ul>
+      </section>
+    )}
 
-      {categories.map(category => (
-        <div class="category-group">
-          <h3 class="category-title">{category.charAt(0).toUpperCase() + category.slice(1)}</h3>
-          <div class="posts-list">
-            {postsByCategory[category].map(post => (
-              <article class="post-item">
-                <div class="post-header">
-                  <h4><a href={`/${lang}/blog/${getBaseSlug(post.slug)}`}>{post.data.title}</a></h4>
-                  <span class="post-date">
-                    {new Date(post.data.publishedDate).toLocaleDateString(lang === 'es' ? 'es-ES' : 'en-US', {
-                      year: 'numeric',
-                      month: 'short',
-                      day: 'numeric'
-                    })}
-                  </span>
-                </div>
-                <p class="post-description">{post.data.description}</p>
-              </article>
-            ))}
-          </div>
-        </div>
-      ))}
-    </section>
   </div>
 
   <style>
@@ -104,8 +110,7 @@ const categories = Object.keys(postsByCategory).sort();
     }
 
     .blog-header {
-      text-align: center;
-      margin-bottom: var(--space-12);
+      margin-bottom: var(--space-10);
     }
 
     .blog-header h1 {
@@ -118,182 +123,128 @@ const categories = Object.keys(postsByCategory).sort();
       color: var(--color-text-secondary);
     }
 
+    /* Shared meta line: the category and the date, above the title in every shape. */
+    .card-meta {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+      margin-bottom: var(--space-2);
+      font-size: var(--font-size-sm);
+      color: var(--color-text-secondary);
+    }
+
+    .category {
+      text-transform: capitalize;
+    }
+
+    .description {
+      color: var(--color-text-secondary);
+      margin: 0;
+    }
+
+    /* The lead story. One item, larger type, no card chrome: it is the first thing on
+       the page, so it does not need a border to say it matters. */
+    .blog-lead {
+      margin-bottom: var(--space-10);
+      padding-bottom: var(--space-8);
+      border-bottom: 1px solid var(--color-border);
+    }
+
+    .lead-card h2 {
+      font-size: var(--font-size-3xl);
+      margin: 0 0 var(--space-3) 0;
+      text-wrap: balance;
+    }
+
+    .lead-card h2 a {
+      color: var(--color-text);
+      text-decoration: none;
+    }
+
+    .lead-card h2 a:hover {
+      color: var(--color-brand-primary);
+    }
+
     .featured-posts {
       margin-bottom: var(--space-12);
     }
 
-    .featured-posts h2 {
-      font-size: var(--font-size-2xl);
+    .featured-posts h2,
+    .posts-section h2 {
+      font-size: var(--font-size-xl);
       margin-bottom: var(--space-6);
     }
 
     .featured-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
       gap: var(--space-6);
-      margin-bottom: var(--space-8);
     }
 
-    .featured-card {
-      background: var(--color-bg-alt);
-      padding: var(--space-6);
-      border-radius: var(--radius-md);
-      border: 1px solid var(--color-border);
-      transition:
-        transform var(--transition-duration-base),
-        box-shadow var(--transition-duration-base);
+    .featured-card h3 {
+      margin: 0 0 var(--space-2) 0;
+      font-size: var(--font-size-lg);
+      text-wrap: balance;
     }
 
-    @media (hover: hover) {
-      .featured-card:hover {
-        transform: translateY(-4px);
-        box-shadow: var(--shadow-lg);
-      }
-    }
-
-    .card-content h3 {
-      margin: 0 0 var(--space-4) 0;
-      font-size: var(--font-size-xl);
-    }
-
-    .card-content h3 a {
-      color: var(--color-brand-primary);
+    .featured-card h3 a {
+      color: var(--color-text);
       text-decoration: none;
     }
 
-    .card-content h3 a:hover {
-      text-decoration: underline;
+    .featured-card h3 a:hover {
+      color: var(--color-brand-primary);
     }
 
-    .card-content h3 a:focus-visible {
-      outline: 2px solid var(--color-brand-primary);
-      outline-offset: 2px;
-      border-radius: var(--radius-sm);
+    /* The archive: one row per post, scannable as a column of dates and titles. */
+    .posts-list {
+      list-style: none;
+      margin: 0;
+      padding: 0;
     }
 
-    .description {
-      margin-bottom: var(--space-4);
-      color: var(--color-text);
-      line-height: var(--leading-relaxed);
+    .post-row + .post-row {
+      border-top: 1px solid var(--color-border-subtle);
     }
 
-    .card-meta {
-      display: flex;
+    .post-row-link {
+      display: grid;
+      grid-template-columns: 7.5rem 7rem 1fr;
       gap: var(--space-4);
-      font-size: var(--font-size-sm);
+      align-items: baseline;
+      padding: var(--space-4) 0;
+      color: var(--color-text);
+      text-decoration: none;
     }
 
-    .date,
-    .category {
+    .post-row-link:hover .post-row-title {
+      color: var(--color-brand-primary);
+    }
+
+    .post-row-date,
+    .post-row-category {
+      font-size: var(--font-size-sm);
       color: var(--color-text-secondary);
     }
 
-    .posts-section h2 {
-      font-size: var(--font-size-2xl);
-      margin: var(--space-8) 0 var(--space-6) 0;
-      border-top: 2px solid var(--color-border);
-      padding-top: var(--space-4);
-    }
-
-    .category-group {
-      margin-bottom: var(--space-8);
-    }
-
-    .category-title {
-      font-size: var(--font-size-xl);
-      color: var(--color-text);
-      margin-bottom: var(--space-4);
+    .post-row-category {
       text-transform: capitalize;
     }
 
-    .posts-list {
-      display: flex;
-      flex-direction: column;
-      gap: var(--space-6);
+    .post-row-title {
+      font-weight: var(--font-weight-medium);
     }
 
-    .post-item {
-      padding: var(--space-6);
-      background-color: var(--color-bg-alt);
-      border-radius: var(--radius-md);
-      border-inline-start: 4px solid var(--color-brand-primary);
-      transition:
-        background-color var(--transition-duration-base),
-        box-shadow var(--transition-duration-base);
-    }
-
-    .post-item:hover {
-      background-color: var(--color-hover);
-      box-shadow: var(--shadow-md);
-    }
-
-    .post-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      gap: var(--space-4);
-      margin-bottom: var(--space-3);
-    }
-
-    .post-header h4 {
-      margin: 0;
-      font-size: var(--font-size-lg);
-      flex: 1;
-    }
-
-    .post-header h4 a {
-      color: var(--color-brand-primary);
-      text-decoration: none;
-    }
-
-    .post-header h4 a:hover {
-      text-decoration: underline;
-    }
-
-    .post-header h4 a:focus-visible {
-      outline: 2px solid var(--color-brand-primary);
-      outline-offset: 2px;
-      border-radius: var(--radius-sm);
-    }
-
-    .post-date {
-      white-space: nowrap;
-      color: var(--color-text-secondary);
-      font-size: var(--font-size-sm);
-    }
-
-    .post-description {
-      margin: var(--space-3) 0;
-      color: var(--color-text-secondary);
-      line-height: var(--leading-relaxed);
-    }
-
-@media (prefers-reduced-motion: reduce) {
-      .featured-card:hover {
-        transform: none;
-      }
-    }
-
-    @media (max-width: 48rem) {
-      /* 768px - respects user font size */
-      .blog-page {
-        padding: calc(var(--nav-top-offset) + var(--space-4)) var(--space-4) var(--space-4);
-      }
-
-      .blog-header h1 {
-        font-size: var(--font-size-2xl);
-      }
-
-      .featured-grid {
+    /* Below 40rem the three columns stop being scannable and become cramped, so the row
+       stacks and the meta line sits above the title, matching the card shapes above. */
+    @media (max-width: 40rem) {
+      .post-row-link {
         grid-template-columns: 1fr;
+        gap: var(--space-1);
       }
 
-      .post-header {
-        flex-direction: column;
-      }
-
-      .post-date {
-        font-size: var(--font-size-xs);
+      .post-row-title {
+        order: -1;
       }
     }
   </style>

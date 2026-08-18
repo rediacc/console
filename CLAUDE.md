@@ -52,7 +52,7 @@ them silently is the failure this rule exists to prevent.
   immediately and say you did. Bigger than that: ask the machinery
   (`worklist.py --triage <me> <finding...>` answers INLINE, PLAN+SUBAGENT, or
   OPERATOR-ONLY with the exact next command), have a Plan agent write the design
-  to `agent/<branch>/PLAN-<slug>.md` (committed, survives compaction), then
+  to `agent/PLAN-<slug>.md` (committed, survives compaction), then
   implement it THIS session: via a writer sub-agent when the fix's file set is
   disjoint from your current work or your context is heavy (disjoint ownership,
   max 2, rule 4), inline otherwise. The fix rides the current PR when
@@ -581,7 +581,7 @@ Slugs: `ses-eu`, `ses-us`, `ses-asia`, `ses-bench`, `cf-cd`, `cf-r2`, `cf-r2-med
 
 `dkim-notify` is the BYODKIM RSA-2048 keypair applied to every regional SES identity for `notify.rediacc.com`. One private key, one Cloudflare TXT record at `<selector>._domainkey.notify.rediacc.com`, three SES regions (eu/us/asia). To rotate, stage the PEM via `DKIM_NOTIFY_PRIVATE_KEY_PATH=<path>` and run `./run.sh rotation rotate dkim-notify`. The tool publishes the DNS, applies the key to all three regions, smoke-tests propagation, and updates the manifest atomically. If `DKIM_NOTIFY_PRIVATE_KEY_PATH` is unset, a fresh keypair is generated in-memory (acceptable for bench experiments only — production rotations must stage the PEM so the key can be backed up to 1Password before the process exits).
 
-Auth: `SES_AK_ID`/`SES_AK_SECRET` for AWS IAM admin, `CLOUDFLARE_API_TOKEN` (or `CF_API_KEY`+`CF_EMAIL`) for Cloudflare, authenticated `gh` CLI for GitHub secrets.
+Auth: `SES_AK_ID`/`SES_AK_SECRET` for AWS IAM admin, `CLOUDFLARE_API_TOKEN` (or `CF_GLOBAL_API_KEY`+`CF_EMAIL`) for Cloudflare, authenticated `gh` CLI for GitHub secrets.
 
 `scripts/dev/deploy-bench.sh` runs `rotation check --for=bench` as a preflight, so a stale `private/account/.env.bench` cannot ship a dead key.
 

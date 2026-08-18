@@ -20,9 +20,9 @@
   font-weight: var(--font-weight-medium);
   cursor: pointer;
   transition:
-    background-color var(--transition-duration-base) ease,
-    border-color var(--transition-duration-base) ease,
-    box-shadow var(--transition-duration-base) ease;
+    background-color var(--transition-duration-base) var(--ease-standard),
+    border-color var(--transition-duration-base) var(--ease-standard),
+    box-shadow var(--transition-duration-base) var(--ease-standard);
   font-family: inherit;
   white-space: nowrap;
 }
@@ -40,8 +40,8 @@
   color: var(--color-text);
   cursor: pointer;
   transition:
-    background-color var(--transition-duration-base) ease,
-    box-shadow var(--transition-duration-base) ease;
+    background-color var(--transition-duration-base) var(--ease-standard),
+    box-shadow var(--transition-duration-base) var(--ease-standard);
 }
 
 .language-trigger-icon:hover {
@@ -62,7 +62,7 @@
 
 .language-trigger:active {
   background-color: rgba(0, 0, 0, var(--opacity-10));
-  transform: translateY(1px);
+  transform: var(--motion-press);
 }
 
 .language-trigger:focus-visible {
@@ -76,7 +76,7 @@
 }
 
 .language-chevron {
-  transition: transform var(--transition-duration-base) ease;
+  transition: transform var(--transition-duration-base) var(--ease-standard);
 }
 
 .language-chevron.open {
@@ -125,7 +125,7 @@
   font-size: var(--font-size-xs);
   font-weight: var(--font-weight-medium);
   cursor: pointer;
-  transition: background-color var(--transition-duration-fast) ease;
+  transition: background-color var(--transition-duration-fast) var(--ease-standard);
   font-family: inherit;
 }
 
@@ -141,7 +141,7 @@
 
 .language-option:active {
   background-color: rgba(0, 0, 0, var(--opacity-10));
-  transform: translateY(1px);
+  transform: var(--motion-press);
 }
 
 .language-option:focus-visible {
@@ -178,14 +178,5 @@
   }
 }
 
-/* Reduced motion: remove press scale and chevron rotation */
-@media (prefers-reduced-motion: reduce) {
-  .language-trigger:active,
-  .language-option:active {
-    transform: none;
-  }
-
-  .language-chevron {
-    transition: none;
-  }
-}
+/* Reduced motion is handled once, in public/styles/main.css. A local copy of
+   that block only ever covers the selectors that existed the day it was written. */

@@ -19,6 +19,7 @@
  */
 
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -503,7 +504,6 @@ const PLACEHOLDER_PATTERNS: RegExp[] = [
   /\.costVisual\.\w+\.items\.\d+\.name$/, // "dev-alice", "dev-bob"
   /\.costVisual\.\w+\.items\.\d+\.detail$/, // "idle 16h/day"
   // Logo wall categories
-  /^logoWall\.categories\.\d+$/, // "CI/CD", "Containers"
   // Stat/metric numeric values (currencies, percentages, measurements)
   /\.statCallouts\.\d+\.number$/, // "$6.9M/yr", "60-80%"
   /\.stats\.\d+\.number$/, // "<5min", "99.99%"
@@ -543,7 +543,27 @@ type TranslationValue = string | TranslationObject | TranslationValue[];
 interface LanguageStats {
   total: number;
   untranslated: number;
+  /**
+   * The DISPLAY string, rounded to one decimal. Never compared against the threshold:
+   * `Number.parseFloat(untranslatedPercent) > 0` was the bug this field caused. See
+   * `untranslatedRatio` below.
+   */
   untranslatedPercent: string;
+  /**
+   * The EXACT ratio, unrounded. The verdict is taken from this.
+   *
+   * THE BUG THIS FIELD FIXES. The threshold test used to read
+   * `Number.parseFloat(((untranslated / total) * 100).toFixed(1)) > 0`. `toFixed(1)`
+   * rounds, so any count small enough to land under 0.05% became the string "0.0" and
+   * compared equal to the threshold -- a PASS. The blind window scales with catalog
+   * size: at packages/www's 8,164 English leaves it swallowed up to 4 English-identical
+   * values per locale, and at 20,000 leaves it would swallow 9. The gate reported "All
+   * translations are complete" over them, and the `else if (untranslated > 0)` branch
+   * below quietly downgraded them to a warning, so they were not even visible as a
+   * number. A count is an integer; comparing a rounded percentage to zero converts an
+   * exact fact into an approximate one for no reason.
+   */
+  untranslatedRatio: number;
   missing: number;
   missingPercent: string;
   untranslatedKeys: string[];
@@ -633,7 +653,8 @@ function checkLocaleDir(name: string, localeDir: string, flatFiles = false): Che
     languages = fs
       .readdirSync(localeDir)
       .filter(
-        (d) => d !== 'en' && !d.startsWith('.') && fs.statSync(path.join(localeDir, d)).isDirectory()
+        (d) =>
+          d !== 'en' && !d.startsWith('.') && fs.statSync(path.join(localeDir, d)).isDirectory()
       );
   }
 
@@ -701,13 +722,15 @@ function checkLocaleDir(name: string, localeDir: string, flatFiles = false): Che
     const orphanKeys = Object.keys(langKeys).filter((key) => !(key in enKeys));
 
     const total = totalEnKeys;
-    const untranslatedPercent = ((untranslated / total) * 100).toFixed(1);
+    const untranslatedRatio = total > 0 ? (untranslated / total) * 100 : 0;
+    const untranslatedPercent = untranslatedRatio.toFixed(1);
     const missingPercent = ((missing / total) * 100).toFixed(1);
 
     stats[lang] = {
       total,
       untranslated,
       untranslatedPercent,
+      untranslatedRatio,
       missing,
       missingPercent,
       untranslatedKeys: untranslatedKeys.slice(0, 5), // First 5 for display
@@ -726,9 +749,10 @@ function checkLocaleDir(name: string, localeDir: string, flatFiles = false): Che
       );
     }
 
-    if (Number.parseFloat(untranslatedPercent) > MAX_UNTRANSLATED_PERCENT) {
+    // The EXACT ratio, never the rounded display string. See LanguageStats above.
+    if (untranslatedRatio > MAX_UNTRANSLATED_PERCENT) {
       errors.push(
-        `[${name}/${lang}] ${untranslated} untranslated strings (${untranslatedPercent}%) - exceeds ${MAX_UNTRANSLATED_PERCENT}% threshold`
+        `[${name}/${lang}] ${untranslated} untranslated strings (${untranslatedRatio.toFixed(4)}%) - exceeds ${MAX_UNTRANSLATED_PERCENT}% threshold`
       );
       if (untranslatedKeys.length > 0) {
         untranslatedKeys.slice(0, 3).forEach((k) => errors.push(`    - ${k}`));
@@ -746,9 +770,95 @@ function checkLocaleDir(name: string, localeDir: string, flatFiles = false): Che
   return { errors, warnings, stats };
 }
 
+/**
+ * CONTROL for the untranslated-count threshold.
+ *
+ * WHY IT PLANTS EXACTLY FOUR. Four is the largest count `toFixed(1)` used to swallow at
+ * packages/www's catalog size: 4 / 8,164 * 100 = 0.049%, which rounds to "0.0" and
+ * compared equal to a threshold of 0. So four English-identical values per locale sat
+ * under a green gate, and the run before this fix reported "All translations are
+ * complete" over a synthetic catalog carrying them. The control asserts BOTH directions:
+ * the four are reported, and a catalog with none is silent.
+ *
+ * IT ALSO RE-DERIVES THE OLD BEHAVIOUR rather than trusting the story. `roundedVerdict`
+ * below is the exact expression that shipped; the control fails if that expression does
+ * NOT pass on the same input, because then the plant is not reproducing the defect and
+ * the green above it would be meaningless.
+ *
+ * Runs inline on every invocation. A fire-proof behind a flag nobody passes is how
+ * check-i18n-cross-locale.ts spent its life untested, and how this repo shipped
+ * check-docs-untranslated-text.ts dead.
+ */
+function controlUntranslatedThreshold(): void {
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'completeness-control-'));
+  const failures: string[] = [];
+
+  // A catalog big enough for the rounding window to exist at all: 4 / 8200 rounds to 0.0.
+  const TOTAL = 8200;
+  const PLANTED = 4;
+  const en: Record<string, string> = {};
+  const de: Record<string, string> = {};
+  for (let i = 0; i < TOTAL; i++) {
+    en[`k${i}`] = `English source string number ${i} for the completeness control`;
+    de[`k${i}`] =
+      i < PLANTED
+        ? en[`k${i}`] // planted: byte-identical to English, i.e. untranslated
+        : `Deutsche Übersetzung Nummer ${i} für die Vollständigkeitskontrolle`;
+  }
+  fs.writeFileSync(path.join(tmp, 'en.json'), JSON.stringify(en));
+  fs.writeFileSync(path.join(tmp, 'de.json'), JSON.stringify(de));
+
+  const planted = checkLocaleDir('control', tmp, true);
+  const stat = planted.stats?.de;
+  if (!stat) {
+    failures.push('the control catalog produced no stats at all');
+  } else {
+    if (stat.untranslated !== PLANTED) {
+      failures.push(`expected ${PLANTED} untranslated, detector counted ${stat.untranslated}`);
+    }
+    // The defect, re-derived: the shipped expression must PASS on this input, or the
+    // plant is not reproducing it and the assertion below proves nothing.
+    const roundedVerdict =
+      Number.parseFloat(((stat.untranslated / stat.total) * 100).toFixed(1)) >
+      MAX_UNTRANSLATED_PERCENT;
+    if (roundedVerdict) {
+      failures.push(
+        `the plant no longer reproduces the rounding defect (${stat.untranslated}/${stat.total} ` +
+          `does not round to 0.0), so this control asserts nothing -- raise TOTAL`
+      );
+    }
+    if (planted.errors.length === 0) {
+      failures.push(
+        `${PLANTED} untranslated value(s) in a ${TOTAL}-key catalog were NOT reported as an ` +
+          `error. The threshold is being read from the rounded display string again.`
+      );
+    }
+  }
+
+  // The other direction: a fully translated catalog must stay silent, or the gate would
+  // red on every locale and get suppressed rather than fixed.
+  for (let i = 0; i < PLANTED; i++) de[`k${i}`] = `Deutsche Übersetzung Nummer ${i} sauber`;
+  fs.writeFileSync(path.join(tmp, 'de.json'), JSON.stringify(de));
+  const clean = checkLocaleDir('control', tmp, true);
+  if (clean.errors.length > 0) {
+    failures.push(`a fully translated catalog reported ${clean.errors.length} error(s)`);
+  }
+
+  fs.rmSync(tmp, { recursive: true, force: true });
+  if (failures.length > 0) {
+    console.error('\x1b[31m✗\x1b[0m CONTROL FAILED: this gate cannot detect a small number of');
+    console.error('  untranslated values, so its verdict on the real trees means nothing.');
+    for (const f of failures) console.error(`    ${f}`);
+    process.exit(1);
+  }
+}
+
 function main(): void {
   console.log('Translation Completeness Check');
   console.log('============================================================\n');
+
+  // CONTROL FIRST. Nothing below is evidence if the threshold cannot fire.
+  controlUntranslatedThreshold();
 
   const allErrors: string[] = [];
   const allWarnings: string[] = [];
@@ -812,7 +922,7 @@ function main(): void {
     if (stats) {
       for (const [lang, data] of Object.entries(stats)) {
         const status =
-          data.missing > 0 || Number.parseFloat(data.untranslatedPercent) > MAX_UNTRANSLATED_PERCENT
+          data.missing > 0 || data.untranslatedRatio > MAX_UNTRANSLATED_PERCENT
             ? '\u001B[31m\u2717\u001B[0m'
             : data.untranslated > 0
               ? '\u001B[33m!\u001B[0m'
@@ -840,7 +950,7 @@ function main(): void {
     console.log(
       'Untranslated strings must be NATURALIZED (natural, idiomatic copy -- not literal/word-for-word).\n' +
         'Use the pipeline: cd private/growth/i18n_pipeline && ./run.sh --lang <lang> --surface <surface>.\n' +
-        'See docs/i18n/CONVENTIONS.md.\n',
+        'See docs/i18n/CONVENTIONS.md.\n'
     );
     process.exit(1);
   }

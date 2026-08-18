@@ -19,7 +19,7 @@
 }
 
 .legal-hero h1 {
-  font-size: clamp(2.25rem, 4vw, 3.5rem);
+  font-size: var(--font-size-4xl);
   font-weight: var(--font-weight-bold);
   margin-bottom: var(--space-4);
   color: white;
@@ -79,9 +79,9 @@
   border-radius: var(--radius-sm);
   border-left: 2px solid transparent;
   transition:
-    color var(--transition-duration-base) ease,
-    border-color var(--transition-duration-base) ease,
-    background var(--transition-duration-base) ease;
+    color var(--transition-duration-base) var(--ease-standard),
+    border-color var(--transition-duration-base) var(--ease-standard),
+    background var(--transition-duration-base) var(--ease-standard);
 }
 
 .legal-toc a:hover {
@@ -225,8 +225,8 @@
   border-radius: var(--radius-2xl);
   text-decoration: none;
   transition:
-    background var(--transition-duration-base) ease,
-    border-color var(--transition-duration-base) ease;
+    background var(--transition-duration-base) var(--ease-standard),
+    border-color var(--transition-duration-base) var(--ease-standard);
 }
 
 .legal-related-links a:hover {

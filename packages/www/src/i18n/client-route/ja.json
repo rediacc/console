@@ -1,0 +1,175 @@
+{
+  "hero": {
+    "install": {
+      "tabs": {
+        "linux": "Linux",
+        "macos": "macOS",
+        "windows": "Windows"
+      }
+    }
+  },
+  "pages": {
+    "downloads": {
+      "meta": {
+        "title": "Rediacc CLI を全プラットフォームでダウンロード | Rediacc",
+        "description": "Windows・macOS・Linux対応の Rediacc CLI をダウンロード。すばやくインストールでき、自動で更新されます。",
+        "keywords": "Rediaccダウンロード, デスクトップアプリ, CLI, Windowsアプリ, macOSアプリ, Linuxアプリ"
+      },
+      "hero": {
+        "title": "Rediacc CLIをダウンロード",
+        "subtitle": "Rediacc CLI",
+        "released": "リリース"
+      },
+      "sections": {
+        "cli": "コマンドラインインターフェース（CLI）"
+      },
+      "platforms": {
+        "windows": "Windows",
+        "macos": "macOS",
+        "linux": "Linux"
+      },
+      "architectures": {
+        "x64": "x64（64ビット）",
+        "x64_intel": "Intel（x64）",
+        "arm64": "ARM64",
+        "arm64_apple": "Apple Silicon（ARM64）"
+      },
+      "actions": {
+        "download": "ダウンロード"
+      },
+      "cli": {
+        "description": "ターミナルで実行する軽量で高速なツールです。画面のないサーバーの管理や、複数のマシンで同じコマンドを一度に実行するのに向いています。サーバーへの接続、コマンドの実行、更新の配信ができ、ブラウザは不要です。"
+      },
+      "noReleases": "現在利用可能なリリースはありません。後ほどご確認ください。",
+      "autoUpdate": {
+        "title": "自動更新について",
+        "description": "Rediacc CLI は自動で更新されます。新しいバージョンを確認してインストールしてくれるので、常に最新版を使えます。"
+      },
+      "installation": {
+        "title": "インストール手順",
+        "cli": "CLI：お使いのシステム用ファイルをダウンロード。Linux/macOS ではターミナルで 'chmod +x ファイル名' を実行してから /usr/local/bin に移動してください。"
+      },
+      "requirements": {
+        "title": "システム要件",
+        "windows": "Windows 10以降（64ビット）",
+        "macos": "macOS 11（Big Sur）以降",
+        "linux": "最新Linuxディストリビューション（glibc 2.28以上）"
+      }
+    },
+    "install": {
+      "meta": {
+        "title": "Rediacc CLI をインストール | クイックセットアップガイド",
+        "description": "Rediacc CLI を Linux、macOS、Windows にインストール。APT・DNF・npm・直接ダウンロード対応。",
+        "keywords": "rediaccインストール, apt install, dnf install, npm install, CLIインストール"
+      },
+      "hero": {
+        "title": "Rediacc CLIをインストール",
+        "subtitle": "お好みのインストール方法を選択",
+        "downloadsNote": "CLI のバイナリを直接お探しですか？",
+        "downloadsLink": "ダウンロードページへ"
+      },
+      "methods": {
+        "quick": {
+          "title": "クイックインストール",
+          "description": "推奨。自動でインストール・更新します。"
+        },
+        "apt": {
+          "title": "APT (Debian / Ubuntu)",
+          "description": "Debian、Ubuntu、およびその派生向け"
+        },
+        "dnf": {
+          "title": "DNF (Fedora / RHEL)",
+          "description": "Fedora、RHEL、CentOS、Rocky Linux向け"
+        },
+        "apk": {
+          "title": "APK (Alpine Linux)",
+          "description": "Alpine Linuxおよび派生ディストリビューション向け"
+        },
+        "pacman": {
+          "title": "Pacman (Arch Linux)",
+          "description": "Arch Linuxおよび派生ディストリビューション向け"
+        },
+        "homebrew": {
+          "title": "Homebrew (macOS / Linux)",
+          "description": "HomebrewをインストールしたmacOSおよびLinuxユーザー向け"
+        },
+        "binary": {
+          "title": "直接ダウンロード",
+          "description": "スタンドアロンバイナリ、パッケージマネージャー不要"
+        },
+        "docker": {
+          "title": "Docker",
+          "description": "Docker ユーザー向け"
+        }
+      },
+      "verify": {
+        "title": "インストールを確認"
+      },
+      "architectures": {
+        "title": "対応アーキテクチャ",
+        "method": "方法",
+        "platform": "プラットフォーム"
+      },
+      "copy": "コピー",
+      "copied": "コピーしました！",
+      "platformFilter": {
+        "all": "すべての方法",
+        "label": "プラットフォームで絞り込み"
+      }
+    },
+    "partners": {
+      "form": {
+        "fields": {
+          "contactName": "お名前",
+          "contactNamePlaceholder": "姓名",
+          "jobTitle": "役職",
+          "jobTitlePlaceholder": "ご担当の役割",
+          "email": "会社のメールアドレス",
+          "emailPlaceholder": "you@company.com",
+          "phone": "電話番号",
+          "phonePlaceholder": "任意",
+          "company": "会社名",
+          "companyPlaceholder": "貴社名",
+          "website": "ウェブサイト",
+          "websitePlaceholder": "https://example.com",
+          "country": "国",
+          "countryPlaceholder": "国を選択してください",
+          "partnerTypes": "販売形態を教えてください（該当するものすべて）",
+          "isDistributor": "ディストリビューターとして、他のパートナー経由で販売しています。",
+          "howHeard": "どこで当社をお知りになりましたか？",
+          "howHeardPlaceholder": "選択してください",
+          "message": "その他、お伝えしたいこと",
+          "messagePlaceholder": "貴社の事業内容と、お客様層について教えてください。",
+          "consent": "Rediaccパートナープログラムに関するご連絡に同意します。"
+        },
+        "partnerTypeOptions": {
+          "reseller": "リセラー",
+          "msp": "マネージドサービスプロバイダー",
+          "consultant": "コンサルタント",
+          "distributor": "ディストリビューター",
+          "referral": "紹介パートナー"
+        },
+        "howHeardOptions": {
+          "search": "検索エンジン",
+          "referral": "同僚・友人からの紹介",
+          "event": "イベント・ウェビナー",
+          "socialMedia": "SNS",
+          "blog": "ブログ・記事",
+          "other": "その他"
+        },
+        "submit": "申請を送信",
+        "sending": "送信中...",
+        "success": {
+          "title": "申請を受け付けました",
+          "body": "ご関心をお寄せいただきありがとうございます。すべての申請に目を通し、まもなくメールでご返信いたします。"
+        },
+        "errors": {
+          "requiredFields": "お名前、会社のメールアドレス、会社名、国、販売形態のいずれかを入力してください。",
+          "consent": "申請にご返信するため、ご連絡への同意をお願いします。",
+          "captcha": "続行するにはキャプチャを完了してください。",
+          "generic": "エラーが発生しました。もう一度お試しください。"
+        }
+      }
+    }
+  }
+}

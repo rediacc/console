@@ -741,13 +741,13 @@ def docs_drift(root):
     return ("drifted" if drift > DOCS_DRIFT_MAX else "ok"), drift, str(docs)
 
 
-# ---- v16: the plan-file convention (agent/<branch>/PLAN-<slug>.md) ---------
+# ---- v16: the plan-file convention (agent/PLAN-<slug>.md) -----------------
 #
-# A plan is the DURABLE design record: committed with its branch, so it
-# survives compaction and a lost machine. That is what distinguishes it from
-# the per-session agent/<branch>/<me>/ directories beside it, whose STATE.md is
-# the volatile cursor. A plan sits one level UP, at branch level, because it
-# belongs to the branch's work rather than to whoever happened to write it.
+# A plan is the DURABLE design record: committed, so it survives compaction and
+# a lost machine. That is what distinguishes it from the per-session
+# agent/<me>/ directories beside it, whose STATE.md is the volatile cursor. A
+# plan sits one level UP, at the tree root, because it belongs to the work
+# rather than to whoever happened to write it.
 # Plans are historical once executed, so only draft/executing/UNKNOWN ones are
 # surfaced; done and superseded appear as a count. An unparseable Status line
 # reads as UNKNOWN and is shown LOUDLY, per the V_PR_UNREADABLE convention
@@ -781,21 +781,19 @@ PLAN_DRIFT_MAX = int(os.environ.get("WORKLIST_PLAN_DRIFT_MAX", "5"))
 PLAN_DRIFT_MIN_MOVES = int(os.environ.get("WORKLIST_PLAN_DRIFT_MIN", "4"))
 
 
-def plan_dir(root, branch):
-    return S.agent_plan_dir(root, branch or "")
+def plan_dir(root):
+    return S.agent_plan_dir(root)
 
 
-def plan_records(root, branch):
-    """[(relpath, status, lines)] for agent/<branch>/PLAN-*.md.
+def plan_records(root):
+    """[(relpath, status, lines)] for agent/PLAN-*.md.
 
     status is the parsed value lowercased, or 'UNKNOWN' when no Status line
     sits in the first PLAN_HEADER_LINES lines. Newest mtime first. Empty list
-    when the branch or the directory is absent, so callers never have to know
-    whether this project uses the convention.
+    when the directory is absent, so callers never have to know whether this
+    project uses the convention.
     """
-    if not branch:
-        return []
-    d = plan_dir(root, branch)
+    d = plan_dir(root)
     if not d.is_dir():
         return []
     rows = []
@@ -820,7 +818,7 @@ def plan_records(root, branch):
 _EPOCH_MIN = C.parse_stamp("1970-01-01T00:00:00Z")
 
 
-def plan_drift_rows(root, branch, fold, session_id, plan_max_read=12):
+def plan_drift_rows(root, fold, session_id, plan_max_read=12):
     """[(relpath, status)] for NON-DONE plans this session has worked past.
 
     The gap the operator named: plans were surfaced at SessionStart and
@@ -830,8 +828,8 @@ def plan_drift_rows(root, branch, fold, session_id, plan_max_read=12):
     stop path.
 
     THE TRIGGER IS WORK, NEVER THE CLOCK -- the lesson STATE.md's check paid for
-    twice. A plan is not stale because time passed; a plan a week old on a branch
-    where nothing happened is perfectly accurate. It is stale when THIS session
+    twice. A plan is not stale because time passed; a week-old plan whose work
+    nobody touched is perfectly accurate. It is stale when THIS session
     has ticked, added or updated its own items since the plan was last written,
     because that is exactly when the durable record stops describing the work.
 
@@ -840,9 +838,9 @@ def plan_drift_rows(root, branch, fold, session_id, plan_max_read=12):
     its way into being ignored.
 
     Ownership-scoped like every other signature here: a PEER's items moving is
-    not a reason to rewrite MY branch's plan.
+    not a reason to rewrite MY plan.
     """
-    recs = plan_records(root, branch)
+    recs = plan_records(root)
     if not recs:
         return []
     mine = [r for r in fold.items if C.owned_by_me(r.get("owner"), session_id)]
@@ -856,7 +854,7 @@ def plan_drift_rows(root, branch, fold, session_id, plan_max_read=12):
         # direct contradiction, and that is the whole signal.
         #
         # `draft` and `ready` are deliberately exempt: a proposal not yet started
-        # is not made wrong by unrelated work happening elsewhere on the branch.
+        # is not made wrong by unrelated work happening elsewhere.
         # The first cut flagged every non-done plan and produced TWELVE rows at
         # once, most of them drafts this session had never touched -- a wall that
         # teaches the reader to skip the check, which is worse than not having
@@ -952,11 +950,11 @@ def plan_orientation(root, rel):
     return title, [f for f, _n in ranked[:PLAN_ORIENT_FILES]]
 
 
-def plans_block(root, branch):
+def plans_block(root):
     """(listing, live_records): the non-done plans, one line each, plus one
     count line for the executed ones. ("", []) when there is nothing to say,
     so a project without plans emits no block at all."""
-    recs = plan_records(root, branch)
+    recs = plan_records(root)
     live = [r for r in recs if r[1] not in PLAN_DONE_STATES]
     if not live:
         return "", []
@@ -998,11 +996,9 @@ def triage_context(root, worklist, session_id=""):
     disjoint" an answerable question rather than a guess.
     """
     branch = C.git_branch(root)
-    d = plan_dir(root, branch)
-    recs = plan_records(root, branch)
-    if not branch:
-        plans = "no branch resolvable, so there is no plan directory to use"
-    elif not d.is_dir():
+    d = plan_dir(root)
+    recs = plan_records(root)
+    if not d.is_dir():
         plans = "%s does not exist yet (creating it is part of writing a plan)" % d
     else:
         plans = "%s exists, %d plan file(s)" % (d, len(recs))
@@ -1611,7 +1607,7 @@ def handle_session_start(event):
     # something else got "READ ALL OF THEM before acting" pointed at the
     # standing program docs, mid-task, as if it had just started. It is also
     # a straight duplicate -- handle_post_compact already re-points at
-    # DESIGN_DOCS and already hands back the branch's plans, plus STATE.md,
+    # DESIGN_DOCS and already hands back the durable plans, plus STATE.md,
     # RULES.md and the trap titles, which is the briefing a compacted session
     # actually needs. So compaction is handled in exactly one place: mark the
     # context fresh (the judge stamp depends on it) and say nothing here.
@@ -1650,11 +1646,10 @@ def handle_session_start(event):
                 "" if state != "drifted" else " (DRIFTED by %d commits)" % drift,
             )
         )
-    branch = C.git_branch(root)
-    listing, live = plans_block(root, branch)
+    listing, live = plans_block(root)
     if listing:
-        blocks.append(M.CTX_PLANS % (branch, listing))
-        summary.append("%d open plan(s) in agent/%s" % (len(live), branch))
+        blocks.append(M.CTX_PLANS % listing)
+        summary.append("%d open plan(s) in agent/" % len(live))
     # A THIRD independent block, for the reason the two above are independent:
     # a repo with live handoff checklists and no design docs and no plans must
     # still be told about the checklists, because the Stop hook will block on
@@ -1692,62 +1687,57 @@ def handle_post_compact(event):
     # titles plus the path is the same economy the judge uses.
     root = C.project_root(C.project_start(event))
     sid = event.get("session_id", "")
-    branch = C.git_branch(root)
     traps = S.trap_headings(root)
     traps_block = "\n".join("  - " + h for h in traps) or "  (none recorded)"
-    # Bound before the branches so the agent-hint haystack below has one shape
-    # on all three of them; only the branch that reads a section fills it.
+    # Bound before the arms so the agent-hint haystack below has one shape on
+    # both of them; only the arm that reads a section fills it. There is no
+    # third, no-branch arm any more (2026-08-18): the document is keyed on the
+    # session, so a detached HEAD can no longer cost a compacted session its
+    # briefing -- which was the worst possible moment to withhold it.
     text = ""
-    if not branch:
-        state = "no-branch"
-        msg = M.CTX_POSTCOMPACT_NO_BRANCH % traps_block
+    # shape + presence only, but for THIS session's own section.
+    state, _age, text = S.agent_state_state(root, session_id=sid)
+    _, peers, _npeers = S.agent_state_briefing(root, sid, C.projects_dir(root))
+    if state in ("missing", "no-dir"):
+        msg = M.CTX_POSTCOMPACT_MISSING % (
+            S.agent_state_path(root, sid),
+            (sid or "unknown")[:8],
+        )
     else:
-        # shape + presence only, but for THIS session's own section.
-        state, _age, text = S.agent_state_state(root, branch, session_id=sid)
-        _, peers, _npeers = S.agent_state_briefing(root, branch, sid, C.projects_dir(root))
-        if state in ("missing", "no-dir"):
-            msg = M.CTX_POSTCOMPACT_MISSING % (
-                S.agent_state_path(root, branch, sid),
-                branch,
-                (sid or "unknown")[:8],
+        try:
+            rules = (
+                S.agent_rules_path(root, sid).read_text(encoding="utf-8", errors="replace").strip()
             )
-        else:
-            try:
-                rules = (
-                    S.agent_rules_path(root, branch, sid)
-                    .read_text(encoding="utf-8", errors="replace")
-                    .strip()
-                )
-            except OSError:
-                rules = "(none for this branch)"
-            msg = M.CTX_POSTCOMPACT_BRIEFING % (
-                DESIGN_DOCS,
-                text.strip(),
-                rules,
-                S.agent_traps_path(root),
-                traps_block,
-            )
-        # AFTER the briefing, on BOTH branches. Own section first is the point:
-        # a compacted session reads top-down, and the block it must act on is
-        # its own. On the missing branch this is the whole state content there
-        # is -- before sections, that branch returned none at all, so a
-        # compacted session on a shared branch was told to reconstruct from
-        # nothing while a peer's section sat in the file unread.
-        if peers:
-            msg += "\n\n" + M.CTX_POSTCOMPACT_PEERS % peers
-    # v16: the durable half of the briefing, appended to ALL THREE branches
-    # above. STATE.md says what is true right now and can be missing or
+        except OSError:
+            rules = "(none)"
+        msg = M.CTX_POSTCOMPACT_BRIEFING % (
+            DESIGN_DOCS,
+            text.strip(),
+            rules,
+            S.agent_traps_path(root),
+            traps_block,
+        )
+    # AFTER the briefing, on BOTH arms. Own section first is the point: a
+    # compacted session reads top-down, and the block it must act on is its
+    # own. On the missing arm this is the whole state content there is --
+    # before sections, that arm returned none at all, so a compacted session
+    # sharing a checkout was told to reconstruct from nothing while a peer's
+    # section sat in the file unread.
+    if peers:
+        msg += "\n\n" + M.CTX_POSTCOMPACT_PEERS % peers
+    # v16: the durable half of the briefing, appended to BOTH arms above.
+    # STATE.md says what is true right now and can be missing or
     # stale; a plan file says what was DESIGNED and is committed, so it is
     # the one artifact a compacted session can always fall back on. The
     # newest non-done plan's '## Status' section rides along, capped, because
     # that section is exactly the progress cursor the lost context held.
-    listing, live = plans_block(root, branch)
+    listing, live = plans_block(root)
     if listing:
-        msg += "\n\n" + M.CTX_PLANS % (branch, listing)
+        msg += "\n\n" + M.CTX_PLANS % listing
         rel, body = plan_status_excerpt(root, live)
         if body:
             msg += "\n\n" + M.CTX_PLANS_EXCERPT % (rel, body)
-    # v20: and the handoff checklists, appended on all three branches above
+    # v20: and the handoff checklists, appended on both arms above
     # for the same reason. A compacted session that forgets a live checklist
     # rediscovers it as a block it cannot explain.
     cl_listing, _cl_n = wl_checklist.checklists_block(root)
@@ -1771,8 +1761,8 @@ def handle_post_compact(event):
                 msg += "\n\n" + M.N_AGENT_HINT % (hit[0], hit[0], ", ".join(hit[2][:6]))
     C.emit(
         {
-            "systemMessage": "PostCompact: STATE.md %s (agent/%s/%s/STATE.md)"
-            % (state, branch or "<no-branch>", S.agent_session_slug(sid)),
+            "systemMessage": "PostCompact: STATE.md %s (agent/%s/STATE.md)"
+            % (state, S.agent_session_slug(sid)),
             "hookSpecificOutput": {
                 "hookEventName": "PostCompact",
                 "additionalContext": msg,
@@ -2231,7 +2221,6 @@ def run_stop(event, event_ok, worklist, hook_file):
     st_sig = S.state_world_sig(
         root, worklist, session_id, fold=fold, transcript_path=event.get("transcript_path")
     )
-    agent_branch = C.git_branch(root)
     # session_id, not blank: the verdict is about THIS session's own section.
     # Without it the check judged whichever document happened to be on disk, so
     # a peer's write reset everyone's clock and -- worse than a skipped stop --
@@ -2240,14 +2229,13 @@ def run_stop(event, event_ok, worklist, hook_file):
     # recovery artifact.
     astate, aage, _atext = S.agent_state_state(
         root,
-        agent_branch,
         session_id=session_id,
         cur_sig=st_sig,
         saved_sig=state_doc.get("state_sig"),
     )
     if astate == "ok":
         # ADOPT: an "ok" verdict banks the signature so a second session
-        # arriving on the branch inherits the document instead of being
+        # arriving in the checkout inherits the document instead of being
         # ordered to rewrite it. The adopt fires ONLY on "ok" -- banking on a
         # "stale" verdict would let the next stop compare cur_sig against a
         # signature recorded DURING the block, find them equal, and allow: a
@@ -2796,7 +2784,27 @@ def run_stop(event, event_ok, worklist, hook_file):
     # wall-clock meaning while the nag stops firing on an unchanged world.
     # ---- INTENT (plan section 4). Two effects, both deliberately small.
     _intent, _intent_expired = S.live_intent(worklist, session_id)
-    if _intent_expired is not None and not _intent:
+    # v18 THE EXPIRED INTENT THAT COVERED NOTHING OPEN. V_INTENT_EXPIRED tells
+    # the reader "what it covered is still outstanding" -- and the check never
+    # verified that. It fired live on an intent whose ONE covered item had been
+    # ticked with evidence, so the message asserted something demonstrably
+    # false. A check that says the wrong thing is worse than one that stays
+    # quiet: it trains the reader to skim the whole battery.
+    #
+    # Firing is SUPPRESSED only when every covered id resolves to a closed
+    # item. Two cases keep it firing on purpose: an intent that named NOTHING
+    # (absence of a claim is not proof the claim was met), and a covered id
+    # this fold cannot resolve (unreadable is not the same as done -- the
+    # V_PR_UNREADABLE rule).
+    _cov_ids = list(_intent_expired.get("covers") or []) if _intent_expired else []
+    _by_id = {r["id"]: r for r in fold.items}
+
+    def _cover_still_open(cid):
+        r = _by_id.get(cid)
+        return r is None or r.get("state") in (" ", "?", ">")
+
+    _intent_all_closed = bool(_cov_ids) and not any(_cover_still_open(c) for c in _cov_ids)
+    if _intent_expired is not None and not _intent and not _intent_all_closed:
         _cov = ", ".join(_intent_expired.get("covers") or []) or "(nothing named)"
         _when = C.parse_stamp(str(_intent_expired.get("at") or ""))
         _age = int((C.utcnow() - _when).total_seconds() / 60.0) if _when else 0
@@ -2847,7 +2855,7 @@ def run_stop(event, event_ok, worklist, hook_file):
     # satisfiable either way (edit the plan, or set its Status), so this cannot
     # become a nag with no way out.
     try:
-        _pdrift = plan_drift_rows(root, agent_branch, fold, session_id)
+        _pdrift = plan_drift_rows(root, fold, session_id)
     except Exception:  # noqa: BLE001 -- a plan read must never break the battery
         _pdrift = []
     if _pdrift:
@@ -3051,13 +3059,19 @@ def run_stop(event, event_ok, worklist, hook_file):
                 )
                 _pb_seen[_pb_name] = C.stamp_now()
                 S.save_state(worklist, session_id, state_doc)
-    # Explicit state mapping, NOT `!= "ok"`: a detached HEAD ("no-branch")
-    # must be report-only (operator decision 2026-07-30, a deliberate
-    # departure from the V_PR_UNREADABLE blocks-when-blind precedent, because
-    # HEAD detaches during every interactive rebase and this operator
-    # rebase-merges everything), and a missing DIRECTORY gets the bootstrap
-    # wall exactly once per branch per session, latched on agent_boot_told.
-    agent_note = ""
+    # Explicit state mapping, NOT `!= "ok"`: a missing DIRECTORY gets the
+    # bootstrap wall exactly once per session, latched on agent_boot_told,
+    # rather than the block every other bad verdict earns.
+    #
+    # THE "no-branch" ARM IS GONE (2026-08-18). It existed only because the
+    # document's path needed a branch to resolve, and it made this check
+    # REPORT-ONLY on a detached HEAD -- which this operator gets on every
+    # interactive rebase, so the one artifact designed to survive compaction
+    # went unenforced for the whole of one. Keying the path on the session
+    # removed the cause instead of softening the symptom, and `agent_note` and
+    # the `agent-blind` note went with it: a note describing a state that can
+    # no longer occur is a check that cannot fire.
+    #
     # A live intent answers the STALE verdict only. `missing`, `thin`, `bloated`
     # and `aimless` are about the DOCUMENT's shape and content, which no
     # statement of plan can substitute for.
@@ -3069,36 +3083,33 @@ def run_stop(event, event_ok, worklist, hook_file):
             False,
             M.V_AGENT_STATE
             % (
-                agent_branch,
                 S.agent_session_slug(session_id),
                 astate,
                 _agent_state_because(astate, aage),
                 S.AGENT_STATE_MIN_CHARS,
                 S.AGENT_STATE_MAX_CHARS,
-                agent_branch,
                 me8,
             ),
         )
     elif astate == "no-dir":
-        if state_doc.get("agent_boot_told") != agent_branch:
+        # The latch used to key on the BRANCH, so one session whose checkout
+        # changed branch met the same wall a second time. It keys on the slug
+        # the wall actually names, which cannot change under a live session.
+        _boot_key = S.agent_session_slug(session_id)
+        if state_doc.get("agent_boot_told") != _boot_key:
             vadd(
                 "agent-bootstrap",
                 True,
-                M.V_AGENT_BOOTSTRAP
-                % ((agent_branch, S.agent_session_slug(session_id)) * 2 + (agent_branch,)),
+                M.V_AGENT_BOOTSTRAP % ((_boot_key,) * 2),
             )
-            state_doc["agent_boot_told"] = agent_branch
+            state_doc["agent_boot_told"] = _boot_key
             S.save_state(worklist, session_id, state_doc)
         elif something_remains:
             vadd(
                 "agent-absent",
                 False,
-                M.V_AGENT_STILL_ABSENT % (agent_branch, S.agent_session_slug(session_id)),
+                M.V_AGENT_STILL_ABSENT % S.agent_session_slug(session_id),
             )
-    elif astate == "no-branch":
-        agent_note = M.N_AGENT_BLIND % root
-        # Class 2, volatile: recomputed from the branch state every stop.
-        outq_add(worklist, session_id, state_doc, "agent-blind", agent_note, 2)
     # REPORT-ONLY, and it must stay that way: a session that cannot see its
     # peers cannot be expected to respect them, but a peer's document is never
     # this session's obligation. Class 2 volatile, recomputed every stop,
@@ -3109,40 +3120,39 @@ def run_stop(event, event_ok, worklist, hook_file):
     # this session's document -- but the visibility it replaced must survive
     # it, or the migration trades one silent failure (a clobber) for another (a
     # session that no longer knows anyone else is here). So this reads every
-    # sibling agent/<branch>/<peer>/STATE.md instead of one file, and keeps the
-    # row shape byte-identical. It still touches NOTHING: an every-turn hook
-    # that writes inside a peer's directory is the fastest route back to the
-    # clobber this layout exists to prevent, so it only NAMES what it sees.
-    if agent_branch:
-        try:
-            _all = S.agent_peer_sections(root, agent_branch, session_id)
-            _, _reapable = S.agent_state_dead(_all, session_id, projects_dir)
-            _reap_ids = {id(s) for s in _reapable}
-            _now = time.time()
-            _rows = [
-                "    %-14s %4d min old%s"
-                % (
-                    s["owner"],
-                    int(max(0.0, (_now - s["ts"]) / 60.0)),
-                    # NOT "reap-eligible" any more: nothing prunes another
-                    # session's directory, so a label promising that would be a
-                    # check that cannot fire. What the horizon still tells the
-                    # reader honestly is that this peer looks gone.
-                    "   ABANDONED" if id(s) in _reap_ids else "",
-                )
-                for s in _all
-            ]
-            if _rows:
-                outq_add(
-                    worklist,
-                    session_id,
-                    state_doc,
-                    "agent-peers",
-                    M.N_AGENT_PEERS % (agent_branch, "\n".join(_rows)),
-                    2,
-                )
-        except OSError:
-            pass  # no document, or an unreadable one: the astate branches above own that
+    # sibling agent/<peer>/STATE.md instead of one file, and keeps the row
+    # shape byte-identical. It still touches NOTHING: an every-turn hook that
+    # writes inside a peer's directory is the fastest route back to the clobber
+    # this layout exists to prevent, so it only NAMES what it sees.
+    try:
+        _all = S.agent_peer_sections(root, session_id)
+        _, _reapable = S.agent_state_dead(_all, session_id, projects_dir)
+        _reap_ids = {id(s) for s in _reapable}
+        _now = time.time()
+        _rows = [
+            "    %-14s %4d min old%s"
+            % (
+                s["owner"],
+                int(max(0.0, (_now - s["ts"]) / 60.0)),
+                # NOT "reap-eligible" any more: nothing prunes another
+                # session's directory, so a label promising that would be a
+                # check that cannot fire. What the horizon still tells the
+                # reader honestly is that this peer looks gone.
+                "   ABANDONED" if id(s) in _reap_ids else "",
+            )
+            for s in _all
+        ]
+        if _rows:
+            outq_add(
+                worklist,
+                session_id,
+                state_doc,
+                "agent-peers",
+                M.N_AGENT_PEERS % "\n".join(_rows),
+                2,
+            )
+    except OSError:
+        pass  # no document, or an unreadable one: the astate branches above own that
     # v18: unread sub-agent reports, on ORDINARY stops as well as at the two
     # boundaries wl_report already covers by hook. SessionStart and PostCompact
     # catch a fresh or compacted session; this catches the far commoner case of
@@ -3152,6 +3162,11 @@ def run_stop(event, event_ok, worklist, hook_file):
     # REPORT-ONLY, never a violation. An unread report is information the
     # session may act on, not an obligation it owes anyone -- and there is no
     # honest evidence a stop could demand for "I read it".
+    #
+    # The branch is read HERE and nowhere else on this path now: the report
+    # store is keyed per branch in TMPDIR (wl_report.store_root), which is a
+    # different tree from agent/ and keeps its own key.
+    agent_branch = C.git_branch(root)
     try:
         _unread = wl_report.unread(
             wl_report.store_root(root), agent_branch or wl_report.NO_BRANCH, session_id

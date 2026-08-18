@@ -107,8 +107,8 @@ export async function replicateRepo(options: ReplicateOptions): Promise<void> {
   const repoGuid = (await configService.getRepository(options.repo))?.repositoryGuid;
   if (!repoGuid) {
     throw new Error(
-      `Repository "${options.repo}" has no repositoryGuid in this config — ` +
-        `replicate needs the repo's storage identity (create it with "rdc repo create").`
+      `Repository "${options.repo}" has no repositoryGuid in this config. ` +
+        `Replicate needs the repo's storage identity (create it with "rdc repo create").`
     );
   }
 
@@ -336,8 +336,8 @@ function removeFailure(
 ): string {
   const log = deleteLog.trim();
   return (
-    `Replica set "${setName}" NOT removed — ${survivor}. State was PRESERVED. ` +
-    `Overlay delete reported: ${log.length > 0 ? log : '(no output — it may have deleted nothing)'}. ` +
+    `Replica set "${setName}" NOT removed: ${survivor}. State was PRESERVED. ` +
+    `Overlay delete reported: ${log.length > 0 ? log : '(no output, so it may have deleted nothing)'}. ` +
     `Terminate any surviving replica pods and detach the fork(s) with --discard on their nodes, ` +
     `then re-run "rdc repo replicate remove ${repoKey}".`
   );

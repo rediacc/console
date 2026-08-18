@@ -14,7 +14,7 @@
  * Built with `subset()` so an unknown code throws at module load instead of silently never
  * matching a file that was never going to exist.
  */
-import { subset, type SiteLocale } from '@rediacc/locales';
+import { type SiteLocale, subset } from '@rediacc/locales';
 
 export const NIS2_SNAPSHOT_LANGS = subset('nis2-snapshot', [
   'en',

@@ -68,7 +68,12 @@ function main(): number {
     console.error(`[i18n-naturalization] could not parse ${LEDGER_FILE}: ${e}`);
     return 1;
   }
-  if (!ledger || typeof ledger !== 'object' || typeof ledger.languages !== 'object' || ledger.languages === null) {
+  if (
+    !ledger ||
+    typeof ledger !== 'object' ||
+    typeof ledger.languages !== 'object' ||
+    ledger.languages === null
+  ) {
     console.log('[i18n-naturalization] ledger has no languages map; nothing to check.');
     return 0;
   }
@@ -113,29 +118,41 @@ function main(): number {
     for (const lang of targeted) {
       const n = langCount[lang] ?? 0;
       const st = staleByLang[lang]?.length ?? 0;
-      const mark = n === 0 ? '✗ not naturalized'
-        : coverageFails.includes(lang) ? `✗ below floor (${n} < ${floor})`
-        : st ? `${st} STALE` : 'ok';
+      const mark =
+        n === 0
+          ? '✗ not naturalized'
+          : coverageFails.includes(lang)
+            ? `✗ below floor (${n} < ${floor})`
+            : st
+              ? `${st} STALE`
+              : 'ok';
       console.log(`  ${lang}: ${n} naturalized, ${mark}`);
     }
     if (orphanTotal) {
-      console.log(`\n${orphanTotal} ledger entries reference deleted English keys ` +
-        `(harmless; cleaned on next run).`);
+      console.log(
+        `\n${orphanTotal} ledger entries reference deleted English keys ` +
+          `(harmless; cleaned on next run).`
+      );
     }
-    console.log(`\nCoverage floor: ${Math.round(COVERAGE_FLOOR * 100)}% of the best-covered ` +
-      `language (${maxCount} keys) = ${floor}. Individual never-naturalized keys (the ` +
-      `backlog within a language) are not failed — only a whole language being absent/near-empty.`);
+    console.log(
+      `\nCoverage floor: ${Math.round(COVERAGE_FLOOR * 100)}% of the best-covered ` +
+        `language (${maxCount} keys) = ${floor}. Individual never-naturalized keys (the ` +
+        `backlog within a language) are not failed — only a whole language being absent/near-empty.`
+    );
   }
 
   if (staleTotal === 0 && coverageFails.length === 0) {
-    console.log(`[i18n-naturalization] OK — all ${targeted.length} maintained locales ` +
-      `covered and fresh.`);
+    console.log(
+      `[i18n-naturalization] OK — all ${targeted.length} maintained locales ` + `covered and fresh.`
+    );
     return 0;
   }
 
   if (staleTotal > 0) {
-    console.error(`\n[i18n-naturalization] ${staleTotal} naturalized translation(s) are ` +
-      `STALE: their English changed but they were not re-naturalized.\n`);
+    console.error(
+      `\n[i18n-naturalization] ${staleTotal} naturalized translation(s) are ` +
+        `STALE: their English changed but they were not re-naturalized.\n`
+    );
     for (const [lang, keys] of Object.entries(staleByLang)) {
       console.error(`  [${lang}] ${keys.length} stale:`);
       for (const k of keys.slice(0, 8)) console.error(`    ~ ${k}`);
@@ -143,16 +160,22 @@ function main(): number {
     }
     console.error(`\nTo fix: re-naturalize ONLY the changed keys (do not re-do everything):`);
     console.error(`  npm run i18n:generate-hashes && npm run i18n:naturalize-status`);
-    console.error(`  cd private/growth/i18n_pipeline && ./run.sh --lang <lang> --surface <surface>`);
+    console.error(
+      `  cd private/growth/i18n_pipeline && ./run.sh --lang <lang> --surface <surface>`
+    );
   }
   if (coverageFails.length > 0) {
-    console.error(`\n[i18n-naturalization] ${coverageFails.length} maintained locale(s) are ` +
-      `missing or near-empty (below ${floor} keys, the ${Math.round(COVERAGE_FLOOR * 100)}% floor):`);
+    console.error(
+      `\n[i18n-naturalization] ${coverageFails.length} maintained locale(s) are ` +
+        `missing or near-empty (below ${floor} keys, the ${Math.round(COVERAGE_FLOOR * 100)}% floor):`
+    );
     for (const lang of coverageFails) {
       console.error(`  ✗ ${lang}: ${langCount[lang] ?? 0} naturalized`);
     }
     console.error(`\nTo fix: naturalize the whole language:`);
-    console.error(`  cd private/growth/i18n_pipeline && ./run.sh --lang <lang> --batch --model haiku`);
+    console.error(
+      `  cd private/growth/i18n_pipeline && ./run.sh --lang <lang> --batch --model haiku`
+    );
   }
   console.error(`See ${DOC}.`);
   return 1;

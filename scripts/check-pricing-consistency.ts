@@ -22,7 +22,12 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { type PlanCode, PLAN_LIMITS, PLAN_MAX_MACHINES, PLAN_ORDER } from '@rediacc/shared/subscription';
+import {
+  PLAN_LIMITS,
+  PLAN_MAX_MACHINES,
+  PLAN_ORDER,
+  type PlanCode,
+} from '@rediacc/shared/subscription';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.join(__dirname, '..');
@@ -101,7 +106,10 @@ function checkEnJson(): void {
     // tiers, `code` is a PlanCode and may be COMMUNITY. At runtime .includes
     // simply returns false for it, which is the intended answer; the cast just
     // stops the narrow tuple type from rejecting the question.
-    if ((PAID_PLAN_CODES as readonly PlanCode[]).includes(code) && !hasPlusSuffix(entry.jobsPerMonth ?? '')) {
+    if (
+      (PAID_PLAN_CODES as readonly PlanCode[]).includes(code) &&
+      !hasPlusSuffix(entry.jobsPerMonth ?? '')
+    ) {
       fail(
         `en.json technicalSummary.values.${planId}.jobsPerMonth = "${entry.jobsPerMonth}" ` +
           'is missing the "+" display convention for a paid tier'
@@ -116,52 +124,21 @@ function checkEnJson(): void {
     }
   }
 
-  // 2. comparison.categories.infrastructure.rows — duplicate of the same two metrics
-  const rows = pricing.comparison?.categories?.infrastructure?.rows ?? [];
-  const machinesRow = rows.find((r: { label?: string }) => /floating licenses/i.test(r.label ?? ''));
-  const issuancesRow = rows.find((r: { label?: string }) => /server setups per month/i.test(r.label ?? ''));
-  if (!machinesRow) fail('en.json comparison.categories.infrastructure.rows: Floating Licenses row not found');
-  if (!issuancesRow) fail('en.json comparison.categories.infrastructure.rows: server-setups row not found');
-  for (const code of PLAN_ORDER) {
-    const planId = PLAN_ID_BY_CODE[code];
-    if (machinesRow) {
-      if (!machinesDisplayMatches(code, machinesRow[planId] ?? '')) {
-        fail(
-          `en.json comparison Floating-Licenses row.${planId} = "${machinesRow[planId]}" ` +
-            `does not match PLAN_MAX_MACHINES.${code} = ${PLAN_MAX_MACHINES[code]} (or "Custom" for ENTERPRISE)`
-        );
-      }
-    }
-    if (issuancesRow) {
-      const parsed = parseCount(issuancesRow[planId] ?? '');
-      if (parsed !== PLAN_LIMITS[code].maxRepoLicenseIssuancesPerMonth) {
-        fail(
-          `en.json comparison server-setups row.${planId} = "${issuancesRow[planId]}" ` +
-            `does not match PLAN_LIMITS.${code}.maxRepoLicenseIssuancesPerMonth = ${PLAN_LIMITS[code].maxRepoLicenseIssuancesPerMonth}`
-        );
-      }
-    }
-  }
-
-  // 3. plans.*.features prose — extract the digit run from the "N server setups per month" bullet
-  const plans = pricing.plans ?? {};
-  for (const code of PLAN_ORDER) {
-    const planId = PLAN_ID_BY_CODE[code];
-    const features: string[] = plans[planId]?.features ?? [];
-    const bullet = features.find((f) => /server setups per month/i.test(f));
-    if (!bullet) {
-      fail(`en.json pages.pricing.plans.${planId}.features: no "server setups per month" bullet found`);
-      continue;
-    }
-    const match = /([\d,]+\+?)\s*server setups per month/i.exec(bullet);
-    const parsed = match ? parseCount(match[1]) : null;
-    if (parsed !== PLAN_LIMITS[code].maxRepoLicenseIssuancesPerMonth) {
-      fail(
-        `en.json pages.pricing.plans.${planId}.features bullet "${bullet}" ` +
-          `does not match PLAN_LIMITS.${code}.maxRepoLicenseIssuancesPerMonth = ${PLAN_LIMITS[code].maxRepoLicenseIssuancesPerMonth}`
-      );
-    }
-  }
+  // Checks 2 and 3 are GONE, and so are the two copies they policed.
+  //
+  // They read `comparison.categories.infrastructure.rows` and the
+  // "N server setups per month" bullet in `plans.*.features`. Both were
+  // hand-maintained duplicates of the numbers already in
+  // `technicalSummary.values` above: the comparison table reprinted what the
+  // pricing card prints, and `plans.*.features` rendered nowhere at all --
+  // 40 English strings across 13 catalogs that no component read. The
+  // www-simplification pass deleted both, so the drift these checks existed to
+  // catch is now structurally impossible rather than merely detected.
+  //
+  // Check 1 above is unchanged and still covers every plan in PLAN_ORDER,
+  // including COMMUNITY, against PLAN_LIMITS and PLAN_MAX_MACHINES. The docs
+  // tables below are still checked too. If a fourth copy of these numbers ever
+  // appears, add a check for it here rather than re-adding these.
 }
 
 interface MarkdownTableSpec {

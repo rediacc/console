@@ -18,9 +18,9 @@ Temizleme, artık canlı bir kaynağa karşılık gelmeyen durumu tarar. Üç ko
 | `rdc machine prune <machine>` | Makine üzerindeki veri deposu yapıtaşları (her zaman); sahipsiz veya unknown depo görüntüleri (isteğe bağlı) | Yerel CLI yapılandırması + makinenin `.interim/state` aynası |
 | `rdc config prune` | Yerel yapılandırma artıkları (sertifika önbelleği, süresi dolmuş arşivler, askıdaki çapraz referanslar) | Yalnızca yerel CLI yapılandırması |
 
-Üçü birbirinden bağımsızdır. Herhangi birini diğerleri olmadan çalıştırabilirsiniz. Aşağıdaki [Güvenlik Modeli](#guvenlik-modeli) altında açıklanan ortak bir güvenlik modelini paylaşırlar.
+Üçü birbirinden bağımsızdır. Herhangi birini diğerleri olmadan çalıştırabilirsiniz. Aşağıdaki [Güvenlik Modeli](#safety-model) altında açıklanan ortak bir güvenlik modelini paylaşırlar.
 
-Temizleme, silinen kaynakların geride bıraktığı durumu kaldırır. *Canlı* depoların kapladığı alanı geri kazanmak için (dosya sistemlerinin serbest bıraktığı ancak havuzun hâlâ tuttuğu bloklar) bunun yerine [`rdc repo trim`](/tr/docs/repositories#alan-kazanma-trim) kullanın; ikisi birbirini tamamlar.
+Temizleme, silinen kaynakların geride bıraktığı durumu kaldırır. *Canlı* depoların kapladığı alanı geri kazanmak için (dosya sistemlerinin serbest bıraktığı ancak havuzun hâlâ tuttuğu bloklar) bunun yerine [`rdc repo trim`](/tr/docs/repositories#reclaim-space-trim) kullanın; ikisi birbirini tamamlar.
 
 ## Bağlama güvenliği ön denetimi
 
@@ -50,7 +50,7 @@ rdc storage prune my-s3 -m server-1 --force-delete-mounted
 
 ### Ne kontrol edilir
 
-1. Adlandırılmış depolamadaki tüm yedek GUID'lerini listeler (hem `hot/` hem de `cold/` alt dizinlerinde. Bkz. [Yedekleme ve Geri Yükleme](/tr/docs/backup-restore#zamanlanmis-yedeklemeler)).
+1. Adlandırılmış depolamadaki tüm yedek GUID'lerini listeler (hem `hot/` hem de `cold/` alt dizinlerinde. Bkz. [Yedekleme ve Geri Yükleme](/tr/docs/backup-restore#scheduled-backups)).
 2. Diskteki her yapılandırma dosyasını tarar (`~/.config/rediacc/*.json`).
 3. Bir yedek, GUID'si herhangi bir yapılandırmanın depolar bölümünde referans verilmiyorsa **sahipsizdir**.
 4. Ek süre içinde yakın zamanda arşivlenen depolar, aktif yapılandırmadan kaldırılmış olsalar bile **korunurlar**.
@@ -103,7 +103,7 @@ Bu **kabadır**. Yerel yapılandırmanızda olmayan her şeyi siler; başka ara�
 
 ### 3. Aşama: `--prune-unknown` (cerrahi)
 
-`--prune-unknown` ile CLI yalnızca **her iki** sinyalin de sınıflandıramadığı depoları siler: herhangi bir yerel yapılandırmada olmayan **ve** makinenin `.interim/state` aynasında çatal işaretli girişi olmayan (bkz. [Depolar. `Type` sütunu](/tr/docs/repositories#type-sutunu-ve-durum-aynasi)).
+`--prune-unknown` ile CLI yalnızca **her iki** sinyalin de sınıflandıramadığı depoları siler: herhangi bir yerel yapılandırmada olmayan **ve** makinenin `.interim/state` aynasında çatal işaretli girişi olmayan (bkz. [Depolar. `Type` sütunu](/tr/docs/repositories#type-column-and-the-state-mirror)).
 
 ```bash
 rdc machine prune server-1 --prune-unknown --dry-run

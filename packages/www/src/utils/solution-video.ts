@@ -35,12 +35,28 @@ export const VIDEO_LANGS = SITE_LOCALES;
 
 type VideoLang = (typeof VIDEO_LANGS)[number];
 
-export interface SolutionVideo {
+/** The three files one locale's solution video is made of. */
+export interface SolutionVideoUrls {
   landscape: string;
   vertical: string;
   poster: string;
+}
+
+export interface SolutionVideo extends SolutionVideoUrls {
   /** The language actually used. Falls back to 'en' only if a locale is missing entirely. */
   lang: VideoLang;
+}
+
+/**
+ * `loadManifest()` re-reads and re-parses the 448 KB manifest on EVERY call, with no cache
+ * of its own. Resolving one page used to cost 3 of those; offering all thirteen languages
+ * to the picker costs 39, on each of 21 solutions x 13 locales. One parse per build process
+ * is enough: the manifest is a committed build input and nothing rewrites it mid-build.
+ */
+let manifestMemo: ReturnType<typeof loadManifest> | null = null;
+function manifest(): ReturnType<typeof loadManifest> {
+  manifestMemo ??= loadManifest();
+  return manifestMemo;
 }
 
 function resolveUrl(slug: string, lang: VideoLang, field: 'mp4' | 'vertical' | 'poster'): string {
@@ -51,7 +67,6 @@ function resolveUrl(slug: string, lang: VideoLang, field: 'mp4' | 'vertical' | '
   };
   if (!VIDEO_CDN_BASE_URL) return localFallback[field];
 
-  const manifest = loadManifest();
   // VideoManifest types every level as Record<string, …>, so without
   // noUncheckedIndexedAccess TypeScript believes each index access always
   // resolves. It does not: a slug absent from the manifest yields undefined and
@@ -67,7 +82,7 @@ function resolveUrl(slug: string, lang: VideoLang, field: 'mp4' | 'vertical' | '
   const solutions: Record<
     string,
     Record<string, Record<string, { path?: string } | undefined> | undefined> | undefined
-  > = manifest.solutions;
+  > = manifest().solutions;
   const path = solutions[slug]?.[lang]?.[field]?.path;
   if (!path) return localFallback[field];
 
@@ -87,4 +102,34 @@ export function resolveSolutionVideo(slug: string, lang: Language): SolutionVide
     poster: resolveUrl(slug, used, 'poster'),
     lang: used,
   };
+}
+
+/**
+ * Every language this solution's video is published in, as a picker-ready map.
+ *
+ * Built at BUILD time and handed to the island as one prop, because
+ * `src/data/video-manifest.json` is 448 KB and covers every slug and every tutorial: a page
+ * needs 13 x 3 URLs for its own video and nothing else.
+ *
+ * The set is read off the manifest rather than assumed, so a slug published in nine locales
+ * offers nine. An empty manifest (fresh checkout, no publish yet) falls back to VIDEO_LANGS,
+ * which is what the local `/assets/videos/solutions/<lang>/...` paths serve.
+ */
+export function resolveSolutionVideoSources(slug: string): Record<string, SolutionVideoUrls> {
+  const solutions: Record<string, Record<string, unknown> | undefined> = manifest().solutions;
+  const published = solutions[slug];
+  const langs = published
+    ? VIDEO_LANGS.filter((l) => Boolean(published[l]))
+    : ([...VIDEO_LANGS] as VideoLang[]);
+  const use = langs.length > 0 ? langs : ([...VIDEO_LANGS] as VideoLang[]);
+
+  const out: Record<string, SolutionVideoUrls> = {};
+  for (const l of use) {
+    out[l] = {
+      landscape: resolveUrl(slug, l, 'mp4'),
+      vertical: resolveUrl(slug, l, 'vertical'),
+      poster: resolveUrl(slug, l, 'poster'),
+    };
+  }
+  return out;
 }

@@ -31,7 +31,7 @@ No blocklist entry. Verify with `scripts/check-actions.ts` locally, expecting ze
 
 **Quality/Security (07-25).** Run the audit gate and act on what it says. It may have
 self-healed via the documented sub-24h auto-defer. If a real vulnerability persists, fix it
-or add a `BLOCKER:` allowlist entry per `docs/agent/suppressions.md`. **The fix is running
+or add a `BLOCKER:` allowlist entry per `docs/agent-reference/suppressions.md`. **The fix is running
 the instrument, not guessing at it.**
 
 ### A2. Fix the reporting defect that hid all three
@@ -234,7 +234,7 @@ Rejected alternatives, with reasons, so this is not relitigated:
   than verification, and is **dishonest under smart CI** because skipped modules produce no
   data.
 - *"Changed source implies changed test" heuristic:* high false-positive rate on this repo's
-  wave-shaped PRs, and every false positive demands a suppression. `docs/agent/suppressions.md`
+  wave-shaped PRs, and every false positive demands a suppression. `docs/agent-reference/suppressions.md`
   requires a `BLOCKER:` reason **plus a liveness proof**, and a judgment call ("no test needed
   here") structurally cannot carry one. Blocking heuristics here converge on rot or blanket
   suppression.

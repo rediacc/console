@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Deny EVERY direct tool write to agent/<branch>/<session>/STATE.md.
+# Deny EVERY direct tool write to agent/<session>/STATE.md.
 #
 # WHY THIS EXISTS. The old compact-recovery handover lived at a TMPDIR path
 # nobody would ever open with Write, so a CLI-side refusal was a complete gate.
@@ -31,7 +31,7 @@
 # normal edits, TRAPS.md is appended by hand, and neither has a shape gate.
 #
 # WHY A REGEX AND NOT A `case` GLOB (2026-08-14, when the tree moved from
-# .agent/<branch>/ to agent/<branch>/<session>/). `case` globs are not
+# .agent/<branch>/ to a per-session directory). `case` globs are not
 # path-segment aware -- `*` happily eats `/` -- so `*/agent/*/STATE.md` does
 # match the deeper path, and would ALSO match anything anywhere whose path
 # merely contains a directory called `agent`. That breadth mattered little
@@ -42,10 +42,14 @@
 # nobody was making while looking exactly as green as a correct one.
 #
 # The regex is segment-aware: `agent` (or the legacy `.agent`) must start a
-# path component, and STATE.md must sit exactly one or two components below it
-# -- <branch>/<session>/STATE.md, the live shape, or <branch>/STATE.md, the
-# pre-split shape, which is blocked too because writing THERE is the same
-# mistake arriving one directory early. The docs trees are excluded outright:
+# path component, and STATE.md must sit exactly one or two components below it.
+# ONE component is the live shape as of 2026-08-18: agent/<session>/STATE.md,
+# with no branch in the path. TWO is kept deliberately, because both retired
+# shapes had one -- agent/<branch>/<session>/STATE.md before the branch left,
+# and .agent/<branch>/STATE.md before the split -- and a session running stale
+# instructions writes the old path, not a nonexistent one. Blocking a dead
+# shape costs one message; waving it through writes a document nothing reads.
+# The docs trees are excluded outright:
 # standing prose lives in docs/agent-reference/ and docs/agent/ is what it was
 # called before, and neither is this hook's business.
 #
@@ -62,5 +66,5 @@ case "$FILE" in
 esac
 [[ "$FILE" =~ (^|/)\.?agent/[^/]+/([^/]+/)?STATE\.md$ ]] || exit 0
 
-echo "❌ BLOCKED: STATE.md is not written by tools. It lives at agent/<branch>/<your-prefix>/STATE.md and only worklist.py writes it -- with the heading, the stamp and the lock that make it recoverable. A tool write puts an unstamped document at a path a peer may not even be the owner of, which is how a live campaign's state document was lost on 2026-08-09. Send YOUR BODY ALONE (250-4000 chars, with a '## Next action' section, no '## SESSION' heading -- the tool writes that) on stdin:  .claude/hooks/stop/worklist.py --state <your-prefix> <<'EOF' ... EOF   See agent/README.md (that tree is tracked, so it is in every clone; this message is the contract)." >&2
+echo "❌ BLOCKED: STATE.md is not written by tools. It lives at agent/<your-prefix>/STATE.md (no branch in the path) and only worklist.py writes it -- with the heading, the stamp and the lock that make it recoverable. A tool write puts an unstamped document at a path a peer may not even be the owner of, which is how a live campaign's state document was lost on 2026-08-09. Send YOUR BODY ALONE (250-4000 chars, with a '## Next action' section, no '## SESSION' heading -- the tool writes that) on stdin:  .claude/hooks/stop/worklist.py --state <your-prefix> <<'EOF' ... EOF   See agent/README.md (that tree is tracked, so it is in every clone; this message is the contract)." >&2
 exit 2

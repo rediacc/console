@@ -199,6 +199,26 @@ REGISTRY=(
     # is now a hard error naming the locale, so the only way left to make this gate
     # assert nothing is to take its input away -- which is exactly what this entry pins.
     "check-i18n-cross-locale.ts|Refusing to run"
+    # The eight www-simplification gates, plus the untranslated-text gate whose skip this
+    # replaced. EVERY ONE of them is root pattern 1 or 2 by construction -- each walks a
+    # hardcoded packages/www path -- so an empty tree is the exact shape that would make
+    # them print a checkmark over nothing. check-docs-untranslated-text.ts is the reason
+    # this block exists: it used to `exit 0` with "Docs directory not found, skipping",
+    # which is pattern 2 verbatim, and it was ALSO proven dead in the other direction (a
+    # wholly English paragraph in a German doc exited 0). A gate can be vacuous by having
+    # no input and vacuous by having no detector, and this repo has now paid for both.
+    "check-docs-untranslated-text.ts|Refusing to run"
+    "check-em-dash-surfaces.ts|Refusing to run"
+    "check-locale-config-divergence.ts|Refusing to run"
+    "check-dead-translation-keys.ts|Refusing to run"
+    "check-layout-overflow.ts|Refusing to run"
+    "check-hydration-clean.ts|Refusing to run"
+    "check-form-validation.ts|Refusing to run"
+    # These two read packages/www/dist rather than the source tree. Their refusal is the
+    # difference between them and check:ci-seo's built-HTML scan, which SELF-SKIPS without
+    # a dist and has therefore been vacuous on every developer machine for its whole life.
+    "check-anchor-integrity.ts|Refusing to run"
+    "check-client-bundle-budget.ts|Refusing to run"
     # NOT registered here: .ci/scripts/test/gates/test-skip-plan-reconcile.sh.
     # Measured, not assumed: it passes all 55 assertions against the empty tree,
     # because it is a pure unit test that builds every fixture it needs (its

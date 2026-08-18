@@ -1,0 +1,175 @@
+{
+  "hero": {
+    "install": {
+      "tabs": {
+        "linux": "Linux",
+        "macos": "macOS",
+        "windows": "Windows"
+      }
+    }
+  },
+  "pages": {
+    "downloads": {
+      "meta": {
+        "title": "Скачайте Rediacc CLI на все платформы | Rediacc",
+        "description": "Скачайте Rediacc CLI для Windows, macOS и Linux. Быстрая установка и автоматические обновления.",
+        "keywords": "скачать Rediacc, настольное приложение, CLI, приложение Windows, приложение macOS, приложение Linux"
+      },
+      "hero": {
+        "title": "Скачайте Rediacc CLI",
+        "subtitle": "Rediacc CLI",
+        "released": "Выпущено"
+      },
+      "sections": {
+        "cli": "Командная строка (CLI)"
+      },
+      "platforms": {
+        "windows": "Windows",
+        "macos": "macOS",
+        "linux": "Linux"
+      },
+      "architectures": {
+        "x64": "x64 (64-бит)",
+        "x64_intel": "Intel (x64)",
+        "arm64": "ARM64",
+        "arm64_apple": "Apple Silicon (ARM64)"
+      },
+      "actions": {
+        "download": "Скачать"
+      },
+      "cli": {
+        "description": "Компактный и быстрый инструмент для терминала. Подходит для серверов без экрана или для запуска одной команды сразу на многих машинах. Подключайтесь к серверам, выполняйте команды, отправляйте обновления. Браузер не нужен."
+      },
+      "noReleases": "Сейчас нет доступных релизов. Загляните позже.",
+      "autoUpdate": {
+        "title": "Информация об автообновлении",
+        "description": "Rediacc CLI обновляется сама. Она проверяет новые версии и устанавливает их за вас, так что вы всегда работаете с последним релизом."
+      },
+      "installation": {
+        "title": "Инструкции по установке",
+        "cli": "CLI: скачайте файл для вашей системы. На Linux/macOS откройте терминал, выполните chmod +x имяфайла и переместите его в /usr/local/bin."
+      },
+      "requirements": {
+        "title": "Системные требования",
+        "windows": "Windows 10 или новее (64-бит)",
+        "macos": "macOS 11 (Big Sur) или новее",
+        "linux": "Современный дистрибутив Linux с glibc 2.28+"
+      }
+    },
+    "install": {
+      "meta": {
+        "title": "Установка Rediacc CLI - быстрая настройка",
+        "description": "Установите Rediacc CLI на Linux, macOS или Windows через APT, DNF, npm или прямую загрузку.",
+        "keywords": "установить rediacc, apt install, dnf install, npm install, установка CLI"
+      },
+      "hero": {
+        "title": "Установить Rediacc CLI",
+        "subtitle": "Выберите предпочтительный способ установки",
+        "downloadsNote": "Ищете отдельные файлы CLI для загрузки?",
+        "downloadsLink": "Перейти на страницу загрузок"
+      },
+      "methods": {
+        "quick": {
+          "title": "Быстрая установка",
+          "description": "Рекомендуется - автоматическая установка с управлением версиями"
+        },
+        "apt": {
+          "title": "APT (Debian / Ubuntu)",
+          "description": "Для Debian, Ubuntu и производных"
+        },
+        "dnf": {
+          "title": "DNF (Fedora / RHEL)",
+          "description": "Для Fedora, RHEL, CentOS, Rocky Linux"
+        },
+        "apk": {
+          "title": "APK (Alpine Linux)",
+          "description": "Для Alpine Linux и производных"
+        },
+        "pacman": {
+          "title": "Pacman (Arch Linux)",
+          "description": "Для Arch Linux и производных"
+        },
+        "homebrew": {
+          "title": "Homebrew (macOS / Linux)",
+          "description": "Для пользователей macOS и Linux с Homebrew"
+        },
+        "binary": {
+          "title": "Прямая загрузка",
+          "description": "Автономный бинарный файл, менеджер пакетов не требуется"
+        },
+        "docker": {
+          "title": "Docker",
+          "description": "Для контейнерных сред"
+        }
+      },
+      "verify": {
+        "title": "Проверить установку"
+      },
+      "architectures": {
+        "title": "Поддерживаемые архитектуры",
+        "method": "Метод",
+        "platform": "Платформа"
+      },
+      "copy": "Копировать",
+      "copied": "Скопировано!",
+      "platformFilter": {
+        "all": "Все методы",
+        "label": "Фильтр по платформе"
+      }
+    },
+    "partners": {
+      "form": {
+        "fields": {
+          "contactName": "Ваше имя",
+          "contactNamePlaceholder": "Имя и фамилия",
+          "jobTitle": "Должность",
+          "jobTitlePlaceholder": "Ваша роль",
+          "email": "Рабочая почта",
+          "emailPlaceholder": "you@company.com",
+          "phone": "Телефон",
+          "phonePlaceholder": "Необязательно",
+          "company": "Название компании",
+          "companyPlaceholder": "Ваша компания",
+          "website": "Сайт",
+          "websitePlaceholder": "https://example.com",
+          "country": "Страна",
+          "countryPlaceholder": "Выберите страну",
+          "partnerTypes": "Как вы продаёте? Отметьте все подходящие варианты.",
+          "isDistributor": "Мы работаем как дистрибьютор и перепродаём через других партнёров.",
+          "howHeard": "Как вы о нас узнали?",
+          "howHeardPlaceholder": "Выберите вариант",
+          "message": "Хотите что-то добавить?",
+          "messagePlaceholder": "Расскажите о своём бизнесе и клиентах, с которыми работаете.",
+          "consent": "Я согласен(на), чтобы со мной связались по поводу партнёрской программы Rediacc."
+        },
+        "partnerTypeOptions": {
+          "reseller": "Реселлер",
+          "msp": "Поставщик управляемых услуг (MSP)",
+          "consultant": "Консультант",
+          "distributor": "Дистрибьютор",
+          "referral": "Реферальный партнёр"
+        },
+        "howHeardOptions": {
+          "search": "Поисковая система",
+          "referral": "Коллега или друг",
+          "event": "Мероприятие или вебинар",
+          "socialMedia": "Социальные сети",
+          "blog": "Блог или статья",
+          "other": "Другое"
+        },
+        "submit": "Отправить заявку",
+        "sending": "Отправка...",
+        "success": {
+          "title": "Заявка получена",
+          "body": "Спасибо за интерес. Мы читаем каждую заявку и скоро ответим по почте."
+        },
+        "errors": {
+          "requiredFields": "Пожалуйста, укажите имя, рабочую почту, компанию, страну и хотя бы один способ продаж.",
+          "consent": "Пожалуйста, согласитесь на связь с вами, чтобы мы могли ответить на заявку.",
+          "captcha": "Пожалуйста, пройдите проверку капчи, чтобы продолжить.",
+          "generic": "Что-то пошло не так. Попробуйте ещё раз."
+        }
+      }
+    }
+  }
+}

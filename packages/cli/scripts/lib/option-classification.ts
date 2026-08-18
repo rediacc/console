@@ -4,7 +4,7 @@
  * rendering format hint, and how prominent each is in a rendered form.
  *
  * Two kinds of table. Name tables key on an option's LONG (without dashes) and
- * apply everywhere that long appears — safe only when the long means the same
+ * apply everywhere that long appears, safe only when the long means the same
  * thing on every command. Override tables key on `<pathKey> --<long>` and win
  * over the name tables, for the cases where the same long means different
  * things (or nothing) per command.
@@ -12,7 +12,7 @@
  * Every override key is gated for staleness against the live tree
  * ({@link collectClassificationProblems}), copying the PROXY_EXCLUSIONS
  * pattern in generate-cli-contract.ts: a renamed command or flag must fail
- * generation loudly, because a stale key does not fail on its own — the lookup
+ * generation loudly, because a stale key does not fail on its own: the lookup
  * simply misses and the classification silently stops applying.
  */
 
@@ -34,8 +34,8 @@ import { at } from './table.js';
  * long `--strategy` on `repo migrate|pull|push` is the block-delta transfer
  * enum (`.choices(['auto','physical','shared'])`) and must NEVER map to the
  * `strategy` RESOURCE kind (backup strategies, the config's backupStrategies
- * family). The strategy resource is bound by POSITIONALS — the `<strategy>`
- * arguments of `backup strategy *` — via POSITIONAL_KIND_BY_NAME in the
+ * family). The strategy resource is bound by POSITIONALS (the `<strategy>`
+ * arguments of `backup strategy *`) via POSITIONAL_KIND_BY_NAME in the
  * generator, never by an option long.
  */
 export const OPTION_KINDS_BY_NAME: Readonly<Record<string, readonly ResourceKind[]>> = {
@@ -55,7 +55,7 @@ export const OPTION_KINDS_BY_NAME: Readonly<Record<string, readonly ResourceKind
 /**
  * A per-command kinds decision: either the kinds the option binds, or an
  * explicit waiver saying why a resource-noun long does NOT bind a resource on
- * this command. A waiver reason must carry its own explanation (≥30 chars) —
+ * this command. A waiver reason must carry its own explanation (≥30 chars),
  * the same bar as a BLOCKER comment.
  */
 export type OptionKindOverride = readonly ResourceKind[] | { readonly waived: string };
@@ -80,7 +80,7 @@ export const OPTION_KIND_OVERRIDES: Readonly<Record<string, OptionKindOverride>>
   'repo push --provision': ['provider'],
   'repo migrate --provision': ['provider'],
   // `--grand <name>` names the parent credential repository to share secrets
-  // with — a repo binding under a role name.
+  // with: a repo binding under a role name.
   'repo admin template apply --grand': ['repo'],
 
   // ── Waivers: the long is in the noun set, the option binds no resource ──
@@ -104,14 +104,14 @@ export const OPTION_KIND_OVERRIDES: Readonly<Record<string, OptionKindOverride>>
   },
   'repo merge --base': {
     waived:
-      'a common-ancestor commit GUID for the three-way merge, not a repository ref — FORMAT_OVERRIDES gives it format "guid" instead',
+      'a common-ancestor commit GUID for the three-way merge, not a repository ref, so FORMAT_OVERRIDES gives it format "guid" instead',
   },
 };
 
 /**
  * Longs that MUST resolve to a kinds decision: via {@link OPTION_KINDS_BY_NAME},
  * via {@link OPTION_KIND_OVERRIDES}, or via an explicit waiver. This is the
- * coverage gate's input — a new command reusing one of these resource-noun
+ * coverage gate's input: a new command reusing one of these resource-noun
  * longs cannot ship unclassified (a silent "no picker" degradation).
  */
 export const RESOURCE_NOUN_GATE: ReadonlySet<string> = new Set([
@@ -130,7 +130,7 @@ export const RESOURCE_NOUN_GATE: ReadonlySet<string> = new Set([
 /**
  * Longs whose value is a secret wherever they appear. Deliberately NOT here:
  * `--ssh-key` / `--key` (paths to key FILES, or public secret NAMES like
- * `repo secret --key` — the name is not the secret, the value is).
+ * `repo secret --key`, where the name is not the secret, the value is).
  */
 export const SENSITIVE_BY_NAME: ReadonlySet<string> = new Set([
   'token',
@@ -144,7 +144,7 @@ export const SENSITIVE_BY_NAME: ReadonlySet<string> = new Set([
 export const SENSITIVE_OVERRIDES: Readonly<Record<string, boolean>> = {
   // The secret plaintext itself; `--key` beside it is just the secret's name.
   'repo secret set --value': true,
-  // Rclone credentials as a JSON blob — a secret in run history even though
+  // Rclone credentials as a JSON blob: a secret in run history even though
   // the long says nothing secret-sounding.
   'storage add --vault': true,
 };
@@ -174,7 +174,7 @@ export const FORMAT_BY_NAME: Readonly<Record<string, FormatHint>> = {
   // percentages
   weight: 'percent',
   'grow-threshold': 'percent',
-  // bare numbers — verified against the live labels: `--older-than` is "in
+  // bare numbers, verified against the live labels: `--older-than` is "in
   // hours", `--timeout` is milliseconds, `--health-*` are seconds,
   // `--trim-interval` is hours, so none of them parse a duration string.
   concurrency: 'integer',
@@ -233,7 +233,7 @@ export const FORMAT_OVERRIDES: Readonly<Record<string, FormatHint | null>> = {
  * Entries on already-mandatory options (`repo fork --tag`, …) are deliberate:
  * they pin the promotion even if the flag ever stops being requiredOption().
  *
- * An override can NEVER demote a mandatory option to 'advanced' — gated in
+ * An override can NEVER demote a mandatory option to 'advanced', which is gated in
  * {@link collectClassificationProblems}.
  */
 export const TIER_OVERRIDES: Readonly<Record<string, OptionTier>> = {
@@ -313,7 +313,7 @@ type GateCommand = {
  *
  *   1. Staleness: every override key names a live command AND a flag that
  *      command declares (kinds/sensitive/format additionally require the flag
- *      to take a value — a boolean names no resource, carries no secret value,
+ *      to take a value, because a boolean names no resource, carries no secret value,
  *      renders no value control).
  *   2. Waiver quality: a kinds waiver must explain itself in ≥30 characters.
  *   3. Kind hygiene: every kinds array is nonempty and every member is a real
@@ -322,7 +322,7 @@ type GateCommand = {
  *   4. Coverage: every value-taking option whose long is in
  *      {@link RESOURCE_NOUN_GATE} resolves via name table, override, or waiver.
  *   5. Tier floor: an override can never demote a mandatory option to
- *      'advanced' — the CLI refuses to run without it, so a form can never be
+ *      'advanced': the CLI refuses to run without it, so a form can never be
  *      allowed to fold it out of sight.
  */
 export function collectClassificationProblems(commands: readonly GateCommand[]): string[] {
@@ -344,14 +344,14 @@ export function collectClassificationProblems(commands: readonly GateCommand[]):
     const cmd = byPath.get(pathKey);
     if (!cmd) {
       problems.push(
-        `${table}["${key}"]: no command "${pathKey}" — stale key, re-key it to the command's current name or delete it deliberately`
+        `${table}["${key}"]: no command "${pathKey}". Stale key: re-key it to the command's current name or delete it deliberately`
       );
       return undefined;
     }
     const opt = cmd.options.find((o) => o.long === long);
     if (!opt) {
       problems.push(
-        `${table}["${key}"]: "${pathKey}" declares no --${long} — stale key, re-key it to the flag's current long or delete it deliberately`
+        `${table}["${key}"]: "${pathKey}" declares no --${long}. Stale key: re-key it to the flag's current long or delete it deliberately`
       );
       return undefined;
     }
@@ -394,7 +394,7 @@ export function collectClassificationProblems(commands: readonly GateCommand[]):
     const opt = checkOverrideKey(key, 'TIER_OVERRIDES');
     if (opt && tier === 'advanced' && opt.mandatory) {
       problems.push(
-        `TIER_OVERRIDES["${key}"]: may not demote a mandatory option to "advanced" — the CLI refuses to run without it, so it can never fold out of sight`
+        `TIER_OVERRIDES["${key}"]: may not demote a mandatory option to "advanced". The CLI refuses to run without it, so it can never fold out of sight`
       );
     }
   }
@@ -407,7 +407,7 @@ export function collectClassificationProblems(commands: readonly GateCommand[]):
       if (at(OPTION_KIND_OVERRIDES, key) !== undefined) continue;
       if (at(OPTION_KINDS_BY_NAME, opt.long) !== undefined) continue;
       problems.push(
-        `${cmd.pathKey} --${opt.long}: resource-noun option is unclassified — add kinds via OPTION_KINDS_BY_NAME or OPTION_KIND_OVERRIDES, or waive it with { waived: '<why this long binds no resource here>' }`
+        `${cmd.pathKey} --${opt.long}: resource-noun option is unclassified. Add kinds via OPTION_KINDS_BY_NAME or OPTION_KIND_OVERRIDES, or waive it with { waived: '<why this long binds no resource here>' }`
       );
     }
   }

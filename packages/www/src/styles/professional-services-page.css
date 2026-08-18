@@ -22,7 +22,7 @@
 }
 
 .ps-hero h1 {
-  font-size: clamp(2.625rem, 4.2vw, 4rem);
+  font-size: var(--font-size-4xl);
   font-weight: var(--font-weight-bold);
   margin-bottom: var(--space-6);
   color: white;
@@ -30,7 +30,7 @@
 }
 
 .ps-hero .hero-subtitle {
-  font-size: clamp(1.25rem, 1.7vw, 1.5rem);
+  font-size: var(--font-size-xl);
   color: rgba(255, 255, 255, var(--opacity-90));
   max-width: var(--container-xs);
   margin: 0 auto var(--space-6);
@@ -72,7 +72,7 @@
 }
 
 .value-content h2 {
-  font-size: clamp(2.25rem, 3.8vw, 3rem);
+  font-size: var(--font-size-4xl);
   margin-bottom: var(--space-6);
   color: var(--color-text);
   font-weight: var(--font-weight-bold);
@@ -106,7 +106,7 @@
   font-size: var(--font-size-base);
   color: var(--color-text);
   line-height: var(--leading-normal);
-  transition: box-shadow var(--transition-duration-base) ease;
+  transition: box-shadow var(--transition-duration-base) var(--ease-standard);
 }
 
 .value-stat:hover {
@@ -137,7 +137,7 @@
 }
 
 .ps-packages-header h2 {
-  font-size: clamp(2rem, 3.5vw, 3rem);
+  font-size: var(--font-size-4xl);
   margin-bottom: var(--space-4);
   color: white;
 }
@@ -161,7 +161,7 @@
 }
 
 .ps-access-section .ps-access-intro h2 {
-  font-size: clamp(2rem, 3.5vw, 2.75rem);
+  font-size: var(--font-size-3xl);
   margin-bottom: var(--space-4);
   color: var(--color-text);
 }
@@ -199,7 +199,7 @@
 }
 
 .ps-details h2 {
-  font-size: clamp(1.75rem, 3vw, 2.5rem);
+  font-size: var(--font-size-3xl);
   font-weight: var(--font-weight-semibold);
   color: white;
   margin-bottom: var(--space-6);
@@ -224,7 +224,7 @@
 }
 
 .cta-content h2 {
-  font-size: clamp(2rem, 3.5vw, 2.75rem);
+  font-size: var(--font-size-3xl);
   margin-bottom: var(--space-4);
   color: var(--color-text);
 }
@@ -267,11 +267,11 @@
   }
 
   .ps-hero h1 {
-    font-size: clamp(2rem, 8vw, 2.625rem);
+    font-size: var(--font-size-2xl);
   }
 
   .ps-hero .hero-subtitle {
-    font-size: clamp(1rem, 4vw, 1.25rem);
+    font-size: var(--font-size-base);
   }
 
   .ps-hero .hero-badge {
@@ -285,7 +285,7 @@
   }
 
   .value-content h2 {
-    font-size: clamp(2rem, 8vw, 2.5rem);
+    font-size: var(--font-size-2xl);
   }
 
   .value-stats {

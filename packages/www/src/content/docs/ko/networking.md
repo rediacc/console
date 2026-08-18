@@ -142,7 +142,7 @@ labels:
    rdc machine infra push server-1
    ```
 
-2. 도메인을 서버의 공용 IP로 가리키는 DNS 레코드(아래 [DNS 구성](#dns-구성) 참조).
+2. 도메인을 서버의 공용 IP로 가리키는 DNS 레코드(아래 [DNS 구성](#dns-configuration) 참조).
 
 ### 레이블 추가
 

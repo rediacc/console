@@ -58,7 +58,7 @@ Makineler arası push ve pull, ikisine de ihtiyaç duymaz. Zaten yapılandırman
 
 ### rclone depolama yolu ortadan kalktı
 
-`rdc repo push --to <storage>` ve ilgili komutları, eskiden kendi kaydettiğiniz bir bulut sağlayıcısına tüm yedek dosyasını kopyalardı. Artık bir depolama hedefini reddediyor ve yerine geçeni adlandırıyorlar. Makineler arası aktarım hiçbir zaman rclone'dan geçmedi ve bundan etkilenmez. O yöntemle yazılmış bir arşivi hâlâ okumanız gerekiyorsa, [Kaldırılmadan Önce Yazılmış Bir Arşivi Okuma](#kaldırılmadan-önce-yazılmış-bir-arşivi-okuma) bölümüne bakın.
+`rdc repo push --to <storage>` ve ilgili komutları, eskiden kendi kaydettiğiniz bir bulut sağlayıcısına tüm yedek dosyasını kopyalardı. Artık bir depolama hedefini reddediyor ve yerine geçeni adlandırıyorlar. Makineler arası aktarım hiçbir zaman rclone'dan geçmedi ve bundan etkilenmez. O yöntemle yazılmış bir arşivi hâlâ okumanız gerekiyorsa, [Kaldırılmadan Önce Yazılmış Bir Arşivi Okuma](#reading-an-archive-written-before-the-retirement) bölümüne bakın.
 
 ### Chunk depolama komutları
 
@@ -344,7 +344,7 @@ rdc repo push shop:nightly@server-1 --to server-2
 rdc repo pull shop:nightly@server-1 --from server-2
 ```
 
-Tam seçenek listeleri [Bir Yedeği Başka Bir Makineye Gönderme](#bir-yedeği-başka-bir-makineye-gönderme) ve [Başka Bir Makineden Yedek Çekme](#başka-bir-makineden-yedek-çekme) bölümlerindedir.
+Tam seçenek listeleri [Bir Yedeği Başka Bir Makineye Gönderme](#push-a-backup-to-another-machine) ve [Başka Bir Makineden Yedek Çekme](#pull-a-backup-from-another-machine) bölümlerindedir.
 
 ## Zamanlanmış Yedeklemeler
 
@@ -437,7 +437,7 @@ Bu varsayılan, kasıtlıdır. Aynı veri deposuna karşı iki soğuk yedeklemey
 
 ### Anlık Görüntüler, Kesintiler ve Havuz Alanı
 
-Her push, anlık bir veri deposu anlık görüntüsünden çalışır; bu yüzden depolar yazmaya devam etse bile yüklenen veri tutarlıdır. Yedekleme çalışırken, o anlık görüntü canlı depolarla paylaştığı her bloğa referans vermeye devam eder: silmeler ve [kırpma](/tr/docs/repositories#alan-geri-kazanma-trim) döngü bitip anlık görüntü silinene kadar daha az havuz alanı serbest bırakır. [Depolama sağlığı raporu](/tr/docs/monitoring#depolama-sağlığı), yedekleme anlık görüntülerinin şu anda ne kadar alan tuttuğunu gösterir.
+Her push, anlık bir veri deposu anlık görüntüsünden çalışır; bu yüzden depolar yazmaya devam etse bile yüklenen veri tutarlıdır. Yedekleme çalışırken, o anlık görüntü canlı depolarla paylaştığı her bloğa referans vermeye devam eder: silmeler ve [kırpma](/tr/docs/repositories#reclaim-space-trim) döngü bitip anlık görüntü silinene kadar daha az havuz alanı serbest bırakır. [Depolama sağlığı raporu](/tr/docs/monitoring#storage-health), yedekleme anlık görüntülerinin şu anda ne kadar alan tuttuğunu gösterir.
 
 Kesintiler güvenlidir. Servisi durdurmak (veya makineyi yeniden başlatmak), yedeklemenin aktarımını iptal etmesine ve çıkmadan önce kendi anlık görüntüsünü silmesine neden olur; bir sonraki zamanlanmış çalıştırma kaldığı yerden devam eder, çünkü zaten depolanan hücreler yeniden yüklenmez. İşlem temizlenemeyecek kadar sert bir şekilde öldürülürse (elektrik kesintisi), sahipsiz kalan anlık görüntü, depolama bakımcısı tarafından dakikalar içinde otomatik olarak tespit edilip kaldırılır.
 
@@ -515,7 +515,7 @@ Bağlama, yapılandırmanızda makine üzerinde bir liste olarak kaydedilir; `rd
 }
 ```
 
-> **Bağlama yalnızca yerel yapılandırmadadır.** Bir strateji tanımlamak ve onu bir makineye bağlamak, makineye dokunmaz. systemd zamanlayıcılarını dağıtmak için `rdc backup schedule -m <machine>` çalıştırın ([Makineye Zamanlama Dağıtma](#makineye-zamanlama-dağıtma) bölümüne bakın) ve herhangi bir strateji veya bağlama değişikliğinden sonra yeniden çalıştırın.
+> **Bağlama yalnızca yerel yapılandırmadadır.** Bir strateji tanımlamak ve onu bir makineye bağlamak, makineye dokunmaz. systemd zamanlayıcılarını dağıtmak için `rdc backup schedule -m <machine>` çalıştırın ([Makineye Zamanlama Dağıtma](#deploy-schedule-to-machine) bölümüne bakın) ve herhangi bir strateji veya bağlama değişikliğinden sonra yeniden çalıştırın.
 
 ## Sıcak ile Soğuk Arasında Seçim Yapma ve Depo Başına Filtreleme
 
@@ -530,7 +530,7 @@ Bağlama, yapılandırmanızda makine üzerinde bir liste olarak kaydedilir; `rd
 
 **Sıcak**, yüksek sıklıklı çalıştırmalar için doğru varsayılandır. Anlık görüntü alınırken servisler çalışmaya devam eder; bu yüzden uygulamalarınız için hiç kesinti yoktur. Anlık görüntü çökme tutarlıdır: temiz olmayan bir kapanmadan sonra elde edeceğinizle eşdeğerdir. Çoğu modern veritabanı ve mesaj kuyruğu için bu yeterlidir.
 
-**Soğuk**, garantili, uygulama tutarlı bir anlık görüntüye ihtiyacınız olduğunda ve depo başına kısa bir yeniden başlatmayı kabul edebiliyorsanız uygundur. Servisler anlık görüntüden önce durdurulur ve yükleme başlamadan önce yeniden başlatılır; bu yüzden yavaş veya başarısız bir yükleme kesinti penceresini asla uzatmaz. Tam garanti modeli için [Soğuk Yedekleme Semantiği](#soğuk-yedekleme-semantiği) bölümüne bakın.
+**Soğuk**, garantili, uygulama tutarlı bir anlık görüntüye ihtiyacınız olduğunda ve depo başına kısa bir yeniden başlatmayı kabul edebiliyorsanız uygundur. Servisler anlık görüntüden önce durdurulur ve yükleme başlamadan önce yeniden başlatılır; bu yüzden yavaş veya başarısız bir yükleme kesinti penceresini asla uzatmaz. Tam garanti modeli için [Soğuk Yedekleme Semantiği](#cold-backup-semantics) bölümüne bakın.
 
 Her iki mod da aynı chunk deposuna yazar. Modun belirlediği şey, imaj dondurulurken deponun nasıl ele alınacağıdır, verinin nereye yerleştiği değil. Hem saatlik sıcak hem de haftalık soğuk zamanlama tarafından kapsanan bir depo, paylaştığı hücreleri iki kez değil, bir kez saklar.
 
@@ -563,7 +563,7 @@ rdc backup strategy set weekly-cold \
 - Bir depo büyükse ve zaten birim üzerinde bulunan kaynak veriden **tamamen yeniden üretilebiliyorsa**, her saatlik yedekleme anlamlı bir kurtarma değeri katmadan bant genişliği harcar.
 - Yedekleme çalıştırması, kullanılabilir yükleme hızında kendi zamanlama aralığını aşacaksa.
 
-**Örnek.** Bir `analytics-demo` deposu, aynı birim içinde saklanan ham CSV döküntülerinden yeniden oluşturulabilecek yaklaşık 114 GB türetilmiş Postgres tablosu tutar. 6 MB/s'lik bir yükleme sınırında, o deponun ilk anlık görüntüsü 5 saatten fazla sürer. Bunu saatlik çalıştırmak, bir sonraki tetiklenme geldiğinde her çalıştırmanın hâlâ devam ediyor olması anlamına gelir; bu yüzden sonraki her tetiklenme sessizce atlanır ([Uzun Süren Yedeklemeler ve Çakışan Zamanlamalar](#uzun-süren-yedeklemeler-ve-çakışan-zamanlamalar) bölümüne bakın). Diğer depoları `hourly-hot`'ta listelemek ve `analytics-demo`'yu `weekly-cold`'a bırakmak, onun hiç yedeklenmemesi yerine haftada bir yedeklenmesi anlamına gelir.
+**Örnek.** Bir `analytics-demo` deposu, aynı birim içinde saklanan ham CSV döküntülerinden yeniden oluşturulabilecek yaklaşık 114 GB türetilmiş Postgres tablosu tutar. 6 MB/s'lik bir yükleme sınırında, o deponun ilk anlık görüntüsü 5 saatten fazla sürer. Bunu saatlik çalıştırmak, bir sonraki tetiklenme geldiğinde her çalıştırmanın hâlâ devam ediyor olması anlamına gelir; bu yüzden sonraki her tetiklenme sessizce atlanır ([Uzun Süren Yedeklemeler ve Çakışan Zamanlamalar](#long-running-backups-and-overlapping-schedules) bölümüne bakın). Diğer depoları `hourly-hot`'ta listelemek ve `analytics-demo`'yu `weekly-cold`'a bırakmak, onun hiç yedeklenmemesi yerine haftada bir yedeklenmesi anlamına gelir.
 
 > **Veri tamamen yeniden üretilebilirse**, onu hiç yedeklemeniz gerekip gerekmediğini düşünün. Bir alternatif, yalnızca ham kaynak girdileri (bu örnekte CSV döküntülerini) yedeklemek ve türetilmiş kopyayı tamamen atlamaktır. Kaynak girdilerin haftalık soğuk yedeklemesi çok daha küçüktür ve kurtarma için tamamen yeterlidir.
 

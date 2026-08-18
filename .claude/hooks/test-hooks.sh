@@ -2,7 +2,7 @@
 # Smoke-test every guard hook by feeding sample tool_input JSON and asserting the exit code.
 # Usage: bash .claude/hooks/test-hooks.sh   (run after `/hooks` reload; needs jq)
 # NOTE: suppression test tokens are concatenated at runtime ("@ts-""ignore") so this file's
-# text never contains the literal banned token — otherwise the suppressions guard blocks it.
+# text never contains the literal banned token, otherwise the suppressions guard blocks it.
 set -u
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PASS=0
@@ -44,7 +44,7 @@ check_out() {
 bash_json() { printf '{"tool_input":{"command":%s}}' "$(jq -Rn --arg c "$1" '$c')"; }
 edit_json() { printf '{"tool_input":{"new_string":%s}}' "$(jq -Rn --arg c "$1" '$c')"; }
 multiedit_json() { printf '{"tool_input":{"edits":[{"new_string":%s}]}}' "$(jq -Rn --arg c "$1" '$c')"; }
-# wf_edit_json <file_path> <new_string> — Edit payload carrying a target file path.
+# wf_edit_json <file_path> <new_string>: Edit payload carrying a target file path.
 wf_edit_json() { printf '{"tool_input":{"file_path":%s,"new_string":%s}}' "$(jq -Rn --arg c "$1" '$c')" "$(jq -Rn --arg c "$2" '$c')"; }
 # tool_json <tool_name> <file_path> <content-or-new_string field> <value>
 tool_json() { printf '{"tool_name":%s,"tool_input":{"file_path":%s,%s:%s}}' "$(jq -Rn --arg c "$1" '$c')" "$(jq -Rn --arg c "$2" '$c')" "\"$3\"" "$(jq -Rn --arg c "$4" '$c')"; }
@@ -242,16 +242,19 @@ check 2 pre-edit/block-inline-workflow-run.sh "$(wf_edit_json '.github/workflows
 # .agent/<branch>/ to agent/<branch>/<session>/ (2026-08-14), every one of
 # these cases would have kept passing against the OLD path while the guard
 # stopped covering the new one, and the suite would have reported that as
-# green. The live shape is asserted first, and the two-level pre-split shape
-# after it, because writing THERE is the same mistake one directory early.
-check_out 2 pre-edit/block-agent-state-shape.sh "$(tool_json Write /r/agent/b/s/STATE.md content tiny)" "agent-state: thin Write blocked" "worklist.py --state"
-check_out 2 pre-edit/block-agent-state-shape.sh "$(tool_json Write /r/agent/b/s/STATE.md content "$STATE_AIMLESS")" "agent-state: aimless Write (no Next action) blocked" "worklist.py --state"
-check_out 2 pre-edit/block-agent-state-shape.sh "$(tool_json Edit /r/agent/b/s/STATE.md new_string patch)" "agent-state: Edit blocked (rewrite, never append)" "agent/<branch>/<your-prefix>/STATE.md"
-check_out 2 pre-edit/block-agent-state-shape.sh "$(tool_json MultiEdit /r/agent/b/s/STATE.md new_string patch)" "agent-state: MultiEdit blocked" "worklist.py --state"
-# The session level is where the document lives now, so the guard must reach it
-# at DEPTH: a pattern anchored one level too high leaves the real path open.
-check_out 2 pre-edit/block-agent-state-shape.sh "$(tool_json Write /r/monorepo/console/agent/0814-1/deadbeef/STATE.md content "$STATE_GOOD")" "agent-state: the real session-level path is reached, deep in an absolute path" "agent/<branch>/<your-prefix>/STATE.md"
-check_out 2 pre-edit/block-agent-state-shape.sh "$(tool_json Write /r/agent/b/STATE.md content "$STATE_GOOD")" "agent-state: the pre-split branch-level path is blocked too" "worklist.py --state"
+# green. It moved AGAIN on 2026-08-18, when the branch left the path and
+# agent/<session>/STATE.md became the live shape, so the same hazard applies to
+# these very lines: the live one-level shape is asserted FIRST, and the retired
+# two-level shapes after it, because writing THERE is a session running stale
+# instructions rather than a path nobody would ever try.
+check_out 2 pre-edit/block-agent-state-shape.sh "$(tool_json Write /r/agent/deadbeef/STATE.md content tiny)" "agent-state: thin Write blocked" "worklist.py --state"
+check_out 2 pre-edit/block-agent-state-shape.sh "$(tool_json Write /r/agent/deadbeef/STATE.md content "$STATE_AIMLESS")" "agent-state: aimless Write (no Next action) blocked" "worklist.py --state"
+check_out 2 pre-edit/block-agent-state-shape.sh "$(tool_json Edit /r/agent/deadbeef/STATE.md new_string patch)" "agent-state: Edit blocked (rewrite, never append)" "agent/<your-prefix>/STATE.md"
+check_out 2 pre-edit/block-agent-state-shape.sh "$(tool_json MultiEdit /r/agent/deadbeef/STATE.md new_string patch)" "agent-state: MultiEdit blocked" "worklist.py --state"
+# The live path must be reached at DEPTH inside an absolute path too: a pattern
+# anchored at the string start leaves every real checkout open.
+check_out 2 pre-edit/block-agent-state-shape.sh "$(tool_json Write /r/monorepo/console/agent/deadbeef/STATE.md content "$STATE_GOOD")" "agent-state: the real session path is reached, deep in an absolute path" "agent/<your-prefix>/STATE.md"
+check_out 2 pre-edit/block-agent-state-shape.sh "$(tool_json Write /r/agent/0814-1/deadbeef/STATE.md content "$STATE_GOOD")" "agent-state: the retired branch/session path is blocked too" "worklist.py --state"
 check_out 2 pre-edit/block-agent-state-shape.sh "$(tool_json Write /r/.agent/b/STATE.md content "$STATE_GOOD")" "agent-state: the legacy dotted path is blocked too" "worklist.py --state"
 
 # --- should PASS (exit 0) ---
@@ -417,7 +420,7 @@ check 0 pre-bash/block-premature-ready.sh "$(bash_json 'gh pr view 531')" "prema
 check 0 pre-bash/block-premature-ready.sh "$(bash_json $'cat >> log.md <<EOF\ngreen-gated `gh pr ready` + hook-banned --admin\nEOF')" "premature-ready: prose mention in heredoc ignored"
 check 0 pre-bash/block-admin-merge.sh "$(bash_json $'cat >> log.md <<EOF\nthe old flow used gh pr merge --admin, now banned\nEOF')" "admin-merge: prose mention in heredoc ignored"
 # Even a command-position-looking mention inside a heredoc BODY is data, not a
-# command, and must not fire (heredoc-body stripping — the FP that fired on a
+# command, and must not fire (heredoc-body stripping, the FP that fired on a
 # worklist write).
 check 0 pre-bash/block-admin-merge.sh "$(bash_json $'cat >> log.md <<EOF\n; gh pr merge 531 --admin\nEOF')" "admin-merge: command-position mention in heredoc body ignored"
 # Regression: a multi-line quoted COMMIT MESSAGE mentioning the commands (with
@@ -426,7 +429,7 @@ COMMITMSG=$'git commit -m "feat: x\n\n- gh pr ready is hook-gated; gh pr merge -
 check 0 pre-bash/block-premature-ready.sh "$(bash_json "$COMMITMSG")" "premature-ready: quoted commit-msg mention ignored"
 check 0 pre-bash/block-admin-merge.sh "$(bash_json "$COMMITMSG")" "admin-merge: quoted commit-msg --admin mention ignored"
 # --auto on a rediacc repo now verifies review hygiene LIVE (report reply +
-# threads), which this offline harness cannot assert — that path is covered
+# threads), which this offline harness cannot assert, and that path is covered
 # by the hook's manual live proofs. Offline we prove the non-rediacc
 # early-exit still holds for --auto.
 check 0 pre-bash/block-admin-merge.sh "$(bash_json 'gh pr merge 7 --squash --auto --repo otherorg/tool')" "admin-merge: --auto on non-rediacc repo ignored"
@@ -463,9 +466,9 @@ check 0 pre-edit/block-suppressions.sh "$(edit_json 'const x = 1;')" "suppressio
 # that is the hole the incident went through. It is now denied like every other
 # direct write, and it lives up in the deny block above only in spirit -- it is
 # asserted here, beside its controls, so the pair reads as one decision.
-check_out 2 pre-edit/block-agent-state-shape.sh "$(tool_json Write /r/agent/b/s/STATE.md content "$STATE_GOOD")" "agent-state: well-shaped Write is ALSO blocked (shape was never the defect)" "worklist.py --state"
+check_out 2 pre-edit/block-agent-state-shape.sh "$(tool_json Write /r/agent/deadbeef/STATE.md content "$STATE_GOOD")" "agent-state: well-shaped Write is ALSO blocked (shape was never the defect)" "worklist.py --state"
 # The controls that keep the guard from being a blanket denial: it must not
-# reach RULES.md (sharpened by ordinary edits), the branch-level plans, the
+# reach RULES.md (sharpened by ordinary edits), the root-level plans, the
 # tree's own README, or anything outside the notes tree at all.
 #
 # EVERY ONE OF THESE IS A NEGATIVE: exit 0 is also what a guard that matches
@@ -476,11 +479,12 @@ check_out 2 pre-edit/block-agent-state-shape.sh "$(tool_json Write /r/agent/b/s/
 # what proves the guard fires at all: break the pattern in the hook so it
 # matches nothing, and THEY go red while every line below stays green. That
 # one-minute mutation is how this block was checked rather than assumed.
-check 0 pre-edit/block-agent-state-shape.sh "$(tool_json Edit /r/agent/b/s/RULES.md new_string sharpen)" "agent-state: RULES.md edits untouched"
+check 0 pre-edit/block-agent-state-shape.sh "$(tool_json Edit /r/agent/RULES.md new_string sharpen)" "agent-state: the shared RULES.md edits untouched"
+check 0 pre-edit/block-agent-state-shape.sh "$(tool_json Edit /r/agent/deadbeef/RULES.md new_string sharpen)" "agent-state: a session's own RULES.md untouched"
 check 0 pre-edit/block-agent-state-shape.sh "$(tool_json Write /r/packages/cli/src/foo.ts content tiny)" "agent-state: non-agent files untouched"
 check 0 pre-edit/block-agent-state-shape.sh "$(tool_json Write /r/.agent/TRAPS.md content "$STATE_GOOD")" "agent-state: TRAPS.md untouched"
 check 0 pre-edit/block-agent-state-shape.sh "$(tool_json Write /r/agent/README.md content "$STATE_GOOD")" "agent-state: the notes tree README untouched"
-check 0 pre-edit/block-agent-state-shape.sh "$(tool_json Write /r/agent/b/PLAN-thing.md content "$STATE_GOOD")" "agent-state: branch-level plan files untouched"
+check 0 pre-edit/block-agent-state-shape.sh "$(tool_json Write /r/agent/PLAN-thing.md content "$STATE_GOOD")" "agent-state: root-level plan files untouched"
 # The docs trees are committed prose that this guard must not own, and they are
 # the paths a `*/agent/*/STATE.md` pattern would swallow by accident. Both
 # names are asserted: the standing docs live in docs/agent-reference/ since the

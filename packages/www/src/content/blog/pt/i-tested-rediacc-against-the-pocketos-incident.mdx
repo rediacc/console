@@ -25,7 +25,7 @@ import YouTubeEmbed from '../../../components/YouTubeEmbed.astro';
 
 <YouTubeEmbed videoId="o-Bst9rO9Fk" title="I Tested Rediacc Against the PocketOS Incident" />
 
-> **Atualização. Maio 2026.** Desde a publicação deste artigo, o Rediacc lançou **segredos por repositório** de primeira classe (`rdc repo secret`). A "lacuna honesta" descrita abaixo -- credenciais SaaS externas incorporadas no seu repositório -- tem agora uma resposta integrada que mantém os segredos completamente fora da imagem LUKS, para que os forks não herdem nenhum por predefinição. Avance para a nova secção final [Atualização: a lacuna é agora colmatável](#atualização-a-lacuna-é-agora-colmatável) para o que foi lançado, o que mudou e o risco residual que permanece.
+> **Atualização. Maio 2026.** Desde a publicação deste artigo, o Rediacc lançou **segredos por repositório** de primeira classe (`rdc repo secret`). A "lacuna honesta" descrita abaixo -- credenciais SaaS externas incorporadas no seu repositório -- tem agora uma resposta integrada que mantém os segredos completamente fora da imagem LUKS, para que os forks não herdem nenhum por predefinição. Avance para a nova secção final [Atualização: a lacuna é agora colmatável](#update-the-gap-is-now-closeable) para o que foi lançado, o que mudou e o risco residual que permanece.
 
 No fim de semana passado, Jer Crane publicou um postmortem de 30 horas. Um agente Cursor a correr o Claude Opus 4.6 da Anthropic apagou a base de dados de produção dele no Railway. A eliminação foi uma única chamada GraphQL. Demorou 9 segundos. Os backups de volume do Railway foram com ela porque o Railway os armazena dentro do mesmo volume.
 

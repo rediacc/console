@@ -1,0 +1,175 @@
+{
+  "hero": {
+    "install": {
+      "tabs": {
+        "linux": "Linux",
+        "macos": "macOS",
+        "windows": "Windows"
+      }
+    }
+  },
+  "pages": {
+    "downloads": {
+      "meta": {
+        "title": "Rediacc CLI를 모든 플랫폼에서 완전 무료로 다운로드하세요 | Rediacc",
+        "description": "Windows, macOS, Linux용 Rediacc CLI를 다운로드하세요. 빠른 설치와 자동 업데이트를 지원합니다.",
+        "keywords": "Rediacc 다운로드, 데스크톱 애플리케이션, CLI, Windows 앱, macOS 앱, Linux 앱"
+      },
+      "hero": {
+        "title": "Rediacc CLI 다운로드",
+        "subtitle": "Rediacc CLI",
+        "released": "출시됨"
+      },
+      "sections": {
+        "cli": "명령줄 인터페이스 (CLI)"
+      },
+      "platforms": {
+        "windows": "Windows",
+        "macos": "macOS",
+        "linux": "Linux"
+      },
+      "architectures": {
+        "x64": "x64 (64비트)",
+        "x64_intel": "Intel (x64)",
+        "arm64": "ARM64",
+        "arm64_apple": "Apple Silicon (ARM64)"
+      },
+      "actions": {
+        "download": "다운로드"
+      },
+      "cli": {
+        "description": "터미널에서 실행하는 가볍고 빠른 도구입니다. 화면 없이 관리하는 서버나 여러 대의 기기에서 동시에 같은 명령을 실행할 때 유용합니다. 서버에 연결하고 명령을 실행하고 업데이트를 배포할 수 있으며, 브라우저는 필요하지 않습니다."
+      },
+      "noReleases": "현재 사용 가능한 릴리스가 없습니다. 나중에 다시 확인해 주세요.",
+      "autoUpdate": {
+        "title": "자동 업데이트 정보",
+        "description": "Rediacc CLI는 스스로 업데이트됩니다. 새 버전을 확인해서 자동으로 설치해 주므로 항상 최신 버전을 사용할 수 있습니다."
+      },
+      "installation": {
+        "title": "설치 안내",
+        "cli": "CLI: 시스템에 맞는 파일을 다운로드하세요. Linux/macOS에서는 터미널을 열고 'chmod +x filename'을 실행한 후 /usr/local/bin으로 이동하세요."
+      },
+      "requirements": {
+        "title": "시스템 요구 사항",
+        "windows": "Windows 10 이상 (64비트)",
+        "macos": "macOS 11 (Big Sur) 이상",
+        "linux": "glibc 2.28 이상의 최신 Linux 배포판"
+      }
+    },
+    "install": {
+      "meta": {
+        "title": "Rediacc CLI 설치하기: 빠른 설정으로 모든 플랫폼에서 시작하세요",
+        "description": "Rediacc CLI를 APT, DNF, npm, 직접 다운로드 등으로 Linux, macOS, Windows에 설치하세요.",
+        "keywords": "rediacc 설치, apt install, dnf install, npm install, CLI 설치"
+      },
+      "hero": {
+        "title": "Rediacc CLI 설치",
+        "subtitle": "원하는 설치 방법을 선택하세요",
+        "downloadsNote": "CLI 바이너리를 직접 찾고 계신가요?",
+        "downloadsLink": "다운로드 페이지 보기"
+      },
+      "methods": {
+        "quick": {
+          "title": "빠른 설치",
+          "description": "권장. 자동으로 설치하고 업데이트합니다."
+        },
+        "apt": {
+          "title": "APT (Debian / Ubuntu)",
+          "description": "Debian, Ubuntu 및 파생 배포판용"
+        },
+        "dnf": {
+          "title": "DNF (Fedora / RHEL)",
+          "description": "Fedora, RHEL, CentOS, Rocky Linux용"
+        },
+        "apk": {
+          "title": "APK (Alpine Linux)",
+          "description": "Alpine Linux 및 파생 배포판용"
+        },
+        "pacman": {
+          "title": "Pacman (Arch Linux)",
+          "description": "Arch Linux 및 파생 배포판용"
+        },
+        "homebrew": {
+          "title": "Homebrew (macOS / Linux)",
+          "description": "Homebrew를 사용하는 macOS, Linux 사용자용"
+        },
+        "binary": {
+          "title": "직접 다운로드",
+          "description": "패키지 관리자 없이 바로 실행할 수 있는 파일"
+        },
+        "docker": {
+          "title": "Docker",
+          "description": "Docker 사용자용"
+        }
+      },
+      "verify": {
+        "title": "설치 확인"
+      },
+      "architectures": {
+        "title": "지원 아키텍처",
+        "method": "방법",
+        "platform": "플랫폼"
+      },
+      "copy": "복사",
+      "copied": "복사됨!",
+      "platformFilter": {
+        "all": "전체 방법",
+        "label": "플랫폼별 필터"
+      }
+    },
+    "partners": {
+      "form": {
+        "fields": {
+          "contactName": "이름",
+          "contactNamePlaceholder": "성과 이름",
+          "jobTitle": "직함",
+          "jobTitlePlaceholder": "담당 업무",
+          "email": "업무용 이메일",
+          "emailPlaceholder": "you@company.com",
+          "phone": "전화번호",
+          "phonePlaceholder": "선택 사항",
+          "company": "회사명",
+          "companyPlaceholder": "회사명을 입력하세요",
+          "website": "웹사이트",
+          "websitePlaceholder": "https://example.com",
+          "country": "국가",
+          "countryPlaceholder": "국가를 선택하세요",
+          "partnerTypes": "어떤 방식으로 판매하시나요? 해당하는 항목을 모두 선택하세요.",
+          "isDistributor": "당사는 유통업체로서 다른 파트너를 통해 재판매합니다.",
+          "howHeard": "저희를 어떻게 알게 되셨나요?",
+          "howHeardPlaceholder": "선택하세요",
+          "message": "추가로 전달할 내용이 있나요?",
+          "messagePlaceholder": "귀사와 담당 고객층에 대해 알려주세요.",
+          "consent": "Rediacc 파트너 프로그램 관련 연락에 동의합니다."
+        },
+        "partnerTypeOptions": {
+          "reseller": "리셀러",
+          "msp": "매니지드 서비스 제공업체",
+          "consultant": "컨설턴트",
+          "distributor": "유통업체",
+          "referral": "리퍼럴 파트너"
+        },
+        "howHeardOptions": {
+          "search": "검색 엔진",
+          "referral": "동료 또는 지인",
+          "event": "행사 또는 웨비나",
+          "socialMedia": "소셜 미디어",
+          "blog": "블로그 또는 기사",
+          "other": "기타"
+        },
+        "submit": "신청서 제출",
+        "sending": "전송 중...",
+        "success": {
+          "title": "신청이 접수되었습니다",
+          "body": "관심 가져주셔서 감사합니다. 모든 신청서를 검토한 후 곧 이메일로 답변드리겠습니다."
+        },
+        "errors": {
+          "requiredFields": "이름, 업무용 이메일, 회사명, 국가, 판매 방식을 최소 한 가지 이상 입력해 주세요.",
+          "consent": "신청서에 답변드릴 수 있도록 연락 수신에 동의해 주세요.",
+          "captcha": "계속하려면 캡차를 완료해 주세요.",
+          "generic": "문제가 발생했습니다. 다시 시도해 주세요."
+        }
+      }
+    }
+  }
+}

@@ -22,10 +22,10 @@ import fs from 'node:fs';
 import https from 'node:https';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { BLUE, DIM, GREEN, NC, RED, YELLOW } from './utils/console.js';
 import { collectActionRefs } from './lib/action-refs.js';
 import { parseBlockeredList, verifyAllBlockers } from './lib/blocker-validator.js';
 import { getMinReleaseAgeMs, isWithinFreshnessWindow } from './lib/release-age.js';
+import { BLUE, DIM, GREEN, NC, RED, YELLOW } from './utils/console.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const CONSOLE_ROOT = path.resolve(__dirname, '..');
@@ -538,7 +538,9 @@ async function checkActions(): Promise<void> {
       `\n  ${DIM}These are real upgrades held back by the release-age window, the same one`
     );
     console.log(`  .npmrc enforces with minimum-release-age and the Go/npm gates apply via`);
-    console.log(`  is_release_deferred. They become normal findings once the window passes.${NC}\n`);
+    console.log(
+      `  is_release_deferred. They become normal findings once the window passes.${NC}\n`
+    );
   }
 
   if (blocked.length > 0) {
@@ -599,8 +601,12 @@ async function checkActions(): Promise<void> {
     console.log(
       `${DIM}  Nothing was verified, so "up-to-date" would be a claim about data this run never saw.`
     );
-    console.log('  Most likely the anonymous GitHub API rate limit: set GITHUB_TOKEN (or GH_TOKEN)');
-    console.log(`  and re-run. CI already sets one, so this is usually a local-only condition.${NC}`);
+    console.log(
+      '  Most likely the anonymous GitHub API rate limit: set GITHUB_TOKEN (or GH_TOKEN)'
+    );
+    console.log(
+      `  and re-run. CI already sets one, so this is usually a local-only condition.${NC}`
+    );
     console.log(`${RED}GitHub Actions check FAILED${NC}`);
     process.exit(1);
   }

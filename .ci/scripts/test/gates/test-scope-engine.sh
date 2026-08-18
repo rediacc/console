@@ -288,14 +288,14 @@ test_docs_only_delta_reduces_everything() {
 }
 
 test_agent_notes_tree_is_a_zero_job_module() {
-    # `agent/` is the TRACKED agent working-notes root: agent/<branch>/<session
-    # prefix>/STATE.md, agent/<branch>/PLAN-*.md, agent/programs/<slug>/. It is
+    # `agent/` is the TRACKED agent working-notes root: agent/<session
+    # prefix>/STATE.md, agent/PLAN-*.md, agent/programs/<slug>/. It is
     # tracked, so every write lands in the delta, and STATE.md is rewritten many
     # times per session. Unclassified it would be full CI each time -- the exact
     # cost this rule exists to remove.
     {
-        printf 'agent/0815-1/97604f47/STATE.md\n'
-        printf 'agent/0815-1/PLAN-agent-folder-migration.md\n'
+        printf 'agent/97604f47/STATE.md\n'
+        printf 'agent/PLAN-agent-folder-migration.md\n'
         printf 'agent/programs/backup-storage/CHECKLIST.md\n'
     } | plan
     assert_eq "$(pget 'p.mode')" "reduced" "an agent/-only delta is reduced, never full"
@@ -325,7 +325,7 @@ process.stdout.write(hits.length ? hits.join(",") : "none");
     # CONTROL C: zero jobs is earned per-delta, not a constant for this rule.
     # One cli file riding along pulls the cli keys back in.
     {
-        printf 'agent/0815-1/97604f47/STATE.md\n'
+        printf 'agent/97604f47/STATE.md\n'
         printf 'packages/cli/src/index.ts\n'
     } | plan
     assert_eq "$(pget 'p.jobs.unit.run')" "true" "a cli path beside the notes pulls unit back in"
@@ -651,14 +651,14 @@ test_representative_deltas_classify_to_pinned_verdicts() {
     # The tracked agent/ notes root. STATE.md is rewritten many times per
     # session, so this row is the one that decides whether a session costs
     # nothing or seventy minutes a write.
-    expect_classify "agent session state only" "reduced|18|" 'agent/0815-1/97604f47/STATE.md'
+    expect_classify "agent session state only" "reduced|18|" 'agent/97604f47/STATE.md'
     expect_classify "agent plan + program suite" "reduced|18|" \
-        'agent/0815-1/PLAN-agent-folder-migration.md' \
+        'agent/PLAN-agent-folder-migration.md' \
         'agent/programs/backup-storage/CHECKLIST.md'
     # The over-eager-skip direction for the same tree: session notes must not
     # SUPPRESS a real module riding in the same delta.
     expect_classify "MIXED agent notes + one cli file" "reduced|18|$cli_keys" \
-        'agent/0815-1/97604f47/STATE.md' 'packages/cli/src/commands/repo.ts'
+        'agent/97604f47/STATE.md' 'packages/cli/src/commands/repo.ts'
     # The over-eager-skip direction: a gate source must not SUPPRESS a real
     # module that another file in the same delta pulls in.
     expect_classify "MIXED gate source + one cli file" "reduced|18|$cli_keys" \

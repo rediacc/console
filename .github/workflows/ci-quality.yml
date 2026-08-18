@@ -248,6 +248,15 @@ jobs:
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: npm run check:ci-gate-id-convention
 
+      # A gate test that writes into the real tree must run in run-all.sh's serial
+      # W chain. Left in the parallel pool it corrupts a concurrent reader and
+      # presents as an unrelated gate going red in a file that parses clean on the
+      # serial re-run -- a concurrency artifact, the most expensive failure shape
+      # here. test-generate-tag-inputs.sh was misfiled that way until 2026-08-17.
+      - name: Pool-registered tests do not write the real tree
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: npm run check:ci-pool-writer-safety
+
       # A review that runs out of turns posts NOTHING and still spends an attempt against a
       # finite allowance, so an under-resourced budget is the expensive failure, not the
       # cheap one. Asserts the budget cannot starve any diff size it is willing to route.
@@ -701,6 +710,24 @@ jobs:
 
       # Source-only content gate. check:ci-seo/-redirects/-cta-bolt all need a
       # built www, so they live in quality-www-build instead.
+      - name: CSS DOM references
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: npm run check:ci-css-dom-refs
+      - name: SVG theme reach
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: npm run check:ci-svg-theme-reach
+      - name: Dead CSS
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: npm run check:ci-dead-css
+      # Fourth pin kind to join the shared soak window, after npm deps, embedded assets
+      # and GitHub Actions. DOCKERHUB_TOKEN keeps Docker Hub's anonymous rate limit from
+      # making this vacuous; without it a limited response is reported as unknown and the
+      # gate FAILS rather than pretending everything is current.
+      - name: Docker image freshness
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        env:
+          DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+        run: npm run check:ci-docker-image-freshness
       - name: Pricing consistency
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: npm run check:ci-pricing-consistency
@@ -708,6 +735,16 @@ jobs:
       - name: Validate per-locale tutorial video assets exist
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: npm run check:ci-locale-tutorial-assets
+
+      - name: Validate tutorial card fonts cover every locale
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: |
+          # This gate reads real font files, so the faces the cards are mapped to
+          # must exist here. DejaVu Sans is vendored in-tree; these three are not.
+          # Package names verified against the apt index, not guessed.
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq fonts-inter fonts-jetbrains-mono fonts-wqy-zenhei
+          npm run check:ci-tutorial-card-fonts
 
       - name: Validate localized solution videos exist
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
@@ -1112,6 +1149,23 @@ jobs:
       - name: Redirects
         if: ${{ !cancelled() && steps.build-www.outcome == 'success' }}
         run: npm run check:ci-redirects
+      # Runs inside the official Playwright container, so the runner needs no browser and
+      # no `playwright install`. The image comes from mcr.microsoft.com, which serves it
+      # anonymously and does NOT rate limit, so this needs no docker login and cannot fail
+      # with "toomanyrequests". See .ci/scripts/quality/browser-smoke.sh.
+      - name: Browser smoke
+        if: ${{ !cancelled() && steps.build-www.outcome == 'success' }}
+        run: npm run check:ci-browser-smoke
+      # One <main> per built page. The duplicate-landmark defect sat on 1,120 of 1,842
+      # pages through nine waves because no gate looked at document structure.
+      - name: Landmarks
+        if: ${{ !cancelled() && steps.build-www.outcome == 'success' }}
+        run: npm run check:ci-landmarks
+      # Each locale's BUILT html must carry that locale's strings. A browser-driven check
+      # cannot see this: hydration corrects the text before it looks.
+      - name: SSR locale
+        if: ${{ !cancelled() && steps.build-www.outcome == 'success' }}
+        run: npm run check:ci-ssr-locale
 
       - name: SEO
         if: ${{ !cancelled() && steps.build-www.outcome == 'success' }}

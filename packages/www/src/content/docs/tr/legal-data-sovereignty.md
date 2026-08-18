@@ -82,3 +82,7 @@ Tüm yetki alanlarında uyumluluk denklemi aynıdır:
 | Üçüncü taraf işleyici sorumluluğu | Evet | Hayır |
 | Şifreleme kontrolü | Sağlayıcı tarafından yönetilen anahtarlar | Sizin LUKS kimlik bilgileriniz, yerel olarak saklanır |
 | Klonlama/hazırlık verileri | Sınırları geçebilir veya kontrolünüzden çıkabilir | Aynı makinede CoW, aynı yetki alanı |
+
+## Barındırılan Hizmet: Bölgesel Veri Yerleşimi
+
+Barındırılan Rediacc hizmetinin kullanıcıları için (kendi sunucunuzda barındırılan değil), veri yerleşimi bölgesel altyapı aracılığıyla sağlanır. Üç bölge kullanılabilir: AB (Frankfurt), ABD (Virginia) ve Asya Pasifik (Tokyo). Her bölge, bölgeler arası veri akışı olmadan bağımsız veritabanları ve depolama çalıştırır. İşlemsel e-postalar AWS SES üzerinden teslim edilir; AB ve ABD özel bölgesel uç noktalar kullanır, Asya Pasifik ise AB uç noktasını (eu-central-1) kullanır. AB bölgesi, R2 depolamada yargı yetkisi zorlaması uygular. Tam teknik döküm için [Veri Bölgeleri](/tr/docs/data-regions) sayfasına bakın.

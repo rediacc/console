@@ -10,21 +10,6 @@ export const getStaticPaths = getLanguagePaths;
 
 const { lang } = Astro.params as { lang: Language };
 const { t } = createTranslator(lang);
-
-const heroTerminalLines = [
-  { type: 'command' as const, prompt: '❯', cmd: 'rdc repo fork production', flag: '', value: '' },
-  { type: 'check' as const, text: 'Cloning production (3.2 TB)', result: 'done in 4.7s' },
-  { type: 'check' as const, text: 'Mounting staging', result: 'ready' },
-  { type: 'success' as const, text: 'Created: staging (0 bytes additional storage)' },
-  { type: 'spacer' as const },
-  { type: 'command' as const, prompt: '❯', cmd: 'rdc term', flag: 'staging', value: 'mail' },
-  { type: 'check' as const, text: 'Connecting to staging/mail', result: 'connected' },
-  { type: 'spacer' as const },
-  { type: 'command' as const, prompt: '❯', cmd: 'rdc cluster fork prod', flag: '--tag', value: 'staging' },
-  { type: 'check' as const, text: 'Cloning cluster images + RBD volumes', result: 'copy-on-write' },
-  { type: 'success' as const, text: 'Created: prod-staging (whole Kubernetes cluster, 46s)' },
-];
-
 ---
 
 <BaseLayout
@@ -35,5 +20,5 @@ const heroTerminalLines = [
   ogType="website"
   structuredDataType="organization"
 >
-  <SPHomePage lang={lang} heroTerminalLines={heroTerminalLines} />
+  <SPHomePage lang={lang} />
 </BaseLayout>

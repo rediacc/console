@@ -28,22 +28,24 @@ const CATEGORY_KEYS: Record<string, string> = {
 };
 function categoryLabel(cat: string): string {
   const k = CATEGORY_KEYS[cat];
-  return k ? t(k) : cat;
+  // The schema (src/content/config.ts) restricts category to this vocabulary.
+  // Failing loudly here keeps the invariant if the two lists ever drift: the
+  // silent fallback used to render the raw frontmatter string as a seventh tab.
+  if (!k) throw new Error(`Unknown docs category "${cat}"; expected one of: ${Object.keys(CATEGORY_KEYS).join(', ')}`);
+  return t(k);
 }
 
 const allDocs = await getCollection('docs');
 const docs = allDocs
   .filter((doc) => doc.data.language === currentLang)
   .sort((a, b) => {
-    const categorySort = (a.data.category || 'other').localeCompare(
-      b.data.category || 'other'
-    );
+    const categorySort = a.data.category.localeCompare(b.data.category);
     if (categorySort !== 0) return categorySort;
     return (a.data.order ?? 999) - (b.data.order ?? 999);
   });
 
 const docsByCategory = docs.reduce((acc, doc) => {
-  const category = doc.data.category || 'Other';
+  const category = doc.data.category;
   if (!acc[category]) acc[category] = [];
   acc[category].push(doc);
   return acc;
@@ -120,11 +122,17 @@ const categories = Object.keys(docsByCategory).sort((a, b) => {
 </script>
 
 <style>
+  /* `flex: 1 1 auto` with `min-width: 0`. The `flex: 1` here was inert until
+     .docs-header-row became a real flex container; now that it is one, the
+     min-width is what lets this strip shrink below its content width so the
+     tabs scroll horizontally instead of pushing the search and theme controls
+     off the end of the row. */
   .docs-top-tabs {
     border-bottom: none;
     overflow-x: auto;
     scrollbar-width: thin;
-    flex: 1;
+    flex: 1 1 auto;
+    min-width: 0;
   }
 
   .docs-top-tabs-list {
@@ -143,7 +151,10 @@ const categories = Object.keys(docsByCategory).sort((a, b) => {
   .docs-top-tab-link {
     display: inline-flex;
     align-items: center;
-    height: 3rem;
+    /* Same token the sticky chrome's min-height and the anchor offset read, so
+       a change to the chrome's height moves all three together. It used to be
+       this literal 3rem in two files and a third copy inside a calc(). */
+    height: var(--docs-chrome-height, 3rem);
     color: var(--color-text-secondary);
     text-decoration: none;
     font-size: var(--font-size-sm);

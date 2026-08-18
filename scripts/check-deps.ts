@@ -23,9 +23,9 @@ import fs from 'node:fs';
 import https from 'node:https';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { BLUE, GREEN, NC, RED, YELLOW } from './utils/console.js';
 import { parseBlockeredList, verifyAllBlockers } from './lib/blocker-validator.js';
 import { getMinReleaseAgeMs, isWithinFreshnessWindow } from './lib/release-age.js';
+import { BLUE, GREEN, NC, RED, YELLOW } from './utils/console.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const CONSOLE_ROOT = path.resolve(__dirname, '..');
@@ -68,7 +68,7 @@ interface PackageInfo {
  */
 function categorizePackages(
   outdated: Record<string, OutdatedPackageInfo>,
-  blocklist: Map<string, BlocklistEntry>,
+  blocklist: Map<string, BlocklistEntry>
 ): { mustUpgrade: PackageInfo[]; blocked: PackageInfo[] } {
   const mustUpgrade: PackageInfo[] = [];
   const blocked: PackageInfo[] = [];
@@ -170,7 +170,7 @@ function loadBlocklist(): Map<string, BlocklistEntry> {
     console.error(`${RED}✗${NC} BLOCKER validation failed for ${BLOCKLIST_FILE}:`);
     for (const f of failures) console.error(f);
     console.error(
-      `\n${RED}✗${NC} Blocklist entries must carry a substantive '# BLOCKER: <reason>' — strict gate enforced`,
+      `\n${RED}✗${NC} Blocklist entries must carry a substantive '# BLOCKER: <reason>' — strict gate enforced`
     );
     process.exit(1);
   }
@@ -248,7 +248,7 @@ function runNpmOutdated(cwd: string, extraArgs = ''): Record<string, OutdatedPac
     throw new DepsProbeError(
       `\`${command}\` produced no output in ${path.relative(CONSOLE_ROOT, cwd) || '.'}. ` +
         'That is a probe that did not run, not a clean result. ' +
-        `stderr: ${stderr.trim() || '(empty)'}`,
+        `stderr: ${stderr.trim() || '(empty)'}`
     );
   }
 
@@ -258,7 +258,7 @@ function runNpmOutdated(cwd: string, extraArgs = ''): Record<string, OutdatedPac
   } catch {
     throw new DepsProbeError(
       `\`${command}\` returned unparseable output in ${path.relative(CONSOLE_ROOT, cwd) || '.'}. ` +
-        `stderr: ${stderr.trim() || '(empty)'}`,
+        `stderr: ${stderr.trim() || '(empty)'}`
     );
   }
   if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
@@ -276,7 +276,7 @@ function runNpmOutdated(cwd: string, extraArgs = ''): Record<string, OutdatedPac
   if (errorPayload) {
     throw new DepsProbeError(
       `\`${command}\` could not reach the registry from ${path.relative(CONSOLE_ROOT, cwd) || '.'}: ` +
-        `${errorPayload.code ?? 'unknown'} ${errorPayload.summary ?? ''}`.trim(),
+        `${errorPayload.code ?? 'unknown'} ${errorPayload.summary ?? ''}`.trim()
     );
   }
   return parsed as Record<string, OutdatedPackageInfo>;
@@ -418,7 +418,10 @@ const publishTimeCache = new Map<string, number | null>();
  * npm registry's `time` map. Returns null on any failure (treated as installable
  * so a registry hiccup never silently suppresses a real upgrade).
  */
-async function fetchVersionPublishTime(packageName: string, version: string): Promise<number | null> {
+async function fetchVersionPublishTime(
+  packageName: string,
+  version: string
+): Promise<number | null> {
   const cacheKey = `${packageName}@${version}`;
   if (publishTimeCache.has(cacheKey)) {
     return publishTimeCache.get(cacheKey) ?? null;
@@ -474,7 +477,7 @@ async function fetchVersionPublishTime(packageName: string, version: string): Pr
 async function partitionByReleaseAge(
   packages: PackageInfo[],
   minReleaseAgeMs: number,
-  nowMs: number,
+  nowMs: number
 ): Promise<{ installable: PackageInfo[]; tooNew: PackageInfo[] }> {
   if (minReleaseAgeMs <= 0 || packages.length === 0) {
     return { installable: packages, tooNew: [] };
@@ -490,7 +493,7 @@ async function partitionByReleaseAge(
       } else {
         installable.push(pkg);
       }
-    }),
+    })
   );
   return { installable, tooNew };
 }
@@ -508,7 +511,7 @@ function formatPackage(pkg: PackageInfo): string {
  */
 function printPackage(
   pkg: PackageInfo,
-  opts: { suffix?: string; changelogUrls?: Map<string, string | null> } = {},
+  opts: { suffix?: string; changelogUrls?: Map<string, string | null> } = {}
 ): void {
   console.log(`  ${formatPackage(pkg)}${opts.suffix ?? ''}`);
   if (pkg.reason) {
@@ -527,7 +530,7 @@ function printPackage(
 function printPackageGroup(
   header: string,
   packages: PackageInfo[],
-  opts: { suffix?: string; changelogUrls?: Map<string, string | null> } = {},
+  opts: { suffix?: string; changelogUrls?: Map<string, string | null> } = {}
 ): void {
   if (packages.length === 0) return;
   console.log(header);
@@ -628,7 +631,9 @@ function upgradePackages(packages: PackageInfo[]): boolean {
 function upgradePrivatePackages(dir: string, packages: PackageInfo[]): boolean {
   if (packages.length === 0) return true;
 
-  console.log(`${BLUE}Upgrading ${packages.length} package(s) in ${path.relative(CONSOLE_ROOT, dir)}...${NC}\n`);
+  console.log(
+    `${BLUE}Upgrading ${packages.length} package(s) in ${path.relative(CONSOLE_ROOT, dir)}...${NC}\n`
+  );
   for (const pkg of packages) {
     const majorTag = isMajorUpgrade(pkg.current, pkg.latest) ? ' (major)' : '';
     console.log(`  ${pkg.name}: ${pkg.current} -> ${pkg.latest}${majorTag}`);
@@ -698,8 +703,12 @@ async function checkDependencies(): Promise<void> {
   const privateBlocked: Array<{ dir: string; name: string; packages: PackageInfo[] }> = [];
 
   for (const { dir, name, packages } of privateOutdated) {
-    const { mustUpgrade: dirMustUpgrade, blocked: dirBlocked } = categorizePackages(packages, blocklist);
-    if (dirMustUpgrade.length > 0) privateMustUpgradeAll.push({ dir, name, packages: dirMustUpgrade });
+    const { mustUpgrade: dirMustUpgrade, blocked: dirBlocked } = categorizePackages(
+      packages,
+      blocklist
+    );
+    if (dirMustUpgrade.length > 0)
+      privateMustUpgradeAll.push({ dir, name, packages: dirMustUpgrade });
     if (dirBlocked.length > 0) privateBlocked.push({ dir, name, packages: dirBlocked });
   }
 
@@ -710,12 +719,20 @@ async function checkDependencies(): Promise<void> {
   const minReleaseAgeMs = getMinReleaseAgeMs();
   const nowMs = Date.now();
 
-  const { installable: mustUpgrade, tooNew } = await partitionByReleaseAge(mustUpgradeAll, minReleaseAgeMs, nowMs);
+  const { installable: mustUpgrade, tooNew } = await partitionByReleaseAge(
+    mustUpgradeAll,
+    minReleaseAgeMs,
+    nowMs
+  );
 
   const privateMustUpgrade: Array<{ dir: string; name: string; packages: PackageInfo[] }> = [];
   const privateTooNew: Array<{ dir: string; name: string; packages: PackageInfo[] }> = [];
   for (const { dir, name, packages } of privateMustUpgradeAll) {
-    const { installable, tooNew: dirTooNew } = await partitionByReleaseAge(packages, minReleaseAgeMs, nowMs);
+    const { installable, tooNew: dirTooNew } = await partitionByReleaseAge(
+      packages,
+      minReleaseAgeMs,
+      nowMs
+    );
     if (installable.length > 0) privateMustUpgrade.push({ dir, name, packages: installable });
     if (dirTooNew.length > 0) privateTooNew.push({ dir, name, packages: dirTooNew });
   }
@@ -764,7 +781,7 @@ async function checkDependencies(): Promise<void> {
 
   // Check mode - fetch changelog URLs for all packages that will be displayed.
   const allPrivatePackages = [privateMustUpgrade, privateBlocked, privateTooNew].flatMap((g) =>
-    g.flatMap((p) => p.packages),
+    g.flatMap((p) => p.packages)
   );
   const allPackages = [...mustUpgrade, ...blocked, ...tooNew, ...allPrivatePackages];
   const changelogUrls = await fetchChangelogUrls(allPackages);
@@ -774,7 +791,9 @@ async function checkDependencies(): Promise<void> {
 
   printPackageGroup(`${RED}Outdated packages (must upgrade):${NC}`, mustUpgrade, { changelogUrls });
   for (const { name: dirName, packages: pkgs } of privateMustUpgrade) {
-    printPackageGroup(`${RED}Outdated packages in ${dirName} (must upgrade):${NC}`, pkgs, { changelogUrls });
+    printPackageGroup(`${RED}Outdated packages in ${dirName} (must upgrade):${NC}`, pkgs, {
+      changelogUrls,
+    });
   }
 
   if (hasFailure) {
@@ -787,7 +806,9 @@ async function checkDependencies(): Promise<void> {
   // the freshness window (deferred until the next UTC day after aging 24h) and
   // surface as a batch once eligible.
   if (totalTooNew > 0) {
-    console.log(`${YELLOW}Too new — within freshness window, deferred until next UTC day (${totalTooNew}):${NC}`);
+    console.log(
+      `${YELLOW}Too new — within freshness window, deferred until next UTC day (${totalTooNew}):${NC}`
+    );
     console.log();
     for (const pkg of tooNew) {
       printPackage(pkg, { changelogUrls });
@@ -860,20 +881,20 @@ function selftest(): void {
     if (child.status === 0) {
       console.error(
         `${RED}\u2717${NC} CONTROL DID NOT FIRE for ${label}: the gate still exited 0.\n` +
-          '  That is the exact fail-open this control exists to prevent (see runNpmOutdated).',
+          '  That is the exact fail-open this control exists to prevent (see runNpmOutdated).'
       );
       process.exit(1);
     }
     if (!output.includes(expect)) {
       console.error(
         `${RED}\u2717${NC} the gate failed for ${label}, but without the expected message\n` +
-          `  (${expect}), so the failure may be incidental. Output was:\n${output}`,
+          `  (${expect}), so the failure may be incidental. Output was:\n${output}`
       );
       process.exit(1);
     }
     if (output.includes('All dependencies are up-to-date')) {
       console.error(
-        `${RED}\u2717${NC} the gate printed the up-to-date claim while failing on ${label}.`,
+        `${RED}\u2717${NC} the gate printed the up-to-date claim while failing on ${label}.`
       );
       process.exit(1);
     }
@@ -881,7 +902,7 @@ function selftest(): void {
 
   console.log(
     `${GREEN}\u2713${NC} control fired on both shapes: an unrunnable probe and an unreachable ` +
-      'registry each fail the gate instead of passing it',
+      'registry each fail the gate instead of passing it'
   );
   process.exit(0);
 }
@@ -895,7 +916,7 @@ if (process.argv.includes('--selftest')) {
       console.error(`${RED}✗${NC} dependency probe failed: ${error.message}`);
       console.error(
         `${RED}✗${NC} Refusing to report "up-to-date" from a check that did not run.\n` +
-          '  If the registry is unreachable, fix that and re-run; do not treat this as a pass.',
+          '  If the registry is unreachable, fix that and re-run; do not treat this as a pass.'
       );
       process.exit(1);
     }
