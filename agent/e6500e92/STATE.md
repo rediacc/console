@@ -1,68 +1,55 @@
-## SESSION e6500e92 2026-08-18T22:25:50Z
+## SESSION e6500e92 2026-08-18T23:16:18Z
 
-# pr-babysit 0818-1 is LIVE, round 7 pending. Two PRs open. Nothing merged.
+# pr-babysit 0818-1 LIVE, round 8 fixes UNCOMMITTED and about to be pushed.
 
-Round log is the real memory and outranks this file:
-`/home/muhammed/.claude/projects/-home-muhammed-monorepo-console/reports/pr-babysit-0818-1.md`.
-Read its wave header plus STATUS block first. `.claude/agents/pr-babysitter.md` is the
-authoritative mechanics. I am the babysitter, the operator is the principal, so tier-3 items
-are DECIDED and logged, never asked.
+Round log outranks this file:
+`/home/muhammed/.claude/projects/-home-muhammed-monorepo-console/reports/pr-babysit-0818-1.md`
+(wave header + STATUS block first). `.claude/agents/pr-babysitter.md` is the mechanics. I am
+the babysitter, the operator is the principal, so tier-3 items are DECIDED and logged.
 
-## What exists
+## PRs and heads
 
-- **console rediacc/console#569**, DRAFT, branch `0818-1`, head **`f400ea5a`**.
-  Body refreshed, lastEditedAt 22:24:22Z (the gate reads lastEditedAt; a push bumps only
-  updatedAt, so verify with the GraphQL query, not `--json updatedAt`).
-- **account rediacc/account#80**, head `d4094cc7`, review answered and its gate verified by
+- **console rediacc/console#569**, DRAFT, branch `0818-1`, pushed head **`603abd7f`**.
+- **account rediacc/account#80**, head `d4094cc7`, review answered, its gate verified by
   running `check-review-report-replies.sh` against the live PR, exit 0.
-- Commits: `97d7c55c` snapshot (1,168 files, net -19,790) | `6509aa14` ruff |
-  `f8cb19fa` CLI translation cascade | `8eeea7eb` three gate fixes | `42987536` English
-  prose dashes | `c99888c9` fast-xml-parser | `f400ea5a` CLI docs + landing validator.
+- 8 commits so far, from `97d7c55c` (snapshot, 1,168 files, net -19,790) to `603abd7f`.
 
-## CI
+## UNCOMMITTED right now: round 8's fixes, 26 files
 
-Run **32192531059** on `f400ea5a` IN FLIGHT. Watch armed as background task `b30r2i27r`,
-heartbeat cron `76e2b5f2` at :23. Per-run trend, which is how to judge progress:
+Fixing run 32193329425's two reds (`Quality / i18n`, `Quality / Code`). All verified locally:
+`check:format`, `em-dash-surfaces`, `dead-css`, `css-dom-refs`, `layout-overflow`,
+`search-index`, `docs-structure-parity`, `hydration-clean`, `tsc` (www AND cli) all exit 0.
+**`check:lint` is still running** (an ~8 minute eslint pass); it went 17 problems to 3 to an
+expected 0. Do not commit until it confirms.
 
-| run | head | failed | cancelled |
-|---|---|---|---|
-| 32185916813 | 97d7c55c | 2 | 8 |
-| 32187986317 | f8cb19fa | 3 | several |
-| 32190029665 | 8eeea7eb | 1 deps | 7 |
-| 32190465172 | 42987536 | 1 same deps | 6 |
-| 32191315429 | c99888c9 | 1 i18n | 4 |
-| 32192531059 | f400ea5a | in flight | in flight |
+The 26 files are: regenerated `public/search-index*.json` (14), two drained
+`docs-structure-parity` BASELINE entries, `eslint.config.js` (node globals for
+`packages/www/src/plugins/*.mjs`), and the lint fixes in `card-fonts.ts`,
+`check-tutorial-card-fonts.ts`, `check-docker-image-freshness.ts`, `check-layout-overflow.ts`,
+`Overlay.tsx`, plus `react-lint`'s four React files.
 
-Every round's fix has HELD in the following run, confirmed in its log. **Always count
-CANCELLED separately**: a cancelled job did not pass, it did not run, and it is invisible to
-a `conclusion=="failure"` filter.
+## The four lint findings each had a DIFFERENT right answer
 
-## The one rule this wave keeps re-learning
-
-**Changing `packages/cli/src/i18n/locales/**` invalidates THREE generated trees**, each
-gated in a different CI lane so they surface one run apart:
-
-- `packages/shared/src/cli-contract/data/**` -> `npm run generate:cli-contract -w @rediacc/cli`
-- `.claude/skills/rdc/reference.md` -> `packages/cli/scripts/generate-skill-reference.ts`
-  (writes to STDOUT, redirect it)
-- `packages/www/src/content/docs/<lang>/cli-application.md` -> `npm run generate:cli-docs -w @rediacc/www`
-
-All CLI i18n work is DONE: 13 catalogs at an identical 1,763-key set, zero key drift, zero
-placeholder drift, zero em dashes, prose double-hyphens cleared, all three trees regenerated,
-`check:i18n` green end to end over 434 lines.
+Worth knowing before touching them again: delete an unused parameter (config policy is
+delete, not underscore); correct a lying type (`Record<string, string>` hid that indexing
+yields undefined at runtime); restructure to a length test when the checker will not accept a
+nullish guard; and DECLINE the rule where its own suggestion changes behaviour
+(`Overlay.tsx`: `||` treats an empty title as absent, `??` would render an empty header).
+None of them was a suppression.
 
 ## Next action
 
-1. Re-check the run DIRECTLY (`gh api repos/rediacc/console/actions/runs/32192531059`)
-   rather than trusting the watch, which can drop silently. Re-arm freely.
+1. Read `/tmp/claude-1000/lint5.out` for `LINT-EXIT`. If 0, stage SURGICALLY (`git add -A` is
+   banned post-snapshot), commit, refresh the PR body so it GENUINELY changes (the gate reads
+   `lastEditedAt`, not `updatedAt`), push once, then arm a terminal-state watch with the
+   `until [ status = completed ]` poll in a background task. Never `gh run watch`.
 2. Per red: read the COMPLETE failed-step log via
-   `gh api repos/rediacc/console/actions/jobs/<id>/logs`. Fix at root, plant a control,
-   stage SURGICALLY (`git add -A` is banned post-snapshot), refresh the PR body so it
-   genuinely changes, push once, re-arm.
+   `gh api repos/rediacc/console/actions/jobs/<id>/logs`. Count CANCELLED separately; a
+   cancelled job did not pass, it did not run.
 3. At green: `gh pr ready 569`, then the Claude review, then reply substantively to every
    thread and resolve them. **Never merge, never push `main`.** Tear down cron `76e2b5f2`
    and say so in the final report.
 
-Then still open: `#2e0695cf`, steps 6-8 of `agent/PLAN-cli-em-dash-lint-gate.md`, adding
-`packages/cli/{src/i18n/locales,scripts}` to the em-dash gate at ZERO and baselining the
-~951 JSDoc residue in `packages/cli/src`. Sequenced after green.
+Still open after that: `#2e0695cf`, steps 6-8 of `agent/PLAN-cli-em-dash-lint-gate.md`
+(add `packages/cli/{src/i18n/locales,scripts}` to the em-dash gate at ZERO, baseline the
+`packages/cli/src` JSDoc residue), deliberately sequenced after green.
