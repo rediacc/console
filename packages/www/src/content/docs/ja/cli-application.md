@@ -1,7 +1,7 @@
 ---
 title: "CLIアプリケーション"
 description: "プラットフォーム管理のためのRediaccコマンドラインインターフェースの完全ガイド"
-category: "Reference"
+category: "リファレンス"
 order: 2
 language: ja
 generated: true

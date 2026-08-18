@@ -138,6 +138,27 @@ export function getAllLandingTerminalCommandsForLanguage(lang) {
   return [...fromTranslations, ...getHomepageTerminalCommands()];
 }
 
+/**
+ * How many landing TERMINAL SOURCES exist, as distinct from how many COMMANDS they yield.
+ *
+ * The validator refuses on a zero command count, correctly: a landing page with no rdc
+ * commands usually means the collector broke, and reporting success on an empty scan is the
+ * exact failure this program keeps finding. But zero has two causes and they need opposite
+ * responses. If a source EXISTS and yields nothing, the collector is broken. If no source
+ * exists at all, there is genuinely nothing to validate, and that is a fact about the site.
+ *
+ * This became real when the homepage hero was rebuilt without its terminal demo and the
+ * terminal blocks left the catalogs: both sources went to zero legitimately, and the gate
+ * could not tell that apart from its own collector failing.
+ */
+export function countLandingTerminalSources(lang) {
+  const src = fs.readFileSync(INDEX_PAGE_PATH, 'utf-8');
+  const homepageArray = /const\s+heroTerminalLines\s*=\s*\[/.test(src);
+  const terminals = [];
+  visitTerminals(loadTranslationJson(lang), [], terminals);
+  return { homepageArray, terminalBlocks: terminals.length };
+}
+
 export function getAllLanguages() {
   return [...LANGUAGES];
 }
