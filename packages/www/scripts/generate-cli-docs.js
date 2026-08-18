@@ -274,11 +274,25 @@ export function generate(lang, cliJsonEn, { sourceHash } = {}) {
 
   const fm = docs.frontmatter;
 
-  // --- Frontmatter (translated per language) ---
+  // --- Frontmatter (translated per language, EXCEPT category) ---
+  //
+  // `category` is a SCHEMA ENUM, not display text. `src/content/config.ts` declares
+  // z.enum(['Tutorials','Guides','Concepts','Reference','Use Cases','Legal']), so emitting
+  // the localized value fails the content collection at build time with
+  // "Invalid enum value ... received 'مرجع'" and takes the whole site build down, not just
+  // that page.
+  //
+  // This is why the generated docs and the files on disk had drifted apart: the on-disk
+  // copies carried the English enum, the generator produced the translated one, and
+  // cli-doc-freshness reported the difference every run. Regenerating to satisfy that gate
+  // then broke the build, which is the loop this comment exists to stop. The localized
+  // string stays in the catalogs for display use; the frontmatter takes the enum from
+  // English.
+  const categoryEnum = cliJsonEn.docs.frontmatter.category;
   lines.push('---');
   lines.push(`title: ${yamlQuote(fm.title)}`);
   lines.push(`description: ${yamlQuote(fm.description)}`);
-  lines.push(`category: ${yamlQuote(fm.category)}`);
+  lines.push(`category: ${yamlQuote(categoryEnum)}`);
   lines.push('order: 2');
   lines.push(`language: ${lang}`);
   lines.push('generated: true');
