@@ -46,6 +46,7 @@ interface SearchModalProps {
 
 const EXCERPT_RADIUS = 60;
 const EXCERPT_MAX = 160;
+const MAX_RESULTS = 50;
 
 // When a Fuse match lands in the body field, replace the pre-computed excerpt
 // with a window centered on the first match — so users see the relevant
@@ -63,6 +64,46 @@ function buildResultExcerpt(item: SearchItem, matches?: readonly FuseResultMatch
   if (after < item.body.length) excerpt = `${excerpt}…`;
   if (excerpt.length > EXCERPT_MAX) excerpt = `${excerpt.slice(0, EXCERPT_MAX - 1)}…`;
   return { ...item, excerpt };
+}
+
+/**
+ * Collect hits for `value`, deduped by destination and capped at MAX_RESULTS.
+ *
+ * Each per-locale file is pre-filtered, so no language check is needed here. The
+ * destination includes the section fragment: two sections of one page are two different
+ * places to land, and deduping by bare page collapsed every section hit into a link to
+ * the top of the page. The category filter runs before the count, not after, so a query
+ * whose first hits are all out of scope still fills the list.
+ */
+function collectResults(
+  fuse: Fuse<SearchItem>,
+  value: string,
+  allowedCategories: Set<string> | null
+): SearchItem[] {
+  const seenDestinations = new Set<string>();
+  const searchResults: SearchItem[] = [];
+  for (const result of fuse.search(value)) {
+    const item = result.item;
+    if (allowedCategories && !allowedCategories.has(item.category)) continue;
+    const destination = `${item.page}#${item.fragment ?? ''}`;
+    if (seenDestinations.has(destination)) continue;
+    seenDestinations.add(destination);
+    searchResults.push(buildResultExcerpt(item, result.matches));
+    if (searchResults.length >= MAX_RESULTS) break;
+  }
+  return searchResults;
+}
+
+/** Report a query to Plausible. Queries under two characters are noise and go unreported. */
+function reportSearch(value: string, resultCount: number, scope: string): void {
+  const query = value.trim();
+  if (query.length < 2) return;
+  window.plausible?.('search_query', {
+    props: { query, results: String(resultCount), scope },
+  });
+  if (resultCount === 0) {
+    window.plausible?.('search_no_results', { props: { query, scope } });
+  }
 }
 
 const SearchModal: React.FC<SearchModalProps> = ({
@@ -181,31 +222,9 @@ const SearchModal: React.FC<SearchModalProps> = ({
 
       setIsLoading(true);
       try {
-        // Each per-locale file is pre-filtered, so no language check needed
-        // here; we dedupe by destination and slice to 50. The destination
-        // includes the section fragment: two sections of one page are two
-        // different places to land, and deduping by bare page collapsed every
-        // section hit into a link to the top of the page.
-        const seenDestinations = new Set<string>();
-        const searchResults: SearchItem[] = [];
-        for (const result of fuse.search(value)) {
-          const item = result.item;
-          if (allowedCategories && !allowedCategories.has(item.category)) continue;
-          const destination = `${item.page}#${item.fragment ?? ''}`;
-          if (seenDestinations.has(destination)) continue;
-          seenDestinations.add(destination);
-          searchResults.push(buildResultExcerpt(item, result.matches));
-          if (searchResults.length >= 50) break;
-        }
+        const searchResults = collectResults(fuse, value, allowedCategories);
         setResults(searchResults);
-        if (value.trim().length >= 2) {
-          window.plausible?.('search_query', {
-            props: { query: value.trim(), results: String(searchResults.length), scope },
-          });
-          if (searchResults.length === 0) {
-            window.plausible?.('search_no_results', { props: { query: value.trim(), scope } });
-          }
-        }
+        reportSearch(value, searchResults.length, scope);
       } finally {
         setIsLoading(false);
       }

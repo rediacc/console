@@ -146,7 +146,7 @@ function declarations(body: string): Map<string, string> {
 
 export function judgeBlock(block: Block, file: string): OverflowFinding[] {
   const d = declarations(block.body);
-  let findings: OverflowFinding[] = [];
+  const findings: OverflowFinding[] = [];
 
   // RULE 1: parked offscreen on the inline axis.
   for (const prop of ['left', 'right']) {

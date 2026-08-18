@@ -3425,8 +3425,8 @@
   {
     "id": "search-17244",
     "content": "概述",
-    "body": "Rediacc CLI（rdc）是一个用于管理自托管基础设施的命令行界面 — 机器、仓库、存储、备份等。",
-    "excerpt": "Rediacc CLI（rdc）是一个用于管理自托管基础设施的命令行界面 — 机器、仓库、存储、备份等。",
+    "body": "Rediacc CLI（rdc）是一个用于管理自托管基础设施的命令行界面：机器、仓库、存储、备份等。",
+    "excerpt": "Rediacc CLI（rdc）是一个用于管理自托管基础设施的命令行界面：机器、仓库、存储、备份等。",
     "category": "Documentation",
     "page": "/zh/docs/cli-application",
     "fragment": "overview",
@@ -3605,7 +3605,7 @@
   {
     "id": "search-17259",
     "content": "1.12 field",
-    "body": "基于 JSON 指针(RFC 6901)的配置字段操作(get/set/unset/rotate/list),如 /credentials/cfDnsApiToken。 <a id=\"cli-local-config-field-get\"></a> #### get 按 JSON 指针读取单个配置值。敏感字段默认脱敏,除非使用 --reveal(仅限人工)。 rdc config field get [options] | 标志 | 描述 | 必填 | 默认值 | |------|-------------|----------|---------| | --pointer <pointer> | 指向字段的 JSON 指针（例如 /credentials/cfDnsApiToken） | 是 | - | | --reveal | 以明文显示敏感值(仅限交互式 TTY;记入审计日志) | 否 | - | | --digest | 输出 SHA-256 摘要而非数值(可安全地分享给代理) | 否 | - | <a id=\"cli-local-config-field-set\"></a> #### set 在 JSON 指针位置写入配置值。敏感路径需提供 --current(知识门控)。 rdc config field set [options] | 标志 | 描述 | 必填 | 默认值 | |------|-------------|----------|---------| | --pointer <pointer> | 指向字段的 JSON 指针（例如 /credentials/cfDnsApiToken） | 是 | - | | --new <value> | 新值(若以 {、[、\" 开头或为 true/false/null/数字,则按 JSON 解析) | 是 | - | | --current <value> | 当前明文值 — 修改敏感路径时必填(知识门控证明) | 否 | - | <a id=\"cli-local-config-field-unset\"></a> #### unset 删除 JSON 指针位置的配置值。敏感路径需提供 --current。 rdc config field unset [options] | 标志 | 描述 | 必填 | 默认值 | |------|-------------|----------|---------| | --pointer <pointer> | 指向字段的 JSON 指针（例如 /credentials/cfDnsApiToken） | 是 | - | | --current <value> | 当前明文值 — 删除敏感路径时必填 | 否 | - | <a id=\"cli-local-config-field-rotate\"></a> #### rotate 在不提供 --current 的情况下轮换敏感值。仅交互式 TTY;详尽审计。 rdc config field rotate [options] | 标志 | 描述 | 必填 | 默认值 | |------|-------------|----------|---------| | --pointer <pointer> | 指向敏感字段的 JSON 指针（例如 /credentials/cfDnsApiToken） | 是 | - | | --new <value> | 新值 | 是 | - | <a id=\"cli-local-config-field-list\"></a> #### list 列出每个已注册的敏感字段指针模板及其类别和提交/加密策略。 rdc config field list [options] | 标志 | 描述 | 必填 | 默认值 | |------|-------------|----------|---------| | --sensitive | 仅显示敏感(非公开)模板 | 否 | - | <a id=\"cli-local-config-edit\"></a>",
+    "body": "基于 JSON 指针(RFC 6901)的配置字段操作(get/set/unset/rotate/list),如 /credentials/cfDnsApiToken。 <a id=\"cli-local-config-field-get\"></a> #### get 按 JSON 指针读取单个配置值。敏感字段默认脱敏,除非使用 --reveal(仅限人工)。 rdc config field get [options] | 标志 | 描述 | 必填 | 默认值 | |------|-------------|----------|---------| | --pointer <pointer> | 指向字段的 JSON 指针（例如 /credentials/cfDnsApiToken） | 是 | - | | --reveal | 以明文显示敏感值(仅限交互式 TTY;记入审计日志) | 否 | - | | --digest | 输出 SHA-256 摘要而非数值(可安全地分享给代理) | 否 | - | <a id=\"cli-local-config-field-set\"></a> #### set 在 JSON 指针位置写入配置值。敏感路径需提供 --current(知识门控)。 rdc config field set [options] | 标志 | 描述 | 必填 | 默认值 | |------|-------------|----------|---------| | --pointer <pointer> | 指向字段的 JSON 指针（例如 /credentials/cfDnsApiToken） | 是 | - | | --new <value> | 新值(若以 {、[、\" 开头或为 true/false/null/数字,则按 JSON 解析) | 是 | - | | --current <value> | 当前明文值，修改敏感路径时必填(知识门控证明) | 否 | - | <a id=\"cli-local-config-field-unset\"></a> #### unset 删除 JSON 指针位置的配置值。敏感路径需提供 --current。 rdc config field unset [options] | 标志 | 描述 | 必填 | 默认值 | |------|-------------|----------|---------| | --pointer <pointer> | 指向字段的 JSON 指针（例如 /credentials/cfDnsApiToken） | 是 | - | | --current <value> | 当前明文值，删除敏感路径时必填 | 否 | - | <a id=\"cli-local-config-field-rotate\"></a> #### rotate 在不提供 --current 的情况下轮换敏感值。仅交互式 TTY;详尽审计。 rdc config field rotate [options] | 标志 | 描述 | 必填 | 默认值 | |------|-------------|----------|---------| | --pointer <pointer> | 指向敏感字段的 JSON 指针（例如 /credentials/cfDnsApiToken） | 是 | - | | --new <value> | 新值 | 是 | - | <a id=\"cli-local-config-field-list\"></a> #### list 列出每个已注册的敏感字段指针模板及其类别和提交/加密策略。 rdc config field list [options] | 标志 | 描述 | 必填 | 默认值 | |------|-------------|----------|---------| | --sensitive | 仅显示敏感(非公开)模板 | 否 | - | <a id=\"cli-local-config-edit\"></a>",
     "excerpt": "基于 JSON 指针(RFC 6901)的配置字段操作(get/set/unset/rotate/list),如 /credentials/cfDnsApiToken。 <a id=\"cli-local-config-field-get\"></a> #### get 按 JSON 指针读取单个配置值...",
     "category": "Documentation",
     "page": "/zh/docs/cli-application",
@@ -3809,8 +3809,8 @@
   {
     "id": "search-17276",
     "content": "3.2 health",
-    "body": "检查 CI/CD 流水线的机器健康状况 health 命令输出系统指标、容器状态、服务稳定性和存储信息 — 适用于 CI/CD 管道检查。 rdc machine health <name> [options] | 标志 | 描述 | 必填 | 默认值 | |------|-------------|----------|---------| | -t, --team <name> | 团队名称 | 否 | - | <a id=\"cli-local-machine-provision\"></a>",
-    "excerpt": "检查 CI/CD 流水线的机器健康状况 health 命令输出系统指标、容器状态、服务稳定性和存储信息 — 适用于 CI/CD 管道检查。 rdc machine health <name> [options] | 标志 | 描述 | 必填 | 默认值 | |------|-------------...",
+    "body": "检查 CI/CD 流水线的机器健康状况 health 命令输出系统指标、容器状态、服务稳定性和存储信息，适用于 CI/CD 管道检查。 rdc machine health <name> [options] | 标志 | 描述 | 必填 | 默认值 | |------|-------------|----------|---------| | -t, --team <name> | 团队名称 | 否 | - | <a id=\"cli-local-machine-provision\"></a>",
+    "excerpt": "检查 CI/CD 流水线的机器健康状况 health 命令输出系统指标、容器状态、服务稳定性和存储信息，适用于 CI/CD 管道检查。 rdc machine health <name> [options] | 标志 | 描述 | 必填 | 默认值 | |------|-------------|-...",
     "category": "Documentation",
     "page": "/zh/docs/cli-application",
     "fragment": "32-health",
@@ -3845,7 +3845,7 @@
   {
     "id": "search-17279",
     "content": "3.5 prune",
-    "body": "从机器中移除孤立的数据存储资源和过期快照 rdc machine prune <name> [options] | 标志 | 描述 | 必填 | 默认值 | |------|-------------|----------|---------| | --dry-run | 显示将被移除的内容，但不做实际更改 | 否 | - | | --orphaned-repos | 删除机器上所有不在本地 CLI 配置中的仓库镜像。这是粗粒度操作 — 也会移除由其他工具创建、没有本地配置条目的 fork，即使其 renet 镜像已正确将其识别为 fork。如需遵循镜像的更精细行为，请使用 --prune-unknown。 | 否 | - | | --prune-unknown | 仅删除 renet .interim/state 镜像无法分类的仓库（不在本地配置中且没有标记为 fork 的镜像）。比 --orphaned-repos 严格更窄：镜像识别时保留没有配置的 fork。镜像前的遗留孤儿和配置条目已删除的过时 grands 都属于此类别。 | 否 | - | | --force-delete-mounted | 覆盖挂载安全预检并删除仓库，即使它们当前已挂载或有正在运行的 Docker 容器。与 --force 不同（后者仅覆盖归档宽限期）。适用于 --orphaned-repos 和 --prune-unknown。 | 否 | - | | --force | 跳过确认提示 | 否 | - | | --grace-days <days> | 最近归档仓库的宽限期天数（默认：7） | 否 | - | | --debug | 启用调试输出（本地模式） | 否 | - | <a id=\"cli-local-machine-add\"></a>",
+    "body": "从机器中移除孤立的数据存储资源和过期快照 rdc machine prune <name> [options] | 标志 | 描述 | 必填 | 默认值 | |------|-------------|----------|---------| | --dry-run | 显示将被移除的内容，但不做实际更改 | 否 | - | | --orphaned-repos | 删除机器上所有不在本地 CLI 配置中的仓库镜像。这是粗粒度操作：也会移除由其他工具创建、没有本地配置条目的 fork，即使其 renet 镜像已正确将其识别为 fork。如需遵循镜像的更精细行为，请使用 --prune-unknown。 | 否 | - | | --prune-unknown | 仅删除 renet .interim/state 镜像无法分类的仓库（不在本地配置中且没有标记为 fork 的镜像）。比 --orphaned-repos 严格更窄：镜像识别时保留没有配置的 fork。镜像前的遗留孤儿和配置条目已删除的过时 grands 都属于此类别。 | 否 | - | | --force-delete-mounted | 覆盖挂载安全预检并删除仓库，即使它们当前已挂载或有正在运行的 Docker 容器。与 --force 不同（后者仅覆盖归档宽限期）。适用于 --orphaned-repos 和 --prune-unknown。 | 否 | - | | --force | 跳过确认提示 | 否 | - | | --grace-days <days> | 最近归档仓库的宽限期天数（默认：7） | 否 | - | | --debug | 启用调试输出（本地模式） | 否 | - | <a id=\"cli-local-machine-add\"></a>",
     "excerpt": "从机器中移除孤立的数据存储资源和过期快照 rdc machine prune <name> [options] | 标志 | 描述 | 必填 | 默认值 | |------|-------------|----------|---------| | --dry-run | 显示将被移除的内容，但不做...",
     "category": "Documentation",
     "page": "/zh/docs/cli-application",
@@ -4133,8 +4133,8 @@
   {
     "id": "search-17303",
     "content": "6.2 down",
-    "body": "停止仓库的 Docker 容器（通过 renet compose 运行 Rediaccfile 的 down）。机器由引用的放置位置推导得出。不会卸载加密卷——仓库仍保持挂载状态，可通过 'repo up' 重新启动。使用 --unmount 可在停止后同时关闭 LUKS 容器（合并了已弃用的 'repo unmount'）。使用 --checkpoint 可在停止前保存 CRIU 进程状态（下次 'repo up' 会自动恢复）。使用 --all --machine <m> 可停止某台机器上的所有仓库。 rdc repo down [ref] [options] | 标志 | 描述 | 必填 | 默认值 | |------|-------------|----------|---------| | --unmount | 停止后同时卸载（关闭 LUKS 容器）。在 'repo resize' 之前或需要完全保护卷时为必需操作 | 否 | - | | --checkpoint | 停止前创建 CRIU checkpoint（保存进程内存状态，以便后续通过 'repo up' 恢复） | 否 | - | | --all | 停止所有归属于 --machine 的仓库（批量形式） | 否 | - | | -m, --machine <name> | 配合 --all 使用：要对其仓库执行批量操作的机器 | 否 | - | | --parallel | 并发启动仓库 | 否 | - | | --concurrency <n> | 最大并发仓库数 (默认: 3) | 否 | 3 | | -y, --yes | 跳过批量操作确认 | 否 | - | | --debug | 启用调试输出（本地模式） | 否 | - | | --skip-router-restart | 二进制更新后跳过重启路由服务器 | 否 | - | | --dry-run | 显示将执行的操作但不进行实际更改 | 否 | - | <a id=\"cli-local-repo-status\"></a>",
-    "excerpt": "停止仓库的 Docker 容器（通过 renet compose 运行 Rediaccfile 的 down）。机器由引用的放置位置推导得出。不会卸载加密卷——仓库仍保持挂载状态，可通过 'repo up' 重新启动。使用 --unmount 可在停止后同时关闭 LUKS 容器（合并了已弃用的 'r...",
+    "body": "停止仓库的 Docker 容器（通过 renet compose 运行 Rediaccfile 的 down）。机器由引用的放置位置推导得出。不会卸载加密卷，仓库仍保持挂载状态，可通过 'repo up' 重新启动。使用 --unmount 可在停止后同时关闭 LUKS 容器（合并了已弃用的 'repo unmount'）。使用 --checkpoint 可在停止前保存 CRIU 进程状态（下次 'repo up' 会自动恢复）。使用 --all --machine <m> 可停止某台机器上的所有仓库。 rdc repo down [ref] [options] | 标志 | 描述 | 必填 | 默认值 | |------|-------------|----------|---------| | --unmount | 停止后同时卸载（关闭 LUKS 容器）。在 'repo resize' 之前或需要完全保护卷时为必需操作 | 否 | - | | --checkpoint | 停止前创建 CRIU checkpoint（保存进程内存状态，以便后续通过 'repo up' 恢复） | 否 | - | | --all | 停止所有归属于 --machine 的仓库（批量形式） | 否 | - | | -m, --machine <name> | 配合 --all 使用：要对其仓库执行批量操作的机器 | 否 | - | | --parallel | 并发启动仓库 | 否 | - | | --concurrency <n> | 最大并发仓库数 (默认: 3) | 否 | 3 | | -y, --yes | 跳过批量操作确认 | 否 | - | | --debug | 启用调试输出（本地模式） | 否 | - | | --skip-router-restart | 二进制更新后跳过重启路由服务器 | 否 | - | | --dry-run | 显示将执行的操作但不进行实际更改 | 否 | - | <a id=\"cli-local-repo-status\"></a>",
+    "excerpt": "停止仓库的 Docker 容器（通过 renet compose 运行 Rediaccfile 的 down）。机器由引用的放置位置推导得出。不会卸载加密卷，仓库仍保持挂载状态，可通过 'repo up' 重新启动。使用 --unmount 可在停止后同时关闭 LUKS 容器（合并了已弃用的 're...",
     "category": "Documentation",
     "page": "/zh/docs/cli-application",
     "fragment": "62-down",
@@ -4217,8 +4217,8 @@
   {
     "id": "search-17310",
     "content": "6.9 commit",
-    "body": "将已挂载的工作 fork 的当前状态冻结为新的不可变 commit（类似 git）。该 commit 在卷内记录其提交信息、作者、时间戳和父 commit（因此可随 push 一同传输），并被标记为只读——它拒绝挂载。工作 fork 保持不变，就像 git 不会改动工作树一样。使用 'rdc repo checkout' 检出某个 commit 以获取可写副本。 rdc repo commit <ref> [options] | 标志 | 描述 | 必填 | 默认值 | |------|-------------|----------|---------| | --message <msg> | Commit 信息 | 是 | - | | --author <author> | Commit 作者 | 否 | - | | --debug | 启用调试输出（本地模式） | 否 | - | <a id=\"cli-local-repo-branch\"></a>",
-    "excerpt": "将已挂载的工作 fork 的当前状态冻结为新的不可变 commit（类似 git）。该 commit 在卷内记录其提交信息、作者、时间戳和父 commit（因此可随 push 一同传输），并被标记为只读——它拒绝挂载。工作 fork 保持不变，就像 git 不会改动工作树一样。使用 'rdc rep...",
+    "body": "将已挂载的工作 fork 的当前状态冻结为新的不可变 commit（类似 git）。该 commit 在卷内记录其提交信息、作者、时间戳和父 commit（因此可随 push 一同传输），并被标记为只读，因此它拒绝挂载。工作 fork 保持不变，就像 git 不会改动工作树一样。使用 'rdc repo checkout' 检出某个 commit 以获取可写副本。 rdc repo commit <ref> [options] | 标志 | 描述 | 必填 | 默认值 | |------|-------------|----------|---------| | --message <msg> | Commit 信息 | 是 | - | | --author <author> | Commit 作者 | 否 | - | | --debug | 启用调试输出（本地模式） | 否 | - | <a id=\"cli-local-repo-branch\"></a>",
+    "excerpt": "将已挂载的工作 fork 的当前状态冻结为新的不可变 commit（类似 git）。该 commit 在卷内记录其提交信息、作者、时间戳和父 commit（因此可随 push 一同传输），并被标记为只读，因此它拒绝挂载。工作 fork 保持不变，就像 git 不会改动工作树一样。使用 'rdc re...",
     "category": "Documentation",
     "page": "/zh/docs/cli-application",
     "fragment": "69-commit",
@@ -5069,8 +5069,8 @@
   {
     "id": "search-17381",
     "content": "17. 本地 VM 操作",
-    "body": "使用 KVM/QEMU/Hyper-V 进行本地 VM 配置和管理（自动检测平台）。不适用于远程机器 — 远程机器请使用 machine。关键子命令：up（启动 VM）、down（停止）、status（列出运行中的 VM）、ssh（连接到 VM）、setup（安装前置条件）、check（验证主机就绪状态）。 <a id=\"cli-local-ops-up\"></a>",
-    "excerpt": "使用 KVM/QEMU/Hyper-V 进行本地 VM 配置和管理（自动检测平台）。不适用于远程机器 — 远程机器请使用 machine。关键子命令：up（启动 VM）、down（停止）、status（列出运行中的 VM）、ssh（连接到 VM）、setup（安装前置条件）、check（验证主机就绪...",
+    "body": "使用 KVM/QEMU/Hyper-V 进行本地 VM 配置和管理（自动检测平台）。不适用于远程机器。远程机器请使用 machine。关键子命令：up（启动 VM）、down（停止）、status（列出运行中的 VM）、ssh（连接到 VM）、setup（安装前置条件）、check（验证主机就绪状态）。 <a id=\"cli-local-ops-up\"></a>",
+    "excerpt": "使用 KVM/QEMU/Hyper-V 进行本地 VM 配置和管理（自动检测平台）。不适用于远程机器。远程机器请使用 machine。关键子命令：up（启动 VM）、down（停止）、status（列出运行中的 VM）、ssh（连接到 VM）、setup（安装前置条件）、check（验证主机就绪状态...",
     "category": "Documentation",
     "page": "/zh/docs/cli-application",
     "fragment": "17-local-vm-operations",
@@ -5165,7 +5165,7 @@
   {
     "id": "search-17389",
     "content": "常见错误消息",
-    "body": "当出现问题时，CLI 会提供清晰的错误消息： | 错误 | 含义 | |-------|---------| | 需要身份验证。运行：rdc subscription login | 您需要先登录 | | 没有活跃的配置。请使用以下命令创建：rdc config init <name> | 没有活跃的配置 — 请使用 rdc config init 创建一个 | | 权限被拒绝 | 您的帐户缺少所需的权限 | | 需要机器名称。使用 --machine <name> | 使用 --machine 指定机器或设置上下文默认值 | | 需要团队名称。使用 --team 或使用以下命令设置默认值：rdc config set team <name> | 使用 --team 指定团队或设置上下文默认值 | | 需要区域名称。使用 --region 或使用以下命令设置默认值：rdc config set region <name> | 使用 --region 指定区域或设置上下文默认值 | ---",
+    "body": "当出现问题时，CLI 会提供清晰的错误消息： | 错误 | 含义 | |-------|---------| | 需要身份验证。运行：rdc subscription login | 您需要先登录 | | 没有活跃的配置。请使用以下命令创建：rdc config init <name> | 没有活跃的配置。请使用 rdc config init 创建一个 | | 权限被拒绝 | 您的帐户缺少所需的权限 | | 需要机器名称。使用 --machine <name> | 使用 --machine 指定机器或设置上下文默认值 | | 需要团队名称。使用 --team 或使用以下命令设置默认值：rdc config set team <name> | 使用 --team 指定团队或设置上下文默认值 | | 需要区域名称。使用 --region 或使用以下命令设置默认值：rdc config set region <name> | 使用 --region 指定区域或设置上下文默认值 | ---",
     "excerpt": "当出现问题时，CLI 会提供清晰的错误消息： | 错误 | 含义 | |-------|---------| | 需要身份验证。运行：rdc subscription login | 您需要先登录 | | 没有活跃的配置。请使用以下命令创建：rdc config init <name> | 没有活跃...",
     "category": "Documentation",
     "page": "/zh/docs/cli-application",

@@ -73,7 +73,7 @@ const LOCALE_FONTS: Record<string, CardFonts> = {
  * be installed on the render host. That dependency is the whole bug: the host
  * had no joining Arabic face and nothing said so.
  */
-const VENDORED_FILES = ['DejaVuSans.ttf', 'DejaVuSans-Bold.ttf'];
+const VENDORED_FILES = ['DejaVuSans.ttf', 'DejaVuSans-Bold.ttf'] as const;
 
 /** Absolute paths of the vendored faces, for resvg's `font.fontFiles`. */
 export function vendoredFontFiles(): string[] {
@@ -173,7 +173,12 @@ function stripGenerics(stack: string): string {
 }
 
 /** Families served by a vendored file rather than by whatever the host has. */
-const VENDORED_FAMILY_FILES: Record<string, string> = { 'DejaVu Sans': 'DejaVuSans.ttf' };
+// `| undefined` is the honest type: indexing a Record with a missing key yields undefined at
+// runtime, and typing it as always-string made the guard below look provably true to the
+// linter. The check is right; the type was lying.
+const VENDORED_FAMILY_FILES: Record<string, string | undefined> = {
+  'DejaVu Sans': 'DejaVuSans.ttf',
+};
 
 /**
  * Absolute file for a family name, or null when nothing provides it.
@@ -197,9 +202,15 @@ function resolveFamilyFile(family: string): string | null {
     const out = execFileSync('fc-match', ['-f', '%{file}\t%{family}', family], {
       encoding: 'utf8',
     });
-    const [file, families] = out.split('\t');
+    // Split on LENGTH rather than on a nullish check. `fc-match` omits the tab when it has
+    // no family to report, so the second field really can be absent, but TypeScript types
+    // `split()` as `string[]` and therefore treats `families ?? ''` as a dead branch. A
+    // length test is a runtime fact it cannot dismiss, so the defence survives the linter.
+    const parts = out.split('\t');
+    const file = parts[0];
+    const families = parts.length > 1 ? parts[1] : '';
     if (!file || !existsSync(file)) return null;
-    const matched = (families ?? '').split(',').map((f) => f.trim().toLowerCase());
+    const matched = families.split(',').map((f) => f.trim().toLowerCase());
     return matched.includes(family.toLowerCase()) ? file : null;
   } catch {
     return null;
@@ -223,7 +234,7 @@ export function missingCodepoints(file: string, text: string): number[] {
  * Deliberately dependency-free — this runs in a render script, not the site.
  */
 function readCmapCoverage(buf: Buffer): (cp: number) => boolean {
-  const ranges: Array<[number, number]> = [];
+  const ranges: [number, number][] = [];
   for (const fontOffset of fontOffsets(buf)) {
     const cmap = findTable(buf, fontOffset, 'cmap');
     if (cmap === null) continue;
@@ -268,7 +279,7 @@ function findTable(buf: Buffer, fontOffset: number, tag: string): number | null 
   return null;
 }
 
-function readFormat4(buf: Buffer, sub: number, out: Array<[number, number]>): void {
+function readFormat4(buf: Buffer, sub: number, out: [number, number][]): void {
   const segX2 = buf.readUInt16BE(sub + 6);
   const endBase = sub + 14;
   const startBase = endBase + segX2 + 2;
@@ -281,7 +292,7 @@ function readFormat4(buf: Buffer, sub: number, out: Array<[number, number]>): vo
   }
 }
 
-function readFormat12(buf: Buffer, sub: number, out: Array<[number, number]>): void {
+function readFormat12(buf: Buffer, sub: number, out: [number, number][]): void {
   const nGroups = buf.readUInt32BE(sub + 12);
   for (let g = 0; g < nGroups; g++) {
     const rec = sub + 16 + g * 12;

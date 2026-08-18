@@ -4,7 +4,12 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseRdcCommand } from './lib/cli-reference-catalog.js';
-import { countLandingTerminalSources, getAllLandingTerminalCommandsForLanguage, getAllLanguages, getTranslationTerminalCommands } from './lib/landing-terminal-catalog.js';
+import {
+  countLandingTerminalSources,
+  getAllLandingTerminalCommandsForLanguage,
+  getAllLanguages,
+  getTranslationTerminalCommands,
+} from './lib/landing-terminal-catalog.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const MAP_PATH = path.resolve(__dirname, './data/landing-cli-capability-map.json');

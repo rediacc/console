@@ -64,8 +64,6 @@ const MIN_PAIRS = 500;
 const BASELINE: Record<string, number> = {
   'tools.md': 12, // every locale
   'setup.md': 11,
-  'installation.md': 8,
-  'legal-data-sovereignty.md': 8,
 };
 
 interface Shape {

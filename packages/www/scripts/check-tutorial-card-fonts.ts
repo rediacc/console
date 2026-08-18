@@ -57,7 +57,7 @@ interface Offence {
 function cardStrings(doc: Record<string, unknown>): string[] {
   const out: string[] = [];
   if (typeof doc.title === 'string') out.push(doc.title);
-  const steps = (doc.steps ?? doc.events) as Array<Record<string, unknown>> | undefined;
+  const steps = (doc.steps ?? doc.events) as Record<string, unknown>[] | undefined;
   for (const step of steps ?? []) {
     for (const key of ['cardLabel', 'label']) {
       const v = step[key];
@@ -110,7 +110,7 @@ function scan(): Offence[] {
  * skipped control is an unproven gate.
  */
 function selftest(): number {
-  const cases: Array<[string, string, string, boolean]> = [
+  const cases: [string, string, string, boolean][] = [
     ['Arabic in Inter must be reported missing', 'Inter', 'إضافة خادمك الأول', true],
     ['Hangul in Inter must be reported missing', 'Inter', '첫 번째 서버 추가', true],
     ['Han in Inter must be reported missing', 'Inter', '添加您的第一台服务器', true],

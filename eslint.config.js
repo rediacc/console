@@ -1386,6 +1386,11 @@ export default tseslint.config(
       // exactly the two classes the block above exists for.
       'packages/cli/bundle.mjs',
       'eslint.config.js',
+      // Build-time plugin modules: plain ESM run by node (the search-index
+      // generator) and by Astro's markdown pipeline, deliberately outside every
+      // tsconfig. Same two classes as the bundler above: node globals and no
+      // type information.
+      'packages/www/src/plugins/*.mjs',
     ],
     languageOptions: {
       ecmaVersion: 'latest',

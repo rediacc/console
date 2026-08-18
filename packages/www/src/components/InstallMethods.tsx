@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import type { InstallMethod, Platform } from '../config/install';
 import {
   APK_COMMANDS,
@@ -37,6 +37,27 @@ const ANCHOR_PLATFORM_MAP: Record<string, Platform> = {
   pacman: 'linux',
   homebrew: 'macos',
 };
+
+/**
+ * The initial filter is a CLIENT-ONLY value: it comes from the URL anchor and the user
+ * agent, and the server has neither. Exposing it as an external store keeps the server
+ * and the hydrating client on the same 'all', and lets React swap in the detected value
+ * once hydration is done. Nothing pushes a new detection at us, so `subscribe` is a
+ * no-op that returns an empty cleanup.
+ */
+function getDetectedFilter(): FilterTab {
+  const hash = window.location.hash.replace('#', '');
+  if (hash && hash in ANCHOR_PLATFORM_MAP) return ANCHOR_PLATFORM_MAP[hash];
+  return detectPlatform();
+}
+
+function getServerFilter(): FilterTab {
+  return 'all';
+}
+
+function subscribeDetectedFilter(): () => void {
+  return () => {};
+}
 
 interface CodeBlockProps {
   id: string;
@@ -132,33 +153,34 @@ function getMethodBlocks(
 const InstallMethods: React.FC<InstallMethodsProps> = ({ lang }) => {
   const { t } = useRouteTranslation(lang);
 
-  // A useState initializer must be PURE. This one read window.location.hash and
-  // called detectPlatform(), so the server's first render ('all') and the client's
-  // first render could disagree, and it also called requestAnimationFrame from inside
-  // the initializer, which StrictMode runs twice. Honest note on the evidence: the
-  // symptom that sent me here, /en/install#homebrew rendering zero platform tabs,
-  // turned out to be a two-day-old dev server whose module graph had gone stale, NOT
-  // this code, and on a clean server the previous version logged no hydration warning
-  // either. This change is correctness by the rules of the hook, not a repair of a
-  // reproduced failure. Verified on a clean dev server: four tabs, macOS selected for
-  // #homebrew, zero console errors.
-  const [filter, setFilter] = useState<FilterTab>('all');
+  // A useState initializer must be PURE. An earlier version read window.location.hash
+  // and called detectPlatform() from the initializer, so the server's first render
+  // ('all') and the client's first render could disagree, and it also called
+  // requestAnimationFrame there, which StrictMode runs twice. Honest note on the
+  // evidence: the symptom that sent someone here, /en/install#homebrew rendering zero
+  // platform tabs, turned out to be a two-day-old dev server whose module graph had
+  // gone stale, NOT this code, and on a clean server that version logged no hydration
+  // warning either. Both this shape and the effect it replaced are correctness by the
+  // rules of the hook, not a repair of a reproduced failure.
+  const detectedFilter = useSyncExternalStore(
+    subscribeDetectedFilter,
+    getDetectedFilter,
+    getServerFilter
+  );
+  // An explicit tab click outranks detection for the rest of the visit.
+  const [chosenFilter, setChosenFilter] = useState<FilterTab | null>(null);
+  const filter = chosenFilter ?? detectedFilter;
 
-  // Platform detection and anchor handling belong after mount, where reading the URL
-  // and the user agent is legal and cannot disagree with the server.
+  // Scrolling the anchored method into view is a genuine side effect, so it stays in an
+  // effect; only the state derivation moved to the store above.
   useEffect(() => {
     const hash = window.location.hash.replace('#', '');
-    if (hash && hash in ANCHOR_PLATFORM_MAP) {
-      setFilter(ANCHOR_PLATFORM_MAP[hash]);
-      const el = document.getElementById(hash);
-      if (el) el.scrollIntoView({ behavior: 'smooth' });
-      return;
-    }
-    setFilter(detectPlatform());
+    if (!hash || !(hash in ANCHOR_PLATFORM_MAP)) return;
+    document.getElementById(hash)?.scrollIntoView({ behavior: 'smooth' });
   }, []);
 
   const handleFilterChange = useCallback((tab: FilterTab) => {
-    setFilter(tab);
+    setChosenFilter(tab);
   }, []);
 
   // Filter methods: "all" shows everything, platform filter hides unsupported methods

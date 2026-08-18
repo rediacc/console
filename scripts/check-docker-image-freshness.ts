@@ -150,7 +150,10 @@ function dockerHubRepo(image: string): string | null {
   return bare.includes('/') ? bare : `library/${bare}`;
 }
 
-async function hubToken(repo: string): Promise<string | null> {
+// No repo parameter: Docker Hub login is account-wide, not per-repository. The repo argument
+// this used to take was never read, and this config's policy is to delete an unused parameter
+// rather than underscore it.
+async function hubToken(): Promise<string | null> {
   const explicit = process.env.DOCKERHUB_TOKEN;
   if (explicit) return explicit;
   const user = process.env.DOCKERHUB_USERNAME;
@@ -171,7 +174,7 @@ interface TagInfo {
 }
 
 async function listHubTags(repo: string): Promise<TagInfo[] | null> {
-  const token = await hubToken(repo);
+  const token = await hubToken();
   const headers: Record<string, string> = token ? { Authorization: `Bearer ${token}` } : {};
   const url = `https://hub.docker.com/v2/repositories/${repo}/tags?page_size=100&ordering=last_updated`;
   try {
