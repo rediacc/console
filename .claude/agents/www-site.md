@@ -1,6 +1,6 @@
 ---
 name: www-site
-description: The packages/www Astro marketing and docs site - where its CSS and design tokens actually live (not where you would look), the solution/persona/resource template families and their 515-line config, the docs surface and its 1,015 flat markdown files, the build hazards that corrupt a shared working tree, and the measured baseline this site is judged against. Use for any change to www styling, components, layouts, routes, or content, and before running a www build in a tree another session is using.
+description: The packages/www Astro marketing and docs site - where its CSS and theming layer actually lives (not where you would look), the solution/persona/resource template families and their 515-line config, the docs surface and its 1,015 flat markdown files, the build hazards that corrupt a shared working tree, and the measured baseline this site is judged against. Use for any change to www styling, components, layouts, routes, or content, and before running a www build in a tree another session is using.
 tools: Bash, Read, Edit, Write, Grep, Glob
 model: opus
 ---
