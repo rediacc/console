@@ -48,14 +48,17 @@ const NC = '\x1b[0m';
  */
 const RETIRED: Array<{ pattern: RegExp; what: string; instead: string }> = [
   {
-    pattern: /\brdc\s+repo\s+push\b[^\n]*--to\s+[<`'"]?(?:my-)?(?:storage|s3|r2|[a-z0-9-]*storage)\b/i,
+    pattern:
+      /\brdc\s+repo\s+push\b[^\n]*--to\s+[<`'"]?(?:my-)?(?:storage|s3|r2|[a-z0-9-]*storage)\b/i,
     what: 'repo push to a storage destination',
     instead: '`rdc backup snapshot <repo>` (chunk store) or `rdc repo push <repo> --to <machine>`',
   },
   {
-    pattern: /\brdc\s+repo\s+pull\b[^\n]*--from\s+[<`'"]?(?:my-)?(?:storage|s3|r2|[a-z0-9-]*storage)\b/i,
+    pattern:
+      /\brdc\s+repo\s+pull\b[^\n]*--from\s+[<`'"]?(?:my-)?(?:storage|s3|r2|[a-z0-9-]*storage)\b/i,
     what: 'repo pull from a storage source',
-    instead: '`rdc backup restore <repo> --at <snapshot>` or `rdc repo pull <repo> --from <machine>`',
+    instead:
+      '`rdc backup restore <repo> --at <snapshot>` or `rdc repo pull <repo> --from <machine>`',
   },
   {
     pattern: /\brdc\s+backup\s+list\b[^\n]*--storage\b/i,
@@ -139,9 +142,12 @@ export function scanSource(file: string, body: string): Finding[] {
 function runControls(): string[] {
   const failures: string[] = [];
 
-  const taught = ['# how to back up', '```bash', 'rdc repo push my-app --to my-storage', '```'].join(
-    '\n'
-  );
+  const taught = [
+    '# how to back up',
+    '```bash',
+    'rdc repo push my-app --to my-storage',
+    '```',
+  ].join('\n');
   if (scanSource('doc.md', taught).length === 0) {
     failures.push('a retired command inside a code fence was not caught');
   }
@@ -165,9 +171,11 @@ function runControls(): string[] {
     failures.push('backup list --storage was not caught');
   }
 
-  const script = ['#!/bin/bash', '# this used to run rdc repo push x --to my-storage', 'echo ok'].join(
-    '\n'
-  );
+  const script = [
+    '#!/bin/bash',
+    '# this used to run rdc repo push x --to my-storage',
+    'echo ok',
+  ].join('\n');
   if (scanSource('t.sh', script).length > 0) {
     failures.push('a shell COMMENT describing the retirement was flagged');
   }
@@ -199,7 +207,9 @@ function main(): number {
   const controlFailures = runControls();
   if (controlFailures.length) {
     for (const f of controlFailures) console.log(`${RED}x${NC} control: ${f}`);
-    console.log(`${RED}x${NC} the rule itself is broken, so no verdict it produces means anything.`);
+    console.log(
+      `${RED}x${NC} the rule itself is broken, so no verdict it produces means anything.`
+    );
     return 1;
   }
   console.log(

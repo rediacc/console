@@ -92,7 +92,10 @@ function checkRedirects() {
       if (line.includes('Astro.redirect(')) {
         // Check if it specifies 301
         if (!line.includes('301')) {
-          error(file, `line ${i + 1}: Astro.redirect() without explicit 301 status. Use Astro.redirect(url, 301)`);
+          error(
+            file,
+            `line ${i + 1}: Astro.redirect() without explicit 301 status. Use Astro.redirect(url, 301)`
+          );
         }
         // Check that the first-arg path doesn't end with `/` (conflicts with
         // trailingSlash: 'never' — produces an extra redirect hop).
@@ -100,7 +103,10 @@ function checkRedirects() {
         if (argMatch) {
           const target = argMatch[2];
           if (isInternalPathWithTrailingSlash(target)) {
-            error(file, `line ${i + 1}: Astro.redirect() target "${target}" ends with "/". Drop the trailing slash to match trailingSlash: 'never'.`);
+            error(
+              file,
+              `line ${i + 1}: Astro.redirect() target "${target}" ends with "/". Drop the trailing slash to match trailingSlash: 'never'.`
+            );
           }
         }
       }
@@ -136,7 +142,10 @@ function checkTrailingSlash() {
   const content = fs.readFileSync(configPath, 'utf-8');
 
   if (!content.includes('trailingSlash')) {
-    error(configPath, 'Missing trailingSlash config. Add trailingSlash: "never" or "always" to prevent Cloudflare 307 redirects.');
+    error(
+      configPath,
+      'Missing trailingSlash config. Add trailingSlash: "never" or "always" to prevent Cloudflare 307 redirects.'
+    );
   }
 }
 
@@ -177,7 +186,7 @@ function checkHreflangConsistency() {
         error(
           layoutPath,
           `Hreflang uses bare language code "{lang}" but sitemap maps "${key}" to "${locale}". ` +
-          'HTML hreflang and sitemap hreflang must match. Use full BCP 47 codes.'
+            'HTML hreflang and sitemap hreflang must match. Use full BCP 47 codes.'
         );
         break; // One error is enough
       }
@@ -192,7 +201,21 @@ function checkH1Presence() {
   console.log('Checking H1 presence in pages...');
 
   // Components known to render an H1 (directly or via SPHero)
-  const h1Components = ['SPHero', 'SPHomePage', 'SolutionPage', 'PersonaPage', 'ContentLayout', 'DocsLayout', 'ResourceBriefPage'];
+  // Components that render the page's <h1> themselves. `SPHomeHero` is the
+  // homepage's own hero, split out of the shared `SPHero` so the homepage could
+  // drop `min-height: 100dvh`; `SPWhyNow` is a section that became its own route
+  // and whose title is that route's subject.
+  const h1Components = [
+    'SPHero',
+    'SPHomeHero',
+    'SPHomePage',
+    'SolutionPage',
+    'PersonaPage',
+    'ContentLayout',
+    'DocsLayout',
+    'ResourceBriefPage',
+    'SPWhyNow',
+  ];
 
   const pageFiles = globSync(`${PAGES_DIR}/\\[lang\\]/**/*.astro`);
 
@@ -245,7 +268,10 @@ function checkTrailingSlashLinks() {
       while ((match = pattern.exec(line)) !== null) {
         const value = match[2];
         if (isInternalPathWithTrailingSlash(value)) {
-          error(file, `line ${i + 1}: internal link "${value}" ends with "/". Drop the trailing slash to match trailingSlash: 'never'.`);
+          error(
+            file,
+            `line ${i + 1}: internal link "${value}" ends with "/". Drop the trailing slash to match trailingSlash: 'never'.`
+          );
         }
       }
     }
@@ -260,7 +286,9 @@ function checkTrailingSlashLinks() {
 // Runs only when packages/www/dist exists (i.e. after `astro build`).
 function checkBuiltHtmlInternalLinks() {
   if (!fs.existsSync(WWW_DIST)) {
-    console.log(`Skipping built-HTML link check (${WWW_DIST} not found — run 'astro build' first).`);
+    console.log(
+      `Skipping built-HTML link check (${WWW_DIST} not found — run 'astro build' first).`
+    );
     return;
   }
 

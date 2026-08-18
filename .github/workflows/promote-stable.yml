@@ -184,6 +184,10 @@ jobs:
       OTLP_CLIENT_CREDENTIALS_EU: ${{ secrets.OTLP_CLIENT_CREDENTIALS_EU }}
       OTLP_CLIENT_CREDENTIALS_US: ${{ secrets.OTLP_CLIENT_CREDENTIALS_US }}
       OTLP_CLIENT_CREDENTIALS_ASIA: ${{ secrets.OTLP_CLIENT_CREDENTIALS_ASIA }}
+      BACKUP_S3_ENDPOINT: ${{ secrets.BACKUP_S3_ENDPOINT }}
+      BACKUP_S3_BUCKET: ${{ secrets.BACKUP_S3_BUCKET }}
+      BACKUP_S3_ACCESS_KEY_ID: ${{ secrets.BACKUP_S3_ACCESS_KEY_ID }}
+      BACKUP_S3_SECRET_ACCESS_KEY: ${{ secrets.BACKUP_S3_SECRET_ACCESS_KEY }}
 
   # Verify stable endpoints after deployment
   verify-stable:

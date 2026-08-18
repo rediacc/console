@@ -23,6 +23,18 @@ interface LanguageMenuProps {
   // Custom handler for language selection
   onLanguageChange?: (lang: Language) => void;
 
+  /**
+   * Whether picking an entry is a statement about the SITE's language.
+   *
+   * True (the default) for the nav, footer and docs sidebar: the choice writes the
+   * `rediacc_lang` cookie every route redirect reads, and reports a `language_change`
+   * conversion. False for an in-page picker that only swaps one widget's media -- a viewer
+   * sampling the Japanese narration of one tutorial has not asked for a Japanese site on
+   * their next visit, and counting it as a language change would inflate the metric with
+   * choices nobody made about the site.
+   */
+  persistPreference?: boolean;
+
   // CSS class name for custom styling
   className?: string;
 
@@ -40,6 +52,7 @@ const LanguageMenu: React.FC<LanguageMenuProps> = ({
   position = 'top',
   navigationMode = 'button',
   onLanguageChange,
+  persistPreference = true,
   className,
   ariaLabel = 'Select language',
   icon,
@@ -161,8 +174,10 @@ const LanguageMenu: React.FC<LanguageMenuProps> = ({
 
   // Handle language selection
   const handleLanguageSelect = (lang: Language) => {
-    setLanguageCookie(lang);
-    window.plausible?.('language_change', { props: { from: currentLang, to: lang } });
+    if (persistPreference) {
+      setLanguageCookie(lang);
+      window.plausible?.('language_change', { props: { from: currentLang, to: lang } });
+    }
 
     if (onLanguageChange) {
       onLanguageChange(lang);

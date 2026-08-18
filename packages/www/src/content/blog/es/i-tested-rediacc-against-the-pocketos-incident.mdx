@@ -25,7 +25,7 @@ import YouTubeEmbed from '../../../components/YouTubeEmbed.astro';
 
 <YouTubeEmbed videoId="o-Bst9rO9Fk" title="Probé Rediacc contra el incidente de PocketOS" />
 
-> **Actualización. Mayo de 2026.** Desde que se publicó este post, Rediacc lanzó **secretos por repositorio** de primera clase (`rdc repo secret`). La "brecha honesta" descrita más abajo, las credenciales de SaaS externos incrustadas en tu repositorio, ahora tiene una respuesta integrada que mantiene los secretos completamente fuera de la imagen LUKS, de modo que los forks no heredan ninguno por defecto. Salta a la nueva sección final [Actualización: la brecha ya se puede cerrar](#actualización-la-brecha-ya-se-puede-cerrar) para ver qué se lanzó, qué cambió y qué riesgo residual queda.
+> **Actualización. Mayo de 2026.** Desde que se publicó este post, Rediacc lanzó **secretos por repositorio** de primera clase (`rdc repo secret`). La "brecha honesta" descrita más abajo, las credenciales de SaaS externos incrustadas en tu repositorio, ahora tiene una respuesta integrada que mantiene los secretos completamente fuera de la imagen LUKS, de modo que los forks no heredan ninguno por defecto. Salta a la nueva sección final [Actualización: la brecha ya se puede cerrar](#update-the-gap-is-now-closeable) para ver qué se lanzó, qué cambió y qué riesgo residual queda.
 
 El fin de semana pasado, Jer Crane publicó un postmortem de 30 horas. Un agente de Cursor que ejecutaba Claude Opus 4.6 de Anthropic borró su base de datos de producción en Railway. La eliminación fue una sola llamada GraphQL. Tardó 9 segundos. Las copias de seguridad de volúmenes de Railway se fueron con ella porque Railway las almacena dentro del mismo volumen.
 

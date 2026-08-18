@@ -25,10 +25,7 @@ import {
 } from '../../eslint-rules/lib/cli-exempt-lists.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const COMMAND_TREE_PATH = path.resolve(
-  __dirname,
-  '../../packages/cli/scripts/command-tree.json'
-);
+const COMMAND_TREE_PATH = path.resolve(__dirname, '../../packages/cli/scripts/command-tree.json');
 
 // ---------------------------------------------------------------------------
 // Types (mirror packages/cli/scripts/export-command-tree.ts shape)
@@ -96,11 +93,7 @@ function getZeroPositionalCommands(): Set<string> {
     if (pathParts.length > 0) {
       const commandPath = pathParts.join(' ');
       const isLeaf = node.subcommands.length === 0;
-      if (
-        isLeaf &&
-        node.arguments.length === 0 &&
-        !FREEFORM_ARG_COMMAND_PATHS.has(commandPath)
-      ) {
+      if (isLeaf && node.arguments.length === 0 && !FREEFORM_ARG_COMMAND_PATHS.has(commandPath)) {
         out.add(commandPath);
       }
     }
@@ -163,8 +156,7 @@ function getPlaceholderOnlyParents(): Set<string> {
 // Detection regex
 // ---------------------------------------------------------------------------
 
-const escapeRegex = (str: string): string =>
-  str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+const escapeRegex = (str: string): string => str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 /**
  * Build a regex that matches a zero-positional command path followed by a
@@ -250,10 +242,7 @@ export interface ScanOptions {
  * most of the tree, and `rdc repo up <repo-ref>` is the syntax we now want taught.
  */
 export function scanText(text: string, opts: ScanOptions = {}): Violation[] {
-  const exemptPrefixes = [
-    ...EXEMPT_COMMAND_PREFIXES,
-    ...(opts.extraExemptPrefixes ?? []),
-  ];
+  const exemptPrefixes = [...EXEMPT_COMMAND_PREFIXES, ...(opts.extraExemptPrefixes ?? [])];
 
   const leafEntries = [...getZeroPositionalCommands()]
     .sort((a, b) => b.length - a.length)

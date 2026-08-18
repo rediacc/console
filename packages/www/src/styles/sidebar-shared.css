@@ -3,49 +3,39 @@
    This file contains unified styling for all sidebars across the documentation.
    ============================================================================ */
 
-:root {
-  /* Sidebar Dimensions */
-  --sidebar-width: 250px;
-  --sidebar-top-offset: var(--space-8);
-
-  /* Sidebar Colors - Using design system variables */
-  --sidebar-bg: var(--color-bg);
-  --sidebar-border: var(--color-border);
-  --sidebar-accent: var(--color-text);
-
-  /* Text Colors */
-  --text-hover: var(--color-text);
-
-  /* Link States - Using design system variables */
-  --link-color: var(--color-text);
-  --link-hover-color: var(--color-text);
-  --link-hover-bg: var(--color-hover);
-  --link-active-bg: var(--color-text);
-  --link-active-color: var(--color-bg-alt);
-
-  /* Border */
-  --border-radius: var(--radius-md);
-  --border-width-thin: 1px;
-  --border-width-accent: 3px;
-
-  /* Spacing - Using design system variables */
-  --sidebar-padding: var(--space-4);
-  --link-padding: var(--space-2) var(--space-3);
-  --item-margin: var(--space-2) 0;
-
-  /* Transitions - Using design system variables */
-  --transition-speed: var(--transition-duration-base);
-}
+/* The `:root` that used to open this file was the sixth token block in the
+   project. Its 14 names (--sidebar-*, --link-*, --text-hover, --border-radius,
+   --transition-speed) are aliases and now live in the single :root in
+   public/styles/main.css, beside the tokens they alias. --sidebar-width,
+   --sidebar-bg, --sidebar-padding and the two --border-width-* were
+   referenced nowhere and were deleted rather than moved. */
 
 /* ============================================================================
    Base Sidebar Container Styles
    Applied to both left navigation sidebar and right table of contents sidebar
    ============================================================================ */
 
+/* `max-height`, not `height`. A definite height forces a scroll container onto
+   every rail, including a five-link category that fits with room to spare, and
+   the old formula subtracted --sidebar-top-offset TWICE, which parked a
+   permanent dead band the size of that offset at the bottom of both rails. With
+   max-height a rail that fits is its own content height and produces no scroll
+   container at all, and one that overflows ends flush with the viewport. One
+   rule, two correct behaviours.
+   dvh, not vh: on mobile browsers vh is the address-bar-hidden height, so the
+   rail ran off the bottom of the visible area at rest. */
 .sidebar-base {
   position: sticky;
   top: calc(var(--nav-top-offset) + var(--sidebar-top-offset));
-  height: calc(100vh - var(--nav-top-offset) - (var(--sidebar-top-offset) * 2));
+  max-height: calc(100dvh - var(--nav-top-offset) - var(--sidebar-top-offset) - var(--space-6));
+  /* Both rails are grid items, and a grid item's default `align-self: stretch`
+     makes it as tall as the row -- which is as tall as the article, i.e.
+     thousands of pixels, clamped back down by the max-height above. That is a
+     box the full height of the viewport regardless of how many links are in it.
+     `start` makes a short rail its own height, which is the whole point of the
+     max-height. Sticky is unaffected: the containing block is still the grid
+     area, not the item. */
+  align-self: start;
   display: flex;
   flex-direction: column;
 }
@@ -77,13 +67,25 @@
   gap: 0;
   row-gap: 0;
   column-gap: 0;
-  flex: 1;
+
+  /* `1 1 auto`, not the `flex: 1` shorthand. `flex: 1` expands to `1 1 0%`, a
+     definite zero basis, which is circular inside a flex container whose own
+     height is now content-derived: the nav asks the container how tall it is,
+     and the container is asking the nav. `auto` reads the nav's content height
+     first and only then lets max-height clamp it. min-height: 0 is what lets it
+     shrink below that content height so overflow-y actually scrolls. */
+  flex: 1 1 auto;
+  min-height: 0;
   padding: 0;
   background-color: transparent;
   border-radius: 0;
   border: none;
   overflow-y: auto;
-  overscroll-behavior: contain;
+
+  /* No `overscroll-behavior: contain` here. It stops the wheel dead at the end
+     of a rail instead of chaining to the page, so scrolling over the rail and
+     scrolling over the article behaved differently. A docs rail is not a chat
+     log or a modal; there is nothing behind it that must not move. */
 
   /* Scrollbar styling for consistency */
   scrollbar-width: thin;
@@ -138,8 +140,8 @@
   border-radius: var(--radius-sm);
   font-size: var(--font-size-sm);
   transition:
-    background-color var(--transition-speed),
-    color var(--transition-speed);
+    background-color var(--transition-speed) var(--ease-standard),
+    color var(--transition-speed) var(--ease-standard);
 }
 
 .sidebar-base .sidebar-link:hover {
@@ -185,7 +187,7 @@
   border: none;
   cursor: pointer;
   margin-bottom: var(--space-2);
-  transition: color var(--transition-speed);
+  transition: color var(--transition-speed) var(--ease-standard);
 }
 
 .sidebar-base .category-header:hover {
@@ -204,7 +206,7 @@
   font-size: var(--font-size-xs);
   margin-inline-start: var(--space-2);
   flex-shrink: 0;
-  transition: transform var(--transition-speed);
+  transition: transform var(--transition-speed) var(--ease-standard);
 }
 
 .sidebar-base .category-header[aria-expanded='false'] .category-chevron {
@@ -221,7 +223,7 @@
   padding: 0;
   margin: 0;
   max-height: 9999px;
-  transition: max-height var(--transition-speed);
+  transition: max-height var(--transition-speed) var(--ease-standard);
 }
 
 /* When parent category item is collapsed, hide the list */
@@ -235,12 +237,11 @@
    Applied to TOC sidebars with special indentation for heading levels
    ============================================================================ */
 
+/* --item-margin is `var(--space-2) 0`, so an h2 entry already has a zero inline
+   start margin. The `.toc-level-2 { margin-inline-start: 0 }` rule that used to
+   restate it here said nothing the shorthand above had not already said. */
 .sidebar-base .toc-item {
   margin: var(--item-margin);
-}
-
-.sidebar-base .toc-level-2 {
-  margin-inline-start: 0;
 }
 
 .sidebar-base .toc-level-3 {
@@ -259,37 +260,20 @@
   font-size: var(--font-size-xs);
 }
 
-/* ============================================================================
-   Collapsible TOC (auto-applied when heading count exceeds threshold)
-   h3/h4+ children are hidden by default; revealed when parent h2 group is active
-   ============================================================================ */
-
-.sidebar-base .toc-collapsible .toc-children {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-  max-height: 0;
-  overflow: hidden;
-  transition: max-height var(--transition-speed);
-}
-
-.sidebar-base .toc-collapsible .toc-group.toc-group-active > .toc-children {
-  max-height: 9999px;
-}
+/* The collapsible-TOC block that used to sit here (.toc-collapsible
+   .toc-children, animating max-height between 0 and 9999px) is gone. It existed
+   only to squeeze a long TOC into a rail with a fixed height, and it did so by
+   changing the rail's own height WHILE the reader scrolled, since the active
+   group opened and the previous one closed on every scroll-spy transition. With
+   a max-height rail, a long TOC simply scrolls. */
 
 /* ============================================================================
    Accessibility and Responsive Design
    ============================================================================ */
 
 /* Ensure keyboard focus is visible */
-@media (prefers-reduced-motion: reduce) {
-  .sidebar-base .sidebar-link,
-  .sidebar-base .category-header,
-  .sidebar-base .collapsible-list,
-  .sidebar-base .toc-children {
-    transition: none;
-  }
-}
+/* Reduced motion is handled once, in public/styles/main.css. A local copy of
+   that block only ever covers the selectors that existed the day it was written. */
 
 /* Mobile responsive - stack layout */
 @media (max-width: 48rem) {

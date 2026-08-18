@@ -60,8 +60,71 @@ them seeing, and to never reintroduce the classes.
   clusters (>=3 keys sharing one value whose EN sources differ: the biggest class,
   255 keys in ja.go alone). Baseline pkg/i18n/locale_quality_baseline.json, shrink-only,
   currently empty: keep it empty. i18n.sh fails CLOSED on extractor errors now.
-- validate-translation-freshness (www docs), check-docs-untranslated-text (weak: it
-  passed on a wholly untranslated Russian sentence; do not rely on it alone).
+- validate-translation-freshness (www docs).
+- check-docs-untranslated-text: **PROVEN DEAD, not merely weak.** A wholly English
+  paragraph appended to a German doc exits 0 with "All non-English documentation appears
+  to be properly translated" plus unrelated frontmatter warnings. It cannot fail. Do not
+  cite it as coverage for anything.
+
+## What the gates do NOT see (each proven by mutation, 2026-08)
+
+Verdicts below came from planting a violation in a scratch mirror and running the gate,
+never from reading its source. Do the same before trusting any gate you have not mutated.
+
+- **check-i18n-cross-locale DOES scan packages/www. This entry used to say it did not,
+  and that stale claim caused a real error on 2026-08-18:** a sub-agent reported a genuine
+  untranslated string and explained it away with "invisible to check-i18n-cross-locale
+  because its LOCALE_ROOTS doesn't include packages/www". Its LOCALE_ROOTS lists
+  `packages/www/src/i18n/translations` as a `flat` root, and the gate's findings that day
+  were in `zh.json` and `ar.json`. Verify a scope claim before repeating it.
+- **The real www blind spot is length, not scope: `MIN_LENGTH = 12`**
+  (check-i18n-cross-locale.ts:93, applied at :215). A literal English `"Test"` sat in
+  ar/de/es/fr/ja/ru/tr/zh for two `howItWorks` step titles and the gate never saw it,
+  because the value is four characters. **Do not "fix" this by lowering the threshold:**
+  measured, that surfaces about 1,700 short values PER script locale, and the ones you see
+  are `Docker`, `PostgreSQL`, `Linux`, `macOS`, `/account/`. The filter is load-bearing.
+  Catching this class properly needs a real word list that can tell an English WORD from a
+  product name, which is a different and much larger instrument than this gate.
+- **Bibliographic citations are exempt from the identical-to-English signal**
+  (`isCitationKey`, any `references.items.<n>.*` path), in the ENGLISH case only. Quoting
+  an English-language source in a reference list is correct and translating the title
+  would make the source unfindable. 1,047 of the gate's 1,060 findings were this. A
+  citation carrying a THIRD language's function words still fires, and a control pins it.
+- **check-translation-completeness rounds untranslated% to one decimal before comparing
+  to 0**, so up to 4 English-identical values per locale pass. Measured: 1/4/5 keys ->
+  exit 0 "(0.0%)"; 9 keys -> exit 1.
+- **The naturalization ledger covers ~22% of English keys** (1,864 of 8,469). Editing a
+  covered key stales all 12 locales at once; editing any of the other ~6,600 produces
+  zero gate pressure.
+- **Deleting a whole locale file is invisible** to completeness, placeholders and
+  value-types. Exactly one gate catches it (de-contamination, which asserts against
+  @rediacc/locales and throws). The TS build is the other backstop - if a refactor
+  removes static locale imports, that backstop goes with it.
+- **check-translation-value-types compares TYPES, not VALUES**, so a config flag can
+  diverge silently. Real instance: an `enabled` boolean was false in en.json and true in
+  all twelve other locales for months.
+- **No gate exists for unreachable keys.** check-translation-key-usage runs
+  source -> en.json only, and i18n/no-unused-keys is 'off' for www. A conservative
+  reachability analysis found 146 dead English leaves (1,898 values across 13 locales).
+- **The em-dash gate only scans content/{docs,blog} *.md/*.mdx.** JSON catalogs and
+  .astro/.tsx files are outside it, which is how thousands of em dashes accumulate in
+  locale values while the gate stays green.
+
+## Deleting keys - there is no tooling, only a procedure
+
+`i18n:sync` ADDS. To remove keys across 13 files: delete them, expect
+check-translation-hashes to red with "Keys removed from English", clear it with
+`npm run i18n:generate-hashes`, then let **check-translation-completeness** be your safety
+net - it names every affected file with its exact orphan keys. Two mechanical traps hit
+for real: a trailing comma when the deleted member is last, and **locale files are
+alphabetically sorted while en.json is authored-order**, so locate by key name and never
+by position.
+
+## Model choice
+
+The ledger's `$meta.models` recording `claude-sonnet-5` across all twelve languages is
+DELIBERATE, not drift: translation runs are delegated to sub-agents on sonnet, which is
+cheaper in practice than the per-key model an older note implies. Do not "fix" it back.
 
 ## Known hazards, each one paid for
 

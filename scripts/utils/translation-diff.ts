@@ -44,11 +44,7 @@ function gitExec(args: string, repoRoot: string): string | null {
  * Get file content at a specific git commit.
  * Returns null if commit is unreachable (shallow clone, etc.).
  */
-export function getFileAtCommit(
-  repoRoot: string,
-  commit: string,
-  filePath: string
-): string | null {
+export function getFileAtCommit(repoRoot: string, commit: string, filePath: string): string | null {
   // Try directly first
   const result = gitExec(`show ${commit}:${filePath}`, repoRoot);
   if (result !== null) return result;
@@ -61,10 +57,7 @@ export function getFileAtCommit(
 /**
  * Get the latest commit SHA that touched a file.
  */
-export function getLatestCommitForFile(
-  repoRoot: string,
-  filePath: string
-): string | null {
+export function getLatestCommitForFile(repoRoot: string, filePath: string): string | null {
   return gitExec(`log -1 --format=%H -- ${filePath}`, repoRoot);
 }
 
@@ -73,10 +66,7 @@ export function getLatestCommitForFile(
 /**
  * Flatten nested JSON object to dot-notation keys with string values.
  */
-export function flattenJson(
-  obj: Record<string, unknown>,
-  prefix = ''
-): Record<string, string> {
+export function flattenJson(obj: Record<string, unknown>, prefix = ''): Record<string, string> {
   const result: Record<string, string> = {};
 
   for (const [key, value] of Object.entries(obj)) {

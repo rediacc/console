@@ -87,6 +87,18 @@ Server = https://releases.rediacc.com/archlinux/stable/\$arch" | sudo tee -a /et
 sudo pacman -Sy rediacc-cli
 ```
 
+### npm (Node.js)
+
+```bash
+npm install -g https://releases.rediacc.com/npm/stable/rediacc-cli-latest.tgz
+```
+
+需要 Node.js 22 或更高版本。要安装特定版本：
+
+```bash
+npm install -g https://releases.rediacc.com/npm/stable/rediacc-cli-0.8.5.tgz
+```
+
 ## Docker
 
 拉取并作为容器运行 CLI：

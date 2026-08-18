@@ -4,19 +4,19 @@
  *
  * The static sibling (check-cli-i18n-key-usage.ts) resolves every t('literal')
  * against en/cli.json, but honestly skips keys built from template literals
- * (t(`help.${x}`)) or variables — it cannot evaluate them. Those dynamically
+ * (t(`help.${x}`)) or variables, because it cannot evaluate them. Those dynamically
  * built keys are exactly where the shipped bug lived: machine/index.ts renders
  * help.machine.containers into `rdc machine status --help` and it leaked as a
  * raw key.
  *
  * This gate renders --help for every node of the LIVE Commander tree (the same
- * tree the docs exporter walks — packages/cli/src/cli.ts) and fails on any
+ * tree the docs exporter walks: packages/cli/src/cli.ts) and fails on any
  * output that still looks like an unresolved i18n key. addHelpText('after')
- * content — where the bug lives — surfaces only through outputHelp(), never
+ * content (where the bug lives) surfaces only through outputHelp(), never
  * helpInformation(), so each node is rendered via a captured outputHelp().
  *
  * Detecting a raw key without tripping on prose or URLs: a leaked i18next key
- * has a precise shape — its root segment is one of en/cli.json's top-level
+ * has a precise shape: its root segment is one of en/cli.json's top-level
  * namespaces, its parent path resolves to an OBJECT in the catalogue, and the
  * full path is a MISSING leaf. That is what "namespace exists, leaf typo'd or
  * computed wrong" looks like (help.machine exists, containers does not). A URL

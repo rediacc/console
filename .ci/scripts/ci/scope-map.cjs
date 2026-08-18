@@ -44,9 +44,9 @@ const KNOWN_MODULES = [
   // `docs`: a future edit that gives docs a job surface must not silently drag
   // the gate sources with it.
   'gates',
-  // The tracked agent working-notes root: agent/<branch>/<session-prefix>/
-  // (STATE.md, RULES.md, reports), agent/<branch>/PLAN-*.md, and the /handoff
-  // program suites under agent/programs/<slug>/. A ZERO-JOB module for the same
+  // The tracked agent working-notes root: agent/<session-prefix>/STATE.md,
+  // agent/RULES.md, agent/PLAN-*.md, and the /handoff program suites under
+  // agent/programs/<slug>/. A ZERO-JOB module for the same
   // reason as docs and gates: nothing in this tree is an input to any build,
   // test or gate, so no JOB_SURFACES entry names it.
   //

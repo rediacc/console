@@ -12,7 +12,7 @@
  *
  * DOMAIN rules (the original gate). For each top-level domain, walk the module
  * tree from the domain's registering module and ask whether the domain can reach
- * a machine at all — the machine-plane services (renet execute, SSH, SFTP, cloud
+ * a machine at all: the machine-plane services (renet execute, SSH, SFTP, cloud
  * provisioning).
  *
  *   Rule 1  A domain that cannot reach a machine must declare no machine-plane
@@ -29,7 +29,7 @@
  * leaves), so nothing anywhere says a word.
  *
  * That is not hypothetical. `repo admin archive {list,restore,purge}` is pure
- * config bookkeeping — it reads and writes the caller's archive map and imports
+ * config bookkeeping: it reads and writes the caller's archive map and imports
  * neither an executor nor SSH. It used to be `config repository *-archived`;
  * moving it under `repo` handed it repo's machine default, and a proxied
  * `archive purge` would therefore have permanently deleted the PROXY HOST's
@@ -44,7 +44,7 @@
  * Rule 3 needs to know which module registers each leaf, and Commander does not
  * record that. So this gate patches `Command.prototype.command`/`.action` to
  * capture a stack at registration time BEFORE importing the CLI, and keeps the
- * innermost frame under src/ — the module where the leaf's `.action(...)` is
+ * innermost frame under src/, the module where the leaf's `.action(...)` is
  * written, which is exactly the module whose imports decide what the leaf can
  * reach. A leaf whose module cannot be attributed is a hard failure: an
  * unattributable leaf is one Rule 3 cannot judge, and silently not judging it is
@@ -203,7 +203,7 @@ for (const [domain, paths] of [...byDomain].sort(byKey)) {
     violations.push(
       `Domain "${domain}" can reach a machine (${reach.via.join(' -> ')}), but declares no ` +
         'machine-plane command.\n  Either a command is mislabelled config/other in ' +
-        'command-metadata.ts, or the reachability is an artefact of module granularity — in ' +
+        'command-metadata.ts, or the reachability is an artefact of module granularity, in ' +
         'which case add an OVERRIDES entry in check-command-planes.ts explaining why.'
     );
   }
@@ -248,10 +248,10 @@ if (report) {
 // Overrides must carry a real reason, and must not outlive their cause.
 for (const [domain, override] of OVERRIDES) {
   if (override.reason.trim().length < 30) {
-    violations.push(`OVERRIDES["${domain}"] reason is too short — explain why the graph is wrong.`);
+    violations.push(`OVERRIDES["${domain}"] reason is too short. Explain why the graph is wrong.`);
   }
   if (!byDomain.has(domain)) {
-    violations.push(`OVERRIDES["${domain}"] is stale — no such domain in the command tree.`);
+    violations.push(`OVERRIDES["${domain}"] is stale: no such domain in the command tree.`);
   }
 }
 

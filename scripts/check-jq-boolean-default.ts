@@ -1,4 +1,5 @@
 #!/usr/bin/env tsx
+import { execFileSync } from 'node:child_process';
 /**
  * Gate: `// true` on a boolean field in a jq filter, which inverts its meaning.
  *
@@ -28,7 +29,6 @@
  */
 import fs from 'node:fs';
 import path from 'node:path';
-import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -76,7 +76,7 @@ function control(): void {
   // including itself, and a literal fixture here self-fired the gate on
   // its very own control line (found 2026-07-31, the first time anything
   // actually ran the scan; see the CI-wiring issue filed the same day).
-  const fires = scanText('x.sh', 'jq -r \'{ not_draft: (.draft /' + '/ true | not) }\'');
+  const fires = scanText('x.sh', "jq -r '{ not_draft: (.draft /" + "/ true | not) }'");
   if (fires.length !== 1) die(`expected 1 finding on the planted defect, got ${fires.length}`);
 
   // Must NOT flag the safe direction, or it becomes noise and gets ignored.

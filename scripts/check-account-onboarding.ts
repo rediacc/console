@@ -214,7 +214,10 @@ function validateStoryboardStep(step: ManifestStep, issues: Issue[]): void {
     return;
   }
   if (!Array.isArray(transcript.events)) {
-    issues.push({ step: step.id, message: `English transcript has no events for "${step.tutorial}"` });
+    issues.push({
+      step: step.id,
+      message: `English transcript has no events for "${step.tutorial}"`,
+    });
     return;
   }
   const event = transcript.events.find((e) => e.markerIndex === step.markerIndex);

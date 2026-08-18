@@ -112,7 +112,7 @@ container_stats() {
 }
 export -f container_stats 2>/dev/null || true
 
-# Block 'docker compose' — must use 'renet compose' for network isolation
+# Block 'docker compose': must use 'renet compose' for network isolation
 docker() {
   case "$1" in
     compose)

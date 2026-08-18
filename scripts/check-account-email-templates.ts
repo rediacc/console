@@ -5,12 +5,25 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { SITE_LOCALES } from '@rediacc/locales';
+
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT_DIR = path.join(__dirname, '..');
 const TEMPLATE_DIR = path.join(ROOT_DIR, 'private/account/src/email/templates');
 const LOCALES_DIR = path.join(ROOT_DIR, 'private/account/src/i18n/locales');
 const LANGUAGES = SITE_LOCALES;
-const TEMPLATE_FILES = ['auth.ts', 'billing.ts', 'contact.ts', 'newsletter.ts', 'organization.ts', 'partner.ts', 'partner-certification.ts', 'partner-deals.ts', 'partner-eval.ts', 'partner-license.ts', 'security.ts'];
+const TEMPLATE_FILES = [
+  'auth.ts',
+  'billing.ts',
+  'contact.ts',
+  'newsletter.ts',
+  'organization.ts',
+  'partner.ts',
+  'partner-certification.ts',
+  'partner-deals.ts',
+  'partner-eval.ts',
+  'partner-license.ts',
+  'security.ts',
+];
 function flattenKeys(input: unknown, prefix = ''): string[] {
   if (typeof input === 'string') {
     return [prefix];
@@ -40,7 +53,9 @@ function findUsedTranslationKeys(content: string): Set<string> {
 
 function hasRenderedEmailContract(content: string): boolean {
   const normalized = content.replace(/\s+/g, ' ');
-  return normalized.includes('subject:') && normalized.includes('html:') && normalized.includes('text:');
+  return (
+    normalized.includes('subject:') && normalized.includes('html:') && normalized.includes('text:')
+  );
 }
 
 function main(): void {
@@ -48,7 +63,8 @@ function main(): void {
   console.log('============================================================\n');
 
   if (!fs.existsSync(TEMPLATE_DIR) || !fs.existsSync(LOCALES_DIR)) {
-    const message = 'private/account is not initialized; account email template validation requires the account submodule';
+    const message =
+      'private/account is not initialized; account email template validation requires the account submodule';
     if (process.env.CI) {
       console.log(`\u001B[31m✗\u001B[0m ${message}\n`);
       process.exit(1);
@@ -82,7 +98,9 @@ function main(): void {
     }
 
     if (usedKeys.size === 0) {
-      errors.push(`${fileName}: no translation keys found; template files must render locale-backed content`);
+      errors.push(
+        `${fileName}: no translation keys found; template files must render locale-backed content`
+      );
     }
 
     if (/subject:\s*['"`]/.test(content)) {
@@ -90,7 +108,9 @@ function main(): void {
     }
 
     if (/text:\s*['"`]/.test(content)) {
-      errors.push(`${fileName}: text body must come from locale-backed rendering, not a hardcoded literal`);
+      errors.push(
+        `${fileName}: text body must come from locale-backed rendering, not a hardcoded literal`
+      );
     }
 
     for (const key of usedKeys) {

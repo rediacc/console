@@ -70,7 +70,7 @@ Process:
      change to CLI commands, config schema, or an on-disk or wire format;
      "minor" for a new user-facing capability; "none" when the diff has NO
      user-facing surface change at all -- no CLI behaviour, no product code, no
-     www content -- i.e. CI workflows, internal tooling, docs/agent notes or
+     www content -- i.e. CI workflows, internal tooling, agent/ notes or
      tests only; "patch" for everything else. ANY change to product, CLI or www
      is at least "patch", however small. Default to "patch" when unsure: "none"
      skips the release for this merge entirely, so claim it only when you have

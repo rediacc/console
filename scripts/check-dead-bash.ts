@@ -48,7 +48,8 @@ const ROOT = process.env.DEAD_BASH_ROOT || path.join(__dirname, '..');
 const ALLOWLIST = path.join(ROOT, '.dead-bash-allowlist');
 
 /** The two real definition forms: `name() {` and `function name {`. */
-const DEF_STRICT = /^\s*(?:([a-zA-Z_][a-zA-Z0-9_]*)\s*\(\)\s*\{|function\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*\{)/;
+const DEF_STRICT =
+  /^\s*(?:([a-zA-Z_][a-zA-Z0-9_]*)\s*\(\)\s*\{|function\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*\{)/;
 
 interface Finding {
   kind: 'function' | 'file';
@@ -194,7 +195,10 @@ function main(): void {
 
   for (const [name, locs] of defs) {
     if (allow.dispatchPrefixes.some((p) => name.startsWith(p))) continue;
-    const re = new RegExp(`(?<![A-Za-z0-9_])${name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?![A-Za-z0-9_])`, 'g');
+    const re = new RegExp(
+      `(?<![A-Za-z0-9_])${name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?![A-Za-z0-9_])`,
+      'g'
+    );
     const total = (corpus.match(re) ?? []).length;
     // Every definition line contains the name once; more than that means a use.
     if (total > locs.length) continue;
@@ -250,7 +254,9 @@ function main(): void {
     return;
   }
 
-  for (const f of findings.sort((a, b) => a.kind.localeCompare(b.kind) || a.file.localeCompare(b.file))) {
+  for (const f of findings.sort(
+    (a, b) => a.kind.localeCompare(b.kind) || a.file.localeCompare(b.file)
+  )) {
     const label = f.kind === 'function' ? `${YELLOW}FUNC${NC}` : `${YELLOW}FILE${NC}`;
     console.log(`${label}  ${f.file}:${f.line}  ${f.name}`);
     console.log(`  DEAD: ${f.why}`);
@@ -260,7 +266,9 @@ function main(): void {
       console.log(`::error file=${f.file},line=${f.line}::${f.name}: ${f.why}`);
     }
   }
-  console.error(`${RED}✗${NC} ${findings.length} dead shell symbol(s) — remove them or declare the discovery mechanism.`);
+  console.error(
+    `${RED}✗${NC} ${findings.length} dead shell symbol(s) — remove them or declare the discovery mechanism.`
+  );
   process.exit(1);
 }
 

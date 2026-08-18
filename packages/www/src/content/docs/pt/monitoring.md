@@ -113,7 +113,7 @@ rdc machine status server-1 --storage-health
 | Allocated | O espaço que a imagem esparsa ocupa atualmente no pool |
 | Unique | Dados únicos reais pertencentes apenas a este repositório |
 | Shared | Blocos de dados reutilizados entre repositórios via reflinks BTRFS (cópias gratuitas) |
-| Reclaimable | A diferença entre alocado e usado que [`repo trim`](/pt/docs/repositories#reclamar-espaco-trim) pode devolver ao pool. Mostra `-` para repositórios desmontados |
+| Reclaimable | A diferença entre alocado e usado que [`repo trim`](/pt/docs/repositories#reclaim-space-trim) pode devolver ao pool. Mostra `-` para repositórios desmontados |
 | Discards | Se o volume encriptado passa discards (`on` para qualquer repositório montado por uma versão atual) |
 | Divergence | Percentagem da imagem única deste repositório em vez de partilhada (maior significa mais recuperável se eliminado) |
 | Frag | Extents por GB na imagem copy-on-write (apenas informativo) |

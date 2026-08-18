@@ -3,7 +3,9 @@ import { EXTERNAL_LINKS } from '../config/constants';
 import { useLanguage } from '../hooks/useLanguage';
 import { useTranslation } from '../i18n/react';
 import NewsletterSignup from './NewsletterSignup';
+import Overlay from './Overlay';
 import '../styles/newsletter.css';
+import type { Language } from '../i18n/types';
 
 const HIDE_THRESHOLD_MS = 30 * 1000;
 const DISMISS_COOLDOWN_MS = 30 * 60 * 1000;
@@ -20,11 +22,26 @@ function isEligiblePath(pathname: string): boolean {
   return !EXCLUDED_PATHS.some((segment) => pathname.includes(segment));
 }
 
-const NewsletterReturnPopup: React.FC = () => {
+interface NewsletterReturnPopupProps {
+  /** Locale from BaseLayout; authoritative on the server. See the note above. */
+  lang?: Language;
+}
+
+/**
+ * `lang` is passed by BaseLayout and is AUTHORITATIVE on the server.
+ *
+ * `useLanguage()` reads `window.location.pathname`, and there is no `window` during SSR,
+ * so it returns 'en' for every locale. That made this island server-render English on all
+ * twelve non-English locales: crawlers and no-JS visitors saw an English nav, and everyone
+ * else got a flash of English until hydration corrected it. Astro knows the locale, so it
+ * hands it down; the hook stays as the fallback for any mount that does not.
+ */
+const NewsletterReturnPopup: React.FC<NewsletterReturnPopupProps> = ({ lang }) => {
   const [open, setOpen] = useState(false);
   const hiddenAtRef = useRef<number | null>(null);
   const shownOnceRef = useRef(false);
-  const currentLang = useLanguage();
+  const detectedLang = useLanguage();
+  const currentLang = lang ?? detectedLang;
   const { t } = useTranslation(currentLang);
 
   const shouldSuppress = () => {
@@ -72,64 +89,36 @@ const NewsletterReturnPopup: React.FC = () => {
     };
   }, [currentLang, open]);
 
-  useEffect(() => {
-    if (!open) return;
+  /* Dismissal is the same three lines whether it came from Escape, the
+     backdrop or the close button, so it is written once. It used to be
+     written three times, and the Escape copy did not fire the
+     `newsletter_return_popup_dismissed` event the button copy did. */
+  const dismiss = (fromCloseButton: boolean) => {
+    localStorage.setItem(DISMISSED_UNTIL_KEY, String(Date.now() + DISMISS_COOLDOWN_MS));
+    setOpen(false);
+    if (fromCloseButton) {
+      window.plausible?.('newsletter_return_popup_dismissed', {
+        props: {
+          source: 'tab-return-popup',
+          path: window.location.pathname,
+        },
+      });
+    }
+  };
 
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-
-    const onEsc = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        localStorage.setItem(DISMISSED_UNTIL_KEY, String(Date.now() + DISMISS_COOLDOWN_MS));
-        setOpen(false);
-      }
-    };
-
-    document.addEventListener('keydown', onEsc);
-    return () => {
-      document.body.style.overflow = previousOverflow;
-      document.removeEventListener('keydown', onEsc);
-    };
-  }, [open]);
-
-  if (currentLang !== 'en' || !open) return null;
+  if (currentLang !== 'en') return null;
 
   return (
-    <div
-      className="newsletter-return-popup-overlay"
-      role="dialog"
-      aria-modal="true"
-      aria-label={t('newsletter.returnPopup.title')}
-      onClick={(event) => {
-        if (event.target !== event.currentTarget) return;
-        localStorage.setItem(DISMISSED_UNTIL_KEY, String(Date.now() + DISMISS_COOLDOWN_MS));
-        setOpen(false);
-      }}
+    <Overlay
+      open={open}
+      onClose={() => dismiss(true)}
+      onBackdropClose={() => dismiss(false)}
+      align="center"
+      label={t('newsletter.returnPopup.title')}
+      closeLabel={t('newsletter.returnPopup.close')}
+      closeTrackLabel="newsletter-return-popup-close"
     >
-      <div className="newsletter-return-popup-card">
-        <button
-          type="button"
-          className="newsletter-return-popup-close"
-          aria-label={t('newsletter.returnPopup.close')}
-          data-track="cta_click"
-          data-track-label="newsletter-return-popup-close"
-          data-track-dest="dismiss"
-          onClick={() => {
-            localStorage.setItem(DISMISSED_UNTIL_KEY, String(Date.now() + DISMISS_COOLDOWN_MS));
-            setOpen(false);
-            window.plausible?.('newsletter_return_popup_dismissed', {
-              props: {
-                source: 'tab-return-popup',
-                path: window.location.pathname,
-              },
-            });
-          }}
-        >
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
-            <path d="M4.646 4.646a.5.5 0 01.708 0L8 7.293l2.646-2.647a.5.5 0 01.708.708L8.707 8l2.647 2.646a.5.5 0 01-.708.708L8 8.707l-2.646 2.647a.5.5 0 01-.708-.708L7.293 8 4.646 5.354a.5.5 0 010-.708z" />
-          </svg>
-        </button>
-
+      <div className="overlay-body newsletter-return-popup">
         <NewsletterSignup
           variant="modal"
           source="tab-return-popup"
@@ -150,7 +139,7 @@ const NewsletterReturnPopup: React.FC = () => {
         />
         <p className="newsletter-return-popup-note">{t('newsletter.returnPopup.note')}</p>
       </div>
-    </div>
+    </Overlay>
   );
 };
 

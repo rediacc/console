@@ -63,7 +63,7 @@ export function tokenizeExampleCommand(command: string): string[] | null {
  * longest-prefix match against the live tree), an unknown flag, bad arity, an
  * out-of-choices value, a missing required positional, or a missing mandatory
  * option all fail generation. Global options (-o/--output, --lang, --context)
- * are tolerated but never enter `values` — they are not form fields.
+ * are tolerated but never enter `values`, since they are not form fields.
  */
 export function parseExampleValues(
   pathKey: string,
@@ -75,7 +75,7 @@ export function parseExampleValues(
 ): Record<string, string> {
   const fail = (message: string): Record<string, string> => {
     ctx.problems.push(
-      `COMMAND_EXAMPLES["${pathKey}"]: ${JSON.stringify(exampleCommand)} — ${message}`
+      `COMMAND_EXAMPLES["${pathKey}"]: ${JSON.stringify(exampleCommand)}: ${message}`
     );
     return {};
   };
@@ -136,7 +136,7 @@ export function parseExampleValues(
           return fail(`${globalLong} has no place in a worked example`);
         }
         // --output/--lang/--context take a value; consume it, keep it out of
-        // `values` — global options are not form fields.
+        // `values`, since global options are not form fields.
         if (inlineValue === undefined) i++;
         continue;
       }

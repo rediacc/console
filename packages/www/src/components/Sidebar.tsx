@@ -1,14 +1,16 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { CATEGORY_ORDER, SOLUTION_PAGES } from '../config/solution-pages';
 import { useLanguage } from '../hooks/useLanguage';
 import { useTranslation } from '../i18n/react';
 import { AccountCta } from './AccountCta';
-import { CATEGORY_ICONS } from './CategoryIcons';
+import type { Language } from '../i18n/types';
 
 interface SidebarProps {
+  /** Locale from Navigation; authoritative on the server, where useLanguage() returns 'en'. */
+  lang?: Language;
   isOpen: boolean;
   onClose: () => void;
   origin?: string;
+  onSearch: () => void;
 }
 
 const normalizePath = (value: string): string => {
@@ -17,14 +19,25 @@ const normalizePath = (value: string): string => {
   return pathOnly.length > 1 && pathOnly.endsWith('/') ? pathOnly.slice(0, -1) : pathOnly;
 };
 
-const computeIsActive = (href: string, currentPath: string, currentLang: string): boolean => {
+const computeIsActive = (
+  href: string,
+  currentPath: string,
+  currentHash: string,
+  currentLang: string
+): boolean => {
   if (!currentPath) return false;
   const normalizedHref = normalizePath(href);
   const normalizedPath = normalizePath(currentPath);
+  // A hash link is active only when the FRAGMENT matches too. Path alone was
+  // enough while every hash link pointed at a page of its own; once Solutions
+  // became `/<lang>#solutions` it shares a path with Home, and a path-only test
+  // put aria-current="page" on two rows of the same drawer at once.
+  if (href.includes('#')) {
+    const hash = href.slice(href.indexOf('#'));
+    return normalizedPath === normalizedHref && currentHash === hash;
+  }
   // Home should only be active on the exact home route.
   if (normalizedHref === `/${currentLang}`) return normalizedPath === normalizedHref;
-  // Hash-based links should match exact base path only.
-  if (href.includes('#')) return normalizedPath === normalizedHref;
   // Mark parent sections active on nested routes, e.g. /en/docs/* keeps Docs active.
   return normalizedPath === normalizedHref || normalizedPath.startsWith(`${normalizedHref}/`);
 };
@@ -123,37 +136,22 @@ const SidebarNavLink: React.FC<SidebarNavLinkProps> = ({
   </a>
 );
 
-const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, origin }) => {
-  const currentLang = useLanguage();
-  const { t, to } = useTranslation(currentLang);
+const Sidebar: React.FC<SidebarProps> = ({ lang, isOpen, onClose, origin, onSearch }) => {
+  const detectedLang = useLanguage();
+  const currentLang = lang ?? detectedLang;
+  const { t } = useTranslation(currentLang);
   const sidebarRef = useRef<HTMLElement>(null);
   const [currentPath, setCurrentPath] = useState('');
-  const [isSolutionsExpanded, setIsSolutionsExpanded] = useState(false);
+  const [currentHash, setCurrentHash] = useState('');
 
-  const topNavItems = [{ href: `/${currentLang}`, label: t('navigation.home') }];
-
-  const categories = to('solutions.categories') as Record<string, string>;
-  const solutionCategories = React.useMemo(() => {
-    const slugs = Object.keys(SOLUTION_PAGES);
-    return CATEGORY_ORDER.map((cat) => ({
-      category: cat,
-      label: categories[cat] ?? cat,
-      items: slugs
-        .filter((slug) => SOLUTION_PAGES[slug].category === cat)
-        .map((slug) => {
-          const config = SOLUTION_PAGES[slug];
-          const content = to(`pages.solutionPages.${config.contentKey}`) as
-            | { hero?: { title?: string } }
-            | undefined;
-          return {
-            href: `/${currentLang}/solutions/${slug}`,
-            label: content?.hero?.title ?? slug,
-          };
-        }),
-    }));
-  }, [categories, currentLang, to]);
-
-  const allSolutionItems = solutionCategories.flatMap((cat) => cat.items);
+  // The solutions accordion (6 category groups x 21 titles) is gone: the
+  // constellation is the one browse surface, so the sidebar links to it like
+  // any other top-level destination. It moved onto the homepage under
+  // `#solutions` when the `/[lang]/solutions` index route was deleted.
+  const topNavItems = [
+    { href: `/${currentLang}`, label: t('navigation.home') },
+    { href: `/${currentLang}#solutions`, label: t('navigation.solutions') },
+  ];
 
   const personaItems = [
     { href: `/${currentLang}/for-devops`, label: t('navigation.forDevops') },
@@ -174,25 +172,28 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, origin }) => {
 
   useEffect(() => {
     requestAnimationFrame(() => {
-      const path = window.location.pathname;
-      setCurrentPath(path);
-      if (path.includes('/solutions/')) {
-        setIsSolutionsExpanded(true);
-      }
+      setCurrentPath(window.location.pathname);
+      setCurrentHash(window.location.hash);
     });
   }, []);
 
-  const isActive = (href: string) => computeIsActive(href, currentPath, currentLang);
-
-  const activeSolutionHref = allSolutionItems.find((item) => isActive(item.href))?.href;
-
-  const toggleSolutions = () => setIsSolutionsExpanded((prev) => !prev);
+  const isActive = (href: string) => computeIsActive(href, currentPath, currentHash, currentLang);
 
   useSidebarBodyLock(isOpen, sidebarRef);
   useSidebarKeyboard(isOpen, onClose, sidebarRef);
 
   const handleLinkClick = () => {
     onClose();
+  };
+
+  // Search lives in the header's split-button menu, and that whole control is
+  // `display: none` below 30rem (main.css, the .nav-cta-split block), so on the
+  // narrowest phones this drawer is the ONLY way to reach it. The label reuses
+  // navigation.search, already in the client catalog: a second key for the same
+  // word in thirteen locales would be the cost of not looking.
+  const handleSearchClick = () => {
+    onClose();
+    onSearch();
   };
 
   return (
@@ -258,6 +259,32 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, origin }) => {
             track={{ event: 'cta_click', label: 'sidebar-login', dest: 'account' }}
             onClick={onClose}
           />
+          <button
+            type="button"
+            className="sidebar-link sidebar-search-btn"
+            onClick={handleSearchClick}
+            tabIndex={isOpen ? 0 : -1}
+            data-track="cta_click"
+            data-track-label="sidebar-search"
+          >
+            <svg
+              width="18"
+              height="18"
+              viewBox="0 0 20 20"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+              aria-hidden="true"
+            >
+              <circle cx="8" cy="8" r="6" stroke="currentColor" strokeWidth="2" />
+              <path
+                d="M12.5 12.5L17 17"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+              />
+            </svg>
+            {t('navigation.search')}
+          </button>
           {/* Home */}
           {topNavItems.map((item) => (
             <SidebarNavLink
@@ -270,66 +297,6 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, origin }) => {
               trackLabel="sidebar-nav"
             />
           ))}
-
-          {/* Solutions Accordion */}
-          <div className="sidebar-solutions-group">
-            <button
-              type="button"
-              className={`sidebar-solutions-toggle${activeSolutionHref ? ' has-active-child' : ''}`}
-              onClick={toggleSolutions}
-              aria-expanded={isSolutionsExpanded}
-              aria-controls="sidebar-solutions-list"
-              tabIndex={isOpen ? 0 : -1}
-              data-track="cta_click"
-              data-track-label="sidebar-solutions-toggle"
-            >
-              <span>{t('navigation.solutions')}</span>
-              <svg
-                className={`sidebar-solutions-chevron${isSolutionsExpanded ? ' expanded' : ''}`}
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                aria-hidden="true"
-              >
-                <polyline points="6 9 12 15 18 9" />
-              </svg>
-            </button>
-            <ul
-              id="sidebar-solutions-list"
-              className={`sidebar-solutions-list${isSolutionsExpanded ? ' expanded' : ''}`}
-              role="list"
-            >
-              {solutionCategories.map((group) => (
-                <li key={group.label} className="sidebar-category-group">
-                  <span className="sidebar-category-label">
-                    {React.createElement(CATEGORY_ICONS[group.category], {
-                      size: 16,
-                      className: 'sidebar-category-icon',
-                    })}
-                    {group.label}
-                  </span>
-                  <ul role="list">
-                    {group.items.map((item) => (
-                      <li key={item.href}>
-                        <SidebarNavLink
-                          href={item.href}
-                          label={item.label}
-                          active={isActive(item.href)}
-                          tabbable={isOpen && isSolutionsExpanded}
-                          onLinkClick={handleLinkClick}
-                          className="sidebar-link sidebar-sublink"
-                          trackLabel="sidebar-solution"
-                        />
-                      </li>
-                    ))}
-                  </ul>
-                </li>
-              ))}
-            </ul>
-          </div>
 
           {/* Persona links */}
           <div className="sidebar-personas-group">

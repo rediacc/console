@@ -32,7 +32,7 @@ interface GitHubAsset {
   size: number;
 }
 
-interface GitHubRelease {
+export interface GitHubRelease {
   tag_name: string;
   published_at: string;
   assets: GitHubAsset[];

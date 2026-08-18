@@ -57,8 +57,18 @@ main() {
     # git ls-files is the enumerator because it needs no maintenance: a new
     # script is covered the moment it is tracked, which is exactly the property
     # a root list cannot have.
-    log_info "Checking every tracked *.sh file"
-    SH_FILES="$(git ls-files '*.sh')"
+    # ALSO the untracked ones. `git ls-files` alone made this gate blind to any
+    # .sh a session had written but not yet committed, which is exactly when it
+    # is most useful: three new gate tests were invisible here until commit. Same
+    # blind spot the lint gate had for untracked .py. --others --exclude-standard
+    # adds untracked files while still honouring .gitignore, so node_modules and
+    # build output stay out.
+    log_info "Checking every tracked and untracked *.sh file"
+    SH_FILES="$(
+        git ls-files '*.sh'
+        git ls-files --others --exclude-standard '*.sh'
+    )"
+    SH_FILES="$(printf '%s\n' "$SH_FILES" | awk 'NF' | sort -u)"
 
     # A gate that lints nothing exits 0 and looks identical to a gate that lints
     # everything. Refuse the empty list rather than pass it.

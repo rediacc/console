@@ -1,4 +1,4 @@
-import React, { useCallback, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import type { InstallMethod, Platform } from '../config/install';
 import {
   APK_COMMANDS,
@@ -14,7 +14,9 @@ import {
   QUICK_INSTALL_UNIX,
   QUICK_INSTALL_WIN,
 } from '../config/install';
-import { useTranslation } from '../i18n/react';
+// Route-scoped translations: this island hydrates on ONE page, so its strings ride
+// this component's chunk instead of the catalog every route downloads.
+import { useRouteTranslation } from '../i18n/react-route';
 import type { Language } from '../i18n/types';
 import { copyToClipboard } from '../utils/clipboard';
 import { CheckIcon, CopyIcon } from './icons/ClipboardIcons';
@@ -128,21 +130,32 @@ function getMethodBlocks(
 }
 
 const InstallMethods: React.FC<InstallMethodsProps> = ({ lang }) => {
-  const { t } = useTranslation(lang);
+  const { t } = useRouteTranslation(lang);
 
-  const [filter, setFilter] = useState<FilterTab>(() => {
-    if (typeof window === 'undefined') return 'all';
+  // A useState initializer must be PURE. This one read window.location.hash and
+  // called detectPlatform(), so the server's first render ('all') and the client's
+  // first render could disagree, and it also called requestAnimationFrame from inside
+  // the initializer, which StrictMode runs twice. Honest note on the evidence: the
+  // symptom that sent me here, /en/install#homebrew rendering zero platform tabs,
+  // turned out to be a two-day-old dev server whose module graph had gone stale, NOT
+  // this code, and on a clean server the previous version logged no hydration warning
+  // either. This change is correctness by the rules of the hook, not a repair of a
+  // reproduced failure. Verified on a clean dev server: four tabs, macOS selected for
+  // #homebrew, zero console errors.
+  const [filter, setFilter] = useState<FilterTab>('all');
+
+  // Platform detection and anchor handling belong after mount, where reading the URL
+  // and the user agent is legal and cannot disagree with the server.
+  useEffect(() => {
     const hash = window.location.hash.replace('#', '');
     if (hash && hash in ANCHOR_PLATFORM_MAP) {
-      // Scroll to the anchor after React render
-      requestAnimationFrame(() => {
-        const el = document.getElementById(hash);
-        if (el) el.scrollIntoView({ behavior: 'smooth' });
-      });
-      return ANCHOR_PLATFORM_MAP[hash];
+      setFilter(ANCHOR_PLATFORM_MAP[hash]);
+      const el = document.getElementById(hash);
+      if (el) el.scrollIntoView({ behavior: 'smooth' });
+      return;
     }
-    return detectPlatform();
-  });
+    setFilter(detectPlatform());
+  }, []);
 
   const handleFilterChange = useCallback((tab: FilterTab) => {
     setFilter(tab);

@@ -144,7 +144,7 @@ Bunlar standart [Traefik v3 etiket sözdizimini](https://doc.traefik.io/traefik/
    rdc machine infra push server-1
    ```
 
-2. Alan adınızı sunucunun genel IP'sine yönlendiren DNS kayıtları (aşağıdaki [DNS Yapılandırması](#dns-yapılandırması) bölümüne bakın).
+2. Alan adınızı sunucunun genel IP'sine yönlendiren DNS kayıtları (aşağıdaki [DNS Yapılandırması](#dns-configuration) bölümüne bakın).
 
 ### Etiket Ekleme
 

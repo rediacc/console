@@ -9,7 +9,7 @@ List detached jobs on a machine, newest first
 
 **Options:**
 
-- `-m, --machine <name>` — Target machine name
+- `-m, --machine <name>`: Target machine name
 
 > MCP tool
 
@@ -19,7 +19,7 @@ Show a detached job's status
 
 **Options:**
 
-- `-m, --machine <name>` — Target machine name
+- `-m, --machine <name>`: Target machine name
 
 > MCP tool
 
@@ -29,10 +29,10 @@ Replay or follow a detached job's event log
 
 **Options:**
 
-- `-m, --machine <name>` — Target machine name
-- `-f, --follow` — Stream until the job finishes
-- `--since-line <n>` — Resume after this many lines (the count you already received)
-- `--debug` — Enable debug output
+- `-m, --machine <name>`: Target machine name
+- `-f, --follow`: Stream until the job finishes
+- `--since-line <n>`: Resume after this many lines (the count you already received)
+- `--debug`: Enable debug output
 
 > MCP tool
 
@@ -42,8 +42,8 @@ Cancel a running detached job
 
 **Options:**
 
-- `-m, --machine <name>` — Target machine name
-- `-y, --yes` — Skip confirmation prompt
+- `-m, --machine <name>`: Target machine name
+- `-y, --yes`: Skip confirmation prompt
 
 > MCP tool
 
@@ -53,9 +53,9 @@ Remove finished jobs and their logs
 
 **Options:**
 
-- `-m, --machine <name>` — Target machine name
-- `--older-than <duration>` — Collect jobs that finished longer ago than this, in hours (default: 168)
-- `-y, --yes` — Skip confirmation prompt
+- `-m, --machine <name>`: Target machine name
+- `--older-than <duration>`: Collect jobs that finished longer ago than this, in hours (default: 168)
+- `-y, --yes`: Skip confirmation prompt
 
 > MCP tool
 
@@ -65,9 +65,9 @@ Open a shell on a machine, or inside a repository with its Docker set up.
 
 **Options:**
 
-- `-c, --command <cmd>` — Execute a command instead of interactive shell
-- `--external` — Force launching in external terminal window
-- `--reset-home` — Reset per-repo home overlay for a fresh start
+- `-c, --command <cmd>`: Execute a command instead of interactive shell
+- `--external`: Force launching in external terminal window
+- `--reset-home`: Reset per-repo home overlay for a fresh start
 
 > agent: fork-only
 
@@ -79,9 +79,9 @@ Register an existing machine you can reach over SSH.
 
 **Options:**
 
-- `--ip <address>` — Machine IP address or hostname
-- `--user <username>` — SSH username
-- `--port <port>` — SSH port (default: 22)
+- `--ip <address>`: Machine IP address or hostname
+- `--user <username>`: SSH username
+- `--port <port>`: SSH port (default: 22)
 
 > MCP tool
 
@@ -91,8 +91,8 @@ Remove a machine from the config. Does not touch the machine itself.
 
 **Options:**
 
-- `-y, --yes` — Skip confirmation prompt
-- `--force` — Remove the machine even if repositories are still placed on it, leaving those placements dangling.
+- `-y, --yes`: Skip confirmation prompt
+- `--force`: Remove the machine even if repositories are still placed on it, leaving those placements dangling.
 
 > MCP tool
 
@@ -102,9 +102,9 @@ List machines
 
 **Options:**
 
-- `--search <text>` — Search in name
-- `--sort <field>` — Sort by field
-- `--desc` — Sort in descending order
+- `--search <text>`: Search in name
+- `--sort <field>`: Sort by field
+- `--desc`: Sort in descending order
 
 > MCP tool
 
@@ -120,9 +120,9 @@ Install renet and prepare a registered machine for repositories.
 
 **Options:**
 
-- `--datastore-path <path>` — Datastore path on remote machine (default: /mnt/rediacc)
-- `--datastore-size <size>` — Datastore size (e.g., 95%, 100G) (default: 95%)
-- `--debug` — Enable debug output
+- `--datastore-path <path>`: Datastore path on remote machine (default: /mnt/rediacc)
+- `--datastore-size <size>`: Datastore size (e.g., 95%, 100G) (default: 95%)
+- `--debug`: Enable debug output
 
 > MCP tool
 
@@ -132,21 +132,21 @@ Show a machine's system, repositories, containers, and services.
 
 **Options:**
 
-- `--debug` — Enable debug output
-- `--system` — Include system info only
-- `--repositories` — Include repositories only
-- `--containers` — Include containers only
-- `--services` — Include services only
-- `--network` — Include network interfaces only
-- `--block-devices` — Include block devices only
-- `--licenses` — Include repository license statuses
-- `--storage-health` — Show BTRFS reflink savings and (informational) image fragmentation per repository
-- `--datastores` — Show attached datastores (mount, attach, usage)
-- `--health-check` — Health check mode - exits with code 2 if any unhealthy
-- `--stability-check` — Stability check mode - exits with code 2 if any failed/restarting
-- `--search <text>` — Filter repositories by name
-- `--sync-certs` — Also pull the ACME cert cache from the machine after querying
-- `--strict` — Exit non-zero (code 2) if any container has crossed the health-drift threshold
+- `--debug`: Enable debug output
+- `--system`: Include system info only
+- `--repositories`: Include repositories only
+- `--containers`: Include containers only
+- `--services`: Include services only
+- `--network`: Include network interfaces only
+- `--block-devices`: Include block devices only
+- `--licenses`: Include repository license statuses
+- `--storage-health`: Show BTRFS reflink savings and (informational) image fragmentation per repository
+- `--datastores`: Show attached datastores (mount, attach, usage)
+- `--health-check`: Health check mode - exits with code 2 if any unhealthy
+- `--stability-check`: Stability check mode - exits with code 2 if any failed/restarting
+- `--search <text>`: Filter repositories by name
+- `--sync-certs`: Also pull the ACME cert cache from the machine after querying
+- `--strict`: Exit non-zero (code 2) if any container has crossed the health-drift threshold
 
 > MCP tool
 
@@ -156,7 +156,7 @@ Check machine health for CI/CD pipelines
 
 **Options:**
 
-- `-t, --team <name>` — Team name
+- `-t, --team <name>`: Team name
 
 > MCP tool
 
@@ -166,14 +166,14 @@ Provision a new machine on a cloud provider using OpenTofu
 
 **Options:**
 
-- `--provider <name>` — Cloud provider name (from machine provider add)
-- `--region <region>` — Override default region
-- `--type <type>` — Override default instance type
-- `--image <image>` — Override default OS image
-- `--ssh-user <user>` — SSH username for the new VM (default: root)
-- `--base-domain <domain>` — Base domain for infrastructure (e.g., example.com). Implies --infra
-- `--no-infra` — Skip infrastructure configuration (proxy + DNS)
-- `--debug` — Enable debug output
+- `--provider <name>`: Cloud provider name (from machine provider add)
+- `--region <region>`: Override default region
+- `--type <type>`: Override default instance type
+- `--image <image>`: Override default OS image
+- `--ssh-user <user>`: SSH username for the new VM (default: root)
+- `--base-domain <domain>`: Base domain for infrastructure (e.g., example.com). Implies --infra
+- `--no-infra`: Skip infrastructure configuration (proxy + DNS)
+- `--debug`: Enable debug output
 
 > MCP tool
 
@@ -183,8 +183,8 @@ Destroy a cloud-provisioned machine and remove from config
 
 **Options:**
 
-- `--force` — Skip confirmation prompt
-- `--debug` — Enable debug output
+- `--force`: Skip confirmation prompt
+- `--debug`: Enable debug output
 
 > MCP tool
 
@@ -194,13 +194,13 @@ Remove orphaned datastore resources and stale snapshots from a machine. The base
 
 **Options:**
 
-- `--dry-run` — Show what would be removed without making changes
-- `--orphaned-repos` — Delete every repo image on the machine that is not in your local CLI config. Coarse — also removes forks created by other tools that have no local config entry, even when their renet mirror correctly identifies them as forks. Use --prune-unknown for the narrower behavior that respects the mirror.
-- `--prune-unknown` — Delete only repos the renet .interim/state mirror cannot classify (not in local config AND no fork-marked mirror). Strictly narrower than --orphaned-repos: forks-without-config are preserved when the mirror identifies them. Pre-mirror legacy orphans and stale grands whose config entry was deleted both fall in this bucket.
-- `--force-delete-mounted` — Override the mount-safety preflight and delete repos even if they are currently mounted or have running Docker containers. Distinct from --force (which only overrides the archive grace period). Applies to both --orphaned-repos and --prune-unknown.
-- `--force` — Skip confirmation prompts
-- `--grace-days <days>` — Grace period in days for recently archived repos (default: 7)
-- `--debug` — Enable debug output
+- `--dry-run`: Show what would be removed without making changes
+- `--orphaned-repos`: Delete every repo image on the machine that is not in your local CLI config. Coarse — also removes forks created by other tools that have no local config entry, even when their renet mirror correctly identifies them as forks. Use --prune-unknown for the narrower behavior that respects the mirror.
+- `--prune-unknown`: Delete only repos the renet .interim/state mirror cannot classify (not in local config AND no fork-marked mirror). Strictly narrower than --orphaned-repos: forks-without-config are preserved when the mirror identifies them. Pre-mirror legacy orphans and stale grands whose config entry was deleted both fall in this bucket.
+- `--force-delete-mounted`: Override the mount-safety preflight and delete repos even if they are currently mounted or have running Docker containers. Distinct from --force (which only overrides the archive grace period). Applies to both --orphaned-repos and --prune-unknown.
+- `--force`: Skip confirmation prompts
+- `--grace-days <days>`: Grace period in days for recently archived repos (default: 7)
+- `--debug`: Enable debug output
 
 > MCP tool
 
@@ -210,23 +210,23 @@ Add a cloud provider
 
 **Options:**
 
-- `--provider <source>` — Known provider source (e.g., linode/linode, hetznercloud/hcloud)
-- `--source <source>` — Custom OpenTofu provider source (e.g., vultr/vultr)
-- `--token <token>` — API token for the cloud provider
-- `--region <region>` — Default region for new machines
-- `--type <type>` — Default instance type/size
-- `--image <image>` — Default OS image
-- `--ssh-user <user>` — SSH username for new VMs (default: root)
-- `--resource <type>` — Custom: OpenTofu resource type for VM
-- `--label-attr <attr>` — Custom: attribute name for VM label
-- `--region-attr <attr>` — Custom: attribute name for region
-- `--size-attr <attr>` — Custom: attribute name for instance type
-- `--image-attr <attr>` — Custom: attribute name for OS image
-- `--ipv4-output <attr>` — Custom: output attribute for IPv4 address
-- `--ipv6-output <attr>` — Custom: output attribute for IPv6 address
-- `--ssh-key-attr <attr>` — Custom: attribute name for SSH keys
-- `--ssh-key-format <format>` — Custom: SSH key format (inline_list or resource_id)
-- `--ssh-key-resource <type>` — Custom: OpenTofu resource type for SSH keys
+- `--provider <source>`: Known provider source (e.g., linode/linode, hetznercloud/hcloud)
+- `--source <source>`: Custom OpenTofu provider source (e.g., vultr/vultr)
+- `--token <token>`: API token for the cloud provider
+- `--region <region>`: Default region for new machines
+- `--type <type>`: Default instance type/size
+- `--image <image>`: Default OS image
+- `--ssh-user <user>`: SSH username for new VMs (default: root)
+- `--resource <type>`: Custom: OpenTofu resource type for VM
+- `--label-attr <attr>`: Custom: attribute name for VM label
+- `--region-attr <attr>`: Custom: attribute name for region
+- `--size-attr <attr>`: Custom: attribute name for instance type
+- `--image-attr <attr>`: Custom: attribute name for OS image
+- `--ipv4-output <attr>`: Custom: output attribute for IPv4 address
+- `--ipv6-output <attr>`: Custom: output attribute for IPv6 address
+- `--ssh-key-attr <attr>`: Custom: attribute name for SSH keys
+- `--ssh-key-format <format>`: Custom: SSH key format (inline_list or resource_id)
+- `--ssh-key-resource <type>`: Custom: OpenTofu resource type for SSH keys
 
 > MCP tool
 
@@ -248,13 +248,13 @@ Set infrastructure configuration for a machine (machine-specific: IPs, domain, p
 
 **Options:**
 
-- `--public-ipv4 <ip>` — Public IPv4 address (per-machine)
-- `--public-ipv6 <ip>` — Public IPv6 address (per-machine)
-- `--base-domain <domain>` — Base domain for applications (per-machine)
-- `--cert-email <email>` — Email for TLS certificate notifications (shared across machines)
-- `--cf-dns-token <token>` — Cloudflare DNS API token for ACME DNS-01 challenge (shared across machines)
-- `--tcp-ports <ports>` — TCP ports to forward (comma-separated, e.g., 25,143,465)
-- `--udp-ports <ports>` — UDP ports to forward (comma-separated, e.g., 53)
+- `--public-ipv4 <ip>`: Public IPv4 address (per-machine)
+- `--public-ipv6 <ip>`: Public IPv6 address (per-machine)
+- `--base-domain <domain>`: Base domain for applications (per-machine)
+- `--cert-email <email>`: Email for TLS certificate notifications (shared across machines)
+- `--cf-dns-token <token>`: Cloudflare DNS API token for ACME DNS-01 challenge (shared across machines)
+- `--tcp-ports <ports>`: TCP ports to forward (comma-separated, e.g., 25,143,465)
+- `--udp-ports <ports>`: UDP ports to forward (comma-separated, e.g., 53)
 
 > MCP excluded: Sets the infra block that `machine infra push` then acts on, which provisions cloud resources and spends real money. Arming and firing are both operator decisions.
 
@@ -270,7 +270,7 @@ Push infrastructure config to machine (Traefik proxy, router, Cloudflare DNS). R
 
 **Options:**
 
-- `--debug` — Enable debug output
+- `--debug`: Enable debug output
 
 > MCP excluded: Applies the infra block to the machine: provisions cloud resources, public DNS and TLS. It spends real money and changes what the world can reach.
 
@@ -280,8 +280,8 @@ Download and cache TLS certificates from a machine
 
 **Options:**
 
-- `--no-prune` — Skip pruning stale network-ID certificates
-- `--debug` — Enable debug output
+- `--no-prune`: Skip pruning stale network-ID certificates
+- `--debug`: Enable debug output
 
 > MCP excluded: Moves TLS key material into the local cert cache. Key material is not agent surface.
 
@@ -291,7 +291,7 @@ Upload cached TLS certificates to a machine
 
 **Options:**
 
-- `--debug` — Enable debug output
+- `--debug`: Enable debug output
 
 > MCP excluded: Moves TLS key material onto the machine. Key material is not agent surface.
 
@@ -313,16 +313,16 @@ Create or update a backup strategy
 
 **Options:**
 
-- `--destination <name>` — Destination name within the strategy. Creates a Rediacc chunk-store destination unless --storage is given
-- `--storage <name>` — Use this rclone storage config instead of the chunk store. Legacy: such a destination cannot be scheduled
-- `--cron <expression>` — Cron schedule (e.g., "0 * * * *" for hourly)
-- `--mode <mode>` — Backup mode: "hot" snapshots while everything keeps running, "cold" stops the containers for the moment the snapshot is taken
-- `--bwlimit <limit>` — Rclone bandwidth limit (e.g., "6M", "10M:off", "08:00,3M;22:00,10M")
-- `--include <repos>` — Only back up these repos (comma-separated names)
-- `--exclude <repos>` — Exclude these repos from backup (comma-separated names)
-- `--folder <path>` — Subfolder under the storage bucket for this destination (e.g. hot, cold). Needs --storage
-- `--enable` — Enable the strategy or destination
-- `--disable` — Disable the strategy or destination
+- `--destination <name>`: Destination name within the strategy. Creates a Rediacc chunk-store destination unless --storage is given
+- `--storage <name>`: Use this rclone storage config instead of the chunk store. Legacy: such a destination cannot be scheduled
+- `--cron <expression>`: Cron schedule (e.g., "0 * * * *" for hourly)
+- `--mode <mode>`: Backup mode: "hot" snapshots while everything keeps running, "cold" stops the containers for the moment the snapshot is taken
+- `--bwlimit <limit>`: Rclone bandwidth limit (e.g., "6M", "10M:off", "08:00,3M;22:00,10M")
+- `--include <repos>`: Only back up these repos (comma-separated names)
+- `--exclude <repos>`: Exclude these repos from backup (comma-separated names)
+- `--folder <path>`: Subfolder under the storage bucket for this destination (e.g. hot, cold). Needs --storage
+- `--enable`: Enable the strategy or destination
+- `--disable`: Disable the strategy or destination
 
 > MCP excluded: Backup policy mutation; use CLI directly.
 
@@ -332,7 +332,7 @@ Bind a backup strategy to a machine so its schedule is deployed there
 
 **Options:**
 
-- `-m, --machine <name>` — Target machine name
+- `-m, --machine <name>`: Target machine name
 
 > MCP excluded: Backup policy mutation; use CLI directly.
 
@@ -342,7 +342,7 @@ Unbind a backup strategy from a machine
 
 **Options:**
 
-- `-m, --machine <name>` — Target machine name
+- `-m, --machine <name>`: Target machine name
 
 > MCP excluded: Backup policy mutation; use CLI directly.
 
@@ -352,7 +352,7 @@ Remove a backup strategy or destination
 
 **Options:**
 
-- `--destination <name>` — Remove only this destination (keeps other destinations)
+- `--destination <name>`: Remove only this destination (keeps other destinations)
 
 > MCP excluded: Backup policy mutation; use CLI directly.
 
@@ -374,11 +374,11 @@ Deploy backup schedule to a remote machine (systemd timers)
 
 **Options:**
 
-- `-m, --machine <name>` — Machine name
-- `--dry-run` — Preview generated units without deploying
-- `--force` — Proceed even if a backup is currently running (new unit applies on next tick; running invocation keeps its old unit)
-- `--reset-failed` — Clear failed state on touched services after a successful deploy (off by default, preserves failure signal)
-- `--debug` — Enable debug output
+- `-m, --machine <name>`: Machine name
+- `--dry-run`: Preview generated units without deploying
+- `--force`: Proceed even if a backup is currently running (new unit applies on next tick; running invocation keeps its old unit)
+- `--reset-failed`: Clear failed state on touched services after a successful deploy (off by default, preserves failure signal)
+- `--debug`: Enable debug output
 
 > MCP excluded: Installs systemd backup timers on a machine; use CLI directly.
 
@@ -388,8 +388,8 @@ Run a backup now.
 
 **Options:**
 
-- `-m, --machine <name>` — Machine name
-- `--debug` — Enable debug output
+- `-m, --machine <name>`: Machine name
+- `--debug`: Enable debug output
 
 > MCP tool
 
@@ -399,8 +399,8 @@ Show backup status and timer state on a remote machine
 
 **Options:**
 
-- `-m, --machine <name>` — Machine name
-- `--debug` — Enable debug output
+- `-m, --machine <name>`: Machine name
+- `--debug`: Enable debug output
 
 > MCP tool
 
@@ -410,8 +410,8 @@ Cancel a running backup on a remote machine
 
 **Options:**
 
-- `-m, --machine <name>` — Machine name
-- `--debug` — Enable debug output
+- `-m, --machine <name>`: Machine name
+- `--debug`: Enable debug output
 
 > MCP tool
 
@@ -433,8 +433,8 @@ Verify a repository's backup anchor against the chunk store
 
 **Options:**
 
-- `--deep` — Re-hash every recorded cell (full verification) instead of a sampled check
-- `--debug` — Enable debug output
+- `--deep`: Re-hash every recorded cell (full verification) instead of a sampled check
+- `--debug`: Enable debug output
 
 > MCP tool
 
@@ -444,10 +444,10 @@ List the files a repository contains. A local read-only walk of the repository i
 
 **Options:**
 
-- `--path <subdir>` — Limit the listing to this subtree
-- `--depth <n>` — Limit descent to N levels (0 for unlimited)
-- `--limit <n>` — Maximum entries to return (0 for unlimited)
-- `--debug` — Enable debug output
+- `--path <subdir>`: Limit the listing to this subtree
+- `--depth <n>`: Limit descent to N levels (0 for unlimited)
+- `--limit <n>`: Maximum entries to return (0 for unlimited)
+- `--debug`: Enable debug output
 
 > MCP tool
 
@@ -457,10 +457,10 @@ Upload a chunk-store snapshot: full inventory first, changed cells after
 
 **Options:**
 
-- `--reseed` — Distrust the local anchor and upload a full inventory (re-uploads everything and re-charges quota)
-- `--dry-run` — Plan only: no upload. Reports what would move
-- `--cold` — Stop the containers, freeze, restart, then upload. Costs a short real outage and gives an application-consistent snapshot; cannot be combined with --dry-run
-- `--debug` — Enable debug output
+- `--reseed`: Distrust the local anchor and upload a full inventory (re-uploads everything and re-charges quota)
+- `--dry-run`: Plan only: no upload. Reports what would move
+- `--cold`: Stop the containers, freeze, restart, then upload. Costs a short real outage and gives an application-consistent snapshot; cannot be combined with --dry-run
+- `--debug`: Enable debug output
 
 > MCP tool
 
@@ -470,12 +470,12 @@ Declare how many snapshots to keep. Every knob is replaced, not merged.
 
 **Options:**
 
-- `--keep-last <n>` — Keep this many of the most recent snapshots
-- `--keep-hourly <n>` — Keep the newest snapshot from each of this many hours
-- `--keep-daily <n>` — Keep the newest snapshot from each of this many days
-- `--keep-weekly <n>` — Keep the newest snapshot from each of this many weeks
-- `--keep-monthly <n>` — Keep the newest snapshot from each of this many months
-- `--keep-yearly <n>` — Keep the newest snapshot from each of this many years
+- `--keep-last <n>`: Keep this many of the most recent snapshots
+- `--keep-hourly <n>`: Keep the newest snapshot from each of this many hours
+- `--keep-daily <n>`: Keep the newest snapshot from each of this many days
+- `--keep-weekly <n>`: Keep the newest snapshot from each of this many weeks
+- `--keep-monthly <n>`: Keep the newest snapshot from each of this many months
+- `--keep-yearly <n>`: Keep the newest snapshot from each of this many years
 
 > MCP excluded: Declares what the server deletes, and replaces every knob rather than merging, so a partial call silently discards retained snapshots.
 
@@ -491,9 +491,9 @@ List backup artifacts on a machine.
 
 **Options:**
 
-- `-m, --machine <name>` — Machine name
-- `--path <subdir>` — Limit the listing to one subdirectory; omit to enumerate the whole datastore
-- `--debug` — Enable debug output
+- `-m, --machine <name>`: Machine name
+- `--path <subdir>`: Limit the listing to one subdirectory; omit to enumerate the whole datastore
+- `--debug`: Enable debug output
 
 > MCP tool
 
@@ -503,15 +503,15 @@ Turn a backup artifact into a live repository. Placement is stated here.
 
 **Options:**
 
-- `--as <name>` — Name for the restored repository (defaults to the artifact name)
-- `-m, --machine <name>` — Machine name
-- `--datastore <name>` — Restore into this named datastore (its attached machine hosts it)
-- `--at <time>` — Restore a point-in-time: a snapshot id or an RFC3339 time (chunk-store restore)
-- `--up` — Deploy the restored repository after the transfer
-- `--health-window <seconds>` — Total health-gate window in seconds (default 300)
-- `--health-timeout <seconds>` — Per-attempt health-check timeout in seconds (default 30)
-- `-y, --yes` — Skip confirmation prompt
-- `--debug` — Enable debug output
+- `--as <name>`: Name for the restored repository (defaults to the artifact name)
+- `-m, --machine <name>`: Machine name
+- `--datastore <name>`: Restore into this named datastore (its attached machine hosts it)
+- `--at <time>`: Restore a point-in-time: a snapshot id or an RFC3339 time (chunk-store restore)
+- `--up`: Deploy the restored repository after the transfer
+- `--health-window <seconds>`: Total health-gate window in seconds (default 300)
+- `--health-timeout <seconds>`: Per-attempt health-check timeout in seconds (default 30)
+- `-y, --yes`: Skip confirmation prompt
+- `--debug`: Enable debug output
 
 > MCP tool | agent: fork-only
 
@@ -521,7 +521,7 @@ Register a storage endpoint.
 
 **Options:**
 
-- `--vault <json>` — Vault content as JSON string
+- `--vault <json>`: Vault content as JSON string
 
 > MCP tool
 
@@ -531,8 +531,8 @@ Remove a storage endpoint from the config.
 
 **Options:**
 
-- `-y, --yes` — Skip confirmation prompt
-- `--dry-run` — Show what would be done without making changes
+- `-y, --yes`: Skip confirmation prompt
+- `--dry-run`: Show what would be done without making changes
 
 > MCP tool
 
@@ -542,7 +542,7 @@ List storage endpoints. Give a name for full detail.
 
 **Options:**
 
-- `--reveal` — Reveal the storage configuration in plaintext (interactive TTY only; audited)
+- `--reveal`: Reveal the storage configuration in plaintext (interactive TTY only; audited)
 
 > MCP tool
 
@@ -552,7 +552,7 @@ Import a storage endpoint from a definition file.
 
 **Options:**
 
-- `--name <name>` — Import only this named section
+- `--name <name>`: Import only this named section
 
 > MCP excluded: Reads a local rclone definition file; use CLI directly.
 
@@ -562,7 +562,7 @@ Browse files in a storage system
 
 **Options:**
 
-- `--path <subpath>` — Subdirectory path to list (default: )
+- `--path <subpath>`: Subdirectory path to list (default: )
 
 > MCP excluded: Interactive file browser — requires TTY
 
@@ -572,13 +572,13 @@ Delete orphaned backups from storage that are no longer in any config. Multi-con
 
 **Options:**
 
-- `-m, --machine <name>` — Executor machine — runs the rclone list/delete calls against the storage. Required because clients aren't expected to have rclone installed locally; storage credentials still come from your local config.
-- `--dry-run` — Show what would be done without making changes
-- `--force` — Skip confirmation prompts
-- `--force-delete-mounted` — Override the mount-safety check and delete cloud backups even if the source GUID is currently mounted or has a running container on the executor machine. Distinct from --force (which only overrides the grace period for archived repos).
-- `--grace-days <days>` — Grace period in days for recently archived repos (default: 7)
-- `--debug` — Enable debug output
-- `--skip-router-restart` — Skip restarting the route server after binary update
+- `-m, --machine <name>`: Executor machine — runs the rclone list/delete calls against the storage. Required because clients aren't expected to have rclone installed locally; storage credentials still come from your local config.
+- `--dry-run`: Show what would be done without making changes
+- `--force`: Skip confirmation prompts
+- `--force-delete-mounted`: Override the mount-safety check and delete cloud backups even if the source GUID is currently mounted or has a running container on the executor machine. Distinct from --force (which only overrides the grace period for archived repos).
+- `--grace-days <days>`: Grace period in days for recently archived repos (default: 7)
+- `--debug`: Enable debug output
+- `--skip-router-restart`: Skip restarting the route server after binary update
 
 > MCP tool
 
@@ -588,23 +588,23 @@ Declare and provision a cluster: machines, Ceph pools, and Kubernetes. Pass --pr
 
 **Options:**
 
-- `--provider <provider>` — Provider: a cloudProviders key, or 'kvm'
-- `--pool <spec...>` — Pool spec name:role:count[:size] (role: ceph|k8s-server|k8s-agent|hyperconverged)
-- `--declare-only` — Record the cluster in config without provisioning it
-- `--network-cidr <cidr>` — Private network CIDR (e.g. 10.0.0.0/24)
-- `--network-primitive <primitive>` — Network primitive (e.g. vlan, vpc, network)
-- `--control-node <machine>` — Explicit control-node machine (default: first k8s-server member)
-- `--net-name <name>` — KVM: libvirt network for this cluster (e.g. renet12)
-- `--net-base <prefix>` — KVM: network prefix, the first three octets (e.g. 192.168.112)
-- `--net-offset <n>` — KVM: offset added to each VM id when deriving its address
-- `--control-id <n>` — KVM: VM id of the control and registry node (default: 1)
-- `--docker-registry <endpoint>` — KVM: in-VM Docker registry endpoint for this cluster
-- `--ssh-user <user>` — SSH user for provisioned members
-- `--base-domain <domain>` — Base domain for cluster public DNS (else inherited from a sibling machine)
-- `--control-ds-size <size>` — Anchor control datastore size (default 10G)
-- `--control-ds-backend <backend>` — Anchor control datastore backend: local | ceph (default: ceph if the cluster has ceph, else local)
-- `--control-ds-pool <pool>` — Ceph rbd pool for the anchor control datastore (ceph backend)
-- `--debug` — Enable debug output
+- `--provider <provider>`: Provider: a cloudProviders key, or 'kvm'
+- `--pool <spec...>`: Pool spec name:role:count[:size] (role: ceph|k8s-server|k8s-agent|hyperconverged)
+- `--declare-only`: Record the cluster in config without provisioning it
+- `--network-cidr <cidr>`: Private network CIDR (e.g. 10.0.0.0/24)
+- `--network-primitive <primitive>`: Network primitive (e.g. vlan, vpc, network)
+- `--control-node <machine>`: Explicit control-node machine (default: first k8s-server member)
+- `--net-name <name>`: KVM: libvirt network for this cluster (e.g. renet12)
+- `--net-base <prefix>`: KVM: network prefix, the first three octets (e.g. 192.168.112)
+- `--net-offset <n>`: KVM: offset added to each VM id when deriving its address
+- `--control-id <n>`: KVM: VM id of the control and registry node (default: 1)
+- `--docker-registry <endpoint>`: KVM: in-VM Docker registry endpoint for this cluster
+- `--ssh-user <user>`: SSH user for provisioned members
+- `--base-domain <domain>`: Base domain for cluster public DNS (else inherited from a sibling machine)
+- `--control-ds-size <size>`: Anchor control datastore size (default 10G)
+- `--control-ds-backend <backend>`: Anchor control datastore backend: local | ceph (default: ceph if the cluster has ceph, else local)
+- `--control-ds-pool <pool>`: Ceph rbd pool for the anchor control datastore (ceph backend)
+- `--debug`: Enable debug output
 
 > agent: BLOCKED | MCP excluded: Provisions cloud/VM infrastructure — not an agent operation
 
@@ -620,9 +620,9 @@ Change a pool's member count (adds/removes machines and joins/drains nodes). k8s
 
 **Options:**
 
-- `--pool <pool>` — Pool name
-- `--count <n>` — Desired member count
-- `--debug` — Enable debug output
+- `--pool <pool>`: Pool name
+- `--count <n>`: Desired member count
+- `--debug`: Enable debug output
 
 > agent: BLOCKED | MCP excluded: Mutates cluster node pools — not an agent operation
 
@@ -632,8 +632,8 @@ Tear down the provisioned members and remove the cluster and its machines from c
 
 **Options:**
 
-- `--force` — Skip confirmation and continue past teardown errors
-- `--debug` — Enable debug output
+- `--force`: Skip confirmation and continue past teardown errors
+- `--debug`: Enable debug output
 
 > agent: BLOCKED | MCP excluded: Destroys cloud/VM infrastructure — not an agent operation
 
@@ -649,11 +649,11 @@ Clone an entire cluster, including its repos' data, into a new cluster: coordina
 
 **Options:**
 
-- `--tag <tag>` — Fork tag
-- `--to <dest-cluster>` — Destination cluster whose nodes host the fork (its control node and agents; a cluster cannot fork onto its own machines, since two k3s cannot share a host network namespace)
-- `--writes <disposition>` — Fork write disposition: local (ephemeral dm-COW overlay, zero Ceph footprint) | ceph (durable clone). Default local
-- `--up` — Bring the forked repos up and gate on cluster health after the fork boots
-- `--debug` — Enable debug output
+- `--tag <tag>`: Fork tag
+- `--to <dest-cluster>`: Destination cluster whose nodes host the fork (its control node and agents; a cluster cannot fork onto its own machines, since two k3s cannot share a host network namespace)
+- `--writes <disposition>`: Fork write disposition: local (ephemeral dm-COW overlay, zero Ceph footprint) | ceph (durable clone). Default local
+- `--up`: Bring the forked repos up and gate on cluster health after the fork boots
+- `--debug`: Enable debug output
 
 > agent: BLOCKED | MCP excluded: Clones a whole cluster — not an agent operation
 
@@ -663,8 +663,8 @@ Move an entire cluster, including its repos' data, to another machine or datacen
 
 **Options:**
 
-- `--to <dest-cluster>` — Destination
-- `--debug` — Enable debug output
+- `--to <dest-cluster>`: Destination
+- `--debug`: Enable debug output
 
 > agent: BLOCKED | MCP excluded: Moves a whole cluster — not an agent operation
 
@@ -674,9 +674,9 @@ Rehearse a release/upgrade: fork the cluster onto a destination as an ephemeral 
 
 **Options:**
 
-- `--on <dest-cluster>` — Destination cluster to boot the throwaway rehearsal on
-- `--tag <tag>` — Optional tag for the rehearsal fork (default: timestamped)
-- `--debug` — Enable debug output
+- `--on <dest-cluster>`: Destination cluster to boot the throwaway rehearsal on
+- `--tag <tag>`: Optional tag for the rehearsal fork (default: timestamped)
+- `--debug`: Enable debug output
 
 > MCP excluded: Boots an entire throwaway k3s control plane to dry-run a migration; expensive, and gated behind REDIACC_ALLOW_CLUSTER_OPS.
 
@@ -686,8 +686,8 @@ Snapshot every rbd-backed datastore in the cluster at ONE instant. Nothing is st
 
 **Options:**
 
-- `--snapshot <label>` — Snapshot label (default: a UTC timestamp)
-- `--debug` — Enable debug output
+- `--snapshot <label>`: Snapshot label (default: a UTC timestamp)
+- `--debug`: Enable debug output
 
 > agent: BLOCKED | MCP excluded: Infrastructure snapshot — operator unlock only
 
@@ -697,7 +697,7 @@ List the cluster's group snapshots.
 
 **Options:**
 
-- `--debug` — Enable debug output
+- `--debug`: Enable debug output
 
 > MCP tool
 
@@ -707,8 +707,8 @@ Adopt an existing registered machine as a Kubernetes agent node of a cluster, us
 
 **Options:**
 
-- `--cluster <name>` — Cluster to join the machine to
-- `--debug` — Enable debug output
+- `--cluster <name>`: Cluster to join the machine to
+- `--debug`: Enable debug output
 
 > agent: BLOCKED | MCP excluded: Cluster membership mutation — not an agent operation
 
@@ -718,8 +718,8 @@ Drain the node, delete its Node object, and clear its cluster membership. The cl
 
 **Options:**
 
-- `--force` — Skip the drain when the node is already dead
-- `--debug` — Enable debug output
+- `--force`: Skip the drain when the node is already dead
+- `--debug`: Enable debug output
 
 > agent: BLOCKED | MCP excluded: Cluster membership mutation — not an agent operation
 
@@ -729,14 +729,14 @@ Provision VM cluster locally
 
 **Options:**
 
-- `--force` — Force restart all VMs
-- `--parallel` — Create VMs in parallel
-- `--basic` — Minimal cluster (bridge + 1 worker)
-- `--lite` — Skip VM provisioning (status only)
-- `--skip-orchestration` — Skip cluster orchestration
-- `--backend <backend>` — Virtualization backend (kvm|qemu, auto-detected)
-- `--os <name>` — VM operating system (e.g., ubuntu-24.04, debian-13)
-- `--debug` — Enable debug output
+- `--force`: Force restart all VMs
+- `--parallel`: Create VMs in parallel
+- `--basic`: Minimal cluster (bridge + 1 worker)
+- `--lite`: Skip VM provisioning (status only)
+- `--skip-orchestration`: Skip cluster orchestration
+- `--backend <backend>`: Virtualization backend (kvm|qemu, auto-detected)
+- `--os <name>`: VM operating system (e.g., ubuntu-24.04, debian-13)
+- `--debug`: Enable debug output
 
 ### rdc ops down
 
@@ -744,8 +744,8 @@ Destroy VM cluster
 
 **Options:**
 
-- `--backend <backend>` — Virtualization backend (kvm|qemu, auto-detected)
-- `--debug` — Enable debug output
+- `--backend <backend>`: Virtualization backend (kvm|qemu, auto-detected)
+- `--debug`: Enable debug output
 
 ### rdc ops status
 
@@ -753,7 +753,7 @@ Show VM cluster status
 
 **Options:**
 
-- `--backend <backend>` — Virtualization backend (kvm|qemu, auto-detected)
+- `--backend <backend>`: Virtualization backend (kvm|qemu, auto-detected)
 
 ### rdc ops ssh
 
@@ -761,10 +761,10 @@ SSH into a VM
 
 **Options:**
 
-- `--vm-id <id>` — Virtual machine ID
-- `-c, --command <cmd>` — Execute a command instead of interactive shell
-- `--backend <backend>` — Virtualization backend (kvm|qemu, auto-detected)
-- `--user <user>` — SSH username for VM connection
+- `--vm-id <id>`: Virtual machine ID
+- `-c, --command <cmd>`: Execute a command instead of interactive shell
+- `--backend <backend>`: Virtualization backend (kvm|qemu, auto-detected)
+- `--user <user>`: SSH username for VM connection
 
 ### rdc ops setup
 
@@ -772,7 +772,7 @@ Install virtualization prerequisites
 
 **Options:**
 
-- `--debug` — Enable debug output
+- `--debug`: Enable debug output
 
 ### rdc ops check
 
@@ -784,13 +784,13 @@ Create an additional named datastore on a machine. A local backend is a file-bac
 
 **Options:**
 
-- `-m, --machine <name>` — Machine to create the datastore on
-- `--size <size>` — Datastore size (for example 100G)
-- `--backend <type>` — Storage backend: local (file-backed, stays on this machine) or rbd (Ceph, movable) (default: local)
-- `--pool <name>` — Ceph pool for the rbd backend (default: rbd)
-- `--image <name>` — RBD image name for the rbd backend (default: the datastore name)
-- `--cluster <name>` — Kubernetes cluster this datastore belongs to. Set means kubernetes repositories only; unset means docker repositories only. Fixed at creation.
-- `--debug` — Enable debug output
+- `-m, --machine <name>`: Machine to create the datastore on
+- `--size <size>`: Datastore size (for example 100G)
+- `--backend <type>`: Storage backend: local (file-backed, stays on this machine) or rbd (Ceph, movable) (default: local)
+- `--pool <name>`: Ceph pool for the rbd backend (default: rbd)
+- `--image <name>`: RBD image name for the rbd backend (default: the datastore name)
+- `--cluster <name>`: Kubernetes cluster this datastore belongs to. Set means kubernetes repositories only; unset means docker repositories only. Fixed at creation.
+- `--debug`: Enable debug output
 
 > agent: BLOCKED | MCP excluded: Infrastructure storage provisioning; operator unlock only.
 
@@ -806,7 +806,7 @@ Show one datastore: its backend, attachment, usage, repositories and snapshots. 
 
 **Options:**
 
-- `--debug` — Enable debug output
+- `--debug`: Enable debug output
 
 > MCP tool
 
@@ -816,12 +816,12 @@ Attach a datastore to a machine. Exactly one machine holds a datastore at a time
 
 **Options:**
 
-- `--to <machine>` — Machine to attach the datastore to
-- `--writes <disposition>` — Where a fork's writes go: local (instant, ephemeral, lost on detach) or ceph (durable clone in the pool). Required for a fork.
-- `--cow-size <size>` — Overlay size for --writes local
-- `--no-auto` — Do not re-attach this datastore automatically on boot
-- `--force` — Fence a stale holder that did not give the datastore up cleanly
-- `--debug` — Enable debug output
+- `--to <machine>`: Machine to attach the datastore to
+- `--writes <disposition>`: Where a fork's writes go: local (instant, ephemeral, lost on detach) or ceph (durable clone in the pool). Required for a fork.
+- `--cow-size <size>`: Overlay size for --writes local
+- `--no-auto`: Do not re-attach this datastore automatically on boot
+- `--force`: Fence a stale holder that did not give the datastore up cleanly
+- `--debug`: Enable debug output
 
 > agent: BLOCKED | MCP excluded: Moves every repository in the pool; operator unlock only.
 
@@ -831,9 +831,9 @@ Detach a datastore from its machine. Repositories inside it stop first. A fork a
 
 **Options:**
 
-- `--discard` — Throw away a local-writes fork and its overlay. The data is not recoverable.
-- `-y, --yes` — Skip confirmation prompt
-- `--debug` — Enable debug output
+- `--discard`: Throw away a local-writes fork and its overlay. The data is not recoverable.
+- `-y, --yes`: Skip confirmation prompt
+- `--debug`: Enable debug output
 
 > agent: BLOCKED | MCP excluded: Stops every repository in the pool; operator unlock only.
 
@@ -843,11 +843,11 @@ Fork a datastore copy-on-write. The fork is instant and its cost does not grow w
 
 **Options:**
 
-- `--tag <tag>` — Tag for the fork (the result is name:tag)
-- `--attach-to <machine>` — Attach the fork to this machine right away (needs --writes)
-- `--writes <disposition>` — Where the fork's writes go: local (instant, ephemeral) or ceph (durable clone)
-- `--cow-size <size>` — Overlay size for --writes local
-- `--debug` — Enable debug output
+- `--tag <tag>`: Tag for the fork (the result is name:tag)
+- `--attach-to <machine>`: Attach the fork to this machine right away (needs --writes)
+- `--writes <disposition>`: Where the fork's writes go: local (instant, ephemeral) or ceph (durable clone)
+- `--cow-size <size>`: Overlay size for --writes local
+- `--debug`: Enable debug output
 
 > agent: BLOCKED | MCP excluded: Infrastructure storage operation; operator unlock only.
 
@@ -857,8 +857,8 @@ Take a point-in-time snapshot of a datastore. Nothing stops. The instant is cras
 
 **Options:**
 
-- `--snapshot <label>` — Snapshot label (default: a UTC timestamp)
-- `--debug` — Enable debug output
+- `--snapshot <label>`: Snapshot label (default: a UTC timestamp)
+- `--debug`: Enable debug output
 
 > agent: BLOCKED | MCP excluded: Infrastructure snapshot; operator unlock only.
 
@@ -868,7 +868,7 @@ List a datastore's snapshots.
 
 **Options:**
 
-- `--debug` — Enable debug output
+- `--debug`: Enable debug output
 
 > MCP tool
 
@@ -878,8 +878,8 @@ Grow or shrink a datastore. This is an offline operation: the repositories insid
 
 **Options:**
 
-- `--size <size>` — New size (for example 200G)
-- `--debug` — Enable debug output
+- `--size <size>`: New size (for example 200G)
+- `--debug`: Enable debug output
 
 > agent: BLOCKED | MCP excluded: Destructive storage geometry change.
 
@@ -889,9 +889,9 @@ Destroy a datastore and everything in it. It detaches first; if it will not deta
 
 **Options:**
 
-- `-y, --yes` — Skip confirmation prompt
-- `--force` — Delete even though repositories still point at it. Their data goes with it.
-- `--debug` — Enable debug output
+- `-y, --yes`: Skip confirmation prompt
+- `--force`: Delete even though repositories still point at it. Their data goes with it.
+- `--debug`: Enable debug output
 
 > agent: BLOCKED | MCP excluded: Destroys a storage pool.
 
@@ -903,12 +903,12 @@ Create a new repository. State its home once: a machine or a datastore.
 
 **Options:**
 
-- `-m, --machine <name>` — Target machine name
-- `--datastore <name>` — Named datastore that holds the repo (docker tiering, or the cluster form)
-- `--size <size>` — Repository size (e.g., 10G, 100G, 1T)
-- `--no-docker` — Skip starting Docker daemon after creation
-- `--debug` — Enable debug output
-- `--skip-router-restart` — Skip restarting the route server after binary update
+- `-m, --machine <name>`: Target machine name
+- `--datastore <name>`: Named datastore that holds the repo (docker tiering, or the cluster form)
+- `--size <size>`: Repository size (e.g., 10G, 100G, 1T)
+- `--no-docker`: Skip starting Docker daemon after creation
+- `--debug`: Enable debug output
+- `--skip-router-restart`: Skip restarting the route server after binary update
 
 > MCP tool
 
@@ -918,11 +918,11 @@ Delete a repository and its data. Config entry is preserved; use --archive-confi
 
 **Options:**
 
-- `--archive-config` — Move config entry to deletedRepositories for later recovery
-- `-y, --yes` — Skip confirmation prompt
-- `--debug` — Enable debug output
-- `--skip-router-restart` — Skip restarting the route server after binary update
-- `--dry-run` — Show what would be done without making changes
+- `--archive-config`: Move config entry to deletedRepositories for later recovery
+- `-y, --yes`: Skip confirmation prompt
+- `--debug`: Enable debug output
+- `--skip-router-restart`: Skip restarting the route server after binary update
+- `--dry-run`: Show what would be done without making changes
 
 > MCP tool | agent: fork-only
 
@@ -932,19 +932,19 @@ Deploy or update a repository (mount, run Rediaccfile up which calls renet compo
 
 **Options:**
 
-- `--no-start` — Mount and prepare the repository without running its up() steps (folds the retired 'repo mount'; LUKS open and, for cluster repos, PV generation).
-- `--skip-checkpoint` — Skip CRIU checkpoint restore even if checkpoint data exists (force fresh start)
-- `--tls` — Request dedicated TLS cert for this repo (forks use shared machine cert by default)
-- `--no-wait` — Return once containers are started; health checks continue in the background
-- `--all` — Deploy every repository whose home is --machine (batch form)
-- `-m, --machine <name>` — With --all: the machine whose repositories to run the batch against
-- `--include-forks` — Also mount/start forked repositories
-- `--parallel` — Start repositories concurrently
-- `--concurrency <n>` — Max concurrent repositories (default: 3) (default: 3)
-- `-y, --yes` — Skip confirmation for batch operations
-- `--debug` — Enable debug output
-- `--skip-router-restart` — Skip restarting the route server after binary update
-- `--dry-run` — Show what would be done without making changes
+- `--no-start`: Mount and prepare the repository without running its up() steps (folds the retired 'repo mount'; LUKS open and, for cluster repos, PV generation).
+- `--skip-checkpoint`: Skip CRIU checkpoint restore even if checkpoint data exists (force fresh start)
+- `--tls`: Request dedicated TLS cert for this repo (forks use shared machine cert by default)
+- `--no-wait`: Return once containers are started; health checks continue in the background
+- `--all`: Deploy every repository whose home is --machine (batch form)
+- `-m, --machine <name>`: With --all: the machine whose repositories to run the batch against
+- `--include-forks`: Also mount/start forked repositories
+- `--parallel`: Start repositories concurrently
+- `--concurrency <n>`: Max concurrent repositories (default: 3) (default: 3)
+- `-y, --yes`: Skip confirmation for batch operations
+- `--debug`: Enable debug output
+- `--skip-router-restart`: Skip restarting the route server after binary update
+- `--dry-run`: Show what would be done without making changes
 
 > MCP tool | agent: fork-only
 
@@ -954,16 +954,16 @@ Stop repository Docker containers (runs Rediaccfile down via renet compose). The
 
 **Options:**
 
-- `--unmount` — Also unmount (close the LUKS container) after stopping. Required before 'repo resize' or to fully secure the volume
-- `--checkpoint` — Create CRIU checkpoint before stopping (save process memory state for later restore via 'repo up')
-- `--all` — Stop every repository whose home is --machine (batch form)
-- `-m, --machine <name>` — With --all: the machine whose repositories to run the batch against
-- `--parallel` — Start repositories concurrently
-- `--concurrency <n>` — Max concurrent repositories (default: 3) (default: 3)
-- `-y, --yes` — Skip confirmation for batch operations
-- `--debug` — Enable debug output
-- `--skip-router-restart` — Skip restarting the route server after binary update
-- `--dry-run` — Show what would be done without making changes
+- `--unmount`: Also unmount (close the LUKS container) after stopping. Required before 'repo resize' or to fully secure the volume
+- `--checkpoint`: Create CRIU checkpoint before stopping (save process memory state for later restore via 'repo up')
+- `--all`: Stop every repository whose home is --machine (batch form)
+- `-m, --machine <name>`: With --all: the machine whose repositories to run the batch against
+- `--parallel`: Start repositories concurrently
+- `--concurrency <n>`: Max concurrent repositories (default: 3) (default: 3)
+- `-y, --yes`: Skip confirmation for batch operations
+- `--debug`: Enable debug output
+- `--skip-router-restart`: Skip restarting the route server after binary update
+- `--dry-run`: Show what would be done without making changes
 
 > MCP tool | agent: fork-only
 
@@ -973,8 +973,8 @@ Get repository status (mount state, Docker daemon running, container count, disk
 
 **Options:**
 
-- `--debug` — Enable debug output
-- `--skip-router-restart` — Skip restarting the route server after binary update
+- `--debug`: Enable debug output
+- `--skip-router-restart`: Skip restarting the route server after binary update
 
 > MCP tool
 
@@ -984,10 +984,10 @@ List repositories on a machine
 
 **Options:**
 
-- `-m, --machine <name>` — Target machine name
-- `--datastore <name>` — List the repositories in this datastore (resolved to whichever machine currently holds it)
-- `--debug` — Enable debug output
-- `--skip-router-restart` — Skip restarting the route server after binary update
+- `-m, --machine <name>`: Target machine name
+- `--datastore <name>`: List the repositories in this datastore (resolved to whichever machine currently holds it)
+- `--debug`: Enable debug output
+- `--skip-router-restart`: Skip restarting the route server after binary update
 
 > MCP tool
 
@@ -997,15 +997,15 @@ Read a bounded window of a file in a repository to stdout (diagnostics go to std
 
 **Options:**
 
-- `--remote-file <path>` — File path to read, relative to the repository mount root
-- `--max-bytes <n>` — Maximum bytes to read and print (default 1 MiB, hard ceiling 50 MiB)
-- `--offset <n>` — Byte offset to start reading from
-- `--head <lines>` — Print only the first N lines (cannot combine with byte range)
-- `--tail <lines>` — Print only the last N lines (cannot combine with byte range)
-- `--stat` — Print only size, type, and modification time; read no content
-- `--force-binary` — Allow reading binary (NUL-containing) content
-- `--debug` — Enable debug output
-- `--skip-router-restart` — Skip restarting the route server after binary update
+- `--remote-file <path>`: File path to read, relative to the repository mount root
+- `--max-bytes <n>`: Maximum bytes to read and print (default 1 MiB, hard ceiling 50 MiB)
+- `--offset <n>`: Byte offset to start reading from
+- `--head <lines>`: Print only the first N lines (cannot combine with byte range)
+- `--tail <lines>`: Print only the last N lines (cannot combine with byte range)
+- `--stat`: Print only size, type, and modification time; read no content
+- `--force-binary`: Allow reading binary (NUL-containing) content
+- `--debug`: Enable debug output
+- `--skip-router-restart`: Skip restarting the route server after binary update
 
 > MCP tool
 
@@ -1015,13 +1015,13 @@ Create a CoW (Copy-on-Write) fork of a repository. FORK IS NEAR-INSTANT AND CONS
 
 **Options:**
 
-- `--tag <name>` — Tag for the fork (creates name:tag)
-- `--checkpoint` — Create CRIU checkpoint on source before forking (capture process memory state for restore on fork)
-- `--immutable` — Mark the fork read-only: it refuses to mount, keeping its image byte-stable forever (a frozen commit/base for cross-machine delta push)
-- `--up` — Mount and start services after forking (fork + mount + up in one command)
-- `--no-wait` — With --up: return once containers are started; health checks continue in the background (ideal for throwaway forks)
-- `--debug` — Enable debug output
-- `--skip-router-restart` — Skip restarting the route server after binary update
+- `--tag <name>`: Tag for the fork (creates name:tag)
+- `--checkpoint`: Create CRIU checkpoint on source before forking (capture process memory state for restore on fork)
+- `--immutable`: Mark the fork read-only: it refuses to mount, keeping its image byte-stable forever (a frozen commit/base for cross-machine delta push)
+- `--up`: Mount and start services after forking (fork + mount + up in one command)
+- `--no-wait`: With --up: return once containers are started; health checks continue in the background (ideal for throwaway forks)
+- `--debug`: Enable debug output
+- `--skip-router-restart`: Skip restarting the route server after binary update
 
 > MCP tool
 
@@ -1031,13 +1031,13 @@ Git-style file-level diff between two copy-on-write forked repositories. Reports
 
 **Options:**
 
-- `--base <ref>` — Repository to diff against (the base / old side); defaults to the parent of <ref>
-- `--name-only` — Print only changed file paths, one per line (no status letters)
-- `--stat` — Show per-file change magnitude (byte and block deltas) and totals
-- `--content [path]` — Show a unified text diff for a single file (requires a file path)
-- `--fast` — Trust the block filter; skip content-hash confirmation (may over-report Modified)
-- `--debug` — Enable debug output
-- `--skip-router-restart` — Skip restarting the route server after binary update
+- `--base <ref>`: Repository to diff against (the base / old side); defaults to the parent of <ref>
+- `--name-only`: Print only changed file paths, one per line (no status letters)
+- `--stat`: Show per-file change magnitude (byte and block deltas) and totals
+- `--content [path]`: Show a unified text diff for a single file (requires a file path)
+- `--fast`: Trust the block filter; skip content-hash confirmation (may over-report Modified)
+- `--debug`: Enable debug output
+- `--skip-router-restart`: Skip restarting the route server after binary update
 
 > MCP tool
 
@@ -1047,9 +1047,9 @@ Freeze the current state of a mounted working fork into a new immutable commit (
 
 **Options:**
 
-- `--message <msg>` — Commit message
-- `--author <author>` — Commit author
-- `--debug` — Enable debug output
+- `--message <msg>`: Commit message
+- `--author <author>`: Commit author
+- `--debug`: Enable debug output
 
 > MCP tool | agent: fork-only
 
@@ -1059,7 +1059,7 @@ Create a named branch ref pointing at the working fork's current commit (its tip
 
 **Options:**
 
-- `--branch <branch>` — Name of the new branch
+- `--branch <branch>`: Name of the new branch
 
 > agent: fork-only | MCP excluded: Config-only ref operation — use CLI directly
 
@@ -1069,10 +1069,10 @@ Reflink-clone an immutable commit (or a branch tip) into a fresh writable workin
 
 **Options:**
 
-- `--tag <name>` — Name for the new writable working fork
-- `--from <workingFork>` — Resolve the positional <commit-or-branch-ref> as a branch name on this working fork
-- `--debug` — Enable debug output
-- `--skip-router-restart` — Skip restarting the route server after binary update
+- `--tag <name>`: Name for the new writable working fork
+- `--from <workingFork>`: Resolve the positional <commit-or-branch-ref> as a branch name on this working fork
+- `--debug`: Enable debug output
+- `--skip-router-restart`: Skip restarting the route server after binary update
 
 > MCP tool | agent: fork-only
 
@@ -1082,7 +1082,7 @@ Print the commit history reachable from a working fork's current commit (or a co
 
 **Options:**
 
-- `--debug` — Enable debug output
+- `--debug`: Enable debug output
 
 > MCP tool
 
@@ -1092,11 +1092,11 @@ Merge a source commit or fork into a target working fork. The live target is nev
 
 **Options:**
 
-- `--from <source>` — Source commit or fork to merge from
-- `--force` — Quiesce a mounted/running target first, then merge (never mutates a live mount)
-- `--resolve <ours|theirs>` — Per-file conflict resolution for a three-way merge: 'ours' keeps the target's version, 'theirs' takes the source's. Omit for whole-image fast-forward (take-theirs).
-- `--base <guid>` — Common-ancestor commit GUID for a three-way merge (used with --resolve). Defaults to the source commit's parent or the target's current commit.
-- `--debug` — Enable debug output
+- `--from <source>`: Source commit or fork to merge from
+- `--force`: Quiesce a mounted/running target first, then merge (never mutates a live mount)
+- `--resolve <ours|theirs>`: Per-file conflict resolution for a three-way merge: 'ours' keeps the target's version, 'theirs' takes the source's. Omit for whole-image fast-forward (take-theirs).
+- `--base <guid>`: Common-ancestor commit GUID for a three-way merge (used with --resolve). Defaults to the source commit's parent or the target's current commit.
+- `--debug`: Enable debug output
 
 > MCP tool | agent: fork-only
 
@@ -1110,7 +1110,7 @@ Restore an archived record into the config.
 
 **Options:**
 
-- `--new-name <name>` — New resource name
+- `--new-name <name>`: New resource name
 
 ### rdc repo admin archive purge [name]
 
@@ -1118,7 +1118,7 @@ Permanently delete archived records.
 
 **Options:**
 
-- `-y, --yes` — Skip confirmation prompt
+- `-y, --yes`: Skip confirmation prompt
 
 ### rdc repo admin fsck
 
@@ -1126,7 +1126,7 @@ Validate the CLI config refs (branches, HEAD) against the objects actually prese
 
 **Options:**
 
-- `-m, --machine <name>` — Target machine name
+- `-m, --machine <name>`: Target machine name
 
 > MCP tool
 
@@ -1136,8 +1136,8 @@ Validate repository integrity (LUKS container, filesystem consistency, configura
 
 **Options:**
 
-- `--debug` — Enable debug output
-- `--skip-router-restart` — Skip restarting the route server after binary update
+- `--debug`: Enable debug output
+- `--skip-router-restart`: Skip restarting the route server after binary update
 
 > agent: fork-only | MCP excluded: Use repo status for MCP.
 
@@ -1147,8 +1147,8 @@ Enable autostart for a repository (omit name to enable all)
 
 **Options:**
 
-- `--debug` — Enable debug output
-- `--skip-router-restart` — Skip restarting the route server after binary update
+- `--debug`: Enable debug output
+- `--skip-router-restart`: Skip restarting the route server after binary update
 
 > agent: fork-only | fork-blocked
 
@@ -1158,8 +1158,8 @@ Disable autostart for a repository (omit name to disable all)
 
 **Options:**
 
-- `--debug` — Enable debug output
-- `--skip-router-restart` — Skip restarting the route server after binary update
+- `--debug`: Enable debug output
+- `--skip-router-restart`: Skip restarting the route server after binary update
 
 > agent: fork-only | fork-blocked
 
@@ -1169,9 +1169,9 @@ List repositories with autostart enabled
 
 **Options:**
 
-- `-m, --machine <name>` — Target machine name
-- `--debug` — Enable debug output
-- `--skip-router-restart` — Skip restarting the route server after binary update
+- `-m, --machine <name>`: Target machine name
+- `--debug`: Enable debug output
+- `--skip-router-restart`: Skip restarting the route server after binary update
 
 ### rdc repo admin ownership <ref>
 
@@ -1179,9 +1179,9 @@ Change repository directory ownership UID on the mounted volume (default: 7111).
 
 **Options:**
 
-- `--uid <uid>` — Owner UID (default: 7111)
-- `--debug` — Enable debug output
-- `--skip-router-restart` — Skip restarting the route server after binary update
+- `--uid <uid>`: Owner UID (default: 7111)
+- `--debug`: Enable debug output
+- `--skip-router-restart`: Skip restarting the route server after binary update
 
 > agent: fork-only | MCP excluded: Destructive ownership transfer.
 
@@ -1195,11 +1195,11 @@ Apply a template to a repository. Use a built-in template name (e.g. app-postgre
 
 **Options:**
 
-- `--template <name>` — Template to apply
-- `--file <path>` — Path to custom template JSON file ({"version":"2","files":{"Rediaccfile":"...","docker-compose.yml":"..."}}): overrides the built-in template name
-- `--grand <name>` — Parent credential repository (auto-resolves name to GUID). Only for repos sharing secrets with a parent
-- `--debug` — Enable debug output
-- `--skip-router-restart` — Skip restarting the route server after binary update
+- `--template <name>`: Template to apply
+- `--file <path>`: Path to custom template JSON file ({"version":"2","files":{"Rediaccfile":"...","docker-compose.yml":"..."}}): overrides the built-in template name
+- `--grand <name>`: Parent credential repository (auto-resolves name to GUID). Only for repos sharing secrets with a parent
+- `--debug`: Enable debug output
+- `--skip-router-restart`: Skip restarting the route server after binary update
 
 > agent: fork-only | MCP excluded: Requires file upload; use CLI directly.
 
@@ -1209,9 +1209,9 @@ Delete immutable commit objects on a machine that no branch or HEAD reaches (rea
 
 **Options:**
 
-- `-m, --machine <name>` — Target machine name
-- `--apply` — Actually delete the unreachable commits (default is a dry-run preview)
-- `--debug` — Enable debug output
+- `-m, --machine <name>`: Target machine name
+- `--apply`: Actually delete the unreachable commits (default is a dry-run preview)
+- `--debug`: Enable debug output
 
 > MCP tool
 
@@ -1221,9 +1221,9 @@ Make a validated fork the production repository under its parent name. The paren
 
 **Options:**
 
-- `-y, --yes` — Skip confirmation prompt
-- `--debug` — Enable debug output
-- `--skip-router-restart` — Skip restarting the route server after binary update
+- `-y, --yes`: Skip confirmation prompt
+- `--debug`: Enable debug output
+- `--skip-router-restart`: Skip restarting the route server after binary update
 
 > agent: fork-only | MCP excluded: Production swap; human decision.
 
@@ -1233,9 +1233,9 @@ Resize a repository offline (supports both grow and shrink). Repo must be unmoun
 
 **Options:**
 
-- `--size <size>` — New repository size (e.g., 10G, 100G, 1T)
-- `--debug` — Enable debug output
-- `--skip-router-restart` — Skip restarting the route server after binary update
+- `--size <size>`: New repository size (e.g., 10G, 100G, 1T)
+- `--debug`: Enable debug output
+- `--skip-router-restart`: Skip restarting the route server after binary update
 
 > agent: fork-only | fork-blocked | MCP excluded: Disk resize — destructive infrastructure operation, use CLI directly
 
@@ -1245,9 +1245,9 @@ Expand a mounted repository online (zero downtime, grow-only). Grows the LUKS co
 
 **Options:**
 
-- `--size <size>` — New repository size (e.g., 10G, 100G, 1T)
-- `--debug` — Enable debug output
-- `--skip-router-restart` — Skip restarting the route server after binary update
+- `--size <size>`: New repository size (e.g., 10G, 100G, 1T)
+- `--debug`: Enable debug output
+- `--skip-router-restart`: Skip restarting the route server after binary update
 
 > agent: fork-only | fork-blocked | MCP excluded: Storage expansion — destructive infrastructure operation, use CLI directly
 
@@ -1257,11 +1257,11 @@ Reclaim datastore pool space from mounted repositories (online, zero downtime). 
 
 **Options:**
 
-- `--docker` — Reclaim Docker space (stopped containers, dangling images, build cache); runs even while a backup snapshot is active
-- `--docker-volumes` — Additionally prune unused Docker volumes
-- `--report-only` — Show discard state and reclaimable estimate without trimming
-- `-m, --machine <name>` — Target machine name
-- `--debug` — Enable debug output
+- `--docker`: Reclaim Docker space (stopped containers, dangling images, build cache); runs even while a backup snapshot is active
+- `--docker-volumes`: Additionally prune unused Docker volumes
+- `--report-only`: Show discard state and reclaimable estimate without trimming
+- `-m, --machine <name>`: Target machine name
+- `--debug`: Enable debug output
 
 > MCP tool
 
@@ -1271,14 +1271,14 @@ Set size policy fields. Only the flags you pass are changed; other stored fields
 
 **Options:**
 
-- `--auto-grow <bool>` — Enable automatic online quota growth (true/false)
-- `--max-quota <size>` — Auto-grow ceiling (e.g. 200G); required for auto-grow
-- `--grow-threshold <percent>` — Filesystem used % that triggers a grow (default 85)
-- `--grow-step <step>` — Growth per step: absolute (10G) or percent of quota (20%)
-- `--auto-trim <bool>` — Enable scheduled trim (true/false)
-- `--trim-interval <hours>` — Minimum hours between automatic trims (default 24)
-- `-m, --machine <name>` — Target machine name
-- `--debug` — Enable debug output
+- `--auto-grow <bool>`: Enable automatic online quota growth (true/false)
+- `--max-quota <size>`: Auto-grow ceiling (e.g. 200G); required for auto-grow
+- `--grow-threshold <percent>`: Filesystem used % that triggers a grow (default 85)
+- `--grow-step <step>`: Growth per step: absolute (10G) or percent of quota (20%)
+- `--auto-trim <bool>`: Enable scheduled trim (true/false)
+- `--trim-interval <hours>`: Minimum hours between automatic trims (default 24)
+- `-m, --machine <name>`: Target machine name
+- `--debug`: Enable debug output
 
 ### rdc repo policy get [ref]
 
@@ -1286,8 +1286,8 @@ Show the stored machine default, the repository override (with a ref), and the e
 
 **Options:**
 
-- `-m, --machine <name>` — Target machine name
-- `--debug` — Enable debug output
+- `-m, --machine <name>`: Target machine name
+- `--debug`: Enable debug output
 
 ### rdc repo push <ref>
 
@@ -1295,16 +1295,16 @@ Push repository to another machine. Storage destinations are retired; use `rdc b
 
 **Options:**
 
-- `--to <remote>` — Destination machine name (auto-detected from config)
-- `--to-machine <machine>` — 
-- `--provision <provider>` — Auto-provision target machine via cloud provider if it doesn't exist
-- `--checkpoint` — Create CRIU checkpoint before backup (captures process memory state for live migration)
-- `--force` — Force overwrite existing backup
-- `--bwlimit <limit>` — Bandwidth limit for rsync transfer (e.g., "6M", "10M")
-- `--delta-base <guid>` — Immutable base GUID present byte-identical on both machines; transfer only changed blocks (machine target). Omit for hands-free auto-base
-- `--strategy <strategy>` — Block-delta strategy when using a delta base: auto, physical, or shared
-- `--debug` — Enable debug output
-- `--skip-router-restart` — Skip restarting the route server after binary update
+- `--to <remote>`: Destination machine name (auto-detected from config)
+- `--to-machine <machine>`: 
+- `--provision <provider>`: Auto-provision target machine via cloud provider if it doesn't exist
+- `--checkpoint`: Create CRIU checkpoint before backup (captures process memory state for live migration)
+- `--force`: Force overwrite existing backup
+- `--bwlimit <limit>`: Bandwidth limit for rsync transfer (e.g., "6M", "10M")
+- `--delta-base <guid>`: Immutable base GUID present byte-identical on both machines; transfer only changed blocks (machine target). Omit for hands-free auto-base
+- `--strategy <strategy>`: Block-delta strategy when using a delta base: auto, physical, or shared
+- `--debug`: Enable debug output
+- `--skip-router-restart`: Skip restarting the route server after binary update
 
 > MCP tool | agent: fork-only
 
@@ -1314,15 +1314,15 @@ Pull repository from another machine. Storage sources are retired; use `rdc back
 
 **Options:**
 
-- `--from <remote>` — Source machine name (auto-detected from config)
-- `--from-machine <machine>` — 
-- `--force` — Force overwrite existing repository
-- `--up` — After pull, mount and deploy repository on this machine
-- `--bwlimit <limit>` — Bandwidth limit for rsync transfer (e.g., "6M", "10M")
-- `--delta-base <guid>` — Immutable base GUID present byte-identical on both machines; receive only changed blocks (machine source)
-- `--strategy <strategy>` — Block-delta strategy when using a delta base: auto, physical, or shared
-- `--debug` — Enable debug output
-- `--skip-router-restart` — Skip restarting the route server after binary update
+- `--from <remote>`: Source machine name (auto-detected from config)
+- `--from-machine <machine>`: 
+- `--force`: Force overwrite existing repository
+- `--up`: After pull, mount and deploy repository on this machine
+- `--bwlimit <limit>`: Bandwidth limit for rsync transfer (e.g., "6M", "10M")
+- `--delta-base <guid>`: Immutable base GUID present byte-identical on both machines; receive only changed blocks (machine source)
+- `--strategy <strategy>`: Block-delta strategy when using a delta base: auto, physical, or shared
+- `--debug`: Enable debug output
+- `--skip-router-restart`: Skip restarting the route server after binary update
 
 > MCP tool | agent: fork-only
 
@@ -1332,15 +1332,15 @@ Live-migrate a repository from one machine to another with minimal downtime. Two
 
 **Options:**
 
-- `--to <place>` — Destination machine or cluster
-- `--provision <provider>` — Auto-provision target via cloud provider (e.g., hetzner, linode)
-- `--bwlimit <limit>` — Bandwidth limit for rsync transfer (e.g., 10M)
-- `--checkpoint` — CRIU live migration: capture and restore process memory state
-- `--delta-base <guid>` — Immutable base GUID for the cutover delta (advanced; defaults to the Phase-1 base)
-- `--strategy <strategy>` — Block-delta strategy for the cutover: auto, physical, or shared
-- `--skip-dns` — Skip DNS record switching after migration
-- `--keep-source` — Keep the source images after a successful move (by default they are deleted; leftover copies are not addressable by any config record and reconcile flags them as strays)
-- `--debug` — Enable debug output
+- `--to <place>`: Destination machine or cluster
+- `--provision <provider>`: Auto-provision target via cloud provider (e.g., hetzner, linode)
+- `--bwlimit <limit>`: Bandwidth limit for rsync transfer (e.g., 10M)
+- `--checkpoint`: CRIU live migration: capture and restore process memory state
+- `--delta-base <guid>`: Immutable base GUID for the cutover delta (advanced; defaults to the Phase-1 base)
+- `--strategy <strategy>`: Block-delta strategy for the cutover: auto, physical, or shared
+- `--skip-dns`: Skip DNS record switching after migration
+- `--keep-source`: Keep the source images after a successful move (by default they are deleted; leftover copies are not addressable by any config record and reconcile flags them as strays)
+- `--debug`: Enable debug output
 
 > MCP tool | agent: fork-only
 
@@ -1356,7 +1356,7 @@ Remove a replica set: delete its generated k8s objects (label-scoped), discard i
 
 **Options:**
 
-- `--debug` — Enable debug output
+- `--debug`: Enable debug output
 
 > MCP tool | agent: fork-only
 
@@ -1366,7 +1366,7 @@ Roll every replica onto a fresh point-in-time snapshot, ONE at a time: bounce th
 
 **Options:**
 
-- `--debug` — Enable debug output
+- `--debug`: Enable debug output
 
 > agent: fork-only | MCP excluded: Rolling replica re-clone. The re-fork path is where a missing LUKS re-open would empty the whole replica set (bug #49), and it has never been exercised on a live cluster.
 
@@ -1376,12 +1376,12 @@ Run a NEW image next to the stable one and send it a percentage of live traffic.
 
 **Options:**
 
-- `--image <image>` — New image the canary Deployment runs (against shared live data)
-- `--port <port>` — Port the app serves on (must match the stable Service)
-- `--weight <percent>` — Percent of traffic routed to the canary (integer 0-100; 0 = dark, 100 = full flip)
-- `--service <name>` — Stable Service to split traffic with (default: the repo name)
-- `--replicas <n>` — Canary Deployment replica count (default: 1)
-- `--debug` — Enable debug output
+- `--image <image>`: New image the canary Deployment runs (against shared live data)
+- `--port <port>`: Port the app serves on (must match the stable Service)
+- `--weight <percent>`: Percent of traffic routed to the canary (integer 0-100; 0 = dark, 100 = full flip)
+- `--service <name>`: Stable Service to split traffic with (default: the repo name)
+- `--replicas <n>`: Canary Deployment replica count (default: 1)
+- `--debug`: Enable debug output
 
 > agent: fork-only | MCP excluded: Runs a new image against the primary's SHARED LIVE DATA. The replicate probe validates a different mechanism and says nothing about this one.
 
@@ -1397,8 +1397,8 @@ Change the percent of traffic routed to a canary. Takes a fresh release-undo gro
 
 **Options:**
 
-- `--weight <percent>` — Percent of traffic routed to the canary (integer 0-100; 0 = dark, 100 = full flip)
-- `--debug` — Enable debug output
+- `--weight <percent>`: Percent of traffic routed to the canary (integer 0-100; 0 = dark, 100 = full flip)
+- `--debug`: Enable debug output
 
 > agent: fork-only | MCP excluded: Shifts REAL PRODUCTION TRAFFIC between versions. A release decision belongs to the operator, and the weighted split has never been observed working on a live machine (bug #42 made it inert until today).
 
@@ -1408,7 +1408,7 @@ Remove a canary's Deployment and Service (label-scoped); the stable Service serv
 
 **Options:**
 
-- `--debug` — Enable debug output
+- `--debug`: Enable debug output
 
 > agent: fork-only | MCP excluded: Tears down a canary that is taking live traffic. Excluded with the family it belongs to.
 
@@ -1418,14 +1418,14 @@ Upload files to a repository via rsync over SSH (delta transfer). Use --mirror t
 
 **Options:**
 
-- `--local <paths...>` — One or more local file or directory paths (default: current directory)
-- `--remote <path>` — Remote subdirectory path within repository
-- `--remote-file <path>` — Single remote file path (relative to repo root) to upload to. Mutually exclusive with --remote.
-- `--mirror` — Mirror mode - delete remote files not present locally
-- `--verify` — Verify files using checksums after sync
-- `--confirm` — Preview changes and ask for confirmation before syncing
-- `--exclude <patterns...>` — Patterns to exclude from sync
-- `--dry-run` — Show what would be done without making changes
+- `--local <paths...>`: One or more local file or directory paths (default: current directory)
+- `--remote <path>`: Remote subdirectory path within repository
+- `--remote-file <path>`: Single remote file path (relative to repo root) to upload to. Mutually exclusive with --remote.
+- `--mirror`: Mirror mode - delete remote files not present locally
+- `--verify`: Verify files using checksums after sync
+- `--confirm`: Preview changes and ask for confirmation before syncing
+- `--exclude <patterns...>`: Patterns to exclude from sync
+- `--dry-run`: Show what would be done without making changes
 
 > agent: fork-only | MCP excluded: Requires local filesystem paths on the MCP host. Run it from the CLI.
 
@@ -1435,14 +1435,14 @@ Download files from a repository via rsync over SSH (delta transfer). Use --mirr
 
 **Options:**
 
-- `--local <path>` — Local directory path (default: current directory)
-- `--remote <path>` — Remote subdirectory path within repository
-- `--remote-file <path>` — Remote file path within repository (alternative to --remote for single-file transfers)
-- `--mirror` — Mirror mode - delete local files not present on remote
-- `--verify` — Verify files using checksums after sync
-- `--confirm` — Preview changes and ask for confirmation before syncing
-- `--exclude <patterns...>` — Patterns to exclude from sync
-- `--dry-run` — Show what would be done without making changes
+- `--local <path>`: Local directory path (default: current directory)
+- `--remote <path>`: Remote subdirectory path within repository
+- `--remote-file <path>`: Remote file path within repository (alternative to --remote for single-file transfers)
+- `--mirror`: Mirror mode - delete local files not present on remote
+- `--verify`: Verify files using checksums after sync
+- `--confirm`: Preview changes and ask for confirmation before syncing
+- `--exclude <patterns...>`: Patterns to exclude from sync
+- `--dry-run`: Show what would be done without making changes
 
 > agent: fork-only | MCP excluded: Requires local filesystem paths on the MCP host. Run it from the CLI.
 
@@ -1452,9 +1452,9 @@ Dry-run comparison of local and remote files (shows what would be transferred wi
 
 **Options:**
 
-- `--local <path>` — Local directory path (default: current directory)
-- `--remote <path>` — Remote subdirectory path within repository
-- `--remote-file <path>` — Remote file path within repository (alternative to --remote for single-file transfers)
+- `--local <path>`: Local directory path (default: current directory)
+- `--remote <path>`: Remote subdirectory path within repository
+- `--remote-file <path>`: Remote file path within repository (alternative to --remote for single-file transfers)
 
 > MCP excluded: Requires local filesystem paths on the MCP host. Run it from the CLI.
 
@@ -1464,11 +1464,11 @@ Show application logs from a repository's containers. Docker repositories read f
 
 **Options:**
 
-- `-c, --container <name>` — Container to read (only needed when the repository runs more than one)
-- `-f, --follow` — Keep streaming new lines until interrupted
-- `--lines <n>` — How many lines of history to show (default: 100) (default: 100)
-- `--timestamps` — Prefix each line with its timestamp
-- `--debug` — Enable debug output
+- `-c, --container <name>`: Container to read (only needed when the repository runs more than one)
+- `-f, --follow`: Keep streaming new lines until interrupted
+- `--lines <n>`: How many lines of history to show (default: 100) (default: 100)
+- `--timestamps`: Prefix each line with its timestamp
+- `--debug`: Enable debug output
 
 > MCP tool
 
@@ -1478,10 +1478,10 @@ Run a command inside a repository container. The command's own exit code is pass
 
 **Options:**
 
-- `-c, --container <name>` — Container to run in (only needed when the repository runs more than one)
-- `-i, --interactive` — Allocate a terminal (for a command that expects one)
-- `-u, --user <user>` — User to run the command as
-- `--debug` — Enable debug output
+- `-c, --container <name>`: Container to run in (only needed when the repository runs more than one)
+- `-i, --interactive`: Allocate a terminal (for a command that expects one)
+- `-u, --user <user>`: User to run the command as
+- `--debug`: Enable debug output
 
 > MCP tool | agent: fork-only
 
@@ -1491,10 +1491,10 @@ Create an SSH port-forward tunnel to a container's port on a remote machine. Aut
 
 **Options:**
 
-- `-c, --container <name>` — Container name (auto-detected if only one running)
-- `--port <port>` — Remote container port to forward
-- `--local <port>` — Local port (defaults to same as remote port)
-- `--url-only` — Print only the local URL once the tunnel is ready (machine-readable)
+- `-c, --container <name>`: Container name (auto-detected if only one running)
+- `--port <port>`: Remote container port to forward
+- `--local <port>`: Local port (defaults to same as remote port)
+- `--url-only`: Print only the local URL once the tunnel is ready (machine-readable)
 
 > agent: fork-only | MCP excluded: Interactive SSH tunnel — blocks until Ctrl+C
 
@@ -1504,7 +1504,7 @@ Show the SHA-256 digest of a secret. The plaintext value is never returned by de
 
 **Options:**
 
-- `--key <KEY>` — Secret key in UPPER_SNAKE_CASE (max 64 chars). Will be exposed as REDIACC_SECRET_<KEY> for env-mode or /run/secrets/<key> in containers for file-mode.
+- `--key <KEY>`: Secret key in UPPER_SNAKE_CASE (max 64 chars). Will be exposed as REDIACC_SECRET_<KEY> for env-mode or /run/secrets/<key> in containers for file-mode.
 
 > MCP tool
 
@@ -1520,11 +1520,11 @@ Set or overwrite a secret. Forks do not inherit; set on the fork explicitly. Und
 
 **Options:**
 
-- `--key <KEY>` — Secret key in UPPER_SNAKE_CASE (max 64 chars). Will be exposed as REDIACC_SECRET_<KEY> for env-mode or /run/secrets/<key> in containers for file-mode.
-- `--value <value>` — Secret value. Pass `-` to read from stdin (avoids shell-history exposure).
-- `--mode <mode>` — Delivery mode: 'env' (visible in container env, docker inspect) or 'file' (tmpfs file, never in env). Default: file. (default: file)
-- `--current <value>` — Previous plaintext value (passwd-style precondition). Required for overwrite/unset; mutually exclusive with --rotate-secret.
-- `--rotate-secret` — Acknowledge rotation; skip --current precondition (audited as rotation). Use when intentionally rotating without verifying the prior value.
+- `--key <KEY>`: Secret key in UPPER_SNAKE_CASE (max 64 chars). Will be exposed as REDIACC_SECRET_<KEY> for env-mode or /run/secrets/<key> in containers for file-mode.
+- `--value <value>`: Secret value. Pass `-` to read from stdin (avoids shell-history exposure).
+- `--mode <mode>`: Delivery mode: 'env' (visible in container env, docker inspect) or 'file' (tmpfs file, never in env). Default: file. (default: file)
+- `--current <value>`: Previous plaintext value (passwd-style precondition). Required for overwrite/unset; mutually exclusive with --rotate-secret.
+- `--rotate-secret`: Acknowledge rotation; skip --current precondition (audited as rotation). Use when intentionally rotating without verifying the prior value.
 
 ### rdc repo secret unset <ref>
 
@@ -1532,9 +1532,9 @@ Delete a secret. Under agent context, requires --current digest match.
 
 **Options:**
 
-- `--key <KEY>` — Secret key in UPPER_SNAKE_CASE (max 64 chars). Will be exposed as REDIACC_SECRET_<KEY> for env-mode or /run/secrets/<key> in containers for file-mode.
-- `--current <value>` — Previous plaintext value (passwd-style precondition). Required for overwrite/unset; mutually exclusive with --rotate-secret.
-- `--rotate-secret` — Acknowledge rotation; skip --current precondition (audited as rotation). Use when intentionally rotating without verifying the prior value.
+- `--key <KEY>`: Secret key in UPPER_SNAKE_CASE (max 64 chars). Will be exposed as REDIACC_SECRET_<KEY> for env-mode or /run/secrets/<key> in containers for file-mode.
+- `--current <value>`: Previous plaintext value (passwd-style precondition). Required for overwrite/unset; mutually exclusive with --rotate-secret.
+- `--rotate-secret`: Acknowledge rotation; skip --current precondition (audited as rotation). Use when intentionally rotating without verifying the prior value.
 
 ## Tools
 
@@ -1544,10 +1544,10 @@ Create a new named config file
 
 **Options:**
 
-- `--ssh-key <path>` — Path to SSH private key (e.g., ~/.ssh/id_rsa)
-- `--renet-path <path>` — Path to renet binary (default: renet in PATH)
-- `--master-password <password>` — Encrypt resources with a master password
-- `--server <url>` — Account server URL
+- `--ssh-key <path>`: Path to SSH private key (e.g., ~/.ssh/id_rsa)
+- `--renet-path <path>`: Path to renet binary (default: renet in PATH)
+- `--master-password <password>`: Encrypt resources with a master password
+- `--server <url>`: Account server URL
 
 > MCP excluded: Creates a named config file — the operator decides what configs exist.
 
@@ -1563,7 +1563,7 @@ Show current config details
 
 **Options:**
 
-- `--reveal` — Show plaintext for sensitive values (interactive only)
+- `--reveal`: Show plaintext for sensitive values (interactive only)
 
 > MCP tool
 
@@ -1597,7 +1597,7 @@ Restore config from backup (.bak) file
 
 **Options:**
 
-- `-y, --yes` — Skip confirmation prompt
+- `-y, --yes`: Skip confirmation prompt
 
 > MCP excluded: Rewrites a damaged config from backup; the operator must see what changed.
 
@@ -1607,13 +1607,13 @@ Remove dead weight from the local config file at ~/.config/rediacc/<config>.json
 
 **Options:**
 
-- `--dry-run` — Preview what would be removed without modifying the config file. Mirrors the default-off semantics of the other prune commands.
-- `--certs-only` — Restrict to the ACME cert-cache bucket. Skips archive purging and cross-reference cleanup. Mutually exclusive with --archives-only and --refs-only.
-- `--archives-only` — Restrict to expired-archive purging. Skips cert-cache and cross-reference cleanup. Mutually exclusive with --certs-only and --refs-only.
-- `--refs-only` — Restrict to dangling cross-references (machine→strategy, strategy→repo excludes/includes). Skips cert-cache and archives. Mutually exclusive with --certs-only and --archives-only.
-- `--purge-archived` — Drop ALL archived repositories regardless of age, not just those past grace. Equivalent to running 'rdc repo admin archive purge' for every archived repo. Use only when you're sure you don't need any of the stashed credentials for restore.
-- `--orphan-repos` — Remove repository entries that are placed on no machine. Each entry holds that repo's credential and SSH key, so this is unrecoverable — run 'rdc config reconcile' first so placement reflects the machines.
-- `--grace-days <days>` — Override the archive grace window (in days) for this invocation. Falls back to defaults.pruneGraceDays in the config, then to 7 if neither is set.
+- `--dry-run`: Preview what would be removed without modifying the config file. Mirrors the default-off semantics of the other prune commands.
+- `--certs-only`: Restrict to the ACME cert-cache bucket. Skips archive purging and cross-reference cleanup. Mutually exclusive with --archives-only and --refs-only.
+- `--archives-only`: Restrict to expired-archive purging. Skips cert-cache and cross-reference cleanup. Mutually exclusive with --certs-only and --refs-only.
+- `--refs-only`: Restrict to dangling cross-references (machine→strategy, strategy→repo excludes/includes). Skips cert-cache and archives. Mutually exclusive with --certs-only and --archives-only.
+- `--purge-archived`: Drop ALL archived repositories regardless of age, not just those past grace. Equivalent to running 'rdc repo admin archive purge' for every archived repo. Use only when you're sure you don't need any of the stashed credentials for restore.
+- `--orphan-repos`: Remove repository entries that are placed on no machine. Each entry holds that repo's credential and SSH key, so this is unrecoverable — run 'rdc config reconcile' first so placement reflects the machines.
+- `--grace-days <days>`: Override the archive grace window (in days) for this invocation. Falls back to defaults.pruneGraceDays in the config, then to 7 if neither is set.
 
 > MCP tool
 
@@ -1623,9 +1623,9 @@ Rebuild runtime state from machine truth. Fixes stale attach and routing data.
 
 **Options:**
 
-- `--machine <m...>` — Limit the reconcile to these machines
-- `--dry-run` — Show what would be done without making changes
-- `--accept-observed` — Rewrite a declared placement to match where the image actually is, but only when that is unambiguous (observed on exactly one machine). Duplicates stay conflicts.
+- `--machine <m...>`: Limit the reconcile to these machines
+- `--dry-run`: Show what would be done without making changes
+- `--accept-observed`: Rewrite a declared placement to match where the image actually is, but only when that is unambiguous (observed on exactly one machine). Duplicates stay conflicts.
 
 > MCP tool
 
@@ -1635,7 +1635,7 @@ Rotate the organization config-encryption key
 
 **Options:**
 
-- `--api-url <url>` — Account server URL
+- `--api-url <url>`: Account server URL
 
 > MCP excluded: Rotates the org config-encryption key; destructive and human-driven (portal wizard).
 
@@ -1645,8 +1645,8 @@ Set SSH key for the current config
 
 **Options:**
 
-- `--key <path>` — Path to SSH private key file
-- `--embed` — Embed key content in config instead of storing path
+- `--key <path>`: Path to SSH private key file
+- `--embed`: Embed key content in config instead of storing path
 
 ### rdc config ssh show
 
@@ -1662,10 +1662,10 @@ Link this config to remote encrypted storage
 
 **Options:**
 
-- `--headless` — Use device code flow (for headless servers)
-- `--password` — Enroll headlessly with a pre-provisioned password slot (no browser)
-- `--api-url <url>` — Account server URL
-- `--force` — Replace differing local content with the server copy without confirmation
+- `--headless`: Use device code flow (for headless servers)
+- `--password`: Enroll headlessly with a pre-provisioned password slot (no browser)
+- `--api-url <url>`: Account server URL
+- `--force`: Replace differing local content with the server copy without confirmation
 
 ### rdc config remote disable
 
@@ -1685,9 +1685,9 @@ Read a single config value by JSON Pointer. Sensitive fields redact unless --rev
 
 **Options:**
 
-- `--pointer <pointer>` — JSON Pointer to the field (e.g. /credentials/cfDnsApiToken)
-- `--reveal` — Show plaintext for sensitive values (interactive TTY only; audited)
-- `--digest` — Print the SHA-256 digest instead of the value (safe to share with agents)
+- `--pointer <pointer>`: JSON Pointer to the field (e.g. /credentials/cfDnsApiToken)
+- `--reveal`: Show plaintext for sensitive values (interactive TTY only; audited)
+- `--digest`: Print the SHA-256 digest instead of the value (safe to share with agents)
 
 ### rdc config field set
 
@@ -1695,9 +1695,9 @@ Write a config value at a JSON Pointer. Sensitive paths require --current (knowl
 
 **Options:**
 
-- `--pointer <pointer>` — JSON Pointer to the field (e.g. /credentials/cfDnsApiToken)
-- `--new <value>` — New value (parsed as JSON if it looks like JSON: {, [, ", true/false/null/number)
-- `--current <value>` — Current plaintext value — required for sensitive-path mutations (knowledge-gate proof)
+- `--pointer <pointer>`: JSON Pointer to the field (e.g. /credentials/cfDnsApiToken)
+- `--new <value>`: New value (parsed as JSON if it looks like JSON: {, [, ", true/false/null/number)
+- `--current <value>`: Current plaintext value — required for sensitive-path mutations (knowledge-gate proof)
 
 ### rdc config field unset
 
@@ -1705,8 +1705,8 @@ Delete a config value at a JSON Pointer. Sensitive paths require --current.
 
 **Options:**
 
-- `--pointer <pointer>` — JSON Pointer to the field (e.g. /credentials/cfDnsApiToken)
-- `--current <value>` — Current plaintext value — required for sensitive-path deletions
+- `--pointer <pointer>`: JSON Pointer to the field (e.g. /credentials/cfDnsApiToken)
+- `--current <value>`: Current plaintext value — required for sensitive-path deletions
 
 ### rdc config field rotate
 
@@ -1714,8 +1714,8 @@ Rotate a sensitive value without --current. Interactive TTY only; loudly audited
 
 **Options:**
 
-- `--pointer <pointer>` — JSON Pointer to the sensitive field (e.g. /credentials/cfDnsApiToken)
-- `--new <value>` — New value
+- `--pointer <pointer>`: JSON Pointer to the sensitive field (e.g. /credentials/cfDnsApiToken)
+- `--new <value>`: New value
 
 ### rdc config field list
 
@@ -1723,8 +1723,8 @@ List every registered sensitivity pointer template with its kind and commit/encr
 
 **Options:**
 
-- `--sensitive` — Show only sensitive (non-public) templates
-- `--output <format>` — Output format (json|table) (default: table)
+- `--sensitive`: Show only sensitive (non-public) templates
+- `--output <format>`: Output format (json|table) (default: table)
 
 ### rdc config edit
 
@@ -1732,11 +1732,11 @@ Open the active config in $EDITOR as a redacted JSONC projection. Humans only; a
 
 **Options:**
 
-- `--reveal` — Show plaintext for sensitive values (interactive TTY only; audited)
-- `--dump` — Print current config as JSONC to stdout (read-only; safe for agents when redacted)
-- `--apply <file>` — Apply an edited JSONC file (skips $EDITOR launch)
-- `--current-secrets <file>` — JSON file mapping pointer→old plaintext for knowledge-gate on --apply
-- `--editor <cmd>` — Editor command override (follows git precedence: flag > $GIT_EDITOR > git config core.editor > $VISUAL > $EDITOR)
+- `--reveal`: Show plaintext for sensitive values (interactive TTY only; audited)
+- `--dump`: Print current config as JSONC to stdout (read-only; safe for agents when redacted)
+- `--apply <file>`: Apply an edited JSONC file (skips $EDITOR launch)
+- `--current-secrets <file>`: JSON file mapping pointer→old plaintext for knowledge-gate on --apply
+- `--editor <cmd>`: Editor command override (follows git precedence: flag > $GIT_EDITOR > git config core.editor > $VISUAL > $EDITOR)
 
 > MCP excluded: Opens $EDITOR on the decrypted config; it needs a TTY.
 
@@ -1746,9 +1746,9 @@ Print recent audit entries as JSON
 
 **Options:**
 
-- `--since <spec>` — Only show entries newer than (e.g., '24h', '7d', ISO timestamp)
-- `--path <glob>` — Filter by JSON Pointer glob (e.g., /credentials/*)
-- `--actor <kind>` — Filter by actor kind (human|agent)
+- `--since <spec>`: Only show entries newer than (e.g., '24h', '7d', ISO timestamp)
+- `--path <glob>`: Filter by JSON Pointer glob (e.g., /credentials/*)
+- `--actor <kind>`: Filter by actor kind (human|agent)
 
 > MCP tool
 
@@ -1770,7 +1770,7 @@ Run diagnostic checks on the CLI environment: Node.js version, renet binary avai
 
 **Options:**
 
-- `--output <format>` — Output format (json)
+- `--output <format>`: Output format (json)
 
 > MCP excluded: Diagnoses local CLI installation — not a remote operation
 
@@ -1780,8 +1780,8 @@ Print the third-party components bundled with rdc: the binaries renet embeds and
 
 **Options:**
 
-- `--licenses` — Print the full THIRD_PARTY_LICENSES text bundled with release builds
-- `--output <format>` — Output format (json)
+- `--licenses`: Print the full THIRD_PARTY_LICENSES text bundled with release builds
+- `--output <format>`: Output format (json)
 
 > MCP tool
 
@@ -1791,16 +1791,16 @@ Open VS Code on a machine or inside a repository.
 
 **Options:**
 
-- `-f, --folder <path>` — Remote folder path to open
-- `--url-only` — Print the VS Code URI instead of launching
-- `-n, --new-window` — Open in new VS Code window
-- `--skip-env-setup` — Skip remote environment setup
-- `--insiders` — Use VS Code Insiders settings
-- `--browser` — Serve browser VS Code from inside the repo sandbox (no local VS Code needed)
-- `--no-open` — Print the URL without launching the local browser
-- `--local <port>` — Local port (defaults to same as remote port)
-- `--server-provider <id>` — Browser VS Code server implementation (openvscode, code-server)
-- `--server-archive <file>` — Pre-staged server tarball path on the machine (airgapped installs)
+- `-f, --folder <path>`: Remote folder path to open
+- `--url-only`: Print the VS Code URI instead of launching
+- `-n, --new-window`: Open in new VS Code window
+- `--skip-env-setup`: Skip remote environment setup
+- `--insiders`: Use VS Code Insiders settings
+- `--browser`: Serve browser VS Code from inside the repo sandbox (no local VS Code needed)
+- `--no-open`: Print the URL without launching the local browser
+- `--local <port>`: Local port (defaults to same as remote port)
+- `--server-provider <id>`: Browser VS Code server implementation (openvscode, code-server)
+- `--server-archive <file>`: Pre-staged server tarball path on the machine (airgapped installs)
 
 > agent: fork-only
 
@@ -1810,7 +1810,7 @@ Show whether the browser VS Code server is running
 
 **Options:**
 
-- `--server-provider <id>` — Browser VS Code server implementation (openvscode, code-server)
+- `--server-provider <id>`: Browser VS Code server implementation (openvscode, code-server)
 
 ### rdc vscode serve stop <target>
 
@@ -1818,7 +1818,7 @@ Stop the browser VS Code server
 
 **Options:**
 
-- `--server-provider <id>` — Browser VS Code server implementation (openvscode, code-server)
+- `--server-provider <id>`: Browser VS Code server implementation (openvscode, code-server)
 
 ### rdc vscode list
 
@@ -1830,8 +1830,8 @@ Remove VS Code SSH configurations
 
 **Options:**
 
-- `--all` — Remove all rediacc SSH configurations
-- `-c, --connection <name>` — Remove specific connection
+- `--all`: Remove all rediacc SSH configurations
+- `-c, --connection <name>`: Remove specific connection
 
 ### rdc vscode check
 
@@ -1839,7 +1839,7 @@ Check VS Code installation and configuration
 
 **Options:**
 
-- `--insiders` — Use VS Code Insiders settings
+- `--insiders`: Use VS Code Insiders settings
 
 ### rdc update
 
@@ -1847,11 +1847,11 @@ Check for new CLI versions and apply updates. Supports --check-only to check wit
 
 **Options:**
 
-- `--force` — Force update even if already up-to-date
-- `--check-only` — Only check for updates without downloading
-- `--rollback` — Rollback to the previous version
-- `--status` — Show auto-update status and diagnostics
-- `--channel <channel>` — Set release channel (stable or edge)
+- `--force`: Force update even if already up-to-date
+- `--check-only`: Only check for updates without downloading
+- `--rollback`: Rollback to the previous version
+- `--status`: Show auto-update status and diagnostics
+- `--channel <channel>`: Set release channel (stable or edge)
 
 > MCP excluded: CLI self-update — not a remote operation
 
@@ -1861,8 +1861,8 @@ Authenticate via browser or API token
 
 **Options:**
 
-- `-t, --token <token>` — API token (rdt_...)
-- `--server <url>` — Account server URL
+- `-t, --token <token>`: API token (rdt_...)
+- `--server <url>`: Account server URL
 
 ### rdc subscription logout
 
@@ -1874,7 +1874,7 @@ Show subscription, and license state for a machine.
 
 **Options:**
 
-- `-m, --machine <name>` — Machine name
+- `-m, --machine <name>`: Machine name
 
 ### rdc subscription refresh
 
@@ -1882,8 +1882,8 @@ Refresh licenses from the account server.
 
 **Options:**
 
-- `-m, --machine <name>` — Machine name
-- `--repo <ref>` — Repository ref: name, or name:tag, optionally with @machine (for example shop or shop:test)
+- `-m, --machine <name>`: Machine name
+- `--repo <ref>`: Repository ref: name, or name:tag, optionally with @machine (for example shop or shop:test)
 
 ### rdc mcp serve
 
@@ -1891,8 +1891,8 @@ Start MCP server (stdio transport)
 
 **Options:**
 
-- `--config <name>` — Config name to use for all commands
-- `--timeout <ms>` — Default command timeout in milliseconds (default: 120000)
+- `--config <name>`: Config name to use for all commands
+- `--timeout <ms>`: Default command timeout in milliseconds (default: 120000)
 
 ### rdc serve
 
@@ -1900,8 +1900,8 @@ Run this process as an executor so clients can run commands through it instead o
 
 **Options:**
 
-- `-p, --port <port>` — Port to listen on (default: 8080)
-- `--host <host>` — Address to bind (default: 0.0.0.0)
-- `--mode <mode>` — Placement: daemon (customer host) or container (default: daemon)
+- `-p, --port <port>`: Port to listen on (default: 8080)
+- `--host <host>`: Address to bind (default: 0.0.0.0)
+- `--mode <mode>`: Placement: daemon (customer host) or container (default: daemon)
 
 > MCP excluded: Runs the executor daemon in the foreground until SIGINT; it never returns.

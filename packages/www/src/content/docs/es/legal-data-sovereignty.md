@@ -82,3 +82,7 @@ En todas las jurisdicciones, la ecuación de cumplimiento es la misma:
 | Responsabilidad del procesador tercero | Sí | No |
 | Control de cifrado | Claves gestionadas por el proveedor | Tus credenciales LUKS, almacenadas localmente |
 | Datos de clonación/staging | Pueden cruzar fronteras o salir de tu control | CoW en la misma máquina, misma jurisdicción |
+
+## Servicio alojado: residencia regional de datos
+
+Para los usuarios del servicio Rediacc alojado (no autoalojado), la residencia de datos se aplica mediante infraestructura regional. Hay tres regiones disponibles: UE (Fráncfort), EE. UU. (Virginia) y Asia-Pacífico (Tokio). Cada región opera bases de datos y almacenamiento independientes, sin flujos de datos entre regiones. El correo transaccional se entrega mediante AWS SES; la UE y EE. UU. usan endpoints regionales dedicados, y Asia-Pacífico usa el endpoint de la UE (eu-central-1). La región de la UE aplica cumplimiento jurisdiccional en el almacenamiento R2. Consulta [Regiones de datos](/es/docs/data-regions) para el desglose técnico completo.

@@ -57,7 +57,7 @@ Il push e il pull da macchina a macchina non necessitano di nessuno dei due. Son
 
 ### Il percorso di storage rclone è sparito
 
-`rdc repo push --to <storage>` e i suoi affini un tempo copiavano un intero file di backup su un provider compatibile con rclone che registravi tu stesso. Ora rifiutano una destinazione di storage e indicano il loro sostituto. Il trasferimento da macchina a macchina non è mai passato per rclone e non è interessato. Se hai ancora bisogno di leggere un archivio scritto in quel modo, vedi [Leggere un archivio scritto prima della dismissione](#leggere-un-archivio-scritto-prima-della-dismissione).
+`rdc repo push --to <storage>` e i suoi affini un tempo copiavano un intero file di backup su un provider compatibile con rclone che registravi tu stesso. Ora rifiutano una destinazione di storage e indicano il loro sostituto. Il trasferimento da macchina a macchina non è mai passato per rclone e non è interessato. Se hai ancora bisogno di leggere un archivio scritto in quel modo, vedi [Leggere un archivio scritto prima della dismissione](#reading-an-archive-written-before-the-retirement).
 
 ### Comandi per lo storage a chunk
 
@@ -343,7 +343,7 @@ rdc repo push shop:nightly@server-1 --to server-2
 rdc repo pull shop:nightly@server-1 --from server-2
 ```
 
-Gli elenchi completi delle opzioni si trovano sotto [Invia un Backup a un'Altra Macchina](#invia-un-backup-a-unaltra-macchina) e [Scarica un Backup da un'Altra Macchina](#scarica-un-backup-da-unaltra-macchina).
+Gli elenchi completi delle opzioni si trovano sotto [Invia un Backup a un'Altra Macchina](#push-a-backup-to-another-machine) e [Scarica un Backup da un'Altra Macchina](#pull-a-backup-from-another-machine).
 
 ## Backup Pianificati
 
@@ -436,7 +436,7 @@ Questo comportamento predefinito è deliberato. Eseguire due backup cold in para
 
 ### Snapshot, Interruzioni e Spazio nel Pool
 
-Ogni push opera da uno snapshot momentaneo del datastore, quindi i dati caricati sono coerenti anche mentre i repository continuano a scrivere. Mentre il backup è in esecuzione, quello snapshot continua a fare riferimento a ogni blocco che condivide con i repository attivi: eliminazioni e [trim](/it/docs/repositories#recupera-spazio-trim) liberano meno spazio nel pool finché il ciclo non termina e lo snapshot viene eliminato. Il [report sulla salute dello storage](/it/docs/monitoring#salute-dellarchiviazione) mostra quanto spazio gli snapshot di backup stanno attualmente bloccando.
+Ogni push opera da uno snapshot momentaneo del datastore, quindi i dati caricati sono coerenti anche mentre i repository continuano a scrivere. Mentre il backup è in esecuzione, quello snapshot continua a fare riferimento a ogni blocco che condivide con i repository attivi: eliminazioni e [trim](/it/docs/repositories#reclaim-space-trim) liberano meno spazio nel pool finché il ciclo non termina e lo snapshot viene eliminato. Il [report sulla salute dello storage](/it/docs/monitoring#storage-health) mostra quanto spazio gli snapshot di backup stanno attualmente bloccando.
 
 Le interruzioni sono sicure. Fermare il servizio (o riavviare la macchina) fa sì che il backup interrompa il trasferimento ed elimini il suo snapshot prima di uscire; la prossima esecuzione pianificata riprende da dove si era fermata, poiché le celle già memorizzate non vengono ricaricate. Se il processo viene terminato in modo troppo brusco per poter fare pulizia (perdita di alimentazione), lo snapshot orfano viene rilevato e rimosso automaticamente dal gestore dello storage entro pochi minuti.
 
@@ -514,7 +514,7 @@ L'associazione viene registrata nella tua configurazione come elenco sulla macch
 }
 ```
 
-> **Il binding è solo configurazione locale.** Definire una strategia e collegarla a una macchina non modifica la macchina. Esegui `rdc backup schedule -m <machine>` (vedi [Distribuisci lo Schedule sulla Macchina](#distribuisci-lo-schedule-sulla-macchina)) per distribuire i timer systemd, e rilancialo dopo ogni modifica di strategia o binding.
+> **Il binding è solo configurazione locale.** Definire una strategia e collegarla a una macchina non modifica la macchina. Esegui `rdc backup schedule -m <machine>` (vedi [Distribuisci lo Schedule sulla Macchina](#deploy-schedule-to-machine)) per distribuire i timer systemd, e rilancialo dopo ogni modifica di strategia o binding.
 
 ## Scegliere tra Hot e Cold e il filtraggio per repository
 
@@ -529,7 +529,7 @@ L'associazione viene registrata nella tua configurazione come elenco sulla macch
 
 **Hot** è il default corretto per le esecuzioni ad alta frequenza. I servizi continuano a girare mentre lo snapshot viene effettuato, quindi la finestra di backup non interrompe gli utenti. Lo snapshot è crash-consistent: equivale a quello che si otterrebbe dopo uno spegnimento non pulito. Per la maggior parte dei database moderni e delle code di messaggi questo è accettabile.
 
-**Cold** è appropriato quando si ha bisogno di uno snapshot application-consistent garantito e si può accettare un breve riavvio per repository. I servizi vengono fermati prima dello snapshot e riavviati prima che inizi il caricamento, quindi un caricamento lento o fallito non prolunga mai la finestra di downtime. Vedere [Semantica del Backup Cold](#semantica-del-backup-cold) per il modello di garanzia completo.
+**Cold** è appropriato quando si ha bisogno di uno snapshot application-consistent garantito e si può accettare un breve riavvio per repository. I servizi vengono fermati prima dello snapshot e riavviati prima che inizi il caricamento, quindi un caricamento lento o fallito non prolunga mai la finestra di downtime. Vedere [Semantica del Backup Cold](#cold-backup-semantics) per il modello di garanzia completo.
 
 Entrambe le modalità scrivono nello stesso storage a chunk, e la modalità riguarda come viene trattato il repository mentre l'immagine è congelata, non dove finiscono i dati. Un repository coperto sia da uno schedule hot orario sia da uno cold settimanale memorizza le celle condivise una sola volta anziché due.
 
@@ -562,7 +562,7 @@ Nomina i repository che vuoi nell'esecuzione ad alta frequenza, invece di lascia
 - Un repository è grande e **completamente rigenerabile** dai dati sorgente già presenti nel volume, quindi ogni backup orario spende banda senza aggiungere valore di recupero.
 - L'esecuzione del backup supererebbe il proprio intervallo di schedule alla velocità di caricamento disponibile.
 
-**Esempio.** Un repository `analytics-demo` contiene circa 114 GB di tabelle Postgres derivate che possono essere ricostruite dai file di dump CSV grezzi già memorizzati all'interno dello stesso volume. Con un limite di caricamento di 6 MB/s, un primo snapshot di quel repository richiede oltre 5 ore. Eseguirlo ogni ora significa che ogni esecuzione è ancora in corso quando parte quella successiva, il che causa lo scarto silenzioso di ogni attivazione successiva (vedere [Backup di Lunga Durata e Schedule Sovrapposti](#backup-di-lunga-durata-e-schedule-sovrapposti)). Elencare gli altri repository in `hourly-hot` e lasciare `analytics-demo` a `weekly-cold` significa che viene eseguito il backup una volta alla settimana invece di mai.
+**Esempio.** Un repository `analytics-demo` contiene circa 114 GB di tabelle Postgres derivate che possono essere ricostruite dai file di dump CSV grezzi già memorizzati all'interno dello stesso volume. Con un limite di caricamento di 6 MB/s, un primo snapshot di quel repository richiede oltre 5 ore. Eseguirlo ogni ora significa che ogni esecuzione è ancora in corso quando parte quella successiva, il che causa lo scarto silenzioso di ogni attivazione successiva (vedere [Backup di Lunga Durata e Schedule Sovrapposti](#long-running-backups-and-overlapping-schedules)). Elencare gli altri repository in `hourly-hot` e lasciare `analytics-demo` a `weekly-cold` significa che viene eseguito il backup una volta alla settimana invece di mai.
 
 > **Se i dati sono puramente rigenerabili**, considera se è necessario eseguirne il backup. Un'alternativa è eseguire il backup solo degli input sorgente grezzi (i dump CSV, in questo esempio) e saltare la copia derivata del tutto. Un backup cold settimanale degli input sorgente è molto più piccolo e completamente sufficiente per il recupero.
 

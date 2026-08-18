@@ -78,6 +78,25 @@ down() {
 
 > **Önemli:** `docker compose` yerine her zaman `renet compose --` kullanın. `renet compose` sarmalayıcısı, host ağını, IP tahsisini ve renet-proxy tarafından gerekli olan servis keşfi etiketlerini zorunlu kılar. CRIU checkpoint/restore yetenekleri `rediacc.checkpoint=true` etiketli konteynerlere eklenir. Doğrudan `docker compose` kullanımı Rediaccfile doğrulaması tarafından reddedilir. Ayrıntılar için [Ağ](/tr/docs/networking) sayfasına bakın.
 
+### Yetenek Etiketleri
+
+Konteynerler varsayılan olarak asgari bir Linux yetenek kümesiyle çalışır. Bir servis, `docker-compose.yml` dosyasına bir etiket ekleyerek ek yeteneklere dahil olur:
+
+| Etiket | Verdiği yetkiler | Kullanım amacı |
+|--------|------------------|----------------|
+| `rediacc.checkpoint=true` | `CHECKPOINT_RESTORE`, `SYS_PTRACE`, `NET_ADMIN` | CRIU denetim noktası/geri yükleme (canlı taşıma, kaydet ve sürdür) |
+| `rediacc.wireguard=true` | `NET_ADMIN` ve `/dev/net/tun` aygıtı | Konteyner içinde bir WireGuard istemcisi çalıştırma |
+
+```yaml
+services:
+  vpn:
+    image: alpine
+    labels:
+      - "rediacc.wireguard=true"
+```
+
+`rediacc.wireguard`, bir servisin WireGuard tüneli açmasına izin verir; örneğin tek bir süreci uzak bir uç nokta üzerinden yönlendirmek için. Her servis host ağıyla çalıştığı için tüneli konteyner içindeki bir ağ ad alanıyla sınırlayın, aksi hâlde host'un yönlendirmesi değişir. `privileged: true`, `pid: host` ve `ipc: host` gibi geniş ayrıcalık seçenekleri, etiketlerden bağımsız olarak doğrulama tarafından reddedilmeye devam eder.
+
 ### Çoklu Servis Düzeni
 
 Birden fazla bağımsız servis grubu olan projeler için alt dizinler kullanın:
@@ -126,26 +145,6 @@ Servis adlarını **slot** numaralarıyla eşler. Her slot, deponun alt ağı i�
 2. Her compose dosyasının `services:` bölümünden servis adlarını çıkarır
 3. Yeni servislere bir sonraki kullanılabilir slotu atar
 4. Sonucu `{repository}/.rediacc.json` dosyasına kaydeder
-
-### Yetenek Etiketleri
-
-Konteynerler varsayılan olarak asgari bir Linux yetenek kümesiyle çalışır. Bir servis, `docker-compose.yml` dosyasına bir etiket ekleyerek ek yeteneklere dahil olur:
-
-| Etiket | Verdiği yetkiler | Kullanım amacı |
-|--------|------------------|----------------|
-| `rediacc.checkpoint=true` | `CHECKPOINT_RESTORE`, `SYS_PTRACE`, `NET_ADMIN` | CRIU denetim noktası/geri yükleme (canlı taşıma, kaydet ve sürdür) |
-| `rediacc.wireguard=true` | `NET_ADMIN` ve `/dev/net/tun` aygıtı | Konteyner içinde bir WireGuard istemcisi çalıştırma |
-
-```yaml
-services:
-  vpn:
-    image: alpine
-    labels:
-      - "rediacc.wireguard=true"
-```
-
-`rediacc.wireguard`, bir servisin WireGuard tüneli açmasına izin verir; örneğin tek bir süreci uzak bir uç nokta üzerinden yönlendirmek için. Her servis host ağıyla çalıştığı için tüneli konteyner içindeki bir ağ ad alanıyla sınırlayın, aksi hâlde host'un yönlendirmesi değişir. `privileged: true`, `pid: host` ve `ipc: host` gibi geniş ayrıcalık seçenekleri, etiketlerden bağımsız olarak doğrulama tarafından reddedilmeye devam eder.
-
 
 ### IP Hesaplama
 

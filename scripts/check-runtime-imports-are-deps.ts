@@ -114,7 +114,10 @@ function scanIn(root: string, pkgDir: string): Finding[] {
     for (const m of text.matchAll(IMPORT_RE)) {
       const spec = m[1] ?? m[2] ?? m[3];
       if (!spec) continue;
-      const line = text.slice(text.lastIndexOf('\n', m.index ?? 0) + 1, (m.index ?? 0) + m[0].length);
+      const line = text.slice(
+        text.lastIndexOf('\n', m.index ?? 0) + 1,
+        (m.index ?? 0) + m[0].length
+      );
       if (isTypeOnly(line)) continue;
       const name = packageOf(spec);
       if (!name || name in ALLOWED) continue;

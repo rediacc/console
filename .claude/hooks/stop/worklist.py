@@ -14,7 +14,7 @@ synced INBOX, so nothing written there is ever silently ignored); every item
 carries start and last-update stamps; in-flight claims are verified against
 the OS and walked up a 45/90/120-minute ladder (wl_liveness); deferrals
 execute their DEFAULT after an autonomy window instead of nagging forever
-(wl_checks); the compact-recovery document is agent/<branch>/<me>/STATE.md with world-keyed
+(wl_checks); the compact-recovery document is agent/<me>/STATE.md with world-keyed
 staleness; and the judge caches identical verdicts (wl_judge). The one
 3600-line file became nine modules; worklist_messages.py remains the
 catalogue of user-facing prose.
@@ -385,7 +385,6 @@ def _triage_cli(argv, worklist, me, die):
         # the loss the worklist exists to prevent.
         item_id = S.add_item(worklist, me, text)
     print("triaging #%s: %s" % (item_id, text[:120]))
-    branch = C.git_branch(root)
     context = CK.triage_context(root, worklist, me)
     degraded = ""
     verdict = None
@@ -401,7 +400,6 @@ def _triage_cli(argv, worklist, me, die):
                 "me": me,
                 "why": degraded,
                 "context": context,
-                "branch": branch or "<branch>",
             }
         )
         return
@@ -410,7 +408,7 @@ def _triage_cli(argv, worklist, me, die):
     if kind == "plan-subagent":
         slug = PLAN_SLUG_RE.sub("-", str(verdict.get("plan_slug", "")).lower()).strip("-")
         slug = slug[:60] or item_id
-        plan = "agent/%s/PLAN-%s.md" % (branch or "<branch>", slug)
+        plan = "agent/PLAN-%s.md" % slug
         S.triage_item(worklist, me, item_id, kind, reason, plan)
         print(
             M.CLI_TRIAGE_PLAN
@@ -546,6 +544,34 @@ def _item_cli(argv, worklist):
     if mode == "--update":
         if not rest:
             die("an empty update updates nothing: one line of what moved")
+        # v17 THE VANISHING DEFAULT. An --update on a `- [?]` silently dropped
+        # its DEFAULT:, because the rendered line carries only the MOST RECENT
+        # update (CK scans rec["line"]). So the deferral's default stopped
+        # being visible the instant any progress landed, and the next stop
+        # blocked on a [?] that demonstrably HAD a default when it was written.
+        # Hit live, by the session that wrote this.
+        #
+        # REFUSING was the first fix and it was WRONG, caught by case 141: a
+        # refresh is documented as "the exit is always available", and the
+        # aged-deferral rung tells a session to refresh. Blocking it removes
+        # the only exit the rung offers -- the same shape as the --lease
+        # release comment below. So the default is carried forward VERBATIM and
+        # the carry is announced. Silence was the defect; the exit is not.
+        _cur = next((r for r in fold.items if r["id"] == item_id), None)
+        if _cur is not None and _cur["state"] == "?" and not C.DEFAULT_TOKEN.search(rest):
+            _src = _cur.get("text") or ""
+            _m = C.DEFAULT_TOKEN.search(_src)
+            if _m:
+                _tail = C.JUST_TOKEN.search(_src, _m.end())
+                _carried = _src[_m.start() : _tail.start() if _tail else len(_src)].strip()
+                rest = "%s  %s" % (rest, _carried)
+                print(
+                    "NOTE: #%s is deferred and this update carried no DEFAULT:, so the "
+                    "existing one was carried forward verbatim:\n    %s\n"
+                    "Restate it yourself if the design moved -- a default that outlives "
+                    "the change it was written under still EXECUTES." % (item_id, _carried),
+                    file=sys.stderr,
+                )
         S.update_item(worklist, me, item_id, rest)
         print("updated #%s" % item_id)
         return
@@ -874,18 +900,17 @@ def main():
         prefix = sys.argv[2]
         _identity_or_die(prefix, _die2)
         root = C.project_root(C.project_start())
-        branch = C.git_branch(root)
-        if not branch:
-            sys.stderr.write(M.CLI_STATE_NO_BRANCH % root)
-            sys.exit(2)
-        if not S.agent_session_dir(root, branch, prefix).is_dir():
-            # NEVER auto-created (operator decision 2026-07-30): the RULES.md
-            # copy-forward is a judgement call a tool must not make. MY OWN
-            # directory since the split, not merely the branch's: a session
-            # joining a branch a peer bootstrapped still has nowhere of its own
-            # to write, and creating it for them would make that copy-forward
-            # decision on their behalf.
-            sys.stderr.write(M.CLI_STATE_NO_DIR % (branch, prefix, branch, prefix, branch))
+        # NO BRANCH GUARD any more (2026-08-18): the document is keyed on the
+        # session alone, so a detached HEAD -- which this operator gets on every
+        # interactive rebase -- no longer makes the one artifact designed to
+        # survive compaction unwritable.
+        if not S.agent_session_dir(root, prefix).is_dir():
+            # NEVER auto-created (operator decision 2026-07-30): bootstrapping
+            # is a judgement call a tool must not make. MY OWN directory since
+            # the split: a session joining a checkout a peer bootstrapped still
+            # has nowhere of its own to write, and creating it for them would
+            # make that decision on their behalf.
+            sys.stderr.write(M.CLI_STATE_NO_DIR % (prefix, prefix))
             sys.exit(2)
         # isatty FIRST: reading an interactive terminal is the hang this verb
         # was reported for, and refusing beats blocking even now that a bare
@@ -924,14 +949,14 @@ def main():
                 % (verdict, detail, S.AGENT_STATE_MIN_CHARS, S.AGENT_STATE_MAX_CHARS)
             )
             sys.exit(2)
-        target = S.agent_state_path(root, branch, prefix)
-        # Branch-scoped since the review round of 2026-07-31 (findings
-        # 3688784930/3688787780): a shared slot let a write on ANOTHER branch
-        # destroy this branch's only backup. Session-scoped too since the tree
-        # split: with one STATE.md per session a branch-wide slot lets a PEER's
-        # write destroy the only copy of my replaced body.
-        backup = S.agent_state_backup_path(wl, branch, prefix)
-        reaped_path = S.agent_state_reaped_path(wl, branch, prefix)
+        target = S.agent_state_path(root, prefix)
+        # Session-scoped since the tree split: with one STATE.md per session a
+        # shared slot lets a PEER's write destroy the only copy of my replaced
+        # body. It used to carry the branch as well (findings
+        # 3688784930/3688787780, when the document itself was per branch); the
+        # branch left the document's path, so it left the slot's name with it.
+        backup = S.agent_state_backup_path(wl, prefix)
+        reaped_path = S.agent_state_reaped_path(wl, prefix)
         pdir = C.projects_dir(root)
         backed_up = had_prev = False
         replaced = ""
@@ -969,11 +994,10 @@ def main():
                     with open(reaped_path, "a", encoding="utf-8") as af:
                         af.write(
                             "\n".join(
-                                "# reaped %s by %s from branch %s\n%s\n"
+                                "# reaped %s by %s\n%s\n"
                                 % (
                                     S.agent_state_stamp(time.time()),
                                     prefix,
-                                    branch,
                                     S.agent_state_render([s]),
                                 )
                                 for s in reaped
@@ -1049,8 +1073,8 @@ def main():
         except Exception:  # noqa: BLE001 -- the sig is an optimisation, never a gate on writing
             pass
         print(
-            "STATE.md section written for %s on branch %s (%d chars)%s\n"
-            "  sections kept: %s" % (prefix, branch, len(body), replaced, ", ".join(kept_rows))
+            "STATE.md section written for %s (%d chars)%s\n"
+            "  sections kept: %s" % (prefix, len(body), replaced, ", ".join(kept_rows))
         )
         if reaped_rows:
             print(

@@ -153,14 +153,17 @@ const SESSION_HEADER = 'X-Backup-Session';
  */
 const RETIRED: { needle: string; why: string }[] = [
   { needle: '/chunks/exists', why: 'route does not exist; the account mounts /exists' },
-  { needle: '/manifests"', why: 'commit posts a field set to /commit, not a document to /manifests' },
+  {
+    needle: '/manifests"',
+    why: 'commit posts a field set to /commit, not a document to /manifests',
+  },
   {
     needle: '"Authorization", "Bearer "',
     why: `the session authenticates with ${SESSION_HEADER}; a bearer authenticates as nobody`,
   },
   {
     needle: '"lineage":',
-    why: "zod requires lineageGuid; `lineage` is a 400",
+    why: 'zod requires lineageGuid; `lineage` is a 400',
   },
 ];
 
@@ -297,14 +300,10 @@ function checkLegs(legs: Leg[], routes: string, dto: string, client: string): st
   const problems: string[] = [];
   for (const leg of legs) {
     if (!routes.includes(`'${leg.path}'`)) {
-      problems.push(
-        `    ${leg.path}\n      declared here but ${ROUTES_TS} mounts no such route.`
-      );
+      problems.push(`    ${leg.path}\n      declared here but ${ROUTES_TS} mounts no such route.`);
     }
     if (!client.includes(`"${leg.path}"`)) {
-      problems.push(
-        `    ${leg.path}\n      declared here but ${CLIENT_GO} never calls it.`
-      );
+      problems.push(`    ${leg.path}\n      declared here but ${CLIENT_GO} never calls it.`);
     }
     const accepted = zodKeys(dto, leg.requestSchema);
     if (accepted === null) {
@@ -420,9 +419,7 @@ const tagProblems = checkLegs(
   `"/control-response" json:"omitemptyKey,omitempty"`
 );
 if (!tagProblems.some((p) => p.includes('"absentKey"'))) {
-  console.error(
-    '✗ tag control did not fire: a key the client never names went unreported.'
-  );
+  console.error('✗ tag control did not fire: a key the client never names went unreported.');
   process.exit(1);
 }
 if (tagProblems.some((p) => p.includes('"omitemptyKey"'))) {
@@ -461,14 +458,10 @@ if (routes.length === 0 || dto.length === 0 || client.length === 0) {
 const problems = checkLegs(LEGS, routes, dto, client);
 
 if (!routes.includes(`'${SESSION_HEADER}'`)) {
-  problems.push(
-    `    auth\n      ${ROUTES_TS} no longer reads ${SESSION_HEADER}.`
-  );
+  problems.push(`    auth\n      ${ROUTES_TS} no longer reads ${SESSION_HEADER}.`);
 }
 if (!client.includes(`"${SESSION_HEADER}"`)) {
-  problems.push(
-    `    auth\n      ${CLIENT_GO} no longer sends ${SESSION_HEADER}.`
-  );
+  problems.push(`    auth\n      ${CLIENT_GO} no longer sends ${SESSION_HEADER}.`);
 }
 
 for (const { needle, why } of RETIRED) {

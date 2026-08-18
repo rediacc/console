@@ -1,0 +1,327 @@
+{
+  "captchaRequired": "Por favor, complete la verificación del captcha.",
+  "common": {
+    "close": "Cerrar",
+    "logoAlt": "Rediacc - Plataforma de Automatización de Infraestructura",
+    "buttons": {
+      "close": "Cerrar",
+      "learnMore": "Más información",
+      "getStarted": "Comenzar"
+    },
+    "search": {
+      "placeholder": "Busque documentación, soluciones, características...",
+      "searching": "Búsqueda...",
+      "noResults": "No se encontraron resultados",
+      "closeModal": "Cerrar búsqueda",
+      "suggestions": {
+        "title": "Intentar:",
+        "differentKeywords": "Diferentes palabras clave o términos más cortos",
+        "checkSpelling": "revisando tu ortografía",
+        "browseSolutions": "Navegando por nuestra página de soluciones",
+        "contactSupport": "Contactando con nuestro equipo de soporte"
+      },
+      "results": "Resultados de búsqueda",
+      "unavailable": "Búsqueda no disponible",
+      "unavailableMessage": "No se pudo cargar el índice de búsqueda. Intente actualizar la página o contacte con soporte si el problema persiste."
+    },
+    "aria": {
+      "mainNavigation": "Navegación principal",
+      "previousImage": "Imagen anterior",
+      "nextImage": "Siguiente imagen",
+      "zoomIn": "Dar un golpe de zoom",
+      "zoomOut": "alejar",
+      "resetZoom": "Restablecer zoom",
+      "closeImageModal": "Cerrar imagen modal",
+      "imageViewer": "Visor de imágenes",
+      "opensInNewTab": "se abre en una nueva pestaña",
+      "tableOfContents": "Tabla de contenidos",
+      "docsSections": "Secciones de documentación",
+      "documentationNavigation": "Navegación de la documentación",
+      "breadcrumbNavigation": "Navegación de migas de pan",
+      "rediaccHome": "Inicio de Rediacc"
+    },
+    "skipNavigation": {
+      "skipToMainContent": "Saltar al contenido principal",
+      "skipToNavigation": "Saltar a navegación",
+      "skipToFooter": "Saltar al pie de página"
+    }
+  },
+  "contactModal": {
+    "title": "Contáctenos",
+    "description": "¿Tiene una pregunta o quiere discutir un proyecto? Envíenos un mensaje.",
+    "fields": {
+      "name": "Nombre",
+      "namePlaceholder": "Su nombre",
+      "email": "Correo electrónico",
+      "emailPlaceholder": "usted@empresa.com",
+      "subject": "Asunto",
+      "message": "Mensaje",
+      "messagePlaceholder": "Cuéntenos sobre su proyecto o pregunta..."
+    },
+    "subjects": {
+      "general": "Consulta general",
+      "technical": "Soporte técnico",
+      "partnership": "Asociación",
+      "disasterRecovery": "Recuperación ante desastres",
+      "other": "Otro"
+    },
+    "submit": "Enviar mensaje",
+    "sending": "Enviando...",
+    "success": "¡Mensaje enviado! Le responderemos en un plazo de 48 horas.",
+    "error": "Algo salió mal. Por favor, inténtelo de nuevo.",
+    "close": "Cerrar"
+  },
+  "footer": {
+    "columns": {
+      "product": "Producto",
+      "organization": "Organización",
+      "legal": "Legal"
+    },
+    "productLinks": {
+      "solutions": "Soluciones",
+      "overview": "Descripción general",
+      "pricing": "Precios",
+      "professionalServices": "Servicios profesionales",
+      "partners": "Programa de Partners",
+      "disasterRecovery": "Recuperación ante desastres"
+    },
+    "organizationLinks": {
+      "aboutUs": "Sobre nosotros",
+      "company": "Empresa",
+      "contact": "Contacto"
+    },
+    "legalLinks": {
+      "termsOfService": "Condiciones del servicio",
+      "privacyPolicy": "Política de privacidad",
+      "cookiePolicy": "Política de cookies",
+      "refundPolicy": "Política de reembolso",
+      "telemetryPolicy": "Política de telemetría",
+      "legalInformation": "Información legal"
+    },
+    "legalDisclosure": {
+      "summary": "{{companyName}} | Código registral {{registryCode}} | IVA {{vatNumber}} |",
+      "fullLegalInformation": "Información legal completa"
+    }
+  },
+  "navigation": {
+    "moreOptions": "Más opciones",
+    "home": "Inicio",
+    "blog": "Blog",
+    "docs": "Documentos",
+    "contact": "Contacto",
+    "downloads": "Descargas",
+    "install": "Instalar",
+    "pricing": "Precios",
+    "toggleMenu": "Alternar menú",
+    "search": "Buscar",
+    "selectLanguage": "Seleccionar idioma",
+    "languageSelectionMenu": "Menú de selección de idioma",
+    "login": "Acceso",
+    "footerNavigation": "Navegación del sitio",
+    "roiCalculator": "Calculadora de ROI",
+    "solutions": "Soluciones",
+    "disasterRecovery": "Recuperación ante Desastres",
+    "viewAllSolutions": "Ver todas las soluciones",
+    "builtForYourRole": "Para tu rol",
+    "builtForYou": "Para ti",
+    "forDevops": "Para ingenieros DevOps",
+    "forCtos": "Para CTOs",
+    "forCeos": "Para CEOs y fundadores",
+    "partners": "Socios",
+    "personas": {
+      "devops": {
+        "tagline": "Entrega más rápido. Recupera al instante. Duerme mejor.",
+        "cta": "Empezar gratis"
+      },
+      "cto": {
+        "tagline": "Reduce el TCO un 60 %. Escala en tu hardware.",
+        "cta": "Solicitar demo"
+      },
+      "ceo": {
+        "tagline": "Costos predecibles. Sin dependencia de proveedores.",
+        "cta": "Ver precios"
+      },
+      "ai-agent": {
+        "tagline": "CLI-first. Salida JSON. Nativo para agentes.",
+        "cta": "Ver la documentación"
+      }
+    },
+    "forAiAgents": "Para agentes de IA",
+    "account": "Cuenta"
+  },
+  "newsletter": {
+    "title": "Boletín",
+    "description": "Un correo corto al mes. Noticias del producto y consejos de autoalojamiento.",
+    "pageTitle": "Mantente al tanto",
+    "pageDescription": "Un correo al mes. Nuevas funciones, consejos de autoalojamiento y todo lo que aprendemos en el camino.",
+    "placeholder": "Tu correo electrónico",
+    "subscribe": "Suscribirse",
+    "successMessage": "Revisa tu bandeja de entrada para confirmar tu suscripción.",
+    "errorGeneric": "Algo salió mal. Por favor, inténtalo de nuevo.",
+    "confirmed": "¡Tu suscripción está confirmada! Bienvenido a bordo.",
+    "unsubscribed": "Te has dado de baja. Lamentamos verte partir.",
+    "blogCta": {
+      "title": "¿Te gustó este artículo?",
+      "description": "Enviamos guías de autoalojamiento y noticias cada mes. ¿Quieres recibirlas?"
+    },
+    "roiGate": {
+      "title": "Obtén tu informe detallado de ROI",
+      "description": "Ingresa tu correo para ver el desglose completo de costos y el análisis de ahorro.",
+      "unlock": "Ver informe"
+    },
+    "returnPopup": {
+      "title": "¿Quieres un recorrido guiado?",
+      "description": "Suscríbete para recibir actualizaciones del producto y reserva una cita de configuración en vivo con nuestro equipo.",
+      "cta": "Suscribirme y reservar cita",
+      "close": "Cerrar ventana",
+      "note": "Usamos tu correo para enviar actualizaciones del producto. Puedes darte de baja en cualquier momento."
+    },
+    "privacyNote": "Respetamos tu privacidad. Puedes darte de baja en cualquier momento."
+  },
+  "pages": {
+    "solutionPages": {
+      "leadMagnetButton": {
+        "title": "Obtenga el informe técnico",
+        "description": "Un PDF sin relleno, redactado para CISOs, CTOs e ingenieros senior. Le enviamos el enlace por correo para que pueda encontrarlo de nuevo.",
+        "buttonLabel": "Descargar el informe",
+        "dismissLabel": "Cerrar"
+      },
+      "leadMagnetModal": {
+        "title": "Obtenga el informe técnico",
+        "description": "Introduzca su correo corporativo. Le enviaremos el enlace al PDF y guardaremos una copia en su bandeja de entrada.",
+        "emailLabel": "Correo corporativo",
+        "emailPlaceholder": "you@company.com",
+        "submitLabel": "Enviarme el PDF",
+        "sendingLabel": "Enviando...",
+        "successTitle": "PDF en camino",
+        "successBody": "Lo hemos abierto en una nueva pestaña y le hemos enviado el enlace por correo. Esta ventana se cerrará en un momento.",
+        "errorGeneric": "Algo ha salido mal. Por favor, inténtelo de nuevo o contacte con nosotros en support@rediacc.com.",
+        "captchaRequired": "Por favor, complete la verificación del captcha.",
+        "disclaimer": "Un único correo. Sin listas de marketing. Cancele la suscripción con un clic.",
+        "closeLabel": "Cerrar"
+      },
+      "environmentCloning": {
+        "hero": {
+          "title": "Clona producción en 60 segundos"
+        }
+      },
+      "infrastructureCosts": {
+        "hero": {
+          "title": "Deja de pagar por entornos inactivos"
+        }
+      },
+      "productionParity": {
+        "hero": {
+          "title": "Entornos de desarrollo que coinciden con producción. Exactamente."
+        }
+      },
+      "integrations": {
+        "hero": {
+          "title": "Intégrate en tu flujo de trabajo existente"
+        }
+      },
+      "immutableBackups": {
+        "hero": {
+          "title": "Copias de seguridad que el ransomware no puede tocar"
+        }
+      },
+      "migrationSafety": {
+        "hero": {
+          "title": "Migra sin arriesgar tus datos"
+        }
+      },
+      "instantRecovery": {
+        "hero": {
+          "title": "Recuperación completa del entorno en minutos"
+        }
+      },
+      "safeOsTesting": {
+        "hero": {
+          "title": "Prueba actualizaciones del SO sin riesgo"
+        }
+      },
+      "retentionCompliance": {
+        "hero": {
+          "title": "Conserva tus datos el tiempo que la ley exige"
+        }
+      },
+      "cloudOutageProtection": {
+        "hero": {
+          "title": "Cuando AWS cae, tú no"
+        }
+      },
+      "failoverTesting": {
+        "hero": {
+          "title": "Prueba tu failover antes de necesitarlo"
+        }
+      },
+      "backupVerification": {
+        "hero": {
+          "title": "Cada copia verificada. Automáticamente."
+        }
+      },
+      "vulnerabilityManagement": {
+        "hero": {
+          "title": "Corrige vulnerabilidades antes de que lleguen los atacantes"
+        }
+      },
+      "aiPentesting": {
+        "hero": {
+          "title": "Clona producción. Deja que la IA lo ataque."
+        }
+      },
+      "encryption": {
+        "hero": {
+          "title": "Tus claves. Tu cifrado. Sin excepciones."
+        }
+      },
+      "continuousSecurityTesting": {
+        "hero": {
+          "title": "Prueba la seguridad continuamente. No anualmente."
+        }
+      },
+      "auditTrail": {
+        "hero": {
+          "title": "Cada acción registrada. Nada oculto."
+        }
+      },
+      "dataSovereignty": {
+        "hero": {
+          "title": "Soberano por arquitectura, no por certificado."
+        }
+      },
+      "rapidRecovery": {
+        "hero": {
+          "title": "Recupérate en minutos. No en días."
+        }
+      },
+      "kubernetesClusterMobility": {
+        "hero": {
+          "title": "Haz fork o mueve un clúster de Kubernetes en ejecución"
+        }
+      },
+      "vendorLockIn": {
+        "hero": {
+          "title": "Tu infraestructura. Tu elección. Siempre."
+        }
+      }
+    }
+  },
+  "regionPicker": {
+    "title": "Elige la región de tu cuenta",
+    "subtitle": "Tu cuenta, facturación y configuraciones permanecen en la región que elijas.",
+    "reassurance": "Los datos de tus servidores y copias de seguridad permanecen en tu propia infraestructura.",
+    "footer": "Elige la región más cercana a ti o la que requiera tu organización.",
+    "footerNote": "No se puede cambiar después del registro."
+  },
+  "solutions": {
+    "categories": {
+      "ransomware": "Supervivencia al ransomware",
+      "multi-cloud": "Multi-Nube",
+      "backups": "Copias de seguridad verificadas",
+      "encryption": "Control de cifrado",
+      "dev-env": "Entornos de desarrollo",
+      "defense": "Defensa preventiva"
+    }
+  }
+}

@@ -12,7 +12,7 @@ sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 
 Otomatik başlatma etkin olan depolar önyükleme sırasında kendiliğinden başlar. Bunlardan biri daha sonra kapanırsa, periyodik uzlaştırıcı onu geri getirir. Hiçbir bildirim. El ile yeniden başlatma yok.
 
-Bir depo için otomatik başlatmayı etkinleştirme veya devre dışı bırakma hakkında bilgi için bkz. [Servisler: Önyükleme Sırasında Otomatik Başlatma](/tr/docs/services#önyükleme-sırasında-otomatik-başlatma).
+Bir depo için otomatik başlatmayı etkinleştirme veya devre dışı bırakma hakkında bilgi için bkz. [Servisler: Önyükleme Sırasında Otomatik Başlatma](/tr/docs/services#autostart-on-boot).
 
 ## Otomatik Başlatma Nasıl Çalışır
 
@@ -121,5 +121,5 @@ Uzlaştırıcı, bir sonraki zamanlayıcı döngüsünde kurtarmayı yeniden den
 
 ## İlgili Sayfalar
 
-- [Servisler: Önyükleme Sırasında Otomatik Başlatma](/tr/docs/services#önyükleme-sırasında-otomatik-başlatma): otomatik başlatmayı etkinleştirme ve devre dışı bırakma, anahtar dosyası yönetimi
+- [Servisler: Önyükleme Sırasında Otomatik Başlatma](/tr/docs/services#autostart-on-boot): otomatik başlatmayı etkinleştirme ve devre dışı bırakma, anahtar dosyası yönetimi
 - [Yedekleme ve Geri Yükleme](/tr/docs/backup-restore): çalışan servislerle soğuk yedekleme etkileşimi

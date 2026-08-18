@@ -2,8 +2,12 @@ import React, { useCallback, useEffect, useRef } from 'react';
 import { useLanguage } from '../hooks/useLanguage';
 import { useTranslation } from '../i18n/react';
 import '../styles/persona-mega-menu.css';
+import type { Language } from '../i18n/types';
 
 interface PersonaMegaMenuProps {
+  /** Locale from Navigation, which gets it from BaseLayout. Authoritative on the server:
+   *  useLanguage() reads window.location and returns 'en' during SSR. */
+  lang?: Language;
   isOpen: boolean;
   onToggle: () => void;
   onClose: () => void;
@@ -87,8 +91,9 @@ const PERSONA_CARDS = [
   { slug: 'for-ai-agents', titleKey: 'forAiAgents', personaKey: 'ai-agent', Icon: CpuIcon },
 ] as const;
 
-const PersonaMegaMenu: React.FC<PersonaMegaMenuProps> = ({ isOpen, onToggle, onClose }) => {
-  const currentLang = useLanguage();
+const PersonaMegaMenu: React.FC<PersonaMegaMenuProps> = ({ isOpen, onToggle, onClose, lang }) => {
+  const detectedLang = useLanguage();
+  const currentLang = lang ?? detectedLang;
   const { t, to } = useTranslation(currentLang);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
@@ -167,7 +172,11 @@ const PersonaMegaMenu: React.FC<PersonaMegaMenuProps> = ({ isOpen, onToggle, onC
     }
   }, [isOpen, handleKeyDown]);
 
-  // Hover intent
+  // Hover intent. `hoverOpenedRef` marks an open that hover initiated: the
+  // first trigger CLICK after a hover-open pins the menu instead of closing
+  // it. Without this, hovering onto the trigger opens the panel and the very
+  // click that meant "open" slams it shut - the defect the old solutions mega
+  // menu shipped with.
   const clearHoverTimeout = () => {
     if (hoverTimeoutRef.current) {
       clearTimeout(hoverTimeoutRef.current);
@@ -175,11 +184,31 @@ const PersonaMegaMenu: React.FC<PersonaMegaMenuProps> = ({ isOpen, onToggle, onC
     }
   };
 
+  const hoverOpenedRef = useRef(false);
+
   const handleMouseEnter = () => {
     clearHoverTimeout();
     if (!isOpen) {
-      hoverTimeoutRef.current = setTimeout(onToggle, 100);
+      hoverTimeoutRef.current = setTimeout(() => {
+        hoverOpenedRef.current = true;
+        onToggle();
+      }, 100);
     }
+  };
+
+  const handleTriggerClick = () => {
+    // Cancel any pending hover-open FIRST. Without this, a click landing inside the 100ms
+    // hover window opens the menu here and the orphaned timer then fires and toggles it
+    // straight back shut, so the click appears to do nothing. Deterministic under
+    // automation (it cost a wave a browser run), intermittent for a fast human, which is
+    // the worst of both.
+    clearHoverTimeout();
+    if (isOpen && hoverOpenedRef.current) {
+      hoverOpenedRef.current = false;
+      return;
+    }
+    hoverOpenedRef.current = false;
+    onToggle();
   };
 
   const handleMouseLeave = () => {
@@ -203,7 +232,7 @@ const PersonaMegaMenu: React.FC<PersonaMegaMenuProps> = ({ isOpen, onToggle, onC
         ref={triggerRef}
         type="button"
         className="nav-link persona-menu-trigger"
-        onClick={onToggle}
+        onClick={handleTriggerClick}
         aria-haspopup="menu"
         aria-expanded={isOpen}
         aria-controls="persona-menu-panel"

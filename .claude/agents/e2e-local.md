@@ -20,7 +20,7 @@ locally in seconds. **Never push a test change to find out whether it works.**
 
 The fleet must be up first (see `ops-vms`): `./rdc.sh ops up --basic` gives the
 bridge `.1` + worker `.11`; `ops up` adds `.12`, which the worker suite wants.
-`virsh list --all` is the fastest honest check — VMs persist across sessions, so
+`virsh list --all` is the fastest honest check - VMs persist across sessions, so
 they are usually already running.
 
 ```bash
@@ -57,7 +57,7 @@ ways the workflow YAML will not explain.
    **Check the flavor before using any renet binary** (`go version -m <path>`):
    `-tags=nolicense` is the dev build you want. A binary with NEITHER
    `nolicense` nor `ProductionPublicKey=` is the poisoned bare-`go build`
-   artifact and every licensed op will fail — see `ops-vms`.
+   artifact and every licensed op will fail - see `ops-vms`.
 
 2. **`CI=true` in the generated `.env` steals the data directory.** renet
    resolves its data dir as `RENET_DATA_DIR` > CI autodetect > `~/.renet`
@@ -73,13 +73,13 @@ ways the workflow YAML will not explain.
 
 ## Reading the results
 
-- `packages/e2e-tests/reports/bridge-logs/summary.txt` — every test with
+- `packages/e2e-tests/reports/bridge-logs/summary.txt` - every test with
   ✓ / ✗ / ○ (skipped). Read this first; it is the whole picture in one file.
-- `bridge-logs/<suite>/<test-name>.txt` — per-test, with the exact SSH command
+- `bridge-logs/<suite>/<test-name>.txt` - per-test, with the exact SSH command
   sent, its raw STDOUT and STDERR **separately**, and the assertion diff. This
   is where a wrong assertion becomes obvious.
 - `○` after a `✗` usually means the failure aborted the rest of the file, so the
-  frontier is the FIRST `✗`. Fixing it commonly exposes the next one — expect to
+  frontier is the FIRST `✗`. Fixing it commonly exposes the next one - expect to
   iterate, which is exactly why you want to be local.
 
 ## Assertion traps this suite has already paid for
@@ -116,7 +116,7 @@ gh run download <id> --repo rediacc/console -n test-e2e-workers-<distro>-<sha> -
 ```
 
 The `<sha>` in the artifact name is the **merge** sha for a PR run, not your
-branch head — list the names rather than constructing them.
+branch head - list the names rather than constructing them.
 
 Read CI results at **JOB level**, never run level: a `cancelled` job did not run,
 and in a run summary that is indistinguishable from a pass.

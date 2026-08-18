@@ -113,7 +113,7 @@ rdc machine status server-1 --storage-health
 | Allocated | スパースイメージが現時点でプール内に実際に占有している容量 |
 | Unique | このリポジトリのみが所有する実際の一意データ |
 | Shared | BTRFS reflink を通じてリポジトリ間で再利用されるデータブロック（無償コピー） |
-| Reclaimable | [`repo trim`](/ja/docs/repositories#領域の回収-trim) でプールに返却できる、割り当て済みと使用済みの差分。未マウントのリポジトリには `-` が表示されます |
+| Reclaimable | [`repo trim`](/ja/docs/repositories#reclaim-space-trim) でプールに返却できる、割り当て済みと使用済みの差分。未マウントのリポジトリには `-` が表示されます |
 | Discards | 暗号化ボリュームがディスカードを透過的に通過させるか（現行バージョンでマウントされたリポジトリはすべて `on`） |
 | Divergence | このリポジトリに固有のイメージの割合（共有されていない部分）（高いほど削除時に回収可能なデータが多い） |
 | Frag | コピーオンライトイメージの GB あたりエクステント数（参考情報のみ） |

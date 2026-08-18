@@ -55,16 +55,16 @@ const cards = splitIntoCards(await Astro.slots.render('default'));
   }
 
   /* ------------------------------------------------------------------ */
-  /* Override DocsLayout constraints for full-width cheat sheet           */
+  /* Width                                                                */
   /* ------------------------------------------------------------------ */
 
   /*
-    .docs-article has max-width: var(--container-md) which clips the 3-col
-    grid.  Override it and the article-content wrapper to use full width.
+    Nothing here widens the page any more, and the `.docs-article { max-width:
+    none !important }` that used to is gone. The article's width is a grid TRACK
+    in DocsLayout now, and DocsLayout widens it itself with
+    `.docs-shell:has(.cs-cards)` -- one rule, at a specificity this unscoped
+    block could not have reached without escalating to !important again.
   */
-  .docs-article {
-    max-width: none !important;
-  }
 
   .article-content .cs-cards {
     max-width: none;

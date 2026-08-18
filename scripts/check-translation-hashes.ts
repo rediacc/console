@@ -47,10 +47,30 @@ interface LocaleCheckConfig {
 }
 
 const LOCALE_CONFIGS: LocaleCheckConfig[] = [
-  { name: 'cli', dir: path.join(__dirname, '../packages/cli/src/i18n/locales'), useNamespacePrefix: false, flatFiles: false },
-  { name: 'www', dir: path.join(__dirname, '../packages/www/src/i18n/translations'), useNamespacePrefix: false, flatFiles: true },
-  { name: 'account-web', dir: path.join(__dirname, '../private/account/web/src/i18n/locales'), useNamespacePrefix: true, flatFiles: false },
-  { name: 'account-emails', dir: path.join(__dirname, '../private/account/src/i18n/locales'), useNamespacePrefix: false, flatFiles: false },
+  {
+    name: 'cli',
+    dir: path.join(__dirname, '../packages/cli/src/i18n/locales'),
+    useNamespacePrefix: false,
+    flatFiles: false,
+  },
+  {
+    name: 'www',
+    dir: path.join(__dirname, '../packages/www/src/i18n/translations'),
+    useNamespacePrefix: false,
+    flatFiles: true,
+  },
+  {
+    name: 'account-web',
+    dir: path.join(__dirname, '../private/account/web/src/i18n/locales'),
+    useNamespacePrefix: true,
+    flatFiles: false,
+  },
+  {
+    name: 'account-emails',
+    dir: path.join(__dirname, '../private/account/src/i18n/locales'),
+    useNamespacePrefix: false,
+    flatFiles: false,
+  },
 ];
 
 /**
@@ -81,9 +101,10 @@ function loadEnglishFlat(config: LocaleCheckConfig): Record<string, string> {
 
   for (const file of jsonFiles) {
     const namespace = config.useNamespacePrefix ? file.replace('.json', '') : '';
-    const content = JSON.parse(
-      fs.readFileSync(path.join(enDir, file), 'utf-8')
-    ) as Record<string, unknown>;
+    const content = JSON.parse(fs.readFileSync(path.join(enDir, file), 'utf-8')) as Record<
+      string,
+      unknown
+    >;
     Object.assign(result, flattenJson(content, namespace));
   }
 
@@ -93,7 +114,10 @@ function loadEnglishFlat(config: LocaleCheckConfig): Record<string, string> {
 /**
  * Try to load the old English translations from git using sourceCommit.
  */
-function loadOldEnglishFlat(config: LocaleCheckConfig, sourceCommit: string): Record<string, string> | null {
+function loadOldEnglishFlat(
+  config: LocaleCheckConfig,
+  sourceCommit: string
+): Record<string, string> | null {
   const relDir = path.relative(REPO_ROOT, config.dir);
 
   if (config.flatFiles) {
@@ -156,9 +180,10 @@ function checkLocaleDir(config: LocaleCheckConfig): string[] {
     const jsonFiles = fs.readdirSync(enDir).filter((f) => f.endsWith('.json'));
     for (const file of jsonFiles) {
       const namespace = config.useNamespacePrefix ? file.replace('.json', '') : '';
-      const content = JSON.parse(
-        fs.readFileSync(path.join(enDir, file), 'utf-8')
-      ) as Record<string, unknown>;
+      const content = JSON.parse(fs.readFileSync(path.join(enDir, file), 'utf-8')) as Record<
+        string,
+        unknown
+      >;
       Object.assign(currentHashes, flattenAndHash(content, namespace));
     }
   }
@@ -287,8 +312,12 @@ function main(): void {
     console.error('');
     console.error('Which tool does step 1 depends on the SURFACE, and they are not the same:');
     console.error('  - packages/www/src/i18n/translations/  -> private/growth/i18n_pipeline');
-    console.error('    (`./run.sh --lang <lang> --surface <surface>`; `npm run i18n:naturalize-status`');
-    console.error('     lists what is stale). Its config targets that directory and ONLY that one.');
+    console.error(
+      '    (`./run.sh --lang <lang> --surface <surface>`; `npm run i18n:naturalize-status`'
+    );
+    console.error(
+      '     lists what is stale). Its config targets that directory and ONLY that one.'
+    );
     console.error('  - packages/cli/src/i18n/locales/       -> that pipeline CANNOT do these.');
     console.error('    config.py points at packages/www; pointing it here silently does nothing.');
     console.error('    Translate them directly (a Sonnet sub-agent, per the repo model policy).');

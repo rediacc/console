@@ -99,7 +99,7 @@ Fable-tier pieces of this program:
   this shape, including the server-first one arguing against its own angle
   (a server-side plaintext table of contents is a zero-knowledge regression).
   Synthesis and the staged plan for remote browse:
-  `docs/agent/backup-storage/PLAN-chunk-store-browse-DECISION.md`.
+  `agent/PLAN-chunk-store-browse-DECISION.md`.
 - CORRECTION 2026-08-16: `rdc repo push/pull --to/--from <storage>` did NOT stay.
   Both now refuse a storage destination (`packages/cli/src/commands/repo-backup.ts:183`)
   and name the chunk store instead. Only the machine form survives. This line

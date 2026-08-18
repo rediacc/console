@@ -62,7 +62,7 @@ function main(): number {
     if (!reason) {
       failures.push(
         `package.json: override "${topKey}" has no matching _overridesReasons entry.\n` +
-          `  Action: add _overridesReasons["${topKey}"] with a substantive "BLOCKER: ..." reason.`,
+          `  Action: add _overridesReasons["${topKey}"] with a substantive "BLOCKER: ..." reason.`
       );
       continue;
     }
@@ -76,7 +76,7 @@ function main(): number {
   for (const key of Object.keys(reasons)) {
     if (!Object.hasOwn(overrides, key)) {
       failures.push(
-        `package.json: _overridesReasons["${key}"] has no matching override — remove the stale reason.`,
+        `package.json: _overridesReasons["${key}"] has no matching override — remove the stale reason.`
       );
     }
   }
@@ -86,7 +86,7 @@ function main(): number {
     for (const f of failures) console.error(f);
     console.error('');
     console.error(
-      '✗ Every package.json override must have a substantive _overridesReasons entry — strict gate enforced',
+      '✗ Every package.json override must have a substantive _overridesReasons entry — strict gate enforced'
     );
     return 1;
   }

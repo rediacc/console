@@ -30,6 +30,7 @@ import * as path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { NIS2_SNAPSHOT_LANGS, type Nis2SnapshotLang } from './lib/nis2-langs.js';
+
 const CELEX = '32022L2555';
 const NORMALISATION_VERSION = 1;
 
@@ -92,7 +93,7 @@ const localCelexPdf = path.join(
   'growth',
   'nis2pack',
   '01_NIS2_Directive',
-  'CELEX_32022L2555_EN_TXT.pdf',
+  'CELEX_32022L2555_EN_TXT.pdf'
 );
 
 function sha256(buf: Buffer | string): string {
@@ -103,13 +104,13 @@ function fetchPdfFromEurLex(lang: SupportedLang): Buffer {
   if (useLocal) {
     if (lang !== 'en') {
       throw new Error(
-        `--use-local only supports English (the vendored CELEX PDF is the EN edition). Use without --use-local for ${lang}.`,
+        `--use-local only supports English (the vendored CELEX PDF is the EN edition). Use without --use-local for ${lang}.`
       );
     }
     if (!fs.existsSync(localCelexPdf)) {
       throw new Error(
         `--use-local requested but local PDF missing: ${localCelexPdf}\n` +
-          `Either drop the file in place or run without --use-local to fetch from EUR-Lex.`,
+          `Either drop the file in place or run without --use-local to fetch from EUR-Lex.`
       );
     }
     console.log(`[${lang}] reading local PDF: ${localCelexPdf}`);
@@ -120,7 +121,7 @@ function fetchPdfFromEurLex(lang: SupportedLang): Buffer {
   console.log(`[${lang}] fetching ${url}`);
   const tmp = path.join(
     fs.mkdtempSync(path.join(os.tmpdir(), `celex-${lang}-`)),
-    `celex-${lang}.pdf`,
+    `celex-${lang}.pdf`
   );
   execFileSync(
     'curl',
@@ -134,7 +135,7 @@ function fetchPdfFromEurLex(lang: SupportedLang): Buffer {
       tmp,
       url,
     ],
-    { stdio: 'inherit' },
+    { stdio: 'inherit' }
   );
   return fs.readFileSync(tmp);
 }
@@ -184,10 +185,7 @@ function normalise(rawText: string): string {
 }
 
 function pdftotextLayout(pdf: Buffer): string {
-  const tmpPdf = path.join(
-    fs.mkdtempSync(path.join(os.tmpdir(), 'celex-')),
-    'celex.pdf',
-  );
+  const tmpPdf = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'celex-')), 'celex.pdf');
   fs.writeFileSync(tmpPdf, pdf);
   return execFileSync('pdftotext', ['-layout', '-enc', 'UTF-8', tmpPdf, '-'], {
     encoding: 'utf-8',
@@ -245,12 +243,12 @@ function processOne(lang: SupportedLang): { ok: boolean; message: string } {
     const drifts: string[] = [];
     if (sourceDrift) {
       drifts.push(
-        `source PDF: was ${String(existing['source_pdf_sha256']).slice(0, 12)}..., now ${sourceSha.slice(0, 12)}...`,
+        `source PDF: was ${String(existing['source_pdf_sha256']).slice(0, 12)}..., now ${sourceSha.slice(0, 12)}...`
       );
     }
     if (textDrift) {
       drifts.push(
-        `normalised text: was ${String(existing['sha256']).slice(0, 12)}..., now ${textSha.slice(0, 12)}...`,
+        `normalised text: was ${String(existing['sha256']).slice(0, 12)}..., now ${textSha.slice(0, 12)}...`
       );
     }
     return { ok: false, message: `[${lang}] drift detected — ${drifts.join('; ')}` };

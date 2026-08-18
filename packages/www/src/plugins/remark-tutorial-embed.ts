@@ -7,11 +7,12 @@
  *
  * Example:
  *   Input:  ![Tutorial: rdc ops](/assets/tutorials/ops-tutorial.cast)
- *   Output: <div class="tutorial-video-container" data-video-src=".../ops-tutorial.mp4" data-poster-src=".../ops-tutorial.en.poster.jpg" data-subtitles-src=".../ops-tutorial.en.vtt" data-chapters-src=".../ops-tutorial.en.chapters.vtt" data-words-src=".../ops-tutorial.en.words.json" data-title="..." data-lang="en"></div>
+ *   Output: <div class="tutorial-video-container" data-video-src=".../ops-tutorial.mp4" data-poster-src=".../ops-tutorial.en.poster.jpg" data-subtitles-src=".../ops-tutorial.en.vtt" data-chapters-src=".../ops-tutorial.en.chapters.vtt" data-words-src=".../ops-tutorial.en.words.json" data-sources='{"en":{...},"de":{...}}' data-title="..." data-lang="en"></div>
  */
 
 import path from 'node:path';
 import process from 'node:process';
+import { SITE_LOCALES } from '@rediacc/locales';
 import { DEFAULTS_EXTENDED } from '@rediacc/shared/config/defaults';
 import type { Image, Paragraph, Root } from 'mdast';
 import type { Node, Parent } from 'unist';
@@ -48,6 +49,33 @@ function langFromFilePath(filePath: string | undefined): string {
   return m ? m[1].toLowerCase() : 'en';
 }
 
+/**
+ * `loadManifest()` re-reads and re-parses the 448 KB manifest on every call, and this
+ * plugin now asks it for 5 fields x 13 locales per embed across 234 tutorial pages. One
+ * read per build process is enough: the file is a committed build input that nothing
+ * mutates while Astro is running.
+ */
+let manifestMemo: ReturnType<typeof asSparse> | null = null;
+function manifest(): ReturnType<typeof asSparse> {
+  manifestMemo ??= asSparse(loadManifest());
+  return manifestMemo;
+}
+
+/**
+ * The locales this cast is actually published in, in SITE_LOCALES order.
+ *
+ * Derived from the manifest rather than assumed, so a cast that is mid-publish offers only
+ * the languages that exist. An empty manifest (no CDN configured, or a fresh checkout
+ * before the first publish) falls back to the full site set, which is what the local
+ * `/assets/tutorials/video/<lang>/...` paths below serve.
+ */
+function localesFor(castKey: string): string[] {
+  const published = manifest().tutorials?.[castKey];
+  if (!published) return [...SITE_LOCALES];
+  const found = SITE_LOCALES.filter((l) => published[l]?.mp4?.path);
+  return found.length > 0 ? [...found] : [...SITE_LOCALES];
+}
+
 function resolveUrl(castKey: string, lang: string, field: TutorialField): string {
   const localFallback: Record<TutorialField, string> = {
     mp4: `/assets/tutorials/video/${lang}/${castKey}.mp4`,
@@ -69,11 +97,31 @@ function resolveUrl(castKey: string, lang: string, field: TutorialField): string
   // src/utils/solution-video.ts already carries a comment saying this exact
   // crash "failed the whole CDN build rather than degrading one player". The
   // fix was applied there and never swept to here.
-  const manifest = asSparse(loadManifest());
-  const assetPath = manifest.tutorials?.[castKey]?.[lang]?.[field]?.path;
+  const assetPath = manifest().tutorials?.[castKey]?.[lang]?.[field]?.path;
   if (!assetPath) return localFallback[field];
 
   return `${VIDEO_CDN_BASE_URL}/${assetPath}`;
+}
+
+/**
+ * The per-locale source sets handed to the player's language picker.
+ *
+ * Emitted as ONE `data-sources` attribute rather than shipping
+ * `src/data/video-manifest.json` to the browser: the manifest is 448 KB and describes
+ * every cast and every solution video, where a player needs 13 x 5 URLs for its own cast.
+ */
+function buildSources(castKey: string): Record<string, Record<string, string>> {
+  const out: Record<string, Record<string, string>> = {};
+  for (const l of localesFor(castKey)) {
+    out[l] = {
+      mp4: resolveUrl(castKey, l, 'mp4'),
+      poster: resolveUrl(castKey, l, 'poster'),
+      vtt: resolveUrl(castKey, l, 'vtt'),
+      chapters: resolveUrl(castKey, l, 'chaptersVtt'),
+      words: resolveUrl(castKey, l, 'wordsJson'),
+    };
+  }
+  return out;
 }
 
 function buildVideoContainerHtml(castUrl: string, lang: string, title: string): string {
@@ -85,6 +133,7 @@ function buildVideoContainerHtml(castUrl: string, lang: string, title: string): 
     ` data-subtitles-src="${escapeHtml(resolveUrl(castKey, lang, 'vtt'))}"`,
     ` data-chapters-src="${escapeHtml(resolveUrl(castKey, lang, 'chaptersVtt'))}"`,
     ` data-words-src="${escapeHtml(resolveUrl(castKey, lang, 'wordsJson'))}"`,
+    ` data-sources="${escapeHtml(JSON.stringify(buildSources(castKey)))}"`,
     ` data-title="${escapeHtml(title)}"`,
     ` data-lang="${escapeHtml(lang)}"`,
     '></div>',

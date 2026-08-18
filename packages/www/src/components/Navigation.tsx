@@ -1,37 +1,63 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useLanguage } from '../hooks/useLanguage';
 import { SUPPORTED_LANGUAGES } from '../i18n/language-utils';
 import { useTranslation } from '../i18n/react';
-import { AccountCta } from './AccountCta';
 import LanguageMenu from './LanguageMenu';
-import MegaMenu from './MegaMenu';
+import NavCtaMenu from './NavCtaMenu';
 import PersonaMegaMenu from './PersonaMegaMenu';
 import SearchModal from './SearchModal';
 import Sidebar from './Sidebar';
-import ThemeToggle from './ThemeToggle';
+import type { Language } from '../i18n/types';
 
 interface NavigationProps {
+  /** Locale from BaseLayout; authoritative on the server. See the note above. */
+  lang?: Language;
   origin?: string;
 }
 
-const Navigation: React.FC<NavigationProps> = ({ origin }) => {
+/**
+ * `lang` is passed by BaseLayout and is AUTHORITATIVE on the server.
+ *
+ * `useLanguage()` reads `window.location.pathname`, and there is no `window` during SSR,
+ * so it returns 'en' for every locale. That made this island server-render English on all
+ * twelve non-English locales: crawlers and no-JS visitors saw an English nav, and everyone
+ * else got a flash of English until hydration corrected it. Astro knows the locale, so it
+ * hands it down; the hook stays as the fallback for any mount that does not.
+ */
+const Navigation: React.FC<NavigationProps> = ({ lang, origin }) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
-  const [isMegaMenuOpen, setIsMegaMenuOpen] = useState(false);
   const [isPersonaMenuOpen, setIsPersonaMenuOpen] = useState(false);
-  const currentLang = useLanguage();
+  const [isCtaMenuOpen, setIsCtaMenuOpen] = useState(false);
+  const wordmarkRef = useRef<HTMLSpanElement>(null);
+  const detectedLang = useLanguage();
+  const currentLang = lang ?? detectedLang;
   const { t } = useTranslation(currentLang);
 
   // Drives `.nav-translate` groups: center nav + utility cluster slide up and
-  // fade out 1:1 with the first 80px of scroll, then clamp. Brand and CTA stay.
+  // fade out 1:1 with the first 80px of scroll, then clamp. The icon and CTA
+  // stay; the WORDMARK fades and collapses on the same 80px range, so the brand
+  // is still present at the top of a scrolled page without spending width on a
+  // word the visitor has already read.
   // Opacity is paired with translate because the items would otherwise hide
   // behind the higher-z announcement banner mid-slide and look abrupt.
   // body[data-nav-collapsed] suppresses pointer events on faded items so they
   // don't intercept clicks meant for the page below.
+  //
+  // ONE listener, deliberately. Everything scroll-linked in this header goes
+  // through this handler; a second listener would double the work per frame and
+  // let the two states disagree mid-scroll.
+  //
+  // The wordmark's natural width is REMEASURED at scrollY 0 rather than baked
+  // into the stylesheet: `.nav-wordmark` steps down a font size below 48rem, so
+  // a literal would be wrong on phones, and `scrollWidth` reports the content
+  // width even while the box is clamped, which makes the reading self-correcting
+  // instead of needing a resize listener.
   useEffect(() => {
     const root = document.documentElement;
     const body = document.body;
     let frame = 0;
+    let measured = 0;
     const update = () => {
       frame = 0;
       const y = Math.min(Math.max(window.scrollY, 0), 80);
@@ -40,11 +66,29 @@ const Navigation: React.FC<NavigationProps> = ({ origin }) => {
       // few pixels (item center is ~16px from the nav's top edge).
       root.style.setProperty('--nav-scroll-y', `${-y * 0.5}px`);
       root.style.setProperty('--nav-scroll-fade', `${1 - y / 80}`);
+      if (y === 0 && wordmarkRef.current) {
+        // Measure with the clamp OFF. `scrollWidth` on the clamped box returns
+        // max(clientWidth, content), so it only ever corrects the stored width
+        // UPWARD: at 390px the wordmark steps down a font size to ~96px of text
+        // and the reading stayed pinned at the 120px fallback, padding a nav
+        // that already overflows that viewport. Clearing the inline size first
+        // costs one synchronous layout, and only on frames that land at
+        // scrollY 0, where the width is not being animated anyway.
+        const el = wordmarkRef.current;
+        el.style.inlineSize = 'auto';
+        const width = Math.ceil(el.getBoundingClientRect().width);
+        el.style.inlineSize = '';
+        if (width > 0 && width !== measured) {
+          measured = width;
+          root.style.setProperty('--nav-wordmark-w', `${width}px`);
+        }
+      }
+      root.style.setProperty('--nav-wordmark-fade', `${1 - y / 80}`);
       const collapsed = y >= 80;
       if (collapsed) {
         body.setAttribute('data-nav-collapsed', 'true');
-        setIsMegaMenuOpen(false);
         setIsPersonaMenuOpen(false);
+        setIsCtaMenuOpen(false);
       } else {
         body.removeAttribute('data-nav-collapsed');
       }
@@ -59,13 +103,15 @@ const Navigation: React.FC<NavigationProps> = ({ origin }) => {
       window.removeEventListener('scroll', onScroll);
       if (frame) cancelAnimationFrame(frame);
       body.removeAttribute('data-nav-collapsed');
+      root.style.removeProperty('--nav-wordmark-fade');
+      root.style.removeProperty('--nav-wordmark-w');
     };
   }, []);
 
   const toggleSidebar = () => {
     setIsSidebarOpen(!isSidebarOpen);
-    setIsMegaMenuOpen(false);
     setIsPersonaMenuOpen(false);
+    setIsCtaMenuOpen(false);
   };
 
   const closeSidebar = () => {
@@ -74,30 +120,36 @@ const Navigation: React.FC<NavigationProps> = ({ origin }) => {
 
   const openSearch = () => {
     setIsSearchOpen(true);
-    setIsMegaMenuOpen(false);
     setIsPersonaMenuOpen(false);
+    setIsCtaMenuOpen(false);
+    // Tell the docs-scoped modal to close. Docs pages mount their own SearchModal, and
+    // without this the two can be open at once via the CLICK paths (the CTA menu entry and
+    // the mobile drawer row). The HOTKEY path was already covered, because both mounts
+    // listen for this same event.
+    document.dispatchEvent(new CustomEvent('search:open'));
   };
 
   const closeSearch = () => {
     setIsSearchOpen(false);
   };
 
-  const toggleMegaMenu = () => {
-    setIsMegaMenuOpen((prev) => !prev);
-    setIsPersonaMenuOpen(false);
-  };
-  const closeMegaMenu = () => setIsMegaMenuOpen(false);
   const togglePersonaMenu = () => {
     setIsPersonaMenuOpen((prev) => !prev);
-    setIsMegaMenuOpen(false);
+    setIsCtaMenuOpen(false);
   };
   const closePersonaMenu = () => setIsPersonaMenuOpen(false);
+
+  const toggleCtaMenu = () => {
+    setIsCtaMenuOpen((prev) => !prev);
+    setIsPersonaMenuOpen(false);
+  };
+  const closeCtaMenu = () => setIsCtaMenuOpen(false);
 
   // Close menus on Astro page navigation
   useEffect(() => {
     const handleNavigation = () => {
-      setIsMegaMenuOpen(false);
       setIsPersonaMenuOpen(false);
+      setIsCtaMenuOpen(false);
     };
     document.addEventListener('astro:after-swap', handleNavigation);
     return () => document.removeEventListener('astro:after-swap', handleNavigation);
@@ -162,13 +214,22 @@ const Navigation: React.FC<NavigationProps> = ({ origin }) => {
             data-track="cta_click"
             data-track-label="nav-brand"
           >
-            <span className="nav-wordmark" aria-label={t('common.logoAlt')}>
+            <span ref={wordmarkRef} className="nav-wordmark" aria-label={t('common.logoAlt')}>
               rediacc
             </span>
           </a>
           <div className="nav-links nav-translate">
-            <MegaMenu isOpen={isMegaMenuOpen} onToggle={toggleMegaMenu} onClose={closeMegaMenu} />
+            <a
+              href={`/${currentLang}#solutions`}
+              className="nav-link"
+              data-track="cta_click"
+              data-track-label="nav-link"
+              data-track-dest="solutions"
+            >
+              {t('navigation.solutions')}
+            </a>
             <PersonaMegaMenu
+              lang={currentLang}
               isOpen={isPersonaMenuOpen}
               onToggle={togglePersonaMenu}
               onClose={closePersonaMenu}
@@ -200,45 +261,9 @@ const Navigation: React.FC<NavigationProps> = ({ origin }) => {
             >
               {t('navigation.blog')}
             </a>
-            <a
-              href={`/${currentLang}/partners`}
-              className="nav-link"
-              data-track="cta_click"
-              data-track-label="nav-link"
-              data-track-dest="partners"
-            >
-              {t('navigation.partners')}
-            </a>
           </div>
           <div className="nav-right">
             <div className="nav-utilities nav-translate">
-              <button
-                type="button"
-                className="search-btn"
-                onClick={openSearch}
-                aria-label={t('navigation.search')}
-                aria-expanded={isSearchOpen}
-                aria-controls="search-modal"
-                data-track="cta_click"
-                data-track-label="nav-search"
-              >
-                <svg
-                  width="20"
-                  height="20"
-                  viewBox="0 0 20 20"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <circle cx="8" cy="8" r="6" stroke="currentColor" strokeWidth="2" />
-                  <path
-                    d="M12.5 12.5L17 17"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                  />
-                </svg>
-              </button>
-              <ThemeToggle label={t('navigation.toggleTheme')} />
               <LanguageMenu
                 variant="icon-only"
                 currentLang={currentLang}
@@ -248,25 +273,32 @@ const Navigation: React.FC<NavigationProps> = ({ origin }) => {
                 ariaLabel={t('navigation.selectLanguage')}
               />
             </div>
-            <AccountCta
+            <NavCtaMenu
               origin={origin}
-              label={t('common.buttons.getStarted')}
-              className="nav-cta-btn nav-install-btn"
-              ariaLabel={t('common.buttons.getStarted')}
-              track={{ event: 'cta_click', label: 'nav-get-started', dest: 'account' }}
-            />
-            <AccountCta
-              origin={origin}
-              label={t('navigation.login')}
-              className="nav-cta-btn nav-cta-btn--secondary nav-account-btn"
-              ariaLabel={t('navigation.login')}
-              track={{ event: 'cta_click', label: 'nav-login', dest: 'account' }}
+              getStartedLabel={t('common.buttons.getStarted')}
+              loginLabel={t('navigation.login')}
+              searchLabel={t('navigation.search')}
+              // navigation.moreOptions, not navigation.toggleMenu: the hamburger already
+              // announces "Toggle menu" in this same bar, and two controls sharing one
+              // accessible name is indistinguishable by ear. The panel takes its name from
+              // this trigger via aria-labelledby, so this one prop names both.
+              menuLabel={t('navigation.moreOptions')}
+              isOpen={isCtaMenuOpen}
+              onToggle={toggleCtaMenu}
+              onClose={closeCtaMenu}
+              onSearch={openSearch}
             />
           </div>
         </div>
       </nav>
-      <Sidebar isOpen={isSidebarOpen} onClose={closeSidebar} origin={origin} />
-      <SearchModal isOpen={isSearchOpen} onClose={closeSearch} />
+      <Sidebar
+        lang={currentLang}
+        isOpen={isSidebarOpen}
+        onClose={closeSidebar}
+        origin={origin}
+        onSearch={openSearch}
+      />
+      <SearchModal lang={currentLang} isOpen={isSearchOpen} onClose={closeSearch} />
     </>
   );
 };

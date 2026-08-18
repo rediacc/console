@@ -8,6 +8,15 @@ export interface AccountCtaProps {
   className?: string;
   ariaLabel?: string;
   tabIndex?: number;
+  /**
+   * ARIA role for the rendered element. The nav's split-button menu needs
+   * `menuitem` here: this component decides at render time whether it emits an
+   * <a> or a <button>, so the role cannot be put on a wrapper without lying
+   * about which element is the menu item.
+   */
+  role?: string;
+  /** Ref to the rendered element, for roving-focus menus. */
+  elementRef?: (el: HTMLElement | null) => void;
   track?: {
     event?: string;
     label?: string;
@@ -22,6 +31,8 @@ export const AccountCta: React.FC<AccountCtaProps> = ({
   className,
   ariaLabel,
   tabIndex,
+  role,
+  elementRef,
   track,
   onClick,
 }) => {
@@ -40,10 +51,12 @@ export const AccountCta: React.FC<AccountCtaProps> = ({
   if (accountUrl) {
     return (
       <a
+        ref={elementRef}
         href={accountUrl}
         className={className}
         aria-label={ariaLabel ?? label}
         tabIndex={tabIndex}
+        role={role}
         onClick={onClick}
         data-track={track?.event}
         {...trackProps}

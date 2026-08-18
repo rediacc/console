@@ -12,7 +12,10 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { glob } from 'glob';
-
+// Curated contract examples (also parsed and gated by the contract generator;
+// validated here too so this script stays the one place that proves every
+// `rdc …` line in the repo against the command tree)
+import { COMMAND_EXAMPLES } from '../packages/cli/src/config/command-docs.ts';
 // Reuse the existing validation library from www package
 import {
   mergeContinuationLines,
@@ -20,20 +23,10 @@ import {
   SHELL_FENCE_LANGS,
 } from '../packages/www/scripts/lib/cli-reference-catalog.js';
 
+// Shared stale-command-path detector (commands that no longer exist)
+import { scanShellText, scanSourceOptions, scanSourceText } from './lib/command-path-checker.ts';
 // Shared positional-syntax detector (zero-positional commands)
 import { scanText as scanPositional } from './lib/positional-cli-detector.ts';
-
-// Shared stale-command-path detector (commands that no longer exist)
-import {
-  scanShellText,
-  scanSourceOptions,
-  scanSourceText,
-} from './lib/command-path-checker.ts';
-
-// Curated contract examples (also parsed and gated by the contract generator;
-// validated here too so this script stays the one place that proves every
-// `rdc …` line in the repo against the command tree)
-import { COMMAND_EXAMPLES } from '../packages/cli/src/config/command-docs.ts';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..');
@@ -153,9 +146,9 @@ const COMMAND_PATH_IGNORE = /(?:__tests__|\.test\.ts$|\.spec\.ts$)/;
  */
 const EXCLUDED_FILES = new Set<string>([
   'docs/design/spec/11-p4-gate-review.md',
-  'agent/backup-storage/PLAN-lint-rule-matrix-probe.md',
-  'agent/backup-storage/PLAN-agent-hints-implementation.md',
-  'agent/backup-storage/PLAN-agent-hints-in-stop-hook.md',
+  'agent/PLAN-lint-rule-matrix-probe.md',
+  'agent/PLAN-agent-hints-implementation.md',
+  'agent/PLAN-agent-hints-in-stop-hook.md',
 ]);
 
 /**
@@ -262,16 +255,10 @@ function formatParsedError(parsed: ReturnType<typeof parseRdcCommand>): string {
  * Also enters ```markdown fences for AGENTS.md-template files that
  * deliberately nest CLI examples inside a markdown fence for copy-paste.
  */
-function extractFromMarkdown(
-  content: string,
-  filePath: string,
-  violations: Violation[]
-): void {
+function extractFromMarkdown(content: string, filePath: string, violations: Violation[]): void {
   const lines = content.split(/\r?\n/);
   let inFence = false;
-  const enterMarkdownFences = MARKDOWN_FENCE_WHITELIST_PATTERNS.some((p) =>
-    p.test(filePath)
-  );
+  const enterMarkdownFences = MARKDOWN_FENCE_WHITELIST_PATTERNS.some((p) => p.test(filePath));
 
   for (let i = 0; i < lines.length; i++) {
     const trimmed = lines[i].trim();
@@ -283,8 +270,7 @@ function extractFromMarkdown(
       }
       const lang = trimmed.slice(3).trim().toLowerCase();
       const isShell = SHELL_FENCE_LANGS.has(lang);
-      const isTemplateFence =
-        enterMarkdownFences && (lang === 'markdown' || lang === '');
+      const isTemplateFence = enterMarkdownFences && (lang === 'markdown' || lang === '');
       inFence = isShell || isTemplateFence;
       continue;
     }
@@ -387,11 +373,7 @@ function checkPositionalSyntax(
 /**
  * Extract rdc commands from TypeScript source files (help text strings).
  */
-function extractFromTypeScript(
-  content: string,
-  filePath: string,
-  violations: Violation[]
-): void {
+function extractFromTypeScript(content: string, filePath: string, violations: Violation[]): void {
   const lines = content.split(/\r?\n/);
 
   for (let i = 0; i < lines.length; i++) {
@@ -420,10 +402,32 @@ function extractFromTypeScript(
  * Known top-level rdc subcommands for filtering real commands from prose.
  */
 const KNOWN_SUBCOMMANDS = new Set([
-  'agent', 'auth', 'audit', 'bridge', 'ceph', 'config', 'datastore',
-  'doctor', 'machine', 'mcp', 'ops', 'organization', 'permission',
-  'protocol', 'queue', 'region', 'repo', 'repository', 'shortcuts',
-  'storage', 'subscription', 'team', 'term', 'update', 'user', 'vscode',
+  'agent',
+  'auth',
+  'audit',
+  'bridge',
+  'ceph',
+  'config',
+  'datastore',
+  'doctor',
+  'machine',
+  'mcp',
+  'ops',
+  'organization',
+  'permission',
+  'protocol',
+  'queue',
+  'region',
+  'repo',
+  'repository',
+  'shortcuts',
+  'storage',
+  'subscription',
+  'team',
+  'term',
+  'update',
+  'user',
+  'vscode',
   'run',
 ]);
 
@@ -466,11 +470,7 @@ function looksLikeCommand(text: string): boolean {
  * We parse the full JSON, walk all string values, split on \\n boundaries,
  * and validate each line that looks like a CLI command.
  */
-function extractFromJSON(
-  content: string,
-  filePath: string,
-  violations: Violation[]
-): void {
+function extractFromJSON(content: string, filePath: string, violations: Violation[]): void {
   let json: unknown;
   try {
     json = JSON.parse(content);
@@ -525,11 +525,7 @@ function extractFromJSON(
 /**
  * Extract rdc commands from Go source files (string literals).
  */
-function extractFromGo(
-  content: string,
-  filePath: string,
-  violations: Violation[]
-): void {
+function extractFromGo(content: string, filePath: string, violations: Violation[]): void {
   const lines = content.split(/\r?\n/);
 
   for (let i = 0; i < lines.length; i++) {
@@ -629,11 +625,7 @@ function extractFromCommandDocs(violations: Violation[]): void {
  * Whole-file positional-syntax scan. Uses the shared detector to catch any
  * `rdc <zero-positional-cmd> <token>` pattern anywhere in the file.
  */
-function scanFileForPositional(
-  content: string,
-  filePath: string,
-  violations: Violation[]
-): void {
+function scanFileForPositional(content: string, filePath: string, violations: Violation[]): void {
   if (!content.includes('rdc ')) return;
   const lines = content.split(/\r?\n/);
   for (let i = 0; i < lines.length; i++) {

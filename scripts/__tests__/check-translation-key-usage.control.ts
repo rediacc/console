@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+
 /**
  * Control harness for check-translation-key-usage.ts's namespace discovery.
  *
@@ -16,9 +17,9 @@
  * Run: npx tsx scripts/__tests__/check-translation-key-usage.control.ts
  */
 
+import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
-import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { globSync } from 'glob';
 
@@ -39,19 +40,27 @@ const BAD = 'thisKeyDoesNotExistAnywhere';
 
 const CASES: Case[] = [
   {
-    name: "lowercase `ns` (the original supported spelling)",
-    source: "const ns = 'pages.partners.form';\nexport const C = () => <p>{t(`${ns}." + BAD + '`)}</p>;\n',
+    name: 'lowercase `ns` (the original supported spelling)',
+    source:
+      "const ns = 'pages.partners.form';\nexport const C = () => <p>{t(`${ns}." +
+      BAD +
+      '`)}</p>;\n',
     shouldDetect: true,
   },
   {
     name: 'uppercase `NS` (the spelling that was invisible)',
-    source: "const NS = 'pages.partners.form';\nexport const C = () => <p>{t(`${NS}." + BAD + '`)}</p>;\n',
+    source:
+      "const NS = 'pages.partners.form';\nexport const C = () => <p>{t(`${NS}." +
+      BAD +
+      '`)}</p>;\n',
     shouldDetect: true,
   },
   {
     name: 'arbitrary `FORM_NS`',
     source:
-      "const FORM_NS = 'pages.partners.form';\nexport const C = () => <p>{t(`${FORM_NS}." + BAD + '`)}</p>;\n',
+      "const FORM_NS = 'pages.partners.form';\nexport const C = () => <p>{t(`${FORM_NS}." +
+      BAD +
+      '`)}</p>;\n',
     shouldDetect: true,
   },
   {
@@ -65,12 +74,15 @@ const CASES: Case[] = [
   {
     name: 'PAGE_KEY (the other originally supported spelling)',
     source:
-      "const PAGE_KEY = 'pages.partners.form';\nexport const C = () => <p>{t(`${PAGE_KEY}." + BAD + '`)}</p>;\n',
+      "const PAGE_KEY = 'pages.partners.form';\nexport const C = () => <p>{t(`${PAGE_KEY}." +
+      BAD +
+      '`)}</p>;\n',
     shouldDetect: true,
   },
   {
     name: 'undotted constant must NOT be treated as a namespace',
-    source: "const LABEL = 'Partners';\nexport const C = () => <p>{t(`${LABEL}." + BAD + '`)}</p>;\n',
+    source:
+      "const LABEL = 'Partners';\nexport const C = () => <p>{t(`${LABEL}." + BAD + '`)}</p>;\n',
     shouldDetect: false,
   },
   {
@@ -147,11 +159,15 @@ function main(): void {
     console.error(
       `VACUOUS: a leftover ${stale} is already present.\n` +
         '  A previous run was killed mid-probe. Remove it and re-run; leaving it would\n' +
-        '  fold one case\'s source into every later case.',
+        "  fold one case's source into every later case."
     );
     process.exit(1);
   }
   let failures = 0;
+
+  // Tell the gate this fixture is a LIVE probe, not the orphan a killed run leaves behind.
+  // The gate diagnoses an orphan by filename; without this it would refuse every case here.
+  process.env.REDIACC_KEY_USAGE_PROBE = '1';
 
   for (const c of CASES) {
     const probe = path.join(probeDir, `__control_probe__.tsx`);
@@ -167,7 +183,7 @@ function main(): void {
     console.log(
       `${ok ? '  ok  ' : '  FAIL'} ${c.name} — want ${c.shouldDetect ? 'detected' : 'ignored'}, got ${
         detected ? 'detected' : 'ignored'
-      }`,
+      }`
     );
   }
 
@@ -177,14 +193,18 @@ function main(): void {
     console.error(
       `VACUOUS: found only ${inUse.length} namespace variable(s) in www source.\n` +
         '  Expected several. Either the scan broke or the convention changed;\n' +
-        '  either way this guard would pass while checking nothing.',
+        '  either way this guard would pass while checking nothing.'
     );
     process.exit(1);
   }
   const unresolved: string[] = [];
   for (const name of inUse) {
     const probe = path.join(probeDir, '__control_probe__.tsx');
-    fs.writeFileSync(probe, `const ${name} = 'pages.partners.form';\nexport const C = () => <p>{t(\`\${${name}}.${BAD}\`)}</p>;\n`, 'utf8');
+    fs.writeFileSync(
+      probe,
+      `const ${name} = 'pages.partners.form';\nexport const C = () => <p>{t(\`\${${name}}.${BAD}\`)}</p>;\n`,
+      'utf8'
+    );
     try {
       if (!gateReports(BAD)) unresolved.push(name);
     } finally {
@@ -202,7 +222,7 @@ function main(): void {
     console.error(
       `\n✗ ${failures} control case(s) failed. Namespace discovery has regressed —\n` +
         '  most likely back to a hard-coded list of variable names, which is exactly\n' +
-        '  how a key missing from every locale shipped to production once already.',
+        '  how a key missing from every locale shipped to production once already.'
     );
     process.exit(1);
   }

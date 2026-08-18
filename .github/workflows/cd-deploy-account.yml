@@ -72,6 +72,20 @@ on:
         required: true
       OTLP_CLIENT_CREDENTIALS_ASIA:
         required: true
+      # Chunk-store backup plane. `required: true` deliberately, and every
+      # caller updated in the same change: these are optional in the Worker's
+      # env schema, so an empty value does NOT fail the deploy -- it ships a
+      # Worker whose backup endpoints answer 503 at runtime. That is the exact
+      # shape of the OTLP bug above, and `required` is what turns it into a
+      # loud workflow error instead of a silent production regression.
+      BACKUP_S3_ENDPOINT:
+        required: true
+      BACKUP_S3_BUCKET:
+        required: true
+      BACKUP_S3_ACCESS_KEY_ID:
+        required: true
+      BACKUP_S3_SECRET_ACCESS_KEY:
+        required: true
 
 jobs:
   # Read regions.json to build the deployment matrix
@@ -280,6 +294,12 @@ jobs:
           SECRET_ROOT_EMAIL: ${{ vars.ROOT_EMAIL }}
           SECRET_SES_REGION: ${{ matrix.sesRegion }}
           SECRET_TURNSTILE_KEY: ${{ secrets.TURNSTILE_SECRET_KEY }}
+          # Chunk-store backup plane. Not region-suffixed on purpose: one
+          # bucket-scoped R2 credential serves every region.
+          BACKUP_S3_ENDPOINT: ${{ secrets.BACKUP_S3_ENDPOINT }}
+          BACKUP_S3_BUCKET: ${{ secrets.BACKUP_S3_BUCKET }}
+          BACKUP_S3_ACCESS_KEY_ID: ${{ secrets.BACKUP_S3_ACCESS_KEY_ID }}
+          BACKUP_S3_SECRET_ACCESS_KEY: ${{ secrets.BACKUP_S3_SECRET_ACCESS_KEY }}
           VAR_SES_FROM: ${{ vars.AWS_SES_FROM }}
           VAR_SES_CONFIGURATION_SET: ${{ vars.AWS_SES_CONFIGURATION_SET }}
           VAR_SELLER_NAME: ${{ vars.SELLER_NAME }}

@@ -43,9 +43,7 @@ export type SectionType =
   | 'socialProof'
   | 'bottomCta'
   | 'downloadShort'
-  | 'techStrip'
-  | 'exploreSolutions'
-  | 'references';
+  | 'exploreSolutions';
 
 export type SolutionCategory =
   | 'dev-env'
@@ -55,23 +53,28 @@ export type SolutionCategory =
   | 'encryption'
   | 'defense';
 
-export interface TechItem {
-  name: string;
-  kind: string;
-}
+/**
+ * What the page IS, mechanically: one of the three verbs the hero sentence
+ * applies to a copy of the running system (Copy -> Test -> Recover), or a
+ * `property` of the platform itself (encryption, audit trail, sovereignty,
+ * lock-in freedom, integrations). This is the axis the solution constellation
+ * lays out on. `category` remains the market-segment axis and keeps driving
+ * CTA routing (CATEGORY_CTA_MAP) and node colors; the two are orthogonal.
+ */
+export type SolutionRole = 'copy' | 'test' | 'recover' | 'property';
 
-export const CATEGORY_ORDER = [
-  'ransomware',
-  'multi-cloud',
-  'backups',
-  'encryption',
-  'dev-env',
-  'defense',
-] as const satisfies readonly SolutionCategory[];
+export const ROLE_ORDER = [
+  'copy',
+  'test',
+  'recover',
+  'property',
+] as const satisfies readonly SolutionRole[];
 
 export interface SolutionPageConfig {
   /** Translation content key: pages.solutionPages.<contentKey> */
   contentKey: string;
+  /** Mechanism taxonomy: which verb of "Clone Production. Break Nothing." this page is */
+  role: SolutionRole;
   /** Category for explore grid color coding */
   category: SolutionCategory;
   /** Which sections to render (in canonical order) */
@@ -80,8 +83,6 @@ export interface SolutionPageConfig {
   calculatorPreset?: string;
   /** Competitor column headers for comparison table */
   competitors?: string[];
-  /** Tech strip items with category color coding */
-  techStrip?: TechItem[];
   /** Problem section illustration */
   illustration?: ImageMetadata;
   /** Optional portrait/mobile variant, swapped in under 768px (vector <picture>). */
@@ -114,9 +115,7 @@ const ALL_SECTIONS = [
   'socialProof',
   'bottomCta',
   'downloadShort',
-  'techStrip',
   'exploreSolutions',
-  'references',
 ] as const satisfies readonly SectionType[];
 
 const SECTIONS_NO_COMPARISON = ALL_SECTIONS.filter((s) => s !== 'competitorComparison');
@@ -124,346 +123,176 @@ const SECTIONS_NO_COMPARISON = ALL_SECTIONS.filter((s) => s !== 'competitorCompa
 export const SOLUTION_PAGES: Record<string, SolutionPageConfig> = {
   'environment-cloning': {
     contentKey: 'environmentCloning',
+    role: 'copy',
     category: 'dev-env',
     illustration: illustrationEnvironmentCloning,
     sections: ALL_SECTIONS,
     calculatorPreset: 'environment-cloning',
     competitors: ['Codespaces', 'Coder', 'Vercel', 'Delphix', 'Neon'],
-    techStrip: [
-      { name: 'GitLab', kind: 'devops' },
-      { name: 'Nextcloud', kind: 'collab' },
-      { name: 'WordPress', kind: 'cms' },
-      { name: 'MariaDB', kind: 'data' },
-      { name: 'Mailcow', kind: 'mail' },
-      { name: 'Grafana', kind: 'monitor' },
-      { name: 'Keycloak', kind: 'auth' },
-      { name: 'MinIO', kind: 'storage' },
-    ],
   },
   'infrastructure-costs': {
     contentKey: 'infrastructureCosts',
+    role: 'copy',
     category: 'dev-env',
     illustration: illustrationInfrastructureCosts,
     sections: ALL_SECTIONS,
     calculatorPreset: 'infrastructure-costs',
     competitors: ['Codespaces', 'Coder', 'Vercel', 'Railway'],
-    techStrip: [
-      { name: 'GitLab', kind: 'devops' },
-      { name: 'Nextcloud', kind: 'collab' },
-      { name: 'WordPress', kind: 'cms' },
-      { name: 'MariaDB', kind: 'data' },
-      { name: 'Mailcow', kind: 'mail' },
-      { name: 'Grafana', kind: 'monitor' },
-      { name: 'Keycloak', kind: 'auth' },
-      { name: 'MinIO', kind: 'storage' },
-    ],
   },
   'production-parity': {
     contentKey: 'productionParity',
+    role: 'copy',
     category: 'dev-env',
     illustration: illustrationProductionParity,
     sections: ALL_SECTIONS,
     calculatorPreset: 'production-parity',
     competitors: ['Codespaces', 'Coder', 'Vercel', 'Railway'],
-    techStrip: [
-      { name: 'GitLab', kind: 'devops' },
-      { name: 'Nextcloud', kind: 'collab' },
-      { name: 'WordPress', kind: 'cms' },
-      { name: 'MariaDB', kind: 'data' },
-      { name: 'Mailcow', kind: 'mail' },
-      { name: 'Grafana', kind: 'monitor' },
-      { name: 'Keycloak', kind: 'auth' },
-      { name: 'MinIO', kind: 'storage' },
-    ],
   },
   integrations: {
     contentKey: 'integrations',
+    role: 'property',
     category: 'dev-env',
     illustration: illustrationIntegrations,
     sections: ALL_SECTIONS,
     calculatorPreset: 'integrations',
     competitors: ['Codespaces', 'Coder', 'Vercel', 'Railway'],
-    techStrip: [
-      { name: 'GitLab', kind: 'devops' },
-      { name: 'Nextcloud', kind: 'collab' },
-      { name: 'WordPress', kind: 'cms' },
-      { name: 'MariaDB', kind: 'data' },
-      { name: 'Mailcow', kind: 'mail' },
-      { name: 'Grafana', kind: 'monitor' },
-      { name: 'Keycloak', kind: 'auth' },
-      { name: 'MinIO', kind: 'storage' },
-    ],
   },
   'immutable-backups': {
     contentKey: 'immutableBackups',
+    role: 'recover',
     category: 'ransomware',
     illustration: illustrationImmutableBackups,
     sections: ALL_SECTIONS,
     calculatorPreset: 'immutable-backups',
     competitors: ['Veeam', 'Rubrik', 'Commvault', 'Druva', 'Zerto'],
-    techStrip: [
-      { name: 'GitLab', kind: 'devops' },
-      { name: 'Nextcloud', kind: 'collab' },
-      { name: 'WordPress', kind: 'cms' },
-      { name: 'MariaDB', kind: 'data' },
-      { name: 'Mailcow', kind: 'mail' },
-      { name: 'Grafana', kind: 'monitor' },
-      { name: 'Vaultwarden', kind: 'auth' },
-      { name: 'MinIO', kind: 'storage' },
-    ],
   },
   'migration-safety': {
     contentKey: 'migrationSafety',
+    role: 'test',
     category: 'encryption',
     illustration: illustrationMigrationSafety,
     sections: ALL_SECTIONS,
     calculatorPreset: 'migration-safety',
     competitors: ['Veeam', 'Rubrik', 'Commvault', 'Druva'],
-    techStrip: [
-      { name: 'GitLab', kind: 'devops' },
-      { name: 'Nextcloud', kind: 'collab' },
-      { name: 'Vaultwarden', kind: 'storage' },
-      { name: 'MariaDB', kind: 'data' },
-      { name: 'Keycloak', kind: 'auth' },
-      { name: 'MinIO', kind: 'storage' },
-      { name: 'Mailcow', kind: 'mail' },
-      { name: 'Grafana', kind: 'monitor' },
-    ],
   },
   'instant-recovery': {
     contentKey: 'instantRecovery',
+    role: 'recover',
     category: 'backups',
     illustration: illustrationInstantRecovery,
     illustrationMobile: illustrationInstantRecoveryMobile,
     sections: ALL_SECTIONS,
     calculatorPreset: 'instant-recovery',
     competitors: ['Veeam', 'Rubrik', 'Commvault', 'Druva'],
-    techStrip: [
-      { name: 'GitLab', kind: 'devops' },
-      { name: 'Nextcloud', kind: 'collab' },
-      { name: 'WordPress', kind: 'cms' },
-      { name: 'MariaDB', kind: 'data' },
-      { name: 'Mailcow', kind: 'mail' },
-      { name: 'Grafana', kind: 'monitor' },
-      { name: 'Keycloak', kind: 'auth' },
-      { name: 'MinIO', kind: 'storage' },
-    ],
   },
   'safe-os-testing': {
     contentKey: 'safeOsTesting',
+    role: 'test',
     category: 'ransomware',
     illustration: illustrationSafeOsTesting,
     sections: ALL_SECTIONS,
     calculatorPreset: 'safe-os-testing',
     competitors: ['Veeam', 'Rubrik', 'Commvault', 'Zerto'],
-    techStrip: [
-      { name: 'GitLab', kind: 'devops' },
-      { name: 'Nextcloud', kind: 'collab' },
-      { name: 'WordPress', kind: 'cms' },
-      { name: 'MariaDB', kind: 'data' },
-      { name: 'Mailcow', kind: 'mail' },
-      { name: 'Grafana', kind: 'monitor' },
-      { name: 'Vaultwarden', kind: 'auth' },
-      { name: 'MinIO', kind: 'storage' },
-    ],
   },
   'retention-compliance': {
     contentKey: 'retentionCompliance',
+    role: 'recover',
     category: 'backups',
     illustration: illustrationRetentionCompliance,
     sections: ALL_SECTIONS,
     calculatorPreset: 'retention-compliance',
     competitors: ['Veeam', 'Rubrik', 'Commvault', 'Druva'],
-    techStrip: [
-      { name: 'GitLab', kind: 'devops' },
-      { name: 'Nextcloud', kind: 'collab' },
-      { name: 'WordPress', kind: 'cms' },
-      { name: 'MariaDB', kind: 'data' },
-      { name: 'Mailcow', kind: 'mail' },
-      { name: 'Grafana', kind: 'monitor' },
-      { name: 'Keycloak', kind: 'auth' },
-      { name: 'MinIO', kind: 'storage' },
-    ],
   },
   'cloud-outage-protection': {
     contentKey: 'cloudOutageProtection',
+    role: 'recover',
     category: 'multi-cloud',
     illustration: illustrationCloudOutageProtection,
     sections: ALL_SECTIONS,
     calculatorPreset: 'cloud-outage-protection',
     competitors: ['AWS Backup', 'Veeam', 'Zerto', 'Druva'],
-    techStrip: [
-      { name: 'GitLab', kind: 'devops' },
-      { name: 'Nextcloud', kind: 'collab' },
-      { name: 'WordPress', kind: 'cms' },
-      { name: 'MariaDB', kind: 'data' },
-      { name: 'Grafana', kind: 'monitor' },
-      { name: 'Keycloak', kind: 'auth' },
-      { name: 'MinIO', kind: 'storage' },
-      { name: 'Gitea', kind: 'devops' },
-    ],
   },
   'failover-testing': {
     contentKey: 'failoverTesting',
+    role: 'test',
     category: 'multi-cloud',
     illustration: illustrationFailoverTesting,
     sections: ALL_SECTIONS,
     calculatorPreset: 'failover-testing',
     competitors: ['AWS Backup', 'Veeam', 'Zerto', 'Druva'],
-    techStrip: [
-      { name: 'GitLab', kind: 'devops' },
-      { name: 'Nextcloud', kind: 'collab' },
-      { name: 'WordPress', kind: 'cms' },
-      { name: 'MariaDB', kind: 'data' },
-      { name: 'Grafana', kind: 'monitor' },
-      { name: 'Keycloak', kind: 'auth' },
-      { name: 'MinIO', kind: 'storage' },
-      { name: 'Gitea', kind: 'devops' },
-    ],
   },
   'backup-verification': {
     contentKey: 'backupVerification',
+    role: 'test',
     category: 'backups',
     illustration: illustrationBackupVerification,
     sections: ALL_SECTIONS,
     calculatorPreset: 'backup-verification',
     competitors: ['Veeam', 'Rubrik', 'Commvault', 'Druva'],
-    techStrip: [
-      { name: 'GitLab', kind: 'devops' },
-      { name: 'Nextcloud', kind: 'collab' },
-      { name: 'WordPress', kind: 'cms' },
-      { name: 'MariaDB', kind: 'data' },
-      { name: 'Mailcow', kind: 'mail' },
-      { name: 'Grafana', kind: 'monitor' },
-      { name: 'Keycloak', kind: 'auth' },
-      { name: 'MinIO', kind: 'storage' },
-    ],
   },
   'vulnerability-management': {
     contentKey: 'vulnerabilityManagement',
+    role: 'test',
     category: 'defense',
     illustration: illustrationVulnerabilityManagement,
     sections: SECTIONS_NO_COMPARISON,
     calculatorPreset: 'vulnerability-management',
-    techStrip: [
-      { name: 'GitLab', kind: 'devops' },
-      { name: 'Nextcloud', kind: 'collab' },
-      { name: 'WordPress', kind: 'cms' },
-      { name: 'MariaDB', kind: 'data' },
-      { name: 'Grafana', kind: 'monitor' },
-      { name: 'Keycloak', kind: 'auth' },
-      { name: 'Mailcow', kind: 'mail' },
-      { name: 'MinIO', kind: 'storage' },
-    ],
   },
   'ai-pentesting': {
     contentKey: 'aiPentesting',
+    role: 'test',
     category: 'defense',
     illustration: illustrationAiPentesting,
     sections: SECTIONS_NO_COMPARISON,
     calculatorPreset: 'ai-pentesting',
-    techStrip: [
-      { name: 'GitLab', kind: 'devops' },
-      { name: 'Nextcloud', kind: 'collab' },
-      { name: 'WordPress', kind: 'cms' },
-      { name: 'MariaDB', kind: 'data' },
-      { name: 'Grafana', kind: 'monitor' },
-      { name: 'Keycloak', kind: 'auth' },
-      { name: 'Mailcow', kind: 'mail' },
-      { name: 'MinIO', kind: 'storage' },
-    ],
   },
   encryption: {
     contentKey: 'encryption',
+    role: 'property',
     category: 'encryption',
     illustration: illustrationEncryption,
     sections: ALL_SECTIONS,
     calculatorPreset: 'encryption',
     competitors: ['Veeam', 'Rubrik', 'Commvault', 'Druva'],
-    techStrip: [
-      { name: 'GitLab', kind: 'devops' },
-      { name: 'Nextcloud', kind: 'collab' },
-      { name: 'WordPress', kind: 'cms' },
-      { name: 'MariaDB', kind: 'data' },
-      { name: 'Mailcow', kind: 'mail' },
-      { name: 'Grafana', kind: 'monitor' },
-      { name: 'Keycloak', kind: 'auth' },
-      { name: 'MinIO', kind: 'storage' },
-    ],
   },
   'continuous-security-testing': {
     contentKey: 'continuousSecurityTesting',
+    role: 'test',
     category: 'defense',
     illustration: illustrationContinuousSecurityTesting,
     sections: SECTIONS_NO_COMPARISON,
     calculatorPreset: 'continuous-security-testing',
-    techStrip: [
-      { name: 'GitLab', kind: 'devops' },
-      { name: 'Nextcloud', kind: 'collab' },
-      { name: 'WordPress', kind: 'cms' },
-      { name: 'MariaDB', kind: 'data' },
-      { name: 'Grafana', kind: 'monitor' },
-      { name: 'Keycloak', kind: 'auth' },
-      { name: 'Mailcow', kind: 'mail' },
-      { name: 'MinIO', kind: 'storage' },
-    ],
   },
   'audit-trail': {
     contentKey: 'auditTrail',
+    role: 'property',
     category: 'encryption',
     illustration: illustrationAuditTrail,
     sections: ALL_SECTIONS,
     calculatorPreset: 'audit-trail',
     competitors: ['Veeam', 'Rubrik', 'Commvault', 'Druva'],
-    techStrip: [
-      { name: 'GitLab', kind: 'devops' },
-      { name: 'Nextcloud', kind: 'collab' },
-      { name: 'WordPress', kind: 'cms' },
-      { name: 'MariaDB', kind: 'data' },
-      { name: 'Mailcow', kind: 'mail' },
-      { name: 'Grafana', kind: 'monitor' },
-      { name: 'Keycloak', kind: 'auth' },
-      { name: 'MinIO', kind: 'storage' },
-    ],
   },
   'rapid-recovery': {
     contentKey: 'rapidRecovery',
+    role: 'recover',
     category: 'ransomware',
     illustration: illustrationRapidRecovery,
     sections: ALL_SECTIONS,
     calculatorPreset: 'rapid-recovery',
     competitors: ['Veeam', 'Rubrik', 'Commvault', 'Druva', 'Zerto'],
-    techStrip: [
-      { name: 'GitLab', kind: 'devops' },
-      { name: 'Nextcloud', kind: 'collab' },
-      { name: 'WordPress', kind: 'cms' },
-      { name: 'MariaDB', kind: 'data' },
-      { name: 'Mailcow', kind: 'mail' },
-      { name: 'Grafana', kind: 'monitor' },
-      { name: 'Vaultwarden', kind: 'auth' },
-      { name: 'MinIO', kind: 'storage' },
-    ],
   },
   'data-sovereignty': {
     contentKey: 'dataSovereignty',
+    role: 'property',
     category: 'encryption',
     illustration: illustrationDataSovereignty,
     sections: ALL_SECTIONS,
     calculatorPreset: 'data-sovereignty',
     competitors: ['Veeam', 'Rubrik', 'AWS Sovereign', 'Microsoft Bleu', 'Keepit'],
-    techStrip: [
-      { name: 'GitLab', kind: 'devops' },
-      { name: 'Nextcloud', kind: 'collab' },
-      { name: 'MariaDB', kind: 'data' },
-      { name: 'Mailcow', kind: 'mail' },
-      { name: 'Grafana', kind: 'monitor' },
-      { name: 'Keycloak', kind: 'auth' },
-      { name: 'Vaultwarden', kind: 'storage' },
-      { name: 'MinIO', kind: 'storage' },
-    ],
   },
   'kubernetes-cluster-mobility': {
     contentKey: 'kubernetesClusterMobility',
+    role: 'copy',
     category: 'multi-cloud',
     illustration: illustrationKubernetesClusterMobility,
     sections: [
@@ -478,38 +307,17 @@ export const SOLUTION_PAGES: Record<string, SolutionPageConfig> = {
       'competitorComparison',
       'bottomCta',
       'downloadShort',
-      'techStrip',
       'exploreSolutions',
-      'references',
     ],
     competitors: ['Velero', 'Kasten K10', 'Cluster API', 'RBD Mirroring'],
-    techStrip: [
-      { name: 'GitLab', kind: 'devops' },
-      { name: 'Nextcloud', kind: 'collab' },
-      { name: 'WordPress', kind: 'cms' },
-      { name: 'MariaDB', kind: 'data' },
-      { name: 'Grafana', kind: 'monitor' },
-      { name: 'Keycloak', kind: 'auth' },
-      { name: 'MinIO', kind: 'storage' },
-      { name: 'Gitea', kind: 'devops' },
-    ],
   },
   'vendor-lock-in': {
     contentKey: 'vendorLockIn',
+    role: 'property',
     category: 'multi-cloud',
     illustration: illustrationVendorLockIn,
     sections: ALL_SECTIONS,
     calculatorPreset: 'vendor-lock-in',
     competitors: ['AWS Backup', 'Veeam', 'Zerto', 'Druva'],
-    techStrip: [
-      { name: 'GitLab', kind: 'devops' },
-      { name: 'Nextcloud', kind: 'collab' },
-      { name: 'WordPress', kind: 'cms' },
-      { name: 'MariaDB', kind: 'data' },
-      { name: 'Grafana', kind: 'monitor' },
-      { name: 'Keycloak', kind: 'auth' },
-      { name: 'MinIO', kind: 'storage' },
-      { name: 'Gitea', kind: 'devops' },
-    ],
   },
 };

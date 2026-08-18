@@ -26,10 +26,13 @@ const LeadMagnetButton: React.FC<Props> = ({ magnetName, source, label, scrollGa
 
   const sessionKey = `${DISMISS_KEY_PREFIX}${magnetName}`;
   const [visible, setVisible] = useState(!scrollGate);
-  const [dismissed, setDismissed] = useState(() => {
-    if (!scrollGate || typeof window === 'undefined') return false;
-    return sessionStorage.getItem(sessionKey) !== null;
-  });
+  // Same value on both renders; the stored dismissal is applied after mount. Reading
+  // sessionStorage in the initializer made the server and the browser disagree, and
+  // React discards a subtree it cannot reconcile.
+  const [dismissed, setDismissed] = useState(false);
+  useEffect(() => {
+    if (scrollGate && sessionStorage.getItem(sessionKey) !== null) setDismissed(true);
+  }, [scrollGate, sessionKey]);
 
   // Scroll-trigger: show when sentinel at ~30vh scrolls out of view.
   useEffect(() => {
@@ -80,12 +83,12 @@ const LeadMagnetButton: React.FC<Props> = ({ magnetName, source, label, scrollGa
   return (
     <div
       ref={wrapperRef}
-      className={`sp-lead-magnet-button${scrollGate ? ' sp-lead-magnet-button--gated' : ''}`}
+      className={`card sp-lead-magnet-button${scrollGate ? ' sp-lead-magnet-button--gated' : ''}`}
     >
       {scrollGate && (
         <button
           type="button"
-          className="sp-lead-magnet-button__close"
+          className="btn--icon sp-lead-magnet-button__close"
           aria-label={t('pages.solutionPages.leadMagnetButton.dismissLabel') || 'Dismiss'}
           onClick={handleDismiss}
           data-track="cta_click"
@@ -100,7 +103,7 @@ const LeadMagnetButton: React.FC<Props> = ({ magnetName, source, label, scrollGa
       <p className="sp-lead-magnet-button__description">{description}</p>
       <button
         type="button"
-        className="sp-lead-magnet-button__cta"
+        className="btn btn--primary"
         onClick={handleClick}
         data-track="cta_click"
         data-track-label={`lead-magnet-button-open-${magnetName}`}

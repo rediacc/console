@@ -2,7 +2,7 @@
 #
 # Two-direction mutation check: a defect-planted run that must go RED, and a
 # clean run that must go GREEN. Design and the incidents behind it:
-# agent/main/PLAN-promote-mutation-runner.md
+# agent/PLAN-promote-mutation-runner.md
 #
 # WHY BOTH DIRECTIONS. On 2026-08-09 two new suite cases went red under a
 # mutation that disabled the guard they covered. The signature looked perfect.

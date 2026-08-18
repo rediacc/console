@@ -12,7 +12,7 @@ datastore-scoped license store, auth-by-blob renewal + soft-claim, 4-part
 chain scope, drills harness, i18n gate rebuild, stop-hook fixes, knowledge
 agents). Immutable briefing:
 `~/.claude/projects/-home-muhammed-monorepo-console/reports/pr-babysit-0804-1-briefing.md`.
-Campaign report: `docs/agent/main/REPORT-licensing-bigbang-2026-08-04.md`.
+Campaign report: `agent/REPORT-licensing-bigbang-2026-08-04.md`.
 
 ## Roles (two live writers + a lead share this tree)
 

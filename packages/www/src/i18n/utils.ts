@@ -11,9 +11,23 @@ import ptTranslations from './translations/pt.json';
 import ruTranslations from './translations/ru.json';
 import trTranslations from './translations/tr.json';
 import zhTranslations from './translations/zh.json';
-import type { InterpolationParams, Language, PathValue, Translations } from './types';
+import { createTranslatorFrom, type TranslationCatalog } from './translator';
+import type { Language } from './types';
 
-const translations = {
+/**
+ * The FULL thirteen catalogs, for server-side callers only.
+ *
+ * These thirteen static imports are load-bearing beyond loading data: they are the reason
+ * deleting `src/i18n/translations/<locale>.json` is a build error rather than a silent
+ * shipping of English. Three i18n gates (completeness, placeholders, value-types) cannot
+ * see a missing FILE at all, so do not replace them with a glob or a dynamic import.
+ *
+ * Nothing that reaches a React island may import this module. The client path is
+ * `react.ts`, which reads the generated slices in `src/i18n/client/`. Importing this from
+ * an island puts all thirteen catalogs into the shared vendor chunk that every page loads,
+ * which cost 6.7 MB of JavaScript on every route until 2026-08.
+ */
+const translations: Record<Language, TranslationCatalog> = {
   en: enTranslations,
   de: deTranslations,
   es: esTranslations,
@@ -30,90 +44,9 @@ const translations = {
 };
 
 /**
- * Get a nested value from an object using a dot-notation path
- */
-function getNestedValue(obj: Record<string, unknown>, path: string): unknown {
-  return path.split('.').reduce<unknown>((current, key) => {
-    if (current && typeof current === 'object' && key in current) {
-      return (current as Record<string, unknown>)[key];
-    }
-    return undefined;
-  }, obj);
-}
-
-/**
- * Replace interpolation placeholders in a string with actual values
- * Example: "Hello {{name}}" with { name: "World" } => "Hello World"
- */
-function interpolate(text: string, params?: InterpolationParams): string {
-  if (!params) return text;
-
-  return Object.entries(params).reduce((result, [key, value]) => {
-    return result.replaceAll(new RegExp(`{{${key}}}`, 'g'), String(value));
-  }, text);
-}
-
-/**
- * Get translation by key with optional interpolation or fallback string.
- *
- * Second argument can be either an interpolation params object
- * (e.g. `t('greeting', { name: 'world' })`) or a literal fallback string used
- * when the translation key is missing (e.g. `t('newKey', 'Default text')`).
- *
- * @param lang - Language code
- * @param key - Translation key in dot notation (e.g., "hero.title")
- * @param paramsOrFallback - Interpolation params, or a string fallback used when the key is missing
- * @returns Translated string, or the fallback / key if not found
- */
-function getTranslation(
-  lang: Language,
-  key: string,
-  paramsOrFallback?: InterpolationParams | string
-): string {
-  const translation = getNestedValue(translations[lang], key);
-
-  if (translation === undefined) {
-    if (typeof paramsOrFallback === 'string') return paramsOrFallback;
-    console.warn(`Translation key not found: ${key}`);
-    return key;
-  }
-
-  if (typeof translation === 'string') {
-    const params = typeof paramsOrFallback === 'object' ? paramsOrFallback : undefined;
-    return interpolate(translation, params);
-  }
-
-  console.warn(`Translation key "${key}" does not point to a string value`);
-  return key;
-}
-
-/**
- * Get an array of translations
- * @param lang - Language code
- * @param key - Translation key pointing to an array
- * @returns Array of strings or empty array if not found
- */
-function getTranslationArray(lang: Language, key: string): string[] {
-  const translation = getNestedValue(translations[lang], key);
-
-  if (!Array.isArray(translation)) {
-    console.warn(`Translation key "${key}" does not point to an array`);
-    return [];
-  }
-
-  return translation;
-}
-
-/**
  * Create a translation function bound to a specific language
  * Useful for Astro pages and server-side code
  */
 export function createTranslator(lang: Language = 'en') {
-  return {
-    t: (key: string, paramsOrFallback?: InterpolationParams | string) =>
-      getTranslation(lang, key, paramsOrFallback),
-    ta: (key: string) => getTranslationArray(lang, key),
-    to: <P extends string>(key: P): PathValue<Translations, P> =>
-      getNestedValue(translations[lang], key) as PathValue<Translations, P>,
-  };
+  return createTranslatorFrom(translations, lang);
 }

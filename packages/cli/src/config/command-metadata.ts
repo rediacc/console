@@ -509,7 +509,7 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
     mcpExcludeReason: 'Follows the audit log until Ctrl+C; it never returns on its own.',
   },
   'config init': {
-    mcpExcludeReason: 'Creates a named config file — the operator decides what configs exist.',
+    mcpExcludeReason: 'Creates a named config file. The operator decides what configs exist.',
   },
   'config delete': {
     mcpExcludeReason: 'Deletes a whole config file, credentials and all. Human decision.',
@@ -537,7 +537,7 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
   // acquire a tool by accident (the coverage gate treats an ancestor exclusion as
   // covering its descendants, and would conflict if one of them also declared mcp).
   'config field': {
-    mcpExcludeReason: 'Reads and rewraps secret field values — key material, not agent surface.',
+    mcpExcludeReason: 'Reads and rewraps secret field values: key material, not agent surface.',
   },
 
   credits: {
@@ -559,10 +559,10 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
   },
 
   'config set': {
-    mcpExcludeReason: 'Config value mutation — use CLI directly',
+    mcpExcludeReason: 'Config value mutation: use CLI directly',
   },
   'config clear': {
-    mcpExcludeReason: 'Config value deletion — use CLI directly',
+    mcpExcludeReason: 'Config value deletion: use CLI directly',
   },
   'config reconcile': {
     mcp: {
@@ -581,10 +581,10 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
       'Rotates the org config-encryption key; destructive and human-driven (portal wizard).',
   },
   'config ssh': {
-    mcpExcludeReason: 'SSH key management — writes key material to config, use CLI directly',
+    mcpExcludeReason: 'SSH key management: writes key material to config, use CLI directly',
   },
   'config remote': {
-    mcpExcludeReason: 'Remote config management — interactive browser flow, use CLI directly',
+    mcpExcludeReason: 'Remote config management: interactive browser flow, use CLI directly',
   },
 
   // ══════════════════════════════════════════════════════════════════════
@@ -607,7 +607,7 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
   // and the later bare `{ grandGuard: true }` was erasing the MCP entry.)
   'repo tunnel': {
     grandGuard: true,
-    mcpExcludeReason: 'Interactive SSH tunnel — blocks until Ctrl+C',
+    mcpExcludeReason: 'Interactive SSH tunnel: blocks until Ctrl+C',
   },
   'repo admin autostart enable': { grandGuard: true, forkBlocked: true },
   'repo admin autostart disable': { grandGuard: true, forkBlocked: true },
@@ -671,7 +671,7 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
   },
   'repo branch': {
     grandGuard: true,
-    mcpExcludeReason: 'Config-only ref operation — use CLI directly',
+    mcpExcludeReason: 'Config-only ref operation: use CLI directly',
   },
   'repo checkout': {
     grandGuard: true,
@@ -738,12 +738,12 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
   'repo resize': {
     grandGuard: true,
     forkBlocked: true,
-    mcpExcludeReason: 'Disk resize — destructive infrastructure operation, use CLI directly',
+    mcpExcludeReason: 'Disk resize: destructive infrastructure operation, use CLI directly',
   },
   'repo expand': {
     grandGuard: true,
     forkBlocked: true,
-    mcpExcludeReason: 'Storage expansion — destructive infrastructure operation, use CLI directly',
+    mcpExcludeReason: 'Storage expansion: destructive infrastructure operation, use CLI directly',
   },
   // No grandGuard: trim only releases blocks the filesystem already freed
   // (fstrim + dangling-image prune); repo data is untouched, safe on grands.
@@ -768,8 +768,7 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
   // changes machine behavior (quota growth consent) — CLI-only; reading is
   // harmless but the JSON blob shape is CLI-oriented too.
   'repo policy': {
-    mcpExcludeReason:
-      'Size-policy management changes machine auto-grow behavior — use CLI directly',
+    mcpExcludeReason: 'Size-policy management changes machine auto-grow behavior. Use CLI directly',
   },
   // Gate B on the REPO arm of each connect leaf (the place arm is a machine shell,
   // class A). These were keyed 'term repo' / 'vscode repo' — paths that never
@@ -794,7 +793,7 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
   // eyes-on; exposing as MCP would invite blind-retry loops.
   'repo secret': {
     mcpExcludeReason:
-      'Writes (set/unset) require --current/--rotate-secret ceremony — CLI-only. Reads (list/get) ARE exposed as repo_secret_list and repo_secret_get MCP tools.',
+      'Writes (set/unset) require --current/--rotate-secret ceremony, so they stay CLI-only. Reads (list/get) ARE exposed as repo_secret_list and repo_secret_get MCP tools.',
   },
   'repo secret list': {
     mcp: {
@@ -830,22 +829,22 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
   term: { mcpExcludeReason: 'Interactive shell.' },
 
   // ── Local-only tooling ────────────────────────────────────────────
-  ops: { mcpExcludeReason: 'Local VM provisioning — requires host KVM/QEMU, not remote-operable' },
-  doctor: { mcpExcludeReason: 'Diagnoses local CLI installation — not a remote operation' },
-  update: { mcpExcludeReason: 'CLI self-update — not a remote operation' },
+  ops: { mcpExcludeReason: 'Local VM provisioning: requires host KVM/QEMU, not remote-operable' },
+  doctor: { mcpExcludeReason: 'Diagnoses local CLI installation, not a remote operation' },
+  update: { mcpExcludeReason: 'CLI self-update, not a remote operation' },
   subscription: { mcpExcludeReason: 'License management; local concern.' },
-  mcp: { mcpExcludeReason: 'The MCP server itself — cannot recurse' },
+  mcp: { mcpExcludeReason: 'The MCP server itself, which cannot recurse' },
 
   // ── Sync requires local filesystem ────────────────────────────────
 
   // ── Covered by sub-operations ─────────────────────────────────────
   run: {
     agentBlocked: true,
-    mcpExcludeReason: 'Escape hatch for raw renet functions — agents should use typed tools',
+    mcpExcludeReason: 'Escape hatch for raw renet functions: agents should use typed tools',
   },
 
   // ── Subcommands ───────────────────────────────────────────────────
-  'storage browse': { mcpExcludeReason: 'Interactive file browser — requires TTY' },
+  'storage browse': { mcpExcludeReason: 'Interactive file browser: requires TTY' },
 
   // ── Factory-generated CRUD (covered by higher-level operations) ──
   'storage list': {
@@ -991,31 +990,31 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
   // REDIACC_ALLOW_GRAND_REPO — enforced in command-policy.ts, not here.
   'cluster create': {
     agentBlocked: true,
-    mcpExcludeReason: 'Provisions cloud/VM infrastructure — not an agent operation',
+    mcpExcludeReason: 'Provisions cloud/VM infrastructure, not an agent operation',
   },
   'cluster destroy': {
     agentBlocked: true,
-    mcpExcludeReason: 'Destroys cloud/VM infrastructure — not an agent operation',
+    mcpExcludeReason: 'Destroys cloud/VM infrastructure, not an agent operation',
   },
   'cluster scale': {
     agentBlocked: true,
-    mcpExcludeReason: 'Mutates cluster node pools — not an agent operation',
+    mcpExcludeReason: 'Mutates cluster node pools, not an agent operation',
   },
   'cluster fork': {
     agentBlocked: true,
-    mcpExcludeReason: 'Clones a whole cluster — not an agent operation',
+    mcpExcludeReason: 'Clones a whole cluster, not an agent operation',
   },
   'cluster migrate': {
     agentBlocked: true,
-    mcpExcludeReason: 'Moves a whole cluster — not an agent operation',
+    mcpExcludeReason: 'Moves a whole cluster, not an agent operation',
   },
   'cluster join': {
     agentBlocked: true,
-    mcpExcludeReason: 'Cluster membership mutation — not an agent operation',
+    mcpExcludeReason: 'Cluster membership mutation, not an agent operation',
   },
   'cluster evict': {
     agentBlocked: true,
-    mcpExcludeReason: 'Cluster membership mutation — not an agent operation',
+    mcpExcludeReason: 'Cluster membership mutation, not an agent operation',
   },
   // ── Datastore family (spec §5.3) ───────────────────────────────────────
   // Mutations are class D (agentBlocked + REDIACC_ALLOW_CLUSTER_OPS): each one
@@ -1066,7 +1065,7 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
   // mutation; list is a read (class A) and MCP-safe.
   'cluster snapshot create': {
     agentBlocked: true,
-    mcpExcludeReason: 'Infrastructure snapshot — operator unlock only',
+    mcpExcludeReason: 'Infrastructure snapshot: operator unlock only',
   },
   'cluster snapshot list': {
     mcp: { destructive: false, idempotent: true, timeout: 'read' },

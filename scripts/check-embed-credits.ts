@@ -37,11 +37,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import {
-  type Lockfile,
-  LOCKFILE,
-  generatedArtifacts,
-} from './generate-embed-credits.js';
+import { generatedArtifacts, LOCKFILE, type Lockfile } from './generate-embed-credits.js';
 import { parseDockerfileVersions } from './lib/dockerfile-versions.js';
 import { GREEN, NC, RED, YELLOW } from './utils/console.js';
 
@@ -76,7 +72,9 @@ function main(): void {
   for (const [base, c] of components) {
     const pinned = versions.get(base);
     if (pinned === undefined) {
-      errors.push(`Dockerfile: no ARG ${base.toUpperCase()}_VERSION for lockfile component '${base}'`);
+      errors.push(
+        `Dockerfile: no ARG ${base.toUpperCase()}_VERSION for lockfile component '${base}'`
+      );
     } else if (pinned !== c.version) {
       errors.push(
         `Dockerfile ARG ${base.toUpperCase()}_VERSION='${pinned}' != lockfile '${base}' version '${c.version}'`
@@ -102,9 +100,7 @@ function main(): void {
       const url = c[field];
       if (url === '') continue;
       if (!url.includes(c.version)) {
-        errors.push(
-          `${base}: ${field} does not name version '${c.version}' — ${url}`
-        );
+        errors.push(`${base}: ${field} does not name version '${c.version}' — ${url}`);
       }
     }
   }

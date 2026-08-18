@@ -52,10 +52,7 @@ interface CoverageReport {
 /**
  * Recursively get all keys from a nested object
  */
-function getAllKeysFromObject(
-  obj: Record<string, unknown>,
-  prefix = ''
-): string[] {
+function getAllKeysFromObject(obj: Record<string, unknown>, prefix = ''): string[] {
   const keys: string[] = [];
 
   for (const [key, value] of Object.entries(obj)) {
@@ -207,9 +204,7 @@ function generateReport(): CoverageReport {
   let totalDocsUsed = 0;
   let totalUnused = 0;
 
-  const sortedNamespaces = [...namespaceKeys.entries()].sort((a, b) =>
-    a[0].localeCompare(b[0])
-  );
+  const sortedNamespaces = [...namespaceKeys.entries()].sort((a, b) => a[0].localeCompare(b[0]));
 
   for (const [namespace, keys] of sortedNamespaces) {
     let webUsed = 0;
@@ -276,9 +271,15 @@ function printReport(report: CoverageReport): void {
   console.log('SUMMARY');
   console.log('------------------------------------------------------------');
   console.log(`  Total keys:   ${report.summary.totalKeys.toLocaleString()}`);
-  console.log(`  Used in CLI:  ${report.summary.webUsed.toLocaleString()} (${report.summary.webPercent}%)`);
-  console.log(`  Used in docs: ${report.summary.docsUsed.toLocaleString()} (${report.summary.docsPercent}%)`);
-  console.log(`  Orphaned:     ${report.summary.orphaned.toLocaleString()} (${report.summary.orphanedPercent}%)`);
+  console.log(
+    `  Used in CLI:  ${report.summary.webUsed.toLocaleString()} (${report.summary.webPercent}%)`
+  );
+  console.log(
+    `  Used in docs: ${report.summary.docsUsed.toLocaleString()} (${report.summary.docsPercent}%)`
+  );
+  console.log(
+    `  Orphaned:     ${report.summary.orphaned.toLocaleString()} (${report.summary.orphanedPercent}%)`
+  );
   console.log();
 }
 

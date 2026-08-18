@@ -55,47 +55,181 @@
   padding: 0;
   box-sizing: border-box;
   /* Mobile touch highlight color */
-  -webkit-tap-highlight-color: rgba(85, 107, 47, var(--opacity-20));
+  -webkit-tap-highlight-color: rgba(74, 124, 63, var(--opacity-20));
 }
 
+/* ============================================================================
+   THE TOKEN LAYER
+
+   This is the ONLY unconditional `:root` in the project. Before 2026-08-18
+   there were five, the last one in the document silently won, and two rules
+   were provably dead because of it (`--font-family` here, and the
+   `--max-width: 1400px` wide-desktop override in responsive.css).
+
+   Shape, borrowed from the reference sites: a closed greyscale RAMP, ONE
+   brand green, and a SEMANTIC layer that aliases both. Rules reference the
+   semantic names. Dark mode redefines the semantic layer only, which is why
+   the accents finally flip with it.
+
+   Namespaces that used to declare their own palette (`--sp-*` on .sp-page,
+   `--sidebar-*`/`--link-*` in sidebar-shared.css) are now aliases declared
+   here, so their several hundred call sites resolve onto the ramp without
+   being touched.
+   ============================================================================ */
 :root {
-  /* Color Scheme - Enable native browser dark mode enhancements */
   color-scheme: light;
 
-  /* Monochromatic Color Palette - OpenAI Inspired */
-  --color-bg: #f7f7f8;
-  --color-bg-alt: #ffffff;
-  --color-text: #1a1a1a;
-  --color-text-secondary: #5e5e63; /* ~5.5:1 contrast on white - WCAG AA+ */
-  --color-border: #d2d2d7;
-  --color-hover: #f5f5f7;
+  /* ---- 1. Ramp. Every greyscale value on the site is one of these, and
+     nothing may sit off it. The numbering is deliberately sparse: a step
+     exists only where something needs it, so a gap is an invitation to reuse
+     a neighbour rather than to invent a new grey. Ten ad-hoc greys plus 158
+     hardcoded hexes is what this replaces. ---- */
+  --gray-0: #ffffff;
+  --gray-100: #f7f7f8;
+  --gray-400: #d2d2d7;
+  --gray-500: #a1a1aa;
+  --gray-600: #6e6e73;
+  --gray-700: #5e5e63;
+  --gray-900: #1a1a1a;
+  --gray-950: #111113;
 
-  /* Brand Olive Green Palette */
-  --color-brand-primary: #556b2f;
-  --color-brand-secondary: #4c6029;
-  --color-brand-dark: #3d5217;
+  /* ---- 2. Brand. ONE green.
+     #556b2f and #4a7c3f were both shipping as "the brand"; they are now one
+     value, #4a7c3f, which is also the green the illustrations already use.
 
-  /* Typography */
+     Two tokens, not one, and the split is forced by arithmetic: a colour
+     carrying white text needs luminance <= 0.175, a colour readable as text
+     on #1a1a1b needs >= 0.227. No single value satisfies both, so the FILL
+     and the ON-SURFACE ACCENT cannot be the same token in dark mode.
+       --color-brand-fill    background of a filled control; pairs with
+                             --color-on-brand. Stays dark in both themes.
+       --color-brand-primary text, icon, border, outline ON a surface.
+                             Brightens to #7fa03f in dark (6.39:1 on #0f0f10).
+     ---- */
+  --color-brand-primary: #4a7c3f;
+  --color-brand-secondary: #3d6834;
+  --color-brand-dark: #2d5227;
+  --color-brand-tint: #eef3ea;
+  --color-brand-glow: rgba(74, 124, 63, 0.25);
+  --color-brand-fill: #4a7c3f;
+  --color-on-brand: #ffffff;
+  --color-primary: var(--color-brand-primary);
+  --color-accent-green: var(--color-brand-primary);
+
+  /* Bolt-red accent — drawn from the central bolt in the Rediacc logo
+     (#DC2626 in /assets/images/icon-rediacc.svg + /favicon.svg). Reserved
+     for THE single highest-intent CTA on a page (the "joker"). Enforced
+     at npm run ci time by scripts/check-cta-bolt-uniqueness.js.
+     It is a FILL: 4.83:1 against white text, 3.97:1 against the dark
+     surface, so it needs no dark-mode variant. */
+  --color-brand-bolt: #dc2626;
+  --color-brand-bolt-hover: #b91c1c;
+
+  /* ---- 3. Semantic surfaces ---- */
+  --color-bg: var(--gray-100);
+  --color-bg-alt: var(--gray-0);
+  --color-bg-light: var(--gray-100);
+  --color-bg-dark: var(--gray-900);
+  --color-bg-darker: var(--gray-950);
+  --color-bg-secondary: var(--gray-100);
+  --color-bg-hover: var(--gray-100);
+  --color-hover: var(--gray-100);
+  --color-surface: var(--gray-0);
+  --color-surface-alt: var(--gray-100);
+
+  /* ---- 4. Semantic foregrounds. Three levels, each AA on --color-bg. ---- */
+  --color-text: var(--gray-900);
+  --color-text-primary: var(--gray-900);
+  --color-heading: var(--gray-900);
+  --color-text-secondary: var(--gray-700); /* 6.45:1 on white */
+  --color-text-tertiary: var(--gray-600); /* 5.07:1 on white */
+  --color-text-muted: var(--gray-600);
+  --color-text-on-dark-muted: var(--gray-500);
+
+  /* ---- 5. Borders ---- */
+  --color-border: var(--gray-400);
+  --color-border-subtle: rgba(0, 0, 0, 0.08);
+  --color-border-on-dark: rgba(255, 255, 255, 0.1);
+
+  /* ---- 6. Status ---- */
+  --color-success: #28a745;
+  --color-success-light: rgba(40, 167, 69, var(--opacity-10));
+  --color-error: #c41e3a;
+  --color-error-light: rgba(196, 30, 58, var(--opacity-10));
+  /* Solid borders for the status colours. The scale had base + a 10% wash and nothing
+     between, so every surface needing a visible status border hand-mixed its own; the
+     solution pages alone had four (#e0d0d0, #e0b8b8, #c5e0be, #cdd8c8). */
+  --color-error-border: #e8b4bc;
+  --color-success-border: #b9dfc2;
+  --color-warning-bg: #fff3cd;
+  --color-warning-border: #ffc107;
+  --color-warning-text: #856404;
+  --color-info-bg: #d1ecf1;
+  --color-info-border: #bee5eb;
+  --color-info-text: #0f5c8a;
+  --color-link-blue: #0066cc;
+  --color-status-blue: #60a5fa;
+  --color-status-red: #f87171;
+
+  /* ---- 7. Interactive overlays ---- */
+  --color-interactive-hover: rgba(0, 0, 0, 0.05);
+  --color-interactive-active: rgba(0, 0, 0, 0.1);
+
+  /* ---- 8. Illustration ink. Drawings that live in the page (inline SVG)
+     paint from these; they flip with the theme, which the 573 file-based
+     SVGs cannot do. `--icon-stroke-width` is the one icon thickness. ---- */
+  --icon-stroke-width: 1.5;
+  --illustration-ink: var(--gray-900);
+  --illustration-ink-soft: var(--gray-600);
+  --illustration-surface: var(--gray-0);
+  --illustration-accent: var(--color-brand-primary);
+
+  /* ---- 9. Typography ---- */
   --font-family:
     'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
   --font-family-mono:
     'JetBrains Mono', ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, 'Liberation Mono',
     monospace;
-  --font-size-sm: 0.875rem;
-  --font-size-base: 1rem;
-  --font-size-lg: 1.125rem;
-  --font-size-xl: 1.5rem;
-  --font-size-2xl: 2rem;
-  --font-size-3xl: 2.5rem;
-  --font-size-4xl: 3rem;
 
-  /* Font Weights */
+  /* The ladder. Eight fixed steps and nothing between them.
+     --font-size-xs was a clamp() that computed to 12.8px at 1440 and 12px at
+     360, which is where two of the homepage's painted sizes came from. */
+  --font-size-xs: 0.75rem; /* 12 */
+  --font-size-sm: 0.875rem; /* 14 */
+  --font-size-base: 1rem; /* 16 */
+  --font-size-lg: 1.125rem; /* 18 */
+  --font-size-xl: 1.5rem; /* 24 */
+  --font-size-2xl: 2rem; /* 32 */
+  /* The two DISPLAY steps are the only fluid ones, and they are pinned to
+     exact ladder values at the two viewports this programme measures:
+     32/40 at 390 and 40/48 at 1440. Fixed display steps were tried first and
+     measured: forcing every hand-rolled display clamp onto a fixed 40/48 grew
+     the mobile pricing page by 579 px, against a programme target that wants
+     mobile SHORTER. A clamp costs nothing on the metric that matters, because
+     at any single viewport a step still paints exactly one value.
+     Everything from --font-size-2xl down stays fixed: that is the body and UI
+     range, where fluid steps buy nothing and cost the 12.8px-versus-12px
+     accident this scale used to have at --font-size-xs. */
+  --font-size-3xl: clamp(2rem, 1.8143rem + 0.7619vw, 2.5rem); /* 32 -> 40 */
+  --font-size-4xl: clamp(2.5rem, 2.3143rem + 0.7619vw, 3rem); /* 40 -> 48 */
+
   --font-weight-normal: 400;
   --font-weight-medium: 500;
   --font-weight-semibold: 600;
   --font-weight-bold: 700;
 
-  /* Spacing */
+  --leading-none: 1;
+  --leading-tight: 1.25;
+  --leading-snug: 1.375;
+  --leading-normal: 1.5;
+  --leading-relaxed: 1.625;
+  --leading-loose: 1.75;
+
+  --tracking-wide: 0.025em;
+  --tracking-wider: 0.05em;
+  --tracking-widest: 0.1em;
+
+  /* ---- 10. Spacing ---- */
   --space-1: 0.25rem;
   --space-2: 0.5rem;
   --space-3: 0.75rem;
@@ -110,99 +244,127 @@
   --space-20: 5rem;
   --space-24: 6rem;
 
-  /* Layout */
+  /* ---- 11. Layout ---- */
   --max-width: 1200px;
   --nav-height: 3.5rem;
-
-  /* Bolt-red accent — drawn from the central bolt in the Rediacc logo
-     (#DC2626 in /assets/images/icon-rediacc.svg + /favicon.svg). Reserved
-     for THE single highest-intent CTA on a page (the "joker"). Enforced
-     at npm run ci time by scripts/check-cta-bolt-uniqueness.js. */
-  --color-brand-bolt: #dc2626;
-  --color-brand-bolt-hover: #b91c1c;
-
-  /* Responsive Breakpoints */
-  --breakpoint-xs: 36rem; /* 576px */
-  --breakpoint-sm: 48rem; /* 768px */
-  --breakpoint-md: 64rem; /* 1024px */
-  --breakpoint-lg: 75rem; /* 1200px */
-  --breakpoint-xl: 90rem; /* 1440px */
-
-  /* Section Layouts */
+  --announcement-bar-height: 0px;
+  --nav-top-offset: calc(var(--nav-height) + var(--announcement-bar-height, 0px));
+  /* Height of the docs chrome strip. Was three independent literals: the header row's
+     min-height, the tab link height, and the docs sidebar top offset. */
+  --docs-chrome-height: 3rem;
   --section-min-height: 100dvh; /* Dynamic viewport height - adapts to mobile address bar */
   --section-padding: 5rem 0;
-  --section-max-width: 1200px;
-
-  /* Container Widths */
   --container-xs: 600px;
   --container-sm: 700px;
   --container-md: 800px;
   --container-lg: 1000px;
   --container-xl: 1200px;
   --container-2xl: 1400px;
-  --container-3xl: 1600px;
-  --container-4xl: 1800px;
-
-  /* Box Styles */
   --box-padding: 2.5rem;
-  --box-border-radius: 15px;
-  --box-shadow: 0 4px 20px rgba(0, 0, 0, var(--opacity-10));
 
   /* Touch Targets - WCAG 2.1 AA/AAA compliance */
   --touch-target-min: 44px; /* WCAG AAA minimum */
   --touch-target-preferred: 48px; /* Optimal thumb accessibility */
 
-  /* Grid Patterns */
-  --grid-gap: var(--space-10);
-  --grid-gap-lg: var(--space-16);
+  /* ---- 12. Radius. Three real values; the wider names alias the middle one
+     so the ~190 call sites that ask for lg/xl/2xl land on the ladder. ---- */
+  --radius-sm: 6px;
+  --radius-md: 12px;
+  --radius-full: 9999px;
+  --radius-xs: var(--radius-sm);
+  --radius-lg: var(--radius-md);
+  --radius-xl: var(--radius-md);
+  --radius-2xl: var(--radius-md);
+  --box-border-radius: var(--radius-md);
 
-  /* Transition Durations - Respect reduced motion preference */
+  /* ---- 13. Elevation. ONE shadow. Both reference sites express depth with
+     a background swap and a 1px border; anthropic.com ships zero shadows.
+     The four --shadow-* names alias it so their call sites need no edit. ---- */
+  --shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  /* Focus rings are not elevation, so they are their own three-value family
+     rather than seven hand-written `0 0 0 3px` strings across four files. */
+  --focus-ring: 0 0 0 3px rgba(74, 124, 63, var(--opacity-15));
+  --focus-ring-error: 0 0 0 3px rgba(196, 30, 58, var(--opacity-15));
+  --focus-ring-success: 0 0 0 3px var(--color-success-light);
+  --shadow-inset: inset 0 2px 4px rgba(0, 0, 0, var(--opacity-20));
+  --shadow-md: var(--shadow);
+  --shadow-lg: var(--shadow);
+  --shadow-xl: var(--shadow);
+  --box-shadow: var(--shadow);
+
+  /* ---- 14. Motion. THREE durations, THREE easings, TWO gestures, and every
+     animated rule on the site picks from them.
+
+     What this replaces: eleven distinct durations (80ms, 100ms, 120ms, 150ms,
+     200ms, 300ms, 500ms, 600ms, 700ms, 800ms, 1200ms) and six easings, chosen
+     per file by whoever wrote it that day. A nav fade at 80ms and a card hover
+     at 200ms are not two decisions, they are one decision made twice.
+
+     Durations. The slot is chosen by what MOVES, not by how important the
+     element feels:
+       fast   pointer feedback that never changes layout: colour, background,
+              border, opacity, the press.
+       base   a hover that moves or resizes something: transform, shadow.
+       slow   an entrance or an exit: overlays, panels, the scroll reveal.
+
+     Easings. Restraint is the point; there is deliberately no overshoot or
+     spring curve, because a bounce reads as decoration and this site has none:
+       standard   symmetric, for state changes that reverse (hover on, off).
+       entrance   decelerating, for something arriving and staying.
+       exit       accelerating, for something leaving.
+
+     `linear` stays a bare keyword at the three places that genuinely need a
+     constant rate (the newsletter spinner, the video progress bar, and
+     visibility step-delays). Tokenising those would hide the one property
+     that makes them correct.
+
+     Gestures. `--motion-lift` and `--motion-press` exist as VALUES rather than
+     as a set of selectors so that reduced motion can cancel them in one line
+     below. Before this, six stylesheets each carried their own
+     `@media (prefers-reduced-motion: reduce) { .thing { transform: none } }`
+     block naming their own selectors, and any new hover was one forgotten
+     block away from ignoring the preference. The lift also collapses three
+     hand-picked distances (-6px, -4px, -2px) into one.
+
+     `--motion-nudge` is the "keep reading" arrow shift, and it is a token for
+     a second reason: it is directional, so it flips under RTL immediately
+     below. As a literal `translateX(2px)` in persona-mega-menu.css it pushed
+     the arrow AWAY from the text it points at in Arabic, the site's one RTL
+     locale (BaseLayout.astro:69). ---- */
   --transition-duration-fast: 0.15s;
   --transition-duration-base: 0.2s;
   --transition-duration-slow: 0.3s;
+  /* Alias kept because sidebar-shared.css and DocsSidebar.astro read it. */
+  --transition-speed: var(--transition-duration-base);
 
-  /* Z-Index Scale - Consistent layering hierarchy */
-  --z-base: 1; /* Base layer, minimal stacking */
+  --ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-entrance: cubic-bezier(0, 0, 0.2, 1);
+  --ease-exit: cubic-bezier(0.4, 0, 1, 1);
+
+  --motion-lift: translateY(-2px);
+  --motion-press: scale(0.98);
+  --motion-nudge: translateX(2px);
+
+  /* ---- 15. Z-index ---- */
+  --nav-scroll-y: 0px;
+  --nav-scroll-fade: 1;
+  /* Wordmark collapse, written by Navigation.tsx on the SAME 80px scroll range
+     as --nav-scroll-fade. --nav-wordmark-w is the measured natural width; the
+     7.5rem fallback only ever applies for the frame before the first
+     measurement lands, and `scrollWidth` corrects it from the content. */
+  --nav-wordmark-fade: 1;
+  --nav-wordmark-w: 7.5rem;
+
   --z-dropdown: 10; /* Relative positioning, dropdowns */
   --z-sticky: 20; /* Sticky headers, sidebars */
   --z-fixed: 30; /* Fixed navigation */
-  --z-backdrop: 50; /* Modal backdrops */
   --z-modal: 100; /* Modals, overlays, search */
   --z-popover: 200; /* Popovers, tooltips */
   --z-toast: 1000; /* Critical alerts, toasts */
-  --z-max: 9999; /* Accessibility elements (skip links)
+  --z-max: 9999; /* Accessibility elements (skip links) */
 
-  /* Extended Color Palette - Round 8 Additions */
-  --color-bg-light: #f8f9fa;
-  --color-bg-lighter: #f8f8f8;
-  --color-bg-dark: #1a1a1a;
-  --color-bg-darker: #2d2d2d;
-
-  /* Primary/Accent Colors */
-  --color-primary: #556b2f; /* Primary accent color */
-  --color-accent-green: #7fa03f; /* Accent green for highlights */
-
-  /* Success/Validation Colors */
-  --color-success: #28a745;
-  --color-success-light: rgba(40, 167, 69, var(--opacity-10));
-
-  /* Error/Warning Colors */
-  --color-error: #c41e3a;
-  --color-error-light: rgba(196, 30, 58, var(--opacity-10));
-  --color-warning-bg: #fff3cd;
-  --color-warning-border: #ffc107;
-  --color-warning-text: #856404;
-
-  /* Status/Badge Colors */
-  --color-status-blue: #60a5fa;
-  --color-status-red: #f87171;
-
-  /* Info/Notice Colors */
-  --color-info-bg: #d1ecf1;
-  --color-info-border: #bee5eb;
-  --color-link-blue: #0066cc;
-
-  /* Opacity Scale - For consistent transparency values */
+  /* ---- 16. Opacity lookup. Not design tokens; a number-to-itself table
+     used to assemble rgba() strings at 104 call sites. ---- */
   --opacity-03: 0.03;
   --opacity-05: 0.05;
   --opacity-08: 0.08;
@@ -225,148 +387,172 @@
   --opacity-90: 0.9;
   --opacity-95: 0.95;
 
-  /* Extended Typography Scale */
-  --font-size-xs: clamp(0.75rem, 0.7rem + 0.2vw, 0.8rem);
-
-  /* Line Height Scale */
-  --leading-none: 1;
-  --leading-tight: 1.25;
-  --leading-snug: 1.375;
-  --leading-normal: 1.5;
-  --leading-relaxed: 1.625;
-  --leading-loose: 1.75;
-
-  /* Letter Spacing Scale */
-  --tracking-tighter: -0.05em;
-  --tracking-tight: -0.025em;
-  --tracking-normal: 0;
-  --tracking-wide: 0.025em;
-  --tracking-wider: 0.05em;
-  --tracking-widest: 0.1em;
-
-  /* Border Radius Scale */
-  --radius-none: 0;
-  --radius-sm: 0.25rem;
-  --radius-md: 0.5rem;
-  --radius-lg: 0.75rem;
-  --radius-xl: 1rem;
-  --radius-2xl: 1.5rem;
-  --radius-full: 9999px;
-
-  /* Box Shadow Scale */
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, var(--opacity-05));
-  --shadow-md: 0 4px 6px rgba(0, 0, 0, var(--opacity-10));
-  --shadow-lg: 0 10px 15px rgba(0, 0, 0, var(--opacity-10));
-  --shadow-xl: 0 20px 25px rgba(0, 0, 0, var(--opacity-15));
-
-  /* Accessibility */
-  --outline-offset: 2px;
-
-  /* Gradients */
+  /* ---- 17. Gradients ---- */
   --gradient-dark: linear-gradient(135deg, var(--color-bg-dark) 0%, var(--color-bg-darker) 100%);
-  --gradient-dark-alt: linear-gradient(135deg, var(--color-bg-darker) 0%, #1f1f1f 100%);
-  --gradient-dark-green: linear-gradient(135deg, var(--color-bg-darker) 0%, #232823 100%);
+  --gradient-dark-alt: linear-gradient(135deg, var(--color-bg-darker) 0%, var(--gray-950) 100%);
+  --gradient-dark-green: linear-gradient(135deg, var(--color-bg-darker) 0%, var(--gray-950) 100%);
 
-  /* Interactive state colors — semantic overlays that flip in dark mode */
-  --color-interactive-hover: rgba(0, 0, 0, 0.05);
-  --color-interactive-active: rgba(0, 0, 0, 0.1);
-  --color-border-subtle: rgba(0, 0, 0, 0.08);
+  /* ---- 18. Solution-page namespace. Was a parallel palette declared on
+     .sp-page (solution-pages.css:8-39) with three separate dark copies.
+     Now aliases, so every `var(--sp-*)` call site resolves onto the ramp. ---- */
+  --sp-brand-primary: var(--color-brand-primary);
+  --sp-brand-secondary: var(--color-brand-secondary);
+  --sp-brand-dark: var(--color-brand-dark);
+  --sp-brand-light: var(--color-brand-tint);
+  --sp-brand-glow: var(--color-brand-glow);
+  --sp-bg-hero: var(--gray-950);
+  --sp-bg-dark: var(--gray-900);
+  --sp-bg-light: var(--color-bg-light);
+  --sp-bg-white: var(--color-bg-alt);
+  --sp-bg-stats: var(--color-brand-tint);
+  --sp-text-primary: var(--color-text);
+  --sp-text-body: var(--color-text-secondary);
+  --sp-text-white: var(--gray-0);
+  --sp-text-muted-light: var(--color-text-tertiary);
+  --sp-text-muted-dark: var(--color-text-on-dark-muted);
+  --sp-border-light: var(--color-border);
+  --sp-border-dark: var(--color-border-on-dark);
+  --sp-font-sans: var(--font-family);
+  --sp-font-mono: var(--font-family-mono);
+  --sp-page-max: var(--max-width);
+  --sp-content-max: 720px;
+  --sp-hero-max: 800px;
+  --sp-stats-max: 1000px;
+  --sp-cards-max: 1100px;
+
+  /* ---- 19. Sidebar namespace. Was a sixth `:root`, in
+     src/styles/sidebar-shared.css:6-38. ---- */
+  --sidebar-top-offset: var(--space-8);
+  --sidebar-border: var(--color-border);
+  --sidebar-accent: var(--color-text);
+  --text-hover: var(--color-text);
+  --link-color: var(--color-text);
+  --link-hover-color: var(--color-text);
+  --link-hover-bg: var(--color-hover);
+  --link-active-bg: var(--color-text);
+  --link-active-color: var(--color-bg-alt);
+  --link-padding: var(--space-2) var(--space-3);
+  --item-margin: var(--space-2) 0;
 }
 
-/* ===== DARK THEME ===== */
-/* JS-driven: inline script in <head> sets data-theme from localStorage / OS preference */
+/* The one directional motion value, mirrored. Every consumer reads the token,
+   so a hover arrow points the way the text runs in Arabic too. */
+[dir='rtl'] {
+  --motion-nudge: translateX(-2px);
+}
+
+/* ===== DARK THEME =====
+   JS-driven: the inline script in <head> stamps data-theme from localStorage
+   or the OS preference before first paint, so it is always present. The
+   `@media (prefers-color-scheme: dark) { :root:not([data-theme]) }` twin that
+   used to duplicate this block verbatim is gone; it could only ever match for
+   the sub-millisecond before that script ran.
+
+   This block redefines the SEMANTIC layer, ACCENTS INCLUDED. It used to
+   redefine backgrounds, text and borders only, which is why six of twelve
+   accents failed WCAG AA on the dark surface, the brand green among them at
+   2.92:1. Ratios in the comments are measured against #1a1a1b
+   (--color-bg-alt), the lighter of the two dark surfaces and therefore the
+   worse case.
+
+   Rules must reference the SEMANTIC names, never `--gray-*` directly: the
+   ramp is authoring input for the light theme and does not flip. */
 :root[data-theme='dark'] {
   color-scheme: dark;
 
-  /* Core palette */
+  /* Surfaces */
   --color-bg: #0f0f10;
   --color-bg-alt: #1a1a1b;
-  --color-text: #e4e4e7;
-  --color-text-secondary: #a1a1aa;
-  --color-border: #2e2e32;
-  --color-hover: #1f1f23;
-
-  /* Extended backgrounds */
   --color-bg-light: #141416;
-  --color-bg-lighter: #18181b;
   --color-bg-dark: #0a0a0b;
   --color-bg-darker: #111113;
+  --color-bg-secondary: #141416;
+  --color-bg-hover: #1f1f23;
+  --color-hover: #1f1f23;
+  --color-surface: #1a1a1b;
+  --color-surface-alt: #141416;
 
-  /* Interactive overlays — light on dark */
+  /* Foregrounds */
+  --color-text: #e4e4e7; /* 13.71:1 */
+  --color-text-primary: #e4e4e7;
+  --color-heading: #e4e4e7;
+  --color-text-secondary: #a1a1aa; /* 6.79:1 */
+  --color-text-tertiary: #8f8f99; /* 5.43:1 */
+  --color-text-muted: #8f8f99;
+
+  /* Borders and overlays */
+  --color-border: #2e2e32;
+  --color-border-subtle: rgba(255, 255, 255, 0.1);
   --color-interactive-hover: rgba(255, 255, 255, 0.08);
   --color-interactive-active: rgba(255, 255, 255, 0.12);
-  --color-border-subtle: rgba(255, 255, 255, 0.1);
 
-  /* Status colors — transparent tints for dark context */
+  /* Accents. THIS is the half that was missing.
+     --color-brand-fill, --color-brand-secondary and --color-brand-dark are
+     FILLS carrying white text, so they deliberately do NOT brighten: they
+     need 4.5:1 against white (4.95 / 6.51 / 8.94) and only 3:1 against the
+     surface as large filled shapes (3.87). Brightening them would have been
+     the obvious change and the wrong one. */
+  --color-brand-primary: #7fa03f; /* was #556b2f at 2.92:1, now 5.80:1 */
+  --color-brand-tint: #1a2118;
+  --color-brand-glow: rgba(127, 160, 63, 0.25);
+  --color-error: #f87171; /* was #c41e3a at 2.98:1, now 6.29:1 */
+  --color-link-blue: #60a5fa; /* was #0066cc at 3.12:1, now 6.84:1 */
+  --color-info-text: #7ec4f0; /* was #0f5c8a at 2.42:1, now 9.14:1 */
+  --color-warning-text: #ffc107; /* 10.67:1 */
+
+  /* Status washes */
   --color-info-bg: rgba(96, 165, 250, 0.1);
   --color-info-border: rgba(96, 165, 250, 0.2);
   --color-warning-bg: rgba(255, 193, 7, 0.1);
   --color-warning-border: rgba(255, 193, 7, 0.2);
-  --color-warning-text: #ffc107;
   --color-error-light: rgba(248, 113, 113, 0.1);
+  --color-error-border: rgba(248, 113, 113, 0.35);
+  --color-success-border: rgba(40, 167, 69, 0.35);
+  /* --color-success had no dark value at all, so every dark rule that needed a legible
+     green mixed one (the solution pages used #86c87a). #28a745 on the dark surface is
+     3.4:1; this is 8.1:1. */
+  --color-success: #86c87a;
   --color-success-light: rgba(40, 167, 69, 0.15);
 
-  /* Shadows — stronger on dark backgrounds */
-  --box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
-  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.4);
-  --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.4);
-  --shadow-xl: 0 20px 25px rgba(0, 0, 0, 0.5);
+  /* Illustration ink flips with the theme; the 573 file-based SVGs cannot,
+     which is w8's problem, not this layer's. */
+  --illustration-ink: #e4e4e7;
+  --illustration-ink-soft: #a1a1aa;
+  --illustration-surface: #1a1a1b;
 
-  /* Gradients — use updated bg tokens */
+  --shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+
   --gradient-dark: linear-gradient(135deg, #0a0a0b 0%, #111113 100%);
   --gradient-dark-alt: linear-gradient(135deg, #111113 0%, #0f0f11 100%);
   --gradient-dark-green: linear-gradient(135deg, #111113 0%, #131613 100%);
+
+  /* Every --sp-* alias follows from the semantic tokens above, which is what
+     retired the three duplicate --sp-* dark blocks in solution-pages.css and
+     the two in lead-magnet-modal.css. */
 }
 
-/* CSS-only fallback: respect OS dark preference when JS hasn't set data-theme */
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme]) {
-    color-scheme: dark;
-    --color-bg: #0f0f10;
-    --color-bg-alt: #1a1a1b;
-    --color-text: #e4e4e7;
-    --color-text-secondary: #a1a1aa;
-    --color-border: #2e2e32;
-    --color-hover: #1f1f23;
-    --color-bg-light: #141416;
-    --color-bg-lighter: #18181b;
-    --color-bg-dark: #0a0a0b;
-    --color-bg-darker: #111113;
-    --color-interactive-hover: rgba(255, 255, 255, 0.08);
-    --color-interactive-active: rgba(255, 255, 255, 0.12);
-    --color-border-subtle: rgba(255, 255, 255, 0.1);
-    --color-info-bg: rgba(96, 165, 250, 0.1);
-    --color-info-border: rgba(96, 165, 250, 0.2);
-    --color-warning-bg: rgba(255, 193, 7, 0.1);
-    --color-warning-border: rgba(255, 193, 7, 0.2);
-    --color-warning-text: #ffc107;
-    --color-error-light: rgba(248, 113, 113, 0.1);
-    --color-success-light: rgba(40, 167, 69, 0.15);
-    --box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
-    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
-    --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.4);
-    --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.4);
-    --shadow-xl: 0 20px 25px rgba(0, 0, 0, 0.5);
-    --gradient-dark: linear-gradient(135deg, #0a0a0b 0%, #111113 100%);
-    --gradient-dark-alt: linear-gradient(135deg, #111113 0%, #0f0f11 100%);
-    --gradient-dark-green: linear-gradient(135deg, #111113 0%, #131613 100%);
-  }
-}
+/* Respect the user's motion preference. This block is the WHOLE mechanism, and
+   it works in three layers because no single layer is enough:
 
-/* Fallback for browsers without dvh support */
-@supports not (height: 100dvh) {
-  :root {
-    --section-min-height: 100vh;
-  }
-}
+   1. The duration tokens go to 0ms, which covers every rule that uses them.
+   2. The gesture tokens go to `none`, which is the only way to cancel a
+      TRANSFORM. The `*` rule below cannot: zeroing a duration makes a hover
+      lift instant, it does not stop the element from moving.
+   3. The `*` rule catches raw literals in files this token layer has not
+      reached yet, plus any third-party or inline style.
 
-/* Respect user's motion preferences - CRITICAL for accessibility */
+   What it deliberately does NOT do is undo an `opacity: 0` hidden state. A
+   reveal that hides its element and waits for JavaScript must therefore be
+   authored so the hidden state is never entered under `reduce`; see the double
+   guard on `.reveal` near the end of this file. */
 @media (prefers-reduced-motion: reduce) {
   :root {
     --transition-duration-fast: 0ms;
     --transition-duration-base: 0ms;
     --transition-duration-slow: 0ms;
+    --motion-lift: none;
+    --motion-press: none;
+    --motion-nudge: none;
   }
 
   /* Fallback for any hard-coded transitions */
@@ -405,8 +591,9 @@ p {
 @media (forced-colors: active) {
   /* Buttons: ensure visible borders when color-only styling is stripped */
   .btn,
-  .btn-primary,
-  .btn-secondary {
+  .btn--primary,
+  .btn--secondary,
+  .btn--icon {
     border: 2px solid ButtonText;
     forced-color-adjust: none;
   }
@@ -428,9 +615,7 @@ p {
     border-bottom: 1px solid;
   }
 
-  .hamburger-btn,
-  .search-btn,
-  .language-trigger-icon {
+  .btn--icon {
     border: 1px solid ButtonText;
   }
 
@@ -441,11 +626,11 @@ p {
   }
 
   /* Cards: visible boundaries */
+  .card,
   .featured-card,
   .pricing-card,
   .service-package-card,
   .value-card,
-  .post-item,
   .faq-item {
     border: 2px solid ButtonText;
   }
@@ -474,7 +659,6 @@ p {
   .pricing-card,
   .service-package-card,
   .value-card,
-  .post-item,
   .faq-item {
     border-width: 2px;
   }
@@ -487,9 +671,24 @@ html {
   text-size-adjust: 100%;
 }
 
-/* Anchor targets: prevent fixed nav from covering content */
-:target {
-  scroll-margin-top: calc(var(--nav-top-offset) + var(--space-8));
+/* ONE anchor offset, living on the scroll container.
+   There used to be three that ADDED rather than replaced: this scroll-padding-top, a
+   `:target { scroll-margin-top }` here, and a `scroll-margin-top` on every h2-h6 in
+   article-content.css. A docs TOC click landed a heading 160px down, a cold #hash landed
+   it somewhere else, and that disagreement is one of the three scroll behaviours the docs
+   surface was reported for. scroll-padding-top is the right home because it also governs
+   scrollIntoView, :target and find-in-page from one declaration, where scroll-margin-top
+   only helps the elements it is written on, which is exactly why there were three copies.
+   :has() is required: the value must sit on `html`, and custom properties only inherit
+   downward, so a variable set on .docs-shell can never reach it. */
+html:has(.docs-shell) {
+  scroll-padding-top: calc(var(--nav-top-offset) + var(--docs-chrome-height) + var(--space-4));
+}
+
+/* MUST stay after the rule above: both are (0,1,1) and an embedded shell carries BOTH
+   classes, so source order is what decides. Embed mode hides the chrome strip. */
+html:has(.docs-shell-embed) {
+  scroll-padding-top: var(--space-4);
 }
 
 body {
@@ -514,7 +713,7 @@ body {
 
 /* ===== TEXT SELECTION ===== */
 ::selection {
-  background-color: var(--color-brand-primary);
+  background-color: var(--color-brand-fill);
   color: var(--color-bg-alt);
 }
 
@@ -554,7 +753,7 @@ video {
 a {
   color: var(--color-text);
   text-decoration: none;
-  transition: color var(--transition-duration-base) ease;
+  transition: color var(--transition-duration-base) var(--ease-standard);
 }
 
 /* Use :where() to give this rule zero specificity from the `a` part, so any
@@ -574,7 +773,7 @@ a:focus-visible {
 
 /* Body text links have underlines for accessibility */
 p a:not(.hero-cta-primary),
-li a:not(:where(.sidebar-link, .nav-link, .solution-card-link)) {
+li a:not(:where(.sidebar-link, .nav-link)) {
   text-decoration: underline;
   text-decoration-thickness: 1px;
   text-underline-offset: 2px;
@@ -585,36 +784,24 @@ li a:not(:where(.sidebar-link, .nav-link)):hover {
   color: var(--color-brand-primary);
 }
 
-/* External link indicators for accessibility */
-a[target='_blank']:not(
-  :where(.hero-cta-primary, .btn, .login-btn, .search-btn, .solution-card-link)
-)::after {
-  content: '';
-  display: inline-block;
-  width: 0.75em;
-  height: 0.75em;
-  margin-inline-start: 0.25em;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%236e6e73' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6'%3E%3C/path%3E%3Cpolyline points='15 3 21 3 21 9'%3E%3C/polyline%3E%3Cline x1='10' y1='14' x2='21' y2='3'%3E%3C/line%3E%3C/svg%3E");
-  background-size: contain;
-  background-repeat: no-repeat;
-  vertical-align: middle;
-}
+/* External link indicators.
 
-a[target='_blank']:not(
-  :where(.hero-cta-primary, .btn, .login-btn, .search-btn, .solution-card-link)
-):hover::after {
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23556B2F' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6'%3E%3C/path%3E%3Cpolyline points='15 3 21 3 21 9'%3E%3C/polyline%3E%3Cline x1='10' y1='14' x2='21' y2='3'%3E%3C/line%3E%3C/svg%3E");
-}
-
-/* Social links and footer links get larger external icon */
-.footer-social-link[target='_blank']::after {
-  width: 1em;
-  height: 1em;
-  margin-inline-start: 0.5em;
-}
+   THERE IS ONE `::after` PER ELEMENT, and this file used to declare two: a
+   0.75em external-link icon here, and the screen-reader label below. Both had
+   specificity (0,1,1) - `:where()` contributes zero, so the `:not()` did not
+   raise it - and the label came later, so it won `content`, `position`,
+   `width`, `height`, `overflow`, `clip-path` and `margin`. Measured on a
+   pristine HEAD build: the computed content was the label, the computed size
+   was 1px by 1px, and the icon's `background-image` was still set and
+   permanently invisible. **The icon has never rendered in this site's
+   history.** Shipping both meant shipping neither, so the one that was
+   actually reaching users stays and the one that never did is gone, along
+   with its hover twin and the `.footer-social-link` rule whose only job was
+   to make it bigger. Neither reference site decorates an external link with
+   an icon.
 
 p a:not(.hero-cta-primary):hover,
-li a:not(:where(.sidebar-link, .nav-link, .solution-card-link)):hover {
+li a:not(:where(.sidebar-link, .nav-link)):hover {
   text-decoration-thickness: 2px;
 }
 
@@ -667,14 +854,35 @@ main {
   border-width: 0;
 }
 
-/* External links: announce new tab to screen readers */
+/* External links: announce new tab to screen readers.
+
+   NOT the `.sr-only` recipe above, and the difference is load-bearing.
+   `position: absolute` on a pseudo-element of an inline anchor is placed at
+   its STATIC POSITION, which on a long line sits past the viewport edge, and
+   an out-of-flow box there still counts toward `scrollWidth`. Bisected on a
+   390px production build of `/en/solutions/encryption`, where 46 anchors carry
+   this rule:
+
+     baseline                                    442
+     `*::before, *::after { display: none }`      375
+     this rule alone disabled                     375   <- the whole 67px
+     `white-space: normal` on it                  442   <- NOT the cause
+     `position: static` on it                     375   <- IS the cause
+
+   So it stays in flow and hides by being a 1px clipped inline-block instead.
+   `display: inline-block` is what lets `width` and `height` apply at all; a
+   1px inline box cannot be placed outside the line that contains it. */
 a[target='_blank']::after {
-  content: ' (opens in new tab)';
-  position: absolute;
+  /* Localized by BaseLayout.astro, which sets --a11y-opens-in-new-tab from
+     `common.aria.opensInNewTab`. The English literal is the fallback, not the source of
+     truth: it used to be the only value, so every non-English locale announced English
+     on all 9,226 external links. */
+  content: var(--a11y-opens-in-new-tab, ' (opens in new tab)');
+  display: inline-block;
   width: 1px;
   height: 1px;
   padding: 0;
-  margin: -1px;
+  margin: 0;
   overflow: hidden;
   clip-path: inset(50%);
   white-space: nowrap;
@@ -682,11 +890,6 @@ a[target='_blank']::after {
 }
 
 /* ===== NAVIGATION ===== */
-:root {
-  --nav-scroll-y: 0px;
-  --nav-scroll-fade: 1;
-}
-
 .nav {
   position: fixed;
   top: var(--announcement-bar-height, 0);
@@ -704,7 +907,13 @@ a[target='_blank']::after {
    of scroll (clamped). Once faded, suppress pointer events so invisible items
    never swallow clicks behind the announcement banner.
    `top` (not `transform`) so .nav-translate doesn't establish a containing
-   block — mega-menu panels rely on `position: fixed` resolving to viewport. */
+   block, because mega-menu panels rely on `position: fixed` resolving to the
+   viewport.
+
+   The 80ms here is deliberately OFF the duration scale and stays a literal.
+   This is not a state change, it is a smoothing constant between scroll
+   samples: `--nav-scroll-y` is rewritten as the user scrolls, so a 150ms
+   transition would make the nav visibly lag the page instead of tracking it. */
 .nav-translate {
   position: relative;
   top: var(--nav-scroll-y, 0);
@@ -751,7 +960,6 @@ body[data-nav-collapsed='true'] .nav-translate {
   display: none;
   align-items: center;
   gap: var(--space-6);
-  justify-self: center;
 }
 
 .nav-link {
@@ -761,8 +969,8 @@ body[data-nav-collapsed='true'] .nav-translate {
   text-decoration: none;
   white-space: nowrap;
   padding: 6px 12px;
-  border-radius: 6px;
-  transition: color var(--transition-duration-base) ease;
+  border-radius: var(--radius-sm);
+  transition: color var(--transition-duration-base) var(--ease-standard);
 }
 
 .nav-link:hover {
@@ -787,34 +995,6 @@ body[data-nav-collapsed='true'] .nav-translate {
   display: flex;
   align-items: center;
   gap: var(--space-6);
-}
-
-.hamburger-btn {
-  background: none;
-  border: none;
-  cursor: pointer;
-  padding: var(--space-3);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-width: var(--touch-target-min);
-  min-height: var(--touch-target-min);
-  border-radius: var(--radius-sm);
-  transition: background-color var(--transition-duration-base) ease;
-}
-
-.hamburger-btn:hover {
-  background-color: var(--color-interactive-hover);
-}
-
-.hamburger-btn:active {
-  background-color: var(--color-interactive-active);
-  transform: scale(0.95);
-}
-
-.hamburger-btn:focus-visible {
-  outline: 2px solid var(--color-brand-primary);
-  outline-offset: 2px;
 }
 
 .hamburger-icon {
@@ -866,13 +1046,41 @@ body[data-nav-collapsed='true'] .nav-translate {
   display: inline-flex;
   align-items: center;
   height: 2.25rem;
-  font-size: 1.9rem;
+  font-size: var(--font-size-2xl);
   line-height: 1;
   font-weight: 700;
   letter-spacing: 0.01em;
   color: var(--color-text);
   text-transform: lowercase;
-  transform: translateY(0);
+  /* Fades and collapses over the first 80px of scroll, leaving the icon as the
+     brand mark on a scrolled page.
+
+     `inline-size`, NOT `transform`. A transform here would establish a
+     containing block on an ancestor of nothing today, but this element sits
+     inside .nav, and the note above .nav-translate records what that costs: the
+     mega-menu panels are `position: fixed` and resolve against the viewport
+     only while no ancestor in the nav is transformed. `inline-size` also takes
+     the width back, which a scale would not, so the icon does not sit in a
+     column of empty space.
+
+     `white-space: nowrap` + `overflow: hidden` make the collapse a clip rather
+     than a reflow of the word onto two lines on the way down. */
+  inline-size: calc(var(--nav-wordmark-fade, 1) * var(--nav-wordmark-w, 7.5rem));
+  opacity: var(--nav-wordmark-fade, 1);
+  overflow: hidden;
+  white-space: nowrap;
+  transition:
+    inline-size 80ms linear,
+    opacity 80ms linear;
+}
+
+/* Same treatment .nav-translate gets: a scroll-linked size change is motion. */
+@media (prefers-reduced-motion: reduce) {
+  .nav-wordmark {
+    inline-size: auto;
+    opacity: 1;
+    transition: none;
+  }
 }
 
 @media (max-width: 48rem) {
@@ -886,6 +1094,17 @@ body[data-nav-collapsed='true'] .nav-translate {
 
   .nav-brand .logo {
     object-fit: contain;
+  }
+
+  /* The wordmark used to be 1.9rem, which is not a step on the scale. Putting
+     it on --font-size-2xl (2rem) made it 1.6px larger, and since the nav
+     already overflows a 390px viewport by ~34px, that pushed the utility
+     cluster 7px further out. One step down below 48rem takes the wordmark to
+     24px, which removes those 7px and 6px of the pre-existing overflow with
+     them. The nav's overflow at 390 is older than this wave and is not mine
+     to finish. */
+  .nav-wordmark {
+    font-size: var(--font-size-xl);
   }
 }
 
@@ -904,217 +1123,48 @@ body[data-nav-collapsed='true'] .nav-translate {
   border-radius: var(--radius-sm);
 }
 
-.search-btn {
-  background: transparent;
-  border: none;
-  cursor: pointer;
-  padding: var(--space-3);
-  color: var(--color-text);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: var(--touch-target-preferred);
-  height: var(--touch-target-preferred);
-  border-radius: var(--radius-sm);
-  transition: background-color var(--transition-duration-base) ease;
-}
-
-.search-btn:hover {
-  background-color: var(--color-interactive-hover);
-  opacity: 1;
-}
-
-.search-btn:active {
-  background-color: var(--color-interactive-active);
-  transform: scale(0.95);
-}
-
-.search-btn:focus-visible {
-  outline: 2px solid var(--color-brand-primary);
-  outline-offset: 2px;
-  border-radius: var(--radius-sm);
-}
-
 .language-selector {
   display: flex;
   align-items: center;
   position: relative;
 }
 
-.language-trigger-icon {
-  background: transparent;
-  border: none;
-  cursor: pointer;
-  padding: var(--space-3);
-  color: var(--color-text);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: var(--touch-target-preferred);
-  height: var(--touch-target-preferred);
-  border-radius: 0;
-}
+/* Appearance, size and visibility for the two nav buttons live in the CHROME
+   block of the primitive layer further down this file, not here. They set
+   `display`, and so does the primitive, at the same specificity, so whichever
+   comes last in the file wins. See the note there. */
 
-.language-trigger-icon:hover {
-  background-color: var(--color-interactive-hover);
-  opacity: 1;
-  border-radius: var(--radius-sm);
-}
+/* Desktop: show inline nav links, and cluster them against the CTA.
 
-.language-trigger-icon:active {
-  background-color: var(--color-interactive-active);
-  transform: scale(0.95);
-}
+   The links used to be `justify-self: center` in the free 1fr track, which at
+   1440 put them at 429-955 and left a 242px hole between their right edge and
+   the Account button at 1197. The layout copied here is anthropic.com's:
+   brand hard left, ONE wide gap, then links and CTA as a single right-hand
+   cluster separated by the container's own gap token.
 
-.language-trigger-icon:focus-visible {
-  outline: 2px solid var(--color-brand-primary);
-  outline-offset: 2px;
-  border-radius: var(--radius-sm);
-}
-
-/* Theme toggle button */
-.theme-toggle-btn {
-  background: transparent;
-  border: none;
-  cursor: pointer;
-  padding: var(--space-3);
-  color: var(--color-text);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: var(--touch-target-preferred);
-  height: var(--touch-target-preferred);
-  border-radius: var(--radius-sm);
-  transition: background-color var(--transition-duration-base) ease;
-}
-
-.theme-toggle-btn:hover {
-  background-color: var(--color-interactive-hover);
-}
-
-.theme-toggle-btn:active {
-  background-color: var(--color-interactive-active);
-  transform: scale(0.95);
-}
-
-.theme-toggle-btn:focus-visible {
-  outline: 2px solid var(--color-brand-primary);
-  outline-offset: 2px;
-  border-radius: var(--radius-sm);
-}
-
-.nav-cta-btn {
-  display: none;
-  text-decoration: none;
-  color: #fff;
-  background: var(--color-brand-primary);
-  font-size: var(--font-size-base);
-  font-weight: var(--font-weight-bold);
-  padding: var(--space-2) var(--space-4);
-  border-radius: 9999px;
-  white-space: nowrap;
-  border: none;
-  cursor: pointer;
-  transition:
-    background-color var(--transition-duration-base) ease,
-    box-shadow var(--transition-duration-base) ease;
-}
-
-.nav-cta-btn:hover {
-  background: var(--color-brand-dark, var(--color-brand-secondary));
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-}
-
-.nav-cta-btn:focus-visible {
-  outline: 2px solid var(--color-brand-primary);
-  outline-offset: 2px;
-}
-
-.nav-cta-btn--secondary {
-  background: transparent;
-  color: var(--color-brand-primary);
-  border: 1.5px solid var(--color-brand-primary);
-  padding: calc(var(--space-2) - 1.5px) calc(var(--space-4) - 1.5px);
-}
-
-.nav-cta-btn--secondary:hover {
-  background: var(--color-brand-primary);
-  color: #fff;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-}
-
-/* Show Account button from 30rem (480px) up — covers most modern phones.
-   Below 30rem the Sidebar provides the only path to /account/. */
-@media (min-width: 30rem) {
-  .nav-cta-btn {
-    display: flex;
-    align-items: center;
-  }
-}
-
-/* Tighten button on small/mid mobile where space is at a premium */
-@media (max-width: 48rem) {
-  .nav-cta-btn {
-    padding: var(--space-2) var(--space-3);
-    font-size: var(--font-size-sm);
-  }
-  .nav-cta-btn--secondary {
-    padding: calc(var(--space-2) - 1.5px) calc(var(--space-3) - 1.5px);
-  }
-}
-
-.login-btn {
-  text-decoration: none;
-  color: var(--color-text);
-  font-size: var(--font-size-base);
-  font-weight: var(--font-weight-normal);
-  padding: var(--space-3);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: var(--touch-target-preferred);
-  background: transparent;
-  border: none;
-  border-radius: var(--radius-sm);
-  white-space: nowrap;
-  cursor: pointer;
-  transition:
-    opacity var(--transition-duration-base) ease,
-    background-color var(--transition-duration-base) ease;
-}
-
-.login-btn:hover {
-  background-color: var(--color-interactive-hover);
-  color: var(--color-text);
-}
-
-.login-btn:active {
-  transform: scale(0.98);
-  background-color: var(--color-interactive-active);
-}
-
-.login-btn:focus-visible {
-  outline: 2px solid var(--color-brand-primary);
-  outline-offset: 2px;
-  border-radius: var(--radius-sm);
-}
-
-/* Desktop: show inline nav links, hide hamburger */
+   The track list is the base one (`auto auto 1fr auto auto`) unchanged, and
+   every item is placed EXPLICITLY. That is not fussiness. The hamburger is
+   `display: none` in this band, so it stops being a grid item and every
+   auto-placed sibling shifts one column left, which is why the old rule had to
+   drop to four tracks and re-derive `.nav-right`. Naming the columns makes the
+   band's own item count irrelevant: column 3 is the empty gap, and nothing
+   else can wander into it. */
 @media (min-width: 64rem) {
+  .nav-icon-link {
+    grid-column: 1;
+  }
+
+  .nav-brand {
+    grid-column: 2;
+  }
+
   .nav-links {
     display: flex;
-  }
-
-  .hamburger-btn {
-    display: none;
-  }
-
-  .nav-container {
-    grid-template-columns: auto auto 1fr auto;
+    grid-column: 4;
   }
 
   .nav-right {
-    grid-column: auto;
+    grid-column: 5;
   }
 }
 
@@ -1125,7 +1175,7 @@ body[data-nav-collapsed='true'] .nav-translate {
   background-color: transparent;
   z-index: calc(var(--z-modal) - 1);
   pointer-events: none;
-  transition: background-color var(--transition-duration-slow) ease;
+  transition: background-color var(--transition-duration-slow) var(--ease-standard);
 }
 
 .sidebar-overlay-visible {
@@ -1142,7 +1192,7 @@ body[data-nav-collapsed='true'] .nav-translate {
   background-color: var(--color-bg-alt);
   z-index: var(--z-modal); /* Overlay layer - same as modals */
   transform: translateX(-100%);
-  transition: transform var(--transition-duration-slow) ease;
+  transition: transform var(--transition-duration-slow) var(--ease-standard);
   padding: var(--space-8) var(--space-10);
   overflow-y: auto;
   overscroll-behavior: contain;
@@ -1180,78 +1230,20 @@ body[data-nav-collapsed='true'] .nav-translate {
   margin-bottom: var(--space-4);
 }
 
-.sidebar-close-btn {
-  background: none;
-  border: none;
-  cursor: pointer;
-  padding: var(--space-2);
-  color: var(--color-text-secondary);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-width: var(--touch-target-min);
-  min-height: var(--touch-target-min);
-  border-radius: var(--radius-sm);
-  transition: background-color var(--transition-duration-base) ease;
-}
-
-.sidebar-close-btn:hover {
-  background-color: var(--color-interactive-hover);
-  color: var(--color-text);
-}
-
-.sidebar-close-btn:focus-visible {
-  outline: 2px solid var(--color-brand-primary);
-  outline-offset: 2px;
-}
-
 .sidebar-nav {
   display: flex;
   flex-direction: column;
   gap: var(--space-8);
 }
 
-/* Account CTA at top of sidebar — primary route to /account/ on mobile */
+/* Account CTA at top of sidebar — primary route to /account/ on mobile.
+   Appearance comes from .btn--primary in the primitive layer. */
 .sidebar-account-cta {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  text-decoration: none;
-  color: #fff;
-  background: var(--color-brand-primary);
-  font-size: var(--font-size-base);
-  font-weight: var(--font-weight-bold);
-  padding: var(--space-3) var(--space-4);
-  border: none;
-  border-radius: var(--radius-md);
-  cursor: pointer;
-  min-height: var(--touch-target-preferred);
   width: 100%;
-  transition:
-    background-color var(--transition-duration-base) ease,
-    box-shadow var(--transition-duration-base) ease;
-}
-
-.sidebar-account-cta:hover {
-  background: var(--color-brand-dark);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-}
-
-.sidebar-account-cta:focus-visible {
-  outline: 2px solid var(--color-brand-primary);
-  outline-offset: 2px;
 }
 
 .sidebar-account-cta--secondary {
-  background: transparent;
-  color: var(--color-brand-primary);
-  border: 1.5px solid var(--color-brand-primary);
   margin-top: var(--space-2);
-}
-
-.sidebar-account-cta--secondary:hover {
-  background: var(--color-brand-primary);
-  color: #fff;
 }
 
 .sidebar-link {
@@ -1260,6 +1252,22 @@ body[data-nav-collapsed='true'] .nav-translate {
   font-size: var(--font-size-lg);
   font-weight: var(--font-weight-normal);
   line-height: var(--leading-normal);
+}
+
+/* The drawer's search row. It is a <button>, so it needs the browser's own
+   button chrome removed before .sidebar-link's type styles are visible at all;
+   everything else it shares with the links around it. */
+.sidebar-search-btn {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  width: 100%;
+  padding: 0;
+  font-family: inherit;
+  text-align: start;
+  cursor: pointer;
+  border: 0;
+  background: none;
 }
 
 .sidebar-link:focus-visible {
@@ -1272,123 +1280,6 @@ body[data-nav-collapsed='true'] .nav-translate {
 .sidebar-link[aria-current='page'] {
   color: var(--color-brand-primary);
   font-weight: var(--font-weight-semibold);
-}
-
-/* ===== SIDEBAR SOLUTIONS ACCORDION ===== */
-.sidebar-solutions-group {
-  display: flex;
-  flex-direction: column;
-}
-
-.sidebar-solutions-toggle {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  width: 100%;
-  padding: 0;
-  background: none;
-  border: none;
-  cursor: pointer;
-  color: var(--color-text);
-  font-size: var(--font-size-lg);
-  font-weight: var(--font-weight-normal);
-  font-family: inherit;
-  line-height: var(--leading-normal);
-  text-align: start;
-  transition: color var(--transition-duration-base);
-}
-
-.sidebar-solutions-toggle:hover {
-  color: var(--color-brand-primary);
-}
-
-.sidebar-solutions-toggle:focus-visible {
-  outline: 2px solid var(--color-brand-primary);
-  outline-offset: 2px;
-  border-radius: var(--radius-sm);
-}
-
-.sidebar-solutions-toggle.has-active-child {
-  color: var(--color-brand-primary);
-  font-weight: var(--font-weight-semibold);
-}
-
-.sidebar-solutions-chevron {
-  flex-shrink: 0;
-  margin-inline-start: var(--space-2);
-  transition: transform var(--transition-duration-base) ease;
-  transform: rotate(-90deg);
-}
-
-.sidebar-solutions-chevron.expanded {
-  transform: rotate(0deg);
-}
-
-[dir='rtl'] .sidebar-solutions-chevron {
-  transform: rotate(90deg);
-}
-[dir='rtl'] .sidebar-solutions-chevron.expanded {
-  transform: rotate(0deg);
-}
-
-.sidebar-solutions-list {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-  overflow: hidden;
-  max-height: 0;
-  opacity: 0;
-  transition:
-    max-height var(--transition-duration-slow) ease,
-    opacity var(--transition-duration-base) ease;
-}
-
-.sidebar-solutions-list.expanded {
-  max-height: 2000px;
-  opacity: 1;
-}
-
-.sidebar-sublink {
-  margin-inline-start: var(--space-6);
-  font-size: var(--font-size-sm) !important;
-  padding-block: var(--space-1);
-}
-
-.sidebar-category-group {
-  list-style: none;
-}
-
-.sidebar-category-group ul {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-}
-
-.sidebar-category-label {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  margin-inline-start: var(--space-4);
-  margin-top: var(--space-4);
-  margin-bottom: var(--space-1);
-  font-size: var(--font-size-xs);
-  font-weight: var(--font-weight-semibold);
-  color: var(--color-text-secondary);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-
-.sidebar-category-icon {
-  flex-shrink: 0;
-  opacity: 0.7;
-}
-
-.sidebar-category-group:first-child .sidebar-category-label {
-  margin-top: var(--space-4);
-}
-
-.sidebar-category-group + .sidebar-category-group .sidebar-category-label {
-  margin-top: var(--space-4);
 }
 
 /* Persona links group */
@@ -1412,13 +1303,6 @@ body[data-nav-collapsed='true'] .nav-translate {
   font-size: var(--font-size-sm);
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .sidebar-solutions-chevron,
-  .sidebar-solutions-list {
-    transition: none;
-  }
-}
-
 /* Shift content when sidebar opens */
 /* REMOVED: margin-left transition causes expensive layout reflow */
 /* Sidebar now overlays content instead of pushing it */
@@ -1435,397 +1319,684 @@ body[data-nav-collapsed='true'] .nav-translate {
   color: white;
 }
 
-/* ===== INSTALL WIDGET ===== */
-.install-widget {
-  max-width: 600px;
-  margin: 0 auto var(--space-10);
-  width: 100%;
-}
+/* ============================================================================
+   THE PRIMITIVE LAYER
 
-.install-tabs {
-  display: flex;
-  gap: 0;
-  background: rgba(255, 255, 255, 0.08);
-  border-radius: var(--radius-md) var(--radius-md) 0 0;
-  padding: var(--space-1);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  border-bottom: none;
-}
+   One button, one card, one chip, one eyebrow, one segmented control, one
+   overlay, one field. Before 2026-08-18 the site shipped 40 button class
+   roots across nine stylesheets producing 45 computed treatments (the primary
+   CTA alone was built nine times), 33 card shells at 7 radii, 31 badge
+   treatments with three different values all meaning "fully rounded"
+   (9999px, 100px, 24px), 6 overlays with no shared code, and 15 distinct
+   focus-ring declarations.
 
-.install-tab {
+   Two conventions, both borrowed from the reference sites:
+
+   1. A LEGACY NAME RIDES ALONGSIDE THE PRIMITIVE in the same ruleset rather
+      than being renamed across 25 components in one change. A class listed
+      here no longer has a rule of its own anywhere; the computed treatment
+      collapses now and the markup rename stays a separate, readable diff.
+
+   2. EVERY BUTTON CARRIES ITS BORDER AT ALL TIMES, transparent when the
+      variant does not want one. A rule that ADDS a border on hover moves the
+      layout, which is why this file used to carry
+      `padding: calc(var(--space-2) - 1.5px)` to hide the shift; a rule that
+      only changes its COLOUR cannot. An inset `box-shadow` ring was the other
+      way to do this and was measured against it: it works, but it puts a
+      painted `box-shadow` value on every outline control, and this site is
+      trying to paint exactly one. A transparent border costs nothing that is
+      not already on the page.
+   ============================================================================ */
+
+/* ---- Button. Three variants, two sizes.
+   Variant colours are carried by four custom properties rather than by
+   repeated declarations, which is what lets dark mode flip the FILL and the
+   LABEL together in one place. ---- */
+.btn,
+.nav-cta-btn,
+.sidebar-account-cta {
+  --btn-fill: transparent;
+  --btn-fill-hover: var(--color-interactive-hover);
+  --btn-ink: var(--color-text);
+  --btn-ink-hover: var(--color-text);
+  --btn-border: transparent;
+  --btn-border-hover: transparent;
+
   display: inline-flex;
-  align-items: center;
-  gap: var(--space-2);
-  padding: var(--space-2) var(--space-4);
-  background: transparent;
-  border: none;
-  border-radius: var(--radius-sm);
-  color: rgba(255, 255, 255, 0.6);
-  font-size: var(--font-size-sm);
-  font-family: inherit;
-  cursor: pointer;
-  transition:
-    color var(--transition-duration-base) ease,
-    background-color var(--transition-duration-base) ease;
-}
-
-.install-tab:hover {
-  color: rgba(255, 255, 255, 0.85);
-  background: rgba(255, 255, 255, 0.06);
-}
-
-.install-tab--active {
-  color: rgba(255, 255, 255, 0.95);
-  background: rgba(255, 255, 255, 0.12);
-}
-
-.install-tab:focus-visible {
-  outline: 2px solid rgba(255, 255, 255, 0.8);
-  outline-offset: -2px;
-  border-radius: var(--radius-sm);
-}
-
-.install-tab svg {
-  width: 14px;
-  height: 14px;
-  flex-shrink: 0;
-}
-
-.install-command {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  border-radius: 0 0 var(--radius-md) var(--radius-md);
-  padding: var(--space-3) var(--space-4);
-  overflow: hidden;
-}
-
-.install-code {
-  flex: 1;
-  min-width: 0;
-  font-family: var(
-    --font-mono,
-    'SFMono-Regular',
-    'Consolas',
-    'Liberation Mono',
-    'Menlo',
-    monospace
-  );
-  font-size: var(--font-size-sm);
-  color: rgba(255, 255, 255, 0.9);
-  white-space: nowrap;
-  overflow-x: auto;
-  scrollbar-width: thin;
-  scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
-  -webkit-overflow-scrolling: touch;
-}
-
-.install-code::-webkit-scrollbar {
-  height: 4px;
-}
-
-.install-code::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.2);
-  border-radius: 2px;
-}
-
-.install-copy-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  flex-shrink: 0;
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  border-radius: var(--radius-sm);
-  color: rgba(255, 255, 255, 0.7);
-  cursor: pointer;
-  transition:
-    color var(--transition-duration-base) ease,
-    background-color var(--transition-duration-base) ease,
-    border-color var(--transition-duration-base) ease;
-}
-
-.install-copy-btn:hover {
-  color: rgba(255, 255, 255, 0.95);
-  background: rgba(255, 255, 255, 0.18);
-  border-color: rgba(255, 255, 255, 0.25);
-}
-
-.install-copy-btn:focus-visible {
-  outline: 2px solid rgba(255, 255, 255, 0.8);
-  outline-offset: 2px;
-  border-radius: var(--radius-sm);
-}
-
-.install-copy-btn--copied {
-  background: var(--color-success);
-  border-color: var(--color-success);
-  color: white;
-}
-
-.install-copy-btn--copied:hover {
-  background: var(--color-success);
-  border-color: var(--color-success);
-  color: white;
-}
-
-.install-alt-methods {
-  display: flex;
   align-items: center;
   justify-content: center;
   gap: var(--space-2);
-  margin-top: var(--space-3);
-  font-size: var(--font-size-sm);
-}
-
-.install-alt-methods a {
-  color: rgba(255, 255, 255, 0.6);
-  text-decoration: none;
-  transition: color var(--transition-duration-base) ease;
-}
-
-.install-alt-methods a:hover {
-  color: rgba(255, 255, 255, 0.9);
-}
-
-.install-alt-methods a:focus-visible {
-  outline: 2px solid rgba(255, 255, 255, 0.8);
-  outline-offset: 2px;
-  border-radius: var(--radius-sm);
-}
-
-.install-alt-sep {
-  color: rgba(255, 255, 255, 0.3);
-}
-
-/* Install widget responsive: tablet */
-@media (max-width: 48rem) {
-  .install-widget {
-    max-width: 100%;
-  }
-
-  .install-tab {
-    font-size: var(--font-size-xs);
-    padding: var(--space-2) var(--space-3);
-  }
-
-  .install-code {
-    font-size: 13px;
-  }
-}
-
-/* Install widget responsive: small mobile */
-@media (max-width: 23.4375rem) {
-  .install-tab-label {
-    display: none;
-  }
-
-  .install-tab {
-    padding: var(--space-2);
-  }
-
-  .install-code {
-    font-size: 12px;
-  }
-
-  .install-alt-methods {
-    flex-wrap: wrap;
-  }
-}
-
-/* ===== LOGO WALL ===== */
-.logo-wall {
-  padding: var(--space-8) 0;
-  text-align: center;
-  border-bottom: 1px solid var(--color-border);
-}
-
-.logo-wall .container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: var(--space-4);
-}
-
-.logo-wall-label {
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-medium);
-  color: var(--color-text-secondary);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-
-.logo-wall-row {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: var(--space-3);
-}
-
-.logo-wall-badge {
-  display: inline-flex;
-  align-items: center;
-  padding: var(--space-2) var(--space-4);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-full);
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-medium);
-  color: var(--color-text-secondary);
-  background: var(--color-bg);
-  white-space: nowrap;
-}
-
-/* ===== BUTTONS ===== */
-.btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: var(--space-4) var(--space-8);
+  padding: var(--space-3) var(--space-6);
   min-height: var(--touch-target-preferred);
-  font-size: var(--font-size-lg);
-  font-weight: var(--font-weight-normal);
+  font-family: inherit;
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--leading-tight);
+  white-space: nowrap;
+  text-align: center;
   text-decoration: none;
   cursor: pointer;
-  border: none;
-  border-radius: var(--radius-full);
-  background-color: var(--color-text);
-  color: var(--color-bg-alt);
+  border: 1px solid var(--btn-border);
+  border-radius: var(--radius-sm);
+  background-color: var(--btn-fill);
+  color: var(--btn-ink);
   transition:
-    opacity var(--transition-duration-base) ease,
-    transform var(--transition-duration-fast) ease,
-    box-shadow var(--transition-duration-base) ease;
+    background-color var(--transition-duration-base) var(--ease-standard),
+    border-color var(--transition-duration-base) var(--ease-standard),
+    color var(--transition-duration-base) var(--ease-standard),
+    transform var(--transition-duration-fast) var(--ease-standard);
 }
 
-.btn:hover {
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
-  transform: translateY(-1px);
+.btn:hover,
+.nav-cta-btn:hover,
+.sidebar-account-cta:hover {
+  background-color: var(--btn-fill-hover);
+  border-color: var(--btn-border-hover);
+  color: var(--btn-ink-hover);
 }
 
-.btn:focus-visible {
+/* One focus ring for every control on the site. There were 15. */
+.btn:focus-visible,
+.nav-cta-btn:focus-visible,
+.sidebar-account-cta:focus-visible {
   outline: 2px solid var(--color-brand-primary);
   outline-offset: 2px;
-  border-radius: var(--radius-full);
 }
 
 .btn:active,
-.btn[aria-pressed='true'] {
-  transform: scale(0.98);
-  opacity: var(--opacity-75);
-  box-shadow: inset 0 2px 4px rgba(0, 0, 0, var(--opacity-20));
+.btn[aria-pressed='true'],
+.nav-cta-btn:active,
+.sidebar-account-cta:active {
+  transform: var(--motion-press);
 }
 
-.btn-primary {
-  background: linear-gradient(
-    135deg,
-    var(--color-brand-primary) 0%,
-    var(--color-brand-secondary) 100%
-  );
-  color: white;
-  border: none;
+/* Primary. The filled brand control. */
+.btn--primary,
+.btn-primary,
+.nav-cta-btn,
+.sidebar-account-cta {
+  --btn-fill: var(--color-brand-fill);
+  --btn-fill-hover: var(--color-brand-secondary);
+  --btn-ink: var(--color-on-brand);
+  --btn-ink-hover: var(--color-on-brand);
 }
 
-.btn-primary:hover {
-  background: linear-gradient(
-    135deg,
-    var(--color-brand-secondary) 0%,
-    var(--color-brand-dark) 100%
-  );
+/* Dark mode: the label flips WITH the fill.
+   #3d6834 (--color-brand-secondary) and #2d5227 (--color-brand-dark) sit at
+   2.67:1 and 1.94:1 against the dark page, below the 3:1 WCAG 1.4.11 asks of
+   a control boundary, so a hover that darkened the fill made the control
+   disappear into the page. The resting fill therefore moves UP to the
+   on-surface accent (#7fa03f, 5.80:1 against the page) and the label flips to
+   the dark surface ink to hold 6.54:1 against it; hover steps the fill back
+   down to #4a7c3f (3.55:1 boundary) and the label flips back to white
+   (4.90:1). Both states pass both criteria, which neither did before. */
+:root[data-theme='dark'] .btn--primary,
+:root[data-theme='dark'] .btn-primary,
+:root[data-theme='dark'] .nav-cta-btn,
+:root[data-theme='dark'] .sidebar-account-cta {
+  --btn-fill: var(--color-brand-primary);
+  --btn-fill-hover: var(--color-brand-fill);
+  --btn-ink: var(--color-bg-dark);
+  --btn-ink-hover: var(--color-on-brand);
+}
+
+/* Secondary. A NEUTRAL outline control. */
+.btn--secondary,
+.btn-secondary {
+  --btn-fill: transparent;
+  --btn-fill-hover: var(--color-interactive-hover);
+  --btn-ink: var(--color-text);
+  --btn-ink-hover: var(--color-text);
+  --btn-border: var(--color-border);
+  --btn-border-hover: var(--color-text-secondary);
+}
+
+/* Brand outline. The quieter half of a CTA PAIR, so it is drawn in the brand
+   accent rather than in neutral ink: the surviving pair is in the SIDEBAR
+   drawer, which is white in light mode and near-black in dark, and neutral ink
+   disappears against the second one. Measured: making these `.btn--secondary`
+   put #1a1a1a on #111113 at 1.08:1 and axe caught it, which is why they have
+   their own variant instead. The nav used to carry the same pair; its second
+   button is a row in the split button's menu now, so the nav-cta-btn--secondary
+   selector left this group with it. */
+.btn--brand-outline,
+.sidebar-account-cta--secondary {
+  --btn-fill: transparent;
+  --btn-fill-hover: var(--color-brand-fill);
+  --btn-ink: var(--color-brand-primary);
+  --btn-ink-hover: var(--color-on-brand);
+  --btn-border: var(--color-brand-primary);
+  --btn-border-hover: var(--color-brand-fill);
+}
+
+/* Ghost. Text plus a hover wash; also the resting state of every icon
+   control in the chrome. */
+.btn--ghost {
+  --btn-fill: transparent;
+  --btn-fill-hover: var(--color-interactive-hover);
+}
+
+/* Icon-only. Square, no label, no padding to compensate for. Nine chrome
+   buttons used to each define this shape for themselves; five are left, the
+   theme toggle having gone with the clock-based default. */
+.btn--icon,
+.hamburger-btn,
+.sidebar-close-btn,
+.language-trigger-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: var(--touch-target-preferred);
+  height: var(--touch-target-preferred);
+  min-width: var(--touch-target-preferred);
+  min-height: var(--touch-target-preferred);
+  padding: 0;
+  font-family: inherit;
+  font-size: var(--font-size-lg);
+  line-height: var(--leading-none);
+  cursor: pointer;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  background-color: transparent;
+  color: var(--color-text);
+  transition:
+    background-color var(--transition-duration-base) var(--ease-standard),
+    border-color var(--transition-duration-base) var(--ease-standard),
+    color var(--transition-duration-base) var(--ease-standard),
+    transform var(--transition-duration-fast) var(--ease-standard);
+}
+
+.btn--icon:hover,
+.hamburger-btn:hover,
+.sidebar-close-btn:hover,
+.language-trigger-icon:hover {
+  background-color: var(--color-interactive-hover);
+  color: var(--color-text);
   opacity: 1;
 }
 
-.btn-primary:active,
-.btn-primary[aria-pressed='true'] {
-  background: linear-gradient(135deg, var(--color-brand-dark) 0%, var(--color-brand-dark) 100%);
-  transform: scale(0.98);
-  box-shadow: inset 0 2px 4px rgba(0, 0, 0, var(--opacity-30));
+.btn--icon:active,
+.hamburger-btn:active,
+.sidebar-close-btn:active,
+.language-trigger-icon:active {
+  background-color: var(--color-interactive-active);
+  transform: var(--motion-press);
 }
 
-/* Joker CTA — at most one per rendered page (enforced by
-   scripts/check-cta-bolt-uniqueness.js at npm run ci time). Applied
-   selectively to the single highest-intent button on each page so the
-   eye lands on it. Overrides background regardless of the underlying
-   button class (.cf-cta-btn, .sp-btn-primary, .dp-btn-primary, .btn-primary). */
-.cta-bolt,
-.cta-bolt:visited {
-  background: var(--color-brand-bolt) !important;
-  border-color: var(--color-brand-bolt) !important;
-  color: #ffffff !important;
-}
-
-.cta-bolt:hover,
-.cta-bolt:focus-visible {
-  background: var(--color-brand-bolt-hover) !important;
-  border-color: var(--color-brand-bolt-hover) !important;
-  opacity: 1;
-}
-
-.cta-bolt:focus-visible {
-  outline: 3px solid var(--color-brand-bolt);
+.btn--icon:focus-visible,
+.hamburger-btn:focus-visible,
+.sidebar-close-btn:focus-visible,
+.language-trigger-icon:focus-visible {
+  outline: 2px solid var(--color-brand-primary);
   outline-offset: 2px;
 }
 
-.btn-secondary {
-  background-color: transparent;
-  color: var(--color-text);
-  border: 1px solid var(--color-border);
+/* Small. The only other size. */
+.btn--sm {
+  padding: var(--space-2) var(--space-4);
+  min-height: var(--touch-target-min);
+  font-size: var(--font-size-sm);
 }
 
-.btn-secondary:hover {
-  background-color: var(--color-interactive-hover);
-  border-color: var(--color-text-secondary);
-  color: var(--color-text);
-}
-
-.hero-dark .btn-secondary {
-  color: white;
-  border: 2px solid white;
-}
-
-.hero-dark .btn-secondary:hover {
-  background-color: rgba(255, 255, 255, var(--opacity-10));
-  opacity: 1;
-}
-
-.btn-secondary:active,
-.btn-secondary[aria-pressed='true'] {
-  transform: scale(0.98);
-  background-color: var(--color-interactive-hover);
-  box-shadow: inset 0 2px 4px rgba(0, 0, 0, var(--opacity-15));
-}
-
-.hero-dark .btn-secondary:active,
-.hero-dark .btn-secondary[aria-pressed='true'] {
-  background-color: rgba(255, 255, 255, var(--opacity-15));
-}
-
+.btn--block,
 .btn-full {
   width: 100%;
 }
 
+/* ---- Chrome: size and visibility for the buttons in the navigation bar.
+
+   THESE RULES MUST LIVE HERE, after the base, not in the navigation section
+   where they belong by subject. `.nav-cta-btn` and `.hamburger-btn` have the
+   same (0,1,0) specificity as `.btn` and `.btn--icon`, so the later rule in
+   the file wins, and a first attempt that left them at line ~985 was silently
+   overridden by the primitive at ~1380. Both symptoms were structural rather
+   than cosmetic, and neither was visible in a screenshot thumbnail:
+
+     - the primitive's `display: inline-flex` beat
+       `@media (min-width: 64rem) { .hamburger-btn { display: none } }`, so the
+       hamburger reappeared at desktop, took a grid column, and pushed the
+       whole `.nav-right` cluster onto an implicit SECOND grid row at y=64,
+       outside the 56px nav band and on top of the dark hero;
+     - the base's 48px `min-height` overflowed the same 56px row, and the CTA
+       label went from 4.90:1 on the white nav to 3.51:1 on the hero, which is
+       what axe reported and what led back to the wrap.
+
+   The `calc(var(--space-2) - 1.5px)` that used to compensate for the outline
+   variant's border is gone: every button carries its border at all times now,
+   so the two variants are the same size without being told to be. ---- */
+.nav-cta-btn {
+  display: none;
+  padding: var(--space-2) var(--space-4);
+  min-height: var(--touch-target-min);
+  font-size: var(--font-size-sm);
+}
+
+/* Show the Account button from 30rem (480px) up, which covers most modern
+   phones. Below 30rem the Sidebar is the only path to /account/. */
+@media (min-width: 30rem) {
+  .nav-cta-btn {
+    display: inline-flex;
+  }
+}
+
+@media (max-width: 48rem) {
+  .nav-cta-btn {
+    padding: var(--space-2) var(--space-3);
+  }
+}
+
+/* ---- The split button. `Get Started` plus an attached caret segment whose
+   menu holds `Log in` and `Search`.
+
+   Both segments carry `.nav-cta-btn`, so the fill, the hover, the focus ring,
+   the press and the dark-mode ink flip all come from the primitive above rather
+   than from a second copy of the same six declarations. This block only does
+   what a split control needs that a single button does not: joining the two
+   halves, and hiding the WRAPPER instead of the segments.
+
+   The visibility rule moves up here to the wrapper on purpose. `.nav-cta-btn`
+   is `display: none` below 30rem, and leaving that on the segments would have
+   left a visible empty wrapper carrying a caret and no label on the narrowest
+   phones. The `.nav-cta-split .nav-cta-btn` override is (0,2,0) and so beats
+   the (0,1,0) `display: none` from either direction in the file; the same
+   ordering hazard the note above describes is what makes that worth stating.
+
+   Below 30rem the drawer is the only path to search and to /account/, which is
+   why Sidebar.tsx carries a search row. ---- */
+.nav-cta-split {
+  position: relative;
+  display: none;
+  align-items: center;
+}
+
+.nav-cta-split .nav-cta-btn {
+  display: inline-flex;
+}
+
+@media (min-width: 30rem) {
+  .nav-cta-split {
+    display: inline-flex;
+  }
+}
+
+/* Logical radii, so the seam is on the correct side in Arabic without a
+   [dir='rtl'] override.
+
+   `:first-child`, not `.nav-install-btn`. That class is a TRACKING hook with no
+   styles, recorded as such in scripts/data/css-dom-refs-baseline.json; styling
+   it here would make a baselined orphan non-orphan and turn check:ci-css-dom-refs
+   red for a cosmetic reason. */
+.nav-cta-split > .nav-cta-btn:first-child {
+  border-start-end-radius: 0;
+  border-end-end-radius: 0;
+}
+
+.nav-cta-caret {
+  padding-inline: var(--space-2);
+  border-start-start-radius: 0;
+  border-end-start-radius: 0;
+  /* The hairline between the halves is drawn from the LABEL colour, which flips
+     with the fill in dark mode, so one declaration covers both themes. */
+  border-inline-start-color: color-mix(in srgb, currentColor 35%, transparent);
+}
+
+.nav-cta-chevron {
+  transition: transform var(--transition-duration-base) var(--ease-standard);
+  flex-shrink: 0;
+}
+
+.nav-cta-chevron.open {
+  transform: rotate(180deg);
+}
+
+/* The menu. Anchored to the wrapper's END edge rather than centred like the
+   persona panel: this one is 12rem wide and sits at the end of the bar, so a
+   centred panel would hang off the viewport. .nav clips its own top edge and
+   leaves downward overflow alone, which is what lets this escape the bar. */
+.nav-cta-menu {
+  position: absolute;
+  top: calc(100% + var(--space-2));
+  inset-inline-end: 0;
+  min-width: 12rem;
+  max-width: min(20rem, calc(100vw - var(--space-8)));
+  display: flex;
+  flex-direction: column;
+  padding: var(--space-2);
+  background-color: var(--color-bg-alt);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow);
+  z-index: var(--z-popover);
+}
+
+.nav-cta-menu-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  width: 100%;
+  padding: var(--space-2) var(--space-3);
+  min-height: var(--touch-target-min);
+  font-family: inherit;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  text-align: start;
+  text-decoration: none;
+  cursor: pointer;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  background-color: transparent;
+  color: var(--color-text);
+  transition: background-color var(--transition-duration-base) var(--ease-standard);
+}
+
+.nav-cta-menu-item:hover {
+  background-color: var(--color-interactive-hover);
+}
+
+.nav-cta-menu-item:focus-visible {
+  outline: 2px solid var(--color-brand-primary);
+  outline-offset: -2px;
+}
+
+/* Desktop: the hamburger gives way to the inline nav links. */
+@media (min-width: 64rem) {
+  .hamburger-btn {
+    display: none;
+  }
+}
+
+/* The joker CTA: at most one per rendered page, enforced by
+   scripts/check-cta-bolt-uniqueness.js at npm run ci time. It used to need
+   six !important declarations to beat four separate button classes
+   (.cf-cta-btn, .sp-btn-primary, .dp-btn-primary, .btn-primary); now it sets
+   the same four custom properties every other variant sets, and needs none.
+   It is a FILL at 4.83:1 against its white label, so it needs no dark twin. */
+.btn--bolt,
+.cta-bolt,
+.cta-bolt:visited {
+  --btn-fill: var(--color-brand-bolt);
+  --btn-fill-hover: var(--color-brand-bolt-hover);
+  --btn-ink: var(--color-on-brand);
+  --btn-ink-hover: var(--color-on-brand);
+  background-color: var(--btn-fill);
+  color: var(--btn-ink);
+}
+
+/* ---- Icon stroke. ONE weight.
+   The site inlines 121 icon SVGs across 37 files at nine different
+   stroke-width attributes (2 x58, 1.5 x42, 1 x12, 1.75 x9, 1.25 x9, 2.5 x7,
+   3 x5, 4 x2, 0 x2); icons at 1px and icons at 2.5px in the same row read as
+   two different sets. A CSS declaration outranks an SVG presentation
+   attribute, so one rule retires all nine without editing a single drawing.
+   Scoped to icons INSIDE a primitive plus an explicit `.icon` opt-in, so the
+   573 illustration files keep their own line weights. ---- */
+.icon,
+.btn svg,
+.btn--icon svg,
+.nav-cta-btn svg,
+.sidebar-account-cta svg,
+.segmented__item svg,
+.chip svg,
+.eyebrow svg,
+.overlay-header svg,
+.form-label svg {
+  stroke-width: var(--icon-stroke-width);
+}
+
+/* ---- Card. One shell. There were 33, at 7 radii, 14 paddings and two
+   neutral border greys picked by whichever stylesheet the component was born
+   in. Depth is a border and a surface swap, not a shadow: anthropic.com
+   ships zero box-shadows and claude.com uses a 1px ring. ---- */
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-6);
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+/* The one emphasis modifier. It reads as raised by taking the brand border
+   and the tinted surface, NOT by adding a second box-shadow value: the whole
+   site is meant to paint one. */
+.card--raised {
+  border-color: var(--color-brand-primary);
+  background-color: var(--color-surface-alt);
+}
+
+.card--flush {
+  padding: 0;
+}
+
+/* ---- Chip. A technology name, a status word, a small labelled fact.
+   The sharpest instance of the sprawl this layer replaces was on the
+   homepage: 15 .integrations-strip-badge chips were 8px rectangles and 6
+   .logo-wall-badge chips were 9999px pills, with identical padding and type
+   and backgrounds one hex apart, defined in this file 840 lines apart. Both
+   strips have since been deleted, which is why neither is in the selector any
+   more; the primitive stays, because the rest of the site uses it. ---- */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-full);
+  background-color: var(--color-bg);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  white-space: nowrap;
+}
+
+/* ---- Eyebrow. The uppercase micro-label above a heading. There were five
+   implementations of this one typographic device. ---- */
+.eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-full);
+  background-color: var(--color-brand-tint);
+  color: var(--color-brand-primary);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: var(--tracking-widest);
+  text-transform: uppercase;
+}
+
+/* ---- Segmented control. One shape and ONE ARIA contract for what used to
+   be five controls with three contracts: two pills, one 8px, one 10px and
+   one underline, two of them on the same page. Consumers render
+   role="tablist" / role="tab" / aria-selected. ---- */
+.segmented {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  padding: var(--space-1);
+  background-color: var(--color-bg-light);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-full);
+}
+
+.segmented__item {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-4);
+  min-height: var(--touch-target-min);
+  border: none;
+  border-radius: var(--radius-full);
+  background-color: transparent;
+  color: var(--color-text-secondary);
+  font-family: inherit;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  transition:
+    background-color var(--transition-duration-base) var(--ease-standard),
+    color var(--transition-duration-base) var(--ease-standard);
+}
+
+.segmented__item:hover {
+  background-color: var(--color-interactive-hover);
+  color: var(--color-text);
+}
+
+.segmented__item[aria-selected='true'],
+.segmented__item[aria-checked='true'],
+.segmented__item.is-selected {
+  background-color: var(--color-surface);
+  color: var(--color-brand-primary);
+}
+
+.segmented__item:focus-visible {
+  outline: 2px solid var(--color-brand-primary);
+  outline-offset: 2px;
+}
+
+/* ---- Overlay. One backdrop, one panel, one close button, one pair of
+   keyframes. There were six overlays, five backdrops at four opacities, four
+   panel treatments, five close-button treatments, and thirteen @keyframes
+   doing two jobs between them. The React side is one <Overlay> component, so
+   the focus trap that was byte-identical in three files is now written once.
+   ---- */
+.overlay-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-toast);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: var(--space-3) var(--space-2);
+  background-color: rgba(0, 0, 0, var(--opacity-40));
+  backdrop-filter: blur(1px);
+  animation: overlay-fade-in var(--transition-duration-fast) var(--ease-standard);
+}
+
+.overlay-backdrop--center {
+  align-items: center;
+}
+
+.overlay-panel {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: var(--container-xs);
+  max-height: 90vh;
+  margin-top: var(--space-6);
+  overflow: hidden auto;
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  animation: overlay-rise var(--transition-duration-base) var(--ease-entrance);
+}
+
+.overlay-backdrop--center .overlay-panel {
+  margin-top: 0;
+}
+
+.overlay-panel--wide {
+  max-width: 620px;
+}
+
+.overlay-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-5) var(--space-5) 0;
+}
+
+.overlay-title {
+  margin: 0;
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--leading-tight);
+  color: var(--color-text);
+}
+
+.overlay-description {
+  margin: var(--space-1) 0 0;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+.overlay-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-4) var(--space-5) var(--space-5);
+}
+
+.overlay-body--flush {
+  padding: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.overlay-close {
+  color: var(--color-text-secondary);
+}
+
+@keyframes overlay-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes overlay-rise {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* No reduced-motion override for these two. Both animations are entrances
+   whose last keyframe IS the resting state, so the global `animation-duration:
+   0.01ms` in the block near the top of this file lands them there immediately.
+   The one reduced-motion block that survives locally is `.nav-translate`, and
+   only because its `top` and `opacity` are driven by a JS-set custom property
+   that no duration override can pin. */
+
+@media (max-width: 40rem) {
+  .overlay-backdrop {
+    padding: var(--space-2) var(--space-1);
+  }
+
+  .overlay-panel {
+    max-height: 95vh;
+    margin-top: var(--space-3);
+  }
+
+  .overlay-header {
+    padding: var(--space-4) var(--space-4) 0;
+  }
+
+  .overlay-body {
+    padding: var(--space-3) var(--space-4) var(--space-4);
+  }
+}
+
 /* ===== SECTIONS ===== */
 .problem,
-.solutions,
-.testimonials,
 .closing-cta {
   content-visibility: auto;
   contain-intrinsic-size: auto 600px;
 }
 
-.problem,
-.solutions {
-  padding: var(--space-8) 0;
-}
-
 .problem {
-  background-color: rgba(220, 53, 69, 0.03);
-}
-
-.solutions {
-  background-color: rgba(85, 107, 47, 0.03);
+  padding: var(--space-8) 0;
+  background-color: rgba(196, 30, 58, 0.03);
 }
 
 .section-header {
@@ -1870,18 +2041,17 @@ body[data-nav-collapsed='true'] .nav-translate {
   width: 100%;
   height: auto;
   cursor: pointer;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   border: 1px solid var(--color-border);
-  transition: box-shadow 0.2s ease;
+  transition: box-shadow var(--transition-duration-base) var(--ease-standard);
 }
 
 .scenario-image:hover {
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  box-shadow: var(--shadow);
 }
 
 @media (hover: none) and (pointer: coarse) {
-  .problem-illustration .image-button::after,
-  .solution-illustration .image-button::after {
+  .problem-illustration .image-button::after {
     content: '\2922';
     position: absolute;
     bottom: var(--space-3);
@@ -1899,394 +2069,6 @@ body[data-nav-collapsed='true'] .nav-translate {
   }
 }
 
-/* ===== SECTION BRIDGE ===== */
-/* ===== SOLUTIONS SECTION ===== */
-.solution-illustration {
-  width: 100%;
-  margin-top: var(--space-12);
-}
-
-.solution-illustration .image-button {
-  display: block;
-  width: 100%;
-}
-
-.solutions-categories {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-10);
-  max-width: 100%;
-  margin: 0 auto;
-  padding: 0 var(--space-8);
-}
-
-.solutions-category-title {
-  font-size: var(--font-size-lg);
-  font-weight: var(--font-weight-semibold);
-  color: var(--color-text-secondary);
-  margin-bottom: var(--space-4);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  font-size: var(--font-size-sm);
-}
-
-.solutions-category-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: var(--space-6);
-}
-
-.solution-card {
-  display: flex;
-  flex-direction: column;
-  padding: var(--space-6);
-  background-color: var(--color-bg-alt);
-  border-radius: var(--radius-lg);
-  border: 1px solid var(--color-border-subtle);
-  transition:
-    transform var(--transition-duration-slow) ease,
-    box-shadow var(--transition-duration-slow) ease;
-}
-
-.solution-title {
-  font-size: var(--font-size-lg);
-  font-weight: var(--font-weight-semibold);
-  margin-bottom: var(--space-2);
-  color: var(--color-text);
-  line-height: var(--leading-snug);
-  overflow-wrap: break-word;
-  word-break: normal;
-}
-
-.solution-description {
-  font-size: var(--font-size-sm);
-  color: var(--color-text-secondary);
-  margin-bottom: var(--space-4);
-  line-height: var(--leading-normal);
-  flex: 1;
-}
-
-.solution-card-link {
-  text-decoration: none;
-  cursor: pointer;
-}
-
-@media (hover: hover) {
-  .solution-card-link:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 8px 24px rgba(0, 0, 0, var(--opacity-12));
-    border-color: var(--color-brand-primary);
-  }
-
-  .solution-card-link:hover .learn-more-link {
-    opacity: var(--opacity-70);
-  }
-
-  .solution-card-link:hover .learn-more-link svg {
-    transform: translateX(4px);
-  }
-}
-
-.solution-card-link:active {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, var(--opacity-10));
-}
-
-.solution-card-link:focus-visible {
-  outline: 2px solid var(--color-brand-primary);
-  outline-offset: 4px;
-  border-radius: var(--radius-lg);
-}
-
-.solution-card-footer {
-  margin-top: var(--space-8);
-  padding-top: var(--space-6);
-  border-top: 1px solid var(--color-border);
-  width: 100%;
-  max-width: var(--container-xs);
-}
-
-.learn-more-link {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-2);
-  font-size: var(--font-size-lg);
-  font-weight: var(--font-weight-medium);
-  color: var(--color-text);
-  transition: opacity var(--transition-duration-base) ease;
-}
-
-.learn-more-link svg {
-  transition: transform var(--transition-duration-base) ease;
-}
-
-/* ===== TESTIMONIALS SECTION ===== */
-.testimonials {
-  padding: var(--space-12) 0;
-}
-
-.testimonials-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: var(--space-6);
-  max-width: 100%;
-  margin: 0 auto;
-  padding: 0 var(--space-8);
-}
-
-.testimonial-card {
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  padding: var(--space-6);
-  background-color: var(--color-bg-alt);
-  border-radius: var(--radius-lg);
-  border: 1px solid var(--color-border-subtle);
-  border-left: 4px solid var(--color-brand-primary);
-}
-
-.testimonial-quote {
-  font-size: var(--font-size-base);
-  font-style: italic;
-  color: var(--color-text-secondary);
-  line-height: var(--leading-relaxed);
-  margin: 0 0 var(--space-6) 0;
-}
-
-.testimonial-author {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-}
-
-.testimonial-avatar {
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  background-color: var(--color-brand-primary);
-  color: #fff;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-semibold);
-  flex-shrink: 0;
-}
-
-.testimonial-avatar-img {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  object-fit: cover;
-  flex-shrink: 0;
-}
-
-.testimonial-meta {
-  display: flex;
-  flex-direction: column;
-  gap: 0.125rem;
-}
-
-.testimonial-name {
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-semibold);
-  color: var(--color-text);
-}
-
-.testimonial-role {
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-semibold);
-  color: var(--color-text);
-}
-
-.testimonial-name + .testimonial-role {
-  font-weight: var(--font-weight-normal);
-  color: var(--color-text-secondary);
-}
-
-.testimonial-card--featured {
-  grid-column: 1 / -1;
-  padding: var(--space-8);
-}
-
-.testimonial-card--featured .testimonial-quote {
-  font-size: var(--font-size-lg);
-}
-
-.testimonial-card--team {
-  border-left: 3px solid var(--color-primary, #6366f1);
-}
-
-.testimonial-team-header {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-  margin-bottom: var(--space-4);
-}
-
-.testimonial-team-photo {
-  width: 48px;
-  height: 48px;
-  border-radius: 50%;
-  object-fit: cover;
-}
-
-.testimonial-name {
-  display: block;
-  font-weight: 600;
-  font-size: var(--font-size-sm);
-  color: var(--color-heading);
-}
-
-@media (max-width: 40rem) {
-  .testimonials-grid {
-    grid-template-columns: 1fr;
-  }
-}
-
-@media (min-width: 40.0625rem) and (max-width: 60.5rem) {
-  .testimonials-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
-
-/* ===== FEATURE SHOWCASE ===== */
-.feature-showcase {
-  padding: var(--space-16) 0;
-}
-
-.feature-tabs {
-  max-width: var(--container-lg);
-  margin: 0 auto;
-  padding: 0 var(--space-8);
-  display: grid;
-  grid-template-columns: 280px 1fr;
-  gap: var(--space-6);
-}
-
-.feature-tab-list {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-}
-
-.feature-tab {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  width: 100%;
-  padding: var(--space-3) var(--space-4);
-  text-align: left;
-  background: transparent;
-  border: 1px solid var(--color-border-subtle);
-  border-radius: var(--radius-md);
-  color: var(--color-text-secondary);
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-medium);
-  cursor: pointer;
-  transition: all 0.2s ease;
-  font-family: inherit;
-}
-
-.feature-tab-icon {
-  flex-shrink: 0;
-  opacity: 0.7;
-}
-
-.feature-tab:hover {
-  background: var(--color-bg-alt);
-  color: var(--color-text);
-}
-
-.feature-tab--active {
-  background: var(--color-bg-alt);
-  border-color: var(--color-brand-primary);
-  color: var(--color-text);
-  font-weight: var(--font-weight-semibold);
-}
-
-.feature-tab-panel {
-  padding: var(--space-6);
-  background: var(--color-bg-alt);
-  border-radius: var(--radius-lg);
-  border: 1px solid var(--color-border-subtle);
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  min-width: 0;
-}
-
-.feature-tab-panel h3 {
-  font-size: var(--font-size-xl);
-  font-weight: var(--font-weight-semibold);
-  margin: 0 0 var(--space-4);
-}
-
-.feature-tab-panel p {
-  font-size: var(--font-size-base);
-  color: var(--color-text-secondary);
-  line-height: var(--leading-relaxed);
-  margin: 0 0 var(--space-4);
-}
-
-.feature-tab-media {
-  min-width: 0;
-}
-
-.feature-tab-solutions {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-1);
-}
-
-.feature-tab-solution-link {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: var(--space-2) var(--space-3);
-  border-radius: var(--radius-sm);
-  color: var(--color-text);
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-medium);
-  text-decoration: none;
-  transition: background-color var(--transition-duration-fast) ease;
-}
-
-.feature-tab-solution-link:hover {
-  background-color: var(--color-hover);
-  color: var(--color-text);
-}
-
-.feature-tab-solution-link span {
-  color: var(--color-text-secondary);
-  font-size: var(--font-size-xs);
-}
-
-@media (max-width: 48rem) {
-  .feature-tabs {
-    grid-template-columns: 1fr;
-    padding: 0;
-  }
-  .feature-tab-list {
-    flex-direction: row;
-    overflow-x: auto;
-    gap: var(--space-2);
-    padding-bottom: var(--space-2);
-  }
-  .feature-tab {
-    white-space: nowrap;
-    min-width: max-content;
-    padding: var(--space-3) var(--space-4);
-    font-size: var(--font-size-sm);
-  }
-  .feature-tab-panel {
-    padding: var(--space-4);
-  }
-}
-
 /* ===== HOME DIFFERENCE ===== */
 .home-difference {
   padding: var(--space-16) 0;
@@ -2297,226 +2079,6 @@ body[data-nav-collapsed='true'] .nav-translate {
   max-width: var(--container-xl);
   margin: 0 auto;
   padding: 0 var(--space-8);
-}
-
-.difference-row {
-  display: grid;
-  grid-template-columns: 4fr 5fr;
-  gap: var(--space-12);
-  align-items: center;
-  margin-bottom: var(--space-16);
-}
-
-.difference-row:last-child {
-  margin-bottom: 0;
-}
-
-.difference-row-reverse {
-  direction: rtl;
-}
-
-.difference-row-reverse > * {
-  direction: ltr;
-}
-
-.difference-row-problem {
-  color: var(--color-text-tertiary);
-  font-size: var(--font-size-base);
-  margin: 0 0 var(--space-2);
-  line-height: var(--leading-relaxed);
-}
-
-.difference-row-solution {
-  font-size: var(--font-size-2xl);
-  font-weight: var(--font-weight-bold);
-  color: var(--color-text);
-  margin: 0;
-  line-height: 1.25;
-}
-
-.difference-row-visual {
-  display: flex;
-  justify-content: center;
-}
-
-.difference-row-zoom {
-  appearance: none;
-  background: none;
-  border: 0;
-  padding: 0;
-  margin: 0;
-  width: 100%;
-  max-width: 720px;
-  cursor: zoom-in;
-  border-radius: var(--radius-md);
-  transition: transform 200ms ease;
-}
-
-.difference-row-zoom:hover,
-.difference-row-zoom:focus-visible {
-  transform: scale(1.02);
-  outline: none;
-}
-
-.difference-row-zoom img {
-  width: 100%;
-  height: auto;
-  display: block;
-}
-
-.difference-zoom-dialog {
-  border: 0;
-  padding: 0;
-  background: transparent;
-  max-width: 100vw;
-  max-height: 100vh;
-  width: 100vw;
-  height: 100vh;
-  margin: 0;
-  overflow: hidden;
-}
-
-.difference-zoom-dialog::backdrop {
-  background: rgba(0, 0, 0, 0.85);
-  backdrop-filter: blur(4px);
-}
-
-.difference-zoom-dialog[open] {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.difference-zoom-dialog-img {
-  max-width: 92vw;
-  max-height: 92vh;
-  width: auto;
-  height: auto;
-  cursor: zoom-out;
-  filter: drop-shadow(0 20px 60px rgba(0, 0, 0, 0.4));
-}
-
-.difference-zoom-close {
-  position: absolute;
-  top: var(--space-4);
-  right: var(--space-4);
-  appearance: none;
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.25);
-  color: #fff;
-  width: 40px;
-  height: 40px;
-  border-radius: 9999px;
-  font-size: 24px;
-  line-height: 1;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.difference-zoom-close:hover {
-  background: rgba(255, 255, 255, 0.2);
-}
-
-@media (max-width: 48rem) {
-  .difference-row {
-    grid-template-columns: 1fr;
-    gap: var(--space-6);
-    text-align: center;
-    margin-bottom: var(--space-10);
-  }
-  .difference-row-reverse {
-    direction: ltr;
-  }
-  .difference-row-zoom {
-    max-width: 480px;
-  }
-}
-
-/* ===== METRICS BAR ===== */
-.metrics-bar {
-  padding: var(--space-12) 0;
-}
-
-.metrics-bar-inner {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: var(--space-6);
-  max-width: var(--container-lg);
-  margin: 0 auto;
-  padding: 0 var(--space-8);
-  text-align: center;
-}
-
-.metric {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-}
-
-.metric-number {
-  font-size: var(--font-size-3xl);
-  font-weight: var(--font-weight-bold);
-  color: var(--color-brand-primary);
-  font-family: var(--font-mono);
-}
-
-.metric-label {
-  font-size: var(--font-size-sm);
-  color: var(--color-text-secondary);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-
-@media (max-width: 48rem) {
-  .metrics-bar-inner {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
-
-@media (max-width: 30rem) {
-  .metrics-bar-inner {
-    grid-template-columns: 1fr 1fr;
-    gap: var(--space-4);
-  }
-}
-
-/* ===== INTEGRATIONS STRIP ===== */
-.integrations-strip {
-  padding: var(--space-12) 0;
-  background: var(--color-bg-alt);
-}
-
-.integrations-strip-title {
-  text-align: center;
-  font-size: var(--font-size-lg);
-  font-weight: var(--font-weight-semibold);
-  color: var(--color-text-secondary);
-  margin: 0 0 var(--space-8);
-}
-
-.integrations-strip-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-3);
-  justify-content: center;
-  max-width: var(--container-lg);
-  margin: 0 auto;
-  padding: 0 var(--space-8);
-}
-
-.integrations-strip-badge {
-  display: inline-flex;
-  align-items: center;
-  padding: var(--space-2) var(--space-4);
-  background: var(--color-bg-light);
-  border: 1px solid var(--color-border-subtle);
-  border-radius: var(--radius-md);
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-medium);
-  color: var(--color-text-secondary);
-  font-family: var(--font-mono);
 }
 
 /* ===== PRICING PREVIEW ===== */
@@ -2541,28 +2103,28 @@ body[data-nav-collapsed='true'] .nav-translate {
   gap: var(--space-4);
   margin-top: var(--space-8);
   padding: var(--space-4) var(--space-6);
-  border-radius: var(--radius-lg, 12px);
+  border-radius: var(--radius-lg);
   background: var(--color-bg-alt, rgba(255, 255, 255, 0.04));
 }
 
 .cf-guarantee-photo {
   width: 48px;
   height: 48px;
-  border-radius: 50%;
+  border-radius: var(--radius-full);
   object-fit: cover;
   flex-shrink: 0;
 }
 
 .cf-guarantee-text {
   font-size: var(--font-size-sm);
-  color: var(--color-text-muted, #a0a0a0);
+  color: var(--color-text-muted);
   line-height: 1.5;
   margin: 0;
 }
 
 a.cf-guarantee-link {
   text-decoration: none;
-  transition: opacity var(--transition-duration-base);
+  transition: opacity var(--transition-duration-base) var(--ease-standard);
 }
 
 a.cf-guarantee-link:hover {
@@ -2579,7 +2141,7 @@ a.cf-guarantee-link:hover {
   position: fixed;
   top: 0;
   inset-inline: 0;
-  background: var(--color-brand-primary);
+  background: var(--color-brand-fill);
   padding: var(--space-2) var(--space-4);
   text-align: center;
   z-index: calc(var(--z-fixed, 1030) + 1);
@@ -2741,8 +2303,8 @@ a.cf-guarantee-link:hover {
   color: var(--color-text);
   caret-color: var(--color-brand-primary);
   transition:
-    border-color var(--transition-duration-base) ease,
-    box-shadow var(--transition-duration-base) ease;
+    border-color var(--transition-duration-base) var(--ease-standard),
+    box-shadow var(--transition-duration-base) var(--ease-standard);
 }
 
 /* Form placeholder styling */
@@ -2762,7 +2324,7 @@ a.cf-guarantee-link:hover {
 .form-textarea:focus-visible {
   outline: none;
   border-color: var(--color-brand-primary);
-  box-shadow: 0 0 0 3px rgba(85, 107, 47, var(--opacity-10));
+  box-shadow: var(--focus-ring);
 }
 
 .form-input:active,
@@ -2774,6 +2336,23 @@ a.cf-guarantee-link:hover {
 .form-textarea {
   min-height: 7.5rem;
   resize: vertical;
+}
+
+/* The native select arrow differs per platform, so the shared field draws its
+   own. This came from contact-modal.css, which was the only place on the site
+   that had it; folding it in here means every select gets it instead of one.
+   The stroke is --gray-700 to match --color-text-secondary. */
+.form-select {
+  appearance: none;
+  cursor: pointer;
+  background-image: url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1.5L6 6.5L11 1.5' stroke='%235E5E63' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right var(--space-3) center;
+  padding-inline-end: var(--space-8);
+}
+
+[dir='rtl'] .form-select {
+  background-position: left var(--space-3) center;
 }
 
 /* Form Error Styles - Visible error indication */
@@ -2806,7 +2385,7 @@ a.cf-guarantee-link:hover {
 .form-input:invalid:not(:placeholder-shown):focus-visible,
 .form-input.error:focus-visible {
   outline-color: var(--color-error);
-  box-shadow: 0 0 0 3px rgba(196, 30, 58, var(--opacity-10));
+  box-shadow: var(--focus-ring-error);
 }
 
 .form-input:valid:not(:placeholder-shown) {
@@ -2816,7 +2395,7 @@ a.cf-guarantee-link:hover {
 
 .form-input:valid:not(:placeholder-shown):focus-visible {
   outline-color: var(--color-success);
-  box-shadow: 0 0 0 3px var(--color-success-light);
+  box-shadow: var(--focus-ring-success);
 }
 
 /* aria-invalid styling for all form fields */
@@ -2831,7 +2410,327 @@ a.cf-guarantee-link:hover {
 .form-select[aria-invalid='true']:focus-visible,
 .form-textarea[aria-invalid='true']:focus-visible {
   outline-color: var(--color-error);
-  box-shadow: 0 0 0 3px rgba(196, 30, 58, var(--opacity-10));
+  box-shadow: var(--focus-ring-error);
+}
+
+/* ============================================================================
+   MODAL CONTENT
+
+   What is left of contact-modal.css (375 lines), search-modal.css (331) and
+   region-picker.css (180) after the overlay, button and field primitives took
+   the rest. Those three files were loaded on EVERY route by the
+   `media="print"` onload trick in BaseLayout, about 23 KB of near-duplicate
+   CSS for three dialogs most visitors never open; contact and search alone
+   shared 173 identical lines once the class prefixes were normalised.
+   ============================================================================ */
+
+/* ---- Form extras the shared field system does not carry ---- */
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  position: relative;
+}
+
+.form-title {
+  margin: 0 0 var(--space-2);
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-semibold);
+}
+
+.form-disclaimer {
+  margin: 0;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-tertiary);
+}
+
+/* The terminal state of any form: a mark, a sentence, and sometimes a way
+   out. Five components each had their own success block. */
+.form-outcome {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-8) var(--space-5);
+  text-align: center;
+}
+
+.form-outcome p {
+  margin: 0;
+  max-width: 300px;
+  font-size: var(--font-size-base);
+  color: var(--color-text);
+}
+
+.form-outcome-mark {
+  width: var(--touch-target-preferred);
+  height: var(--touch-target-preferred);
+  color: var(--color-success);
+}
+
+/* Spam trap. Visually gone, still submitted, never focusable. */
+.honeypot {
+  position: absolute;
+  inset-inline-start: -9999px;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}
+
+/* ---- Search ---- */
+.search-panel {
+  max-height: 85vh;
+  margin-top: var(--space-3);
+}
+
+.search-header {
+  padding: var(--space-4);
+}
+
+.search-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+/* The input and its magnifier are their own positioning context. When the
+   icon was absolutely positioned against the whole row instead, it painted on
+   top of the Esc button. */
+.search-field {
+  position: relative;
+  display: flex;
+  flex: 1;
+  min-width: 0;
+}
+
+.search-input {
+  flex: 1;
+  min-width: 0;
+  padding-inline-end: var(--space-8);
+  min-height: var(--touch-target-preferred);
+}
+
+.search-icon {
+  position: absolute;
+  top: 50%;
+  inset-inline-end: var(--space-3);
+  transform: translateY(-50%);
+  color: var(--color-text-secondary);
+  pointer-events: none;
+}
+
+.search-results {
+  flex: 1;
+  padding: var(--space-3) 0;
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-border) transparent;
+}
+
+.search-message {
+  padding: var(--space-5) var(--space-4);
+  text-align: center;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+.search-message h3 {
+  margin: 0 0 var(--space-3);
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text);
+}
+
+.search-message p {
+  margin: 0;
+}
+
+.search-suggestions {
+  display: inline-block;
+  text-align: start;
+}
+
+.search-suggestions ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.search-suggestions li {
+  position: relative;
+  padding: var(--space-1) 0 var(--space-1) var(--space-5);
+}
+
+.search-suggestions li::before {
+  content: '•';
+  position: absolute;
+  inset-inline-start: var(--space-2);
+}
+
+.search-category-title {
+  margin: var(--space-3) var(--space-4) var(--space-2);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-bold);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wide);
+  color: var(--color-text-secondary);
+}
+
+.search-results-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.search-result {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: var(--space-3) var(--space-4);
+  min-height: var(--touch-target-preferred);
+  cursor: pointer;
+  border-inline-start: 2px solid transparent;
+  transition: background-color var(--transition-duration-fast) var(--ease-standard);
+}
+
+.search-result:hover,
+.search-result.selected {
+  background-color: var(--color-hover);
+}
+
+.search-result.selected {
+  border-inline-start-color: var(--color-brand-primary);
+}
+
+.search-result:focus-visible {
+  outline: 2px solid var(--color-brand-primary);
+  outline-offset: -2px;
+  background-color: var(--color-hover);
+}
+
+.search-result-title {
+  margin: 0 0 var(--space-1);
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text);
+  line-height: var(--leading-normal);
+}
+
+.search-result-excerpt {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  line-height: var(--leading-normal);
+}
+
+.search-result mark {
+  padding: 0 var(--space-1);
+  border-radius: var(--radius-sm);
+  background-color: var(--color-interactive-active);
+  color: inherit;
+  font-weight: var(--font-weight-semibold);
+}
+
+@media (max-width: 40rem) {
+  .search-header {
+    padding: var(--space-4) var(--space-3);
+  }
+
+  .search-result {
+    padding: var(--space-4) var(--space-3);
+  }
+
+  .search-category-title {
+    margin-inline: var(--space-3);
+  }
+}
+
+/* ---- Region picker ---- */
+.region-picker {
+  text-align: center;
+}
+
+.region-picker-subtitle,
+.region-picker-reassurance,
+.region-picker-footer,
+.region-picker-footer-note {
+  margin: 0;
+  line-height: var(--leading-relaxed);
+}
+
+.region-picker-subtitle {
+  font-size: var(--font-size-base);
+  color: var(--color-text);
+}
+
+.region-picker-reassurance,
+.region-picker-footer,
+.region-picker-footer-note {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+
+.region-picker-footer,
+.region-picker-footer-note {
+  font-size: var(--font-size-xs);
+}
+
+.region-picker-cards {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-3);
+}
+
+.region-picker-card {
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-4) var(--space-3);
+  text-align: center;
+  cursor: pointer;
+  transition:
+    border-color var(--transition-duration-fast) var(--ease-standard),
+    background-color var(--transition-duration-fast) var(--ease-standard);
+}
+
+.region-picker-card:hover,
+.region-picker-card:focus-visible {
+  border-color: var(--color-brand-primary);
+  background-color: var(--color-bg-hover);
+  outline: none;
+}
+
+.region-picker-card-flag {
+  width: var(--space-8);
+  height: var(--space-8);
+  line-height: var(--leading-none);
+}
+
+.region-picker-card-flag img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.region-picker-card-label {
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-heading);
+}
+
+.region-picker-card-location {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+
+@media (max-width: 36rem) {
+  .region-picker-cards {
+    grid-template-columns: 1fr;
+  }
+
+  .region-picker-subtitle,
+  .region-picker-footer {
+    display: none;
+  }
 }
 
 /* ===== FOOTER ===== */
@@ -2865,7 +2764,7 @@ a.cf-guarantee-link:hover {
 
 .footer-logo-link {
   display: inline-block;
-  transition: opacity var(--transition-duration-base) ease;
+  transition: opacity var(--transition-duration-base) var(--ease-standard);
 }
 
 .footer-logo-link:hover {
@@ -2884,7 +2783,7 @@ a.cf-guarantee-link:hover {
   gap: 6px;
   text-decoration: none;
   color: var(--color-text-secondary);
-  transition: color 0.15s ease;
+  transition: color var(--transition-duration-fast) var(--ease-standard);
 }
 
 .footer-founder:hover {
@@ -2894,7 +2793,7 @@ a.cf-guarantee-link:hover {
 .footer-founder-photo {
   width: 24px;
   height: 24px;
-  border-radius: 50%;
+  border-radius: var(--radius-full);
   object-fit: cover;
   flex-shrink: 0;
 }
@@ -2931,7 +2830,7 @@ a.cf-guarantee-link:hover {
   text-decoration: none;
   color: var(--color-text);
   font-size: var(--font-size-base);
-  transition: opacity var(--transition-duration-base) ease;
+  transition: opacity var(--transition-duration-base) var(--ease-standard);
   display: inline-flex;
   align-items: center;
   padding: var(--space-1) 0;
@@ -2978,7 +2877,7 @@ a.cf-guarantee-link:hover {
 
 .footer-social-link {
   color: var(--color-text);
-  transition: opacity var(--transition-duration-base) ease;
+  transition: opacity var(--transition-duration-base) var(--ease-standard);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -2995,7 +2894,7 @@ a.cf-guarantee-link:hover {
 }
 
 .footer-social-link:active {
-  transform: scale(0.95);
+  transform: var(--motion-press);
   background-color: var(--color-interactive-active);
 }
 
@@ -3030,7 +2929,7 @@ a.cf-guarantee-link:hover {
 /* ===== UTILITY CLASSES ===== */
 .clickable-image {
   cursor: pointer;
-  transition: opacity var(--transition-duration-base) ease;
+  transition: opacity var(--transition-duration-base) var(--ease-standard);
 }
 
 .clickable-image:hover {
@@ -3044,231 +2943,8 @@ a.cf-guarantee-link:hover {
 }
 
 .clickable-image[role='button']:active {
-  transform: scale(0.98);
+  transform: var(--motion-press);
   opacity: var(--opacity-90);
-}
-
-/* Image button wrapper - accessible button element wrapping images */
-.image-button {
-  display: inline-block;
-  padding: 0;
-  margin: 0;
-  border: none;
-  background: transparent;
-  cursor: pointer;
-  font: inherit;
-  line-height: var(--leading-tight);
-}
-
-.image-button:focus-visible {
-  outline: 2px solid var(--color-brand-primary);
-  outline-offset: 2px;
-  border-radius: var(--radius-sm);
-}
-
-.image-button:active {
-  transform: scale(0.98);
-}
-
-/* ===== MODAL & MESSAGE STYLES ===== */
-.message-overlay,
-.image-modal {
-  display: none;
-  position: fixed;
-  inset: 0;
-  background-color: rgba(0, 0, 0, var(--opacity-60));
-  backdrop-filter: blur(2px);
-  z-index: var(--z-toast); /* Critical modals - highest priority */
-  align-items: center;
-  justify-content: center;
-}
-
-.message-overlay[aria-hidden='false'],
-.image-modal[aria-hidden='false'] {
-  display: flex;
-}
-
-.message-content,
-.image-modal-content {
-  background-color: var(--color-bg-alt);
-  padding: var(--space-8);
-  max-width: 500px;
-  width: 90%;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-}
-
-.message-title {
-  font-size: var(--font-size-xl);
-  margin-bottom: var(--space-4);
-}
-
-.message-text {
-  color: var(--color-text-secondary);
-  margin-bottom: var(--space-6);
-}
-
-.message-icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: var(--touch-target-preferred);
-  height: var(--touch-target-preferred);
-  margin: 0 auto var(--space-4);
-  border-radius: var(--radius-full);
-}
-
-.message-icon.success {
-  background-color: rgba(85, 107, 47, var(--opacity-10));
-  color: var(--color-brand-primary);
-}
-
-.message-icon.error {
-  background-color: var(--color-error-light);
-  color: var(--color-error);
-}
-
-.image-modal-content {
-  width: calc(100vw - var(--space-16));
-  height: calc(100vh - var(--space-16));
-  max-width: none;
-  max-height: none;
-  position: relative;
-  display: flex;
-  flex-direction: column;
-}
-
-.image-modal-close {
-  position: absolute;
-  top: var(--space-2);
-  inset-inline-end: var(--space-2);
-  background: var(--color-bg-alt);
-  border: none;
-  font-size: var(--font-size-2xl);
-  cursor: pointer;
-  width: var(--touch-target-min);
-  height: var(--touch-target-min);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: var(--z-dropdown); /* Relative stacking within modal */
-  border-radius: var(--radius-sm);
-  transition: background-color var(--transition-duration-base);
-}
-
-.image-modal-close:hover {
-  background-color: var(--color-hover);
-}
-
-.image-modal-close:focus-visible {
-  outline: 3px solid var(--color-brand-primary);
-  outline-offset: 2px;
-}
-
-.nav-btn {
-  position: absolute;
-  top: 50%;
-  transform: translateY(-50%);
-  background: var(--color-bg-alt);
-  border: 1px solid var(--color-border);
-  font-size: var(--font-size-2xl);
-  cursor: pointer;
-  width: var(--touch-target-preferred);
-  height: var(--touch-target-preferred);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: var(--z-dropdown);
-  border-radius: var(--radius-sm);
-  transition:
-    background-color var(--transition-duration-base),
-    border-color var(--transition-duration-base);
-  color: var(--color-text);
-}
-
-.nav-btn:hover {
-  background-color: var(--color-hover);
-  border-color: var(--color-brand-primary);
-}
-
-.nav-btn:focus-visible {
-  outline: 3px solid var(--color-brand-primary);
-  outline-offset: 2px;
-}
-
-.nav-prev {
-  inset-inline-start: var(--space-4);
-}
-
-.nav-next {
-  inset-inline-end: var(--space-4);
-}
-
-.zoom-controls {
-  position: absolute;
-  bottom: var(--space-4);
-  left: 50%;
-  transform: translateX(-50%);
-  display: flex;
-  gap: var(--space-2);
-  z-index: var(--z-dropdown);
-}
-
-.zoom-btn {
-  background: var(--color-bg-alt);
-  border: 1px solid var(--color-border);
-  font-size: var(--font-size-xl);
-  cursor: pointer;
-  width: var(--touch-target-min);
-  height: var(--touch-target-min);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: var(--radius-sm);
-  transition:
-    background-color var(--transition-duration-base),
-    border-color var(--transition-duration-base);
-  color: var(--color-text);
-}
-
-.zoom-btn:hover {
-  background-color: var(--color-hover);
-  border-color: var(--color-brand-primary);
-}
-
-.zoom-btn:focus-visible {
-  outline: 3px solid var(--color-brand-primary);
-  outline-offset: 2px;
-}
-
-.image-container {
-  overflow: clip;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex: 1;
-  min-height: 0;
-}
-
-.image-indicator {
-  position: absolute;
-  top: var(--space-2);
-  left: 50%;
-  transform: translateX(-50%);
-  background: rgba(0, 0, 0, var(--opacity-60));
-  color: white;
-  padding: var(--space-2) var(--space-4);
-  border-radius: var(--radius-lg);
-  font-size: var(--font-size-sm);
-  z-index: var(--z-dropdown);
-}
-
-.modal-image {
-  max-width: 100%;
-  max-height: 100%;
-  object-fit: contain;
-  transition: transform var(--transition-duration-base);
-  will-change: transform;
 }
 
 /* ==========================================================================
@@ -3278,30 +2954,7 @@ a.cf-guarantee-link:hover {
 @media (min-width: 64rem) {
   /* 1024px - respects user font size */
   .hero-title {
-    font-size: 3.5rem;
-  }
-
-  .hero-subtitle {
-    font-size: 1.375rem;
-  }
-
-  .section-title {
     font-size: var(--font-size-4xl);
-  }
-
-  .section-subtitle {
-    font-size: 1.25rem;
-  }
-
-  .solution-card {
-    padding: var(--space-8);
-  }
-}
-
-@media (min-width: 90rem) {
-  /* 1440px - respects user font size */
-  .hero-title {
-    font-size: 4rem;
   }
 
   .hero-subtitle {
@@ -3309,113 +2962,86 @@ a.cf-guarantee-link:hover {
   }
 
   .section-title {
-    font-size: 3.25rem;
+    font-size: var(--font-size-4xl);
   }
 
-  .solution-card {
-    padding: var(--space-8);
-  }
-}
-
-@media (max-width: 60.5rem) {
-  /* 968px - respects user font size */
-  .solutions-category-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-
-  .solutions-categories {
-    padding: 0 var(--space-4);
-  }
-
-  .testimonials-grid {
-    grid-template-columns: repeat(2, 1fr);
-    padding: 0 var(--space-4);
+  .section-subtitle {
+    font-size: var(--font-size-lg);
   }
 }
 
-@media (max-width: 40rem) {
-  /* 640px */
-  .solutions-category-grid {
-    grid-template-columns: 1fr;
+/* ===== SCROLL REVEAL ANIMATIONS =====
+
+   THE DOUBLE GUARD. Read this before adding any reveal-on-scroll rule.
+
+   `.reveal` hides its element (`opacity: 0`) and waits for JavaScript to add
+   `.visible`. That is safe ONLY while both of these hold:
+
+     1. `html.js-anim` is present, which the inline script in <head> sets
+        before first paint and ONLY when JavaScript runs. Without it the rule
+        never applies, so a visitor with JS off, a JS error before the reveal
+        script, or a crawler sees the content at full opacity instead of a
+        permanently blank page.
+
+     2. `prefers-reduced-motion: no-preference` matches. The global
+        reduced-motion rule near the top of this file zeroes every
+        `transition-duration` with `!important`. It does NOT undo an opacity.
+        So under `reduce`, an unguarded `.reveal` would be set to `opacity: 0`
+        and then have the transition that was supposed to bring it back
+        cancelled, and the element would never appear at all. Guarding by
+        `no-preference` means the hidden state is never authored in the first
+        place, which is why this is a positive query and not another
+        `reduce` override bolted on afterwards.
+
+   Both conditions are expressed as ENTRY conditions for the hidden state.
+   An override that tries to put the element back is one bug away from
+   leaving it invisible; a guard that never hides it cannot be.
+
+   THE ONLY REVEAL. `public/scripts/scroll-reveal.js` (one IntersectionObserver,
+   one-shot, disconnects when the last element has fired) is the site's single
+   reveal mechanism, and the two rules below are its whole appearance. If you want
+   something to appear on scroll, add `class="reveal"`. Do not write another
+   observer.
+
+   Two things were deleted here rather than kept "just in case":
+
+     - `--reveal-duration`, which was read twice as `var(--reveal-duration,
+       0.5s)` and DECLARED NOWHERE, so the fallback was the only value that had
+       ever applied. It read like a knob and was a constant.
+     - six `.reveal-stagger > .reveal:nth-child(n)` delay rules, which had zero
+       consumers: no markup anywhere in packages/www carries `reveal-stagger`.
+
+   The travel is 12px, not the 20px it was. At 20px the reveal reads as an
+   effect; the reference sites move things about a line of text's worth and let
+   the opacity carry it. */
+@media (prefers-reduced-motion: no-preference) {
+  html.js-anim .reveal {
+    opacity: 0;
+    transform: translateY(12px);
+    transition:
+      opacity var(--transition-duration-slow) var(--ease-entrance),
+      transform var(--transition-duration-slow) var(--ease-entrance);
   }
 
-  .testimonials-grid {
-    grid-template-columns: 1fr;
-  }
-}
-
-/* ===== SCROLL REVEAL ANIMATIONS ===== */
-.reveal {
-  opacity: 0;
-  transform: translateY(20px);
-  transition:
-    opacity 0.5s ease,
-    transform 0.5s ease;
-}
-
-.reveal.visible {
-  opacity: 1;
-  transform: translateY(0);
-}
-
-/* Stagger children in grids */
-.reveal-stagger > .reveal:nth-child(1) {
-  transition-delay: 0s;
-}
-.reveal-stagger > .reveal:nth-child(2) {
-  transition-delay: 0.1s;
-}
-.reveal-stagger > .reveal:nth-child(3) {
-  transition-delay: 0.15s;
-}
-.reveal-stagger > .reveal:nth-child(4) {
-  transition-delay: 0.2s;
-}
-.reveal-stagger > .reveal:nth-child(5) {
-  transition-delay: 0.25s;
-}
-.reveal-stagger > .reveal:nth-child(6) {
-  transition-delay: 0.3s;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .reveal {
+  html.js-anim .reveal.visible {
     opacity: 1;
-    transform: none;
-    transition: none;
+    transform: translateY(0);
   }
 }
 
-/* View Transitions Animations */
-@keyframes fade-in {
-  from {
-    opacity: 0;
-  }
-}
+/* The four view-transition keyframes (fade-in, fade-out, slide-from-right,
+   slide-to-left) and the ::view-transition-old/new rules that used them lived
+   here and could never fire. Both routes into them are absent:
 
-@keyframes fade-out {
-  to {
-    opacity: 0;
-  }
-}
+     - Astro's client router is what enables them, and it is opt-in via
+       `<ClientRouter />` from `astro:transitions`. Nothing in packages/www
+       imports it. BaseLayout hand-wrote the `astro-view-transitions-enabled`
+       meta tag instead, but that meta is only ever READ, by
+       node_modules/astro/dist/transitions/router.js:12, which is a module the
+       router component loads and nothing else does.
+     - A native cross-document transition needs `@view-transition { navigation:
+       auto }` in CSS. The repo has none, and no `view-transition-name` either.
 
-@keyframes slide-from-right {
-  from {
-    transform: translateX(30px);
-  }
-}
-
-@keyframes slide-to-left {
-  to {
-    transform: translateX(-30px);
-  }
-}
-
-::view-transition-old(root) {
-  animation: var(--transition-duration-base) cubic-bezier(0.4, 0, 1, 1) both fade-out;
-}
-
-::view-transition-new(root) {
-  animation: var(--transition-duration-base) cubic-bezier(0, 0, 0.2, 1)
-    var(--transition-duration-fast) both fade-in;
-}
+   So they are gone, along with the meta tags in BaseLayout.astro. Re-adding
+   `<ClientRouter />` is the way to bring view transitions back, and that is a
+   deliberate decision with a real JS cost, not a stylesheet detail. */

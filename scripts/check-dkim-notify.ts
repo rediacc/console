@@ -29,10 +29,10 @@
  * external-network retry pattern used by `scripts/check-external-links.ts`.
  */
 
-import { readFileSync } from 'node:fs';
-import * as path from 'node:path';
 import { createHash } from 'node:crypto';
 import { Resolver } from 'node:dns/promises';
+import { readFileSync } from 'node:fs';
+import * as path from 'node:path';
 
 interface ManifestVersion {
   id: string;
@@ -46,7 +46,10 @@ interface ManifestDkimNotify {
   versions: ManifestVersion[];
 }
 interface Manifest {
-  credentials: Record<string, { platform: string; versions?: ManifestVersion[] } & Partial<ManifestDkimNotify>>;
+  credentials: Record<
+    string,
+    { platform: string; versions?: ManifestVersion[] } & Partial<ManifestDkimNotify>
+  >;
 }
 
 const MANIFEST_PATH = 'private/account/rotation-manifest.json';
@@ -110,7 +113,9 @@ async function resolveTxtWithRetry(name: string): Promise<string[][]> {
   throw new Error(`TXT ${name} failed after ${MAX_RETRIES} attempts: ${lastErr}`);
 }
 
-async function resolveMxWithRetry(name: string): Promise<Array<{ exchange: string; priority: number }>> {
+async function resolveMxWithRetry(
+  name: string
+): Promise<Array<{ exchange: string; priority: number }>> {
   let lastErr = '';
   for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
     for (const server of PUBLIC_RESOLVERS) {
@@ -137,7 +142,9 @@ async function main(): Promise<number> {
     const raw = readFileSync(manifestPath, 'utf-8');
     manifest = JSON.parse(raw) as Manifest;
   } catch (err) {
-    process.stderr.write(`error: could not read ${MANIFEST_PATH}: ${err instanceof Error ? err.message : String(err)}\n`);
+    process.stderr.write(
+      `error: could not read ${MANIFEST_PATH}: ${err instanceof Error ? err.message : String(err)}\n`
+    );
     return 1;
   }
 
@@ -178,7 +185,9 @@ async function main(): Promise<number> {
     // Cloudflare returns multi-string TXTs as nested arrays; concatenate chunks.
     const joined = txt.map((chunks) => chunks.join('')).join('\n');
     if (!/^v=DKIM1\b/.test(joined)) {
-      errors.push(`${recordName}: TXT does not start with v=DKIM1 (got: ${joined.slice(0, 80)}...)`);
+      errors.push(
+        `${recordName}: TXT does not start with v=DKIM1 (got: ${joined.slice(0, 80)}...)`
+      );
     } else {
       const pMatch = /p=([A-Za-z0-9+/]+=*)/.exec(joined);
       if (!pMatch || !pMatch[1]) {
@@ -218,7 +227,9 @@ async function main(): Promise<number> {
   }
 
   if (errors.length > 0) {
-    process.stderr.write(`FAIL: dkim-notify DNS check (${errors.length} issue${errors.length > 1 ? 's' : ''}):\n`);
+    process.stderr.write(
+      `FAIL: dkim-notify DNS check (${errors.length} issue${errors.length > 1 ? 's' : ''}):\n`
+    );
     for (const e of errors) {
       process.stderr.write(`  ${e}\n`);
     }

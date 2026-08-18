@@ -90,7 +90,7 @@ function serializeMarkdownWithSourceCommit(raw: string, sourceCommit: string): s
   // Insert sourceCommit after sourceHash in the frontmatter
   return raw.replace(
     /^(---\r?\n[\s\S]*?)(sourceHash:\s*["'][^"']*["'])\r?\n/m,
-    `$1$2\nsourceCommit: "${sourceCommit}"\n`,
+    `$1$2\nsourceCommit: "${sourceCommit}"\n`
   );
 }
 
@@ -325,7 +325,7 @@ function main(): void {
     console.log(`  x ${r.file} -- could not find matching commit`);
   }
   console.log(
-    `  Total: ${mdAdded.length} added, ${mdNotFound.length} not found, ${mdResults.filter((r) => r.status === 'skipped').length} skipped`,
+    `  Total: ${mdAdded.length} added, ${mdNotFound.length} not found, ${mdResults.filter((r) => r.status === 'skipped').length} skipped`
   );
 
   // JSON manifests
@@ -340,7 +340,9 @@ function main(): void {
   }
 
   console.log('\n' + ''.padEnd(60, '='));
-  console.log(DRY_RUN ? 'Dry run complete. Run without --dry-run to apply changes.' : 'Backfill complete.');
+  console.log(
+    DRY_RUN ? 'Dry run complete. Run without --dry-run to apply changes.' : 'Backfill complete.'
+  );
 }
 
 main();

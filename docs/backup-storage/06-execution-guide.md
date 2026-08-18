@@ -93,7 +93,7 @@ restart: (1) list the harness's running background task ids (the lease-warning
 path prints them) and reconcile every `- [>]` lease's `worker:<id>` against that
 list, re-leasing or finishing items whose worker is gone; (2) probe the writers'
 file sets with absolute-timestamp mtimes (this box's find rejects relative
--newermt; see docs/agent/TRAPS.md "Session liveness"), because the agent roster
+-newermt; see docs/agent-reference/TRAPS.md "Session liveness"), because the agent roster
 lies after a restart while writers stay alive; (3) only then promote, relaunch,
 or tick. The 2026-08-10 duplicate-writer incident is the recorded cost of
 skipping this.

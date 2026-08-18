@@ -57,7 +57,7 @@ Maschine-zu-Maschine-Push und -Pull brauchen keins von beidem. Sie sind eine dir
 
 ### Der rclone-Speicherpfad ist verschwunden
 
-`rdc repo push --to <storage>` und Verwandte kopierten früher eine ganze Backup-Datei zu einem Cloud-Anbieter, den Sie selbst registrierten. Diese verweigern jetzt ein Speicherziel und nennen ihren Ersatz. Die Maschine-zu-Maschine-Übertragung lief nie über rclone und ist unbetroffen. Wenn Sie noch ein auf diese Weise geschriebenes Archiv lesen müssen, siehe [Ein vor der Umstellung geschriebenes Archiv lesen](#ein-vor-der-umstellung-geschriebenes-archiv-lesen).
+`rdc repo push --to <storage>` und Verwandte kopierten früher eine ganze Backup-Datei zu einem Cloud-Anbieter, den Sie selbst registrierten. Diese verweigern jetzt ein Speicherziel und nennen ihren Ersatz. Die Maschine-zu-Maschine-Übertragung lief nie über rclone und ist unbetroffen. Wenn Sie noch ein auf diese Weise geschriebenes Archiv lesen müssen, siehe [Ein vor der Umstellung geschriebenes Archiv lesen](#reading-an-archive-written-before-the-retirement).
 
 ### Chunk-Storage-Befehle
 
@@ -343,7 +343,7 @@ rdc repo push shop:nightly@server-1 --to server-2
 rdc repo pull shop:nightly@server-1 --from server-2
 ```
 
-Die vollständigen Optionslisten finden Sie unter [Ein Backup auf eine andere Maschine übertragen](#ein-backup-auf-eine-andere-maschine-übertragen) und [Ein Backup von einer anderen Maschine abrufen](#ein-backup-von-einer-anderen-maschine-abrufen).
+Die vollständigen Optionslisten finden Sie unter [Ein Backup auf eine andere Maschine übertragen](#push-a-backup-to-another-machine) und [Ein Backup von einer anderen Maschine abrufen](#pull-a-backup-from-another-machine).
 
 ## Geplante Backups
 
@@ -436,7 +436,7 @@ Dieses Verhalten ist bewusst gewählt. Zwei parallele Cold-Backups gegen denselb
 
 ### Snapshots, Unterbrechungen und Pool-Speicher
 
-Jeder Push arbeitet von einem kurzlebigen Datastore-Snapshot, sodass die hochgeladenen Daten konsistent sind, auch während Repositories weiter schreiben. Während das Backup läuft, referenziert dieser Snapshot weiterhin jeden Block, den er mit aktiven Repositories teilt: Löschungen und [Trims](/de/docs/repositories#speicherplatz-zuruckgewinnen-trim) geben bis zum Abschluss des Zyklus und zum Löschen des Snapshots weniger Pool-Speicher frei. Der [Speichergesundheitsbericht](/de/docs/monitoring#speichergesundheit) zeigt, wie viel Speicher Backup-Snapshots aktuell belegen.
+Jeder Push arbeitet von einem kurzlebigen Datastore-Snapshot, sodass die hochgeladenen Daten konsistent sind, auch während Repositories weiter schreiben. Während das Backup läuft, referenziert dieser Snapshot weiterhin jeden Block, den er mit aktiven Repositories teilt: Löschungen und [Trims](/de/docs/repositories#reclaim-space-trim) geben bis zum Abschluss des Zyklus und zum Löschen des Snapshots weniger Pool-Speicher frei. Der [Speichergesundheitsbericht](/de/docs/monitoring#storage-health) zeigt, wie viel Speicher Backup-Snapshots aktuell belegen.
 
 Unterbrechungen sind sicher. Wird der Dienst gestoppt (oder die Maschine neu gestartet), bricht das Backup seine Übertragung ab und löscht seinen Snapshot vor dem Beenden; der nächste geplante Lauf setzt dort fort, wo er aufgehört hat, da bereits gespeicherte Zellen nicht erneut hochgeladen werden. Wird der Prozess zu hart beendet, um aufzuräumen (Stromausfall), wird der verwaiste Snapshot vom Storage-Maintainer innerhalb von Minuten automatisch erkannt und entfernt.
 
@@ -514,7 +514,7 @@ Die Bindung wird in Ihrer Konfiguration als Liste auf der Maschine festgehalten,
 }
 ```
 
-> **Bindung ist nur lokale Konfiguration.** Eine Strategie zu definieren und an eine Maschine zu binden, hat keine Auswirkung auf die Maschine. Führen Sie `rdc backup schedule -m <machine>` aus (siehe [Zeitplan auf Maschine deployen](#zeitplan-auf-maschine-deployen)), um die systemd-Timer zu deployen, und führen Sie den Befehl nach jeder Strategie- oder Bindungsänderung erneut aus.
+> **Bindung ist nur lokale Konfiguration.** Eine Strategie zu definieren und an eine Maschine zu binden, hat keine Auswirkung auf die Maschine. Führen Sie `rdc backup schedule -m <machine>` aus (siehe [Zeitplan auf Maschine deployen](#deploy-schedule-to-machine)), um die systemd-Timer zu deployen, und führen Sie den Befehl nach jeder Strategie- oder Bindungsänderung erneut aus.
 
 ## Hot vs. Cold und Repo-Filterung im Vergleich
 
@@ -529,7 +529,7 @@ Die Bindung wird in Ihrer Konfiguration als Liste auf der Maschine festgehalten,
 
 **Hot** ist die richtige Standardwahl für hochfrequente Läufe. Dienste laufen weiter, während der Snapshot erstellt wird, sodass das Backup-Fenster Benutzer nicht unterbricht. Der Snapshot ist absturzkonsistent: Er entspricht dem, was Sie nach einem unsauberen Herunterfahren erhalten würden. Für die meisten modernen Datenbanken und Message-Queues ist dies akzeptabel.
 
-**Cold** ist geeignet, wenn Sie einen garantiert anwendungskonsistenten Snapshot benötigen und einen kurzen Neustart pro Repo akzeptieren können. Dienste werden vor dem Snapshot gestoppt und vor Beginn des Uploads neu gestartet, sodass ein langsamer oder fehlgeschlagener Upload das Ausfallzeitfenster nie verlängert. Das vollständige Garantiemodell finden Sie unter [Cold-Backup-Semantik](#cold-backup-semantik).
+**Cold** ist geeignet, wenn Sie einen garantiert anwendungskonsistenten Snapshot benötigen und einen kurzen Neustart pro Repo akzeptieren können. Dienste werden vor dem Snapshot gestoppt und vor Beginn des Uploads neu gestartet, sodass ein langsamer oder fehlgeschlagener Upload das Ausfallzeitfenster nie verlängert. Das vollständige Garantiemodell finden Sie unter [Cold-Backup-Semantik](#cold-backup-semantics).
 
 Beide Modi schreiben in denselben Chunk-Store, und der Modus betrifft, wie das Repository behandelt wird, während das Image eingefroren wird, nicht, wo die Daten landen. Ein Repository, das sowohl von einem stündlichen Hot- als auch einem wöchentlichen Cold-Zeitplan abgedeckt wird, speichert die gemeinsamen Zellen einmal statt zweimal.
 
@@ -562,7 +562,7 @@ Benennen Sie die Repositories, die Sie im hochfrequenten Lauf haben wollen, stat
 - Ein Repo groß und **vollständig aus Quelldaten regenerierbar** ist, die bereits auf dem Volume liegen, sodass jedes stündliche Backup Bandbreite verbraucht, ohne Wiederherstellungswert hinzuzufügen.
 - Der Backup-Lauf bei Ihrer verfügbaren Upload-Geschwindigkeit sein eigenes Zeitplan-Intervall überschreiten würde.
 
-**Beispiel.** Ein `analytics-demo`-Repository hält ungefähr 114 GB abgeleitete Postgres-Tabellen, die aus rohen CSV-Dumps, die im selben Volume gespeichert sind, neu aufgebaut werden können. Bei einem Upload-Limit von 6 MB/s dauert ein erster Snapshot dieses Repos über 5 Stunden. Ihn stündlich laufen zu lassen bedeutet, dass jeder Lauf noch läuft, wenn der nächste feuert, sodass jedes nachfolgende Feuern still verworfen wird (siehe [Lange Läufe und überlappende Zeitpläne](#lange-läufe-und-überlappende-zeitpläne)). Die anderen Repositories in `hourly-hot` aufzulisten und `analytics-demo` bei `weekly-cold` zu belassen bedeutet, dass es einmal pro Woche gesichert wird statt nie.
+**Beispiel.** Ein `analytics-demo`-Repository hält ungefähr 114 GB abgeleitete Postgres-Tabellen, die aus rohen CSV-Dumps, die im selben Volume gespeichert sind, neu aufgebaut werden können. Bei einem Upload-Limit von 6 MB/s dauert ein erster Snapshot dieses Repos über 5 Stunden. Ihn stündlich laufen zu lassen bedeutet, dass jeder Lauf noch läuft, wenn der nächste feuert, sodass jedes nachfolgende Feuern still verworfen wird (siehe [Lange Läufe und überlappende Zeitpläne](#long-running-backups-and-overlapping-schedules)). Die anderen Repositories in `hourly-hot` aufzulisten und `analytics-demo` bei `weekly-cold` zu belassen bedeutet, dass es einmal pro Woche gesichert wird statt nie.
 
 > **Wenn die Daten rein regenerierbar sind**, überlegen Sie, ob Sie sie überhaupt sichern müssen. Eine Alternative ist, nur die rohen Quelleingaben (in diesem Beispiel die CSV-Dumps) zu sichern und die abgeleitete Kopie ganz zu überspringen. Ein wöchentliches Cold-Backup der Quelleingaben ist viel kleiner und für eine Wiederherstellung vollständig ausreichend.
 

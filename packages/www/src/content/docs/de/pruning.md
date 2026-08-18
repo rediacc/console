@@ -20,7 +20,7 @@ Die Bereinigung entfernt Zustand, der keiner aktiven Ressource mehr entspricht. 
 
 Die drei sind unabhängig. Sie können jeden einzeln ohne die anderen ausführen. Sie teilen sich ein gemeinsames Sicherheitsmodell, beschrieben unter [Sicherheit](#safety-model) weiter unten.
 
-Die Bereinigung entfernt Zustand, der von gelöschten Ressourcen hinterlassen wurde. Um Speicherplatz zurückzugewinnen, der von *aktiven* Repositories belegt wird (Blöcke, die ihre Dateisysteme freigegeben haben, die der Pool aber noch hält), verwenden Sie stattdessen [`rdc repo trim`](/de/docs/repositories#speicherplatz-zuruckgewinnen-trim); die beiden Ansätze ergänzen einander.
+Die Bereinigung entfernt Zustand, der von gelöschten Ressourcen hinterlassen wurde. Um Speicherplatz zurückzugewinnen, der von *aktiven* Repositories belegt wird (Blöcke, die ihre Dateisysteme freigegeben haben, die der Pool aber noch hält), verwenden Sie stattdessen [`rdc repo trim`](/de/docs/repositories#reclaim-space-trim); die beiden Ansätze ergänzen einander.
 
 ## Mount-Safety-Preflight
 
@@ -50,7 +50,7 @@ rdc storage prune my-s3 -m server-1 --force-delete-mounted
 
 ### Was geprüft wird
 
-1. Listet alle Backup-GUIDs im benannten Speicher auf (über beide Unterverzeichnisse `hot/` und `cold/`. Siehe [Backup & Restore](/de/docs/backup-restore#geplante-backups)).
+1. Listet alle Backup-GUIDs im benannten Speicher auf (über beide Unterverzeichnisse `hot/` und `cold/`. Siehe [Backup & Restore](/de/docs/backup-restore#scheduled-backups)).
 2. Durchsucht alle Konfigurationsdateien auf der Festplatte (`~/.config/rediacc/*.json`).
 3. Ein Backup ist **verwaist**, wenn seine GUID in keinem Repositories-Abschnitt einer Konfiguration referenziert wird.
 4. Kürzlich archivierte Repos innerhalb der Schonfrist sind **geschützt**, auch wenn sie aus der aktiven Konfiguration entfernt wurden.

@@ -449,9 +449,9 @@ test_agent_notes_tree_is_documentation_whatever_the_extension() {
     local t="$1"
     setup "$t"
     files_fixture "$t" \
-        "agent/0815-1/97604f47/STATE.md" \
+        "agent/97604f47/STATE.md" \
         "agent/programs/backup-storage/CHECKLIST.md" \
-        "agent/0815-1/97604f47/report.json"
+        "agent/97604f47/report.json"
     execution_file "$t" "$(report_with_verdict "")"
     run_apply "$t"
     assert_eq "$(added "$t")" "documentation" \
@@ -469,7 +469,7 @@ test_agent_notes_tree_is_documentation_whatever_the_extension() {
     # CONTROL B: all-files is still all-files. One real source file disqualifies
     # the whole diff however much of it is session notes.
     setup "$t"
-    files_fixture "$t" "agent/0815-1/97604f47/STATE.md" "packages/cli/src/commands/repo.ts"
+    files_fixture "$t" "agent/97604f47/STATE.md" "packages/cli/src/commands/repo.ts"
     execution_file "$t" "$(report_with_verdict "")"
     run_apply "$t"
     assert_eq "$(added "$t")" "" "one source file disqualifies an otherwise notes-only diff"

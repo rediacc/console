@@ -19,6 +19,7 @@ async function hydrateTutorialVideos() {
   if (containers.length === 0) return;
 
   const { default: TutorialVideoPlayer } = await import('../components/TutorialVideoPlayer');
+  type SourceSet = import('../components/TutorialVideoPlayer').TutorialSourceSet;
 
   containers.forEach((el) => {
     if (el.dataset.hydrated) return;
@@ -31,6 +32,18 @@ async function hydrateTutorialVideos() {
     const wordsSrc = el.dataset.wordsSrc ?? '';
     const title = el.dataset.title ?? '';
     const lang = (el.dataset.lang ?? document.documentElement.lang) || 'en';
+    // One JSON attribute holding <locale> -> {mp4, poster, vtt, chapters, words}, written
+    // by remark-tutorial-embed.ts at build time. A malformed or absent attribute leaves
+    // `sources` undefined, and the player then renders without a language picker on the
+    // five URLs above -- exactly the behaviour it had before the picker existed.
+    let sources: Record<string, SourceSet> | undefined;
+    if (el.dataset.sources) {
+      try {
+        sources = JSON.parse(el.dataset.sources) as Record<string, SourceSet>;
+      } catch {
+        sources = undefined;
+      }
+    }
 
     const root = createRoot(el);
     root.render(
@@ -42,6 +55,7 @@ async function hydrateTutorialVideos() {
         wordsSrc,
         title,
         lang,
+        sources,
       })
     );
   });

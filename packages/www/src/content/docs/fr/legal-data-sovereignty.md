@@ -82,3 +82,7 @@ Dans toutes les juridictions, l'équation de conformité est la même :
 | Responsabilité du sous-traitant tiers | Oui | Non |
 | Contrôle du chiffrement | Clés gérées par le fournisseur | Vos identifiants LUKS, stockés localement |
 | Données de clonage/staging | Peuvent traverser les frontières ou échapper à votre contrôle | CoW sur la même machine, même juridiction |
+
+## Service hébergé : résidence régionale des données
+
+Pour les utilisateurs du service Rediacc hébergé (non auto-hébergé), la résidence des données est assurée par une infrastructure régionale. Trois régions sont disponibles : UE (Francfort), États-Unis (Virginie) et Asie-Pacifique (Tokyo). Chaque région exploite des bases de données et un stockage indépendants, sans flux de données entre régions. Les e-mails transactionnels sont envoyés via AWS SES ; l'UE et les États-Unis utilisent des points de terminaison régionaux dédiés, tandis que l'Asie-Pacifique utilise le point de terminaison de l'UE (eu-central-1). La région UE applique un contrôle juridictionnel au stockage R2. Consultez [Régions de données](/fr/docs/data-regions) pour le détail technique complet.

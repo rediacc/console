@@ -146,7 +146,7 @@ const slices = (to('notASlice.slices') as Slice[] | undefined) ?? [];
   .sp-slice-card {
     background: var(--sp-bg-white);
     border: 1px solid var(--sp-border-light);
-    border-radius: 12px;
+    border-radius: var(--radius-md);
     padding: 28px 24px;
     text-align: center;
     color: var(--sp-text-muted-light);
@@ -181,6 +181,12 @@ const slices = (to('notASlice.slices') as Slice[] | undefined) ?? [];
     margin: 0 auto 40px;
     max-width: 720px;
   }
+  /* Emphasis by border and surface, not by a second shadow value.
+     `0 4px 24px var(--sp-brand-glow)` here and the 4px ring on the dot below
+     were the only two painted box-shadows on /en that were not var(--shadow),
+     so the site now paints exactly one. This card already carries the brand
+     border and the raised surface, which is the recipe `.card--raised` in the
+     primitive layer uses for the same job. */
   .sp-slice-winner {
     display: grid;
     grid-template-columns: 220px 1fr;
@@ -188,9 +194,8 @@ const slices = (to('notASlice.slices') as Slice[] | undefined) ?? [];
     align-items: center;
     background: var(--sp-bg-white);
     border: 1.5px solid var(--sp-brand-primary);
-    border-radius: 14px;
+    border-radius: var(--radius-md);
     padding: 36px 40px;
-    box-shadow: 0 4px 24px var(--sp-brand-glow);
   }
   .sp-slice-winner-icon {
     display: flex;
@@ -212,12 +217,15 @@ const slices = (to('notASlice.slices') as Slice[] | undefined) ?? [];
     align-items: center;
     gap: 8px;
   }
+  /* The ring was a zero-blur, non-zero-spread box-shadow, which is an OUTLINE
+     rather than an elevation; swapping it for var(--shadow) would have drawn
+     nothing. It is 4px of decoration around a 10px aria-hidden pip, so it
+     goes rather than being reproduced by another means. */
   .sp-slice-winner-dot {
     width: 10px;
     height: 10px;
-    border-radius: 50%;
+    border-radius: var(--radius-full);
     background: var(--sp-brand-primary);
-    box-shadow: 0 0 0 4px var(--sp-brand-glow);
   }
   .sp-slice-winner-description {
     font-size: 18px;

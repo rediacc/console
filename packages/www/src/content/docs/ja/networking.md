@@ -12,7 +12,7 @@ sourceCommit: "20f014619af1ee41e75cd46a3c8e4abc5add0983"
 
 このページでは、隔離されたDockerデーモン内で実行されているサービスをインターネットからアクセス可能にする方法を説明します。リバースプロキシシステム、ルーティング用Dockerラベル、TLS証明書、DNS、TCP/UDPポートフォワーディングについて説明します。
 
-サービスがループバックIPを取得する仕組みと`.rediacc.json`スロットシステムについては、[サービス](/ja/docs/services#サービスネットワーキングrediaccjson)を参照してください。
+サービスがループバックIPを取得する仕組みと`.rediacc.json`スロットシステムについては、[サービス](/ja/docs/services#service-networking-rediaccjson)を参照してください。
 
 ## ネットワーク分離
 
@@ -126,7 +126,7 @@ labels:
 
 ### 前提条件
 
-1. マシンにインフラストラクチャが設定されていること（[マシンセットアップ, インフラストラクチャ設定](/ja/docs/setup#インフラストラクチャ設定)）：
+1. マシンにインフラストラクチャが設定されていること（[マシンセットアップ, インフラストラクチャ設定](/ja/docs/setup#infrastructure-configuration)）：
 
    ```bash
    # 共有資格情報（configごとに一度、すべてのマシンに適用）
@@ -142,7 +142,7 @@ labels:
    rdc machine infra push server-1
    ```
 
-2. ドメインのDNSレコードがサーバーのパブリックIPを指していること（下記の[DNS設定](#dns設定)を参照）。
+2. ドメインのDNSレコードがサーバーのパブリックIPを指していること（下記の[DNS設定](#dns-configuration)を参照）。
 
 ### ラベルの追加
 

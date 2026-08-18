@@ -87,6 +87,18 @@ Server = https://releases.rediacc.com/archlinux/stable/\$arch" | sudo tee -a /et
 sudo pacman -Sy rediacc-cli
 ```
 
+### npm (Node.js)
+
+```bash
+npm install -g https://releases.rediacc.com/npm/stable/rediacc-cli-latest.tgz
+```
+
+يتطلب Node.js الإصدار 22 أو أحدث. لتثبيت إصدار محدد:
+
+```bash
+npm install -g https://releases.rediacc.com/npm/stable/rediacc-cli-0.8.5.tgz
+```
+
 ## Docker
 
 قم بسحب وتشغيل واجهة سطر الأوامر كحاوية:

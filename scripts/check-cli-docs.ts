@@ -24,8 +24,8 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { cli } from '../packages/cli/src/cli.js';
 import { EXCLUDED_TOP_LEVEL } from '../packages/cli/scripts/lib/command-tree-lib.js';
+import { cli } from '../packages/cli/src/cli.js';
 import {
   findRegressions,
   loadBacklog,
@@ -222,10 +222,31 @@ for (const name of EXCLUDED_TOP_LEVEL) {
 const CLI_JSON_PATH = path.join(ROOT, 'packages/cli/src/i18n/locales/en/cli.json');
 // Real top-level command groups (camelCase keys map to kebab tree names).
 const COMMAND_GROUPS = new Set([
-  'agent', 'config', 'datastore', 'machine', 'mcp', 'repo', 'storage', 'vscode',
-  'term', 'protocol', 'subscription', 'update', 'doctor', 'ops', 'auth',
-  'organization', 'user', 'team', 'permission', 'region', 'bridge', 'repository',
-  'queue', 'ceph', 'audit',
+  'agent',
+  'config',
+  'datastore',
+  'machine',
+  'mcp',
+  'repo',
+  'storage',
+  'vscode',
+  'term',
+  'protocol',
+  'subscription',
+  'update',
+  'doctor',
+  'ops',
+  'auth',
+  'organization',
+  'user',
+  'team',
+  'permission',
+  'region',
+  'bridge',
+  'repository',
+  'queue',
+  'ceph',
+  'audit',
 ]);
 const kebab = (s: string): string => s.replace(/([a-z0-9])([A-Z])/g, '$1-$2').toLowerCase();
 
@@ -264,8 +285,31 @@ function validCommandPaths(): Set<string> {
 // embedded in it, so `rdc --help for architecture ...` puts "for" in command position. Without
 // this the gate cries wolf, and a gate nobody trusts is a gate nobody runs.
 const PROSE_WORDS = new Set([
-  'for', 'to', 'and', 'or', 'the', 'a', 'an', 'is', 'was', 'with', 'in', 'on', 'if', 'then',
-  'use', 'run', 'see', 'from', 'into', 'via', 'not', 'no', 'it', 'this', 'that',
+  'for',
+  'to',
+  'and',
+  'or',
+  'the',
+  'a',
+  'an',
+  'is',
+  'was',
+  'with',
+  'in',
+  'on',
+  'if',
+  'then',
+  'use',
+  'run',
+  'see',
+  'from',
+  'into',
+  'via',
+  'not',
+  'no',
+  'it',
+  'this',
+  'that',
 ]);
 
 /** A token that ends a sentence, or is an English function word, is prose. */
@@ -375,7 +419,9 @@ function checkI18nCommandExamples(out: Violation[]): void {
     const file = path.join(localesDir, locale, 'cli.json');
     if (!fs.existsSync(file)) continue;
 
-    for (const [key, value] of Object.entries(flattenStrings(JSON.parse(fs.readFileSync(file, 'utf-8'))))) {
+    for (const [key, value] of Object.entries(
+      flattenStrings(JSON.parse(fs.readFileSync(file, 'utf-8')))
+    )) {
       const source = english[key];
       if (source === undefined) continue;
 
@@ -405,7 +451,9 @@ function checkI18nCommandExamples(out: Violation[]): void {
       // blind spot come out as a confident accusation against a correct translation — which is
       // exactly what happened to Chinese. So the rule fires only on POSITIVE evidence: the locale
       // HAS an `rdc …` whose head resolves to nothing, while English names a real command.
-      const localeHasUnresolvedInvocation = invocationShapes(value).some((sh) => sh.startsWith('?'));
+      const localeHasUnresolvedInvocation = invocationShapes(value).some((sh) =>
+        sh.startsWith('?')
+      );
       const lostTheCommand =
         wantResolved.size > 0 && gotResolved.length === 0 && localeHasUnresolvedInvocation;
 
@@ -434,7 +482,11 @@ function checkI18nCommandExamples(out: Violation[]): void {
 }
 
 /** Flatten a locale document to dotted key -> string. */
-function flattenStrings(node: unknown, prefix = '', out: Record<string, string> = {}): Record<string, string> {
+function flattenStrings(
+  node: unknown,
+  prefix = '',
+  out: Record<string, string> = {}
+): Record<string, string> {
   if (typeof node === 'string') {
     out[prefix] = node;
     return out;
@@ -453,7 +505,9 @@ function checkI18nCommandKeys(out: Violation[]): void {
     commands?: Record<string, unknown>;
   };
   const isCommand = (n: unknown): n is Record<string, unknown> =>
-    typeof n === 'object' && n !== null && typeof (n as { description?: unknown }).description === 'string';
+    typeof n === 'object' &&
+    n !== null &&
+    typeof (n as { description?: unknown }).description === 'string';
   const walk = (node: Record<string, unknown>, parts: string[]): void => {
     for (const [key, value] of Object.entries(node)) {
       if (typeof value !== 'object' || value === null) continue;

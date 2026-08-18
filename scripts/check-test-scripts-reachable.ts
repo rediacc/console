@@ -150,8 +150,7 @@ function unreachable(root: string, pkgs: Pkg[]): Pkg[] {
   const ci = ciTestLines(root, CI_SURFACES);
   const omitted = omissionsSection(root);
   return pkgs.filter(
-    (p) =>
-      !ci.some((l) => l.includes(p.name) || l.includes(p.dir)) && !omitted.includes(p.dir)
+    (p) => !ci.some((l) => l.includes(p.name) || l.includes(p.dir)) && !omitted.includes(p.dir)
   );
 }
 

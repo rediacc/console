@@ -325,7 +325,7 @@ export function buildAttribution(
   if (workloadMs / wallMs < WORKLOAD_NOTE_THRESHOLD) return line;
   const note =
     `  ℹ Service startup is this repository's container boot (images, init,\n` +
-    `    healthchecks — defined by its Rediaccfile), so it varies per app.\n` +
+    `    healthchecks, all defined by its Rediaccfile), so it varies per app.\n` +
     `    The fork pipeline itself completed in ${formatStepDuration(platformMs)}.`;
   const tip = suggestDetach
     ? `\n  Tip: add --detach to return ~${formatStepDuration(workloadMs)} sooner and let services\n` +

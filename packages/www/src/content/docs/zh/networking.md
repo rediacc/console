@@ -12,7 +12,7 @@ sourceCommit: "20f014619af1ee41e75cd46a3c8e4abc5add0983"
 
 本页面介绍运行在隔离 Docker 守护进程中的服务如何从互联网访问。涵盖反向代理系统、用于路由的 Docker 标签、TLS 证书、DNS 以及 TCP/UDP 端口转发。
 
-有关服务如何获取回环 IP 和 `.rediacc.json` 槽位系统的信息，请参阅[服务](/zh/docs/services#服务网络rediaccjson)。
+有关服务如何获取回环 IP 和 `.rediacc.json` 槽位系统的信息，请参阅[服务](/zh/docs/services#service-networking-rediaccjson)。
 
 ## 网络隔离
 
@@ -126,7 +126,7 @@ labels:
 
 ### 前提条件
 
-1. 已在机器上配置基础设施（[机器设置, 基础设施配置](/zh/docs/setup#基础设施配置)）：
+1. 已在机器上配置基础设施（[机器设置, 基础设施配置](/zh/docs/setup#infrastructure-configuration)）：
 
    ```bash
    # 共享凭据（每个配置一次，适用于所有机器）
@@ -142,7 +142,7 @@ labels:
    rdc machine infra push server-1
    ```
 
-2. DNS 记录将您的域名指向服务器的公网 IP（参见下方的 [DNS 配置](#dns-配置)）。
+2. DNS 记录将您的域名指向服务器的公网 IP（参见下方的 [DNS 配置](#dns-configuration)）。
 
 ### 添加标签
 

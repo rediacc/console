@@ -25,7 +25,7 @@ import YouTubeEmbed from '../../../components/YouTubeEmbed.astro';
 
 <YouTubeEmbed videoId="o-Bst9rO9Fk" title="Ich habe Rediacc gegen den PocketOS Vorfall getestet" />
 
-> **Update. Mai 2026.** Seit der Veröffentlichung dieses Beitrags hat Rediacc erstklassige **Per-Repo-Secrets** (`rdc repo secret`) ausgeliefert. Die unten beschriebene "ehrliche Lücke". Externe SaaS-Zugangsdaten, die in Ihr Repository eingebacken sind. Hat jetzt eine eingebaute Antwort, die Secrets vollständig aus dem LUKS-Image heraushält, sodass Forks standardmäßig keinen davon erben. Springen Sie zum neuen Schlussabschnitt [Update: Die Lücke ist jetzt schließbar](#update-die-lücke-ist-jetzt-schließbar), um zu erfahren, was ausgeliefert wurde, was sich geändert hat und welches Restrisiko bleibt.
+> **Update. Mai 2026.** Seit der Veröffentlichung dieses Beitrags hat Rediacc erstklassige **Per-Repo-Secrets** (`rdc repo secret`) ausgeliefert. Die unten beschriebene "ehrliche Lücke". Externe SaaS-Zugangsdaten, die in Ihr Repository eingebacken sind. Hat jetzt eine eingebaute Antwort, die Secrets vollständig aus dem LUKS-Image heraushält, sodass Forks standardmäßig keinen davon erben. Springen Sie zum neuen Schlussabschnitt [Update: Die Lücke ist jetzt schließbar](#update-the-gap-is-now-closeable), um zu erfahren, was ausgeliefert wurde, was sich geändert hat und welches Restrisiko bleibt.
 
 Letztes Wochenende veröffentlichte Jer Crane ein 30-stündiges Postmortem. Ein Cursor-Agent, der Anthropics Claude Opus 4.6 ausführte, löschte seine Produktionsdatenbank auf Railway. Die Löschung war ein einziger GraphQL-Aufruf. Sie dauerte 9 Sekunden. Railways Volume-Backups verschwanden mit, weil Railway sie innerhalb desselben Volumes speichert.
 

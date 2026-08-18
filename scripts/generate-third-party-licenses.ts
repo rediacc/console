@@ -104,9 +104,7 @@ function componentBlock(c: Credit): string {
 function goLicensesSection(repoRoot: string): string {
   const renetDir = path.join(repoRoot, 'private/renet');
   if (!fs.existsSync(path.join(renetDir, 'go.mod'))) {
-    return placeholderSection(
-      'renet is not present in this checkout (submodule not initialized).'
-    );
+    return placeholderSection('renet is not present in this checkout (submodule not initialized).');
   }
   try {
     const out = execFileSync(

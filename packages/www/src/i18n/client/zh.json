@@ -1,0 +1,327 @@
+{
+  "captchaRequired": "请完成验证码验证。",
+  "common": {
+    "close": "关闭",
+    "logoAlt": "Rediacc - 基础设施自动化平台",
+    "buttons": {
+      "close": "关闭",
+      "learnMore": "了解更多",
+      "getStarted": "立即开始"
+    },
+    "search": {
+      "placeholder": "搜索文档、解决方案、功能...",
+      "searching": "正在寻找...",
+      "noResults": "没有找到结果",
+      "closeModal": "关闭搜索",
+      "suggestions": {
+        "title": "尝试：",
+        "differentKeywords": "不同的关键字或较短的术语",
+        "checkSpelling": "检查你的拼写",
+        "browseSolutions": "浏览我们的解决方案页面",
+        "contactSupport": "联系我们的支持团队"
+      },
+      "results": "搜索结果",
+      "unavailable": "搜索不可用",
+      "unavailableMessage": "无法加载搜索索引。请尝试刷新页面，如果问题仍然存在，请联系支持团队。"
+    },
+    "aria": {
+      "mainNavigation": "主导航",
+      "previousImage": "上一张图片",
+      "nextImage": "下一张图片",
+      "zoomIn": "放大",
+      "zoomOut": "缩小",
+      "resetZoom": "重置变焦",
+      "closeImageModal": "关闭图像模态",
+      "imageViewer": "图片查看器",
+      "opensInNewTab": "在新标签页中打开",
+      "tableOfContents": "目录",
+      "docsSections": "文档章节",
+      "documentationNavigation": "文档导航",
+      "breadcrumbNavigation": "面包屑导航",
+      "rediaccHome": "Rediacc 首页"
+    },
+    "skipNavigation": {
+      "skipToMainContent": "跳至主要内容",
+      "skipToNavigation": "跳至导航",
+      "skipToFooter": "跳至页脚"
+    }
+  },
+  "contactModal": {
+    "title": "联系我们",
+    "description": "有问题或想讨论项目？给我们发送消息。",
+    "fields": {
+      "name": "姓名",
+      "namePlaceholder": "您的姓名",
+      "email": "电子邮件",
+      "emailPlaceholder": "you@company.com",
+      "subject": "主题",
+      "message": "消息",
+      "messagePlaceholder": "告诉我们您的项目或问题..."
+    },
+    "subjects": {
+      "general": "一般咨询",
+      "technical": "技术支持",
+      "partnership": "合作伙伴",
+      "disasterRecovery": "灾难恢复",
+      "other": "其他"
+    },
+    "submit": "发送消息",
+    "sending": "发送中...",
+    "success": "消息已发送！我们将在48小时内回复您。",
+    "error": "出现错误，请重试。",
+    "close": "关闭"
+  },
+  "footer": {
+    "columns": {
+      "product": "产品",
+      "organization": "公司",
+      "legal": "法律"
+    },
+    "productLinks": {
+      "solutions": "解决方案",
+      "overview": "概述",
+      "pricing": "定价",
+      "professionalServices": "专业服务",
+      "partners": "合作伙伴计划",
+      "disasterRecovery": "灾难恢复"
+    },
+    "organizationLinks": {
+      "aboutUs": "关于我们",
+      "company": "公司",
+      "contact": "联系我们"
+    },
+    "legalLinks": {
+      "termsOfService": "服务条款",
+      "privacyPolicy": "隐私政策",
+      "cookiePolicy": "Cookie 政策",
+      "refundPolicy": "退款政策",
+      "telemetryPolicy": "遥测政策",
+      "legalInformation": "法律信息"
+    },
+    "legalDisclosure": {
+      "summary": "{{companyName}} | 注册号 {{registryCode}} | 增值税号 {{vatNumber}} |",
+      "fullLegalInformation": "完整法律信息"
+    }
+  },
+  "navigation": {
+    "moreOptions": "更多选项",
+    "home": "首页",
+    "blog": "博客",
+    "docs": "文档",
+    "contact": "联系我们",
+    "downloads": "下载",
+    "install": "安装",
+    "pricing": "定价",
+    "toggleMenu": "切换菜单",
+    "search": "搜索",
+    "selectLanguage": "选择语言",
+    "languageSelectionMenu": "语言选择菜单",
+    "login": "登录",
+    "footerNavigation": "站点导航",
+    "roiCalculator": "ROI 计算器",
+    "solutions": "解决方案",
+    "disasterRecovery": "灾难恢复",
+    "viewAllSolutions": "查看所有解决方案",
+    "builtForYourRole": "为您的角色打造",
+    "builtForYou": "为您打造",
+    "forDevops": "面向DevOps工程师",
+    "forCtos": "面向CTO",
+    "forCeos": "面向CEO和创始人",
+    "partners": "合作伙伴",
+    "personas": {
+      "devops": {
+        "tagline": "更快交付。即时恢复。安心入眠。",
+        "cta": "免费开始"
+      },
+      "cto": {
+        "tagline": "TCO降低60%。在自有硬件上扩展。",
+        "cta": "预约演示"
+      },
+      "ceo": {
+        "tagline": "可预测的成本。零供应商锁定。",
+        "cta": "查看定价"
+      },
+      "ai-agent": {
+        "tagline": "CLI优先。JSON输出。原生Agent支持。",
+        "cta": "查看文档"
+      }
+    },
+    "forAiAgents": "面向AI Agent",
+    "account": "账户"
+  },
+  "newsletter": {
+    "title": "通讯",
+    "description": "每月一封邮件。产品资讯和自托管秘诀。",
+    "pageTitle": "掌握最新资讯",
+    "pageDescription": "每月一封邮件。新功能、自托管秘诀，还有我们踩过的坑。",
+    "placeholder": "邮箱地址",
+    "subscribe": "订阅",
+    "successMessage": "请检查邮箱，确认订阅。",
+    "errorGeneric": "出了点问题，请重试。",
+    "confirmed": "订阅成功！欢迎加入。",
+    "unsubscribed": "已取消订阅，期待你的回归。",
+    "blogCta": {
+      "title": "喜欢这篇文章吗？",
+      "description": "每月发送自托管指南和产品资讯。想来一份吗？"
+    },
+    "roiGate": {
+      "title": "查看你的ROI报告",
+      "description": "填写邮箱，查看完整的成本拆解和节省分析。",
+      "unlock": "查看报告"
+    },
+    "returnPopup": {
+      "title": "想要一次手把手的演示吗？",
+      "description": "订阅产品更新，预约和我们一起部署。",
+      "cta": "订阅并预约",
+      "close": "关闭",
+      "note": "我们用你的邮箱发送产品更新，随时可以取消订阅。"
+    },
+    "privacyNote": "放心，你可以随时取消订阅。"
+  },
+  "pages": {
+    "solutionPages": {
+      "leadMagnetButton": {
+        "title": "获取技术简报",
+        "description": "这份简明 PDF 专为 CISO、CTO 及高级工程师撰写。我们将链接发送至您的邮箱，方便日后查阅。",
+        "buttonLabel": "下载简报",
+        "dismissLabel": "关闭"
+      },
+      "leadMagnetModal": {
+        "title": "获取技术简报",
+        "description": "请输入您的工作邮箱，我们将发送 PDF 链接并为您保留一份副本。",
+        "emailLabel": "工作邮箱",
+        "emailPlaceholder": "you@company.com",
+        "submitLabel": "发送 PDF",
+        "sendingLabel": "发送中……",
+        "successTitle": "PDF 正在发送",
+        "successBody": "已在新标签页中打开，并通过邮件发送了链接。即将自动关闭。",
+        "errorGeneric": "出现错误，请重试或联系 support@rediacc.com。",
+        "captchaRequired": "请完成验证码验证。",
+        "disclaimer": "仅一封邮件，不加入营销列表，一键退订。",
+        "closeLabel": "关闭"
+      },
+      "environmentCloning": {
+        "hero": {
+          "title": "60 秒克隆生产环境"
+        }
+      },
+      "infrastructureCosts": {
+        "hero": {
+          "title": "停止为闲置环境付费"
+        }
+      },
+      "productionParity": {
+        "hero": {
+          "title": "开发环境与生产环境完全一致。"
+        }
+      },
+      "integrations": {
+        "hero": {
+          "title": "无缝融入您的现有工作流"
+        }
+      },
+      "immutableBackups": {
+        "hero": {
+          "title": "勒索软件无法触及的备份"
+        }
+      },
+      "migrationSafety": {
+        "hero": {
+          "title": "无风险迁移数据"
+        }
+      },
+      "instantRecovery": {
+        "hero": {
+          "title": "几分钟内完成全环境恢复"
+        }
+      },
+      "safeOsTesting": {
+        "hero": {
+          "title": "零风险测试 OS 更新"
+        }
+      },
+      "retentionCompliance": {
+        "hero": {
+          "title": "按法律要求保留数据"
+        }
+      },
+      "cloudOutageProtection": {
+        "hero": {
+          "title": "AWS 宕机时，你不会"
+        }
+      },
+      "failoverTesting": {
+        "hero": {
+          "title": "在需要之前测试你的故障转移"
+        }
+      },
+      "backupVerification": {
+        "hero": {
+          "title": "每个备份都自动验证。"
+        }
+      },
+      "vulnerabilityManagement": {
+        "hero": {
+          "title": "在攻击者到来之前修复漏洞"
+        }
+      },
+      "aiPentesting": {
+        "hero": {
+          "title": "克隆生产环境，让 AI 攻击它。"
+        }
+      },
+      "encryption": {
+        "hero": {
+          "title": "你的密钥，你的加密，没有例外。"
+        }
+      },
+      "continuousSecurityTesting": {
+        "hero": {
+          "title": "持续测试安全性，而非每年一次。"
+        }
+      },
+      "auditTrail": {
+        "hero": {
+          "title": "每项操作都有记录，无处隐藏。"
+        }
+      },
+      "dataSovereignty": {
+        "hero": {
+          "title": "以架构实现主权，而非依赖证书。"
+        }
+      },
+      "rapidRecovery": {
+        "hero": {
+          "title": "几分钟内恢复，而非数天。"
+        }
+      },
+      "kubernetesClusterMobility": {
+        "hero": {
+          "title": "克隆或迁移正在运行的 Kubernetes 集群"
+        }
+      },
+      "vendorLockIn": {
+        "hero": {
+          "title": "你的基础设施，你的选择，始终如此。"
+        }
+      }
+    }
+  },
+  "regionPicker": {
+    "title": "选择您的账户区域",
+    "subtitle": "您的账户、账单和配置保留在您选择的区域中，",
+    "reassurance": "您的服务器数据和备份保留在您自己的基础设施中。",
+    "footer": "选择离您最近的区域，或您的组织所要求的区域。",
+    "footerNote": "注册后无法更改。"
+  },
+  "solutions": {
+    "categories": {
+      "ransomware": "勒索危机应对",
+      "multi-cloud": "多云架构",
+      "backups": "可靠备份",
+      "encryption": "加密控制",
+      "dev-env": "开发环境",
+      "defense": "主动防御"
+    }
+  }
+}

@@ -19,9 +19,9 @@
   font-size: var(--font-size-base);
   font-weight: var(--font-weight-semibold);
   white-space: nowrap;
-  transition: color 0.2s ease;
+  transition: color var(--transition-duration-base) var(--ease-standard);
   padding: 6px 12px;
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
 }
 
 .persona-menu-trigger:hover {
@@ -35,7 +35,7 @@
 }
 
 .persona-menu-chevron {
-  transition: transform var(--transition-duration-base) ease;
+  transition: transform var(--transition-duration-base) var(--ease-standard);
   flex-shrink: 0;
 }
 
@@ -53,10 +53,10 @@
   background-color: var(--color-bg-alt);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-lg);
+  box-shadow: var(--shadow);
   z-index: var(--z-popover);
   padding: var(--space-6);
-  animation: personaMenuFadeIn var(--transition-duration-fast) ease forwards;
+  animation: personaMenuFadeIn var(--transition-duration-fast) var(--ease-standard) forwards;
 }
 
 @keyframes personaMenuFadeIn {
@@ -88,15 +88,15 @@
   text-decoration: none;
   color: var(--color-text);
   transition:
-    border-color var(--transition-duration-fast) ease,
-    box-shadow var(--transition-duration-fast) ease,
-    transform var(--transition-duration-fast) ease;
+    border-color var(--transition-duration-fast) var(--ease-standard),
+    box-shadow var(--transition-duration-fast) var(--ease-standard),
+    transform var(--transition-duration-fast) var(--ease-standard);
 }
 
 .persona-card:hover {
   border-color: var(--color-brand-primary);
-  box-shadow: 0 4px 16px rgba(74, 124, 63, 0.12);
-  transform: translateY(-2px);
+  box-shadow: var(--shadow);
+  transform: var(--motion-lift);
 }
 
 .persona-card:focus-visible {
@@ -148,26 +148,9 @@
 }
 
 .persona-card:hover .persona-card-cta svg {
-  transform: translateX(2px);
-  transition: transform var(--transition-duration-fast) ease;
+  transform: var(--motion-nudge);
+  transition: transform var(--transition-duration-fast) var(--ease-standard);
 }
 
-/* Reduced motion */
-@media (prefers-reduced-motion: reduce) {
-  .persona-menu-panel {
-    animation: none;
-  }
-
-  .persona-menu-chevron {
-    transition: none;
-  }
-
-  .persona-card {
-    transition: none;
-  }
-
-  .persona-card:hover .persona-card-cta svg {
-    transform: none;
-    transition: none;
-  }
-}
+/* Reduced motion is handled once, in public/styles/main.css. A local copy of
+   that block only ever covers the selectors that existed the day it was written. */
