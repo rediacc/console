@@ -1,7 +1,7 @@
 ---
 title: "Applicazione CLI"
 description: "Guida completa all'uso dell'interfaccia a riga di comando Rediacc per la gestione della piattaforma"
-category: "Reference"
+category: "Riferimento"
 order: 2
 language: it
 generated: true

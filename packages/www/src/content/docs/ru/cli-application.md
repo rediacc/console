@@ -1,7 +1,7 @@
 ---
 title: "CLI-приложение"
 description: "Полное руководство по использованию интерфейса командной строки Rediacc для управления платформой"
-category: "Reference"
+category: "Справочник"
 order: 2
 language: ru
 generated: true

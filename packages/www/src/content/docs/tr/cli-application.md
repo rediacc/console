@@ -1,7 +1,7 @@
 ---
 title: "CLI Uygulaması"
 description: "Platform yönetimi için Rediacc komut satırı arayüzünü kullanma rehberi"
-category: "Reference"
+category: "Başvuru"
 order: 2
 language: tr
 generated: true
