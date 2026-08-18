@@ -288,7 +288,7 @@
           "description": "Transmitir novas entradas de auditoria à medida que são escritas (Ctrl+C para parar)"
         },
         "verify": {
-          "chainBroken": "Cadeia interrompida na linha {{line}} -- o ficheiro foi adulterado ou corrompido.",
+          "chainBroken": "Cadeia interrompida na linha {{line}}: o ficheiro foi adulterado ou corrompido.",
           "chainOk": "Integridade da cadeia verificada em {{count}} entradas.",
           "description": "Verificar a integridade da cadeia de hashes SHA-256 em todas as entradas de auditoria"
         }
@@ -370,14 +370,14 @@
         },
         "set": {
           "description": "Escrever um valor de configuração num Ponteiro JSON. Os caminhos sensíveis requerem --current (barreira de conhecimento).",
-          "optionCurrent": "Valor actual em texto simples -- obrigatório para mutações em caminhos sensíveis (prova de barreira de conhecimento)",
+          "optionCurrent": "Valor actual em texto simples, obrigatório para mutações em caminhos sensíveis (prova de barreira de conhecimento)",
           "optionNew": "Novo valor (interpretado como JSON se parecer JSON: {, [, \", true/false/null/número)",
           "optionPointer": "Ponteiro JSON para o campo (por ex., /credentials/cfDnsApiToken)",
           "success": "{{pointer}} definido"
         },
         "unset": {
           "description": "Eliminar um valor de configuração num Ponteiro JSON. Os caminhos sensíveis requerem --current.",
-          "optionCurrent": "Valor actual em texto simples -- obrigatório para eliminações em caminhos sensíveis",
+          "optionCurrent": "Valor actual em texto simples, obrigatório para eliminações em caminhos sensíveis",
           "optionPointer": "Ponteiro JSON para o campo (por ex., /credentials/cfDnsApiToken)",
           "success": "{{pointer}} removido"
         }
@@ -433,9 +433,9 @@
         "foundOrphanRepos": "{{count}} entrada(s) de repositório não estão colocadas em nenhuma máquina:",
         "graceDaysOption": "Substituir a janela de graça de arquivos (em dias) para esta invocação. Recorre a defaults.pruneGraceDays na configuração, depois a 7 se nenhum estiver definido.",
         "keptArchivesInGrace": "Repositórios arquivados ainda em período de graça preservados (recuperáveis via 'rdc repo admin archive restore'):",
-        "nothingToPrune": "Nada a limpar -- a configuração já está limpa.",
+        "nothingToPrune": "Nada a limpar: a configuração já está limpa.",
         "orphanReposHint": "Execute 'rdc config reconcile' para derivar a colocação a partir das suas máquinas. As entradas que continuarem listadas depois disso estão genuinamente sem colocação; remova-as com 'rdc config prune --orphan-repos'.",
-        "orphanReposOption": "Remove entradas de repositório que não estão colocadas em nenhuma máquina. Cada entrada contém a credencial e a chave SSH desse repositório, pelo que isto é irrecuperável -- execute primeiro 'rdc config reconcile' para que a colocação reflita as máquinas.",
+        "orphanReposOption": "Remove entradas de repositório que não estão colocadas em nenhuma máquina. Cada entrada contém a credencial e a chave SSH desse repositório, pelo que isto é irrecuperável. Execute primeiro 'rdc config reconcile' para que a colocação reflita as máquinas.",
         "purgeArchivedOption": "Elimina TODOS os repositórios arquivados independentemente da idade, não apenas os que passaram o período de graça. Equivalente a executar 'rdc repo admin archive purge' para cada repositório arquivado. Use apenas quando tiver a certeza de que não precisa de nenhuma das credenciais guardadas para restauro.",
         "purgedArchives": "{{count}} repositório(s) arquivado(s) expirado(s) {{verb}} removido(s):",
         "refsOnlyOption": "Restringir a referências cruzadas pendentes (machine→strategy, excludes/includes de strategy→repo). Ignora a cache de certificados e os arquivos. Mutuamente exclusivo com --certs-only e --archives-only.",
@@ -930,9 +930,9 @@
         "dryRunOption": "Mostrar o que seria removido sem efetuar alterações",
         "forceDeleteMountedOption": "Ignorar a verificação prévia de segurança de montagem e eliminar repositórios mesmo que estejam montados ou com contentores Docker em execução. Distinto de --force (que apenas ignora o período de carência para repositórios arquivados). Aplica-se a --orphaned-repos e --prune-unknown.",
         "noReposFound": "Nenhum repositório encontrado na máquina",
-        "noUnknownRepos": "Nenhum repositório desconhecido encontrado -- todos os repositórios da máquina estão na configuração local ou têm espelho renet",
+        "noUnknownRepos": "Nenhum repositório desconhecido encontrado. Todos os repositórios da máquina estão na configuração local ou têm espelho renet",
         "orphanedReposCompleted": "{{count}} repositório(s) órfão(s) removido(s)",
-        "orphanedReposOption": "Eliminar todos os repositórios na máquina que não existam na configuração local do CLI. Abrangente -- também remove forks criados por outras ferramentas sem entrada na configuração local, mesmo quando o espelho renet os identifica corretamente como forks. Use --prune-unknown para o comportamento mais restrito que respeita o espelho.",
+        "orphanedReposOption": "Eliminar todos os repositórios na máquina que não existam na configuração local do CLI. Abrangente: também remove forks criados por outras ferramentas sem entrada na configuração local, mesmo quando o espelho renet os identifica corretamente como forks. Use --prune-unknown para o comportamento mais restrito que respeita o espelho.",
         "orphanedReposStarting": "A procurar repositórios órfãos em {{machine}}...",
         "previewEmpty": "Nenhum recurso órfão do datastore encontrado",
         "pruneUnknownOption": "Eliminar apenas repositórios que o espelho .interim/state do renet não consegue classificar (não na configuração local E sem espelho marcado como fork). Estritamente mais restrito do que --orphaned-repos: forks sem configuração são preservados quando o espelho os identifica. Órfãos legados anteriores ao espelho e grands desatualizados cuja entrada de configuração foi eliminada entram neste grupo.",
@@ -1014,10 +1014,10 @@
         "allPassed": "Todos os pré-requisitos satisfeitos",
         "description": "Verificar pré-requisitos de virtualização",
         "hasMissing": "{{count}} pré-requisito(s) em falta",
-        "localFallback": "(a usar verificações locais -- renet não disponível)",
+        "localFallback": "(a usar verificações locais, renet não disponível)",
         "title": "Verificação de pré-requisitos OPS"
       },
-      "description": "Provisionamento e gestão de VMs locais com KVM/QEMU/Hyper-V (plataforma detetada automaticamente). Não se destina a máquinas remotas -- use `machine` para esse efeito. Subcomandos principais: up (iniciar VMs), down (parar), status (listar VMs em execução), ssh (ligar a VM), setup (instalar pré-requisitos), check (verificar disponibilidade do anfitrião).",
+      "description": "Provisionamento e gestão de VMs locais com KVM/QEMU/Hyper-V (plataforma detetada automaticamente). Não se destina a máquinas remotas. Use `machine` para esse efeito. Subcomandos principais: up (iniciar VMs), down (parar), status (listar VMs em execução), ssh (ligar a VM), setup (instalar pré-requisitos), check (verificar disponibilidade do anfitrião).",
       "descriptionShort": "Operações locais de VM (provisionar, gerir, destruir)",
       "down": {
         "completed": "Cluster de VMs destruído com sucesso",
@@ -1207,7 +1207,7 @@
       "commit": {
         "authorOption": "Autor do commit",
         "completed": "Commit realizado {{commit}}: {{message}}",
-        "description": "Congela o estado actual de um fork de trabalho montado num novo commit imutável (semelhante ao git). O commit regista a sua mensagem, autor, data/hora e pai dentro do volume (para que viaje no push) e é marcado como só de leitura -- recusa-se a montar. O fork de trabalho continua inalterado, tal como o git deixa a árvore de trabalho intacta. Faça checkout de um commit com 'rdc repo checkout' para obter uma cópia gravável.",
+        "description": "Congela o estado actual de um fork de trabalho montado num novo commit imutável (semelhante ao git). O commit regista a sua mensagem, autor, data/hora e pai dentro do volume (para que viaje no push) e é marcado como só de leitura, pelo que se recusa a montar. O fork de trabalho continua inalterado, tal como o git deixa a árvore de trabalho intacta. Faça checkout de um commit com 'rdc repo checkout' para obter uma cópia gravável.",
         "descriptionShort": "Congela um fork de trabalho em um novo commit imutável",
         "failed": "Falha no commit",
         "messageOption": "Mensagem do commit"
@@ -1280,7 +1280,7 @@
         "allStarting": "A parar todos os repositórios em \"{{machine}}\"...",
         "checkpointOption": "Criar ponto de verificação CRIU antes de parar (guardar o estado de memória do processo para restauro posterior via 'repo up')",
         "completed": "Serviços parados",
-        "description": "Para os contentores Docker do repositório (executa o down do Rediaccfile via renet compose). A máquina é derivada da localização da ref. NÃO desmonta o volume encriptado -- o repositório permanece montado e pode ser reiniciado com 'repo up'. Use --unmount para também fechar o contentor LUKS após parar (integra o retirado 'repo unmount'). Use --checkpoint para guardar o estado do processo CRIU antes de parar (o próximo 'repo up' restaura automaticamente). Use --all --machine <m> para parar todos os repositórios de uma máquina.",
+        "description": "Para os contentores Docker do repositório (executa o down do Rediaccfile via renet compose). A máquina é derivada da localização da ref. NÃO desmonta o volume encriptado: o repositório permanece montado e pode ser reiniciado com 'repo up'. Use --unmount para também fechar o contentor LUKS após parar (integra o retirado 'repo unmount'). Use --checkpoint para guardar o estado do processo CRIU antes de parar (o próximo 'repo up' restaura automaticamente). Use --all --machine <m> para parar todos os repositórios de uma máquina.",
         "descriptionShort": "Parar os contentores Docker do repositório",
         "examples": {
           "basic": "Para os containers de um repositório.",
@@ -1305,7 +1305,7 @@
       },
       "expand": {
         "completed": "Expansão concluída",
-        "description": "Expandir um repositório montado online (sem tempo de inactividade, apenas crescimento). Aumenta o contentor LUKS e o sistema de ficheiros enquanto os contentores continuam em execução. Não é possível reduzir -- use 'repo resize' para isso (requer desmontagem).",
+        "description": "Expandir um repositório montado online (sem tempo de inactividade, apenas crescimento). Aumenta o contentor LUKS e o sistema de ficheiros enquanto os contentores continuam em execução. Não é possível reduzir: use 'repo resize' para isso (requer desmontagem).",
         "descriptionShort": "Expandir um repositório montado online (sem tempo de inactividade, apenas crescimento)",
         "failed": "Expansão falhou",
         "sizeOption": "Novo tamanho do repositório (por ex., 10G, 100G, 1T)",
@@ -1496,7 +1496,7 @@
         "deployFailed": "Falha ao implementar \"{{repo}}\" após envio",
         "deployed": "Repositório \"{{repo}}\" implementado em {{machine}}",
         "deploying": "A implementar \"{{repo}}\" em {{machine}}...",
-        "description": "Enviar repositório para outra máquina. Os destinos de armazenamento foram descontinuados; use `rdc backup snapshot` para uma cópia de segurança pontual. Para transferência entre máquinas, a imagem encriptada do repositório é copiada com o MESMO GUID -- trata-se de uma cópia de segurança ou migração, não de um fork. Para criar um fork independente, use 'repo fork' primeiro e depois envie. Uma cópia enviada fica como um ARTEFACTO de cópia de segurança: arranque-o no destino com 'backup restore <ref> --as <name> -m <target> --up'",
+        "description": "Enviar repositório para outra máquina. Os destinos de armazenamento foram descontinuados; use `rdc backup snapshot` para uma cópia de segurança pontual. Para transferência entre máquinas, a imagem encriptada do repositório é copiada com o MESMO GUID, pelo que se trata de uma cópia de segurança ou migração, não de um fork. Para criar um fork independente, use 'repo fork' primeiro e depois envie. Uma cópia enviada fica como um ARTEFACTO de cópia de segurança: arranque-o no destino com 'backup restore <ref> --as <name> -m <target> --up'",
         "descriptionShort": "Enviar repositório para outra máquina",
         "destRequired": "Especifique --to <machine> (nome de máquina da configuração)",
         "examples": {
@@ -1739,7 +1739,7 @@
         "forceDeleteMountedOption": "Ignorar a verificação de segurança de montagem e eliminar cópias de segurança na cloud mesmo que o GUID de origem esteja montado ou com contentor em execução na máquina executora. Distinto de --force (que apenas ignora o período de carência para repositórios arquivados).",
         "found": "Encontradas {{count}} cópias de segurança no armazenamento",
         "listing": "A listar cópias de segurança em \"{{storage}}\"...",
-        "machineOption": "Máquina executora -- executa as chamadas rclone list/delete contra o armazenamento. Obrigatório porque não se espera que os clientes tenham o rclone instalado localmente; as credenciais de armazenamento continuam a vir da sua configuração local.",
+        "machineOption": "Máquina executora que executa as chamadas rclone list/delete contra o armazenamento. Obrigatório porque não se espera que os clientes tenham o rclone instalado localmente; as credenciais de armazenamento continuam a vir da sua configuração local.",
         "noBackups": "Nenhuma cópia de segurança encontrada no armazenamento"
       },
       "remove": {
@@ -2012,7 +2012,7 @@
       "meanings": {
         "authRequired": "Precisa de iniciar sessão primeiro",
         "machineRequired": "Especifique uma máquina com `--machine` ou defina um valor predefinido na configuração",
-        "noActiveConfig": "Nenhuma configuração está ativa -- crie uma com `rdc config init`",
+        "noActiveConfig": "Nenhuma configuração está ativa. Crie uma com `rdc config init`",
         "permissionDenied": "A sua conta não tem as permissões necessárias",
         "regionRequired": "Especifique uma região com `--region` ou defina um valor predefinido na configuração",
         "teamRequired": "Especifique uma equipa com `--team` ou defina um valor predefinido na configuração"
@@ -2042,7 +2042,7 @@
     },
     "overview": {
       "heading": "Visão Geral",
-      "text": "A **CLI Rediacc** (`rdc`) é uma interface de linha de comandos para gerir infraestrutura auto-hospedada -- máquinas, repositórios, armazenamento, backups e muito mais."
+      "text": "A **CLI Rediacc** (`rdc`) é uma interface de linha de comandos para gerir infraestrutura auto-hospedada: máquinas, repositórios, armazenamento, backups e muito mais."
     },
     "pageTitle": "Referência da CLI Rediacc",
     "sectionTitles": {
@@ -2075,7 +2075,7 @@
       },
       "machine": {
         "health": {
-          "afterDescription": "O comando health produz métricas do sistema, estado dos contentores, estabilidade dos serviços e informações de armazenamento -- útil para verificações em pipelines de CI/CD."
+          "afterDescription": "O comando health produz métricas do sistema, estado dos contentores, estabilidade dos serviços e informações de armazenamento, úteis para verificações em pipelines de CI/CD."
         }
       }
     },
@@ -2095,15 +2095,15 @@
       "configEdit": "O editor interativo está bloqueado em ambientes de agente.\n\nAlternativas:\n  • rdc config edit --dump > config.jsonc    (inspeção redatada segura)\n  • rdc config field set --pointer <pointer> --current <old> --new <new>\n  • rdc config edit --apply config.jsonc\n\nPara substituir, defina REDIACC_ALLOW_CONFIG_EDIT=<scope-glob> na shell pai\nANTES de iniciar o agente (tem de constar na ancestralidade do processo do agente).",
       "configEditAncestry": "O editor interativo está bloqueado em ambientes de agente (REDIACC_ALLOW_CONFIG_EDIT foi definido mas a verificação de ancestralidade falhou: a substituição tem de ser definida pela sua shell, não por um agente).\n\nAlternativas:\n  • rdc config edit --dump > config.jsonc    (inspeção redatada segura)\n  • rdc config field set --pointer <pointer> --current <old> --new <new>\n  • rdc config edit --apply config.jsonc\n\nDefina REDIACC_ALLOW_CONFIG_EDIT=<scope-glob> na shell pai ANTES de iniciar o agente.",
       "createGuard": "Não é possível criar um novo repositório grand \"{{name}}\" no modo de agente.\n\nOs agentes operam no modo apenas de forks. Os repositórios grand são ambientes de produção aos quais os agentes não podem aceder após a criação.\n\nEm vez disso, faça um fork de um repositório existente:\n  rdc repo fork <parent-ref> --tag {{name}}\n\nUtilizador: para permitir a criação de repositórios, defina REDIACC_ALLOW_GRAND_REPO=* (ou um nome de repositório específico) no terminal antes de iniciar a sessão do agente.",
-      "createGuardOverride": "Não é possível criar um novo repositório grand \"{{name}}\". Substituições iniciadas por agentes não são aceites.\n\nNão tente definir REDIACC_ALLOW_GRAND_REPO -- apenas o utilizador pode autorizar isso antes de o agente ser iniciado.\n\nEm vez disso, faça um fork de um repositório existente:\n  rdc repo fork <parent-ref> --tag {{name}}",
+      "createGuardOverride": "Não é possível criar um novo repositório grand \"{{name}}\". Substituições iniciadas por agentes não são aceites.\n\nNão tente definir REDIACC_ALLOW_GRAND_REPO. Apenas o utilizador pode autorizar isso antes de o agente ser iniciado.\n\nEm vez disso, faça um fork de um repositório existente:\n  rdc repo fork <parent-ref> --tag {{name}}",
       "createGuardOverrideNonLinux": "Não é possível criar um novo repositório grand \"{{name}}\". REDIACC_ALLOW_GRAND_REPO está definido, mas a sua origem não pôde ser verificada em {{platform}} (o auxiliar de verificação de herança está indisponível ou falhou).\n\nEm alternativa, faça um fork de um repositório existente:\n  rdc repo fork <parent-ref> --tag {{name}}\n\nUtilizador: a verificação funciona em Linux, macOS e Windows com uma instalação rdc intacta. Reinstale o rdc se isto persistir e defina a variável no terminal antes de iniciar o agente.",
       "fieldReveal": "--reveal para o campo sensível {{pointer}} está bloqueado em ambientes de agente. Os agentes devem usar --digest. Um utilizador real num terminal interativo pode usar --reveal.",
       "forkBlocked": "O comando \"{{command}}\" não está disponível em repositórios fork.\n\nOs repositórios fork são ambientes de sandbox temporários. Esta operação aplica-se apenas a repositórios grand (produção). Peça ao utilizador que execute este comando diretamente.",
       "grandGuard": "\"{{name}}\" é um repositório grand (produção). Os agentes não podem modificar repositórios grand diretamente.\n\nOs repositórios grand contêm dados de produção. Use um fork em vez disso: os forks são cópias de sandbox isoladas e seguras.\n\nFluxo de trabalho:\n  1. rdc repo fork {{name}} --tag <tag-name>\n  2. Opere no fork (ex.: rdc repo up {{name}}:<tag-name>)\n  3. Quando terminar, o utilizador pode promover o fork com rdc repo promote {{name}}:<tag-name>\n\nUtilizador: para permitir acesso direto, defina REDIACC_ALLOW_GRAND_REPO={{name}} (ou * para todos os repositórios) no terminal antes de iniciar a sessão do agente.",
-      "grandGuardOverride": "\"{{name}}\" é um repositório grand (produção). Substituições iniciadas por agentes não são aceites.\n\nNão tente definir REDIACC_ALLOW_GRAND_REPO -- apenas o utilizador pode autorizar isso antes de o agente ser iniciado.\n\nUse um fork em vez disso: os forks são cópias de sandbox isoladas e seguras.\n  1. rdc repo fork {{name}} --tag <tag-name>\n  2. Opere no fork\n  3. Quando terminar, o utilizador pode promover o fork com rdc repo promote {{name}}:<tag-name>",
+      "grandGuardOverride": "\"{{name}}\" é um repositório grand (produção). Substituições iniciadas por agentes não são aceites.\n\nNão tente definir REDIACC_ALLOW_GRAND_REPO. Apenas o utilizador pode autorizar isso antes de o agente ser iniciado.\n\nUse um fork em vez disso: os forks são cópias de sandbox isoladas e seguras.\n  1. rdc repo fork {{name}} --tag <tag-name>\n  2. Opere no fork\n  3. Quando terminar, o utilizador pode promover o fork com rdc repo promote {{name}}:<tag-name>",
       "grandGuardOverrideNonLinux": "\"{{name}}\" é um repositório grand (produção). REDIACC_ALLOW_GRAND_REPO está definido, mas a sua origem não pôde ser verificada em {{platform}} (o auxiliar de verificação de herança está indisponível ou falhou), portanto a substituição não é aceite.\n\nUse o fluxo fork-first:\n  1. rdc repo fork {{name}} --tag <tag-name>\n  2. Opere no fork\n  3. Quando terminar, o utilizador pode promover o fork com rdc repo promote {{name}}:<tag-name>\n\nUtilizador: a verificação funciona em Linux, macOS e Windows com uma instalação rdc intacta. Reinstale o rdc se isto persistir e defina a variável no terminal antes de iniciar o agente.",
       "machineGuard": "O acesso direto à máquina \"{{machine}}\" não é permitido no modo de agente.\n\nOs agentes têm de se ligar através de um contexto de repositório para acesso em sandbox. Faça primeiro um fork de um repositório e ligue-se ao fork.\n\nFluxo de trabalho:\n  1. rdc repo fork <repo> --tag <tag-name>\n  2. rdc term connect <repo>:<tag-name> -c \"<command>\"\n\nUtilizador: o acesso ao nível da máquina requer o carácter universal: defina REDIACC_ALLOW_GRAND_REPO=* no terminal antes de iniciar a sessão do agente. Um nome de repositório específico não desbloqueia o acesso direto à máquina.",
-      "machineGuardOverride": "O acesso direto à máquina \"{{machine}}\" não é permitido. Substituições iniciadas por agentes não são aceites.\n\nNão tente definir REDIACC_ALLOW_GRAND_REPO -- apenas o utilizador pode autorizar isso antes de o agente ser iniciado.\n\nFaça primeiro um fork de um repositório e ligue-se ao fork:\n  1. rdc repo fork <repo> --tag <tag-name>\n  2. rdc term connect <repo>:<tag-name> -c \"<command>\"",
+      "machineGuardOverride": "O acesso direto à máquina \"{{machine}}\" não é permitido. Substituições iniciadas por agentes não são aceites.\n\nNão tente definir REDIACC_ALLOW_GRAND_REPO. Apenas o utilizador pode autorizar isso antes de o agente ser iniciado.\n\nFaça primeiro um fork de um repositório e ligue-se ao fork:\n  1. rdc repo fork <repo> --tag <tag-name>\n  2. rdc term connect <repo>:<tag-name> -c \"<command>\"",
       "machineGuardOverrideNonLinux": "O acesso direto à máquina \"{{machine}}\" está com substituição definida, mas a sua origem não pôde ser verificada em {{platform}} (o auxiliar de verificação de herança está indisponível ou falhou), portanto a substituição não é aceite.\n\nFaça primeiro um fork de um repositório e ligue-se ao fork:\n  1. rdc repo fork <repo> --tag <tag-name>\n  2. rdc term connect <repo>:<tag-name> -c \"<command>\"\n\nUtilizador: a verificação funciona em Linux, macOS e Windows com uma instalação rdc intacta. Reinstale o rdc se isto persistir e defina a variável no terminal antes de iniciar o agente.",
       "mcpGrandGuard": "\"{{name}}\" é um repositório grand (produção). Os agentes não podem modificar repositórios grand diretamente.\n\nUse repo_fork para criar uma cópia de sandbox isolada e segura, depois opere no fork.\nSe precisar de acesso direto, peça ao utilizador que exporte REDIACC_ALLOW_GRAND_REPO antes de iniciar o agente.",
       "mcpGrandGuardOverride": "\"{{name}}\" é um repositório grand (produção). Substituições iniciadas por agentes não são aceites.\n\nNão tente definir REDIACC_ALLOW_GRAND_REPO.\n\nUse repo_fork para criar uma cópia de sandbox isolada e segura, depois opere no fork.",
@@ -2405,7 +2405,7 @@
   "services": {
     "prune": {
       "noOrphaned": "Nenhuma entrada órfã encontrada",
-      "refusingPrune": "Recusa de limpeza -- estas configurações podem referenciar GUIDs protegidos. Use --force para forçar.",
+      "refusingPrune": "Recusa de limpeza: estas configurações podem referenciar GUIDs protegidos. Use --force para forçar.",
       "unreadableConfigs": "Não é possível ler {{count}} configuração(ões): {{names}} (encriptada(s) ou corrompida(s))"
     }
   },

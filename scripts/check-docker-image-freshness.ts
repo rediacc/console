@@ -1,4 +1,5 @@
 #!/usr/bin/env tsx
+import { spawnSync } from 'node:child_process';
 /**
  * Container base images go stale like every other dependency, and nothing watched them.
  *
@@ -29,6 +30,75 @@ import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
 import { globSync } from 'glob';
+
+/**
+ * Drop paths git IGNORES, because CI cannot see them and a baseline entry it cannot
+ * reproduce is a permanent red.
+ *
+ * MEASURED, not theorised. `private/growth` is a git repo under `private/` that is NOT a
+ * console submodule and IS gitignored, so it exists only on the operator's machine. Its
+ * `youtube-transcripts/Dockerfile` pin was genuinely stale locally, went into this
+ * baseline, and then failed CI with "1 baselined pin(s) are no longer stale" because CI
+ * had never checked the directory out at all. Locally the same gate exited 0. A gate whose
+ * verdict depends on files only one machine has is not a gate.
+ *
+ * `git check-ignore` is the right instrument rather than `git ls-files`: submodule
+ * contents like `private/renet/Dockerfile` are absent from the parent's index but ARE
+ * checked out in CI, so an ls-files filter would silently drop them. Verified on this
+ * tree: check-ignore flags the `private/growth` path and passes both `private/renet` and
+ * `packages/json`.
+ */
+function gitVisible(paths: string[]): string[] {
+  if (paths.length === 0) return paths;
+
+  // Submodule paths are EXCLUDED FROM THE QUESTION, not answered by it. `git check-ignore`
+  // exits 128 with "fatal: Pathspec is in submodule" the moment one appears in its input,
+  // and the first version of this function treated 128 as a hard error and returned every
+  // path unfiltered. It silently did nothing while the gate still passed locally, which is
+  // the exact false-green shape this gate family exists to prevent. Submodule content IS
+  // checked out in CI, so it is visible by definition and never needs the check.
+  const submodules = readGitmodulePaths();
+  const inSubmodule = (rel: string) => submodules.some((s) => rel === s || rel.startsWith(`${s}/`));
+
+  const rels = paths.map((p) => ({ abs: p, rel: path.relative(ROOT, p) }));
+  const askable = rels.filter((r) => !inSubmodule(r.rel));
+  if (askable.length === 0) return paths;
+
+  const res = spawnSync('git', ['check-ignore', '--stdin'], {
+    cwd: ROOT,
+    input: `${askable.map((r) => r.rel).join('\n')}\n`,
+    encoding: 'utf8',
+  });
+  // 0 = some ignored, 1 = none ignored. Anything else means the instrument did not answer,
+  // and a filter that cannot answer must not silently widen scope: refuse loudly instead.
+  if (res.error || (res.status !== 0 && res.status !== 1)) {
+    console.error(
+      `\u2717 git check-ignore could not answer (status ${res.status}): ${res.stderr?.trim()}`
+    );
+    process.exit(1);
+  }
+  const ignored = new Set(
+    res.stdout
+      .split('\n')
+      .map((s) => s.trim())
+      .filter(Boolean)
+  );
+  return rels.filter((r) => !ignored.has(r.rel)).map((r) => r.abs);
+}
+
+/** Submodule paths from .gitmodules, so they can be exempted from check-ignore. */
+function readGitmodulePaths(): string[] {
+  const res = spawnSync('git', ['config', '-f', '.gitmodules', '--get-regexp', 'path'], {
+    cwd: ROOT,
+    encoding: 'utf8',
+  });
+  if (res.error || res.status !== 0) return [];
+  return res.stdout
+    .split('\n')
+    .map((l) => l.trim().split(/\s+/)[1])
+    .filter(Boolean);
+}
+
 import { getMinReleaseAgeMs, isWithinFreshnessWindow } from './lib/release-age.js';
 
 const ROOT = path.resolve(import.meta.dirname, '..');
@@ -95,7 +165,10 @@ async function hubToken(repo: string): Promise<string | null> {
   return ((await r.json()) as { token?: string }).token ?? null;
 }
 
-interface TagInfo { name: string; pushedMs: number | null }
+interface TagInfo {
+  name: string;
+  pushedMs: number | null;
+}
 
 async function listHubTags(repo: string): Promise<TagInfo[] | null> {
   const token = await hubToken(repo);
@@ -122,7 +195,10 @@ function selftest(): number {
   };
   const pins = parsePins('FROM node:22-slim AS build\nFROM ghcr.io/rediacc/renet:latest\n', 'X');
   check('a FROM pin is parsed', pins.length === 1 && pins[0].image === 'node');
-  check('our OWN ghcr images are not treated as upstream pins', !pins.some((p) => p.image.includes('rediacc')));
+  check(
+    'our OWN ghcr images are not treated as upstream pins',
+    !pins.some((p) => p.image.includes('rediacc'))
+  );
   check('CONTROL: a newer minor in the same shape is newer', isNewer('3.9-slim', '3.13-slim'));
   check('CONTROL: a newer major is newer', isNewer('22-slim', '24-slim'));
   check('a DIFFERENT shape is not comparable', !isNewer('3.9-slim', '3.13-alpine'));
@@ -132,8 +208,10 @@ function selftest(): number {
   // The window is the SHARED one; a release published now must be deferred.
   const win = getMinReleaseAgeMs();
   check('the shared freshness window is configured (.npmrc)', win > 0);
-  check('CONTROL: a release published right now is deferred',
-    isWithinFreshnessWindow(Date.now(), Date.now(), win));
+  check(
+    'CONTROL: a release published right now is deferred',
+    isWithinFreshnessWindow(Date.now(), Date.now(), win)
+  );
   return bad;
 }
 
@@ -141,19 +219,28 @@ async function main(): Promise<void> {
   if (process.argv.includes('--selftest')) {
     console.log('docker image freshness selftest');
     const bad = selftest();
-    console.log(bad === 0 ? '\n\x1b[32m✓\x1b[0m 10/10 controls pass' : `\n\x1b[31m✗\x1b[0m ${bad} failed`);
+    console.log(
+      bad === 0 ? '\n\x1b[32m✓\x1b[0m 10/10 controls pass' : `\n\x1b[31m✗\x1b[0m ${bad} failed`
+    );
     process.exit(bad === 0 ? 0 : 1);
   }
-  if (selftest() !== 0) { console.error('controls failed; the gate cannot be trusted'); process.exit(1); }
+  if (selftest() !== 0) {
+    console.error('controls failed; the gate cannot be trusted');
+    process.exit(1);
+  }
 
   const files = [
-    ...globSync(`${ROOT}/**/Dockerfile*`, { ignore: ['**/node_modules/**', '**/dist/**'] }),
+    ...gitVisible(
+      globSync(`${ROOT}/**/Dockerfile*`, { ignore: ['**/node_modules/**', '**/dist/**'] })
+    ),
   ];
   const pins: Pin[] = [];
   for (const f of files) pins.push(...parsePins(readFileSync(f, 'utf8'), path.relative(ROOT, f)));
 
   if (pins.length === 0) {
-    console.error('✗ zero image pins found. The gate is not seeing the tree; its green would mean nothing.');
+    console.error(
+      '✗ zero image pins found. The gate is not seeing the tree; its green would mean nothing.'
+    );
     process.exit(1);
   }
 
@@ -185,7 +272,9 @@ async function main(): Promise<void> {
   }
 
   if (unknown.length > 0) {
-    console.error(`\n\x1b[31m✗\x1b[0m ${unknown.length} image(s) could NOT be checked. Unknown is not a pass:`);
+    console.error(
+      `\n\x1b[31m✗\x1b[0m ${unknown.length} image(s) could NOT be checked. Unknown is not a pass:`
+    );
     for (const u of unknown) console.error(`    ${u}`);
     console.error('\nDocker Hub rate limits anonymous listings. Set DOCKERHUB_TOKEN (or');
     console.error('DOCKERHUB_USERNAME + DOCKERHUB_PASSWORD) so this cannot go vacuous in CI.');
@@ -208,21 +297,31 @@ async function main(): Promise<void> {
   const fixed = base.filter((b) => !keyed.includes(b));
 
   if (fresh.length > 0) {
-    console.error(`\n\x1b[31m✗\x1b[0m ${fresh.length} base image pin(s) newly stale past the soak window:\n`);
+    console.error(
+      `\n\x1b[31m✗\x1b[0m ${fresh.length} base image pin(s) newly stale past the soak window:\n`
+    );
     for (const s of fresh) console.error(`    ${s}`);
-    console.error(`\nThe window is the SHARED one from .npmrc minimum-release-age (${win / 60000} min,`);
+    console.error(
+      `\nThe window is the SHARED one from .npmrc minimum-release-age (${win / 60000} min,`
+    );
     console.error('rounded up to the next UTC day) so a day of upgrades surfaces together.');
     console.error('Bump the pin. Do not add it to the baseline.');
     process.exit(1);
   }
   if (fixed.length > 0) {
-    console.error(`\n\x1b[31m✗\x1b[0m ${fixed.length} baselined pin(s) are no longer stale. This baseline is`);
-    console.error('SHRINK-ONLY, so drain it: npx tsx scripts/check-docker-image-freshness.ts --write-baseline');
+    console.error(
+      `\n\x1b[31m✗\x1b[0m ${fixed.length} baselined pin(s) are no longer stale. This baseline is`
+    );
+    console.error(
+      'SHRINK-ONLY, so drain it: npx tsx scripts/check-docker-image-freshness.ts --write-baseline'
+    );
     for (const f of fixed) console.error(`    ${f}`);
     process.exit(1);
   }
   if (stale.length > 0) {
-    console.log(`\x1b[33m!\x1b[0m ${stale.length} known-stale pin(s) still baselined (drain as they are bumped):`);
+    console.log(
+      `\x1b[33m!\x1b[0m ${stale.length} known-stale pin(s) still baselined (drain as they are bumped):`
+    );
     for (const s of stale) console.log(`    ${s}`);
   }
   console.log(
@@ -231,4 +330,7 @@ async function main(): Promise<void> {
   );
 }
 
-main().catch((e) => { console.error('gate crashed:', e); process.exit(1); });
+main().catch((e) => {
+  console.error('gate crashed:', e);
+  process.exit(1);
+});

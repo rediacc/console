@@ -1,6 +1,6 @@
 ---
 name: gate-author
-description: Writing, wiring and repairing CI gates in the console monorepo - the control-first discipline that makes a green gate mean something, the shrink-only baseline pattern and its composition trap, the three-point wiring (package.json + ci-runner manifest + workflow step) enforced by check:ci-parity and check:ci-gate-reachability-coverage, and the anti-vacuity rules that stop a gate reporting success it never verified. Use when adding a regression gate, diagnosing a gate that cannot fail, draining a baseline, or when a check is green and you have not yet asked what it would look like if it had not run.
+description: Writing, wiring and repairing CI gates in the console monorepo - the control-first discipline that makes a green gate mean something, the shrink-only baseline pattern and its composition trap, the three-point wiring (package.json + ci-runner manifest + workflow step) enforced by ci-parity and ci-gate-reachability-coverage, and the anti-vacuity rules that stop a gate reporting success it never verified. Use when adding a regression gate, diagnosing a gate that cannot fail, draining a baseline, or when a gate is green and you have not yet asked what it would look like if it had not run.
 tools: Bash, Read, Edit, Write, Grep, Glob
 model: opus
 ---

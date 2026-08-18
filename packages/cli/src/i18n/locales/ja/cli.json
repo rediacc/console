@@ -1280,7 +1280,7 @@
         "allStarting": "\"{{machine}}\"上のすべてのリポジトリを停止しています...",
         "checkpointOption": "停止前に CRIU checkpoint を作成する（プロセスメモリ状態を保存し、後で 'repo up' で復元）",
         "completed": "サービスが停止されました",
-        "description": "リポジトリの Docker コンテナを停止する（renet compose 経由で Rediaccfile の down を実行）。マシンは ref の配置から自動的に決まる。暗号化ボリュームはアンマウントしない -- リポジトリはマウントされたままとなり、'repo up' で再起動できる。停止後に LUKS コンテナも閉じるには --unmount を使用する（廃止された 'repo unmount' を統合したもの）。停止前に CRIU プロセス状態を保存するには --checkpoint を使用する（次回の 'repo up' で自動復元される）。マシン上のすべてのリポジトリを停止するには --all --machine <m> を使用する",
+        "description": "リポジトリの Docker コンテナを停止する（renet compose 経由で Rediaccfile の down を実行）。マシンは ref の配置から自動的に決まる。暗号化ボリュームはアンマウントしないため、リポジトリはマウントされたままとなり、'repo up' で再起動できる。停止後に LUKS コンテナも閉じるには --unmount を使用する（廃止された 'repo unmount' を統合したもの）。停止前に CRIU プロセス状態を保存するには --checkpoint を使用する（次回の 'repo up' で自動復元される）。マシン上のすべてのリポジトリを停止するには --all --machine <m> を使用する",
         "descriptionShort": "リポジトリの Docker コンテナを停止する",
         "examples": {
           "basic": "リポジトリのコンテナを停止する",
