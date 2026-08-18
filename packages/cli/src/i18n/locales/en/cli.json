@@ -889,7 +889,7 @@
         "failed": "Up-all operation failed"
       },
       "down": {
-        "description": "Stop repository Docker containers (runs Rediaccfile down via renet compose). The machine is derived from the ref placement. Does NOT unmount the encrypted volume -- the repo stays mounted and can be restarted with 'repo up'. Use --unmount to also close the LUKS container after stopping (folds the retired 'repo unmount'). Use --checkpoint to save CRIU process state before stopping (next 'repo up' auto-restores). Use --all --machine <m> to stop every repository on a machine.",
+        "description": "Stop repository Docker containers (runs Rediaccfile down via renet compose). The machine is derived from the ref placement. Does NOT unmount the encrypted volume. The repo stays mounted and can be restarted with 'repo up'. Use --unmount to also close the LUKS container after stopping (folds the retired 'repo unmount'). Use --checkpoint to save CRIU process state before stopping (next 'repo up' auto-restores). Use --all --machine <m> to stop every repository on a machine.",
         "descriptionShort": "Stop repository Docker containers",
         "unmountOption": "Also unmount (close the LUKS container) after stopping. Required before 'repo resize' or to fully secure the volume",
         "checkpointOption": "Create CRIU checkpoint before stopping (save process memory state for later restore via 'repo up')",
@@ -1123,7 +1123,7 @@
         "failed": "Resize failed"
       },
       "expand": {
-        "description": "Expand a mounted repository online (zero downtime, grow-only). Grows the LUKS container and filesystem while containers keep running. Cannot shrink -- use 'repo resize' for that (requires unmount)",
+        "description": "Expand a mounted repository online (zero downtime, grow-only). Grows the LUKS container and filesystem while containers keep running. Cannot shrink. Use 'repo resize' for that (requires unmount)",
         "descriptionShort": "Expand a mounted repository online (zero downtime, grow-only)",
         "sizeOption": "New repository size (e.g., 10G, 100G, 1T)",
         "starting": "Expanding \"{{repository}}\" to {{size}} on \"{{machine}}\"...",
