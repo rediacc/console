@@ -147,7 +147,10 @@
     "zod",
 
     // BLOCKER: declared in packages/www to carry the 5.9.3 security override pin for the @astrojs/rss transitive chain (see _overridesReasons.fast-xml-parser); www code never imports it directly
-    "fast-xml-parser"
+    "fast-xml-parser",
+
+    // BLOCKER: declared in packages/www, which owns browser testing, and imported from the hoisted tree by scripts/check-browser-smoke.ts at the root. Declaring it a second time at root would create a second range to hold in sync with a package check:deps deliberately blocks from upgrading (a playwright bump changes the pinned browser revisions and needs E2E revalidation), so one declaration in one workspace is the correct shape
+    "playwright"
   ],
   "ignoreBinaries": [
     // BLOCKER: platform/system tools spawned via child_process at runtime by the CLI (user lookups, keyrings, macOS/Linux/WSL shells); host binaries, never npm-managed. knip 6.29 still parses bare `qemu-img` (e2e VM image inspection on the KVM host), so it stays listed; it now resolves `which` (doctor PATH probes), `security` (macOS keychain), `systemctl` (ops libvirtd/router service control, spawnSync in ops/check.ts) and the Windows cmd.exe/powershell shells natively, so those are dropped
@@ -157,6 +160,11 @@
     "osascript",
     "qemu-img",
     "wsl.exe",
+
+    // BLOCKER: fontconfig's font matcher, spawned via execFileSync by
+    // packages/www/scripts/lib/scenes/card-fonts.ts to resolve a family name to a file for
+    // card rendering. A host binary like the rest of this list, never npm-managed
+    "fc-match",
 
     // BLOCKER: terminal emulators probed by the CLI terminal launcher (the remote/ terminal detector tries each candidate); presence is optional per host
     "gnome-terminal",

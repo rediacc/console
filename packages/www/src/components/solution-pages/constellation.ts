@@ -23,7 +23,7 @@ import { ROLE_ORDER, SOLUTION_PAGES, type SolutionRole } from '../../config/solu
 
 export type ConstellationPreset = 'full' | 'compact';
 
-export interface CxPlaced {
+interface CxPlaced {
   kind: 'centre' | 'anchor' | 'solution';
   /** For anchors: the arm role. For solutions: the page's role. */
   role: SolutionRole | null;
@@ -39,7 +39,7 @@ export interface CxPlaced {
   flip: boolean;
 }
 
-export interface CxEdge {
+interface CxEdge {
   x1: number;
   y1: number;
   x2: number;
@@ -260,8 +260,6 @@ export function buildConstellation(
 
   return { width: g.width, height: g.height, centre, anchors, arms, edges };
 }
-
-export { ROLE_ORDER };
 
 /**
  * Where each page's short label and blurb lived before the harvest: the page's

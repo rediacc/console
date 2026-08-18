@@ -195,7 +195,7 @@ const excerpt = (s: string): string => {
 
 export function scanSurface(
   root: string,
-  surface: { dir: string; kind: 'catalog' | 'source'; exts: string[] }
+  surface: Surface
 ): { findings: Finding[]; files: number } {
   const abs = path.join(root, surface.dir);
   const files = walk(abs, surface.exts);
