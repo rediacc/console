@@ -1692,7 +1692,7 @@ export const CLI_CONTRACT: CliContract = {
         "provision"
       ],
       "agentBlocked": true,
-      "mcpExcludeReason": "Provisions cloud/VM infrastructure — not an agent operation",
+      "mcpExcludeReason": "Provisions cloud/VM infrastructure, not an agent operation",
       "interactive": false,
       "proxyCapable": true,
       "detachable": true,
@@ -1748,7 +1748,7 @@ export const CLI_CONTRACT: CliContract = {
       ],
       "hasSubcommands": false,
       "agentBlocked": true,
-      "mcpExcludeReason": "Destroys cloud/VM infrastructure — not an agent operation",
+      "mcpExcludeReason": "Destroys cloud/VM infrastructure, not an agent operation",
       "interactive": false,
       "proxyCapable": true,
       "detachable": true,
@@ -1804,7 +1804,7 @@ export const CLI_CONTRACT: CliContract = {
       ],
       "hasSubcommands": false,
       "agentBlocked": true,
-      "mcpExcludeReason": "Cluster membership mutation — not an agent operation",
+      "mcpExcludeReason": "Cluster membership mutation, not an agent operation",
       "interactive": false,
       "proxyCapable": true,
       "detachable": true,
@@ -1929,7 +1929,7 @@ export const CLI_CONTRACT: CliContract = {
         "k8s"
       ],
       "agentBlocked": true,
-      "mcpExcludeReason": "Clones a whole cluster — not an agent operation",
+      "mcpExcludeReason": "Clones a whole cluster, not an agent operation",
       "interactive": false,
       "proxyCapable": true,
       "detachable": true,
@@ -2006,7 +2006,7 @@ export const CLI_CONTRACT: CliContract = {
         "k8s"
       ],
       "agentBlocked": true,
-      "mcpExcludeReason": "Cluster membership mutation — not an agent operation",
+      "mcpExcludeReason": "Cluster membership mutation, not an agent operation",
       "interactive": false,
       "proxyCapable": true,
       "detachable": true,
@@ -2101,7 +2101,7 @@ export const CLI_CONTRACT: CliContract = {
       ],
       "hasSubcommands": false,
       "agentBlocked": true,
-      "mcpExcludeReason": "Moves a whole cluster — not an agent operation",
+      "mcpExcludeReason": "Moves a whole cluster, not an agent operation",
       "interactive": false,
       "proxyCapable": true,
       "detachable": true,
@@ -2238,7 +2238,7 @@ export const CLI_CONTRACT: CliContract = {
       ],
       "hasSubcommands": false,
       "agentBlocked": true,
-      "mcpExcludeReason": "Mutates cluster node pools — not an agent operation",
+      "mcpExcludeReason": "Mutates cluster node pools, not an agent operation",
       "interactive": false,
       "proxyCapable": true,
       "detachable": true,
@@ -2295,7 +2295,7 @@ export const CLI_CONTRACT: CliContract = {
       ],
       "hasSubcommands": false,
       "agentBlocked": true,
-      "mcpExcludeReason": "Infrastructure snapshot — operator unlock only",
+      "mcpExcludeReason": "Infrastructure snapshot: operator unlock only",
       "interactive": false,
       "proxyCapable": true,
       "detachable": true,
@@ -2530,7 +2530,7 @@ export const CLI_CONTRACT: CliContract = {
         }
       ],
       "hasSubcommands": false,
-      "mcpExcludeReason": "Config value deletion — use CLI directly",
+      "mcpExcludeReason": "Config value deletion: use CLI directly",
       "interactive": false,
       "proxyCapable": false,
       "proxyBlockedReason": "Runs entirely against the local config and never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
@@ -2880,7 +2880,7 @@ export const CLI_CONTRACT: CliContract = {
           "tier": "advanced",
           "sensitive": true,
           "descriptionKey": "commands.config.field.set.optionCurrent",
-          "label": "Current plaintext value — required for sensitive-path mutations (knowledge-gate proof)"
+          "label": "Current plaintext value, required for sensitive-path mutations (knowledge-gate proof)"
         }
       ],
       "positionals": [],
@@ -2928,7 +2928,7 @@ export const CLI_CONTRACT: CliContract = {
           "tier": "advanced",
           "sensitive": true,
           "descriptionKey": "commands.config.field.unset.optionCurrent",
-          "label": "Current plaintext value — required for sensitive-path deletions"
+          "label": "Current plaintext value, required for sensitive-path deletions"
         }
       ],
       "positionals": [],
@@ -3039,7 +3039,7 @@ export const CLI_CONTRACT: CliContract = {
         "configure",
         "profile"
       ],
-      "mcpExcludeReason": "Creates a named config file — the operator decides what configs exist.",
+      "mcpExcludeReason": "Creates a named config file. The operator decides what configs exist.",
       "interactive": false,
       "proxyCapable": false,
       "proxyBlockedReason": "Runs entirely against the local config and never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
@@ -3161,7 +3161,7 @@ export const CLI_CONTRACT: CliContract = {
           "defaultValue": null,
           "tier": "advanced",
           "descriptionKey": "commands.config.prune.orphanReposOption",
-          "label": "Remove repository entries that are placed on no machine. Each entry holds that repo's credential and SSH key, so this is unrecoverable — run 'rdc config reconcile' first so placement reflects the machines."
+          "label": "Remove repository entries that are placed on no machine. Each entry holds that repo's credential and SSH key, so this is unrecoverable. Run 'rdc config reconcile' first so placement reflects the machines."
         },
         {
           "flags": "--grace-days <days>",
@@ -3511,7 +3511,7 @@ export const CLI_CONTRACT: CliContract = {
         }
       ],
       "hasSubcommands": false,
-      "mcpExcludeReason": "Config value mutation — use CLI directly",
+      "mcpExcludeReason": "Config value mutation: use CLI directly",
       "interactive": false,
       "proxyCapable": false,
       "proxyBlockedReason": "Runs entirely against the local config and never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
@@ -4537,7 +4537,7 @@ export const CLI_CONTRACT: CliContract = {
         "troubleshoot",
         "health"
       ],
-      "mcpExcludeReason": "Diagnoses local CLI installation — not a remote operation",
+      "mcpExcludeReason": "Diagnoses local CLI installation, not a remote operation",
       "interactive": false,
       "proxyCapable": false,
       "proxyBlockedReason": "Local tooling that never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
@@ -6100,7 +6100,7 @@ export const CLI_CONTRACT: CliContract = {
           "defaultValue": null,
           "tier": "advanced",
           "descriptionKey": "commands.machine.prune.orphanedReposOption",
-          "label": "Delete every repo image on the machine that is not in your local CLI config. Coarse — also removes forks created by other tools that have no local config entry, even when their renet mirror correctly identifies them as forks. Use --prune-unknown for the narrower behavior that respects the mirror."
+          "label": "Delete every repo image on the machine that is not in your local CLI config. Coarse: it also removes forks created by other tools that have no local config entry, even when their renet mirror correctly identifies them as forks. Use --prune-unknown for the narrower behavior that respects the mirror."
         },
         {
           "flags": "--prune-unknown",
@@ -7607,7 +7607,7 @@ export const CLI_CONTRACT: CliContract = {
       ],
       "hasSubcommands": false,
       "grandGuard": true,
-      "mcpExcludeReason": "Config-only ref operation — use CLI directly",
+      "mcpExcludeReason": "Config-only ref operation: use CLI directly",
       "interactive": false,
       "proxyCapable": false,
       "proxyBlockedReason": "Runs entirely against the local config and never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
@@ -8113,7 +8113,7 @@ export const CLI_CONTRACT: CliContract = {
       "group": "REPOSITORIES",
       "plane": "machine",
       "descriptionKey": "commands.repo.commit.description",
-      "label": "Freeze the current state of a mounted working fork into a new immutable commit (git-like). The commit records its message, author, timestamp, and parent in-volume (so it travels on push) and is marked read-only — it refuses to mount. The working fork continues unchanged, like git leaving the working tree intact. Check a commit out with 'rdc repo checkout' to get a writable copy.",
+      "label": "Freeze the current state of a mounted working fork into a new immutable commit (git-like). The commit records its message, author, timestamp, and parent in-volume (so it travels on push) and is marked read-only, so it refuses to mount. The working fork continues unchanged, like git leaving the working tree intact. Check a commit out with 'rdc repo checkout' to get a writable copy.",
       "options": [
         {
           "flags": "--message <msg>",
@@ -8924,7 +8924,7 @@ export const CLI_CONTRACT: CliContract = {
       "hasSubcommands": false,
       "grandGuard": true,
       "forkBlocked": true,
-      "mcpExcludeReason": "Storage expansion — destructive infrastructure operation, use CLI directly",
+      "mcpExcludeReason": "Storage expansion: destructive infrastructure operation, use CLI directly",
       "interactive": false,
       "proxyCapable": true,
       "detachable": true,
@@ -10181,7 +10181,7 @@ export const CLI_CONTRACT: CliContract = {
       "group": "REPOSITORIES",
       "plane": "machine",
       "descriptionKey": "commands.repo.push.description",
-      "label": "Push repository to another machine. Storage destinations are retired; use `rdc backup snapshot` for point-in-time backup. For machine-to-machine transfer, the encrypted repo image is copied with the SAME GUID — this is a backup/migration, not a fork. To create an independent fork, use 'repo fork' first, then push. A pushed copy lands as a backup ARTIFACT: boot it on the target with 'backup restore <ref> --as <name> -m <target> --up'",
+      "label": "Push repository to another machine. Storage destinations are retired; use `rdc backup snapshot` for point-in-time backup. For machine-to-machine transfer, the encrypted repo image is copied with the SAME GUID, so this is a backup/migration, not a fork. To create an independent fork, use 'repo fork' first, then push. A pushed copy lands as a backup ARTIFACT: boot it on the target with 'backup restore <ref> --as <name> -m <target> --up'",
       "options": [
         {
           "flags": "--to <remote>",
@@ -10676,7 +10676,7 @@ export const CLI_CONTRACT: CliContract = {
       "hasSubcommands": false,
       "grandGuard": true,
       "forkBlocked": true,
-      "mcpExcludeReason": "Disk resize — destructive infrastructure operation, use CLI directly",
+      "mcpExcludeReason": "Disk resize: destructive infrastructure operation, use CLI directly",
       "interactive": false,
       "proxyCapable": true,
       "detachable": true,
@@ -11598,7 +11598,7 @@ export const CLI_CONTRACT: CliContract = {
       ],
       "hasSubcommands": false,
       "grandGuard": true,
-      "mcpExcludeReason": "Interactive SSH tunnel — blocks until Ctrl+C",
+      "mcpExcludeReason": "Interactive SSH tunnel: blocks until Ctrl+C",
       "interactive": true,
       "proxyCapable": false,
       "proxyBlockedReason": "Needs a terminal or never returns on its own (interactive shell, editor, tunnel, stream, or daemon), so a headless executor cannot run it. Run it without --proxy.",
@@ -12018,7 +12018,7 @@ export const CLI_CONTRACT: CliContract = {
         }
       ],
       "hasSubcommands": false,
-      "mcpExcludeReason": "Interactive file browser — requires TTY",
+      "mcpExcludeReason": "Interactive file browser: requires TTY",
       "interactive": false,
       "proxyCapable": false,
       "proxyBlockedReason": "Local tooling that never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
@@ -12153,7 +12153,7 @@ export const CLI_CONTRACT: CliContract = {
           ],
           "tier": "common",
           "descriptionKey": "commands.storage.prune.machineOption",
-          "label": "Executor machine — runs the rclone list/delete calls against the storage. Required because clients aren't expected to have rclone installed locally; storage credentials still come from your local config."
+          "label": "Executor machine that runs the rclone list/delete calls against the storage. Required because clients aren't expected to have rclone installed locally; storage credentials still come from your local config."
         },
         {
           "flags": "--dry-run",
@@ -12644,7 +12644,7 @@ export const CLI_CONTRACT: CliContract = {
         "version",
         "self-update"
       ],
-      "mcpExcludeReason": "CLI self-update — not a remote operation",
+      "mcpExcludeReason": "CLI self-update, not a remote operation",
       "interactive": false,
       "proxyCapable": false,
       "proxyBlockedReason": "Local tooling that never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
