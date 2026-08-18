@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { useLanguage } from '../../hooks/useLanguage';
 import { useTranslation } from '../../i18n/react';
 
@@ -20,19 +20,45 @@ interface Props {
 
 const DISMISS_KEY_PREFIX = 'leadMagnetButtonDismissed:';
 
+// Dismissal lives in sessionStorage, which the server does not have. Reading it during
+// render made the server and the browser disagree, and React discards a subtree it
+// cannot reconcile. useSyncExternalStore keeps both renders on the server snapshot and
+// applies the stored value after hydration. One listener set covers every key: a
+// dismissal notifies all mounted buttons and each one re-reads its own key.
+const dismissListeners = new Set<() => void>();
+
+function subscribeDismissed(onStoreChange: () => void): () => void {
+  dismissListeners.add(onStoreChange);
+  return () => {
+    dismissListeners.delete(onStoreChange);
+  };
+}
+
+function getDismissedServerSnapshot(): boolean {
+  return false;
+}
+
+function storeDismissal(sessionKey: string): void {
+  sessionStorage.setItem(sessionKey, '1');
+  for (const listener of dismissListeners) listener();
+}
+
 const LeadMagnetButton: React.FC<Props> = ({ magnetName, source, label, scrollGate = false }) => {
   const lang = useLanguage();
   const { t } = useTranslation(lang);
 
   const sessionKey = `${DISMISS_KEY_PREFIX}${magnetName}`;
   const [visible, setVisible] = useState(!scrollGate);
-  // Same value on both renders; the stored dismissal is applied after mount. Reading
-  // sessionStorage in the initializer made the server and the browser disagree, and
-  // React discards a subtree it cannot reconcile.
-  const [dismissed, setDismissed] = useState(false);
-  useEffect(() => {
-    if (scrollGate && sessionStorage.getItem(sessionKey) !== null) setDismissed(true);
-  }, [scrollGate, sessionKey]);
+  // Only the gated variant renders a dismiss button, so only it can have been dismissed.
+  const getDismissedSnapshot = useCallback(
+    () => scrollGate && sessionStorage.getItem(sessionKey) !== null,
+    [scrollGate, sessionKey]
+  );
+  const dismissed = useSyncExternalStore(
+    subscribeDismissed,
+    getDismissedSnapshot,
+    getDismissedServerSnapshot
+  );
 
   // Scroll-trigger: show when sentinel at ~30vh scrolls out of view.
   useEffect(() => {
@@ -70,10 +96,7 @@ const LeadMagnetButton: React.FC<Props> = ({ magnetName, source, label, scrollGa
   };
 
   const handleDismiss = () => {
-    setDismissed(true);
-    if (typeof window !== 'undefined') {
-      sessionStorage.setItem(sessionKey, '1');
-    }
+    storeDismissal(sessionKey);
   };
 
   const title = t('pages.solutionPages.leadMagnetButton.title');

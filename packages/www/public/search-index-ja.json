@@ -3425,8 +3425,8 @@
   {
     "id": "search-10699",
     "content": "概要",
-    "body": "Rediacc CLI（rdc）は、セルフホスト型インフラストラクチャ — マシン、リポジトリ、ストレージ、バックアップなど — を管理するためのコマンドラインインターフェースです。",
-    "excerpt": "Rediacc CLI（rdc）は、セルフホスト型インフラストラクチャ — マシン、リポジトリ、ストレージ、バックアップなど — を管理するためのコマンドラインインターフェースです。",
+    "body": "Rediacc CLI（rdc）は、マシン、リポジトリ、ストレージ、バックアップなどのセルフホスト型インフラストラクチャを管理するためのコマンドラインインターフェースです。",
+    "excerpt": "Rediacc CLI（rdc）は、マシン、リポジトリ、ストレージ、バックアップなどのセルフホスト型インフラストラクチャを管理するためのコマンドラインインターフェースです。",
     "category": "Documentation",
     "page": "/ja/docs/cli-application",
     "fragment": "overview",
@@ -3605,7 +3605,7 @@
   {
     "id": "search-10714",
     "content": "1.12 field",
-    "body": "ポインタ指定による設定フィールド操作(get/set/unset/rotate/list)。/credentials/cfDnsApiToken のような JSON Pointer(RFC 6901)を使用します。 <a id=\"cli-local-config-field-get\"></a> #### get JSON ポインタで単一の設定値を読み取ります。機密フィールドは --reveal を指定しない限り秘匿されます(人間のみ)。 rdc config field get [options] | フラグ | 説明 | 必須 | デフォルト | |------|-------------|----------|---------| | --pointer <pointer> | フィールドへのJSONポインタ（例: /credentials/cfDnsApiToken） | はい | - | | --reveal | 機密値を平文で表示する(対話型 TTY のみ、監査ログに記録) | いいえ | - | | --digest | 値の代わりに SHA-256 ダイジェストを出力(エージェントに共有しても安全) | いいえ | - | <a id=\"cli-local-config-field-set\"></a> #### set JSON ポインタ位置に設定値を書き込みます。機密パスには --current(知識ゲート)が必要です。 rdc config field set [options] | フラグ | 説明 | 必須 | デフォルト | |------|-------------|----------|---------| | --pointer <pointer> | フィールドへのJSONポインタ（例: /credentials/cfDnsApiToken） | はい | - | | --new <value> | 新しい値({, [, \", true/false/null, 数値で始まる場合は JSON として解釈) | はい | - | | --current <value> | 現在の平文値 — 機密パスの変更に必須(知識ゲート証明) | いいえ | - | <a id=\"cli-local-config-field-unset\"></a> #### unset JSON ポインタ位置の設定値を削除。機密パスには --current が必要です。 rdc config field unset [options] | フラグ | 説明 | 必須 | デフォルト | |------|-------------|----------|---------| | --pointer <pointer> | フィールドへのJSONポインタ（例: /credentials/cfDnsApiToken） | はい | - | | --current <value> | 現在の平文値 — 機密パスの削除に必須 | いいえ | - | <a id=\"cli-local-config-field-rotate\"></a> #### rotate --current なしで機密値をローテーションします。対話型 TTY のみ、詳細に監査されます。 rdc config field rotate [options] | フラグ | 説明 | 必須 | デフォルト | |------|-------------|----------|---------| | --pointer <pointer> | 機密フィールドへのJSONポインタ（例: /credentials/cfDnsApiToken） | はい | - | | --new <value> | 新しい値 | はい | - | <a id=\"cli-local-config-field-list\"></a> #### list 登録済みのすべてのセンシティビティ・ポインタ・テンプレートと種類、commit/encrypt ポリシーを一覧表示。 rdc config field list [options] | フラグ | 説明 | 必須 | デフォルト | |------|-------------|----------|---------| | --sensitive | 機密(非パブリック)テンプレートのみ表示 | いいえ | - | <a id=\"cli-local-config-edit\"></a>",
+    "body": "ポインタ指定による設定フィールド操作(get/set/unset/rotate/list)。/credentials/cfDnsApiToken のような JSON Pointer(RFC 6901)を使用します。 <a id=\"cli-local-config-field-get\"></a> #### get JSON ポインタで単一の設定値を読み取ります。機密フィールドは --reveal を指定しない限り秘匿されます(人間のみ)。 rdc config field get [options] | フラグ | 説明 | 必須 | デフォルト | |------|-------------|----------|---------| | --pointer <pointer> | フィールドへのJSONポインタ（例: /credentials/cfDnsApiToken） | はい | - | | --reveal | 機密値を平文で表示する(対話型 TTY のみ、監査ログに記録) | いいえ | - | | --digest | 値の代わりに SHA-256 ダイジェストを出力(エージェントに共有しても安全) | いいえ | - | <a id=\"cli-local-config-field-set\"></a> #### set JSON ポインタ位置に設定値を書き込みます。機密パスには --current(知識ゲート)が必要です。 rdc config field set [options] | フラグ | 説明 | 必須 | デフォルト | |------|-------------|----------|---------| | --pointer <pointer> | フィールドへのJSONポインタ（例: /credentials/cfDnsApiToken） | はい | - | | --new <value> | 新しい値({, [, \", true/false/null, 数値で始まる場合は JSON として解釈) | はい | - | | --current <value> | 現在の平文値、機密パスの変更に必須(知識ゲート証明) | いいえ | - | <a id=\"cli-local-config-field-unset\"></a> #### unset JSON ポインタ位置の設定値を削除。機密パスには --current が必要です。 rdc config field unset [options] | フラグ | 説明 | 必須 | デフォルト | |------|-------------|----------|---------| | --pointer <pointer> | フィールドへのJSONポインタ（例: /credentials/cfDnsApiToken） | はい | - | | --current <value> | 現在の平文値、機密パスの削除に必須 | いいえ | - | <a id=\"cli-local-config-field-rotate\"></a> #### rotate --current なしで機密値をローテーションします。対話型 TTY のみ、詳細に監査されます。 rdc config field rotate [options] | フラグ | 説明 | 必須 | デフォルト | |------|-------------|----------|---------| | --pointer <pointer> | 機密フィールドへのJSONポインタ（例: /credentials/cfDnsApiToken） | はい | - | | --new <value> | 新しい値 | はい | - | <a id=\"cli-local-config-field-list\"></a> #### list 登録済みのすべてのセンシティビティ・ポインタ・テンプレートと種類、commit/encrypt ポリシーを一覧表示。 rdc config field list [options] | フラグ | 説明 | 必須 | デフォルト | |------|-------------|----------|---------| | --sensitive | 機密(非パブリック)テンプレートのみ表示 | いいえ | - | <a id=\"cli-local-config-edit\"></a>",
     "excerpt": "ポインタ指定による設定フィールド操作(get/set/unset/rotate/list)。/credentials/cfDnsApiToken のような JSON Pointer(RFC 6901)を使用します。 <a id=\"cli-local-config-field-get\"></a> ##...",
     "category": "Documentation",
     "page": "/ja/docs/cli-application",
@@ -3809,8 +3809,8 @@
   {
     "id": "search-10731",
     "content": "3.2 health",
-    "body": "CI/CDパイプライン用のマシン健全性を確認する healthコマンドはシステムメトリクス、コンテナステータス、サービス安定性、ストレージ情報を出力します — CI/CDパイプラインチェックに便利です。 rdc machine health <name> [options] | フラグ | 説明 | 必須 | デフォルト | |------|-------------|----------|---------| | -t, --team <name> | チーム名 | いいえ | - | <a id=\"cli-local-machine-provision\"></a>",
-    "excerpt": "CI/CDパイプライン用のマシン健全性を確認する healthコマンドはシステムメトリクス、コンテナステータス、サービス安定性、ストレージ情報を出力します — CI/CDパイプラインチェックに便利です。 rdc machine health <name> [options] | フラグ | 説明 |...",
+    "body": "CI/CDパイプライン用のマシン健全性を確認する healthコマンドはシステムメトリクス、コンテナステータス、サービス安定性、ストレージ情報を出力します。CI/CDパイプラインチェックに便利です。 rdc machine health <name> [options] | フラグ | 説明 | 必須 | デフォルト | |------|-------------|----------|---------| | -t, --team <name> | チーム名 | いいえ | - | <a id=\"cli-local-machine-provision\"></a>",
+    "excerpt": "CI/CDパイプライン用のマシン健全性を確認する healthコマンドはシステムメトリクス、コンテナステータス、サービス安定性、ストレージ情報を出力します。CI/CDパイプラインチェックに便利です。 rdc machine health <name> [options] | フラグ | 説明 | 必...",
     "category": "Documentation",
     "page": "/ja/docs/cli-application",
     "fragment": "32-health",
@@ -4133,8 +4133,8 @@
   {
     "id": "search-10758",
     "content": "6.2 down",
-    "body": "リポジトリの Docker コンテナを停止する（renet compose 経由で Rediaccfile の down を実行）。マシンは ref の配置から自動的に決まる。暗号化ボリュームはアンマウントしない -- リポジトリはマウントされたままとなり、'repo up' で再起動できる。停止後に LUKS コンテナも閉じるには --unmount を使用する（廃止された 'repo unmount' を統合したもの）。停止前に CRIU プロセス状態を保存するには --checkpoint を使用する（次回の 'repo up' で自動復元される）。マシン上のすべてのリポジトリを停止するには --all --machine <m> を使用する rdc repo down [ref] [options] | フラグ | 説明 | 必須 | デフォルト | |------|-------------|----------|---------| | --unmount | 停止後にアンマウントも行う（LUKS コンテナを閉じる）。'repo resize' の前、またはボリュームを完全に保護するために必要 | いいえ | - | | --checkpoint | 停止前に CRIU checkpoint を作成する（プロセスメモリ状態を保存し、後で 'repo up' で復元） | いいえ | - | | --all | --machine をホームとするすべてのリポジトリを停止する（バッチ形式） | いいえ | - | | -m, --machine <name> | --all と併用: バッチ処理の対象となるリポジトリを持つマシン | いいえ | - | | --parallel | リポジトリを並行して開始する | いいえ | - | | --concurrency <n> | 最大同時リポジトリ数 (デフォルト: 3) | いいえ | 3 | | -y, --yes | バッチ操作の確認をスキップ | いいえ | - | | --debug | デバッグ出力を有効化 (ローカルモード) | いいえ | - | | --skip-router-restart | バイナリ更新後のルートサーバーの再起動をスキップする | いいえ | - | | --dry-run | 変更を加えずに実行内容を表示する | いいえ | - | <a id=\"cli-local-repo-status\"></a>",
-    "excerpt": "リポジトリの Docker コンテナを停止する（renet compose 経由で Rediaccfile の down を実行）。マシンは ref の配置から自動的に決まる。暗号化ボリュームはアンマウントしない -- リポジトリはマウントされたままとなり、'repo up' で再起動できる。停止後...",
+    "body": "リポジトリの Docker コンテナを停止する（renet compose 経由で Rediaccfile の down を実行）。マシンは ref の配置から自動的に決まる。暗号化ボリュームはアンマウントしないため、リポジトリはマウントされたままとなり、'repo up' で再起動できる。停止後に LUKS コンテナも閉じるには --unmount を使用する（廃止された 'repo unmount' を統合したもの）。停止前に CRIU プロセス状態を保存するには --checkpoint を使用する（次回の 'repo up' で自動復元される）。マシン上のすべてのリポジトリを停止するには --all --machine <m> を使用する rdc repo down [ref] [options] | フラグ | 説明 | 必須 | デフォルト | |------|-------------|----------|---------| | --unmount | 停止後にアンマウントも行う（LUKS コンテナを閉じる）。'repo resize' の前、またはボリュームを完全に保護するために必要 | いいえ | - | | --checkpoint | 停止前に CRIU checkpoint を作成する（プロセスメモリ状態を保存し、後で 'repo up' で復元） | いいえ | - | | --all | --machine をホームとするすべてのリポジトリを停止する（バッチ形式） | いいえ | - | | -m, --machine <name> | --all と併用: バッチ処理の対象となるリポジトリを持つマシン | いいえ | - | | --parallel | リポジトリを並行して開始する | いいえ | - | | --concurrency <n> | 最大同時リポジトリ数 (デフォルト: 3) | いいえ | 3 | | -y, --yes | バッチ操作の確認をスキップ | いいえ | - | | --debug | デバッグ出力を有効化 (ローカルモード) | いいえ | - | | --skip-router-restart | バイナリ更新後のルートサーバーの再起動をスキップする | いいえ | - | | --dry-run | 変更を加えずに実行内容を表示する | いいえ | - | <a id=\"cli-local-repo-status\"></a>",
+    "excerpt": "リポジトリの Docker コンテナを停止する（renet compose 経由で Rediaccfile の down を実行）。マシンは ref の配置から自動的に決まる。暗号化ボリュームはアンマウントしないため、リポジトリはマウントされたままとなり、'repo up' で再起動できる。停止後に...",
     "category": "Documentation",
     "page": "/ja/docs/cli-application",
     "fragment": "62-down",
@@ -5069,8 +5069,8 @@
   {
     "id": "search-10836",
     "content": "17. ローカル VM 操作",
-    "body": "KVM/QEMU/Hyper-V を使ったローカル VM のプロビジョニングと管理（プラットフォームは自動検出）。リモートマシン向けではない — そちらには machine を使用する。主なサブコマンド: up（VM 起動）、down（停止）、status（実行中 VM の一覧）、ssh（VM へ接続）、setup（前提条件のインストール）、check（ホストの準備状況を確認）。 <a id=\"cli-local-ops-up\"></a>",
-    "excerpt": "KVM/QEMU/Hyper-V を使ったローカル VM のプロビジョニングと管理（プラットフォームは自動検出）。リモートマシン向けではない — そちらには machine を使用する。主なサブコマンド: up（VM 起動）、down（停止）、status（実行中 VM の一覧）、ssh（VM へ接...",
+    "body": "KVM/QEMU/Hyper-V を使ったローカル VM のプロビジョニングと管理（プラットフォームは自動検出）。リモートマシン向けではない。そちらには machine を使用する。主なサブコマンド: up（VM 起動）、down（停止）、status（実行中 VM の一覧）、ssh（VM へ接続）、setup（前提条件のインストール）、check（ホストの準備状況を確認）。 <a id=\"cli-local-ops-up\"></a>",
+    "excerpt": "KVM/QEMU/Hyper-V を使ったローカル VM のプロビジョニングと管理（プラットフォームは自動検出）。リモートマシン向けではない。そちらには machine を使用する。主なサブコマンド: up（VM 起動）、down（停止）、status（実行中 VM の一覧）、ssh（VM へ接続）...",
     "category": "Documentation",
     "page": "/ja/docs/cli-application",
     "fragment": "17-local-vm-operations",
@@ -5165,7 +5165,7 @@
   {
     "id": "search-10844",
     "content": "一般的なエラーメッセージ",
-    "body": "問題が発生した場合、CLIは明確なエラーメッセージを提供します： | エラー | 意味 | |-------|---------| | 認証が必要です。実行してください: rdc subscription login | 最初にログインする必要があります | | アクティブな設定がありません。次のコマンドで作成してください: rdc config init <name> | アクティブな設定がありません — rdc config init で作成してください | | 権限がありません | アカウントに必要な権限がありません | | マシン名が必要です。--machine <name> を使用してください | --machineでマシンを指定するか、コンテキストのデフォルトを設定してください | | チーム名が必要です。--team を使用するか、次のコマンドでデフォルトを設定してください: rdc config set team <name> | --teamでチームを指定するか、コンテキストのデフォルトを設定してください | | リージョン名が必要です。--region を使用するか、次のコマンドでデフォルトを設定してください: rdc config set region <name> | --regionでリージョンを指定するか、コンテキストのデフォルトを設定してください | ---",
+    "body": "問題が発生した場合、CLIは明確なエラーメッセージを提供します： | エラー | 意味 | |-------|---------| | 認証が必要です。実行してください: rdc subscription login | 最初にログインする必要があります | | アクティブな設定がありません。次のコマンドで作成してください: rdc config init <name> | アクティブな設定がありません。rdc config init で作成してください | | 権限がありません | アカウントに必要な権限がありません | | マシン名が必要です。--machine <name> を使用してください | --machineでマシンを指定するか、コンテキストのデフォルトを設定してください | | チーム名が必要です。--team を使用するか、次のコマンドでデフォルトを設定してください: rdc config set team <name> | --teamでチームを指定するか、コンテキストのデフォルトを設定してください | | リージョン名が必要です。--region を使用するか、次のコマンドでデフォルトを設定してください: rdc config set region <name> | --regionでリージョンを指定するか、コンテキストのデフォルトを設定してください | ---",
     "excerpt": "問題が発生した場合、CLIは明確なエラーメッセージを提供します： | エラー | 意味 | |-------|---------| | 認証が必要です。実行してください: rdc subscription login | 最初にログインする必要があります | | アクティブな設定がありません。次のコ...",
     "category": "Documentation",
     "page": "/ja/docs/cli-application",
