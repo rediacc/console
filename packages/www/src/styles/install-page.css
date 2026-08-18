@@ -1,5 +1,4 @@
 /* Install Page Styles */
-@import './platform-tabs.css';
 
 /* Hero Section — flat dark surface (no gradient). .section-dark provides bg+color. */
 .install-hero {
@@ -18,7 +17,7 @@
 }
 
 .install-hero h1 {
-  font-size: clamp(36px, 4vw, 56px);
+  font-size: var(--font-size-4xl);
   font-weight: bold;
   margin-bottom: var(--space-4);
   color: white;
@@ -26,13 +25,13 @@
 }
 
 .install-hero .hero-subtitle {
-  font-size: clamp(18px, 1.5vw, 22px);
+  font-size: var(--font-size-xl);
   color: rgba(255, 255, 255, var(--opacity-90));
   line-height: var(--leading-normal);
 }
 
 .install-hero .hero-downloads-note {
-  font-size: clamp(14px, 1.2vw, 16px);
+  font-size: var(--font-size-base);
   color: rgba(255, 255, 255, 0.7);
   margin-top: var(--space-4);
   line-height: var(--leading-normal);
@@ -42,7 +41,7 @@
   color: rgba(255, 255, 255, 0.9);
   text-decoration: underline;
   text-underline-offset: 2px;
-  transition: color var(--transition-duration-base) ease;
+  transition: color var(--transition-duration-base) var(--ease-standard);
 }
 
 .install-hero .hero-downloads-link:hover {
@@ -94,7 +93,7 @@
   border: 1px solid var(--color-border);
   border-radius: var(--radius-xl);
   padding: var(--space-8);
-  transition: border-color var(--transition-duration-base) ease;
+  transition: border-color var(--transition-duration-base) var(--ease-standard);
 }
 
 .method-card:hover {
@@ -115,7 +114,7 @@
   left: 0;
   right: 0;
   height: 4px;
-  background: var(--color-brand-primary);
+  background: var(--color-brand-fill);
   border-radius: var(--radius-xl) var(--radius-xl) 0 0;
 }
 
@@ -180,8 +179,8 @@
   font-size: var(--font-size-sm);
   cursor: pointer;
   transition:
-    background var(--transition-duration-base) ease,
-    border-color var(--transition-duration-base) ease;
+    background var(--transition-duration-base) var(--ease-standard),
+    border-color var(--transition-duration-base) var(--ease-standard);
 }
 
 .copy-btn:hover {
@@ -204,7 +203,7 @@
 
 /* Method card visibility transition */
 .method-card--visible {
-  animation: methodCardFadeIn 0.2s ease-out;
+  animation: methodCardFadeIn var(--transition-duration-base) var(--ease-entrance);
 }
 
 @keyframes methodCardFadeIn {
@@ -322,7 +321,7 @@
   }
 
   .code-block code {
-    font-size: 13px;
+    font-size: var(--font-size-xs);
   }
 
   .arch-table th,

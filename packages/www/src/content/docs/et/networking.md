@@ -142,7 +142,7 @@ Need kasutavad standardset [Traefik v3 siltide süntaksit](https://doc.traefik.i
    rdc machine infra push server-1
    ```
 
-2. DNS-kirjed, mis suunavad sinu domeeni serveri avalikule IP-le (vt allpool [DNS-konfigureerimine](#dns-konfigureerimine)).
+2. DNS-kirjed, mis suunavad sinu domeeni serveri avalikule IP-le (vt allpool [DNS-konfigureerimine](#dns-configuration)).
 
 ### Siltide lisamine
 

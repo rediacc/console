@@ -23,7 +23,12 @@ const docsCollection = defineCollection({
   schema: z.object({
     title: z.string(),
     description: z.string(),
-    category: z.string(),
+    // The English category vocabulary, in EVERY locale. The category is an
+    // identifier (tab routing, sorting, key lookup), not display text; the
+    // translated label lives under documentation.categories.* in the locale
+    // catalogs. A translated value here once shipped a seventh docs tab whose
+    // label appeared twice in Arabic.
+    category: z.enum(['Tutorials', 'Guides', 'Concepts', 'Reference', 'Use Cases', 'Legal']),
     subcategory: z.enum(['essentials', 'advanced']).optional(),
     order: z.number().optional(),
     toc: z.boolean().default(true),

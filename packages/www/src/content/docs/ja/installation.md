@@ -87,6 +87,18 @@ Server = https://releases.rediacc.com/archlinux/stable/\$arch" | sudo tee -a /et
 sudo pacman -Sy rediacc-cli
 ```
 
+### npm (Node.js)
+
+```bash
+npm install -g https://releases.rediacc.com/npm/stable/rediacc-cli-latest.tgz
+```
+
+Node.js 22以降が必要です。特定のバージョンをインストールするには:
+
+```bash
+npm install -g https://releases.rediacc.com/npm/stable/rediacc-cli-0.8.5.tgz
+```
+
 ## Docker
 
 CLIをコンテナとしてプルして実行:

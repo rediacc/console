@@ -45,12 +45,11 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { globSync } from 'glob';
-
-import { parseBlockeredList, verifyAllBlockers } from './lib/blocker-validator.ts';
-
 import { SITE_LOCALES } from '@rediacc/locales';
+import { globSync } from 'glob';
+import { parseBlockeredList, verifyAllBlockers } from './lib/blocker-validator.ts';
 import { NIS2_SNAPSHOT_LANGS, type Nis2SnapshotLang } from './lib/nis2-langs.js';
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const repoRoot = path.resolve(__dirname, '..');
@@ -71,9 +70,7 @@ const ALL_CONTENT_LANGS = SITE_LOCALES;
 type ContentLang = (typeof ALL_CONTENT_LANGS)[number];
 
 function snapshotForLang(lang: ContentLang): SnapshotLang {
-  return (SNAPSHOT_LANGS as readonly string[]).includes(lang)
-    ? (lang as SnapshotLang)
-    : 'en';
+  return (SNAPSHOT_LANGS as readonly string[]).includes(lang) ? (lang as SnapshotLang) : 'en';
 }
 
 function snapshotPath(lang: SnapshotLang): { txt: string; manifest: string } {
@@ -83,17 +80,12 @@ function snapshotPath(lang: SnapshotLang): { txt: string; manifest: string } {
       repoRoot,
       'scripts',
       'data',
-      `nis2-directive-2022-2555-${lang}.manifest.json`,
+      `nis2-directive-2022-2555-${lang}.manifest.json`
     ),
   };
 }
 
-const ALLOWLIST_PATH = path.join(
-  repoRoot,
-  '.ci',
-  'config',
-  'directive-quotes-allowlist.txt',
-);
+const ALLOWLIST_PATH = path.join(repoRoot, '.ci', 'config', 'directive-quotes-allowlist.txt');
 
 // All-language content. File language is detected from path:
 //   packages/www/src/content/{blog,docs}/<lang>/...           -> <lang>
@@ -123,7 +115,8 @@ const NIS2_MENTION_PATTERNS: RegExp[] = [
 // per glossary; this regex still picks them up via the case-insensitive
 // English alternative. Avoid trailing `\b` after `)` because that breaks at
 // the first `(` and yields a truncated match.
-const ARTICLE_REF = /\b(?:Article|Artikel|art[íi]culo|articolo|artigo|artikkel|статья|статьи|Madde|المادة|条|조)\s+2[0-3](?:\([0-9a-z]+\))*/i;
+const ARTICLE_REF =
+  /\b(?:Article|Artikel|art[íi]culo|articolo|artigo|artikkel|статья|статьи|Madde|المادة|条|조)\s+2[0-3](?:\([0-9a-z]+\))*/i;
 const RECITAL_REF = /\bRecital\s+\d+\b/i;
 const ANNEX_REF = /\bAnnex\s+(I|II|III)\b/i;
 
@@ -185,9 +178,7 @@ function loadAllSnapshots(): Map<SnapshotLang, LoadedSnapshot> {
     let sha = '';
     if (fs.existsSync(manifest)) {
       try {
-        sha = String(
-          JSON.parse(fs.readFileSync(manifest, 'utf-8'))['sha256'] ?? '',
-        );
+        sha = String(JSON.parse(fs.readFileSync(manifest, 'utf-8'))['sha256'] ?? '');
       } catch {
         // manifest unreadable — proceed with empty sha
       }
@@ -196,14 +187,14 @@ function loadAllSnapshots(): Map<SnapshotLang, LoadedSnapshot> {
   }
   if (out.size === 0) {
     console.error(
-      `FATAL: no directive snapshots found under ${path.relative(repoRoot, path.dirname(snapshotPath('en').txt))}`,
+      `FATAL: no directive snapshots found under ${path.relative(repoRoot, path.dirname(snapshotPath('en').txt))}`
     );
     console.error(`  Run: tsx scripts/fetch-directive-snapshot.ts --all`);
     process.exit(2);
   }
   if (missing.length > 0) {
     console.warn(
-      `WARN ${missing.length} snapshot(s) missing: ${missing.join(', ')}; files in those languages will fall back to English`,
+      `WARN ${missing.length} snapshot(s) missing: ${missing.join(', ')}; files in those languages will fall back to English`
     );
   }
   return out;
@@ -343,7 +334,7 @@ function extractArticleRef(line: string): string | null {
 
 function extractQuotesFromFile(
   filePath: string,
-  fileLang: ContentLang,
+  fileLang: ContentLang
 ): {
   quotes: QuoteCase[];
   skipped: Array<{ file: string; line: number; reason: string }>;
@@ -356,10 +347,12 @@ function extractQuotesFromFile(
 
   // The default snapshot for this file: own snapshot if vendored, else English.
   const defaultSnapshot = snapshotForLang(fileLang);
-  const defaultLangSource: 'file' | 'fallback' =
-    defaultSnapshot === fileLang ? 'file' : 'fallback';
+  const defaultLangSource: 'file' | 'fallback' = defaultSnapshot === fileLang ? 'file' : 'fallback';
 
-  function resolveLang(line: string, prevLine: string): {
+  function resolveLang(
+    line: string,
+    prevLine: string
+  ): {
     lang: SnapshotLang;
     source: 'file' | 'marker' | 'fallback';
   } {
@@ -415,10 +408,7 @@ function extractQuotesFromFile(
     if (!markerHere && !markerPrev) continue;
     // Skip-marker takes precedence.
     if (line.match(SKIP_MARKER) || prevLine.match(SKIP_MARKER)) {
-      const reason =
-        line.match(SKIP_MARKER)?.[1] ??
-        prevLine.match(SKIP_MARKER)?.[1] ??
-        'skipped';
+      const reason = line.match(SKIP_MARKER)?.[1] ?? prevLine.match(SKIP_MARKER)?.[1] ?? 'skipped';
       skipped.push({ file: rel, line: i + 1, reason: reason.trim() });
       continue;
     }
@@ -461,7 +451,7 @@ function extractQuotesFromFile(
 
 function verifyQuote(
   q: QuoteCase,
-  source: string,
+  source: string
 ): { ok: true } | { ok: false; reason: string; nearest?: string } {
   if (q.text === '<<no quote text on or after marker>>') {
     return {
@@ -511,7 +501,7 @@ function main() {
 
   const snapshots = loadAllSnapshots();
   console.log(
-    `scanning markdown/Astro under ${SCAN_GLOBS.length} globs; ${snapshots.size} snapshot(s) loaded (${[...snapshots.keys()].join(', ')})`,
+    `scanning markdown/Astro under ${SCAN_GLOBS.length} globs; ${snapshots.size} snapshot(s) loaded (${[...snapshots.keys()].join(', ')})`
   );
 
   const result: CheckResult = {
@@ -570,11 +560,11 @@ function main() {
 
   // Report.
   console.log(
-    `${result.filesWithMention} files mention NIS2; ${result.filesSkippedAllowlist.length} allowlisted`,
+    `${result.filesWithMention} files mention NIS2; ${result.filesSkippedAllowlist.length} allowlisted`
   );
   if (fallbackFiles.size > 0) {
     console.log(
-      `${fallbackFiles.size} file(s) use English snapshot as fallback (no official directive translation in their language):`,
+      `${fallbackFiles.size} file(s) use English snapshot as fallback (no official directive translation in their language):`
     );
     for (const [f, l] of fallbackFiles) console.log(`  INFO ${f} (${l} → en)`);
   }
@@ -587,7 +577,7 @@ function main() {
           ? `${p.lang} (marker)`
           : p.lang;
     console.log(
-      `OK   ${p.file}:${p.line} ${p.ref} [${langTag}] (${flatten(p.text).length} chars / ${fragCount} fragment${fragCount === 1 ? '' : 's'})`,
+      `OK   ${p.file}:${p.line} ${p.ref} [${langTag}] (${flatten(p.text).length} chars / ${fragCount} fragment${fragCount === 1 ? '' : 's'})`
     );
   }
   for (const s of result.skipped) {
@@ -602,7 +592,7 @@ function main() {
   }
 
   console.log(
-    `\n${result.pass.length} verified, ${result.fail.length} failed, ${result.skipped.length} skipped (skip-marker)`,
+    `\n${result.pass.length} verified, ${result.fail.length} failed, ${result.skipped.length} skipped (skip-marker)`
   );
   process.exit(result.fail.length > 0 ? 1 : 0);
 }

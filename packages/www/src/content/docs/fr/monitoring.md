@@ -115,7 +115,7 @@ rdc machine status server-1 --storage-health
 | Allocated | Ce que l'image éparse occupe réellement dans le pool en ce moment |
 | Unique | Données uniques réelles appartenant uniquement à ce dépôt |
 | Shared | Blocs de données réutilisés entre dépôts via les reflinks BTRFS (copies gratuites) |
-| Reclaimable | L'écart entre la quantité allouée et la quantité utilisée que [`repo trim`](/fr/docs/repositories#récupérer-de-lespace-trim) peut restituer au pool. Affiche `-` pour les dépôts non montés |
+| Reclaimable | L'écart entre la quantité allouée et la quantité utilisée que [`repo trim`](/fr/docs/repositories#reclaim-space-trim) peut restituer au pool. Affiche `-` pour les dépôts non montés |
 | Discards | Si le volume chiffré propage les discards (`on` pour tout dépôt monté par une version actuelle) |
 | Divergence | Pourcentage de l'image propre à ce dépôt plutôt que partagé (plus élevé = davantage récupérable en cas de suppression) |
 | Frag | Nombre d'extents par Go dans l'image copy-on-write (informatif uniquement) |

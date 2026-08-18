@@ -28,7 +28,7 @@
  * there becomes a fourteenth "language" for every i18n rule and for the
  * locale-set gates that derive from @rediacc/locales.
  *
- * DESIGN: agent/backup-storage/PLAN-lint-rule-matrix-probe.md
+ * DESIGN: agent/PLAN-lint-rule-matrix-probe.md
  */
 
 import fs from 'node:fs';

@@ -54,16 +54,16 @@ const LIVENESS_TIMEOUT_MS = 8_000;
 // Sites that aggressively block all automated requests (403 even with browser UA + curl).
 // Verified manually with a real browser. Keep this list minimal.
 const ALLOWLISTED_DOMAINS = new Set([
-  'www.hhs.gov',       // US HHS - blocks all automated requests
-  'www.sec.gov',       // US SEC - blocks all automated requests
-  'pd.rkn.gov.ru',     // Russia Roskomnadzor - unreachable from most locations
-  'sdaia.gov.sa',      // Saudi SDAIA - connection refused from non-Saudi IPs
-  'www.pipc.go.kr',    // South Korea PIPC - extremely slow, times out in CI
+  'www.hhs.gov', // US HHS - blocks all automated requests
+  'www.sec.gov', // US SEC - blocks all automated requests
+  'pd.rkn.gov.ru', // Russia Roskomnadzor - unreachable from most locations
+  'sdaia.gov.sa', // Saudi SDAIA - connection refused from non-Saudi IPs
+  'www.pipc.go.kr', // South Korea PIPC - extremely slow, times out in CI
   'www.legislation.gov.au', // Australia legislation - intermittent timeouts from CI runners
-  'www.iso.org',       // ISO standards - returns 403 to non-browser User-Agent (anti-scraping)
-  'www.meity.gov.in',  // India MeitY - intermittent fetch failures from CI runners (Azure US-East), reachable from browsers
+  'www.iso.org', // ISO standards - returns 403 to non-browser User-Agent (anti-scraping)
+  'www.meity.gov.in', // India MeitY - intermittent fetch failures from CI runners (Azure US-East), reachable from browsers
   'eur-lex.europa.eu', // EU EUR-Lex - returns 403 to CI runners (Cloudflare/anti-scraping), reachable from browsers
-  'www.ftc.gov',       // US FTC - returns 503/403 to CI runners (Akamai anti-bot), reachable from browsers
+  'www.ftc.gov', // US FTC - returns 503/403 to CI runners (Akamai anti-bot), reachable from browsers
   // Debian securing-debian-manual - `fetch failed` from GitHub-hosted runners
   // on 2026-08-05 (run 30990002964), after this checker's own two retries AND
   // its last-chance GET, so not a one-shot blip. Measured rather than assumed:
@@ -143,9 +143,18 @@ const KNOWN_BROKEN = new Map<string, string>([
   //                                       the configuration reference
   // The fix belongs in docs/code-signing-guide.md:422, :252 and :601, which
   // this file does not own. Delete these three entries in the same change.
-  ['https://www.electron.build/code-signing-mac.html', 'electron-builder docs rewrite; replace with https://www.electron.build/mac in docs/code-signing-guide.md:422'],
-  ['https://www.electron.build/code-signing-windows.html', 'electron-builder docs rewrite; replace with https://www.electron.build/win in docs/code-signing-guide.md:252'],
-  ['https://www.electron.build/hooks.html', 'electron-builder docs rewrite; no live equivalent, drop the link in docs/code-signing-guide.md:601'],
+  [
+    'https://www.electron.build/code-signing-mac.html',
+    'electron-builder docs rewrite; replace with https://www.electron.build/mac in docs/code-signing-guide.md:422',
+  ],
+  [
+    'https://www.electron.build/code-signing-windows.html',
+    'electron-builder docs rewrite; replace with https://www.electron.build/win in docs/code-signing-guide.md:252',
+  ],
+  [
+    'https://www.electron.build/hooks.html',
+    'electron-builder docs rewrite; no live equivalent, drop the link in docs/code-signing-guide.md:601',
+  ],
   // A DEAD COMMAND, not just a dead link, and the widened scan is what found
   // it. Both docs used to tell the operator to run:
   //   ACCOUNT_ED25519_PUBLIC_KEY="$(curl -fsS https://www.rediacc.com/api/public/account-key)"
@@ -172,7 +181,10 @@ const KNOWN_BROKEN = new Map<string, string>([
   //
   // The entry STAYS because both files still name the dead URL in prose, while
   // explaining why not to call it. Removing it would re-red the link check.
-  ['https://www.rediacc.com/api/public/account-key', 'route does not exist on any host (404 on www/edge/eu/us/asia); both docs now cite it only to warn against it, never as a command'],
+  [
+    'https://www.rediacc.com/api/public/account-key',
+    'route does not exist on any host (404 on www/edge/eu/us/asia); both docs now cite it only to warn against it, never as a command',
+  ],
   // The whole domain, not just the page, is unreachable -- a connection
   // timeout on both http and https, not a 404. Measured 2026-07-30 from two
   // independent networks (this repo's dev sandbox and, per the CI run that
@@ -190,10 +202,10 @@ const KNOWN_BROKEN = new Map<string, string>([
 // becomes `https://media.rediacc.com/` once trailing dots are stripped, which
 // looks like a perfectly real link and 404s.
 const PLACEHOLDER_PATTERNS = [
-  /[<>]/,              // <node-ip>, <some-path>.mp4, <port>
-  /[{}]/,              // {service}.{repo}, ${SERVICE_IP}
-  /\$\{?[A-Za-z_]/,    // BARE shell vars too: $CLOUDFLARE_ACCOUNT_ID, $ZONE
-  /\.\.\./,            // https://media.rediacc.com/...  (elided path)
+  /[<>]/, // <node-ip>, <some-path>.mp4, <port>
+  /[{}]/, // {service}.{repo}, ${SERVICE_IP}
+  /\$\{?[A-Za-z_]/, // BARE shell vars too: $CLOUDFLARE_ACCOUNT_ID, $ZONE
+  /\.\.\./, // https://media.rediacc.com/...  (elided path)
 ];
 
 // URL patterns that are not real links (examples, templates, localhost).
@@ -258,7 +270,10 @@ function isPlaceholder(raw: string): boolean {
   return PLACEHOLDER_PATTERNS.some((p) => p.test(raw));
 }
 
-function extractLinks(filePath: string): { links: Map<string, LinkLocation[]>; placeholders: number } {
+function extractLinks(filePath: string): {
+  links: Map<string, LinkLocation[]>;
+  placeholders: number;
+} {
   const content = fs.readFileSync(filePath, 'utf-8');
   const lines = content.split('\n');
   const links = new Map<string, LinkLocation[]>();
@@ -319,8 +334,9 @@ function isAllowlisted(url: string): boolean {
  */
 function buildHeaders(url: string): Record<string, string> {
   const headers: Record<string, string> = {
-    'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
-    'Accept': 'text/html,application/xhtml+xml,*/*',
+    'User-Agent':
+      'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+    Accept: 'text/html,application/xhtml+xml,*/*',
   };
   const token = process.env.GITHUB_TOKEN;
   if (token && /^https:\/\/api\.github\.com\//.test(url)) {
@@ -338,7 +354,9 @@ function buildHeaders(url: string): Record<string, string> {
  * 200 for existing resources and 404 for deleted ones.
  */
 function toApiUrl(url: string): string | null {
-  const m = url.match(/^https:\/\/github\.com\/([^/]+)\/([^/]+)\/(issues|pull|tree|blob)\/(.+?)(?:[?#].*)?$/);
+  const m = url.match(
+    /^https:\/\/github\.com\/([^/]+)\/([^/]+)\/(issues|pull|tree|blob)\/(.+?)(?:[?#].*)?$/
+  );
   if (!m) return null;
   const [, owner, repo, kind, rest] = m;
   if (kind === 'issues' || kind === 'pull') {
@@ -360,7 +378,10 @@ function toApiUrl(url: string): string | null {
   return `https://api.github.com/repos/${owner}/${repo}/contents/${path}?ref=${encodeURIComponent(ref)}`;
 }
 
-async function checkUrl(url: string, retries = 0): Promise<{ ok: boolean; status: number | string }> {
+async function checkUrl(
+  url: string,
+  retries = 0
+): Promise<{ ok: boolean; status: number | string }> {
   // Rewrite github.com HTML URLs to api.github.com so GITHUB_TOKEN actually
   // authorises the request. Only used when GITHUB_TOKEN is available.
   if (process.env.GITHUB_TOKEN) {
@@ -506,7 +527,10 @@ async function probeOnce(url: string): Promise<ProbeOutcome> {
       return { kind: 'gone', detail: code };
     }
     const message = err instanceof Error ? err.message : String(err);
-    return { kind: 'unreachable', detail: code || (message.includes('abort') ? 'TIMEOUT' : message.slice(0, 60)) };
+    return {
+      kind: 'unreachable',
+      detail: code || (message.includes('abort') ? 'TIMEOUT' : message.slice(0, 60)),
+    };
   } finally {
     // Without this the abort timer stays armed after a fast response and keeps
     // the event loop alive for up to LIVENESS_TIMEOUT_MS per probe. Caught by
@@ -543,7 +567,7 @@ interface LivenessReport {
 
 async function auditAllowlist(
   allUrls: Map<string, LinkLocation[]>,
-  allowlisted: LinkEntry[],
+  allowlisted: LinkEntry[]
 ): Promise<LivenessReport> {
   const report: LivenessReport = {
     unreferencedDomains: [],
@@ -620,7 +644,13 @@ async function auditAllowlist(
   return report;
 }
 
-async function processQueue(entries: LinkEntry[]): Promise<{ broken: LinkEntry[]; skipped: LinkEntry[]; excluded: number; knownBroken: number; checked: number }> {
+async function processQueue(entries: LinkEntry[]): Promise<{
+  broken: LinkEntry[];
+  skipped: LinkEntry[];
+  excluded: number;
+  knownBroken: number;
+  checked: number;
+}> {
   const broken: LinkEntry[] = [];
   const skipped: LinkEntry[] = [];
   let excluded = 0;
@@ -698,8 +728,8 @@ function collectFiles(): { files: string[]; perRoot: Map<string, number> } | nul
   if (empty.length > 0) {
     console.error(
       `\n  Refusing to run: no markdown files under ${empty.join(', ')}.\n` +
-      `  A link checker with nothing to scan reports success while asserting\n` +
-      `  nothing. Fix SCAN_ROOTS, or fix the checkout that left the tree empty.`
+        `  A link checker with nothing to scan reports success while asserting\n` +
+        `  nothing. Fix SCAN_ROOTS, or fix the checkout that left the tree empty.`
     );
     return null;
   }
@@ -742,7 +772,9 @@ async function main() {
     }
   }
 
-  console.log(`Found ${entries.length} unique external URLs (${placeholders} placeholder occurrence(s) dropped)\n`);
+  console.log(
+    `Found ${entries.length} unique external URLs (${placeholders} placeholder occurrence(s) dropped)\n`
+  );
   console.log('Checking links...\n');
 
   const { broken, skipped, excluded, knownBroken, checked } = await processQueue(entries);
@@ -778,9 +810,9 @@ async function main() {
     }
     console.log(
       `    These may be dead weight. They are NOT failed here: every entry in\n` +
-      `    the allowlist documents an IP-dependent block, so a green probe from\n` +
-      `    one location is not proof the block is gone. Re-check from a CI\n` +
-      `    runner before deleting the entry.`
+        `    the allowlist documents an IP-dependent block, so a green probe from\n` +
+        `    one location is not proof the block is gone. Re-check from a CI\n` +
+        `    runner before deleting the entry.`
     );
   }
 
@@ -791,8 +823,8 @@ async function main() {
     }
     console.log(
       `    The allowlist claims these are reachable from a browser. A name that\n` +
-      `    does not resolve is not reachable from anywhere, so the links behind\n` +
-      `    them are probably dead and the allowlist is hiding it.`
+        `    does not resolve is not reachable from anywhere, so the links behind\n` +
+        `    them are probably dead and the allowlist is hiding it.`
     );
   }
 
@@ -818,16 +850,16 @@ async function main() {
   if (liveness.unreferencedDomains.length > 0) {
     failures.push(
       `  Allowlisted domain(s) no longer referenced by any scanned markdown:\n` +
-      liveness.unreferencedDomains.map((d) => `    - ${d}`).join('\n') +
-      `\n  The exemption outlived the link it excused. Delete it from ALLOWLISTED_DOMAINS.`
+        liveness.unreferencedDomains.map((d) => `    - ${d}`).join('\n') +
+        `\n  The exemption outlived the link it excused. Delete it from ALLOWLISTED_DOMAINS.`
     );
   }
 
   if (liveness.unreferencedKnownBroken.length > 0) {
     failures.push(
       `  KNOWN_BROKEN url(s) that no longer appear in any scanned markdown:\n` +
-      liveness.unreferencedKnownBroken.map((u) => `    - ${u}`).join('\n') +
-      `\n  The doc was fixed. Delete the entry from KNOWN_BROKEN.`
+        liveness.unreferencedKnownBroken.map((u) => `    - ${u}`).join('\n') +
+        `\n  The doc was fixed. Delete the entry from KNOWN_BROKEN.`
     );
   }
 
@@ -843,8 +875,8 @@ async function main() {
   if (liveness.referencedDomains > 0 && liveness.domainProbes === 0) {
     failures.push(
       `  Liveness audit ran ZERO probes while ${liveness.referencedDomains} allowlisted domain(s)\n` +
-      `  were still referenced by the docs. Silence from an instrument that never\n` +
-      `  fired is not a clean bill of health.`
+        `  were still referenced by the docs. Silence from an instrument that never\n` +
+        `  fired is not a clean bill of health.`
     );
   }
 

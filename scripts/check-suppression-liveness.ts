@@ -27,19 +27,19 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { NC, RED } from './utils/console.js';
 import { collectActionRefs } from './lib/action-refs.js';
 import { parseDockerfileVersions } from './lib/dockerfile-versions.js';
 import { EMBED_ASSET_SOURCES } from './lib/embed-asset-sources.js';
 import {
-  type Probe,
-  type Universe,
   blockeredEntries,
   findOrphanedBlockers,
   formatReport,
   isVacuous,
+  type Probe,
   runProbes,
+  type Universe,
 } from './lib/suppression-liveness.js';
+import { NC, RED } from './utils/console.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const CONSOLE_ROOT = process.env.SUPPRESSION_LIVENESS_ROOT || path.join(__dirname, '..');
@@ -262,9 +262,7 @@ const PROBES: Probe[] = [
     10,
     (entry, u) =>
       `template "${entry}" no longer exists (oracle: ${u.source}); it is skipped by two independent parsers (packages/json/generate.sh and packages/www/scripts/generate-json.js) that can now never match it.`,
-    (entry, line) => [
-      `remove line ${line} ("${entry}") from packages/json/.templates-skiplist`,
-    ]
+    (entry, line) => [`remove line ${line} ("${entry}") from packages/json/.templates-skiplist`]
   ),
   {
     id: 'cli-i18n-orphan',
@@ -341,7 +339,10 @@ const PROBES: Probe[] = [
       const fnNames: string[] = [];
       for (const rel of shDirs) {
         names.add(`manual:${rel}`);
-        for (const seg of rel.split('/').slice(0, -1).map((_, i, a) => `${a.slice(0, i + 1).join('/')}/`)) {
+        for (const seg of rel
+          .split('/')
+          .slice(0, -1)
+          .map((_, i, a) => `${a.slice(0, i + 1).join('/')}/`)) {
           names.add(`glob:${seg}`);
         }
         try {
@@ -382,7 +383,10 @@ const PROBES: Probe[] = [
     entries: (root) =>
       blockeredEntries(path.join(root, '.ci-parity-exempt')).map((e) => ({
         ...e,
-        entry: e.entry === 'ci-only' || e.entry === 'local-only' ? readSecondColumn(root, e.line) : e.entry,
+        entry:
+          e.entry === 'ci-only' || e.entry === 'local-only'
+            ? readSecondColumn(root, e.line)
+            : e.entry,
       })),
     universe: (root) => {
       // An exemption is live only while the thing it exempts is still invoked

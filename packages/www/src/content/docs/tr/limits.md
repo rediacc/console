@@ -103,9 +103,9 @@ Veri deposu, makine ilk kurulduğunda oluşturulan sabit boyutlu bir havuzdur. B
 - **Yeniden boyutlandırma**: Havuz boyutunu değiştirmek için `rdc datastore resize` kullanın (tüm depolar önceden çıkarılmış olmalıdır).
 - **Dosya sistemi**: Rediacc, yazma üzerine kopyalama anlık görüntüleri ve verimli çatallama için dahili olarak BTRFS kullanır. Tam üretim kararlılığı için **Linux 6.1 veya üzeri** çekirdek çalıştıran bir makine gerektirir.
 
-Her deponun oluşturma sırasında belirlenen bir maksimum boyutu vardır (varsayılan: 10 GB). Bunu elle değiştirmek için `rdc repo resize`, makine dolduğunda otomatik büyüme için ise [otomatik boyut politikası](/tr/docs/repositories#otomatik-boyut-politikasi) ayarlayın (depo başına açık bir tavan ve havuz serbest alan rezerviyle sınırlıdır). Otomatik büyüme yalnızca tekil depolara uygulanır; havuzun kendisi otomatik olarak büyümez.
+Her deponun oluşturma sırasında belirlenen bir maksimum boyutu vardır (varsayılan: 10 GB). Bunu elle değiştirmek için `rdc repo resize`, makine dolduğunda otomatik büyüme için ise [otomatik boyut politikası](/tr/docs/repositories#automatic-size-policy) ayarlayın (depo başına açık bir tavan ve havuz serbest alan rezerviyle sınırlıdır). Otomatik büyüme yalnızca tekil depolara uygulanır; havuzun kendisi otomatik olarak büyümez.
 
-Depo görüntüleri seyrektir: bir depo havuzda yalnızca gerçekten yazdığı kadar yer kaplar; silmelerle serbest kalan alan [`repo trim`](/tr/docs/repositories#alan-kazanma-trim) veya zamanlanmış otomatik trim aracılığıyla havuza geri döner. Kotalar bu nedenle havuz boyutunun toplamını aşabilir; [depolama sağlığı raporu](/tr/docs/monitoring#depolama-sagligi) gerçek doluluk düzeyini gösterir.
+Depo görüntüleri seyrektir: bir depo havuzda yalnızca gerçekten yazdığı kadar yer kaplar; silmelerle serbest kalan alan [`repo trim`](/tr/docs/repositories#reclaim-space-trim) veya zamanlanmış otomatik trim aracılığıyla havuza geri döner. Kotalar bu nedenle havuz boyutunun toplamını aşabilir; [depolama sağlığı raporu](/tr/docs/monitoring#storage-health) gerçek doluluk düzeyini gösterir.
 
 ---
 

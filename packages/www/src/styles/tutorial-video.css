@@ -8,12 +8,12 @@
   margin: 1.5rem 0;
   aspect-ratio: 16 / 9;
   background: #000;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   overflow: hidden;
 }
 
 .tvp-root .plyr {
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   --plyr-color-main: #e94e2b;
   --plyr-video-control-color-hover: #ffffff;
   --plyr-tooltip-radius: 4px;
@@ -39,17 +39,17 @@
   padding: 8px 14px;
   background: rgba(0, 0, 0, 0.72);
   color: #fff;
-  font-size: 18px;
+  font-size: var(--font-size-lg);
   line-height: 1.4;
   font-weight: 500;
   text-align: center;
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   pointer-events: none;
   opacity: 0;
   visibility: hidden;
   transition:
-    opacity 120ms ease,
-    visibility 0s linear 120ms;
+    opacity var(--transition-duration-fast) var(--ease-standard),
+    visibility 0s linear var(--transition-duration-fast);
   z-index: 3;
   text-wrap: balance;
 }
@@ -58,7 +58,7 @@
   opacity: 1;
   visibility: visible;
   transition:
-    opacity 120ms ease,
+    opacity var(--transition-duration-fast) var(--ease-standard),
     visibility 0s linear 0s;
 }
 
@@ -71,14 +71,14 @@
 .tvp-root .plyr--fullscreen-active .tvp-caption,
 .tvp-root .plyr:fullscreen .tvp-caption {
   bottom: 96px;
-  font-size: 22px;
+  font-size: var(--font-size-xl);
 }
 
 .tvp-caption-word {
   display: inline;
   transition:
-    color 120ms ease,
-    background-color 120ms ease;
+    color var(--transition-duration-fast) var(--ease-standard),
+    background-color var(--transition-duration-fast) var(--ease-standard);
 }
 
 .tvp-caption-word.is-active {
@@ -89,7 +89,7 @@
 @media (max-width: 640px) {
   .tvp-caption {
     bottom: 56px;
-    font-size: 15px;
+    font-size: var(--font-size-base);
     padding: 6px 10px;
   }
 }
@@ -115,11 +115,16 @@
   height: 18px;
   padding: 0;
   border: 0;
+  /* EXCEPTION to the radius scale, and it is deliberate. This is a 12x18px hit
+     target; --radius-full clamps to 6px on a box that narrow, which is a
+     lozenge rather than a tick. A radius token is not scale-free: --radius-full
+     means "pill" only on an element wide enough to have one. Proven by
+     rendering 12x18 at 2px against 12x18 at 9999px: the two differ. */
   border-radius: 2px;
   background: transparent;
   pointer-events: auto;
   cursor: pointer;
-  transition: background 120ms ease;
+  transition: background var(--transition-duration-fast) var(--ease-standard);
 }
 
 /* The visible tick mark is drawn as a centered pseudo-element so the button's
@@ -133,11 +138,18 @@
   height: 14px;
   transform: translate(-50%, -50%);
   background: rgba(255, 255, 255, 0.85);
+  /* EXCEPTION to the one-shadow rule. Zero offset, zero blur, 1px spread is an
+     OUTLINE, not elevation: it is what keeps this white tick visible against a
+     bright video frame. --shadow is 0 1px 3px at 8% opacity and outlines
+     nothing, so forcing it here would have removed the tick's edge on light
+     footage. A box-shadow with zero blur and non-zero spread must never be
+     forced onto an elevation token. */
   box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.4);
+  /* EXCEPTION to the radius scale, same reason as the parent: 3px wide. */
   border-radius: 1px;
   transition:
-    background 120ms ease,
-    transform 120ms ease;
+    background var(--transition-duration-fast) var(--ease-standard),
+    transform var(--transition-duration-fast) var(--ease-standard);
 }
 
 .tvp-chapter-overlay .tvp-chapter-tick:hover::before,
@@ -158,18 +170,23 @@
   padding: 6px 10px;
   background: rgba(0, 0, 0, 0.9);
   color: #fff;
-  font-size: 12px;
+  font-size: var(--font-size-xs);
   font-weight: 500;
   line-height: 1.2;
-  white-space: nowrap;
-  border-radius: 4px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+  /* Bounded, and allowed to wrap. It used to be `white-space: nowrap` with no
+     max-width: `visibility: hidden` keeps an element in layout, so the hidden
+     tooltip still claimed its longest chapter title's width and widened the
+     scrollable area of every page carrying a player. Caught by
+     npm run check:ci-layout-overflow as [phantom-nowrap]. */
+  max-width: 14rem;
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow);
   pointer-events: none;
   opacity: 0;
   visibility: hidden;
   transition:
-    opacity 120ms ease,
-    visibility 0s linear 120ms;
+    opacity var(--transition-duration-fast) var(--ease-standard),
+    visibility 0s linear var(--transition-duration-fast);
   z-index: 5;
 }
 
@@ -188,6 +205,33 @@
   opacity: 1;
   visibility: visible;
   transition:
-    opacity 120ms ease,
+    opacity var(--transition-duration-fast) var(--ease-standard),
     visibility 0s linear 0s;
+}
+
+/* Language picker row above the player.
+ *
+ * It sits OUTSIDE .tvp-root on purpose. .tvp-root is a 16/9 box with
+ * overflow:hidden, so a control placed inside it would either cover the video or
+ * be clipped, and anything inside .plyr is destroyed and rebuilt every time the
+ * language changes -- which is precisely the element this control triggers. */
+.tvp-shell {
+  margin: 1.5rem 0;
+}
+
+.tvp-shell .tvp-root {
+  margin: 0;
+}
+
+.tvp-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-2);
+  margin-bottom: var(--space-2);
+  color: var(--color-text-muted);
+}
+
+.tvp-toolbar-icon {
+  flex: none;
 }

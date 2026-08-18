@@ -136,16 +136,38 @@ BACKUP_S3_ACCESS_KEY_ID="<key id>" \
 BACKUP_S3_SECRET_ACCESS_KEY="<secret>" \
   scripts/backup-cutover-preflight.sh
 
-# 2. Push the same four values as Worker secrets, per deploy target.
-#    CORRECTED 2026-08-15: the worker configs live in workers/account, NOT in
-#    the private/account submodule, and each target is its OWN config file
-#    (wrangler.bench.toml, wrangler.eu.toml, wrangler.edge-eu.toml, ...), not an
-#    [env.*] section — so this is `--config <file>`, never `--env edge`.
-#    A BACKUP_BUCKET binding is fine and preferable; see 2.2.
-cd workers/account
-for k in BACKUP_S3_ENDPOINT BACKUP_S3_BUCKET BACKUP_S3_ACCESS_KEY_ID BACKUP_S3_SECRET_ACCESS_KEY; do
-  npx wrangler secret put "$k" --config wrangler.edge-eu.toml
-done
+# 2. NOTHING TO DO BY HAND ANY MORE. SUPERSEDED 2026-08-18.
+#    CD now pushes these four to every account Worker on every deploy, so a
+#    hand-pushed secret is at best redundant and at worst a value that drifts
+#    from the one CI holds. The chain, all four links required:
+#      - the four values live as GitHub ORG secrets scoped to `console`
+#      - .github/workflows/cd-deploy-account.yml declares them under
+#        on.workflow_call.secrets AND passes them into "Set Worker secrets"
+#      - all three callers pass them: cd-v2.yml deploy-account-edge,
+#        cd-v2.yml deploy-account-stable, promote-stable.yml
+#      - .ci/scripts/deploy/set-account-worker-secrets.sh puts them in the jq
+#        payload piped to `wrangler secret bulk`
+#    `check:ci-workflow-gates` enforces the declare-and-pass contract in BOTH
+#    directions, so an incomplete rewiring fails CI by name rather than
+#    shipping a Worker whose backup endpoints answer 503. Verified by control:
+#    deleting one caller's pass-through reddens it with
+#    "promote-stable.yml: job 'deploy-account-stable' -> cd-deploy-account.yml:
+#     does not pass required secret BACKUP_S3_SECRET_ACCESS_KEY".
+#
+#    `wrangler secret bulk` MERGES rather than replacing, so any secret set by
+#    hand outside this list survives a deploy.
+#
+#    The old manual loop is kept below ONLY as the break-glass path for a
+#    target CD does not cover (e.g. a one-off bench worker). The worker configs
+#    live in workers/account, NOT in the private/account submodule, and each
+#    target is its OWN config file (wrangler.bench.toml, wrangler.eu.toml,
+#    wrangler.edge-eu.toml, ...), not an [env.*] section — so this is
+#    `--config <file>`, never `--env edge`.
+#
+# cd workers/account
+# for k in BACKUP_S3_ENDPOINT BACKUP_S3_BUCKET BACKUP_S3_ACCESS_KEY_ID BACKUP_S3_SECRET_ACCESS_KEY; do
+#   npx wrangler secret put "$k" --config wrangler.edge-eu.toml
+# done
 
 # 3. Register the credential for rotation (slug: cf-r2-backup), so this key
 #    joins the same lifecycle as cf-r2 and cf-r2-media rather than living

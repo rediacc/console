@@ -59,7 +59,8 @@ const RECOVERY_FUNCTIONS = [
  * by the work path, so it qualifies; a WithCancel one cannot be shown to.
  */
 const FRESH_ROOT = /context\.(Background|TODO)\(\)/;
-const FRESH_LOCAL = /context\.WithTimeout\(\s*context\.(Background|TODO)\(\)|=\s*context\.(Background|TODO)\(\)/;
+const FRESH_LOCAL =
+  /context\.WithTimeout\(\s*context\.(Background|TODO)\(\)|=\s*context\.(Background|TODO)\(\)/;
 
 interface Finding {
   file: string;
@@ -228,7 +229,14 @@ function runControl(): string[] {
     const bad = path.join(dir, 'bad.go');
     fs.writeFileSync(
       bad,
-      ['package main', '', 'func run(ctx context.Context) {', '\tstartColdBackupRepos(ctx, ds, repos)', '}', ''].join('\n')
+      [
+        'package main',
+        '',
+        'func run(ctx context.Context) {',
+        '\tstartColdBackupRepos(ctx, ds, repos)',
+        '}',
+        '',
+      ].join('\n')
     );
     if (scan([bad]).length !== 1) {
       failures.push('the detector did NOT flag a recovery call taking a work context');
@@ -250,7 +258,9 @@ function runControl(): string[] {
       ].join('\n')
     );
     if (scan([good]).length !== 0) {
-      failures.push('the detector flagged a correctly-rooted context, so it would fail forever and get deleted');
+      failures.push(
+        'the detector flagged a correctly-rooted context, so it would fail forever and get deleted'
+      );
     }
   } finally {
     fs.rmSync(dir, { recursive: true, force: true });
@@ -284,10 +294,18 @@ function main(): void {
       console.error(`  ${RED}✗${NC} ${f.file}:${f.line}  ${f.fn}(${f.arg}, …)`);
     }
     console.error('');
-    console.error(`${RED}✗${NC} ${findings.length} recovery call(s) take a context that may already be cancelled.`);
-    console.error('  On SIGTERM the work context is dead, every call inside fails instantly, and the');
-    console.error('  repositories stay STOPPED. Route the call through a wrapper that builds its own');
-    console.error('  context from context.Background() with its own timeout, as restartColdRepos does');
+    console.error(
+      `${RED}✗${NC} ${findings.length} recovery call(s) take a context that may already be cancelled.`
+    );
+    console.error(
+      '  On SIGTERM the work context is dead, every call inside fails instantly, and the'
+    );
+    console.error(
+      '  repositories stay STOPPED. Route the call through a wrapper that builds its own'
+    );
+    console.error(
+      '  context from context.Background() with its own timeout, as restartColdRepos does'
+    );
     console.error('  in private/renet/cmd/renet/backup_cold_restart.go.');
     process.exit(1);
   }

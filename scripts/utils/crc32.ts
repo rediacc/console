@@ -38,10 +38,7 @@ function crc32(str: string): string {
  * @param prefix - Current key prefix (for recursion)
  * @returns Record mapping dot-notation keys to their CRC32 hashes
  */
-export function flattenAndHash(
-  obj: Record<string, unknown>,
-  prefix = ''
-): Record<string, string> {
+export function flattenAndHash(obj: Record<string, unknown>, prefix = ''): Record<string, string> {
   const hashes: Record<string, string> = {};
 
   for (const [key, value] of Object.entries(obj)) {

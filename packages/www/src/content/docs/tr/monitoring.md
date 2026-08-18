@@ -115,7 +115,7 @@ rdc machine status server-1 --storage-health
 | Allocated | Seyrek görüntünün havuzda şu anda gerçekte kapladığı alan |
 | Unique | Yalnızca bu depoya ait gerçek benzersiz veriler |
 | Shared | BTRFS reflinkleri aracılığıyla depolar arasında yeniden kullanılan veri blokları (ücretsiz kopyalar) |
-| Reclaimable | [`repo trim`](/tr/docs/repositories#alan-kazanma-trim) komutunun havuza geri döndürebileceği, ayrılmış-kullanılan alan farkı. Bağlı olmayan depolar için `-` gösterir |
+| Reclaimable | [`repo trim`](/tr/docs/repositories#reclaim-space-trim) komutunun havuza geri döndürebileceği, ayrılmış-kullanılan alan farkı. Bağlı olmayan depolar için `-` gösterir |
 | Discards | Şifreli birimin discard'ları iletip iletmediği (güncel bir sürümle bağlanan her depo için `on`) |
 | Divergence | Görüntünün paylaşılan yerine bu depoya özgü yüzdesi (yüksekse silindiğinde daha fazla alan geri kazanılır) |
 | Frag | Copy-on-write görüntüsünde GB başına extent sayısı (yalnızca bilgi amaçlı) |

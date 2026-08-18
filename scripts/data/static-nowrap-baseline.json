@@ -1,0 +1,16 @@
+{
+  "note": "shrink-only; see RULE 3",
+  "entries": [
+    "packages/www/public/styles/main.css:.btn,\n.nav-cta-btn,\n.sidebar-account-cta",
+    "packages/www/public/styles/main.css:.chip",
+    "packages/www/public/styles/main.css:.footer-founder-name",
+    "packages/www/public/styles/main.css:.nav-link",
+    "packages/www/src/layouts/DocsLayout.astro:.docs-copy-page-md",
+    "packages/www/src/styles/cheatsheet.css:.cs-cards code",
+    "packages/www/src/styles/downloads-page.css:.download-button",
+    "packages/www/src/styles/language-switcher.css:.language-trigger",
+    "packages/www/src/styles/persona-mega-menu.css:.persona-menu-trigger",
+    "packages/www/src/styles/pricing-page.css:.comparison-table .comparison-row-label",
+    "packages/www/src/styles/solution-pages.css:.sp-roi-card-row span:last-child"
+  ]
+}

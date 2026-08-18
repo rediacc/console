@@ -256,7 +256,7 @@ V_MANY_POLL_CRONS = (
 )
 
 V_AGENT_STATE = (
-    "YOUR compact-recovery document agent/%s/%s/STATE.md is %s%s. "
+    "YOUR compact-recovery document agent/%s/STATE.md is %s%s. "
     "Compaction has "
     "already cost this project one operator decision (the autopilot App was "
     "reported blocked AFTER the operator had created it), and the transcript "
@@ -267,46 +267,38 @@ V_AGENT_STATE = (
     "them here; STATE.md carries only what is volatile. Stale means the WORLD "
     "has moved since it was written; an unchanged world never stales it. This "
     "document is YOURS: every peer session owns a sibling directory under "
-    "agent/%s/, which you read and never write. Send the BODY ALONE, with no "
+    "agent/, which you read and never write. Send the BODY ALONE, with no "
     "'## SESSION' heading -- the tool writes that:\n"
     "    .claude/hooks/stop/worklist.py --state %s <<'EOF'\n    ...\n    EOF"
 )
 
 V_AGENT_BOOTSTRAP = (
-    "you have no agent/%s/%s/ folder, so there is nowhere for the "
-    "compact-recovery STATE.md to live. It is one directory PER SESSION, not "
-    "one per branch: a peer's folder is not yours to write in, which is exactly "
-    "why a peer can no longer destroy your document. Bootstrap yours now (NEVER "
-    "auto-created: the RULES.md copy-forward is a judgement call a hook must "
-    "not make for you):\n"
-    "    mkdir -p agent/%s/%s\n"
-    "    cp agent/<a-previous-branch>/RULES.md agent/%s/RULES.md   # ONLY if this branch has none yet, then sharpen\n"
-    "then write a fresh STATE.md via worklist.py --state. RULES.md is per BRANCH, "
-    "one copy beside the session folders; STATE.md is the per-session half. "
-    "(agent/ is tracked, so agent/README.md is in a fresh clone.)"
+    "you have no agent/%s/ folder, so there is nowhere for the "
+    "compact-recovery STATE.md to live. It is one directory PER SESSION, named "
+    "after YOUR session and nothing else: a peer's folder is not yours to write "
+    "in, which is exactly why a peer can no longer destroy your document. "
+    "Bootstrap yours now (NEVER auto-created: it is a judgement call a hook "
+    "must not make for you):\n"
+    "    mkdir -p agent/%s\n"
+    "then write a fresh STATE.md via worklist.py --state. agent/RULES.md is the "
+    "shared half, sharpened in place and read by everyone; STATE.md is the "
+    "per-session half. (agent/ is tracked, so agent/README.md is in a fresh "
+    "clone.)"
 )
 
 V_AGENT_STILL_ABSENT = (
-    "agent/%s/%s/ is still absent; the bootstrap commands were shown on an "
+    "agent/%s/ is still absent; the bootstrap commands were shown on an "
     "earlier stop. Create it, then write STATE.md via worklist.py --state."
 )
 
 N_AGENT_PEERS = (
-    "NOTE: other sessions own directories beside yours under agent/%s/, each "
+    "NOTE: other sessions own directories beside yours under agent/, each "
     "with its own STATE.md. They are theirs; read them for cross-session "
     "context and NEVER write in one. Since the split you cannot lose a peer's "
     "document by accident at all -- not even with a raw `cat >`, because you "
     "would have to name their path to do it. One marked ABANDONED has an owner "
     "the liveness horizon calls gone; nothing deletes it, so treat it as a "
     "record to read rather than a slot to reclaim:\n%s"
-)
-
-N_AGENT_BLIND = (
-    "NOTE: no branch is resolvable at %s (detached HEAD?), so the STATE.md "
-    "freshness check is BLIND this stop. Report-only by operator decision "
-    "2026-07-30: HEAD detaches during every interactive rebase and blocking "
-    "each stop for the duration would be worse than one turn of unenforced "
-    "staleness. Set WORKLIST_AGENT_BRANCH to re-enable it mid-rebase."
 )
 
 CLI_LOOP_USAGE = (
@@ -492,7 +484,7 @@ N_CL_FOREIGN = (
 # the same FACTS and names no action for the reader. V_CL_FLIP keeps its
 # imperative, because on that path the reader IS the owner.
 V_PLAN_DRIFT = (
-    "%d committed plan file(s) on this branch describe work you have since "
+    "%d committed plan file(s) under agent/ describe work you have since "
     "moved past:\n%s\n"
     "A plan is the DURABLE design record -- committed, so it outlives this "
     "session, compaction, and this machine. STATE.md is the volatile cursor; "
@@ -504,7 +496,7 @@ V_PLAN_DRIFT = (
     "Do NOT simply touch the file: a plan that says the wrong thing with a "
     "fresh timestamp is worse than one that is visibly behind. Only "
     "draft/executing plans are checked, and the clock is never the trigger -- "
-    "a plan on a branch where nothing moved is never flagged."
+    "a plan whose work has not moved is never flagged."
 )
 
 CLI_INTENT_USAGE = (
@@ -570,7 +562,7 @@ CLI_STATE_REFUSED = (
 CLI_STATE_WHOLE_DOC = (
     "STATE REFUSED: the body you piped in carries a '## SESSION' heading, so it "
     "looks like the WHOLE document rather than your own section.\n"
-    "The contract changed: agent/<branch>/<you>/STATE.md is YOUR OWN document "
+    "The contract changed: agent/<you>/STATE.md is YOUR OWN document "
     "and `--state` writes your body into it under a lock, heading and all. "
     "Peers own sibling directories; you never write their text, so there is "
     "never a whole document to paste.\n"
@@ -610,17 +602,11 @@ CLI_STATE_NO_BODY = (
 )
 
 CLI_STATE_NO_DIR = (
-    "STATE REFUSED: agent/%s/%s/ does not exist, and this tool NEVER creates it "
-    "(the RULES.md copy-forward is a judgement call). It is one directory per "
-    "SESSION: a branch a peer already bootstrapped still has no folder of "
-    "yours in it. Bootstrap first:\n"
-    "    mkdir -p agent/%s/%s\n"
-    "    cp agent/<a-previous-branch>/RULES.md agent/%s/RULES.md   # ONLY if this branch has none yet\n"
-)
-
-CLI_STATE_NO_BRANCH = (
-    "STATE REFUSED: no branch is resolvable at %s (detached HEAD?). Check out "
-    "a branch, or set WORKLIST_AGENT_BRANCH explicitly.\n"
+    "STATE REFUSED: agent/%s/ does not exist, and this tool NEVER creates it "
+    "(bootstrapping is a judgement call). It is one directory per SESSION, "
+    "named after yours: a checkout a peer already bootstrapped still has no "
+    "folder of yours in it. Bootstrap first:\n"
+    "    mkdir -p agent/%s\n"
 )
 
 # v18 replaces N_WAKEUPS, which printed every scheduled task's next firing on
@@ -1339,7 +1325,7 @@ CLI_TRIAGE_SELF = (
     "INLINE if small and local: fix it now, then\n"
     "    .claude/hooks/stop/worklist.py --tick %(me)s %(id)s '<evidence>'\n"
     "PLAN+SUBAGENT if bigger: a Plan agent writes the design to "
-    "agent/%(branch)s/PLAN-<slug>.md with a 'Status: draft' header, you "
+    "agent/PLAN-<slug>.md with a 'Status: draft' header, you "
     "flip it to executing, and you implement it THIS session (a writer "
     "sub-agent when the file set is disjoint or the context is heavy, at most "
     "2, inline otherwise), riding the current PR when the risk is compatible "
@@ -1373,14 +1359,14 @@ CTX_SESSION_START_STALE = (
     "were last updated. Reconcile them early, not at the end."
 )
 
-# v16: the plan-file convention. agent/<branch>/PLAN-<slug>.md is the DURABLE
-# design record, committed with the branch, as opposed to the per-session
-# agent/<branch>/<me>/ directories whose STATE.md is the volatile cursor. A
-# plan survives compaction and a machine loss, so a session that never reads
-# them re-litigates decisions that were already paid for.
+# v16: the plan-file convention. agent/PLAN-<slug>.md is the DURABLE design
+# record, committed, as opposed to the per-session agent/<me>/ directories
+# whose STATE.md is the volatile cursor. A plan survives compaction and a
+# machine loss, so a session that never reads them re-litigates decisions that
+# were already paid for.
 CTX_PLANS = (
-    "DURABLE PLANS FOR THIS BRANCH (%s), committed under agent/<branch>/ "
-    "and written to survive compaction and a lost machine:\n%s\n\n"
+    "DURABLE PLANS, committed under agent/ and written to survive compaction "
+    "and a lost machine:\n%s\n\n"
     "READ EVERY NON-DONE PLAN BEFORE ACTING. They carry decisions already "
     "made and constraints that are invisible in the code, and re-deciding one "
     "wastes the session that decided it. When you take a plan over, flip its "
@@ -1410,20 +1396,12 @@ CTX_CHECKLISTS = (
 
 CTX_POSTCOMPACT_MISSING = (
     "CONTEXT WAS JUST COMPACTED and there is NO STATE.md at %s.\n"
-    "Read agent/README.md, agent/%s/RULES.md and docs/agent-reference/TRAPS.md "
+    "Read agent/README.md, agent/RULES.md and docs/agent-reference/TRAPS.md "
     "if they "
     "exist, reconstruct the current state from what survived, write it with\n"
     "    .claude/hooks/stop/worklist.py --state %s <<'EOF' ... EOF\n"
     "and do NOT report anything as blocked-on-operator until you have "
     "re-checked it: that is exactly the error compaction caused last time."
-)
-
-CTX_POSTCOMPACT_NO_BRANCH = (
-    "CONTEXT WAS JUST COMPACTED and no branch is resolvable (detached HEAD?), "
-    "so your STATE.md cannot be located. Check out a branch or set "
-    "WORKLIST_AGENT_BRANCH, then read agent/<branch>/<you>/STATE.md and "
-    "RULES.md. "
-    "Branch-independent hard-won facts, titles from docs/agent-reference/TRAPS.md:\n%s"
 )
 
 # Appended as its OWN block rather than widened into CTX_POSTCOMPACT_BRIEFING,
@@ -1433,7 +1411,7 @@ CTX_POSTCOMPACT_NO_BRANCH = (
 # strictly worse briefing than the file in front of it contains.
 CTX_POSTCOMPACT_PEERS = (
     "=== OTHER SESSIONS' STATE.md, from the sibling directories under "
-    "agent/<branch>/ ===\n"
+    "agent/ ===\n"
     "These belong to sessions sharing this checkout. They are context, not your "
     "work: read them so you do not sweep their uncommitted files or re-decide "
     "what they decided, and never write in one. `--state` only ever touches "
@@ -1446,10 +1424,9 @@ CTX_POSTCOMPACT_BRIEFING = (
     "recollection as unreliable. Re-verify anything it calls decided before "
     "you report it as blocked. Re-read %s before acting, and update whichever "
     "of those documents your work has invalidated.\n\n"
-    "=== your agent/<branch>/<you>/STATE.md (what is true now; rewrite via "
+    "=== your agent/<you>/STATE.md (what is true now; rewrite via "
     "worklist.py --state) ===\n%s\n\n"
-    "=== agent/<branch>/RULES.md (settled facts for the branch; sharpen in "
-    "place) ===\n%s\n\n"
+    "=== agent/RULES.md (settled facts; sharpen in place) ===\n%s\n\n"
     "=== docs/agent-reference/TRAPS.md titles (hard-won repo facts; read the full "
     "entry for "
     "any that looks relevant at %s) ===\n%s"
@@ -1677,7 +1654,7 @@ Cross-session messaging:
 
 Session state:
   --brief <me> <text...>        publish what you are changing right now
-  --state <me>                  rewrite agent/<branch>/<me>/STATE.md (body on stdin)
+  --state <me>                  rewrite agent/<me>/STATE.md (body on stdin)
   --loop <me> <next> <count> <what...>   declare a scheduled loop
 
 Maintenance:

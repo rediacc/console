@@ -18,9 +18,9 @@ Le nettoyage balaie les états qui ne correspondent plus à une ressource vivant
 | `rdc machine prune <machine>` | Artefacts du datastore sur la machine (toujours) ; images de dépôt orphelines ou inconnues (opt-in) | Configuration CLI locale + le miroir `.interim/state` de la machine |
 | `rdc config prune` | Résidus de la configuration locale (cache de certificats, archives expirées, références croisées orphelines) | Configuration CLI locale uniquement |
 
-Les trois sont indépendantes. Vous pouvez exécuter n'importe laquelle sans les autres. Elles partagent un modèle de sécurité commun décrit sous [Sécurité](#modèle-de-sécurité) ci-dessous.
+Les trois sont indépendantes. Vous pouvez exécuter n'importe laquelle sans les autres. Elles partagent un modèle de sécurité commun décrit sous [Sécurité](#safety-model) ci-dessous.
 
-Le nettoyage supprime l'état laissé par des ressources supprimées. Pour récupérer l'espace occupé par les dépôts *actifs* (des blocs que leurs systèmes de fichiers ont libérés mais que le pool retient encore), utilisez [`rdc repo trim`](/fr/docs/repositories#récupérer-de-lespace-trim) à la place ; les deux sont complémentaires.
+Le nettoyage supprime l'état laissé par des ressources supprimées. Pour récupérer l'espace occupé par les dépôts *actifs* (des blocs que leurs systèmes de fichiers ont libérés mais que le pool retient encore), utilisez [`rdc repo trim`](/fr/docs/repositories#reclaim-space-trim) à la place ; les deux sont complémentaires.
 
 ## Préflight de sécurité de montage
 
@@ -50,7 +50,7 @@ rdc storage prune my-s3 -m server-1 --force-delete-mounted
 
 ### Ce qui est vérifié
 
-1. Liste tous les GUIDs de sauvegarde dans le stockage nommé (à travers les sous-répertoires `hot/` et `cold/`. Voir [Sauvegarde et restauration](/fr/docs/backup-restore#sauvegardes-planifiées)).
+1. Liste tous les GUIDs de sauvegarde dans le stockage nommé (à travers les sous-répertoires `hot/` et `cold/`. Voir [Sauvegarde et restauration](/fr/docs/backup-restore#scheduled-backups)).
 2. Analyse tous les fichiers de configuration sur le disque (`~/.config/rediacc/*.json`).
 3. Une sauvegarde est **orpheline** si son GUID n'est référencé dans la section repositories d'aucune configuration.
 4. Les dépôts récemment archivés dans la période de grâce sont **protégés** même s'ils ont été retirés de la configuration active.
@@ -103,7 +103,7 @@ C'est un nettoyage **large**. Il supprime tout ce qui n'est pas dans votre confi
 
 ### Phase 3 : `--prune-unknown` (chirurgical)
 
-Avec `--prune-unknown`, la CLI ne supprime que les dépôts que **les deux** signaux échouent à classer : absents de toute configuration locale **et** sans entrée fork-marquée dans le miroir `.interim/state` de la machine (voir [Dépôts. Colonne `Type`](/fr/docs/repositories#colonne-type-et-le-miroir-detat)).
+Avec `--prune-unknown`, la CLI ne supprime que les dépôts que **les deux** signaux échouent à classer : absents de toute configuration locale **et** sans entrée fork-marquée dans le miroir `.interim/state` de la machine (voir [Dépôts. Colonne `Type`](/fr/docs/repositories#type-column-and-the-state-mirror)).
 
 ```bash
 rdc machine prune server-1 --prune-unknown --dry-run

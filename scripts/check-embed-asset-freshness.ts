@@ -37,11 +37,14 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { parseBlockeredList, verifyAllBlockers } from './lib/blocker-validator.js';
 import { parseDockerfileVersions } from './lib/dockerfile-versions.js';
 // Extracted so scripts/check-suppression-liveness.ts can reuse the inventory
 // without importing this module (which runs main() at import time).
-import { EMBED_ASSET_SOURCES as SOURCES, type EmbedAssetSource as Source } from './lib/embed-asset-sources.js';
-import { parseBlockeredList, verifyAllBlockers } from './lib/blocker-validator.js';
+import {
+  EMBED_ASSET_SOURCES as SOURCES,
+  type EmbedAssetSource as Source,
+} from './lib/embed-asset-sources.js';
 import { getMinReleaseAgeMs, isWithinFreshnessWindow } from './lib/release-age.js';
 import { GREEN, NC, RED, YELLOW } from './utils/console.js';
 
@@ -51,7 +54,8 @@ const DOCKERFILE = path.join(CONSOLE_ROOT, 'private/renet/Dockerfile');
 // Test seam: EMBED_BLOCKLIST_FILE points at a fixture blocklist so the gate
 // test can prove the BLOCKER-reason validation fires without mutating the real,
 // tracked .embed-assets-upgrade-blocklist.
-const BLOCKLIST = process.env.EMBED_BLOCKLIST_FILE || path.join(CONSOLE_ROOT, '.embed-assets-upgrade-blocklist');
+const BLOCKLIST =
+  process.env.EMBED_BLOCKLIST_FILE || path.join(CONSOLE_ROOT, '.embed-assets-upgrade-blocklist');
 
 const HTTP_TIMEOUT_MS = 15_000;
 
@@ -155,14 +159,18 @@ async function latestFor(src: Source): Promise<Latest> {
   if (fixture) {
     const hit = fixture[src.base];
     if (!hit) throw new Error('not in fixture');
-    return { version: hit.version, publishedAt: hit.publishedAt ? new Date(hit.publishedAt) : null };
+    return {
+      version: hit.version,
+      publishedAt: hit.publishedAt ? new Date(hit.publishedAt) : null,
+    };
   }
   if (src.kind === 'github') {
     // /releases/latest excludes prereleases/drafts — the stable line we track.
     try {
-      const rel = (await fetchJson(
-        `https://api.github.com/repos/${src.repo}/releases/latest`
-      )) as { tag_name?: string; published_at?: string };
+      const rel = (await fetchJson(`https://api.github.com/repos/${src.repo}/releases/latest`)) as {
+        tag_name?: string;
+        published_at?: string;
+      };
       if (!rel.tag_name) throw new Error('no tag_name in release');
       return {
         version: rel.tag_name.replace(/^v/i, ''),
@@ -225,7 +233,6 @@ async function latestFor(src: Source): Promise<Latest> {
   }
   return { version: newestRsync, publishedAt: rsyncPublished };
 }
-
 
 interface Finding {
   display: string;
@@ -305,7 +312,9 @@ async function main(): Promise<void> {
   for (const h of heldOut) console.log(`${YELLOW}⏸ held: ${h}${NC}`);
 
   if (stale.length === 0) {
-    console.log(`${GREEN}✓ Every embed-asset pin is current (or deferred / held / uncheckable).${NC}`);
+    console.log(
+      `${GREEN}✓ Every embed-asset pin is current (or deferred / held / uncheckable).${NC}`
+    );
     return;
   }
 
@@ -318,7 +327,9 @@ async function main(): Promise<void> {
     }
     fs.writeFileSync(DOCKERFILE, src);
     console.log('');
-    console.log(`${YELLOW}Dockerfile ARGs rewritten. You MUST now, for the bumped components:${NC}`);
+    console.log(
+      `${YELLOW}Dockerfile ARGs rewritten. You MUST now, for the bumped components:${NC}`
+    );
     console.log('  - refresh the SHA256 pins (zot/k3s) and the AssetK3sVersion const in');
     console.log('    private/renet/pkg/embed/embed.go if k3s changed;');
     console.log('  - re-run `./build.sh embed_assets --force` and update the credits');
@@ -338,7 +349,9 @@ async function main(): Promise<void> {
   console.error('    npm run check:ci-embed-asset-freshness -- --upgrade');
   console.error('  then, for each bumped component:');
   console.error('    1. rebuild the builder image so the new binaries are pulled:');
-  console.error('         (cd private/renet && docker build -t rediacc/renet:latest . && ./build.sh embed_assets --force)');
+  console.error(
+    '         (cd private/renet && docker build -t rediacc/renet:latest . && ./build.sh embed_assets --force)'
+  );
   console.error('    2. refresh any SHA256 pin (zot/k3s) + the AssetK3sVersion const in');
   console.error('       private/renet/pkg/embed/embed.go if k3s changed;');
   console.error('    3. update the credits inventories (credits.go + third-party-credits.json)');
@@ -357,4 +370,3 @@ main().catch((err) => {
   console.error(`${RED}✗ freshness gate crashed: ${(err as Error).message}${NC}`);
   process.exit(1);
 });
-

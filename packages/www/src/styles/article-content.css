@@ -7,9 +7,13 @@
 .article-content h3,
 .article-content h4,
 .article-content h5,
+/* No scroll-margin-top here. There is exactly one anchor offset on this site
+   and it is `scroll-padding-top` on the scroll container (public/styles/main.css),
+   which already knows about the sticky nav, the announcement bar and the docs
+   chrome. The copy that used to live on this rule ADDED to that one rather than
+   replacing it, so a heading landed the sum of the two down the page. */
 .article-content h6 {
   margin: var(--space-8) 0 var(--space-4) 0;
-  scroll-margin-top: calc(var(--nav-top-offset) + var(--space-8));
 }
 
 .article-content h2 {
@@ -32,14 +36,18 @@
   padding: var(--space-1) var(--space-2);
   border-radius: var(--radius-sm);
   font-family: var(--font-family-mono);
-  font-size: 0.9em;
+  font-size: var(--font-size-sm);
 }
 
+/* Shiki writes `background-color` and `overflow-x` as INLINE styles on every
+   <pre class="astro-code">, so both were declared here and neither could ever
+   apply: an inline style beats any selector. Verified on the built HTML, where
+   all 18 blocks on quick-start carry
+   style="background-color:#24292e;color:#e1e4e8; overflow-x: auto;".
+   The theme is chosen with `shikiConfig` in astro.config.mjs, not here. */
 .article-content pre {
-  background-color: var(--color-bg-light);
   padding: var(--space-4);
   border-radius: var(--radius-md);
-  overflow-x: auto;
   margin: var(--space-4) 0;
   tab-size: 4;
   scrollbar-width: thin;
@@ -94,7 +102,7 @@
 .article-content a {
   color: var(--color-brand-primary);
   text-decoration: none;
-  transition: color var(--transition-duration-base) ease;
+  transition: color var(--transition-duration-base) var(--ease-standard);
 }
 
 .article-content a:hover {

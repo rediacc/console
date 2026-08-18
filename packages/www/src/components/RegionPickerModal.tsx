@@ -3,28 +3,10 @@ import { REGIONS, type Region } from '../config/regions';
 import { useLanguage } from '../hooks/useLanguage';
 import { useTranslation } from '../i18n/react';
 import { buildPortalRedirectUrl, getHostKind } from '../utils/marketing-host';
+import Overlay from './Overlay';
+import type { Language } from '../i18n/types';
 
 const DEFAULT_TARGET_PATH = '/account/';
-
-function handleFocusTrap(e: KeyboardEvent, modal: HTMLDivElement, close: () => void): void {
-  if (e.key === 'Escape') {
-    close();
-    return;
-  }
-  if (e.key !== 'Tab') return;
-
-  const focusable = modal.querySelectorAll<HTMLElement>('button, [tabindex]:not([tabindex="-1"])');
-  if (focusable.length === 0) return;
-  const first = focusable[0];
-  const last = focusable[focusable.length - 1];
-  if (e.shiftKey && document.activeElement === first) {
-    e.preventDefault();
-    last.focus();
-  } else if (!e.shiftKey && document.activeElement === last) {
-    e.preventDefault();
-    first.focus();
-  }
-}
 
 function detectLikelyRegion(regions: Region[]): Region {
   try {
@@ -105,18 +87,31 @@ function forwardToPortal(region: Region, targetPath: string): void {
   );
 }
 
-const RegionPickerModal: React.FC = () => {
+interface RegionPickerModalProps {
+  /** Locale from BaseLayout; authoritative on the server. See the note above. */
+  lang?: Language;
+}
+
+/**
+ * `lang` is passed by BaseLayout and is AUTHORITATIVE on the server.
+ *
+ * `useLanguage()` reads `window.location.pathname`, and there is no `window` during SSR,
+ * so it returns 'en' for every locale. That made this island server-render English on all
+ * twelve non-English locales: crawlers and no-JS visitors saw an English nav, and everyone
+ * else got a flash of English until hydration corrected it. Astro knows the locale, so it
+ * hands it down; the hook stays as the fallback for any mount that does not.
+ */
+const RegionPickerModal: React.FC<RegionPickerModalProps> = ({ lang }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [targetPath, setTargetPath] = useState('/account/');
   const [selected, setSelected] = useState<string | null>(null);
-  const currentLang = useLanguage();
+  const detectedLang = useLanguage();
+  const currentLang = lang ?? detectedLang;
   const { t } = useTranslation(currentLang);
 
-  const modalRef = useRef<HTMLDivElement>(null);
-  const previousFocusRef = useRef<HTMLElement | null>(null);
+  const firstCardRef = useRef<HTMLButtonElement>(null);
 
   const forceOpen = useCallback((path?: string) => {
-    previousFocusRef.current = document.activeElement as HTMLElement;
     setTargetPath(path ?? DEFAULT_TARGET_PATH);
     setSelected(detectLikelyRegion(REGIONS).id);
     setIsOpen(true);
@@ -145,7 +140,6 @@ const RegionPickerModal: React.FC = () => {
 
   const close = useCallback(() => {
     setIsOpen(false);
-    previousFocusRef.current?.focus();
   }, []);
 
   const handleSelect = useCallback(
@@ -176,72 +170,29 @@ const RegionPickerModal: React.FC = () => {
     };
   }, [open, forceOpen]);
 
-  // Focus trap + Escape + body scroll lock
-  useEffect(() => {
-    if (!isOpen) return;
-
-    document.body.style.overflow = 'hidden';
-    requestAnimationFrame(() => {
-      const firstBtn = modalRef.current?.querySelector<HTMLElement>('.region-picker-card');
-      firstBtn?.focus();
-    });
-
-    const onKeyDown = (e: KeyboardEvent) => {
-      const modal = modalRef.current;
-      if (!modal) return;
-      handleFocusTrap(e, modal, close);
-    };
-
-    document.addEventListener('keydown', onKeyDown);
-    return () => {
-      document.body.style.overflow = '';
-      document.removeEventListener('keydown', onKeyDown);
-    };
-  }, [isOpen, close]);
-
-  if (!isOpen) return null;
-
   return (
-    <div className="region-picker-backdrop" onClick={close}>
-      <div
-        className="region-picker-content"
-        ref={modalRef}
-        role="dialog"
-        aria-modal="true"
-        aria-label={t('regionPicker.title')}
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="region-picker-header">
-          <h2 className="region-picker-title">{t('regionPicker.title')}</h2>
-          <button
-            className="region-picker-close"
-            onClick={close}
-            aria-label={t('common.close')}
-            type="button"
-            data-track="region_picker_close"
-          >
-            <svg
-              width="20"
-              height="20"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-            >
-              <path d="M18 6L6 18M6 6l12 12" />
-            </svg>
-          </button>
-        </div>
-
+    <Overlay
+      open={isOpen}
+      onClose={close}
+      align="center"
+      width="wide"
+      label={t('regionPicker.title')}
+      title={t('regionPicker.title')}
+      closeLabel={t('common.close')}
+      closeTrackLabel="region_picker_close"
+      initialFocusRef={firstCardRef}
+    >
+      <div className="overlay-body region-picker">
         <p className="region-picker-subtitle">{t('regionPicker.subtitle')}</p>
         <p className="region-picker-reassurance">{t('regionPicker.reassurance')}</p>
 
         <div className="region-picker-cards">
-          {REGIONS.map((region) => (
+          {REGIONS.map((region, index) => (
             <button
               key={region.id}
               type="button"
-              className={`region-picker-card ${selected === region.id ? 'region-picker-card--selected' : ''}`}
+              ref={index === 0 ? firstCardRef : undefined}
+              className={`card region-picker-card ${selected === region.id ? 'card--raised' : ''}`}
               onClick={() => handleSelect(region)}
               onMouseEnter={() => setSelected(region.id)}
               onFocus={() => setSelected(region.id)}
@@ -267,7 +218,7 @@ const RegionPickerModal: React.FC = () => {
         <p className="region-picker-footer">{t('regionPicker.footer')}</p>
         <p className="region-picker-footer-note">{t('regionPicker.footerNote')}</p>
       </div>
-    </div>
+    </Overlay>
   );
 };
 

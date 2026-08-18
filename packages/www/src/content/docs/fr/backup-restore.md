@@ -57,7 +57,7 @@ Le push et le pull de machine à machine n'ont besoin ni de l'un ni de l'autre. 
 
 ### La voie de stockage rclone a disparu
 
-`rdc repo push --to <storage>` et ses variantes copiaient auparavant un fichier de sauvegarde complet vers un fournisseur compatible rclone que vous enregistriez vous-même. Elles refusent maintenant une destination de stockage et nomment leur remplaçant. Le transfert de machine à machine n'est pas concerné : il n'est jamais passé par rclone. Si vous avez encore besoin de lire une archive écrite de cette façon, voir [Lire une archive écrite avant le retrait](#lire-une-archive-écrite-avant-le-retrait).
+`rdc repo push --to <storage>` et ses variantes copiaient auparavant un fichier de sauvegarde complet vers un fournisseur compatible rclone que vous enregistriez vous-même. Elles refusent maintenant une destination de stockage et nomment leur remplaçant. Le transfert de machine à machine n'est pas concerné : il n'est jamais passé par rclone. Si vous avez encore besoin de lire une archive écrite de cette façon, voir [Lire une archive écrite avant le retrait](#reading-an-archive-written-before-the-retirement).
 
 ### Commandes de stockage fragmenté
 
@@ -343,7 +343,7 @@ rdc repo push shop:nightly@server-1 --to server-2
 rdc repo pull shop:nightly@server-1 --from server-2
 ```
 
-Les listes d'options complètes se trouvent sous [Envoyer une sauvegarde vers une autre machine](#envoyer-une-sauvegarde-vers-une-autre-machine) et [Récupérer une sauvegarde depuis une autre machine](#récupérer-une-sauvegarde-depuis-une-autre-machine).
+Les listes d'options complètes se trouvent sous [Envoyer une sauvegarde vers une autre machine](#push-a-backup-to-another-machine) et [Récupérer une sauvegarde depuis une autre machine](#pull-a-backup-from-another-machine).
 
 ## Sauvegardes planifiées
 
@@ -436,7 +436,7 @@ Ce comportement par défaut est délibéré. Exécuter deux sauvegardes froides 
 
 ### Instantanés, interruptions et espace dans le pool
 
-Chaque push fonctionne à partir d'un instantané momentané du datastore, de sorte que les données chargées sont cohérentes même pendant que les dépôts continuent d'écrire. Pendant l'exécution de la sauvegarde, cet instantané continue de référencer chaque bloc qu'il partage avec les dépôts actifs : les suppressions et les [trims](/fr/docs/repositories#récupérer-de-lespace-trim) libèrent moins d'espace dans le pool jusqu'à la fin du cycle et la suppression de l'instantané. Le [rapport de santé du stockage](/fr/docs/monitoring#santé-du-stockage) indique l'espace que les instantanés de sauvegarde immobilisent actuellement.
+Chaque push fonctionne à partir d'un instantané momentané du datastore, de sorte que les données chargées sont cohérentes même pendant que les dépôts continuent d'écrire. Pendant l'exécution de la sauvegarde, cet instantané continue de référencer chaque bloc qu'il partage avec les dépôts actifs : les suppressions et les [trims](/fr/docs/repositories#reclaim-space-trim) libèrent moins d'espace dans le pool jusqu'à la fin du cycle et la suppression de l'instantané. Le [rapport de santé du stockage](/fr/docs/monitoring#storage-health) indique l'espace que les instantanés de sauvegarde immobilisent actuellement.
 
 Les interruptions sont sans danger. Arrêter le service (ou redémarrer la machine) provoque l'abandon du transfert et la suppression de l'instantané avant la sortie ; l'exécution planifiée suivante reprend là où elle s'était arrêtée, car les cellules déjà stockées ne sont pas renvoyées. Si le processus est tué trop brutalement pour nettoyer (coupure de courant), l'instantané orphelin est détecté et supprimé automatiquement par le mainteneur de stockage en quelques minutes.
 
@@ -514,7 +514,7 @@ L'association est enregistrée dans votre configuration comme une liste sur la m
 }
 ```
 
-> **La liaison ne concerne que la configuration locale.** Définir une stratégie et la lier à une machine n'agit pas sur la machine. Exécutez `rdc backup schedule -m <machine>` (voir [Déployer le calendrier sur une machine](#déployer-le-calendrier-sur-une-machine)) pour déployer les minuteurs systemd, et relancez-le après tout changement de stratégie ou de liaison.
+> **La liaison ne concerne que la configuration locale.** Définir une stratégie et la lier à une machine n'agit pas sur la machine. Exécutez `rdc backup schedule -m <machine>` (voir [Déployer le calendrier sur une machine](#deploy-schedule-to-machine)) pour déployer les minuteurs systemd, et relancez-le après tout changement de stratégie ou de liaison.
 
 ## Choisir entre hot et cold et filtrage par dépôt
 
@@ -529,7 +529,7 @@ L'association est enregistrée dans votre configuration comme une liste sur la m
 
 **Hot** est le bon choix par défaut pour les exécutions à haute fréquence. Les services continuent de fonctionner pendant la prise du snapshot, de sorte qu'il n'y a pas de temps d'arrêt pour vos applications. Le snapshot est cohérent en cas de crash : il équivaut à ce que vous obtiendriez après un arrêt incorrect. Pour la plupart des bases de données modernes et des files de messages, c'est acceptable.
 
-**Cold** est approprié quand vous avez besoin d'un snapshot applicatif garanti et que vous pouvez accepter un bref redémarrage par dépôt. Les services sont arrêtés avant le snapshot et redémarrés avant le début du chargement, de sorte qu'un chargement lent ou échoué ne prolonge jamais la fenêtre de temps d'arrêt. Consultez [Sémantique de la sauvegarde froide](#sémantique-de-la-sauvegarde-froide) pour le modèle de garantie complet.
+**Cold** est approprié quand vous avez besoin d'un snapshot applicatif garanti et que vous pouvez accepter un bref redémarrage par dépôt. Les services sont arrêtés avant le snapshot et redémarrés avant le début du chargement, de sorte qu'un chargement lent ou échoué ne prolonge jamais la fenêtre de temps d'arrêt. Consultez [Sémantique de la sauvegarde froide](#cold-backup-semantics) pour le modèle de garantie complet.
 
 Les deux modes écrivent dans le même stockage fragmenté, et le mode concerne la façon dont le dépôt est traité pendant que l'image est gelée, pas l'endroit où atterrissent les données. Un dépôt couvert à la fois par un calendrier hot horaire et un calendrier cold hebdomadaire stocke les cellules qu'ils partagent une seule fois plutôt que deux.
 
@@ -562,7 +562,7 @@ Nommez les dépôts que vous voulez dans l'exécution haute fréquence, plutôt 
 - Un dépôt est volumineux et **entièrement régénérable** à partir des données sources déjà présentes sur le volume, de sorte que chaque sauvegarde horaire dépense de la bande passante sans apporter de valeur de récupération.
 - L'exécution de sauvegarde dépasserait son propre intervalle de calendrier à votre vitesse de chargement disponible.
 
-**Exemple.** Un dépôt `analytics-demo` contient environ 114 Go de tables Postgres dérivées pouvant être reconstruites à partir des fichiers CSV bruts stockés dans le même volume. Avec une limite de chargement à 6 Mo/s, un premier instantané de ce dépôt prend plus de 5 heures. En l'exécutant toutes les heures, chaque exécution est encore en cours quand la suivante se déclenche, si bien que chaque déclenchement suivant est abandonné silencieusement (voir [Sauvegardes longues et calendriers qui se chevauchent](#sauvegardes-longues-et-calendriers-qui-se-chevauchent)). Lister les autres dépôts dans `hourly-hot` et laisser `analytics-demo` à `weekly-cold` signifie qu'il est sauvegardé une fois par semaine plutôt que jamais.
+**Exemple.** Un dépôt `analytics-demo` contient environ 114 Go de tables Postgres dérivées pouvant être reconstruites à partir des fichiers CSV bruts stockés dans le même volume. Avec une limite de chargement à 6 Mo/s, un premier instantané de ce dépôt prend plus de 5 heures. En l'exécutant toutes les heures, chaque exécution est encore en cours quand la suivante se déclenche, si bien que chaque déclenchement suivant est abandonné silencieusement (voir [Sauvegardes longues et calendriers qui se chevauchent](#long-running-backups-and-overlapping-schedules)). Lister les autres dépôts dans `hourly-hot` et laisser `analytics-demo` à `weekly-cold` signifie qu'il est sauvegardé une fois par semaine plutôt que jamais.
 
 > **Si les données sont purement régénérables**, envisagez si vous avez vraiment besoin de les sauvegarder. Une alternative est de ne sauvegarder que les entrées sources brutes (les dumps CSV dans cet exemple) et d'ignorer entièrement la copie dérivée. Une sauvegarde froide hebdomadaire des entrées sources est bien plus petite et entièrement suffisante pour la récupération.
 

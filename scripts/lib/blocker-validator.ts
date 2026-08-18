@@ -13,19 +13,63 @@ import * as fs from 'node:fs';
 
 const LOW_EFFORT_BLOCKER_PATTERNS: readonly string[] = [
   // npm-audit ack-tier phrases
-  'no fix', 'no fix available', 'no fix yet', 'no upstream fix', 'no fix published',
-  'no patch', 'no patch yet', 'no patch available',
-  'none', 'n/a', 'na', 'empty', '-',
+  'no fix',
+  'no fix available',
+  'no fix yet',
+  'no upstream fix',
+  'no fix published',
+  'no patch',
+  'no patch yet',
+  'no patch available',
+  'none',
+  'n/a',
+  'na',
+  'empty',
+  '-',
   // scheduling ack-tier
-  'tbd', 'wip', 'fixme', 'todo', 'later', 'fix later', 'will fix', 'pending',
-  'skip', 'skipping', 'skipped', 'ignore', 'ignoring', 'ignored',
-  'unknown', 'unknown reason', 'idk', 'dunno', 'whatever',
+  'tbd',
+  'wip',
+  'fixme',
+  'todo',
+  'later',
+  'fix later',
+  'will fix',
+  'pending',
+  'skip',
+  'skipping',
+  'skipped',
+  'ignore',
+  'ignoring',
+  'ignored',
+  'unknown',
+  'unknown reason',
+  'idk',
+  'dunno',
+  'whatever',
   // review-gate-style ack phrases
-  'ok', 'okay', 'ack', 'acknowledged', 'noted', 'done', 'fixed', 'applied',
-  'addressed', 'updated', 'changed', 'understood',
+  'ok',
+  'okay',
+  'ack',
+  'acknowledged',
+  'noted',
+  'done',
+  'fixed',
+  'applied',
+  'addressed',
+  'updated',
+  'changed',
+  'understood',
   // explicit escape-hatch attempts
-  'escape', 'escape hatch', 'suppressed', 'suppress', 'bypass', 'override',
-  'upstream issue', 'transitive', 'dev dep', 'dev only',
+  'escape',
+  'escape hatch',
+  'suppressed',
+  'suppress',
+  'bypass',
+  'override',
+  'upstream issue',
+  'transitive',
+  'dev dep',
+  'dev only',
 ];
 
 // Substring-matched (not exact-match) phrases that signal can-kicking a routine,
@@ -71,7 +115,7 @@ export interface BlockerValidationFailure {
 export function validateBlockerQuality(
   id: string,
   reason: string,
-  file: string,
+  file: string
 ): BlockerValidationFailure | null {
   const normalized = normalize(reason);
 
@@ -197,7 +241,7 @@ export function verifyAllBlockers(entries: BlockeredEntry[], file: string): stri
         [
           `Allowlist ${file}: entry ${entry} is missing a '# BLOCKER: <reason>' comment above it`,
           `  Action: add a line like '# BLOCKER: <who pins what / why we cannot take the fix>' immediately above ${entry} in ${file}`,
-        ].join('\n'),
+        ].join('\n')
       );
       continue;
     }

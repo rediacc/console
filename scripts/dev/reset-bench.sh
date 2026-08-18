@@ -13,9 +13,9 @@
 #   - someone else's test data is in the way
 #
 # Auth (uses scripts/dev/lib/cf-auth.sh — see that file's header for details):
-#   CF_API_KEY + CF_EMAIL    Global API Key (recommended)
-#   CF_MANAGEMENT_TOKEN      Pre-created scoped API token
-#   Interactive prompt       Asks for one of the above when neither is set
+#   CF_GLOBAL_API_KEY + CF_EMAIL  Global API Key (recommended)
+#   CF_MANAGEMENT_TOKEN           Pre-created scoped API token
+#   Interactive prompt            Asks for one of the above when neither is set
 #
 # bench is internal-only, so there's no soft-confirm dance: pass --yes to
 # skip the single confirmation prompt for non-interactive use.
@@ -85,7 +85,10 @@ export CLOUDFLARE_ACCOUNT_ID="$ACCOUNT_ID"
 # Unset the legacy global-key envs so wrangler only sees CLOUDFLARE_API_TOKEN.
 # Note: cf-auth.sh's CF_AUTH_HEADERS still uses Bearer $CF_MANAGEMENT_TOKEN
 # (set by resolve_cf_auth), so curl calls keep working.
-unset CF_API_KEY CF_EMAIL
+# CF_API_KEY is not ours: it is wrangler's OWN deprecated alias for the global
+# key, so clearing it from the ambient shell is defensive hygiene, not a second
+# name for CF_GLOBAL_API_KEY.
+unset CF_GLOBAL_API_KEY CF_API_KEY CF_EMAIL
 
 # ─── Confirmation ──────────────────────────────────────────────────────
 if [[ "$ASSUME_YES" == "false" ]]; then

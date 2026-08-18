@@ -14,7 +14,7 @@ sourceCommit: "20f014619af1ee41e75cd46a3c8e4abc5add0983"
 
 Cette page explique comment les services exécutés dans des démons Docker isolés deviennent accessibles depuis Internet. Elle couvre le système de proxy inverse, les labels Docker pour le routage, les certificats TLS, le DNS et la redirection de ports TCP/UDP.
 
-Pour comprendre comment les services obtiennent leurs adresses IP de bouclage et le système de slots `.rediacc.json`, consultez [Services](/fr/docs/services#réseau-de-services-rediaccjson).
+Pour comprendre comment les services obtiennent leurs adresses IP de bouclage et le système de slots `.rediacc.json`, consultez [Services](/fr/docs/services#service-networking-rediaccjson).
 
 ## Isolation Réseau
 
@@ -128,7 +128,7 @@ Ceux-ci utilisent la syntaxe standard des [labels Traefik v3](https://doc.traefi
 
 ### Prérequis
 
-1. Infrastructure configurée sur la machine ([Configuration de la machine, Configuration de l'infrastructure](/fr/docs/setup#configuration-de-linfrastructure)) :
+1. Infrastructure configurée sur la machine ([Configuration de la machine, Configuration de l'infrastructure](/fr/docs/setup#infrastructure-configuration)) :
 
    ```bash
    # Identifiants partagés (une fois par config, s'applique à toutes les machines)
@@ -144,7 +144,7 @@ Ceux-ci utilisent la syntaxe standard des [labels Traefik v3](https://doc.traefi
    rdc machine infra push server-1
    ```
 
-2. Enregistrements DNS pointant votre domaine vers l'IP publique du serveur (voir [Configuration DNS](#configuration-dns) ci-dessous).
+2. Enregistrements DNS pointant votre domaine vers l'IP publique du serveur (voir [Configuration DNS](#dns-configuration) ci-dessous).
 
 ### Ajouter des labels
 

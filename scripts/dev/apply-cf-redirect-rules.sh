@@ -15,7 +15,7 @@
 #
 # Auth:
 #   CLOUDFLARE_API_TOKEN, OR
-#   CF_API_KEY + CF_EMAIL (fallback for Global API Key)
+#   CF_GLOBAL_API_KEY + CF_EMAIL (fallback for Global API Key)
 #
 # Usage:
 #   ./scripts/dev/apply-cf-redirect-rules.sh              # verify + create if missing
@@ -42,10 +42,10 @@ done
 
 if [[ -n "${CLOUDFLARE_API_TOKEN:-}" ]]; then
     AUTH=(-H "Authorization: Bearer $CLOUDFLARE_API_TOKEN")
-elif [[ -n "${CF_API_KEY:-}" && -n "${CF_EMAIL:-}" ]]; then
-    AUTH=(-H "X-Auth-Email: $CF_EMAIL" -H "X-Auth-Key: $CF_API_KEY")
+elif [[ -n "${CF_GLOBAL_API_KEY:-}" && -n "${CF_EMAIL:-}" ]]; then
+    AUTH=(-H "X-Auth-Email: $CF_EMAIL" -H "X-Auth-Key: $CF_GLOBAL_API_KEY")
 else
-    echo "ERROR: set CLOUDFLARE_API_TOKEN or CF_API_KEY + CF_EMAIL" >&2
+    echo "ERROR: set CLOUDFLARE_API_TOKEN or CF_GLOBAL_API_KEY + CF_EMAIL" >&2
     exit 1
 fi
 

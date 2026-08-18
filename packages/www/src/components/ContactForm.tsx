@@ -95,15 +95,13 @@ const ContactForm: React.FC<Props> = ({ interest }) => {
 
   if (state === 'success') {
     return (
-      <div className="contact-inline-success">
+      <div className="form-outcome">
         <svg
-          width="48"
-          height="48"
           viewBox="0 0 24 24"
           fill="none"
           stroke="currentColor"
-          strokeWidth="2"
-          className="contact-inline-success-icon"
+          className="icon form-outcome-mark"
+          aria-hidden="true"
         >
           <circle cx="12" cy="12" r="10" />
           <path d="M8 12l3 3 5-5" />
@@ -115,7 +113,7 @@ const ContactForm: React.FC<Props> = ({ interest }) => {
 
   return (
     <form
-      className="contact-inline-form"
+      className="form"
       onSubmit={handleSubmit}
       noValidate
       onFocus={() => {
@@ -125,16 +123,19 @@ const ContactForm: React.FC<Props> = ({ interest }) => {
         }
       }}
     >
-      <h2 className="contact-inline-title">{t('contactModal.title')}</h2>
+      <h2 className="form-title">{t('contactModal.title')}</h2>
 
       {/* Honeypot */}
-      <div className="contact-honeypot" aria-hidden="true">
+      <div className="honeypot" aria-hidden="true">
         <input type="text" name="company_url" ref={honeypotRef} tabIndex={-1} autoComplete="off" />
       </div>
 
-      <div className="contact-inline-field">
-        <label htmlFor="page-contact-name">{t('contactModal.fields.name')}</label>
+      <div className="form-group">
+        <label className="form-label" htmlFor="page-contact-name">
+          {t('contactModal.fields.name')}
+        </label>
         <input
+          className="form-input"
           id="page-contact-name"
           ref={nameRef}
           type="text"
@@ -145,9 +146,12 @@ const ContactForm: React.FC<Props> = ({ interest }) => {
         />
       </div>
 
-      <div className="contact-inline-field">
-        <label htmlFor="page-contact-email">{t('contactModal.fields.email')}</label>
+      <div className="form-group">
+        <label className="form-label" htmlFor="page-contact-email">
+          {t('contactModal.fields.email')}
+        </label>
         <input
+          className="form-input"
           id="page-contact-email"
           ref={emailRef}
           type="email"
@@ -157,9 +161,12 @@ const ContactForm: React.FC<Props> = ({ interest }) => {
         />
       </div>
 
-      <div className="contact-inline-field">
-        <label htmlFor="page-contact-subject">{t('contactModal.fields.subject')}</label>
+      <div className="form-group">
+        <label className="form-label" htmlFor="page-contact-subject">
+          {t('contactModal.fields.subject')}
+        </label>
         <select
+          className="form-select"
           id="page-contact-subject"
           value={selectedSubject}
           onChange={(e) => setSelectedSubject(e.target.value)}
@@ -173,9 +180,12 @@ const ContactForm: React.FC<Props> = ({ interest }) => {
         </select>
       </div>
 
-      <div className="contact-inline-field">
-        <label htmlFor="page-contact-message">{t('contactModal.fields.message')}</label>
+      <div className="form-group">
+        <label className="form-label" htmlFor="page-contact-message">
+          {t('contactModal.fields.message')}
+        </label>
         <textarea
+          className="form-textarea"
           id="page-contact-message"
           ref={messageRef}
           placeholder={t('contactModal.fields.messagePlaceholder')}
@@ -188,7 +198,7 @@ const ContactForm: React.FC<Props> = ({ interest }) => {
       </div>
 
       {state === 'error' && (
-        <p className="contact-inline-error" role="alert">
+        <p className="form-error" role="alert">
           {errorMsg}
         </p>
       )}
@@ -203,7 +213,7 @@ const ContactForm: React.FC<Props> = ({ interest }) => {
         />
       )}
 
-      <button type="submit" className="contact-inline-submit" disabled={state === 'loading'}>
+      <button type="submit" className="btn btn--primary" disabled={state === 'loading'}>
         {state === 'loading' ? t('contactModal.sending') : t('contactModal.submit')}
       </button>
     </form>

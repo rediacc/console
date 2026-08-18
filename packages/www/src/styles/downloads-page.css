@@ -1,5 +1,4 @@
 /* Downloads Page Styles */
-@import './platform-tabs.css';
 
 /* Hero Section - Dark Gradient */
 .downloads-hero {
@@ -20,7 +19,7 @@
 }
 
 .downloads-hero h1 {
-  font-size: clamp(2.25rem, 4vw, 3.5rem);
+  font-size: var(--font-size-4xl);
   font-weight: var(--font-weight-bold);
   margin-bottom: var(--space-4);
   color: white;
@@ -28,7 +27,7 @@
 }
 
 .downloads-hero .hero-subtitle {
-  font-size: clamp(1.125rem, 1.5vw, 1.375rem);
+  font-size: var(--font-size-lg);
   color: rgba(255, 255, 255, var(--opacity-90));
   margin-bottom: var(--space-2);
   line-height: var(--leading-normal);
@@ -71,8 +70,8 @@
   padding: var(--space-8);
   margin-bottom: var(--space-6);
   transition:
-    border-color var(--transition-duration-slow) ease,
-    box-shadow var(--transition-duration-slow) ease;
+    border-color var(--transition-duration-slow) var(--ease-standard),
+    box-shadow var(--transition-duration-slow) var(--ease-standard);
 }
 
 .platform-header {
@@ -101,7 +100,7 @@
   padding: var(--space-4);
   background: var(--color-bg-light);
   border-radius: var(--radius-md);
-  transition: background-color var(--transition-duration-base) ease;
+  transition: background-color var(--transition-duration-base) var(--ease-standard);
 }
 
 .download-item:hover {
@@ -190,8 +189,8 @@
   margin-bottom: var(--space-3);
   cursor: pointer;
   transition:
-    border-color var(--transition-duration-base) ease,
-    background-color var(--transition-duration-base) ease;
+    border-color var(--transition-duration-base) var(--ease-standard),
+    background-color var(--transition-duration-base) var(--ease-standard);
 }
 
 .installation-details:hover {
@@ -221,7 +220,7 @@
 .installation-details summary::after {
   content: '▼';
   font-size: var(--font-size-xs);
-  transition: transform var(--transition-duration-base) ease;
+  transition: transform var(--transition-duration-base) var(--ease-standard);
 }
 
 .installation-details[open] summary::after {
@@ -301,12 +300,5 @@
   }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .installation-details summary::after {
-    transition: none;
-  }
-
-  .installation-details[open] summary::after {
-    transform: none;
-  }
-}
+/* Reduced motion is handled once, in public/styles/main.css. A local copy of
+   that block only ever covers the selectors that existed the day it was written. */

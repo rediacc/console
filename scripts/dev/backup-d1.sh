@@ -7,7 +7,7 @@
 #
 # Auth:
 #   CF_MANAGEMENT_TOKEN  - Scoped API token (recommended)
-#   CF_API_KEY + CF_EMAIL - Global API Key (legacy)
+#   CF_GLOBAL_API_KEY + CF_EMAIL - Global API Key (legacy)
 #   See scripts/dev/lib/cf-auth.sh for token creation details.
 #
 # Flags:
@@ -79,8 +79,8 @@ fi
 # Map to wrangler env vars
 if [[ -n "${CF_MANAGEMENT_TOKEN:-}" ]]; then
     export CLOUDFLARE_API_TOKEN="$CF_MANAGEMENT_TOKEN"
-elif [[ -n "${CF_API_KEY:-}" ]]; then
-    export CLOUDFLARE_API_KEY="$CF_API_KEY"
+elif [[ -n "${CF_GLOBAL_API_KEY:-}" ]]; then
+    export CLOUDFLARE_API_KEY="$CF_GLOBAL_API_KEY"
     export CLOUDFLARE_EMAIL="$CF_EMAIL"
 fi
 export CLOUDFLARE_ACCOUNT_ID="$ACCOUNT_ID"

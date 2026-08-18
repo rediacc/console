@@ -102,9 +102,9 @@ rdc machine infra push server-1
 - **调整大小**：使用 `rdc datastore resize` 更改存储池大小（所有仓库必须先卸载）。
 - **文件系统**：Rediacc 内部使用 BTRFS 实现写时复制快照和高效分支。需要运行 **Linux 6.1 或更高版本**内核的机器以获得完整的生产稳定性。
 
-每个仓库在创建时设有最大容量上限（默认：10 GB）。使用 `rdc repo resize` 手动更改，或设置[自动容量策略](/zh/docs/repositories#自动容量策略)，让机器在仓库占满时自动扩容（受每仓库显式上限和存储池剩余空间保留量约束）。自动扩容仅作用于单个仓库；存储池本身不会自动扩容。
+每个仓库在创建时设有最大容量上限（默认：10 GB）。使用 `rdc repo resize` 手动更改，或设置[自动容量策略](/zh/docs/repositories#automatic-size-policy)，让机器在仓库占满时自动扩容（受每仓库显式上限和存储池剩余空间保留量约束）。自动扩容仅作用于单个仓库；存储池本身不会自动扩容。
 
-仓库镜像是稀疏的：仓库只占用其实际写入数据所需的存储池空间，删除操作释放的空间通过 [`repo trim`](/zh/docs/repositories#reclaim-space-trim) 或定时自动 trim 归还给存储池。因此各仓库配额之和可以超过存储池总大小，[存储健康报告](/zh/docs/monitoring#存储健康状况)会显示实际填充水位。
+仓库镜像是稀疏的：仓库只占用其实际写入数据所需的存储池空间，删除操作释放的空间通过 [`repo trim`](/zh/docs/repositories#reclaim-space-trim) 或定时自动 trim 归还给存储池。因此各仓库配额之和可以超过存储池总大小，[存储健康报告](/zh/docs/monitoring#storage-health)会显示实际填充水位。
 
 ---
 

@@ -113,7 +113,7 @@ rdc machine status server-1 --storage-health
 | Allocated | Was das Sparse-Image aktuell tatsächlich im Pool belegt |
 | Unique | Tatsächlich einzigartige Daten, die nur diesem Repository gehören |
 | Shared | Datenblöcke, die über Repositories via BTRFS-Reflinks wiederverwendet werden (kostenlose Kopien) |
-| Reclaimable | Die Lücke zwischen belegtem und genutztem Speicher, die [`repo trim`](/de/docs/repositories#speicherplatz-zuruckgewinnen-trim) an den Pool zurückgeben kann. Zeigt `-` für unmountete Repositories |
+| Reclaimable | Die Lücke zwischen belegtem und genutztem Speicher, die [`repo trim`](/de/docs/repositories#reclaim-space-trim) an den Pool zurückgeben kann. Zeigt `-` für unmountete Repositories |
 | Discards | Ob das verschlüsselte Volume Discards durchleitet (`on` für jedes Repository, das mit einer aktuellen Version gemountet wurde) |
 | Divergence | Prozentualer Anteil des Images, der einzigartig für dieses Repository ist und nicht geteilt wird (höher bedeutet mehr rückgewinnbaren Speicher bei Löschung) |
 | Frag | Extents pro GB im copy-on-write-Image (nur informativ) |

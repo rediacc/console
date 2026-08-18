@@ -91,7 +91,9 @@ if (brokenTargets.length > 0) {
       `target to ALLOWED_NON_MANIFEST_TARGETS if it's intentionally not in the manifest.`
   );
 }
-ok(`all ${Object.values(redirects.exact).filter((r) => r.status === 301).length} exact 301 targets are live`);
+ok(
+  `all ${Object.values(redirects.exact).filter((r) => r.status === 301).length} exact 301 targets are live`
+);
 
 // --- Check 2: No redirect chains -------------------------------------------
 // Self-maps (A -> A) are legal: they trigger lang-prefix addition, and the

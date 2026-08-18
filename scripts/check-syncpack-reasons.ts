@@ -45,7 +45,7 @@ function main(): number {
   if (!fs.existsSync(REASONS_FILE)) {
     console.error(`✗ ${REASONS_FILE} is missing.`);
     console.error(
-      `  Action: create ${REASONS_FILE} as a JSON object keyed by each versionGroup's "label" field.`,
+      `  Action: create ${REASONS_FILE} as a JSON object keyed by each versionGroup's "label" field.`
     );
     return 1;
   }
@@ -57,7 +57,7 @@ function main(): number {
     const label = g.label;
     if (!label) {
       failures.push(
-        `.syncpackrc.json: versionGroup[${i}] has no "label" field. A label is required so the reasons sidecar can reference it.`,
+        `.syncpackrc.json: versionGroup[${i}] has no "label" field. A label is required so the reasons sidecar can reference it.`
       );
       continue;
     }
@@ -66,7 +66,7 @@ function main(): number {
     if (typeof reason !== 'string' || !reason) {
       failures.push(
         `.syncpackrc-reasons.json: missing entry for "${label}".\n` +
-          `  Action: add a "${label}" key with a substantive "BLOCKER: ..." reason.`,
+          `  Action: add a "${label}" key with a substantive "BLOCKER: ..." reason.`
       );
       continue;
     }
@@ -81,7 +81,7 @@ function main(): number {
     if (key.startsWith('$')) continue; // JSON metadata like $comment, $schema
     if (!labels.has(key)) {
       failures.push(
-        `.syncpackrc-reasons.json: "${key}" has no matching versionGroup in .syncpackrc.json — remove the stale reason.`,
+        `.syncpackrc-reasons.json: "${key}" has no matching versionGroup in .syncpackrc.json — remove the stale reason.`
       );
     }
   }
@@ -90,7 +90,9 @@ function main(): number {
     console.error('✗ syncpack reason validation failed:');
     for (const f of failures) console.error(f);
     console.error('');
-    console.error('✗ Every syncpack versionGroup needs a substantive reason — strict gate enforced');
+    console.error(
+      '✗ Every syncpack versionGroup needs a substantive reason — strict gate enforced'
+    );
     return 1;
   }
 

@@ -9,19 +9,47 @@ interface Props {
     id: string;
     monthly: number;
     annual: number;
-    isPopular?: boolean;
-    badgeLabel?: string;
-    badgeVariant?: string;
-    startingAt?: boolean;
+    /**
+     * Show "Contact us" instead of a price. This used to be `plan.id ===
+     * 'enterprise'`, which meant renaming a tier silently published the
+     * placeholder number the branch existed to hide.
+     */
+    contactOnly?: boolean;
   };
   metrics: Array<{ label: string; tooltip?: string; value: string }>;
   lang: Language;
-  ctaNamespace?: string;
+  /**
+   * Which catalog branch the card's copy comes from. A closed union, not a free
+   * string: it used to be a plain namespace string, and every key reached
+   * through it was invisible to check-dead-translation-keys, which reported
+   * seven live keys as unreachable because a component prop is not a literal it
+   * can resolve. The two branches below spell their paths out.
+   */
+  namespace?: 'pricing' | 'disasterRecovery';
   useCheckout?: boolean;
 }
 
-const { plan, metrics, lang, ctaNamespace = 'pages.pricing', useCheckout = false } = Astro.props;
+const { plan, metrics, lang, namespace = 'pricing', useCheckout = false } = Astro.props;
 const { t } = createTranslator(lang);
+
+const isDr = namespace === 'disasterRecovery';
+const planName = isDr
+  ? t(`pages.disasterRecovery.plans.${plan.id}.name`)
+  : t(`pages.pricing.plans.${plan.id}.name`);
+const contactUs = isDr
+  ? t('pages.disasterRecovery.ui.contactUs')
+  : t('pages.pricing.ui.contactUs');
+const contactUsSub = isDr
+  ? t('pages.disasterRecovery.ui.contactUsSub')
+  : t('pages.pricing.ui.contactUsSub');
+// Resolved lazily. Hoisting this out of the branch asked for
+// pages.pricing.ui.cta.<plan>.primary on every card, including the two that
+// render the checkout button instead, and the build printed
+// "Translation key not found" 26 times per page for keys nothing displays.
+const ctaLabel = () =>
+  isDr
+    ? t(`pages.disasterRecovery.ui.cta.${plan.id}.primary`)
+    : t(`pages.pricing.ui.cta.${plan.id}.primary`);
 
 const priceFormatter = new Intl.NumberFormat(lang === 'en' ? 'en-US' : lang, {
   style: 'currency',
@@ -30,34 +58,23 @@ const priceFormatter = new Intl.NumberFormat(lang === 'en' ? 'en-US' : lang, {
 });
 const formatPrice = (amount: number) => priceFormatter.format(amount);
 
-const checkoutPlans = useCheckout ? new Set(['professional', 'business']) : new Set<string>();
-const usesCheckout = checkoutPlans.has(plan.id);
+const usesCheckout = useCheckout && !plan.contactOnly;
 ---
 
 <div
-  class:list={[
-    'cf-pricing-card',
-    { 'cf-featured': plan.isPopular },
-    plan.badgeVariant ? `cf-badge-${plan.badgeVariant}` : '',
-  ]}
+  class="cf-pricing-card"
   data-monthly-price={plan.monthly}
   data-annual-price={plan.annual}
 >
-  {plan.badgeLabel ? (
-    <div class="cf-badge">{plan.badgeLabel}</div>
-  ) : null}
-  <h3 class="cf-plan-name">{t(`${ctaNamespace}.plans.${plan.id}.name`)}</h3>
+  <h3 class="cf-plan-name">{planName}</h3>
   <div class="cf-price-block">
-    {plan.id === 'enterprise' ? (
+    {plan.contactOnly ? (
       <>
-        <div class="cf-price cf-contact-us">{t(`${ctaNamespace}.ui.contactUs`)}</div>
-        <div class="cf-price-subtitle">{t(`${ctaNamespace}.ui.contactUsSub`)}</div>
+        <div class="cf-price cf-contact-us">{contactUs}</div>
+        <div class="cf-price-subtitle">{contactUsSub}</div>
       </>
     ) : (
       <>
-        {plan.startingAt && (
-          <div class="cf-starting-at">{t(`${ctaNamespace}.ui.startingAt`)}</div>
-        )}
         <div class="cf-price-line">
           <span class="cf-price" data-monthly={formatPrice(plan.monthly)} data-annual={formatPrice(plan.annual)}>{formatPrice(plan.monthly)}</span>
           <span class="cf-price-period" data-monthly="/mo" data-annual="/yr">/mo</span>
@@ -83,7 +100,7 @@ const usesCheckout = checkoutPlans.has(plan.id);
       </li>
     ))}
   </ul>
-  {plan.id === 'enterprise' ? (
+  {plan.contactOnly ? (
     <a
       href={EXTERNAL_LINKS.SCHEDULE_CONSULTATION}
       target="_blank"
@@ -93,7 +110,7 @@ const usesCheckout = checkoutPlans.has(plan.id);
       data-track-label="pricing-cta"
       data-track-dest={plan.id}
     >
-      {t(`${ctaNamespace}.ui.cta.${plan.id}.primary`)}
+      {ctaLabel()}
     </a>
   ) : usesCheckout ? (
     <button
@@ -108,7 +125,7 @@ const usesCheckout = checkoutPlans.has(plan.id);
     </button>
   ) : (
     <AccountLink
-      label={t(`${ctaNamespace}.ui.cta.${plan.id}.primary`)}
+      label={ctaLabel()}
       className="cf-cta-btn"
       trackEvent="cta_click"
       trackLabel="pricing-cta"

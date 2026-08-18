@@ -7,8 +7,6 @@
  * - Active state tracking
  */
 
-import { stringToSlug } from './slug';
-
 const NAMED_ENTITIES: Record<string, string> = {
   '&amp;': '&',
   '&lt;': '<',
@@ -59,7 +57,7 @@ export interface TOCOptions {
 export function generateTOCFromHtml(htmlContent: string, options: TOCOptions = {}): TOCHeading[] {
   const { minLevel = 2, maxLevel = 6, stripTags = true } = options;
 
-  const headingRegex = /<h([2-6])[^>]*>(.*?)<\/h\1>/gi;
+  const headingRegex = /<h([2-6])([^>]*)>(.*?)<\/h\1>/gis;
   const headings: TOCHeading[] = [];
 
   let match = headingRegex.exec(htmlContent);
@@ -72,7 +70,22 @@ export function generateTOCFromHtml(htmlContent: string, options: TOCOptions = {
       continue;
     }
 
-    let title = match[2];
+    // The heading tag already carries the id the page will render, written by the
+    // rehype pipeline. Read it instead of re-deriving one: re-derivation is how the
+    // TOC and the document ended up running two different slug algorithms, which
+    // left half the site's in-page links dead. Attribute order is not guaranteed,
+    // so parse the attribute soup rather than assuming a position.
+    const idMatch = /\bid\s*=\s*(?:"([^"]*)"|'([^']*)')/.exec(match[2]);
+    const id = idMatch ? idMatch[1] || idMatch[2] || '' : '';
+
+    // A heading without an id cannot be linked to; emitting href="#" would be a
+    // dead link by construction, so skip it.
+    if (!id) {
+      match = headingRegex.exec(htmlContent);
+      continue;
+    }
+
+    let title = match[3];
 
     // Strip inner HTML tags if requested
     if (stripTags) {
@@ -81,9 +94,6 @@ export function generateTOCFromHtml(htmlContent: string, options: TOCOptions = {
 
     // Decode HTML entities so rendered text doesn't double-encode (e.g. "Fork & Backup" not "Fork &#x26; Backup")
     title = decodeHtmlEntities(title);
-
-    // Generate ID from title
-    const id = stringToSlug(title);
 
     headings.push({ level, title, id });
     match = headingRegex.exec(htmlContent);

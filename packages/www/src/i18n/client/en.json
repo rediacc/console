@@ -1,0 +1,327 @@
+{
+  "captchaRequired": "Please complete the captcha verification.",
+  "common": {
+    "close": "Close",
+    "logoAlt": "Rediacc - Infrastructure Automation Platform",
+    "buttons": {
+      "close": "Close",
+      "learnMore": "Learn More",
+      "getStarted": "Get Started"
+    },
+    "search": {
+      "placeholder": "Search documentation, solutions, features...",
+      "searching": "Searching...",
+      "noResults": "No results found",
+      "closeModal": "Close search",
+      "suggestions": {
+        "title": "Try:",
+        "differentKeywords": "Different keywords or shorter terms",
+        "checkSpelling": "Checking your spelling",
+        "browseSolutions": "Browsing our solutions page",
+        "contactSupport": "Contacting our support team"
+      },
+      "results": "Search results",
+      "unavailable": "Search Unavailable",
+      "unavailableMessage": "Unable to load search index. Please try refreshing the page or contact support if the issue persists."
+    },
+    "aria": {
+      "mainNavigation": "Main navigation",
+      "previousImage": "Previous image",
+      "nextImage": "Next image",
+      "zoomIn": "Zoom in",
+      "zoomOut": "Zoom out",
+      "resetZoom": "Reset zoom",
+      "closeImageModal": "Close image modal",
+      "imageViewer": "Image viewer",
+      "opensInNewTab": "opens in new tab",
+      "tableOfContents": "Table of contents",
+      "docsSections": "Docs sections",
+      "documentationNavigation": "Documentation navigation",
+      "breadcrumbNavigation": "Breadcrumb navigation",
+      "rediaccHome": "Rediacc home"
+    },
+    "skipNavigation": {
+      "skipToMainContent": "Skip to main content",
+      "skipToNavigation": "Skip to navigation",
+      "skipToFooter": "Skip to footer"
+    }
+  },
+  "contactModal": {
+    "title": "Get in Touch",
+    "description": "Have a question or want to discuss a project? Send us a message.",
+    "fields": {
+      "name": "Name",
+      "namePlaceholder": "Your name",
+      "email": "Email",
+      "emailPlaceholder": "you@company.com",
+      "subject": "Subject",
+      "message": "Message",
+      "messagePlaceholder": "Tell us about your project or question..."
+    },
+    "subjects": {
+      "general": "General Inquiry",
+      "technical": "Technical Support",
+      "partnership": "Partnership",
+      "disasterRecovery": "Disaster Recovery",
+      "other": "Other"
+    },
+    "submit": "Send Message",
+    "sending": "Sending...",
+    "success": "Message sent! We'll get back to you within 48 hours.",
+    "error": "Something went wrong. Please try again.",
+    "close": "Close"
+  },
+  "footer": {
+    "columns": {
+      "product": "Product",
+      "organization": "Organization",
+      "legal": "Legal"
+    },
+    "productLinks": {
+      "solutions": "Solutions",
+      "overview": "Overview",
+      "pricing": "Pricing",
+      "professionalServices": "Professional Services",
+      "partners": "Partner Program",
+      "disasterRecovery": "Disaster Recovery"
+    },
+    "organizationLinks": {
+      "aboutUs": "About Us",
+      "company": "Company",
+      "contact": "Contact"
+    },
+    "legalLinks": {
+      "termsOfService": "Terms of Service",
+      "privacyPolicy": "Privacy Policy",
+      "cookiePolicy": "Cookie Policy",
+      "refundPolicy": "Refund Policy",
+      "telemetryPolicy": "Telemetry Policy",
+      "legalInformation": "Legal Information"
+    },
+    "legalDisclosure": {
+      "summary": "{{companyName}} | Registry code {{registryCode}} | VAT {{vatNumber}} |",
+      "fullLegalInformation": "Full legal information"
+    }
+  },
+  "navigation": {
+    "moreOptions": "More options",
+    "home": "Home",
+    "blog": "Blog",
+    "docs": "Docs",
+    "contact": "Contact",
+    "downloads": "Downloads",
+    "install": "Install",
+    "pricing": "Pricing",
+    "toggleMenu": "Toggle menu",
+    "search": "Search",
+    "selectLanguage": "Select language",
+    "languageSelectionMenu": "Language selection menu",
+    "login": "Log in",
+    "footerNavigation": "Site navigation",
+    "roiCalculator": "ROI Calculator",
+    "solutions": "Solutions",
+    "disasterRecovery": "Disaster Recovery",
+    "viewAllSolutions": "View All Solutions",
+    "builtForYourRole": "Built for your role",
+    "builtForYou": "Built for you",
+    "forDevops": "For DevOps Engineers",
+    "forCtos": "For CTOs",
+    "forCeos": "For CEOs",
+    "partners": "Partners",
+    "personas": {
+      "devops": {
+        "tagline": "Ship faster. Recover instantly. Sleep better.",
+        "cta": "Start free trial"
+      },
+      "cto": {
+        "tagline": "Reduce TCO by 60%. Scale on your hardware.",
+        "cta": "Schedule a Demo"
+      },
+      "ceo": {
+        "tagline": "Predictable costs. Zero vendor lock-in.",
+        "cta": "See Pricing"
+      },
+      "ai-agent": {
+        "tagline": "CLI-first. JSON output. Agent-native.",
+        "cta": "See the Docs"
+      }
+    },
+    "forAiAgents": "For AI Agents",
+    "account": "Account"
+  },
+  "newsletter": {
+    "title": "Newsletter",
+    "description": "One short email a month. Product news and self-hosting tips.",
+    "pageTitle": "Stay in the Loop",
+    "pageDescription": "A short email, once a month. New features, self-hosting tips, and lessons we learned the hard way.",
+    "placeholder": "Your email address",
+    "subscribe": "Subscribe",
+    "successMessage": "Check your inbox to confirm your subscription.",
+    "errorGeneric": "Something went wrong. Please try again.",
+    "confirmed": "Your subscription is confirmed! Welcome aboard.",
+    "unsubscribed": "You've been unsubscribed. Sorry to see you go.",
+    "blogCta": {
+      "title": "Enjoyed this article?",
+      "description": "We send self-hosting guides and product news every month. Want them?"
+    },
+    "roiGate": {
+      "title": "Get your detailed ROI report",
+      "description": "Enter your email to see the full cost breakdown and savings analysis.",
+      "unlock": "View Report"
+    },
+    "returnPopup": {
+      "title": "Want a guided walkthrough?",
+      "description": "Subscribe for product updates and book a live setup appointment with our team.",
+      "cta": "Subscribe & Book Appointment",
+      "close": "Close popup",
+      "note": "We use your email to send product updates. You can unsubscribe at any time."
+    },
+    "privacyNote": "We respect your privacy. Unsubscribe at any time."
+  },
+  "pages": {
+    "solutionPages": {
+      "leadMagnetButton": {
+        "title": "Get the technical brief",
+        "description": "A no-fluff PDF written for CISOs, CTOs, and senior engineers. We send the link by email so you can find it again.",
+        "buttonLabel": "Download the brief",
+        "dismissLabel": "Dismiss"
+      },
+      "leadMagnetModal": {
+        "title": "Get the technical brief",
+        "description": "Enter your work email. We will send you the PDF link and keep a copy in your inbox.",
+        "emailLabel": "Work email",
+        "emailPlaceholder": "you@company.com",
+        "submitLabel": "Send me the PDF",
+        "sendingLabel": "Sending...",
+        "successTitle": "PDF on the way",
+        "successBody": "We've opened it in a new tab and emailed you the link. Closing this in a moment.",
+        "errorGeneric": "Something went wrong. Please try again or reach out at support@rediacc.com.",
+        "captchaRequired": "Please complete the captcha verification.",
+        "disclaimer": "One email. No marketing list. Unsubscribe with one click.",
+        "closeLabel": "Close"
+      },
+      "environmentCloning": {
+        "hero": {
+          "title": "Clone production in 60 seconds"
+        }
+      },
+      "infrastructureCosts": {
+        "hero": {
+          "title": "Stop paying for idle environments"
+        }
+      },
+      "productionParity": {
+        "hero": {
+          "title": "Dev environments that match production. Exactly."
+        }
+      },
+      "integrations": {
+        "hero": {
+          "title": "Plug into your existing workflow"
+        }
+      },
+      "immutableBackups": {
+        "hero": {
+          "title": "Backups that ransomware can’t touch"
+        }
+      },
+      "migrationSafety": {
+        "hero": {
+          "title": "Migrate without risking your data"
+        }
+      },
+      "instantRecovery": {
+        "hero": {
+          "title": "Get your whole setup back in minutes"
+        }
+      },
+      "safeOsTesting": {
+        "hero": {
+          "title": "Test OS updates without the risk"
+        }
+      },
+      "retentionCompliance": {
+        "hero": {
+          "title": "Keep your data as long as the law requires"
+        }
+      },
+      "cloudOutageProtection": {
+        "hero": {
+          "title": "When AWS goes down, you don’t"
+        }
+      },
+      "failoverTesting": {
+        "hero": {
+          "title": "Test your failover before you need it"
+        }
+      },
+      "backupVerification": {
+        "hero": {
+          "title": "Every backup verified. Automatically."
+        }
+      },
+      "vulnerabilityManagement": {
+        "hero": {
+          "title": "Fix vulnerabilities before attackers arrive"
+        }
+      },
+      "aiPentesting": {
+        "hero": {
+          "title": "Clone production. Let AI attack it."
+        }
+      },
+      "encryption": {
+        "hero": {
+          "title": "Your keys. Your encryption. No exceptions."
+        }
+      },
+      "continuousSecurityTesting": {
+        "hero": {
+          "title": "Test security continuously. Not annually."
+        }
+      },
+      "auditTrail": {
+        "hero": {
+          "title": "Every action logged. Nothing hidden."
+        }
+      },
+      "dataSovereignty": {
+        "hero": {
+          "title": "Sovereign by design, not by certificate."
+        }
+      },
+      "rapidRecovery": {
+        "hero": {
+          "title": "Recover in minutes. Not days."
+        }
+      },
+      "kubernetesClusterMobility": {
+        "hero": {
+          "title": "Fork or move a running Kubernetes cluster"
+        }
+      },
+      "vendorLockIn": {
+        "hero": {
+          "title": "Your infrastructure. Your choice. Always."
+        }
+      }
+    }
+  },
+  "regionPicker": {
+    "title": "Choose your account region",
+    "subtitle": "Your account, billing, and configurations stay in the region you choose.",
+    "reassurance": "Your server data and backups stay on your own infrastructure.",
+    "footer": "Pick the region closest to you, or where your organization requires.",
+    "footerNote": "This can't be changed after sign-up."
+  },
+  "solutions": {
+    "categories": {
+      "ransomware": "Ransomware Survival",
+      "multi-cloud": "Multi-Cloud",
+      "backups": "Verified Backups",
+      "encryption": "Encryption Control",
+      "dev-env": "Dev Environments",
+      "defense": "Preemptive Defense"
+    }
+  }
+}

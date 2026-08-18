@@ -1,7 +1,9 @@
 import fs from 'node:fs';
-import matter from 'gray-matter';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import matter from 'gray-matter';
+import { englishAnchorsFor, scanHeadings } from '../src/plugins/heading-anchors.mjs';
+import { hasTranslationKeys, replaceTranslationKeys } from '../src/plugins/translation-keys.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.join(__dirname, '..');
@@ -20,6 +22,22 @@ const DEFAULT_LANG = 'en';
  * @param {string} fallback
  * @returns {unknown}
  */
+/**
+ * Resolve `{{t:...}}` placeholders, skipping the work when there are none.
+ *
+ * The guard is not just speed: `replaceTranslationKeys` warns per unresolved key, and
+ * running it over every one of a thousand docs files that contain no placeholder at all
+ * would be a thousand pointless catalog probes.
+ *
+ * @param {string} text
+ * @param {string} lang
+ * @param {string} filePath
+ * @returns {string}
+ */
+function resolveKeys(text, lang, filePath) {
+  return hasTranslationKeys(text) ? replaceTranslationKeys(text, lang, filePath) : text;
+}
+
 function withContent(value, fallback) {
   return value === undefined || value === null || value === '' ? fallback : value;
 }
@@ -147,7 +165,18 @@ function indexCollectionType(searchIndex, startingId, collectionDir, category, u
           totalFiles++;
           const filePath = path.join(langPath, file);
           const fileContent = fs.readFileSync(filePath, 'utf-8');
-          const { data: frontmatter, content } = matter(fileContent);
+          const { data: frontmatter, content: rawContent } = matter(fileContent);
+
+          // Resolve `{{t:...}}` exactly as the rendered page does. This generator reads
+          // the markdown itself rather than going through Astro's remark pipeline, so
+          // without this the index shipped the raw placeholders: 2,122 per locale, and a
+          // docs search returned titles reading `{{t:cli.docs.sectionTitles.backup}}`.
+          // The built HTML was clean the whole time, which is why nobody saw it.
+          const content = resolveKeys(rawContent, langDir, filePath);
+          if (typeof frontmatter.title === 'string')
+            frontmatter.title = resolveKeys(frontmatter.title, langDir, filePath);
+          if (typeof frontmatter.description === 'string')
+            frontmatter.description = resolveKeys(frontmatter.description, langDir, filePath);
 
           // Index frontmatter title
           if (frontmatter.title) {
@@ -199,8 +228,32 @@ function indexCollectionType(searchIndex, startingId, collectionDir, category, u
           // Walk the markdown body section by section (split on H2/H3).
           // Each section produces ONE index entry whose `body` is the full
           // stripped section text — that's what makes buried terms searchable.
+          // Every section also carries the stable English fragment its heading
+          // renders with (see src/plugins/heading-anchors.mjs), so a result can
+          // land ON the matching section instead of the top of the page.
           const slug = file.replace(/\.mdx?$/, '');
-          const sections = splitIntoSections(content, withContent(frontmatter.title, slug));
+          const collection = path.basename(collectionDir);
+          const sectionAnchors = englishAnchorsFor(collection, file).filter(
+            (h) => h.depth === 2 || h.depth === 3
+          );
+          const sectionHeadings = scanHeadings(content).filter(
+            (h) => h.depth === 2 || h.depth === 3
+          );
+          if (sectionHeadings.length !== sectionAnchors.length) {
+            // The build enforces full heading alignment with the English source
+            // (rehype-stable-heading-ids); a mismatch here means THIS script's
+            // sectioning drifted from that contract, and a silently wrong
+            // fragment is worse than a loud failure.
+            throw new Error(
+              `${collection}/${langDir}/${file}: ${sectionHeadings.length} H2/H3 section(s) ` +
+                `but ${sectionAnchors.length} English anchor(s); cannot assign search fragments`
+            );
+          }
+          const sections = splitIntoSections(
+            content,
+            withContent(frontmatter.title, slug),
+            sectionHeadings.map((h, i) => ({ line: h.line, fragment: sectionAnchors[i].id }))
+          );
 
           for (const section of sections) {
             const body = stripMarkdown(section.body);
@@ -213,6 +266,7 @@ function indexCollectionType(searchIndex, startingId, collectionDir, category, u
               excerpt: truncateExcerpt(withContent(body, section.heading), 150),
               category,
               page: `/${langDir}/${urlPrefix}/${slug}`,
+              ...(section.fragment ? { fragment: section.fragment } : {}),
               path: `${urlPrefix}.${slug}.content`,
               priority: 2,
               language: langDir,
@@ -229,7 +283,12 @@ function indexCollectionType(searchIndex, startingId, collectionDir, category, u
         totalFiles++;
         const filePath = path.join(collectionDir, file);
         const fileContent = fs.readFileSync(filePath, 'utf-8');
-        const { data: frontmatter, content } = matter(fileContent);
+        const { data: frontmatter, content: rawContent } = matter(fileContent);
+        const content = resolveKeys(rawContent, DEFAULT_LANG, filePath);
+        if (typeof frontmatter.title === 'string')
+          frontmatter.title = resolveKeys(frontmatter.title, DEFAULT_LANG, filePath);
+        if (typeof frontmatter.description === 'string')
+          frontmatter.description = resolveKeys(frontmatter.description, DEFAULT_LANG, filePath);
 
         // Index frontmatter title
         if (frontmatter.title) {
@@ -252,7 +311,11 @@ function indexCollectionType(searchIndex, startingId, collectionDir, category, u
 
     console.log(`  ✓ Indexed ${totalFiles} ${category.toLowerCase()} files`);
   } catch (error) {
-    console.warn(`⚠ Warning: Could not index ${category}:`, error.message);
+    // Swallowing this used to ship a build with a silently truncated index:
+    // the generator deletes the previous files before writing (see the sweep
+    // above), so a half-indexed run is strictly worse than a loud failure.
+    console.error(`✗ Failed to index ${category}:`, error.message);
+    throw error;
   }
 }
 
@@ -269,21 +332,27 @@ function truncateExcerpt(text, maxLength = 150) {
  * appears before the first heading becomes an "intro" section labeled with
  * the doc's frontmatter title.
  */
-function splitIntoSections(markdown, fallbackHeading) {
+function splitIntoSections(markdown, fallbackHeading, boundaries) {
   const lines = markdown.split('\n');
   const sections = [];
+  // Boundary lines come from the SAME fence-aware scan that assigns heading
+  // ids (heading-anchors.mjs), so section count and fragment count cannot
+  // disagree the way two independent regexes once could.
+  const boundaryByLine = new Map(boundaries.map((b) => [b.line, b]));
   let currentHeading = fallbackHeading;
+  let currentFragment; // the intro section lands at the top of the page
   let currentBody = [];
   let inFence = false;
 
   const flush = () => {
     const body = currentBody.join('\n').trim();
     if (currentHeading || body) {
-      sections.push({ heading: currentHeading, body });
+      sections.push({ heading: currentHeading, body, fragment: currentFragment });
     }
   };
 
-  for (const line of lines) {
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
     if (line.startsWith('```')) {
       inFence = !inFence;
       currentBody.push(line);
@@ -294,10 +363,14 @@ function splitIntoSections(markdown, fallbackHeading) {
     if (!inFence && /^\s*(?:import|export)\s+/.test(line)) {
       continue;
     }
-    const headingMatch = !inFence && line.match(/^(#{2,3})\s+(.+?)\s*#*\s*$/);
-    if (headingMatch) {
+    const boundary = boundaryByLine.get(i);
+    if (boundary) {
       flush();
-      currentHeading = headingMatch[2].trim();
+      currentHeading = line
+        .replace(/^\s*#{2,3}\s+/, '')
+        .replace(/\s*#*\s*$/, '')
+        .trim();
+      currentFragment = boundary.fragment;
       currentBody = [];
     } else {
       currentBody.push(line);
@@ -341,5 +414,6 @@ function stripMarkdown(text) {
   );
 }
 
-// Run generator
-generateSearchIndex();
+// Run generator. The boolean is the verdict; exiting 0 on failure made a lost
+// index invisible to both the CLI caller and the build integration.
+process.exit(generateSearchIndex() ? 0 : 1);

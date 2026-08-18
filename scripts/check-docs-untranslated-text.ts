@@ -2,11 +2,29 @@
 /**
  * Untranslated Text Detection for Documentation
  *
- * Two detection layers:
+ * Three detection layers:
  * 1. Pattern matching: detects common English instruction phrases
  * 2. Native character analysis: verifies non-English files contain characters
  *    from their expected script (Arabic, Cyrillic, CJK, etc.) and that
  *    Latin-script languages contain their distinctive diacritics
+ * 3. Paragraph-level language identification (layer 3, added 2026-08-18)
+ *
+ * WHY LAYER 3 EXISTS: LAYERS 1 AND 2 WERE PROVEN DEAD TOGETHER. Appending four lines
+ * of ordinary English prose to packages/www/src/content/docs/de/quick-start.md and
+ * running this file printed "de: No untranslated text detected" and exited 0. Neither
+ * layer could see it, and for different reasons:
+ *
+ *   Layer 1 is a hand-written phrase list. Ordinary prose that happens to use none of
+ *     those ~25 phrases passes, and most prose does.
+ *   Layer 2 is a WHOLE-FILE ratio. One untranslated paragraph inside an otherwise
+ *     German file leaves the file's diacritic count far above zero, so the file reads
+ *     as translated. The measurement is at the wrong granularity to see a block.
+ *
+ * Layer 3 measures at the granularity the defect has: the PARAGRAPH. It reuses the
+ * detector from scripts/lib/language-detect.ts, the same two-independent-signals design
+ * that check-i18n-cross-locale.ts fought its false positives down to -- another
+ * language's function words must be PRESENT and the locale's own evidence ABSENT -- so a
+ * loanword, a cognate, a product name or a technical term cannot trip it.
  *
  * Usage:
  *   npx tsx scripts/check-docs-untranslated-text.ts
@@ -17,11 +35,20 @@
  */
 
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { globSync } from 'glob';
-
 import { NON_ENGLISH_LOCALES } from '@rediacc/locales';
+import { globSync } from 'glob';
+import {
+  contentWords,
+  DISCRIMINATIVE,
+  identify,
+  NATIVE_SCRIPT,
+  norm,
+  stripNonLanguage,
+} from './lib/language-detect.js';
+
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 // Configuration
@@ -73,26 +100,26 @@ const ENGLISH_PATTERNS = [
  * These include code blocks, frontmatter, image references, etc.
  */
 const SKIP_PATTERNS = [
-  /^---$/,                          // Frontmatter delimiter
-  /^```/,                           // Code block
-  /^>\s*\*\*/,                      // Blockquote with bold (often tips in English format)
-  /^!\[/,                           // Image reference
-  /^\*\(/,                          // Figure caption start
-  /^#+\s/,                          // Headers (may intentionally be in English)
-  /^\s*[-*]\s*\*\*{{t:/,           // List items with only translation keys
-  /^[0-9]+\.\s+\*\*{{t:/,          // Numbered items with only translation keys
-  /^\s*$/,                          // Empty lines
-  /^\|/,                            // Table rows
-  /^<!--/,                          // HTML comments
+  /^---$/, // Frontmatter delimiter
+  /^```/, // Code block
+  /^>\s*\*\*/, // Blockquote with bold (often tips in English format)
+  /^!\[/, // Image reference
+  /^\*\(/, // Figure caption start
+  /^#+\s/, // Headers (may intentionally be in English)
+  /^\s*[-*]\s*\*\*{{t:/, // List items with only translation keys
+  /^[0-9]+\.\s+\*\*{{t:/, // Numbered items with only translation keys
+  /^\s*$/, // Empty lines
+  /^\|/, // Table rows
+  /^<!--/, // HTML comments
 ];
 
 /**
  * Words/patterns that are acceptable in any language (technical terms, etc.)
  */
 const ALLOWED_ENGLISH = [
-  /\{\{t:[^}]+\}\}/,               // Translation keys
-  /\*\*{{t:[^}]+}}\*\*/,           // Bold translation keys
-  /`[^`]+`/,                        // Inline code
+  /\{\{t:[^}]+\}\}/, // Translation keys
+  /\*\*{{t:[^}]+}}\*\*/, // Bold translation keys
+  /`[^`]+`/, // Inline code
   // A bold subcommand label, e.g. `**list:**`. These are COMMAND NAMES, not prose:
   // the generated CLI docs emit one per leaf, and `rdc backup list` is spelled "list"
   // in every language. Its siblings in the same file (**pull:**, **push:**, **status:**,
@@ -100,13 +127,13 @@ const ALLOWED_ENGLISH = [
   // because "list" also happens to be an English instruction word. Translating it would
   // document a command that does not exist.
   /^\*\*[a-z][a-z0-9-]*:\*\*$/,
-  /\b(JSON|CSV|API|URL|SSH|HTTP|HTTPS|SQL|HTML|CSS|JS|TS|UUID|ID|IP|DNS|TLS|SSL|VPN|VM|OS|CPU|RAM|GB|MB|KB|TB|GHz|MHz)\b/i,  // Technical acronyms
-  /\b(docker|git|npm|node|bash|linux|windows|macos)\b/i,  // Technical product names
-  /\b(setup|backup|deploy|fork|unmount|checkpoint)\b/i,   // Function names that might appear
-  /\b(fx)\b/,                       // UI element names
-  /\b(postgresql|mysql|mongodb|redis)\b/i,  // Database names
-  /\d{4}-\d{2}-\d{2}/,             // Dates
-  /\b\d+\s*(GB|MB|KB|TB)\b/i,      // Size values
+  /\b(JSON|CSV|API|URL|SSH|HTTP|HTTPS|SQL|HTML|CSS|JS|TS|UUID|ID|IP|DNS|TLS|SSL|VPN|VM|OS|CPU|RAM|GB|MB|KB|TB|GHz|MHz)\b/i, // Technical acronyms
+  /\b(docker|git|npm|node|bash|linux|windows|macos)\b/i, // Technical product names
+  /\b(setup|backup|deploy|fork|unmount|checkpoint)\b/i, // Function names that might appear
+  /\b(fx)\b/, // UI element names
+  /\b(postgresql|mysql|mongodb|redis)\b/i, // Database names
+  /\d{4}-\d{2}-\d{2}/, // Dates
+  /\b\d+\s*(GB|MB|KB|TB)\b/i, // Size values
 ];
 
 // =============================================================================
@@ -158,13 +185,15 @@ const LOCALE_CHAR_CONFIG: Record<string, LocaleCharConfig> = {
     scriptType: 'latin',
     scriptName: 'Spanish',
     // ñáéíóúÑÁÉÍÓÚ¿¡
-    nativeCharPattern: /[\u00F1\u00D1\u00E1\u00E9\u00ED\u00F3\u00FA\u00C1\u00C9\u00CD\u00D3\u00DA\u00BF\u00A1]/,
+    nativeCharPattern:
+      /[\u00F1\u00D1\u00E1\u00E9\u00ED\u00F3\u00FA\u00C1\u00C9\u00CD\u00D3\u00DA\u00BF\u00A1]/,
   },
   fr: {
     scriptType: 'latin',
     scriptName: 'French',
     // éèêëçàâùûôîïÉÈÊËÇÀÂÙÛÔÎÏ
-    nativeCharPattern: /[\u00E9\u00E8\u00EA\u00EB\u00E7\u00E0\u00E2\u00F9\u00FB\u00F4\u00EE\u00EF\u00C9\u00C8\u00CA\u00CB\u00C7\u00C0\u00C2\u00D9\u00DB\u00D4\u00CE\u00CF]/,
+    nativeCharPattern:
+      /[\u00E9\u00E8\u00EA\u00EB\u00E7\u00E0\u00E2\u00F9\u00FB\u00F4\u00EE\u00EF\u00C9\u00C8\u00CA\u00CB\u00C7\u00C0\u00C2\u00D9\u00DB\u00D4\u00CE\u00CF]/,
   },
   tr: {
     scriptType: 'latin',
@@ -187,13 +216,15 @@ const LOCALE_CHAR_CONFIG: Record<string, LocaleCharConfig> = {
     scriptType: 'latin',
     scriptName: 'Portuguese',
     // \u00E3\u00E1\u00E2\u00E0\u00E7\u00E9\u00EA\u00ED\u00F3\u00F4\u00F5\u00FA\u00FC\u00C3\u00C1\u00C2\u00C0\u00C7\u00C9\u00CA\u00CD\u00D3\u00D4\u00D5\u00DA\u00DC
-    nativeCharPattern: /[\u00E3\u00E1\u00E2\u00E0\u00E7\u00E9\u00EA\u00ED\u00F3\u00F4\u00F5\u00FA\u00FC\u00C3\u00C1\u00C2\u00C0\u00C7\u00C9\u00CA\u00CD\u00D3\u00D4\u00D5\u00DA\u00DC]/,
+    nativeCharPattern:
+      /[\u00E3\u00E1\u00E2\u00E0\u00E7\u00E9\u00EA\u00ED\u00F3\u00F4\u00F5\u00FA\u00FC\u00C3\u00C1\u00C2\u00C0\u00C7\u00C9\u00CA\u00CD\u00D3\u00D4\u00D5\u00DA\u00DC]/,
   },
   it: {
     scriptType: 'latin',
     scriptName: 'Italian',
     // \u00E0\u00E8\u00E9\u00EC\u00ED\u00EE\u00F2\u00F3\u00F9\u00FA\u00C0\u00C8\u00C9\u00CC\u00CD\u00CE\u00D2\u00D3\u00D9\u00DA
-    nativeCharPattern: /[\u00E0\u00E8\u00E9\u00EC\u00ED\u00EE\u00F2\u00F3\u00F9\u00FA\u00C0\u00C8\u00C9\u00CC\u00CD\u00CE\u00D2\u00D3\u00D9\u00DA]/,
+    nativeCharPattern:
+      /[\u00E0\u00E8\u00E9\u00EC\u00ED\u00EE\u00F2\u00F3\u00F9\u00FA\u00C0\u00C8\u00C9\u00CC\u00CD\u00CE\u00D2\u00D3\u00D9\u00DA]/,
   },
 };
 
@@ -433,7 +464,11 @@ function extractTextParts(content: string): {
       }
       // Parse description (single-line without quotes)
       const descPlainMatch = line.match(/^description:\s+(.+)$/);
-      if (descPlainMatch && !descPlainMatch[1].startsWith('>') && !descPlainMatch[1].startsWith('|')) {
+      if (
+        descPlainMatch &&
+        !descPlainMatch[1].startsWith('>') &&
+        !descPlainMatch[1].startsWith('|')
+      ) {
         frontmatterDescription = descPlainMatch[1].replace(/^["']|["']$/g, '');
         collectingDescription = false;
         continue;
@@ -466,14 +501,14 @@ function extractTextParts(content: string): {
 
     // Clean markdown syntax, keep only prose text
     let cleaned = line;
-    cleaned = cleaned.replace(/`[^`]+`/g, '');                    // Remove inline code
-    cleaned = cleaned.replace(/\[([^\]]*)\]\([^)]*\)/g, '$1');   // [text](url) -> text
-    cleaned = cleaned.replace(/^#+\s*/, '');                      // Remove heading markers
-    cleaned = cleaned.replace(/^\s*[-*+]\s+/, '');                // Remove list markers
-    cleaned = cleaned.replace(/^\s*\d+\.\s+/, '');               // Remove numbered list markers
-    cleaned = cleaned.replace(/^>\s*/, '');                       // Remove blockquote markers
-    cleaned = cleaned.replace(/\*\*([^*]*)\*\*/g, '$1');         // Remove bold markers
-    cleaned = cleaned.replace(/\*([^*]*)\*/g, '$1');             // Remove italic markers
+    cleaned = cleaned.replace(/`[^`]+`/g, ''); // Remove inline code
+    cleaned = cleaned.replace(/\[([^\]]*)\]\([^)]*\)/g, '$1'); // [text](url) -> text
+    cleaned = cleaned.replace(/^#+\s*/, ''); // Remove heading markers
+    cleaned = cleaned.replace(/^\s*[-*+]\s+/, ''); // Remove list markers
+    cleaned = cleaned.replace(/^\s*\d+\.\s+/, ''); // Remove numbered list markers
+    cleaned = cleaned.replace(/^>\s*/, ''); // Remove blockquote markers
+    cleaned = cleaned.replace(/\*\*([^*]*)\*\*/g, '$1'); // Remove bold markers
+    cleaned = cleaned.replace(/\*([^*]*)\*/g, '$1'); // Remove italic markers
     cleaned = cleaned.trim();
 
     if (cleaned.length > 0) {
@@ -572,6 +607,265 @@ function analyzeNativeChars(filePath: string, lang: string): NativeCharIssue[] {
 }
 
 // =============================================================================
+// PARAGRAPH LANGUAGE IDENTIFICATION (Layer 3)
+// =============================================================================
+
+/**
+ * A prose paragraph of a markdown file, with the source line it starts on.
+ *
+ * BLOCKS, not lines. A single line is too short to identify a language from with any
+ * confidence (the detector needs three content words before it will answer at all), and
+ * the whole file is too long to see one untranslated block inside. The paragraph is the
+ * unit the defect actually arrives in.
+ */
+interface ProseBlock {
+  lineNumber: number;
+  text: string;
+}
+
+/**
+ * Split a markdown file into prose blocks, dropping everything that is not natural
+ * language: frontmatter, fenced code, tables, images, HTML comments, and the markdown
+ * syntax itself. Headings are kept -- they are prose, and an untranslated heading is the
+ * same defect -- but they terminate a block so a heading and its body are never fused.
+ */
+function extractProseBlocks(content: string): ProseBlock[] {
+  const lines = content.split('\n');
+  const blocks: ProseBlock[] = [];
+  let current: string[] = [];
+  let currentLine = 0;
+  let inCodeBlock = false;
+  let inFrontmatter = false;
+  let frontmatterCount = 0;
+
+  const flush = () => {
+    if (current.length > 0) blocks.push({ lineNumber: currentLine, text: current.join(' ') });
+    current = [];
+  };
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    if (line === '---') {
+      frontmatterCount++;
+      if (frontmatterCount === 1) inFrontmatter = true;
+      else if (frontmatterCount === 2) inFrontmatter = false;
+      flush();
+      continue;
+    }
+    if (inFrontmatter) continue;
+    if (line.startsWith('```')) {
+      inCodeBlock = !inCodeBlock;
+      flush();
+      continue;
+    }
+    if (inCodeBlock) continue;
+    if (/^\s*$/.test(line) || /^<!--/.test(line) || /^!\[/.test(line) || /^\|/.test(line)) {
+      flush();
+      continue;
+    }
+
+    let cleaned = line;
+    cleaned = cleaned.replace(/`[^`]*`/g, ' ');
+    cleaned = cleaned.replace(/\[([^\]]*)\]\([^)]*\)/g, '$1');
+    cleaned = cleaned.replace(/^\s*#+\s*/, '');
+    cleaned = cleaned.replace(/^\s*[-*+]\s+/, '');
+    cleaned = cleaned.replace(/^\s*\d+\.\s+/, '');
+    cleaned = cleaned.replace(/^>\s*/, '');
+    cleaned = cleaned.replace(/\*\*([^*]*)\*\*/g, '$1');
+    cleaned = cleaned.replace(/\*([^*]*)\*/g, '$1');
+    cleaned = cleaned.trim();
+    if (cleaned.length === 0) {
+      flush();
+      continue;
+    }
+    if (current.length === 0) currentLine = i + 1;
+    current.push(cleaned);
+    // A heading closes its own block: fusing it with the paragraph below would let a
+    // translated body vouch for an untranslated heading and vice versa.
+    if (/^\s*#/.test(line)) flush();
+  }
+  flush();
+  return blocks;
+}
+
+/**
+ * The number of content words a block must carry before it is judged at all.
+ *
+ * Twelve, not three. The detector itself answers from three, which is right for a UI
+ * string but far too eager for documentation: a two-word caption or a short list item
+ * made of loanwords would be identified as English on almost no evidence. Every
+ * measured false positive during authoring sat below this floor.
+ */
+const MIN_BLOCK_CONTENT_WORDS = 12;
+
+/**
+ * How many of ANOTHER language's discriminative function words must be present.
+ *
+ * Three, one more than the cross-locale gate's two. Prose blocks are long enough that
+ * two stray matches are cheap; requiring three keeps the signal where the defect is.
+ */
+const MIN_FOREIGN_SCORE = 3;
+
+interface ForeignBlockIssue {
+  file: string;
+  lang: string;
+  lineNumber: number;
+  detected: string;
+  score: number;
+  excerpt: string;
+}
+
+/**
+ * Report prose blocks written in a language that is not this file's locale.
+ *
+ * TWO INDEPENDENT SIGNALS, exactly as in scripts/lib/language-detect.ts:
+ *   1. another language's discriminative function words are present, at least three;
+ *   2. NONE of this locale's own evidence is present in the same block -- its script for
+ *      ar/ja/ko/ru/zh, its function words or its diacritics for the Latin locales.
+ * Requiring both is what separates "this paragraph was never translated" from "this
+ * paragraph mentions Copy-on-Write and Docker Compose", and it is the design that took
+ * the cross-locale gate from 136 false positives to zero.
+ */
+function analyzeProseBlocks(filePath: string, lang: string): ForeignBlockIssue[] {
+  const content = fs.readFileSync(filePath, 'utf-8');
+  if (/^untranslated:\s*true\b/m.test(content.split(/^---$/m)[1] ?? '')) return [];
+  // `generated: true` files are {{t:key}} scaffolding, not prose.
+  if (/^generated:\s*true\b/m.test(content.split(/^---$/m)[1] ?? '')) return [];
+
+  const native = NATIVE_SCRIPT[lang];
+  const own = DISCRIMINATIVE[lang] ?? new Set<string>();
+  const diacritics = LOCALE_CHAR_CONFIG[lang]?.nativeCharPattern;
+  const issues: ForeignBlockIssue[] = [];
+
+  for (const block of extractProseBlocks(content)) {
+    const text = stripNonLanguage(block.text);
+    if (contentWords(text).length < MIN_BLOCK_CONTENT_WORDS) continue;
+
+    const id = identify(text);
+    if (!id || id.lang === lang || id.score < MIN_FOREIGN_SCORE) continue;
+
+    if (native) {
+      // Any of the locale's own script in the block means the block is in that locale,
+      // whatever Latin technical vocabulary it also carries.
+      if (native.test(text)) continue;
+    } else {
+      const words = new Set(norm(text).split(/[^a-z]+/));
+      if ([...own].some((w) => words.has(norm(w)))) continue;
+      if (diacritics?.test(block.text)) continue;
+    }
+
+    issues.push({
+      file: filePath,
+      lang,
+      lineNumber: block.lineNumber,
+      detected: id.lang,
+      score: id.score,
+      excerpt: block.text.length > 100 ? `${block.text.slice(0, 97)}...` : block.text,
+    });
+  }
+  return issues;
+}
+
+/**
+ * CONTROL. Plant the exact defect that proved this gate dead, and require layer 3 to
+ * report it -- then plant the three shapes that must NOT fire.
+ *
+ * Runs INLINE on every invocation, never behind a flag. The reason is on the record in
+ * this repo twice over: check-i18n-cross-locale.ts carried its fire-proof behind
+ * `--selftest` and nothing ever passed the flag, and THIS file was green for its whole
+ * life over a defect a four-line paste could produce. A control that only runs when
+ * someone remembers to ask for it is not a control.
+ */
+function controlLayer3(): void {
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'untranslated-control-'));
+  const write = (name: string, body: string) => {
+    const f = path.join(tmp, name);
+    fs.writeFileSync(f, body);
+    return f;
+  };
+  const failures: string[] = [];
+  const expect = (name: string, actual: number, wanted: 'some' | 'none') => {
+    const ok = wanted === 'some' ? actual > 0 : actual === 0;
+    if (!ok) failures.push(`${name}: expected ${wanted}, got ${actual} finding(s)`);
+  };
+
+  const GERMAN_DOC = [
+    '---',
+    'title: Schnellstart',
+    '---',
+    '',
+    '## Erste Schritte mit Rediacc',
+    '',
+    'Rediacc schützt Ihre Produktionsdaten mit sofortigen Wiederherstellungspunkten.',
+    'Jedes Repository ist von jedem anderen isoliert, damit ein Fehler an einer Stelle',
+    'sich niemals ausbreitet und Sie nichts überschreiben können.',
+    '',
+  ].join('\n');
+
+  // THE PLANT: the literal paragraph that proved this gate dead on 2026-08-18.
+  const ENGLISH_PARAGRAPH = [
+    'Rediacc keeps your production data safe with instant recovery points. Every',
+    'repository is isolated from every other one, so a mistake in one place never',
+    'spreads. Recovery takes seconds rather than hours, and nothing is ever',
+    'overwritten until you say so.',
+  ].join('\n');
+
+  expect(
+    'a clean German document reports nothing',
+    analyzeProseBlocks(write('clean.md', GERMAN_DOC), 'de').length,
+    'none'
+  );
+  expect(
+    'an English paragraph appended to a German document is reported',
+    analyzeProseBlocks(write('planted.md', `${GERMAN_DOC}\n${ENGLISH_PARAGRAPH}\n`), 'de').length,
+    'some'
+  );
+  expect(
+    'an English paragraph appended to a Japanese document is reported',
+    analyzeProseBlocks(
+      write(
+        'planted-ja.md',
+        `---\ntitle: クイックスタート\n---\n\nRediacc は本番データを即時の復旧ポイントで保護します。各リポジトリは互いに分離されています。\n\n${ENGLISH_PARAGRAPH}\n`
+      ),
+      'ja'
+    ).length,
+    'some'
+  );
+  // FALSE-POSITIVE CONTROLS. Each of these is a shape that exists in the real tree and
+  // must never be reported, or the gate gets suppressed instead of fixed.
+  expect(
+    'a fenced English code block inside a German document is not reported',
+    analyzeProseBlocks(
+      write(
+        'code.md',
+        `${GERMAN_DOC}\n\`\`\`bash\n# create the repository and then push it to the machine\nrdc repo create demo --tag latest\n\`\`\`\n`
+      ),
+      'de'
+    ).length,
+    'none'
+  );
+  expect(
+    'a German paragraph dense with English product names is not reported',
+    analyzeProseBlocks(
+      write(
+        'products.md',
+        `${GERMAN_DOC}\nDer Docker Compose Stack nutzt BTRFS Copy-on-Write Snapshots und LUKS, damit Kubernetes und Ceph zusammenarbeiten können.\n`
+      ),
+      'de'
+    ).length,
+    'none'
+  );
+
+  fs.rmSync(tmp, { recursive: true, force: true });
+  if (failures.length > 0) {
+    console.error('\x1b[31m✗\x1b[0m Layer 3 CONTROL FAILED. This gate cannot detect the');
+    console.error('  defect it exists for, so its verdict on the real tree means nothing.');
+    for (const f of failures) console.error(`    ${f}`);
+    process.exit(1);
+  }
+}
+
+// =============================================================================
 // MAIN
 // =============================================================================
 
@@ -579,13 +873,24 @@ function main(): void {
   console.log('Untranslated Text Detection');
   console.log('============================================================\n');
 
+  // CONTROL FIRST. If layer 3 cannot see the planted defect, nothing below is evidence.
+  controlLayer3();
+
+  // REFUSE, never skip. This used to print a warning and exit 0, which is root pattern 2
+  // of .ci/scripts/test/gates/test-gate-anti-vacuity.sh: an assertion disabled when its
+  // input is absent is indistinguishable in the output from an assertion that passed.
   if (!fs.existsSync(DOCS_DIR)) {
-    console.log('\x1b[33m!\x1b[0m Docs directory not found, skipping untranslated text check');
-    process.exit(0);
+    console.error(
+      `\x1b[31m✗\x1b[0m Refusing to run: the docs tree is missing (${DOCS_DIR}).\n` +
+        `  A scan over zero files would report "properly translated" while checking nothing.`
+    );
+    process.exit(1);
   }
 
   const allIssues: UntranslatedLine[] = [];
   const allNativeIssues: NativeCharIssue[] = [];
+  const allBlockIssues: ForeignBlockIssue[] = [];
+  let filesScanned = 0;
   // frontmatter-no-native is warning-only for Latin scripts (a title/description can
   // legitimately lack diacritics, e.g. Italian "Architettura"); see analyzeNativeChars comment.
   const nativeWarnings: NativeCharIssue[] = [];
@@ -601,11 +906,14 @@ function main(): void {
 
     const mdFiles = globSync(`${langDir}/**/*.{md,mdx}`);
     let langPatternIssues = 0;
+    filesScanned += mdFiles.length;
 
     for (const file of mdFiles) {
       const patternIssues = analyzeFile(file, lang);
       allIssues.push(...patternIssues);
       langPatternIssues += patternIssues.length;
+
+      allBlockIssues.push(...analyzeProseBlocks(file, lang));
 
       const nativeIssues = analyzeNativeChars(file, lang);
       const isLatin = LOCALE_CHAR_CONFIG[lang]?.scriptType !== 'non-latin';
@@ -616,15 +924,24 @@ function main(): void {
     }
 
     const langNativeErrors = allNativeIssues.filter((i) => i.lang === lang).length;
-    const totalErrors = langPatternIssues + langNativeErrors;
+    const langBlockErrors = allBlockIssues.filter((i) => i.lang === lang).length;
+    const totalErrors = langPatternIssues + langNativeErrors + langBlockErrors;
 
     if (totalErrors > 0) {
       const parts: string[] = [];
       if (langPatternIssues > 0) parts.push(`${langPatternIssues} pattern match(es)`);
       if (langNativeErrors > 0) parts.push(`${langNativeErrors} native char error(s)`);
+      if (langBlockErrors > 0) parts.push(`${langBlockErrors} foreign-language paragraph(s)`);
       console.log(`  \x1b[31m\u2717\x1b[0m ${lang}: ${parts.join(', ')}`);
     } else {
-      console.log(`  \x1b[32m\u2713\x1b[0m ${lang}: No untranslated text detected`);
+      // State the FLOOR alongside the pass. A clean line that does not say what
+      // it could not have seen is how a passing single-sentence plant gets read
+      // as proof the gate is dead again, which is precisely the mistake that
+      // was made against this gate once already.
+      console.log(
+        `  \x1b[32m\u2713\x1b[0m ${lang}: No untranslated text detected ` +
+          `\x1b[2m(layer 3 floor: blocks under ${MIN_BLOCK_CONTENT_WORDS} words are not language-checked)\x1b[0m`
+      );
     }
   }
 
@@ -677,6 +994,29 @@ function main(): void {
     console.log('');
   }
 
+  // Layer 3 report: paragraphs written in the wrong language.
+  if (allBlockIssues.length > 0) {
+    console.log('\x1b[31mForeign-Language Paragraphs (Layer 3):\x1b[0m\n');
+    const byFile = new Map<string, ForeignBlockIssue[]>();
+    for (const issue of allBlockIssues) {
+      const rel = path.relative(DOCS_DIR, issue.file);
+      byFile.set(rel, [...(byFile.get(rel) ?? []), issue]);
+    }
+    let shown = 0;
+    for (const [file, issues] of [...byFile].sort((a, b) => b[1].length - a[1].length)) {
+      if (shown >= 30) break;
+      console.log(`  \x1b[33m${file}\x1b[0m  (${issues.length})`);
+      for (const issue of issues.slice(0, 3)) {
+        console.log(
+          `    Line ${issue.lineNumber} reads as ${issue.detected} (score ${issue.score}): ${issue.excerpt}`
+        );
+        shown++;
+      }
+    }
+    if (byFile.size > 30) console.log(`  ... and ${byFile.size - 30} more file(s)\n`);
+    console.log('');
+  }
+
   // Warnings (non-failing): Latin frontmatter without diacritics.
   if (nativeWarnings.length > 0) {
     console.log(`\x1b[33mWarnings (${nativeWarnings.length}, non-failing):\x1b[0m`);
@@ -687,13 +1027,28 @@ function main(): void {
     console.log('');
   }
 
-  // Exit logic — pattern matches + non-Latin/body native issues are errors
-  const hasErrors = allIssues.length > 0 || allNativeIssues.length > 0;
+  // FLOOR. A run that opened no files is not a pass. The docs tree exists (checked
+  // above), so zero files means the glob or the locale set has gone wrong, and "found
+  // nothing" would be indistinguishable from "checked nothing".
+  const MIN_FILES = 100;
+  if (filesScanned < MIN_FILES) {
+    console.error(
+      `\x1b[31m✗\x1b[0m Refusing to report: only ${filesScanned} file(s) scanned across ` +
+        `${NON_ENGLISH_LANGS.length} locale(s), below the floor of ${MIN_FILES}.`
+    );
+    process.exit(1);
+  }
+
+  // Exit logic — pattern matches, native char issues and foreign paragraphs are errors
+  const hasErrors = allIssues.length > 0 || allNativeIssues.length > 0 || allBlockIssues.length > 0;
 
   if (hasErrors) {
     const counts: string[] = [];
     if (allIssues.length > 0) counts.push(`${allIssues.length} line(s) with English text patterns`);
-    if (allNativeIssues.length > 0) counts.push(`${allNativeIssues.length} native character error(s)`);
+    if (allNativeIssues.length > 0)
+      counts.push(`${allNativeIssues.length} native character error(s)`);
+    if (allBlockIssues.length > 0)
+      counts.push(`${allBlockIssues.length} paragraph(s) in the wrong language`);
 
     console.log(
       '\x1b[31m\u2717\x1b[0m Untranslated text detection FAILED\n' +
@@ -707,7 +1062,8 @@ function main(): void {
   }
 
   console.log(
-    '\x1b[32m\u2713\x1b[0m All non-English documentation appears to be properly translated\n'
+    `\x1b[32m\u2713\x1b[0m All non-English documentation appears to be properly translated ` +
+      `(${filesScanned} file(s) across ${NON_ENGLISH_LANGS.length} locale(s); layer-3 control fired)\n`
   );
   process.exit(0);
 }

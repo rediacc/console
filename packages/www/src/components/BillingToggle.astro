@@ -1,0 +1,80 @@
+---
+import { createTranslator } from '../i18n/utils';
+import type { Language } from '../i18n/types';
+
+interface Props {
+  lang: Language;
+  /** Extra classes for the wrapper, e.g. the homepage's scroll-reveal hook. */
+  class?: string;
+}
+
+const { lang, class: className } = Astro.props;
+const { t } = createTranslator(lang);
+const ns = 'pages.pricing.ui.billingToggle';
+---
+
+<div class:list={['billing-toggle-wrapper', className]}>
+  <div class="billing-toggle" role="radiogroup" aria-label={t(`${ns}.ariaLabel`)}>
+    <button
+      type="button"
+      role="radio"
+      class="billing-toggle-btn active"
+      data-period="monthly"
+      aria-checked="true"
+    >
+      {t(`${ns}.monthly`)}
+    </button>
+    <button
+      type="button"
+      role="radio"
+      class="billing-toggle-btn"
+      data-period="annual"
+      aria-checked="false"
+    >
+      {t(`${ns}.annual`)}
+    </button>
+  </div>
+  <span class="billing-toggle-savings">{t(`${ns}.annualSavings`)}</span>
+</div>
+
+<script>
+  // One handler for every billing toggle on the site. This used to be three
+  // byte-identical copies (pricing page, homepage preview, disaster recovery),
+  // each hardcoding the id of the section it happened to live in.
+  //
+  // A toggle now drives the nearest enclosing [data-pricing-scope], so a page
+  // may carry more than one grid without the toggles fighting over each other.
+  document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll<HTMLElement>('.billing-toggle').forEach((toggle) => {
+      const scope = toggle.closest<HTMLElement>('[data-pricing-scope]');
+      if (!scope) return;
+
+      const buttons = toggle.querySelectorAll<HTMLButtonElement>('.billing-toggle-btn');
+      const savings = scope.querySelector<HTMLElement>('.billing-toggle-savings');
+      if (!buttons.length) return;
+
+      buttons.forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const period = btn.dataset.period;
+          if (!period) return;
+
+          buttons.forEach((b) => {
+            const isActive = b === btn;
+            b.classList.toggle('active', isActive);
+            b.setAttribute('aria-checked', isActive ? 'true' : 'false');
+          });
+
+          savings?.classList.toggle('visible', period === 'annual');
+
+          scope
+            .querySelectorAll<HTMLElement>(
+              '.cf-price[data-monthly], .cf-price-period[data-monthly], .cf-annual-note[data-monthly]'
+            )
+            .forEach((el) => {
+              el.textContent = period === 'annual' ? el.dataset.annual! : el.dataset.monthly!;
+            });
+        });
+      });
+    });
+  });
+</script>

@@ -12,10 +12,13 @@
  * region list to the user.
  */
 
-import { importPrivateKey, signSubscriptionPayload } from '@rediacc/shared/subscription';
-import { CURRENT_SIGNING_KEY } from '@rediacc/shared/subscription';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import {
+  CURRENT_SIGNING_KEY,
+  importPrivateKey,
+  signSubscriptionPayload,
+} from '@rediacc/shared/subscription';
 
 const privateKeyBase64 = process.env.ED25519_PRIVATE_KEY;
 if (!privateKeyBase64) {

@@ -169,7 +169,7 @@ const tierSlugs = ['registered', 'silver', 'gold', 'platinum'];
 
   .pt-eyebrow {
     display: inline-block;
-    background: var(--color-brand-primary);
+    background: var(--color-brand-fill);
     color: white;
     padding: var(--space-1) var(--space-3);
     border-radius: var(--radius-full);
@@ -181,7 +181,7 @@ const tierSlugs = ['registered', 'silver', 'gold', 'platinum'];
   }
 
   .pt-hero h1 {
-    font-size: clamp(2.5rem, 5vw, 4rem);
+    font-size: var(--font-size-4xl);
     font-weight: var(--font-weight-bold);
     line-height: 1.1;
     max-width: 880px;
@@ -208,7 +208,7 @@ const tierSlugs = ['registered', 'silver', 'gold', 'platinum'];
     align-items: center;
     gap: var(--space-2);
     padding: var(--space-3) var(--space-6);
-    background: var(--color-brand-primary);
+    background: var(--color-brand-fill);
     color: white;
     text-decoration: none;
     border-radius: var(--radius-md);
@@ -364,7 +364,7 @@ const tierSlugs = ['registered', 'silver', 'gold', 'platinum'];
     width: 6px;
     height: 6px;
     border-radius: var(--radius-full);
-    background: var(--color-brand-primary);
+    background: var(--color-brand-fill);
   }
 
   /* How it works */
@@ -392,7 +392,7 @@ const tierSlugs = ['registered', 'silver', 'gold', 'platinum'];
     width: 2.25rem;
     height: 2.25rem;
     border-radius: var(--radius-full);
-    background: var(--color-brand-primary);
+    background: var(--color-brand-fill);
     color: white;
     font-weight: var(--font-weight-bold);
   }
@@ -467,7 +467,7 @@ const tierSlugs = ['registered', 'silver', 'gold', 'platinum'];
   .pt-final-cta {
     padding: var(--space-20) 0;
     text-align: center;
-    background: var(--color-brand-primary);
+    background: var(--color-brand-fill);
     color: white;
   }
 
@@ -514,11 +514,15 @@ const tierSlugs = ['registered', 'silver', 'gold', 'platinum'];
     gap: var(--space-5);
   }
 
+  /* Direction-neutral. `left: -9999px` hid this by pushing it off the LEFT edge, which
+     under dir="rtl" is the TRAILING edge, so on every Arabic page it made the document
+     9999px wider instead of hiding anything. clip-path hides it in both directions and
+     keeps it reachable to the bots the honeypot is there to catch. */
   .partner-form-honeypot {
     position: absolute;
-    left: -9999px;
     width: 1px;
     height: 1px;
+    clip-path: inset(50%);
     overflow: hidden;
   }
 
@@ -609,7 +613,7 @@ const tierSlugs = ['registered', 'silver', 'gold', 'platinum'];
 
   .partner-form-submit {
     padding: var(--space-3) var(--space-6);
-    background: var(--color-brand-primary);
+    background: var(--color-brand-fill);
     color: white;
     border: none;
     border-radius: var(--radius-md);

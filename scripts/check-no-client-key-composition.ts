@@ -139,9 +139,13 @@ function scan(root: string, globs: string[]): { findings: Finding[]; files: numb
     mkdirSync(dir, { recursive: true });
     writeFileSync(
       join(dir, 'bad.go'),
-      ['package chunkstore', '', 'func p(prefix string) string {', '\treturn prefix + "c/"', '}'].join(
-        '\n'
-      )
+      [
+        'package chunkstore',
+        '',
+        'func p(prefix string) string {',
+        '\treturn prefix + "c/"',
+        '}',
+      ].join('\n')
     );
     writeFileSync(
       join(dir, 'good.go'),

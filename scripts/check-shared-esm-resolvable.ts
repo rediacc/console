@@ -28,11 +28,11 @@
  */
 
 import { execFileSync } from 'node:child_process';
-import { existsSync, mkdtempSync, mkdirSync, rmSync, writeFileSync, readFileSync } from 'node:fs';
-import { globSync } from 'glob';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+import { globSync } from 'glob';
 
 const ROOT = join(fileURLToPath(new URL('.', import.meta.url)), '..');
 const DIST = join(ROOT, 'packages/shared/dist');
@@ -102,14 +102,26 @@ function importAll(dir: string, modules: string[]): ImportResult {
           {
             module: '(child process)',
             code: 'CHILD_DIED',
-            message: (e.stderr ?? 'child exited without the completion sentinel').trim().split('\n')[0],
+            message: (e.stderr ?? 'child exited without the completion sentinel')
+              .trim()
+              .split('\n')[0],
           },
         ],
       };
     }
   }
   const at = stdout.indexOf(SENTINEL);
-  if (at === -1) return { attempted: -1, failures: [{ module: '(child process)', code: 'NO_SENTINEL', message: 'child produced no completion sentinel' }] };
+  if (at === -1)
+    return {
+      attempted: -1,
+      failures: [
+        {
+          module: '(child process)',
+          code: 'NO_SENTINEL',
+          message: 'child produced no completion sentinel',
+        },
+      ],
+    };
   return JSON.parse(stdout.slice(at + SENTINEL.length)) as ImportResult;
 }
 
@@ -142,7 +154,8 @@ function runControls(): string | null {
     }
 
     const good = arm('good', {
-      'index.js': "export * from './leaf.js';\nimport d from './d.json' with { type: 'json' };\nexport default d;\n",
+      'index.js':
+        "export * from './leaf.js';\nimport d from './d.json' with { type: 'json' };\nexport default d;\n",
       'leaf.js': 'export const leaf = 1;\n',
       'd.json': '{"a":1}',
     });
@@ -195,9 +208,7 @@ if (concreteTargets.length < MIN_CONCRETE_EXPORT_TARGETS) {
   process.exit(1);
 }
 
-const missingTargets = concreteTargets.filter(
-  (t) => !existsSync(join(ROOT, 'packages/shared', t))
-);
+const missingTargets = concreteTargets.filter((t) => !existsSync(join(ROOT, 'packages/shared', t)));
 if (missingTargets.length > 0) {
   console.error(
     `✗ package.json exports point at files the build does not emit (${missingTargets.length}):\n` +

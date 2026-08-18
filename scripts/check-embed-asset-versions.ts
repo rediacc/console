@@ -128,7 +128,6 @@ const VERSION_TOKEN = /\bv?\d+\.\d+(?:\.\d+)?[\w.+-]*/;
  */
 const MUST_STAY_PROBEABLE = new Set(['rsync', 'criu']);
 
-
 const HOST_ARCH = os.arch() === 'x64' ? 'amd64' : os.arch() === 'arm64' ? 'arm64' : os.arch();
 
 type Verdict = 'match' | 'mismatch' | 'unprobed';
@@ -146,7 +145,7 @@ function probeAsset(
   zstPath: string,
   arch: string,
   pin: string,
-  tmpDir: string,
+  tmpDir: string
 ): Result {
   const asset = path.relative(ASSETS_DIR, zstPath);
   const bin = path.join(tmpDir, path.basename(zstPath).replace(/\.zst$/, ''));
@@ -154,7 +153,13 @@ function probeAsset(
     const raw = execFileSync('zstd', ['-dc', zstPath], { maxBuffer: 1024 * 1024 * 512 });
     fs.writeFileSync(bin, raw, { mode: 0o755 });
   } catch (error) {
-    return { component, asset, pin, verdict: 'unprobed', detail: `could not decompress: ${String(error)}` };
+    return {
+      component,
+      asset,
+      pin,
+      verdict: 'unprobed',
+      detail: `could not decompress: ${String(error)}`,
+    };
   }
 
   if (arch === HOST_ARCH) {
@@ -295,11 +300,13 @@ function main(): void {
   if (controlFailures.length > 0) {
     for (const f of controlFailures) console.error(`${RED}✗${NC} ${f}`);
     console.error(
-      `${RED}✗${NC} the comparison itself is broken, so no verdict it produces means anything.`,
+      `${RED}✗${NC} the comparison itself is broken, so no verdict it produces means anything.`
     );
     process.exit(1);
   }
-  console.log(`${GREEN}✓${NC} control fired: the comparison accepts a match and rejects a stale one`);
+  console.log(
+    `${GREEN}✓${NC} control fired: the comparison accepts a match and rejects a stale one`
+  );
 
   if (!fs.existsSync(LOCKFILE)) {
     console.log(`${YELLOW}⚠${NC} SKIPPED: ${path.relative(CONSOLE_ROOT, LOCKFILE)} is absent`);
@@ -323,7 +330,9 @@ function main(): void {
   }
 
   if (staged.length === 0) {
-    console.log(`${YELLOW}⚠${NC} SKIPPED: no staged assets under ${path.relative(CONSOLE_ROOT, ASSETS_DIR)}`);
+    console.log(
+      `${YELLOW}⚠${NC} SKIPPED: no staged assets under ${path.relative(CONSOLE_ROOT, ASSETS_DIR)}`
+    );
     console.log('  The .zst payloads are gitignored, so a fresh checkout and any CI job that has');
     console.log('  not run `./build.sh embed_assets` legitimately has none. The controls above');
     console.log('  still ran, so this is a skip with its reason stated, not a silent pass.');
@@ -350,7 +359,9 @@ function main(): void {
     console.error('');
     console.error(`${RED}✗${NC} ${mismatches.length} staged asset(s) are NOT the version pinned.`);
     console.error('  The lockfile, the Dockerfile ARGs and the credits can all be correct while');
-    console.error('  this is wrong: `./build.sh embed_assets --force` re-extracts from an EXISTING');
+    console.error(
+      '  this is wrong: `./build.sh embed_assets --force` re-extracts from an EXISTING'
+    );
     console.error('  image, so a Dockerfile change needs `./build.sh docker_image` FIRST.');
     process.exit(1);
   }
@@ -359,9 +370,13 @@ function main(): void {
   const wentQuiet = unprobed.filter((r) => MUST_STAY_PROBEABLE.has(r.component));
   if (wentQuiet.length > 0) {
     console.error('');
-    console.error(`${RED}✗${NC} ${wentQuiet.length} asset(s) that this gate is known to verify came`);
+    console.error(
+      `${RED}✗${NC} ${wentQuiet.length} asset(s) that this gate is known to verify came`
+    );
     console.error('  back UNPROBED. The gate did not fail, it went QUIET, which is how a check');
-    console.error('  decays into decoration. Either the probe recipe broke or the asset changed shape:');
+    console.error(
+      '  decays into decoration. Either the probe recipe broke or the asset changed shape:'
+    );
     for (const r of wentQuiet) console.error(`    ${r.asset}: ${r.detail}`);
     process.exit(1);
   }
@@ -377,7 +392,7 @@ function main(): void {
   console.log('');
   console.log(
     `${GREEN}✓${NC} ${matched.length} staged asset(s) match their pin` +
-      (unprobed.length > 0 ? `, ${unprobed.length} unprobed (listed above)` : ''),
+      (unprobed.length > 0 ? `, ${unprobed.length} unprobed (listed above)` : '')
   );
   process.exit(0);
 }

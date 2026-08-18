@@ -16,7 +16,7 @@
 #
 # Env vars:
 #   CF_MANAGEMENT_TOKEN  - Scoped API token (recommended, supports self-destruct)
-#   CF_API_KEY + CF_EMAIL - Global API Key (legacy, cannot self-destruct)
+#   CF_GLOBAL_API_KEY + CF_EMAIL - Global API Key (legacy, cannot self-destruct)
 #   AWS_SES_ADMIN_KEY_ID + AWS_SES_ADMIN_SECRET - IAM admin credentials
 
 CF_API_BASE="https://api.cloudflare.com/client/v4"
@@ -24,12 +24,12 @@ CF_AUTH_HEADERS=()
 
 # Resolve Cloudflare authentication.
 # Sets CF_AUTH_HEADERS array for use with curl.
-# If CF_API_KEY + CF_EMAIL are provided (Global API Key), auto-creates a scoped
+# If CF_GLOBAL_API_KEY + CF_EMAIL are provided (Global API Key), auto-creates a scoped
 # management token so self-destruct works. The token is deleted at the end.
 resolve_cf_auth() {
     if [[ -n "${CF_MANAGEMENT_TOKEN:-}" ]]; then
         CF_AUTH_HEADERS=(-H "Authorization: Bearer ${CF_MANAGEMENT_TOKEN}")
-    elif [[ -n "${CF_API_KEY:-}" && -n "${CF_EMAIL:-}" ]]; then
+    elif [[ -n "${CF_GLOBAL_API_KEY:-}" && -n "${CF_EMAIL:-}" ]]; then
         log_step "Creating scoped management token from Global API Key..."
         CF_MANAGEMENT_TOKEN=$(_create_management_token)
         if [[ -z "$CF_MANAGEMENT_TOKEN" || "$CF_MANAGEMENT_TOKEN" == "null" ]]; then
@@ -48,7 +48,7 @@ resolve_cf_auth() {
             echo -n "Enter email: "
             read -r CF_EMAIL
             echo -n "Enter Global API Key: "
-            read -rs CF_API_KEY
+            read -rs CF_GLOBAL_API_KEY
             echo
             log_step "Creating scoped management token..."
             CF_MANAGEMENT_TOKEN=$(_create_management_token)
@@ -73,7 +73,7 @@ resolve_cf_auth() {
 }
 
 # Create a scoped management token using the Global API Key.
-# Requires CF_API_KEY, CF_EMAIL, and ACCOUNT_ID to be set.
+# Requires CF_GLOBAL_API_KEY, CF_EMAIL, and ACCOUNT_ID to be set.
 # Prints the token value to stdout.
 _create_management_token() {
     local account_id="${ACCOUNT_ID:-fa51e4a18d553c30e1633288e9733d04}"
@@ -81,7 +81,7 @@ _create_management_token() {
     # Get user ID for user-level permissions
     local user_id
     user_id=$(curl -s -X GET "${CF_API_BASE}/user" \
-        -H "X-Auth-Key: ${CF_API_KEY}" -H "X-Auth-Email: ${CF_EMAIL}" \
+        -H "X-Auth-Key: ${CF_GLOBAL_API_KEY}" -H "X-Auth-Email: ${CF_EMAIL}" \
         -H "Content-Type: application/json" | jq -r '.result.id // empty')
 
     if [[ -z "$user_id" ]]; then
@@ -94,7 +94,7 @@ _create_management_token() {
     # avoid hardcoding zone IDs.
     local zones_csv
     zones_csv=$(curl -s -X GET "${CF_API_BASE}/zones?account.id=${account_id}&per_page=50" \
-        -H "X-Auth-Key: ${CF_API_KEY}" -H "X-Auth-Email: ${CF_EMAIL}" \
+        -H "X-Auth-Key: ${CF_GLOBAL_API_KEY}" -H "X-Auth-Email: ${CF_EMAIL}" \
         -H "Content-Type: application/json" | jq -r '[.result[].id] | join(",")')
 
     # Account permissions:
@@ -125,7 +125,7 @@ _create_management_token() {
     # omitted entirely instead of sent with an empty map.
     local response
     response=$(curl -s -X POST "${CF_API_BASE}/user/tokens" \
-        -H "X-Auth-Key: ${CF_API_KEY}" -H "X-Auth-Email: ${CF_EMAIL}" \
+        -H "X-Auth-Key: ${CF_GLOBAL_API_KEY}" -H "X-Auth-Email: ${CF_EMAIL}" \
         -H "Content-Type: application/json" \
         -d "$(jq -n \
             --arg account_id "$account_id" \
@@ -185,7 +185,7 @@ resolve_aws_auth() {
 check_self_destruct_capable() {
     if [[ -z "${CF_MANAGEMENT_TOKEN:-}" ]]; then
         log_error "Self-destruct requires Cloudflare authentication"
-        log_error "Set CF_MANAGEMENT_TOKEN or CF_API_KEY + CF_EMAIL"
+        log_error "Set CF_MANAGEMENT_TOKEN or CF_GLOBAL_API_KEY + CF_EMAIL"
         exit 1
     fi
 }

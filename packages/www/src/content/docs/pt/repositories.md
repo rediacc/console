@@ -82,7 +82,7 @@ rdc repo resize my-app --size 20G  # Define para tamanho exato
 rdc repo expand my-app --size 5G  # Adiciona 5G ao tamanho atual
 ```
 
-> O repositório deve estar desmontado antes de redimensionar. `repo expand` funciona online. Redimensionar altera o tamanho máximo do repositório; para devolver blocos libertos ao pool sem alterar o máximo, use [`repo trim`](#reclamar-espaco-trim) em alternativa.
+> O repositório deve estar desmontado antes de redimensionar. `repo expand` funciona online. Redimensionar altera o tamanho máximo do repositório; para devolver blocos libertos ao pool sem alterar o máximo, use [`repo trim`](#reclaim-space-trim) em alternativa.
 
 ## Reclamar Espaço (trim)
 
@@ -129,7 +129,7 @@ Campos da política:
 | `--auto-trim` | Executar trims agendados | desativado |
 | `--trim-interval` | Horas mínimas entre trims automáticos | 24 |
 
-Salvaguardas: o crescimento automático recusa quando o espaço livre do pool está abaixo de uma reserva (10 GB ou 5% do pool, o que for maior), aguarda pelo menos 30 minutos entre crescimentos do mesmo repositório, e nunca ultrapassa `--max-quota`. Não há redução automática: diminuir o tamanho máximo de um repositório continua a ser um [`repo resize`](#redimensionar) manual e offline.
+Salvaguardas: o crescimento automático recusa quando o espaço livre do pool está abaixo de uma reserva (10 GB ou 5% do pool, o que for maior), aguarda pelo menos 30 minutos entre crescimentos do mesmo repositório, e nunca ultrapassa `--max-quota`. Não há redução automática: diminuir o tamanho máximo de um repositório continua a ser um [`repo resize`](#resize) manual e offline.
 
 As definições por repositório substituem a predefinição a nível de máquina. Chamadas repetidas de `policy set` alteram apenas as flags que passar.
 

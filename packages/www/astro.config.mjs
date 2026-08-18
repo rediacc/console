@@ -1,4 +1,4 @@
-/* global console, process */
+/* global process */
 // @ts-check
 import { defineConfig } from 'astro/config';
 import { execSync } from 'child_process';
@@ -16,21 +16,20 @@ import { remarkResolveTranslations } from './src/plugins/remark-resolve-translat
 import { remarkTutorialEmbed } from './src/plugins/remark-tutorial-embed.ts';
 import { remarkVideoEmbed } from './src/plugins/remark-video-embed.ts';
 import { remarkDocsCliLinks } from './src/plugins/remark-docs-cli-links.ts';
+import { rehypeStableHeadingIds } from './src/plugins/rehype-stable-heading-ids.mjs';
 import jsonGeneratorIntegration from './src/integrations/json-generator.ts';
 import routeManifestIntegration from './src/integrations/route-manifest-generator.ts';
 
-// Integration to generate search index before build
+// Integration to generate search index before build. A failure fails the BUILD:
+// the generator deletes the previous index files before writing, so swallowing
+// its error ships a site with no search index while exiting 0.
 const searchIndexIntegration = {
   name: 'search-index-generator',
   hooks: {
     'astro:build:start': async () => {
-      try {
-        execSync('node scripts/generate-search-index.js', { stdio: 'inherit' });
-      } catch {
-        console.error('⚠ Failed to generate search index. Continuing with build...');
-      }
-    }
-  }
+      execSync('node scripts/generate-search-index.js', { stdio: 'inherit' });
+    },
+  },
 };
 
 // https://astro.build/config
@@ -62,16 +61,16 @@ export default defineConfig({
           et: 'et-EE',
           ko: 'ko-KR',
           pt: 'pt-PT',
-          it: 'it-IT'
-        }
+          it: 'it-IT',
+        },
       },
 
       // Optimize XML file size by excluding unused namespaces
       namespaces: {
-        news: false,  // Not a news site
+        news: false, // Not a news site
         video: false, // No video content
-        image: true,  // Keep for images
-        xhtml: true   // Keep for hreflang (i18n)
+        image: true, // Keep for images
+        xhtml: true, // Keep for hreflang (i18n)
       },
 
       // Per-page customization for priority and changefreq
@@ -135,11 +134,11 @@ export default defineConfig({
         }
 
         return item;
-      }
+      },
     }),
     searchIndexIntegration,
     jsonGeneratorIntegration(),
-    routeManifestIntegration()
+    routeManifestIntegration(),
   ],
   output: 'static',
   redirects: {
@@ -155,22 +154,45 @@ export default defineConfig({
     '/et/team': '/et/company',
     '/ko/team': '/ko/company',
     '/pt/team': '/pt/company',
-    '/it/team': '/it/company'
+    '/it/team': '/it/company',
+
+    /* The `/[lang]/solutions` index route was deleted and the constellation it
+       existed to hold moved onto the homepage, under `id="solutions"` (see
+       SPHomePage.astro). These keep the thirteen published URLs landing on the
+       figure instead of on a 404. The root `/solutions` is NOT in this map: a
+       page file, pages/solutions.astro, already claims that path and issues the
+       301 itself. */
+    '/en/solutions': '/en#solutions',
+    '/de/solutions': '/de#solutions',
+    '/es/solutions': '/es#solutions',
+    '/fr/solutions': '/fr#solutions',
+    '/ja/solutions': '/ja#solutions',
+    '/ar/solutions': '/ar#solutions',
+    '/ru/solutions': '/ru#solutions',
+    '/tr/solutions': '/tr#solutions',
+    '/zh/solutions': '/zh#solutions',
+    '/et/solutions': '/et#solutions',
+    '/ko/solutions': '/ko#solutions',
+    '/pt/solutions': '/pt#solutions',
+    '/it/solutions': '/it#solutions',
   },
   build: {
-    assets: 'assets'
+    assets: 'assets',
   },
   vite: {
     define: {
-      __APP_VERSION__: JSON.stringify(version)
-    }
+      __APP_VERSION__: JSON.stringify(version),
+    },
   },
   markdown: {
     remarkPlugins: [
       remarkVideoEmbed,
       remarkTutorialEmbed,
       remarkDocsCliLinks,
-      remarkResolveTranslations
-    ]
-  }
+      remarkResolveTranslations,
+    ],
+    // Runs BEFORE Astro's default rehypeHeadingIds, which respects an existing
+    // id, so these ids win and also land in file.data.astro.headings.
+    rehypePlugins: [rehypeStableHeadingIds],
+  },
 });

@@ -82,7 +82,7 @@ rdc repo resize my-app --size 20G  # Définir à une taille exacte
 rdc repo expand my-app --size 5G  # Ajouter 5G à la taille actuelle
 ```
 
-> Le dépôt doit être démonté avant le redimensionnement. `repo expand` fonctionne en ligne. Le redimensionnement modifie la taille maximale du dépôt ; pour restituer les blocs libérés au pool sans changer le maximum, utilisez [`repo trim`](#récupérer-de-lespace-trim) à la place.
+> Le dépôt doit être démonté avant le redimensionnement. `repo expand` fonctionne en ligne. Le redimensionnement modifie la taille maximale du dépôt ; pour restituer les blocs libérés au pool sans changer le maximum, utilisez [`repo trim`](#reclaim-space-trim) à la place.
 
 ## Récupérer de l'espace (trim)
 
@@ -129,7 +129,7 @@ Champs de la politique :
 | `--auto-trim` | Exécuter des trims planifiés | off |
 | `--trim-interval` | Nombre minimal d'heures entre deux trims automatiques | 24 |
 
-Garde-fous : la croissance automatique est refusée quand l'espace libre du pool est inférieur à une réserve (10 Go ou 5 % du pool, selon le plus grand des deux), attend au moins 30 minutes entre deux croissances du même dépôt, et ne dépasse jamais `--max-quota`. Il n'existe pas de réduction automatique : diminuer la taille maximale d'un dépôt reste une opération manuelle, hors ligne via [`repo resize`](#redimensionner).
+Garde-fous : la croissance automatique est refusée quand l'espace libre du pool est inférieur à une réserve (10 Go ou 5 % du pool, selon le plus grand des deux), attend au moins 30 minutes entre deux croissances du même dépôt, et ne dépasse jamais `--max-quota`. Il n'existe pas de réduction automatique : diminuer la taille maximale d'un dépôt reste une opération manuelle, hors ligne via [`repo resize`](#resize).
 
 Les paramètres par dépôt remplacent la valeur par défaut à l'échelle de la machine. Les appels successifs à `policy set` ne modifient que les flags que vous passez.
 
@@ -145,7 +145,7 @@ Les forks utilisent le modèle name:tag : le fork résultant est nommé `my-app:
 
 > Les forks partagent les données du parent via reflink BTRFS, y compris tous les credentials stockés sur le disque. Voir [Ce que Rediacc n'isole pas](/fr/docs/ai-agents-safety#what-rediacc-does-not-isolate) pour les implications quand ces credentials autorisent des services externes comme Stripe, AWS ou Railway. Pour garder les credentials de déploiement hors de la portée du fork, utilisez [les secrets par dépôt](#secrets) plutôt que d'intégrer les valeurs dans les fichiers `.env` du dépôt.
 
-À la création du fork, `repo fork` écrit le [fichier annexe du miroir d'état](#colonne-type-et-miroir-détat) à `<datastore>/.interim/state/<fork-guid>/.rediacc.json` immédiatement. Sans déverrouiller le volume. De sorte que le nouveau fork est correctement identifié comme `is_fork: true` dès le moment de sa création. Cela permet aux sauvegardes planifiées de l'ignorer (les forks sont exclus du pipeline d'upload par défaut) même s'il n'est jamais monté. Lors du fork d'un fork, `grand_guid` s'enchaîne correctement : le miroir du nouveau fork pointe vers le GUID du grand-parent original, pas vers le fork intermédiaire.
+À la création du fork, `repo fork` écrit le [fichier annexe du miroir d'état](#type-column-and-the-state-mirror) à `<datastore>/.interim/state/<fork-guid>/.rediacc.json` immédiatement. Sans déverrouiller le volume. De sorte que le nouveau fork est correctement identifié comme `is_fork: true` dès le moment de sa création. Cela permet aux sauvegardes planifiées de l'ignorer (les forks sont exclus du pipeline d'upload par défaut) même s'il n'est jamais monté. Lors du fork d'un fork, `grand_guid` s'enchaîne correctement : le miroir du nouveau fork pointe vers le GUID du grand-parent original, pas vers le fork intermédiaire.
 
 ### Forker et démarrer en une seule opération
 

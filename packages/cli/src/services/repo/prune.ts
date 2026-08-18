@@ -244,14 +244,14 @@ export function printPruneAnalysis(analysis: PruneAnalysis, dryRun: boolean): vo
   if (analysis.protected.length > 0) {
     outputService.info(`Protected (${analysis.protected.length}):`);
     for (const item of analysis.protected) {
-      outputService.info(`  ${item.guid.slice(0, 8)}… — ${item.reason}`);
+      outputService.info(`  ${item.guid.slice(0, 8)}…: ${item.reason}`);
     }
   }
 
   if (analysis.orphaned.length > 0) {
     outputService.info(`\nOrphaned (${analysis.orphaned.length}):`);
     for (const item of analysis.orphaned) {
-      outputService.info(`  ${item.guid.slice(0, 8)}… — ${item.reason}`);
+      outputService.info(`  ${item.guid.slice(0, 8)}…: ${item.reason}`);
     }
   }
 

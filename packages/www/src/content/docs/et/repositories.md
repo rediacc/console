@@ -82,7 +82,7 @@ rdc repo resize my-app --size 20G  # Seadista täpsele suurusele
 rdc repo expand my-app --size 5G  # Lisa 5G praegusele suurusele
 ```
 
-> Repositoorium peab olema lahtiühendatud enne suuruse muutmist. `repo expand` töötab veebis. Suuruse muutmine muudab repositooriumi maksimaalset suurust; et tagastada vabastatud plokid basseinile maksimumit muutmata, kasuta selle asemel [`repo trim`](#ruumi-tagasinõudmine-trim).
+> Repositoorium peab olema lahtiühendatud enne suuruse muutmist. `repo expand` töötab veebis. Suuruse muutmine muudab repositooriumi maksimaalset suurust; et tagastada vabastatud plokid basseinile maksimumit muutmata, kasuta selle asemel [`repo trim`](#reclaim-space-trim).
 
 ## Ruumi tagasinõudmine (trim)
 
@@ -129,7 +129,7 @@ Poliitika väljad:
 | `--auto-trim` | Käivitab ajastatud trimmimised | välja |
 | `--trim-interval` | Minimaalne tundide arv automaatsete trimmimiste vahel | 24 |
 
-Kaitsemeetmed: automaatne kasv keeldub, kui basseini vabas ruumi on alla reservi (10 GB või 5% basseinist, kumb on suurem), ootab vähemalt 30 minutit sama repositooriumi kasvude vahel ja ei ületa kunagi `--max-quota`. Automaatset kahanemist pole: repositooriumi maksimaalse suuruse vähendamine jääb käsitsi, võrguühenduseta [`repo resize`](#suuruse-muutmine) operatsiooniks.
+Kaitsemeetmed: automaatne kasv keeldub, kui basseini vabas ruumi on alla reservi (10 GB või 5% basseinist, kumb on suurem), ootab vähemalt 30 minutit sama repositooriumi kasvude vahel ja ei ületa kunagi `--max-quota`. Automaatset kahanemist pole: repositooriumi maksimaalse suuruse vähendamine jääb käsitsi, võrguühenduseta [`repo resize`](#resize) operatsiooniks.
 
 Repositooriumipõhised sätted alistavad masina üldise vaikimisi. Korduvad `policy set` kutsed muudavad ainult neid lippe, mida edastad.
 
@@ -145,7 +145,7 @@ Kahvlid kasutavad nimi:silt mudelit: saadud kahvel on nimega `my-app:staging`. S
 
 > Kahvlid jagavad vanema andmeid BTRFS-i reflinki kaudu, sealhulgas kõiki kettal salvestatud mandaate. Vaata [Mida Rediacc ei erista](/en/docs/ai-agents-safety#what-rediacc-does-not-isolate), et mõista tagajärgi, kui need mandaadid annavad loa välistele teenustele nagu Stripe, AWS või Railway. Et hoida juurutamise ajal mandaadid kahvli käeulatusest eemal, kasuta [repopõhiseid saladusi](#secrets) `.env` failidesse väärtuste põimimise asemel.
 
-Kahvli loomisel kirjutab `repo fork` kohe [oleku peegli külgfaili](#tüübi-veerg-ja-oleku-peegel) asukohta `<datastore>/.interim/state/<fork-guid>/.rediacc.json`. Mahtu avamata. Seega tuvastatakse uus kahvel korrektselt kui `is_fork: true` loomise hetkest alates. See võimaldab ajastatud varundusülesannetel selle vahele jätta (kahvlid on vaikimisi üleslaadimiskonveierist välistatud), isegi kui seda ei ühendatagi. Kahvli kahveldamisel ahelstatakse `grand_guid` õigesti: uue kahvli peegel osutab algse suurvanema GUIDile, mitte vahekahvlile.
+Kahvli loomisel kirjutab `repo fork` kohe [oleku peegli külgfaili](#type-column-and-the-state-mirror) asukohta `<datastore>/.interim/state/<fork-guid>/.rediacc.json`. Mahtu avamata. Seega tuvastatakse uus kahvel korrektselt kui `is_fork: true` loomise hetkest alates. See võimaldab ajastatud varundusülesannetel selle vahele jätta (kahvlid on vaikimisi üleslaadimiskonveierist välistatud), isegi kui seda ei ühendatagi. Kahvli kahveldamisel ahelstatakse `grand_guid` õigesti: uue kahvli peegel osutab algse suurvanema GUIDile, mitte vahekahvlile.
 
 ### Kahveldamine ja käivitamine ühe sammuga
 

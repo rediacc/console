@@ -13,14 +13,7 @@
  * Run via: `npm run check:ci-search-index`
  */
 import { execFileSync } from 'node:child_process';
-import {
-  copyFileSync,
-  existsSync,
-  mkdtempSync,
-  readFileSync,
-  readdirSync,
-  rmSync,
-} from 'node:fs';
+import { copyFileSync, existsSync, mkdtempSync, readdirSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -54,8 +47,7 @@ const committedFiles = readdirSync(PUBLIC_DIR)
 
 if (committedFiles.length === 0) {
   fail(
-    `No committed search-index*.json files in ${PUBLIC_DIR}.\n` +
-      `Did packages/www build ever run?`
+    `No committed search-index*.json files in ${PUBLIC_DIR}.\n` + `Did packages/www build ever run?`
   );
 }
 
@@ -146,7 +138,68 @@ for (const file of allFiles) {
   }
 }
 
+/**
+ * CONTENT ASSERTION: an index must not ship an unresolved `{{t:...}}` placeholder.
+ *
+ * The freshness half of this gate could never have caught this, and did not: it compares
+ * the committed index against a freshly generated one, so a placeholder present in BOTH
+ * is agreement, not a finding. Measured on 2026-08-18, every locale index carried 2,122 of
+ * them and this gate was green. A reader searching the docs for "backup" got a result
+ * titled `{{t:cli.docs.sectionTitles.backup}}`.
+ *
+ * The rendered pages were clean the whole time, because
+ * `src/plugins/remark-resolve-translations.ts` resolves them inside Astro's markdown
+ * pipeline. `scripts/generate-search-index.js` reads the markdown itself and had no idea
+ * they existed. Both now share `src/plugins/translation-keys.mjs`, and this assertion is
+ * what stops them drifting apart again.
+ */
+const countPlaceholders = (text: string): string[] =>
+  text.match(/\{\{t:[a-zA-Z]+\.[a-zA-Z0-9_.]+\}\}/g) ?? [];
+
+// CONTROL, both directions, inline on every run. A detector that matches nothing reports a
+// clean index forever, which is precisely the failure this assertion exists to end.
+if (countPlaceholders('a {{t:cli.docs.tableHeaders.flag}} b').length !== 1) {
+  restore();
+  fail(
+    'control failed: the placeholder detector did not match a known-good placeholder.\n' +
+      '  Every "no unresolved placeholders" result below would have been vacuous.'
+  );
+}
+if (countPlaceholders('a plain sentence with no keys in it').length !== 0) {
+  restore();
+  fail('control failed: the placeholder detector matched text containing no placeholder.');
+}
+
+const unresolved: { file: string; count: number; sample: string }[] = [];
+for (const file of regeneratedFiles) {
+  const filePath = path.join(PUBLIC_DIR, file);
+  if (!existsSync(filePath)) continue;
+  const hits = countPlaceholders(readFileSync(filePath, 'utf8'));
+  if (hits.length > 0) {
+    unresolved.push({
+      file,
+      count: hits.length,
+      sample: [...new Set(hits)].slice(0, 3).join(', '),
+    });
+  }
+}
+
 restore();
+
+if (unresolved.length > 0) {
+  const total = unresolved.reduce((n, u) => n + u.count, 0);
+  fail(
+    `${total} unresolved translation placeholder(s) in ${unresolved.length} search-index file(s):\n\n` +
+      unresolved
+        .map((u) => `  ${u.file.padEnd(28)} ${u.count} occurrence(s)  e.g. ${u.sample}`)
+        .join('\n') +
+      `\n\nThese ship to readers as literal text in search results.\n` +
+      `Fix: resolution lives in packages/www/src/plugins/translation-keys.mjs and is used by\n` +
+      `BOTH remark-resolve-translations.ts (rendered pages) and generate-search-index.js\n` +
+      `(the index). A placeholder surviving here means the index path stopped calling it,\n` +
+      `or the key is genuinely missing from packages/cli/src/i18n/locales/<lang>/.`
+  );
+}
 
 if (stale.length === 0) {
   process.stdout.write(

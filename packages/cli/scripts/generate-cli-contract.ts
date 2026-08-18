@@ -65,13 +65,13 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
  *
  * Two distinct classes end up here.
  *
- * 1. Client-side transfer — the file paths exist only on the operator's own
+ * 1. Client-side transfer: the file paths exist only on the operator's own
  *    disk, so an executor could not see them. (This is NOT the same as building
  *    params from a local file: `repo template apply --file` reads the file and
  *    base64s the bytes INTO the renet params, which crosses the wire fine and
  *    stays proxyable.)
  *
- * 2. Local effect — the command reaches a machine, but its whole point is to
+ * 2. Local effect: the command reaches a machine, but its whole point is to
  *    write what it found back into the CALLER's config or filesystem. A remote
  *    executor would write it into its own, and the caller would be none the
  *    wiser. The wire carries params and events, not config mutations.
@@ -154,7 +154,7 @@ const DEFAULT_POSITIONAL_KIND: PositionalKind = 'plain';
  * Machine-domain commands whose `<name>` positional names a machine (or
  * provider) that does NOT exist yet, so it must NOT bind the console's machine
  * picker. Everything else on the `machine` domain named `name` references an
- * existing machine — see `classifyPositional`.
+ * existing machine (see `classifyPositional`).
  */
 const MACHINE_NAME_CREATORS = new Set<string>([
   'machine add',
@@ -169,7 +169,7 @@ function classifyPositional(pathKey: string, domain: string, name: string): Posi
   // `machine provider remove <name>` names an EXISTING configured provider, so
   // the console can bind its provider picker to it. Path-aware on purpose:
   // `machine provider add <name>` and `machine provision <name>` name NEW
-  // resources — there is nothing to pick, so they stay plain.
+  // resources, so there is nothing to pick and they stay plain.
   if (pathKey === 'machine provider remove' && name === 'name') return 'provider';
   // A machine verb's `<name>` positional names an EXISTING configured machine
   // (`machine status`, `health`, `deprovision`, `prune`, `remove`, `setup`,
@@ -177,7 +177,7 @@ function classifyPositional(pathKey: string, domain: string, name: string): Posi
   // container discovery / context / policy layers can resolve the machine from
   // the ref. Same path-aware carve-out as `machine provider remove` above: the
   // commands below name a machine (or provider) that does NOT exist yet, so
-  // there is nothing to pick and they stay plain —
+  // there is nothing to pick and they stay plain:
   //   `machine add`          registers a brand-new machine under this name,
   //   `machine provision`    provisions a brand-new cloud machine under this name,
   //   `machine provider add` names a new cloud PROVIDER, not a machine.
@@ -264,7 +264,7 @@ function toContractOption(
 
   // Classification (scripts/lib/option-classification.ts): kinds feed the
   // console's pick-or-type combobox, format its input control, sensitive its
-  // masking/redaction, tier its progressive disclosure. All hints — none of
+  // masking/redaction, tier its progressive disclosure. All hints: none of
   // them constrains what the CLI accepts.
   const long = stripDashes(opt.long);
   const valueTaking = opt.required || opt.optional;
@@ -349,14 +349,14 @@ const walked = walkContractCommands(cli, resolver);
  * ★ This is the table whose ENTIRE JOB is to stop a command being shipped to a
  * remote executor, and until now nothing checked its keys. `proxyCapable` is
  * `plane === 'machine' && !interactive && !(pathKey in PROXY_EXCLUSIONS)`, so a key
- * that goes stale through a rename does not fail loudly — the lookup simply misses,
+ * that goes stale through a rename does not fail loudly: the lookup simply misses,
  * the exclusion STOPS EXCLUDING, and the command silently becomes proxyCapable.
  *
  * That is bug #51's exact failure mode occurring inside the mechanism built to
  * prevent it: `machine scan-keys` is excluded because it scans from the CALLER's
  * network position and stores the result in the CALLER's config. Rename it, forget
  * this key, and a remote executor starts scanning from its own network and keeping
- * the answer — with no gate anywhere saying so.
+ * the answer, with no gate anywhere saying so.
  *
  * COMMAND_PLANES already has this protection (plane-coverage.test.ts fails on a stale
  * entry). Its sibling did not. It does now.
@@ -368,7 +368,7 @@ const staleExclusions = [
 ].filter(([pathKey]) => !livePathKeys.has(pathKey));
 
 if (staleExclusions.length > 0) {
-  console.error('\x1b[31m✗ Stale exclusion keys — these commands do not exist\x1b[0m\n');
+  console.error('\x1b[31m✗ Stale exclusion keys: these commands do not exist\x1b[0m\n');
   for (const [pathKey, table] of staleExclusions) {
     console.error(`  ${table}["${pathKey}"]`);
   }
@@ -383,7 +383,7 @@ if (staleExclusions.length > 0) {
 /**
  * Same staleness discipline for the curated registries (command-docs.ts): a
  * key naming a command that no longer exists means its examples/keywords/
- * output hints silently stop shipping — curation lost through a rename, with
+ * output hints silently stop shipping: curation lost through a rename, with
  * no gate anywhere saying so.
  */
 const staleRegistryKeys = [
@@ -393,7 +393,7 @@ const staleRegistryKeys = [
 ].filter(([pathKey]) => !livePathKeys.has(pathKey));
 
 if (staleRegistryKeys.length > 0) {
-  console.error('\x1b[31m✗ Stale registry keys — these commands do not exist\x1b[0m\n');
+  console.error('\x1b[31m✗ Stale registry keys: these commands do not exist\x1b[0m\n');
   for (const [pathKey, table] of staleRegistryKeys) {
     console.error(`  ${table}["${pathKey}"]`);
   }
@@ -450,7 +450,7 @@ function buildCommandKeywords(pathKey: string): string[] | undefined {
   const keywords = at(COMMAND_KEYWORDS, pathKey);
   if (!keywords) return undefined;
   if (keywords.length === 0) {
-    curationProblems.push(`COMMAND_KEYWORDS["${pathKey}"]: entry is empty — delete it instead`);
+    curationProblems.push(`COMMAND_KEYWORDS["${pathKey}"]: entry is empty. Delete it instead`);
   }
   for (const keyword of keywords) {
     if (!/^[a-z][a-z0-9-]*$/.test(keyword)) {
@@ -559,7 +559,7 @@ commands.sort((a, b) => a.pathKey.localeCompare(b.pathKey));
 
 /**
  * Metadata gates: the classification tables (staleness, resource-noun
- * coverage, waiver quality, tier floor — see option-classification.ts) plus
+ * coverage, waiver quality, tier floor, all in option-classification.ts) plus
  * everything collected while attaching the curated registries. One red block,
  * exit 1: a wrong or stale entry must never survive a regen silently.
  */
@@ -572,8 +572,8 @@ if (metadataProblems.length > 0) {
   }
   console.error(
     '\n  Fix the classification-table or command-docs entry each line names. A stale or\n' +
-      '  wrong entry does not fail on its own — the lookup misses and the metadata\n' +
-      '  silently stops applying — so generation refuses to proceed instead.\n'
+      '  wrong entry does not fail on its own: the lookup misses and the metadata\n' +
+      '  silently stops applying, so generation refuses to proceed instead.\n'
   );
   process.exit(1);
 }

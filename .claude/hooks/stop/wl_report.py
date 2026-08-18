@@ -115,7 +115,7 @@ def store_root(start):
 
     Not `/tmp`: reboot deletes it.
 
-    Not the repo's `agent/<branch>/<session>/` tree either, and the migration of
+    Not the repo's `agent/<session>/` tree either, and the migration of
     2026-08-14 STRENGTHENED that rather than weakening it. There used to be two
     objections to two different trees: a tracked `docs/agent/<branch>/` would put
     roughly 142 machine-written files per session into every PR diff, and a

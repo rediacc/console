@@ -46,6 +46,16 @@ REGGATE_VERDICTS = ("not-applicable", "covered", "one-off", "proven", "deferred"
 # probe narrower than the judge's own ruling is a false-fire generator.
 CHECK_SCRIPT_GLOBS = (
     "scripts/check-*.ts",
+    # Package-local gates. Omitting these made the probe structurally blind to
+    # NINE real gates -- check:ci-tutorial-parity, check:ci-locale-tutorial-assets,
+    # check:ci-solution-videos, check:ci-command-planes and friends all live here,
+    # because a gate about www content belongs beside www. Measured 2026-08-18: a
+    # session wrote packages/www/scripts/check-tutorial-card-fonts.ts, wired its
+    # check:ci-* key and its ci-quality.yml step, ran its planted-defect proof, and
+    # the probe still answered "no new or changed check script found; a claimed
+    # gate must leave one". The only way to satisfy the old globs was to move a
+    # www gate to the repo root, i.e. to let the probe dictate layout.
+    "packages/*/scripts/check-*.ts",
     ".ci/scripts/quality/check-*.sh",
     ".ci/scripts/test/gates/test-*.sh",
     ".claude/hooks/stop/test-*.sh",
@@ -251,6 +261,15 @@ def prove_new_gate(root, scripts, state):
             if not digest:
                 continue
             prev = state["gate_runs"].get(rel)
+            if prev is None and not _is_dirty(rel, root):
+                # First sight of a gate the working tree has NOT touched. That is
+                # a glob widening or a fresh marker, not evidence about this fix,
+                # so record it and move on. Without this, widening the globs to
+                # packages/*/scripts turned one stop into eight `npm run` gates at
+                # up to REGGATE_TIMEOUT_S each -- a sixteen-minute stop hook that
+                # proves nothing, because none of those gates was written here.
+                state["gate_runs"][rel] = {"hash": digest, "exit": -3, "at": stamp}
+                continue
             if prev and prev.get("hash") == digest:
                 # Neither new nor changed, so it proves nothing for THIS fix and
                 # `proven` stays False. But a gate this marker already RAN GREEN
@@ -323,6 +342,29 @@ def prove_new_gate(root, scripts, state):
         else:
             notes.append("no new or changed check script found; a claimed gate must leave one")
     return proven, "; ".join(notes)
+
+
+def _is_dirty(rel, root):
+    """True when the working tree has touched this path (modified or untracked).
+
+    The probe's question is "did the session that just claimed a fix leave a
+    gate", so a gate it did not touch is not evidence either way. Errs toward
+    True: if git cannot answer, run the gate rather than silently skip it.
+    """
+    try:
+        pr = subprocess.run(
+            ["git", "status", "--porcelain", "--", rel],
+            cwd=str(root),
+            capture_output=True,
+            text=True,
+            timeout=10,
+            check=False,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return True
+    if pr.returncode != 0:
+        return True
+    return bool(pr.stdout.strip())
 
 
 def apply_regression_verdict(rg, scripts, root, state, sig, lines, me8):

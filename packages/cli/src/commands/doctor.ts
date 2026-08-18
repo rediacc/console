@@ -195,7 +195,7 @@ function checkRenetEmbeddedAssets(checks: CheckResult[]): void {
       if (integrity.ok) {
         pushEmbedAssetChecks(checks, `yes (${archs})`, 'ok');
       } else {
-        pushEmbedAssetChecks(checks, `corrupt — ${integrity.detail}`, 'fail');
+        pushEmbedAssetChecks(checks, `corrupt: ${integrity.detail}`, 'fail');
       }
     } catch {
       pushEmbedAssetChecks(checks, 'not available', 'warn');

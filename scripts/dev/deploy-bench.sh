@@ -7,8 +7,8 @@
 # only, triggered by you running this script.
 #
 # Auth (uses scripts/dev/lib/cf-auth.sh — see that file's header for details):
-#   CF_API_KEY + CF_EMAIL    Global API Key (recommended; auto-creates a
-#                            scoped token via cf-auth.sh)
+#   CF_GLOBAL_API_KEY + CF_EMAIL  Global API Key (recommended; auto-creates a
+#                                 scoped token via cf-auth.sh)
 #   CF_MANAGEMENT_TOKEN      Pre-created scoped API token (if you have one)
 #   Interactive prompt       Asks for one of the above when neither is set
 #   Get your Global API Key: https://dash.cloudflare.com/profile/api-tokens
@@ -87,8 +87,10 @@ export CLOUDFLARE_ACCOUNT_ID="$ACCOUNT_ID"
 
 # Unset the legacy global-key envs so wrangler only sees CLOUDFLARE_API_TOKEN
 # (otherwise it warns "Using CF_API_KEY environment variable. This is
-# deprecated.").
-unset CF_API_KEY CF_EMAIL
+# deprecated."). CF_API_KEY is not ours: it is wrangler's OWN deprecated alias
+# for the global key, so clearing it from the ambient shell is defensive
+# hygiene, not a second name for CF_GLOBAL_API_KEY.
+unset CF_GLOBAL_API_KEY CF_API_KEY CF_EMAIL
 
 # Wait a moment for the freshly-created management token to propagate through
 # the Cloudflare API. Without this, the very first wrangler call (D1 migrate)

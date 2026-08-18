@@ -16,20 +16,34 @@ this very file was caught describing a layout the same change had replaced.
 
     agent/
       README.md              this file
-      <branch>/
-        RULES.md             settled facts and standing constraints. SHARPEN.
-        PLAN-<slug>.md       durable designs; survive compaction.
-        <session-prefix>/
-          STATE.md           what is true NOW and what happens next. REWRITE.
+      RULES.md               settled facts and standing constraints. SHARPEN.
+      PLAN-<slug>.md         durable designs; survive compaction.
+      <session-prefix>/
+        STATE.md             what is true NOW and what happens next. REWRITE.
       programs/
         <slug>/              /handoff program suites
       archive/
-        <branch>/            moved here when a branch merges
+        <label>/             frozen history, moved here when work concludes
+
+**No branch anywhere in the path** (operator decision, 2026-08-18: "avoid using
+branch name in folder path, instead let's only use the session name"). The
+branch was the wrong key and the tree proved it: session `97604f47` owned three
+separate STATE.md files at once, under `main`, `0815-1` and `backup-storage`,
+because a `/pr-merge` moved the checkout under a live session and the hook
+quietly started writing somewhere else. The compact-recovery document is the
+one artifact that must not fork when the branch does. Two things fall out and
+both are improvements: a detached HEAD no longer disables the freshness check,
+and `archive/` is the only place a branch name still appears -- as a LABEL on
+frozen history, which is what it was always good at.
+
+`archive/<label>/` is frozen and nothing in the hooks reads it. `archive` and
+`programs` are the two reserved names under `agent/`; every other directory
+there is a session (`wl_store.AGENT_RESERVED_DIRS`).
 
 `TRAPS.md` is NOT here. The standing lookup material -- TRAPS.md, ci-gates.md,
 suppressions.md -- lives in `docs/agent-reference/`, because it is reference
-prose that outlives every branch, while everything under `agent/` is per-branch
-or per-session state.
+prose that outlives every session, while everything under `agent/` is
+per-session state or a durable design record.
 
 ## The one idea
 
@@ -39,10 +53,10 @@ budget:
 
 | Lives for | Goes in | Discipline |
 |---|---|---|
-| Minutes | `<branch>/<session>/STATE.md` | Rewrite every time |
-| The branch | `<branch>/RULES.md` | Sharpen; edit in place when wrong |
+| Minutes | `<session>/STATE.md` | Rewrite every time |
+| The work | `RULES.md`, `PLAN-<slug>.md` | Sharpen; edit in place when wrong |
 | Forever | `docs/agent-reference/TRAPS.md` | Append; never prune |
-| History | `archive/<branch>/` | Frozen at merge |
+| History | `archive/<label>/` | Frozen when the work concludes |
 
 Measured on the old scheme: about 40% of every handover was standing rules being
 re-typed verbatim, and 8 rewrites in one session were rejected for exceeding the
@@ -66,26 +80,36 @@ by being wrong, so gating them by age is pure noise. This is the second thing th
 old scheme got wrong: one freshness rule over a document that was mostly
 timeless.
 
-## Starting a new branch
+## Starting a new session
 
-    mkdir -p agent/<branch>
-    cp agent/<previous-branch>/RULES.md agent/<branch>/RULES.md   # then sharpen
+    mkdir -p agent/<session-prefix>
     # write a fresh STATE.md via `worklist.py --state`; never copy one forward
 
-`docs/agent-reference/TRAPS.md` is shared across every branch, so it carries over
-by doing nothing. That is the point.
+That is the whole bootstrap. There is no RULES.md to copy forward any more:
+`agent/RULES.md` is one document every session reads and sharpens in place.
+A session that needs a rule of its own can still keep `agent/<session>/RULES.md`
+and it wins over the shared one, but nothing in this repo has ever needed to.
 
-## When a branch merges
+The copy-forward ritual was the tell that the file was never per-branch: a
+document copied verbatim across every branch is repo-level with a manual step
+in front of it. `docs/agent-reference/TRAPS.md` carries over by doing nothing,
+and now so does `RULES.md`.
 
-Move `<branch>/` into `archive/`. Before archiving, promote anything in its
-`RULES.md` that turned out to be true of the REPO rather than the branch into
-`TRAPS.md`, because the archive is read rarely and `TRAPS.md` is read always.
+## When work concludes
+
+Move the finished session directories into `archive/<label>/`, where `<label>`
+is whatever names that work best -- historically a branch name, and branch names
+are still fine HERE because the archive is a record rather than a live path.
+Before archiving, promote anything in `RULES.md` that turned out to be true of
+the REPO into `TRAPS.md`, because the archive is read rarely and `TRAPS.md` is
+read always.
 
 ## `STATE.md` is one OWNED SECTION per session (since 2026-08-09)
 
-The document is per BRANCH; sessions are per SESSION; and this repo routinely
-runs several sessions in one checkout. So `STATE.md` is a set of owned,
-timestamped sections:
+The document was per BRANCH once, sessions are per SESSION, and this repo
+routinely runs several sessions in one checkout. So `STATE.md` is a set of
+owned, timestamped sections -- a shape that survives the 2026-08-18 move to a
+per-session path because it is what makes a document adoptable at all:
 
     ## SESSION 2fd369e0 2026-08-09T21:05:00Z
     <that session's body: 250-4000 chars, with a '## Next action' section>
@@ -97,7 +121,7 @@ Rules that follow from it:
 
 - **You send ONE section body, never the document.** `worklist.py --state <me>`
   reads your body from stdin and writes it to YOUR OWN file at
-  `agent/<branch>/<session-prefix>/STATE.md`. The tool writes your `## SESSION`
+  `agent/<session-prefix>/STATE.md`. The tool writes your `## SESSION`
   heading and its timestamp for you, and refuses a body that already carries one.
   Since 2026-08-14 there is no shared document to merge into: the single file was
   SPLIT precisely because a whole-file write could delete every peer's section at
@@ -114,7 +138,7 @@ Rules that follow from it:
   must not sweep); never rewrite or delete one.
 - **Dead sections are reaped, not lost.** A section whose owner has been silent
   for `WORKLIST_DEAD_HOURS` (24) is dropped by the next write, and its body is
-  appended to `<worklist>.agentstate.reaped.<branch>.md` first. Your own
+  appended to `<worklist>.agentstate.reaped.<session>.md` first. Your own
   section is never reaped, at any age.
 - **A pre-section document is adopted, not destroyed**, under a
   `## SESSION legacy` heading, and ages out through the same reap path.
@@ -135,7 +159,10 @@ write to STATE.md is DENIED** by a PreToolUse guard
 (`block-agent-state-shape.sh`): `Write`, `Edit`, `MultiEdit` and
 `NotebookEdit` alike. A shape-valid whole-file `Write` destroys peers exactly
 as thoroughly as the old CLI did, and no shell guard can enforce a merge, so
-the one writer that owns the path is the only writer. A missing `agent/<branch>/`
-blocks once with the bootstrap commands and is never auto-created. A detached
-HEAD makes the check report-only (set `WORKLIST_AGENT_BRANCH` to re-enable it
-mid-rebase). The judge is fed the `## ` titles of `docs/agent-reference/TRAPS.md`, never bodies.
+the one writer that owns the path is the only writer. A missing
+`agent/<session-prefix>/` blocks once with the bootstrap command and is never
+auto-created. **A detached HEAD no longer disables anything** (2026-08-18):
+the check needed a branch to find the file, so it went report-only during every
+interactive rebase; with the branch out of the path there is nothing to resolve
+and the gate runs mid-rebase like any other stop. The judge is fed the `## `
+titles of `docs/agent-reference/TRAPS.md`, never bodies.

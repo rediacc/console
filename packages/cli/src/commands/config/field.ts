@@ -85,7 +85,7 @@ function checkFieldReveal(pointer: string): void {
       command: 'config field get --reveal',
       paths: [pointer],
       outcome: 'refused',
-      reason: 'agent environment — use --digest for a safe fingerprint',
+      reason: 'agent environment: use --digest for a safe fingerprint',
     });
     throw new ValidationError(t('errors.agent.fieldReveal', { pointer }));
   }

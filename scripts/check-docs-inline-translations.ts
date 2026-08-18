@@ -24,9 +24,9 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { SITE_LOCALES } from '@rediacc/locales';
 import { globSync } from 'glob';
 
-import { SITE_LOCALES } from '@rediacc/locales';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 // Configuration
@@ -53,10 +53,7 @@ type DocGroup = Record<Language, LangVersionInfo>;
 /**
  * Resolve a nested key path in a translation object
  */
-function resolveKeyPath(
-  translations: Record<string, unknown>,
-  keyPath: string
-): unknown {
+function resolveKeyPath(translations: Record<string, unknown>, keyPath: string): unknown {
   const keys = keyPath.split('.');
   let current: unknown = translations;
 
@@ -179,11 +176,7 @@ const P7_DEFERRED_STALE_KEYS = new Set([
   'cli.options.containerAction',
 ]);
 
-function validateKeyInLocales(
-  namespace: string,
-  keyPath: string,
-  lang: Language
-): string | null {
+function validateKeyInLocales(namespace: string, keyPath: string, lang: Language): string | null {
   if (P7_DEFERRED_STALE_KEYS.has(`${namespace}.${keyPath}`)) return null;
 
   const paths = [path.join(CLI_LOCALES, lang, `${namespace}.json`)];
@@ -464,9 +457,7 @@ function main(): void {
       '\u001B[32m\u2713\u001B[0m No inline translation keys found in documentation (none to validate)\n'
     );
   } else {
-    console.log(
-      '\u001B[32m\u2713\u001B[0m All inline translation keys are valid and consistent\n'
-    );
+    console.log('\u001B[32m\u2713\u001B[0m All inline translation keys are valid and consistent\n');
   }
 
   process.exit(0);

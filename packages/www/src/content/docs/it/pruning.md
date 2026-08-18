@@ -20,7 +20,7 @@ Il pruning elimina lo stato che non corrisponde più a una risorsa attiva. Tre c
 
 I tre sono indipendenti. Puoi eseguirne uno qualsiasi senza gli altri. Condividono un modello di sicurezza comune descritto in [Sicurezza](#safety-model) di seguito.
 
-Il pruning rimuove lo stato lasciato da risorse eliminate. Per recuperare spazio occupato da repository *attivi* (blocchi che i loro filesystem hanno liberato ma il pool ancora detiene), usa invece [`rdc repo trim`](/it/docs/repositories#recupera-spazio-trim); i due sono complementari.
+Il pruning rimuove lo stato lasciato da risorse eliminate. Per recuperare spazio occupato da repository *attivi* (blocchi che i loro filesystem hanno liberato ma il pool ancora detiene), usa invece [`rdc repo trim`](/it/docs/repositories#reclaim-space-trim); i due sono complementari.
 
 ## Preflight di sicurezza del mount
 

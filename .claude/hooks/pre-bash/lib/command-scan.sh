@@ -2,8 +2,8 @@
 # Shared command scanning for the gh-pr guardrail hooks (block-admin-merge,
 # block-nondraft-pr-create, block-premature-ready).
 #
-# The old inline approach — strip every quoted span, then anchor `gh pr <verb>`
-# at a command position — had a review-found bypass class: stripping ALL quotes
+# The old inline approach (strip every quoted span, then anchor `gh pr <verb>`
+# at a command position) had a review-found bypass class: stripping ALL quotes
 # also erases a command hidden inside a shell-execution wrapper, so
 # `sh -c 'gh pr merge --admin'`, `bash -c "..."`, `eval "..."`, variable
 # indirection (`X=--admin; gh pr merge $X`), and `--admin=true` all sailed past
@@ -21,8 +21,8 @@
 #      (sh/bash/dash/zsh/ash/ksh -c, or eval) with its quotes turned to spaces,
 #      so the inner command lands at a command position and IS scanned.
 #
-# hook_flag_present matches a long flag in every form a shell accepts —
-# `--flag`, `--flag=value`, `--flag;`, and inside a quoted/assignment token —
+# hook_flag_present matches a long flag in every form a shell accepts:
+# `--flag`, `--flag=value`, `--flag;`, and inside a quoted/assignment token,
 # so `--admin=true` and `X="--admin"` are caught. Combined with a
 # command-position verb match, over-blocking a command that both names the flag
 # and runs the verb is the safe direction.

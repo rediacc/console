@@ -1,45 +1,19 @@
 /**
  * Solution Pages v2 — templateized marketing pages
  * All classes prefixed with sp- to avoid collision with existing site styles.
- * Design tokens scoped under .sp-page.
+ * Design tokens come from the single :root in public/styles/main.css.
  */
 
-/* ========== DESIGN TOKENS ========== */
+/* ========== DESIGN TOKENS ==========
+   The --sp-* palette that used to be declared here is gone. Every one of
+   those names is now an ALIAS in the single :root in public/styles/main.css,
+   so the several hundred `var(--sp-*)` call sites below resolve onto the site
+   ramp without one of them being edited. That is what collapsed
+   var(--color-border) onto --color-border, var(--color-text-secondary) and var(--color-text-tertiary) onto the two secondary
+   text tokens, and the second brand green onto the first. */
 .sp-page {
-  --sp-brand-primary: #4a7c3f;
-  --sp-brand-secondary: #3d6834;
-  --sp-brand-dark: #2d5227;
-  --sp-brand-light: #e8f5e3;
-  --sp-brand-glow: rgba(74, 124, 63, 0.25);
-
-  --sp-bg-hero: #111111;
-  --sp-bg-dark: #1a1a1a;
-  --sp-bg-light: #fafafa;
-  --sp-bg-white: #ffffff;
-  --sp-bg-stats: #f0f4ee;
-
-  --sp-text-primary: #1a1a1a;
-  --sp-text-body: #4a4a4f;
-  --sp-text-white: #ffffff;
-  --sp-text-muted-light: #6b6b70;
-  --sp-text-muted-dark: #a0a0a5;
-
-  --sp-border-light: #e5e5e5;
-  --sp-border-dark: rgba(255, 255, 255, 0.1);
-
-  --sp-font-sans:
-    'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-  --sp-font-mono:
-    'JetBrains Mono', ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace;
-
-  --sp-page-max: 1200px;
-  --sp-content-max: 720px;
-  --sp-hero-max: 800px;
-  --sp-stats-max: 1000px;
-  --sp-cards-max: 1100px;
-
   font-family: var(--sp-font-sans);
-  font-size: 18px;
+  font-size: var(--font-size-lg);
   line-height: 1.6;
   color: var(--sp-text-body);
   -webkit-font-smoothing: antialiased;
@@ -68,7 +42,7 @@
 .sp-page > .sp-page-header > h1 {
   margin: 0 auto;
   max-width: var(--sp-page-max);
-  font-size: clamp(2rem, 4vw, 3rem);
+  font-size: var(--font-size-4xl);
   font-weight: 700;
   line-height: 1.2;
   color: inherit;
@@ -80,15 +54,17 @@
   }
 }
 
-/* ========== HERO ========== */
+/* ========== HERO ==========
+   The height comes from the content. This block used to reserve a full viewport
+   (`100dvh`) and centre in it, on 25 pages whose hero is now a title, one
+   sentence and a button. The breadcrumb above carries the same background and
+   already clears the fixed header, so the hero only needs its own padding. */
 .sp-hero {
   background: var(--sp-bg-hero);
-  min-height: 100dvh;
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  padding: 48px 48px;
+  padding: 40px 48px 72px;
   text-align: center;
   position: relative;
   overflow: hidden;
@@ -118,28 +94,8 @@
   position: relative;
   z-index: 1;
 }
-.sp-hero-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  background: rgba(74, 124, 63, 0.15);
-  color: var(--sp-brand-primary);
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  padding: 6px 16px;
-  border-radius: 100px;
-  margin-bottom: 32px;
-}
-.sp-hero-badge-dot {
-  width: 6px;
-  height: 6px;
-  background: var(--sp-brand-primary);
-  border-radius: 50%;
-}
 .sp-hero h1 {
-  font-size: 56px;
+  font-size: var(--font-size-4xl);
   font-weight: 700;
   color: var(--sp-text-white);
   line-height: 1.15;
@@ -147,25 +103,11 @@
   margin-bottom: 20px;
 }
 .sp-hero-sub {
-  font-size: 20px;
+  font-size: var(--font-size-lg);
   color: var(--sp-text-muted-dark);
   line-height: 1.5;
   max-width: 600px;
-  margin: 0 auto 20px;
-}
-.sp-hero-differentiator {
-  font-size: 17px;
-  color: var(--sp-brand-primary);
-  font-weight: 600;
-  letter-spacing: -0.01em;
-  margin-bottom: 40px;
-}
-.sp-hero-ctas {
-  display: flex;
-  gap: 16px;
-  justify-content: center;
-  align-items: center;
-  margin-bottom: 64px;
+  margin: 0 auto 32px;
 }
 
 /* ========== SHARED BUTTONS ========== */
@@ -173,223 +115,28 @@
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  background: linear-gradient(135deg, var(--sp-brand-primary), var(--sp-brand-secondary));
+  background: linear-gradient(135deg, var(--color-brand-fill), var(--color-brand-secondary));
   color: var(--sp-text-white);
-  font-size: 17px;
+  font-size: var(--font-size-base);
   font-weight: 600;
   padding: 14px 32px;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   text-decoration: none;
-  box-shadow: 0 4px 20px var(--sp-brand-glow);
+  box-shadow: var(--shadow);
   transition:
     transform 0.2s,
     box-shadow 0.2s;
 }
 .sp-btn-primary:hover {
   transform: translateY(-1px);
-  box-shadow: 0 6px 28px var(--sp-brand-glow);
-}
-.sp-btn-secondary-dark {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  color: var(--sp-text-muted-dark);
-  font-size: 16px;
-  font-weight: 400;
-  text-decoration: none;
-  padding: 14px 24px;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 8px;
-  transition:
-    border-color 0.2s,
-    color 0.2s;
-}
-.sp-btn-secondary-dark:hover {
-  border-color: rgba(255, 255, 255, 0.5);
-  color: var(--sp-text-white);
-}
-
-/* ========== TERMINAL MOCKUP ========== */
-.sp-hero-visual {
-  max-width: 900px;
-  margin: 0 auto;
-  background: #1e1e1e;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 12px;
-  overflow: hidden;
-  box-shadow:
-    0 24px 80px rgba(0, 0, 0, 0.5),
-    0 0 120px -20px rgba(74, 124, 63, 0.15),
-    0 0 60px -10px rgba(74, 124, 63, 0.08);
-  position: relative;
-}
-.sp-hero-visual-titlebar {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 14px 18px;
-  background: #2a2a2a;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-}
-.sp-hero-visual-dot {
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-}
-.sp-hero-visual-dot.red {
-  background: #ff5f57;
-}
-.sp-hero-visual-dot.yellow {
-  background: #febc2e;
-}
-.sp-hero-visual-dot.green {
-  background: #28c840;
-}
-
-.sp-terminal-body {
-  padding: 28px 24px;
-  font-family: var(--sp-font-mono);
-  font-size: 14px;
-  line-height: 1.8;
-  background: linear-gradient(180deg, #1e1e1e 0%, #171717 100%);
-  text-align: left;
-}
-.sp-terminal-prompt {
-  color: var(--sp-brand-primary);
-  font-weight: 600;
-}
-.sp-terminal-cmd {
-  color: #e0e0e0;
-}
-.sp-terminal-flag {
-  color: #7ab0d6;
-}
-.sp-terminal-value {
-  color: #f0c674;
-}
-.sp-terminal-line {
-  color: #777;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-.sp-terminal-check {
-  color: var(--sp-brand-primary);
-  font-weight: 700;
-}
-.sp-terminal-dots {
-  color: #555;
-  letter-spacing: 0.5px;
-}
-.sp-terminal-done {
-  color: #8abeb7;
-}
-.sp-terminal-spacer {
-  height: 10px;
-}
-.sp-terminal-success {
-  color: var(--sp-brand-primary);
-  font-weight: 600;
-}
-.sp-terminal-summary {
-  color: #555;
-  border-top: 1px solid rgba(255, 255, 255, 0.06);
-  padding-top: 14px;
-  margin-top: 10px;
-}
-.sp-terminal-summary-value {
-  color: #8abeb7;
-}
-.sp-terminal-comment {
-  color: #555;
-  font-style: italic;
-}
-.sp-terminal-warn {
-  color: #d4a04a;
-  font-weight: 600;
-}
-.sp-terminal-table-header {
-  color: #7ab0d6;
-  white-space: pre;
-  font-size: 13px;
-  letter-spacing: 0.5px;
-}
-.sp-terminal-table-row {
-  color: #8abeb7;
-  white-space: pre;
-  font-size: 13px;
-}
-.sp-terminal-wrapper {
-  max-width: 900px;
-  margin: 0 auto;
-}
-.sp-terminal-disclaimer {
-  margin: 8px 0 0;
-  color: #2f3338;
-  font-size: 12px;
-  line-height: 1.45;
-  text-align: left;
-}
-
-.sp-terminal-disclaimer a {
-  color: #0a58ca;
-  font-weight: 600;
-  text-decoration: underline;
-  text-underline-offset: 2px;
-}
-
-.sp-terminal-disclaimer a:hover {
-  color: #0847a6;
-}
-
-:root[data-theme='light'] .sp-terminal-disclaimer {
-  color: #cfd6df;
-}
-
-:root[data-theme='light'] .sp-terminal-disclaimer a {
-  color: #9bc7ff;
-}
-
-:root[data-theme='light'] .sp-terminal-disclaimer a:hover {
-  color: #b8d8ff;
-}
-
-:root[data-theme='dark'] .sp-terminal-disclaimer {
-  color: #d8dde5;
-}
-
-:root[data-theme='dark'] .sp-terminal-disclaimer a {
-  color: #7fb3ff;
-}
-
-:root[data-theme='dark'] .sp-terminal-disclaimer a:hover {
-  color: #a6c9ff;
-}
-.sp-terminal-cursor {
-  display: inline-block;
-  width: 8px;
-  height: 15px;
-  background: var(--sp-brand-primary);
-  animation: sp-blink 1.2s step-end infinite;
-  vertical-align: middle;
-  margin-left: 4px;
-  border-radius: 1px;
-}
-@keyframes sp-blink {
-  0%,
-  100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0;
-  }
+  box-shadow: var(--shadow);
 }
 
 /* ========== STATS BAR ========== */
 .sp-stats {
   background: var(--sp-bg-stats);
   padding: 48px;
-  border-bottom: 1px solid #e0e8dc;
+  border-bottom: 1px solid var(--color-border-subtle);
 }
 .sp-stats-inner {
   max-width: var(--sp-stats-max);
@@ -405,7 +152,7 @@
   padding: 0 40px;
 }
 .sp-stat + .sp-stat {
-  border-left: 1px solid #cdd8c8;
+  border-left: 1px solid var(--color-border-subtle);
 }
 .sp-stat-icon {
   display: flex;
@@ -423,14 +170,14 @@
   opacity: 0.7;
 }
 .sp-stat-number {
-  font-size: 48px;
+  font-size: var(--font-size-4xl);
   font-weight: 700;
   color: var(--sp-brand-primary);
   line-height: 1.1;
   letter-spacing: -0.02em;
 }
 .sp-stat-label {
-  font-size: 15px;
+  font-size: var(--font-size-base);
   color: var(--sp-text-body);
   margin-top: 4px;
   font-weight: 500;
@@ -446,7 +193,7 @@
   margin: 0 auto;
 }
 .sp-overline {
-  font-size: 12px;
+  font-size: var(--font-size-xs);
   font-weight: 700;
   letter-spacing: 0.12em;
   text-transform: uppercase;
@@ -454,7 +201,7 @@
   margin-bottom: 16px;
 }
 .sp-problem h2 {
-  font-size: 40px;
+  font-size: var(--font-size-3xl);
   font-weight: 700;
   color: var(--sp-text-primary);
   line-height: 1.2;
@@ -462,7 +209,7 @@
   margin-bottom: 24px;
 }
 .sp-problem p {
-  font-size: 18px;
+  font-size: var(--font-size-lg);
   color: var(--sp-text-body);
   line-height: 1.7;
   max-width: 640px;
@@ -475,9 +222,14 @@
      section content even though it's wider than the prose column. */
   width: min(1100px, calc(100vw - 96px));
   max-width: none;
-  margin-left: calc((var(--sp-content-max) - min(1100px, calc(100vw - 96px))) / 2);
-  margin-right: auto;
-  border-radius: 12px;
+  /* Logical, not `margin-left`/`margin-right`. The negative offset is meant to
+     pull the illustration out of the prose column towards the START edge; with
+     physical properties RTL kept pulling it LEFT while the auto margin sat on
+     the right, which put the box 27px past the viewport edge and gave every
+     Arabic solution and persona page 13px of horizontal scroll. */
+  margin-inline-start: calc((var(--sp-content-max) - min(1100px, calc(100vw - 96px))) / 2);
+  margin-inline-end: auto;
+  border-radius: var(--radius-md);
   overflow: hidden;
 }
 .sp-problem-illustration img {
@@ -505,17 +257,16 @@ button.sp-illustration-trigger {
 }
 button.sp-illustration-trigger:hover {
   transform: scale(1.01);
-  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.18);
+  box-shadow: var(--shadow);
 }
 button.sp-illustration-trigger:focus-visible {
-  outline: 2px solid var(--accent, #556b2f);
+  outline: 2px solid var(--color-brand-primary);
   outline-offset: 4px;
 }
 @media (max-width: 768px) {
   .sp-problem-illustration {
     width: 100%;
-    margin-left: 0;
-    margin-right: 0;
+    margin-inline: 0;
   }
 }
 
@@ -534,18 +285,18 @@ button.sp-illustration-trigger:focus-visible {
   background: var(--sp-bg-white);
   border: 1px solid var(--sp-border-light);
   border-left: 3px solid var(--sp-brand-primary);
-  border-radius: 0 8px 8px 0;
-  font-size: 14px;
+  border-radius: 0 var(--radius-md) var(--radius-md) 0;
+  font-size: var(--font-size-sm);
   line-height: 1.4;
 }
 .sp-stat-callout-number {
   font-family: var(--sp-font-mono);
-  font-size: 18px;
+  font-size: var(--font-size-lg);
   font-weight: 700;
   color: var(--sp-text-primary);
 }
 .sp-stat-callout-source {
-  font-size: 11px;
+  font-size: var(--font-size-xs);
   color: var(--sp-text-muted-light);
   display: block;
   margin-top: 2px;
@@ -557,14 +308,14 @@ button.sp-illustration-trigger:focus-visible {
   max-width: 700px;
 }
 .sp-timeline-label {
-  font-size: 11px;
+  font-size: var(--font-size-xs);
   font-weight: 700;
   letter-spacing: 0.12em;
   text-transform: uppercase;
   margin-bottom: 12px;
 }
 .sp-timeline-label.old {
-  color: #b45555;
+  color: var(--color-error);
 }
 .sp-timeline-label.new {
   color: var(--sp-brand-primary);
@@ -580,21 +331,21 @@ button.sp-illustration-trigger:focus-visible {
   flex: 1;
   text-align: center;
   padding: 14px 6px;
-  background: #fff;
-  border: 1px solid #e0d0d0;
+  background: var(--sp-bg-white);
+  border: 1px solid var(--color-error-border);
   position: relative;
-  font-size: 13px;
-  color: #8a6a6a;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
   line-height: 1.3;
 }
 .sp-timeline-old-step:first-child {
-  border-radius: 8px 0 0 8px;
+  border-radius: var(--radius-md) 0 0 var(--radius-md);
 }
 .sp-timeline-old-step:last-child {
-  border-radius: 0 8px 8px 0;
-  background: #fdf0f0;
-  border-color: #e0b8b8;
-  color: #a04040;
+  border-radius: 0 var(--radius-md) var(--radius-md) 0;
+  background: var(--color-error-light);
+  border-color: var(--color-error-border);
+  color: var(--color-error);
   font-weight: 600;
 }
 .sp-timeline-old-step + .sp-timeline-old-step {
@@ -602,15 +353,15 @@ button.sp-illustration-trigger:focus-visible {
 }
 .sp-timeline-old-day {
   display: block;
-  font-size: 10px;
+  font-size: var(--font-size-xs);
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  color: #9a7a7a;
+  color: var(--color-text-secondary);
   margin-bottom: 3px;
 }
 .sp-timeline-old-step:last-child .sp-timeline-old-day {
-  color: #c07070;
+  color: var(--color-error);
 }
 .sp-timeline-old-step:not(:last-child)::after {
   content: '';
@@ -622,7 +373,7 @@ button.sp-illustration-trigger:focus-visible {
   height: 0;
   border-top: 6px solid transparent;
   border-bottom: 6px solid transparent;
-  border-left: 6px solid #e0d0d0;
+  border-left: 6px solid var(--color-error-border);
   z-index: 1;
 }
 .sp-timeline-new {
@@ -634,27 +385,27 @@ button.sp-illustration-trigger:focus-visible {
 .sp-timeline-new-step {
   text-align: center;
   padding: 14px 20px;
-  font-size: 14px;
+  font-size: var(--font-size-sm);
   font-weight: 600;
   color: var(--sp-brand-dark);
   background: var(--sp-brand-light);
-  border: 1px solid #c5e0be;
+  border: 1px solid var(--color-success-border);
   line-height: 1.3;
 }
 .sp-timeline-new-step:first-child {
-  border-radius: 8px 0 0 8px;
+  border-radius: var(--radius-md) 0 0 var(--radius-md);
   padding: 14px 18px;
 }
 .sp-timeline-new-step:nth-child(2) {
-  background: linear-gradient(135deg, var(--sp-brand-primary), var(--sp-brand-secondary));
+  background: linear-gradient(135deg, var(--color-brand-fill), var(--color-brand-secondary));
   color: var(--sp-text-white);
   border-color: var(--sp-brand-primary);
-  font-size: 18px;
+  font-size: var(--font-size-lg);
   font-weight: 700;
   padding: 14px 28px;
 }
 .sp-timeline-new-step:last-child {
-  border-radius: 0 8px 8px 0;
+  border-radius: 0 var(--radius-md) var(--radius-md) 0;
   padding: 14px 18px;
 }
 .sp-timeline-new-step + .sp-timeline-new-step {
@@ -671,7 +422,7 @@ button.sp-illustration-trigger:focus-visible {
   margin: 0 auto;
 }
 .sp-cost-section h2 {
-  font-size: 36px;
+  font-size: var(--font-size-2xl);
   font-weight: 700;
   color: var(--sp-text-primary);
   line-height: 1.2;
@@ -679,7 +430,7 @@ button.sp-illustration-trigger:focus-visible {
   margin-bottom: 12px;
 }
 .sp-cost-section > .sp-cost-section-inner > p {
-  font-size: 17px;
+  font-size: var(--font-size-base);
   color: var(--sp-text-body);
   line-height: 1.6;
   margin-bottom: 0;
@@ -690,7 +441,7 @@ button.sp-illustration-trigger:focus-visible {
   max-width: 700px;
   background: var(--sp-bg-white);
   border: 1px solid var(--sp-border-light);
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   overflow: hidden;
 }
 .sp-calc-header {
@@ -701,7 +452,7 @@ button.sp-illustration-trigger:focus-visible {
   gap: 10px;
 }
 .sp-calc-header h3 {
-  font-size: 16px;
+  font-size: var(--font-size-base);
   font-weight: 700;
   color: var(--sp-text-primary);
   letter-spacing: -0.01em;
@@ -725,27 +476,27 @@ button.sp-illustration-trigger:focus-visible {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  font-size: 14px;
+  font-size: var(--font-size-sm);
   color: var(--sp-text-body);
   margin-bottom: 8px;
   font-weight: 500;
 }
 .sp-calc-input-value {
   font-family: var(--sp-font-mono);
-  font-size: 15px;
+  font-size: var(--font-size-base);
   font-weight: 700;
   color: var(--sp-text-primary);
   background: var(--sp-bg-light);
   padding: 2px 10px;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   min-width: 48px;
   text-align: center;
 }
 .sp-calc-input input[type='range'] {
   width: 100%;
   height: 6px;
-  border-radius: 3px;
-  background: #e5e5e5;
+  border-radius: var(--radius-full);
+  background: var(--color-border);
   outline: none;
   -webkit-appearance: none;
   appearance: none;
@@ -755,19 +506,19 @@ button.sp-illustration-trigger:focus-visible {
   appearance: none;
   width: 20px;
   height: 20px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, var(--sp-brand-primary), var(--sp-brand-secondary));
+  border-radius: var(--radius-full);
+  background: linear-gradient(135deg, var(--color-brand-fill), var(--color-brand-secondary));
   cursor: pointer;
-  box-shadow: 0 2px 8px var(--sp-brand-glow);
+  box-shadow: var(--shadow);
 }
 .sp-calc-input input[type='range']::-moz-range-thumb {
   width: 20px;
   height: 20px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, var(--sp-brand-primary), var(--sp-brand-secondary));
+  border-radius: var(--radius-full);
+  background: linear-gradient(135deg, var(--color-brand-fill), var(--color-brand-secondary));
   cursor: pointer;
   border: none;
-  box-shadow: 0 2px 8px var(--sp-brand-glow);
+  box-shadow: var(--shadow);
 }
 .sp-calc-results {
   display: flex;
@@ -778,24 +529,24 @@ button.sp-illustration-trigger:focus-visible {
   padding: 24px 28px;
 }
 .sp-calc-result-col.without {
-  background: #fdf8f6;
+  background: var(--color-error-light);
   border-right: 1px solid var(--sp-border-light);
 }
 .sp-calc-result-col.with {
-  background: #f4faf2;
+  background: var(--color-success-light);
 }
 .sp-calc-result-tag {
-  font-size: 10px;
+  font-size: var(--font-size-xs);
   font-weight: 700;
   letter-spacing: 0.12em;
   text-transform: uppercase;
   margin-bottom: 16px;
   display: inline-block;
   padding: 3px 10px;
-  border-radius: 100px;
+  border-radius: var(--radius-full);
 }
 .sp-calc-result-col.without .sp-calc-result-tag {
-  color: #a04040;
+  color: var(--color-error);
   background: rgba(176, 69, 69, 0.1);
 }
 .sp-calc-result-col.with .sp-calc-result-tag {
@@ -807,7 +558,7 @@ button.sp-illustration-trigger:focus-visible {
   justify-content: space-between;
   align-items: baseline;
   padding: 6px 0;
-  font-size: 14px;
+  font-size: var(--font-size-sm);
   color: var(--sp-text-body);
 }
 .sp-calc-result-row + .sp-calc-result-row {
@@ -816,11 +567,11 @@ button.sp-illustration-trigger:focus-visible {
 .sp-calc-result-num {
   font-family: var(--sp-font-mono);
   font-weight: 700;
-  font-size: 15px;
+  font-size: var(--font-size-base);
   text-align: right;
 }
 .sp-calc-result-col.without .sp-calc-result-num {
-  color: #a04040;
+  color: var(--color-error);
 }
 .sp-calc-result-col.with .sp-calc-result-num {
   color: var(--sp-brand-primary);
@@ -831,7 +582,7 @@ button.sp-illustration-trigger:focus-visible {
   border-top: 1px solid rgba(0, 0, 0, 0.08);
 }
 .sp-calc-result-big-label {
-  font-size: 11px;
+  font-size: var(--font-size-xs);
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.06em;
@@ -839,13 +590,13 @@ button.sp-illustration-trigger:focus-visible {
   margin-bottom: 4px;
 }
 .sp-calc-result-big-value {
-  font-size: 28px;
+  font-size: var(--font-size-xl);
   font-weight: 700;
   letter-spacing: -0.02em;
   line-height: 1.2;
 }
 .sp-calc-result-col.without .sp-calc-result-big-value {
-  color: #a04040;
+  color: var(--color-error);
 }
 .sp-calc-result-col.with .sp-calc-result-big-value {
   color: var(--sp-brand-primary);
@@ -854,7 +605,7 @@ button.sp-illustration-trigger:focus-visible {
   padding: 12px 28px;
   background: var(--sp-bg-light);
   border-top: 1px solid var(--sp-border-light);
-  font-size: 12px;
+  font-size: var(--font-size-xs);
   color: var(--sp-text-muted-light);
   line-height: 1.5;
 }
@@ -872,7 +623,7 @@ button.sp-illustration-trigger:focus-visible {
   text-align: center;
 }
 .sp-how-it-works h2 {
-  font-size: 40px;
+  font-size: var(--font-size-3xl);
   font-weight: 700;
   color: var(--sp-text-primary);
   line-height: 1.2;
@@ -899,7 +650,7 @@ button.sp-illustration-trigger:focus-visible {
   right: -16px;
   width: 32px;
   height: 2px;
-  background: linear-gradient(90deg, var(--sp-brand-primary), rgba(74, 124, 63, 0.2));
+  background: linear-gradient(90deg, var(--color-brand-fill), var(--color-brand-glow));
 }
 .sp-step-icon {
   width: 36px;
@@ -922,25 +673,25 @@ button.sp-illustration-trigger:focus-visible {
 .sp-step-number {
   width: 56px;
   height: 56px;
-  background: linear-gradient(135deg, var(--sp-brand-primary), var(--sp-brand-secondary));
+  background: linear-gradient(135deg, var(--color-brand-fill), var(--color-brand-secondary));
   color: var(--sp-text-white);
-  font-size: 22px;
+  font-size: var(--font-size-xl);
   font-weight: 700;
-  border-radius: 50%;
+  border-radius: var(--radius-full);
   display: flex;
   align-items: center;
   justify-content: center;
   margin: 0 auto 20px;
-  box-shadow: 0 4px 16px var(--sp-brand-glow);
+  box-shadow: var(--shadow);
 }
 .sp-step h3 {
-  font-size: 22px;
+  font-size: var(--font-size-xl);
   font-weight: 600;
   color: var(--sp-text-primary);
   margin-bottom: 10px;
 }
 .sp-step p {
-  font-size: 16px;
+  font-size: var(--font-size-base);
   color: var(--sp-text-body);
   line-height: 1.6;
   max-width: 280px;
@@ -960,7 +711,7 @@ button.sp-illustration-trigger:focus-visible {
   width: 360px;
   background: var(--sp-bg-light);
   border: 1px solid var(--sp-border-light);
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   overflow: hidden;
 }
 .sp-server-card-header {
@@ -971,7 +722,7 @@ button.sp-illustration-trigger:focus-visible {
   border-bottom: 1px solid var(--sp-border-light);
 }
 .sp-server-card-title {
-  font-size: 13px;
+  font-size: var(--font-size-sm);
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -983,13 +734,13 @@ button.sp-illustration-trigger:focus-visible {
   color: #7ab0d6;
 }
 .sp-server-card.sealed .sp-server-card-title {
-  color: #c05050;
+  color: var(--color-error);
 }
 .sp-server-card-status {
-  font-size: 11px;
+  font-size: var(--font-size-xs);
   font-weight: 600;
   padding: 3px 10px;
-  border-radius: 100px;
+  border-radius: var(--radius-full);
   text-transform: uppercase;
   letter-spacing: 0.06em;
 }
@@ -1003,7 +754,7 @@ button.sp-illustration-trigger:focus-visible {
 }
 .sp-server-card.sealed .sp-server-card-status {
   background: rgba(192, 80, 80, 0.12);
-  color: #c05050;
+  color: var(--color-error);
 }
 .sp-server-card-body {
   padding: 8px 0;
@@ -1013,13 +764,13 @@ button.sp-illustration-trigger:focus-visible {
   align-items: center;
   gap: 12px;
   padding: 10px 20px;
-  font-size: 14px;
+  font-size: var(--font-size-sm);
   font-family: var(--sp-font-mono);
 }
 .sp-server-service-dot {
   width: 8px;
   height: 8px;
-  border-radius: 50%;
+  border-radius: var(--radius-full);
   flex-shrink: 0;
 }
 .sp-server-card.production .sp-server-service-dot {
@@ -1029,7 +780,7 @@ button.sp-illustration-trigger:focus-visible {
   background: #5ac8fa;
 }
 .sp-server-card.sealed .sp-server-service-dot {
-  background: #c05050;
+  background: var(--color-error);
 }
 .sp-server-card.verified .sp-server-card-title {
   color: #d4a04a;
@@ -1052,18 +803,18 @@ button.sp-illustration-trigger:focus-visible {
   background: #28c840;
 }
 .sp-server-card.down .sp-server-card-title {
-  color: #c05050;
+  color: var(--color-error);
 }
 .sp-server-card.down .sp-server-card-status {
   background: rgba(192, 80, 80, 0.12);
-  color: #c05050;
+  color: var(--color-error);
 }
 .sp-server-card.down .sp-server-service-dot {
-  background: #c05050;
+  background: var(--color-error);
 }
 .sp-server-card-patch {
   padding: 8px 20px;
-  font-size: 12px;
+  font-size: var(--font-size-xs);
   color: #d4a04a;
   font-family: var(--sp-font-mono);
   border-top: 1px solid var(--sp-border-light);
@@ -1102,14 +853,14 @@ button.sp-illustration-trigger:focus-visible {
 }
 .sp-server-service-port {
   color: var(--sp-text-muted-light);
-  font-size: 12px;
+  font-size: var(--font-size-xs);
 }
 .sp-server-card-footer {
   padding: 12px 20px;
   border-top: 1px solid var(--sp-border-light);
   display: flex;
   justify-content: space-between;
-  font-size: 12px;
+  font-size: var(--font-size-xs);
   color: var(--sp-text-muted-light);
 }
 .sp-server-card-footer span {
@@ -1128,12 +879,12 @@ button.sp-illustration-trigger:focus-visible {
 .sp-clone-arrow-bolt {
   width: 48px;
   height: 48px;
-  background: linear-gradient(135deg, var(--sp-brand-primary), var(--sp-brand-secondary));
-  border-radius: 50%;
+  background: linear-gradient(135deg, var(--color-brand-fill), var(--color-brand-secondary));
+  border-radius: var(--radius-full);
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 4px 24px var(--sp-brand-glow);
+  box-shadow: var(--shadow);
 }
 .sp-clone-arrow-bolt svg {
   width: 22px;
@@ -1145,14 +896,14 @@ button.sp-illustration-trigger:focus-visible {
   stroke-linejoin: round;
 }
 .sp-clone-arrow-label {
-  font-size: 11px;
+  font-size: var(--font-size-xs);
   font-weight: 700;
   letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--sp-brand-primary);
 }
 .sp-clone-arrow-time {
-  font-size: 20px;
+  font-size: var(--font-size-lg);
   font-weight: 700;
   color: var(--sp-brand-primary);
   letter-spacing: -0.02em;
@@ -1171,7 +922,7 @@ button.sp-illustration-trigger:focus-visible {
   width: 360px;
   background: var(--sp-bg-light);
   border: 1px solid var(--sp-border-light);
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   overflow: hidden;
 }
 .sp-cost-card-header {
@@ -1182,28 +933,28 @@ button.sp-illustration-trigger:focus-visible {
   border-bottom: 1px solid var(--sp-border-light);
 }
 .sp-cost-card-title {
-  font-size: 13px;
+  font-size: var(--font-size-sm);
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
 .sp-cost-card.wasteful .sp-cost-card-title {
-  color: #b45555;
+  color: var(--color-error);
 }
 .sp-cost-card.efficient .sp-cost-card-title {
   color: var(--sp-brand-primary);
 }
 .sp-cost-card-status {
-  font-size: 11px;
+  font-size: var(--font-size-xs);
   font-weight: 600;
   padding: 3px 10px;
-  border-radius: 100px;
+  border-radius: var(--radius-full);
   text-transform: uppercase;
   letter-spacing: 0.06em;
 }
 .sp-cost-card.wasteful .sp-cost-card-status {
   background: rgba(176, 69, 69, 0.12);
-  color: #b45555;
+  color: var(--color-error);
 }
 .sp-cost-card.efficient .sp-cost-card-status {
   background: rgba(74, 124, 63, 0.12);
@@ -1217,17 +968,17 @@ button.sp-illustration-trigger:focus-visible {
   align-items: center;
   gap: 12px;
   padding: 10px 20px;
-  font-size: 14px;
+  font-size: var(--font-size-sm);
   font-family: var(--sp-font-mono);
 }
 .sp-cost-card-dot {
   width: 8px;
   height: 8px;
-  border-radius: 50%;
+  border-radius: var(--radius-full);
   flex-shrink: 0;
 }
 .sp-cost-card.wasteful .sp-cost-card-dot {
-  background: #e06060;
+  background: var(--color-error);
 }
 .sp-cost-card.efficient .sp-cost-card-dot {
   background: #28c840;
@@ -1238,21 +989,21 @@ button.sp-illustration-trigger:focus-visible {
 }
 .sp-cost-card-detail {
   color: var(--sp-text-muted-light);
-  font-size: 12px;
+  font-size: var(--font-size-xs);
 }
 .sp-cost-card-footer {
   padding: 12px 20px;
   border-top: 1px solid var(--sp-border-light);
   display: flex;
   justify-content: space-between;
-  font-size: 12px;
+  font-size: var(--font-size-xs);
   color: var(--sp-text-muted-light);
 }
 .sp-cost-card-footer span {
   font-family: var(--sp-font-mono);
 }
 .sp-cost-card.wasteful .sp-cost-card-footer span:last-child {
-  color: #b45555;
+  color: var(--color-error);
   font-weight: 600;
 }
 .sp-cost-card.efficient .sp-cost-card-footer span:last-child {
@@ -1273,7 +1024,7 @@ button.sp-illustration-trigger:focus-visible {
   width: 240px;
   background: var(--sp-bg-light);
   border: 1px solid var(--sp-border-light);
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   overflow: hidden;
 }
 .sp-pipeline-card-header {
@@ -1284,7 +1035,7 @@ button.sp-illustration-trigger:focus-visible {
   border-bottom: 1px solid var(--sp-border-light);
 }
 .sp-pipeline-card-title {
-  font-size: 13px;
+  font-size: var(--font-size-sm);
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -1299,10 +1050,10 @@ button.sp-illustration-trigger:focus-visible {
   color: #5a9abf;
 }
 .sp-pipeline-card-status {
-  font-size: 11px;
+  font-size: var(--font-size-xs);
   font-weight: 600;
   padding: 3px 10px;
-  border-radius: 100px;
+  border-radius: var(--radius-full);
   text-transform: uppercase;
   letter-spacing: 0.06em;
 }
@@ -1323,14 +1074,14 @@ button.sp-illustration-trigger:focus-visible {
 }
 .sp-pipeline-card-item {
   padding: 8px 18px;
-  font-size: 13px;
+  font-size: var(--font-size-sm);
   font-family: var(--sp-font-mono);
   color: var(--sp-text-body);
 }
 .sp-pipeline-card-footer {
   padding: 10px 18px;
   border-top: 1px solid var(--sp-border-light);
-  font-size: 12px;
+  font-size: var(--font-size-xs);
   font-family: var(--sp-font-mono);
   color: var(--sp-text-muted-light);
 }
@@ -1348,7 +1099,7 @@ button.sp-illustration-trigger:focus-visible {
   margin-bottom: 12px;
 }
 .sp-tech-detail h2 {
-  font-size: 32px;
+  font-size: var(--font-size-2xl);
   font-weight: 700;
   color: var(--sp-text-primary);
   line-height: 1.2;
@@ -1356,7 +1107,7 @@ button.sp-illustration-trigger:focus-visible {
   margin-bottom: 16px;
 }
 .sp-tech-detail p {
-  font-size: 17px;
+  font-size: var(--font-size-base);
   color: var(--sp-text-body);
   line-height: 1.7;
   margin-bottom: 32px;
@@ -1366,20 +1117,20 @@ button.sp-illustration-trigger:focus-visible {
   grid-template-columns: 1fr 1fr;
   gap: 0;
   border: 1px solid var(--sp-border-light);
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   overflow: hidden;
-  font-size: 14px;
+  font-size: var(--font-size-sm);
 }
 .sp-tech-detail-col-header {
   padding: 14px 20px;
-  font-size: 12px;
+  font-size: var(--font-size-xs);
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   border-bottom: 1px solid var(--sp-border-light);
 }
 .sp-tech-detail-col-header.traditional {
-  background: #fafafa;
+  background: var(--color-bg-light);
   color: var(--sp-text-muted-light);
 }
 .sp-tech-detail-col-header.rediacc {
@@ -1416,7 +1167,7 @@ button.sp-illustration-trigger:focus-visible {
   color: var(--sp-brand-primary);
 }
 .sp-benefits h2 {
-  font-size: 40px;
+  font-size: var(--font-size-3xl);
   font-weight: 700;
   color: var(--sp-text-white);
   line-height: 1.2;
@@ -1431,14 +1182,14 @@ button.sp-illustration-trigger:focus-visible {
 .sp-benefit-card {
   flex: 1;
   border: 1px solid var(--sp-border-dark);
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   padding: 36px 28px;
 }
 .sp-benefit-icon {
   width: 48px;
   height: 48px;
   background: rgba(74, 124, 63, 0.15);
-  border-radius: 10px;
+  border-radius: var(--radius-md);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1454,14 +1205,14 @@ button.sp-illustration-trigger:focus-visible {
   stroke-linejoin: round;
 }
 .sp-benefit-card h3 {
-  font-size: 20px;
+  font-size: var(--font-size-lg);
   font-weight: 600;
   color: var(--sp-text-white);
   margin-bottom: 10px;
   line-height: 1.3;
 }
 .sp-benefit-card p {
-  font-size: 16px;
+  font-size: var(--font-size-base);
   color: var(--sp-text-muted-dark);
   line-height: 1.6;
 }
@@ -1474,12 +1225,17 @@ button.sp-illustration-trigger:focus-visible {
 .sp-comparison-section-inner {
   max-width: var(--sp-page-max);
   margin: 0 auto;
+  /* The table's content forces about 500px, so on a 390px viewport it used to
+     push the whole PAGE wide rather than scroll. Pre-existing; it got 8px
+     worse when the 10px footnote markers moved onto the ladder's 12px floor,
+     which is what made it visible. Scroll the table, not the document. */
+  overflow-x: auto;
 }
 .sp-comparison-section .sp-overline {
   text-align: center;
 }
 .sp-comparison-section h2 {
-  font-size: 36px;
+  font-size: var(--font-size-2xl);
   font-weight: 700;
   color: var(--sp-text-primary);
   line-height: 1.2;
@@ -1489,7 +1245,7 @@ button.sp-illustration-trigger:focus-visible {
 }
 .sp-comparison-section > .sp-comparison-section-inner > p {
   text-align: center;
-  font-size: 17px;
+  font-size: var(--font-size-base);
   color: var(--sp-text-body);
   max-width: 560px;
   margin: 0 auto 48px;
@@ -1498,7 +1254,7 @@ button.sp-illustration-trigger:focus-visible {
 .sp-comparison-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 14px;
+  font-size: var(--font-size-sm);
 }
 .sp-comparison-table th,
 .sp-comparison-table td {
@@ -1507,7 +1263,7 @@ button.sp-illustration-trigger:focus-visible {
   border-bottom: 1px solid var(--sp-border-light);
 }
 .sp-comparison-table th {
-  font-size: 12px;
+  font-size: var(--font-size-xs);
   font-weight: 700;
   letter-spacing: 0.05em;
   text-transform: uppercase;
@@ -1532,11 +1288,11 @@ button.sp-illustration-trigger:focus-visible {
 .sp-comparison-check {
   color: var(--sp-brand-primary);
   font-weight: 700;
-  font-size: 16px;
+  font-size: var(--font-size-base);
 }
 .sp-comparison-cross {
-  color: #999;
-  font-size: 16px;
+  color: var(--color-text-tertiary);
+  font-size: var(--font-size-base);
 }
 .sp-comparison-rediacc {
   color: var(--sp-brand-primary);
@@ -1548,17 +1304,17 @@ button.sp-illustration-trigger:focus-visible {
    hides the (dark-green) check on the (dark) page. Override the offending cells. */
 :root[data-theme='dark'] .sp-comparison-table th:last-child {
   background: rgba(74, 124, 63, 0.18);
-  color: #86c87a;
+  color: var(--color-success);
 }
 :root[data-theme='dark'] .sp-comparison-table td:last-child {
   background: rgba(74, 124, 63, 0.12);
 }
 :root[data-theme='dark'] .sp-comparison-rediacc,
 :root[data-theme='dark'] .sp-comparison-check {
-  color: #86c87a;
+  color: var(--color-success);
 }
 :root[data-theme='dark'] .sp-comparison-cross {
-  color: #6b6b70;
+  color: var(--color-text-tertiary);
 }
 
 /* ========== SOCIAL PROOF ========== */
@@ -1572,14 +1328,14 @@ button.sp-illustration-trigger:focus-visible {
   text-align: center;
 }
 .sp-quote-mark {
-  font-size: 64px;
+  font-size: var(--font-size-4xl);
   color: var(--sp-brand-primary);
   line-height: 1;
   margin-bottom: 16px;
   opacity: 0.4;
 }
 .sp-quote-text {
-  font-size: 24px;
+  font-size: var(--font-size-xl);
   font-weight: 400;
   color: var(--sp-text-primary);
   line-height: 1.5;
@@ -1595,12 +1351,12 @@ button.sp-illustration-trigger:focus-visible {
 .sp-quote-photo {
   width: 48px;
   height: 48px;
-  border-radius: 50%;
+  border-radius: var(--radius-full);
   object-fit: cover;
   flex-shrink: 0;
 }
 .sp-quote-author {
-  font-size: 16px;
+  font-size: var(--font-size-base);
   color: var(--sp-text-body);
   font-weight: 500;
   font-style: normal;
@@ -1617,7 +1373,7 @@ button.sp-illustration-trigger:focus-visible {
   margin: 40px auto 0;
   background: var(--sp-bg-white);
   border: 1px solid var(--sp-border-light);
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   padding: 32px 36px;
   display: flex;
   align-items: center;
@@ -1628,34 +1384,34 @@ button.sp-illustration-trigger:focus-visible {
   text-align: center;
 }
 .sp-impact-label {
-  font-size: 11px;
+  font-size: var(--font-size-xs);
   font-weight: 700;
   letter-spacing: 0.1em;
   text-transform: uppercase;
   margin-bottom: 6px;
 }
 .sp-impact-before .sp-impact-label {
-  color: #b45555;
+  color: var(--color-error);
 }
 .sp-impact-after .sp-impact-label {
   color: var(--sp-brand-primary);
 }
 .sp-impact-before .sp-impact-value {
-  font-size: 36px;
+  font-size: var(--font-size-2xl);
   font-weight: 700;
-  color: #c06060;
+  color: var(--color-error);
   letter-spacing: -0.02em;
   line-height: 1.1;
 }
 .sp-impact-after .sp-impact-value {
-  font-size: 36px;
+  font-size: var(--font-size-2xl);
   font-weight: 700;
   color: var(--sp-brand-primary);
   letter-spacing: -0.02em;
   line-height: 1.1;
 }
 .sp-impact-arrow {
-  font-size: 24px;
+  font-size: var(--font-size-xl);
   color: var(--sp-text-muted-light);
   flex-shrink: 0;
 }
@@ -1666,12 +1422,12 @@ button.sp-illustration-trigger:focus-visible {
   border-top: 1px solid var(--sp-border-light);
 }
 .sp-impact-improvement span {
-  font-size: 14px;
+  font-size: var(--font-size-sm);
   font-weight: 600;
   color: var(--sp-brand-primary);
   background: var(--sp-brand-light);
   padding: 4px 14px;
-  border-radius: 100px;
+  border-radius: var(--radius-full);
 }
 
 /* ========== BOTTOM CTA ========== */
@@ -1700,7 +1456,7 @@ button.sp-illustration-trigger:focus-visible {
   z-index: 1;
 }
 .sp-bottom-cta h2 {
-  font-size: 40px;
+  font-size: var(--font-size-3xl);
   font-weight: 700;
   color: var(--sp-text-white);
   line-height: 1.2;
@@ -1708,17 +1464,17 @@ button.sp-illustration-trigger:focus-visible {
   margin-bottom: 16px;
 }
 .sp-bottom-cta p {
-  font-size: 18px;
+  font-size: var(--font-size-lg);
   color: var(--sp-text-muted-dark);
   margin-bottom: 36px;
 }
 .sp-bottom-cta .sp-btn-primary {
-  font-size: 18px;
+  font-size: var(--font-size-lg);
   padding: 16px 40px;
 }
 .sp-cta-tier-badge {
   display: block;
-  font-size: 13px;
+  font-size: var(--font-size-sm);
   color: rgba(255, 255, 255, 0.45);
   margin-top: 8px;
   font-weight: 400;
@@ -1726,7 +1482,7 @@ button.sp-illustration-trigger:focus-visible {
 .sp-cta-command {
   margin-top: 24px;
   font-family: var(--sp-font-mono);
-  font-size: 13px;
+  font-size: var(--font-size-sm);
   color: rgba(255, 255, 255, 0.25);
   display: flex;
   align-items: center;
@@ -1738,234 +1494,21 @@ button.sp-illustration-trigger:focus-visible {
   font-weight: 600;
 }
 
-/* ========== TECH STRIP ========== */
-.sp-tech-strip {
-  background: var(--sp-bg-white);
-  padding: 48px;
-  border-top: 1px solid var(--sp-border-light);
-  text-align: center;
-}
-.sp-tech-strip-label {
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--sp-text-muted-light);
-  margin-bottom: 24px;
-}
-.sp-tech-strip-logos {
-  display: flex;
-  gap: 32px;
-  justify-content: center;
-  align-items: center;
-  flex-wrap: wrap;
-}
-.sp-tech-logo {
-  font-family: var(--sp-font-mono);
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--sp-text-muted-light);
-  padding: 8px 20px;
-  border: 1px solid var(--sp-border-light);
-  border-radius: 8px;
-  opacity: 0.7;
-  position: relative;
-  border-top: 2px solid transparent;
-}
-.sp-tech-logo[data-kind='devops'] {
-  border-top-color: #e24329;
-}
-.sp-tech-logo[data-kind='collab'] {
-  border-top-color: #0082c9;
-}
-.sp-tech-logo[data-kind='cms'] {
-  border-top-color: #21759b;
-}
-.sp-tech-logo[data-kind='data'] {
-  border-top-color: #c0765a;
-}
-.sp-tech-logo[data-kind='mail'] {
-  border-top-color: #f6a821;
-}
-.sp-tech-logo[data-kind='monitor'] {
-  border-top-color: #f46800;
-}
-.sp-tech-logo[data-kind='auth'] {
-  border-top-color: #4d4d4d;
-}
-.sp-tech-logo[data-kind='storage'] {
-  border-top-color: #c72c48;
-}
-.sp-tech-strip-note {
-  margin-top: 20px;
-  font-size: 13px;
-  color: var(--sp-text-muted-light);
-  opacity: 0.6;
-  max-width: 600px;
-  margin-left: auto;
-  margin-right: auto;
-  line-height: 1.5;
-}
-
-/* ========== EXPLORE OTHER SOLUTIONS ========== */
-.sp-explore {
-  background: var(--sp-bg-white);
-  padding: 96px 48px;
-}
-.sp-explore-inner {
-  max-width: var(--sp-cards-max);
-  margin: 0 auto;
-}
-.sp-explore h2 {
-  font-size: 32px;
-  font-weight: 700;
-  color: var(--sp-text-primary);
-  line-height: 1.2;
-  letter-spacing: -0.02em;
-  margin-bottom: 48px;
-}
-.sp-explore-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 20px;
-}
-.sp-explore-card {
-  background: var(--sp-bg-white);
-  border: 1px solid var(--sp-border-light);
-  border-radius: 12px;
-  padding: 28px 24px;
-  text-decoration: none;
-  transition:
-    border-color 0.2s,
-    box-shadow 0.2s;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-.sp-explore-card:hover {
-  border-color: var(--sp-brand-primary);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
-}
-.sp-explore-card.current {
-  border-color: var(--sp-brand-primary);
-  background: var(--sp-brand-light);
-}
-.sp-explore-card[data-category='dev-env'] {
-  border-left: 3px solid #4a7c3f;
-}
-.sp-explore-card[data-category='ransomware'] {
-  border-left: 3px solid #c05050;
-}
-.sp-explore-card[data-category='multi-cloud'] {
-  border-left: 3px solid #5a9abf;
-}
-.sp-explore-card[data-category='backups'] {
-  border-left: 3px solid #d4a04a;
-}
-.sp-explore-card[data-category='encryption'] {
-  border-left: 3px solid #8a6fba;
-}
-.sp-explore-card[data-category='defense'] {
-  border-left: 3px solid #4ab0a0;
-}
-.sp-explore-card-category {
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--sp-brand-primary);
-}
-.sp-explore-card h3 {
-  font-size: 17px;
-  font-weight: 600;
-  color: var(--sp-text-primary);
-  line-height: 1.3;
-}
-.sp-explore-card p {
-  font-size: 14px;
-  color: var(--sp-text-muted-light);
-  line-height: 1.5;
-}
-.sp-explore-card-arrow {
-  font-size: 16px;
-  color: var(--sp-brand-primary);
-  margin-top: auto;
-  font-weight: 500;
-}
-
-/* ========== REFERENCES ========== */
-.sp-references {
-  background: var(--sp-bg-light);
-  padding: 64px 48px 72px;
-  border-top: 1px solid var(--sp-border-light);
-}
-.sp-references-inner {
-  max-width: 720px;
-  margin: 0 auto;
-}
-.sp-references-label {
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--sp-text-muted-light);
-  margin-bottom: 24px;
-}
-.sp-references-list {
-  list-style: none;
-  counter-reset: ref;
-  padding: 0;
-  margin: 0;
-}
-.sp-references-list li {
-  counter-increment: ref;
-  position: relative;
-  padding-left: 32px;
-  margin-bottom: 12px;
-  font-size: 13px;
-  line-height: 1.6;
-  color: var(--sp-text-body);
-}
-.sp-references-list li::before {
-  content: '[' counter(ref) ']';
-  position: absolute;
-  left: 0;
-  font-family: var(--sp-font-mono);
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--sp-text-muted-light);
-}
-.sp-references-list li a {
-  color: var(--sp-brand-primary);
-  text-decoration: none;
-  word-break: break-all;
-}
-.sp-references-list li a:hover {
+/* ========== SOURCE LINKS ==========
+   The citation is the phrase, not a superscript. An underline (not colour) is
+   what marks it, so it stays a link for a reader who cannot tell the two apart. */
+.sp-source-link {
+  color: inherit;
   text-decoration: underline;
-}
-.sp-ref-note {
-  margin-top: 24px;
-  padding-top: 16px;
-  border-top: 1px solid var(--sp-border-light);
-  font-size: 12px;
-  color: var(--sp-text-muted-light);
-  line-height: 1.5;
-}
-.sp-ref-link {
-  text-decoration: none;
+  text-decoration-color: var(--sp-brand-primary);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 2px;
   cursor: pointer;
 }
-.sp-ref-link:hover .sp-ref-num {
-  text-decoration: underline;
-}
-.sp-ref-num {
-  font-family: var(--sp-font-mono);
-  font-size: 10px;
-  font-weight: 600;
+.sp-source-link:hover,
+.sp-source-link:focus-visible {
   color: var(--sp-brand-primary);
-  vertical-align: super;
-  line-height: 0;
-  margin-left: 2px;
+  text-decoration-thickness: 2px;
 }
 
 /* ========== RESPONSIVE ========== */
@@ -1993,14 +1536,11 @@ button.sp-illustration-trigger:focus-visible {
   .sp-step:not(:last-child)::after {
     display: none;
   }
-  .sp-explore-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
   .sp-benefits-grid {
     flex-direction: column;
   }
   .sp-comparison-table {
-    font-size: 12px;
+    font-size: var(--font-size-xs);
   }
   .sp-comparison-table th,
   .sp-comparison-table td {
@@ -2018,18 +1558,13 @@ button.sp-illustration-trigger:focus-visible {
   }
 
   .sp-hero {
-    min-height: auto;
     padding: 32px 24px 64px;
   }
   .sp-hero h1 {
-    font-size: 36px;
+    font-size: var(--font-size-2xl);
   }
   .sp-hero-sub {
-    font-size: 17px;
-  }
-  .sp-hero-ctas {
-    flex-direction: column;
-    margin-bottom: 48px;
+    font-size: var(--font-size-base);
   }
   .sp-stats {
     padding: 32px 24px;
@@ -2040,7 +1575,7 @@ button.sp-illustration-trigger:focus-visible {
   }
   .sp-stat + .sp-stat {
     border-left: none;
-    border-top: 1px solid #cdd8c8;
+    border-top: 1px solid var(--color-border-subtle);
     padding-top: 24px;
   }
   .sp-problem,
@@ -2050,21 +1585,19 @@ button.sp-illustration-trigger:focus-visible {
   .sp-benefits,
   .sp-comparison-section,
   .sp-social-proof,
-  .sp-bottom-cta,
-  .sp-explore,
-  .sp-references {
+  .sp-bottom-cta {
     padding: 64px 24px;
   }
   .sp-problem h2,
   .sp-how-it-works h2,
   .sp-benefits h2 {
-    font-size: 28px;
+    font-size: var(--font-size-xl);
   }
   .sp-cost-section h2,
   .sp-tech-detail h2,
   .sp-comparison-section h2,
   .sp-bottom-cta h2 {
-    font-size: 26px;
+    font-size: var(--font-size-xl);
   }
   .sp-calc-results {
     flex-direction: column;
@@ -2078,12 +1611,6 @@ button.sp-illustration-trigger:focus-visible {
   }
   .sp-tech-detail-col-header.traditional {
     border-right: none;
-  }
-  .sp-explore-grid {
-    grid-template-columns: 1fr;
-  }
-  .sp-tech-strip-logos {
-    gap: 16px;
   }
   .sp-stat-callouts {
     flex-direction: column;
@@ -2101,28 +1628,11 @@ button.sp-illustration-trigger:focus-visible {
   }
 }
 
-/* ========== DARK THEME ========== */
-:root[data-theme='dark'] .sp-page {
-  --sp-bg-light: #141416;
-  --sp-bg-white: #1a1a1b;
-  --sp-bg-stats: #1a2118;
-  --sp-text-primary: #e4e4e7;
-  --sp-text-body: #a1a1aa;
-  --sp-border-light: #2e2e32;
-  --sp-brand-light: rgba(74, 124, 63, 0.15);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme]) .sp-page {
-    --sp-bg-light: #141416;
-    --sp-bg-white: #1a1a1b;
-    --sp-bg-stats: #1a2118;
-    --sp-text-primary: #e4e4e7;
-    --sp-text-body: #a1a1aa;
-    --sp-border-light: #2e2e32;
-    --sp-brand-light: rgba(74, 124, 63, 0.15);
-  }
-}
+/* ========== DARK THEME ==========
+   The --sp-* dark redefinitions that used to live here (plus their verbatim
+   prefers-color-scheme twin) are gone: the aliases follow the semantic tokens,
+   which the one dark block in main.css redefines. Every value they produced is
+   reproduced exactly. */
 
 /* ========== ROI CALCULATOR ========== */
 
@@ -2142,7 +1652,7 @@ button.sp-illustration-trigger:focus-visible {
 
 .sp-roi-inner > h2 {
   text-align: center;
-  font-size: 2.2rem;
+  font-size: var(--font-size-2xl);
   font-weight: 700;
   color: var(--sp-text-primary);
   margin: 12px 0 8px;
@@ -2158,14 +1668,14 @@ button.sp-illustration-trigger:focus-visible {
 .sp-roi-calculator {
   background: var(--sp-bg-light);
   border: 1px solid var(--sp-border-light);
-  border-radius: 16px;
+  border-radius: var(--radius-md);
   padding: 32px;
 }
 
 /* Size select */
 .sp-roi-size-label {
   display: block;
-  font-size: 0.8rem;
+  font-size: var(--font-size-xs);
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.06em;
@@ -2187,7 +1697,7 @@ button.sp-illustration-trigger:focus-visible {
   gap: 2px;
   padding: 12px 8px;
   border: 1px solid var(--sp-border-light);
-  border-radius: 10px;
+  border-radius: var(--radius-md);
   background: var(--sp-bg-white);
   color: var(--sp-text-body);
   cursor: pointer;
@@ -2208,11 +1718,11 @@ button.sp-illustration-trigger:focus-visible {
 
 .sp-roi-size-btn-label {
   font-weight: 600;
-  font-size: 0.9rem;
+  font-size: var(--font-size-sm);
 }
 
 .sp-roi-size-btn-desc {
-  font-size: 0.75rem;
+  font-size: var(--font-size-xs);
   opacity: 0.7;
 }
 
@@ -2228,7 +1738,7 @@ button.sp-illustration-trigger:focus-visible {
   display: flex;
   justify-content: space-between;
   align-items: baseline;
-  font-size: 0.85rem;
+  font-size: var(--font-size-sm);
   font-weight: 500;
   color: var(--sp-text-body);
   margin-bottom: 6px;
@@ -2238,7 +1748,7 @@ button.sp-illustration-trigger:focus-visible {
   font-family: var(--sp-font-mono);
   font-weight: 600;
   color: var(--sp-text-primary);
-  font-size: 0.85rem;
+  font-size: var(--font-size-sm);
 }
 
 .sp-roi-slider input[type='range'] {
@@ -2247,7 +1757,7 @@ button.sp-illustration-trigger:focus-visible {
   appearance: none;
   -webkit-appearance: none;
   background: var(--sp-border-light);
-  border-radius: 3px;
+  border-radius: var(--radius-full);
   outline: none;
   cursor: pointer;
 }
@@ -2257,21 +1767,21 @@ button.sp-illustration-trigger:focus-visible {
   appearance: none;
   width: 18px;
   height: 18px;
-  background: var(--sp-brand-primary);
-  border-radius: 50%;
+  background: var(--color-brand-fill);
+  border-radius: var(--radius-full);
   cursor: pointer;
   border: 2px solid var(--sp-bg-white);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  box-shadow: var(--shadow);
 }
 
 .sp-roi-slider input[type='range']::-moz-range-thumb {
   width: 18px;
   height: 18px;
-  background: var(--sp-brand-primary);
-  border-radius: 50%;
+  background: var(--color-brand-fill);
+  border-radius: var(--radius-full);
   cursor: pointer;
   border: 2px solid var(--sp-bg-white);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  box-shadow: var(--shadow);
 }
 
 /* Advanced accordion */
@@ -2282,7 +1792,7 @@ button.sp-illustration-trigger:focus-visible {
 }
 
 .sp-roi-advanced summary {
-  font-size: 0.85rem;
+  font-size: var(--font-size-sm);
   font-weight: 600;
   color: var(--sp-text-muted-light);
   cursor: pointer;
@@ -2316,7 +1826,7 @@ button.sp-illustration-trigger:focus-visible {
   grid-template-columns: repeat(3, 1fr);
   gap: 1px;
   background: var(--sp-border-light);
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   overflow: hidden;
   margin-bottom: 32px;
 }
@@ -2331,7 +1841,7 @@ button.sp-illustration-trigger:focus-visible {
 }
 
 .sp-roi-summary-label {
-  font-size: 0.75rem;
+  font-size: var(--font-size-xs);
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.06em;
@@ -2340,7 +1850,7 @@ button.sp-illustration-trigger:focus-visible {
 
 .sp-roi-summary-value {
   font-family: var(--sp-font-mono);
-  font-size: 1.8rem;
+  font-size: var(--font-size-xl);
   font-weight: 700;
   color: var(--sp-text-white);
 }
@@ -2350,7 +1860,7 @@ button.sp-illustration-trigger:focus-visible {
 }
 
 .sp-roi-red {
-  color: #a04040;
+  color: var(--color-error);
 }
 
 /* Detail cards */
@@ -2364,12 +1874,12 @@ button.sp-illustration-trigger:focus-visible {
 .sp-roi-card {
   background: var(--sp-bg-white);
   border: 1px solid var(--sp-border-light);
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   padding: 20px;
 }
 
 .sp-roi-card h4 {
-  font-size: 0.85rem;
+  font-size: var(--font-size-sm);
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.04em;
@@ -2384,7 +1894,7 @@ button.sp-illustration-trigger:focus-visible {
   justify-content: space-between;
   align-items: baseline;
   padding: 6px 0;
-  font-size: 0.85rem;
+  font-size: var(--font-size-sm);
   color: var(--sp-text-body);
 }
 
@@ -2422,7 +1932,7 @@ button.sp-illustration-trigger:focus-visible {
   justify-content: center;
   background: rgba(255, 255, 255, 0.6);
   backdrop-filter: blur(2px);
-  border-radius: 12px;
+  border-radius: var(--radius-md);
 }
 
 :root[data-theme='dark'] .sp-roi-gate-overlay {
@@ -2436,13 +1946,13 @@ button.sp-illustration-trigger:focus-visible {
 }
 
 .sp-roi-gate-content h4 {
-  font-size: 1.1rem;
+  font-size: var(--font-size-base);
   margin-bottom: 8px;
   color: var(--color-text);
 }
 
 .sp-roi-gate-content p {
-  font-size: 0.875rem;
+  font-size: var(--font-size-sm);
   color: var(--color-text-secondary);
   margin-bottom: 12px;
 }
@@ -2459,7 +1969,7 @@ button.sp-illustration-trigger:focus-visible {
 
 /* Footnote */
 .sp-roi-footnote {
-  font-size: 0.75rem;
+  font-size: var(--font-size-xs);
   color: var(--sp-text-muted-light);
   line-height: 1.6;
   margin-top: 8px;
@@ -2472,7 +1982,7 @@ button.sp-illustration-trigger:focus-visible {
   }
 
   .sp-roi-inner > h2 {
-    font-size: 1.6rem;
+    font-size: var(--font-size-xl);
   }
 
   .sp-roi-calculator {
@@ -2497,7 +2007,7 @@ button.sp-illustration-trigger:focus-visible {
   }
 
   .sp-roi-summary-value {
-    font-size: 1.4rem;
+    font-size: var(--font-size-xl);
   }
 
   .sp-roi-details {
@@ -2519,26 +2029,8 @@ button.sp-illustration-trigger:focus-visible {
      - Brand olive button (--sp-brand-primary), white text on green
    ========================================================================== */
 
-/* Dark-mode token redefinition, scoped to OUR components so they work both
-   inside .sp-page (solution pages) and inside .resource-brief-page. */
-:root[data-theme='dark'] .sp-download-gated-wrapper,
-:root[data-theme='dark'] .sp-download-short {
-  --sp-bg-light: #141416;
-  --sp-bg-white: #1a1a1b;
-  --sp-text-primary: #e4e4e7;
-  --sp-text-body: #a1a1aa;
-  --sp-border-light: #2e2e32;
-}
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme]) .sp-download-gated-wrapper,
-  :root:not([data-theme]) .sp-download-short {
-    --sp-bg-light: #141416;
-    --sp-bg-white: #1a1a1b;
-    --sp-text-primary: #e4e4e7;
-    --sp-text-body: #a1a1aa;
-    --sp-border-light: #2e2e32;
-  }
-}
+/* The --sp-* dark redefinitions that were scoped here so these components
+   worked outside .sp-page are unnecessary now: the aliases are global. */
 
 /* Section wrapper: full-width light/dark band. The gated wrapper only renders
    the LeadMagnetButton trigger; the actual form lives in LeadMagnetModal.tsx
@@ -2546,7 +2038,7 @@ button.sp-illustration-trigger:focus-visible {
 .sp-download-gated-wrapper,
 .sp-download-short {
   padding: 56px 20px 56px;
-  background: var(--sp-bg-light, #fafafa);
+  background: var(--sp-bg-light, var(--color-bg-light));
 }
 
 /* Card container for the short variant only. */
@@ -2554,27 +2046,27 @@ button.sp-illustration-trigger:focus-visible {
   position: relative;
   max-width: 560px;
   margin: 0 auto;
-  background: var(--sp-bg-white, #ffffff);
-  border: 1px solid var(--sp-border-light, #e5e5e5);
-  border-radius: 12px;
+  background: var(--sp-bg-white, var(--gray-0));
+  border: 1px solid var(--sp-border-light);
+  border-radius: var(--radius-md);
   padding: 32px 28px;
   text-align: center;
-  color: var(--sp-text-primary, #1a1a1a);
+  color: var(--sp-text-primary, var(--color-text));
 }
 
 /* Title + description for the short variant. */
 .sp-download-short__title {
-  font-size: 22px;
+  font-size: var(--font-size-xl);
   line-height: 1.3;
   margin: 0 0 10px;
-  color: var(--sp-text-primary, #1a1a1a);
+  color: var(--sp-text-primary, var(--color-text));
   font-weight: 700;
 }
 .sp-download-short__description {
-  font-size: 15px;
+  font-size: var(--font-size-base);
   line-height: 1.6;
   margin: 0 0 18px;
-  color: var(--sp-text-body, #4a4a4f);
+  color: var(--sp-text-body, var(--color-text-secondary));
 }
 
 /* Short-form button: olive green pill. */
@@ -2584,18 +2076,18 @@ button.sp-illustration-trigger:focus-visible {
   justify-content: center;
   gap: 8px;
   padding: 12px 22px;
-  background: var(--sp-brand-primary, #4a7c3f);
-  color: #fff;
+  background: var(--color-brand-fill);
+  color: var(--color-on-brand);
   border: 0;
-  border-radius: 8px;
-  font-size: 15px;
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-base);
   font-weight: 600;
   cursor: pointer;
   text-decoration: none;
   transition: background-color 0.15s;
 }
 .sp-download-short__button:hover {
-  background: var(--sp-brand-secondary, #3d6834);
+  background: var(--sp-brand-secondary, var(--color-brand-secondary));
 }
 .sp-download-short__button svg {
   stroke: currentColor;
@@ -2611,6 +2103,6 @@ button.sp-illustration-trigger:focus-visible {
     padding: 24px 20px;
   }
   .sp-download-short__title {
-    font-size: 19px;
+    font-size: var(--font-size-lg);
   }
 }

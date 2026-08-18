@@ -97,8 +97,7 @@ const LAYERS: Layer[] = [
     // `policy.keepLast` also appears in the all-null probe above it, so a
     // bare mention stayed present when the application was disabled and the
     // gate went green on a knob that no longer did anything.
-    spell: (k) =>
-      k === 'keepLast' ? 'sorted.slice(0, policy.keepLast)' : `knob: '${k}'`,
+    spell: (k) => (k === 'keepLast' ? 'sorted.slice(0, policy.keepLast)' : `knob: '${k}'`),
   },
   {
     name: 'CLI flags (how the operator sets it)',
@@ -154,9 +153,7 @@ const problems: string[] = [];
 for (const layer of LAYERS) {
   const missing = missingIn(ROOT, layer, KNOBS);
   if (missing.length > 0) {
-    problems.push(
-      `    ${layer.name}\n      ${layer.file}\n      missing: ${missing.join(', ')}`
-    );
+    problems.push(`    ${layer.name}\n      ${layer.file}\n      missing: ${missing.join(', ')}`);
   }
 }
 

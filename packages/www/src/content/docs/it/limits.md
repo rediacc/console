@@ -103,9 +103,9 @@ Il datastore è un pool di dimensioni fisse creato quando una macchina viene con
 - **Ridimensionamento**: usa `rdc datastore resize` per modificare la dimensione del pool (tutti i repository devono essere smontati prima).
 - **File system**: Rediacc usa BTRFS internamente per snapshot copy-on-write e forking efficiente. Richiede una macchina con **Linux kernel 6.1 o successivo** per la piena stabilità in produzione.
 
-Ogni repository ha una dimensione massima impostata al momento della creazione (predefinita: 10 GB). Usa `rdc repo resize` per modificarla manualmente, oppure imposta una [policy di dimensione automatica](/it/docs/repositories#policy-di-dimensione-automatica) affinché la macchina la faccia crescere online quando si riempie (limitata da un tetto esplicito per-repository e da una riserva di spazio libero nel pool). L'auto-grow si applica solo ai singoli repository; il pool stesso non cresce mai automaticamente.
+Ogni repository ha una dimensione massima impostata al momento della creazione (predefinita: 10 GB). Usa `rdc repo resize` per modificarla manualmente, oppure imposta una [policy di dimensione automatica](/it/docs/repositories#automatic-size-policy) affinché la macchina la faccia crescere online quando si riempie (limitata da un tetto esplicito per-repository e da una riserva di spazio libero nel pool). L'auto-grow si applica solo ai singoli repository; il pool stesso non cresce mai automaticamente.
 
-Le immagini di repository sono sparse: un repository occupa nel pool solo quanto ha effettivamente scritto, e lo spazio liberato dalle eliminazioni torna al pool tramite [`repo trim`](/it/docs/repositories#recupera-spazio-trim) o un auto-trim pianificato. Le quote possono quindi sommarsi a più della dimensione del pool, con il [report sulla salute dello storage](/it/docs/monitoring#salute-dellarchiviazione) che mostra il livello di riempimento reale.
+Le immagini di repository sono sparse: un repository occupa nel pool solo quanto ha effettivamente scritto, e lo spazio liberato dalle eliminazioni torna al pool tramite [`repo trim`](/it/docs/repositories#reclaim-space-trim) o un auto-trim pianificato. Le quote possono quindi sommarsi a più della dimensione del pool, con il [report sulla salute dello storage](/it/docs/monitoring#storage-health) che mostra il livello di riempimento reale.
 
 ---
 

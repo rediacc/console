@@ -2,6 +2,7 @@
 import BaseLayout from './BaseLayout.astro';
 import DocsSidebar from '../components/DocsSidebar.astro';
 import DocsTopTabs from '../components/DocsTopTabs.astro';
+import DocsSearchMount from '../components/DocsSearchMount';
 import Breadcrumb from '../components/Breadcrumb.astro';
 import LlmsInlineScript from '../components/LlmsInlineScript.astro';
 import StructuredData from '../components/StructuredData.astro';
@@ -37,6 +38,12 @@ const {
   showTOC = true
 } = Astro.props as Props;
 
+// D-5: the docs search returns Documentation hits only; the site-wide Cmd/Ctrl+K
+// modal keeps returning both. These are the `category` values the generated
+// search index actually carries ("Documentation" and "Blog"), not a display
+// label, so the filter is an exact match rather than a heuristic.
+const DOCS_SEARCH_CATEGORIES = ['Documentation'] as const;
+
 // Extract slug for markdown alternate link
 const slugMatch = url.match(/\/docs\/([^/]+)\/?$/);
 const docSlug = slugMatch ? slugMatch[1] : '';
@@ -66,23 +73,12 @@ const tocFromContent = generateTOCFromHtml(await Astro.slots.render('default'));
 const toc = tocItems ?? tocFromContent;
 const shouldTrackTOC = !tocItems && toc.length > 0;
 
-// Smart TOC: auto-collapse deeper headings when the list is crowded
-const TOC_COLLAPSE_THRESHOLD = 20;
-const isCollapsible = toc.length > TOC_COLLAPSE_THRESHOLD;
-
-interface TOCGroup {
-  heading: typeof toc[0];
-  children: typeof toc;
-}
-const tocGroups: TOCGroup[] = [];
-for (const item of toc) {
-  if (item.level === 2) {
-    tocGroups.push({ heading: item, children: [] });
-  } else if (tocGroups.length > 0) {
-    tocGroups[tocGroups.length - 1].children.push(item);
-  }
-}
-const useGrouped = isCollapsible && tocGroups.length > 0;
+// A long TOC is rendered flat and simply scrolls. The grouping that used to be
+// computed here fed a collapsible rail whose only job was to fit a long list
+// into a rail with a fixed height -- and it did that by opening one group and
+// closing another on every scroll-spy transition, so the rail's own height
+// changed under the reader's cursor while they scrolled. The rail is now
+// max-height, so the list needs no help fitting.
 ---
 
 <BaseLayout
@@ -99,6 +95,59 @@ const useGrouped = isCollapsible && tocGroups.length > 0;
           currentCategory={frontmatter.category}
           variant={variant}
         />
+        <div class="docs-header-tools">
+          {/* Server-rendered trigger, not part of the React island. The island
+              below is headless: it carries the modal and nothing else, so the
+              control the reader sees is present in the HTML and works the
+              moment the island hydrates, with no layout shift on hydration. */}
+          <button
+            type="button"
+            class="docs-search-trigger"
+            data-docs-search-open
+            aria-label={t('documentation.searchDocs')}
+          >
+            <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+              <circle cx="8" cy="8" r="6" />
+              <path d="M12.5 12.5L17 17" />
+            </svg>
+            <span class="docs-search-trigger-text">{t('pages.docs.searchPlaceholder')}</span>
+          </button>
+
+          {/* Light / Dark / Auto. The popover contract is the one LanguageMenu
+              established (anchored to its own button, click-outside, Escape
+              returns focus to the trigger, roving arrow keys), implemented
+              inline rather than as a second React island: three radio options
+              do not need a hydration boundary, and the site's standing problem
+              is shipped JavaScript. */}
+          <div class="docs-theme">
+            <button
+              type="button"
+              class="docs-theme-trigger"
+              id="docs-theme-trigger"
+              aria-haspopup="true"
+              aria-expanded="false"
+              aria-controls="docs-theme-menu"
+              aria-label={t('documentation.theme.label', 'Theme')}
+            >
+              <svg class="docs-theme-icon-light" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+                <circle cx="12" cy="12" r="4" />
+                <path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" />
+              </svg>
+              <svg class="docs-theme-icon-dark" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z" />
+              </svg>
+              <span class="docs-theme-trigger-text">{t('documentation.theme.label', 'Theme')}</span>
+              <svg class="docs-theme-caret" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="m6 9 6 6 6-6" />
+              </svg>
+            </button>
+            <div class="docs-theme-menu" id="docs-theme-menu" role="menu" aria-labelledby="docs-theme-trigger" hidden>
+              <button type="button" role="menuitemradio" class="docs-theme-option" data-theme-choice="light" aria-checked="false">{t('documentation.theme.light', 'Light')}</button>
+              <button type="button" role="menuitemradio" class="docs-theme-option" data-theme-choice="dark" aria-checked="false">{t('documentation.theme.dark', 'Dark')}</button>
+              <button type="button" role="menuitemradio" class="docs-theme-option" data-theme-choice="auto" aria-checked="false">{t('documentation.theme.auto', 'Auto')}</button>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -117,8 +166,12 @@ const useGrouped = isCollapsible && tocGroups.length > 0;
         visibleCategory={variant === 'article' ? frontmatter.category : undefined}
       />
 
-      <main class="docs-content">
-        <article class={`docs-article ${variant === 'index' ? 'docs-article-index' : ''}`}>
+      {/* A <div>, not a <main>: BaseLayout.astro:321 already emits the page's one
+          <main id="main-content"> and this sits inside it. Nesting a second landmark
+          shipped on 1,120 of 1,842 built pages and is what axe reports as
+          landmark-no-duplicate-main / landmark-main-is-top-level / landmark-unique. */}
+      <div class="docs-content">
+        <article class="docs-article">
           {variant === 'article' && <Breadcrumb items={breadcrumbItems} />}
           {variant === 'article' && (
             <StructuredData
@@ -174,35 +227,18 @@ const useGrouped = isCollapsible && tocGroups.length > 0;
             <slot />
           </div>
         </article>
-      </main>
+      </div>
 
       {showTOC && toc.length > 0 && (
         <aside class="sidebar-base sidebar-toc toc-sidebar" data-track={shouldTrackTOC ? 'true' : 'false'} data-selector={tocTrackingSelector}>
           <nav class="sidebar-nav sidebar-nav-with-accent toc-nav" role="navigation" aria-label={t('common.aria.tableOfContents')}>
             <h3 class="sidebar-title toc-title">{t('pages.docs.tableOfContents')}</h3>
-            <ul class={`sidebar-list toc-list${useGrouped ? ' toc-collapsible' : ''}`}>
-              {useGrouped ? (
-                tocGroups.map(group => (
-                  <li class="sidebar-item toc-item toc-level-2 toc-group">
-                    <a href={`#${group.heading.id}`} class="sidebar-link toc-link">{group.heading.title}</a>
-                    {group.children.length > 0 && (
-                      <ul class="toc-children">
-                        {group.children.map(child => (
-                          <li class={`sidebar-item toc-item toc-level-${child.level}`}>
-                            <a href={`#${child.id}`} class="sidebar-link toc-link">{child.title}</a>
-                          </li>
-                        ))}
-                      </ul>
-                    )}
-                  </li>
-                ))
-              ) : (
-                toc.map(heading => (
-                  <li class={`sidebar-item toc-item toc-level-${heading.level}`}>
-                    <a href={`#${heading.id}`} class="sidebar-link toc-link">{heading.title}</a>
-                  </li>
-                ))
-              )}
+            <ul class="sidebar-list toc-list">
+              {toc.map(heading => (
+                <li class={`sidebar-item toc-item toc-level-${heading.level}`}>
+                  <a href={`#${heading.id}`} class="sidebar-link toc-link">{heading.title}</a>
+                </li>
+              ))}
             </ul>
           </nav>
         </aside>
@@ -210,16 +246,14 @@ const useGrouped = isCollapsible && tocGroups.length > 0;
     </div>
   </div>
 
+  {/* Headless: it renders the modal and nothing else. Kept OUTSIDE .docs-shell
+      so the island wrapper element is never a child of a layout container that
+      might count it. */}
+  <DocsSearchMount client:idle categories={DOCS_SEARCH_CATEGORIES} scope="docs" />
+
   <div id="docs-i18n" hidden
     data-copied={t('documentation.copied')}
-    data-share-section={t('documentation.shareSection')}
-    data-copy-section={t('documentation.copySection')}
-    data-copy-section-link={t('documentation.copySectionLink')}
-    data-copy-section-link-desc={t('documentation.copySectionLinkDesc')}
-    data-copy-md={t('documentation.copyAsMarkdownSection')}
-    data-copy-md-desc={t('documentation.copyAsMarkdownSectionDesc')}
-    data-view-md={t('documentation.viewAsMarkdown')}
-    data-view-md-desc={t('documentation.viewAsMarkdownDesc')}
+    data-copy-code={t('documentation.copyCode')}
   ></div>
 
   <script is:inline>
@@ -279,402 +313,97 @@ const useGrouped = isCollapsible && tocGroups.length > 0;
   </script>
 
   <script is:inline>
-    // Add advanced share controls for docs headings.
+    // TOC scroll-spy.
+    //
+    // No `window.rediaccTOCInitialized` guard. That guard made init run exactly
+    // once per PAGE LOAD, which is once per browsing session under Astro view
+    // transitions: after a client-side navigation the observer was still
+    // watching the previous document's heading nodes, so the TOC of the page
+    // you were reading tracked the page you had left. The lifecycle is instead
+    // a module-scoped observer that disconnects at the top of every init.
     (function() {
-      const MENU_ITEM_SELECTOR = '.heading-share-menu-item';
+      var observer = null;
+      // Ids of every heading currently inside the spy band, so the active link
+      // can be the FIRST one in document order. The previous version took
+      // whichever entry the callback happened to see last, which on a fast
+      // scroll -- or on any single callback carrying several entries -- could
+      // activate a heading below the one being read.
+      var visible = new Set();
+      var order = [];
 
-      function closeAllShareMenus(exceptId) {
-        document.querySelectorAll('.heading-share').forEach((root) => {
-          if (!(root instanceof HTMLElement)) return;
-          const id = root.dataset.shareId;
-          if (exceptId && id === exceptId) return;
-
-          const trigger = root.querySelector('.heading-share-trigger');
-          const menu = root.querySelector('.heading-share-menu');
-          if (trigger instanceof HTMLButtonElement) {
-            trigger.setAttribute('aria-expanded', 'false');
-          }
-          if (menu instanceof HTMLElement) {
-            menu.hidden = true;
-          }
-        });
-      }
-
-      function copyToClipboard(text) {
-        return navigator.clipboard.writeText(text);
-      }
-
-      function buildMarkdownHref() {
-        const match = window.location.pathname.match(/^\/([^/]+)\/docs\/([^/]+)\/?$/);
-        if (!match) return null;
-        const [, lang, slug] = match;
-        return `/${lang}/docs/${slug}.md`;
-      }
-
-      function inlineMarkdownFromNode(node) {
-        if (node.nodeType === Node.TEXT_NODE) return node.textContent || '';
-        if (!(node instanceof HTMLElement)) return '';
-
-        if (node.tagName === 'CODE') return `\`${node.textContent || ''}\``;
-        if (node.tagName === 'A') {
-          const text = (node.textContent || '').trim();
-          const href = node.getAttribute('href') || '#';
-          return `[${text}](${href})`;
-        }
-        if (node.tagName === 'STRONG' || node.tagName === 'B') return `**${[...node.childNodes].map(inlineMarkdownFromNode).join('')}**`;
-        if (node.tagName === 'EM' || node.tagName === 'I') return `*${[...node.childNodes].map(inlineMarkdownFromNode).join('')}*`;
-
-        return [...node.childNodes].map(inlineMarkdownFromNode).join('');
-      }
-
-      function blockMarkdownFromNode(node, depth = 0) {
-        if (!(node instanceof HTMLElement)) return '';
-
-        const tag = node.tagName;
-        if (tag === 'P') return `${[...node.childNodes].map(inlineMarkdownFromNode).join('').trim()}\n\n`;
-        if (tag === 'PRE') {
-          const codeEl = node.querySelector('code');
-          const raw = codeEl?.textContent || node.textContent || '';
-          const className = codeEl?.getAttribute('class') || '';
-          const langMatch = className.match(/language-([a-zA-Z0-9_-]+)/);
-          const lang = langMatch ? langMatch[1] : '';
-          return `\`\`\`${lang}\n${raw.trimEnd()}\n\`\`\`\n\n`;
-        }
-        if (tag === 'UL' || tag === 'OL') {
-          const items = [...node.children].filter((c) => c.tagName === 'LI');
-          const lines = items.map((li, idx) => {
-            const prefix = tag === 'OL' ? `${idx + 1}. ` : '- ';
-            const text = [...li.childNodes]
-              .map((child) => {
-                if (child instanceof HTMLElement && (child.tagName === 'UL' || child.tagName === 'OL')) {
-                  return `\n${blockMarkdownFromNode(child, depth + 1)}`.trimEnd();
-                }
-                return inlineMarkdownFromNode(child);
-              })
-              .join('')
-              .trim();
-            return `${'  '.repeat(depth)}${prefix}${text}`;
-          });
-          return `${lines.join('\n')}\n\n`;
-        }
-        if (tag === 'TABLE') {
-          const rows = [...node.querySelectorAll('tr')];
-          if (rows.length === 0) return '';
-          const toCells = (tr) => [...tr.querySelectorAll('th,td')].map((c) => c.textContent?.trim() || '');
-          const header = toCells(rows[0]);
-          const divider = header.map(() => '---');
-          const body = rows.slice(1).map(toCells);
-          const lines = [
-            `| ${header.join(' | ')} |`,
-            `| ${divider.join(' | ')} |`,
-            ...body.map((r) => `| ${r.join(' | ')} |`)
-          ];
-          return `${lines.join('\n')}\n\n`;
-        }
-        if (/^H[4-6]$/.test(tag)) {
-          const level = Number.parseInt(tag[1], 10);
-          return `${'#'.repeat(level)} ${node.textContent?.trim() || ''}\n\n`;
-        }
-        if (tag === 'BLOCKQUOTE') {
-          const text = node.textContent?.trim() || '';
-          return `${text.split('\n').map((line) => `> ${line}`).join('\n')}\n\n`;
-        }
-        if (tag === 'HR') return '---\n\n';
-
-        return [...node.children].map((child) => blockMarkdownFromNode(child, depth)).join('');
-      }
-
-      function getSectionMarkdown(heading) {
-        if (!(heading instanceof HTMLElement)) return '';
-        const headingLevel = Number.parseInt(heading.tagName[1], 10);
-        const headingClone = heading.cloneNode(true);
-        if (headingClone instanceof HTMLElement) {
-          headingClone.querySelector('.heading-share')?.remove();
-        }
-        const title = headingClone.textContent?.replace(/\s+/g, ' ').trim() || heading.id;
-        const parts = [`${'#'.repeat(headingLevel)} ${title}`, ''];
-
-        let cursor = heading.nextElementSibling;
-        while (cursor) {
-          if (
-            cursor instanceof HTMLElement &&
-            /^H[2-6]$/.test(cursor.tagName) &&
-            Number.parseInt(cursor.tagName[1], 10) <= headingLevel
-          ) {
-            break;
-          }
-          parts.push(blockMarkdownFromNode(cursor).trimEnd());
-          cursor = cursor.nextElementSibling;
-        }
-
-        return parts.filter(Boolean).join('\n\n').trim();
-      }
-
-      function getSectionUrl(id) {
-        const url = new URL(window.location.href);
-        url.hash = '';
-        url.hash = id;
-        return url.toString();
-      }
-
-      function getDocsI18n() {
-        const el = document.getElementById('docs-i18n');
-        return {
-          copied: el?.dataset.copied || 'Copied!',
-          shareSection: el?.dataset.shareSection || 'Share section',
-          copySection: el?.dataset.copySection || 'Copy section',
-          copySectionLink: el?.dataset.copySectionLink || 'Copy section link',
-          copySectionLinkDesc: el?.dataset.copySectionLinkDesc || 'Copy direct URL to clipboard',
-          copyMd: el?.dataset.copyMd || 'Copy as markdown',
-          copyMdDesc: el?.dataset.copyMdDesc || 'Copy section Markdown content',
-          viewMd: el?.dataset.viewMd || 'View Page as Markdown',
-          viewMdDesc: el?.dataset.viewMdDesc || 'Open the Markdown file in a new tab',
-        };
-      }
-
-      function indicateCopied(button) {
-        if (!(button instanceof HTMLElement)) return;
-        const i18n = getDocsI18n();
-        button.classList.add('copied');
-        const label = button.querySelector('.heading-share-menu-text');
-        const previous = button.dataset.defaultLabel || label?.textContent || '';
-        if (label) label.textContent = i18n.copied;
-        window.setTimeout(() => {
-          button.classList.remove('copied');
-          if (label && previous) label.textContent = previous;
-        }, 1200);
-      }
-
-      function initHeadingShareLinks() {
-        const article = document.querySelector('.article-content');
-        if (!article) return;
-
-        article.querySelectorAll('.heading-share').forEach((node) => node.remove());
-
-        const headings = article.querySelectorAll('h2[id], h3[id]');
-        const markdownHref = buildMarkdownHref();
-        headings.forEach((heading) => {
-          const id = heading.getAttribute('id');
-          if (!id) return;
-
-          const shareId = `share-${id}`;
-          const menuId = `${shareId}-menu`;
-          const root = document.createElement('span');
-          root.className = 'heading-share';
-          root.dataset.shareId = shareId;
-
-          const trigger = document.createElement('button');
-          trigger.type = 'button';
-          trigger.className = 'heading-share-trigger';
-          const i18n = getDocsI18n();
-          trigger.setAttribute('aria-label', i18n.shareSection);
-          trigger.setAttribute('aria-haspopup', 'menu');
-          trigger.setAttribute('aria-expanded', 'false');
-          trigger.setAttribute('aria-controls', menuId);
-          trigger.innerHTML = '<span class="heading-share-trigger-main"><span class="heading-share-trigger-label">' + i18n.copySection + '</span></span><span class="heading-share-trigger-caret-wrap"><span class="heading-share-trigger-caret" aria-hidden="true">v</span></span>';
-
-          const menu = document.createElement('div');
-          menu.className = 'heading-share-menu';
-          menu.id = menuId;
-          menu.setAttribute('role', 'menu');
-          menu.hidden = true;
-
-          const sectionBtn = document.createElement('button');
-          sectionBtn.type = 'button';
-          sectionBtn.className = 'heading-share-menu-item';
-          sectionBtn.setAttribute('role', 'menuitem');
-          sectionBtn.dataset.defaultLabel = i18n.copySectionLink;
-          sectionBtn.innerHTML = '<span class="heading-share-menu-text">' + i18n.copySectionLink + '</span><span class="heading-share-menu-sub">' + i18n.copySectionLinkDesc + '</span>';
-          sectionBtn.addEventListener('click', async (event) => {
-            event.preventDefault();
-            const href = getSectionUrl(id);
-            try {
-              await copyToClipboard(href);
-              indicateCopied(sectionBtn);
-            } catch {
-              window.location.hash = id;
-            }
-            closeAllShareMenus();
-          });
-
-          const markdownCopyBtn = document.createElement('button');
-          markdownCopyBtn.type = 'button';
-          markdownCopyBtn.className = 'heading-share-menu-item';
-          markdownCopyBtn.setAttribute('role', 'menuitem');
-          markdownCopyBtn.dataset.defaultLabel = i18n.copyMd;
-          markdownCopyBtn.innerHTML = '<span class="heading-share-menu-text">' + i18n.copyMd + '</span><span class="heading-share-menu-sub">' + i18n.copyMdDesc + '</span>';
-          markdownCopyBtn.addEventListener('click', async (event) => {
-            event.preventDefault();
-            const sectionContent = getSectionMarkdown(heading);
-            try {
-              if (!sectionContent) throw new Error('section-not-found');
-              await copyToClipboard(sectionContent);
-              indicateCopied(markdownCopyBtn);
-            } catch {
-              const href = getSectionUrl(id);
-              await copyToClipboard(href).catch(() => {
-                window.location.hash = id;
-              });
-            }
-            closeAllShareMenus();
-          });
-
-          const markdownLink = document.createElement('a');
-          markdownLink.className = 'heading-share-menu-item heading-share-menu-link';
-          markdownLink.setAttribute('role', 'menuitem');
-          markdownLink.target = '_blank';
-          markdownLink.rel = 'noopener noreferrer';
-          markdownLink.innerHTML = '<span class="heading-share-menu-text">' + i18n.viewMd + '</span><span class="heading-share-menu-sub">' + i18n.viewMdDesc + '</span>';
-          if (markdownHref) {
-            markdownLink.href = markdownHref;
-          } else {
-            markdownLink.href = '#';
-            markdownLink.setAttribute('aria-disabled', 'true');
-          }
-
-          trigger.addEventListener('click', (event) => {
-            event.preventDefault();
-            const isOpen = !menu.hidden;
-            closeAllShareMenus(shareId);
-            menu.hidden = isOpen;
-            trigger.setAttribute('aria-expanded', String(!isOpen));
-            if (!isOpen) {
-              const first = menu.querySelector(MENU_ITEM_SELECTOR);
-              if (first instanceof HTMLElement) first.focus();
-            }
-          });
-
-          root.addEventListener('keydown', (event) => {
-            if (menu.hidden) return;
-            const items = [...menu.querySelectorAll(MENU_ITEM_SELECTOR)];
-            if (items.length === 0) return;
-            const active = document.activeElement;
-            const index = items.indexOf(active);
-
-            if (event.key === 'Escape') {
-              event.preventDefault();
-              closeAllShareMenus();
-              trigger.focus();
-              return;
-            }
-
-            if (event.key === 'ArrowDown') {
-              event.preventDefault();
-              const next = index < 0 ? 0 : (index + 1) % items.length;
-              items[next].focus();
-              return;
-            }
-
-            if (event.key === 'ArrowUp') {
-              event.preventDefault();
-              const prev = index < 0 ? items.length - 1 : (index - 1 + items.length) % items.length;
-              items[prev].focus();
-            }
-          });
-
-          menu.append(sectionBtn, markdownCopyBtn, markdownLink);
-          root.append(trigger, menu);
-          heading.appendChild(root);
-        });
-
-        if (!window.rediaccHeadingShareGlobalEvents) {
-          window.rediaccHeadingShareGlobalEvents = true;
-          document.addEventListener('click', (event) => {
-            const target = event.target;
-            if (!(target instanceof Element)) return;
-            if (target.closest('.heading-share')) return;
-            closeAllShareMenus();
-          });
-
-          document.addEventListener('keydown', (event) => {
-            if (event.key !== 'Escape') return;
-            closeAllShareMenus();
-          });
+      /* Bring a rail's active link into view WITHOUT Element.scrollIntoView.
+         scrollIntoView walks every scrollable ancestor up to and including the
+         document, so nudging a link inside the 250px rail also scrolled the
+         article out from under the reader. Arithmetic on the rail's own
+         scrollTop touches nothing else. Guarded on the rail actually being a
+         scroll container: with a max-height rail, a short TOC is not one, and
+         scrolling it is both pointless and a no-op we should not pay for. */
+      function revealInRail(nav, el) {
+        if (!nav || !el) return;
+        if (nav.scrollHeight <= nav.clientHeight) return;
+        var navBox = nav.getBoundingClientRect();
+        var elBox = el.getBoundingClientRect();
+        var margin = 24;
+        if (elBox.top < navBox.top + margin) {
+          nav.scrollTop -= (navBox.top + margin) - elBox.top;
+        } else if (elBox.bottom > navBox.bottom - margin) {
+          nav.scrollTop += elBox.bottom - (navBox.bottom - margin);
         }
       }
-
-      function init() {
-        try {
-          initHeadingShareLinks();
-        } catch {
-          // Keep docs usable even if share UI fails.
-          closeAllShareMenus();
-        }
-      }
-
-      if (!window.rediaccHeadingShareLinksInitialized) {
-        window.rediaccHeadingShareLinksInitialized = true;
-        document.addEventListener('astro:page-load', init);
-        if (document.readyState === 'loading') {
-          document.addEventListener('DOMContentLoaded', init);
-        } else {
-          init();
-        }
-      } else {
-        init();
-      }
-    })();
-  </script>
-
-  <script is:inline>
-    // Initialize active state tracking for TOC as user scrolls
-    (function() {
-      // Prevent multiple initializations
-      if (window.rediaccTOCInitialized) return;
-      window.rediaccTOCInitialized = true;
 
       function initTOCActiveState() {
-        const container = document.querySelector('.toc-sidebar');
+        var container = document.querySelector('.toc-sidebar');
         if (!container) return; // No TOC sidebar on this page
 
-        const shouldTrack = container.getAttribute('data-track') === 'true';
-        if (!shouldTrack) return;
+        if (container.getAttribute('data-track') !== 'true') return;
 
-        const selector = container.getAttribute('data-selector') || '.article-content h2, .article-content h3, .article-content h4';
-        const headings = document.querySelectorAll(selector);
+        var selector = container.getAttribute('data-selector') || '.article-content h2, .article-content h3, .article-content h4';
+        var headings = Array.prototype.slice.call(document.querySelectorAll(selector));
         if (headings.length === 0) return; // No headings to track
 
-        const observer = new IntersectionObserver((entries) => {
-          entries.forEach(entry => {
-            const id = entry.target.id;
-            if (!id) return;
+        var nav = container.querySelector('.sidebar-nav');
+        order = headings.map(function(h) { return h.id; }).filter(Boolean);
+        visible = new Set();
 
-            const tocLink = container?.querySelector(`a[href="#${id}"]`);
-            if (!tocLink) return;
-
-            if (entry.isIntersecting) {
-              // Remove active class from all links
-              container?.querySelectorAll('a').forEach(link => {
-                link.classList.remove('active');
-              });
-
-              // Add active class to current link
-              tocLink.classList.add('active');
-
-              // Update collapsible group active state
-              container?.querySelectorAll('.toc-group').forEach(g => g.classList.remove('toc-group-active'));
-              const parentGroup = tocLink.closest('.toc-group');
-              if (parentGroup) {
-                parentGroup.classList.add('toc-group-active');
-              }
-            }
+        function paint() {
+          var activeId = null;
+          for (var i = 0; i < order.length; i++) {
+            if (visible.has(order[i])) { activeId = order[i]; break; }
+          }
+          if (!activeId) return;
+          var link = container.querySelector('a[href="#' + CSS.escape(activeId) + '"]');
+          if (!link || link.classList.contains('active')) return;
+          container.querySelectorAll('a.active').forEach(function(a) {
+            a.classList.remove('active');
           });
+          link.classList.add('active');
+          revealInRail(nav, link);
+        }
+
+        /* The band's top edge is the site's one anchor offset, read from the
+           computed scroll-padding-top rather than hardcoded. A literal is wrong
+           in one of the two announcement-bar states, because
+           --announcement-bar-height is written at runtime by AnnouncementBar. */
+        var pad = parseFloat(getComputedStyle(document.documentElement).scrollPaddingTop);
+        if (!isFinite(pad)) pad = 0;
+
+        observer = new IntersectionObserver(function(entries) {
+          entries.forEach(function(entry) {
+            var id = entry.target.id;
+            if (!id) return;
+            if (entry.isIntersecting) visible.add(id);
+            else visible.delete(id);
+          });
+          paint();
         }, {
-          rootMargin: '-100px 0px -66%'
+          rootMargin: '-' + Math.round(pad) + 'px 0px -66% 0px'
         });
 
-        // Start observing all headings
-        headings.forEach(heading => {
-          observer.observe(heading);
-        });
-
-        // Expand first group by default so page doesn't start fully collapsed
-        const firstGroup = container?.querySelector('.toc-group');
-        if (firstGroup) firstGroup.classList.add('toc-group-active');
+        headings.forEach(function(heading) { observer.observe(heading); });
       }
 
-      // Initialize on load events
       function init() {
+        if (observer) { observer.disconnect(); observer = null; }
         initTOCActiveState();
       }
 
@@ -690,21 +419,253 @@ const useGrouped = isCollapsible && tocGroups.length > 0;
     })();
   </script>
 
+  <script is:inline>
+    // Light / Dark / Auto.
+    //
+    // The pre-paint block in BaseLayout owns the RULE (an explicit
+    // localStorage['theme'] wins; otherwise the clock plus the OS preference).
+    // This control only writes that key, so Auto is `removeItem`, not a third
+    // stored value: a stored "auto" would be a second source of truth for the
+    // same decision. The class flip is repeated here because the pre-paint
+    // block runs once, before this element exists.
+    (function() {
+      var STORE = 'theme';
+      var menuOpen = false;
+
+      function stored() {
+        try {
+          var v = localStorage.getItem(STORE);
+          return v === 'dark' || v === 'light' ? v : null;
+        } catch (e) {
+          return null;
+        }
+      }
+
+      function resolve() {
+        var explicit = stored();
+        if (explicit) return explicit;
+        var hour = new Date().getHours();
+        if (hour >= 20 || hour < 6) return 'dark';
+        return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches
+          ? 'dark'
+          : 'light';
+      }
+
+      function applyTheme() {
+        var theme = resolve();
+        document.documentElement.dataset.theme = theme;
+        var meta = document.querySelector('meta[name="theme-color"]');
+        if (meta) meta.content = theme === 'dark' ? '#0f0f10' : '#4a7c3f';
+      }
+
+      function syncChecked(root) {
+        var current = stored() || 'auto';
+        root.querySelectorAll('.docs-theme-option').forEach(function(opt) {
+          opt.setAttribute('aria-checked', String(opt.dataset.themeChoice === current));
+        });
+      }
+
+      /* The two document-level listeners are registered ONCE, here, and read the
+         live control through `current`. Registering them inside init would add
+         a pair per initialisation and leave every old pair holding a reference
+         to a control that is no longer in the document -- a slower version of
+         exactly the lifecycle bug this wave removes. */
+      var current = null;
+
+      function setOpen(next) {
+        if (!current) return;
+        menuOpen = next;
+        current.menu.hidden = !next;
+        current.trigger.setAttribute('aria-expanded', String(next));
+      }
+
+      function close(returnFocus) {
+        var trigger = current && current.trigger;
+        setOpen(false);
+        if (returnFocus && trigger) trigger.focus();
+      }
+
+      document.addEventListener('keydown', function(event) {
+        if (event.key === 'Escape' && menuOpen) close(true);
+      });
+
+      document.addEventListener('mousedown', function(event) {
+        if (menuOpen && current && !current.root.contains(event.target)) close(false);
+      });
+
+      function initThemeControl() {
+        var root = document.querySelector('.docs-theme');
+        if (!root) { current = null; return; }
+
+        var trigger = root.querySelector('.docs-theme-trigger');
+        var menu = root.querySelector('.docs-theme-menu');
+        if (!trigger || !menu) { current = null; return; }
+        var options = Array.prototype.slice.call(menu.querySelectorAll('.docs-theme-option'));
+        current = { root: root, trigger: trigger, menu: menu, options: options };
+        menuOpen = !menu.hidden;
+
+        syncChecked(root);
+        if (root.dataset.themeInit === 'true') return;
+        root.dataset.themeInit = 'true';
+
+        trigger.addEventListener('click', function() {
+          setOpen(!menuOpen);
+          if (menuOpen) {
+            syncChecked(root);
+            var checked = options.find(function(o) { return o.getAttribute('aria-checked') === 'true'; });
+            (checked || options[0]).focus();
+          }
+        });
+
+        options.forEach(function(opt, index) {
+          opt.addEventListener('click', function() {
+            var choice = opt.dataset.themeChoice;
+            try {
+              if (choice === 'auto') localStorage.removeItem(STORE);
+              else localStorage.setItem(STORE, choice);
+            } catch (e) { /* private mode: the choice just does not persist */ }
+            applyTheme();
+            syncChecked(root);
+            close(true);
+          });
+          opt.addEventListener('keydown', function(event) {
+            if (event.key === 'ArrowDown') {
+              event.preventDefault();
+              options[(index + 1) % options.length].focus();
+            } else if (event.key === 'ArrowUp') {
+              event.preventDefault();
+              options[(index - 1 + options.length) % options.length].focus();
+            } else if (event.key === 'Home') {
+              event.preventDefault();
+              options[0].focus();
+            } else if (event.key === 'End') {
+              event.preventDefault();
+              options[options.length - 1].focus();
+            }
+          });
+        });
+      }
+
+      document.addEventListener('astro:page-load', initThemeControl);
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initThemeControl);
+      } else {
+        initThemeControl();
+      }
+    })();
+  </script>
+
+  <script is:inline>
+    /* The docs search trigger is delegated on `document`, not bound to the
+       button. Delegation survives an Astro view transition replacing the header
+       without any rebinding, which is exactly the failure mode the set-once
+       guards elsewhere in this file used to create. */
+    (function() {
+      document.addEventListener('click', function(event) {
+        var trigger = event.target instanceof Element
+          ? event.target.closest('[data-docs-search-open]')
+          : null;
+        if (!trigger) return;
+        event.preventDefault();
+        document.dispatchEvent(new CustomEvent('docs-search:open'));
+      });
+    })();
+  </script>
+
+  <script is:inline>
+    // One copy button per code block.
+    //
+    // This replaces a 336-line script that injected a 141px split button into
+    // every h2 and h3 -- including a whole HTML-to-Markdown converter shipped to
+    // the browser to serve one menu item. That control was permanently visible,
+    // it left every heading's accessible name reading
+    // "IntroductionCopy sectionvCopy section link...", and in Arabic it covered
+    // the first 40px of the heading text. Deep links still work: the ids come
+    // from remark, not from that script.
+    (function() {
+      function initCodeCopy() {
+        var i18n = document.getElementById('docs-i18n');
+        var copyLabel = (i18n && i18n.dataset.copyCode) || 'Copy code';
+        var copiedLabel = (i18n && i18n.dataset.copied) || 'Copied!';
+
+        document.querySelectorAll('.article-content pre').forEach(function(pre) {
+          if (pre.dataset.copyBound === 'true') return;
+          pre.dataset.copyBound = 'true';
+
+          var btn = document.createElement('button');
+          btn.type = 'button';
+          btn.className = 'code-copy';
+          btn.setAttribute('aria-label', copyLabel);
+          btn.title = copyLabel;
+          btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>';
+
+          btn.addEventListener('click', function() {
+            var code = pre.querySelector('code');
+            navigator.clipboard.writeText((code || pre).textContent || '').then(function() {
+              btn.classList.add('copied');
+              btn.setAttribute('aria-label', copiedLabel);
+              btn.title = copiedLabel;
+              setTimeout(function() {
+                btn.classList.remove('copied');
+                btn.setAttribute('aria-label', copyLabel);
+                btn.title = copyLabel;
+              }, 2000);
+            }).catch(function() {});
+          });
+
+          pre.appendChild(btn);
+        });
+      }
+
+      document.addEventListener('astro:page-load', initCodeCopy);
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initCodeCopy);
+      } else {
+        initCodeCopy();
+      }
+    })();
+  </script>
+
   <!-- Tutorial video hydration: mounts TutorialVideoPlayer for any .tutorial-video-container on the page. -->
   <script src="../scripts/tutorial-video-hydrate.ts"></script>
 
   <style>
+    /* No max-width and no `margin: 0 auto`. Centring a 1400px shell inside a
+       1920px viewport pushed the nav rail 260px in from the edge and the
+       article 551px in, which is what made the docs read narrow: the reader
+       paid for the whitespace on BOTH sides. The shell now spans the viewport
+       and the five-track grid below decides where the void goes. */
     .docs-shell {
-      max-width: 1400px;
-      margin: 0 auto;
       padding: calc(var(--nav-top-offset) + var(--space-4)) var(--space-4) var(--space-8) var(--space-4);
       font-family: 'Inter', var(--font-family);
-      --sidebar-top-offset: calc(3rem + var(--space-4) + var(--space-4));
+
+      /* The rail's sticky top has to clear the fixed nav AND the sticky docs
+         chrome under it. --docs-chrome-height is the chrome's height; it is
+         declared once in main.css because html:has() needs to read it there
+         too, and the tab links in DocsTopTabs size themselves from it. */
+      --sidebar-top-offset: calc(var(--docs-chrome-height, 3rem) + var(--space-4) + var(--space-4));
+
+      --docs-rail-nav: 250px;
+      --docs-rail-toc: 250px;
+      --docs-measure: 800px;
+      --docs-slack: 1fr;
+    }
+
+    /* A cheat sheet is a reference table, not prose: it wants every pixel, so
+       the measure takes the free space and the slack track gets none.
+       Declared HERE rather than in CheatSheetGrid because Astro's scoping adds
+       an attribute to every selector in this block, so `.docs-shell` here is
+       (0,2,0) and the same selector written in the component's unscoped
+       `is:inline` block is (0,1,0) -- the component cannot win without
+       `!important`, which is exactly the escalation this rewrite removed.
+       Verified, not assumed: the first attempt put these two lines in
+       CheatSheetGrid and --docs-measure still computed to 800px. */
+    .docs-shell:has(.cs-cards) {
+      --docs-measure: 1fr;
+      --docs-slack: 0px;
     }
 
     .docs-shell.docs-shell-embed {
-      max-width: none;
-      margin: 0;
       padding: var(--space-3) var(--space-3) var(--space-5);
     }
 
@@ -715,13 +676,20 @@ const useGrouped = isCollapsible && tocGroups.length > 0;
       display: none !important;
     }
 
+    /* Two classes deep, so it outranks both the base .docs-layout rule and the
+       two responsive ones -- the embed has no rails at any width and must not
+       be re-columned by a breakpoint. */
     .docs-shell.docs-shell-embed .docs-layout {
-      grid-template-columns: 1fr;
+      grid-template-columns: minmax(0, 1fr);
       gap: 0;
     }
 
-    .docs-shell.docs-shell-embed .docs-article {
-      max-width: none;
+    /* One track, so the base rule's `grid-column: 3` would invent tracks 2 and
+       3 and push the article off the right of an embed that has no rails. */
+    .docs-shell.docs-shell-embed .docs-layout > :global(.docs-sidebar),
+    .docs-shell.docs-shell-embed .docs-layout > .docs-content,
+    .docs-shell.docs-shell-embed .docs-layout > .toc-sidebar {
+      grid-column: auto;
     }
 
     .docs-shell.docs-shell-embed .article-header {
@@ -729,31 +697,221 @@ const useGrouped = isCollapsible && tocGroups.length > 0;
       margin-bottom: var(--space-4);
     }
 
+    /* padding-bottom, not margin-bottom. A sticky element's margin is outside
+       its background box, so the 16px gap under the chrome was transparent and
+       article text scrolled visibly through it before disappearing behind the
+       bar. Padding puts that gap inside the opaque box. */
     .docs-shell-top {
       display: block;
-      margin-bottom: var(--space-4);
+      padding-bottom: var(--space-4);
       position: sticky;
       top: var(--nav-top-offset);
       z-index: 10;
       background: var(--color-bg-alt);
     }
 
+    /* A real flex container. This was `display: block` with an `align-items`
+       that block layout ignores, which is why DocsTopTabs' own `flex: 1` had
+       never done anything: it had no flex parent to be a child of. */
     .docs-header-row {
-      display: block;
+      display: flex;
       align-items: center;
+      gap: var(--space-4);
       border-bottom: 1px solid var(--color-border);
-      min-height: 3rem;
+      min-height: var(--docs-chrome-height, 3rem);
+    }
+
+    .docs-header-tools {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+      flex: 0 0 auto;
+    }
+
+    .docs-search-trigger {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-2);
+      max-inline-size: 14rem;
+      padding: var(--space-1) var(--space-3);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-sm);
+      background: var(--color-bg-alt);
+      color: var(--color-text-secondary);
+      font-family: inherit;
+      font-size: var(--font-size-sm);
+      line-height: var(--leading-normal);
+      cursor: pointer;
+      transition:
+        color var(--transition-duration-fast) var(--ease-standard),
+        border-color var(--transition-duration-fast) var(--ease-standard);
+    }
+
+    .docs-search-trigger:hover {
+      color: var(--color-text);
+      border-color: var(--color-text-muted);
+    }
+
+    .docs-search-trigger:focus-visible {
+      outline: 2px solid var(--color-brand-primary);
+      outline-offset: 2px;
+    }
+
+    .docs-search-trigger-text {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .docs-theme {
+      position: relative;
+    }
+
+    .docs-theme-trigger {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-2);
+      padding: var(--space-1) var(--space-2);
+      border: 1px solid transparent;
+      border-radius: var(--radius-sm);
+      background: none;
+      color: var(--color-text-secondary);
+      font-family: inherit;
+      font-size: var(--font-size-sm);
+      cursor: pointer;
+    }
+
+    .docs-theme-trigger:hover {
+      color: var(--color-text);
+      border-color: var(--color-border);
+    }
+
+    /* The label is translated, so its longest form is not something this
+       stylesheet can know. Clip it rather than let it set the row's min-content
+       width and push the page sideways. */
+    .docs-theme-trigger-text {
+      overflow: hidden;
+      max-inline-size: 8rem;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .docs-theme-caret {
+      flex-shrink: 0;
+      opacity: var(--opacity-65, 0.65);
+    }
+
+    .docs-theme-trigger:focus-visible {
+      outline: 2px solid var(--color-brand-primary);
+      outline-offset: 2px;
+    }
+
+    /* The trigger shows the theme in force, so exactly one of the two glyphs is
+       ever painted. Driven off the same data-theme attribute the pre-paint
+       block writes, so it is correct on the first frame. */
+    .docs-theme-icon-dark,
+    :global([data-theme='dark']) .docs-theme-icon-light {
+      display: none;
+    }
+
+    :global([data-theme='dark']) .docs-theme-icon-dark {
+      display: inline;
+    }
+
+    /* Anchored to its own button, not to the header row: a three-item control
+       does not need to reserve horizontal space it only uses while open.
+       inset-inline-end so it opens inward under RTL as well. */
+    .docs-theme-menu {
+      position: absolute;
+      inset-block-start: calc(100% + var(--space-1));
+      inset-inline-end: 0;
+      z-index: 20;
+      min-inline-size: 8rem;
+      padding: var(--space-1);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-sm);
+      background: var(--color-bg-alt);
+      box-shadow: var(--shadow-md, 0 4px 12px rgba(0, 0, 0, 0.12));
+    }
+
+    .docs-theme-menu[hidden] {
+      display: none;
+    }
+
+    .docs-theme-option {
+      display: block;
+      inline-size: 100%;
+      padding: var(--space-2) var(--space-3);
+      border: none;
+      border-radius: var(--radius-sm);
+      background: none;
+      color: var(--color-text);
+      font-family: inherit;
+      font-size: var(--font-size-sm);
+      text-align: start;
+      cursor: pointer;
+    }
+
+    .docs-theme-option:hover {
+      background: var(--color-hover);
+    }
+
+    .docs-theme-option[aria-checked='true'] {
+      font-weight: var(--font-weight-semibold);
+      background: var(--color-hover);
+    }
+
+    .docs-theme-option:focus-visible {
+      outline: 2px solid var(--color-brand-primary);
+      outline-offset: -2px;
     }
 
     .docs-sidebar-toggle {
       display: none;
     }
 
+    /* Five tracks, the second and fourth deliberately empty. An equal slack
+       track on EACH side of the measure is what centres the article; the
+       earlier four-track version put the single slack at the END, which parked
+       340px of dead space to the right of the TOC at 1920 and left the article
+       hard against the nav rail. With the slack split, the TOC is the LAST
+       track and lands against the inline end, one gutter from the viewport.
+       Docking content is usually written as `margin-inline-end: auto` or a
+       physical `padding-right`, and this layout's comment history records RTL
+       regressions from exactly that. Making the void a real grid TRACK means
+       the browser lays it out in the inline direction, so under dir=rtl the
+       whole thing mirrors with no second rule and no physical property.
+       The article cap lives on the measure track rather than on .docs-article,
+       so a page that wants the full width (a cheat sheet) redefines one custom
+       property instead of fighting a max-width with !important. */
     .docs-layout {
       display: grid;
-      grid-template-columns: 250px 1fr 250px;
+      grid-template-columns:
+        var(--docs-rail-nav)
+        minmax(0, var(--docs-slack))
+        minmax(0, var(--docs-measure))
+        minmax(0, var(--docs-slack))
+        var(--docs-rail-toc);
       gap: var(--space-8);
       padding: 0;
+    }
+
+    /* Explicit placement, because auto-placement fills tracks in DOM order and
+       would drop the article into the first slack track and the TOC into the
+       measure. Every rule that changes the track COUNT (the embed override and
+       the two max-width breakpoints below) has to hand these back to `auto`,
+       or a definite column 3 or 5 conjures implicit tracks in a grid that only
+       has one or two. */
+    .docs-layout > :global(.docs-sidebar) {
+      grid-column: 1;
+    }
+
+    .docs-layout > .docs-content {
+      grid-column: 3;
+    }
+
+    .docs-layout > .toc-sidebar {
+      grid-column: 5;
     }
 
 
@@ -773,13 +931,9 @@ const useGrouped = isCollapsible && tocGroups.length > 0;
       box-shadow: none;
     }
 
+    /* No max-width. The measure is the grid track's job now; see .docs-layout. */
     .docs-article {
-      max-width: var(--container-md);
       overflow-wrap: break-word;
-    }
-
-    .docs-article-index {
-      max-width: none;
     }
 
     /* Fallback Notice */
@@ -831,7 +985,7 @@ const useGrouped = isCollapsible && tocGroups.length > 0;
     }
 
     .article-title {
-      font-size: clamp(1.75rem, 3vw, 2.5rem);
+      font-size: var(--font-size-3xl);
       line-height: var(--leading-tight);
       margin: var(--space-4) 0;
       color: var(--color-text);
@@ -847,10 +1001,10 @@ const useGrouped = isCollapsible && tocGroups.length > 0;
       border-radius: var(--radius-md);
       background: var(--color-surface);
       color: var(--color-text-muted);
-      font-size: 0.8rem;
+      font-size: var(--font-size-sm);
       cursor: pointer;
       white-space: nowrap;
-      transition: color 0.15s, border-color 0.15s;
+      transition: color var(--transition-duration-fast) var(--ease-standard), border-color var(--transition-duration-fast) var(--ease-standard);
     }
 
     .docs-copy-page-md:hover {
@@ -864,7 +1018,7 @@ const useGrouped = isCollapsible && tocGroups.length > 0;
     }
 
     .article-description {
-      font-size: 1.05rem;
+      font-size: var(--font-size-lg);
       color: var(--color-text-secondary);
       margin: var(--space-4) 0;
     }
@@ -979,7 +1133,7 @@ const useGrouped = isCollapsible && tocGroups.length > 0;
     .article-content :global(.cli-ref-links-label) {
       font-weight: var(--font-weight-semibold);
       color: var(--color-text);
-      margin-right: var(--space-2);
+      margin-inline-end: var(--space-2);
     }
 
     .article-content :global(.cli-ref-links a) {
@@ -987,143 +1141,69 @@ const useGrouped = isCollapsible && tocGroups.length > 0;
       text-underline-offset: 2px;
     }
 
-    .article-content :global(h2[id], h3[id]) {
+    /* Per-code-block copy control. Logical properties throughout: the control
+       it replaced used `right: 0` with `padding-right`, so under dir=rtl it sat
+       on top of the text it was meant to sit beside. */
+    .article-content :global(pre) {
       position: relative;
-      padding-right: 4.75rem;
     }
 
-    .article-content :global(.heading-share) {
+    .article-content :global(pre .code-copy) {
       position: absolute;
-      right: 0;
-      top: 50%;
-      transform: translateY(-50%);
-      z-index: 3;
-    }
-
-    .article-content :global(.heading-share-trigger) {
-      display: inline-flex;
-      align-items: center;
-      gap: 0;
-      border: 1px solid var(--color-border);
-      border-radius: var(--radius-sm);
-      background: var(--color-bg-alt);
-      color: var(--color-text-secondary);
-      font-size: var(--font-size-xs);
-      line-height: 1;
-      padding: 0;
-      cursor: pointer;
-      opacity: 1;
-      transition: background var(--transition-duration-fast) ease;
-      overflow: hidden;
-    }
-
-    .article-content :global(h2[id]:hover .heading-share-trigger),
-    .article-content :global(h3[id]:hover .heading-share-trigger),
-    .article-content :global(.heading-share-trigger:focus-visible),
-    .article-content :global(.heading-share-trigger[aria-expanded='true']) {
-      opacity: 1;
-      background: var(--color-hover);
-      color: var(--color-text);
-    }
-
-    .article-content :global(.heading-share-trigger-main) {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.35rem;
-      padding: 0.45rem 0.62rem;
-    }
-
-    .article-content :global(.heading-share-trigger-caret-wrap) {
+      inset-block-start: var(--space-2);
+      inset-inline-end: var(--space-2);
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      min-width: 1.8rem;
-      height: 100%;
-      border-left: 1px solid var(--color-border);
-      padding: 0.45rem 0.42rem;
-      background: var(--color-bg);
-    }
-
-    .article-content :global(.heading-share-trigger-label) {
-      font-size: var(--font-size-sm);
-      color: var(--color-text);
-      white-space: nowrap;
-    }
-
-    .article-content :global(.heading-share-trigger-caret) {
-      font-size: 0.62rem;
-      line-height: 1;
-      color: var(--color-text);
-    }
-
-    .article-content :global(.heading-share-menu) {
-      position: absolute;
-      top: calc(100% + 0.35rem);
-      right: 0;
-      width: min(18rem, 80vw);
-      border: 1px solid var(--color-border);
-      border-radius: var(--radius-sm);
-      background: var(--color-bg-alt);
-      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
-      padding: 0.25rem;
-      display: flex;
-      flex-direction: column;
-      gap: 0.2rem;
-      z-index: 12;
-    }
-
-    .article-content :global(.heading-share-menu[hidden]) {
-      display: none;
-    }
-
-    .article-content :global(.heading-share-menu-item) {
-      width: 100%;
-      display: flex;
-      flex-direction: column;
-      align-items: flex-start;
+      width: 1.75rem;
+      height: 1.75rem;
+      padding: 0;
       border: 0;
-      border-radius: var(--radius-xs);
+      border-radius: var(--radius-sm);
       background: transparent;
-      color: var(--color-text);
-      text-align: left;
-      text-decoration: none;
-      padding: 0.5rem 0.55rem;
+      color: rgba(255, 255, 255, var(--opacity-65));
       cursor: pointer;
+      opacity: 0;
+      transition: opacity var(--transition-duration-base) var(--ease-standard), color var(--transition-duration-base) var(--ease-standard);
     }
 
-    .article-content :global(.heading-share-menu-item:hover),
-    .article-content :global(.heading-share-menu-item:focus-visible) {
-      background: var(--color-hover);
-      outline: none;
+    .article-content :global(pre:hover .code-copy),
+    .article-content :global(pre .code-copy:focus-visible) {
+      opacity: 1;
     }
 
-    .article-content :global(.heading-share-menu-text) {
-      font-size: var(--font-size-sm);
-      font-weight: var(--font-weight-semibold);
-      line-height: 1.2;
-      margin-bottom: 0.15rem;
+    .article-content :global(pre .code-copy:hover) {
+      color: white;
+      background: rgba(255, 255, 255, var(--opacity-10));
     }
 
-    .article-content :global(.heading-share-menu-sub) {
-      font-size: var(--font-size-xs);
-      color: var(--color-text-secondary);
-      line-height: 1.3;
+    .article-content :global(pre .code-copy.copied) {
+      opacity: 1;
+      color: var(--color-success, #7fa03f);
     }
 
-    .article-content :global(.heading-share-menu-item.copied .heading-share-menu-text) {
-      color: var(--color-success, #2f7a35);
-    }
-
-    .article-content :global(.heading-share-menu-link[aria-disabled='true']) {
-      opacity: 0.6;
-      pointer-events: none;
+    /* Coarse pointers have no hover, so the control is always visible there. */
+    @media (hover: none) {
+      .article-content :global(pre .code-copy) {
+        opacity: 1;
+      }
     }
 
     /* Responsive Design - TOC sidebar is hidden on tablets/phones (handled in sidebar-shared.css) */
     @media (max-width: 75rem) {
-      /* 1200px */
+      /* 1200px. The TOC rail is display:none here, so the grid drops to nav +
+         article and the article takes the whole remainder: there is no room
+         left to dock anything against. */
       .docs-layout {
-        grid-template-columns: 250px 1fr;
+        grid-template-columns: var(--docs-rail-nav) minmax(0, 1fr);
+      }
+
+      /* Two tracks now, so hand placement back to auto: rail then article, in
+         DOM order. */
+      .docs-layout > :global(.docs-sidebar),
+      .docs-layout > .docs-content,
+      .docs-layout > .toc-sidebar {
+        grid-column: auto;
       }
     }
 
@@ -1132,13 +1212,39 @@ const useGrouped = isCollapsible && tocGroups.length > 0;
         padding: calc(var(--nav-top-offset) + var(--space-3)) var(--space-2) var(--space-4) var(--space-2);
       }
 
+      /* The tab strip and the tools wrap onto two rows rather than the tabs
+         being squeezed to nothing beside them. */
       .docs-header-row {
-        align-items: stretch;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: var(--space-2);
+        padding-block: var(--space-2);
+      }
+
+      .docs-search-trigger {
+        max-inline-size: none;
+      }
+
+      /* Icon only: the row is already two lines here and the glyph plus caret
+         says everything the word did. aria-label on the trigger keeps the
+         accessible name. */
+      .docs-theme-trigger-text {
+        display: none;
       }
 
       /* 768px */
       .docs-layout {
-        grid-template-columns: 1fr;
+        grid-template-columns: minmax(0, 1fr);
+      }
+
+      /* One track, and .docs-sidebar-toggle becomes a grid item here. Auto for
+         every child keeps the toggle first in DOM order; pinning the other
+         three to column 1 while the toggle stayed auto placed it in the LAST
+         row instead of the first. */
+      .docs-layout > :global(.docs-sidebar),
+      .docs-layout > .docs-content,
+      .docs-layout > .toc-sidebar {
+        grid-column: auto;
       }
 
       .article-title {
@@ -1164,7 +1270,7 @@ const useGrouped = isCollapsible && tocGroups.length > 0;
         font-family: inherit;
         cursor: pointer;
         margin-bottom: var(--space-4);
-        transition: background-color 0.15s;
+        transition: background-color var(--transition-duration-fast) var(--ease-standard);
       }
 
       .docs-sidebar-toggle:hover {

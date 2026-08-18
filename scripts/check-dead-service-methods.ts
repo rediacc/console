@@ -167,10 +167,14 @@ function main(): number {
   const controlFailures = runControls();
   if (controlFailures.length) {
     for (const f of controlFailures) console.log(`${RED}x${NC} control: ${f}`);
-    console.log(`${RED}x${NC} the rule itself is broken, so no verdict it produces means anything.`);
+    console.log(
+      `${RED}x${NC} the rule itself is broken, so no verdict it produces means anything.`
+    );
     return 1;
   }
-  console.log(`${GREEN}v${NC} control fired: dead and this-only caught; called and private are not`);
+  console.log(
+    `${GREEN}v${NC} control fired: dead and this-only caught; called and private are not`
+  );
 
   const files = tracked();
   if (!files.length) {
@@ -198,7 +202,9 @@ function main(): number {
       console.log(`${RED}x${NC} ${f.file}: ${f.method}() ${why}`);
     }
     console.log();
-    console.log(`${RED}x${NC} ${findings.length} singleton-service method(s) with no external use.`);
+    console.log(
+      `${RED}x${NC} ${findings.length} singleton-service method(s) with no external use.`
+    );
     console.log('  knip cannot see class members, so nothing else in the suite catches these.');
     console.log('  A dead method reads as supported API to the next author, who then calls it.');
     return 1;

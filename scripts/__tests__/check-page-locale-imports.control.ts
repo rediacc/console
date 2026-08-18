@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+
 /**
  * Control harness for check-page-locale-imports.ts.
  *
@@ -26,10 +27,10 @@
  * Run: npx tsx scripts/__tests__/check-page-locale-imports.control.ts
  */
 
+import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -48,7 +49,7 @@ const CHEAT_SHEET_ASTRO = [
   '// so the deck ships inlined rather than fetched.',
   "import markdownSource from '../../../marp/rdc-cheat-sheet.marp.md?raw';",
   '',
-  '// The theme is injected with set:html to escape Marp\'s scoping.',
+  "// The theme is injected with set:html to escape Marp's scoping.",
   '',
   "import themeCss from '../../../styles/marp-cheatsheet.css?raw';",
   '---',
@@ -123,26 +124,33 @@ const CASES: Case[] = [
   },
   {
     name: 'a layout is scanned, not just a page',
-    files: { 'layouts/L.astro': "---\nimport md from '../content/docs/en/quick-start.md?raw';\n---\n" },
+    files: {
+      'layouts/L.astro': "---\nimport md from '../content/docs/en/quick-start.md?raw';\n---\n",
+    },
     wantExit: 'non-zero',
     wantNamed: ['layouts/L.astro:2'],
   },
   {
     name: 'importing src/content/docs/en/ without ?raw is still hardcoding English',
-    files: { 'pages/x.astro': "---\nimport d from '../content/docs/en/rdc-cheat-sheet.md';\n---\n" },
+    files: {
+      'pages/x.astro': "---\nimport d from '../content/docs/en/rdc-cheat-sheet.md';\n---\n",
+    },
     wantExit: 'non-zero',
     wantNamed: ['content/docs/en/rdc-cheat-sheet.md', 'ENGLISH copy'],
   },
   {
     name: 'a dynamic import of the English copy is caught as well',
-    files: { 'pages/x.astro': "---\nconst d = await import('../content/docs/en/tools.md');\n---\n" },
+    files: {
+      'pages/x.astro': "---\nconst d = await import('../content/docs/en/tools.md');\n---\n",
+    },
     wantExit: 'non-zero',
     wantNamed: ['content/docs/en/tools.md'],
   },
   {
     name: 'a commented-out markdown ?raw import is prose, not an import',
     files: {
-      'pages/x.astro': "---\n// import md from '../content/docs/en/a.md?raw';\n/* import b from './b.md?raw'; */\n---\n<!-- import c from './c.md?raw'; -->\n",
+      'pages/x.astro':
+        "---\n// import md from '../content/docs/en/a.md?raw';\n/* import b from './b.md?raw'; */\n---\n<!-- import c from './c.md?raw'; -->\n",
     },
     wantExit: 'zero',
   },
@@ -188,7 +196,12 @@ function main(): void {
     if (!ok) {
       if (missing.length > 0) console.log(`        never named: ${missing.join(', ')}`);
       if (present.length > 0) console.log(`        wrongly named: ${present.join(', ')}`);
-      console.log(res.output.split('\n').map((l) => `        ${l}`).join('\n'));
+      console.log(
+        res.output
+          .split('\n')
+          .map((l) => `        ${l}`)
+          .join('\n')
+      );
     }
   }
 
@@ -199,17 +212,21 @@ function main(): void {
   fs.rmSync(empty, { recursive: true, force: true });
   const emptyOk = emptyRes.code !== 0 && emptyRes.output.includes('Refusing to run');
   failures += emptyOk ? 0 : 1;
-  console.log(`${emptyOk ? '  ok  ' : '  FAIL'} a missing pages/ root REFUSES rather than reporting a clean scan`);
+  console.log(
+    `${emptyOk ? '  ok  ' : '  FAIL'} a missing pages/ root REFUSES rather than reporting a clean scan`
+  );
 
   if (failures > 0) {
     console.error(
       `\n✗ ${failures} control case(s) failed. check-page-locale-imports cannot be trusted:\n` +
-        '  either it no longer catches a page pinned to one locale\'s content, or it now rejects\n' +
+        "  either it no longer catches a page pinned to one locale's content, or it now rejects\n" +
         '  the locale-independent `?raw` imports that sat four lines from the real defect.'
     );
     process.exit(1);
   }
-  console.log(`\n✓ ${CASES.length + 1} control cases: the rule separates a markdown ?raw import from a CSS one, a comment and an out-of-scope file`);
+  console.log(
+    `\n✓ ${CASES.length + 1} control cases: the rule separates a markdown ?raw import from a CSS one, a comment and an out-of-scope file`
+  );
 }
 
 main();

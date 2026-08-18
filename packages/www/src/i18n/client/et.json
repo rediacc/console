@@ -1,0 +1,327 @@
+{
+  "captchaRequired": "Palun läbi captcha kontroll.",
+  "common": {
+    "close": "Sulge",
+    "logoAlt": "Rediacc - Infrastruktuuri Automatiseerimisplatvorm",
+    "buttons": {
+      "close": "Sulge",
+      "learnMore": "Loe lähemalt",
+      "getStarted": "Alusta"
+    },
+    "search": {
+      "placeholder": "Otsi dokumentatsiooni, lahendusi, funktsioone...",
+      "searching": "Otsin...",
+      "noResults": "Tulemusi ei leitud",
+      "closeModal": "Sulge otsing",
+      "suggestions": {
+        "title": "Proovi:",
+        "differentKeywords": "Erinevaid märksõnu või lühemaid termineid",
+        "checkSpelling": "Kontrolli õigekirja",
+        "browseSolutions": "Sirvi meie lahenduste lehte",
+        "contactSupport": "Võta ühendust meie tugimeeskonnaga"
+      },
+      "results": "Otsingutulemused",
+      "unavailable": "Otsing pole saadaval",
+      "unavailableMessage": "Otsingurakendit ei õnnestunud laadida. Proovi lehte uuendada või võta ühendust toega, kui probleem püsib."
+    },
+    "aria": {
+      "mainNavigation": "Peamine navigatsioon",
+      "previousImage": "Eelmine pilt",
+      "nextImage": "Järgmine pilt",
+      "zoomIn": "Suurenda",
+      "zoomOut": "Vähenda",
+      "resetZoom": "Lähtesta suum",
+      "closeImageModal": "Sulge pildivorm",
+      "imageViewer": "Pildivaataja",
+      "opensInNewTab": "avaneb uuel vahekaardil",
+      "tableOfContents": "Sisukord",
+      "docsSections": "Dokumendi jaotised",
+      "documentationNavigation": "Dokumentatsiooni navigatsioon",
+      "breadcrumbNavigation": "Leivaküljenduse navigatsioon",
+      "rediaccHome": "Rediacc avaleht"
+    },
+    "skipNavigation": {
+      "skipToMainContent": "Hüppa põhisisu juurde",
+      "skipToNavigation": "Hüppa navigatsiooni juurde",
+      "skipToFooter": "Hüppa jaluse juurde"
+    }
+  },
+  "contactModal": {
+    "title": "Võta ühendust",
+    "description": "Kas sul on küsimus või soovid projekti arutada? Saada meile sõnum.",
+    "fields": {
+      "name": "Nimi",
+      "namePlaceholder": "Sinu nimi",
+      "email": "E-post",
+      "emailPlaceholder": "sina@ettevõte.ee",
+      "subject": "Teema",
+      "message": "Sõnum",
+      "messagePlaceholder": "Räägi meile oma projektist või küsimusest..."
+    },
+    "subjects": {
+      "general": "Üldine päring",
+      "technical": "Tehniline tugi",
+      "partnership": "Koostöö",
+      "disasterRecovery": "Avariitaaste",
+      "other": "Muu"
+    },
+    "submit": "Saada sõnum",
+    "sending": "Saadan...",
+    "success": "Sõnum saadetud! Vastame sulle 48 tunni jooksul.",
+    "error": "Midagi läks valesti. Proovi uuesti.",
+    "close": "Sulge"
+  },
+  "footer": {
+    "columns": {
+      "product": "Toode",
+      "organization": "Organisatsioon",
+      "legal": "Õiguslik"
+    },
+    "productLinks": {
+      "solutions": "Lahendused",
+      "overview": "Ülevaade",
+      "pricing": "Hinnad",
+      "professionalServices": "Professionaalsed teenused",
+      "partners": "Partnerprogramm",
+      "disasterRecovery": "Avariitaaste"
+    },
+    "organizationLinks": {
+      "aboutUs": "Meist",
+      "company": "Ettevõte",
+      "contact": "Kontakt"
+    },
+    "legalLinks": {
+      "termsOfService": "Teenuse tingimused",
+      "privacyPolicy": "Privaatsuspoliitika",
+      "cookiePolicy": "Küpsiste poliitika",
+      "refundPolicy": "Tagastuspoliitika",
+      "telemetryPolicy": "Telemetria poliitika",
+      "legalInformation": "Õiguslik teave"
+    },
+    "legalDisclosure": {
+      "summary": "{{companyName}} | Registrikood {{registryCode}} | KM-number {{vatNumber}} |",
+      "fullLegalInformation": "Täielik õiguslik teave"
+    }
+  },
+  "navigation": {
+    "moreOptions": "Rohkem valikuid",
+    "home": "Avaleht",
+    "blog": "Blogi",
+    "docs": "Dokumendid",
+    "contact": "Kontakt",
+    "downloads": "Allalaadimised",
+    "install": "Installi",
+    "pricing": "Hinnad",
+    "toggleMenu": "Lülita menüü",
+    "search": "Otsing",
+    "selectLanguage": "Vali keel",
+    "languageSelectionMenu": "Keele valimise menüü",
+    "login": "Logi sisse",
+    "footerNavigation": "Saidi navigatsioon",
+    "roiCalculator": "ROI kalkulaator",
+    "solutions": "Lahendused",
+    "disasterRecovery": "Avariitaaste",
+    "viewAllSolutions": "Vaata kõiki lahendusi",
+    "builtForYourRole": "Loodud sinu rollile",
+    "builtForYou": "Loodud sulle",
+    "forDevops": "DevOpsi inseneridele",
+    "forCtos": "CTO-dele",
+    "forCeos": "CEO-dele ja asutajatele",
+    "partners": "Partnerid",
+    "personas": {
+      "devops": {
+        "tagline": "Tarni kiiremini. Taasta koheselt. Maga rahulikult.",
+        "cta": "Alusta tasuta"
+      },
+      "cto": {
+        "tagline": "Vähenda TCO-d 60% võrra. Skaleeri oma riistvaral.",
+        "cta": "Broneeri demo"
+      },
+      "ceo": {
+        "tagline": "Etteaimatavad kulud. Null tarnija lukustust.",
+        "cta": "Vaata hindasid"
+      },
+      "ai-agent": {
+        "tagline": "CLI-esmane. JSON väljund. Agendisõbralik.",
+        "cta": "Vaata dokumentatsiooni"
+      }
+    },
+    "forAiAgents": "AI agentidele",
+    "account": "Konto"
+  },
+  "newsletter": {
+    "title": "Uudiskiri",
+    "description": "Üks e-kiri kuus — tooteuuendused ja isemajutamise näpunäited.",
+    "pageTitle": "Püsi kursis",
+    "pageDescription": "Üks e-kiri kuus. Uued funktsioonid, isemajutamise näpunäited ja valdkonnas raskuste käigus õpitud tunnid.",
+    "placeholder": "Sinu e-posti aadress",
+    "subscribe": "Telli",
+    "successMessage": "Vaata oma postkasti tellimuse kinnitamiseks.",
+    "errorGeneric": "Midagi läks valesti. Proovi uuesti.",
+    "confirmed": "Sinu tellimus on kinnitatud! Tere tulemast.",
+    "unsubscribed": "Oled tellimusest loobunud. Kahju, et lahkud.",
+    "blogCta": {
+      "title": "Meeldis see artikkel?",
+      "description": "Igal kuul saadame isemajutamise juhendeid ja tooteuuendusi. Soovid neid?"
+    },
+    "roiGate": {
+      "title": "Saa oma üksikasjalik ROI aruanne",
+      "description": "Sisesta oma e-post, et näha täielikku kulude jaotust ja kokkuhoiuanalüüsi.",
+      "unlock": "Vaata aruannet"
+    },
+    "returnPopup": {
+      "title": "Soovid juhendatud ülevaadet?",
+      "description": "Telli tooteuuendused ja broneeri meie meeskonnaga live-seadistamise kohtumine.",
+      "cta": "Telli ja broneeri kohtumine",
+      "close": "Sulge hüpikaken",
+      "note": "Kasutame sinu e-posti tooteuuenduste saatmiseks. Saad igal ajal tellimusest loobuda."
+    },
+    "privacyNote": "Austame sinu privaatsust. Loobu tellimusest igal ajal."
+  },
+  "pages": {
+    "solutionPages": {
+      "leadMagnetButton": {
+        "title": "Hangi tehniline ülevaade",
+        "description": "Otse asja juurde minev PDF, mis on kirjutatud CISO-dele, CTO-dele ja vaneminsenieridele. Saadame lingi e-postiga, et saaksid selle hiljem üles leida.",
+        "buttonLabel": "Laadi ülevaade alla",
+        "dismissLabel": "Sulge"
+      },
+      "leadMagnetModal": {
+        "title": "Hangi tehniline ülevaade",
+        "description": "Sisesta töö e-posti aadress. Saadame sulle PDF-i lingi ja hoiame koopia sinu postkastis.",
+        "emailLabel": "Töö e-post",
+        "emailPlaceholder": "you@company.com",
+        "submitLabel": "Saada mulle PDF",
+        "sendingLabel": "Saadan...",
+        "successTitle": "PDF on teel",
+        "successBody": "Avasime selle uuel vahekaardil ja saatsime sulle lingi e-postiga. Sulgen akna hetke pärast.",
+        "errorGeneric": "Midagi läks valesti. Proovi uuesti või võta ühendust aadressil support@rediacc.com.",
+        "captchaRequired": "Palun läbi captcha kinnitamine.",
+        "disclaimer": "Üks e-kiri. Turunduslistis ei osale. Tühista tellimus ühe klikiga.",
+        "closeLabel": "Sulge"
+      },
+      "environmentCloning": {
+        "hero": {
+          "title": "Klooni tootmiskeskkond 60 sekundiga"
+        }
+      },
+      "infrastructureCosts": {
+        "hero": {
+          "title": "Lõpeta maksmast jõudeolekus keskkondade eest"
+        }
+      },
+      "productionParity": {
+        "hero": {
+          "title": "Arenduskeskkonnad, mis vastavad tootmisele. Täpselt."
+        }
+      },
+      "integrations": {
+        "hero": {
+          "title": "Ühenda oma olemasoleva töövooguga"
+        }
+      },
+      "immutableBackups": {
+        "hero": {
+          "title": "Varukoopiad, mida lunavara ei puutu"
+        }
+      },
+      "migrationSafety": {
+        "hero": {
+          "title": "Migreeri ilma andmeid riskimata"
+        }
+      },
+      "instantRecovery": {
+        "hero": {
+          "title": "Täieliku keskkonna taastamine minutitega"
+        }
+      },
+      "safeOsTesting": {
+        "hero": {
+          "title": "Testige OS-i uuendusi riskivabalt"
+        }
+      },
+      "retentionCompliance": {
+        "hero": {
+          "title": "Hoidke andmeid nii kaua, kui seadus nõuab"
+        }
+      },
+      "cloudOutageProtection": {
+        "hero": {
+          "title": "Kui AWS läheb alla, teie ei lähe"
+        }
+      },
+      "failoverTesting": {
+        "hero": {
+          "title": "Testi oma tõrkeüleminek enne, kui seda vajad"
+        }
+      },
+      "backupVerification": {
+        "hero": {
+          "title": "Iga varukoopia kontrollitud. Automaatselt."
+        }
+      },
+      "vulnerabilityManagement": {
+        "hero": {
+          "title": "Paigake haavatavused enne ründajate saabumist"
+        }
+      },
+      "aiPentesting": {
+        "hero": {
+          "title": "Klooni tootmiskeskkond. Lase tehisintellektil seda rünnata."
+        }
+      },
+      "encryption": {
+        "hero": {
+          "title": "Teie võtmed. Teie krüpteerimine. Ilma eranditeta."
+        }
+      },
+      "continuousSecurityTesting": {
+        "hero": {
+          "title": "Testa turvalisust pidevalt. Mitte aastase intervalliga."
+        }
+      },
+      "auditTrail": {
+        "hero": {
+          "title": "Iga tegevus logitud. Mitte midagi peidetud."
+        }
+      },
+      "dataSovereignty": {
+        "hero": {
+          "title": "Suveräänne arhitektuuri järgi, mitte sertifikaadi järgi."
+        }
+      },
+      "rapidRecovery": {
+        "hero": {
+          "title": "Taasta minutitega. Mitte päevadega."
+        }
+      },
+      "kubernetesClusterMobility": {
+        "hero": {
+          "title": "Forki või vii üle töötav Kubernetese klaster"
+        }
+      },
+      "vendorLockIn": {
+        "hero": {
+          "title": "Teie taristu. Teie valik. Alati."
+        }
+      }
+    }
+  },
+  "regionPicker": {
+    "title": "Vali oma konto piirkond",
+    "subtitle": "Sinu konto, arveldus ja konfiguratsioonid jäävad valitud piirkonda.",
+    "reassurance": "Sinu serverite andmed ja varukoopiad jäävad sinu enda infrastruktuuri.",
+    "footer": "Vali endale lähim piirkond või see, mida sinu organisatsioon nõuab.",
+    "footerNote": "Pärast registreerumist ei saa seda muuta."
+  },
+  "solutions": {
+    "categories": {
+      "ransomware": "Lunavararünnakutest ellujäämine",
+      "multi-cloud": "Mitu pilve",
+      "backups": "Kontrollitud varukoopiad",
+      "encryption": "Krüptimise kontroll",
+      "dev-env": "Arenduskeskkonnad",
+      "defense": "Ennetav kaitse"
+    }
+  }
+}

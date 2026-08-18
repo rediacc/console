@@ -35,9 +35,8 @@ import SPComparisonTable from './SPComparisonTable.astro';
 import SPBottomCta from './SPBottomCta.astro';
 import SPDownloadGated from './SPDownloadGated.astro';
 import SPDownloadShort from './SPDownloadShort.astro';
-import SPTechStrip from './SPTechStrip.astro';
-import SPExploreSolutions from './SPExploreSolutions.astro';
-import SPReferences from './SPReferences.astro';
+import SolutionConstellation from './SolutionConstellation.astro';
+import { slugsForRole } from './constellation';
 import { createTranslator } from '../../i18n/utils';
 import type { Language } from '../../i18n/types';
 import { SOLUTION_PAGES, CATEGORY_CTA_MAP } from '../../config/solution-pages';
@@ -71,6 +70,12 @@ const ctaHref = rawCtaHref === 'CONSULTATION'
     ? rawCtaHref
     : `/${lang}${rawCtaHref}`;
 
+// Section heading for the constellation, from the harvested
+// `solutions.constellation.title` key. It replaced 21 identical per-page copies
+// of the same string in every locale. The transitional fallback to
+// `environmentCloning.explore.title` is gone with those arrays.
+const exploreHeading = t('solutions.constellation.title', 'Explore Other Solutions');
+
 // Breadcrumb items
 const pageTitle = (content as any).hero?.title ?? slug;
 const breadcrumbItems = [
@@ -89,7 +94,7 @@ const breadcrumbItems = [
   <div class="sp-page">
     <Breadcrumb items={breadcrumbItems} class="sp-breadcrumb" />
     {has('hero') && (
-      <SPHero lang={lang} hero={(content as any).hero} ctaHref={ctaHref} terminal={(content as any).terminal} />
+      <SPHero hero={(content as any).hero} ctaHref={ctaHref} />
     )}
 
     {has('stats') && (
@@ -97,7 +102,7 @@ const breadcrumbItems = [
     )}
 
     {has('problem') && (
-      <SPProblem problem={(content as any).problem} illustration={config.illustration} illustrationMobile={config.illustrationMobile} referenceItems={(content as any).references?.items} slug={slug} />
+      <SPProblem problem={(content as any).problem} referenceItems={(content as any).references?.items} slug={slug} />
     )}
 
     {has('video') && (
@@ -146,20 +151,14 @@ const breadcrumbItems = [
       <SPDownloadShort lang={lang} slug={slug} category={config.category} />
     )}
 
-    {has('techStrip') && config.techStrip && (
-      <SPTechStrip techStrip={(content as any).techStrip} items={config.techStrip} />
-    )}
-
     {has('exploreSolutions') && (
-      <SPExploreSolutions
-        explore={(content as any).explore}
-        currentSlug={slug}
+      <SolutionConstellation
         lang={lang}
+        preset="compact"
+        slugs={slugsForRole(config.role)}
+        currentSlug={slug}
+        heading={exploreHeading}
       />
-    )}
-
-    {has('references') && (
-      <SPReferences references={(content as any).references} />
     )}
   </div>
 
@@ -168,7 +167,6 @@ const breadcrumbItems = [
     data={{
       name: (content as any).hero?.title ?? '',
       description: t(`${metaPath}.description`),
-      serviceType: (content as any).hero?.badge ?? '',
       url: `${SITE_URL}/${lang}/solutions/${slug}`,
     }}
   />

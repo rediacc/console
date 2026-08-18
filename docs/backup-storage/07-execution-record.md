@@ -73,7 +73,7 @@ Recorded 2026-08-14. Each was asked with scored options and answered explicitly.
 2. **Quota: BOTH, with retention on top.** Fix the chain shape, make prune
    chain-aware, AND wire retention enforcement.
 3. **Restore: BUILD IT NOW.** Reverses the earlier "its own campaign" default.
-   Plan at `docs/agent/backup-storage/PLAN-chunkstore-restore.md`. DONE; see §1.
+   Plan at `agent/PLAN-chunkstore-restore.md`. DONE; see §1.
    The plan was right about the tree in every load-bearing claim I checked, and
    wrong about one convention: it said `--selftest` must plant an assertion in
    each new drill leg, but the drill uses ONE shared probe
@@ -541,8 +541,12 @@ the wrapper around it.**
 - **Bench deploy is plumbed, not run.** `scripts/dev/deploy-bench.sh` now carries
   the four `BACKUP_S3_*` entries in its `wrangler secret bulk` payload,
   defaulting from the `R2_*` values in `.env`. It cannot run from here because
-  `lib/cf-auth.sh` needs `CLOUDFLARE_API_TOKEN` or `CF_API_KEY` + `CF_EMAIL`, and
-  `.env` carries only `CF_EMAIL`. The operator runs it.
+  `lib/cf-auth.sh` needs `CLOUDFLARE_API_TOKEN` or `CF_GLOBAL_API_KEY` +
+  `CF_EMAIL`, and `.env` appeared to carry only `CF_EMAIL`. The operator runs it.
+  (Later finding: `.env` did carry the global key, under the name
+  `CF_GLOBAL_API_KEY`, while every consumer read the name `CF_API_KEY`. That
+  variable-name drift was repaired by renaming all consumers to
+  `CF_GLOBAL_API_KEY`.)
 - One earlier claim in this program that `wrangler.bench.toml` was missing was
   **wrong**. It is at `workers/account/`, which `deploy-bench.sh:52` points at
   via `WORKER_DIR`. The search that produced the claim only looked inside the

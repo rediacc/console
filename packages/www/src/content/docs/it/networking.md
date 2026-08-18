@@ -142,7 +142,7 @@ Questi usano la [sintassi delle etichette Traefik v3](https://doc.traefik.io/tra
    rdc machine infra push server-1
    ```
 
-2. Record DNS che puntano il tuo dominio all'IP pubblico del server (vedi [Configurazione DNS](#configurazione-dns) di seguito).
+2. Record DNS che puntano il tuo dominio all'IP pubblico del server (vedi [Configurazione DNS](#dns-configuration) di seguito).
 
 ### Aggiunta delle Etichette
 

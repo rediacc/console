@@ -1,0 +1,327 @@
+{
+  "captchaRequired": "Lütfen captcha doğrulamasını tamamlayın.",
+  "common": {
+    "close": "Kapat",
+    "logoAlt": "Rediacc - Altyapı Otomasyon Platformu",
+    "buttons": {
+      "close": "Kapat",
+      "learnMore": "Daha Fazla Bilgi",
+      "getStarted": "Başlayın"
+    },
+    "search": {
+      "placeholder": "Belgeleri, çözümleri, özellikleri arayın...",
+      "searching": "Aranıyor...",
+      "noResults": "Sonuç bulunamadı",
+      "closeModal": "Aramayı kapat",
+      "suggestions": {
+        "title": "Deneyin:",
+        "differentKeywords": "Farklı anahtar kelimeler veya daha kısa terimler deneyin",
+        "checkSpelling": "Yazımınızı kontrol edin",
+        "browseSolutions": "Çözümler sayfamıza göz atın",
+        "contactSupport": "Destek ekibimizle iletişime geçin"
+      },
+      "results": "Arama sonuçları",
+      "unavailable": "Arama Kullanılamıyor",
+      "unavailableMessage": "Arama dizini yüklenemedi. Lütfen sayfayı yenilemeyi deneyin veya sorun devam ederse destek ile iletişime geçin."
+    },
+    "aria": {
+      "mainNavigation": "Ana gezinme",
+      "previousImage": "Önceki resim",
+      "nextImage": "Sonraki resim",
+      "zoomIn": "Yakınlaştır",
+      "zoomOut": "Uzaklaştır",
+      "resetZoom": "Yakınlaştırmayı sıfırla",
+      "closeImageModal": "Görüntü modelini kapat",
+      "imageViewer": "Resim görüntüleyici",
+      "opensInNewTab": "yeni sekmede açılır",
+      "tableOfContents": "İçindekiler",
+      "docsSections": "Doküman bölümleri",
+      "documentationNavigation": "Dokümantasyon gezinmesi",
+      "breadcrumbNavigation": "Breadcrumb gezinmesi",
+      "rediaccHome": "Rediacc ana sayfa"
+    },
+    "skipNavigation": {
+      "skipToMainContent": "Ana içeriğe atla",
+      "skipToNavigation": "Navigasyona atla",
+      "skipToFooter": "Alt bilgiye atla"
+    }
+  },
+  "contactModal": {
+    "title": "İletişime Geçin",
+    "description": "Bir sorunuz mu var veya bir projeyi tartışmak mı istiyorsunuz? Bize mesaj gönderin.",
+    "fields": {
+      "name": "İsim",
+      "namePlaceholder": "Adınız",
+      "email": "E-posta",
+      "emailPlaceholder": "siz@sirket.com",
+      "subject": "Konu",
+      "message": "Mesaj",
+      "messagePlaceholder": "Projeniz veya sorunuz hakkında bilgi verin..."
+    },
+    "subjects": {
+      "general": "Genel Sorgu",
+      "technical": "Teknik Destek",
+      "partnership": "Ortaklık",
+      "disasterRecovery": "Felaket Kurtarma",
+      "other": "Diğer"
+    },
+    "submit": "Mesaj Gönder",
+    "sending": "Gönderiliyor...",
+    "success": "Mesaj gönderildi! 48 saat içinde size dönüş yapacağız.",
+    "error": "Bir hata oluştu. Lütfen tekrar deneyin.",
+    "close": "Kapat"
+  },
+  "footer": {
+    "columns": {
+      "product": "Ürün",
+      "organization": "Şirket",
+      "legal": "Yasal"
+    },
+    "productLinks": {
+      "solutions": "Çözümler",
+      "overview": "Genel Bakış",
+      "pricing": "Fiyatlar",
+      "professionalServices": "Profesyonel Hizmetler",
+      "partners": "Ortaklık Programı",
+      "disasterRecovery": "Afet Kurtarma"
+    },
+    "organizationLinks": {
+      "aboutUs": "Hakkımızda",
+      "company": "Şirket",
+      "contact": "İletişim"
+    },
+    "legalLinks": {
+      "termsOfService": "Kullanım Koşulları",
+      "privacyPolicy": "Gizlilik Politikası",
+      "cookiePolicy": "Çerez Politikası",
+      "refundPolicy": "İade Politikası",
+      "telemetryPolicy": "Telemetri Politikası",
+      "legalInformation": "Yasal Bilgiler"
+    },
+    "legalDisclosure": {
+      "summary": "{{companyName}} | Sicil kodu {{registryCode}} | KDV {{vatNumber}} |",
+      "fullLegalInformation": "Tüm yasal bilgiler"
+    }
+  },
+  "navigation": {
+    "moreOptions": "Diğer seçenekler",
+    "home": "Ana Sayfa",
+    "blog": "Blog",
+    "docs": "Dokümanlar",
+    "contact": "İletişim",
+    "downloads": "İndirmeler",
+    "install": "Yükle",
+    "pricing": "Fiyatlandırma",
+    "toggleMenu": "Menüyü değiştir",
+    "search": "Ara",
+    "selectLanguage": "Dil seçin",
+    "languageSelectionMenu": "Dil seçim menüsü",
+    "login": "Giriş",
+    "footerNavigation": "Site gezintisi",
+    "roiCalculator": "ROI Hesaplayıcı",
+    "solutions": "Çözümler",
+    "disasterRecovery": "Felaket Kurtarma",
+    "viewAllSolutions": "Tüm Çözümleri Görüntüle",
+    "builtForYourRole": "Rolünüze özel",
+    "builtForYou": "Size özel",
+    "forDevops": "DevOps mühendisleri için",
+    "forCtos": "CTO'lar için",
+    "forCeos": "CEO'lar ve kurucular için",
+    "partners": "Ortaklar",
+    "personas": {
+      "devops": {
+        "tagline": "Daha hızlı gönderin. Anında kurtarın. Rahat uyuyun.",
+        "cta": "Ücretsiz başlayın"
+      },
+      "cto": {
+        "tagline": "TCO'yu %60 azaltın. Kendi donanımınızda ölçeklendirin.",
+        "cta": "Demo planlayın"
+      },
+      "ceo": {
+        "tagline": "Öngörülebilir maliyetler. Sıfır tedarikçi bağımlılığı.",
+        "cta": "Fiyatları görün"
+      },
+      "ai-agent": {
+        "tagline": "CLI öncelikli. JSON çıktısı. Agent uyumlu.",
+        "cta": "Belgeleri Görün"
+      }
+    },
+    "forAiAgents": "Yapay Zeka Ajanları İçin",
+    "account": "Hesap"
+  },
+  "newsletter": {
+    "title": "Haberler",
+    "description": "Ayda bir kısa e-posta. Ürün haberleri ve self-hosting ipuçları.",
+    "pageTitle": "Haberin Başında Kal",
+    "pageDescription": "Ayda bir kısa e-posta alırsınız. Yeni özellikler, self-hosting kılavuzları ve ürün konusunda sıkı yoldan kazandığımız bilgiler içerir.",
+    "placeholder": "E-postanız",
+    "subscribe": "Abone ol",
+    "successMessage": "Gelen kutunuzu kontrol edin, onay e-postası orada.",
+    "errorGeneric": "Bir şeyler ters gitti, lütfen tekrar dene.",
+    "confirmed": "Aboneliğin onaylandı! Aramıza hoş geldin.",
+    "unsubscribed": "Aboneliğiniz iptal edildi. Gittiğinizi görmek üzücü.",
+    "blogCta": {
+      "title": "Bu makaleyi beğendiniz mi?",
+      "description": "Her ay self-hosting kılavuzları ve ürün haberleri gönderiyoruz. Abone olmak ister misiniz?"
+    },
+    "roiGate": {
+      "title": "Ayrıntılı ROI raporunuzu alın",
+      "description": "Tam maliyet dökümünü ve tasarruf analizini görmek için e-posta adresinizi girin.",
+      "unlock": "Raporu aç"
+    },
+    "returnPopup": {
+      "title": "Rehberli bir tur ister misiniz?",
+      "description": "Ürün güncellemelerine abone ol, ekibimizle canlı kurulum randevusu al.",
+      "cta": "Abone Ol ve Randevu Al",
+      "close": "Kapat",
+      "note": "E-postanı ürün güncellemeleri göndermek için kullanırız. İstediğin zaman aboneliği iptal edebilirsin."
+    },
+    "privacyNote": "Gizliliğini önemsiyoruz. İstediğin zaman aboneliği iptal edebilirsin."
+  },
+  "pages": {
+    "solutionPages": {
+      "leadMagnetButton": {
+        "title": "Teknik özeti edinin",
+        "description": "CISO'lar, CTO'lar ve kıdemli mühendisler için yazılmış, gereksiz ayrıntılardan arındırılmış bir PDF. Bağlantıyı e-posta ile gönderiyoruz; böylece daha sonra kolayca bulabilirsiniz.",
+        "buttonLabel": "Özeti indir",
+        "dismissLabel": "Kapat"
+      },
+      "leadMagnetModal": {
+        "title": "Teknik özeti edinin",
+        "description": "Kurumsal e-posta adresinizi girin. PDF bağlantısını size göndereceğiz ve bir kopyasını posta kutunuzda saklayacağız.",
+        "emailLabel": "Kurumsal e-posta",
+        "emailPlaceholder": "you@company.com",
+        "submitLabel": "PDF'yi bana gönder",
+        "sendingLabel": "Gönderiliyor...",
+        "successTitle": "PDF yolda",
+        "successBody": "PDF'yi yeni bir sekmede açtık ve bağlantıyı size e-posta ile gönderdik. Bu pencere kısa süre içinde kapanacak.",
+        "errorGeneric": "Bir sorun oluştu. Lütfen tekrar deneyin ya da support@rediacc.com adresinden bize ulaşın.",
+        "captchaRequired": "Lütfen captcha doğrulamasını tamamlayın.",
+        "disclaimer": "Tek e-posta. Pazarlama listesi yok. Tek tıkla abonelik iptali.",
+        "closeLabel": "Kapat"
+      },
+      "environmentCloning": {
+        "hero": {
+          "title": "Üretim ortamını 60 saniyede klonlayın"
+        }
+      },
+      "infrastructureCosts": {
+        "hero": {
+          "title": "Boşta kalan ortamlar için ödeme yapmayı durdurun"
+        }
+      },
+      "productionParity": {
+        "hero": {
+          "title": "Üretim ortamıyla birebir eşleşen geliştirme ortamları."
+        }
+      },
+      "integrations": {
+        "hero": {
+          "title": "Mevcut iş akışınıza bağlanın"
+        }
+      },
+      "immutableBackups": {
+        "hero": {
+          "title": "Fidye yazılımının dokunamayacağı yedeklemeler"
+        }
+      },
+      "migrationSafety": {
+        "hero": {
+          "title": "Verilerinizi riske atmadan göç edin"
+        }
+      },
+      "instantRecovery": {
+        "hero": {
+          "title": "Dakikalar içinde tam ortam kurtarma"
+        }
+      },
+      "safeOsTesting": {
+        "hero": {
+          "title": "İşletim sistemi güncellemelerini risksiz test edin"
+        }
+      },
+      "retentionCompliance": {
+        "hero": {
+          "title": "Verilerinizi yasanın gerektirdiği sürece saklayın"
+        }
+      },
+      "cloudOutageProtection": {
+        "hero": {
+          "title": "AWS çökünce siz çökmezsiniz"
+        }
+      },
+      "failoverTesting": {
+        "hero": {
+          "title": "Yük devretmenizi ihtiyacınız olmadan önce test edin"
+        }
+      },
+      "backupVerification": {
+        "hero": {
+          "title": "Her yedekleme doğrulanır. Otomatik olarak."
+        }
+      },
+      "vulnerabilityManagement": {
+        "hero": {
+          "title": "Saldırganlar gelmeden güvenlik açıklarını düzeltin"
+        }
+      },
+      "aiPentesting": {
+        "hero": {
+          "title": "Üretim ortamını klonlayın. AI'nın saldırmasına izin verin."
+        }
+      },
+      "encryption": {
+        "hero": {
+          "title": "Sizin anahtarlarınız. Sizin şifrelemeniz. İstisnasız."
+        }
+      },
+      "continuousSecurityTesting": {
+        "hero": {
+          "title": "Güvenliği sürekli test edin. Yılda bir değil."
+        }
+      },
+      "auditTrail": {
+        "hero": {
+          "title": "Her eylem kaydedilir. Hiçbir şey gizlenmez."
+        }
+      },
+      "dataSovereignty": {
+        "hero": {
+          "title": "Sertifikayla değil, mimariyle egemen."
+        }
+      },
+      "rapidRecovery": {
+        "hero": {
+          "title": "Günler değil dakikalar içinde kurtarın."
+        }
+      },
+      "kubernetesClusterMobility": {
+        "hero": {
+          "title": "Çalışan bir Kubernetes cluster'ını fork'layın veya taşıyın"
+        }
+      },
+      "vendorLockIn": {
+        "hero": {
+          "title": "Sizin altyapınız. Sizin seçiminiz. Her zaman."
+        }
+      }
+    }
+  },
+  "regionPicker": {
+    "title": "Hesap bölgenizi seçin",
+    "subtitle": "Hesabınız, faturalandırmanız ve yapılandırmalarınız seçtiğiniz bölgede kalır.",
+    "reassurance": "Sunucu verileriniz ve yedekleriniz kendi altyapınızda kalır.",
+    "footer": "Size en yakın bölgeyi veya kuruluşunuzun gerektirdiği bölgeyi seçin.",
+    "footerNote": "Kayıt sonrası değiştirilemez."
+  },
+  "solutions": {
+    "categories": {
+      "ransomware": "Fidye Yazılımından Kurtulma",
+      "multi-cloud": "Çoklu Bulut",
+      "backups": "Doğrulanmış Yedeklemeler",
+      "encryption": "Şifreleme Kontrolü",
+      "dev-env": "Dev Ortamları",
+      "defense": "Proaktif Savunma"
+    }
+  }
+}

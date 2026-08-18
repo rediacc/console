@@ -18,9 +18,9 @@ La limpieza barre el estado que ya no corresponde a un recurso vivo. Tres comand
 | `rdc machine prune <machine>` | Artefactos del datastore en la máquina (siempre); imágenes de repositorio huérfanas o desconocidas (opt-in) | Configuración local del CLI + el espejo `.interim/state` de la máquina |
 | `rdc config prune` | Restos en la configuración local (caché de certificados, archivos expirados, referencias cruzadas colgantes) | Solo la configuración local del CLI |
 
-Los tres son independientes. Puedes ejecutar cualquiera sin los otros. Comparten un modelo de seguridad común descrito en [Modelo de seguridad](#modelo-de-seguridad) más abajo.
+Los tres son independientes. Puedes ejecutar cualquiera sin los otros. Comparten un modelo de seguridad común descrito en [Modelo de seguridad](#safety-model) más abajo.
 
-La limpieza elimina el estado que dejaron atrás los recursos eliminados. Para recuperar el espacio ocupado por repositorios *activos* (bloques que sus sistemas de archivos han liberado pero el pool sigue reteniendo), use [`rdc repo trim`](/es/docs/repositories#recuperar-espacio-trim) en su lugar; los dos son complementarios.
+La limpieza elimina el estado que dejaron atrás los recursos eliminados. Para recuperar el espacio ocupado por repositorios *activos* (bloques que sus sistemas de archivos han liberado pero el pool sigue reteniendo), use [`rdc repo trim`](/es/docs/repositories#reclaim-space-trim) en su lugar; los dos son complementarios.
 
 ## Verificación previa de seguridad de montaje
 
@@ -50,7 +50,7 @@ rdc storage prune my-s3 -m server-1 --force-delete-mounted
 
 ### Qué verifica
 
-1. Lista todos los GUIDs de respaldo en el almacenamiento indicado (en ambos subdirectorios `hot/` y `cold/`. Consulta [Respaldo y Restauración](/es/docs/backup-restore#respaldos-programados)).
+1. Lista todos los GUIDs de respaldo en el almacenamiento indicado (en ambos subdirectorios `hot/` y `cold/`. Consulta [Respaldo y Restauración](/es/docs/backup-restore#scheduled-backups)).
 2. Escanea cada archivo de configuración en disco (`~/.config/rediacc/*.json`).
 3. Un respaldo está **huérfano** si su GUID no está referenciado por la sección de repositorios de ninguna configuración.
 4. Los repositorios archivados recientemente dentro del período de gracia están **protegidos** incluso si fueron eliminados de la configuración activa.
@@ -103,7 +103,7 @@ Esto es **grueso**. Elimina todo lo que no esté en tu configuración local, inc
 
 ### Fase 3: `--prune-unknown` (quirúrgico)
 
-Con `--prune-unknown`, el CLI elimina solo repos que **ambas** señales no logran clasificar: no están en ninguna configuración local **y** no tienen entrada marcada como bifurcación en el espejo `.interim/state` de la máquina (consulta [Repositorios. Columna `Type`](/es/docs/repositories#columna-type-y-el-espejo-de-estado)).
+Con `--prune-unknown`, el CLI elimina solo repos que **ambas** señales no logran clasificar: no están en ninguna configuración local **y** no tienen entrada marcada como bifurcación en el espejo `.interim/state` de la máquina (consulta [Repositorios. Columna `Type`](/es/docs/repositories#type-column-and-the-state-mirror)).
 
 ```bash
 rdc machine prune server-1 --prune-unknown --dry-run

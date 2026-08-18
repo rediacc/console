@@ -1,0 +1,327 @@
+{
+  "captchaRequired": "キャプチャ認証を完了してください。",
+  "common": {
+    "close": "閉じる",
+    "logoAlt": "Rediacc - インフラストラクチャ自動化プラットフォーム",
+    "buttons": {
+      "close": "閉じる",
+      "learnMore": "もっと詳しく知る",
+      "getStarted": "今すぐ始める"
+    },
+    "search": {
+      "placeholder": "ドキュメント、ソリューション、機能を検索...",
+      "searching": "検索中...",
+      "noResults": "結果が見つかりませんでした",
+      "closeModal": "検索を閉じる",
+      "suggestions": {
+        "title": "試す：",
+        "differentKeywords": "異なるキーワードまたは短い用語",
+        "checkSpelling": "スペルをチェックする",
+        "browseSolutions": "ソリューションページの閲覧",
+        "contactSupport": "サポートチームへのお問い合わせ"
+      },
+      "results": "検索結果",
+      "unavailable": "検索が利用できません",
+      "unavailableMessage": "検索インデックスを読み込めませんでした。ページを更新するか、問題が続く場合はサポートにお問い合わせください。"
+    },
+    "aria": {
+      "mainNavigation": "メインナビゲーション",
+      "previousImage": "前の画像",
+      "nextImage": "次の画像",
+      "zoomIn": "ズームイン",
+      "zoomOut": "ズームアウト",
+      "resetZoom": "ズームをリセットする",
+      "closeImageModal": "画像モーダルを閉じる",
+      "imageViewer": "画像ビューア",
+      "opensInNewTab": "新しいタブで開きます",
+      "tableOfContents": "目次",
+      "docsSections": "ドキュメントセクション",
+      "documentationNavigation": "ドキュメントナビゲーション",
+      "breadcrumbNavigation": "パンくずナビゲーション",
+      "rediaccHome": "Rediacc ホーム"
+    },
+    "skipNavigation": {
+      "skipToMainContent": "メインコンテンツにスキップ",
+      "skipToNavigation": "ナビゲーションにスキップ",
+      "skipToFooter": "フッターにスキップ"
+    }
+  },
+  "contactModal": {
+    "title": "お問い合わせ",
+    "description": "ご質問やプロジェクトのご相談がございましたら、メッセージをお送りください。",
+    "fields": {
+      "name": "お名前",
+      "namePlaceholder": "お名前を入力",
+      "email": "メールアドレス",
+      "emailPlaceholder": "you@company.com",
+      "subject": "件名",
+      "message": "メッセージ",
+      "messagePlaceholder": "プロジェクトやご質問についてお聞かせください..."
+    },
+    "subjects": {
+      "general": "一般的なお問い合わせ",
+      "technical": "技術サポート",
+      "partnership": "パートナーシップ",
+      "disasterRecovery": "災害復旧",
+      "other": "その他"
+    },
+    "submit": "メッセージを送信",
+    "sending": "送信中...",
+    "success": "メッセージが送信されました！48時間以内にご返信いたします。",
+    "error": "エラーが発生しました。もう一度お試しください。",
+    "close": "閉じる"
+  },
+  "footer": {
+    "columns": {
+      "product": "製品",
+      "organization": "会社",
+      "legal": "法務"
+    },
+    "productLinks": {
+      "solutions": "ソリューション",
+      "overview": "概要",
+      "pricing": "料金",
+      "professionalServices": "プロフェッショナルサービス",
+      "partners": "パートナープログラム",
+      "disasterRecovery": "災害復旧"
+    },
+    "organizationLinks": {
+      "aboutUs": "当社について",
+      "company": "会社概要",
+      "contact": "お問い合わせ"
+    },
+    "legalLinks": {
+      "termsOfService": "利用規約",
+      "privacyPolicy": "プライバシーポリシー",
+      "cookiePolicy": "Cookieポリシー",
+      "refundPolicy": "返金ポリシー",
+      "telemetryPolicy": "テレメトリポリシー",
+      "legalInformation": "法的情報"
+    },
+    "legalDisclosure": {
+      "summary": "{{companyName}} | 登録番号 {{registryCode}} | VAT {{vatNumber}} |",
+      "fullLegalInformation": "詳細な法務情報"
+    }
+  },
+  "navigation": {
+    "moreOptions": "その他のオプション",
+    "home": "ホーム",
+    "blog": "ブログ",
+    "docs": "ドキュメント",
+    "contact": "お問い合わせ",
+    "downloads": "ダウンロード",
+    "install": "インストール",
+    "pricing": "料金",
+    "toggleMenu": "メニューの切り替え",
+    "search": "検索",
+    "selectLanguage": "言語を選択してください",
+    "languageSelectionMenu": "言語選択メニュー",
+    "login": "ログイン",
+    "footerNavigation": "サイトナビゲーション",
+    "roiCalculator": "ROI計算ツール",
+    "solutions": "ソリューション",
+    "disasterRecovery": "災害復旧",
+    "viewAllSolutions": "すべてのソリューションを表示",
+    "builtForYourRole": "あなたの役割に合わせて",
+    "builtForYou": "あなたに合わせて",
+    "forDevops": "DevOpsエンジニア向け",
+    "forCtos": "CTO向け",
+    "forCeos": "CEO・創業者向け",
+    "partners": "パートナー",
+    "personas": {
+      "devops": {
+        "tagline": "より速く。即座に復旧。安心して眠れる。",
+        "cta": "無料で始める"
+      },
+      "cto": {
+        "tagline": "TCOを60%削減。自社ハードウェアでスケール。",
+        "cta": "デモを予約"
+      },
+      "ceo": {
+        "tagline": "予測可能なコスト。ベンダーロックインなし。",
+        "cta": "料金を見る"
+      },
+      "ai-agent": {
+        "tagline": "CLI優先。JSON出力。エージェントネイティブ。",
+        "cta": "ドキュメントを見る"
+      }
+    },
+    "forAiAgents": "AIエージェント向け",
+    "account": "アカウント"
+  },
+  "newsletter": {
+    "title": "メールマガジン",
+    "description": "月1回、短いメール1通。新機能やセルフホスティングのコツをお届けします。",
+    "pageTitle": "最新情報を逃さない",
+    "pageDescription": "月1回、短いメールで。新機能、セルフホスティングのコツ、そして試行錯誤して学んだ教訓をお届けします。",
+    "placeholder": "メールアドレス",
+    "subscribe": "購読する",
+    "successMessage": "受信トレイを確認して、購読を確定してください。",
+    "errorGeneric": "エラーが発生しました。もう一度お試しください。",
+    "confirmed": "購読が確定しました！ようこそ。",
+    "unsubscribed": "購読が解除されました。ご利用ありがとうございました。",
+    "blogCta": {
+      "title": "この記事はいかがでしたか？",
+      "description": "毎月、セルフホスティングガイドと製品ニュースをお届けしています。受け取ってみませんか？"
+    },
+    "roiGate": {
+      "title": "詳細なROIレポートで削減効果を確認",
+      "description": "メールアドレスを入力すると、詳細なコスト内訳と削減額がわかります。",
+      "unlock": "レポートを確認"
+    },
+    "returnPopup": {
+      "title": "ガイド付きのセットアップがほしい？",
+      "description": "製品アップデートに登録して、チームによるライブセットアップを予約できます。",
+      "cta": "購読して予約する",
+      "close": "ポップアップを閉じる",
+      "note": "メールアドレスは製品の最新情報をお送りするのに使わせていただきます。いつでも配信停止できます。"
+    },
+    "privacyNote": "プライバシーを大切にしています。いつでも配信停止できます。"
+  },
+  "pages": {
+    "solutionPages": {
+      "leadMagnetButton": {
+        "title": "技術概要書を入手する",
+        "description": "CISO・CTO・上級エンジニア向けに書かれた、無駄のないPDFです。後から見つけられるよう、リンクをメールでお送りします。",
+        "buttonLabel": "概要書をダウンロードする",
+        "dismissLabel": "閉じる"
+      },
+      "leadMagnetModal": {
+        "title": "技術概要書を入手する",
+        "description": "会社のメールアドレスをご入力ください。PDFリンクをお送りし、受信トレイにも保存されます。",
+        "emailLabel": "会社のメールアドレス",
+        "emailPlaceholder": "you@company.com",
+        "submitLabel": "PDFを送ってください",
+        "sendingLabel": "送信中...",
+        "successTitle": "PDFを送信しました",
+        "successBody": "新しいタブで開き、リンクをメールでもお送りしました。まもなくこのウィンドウを閉じます。",
+        "errorGeneric": "エラーが発生しました。もう一度お試しいただくか、support@rediacc.com までお問い合わせください。",
+        "captchaRequired": "キャプチャ認証を完了してください。",
+        "disclaimer": "送信は1通のみ。マーケティングリストへの登録はありません。ワンクリックで配信停止できます。",
+        "closeLabel": "閉じる"
+      },
+      "environmentCloning": {
+        "hero": {
+          "title": "本番環境を60秒でクローン"
+        }
+      },
+      "infrastructureCosts": {
+        "hero": {
+          "title": "アイドル環境への支払いをやめる"
+        }
+      },
+      "productionParity": {
+        "hero": {
+          "title": "本番環境と完全に一致する開発環境。"
+        }
+      },
+      "integrations": {
+        "hero": {
+          "title": "既存のワークフローに接続"
+        }
+      },
+      "immutableBackups": {
+        "hero": {
+          "title": "ランサムウェアが触れないバックアップ"
+        }
+      },
+      "migrationSafety": {
+        "hero": {
+          "title": "データを危険にさらさずに移行"
+        }
+      },
+      "instantRecovery": {
+        "hero": {
+          "title": "数分で環境全体を復旧"
+        }
+      },
+      "safeOsTesting": {
+        "hero": {
+          "title": "リスクなしでOSアップデートをテスト"
+        }
+      },
+      "retentionCompliance": {
+        "hero": {
+          "title": "法律で求められる期間データを保持"
+        }
+      },
+      "cloudOutageProtection": {
+        "hero": {
+          "title": "AWSがダウンしても、あなたはダウンしない"
+        }
+      },
+      "failoverTesting": {
+        "hero": {
+          "title": "必要になる前にフェイルオーバーをテスト"
+        }
+      },
+      "backupVerification": {
+        "hero": {
+          "title": "すべてのバックアップを自動検証。"
+        }
+      },
+      "vulnerabilityManagement": {
+        "hero": {
+          "title": "攻撃者より先に脆弱性を修正"
+        }
+      },
+      "aiPentesting": {
+        "hero": {
+          "title": "本番をクローン。AIに攻撃させる。"
+        }
+      },
+      "encryption": {
+        "hero": {
+          "title": "あなたの鍵。あなたの暗号化。例外なし。"
+        }
+      },
+      "continuousSecurityTesting": {
+        "hero": {
+          "title": "セキュリティを継続的にテスト。年1回ではなく。"
+        }
+      },
+      "auditTrail": {
+        "hero": {
+          "title": "すべてのアクション記録。隠しごとなし。"
+        }
+      },
+      "dataSovereignty": {
+        "hero": {
+          "title": "証明書ではなく、アーキテクチャによるソブリン。"
+        }
+      },
+      "rapidRecovery": {
+        "hero": {
+          "title": "数日ではなく数分で復旧。"
+        }
+      },
+      "kubernetesClusterMobility": {
+        "hero": {
+          "title": "稼働中のKubernetesクラスタをフォーク、または移動"
+        }
+      },
+      "vendorLockIn": {
+        "hero": {
+          "title": "あなたのインフラ。あなたの選択。常に。"
+        }
+      }
+    }
+  },
+  "regionPicker": {
+    "title": "アカウントリージョンを選択",
+    "subtitle": "アカウント、請求、設定は選択したリージョンに保存されます。",
+    "reassurance": "サーバーデータとバックアップはお客様のインフラに残ります。",
+    "footer": "最寄りのリージョン、または組織が必要とするリージョンを選択してください。",
+    "footerNote": "登録後は変更できません。"
+  },
+  "solutions": {
+    "categories": {
+      "ransomware": "ランサムウェア対策",
+      "multi-cloud": "マルチクラウド",
+      "backups": "検証済みバックアップ",
+      "encryption": "暗号化制御",
+      "dev-env": "開発環境",
+      "defense": "先制防御"
+    }
+  }
+}

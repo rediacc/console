@@ -170,7 +170,9 @@ const phantom = [...doc].filter((leaf) => !cliPrefixes.has(leaf)).sort();
 const omitted = [...cli].filter((leaf) => !doc.has(leaf)).sort();
 
 if (phantom.length > 0 || omitted.length > 0) {
-  console.error('\x1b[31m✗ docs/design/06-cli-reshape.md §1 does not match the shipped CLI\x1b[0m\n');
+  console.error(
+    '\x1b[31m✗ docs/design/06-cli-reshape.md §1 does not match the shipped CLI\x1b[0m\n'
+  );
   if (phantom.length > 0) {
     console.error('  The doc draws commands the CLI does not have:');
     for (const leaf of phantom) console.error(`    rdc ${leaf}`);

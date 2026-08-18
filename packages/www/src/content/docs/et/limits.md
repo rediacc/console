@@ -103,9 +103,9 @@ Andmehoidla on fikseeritud suurusega bassein, mis luuakse masina esimesel seadis
 - **Suuruse muutmine**: kasutage `rdc datastore resize` basseini suuruse muutmiseks (kõik repositooriumid peavad enne lahti ühendama).
 - **Failisüsteem**: Rediacc kasutab sisemiselt BTRFS-i kirjutamisel kopeerivate hetktõmmiste ja tõhusa hargnemise jaoks. Nõuab masinat, mis käitab **Linuxi tuumaga 6.1 või uuemaga** täieliku tootmisstabilisuse jaoks.
 
-Igal repositooriumil on maksimaalne suurus, mis on seatud loomise ajal (vaikimisi: 10 GB). Kasuta `rdc repo resize` selle käsitsi muutmiseks või sea [automaatne suuruse poliitika](/et/docs/repositories#automaatne-suuruse-poliitika), et masin kasvataks seda veebis täitumisel (piiratud eksplitsiitse repositooriumipõhise ülempiiri ja basseini vaba ruumi reserviga). Automaatne kasv kehtib ainult üksikutele repositooriumidele; bassein ise ei kasva kunagi automaatselt.
+Igal repositooriumil on maksimaalne suurus, mis on seatud loomise ajal (vaikimisi: 10 GB). Kasuta `rdc repo resize` selle käsitsi muutmiseks või sea [automaatne suuruse poliitika](/et/docs/repositories#automatic-size-policy), et masin kasvataks seda veebis täitumisel (piiratud eksplitsiitse repositooriumipõhise ülempiiri ja basseini vaba ruumi reserviga). Automaatne kasv kehtib ainult üksikutele repositooriumidele; bassein ise ei kasva kunagi automaatselt.
 
-Repositooriumi kujutised on hõredad: repositoorium hõivab basseinis ainult selle, mida ta on tegelikult kirjutanud, ja kustutamistega vabastatud ruum naaseb basseinile [`repo trim`](/et/docs/repositories#ruumi-tagasinõudmine-trim) või ajastatud automaatse trimmimise kaudu. Kvoodid võivad seetõttu kokku olla suuremad kui basseini suurus, kusjuures [salvestuse tervise raport](/et/docs/monitoring#salvestuse-tervis) näitab tegelikku täitumist.
+Repositooriumi kujutised on hõredad: repositoorium hõivab basseinis ainult selle, mida ta on tegelikult kirjutanud, ja kustutamistega vabastatud ruum naaseb basseinile [`repo trim`](/et/docs/repositories#reclaim-space-trim) või ajastatud automaatse trimmimise kaudu. Kvoodid võivad seetõttu kokku olla suuremad kui basseini suurus, kusjuures [salvestuse tervise raport](/et/docs/monitoring#storage-health) näitab tegelikku täitumist.
 
 ---
 

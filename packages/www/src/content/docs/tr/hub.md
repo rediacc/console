@@ -296,7 +296,7 @@ Hub, `/_hub/dashboard` adresinde self-servis bir panel içerir. Şunları göste
 
 İstatistikler her 30 saniyede bir örneklenir.
 
-### Data-Root Çöp Toplama
+## Data-Root Çöp Toplama
 
 Kullanıcı başına data-root'lar uzun süreli çalışan ana bilgisayarlarda birikir. Terk edilenleri temizlemek için `renet hub gc` zamanlayın. Bir systemd zamanlayıcısı iyi çalışır:
 

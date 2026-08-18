@@ -48,11 +48,15 @@
  * Usage: npx tsx scripts/check-ci-parity.ts
  */
 
-import { existsSync, readFileSync, readdirSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { type BlockeredEntry, parseBlockeredList, validateBlockerQuality } from './lib/blocker-validator.js';
 import { type CiCoverage, GATES, type GateSpec, paritySurface } from './ci-runner/manifest.js';
+import {
+  type BlockeredEntry,
+  parseBlockeredList,
+  validateBlockerQuality,
+} from './lib/blocker-validator.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = process.env.CI_PARITY_ROOT || path.resolve(__dirname, '..');
@@ -158,7 +162,11 @@ function resolveLeaves(
       const key = rest[0] === 'test' ? 'test' : (rest[1] ?? '');
       const wsIdx = rest.findIndex((t) => t === '-w' || t === '--workspace');
       const eq = rest.find((t) => t.startsWith('--workspace='));
-      const ws = eq ? eq.slice('--workspace='.length) : wsIdx >= 0 ? (rest[wsIdx + 1] ?? undefined) : undefined;
+      const ws = eq
+        ? eq.slice('--workspace='.length)
+        : wsIdx >= 0
+          ? (rest[wsIdx + 1] ?? undefined)
+          : undefined;
       const nextScope = ws ? (u.nameToDir.get(ws) ?? curScope) : curScope;
       const sig = `${nextScope}\0${key}`;
       if (seen.has(sig)) continue;
@@ -428,7 +436,11 @@ function analyze(inp: Inputs): Finding[] {
     const ci: CiCoverage = g.ci;
     if (ci.kind === 'local-only' || ci.kind === 'test') {
       const label = ci.kind === 'test' ? `${ci.test} (${g.id})` : g.id;
-      const v = validateBlockerQuality(label, ci.blocker.replace(/^BLOCKER:\s*/, ''), 'manifest.ts');
+      const v = validateBlockerQuality(
+        label,
+        ci.blocker.replace(/^BLOCKER:\s*/, ''),
+        'manifest.ts'
+      );
       if (v) add('R3', `${g.id}: ${v.message}`);
       if (ci.kind === 'test' && !inp.fileExists(ci.test)) {
         add('R3', `${g.id} declares coverage by ${ci.test}, which does not exist.`);
@@ -539,7 +551,10 @@ function analyze(inp: Inputs): Finding[] {
   }
   for (const f of declared) {
     if (!inp.battery.includes(f)) {
-      add('battery', `a manifest entry is tagged qualityGateTest for ${BATTERY_DIR}/${f}, which no longer exists.`);
+      add(
+        'battery',
+        `a manifest entry is tagged qualityGateTest for ${BATTERY_DIR}/${f}, which no longer exists.`
+      );
     }
   }
 
@@ -550,7 +565,10 @@ function analyze(inp: Inputs): Finding[] {
 // CONTROL. Prove the instrument can FIRE before trusting its green.
 // ---------------------------------------------------------------------------
 
-function universeOf(byDir: Record<string, Record<string, string>>, names: Record<string, string> = {}): ScriptUniverse {
+function universeOf(
+  byDir: Record<string, Record<string, string>>,
+  names: Record<string, string> = {}
+): ScriptUniverse {
   return {
     byDir: new Map(Object.entries(byDir)),
     nameToDir: new Map(Object.entries(names)),
@@ -569,7 +587,9 @@ function universeOf(byDir: Record<string, Record<string, string>>, names: Record
 function control(): void {
   const fail = (why: string): never => {
     console.error(`${RED}CONTROL FAILED${NC}: ${why}`);
-    console.error('  This gate cannot be trusted until its own control fires, so the real check did not run.');
+    console.error(
+      '  This gate cannot be trusted until its own control fires, so the real check did not run.'
+    );
     process.exit(1);
   };
 
@@ -596,14 +616,24 @@ function control(): void {
       run: 'npm run check:ci-covered',
       gate: true,
       leaves: ['.ci/scripts/quality/check-covered.sh'],
-      ci: { kind: 'step', workflow: '.github/workflows/w.yml', job: 'lane', step: 'npm run check:ci-planted-chain-only' },
+      ci: {
+        kind: 'step',
+        workflow: '.github/workflows/w.yml',
+        job: 'lane',
+        step: 'npm run check:ci-planted-chain-only',
+      },
     },
     {
       id: 'check:ci-planted-chain-only',
       run: 'npm run check:ci-planted-chain-only',
       gate: true,
       leaves: ['.ci/scripts/quality/check-planted-chain-only.sh'],
-      ci: { kind: 'step', workflow: '.github/workflows/w.yml', job: 'lane', step: 'Nonexistent step' },
+      ci: {
+        kind: 'step',
+        workflow: '.github/workflows/w.yml',
+        job: 'lane',
+        step: 'Nonexistent step',
+      },
     },
   ];
   const base: Inputs = {
@@ -622,7 +652,9 @@ function control(): void {
 
   // 1. Direction A (#549): a manifest gate whose declared step does not exist.
   if (!has('R3', 'check:ci-planted-chain-only')) {
-    fail(`a manifest gate no workflow step runs was NOT reported; got ${JSON.stringify(findings.map((f) => f.rule))}`);
+    fail(
+      `a manifest gate no workflow step runs was NOT reported; got ${JSON.stringify(findings.map((f) => f.rule))}`
+    );
   }
   // 2. Direction B: a gate-shaped leaf CI runs with no manifest entry.
   if (!has('R2', 'check-planted-orphan.sh')) {
@@ -660,7 +692,8 @@ function control(): void {
         ? 'jobs:\n  lane:\n    steps:\n      - name: All gates\n        run: npm run ci\n'
         : null,
   });
-  if (!tauto.some((f) => f.rule === 'tautology')) fail('`npm run ci` inside a run: block was NOT reported');
+  if (!tauto.some((f) => f.rule === 'tautology'))
+    fail('`npm run ci` inside a run: block was NOT reported');
 
   console.log('  PASS  reports a manifest gate that no workflow step runs (the #549 direction)');
   console.log('  PASS  reports a CI-run shell gate that no manifest entry covers');
@@ -680,7 +713,10 @@ function loadScripts(): ScriptUniverse {
     const p = path.join(ROOT, rel, 'package.json');
     if (!existsSync(p)) return;
     try {
-      const pkg = JSON.parse(readFileSync(p, 'utf-8')) as { name?: string; scripts?: Record<string, string> };
+      const pkg = JSON.parse(readFileSync(p, 'utf-8')) as {
+        name?: string;
+        scripts?: Record<string, string>;
+      };
       byDir.set(rel, pkg.scripts ?? {});
       if (pkg.name) nameToDir.set(pkg.name, rel);
     } catch {
@@ -765,7 +801,8 @@ function main(): void {
   const gates = loadGates();
   if (gates.length === 0) refuse('the gate manifest declares zero gates.');
   const wfDir = path.join(ROOT, '.github', 'workflows');
-  if (!existsSync(wfDir)) refuse(`no workflow directory at ${path.relative(ROOT, wfDir)}, so this gate is blind.`);
+  if (!existsSync(wfDir))
+    refuse(`no workflow directory at ${path.relative(ROOT, wfDir)}, so this gate is blind.`);
   if (readdirSync(wfDir).filter((f) => /\.ya?ml$/.test(f)).length === 0) {
     refuse(`${path.relative(ROOT, wfDir)} holds no workflows, so this gate is blind.`);
   }
@@ -775,7 +812,8 @@ function main(): void {
   }
   const scripts = loadScripts();
   const rootScripts = scripts.byDir.get('');
-  if (!rootScripts) refuse(`no readable package.json at ${ROOT}, so there is nothing to compare against.`);
+  if (!rootScripts)
+    refuse(`no readable package.json at ${ROOT}, so there is nothing to compare against.`);
   if (Object.keys(rootScripts ?? {}).filter((k) => k.startsWith('check:ci-')).length === 0) {
     refuse('package.json defines no check:ci-* gates.');
   }
@@ -791,7 +829,9 @@ function main(): void {
     },
     exempt: loadExempt(),
     battery: existsSync(batteryDir)
-      ? readdirSync(batteryDir).filter((f) => f.startsWith('test-') && f.endsWith('.sh')).sort()
+      ? readdirSync(batteryDir)
+          .filter((f) => f.startsWith('test-') && f.endsWith('.sh'))
+          .sort()
       : [],
     fileExists: (rel) => existsSync(path.join(ROOT, rel)),
   };
@@ -808,7 +848,9 @@ function main(): void {
   console.log('');
 
   if (findings.length === 0) {
-    console.log(`${GREEN}✓${NC} The local gate set and the CI quality surface agree in both directions.`);
+    console.log(
+      `${GREEN}✓${NC} The local gate set and the CI quality surface agree in both directions.`
+    );
     return;
   }
 

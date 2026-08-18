@@ -1,0 +1,327 @@
+{
+  "captchaRequired": "캡차 인증을 완료해 주세요.",
+  "common": {
+    "close": "닫기",
+    "logoAlt": "Rediacc - 인프라 자동화 플랫폼",
+    "buttons": {
+      "close": "닫기",
+      "learnMore": "자세히 알아보기",
+      "getStarted": "시작하기"
+    },
+    "search": {
+      "placeholder": "문서, 솔루션, 기능 검색...",
+      "searching": "검색 중...",
+      "noResults": "결과를 찾을 수 없습니다",
+      "closeModal": "검색 닫기",
+      "suggestions": {
+        "title": "시도해 보세요:",
+        "differentKeywords": "다른 키워드 또는 더 짧은 검색어",
+        "checkSpelling": "맞춤법 확인",
+        "browseSolutions": "솔루션 페이지 탐색",
+        "contactSupport": "지원팀에 문의"
+      },
+      "results": "검색 결과",
+      "unavailable": "검색 사용 불가",
+      "unavailableMessage": "검색 인덱스를 불러올 수 없습니다. 페이지를 새로 고침하거나, 문제가 지속되면 지원팀에 문의해 주세요."
+    },
+    "aria": {
+      "mainNavigation": "기본 탐색",
+      "previousImage": "이전 이미지",
+      "nextImage": "다음 이미지",
+      "zoomIn": "확대",
+      "zoomOut": "축소",
+      "resetZoom": "확대/축소 초기화",
+      "closeImageModal": "이미지 모달 닫기",
+      "imageViewer": "이미지 뷰어",
+      "opensInNewTab": "새 탭에서 열기",
+      "tableOfContents": "목차",
+      "docsSections": "문서 섹션",
+      "documentationNavigation": "문서 탐색",
+      "breadcrumbNavigation": "이동 경로 탐색",
+      "rediaccHome": "Rediacc 홈"
+    },
+    "skipNavigation": {
+      "skipToMainContent": "메인 콘텐츠로 건너뛰기",
+      "skipToNavigation": "탐색으로 건너뛰기",
+      "skipToFooter": "푸터로 건너뛰기"
+    }
+  },
+  "contactModal": {
+    "title": "문의하기",
+    "description": "질문이 있거나 프로젝트에 대해 논의하고 싶으신가요? 메시지를 보내주세요.",
+    "fields": {
+      "name": "이름",
+      "namePlaceholder": "성함",
+      "email": "이메일",
+      "emailPlaceholder": "you@company.com",
+      "subject": "제목",
+      "message": "메시지",
+      "messagePlaceholder": "프로젝트 또는 질문에 대해 알려주세요..."
+    },
+    "subjects": {
+      "general": "일반 문의",
+      "technical": "기술 지원",
+      "partnership": "파트너십",
+      "disasterRecovery": "재해 복구",
+      "other": "기타"
+    },
+    "submit": "메시지 보내기",
+    "sending": "전송 중...",
+    "success": "메시지가 전송되었습니다! 48시간 이내에 답변드리겠습니다.",
+    "error": "문제가 발생했습니다. 다시 시도해 주세요.",
+    "close": "닫기"
+  },
+  "footer": {
+    "columns": {
+      "product": "제품",
+      "organization": "조직",
+      "legal": "법적"
+    },
+    "productLinks": {
+      "solutions": "솔루션",
+      "overview": "개요",
+      "pricing": "요금제",
+      "professionalServices": "전문 서비스",
+      "partners": "파트너 프로그램",
+      "disasterRecovery": "재해 복구"
+    },
+    "organizationLinks": {
+      "aboutUs": "회사 소개",
+      "company": "회사",
+      "contact": "문의"
+    },
+    "legalLinks": {
+      "termsOfService": "서비스 약관",
+      "privacyPolicy": "개인정보 처리방침",
+      "cookiePolicy": "쿠키 정책",
+      "refundPolicy": "환불 정책",
+      "telemetryPolicy": "텔레메트리 정책",
+      "legalInformation": "법적 정보"
+    },
+    "legalDisclosure": {
+      "summary": "{{companyName}} | 등록 코드 {{registryCode}} | 부가세 번호 {{vatNumber}} |",
+      "fullLegalInformation": "전체 법적 정보"
+    }
+  },
+  "navigation": {
+    "moreOptions": "추가 옵션",
+    "home": "홈",
+    "blog": "블로그",
+    "docs": "문서",
+    "contact": "문의",
+    "downloads": "다운로드",
+    "install": "설치",
+    "pricing": "요금제",
+    "toggleMenu": "메뉴 열기/닫기",
+    "search": "검색",
+    "selectLanguage": "언어 선택",
+    "languageSelectionMenu": "언어 선택 메뉴",
+    "login": "로그인",
+    "footerNavigation": "사이트 탐색",
+    "roiCalculator": "ROI 계산기",
+    "solutions": "솔루션",
+    "disasterRecovery": "재해 복구",
+    "viewAllSolutions": "모든 솔루션 보기",
+    "builtForYourRole": "역할에 맞게 설계됨",
+    "builtForYou": "나를 위해 만들어진",
+    "forDevops": "DevOps 엔지니어용",
+    "forCtos": "CTO용",
+    "forCeos": "CEO 및 창업자용",
+    "partners": "파트너",
+    "personas": {
+      "devops": {
+        "tagline": "더 빠르게 배포. 즉시 복구. 편안한 잠자리.",
+        "cta": "무료로 시작하기"
+      },
+      "cto": {
+        "tagline": "TCO 60% 절감. 자체 하드웨어로 확장.",
+        "cta": "데모 예약"
+      },
+      "ceo": {
+        "tagline": "예측 가능한 비용. 벤더 종속 없음.",
+        "cta": "요금제 보기"
+      },
+      "ai-agent": {
+        "tagline": "CLI 우선. JSON 출력. 에이전트 네이티브.",
+        "cta": "문서 보기"
+      }
+    },
+    "forAiAgents": "AI 에이전트용",
+    "account": "계정"
+  },
+  "newsletter": {
+    "title": "뉴스레터",
+    "description": "매달 짧은 이메일 하나. 제품 소식과 자체 호스팅 팁을 보내드려요.",
+    "pageTitle": "최신 소식 받아보기",
+    "pageDescription": "매달 한 번, 짧은 이메일로 새로운 기능, 자체 호스팅 팁, 그리고 우리가 배운 경험들을 나눠요.",
+    "placeholder": "이메일 주소",
+    "subscribe": "구독하기",
+    "successMessage": "받은 편지함에서 구독을 확인해 주세요",
+    "errorGeneric": "뭔가 잘못됐어요. 다시 시도해 주세요.",
+    "confirmed": "구독이 확인됐어요! 함께해서 기뻐요",
+    "unsubscribed": "구독이 취소됐어요. 떠나셔서 아쉬워요",
+    "blogCta": {
+      "title": "이 글 재미있었어요?",
+      "description": "매달 자체 호스팅 가이드와 제품 뉴스를 보내는데, 받아보실래요?"
+    },
+    "roiGate": {
+      "title": "자세한 ROI 보고서 받기",
+      "description": "이메일을 입력하면 비용 분석과 절감액을 자세하게 확인할 수 있어요.",
+      "unlock": "보고서 보기"
+    },
+    "returnPopup": {
+      "title": "직접 안내를 받아보고 싶으신가요?",
+      "description": "제품 소식을 구독하고 우리 팀과 함께 실시간 설정 상담을 받아보세요.",
+      "cta": "구독하고 상담 예약하기",
+      "close": "팝업 닫기",
+      "note": "이메일은 제품 소식을 보내는 데만 사용돼요. 언제든 구독을 취소할 수 있어요."
+    },
+    "privacyNote": "개인정보는 소중하게 보호돼요. 언제든 구독을 취소할 수 있습니다."
+  },
+  "pages": {
+    "solutionPages": {
+      "leadMagnetButton": {
+        "title": "기술 브리프 받기",
+        "description": "CISO, CTO, 시니어 엔지니어를 위해 작성된 군더더기 없는 PDF입니다. 나중에 다시 찾을 수 있도록 링크를 이메일로 보내드립니다.",
+        "buttonLabel": "브리프 다운로드",
+        "dismissLabel": "닫기"
+      },
+      "leadMagnetModal": {
+        "title": "기술 브리프 받기",
+        "description": "업무용 이메일을 입력해 주세요. PDF 링크를 보내드리고 받은 편지함에도 사본을 남겨드립니다.",
+        "emailLabel": "업무용 이메일",
+        "emailPlaceholder": "you@company.com",
+        "submitLabel": "PDF 보내주세요",
+        "sendingLabel": "전송 중...",
+        "successTitle": "PDF를 발송했습니다",
+        "successBody": "새 탭에서 열어 두었으며, 링크를 이메일로도 보내드렸습니다. 잠시 후 창이 닫힙니다.",
+        "errorGeneric": "문제가 발생했습니다. 다시 시도하시거나 support@rediacc.com으로 문의해 주세요.",
+        "captchaRequired": "캡차 인증을 완료해 주세요.",
+        "disclaimer": "이메일 한 통. 마케팅 리스트 없음. 원 클릭으로 구독 취소.",
+        "closeLabel": "닫기"
+      },
+      "environmentCloning": {
+        "hero": {
+          "title": "60초 만에 프로덕션 복제"
+        }
+      },
+      "infrastructureCosts": {
+        "hero": {
+          "title": "유휴 환경 비용 지불을 중단하세요"
+        }
+      },
+      "productionParity": {
+        "hero": {
+          "title": "프로덕션과 정확히 일치하는 개발 환경."
+        }
+      },
+      "integrations": {
+        "hero": {
+          "title": "기존 워크플로에 바로 연결"
+        }
+      },
+      "immutableBackups": {
+        "hero": {
+          "title": "랜섬웨어가 건드릴 수 없는 백업"
+        }
+      },
+      "migrationSafety": {
+        "hero": {
+          "title": "데이터를 위험에 빠뜨리지 않고 마이그레이션"
+        }
+      },
+      "instantRecovery": {
+        "hero": {
+          "title": "전체 환경을 몇 분 안에 복구"
+        }
+      },
+      "safeOsTesting": {
+        "hero": {
+          "title": "위험 없이 OS 업데이트를 테스트하세요"
+        }
+      },
+      "retentionCompliance": {
+        "hero": {
+          "title": "법이 요구하는 기간만큼 데이터를 보관하세요"
+        }
+      },
+      "cloudOutageProtection": {
+        "hero": {
+          "title": "AWS가 다운되어도 귀사는 계속 운영됩니다"
+        }
+      },
+      "failoverTesting": {
+        "hero": {
+          "title": "필요하기 전에 페일오버를 테스트하세요"
+        }
+      },
+      "backupVerification": {
+        "hero": {
+          "title": "모든 백업이 자동으로 검증됩니다."
+        }
+      },
+      "vulnerabilityManagement": {
+        "hero": {
+          "title": "공격자가 오기 전에 취약점을 수정하세요"
+        }
+      },
+      "aiPentesting": {
+        "hero": {
+          "title": "프로덕션을 복제하고, AI가 공격하게 하세요."
+        }
+      },
+      "encryption": {
+        "hero": {
+          "title": "귀하의 키. 귀하의 암호화. 예외 없음."
+        }
+      },
+      "continuousSecurityTesting": {
+        "hero": {
+          "title": "연간이 아닌 지속적으로 보안을 테스트하세요."
+        }
+      },
+      "auditTrail": {
+        "hero": {
+          "title": "모든 작업이 기록됩니다. 숨겨진 것은 없습니다."
+        }
+      },
+      "dataSovereignty": {
+        "hero": {
+          "title": "인증서가 아닌 아키텍처로 주권을 실현합니다."
+        }
+      },
+      "rapidRecovery": {
+        "hero": {
+          "title": "며칠이 아닌 몇 분 안에 복구."
+        }
+      },
+      "kubernetesClusterMobility": {
+        "hero": {
+          "title": "실행 중인 Kubernetes 클러스터를 포크하거나 이동하세요"
+        }
+      },
+      "vendorLockIn": {
+        "hero": {
+          "title": "귀사의 인프라. 귀사의 선택. 언제나."
+        }
+      }
+    }
+  },
+  "regionPicker": {
+    "title": "데이터를 어디에 저장할까요?",
+    "subtitle": "계정, 결제, 구성 정보는 선택한 리전에 저장되며 절대 다른 곳으로 이전되지 않습니다.",
+    "reassurance": "귀하의 서버 데이터와 백업은 귀하의 인프라에 그대로 남습니다.",
+    "footer": "가장 가까운 리전 또는 조직 규정에 맞는 리전을 선택하세요. 가입 후에는 변경할 수 없습니다.",
+    "footerNote": "가입 후에는 변경할 수 없습니다."
+  },
+  "solutions": {
+    "categories": {
+      "ransomware": "랜섬웨어 공격 극복",
+      "multi-cloud": "멀티 클라우드",
+      "backups": "신뢰할 수 있는 백업",
+      "encryption": "암호화 관리",
+      "dev-env": "개발 환경",
+      "defense": "사전 방어"
+    }
+  }
+}

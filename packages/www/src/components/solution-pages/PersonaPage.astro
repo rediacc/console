@@ -27,8 +27,7 @@ import SPTechDiff from './SPTechDiff.astro';
 import SPBenefits from './SPBenefits.astro';
 import SPComparisonTable from './SPComparisonTable.astro';
 import SPBottomCta from './SPBottomCta.astro';
-import SPTechStrip from './SPTechStrip.astro';
-import SPRelatedSolutions from './SPRelatedSolutions.astro';
+import SolutionConstellation from './SolutionConstellation.astro';
 import SPShareWithTeam from './SPShareWithTeam.astro';
 import { createTranslator } from '../../i18n/utils';
 import type { Language } from '../../i18n/types';
@@ -82,15 +81,21 @@ const breadcrumbItems = [
   <div class="sp-page" data-persona={config.personaType}>
     <Breadcrumb items={breadcrumbItems} class="sp-breadcrumb" />
     {has('hero') && (
-      <SPHero lang={lang} hero={(content as any).hero} ctaHref={ctaHref} terminal={(content as any).terminal} />
+      <SPHero hero={(content as any).hero} ctaHref={ctaHref} />
     )}
 
     {has('stats') && (
       <SPStatsBar stats={(content as any).stats} />
     )}
 
+    {/*
+      No `referenceItems`: `pages.personaPages.*` has never carried a `references`
+      branch in any locale, so this prop was always `undefined` and the three stat
+      callouts on each persona page cited a source that did not exist. The `ref`
+      indices left in the catalog data are inert and are queued for retirement.
+    */}
     {has('problem') && (
-      <SPProblem problem={(content as any).problem} illustration={config.illustration} referenceItems={(content as any).references?.items} slug={config.illustrationSlug} />
+      <SPProblem problem={(content as any).problem} slug={config.illustrationSlug} />
     )}
 
     {has('costCalculator') && config.calculatorPreset && (
@@ -117,22 +122,17 @@ const breadcrumbItems = [
       <SPComparisonTable
         comparison={(content as any).comparison}
         competitors={config.competitors}
-        referenceItems={(content as any).references?.items}
       />
     )}
 
     {/* SPSocialProof was rendered here — see the SOCIAL PROOF note in the frontmatter. */}
 
-
-    {has('techStrip') && config.techStrip && (
-      <SPTechStrip techStrip={(content as any).techStrip} items={config.techStrip} />
-    )}
-
     {has('relatedSolutions') && config.relatedSolutions && (
-      <SPRelatedSolutions
-        solutions={config.relatedSolutions}
-        content={(content as any).relatedSolutions}
+      <SolutionConstellation
         lang={lang}
+        preset="compact"
+        slugs={config.relatedSolutions}
+        heading={(content as any).relatedSolutions?.title}
       />
     )}
 
@@ -154,7 +154,6 @@ const breadcrumbItems = [
     data={{
       name: (content as any).hero?.title ?? '',
       description: t(`${metaPath}.description`),
-      serviceType: (content as any).hero?.badge ?? '',
       url: `${SITE_URL}/${lang}/${slug}`,
     }}
   />

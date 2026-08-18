@@ -52,7 +52,7 @@ import os from 'node:os';
 import path from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
-import { DEFAULT_LOCALE, SITE_LOCALES, isSiteLocale } from '@rediacc/locales';
+import { DEFAULT_LOCALE, isSiteLocale, SITE_LOCALES } from '@rediacc/locales';
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -75,12 +75,63 @@ const ENGLISH_LOCALE = DEFAULT_LOCALE;
  * can afford to be broader without the discriminative-overlap pruning that file needs.
  */
 const GERMAN_FUNCTION_WORDS = new Set([
-  'aber', 'alle', 'als', 'auf', 'aus', 'bei', 'beim', 'bereits', 'bitte', 'das', 'dass',
-  'dem', 'den', 'der', 'des', 'diese', 'dieser', 'dieses', 'durch', 'ein', 'eine',
-  'einen', 'einer', 'eines', 'für', 'haben', 'hat', 'hier', 'ihre', 'ihren', 'ist',
-  'kann', 'kein', 'keine', 'können', 'muss', 'müssen', 'nach', 'nicht', 'noch', 'nur',
-  'oder', 'sich', 'sie', 'sind', 'über', 'und', 'unter', 'vom', 'von', 'wenn', 'werden',
-  'wird', 'wurde', 'wurden', 'zum', 'zur',
+  'aber',
+  'alle',
+  'als',
+  'auf',
+  'aus',
+  'bei',
+  'beim',
+  'bereits',
+  'bitte',
+  'das',
+  'dass',
+  'dem',
+  'den',
+  'der',
+  'des',
+  'diese',
+  'dieser',
+  'dieses',
+  'durch',
+  'ein',
+  'eine',
+  'einen',
+  'einer',
+  'eines',
+  'für',
+  'haben',
+  'hat',
+  'hier',
+  'ihre',
+  'ihren',
+  'ist',
+  'kann',
+  'kein',
+  'keine',
+  'können',
+  'muss',
+  'müssen',
+  'nach',
+  'nicht',
+  'noch',
+  'nur',
+  'oder',
+  'sich',
+  'sie',
+  'sind',
+  'über',
+  'und',
+  'unter',
+  'vom',
+  'von',
+  'wenn',
+  'werden',
+  'wird',
+  'wurde',
+  'wurden',
+  'zum',
+  'zur',
 ]);
 
 /** German noun/verb endings. Long words only, so Romance cognates in -ion do not trip it. */
@@ -113,7 +164,11 @@ for (const key of Object.keys(NATIVE_SCRIPT)) {
 export type Finding = { root: string; locale: string; file: string; key: string; value: string };
 type LocaleData = Record<string, Record<string, string>>;
 
-function flatten(obj: unknown, prefix = '', out: Record<string, string> = {}): Record<string, string> {
+function flatten(
+  obj: unknown,
+  prefix = '',
+  out: Record<string, string> = {}
+): Record<string, string> {
   if (obj && typeof obj === 'object') {
     for (const [k, v] of Object.entries(obj as Record<string, unknown>)) {
       const q = prefix ? `${prefix}.${k}` : k;
@@ -363,8 +418,11 @@ function selftest(): boolean {
     findGermanContamination(root, 'dir').map((f) => `${f.locale}:${f.key}`);
 
   reseed();
-  check('a clean tree of all thirteen site locales reports nothing (control)',
-    findGermanContamination(root, 'dir').length, 0);
+  check(
+    'a clean tree of all thirteen site locales reports nothing (control)',
+    findGermanContamination(root, 'dir').length,
+    0
+  );
 
   // THE PLANTED DEFECT: German dropped into the Arabic file.
   write('ar', { ...base.ar, empty: GERMAN });
@@ -385,21 +443,34 @@ function selftest(): boolean {
   // carries German function words. It hid 59 genuinely corrupted keys in account-web's
   // team.json before the filter learned to consult that evidence.
   for (const locale of ['ar', 'ja', 'ru', 'zh']) write(locale, { ...base[locale], empty: GERMAN });
-  check('one German value shared by four locales is reported, not exempted as neutral',
-    keys(), ['ar:empty', 'ja:empty', 'ru:empty', 'zh:empty']);
+  check('one German value shared by four locales is reported, not exempted as neutral', keys(), [
+    'ar:empty',
+    'ja:empty',
+    'ru:empty',
+    'zh:empty',
+  ]);
   reseed();
 
   // The three false-positive classes that the first drafts reported, each pinned so a
   // future loosening of a filter fails here instead of in someone's review.
-  check('a unit shared with German is not reported (control)',
-    findGermanContamination(root, 'dir').filter((f) => f.key === 'size').length, 0);
-  check('an English citation every locale carries is not reported (control)',
-    findGermanContamination(root, 'dir').filter((f) => f.key === 'cite').length, 0);
+  check(
+    'a unit shared with German is not reported (control)',
+    findGermanContamination(root, 'dir').filter((f) => f.key === 'size').length,
+    0
+  );
+  check(
+    'an English citation every locale carries is not reported (control)',
+    findGermanContamination(root, 'dir').filter((f) => f.key === 'cite').length,
+    0
+  );
   write('tr', { ...base.tr, product: 'Rediacc btrfs CoW' });
   write('de', { ...base.de, product: 'Rediacc btrfs CoW' });
   write('en', { ...base.en, product: 'Rediacc Copy-on-Write' });
-  check('a product name shared with German is not reported (control)',
-    findGermanContamination(root, 'dir').filter((f) => f.key === 'product').length, 0);
+  check(
+    'a product name shared with German is not reported (control)',
+    findGermanContamination(root, 'dir').filter((f) => f.key === 'product').length,
+    0
+  );
   reseed();
 
   // THE LOCALE SET. The universe is @rediacc/locales, never readdirSync.
@@ -412,13 +483,21 @@ function selftest(): boolean {
     }
   };
   write('nl', { empty: 'Geen activiteit gevonden.' });
-  check('a directory that is not a site locale is a hard error',
-    String(throwsWith(() => findGermanContamination(root, 'dir'))).includes('not a site locale'), true);
+  check(
+    'a directory that is not a site locale is a hard error',
+    String(throwsWith(() => findGermanContamination(root, 'dir'))).includes('not a site locale'),
+    true
+  );
   fs.rmSync(path.join(root, 'nl'), { recursive: true, force: true });
 
   fs.rmSync(path.join(root, 'it'), { recursive: true, force: true });
-  check('a site locale with no directory is a hard error, not a silent zero-file scan',
-    String(throwsWith(() => findGermanContamination(root, 'dir'))).includes('missing 1 site locale(s): it'), true);
+  check(
+    'a site locale with no directory is a hard error, not a silent zero-file scan',
+    String(throwsWith(() => findGermanContamination(root, 'dir'))).includes(
+      'missing 1 site locale(s): it'
+    ),
+    true
+  );
   reseed();
 
   // Flat layout (packages/www), where the German values live in de.json rather than in
@@ -428,8 +507,11 @@ function selftest(): boolean {
     fs.writeFileSync(path.join(flatRoot, `${locale}.json`), JSON.stringify(obj));
   for (const [locale, empty] of Object.entries(NATIVE)) writeFlat(locale, { empty });
   writeFlat('ru', { empty: GERMAN });
-  check('the flat www layout is scanned, not silently skipped',
-    findGermanContamination(flatRoot, 'flat').map((f) => `${f.locale}:${f.key}`), ['ru:empty']);
+  check(
+    'the flat www layout is scanned, not silently skipped',
+    findGermanContamination(flatRoot, 'flat').map((f) => `${f.locale}:${f.key}`),
+    ['ru:empty']
+  );
 
   fs.rmSync(root, { recursive: true, force: true });
   fs.rmSync(flatRoot, { recursive: true, force: true });

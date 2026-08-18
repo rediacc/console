@@ -163,7 +163,9 @@ if (violations.length > 0) {
   for (const { set, locale, key, dropped, invented } of violations) {
     const parts: string[] = [];
     if (dropped.length > 0) {
-      parts.push(`DROPPED ${dropped.map((p) => `{{${p}}}`).join(', ')} (information silently lost)`);
+      parts.push(
+        `DROPPED ${dropped.map((p) => `{{${p}}}`).join(', ')} (information silently lost)`
+      );
     }
     if (invented.length > 0) {
       parts.push(

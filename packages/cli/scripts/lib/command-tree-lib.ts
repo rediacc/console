@@ -233,7 +233,7 @@ export const GLOBAL_OPTION_LONGS = new Set([
  *
  * An entry here is invisible to EVERY consumer of the contract: the plane gate,
  * MCP coverage, console coverage and the docs checks all walk this tree. So a
- * stale entry fails OPEN — name a command that does not exist yet, and the day
+ * stale entry fails OPEN: name a command that does not exist yet, and the day
  * someone adds it, it is silently exempt from all of them. `contract-surface`
  * (plane-coverage.test.ts) therefore asserts every entry is a live command.
  *

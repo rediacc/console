@@ -56,7 +56,7 @@ SCAN=$(hook_scan_target "$CMD")
 # command runs, not what it destroys.
 GIT='(^|[;&|(]|\$\(|`)[[:space:]]*git([[:space:]]+-[A-Za-z-]+([[:space:]]+[^ ;&|]+)?)*[[:space:]]+'
 
-# `git restore ...` — always discards (worktree by default, index with --staged).
+# `git restore ...` always discards (worktree by default, index with --staged).
 RESTORE="${GIT}restore([[:space:]]|$)"
 
 # Bare `git stash` (stashes everything) OR an explicitly mutating subcommand.
@@ -66,7 +66,7 @@ RESTORE="${GIT}restore([[:space:]]|$)"
 STASH_BARE="${GIT}stash[[:space:]]*($|[;&|])"
 STASH_VERB="${GIT}stash[[:space:]]+(push|save|pop|apply|drop|clear|branch|create|store)([[:space:]]|$)"
 
-# `git clean` — deletes UNTRACKED files, which in this repo includes entire
+# `git clean` deletes UNTRACKED files, which in this repo includes entire
 # packages (pkg/chunkstore is untracked in its entirety). Excluded when -n or
 # --dry-run appears anywhere in the invocation.
 CLEAN="${GIT}clean([[:space:]]|$)"

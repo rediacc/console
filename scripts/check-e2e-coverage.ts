@@ -67,8 +67,10 @@ const FUNCTIONS_FILE =
   path.join(REPO_ROOT, 'packages/shared/src/renet-contract/data/functions.generated.ts');
 const METHODS_DIR = path.join(E2E_DIR, 'src/utils/bridge/methods');
 const HELPERS_DIR = path.join(E2E_DIR, 'src/utils/bridge/helpers');
-const WORKFLOWS_DIR = process.env.E2E_COV_WORKFLOWS_DIR ?? path.join(REPO_ROOT, '.github/workflows');
-const ALLOWLIST_FILE = process.env.E2E_COV_ALLOWLIST ?? path.join(REPO_ROOT, '.e2e-coverage-allowlist');
+const WORKFLOWS_DIR =
+  process.env.E2E_COV_WORKFLOWS_DIR ?? path.join(REPO_ROOT, '.github/workflows');
+const ALLOWLIST_FILE =
+  process.env.E2E_COV_ALLOWLIST ?? path.join(REPO_ROOT, '.e2e-coverage-allowlist');
 
 const GREEN = '\x1b[32m';
 const RED = '\x1b[31m';
@@ -168,7 +170,7 @@ function selfCheckRegistry(): void {
   }
 
   const registryNamed = new Set(
-    LIVE_CONFIG_REGISTRY.filter((c) => !c.isDefault).map((c) => c.file),
+    LIVE_CONFIG_REGISTRY.filter((c) => !c.isDefault).map((c) => c.file)
   );
   const registryHasDefault = LIVE_CONFIG_REGISTRY.some((c) => c.isDefault);
 
@@ -176,20 +178,20 @@ function selfCheckRegistry(): void {
   for (const c of namedInWorkflows) {
     if (!registryNamed.has(c)) {
       problems.push(
-        `  - '${c}' is run by a workflow (--config) but is MISSING from LIVE_CONFIG_REGISTRY`,
+        `  - '${c}' is run by a workflow (--config) but is MISSING from LIVE_CONFIG_REGISTRY`
       );
     }
   }
   for (const c of registryNamed) {
     if (!namedInWorkflows.has(c)) {
       problems.push(
-        `  - '${c}' is in LIVE_CONFIG_REGISTRY but NO workflow runs it (--config) — remove it or wire it`,
+        `  - '${c}' is in LIVE_CONFIG_REGISTRY but NO workflow runs it (--config) — remove it or wire it`
       );
     }
   }
   if (registryHasDefault && !bareDefaultSeen) {
     problems.push(
-      `  - LIVE_CONFIG_REGISTRY marks a default config but no workflow calls run-e2e.sh without --config`,
+      `  - LIVE_CONFIG_REGISTRY marks a default config but no workflow calls run-e2e.sh without --config`
     );
   }
 
@@ -197,10 +199,10 @@ function selfCheckRegistry(): void {
     console.log(`${RED}✗${RESET} Live-config registry drifted from the workflows:\n`);
     for (const p of problems) console.log(p);
     console.log(
-      `\nThe registry in scripts/check-e2e-coverage.ts must list exactly the configs CI runs.`,
+      `\nThe registry in scripts/check-e2e-coverage.ts must list exactly the configs CI runs.`
     );
     console.log(
-      `Named configs come from '--config <file>' in .github/workflows/*.yml; the default`,
+      `Named configs come from '--config <file>' in .github/workflows/*.yml; the default`
     );
     console.log(`config is the bare 'run-e2e.sh' call. Reconcile the two and re-run.`);
     process.exit(1);
@@ -208,7 +210,7 @@ function selfCheckRegistry(): void {
 
   console.log(
     `${GREEN}✓${RESET} Live-config registry matches the workflows ` +
-      `(${registryNamed.size} named + 1 default; ${workflowFiles.length} workflow files scanned)`,
+      `(${registryNamed.size} named + 1 default; ${workflowFiles.length} workflow files scanned)`
   );
 }
 
@@ -229,9 +231,10 @@ interface PlaywrightConfig {
 
 const DEFAULT_TEST_MATCH = '**/*.@(spec|test).?(c|m)[jt]s?(x)';
 
-function toPatternArray(
-  v: string | RegExp | (string | RegExp)[] | undefined,
-): { globs: string[]; regexes: RegExp[] } {
+function toPatternArray(v: string | RegExp | (string | RegExp)[] | undefined): {
+  globs: string[];
+  regexes: RegExp[];
+} {
   const globs: string[] = [];
   const regexes: RegExp[] = [];
   if (v === undefined) return { globs, regexes };
@@ -271,7 +274,7 @@ async function expandConfig(configFile: string): Promise<string[]> {
       fail(
         `Config ${configFile} uses a RegExp testMatch/testIgnore — this gate only ` +
           `understands string globs. Extend expandConfig() to evaluate it, or the ` +
-          `coverage set is a lie.`,
+          `coverage set is a lie.`
       );
     }
 
@@ -416,7 +419,7 @@ async function main(): Promise<void> {
   const liveFiles = [...liveTestFiles];
   console.log(
     `${GREEN}✓${RESET} Expanded ${LIVE_CONFIG_REGISTRY.length} live configs into ` +
-      `${liveFiles.length} distinct test file(s):`,
+      `${liveFiles.length} distinct test file(s):`
   );
   for (const line of perConfigCounts) console.log(`    ${line}`);
   console.log('');
@@ -526,7 +529,7 @@ async function main(): Promise<void> {
   console.log(`  - live test files expanded:         ${liveFiles.length}`);
   console.log(`  - harness verb-methods mapped:      ${methodMap.size}`);
   console.log(
-    `  - live helper files (1 hop):        ${liveHelperText.size} of ${helperFiles.length}`,
+    `  - live helper files (1 hop):        ${liveHelperText.size} of ${helperFiles.length}`
   );
   console.log(`  - verbs resolved via a helper hop:  ${helperHopVerbs} (one level max)`);
   console.log(`  - renet functions checked:          ${fns.length}`);
@@ -538,7 +541,7 @@ async function main(): Promise<void> {
     failed = true;
     console.log(
       `${RED}✗${RESET} ${staleAllowlisted.length} allowlist entr(ies) are now covered by a ` +
-        `live suite — the debt is paid, remove them from ${rel(ALLOWLIST_FILE)}:`,
+        `live suite — the debt is paid, remove them from ${rel(ALLOWLIST_FILE)}:`
     );
     for (const fn of staleAllowlisted) console.log(`    - ${fn}`);
     console.log('');
@@ -547,7 +550,7 @@ async function main(): Promise<void> {
   if (missing.length > 0) {
     failed = true;
     console.log(
-      `${RED}✗${RESET} ${missing.length} renet function(s) exercised by NO live suite:\n`,
+      `${RED}✗${RESET} ${missing.length} renet function(s) exercised by NO live suite:\n`
     );
     for (const fn of missing) console.log(`    - ${fn}`);
     console.log('');
@@ -565,7 +568,7 @@ async function main(): Promise<void> {
 
   console.log(
     `${GREEN}✓${RESET} All ${fns.length - allowlist.size} enforced renet functions are ` +
-      `covered by a live suite (${allowlist.size} legacy names allowlisted)`,
+      `covered by a live suite (${allowlist.size} legacy names allowlisted)`
   );
 }
 

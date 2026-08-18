@@ -1,0 +1,54 @@
+/* Solution-page video section.
+ *
+ * These rules used to live in a scoped <style> block inside SPSolutionVideo.astro. They
+ * moved here when the players became a React island: Astro's scoping rewrites selectors
+ * against the elements IT renders, and an island's elements are not among them, so a scoped
+ * rule would have silently stopped matching. */
+
+.sp-video {
+  padding: 2rem 1rem 1rem;
+}
+
+.sp-video-inner {
+  max-width: 960px;
+  margin: 0 auto;
+}
+
+.sp-video-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-2);
+  margin-bottom: var(--space-2);
+  color: var(--color-text-muted);
+}
+
+.sp-video-toolbar-icon {
+  flex: none;
+}
+
+.sp-video-player {
+  width: 100%;
+  height: auto;
+  border-radius: var(--radius-md);
+  background: #0b0e14;
+  display: block;
+}
+
+/* Desktop: landscape only. */
+.sp-video-vertical {
+  display: none;
+}
+
+/* Mobile: swap to the native portrait cut. */
+@media (max-width: 768px) {
+  .sp-video-landscape {
+    display: none;
+  }
+
+  .sp-video-vertical {
+    display: block;
+    max-width: 420px;
+    margin-inline: auto;
+  }
+}

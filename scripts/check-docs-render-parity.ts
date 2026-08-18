@@ -49,7 +49,7 @@
  * Control: npx tsx scripts/__tests__/check-docs-render-parity.control.ts
  */
 
-import { existsSync, readFileSync, readdirSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { SITE_LOCALES } from '@rediacc/locales';
@@ -159,7 +159,10 @@ const ENTITIES: Record<string, string> = {
 function decodeEntities(s: string): string {
   return s.replace(/&(#x?[0-9a-fA-F]+|[a-zA-Z]+);/g, (whole, body: string) => {
     if (body.startsWith('#')) {
-      const code = body[1] === 'x' || body[1] === 'X' ? parseInt(body.slice(2), 16) : parseInt(body.slice(1), 10);
+      const code =
+        body[1] === 'x' || body[1] === 'X'
+          ? parseInt(body.slice(2), 16)
+          : parseInt(body.slice(1), 10);
       return Number.isFinite(code) ? String.fromCodePoint(code) : whole;
     }
     return ENTITIES[body.toLowerCase()] ?? whole;
@@ -198,9 +201,36 @@ function normalizeText(s: string): string {
  * silently joining two unrelated strings into an accidental match.
  */
 const INLINE_TAGS = new Set([
-  'a', 'abbr', 'b', 'bdi', 'bdo', 'cite', 'code', 'data', 'del', 'dfn', 'em', 'i',
-  'ins', 'kbd', 'mark', 'q', 'rp', 'rt', 'ruby', 's', 'samp', 'small', 'span',
-  'strong', 'sub', 'sup', 'time', 'u', 'var', 'wbr',
+  'a',
+  'abbr',
+  'b',
+  'bdi',
+  'bdo',
+  'cite',
+  'code',
+  'data',
+  'del',
+  'dfn',
+  'em',
+  'i',
+  'ins',
+  'kbd',
+  'mark',
+  'q',
+  'rp',
+  'rt',
+  'ruby',
+  's',
+  'samp',
+  'small',
+  'span',
+  'strong',
+  'sub',
+  'sup',
+  'time',
+  'u',
+  'var',
+  'wbr',
 ]);
 
 /** The visible text of an HTML fragment, with script/style content discarded. */
@@ -306,7 +336,9 @@ function control(): void {
 
   const fail = (why: string): never => {
     console.error(`${RED}CONTROL FAILED${NC}: ${why}`);
-    console.error('  The real scan did not run: a gate whose control cannot fire proves nothing by passing.');
+    console.error(
+      '  The real scan did not run: a gate whose control cannot fire proves nothing by passing.'
+    );
     process.exit(1);
   };
 
@@ -317,7 +349,10 @@ function control(): void {
   }
   // 2. Discrimination: the matching case must be silent, or the gate is a tripwire
   //    that fires on everything and would be disabled within a week.
-  if (analyze([mk('## Repository-Lebenszyklus\n', wrap('<h2>Repository-Lebenszyklus</h2>'))]).length !== 0) {
+  if (
+    analyze([mk('## Repository-Lebenszyklus\n', wrap('<h2>Repository-Lebenszyklus</h2>'))])
+      .length !== 0
+  ) {
     fail('a correctly rendered heading was reported as missing');
   }
   // 3. Scoping: the English TOC outside .article-content must not satisfy the
@@ -371,7 +406,8 @@ function main(): void {
     process.exit(1);
   };
 
-  if (!existsSync(SRC_DIR)) refuse(`no docs collection at ${path.relative(ROOT, SRC_DIR)}.`, 'Nothing to compare.');
+  if (!existsSync(SRC_DIR))
+    refuse(`no docs collection at ${path.relative(ROOT, SRC_DIR)}.`, 'Nothing to compare.');
   if (!existsSync(DIST_DIR)) {
     refuse(
       `no built site at ${path.relative(ROOT, DIST_DIR)}, so there is no rendered page to read.`,
@@ -380,7 +416,11 @@ function main(): void {
   }
 
   const pairs = collectPairs();
-  if (pairs.length === 0) refuse('zero locale documents found.', 'The scan is blind; fix the paths rather than trusting this green.');
+  if (pairs.length === 0)
+    refuse(
+      'zero locale documents found.',
+      'The scan is blind; fix the paths rather than trusting this green.'
+    );
 
   const localesSeen = new Set(pairs.map((p) => p.locale));
   const missingLocales = SITE_LOCALES.filter((l) => !localesSeen.has(l));
@@ -393,7 +433,10 @@ function main(): void {
 
   const withHeadings = pairs.filter((p) => sourceHeadings(p.markdown).length > 0);
   if (withHeadings.length === 0) {
-    refuse('no source document yielded a single `## ` heading.', 'The heading parser broke; every assertion below would pass while checking nothing.');
+    refuse(
+      'no source document yielded a single `## ` heading.',
+      'The heading parser broke; every assertion below would pass while checking nothing.'
+    );
   }
 
   const findings = analyze(pairs);
@@ -421,7 +464,7 @@ function main(): void {
   console.error('');
   console.error(
     `${RED}✗${NC} ${findings.length} page(s) render something other than their own locale's document.\n` +
-      "  A page that ignores its locale file serves one language to thirteen routes, and every\n" +
+      '  A page that ignores its locale file serves one language to thirteen routes, and every\n' +
       '  source-rooted i18n gate stays green while it does.'
   );
   process.exit(1);

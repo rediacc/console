@@ -7,7 +7,7 @@ allowed-tools: Bash(ls:*), Bash(git branch:*), Bash(git status:*), Bash(date:*)
 
 ## Current state
 
-- Existing program suites (empty = none yet): !`ls agent/programs/ 2>/dev/null`
+- Existing program suites (empty = none yet): !`ls agent/programs/ 2>/dev/null || echo '(none yet)'`
 - Branch: !`git branch --show-current`
 - UTC now: !`date -u +%Y-%m-%dT%H:%MZ`
 

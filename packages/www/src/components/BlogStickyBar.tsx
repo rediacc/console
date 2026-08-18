@@ -9,9 +9,14 @@ const DISMISSED_KEY = 'stickyBarDismissed';
 
 const BlogStickyBar: React.FC<Props> = ({ source = 'blog-sticky' }) => {
   const [visible, setVisible] = useState(false);
-  const [dismissed, setDismissed] = useState(
-    () => typeof window !== 'undefined' && sessionStorage.getItem(DISMISSED_KEY) !== null
-  );
+  // Both renders must start from the SAME value. Reading sessionStorage here made the
+  // server say false and the browser say true for a returning reader, and React then
+  // discarded the whole island rather than reconciling it. The stored value is applied
+  // after mount instead.
+  const [dismissed, setDismissed] = useState(false);
+  useEffect(() => {
+    if (sessionStorage.getItem(DISMISSED_KEY) !== null) setDismissed(true);
+  }, []);
   const sentinelRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {

@@ -31,12 +31,12 @@ for tok in $(echo "$CMD" | sed -n 's/.*git push//p' | tr ' ' '\n'); do
     esac
 done
 BRANCHES=$(echo "$BRANCHES" | tr ' ' '\n' | grep -v '^$' | grep -v '^main$' | sort -u | tr '\n' ' ')
-# Cancel only runs that are GENUINELY superseded — i.e. built from a sha that is no
+# Cancel only runs that are GENUINELY superseded, i.e. built from a sha that is no
 # longer the tip of origin/$BRANCH.
 #
 # This hook fires on ANY command containing `git push`, including a push to a SUBMODULE
 # (private/renet, private/account). Those pushes do not advance the console branch, so the
-# in-flight console run is still the one we want — yet the old logic cancelled it anyway,
+# in-flight console run is still the one we want, yet the old logic cancelled it anyway,
 # because it matched every queued/in_progress run regardless of sha. The documented workflow
 # is "submodules first, then console", so this hook was force-cancelling a live console run
 # on essentially every cycle: rounds 10 and 12 of the P4 wave died exactly this way, each
@@ -61,5 +61,5 @@ done
 if [[ $COUNT -gt 0 ]]; then
     echo "⚡ Auto-cancelled $COUNT old CI run(s) across: $BRANCHES. The new push triggers a fresh CI run. Watch it with: gh run watch <new-run-id> --repo rediacc/console --exit-status --interval 100 (run_in_background: true). Remember: watch the Console CI run, not the Watchdog Monitor chain runs; auto-retries land as attempt 2 of the same Console CI run."
 fi
-echo "📝 If a PR is open for any of: $BRANCHES — refresh its description NOW (gh pr edit <N> --body-file ...) — the PR-Description gate fails when the body is older than the newest commit. Stale-only failure? Refresh + 'gh run rerun <id> --failed' (no commit needed)."
+echo "📝 If a PR is open for any of: $BRANCHES, refresh its description NOW (gh pr edit <N> --body-file ...). The PR-Description gate fails when the body is older than the newest commit. Stale-only failure? Refresh + 'gh run rerun <id> --failed' (no commit needed)."
 exit 0

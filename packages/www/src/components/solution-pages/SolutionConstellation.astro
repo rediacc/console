@@ -1,0 +1,726 @@
+---
+/**
+ * The solution constellation: ONE navigation engine for the 21 solution pages,
+ * rendered from a filtered node set. It replaces the mega menu, the sidebar
+ * solutions accordion, the /solutions card grid, and both explore/related card
+ * walls - if a variant of "browse the solutions" exists, it is this component.
+ *
+ * Since the `/[lang]/solutions` index route was deleted, the `full` preset's one
+ * mount is on the HOMEPAGE, immediately after the hero. Two things followed it
+ * here rather than being left behind: the frame the index page used to draw in
+ * its own scoped <style> (see .cx--full.cx--boxed below), and the in-page
+ * fragment ids the compact preset links to. `solutionsHref` therefore points at
+ * the homepage, and `#copy` / `#test` / `#recover` / `#platform` resolve there.
+ *
+ * Two layers, deliberately:
+ *   - The <svg> carries ONLY the hair-thin edges. It is aria-hidden and
+ *     pointer-events: none, honestly: it contains no text and nothing focusable.
+ *   - The nodes are real HTML <a> elements inside <nav aria-label>, absolutely
+ *     positioned from the same build-time coordinate array the edges use. That
+ *     buys real focus rings, middle-click, crawlable hrefs, native per-locale
+ *     wrapping, and no SVG-text RTL hazard.
+ *
+ * Three presentations of one DOM:
+ *   >=1200px + JS  : constellation; a plain primary click opens the popover.
+ *   >=1200px, no JS: constellation renders (static HTML/CSS); clicks navigate.
+ *   <1200px / noCSS: the same markup reflows into a grouped list of links.
+ *
+ * Motion: reveal only (edges draw in, nodes fade in), all over by ~1.4s, and
+ * NO idle loop - a target that drifts under the cursor is a Fitts's-law tax.
+ * The hidden state is authored ONLY under `html.js-anim` +
+ * `prefers-reduced-motion: no-preference` (the site's double guard; see the
+ * SCROLL REVEAL note in public/styles/main.css). Do not invert that.
+ */
+import type { Language } from '../../i18n/types';
+import { createTranslator } from '../../i18n/utils';
+import { SOLUTION_PAGES } from '../../config/solution-pages';
+import {
+  buildConstellation,
+  EN_FALLBACK,
+  LEGACY_EXPLORE_SOURCE,
+  type ConstellationPreset,
+} from './constellation';
+
+interface Props {
+  lang: Language;
+  /** Anchor id for the section, so the header and footer can link to the mount. */
+  id?: string;
+  /** 'full' = the homepage mount (all 21, in-page group ids). 'compact' = a shorter frame. */
+  preset?: ConstellationPreset;
+  /** Solution slugs to render as nodes. Omit for all; [] for anchors + centre only. */
+  slugs?: readonly string[];
+  /** Rendered inert with aria-current="page" instead of as a link. */
+  currentSlug?: string;
+  /** Optional section heading (explore/related slots). */
+  heading?: string;
+  /** Ink overrides for the dark hero band. */
+  onDark?: boolean;
+}
+
+const {
+  lang,
+  id,
+  preset = 'compact',
+  slugs = Object.keys(SOLUTION_PAGES),
+  currentSlug,
+  heading,
+  onDark = false,
+} = Astro.props as Props;
+
+const { t, to } = createTranslator(lang);
+const rtl = lang === 'ar';
+const full = preset === 'full';
+
+const layout = buildConstellation(preset, slugs, rtl);
+
+interface LegacyExploreEntry {
+  title?: string;
+  description?: string;
+}
+
+/**
+ * Short label + blurb per page, from the harvested
+ * `pages.solutionPages.<key>.label` / `.blurb` keys.
+ *
+ * These used to fall back to the page's own entry in the legacy
+ * `explore.solutions[]` array so every locale rendered correctly while the
+ * consolidated i18n pass was still pending. That pass has landed: the arrays are
+ * deleted in all 13 catalogs and the harvested keys carry the same already
+ * naturalized strings, so the fallback now pointed at keys that no longer exist.
+ * The English safety net stays, because a missing key should degrade to a word
+ * rather than to a slug.
+ */
+const labelBlurb = (slug: string): { label: string; blurb: string } => {
+  const ck = SOLUTION_PAGES[slug].contentKey;
+  const label = t(`pages.solutionPages.${ck}.label`, '') || EN_FALLBACK[slug]?.label || slug;
+  const blurb = t(`pages.solutionPages.${ck}.blurb`, '') || EN_FALLBACK[slug]?.blurb || '';
+  return { label, blurb };
+};
+
+const roleLabels = {
+  copy: t('solutions.roles.copy', 'Copy'),
+  test: t('solutions.roles.test', 'Test'),
+  recover: t('solutions.roles.recover', 'Recover'),
+  property: t('solutions.roles.property', 'Platform'),
+} as const;
+
+/** Stable in-page fragment ids, English in every locale (the F2 convention). */
+const GROUP_IDS = { copy: 'copy', test: 'test', recover: 'recover', property: 'platform' } as const;
+
+const centreText = full
+  ? t(
+      'solutions.constellation.centre',
+      'Every solution is one thing done to a copy of your live system.'
+    )
+  : t('navigation.viewAllSolutions');
+
+/**
+ * The browse surface is the homepage's `full` mount. `/[lang]/solutions` no
+ * longer exists, and every anchor below hangs off this one constant, so the
+ * ~5 links x 24 pages x 13 locales that point into it move together.
+ */
+const solutionsHref = `/${lang}`;
+const dist = (x: number, y: number) =>
+  Math.hypot(x - layout.width / 2, y - layout.height / 2);
+/** Reveal stagger: 120-560ms by distance from centre; edges lead by ~120ms. */
+const maxDist = Math.max(1, ...layout.edges.map((e) => dist(e.x2, e.y2)));
+const nodeDelay = (x: number, y: number) => Math.round(120 + (dist(x, y) / maxDist) * 440);
+const edgeDelay = (e: (typeof layout.edges)[number]) =>
+  Math.round((dist(e.x2, e.y2) / maxDist) * 260);
+
+const groups = (['copy', 'test', 'recover', 'property'] as const)
+  .map((role) => ({
+    role,
+    id: GROUP_IDS[role],
+    label: roleLabels[role],
+    anchor: layout.anchors.find((a) => a.role === role) ?? null,
+    nodes: layout.arms[role].map((n) => {
+      const slug = n.slug as string;
+      const cfg = SOLUTION_PAGES[slug];
+      return {
+        ...n,
+        slug,
+        category: cfg.category,
+        catLabel: t(`solutions.categories.${cfg.category}`),
+        href: `/${lang}/solutions/${slug}`,
+        current: slug === currentSlug,
+        ...labelBlurb(slug),
+      };
+    }),
+  }))
+  .filter((g) => g.anchor !== null || g.nodes.length > 0);
+
+const popTitleId = `cx-pop-t-${preset}-${currentSlug ?? slugs.length}`;
+---
+
+<div
+  id={id}
+  class:list={['cx', `cx--${preset}`, { 'cx--on-dark': onDark, 'cx--boxed': Boolean(heading) }]}
+  data-cx
+>
+  {heading && <h2 class="cx-heading">{heading}</h2>}
+  <div class="cx-stage" style={`--cx-ar: ${layout.width} / ${layout.height}`}>
+    <svg
+      class="cx-net"
+      viewBox={`0 0 ${layout.width} ${layout.height}`}
+      preserveAspectRatio="xMidYMid meet"
+      aria-hidden="true"
+      focusable="false"
+    >
+      {layout.edges.map((e) => (
+        <line
+          x1={e.x1}
+          y1={e.y1}
+          x2={e.x2}
+          y2={e.y2}
+          style={`--l: ${e.len}; --d: ${edgeDelay(e)}`}
+        />
+      ))}
+    </svg>
+
+    <nav class="cx-nav" aria-label={t('navigation.solutions')}>
+      {
+        full ? (
+          <p class="cx-centre" style={`--x: ${layout.centre.px}%; --y: ${layout.centre.py}%`}>
+            {centreText}
+          </p>
+        ) : (
+          <a
+            class="cx-centre cx-centre--link"
+            href={`${solutionsHref}#solutions`}
+            style={`--x: ${layout.centre.px}%; --y: ${layout.centre.py}%`}
+            data-track="cta_click"
+            data-track-label="constellation-all-solutions"
+          >
+            {centreText}
+          </a>
+        )
+      }
+      <ul class="cx-groups" role="list">
+        {
+          groups.map((g) => (
+            <li
+              class="cx-group"
+              role="listitem"
+              id={full ? g.id : undefined}
+              aria-label={g.label}
+            >
+              {/*
+                The `property` group is an inner RING around the centre, not an arm, so
+                it has no anchor by design (see the geometry note in constellation.ts).
+                The consequence was that its label never rendered in any form: five
+                pages sat in an unnamed group, and `solutions.roles.property` was
+                authored in all 13 catalogs while reaching nobody, including screen
+                readers.
+
+                EVERY group carries the label, not just the anchorless one. Labelling
+                only that one inverted the two views: `role="listitem"` takes no
+                accessible name from its content, so the three groups with a visible
+                `cx-anchor` span had no accessible name while the one without a visible
+                label had one. A sighted user saw three labels and a screen-reader user
+                heard a different one. Naming all four makes the views agree.
+              */}
+              {g.anchor &&
+                (full ? (
+                  <span
+                    class="cx-anchor"
+                    style={`--x: ${g.anchor.px}%; --y: ${g.anchor.py}%; --d: ${nodeDelay(g.anchor.x, g.anchor.y)}`}
+                  >
+                    {g.label}
+                  </span>
+                ) : (
+                  <a
+                    class="cx-anchor cx-anchor--link"
+                    href={`${solutionsHref}#${g.id}`}
+                    style={`--x: ${g.anchor.px}%; --y: ${g.anchor.py}%; --d: ${nodeDelay(g.anchor.x, g.anchor.y)}`}
+                    data-track="cta_click"
+                    data-track-label="constellation-anchor"
+                    data-track-dest={g.id}
+                  >
+                    {g.label}
+                  </a>
+                ))}
+              {g.nodes.length > 0 && (
+                <ul role="list">
+                  {g.nodes.map((n) => (
+                    <li role="listitem">
+                      {n.current ? (
+                        <span
+                          class="cx-n cx-n--current"
+                          aria-current="page"
+                          data-cat={n.category}
+                          data-flip={n.flip ? '' : undefined}
+                          style={`--x: ${n.px}%; --y: ${n.py}%; --d: ${nodeDelay(n.x, n.y)}`}
+                        >
+                          <span class="cx-dot" aria-hidden="true" />
+                          <span class="cx-lbl">{n.label}</span>
+                        </span>
+                      ) : (
+                        <a
+                          class="cx-n"
+                          href={n.href}
+                          data-cat={n.category}
+                          data-cat-label={n.catLabel}
+                          data-blurb={n.blurb}
+                          data-flip={n.flip ? '' : undefined}
+                          aria-haspopup="dialog"
+                          style={`--x: ${n.px}%; --y: ${n.py}%; --d: ${nodeDelay(n.x, n.y)}`}
+                          data-track="cta_click"
+                          data-track-label="constellation-node"
+                          data-track-dest={n.slug}
+                        >
+                          <span class="cx-dot" aria-hidden="true" />
+                          <span class="cx-lbl">{n.label}</span>
+                        </a>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </li>
+          ))
+        }
+      </ul>
+    </nav>
+
+    <div class="cx-pop" popover="auto" role="dialog" aria-labelledby={popTitleId}>
+      <p class="cx-pop-cat"></p>
+      <h3 class="cx-pop-t" id={popTitleId}></h3>
+      <p class="cx-pop-blurb"></p>
+      <a class="cx-pop-go" href="#">
+        <span>{t('common.buttons.learnMore')}</span>
+        <span class="cx-pop-arrow" aria-hidden="true">&rarr;</span>
+      </a>
+    </div>
+  </div>
+</div>
+
+<style is:global>
+  /* ===== Solution constellation (namespace: .cx-) =====
+     Default styles ARE the grouped-list presentation, so a no-CSS or <1200px
+     visitor gets a working nav with zero extra markup. The constellation is
+     the >=1200px enhancement inside the media query below. */
+  .cx {
+    --cx-ink: var(--color-text);
+    --cx-muted: var(--color-text-secondary);
+    --cx-line: var(--color-border);
+    --cx-surface: var(--color-surface);
+    /* The six category colours, same values the solution pages use. */
+    --cx-cat-dev-env: var(--color-brand-primary);
+    --cx-cat-ransomware: #c05050;
+    --cx-cat-multi-cloud: #5a9abf;
+    --cx-cat-backups: #d4a04a;
+    --cx-cat-encryption: #8a6fba;
+    --cx-cat-defense: #4ab0a0;
+    color: var(--cx-ink);
+  }
+  .cx--on-dark {
+    --cx-ink: #fafaf5;
+    --cx-muted: rgba(250, 249, 245, 0.72);
+    --cx-line: rgba(250, 249, 245, 0.35);
+  }
+  /* Section dress for the explore/related slots (any mount with a heading). */
+  .cx--boxed {
+    padding: 96px 48px;
+    background: var(--sp-bg-white, var(--color-bg));
+  }
+  .cx--boxed .cx-heading,
+  .cx--boxed .cx-stage {
+    max-width: var(--sp-cards-max, 1200px);
+    margin-inline: auto;
+  }
+  /* The `full` figure carries all 21 nodes and was framed at 1360px by the
+     deleted index page's scoped <style>. The 1200px explore/related cap would
+     squeeze it; the stage's own max-width at >=1200px is 1360px, so this makes
+     the two agree instead of one silently winning. */
+  .cx--full.cx--boxed .cx-heading,
+  .cx--full.cx--boxed .cx-stage {
+    max-width: 1360px;
+  }
+  @media (max-width: 768px) {
+    .cx--boxed {
+      padding: 64px 24px;
+    }
+  }
+  .cx-heading {
+    font-size: var(--font-size-2xl);
+    font-weight: 700;
+    line-height: 1.2;
+    letter-spacing: -0.02em;
+    margin: 0 0 32px;
+  }
+  .cx-net {
+    display: none;
+  }
+  .cx-nav ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+  /* List presentation: the four role groups flow as responsive columns. */
+  .cx-groups {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 8px 32px;
+  }
+  .cx-group {
+    min-width: 0;
+  }
+  .cx-centre {
+    display: block;
+    margin: 0 0 24px;
+    font-size: var(--font-size-lg);
+    color: var(--cx-muted);
+    max-width: 440px;
+  }
+  a.cx-centre--link {
+    color: var(--cx-ink);
+    font-weight: 600;
+    text-decoration: none;
+    text-underline-offset: 4px;
+  }
+  a.cx-centre--link:hover {
+    text-decoration: underline;
+  }
+  .cx-anchor {
+    display: block;
+    font-size: var(--font-size-sm);
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--cx-ink);
+    text-decoration: none;
+    margin: 20px 0 8px;
+  }
+  a.cx-anchor--link,
+  a.cx-centre--link {
+    display: inline-flex;
+    align-items: center;
+    min-height: var(--touch-target-min, 44px);
+  }
+  .cx-n {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-height: var(--touch-target-min, 44px);
+    padding: 4px 0;
+    color: var(--cx-ink);
+    text-decoration: none;
+    font-size: var(--font-size-sm);
+  }
+  .cx-n--current {
+    color: var(--cx-muted);
+  }
+  .cx-dot {
+    flex: none;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--cx-cat, var(--cx-ink));
+    transition: transform 0.2s ease;
+  }
+  .cx-n[data-cat='dev-env'] {
+    --cx-cat: var(--cx-cat-dev-env);
+  }
+  .cx-n[data-cat='ransomware'] {
+    --cx-cat: var(--cx-cat-ransomware);
+  }
+  .cx-n[data-cat='multi-cloud'] {
+    --cx-cat: var(--cx-cat-multi-cloud);
+  }
+  .cx-n[data-cat='backups'] {
+    --cx-cat: var(--cx-cat-backups);
+  }
+  .cx-n[data-cat='encryption'] {
+    --cx-cat: var(--cx-cat-encryption);
+  }
+  .cx-n[data-cat='defense'] {
+    --cx-cat: var(--cx-cat-defense);
+  }
+  .cx-n:hover .cx-dot,
+  .cx-n:focus-visible .cx-dot {
+    transform: scale(1.35);
+  }
+  .cx-n:hover .cx-lbl {
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+  .cx-n:focus-visible,
+  .cx-anchor--link:focus-visible,
+  a.cx-centre--link:focus-visible {
+    outline: 2px solid currentColor;
+    outline-offset: 3px;
+    border-radius: var(--radius-sm);
+  }
+
+  /* ===== The constellation, >=1200px ===== */
+  @media (min-width: 1200px) {
+    .cx-stage {
+      position: relative;
+      aspect-ratio: var(--cx-ar);
+      max-width: 1360px;
+      margin-inline: auto;
+      /* Labels are sized in cqw so text shrinks with the stage; the geometry
+         is percentages, so the whole figure scales as one unit. */
+      container-type: inline-size;
+    }
+    .cx-net {
+      display: block;
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+    }
+    .cx-net line {
+      stroke: var(--cx-line);
+      stroke-width: 1;
+      vector-effect: non-scaling-stroke;
+    }
+    /* In the constellation the groups are not boxes: nodes position against
+       the stage directly. */
+    .cx-nav .cx-groups,
+    .cx-nav .cx-group ul,
+    .cx-nav .cx-group li {
+      display: contents;
+    }
+    /* .cx-group is the EXCEPTION, and the reason is the fragment ids it carries.
+       `display: contents` generates no box, so `#copy`, `#test`, `#recover` and
+       `#platform` were valid ids that a browser could not scroll to: measured on
+       the homepage at 1280px, every one of the four left scrollY at 0 while
+       `#solutions` moved to 220. Every ~5 links x 24 pages x 13 locales in the
+       compact constellation point at these.
+
+       A block whose children are all absolutely positioned is zero-height and
+       generates no containing block, so the nodes still resolve against
+       .cx-stage and the figure is pixel-identical; it just has a scroll
+       position now. All four land at the top of the stage, which at this width
+       is correct: the arms are one figure, not four stacked sections. */
+    .cx-nav .cx-group {
+      display: block;
+    }
+    /* Node positions are physical left/top with PRE-MIRRORED coordinates
+       (RTL is applied once, at build time, in constellation.ts). Do not
+       change these to inset-inline-start: the mirror would apply twice and
+       Arabic would silently flip back to LTR. */
+    .cx-nav .cx-centre,
+    .cx-nav .cx-anchor,
+    .cx-nav .cx-n {
+      position: absolute;
+      left: var(--x);
+      top: var(--y);
+      transform: translate(-50%, -50%);
+      margin: 0;
+    }
+    .cx-nav .cx-centre {
+      text-align: center;
+      text-wrap: balance;
+      font-size: clamp(14px, 1.33cqw, 18px);
+      max-width: clamp(300px, 26.5cqw, 360px);
+      width: max-content;
+    }
+    .cx-nav .cx-anchor {
+      font-size: clamp(13px, 1.18cqw, 16px);
+      justify-content: center;
+      min-width: var(--touch-target-min, 44px);
+    }
+    .cx-nav .cx-anchor,
+    .cx-nav a.cx-centre--link {
+      display: inline-flex;
+      align-items: center;
+      min-height: var(--touch-target-min, 44px);
+    }
+    .cx-nav .cx-n {
+      flex-direction: column;
+      justify-content: center;
+      gap: 6px;
+      min-width: var(--touch-target-min, 44px);
+      min-height: var(--touch-target-min, 44px);
+      max-width: clamp(116px, 10.3cqw, 140px);
+      padding: 4px;
+      text-align: center;
+      font-size: clamp(10.5px, 0.94cqw, 12.8px);
+      line-height: 1.25;
+    }
+    /* Bottom-half nodes carry the label ABOVE the dot so it stays in frame. */
+    .cx-nav .cx-n[data-flip] {
+      flex-direction: column-reverse;
+    }
+    .cx-nav .cx-lbl {
+      color: var(--cx-muted);
+      transition: color 0.2s ease;
+    }
+    .cx-nav .cx-n:hover .cx-lbl,
+    .cx-nav .cx-n:focus-visible .cx-lbl {
+      color: var(--cx-ink);
+    }
+    .cx-nav .cx-n--current .cx-dot {
+      box-shadow: 0 0 0 3px color-mix(in srgb, var(--cx-cat, var(--cx-ink)) 30%, transparent);
+    }
+  }
+
+  /* ===== Reveal motion: THE DOUBLE GUARD (see main.css). The hidden state is
+     only ever authored when JS is live AND the visitor allows motion, so a
+     no-JS, broken-JS, or reduced-motion visit renders everything at full
+     opacity with zero rules to undo. All motion ends by ~1.4s; no idle loop. */
+  @media (prefers-reduced-motion: no-preference) and (min-width: 1200px) {
+    html.js-anim .cx:not(.cx-in) .cx-net line {
+      stroke-dasharray: var(--l);
+      stroke-dashoffset: var(--l);
+    }
+    html.js-anim .cx .cx-net line {
+      stroke-dasharray: var(--l);
+      transition: stroke-dashoffset 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+      transition-delay: calc(var(--d, 0) * 1ms);
+    }
+    html.js-anim .cx.cx-in .cx-net line {
+      stroke-dashoffset: 0;
+    }
+    html.js-anim .cx:not(.cx-in) .cx-nav :is(.cx-n, .cx-anchor, .cx-centre) {
+      opacity: 0;
+      transform: translate(-50%, -50%) scale(0.94);
+    }
+    html.js-anim .cx .cx-nav :is(.cx-n, .cx-anchor, .cx-centre) {
+      transition:
+        opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1),
+        transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+      transition-delay: calc(var(--d, 0) * 1ms);
+    }
+    html.js-anim .cx.cx-in .cx-nav :is(.cx-n, .cx-anchor, .cx-centre) {
+      opacity: 1;
+      transform: translate(-50%, -50%) scale(1);
+    }
+  }
+
+  /* ===== Popover: always lands in the constellation's empty centre. ===== */
+  .cx-pop {
+    position: fixed;
+    margin: 0;
+    transform: translate(-50%, -50%);
+    width: min(360px, 90vw);
+    padding: var(--space-6, 24px);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    background: var(--color-surface);
+    color: var(--color-text);
+    box-shadow: var(--shadow-lg);
+  }
+  .cx-pop-cat {
+    margin: 0 0 6px;
+    font-size: var(--font-size-xs);
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--color-text-secondary);
+  }
+  .cx-pop-t {
+    margin: 0 0 8px;
+    font-size: var(--font-size-lg);
+    font-weight: 700;
+    line-height: 1.25;
+  }
+  .cx-pop-blurb {
+    margin: 0 0 16px;
+    font-size: var(--font-size-sm);
+    line-height: 1.5;
+    color: var(--color-text-secondary);
+  }
+  .cx-pop-go {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-weight: 600;
+    color: var(--color-brand-primary);
+    text-decoration: none;
+  }
+  .cx-pop-go:hover {
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+  .cx-pop-go:focus-visible {
+    outline: 2px solid currentColor;
+    outline-offset: 3px;
+    border-radius: var(--radius-sm);
+  }
+  .cx-pop-arrow {
+    display: inline-block;
+  }
+  [dir='rtl'] .cx-pop-arrow {
+    transform: scaleX(-1);
+  }
+</style>
+
+<script>
+  /**
+   * Popup + reveal wiring. Everything degrades: without this script every node
+   * is a plain link and the CSS never hides anything (the js-anim guard).
+   */
+  const setup = (root: HTMLElement) => {
+    if (root.dataset.cxInit) return;
+    root.dataset.cxInit = '1';
+
+    // Reveal: flip once when 20% visible. Harmless when the guard never hid anything.
+    const io = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (entry.isIntersecting) {
+            root.classList.add('cx-in');
+            io.disconnect();
+          }
+        }
+      },
+      { threshold: 0.2 }
+    );
+    io.observe(root);
+
+    const pop = root.querySelector<HTMLElement>('.cx-pop');
+    if (!pop || typeof pop.showPopover !== 'function') return;
+
+    let invoker: HTMLElement | null = null;
+
+    root.addEventListener('click', (ev) => {
+      // Popup only where the constellation presentation is active. A coarse
+      // primary pointer (touch) navigates directly instead; keyboard-only
+      // devices report `pointer: none` and keep the popup, which is
+      // focus-managed and Escape-dismissable.
+      if (!matchMedia('(min-width: 1200px)').matches || matchMedia('(pointer: coarse)').matches)
+        return;
+      const a = (ev.target as HTMLElement).closest<HTMLAnchorElement>('a.cx-n[data-blurb]');
+      if (!a || ev.metaKey || ev.ctrlKey || ev.shiftKey || ev.altKey || ev.button !== 0) return;
+      ev.preventDefault();
+      invoker = a;
+      const set = (sel: string, text: string) => {
+        const el = pop.querySelector(sel);
+        if (el) el.textContent = text;
+      };
+      set('.cx-pop-cat', a.dataset.catLabel ?? '');
+      set('.cx-pop-t', a.querySelector('.cx-lbl')?.textContent ?? '');
+      set('.cx-pop-blurb', a.dataset.blurb ?? '');
+      pop.querySelector<HTMLAnchorElement>('.cx-pop-go')?.setAttribute(
+        'href',
+        a.getAttribute('href') ?? '#'
+      );
+      // Land in the permanent empty centre of this instance's stage.
+      const stage = root.querySelector('.cx-stage')?.getBoundingClientRect();
+      if (stage) {
+        pop.style.left = `${stage.left + stage.width / 2}px`;
+        pop.style.top = `${Math.max(140, Math.min(window.innerHeight - 140, stage.top + stage.height / 2))}px`;
+      }
+      pop.showPopover();
+    });
+
+    pop.addEventListener('toggle', (ev) => {
+      const state = (ev as ToggleEvent).newState;
+      if (state === 'open') {
+        pop.querySelector<HTMLAnchorElement>('.cx-pop-go')?.focus();
+      } else {
+        invoker?.focus();
+        invoker = null;
+      }
+    });
+  };
+
+  const initAll = () => document.querySelectorAll<HTMLElement>('[data-cx]').forEach(setup);
+  initAll();
+  document.addEventListener('astro:page-load', initAll);
+</script>

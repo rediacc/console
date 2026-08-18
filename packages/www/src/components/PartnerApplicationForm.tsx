@@ -1,7 +1,9 @@
 import { Turnstile, type TurnstileInstance } from '@marsidev/react-turnstile';
 import React, { useRef, useState } from 'react';
 import { useLanguage } from '../hooks/useLanguage';
-import { useTranslation } from '../i18n/react';
+// Route-scoped translations: this island hydrates on ONE page, so its strings ride
+// this component's chunk instead of the catalog every route downloads.
+import { useRouteTranslation } from '../i18n/react-route';
 
 /**
  * Public application form for The Rediacc Partner 1st Program. Mirrors
@@ -107,7 +109,7 @@ const NS = 'pages.partners.form';
 
 const PartnerApplicationForm: React.FC = () => {
   const currentLang = useLanguage();
-  const { t } = useTranslation(currentLang);
+  const { t } = useRouteTranslation(currentLang);
 
   const [state, setState] = useState<FormState>('idle');
   const [errorMsg, setErrorMsg] = useState('');

@@ -289,7 +289,7 @@ const SPRoiCalculator: React.FC<Props> = ({ content }) => {
                       onError={() => setTurnstileToken(null)}
                     />
                   )}
-                  {gateError && <p className="newsletter-error">{gateError}</p>}
+                  {gateError && <p className="form-error">{gateError}</p>}
                   <p className="newsletter-privacy">{t('newsletter.privacyNote')}</p>
                 </div>
               </div>

@@ -24,23 +24,37 @@ interface Props {
 
 const { comparison, competitors, referenceItems = [] } = Astro.props;
 
+const attr = (s: string) =>
+  s
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+
+/**
+ * The cell's own value carries the citation. The superscript `[n]` is gone: the
+ * source lives on the words (or the glyph) the reader is already looking at, and
+ * the underline is what marks it as a link without relying on colour.
+ *
+ * A glyph cell has no readable label, so its accessible name is the source prose
+ * alone; a text cell keeps its visible text at the front of the accessible name so
+ * "label in name" still holds.
+ */
 function renderValue(val: string, ref?: number) {
-  let refHtml = '';
-  if (ref && ref > 0) {
-    const item = referenceItems[ref - 1];
-    const url = item?.url;
-    if (url) {
-      refHtml = `<a href="${url}" target="_blank" rel="noopener noreferrer" class="sp-ref-link"><sup class="sp-ref-num">[${ref}]</sup></a>`;
-    } else {
-      refHtml = `<sup class="sp-ref-num">[${ref}]</sup>`;
-    }
-  }
-  if (val === 'check') return `<span class="sp-comparison-check">&#10003;</span>${refHtml}`;
-  if (val === 'cross') return `<span class="sp-comparison-cross">&#10007;</span>${refHtml}`;
-  if (val === 'rediacc') return `<span class="sp-comparison-rediacc">&#10003;</span>${refHtml}`;
+  const cited = ref && ref > 0 ? referenceItems[ref - 1] : undefined;
+  const url = cited?.url;
+  const cite = (inner: string, spoken: string) => {
+    if (!url) return inner;
+    const label = spoken ? `${spoken}: ${cited!.text}` : cited!.text;
+    return `<a href="${attr(url)}" target="_blank" rel="noopener noreferrer" class="sp-source-link" title="${attr(cited!.text)}" aria-label="${attr(label)}">${inner}</a>`;
+  };
+  if (val === 'check') return cite('<span class="sp-comparison-check">&#10003;</span>', '');
+  if (val === 'cross') return cite('<span class="sp-comparison-cross">&#10007;</span>', '');
+  if (val === 'rediacc') return cite('<span class="sp-comparison-rediacc">&#10003;</span>', '');
   // Text values like "Minutes", "<60s"
-  if (val.startsWith('<')) return `<span class="sp-comparison-rediacc">${val}</span>${refHtml}`;
-  return `${val}${refHtml}`;
+  if (val.startsWith('<'))
+    return cite(`<span class="sp-comparison-rediacc">${attr(val)}</span>`, val);
+  return cite(attr(val), val);
 }
 ---
 

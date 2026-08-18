@@ -706,7 +706,7 @@ test_workflow_does_not_trigger_on_pull_request() {
 # workflow_dispatch -- closes the head-SHA gap a workflow_run event hits when
 # Claude Review was itself invoked via workflow_dispatch (its head_sha is the
 # dispatch ref, e.g. main, never the PR head -- documented GitHub Actions
-# behavior). See agent/0731-2/PLAN-github-actions-workflow-run-trigger-fix.md.
+# behavior). See agent/PLAN-github-actions-workflow-run-trigger-fix.md.
 # ---------------------------------------------------------------------------
 test_workflow_dispatch_resolves_pr_directly() {
     local t="$1"

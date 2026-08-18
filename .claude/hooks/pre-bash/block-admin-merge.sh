@@ -11,7 +11,7 @@
 #      reply to the newest finished review REPORT (issue-comment channel,
 #      check-review-report-replies.sh). Required checks are per-commit: a
 #      report posted after CI went green can never turn the check red, so
-#      merge time is the only enforcement point — ci.yml's review-gate only
+#      merge time is the only enforcement point, and ci.yml's review-gate only
 #      re-evaluates on the next push.
 #   4. An immediate merge (no --auto) must additionally prove CI green NOW.
 #      Console gets all checks; other rediacc repos get the hygiene checks

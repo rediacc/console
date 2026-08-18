@@ -135,14 +135,12 @@ const categoryStates = visibleCategories.map(category => {
   <nav class="sidebar-nav docs-nav" role="navigation" aria-label={t('common.aria.documentationNavigation')}>
     <h2 class="sidebar-title">{t('pages.docs.title')}</h2>
 
-    <div class="sidebar-search-container">
-      <input
-        type="text"
-        class="sidebar-search-input"
-        placeholder={t('pages.docs.searchPlaceholder')}
-        aria-label={t('documentation.searchDocs')}
-      />
-    </div>
+    {/* The substring filter that used to sit here is gone. It was visible on
+        phones only, it matched link text and nothing else (not body copy, not
+        headings, not other categories once one was scoped away), and the docs
+        header now carries a real search that queries the same index the
+        site-wide modal does. Its two translation keys were not orphaned: the
+        header trigger reuses both. */}
 
     <ul class="sidebar-list category-list">
       {categoryStates.map(({ category, itemCount, categoryId, hasActiveDoc, expandedAttr, subgroups }) => {
@@ -238,33 +236,6 @@ const categoryStates = visibleCategories.map(category => {
     /* Uses shared sidebar-nav styles from sidebar-shared.css */
   }
 
-  /* Search Input Container */
-  .sidebar-search-container {
-    display: none;
-  }
-
-  .sidebar-search-input {
-    width: 100%;
-    padding: var(--space-2) var(--space-3);
-    border: 1px solid var(--sidebar-border);
-    border-radius: var(--radius-sm);
-    font-size: var(--font-size-sm);
-    font-family: inherit;
-    background-color: var(--color-bg-alt);
-    color: var(--color-text);
-    transition: border-color var(--transition-speed);
-  }
-
-  .sidebar-search-input:focus-visible {
-    outline: 2px solid var(--color-brand-primary);
-    outline-offset: 1px;
-    border-color: var(--sidebar-accent);
-  }
-
-  .sidebar-search-input::placeholder {
-    color: var(--color-text-secondary);
-  }
-
   /* Add extra margin to category items for spacing */
   .category-item {
     margin-bottom: var(--space-6);
@@ -315,7 +286,7 @@ const categoryStates = visibleCategories.map(category => {
     display: inline-block;
     color: var(--color-text-secondary);
     font-variant-numeric: tabular-nums;
-    margin-right: var(--space-1);
+    margin-inline-end: var(--space-1);
     min-width: 1.6em;
   }
 
@@ -323,20 +294,8 @@ const categoryStates = visibleCategories.map(category => {
     color: inherit;
   }
 
-  /* Highlight search matches */
-  .doc-link.search-match {
-    background-color: rgba(26, 26, 26, var(--opacity-05));
-  }
-
   /* Responsive Design */
   @media (max-width: 48rem) {
-    .sidebar-search-container {
-      display: block;
-      margin: 0 0 var(--space-4) 0;
-      padding-bottom: var(--space-4);
-      border-bottom: 1px solid var(--sidebar-border);
-    }
-
     .docs-sidebar {
       position: static;
       max-height: none;
@@ -347,9 +306,12 @@ const categoryStates = visibleCategories.map(category => {
 
 <script is:inline>
   (function() {
-    // Prevent multiple initialization
-    if (window.rediaccDocsSidebarInitialized) return;
-    window.rediaccDocsSidebarInitialized = true;
+    // No `window.rediaccDocsSidebarInitialized` guard. It made init run once
+    // per page LOAD rather than once per page, so after an Astro view
+    // transition the freshly rendered categories had no click handlers at all
+    // and the rail stopped collapsing. Re-entry is handled where it belongs
+    // instead: every init below is idempotent per element, via the
+    // `data-initialized` marks that were already there.
 
     /**
      * Set collapsed/expanded state of a category
@@ -454,63 +416,35 @@ const categoryStates = visibleCategories.map(category => {
     }
 
     /**
-     * Initialize search/filter functionality for sidebar navigation
+     * Put the current page's link inside the visible part of the rail.
+     *
+     * Deliberately NOT Element.scrollIntoView: that walks every scrollable
+     * ancestor including the document, so nudging a link inside a 250px rail
+     * also scrolled the article. Arithmetic on the rail's own scrollTop moves
+     * the rail and nothing else. Guarded on the rail actually being a scroll
+     * container, because with a max-height rail a short category is not one.
      */
-    function initSidebarSearch() {
-      const sidebar = document.querySelector('.docs-sidebar');
-      const input = document.querySelector('.sidebar-search-input');
+    function revealActiveDoc() {
+      const nav = document.querySelector('.docs-sidebar .sidebar-nav');
+      const active = nav && nav.querySelector('.doc-link.active');
+      if (!nav || !active) return;
+      if (nav.scrollHeight <= nav.clientHeight) return;
 
-      if (!sidebar || !input) return;
-
-      input.addEventListener('input', (e) => {
-        const searchTerm = e.target.value.toLowerCase().trim();
-
-        // Get all items to filter
-        const categoryItems = sidebar.querySelectorAll('[data-category]');
-        const docLinks = sidebar.querySelectorAll('.doc-link');
-
-        if (searchTerm.length === 0) {
-          // Reset view - show all
-          categoryItems.forEach(item => {
-            item.style.display = '';
-          });
-          docLinks.forEach(link => {
-            link.style.display = '';
-            link.classList.remove('search-match');
-          });
-          return;
-        }
-
-        // Filter and highlight
-        categoryItems.forEach(item => {
-          const links = item.querySelectorAll('.doc-link');
-          let hasMatch = false;
-
-          links.forEach(link => {
-            const text = link.textContent.toLowerCase();
-            const matches = text.includes(searchTerm);
-
-            if (matches) {
-              hasMatch = true;
-              link.style.display = '';
-              link.classList.add('search-match');
-            } else {
-              link.style.display = 'none';
-              link.classList.remove('search-match');
-            }
-          });
-
-          // Show category if it has matching items
-          item.style.display = hasMatch ? '' : 'none';
-        });
-      });
+      const navBox = nav.getBoundingClientRect();
+      const linkBox = active.getBoundingClientRect();
+      const margin = 24;
+      if (linkBox.top < navBox.top + margin) {
+        nav.scrollTop -= (navBox.top + margin) - linkBox.top;
+      } else if (linkBox.bottom > navBox.bottom - margin) {
+        nav.scrollTop += linkBox.bottom - (navBox.bottom - margin);
+      }
     }
 
     // Initialize on various events
     function init() {
       initCollapsibleCategories();
       initCollapsibleSubcategories();
-      initSidebarSearch();
+      revealActiveDoc();
     }
 
     // Astro View Transitions support

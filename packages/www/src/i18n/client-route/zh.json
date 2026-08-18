@@ -1,0 +1,175 @@
+{
+  "hero": {
+    "install": {
+      "tabs": {
+        "linux": "Linux",
+        "macos": "macOS",
+        "windows": "Windows"
+      }
+    }
+  },
+  "pages": {
+    "downloads": {
+      "meta": {
+        "title": "下载 Rediacc CLI 和桌面应用 - 支持 Windows macOS Linux",
+        "description": "下载适用于 Windows、macOS 和 Linux 的 Rediacc CLI。安装快速，并支持自动更新。",
+        "keywords": "Rediacc下载, 桌面应用, CLI, Windows应用, macOS应用, Linux应用"
+      },
+      "hero": {
+        "title": "获取适用于各平台的 Rediacc 应用程序",
+        "subtitle": "Rediacc CLI",
+        "released": "发布日期"
+      },
+      "sections": {
+        "cli": "命令行界面（CLI）"
+      },
+      "platforms": {
+        "windows": "Windows",
+        "macos": "macOS",
+        "linux": "Linux"
+      },
+      "architectures": {
+        "x64": "x64（64位）",
+        "x64_intel": "Intel (x64)",
+        "arm64": "ARM64",
+        "arm64_apple": "Apple Silicon (ARM64)"
+      },
+      "actions": {
+        "download": "下载"
+      },
+      "cli": {
+        "description": "一个在终端窗口中运行的小巧快速工具。适合管理没有屏幕的服务器，或者需要在多台机器上同时运行同一条命令的场景。连接服务器、执行命令、推送更新，无需浏览器。"
+      },
+      "noReleases": "目前没有可用的版本。请稍后再来查看。",
+      "autoUpdate": {
+        "title": "自动更新信息",
+        "description": "Rediacc CLI 会自动更新。它会检查新版本并为您安装，让您始终使用最新版本。"
+      },
+      "installation": {
+        "title": "安装说明",
+        "cli": "CLI：下载适用于您平台的二进制文件，将其设为可执行（Linux/macOS上使用chmod +x），然后放入PATH目录中。"
+      },
+      "requirements": {
+        "title": "系统要求",
+        "windows": "Windows 10或更高版本（64位）",
+        "macos": "macOS 11（Big Sur）或更高版本",
+        "linux": "具有glibc 2.28+的现代Linux发行版"
+      }
+    },
+    "install": {
+      "meta": {
+        "title": "Rediacc 命令行工具快速安装指南 - 新手完整配置教程",
+        "description": "在 Linux、macOS 和 Windows 上安装 Rediacc CLI，支持 APT、DNF、npm 和直接下载。",
+        "keywords": "安装rediacc, apt install, dnf install, npm install, CLI安装"
+      },
+      "hero": {
+        "title": "安装 Rediacc CLI",
+        "subtitle": "选择你首选的安装方式",
+        "downloadsNote": "在找 CLI 的直接二进制文件吗？",
+        "downloadsLink": "访问下载页面"
+      },
+      "methods": {
+        "quick": {
+          "title": "快速安装",
+          "description": "推荐。自动安装和更新。"
+        },
+        "apt": {
+          "title": "APT (Debian / Ubuntu)",
+          "description": "适用于Debian、Ubuntu及其衍生版"
+        },
+        "dnf": {
+          "title": "DNF (Fedora / RHEL)",
+          "description": "适用于Fedora、RHEL、CentOS、Rocky Linux"
+        },
+        "apk": {
+          "title": "APK (Alpine Linux)",
+          "description": "适用于 Alpine Linux 及衍生发行版"
+        },
+        "pacman": {
+          "title": "Pacman (Arch Linux)",
+          "description": "适用于 Arch Linux 及衍生发行版"
+        },
+        "homebrew": {
+          "title": "Homebrew (macOS / Linux)",
+          "description": "适用于使用 Homebrew 的 macOS 和 Linux 用户"
+        },
+        "binary": {
+          "title": "直接下载",
+          "description": "独立的二进制文件，无需包管理器"
+        },
+        "docker": {
+          "title": "Docker",
+          "description": "适用于 Docker 用户"
+        }
+      },
+      "verify": {
+        "title": "验证安装"
+      },
+      "architectures": {
+        "title": "支持的架构",
+        "method": "方法",
+        "platform": "平台"
+      },
+      "copy": "复制",
+      "copied": "已复制！",
+      "platformFilter": {
+        "all": "所有方法",
+        "label": "按平台筛选"
+      }
+    },
+    "partners": {
+      "form": {
+        "fields": {
+          "contactName": "您的姓名",
+          "contactNamePlaceholder": "姓和名",
+          "jobTitle": "职位",
+          "jobTitlePlaceholder": "您的职务",
+          "email": "工作邮箱",
+          "emailPlaceholder": "you@company.com",
+          "phone": "电话",
+          "phonePlaceholder": "选填",
+          "company": "公司名称",
+          "companyPlaceholder": "您的公司",
+          "website": "网站",
+          "websitePlaceholder": "https://example.com",
+          "country": "国家/地区",
+          "countryPlaceholder": "选择您的国家/地区",
+          "partnerTypes": "您如何销售？可多选。",
+          "isDistributor": "我们是分销商，通过其他合作伙伴转售。",
+          "howHeard": "您是如何了解到我们的？",
+          "howHeardPlaceholder": "请选择",
+          "message": "还有什么想告诉我们的？",
+          "messagePlaceholder": "介绍一下您的业务和您服务的客户。",
+          "consent": "我同意接收有关 Rediacc 合作伙伴计划的联系。"
+        },
+        "partnerTypeOptions": {
+          "reseller": "经销商",
+          "msp": "托管服务提供商",
+          "consultant": "顾问",
+          "distributor": "分销商",
+          "referral": "推荐合作伙伴"
+        },
+        "howHeardOptions": {
+          "search": "搜索引擎",
+          "referral": "同事或朋友介绍",
+          "event": "活动或网络研讨会",
+          "socialMedia": "社交媒体",
+          "blog": "博客或文章",
+          "other": "其他"
+        },
+        "submit": "提交申请",
+        "sending": "发送中...",
+        "success": {
+          "title": "申请已收到",
+          "body": "感谢您的关注。我们会仔细查看每份申请，并尽快通过邮件回复。"
+        },
+        "errors": {
+          "requiredFields": "请填写姓名、工作邮箱、公司、国家/地区，并至少选择一种销售方式。",
+          "consent": "请同意接收联系，以便我们回复您的申请。",
+          "captcha": "请完成验证码后继续。",
+          "generic": "出了点问题，请重试。"
+        }
+      }
+    }
+  }
+}

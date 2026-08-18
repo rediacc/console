@@ -144,7 +144,11 @@ const toc = frontmatter.toc !== false ? generateTOCFromHtml(articleHtml) : [];
         </aside>
       )}
 
-      <main class="article-content">
+      {/* A <div>, not a <main>: BaseLayout.astro:321 already emits the page's one
+          <main id="main-content"> and this sits inside it. Nesting a second landmark
+          shipped on 1,120 of 1,842 built pages and is what axe reports as
+          landmark-no-duplicate-main / landmark-main-is-top-level / landmark-unique. */}
+      <div class="article-content">
         <Fragment set:html={articleHtml} />
 
         {isBlogPost && (
@@ -158,7 +162,7 @@ const toc = frontmatter.toc !== false ? generateTOCFromHtml(articleHtml) : [];
             />
           </div>
         )}
-      </main>
+      </div>
     </div>
   </article>
 
@@ -205,7 +209,7 @@ const toc = frontmatter.toc !== false ? generateTOCFromHtml(articleHtml) : [];
     }
 
     .article-title {
-      font-size: clamp(1.75rem, 3vw, 2.5rem);
+      font-size: var(--font-size-3xl);
       line-height: var(--leading-tight);
       margin: var(--space-4) 0;
       color: var(--color-text);
@@ -269,17 +273,14 @@ const toc = frontmatter.toc !== false ? generateTOCFromHtml(articleHtml) : [];
       grid-template-columns: 1fr;
     }
 
-    /* TOC Sidebar - ContentLayout specific positioning */
-    .toc-sidebar {
-      position: sticky;
-      top: var(--space-8);
-      height: fit-content;
-      max-height: calc(100vh - var(--space-16));
-      overflow-y: auto;
-      overscroll-behavior: contain;
-      scrollbar-width: thin;
-      scrollbar-color: var(--color-border) transparent;
-    }
+    /* The TOC rail is styled once, by .sidebar-base in
+       src/styles/sidebar-shared.css, which this layout already imports. A second
+       positioning model used to live here: sticky at top: 32px, a scroll
+       container on the <aside> instead of on the <nav> inside it, and a
+       max-height in vh. Both models matched the same element, so which one won
+       depended on the order Astro happened to emit the two stylesheets in, and
+       the 32px top parked the rail UNDER the 56px fixed nav. Deleting it makes
+       the blog rail behave exactly like the docs rails. */
 
     .content-article .toc-item a {
       color: var(--color-text);

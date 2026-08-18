@@ -155,69 +155,69 @@ const faqs = ta(`${ns}.faq.items`) as unknown as Array<{ q: string; a: string }>
   .resource-brief-hero .container { max-width: 760px; margin: 0 auto; padding: 0 20px; }
   .resource-brief-eyebrow {
     display: inline-block;
-    font-size: 13px;
+    font-size: var(--font-size-xs);
     letter-spacing: 0.08em;
     text-transform: uppercase;
     color: var(--rb-accent);
     margin-bottom: 16px;
   }
-  .resource-brief-title { font-size: clamp(28px, 4vw, 40px); margin: 0 0 18px; line-height: 1.2; }
-  .resource-brief-subtitle { font-size: 17px; line-height: 1.6; opacity: 0.85; margin: 0 auto 28px; max-width: 640px; }
+  .resource-brief-title { font-size: var(--font-size-3xl); margin: 0 0 18px; line-height: 1.2; }
+  .resource-brief-subtitle { font-size: var(--font-size-lg); line-height: 1.6; opacity: 0.85; margin: 0 auto 28px; max-width: 640px; }
   .resource-brief-form-slot { margin: 0 auto 12px; max-width: 480px; }
-  .resource-brief-disclaimer { font-size: 13px; opacity: 0.55; margin-top: 6px; }
+  .resource-brief-disclaimer { font-size: var(--font-size-xs); opacity: 0.55; margin-top: 6px; }
 
   .resource-brief-toc { padding: 64px 0; }
   .resource-brief-toc .container { max-width: 760px; margin: 0 auto; padding: 0 20px; }
-  .resource-brief-toc h2 { font-size: 26px; margin: 0 0 12px; }
-  .resource-brief-toc-intro { font-size: 15px; opacity: 0.75; margin: 0 0 24px; }
+  .resource-brief-toc h2 { font-size: var(--font-size-xl); margin: 0 0 12px; }
+  .resource-brief-toc-intro { font-size: var(--font-size-sm); opacity: 0.75; margin: 0 0 24px; }
   .resource-brief-toc-list {
     columns: 2;
     column-gap: 32px;
     padding-left: 24px;
     margin: 0;
-    font-size: 15px;
+    font-size: var(--font-size-sm);
     line-height: 1.8;
   }
   @media (max-width: 600px) { .resource-brief-toc-list { columns: 1; } }
 
   .resource-brief-companions { padding: 64px 0; }
   .resource-brief-companions .container { max-width: 1080px; margin: 0 auto; padding: 0 20px; }
-  .resource-brief-companions h2 { font-size: 26px; margin: 0 0 12px; text-align: center; }
-  .resource-brief-companions-intro { text-align: center; font-size: 15px; opacity: 0.75; max-width: 600px; margin: 0 auto 36px; }
+  .resource-brief-companions h2 { font-size: var(--font-size-xl); margin: 0 0 12px; text-align: center; }
+  .resource-brief-companions-intro { text-align: center; font-size: var(--font-size-sm); opacity: 0.75; max-width: 600px; margin: 0 auto 36px; }
   .resource-brief-companion-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; }
   .resource-brief-companion-card {
     display: block;
     padding: 24px;
     background: rgba(255, 255, 255, 0.03);
     border: 1px solid rgba(255, 255, 255, 0.08);
-    border-radius: 8px;
+    border-radius: var(--radius-md);
     text-decoration: none;
     color: inherit;
     transition: border-color 0.15s, transform 0.15s;
   }
   .resource-brief-companion-card:hover { border-color: var(--rb-accent); transform: translateY(-2px); }
-  .resource-brief-companion-card h3 { font-size: 17px; margin: 0 0 10px; color: var(--rb-accent); }
+  .resource-brief-companion-card h3 { font-size: var(--font-size-lg); margin: 0 0 10px; color: var(--rb-accent); }
   .resource-brief-companion-card p { font-size: 14px; line-height: 1.55; opacity: 0.85; margin: 0 0 14px; }
-  .resource-brief-companion-link { font-size: 13px; color: var(--rb-accent); }
+  .resource-brief-companion-link { font-size: var(--font-size-xs); color: var(--rb-accent); }
 
   .resource-brief-faq { padding: 64px 0; }
   .resource-brief-faq .container { max-width: 760px; margin: 0 auto; padding: 0 20px; }
-  .resource-brief-faq h2 { font-size: 26px; margin: 0 0 24px; }
+  .resource-brief-faq h2 { font-size: var(--font-size-xl); margin: 0 0 24px; }
   .resource-brief-faq-list { display: flex; flex-direction: column; gap: 10px; }
   .resource-brief-faq-item {
     border: 1px solid rgba(0, 0, 0, 0.08);
-    border-radius: 6px;
+    border-radius: var(--radius-sm);
     padding: 14px 18px;
     background: rgba(255, 255, 255, 0.02);
   }
-  .resource-brief-faq-item summary { cursor: pointer; font-weight: 600; font-size: 15px; }
+  .resource-brief-faq-item summary { cursor: pointer; font-weight: 600; font-size: var(--font-size-sm); }
   .resource-brief-faq-item[open] summary { margin-bottom: 10px; }
   .resource-brief-faq-item p { font-size: 14px; line-height: 1.65; margin: 0; opacity: 0.85; }
 
   .resource-brief-about { padding: 64px 0; text-align: center; }
   .resource-brief-about .container { max-width: 720px; margin: 0 auto; padding: 0 20px; }
   .resource-brief-about h2 { font-size: 24px; margin: 0 0 18px; }
-  .resource-brief-about p { font-size: 15px; line-height: 1.7; margin: 0 0 18px; opacity: 0.85; }
+  .resource-brief-about p { font-size: var(--font-size-sm); line-height: 1.7; margin: 0 0 18px; opacity: 0.85; }
   .resource-brief-about-cta { font-style: italic; }
   .resource-brief-short-link {
     display: inline-block;
@@ -226,7 +226,7 @@ const faqs = ta(`${ns}.faq.items`) as unknown as Array<{ q: string; a: string }>
     text-decoration: none;
     border-bottom: 1px solid currentColor;
     padding-bottom: 2px;
-    font-size: 15px;
+    font-size: var(--font-size-sm);
   }
   .resource-brief-short-link:hover { opacity: 0.85; }
 </style>

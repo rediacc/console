@@ -1,0 +1,6 @@
+[
+  "packages/json/templates/networking/cloud-switch/web/Dockerfile:2  python:3.9-slim",
+  "private/growth/scripts/youtube-transcripts/Dockerfile:1  python:3.12-slim",
+  "private/renet/Dockerfile:133  ubuntu:24.04",
+  "workers/proxy/Dockerfile:12  node:22-slim"
+]

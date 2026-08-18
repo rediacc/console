@@ -1,61 +1,25 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 450" width="800" height="450" role="img" aria-label="A running Kubernetes cluster of two nodes copied as a whole to a second datacenter, with an arrow showing the move takes seconds.">
-  <title>A running Kubernetes cluster of two nodes copied as a whole to a second datacenter, with an arrow showing the move takes seconds.</title>
-
-  <rect x="0" y="0" width="800" height="450" fill="#f5f5f5"/>
-
-  <!-- SOURCE DATACENTER -->
-  <rect x="50" y="90" width="280" height="270" rx="12" fill="#ffffff" stroke="#2d2d2d" stroke-width="3"/>
-  <text x="190" y="70" text-anchor="middle" font-family="Arial, sans-serif" font-size="20" font-weight="bold" fill="#2d2d2d">Datacenter A</text>
-
-  <!-- source nodes -->
-  <rect x="80" y="120" width="220" height="70" rx="8" fill="#e8f0fe" stroke="#2563eb" stroke-width="2.5"/>
-  <text x="190" y="150" text-anchor="middle" font-family="Arial, sans-serif" font-size="16" font-weight="bold" fill="#1e3a8a">control plane</text>
-  <text x="190" y="172" text-anchor="middle" font-family="Arial, sans-serif" font-size="13" fill="#1e3a8a">k3s + Ceph</text>
-
-  <rect x="80" y="205" width="220" height="70" rx="8" fill="#e8f0fe" stroke="#2563eb" stroke-width="2.5"/>
-  <text x="190" y="235" text-anchor="middle" font-family="Arial, sans-serif" font-size="16" font-weight="bold" fill="#1e3a8a">worker node</text>
-  <text x="190" y="257" text-anchor="middle" font-family="Arial, sans-serif" font-size="13" fill="#1e3a8a">pods + volumes</text>
-
-  <!-- data disk -->
-  <ellipse cx="190" cy="310" rx="80" ry="16" fill="#c7d2fe" stroke="#2563eb" stroke-width="2.5"/>
-  <rect x="110" y="310" width="160" height="26" fill="#c7d2fe" stroke="none"/>
-  <ellipse cx="190" cy="336" rx="80" ry="16" fill="#c7d2fe" stroke="#2563eb" stroke-width="2.5"/>
-  <line x1="110" y1="310" x2="110" y2="336" stroke="#2563eb" stroke-width="2.5"/>
-  <line x1="270" y1="310" x2="270" y2="336" stroke="#2563eb" stroke-width="2.5"/>
-  <text x="190" y="330" text-anchor="middle" font-family="Arial, sans-serif" font-size="13" font-weight="bold" fill="#1e3a8a">data included</text>
-
-  <!-- running badge -->
-  <circle cx="310" cy="110" r="12" fill="#16a34a"/>
-  <text x="310" y="115" text-anchor="middle" font-family="Arial, sans-serif" font-size="13" font-weight="bold" fill="#ffffff">✓</text>
-
-  <!-- ARROW -->
-  <line x1="345" y1="225" x2="435" y2="225" stroke="#16a34a" stroke-width="8" stroke-linecap="round"/>
-  <polygon points="455,225 425,207 425,243" fill="#16a34a"/>
-  <text x="400" y="200" text-anchor="middle" font-family="Arial, sans-serif" font-size="18" font-weight="bold" fill="#16a34a">fork or move</text>
-  <text x="400" y="262" text-anchor="middle" font-family="Arial, sans-serif" font-size="15" fill="#2d2d2d">whole cluster</text>
-
-  <!-- DESTINATION DATACENTER -->
-  <rect x="470" y="90" width="280" height="270" rx="12" fill="#ffffff" stroke="#16a34a" stroke-width="3"/>
-  <text x="610" y="70" text-anchor="middle" font-family="Arial, sans-serif" font-size="20" font-weight="bold" fill="#166534">Datacenter B</text>
-
-  <rect x="500" y="120" width="220" height="70" rx="8" fill="#dcfce7" stroke="#16a34a" stroke-width="2.5"/>
-  <text x="610" y="150" text-anchor="middle" font-family="Arial, sans-serif" font-size="16" font-weight="bold" fill="#166534">control plane</text>
-  <text x="610" y="172" text-anchor="middle" font-family="Arial, sans-serif" font-size="13" fill="#166534">k3s + Ceph</text>
-
-  <rect x="500" y="205" width="220" height="70" rx="8" fill="#dcfce7" stroke="#16a34a" stroke-width="2.5"/>
-  <text x="610" y="235" text-anchor="middle" font-family="Arial, sans-serif" font-size="16" font-weight="bold" fill="#166534">worker node</text>
-  <text x="610" y="257" text-anchor="middle" font-family="Arial, sans-serif" font-size="13" fill="#166534">pods + volumes</text>
-
-  <ellipse cx="610" cy="310" rx="80" ry="16" fill="#bbf7d0" stroke="#16a34a" stroke-width="2.5"/>
-  <rect x="530" y="310" width="160" height="26" fill="#bbf7d0" stroke="none"/>
-  <ellipse cx="610" cy="336" rx="80" ry="16" fill="#bbf7d0" stroke="#16a34a" stroke-width="2.5"/>
-  <line x1="530" y1="310" x2="530" y2="336" stroke="#16a34a" stroke-width="2.5"/>
-  <line x1="690" y1="310" x2="690" y2="336" stroke="#16a34a" stroke-width="2.5"/>
-  <text x="610" y="330" text-anchor="middle" font-family="Arial, sans-serif" font-size="13" font-weight="bold" fill="#166534">same data</text>
-
-  <circle cx="730" cy="110" r="12" fill="#16a34a"/>
-  <text x="730" y="115" text-anchor="middle" font-family="Arial, sans-serif" font-size="13" font-weight="bold" fill="#ffffff">✓</text>
-
-  <!-- caption -->
-  <text x="400" y="415" text-anchor="middle" font-family="Arial, sans-serif" font-size="17" font-weight="bold" fill="#2d2d2d">A running cluster moves as one set: nodes, config, and data</text>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 450" width="800" height="450" style="display:block;width:100%;height:auto" fill="none" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+  <!-- Cluster A -->
+  <g style="stroke:var(--illustration-ink,#1a1a1a)">
+    <rect x="60" y="110" width="250" height="230" rx="18"/>
+    <path d="M135 150 l26 15 v30 l-26 15 l-26 -15 v-30 z"/>
+    <path d="M235 150 l26 15 v30 l-26 15 l-26 -15 v-30 z"/>
+    <path d="M185 220 l26 15 v30 l-26 15 l-26 -15 v-30 z"/>
+    <ellipse cx="185" cy="305" rx="34" ry="11"/>
+    <path d="M151 305 V282 a34 11 0 0 1 68 0 V305"/>
+  </g>
+  <!-- Move arrow -->
+  <g style="stroke:var(--illustration-accent,#4a7c3f)" stroke-width="5">
+    <line x1="340" y1="225" x2="452" y2="225"/>
+    <path d="M430 203 L458 225 L430 247"/>
+  </g>
+  <!-- Cluster B, identical -->
+  <g style="stroke:var(--illustration-accent,#4a7c3f)">
+    <rect x="490" y="110" width="250" height="230" rx="18"/>
+    <path d="M565 150 l26 15 v30 l-26 15 l-26 -15 v-30 z"/>
+    <path d="M665 150 l26 15 v30 l-26 15 l-26 -15 v-30 z"/>
+    <path d="M615 220 l26 15 v30 l-26 15 l-26 -15 v-30 z"/>
+    <ellipse cx="615" cy="305" rx="34" ry="11"/>
+    <path d="M581 305 V282 a34 11 0 0 1 68 0 V305"/>
+  </g>
 </svg>

@@ -12,7 +12,11 @@ import StructuredData from '../components/StructuredData.astro';
 import { createTranslator } from '../i18n/utils';
 import { getLanguageFromPath, getPathWithoutLanguage, SUPPORTED_LANGUAGES, getLocale, getHreflang } from '../i18n/language-utils';
 import type { Language } from '../i18n/types';
-// ViewTransitions is now built-in in Astro 5+ via meta tag
+// No view transitions. The two `astro-view-transitions-*` meta tags that used
+// to sit in <head> here, and the ::view-transition rules in main.css that went
+// with them, were inert: the meta is only read by Astro's client router
+// (node_modules/astro/dist/transitions/router.js:12), which loads only when a
+// page renders `<ClientRouter />` from `astro:transitions`. No page does.
 
 export interface Props {
   title: string;
@@ -74,8 +78,12 @@ const dir = currentLang === 'ar' ? 'rtl' : 'ltr';
     <meta name="keywords" content={finalKeywords}>
     <meta name="author" content={t('layout.meta.author')}>
     <meta name="robots" content={robots}>
-    <meta name="theme-color" content="#556b2f" media="(prefers-color-scheme: light)">
-    <meta name="theme-color" content="#0f0f10" media="(prefers-color-scheme: dark)">
+    <!-- ONE theme-color, patched by the theme script below. The pair of
+         media-scoped tags this replaces was resolved by the browser from the OS
+         preference alone, so the moment the theme stopped being a function of
+         that preference (see the script) the browser chrome and the page
+         disagreed: dark page, green chrome, every evening. -->
+    <meta name="theme-color" content="#4a7c3f">
 
     <!-- Security Headers -->
     <meta http-equiv="X-Content-Type-Options" content="nosniff">
@@ -144,20 +152,64 @@ const dir = currentLang === 'ar' ? 'rtl' : 'ltr';
     {isHomePage && <StructuredData type="service" />}
     {isHomePage && <StructuredData type="sitenavigation" />}
 
-    <!-- View Transitions for smooth navigation -->
-    <meta name="astro-view-transitions-enabled" content="true" />
-    <meta name="astro-view-transitions-fallback" content="animate" />
+    <!-- Theme detection script (runs before paint to prevent flash of wrong theme).
+         Also stamps html.js-anim, which is the ONLY thing that lets the
+         scroll-reveal rules in main.css hide anything. Without JavaScript the
+         class never lands, the `.reveal` rules never match, and the content
+         renders at full opacity instead of staying permanently invisible.
+         It must be set HERE, before first paint, not from the deferred
+         scroll-reveal script: setting it later would paint the content and
+         then hide it. The js-anim line stays in THIS block for that reason; do
+         not move it out when the theme rule changes again.
 
-    <!-- Theme detection script (runs before paint to prevent flash of wrong theme) -->
+         The rule, in priority order:
+           1. An explicit localStorage['theme'] of 'light' or 'dark' wins and is
+              never cleared here. It is written by a control on the docs pages,
+              and it persists site-wide by design.
+           2. Otherwise dark between 20:00 and 06:00 by the visitor's own clock,
+              OR whenever the OS asks for dark. The clock leg is why the header
+              theme toggle could go: the site now guesses right for the case the
+              toggle was mostly used for.
+
+         Re-evaluated on visibilitychange so a tab left open across 20:00 flips
+         when it is looked at again, and on the OS preference changing. -->
     <script is:inline>
       (function(){
-        var t = localStorage.getItem('theme');
-        if (t === 'dark' || t === 'light') {
-          document.documentElement.dataset.theme = t;
-        } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-          document.documentElement.dataset.theme = 'dark';
-        } else {
-          document.documentElement.dataset.theme = 'light';
+        var root = document.documentElement;
+        var meta = document.querySelector('meta[name="theme-color"]');
+        function stored() {
+          // A blocked or full localStorage must not take the theme, and must not
+          // take js-anim down with it: without that class every reveal element
+          // on the page renders at full opacity.
+          try {
+            var v = localStorage.getItem('theme');
+            return v === 'dark' || v === 'light' ? v : null;
+          } catch (e) {
+            return null;
+          }
+        }
+        function resolve() {
+          var explicit = stored();
+          if (explicit) return explicit;
+          var hour = new Date().getHours();
+          if (hour >= 20 || hour < 6) return 'dark';
+          return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches
+            ? 'dark'
+            : 'light';
+        }
+        function apply() {
+          var theme = resolve();
+          root.dataset.theme = theme;
+          if (meta) meta.content = theme === 'dark' ? '#0f0f10' : '#4a7c3f';
+        }
+        apply();
+        root.classList.add('js-anim');
+        document.addEventListener('visibilitychange', function(){
+          if (!document.hidden) apply();
+        });
+        if (window.matchMedia) {
+          var mq = window.matchMedia('(prefers-color-scheme: dark)');
+          if (mq.addEventListener) mq.addEventListener('change', apply);
         }
       })();
     </script>
@@ -236,10 +288,19 @@ const dir = currentLang === 'ar' ? 'rtl' : 'ltr';
     <!-- Critical CSS loaded first -->
     <link rel="stylesheet" href="/styles/main.css">
     <link rel="stylesheet" href="/styles/responsive.css">
-    <!-- Non-critical CSS loaded with lower priority -->
-    <link rel="stylesheet" href="/styles/search-modal.css" media="print" onload="this.media='all'; this.onload=null;">
-    <link rel="stylesheet" href="/styles/contact-modal.css" media="print" onload="this.media='all'; this.onload=null;">
-    <link rel="stylesheet" href="/styles/region-picker.css" media="print" onload="this.media='all'; this.onload=null;">
+
+    <!--
+      The screen-reader-only " (opens in new tab)" suffix that `main.css` appends to every
+      `a[target="_blank"]::after` was a HARDCODED ENGLISH string, so all twelve non-English
+      locales announced English on 9,226 links. CSS cannot read a translation, so the
+      locale's own wording is handed to it as a custom property here and `main.css` falls
+      back to English only if this ever fails to render.
+
+      `JSON.stringify` supplies the quotes and escapes any quote inside the translation,
+      which matters because a CSS `content` string is quote-delimited and an unescaped one
+      would terminate the declaration early and silently drop the suffix.
+    -->
+    <style is:inline set:html={`:root{--a11y-opens-in-new-tab:${JSON.stringify(` (${t('common.aria.opensInNewTab')})`)}}`}></style>
 
     <!-- Skip Navigation Styles -->
     <style>
@@ -260,7 +321,7 @@ const dir = currentLang === 'ar' ? 'rtl' : 'ltr';
         text-decoration: none;
         font-size: var(--font-size-sm);
         border-radius: 0 0 var(--radius-sm) var(--radius-sm);
-        transition: top var(--transition-duration-slow) ease;
+        transition: top var(--transition-duration-slow) var(--ease-standard);
         border: 2px solid var(--color-bg-alt);
       }
 
@@ -275,131 +336,23 @@ const dir = currentLang === 'ar' ? 'rtl' : 'ltr';
       }
     </style>
 
-    <!-- Critical CSS for above-the-fold content -->
+    <!-- Embed mode: the CLI reference iframe hides site chrome.
+         This block used to also carry a 17-token `:root` copy plus scoped
+         duplicates of `.nav`, `.nav-container`, `.nav-brand`, `.logo`,
+         `.nav-wordmark`, `.container`, `*`, `body` and `main`. The `:root`
+         copies were the LAST style source in the document and silently
+         overrode public/styles/main.css for every token they redeclared;
+         the rest were scoped to `[data-astro-cid-37fxchfa]` and so never
+         matched the React-island nav they were written for. Both are gone;
+         the tokens live in exactly one place now. Only these globals are
+         load-bearing, which is why only these remain. -->
     <style>
-      /* Critical CSS Variables */
-      :root {
-        --color-bg: #F7F7F8;
-        --color-bg-alt: #FFFFFF;
-        --color-text: #1A1A1A;
-        --color-text-secondary: #5E5E63;
-        --color-border: #D2D2D7;
-        --font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Helvetica Neue', Arial, sans-serif;
-        --font-size-base: 1rem;
-        --font-size-4xl: 3rem;
-        --space-4: 1rem;
-        --space-6: 1.5rem;
-        --space-20: 5rem;
-        --space-24: 6rem;
-        --max-width: 1200px;
-        --nav-height: 3.5rem;
-        --nav-top-offset: calc(var(--nav-height) + var(--announcement-bar-height, 0px));
-        --color-brand-bolt: #DC2626;
-        --color-brand-bolt-hover: #B91C1C;
-      }
-
-      /* Critical dark theme overrides */
-      :root[data-theme="dark"] {
-        --color-bg: #0f0f10;
-        --color-bg-alt: #1a1a1b;
-        --color-text: #e4e4e7;
-        --color-text-secondary: #a1a1aa;
-        --color-border: #2e2e32;
-      }
-
-      /* Critical Base Styles */
-      * {
-        margin: 0;
-        padding: 0;
-        box-sizing: border-box;
-      }
-
-      body {
-        font-family: var(--font-family);
-        font-size: var(--font-size-base);
-        line-height: var(--leading-relaxed);
-        color: var(--color-text);
-        background-color: var(--color-bg-alt);
-        -webkit-font-smoothing: antialiased;
-        -moz-osx-font-smoothing: grayscale;
-      }
-
-      /* Container */
-      .container {
-        width: 100%;
-        max-width: var(--max-width);
-        margin: 0 auto;
-        padding: 0 var(--space-4);
-      }
-
-      /* Critical Navigation Styles */
-      .nav {
-        position: fixed;
-        top: 0;
-        inset-inline: 0;
-        background-color: var(--color-bg-alt);
-        z-index: var(--z-modal);
-      }
-
-      .nav-container {
-        max-width: var(--max-width);
-        margin: 0 auto;
-        padding: 0 var(--space-4);
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 0.625rem;
-        height: var(--nav-height);
-      }
-
-      .nav-icon-link {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        width: 2.25rem;
-        height: 2.25rem;
-        flex: 0 0 auto;
-      }
-
-      .logo-icon {
-        width: 2.25rem;
-        height: 2.25rem;
-        display: block;
-      }
-
-      .nav-brand {
-        margin-right: auto;
-      }
-
-      .nav-brand .logo {
-        height: 1.5rem;
-        width: auto;
-        display: block;
-      }
-
-      .nav-brand .nav-wordmark {
-        display: inline-block;
-        font-size: 2rem !important;
-        line-height: 1;
-        font-weight: 700 !important;
-        letter-spacing: 0.01em;
-        color: var(--color-text);
-        text-transform: lowercase;
-        font-family: var(--font-family);
-      }
-
-      /* Main Content */
-      main {
-        padding-top: 0;
-      }
-
       :global(html.cli-ref-embed .skip-nav),
       :global(html.cli-ref-embed #navigation),
       :global(html.cli-ref-embed .nav),
       :global(html.cli-ref-embed #footer),
       :global(html.cli-ref-embed footer),
-      :global(html.cli-ref-embed .contact-modal-backdrop),
-      :global(html.cli-ref-embed .newsletter-return-popup-overlay) {
+      :global(html.cli-ref-embed .overlay-backdrop) {
         display: none !important;
       }
 
@@ -410,7 +363,6 @@ const dir = currentLang === 'ar' ? 'rtl' : 'ltr';
       :global(html.cli-ref-embed main) {
         padding-top: 0 !important;
       }
-
     </style>
 </head>
 <body>
@@ -422,17 +374,17 @@ const dir = currentLang === 'ar' ? 'rtl' : 'ltr';
     </div>
 
     <AnnouncementBar lang={currentLang} />
-    <Navigation origin={Astro.url.origin} client:idle />
+    <Navigation lang={currentLang} origin={Astro.url.origin} client:idle />
     <main id="main-content">
         <slot />
     </main>
     <CliReferenceModal lang={currentLang} />
     <ImageModal lang={currentLang} />
-    <ContactModal client:load />
-    <RegionPickerModal client:load />
-    <NewsletterReturnPopup client:load />
-    <LeadMagnetModal client:idle />
-    <Footer client:visible />
+    <ContactModal lang={currentLang} client:load />
+    <RegionPickerModal lang={currentLang} client:load />
+    <NewsletterReturnPopup lang={currentLang} client:load />
+    <LeadMagnetModal lang={currentLang} client:idle />
+    <Footer lang={currentLang} client:visible />
     <script src="/scripts/main.js" is:inline></script>
     <script src="/scripts/contact-interceptor.js" is:inline></script>
     <script src="/scripts/image-modal.js" is:inline></script>
@@ -467,12 +419,22 @@ const dir = currentLang === 'ar' ? 'rtl' : 'ltr';
       // https://eu.rediacc.com/account/... are pass-through (already
       // explicit destinations).
       (function () {
+        // "Already bound" is tracked in a WeakSet, NOT in a data attribute.
+        // It used to write `data-account-link-bound="true"` on each anchor,
+        // and this script runs on DOMContentLoaded while <Navigation> and
+        // <Sidebar> hydrate on `client:idle`, so React arrived at an <a> in
+        // its own tree carrying an attribute React had never rendered. That
+        // is a hydration mismatch, which React reports as a console error and
+        // explicitly "won't patch up". A WeakSet keys off the node itself, so
+        // it is invisible to hydration and still idempotent: a node React
+        // replaces is simply a new key and gets bound again.
+        var boundAccountLinks = new WeakSet();
         function bindAccountLinks() {
           var links = document.querySelectorAll('a[href^="/account"]');
           for (var i = 0; i < links.length; i++) {
             var link = links[i];
-            if (link.dataset.accountLinkBound) continue;
-            link.dataset.accountLinkBound = 'true';
+            if (boundAccountLinks.has(link)) continue;
+            boundAccountLinks.add(link);
             link.addEventListener('click', function (e) {
               var href = this.getAttribute('href');
               if (!href) return;
@@ -531,8 +493,7 @@ const dir = currentLang === 'ar' ? 'rtl' : 'ltr';
             '.nav',
             '#footer',
             'footer',
-            '.contact-modal-backdrop',
-            '.newsletter-return-popup-overlay'
+            '.overlay-backdrop'
           ];
 
           selectors.forEach((selector) => {

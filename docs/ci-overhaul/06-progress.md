@@ -1650,7 +1650,7 @@ operator's push.
 Reported as "run 30983418337 is running the whole test matrix for a commit that
 is documentation and agent tooling". The push `1d172438f..208c8a2d9` carried
 four files: `.claude/agents/pr-babysitter.md`, `.claude/commands/pr-babysit.md`,
-`.claude/hooks/stop/wl_judge.py`, and a report under `docs/agent/main/`. Every
+`.claude/hooks/stop/wl_judge.py`, and a report under `agent/`. Every
 one classifies to the `docs` module, which appears in no `JOB_SURFACES` entry,
 so the table would skip all eighteen keys. It skipped none.
 
@@ -2330,7 +2330,7 @@ gated jobs. Everything else is a zero-job `gates` module.
 force full independently. The reason to land it is not the minutes; it is that
 "an attribution-string check ran a ceph fork test" makes the engine look
 untrustworthy even when it is working correctly. Full analysis:
-`docs/agent/0804-1/PLAN-scope-gates-split.md`.
+`agent/PLAN-scope-gates-split.md`.
 
 **A CI wait is no longer a legitimate stop.** Operator ruling: a session watching
 a run is idle, not blocked, because the run needs nothing from it. The stop-gate
@@ -2377,7 +2377,7 @@ most valuable thing to read.
    leading theory, and it is the most useful of the seven.
 
 **The measurement error worth not repeating** is recorded in
-`docs/agent/TRAPS.md`: three rounds were initially counted as "did not recur"
+`docs/agent-reference/TRAPS.md`: three rounds were initially counted as "did not recur"
 when the battery had never executed, because the run was cancelled by an earlier
 gate. Not-executed is a third state.
 
@@ -3407,7 +3407,7 @@ had just written the entry. `pr-babysit-0804-1.md:114` adds the design principle
 "not one was caught by its author re-reading it. Each was caught by a DIFFERENT
 instrument."
 
-Plan at `docs/agent/main/PLAN-trap-enforcement.md`, which absorbs and supersedes
+Plan at `agent/PLAN-trap-enforcement.md`, which absorbs and supersedes
 `PLAN-unify-trap-corpus.md`. Instruments are matched to failure SHAPE, not topic:
 forbidden action and guaranteed-failing action (PreToolUse block), misread outcome
 (PostToolUse injection on `tool_response`), unproven claim (control-first gate).

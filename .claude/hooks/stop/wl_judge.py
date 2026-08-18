@@ -21,7 +21,7 @@ JUDGE_MODEL = os.environ.get("WORKLIST_JUDGE_MODEL", "claude-haiku-4-5-20251001"
 # Measured on 2026-07-29 with --json-schema: haiku warm $0.011-$0.026 per call
 # at 4.9-20.0s; sonnet $0.231 at 12.1s for the same judgement. Haiku it is.
 # MEASURED, not guessed (2026-08-05): at $0.10 the judge died mid-run with
-# subtype=error_max_budget_usd at cost $0.1025 — and reported it as the
+# subtype=error_max_budget_usd at cost $0.1025, and reported it as the
 # unactionable "judge exited 1: " because the envelope goes to stdout, which the
 # failure path was not reading (see _explain_failed_exit). The cap is a post-hoc
 # between-turns stop, not a ceiling, so it must sit clear of the real cost rather

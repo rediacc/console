@@ -114,7 +114,7 @@ packages/cli/src/services/executor/local-executor.ts:
   exports `RDC_RENET_LICENSE=1` itself and proves the flavor pre-deploy
   (`verify_renet_flavor`: `go version -m bin/renet` must NOT show
   `-tags=nolicense` and MUST show `ProductionPublicKey=` in ldflags). A binary
-  with neither marker is a foreign bare `go build` — enforcing but keyless, fails
+  with neither marker is a foreign bare `go build` - enforcing but keyless, fails
   everything as "public key not configured". The build stamp fingerprints the
   artifact since 2026-08-04, so such an overwrite now triggers a rebuild.
 - `go test -tags nolicense ./...` is a distinct matrix leg: license-gate-fires tests

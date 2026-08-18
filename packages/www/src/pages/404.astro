@@ -64,7 +64,7 @@ const structuredData = {
             <ul>
               <li>{t('pages.notFound.suggestions.items.0')}</li>
               <li>{t('pages.notFound.suggestions.goBackPrefix')} <a href="/">{t('pages.notFound.suggestions.links.homepage')}</a></li>
-              <li>{t('pages.notFound.suggestions.learnAboutPrefix')} <a href="/solutions">{t('pages.notFound.suggestions.links.solutions')}</a></li>
+              <li>{t('pages.notFound.suggestions.learnAboutPrefix')} <a href="/#solutions">{t('pages.notFound.suggestions.links.solutions')}</a></li>
               <li>{t('pages.notFound.suggestions.getInTouchPrefix')} <a href="/contact">{t('pages.notFound.suggestions.links.contact')}</a></li>
             </ul>
           </div>
@@ -111,7 +111,7 @@ const structuredData = {
 }
 
 .error-code {
-  font-size: 6rem;
+  font-size: var(--font-size-4xl);
   font-weight: 800;
   color: var(--color-brand-primary);
   line-height: var(--leading-none);
@@ -231,7 +231,7 @@ const structuredData = {
   }
 
   .error-code {
-    font-size: 4rem;
+    font-size: var(--font-size-4xl);
   }
 
   .error-title {
