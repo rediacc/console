@@ -195,7 +195,7 @@ Remove orphaned datastore resources and stale snapshots from a machine. The base
 **Options:**
 
 - `--dry-run`: Show what would be removed without making changes
-- `--orphaned-repos`: Delete every repo image on the machine that is not in your local CLI config. Coarse — also removes forks created by other tools that have no local config entry, even when their renet mirror correctly identifies them as forks. Use --prune-unknown for the narrower behavior that respects the mirror.
+- `--orphaned-repos`: Delete every repo image on the machine that is not in your local CLI config. Coarse: it also removes forks created by other tools that have no local config entry, even when their renet mirror correctly identifies them as forks. Use --prune-unknown for the narrower behavior that respects the mirror.
 - `--prune-unknown`: Delete only repos the renet .interim/state mirror cannot classify (not in local config AND no fork-marked mirror). Strictly narrower than --orphaned-repos: forks-without-config are preserved when the mirror identifies them. Pre-mirror legacy orphans and stale grands whose config entry was deleted both fall in this bucket.
 - `--force-delete-mounted`: Override the mount-safety preflight and delete repos even if they are currently mounted or have running Docker containers. Distinct from --force (which only overrides the archive grace period). Applies to both --orphaned-repos and --prune-unknown.
 - `--force`: Skip confirmation prompts
@@ -564,7 +564,7 @@ Browse files in a storage system
 
 - `--path <subpath>`: Subdirectory path to list (default: )
 
-> MCP excluded: Interactive file browser — requires TTY
+> MCP excluded: Interactive file browser: requires TTY
 
 ### rdc storage prune <storage>
 
@@ -572,7 +572,7 @@ Delete orphaned backups from storage that are no longer in any config. Multi-con
 
 **Options:**
 
-- `-m, --machine <name>`: Executor machine — runs the rclone list/delete calls against the storage. Required because clients aren't expected to have rclone installed locally; storage credentials still come from your local config.
+- `-m, --machine <name>`: Executor machine that runs the rclone list/delete calls against the storage. Required because clients aren't expected to have rclone installed locally; storage credentials still come from your local config.
 - `--dry-run`: Show what would be done without making changes
 - `--force`: Skip confirmation prompts
 - `--force-delete-mounted`: Override the mount-safety check and delete cloud backups even if the source GUID is currently mounted or has a running container on the executor machine. Distinct from --force (which only overrides the grace period for archived repos).
@@ -606,7 +606,7 @@ Declare and provision a cluster: machines, Ceph pools, and Kubernetes. Pass --pr
 - `--control-ds-pool <pool>`: Ceph rbd pool for the anchor control datastore (ceph backend)
 - `--debug`: Enable debug output
 
-> agent: BLOCKED | MCP excluded: Provisions cloud/VM infrastructure — not an agent operation
+> agent: BLOCKED | MCP excluded: Provisions cloud/VM infrastructure, not an agent operation
 
 ### rdc cluster status [cluster]
 
@@ -624,7 +624,7 @@ Change a pool's member count (adds/removes machines and joins/drains nodes). k8s
 - `--count <n>`: Desired member count
 - `--debug`: Enable debug output
 
-> agent: BLOCKED | MCP excluded: Mutates cluster node pools — not an agent operation
+> agent: BLOCKED | MCP excluded: Mutates cluster node pools, not an agent operation
 
 ### rdc cluster destroy <cluster>
 
@@ -635,7 +635,7 @@ Tear down the provisioned members and remove the cluster and its machines from c
 - `--force`: Skip confirmation and continue past teardown errors
 - `--debug`: Enable debug output
 
-> agent: BLOCKED | MCP excluded: Destroys cloud/VM infrastructure — not an agent operation
+> agent: BLOCKED | MCP excluded: Destroys cloud/VM infrastructure, not an agent operation
 
 ### rdc cluster kubeconfig <cluster>
 
@@ -655,7 +655,7 @@ Clone an entire cluster, including its repos' data, into a new cluster: coordina
 - `--up`: Bring the forked repos up and gate on cluster health after the fork boots
 - `--debug`: Enable debug output
 
-> agent: BLOCKED | MCP excluded: Clones a whole cluster — not an agent operation
+> agent: BLOCKED | MCP excluded: Clones a whole cluster, not an agent operation
 
 ### rdc cluster migrate <cluster>
 
@@ -666,7 +666,7 @@ Move an entire cluster, including its repos' data, to another machine or datacen
 - `--to <dest-cluster>`: Destination
 - `--debug`: Enable debug output
 
-> agent: BLOCKED | MCP excluded: Moves a whole cluster — not an agent operation
+> agent: BLOCKED | MCP excluded: Moves a whole cluster, not an agent operation
 
 ### rdc cluster rehearse <cluster>
 
@@ -689,7 +689,7 @@ Snapshot every rbd-backed datastore in the cluster at ONE instant. Nothing is st
 - `--snapshot <label>`: Snapshot label (default: a UTC timestamp)
 - `--debug`: Enable debug output
 
-> agent: BLOCKED | MCP excluded: Infrastructure snapshot — operator unlock only
+> agent: BLOCKED | MCP excluded: Infrastructure snapshot: operator unlock only
 
 ### rdc cluster snapshot list <cluster>
 
@@ -710,7 +710,7 @@ Adopt an existing registered machine as a Kubernetes agent node of a cluster, us
 - `--cluster <name>`: Cluster to join the machine to
 - `--debug`: Enable debug output
 
-> agent: BLOCKED | MCP excluded: Cluster membership mutation — not an agent operation
+> agent: BLOCKED | MCP excluded: Cluster membership mutation, not an agent operation
 
 ### rdc cluster evict <machine>
 
@@ -721,7 +721,7 @@ Drain the node, delete its Node object, and clear its cluster membership. The cl
 - `--force`: Skip the drain when the node is already dead
 - `--debug`: Enable debug output
 
-> agent: BLOCKED | MCP excluded: Cluster membership mutation — not an agent operation
+> agent: BLOCKED | MCP excluded: Cluster membership mutation, not an agent operation
 
 ### rdc ops up
 
@@ -1043,7 +1043,7 @@ Git-style file-level diff between two copy-on-write forked repositories. Reports
 
 ### rdc repo commit <ref>
 
-Freeze the current state of a mounted working fork into a new immutable commit (git-like). The commit records its message, author, timestamp, and parent in-volume (so it travels on push) and is marked read-only — it refuses to mount. The working fork continues unchanged, like git leaving the working tree intact. Check a commit out with 'rdc repo checkout' to get a writable copy.
+Freeze the current state of a mounted working fork into a new immutable commit (git-like). The commit records its message, author, timestamp, and parent in-volume (so it travels on push) and is marked read-only, so it refuses to mount. The working fork continues unchanged, like git leaving the working tree intact. Check a commit out with 'rdc repo checkout' to get a writable copy.
 
 **Options:**
 
@@ -1061,7 +1061,7 @@ Create a named branch ref pointing at the working fork's current commit (its tip
 
 - `--branch <branch>`: Name of the new branch
 
-> agent: fork-only | MCP excluded: Config-only ref operation — use CLI directly
+> agent: fork-only | MCP excluded: Config-only ref operation: use CLI directly
 
 ### rdc repo checkout <commit-or-branch-ref>
 
@@ -1237,7 +1237,7 @@ Resize a repository offline (supports both grow and shrink). Repo must be unmoun
 - `--debug`: Enable debug output
 - `--skip-router-restart`: Skip restarting the route server after binary update
 
-> agent: fork-only | fork-blocked | MCP excluded: Disk resize — destructive infrastructure operation, use CLI directly
+> agent: fork-only | fork-blocked | MCP excluded: Disk resize: destructive infrastructure operation, use CLI directly
 
 ### rdc repo expand <ref>
 
@@ -1249,7 +1249,7 @@ Expand a mounted repository online (zero downtime, grow-only). Grows the LUKS co
 - `--debug`: Enable debug output
 - `--skip-router-restart`: Skip restarting the route server after binary update
 
-> agent: fork-only | fork-blocked | MCP excluded: Storage expansion — destructive infrastructure operation, use CLI directly
+> agent: fork-only | fork-blocked | MCP excluded: Storage expansion: destructive infrastructure operation, use CLI directly
 
 ### rdc repo trim [ref]
 
@@ -1291,7 +1291,7 @@ Show the stored machine default, the repository override (with a ref), and the e
 
 ### rdc repo push <ref>
 
-Push repository to another machine. Storage destinations are retired; use `rdc backup snapshot` for point-in-time backup. For machine-to-machine transfer, the encrypted repo image is copied with the SAME GUID — this is a backup/migration, not a fork. To create an independent fork, use 'repo fork' first, then push. A pushed copy lands as a backup ARTIFACT: boot it on the target with 'backup restore <ref> --as <name> -m <target> --up'
+Push repository to another machine. Storage destinations are retired; use `rdc backup snapshot` for point-in-time backup. For machine-to-machine transfer, the encrypted repo image is copied with the SAME GUID, so this is a backup/migration, not a fork. To create an independent fork, use 'repo fork' first, then push. A pushed copy lands as a backup ARTIFACT: boot it on the target with 'backup restore <ref> --as <name> -m <target> --up'
 
 **Options:**
 
@@ -1496,7 +1496,7 @@ Create an SSH port-forward tunnel to a container's port on a remote machine. Aut
 - `--local <port>`: Local port (defaults to same as remote port)
 - `--url-only`: Print only the local URL once the tunnel is ready (machine-readable)
 
-> agent: fork-only | MCP excluded: Interactive SSH tunnel — blocks until Ctrl+C
+> agent: fork-only | MCP excluded: Interactive SSH tunnel: blocks until Ctrl+C
 
 ### rdc repo secret get <ref>
 
@@ -1549,7 +1549,7 @@ Create a new named config file
 - `--master-password <password>`: Encrypt resources with a master password
 - `--server <url>`: Account server URL
 
-> MCP excluded: Creates a named config file — the operator decides what configs exist.
+> MCP excluded: Creates a named config file. The operator decides what configs exist.
 
 ### rdc config list
 
@@ -1583,13 +1583,13 @@ Delete a config file
 
 Set a default value (team, region, bridge)
 
-> MCP excluded: Config value mutation — use CLI directly
+> MCP excluded: Config value mutation: use CLI directly
 
 ### rdc config clear [key]
 
 Clear defaults (all or specific key)
 
-> MCP excluded: Config value deletion — use CLI directly
+> MCP excluded: Config value deletion: use CLI directly
 
 ### rdc config recover [name]
 
@@ -1612,7 +1612,7 @@ Remove dead weight from the local config file at ~/.config/rediacc/<config>.json
 - `--archives-only`: Restrict to expired-archive purging. Skips cert-cache and cross-reference cleanup. Mutually exclusive with --certs-only and --refs-only.
 - `--refs-only`: Restrict to dangling cross-references (machine→strategy, strategy→repo excludes/includes). Skips cert-cache and archives. Mutually exclusive with --certs-only and --archives-only.
 - `--purge-archived`: Drop ALL archived repositories regardless of age, not just those past grace. Equivalent to running 'rdc repo admin archive purge' for every archived repo. Use only when you're sure you don't need any of the stashed credentials for restore.
-- `--orphan-repos`: Remove repository entries that are placed on no machine. Each entry holds that repo's credential and SSH key, so this is unrecoverable — run 'rdc config reconcile' first so placement reflects the machines.
+- `--orphan-repos`: Remove repository entries that are placed on no machine. Each entry holds that repo's credential and SSH key, so this is unrecoverable. Run 'rdc config reconcile' first so placement reflects the machines.
 - `--grace-days <days>`: Override the archive grace window (in days) for this invocation. Falls back to defaults.pruneGraceDays in the config, then to 7 if neither is set.
 
 > MCP tool
@@ -1697,7 +1697,7 @@ Write a config value at a JSON Pointer. Sensitive paths require --current (knowl
 
 - `--pointer <pointer>`: JSON Pointer to the field (e.g. /credentials/cfDnsApiToken)
 - `--new <value>`: New value (parsed as JSON if it looks like JSON: {, [, ", true/false/null/number)
-- `--current <value>`: Current plaintext value — required for sensitive-path mutations (knowledge-gate proof)
+- `--current <value>`: Current plaintext value, required for sensitive-path mutations (knowledge-gate proof)
 
 ### rdc config field unset
 
@@ -1706,7 +1706,7 @@ Delete a config value at a JSON Pointer. Sensitive paths require --current.
 **Options:**
 
 - `--pointer <pointer>`: JSON Pointer to the field (e.g. /credentials/cfDnsApiToken)
-- `--current <value>`: Current plaintext value — required for sensitive-path deletions
+- `--current <value>`: Current plaintext value, required for sensitive-path deletions
 
 ### rdc config field rotate
 
@@ -1772,7 +1772,7 @@ Run diagnostic checks on the CLI environment: Node.js version, renet binary avai
 
 - `--output <format>`: Output format (json)
 
-> MCP excluded: Diagnoses local CLI installation — not a remote operation
+> MCP excluded: Diagnoses local CLI installation, not a remote operation
 
 ### rdc credits
 
@@ -1853,7 +1853,7 @@ Check for new CLI versions and apply updates. Supports --check-only to check wit
 - `--status`: Show auto-update status and diagnostics
 - `--channel <channel>`: Set release channel (stable or edge)
 
-> MCP excluded: CLI self-update — not a remote operation
+> MCP excluded: CLI self-update, not a remote operation
 
 ### rdc subscription login
 

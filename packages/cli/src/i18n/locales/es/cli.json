@@ -288,7 +288,7 @@
           "description": "Transmitir nuevas entradas a medida que se escriben (Ctrl+C para detener)"
         },
         "verify": {
-          "chainBroken": "Cadena rota en la línea {{line}} — el archivo fue manipulado o está corrupto.",
+          "chainBroken": "Cadena rota en la línea {{line}}: el archivo fue manipulado o está corrupto.",
           "chainOk": "Integridad de la cadena verificada en {{count}} entradas.",
           "description": "Verificar la integridad de la cadena SHA-256 de todas las entradas de auditoría"
         }
@@ -331,7 +331,7 @@
         "applied": "Se aplicó {{path}}",
         "bannerRedacted": "Los campos sensibles se muestran como marcadores <redacted:KIND>:DIGEST que se reintegran de forma segura.",
         "bannerReveal": "--reveal activo: VALORES SENSIBLES VISIBLES. Auditado.",
-        "bannerRotateLine1": "Para rotar un secreto: reemplaza el marcador con el nuevo valor en claro — se te pedirá",
+        "bannerRotateLine1": "Para rotar un secreto: reemplaza el marcador con el nuevo valor en claro. Se te pedirá",
         "bannerRotateLine2": "confirmar cada rotación después de cerrar el editor.",
         "bannerStrip": "Las líneas que comienzan con // se eliminan al guardar.",
         "bannerTitle": "Editando configuración \"{{name}}\" (v{{version}})",
@@ -370,14 +370,14 @@
         },
         "set": {
           "description": "Escribir un valor de configuración en un puntero JSON. Los caminos sensibles requieren --current (puerta de conocimiento).",
-          "optionCurrent": "Valor actual en claro — obligatorio para mutar caminos sensibles (prueba de conocimiento)",
+          "optionCurrent": "Valor actual en claro, obligatorio para mutar caminos sensibles (prueba de conocimiento)",
           "optionNew": "Valor nuevo (se interpreta como JSON si empieza con {, [, \", true, false, null o un número)",
           "optionPointer": "Puntero JSON al campo (p. ej. /credentials/cfDnsApiToken)",
           "success": "Se estableció {{pointer}}"
         },
         "unset": {
           "description": "Eliminar un valor de configuración en un puntero JSON. Los caminos sensibles requieren --current.",
-          "optionCurrent": "Valor actual en claro — obligatorio para eliminar caminos sensibles",
+          "optionCurrent": "Valor actual en claro, obligatorio para eliminar caminos sensibles",
           "optionPointer": "Puntero JSON al campo (p. ej. /credentials/cfDnsApiToken)",
           "success": "Se eliminó {{pointer}}"
         }
@@ -1014,10 +1014,10 @@
         "allPassed": "Todos los prerequisitos satisfechos",
         "description": "Verificar prerequisitos de virtualización",
         "hasMissing": "{{count}} prerequisito(s) faltante(s)",
-        "localFallback": "(usando comprobaciones locales — renet no disponible)",
+        "localFallback": "(usando comprobaciones locales, renet no disponible)",
         "title": "Verificación de prerequisitos OPS"
       },
-      "description": "Aprovisionamiento y gestión de VMs locales usando KVM/QEMU/Hyper-V (la plataforma se detecta automáticamente). No es para máquinas remotas — para eso usa `machine`. Subcomandos clave: up (iniciar VMs), down (detener), status (listar VMs en ejecución), ssh (conectar a la VM), setup (instalar prerrequisitos), check (verificar que el host esté listo).",
+      "description": "Aprovisionamiento y gestión de VMs locales usando KVM/QEMU/Hyper-V (la plataforma se detecta automáticamente). No es para máquinas remotas. Para eso usa `machine`. Subcomandos clave: up (iniciar VMs), down (detener), status (listar VMs en ejecución), ssh (conectar a la VM), setup (instalar prerrequisitos), check (verificar que el host esté listo).",
       "descriptionShort": "Operaciones locales de VM (aprovisionar, gestionar, destruir)",
       "down": {
         "completed": "Clúster de VM destruido exitosamente",
@@ -1331,7 +1331,7 @@
         "rollback": "Configuración revertida para \"{{repository}}\"",
         "starting": "Creando fork de \"{{parent}}\" como \"{{repository}}\" en \"{{machine}}\"...",
         "tagOption": "Etiqueta para el fork (crea nombre:etiqueta)",
-        "tagReservedLatest": "repo fork: la etiqueta \"latest\" está reservada para el repositorio grand (producción) — elige un --tag distinto (p. ej. \"test\", \"staging\", \"<feature>\")",
+        "tagReservedLatest": "repo fork: la etiqueta \"latest\" está reservada para el repositorio grand (producción). Elige un --tag distinto (p. ej. \"test\", \"staging\", \"<feature>\")",
         "upOption": "Montar e iniciar servicios después de fork (fork + mount + up en un solo comando)"
       },
       "gc": {
@@ -1411,7 +1411,7 @@
         "optionTo": "Máquina o clúster de destino",
         "phase1": "Fase 1: Transfiriendo datos masivos (el origen sigue en ejecución)...",
         "phase1Done": "Transferencia masiva completada",
-        "phase1Stats": "{{transferred}} transferidos en {{duration}} — el origen siguió en línea",
+        "phase1Stats": "{{transferred}} transferidos en {{duration}}, el origen siguió en línea",
         "phase2": "Fase 2: Corte (breve inactividad)...",
         "phase2Stats": "Conmutación (TIEMPO DE INACTIVIDAD): {{transferred}} en {{duration}}",
         "phase3": "Fase 3: Iniciando en el destino...",
@@ -1510,9 +1510,9 @@
         "optionStrategy": "Estrategia de delta por bloques al usar una base delta: auto, physical o shared",
         "optionTo": "Nombre de la máquina de destino (detectado automáticamente desde la configuración)",
         "pushing": "Enviando respaldo de \"{{repo}}\" a {{dest}}...",
-        "statsDelta": "\"{{repo}}\" enviado a {{machine}} — {{transferred}} transferidos en {{duration}} (delta sobre la base {{base}}, imagen {{image}})",
-        "statsFull": "\"{{repo}}\" enviado a {{machine}} — {{transferred}} transferidos en {{duration}} (completo)",
-        "statsNoBytes": "\"{{repo}}\" enviado a {{machine}} — completado en {{duration}}",
+        "statsDelta": "\"{{repo}}\" enviado a {{machine}}: {{transferred}} transferidos en {{duration}} (delta sobre la base {{base}}, imagen {{image}})",
+        "statsFull": "\"{{repo}}\" enviado a {{machine}}: {{transferred}} transferidos en {{duration}} (completo)",
+        "statsNoBytes": "\"{{repo}}\" enviado a {{machine}}: completado en {{duration}}",
         "storageRetired": "Enviar a un backend de almacenamiento está retirado: se eliminó el brazo de nube de rclone. La copia puntual se hace con `rdc backup snapshot` (subida) y `rdc backup restore <repo> --at <snapshot>` (descarga), ambas sobre el almacén de bloques. La transferencia entre máquinas no cambia: usa --to-machine"
       },
       "refMachineConflict": "Una referencia de repositorio ya deriva su propia máquina. Usa -m/--machine solo para la forma a nivel de máquina: repo {{verb}} --all -m <machine>.",
@@ -2012,7 +2012,7 @@
       "meanings": {
         "authRequired": "Necesita iniciar sesión primero",
         "machineRequired": "Especifique una máquina con `--machine` o establezca un valor predeterminado de contexto",
-        "noActiveConfig": "No hay configuración activa — cree una con `rdc config init`",
+        "noActiveConfig": "No hay configuración activa. Cree una con `rdc config init`",
         "permissionDenied": "Su cuenta no tiene los permisos requeridos",
         "regionRequired": "Especifique una región con `--region` o establezca un valor predeterminado de contexto",
         "teamRequired": "Especifique un equipo con `--team` o establezca un valor predeterminado de contexto"
@@ -2042,7 +2042,7 @@
     },
     "overview": {
       "heading": "Descripción general",
-      "text": "La **CLI de Rediacc** (`rdc`) es una interfaz de línea de comandos para gestionar infraestructura autoalojada — máquinas, repositorios, almacenamiento, copias de seguridad y más."
+      "text": "La **CLI de Rediacc** (`rdc`) es una interfaz de línea de comandos para gestionar infraestructura autoalojada: máquinas, repositorios, almacenamiento, copias de seguridad y más."
     },
     "pageTitle": "Referencia de la CLI de Rediacc",
     "sectionTitles": {
@@ -2075,7 +2075,7 @@
       },
       "machine": {
         "health": {
-          "afterDescription": "El comando health muestra métricas del sistema, estado de contenedores, estabilidad de servicios e información de almacenamiento — útil para verificaciones de pipelines CI/CD."
+          "afterDescription": "El comando health muestra métricas del sistema, estado de contenedores, estabilidad de servicios e información de almacenamiento, útil para verificaciones de pipelines CI/CD."
         }
       }
     },
@@ -2090,7 +2090,7 @@
   },
   "errors": {
     "agent": {
-      "clusterOpBlocked": "El comando de clúster \"{{command}}\" está bloqueado en modo agente. Las operaciones de clúster crean o desmantelan infraestructura real, por lo que un agente no puede autorizarlas por sí mismo. Usuario: para permitir esto, establezca REDIACC_ALLOW_CLUSTER_OPS=<nombre-del-clúster> (o * para todos los clústeres) en su terminal ANTES de iniciar la sesión del agente — no se acepta una anulación establecida desde dentro del agente.",
+      "clusterOpBlocked": "El comando de clúster \"{{command}}\" está bloqueado en modo agente. Las operaciones de clúster crean o desmantelan infraestructura real, por lo que un agente no puede autorizarlas por sí mismo. Usuario: para permitir esto, establezca REDIACC_ALLOW_CLUSTER_OPS=<nombre-del-clúster> (o * para todos los clústeres) en su terminal ANTES de iniciar la sesión del agente. No se acepta una anulación establecida desde dentro del agente.",
       "commandBlocked": "El comando \"{{command}}\" no está disponible en modo agente.\n\nEste comando ejecuta funciones arbitrarias de bajo nivel sin protecciones de seguridad. Use comandos CLI tipados o herramientas MCP en su lugar.\n\nAlternativas:\n  - MCP tools: repo_up, repo_down, repo_fork, repo_logs, repo_exec, machine_status\n  - CLI commands: rdc repo up, rdc repo down, rdc term connect\n  - Ejecute \"rdc --help\" para ver todos los comandos disponibles\n\nSi necesita acceso directo, pida al usuario que ejecute el comando directamente.",
       "configEdit": "El editor interactivo está bloqueado en entornos de agente.\n\nAlternativas:\n  • rdc config edit --dump > config.jsonc    (inspección segura redactada)\n  • rdc config field set --pointer <pointer> --current <old> --new <new>\n  • rdc config edit --apply config.jsonc\n\nPara anularlo, define REDIACC_ALLOW_CONFIG_EDIT=<scope-glob> en el shell padre\nANTES de iniciar el agente (debe aparecer en la ascendencia del proceso).",
       "configEditAncestry": "El editor interactivo está bloqueado en entornos de agente (REDIACC_ALLOW_CONFIG_EDIT se estableció pero falló la verificación de ascendencia: el override debe establecerlo tu shell, no un agente).\n\nAlternativas:\n  • rdc config edit --dump > config.jsonc    (inspección segura redactada)\n  • rdc config field set --pointer <pointer> --current <old> --new <new>\n  • rdc config edit --apply config.jsonc\n\nEstablece REDIACC_ALLOW_CONFIG_EDIT=<scope-glob> en el shell padre ANTES de iniciar el agente.",
@@ -2102,7 +2102,7 @@
       "grandGuard": "\"{{name}}\" es un repositorio grand (producción). Los agentes no pueden modificar repositorios grand directamente.\n\nLos repositorios grand contienen datos de producción. Use un fork en su lugar: los forks son copias sandbox seguras y aisladas.\n\nFlujo de trabajo:\n  1. rdc repo fork {{name}} --tag <tag-name>\n  2. Opere en el fork (ej: rdc repo up {{name}}:<tag-name>)\n  3. Cuando termine, el usuario puede promover el fork con rdc repo promote {{name}}:<tag-name>\n\nUsuario: para permitir acceso directo, establezca REDIACC_ALLOW_GRAND_REPO={{name}} (o * para todos los repos) en su terminal antes de iniciar la sesión del agente.",
       "grandGuardOverride": "\"{{name}}\" es un repositorio grand (producción). No se aceptan anulaciones iniciadas por el agente.\n\nNo intente establecer REDIACC_ALLOW_GRAND_REPO (solo el usuario puede autorizar esto antes de que el agente se inicie).\n\nUse un fork en su lugar: los forks son copias sandbox seguras y aisladas.\n  1. rdc repo fork {{name}} --tag <tag-name>\n  2. Opere en el fork\n  3. Cuando termine, el usuario puede promover el fork con rdc repo promote {{name}}:<tag-name>",
       "grandGuardOverrideNonLinux": "\"{{name}}\" es un repositorio grand (producción). REDIACC_ALLOW_GRAND_REPO está configurado, pero su origen no se pudo verificar en {{platform}} (el asistente de verificación de ascendencia no está disponible o falló), por lo que la anulación no se acepta.\n\nUtilice el flujo de trabajo fork-first:\n  1. rdc repo fork {{name}} --tag <tag-name>\n  2. Opere en el fork\n  3. Cuando termine, el usuario puede promover el fork con rdc repo promote {{name}}:<tag-name>\n\nUsuario: la verificación funciona en Linux, macOS y Windows con una instalación intacta de rdc. Reinstale rdc si esto persiste y configure la variable en su terminal antes de iniciar el agente.",
-      "machineGuard": "El acceso directo a la máquina \"{{machine}}\" no está permitido en modo agente.\n\nLos agentes deben conectarse a través de un contexto de repositorio para acceso sandbox. Cree un fork del repositorio primero, luego conéctese al fork.\n\nFlujo de trabajo:\n  1. rdc repo fork <repo> --tag <tag-name>\n  2. rdc term connect <repo>:<tag-name> -c \"<command>\"\n\nUsuario: el acceso a nivel de máquina requiere el comodín — establezca REDIACC_ALLOW_GRAND_REPO=* en su terminal antes de iniciar la sesión del agente. Un nombre de repositorio específico no habilita el acceso directo a la máquina.",
+      "machineGuard": "El acceso directo a la máquina \"{{machine}}\" no está permitido en modo agente.\n\nLos agentes deben conectarse a través de un contexto de repositorio para acceso sandbox. Cree un fork del repositorio primero, luego conéctese al fork.\n\nFlujo de trabajo:\n  1. rdc repo fork <repo> --tag <tag-name>\n  2. rdc term connect <repo>:<tag-name> -c \"<command>\"\n\nUsuario: el acceso a nivel de máquina requiere el comodín: establezca REDIACC_ALLOW_GRAND_REPO=* en su terminal antes de iniciar la sesión del agente. Un nombre de repositorio específico no habilita el acceso directo a la máquina.",
       "machineGuardOverride": "El acceso directo a la máquina \"{{machine}}\" no está permitido. No se aceptan anulaciones iniciadas por el agente.\n\nNo intente establecer REDIACC_ALLOW_GRAND_REPO (solo el usuario puede autorizar esto antes de que el agente se inicie).\n\nCree un fork del repositorio primero, luego conéctese al fork:\n  1. rdc repo fork <repo> --tag <tag-name>\n  2. rdc term connect <repo>:<tag-name> -c \"<command>\"",
       "machineGuardOverrideNonLinux": "El acceso directo a la máquina \"{{machine}}\" está anulado, pero el origen de la anulación no se pudo verificar en {{platform}} (el asistente de verificación de ascendencia no está disponible o falló), por lo que la anulación no se acepta.\n\nCree un fork del repositorio primero, luego conéctese al fork:\n  1. rdc repo fork <repo> --tag <tag-name>\n  2. rdc term connect <repo>:<tag-name> -c \"<command>\"\n\nUsuario: la verificación funciona en Linux, macOS y Windows con una instalación intacta de rdc. Reinstale rdc si esto persiste y configure la variable en su terminal antes de iniciar el agente.",
       "mcpGrandGuard": "\"{{name}}\" es un repositorio grand (producción). Los agentes no pueden modificar repositorios grand directamente.\n\nUse repo_fork para crear una copia sandbox segura y aislada, luego opere en el fork.\nSi necesita acceso directo, pida al usuario que exporte REDIACC_ALLOW_GRAND_REPO antes de iniciar el agente.",
@@ -2405,7 +2405,7 @@
   "services": {
     "prune": {
       "noOrphaned": "No se encontraron entradas huérfanas",
-      "refusingPrune": "Se rechaza la limpieza — estas configuraciones pueden contener GUIDs protegidos. Use --force para forzar.",
+      "refusingPrune": "Se rechaza la limpieza: estas configuraciones pueden contener GUIDs protegidos. Use --force para forzar.",
       "unreadableConfigs": "No se pueden leer {{count}} configuración(es): {{names}} (cifradas o corruptas)"
     }
   },
