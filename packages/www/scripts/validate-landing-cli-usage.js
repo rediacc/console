@@ -4,11 +4,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseRdcCommand } from './lib/cli-reference-catalog.js';
-import {
-  getAllLandingTerminalCommandsForLanguage,
-  getAllLanguages,
-  getTranslationTerminalCommands,
-} from './lib/landing-terminal-catalog.js';
+import { countLandingTerminalSources, getAllLandingTerminalCommandsForLanguage, getAllLanguages, getTranslationTerminalCommands } from './lib/landing-terminal-catalog.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const MAP_PATH = path.resolve(__dirname, './data/landing-cli-capability-map.json');
@@ -301,11 +297,27 @@ function main() {
   validateLocaleParity(errors);
 
   if (checkedCount === 0) {
-    // A landing page with ZERO rdc commands means the collector broke, not that the page is
-    // clean. Refuse to report success on an empty scan — that is the failure mode this whole
-    // program keeps finding.
-    console.error('✗ landing-cli-usage found NO rdc commands to check. The collector is broken.');
-    process.exit(1);
+    // ZERO commands has two causes that need opposite responses, and the refusal below is
+    // only correct for one of them. If a terminal SOURCE exists and yields nothing, the
+    // collector broke and reporting success would be the empty-scan failure this program
+    // keeps finding. If no source exists at all, there is genuinely nothing to validate.
+    //
+    // Both sources are legitimately gone now: the homepage hero was rebuilt without its
+    // terminal demo, and the terminal blocks left the locale catalogs. Refusing there would
+    // demand a subject the site no longer has.
+    const sources = countLandingTerminalSources('en');
+    if (sources.homepageArray || sources.terminalBlocks > 0) {
+      console.error('✗ landing-cli-usage found NO rdc commands to check, but a terminal source');
+      console.error(
+        `  EXISTS (heroTerminalLines: ${sources.homepageArray}, terminal blocks: ${sources.terminalBlocks}).`
+      );
+      console.error('  The collector is broken.');
+      process.exit(1);
+    }
+    console.log('✓ landing-cli-usage: no landing terminal sources exist, so there is nothing');
+    console.log('  to validate. This is checked, not assumed: heroTerminalLines is absent from');
+    console.log('  index.astro and the en catalog carries no terminal blocks.');
+    process.exit(0);
   }
 
   process.exit(printSummary(errors, entries, strictMode, checkedCount));
