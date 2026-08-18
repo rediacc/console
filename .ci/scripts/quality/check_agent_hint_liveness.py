@@ -78,6 +78,9 @@ SPECIMENS = {
     "pr-babysitter": "push the branch and watch CI until every job is green, flip the PR ready",
     "config-universe": "rdc config remote enable fails with Decryption failed after the passkey unlock",
     "e2e-local": "an e2e test is failing, run the bridge suite locally against the VM fleet instead of pushing to CI",
+    "browser-probe": "drive the page in a real browser with agent-browser and measure the rendered layout",
+    "gate-author": "write a regression gate, drain its baseline, and verify the three-point wiring in the ci-runner manifest",
+    "www-site": "restyle the solution page hero and the docs layout in the Astro marketing site",
 }
 
 # Neutral haystacks. Every one of them is ordinary work that no specialist owns.

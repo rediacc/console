@@ -370,14 +370,14 @@
         },
         "set": {
           "description": "Scrivi un valore di configurazione su un JSON Pointer. I percorsi sensibili richiedono --current (knowledge-gate).",
-          "optionCurrent": "Valore in chiaro corrente -- obbligatorio per le mutazioni su percorsi sensibili (prova per knowledge-gate)",
+          "optionCurrent": "Valore in chiaro corrente, obbligatorio per le mutazioni su percorsi sensibili (prova per knowledge-gate)",
           "optionNew": "Nuovo valore (analizzato come JSON se sembra JSON: {, [, \", true/false/null/numero)",
           "optionPointer": "JSON Pointer al campo (es. /credentials/cfDnsApiToken)",
           "success": "Impostato {{pointer}}"
         },
         "unset": {
           "description": "Elimina un valore di configurazione su un JSON Pointer. I percorsi sensibili richiedono --current.",
-          "optionCurrent": "Valore in chiaro corrente -- obbligatorio per le eliminazioni su percorsi sensibili",
+          "optionCurrent": "Valore in chiaro corrente, obbligatorio per le eliminazioni su percorsi sensibili",
           "optionPointer": "JSON Pointer al campo (es. /credentials/cfDnsApiToken)",
           "success": "Rimosso {{pointer}}"
         }
@@ -2336,8 +2336,8 @@
     "machine": "Nome della macchina",
     "machineIp": "Indirizzo IP o hostname della macchina",
     "machineName": "Nome della macchina",
-    "mirrorDownload": "Modalità mirror -- elimina i file locali non presenti in remoto",
-    "mirrorUpload": "Modalità mirror -- elimina i file remoti non presenti in locale",
+    "mirrorDownload": "Modalità mirror: elimina i file locali non presenti in remoto",
+    "mirrorUpload": "Modalità mirror: elimina i file remoti non presenti in locale",
     "name": "Nome della risorsa",
     "newName": "Nuovo nome della risorsa",
     "newWindow": "Apri in una nuova finestra di VS Code",
@@ -2405,7 +2405,7 @@
   "services": {
     "prune": {
       "noOrphaned": "Nessuna voce orfana trovata",
-      "refusingPrune": "Eliminazione rifiutata -- queste configurazioni potrebbero fare riferimento a GUID protetti. Usa --force per ignorare.",
+      "refusingPrune": "Eliminazione rifiutata: queste configurazioni potrebbero fare riferimento a GUID protetti. Usa --force per ignorare.",
       "unreadableConfigs": "Impossibile leggere {{count}} configurazione/i: {{names}} (cifrata/e o corrotta/e)"
     }
   },
