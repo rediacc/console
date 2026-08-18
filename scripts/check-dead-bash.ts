@@ -51,6 +51,47 @@ const ALLOWLIST = path.join(ROOT, '.dead-bash-allowlist');
 const DEF_STRICT =
   /^\s*(?:([a-zA-Z_][a-zA-Z0-9_]*)\s*\(\)\s*\{|function\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*\{)/;
 
+/**
+ * Blank out HEREDOC BODIES before scanning.
+ *
+ * A heredoc body is DATA, not code in the enclosing script. When it is written to a fixture
+ * file, any function it declares belongs to that file, so counting it as a definition here
+ * makes the gate demand a caller for something this script never defines.
+ *
+ * Measured: `.ci/scripts/quality/check-pool-writer-safety.sh` writes two planted-writer
+ * fixtures via `<<'PLANTED'`, each declaring `run_it()`. The gate reported
+ * "shell function run_it is defined but never called anywhere in the tracked tree" and
+ * demanded either a deletion, which would have destroyed the control the check under test
+ * depends on, or an allowlist entry, which would have recorded a parser bug as sanctioned
+ * debt. Neither is the fix; not parsing data as code is.
+ *
+ * Lines are BLANKED rather than removed so every reported line number still matches the file.
+ */
+export function stripHeredocs(text: string): string {
+  const open =
+    /<<-?\s*(?:'([A-Za-z_][A-Za-z0-9_]*)'|"([A-Za-z_][A-Za-z0-9_]*)"|([A-Za-z_][A-Za-z0-9_]*))/;
+  const lines = text.split('\n');
+  const out: string[] = [];
+  let delim: string | null = null;
+  let dashed = false;
+  for (const line of lines) {
+    if (delim === null) {
+      out.push(line);
+      const m = line.match(open);
+      if (m) {
+        delim = m[1] ?? m[2] ?? m[3] ?? null;
+        dashed = line.includes('<<-');
+      }
+      continue;
+    }
+    // The terminator is the delimiter alone on its line; `<<-` also allows leading tabs.
+    const candidate = dashed ? line.replace(/^\t+/, '') : line;
+    out.push('');
+    if (candidate.trimEnd() === delim) delim = null;
+  }
+  return out.join('\n');
+}
+
 interface Finding {
   kind: 'function' | 'file';
   name: string;
@@ -182,15 +223,17 @@ function main(): void {
   for (const f of shellFiles) {
     const text = texts.get(f);
     if (!text) continue;
-    text.split('\n').forEach((line, i) => {
-      const m = line.match(DEF_STRICT);
-      if (!m) return;
-      const name = m[1] ?? m[2];
-      if (!name) return;
-      const list = defs.get(name) ?? [];
-      list.push({ file: f, line: i + 1 });
-      defs.set(name, list);
-    });
+    stripHeredocs(text)
+      .split('\n')
+      .forEach((line, i) => {
+        const m = line.match(DEF_STRICT);
+        if (!m) return;
+        const name = m[1] ?? m[2];
+        if (!name) return;
+        const list = defs.get(name) ?? [];
+        list.push({ file: f, line: i + 1 });
+        defs.set(name, list);
+      });
   }
 
   for (const [name, locs] of defs) {

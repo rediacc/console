@@ -1,5 +1,5 @@
-import { SITE_LOCALES } from '@rediacc/locales';
 import process from 'node:process';
+import { SITE_LOCALES } from '@rediacc/locales';
 import { loadManifest } from '../../scripts/lib/update-video-manifest.ts';
 import type { Language } from '../i18n/types';
 
@@ -42,11 +42,6 @@ export interface SolutionVideoUrls {
   poster: string;
 }
 
-export interface SolutionVideo extends SolutionVideoUrls {
-  /** The language actually used. Falls back to 'en' only if a locale is missing entirely. */
-  lang: VideoLang;
-}
-
 /**
  * `loadManifest()` re-reads and re-parses the 448 KB manifest on EVERY call, with no cache
  * of its own. Resolving one page used to cost 3 of those; offering all thirteen languages
@@ -87,21 +82,6 @@ function resolveUrl(slug: string, lang: VideoLang, field: 'mp4' | 'vertical' | '
   if (!path) return localFallback[field];
 
   return `${VIDEO_CDN_BASE_URL}/${path}`;
-}
-
-export function resolveSolutionVideo(slug: string, lang: Language): SolutionVideo {
-  // No fallback any more: VIDEO_LANGS is SITE_LOCALES (see :34), so VideoLang
-  // and Language are the same set and every locale has its own video. The old
-  // ternary narrowed ar/et/tr to English and became dead the moment the list was
-  // unified; eslint caught it as an unnecessary assertion, which is what an
-  // always-true guard looks like from the type system's side.
-  const used: VideoLang = lang;
-  return {
-    landscape: resolveUrl(slug, used, 'mp4'),
-    vertical: resolveUrl(slug, used, 'vertical'),
-    poster: resolveUrl(slug, used, 'poster'),
-    lang: used,
-  };
 }
 
 /**

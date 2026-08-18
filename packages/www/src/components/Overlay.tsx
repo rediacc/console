@@ -50,7 +50,7 @@ function lockScroll(): () => void {
   };
 }
 
-export interface OverlayProps {
+interface OverlayProps {
   open: boolean;
   onClose: () => void;
   /** Accessible name for the dialog. */

@@ -11,6 +11,7 @@
 
 import { createElement } from 'react';
 import { createRoot } from 'react-dom/client';
+import type { TutorialSourceSet } from '../components/TutorialVideoPlayer';
 
 async function hydrateTutorialVideos() {
   const containers = document.querySelectorAll<HTMLElement>(
@@ -19,7 +20,7 @@ async function hydrateTutorialVideos() {
   if (containers.length === 0) return;
 
   const { default: TutorialVideoPlayer } = await import('../components/TutorialVideoPlayer');
-  type SourceSet = import('../components/TutorialVideoPlayer').TutorialSourceSet;
+  type SourceSet = TutorialSourceSet;
 
   containers.forEach((el) => {
     if (el.dataset.hydrated) return;
