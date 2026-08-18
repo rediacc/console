@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import NewsletterSignup from './NewsletterSignup';
 
 interface Props {
@@ -7,16 +7,41 @@ interface Props {
 
 const DISMISSED_KEY = 'stickyBarDismissed';
 
+// Dismissal lives in sessionStorage, which the server does not have. Both renders must
+// start from the SAME value: reading sessionStorage during render made the server say
+// false and the browser say true for a returning reader, and React then discarded the
+// whole island rather than reconciling it. useSyncExternalStore is the shape React
+// provides for exactly this, with a separate server snapshot, so the stored value is
+// applied after hydration instead of during it.
+const dismissListeners = new Set<() => void>();
+
+function subscribeDismissed(onStoreChange: () => void): () => void {
+  dismissListeners.add(onStoreChange);
+  return () => {
+    dismissListeners.delete(onStoreChange);
+  };
+}
+
+function getDismissedSnapshot(): boolean {
+  return sessionStorage.getItem(DISMISSED_KEY) !== null;
+}
+
+function getDismissedServerSnapshot(): boolean {
+  return false;
+}
+
+function dismiss(): void {
+  sessionStorage.setItem(DISMISSED_KEY, '1');
+  for (const listener of dismissListeners) listener();
+}
+
 const BlogStickyBar: React.FC<Props> = ({ source = 'blog-sticky' }) => {
   const [visible, setVisible] = useState(false);
-  // Both renders must start from the SAME value. Reading sessionStorage here made the
-  // server say false and the browser say true for a returning reader, and React then
-  // discarded the whole island rather than reconciling it. The stored value is applied
-  // after mount instead.
-  const [dismissed, setDismissed] = useState(false);
-  useEffect(() => {
-    if (sessionStorage.getItem(DISMISSED_KEY) !== null) setDismissed(true);
-  }, []);
+  const dismissed = useSyncExternalStore(
+    subscribeDismissed,
+    getDismissedSnapshot,
+    getDismissedServerSnapshot
+  );
   const sentinelRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -46,18 +71,13 @@ const BlogStickyBar: React.FC<Props> = ({ source = 'blog-sticky' }) => {
     };
   }, []);
 
-  const handleDismiss = () => {
-    setDismissed(true);
-    sessionStorage.setItem(DISMISSED_KEY, '1');
-  };
-
   if (dismissed || !visible) return null;
 
   return (
     <div className="blog-sticky-bar-wrapper">
       <button
         className="blog-sticky-bar-close"
-        onClick={handleDismiss}
+        onClick={dismiss}
         aria-label="Dismiss"
         type="button"
         data-track="cta_click"

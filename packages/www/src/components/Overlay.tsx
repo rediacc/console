@@ -154,7 +154,8 @@ const Overlay: React.FC<OverlayProps> = ({
         aria-modal="true"
         aria-label={label}
       >
-        {(title || closeLabel) && (
+        {/* Truthiness, not nullishness: an empty title must not open the header. */}
+        {(Boolean(title) || Boolean(closeLabel)) && (
           <div className="overlay-header">
             <div>
               {title && <h2 className="overlay-title">{title}</h2>}
