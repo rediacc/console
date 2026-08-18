@@ -288,7 +288,7 @@
           "description": "Neue Audit-Einträge live streamen (Ctrl+C zum Beenden)"
         },
         "verify": {
-          "chainBroken": "Kette bei Zeile {{line}} unterbrochen — Datei wurde manipuliert oder ist beschädigt.",
+          "chainBroken": "Kette bei Zeile {{line}} unterbrochen: Datei wurde manipuliert oder ist beschädigt.",
           "chainOk": "Ketten-Integrität über {{count}} Einträge verifiziert.",
           "description": "Integrität der SHA-256-Hash-Kette über alle Audit-Einträge prüfen"
         }
@@ -331,7 +331,7 @@
         "applied": "{{path}} angewendet",
         "bannerRedacted": "Sensible Felder werden als <redacted:KIND>:DIGEST-Stubs angezeigt, die sicher unverändert zurücklaufen.",
         "bannerReveal": "--reveal aktiv: SENSIBLE WERTE SICHTBAR. Audit-Log aktiv.",
-        "bannerRotateLine1": "Zum Rotieren eines Geheimnisses: Ersetzen Sie den Stub durch den neuen Klartext — Sie werden",
+        "bannerRotateLine1": "Zum Rotieren eines Geheimnisses: Ersetzen Sie den Stub durch den neuen Klartext. Sie werden",
         "bannerRotateLine2": "nach dem Schließen des Editors zur Bestätigung jeder Rotation aufgefordert.",
         "bannerStrip": "Zeilen, die mit // beginnen, werden beim Speichern entfernt.",
         "bannerTitle": "Bearbeite Konfiguration \"{{name}}\" (v{{version}})",
@@ -370,14 +370,14 @@
         },
         "set": {
           "description": "Konfigurationswert an einem JSON-Pointer schreiben. Sensible Pfade erfordern --current (Wissensnachweis).",
-          "optionCurrent": "Aktueller Klartextwert — für Änderungen sensibler Pfade erforderlich (Wissensnachweis)",
+          "optionCurrent": "Aktueller Klartextwert, erforderlich für Änderungen sensibler Pfade (Wissensnachweis)",
           "optionNew": "Neuer Wert (als JSON interpretiert, falls er mit {, [, \", true, false, null oder einer Zahl beginnt)",
           "optionPointer": "JSON-Pointer zum Feld (z. B. /credentials/cfDnsApiToken)",
           "success": "{{pointer}} gesetzt"
         },
         "unset": {
           "description": "Konfigurationswert an einem JSON-Pointer löschen. Sensible Pfade erfordern --current.",
-          "optionCurrent": "Aktueller Klartextwert — für Löschungen sensibler Pfade erforderlich",
+          "optionCurrent": "Aktueller Klartextwert, erforderlich für Löschungen sensibler Pfade",
           "optionPointer": "JSON-Pointer zum Feld (z. B. /credentials/cfDnsApiToken)",
           "success": "{{pointer}} entfernt"
         }
@@ -433,7 +433,7 @@
         "foundOrphanRepos": "{{count}} Repository-Eintrag/-Einträge sind keiner Maschine zugeordnet:",
         "graceDaysOption": "Überschreibt das Archiv-Schonfristfenster (in Tagen) für diesen Aufruf. Greift auf defaults.pruneGraceDays in der Konfiguration zurück, dann auf 7, wenn keines gesetzt ist.",
         "keptArchivesInGrace": "Archivierte Repositories noch in Schonfrist behalten (wiederherstellbar über 'rdc repo admin archive restore'):",
-        "nothingToPrune": "Nichts zu bereinigen, Konfiguration ist bereits sauber.",
+        "nothingToPrune": "Nichts zu bereinigen: Konfiguration ist bereits sauber.",
         "orphanReposHint": "Führen Sie 'rdc config reconcile' aus, um die Zuordnung anhand Ihrer Maschinen zu ermitteln. Einträge, die danach weiterhin aufgeführt werden, sind tatsächlich nicht zugeordnet; entfernen Sie sie mit 'rdc config prune --orphan-repos'.",
         "orphanReposOption": "Entfernt Repository-Einträge, die keiner Maschine zugeordnet sind. Jeder Eintrag enthält die Zugangsdaten und den SSH-Schlüssel des jeweiligen Repos. Das Löschen ist daher nicht rückgängig zu machen. Führen Sie zuerst 'rdc config reconcile' aus, damit die Zuordnung die tatsächlichen Maschinen widerspiegelt.",
         "purgeArchivedOption": "ALLE archivierten Repositories unabhängig vom Alter verwerfen, nicht nur die nach Schonfrist. Äquivalent zum Ausführen von 'rdc repo admin archive purge' für jedes archivierte Repository. Nur verwenden, wenn Sie sicher sind, dass keine der gespeicherten Anmeldedaten zur Wiederherstellung benötigt werden.",
@@ -930,9 +930,9 @@
         "dryRunOption": "Anzeigen, was entfernt würde, ohne Änderungen vorzunehmen",
         "forceDeleteMountedOption": "Setzt die Mount-Sicherheitsprüfung außer Kraft und löscht Repos, auch wenn sie aktuell gemountet sind oder laufende Docker-Container haben. Unterscheidet sich von --force (das nur die Archiv-Schonfrist überschreibt). Gilt sowohl für --orphaned-repos als auch für --prune-unknown.",
         "noReposFound": "Keine Repositories auf dem Rechner gefunden",
-        "noUnknownRepos": "Keine unbekannten Repositories gefunden, jedes Maschinen-Repo ist entweder in der lokalen Konfiguration oder hat einen renet-Mirror",
+        "noUnknownRepos": "Keine unbekannten Repositories gefunden. Jedes Maschinen-Repo ist entweder in der lokalen Konfiguration oder hat einen renet-Mirror",
         "orphanedReposCompleted": "{{count}} verwaiste Repositories bereinigt",
-        "orphanedReposOption": "Löscht jedes Repo-Image auf der Maschine, das nicht in Ihrer lokalen CLI-Konfiguration steht. Grobkörnig — entfernt auch Forks, die von anderen Tools erstellt wurden und keinen lokalen Konfigurationseintrag haben, selbst wenn deren renet-Mirror sie korrekt als Forks identifiziert. Verwenden Sie --prune-unknown für das engere Verhalten, das den Mirror respektiert.",
+        "orphanedReposOption": "Löscht jedes Repo-Image auf der Maschine, das nicht in Ihrer lokalen CLI-Konfiguration steht. Grobkörnig: entfernt auch Forks, die von anderen Tools erstellt wurden und keinen lokalen Konfigurationseintrag haben, selbst wenn deren renet-Mirror sie korrekt als Forks identifiziert. Verwenden Sie --prune-unknown für das engere Verhalten, das den Mirror respektiert.",
         "orphanedReposStarting": "Suche nach verwaisten Repositories auf {{machine}}...",
         "previewEmpty": "Keine verwaisten Datastore-Ressourcen gefunden",
         "pruneUnknownOption": "Löscht nur Repos, die der renet .interim/state Mirror nicht klassifizieren kann (nicht in lokaler Konfiguration UND kein fork-markierter Mirror). Strikt enger als --orphaned-repos: Forks ohne Konfiguration werden bewahrt, wenn der Mirror sie identifiziert. Pre-mirror Legacy-Waisen und veraltete Grands mit gelöschtem Konfigurationseintrag fallen beide in diesen Bereich.",
@@ -1014,10 +1014,10 @@
         "allPassed": "Alle Voraussetzungen erfüllt",
         "description": "Virtualisierungsvoraussetzungen überprüfen",
         "hasMissing": "{{count}} Voraussetzung(en) fehlen",
-        "localFallback": "(Lokale Prüfungen — renet nicht verfügbar)",
+        "localFallback": "(Lokale Prüfungen, renet nicht verfügbar)",
         "title": "OPS-Voraussetzungsprüfung"
       },
-      "description": "Lokale VM-Bereitstellung und -Verwaltung über KVM/QEMU/Hyper-V (Plattform wird automatisch erkannt). Nicht für Remote-Maschinen gedacht — dafür `machine` verwenden. Wichtige Unterbefehle: up (VMs starten), down (stoppen), status (laufende VMs auflisten), ssh (mit VM verbinden), setup (Voraussetzungen installieren), check (Host-Bereitschaft prüfen).",
+      "description": "Lokale VM-Bereitstellung und -Verwaltung über KVM/QEMU/Hyper-V (Plattform wird automatisch erkannt). Nicht für Remote-Maschinen gedacht. Dafür `machine` verwenden. Wichtige Unterbefehle: up (VMs starten), down (stoppen), status (laufende VMs auflisten), ssh (mit VM verbinden), setup (Voraussetzungen installieren), check (Host-Bereitschaft prüfen).",
       "descriptionShort": "Lokale VM-Operationen (bereitstellen, verwalten, zerstören)",
       "down": {
         "completed": "VM-Cluster erfolgreich zerstört",
@@ -1207,7 +1207,7 @@
       "commit": {
         "authorOption": "commit-Autor",
         "completed": "{{commit}} committet: {{message}}",
-        "description": "Friert den aktuellen Zustand eines gemounteten Arbeits-Forks in einen neuen unveränderlichen commit ein (wie bei git). Der commit speichert seine Nachricht, den Autor, den Zeitstempel und den Parent im Volume (sodass diese Angaben beim push mitwandern) und wird schreibgeschützt markiert — er verweigert das Mounten. Der Arbeits-Fork bleibt unverändert, so wie git den Arbeitsbaum unangetastet lässt. Checke einen commit mit 'rdc repo checkout' aus, um eine beschreibbare Kopie zu erhalten.",
+        "description": "Friert den aktuellen Zustand eines gemounteten Arbeits-Forks in einen neuen unveränderlichen commit ein (wie bei git). Der commit speichert seine Nachricht, den Autor, den Zeitstempel und den Parent im Volume (sodass diese Angaben beim push mitwandern) und wird schreibgeschützt markiert und verweigert daher das Mounten. Der Arbeits-Fork bleibt unverändert, so wie git den Arbeitsbaum unangetastet lässt. Checke einen commit mit 'rdc repo checkout' aus, um eine beschreibbare Kopie zu erhalten.",
         "descriptionShort": "Einen Arbeits-Fork in einen neuen unveränderlichen commit einfrieren",
         "failed": "commit fehlgeschlagen",
         "messageOption": "commit-Nachricht"
@@ -1243,7 +1243,7 @@
         "completed": "Repository gelöscht",
         "configRetained": "Konfigurationseintrag für \"{{repository}}\" beibehalten (das Repository kann auf anderen Maschinen existieren). Zum Entfernen: erneut mit --archive-config ausführen, dann \"rdc repo admin archive purge {{repository}}\".",
         "confirm": "Repository \"{{repository}}\" auf \"{{machine}}\" löschen? Dabei werden Container, Volumes und das verschlüsselte Image zerstört.",
-        "description": "Ein Repository und seine Daten löschen. Der Konfigurationseintrag bleibt erhalten; verwenden Sie --archive-config, um Anmeldedaten für die Wiederherstellung über 'repo admin archive restore' nach deletedRepositories zu verschieben. Nimmt eine positionale <ref> entgegen; ein bloßer Name löst zur Grand-Linie auf und wird abgelehnt, wenn mehrere Repositories denselben Basisnamen teilen — übergeben Sie name:tag, um einen Fork anzusprechen.",
+        "description": "Ein Repository und seine Daten löschen. Der Konfigurationseintrag bleibt erhalten; verwenden Sie --archive-config, um Anmeldedaten für die Wiederherstellung über 'repo admin archive restore' nach deletedRepositories zu verschieben. Nimmt eine positionale <ref> entgegen; ein bloßer Name löst zur Grand-Linie auf und wird abgelehnt, wenn mehrere Repositories denselben Basisnamen teilen: übergeben Sie name:tag, um einen Fork anzusprechen.",
         "descriptionShort": "Ein Repository und seine Daten löschen",
         "examples": {
           "basic": "Ein Repository löschen.",
@@ -1260,7 +1260,7 @@
         "conflictingFormat": "Wählen Sie nur eine der Optionen --name-only, --stat, --content. Für JSON verwenden Sie -o json.",
         "contentNeedsPath": "--content erfordert einen Dateipfad, z. B.: --content app/config.toml",
         "contentOption": "Vereinheitlichten Text-Diff für eine einzelne Datei anzeigen (benötigt Dateipfad)",
-        "description": "Git-artiger Datei-Diff zwischen zwei Copy-on-Write-geforkten Repositories. Meldet hinzugefügte, geänderte, gelöschte und umbenannte Dateien. Vergleicht das per --name angegebene Repository (Ziel/Neuseite) mit seinem aus der lokalen Konfiguration aufgelösten Eltern-Repository oder mit einem explizit per --base angegebenen Repository (Basis/Altseite). Nur Metadaten und größenunabhängig: vergleicht die verschlüsselten LUKS-Images auf Blockebene ohne Entschlüsselung — ein 1-GB- und ein 100-GB-Repo werden in denselben Millisekunden gediff.",
+        "description": "Git-artiger Datei-Diff zwischen zwei Copy-on-Write-geforkten Repositories. Meldet hinzugefügte, geänderte, gelöschte und umbenannte Dateien. Vergleicht das per --name angegebene Repository (Ziel/Neuseite) mit seinem aus der lokalen Konfiguration aufgelösten Eltern-Repository oder mit einem explizit per --base angegebenen Repository (Basis/Altseite). Nur Metadaten und größenunabhängig: vergleicht die verschlüsselten LUKS-Images auf Blockebene ohne Entschlüsselung: ein 1-GB- und ein 100-GB-Repo werden in denselben Millisekunden gediff.",
         "descriptionShort": "Git-artiger Datei-Diff zwischen zwei geforkten Repositories (A/M/D/R)",
         "failed": "Diff fehlgeschlagen",
         "fastOption": "Block-Filter vertrauen; Inhalts-Hash-Bestätigung überspringen (kann „Modified“ überschätzen)",
@@ -1280,7 +1280,7 @@
         "allStarting": "Alle Repositories auf \"{{machine}}\" werden gestoppt...",
         "checkpointOption": "CRIU checkpoint vor dem Stoppen erstellen (Prozessspeicherzustand für spätere Wiederherstellung via 'repo up' sichern)",
         "completed": "Dienste gestoppt",
-        "description": "Docker-Container des Repositorys stoppen (führt Rediaccfile down über renet compose aus). Die Maschine wird aus der Referenz-Platzierung abgeleitet. Hängt das verschlüsselte Volume NICHT aus — das Repository bleibt eingehängt und kann mit 'repo up' neu gestartet werden. Verwenden Sie --unmount, um den LUKS-Container nach dem Stoppen zusätzlich zu schließen (vereint das ausgemusterte 'repo unmount'). Verwenden Sie --checkpoint, um den CRIU-Prozesszustand vor dem Stoppen zu sichern (das nächste 'repo up' stellt ihn automatisch wieder her). Verwenden Sie --all --machine <m>, um alle Repositories auf einer Maschine zu stoppen.",
+        "description": "Docker-Container des Repositorys stoppen (führt Rediaccfile down über renet compose aus). Die Maschine wird aus der Referenz-Platzierung abgeleitet. Hängt das verschlüsselte Volume NICHT aus. Das Repository bleibt eingehängt und kann mit 'repo up' neu gestartet werden. Verwenden Sie --unmount, um den LUKS-Container nach dem Stoppen zusätzlich zu schließen (vereint das ausgemusterte 'repo unmount'). Verwenden Sie --checkpoint, um den CRIU-Prozesszustand vor dem Stoppen zu sichern (das nächste 'repo up' stellt ihn automatisch wieder her). Verwenden Sie --all --machine <m>, um alle Repositories auf einer Maschine zu stoppen.",
         "descriptionShort": "Docker-Container des Repositorys stoppen",
         "examples": {
           "basic": "Die Container eines Repositorys stoppen.",
@@ -1315,7 +1315,7 @@
         "alreadyExists": "Repository \"{{name}}\" existiert bereits im Kontext",
         "checkpointOption": "CRIU checkpoint auf der Quelle vor dem fork erstellen (Prozessspeicherzustand für Wiederherstellung beim fork erfassen)",
         "completed": "Fork erstellt. Bereitstellen: repo up {{repository}}. Um ihn auf eine andere Maschine zu kopieren: repo push {{repository}} --to <target>, dann das Artefakt dort mit backup restore {{repository}} --as {{repository}} -m <target> --up bereitstellen",
-        "description": "Einen CoW-Fork (Copy-on-Write) eines Repositorys erstellen. DER FORK IST NAHEZU SOFORT UND VON KONSTANTER DAUER, unabhängig von der Repository-Größe — BTRFS-Reflink klont das zugrunde liegende Image, sodass ein 100-GB-Repository und ein 1-GB-Repository in denselben ~Sekunden forken. Der Fork erhält eine NEUE GUID, networkId, einen neuen IP-Bereich und eine Auto-Route-Domain ({service}-fork-{tag}.{repo}.{machine}.{baseDomain}) und ist eine vollständig unabhängige Kopie. Online-Forking wird unterstützt, das Original kann weiterlaufen. Der Fork erbt automatisch die Verschlüsselungs-Anmeldedaten des Originals. Verwenden Sie --checkpoint, um den CRIU-Prozesszustand vor dem Forken zu erfassen; der Fork stellt ihn beim ersten 'repo up' automatisch wieder her (Zustand im Speicher bleibt erhalten). MASCHINENÜBERGREIFENDER FORK: zuerst lokal forken, dann übertragen: (1) rdc repo fork <parent-ref> --tag <name>, (2) rdc repo push <fork-ref> --to <target-machine>, (3) rdc backup restore <fork-ref> --as <fork-name> -m <target-machine> --up. WARNUNG: Verwenden Sie NICHT \"repo push\" allein zum Forken — das erzeugt eine Rohkopie mit DERSELBEN GUID (kein unabhängiger Fork). Forken Sie immer zuerst, um eine neue Identität zu erhalten. Auto-Routes verwenden den Repository-Namen, sodass jeder Fork automatisch eine eindeutige Domain erhält.",
+        "description": "Einen CoW-Fork (Copy-on-Write) eines Repositorys erstellen. DER FORK IST NAHEZU SOFORT UND VON KONSTANTER DAUER, unabhängig von der Repository-Größe: BTRFS-Reflink klont das zugrunde liegende Image, sodass ein 100-GB-Repository und ein 1-GB-Repository in denselben ~Sekunden forken. Der Fork erhält eine NEUE GUID, networkId, einen neuen IP-Bereich und eine Auto-Route-Domain ({service}-fork-{tag}.{repo}.{machine}.{baseDomain}) und ist eine vollständig unabhängige Kopie. Online-Forking wird unterstützt, das Original kann weiterlaufen. Der Fork erbt automatisch die Verschlüsselungs-Anmeldedaten des Originals. Verwenden Sie --checkpoint, um den CRIU-Prozesszustand vor dem Forken zu erfassen; der Fork stellt ihn beim ersten 'repo up' automatisch wieder her (Zustand im Speicher bleibt erhalten). MASCHINENÜBERGREIFENDER FORK: zuerst lokal forken, dann übertragen: (1) rdc repo fork <parent-ref> --tag <name>, (2) rdc repo push <fork-ref> --to <target-machine>, (3) rdc backup restore <fork-ref> --as <fork-name> -m <target-machine> --up. WARNUNG: Verwenden Sie NICHT \"repo push\" allein zum Forken: das erzeugt eine Rohkopie mit DERSELBEN GUID (kein unabhängiger Fork). Forken Sie immer zuerst, um eine neue Identität zu erhalten. Auto-Routes verwenden den Repository-Namen, sodass jeder Fork automatisch eine eindeutige Domain erhält.",
         "descriptionShort": "CoW-Fork eines Repositorys erstellen (neue GUID, networkId, IP-Bereich)",
         "detachedHint": "Dienste starten im Hintergrund. Status prüfen mit: rdc machine status {{machine}} --containers",
         "detachOption": "Mit --up: Rückkehr, sobald Container gestartet sind; Healthchecks laufen im Hintergrund weiter (ideal für Wegwerf-Forks)",
@@ -1331,7 +1331,7 @@
         "rollback": "Konfiguration für \"{{repository}}\" zurückgesetzt",
         "starting": "Fork von \"{{parent}}\" als \"{{repository}}\" auf \"{{machine}}\" wird erstellt...",
         "tagOption": "Tag für den Fork (erstellt Name:Tag)",
-        "tagReservedLatest": "repo fork: Tag \"latest\" ist für das Grand-Repository (Produktion) reserviert — wählen Sie ein anderes --tag (z. B. \"test\", \"staging\", \"<feature>\")",
+        "tagReservedLatest": "repo fork: Tag \"latest\" ist für das Grand-Repository (Produktion) reserviert. Wählen Sie ein anderes --tag (z. B. \"test\", \"staging\", \"<feature>\")",
         "upOption": "Nach dem Fork mounten und Dienste starten (Fork + Mount + Up in einem Befehl)"
       },
       "gc": {
@@ -1411,7 +1411,7 @@
         "optionTo": "Zielmaschine oder -cluster",
         "phase1": "Phase 1: Massendaten übertragen (Quelle läuft weiter)...",
         "phase1Done": "Massentransfer abgeschlossen",
-        "phase1Stats": "{{transferred}} in {{duration}} übertragen — Quelle blieb online",
+        "phase1Stats": "{{transferred}} in {{duration}} übertragen, Quelle blieb online",
         "phase2": "Phase 2: Umschaltung (kurze Ausfallzeit)...",
         "phase2Stats": "Umschaltung (AUSFALLZEIT): {{transferred}} in {{duration}}",
         "phase3": "Phase 3: Start auf dem Ziel...",
@@ -1510,9 +1510,9 @@
         "optionStrategy": "Block-Delta-Strategie bei Verwendung einer Delta-Basis: auto, physical oder shared",
         "optionTo": "Name der Zielmaschine (wird automatisch aus der Konfiguration erkannt)",
         "pushing": "Backup von \"{{repo}}\" wird nach {{dest}} übertragen...",
-        "statsDelta": "\"{{repo}}\" nach {{machine}} übertragen — {{transferred}} in {{duration}} (Delta gegen Basis {{base}}, Image {{image}})",
-        "statsFull": "\"{{repo}}\" nach {{machine}} übertragen — {{transferred}} in {{duration}} (vollständig)",
-        "statsNoBytes": "\"{{repo}}\" nach {{machine}} übertragen — abgeschlossen in {{duration}}",
+        "statsDelta": "\"{{repo}}\" nach {{machine}} übertragen: {{transferred}} in {{duration}} (Delta gegen Basis {{base}}, Image {{image}})",
+        "statsFull": "\"{{repo}}\" nach {{machine}} übertragen: {{transferred}} in {{duration}} (vollständig)",
+        "statsNoBytes": "\"{{repo}}\" nach {{machine}} übertragen: abgeschlossen in {{duration}}",
         "storageRetired": "Das Pushen auf ein Storage-Backend ist eingestellt: der rclone-Cloud-Arm wurde entfernt. Point-in-Time-Sicherung läuft über `rdc backup snapshot` (Upload) und `rdc backup restore <repo> --at <snapshot>` (Download), beides über den Chunk-Store. Der Transfer zwischen Maschinen bleibt unberührt: nutze --to-machine"
       },
       "refMachineConflict": "Eine Repository-Referenz leitet ihre eigene Maschine ab. Verwenden Sie -m/--machine nur für die maschinenweite Form: repo {{verb}} --all -m <machine>.",
@@ -2012,7 +2012,7 @@
       "meanings": {
         "authRequired": "Sie müssen sich zuerst anmelden",
         "machineRequired": "Geben Sie eine Maschine mit `--machine` an oder setzen Sie einen Kontextstandard",
-        "noActiveConfig": "Keine Konfiguration aktiv — erstellen Sie eine mit `rdc config init`",
+        "noActiveConfig": "Keine Konfiguration aktiv. Erstellen Sie eine mit `rdc config init`",
         "permissionDenied": "Ihr Konto verfügt nicht über die erforderlichen Berechtigungen",
         "regionRequired": "Geben Sie eine Region mit `--region` an oder setzen Sie einen Kontextstandard",
         "teamRequired": "Geben Sie ein Team mit `--team` an oder setzen Sie einen Kontextstandard"
@@ -2042,7 +2042,7 @@
     },
     "overview": {
       "heading": "Überblick",
-      "text": "Die **Rediacc CLI** (`rdc`) ist eine Befehlszeilenschnittstelle zur Verwaltung selbst gehosteter Infrastruktur — Maschinen, Repositories, Speicher, Backups und mehr."
+      "text": "Die **Rediacc CLI** (`rdc`) ist eine Befehlszeilenschnittstelle zur Verwaltung selbst gehosteter Infrastruktur: Maschinen, Repositories, Speicher, Backups und mehr."
     },
     "pageTitle": "Rediacc CLI-Referenz",
     "sectionTitles": {
@@ -2075,7 +2075,7 @@
       },
       "machine": {
         "health": {
-          "afterDescription": "Der Health-Befehl gibt Systemmetriken, Container-Status, Dienststabilität und Speicherinformationen aus — nützlich für CI/CD-Pipeline-Prüfungen."
+          "afterDescription": "Der Health-Befehl gibt Systemmetriken, Container-Status, Dienststabilität und Speicherinformationen aus, nützlich für CI/CD-Pipeline-Prüfungen."
         }
       }
     },
@@ -2090,7 +2090,7 @@
   },
   "errors": {
     "agent": {
-      "clusterOpBlocked": "Der Cluster-Befehl \"{{command}}\" ist im Agenten-Modus blockiert. Cluster-Operationen richten echte Infrastruktur ein oder bauen sie ab, daher kann ein Agent sie nicht selbst autorisieren. Benutzer: Um dies zu erlauben, setzen Sie REDIACC_ALLOW_CLUSTER_OPS=<cluster-name> (oder * für alle Cluster) in Ihrem Terminal, BEVOR Sie die Agenten-Sitzung starten — eine von innerhalb des Agenten gesetzte Überschreibung wird nicht akzeptiert.",
+      "clusterOpBlocked": "Der Cluster-Befehl \"{{command}}\" ist im Agenten-Modus blockiert. Cluster-Operationen richten echte Infrastruktur ein oder bauen sie ab, daher kann ein Agent sie nicht selbst autorisieren. Benutzer: Um dies zu erlauben, setzen Sie REDIACC_ALLOW_CLUSTER_OPS=<cluster-name> (oder * für alle Cluster) in Ihrem Terminal, BEVOR Sie die Agenten-Sitzung starten. Eine von innerhalb des Agenten gesetzte Überschreibung wird nicht akzeptiert.",
       "commandBlocked": "Der Befehl \"{{command}}\" ist im Agenten-Modus nicht verfügbar.\n\nDieser Befehl führt beliebige Low-Level-Funktionen ohne Sicherheitsschutzmechanismen aus. Verwenden Sie stattdessen typisierte CLI-Befehle oder MCP-Tools.\n\nAlternativen:\n  - MCP-Tools: repo_up, repo_down, repo_fork, repo_logs, repo_exec, machine_status\n  - CLI-Befehle: rdc repo up, rdc repo down, rdc term connect\n  - Führen Sie \"rdc --help\" aus, um alle verfügbaren Befehle anzuzeigen\n\nWenn Sie direkten Zugriff benötigen, bitten Sie den Benutzer, den Befehl direkt auszuführen.",
       "configEdit": "Interaktiver Editor ist in Agenten-Umgebungen blockiert.\n\nAlternativen:\n  • rdc config edit --dump > config.jsonc    (sichere, zensierte Inspektion)\n  • rdc config field set --pointer <pointer> --current <old> --new <new>\n  • rdc config edit --apply config.jsonc\n\nZum Überschreiben REDIACC_ALLOW_CONFIG_EDIT=<scope-glob> in der Elternshell setzen,\nBEVOR der Agent startet (muss in der Agent-Prozess-Ahnenkette erscheinen).",
       "configEditAncestry": "Interaktiver Editor ist in Agenten-Umgebungen blockiert (REDIACC_ALLOW_CONFIG_EDIT wurde gesetzt, aber die Ahnenprüfung ist fehlgeschlagen: der Override muss von Ihrer Shell gesetzt werden, nicht von einem Agenten).\n\nAlternativen:\n  • rdc config edit --dump > config.jsonc    (sichere, zensierte Inspektion)\n  • rdc config field set --pointer <pointer> --current <old> --new <new>\n  • rdc config edit --apply config.jsonc\n\nSetzen Sie REDIACC_ALLOW_CONFIG_EDIT=<scope-glob> in der Elternshell, BEVOR der Agent startet.",
@@ -2102,7 +2102,7 @@
       "grandGuard": "\"{{name}}\" ist ein Grand-Repository (Produktion). Agenten können Grand-Repositories nicht direkt ändern.\n\nGrand-Repositories enthalten Produktionsdaten. Verwenden Sie stattdessen einen Fork: Forks sind sichere, isolierte Sandbox-Kopien.\n\nArbeitsablauf:\n  1. rdc repo fork {{name}} --tag <tag-name>\n  2. Arbeiten Sie mit dem Fork (z.B. rdc repo up {{name}}:<tag-name>)\n  3. Wenn fertig, kann der Benutzer den Fork mit rdc repo promote {{name}}:<tag-name> befördern\n\nBenutzer: Um direkten Zugriff zu erlauben, setzen Sie REDIACC_ALLOW_GRAND_REPO={{name}} (oder * für alle Repos) in Ihrem Terminal, bevor Sie die Agenten-Sitzung starten.",
       "grandGuardOverride": "\"{{name}}\" ist ein Grand-Repository (Produktion). Vom Agenten initiierte Überschreibungen werden nicht akzeptiert.\n\nVersuchen Sie nicht, REDIACC_ALLOW_GRAND_REPO zu setzen (nur der Benutzer kann dies vor dem Start des Agenten autorisieren).\n\nVerwenden Sie stattdessen einen Fork: Forks sind sichere, isolierte Sandbox-Kopien.\n  1. rdc repo fork {{name}} --tag <tag-name>\n  2. Arbeiten Sie mit dem Fork\n  3. Wenn fertig, kann der Benutzer den Fork mit rdc repo promote {{name}}:<tag-name> befördern",
       "grandGuardOverrideNonLinux": "\"{{name}}\" ist ein Grand-Repository (Produktion). REDIACC_ALLOW_GRAND_REPO ist gesetzt, aber seine Herkunft konnte auf {{platform}} nicht überprüft werden (das Ahnen-Verifikations-Hilfsprogramm ist nicht verfügbar oder fehlgeschlagen), daher wird die Überschreibung nicht akzeptiert.\n\nNutzen Sie den Fork-First-Arbeitsablauf:\n  1. rdc repo fork {{name}} --tag <tag-name>\n  2. Arbeiten Sie mit dem Fork\n  3. Wenn fertig, kann der Benutzer den Fork mit rdc repo promote {{name}}:<tag-name> befördern\n\nBenutzer: Die Verifikation funktioniert unter Linux, macOS und Windows mit einer intakten rdc-Installation. Installieren Sie rdc neu, wenn das Problem weiterhin besteht, und setzen Sie die Variable in Ihrem Terminal, bevor Sie den Agenten starten.",
-      "machineGuard": "Direkter Maschinenzugriff auf \"{{machine}}\" ist im Agenten-Modus nicht erlaubt.\n\nAgenten müssen sich über einen Repository-Kontext für sandboxed Zugriff verbinden. Erstellen Sie zuerst einen Fork eines Repositories und verbinden Sie sich dann mit dem Fork.\n\nArbeitsablauf:\n  1. rdc repo fork <repo> --tag <tag-name>\n  2. rdc term connect <repo>:<tag-name> -c \"<command>\"\n\nBenutzer: Zugriff auf Maschinenebene erfordert den Platzhalter — setzen Sie REDIACC_ALLOW_GRAND_REPO=* in Ihrem Terminal, bevor Sie die Agenten-Sitzung starten. Ein bestimmter Repository-Name schaltet den direkten Maschinenzugriff nicht frei.",
+      "machineGuard": "Direkter Maschinenzugriff auf \"{{machine}}\" ist im Agenten-Modus nicht erlaubt.\n\nAgenten müssen sich über einen Repository-Kontext für sandboxed Zugriff verbinden. Erstellen Sie zuerst einen Fork eines Repositories und verbinden Sie sich dann mit dem Fork.\n\nArbeitsablauf:\n  1. rdc repo fork <repo> --tag <tag-name>\n  2. rdc term connect <repo>:<tag-name> -c \"<command>\"\n\nBenutzer: Zugriff auf Maschinenebene erfordert den Platzhalter: setzen Sie REDIACC_ALLOW_GRAND_REPO=* in Ihrem Terminal, bevor Sie die Agenten-Sitzung starten. Ein bestimmter Repository-Name schaltet den direkten Maschinenzugriff nicht frei.",
       "machineGuardOverride": "Direkter Maschinenzugriff auf \"{{machine}}\" ist nicht erlaubt. Vom Agenten initiierte Überschreibungen werden nicht akzeptiert.\n\nVersuchen Sie nicht, REDIACC_ALLOW_GRAND_REPO zu setzen (nur der Benutzer kann dies vor dem Start des Agenten autorisieren).\n\nErstellen Sie zuerst einen Fork eines Repositories und verbinden Sie sich dann mit dem Fork:\n  1. rdc repo fork <repo> --tag <tag-name>\n  2. rdc term connect <repo>:<tag-name> -c \"<command>\"",
       "machineGuardOverrideNonLinux": "Direkter Maschinenzugriff auf \"{{machine}}\" wurde überschrieben, aber die Herkunft der Überschreibung konnte auf {{platform}} nicht überprüft werden (das Ahnen-Verifikations-Hilfsprogramm ist nicht verfügbar oder fehlgeschlagen), daher wird die Überschreibung nicht akzeptiert.\n\nErstellen Sie zuerst einen Fork eines Repositories und verbinden Sie sich dann mit dem Fork:\n  1. rdc repo fork <repo> --tag <tag-name>\n  2. rdc term connect <repo>:<tag-name> -c \"<command>\"\n\nBenutzer: Die Verifikation funktioniert unter Linux, macOS und Windows mit einer intakten rdc-Installation. Installieren Sie rdc neu, wenn das Problem weiterhin besteht, und setzen Sie die Variable in Ihrem Terminal, bevor Sie den Agenten starten.",
       "mcpGrandGuard": "\"{{name}}\" ist ein Grand-Repository (Produktion). Agenten können Grand-Repositories nicht direkt ändern.\n\nVerwenden Sie repo_fork, um eine sichere, isolierte Sandbox-Kopie zu erstellen, und arbeiten Sie dann mit dem Fork.\nWenn Sie direkten Zugriff benötigen, bitten Sie den Benutzer, REDIACC_ALLOW_GRAND_REPO zu exportieren, bevor der Agent gestartet wird.",
@@ -2277,7 +2277,7 @@
       "create": "Verschlüsseltes Repository erstellen",
       "down": "Dienste stoppen",
       "fork": "CoW-Fork zum Testen",
-      "keyConcepts": "\nSchlüsselkonzepte:\n\n  Compose & Rediaccfile\n    • renet compose -- up -d (niemals rohes docker compose). Das Trennzeichen -- ist erforderlich\n    • rdc repo exec <ref> [CLI-Flags] -- <Remote-Befehl>: Alles nach -- geht unverändert an den Container, also -c/-i/-u/--debug VOR -- setzen. Ein --debug nach -- wird an den Remote-Befehl weitergereicht und aktiviert niemals die CLI-Debug-Ausgabe\n    • Rediaccfile muss die Funktionen up() und down() definieren. up() sollte: Verzeichnisse anlegen, Konfigurationen generieren, Container starten\n    • compose ports: werden ignoriert (network_mode:host). Für externen Zugriff das Label rediacc.service_port verwenden\n    • restart: always/unless-stopped wird von renet automatisch entfernt und in .rediacc.json gespeichert (der Router-Watchdog stellt gestoppte Dienste automatisch wieder her)\n    • Jeder Dienst erhält eine Loopback-IP. eBPF-Bind-Rewriting übernimmt die Isolation transparent, sodass Apps an 0.0.0.0 binden können\n    • Um sich mit Nachbardiensten zu verbinden, deren Dienstnamen verwenden (z. B. \"db\", \"redis\"): renet injiziert alle Dienstnamen als Hostnamen. Niemals ${DB_IP} in Verbindungsstrings einbetten, die in Datenbanken gespeichert werden: das bäckt die IP fest ein und bricht die Fork-Isolation (Validierungsfehler)\n    • Health-Checks können localhost verwenden. Beispiel: [\"CMD\", \"curl\", \"-f\", \"http://localhost:8080/health\"]\n\n  Speicher\n    • Bind-Mount nach ${REDIACC_WORKING_DIR}/data, ${REDIACC_WORKING_DIR}/config usw.\n    • Beispiel: volumes: ['${REDIACC_WORKING_DIR}/data:/var/lib/postgresql/data']\n    • Benannte Docker-Volumes sind von Forks und Backups ausgeschlossen\n    • In Container eingebundene Konfigurationsdateien müssen weltweit lesbar sein (644), wenn der Container mit einer abweichenden UID läuft\n\n  Routing\n    • Grand-Repository Auto-Route: https://{service}.{repo}.{machine}.{baseDomain} (Wildcard-Zertifikat *.{repo}.{machine}.{baseDomain} wird beim ersten repo up automatisch von Traefik bereitgestellt)\n    • Fork-Auto-Route: https://{service}-fork-{tag}.{repo}.{machine}.{baseDomain} (nutzt das Wildcard-Zertifikat des Eltern-Repositorys, keine Auswirkung auf das Rate-Limit)\n    • Eigene Domain: traefik.enable=true + traefik.http.routers.{name}.rule=Host(`domain.com`)\n    • TCP/UDP-Weiterleitung: rediacc.tcp_ports=5432 / rediacc.udp_ports=53\n    • Eigene Domains (Label rediacc.domain) werden bei Forks ignoriert: die Domain gehört dem Grand-Repository\n\n  Lebenszyklus\n    • repo delete räumt vollständig auf: Speicher, Docker-Daemon, Loopback-IPs, systemd-Units\n    • repo down stoppt Container, behält aber Docker-Daemon und IPs (schneller Neustart mit repo up)\n    • depends_on mit condition: service_healthy steuert die Startreihenfolge, aber nicht die Laufzeit-Wiederherstellung\n    • Stoppt eine Datenbank sauber (exit 0), geraten abhängige Dienste in eine Crash-Loop. Fix: rdc repo up <repo-ref>\n    • Autostart: rdc repo admin autostart enable <repo-ref> (hängt das Repository beim Maschinenstart automatisch ein und startet es)\n    • Geplante Backups überspringen Fork-Repositories automatisch. Für manuelle Fork-Backups: rdc repo push <repo-ref> --to <remote>\n    • rdc repo promote <fork-ref> ersetzt die Produktionsdaten durch die Fork-Daten (Identität bleibt erhalten). Zum Zurücksetzen: rdc repo promote <backup-fork-ref>\n\n  Benennung & Adressierung\n    • Grand-(Produktions-)Repository: referenziert als <repo>, gleichbedeutend mit <repo>:latest (latest ist der Standard-Tag). Eine bloße Referenz löst zum exakten Konfigurationsschlüssel auf, sonst Fallback auf <repo>:latest.\n    • Fork: immer <repo>:<tag> mit einem Tag ungleich latest (z. B. app:test). up/down/delete/term/sync verwenden alle dasselbe <repo>:<tag>.\n    • Also zielt `app` auf den GRAND; `app:test` zielt auf diesen FORK. Beim Arbeiten mit einem Fork immer den Tag angeben — der einzige mehrdeutige Fall ist ein Fork, der versehentlich unter dem bloßen/latest-Namen registriert wurde.\n    • Agenten dürfen nur Forks verändern; Grand-Repositories sind geschützt (Override nur über REDIACC_ALLOW_GRAND_REPO, das vom Operator vor der Sitzung gesetzt werden muss). Forks sind die sichere, verwerfbare Einheit.\n",
+      "keyConcepts": "\nSchlüsselkonzepte:\n\n  Compose & Rediaccfile\n    • renet compose -- up -d (niemals rohes docker compose). Das Trennzeichen -- ist erforderlich\n    • rdc repo exec <ref> [CLI-Flags] -- <Remote-Befehl>: Alles nach -- geht unverändert an den Container, also -c/-i/-u/--debug VOR -- setzen. Ein --debug nach -- wird an den Remote-Befehl weitergereicht und aktiviert niemals die CLI-Debug-Ausgabe\n    • Rediaccfile muss die Funktionen up() und down() definieren. up() sollte: Verzeichnisse anlegen, Konfigurationen generieren, Container starten\n    • compose ports: werden ignoriert (network_mode:host). Für externen Zugriff das Label rediacc.service_port verwenden\n    • restart: always/unless-stopped wird von renet automatisch entfernt und in .rediacc.json gespeichert (der Router-Watchdog stellt gestoppte Dienste automatisch wieder her)\n    • Jeder Dienst erhält eine Loopback-IP. eBPF-Bind-Rewriting übernimmt die Isolation transparent, sodass Apps an 0.0.0.0 binden können\n    • Um sich mit Nachbardiensten zu verbinden, deren Dienstnamen verwenden (z. B. \"db\", \"redis\"): renet injiziert alle Dienstnamen als Hostnamen. Niemals ${DB_IP} in Verbindungsstrings einbetten, die in Datenbanken gespeichert werden: das bäckt die IP fest ein und bricht die Fork-Isolation (Validierungsfehler)\n    • Health-Checks können localhost verwenden. Beispiel: [\"CMD\", \"curl\", \"-f\", \"http://localhost:8080/health\"]\n\n  Speicher\n    • Bind-Mount nach ${REDIACC_WORKING_DIR}/data, ${REDIACC_WORKING_DIR}/config usw.\n    • Beispiel: volumes: ['${REDIACC_WORKING_DIR}/data:/var/lib/postgresql/data']\n    • Benannte Docker-Volumes sind von Forks und Backups ausgeschlossen\n    • In Container eingebundene Konfigurationsdateien müssen weltweit lesbar sein (644), wenn der Container mit einer abweichenden UID läuft\n\n  Routing\n    • Grand-Repository Auto-Route: https://{service}.{repo}.{machine}.{baseDomain} (Wildcard-Zertifikat *.{repo}.{machine}.{baseDomain} wird beim ersten repo up automatisch von Traefik bereitgestellt)\n    • Fork-Auto-Route: https://{service}-fork-{tag}.{repo}.{machine}.{baseDomain} (nutzt das Wildcard-Zertifikat des Eltern-Repositorys, keine Auswirkung auf das Rate-Limit)\n    • Eigene Domain: traefik.enable=true + traefik.http.routers.{name}.rule=Host(`domain.com`)\n    • TCP/UDP-Weiterleitung: rediacc.tcp_ports=5432 / rediacc.udp_ports=53\n    • Eigene Domains (Label rediacc.domain) werden bei Forks ignoriert: die Domain gehört dem Grand-Repository\n\n  Lebenszyklus\n    • repo delete räumt vollständig auf: Speicher, Docker-Daemon, Loopback-IPs, systemd-Units\n    • repo down stoppt Container, behält aber Docker-Daemon und IPs (schneller Neustart mit repo up)\n    • depends_on mit condition: service_healthy steuert die Startreihenfolge, aber nicht die Laufzeit-Wiederherstellung\n    • Stoppt eine Datenbank sauber (exit 0), geraten abhängige Dienste in eine Crash-Loop. Fix: rdc repo up <repo-ref>\n    • Autostart: rdc repo admin autostart enable <repo-ref> (hängt das Repository beim Maschinenstart automatisch ein und startet es)\n    • Geplante Backups überspringen Fork-Repositories automatisch. Für manuelle Fork-Backups: rdc repo push <repo-ref> --to <remote>\n    • rdc repo promote <fork-ref> ersetzt die Produktionsdaten durch die Fork-Daten (Identität bleibt erhalten). Zum Zurücksetzen: rdc repo promote <backup-fork-ref>\n\n  Benennung & Adressierung\n    • Grand-(Produktions-)Repository: referenziert als <repo>, gleichbedeutend mit <repo>:latest (latest ist der Standard-Tag). Eine bloße Referenz löst zum exakten Konfigurationsschlüssel auf, sonst Fallback auf <repo>:latest.\n    • Fork: immer <repo>:<tag> mit einem Tag ungleich latest (z. B. app:test). up/down/delete/term/sync verwenden alle dasselbe <repo>:<tag>.\n    • Also zielt `app` auf den GRAND; `app:test` zielt auf diesen FORK. Beim Arbeiten mit einem Fork immer den Tag angeben. Der einzige mehrdeutige Fall ist ein Fork, der versehentlich unter dem bloßen/latest-Namen registriert wurde.\n    • Agenten dürfen nur Forks verändern; Grand-Repositories sind geschützt (Override nur über REDIACC_ALLOW_GRAND_REPO, das vom Operator vor der Sitzung gesetzt werden muss). Forks sind die sichere, verwerfbare Einheit.\n",
       "up": "Bereitstellen mit Auto-Mount"
     },
     "sync": {
@@ -2405,7 +2405,7 @@
   "services": {
     "prune": {
       "noOrphaned": "Keine verwaisten Einträge gefunden",
-      "refusingPrune": "Bereinigung abgelehnt — diese Konfigurationen könnten geschützte GUIDs enthalten. Verwenden Sie --force zum Überschreiben.",
+      "refusingPrune": "Bereinigung abgelehnt: diese Konfigurationen könnten geschützte GUIDs enthalten. Verwenden Sie --force zum Überschreiben.",
       "unreadableConfigs": "{{count}} Konfiguration(en) nicht lesbar: {{names}} (verschlüsselt oder beschädigt)"
     }
   },

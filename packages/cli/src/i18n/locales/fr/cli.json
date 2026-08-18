@@ -288,7 +288,7 @@
           "description": "Diffuser les nouvelles entrées en temps réel (Ctrl+C pour arrêter)"
         },
         "verify": {
-          "chainBroken": "Chaîne rompue à la ligne {{line}} — le fichier a été altéré ou corrompu.",
+          "chainBroken": "Chaîne rompue à la ligne {{line}} : le fichier a été altéré ou corrompu.",
           "chainOk": "Intégrité de la chaîne vérifiée sur {{count}} entrées.",
           "description": "Vérifier l'intégrité de la chaîne SHA-256 de toutes les entrées d'audit"
         }
@@ -331,7 +331,7 @@
         "applied": "{{path}} appliqué",
         "bannerRedacted": "Les champs sensibles apparaissent comme des marqueurs <redacted:KIND>:DIGEST qui se réintègrent proprement.",
         "bannerReveal": "--reveal actif : VALEURS SENSIBLES VISIBLES. Audité.",
-        "bannerRotateLine1": "Pour changer un secret : remplacez son marqueur par la nouvelle valeur en clair — il vous sera",
+        "bannerRotateLine1": "Pour changer un secret : remplacez son marqueur par la nouvelle valeur en clair. Il vous sera",
         "bannerRotateLine2": "demandé de confirmer chaque rotation après la fermeture de l'éditeur.",
         "bannerStrip": "Les lignes commençant par // sont supprimées lors de l'enregistrement.",
         "bannerTitle": "Édition de la configuration \"{{name}}\" (v{{version}})",
@@ -370,14 +370,14 @@
         },
         "set": {
           "description": "Écrire une valeur de configuration à un pointeur JSON. Les chemins sensibles exigent --current (preuve de connaissance).",
-          "optionCurrent": "Valeur actuelle en clair — requise pour modifier les chemins sensibles (preuve de connaissance)",
+          "optionCurrent": "Valeur actuelle en clair, requise pour modifier les chemins sensibles (preuve de connaissance)",
           "optionNew": "Nouvelle valeur (interprétée comme JSON si elle commence par {, [, \", true, false, null ou un nombre)",
           "optionPointer": "Pointeur JSON vers le champ (ex : /credentials/cfDnsApiToken)",
           "success": "{{pointer}} défini"
         },
         "unset": {
           "description": "Supprimer une valeur de configuration à un pointeur JSON. Les chemins sensibles exigent --current.",
-          "optionCurrent": "Valeur actuelle en clair — requise pour supprimer les chemins sensibles",
+          "optionCurrent": "Valeur actuelle en clair, requise pour supprimer les chemins sensibles",
           "optionPointer": "Pointeur JSON vers le champ (ex : /credentials/cfDnsApiToken)",
           "success": "{{pointer}} supprimé"
         }
@@ -1014,10 +1014,10 @@
         "allPassed": "Tous les prérequis sont satisfaits",
         "description": "Vérifier les prérequis de virtualisation",
         "hasMissing": "{{count}} prérequis manquant(s)",
-        "localFallback": "(vérifications locales — renet non disponible)",
+        "localFallback": "(vérifications locales, renet non disponible)",
         "title": "Vérification des prérequis OPS"
       },
-      "description": "Provisionnement et gestion de VM locales via KVM/QEMU/Hyper-V (plateforme détectée automatiquement). Pas pour les machines distantes — utilisez `machine` pour celles-ci. Sous-commandes clés : up (démarrer les VM), down (arrêter), status (lister les VM en cours), ssh (se connecter à une VM), setup (installer les prérequis), check (vérifier que l'hôte est prêt).",
+      "description": "Provisionnement et gestion de VM locales via KVM/QEMU/Hyper-V (plateforme détectée automatiquement). Pas pour les machines distantes. Utilisez `machine` pour celles-ci. Sous-commandes clés : up (démarrer les VM), down (arrêter), status (lister les VM en cours), ssh (se connecter à une VM), setup (installer les prérequis), check (vérifier que l'hôte est prêt).",
       "descriptionShort": "Opérations de VM locales (provisionner, gérer, détruire)",
       "down": {
         "completed": "Cluster VM détruit avec succès",
@@ -1207,7 +1207,7 @@
       "commit": {
         "authorOption": "Auteur du commit",
         "completed": "Commit {{commit}} créé : {{message}}",
-        "description": "Fige l'état actuel d'un fork de travail monté dans un nouveau commit immuable (à la manière de git). Le commit enregistre son message, son auteur, son horodatage et son parent dans le volume (afin qu'il voyage lors du push) et il est marqué en lecture seule — il refuse d'être monté. Le fork de travail reste inchangé, comme git qui laisse l'arbre de travail intact. Récupérez une copie modifiable d'un commit avec 'rdc repo checkout'.",
+        "description": "Fige l'état actuel d'un fork de travail monté dans un nouveau commit immuable (à la manière de git). Le commit enregistre son message, son auteur, son horodatage et son parent dans le volume (afin qu'il voyage lors du push) et il est marqué en lecture seule, il refuse donc d'être monté. Le fork de travail reste inchangé, comme git qui laisse l'arbre de travail intact. Récupérez une copie modifiable d'un commit avec 'rdc repo checkout'.",
         "descriptionShort": "Figer un fork de travail dans un nouveau commit immuable",
         "failed": "Échec du commit",
         "messageOption": "Message du commit"
@@ -1243,7 +1243,7 @@
         "completed": "Dépôt supprimé",
         "configRetained": "Entrée de configuration pour \"{{repository}}\" conservée (le dépôt peut exister sur d'autres machines). Pour la supprimer, relancez avec --archive-config, puis \"rdc repo admin archive purge {{repository}}\".",
         "confirm": "Supprimer le dépôt \"{{repository}}\" sur \"{{machine}}\" ? Cette action détruit ses conteneurs, ses volumes et l'image chiffrée.",
-        "description": "Supprimer un dépôt et ses données. L'entrée de configuration est conservée ; utilisez --archive-config pour déplacer les identifiants vers deletedRepositories en vue d'une récupération via 'repo admin archive restore'. Prend une <ref> positionnelle ; un nom seul se résout vers la ligne grand et est refusé quand plusieurs dépôts partagent le même nom de base — passez name:tag pour cibler un fork.",
+        "description": "Supprimer un dépôt et ses données. L'entrée de configuration est conservée ; utilisez --archive-config pour déplacer les identifiants vers deletedRepositories en vue d'une récupération via 'repo admin archive restore'. Prend une <ref> positionnelle ; un nom seul se résout vers la ligne grand et est refusé quand plusieurs dépôts partagent le même nom de base : passez name:tag pour cibler un fork.",
         "descriptionShort": "Supprimer un dépôt et ses données",
         "examples": {
           "basic": "Supprimer un dépôt.",
@@ -1331,7 +1331,7 @@
         "rollback": "Configuration annulée pour \"{{repository}}\"",
         "starting": "Création du fork de \"{{parent}}\" en tant que \"{{repository}}\" sur \"{{machine}}\"...",
         "tagOption": "Tag pour le fork (crée nom:tag)",
-        "tagReservedLatest": "repo fork : le tag \"latest\" est réservé au dépôt principal (production) — choisissez un autre --tag (par exemple \"test\", \"staging\", \"<feature>\")",
+        "tagReservedLatest": "repo fork : le tag \"latest\" est réservé au dépôt principal (production). Choisissez un autre --tag (par exemple \"test\", \"staging\", \"<feature>\")",
         "upOption": "Monter et démarrer les services après le fork (fork + mount + up en une seule commande)"
       },
       "gc": {
@@ -1411,7 +1411,7 @@
         "optionTo": "Machine ou cluster de destination",
         "phase1": "Phase 1 : Transfert des données en masse (la source reste en fonctionnement)...",
         "phase1Done": "Transfert en masse terminé",
-        "phase1Stats": "{{transferred}} transférés en {{duration}} — la source est restée en ligne",
+        "phase1Stats": "{{transferred}} transférés en {{duration}}, la source est restée en ligne",
         "phase2": "Phase 2 : Basculement (bref temps d'arrêt)...",
         "phase2Stats": "Bascule (TEMPS D'ARRÊT) : {{transferred}} en {{duration}}",
         "phase3": "Phase 3 : Démarrage sur la cible...",
@@ -1510,9 +1510,9 @@
         "optionStrategy": "Stratégie de delta par blocs lors de l'utilisation d'une base de delta : auto, physical ou shared",
         "optionTo": "Nom de la machine de destination (détecté automatiquement depuis la configuration)",
         "pushing": "Envoi de la sauvegarde de \"{{repo}}\" vers {{dest}}...",
-        "statsDelta": "\"{{repo}}\" envoyé vers {{machine}} — {{transferred}} transférés en {{duration}} (delta par rapport à la base {{base}}, image {{image}})",
-        "statsFull": "\"{{repo}}\" envoyé vers {{machine}} — {{transferred}} transférés en {{duration}} (transfert complet)",
-        "statsNoBytes": "\"{{repo}}\" envoyé vers {{machine}} — terminé en {{duration}}",
+        "statsDelta": "\"{{repo}}\" envoyé vers {{machine}} : {{transferred}} transférés en {{duration}} (delta par rapport à la base {{base}}, image {{image}})",
+        "statsFull": "\"{{repo}}\" envoyé vers {{machine}} : {{transferred}} transférés en {{duration}} (transfert complet)",
+        "statsNoBytes": "\"{{repo}}\" envoyé vers {{machine}} : terminé en {{duration}}",
         "storageRetired": "L'envoi vers un backend de stockage est retiré : le bras cloud rclone a été supprimé. La sauvegarde ponctuelle passe par `rdc backup snapshot` (envoi) et `rdc backup restore <repo> --at <snapshot>` (récupération), toutes deux via le magasin de blocs. Le transfert entre machines est inchangé : utilisez --to-machine"
       },
       "refMachineConflict": "Une réf de dépôt dérive sa propre machine. N'utilisez -m/--machine que pour la forme à l'échelle de la machine : repo {{verb}} --all -m <machine>.",
@@ -2012,7 +2012,7 @@
       "meanings": {
         "authRequired": "Vous devez d'abord vous connecter",
         "machineRequired": "Spécifiez une machine avec `--machine` ou définissez un défaut de contexte",
-        "noActiveConfig": "Aucune configuration active — créez-en une avec `rdc config init`",
+        "noActiveConfig": "Aucune configuration active. Créez-en une avec `rdc config init`",
         "permissionDenied": "Votre compte ne dispose pas des permissions requises",
         "regionRequired": "Spécifiez une région avec `--region` ou définissez un défaut de contexte",
         "teamRequired": "Spécifiez une équipe avec `--team` ou définissez un défaut de contexte"
@@ -2042,7 +2042,7 @@
     },
     "overview": {
       "heading": "Aperçu",
-      "text": "La **CLI Rediacc** (`rdc`) est une interface en ligne de commande pour gérer une infrastructure auto-hébergée — machines, dépôts, stockage, sauvegardes et plus encore."
+      "text": "La **CLI Rediacc** (`rdc`) est une interface en ligne de commande pour gérer une infrastructure auto-hébergée : machines, dépôts, stockage, sauvegardes et plus encore."
     },
     "pageTitle": "Référence CLI Rediacc",
     "sectionTitles": {
@@ -2075,7 +2075,7 @@
       },
       "machine": {
         "health": {
-          "afterDescription": "La commande health affiche les métriques système, l'état des conteneurs, la stabilité des services et les informations de stockage — utile pour les vérifications de pipeline CI/CD."
+          "afterDescription": "La commande health affiche les métriques système, l'état des conteneurs, la stabilité des services et les informations de stockage, utile pour les vérifications de pipeline CI/CD."
         }
       }
     },
@@ -2090,7 +2090,7 @@
   },
   "errors": {
     "agent": {
-      "clusterOpBlocked": "La commande de cluster \"{{command}}\" est bloquée en mode agent. Les opérations de cluster provisionnent ou démantèlent une infrastructure réelle, un agent ne peut donc pas les autoriser lui-même. Utilisateur : pour l'autoriser, définissez REDIACC_ALLOW_CLUSTER_OPS=<nom-du-cluster> (ou * pour tous les clusters) dans votre terminal AVANT de démarrer la session de l'agent — un contournement défini depuis l'intérieur de l'agent n'est pas accepté.",
+      "clusterOpBlocked": "La commande de cluster \"{{command}}\" est bloquée en mode agent. Les opérations de cluster provisionnent ou démantèlent une infrastructure réelle, un agent ne peut donc pas les autoriser lui-même. Utilisateur : pour l'autoriser, définissez REDIACC_ALLOW_CLUSTER_OPS=<nom-du-cluster> (ou * pour tous les clusters) dans votre terminal AVANT de démarrer la session de l'agent. Un contournement défini depuis l'intérieur de l'agent n'est pas accepté.",
       "commandBlocked": "La commande \"{{command}}\" n'est pas disponible en mode agent.\n\nCette commande exécute des fonctions arbitraires de bas niveau sans garde-fous de sécurité. Utilisez plutôt des commandes CLI typées ou des outils MCP.\n\nAlternatives :\n  - Outils MCP : repo_up, repo_down, repo_fork, repo_logs, repo_exec, machine_status\n  - Commandes CLI : rdc repo up, rdc repo down, rdc term connect\n  - Exécutez \"rdc --help\" pour voir toutes les commandes disponibles\n\nSi vous avez besoin d'un accès direct, demandez à l'utilisateur d'exécuter la commande directement.",
       "configEdit": "L'éditeur interactif est bloqué dans les environnements d'agent.\n\nAlternatives :\n  • rdc config edit --dump > config.jsonc    (inspection caviardée sûre)\n  • rdc config field set --pointer <pointer> --current <old> --new <new>\n  • rdc config edit --apply config.jsonc\n\nPour passer outre, définissez REDIACC_ALLOW_CONFIG_EDIT=<scope-glob> dans le shell parent\nAVANT de démarrer l'agent (doit apparaître dans l'arborescence du processus).",
       "configEditAncestry": "L'éditeur interactif est bloqué dans les environnements d'agent (REDIACC_ALLOW_CONFIG_EDIT était défini mais la vérification d'ascendance a échoué : l'override doit être défini par votre shell, pas par un agent).\n\nAlternatives :\n  • rdc config edit --dump > config.jsonc    (inspection caviardée sûre)\n  • rdc config field set --pointer <pointer> --current <old> --new <new>\n  • rdc config edit --apply config.jsonc\n\nDéfinissez REDIACC_ALLOW_CONFIG_EDIT=<scope-glob> dans le shell parent AVANT de démarrer l'agent.",
@@ -2102,7 +2102,7 @@
       "grandGuard": "\"{{name}}\" est un dépôt grand (production). Les agents ne peuvent pas modifier directement les dépôts grand.\n\nLes dépôts grand contiennent des données de production. Utilisez un fork à la place : les forks sont des copies sandbox sûres et isolées.\n\nFlux de travail :\n  1. rdc repo fork {{name}} --tag <tag-name>\n  2. Travaillez sur le fork (ex : rdc repo up {{name}}:<tag-name>)\n  3. Une fois terminé, l'utilisateur peut promouvoir le fork avec rdc repo promote {{name}}:<tag-name>\n\nUtilisateur : pour autoriser l'accès direct, définissez REDIACC_ALLOW_GRAND_REPO={{name}} (ou * pour tous les dépôts) dans votre terminal avant de démarrer la session de l'agent.",
       "grandGuardOverride": "\"{{name}}\" est un dépôt grand (production). Les contournements initiés par l'agent ne sont pas acceptés.\n\nN'essayez pas de définir REDIACC_ALLOW_GRAND_REPO (seul l'utilisateur peut l'autoriser avant le démarrage de l'agent).\n\nUtilisez un fork à la place : les forks sont des copies sandbox sûres et isolées.\n  1. rdc repo fork {{name}} --tag <tag-name>\n  2. Travaillez sur le fork\n  3. Une fois terminé, l'utilisateur peut promouvoir le fork avec rdc repo promote {{name}}:<tag-name>",
       "grandGuardOverrideNonLinux": "\"{{name}}\" est un dépôt grand (production). REDIACC_ALLOW_GRAND_REPO est défini, mais son origine n'a pas pu être vérifiée sur {{platform}} (l'auxiliaire de vérification d'ascendance est indisponible ou a échoué), donc le contournement n'est pas accepté.\n\nUtilisez le flux de travail fork-first :\n  1. rdc repo fork {{name}} --tag <tag-name>\n  2. Opérez sur le fork\n  3. Une fois terminé, l'utilisateur peut promouvoir le fork avec rdc repo promote {{name}}:<tag-name>\n\nUtilisateur : la vérification fonctionne sur Linux, macOS et Windows avec une installation rdc intacte. Réinstallez rdc si le problème persiste, et définissez la variable dans votre terminal avant de démarrer l'agent.",
-      "machineGuard": "L'accès direct à la machine \"{{machine}}\" n'est pas autorisé en mode agent.\n\nLes agents doivent se connecter via un contexte de dépôt pour un accès sandboxé. Créez d'abord un fork d'un dépôt, puis connectez-vous au fork.\n\nFlux de travail :\n  1. rdc repo fork <repo> --tag <tag-name>\n  2. rdc term connect <repo>:<tag-name> -c \"<command>\"\n\nUtilisateur : l'accès au niveau machine nécessite le caractère générique — définissez REDIACC_ALLOW_GRAND_REPO=* dans votre terminal avant de démarrer la session de l'agent. Un nom de dépôt spécifique ne débloque pas l'accès direct à la machine.",
+      "machineGuard": "L'accès direct à la machine \"{{machine}}\" n'est pas autorisé en mode agent.\n\nLes agents doivent se connecter via un contexte de dépôt pour un accès sandboxé. Créez d'abord un fork d'un dépôt, puis connectez-vous au fork.\n\nFlux de travail :\n  1. rdc repo fork <repo> --tag <tag-name>\n  2. rdc term connect <repo>:<tag-name> -c \"<command>\"\n\nUtilisateur : l'accès au niveau machine nécessite le caractère générique : définissez REDIACC_ALLOW_GRAND_REPO=* dans votre terminal avant de démarrer la session de l'agent. Un nom de dépôt spécifique ne débloque pas l'accès direct à la machine.",
       "machineGuardOverride": "L'accès direct à la machine \"{{machine}}\" n'est pas autorisé. Les contournements initiés par l'agent ne sont pas acceptés.\n\nN'essayez pas de définir REDIACC_ALLOW_GRAND_REPO (seul l'utilisateur peut l'autoriser avant le démarrage de l'agent).\n\nCréez d'abord un fork d'un dépôt, puis connectez-vous au fork :\n  1. rdc repo fork <repo> --tag <tag-name>\n  2. rdc term connect <repo>:<tag-name> -c \"<command>\"",
       "machineGuardOverrideNonLinux": "L'accès direct à la machine \"{{machine}}\" est contourné, mais l'origine du contournement n'a pas pu être vérifiée sur {{platform}} (l'auxiliaire de vérification d'ascendance est indisponible ou a échoué), donc le contournement n'est pas accepté.\n\nCréez d'abord un fork d'un dépôt, puis connectez-vous au fork :\n  1. rdc repo fork <repo> --tag <tag-name>\n  2. rdc term connect <repo>:<tag-name> -c \"<command>\"\n\nUtilisateur : la vérification fonctionne sur Linux, macOS et Windows avec une installation rdc intacte. Réinstallez rdc si le problème persiste, et définissez la variable dans votre terminal avant de démarrer l'agent.",
       "mcpGrandGuard": "\"{{name}}\" est un dépôt grand (production). Les agents ne peuvent pas modifier directement les dépôts grand.\n\nUtilisez repo_fork pour créer une copie sandbox sûre et isolée, puis travaillez sur le fork.\nSi vous avez besoin d'un accès direct, demandez à l'utilisateur de définir REDIACC_ALLOW_GRAND_REPO avant de démarrer l'agent.",
@@ -2405,7 +2405,7 @@
   "services": {
     "prune": {
       "noOrphaned": "Aucune entrée orpheline trouvée",
-      "refusingPrune": "Nettoyage refusé — ces configurations peuvent contenir des GUIDs protégés. Utilisez --force pour forcer.",
+      "refusingPrune": "Nettoyage refusé : ces configurations peuvent contenir des GUIDs protégés. Utilisez --force pour forcer.",
       "unreadableConfigs": "Impossible de lire {{count}} configuration(s) : {{names}} (chiffrée(s) ou corrompue(s))"
     }
   },

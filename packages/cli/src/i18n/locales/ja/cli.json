@@ -288,7 +288,7 @@
           "description": "新しいエントリを書き込まれた順にストリーム(Ctrl+C で停止)"
         },
         "verify": {
-          "chainBroken": "{{line}} 行目でチェーンが破損しました — ファイルが改ざんまたは破損しています。",
+          "chainBroken": "{{line}} 行目でチェーンが破損しました。ファイルが改ざんまたは破損しています。",
           "chainOk": "{{count}} エントリにわたりチェーン整合性を確認しました。",
           "description": "すべての監査エントリにおける SHA-256 ハッシュチェーンの整合性を検証"
         }
@@ -370,14 +370,14 @@
         },
         "set": {
           "description": "JSON ポインタ位置に設定値を書き込みます。機密パスには --current(知識ゲート)が必要です。",
-          "optionCurrent": "現在の平文値 — 機密パスの変更に必須(知識ゲート証明)",
+          "optionCurrent": "現在の平文値、機密パスの変更に必須(知識ゲート証明)",
           "optionNew": "新しい値({, [, \", true/false/null, 数値で始まる場合は JSON として解釈)",
           "optionPointer": "フィールドへのJSONポインタ（例: /credentials/cfDnsApiToken）",
           "success": "{{pointer}} を設定しました"
         },
         "unset": {
           "description": "JSON ポインタ位置の設定値を削除。機密パスには --current が必要です。",
-          "optionCurrent": "現在の平文値 — 機密パスの削除に必須",
+          "optionCurrent": "現在の平文値、機密パスの削除に必須",
           "optionPointer": "フィールドへのJSONポインタ（例: /credentials/cfDnsApiToken）",
           "success": "{{pointer}} を削除しました"
         }
@@ -1014,10 +1014,10 @@
         "allPassed": "すべての前提条件を満たしています",
         "description": "仮想化の前提条件を確認",
         "hasMissing": "{{count}} 件の前提条件が不足しています",
-        "localFallback": "（ローカルチェック使用中 — renetが利用できません）",
+        "localFallback": "（ローカルチェック使用中、renetが利用できません）",
         "title": "OPS 前提条件チェック"
       },
-      "description": "KVM/QEMU/Hyper-V を使ったローカル VM のプロビジョニングと管理（プラットフォームは自動検出）。リモートマシン向けではない — そちらには `machine` を使用する。主なサブコマンド: up（VM 起動）、down（停止）、status（実行中 VM の一覧）、ssh（VM へ接続）、setup（前提条件のインストール）、check（ホストの準備状況を確認）。",
+      "description": "KVM/QEMU/Hyper-V を使ったローカル VM のプロビジョニングと管理（プラットフォームは自動検出）。リモートマシン向けではない。そちらには `machine` を使用する。主なサブコマンド: up（VM 起動）、down（停止）、status（実行中 VM の一覧）、ssh（VM へ接続）、setup（前提条件のインストール）、check（ホストの準備状況を確認）。",
       "descriptionShort": "ローカル VM 操作（プロビジョニング、管理、破棄）",
       "down": {
         "completed": "VM クラスターの破棄が完了しました",
@@ -1331,7 +1331,7 @@
         "rollback": "\"{{repository}}\" の設定をロールバックしました",
         "starting": "\"{{machine}}\" で \"{{parent}}\" を \"{{repository}}\" としてフォーク中...",
         "tagOption": "フォークのタグ（名前:タグを作成）",
-        "tagReservedLatest": "repo fork: タグ \"latest\" はグランド (本番) リポジトリ用に予約されています — 別の --tag を選んでください (例: \"test\"、\"staging\"、\"<feature>\")",
+        "tagReservedLatest": "repo fork: タグ \"latest\" はグランド (本番) リポジトリ用に予約されています。別の --tag を選んでください (例: \"test\"、\"staging\"、\"<feature>\")",
         "upOption": "fork後にマウントしてサービスを開始（fork + mount + upを1コマンドで）"
       },
       "gc": {
@@ -2012,7 +2012,7 @@
       "meanings": {
         "authRequired": "最初にログインする必要があります",
         "machineRequired": "`--machine`でマシンを指定するか、コンテキストのデフォルトを設定してください",
-        "noActiveConfig": "アクティブな設定がありません — `rdc config init` で作成してください",
+        "noActiveConfig": "アクティブな設定がありません。`rdc config init` で作成してください",
         "permissionDenied": "アカウントに必要な権限がありません",
         "regionRequired": "`--region`でリージョンを指定するか、コンテキストのデフォルトを設定してください",
         "teamRequired": "`--team`でチームを指定するか、コンテキストのデフォルトを設定してください"
@@ -2042,7 +2042,7 @@
     },
     "overview": {
       "heading": "概要",
-      "text": "**Rediacc CLI**（`rdc`）は、セルフホスト型インフラストラクチャ — マシン、リポジトリ、ストレージ、バックアップなど — を管理するためのコマンドラインインターフェースです。"
+      "text": "**Rediacc CLI**（`rdc`）は、マシン、リポジトリ、ストレージ、バックアップなどのセルフホスト型インフラストラクチャを管理するためのコマンドラインインターフェースです。"
     },
     "pageTitle": "Rediacc CLIリファレンス",
     "sectionTitles": {
@@ -2075,7 +2075,7 @@
       },
       "machine": {
         "health": {
-          "afterDescription": "healthコマンドはシステムメトリクス、コンテナステータス、サービス安定性、ストレージ情報を出力します — CI/CDパイプラインチェックに便利です。"
+          "afterDescription": "healthコマンドはシステムメトリクス、コンテナステータス、サービス安定性、ストレージ情報を出力します。CI/CDパイプラインチェックに便利です。"
         }
       }
     },
@@ -2093,17 +2093,17 @@
       "clusterOpBlocked": "クラスターコマンド \"{{command}}\" はエージェントモードではブロックされています。クラスター操作は実際のインフラを構築または破棄するため、エージェント自身が承認することはできません。ユーザーへ: これを許可するには、エージェントセッションを開始する前にターミナルで REDIACC_ALLOW_CLUSTER_OPS=<cluster-name>（またはすべてのクラスターに対して *）を設定してください。エージェント内部から設定されたオーバーライドは受け入れられません。",
       "commandBlocked": "\"{{command}}\" コマンドはエージェントモードでは使用できません。\n\nこのコマンドは安全ガードなしに任意の低レベル関数を実行します。代わりに型付きCLIコマンドまたはMCPツールを使用してください。\n\n代替手段:\n  - MCP tools: repo_up, repo_down, repo_fork, repo_logs, repo_exec, machine_status\n  - CLI commands: rdc repo up, rdc repo down, rdc term connect\n  - 利用可能なすべてのコマンドを表示するには \"rdc --help\" を実行してください\n\n直接アクセスが必要な場合は、ユーザーにコマンドを直接実行するよう依頼してください。",
       "configEdit": "対話型エディタはエージェント環境ではブロックされます。\n\n代替手段:\n  • rdc config edit --dump > config.jsonc    (安全な秘匿表示)\n  • rdc config field set --pointer <pointer> --current <old> --new <new>\n  • rdc config edit --apply config.jsonc\n\nオーバーライドするには、エージェントを起動する前に親シェルで\nREDIACC_ALLOW_CONFIG_EDIT=<scope-glob> を設定してください(エージェントの祖先プロセス内に存在する必要があります)。",
-      "configEditAncestry": "対話型エディタはエージェント環境ではブロックされます(REDIACC_ALLOW_CONFIG_EDIT は設定されましたが祖先検証に失敗 — オーバーライドはエージェントではなく親シェルから設定する必要があります)。\n\n代替手段:\n  • rdc config edit --dump > config.jsonc    (安全な秘匿表示)\n  • rdc config field set --pointer <pointer> --current <old> --new <new>\n  • rdc config edit --apply config.jsonc\n\nエージェントを起動する前に親シェルで REDIACC_ALLOW_CONFIG_EDIT=<scope-glob> を設定してください。",
+      "configEditAncestry": "対話型エディタはエージェント環境ではブロックされます(REDIACC_ALLOW_CONFIG_EDIT は設定されましたが祖先検証に失敗、オーバーライドはエージェントではなく親シェルから設定する必要があります)。\n\n代替手段:\n  • rdc config edit --dump > config.jsonc    (安全な秘匿表示)\n  • rdc config field set --pointer <pointer> --current <old> --new <new>\n  • rdc config edit --apply config.jsonc\n\nエージェントを起動する前に親シェルで REDIACC_ALLOW_CONFIG_EDIT=<scope-glob> を設定してください。",
       "createGuard": "エージェントモードでは新しいgrandリポジトリ \"{{name}}\" を作成できません。\n\nエージェントはfork専用モードで動作します。grandリポジトリは本番環境であり、作成後にエージェントがアクセスすることはできません。\n\n代わりに、既存のリポジトリからforkを作成してください:\n  rdc repo fork <parent-ref> --tag {{name}}\n\nユーザーへ: リポジトリの作成を許可するには、エージェントセッション開始前にターミナルで REDIACC_ALLOW_GRAND_REPO=*（または特定のリポジトリ名）を設定してください。",
-      "createGuardOverride": "新しいgrandリポジトリ \"{{name}}\" を作成できません。エージェントによるオーバーライドは受け付けられません。\n\nREDIACC_ALLOW_GRAND_REPO を設定しようとしないでください — エージェント開始前にユーザーのみがこれを承認できます。\n\n代わりに、既存のリポジトリからforkを作成してください:\n  rdc repo fork <parent-ref> --tag {{name}}",
+      "createGuardOverride": "新しいgrandリポジトリ \"{{name}}\" を作成できません。エージェントによるオーバーライドは受け付けられません。\n\nREDIACC_ALLOW_GRAND_REPO を設定しようとしないでください。エージェント開始前にユーザーのみがこれを承認できます。\n\n代わりに、既存のリポジトリからforkを作成してください:\n  rdc repo fork <parent-ref> --tag {{name}}",
       "createGuardOverrideNonLinux": "新しいgrandリポジトリ \"{{name}}\" を作成できません。REDIACC_ALLOW_GRAND_REPO は設定されていますが、{{platform}} では起源が検証できません（祖先検証ヘルパーが使用不可またはエラー）。\n\n代わりに、既存のリポジトリからforkを作成してください:\n  rdc repo fork <parent-ref> --tag {{name}}\n\n注記: 検証は Linux、macOS、Windows で機能します（rdc インストールが正常な場合）。問題が続く場合は rdc を再インストールし、エージェント開始前にターミナルで変数を設定してください。",
       "fieldReveal": "機密フィールド {{pointer}} の --reveal はエージェント環境ではブロックされます。エージェントは --digest を使用してください。対話型端末の実ユーザーは --reveal を使えます。",
       "forkBlocked": "コマンド \"{{command}}\" はforkリポジトリでは使用できません。\n\nforkリポジトリは一時的なサンドボックス環境です。この操作はgrand（本番）リポジトリにのみ適用されます。ユーザーにこのコマンドを直接実行するよう依頼してください。",
-      "grandGuard": "\"{{name}}\" はgrand（本番）リポジトリです。エージェントはgrandリポジトリを直接変更できません。\n\ngrandリポジトリには本番データが含まれています。代わりにforkを使用してください — forkは安全で分離されたサンドボックスコピーです。\n\nワークフロー:\n  1. rdc repo fork {{name}} --tag <tag-name>\n  2. fork上で操作する（例: rdc repo up {{name}}:<tag-name>）\n  3. 完了したら、ユーザーは rdc repo promote {{name}}:<tag-name> でforkを昇格できます\n\nユーザーへ: 直接アクセスを許可するには、エージェントセッション開始前にターミナルで REDIACC_ALLOW_GRAND_REPO={{name}}（またはすべてのリポジトリに対して *）を設定してください。",
-      "grandGuardOverride": "\"{{name}}\" はgrand（本番）リポジトリです。エージェントによるオーバーライドは受け付けられません。\n\nREDIACC_ALLOW_GRAND_REPO を設定しようとしないでください — エージェント開始前にユーザーのみがこれを承認できます。\n\n代わりにforkを使用してください — forkは安全で分離されたサンドボックスコピーです:\n  1. rdc repo fork {{name}} --tag <tag-name>\n  2. fork上で操作する\n  3. 完了したら、ユーザーは rdc repo promote {{name}}:<tag-name> でforkを昇格できます",
+      "grandGuard": "\"{{name}}\" はgrand（本番）リポジトリです。エージェントはgrandリポジトリを直接変更できません。\n\ngrandリポジトリには本番データが含まれています。代わりにforkを使用してください：forkは安全で分離されたサンドボックスコピーです。\n\nワークフロー:\n  1. rdc repo fork {{name}} --tag <tag-name>\n  2. fork上で操作する（例: rdc repo up {{name}}:<tag-name>）\n  3. 完了したら、ユーザーは rdc repo promote {{name}}:<tag-name> でforkを昇格できます\n\nユーザーへ: 直接アクセスを許可するには、エージェントセッション開始前にターミナルで REDIACC_ALLOW_GRAND_REPO={{name}}（またはすべてのリポジトリに対して *）を設定してください。",
+      "grandGuardOverride": "\"{{name}}\" はgrand（本番）リポジトリです。エージェントによるオーバーライドは受け付けられません。\n\nREDIACC_ALLOW_GRAND_REPO を設定しようとしないでください。エージェント開始前にユーザーのみがこれを承認できます。\n\n代わりにforkを使用してください：forkは安全で分離されたサンドボックスコピーです。\n  1. rdc repo fork {{name}} --tag <tag-name>\n  2. fork上で操作する\n  3. 完了したら、ユーザーは rdc repo promote {{name}}:<tag-name> でforkを昇格できます",
       "grandGuardOverrideNonLinux": "\"{{name}}\" はgrand（本番）リポジトリです。REDIACC_ALLOW_GRAND_REPO は設定されていますが、{{platform}} では起源が検証できません（祖先検証ヘルパーが使用不可またはエラー）。したがってオーバーライドは受け入れられません。\n\nfork優先ワークフローを使用してください:\n  1. rdc repo fork {{name}} --tag <tag-name>\n  2. fork上で操作する\n  3. 完了したら、ユーザーは rdc repo promote {{name}}:<tag-name> でforkを昇格できます\n\n注記: 検証は Linux、macOS、Windows で機能します（rdc インストールが正常な場合）。問題が続く場合は rdc を再インストールし、エージェント開始前にターミナルで変数を設定してください。",
       "machineGuard": "エージェントモードでは \"{{machine}}\" への直接マシンアクセスは許可されていません。\n\nエージェントはサンドボックスアクセスのためにリポジトリコンテキストを通じて接続する必要があります。まずリポジトリのforkを作成し、fork に接続してください。\n\nワークフロー:\n  1. rdc repo fork <repo> --tag <tag-name>\n  2. rdc term connect <repo>:<tag-name> -c \"<command>\"\n\nユーザーへ: マシンレベルのアクセスにはワイルドカードが必要です。エージェントセッションを開始する前に、ターミナルで REDIACC_ALLOW_GRAND_REPO=* を設定してください。特定のリポジトリ名を指定しても直接マシンアクセスは解放されません。",
-      "machineGuardOverride": "\"{{machine}}\" への直接マシンアクセスは許可されていません。エージェントによるオーバーライドは受け付けられません。\n\nREDIACC_ALLOW_GRAND_REPO を設定しようとしないでください — エージェント開始前にユーザーのみがこれを承認できます。\n\nまずリポジトリのforkを作成し、forkに接続してください:\n  1. rdc repo fork <repo> --tag <tag-name>\n  2. rdc term connect <repo>:<tag-name> -c \"<command>\"",
+      "machineGuardOverride": "\"{{machine}}\" への直接マシンアクセスは許可されていません。エージェントによるオーバーライドは受け付けられません。\n\nREDIACC_ALLOW_GRAND_REPO を設定しようとしないでください。エージェント開始前にユーザーのみがこれを承認できます。\n\nまずリポジトリのforkを作成し、forkに接続してください:\n  1. rdc repo fork <repo> --tag <tag-name>\n  2. rdc term connect <repo>:<tag-name> -c \"<command>\"",
       "machineGuardOverrideNonLinux": "\"{{machine}}\" への直接マシンアクセスのオーバーライドが設定されていますが、{{platform}} では起源が検証できません（祖先検証ヘルパーが使用不可またはエラー）。したがってオーバーライドは受け入れられません。\n\nまずリポジトリのforkを作成し、forkに接続してください:\n  1. rdc repo fork <repo> --tag <tag-name>\n  2. rdc term connect <repo>:<tag-name> -c \"<command>\"\n\n注記: 検証は Linux、macOS、Windows で機能します（rdc インストールが正常な場合）。問題が続く場合は rdc を再インストールし、エージェント開始前にターミナルで変数を設定してください。",
       "mcpGrandGuard": "\"{{name}}\" はgrand（本番）リポジトリです。エージェントはgrandリポジトリを直接変更できません。\n\nrepo_fork を使用して安全で分離されたサンドボックスコピーを作成し、fork上で操作してください。\n直接アクセスが必要な場合は、ユーザーに REDIACC_ALLOW_GRAND_REPO をエージェント開始前にエクスポートするよう依頼してください。",
       "mcpGrandGuardOverride": "\"{{name}}\" はgrand（本番）リポジトリです。エージェントによるオーバーライドは受け付けられません。\n\nREDIACC_ALLOW_GRAND_REPO を設定しようとしないでください。\n\nrepo_fork を使用して安全で分離されたサンドボックスコピーを作成し、fork上で操作してください。",
@@ -2266,18 +2266,18 @@
       "setupMachine": "リモートマシンでセットアップを実行"
     },
     "examples": "例:",
-    "keyConcepts": "\nKey Concepts:\n\n  アーキテクチャ\n    • 各リポジトリ = 分離された Docker 環境（専用 daemon、ループバック IP 範囲、LUKS 暗号化ストレージ）\n    • renet compose を使用する（raw docker compose は使わない）— network_mode:host と rediacc.* ラベルを自動的に注入する\n    • ストレージ: ${REDIACC_WORKING_DIR}/... への bind-mount — Docker の named volume は使わない（フォークやバックアップから除外される）\n    • eBPF バインド書き換えが IP 分離を処理する: アプリは 0.0.0.0 にバインドし、カーネルが正しいループバック IP に書き換える\n\n  ルーティング\n    • 自動ルート（フォークフレンドリー）: https://{service}.{repo}.{machine}.{baseDomain}\n    • カスタムドメイン: Traefik ラベル（traefik.enable=true）— フォークフレンドリーではない\n    • 80 番以外のポートには rediacc.service_port ラベル。ルートはデプロイ後約3秒で有効化される\n    • HTTPS: Cloudflare DNS-01 経由の自動 Let's Encrypt ワイルドカード証明書。'rdc machine infra set' で設定する --cf-dns-token が必要。未設定の場合、HTTP は動作するが HTTPS 証明書はプロビジョニングされない\n    • Grand リポジトリは *.{repo}.{machine}.{baseDomain} を取得する — 最初の repo up 時に Traefik が自動的にプロビジョニングする\n    • フォークは親リポジトリのワイルドカード証明書を再利用する（プロビジョニング済み、レート制限への影響なし）\n\n  環境変数\n    • Rediaccfile シェル: ${SVCNAME_IP}, ${REDIACC_WORKING_DIR}, ${REDIACC_NETWORK_ID}\n    • コンテナ内: SERVICE_IP, REDIACC_NETWORK_ID（renet が自動的に注入する）\n\n  フォーク\n    • rdc repo fork <parent-ref> --tag <tag>: 新しい GUID、networkId、IP 範囲、自動ルートドメインを持つ即時 CoW クローン\n    • 親は稼働したままでよい（オンラインフォーク）。クロスマシン: まずローカルでフォークしてから rdc repo push <ref> --to <machine>\n    • リポジトリ削除後も設定エントリは残る（リポジトリは他のマシンに存在する可能性がある）",
+    "keyConcepts": "\nKey Concepts:\n\n  アーキテクチャ\n    • 各リポジトリ = 分離された Docker 環境（専用 daemon、ループバック IP 範囲、LUKS 暗号化ストレージ）\n    • renet compose を使用する（raw docker compose は使わない）、network_mode:host と rediacc.* ラベルを自動的に注入する\n    • ストレージ: ${REDIACC_WORKING_DIR}/... への bind-mount、Docker の named volume は使わない（フォークやバックアップから除外される）\n    • eBPF バインド書き換えが IP 分離を処理する: アプリは 0.0.0.0 にバインドし、カーネルが正しいループバック IP に書き換える\n\n  ルーティング\n    • 自動ルート（フォークフレンドリー）: https://{service}.{repo}.{machine}.{baseDomain}\n    • カスタムドメイン: Traefik ラベル（traefik.enable=true）、フォークフレンドリーではない\n    • 80 番以外のポートには rediacc.service_port ラベル。ルートはデプロイ後約3秒で有効化される\n    • HTTPS: Cloudflare DNS-01 経由の自動 Let's Encrypt ワイルドカード証明書。'rdc machine infra set' で設定する --cf-dns-token が必要。未設定の場合、HTTP は動作するが HTTPS 証明書はプロビジョニングされない\n    • Grand リポジトリは *.{repo}.{machine}.{baseDomain} を取得する、最初の repo up 時に Traefik が自動的にプロビジョニングする\n    • フォークは親リポジトリのワイルドカード証明書を再利用する（プロビジョニング済み、レート制限への影響なし）\n\n  環境変数\n    • Rediaccfile シェル: ${SVCNAME_IP}, ${REDIACC_WORKING_DIR}, ${REDIACC_NETWORK_ID}\n    • コンテナ内: SERVICE_IP, REDIACC_NETWORK_ID（renet が自動的に注入する）\n\n  フォーク\n    • rdc repo fork <parent-ref> --tag <tag>: 新しい GUID、networkId、IP 範囲、自動ルートドメインを持つ即時 CoW クローン\n    • 親は稼働したままでよい（オンラインフォーク）。クロスマシン: まずローカルでフォークしてから rdc repo push <ref> --to <machine>\n    • リポジトリ削除後も設定エントリは残る（リポジトリは他のマシンに存在する可能性がある）",
     "machine": {
       "containers": "コンテナの状態のみを表示",
       "health": "CI/CD用ヘルスチェック",
-      "keyConcepts": "\n主要概念:\n\n  クエリフィルター\n    • rdc machine status <name> はデフォルトで全セクションを返します\n    • --system、--repositories、--containers、--services、--network、--block-devices でフィルタリング\n    • JSON 出力はコンテナを拡張: repository (解決済み名)、domain、autoRoute\n\n  監視とヘルス\n    • machine health の終了コード: 0=正常、1=警告、2=エラー — CI/CD ゲートに使用\n    • machine status <name> --containers --health-check は異常なコンテナがあれば終了コード 2\n    • machine status <name> --services --stability-check は失敗・再起動中・再起動 3 回超のサービスがあれば終了コード 2\n    • machine prune は削除済みリポジトリの孤立したループバック IP と systemd ユニットを削除します\n\n  データストア構造 (/mnt/rediacc/)\n    • repositories/ — 暗号化された LUKS イメージ (リポジトリ GUID ごとに 1 つ)\n    • mounts/ — 復号化されたマウントポイント (リポジトリがマウントされている時にアクセス可能)\n    • immovable/ — リポジトリごとの Docker daemon データ\n    • データストアはシステムディスク上の BTRFS プールファイルです。実効空き容量 = min(ディスク空き容量, データストア空き容量)。拡張: rdc datastore resize\n",
+      "keyConcepts": "\n主要概念:\n\n  クエリフィルター\n    • rdc machine status <name> はデフォルトで全セクションを返します\n    • --system、--repositories、--containers、--services、--network、--block-devices でフィルタリング\n    • JSON 出力はコンテナを拡張: repository (解決済み名)、domain、autoRoute\n\n  監視とヘルス\n    • machine health の終了コード: 0=正常、1=警告、2=エラー。CI/CD ゲートに使用\n    • machine status <name> --containers --health-check は異常なコンテナがあれば終了コード 2\n    • machine status <name> --services --stability-check は失敗・再起動中・再起動 3 回超のサービスがあれば終了コード 2\n    • machine prune は削除済みリポジトリの孤立したループバック IP と systemd ユニットを削除します\n\n  データストア構造 (/mnt/rediacc/)\n    • repositories/: 暗号化された LUKS イメージ (リポジトリ GUID ごとに 1 つ)\n    • mounts/: 復号化されたマウントポイント (リポジトリがマウントされている時にアクセス可能)\n    • immovable/: リポジトリごとの Docker daemon データ\n    • データストアはシステムディスク上の BTRFS プールファイルです。実効空き容量 = min(ディスク空き容量, データストア空き容量)。拡張: rdc datastore resize\n",
       "query": "マシンの完全な状態を表示"
     },
     "repo": {
       "create": "暗号化リポジトリを作成",
       "down": "サービスを停止",
       "fork": "テスト用CoWフォーク",
-      "keyConcepts": "\n主要概念:\n\n  Compose と Rediaccfile\n    • renet compose -- up -d を使用する（生の docker compose は使わない）。-- セパレータは必須\n    • rdc repo exec <ref> [CLI フラグ] -- <remote cmd>: -- の後はすべてそのままコンテナに渡されるため、-c/-i/-u/--debug は -- より前に置く。-- の後に書いた --debug はリモートコマンドに渡され、CLI のデバッグ出力を有効にすることはない\n    • Rediaccfile は up() と down() 関数を定義する必要があります。up() では: ディレクトリ作成、設定生成、コンテナ起動を行うべきです\n    • compose の ports: は無視されます（network_mode:host）。外部アクセスには rediacc.service_port ラベルを使用してください\n    • restart: always/unless-stopped は renet によって自動的に取り除かれ .rediacc.json に保存されます — ルーターの watchdog が停止したサービスを自動復旧します\n    • 各サービスはループバック IP を取得します。eBPF バインド書き換えが分離を透過的に処理するため、アプリは 0.0.0.0 にバインドできます\n    • 隣接サービスに接続するにはそのサービス名を使用してください（例: \"db\"、\"redis\"）— renet がすべてのサービス名をホスト名として注入します。データベース内に保存する接続文字列に ${DB_IP} を直接埋め込まないでください — IP が固定化されフォーク分離が壊れます（検証エラー）\n    • ヘルスチェックには localhost を使用できます。例: [\"CMD\", \"curl\", \"-f\", \"http://localhost:8080/health\"]\n\n  ストレージ\n    • ${REDIACC_WORKING_DIR}/data、${REDIACC_WORKING_DIR}/config などへバインドマウントしてください\n    • 例: volumes: ['${REDIACC_WORKING_DIR}/data:/var/lib/postgresql/data']\n    • Docker の named volume はフォークとバックアップから除外されます\n    • コンテナにバインドマウントされる設定ファイルは、コンテナが非デフォルト UID で実行される場合 world-readable（644）である必要があります\n\n  ルーティング\n    • Grand リポジトリの自動ルート: https://{service}.{repo}.{machine}.{baseDomain}（ワイルドカード証明書 *.{repo}.{machine}.{baseDomain} は最初の repo up 時に Traefik が自動プロビジョニング）\n    • フォークの自動ルート: https://{service}-fork-{tag}.{repo}.{machine}.{baseDomain}（親リポジトリのワイルドカード証明書を使用、レート制限への影響なし）\n    • カスタムドメイン: traefik.enable=true + traefik.http.routers.{name}.rule=Host(`domain.com`)\n    • TCP/UDP フォワーディング: rediacc.tcp_ports=5432 / rediacc.udp_ports=53\n    • カスタムドメイン（rediacc.domain ラベル）はフォークでは無視されます — ドメインは Grand リポジトリに属します\n\n  ライフサイクル\n    • repo delete は完全にクリーンアップします: ストレージ、Docker daemon、ループバック IP、systemd ユニット\n    • repo down はコンテナを停止しますが Docker daemon と IP は保持します（repo up で素早く再起動可能）\n    • condition: service_healthy を伴う depends_on は起動順序を処理しますが、ランタイムの復旧は処理しません\n    • データベースが正常終了（exit 0）した場合、依存サービスはクラッシュループに陥ります。対処: rdc repo up <repo-ref>\n    • 自動起動: rdc repo admin autostart enable <repo-ref> — マシン起動時にリポジトリを自動マウントして起動します\n    • 予約バックアップはフォークリポジトリを自動的にスキップします。手動でフォークをバックアップするには rdc repo push <repo-ref> --to <remote> を使用してください\n    • rdc repo promote <fork-ref> — 本番データをフォークのデータで置き換えます（ID は保持）。元に戻すには: rdc repo promote <backup-fork-ref>\n\n  命名とターゲット指定\n    • Grand（本番）リポジトリ: <repo> として参照します。<repo>:latest も同義です（latest がデフォルトタグ）。裸の ref は設定キーに完全一致すればそれに解決され、なければ <repo>:latest にフォールバックします\n    • フォーク: 常に latest 以外のタグを付けた <repo>:<tag> で参照します（例: app:test）。up/down/delete/term/sync はすべて同じ <repo>:<tag> を受け取ります\n    • つまり `app` は GRAND を対象とし、`app:test` はその FORK を対象とします。フォークを操作する際は必ずタグを含めてください — 唯一の曖昧なケースは、フォークが誤って裸/latest の名前で登録されている場合です\n    • エージェントはフォークのみを変更できます。Grand リポジトリは保護されており（オーバーライドは REDIACC_ALLOW_GRAND_REPO のみで可能。これはセッション開始前にオペレーターが設定する必要があります）、フォークは安全で使い捨て可能な単位です\n",
+      "keyConcepts": "\n主要概念:\n\n  Compose と Rediaccfile\n    • renet compose -- up -d を使用する（生の docker compose は使わない）。-- セパレータは必須\n    • rdc repo exec <ref> [CLI フラグ] -- <remote cmd>: -- の後はすべてそのままコンテナに渡されるため、-c/-i/-u/--debug は -- より前に置く。-- の後に書いた --debug はリモートコマンドに渡され、CLI のデバッグ出力を有効にすることはない\n    • Rediaccfile は up() と down() 関数を定義する必要があります。up() では: ディレクトリ作成、設定生成、コンテナ起動を行うべきです\n    • compose の ports: は無視されます（network_mode:host）。外部アクセスには rediacc.service_port ラベルを使用してください\n    • restart: always/unless-stopped は renet によって自動的に取り除かれ .rediacc.json に保存されます。ルーターの watchdog が停止したサービスを自動復旧します\n    • 各サービスはループバック IP を取得します。eBPF バインド書き換えが分離を透過的に処理するため、アプリは 0.0.0.0 にバインドできます\n    • 隣接サービスに接続するにはそのサービス名を使用してください（例: \"db\"、\"redis\"）。renet がすべてのサービス名をホスト名として注入します。データベース内に保存する接続文字列に ${DB_IP} を直接埋め込まないでください。IP が固定化されフォーク分離が壊れます（検証エラー）\n    • ヘルスチェックには localhost を使用できます。例: [\"CMD\", \"curl\", \"-f\", \"http://localhost:8080/health\"]\n\n  ストレージ\n    • ${REDIACC_WORKING_DIR}/data、${REDIACC_WORKING_DIR}/config などへバインドマウントしてください\n    • 例: volumes: ['${REDIACC_WORKING_DIR}/data:/var/lib/postgresql/data']\n    • Docker の named volume はフォークとバックアップから除外されます\n    • コンテナにバインドマウントされる設定ファイルは、コンテナが非デフォルト UID で実行される場合 world-readable（644）である必要があります\n\n  ルーティング\n    • Grand リポジトリの自動ルート: https://{service}.{repo}.{machine}.{baseDomain}（ワイルドカード証明書 *.{repo}.{machine}.{baseDomain} は最初の repo up 時に Traefik が自動プロビジョニング）\n    • フォークの自動ルート: https://{service}-fork-{tag}.{repo}.{machine}.{baseDomain}（親リポジトリのワイルドカード証明書を使用、レート制限への影響なし）\n    • カスタムドメイン: traefik.enable=true + traefik.http.routers.{name}.rule=Host(`domain.com`)\n    • TCP/UDP フォワーディング: rediacc.tcp_ports=5432 / rediacc.udp_ports=53\n    • カスタムドメイン（rediacc.domain ラベル）はフォークでは無視されます：ドメインは Grand リポジトリに属します\n\n  ライフサイクル\n    • repo delete は完全にクリーンアップします: ストレージ、Docker daemon、ループバック IP、systemd ユニット\n    • repo down はコンテナを停止しますが Docker daemon と IP は保持します（repo up で素早く再起動可能）\n    • condition: service_healthy を伴う depends_on は起動順序を処理しますが、ランタイムの復旧は処理しません\n    • データベースが正常終了（exit 0）した場合、依存サービスはクラッシュループに陥ります。対処: rdc repo up <repo-ref>\n    • 自動起動: rdc repo admin autostart enable <repo-ref>、マシン起動時にリポジトリを自動マウントして起動します\n    • 予約バックアップはフォークリポジトリを自動的にスキップします。手動でフォークをバックアップするには rdc repo push <repo-ref> --to <remote> を使用してください\n    • rdc repo promote <fork-ref> は本番データをフォークのデータで置き換えます（ID は保持）。元に戻すには: rdc repo promote <backup-fork-ref>\n\n  命名とターゲット指定\n    • Grand（本番）リポジトリ: <repo> として参照します。<repo>:latest も同義です（latest がデフォルトタグ）。裸の ref は設定キーに完全一致すればそれに解決され、なければ <repo>:latest にフォールバックします\n    • フォーク: 常に latest 以外のタグを付けた <repo>:<tag> で参照します（例: app:test）。up/down/delete/term/sync はすべて同じ <repo>:<tag> を受け取ります\n    • つまり `app` は GRAND を対象とし、`app:test` はその FORK を対象とします。フォークを操作する際は必ずタグを含めてください。唯一の曖昧なケースは、フォークが誤って裸/latest の名前で登録されている場合です\n    • エージェントはフォークのみを変更できます。Grand リポジトリは保護されており（オーバーライドは REDIACC_ALLOW_GRAND_REPO のみで可能。これはセッション開始前にオペレーターが設定する必要があります）、フォークは安全で使い捨て可能な単位です\n",
       "up": "自動マウントでデプロイ"
     },
     "sync": {
@@ -2405,7 +2405,7 @@
   "services": {
     "prune": {
       "noOrphaned": "孤立したエントリは見つかりませんでした",
-      "refusingPrune": "整理を拒否 — これらの設定に保護されたGUIDが含まれている可能性があります。--force を使用して強制実行してください。",
+      "refusingPrune": "整理を拒否：これらの設定に保護されたGUIDが含まれている可能性があります。--force を使用して強制実行してください。",
       "unreadableConfigs": "{{count}} 個の設定ファイルを読み取れません: {{names}} (暗号化済みまたは破損)"
     }
   },

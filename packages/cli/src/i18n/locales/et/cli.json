@@ -1207,7 +1207,7 @@
       "commit": {
         "authorOption": "Commit'i autor",
         "completed": "Commit'itud {{commit}}: {{message}}",
-        "description": "Külmuta haagitud töötava forki praegune olek uueks muutumatuks commit'iks (git-laadne). Commit salvestab oma sõnumi, autori, ajatempli ja vanema mahu sees (nii et see liigub kaasa push'iga) ning märgitakse kirjutuskaitstuks — see keeldub haakimisest. Töötav fork jätkab muutumatuna, nagu git jätab töökataloogi puutumata. Tee commit'ist kirjutatav koopia käsuga 'rdc repo checkout'.",
+        "description": "Külmuta haagitud töötava forki praegune olek uueks muutumatuks commit'iks (git-laadne). Commit salvestab oma sõnumi, autori, ajatempli ja vanema mahu sees (nii et see liigub kaasa push'iga) ning märgitakse kirjutuskaitstuks, mistõttu see keeldub haakimisest. Töötav fork jätkab muutumatuna, nagu git jätab töökataloogi puutumata. Tee commit'ist kirjutatav koopia käsuga 'rdc repo checkout'.",
         "descriptionShort": "Külmuta töötav fork uueks muutumatuks commit'iks",
         "failed": "Commit ebaõnnestus",
         "messageOption": "Commit'i sõnum"
@@ -1331,7 +1331,7 @@
         "rollback": "Konfiguratsiooni muudatused tühistati hoidla \"{{repository}}\" jaoks",
         "starting": "Forkimine: \"{{parent}}\" nimega \"{{repository}}\" masinal \"{{machine}}\"...",
         "tagOption": "Forki silt (loob nime:silt)",
-        "tagReservedLatest": "repo fork: silt \"latest\" on reserveeritud peamise (toodangu) hoidla jaoks — vali teine --tag (nt \"test\", \"staging\", \"<feature>\")",
+        "tagReservedLatest": "repo fork: silt \"latest\" on reserveeritud peamise (toodangu) hoidla jaoks. Vali teine --tag (nt \"test\", \"staging\", \"<feature>\")",
         "upOption": "Haagi külge ja käivita teenused pärast forkimist (fork + mount + up ühes käsus)"
       },
       "gc": {
@@ -1411,7 +1411,7 @@
         "optionTo": "Sihtmasin või -klaster",
         "phase1": "1. faas: mahukate andmete ülekandmine (allikas jääb töötama)...",
         "phase1Done": "Mahukas ülekanne lõpetatud",
-        "phase1Stats": "{{transferred}} üle kantud {{duration}} jooksul — allikas jäi tööle",
+        "phase1Stats": "{{transferred}} üle kantud {{duration}} jooksul, allikas jäi tööle",
         "phase2": "2. faas: üleminek (lühike katkestus)...",
         "phase2Stats": "Ümberlülitus (KATKESTUS): {{transferred}} {{duration}} jooksul",
         "phase3": "3. faas: sihtmäel käivitamine...",
@@ -1510,9 +1510,9 @@
         "optionStrategy": "Delta-baasi kasutamisel rakendatav plokidelta strateegia: auto, physical või shared",
         "optionTo": "Sihtmasina nimi (tuvastatakse automaatselt konfiguratsioonist)",
         "pushing": "Hoidla \"{{repo}}\" varukoopia lükkamine kohta {{dest}}...",
-        "statsDelta": "\"{{repo}}\" lükatud masinale {{machine}} — {{transferred}} üle kantud {{duration}} jooksul (delta baasi {{base}} suhtes, tõmmis {{image}})",
-        "statsFull": "\"{{repo}}\" lükatud masinale {{machine}} — {{transferred}} üle kantud {{duration}} jooksul (täielik ülekanne)",
-        "statsNoBytes": "\"{{repo}}\" lükatud masinale {{machine}} — valmis {{duration}} jooksul",
+        "statsDelta": "\"{{repo}}\" lükatud masinale {{machine}}: {{transferred}} üle kantud {{duration}} jooksul (delta baasi {{base}} suhtes, tõmmis {{image}})",
+        "statsFull": "\"{{repo}}\" lükatud masinale {{machine}}: {{transferred}} üle kantud {{duration}} jooksul (täielik ülekanne)",
+        "statsNoBytes": "\"{{repo}}\" lükatud masinale {{machine}}: valmis {{duration}} jooksul",
         "storageRetired": "Salvestusteenusesse saatmine on lõpetatud: rclone'i pilveharu eemaldati. Ajahetke varundus käib nüüd käsuga `rdc backup snapshot` (üleslaadimine) ja `rdc backup restore <repo> --at <snapshot>` (allalaadimine), mõlemad tükihoidla kaudu. Masinatevaheline ülekanne ei muutunud: kasuta --to-machine"
       },
       "refMachineConflict": "Hoidla viide tuletab oma masina ise. Kasuta -m/--machine ainult masinaülese vormi jaoks: repo {{verb}} --all -m <machine>.",
@@ -2090,7 +2090,7 @@
   },
   "errors": {
     "agent": {
-      "clusterOpBlocked": "Klastri käsk \"{{command}}\" on agendi režiimis blokeeritud. Klastri toimingud loovad või lammutavad reaalset taristut, seega ei saa agent neid ise volitada. Kasutaja: selle lubamiseks seadista REDIACC_ALLOW_CLUSTER_OPS=<klastri-nimi> (või * kõigi klastrite jaoks) oma terminalis ENNE agendi seansi käivitamist — agendi seest seatud ülekirjutust ei aktsepteerita.",
+      "clusterOpBlocked": "Klastri käsk \"{{command}}\" on agendi režiimis blokeeritud. Klastri toimingud loovad või lammutavad reaalset taristut, seega ei saa agent neid ise volitada. Kasutaja: selle lubamiseks seadista REDIACC_ALLOW_CLUSTER_OPS=<klastri-nimi> (või * kõigi klastrite jaoks) oma terminalis ENNE agendi seansi käivitamist. Agendi seest seatud ülekirjutust ei aktsepteerita.",
       "commandBlocked": "Käsk \"{{command}}\" ei ole agendi režiimis saadaval.\n\nSee käsk täidab suvalisi madaltaseme funktsioone ilma turvakontrollideta. Kasuta selle asemel tüüpilisi CLI käske või MCP tööriistu.\n\nAlternatiivid:\n  - MCP tööriistad: repo_up, repo_down, repo_fork, repo_logs, repo_exec, machine_status\n  - CLI käsud: rdc repo up, rdc repo down, rdc term connect\n  - Käivita \"rdc --help\", et näha kõiki saadaval olevaid käske\n\nKui vajad tooreset ligipääsu, palu kasutajal käivitada käsk otse.",
       "configEdit": "Interaktiivne redaktor on agendikeskkondades blokeeritud.\n\nAlternatiivid:\n  • rdc config edit --dump > config.jsonc    (turvaline varjatud ülevaatus)\n  • rdc config field set --pointer <pointer> --current <old> --new <new>\n  • rdc config edit --apply config.jsonc\n\nÜlekirjutamiseks seadista REDIACC_ALLOW_CONFIG_EDIT=<scope-glob> vanemas shellis\nENNE oma agendi käivitamist (see peab olema nähtav agendi protsessipuus).",
       "configEditAncestry": "Interaktiivne redaktor on agendikeskkondades blokeeritud (REDIACC_ALLOW_CONFIG_EDIT oli seadistatud, kuid esivanema kontroll ebaõnnestus - ülekiri peab olema seadistatud sinu shelli poolt, mitte agendi poolt).\n\nAlternatiivid:\n  • rdc config edit --dump > config.jsonc    (turvaline varjatud ülevaatus)\n  • rdc config field set --pointer <pointer> --current <old> --new <new>\n  • rdc config edit --apply config.jsonc\n\nSeadista REDIACC_ALLOW_CONFIG_EDIT=<scope-glob> vanemas shellis ENNE oma agendi käivitamist.",
@@ -2102,7 +2102,7 @@
       "grandGuard": "\"{{name}}\" on grand (tootmis) repositoorium. Agendid ei saa grand-repositooriume otse muuta.\n\nGrand-repositooriumid sisaldavad tootmisandmeid. Kasuta selle asemel forki - forgid on turvalised, eraldatud liivakastikoopiad.\n\nTöövoog:\n  1. rdc repo fork {{name}} --tag <tag-name>\n  2. Tee forgi peal toiminguid (nt rdc repo up {{name}}:<tag-name>)\n  3. Kui oled valmis, saab kasutaja forgi ülendada käsuga rdc repo promote {{name}}:<tag-name>\n\nKasutaja: otsese ligipääsu lubamiseks seadista REDIACC_ALLOW_GRAND_REPO={{name}} (või * kõigi repositooriumide jaoks) oma terminalis enne agendi seansi käivitamist.",
       "grandGuardOverride": "\"{{name}}\" on grand (tootmis) repositoorium. Agendi algatatud ülekirjutamised ei ole aktsepteeritud.\n\nÄra proovi seadistada REDIACC_ALLOW_GRAND_REPO - ainult kasutaja saab selle enne agendi käivitamist autoriseerida.\n\nKasuta selle asemel forki - forgid on turvalised, eraldatud liivakastikoopiad:\n  1. rdc repo fork {{name}} --tag <tag-name>\n  2. Tee forgi peal toiminguid\n  3. Kui oled valmis, saab kasutaja forgi ülendada käsuga rdc repo promote {{name}}:<tag-name>",
       "grandGuardOverrideNonLinux": "\"{{name}}\" on grand (tootmis) repositoorium. REDIACC_ALLOW_GRAND_REPO on seadistatud, kuid selle päritolu ei saanud platvormil {{platform}} verifitseerida (esivanema verifitseerimise abivahend on saadaval olematu või ebaõnnestus), seega ülekirjutamine ei ole aktsepteeritud.\n\nKasuta fork-first töövoogu:\n  1. rdc repo fork {{name}} --tag <tag-name>\n  2. Tee forgi peal toiminguid\n  3. Kui oled valmis, saab kasutaja forgi ülendada käsuga rdc repo promote {{name}}:<tag-name>\n\nKasutaja: verifitseerimine töötab Linuxis, macOS-is ja Windowsis koos puhtalt paigaldatud rdc-ga. Kui probleem jääb, paigalda rdc uuesti ja seadista muutuja oma terminalis enne agendi käivitamist.",
-      "machineGuard": "Otsene ligipääs masinale \"{{machine}}\" ei ole agendi režiimis lubatud.\n\nAgendid peavad ühenduma repositooriumi konteksti kaudu liivakastiga ligipääsuks. Forki esmalt repositoorium, seejärel ühenda forgi külge.\n\nTöövoog:\n  1. rdc repo fork <repo> --tag <tag-name>\n  2. rdc term connect <repo>:<tag-name> -c \"<command>\"\n\nKasutaja: masinatasemel ligipääs nõuab metamärki — seadista REDIACC_ALLOW_GRAND_REPO=* oma terminalis enne agendi seansi käivitamist. Konkreetne repositooriumi nimi ei ava otsest masina ligipääsu.",
+      "machineGuard": "Otsene ligipääs masinale \"{{machine}}\" ei ole agendi režiimis lubatud.\n\nAgendid peavad ühenduma repositooriumi konteksti kaudu liivakastiga ligipääsuks. Forki esmalt repositoorium, seejärel ühenda forgi külge.\n\nTöövoog:\n  1. rdc repo fork <repo> --tag <tag-name>\n  2. rdc term connect <repo>:<tag-name> -c \"<command>\"\n\nKasutaja: masinatasemel ligipääs nõuab metamärki: seadista REDIACC_ALLOW_GRAND_REPO=* oma terminalis enne agendi seansi käivitamist. Konkreetne repositooriumi nimi ei ava otsest masina ligipääsu.",
       "machineGuardOverride": "Otsene ligipääs masinale \"{{machine}}\" ei ole lubatud. Agendi algatatud ülekirjutamised ei ole aktsepteeritud.\n\nÄra proovi seadistada REDIACC_ALLOW_GRAND_REPO - ainult kasutaja saab selle enne agendi käivitamist autoriseerida.\n\nForki esmalt repositoorium, seejärel ühenda forgi külge:\n  1. rdc repo fork <repo> --tag <tag-name>\n  2. rdc term connect <repo>:<tag-name> -c \"<command>\"",
       "machineGuardOverrideNonLinux": "Otsene ligipääs masinale \"{{machine}}\" on üle kirjutatud, kuid selle ülekirjutamise päritolu ei saanud platvormil {{platform}} verifitseerida (esivanema verifitseerimise abivahend on saadaval olematu või ebaõnnestus), seega ülekirjutamine ei ole aktsepteeritud.\n\nForki repositoorium esmalt, seejärel ühenda forgi külge:\n  1. rdc repo fork <repo> --tag <tag-name>\n  2. rdc term connect <repo>:<tag-name> -c \"<command>\"\n\nKasutaja: verifitseerimine töötab Linuxis, macOS-is ja Windowsis koos puhtalt paigaldatud rdc-ga. Kui probleem jääb, paigalda rdc uuesti ja seadista muutuja oma terminalis enne agendi käivitamist.",
       "mcpGrandGuard": "\"{{name}}\" on grand (tootmis) repositoorium. Agendid ei saa grand-repositooriume otse muuta.\n\nKasuta repo_fork'i turvalise, eraldatud liivakastikoopia loomiseks, seejärel tee forgi peal toiminguid.\nKui vajad otsest ligipääsu, palu kasutajal määrata REDIACC_ALLOW_GRAND_REPO enne agendi käivitamist.",
