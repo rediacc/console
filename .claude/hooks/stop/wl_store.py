@@ -1704,9 +1704,7 @@ def agent_state_briefing(root, session_id, projects_dir=""):
         mine = agent_state_mine(sections, session_id)
         if mine is None:
             mine = next((s for s in sections if s["owner"] == AGENT_STATE_LEGACY_OWNER), None)
-    live, _dead = agent_state_dead(
-        agent_peer_sections(root, session_id), session_id, projects_dir
-    )
+    live, _dead = agent_state_dead(agent_peer_sections(root, session_id), session_id, projects_dir)
     now = time.time()
     rows = [
         "--- SESSION %s, written %d minutes ago. NOT YOURS: read it, never "
