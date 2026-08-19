@@ -23,6 +23,9 @@ import sys
 import tempfile
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import ctx_budget as B
+
 HERE = Path(__file__).resolve().parent
 SESSION = "abcd1234-0000-0000-0000-000000000000"
 SLUG = "abcd1234"
@@ -119,15 +122,15 @@ class Sandbox:
         }
 
     def run(self, script, event):
-        p = subprocess.run(
+        return subprocess.run(
             [sys.executable, str(self.hooks / script)],
             input=json.dumps(event),
             capture_output=True,
             text=True,
             env=self.env(),
             timeout=60,
+            check=False,
         )
-        return p
 
     def post_tool(self, **over):
         ev = {
@@ -191,9 +194,6 @@ def fired(p):
 
 def test_arithmetic():
     print("\n[arithmetic]")
-    sys.path.insert(0, str(HERE))
-    import ctx_budget as B
-
     r = B.resolve_threshold("claude-opus-5[1m]", None)
     # No project dir and no env: falls back to the model's own max.
     check(
@@ -248,9 +248,10 @@ def test_arithmetic():
 # --------------------------------------------------------------------------
 
 
-def test_bands(hooks_dir=HERE, expect=None):
-    """The behavioural half. `expect` overrides let the mutation half assert
-    that a broken hook makes specific checks fail."""
+def test_bands(hooks_dir):
+    """The behavioural half. The mutation half asserts that a broken hook
+    makes specific checks fail via `must_fail` / `run_isolated`, not via an
+    override here."""
     print("\n[band hook] %s" % hooks_dir)
     sb = Sandbox(hooks_dir)
     try:
@@ -494,7 +495,7 @@ def test_bands(hooks_dir=HERE, expect=None):
 # --------------------------------------------------------------------------
 
 
-def test_precompact(hooks_dir=HERE):
+def test_precompact(hooks_dir):
     print("\n[precompact floor] %s" % hooks_dir)
     sb = Sandbox(hooks_dir)
     try:
@@ -598,6 +599,7 @@ def test_precompact(hooks_dir=HERE):
             text=True,
             env=env,
             timeout=60,
+            check=False,
         )
         check("precompact exits 0 with no git on PATH", p3.returncode == 0, str(p3.returncode))
         sb3.cleanup()
@@ -765,8 +767,8 @@ def test_mutations():
             tgt, old, new = indirect
             d = mutate(tgt, (old, new))
         try:
-            if any(m in ("200K model caps the pinned window",) for m in must_fail):
-                failed = run_isolated(lambda h: test_arithmetic_in(h), d)
+            if "200K model caps the pinned window" in must_fail:
+                failed = run_isolated(test_arithmetic_in, d)
             else:
                 failed = run_isolated(test_bands, d)
             missing = [m for m in must_fail if m not in failed]
@@ -807,6 +809,7 @@ def test_arithmetic_in(hooks_dir):
             text=True,
             env=sb.env(),
             timeout=60,
+            check=False,
         )
         try:
             r = json.loads(p.stdout)
