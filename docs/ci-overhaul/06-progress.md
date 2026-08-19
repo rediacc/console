@@ -3781,3 +3781,100 @@ being green -- so a manual dispatch before CI is green no-ops silently. The sequ
 self-resolving (CI green, review stamps, observer turns green) and `review-status.yml`'s
 header explains why nothing in CI may wait on it: the pipeline that produces the review
 would deadlock on its own output.
+
+## The 0818-1 wave: four defects the existing gates were blind to (2026-08-19)
+
+Branch `0818-1`, PR #569. This wave started as "green the www round-3 work" and turned
+into four separate cases of a check that could not see the thing it was standing next
+to. Each one is recorded here with the class it closes, because in every case the fix
+was cheap and the blindness was the expensive part.
+
+### 1. A silent truncation, and a verb that cannot express it
+
+The pr-babysit round log is a wave header, a STATUS block overwritten each round, and a
+history appendix. "Overwritten in place" invites `text[:i] + new`, which replaces from
+the STATUS heading to END OF FILE. A heartbeat tick whose entire purpose was keeping the
+log current destroyed the appendix that way, on a file with no backup, and the write
+SUCCEEDED: the new STATUS looked perfect and nothing said the history had gone.
+
+`worklist.py --roundlog <branch>` (new `wl_roundlog.py`) now splices only the middle
+part and PRINTS the bytes kept on each side. Its first real use on the damaged log
+reported `appendix kept: 15809 bytes`, which is exactly the number a silent success
+hides. The time is machine-stamped rather than hand-typed, because that stamp is what a
+watchdog reads to decide a loop is wedged and a copied one lies.
+
+Two guards, not one: `pre-edit/block-roundlog-write.sh` denies whole-file tool writes,
+and `pre-bash/block-roundlog-truncate.sh` denies truncating Bash. The second exists
+because the damage went through a python heredoc, which no PreToolUse edit hook can see.
+`block-agent-state-shape.sh` names that residual and leaves it open; here it was the
+actual incident.
+
+### 2. That guard then had two defects at once, pointing opposite ways
+
+Caught by the automated review, and worth reading as a pair:
+
+- **A hole.** The tee check was DEAD. `grep -q P | grep -qv '-a'` is not the check it
+  reads as: `-q` suppresses stdout, so the downstream grep always sees empty input and
+  its exit status carries nothing about the first pattern. A bare `tee` onto a round log
+  would have truncated the very file the hook protects.
+- **An over-block.** The verbs matched ANYWHERE in the command, unanchored to the log,
+  so a bare `truncate` matched the substring in the script's OWN filename and `cp`/`mv`
+  matched unrelated files sharing a line with a READ. It blocked `cat <log>`.
+
+The two inline review threads claimed OPPOSITE causes, so only one could be right.
+`bash -x` settled it: the flag was never set, so that line was dead rather than dominant,
+and the over-block came from the line above it. The harness now carries 19 round-log
+cases in both directions.
+
+### 3. A guard hook nobody registered was completely silent
+
+`check_hooks_resolvable.py` enforced one direction only: every script `settings.json`
+names must exist. The reverse was unguarded, and the reverse is the direction an AUTHOR
+gets wrong: write a guard, hand-test it, never wire it. The result is indistinguishable
+from a working guard, because a hook that is never invoked never complains. Two hooks
+were added this wave and nothing would have noticed a skipped registration line.
+`unregistered_guards()` closes it inside the existing gate: no new job, no new wiring.
+
+### 4. Retrying one dead mirror five times is still one mirror
+
+`Devcontainer (amd64)` took down four consecutive attempts. Root cause from the
+watchdog's captured 513KB log: `azure.archive.ubuntu.com` refused port 80 for ninety
+minutes, and `.devcontainer/Dockerfile` had rewritten EVERY apt source to that one host,
+so all five retries hammered the same dead mirror. The retry loop was working perfectly
+and could not help.
+
+ONE cause, TWO symptoms, which is what made it hard to read: two attempts EXHAUSTED the
+retries and reported `failure`; two ran PAST the 30-minute job timeout while still
+retrying and reported `cancelled`. The first reading, "a timeout, maybe raise it", was
+wrong, and raising it would only have bought a 45-minute failure.
+
+The Dockerfile now falls back to canonical `archive.ubuntu.com` after the first failure,
+keeping the documented in-datacenter speed argument for the normal case. And because the
+fix was applied by hand with nothing preventing its return,
+**`check:ci-dockerfile-mirror-resilience`** was added: a RUN block that rewrites apt
+sources to a specific host must name at least TWO distinct hosts. Proved on the REAL
+defect rather than a synthetic plant, by running it against
+`git show 288271092:.devcontainer/Dockerfile`: one finding, naming the pinned host, and
+zero against the fixed tree.
+
+The blindness is the point. Every existing check that looked at retry logic counted
+ATTEMPTS; none asked whether the attempts could reach a different SOURCE. Five retries
+against one host satisfies "has retries" while being equivalent to no retries at all.
+
+### Also landed, and two CI facts worth not rediscovering
+
+`GITHUB_TOKEN` now reaches BOTH www builds. `downloads.astro` fetches the latest release
+at build time and correctly THROWS rather than shipping an empty downloads page, but the
+call was unauthenticated and capped at 60/hour per SHARED runner IP. Four other steps in
+that workflow already passed the token; the www build did not, and the DEPLOY build had
+the identical gap, which would have failed a deploy rather than merely CI.
+
+- **`WATCHDOG_RETRY_ALLOWLIST_PATTERNS` is `E2E,OPS,Fork Isolation,Migration Test`.**
+  `Devcontainer` is in neither that nor the no-retry list, and the allowlist FAILS
+  CLOSED, so Docker builds never auto-retry. Every retry this wave was manual, while the
+  babysitter playbook names apt mirrors as exactly the transient class worth retrying.
+  Gap left open deliberately, mid-wave, and flagged rather than edited under a live run.
+- **`ruff EXE001` cannot be reproduced locally here.** A shebang without an exec bit
+  fails in CI and passes locally on the SAME pinned ruff 0.16.1, same `100644` mode, with
+  `os.access(X_OK)` correctly False. "Run the gates locally first" does not cover EXE
+  rules on this machine.
