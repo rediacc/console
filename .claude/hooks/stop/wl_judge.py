@@ -267,6 +267,121 @@ def run_triage(finding, context):
     return out, None
 
 
+PLANFID_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "plan_fidelity": {
+            "type": "object",
+            "properties": {
+                "faithful": {"type": "boolean"},
+                "umbrella_ids": {"type": "array", "items": {"type": "string", "maxLength": 16}},
+                "missing": {"type": "array", "items": {"type": "string", "maxLength": 300}},
+                "instruction": {"type": "string", "maxLength": 300},
+            },
+            "required": ["faithful", "umbrella_ids", "missing", "instruction"],
+            "additionalProperties": False,
+        }
+    },
+    "required": ["plan_fidelity"],
+    "additionalProperties": False,
+}
+
+
+def _run_structured(label, prompt, schema, extract):
+    """(payload, error_string). Exactly one is non-None. ONE transport.
+
+    run_judge, run_triage and run_admission are three near-identical copies of
+    this, and wl_judge's own comment on the second one ("the transport is the
+    same and a second copy that drifts is a second bug") is the argument against
+    adding a fourth. Only the NEW caller is routed through here: folding the
+    three live paths in would be a behaviour change to the stop gate itself,
+    which is not this change's business. That is a named residual, not an
+    oversight -- the next module that needs a model call should use this and the
+    three copies should follow when something else forces them open.
+
+    Failure semantics are the CALLER's business, exactly as for run_triage: every
+    error is reported, never swallowed.
+    """
+    exe = resolve_claude()
+    if not exe or not os.path.exists(exe):
+        return None, "claude CLI not found (looked at PATH and ~/.local/bin/claude)"
+    workdir = pathlib.Path(os.environ.get("TMPDIR", "/tmp")) / "claude-worklist" / ".judge"
+    try:
+        workdir.mkdir(parents=True, exist_ok=True)
+    except OSError as exc:
+        return None, "%s workdir unusable: %s" % (label, exc)
+    env = dict(os.environ)
+    # THE RECURSION GUARD, same as run_judge: `claude -p` fires the Stop hook.
+    env["STOPHOOK_CHILD"] = "1"
+    try:
+        proc = subprocess.run(
+            [
+                exe,
+                "-p",
+                prompt,
+                "--output-format",
+                "json",
+                "--json-schema",
+                json.dumps(schema),
+                "--model",
+                JUDGE_MODEL,
+                "--max-budget-usd",
+                JUDGE_BUDGET_USD,
+            ],
+            capture_output=True,
+            text=True,
+            timeout=JUDGE_TIMEOUT_S,
+            env=env,
+            check=False,
+            cwd=str(workdir),
+            stdin=subprocess.DEVNULL,
+        )
+    except subprocess.TimeoutExpired:
+        return None, "%s timed out after %ds" % (label, JUDGE_TIMEOUT_S)
+    except OSError as exc:
+        return None, "%s could not be launched: %s" % (label, exc)
+    if proc.returncode != 0:
+        return None, _explain_failed_exit(label, proc)
+    try:
+        env_out = json.loads(proc.stdout)
+    except ValueError:
+        return None, "%s returned unparseable stdout: %s" % (label, (proc.stdout or "")[-300:])
+    if env_out.get("is_error"):
+        return None, "%s reported is_error (subtype=%s, api=%s)" % (
+            label,
+            env_out.get("subtype"),
+            env_out.get("api_error_status"),
+        )
+    out = env_out.get("structured_output")
+    payload = extract(out) if isinstance(out, dict) else None
+    if payload is None:
+        return None, "%s produced no usable structured_output: %s" % (label, repr(out)[:300])
+    return payload, None
+
+
+def run_planfid(plan_text, items_rendered, message):
+    """(plan_fidelity_dict, error_string). Exactly one is non-None.
+
+    DEGRADES, never blocks on its own unavailability. See wl_planfid's header:
+    this check triggers on a heuristic about item shape rather than on an
+    artifact, so an unreachable model must not wall in every session that has an
+    approved plan. The caller reports the error on the systemMessage line.
+    """
+    prompt = M.PLANFID_PROMPT % {
+        "plan": (plan_text or "")[:14000],
+        "items": items_rendered or "  (none)",
+        "message": (message or "(the session produced no text)")[-3000:],
+    }
+    return _run_structured(
+        "plan-fidelity",
+        prompt,
+        PLANFID_SCHEMA,
+        lambda out: (
+            out.get("plan_fidelity") if isinstance(out.get("plan_fidelity"), dict) else None
+        ),
+    )
+
+
 ADMISSION_SCHEMA = {
     "type": "object",
     "properties": {"admission": JUDGE_SCHEMA["properties"]["admission"]},

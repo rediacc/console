@@ -1857,3 +1857,105 @@ Being cautious in BOTH directions matters. Inventing an admission creates busywo
 and teaches sessions to write evasively, which destroys the signal this depends
 on. Missing a real one lets the next session repeat it.
 """
+
+
+# ---- v20 PLAN FIDELITY (wl_planfid.py) --------------------------------------
+#
+# Operator, 2026-08-19, on a session that seeded a twenty-task approved plan with
+# two items named "www round 4 Wave A" and "www round 4 Waves B-D": "you took it
+# easy and wrote Round 4 which is not precise! We need individual items for stop
+# hook." The wording of this block is deliberately about the INSTRUMENT rather
+# than about tidiness: an umbrella item does not merely read badly, it makes the
+# open-item gate unable to tell one task from twenty.
+V_PLANFID = (
+    "AN APPROVED PLAN IS NOT DECOMPOSED INTO TRACKED ITEMS. One umbrella item "
+    "hides however many tasks it covers, and every check in this hook then reads "
+    "a queue of two as two tasks' worth of work. The gate is not wrong about the "
+    "count; it is blind, and it reports green while blind.\n\n"
+    "  plan:                %s\n"
+    "  umbrella item(s):\n%s\n"
+    "  plan task(s) nothing tracks:\n%s\n"
+    "  judge's instruction: %s\n\n"
+    "Three exits, pick one THIS turn:\n"
+    "  1. DECOMPOSE. `worklist.py --add %s '<one plan task>'` for each task above, "
+    "then retire each umbrella item: either --update it into ONE of those tasks, "
+    "or --tick it with the ids that replaced it. One item per task the plan names, "
+    "so that ticking one means one task is actually done.\n"
+    "  2. REBUT in your message: name which existing item covers which plan task, "
+    "or say why this plan is no longer the work in front of you. The judge re-reads "
+    "your message next stop.\n"
+    "  3. DEFER to the operator, only for a call that is genuinely theirs (the plan "
+    "is superseded, the scope changed): append\n"
+    "     - [?] (%s) %s <the question> DEFAULT: <what you do if unanswered> "
+    "WHY: <why the call is not yours> HOW: <what settles it>\n"
+    "     and the deferral machinery prints it to them every stop."
+)
+
+# Never silent. The check fails OPEN (see wl_planfid's header on why this one
+# does not share wl_judge's no-escape-hatch contract), so the only thing standing
+# between a broken judge and a silently dead check is this line.
+V_PLANFID_DEGRADED = (
+    "Stop hook: the plan-fidelity check could not run (%s). It is NOT blocking on "
+    "its own unavailability, so decompose the approved plan yourself if it is not "
+    "already one item per task."
+)
+
+PLANFID_PROMPT = """\
+You are checking whether a coding session's tracked work is a faithful
+DECOMPOSITION of a plan its operator already approved.
+
+WHY THIS MATTERS, and it is mechanical rather than stylistic. The session's Stop
+gate refuses to end a turn while an open tracked item remains. That enforcement
+is only as strong as the decomposition behind it: one item reading "Wave A" is
+indistinguishable, to every check, from one small task, and it can be ticked with
+a single line of evidence for twenty tasks' worth of work. So the question is not
+whether the items are tidily worded. It is whether the item list, read alone,
+tells you the same amount of remaining work the plan does.
+
+THE APPROVED PLAN:
+<<<
+%(plan)s
+>>>
+
+THE SESSION'S TRACKED ITEMS ([ ] open, [x] done, [?] deferred, [>] in flight):
+%(items)s
+
+THE SESSION'S LAST MESSAGE, which may contain a rebuttal explaining why the items
+already cover the plan or why the plan no longer applies. A rebuttal that names
+which item covers which plan task is a legitimate answer:
+<<<
+%(message)s
+>>>
+
+Fill `plan_fidelity`:
+
+  faithful      true when the items track the plan's tasks at roughly one item
+                per task. Judge the WHOLE list, not just the open ones: a session
+                that decomposed correctly and has already ticked most of them is
+                faithful. Be generous about wording, grouping two genuinely
+                inseparable steps, and extra items the plan never mentioned.
+                Be strict about ONE item standing in for several plan tasks.
+
+  umbrella_ids  the ids (the #xxxxxxxx values above, id only, no #) of OPEN items
+                that are container labels rather than tasks: a wave, a phase, a
+                round, a range of waves, or a single item whose text covers work
+                the plan lists as several separate things. Only ids that appear
+                above. Inventing one voids your whole verdict.
+
+  missing       plan tasks that NO item tracks, and this is the field that
+                decides the outcome: without at least one, nothing here blocks.
+                Each entry must be copied VERBATIM from a TASK LINE of the plan
+                -- a bullet or numbered line under an implementation heading, or
+                a checkbox line. Context, background, and the locked DECISIONS
+                section are NOT tasks; quoting one is discarded, and a verdict
+                whose only evidence is a decision bullet is thrown away whole.
+                An item that merely names a wave does NOT count as tracking the
+                tasks inside that wave, so list those tasks here.
+
+  instruction   one concrete sentence telling the session what to add or split.
+
+Set faithful=true, umbrella_ids=[] and missing=[] when the decomposition is
+sound. Being wrong in the "unfaithful" direction walls in a session that did the
+right thing and teaches everyone to route around this check, so when the item
+list plausibly covers the plan, say so.
+"""
