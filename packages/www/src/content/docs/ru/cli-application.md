@@ -2,13 +2,11 @@
 title: "CLI-приложение"
 description: "Полное руководство по использованию интерфейса командной строки Rediacc для управления платформой"
 category: "Reference"
-tags:
-  - cli
 order: 2
 language: ru
 generated: true
 generatedFrom: packages/cli/src/i18n/locales/ru/cli.json
-sourceHash: "b6ae8408bdbd2fe7"
+sourceHash: "bb3ff8daf0bc61cb"
 ---
 
 <!-- THIS FILE IS AUTO-GENERATED. Do not edit manually. -->
