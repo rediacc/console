@@ -535,6 +535,22 @@ check 2 pre-bash/block-roundlog-truncate.sh "$(bash_json "echo hi > $RLOG")" "ro
 check 2 pre-bash/block-roundlog-truncate.sh "$(bash_json "sed -i s/a/b/ $RLOG")" "roundlog: sed -i is blocked"
 check 0 pre-bash/block-roundlog-truncate.sh "$(bash_json "echo hi >> $RLOG")" "roundlog: appending passes (it cannot truncate)"
 check 0 pre-bash/block-roundlog-truncate.sh "$(bash_json "grep -n STATUS $RLOG")" "roundlog: reading passes"
+# THE UNDER-BLOCK REGRESSIONS, found in review 2026-08-19 and each reproduced against the
+# live hook before it was fixed. All three are ways a command that genuinely TRUNCATES the
+# log was waved through, which is worse than an over-block: the guard reported safety it
+# was not providing. Every one has an allow-twin below so the fix cannot be "block more
+# until quiet".
+check 2 pre-bash/block-roundlog-truncate.sh "$(bash_json "tee --output-error=warn $RLOG")" "roundlog: tee --output-error=warn truncates, and is not an -a"
+check 2 pre-bash/block-roundlog-truncate.sh "$(bash_json "tee -a /tmp/other.txt | tee $RLOG")" "roundlog: a decoy -a on another file does not license a bare tee"
+check 0 pre-bash/block-roundlog-truncate.sh "$(bash_json "tee --append $RLOG")" "roundlog: long --append is a real append"
+check 0 pre-bash/block-roundlog-truncate.sh "$(bash_json "tee -ai $RLOG")" "roundlog: a short bundle containing a is a real append"
+check 2 pre-bash/block-roundlog-truncate.sh "$(bash_json "tee $RLOG")" "roundlog: a bare tee still truncates"
+# cp names the log as a SOURCE here, which is a read, and backing the log up is the most
+# useful thing a session can do with it. mv in the same position is NOT a read: it removes
+# the log from its path, so the two verbs are deliberately treated differently.
+check 0 pre-bash/block-roundlog-truncate.sh "$(bash_json "cp $RLOG /tmp/backup.md")" "roundlog: cp with the log as SOURCE is a read"
+check 2 pre-bash/block-roundlog-truncate.sh "$(bash_json "cp /tmp/new.md $RLOG")" "roundlog: cp ONTO the log still blocked"
+check 2 pre-bash/block-roundlog-truncate.sh "$(bash_json "mv $RLOG /tmp/backup.md")" "roundlog: mv away removes the log, still blocked"
 # THE OVER-BLOCK REGRESSIONS. Found in review, then reproduced twice against the
 # live hook within minutes: the truncating verbs were matched ANYWHERE in the
 # command rather than anchored to the log, so `truncate` hit this script's own
@@ -578,6 +594,28 @@ if [[ -f "$RLOG_MOD" ]]; then
 else
     FAIL=$((FAIL + 1))
     echo "FAIL [1] stop/wl_roundlog.py missing"
+fi
+
+# The plan-fidelity check's own controls (stop/wl_planfid.py). Separate from the
+# stop suite below, which drives the whole hook: these are the unit-level
+# controls that prove the instrument can FIRE on the real 2026-08-19 incident
+# (two umbrella items for a four-wave approved plan) and stays SILENT on the
+# operator's own correction of it, plus every verification that stands between a
+# model claim and a block.
+PLANFID_MOD="$DIR/stop/wl_planfid.py"
+if [[ -f "$PLANFID_MOD" ]]; then
+    if out="$(python3 "$PLANFID_MOD" --selftest 2>&1)"; then
+        n=$(grep -c "^  PASS " <<<"$out")
+        PASS=$((PASS + n))
+        echo "ok   [0] stop/wl_planfid.py --selftest: $n control(s) passed"
+    else
+        FAIL=$((FAIL + 1))
+        echo "FAIL [1] stop/wl_planfid.py --selftest"
+        grep -E "^  FAIL " <<<"$out" | sed 's/^/       /'
+    fi
+else
+    FAIL=$((FAIL + 1))
+    echo "FAIL [1] stop/wl_planfid.py missing"
 fi
 
 STOP_SUITE="$DIR/stop/test-worklist-v5.sh"

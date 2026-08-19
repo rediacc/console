@@ -166,8 +166,22 @@ def offenders(text):
     return bad
 
 
+# An iteration test against a literal, in the shapes shell actually uses.
+#
+# This started as `[ "$i" = "N" ]` only, and review caught the consequence: `[[ $i -eq N ]]`
+# is a real idiom, used elsewhere in the very delta that added this gate, and a fallback
+# guarded that way was INVISIBLE here. Both sequencing checks are conditioned on finding a
+# guard, so not finding one meant reporting nothing, and the gate passed on exactly the
+# defect it exists to catch. That is the vacuity class this file's own header warns about,
+# so it is worth being explicit: `[` and `[[`, and `=`, `==` or `-eq`.
+#
+# Declared ONCE and shared by both readers below. They had identical copies, which is how
+# a fix lands in one and not the other.
+ITER_TEST = r'\[\[?\s*"?\$\{?\w+\}?"?\s*(?:==?|-eq)\s*"?(\d+)"?\s*\]\]?'
+
+
 def giveup_iteration(block):
-    """Iteration N of a `[ "$i" = "N" ]` guard whose body EXITS.
+    """Iteration N of an iteration guard whose body EXITS.
 
     A fallback can be correctly placed relative to the loop bound and still never
     run, because an earlier iteration bails out first. Loop bound and fallback
@@ -175,7 +189,7 @@ def giveup_iteration(block):
     decides whether the fallback is reachable.
     """
     best = None
-    for m in re.finditer(r'\[\s*"?\$\{?\w+\}?"?\s*=\s*"?(\d+)"?\s*\]', block):
+    for m in re.finditer(ITER_TEST, block):
         tail = block[m.end() : m.end() + 200]
         # `exit` before the guard's `fi`, i.e. inside this branch.
         branch = tail.split(" fi;")[0]
@@ -202,7 +216,7 @@ def fallback_iteration(block):
     than on any equality test.
     """
     best = None
-    for m in re.finditer(r'\[\s*"?\$\{?\w+\}?"?\s*=\s*"?(\d+)"?\s*\]', block):
+    for m in re.finditer(ITER_TEST, block):
         tail = block[m.end() : m.end() + 400]
         if REWRITE.search(tail):
             n = int(m.group(1))
@@ -218,8 +232,14 @@ def selftest():
         nonlocal ok
         if not cond:
             ok = False
+        # `% (detail,)`, NOT `% detail`. With a list or tuple detail the bare form treats
+        # it as the argument LIST, so an empty list raises TypeError and a 2-element one
+        # raises too. That turns a control FAILURE into a traceback, which is the worst
+        # possible time to lose the message: found while mutation-testing this very file,
+        # where a genuinely failing control crashed instead of printing what it wanted.
         print(
-            "  %s  %s%s" % ("PASS" if cond else "FAIL", label, "" if cond else "  <- %s" % detail)
+            "  %s  %s%s"
+            % ("PASS" if cond else "FAIL", label, "" if cond else "  <- %r" % (detail,))
         )
 
     single = (
@@ -311,6 +331,47 @@ def selftest():
         "a fallback BEFORE the give-up point still passes",
         offenders(both) == [] and giveup_iteration(both) is None,
         (offenders(both), giveup_iteration(both)),
+    )
+
+    # THE DOUBLE-BRACKET BLINDSPOT, found in review. The iteration test used to be
+    # `[ "$i" = "N" ]` and NOTHING else, so a fallback guarded `[[ $i -eq N ]]` was
+    # invisible: both sequencing checks are conditioned on finding a guard, so finding
+    # none meant reporting none, and the gate passed on the very defect it exists to
+    # catch. `[[ ... -eq ... ]]` is not hypothetical; it is already used elsewhere in the
+    # delta that added this file. Each shape below is the SAME defect written a different
+    # legal way, and every one must still be caught.
+    for label, test in (
+        ("[[ $i -eq N ]]", '[[ $i -eq 5 ]]'),
+        ('[[ "$i" == "N" ]]', '[[ "$i" == "5" ]]'),
+        ('[ "$i" -eq "N" ]', '[ "$i" -eq "5" ]'),
+    ):
+        variant = (
+            "RUN sed -i -e 's|http://archive.ubuntu.com/ubuntu|http://azure.archive.ubuntu.com/ubuntu|g' /etc/apt/sources.list \\\n"
+            "    && for i in 1 2 3 4 5; do apt-get update && break; \\\n"
+            "        if %s; then \\\n" % test
+            + "            sed -i -e 's|http://azure.archive.ubuntu.com/ubuntu|http://archive.ubuntu.com/ubuntu|g' /etc/apt/sources.list; \\\n"
+            "        fi; \\\n"
+            "    done\n"
+        )
+        check(
+            "a last-iteration fallback written %s is caught" % label,
+            len(offenders(variant)) == 1 and "after the " in offenders(variant)[0][0],
+            offenders(variant),
+        )
+    # CONTROL for the control: the same bracket shapes must NOT manufacture a finding
+    # when the fallback is early, or the fix would just be "report more".
+    early_dbl = (
+        "RUN sed -i -e 's|http://archive.ubuntu.com/ubuntu|http://azure.archive.ubuntu.com/ubuntu|g' /etc/apt/sources.list \\\n"
+        "    && for i in 1 2 3 4 5; do apt-get update && break; \\\n"
+        "        if [[ $i -eq 1 ]]; then \\\n"
+        "            sed -i -e 's|http://azure.archive.ubuntu.com/ubuntu|http://archive.ubuntu.com/ubuntu|g' /etc/apt/sources.list; \\\n"
+        "        fi; \\\n"
+        "    done\n"
+    )
+    check(
+        "an EARLY fallback written [[ -eq ]] still passes",
+        offenders(early_dbl) == [] and fallback_iteration(early_dbl) == 1,
+        (offenders(early_dbl), fallback_iteration(early_dbl)),
     )
 
     # ANTI-VACUITY. Both sequencing checks are guarded on having parsed a number,
