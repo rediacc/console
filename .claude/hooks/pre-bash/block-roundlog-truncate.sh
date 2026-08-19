@@ -65,8 +65,15 @@ SEG='[^;|&]*'
 TRUNCATING=0
 # `>` that is not `>>` and not `2>&1`-style fd plumbing, aimed at the log.
 echo "$CMD" | grep -qE "[^>&2]>[[:space:]]*[^>|&[:space:]]*$RL" && TRUNCATING=1
-# cp / mv / truncate naming the log as an argument of THAT command.
-echo "$CMD" | grep -qE "(^|[[:space:];|&])(cp|mv|truncate)[[:space:]]$SEG$RL" && TRUNCATING=1
+# cp with the log as DESTINATION, i.e. the LAST argument of that segment. `cp <log>
+# /backup/` names the log as a SOURCE, which is a pure read, and blocking it contradicted
+# this file's own "reads are untouched" guarantee two paragraphs up. Backing the log up is
+# the single most useful thing a session can do with it, and this refused it.
+echo "$CMD" | grep -qE "(^|[[:space:];|&])cp[[:space:]]$SEG$RL[[:space:]]*($|[;|&])" && TRUNCATING=1
+# mv and truncate stay position-independent, and NOT by oversight: `mv <log> elsewhere`
+# reads as a source too, but it REMOVES the log from its path, so unlike cp it is
+# destructive in exactly the way this guard exists to catch.
+echo "$CMD" | grep -qE "(^|[[:space:];|&])(mv|truncate)[[:space:]]$SEG$RL" && TRUNCATING=1
 echo "$CMD" | grep -qE "(^|[[:space:];|&])dd[[:space:]]${SEG}of=$SEG$RL" && TRUNCATING=1
 # sed -i on the log, with any flags before the -i.
 echo "$CMD" | grep -qE "sed[[:space:]]+(-[^[:space:]]+[[:space:]]+)*-i$SEG$RL" && TRUNCATING=1
@@ -79,8 +86,22 @@ echo "$CMD" | grep -qE "sed[[:space:]]+(-[^[:space:]]+[[:space:]]+)*-i$SEG$RL" &
 # pipeline returns 0 on a match AND on a miss. It happened not to set the flag in
 # practice, which is worse than failing loudly, because it made the line look
 # tested when the controls were passing for an unrelated reason.
-if echo "$CMD" | grep -qE "(^|[[:space:];|&])tee[[:space:]]$SEG$RL"; then
-    echo "$CMD" | grep -qE "(^|[[:space:];|&])tee[[:space:]]+-[^[:space:]]*a" || TRUNCATING=1
+# Two ways this was wrong, both found in review, both reproduced before fixing:
+#
+#   1. `-[^[:space:]]*a` is not an option test, it is a substring test. It matched
+#      `tee --output-error=warn <log>`, because `--output-error=wa` fits "a dash, some
+#      non-space, an a". That command TRUNCATES, and the guard waved it through as if it
+#      had said -a.
+#   2. The test was unscoped, searching the WHOLE command for any `tee -a`. So
+#      `tee -a other.txt | tee <log>` passed on the strength of a decoy append to an
+#      unrelated file, while the second tee truncated the log.
+#
+# Both are fixed by scoping to the tee invocation that actually targets the log, and by
+# requiring a real option TOKEN: `-a`, a short bundle containing a, or `--append`. The
+# surrounding space/end anchors are what stop `--output-error=warn` matching again.
+TEE_SEG=$(echo "$CMD" | grep -oE "(^|[[:space:];|&])tee[[:space:]]$SEG$RL" | tail -1)
+if [ -n "$TEE_SEG" ]; then
+    echo "$TEE_SEG" | grep -qE "[[:space:]](--append|-[A-Za-z]*a[A-Za-z]*)([[:space:]]|$)" || TRUNCATING=1
 fi
 # An in-process write from python or node. NOT anchorable the way the shell verbs
 # are: the 2026-08-19 incident was a heredoc where the path sat on a DIFFERENT
