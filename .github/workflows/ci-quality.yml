@@ -207,6 +207,15 @@ jobs:
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: .ci/scripts/quality/check_hooks_resolvable.py
 
+      # An apt source rewritten to ONE mirror must carry a fallback to another.
+      # Retrying a single point of failure is still a single point of failure:
+      # on 2026-08-19 a dead azure.archive.ubuntu.com took down four consecutive
+      # CI attempts because every source pointed at it and all five retries hit
+      # the same host. Static text analysis, no network, so it belongs here.
+      - name: Dockerfile mirror resilience
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: .ci/scripts/quality/check_dockerfile_mirror_resilience.py
+
       # A job that READS submodule source must CHECK IT OUT. Tests + Infra /
       # Unit parsed private/renet/pkg/prune/datastore.go with a bare checkout,
       # failed on a file it never fetched, and cancelled 26 siblings; the ENOENT
