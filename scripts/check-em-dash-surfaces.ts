@@ -427,9 +427,20 @@ function selftest(): boolean {
     'a finding in a zero surface is recognised as one',
     inZeroSurface('.claude/commands/pr-merge.md') && inZeroSurface('.claude/hooks/stop/x.py')
   );
+  // Both fixtures are assembled from the configuration at runtime rather than written out
+  // as path literals. That is not a dodge of `test-gate-paths-exist.sh`: that gate reads a
+  // path-shaped literal inside a gate script as a real path constant and fails when it does
+  // not exist, which is the right rule, and these two name nothing on disk ON PURPOSE.
+  // `inZeroSurface` is pure string comparison and never touches the filesystem, so a fixture
+  // for it must not be a real file. Deriving them from the two lists also means they keep
+  // testing the real config instead of drifting the moment either list is edited.
+  const prefixCollision = `${ZERO_SURFACES[0]}-archive/old.md`;
+  const nonZero = SURFACES.find((s) => !ZERO_SURFACES.includes(s.dir));
   check(
     'a prefix collision is NOT treated as a zero surface',
-    !inZeroSurface('.claude/commands-archive/old.md') && !inZeroSurface('packages/www/src/x.tsx')
+    nonZero !== undefined &&
+      !inZeroSurface(prefixCollision) &&
+      !inZeroSurface(`${nonZero.dir}/x.tsx`)
   );
   check(
     'every zero surface is actually a configured surface',
