@@ -1151,6 +1151,16 @@ jobs:
         id: build-www
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: npm run build:www
+        env:
+          # REQUIRED, not a nicety. `downloads.astro` fetches the latest release
+          # from the GitHub API at build time and deliberately THROWS rather than
+          # shipping a downloads page with no downloads on it. Unauthenticated
+          # that call is capped at 60/hour per runner IP, which is shared, so the
+          # build fails intermittently with "403 rate limit exceeded" for reasons
+          # that have nothing to do with the commit under test. Observed live on
+          # run 32223128728, where the error message named this exact fix.
+          # `github.token` is injected automatically and is read-only.
+          GITHUB_TOKEN: ${{ github.token }}
 
       - name: Redirects
         if: ${{ !cancelled() && steps.build-www.outcome == 'success' }}
