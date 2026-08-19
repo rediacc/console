@@ -106,6 +106,7 @@ def offenders(text):
             continue
         last = last_attempt(block)
         guard = fallback_iteration(block)
+        give_up = giveup_iteration(block)
         if last is not None and guard is not None and guard >= last:
             bad.append(
                 (
@@ -114,7 +115,34 @@ def offenders(text):
                     excerpt,
                 )
             )
+        elif guard is not None and give_up is not None and guard >= give_up:
+            bad.append(
+                (
+                    "fallback is guarded on iteration %d but the loop gives up at %d, "
+                    "so it is unreachable" % (guard, give_up),
+                    excerpt,
+                )
+            )
     return bad
+
+
+def giveup_iteration(block):
+    """Iteration N of a `[ "$i" = "N" ]` guard whose body EXITS.
+
+    A fallback can be correctly placed relative to the loop bound and still never
+    run, because an earlier iteration bails out first. Loop bound and fallback
+    position are each fine in isolation; only their relation to the give-up point
+    decides whether the fallback is reachable.
+    """
+    best = None
+    for m in re.finditer(r'\[\s*"?\$\{?\w+\}?"?\s*=\s*"?(\d+)"?\s*\]', block):
+        tail = block[m.end() : m.end() + 200]
+        # `exit` before the guard's `fi`, i.e. inside this branch.
+        branch = tail.split(" fi;")[0]
+        if re.search(r"\bexit\b", branch):
+            n = int(m.group(1))
+            best = n if best is None else min(best, n)
+    return best
 
 
 def last_attempt(block):
@@ -210,6 +238,39 @@ def selftest():
         "an early fallback guard is read as early",
         fallback_iteration(both) == 1 or fallback_iteration(both) is None,
         fallback_iteration(both),
+    )
+
+    # UNREACHABLE BY EARLY EXIT. The fallback sits before the loop bound, so the
+    # bound check above is satisfied, and it still never runs because an earlier
+    # iteration bails out first. Loop bound and fallback position are each fine in
+    # isolation; only their RELATION to the give-up point decides reachability.
+    stranded = (
+        "RUN sed -i -e 's|http://archive.ubuntu.com/ubuntu|http://azure.archive.ubuntu.com/ubuntu|g' /etc/apt/sources.list \\\n"
+        "    && for i in 1 2 3 4 5; do apt-get update && break; \\\n"
+        '        if [ "$i" = "3" ]; then echo giving up >&2; exit 1; fi; \\\n'
+        '        if [ "$i" = "4" ]; then \\\n'
+        "            sed -i -e 's|http://azure.archive.ubuntu.com/ubuntu|http://archive.ubuntu.com/ubuntu|g' /etc/apt/sources.list; \\\n"
+        "        fi; \\\n"
+        "    done\n"
+    )
+    check(
+        "the give-up iteration is read", giveup_iteration(stranded) == 3, giveup_iteration(stranded)
+    )
+    check(
+        "a fallback stranded behind an early exit is caught",
+        len(offenders(stranded)) == 1,
+        offenders(stranded),
+    )
+    check(
+        "and it says the loop gives up first",
+        "gives up at 3" in offenders(stranded)[0][0] if offenders(stranded) else False,
+        offenders(stranded),
+    )
+    # The real file must not trip the new class: its give-up is at 5, fallback at 1.
+    check(
+        "a fallback BEFORE the give-up point still passes",
+        offenders(both) == [] and giveup_iteration(both) is None,
+        (offenders(both), giveup_iteration(both)),
     )
     # The fixed shape must pass, or the gate blocks the very remedy it demands.
     check("a rewrite WITH a fallback passes", offenders(both) == [], offenders(both))
