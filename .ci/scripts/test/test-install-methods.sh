@@ -803,7 +803,20 @@ test_apt_install() {
                 -e 's|http://security\\.ubuntu\\.com/ubuntu|http://azure.archive.ubuntu.com/ubuntu|g' \\
                 \"\$f\"
         done
-        apt-get update -qq
+        # FALL BACK if the Azure mirror is the thing that is down. The comment
+        # above assumed it never is; on 2026-08-19 it refused connections for
+        # ninety minutes and took this test down along with four devcontainer
+        # builds. Rewriting every source to one host turns a co-location
+        # optimisation into a single point of failure.
+        if ! apt-get update -qq; then
+            echo 'azure mirror unreachable; falling back to archive.ubuntu.com' >&2
+            for f in /etc/apt/sources.list /etc/apt/sources.list.d/ubuntu.sources; do
+                [ -f \"\$f\" ] && sed -i \\
+                    -e 's|http://azure\\.archive\\.ubuntu\\.com/ubuntu|http://archive.ubuntu.com/ubuntu|g' \\
+                    \"\$f\"
+            done
+            apt-get update -qq
+        fi
         apt-get install -y -qq curl gnupg ca-certificates >/dev/null 2>&1
 
         # Add GPG key
@@ -1087,7 +1100,20 @@ test_quick_install() {
                 -e 's|http://security\\.ubuntu\\.com/ubuntu|http://azure.archive.ubuntu.com/ubuntu|g' \\
                 \"\$f\"
         done
-        apt-get update -qq
+        # FALL BACK if the Azure mirror is the thing that is down. The comment
+        # above assumed it never is; on 2026-08-19 it refused connections for
+        # ninety minutes and took this test down along with four devcontainer
+        # builds. Rewriting every source to one host turns a co-location
+        # optimisation into a single point of failure.
+        if ! apt-get update -qq; then
+            echo 'azure mirror unreachable; falling back to archive.ubuntu.com' >&2
+            for f in /etc/apt/sources.list /etc/apt/sources.list.d/ubuntu.sources; do
+                [ -f \"\$f\" ] && sed -i \\
+                    -e 's|http://azure\\.archive\\.ubuntu\\.com/ubuntu|http://archive.ubuntu.com/ubuntu|g' \\
+                    \"\$f\"
+            done
+            apt-get update -qq
+        fi
         apt-get install -y -qq curl ca-certificates >/dev/null 2>&1
 
         # Fetch install script and verify its baked default channel matches
