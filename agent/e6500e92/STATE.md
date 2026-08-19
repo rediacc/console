@@ -1,59 +1,58 @@
-## SESSION e6500e92 2026-08-19T19:59:17Z
+## SESSION e6500e92 2026-08-19T20:53:35Z
 
 ## What is true right now
 
-**The operator left**: "let's commit and push all the local changes. I'll not be around."
-Executed in full. Session now runs AUTONOMOUS per in-context tier-3 (decide, log, never
-ask). Branch `0818-1`, PR **#569 OPEN and READY** (non-draft).
+**Operator stepped away** ("commit and push all local changes, I'll not be around"),
+loop runs autonomous per in-context tier-3. Branch `0818-1`, PR **#569 OPEN/READY**.
 
-## EVERYTHING WAS COMMITTED AND PUSHED THIS TURN
+**THREE PUSHES so far this session-turn.** `4c8e5f6dc` (round-4 snapshot, 1249 files) ->
+`20d39b946` (fixed 3 real reds: 35 SVG newlines, cli-application.md sourceHash
+regenerated via `npm run generate:cli-docs` NOT hand-edited, correcting an earlier
+D-FINDING-4 tick that was wrong for that ONE file) -> `f75fa0afd` (31 MORE ruff-check
+findings in `.claude/hooks/context/*.py`, promoted/revealed once the first Static issue
+cleared -- "errors stack". All style-only, verified via the real behavioral suite
+`python3 .claude/hooks/context/test-context-bands.py` = 73/73, not just re-lint).
+package-lock.json restored to npm10 canonical form TWICE (same documented cosmetic
+drift recurring; `npx -y npm@10 install --package-lock-only --ignore-scripts`).
 
-- Console: snapshot `4c8e5f6dc` (1249 files). One drive-by: package-lock.json had the
-  documented npm10/11 cosmetic drift (27 lines), restored via `npx -y npm@10 install
-  --package-lock-only --ignore-scripts`, confirmed BYTE-IDENTICAL to HEAD before staging.
-- `private/account`: 12 locale key-reorders (values verified identical), `e4a995c`,
-  pushed to origin/0818-1 (rides existing account PR #80, no new PR). Pointer bumped in
-  the console snapshot.
-- `private/growth` (NOT a submodule, own GitLab remote, gitignored by console): my
-  i18n_pipeline fixes, `c16f85b`, pushed to its own `main`. Never touches console.
-- `private/generative`: was already clean.
-- PR #569 body refreshed with a Round 17 section; verified via GraphQL that
-  `lastEditedAt` actually moved (not just `updatedAt`, which bumps on any push).
+**Latest run `32300850903`** for push 3, watch `bnxip777h` armed, STILL IN FLIGHT as of
+this write (empty output = not terminal). Check that task before assuming anything.
 
-## MAJOR SELF-CORRECTION on the record
+## CRITICAL: another session (3fe0b2ed) is LIVE on tutorial/cast work RIGHT NOW
 
-Earlier I alarmed the operator that an 11-wave `www-simplification` implementation was
-MISSING from the tree (checked `git status`, saw zero Aug-18 files, concluded loss).
-WRONG -- never checked `git log`. It is commit `97d7c55c5` on THIS branch and IS PR
-#569 (title matches exactly). Reconciled: en.json leaf count 6943 = PR's cited 6916 +
-27 keys tonight's docs-browse work added. NOTHING WAS LOST. One unchased, non-blocking
-loose end: MANIFEST.md describes a bigger final pass (8926->7938 leaves, illustrations
-573->22) that does not match what landed (51 illustration files, smaller leaf cut).
+Operator corrected me directly: I nearly dispatched a duplicate `media-pipeline` worker
+into their non-resumable VM recording pipeline; STOPPED it before it touched anything
+(verified via git status + process check). **DO NOT TOUCH**: `check_tutorial_healthcheck_
+headroom.py`, `.ci/tutorials/**`, any `packages/www/public/assets/tutorials/*.cast`,
+`validate-tutorial-cast-output.js`, `agent/3fe0b2ed/STATE.md`. These show as modified in
+`git status` from THEIR concurrent edits, not mine -- confirmed via `git diff HEAD` before
+every stage this session. `check:ci-tutorial-casts` (Quality/Content) will stay red until
+they finish; that is EXPECTED and not yours to fix. `a6dd08a8`/`2de6d413`/`552b33ec` are
+owned by 3fe0b2ed -- the worklist itself refuses edits to them ("never tick another
+session's tracking").
 
-## Two things running in the background right now
+## Wave C naturalization batch: bg pid `1152389`, `scratchpad/wave-c-naturalize.log`
 
-- **New CI run `32295385671`** for the push. Terminal-state watch armed, task
-  `b7muswdss`, STILL IN FLIGHT as of this write (empty output = not terminal yet).
-  Do NOT re-arm redundantly; check the task output first.
-- **Wave C naturalization batch**, bg pid `1152389`, **~1h22m elapsed, 21/36 lang-surface
-  combos**, log `scratchpad/wave-c-naturalize.log`. Still healthy. Its output writes to
-  ALREADY-COMMITTED files, so nothing is lost if a session boundary lands mid-batch --
-  the next commit just needs to pick up whatever it produced by then. THREE known safe
-  failure classes seen repeatedly (model inventing an unrequested key, model bleeding
-  content from a different item's group, raw malformed JSON) -- all non-fatal to the
-  loop, all leave 0 corruption, all need a per-item retry once `naturalize-status` gives
-  the real remaining list.
+**31/36 combos, ~2h17m elapsed**, healthy, close to done. When `===ALL DONE===` appears:
+`npm run i18n:naturalize-status` for the real remaining list, retry surviving skips
+(3 known-safe failure classes: invented sibling key, cross-item content bleed, raw
+malformed JSON -- all leave 0 corruption), THEN tick C2c/#e17863bd, run C2e
+`i18n:generate-client -w @rediacc/www`, then C-V verify incl. layout-overflow x13.
 
-## Dev server MINE on 4325 (restarted once tonight after a stale-store crash)
+## Staging discipline this whole turn
 
-Do not start another, do not kill it.
+Every commit surgically staged (`git add <exact files>`, never `-A` again after the
+first snapshot); every borderline file checked with `git diff HEAD` before staging to
+confirm it's genuinely mine, not another writer's concurrent edit.
 
 ## Next action
 
-1. Check `b7muswdss`'s output / re-poll `gh run view 32295385671`. If terminal and green:
-   the finish sequence is now Claude review (fires automatically, non-draft + green) ->
-   resolve threads -> `CronDelete 7cb9b31f`. If red: diagnose per the babysitter agent
-   file (`.claude/agents/pr-babysitter.md`), fix, commit, push, re-arm.
-2. Check naturalize batch: `ps -o etime= -p 1152389`. When done, run
-   `npm run i18n:naturalize-status`, retry every surviving skip, then commit again.
-3. Never merge, never push `main` -- `/pr-merge` is the operator's call even in absence.
+1. Check `bnxip777h` output / `gh run view 32300850903`. If red: diagnose per
+   `.claude/agents/pr-babysitter.md` (complete job logs, suspect own commits, "errors
+   stack" so re-run the SAME local gate after any fix, do not assume one round clears it).
+2. Check naturalize batch: `ps -o etime= -p 1152389`. Near done; when finished, run the
+   C2c/C2e/C-V chain.
+3. Once CI green: fresh Claude review fires automatically (non-draft, marker stale from
+   3 pushes), resolve threads, `CronDelete 7cb9b31f`. Never merge, never push `main`.
+4. STILL do not touch tutorial/cast files even after everything else is green -- that
+   gate is a different session's to close.
