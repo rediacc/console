@@ -535,6 +535,21 @@ check 2 pre-bash/block-roundlog-truncate.sh "$(bash_json "echo hi > $RLOG")" "ro
 check 2 pre-bash/block-roundlog-truncate.sh "$(bash_json "sed -i s/a/b/ $RLOG")" "roundlog: sed -i is blocked"
 check 0 pre-bash/block-roundlog-truncate.sh "$(bash_json "echo hi >> $RLOG")" "roundlog: appending passes (it cannot truncate)"
 check 0 pre-bash/block-roundlog-truncate.sh "$(bash_json "grep -n STATUS $RLOG")" "roundlog: reading passes"
+# THE OVER-BLOCK REGRESSIONS. Found in review, then reproduced twice against the
+# live hook within minutes: the truncating verbs were matched ANYWHERE in the
+# command rather than anchored to the log, so `truncate` hit this script's own
+# filename and a bare `cp`/`mv` hit a copy of unrelated files that merely shared
+# a command line with a round-log READ. The guard blocked `cat <log>`. Each case
+# below is one of those, and each has a still-blocks twin above or below it, so
+# the fix cannot be "loosen until quiet".
+check 0 pre-bash/block-roundlog-truncate.sh "$(bash_json "cp /tmp/a /tmp/b && grep STATUS $RLOG")" "roundlog: an unrelated cp beside a read passes"
+check 0 pre-bash/block-roundlog-truncate.sh "$(bash_json "grep STATUS $RLOG && mv /tmp/x /tmp/y")" "roundlog: an unrelated mv beside a read passes"
+check 0 pre-bash/block-roundlog-truncate.sh "$(bash_json "ls .claude/hooks/pre-bash/block-roundlog-truncate.sh; cat $RLOG")" "roundlog: the hook's OWN filename beside a read passes"
+check 0 pre-bash/block-roundlog-truncate.sh "$(bash_json "tee -a $RLOG < /tmp/x")" "roundlog: tee -a passes (it cannot truncate)"
+check 2 pre-bash/block-roundlog-truncate.sh "$(bash_json "cp /tmp/x $RLOG")" "roundlog: cp ONTO the log is blocked"
+check 2 pre-bash/block-roundlog-truncate.sh "$(bash_json "mv /tmp/x $RLOG")" "roundlog: mv ONTO the log is blocked"
+check 2 pre-bash/block-roundlog-truncate.sh "$(bash_json "tee $RLOG < /tmp/x")" "roundlog: tee WITHOUT -a is blocked"
+check 2 pre-bash/block-roundlog-truncate.sh "$(bash_json "truncate -s 0 $RLOG")" "roundlog: truncate on the log is blocked"
 check 0 pre-bash/block-roundlog-truncate.sh "$(bash_json "worklist.py --roundlog 0818-1")" "roundlog: the sanctioned verb passes"
 check 0 pre-bash/block-roundlog-truncate.sh "$(bash_json 'npm run ci')" "roundlog: an unrelated command is untouched"
 unset CLAUDE_PROJECT_DIR
