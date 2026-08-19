@@ -19,7 +19,7 @@
  * PRE-MIRRORED coordinates - do not "improve" that to inset-inline-start, or
  * the mirror applies twice and Arabic silently flips back to LTR.
  */
-import { ROLE_ORDER, SOLUTION_PAGES, type SolutionRole } from '../../config/solution-pages';
+import { SOLUTION_PAGES, type SolutionRole } from '../../config/solution-pages';
 
 export type ConstellationPreset = 'full' | 'compact';
 

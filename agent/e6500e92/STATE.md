@@ -1,55 +1,62 @@
-## SESSION e6500e92 2026-08-18T23:16:18Z
+## SESSION e6500e92 2026-08-18T23:56:25Z
 
-# pr-babysit 0818-1 LIVE, round 8 fixes UNCOMMITTED and about to be pushed.
+# pr-babysit 0818-1 LIVE, round 10 pending. Two PRs open. Working tree CLEAN.
 
 Round log outranks this file:
 `/home/muhammed/.claude/projects/-home-muhammed-monorepo-console/reports/pr-babysit-0818-1.md`
-(wave header + STATUS block first). `.claude/agents/pr-babysitter.md` is the mechanics. I am
-the babysitter, the operator is the principal, so tier-3 items are DECIDED and logged.
+(read its wave header + STATUS block first). `.claude/agents/pr-babysitter.md` is the
+mechanics. I am the babysitter, the operator is the principal, so tier-3 items are DECIDED
+and logged under DECISIONS, never asked.
 
-## PRs and heads
+## PRs and head
 
-- **console rediacc/console#569**, DRAFT, branch `0818-1`, pushed head **`603abd7f`**.
-- **account rediacc/account#80**, head `d4094cc7`, review answered, its gate verified by
+- **console rediacc/console#569**, DRAFT, branch `0818-1`, head **`58f3f0ba`**, pushed.
+  Body refreshed, `lastEditedAt` 23:55:11Z. The PR-Description gate reads `lastEditedAt`,
+  NOT `updatedAt`, and a push bumps only the latter, so verify with the GraphQL query.
+- **account rediacc/account#80**, head `d4094cc7`, review answered; its gate verified by
   running `check-review-report-replies.sh` against the live PR, exit 0.
-- 8 commits so far, from `97d7c55c` (snapshot, 1,168 files, net -19,790) to `603abd7f`.
+- 11 commits, `97d7c55c` (snapshot, 1,168 files, net -19,790) through `58f3f0ba`.
 
-## UNCOMMITTED right now: round 8's fixes, 26 files
+## CI
 
-Fixing run 32193329425's two reds (`Quality / i18n`, `Quality / Code`). All verified locally:
-`check:format`, `em-dash-surfaces`, `dead-css`, `css-dom-refs`, `layout-overflow`,
-`search-index`, `docs-structure-parity`, `hydration-clean`, `tsc` (www AND cli) all exit 0.
-**`check:lint` is still running** (an ~8 minute eslint pass); it went 17 problems to 3 to an
-expected 0. Do not commit until it confirms.
+Run **32199152941** on `58f3f0ba` IN FLIGHT. Watch armed as background task `b1cb1x0h3`;
+heartbeat cron `76e2b5f2` at :23. Reds per round so far: 2, 3, 1, 1, 1, 1, 2, 1. **Every
+round's fix has held in the following run**, confirmed in that run's log.
 
-The 26 files are: regenerated `public/search-index*.json` (14), two drained
-`docs-structure-parity` BASELINE entries, `eslint.config.js` (node globals for
-`packages/www/src/plugins/*.mjs`), and the lint fixes in `card-fonts.ts`,
-`check-tutorial-card-fonts.ts`, `check-docker-image-freshness.ts`, `check-layout-overflow.ts`,
-`Overlay.tsx`, plus `react-lint`'s four React files.
+**Count CANCELLED separately every time.** A watchdog-cancelled job did not pass, it did not
+run, and it is invisible to a `conclusion=="failure"` filter. Runs have been ending
+`cancelled` with one real red plus several cancelled siblings.
 
-## The four lint findings each had a DIFFERENT right answer
+## Everything was green LOCALLY before this push
 
-Worth knowing before touching them again: delete an unused parameter (config policy is
-delete, not underscore); correct a lying type (`Record<string, string>` hid that indexing
-yields undefined at runtime); restructure to a length test when the checker will not accept a
-nullish guard; and DECLINE the rule where its own suggestion changes behaviour
-(`Overlay.tsx`: `||` treats an empty title as absent, `??` would render an empty header).
-None of them was a suppression.
+typecheck, check:lint, lint:unused, check:ci-dead-bash, check:format, em-dash-surfaces,
+tsc (www and cli), knip, hydration-clean, dead-css, css-dom-refs, layout-overflow,
+search-index, docs-structure-parity, cli-contract, translation-hashes, deps.
+
+## Two traps this wave paid for, both still live risks
+
+1. **`Quality / Code` runs FOUR checks** (eslint, knip, dead-bash, typecheck). Clearing one
+   promotes the next, so a green eslint does not mean that job passes. Run
+   `npm run typecheck` too: per-package `tsc` is NOT the same gate and missing it cost a round.
+2. **Changing `packages/cli/src/i18n/locales/**` invalidates THREE generated trees**, each
+   gated in a different lane: `packages/shared/src/cli-contract/data/**`
+   (`generate:cli-contract -w @rediacc/cli`), `.claude/skills/rdc/reference.md`
+   (`generate-skill-reference.ts`, writes to STDOUT), and
+   `packages/www/src/content/docs/<lang>/cli-application.md` (`generate:cli-docs -w @rediacc/www`).
 
 ## Next action
 
-1. Read `/tmp/claude-1000/lint5.out` for `LINT-EXIT`. If 0, stage SURGICALLY (`git add -A` is
-   banned post-snapshot), commit, refresh the PR body so it GENUINELY changes (the gate reads
-   `lastEditedAt`, not `updatedAt`), push once, then arm a terminal-state watch with the
-   `until [ status = completed ]` poll in a background task. Never `gh run watch`.
+1. Re-check the run DIRECTLY (`gh api repos/rediacc/console/actions/runs/32199152941`)
+   rather than trusting the watch, which can drop silently. Re-arm freely.
 2. Per red: read the COMPLETE failed-step log via
-   `gh api repos/rediacc/console/actions/jobs/<id>/logs`. Count CANCELLED separately; a
-   cancelled job did not pass, it did not run.
+   `gh api repos/rediacc/console/actions/jobs/<id>/logs` before diagnosing. Fix at root,
+   plant a control, stage SURGICALLY (`git add -A` is banned post-snapshot), refresh the PR
+   body so it GENUINELY changes, push once, re-arm.
 3. At green: `gh pr ready 569`, then the Claude review, then reply substantively to every
    thread and resolve them. **Never merge, never push `main`.** Tear down cron `76e2b5f2`
    and say so in the final report.
 
-Still open after that: `#2e0695cf`, steps 6-8 of `agent/PLAN-cli-em-dash-lint-gate.md`
-(add `packages/cli/{src/i18n/locales,scripts}` to the em-dash gate at ZERO, baseline the
-`packages/cli/src` JSDoc residue), deliberately sequenced after green.
+Still open after green: `#2e0695cf`, steps 6-8 of `agent/PLAN-cli-em-dash-lint-gate.md` (add
+`packages/cli/{src/i18n/locales,scripts}` to the em-dash gate at ZERO, baseline the
+`packages/cli/src` JSDoc residue). Deliberately sequenced after green so a gate edit does not
+muddy attribution of the next red.

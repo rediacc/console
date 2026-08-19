@@ -1,7 +1,6 @@
 import process from 'node:process';
 import { SITE_LOCALES } from '@rediacc/locales';
 import { loadManifest } from '../../scripts/lib/update-video-manifest.ts';
-import type { Language } from '../i18n/types';
 
 /**
  * CDN base URL for published videos (Cloudflare R2 + media.rediacc.com).

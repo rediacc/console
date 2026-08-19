@@ -63,13 +63,6 @@ export type SolutionCategory =
  */
 export type SolutionRole = 'copy' | 'test' | 'recover' | 'property';
 
-export const ROLE_ORDER = [
-  'copy',
-  'test',
-  'recover',
-  'property',
-] as const satisfies readonly SolutionRole[];
-
 export interface SolutionPageConfig {
   /** Translation content key: pages.solutionPages.<contentKey> */
   contentKey: string;
