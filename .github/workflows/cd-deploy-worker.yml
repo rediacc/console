@@ -101,6 +101,12 @@ jobs:
         env:
           NODE_OPTIONS: '--max-old-space-size=4096'
           APP_VERSION: ${{ inputs.version }}
+          # Same reason as the CI-side www build: downloads.astro fetches the
+          # latest release at build time and THROWS rather than shipping an empty
+          # downloads page, and unauthenticated that call is capped at 60/hour
+          # per shared runner IP. CI hit it live on run 32223128728; this path had
+          # the identical gap and would fail a DEPLOY the same way, which is worse.
+          GITHUB_TOKEN: ${{ github.token }}
           # Single global CDN domain for tutorial/solution videos -- same value
           # for edge, stable, and PR previews. See .ci/docs/r2-media-setup.md.
           PUBLIC_VIDEO_CDN_BASE_URL: https://media.rediacc.com
