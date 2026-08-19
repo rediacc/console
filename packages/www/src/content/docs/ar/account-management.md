@@ -2,9 +2,11 @@
 title: إدارة الحساب
 description: المؤسسات والفرق والأعضاء والاشتراكات في Rediacc.
 category: Guides
+tags:
+  - account
 order: 12
 language: ar
-sourceHash: 9d77ef9087375fbc
+sourceHash: d84a733762750312
 sourceCommit: 23543669cd22bce3f14d69a0886bac8a12061412
 ---
 

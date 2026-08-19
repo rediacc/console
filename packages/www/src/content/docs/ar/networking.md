@@ -4,9 +4,12 @@ description: >-
   كشف الخدمات باستخدام الوكيل العكسي، وعلامات Docker، وشهادات TLS، وDNS، وتوجيه
   منافذ TCP/UDP.
 category: Guides
+tags:
+  - networking
+  - containers
 order: 6
 language: ar
-sourceHash: "89a755491d11fbd6"
+sourceHash: "6c5538c8919e9089"
 sourceCommit: 20f014619af1ee41e75cd46a3c8e4abc5add0983
 ---
 

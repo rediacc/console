@@ -2,9 +2,12 @@
 title: Seguridad y salvaguardas para agentes de IA
 description: 'Cómo la CLI de Rediacc evita que los asistentes de codificación con IA filtren secretos, sobreescriban credenciales o escalen privilegios. Compuertas de conocimiento, redacción, anulaciones verificadas por ascendencia y un registro de auditoría encadenado por hash.'
 category: Concepts
+tags:
+  - ai-agents
+  - security
 order: 35
 language: es
-sourceHash: "5dac7c4162cbbb8e"
+sourceHash: "e008783008d8e887"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 

@@ -98,11 +98,17 @@
     "title": "Kontakt aufnehmen"
   },
   "documentation": {
-    "theme": {
-      "label": "Erscheinungsbild",
-      "light": "Hell",
-      "dark": "Dunkel",
-      "auto": "Automatisch"
+    "browse": {
+      "clear": "Filter zurücksetzen",
+      "description": "Jede Anleitung, jedes Tutorial und jede Referenz an einem Ort.",
+      "empty": "Keine Dokumente entsprechen diesem Filter.",
+      "filterHeading": "Filteroptionen",
+      "filterLabel": "Nach Kategorie filtern",
+      "searchLabel": "Diese Dokumentation durchsuchen",
+      "searchPlaceholder": "Titel und Beschreibungen durchsuchen",
+      "showDescription": "Beschreibung anzeigen",
+      "title": "Dokumentation",
+      "topicLabel": "Nach Thema filtern"
     },
     "categories": {
       "concepts": "Konzepte",
@@ -115,14 +121,36 @@
     "cliReference": "CLI-Referenz",
     "cliReferenceLabel": "CLI-Referenz:",
     "copied": "Kopiert!",
-    "copyCode": "Code kopieren",
     "copyAsMarkdown": "Als Markdown kopieren",
+    "copyCode": "Code kopieren",
     "copyFullPageAriaLabel": "Gesamte Seite als Markdown kopieren",
     "openInNewTab": "In neuem Tab öffnen",
     "searchDocs": "Dokumentation durchsuchen",
     "subcategories": {
       "advanced": "Erweitert",
       "essentials": "Grundlagen"
+    },
+    "tags": {
+      "account": "Konten",
+      "aiAgents": "KI-Agenten",
+      "backup": "Backup",
+      "cli": "CLI",
+      "compliance": "Compliance",
+      "containers": "Container",
+      "forking": "Forken",
+      "gettingStarted": "Erste Schritte",
+      "migration": "Migration",
+      "networking": "Netzwerke",
+      "operations": "Operationen",
+      "repositories": "Repositories",
+      "security": "Sicherheit",
+      "storage": "Speicher"
+    },
+    "theme": {
+      "auto": "Automatisch",
+      "dark": "Dunkel",
+      "label": "Erscheinungsbild",
+      "light": "Hell"
     }
   },
   "footer": {
@@ -193,9 +221,9 @@
     }
   },
   "navigation": {
-    "moreOptions": "Weitere Optionen",
     "account": "Konto",
     "blog": "Blog",
+    "browseAllDocs": "Alle Dokumente ansehen",
     "builtForYou": "Für Sie",
     "builtForYourRole": "Für Ihre Rolle",
     "contact": "Kontakt",
@@ -210,7 +238,9 @@
     "home": "Startseite",
     "install": "Installieren",
     "languageSelectionMenu": "Sprachauswahlmenü",
+    "learn": "Lernen",
     "login": "Einloggen",
+    "moreOptions": "Weitere Optionen",
     "partners": "Partner",
     "personas": {
       "ai-agent": {
@@ -514,14 +544,14 @@
     "disasterRecovery": {
       "enterpriseCta": {
         "button": "Zum Vertrieb",
-        "description": "Wenn keiner unserer Pläne passt: Erzählen Sie uns, was Sie laufen haben. Wir finden eine Lösung.",
-        "heading": "Ungewöhnliche Infrastruktur? Sagen Sie Bescheid."
+        "description": "Keiner passt? Sagen Sie uns, wie Ihre Infrastruktur aussieht. Wir finden eine Lösung.",
+        "heading": "Ungewöhnlich? Sagen Sie Bescheid."
       },
       "faq": {
         "heading": "Häufig gestellte Fragen",
         "items": [
           {
-            "answer": "Ja, Sie können Ihren Plan jederzeit ändern. Upgrades werden sofort wirksam und Downgrades gelten zu Beginn Ihres nächsten Abrechnungszeitraums.",
+            "answer": "Ja, jederzeit. Upgrades sofort aktiv. Downgrades greifen mit der nächsten Abrechnung.",
             "question": "Kann ich meinen Plan upgraden oder downgraden?"
           },
           {
@@ -529,7 +559,7 @@
             "question": "Welche Zahlungsmethoden akzeptieren Sie?"
           },
           {
-            "answer": "Ja. Recovery-Analyse und Recovery-Programm starten beide mit 14 Tagen kostenlos. Sie hinterlegen bei der Anmeldung eine Karte und zahlen erst, wenn der Testzeitraum endet. Kündigen Sie vorher, zahlen Sie nichts.",
+            "answer": "Ja. Recovery-Analyse und Recovery-Programm: je 14 Tage kostenlos. Zahlungsmittel bei Anmeldung, abgerechnet wenn die Trial endet. Kündigen Sie vorher – kostenlos.",
             "question": "Gibt es eine kostenlose Testversion?"
           },
           {
@@ -537,15 +567,15 @@
             "question": "Was ist im Support enthalten?"
           },
           {
-            "answer": "Die Wiederherstellungszeit hängt von Ihrem Vertrag ab. Mit Recovery-Analyse kehren Sie zu jedem Punkt der letzten 24 Stunden zurück. Recovery-Programm garantiert eine Wiederherstellung in 4 Stunden. Recovery-Retainer bringt Sie in 15 bis 60 Minuten wieder online, nach Ihrem eigenen Zeitplan.",
+            "answer": "Je nach Plan. Recovery-Analyse stellt jeden Punkt der letzten 24 Stunden wieder her. Recovery-Programm: 4 Stunden garantiert. Recovery-Retainer: 15 bis 60 Minuten, nach Ihrem Zeitplan.",
             "question": "Wie schnell kann ich mich von einer Katastrophe erholen?"
           },
           {
-            "answer": "Ja, das ist mir persönlich wichtig. Wir führen bei jedem Backup einen Test-Restore durch. So wissen Sie: Es funktioniert, bevor Sie es brauchen.",
+            "answer": "Ja, mir persönlich sehr wichtig. Bei jedem Backup: Test-Restore. Funktioniert garantiert, lange bevor Sie es brauchen.",
             "question": "Werden meine Backups tatsächlich getestet und verifiziert?"
           },
           {
-            "answer": "Ihre Daten bleiben verschlüsselt an Ihrem Ort. Sie behalten die volle Kontrolle. Selbst wenn unser Service ausfällt – Sie können jederzeit auf Ihre Backups zugreifen.",
+            "answer": "Daten verschlüsselt, Kontrolle bei Ihnen. Selbst wenn unser Service ausfällt – Ihre Backups sind immer erreichbar.",
             "question": "Was passiert mit meinen Daten, wenn der Dienst ausfällt?"
           }
         ]
@@ -555,7 +585,7 @@
           "startFree": "Kostenlos starten",
           "talkToSales": "Mit Vertrieb sprechen"
         },
-        "description": "Installieren Sie Rediacc und fahren Sie das erste Backup in unter 10 Minuten hoch.",
+        "description": "Installieren Sie Rediacc und starten Sie das erste Backup in unter 10 Minuten.",
         "heading": "Schneller wieder online"
       },
       "hero": {
@@ -568,14 +598,14 @@
         "title": "Disaster-Recovery-Preise | Rediacc"
       },
       "plans": {
+        "assessment": {
+          "name": "Recovery-Analyse"
+        },
         "program": {
           "name": "Recovery-Programm"
         },
         "retainer": {
           "name": "Recovery-Retainer"
-        },
-        "assessment": {
-          "name": "Recovery-Analyse"
         }
       },
       "psTeaser": {
@@ -584,15 +614,15 @@
         "viewDetails": "Services anschauen"
       },
       "strategy": {
-        "copy": "Starten Sie dort, wo Sie stehen. Die meisten Teams bleiben länger dort, als sie erwarten. Steigen Sie nur um, wenn eine langsame Wiederherstellung dem Unternehmen tatsächlich etwas kostet. Immer dasselbe Produkt. Nutzen Sie Kubernetes? Ganze Cluster wechseln genauso, mit einem kurzen, kontrollierten Cutover.",
+        "copy": "Starten Sie dort, wo Sie sind. Die meisten Teams bleiben länger als erwartet. Upgraden Sie erst, wenn langsame Recovery dem Business wehtut. Ein Produkt für alle. Mit Kubernetes? Cluster wechseln im Gleichtakt – mit gemessenem Cutover.",
         "distribution": [
-          "Recovery-Analyse zu Recovery-Programm: Ihre Backups liegen an einem zweiten Standort. Jede Änderung wird sofort gesichert. Sie erhalten ein garantiertes 4-Stunden-Fenster, um wieder online zu sein. Ein fester Ansprechpartner im Support ist dabei.",
-          "Recovery-Programm zu Recovery-Retainer: Sie legen fest, wie schnell Sie wieder online sein müssen. Dieses Fenster reicht von 15 bis 60 Minuten. Die Wiederherstellung läuft in einer vollständig getrennten Umgebung, die Ihre Live-Systeme nicht berühren können, und persönlicher Support ist da, wenn es darauf ankommt."
+          "Recovery-Analyse bis Recovery-Programm: Backups am zweiten Standort. Jede Änderung sofort gesichert. 4 Stunden online-Garantie. Support-Kontakt dabei.",
+          "Recovery-Programm bis Recovery-Retainer: Ihr Tempo – 15 bis 60 Minuten. Recovery in isolierter Umgebung, Live-Systeme unberührt. Support wenn's zählt."
         ],
         "heading": "Für jede Betriebsphase"
       },
       "technicalSummary": {
-        "description": "Geben Sie Ihrem Plattformteam einen genauen Überblick über die Erwartungen an Durchsatz, Aufbewahrung und Wiederherstellung.",
+        "description": "Geben Sie Ihrem IT-Team Klarheit: Speichergrenzen und Recovery-Ziele.",
         "heading": "Technische Grenzen auf einen Blick",
         "metrics": [
           {
@@ -608,8 +638,13 @@
             "label": "Aufbewahrung des Audit-Protokolls"
           }
         ],
-        "recoveryNote": "RPO (Recovery Point Objective): Wie viele Daten Sie sich leisten können, zu verlieren – gemessen in der Zeit. Beispielsweise bedeutet ein RPO von 15 Minuten, dass Sie möglicherweise bis zu 15 Minuten der letzten Änderungen verlieren. \n\nRTO (Recovery Time Objective): Wie schnell Sie nach einer Katastrophe wieder online sein müssen. Beispielsweise bedeutet eine RTO von 4 Stunden, dass Ihre Systeme innerhalb von 4 Stunden wiederhergestellt werden.",
+        "recoveryNote": "RPO (Recovery Point Objective): Wie viel Datenverlust ist akzeptabel – gemessen in Zeit. Beispiel: Ein RPO von 15 Minuten bedeutet, bis zu 15 Minuten der letzten Änderungen können verloren gehen.\n\nRTO (Recovery Time Objective): Wie schnell müssen Sie wieder online sein – gemessen in Zeit. Beispiel: Eine RTO von 4 Stunden bedeutet, Ihre Systeme laufen spätestens nach 4 Stunden.",
         "values": {
+          "assessment": {
+            "auditLogs": "30 Tage",
+            "rpo": "~15 Minuten",
+            "rto": "Point-in-Time-Wiederherstellung"
+          },
           "program": {
             "auditLogs": "90 Tage",
             "rpo": "~5 Minuten (kontinuierlich)",
@@ -617,13 +652,8 @@
           },
           "retainer": {
             "auditLogs": "1+ Jahr",
-            "rpo": "Benutzerdefiniert (nahe Null)",
-            "rto": "15–60 Minuten (benutzerdefiniert)"
-          },
-          "assessment": {
-            "auditLogs": "30 Tage",
-            "rpo": "~15 Minuten",
-            "rto": "Point-in-Time-Wiederherstellung"
+            "rpo": "Individuell (nahe null)",
+            "rto": "15–60 Minuten (individuell)"
           }
         }
       },
@@ -634,14 +664,14 @@
         "contactUs": "Kontaktieren Sie uns",
         "contactUsSub": "Individuelle Limits & Konditionen",
         "cta": {
+          "assessment": {
+            "primary": "Gratis testen"
+          },
           "program": {
-            "primary": "Planen Sie einen Implementierungsanruf"
+            "primary": "Kostenlos starten"
           },
           "retainer": {
-            "primary": "Planen Sie eine Executive-Demo"
-          },
-          "assessment": {
-            "primary": "Legen Sie los"
+            "primary": "Demo buchen"
           }
         }
       }
@@ -1410,7 +1440,7 @@
         "benefits": {
           "items": [
             {
-              "description": "Keine Cloud-Aufschläge, Pro-Sitz-Lizenzen oder Egress-Gebühren. Betreiben auf Hardware, die Sie besitzen.",
+              "description": "Keine Cloud-Aufschläge, Pro-Sitz-Lizenzen oder Egress-Gebühren. Betrieb auf Ihrer bereits vorhandenen Hardware.",
               "icon": "trend-up",
               "title": "60% niedrigere TCO"
             },
@@ -1420,22 +1450,22 @@
               "title": "Minuten, nicht Stunden"
             },
             {
-              "description": "Ihre Daten bleiben auf Ihrer Infrastruktur, in offenen Formaten. Anbieter wechseln, selbst verwalten oder morgen migrieren: Ihre Entscheidung. Das gilt jetzt auch für Kubernetes-Cluster.",
+              "description": "Daten bleiben auf Ihrer Infrastruktur, in offenen Formaten. Anbieter wechseln, selbst verwalten, morgen migrieren — alles Ihre Entscheidung. Das gilt jetzt auch für Kubernetes-Cluster.",
               "icon": "lock",
               "title": "Kein Vendor Lock-in"
             }
           ],
           "overline": "STRATEGISCHER WERT",
-          "title": "Das ermöglicht Rediacc für Ihre Infrastruktur"
+          "title": "Was Rediacc für Ihren Stack bedeutet"
         },
         "bottomCta": {
-          "description": "Vereinbaren Sie eine 30-minütige Architekturüberprüfung mit unserem Team. Wir zeigen Ihnen TCO-Projektionen für Ihre spezifische Infrastruktur.",
+          "description": "Vereinbaren Sie eine 30-minütige Architektur-Überprüfung mit unserem Team — inklusive TCO-Projektionen für Ihr Setup.",
           "primaryCta": "Demo vereinbaren",
           "title": "In Aktion sehen"
         },
         "calculator": {
           "annualLabel": "Jährliche Gesamtkosten",
-          "description": "Passen Sie die Regler an Ihre Situation an und sehen Sie, wie Rediacc im Vergleich zu dem abschneidet, was Sie heute zahlen.",
+          "description": "Passen Sie die Regler an Ihre Situation an. Sehen Sie, wie Rediacc gegen Ihre heutige Rechnung abschneidet.",
           "footnote": "Schätzungen basieren auf branchen-üblichen TCO-Modellen, die Self-Hosted-Infrastruktur mit gleichwertigen Cloud-Services vergleichen. Tatsächliche Einsparungen hängen von Workload, Konfiguration und Skalierung ab.",
           "headerTitle": "Berechnen Sie Ihre Infrastruktur-Einsparungen",
           "overline": "DIE ECHTEN KOSTEN",
@@ -1463,7 +1493,7 @@
         },
         "comparison": {
           "capabilityLabel": "Fähigkeit",
-          "description": "Enterprise-Backup-Tools berechnen pro Socket, pro VM oder pro TB. Rediacc berechnet pro Maschine — und läuft auf Ihrer Hardware.",
+          "description": "Enterprise-Backup-Tools berechnen pro Socket, pro VM oder pro TB. Rediacc rechnet pro Maschine ab — auf Ihrer Hardware.",
           "features": [
             {
               "name": "Self-Hosted / On-Premises",
@@ -1500,15 +1530,15 @@
         "hero": {
           "primaryCta": "Demo vereinbaren",
           "subtitle": "Infrastruktur ohne Cloud-Markup. Keine Pro-Sitz-Preise. Recovery in Minuten, nicht Stunden.",
-          "title": "Infrastruktur-TCO um 60% senken. Auf Ihrer Hardware skalieren."
+          "title": "Infrastruktur-TCO um 60 % senken. Auf Ihrer Hardware skalieren."
         },
         "meta": {
-          "description": "Infrastruktur auf Ihrer Hardware: 60% Kostenersparnis, volle Unabhängigkeit, Recovery in Minuten.",
+          "description": "Infrastruktur auf Ihrer eigenen Hardware schützen. 60 % TCO-Ersparnis, volle Unabhängigkeit, Wiederherstellung in Minuten.",
           "keywords": "CTO, Infrastruktur-TCO, Self-Hosted, Notfallwiederherstellung, Vendor Lock-in, btrfs-Snapshots, Compliance, Skalierbarkeit",
           "title": "Für CTOs: TCO um 60% sparen | Rediacc"
         },
         "problem": {
-          "description": "Ihre Cloud-Rechnung wächst um 15–20% jedes Jahr. Pro-Sitz-Lizenzen werden teurer, je mehr Team-Mitglieder Sie einstellen. Wenn es zu einem Ausfall kommt, dauert die 'sofortige Wiederherstellung' Stunden — das Tool versprach minütliche RPO, liefert aber tatsächlich Tage. Und mit jeder Vertragsverlängerung werden die Vendor-Kosten höher.",
+          "description": "Ihre Cloud-Rechnung wächst jedes Jahr um 15–20 %. Pro-Sitz-Lizenzen bestrafen Teamwachstum. Wenn etwas ausfällt, dauert die 'sofortige Wiederherstellung' trotzdem Stunden — weil das Tool zwar Minuten-RPO verspricht, aber Tage liefert. Und mit jeder Vertragsverlängerung wird der Vendor-Lock teurer.",
           "overline": "DAS KERNPROBLEM",
           "statCallouts": [
             {
@@ -1562,7 +1592,7 @@
         "shareWithTeam": {
           "ctaSlug": "for-devops",
           "ctaText": "DevOps-Vertiefung teilen",
-          "description": "Ihre Engineers brauchen CLI-first und Instant-Umgebungen. Teilen Sie die technische Vertiefung.",
+          "description": "Ihre Engineers lieben CLI-first-Workflows und sofort verfügbare Umgebungen. Teilen Sie den technischen Deep-Dive.",
           "overline": "MIT IHREM TEAM TEILEN",
           "title": "Für Ihr DevOps-Team"
         },
@@ -1596,7 +1626,7 @@
           }
         ],
         "techDiff": {
-          "description": "Rediacc läuft auf Ihrer Hardware und nutzt btrfs Copy-on-Write-Snapshots für sofortige Backups und Wiederherstellung. Jeder Snapshot ist auf Dateisystemebene unveränderlich — Ransomware kann nicht verschlüsseln, was der Kernel schützt. Statt Terabytes zu restaurieren, wechseln Sie einfach einen Zeiger.",
+          "description": "Rediacc läuft auf Ihrer Hardware und nutzt btrfs Copy-on-Write-Snapshots für sofortige Backups und Wiederherstellung. Jeder Snapshot ist auf Dateisystem-Ebene unveränderlich — Ransomware kann nicht verschlüsseln, was der Kernel schützt. Recovery heißt: einen Zeiger bewegen, nicht Terabytes restaurieren.",
           "overline": "ARCHITEKTUR",
           "rediaccLabel": "Rediacc (selbst gehostet)",
           "rows": [
@@ -1609,16 +1639,16 @@
               "traditional": "Recovery: Stunden für Cloud-Backup-Wiederherstellung"
             },
             {
-              "rediacc": "Offenes Format: Ihre Daten auf Ihrem Dateisystem",
+              "rediacc": "Offenes Format: Daten auf Ihrem lokalen Dateisystem",
               "traditional": "Vendor Lock-in: Daten in proprietärem Format"
             },
             {
-              "rediacc": "Compliance: Verifizieren Sie auf Ihrer eigenen Infrastruktur",
+              "rediacc": "Compliance: Verifikation auf Ihrer eigenen Infrastruktur",
               "traditional": "Compliance: Sie verlassen sich auf Anbieter-Zertifikate"
             },
             {
               "rediacc": "Cluster forken oder in ein anderes Rechenzentrum verschieben, Umschaltung in Sekunden",
-              "traditional": "Kubernetes bindet Sie an das Rechenzentrum, in dem Sie es aufgebaut haben"
+              "traditional": "Kubernetes bleibt an das Rechenzentrum gebunden, in dem Sie es aufgebaut haben"
             }
           ],
           "title": "So schützt Rediacc Ihre Infrastruktur",
@@ -1853,47 +1883,47 @@
     "pricing": {
       "comparison": {
         "allPlansInclude": "In allen Tarifen enthalten: unbegrenzte Nutzer und Teams, unbegrenzte Repositorys, Snapshot-Wiederherstellungen, kontinuierlicher Datenschutz, georedundanter Speicher, LUKS-Verschlüsselung, Audit-Logs, rollenbasierter Zugriff, manuelle und automatische Zeitpläne sowie die Integrations-API.",
-        "rows": [
-          {
-            "label": "Dedizierter Account Manager",
-            "professional": false,
-            "business": true,
-            "enterprise": true
-          },
-          {
-            "label": "Telefon-Support",
-            "professional": false,
-            "business": true,
-            "enterprise": true
-          },
-          {
-            "label": "24/7/365-Support",
-            "professional": false,
-            "business": false,
-            "enterprise": true
-          },
-          {
-            "label": "Eskalation auf Führungsebene",
-            "professional": false,
-            "business": false,
-            "enterprise": true
-          },
-          {
-            "label": "Sicherheitsüberprüfungen",
-            "professional": false,
-            "business": false,
-            "enterprise": true
-          },
-          {
-            "label": "Benutzerdefinierte Workflows",
-            "professional": false,
-            "business": false,
-            "enterprise": true
-          }
-        ],
         "heading": "Pläne detailliert vergleichen",
         "included": "Enthalten",
-        "notIncluded": "Nicht enthalten"
+        "notIncluded": "Nicht enthalten",
+        "rows": [
+          {
+            "business": true,
+            "enterprise": true,
+            "label": "Dedizierter Account Manager",
+            "professional": false
+          },
+          {
+            "business": true,
+            "enterprise": true,
+            "label": "Telefon-Support",
+            "professional": false
+          },
+          {
+            "business": false,
+            "enterprise": true,
+            "label": "24/7/365-Support",
+            "professional": false
+          },
+          {
+            "business": false,
+            "enterprise": true,
+            "label": "Eskalation auf Führungsebene",
+            "professional": false
+          },
+          {
+            "business": false,
+            "enterprise": true,
+            "label": "Sicherheitsüberprüfungen",
+            "professional": false
+          },
+          {
+            "business": false,
+            "enterprise": true,
+            "label": "Benutzerdefinierte Workflows",
+            "professional": false
+          }
+        ]
       },
       "edgeChannel": {
         "cta": "Edge-Kanal entdecken",
@@ -2453,30 +2483,30 @@
         },
         "companions": {
           "heading": "Verwandte Lösungsseiten",
-          "intro": "Dieselbe Architektur, angewandt auf spezifische Käuferfragen:",
+          "intro": "Der gleiche Ansatz, zugeschnitten auf die Fragen, die tatsächlich kommen:",
           "readMore": "Mehr erfahren"
         },
         "faq": {
           "heading": "Häufig gestellte Fragen",
           "items": [
             {
-              "a": "Für einen CISO, CTO oder Senior-Infrastrukturingenieur, der die Architektur bewertet. Das setzt Vertrautheit mit Backup-Prozessen, Speicher-Grundlagen und den Compliance-Anforderungen Ihrer Umgebung voraus.",
+              "a": "Für CISOs, CTOs und erfahrene Infrastruktur-Ingenieure, die die Architektur bewerten. Voraussetzung: Sie kennen Backup-Prozesse, Storage-Grundlagen und die Compliance-Anforderungen Ihrer Umgebung.",
               "q": "Für wen ist dieses Briefing geschrieben?"
             },
             {
-              "a": "Ja. Nach E-Mail-Bestätigung verlinkt die gleiche Seite auf ein 5-Minuten-Executive-PDF, das Sie an CFO, IT-Leiter oder Vorstandsmitglied weitergeben können.",
+              "a": "Ja. Nach der E-Mail-Bestätigung finden Sie auf der gleichen Seite ein 5-Minuten-Executive-PDF zum Weitergeben an CFO, IT-Direktor oder Vorstand.",
               "q": "Gibt es eine nicht-technische Version?"
             },
             {
-              "a": "Eine Bestätigungs-E-Mail. Sie werden in unseren Newsletter aufgenommen (monatlich ein kurzer Beitrag). Abmeldung jederzeit mit einem Klick. Ihre E-Mail bleibt gemäß Rediacc-Datenschutzrichtlinie standardmäßig in der EU.",
+              "a": "Eine Bestätigungs-E-Mail. Dann Newsletter von uns (ein kurzer Beitrag pro Monat, alles rund um die Produkte). Abmeldung mit einem Klick. Ihre E-Mail bleibt nach Rediacc's Datenschutzrichtlinie standardmäßig in der EU.",
               "q": "Was passiert mit meiner E-Mail?"
             },
             {
-              "a": "Das Briefing erläutert dies ausführlich. Kurz gesagt: btrfs verankert Unveränderlichkeit, Copy-on-Write-Snapshots und inkrementelles Send/Receive in der Speicherschicht selbst, statt in einer darüber liegenden Anwendung. Das verändert, was ein Angreifer mit Root-Zugangsdaten überwinden kann.",
+              "a": "Das Briefing erklärt das ausführlich. Kurz: btrfs verankert Unveränderlichkeit und Snapshots direkt in der Speicherschicht – nicht in einer App darüber. Ein Angreifer mit Root-Zugang kann sie nicht ändern oder löschen.",
               "q": "Warum btrfs?"
             },
             {
-              "a": "Nicht direkt. Die Architektur beschreibt selbst verwaltete Compute-Instanzen mit containerisierten Datenbanken auf btrfs-Volumes. Wenn Ihre kritischen Daten in RDS oder Aurora liegen, zeigt das Briefing, wo das Modell passt – und wo nicht.",
+              "a": "Nicht direkt. Die Architektur behandelt selbst verwaltete Datenbanken auf btrfs-Speicher. Haben Sie RDS oder Aurora im Einsatz? Das Briefing zeigt, wo das Modell passt und wo nicht.",
               "q": "Gilt das auch für verwaltete Dienste wie AWS RDS?"
             }
           ]
@@ -2486,7 +2516,7 @@
           "downloadButton": "Briefing herunterladen",
           "eyebrow": "Kostenlos · A4 PDF · CISO/CTO-Standard",
           "openInBrowser": "Im Browser öffnen",
-          "subtitle": "Ihre Entwickler schreiben 4,5 Stunden Code pro Woche. Die restliche Zeit wartet das Team auf Environments. Ein 50-köpfiges Team verliert dabei jährlich 720.000 bis 1,2 Mio. EUR.",
+          "subtitle": "Ihre Entwickler schreiben 4,5 Stunden Code pro Woche. Die restliche Zeit wartet das Team auf Environments. Bei 50 Ingenieuren kostet das 720.000 bis 1,2 Millionen Euro pro Jahr.",
           "title": "Entwicklungsumgebungen"
         },
         "meta": {
@@ -2496,16 +2526,16 @@
         },
         "toc": {
           "heading": "Das ist enthalten",
-          "intro": "Das Briefing zeigt die Architektur, Fehlerszenarien, die relevanten Compliance-Anforderungen und Audit-Nachweise – alles, was ein Prüfer einfordern wird. Umfang: ca. 10 bis 14 kompakte Seiten.",
+          "intro": "Hier erfahren Sie, was der Schutz abdeckt und wie er funktioniert. Welche Compliance-Anforderungen erfüllt sind. Welche Nachweise Ihr Auditor einfordern wird. Etwa 10 bis 14 dichte Seiten.",
           "items": [
-            "Das Bedrohungsmodell – klar und konkret",
+            "Die echte Bedrohung – im klaren Deutsch",
             "Wie das System funktioniert – und warum Angreifer scheitern",
             "Was es verhindert – echte Beispiele",
             "Compliance-Karte: konkrete Regelungen, Bußgelder, Meldefristen",
             "ROI-Rechnung auf Basis veröffentlichter Zahlen",
             "So unterscheiden wir uns – Technik, nicht Preis",
             "Wie das Onboarding läuft – und wo wir nicht passen",
-            "Die Prüfnachweise, die Sie brauchen"
+            "Die Nachweise, die Ihr Auditor einfordert"
           ]
         }
       },
@@ -2518,30 +2548,30 @@
         },
         "companions": {
           "heading": "Verwandte Lösungsseiten",
-          "intro": "Dieselbe Architektur – zugespitzt auf die Fragen, die Sie wirklich haben:",
+          "intro": "Der gleiche Ansatz, zugeschnitten auf die Fragen, die tatsächlich kommen:",
           "readMore": "Mehr erfahren"
         },
         "faq": {
           "heading": "Das fragen Leser uns",
           "items": [
             {
-              "a": "Für CISOs, CTOs oder erfahrene Infrastruktur-Ingenieure, die Architektur evaluieren. Voraussetzung: Sie kennen Backup-Workflows, wie Storage funktioniert, und welche Regeln Ihr Stack erfüllen muss.",
+              "a": "Für CISOs, CTOs und erfahrene Infrastruktur-Ingenieure, die die Architektur bewerten. Voraussetzung: Sie kennen Backup-Prozesse, Storage-Grundlagen und die Compliance-Anforderungen Ihrer Umgebung.",
               "q": "Für wen ist dieses Briefing geschrieben?"
             },
             {
-              "a": "Ja. Nach Ihrer Mail-Bestätigung finden Sie auf der gleichen Seite ein Fünf-Minuten-Executive-PDF – weiterleitbar an CFO, IT-Leiter oder Vorstand.",
+              "a": "Ja. Nach der E-Mail-Bestätigung finden Sie auf der gleichen Seite ein 5-Minuten-Executive-PDF zum Weitergeben an CFO, IT-Direktor oder Vorstand.",
               "q": "Gibt es eine nicht-technische Version?"
             },
             {
-              "a": "Eine Bestätigungs-Mail. Sie landen in unserem Newsletter (ein kurzer Beitrag pro Monat, alles rund um die Produkte). Abmeldung mit einem Klick. Ihre E-Mail bleibt in der EU – laut Rediacc's Data-Residency-Policy.",
+              "a": "Eine Bestätigungs-E-Mail. Dann Newsletter von uns (ein kurzer Beitrag pro Monat, alles rund um die Produkte). Abmeldung mit einem Klick. Ihre E-Mail bleibt nach Rediacc's Datenschutzrichtlinie standardmäßig in der EU.",
               "q": "Was passiert mit meiner E-Mail-Adresse?"
             },
             {
-              "a": "Das Briefing erklärt das ausführlich. Kurzfassung: btrfs verankert Immutability, Snapshots und Send/Receive direkt in der Storage-Schicht – nicht in einer App darüber. Ein Angreifer mit Root-Zugang kann diese Copies nicht anfassen.",
+              "a": "Das Briefing erklärt das ausführlich. Kurz: btrfs verankert Unveränderlichkeit und Snapshots direkt in der Speicherschicht – nicht in einer App darüber. Ein Angreifer mit Root-Zugang kann sie nicht ändern oder löschen.",
               "q": "Warum btrfs?"
             },
             {
-              "a": "Nicht direkt. Das Modell gilt für Ihre eigenen Server mit Datenbanken in Docker auf btrfs-Storage. Falls Sie RDS oder Aurora nutzen, setzt das Briefing da an – und zeigt, wo das Modell greift.",
+              "a": "Nicht direkt. Die Architektur behandelt selbst verwaltete Datenbanken auf btrfs-Speicher. Haben Sie RDS oder Aurora im Einsatz? Das Briefing zeigt, wo das Modell passt und wo nicht.",
               "q": "Gilt das auch für verwaltete Dienste wie AWS RDS?"
             }
           ]
@@ -2555,22 +2585,22 @@
           "title": "Verschlüsselungskontrolle"
         },
         "meta": {
-          "description": "Sie verwalten die Schlüssel. Ihre Daten bleiben verschlüsselt – auch beim Wechsel. Schrems-II-konform. CISO/CTO-Briefing plus Executive-Summary.",
+          "description": "Sie verwalten die Schlüssel. Daten bleiben verschlüsselt – auch beim Wechsel. Schrems-II-konform. CISO/CTO-Briefing plus Executive Summary.",
           "keywords": "verschlüsselungskontrolle, pdf, rediacc, btrfs backup, unveränderliches backup, technisches briefing",
           "title": "Verschlüsselungskontrolle: Kostenloses PDF-Briefing"
         },
         "toc": {
           "heading": "Inhalt",
-          "intro": "Drin: wie die Architektur Angreifer abwehrt, welche Regeln Sie erfüllen, welche Nachweise Ihr Auditor erwartet. Etwa 10–14 kompakte Seiten.",
+          "intro": "Hier erfahren Sie, was der Schutz abdeckt und wie er funktioniert. Welche Compliance-Anforderungen erfüllt sind. Welche Nachweise Ihr Auditor einfordern wird. Etwa 10 bis 14 dichte Seiten.",
           "items": [
-            "Was Sie wirklich verteidigen – ganz konkret",
+            "Die echte Bedrohung – im klaren Deutsch",
             "So funktioniert die Architektur – und warum ein Angreifer verliert",
             "Was es stoppt – echte Szenarien, echte Fälle",
             "Welche Regeln gelten: Bußgelder, Fristen, Wortlaute",
             "Die Wirtschaftlichkeitsrechnung – mit echten, publizierten Zahlen",
             "Wir gegen andere – der technische Vergleich, nicht der Preis",
             "Wie Sie es aufsetzen – und wo die Grenzen sind",
-            "Was Ihr Audit einfordert – direkt von der Architektur"
+            "Die Nachweise, die Ihr Auditor einfordert"
           ]
         }
       },
@@ -2583,30 +2613,30 @@
         },
         "companions": {
           "heading": "Weitere Lösungen",
-          "intro": "Der gleiche Ansatz, angepasst auf Ihre konkreten Fragen:",
+          "intro": "Der gleiche Ansatz, zugeschnitten auf die Fragen, die tatsächlich kommen:",
           "readMore": "Mehr erfahren"
         },
         "faq": {
           "heading": "Das fragen Sie uns",
           "items": [
             {
-              "a": "Für CISO, CTO oder Senior-Infrastrukturengineers, die die Architektur bewerten. Voraussetzung: Sie kennen die Basics von Backups, Speicher und den Compliance-Anforderungen Ihrer Umgebung.",
+              "a": "Für CISOs, CTOs und erfahrene Infrastruktur-Ingenieure, die die Architektur bewerten. Voraussetzung: Sie kennen Backup-Prozesse, Storage-Grundlagen und die Compliance-Anforderungen Ihrer Umgebung.",
               "q": "Für wen ist dieses Briefing?"
             },
             {
-              "a": "Ja. Nach der Bestätigung sehen Sie einen 5-Minuten-Executive-Brief (PDF), den Sie an CFO, IT-Leitung oder den Vorstand weitergeben können.",
+              "a": "Ja. Nach der E-Mail-Bestätigung finden Sie auf der gleichen Seite ein 5-Minuten-Executive-PDF zum Weitergeben an CFO, IT-Direktor oder Vorstand.",
               "q": "Gibt es auch eine nicht-technische Version?"
             },
             {
-              "a": "Eine Bestätigungsmail, dann landen Sie in unserem Newsletter (1 Beitrag pro Monat, alle Produkte). Abmeldung mit einem Klick. Nach Rediacc's Datenschutzrichtlinie liegt Ihre Adresse standardmäßig in der EU.",
+              "a": "Eine Bestätigungs-E-Mail. Dann Newsletter von uns (ein kurzer Beitrag pro Monat, alles rund um die Produkte). Abmeldung mit einem Klick. Ihre E-Mail bleibt nach Rediacc's Datenschutzrichtlinie standardmäßig in der EU.",
               "q": "Was passiert mit meiner E-Mail?"
             },
             {
-              "a": "Das Briefing erklärt das ausführlich. Kurz: btrfs verschiebt Unveränderlichkeit, Snapshots und Send/Receive in die Speicherschicht – nicht in eine App darüber. Ein Angreifer mit Root-Passwort kann diese Kopien nicht ändern oder löschen.",
+              "a": "Das Briefing erklärt das ausführlich. Kurz: btrfs verankert Unveränderlichkeit und Snapshots direkt in der Speicherschicht – nicht in einer App darüber. Ein Angreifer mit Root-Zugang kann sie nicht ändern oder löschen.",
               "q": "Warum btrfs?"
             },
             {
-              "a": "Nicht direkt. Das Modell deckt selbst verwaltete Server mit Docker-Datenbanken auf btrfs-Speicher ab. Haben Sie RDS oder Aurora im Einsatz? Das Briefing zeigt klar, wo es passt und wo nicht.",
+              "a": "Nicht direkt. Die Architektur behandelt selbst verwaltete Datenbanken auf btrfs-Speicher. Haben Sie RDS oder Aurora im Einsatz? Das Briefing zeigt, wo das Modell passt und wo nicht.",
               "q": "Gilt das auch für verwaltete Dienste wie AWS RDS?"
             }
           ]
@@ -2616,26 +2646,26 @@
           "downloadButton": "Briefing jetzt laden",
           "eyebrow": "Kostenlos · A4-PDF · Enterprise-Standard",
           "openInBrowser": "Im Browser öffnen",
-          "subtitle": "AWS US-EAST-1 war am 20. Oktober 2025 für 15 Stunden offline. Snapchat, Robinhood, Uber, Delta. Hätten Sie schnell genug zu einer anderen Cloud wechseln können?",
+          "subtitle": "AWS US-EAST-1 war am 20. Oktober 2025 für 15 Stunden offline. Snapchat, Robinhood, Uber, Delta. Hätten Sie einen Wechsel zur Ausfall-Zeit schnell genug geplant?",
           "title": "Multi-Cloud Immer"
         },
         "meta": {
-          "description": "Portierbare Backups und bewährtes Multi-Cloud-Failover, damit Ihr Unternehmen Ausfälle übersteht. Technisches Briefing für CISO/CTO, plus Executive Summary.",
+          "description": "Portierbare Backups und bewährtes Multi-Cloud-Failover für die Betriebssicherheit. Technisches Briefing für CISO/CTO plus Executive Summary.",
           "keywords": "multi-cloud verfügbarkeit, pdf, rediacc, btrfs backup, unveränderliches backup, technisches briefing",
           "title": "Multi-Cloud Always: Kostenloses technisches Briefing"
         },
         "toc": {
           "heading": "Das ist drin",
-          "intro": "Architektur, Schutzmaßnahmen, Compliance-Anforderungen und die Nachweise, die ein Prüfer braucht – alles auf etwa 10 bis 14 kompakten Seiten.",
+          "intro": "Hier erfahren Sie, was der Schutz abdeckt und wie er funktioniert. Welche Compliance-Anforderungen erfüllt sind. Welche Nachweise Ihr Auditor einfordern wird. Etwa 10 bis 14 dichte Seiten.",
           "items": [
-            "Wogegen Sie sich wirklich schützen – im Klartext",
+            "Die echte Bedrohung – im klaren Deutsch",
             "Wie es funktioniert – und warum Angreifer nicht durchkommen",
             "Was es stoppt – mit echten Fehlerszenarien und Beispielen",
             "Welche Regeln gelten: Bußgelder, Fristen, konkrete Anforderungen",
             "Die Kosten-Rechnung – mit realen Zahlen",
             "So schneiden wir ab: Die Technik zählt, nicht der Preis",
             "Wie das Onboarding läuft – und wo die Grenzen sind",
-            "Die Nachweise, die Ihre Prüfer brauchen"
+            "Die Nachweise, die Ihr Auditor einfordert"
           ]
         }
       },
@@ -2648,30 +2678,30 @@
         },
         "companions": {
           "heading": "Verwandte Lösungsseiten",
-          "intro": "Dieselbe Architektur – beantwortet auf spezifische Fragen:",
+          "intro": "Der gleiche Ansatz, zugeschnitten auf die Fragen, die tatsächlich kommen:",
           "readMore": "Mehr erfahren"
         },
         "faq": {
           "heading": "Fragen von Lesern",
           "items": [
             {
-              "a": "Für CISO, CTO oder erfahrene Infrastruktur-Engineers, die eine Architektur bewerten. Wir setzen Verständnis von Backups, Speichersystemen und Ihren regulatorischen Anforderungen voraus.",
+              "a": "Für CISOs, CTOs und erfahrene Infrastruktur-Ingenieure, die die Architektur bewerten. Voraussetzung: Sie kennen Backup-Prozesse, Storage-Grundlagen und die Compliance-Anforderungen Ihrer Umgebung.",
               "q": "Für wen ist dieses Briefing geschrieben?"
             },
             {
-              "a": "Ja. Nach Ihrer E-Mail-Bestätigung finden Sie auf der gleichen Seite ein fünf-Minuten-Executive-PDF zum Weiterleiten an CFO, IT-Direktor oder Vorstandsmitglieder.",
+              "a": "Ja. Nach der E-Mail-Bestätigung finden Sie auf der gleichen Seite ein 5-Minuten-Executive-PDF zum Weitergeben an CFO, IT-Direktor oder Vorstand.",
               "q": "Gibt es eine nicht-technische Version?"
             },
             {
-              "a": "Eine Bestätigungs-E-Mail. Sie landen in unserem Newsletter (ein kurzer Post pro Monat, alle Produkte). Abmeldung mit einem Klick. Ihre E-Mail lagert nach Rediacc's Datenschutzrichtlinie standardmäßig in der EU.",
+              "a": "Eine Bestätigungs-E-Mail. Dann Newsletter von uns (ein kurzer Beitrag pro Monat, alles rund um die Produkte). Abmeldung mit einem Klick. Ihre E-Mail bleibt nach Rediacc's Datenschutzrichtlinie standardmäßig in der EU.",
               "q": "Was passiert mit meiner E-Mail-Adresse?"
             },
             {
-              "a": "Das Briefing erläutert das ausführlich. Kurz: btrfs verankert schreibgeschützte Snapshots und inkrementelle Send/Receive-Funktionen direkt in der Speicherschicht – nicht in einer App darüber. Das ist entscheidend: Ein Angreifer mit Root-Passwort kann diese Kopien nicht ändern oder löschen.",
+              "a": "Das Briefing erklärt das ausführlich. Kurz: btrfs verankert Unveränderlichkeit und Snapshots direkt in der Speicherschicht – nicht in einer App darüber. Ein Angreifer mit Root-Zugang kann sie nicht ändern oder löschen.",
               "q": "Warum btrfs?"
             },
             {
-              "a": "Nicht unmittelbar. Die Architektur gilt für selbst verwaltete Server mit Datenbanken in Docker auf btrfs-Storage. Falls Ihre Daten in RDS oder Aurora liegen, weist das Briefing drauf hin – und zeigt, wo das Modell passt und wo nicht.",
+              "a": "Nicht direkt. Die Architektur behandelt selbst verwaltete Datenbanken auf btrfs-Speicher. Haben Sie RDS oder Aurora im Einsatz? Das Briefing zeigt, wo das Modell passt und wo nicht.",
               "q": "Gilt das auch für verwaltete Dienste wie AWS RDS?"
             }
           ]
@@ -2681,7 +2711,7 @@
           "downloadButton": "Technisches Briefing herunterladen",
           "eyebrow": "Kostenlos · A4 PDF · CISO/CTO-Qualität",
           "openInBrowser": "Im Browser öffnen",
-          "subtitle": "Testen Sie auf einer Kopie Ihrer echten Systeme. Nichts beschädigt in der Produktion. Der Clone nimmt die kritischen Treffer.",
+          "subtitle": "Testen Sie auf einer Kopie Ihrer echten Systeme. Nichts geht daneben in der Produktion. Der Clone nimmt die scharfen Treffer.",
           "title": "Präventive Abwehr"
         },
         "meta": {
@@ -2691,16 +2721,16 @@
         },
         "toc": {
           "heading": "Inhalt",
-          "intro": "Das Briefing behandelt die Architektur, die abgewehrten Fehlerszenarien, die regulatorische Einordnung und die Nachweise auf Betreiberebene, die ein Prüfer einfordern wird. Umfang: ca. 10 bis 14 kompakte Seiten.",
+          "intro": "Hier erfahren Sie, was der Schutz abdeckt und wie er funktioniert. Welche Compliance-Anforderungen erfüllt sind. Welche Nachweise Ihr Auditor einfordern wird. Etwa 10 bis 14 dichte Seiten.",
           "items": [
-            "Was Sie wirklich abwehren müssen – in klaren Worten",
+            "Die echte Bedrohung – im klaren Deutsch",
             "So funktioniert das System – und warum Angreifer nicht durchkommen",
             "Was wird verhindert – mit echten Beispielen",
             "Welche Regeln gelten: Bußgelder, Fristen, genaue Anforderungen",
             "Die Kostenrechnung – mit echten Zahlen",
             "Wie wir gegen Mitbewerber dastehen – technisch, nicht beim Preis",
             "So wird es eingebunden – und wo wir nicht helfen",
-            "Die Nachweise, die Ihre Prüfer einfordern"
+            "Die Nachweise, die Ihr Auditor einfordert"
           ]
         }
       },
@@ -2713,30 +2743,30 @@
         },
         "companions": {
           "heading": "Verwandte Lösungsseiten",
-          "intro": "Dieselbe Architektur – beantwortet die Fragen, die Sie bekommen werden:",
+          "intro": "Der gleiche Ansatz, zugeschnitten auf die Fragen, die tatsächlich kommen:",
           "readMore": "Mehr erfahren"
         },
         "faq": {
           "heading": "Fragen von Lesern",
           "items": [
             {
-              "a": "Für CISOs, CTOs und erfahrene Infrastruktur-Ingenieure. Voraussetzung: Vertrautheit mit Backup-Konzepten, Storage-Grundlagen und den Compliance-Anforderungen deiner Umgebung.",
+              "a": "Für CISOs, CTOs und erfahrene Infrastruktur-Ingenieure, die die Architektur bewerten. Voraussetzung: Sie kennen Backup-Prozesse, Storage-Grundlagen und die Compliance-Anforderungen Ihrer Umgebung.",
               "q": "Für wen ist dieses Briefing geschrieben?"
             },
             {
-              "a": "Ja. Nach der E-Mail-Bestätigung verlinkt die Seite auf ein fünfminütiges Executive-PDF, das du an CFO, IT-Direktor oder Vorstandsmitglieder weiterleiten kannst.",
+              "a": "Ja. Nach der E-Mail-Bestätigung finden Sie auf der gleichen Seite ein 5-Minuten-Executive-PDF zum Weitergeben an CFO, IT-Direktor oder Vorstand.",
               "q": "Gibt es eine nicht-technische Version?"
             },
             {
-              "a": "Eine Bestätigungs-E-Mail. Dann Newsletter von uns (ein Artikel pro Monat). Abmelden jederzeit mit einem Klick. Deine Adresse bleibt laut Rediacc-Datenschutz standardmäßig in der EU.",
+              "a": "Eine Bestätigungs-E-Mail. Dann Newsletter von uns (ein kurzer Beitrag pro Monat, alles rund um die Produkte). Abmeldung mit einem Klick. Ihre E-Mail bleibt nach Rediacc's Datenschutzrichtlinie standardmäßig in der EU.",
               "q": "Was passiert mit meiner E-Mail?"
             },
             {
-              "a": "Das Briefing erklärt es im Detail. Kurz: btrfs verankert Unveränderlichkeit und Snapshots in der Speicherschicht – nicht in einer App-Ebene. Ein Angreifer mit Root-Zugriff kann sie nicht ändern.",
+              "a": "Das Briefing erklärt das ausführlich. Kurz: btrfs verankert Unveränderlichkeit und Snapshots direkt in der Speicherschicht – nicht in einer App darüber. Ein Angreifer mit Root-Zugang kann sie nicht ändern oder löschen.",
               "q": "Warum btrfs?"
             },
             {
-              "a": "Nicht direkt. Wir behandeln selbst verwaltete Datenbanken auf btrfs-Volumes. Wenn deine kritische Infrastruktur bei RDS oder Aurora läuft, zeigen wir, wo unser Modell funktioniert und wo nicht.",
+              "a": "Nicht direkt. Die Architektur behandelt selbst verwaltete Datenbanken auf btrfs-Speicher. Haben Sie RDS oder Aurora im Einsatz? Das Briefing zeigt, wo das Modell passt und wo nicht.",
               "q": "Gilt das auch für verwaltete Dienste wie AWS RDS?"
             }
           ]
@@ -2756,16 +2786,16 @@
         },
         "toc": {
           "heading": "Inhalt",
-          "intro": "Architektur, Bedrohungsszenarien, Compliance-Anforderungen und Auditor-Nachweise. Etwa 10–14 kompakte Seiten.",
+          "intro": "Hier erfahren Sie, was der Schutz abdeckt und wie er funktioniert. Welche Compliance-Anforderungen erfüllt sind. Welche Nachweise Ihr Auditor einfordern wird. Etwa 10 bis 14 dichte Seiten.",
           "items": [
-            "Die echte Bedrohung – in einfachen Worten",
+            "Die echte Bedrohung – im klaren Deutsch",
             "Wie das System funktioniert – und warum Angreifer es nicht knacken",
             "Was es stoppt – mit realen Beispielen",
             "Compliance-Karte: konkrete Regelungen, Bußgelder, Meldefristen",
             "Die Kostenrechnung: Realistische Zahlen",
             "Vergleich mit anderen Anbietern – Technik vor Preis",
             "Das Setup und was wir nicht abdecken",
-            "Die Nachweise, die Prüfer brauchen"
+            "Die Nachweise, die Ihr Auditor einfordert"
           ]
         }
       },
@@ -2778,30 +2808,30 @@
         },
         "companions": {
           "heading": "Verwandte Lösungsseiten",
-          "intro": "Der gleiche Ansatz, angepasst an Ihre spezifischen Fragen:",
+          "intro": "Der gleiche Ansatz, zugeschnitten auf die Fragen, die tatsächlich kommen:",
           "readMore": "Mehr erfahren"
         },
         "faq": {
           "heading": "Fragen, die Leser stellen",
           "items": [
             {
-              "a": "Für einen CISO, CTO oder erfahrenen Infrastruktur-Engineer, der die Architektur bewertet. Es setzt Vertrautheit mit Backup-Workflows, Storage-Grundlagen und dem Compliance-Umfeld voraus, in dem Ihre Infrastruktur schon operiert.",
+              "a": "Für CISOs, CTOs und erfahrene Infrastruktur-Ingenieure, die die Architektur bewerten. Voraussetzung: Sie kennen Backup-Prozesse, Storage-Grundlagen und die Compliance-Anforderungen Ihrer Umgebung.",
               "q": "Für wen ist dieses Briefing geschrieben?"
             },
             {
-              "a": "Ja. Nach der E-Mail-Bestätigung finden Sie auf der gleichen Seite ein fünf-Minuten-Executive-PDF, das Sie an CFO, IT-Direktor oder Vorstand weiterleiten können.",
+              "a": "Ja. Nach der E-Mail-Bestätigung finden Sie auf der gleichen Seite ein 5-Minuten-Executive-PDF zum Weitergeben an CFO, IT-Direktor oder Vorstand.",
               "q": "Gibt es eine nicht-technische Version?"
             },
             {
-              "a": "Eine Bestätigung per E-Mail. Sie werden in unseren Newsletter aufgenommen (monatlich ein kurzer Beitrag zu allen Produkten). Abmeldung mit einem Klick. Ihre E-Mail-Adresse wird gemäß der Data-Residency-Policy von Rediacc standardmäßig in der EU gespeichert.",
+              "a": "Eine Bestätigungs-E-Mail. Dann Newsletter von uns (ein kurzer Beitrag pro Monat, alles rund um die Produkte). Abmeldung mit einem Klick. Ihre E-Mail bleibt nach Rediacc's Datenschutzrichtlinie standardmäßig in der EU.",
               "q": "Was passiert mit meiner E-Mail?"
             },
             {
-              "a": "Das Briefing behandelt das ausführlich. Kurz gesagt: btrfs verankert Write-Once-Kopien und sofortige Clones direkt in der Speicherschicht, nicht in einer App darüber. Das Send/Receive-Feature verschiebt diese Kopien offline. Ein Angreifer mit Admin-Passwort kann sie dann nicht ändern oder löschen.",
+              "a": "Das Briefing erklärt das ausführlich. Kurz: btrfs verankert Unveränderlichkeit und Snapshots direkt in der Speicherschicht – nicht in einer App darüber. Ein Angreifer mit Root-Zugang kann sie nicht ändern oder löschen.",
               "q": "Warum btrfs?"
             },
             {
-              "a": "Nicht direkt. Die Architektur deckt selbst verwaltete Server mit Datenbanken in Docker auf btrfs-Storage ab. Wenn Ihre kritischen Daten in RDS oder Aurora liegen, flaggt das Briefing das explizit und zeigt, wo das Modell greift und wo nicht.",
+              "a": "Nicht direkt. Die Architektur behandelt selbst verwaltete Datenbanken auf btrfs-Speicher. Haben Sie RDS oder Aurora im Einsatz? Das Briefing zeigt, wo das Modell passt und wo nicht.",
               "q": "Gilt das auch für verwaltete Dienste wie AWS RDS?"
             }
           ]
@@ -2811,7 +2841,7 @@
           "downloadButton": "Technisches Briefing herunterladen",
           "eyebrow": "Kostenlos · A4 PDF · CISO/CTO-gerecht",
           "openInBrowser": "Im Browser öffnen",
-          "subtitle": "58 % der Backups schlagen bei der Wiederherstellung fehl. Die meisten Unternehmen erfahren das erst im Katastrophenfall.",
+          "subtitle": "58 % der Backups schlagen bei der Wiederherstellung fehl. Die meisten Unternehmen erfahren das erst im Ernstfall.",
           "title": "Verifizierte Backups"
         },
         "meta": {
@@ -2821,16 +2851,16 @@
         },
         "toc": {
           "heading": "Das steht drin",
-          "intro": "Das Briefing erläutert: Bedrohungsmodell und Funktionsweise. Welche Compliance-Anforderungen es erfüllt. Die Nachweise für Prüfer. Umfang: etwa 10 bis 14 kompakte Seiten.",
+          "intro": "Hier erfahren Sie, was der Schutz abdeckt und wie er funktioniert. Welche Compliance-Anforderungen erfüllt sind. Welche Nachweise Ihr Auditor einfordern wird. Etwa 10 bis 14 dichte Seiten.",
           "items": [
-            "Das Bedrohungsmodell – in klaren, praktischen Begriffen",
+            "Die echte Bedrohung – im klaren Deutsch",
             "So funktioniert die Architektur – und warum Angreifer scheitern",
             "Was es schützt – mit realen Beispielen aus der Praxis",
             "Welche Regeln gelten – Bußgelder, Fristen, Wortlaut",
             "Die Kostenrechnung – mit veröffentlichten Daten",
             "Vergleich mit anderen – auf technischer Ebene",
             "Wie die Einrichtung läuft – und wo die Grenzen sind",
-            "Die Nachweise, die Ihr Auditor verlangt"
+            "Die Nachweise, die Ihr Auditor einfordert"
           ]
         }
       }
@@ -3012,8 +3042,6 @@
     },
     "solutionPages": {
       "aiPentesting": {
-        "label": "KI-Penetrationstest",
-        "blurb": "Produktion klonen. KI angreifen lassen.",
         "benefits": {
           "items": [
             {
@@ -3035,6 +3063,7 @@
           "overline": "WARUM ES WICHTIG IST",
           "title": "Was Sie bekommen"
         },
+        "blurb": "Produktion klonen. KI angreifen lassen.",
         "bottomCta": {
           "command": "rdc repo fork production --tag pentest",
           "ctaText": "Kostenlos starten",
@@ -3140,6 +3169,7 @@
           ],
           "title": "Ein Befehl. Null Risiko."
         },
+        "label": "KI-Penetrationstest",
         "meta": {
           "description": "Erstellen Sie identische Kopien Ihrer Infrastruktur und führen Sie KI-gestützte Penetrationstests durch — ohne die Produktion zu gefährden.",
           "keywords": "KI-Pentesting, Penetrationstests, Sicherheitstests, Schwachstellenscanning, Klon-Angriff",
@@ -3275,8 +3305,6 @@
         }
       },
       "auditTrail": {
-        "label": "Audit-Trail",
-        "blurb": "Jede Aktion protokolliert. Nichts verborgen.",
         "benefits": {
           "items": [
             {
@@ -3298,6 +3326,7 @@
           "overline": "WARUM ES WICHTIG IST",
           "title": "Was Sie bekommen"
         },
+        "blurb": "Jede Aktion protokolliert. Nichts verborgen.",
         "bottomCta": {
           "command": "rdc repo status production",
           "ctaText": "Kostenlos mit Community starten",
@@ -3457,6 +3486,7 @@
           ],
           "title": "Ein Befehl. Vollständige Transparenz."
         },
+        "label": "Audit-Trail",
         "meta": {
           "description": "Vollständige Transparenz darüber, wer was wann und warum getan hat. Manipulationssichere Audit-Logs für jede Operation.",
           "keywords": "Audit-Trail, Compliance-Protokollierung, manipulationssichere Protokolle, SHA-256-signiert, Auditbericht",
@@ -3628,8 +3658,6 @@
         }
       },
       "backupVerification": {
-        "label": "Backup-Verifizierung",
-        "blurb": "Jedes Backup automatisch verifiziert",
         "benefits": {
           "items": [
             {
@@ -3651,6 +3679,7 @@
           "overline": "WARUM ES WICHTIG IST",
           "title": "Was Sie bekommen"
         },
+        "blurb": "Jedes Backup automatisch verifiziert",
         "bottomCta": {
           "command": "rdc backup verify my-app",
           "description": "Starten Sie mit der kostenlosen Community-Edition. Verifizieren Sie Ihr erstes Backup in unter einer Minute.",
@@ -3811,6 +3840,7 @@
           ],
           "title": "Ein Befehl. Keine Überraschungen."
         },
+        "label": "Backup-Verifizierung",
         "meta": {
           "description": "Warten Sie nicht auf eine Katastrophe, um herauszufinden, dass Ihr Backup beschädigt ist. Rediacc prüft jedes Backup im Moment seiner Erstellung.",
           "keywords": "Backup-Verifizierung, Backup-Tests, Wiederherstellungsverifizierung, Backup-Integritaet, automatische Backup-Pruefung, btrfs-Klon, Backup-Zustandspruefung",
@@ -3992,8 +4022,6 @@
         }
       },
       "cloudOutageProtection": {
-        "label": "Cloud-Ausfallschutz",
-        "blurb": "Wenn AWS ausfaellt, laufen Sie weiter",
         "benefits": {
           "items": [
             {
@@ -4015,6 +4043,7 @@
           "overline": "WARUM ES WICHTIG IST",
           "title": "Was Sie bekommen"
         },
+        "blurb": "Wenn AWS ausfaellt, laufen Sie weiter",
         "bottomCta": {
           "command": "rdc repo push production --to secondary-dc",
           "description": "Starten Sie mit der kostenlosen Community-Edition. Replizieren Sie standortübergreifend kostenlos. Keine Kreditkarte.",
@@ -4176,6 +4205,7 @@
           ],
           "title": "Ein Befehl. Immer online."
         },
+        "label": "Cloud-Ausfallschutz",
         "meta": {
           "description": "Ihre Infrastruktur läuft auf mehreren Clouds. Wenn eine ausfällt, übernehmen die anderen. Automatisch.",
           "keywords": "Cloud-Ausfallschutz, Multi-Cloud-Failover, Cloud-uebergreifende Replikation, Notfallwiederherstellung, Cloud-Redundanz, automatisches Failover, btrfs-Replikation",
@@ -4353,8 +4383,6 @@
         }
       },
       "continuousSecurityTesting": {
-        "label": "Kontinuierliche Sicherheitstests",
-        "blurb": "Sicherheit kontinuierlich testen, nicht jaehrlich",
         "benefits": {
           "items": [
             {
@@ -4376,6 +4404,7 @@
           "overline": "WARUM ES WICHTIG IST",
           "title": "Was Sie bekommen"
         },
+        "blurb": "Sicherheit kontinuierlich testen, nicht jaehrlich",
         "bottomCta": {
           "command": "rdc backup restore production --as production-verify -m primary --up",
           "ctaText": "Kostenlos starten",
@@ -4476,6 +4505,7 @@
           ],
           "title": "Ein Befehl. Tägliche Abdeckung."
         },
+        "label": "Kontinuierliche Sicherheitstests",
         "meta": {
           "description": "Führen Sie täglich Sicherheitstests auf frischen Produktionsklonen durch. Finden Sie Schwachstellen, wenn sie auftreten — nicht Monate später.",
           "keywords": "kontinuierliche Sicherheitstests, taegliches Pentesting, automatisierte Sicherheit, Schwachstellenerkennung",
@@ -4611,8 +4641,6 @@
         }
       },
       "dataSovereignty": {
-        "label": "Datensouveränität",
-        "blurb": "Ihre Server, Ihre Schlüssel, Ihre Jurisdiktion.",
         "benefits": {
           "items": [
             {
@@ -4634,6 +4662,7 @@
           "overline": "WARUM ES WICHTIG IST",
           "title": "Was Sie bekommen"
         },
+        "blurb": "Ihre Server, Ihre Schlüssel, Ihre Jurisdiktion.",
         "bottomCta": {
           "command": "rdc config show",
           "ctaText": "Kostenlos mit Community starten",
@@ -4791,6 +4820,7 @@
           ],
           "title": "Drei Schritte. Ein souveräner Stack."
         },
+        "label": "Datensouveränität",
         "meta": {
           "description": "Sie hosten es. Sie halten die Schlüssel. CLOUD Act-Immunität durch Architektur, nicht durch Zertifikat. Self-hosted Backup mit kundenverwalteten Schlüsseln.",
           "keywords": "Datensouveränität, CLOUD Act-Immunität, kundenverwaltete Schlüssel, DSGVO Schrems II, EU-Datengesetz, self-hosted, souveränes Backup, SecNumCloud, DORA",
@@ -4985,8 +5015,6 @@
         "title": "Wenig Zeit?"
       },
       "encryption": {
-        "label": "Verschluesselung unter Ihrer Kontrolle",
-        "blurb": "Ihre Schluessel. Ihre Verschluesselung. Ohne Ausnahme.",
         "benefits": {
           "items": [
             {
@@ -5008,6 +5036,7 @@
           "overline": "WARUM ES WICHTIG IST",
           "title": "Was Sie bekommen"
         },
+        "blurb": "Ihre Schluessel. Ihre Verschluesselung. Ohne Ausnahme.",
         "bottomCta": {
           "command": "rdc repo up production",
           "ctaText": "Kostenlos mit Community starten",
@@ -5167,6 +5196,7 @@
           ],
           "title": "Ein Befehl. Totale Kontrolle."
         },
+        "label": "Verschluesselung unter Ihrer Kontrolle",
         "meta": {
           "description": "Jedes Backup wird mit Schlüsseln verschlüsselt, die Ihnen gehören. Nicht die Schlüssel Ihres Anbieters. Nicht geteilte Schlüssel. Nur Ihre.",
           "keywords": "Verschluesselung, Zero-Knowledge, kundenverwaltete Schluessel, AES-256, Backup-Verschluesselung",
@@ -5370,8 +5400,6 @@
         }
       },
       "environmentCloning": {
-        "label": "Umgebungs-Klonen",
-        "blurb": "Produktion in 60 Sekunden klonen",
         "benefits": {
           "items": [
             {
@@ -5393,6 +5421,7 @@
           "overline": "WARUM ES WICHTIG IST",
           "title": "Was Sie bekommen"
         },
+        "blurb": "Produktion in 60 Sekunden klonen",
         "bottomCta": {
           "command": "rdc repo fork production --tag my-first-clone",
           "description": "Starten Sie mit der kostenlosen Community-Edition. Klonen Sie bis zu 10 Workloads kostenlos. Keine Kreditkarte.",
@@ -5554,6 +5583,7 @@
           ],
           "title": "Ein Befehl. Sechzig Sekunden."
         },
+        "label": "Umgebungs-Klonen",
         "meta": {
           "description": "Erstellen Sie exakte Kopien der Produktion — Anwendung, Datenbank und Konfiguration — für Entwicklung und Tests. Keine Tickets. Kein Warten.",
           "keywords": "Umgebungsklonen, Produktionsklon, Entwicklungsumgebung, sofortige Bereitstellung, btrfs-Klon, Copy-on-Write, kurzlebige Umgebungen",
@@ -5735,8 +5765,6 @@
         }
       },
       "failoverTesting": {
-        "label": "Failover-Tests",
-        "blurb": "Testen Sie Ihren Failover, bevor Sie ihn brauchen",
         "benefits": {
           "items": [
             {
@@ -5758,6 +5786,7 @@
           "overline": "WARUM ES WICHTIG IST",
           "title": "Was Sie bekommen"
         },
+        "blurb": "Testen Sie Ihren Failover, bevor Sie ihn brauchen",
         "bottomCta": {
           "command": "rdc repo push production --to secondary --checkpoint",
           "description": "Starten Sie mit der kostenlosen Community-Edition. Führen Sie Ihren ersten DR-Test in unter 5 Minuten durch.",
@@ -5918,6 +5947,7 @@
           ],
           "title": "Ein Befehl. Volles Vertrauen."
         },
+        "label": "Failover-Tests",
         "meta": {
           "description": "Katastrophensimulationen sicher durchführen. Wissen, dass Ihre Wiederherstellung funktioniert. Keine Überraschungen im Ernstfall.",
           "keywords": "Failover-Tests, Disaster-Recovery-Tests, DR-Simulation, DR-Testautomatisierung, Wiederherstellungsverifizierung, btrfs-Klon, RTO-RPO-Tests",
@@ -6087,8 +6117,6 @@
         }
       },
       "immutableBackups": {
-        "label": "Unveraenderliche Backups",
-        "blurb": "Backups, die Ransomware nicht antasten kann",
         "benefits": {
           "items": [
             {
@@ -6110,6 +6138,7 @@
           "overline": "WARUM ES WICHTIG IST",
           "title": "Was Sie bekommen"
         },
+        "blurb": "Backups, die Ransomware nicht antasten kann",
         "bottomCta": {
           "command": "rdc repo push production --to backup-vault",
           "description": "Starten Sie mit der kostenlosen Community-Edition. Schützen Sie bis zu 10 Workloads kostenlos. Keine Kreditkarte.",
@@ -6270,6 +6299,7 @@
           ],
           "title": "Ein Befehl. Totaler Schutz."
         },
+        "label": "Unveraenderliche Backups",
         "meta": {
           "description": "Ihre Backups sind unveränderlich ab dem Moment ihrer Erstellung. Niemand kann sie ändern. Keine Hacker. Nicht einmal Sie.",
           "keywords": "unveraenderliche Backups, Ransomware-Schutz, btrfs-Snapshots, Backup-Verifizierung, Notfallwiederherstellung, Copy-on-Write, versiegelte Backups",
@@ -6479,8 +6509,6 @@
         }
       },
       "infrastructureCosts": {
-        "label": "Infrastrukturkosten",
-        "blurb": "Schluss mit dem Bezahlen fuer ungenutzte Umgebungen",
         "benefits": {
           "items": [
             {
@@ -6502,6 +6530,7 @@
           "overline": "WARUM ES WICHTIG IST",
           "title": "Was Sie bekommen"
         },
+        "blurb": "Schluss mit dem Bezahlen fuer ungenutzte Umgebungen",
         "bottomCta": {
           "command": "rdc repo fork production --tag dev-loadtest",
           "description": "Starten Sie mit der kostenlosen Community-Edition. On-Demand-Klonen inklusive.",
@@ -6657,6 +6686,7 @@
           ],
           "title": "Ein Befehl. Keine Verschwendung."
         },
+        "label": "Infrastrukturkosten",
         "meta": {
           "description": "Erstellen Sie Umgebungen bei Bedarf. Löschen Sie sie, wenn Sie fertig sind. Zahlen Sie nur für das, was Sie tatsächlich nutzen.",
           "keywords": "Infrastrukturkosten, ungenutzte Umgebungen, bedarfsgesteuerte Umgebungen, Kostenoptimierung, btrfs-Klon, Copy-on-Write, TTL, automatische Bereinigung",
@@ -6814,8 +6844,6 @@
         }
       },
       "instantRecovery": {
-        "label": "Sofortige Wiederherstellung",
-        "blurb": "Komplette Umgebungswiederherstellung in Minuten",
         "benefits": {
           "items": [
             {
@@ -6837,6 +6865,7 @@
           "overline": "WARUM ES WICHTIG IST",
           "title": "Was Sie bekommen"
         },
+        "blurb": "Komplette Umgebungswiederherstellung in Minuten",
         "bottomCta": {
           "command": "rdc repo pull production --from daily-2026-02-27",
           "description": "Starten Sie mit der kostenlosen Community-Edition. Stellen Sie Ihre erste Umgebung in unter 5 Minuten wieder her.",
@@ -6999,6 +7028,7 @@
           ],
           "title": "Ein Befehl. Alles zurück."
         },
+        "label": "Sofortige Wiederherstellung",
         "meta": {
           "description": "Nicht nur Dateien. Ganze Umgebungen — Server, Konfigurationen, Datenbanken — in Minuten wiederhergestellt und betriebsbereit.",
           "keywords": "sofortige Wiederherstellung, vollstaendige Umgebungswiederherstellung, btrfs-Klon, Notfallwiederherstellung, Backup-Wiederherstellung, Zeitpunktwiederherstellung, Gesundheitspruefungen, Ein-Befehl-Wiederherstellung",
@@ -7176,8 +7206,6 @@
         }
       },
       "integrations": {
-        "label": "CI/CD-Integrationen",
-        "blurb": "Nahtlose Integration in Ihren bestehenden Workflow",
         "benefits": {
           "items": [
             {
@@ -7199,6 +7227,7 @@
           "overline": "WARUM ES WICHTIG IST",
           "title": "Was Sie bekommen"
         },
+        "blurb": "Nahtlose Integration in Ihren bestehenden Workflow",
         "bottomCta": {
           "command": "rdc repo fork production --tag ci-build",
           "description": "Starten Sie mit der kostenlosen Community-Edition. Git-Integration inklusive.",
@@ -7328,6 +7357,7 @@
           ],
           "title": "Ein Befehl. Keine Skripte."
         },
+        "label": "CI/CD-Integrationen",
         "meta": {
           "description": "Git Push löst eine frische Umgebung aus. Tests laufen auf Produktionsklonen. CI/CD funktioniert einfach — kein Custom-Scripting erforderlich.",
           "keywords": "CI/CD-Integration, GitLab CI, GitHub Actions, Webhook, Produktionsklon, Testumgebung, Pipeline-Automatisierung",
@@ -7493,8 +7523,6 @@
         }
       },
       "kubernetesClusterMobility": {
-        "label": "Kubernetes-Cluster-Mobilität",
-        "blurb": "Laufenden Cluster forken oder verschieben, Daten inklusive",
         "benefits": {
           "items": [
             {
@@ -7516,6 +7544,7 @@
           "overline": "WARUM ES WICHTIG IST",
           "title": "Behalten Sie Ihr Kubernetes. Gewinnen Sie Mobilität."
         },
+        "blurb": "Laufenden Cluster forken oder verschieben, Daten inklusive",
         "bottomCta": {
           "command": "rdc cluster fork prod --tag staging",
           "ctaText": "Kostenlos starten",
@@ -7642,6 +7671,7 @@
           ],
           "title": "Der gesamte Cluster ist ein Satz Dateien"
         },
+        "label": "Kubernetes-Cluster-Mobilität",
         "meta": {
           "description": "Forken oder verschieben Sie einen laufenden Kubernetes-Cluster mit Daten auf eine andere Maschine oder ins Rechenzentrum. Kurzer Wechsel. Mit Ceph RBD und k3s.",
           "keywords": "Kubernetes-Cluster-Migration, Cluster-Fork, Ceph RBD, k3s, Rechenzentrums-Mobilität, Kubernetes-Portabilität",
@@ -7805,8 +7835,6 @@
         "title": "Technisches Briefing anfordern"
       },
       "migrationSafety": {
-        "label": "Migrationssicherheit",
-        "blurb": "Migrieren ohne Ihre Daten zu gefaehrden",
         "benefits": {
           "items": [
             {
@@ -7828,6 +7856,7 @@
           "overline": "WARUM ES WICHTIG IST",
           "title": "Was Sie bekommen"
         },
+        "blurb": "Migrieren ohne Ihre Daten zu gefaehrden",
         "bottomCta": {
           "command": "rdc repo push production --to secondary",
           "description": "Starten Sie mit der kostenlosen Community-Edition. Verschlüsselte Migration inklusive.",
@@ -7986,6 +8015,7 @@
           ],
           "title": "Ein Befehl. Null Exposition."
         },
+        "label": "Migrationssicherheit",
         "meta": {
           "description": "Wechsel zwischen Servern, Clouds oder Anbietern? Ihre verschlüsselten Backups reisen sicher. Keine Exposition. Kein Datenverlust.",
           "keywords": "verschluesselte Migration, Zero-Exposure-Transfer, Datenmigrationssicherheit, verschluesselter Backup-Transfer, btrfs-Migration, Servermigration, Cloud-Migrationsverschluesselung",
@@ -8163,8 +8193,6 @@
         }
       },
       "productionParity": {
-        "label": "Produktionsparität",
-        "blurb": "Entwicklungsumgebungen, die exakt der Produktion entsprechen",
         "benefits": {
           "items": [
             {
@@ -8186,6 +8214,7 @@
           "overline": "WARUM ES WICHTIG IST",
           "title": "Was Sie bekommen"
         },
+        "blurb": "Entwicklungsumgebungen, die exakt der Produktion entsprechen",
         "bottomCta": {
           "command": "rdc backup restore dev-sarah --as dev-sarah-verify --up",
           "description": "Starten Sie mit der kostenlosen Community-Edition. Produktionsparität inklusive.",
@@ -8342,6 +8371,7 @@
           ],
           "title": "Ein Befehl. Perfekte Parität."
         },
+        "label": "Produktionsparität",
         "meta": {
           "description": "Kein 'es funktioniert auf meinem Rechner' mehr. Jede Entwicklungsumgebung ist ein identischer Klon der Produktion.",
           "keywords": "Produktionsgleichheit, Umgebungsabweichung, Entwicklungsumgebung, identischer Klon, btrfs-Klon, Copy-on-Write, Konfigurationsabgleich",
@@ -8495,8 +8525,6 @@
         }
       },
       "rapidRecovery": {
-        "label": "Schnelle Wiederherstellung",
-        "blurb": "Wiederherstellung in Minuten, nicht Tagen",
         "benefits": {
           "items": [
             {
@@ -8518,6 +8546,7 @@
           "overline": "WARUM ES WICHTIG IST",
           "title": "Was Sie bekommen"
         },
+        "blurb": "Wiederherstellung in Minuten, nicht Tagen",
         "bottomCta": {
           "command": "rdc repo pull production --from backup-vault --force",
           "ctaText": "Kostenlos mit Community starten",
@@ -8673,6 +8702,7 @@
           ],
           "title": "Ein Befehl. Wieder online."
         },
+        "label": "Schnelle Wiederherstellung",
         "meta": {
           "description": "Wenn Ransomware zuschlägt, kostet jede Minute Geld. Rediacc bringt Sie wieder online, bevor sich der Schaden ausbreitet.",
           "keywords": "schnelle Wiederherstellung, Ransomware-Wiederherstellung, Notfallwiederherstellung, btrfs-Wiederherstellung, schnelle Recovery",
@@ -8864,8 +8894,6 @@
         }
       },
       "retentionCompliance": {
-        "label": "Aufbewahrungskonformitaet",
-        "blurb": "Daten so lange aufbewahren, wie das Gesetz es verlangt",
         "benefits": {
           "items": [
             {
@@ -8887,6 +8915,7 @@
           "overline": "WARUM ES WICHTIG IST",
           "title": "Was Sie bekommen"
         },
+        "blurb": "Daten so lange aufbewahren, wie das Gesetz es verlangt",
         "bottomCta": {
           "command": "rdc config backup-strategy set --cron '0 2 * * *'",
           "description": "Starten Sie mit der kostenlosen Community-Edition. Legen Sie Ihre erste Aufbewahrungsrichtlinie in 30 Sekunden fest.",
@@ -9048,6 +9077,7 @@
           ],
           "title": "Ein Befehl. Volle Compliance."
         },
+        "label": "Aufbewahrungskonformitaet",
         "meta": {
           "description": "Konfigurierbare Aufbewahrungsrichtlinien, die Compliance-Anforderungen erfüllen. HIPAA, SOC2, DSGVO — standardmäßig abgedeckt.",
           "keywords": "Aufbewahrungskonformitaet, Datenaufbewahrung, HIPAA-Konformitaet, SOC2, DSGVO, Backup-Aufbewahrung, pruefungsbereit, Compliance-Automatisierung",
@@ -9257,8 +9287,6 @@
         }
       },
       "safeOsTesting": {
-        "label": "Sichere OS-Tests",
-        "blurb": "OS-Updates ohne Risiko testen",
         "benefits": {
           "items": [
             {
@@ -9280,6 +9308,7 @@
           "overline": "WARUM ES WICHTIG IST",
           "title": "Was Sie bekommen"
         },
+        "blurb": "OS-Updates ohne Risiko testen",
         "bottomCta": {
           "command": "rdc repo fork production --tag patch-test",
           "description": "Starten Sie mit der kostenlosen Community-Edition. Klonen, testen und verifizieren Sie kostenlos. Keine Kreditkarte.",
@@ -9440,6 +9469,7 @@
           ],
           "title": "Ein Befehl. Null Risiko."
         },
+        "label": "Sichere OS-Tests",
         "meta": {
           "description": "Klonen Sie Ihre Produktionsumgebung. Wenden Sie den Patch an. Sehen Sie, was bricht. Rollen Sie bei Bedarf zurück. Alles ohne die Produktion zu berühren.",
           "keywords": "sicheres OS-Testen, Patch-Testen, OS-Update-Testen, btrfs-Klon, Produktionsklon, risikofreies Patchen, Update-Verifizierung",
@@ -9617,8 +9647,6 @@
         }
       },
       "vendorLockIn": {
-        "label": "Vendor-Lock-in-Freiheit",
-        "blurb": "Ihre Infrastruktur. Ihre Wahl. Immer.",
         "benefits": {
           "items": [
             {
@@ -9640,6 +9668,7 @@
           "overline": "WARUM ES WICHTIG IST",
           "title": "Was Sie bekommen"
         },
+        "blurb": "Ihre Infrastruktur. Ihre Wahl. Immer.",
         "bottomCta": {
           "command": "rdc repo push production --to new-provider --checkpoint",
           "ctaText": "Kostenlos mit Community starten",
@@ -9800,6 +9829,7 @@
           ],
           "title": "Ein Befehl. Totale Freiheit."
         },
+        "label": "Vendor-Lock-in-Freiheit",
         "meta": {
           "description": "Überall deployen. Jederzeit migrieren. Keine Lock-in-Verträge. Keine proprietären Formate. Ihre Daten bleiben Ihre.",
           "keywords": "Anbieterabhaengigkeit, Cloud-Migration, Multi-Cloud, Portabilitaet, btrfs-Migration",
@@ -9967,8 +9997,6 @@
         }
       },
       "vulnerabilityManagement": {
-        "label": "Schwachstellenmanagement",
-        "blurb": "Schwachstellen beheben, bevor Angreifer kommen",
         "benefits": {
           "items": [
             {
@@ -9990,6 +10018,7 @@
           "overline": "WARUM ES WICHTIG IST",
           "title": "Was Sie bekommen"
         },
+        "blurb": "Schwachstellen beheben, bevor Angreifer kommen",
         "bottomCta": {
           "command": "rdc term production cve-2026-1234-fix",
           "description": "Starten Sie mit der kostenlosen Community-Edition. Verifizieren Sie Ihren ersten Patch in unter 4 Minuten.",
@@ -10091,6 +10120,7 @@
           ],
           "title": "Ein Befehl. Verifizierte Fixes."
         },
+        "label": "Schwachstellenmanagement",
         "meta": {
           "description": "Finden, testen und patchen Sie Sicherheitslücken auf sicheren Klonen. Deployen Sie Fixes mit Vertrauen in die Produktion.",
           "keywords": "Schwachstellenmanagement, Patch-Verifizierung, CVE-Behebung, klonbasiertes Patchen, sicheres Patchen, Sicherheitstests, Schwachstellenbehebung",
@@ -10713,16 +10743,6 @@
     "title": "Wählen Sie Ihre Konto-Region"
   },
   "solutions": {
-    "roles": {
-      "copy": "Kopieren",
-      "test": "Test",
-      "recover": "Wiederherstellen",
-      "property": "Plattform"
-    },
-    "constellation": {
-      "centre": "Jede Lösung ist eine Aktion an einer Kopie deines Live-Systems.",
-      "title": "Weitere Lösungen entdecken"
-    },
     "categories": {
       "backups": "Verifizierte Backups",
       "defense": "Präventive Abwehr",
@@ -10730,6 +10750,19 @@
       "encryption": "Verschlüsselungskontrolle",
       "multi-cloud": "Multi-Cloud",
       "ransomware": "Ransomware-Schutz"
+    },
+    "constellation": {
+      "centre": "Jede Lösung ist eine Aktion an einer Kopie deines Live-Systems.",
+      "title": "Weitere Lösungen entdecken"
+    },
+    "references": {
+      "title": "Quellen"
+    },
+    "roles": {
+      "copy": "Kopieren",
+      "property": "Plattform",
+      "recover": "Wiederherstellen",
+      "test": "Test"
     },
     "title": "So sichern wir Geschäftskontinuität"
   },

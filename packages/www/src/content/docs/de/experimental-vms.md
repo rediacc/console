@@ -2,9 +2,12 @@
 title: Experimentelle VMs
 description: Lokale VM-Cluster für Entwicklung und Tests mit rdc ops bereitstellen.
 category: Concepts
+tags:
+  - operations
+  - containers
 order: 2
 language: de
-sourceHash: aafca00c006ded0b
+sourceHash: 5fad635a61089758
 ---
 
 # Experimentelle VMs

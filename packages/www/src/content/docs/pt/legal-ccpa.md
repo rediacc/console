@@ -2,9 +2,11 @@
 title: "Conformidade com a CCPA"
 description: "Como o modelo self-hosted da Rediacc responde aos requisitos da California Consumer Privacy Act relativos à proteção de dados dos consumidores."
 category: "Legal"
+tags:
+  - compliance
 order: 4
 language: pt
-sourceHash: "3cee3262b53f7afd"
+sourceHash: "0d297fb9552dcfeb"
 sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
 ---
 

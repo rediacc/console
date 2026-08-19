@@ -950,7 +950,7 @@ Deploy or update a repository (mount, run Rediaccfile up which calls renet compo
 
 ### rdc repo down [ref]
 
-Stop repository Docker containers (runs Rediaccfile down via renet compose). The machine is derived from the ref placement. Does NOT unmount the encrypted volume -- the repo stays mounted and can be restarted with 'repo up'. Use --unmount to also close the LUKS container after stopping (folds the retired 'repo unmount'). Use --checkpoint to save CRIU process state before stopping (next 'repo up' auto-restores). Use --all --machine <m> to stop every repository on a machine.
+Stop repository Docker containers (runs Rediaccfile down via renet compose). The machine is derived from the ref placement. Does NOT unmount the encrypted volume. The repo stays mounted and can be restarted with 'repo up'. Use --unmount to also close the LUKS container after stopping (folds the retired 'repo unmount'). Use --checkpoint to save CRIU process state before stopping (next 'repo up' auto-restores). Use --all --machine <m> to stop every repository on a machine.
 
 **Options:**
 
@@ -1241,7 +1241,7 @@ Resize a repository offline (supports both grow and shrink). Repo must be unmoun
 
 ### rdc repo expand <ref>
 
-Expand a mounted repository online (zero downtime, grow-only). Grows the LUKS container and filesystem while containers keep running. Cannot shrink -- use 'repo resize' for that (requires unmount)
+Expand a mounted repository online (zero downtime, grow-only). Grows the LUKS container and filesystem while containers keep running. Cannot shrink. Use 'repo resize' for that (requires unmount)
 
 **Options:**
 

@@ -5,16 +5,16 @@
   "commands": {
     "backup": {
       "browse": {
+        "completed": "{{name}} 나열 완료",
         "description": "저장소에 포함된 파일을 나열합니다. 저장소 이미지에 대한 로컬 읽기 전용 순회로, 계정 서버에도 네트워크에도 접속하지 않습니다. 암호화된 저장소는 열리기 전에 마운트되어 있거나 키 파일이 배포되어 있어야 합니다. browse는 빈 목록을 보여주는 대신 그 사실을 알립니다. 청크 저장소에만 존재하는 스냅샷은 나열할 수 없습니다. 먼저 복원한 다음 결과를 살펴보세요.",
         "descriptionShort": "저장소 파일 나열 (로컬, 읽기 전용)",
-        "optionPath": "나열 범위를 이 하위 트리로 제한합니다",
+        "empty": "{{name}}에 파일이 없습니다.",
+        "failed": "{{name}}을(를) 나열하지 못했습니다",
         "optionDepth": "하위 탐색을 N단계로 제한합니다 (0은 무제한)",
         "optionLimit": "반환할 최대 항목 수 (0은 무제한)",
+        "optionPath": "나열 범위를 이 하위 트리로 제한합니다",
         "starting": "{{name}}을(를) 나열하는 중...",
-        "completed": "{{name}} 나열 완료",
-        "failed": "{{name}}을(를) 나열하지 못했습니다",
-        "truncated": "나열이 {{limit}}개 항목에서 잘렸습니다. --path로 범위를 좁히거나 --limit을 늘리세요.",
-        "empty": "{{name}}에 파일이 없습니다."
+        "truncated": "나열이 {{limit}}개 항목에서 잘렸습니다. --path로 범위를 좁히거나 --limit을 늘리세요."
       },
       "cancel": {
         "cancelled": "{{name}}이 취소되었습니다",
@@ -45,8 +45,8 @@
         "atResolved": "{{at}}을(를) 스냅샷 {{snapshot}}(으)로 확인했습니다 ({{created}}에 생성됨)",
         "atUnparsable": "--at \"{{at}}\"은(는) 스냅샷 ID도 시각도 아닙니다. `rdc backup manifests`에서 스냅샷 ID를 가져오거나 2026-08-14T12:00:00Z와 같은 RFC3339 형식의 시각을 지정하세요",
         "datastoreUnattached": "데이터스토어 \"{{datastore}}\"가 어떤 머신에도 어태치되어 있지 않습니다. 먼저 어태치하세요: rdc datastore attach {{datastore}} --to <machine>",
-        "deployFailed": "복원된 {{name}}의 배포에 실패했습니다",
         "deployed": "{{machine}}에 {{name}} 배포 완료",
+        "deployFailed": "복원된 {{name}}의 배포에 실패했습니다",
         "deploying": "{{machine}}에 {{name}}을(를) 배포하는 중...",
         "description": "백업 아티팩트를 실행 중인 저장소로 되돌립니다. 배치 위치는 여기서 지정합니다",
         "examples": {
@@ -58,9 +58,9 @@
         "optionAt": "특정 시점으로 복원: 스냅샷 ID 또는 RFC3339 시각 (청크 스토리지 복원)",
         "optionDatastore": "이 이름 지정 데이터스토어로 복원합니다 (어태치된 머신이 호스팅)",
         "optionUp": "전송 후 복원된 저장소를 배포합니다",
-        "placeRequired": "복원할 아티팩트는 위치를 명시해야 합니다: repo@place 형식을 사용하세요 (예: shop:nightly@backup-1)",
         "placementExclusive": "배치 플래그는 --machine 또는 --datastore 중 하나만 지정하세요",
         "placementRequired": "복원 위치를 지정하세요: --machine <m> (Docker) 또는 --datastore <d> (이름 지정 데이터스토어)",
+        "placeRequired": "복원할 아티팩트는 위치를 명시해야 합니다: repo@place 형식을 사용하세요 (예: shop:nightly@backup-1)",
         "pulling": "{{place}}에서 {{name}}을(를) 가져오는 중...",
         "restored": "{{machine}}에 {{name}} 복원 완료",
         "restoringSnapshot": "스냅샷 {{snapshot}}에서 {{name}}을(를) 복원하는 중...",
@@ -1473,8 +1473,8 @@
         "starting": "\"{{machine}}\"에서 \"{{fork}}\"의 데이터로 \"{{grand}}\"를 인수하는 중..."
       },
       "pull": {
-        "deployFailed": "가져온 후 \"{{repo}}\" 배포 실패",
         "deployed": "{{machine}}에서 저장소 \"{{repo}}\" 배포 완료",
+        "deployFailed": "가져온 후 \"{{repo}}\" 배포 실패",
         "deploying": "{{machine}}에서 \"{{repo}}\"를 배포하는 중...",
         "description": "다른 머신에서 저장소를 가져옵니다. 스토리지 소스는 폐지되었습니다. 특정 시점 복원에는 `rdc backup restore`를 사용하세요. 소스 유형은 설정에서 자동으로 감지됩니다. 가져온 후 배포하려면 --up을 사용하십시오",
         "descriptionShort": "다른 머신에서 저장소를 가져옵니다",
@@ -1493,8 +1493,8 @@
         "storageRetired": "스토리지 백엔드에서 풀하는 기능은 종료되었습니다. rclone 클라우드 계열이 제거되었기 때문입니다. 시점 복원은 청크 저장소를 쓰는 `rdc backup restore <repo> --at <snapshot>`으로 합니다. 머신 간 전송은 그대로이며 --from-machine을 쓰세요"
       },
       "push": {
-        "deployFailed": "푸시 후 \"{{repo}}\" 배포 실패",
         "deployed": "{{machine}}에서 저장소 \"{{repo}}\" 배포 완료",
+        "deployFailed": "푸시 후 \"{{repo}}\" 배포 실패",
         "deploying": "{{machine}}에서 \"{{repo}}\"를 배포하는 중...",
         "description": "저장소를 다른 머신으로 푸시합니다. 스토리지 대상은 폐지되었습니다. 특정 시점 백업에는 `rdc backup snapshot`을 사용하세요. 머신 간 전송 시 암호화된 저장소 이미지가 동일한 GUID로 복사됩니다. 이는 백업/마이그레이션이며 포크가 아닙니다. 독립적인 포크를 생성하려면 먼저 'repo fork'를 사용한 후 푸시하십시오. 푸시된 사본은 백업 아티팩트로 저장됩니다: 대상에서 'backup restore <ref> --as <name> -m <target> --up'으로 부팅하세요",
         "descriptionShort": "저장소를 다른 머신으로 푸시합니다",

@@ -2,9 +2,12 @@
 title: "백업 및 복원"
 description: "암호화된 저장소를 콘텐츠 주소 기반 청크 스토리지에 스냅샷으로 저장합니다. 변경된 셀만 업로드되며, 어떤 스냅샷에서든 곧바로 복원할 수 있습니다. 또는 다른 머신에 사본을 보관할 수도 있습니다. 어디서든 복원할 수 있고, 이름이 지정된 전략과 systemd 타이머로 자동화할 수 있습니다."
 category: "Guides"
+tags:
+  - backup
+  - storage
 order: 7
 language: ko
-sourceHash: "91f6072e230b059c"
+sourceHash: "c35328105c2f3e8c"
 sourceCommit: "79c84ad044d5730b6d0a20aaf7b21f21914b6bda"
 ---
 

@@ -2,22 +2,23 @@
 title: "分支：提交与回滚"
 description: "将仓库状态冻结为不可变的提交，用分支命名，将任意提交检出为可写 fork。"
 category: "Tutorials"
+tags:
+  - forking
+  - repositories
 subcategory: advanced
 order: 15
 language: zh
-sourceHash: "53f4eacdd4630b19"
+sourceHash: "ebb8a81df80ede24"
 sourceCommit: "3fb35b9a33c7e8ec6753ecd56231f2018e8f4803"
 ---
 
 import TutorialStep from '../../../components/tutorial/TutorialStep.astro';
 
+![Tutorial: Branching, commit and rollback](/assets/tutorials/tutorial-branching.cast)
+
 # 分支：提交与回滚
 
 像管理代码一样管理仓库版本。**commit** 将 fork 冻结为不可变镜像；**branch** 为其命名；**checkout** 将任意提交还原为全新可写 fork。本教程中，我们提交一个已知良好的状态，然后误删一张真实的 PostgreSQL 表，再用秒级回滚找回每一行数据。
-
-## 观看教程
-
-![Tutorial: Branching, commit and rollback](/assets/tutorials/tutorial-branching.cast)
 
 ## 模型说明
 

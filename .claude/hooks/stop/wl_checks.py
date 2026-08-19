@@ -505,7 +505,13 @@ CITE_RE = re.compile(
     # So a session doing www work could not cite the files it had just changed,
     # which pushes it toward citing something unrelated or not ticking. Found by
     # a tick of mine being refused while citing main.css and BaseLayout.astro.
-    r"(?<![\w./-])(\.?[\w][\w./-]*\.(?:py|ts|tsx|js|cjs|mjs|sh|json|md|ya?ml|go|toml|astro|css))"
+    # `mdx`, `svg`, `cast`, `txt` added 2026-08-19, the SAME class of gap as the
+    # astro/css one directly above and found the same way: a tick of mine citing
+    # tutorial-create-repo.mdx:15 was refused as evidence-free. 260 tracked .mdx
+    # files (every tutorial doc), 86 .svg, 18 .cast and 14 .txt could not be cited
+    # AT ALL. Binary formats (png, pdf) stay OUT on purpose: a line number in a
+    # binary cites nothing.
+    r"(?<![\w./-])(\.?[\w][\w./-]*\.(?:py|ts|tsx|js|cjs|mjs|sh|json|md|ya?ml|go|toml|astro|css|mdx|svg|cast|txt))"
     r":(\d+)(?:-\d+)?\b"
 )
 

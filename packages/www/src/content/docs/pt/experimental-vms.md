@@ -2,9 +2,12 @@
 title: "VMs Experimentais"
 description: "Provisione clusters de VMs locais para desenvolvimento e testes com rdc ops, sem necessidade de fornecedores externos de nuvem. Configuração rápida e isolada."
 category: "Concepts"
+tags:
+  - operations
+  - containers
 order: 2
 language: pt
-sourceHash: "aafca00c006ded0b"
+sourceHash: "5fad635a61089758"
 sourceCommit: "6cf65c4fe8617378da6a6dd21cce2feecff7ca9f"
 ---
 

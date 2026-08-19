@@ -2,9 +2,12 @@
 title: "리포지터리"
 description: "원격 머신에서 LUKS 암호화된 리포지터리를 생성, 관리, 운영합니다."
 category: "Guides"
+tags:
+  - repositories
+  - security
 order: 4
 language: ko
-sourceHash: "b67203062ab832f8"
+sourceHash: "e1d1a463cc4049d4"
 sourceCommit: "70a4ca883754f1c0a7f4684c9fde02a5a01d3681"
 ---
 

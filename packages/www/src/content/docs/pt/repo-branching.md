@@ -2,10 +2,12 @@
 title: "Ramificação semelhante ao git"
 description: "Trate forks copy-on-write como commits git: congele um fork num commit imutável, nomeie branches, faça checkout de commits para forks graváveis, percorra o histórico e faça merge sem nunca modificar um repositório em produção."
 category: Reference
-subcategory: advanced
+tags:
+  - forking
+  - repositories
 order: 41
 language: pt
-sourceHash: "b8bd3176ecabfa4b"
+sourceHash: "7aaa25bc83dfcf5b"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 

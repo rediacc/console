@@ -296,10 +296,23 @@ export const LEGACY_EXPLORE_SOURCE: Record<string, { ck: string; idx: number }> 
   'vendor-lock-in': { ck: 'vendorLockIn', idx: 1 },
 };
 
-/** English-only last resort, used when neither the new key nor the legacy path resolves. */
-export const EN_FALLBACK: Record<string, { label: string; blurb: string }> = {
-  'data-sovereignty': {
-    label: 'Data Sovereignty',
-    blurb: 'Your servers, your keys, your jurisdiction.',
-  },
-};
+/*
+ * EN_FALLBACK was removed on 2026-08-19. It held one entry, `data-sovereignty`,
+ * whose blurb was BYTE-IDENTICAL to the live catalog value at
+ * `pages.solutionPages.dataSovereignty.blurb`, with nothing keeping the two in
+ * step.
+ *
+ * It was dead, and measurably: all 13 locales carry both `label` and `blurb` for
+ * that key, properly naturalized (tr reads "Sunucularınız, anahtarlarınız, yargı
+ * yetkiniz."), so `t(key, '')` never returned empty and the `||` never reached
+ * the fallback in any language.
+ *
+ * Removing rather than syncing, because it was worse than redundant. The
+ * condition it guarded -- a locale missing that key -- is exactly what
+ * `check:i18n:completeness` FAILS CLOSED on. A silent English fallback would
+ * have served stale copy while looking fine, muting a gate designed to shout.
+ *
+ * `|| slug` in SolutionConstellation.astro remains as the genuine last resort:
+ * it degrades to an identifier, which is visibly wrong, rather than to English
+ * prose, which is invisibly wrong.
+ */

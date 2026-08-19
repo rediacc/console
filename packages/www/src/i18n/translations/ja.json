@@ -98,11 +98,17 @@
     "title": "お問い合わせ"
   },
   "documentation": {
-    "theme": {
-      "label": "テーマ",
-      "light": "ライト",
-      "dark": "ダーク",
-      "auto": "自動"
+    "browse": {
+      "clear": "フィルターを解除",
+      "description": "すべてのガイド、チュートリアル、リファレンスを一箇所に。",
+      "empty": "このフィルターに一致するドキュメントはありません。",
+      "filterHeading": "絞り込み",
+      "filterLabel": "カテゴリで絞り込む",
+      "searchLabel": "ドキュメントを検索",
+      "searchPlaceholder": "タイトルと説明を検索",
+      "showDescription": "説明を表示",
+      "title": "ドキュメント",
+      "topicLabel": "トピックで絞り込む"
     },
     "categories": {
       "concepts": "コンセプト",
@@ -115,14 +121,36 @@
     "cliReference": "CLIリファレンス",
     "cliReferenceLabel": "CLIリファレンス：",
     "copied": "コピーしました！",
-    "copyCode": "コードをコピー",
     "copyAsMarkdown": "Markdownとしてコピー",
+    "copyCode": "コードをコピー",
     "copyFullPageAriaLabel": "ページ全体をMarkdownとしてコピー",
     "openInNewTab": "新しいタブで開く",
     "searchDocs": "ドキュメントを検索",
     "subcategories": {
       "advanced": "応用",
       "essentials": "基本"
+    },
+    "tags": {
+      "account": "アカウント",
+      "aiAgents": "AIエージェント",
+      "backup": "バックアップ",
+      "cli": "CLI",
+      "compliance": "コンプライアンス",
+      "containers": "コンテナ",
+      "forking": "フォーク",
+      "gettingStarted": "はじめに",
+      "migration": "移行",
+      "networking": "ネットワーク",
+      "operations": "オペレーション",
+      "repositories": "リポジトリ",
+      "security": "セキュリティ",
+      "storage": "ストレージ"
+    },
+    "theme": {
+      "auto": "自動",
+      "dark": "ダーク",
+      "label": "テーマ",
+      "light": "ライト"
     }
   },
   "footer": {
@@ -193,9 +221,9 @@
     }
   },
   "navigation": {
-    "moreOptions": "その他のオプション",
     "account": "アカウント",
     "blog": "ブログ",
+    "browseAllDocs": "すべてのドキュメントを見る",
     "builtForYou": "あなたに合わせて",
     "builtForYourRole": "あなたの役割に合わせて",
     "contact": "お問い合わせ",
@@ -210,7 +238,9 @@
     "home": "ホーム",
     "install": "インストール",
     "languageSelectionMenu": "言語選択メニュー",
+    "learn": "学ぶ",
     "login": "ログイン",
+    "moreOptions": "その他のオプション",
     "partners": "パートナー",
     "personas": {
       "ai-agent": {
@@ -566,14 +596,14 @@
         "title": "ディザスタリカバリサービスの料金プラン - あらゆる規模の企業向け | Rediacc"
       },
       "plans": {
+        "assessment": {
+          "name": "リカバリー診断"
+        },
         "program": {
           "name": "リカバリープログラム"
         },
         "retainer": {
           "name": "リカバリー顧問契約"
-        },
-        "assessment": {
-          "name": "リカバリー診断"
         }
       },
       "psTeaser": {
@@ -608,6 +638,11 @@
         ],
         "recoveryNote": "RPO（目標復旧時点）: 災害時に失ってもいいデータ量を、時間で表したもの。例えば RPO が15分なら、最大15分間のデータが失われる可能性があります。\n\nRTO（目標復旧時間）: 災害後、ビジネスを再開するまでの時間。例えば RTO が4時間なら、4時間以内にシステムが復旧されます。",
         "values": {
+          "assessment": {
+            "auditLogs": "30日",
+            "rpo": "約15分",
+            "rto": "任意時点への復元"
+          },
           "program": {
             "auditLogs": "90日",
             "rpo": "約5分（継続）",
@@ -617,11 +652,6 @@
             "auditLogs": "1年以上",
             "rpo": "カスタム（ほぼゼロ）",
             "rto": "15～60分（カスタム）"
-          },
-          "assessment": {
-            "auditLogs": "30日",
-            "rpo": "約15分",
-            "rto": "任意時点への復元"
           }
         }
       },
@@ -632,14 +662,14 @@
         "contactUs": "お問い合わせ",
         "contactUsSub": "カスタム制限と条件",
         "cta": {
+          "assessment": {
+            "primary": "無料トライアルを開始"
+          },
           "program": {
             "primary": "無料トライアルを開始"
           },
           "retainer": {
             "primary": "デモを予約"
-          },
-          "assessment": {
-            "primary": "無料トライアルを開始"
           }
         }
       }
@@ -1848,47 +1878,47 @@
     "pricing": {
       "comparison": {
         "allPlansInclude": "すべてのプランに含まれるもの: ユーザーとチーム無制限、リポジトリ無制限、スナップショットからの復元、継続的データ保護、地理冗長ストレージ、LUKS 暗号化、監査ログ、ロールベースアクセス、手動および自動スケジュール、連携 API。",
-        "rows": [
-          {
-            "label": "専任アカウント マネージャー",
-            "professional": false,
-            "business": true,
-            "enterprise": true
-          },
-          {
-            "label": "電話サポート",
-            "professional": false,
-            "business": true,
-            "enterprise": true
-          },
-          {
-            "label": "24時間365日サポート",
-            "professional": false,
-            "business": false,
-            "enterprise": true
-          },
-          {
-            "label": "経営層へのエスカレーション",
-            "professional": false,
-            "business": false,
-            "enterprise": true
-          },
-          {
-            "label": "セキュリティ監査",
-            "professional": false,
-            "business": false,
-            "enterprise": true
-          },
-          {
-            "label": "カスタム ワークフロー",
-            "professional": false,
-            "business": false,
-            "enterprise": true
-          }
-        ],
         "heading": "プラン詳細を比較",
         "included": "含まれます",
-        "notIncluded": "含まれません"
+        "notIncluded": "含まれません",
+        "rows": [
+          {
+            "business": true,
+            "enterprise": true,
+            "label": "専任アカウント マネージャー",
+            "professional": false
+          },
+          {
+            "business": true,
+            "enterprise": true,
+            "label": "電話サポート",
+            "professional": false
+          },
+          {
+            "business": false,
+            "enterprise": true,
+            "label": "24時間365日サポート",
+            "professional": false
+          },
+          {
+            "business": false,
+            "enterprise": true,
+            "label": "経営層へのエスカレーション",
+            "professional": false
+          },
+          {
+            "business": false,
+            "enterprise": true,
+            "label": "セキュリティ監査",
+            "professional": false
+          },
+          {
+            "business": false,
+            "enterprise": true,
+            "label": "カスタム ワークフロー",
+            "professional": false
+          }
+        ]
       },
       "edgeChannel": {
         "cta": "無料で始める",
@@ -3001,8 +3031,6 @@
     },
     "solutionPages": {
       "aiPentesting": {
-        "label": "AIペネトレーションテスト",
-        "blurb": "本番環境をクローン。AIに攻撃させる。",
         "benefits": {
           "items": [
             {
@@ -3024,6 +3052,7 @@
           "overline": "重要な理由",
           "title": "得られるもの"
         },
+        "blurb": "本番環境をクローン。AIに攻撃させる。",
         "bottomCta": {
           "command": "rdc repo fork production --tag pentest",
           "ctaText": "無料で始める",
@@ -3129,6 +3158,7 @@
           ],
           "title": "1コマンド。リスクゼロ。"
         },
+        "label": "AIペネトレーションテスト",
         "meta": {
           "description": "インフラの完全なコピーを作成し、AIによるペネトレーションテストを実行 — 本番を危険にさらさずに。",
           "keywords": "AIペンテスト, ペネトレーションテスト, セキュリティテスト, 脆弱性スキャン, クローン攻撃",
@@ -3264,8 +3294,6 @@
         }
       },
       "auditTrail": {
-        "label": "監査証跡",
-        "blurb": "すべてのアクションを記録。隠し事なし。",
         "benefits": {
           "items": [
             {
@@ -3287,6 +3315,7 @@
           "overline": "重要な理由",
           "title": "得られるもの"
         },
+        "blurb": "すべてのアクションを記録。隠し事なし。",
         "bottomCta": {
           "command": "rdc repo status production",
           "ctaText": "Communityで無料で始める",
@@ -3446,6 +3475,7 @@
           ],
           "title": "1コマンド。完全な可視性。"
         },
+        "label": "監査証跡",
         "meta": {
           "description": "誰が何をいつなぜ行ったかの完全な可視性。すべての操作に対する改ざん防止監査ログで、コンプライアンスを確保します。",
           "keywords": "監査証跡, コンプライアンスログ, 改ざん防止ログ, SHA-256署名, 監査レポート",
@@ -3617,8 +3647,6 @@
         }
       },
       "backupVerification": {
-        "label": "バックアップ検証",
-        "blurb": "すべてのバックアップを自動検証",
         "benefits": {
           "items": [
             {
@@ -3640,6 +3668,7 @@
           "overline": "重要な理由",
           "title": "得られるもの"
         },
+        "blurb": "すべてのバックアップを自動検証",
         "bottomCta": {
           "command": "rdc backup verify my-app",
           "description": "無料のCommunityエディションから始めましょう。1分以内に最初のバックアップを検証できます。",
@@ -3800,6 +3829,7 @@
           ],
           "title": "1コマンド。サプライズゼロ。"
         },
+        "label": "バックアップ検証",
         "meta": {
           "description": "災害が起きてからバックアップが破損していることに気づくのでは遅すぎます。Rediaccは作成された瞬間にすべてのバックアップをチェックします。",
           "keywords": "バックアップ検証, バックアップテスト, 復元検証, バックアップ整合性, 自動バックアップチェック, btrfsクローン, バックアップヘルスチェック",
@@ -3981,8 +4011,6 @@
         }
       },
       "cloudOutageProtection": {
-        "label": "クラウド障害対策",
-        "blurb": "AWSがダウンしても、あなたはダウンしない",
         "benefits": {
           "items": [
             {
@@ -4004,6 +4032,7 @@
           "overline": "重要な理由",
           "title": "得られるもの"
         },
+        "blurb": "AWSがダウンしても、あなたはダウンしない",
         "bottomCta": {
           "command": "rdc repo push production --to secondary-dc",
           "description": "無料のCommunityエディションから始めましょう。ロケーション間レプリケーションが無料。クレジットカード不要。",
@@ -4165,6 +4194,7 @@
           ],
           "title": "1コマンド。常時オンライン。"
         },
+        "label": "クラウド障害対策",
         "meta": {
           "description": "インフラは複数のクラウドで稼働。1つが障害を起こしても、他が自動的に引き継ぎます。ダウンタイムなしで事業を継続。",
           "keywords": "クラウド障害保護, マルチクラウドフェイルオーバー, クロスクラウドレプリケーション, 災害復旧, クラウド冗長性, 自動フェイルオーバー, btrfsレプリケーション",
@@ -4342,8 +4372,6 @@
         }
       },
       "continuousSecurityTesting": {
-        "label": "継続的セキュリティテスト",
-        "blurb": "年次ではなく継続的にセキュリティをテスト",
         "benefits": {
           "items": [
             {
@@ -4365,6 +4393,7 @@
           "overline": "重要な理由",
           "title": "得られるもの"
         },
+        "blurb": "年次ではなく継続的にセキュリティをテスト",
         "bottomCta": {
           "command": "rdc backup restore production --as production-verify -m primary --up",
           "ctaText": "無料で始める",
@@ -4465,6 +4494,7 @@
           ],
           "title": "1コマンド。毎日カバー。"
         },
+        "label": "継続的セキュリティテスト",
         "meta": {
           "description": "毎日新鮮な本番クローンでセキュリティテストを実行。脆弱性が現れた時に発見します。数ヶ月後に気づくのではなく即座に対応。",
           "keywords": "継続的セキュリティテスト, 毎日のペンテスト, 自動セキュリティ, 脆弱性検出",
@@ -4600,8 +4630,6 @@
         }
       },
       "dataSovereignty": {
-        "label": "データ主権",
-        "blurb": "あなたのサーバー、あなたの鍵、あなたの管轄。",
         "benefits": {
           "items": [
             {
@@ -4623,6 +4651,7 @@
           "overline": "重要な理由",
           "title": "得られるもの"
         },
+        "blurb": "あなたのサーバー、あなたの鍵、あなたの管轄。",
         "bottomCta": {
           "command": "rdc config show",
           "ctaText": "Communityで無料で始める",
@@ -4780,6 +4809,7 @@
           ],
           "title": "3ステップ。1つのソブリンスタック。"
         },
+        "label": "データ主権",
         "meta": {
           "description": "あなたがホストし、あなたが鍵を管理します。証明書ではなくアーキテクチャによる CLOUD Act 免疫。顧客管理キーによる自己ホスト型バックアップ。",
           "keywords": "データ主権, CLOUD Act免除, 顧客管理鍵, GDPR Schrems II, EU Data Act, セルフホスト, ソブリンバックアップ, SecNumCloud, DORA",
@@ -4970,8 +5000,6 @@
         "title": "お時間がありませんか？"
       },
       "encryption": {
-        "label": "自分で管理する暗号化",
-        "blurb": "あなたの鍵。あなたの暗号化。例外なし。",
         "benefits": {
           "items": [
             {
@@ -4993,6 +5021,7 @@
           "overline": "重要な理由",
           "title": "得られるもの"
         },
+        "blurb": "あなたの鍵。あなたの暗号化。例外なし。",
         "bottomCta": {
           "command": "rdc repo up production",
           "ctaText": "Communityで無料で始める",
@@ -5152,6 +5181,7 @@
           ],
           "title": "1コマンド。完全な制御。"
         },
+        "label": "自分で管理する暗号化",
         "meta": {
           "description": "すべてのバックアップがあなたが所有する鍵で暗号化されます。ベンダーの鍵ではありません。共有鍵ではありません。あなただけの鍵です。",
           "keywords": "暗号化, ゼロナレッジ, 顧客保持鍵, AES-256, バックアップ暗号化",
@@ -5355,8 +5385,6 @@
         }
       },
       "environmentCloning": {
-        "label": "環境クローン",
-        "blurb": "本番環境を60秒でクローン",
         "benefits": {
           "items": [
             {
@@ -5378,6 +5406,7 @@
           "overline": "重要な理由",
           "title": "得られるもの"
         },
+        "blurb": "本番環境を60秒でクローン",
         "bottomCta": {
           "command": "rdc repo fork production --tag my-first-clone",
           "description": "無料のCommunityエディションから始めましょう。最大10ワークロードまで無料でクローン可能。クレジットカード不要。",
@@ -5539,6 +5568,7 @@
           ],
           "title": "1コマンド。60秒。"
         },
+        "label": "環境クローン",
         "meta": {
           "description": "本番環境の完全なコピー（アプリケーション、データベース、設定）を開発・テスト用に即座に作成。チケット不要。待ち時間なし。",
           "keywords": "環境クローン, 本番クローン, 開発環境, 即時プロビジョニング, btrfsクローン, コピーオンライト, 一時環境",
@@ -5720,8 +5750,6 @@
         }
       },
       "failoverTesting": {
-        "label": "フェイルオーバーテスト",
-        "blurb": "必要になる前にフェイルオーバーをテスト",
         "benefits": {
           "items": [
             {
@@ -5743,6 +5771,7 @@
           "overline": "重要な理由",
           "title": "得られるもの"
         },
+        "blurb": "必要になる前にフェイルオーバーをテスト",
         "bottomCta": {
           "command": "rdc repo push production --to secondary --checkpoint",
           "description": "無料のCommunityエディションから始めましょう。5分以内に最初のDRテストを実行できます。",
@@ -5903,6 +5932,7 @@
           ],
           "title": "1コマンド。完全な自信。"
         },
+        "label": "フェイルオーバーテスト",
         "meta": {
           "description": "災害シミュレーションを安全に実行。復旧が実際に機能することを事前に確認。最も重要な時にサプライズなしで対応可能。",
           "keywords": "フェイルオーバーテスト, 災害復旧テスト, DRシミュレーション, DRテスト自動化, 復旧検証, btrfsクローン, RTO RPOテスト",
@@ -6072,8 +6102,6 @@
         }
       },
       "immutableBackups": {
-        "label": "イミュータブルバックアップ",
-        "blurb": "ランサムウェアが触れないバックアップ",
         "benefits": {
           "items": [
             {
@@ -6095,6 +6123,7 @@
           "overline": "重要な理由",
           "title": "得られるもの"
         },
+        "blurb": "ランサムウェアが触れないバックアップ",
         "bottomCta": {
           "command": "rdc repo push production --to backup-vault",
           "description": "無料のCommunityエディションから始めましょう。最大10ワークロードまで無料で保護。クレジットカード不要。",
@@ -6255,6 +6284,7 @@
           ],
           "title": "1コマンド。完全な保護。"
         },
+        "label": "イミュータブルバックアップ",
         "meta": {
           "description": "バックアップは作成された瞬間からイミュータブル（不変）です。ハッカーも、あなた自身も変更できません。",
           "keywords": "イミュータブルバックアップ, ランサムウェア保護, btrfsスナップショット, バックアップ検証, 災害復旧, コピーオンライト, 封印バックアップ",
@@ -6464,8 +6494,6 @@
         }
       },
       "infrastructureCosts": {
-        "label": "インフラコスト",
-        "blurb": "アイドル環境への課金を停止",
         "benefits": {
           "items": [
             {
@@ -6487,6 +6515,7 @@
           "overline": "重要な理由",
           "title": "得られるもの"
         },
+        "blurb": "アイドル環境への課金を停止",
         "bottomCta": {
           "command": "rdc repo fork production --tag dev-loadtest",
           "description": "無料のCommunityエディションから始めましょう。オンデマンドクローン機能付き。",
@@ -6642,6 +6671,7 @@
           ],
           "title": "1コマンド。浪費ゼロ。"
         },
+        "label": "インフラコスト",
         "meta": {
           "description": "必要に応じて環境を作成し、使い終わったら破棄。実際に使った分だけ支払い、アイドル環境のコストを削減します。",
           "keywords": "インフラコスト, アイドル環境, オンデマンド環境, コスト最適化, btrfsクローン, コピーオンライト, TTL, 自動破棄",
@@ -6799,8 +6829,6 @@
         }
       },
       "instantRecovery": {
-        "label": "即時リカバリ",
-        "blurb": "数分で環境全体をリカバリ",
         "benefits": {
           "items": [
             {
@@ -6822,6 +6850,7 @@
           "overline": "重要な理由",
           "title": "得られるもの"
         },
+        "blurb": "数分で環境全体をリカバリ",
         "bottomCta": {
           "command": "rdc repo pull production --from daily-2026-02-27",
           "description": "無料のCommunityエディションから始めましょう。5分以内に最初の環境を復元できます。",
@@ -6984,6 +7013,7 @@
           ],
           "title": "1コマンド。すべてが復活。"
         },
+        "label": "即時リカバリ",
         "meta": {
           "description": "ファイルだけではありません。環境全体 — サーバー、設定、データベース — が数分で復元・稼働します。",
           "keywords": "即時復旧, 環境全体復元, btrfsクローン, 災害復旧, バックアップ復元, ポイントインタイム復旧, ヘルスチェック, 単一コマンド復旧",
@@ -7161,8 +7191,6 @@
         }
       },
       "integrations": {
-        "label": "CI/CD統合",
-        "blurb": "既存のワークフローにプラグイン",
         "benefits": {
           "items": [
             {
@@ -7184,6 +7212,7 @@
           "overline": "重要な理由",
           "title": "得られるもの"
         },
+        "blurb": "既存のワークフローにプラグイン",
         "bottomCta": {
           "command": "rdc repo fork production --tag ci-build",
           "description": "無料のCommunityエディションから始めましょう。Git統合機能付き。",
@@ -7313,6 +7342,7 @@
           ],
           "title": "1コマンド。スクリプトゼロ。"
         },
+        "label": "CI/CD統合",
         "meta": {
           "description": "Git pushで新しい環境がトリガーされます。本番クローンでテストが実行されます。CI/CDがそのまま動きます — カスタムスクリプト不要。",
           "keywords": "CI/CD統合, GitLab CI, GitHub Actions, webhook, 本番クローン, テスト環境, パイプライン自動化",
@@ -7478,8 +7508,6 @@
         }
       },
       "kubernetesClusterMobility": {
-        "label": "Kubernetesクラスタの可搬性",
-        "blurb": "実行中のクラスタをデータごとフォークまたは移動",
         "benefits": {
           "items": [
             {
@@ -7501,6 +7529,7 @@
           "overline": "重要な理由",
           "title": "Kubernetesはそのまま。可搬性を手に入れる。"
         },
+        "blurb": "実行中のクラスタをデータごとフォークまたは移動",
         "bottomCta": {
           "command": "rdc cluster fork prod --tag staging",
           "ctaText": "無料トライアルを開始",
@@ -7627,6 +7656,7 @@
           ],
           "title": "クラスタ全体は1つのファイル群"
         },
+        "label": "Kubernetesクラスタの可搬性",
         "meta": {
           "description": "稼働中のKubernetesクラスタを、データごと別のマシンやデータセンターへフォークまたは移動。短い実測カットオーバー。Ceph RBDとk3sの上に構築。",
           "keywords": "Kubernetesクラスタ移行, クラスタフォーク, Ceph RBD, k3s, データセンター可搬性, Kubernetes可搬性",
@@ -7790,8 +7820,6 @@
         "title": "技術概要書を入手する"
       },
       "migrationSafety": {
-        "label": "移行の安全性",
-        "blurb": "データを危険にさらさず移行",
         "benefits": {
           "items": [
             {
@@ -7813,6 +7841,7 @@
           "overline": "重要な理由",
           "title": "得られるもの"
         },
+        "blurb": "データを危険にさらさず移行",
         "bottomCta": {
           "command": "rdc repo push production --to secondary",
           "description": "無料のCommunityエディションから始めましょう。暗号化移行機能付き。",
@@ -7971,6 +8000,7 @@
           ],
           "title": "1コマンド。露出ゼロ。"
         },
+        "label": "移行の安全性",
         "meta": {
           "description": "サーバー間、クラウド間、プロバイダー間の移行？暗号化バックアップが安全に移動します。露出なし。データ損失なし。",
           "keywords": "暗号化移行, ゼロ露出転送, データ移行セキュリティ, 暗号化バックアップ転送, btrfs移行, サーバー移行, クラウド移行暗号化",
@@ -8148,8 +8178,6 @@
         }
       },
       "productionParity": {
-        "label": "本番環境の同一性",
-        "blurb": "本番環境と完全に一致する開発環境",
         "benefits": {
           "items": [
             {
@@ -8171,6 +8199,7 @@
           "overline": "重要な理由",
           "title": "得られるもの"
         },
+        "blurb": "本番環境と完全に一致する開発環境",
         "bottomCta": {
           "command": "rdc backup restore dev-sarah --as dev-sarah-verify --up",
           "description": "無料のCommunityエディションから始めましょう。本番パリティ機能付き。",
@@ -8327,6 +8356,7 @@
           ],
           "title": "1コマンド。完全な一致。"
         },
+        "label": "本番環境の同一性",
         "meta": {
           "description": "「自分の環境では動く」はもう終わり。すべての開発環境が本番環境の完全なクローンで、一貫性のある開発を実現します。",
           "keywords": "本番パリティ, 環境ドリフト, 開発環境, 完全クローン, btrfsクローン, コピーオンライト, 設定一致",
@@ -8480,8 +8510,6 @@
         }
       },
       "rapidRecovery": {
-        "label": "高速リカバリ",
-        "blurb": "日単位ではなく分単位で復旧",
         "benefits": {
           "items": [
             {
@@ -8503,6 +8531,7 @@
           "overline": "重要な理由",
           "title": "得られるもの"
         },
+        "blurb": "日単位ではなく分単位で復旧",
         "bottomCta": {
           "command": "rdc repo pull production --from backup-vault --force",
           "ctaText": "Communityで無料で始める",
@@ -8658,6 +8687,7 @@
           ],
           "title": "1コマンド。オンラインに復帰。"
         },
+        "label": "高速リカバリ",
         "meta": {
           "description": "ランサムウェアが襲来した時、1分ごとにコストがかかります。Rediaccは被害が広がる前にオンラインに復帰させます。",
           "keywords": "迅速復旧, ランサムウェア復旧, 災害復旧, btrfs復元, 高速復旧",
@@ -8849,8 +8879,6 @@
         }
       },
       "retentionCompliance": {
-        "label": "保持期間コンプライアンス",
-        "blurb": "法律が求める期間データを保持",
         "benefits": {
           "items": [
             {
@@ -8872,6 +8900,7 @@
           "overline": "重要な理由",
           "title": "得られるもの"
         },
+        "blurb": "法律が求める期間データを保持",
         "bottomCta": {
           "command": "rdc config backup-strategy set --cron '0 2 * * *'",
           "description": "無料のCommunityエディションから始めましょう。30秒で最初の保持ポリシーを設定できます。",
@@ -9033,6 +9062,7 @@
           ],
           "title": "1コマンド。完全なコンプライアンス。"
         },
+        "label": "保持期間コンプライアンス",
         "meta": {
           "description": "コンプライアンス要件を満たす設定可能な保持ポリシー。HIPAA、SOC2、GDPR — デフォルトで対応。",
           "keywords": "保持コンプライアンス, データ保持, HIPAAコンプライアンス, SOC2, GDPR, バックアップ保持, 監査対応, コンプライアンス自動化",
@@ -9242,8 +9272,6 @@
         }
       },
       "safeOsTesting": {
-        "label": "安全なOSテスト",
-        "blurb": "リスクなしでOSアップデートをテスト",
         "benefits": {
           "items": [
             {
@@ -9265,6 +9293,7 @@
           "overline": "重要な理由",
           "title": "得られるもの"
         },
+        "blurb": "リスクなしでOSアップデートをテスト",
         "bottomCta": {
           "command": "rdc repo fork production --tag patch-test",
           "description": "無料のCommunityエディションから始めましょう。クローン、テスト、検証が無料。クレジットカード不要。",
@@ -9425,6 +9454,7 @@
           ],
           "title": "1コマンド。リスクゼロ。"
         },
+        "label": "安全なOSテスト",
         "meta": {
           "description": "本番環境をクローンしてパッチを適用。何が壊れるか確認し、必要なら元に戻す。本番環境に一切触れずにテスト可能です。",
           "keywords": "安全なOSテスト, パッチテスト, OSアップデートテスト, btrfsクローン, 本番クローン, ゼロリスクパッチ, アップデート検証",
@@ -9602,8 +9632,6 @@
         }
       },
       "vendorLockIn": {
-        "label": "ベンダーロックインからの解放",
-        "blurb": "あなたのインフラ。あなたの選択。常に。",
         "benefits": {
           "items": [
             {
@@ -9625,6 +9653,7 @@
           "overline": "重要な理由",
           "title": "得られるもの"
         },
+        "blurb": "あなたのインフラ。あなたの選択。常に。",
         "bottomCta": {
           "command": "rdc repo push production --to new-provider --checkpoint",
           "ctaText": "Communityで無料で始める",
@@ -9785,6 +9814,7 @@
           ],
           "title": "1コマンド。完全な自由。"
         },
+        "label": "ベンダーロックインからの解放",
         "meta": {
           "description": "どこにでもデプロイし、いつでも移行可能。ロックイン契約なし、独自フォーマットなし。データは常にあなたのものです。",
           "keywords": "ベンダーロックイン, クラウド移行, マルチクラウド, ポータビリティ, btrfs移行",
@@ -9952,8 +9982,6 @@
         }
       },
       "vulnerabilityManagement": {
-        "label": "脆弱性管理",
-        "blurb": "攻撃者が到着する前に脆弱性を修正",
         "benefits": {
           "items": [
             {
@@ -9975,6 +10003,7 @@
           "overline": "重要な理由",
           "title": "得られるもの"
         },
+        "blurb": "攻撃者が到着する前に脆弱性を修正",
         "bottomCta": {
           "command": "rdc term production cve-2026-1234-fix",
           "description": "無料のCommunityエディションから始めましょう。4分以内に最初のパッチを検証できます。",
@@ -10076,6 +10105,7 @@
           ],
           "title": "1コマンド。検証済みの修正。"
         },
+        "label": "脆弱性管理",
         "meta": {
           "description": "安全なクローン上でセキュリティギャップを発見、テスト、パッチ適用。自信を持って本番環境にデプロイできます。",
           "keywords": "脆弱性管理, パッチ検証, CVE修復, クローンベースパッチ, 安全なパッチ適用, セキュリティテスト, 脆弱性修正検証",
@@ -10698,16 +10728,6 @@
     "title": "アカウントリージョンを選択"
   },
   "solutions": {
-    "roles": {
-      "copy": "コピー",
-      "test": "テスト",
-      "recover": "復旧",
-      "property": "プラットフォーム"
-    },
-    "constellation": {
-      "centre": "すべてのソリューションは、あなたの本番のコピーに対するひとつの操作です。",
-      "title": "他のソリューションを探す"
-    },
     "categories": {
       "backups": "検証済みバックアップ",
       "defense": "先制防御",
@@ -10715,6 +10735,19 @@
       "encryption": "暗号化制御",
       "multi-cloud": "マルチクラウド",
       "ransomware": "ランサムウェア対策"
+    },
+    "constellation": {
+      "centre": "すべてのソリューションは、あなたの本番のコピーに対するひとつの操作です。",
+      "title": "他のソリューションを探す"
+    },
+    "references": {
+      "title": "出典"
+    },
+    "roles": {
+      "copy": "コピー",
+      "property": "プラットフォーム",
+      "recover": "復旧",
+      "test": "テスト"
     },
     "title": "事業継続をどう実現するか"
   },

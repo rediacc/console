@@ -4,9 +4,12 @@ description: >-
   Referenz für die Limits, Maximalwerte und Kontingente, die für Rediacc
   Repositories, Dienste, Netzwerk und Speicher gelten.
 category: Reference
+tags:
+  - storage
+  - account
 order: 99
 language: de
-sourceHash: "58ee35faeda9b8df"
+sourceHash: "2c014598b66bdeb7"
 sourceCommit: "79c84ad044d5730b6d0a20aaf7b21f21914b6bda"
 ---
 

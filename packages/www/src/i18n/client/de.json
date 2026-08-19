@@ -71,6 +71,16 @@
     "error": "Etwas ist schiefgelaufen. Bitte versuchen Sie es erneut.",
     "close": "Schließen"
   },
+  "documentation": {
+    "categories": {
+      "tutorials": "Tutorials",
+      "guides": "Anleitungen",
+      "concepts": "Konzepte",
+      "reference": "Referenz",
+      "useCases": "Anwendungsfälle",
+      "legal": "Rechtliches"
+    }
+  },
   "footer": {
     "columns": {
       "product": "Produkt",
@@ -147,7 +157,9 @@
       }
     },
     "forAiAgents": "Für KI-Agenten",
-    "account": "Konto"
+    "account": "Konto",
+    "learn": "Lernen",
+    "browseAllDocs": "Alle Dokumente ansehen"
   },
   "newsletter": {
     "title": "Newsletter",

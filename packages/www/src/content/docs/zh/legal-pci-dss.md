@@ -2,9 +2,12 @@
 title: "PCI DSS 合规"
 description: "Rediacc 如何满足 PCI DSS 要求：不可变备份、自动网络隔离和基础设施级别的访问控制。"
 category: "Legal"
+tags:
+  - compliance
+  - security
 order: 6
 language: zh
-sourceHash: "05ca01c69d8bab61"
+sourceHash: "f0349ad8df33656e"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 

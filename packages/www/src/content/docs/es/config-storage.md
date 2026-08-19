@@ -4,9 +4,12 @@ description: >-
   Sincronización cifrada de configuración de conocimiento cero con
   desbloqueo mediante passkey, contraseña maestra o código de recuperación
 category: Guides
+tags:
+  - account
+  - security
 order: 8
 language: es
-sourceHash: "97c64241ff4c0d81"
+sourceHash: "e4b2eecb8bdf0015"
 sourceCommit: "433347c5ea4754300fe3da80c4bfcee42dd161bc"
 ---
 

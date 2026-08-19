@@ -2,9 +2,12 @@
 title: "Cadeia de Licenças e Delegação"
 description: "Emissão de licenças à prova de adulteração, assinatura delegada para instalações on-premise e deteção de forks."
 category: "Guides"
+tags:
+  - account
+  - security
 order: 8
 language: pt
-sourceHash: "6486263bfb9ebf98"
+sourceHash: "d6d980d721be2373"
 sourceCommit: "fc24769cfd0684622952395c5bafe44e6180530d"
 ---
 

@@ -2,9 +2,12 @@
 title: "几分钟内搭建类生产开发环境"
 description: "通过块级重复数据删除，将开发环境搭建时间从数天缩短到几分钟。"
 category: Use Cases
+tags:
+  - forking
+  - storage
 order: 7
 language: zh
-sourceHash: "2aa115fc621f5258"
+sourceHash: "a9c98112fe890a13"
 sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 ---
 

@@ -2,9 +2,12 @@
 title: "PCI DSSコンプライアンス"
 description: "Rediaccが不変バックアップ、自動ネットワーク隔離、インフラストラクチャレベルのアクセス制御によってPCI DSS要件を満たす方法。"
 category: "Legal"
+tags:
+  - compliance
+  - security
 order: 6
 language: ja
-sourceHash: "05ca01c69d8bab61"
+sourceHash: "f0349ad8df33656e"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 

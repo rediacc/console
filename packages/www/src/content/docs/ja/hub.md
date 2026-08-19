@@ -2,9 +2,12 @@
 title: "Hub"
 description: "認証済みのユーザー別コンテナ環境を提供し、ユーザーごとの Docker daemon、マルチテンプレート選択、CRIU チェックポイント/リストア、監査ログ、data-root ガベージコレクションに対応します。"
 category: "Guides"
+tags:
+  - containers
+  - security
 order: 14
 language: ja
-sourceHash: "6fa16a1c73af497e"
+sourceHash: "fb8ab2f49f1a395b"
 sourceCommit: "b997ae00deb9e814edaf2fc449f4d9e36cfafe81"
 ---
 

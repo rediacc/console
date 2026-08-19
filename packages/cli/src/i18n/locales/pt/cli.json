@@ -5,16 +5,16 @@
   "commands": {
     "backup": {
       "browse": {
+        "completed": "{{name}} listado",
         "description": "Lista os ficheiros que um repositório contém. Uma leitura local só de leitura da imagem do repositório: sem servidor de conta e sem rede. Um repositório encriptado tem de estar montado, ou ter o seu ficheiro de chave implementado, antes de poder ser aberto; o browse comunica isso em vez de mostrar uma lista vazia. Não consegue listar um snapshot que existe apenas no chunk store; restaure-o primeiro e depois explore o resultado.",
         "descriptionShort": "Listar os ficheiros de um repositório (local, só leitura)",
-        "optionPath": "Limitar a listagem a esta subárvore",
+        "empty": "{{name}} não contém ficheiros.",
+        "failed": "Não foi possível listar {{name}}",
         "optionDepth": "Limitar a descida a N níveis (0 para ilimitado)",
         "optionLimit": "Número máximo de entradas a devolver (0 para ilimitado)",
+        "optionPath": "Limitar a listagem a esta subárvore",
         "starting": "A listar {{name}}...",
-        "completed": "{{name}} listado",
-        "failed": "Não foi possível listar {{name}}",
-        "truncated": "Listagem truncada em {{limit}} entradas. Restrinja com --path, ou aumente --limit.",
-        "empty": "{{name}} não contém ficheiros."
+        "truncated": "Listagem truncada em {{limit}} entradas. Restrinja com --path, ou aumente --limit."
       },
       "cancel": {
         "cancelled": "{{name}} cancelado",
@@ -45,8 +45,8 @@
         "atResolved": "{{at}} foi resolvido para o snapshot {{snapshot}} (feito em {{created}}).",
         "atUnparsable": "--at \"{{at}}\" não é um ID de snapshot nem uma hora. Indique um ID de snapshot de `rdc backup manifests`, ou uma hora RFC3339 como 2026-08-14T12:00:00Z.",
         "datastoreUnattached": "O datastore \"{{datastore}}\" não está anexado a nenhuma máquina. Anexe-o primeiro: rdc datastore attach {{datastore}} --to <machine>.",
-        "deployFailed": "Falha na implementação de {{name}} restaurado",
         "deployed": "{{name}} implementado em {{machine}}",
+        "deployFailed": "Falha na implementação de {{name}} restaurado",
         "deploying": "A implementar {{name}} em {{machine}}...",
         "description": "Transforma um artefacto de cópia de segurança num repositório ativo. A localização é indicada aqui.",
         "examples": {
@@ -58,9 +58,9 @@
         "optionAt": "Restaurar um ponto no tempo: um ID de snapshot ou uma hora RFC3339 (restauro a partir do armazenamento fragmentado)",
         "optionDatastore": "Restaurar para este datastore com nome (é alojado pela máquina a que está anexado)",
         "optionUp": "Implementar o repositório restaurado após a transferência",
-        "placeRequired": "Um artefacto a restaurar tem de indicar onde vive: use repo@local (por exemplo shop:nightly@backup-1).",
         "placementExclusive": "Passe exatamente uma flag de localização: --machine ou --datastore.",
         "placementRequired": "Indique onde restaurar: --machine <m> (docker) ou --datastore <d> (datastore com nome).",
+        "placeRequired": "Um artefacto a restaurar tem de indicar onde vive: use repo@local (por exemplo shop:nightly@backup-1).",
         "pulling": "A receber {{name}} de {{place}}...",
         "restored": "{{name}} restaurado em {{machine}}",
         "restoringSnapshot": "A restaurar {{name}} a partir do snapshot {{snapshot}}...",
@@ -1473,8 +1473,8 @@
         "starting": "A fazer takeover de \"{{grand}}\" com os dados de \"{{fork}}\" em \"{{machine}}\"..."
       },
       "pull": {
-        "deployFailed": "Falha ao implementar \"{{repo}}\" após recepção",
         "deployed": "Repositório \"{{repo}}\" implementado em {{machine}}",
+        "deployFailed": "Falha ao implementar \"{{repo}}\" após recepção",
         "deploying": "A implementar \"{{repo}}\" em {{machine}}...",
         "description": "Receber repositório de outra máquina. As origens de armazenamento foram descontinuadas; use `rdc backup restore` para uma restauração pontual. O tipo de origem é detectado automaticamente a partir da configuração. Use --up para implementar após a recepção.",
         "descriptionShort": "Receber repositório de outra máquina",
@@ -1493,8 +1493,8 @@
         "storageRetired": "Baixar de um backend de armazenamento foi descontinuado: o braço de nuvem do rclone foi removido. A restauração pontual é feita com `rdc backup restore <repo> --at <snapshot>` sobre o chunk store. A transferência entre máquinas continua igual: use --from-machine"
       },
       "push": {
-        "deployFailed": "Falha ao implementar \"{{repo}}\" após envio",
         "deployed": "Repositório \"{{repo}}\" implementado em {{machine}}",
+        "deployFailed": "Falha ao implementar \"{{repo}}\" após envio",
         "deploying": "A implementar \"{{repo}}\" em {{machine}}...",
         "description": "Enviar repositório para outra máquina. Os destinos de armazenamento foram descontinuados; use `rdc backup snapshot` para uma cópia de segurança pontual. Para transferência entre máquinas, a imagem encriptada do repositório é copiada com o MESMO GUID, pelo que se trata de uma cópia de segurança ou migração, não de um fork. Para criar um fork independente, use 'repo fork' primeiro e depois envie. Uma cópia enviada fica como um ARTEFACTO de cópia de segurança: arranque-o no destino com 'backup restore <ref> --as <name> -m <target> --up'",
         "descriptionShort": "Enviar repositório para outra máquina",

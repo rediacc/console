@@ -2,10 +2,12 @@
 title: "Ветвление в стиле Git"
 description: "Используйте форки с копированием при записи как коммиты git: заморозьте форк в неизменяемый коммит, назовите ветви, восстановите коммиты в перезаписываемые форки, просматривайте историю и выполняйте слияние без изменения живого репозитория."
 category: Reference
-subcategory: advanced
+tags:
+  - forking
+  - repositories
 order: 41
 language: ru
-sourceHash: "b8bd3176ecabfa4b"
+sourceHash: "7aaa25bc83dfcf5b"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 

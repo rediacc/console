@@ -2,9 +2,12 @@
 title: "قنوات الإصدار"
 description: "فهم قناتَي الإصدار Edge وStable، والفروق بينهما، وكيفية الاختيار."
 category: "Concepts"
+tags:
+  - cli
+  - operations
 order: 2
 language: ar
-sourceHash: "6669b5b089f94a39"
+sourceHash: "0cc32d712c02538f"
 sourceCommit: "23543669cd22bce3f14d69a0886bac8a12061412"
 ---
 

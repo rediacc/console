@@ -3,6 +3,7 @@ import { getCollection } from 'astro:content';
 import type { Language } from '../i18n/types';
 import { createTranslator } from '../i18n/utils';
 import { getBaseSlug } from '../utils/slug';
+import { makeCategoryLabel } from '../utils/docs-categories';
 import '../styles/sidebar-shared.css';
 
 interface Props {
@@ -33,11 +34,17 @@ const docsByCategory = docs.reduce((acc, doc) => {
   return acc;
 }, {} as Record<string, typeof docs>);
 
+// Sidebar order, deliberately NOT the browse page's order (utils/docs-categories exports
+// CATEGORY_ORDER for that): the sidebar opens on Guides because that is where a reader
+// already inside the docs continues, while browse opens on Tutorials.
+// 'Use Cases' was missing and fell through to the `?? 99` bucket, sorting below Legal.
+// The gap at 4, between Tutorials and Legal, is where it belongs.
 const categoryOrder: Record<string, number> = {
   'Guides': 0,
   'Concepts': 1,
   'Reference': 2,
   'Tutorials': 3,
+  'Use Cases': 4,
   'Legal': 5,
 };
 const categories = Object.keys(docsByCategory).sort((a, b) => {
@@ -56,18 +63,8 @@ const currentSlug = getBaseSlug(currentUrl);
 // Get translator
 const { t } = createTranslator(currentLang);
 
-const CATEGORY_KEYS: Record<string, string> = {
-  'Tutorials': 'documentation.categories.tutorials',
-  'Guides': 'documentation.categories.guides',
-  'Concepts': 'documentation.categories.concepts',
-  'Reference': 'documentation.categories.reference',
-  'Use Cases': 'documentation.categories.useCases',
-  'Legal': 'documentation.categories.legal',
-};
-function categoryLabel(cat: string): string {
-  const k = CATEGORY_KEYS[cat];
-  return k ? t(k) : cat;
-}
+// The category vocabulary is shared with the docs browse page; see utils/docs-categories.
+const categoryLabel = makeCategoryLabel(t);
 
 const SUBCATEGORY_KEYS: Record<string, string> = {
   essentials: 'documentation.subcategories.essentials',

@@ -2,9 +2,12 @@
 title: "自动启动与恢复"
 description: "自动启动的工作原理、在启动后发生故障的仓库的周期性协调器，以及如何检查恢复状态。"
 category: "Guides"
+tags:
+  - operations
+  - containers
 order: 5
 language: zh
-sourceHash: "62148f7a55752783"
+sourceHash: "0a87131bd0d87a34"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 

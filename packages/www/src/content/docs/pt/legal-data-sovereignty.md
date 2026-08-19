@@ -1,8 +1,10 @@
 ---
-sourceHash: "dba51d5d6dcf8197"
+sourceHash: "1e10165626ba3730"
 title: "Soberania de Dados"
 description: "Como a arquitetura self-hosted da Rediacc satisfaz os requisitos de residência e soberania de dados nas diferentes jurisdições globais."
 category: "Legal"
+tags:
+  - compliance
 order: 7
 language: pt
 ---

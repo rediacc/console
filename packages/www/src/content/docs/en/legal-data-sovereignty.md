@@ -2,6 +2,8 @@
 title: "Data Sovereignty"
 description: "How Rediacc's self-hosted architecture satisfies data residency and sovereignty requirements across global jurisdictions."
 category: "Legal"
+tags:
+  - compliance
 order: 7
 language: en
 ---

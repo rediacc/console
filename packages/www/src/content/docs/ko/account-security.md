@@ -2,9 +2,12 @@
 title: 계정 보안 및 API
 description: 인증, API 토큰, 세션 관리 및 권한 모델.
 category: Guides
+tags:
+  - account
+  - security
 order: 13
 language: ko
-sourceHash: "dcd061b971573573"
+sourceHash: "c898204d1ff917f8"
 sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 ---
 

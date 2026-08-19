@@ -2,9 +2,11 @@
 title: "Soberanía de datos"
 description: "Cómo la arquitectura autoalojada de Rediacc satisface los requisitos de residencia y soberanía de datos en jurisdicciones globales."
 category: "Legal"
+tags:
+  - compliance
 order: 7
 language: es
-sourceHash: "dba51d5d6dcf8197"
+sourceHash: "1e10165626ba3730"
 sourceCommit: "8b37b0a2c25c0ba7e5a8a63c8d3ed0da48b78a10"
 ---
 

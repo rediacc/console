@@ -26,6 +26,18 @@ fi
 # Machine configuration — update these if your test environment differs.
 # The machine name is just a local alias; we use machine-11/machine-12 so it
 # lines up with the .11/.12 worker IPs, but it can be any label (prod-db, web-1).
+# Where a tutorial's PRE-RECORDING setup output goes.
+#
+# Every tutorial silences setup with `exec >/dev/null 2>&1` so it does not bleed
+# into the cast. That is right for the cast and catastrophic for diagnosis: the
+# setup runs unguarded `rdc` calls under `set -euo pipefail`, so when one fails
+# the script exits 1 having printed NOTHING ANYWHERE, and the recorded cast is
+# empty because the failure happened before output was restored to the camera.
+# Two separate multi-hour diagnoses were lost to exactly this. Setup now goes to
+# a file instead of /dev/null; record.sh prints it when the tutorial fails.
+export TUTORIAL_SETUP_LOG="${TUTORIAL_SETUP_LOG:-/tmp/tutorial-setup-$(basename "$0" .sh).log}"
+: >"$TUTORIAL_SETUP_LOG" 2>/dev/null || true
+
 export TUTORIAL_MACHINE_NAME="${TUTORIAL_MACHINE_NAME:-machine-11}"
 export TUTORIAL_MACHINE_IP="${TUTORIAL_MACHINE_IP:-192.168.111.11}"
 export TUTORIAL_MACHINE_USER="${TUTORIAL_MACHINE_USER:-$USER}"
@@ -100,7 +112,22 @@ _format_display_cmd() {
     done
     segs+=("$seg")
     local param_count=$((${#segs[@]} - 1))
-    if ((param_count <= 2)); then
+    # Split when there are several options OR when the flat form would not fit the
+    # recorded terminal. The option count alone was the only test, so a single
+    # long `--command '<shell>'` stayed on one line and wrapped in the recording:
+    # measured 111-140 visible columns in tutorial-branching, -delta-transfer and
+    # -storage-management against a ${TUTORIAL_COLS}-column terminal. The prompt
+    # sits in front of it, so budget for that too.
+    local prompt_cols=${TUTORIAL_PROMPT_COLS:-15}
+    local budget=$((${TUTORIAL_COLS:-107} - prompt_cols))
+    if ((param_count <= 2 && ${#cmd} <= budget)); then
+        printf '%s' "$cmd"
+        return
+    fi
+    if ((param_count == 0)); then
+        # Nothing to split on: one long token (usually a quoted shell payload).
+        # Emitting it flat is honest; the recording gate reports it and the fix
+        # is a shorter display form via run_cmd's second argument.
         printf '%s' "$cmd"
         return
     fi

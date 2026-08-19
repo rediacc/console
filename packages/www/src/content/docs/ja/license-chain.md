@@ -2,9 +2,12 @@
 title: "ライセンスチェーンと委任"
 description: "改ざん検知可能なライセンス発行、オンプレミス向けの委任署名、フォーク検出。"
 category: "Guides"
+tags:
+  - account
+  - security
 order: 8
 language: ja
-sourceHash: "6486263bfb9ebf98"
+sourceHash: "d6d980d721be2373"
 sourceCommit: "fc24769cfd0684622952395c5bafe44e6180530d"
 ---
 

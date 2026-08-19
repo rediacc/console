@@ -2,9 +2,11 @@
 title: "NIS2 e DORA"
 description: "Como a Rediacc responde aos requisitos da Diretiva NIS2 de cibersegurança da UE e do DORA em matéria de resiliência operacional digital."
 category: "Legal"
+tags:
+  - compliance
 order: 8
 language: pt
-sourceHash: "72a61496d38955d3"
+sourceHash: "9179eb8e594f2ed0"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 

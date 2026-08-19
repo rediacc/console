@@ -2,6 +2,9 @@
 title: Risk-Free Upgrades
 description: Test database upgrades without risk using instant cloning and hourly snapshots.
 category: Use Cases
+tags:
+  - forking
+  - backup
 order: 4
 language: en
 ---

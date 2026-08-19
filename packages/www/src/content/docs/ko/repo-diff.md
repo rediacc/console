@@ -2,10 +2,12 @@
 title: "rdc repo diff"
 description: "COW(Copy-on-Write) 포크된 두 저장소 간의 git 스타일 파일 수준 diff를 보여줍니다. 암호화된 이미지를 블록 수준에서 비교하므로 복호화가 필요 없습니다."
 category: Reference
-subcategory: advanced
+tags:
+  - forking
+  - storage
 order: 40
 language: ko
-sourceHash: "b555f4ca6b58ff4b"
+sourceHash: "6f5ccba93044665a"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 

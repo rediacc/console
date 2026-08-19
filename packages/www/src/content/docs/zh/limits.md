@@ -3,9 +3,12 @@ title: "限制与配额"
 description: >-
   适用于 Rediacc 仓库、服务、网络和存储的限制、最大值和配额参考。
 category: "Reference"
+tags:
+  - storage
+  - account
 order: 99
 language: zh
-sourceHash: "58ee35faeda9b8df"
+sourceHash: "2c014598b66bdeb7"
 sourceCommit: "79c84ad044d5730b6d0a20aaf7b21f21914b6bda"
 ---
 

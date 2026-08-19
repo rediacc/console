@@ -2,9 +2,12 @@
 title: Estratégia de Backup Cruzado
 description: "Seu backup falha no momento em que sua máquina falha. A Rediacc replica snapshots para uma máquina separada, portanto uma falha de disco não leva tudo consigo."
 category: Use Cases
+tags:
+  - backup
+  - migration
 order: 5
 language: pt
-sourceHash: "39dbeac1faec121c"
+sourceHash: "a565990a48aa0593"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 

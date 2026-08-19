@@ -2,9 +2,11 @@
 title: モニタリング
 description: マシンの健全性、コンテナ、サービス、リポジトリの監視と診断の実行。
 category: Guides
+tags:
+  - operations
 order: 9
 language: ja
-sourceHash: "ab050e731db18848"
+sourceHash: "9c5882697da43a8f"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 

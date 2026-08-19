@@ -2,9 +2,12 @@
 title: 网页控制台
 description: 在浏览器中运行完整的rdc CLI，包含表单、资源选择器和运行历史
 category: Guides
+tags:
+  - cli
+  - account
 order: 8
 language: zh
-sourceHash: "b735dd2fd77435c5"
+sourceHash: "972ed654ae294102"
 sourceCommit: "5197d1c0349438c2bff2442377a5166d0b8214b6"
 ---
 

@@ -2,9 +2,12 @@
 title: "Kubernetes"
 description: "以 Rediacc 的仓库理念运行 Kubernetes：将一个正在运行的集群（包括其数据）以较短的切换时间 fork 或迁移到另一台机器或数据中心。"
 category: "Guides"
+tags:
+  - containers
+  - migration
 order: 6
 language: zh
-sourceHash: "6ad4b60e09edde94"
+sourceHash: "22eef465dfd46ccf"
 sourceCommit: "4401262fffbf29b9480dee8ecd209013e4b87f60"
 ---
 

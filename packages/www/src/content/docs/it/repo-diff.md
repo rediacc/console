@@ -2,10 +2,12 @@
 title: "rdc repo diff"
 description: "Mostra un diff a livello di file nello stile di git tra due repository separate tramite copy-on-write confrontando le loro immagini crittate a livello di blocco, senza decrittazione."
 category: Reference
-subcategory: advanced
+tags:
+  - forking
+  - storage
 order: 40
 language: it
-sourceHash: "b555f4ca6b58ff4b"
+sourceHash: "6f5ccba93044665a"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 

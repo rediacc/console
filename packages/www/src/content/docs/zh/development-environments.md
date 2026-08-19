@@ -2,9 +2,12 @@
 title: 几秒钟内启动的开发环境
 description: 停止等待开发环境。 根据需要在 60 秒内克隆完整的生产基础设施和临时环境。
 category: Use Cases
+tags:
+  - forking
+  - containers
 order: 10
 language: zh
-sourceHash: "d534fc11b7ba4fa7"
+sourceHash: "dd05b3e00f6f921d"
 sourceCommit: "8b37b0a2c25c0ba7e5a8a63c8d3ed0da48b78a10"
 ---
 

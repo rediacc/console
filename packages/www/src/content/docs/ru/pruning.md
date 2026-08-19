@@ -2,9 +2,12 @@
 title: "Очистка"
 description: "Удаление архивных резервных копий, устаревших снимков, образов репозиториев и остатков локальной конфигурации для освобождения дискового пространства и обеспечения консистентности состояния."
 category: "Guides"
+tags:
+  - storage
+  - operations
 order: 12
 language: ru
-sourceHash: "928f117282b38484"
+sourceHash: "7d9a82ee410c420a"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 

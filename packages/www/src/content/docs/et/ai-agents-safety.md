@@ -5,9 +5,12 @@ description: >-
   volitusi üle kirjutada või õigusi eskaleerida. Teadmisväravad,
   redakteerimine, päritolu-kontrollitud ülekanded ja räsiahelaga auditi logi.
 category: Concepts
+tags:
+  - ai-agents
+  - security
 order: 35
 language: et
-sourceHash: "5dac7c4162cbbb8e"
+sourceHash: "e008783008d8e887"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 

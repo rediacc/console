@@ -2,9 +2,12 @@
 title: AI 에이전트 통합 개요
 description: "Claude Code, Cursor, Cline이 rdc를 통해 Rediacc 인프라를 관리하는 방법: JSON 출력, 에이전트 내부 검사, 안전 가드레일."
 category: Guides
+tags:
+  - ai-agents
+  - cli
 order: 30
 language: ko
-sourceHash: "29eb3ce5a55c36d1"
+sourceHash: "c544cf8514d36558"
 sourceCommit: "23543669cd22bce3f14d69a0886bac8a12061412"
 ---
 

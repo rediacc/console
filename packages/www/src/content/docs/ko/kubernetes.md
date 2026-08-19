@@ -2,9 +2,12 @@
 title: "Kubernetes"
 description: "Rediacc의 저장소 사고방식으로 Kubernetes를 운영하세요: 실행 중인 클러스터를 데이터까지 포함해 짧은 컷오버로 다른 머신이나 데이터센터로 포크하거나 이동할 수 있습니다."
 category: "Guides"
+tags:
+  - containers
+  - migration
 order: 6
 language: ko
-sourceHash: "6ad4b60e09edde94"
+sourceHash: "22eef465dfd46ccf"
 sourceCommit: "4401262fffbf29b9480dee8ecd209013e4b87f60"
 ---
 

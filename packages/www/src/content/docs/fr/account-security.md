@@ -2,9 +2,12 @@
 title: Sécurité du compte et API
 description: Authentification, tokens API, gestion des sessions et modèle de permissions.
 category: Guides
+tags:
+  - account
+  - security
 order: 13
 language: fr
-sourceHash: "dcd061b971573573"
+sourceHash: "c898204d1ff917f8"
 sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 ---
 

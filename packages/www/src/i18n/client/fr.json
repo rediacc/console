@@ -71,6 +71,16 @@
     "error": "Une erreur est survenue. Veuillez réessayer.",
     "close": "Fermer"
   },
+  "documentation": {
+    "categories": {
+      "tutorials": "Tutoriels",
+      "guides": "Guides",
+      "concepts": "Concepts",
+      "reference": "Référence",
+      "useCases": "Cas d'utilisation",
+      "legal": "Juridique"
+    }
+  },
   "footer": {
     "columns": {
       "product": "Produit",
@@ -147,7 +157,9 @@
       }
     },
     "forAiAgents": "Pour les agents IA",
-    "account": "Compte"
+    "account": "Compte",
+    "learn": "Apprendre",
+    "browseAllDocs": "Voir toute la documentation"
   },
   "newsletter": {
     "title": "Newsletter",

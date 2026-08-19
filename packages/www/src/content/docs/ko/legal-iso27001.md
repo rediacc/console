@@ -2,9 +2,12 @@
 title: "ISO 27001 준수"
 description: "Rediacc가 암호화, 접근 관리 및 운영 보안에 관한 ISO 27001 정보 보안 통제에 어떻게 매핑되는지 설명합니다."
 category: "Legal"
+tags:
+  - compliance
+  - security
 order: 5
 language: ko
-sourceHash: "1e23c89ae8cf0185"
+sourceHash: "249b81c87ea92b97"
 sourceCommit: "70a4ca883754f1c0a7f4684c9fde02a5a01d3681"
 ---
 

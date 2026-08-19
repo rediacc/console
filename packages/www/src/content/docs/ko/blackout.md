@@ -1,9 +1,12 @@
 ---
-sourceHash: "63861113cf5e7809"
+sourceHash: "8817b7a0a9304cd0"
 sourceCommit: "b8e332b73573133a282b5c508bc049af1fbeb581"
 title: 정전 중 은행 업무 연속성
 description: 대륙 간 데이터 미러링으로 정전 중에도 은행 업무를 유지하는 방법입니다.
 category: Use Cases
+tags:
+  - backup
+  - migration
 order: 6
 language: ko
 ---

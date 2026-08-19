@@ -2,9 +2,11 @@
 title: "سيادة البيانات"
 description: "كيف تلبي بنية الاستضافة الذاتية في Rediacc متطلبات إقامة البيانات والسيادة عبر الولايات القضائية العالمية."
 category: "Legal"
+tags:
+  - compliance
 order: 7
 language: ar
-sourceHash: "dba51d5d6dcf8197"
+sourceHash: "1e10165626ba3730"
 sourceCommit: "8b37b0a2c25c0ba7e5a8a63c8d3ed0da48b78a10"
 ---
 

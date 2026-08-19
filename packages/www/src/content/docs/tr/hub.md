@@ -2,9 +2,12 @@
 title: "Hub"
 description: "Kimlik doğrulamalı, kullanıcı başına Docker daemon'ı, çoklu şablon seçimi, CRIU checkpoint/geri yükleme, denetim günlükleri ve data-root çöp toplama özelliklerine sahip kullanıcı başına konteyner ortamları sağlar."
 category: "Guides"
+tags:
+  - containers
+  - security
 order: 14
 language: tr
-sourceHash: "6fa16a1c73af497e"
+sourceHash: "fb8ab2f49f1a395b"
 sourceCommit: "b997ae00deb9e814edaf2fc449f4d9e36cfafe81"
 ---
 

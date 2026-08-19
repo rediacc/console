@@ -71,6 +71,16 @@
     "error": "Bir hata oluştu. Lütfen tekrar deneyin.",
     "close": "Kapat"
   },
+  "documentation": {
+    "categories": {
+      "tutorials": "Öğreticiler",
+      "guides": "Kılavuzlar",
+      "concepts": "Kavramlar",
+      "reference": "Başvuru",
+      "useCases": "Kullanım Senaryoları",
+      "legal": "Yasal"
+    }
+  },
   "footer": {
     "columns": {
       "product": "Ürün",
@@ -147,7 +157,9 @@
       }
     },
     "forAiAgents": "Yapay Zeka Ajanları İçin",
-    "account": "Hesap"
+    "account": "Hesap",
+    "learn": "Öğrenme",
+    "browseAllDocs": "Tüm dokümanları görüntüle"
   },
   "newsletter": {
     "title": "Haberler",

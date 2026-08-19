@@ -98,11 +98,17 @@
     "title": "Entre em Contacto"
   },
   "documentation": {
-    "theme": {
-      "label": "Tema",
-      "light": "Claro",
-      "dark": "Escuro",
-      "auto": "Automático"
+    "browse": {
+      "clear": "Limpar filtros",
+      "description": "Todos os guias, tutoriais e referências num só lugar.",
+      "empty": "Nenhum documento corresponde a este filtro.",
+      "filterHeading": "Filtros",
+      "filterLabel": "Filtrar por categoria",
+      "searchLabel": "Pesquisar nesta documentação",
+      "searchPlaceholder": "Pesquisar títulos e descrições",
+      "showDescription": "Mostrar descrição",
+      "title": "Documentação",
+      "topicLabel": "Filtrar por tópico"
     },
     "categories": {
       "concepts": "Conceitos",
@@ -115,14 +121,36 @@
     "cliReference": "Referência da CLI",
     "cliReferenceLabel": "Referência da CLI:",
     "copied": "Copiado!",
-    "copyCode": "Copiar código",
     "copyAsMarkdown": "Copiar como Markdown",
+    "copyCode": "Copiar código",
     "copyFullPageAriaLabel": "Copiar página completa como markdown",
     "openInNewTab": "Abrir num novo separador",
     "searchDocs": "Pesquisar documentação",
     "subcategories": {
       "advanced": "Avançado",
       "essentials": "Essenciais"
+    },
+    "tags": {
+      "account": "Contas",
+      "aiAgents": "Agentes de IA",
+      "backup": "Cópias de segurança",
+      "cli": "CLI",
+      "compliance": "Conformidade",
+      "containers": "Contentores",
+      "forking": "Fork",
+      "gettingStarted": "Primeiros passos",
+      "migration": "Migração",
+      "networking": "Redes",
+      "operations": "Operações",
+      "repositories": "Repositórios",
+      "security": "Segurança",
+      "storage": "Armazenamento"
+    },
+    "theme": {
+      "auto": "Automático",
+      "dark": "Escuro",
+      "label": "Tema",
+      "light": "Claro"
     }
   },
   "footer": {
@@ -193,9 +221,9 @@
     }
   },
   "navigation": {
-    "moreOptions": "Mais opções",
     "account": "Conta",
     "blog": "Blog",
+    "browseAllDocs": "Ver toda a documentação",
     "builtForYou": "Criado para si",
     "builtForYourRole": "Criado para o seu perfil",
     "contact": "Contacto",
@@ -210,7 +238,9 @@
     "home": "Início",
     "install": "Instalar",
     "languageSelectionMenu": "Menu de selecção de idioma",
+    "learn": "Aprender",
     "login": "Iniciar sessão",
+    "moreOptions": "Mais opções",
     "partners": "Parceiros",
     "personas": {
       "ai-agent": {
@@ -570,14 +600,14 @@
         "title": "Preços para Recuperação de Desastres | Rediacc"
       },
       "plans": {
+        "assessment": {
+          "name": "Avaliação de Recuperação"
+        },
         "program": {
           "name": "Programa de Recuperação"
         },
         "retainer": {
           "name": "Contrato de Recuperação"
-        },
-        "assessment": {
-          "name": "Avaliação de Recuperação"
         }
       },
       "psTeaser": {
@@ -612,6 +642,11 @@
         ],
         "recoveryNote": "RPO (Objetivo de Ponto de Recuperação): Quanto dado você pode perder -- medido em tempo. Por exemplo, um RPO de 15 minutos significa que você pode perder até 15 minutos de alterações recentes.\n\nRTO (Objetivo de Tempo de Recuperação): Rapidez com que você precisa voltar online após um desastre. Por exemplo, um RTO de 4 horas significa que seus sistemas estarão restaurados em até 4 horas.",
         "values": {
+          "assessment": {
+            "auditLogs": "30 dias",
+            "rpo": "~15 minutos",
+            "rto": "Restauro para um ponto no tempo"
+          },
           "program": {
             "auditLogs": "90 dias",
             "rpo": "~5 minutos (contínuo)",
@@ -621,11 +656,6 @@
             "auditLogs": "1+ ano",
             "rpo": "Personalizado (próximo de zero)",
             "rto": "15 a 60 minutos (personalizado)"
-          },
-          "assessment": {
-            "auditLogs": "30 dias",
-            "rpo": "~15 minutos",
-            "rto": "Restauro para um ponto no tempo"
           }
         }
       },
@@ -636,14 +666,14 @@
         "contactUs": "Contacte-nos",
         "contactUsSub": "Limites e termos personalizados",
         "cta": {
+          "assessment": {
+            "primary": "Teste grátis"
+          },
           "program": {
             "primary": "Teste grátis"
           },
           "retainer": {
             "primary": "Agende uma Demo"
-          },
-          "assessment": {
-            "primary": "Teste grátis"
           }
         }
       }
@@ -1861,47 +1891,47 @@
     "pricing": {
       "comparison": {
         "allPlansInclude": "Todos os planos incluem: usuários e equipes ilimitados, repositórios ilimitados, restaurações por snapshot, proteção contínua de dados, armazenamento georredundante, criptografia LUKS, logs de auditoria, acesso por funções, agendamento manual e automático e a API de integrações.",
-        "rows": [
-          {
-            "label": "Gestor de Conta Dedicado",
-            "professional": false,
-            "business": true,
-            "enterprise": true
-          },
-          {
-            "label": "Suporte Telefónico",
-            "professional": false,
-            "business": true,
-            "enterprise": true
-          },
-          {
-            "label": "Suporte 24/7/365",
-            "professional": false,
-            "business": false,
-            "enterprise": true
-          },
-          {
-            "label": "Escalonamento Executivo",
-            "professional": false,
-            "business": false,
-            "enterprise": true
-          },
-          {
-            "label": "Revisões de Segurança",
-            "professional": false,
-            "business": false,
-            "enterprise": true
-          },
-          {
-            "label": "Fluxos de Trabalho Personalizados",
-            "professional": false,
-            "business": false,
-            "enterprise": true
-          }
-        ],
         "heading": "Comparar Planos em Detalhe",
         "included": "Incluído",
-        "notIncluded": "Não incluído"
+        "notIncluded": "Não incluído",
+        "rows": [
+          {
+            "business": true,
+            "enterprise": true,
+            "label": "Gestor de Conta Dedicado",
+            "professional": false
+          },
+          {
+            "business": true,
+            "enterprise": true,
+            "label": "Suporte Telefónico",
+            "professional": false
+          },
+          {
+            "business": false,
+            "enterprise": true,
+            "label": "Suporte 24/7/365",
+            "professional": false
+          },
+          {
+            "business": false,
+            "enterprise": true,
+            "label": "Escalonamento Executivo",
+            "professional": false
+          },
+          {
+            "business": false,
+            "enterprise": true,
+            "label": "Revisões de Segurança",
+            "professional": false
+          },
+          {
+            "business": false,
+            "enterprise": true,
+            "label": "Fluxos de Trabalho Personalizados",
+            "professional": false
+          }
+        ]
       },
       "edgeChannel": {
         "cta": "Explorar o canal edge",
@@ -3032,8 +3062,6 @@
     },
     "solutionPages": {
       "aiPentesting": {
-        "label": "Pentesting com IA",
-        "blurb": "Clone a produção. Deixe a IA atacá-la.",
         "benefits": {
           "items": [
             {
@@ -3055,6 +3083,7 @@
           "overline": "PORQUE É IMPORTANTE",
           "title": "O que obtém"
         },
+        "blurb": "Clone a produção. Deixe a IA atacá-la.",
         "bottomCta": {
           "command": "rdc repo fork production --tag pentest",
           "ctaText": "Começar Gratuitamente",
@@ -3160,6 +3189,7 @@
           ],
           "title": "Um comando. Risco zero."
         },
+        "label": "Pentesting com IA",
         "meta": {
           "description": "Crie cópias idênticas da sua infraestrutura e execute testes de intrusão com IA, sem colocar a produção em risco.",
           "keywords": "ai pentesting, testes de intrusão, testes de segurança, análise de vulnerabilidades, clone attack",
@@ -3295,8 +3325,6 @@
         }
       },
       "auditTrail": {
-        "label": "Registo de Auditoria",
-        "blurb": "Cada ação registada. Nada escondido.",
         "benefits": {
           "items": [
             {
@@ -3318,6 +3346,7 @@
           "overline": "PORQUE É IMPORTANTE",
           "title": "O que obtém"
         },
+        "blurb": "Cada ação registada. Nada escondido.",
         "bottomCta": {
           "command": "rdc repo status production",
           "ctaText": "Começar Gratuitamente com Community",
@@ -3477,6 +3506,7 @@
           ],
           "title": "Um comando. Visibilidade total."
         },
+        "label": "Registo de Auditoria",
         "meta": {
           "description": "Visibilidade total sobre quem fez o quê, quando e porquê. Registos de auditoria invioláveis para cada operação.",
           "keywords": "registo de auditoria, logging de conformidade, registos invioláveis, assinados SHA-256, relatório de auditoria",
@@ -3648,8 +3678,6 @@
         }
       },
       "backupVerification": {
-        "label": "Verificação de Backups",
-        "blurb": "Cada backup verificado automaticamente",
         "benefits": {
           "items": [
             {
@@ -3671,6 +3699,7 @@
           "overline": "PORQUE É IMPORTANTE",
           "title": "O que obtém"
         },
+        "blurb": "Cada backup verificado automaticamente",
         "bottomCta": {
           "command": "rdc backup verify my-app",
           "description": "Comece com a edição Community gratuita. Verifique o seu primeiro backup em menos de um minuto.",
@@ -3831,6 +3860,7 @@
           ],
           "title": "Um comando. Zero surpresas."
         },
+        "label": "Verificação de Backups",
         "meta": {
           "description": "Não espere por um desastre para descobrir que o seu backup está corrompido. A Rediacc verifica cada backup no momento em que é criado.",
           "keywords": "verificação de backups, testes de backup, verificação de restauro, integridade de backup, verificação automática de backup, clone btrfs, verificação de saúde de backup",
@@ -4012,8 +4042,6 @@
         }
       },
       "cloudOutageProtection": {
-        "label": "Proteção Contra Falhas na Cloud",
-        "blurb": "Quando a AWS cai, você não cai",
         "benefits": {
           "items": [
             {
@@ -4035,6 +4063,7 @@
           "overline": "PORQUE É IMPORTANTE",
           "title": "O que obtém"
         },
+        "blurb": "Quando a AWS cai, você não cai",
         "bottomCta": {
           "command": "rdc repo push production --to secondary-dc",
           "description": "Comece com a edição Community gratuita. Replique entre localizações sem custo. Sem cartão de crédito.",
@@ -4196,6 +4225,7 @@
           ],
           "title": "Um comando. Sempre online."
         },
+        "label": "Proteção Contra Falhas na Cloud",
         "meta": {
           "description": "A sua infraestrutura corre em múltiplas clouds. Quando uma falha, as outras assumem. Automaticamente.",
           "keywords": "proteção contra falhas na cloud, failover multi-cloud, replicação entre clouds, recuperação de desastres, redundância na cloud, failover automático, replicação btrfs",
@@ -4373,8 +4403,6 @@
         }
       },
       "continuousSecurityTesting": {
-        "label": "Testes de Segurança Contínuos",
-        "blurb": "Teste a segurança de forma contínua, não anual",
         "benefits": {
           "items": [
             {
@@ -4396,6 +4424,7 @@
           "overline": "PORQUE É IMPORTANTE",
           "title": "O que obtém"
         },
+        "blurb": "Teste a segurança de forma contínua, não anual",
         "bottomCta": {
           "command": "rdc backup restore production --as production-verify -m primary --up",
           "ctaText": "Começar Gratuitamente",
@@ -4496,6 +4525,7 @@
           ],
           "title": "Um comando. Cobertura diária."
         },
+        "label": "Testes de Segurança Contínuos",
         "meta": {
           "description": "Execute testes de segurança todos os dias em clones frescos de produção. Encontre vulnerabilidades quando surgem, não meses depois.",
           "keywords": "testes de segurança contínuos, pentesting diário, segurança automatizada, deteção de vulnerabilidades",
@@ -4631,8 +4661,6 @@
         }
       },
       "dataSovereignty": {
-        "label": "Soberania de Dados",
-        "blurb": "Os seus servidores, as suas chaves, a sua jurisdição.",
         "benefits": {
           "items": [
             {
@@ -4654,6 +4682,7 @@
           "overline": "PORQUE IMPORTA",
           "title": "O que obtém"
         },
+        "blurb": "Os seus servidores, as suas chaves, a sua jurisdição.",
         "bottomCta": {
           "command": "rdc config show",
           "ctaText": "Começar Gratuitamente com Community",
@@ -4811,6 +4840,7 @@
           ],
           "title": "Três passos. Uma stack soberana."
         },
+        "label": "Soberania de Dados",
         "meta": {
           "description": "Aloja os seus dados. Detém as chaves. Imunidade ao CLOUD Act por arquitectura, não por certificado. Chaves geridas pelo cliente.",
           "keywords": "soberania de dados, imunidade CLOUD Act, chaves geridas pelo cliente, GDPR Schrems II, Data Act UE, auto-hospedado, backup soberano, SecNumCloud, DORA",
@@ -5005,8 +5035,6 @@
         "title": "Sem tempo?"
       },
       "encryption": {
-        "label": "Encriptação sob o Seu Controlo",
-        "blurb": "As suas chaves. A sua encriptação. Sem exceções.",
         "benefits": {
           "items": [
             {
@@ -5028,6 +5056,7 @@
           "overline": "PORQUÊ IMPORTA",
           "title": "O que obtém"
         },
+        "blurb": "As suas chaves. A sua encriptação. Sem exceções.",
         "bottomCta": {
           "command": "rdc repo up production",
           "ctaText": "Começar Gratuitamente com a Community",
@@ -5187,6 +5216,7 @@
           ],
           "title": "Um comando. Controlo total."
         },
+        "label": "Encriptação sob o Seu Controlo",
         "meta": {
           "description": "Cada cópia de segurança é encriptada com chaves que lhe pertencem. Não as chaves do seu fornecedor. Não chaves partilhadas. Só suas.",
           "keywords": "encriptação, zero-knowledge, chaves do cliente, AES-256, encriptação de backups",
@@ -5390,8 +5420,6 @@
         }
       },
       "environmentCloning": {
-        "label": "Clonagem de Ambientes",
-        "blurb": "Clone a produção em 60 segundos",
         "benefits": {
           "items": [
             {
@@ -5413,6 +5441,7 @@
           "overline": "PORQUÊ IMPORTA",
           "title": "O que obtém"
         },
+        "blurb": "Clone a produção em 60 segundos",
         "bottomCta": {
           "command": "rdc repo fork production --tag my-first-clone",
           "description": "Comece com a edição Community gratuita. Clone até 10 cargas de trabalho sem qualquer custo. Sem cartão de crédito.",
@@ -5574,6 +5603,7 @@
           ],
           "title": "Um comando. Sessenta segundos."
         },
+        "label": "Clonagem de Ambientes",
         "meta": {
           "description": "Crie cópias exatas da produção — aplicação, base de dados e configuração — para desenvolvimento e testes. Sem tickets. Sem esperas.",
           "keywords": "clonagem de ambientes, clone de produção, ambiente de desenvolvimento, aprovisionamento instantâneo, clone btrfs, copy-on-write, ambientes efémeros",
@@ -5755,8 +5785,6 @@
         }
       },
       "failoverTesting": {
-        "label": "Teste de Failover",
-        "blurb": "Teste o seu failover antes de precisar dele",
         "benefits": {
           "items": [
             {
@@ -5778,6 +5806,7 @@
           "overline": "PORQUÊ IMPORTA",
           "title": "O que obtém"
         },
+        "blurb": "Teste o seu failover antes de precisar dele",
         "bottomCta": {
           "command": "rdc repo push production --to secondary --checkpoint",
           "description": "Comece com a edição Community gratuita. Execute o seu primeiro teste de DR em menos de 5 minutos.",
@@ -5938,6 +5967,7 @@
           ],
           "title": "Um comando. Confiança total."
         },
+        "label": "Teste de Failover",
         "meta": {
           "description": "Execute simulações de desastre em segurança. Saiba que a sua recuperação funciona mesmo. Sem surpresas quando mais importa.",
           "keywords": "teste de failover, teste de recuperação de desastre, simulação de DR, automação de testes de DR, verificação de recuperação, clone btrfs, testes de RTO RPO",
@@ -6107,8 +6137,6 @@
         }
       },
       "immutableBackups": {
-        "label": "Backups Imutáveis",
-        "blurb": "Backups que o ransomware não consegue tocar",
         "benefits": {
           "items": [
             {
@@ -6130,6 +6158,7 @@
           "overline": "PORQUÊ IMPORTA",
           "title": "O que obtém"
         },
+        "blurb": "Backups que o ransomware não consegue tocar",
         "bottomCta": {
           "command": "rdc repo push production --to backup-vault",
           "description": "Comece com a edição Community gratuita. Proteja até 10 cargas de trabalho sem qualquer custo. Sem cartão de crédito.",
@@ -6290,6 +6319,7 @@
           ],
           "title": "Um comando. Proteção total."
         },
+        "label": "Backups Imutáveis",
         "meta": {
           "description": "Os seus backups são imutáveis desde o momento em que são criados. Ninguém os pode alterar. Nem hackers. Nem sequer você.",
           "keywords": "backups imutáveis, proteção contra ransomware, snapshots btrfs, verificação de backups, recuperação de desastre, copy-on-write, backups selados",
@@ -6499,8 +6529,6 @@
         }
       },
       "infrastructureCosts": {
-        "label": "Custos de Infraestrutura",
-        "blurb": "Pare de pagar por ambientes inativos",
         "benefits": {
           "items": [
             {
@@ -6522,6 +6550,7 @@
           "overline": "PORQUÊ IMPORTA",
           "title": "O que obtém"
         },
+        "blurb": "Pare de pagar por ambientes inativos",
         "bottomCta": {
           "command": "rdc repo fork production --tag dev-loadtest",
           "description": "Comece com a edição Community gratuita. Clonagem a pedido incluída.",
@@ -6677,6 +6706,7 @@
           ],
           "title": "Um comando. Zero desperdício."
         },
+        "label": "Custos de Infraestrutura",
         "meta": {
           "description": "Crie ambientes a pedido. Destrua-os quando terminar. Pague apenas pelo que realmente usa.",
           "keywords": "custos de infraestrutura, ambientes inativos, ambientes a pedido, otimização de custos, clone btrfs, copy-on-write, TTL, destruição automática",
@@ -6834,8 +6864,6 @@
         }
       },
       "instantRecovery": {
-        "label": "Recuperação Instantânea",
-        "blurb": "Recuperação completa do ambiente em minutos",
         "benefits": {
           "items": [
             {
@@ -6857,6 +6885,7 @@
           "overline": "POR QUE É IMPORTANTE",
           "title": "O que obtém"
         },
+        "blurb": "Recuperação completa do ambiente em minutos",
         "bottomCta": {
           "command": "rdc repo pull production --from daily-2026-02-27",
           "description": "Comece com a edição gratuita Community. Restaure o seu primeiro ambiente em menos de 5 minutos.",
@@ -7019,6 +7048,7 @@
           ],
           "title": "Um comando. Tudo de volta."
         },
+        "label": "Recuperação Instantânea",
         "meta": {
           "description": "Não apenas ficheiros. Ambientes inteiros — servidores, configurações, bases de dados — restaurados e em funcionamento em minutos.",
           "keywords": "recuperação instantânea, restauro completo do ambiente, clone btrfs, recuperação de desastres, restauro de cópia de segurança, recuperação em ponto no tempo, verificações de saúde, recuperação com um único comando",
@@ -7196,8 +7226,6 @@
         }
       },
       "integrations": {
-        "label": "Integrações CI/CD",
-        "blurb": "Integre-se no seu fluxo de trabalho existente",
         "benefits": {
           "items": [
             {
@@ -7219,6 +7247,7 @@
           "overline": "POR QUE É IMPORTANTE",
           "title": "O que obtém"
         },
+        "blurb": "Integre-se no seu fluxo de trabalho existente",
         "bottomCta": {
           "command": "rdc repo fork production --tag ci-build",
           "description": "Comece com a edição gratuita Community. Integração Git incluída.",
@@ -7348,6 +7377,7 @@
           ],
           "title": "Um comando. Zero scripts."
         },
+        "label": "Integrações CI/CD",
         "meta": {
           "description": "Um git push desencadeia um ambiente novo. Os testes correm em clones de produção. O CI/CD simplesmente funciona — sem scripts personalizados.",
           "keywords": "integração CI/CD, GitLab CI, GitHub Actions, webhook, clone de produção, ambiente de teste, automação de pipeline",
@@ -7513,8 +7543,6 @@
         }
       },
       "kubernetesClusterMobility": {
-        "label": "Mobilidade de Clusters Kubernetes",
-        "blurb": "Fork ou mova um cluster em execução, dados incluídos",
         "benefits": {
           "items": [
             {
@@ -7536,6 +7564,7 @@
           "overline": "PORQUE É IMPORTANTE",
           "title": "Mantém o teu Kubernetes. Ganha mobilidade."
         },
+        "blurb": "Fork ou mova um cluster em execução, dados incluídos",
         "bottomCta": {
           "command": "rdc cluster fork prod --tag staging",
           "ctaText": "Começar Gratuitamente",
@@ -7662,6 +7691,7 @@
           ],
           "title": "O cluster inteiro é um único conjunto de ficheiros"
         },
+        "label": "Mobilidade de Clusters Kubernetes",
         "meta": {
           "description": "Faz fork ou move um cluster Kubernetes em execução, dados incluídos, para outra máquina ou datacenter. Corte curto e medido. Construído sobre Ceph RBD e k3s.",
           "keywords": "migração de cluster kubernetes, fork de cluster, ceph rbd, k3s, mobilidade de datacenter, portabilidade kubernetes",
@@ -7825,8 +7855,6 @@
         "title": "Obter o briefing técnico"
       },
       "migrationSafety": {
-        "label": "Segurança na Migração",
-        "blurb": "Migre sem arriscar os seus dados",
         "benefits": {
           "items": [
             {
@@ -7848,6 +7876,7 @@
           "overline": "POR QUE É IMPORTANTE",
           "title": "O que obtém"
         },
+        "blurb": "Migre sem arriscar os seus dados",
         "bottomCta": {
           "command": "rdc repo push production --to secondary",
           "description": "Comece com a edição gratuita Community. Migração encriptada incluída.",
@@ -8006,6 +8035,7 @@
           ],
           "title": "Um comando. Zero exposição."
         },
+        "label": "Segurança na Migração",
         "meta": {
           "description": "A migrar entre servidores, clouds ou fornecedores? As suas cópias de segurança encriptadas viajam em segurança. Sem exposição. Sem perda de dados.",
           "keywords": "migração encriptada, transferência sem exposição, segurança na migração de dados, transferência de cópia de segurança encriptada, migração btrfs, migração de servidor, encriptação na migração para cloud",
@@ -8183,8 +8213,6 @@
         }
       },
       "productionParity": {
-        "label": "Paridade com Produção",
-        "blurb": "Ambientes de desenvolvimento idênticos à produção",
         "benefits": {
           "items": [
             {
@@ -8206,6 +8234,7 @@
           "overline": "POR QUE É IMPORTANTE",
           "title": "O que obtém"
         },
+        "blurb": "Ambientes de desenvolvimento idênticos à produção",
         "bottomCta": {
           "command": "rdc backup restore dev-sarah --as dev-sarah-verify --up",
           "description": "Comece com a edição gratuita Community. Paridade com produção incluída.",
@@ -8362,6 +8391,7 @@
           ],
           "title": "Um comando. Paridade perfeita."
         },
+        "label": "Paridade com Produção",
         "meta": {
           "description": "Chega de \"funciona na minha máquina\". Cada ambiente de desenvolvimento é um clone idêntico da produção.",
           "keywords": "paridade com produção, desvio de ambiente, ambiente de desenvolvimento, clone idêntico, clone btrfs, copy-on-write, correspondência de configuração",
@@ -8515,8 +8545,6 @@
         }
       },
       "rapidRecovery": {
-        "label": "Recuperação Rápida",
-        "blurb": "Recupere em minutos, não em dias",
         "benefits": {
           "items": [
             {
@@ -8538,6 +8566,7 @@
           "overline": "POR QUE É IMPORTANTE",
           "title": "O que obtém"
         },
+        "blurb": "Recupere em minutos, não em dias",
         "bottomCta": {
           "command": "rdc repo pull production --from backup-vault --force",
           "ctaText": "Começar Gratuitamente com a Community",
@@ -8693,6 +8722,7 @@
           ],
           "title": "Um comando. De volta online."
         },
+        "label": "Recuperação Rápida",
         "meta": {
           "description": "Quando o ransomware ataca, cada minuto custa dinheiro. A Rediacc repõe o seu sistema online antes de o dano se propagar.",
           "keywords": "recuperação rápida, recuperação de ransomware, recuperação de desastres, restauro btrfs, recuperação célere",
@@ -8884,8 +8914,6 @@
         }
       },
       "retentionCompliance": {
-        "label": "Conformidade de Retenção",
-        "blurb": "Conserve os seus dados durante o tempo que a lei exige",
         "benefits": {
           "items": [
             {
@@ -8907,6 +8935,7 @@
           "overline": "PORQUE ISTO IMPORTA",
           "title": "O que obtém"
         },
+        "blurb": "Conserve os seus dados durante o tempo que a lei exige",
         "bottomCta": {
           "command": "rdc config backup-strategy set --cron '0 2 * * *'",
           "description": "Comece com a edição Community gratuita. Defina a sua primeira política de retenção em 30 segundos.",
@@ -9068,6 +9097,7 @@
           ],
           "title": "Um comando. Conformidade total."
         },
+        "label": "Conformidade de Retenção",
         "meta": {
           "description": "Políticas de retenção configuráveis que cumprem os requisitos de conformidade. HIPAA, SOC2, GDPR -- cobertas por predefinição.",
           "keywords": "conformidade de retenção, retenção de dados, conformidade HIPAA, SOC2, GDPR, retenção de backups, pronto para auditoria, automatização de conformidade",
@@ -9277,8 +9307,6 @@
         }
       },
       "safeOsTesting": {
-        "label": "Testes Seguros de SO",
-        "blurb": "Teste atualizações de SO sem o risco",
         "benefits": {
           "items": [
             {
@@ -9300,6 +9328,7 @@
           "overline": "PORQUE ISTO IMPORTA",
           "title": "O que obtém"
         },
+        "blurb": "Teste atualizações de SO sem o risco",
         "bottomCta": {
           "command": "rdc repo fork production --tag patch-test",
           "description": "Comece com a edição Community gratuita. Clone, teste e verifique sem custos. Sem cartão de crédito.",
@@ -9460,6 +9489,7 @@
           ],
           "title": "Um comando. Zero risco."
         },
+        "label": "Testes Seguros de SO",
         "meta": {
           "description": "Clone o seu ambiente de produção. Aplique o patch. Veja o que falha. Faça rollback se necessário. Sem tocar na produção.",
           "keywords": "testes seguros de SO, teste de patches, teste de atualização de SO, clone btrfs, clone de produção, aplicação de patches sem risco, verificação de atualizações",
@@ -9637,8 +9667,6 @@
         }
       },
       "vendorLockIn": {
-        "label": "Liberdade de Dependência de Fornecedor",
-        "blurb": "A sua infraestrutura. A sua escolha. Sempre.",
         "benefits": {
           "items": [
             {
@@ -9660,6 +9688,7 @@
           "overline": "PORQUE ISTO IMPORTA",
           "title": "O que obtém"
         },
+        "blurb": "A sua infraestrutura. A sua escolha. Sempre.",
         "bottomCta": {
           "command": "rdc repo push production --to new-provider --checkpoint",
           "ctaText": "Começar Grátis com a Community",
@@ -9820,6 +9849,7 @@
           ],
           "title": "Um comando. Liberdade total."
         },
+        "label": "Liberdade de Dependência de Fornecedor",
         "meta": {
           "description": "Implemente onde quiser. Migre quando quiser. Sem contratos de dependência. Sem formatos proprietários. Os seus dados ficam seus.",
           "keywords": "dependência de fornecedor, migração de cloud, multi-cloud, portabilidade, migração btrfs",
@@ -9987,8 +10017,6 @@
         }
       },
       "vulnerabilityManagement": {
-        "label": "Gestão de Vulnerabilidades",
-        "blurb": "Corrija vulnerabilidades antes dos atacantes chegarem",
         "benefits": {
           "items": [
             {
@@ -10010,6 +10038,7 @@
           "overline": "PORQUE ISTO IMPORTA",
           "title": "O que obtém"
         },
+        "blurb": "Corrija vulnerabilidades antes dos atacantes chegarem",
         "bottomCta": {
           "command": "rdc term production cve-2026-1234-fix",
           "description": "Comece com a edição Community gratuita. Verifique o seu primeiro patch em menos de 4 minutos.",
@@ -10111,6 +10140,7 @@
           ],
           "title": "Um comando. Correções verificadas."
         },
+        "label": "Gestão de Vulnerabilidades",
         "meta": {
           "description": "Encontre, teste e corrija falhas de segurança em clones seguros. Implemente correções em produção com confiança.",
           "keywords": "gestão de vulnerabilidades, verificação de patches, remediação de CVE, correção baseada em clone, aplicação segura de patches, testes de segurança, verificação de correção de vulnerabilidades",
@@ -10731,16 +10761,6 @@
     "title": "Escolha a região da sua conta"
   },
   "solutions": {
-    "roles": {
-      "copy": "Copiar",
-      "test": "Testar",
-      "recover": "Recuperar",
-      "property": "Plataforma"
-    },
-    "constellation": {
-      "centre": "Cada solução é uma ação sobre uma cópia do seu sistema em produção.",
-      "title": "Explorar Outras Soluções"
-    },
     "categories": {
       "backups": "Cópias de Segurança Verificadas",
       "defense": "Defesa Preventiva",
@@ -10748,6 +10768,19 @@
       "encryption": "Controlo de Encriptação",
       "multi-cloud": "Multi-Nuvem",
       "ransomware": "Sobrevivência a Ransomware"
+    },
+    "constellation": {
+      "centre": "Cada solução é uma ação sobre uma cópia do seu sistema em produção.",
+      "title": "Explorar Outras Soluções"
+    },
+    "references": {
+      "title": "Fontes"
+    },
+    "roles": {
+      "copy": "Copiar",
+      "property": "Plataforma",
+      "recover": "Recuperar",
+      "test": "Testar"
     },
     "title": "Como Garantimos a Continuidade do Seu Negócio"
   },

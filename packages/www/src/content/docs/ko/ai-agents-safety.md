@@ -4,9 +4,12 @@ description: >-
   Rediacc CLI가 AI 코딩 어시스턴트의 시크릿 유출, 자격 증명 덮어쓰기, 권한 상승을 방지하는 방법입니다.
   지식 게이트, 리댁션, 조상 검증된 재정의, 해시 체인 감사 로그를 설명합니다.
 category: Concepts
+tags:
+  - ai-agents
+  - security
 order: 35
 language: ko
-sourceHash: "5dac7c4162cbbb8e"
+sourceHash: "e008783008d8e887"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 

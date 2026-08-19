@@ -2,9 +2,12 @@
 title: "HIPAAコンプライアンス"
 description: "Rediaccの暗号化と分離アーキテクチャがHIPAAの医療情報保護の保護措置要件にどのように対応するか。"
 category: "Legal"
+tags:
+  - compliance
+  - security
 order: 3
 language: ja
-sourceHash: "58f208db31474a81"
+sourceHash: "1a0a2df716f6628b"
 sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
 ---
 

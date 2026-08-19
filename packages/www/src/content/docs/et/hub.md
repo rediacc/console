@@ -1,8 +1,11 @@
 ---
-sourceHash: "6fa16a1c73af497e"
+sourceHash: "fb8ab2f49f1a395b"
 title: "Hub"
 description: "Pakkuge autentitud, kasutajapõhiseid konteineriseeritud keskkondi kasutajapõhiste Docker daemonitega, mitmemallivalikuga, CRIU kontrollpunkti/taastamisega, auditilogidega ja andmejuure prügikorjega."
 category: "Guides"
+tags:
+  - containers
+  - security
 order: 14
 language: et
 ---

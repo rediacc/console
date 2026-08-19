@@ -11,6 +11,7 @@ import { NETWORK_DEFAULTS } from '@rediacc/shared/config';
 import { scanHostKeys } from '../../utils/host-keys.js';
 import { configService } from '../config/config-resources.js';
 import { outputService } from '../core/output.js';
+import { createQuietStderrPump } from '../executor/output-lines.js';
 import { machineConnections } from '../machine/machine-connection.js';
 import { provisionRenetToRemote, readSSHKey } from './renet-execution.js';
 
@@ -61,12 +62,17 @@ export async function bootstrapMachine(
     const datastorePath = machine.datastore ?? NETWORK_DEFAULTS.DATASTORE_PATH;
     const datastoreSize = updatedConfig.datastoreSize ?? NETWORK_DEFAULTS.DATASTORE_SIZE;
     const cmd = `sudo ${remoteRenetPath} setup --auto --datastore ${datastorePath} --datastore-size ${datastoreSize}`;
+    // renet's setup narrates itself at info level, and those lines are 121+
+    // columns. Withhold them and replay only if setup actually failed, so the
+    // terminal (and the tutorial recording) shows the steps, not the logrus.
+    const stderrPump = createQuietStderrPump({ echoAll: options.debug });
     const exitCode = await lease.sftp.execStreaming(cmd, {
       onStdout: (data) => {
         if (options.debug) process.stdout.write(data);
       },
-      onStderr: (data) => process.stderr.write(data),
+      onStderr: (data) => stderrPump.write(String(data)),
     });
+    stderrPump.flush(exitCode !== 0);
     if (exitCode !== 0) {
       outputService.warn(`Machine setup exited with code ${exitCode}`);
     }

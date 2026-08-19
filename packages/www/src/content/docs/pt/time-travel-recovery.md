@@ -2,9 +2,12 @@
 title: Time Travel Recovery
 description: Recupere dados apagados há semanas usando snapshots do btrfs, mesmo quando seus backups normais já não cobrem esse período.
 category: Use Cases
+tags:
+  - backup
+  - storage
 order: 2
 language: pt
-sourceHash: "e55d51b8df91b20f"
+sourceHash: "2fce69fb1631f640"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 

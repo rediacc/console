@@ -2,9 +2,12 @@
 title: Outils
 description: "Synchronisation de fichiers, accès terminal, intégration VS Code et mises à jour du CLI."
 category: Guides
+tags:
+  - cli
+  - operations
 order: 9
 language: fr
-sourceHash: "2b8afb656455d6ec"
+sourceHash: "3c5f1e7f8063438b"
 sourceCommit: "3fb35b9a33c7e8ec6753ecd56231f2018e8f4803"
 ---
 

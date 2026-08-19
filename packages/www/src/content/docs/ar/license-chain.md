@@ -2,9 +2,12 @@
 title: "سلسلة التراخيص والتفويض"
 description: "إصدار تراخيص مقاوم للتلاعب، والتوقيع المفوَّض للنشر المحلي، واكتشاف الشوكة."
 category: "Guides"
+tags:
+  - account
+  - security
 order: 8
 language: ar
-sourceHash: "6486263bfb9ebf98"
+sourceHash: "d6d980d721be2373"
 sourceCommit: "fc24769cfd0684622952395c5bafe44e6180530d"
 ---
 

@@ -2,9 +2,12 @@
 title: "Kärpimine"
 description: "Eemalda orvuks jäänud varukoopiad, aegunud hetktõmmised, hoidlakujutised ja kohaliku konfiguratsiooni jäänukid, et vabastada kettaruumi ja hoida olek sidusana."
 category: "Guides"
+tags:
+  - storage
+  - operations
 order: 12
 language: et
-sourceHash: "928f117282b38484"
+sourceHash: "7d9a82ee410c420a"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 

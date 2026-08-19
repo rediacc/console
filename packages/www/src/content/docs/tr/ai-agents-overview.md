@@ -2,9 +2,12 @@
 title: AI Ajan Entegrasyonuna Genel Bakış
 description: "Claude Code, Cursor ve Cline'ın rdc aracılığıyla Rediacc altyapısını nasıl yönettiği: JSON çıktısı, ajan iç gözlemi ve güvenlik koruyucuları."
 category: Guides
+tags:
+  - ai-agents
+  - cli
 order: 30
 language: tr
-sourceHash: "29eb3ce5a55c36d1"
+sourceHash: "c544cf8514d36558"
 sourceCommit: "23543669cd22bce3f14d69a0886bac8a12061412"
 ---
 

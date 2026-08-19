@@ -2,6 +2,8 @@
 title: "Subscription & Licensing"
 description: "Understand how account, rdc, and renet handle machine slots, repo licenses, and plan limits."
 category: "Guides"
+tags:
+  - account
 order: 7
 language: en
 ---

@@ -2,9 +2,12 @@
 title: "Kubernetes"
 description: "Kubernetes'i Rediacc'ın depo zihniyetiyle çalıştırın: çalışan bir kümeyi, verileri dahil, kısa bir kesinti süresiyle başka bir makineye veya veri merkezine fork'layın ya da taşıyın."
 category: "Guides"
+tags:
+  - containers
+  - migration
 order: 6
 language: tr
-sourceHash: "6ad4b60e09edde94"
+sourceHash: "22eef465dfd46ccf"
 sourceCommit: "4401262fffbf29b9480dee8ecd209013e4b87f60"
 ---
 

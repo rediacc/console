@@ -2,9 +2,12 @@
 title: "التشغيل التلقائي والاسترداد"
 description: "كيف يعمل التشغيل التلقائي، والمُوفِّق الدوري الذي يستعيد المستودعات التي تتوقف بعد الإقلاع، وكيفية فحص حالة الاسترداد."
 category: "Guides"
+tags:
+  - operations
+  - containers
 order: 5
 language: ar
-sourceHash: "62148f7a55752783"
+sourceHash: "0a87131bd0d87a34"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 

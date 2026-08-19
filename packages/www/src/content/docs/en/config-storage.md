@@ -2,9 +2,11 @@
 title: Config Storage
 description: Zero-knowledge encrypted config sync with passkey, master password, and recovery code unlock
 category: Guides
+tags:
+  - account
+  - security
 order: 8
 language: en
-sourceHash: "73c75b1f00630553"
 ---
 
 # Config Storage

@@ -4,9 +4,12 @@ description: >-
   Déployez et gérez des services conteneurisés avec les Rediaccfiles, le réseau
   de services et le démarrage automatique.
 category: Guides
+tags:
+  - containers
+  - operations
 order: 5
 language: fr
-sourceHash: "f33bcf4598caedc8"
+sourceHash: "8eef0f7b9e1dcd39"
 sourceCommit: "3fb35b9a33c7e8ec6753ecd56231f2018e8f4803"
 ---
 

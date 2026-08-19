@@ -2,9 +2,12 @@
 title: "Configuration de la machine"
 description: "Créez une configuration, ajoutez des machines, provisionnez des serveurs et configurez l'infrastructure."
 category: "Guides"
+tags:
+  - getting-started
+  - operations
 order: 3
 language: fr
-sourceHash: "6e0b338423280f98"
+sourceHash: "a0f69282724c27ea"
 sourceCommit: "5fab1177d6ceae5211c25cf8fa0176d67259d40e"
 ---
 

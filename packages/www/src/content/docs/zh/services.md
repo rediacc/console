@@ -3,9 +3,12 @@ title: 服务
 description: >-
   使用 Rediaccfile、服务网络和开机自启来部署和管理容器化服务。
 category: Guides
+tags:
+  - containers
+  - operations
 order: 5
 language: zh
-sourceHash: "f33bcf4598caedc8"
+sourceHash: "8eef0f7b9e1dcd39"
 sourceCommit: "3fb35b9a33c7e8ec6753ecd56231f2018e8f4803"
 ---
 

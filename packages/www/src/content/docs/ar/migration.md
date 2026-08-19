@@ -2,9 +2,12 @@
 title: "دليل الترحيل"
 description: "ترحيل المشاريع الحالية إلى مستودعات Rediacc المشفرة."
 category: Guides
+tags:
+  - migration
+  - repositories
 order: 11
 language: ar
-sourceHash: "6817858de56705e6"
+sourceHash: "53730ef01c5acb58"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 

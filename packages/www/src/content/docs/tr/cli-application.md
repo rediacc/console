@@ -2,11 +2,13 @@
 title: "CLI Uygulaması"
 description: "Platform yönetimi için Rediacc komut satırı arayüzünü kullanma rehberi"
 category: "Reference"
+tags:
+  - cli
 order: 2
 language: tr
 generated: true
 generatedFrom: packages/cli/src/i18n/locales/tr/cli.json
-sourceHash: "bb3ff8daf0bc61cb"
+sourceHash: "b6ae8408bdbd2fe7"
 ---
 
 <!-- THIS FILE IS AUTO-GENERATED. Do not edit manually. -->

@@ -5,16 +5,16 @@
   "commands": {
     "backup": {
       "browse": {
+        "completed": "{{name}} listé",
         "description": "Liste les fichiers que contient un dépôt. Un parcours local en lecture seule de l'image du dépôt : aucun serveur de compte et aucun réseau. Un dépôt chiffré doit être monté, ou avoir son fichier de clé déployé, avant de pouvoir être ouvert ; browse le signale au lieu d'afficher une liste vide. Ne peut pas lister un instantané qui n'existe que dans le magasin de blocs ; restaurez-le d'abord, puis parcourez le résultat.",
         "descriptionShort": "Lister les fichiers d'un dépôt (local, lecture seule)",
-        "optionPath": "Limiter le listage à ce sous-arbre",
+        "empty": "{{name}} ne contient aucun fichier.",
+        "failed": "Impossible de lister {{name}}",
         "optionDepth": "Limiter la descente à N niveaux (0 pour illimité)",
         "optionLimit": "Nombre maximal d'entrées à renvoyer (0 pour illimité)",
+        "optionPath": "Limiter le listage à ce sous-arbre",
         "starting": "Listage de {{name}}...",
-        "completed": "{{name}} listé",
-        "failed": "Impossible de lister {{name}}",
-        "truncated": "Listage tronqué à {{limit}} entrées. Restreignez avec --path, ou augmentez --limit.",
-        "empty": "{{name}} ne contient aucun fichier."
+        "truncated": "Listage tronqué à {{limit}} entrées. Restreignez avec --path, ou augmentez --limit."
       },
       "cancel": {
         "cancelled": "{{name}} annulé",
@@ -45,8 +45,8 @@
         "atResolved": "{{at}} a été résolu vers l'instantané {{snapshot}} (pris le {{created}}).",
         "atUnparsable": "--at \"{{at}}\" n'est ni un identifiant d'instantané ni une date. Indiquez un identifiant d'instantané issu de `rdc backup manifests`, ou une date RFC3339 telle que 2026-08-14T12:00:00Z.",
         "datastoreUnattached": "Le datastore \"{{datastore}}\" n'est attaché à aucune machine. Attachez-le d'abord : rdc datastore attach {{datastore}} --to <machine>.",
-        "deployFailed": "Échec du déploiement de {{name}} restauré",
         "deployed": "{{name}} déployé sur {{machine}}",
+        "deployFailed": "Échec du déploiement de {{name}} restauré",
         "deploying": "Déploiement de {{name}} sur {{machine}}...",
         "description": "Transformer un artefact de sauvegarde en dépôt actif. Le placement est indiqué ici.",
         "examples": {
@@ -58,9 +58,9 @@
         "optionAt": "Restaurer à un instant donné : un identifiant d'instantané ou une heure RFC3339 (restauration depuis le stockage fragmenté)",
         "optionDatastore": "Restaurer dans ce datastore nommé (sa machine attachée l'héberge)",
         "optionUp": "Déployer le dépôt restauré après le transfert",
-        "placeRequired": "Un artefact de restauration doit indiquer où il se trouve : utilisez repo@place (par exemple shop:nightly@backup-1).",
         "placementExclusive": "Passez exactement un indicateur de placement : --machine ou --datastore.",
         "placementRequired": "Indiquez où restaurer : --machine <m> (docker) ou --datastore <d> (datastore nommé).",
+        "placeRequired": "Un artefact de restauration doit indiquer où il se trouve : utilisez repo@place (par exemple shop:nightly@backup-1).",
         "pulling": "Récupération de {{name}} depuis {{place}}...",
         "restored": "{{name}} restauré sur {{machine}}",
         "restoringSnapshot": "Restauration de {{name}} depuis l'instantané {{snapshot}}...",
@@ -1473,8 +1473,8 @@
         "starting": "Prise de contrôle de \"{{grand}}\" avec les données de \"{{fork}}\" sur \"{{machine}}\"..."
       },
       "pull": {
-        "deployFailed": "Échec du déploiement de \"{{repo}}\" après le pull",
         "deployed": "Dépôt \"{{repo}}\" déployé sur {{machine}}",
+        "deployFailed": "Échec du déploiement de \"{{repo}}\" après le pull",
         "deploying": "Déploiement de \"{{repo}}\" sur {{machine}}...",
         "description": "Tirer un dépôt depuis une autre machine. Les sources de stockage sont retirées ; utilisez `rdc backup restore` pour une restauration ponctuelle. Le type de source est détecté automatiquement depuis la configuration. Utilisez --up pour déployer après le pull",
         "descriptionShort": "Tirer un dépôt depuis une autre machine",
@@ -1493,8 +1493,8 @@
         "storageRetired": "La récupération depuis un backend de stockage est retirée : le bras cloud rclone a été supprimé. La restauration ponctuelle passe par `rdc backup restore <repo> --at <snapshot>` via le magasin de blocs. Le transfert entre machines est inchangé : utilisez --from-machine"
       },
       "push": {
-        "deployFailed": "Échec du déploiement de \"{{repo}}\" après l'envoi",
         "deployed": "Dépôt \"{{repo}}\" déployé sur {{machine}}",
+        "deployFailed": "Échec du déploiement de \"{{repo}}\" après l'envoi",
         "deploying": "Déploiement de \"{{repo}}\" sur {{machine}}...",
         "description": "Pousser un dépôt vers une autre machine. Les destinations de stockage sont retirées ; utilisez `rdc backup snapshot` pour une sauvegarde ponctuelle. Pour un transfert machine à machine, l'image chiffrée du dépôt est copiée avec le MÊME GUID : c'est une sauvegarde ou une migration, pas un fork. Pour créer un fork indépendant, utilisez d'abord 'repo fork', puis push. Une copie poussée atterrit comme un ARTEFACT de sauvegarde : démarrez-le sur la cible avec 'backup restore <ref> --as <name> -m <target> --up'",
         "descriptionShort": "Pousser un dépôt vers une autre machine",

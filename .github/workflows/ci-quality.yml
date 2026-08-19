@@ -970,6 +970,21 @@ jobs:
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: npm run test:unit --workspace=@rediacc/cli
 
+      # Runs the CLI tests against a deliberately broken copy of the source and
+      # requires them to FAIL. The unit step above reports that the tests pass;
+      # it is blind to whether any assertion pins the behaviour it names, which
+      # is how a vacuous wrapProse test and a colWidths crash shipped together.
+      - name: Guard mutations
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: npm run check:ci-guard-mutations
+
+      # A tutorial app healthcheck sized while watching a fast machine aborts the
+      # whole non-resumable 18-cast recording on a slower one. Static, because no
+      # CI gate can afford to record 18 casts against a VM fleet.
+      - name: Tutorial healthcheck headroom
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: npm run check:ci-tutorial-healthcheck-headroom
+
       # The stop hook's own suite (693 assertions). It lives in this lane, not
       # in Static, for two reasons: it IS a test suite like its neighbours, and
       # Static runs on ubuntu-slim whose HARD 15-minute cap kills the job as

@@ -2,9 +2,11 @@
 title: Proxy & Executor
 description: How browser and thin-client commands run without the client ever holding SSH keys or machine addresses
 category: Concepts
+tags:
+  - security
+  - networking
 order: 4
 language: en
-sourceHash: "3f522a473a550b0c"
 ---
 
 # Proxy & Executor

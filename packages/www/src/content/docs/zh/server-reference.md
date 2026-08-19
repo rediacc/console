@@ -2,9 +2,12 @@
 title: "服务器参考"
 description: "远程服务器的目录布局、renet 命令、systemd 服务和工作流。"
 category: "Concepts"
+tags:
+  - operations
+  - cli
 order: 3
 language: zh
-sourceHash: "af2e8fc3da708d9a"
+sourceHash: "334e3ab3d1d1cce9"
 sourceCommit: "ff9c470edf8760f63f12baf681c04db51a0c202f"
 ---
 

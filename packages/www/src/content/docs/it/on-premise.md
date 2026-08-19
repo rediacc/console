@@ -2,9 +2,12 @@
 title: "Installazione On-Premise"
 description: "Esecuzione del server account e distribuzione della CLI sulla propria infrastruttura."
 category: "Guides"
+tags:
+  - account
+  - operations
 order: 5
 language: it
-sourceHash: "f05bd90f123befad"
+sourceHash: "2c3ac4a96a028b3f"
 sourceCommit: "018665c7c35e0bea3349818b12a5906828240a29"
 ---
 

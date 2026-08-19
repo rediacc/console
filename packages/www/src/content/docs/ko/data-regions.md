@@ -2,9 +2,12 @@
 title: "데이터 리전"
 description: "데이터가 저장되는 위치와 지역별 데이터 거주 방식에 대한 안내입니다."
 category: "Concepts"
+tags:
+  - compliance
+  - account
 order: 3
 language: ko
-sourceHash: "c87be32ef22a725d"
+sourceHash: "c03afe9324e59b45"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 

@@ -2,9 +2,12 @@
 title: "清理"
 description: "删除孤立备份、过期快照、仓库镜像和本地配置遗留物，回收磁盘空间并保持状态一致。"
 category: "Guides"
+tags:
+  - storage
+  - operations
 order: 12
 language: zh
-sourceHash: "928f117282b38484"
+sourceHash: "7d9a82ee410c420a"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 

@@ -2,9 +2,11 @@
 title: "Backup & Restore"
 description: "Snapshot encrypted repositories to content-addressed chunk storage, where only changed cells are uploaded and every snapshot restores directly. Or keep a copy on another machine. Restore anywhere, and automate it with named strategies and systemd timers."
 category: "Guides"
+tags:
+  - backup
+  - storage
 order: 7
 language: en
-sourceHash: "c02ab3e78c40fa92"
 ---
 
 # Backup & Restore

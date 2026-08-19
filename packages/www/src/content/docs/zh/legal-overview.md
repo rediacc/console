@@ -2,9 +2,11 @@
 title: "合规的实际要求"
 description: "Rediacc 在您的基础设施上运行。您控制您的数据。以下介绍其如何与主要合规框架保持一致。"
 category: "Legal"
+tags:
+  - compliance
 order: 0
 language: zh
-sourceHash: "e6044a3b067b54d5"
+sourceHash: "f3c999aa355997c6"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 

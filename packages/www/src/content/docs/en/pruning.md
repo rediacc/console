@@ -2,6 +2,9 @@
 title: "Pruning"
 description: "Remove orphaned backups, stale snapshots, repo images, and local-config leftovers to reclaim disk space and keep state coherent."
 category: "Guides"
+tags:
+  - storage
+  - operations
 order: 12
 language: en
 ---

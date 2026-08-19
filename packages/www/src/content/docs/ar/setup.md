@@ -2,9 +2,12 @@
 title: "إعداد الجهاز"
 description: "إنشاء إعداد، وإضافة أجهزة، وتجهيز الخوادم، وتهيئة البنية التحتية."
 category: "Guides"
+tags:
+  - getting-started
+  - operations
 order: 3
 language: ar
-sourceHash: "6e0b338423280f98"
+sourceHash: "a0f69282724c27ea"
 sourceCommit: "23543669cd22bce3f14d69a0886bac8a12061412"
 ---
 

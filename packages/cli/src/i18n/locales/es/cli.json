@@ -5,16 +5,16 @@
   "commands": {
     "backup": {
       "browse": {
+        "completed": "{{name}} listado",
         "description": "Lista los archivos que contiene un repositorio. Un recorrido local de solo lectura de la imagen del repositorio: sin servidor de cuenta y sin red. Un repositorio cifrado debe estar montado, o tener desplegado su archivo de claves, antes de poder abrirse; browse lo indica en vez de mostrar una lista vacía. No puede listar una instantánea que solo existe en el almacén de bloques; restáurela primero y luego explore el resultado.",
         "descriptionShort": "Listar los archivos de un repositorio (local, solo lectura)",
-        "optionPath": "Limitar el listado a este subárbol",
+        "empty": "{{name}} no contiene archivos.",
+        "failed": "No se pudo listar {{name}}",
         "optionDepth": "Limitar el descenso a N niveles (0 para ilimitado)",
         "optionLimit": "Número máximo de entradas a devolver (0 para ilimitado)",
+        "optionPath": "Limitar el listado a este subárbol",
         "starting": "Listando {{name}}...",
-        "completed": "{{name}} listado",
-        "failed": "No se pudo listar {{name}}",
-        "truncated": "Listado truncado a {{limit}} entradas. Acótelo con --path, o aumente --limit.",
-        "empty": "{{name}} no contiene archivos."
+        "truncated": "Listado truncado a {{limit}} entradas. Acótelo con --path, o aumente --limit."
       },
       "cancel": {
         "cancelled": "{{name}} cancelado",
@@ -45,8 +45,8 @@
         "atResolved": "Se resolvió {{at}} a la instantánea {{snapshot}} (tomada el {{created}}).",
         "atUnparsable": "--at \"{{at}}\" no es un ID de instantánea ni una hora. Pasa un ID de instantánea de `rdc backup manifests`, o una hora RFC3339 como 2026-08-14T12:00:00Z.",
         "datastoreUnattached": "El almacén de datos \"{{datastore}}\" no está acoplado a ninguna máquina. Acóplalo primero: rdc datastore attach {{datastore}} --to <machine>.",
-        "deployFailed": "Falló el despliegue de {{name}} restaurado",
         "deployed": "Se desplegó {{name}} en {{machine}}",
+        "deployFailed": "Falló el despliegue de {{name}} restaurado",
         "deploying": "Desplegando {{name}} en {{machine}}...",
         "description": "Convierte un artefacto de copia de seguridad en un repositorio activo. La ubicación se indica aquí.",
         "examples": {
@@ -58,9 +58,9 @@
         "optionAt": "Restaurar un punto en el tiempo: un ID de instantánea o una hora RFC3339 (restauración desde almacenamiento fragmentado)",
         "optionDatastore": "Restaurar en este almacén de datos con nombre (lo aloja la máquina a la que está acoplado)",
         "optionUp": "Desplegar el repositorio restaurado tras la transferencia",
-        "placeRequired": "Un artefacto a restaurar debe indicar dónde vive: usa repo@lugar (por ejemplo shop:nightly@backup-1).",
         "placementExclusive": "Pasa exactamente un flag de ubicación: --machine o --datastore.",
         "placementRequired": "Indica dónde restaurar: --machine <m> (docker) o --datastore <d> (almacén de datos con nombre).",
+        "placeRequired": "Un artefacto a restaurar debe indicar dónde vive: usa repo@lugar (por ejemplo shop:nightly@backup-1).",
         "pulling": "Obteniendo {{name}} desde {{place}}...",
         "restored": "Se restauró {{name}} en {{machine}}",
         "restoringSnapshot": "Restaurando {{name}} desde la instantánea {{snapshot}}...",
@@ -1473,8 +1473,8 @@
         "starting": "Tomando el control de \"{{grand}}\" con datos de \"{{fork}}\" en \"{{machine}}\"..."
       },
       "pull": {
-        "deployFailed": "Error al desplegar \"{{repo}}\" después de pull",
         "deployed": "Repositorio \"{{repo}}\" desplegado en {{machine}}",
+        "deployFailed": "Error al desplegar \"{{repo}}\" después de pull",
         "deploying": "Desplegando \"{{repo}}\" en {{machine}}...",
         "description": "Obtener repositorio de otra máquina. Las fuentes de almacenamiento están retiradas; use `rdc backup restore` para una restauración puntual. El tipo de origen se detecta automáticamente desde la configuración. Use --up para desplegar después del pull",
         "descriptionShort": "Obtener repositorio de otra máquina",
@@ -1493,8 +1493,8 @@
         "storageRetired": "Descargar desde un backend de almacenamiento está retirado: se eliminó el brazo de nube de rclone. La restauración puntual se hace con `rdc backup restore <repo> --at <snapshot>` sobre el almacén de bloques. La transferencia entre máquinas no cambia: usa --from-machine"
       },
       "push": {
-        "deployFailed": "Error al desplegar \"{{repo}}\" después del envío",
         "deployed": "Repositorio \"{{repo}}\" desplegado en {{machine}}",
+        "deployFailed": "Error al desplegar \"{{repo}}\" después del envío",
         "deploying": "Desplegando \"{{repo}}\" en {{machine}}...",
         "description": "Enviar repositorio a otra máquina. Los destinos de almacenamiento están retirados; use `rdc backup snapshot` para una copia puntual. Para transferencia entre máquinas, la imagen cifrada del repo se copia con el MISMO GUID: esto es un respaldo o una migración, no un fork. Para crear un fork independiente, use 'repo fork' primero y luego push. Una copia enviada llega como un ARTEFACTO de respaldo: inícielo en el destino con 'backup restore <ref> --as <name> -m <target> --up'",
         "descriptionShort": "Enviar repositorio a otra máquina",

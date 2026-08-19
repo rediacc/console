@@ -4,9 +4,12 @@ description: >-
   Claude Code, Cursor ve diğer AI kodlama asistanlarını Rediacc altyapısıyla
   çalışacak şekilde yapılandırmak için kopyala-yapıştır şablonu.
 category: Reference
+tags:
+  - ai-agents
+  - cli
 order: 50
 language: tr
-sourceHash: "1edff3471ded906d"
+sourceHash: "7592f803f8caf5f4"
 sourceCommit: "23543669cd22bce3f14d69a0886bac8a12061412"
 ---
 

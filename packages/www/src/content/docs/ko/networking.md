@@ -2,9 +2,12 @@
 title: "네트워킹"
 description: "리버스 프록시, Docker 레이블, TLS 인증서, DNS, TCP/UDP 포트 포워딩으로 서비스를 노출합니다."
 category: "Guides"
+tags:
+  - networking
+  - containers
 order: 6
 language: ko
-sourceHash: "89a755491d11fbd6"
+sourceHash: "6c5538c8919e9089"
 sourceCommit: "20f014619af1ee41e75cd46a3c8e4abc5add0983"
 ---
 

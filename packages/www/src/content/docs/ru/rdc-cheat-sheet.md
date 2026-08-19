@@ -2,10 +2,12 @@
 title: Шпаргалка по CLI RDC
 description: "Краткая справка по rdc: конфиги, репозитории, машины, синхронизация файлов и контейнеры. Полный набор опций: добавьте --help к любой команде."
 category: Guides
+tags:
+  - cli
 order: 3
 cardGrid: true
 language: ru
-sourceHash: "26e60c6b486eadd0"
+sourceHash: "14ed5791afa44326"
 sourceCommit: "45cd71f8a80949d4cd621f233377c48715bbf531"
 ---
 

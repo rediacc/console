@@ -2,22 +2,23 @@
 title: "Живая миграция"
 description: "Перенесите работающий репозиторий, контейнеры, базу данных и память процессов на другую машину одной командой с минимальным простоем."
 category: "Tutorials"
+tags:
+  - migration
+  - containers
 subcategory: advanced
 order: 16
 language: ru
-sourceHash: "0d0c4df847c6ba17"
+sourceHash: "6b14c6eb4a0b643a"
 sourceCommit: "3fb35b9a33c7e8ec6753ecd56231f2018e8f4803"
 ---
 
 import TutorialStep from '../../../components/tutorial/TutorialStep.astro';
 
+![Tutorial: Live migration](/assets/tutorials/tutorial-live-migration.cast)
+
 # Живая миграция
 
 Серверы меняются: железо стареет, провайдеры уходят, регионы смещаются. `rdc repo migrate` переносит работающий репозиторий на другую машину одной командой, и с `--checkpoint` даже память процессов делает этот переезд. Демо-приложение `pulse` хранит счётчик в ОЗУ; после переноса оно продолжает считать, а не начинает заново.
-
-## Смотреть урок
-
-![Tutorial: Live migration](/assets/tutorials/tutorial-live-migration.cast)
 
 ## Как это происходит
 

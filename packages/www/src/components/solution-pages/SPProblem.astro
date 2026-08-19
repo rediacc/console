@@ -56,23 +56,32 @@ const illustrationSvg = slug ? resolveSolutionIllustration(slug) : null;
     {problem.statCallouts && problem.statCallouts.length > 0 && (
       <div class="sp-stat-callouts">
         {problem.statCallouts.map((callout) => {
+          /*
+            B4: the callout keeps its number and its claim and loses the stacked source
+            line. What replaces it is a marker into SPSources, and it is rendered ONLY when
+            the `ref` actually resolves to an item.
+
+            That guard is the whole point rather than defensive habit. `statCallout.ref` is
+            unvalidated: `scripts/validate-comparison-refs.js` iterates `comparison.features`
+            and nothing else, so no gate has ever read these indices. And the case is live,
+            not hypothetical -- `pages.personaPages.*` carries `ref` numbers but has never
+            carried a `references` branch in any locale, so `PersonaPage.astro` passes no
+            `referenceItems` and every persona callout lands here unresolved. An
+            unconditional marker would emit `#sp-ref-N` against an id no page contains.
+          */
           const cited = callout.ref && callout.ref > 0 ? referenceItems[callout.ref - 1] : undefined;
           return (
             <div class="sp-stat-callout">
               <span class="sp-stat-callout-number">{callout.number}</span>
               {callout.text}
-              <span class="sp-stat-callout-source">
-                {cited?.url ? (
-                  <a
-                    href={cited.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    class="sp-source-link"
-                    title={cited.text}
-                    aria-label={`${callout.source}: ${cited.text}`}
-                  >{callout.source}</a>
-                ) : callout.source}
-              </span>
+              {cited && (
+                <a
+                  class="sp-stat-ref"
+                  href={`#sp-ref-${callout.ref}`}
+                  title={callout.source}
+                  aria-label={`${callout.source}: ${cited.text}`}
+                >{callout.ref}</a>
+              )}
             </div>
           );
         })}

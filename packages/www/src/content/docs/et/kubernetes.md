@@ -2,9 +2,12 @@
 title: "Kubernetes"
 description: "Käita Kubernetest Rediacci repo mentaliteediga: forkida või liigutada töötav klaster, sealhulgas selle andmed, teise masinasse või andmekeskusesse lühikese ülemineku ajaga."
 category: "Guides"
+tags:
+  - containers
+  - migration
 order: 6
 language: et
-sourceHash: "6ad4b60e09edde94"
+sourceHash: "22eef465dfd46ccf"
 sourceCommit: "23543669cd22bce3f14d69a0886bac8a12061412"
 ---
 

@@ -2,9 +2,12 @@
 title: "Installation On-Premise"
 description: "Exécuter le serveur de compte et la distribution de la CLI sur votre propre infrastructure."
 category: "Guides"
+tags:
+  - account
+  - operations
 order: 5
 language: fr
-sourceHash: "f05bd90f123befad"
+sourceHash: "2c3ac4a96a028b3f"
 sourceCommit: "018665c7c35e0bea3349818b12a5906828240a29"
 ---
 

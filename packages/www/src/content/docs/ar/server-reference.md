@@ -2,9 +2,12 @@
 title: "مرجع الخادم"
 description: "تخطيط المجلدات، وأوامر renet، وخدمات systemd، وسير العمل على الخادم البعيد."
 category: "Concepts"
+tags:
+  - operations
+  - cli
 order: 3
 language: ar
-sourceHash: "af2e8fc3da708d9a"
+sourceHash: "334e3ab3d1d1cce9"
 sourceCommit: "23543669cd22bce3f14d69a0886bac8a12061412"
 ---
 

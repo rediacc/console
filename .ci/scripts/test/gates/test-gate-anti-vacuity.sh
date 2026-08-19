@@ -67,6 +67,12 @@ REGISTRY=(
     # Against an empty tree every oracle is unavailable, so the run is vacuous
     # and must FAIL rather than report "every entry is still load-bearing".
     "check-suppression-liveness.ts|vacuous"
+    # A mutation gate: it copies packages/cli into a sandbox, breaks the source,
+    # and requires the tests to fail. On an empty tree there is nothing to
+    # mutate, and "no source to mutate" must be a hard error - a mutation gate
+    # that reports success having mutated nothing is the purest form of the
+    # class this meta-gate exists to catch.
+    "check-guard-mutations.ts|required subject missing"
     # A bash gate, reachable only since this harness learned to run .sh. It used
     # to `exit 0` when private/renet was absent, silently taking govulncheck,
     # deadcode and golangci-lint with it.

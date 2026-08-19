@@ -2,9 +2,11 @@
 title: "Vastavuse ülevaade"
 description: "Rediacc töötab teie infrastruktuuril. Te kontrolliite oma andmeid. Kuidas see vastab peamiste vastavusraamistike nõuetele."
 category: "Legal"
+tags:
+  - compliance
 order: 0
 language: et
-sourceHash: "e6044a3b067b54d5"
+sourceHash: "f3c999aa355997c6"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 

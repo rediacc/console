@@ -2,9 +2,12 @@
 title: AI 助手的 AGENTS.md 模板
 description: 用于配置 Claude Code、Cursor 和其他 AI 编程助手以使用 Rediacc 基础设施的复制粘贴模板。
 category: Reference
+tags:
+  - ai-agents
+  - cli
 order: 50
 language: zh
-sourceHash: "1edff3471ded906d"
+sourceHash: "7592f803f8caf5f4"
 sourceCommit: "23543669cd22bce3f14d69a0886bac8a12061412"
 ---
 

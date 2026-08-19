@@ -4,9 +4,12 @@ description: >-
   Kuidas Rediacc töötab: kahe tööriista arhitektuur, adapteri tuvastamine, turvamudel
   ja konfiguratsioonistuktuur.
 category: Concepts
+tags:
+  - repositories
+  - containers
 order: 0
 language: et
-sourceHash: "16b02000a82f3acd"
+sourceHash: "878b744629cb8b14"
 sourceCommit: "23543669cd22bce3f14d69a0886bac8a12061412"
 ---
 

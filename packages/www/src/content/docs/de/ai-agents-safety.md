@@ -5,9 +5,12 @@ description: >-
   Anmeldedaten zu überschreiben oder Berechtigungen zu eskalieren. Wissens-Gates,
   Schwärzung, abstammungsverifizierte Überschreibungen und ein hash-verkettetes Audit-Log.
 category: Concepts
+tags:
+  - ai-agents
+  - security
 order: 35
 language: de
-sourceHash: "5dac7c4162cbbb8e"
+sourceHash: "e008783008d8e887"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 

@@ -2,6 +2,9 @@
 title: Cross Backup Strategy
 description: "Your backup fails the moment its machine does. Rediacc replicates snapshots to a separate machine so one disk failure doesn't take everything with it."
 category: Use Cases
+tags:
+  - backup
+  - migration
 order: 5
 language: en
 ---

@@ -2,9 +2,12 @@
 title: Stratégie de sauvegarde croisée
 description: Votre sauvegarde échoue au moment même où sa machine tombe. Rediacc réplique les instantanés sur une machine distincte afin qu'une seule défaillance disque ne vous fasse perdre l'essentiel.
 category: Use Cases
+tags:
+  - backup
+  - migration
 order: 5
 language: fr
-sourceHash: "39dbeac1faec121c"
+sourceHash: "a565990a48aa0593"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 

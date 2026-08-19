@@ -2,10 +2,12 @@
 title: RDC CLI 치트 시트
 description: "rdc 빠른 참조: 설정, 리포지터리, 머신, 파일 동기화, 컨테이너. 전체 옵션: 모든 명령에 --help 추가."
 category: Guides
+tags:
+  - cli
 order: 3
 cardGrid: true
 language: ko
-sourceHash: "26e60c6b486eadd0"
+sourceHash: "14ed5791afa44326"
 sourceCommit: "45cd71f8a80949d4cd621f233377c48715bbf531"
 ---
 

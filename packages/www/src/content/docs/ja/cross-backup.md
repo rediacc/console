@@ -2,9 +2,12 @@
 title: クロスバックアップ戦略
 description: あなたのバックアップはそのマシンが失敗すると同時に失敗します。Rediacc はスナップショットを別のマシンにレプリケートするため、1 つのディスク障害によってすべてが失われることはありません。
 category: Use Cases
+tags:
+  - backup
+  - migration
 order: 5
 language: ja
-sourceHash: "39dbeac1faec121c"
+sourceHash: "a565990a48aa0593"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 

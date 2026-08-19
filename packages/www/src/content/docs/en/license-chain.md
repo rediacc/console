@@ -2,6 +2,9 @@
 title: "License Chain & Delegation"
 description: "Tamper-evident license issuance, delegated signing for on-premise, and fork detection."
 category: "Guides"
+tags:
+  - account
+  - security
 order: 8
 language: en
 ---

@@ -2,9 +2,12 @@
 title: "Varundamine ja taastamine"
 description: "Tee krüpteeritud repositooriumidest hetktõmmiseid sisupõhiselt aadresseeritud tükksalvestusse, kus laaditakse üles ainult muutunud rakud ja iga hetktõmmis taastub otse. Või hoia koopiat teisel masinal. Taasta kus tahes ja automatiseeri nimetatud strateegiate ning systemd-taimerite abil."
 category: "Guides"
+tags:
+  - backup
+  - storage
 order: 7
 language: et
-sourceHash: "91f6072e230b059c"
+sourceHash: "c35328105c2f3e8c"
 sourceCommit: "79c84ad044d5730b6d0a20aaf7b21f21914b6bda"
 ---
 

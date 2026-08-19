@@ -2,9 +2,12 @@
 title: "PCI DSS vastavus"
 description: "Kuidas Rediacc vastab PCI DSS nõuetele: muutumatud varukoopiad, automaatne võrgusegmenteerimine ja juurdepääsukontroll infrastruktuuri tasemel."
 category: "Legal"
+tags:
+  - compliance
+  - security
 order: 6
 language: et
-sourceHash: "05ca01c69d8bab61"
+sourceHash: "f0349ad8df33656e"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 

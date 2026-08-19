@@ -2,9 +2,12 @@
 title: "Kohapealne paigaldus"
 description: "Konto-serveri ja CLI jaotuse käitamine oma infrastruktuuris."
 category: "Guides"
+tags:
+  - account
+  - operations
 order: 5
 language: et
-sourceHash: "f05bd90f123befad"
+sourceHash: "2c3ac4a96a028b3f"
 sourceCommit: "018665c7c35e0bea3349818b12a5906828240a29"
 ---
 

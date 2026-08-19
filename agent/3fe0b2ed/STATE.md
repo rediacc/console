@@ -1,63 +1,70 @@
-## SESSION 3fe0b2ed 2026-08-18T19:51:30Z
-
-# Session 3fe0b2ed
+## SESSION 3fe0b2ed 2026-08-19T18:43:13Z
 
 ## Task
-Operator reported Arabic in generated tutorial thumbnails rendering letter-by-letter instead of
-joined. Root-caused, fixed, gated. Operator then EXPLICITLY AUTHORISED the R2 publish
-("its not. you must publish it"), overriding an earlier door:operator-only close.
+
+Plan ~/.claude/plans/let-s-make-a-plan-vast-cray.md: tutorial output exceeds the 107-column
+recorded terminal and wraps into unreadable rows. Fix at source, re-record 18 casts,
+regenerate 234 pairs, publish to R2. Operator approved the plan with "GO".
+
+## PHASE 4 IS DONE. THE CAST GATE IS RED, AND THAT IS THE REAL STATE.
+
+All 18 casts recorded on the downclocked host (sweep run 4, worker bt3etolpv, now finished).
+The chain then ABORTED at the cast gate with 24 violations, before Phase 5. That abort is
+correct: it stopped a ~5 hour render on a bad corpus.
+
+**Phase 0 was NOT done, despite four earlier reports saying so.** Those rested on ONE sample
+tutorial that never exercised the failing paths. The gate over all 18 disagreed. Treat any
+"verified" claim in this file as scoped to what was actually run.
+
+FIXED since (15 of 24), all uncommitted:
+- job-remote.ts:426 `outputLine` echoed renet's machine-readable protocol verbatim
+  ({"push_result":...} at 322-400 cols). New `isMachineReadableRelayLine`
+  (output-lines.ts:143) drops whole-line JSON from the HUMAN stream only; stdout capture is
+  separate so extractPushResult still works. 6 tests, mutation-proven, third guard in
+  check:ci-guard-mutations.
+- My own eslint breakage in local-executor.ts and daemon/client.ts (cognitive complexity).
+  PROVEN mine by linting each file's HEAD copy clean and restoring byte-identically.
+  local-executor now USES createQuietStderrPump instead of an inlined duplicate of it;
+  daemon/client gained `routeLogEvent`.
 
 ## Next action
-Work is IN FLIGHT; do not restart anything. State at 19:51Z: main sweep 43/51 (0 fail), ko 9/18;
-zh publish 16/17; ar fully published.
-1. Wait for "=== ALL DONE" in scratchpad/arabic/render-all.out (monitor b6ericbli reports it).
-2. Wait for bg b8uubpdvo: re-render of zh then ko tutorial-backup-restore, running SEQUENTIALLY.
-3. RE-RENDER tutorial-add-server for ar, zh AND ko. The sweep SKIPPED it in all three and its
-   mp4s predate the final card-fonts.ts, so it is the only pair not provably current.
-4. Publish, sequentially, with scratchpad/arabic/publish-lang.sh <lang> <tutorial>...:
-   - ko: all 18
-   - zh: tutorial-backup-restore AGAIN (it went out with bad captions before the re-align)
-   - add-server for ar, zh, ko
-5. Purge: .ci/scripts/deploy/purge-media-cache.sh (CF_GLOBAL_API_KEY + CF_EMAIL in
-   private/account/.env).
-6. Verify CDN-side, never by exit code: fetch a words.json and diff vs local; pull an ar poster
-   and actually look at it.
 
-## DO NOT PURGE UNTIL STEP 5 - the stale cache is a live diagnostic
-The un-purged CDN still serves pre-fix files. That is the ONLY reason the caption regression
-below was caught. Purging destroys the comparison permanently.
+1. **#a6dd08a8** finish the remaining 9 cast-gate violations, in this order:
+   a. `rdc repo up my-app:test` still leaks a 115-col `level=info` logrus line - that is the
+      EIGHTH raw stderr pump; find it.
+   b. `rdc doctor` prints a 232-col version table.
+   c. `docker ps` (122) and `df -h` (128) are third-party: narrow them in the tutorial
+      scripts (plan step 0d, never done). The df width comes from a 36-char device-mapper
+      GUID.
+   d. typed `ssh-copy-id` line is 111 cols.
+   e. the 162-col `rdc vscode connect --browser` URL is DELIBERATELY exempt per the plan
+      (breaking a URL makes it uncopyable) - the GATE must learn that, do not wrap it.
+   Re-run: bash scratchpad/rebuild-and-sweep.sh, and re-lease #2de6d413 / #552b33ec to that
+   new worker id.
+2. **#2de6d413** Phase 5 auto-starts once the gate passes. If `generate` reports new
+   synthesis, STOP: the clip cache missed.
+3. **#552b33ec** Phase 6: ASK before any upload (media-pipeline.md:374).
 
-## Caption defect: found, swept, fixed (#2d2f8b85 ticked, #6b489ba2 in flight)
-tutorial-backup-restore had been re-narrated by an earlier session WITHOUT --subtitle, so its
-timeline carried zero ASR alignment and renders emitted the evenly-distributed estimate.
-Measured across all 13 locales: ar was 61/61 flat, zh 58/60, ko 50/52; everything else 0-10%.
-et is 91% flat and that is CORRECT - no forced aligner exists for Estonian, it is exempt.
-ar: fixed, re-rendered, re-published, now 5/39 flat (better than the 6/31 that was live before).
-zh+ko: re-aligned (timelines now 16 real runs, 0 flat), re-rendering under bg b8uubpdvo, still
-need re-publishing.
-Recipe if another pair shows it:
-  cd private/generative && PYTHONPATH=src .venv/bin/python -m tutorial_tts.cli \
-    --repo-root /home/muhammed/monorepo/console --lang <l> --cast <t> --subtitle --resubtitle
-  Dry-run FIRST; it must say "Generated clips: 0", otherwise it would re-synthesise the audio.
-  Then re-render that pair, then re-publish it.
+Never run a recording in the FOREGROUND: the Bash tool caps at 10 min and SIGTERMs it
+mid-flight. The driver only prints at stage boundaries, so judge liveness by
+scratchpad/sweep.record.log growing, not by its silence.
 
-## Publish mechanics already de-risked
-- Per-pair publisher: packages/www/scripts/publish-tutorial-video-to-r2.ts --cast X --lang Y.
-- NEVER run generate-video-manifest.ts: whole-tree SCAN, most media gitignored, drops locales.
-- Publishes MUST be sequential: update-video-manifest.ts:113/119 is an unsynchronised
-  readFileSync/writeFileSync, no lock.
-- Renders: lang-major, and NEVER the same tutorial in two languages at once (browser-segment
-  cache key omits language).
-- ar verified at origin: list-objects-v2 showed 85 objects dated 2026-08-18 vs 5 old.
+## Also landed this session
 
-## Code state: uncommitted, partly UNTRACKED
-Fix = packages/www/scripts/lib/scenes/card-fonts.ts + svg-render.ts + slide.ts + the two
-_template card SVGs + vendored scripts/assets/fonts/. Plus gate check:ci-tutorial-card-fonts and
-a reggate probe fix in .claude/hooks/stop/wl_reggate.py. card-fonts.ts, the gate script and the
-fonts dir are UNTRACKED while their wiring (package.json:157, ci-runner/manifest.ts:1801,
-ci-quality.yml:747) is TRACKED - committing wiring alone points CI at a missing script.
-1061 dirty paths in this shared tree; only ~13 are mine. Never stage broadly.
+- run.sh records in declared frontmatter order, not alphabetically.
+- ALL 17 tutorials send setup output to $TUTORIAL_SETUP_LOG instead of /dev/null, and
+  record.sh prints the preserved cast tail AND that log on failure. Without this, three
+  aborts produced no output at all.
+- Healthchecks calibrated for a slow host (demo-pgadmin pgadmin 300s/30, db 90s/20;
+  heartbeat 90s/12), plus gate `check:ci-tutorial-healthcheck-headroom` (floor 180s,
+  evidence: the config that failed had a 150s budget).
+- Gate `check:ci-guard-mutations`: runs the CLI tests against a deliberately broken COPY and
+  requires them to FAIL.
 
-## Remaining
-- [>] #f7b80380 sweep -> add-server -> publish ko -> purge -> verify
-- [>] #6b489ba2 zh+ko backup-restore re-render -> re-publish
+Green: CLI suite 2390/2390, eslint (FROM REPO ROOT), check:ci-parity, shell-format,
+dead-bash, anti-vacuity battery, both new gates.
+
+## Environment
+
+REDIACC_ALLOW_GRAND_REPO=* is set in THIS session's env and is required for recording; it
+must be exported BEFORE the agent starts, so a fresh session loses it and cannot record.

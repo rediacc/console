@@ -2,9 +2,12 @@
 title: "Régions de données"
 description: "Où vos données sont stockées et comment fonctionne la résidence des données par région."
 category: "Concepts"
+tags:
+  - compliance
+  - account
 order: 3
 language: fr
-sourceHash: "c87be32ef22a725d"
+sourceHash: "c03afe9324e59b45"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 

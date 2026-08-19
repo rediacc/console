@@ -2,9 +2,12 @@
 title: Cursor Kurulum Kılavuzu
 description: Cursor IDE'yi .cursorrules ve terminal entegrasyonu kullanarak Rediacc altyapısıyla çalışacak şekilde yapılandırın.
 category: Guides
+tags:
+  - ai-agents
+  - cli
 order: 32
 language: tr
-sourceHash: "bab7e70ffbd9f32b"
+sourceHash: "e0fb319a9e477324"
 sourceCommit: "23543669cd22bce3f14d69a0886bac8a12061412"
 ---
 

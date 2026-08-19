@@ -2,6 +2,9 @@
 title: "rdc vs renet"
 description: "When to use rdc and when to use renet."
 category: "Concepts"
+tags:
+  - cli
+  - operations
 order: 1
 language: en
 ---

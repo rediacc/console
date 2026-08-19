@@ -2,9 +2,12 @@
 title: VMs Experimentales
 description: Aprovisione clústeres de VMs locales para desarrollo y pruebas con rdc ops.
 category: Concepts
+tags:
+  - operations
+  - containers
 order: 2
 language: es
-sourceHash: aafca00c006ded0b
+sourceHash: 5fad635a61089758
 ---
 
 # VMs Experimentales

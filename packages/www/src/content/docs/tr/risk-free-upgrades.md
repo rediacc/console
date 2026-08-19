@@ -4,9 +4,12 @@ description: >-
   Anında klonlama ve saatlik anlık görüntüleri kullanarak veritabanı
   yükseltmelerini risk olmadan test edin.
 category: Use Cases
+tags:
+  - forking
+  - backup
 order: 4
 language: tr
-sourceHash: "242617b8bede9535"
+sourceHash: "852e967b9d505861"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 

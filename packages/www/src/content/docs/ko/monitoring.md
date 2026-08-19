@@ -2,9 +2,11 @@
 title: "모니터링"
 description: "머신 상태, 컨테이너, 서비스, 저장소를 모니터링하고 진단을 실행합니다."
 category: "Guides"
+tags:
+  - operations
 order: 9
 language: ko
-sourceHash: "ab050e731db18848"
+sourceHash: "9c5882697da43a8f"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 

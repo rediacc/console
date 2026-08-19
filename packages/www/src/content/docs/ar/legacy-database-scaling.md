@@ -2,9 +2,12 @@
 title: تحجيم قاعدة البيانات القديمة
 description: قم بتوسيع نطاق قواعد البيانات القديمة دون الترحيل من خلال الاستفادة من النسخ المتماثل للبيانات في الوقت الفعلي وتوزيع الاستعلام.
 category: Use Cases
+tags:
+  - migration
+  - forking
 order: 3
 language: ar
-sourceHash: "b15507f1e0da46d2"
+sourceHash: "7131eacdf2a43da5"
 sourceCommit: "8b37b0a2c25c0ba7e5a8a63c8d3ed0da48b78a10"
 ---
 

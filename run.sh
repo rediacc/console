@@ -371,6 +371,14 @@ _ensure_bridge_recording_tooling() {
     _bridge_rsync "$ROOT_DIR/.ci/scripts/docs/" "${bridge}:/tmp/rec/.ci/scripts/docs/"
 }
 
+# Recorded terminal geometry, single source of truth. Downstream is derived, not
+# duplicated: the value is written into each cast header and every renderer reads
+# it back (packages/www/scripts/lib/scenes/cast.ts). The width is a legibility
+# choice, not a realism one -- the player shows the video at ~800px, so 107
+# columns already lands near the readable floor.
+TUTORIAL_COLS=107
+TUTORIAL_ROWS=32
+
 www_tutorials_record() {
     local force=false
     local keep_vms=false
@@ -441,10 +449,47 @@ www_tutorials_record() {
         }
         candidates+=("$script")
     else
-        # All tutorial scripts share the tutorial-<slug>.sh prefix; record alphabetically.
+        # Record in the DECLARED sequence, never alphabetically. The tutorials are a
+        # stateful chain run against one shared cluster and nothing is reset between
+        # them (.ci/tutorials/run-sequence.sh), so alphabetical order puts tutorial 11
+        # (backup-restore) and 15 (branching) ahead of tutorial 4 (create-repo), which
+        # then fails on the state they left behind. The order lives in the docs
+        # frontmatter, the same single source of truth run-sequence.sh derives from.
+        local docs_dir="$ROOT_DIR/packages/www/src/content/docs/en"
+        local ordered_pairs=()
+        local doc slug order
+        for doc in "$docs_dir"/tutorial-*.mdx; do
+            [[ -f "$doc" ]] || continue
+            slug="$(basename "$doc" .mdx)"
+            order="$(grep -m1 '^order:' "$doc" | tr -dc '0-9')"
+            if [[ -z "$order" ]]; then
+                log_error "Tutorial doc has no 'order:' frontmatter: $doc"
+                exit 1
+            fi
+            ordered_pairs+=("$(printf '%03d %s' "$order" "$slug")")
+        done
+        # while-read, not mapfile: bash 3.2 compat, same pattern as run-sequence.sh.
+        local _line
+        while IFS= read -r _line; do
+            [[ -n "$_line" ]] || continue
+            local ordered_script="$tutorials_dir/${_line}.sh"
+            if [[ ! -f "$ordered_script" ]]; then
+                log_error "Tutorial doc ${_line}.mdx has no script $ordered_script"
+                exit 1
+            fi
+            candidates+=("$ordered_script")
+        done < <(printf '%s\n' "${ordered_pairs[@]}" | sort | awk '{print $2}')
+        # A script with no doc would be silently skipped by the loop above; catch it.
+        local script
         for script in "$tutorials_dir"/tutorial-*.sh; do
             [[ -f "$script" ]] || continue
-            candidates+=("$script")
+            case " ${candidates[*]} " in
+                *" $script "*) ;;
+                *)
+                    log_error "Tutorial script has no doc, so it has no place in the sequence: $script"
+                    exit 1
+                    ;;
+            esac
         done
     fi
 
@@ -527,7 +572,7 @@ TEOF
             MAX_IDLE_MS='${MAX_IDLE_MS:-800}' \
             bash /tmp/rec/.ci/tutorials/record.sh \
                 /tmp/rec/.ci/tutorials/${base}.sh \
-                /tmp/rec/out/${base}.cast 107 32"
+                /tmp/rec/out/${base}.cast $TUTORIAL_COLS $TUTORIAL_ROWS"
         _bridge_rsync "${bridge}:/tmp/rec/out/${base}.cast" "$output_dir/${base}.cast"
         log_info "Pulled cast → $output_dir/${base}.cast"
 

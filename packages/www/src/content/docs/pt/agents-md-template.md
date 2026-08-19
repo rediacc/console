@@ -2,9 +2,12 @@
 title: Modelo de AGENTS.md para Assistentes de IA
 description: Modelo de copiar e colar para configurar o Claude Code, Cursor e outros assistentes de codificação com IA para trabalhar com a infraestrutura Rediacc.
 category: Reference
+tags:
+  - ai-agents
+  - cli
 order: 50
 language: pt
-sourceHash: "1edff3471ded906d"
+sourceHash: "7592f803f8caf5f4"
 sourceCommit: "23543669cd22bce3f14d69a0886bac8a12061412"
 ---
 

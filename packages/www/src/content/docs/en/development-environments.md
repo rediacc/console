@@ -2,6 +2,9 @@
 title: Development Environments That Spin Up in Seconds
 description: Stop waiting days for development environments. Clone your complete production infrastructure in under 60 seconds with ephemeral environments on demand.
 category: Use Cases
+tags:
+  - forking
+  - containers
 order: 10
 language: en
 ---

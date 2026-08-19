@@ -2,6 +2,9 @@
 title: "Delta Transfer"
 description: "The first push to another machine copies everything; every push after that transfers only the changed blocks — automatically."
 category: "Tutorials"
+tags:
+  - backup
+  - storage
 subcategory: advanced
 order: 17
 language: en
@@ -9,13 +12,11 @@ language: en
 
 import TutorialStep from '../../../components/tutorial/TutorialStep.astro';
 
+![Tutorial: Delta transfer](/assets/tutorials/tutorial-delta-transfer.cast)
+
 # Delta Transfer
 
 Push a repository to another machine twice. The first push carries everything. The second carries only what changed: same command, no flags, no bookkeeping. And you don't have to take it on faith, because the push output prints exactly how much it moved.
-
-## Watch the tutorial
-
-![Tutorial: Delta transfer](/assets/tutorials/tutorial-delta-transfer.cast)
 
 ## Blocks, not bytes
 

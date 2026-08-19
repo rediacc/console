@@ -2,9 +2,12 @@
 title: "Autostart & Wiederherstellung"
 description: "Wie Autostart funktioniert, der periodische Reconciler, der Repositories nach dem Start wiederherstellt, und wie man den Wiederherstellungsstatus prüft."
 category: "Guides"
+tags:
+  - operations
+  - containers
 order: 5
 language: de
-sourceHash: "62148f7a55752783"
+sourceHash: "0a87131bd0d87a34"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 

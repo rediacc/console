@@ -2,9 +2,12 @@
 title: 账户安全与API
 description: 身份验证、API令牌、会话管理和权限模型。
 category: Guides
+tags:
+  - account
+  - security
 order: 13
 language: zh
-sourceHash: "dcd061b971573573"
+sourceHash: "c898204d1ff917f8"
 sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 ---
 

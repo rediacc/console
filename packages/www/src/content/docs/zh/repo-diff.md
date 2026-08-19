@@ -2,10 +2,12 @@
 title: "rdc repo diff"
 description: "显示两个写时复制(copy-on-write)分支仓库之间的类Git风格的文件级差异,通过在块级别比较其加密镜像,无需解密。"
 category: Reference
-subcategory: advanced
+tags:
+  - forking
+  - storage
 order: 40
 language: zh
-sourceHash: "b555f4ca6b58ff4b"
+sourceHash: "6f5ccba93044665a"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 

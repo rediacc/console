@@ -4,9 +4,11 @@ description: >-
   Monitoree el estado de máquinas, contenedores, servicios, repositorios y
   ejecute diagnósticos.
 category: Guides
+tags:
+  - operations
 order: 9
 language: es
-sourceHash: "ab050e731db18848"
+sourceHash: "9c5882697da43a8f"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 

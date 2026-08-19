@@ -2,9 +2,12 @@
 title: "Sauvegarde et restauration"
 description: "Prenez des instantanés des dépôts chiffrés vers un stockage fragmenté adressé par contenu, où seules les cellules modifiées sont envoyées et chaque instantané se restaure directement. Ou conservez une copie sur une autre machine. Restaurez n'importe où, et automatisez avec des stratégies nommées et des timers systemd."
 category: "Guides"
+tags:
+  - backup
+  - storage
 order: 7
 language: fr
-sourceHash: "91f6072e230b059c"
+sourceHash: "c35328105c2f3e8c"
 sourceCommit: "79c84ad044d5730b6d0a20aaf7b21f21914b6bda"
 ---
 

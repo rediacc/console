@@ -2,6 +2,9 @@
 title: "Experimental VMs"
 description: "Provision local VM clusters for development and testing with rdc ops."
 category: "Concepts"
+tags:
+  - operations
+  - containers
 order: 2
 language: en
 ---

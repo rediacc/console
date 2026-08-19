@@ -2,9 +2,12 @@
 title: 빠른 시작
 description: 몇 분 안에 서버에서 컨테이너화된 서비스를 실행합니다.
 category: Guides
+tags:
+  - getting-started
+  - containers
 order: -1
 language: ko
-sourceHash: "b2745d4f0d99d7a4"
+sourceHash: "05e91da1e94dddfc"
 sourceCommit: "a56b03aa5da8df74255a6bc9bc9463665c3499b6"
 ---
 

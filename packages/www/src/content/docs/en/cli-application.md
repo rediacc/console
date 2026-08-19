@@ -2,11 +2,12 @@
 title: "CLI Application"
 description: "Complete guide to using the Rediacc command-line interface for platform management"
 category: "Reference"
+tags:
+  - cli
 order: 2
 language: en
 generated: true
 generatedFrom: packages/cli/src/i18n/locales/en/cli.json
-sourceHash: "bb3ff8daf0bc61cb"
 ---
 
 <!-- THIS FILE IS AUTO-GENERATED. Do not edit manually. -->

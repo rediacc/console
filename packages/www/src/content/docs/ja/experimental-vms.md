@@ -2,9 +2,12 @@
 title: 実験的VM
 description: rdc opsを使用して、開発およびテスト用のローカルVMクラスターをプロビジョニングします。
 category: Concepts
+tags:
+  - operations
+  - containers
 order: 2
 language: ja
-sourceHash: aafca00c006ded0b
+sourceHash: 5fad635a61089758
 ---
 
 # 実験的VM

@@ -2,9 +2,11 @@
 title: "Repositories"
 description: "Create, manage, and operate LUKS-encrypted repositories on remote machines."
 category: "Guides"
+tags:
+  - repositories
+  - security
 order: 4
 language: en
-sourceHash: "06b8912e9b65b720"
 ---
 
 # Repositories

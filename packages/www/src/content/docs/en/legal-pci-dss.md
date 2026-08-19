@@ -2,6 +2,9 @@
 title: "PCI DSS Compliance"
 description: "How Rediacc meets PCI DSS requirements: immutable backups, automatic network isolation, and access control at the infrastructure level."
 category: "Legal"
+tags:
+  - compliance
+  - security
 order: 6
 language: en
 ---

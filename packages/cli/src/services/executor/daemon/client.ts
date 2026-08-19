@@ -13,8 +13,8 @@
  * reading of "fall back on mid-stream drop".
  */
 
-import * as net from 'node:net';
 import { randomUUID } from 'node:crypto';
+import * as net from 'node:net';
 import { debugEnabled } from '../../../utils/debug.js';
 import { currentRequestContext } from '../../core/request-context.js';
 import { renderJobEvent } from '../job-remote.js';
@@ -58,6 +58,34 @@ const DEFAULT_SPAWN_WAIT_MS = 2000;
 
 /** Raised for any pre-execution trouble; the caller falls back to the direct path. */
 class DaemonUnavailable extends Error {}
+
+/** Cap on withheld relay lines. A failing job's tail is what matters, not its head. */
+/**
+ * Send one event to the terminal, holding info-level logs for a possible replay.
+ *
+ * error/warning go out live because they explain a failure as it happens.
+ * Everything quieter is buffered by `remember` and replayed only if the job
+ * fails: those lines were 227-358 columns wide and wrapped into garbage in every
+ * tutorial recording, but DROPPING them was tried and is worse - a renet child
+ * exited 1 with every explanatory line at info level, and the failure became
+ * unreadable. REDIACC_DEBUG restores the old firehose.
+ *
+ * Extracted from the frame switch rather than inlined: inline it pushed that
+ * function past the cognitive-complexity gate.
+ */
+function routeLogEvent(event: RenetEvent, remember: (line: string) => void): void {
+  if (event.type !== 'log' || !event.msg) {
+    renderJobEvent(event);
+    return;
+  }
+  if (event.level === 'error' || event.level === 'warning' || debugEnabled()) {
+    process.stderr.write(`${event.msg}\n`);
+    return;
+  }
+  remember(event.msg);
+}
+
+const DEFERRED_LOG_LIMIT = 200;
 
 function debug(message: string): void {
   if (debugEnabled('daemon')) {
@@ -188,6 +216,21 @@ async function runViaDaemon(options: ExecuteOptions, deps: ResolvedDeps): Promis
   return new Promise<ExecuteResult>((resolve, reject) => {
     let settled = false;
     let accepted = false;
+    // Info-level relay lines are DEFERRED, not dropped. Printing them live put
+    // 358-column logrus strings on screen (and into every tutorial recording);
+    // dropping them outright is worse, and was tried: a renet child exited 1 and
+    // every explanatory line was an info-level log event, so the failure became
+    // unreadable. Buffering keeps both properties -- silent on success, complete
+    // on failure. Bounded so a chatty job cannot grow it without limit.
+    const deferredLogs: string[] = [];
+    const rememberLog = (line: string): void => {
+      deferredLogs.push(line);
+      if (deferredLogs.length > DEFERRED_LOG_LIMIT) deferredLogs.shift();
+    };
+    const flushDeferredLogs = (): void => {
+      for (const line of deferredLogs) process.stderr.write(`${line}\n`);
+      deferredLogs.length = 0;
+    };
 
     const finish = (fn: () => void): void => {
       if (settled) return;
@@ -218,11 +261,7 @@ async function runViaDaemon(options: ExecuteOptions, deps: ResolvedDeps): Promis
             // exists for detached-job replays; hiding info-level diagnostics
             // here made real failures unreadable — a renet child exited 1 and
             // every explanatory line was an info-level log event.
-            if (frame.event.type === 'log' && frame.event.msg) {
-              process.stderr.write(`${frame.event.msg}\n`);
-            } else {
-              renderJobEvent(frame.event);
-            }
+            routeLogEvent(frame.event, rememberLog);
           }
           return;
         case 'jobStarted':
@@ -230,14 +269,18 @@ async function runViaDaemon(options: ExecuteOptions, deps: ResolvedDeps): Promis
           return;
         case 'result':
           finish(() => {
+            // The job failed, so the diagnostics we withheld are exactly what the
+            // reader needs. Flush BEFORE the step summary so cause precedes effect.
+            if (frame.result.exitCode !== 0) flushDeferredLogs();
             renderCliSteps(options, frame.result);
             resolve(frame.result);
           });
           return;
         case 'error':
-          finish(() =>
-            reject(accepted ? new Error(frame.message) : new DaemonUnavailable(frame.message))
-          );
+          finish(() => {
+            flushDeferredLogs();
+            reject(accepted ? new Error(frame.message) : new DaemonUnavailable(frame.message));
+          });
           return;
         default:
           return;

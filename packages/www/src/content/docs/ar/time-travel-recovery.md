@@ -2,9 +2,12 @@
 title: استعادة السفر عبر الزمن
 description: "استعادة البيانات المحذوفة منذ أسابيع مضت باستخدام لقطات btrfs، حتى بعد انقضاء فترة النسخ الاحتياطية العادية."
 category: Use Cases
+tags:
+  - backup
+  - storage
 order: 2
 language: ar
-sourceHash: "e55d51b8df91b20f"
+sourceHash: "2fce69fb1631f640"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 

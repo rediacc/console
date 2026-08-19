@@ -2,9 +2,11 @@
 title: "SOC 2 コンプライアンス"
 description: "SOC 2について：監査担当者はコントロールが機能していることの証拠を求めます。Rediaccはログ、変更管理証跡、そして監査担当者が求める他のすべてを提供します。"
 category: "Legal"
+tags:
+  - compliance
 order: 2
 language: ja
-sourceHash: "28b4309f81f43d8d"
+sourceHash: "8ccd82a1265e268e"
 sourceCommit: "5fab1177d6ceae5211c25cf8fa0176d67259d40e"
 ---
 

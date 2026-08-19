@@ -2,9 +2,12 @@
 title: 配置存储
 description: 支持通行密钥、主密码和恢复码解锁的零知识加密配置同步
 category: Guides
+tags:
+  - account
+  - security
 order: 8
 language: zh
-sourceHash: "97c64241ff4c0d81"
+sourceHash: "e4b2eecb8bdf0015"
 sourceCommit: "433347c5ea4754300fe3da80c4bfcee42dd161bc"
 ---
 

@@ -2,7 +2,9 @@
 title: "rdc repo diff"
 description: "Show a git-style, file-level diff between two copy-on-write forked repositories by comparing their encrypted images at the block level, without decryption."
 category: Reference
-subcategory: advanced
+tags:
+  - forking
+  - storage
 order: 40
 language: en
 ---

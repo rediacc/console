@@ -2,9 +2,12 @@
 title: Visão Geral da Integração com Agentes de IA
 description: "Como o Claude Code, o Cursor e o Cline gerem a infraestrutura Rediacc via rdc: saída JSON, introspeção de agentes e controlos de segurança."
 category: Guides
+tags:
+  - ai-agents
+  - cli
 order: 30
 language: pt
-sourceHash: "29eb3ce5a55c36d1"
+sourceHash: "c544cf8514d36558"
 sourceCommit: "23543669cd22bce3f14d69a0886bac8a12061412"
 ---
 

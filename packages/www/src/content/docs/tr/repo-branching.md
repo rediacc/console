@@ -2,10 +2,12 @@
 title: "Git benzeri dallanma"
 description: "Kopyala-yaz fork'larını git commit'leri olarak ele alın: bir fork'u değişmez bir commit'e dondurun, dalları adlandırın, commit'leri yazılabilir fork'lara geri aktarın, geçmişi dolaşın ve canlı bir depoyu yerinde hiç değiştirmeden birleştirin."
 category: Reference
-subcategory: advanced
+tags:
+  - forking
+  - repositories
 order: 41
 language: tr
-sourceHash: "b8bd3176ecabfa4b"
+sourceHash: "7aaa25bc83dfcf5b"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 

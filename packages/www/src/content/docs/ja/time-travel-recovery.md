@@ -2,9 +2,12 @@
 title: タイムトラベルからの回復
 description: "btrfsスナップショットを使用して、通常のバックアップが対象期間を過ぎた後でも、数週間前に削除したデータを復元します。"
 category: Use Cases
+tags:
+  - backup
+  - storage
 order: 2
 language: ja
-sourceHash: "e55d51b8df91b20f"
+sourceHash: "2fce69fb1631f640"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 

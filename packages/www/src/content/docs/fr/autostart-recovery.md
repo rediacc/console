@@ -2,9 +2,12 @@
 title: "Démarrage automatique et récupération"
 description: "Comment fonctionne le démarrage automatique, le réconciliateur périodique qui récupère les dépôts tombés après le démarrage, et comment inspecter l'état de récupération."
 category: "Guides"
+tags:
+  - operations
+  - containers
 order: 5
 language: fr
-sourceHash: "62148f7a55752783"
+sourceHash: "0a87131bd0d87a34"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 

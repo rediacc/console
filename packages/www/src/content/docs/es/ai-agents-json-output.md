@@ -5,9 +5,12 @@ description: >-
   información envolvente, gestión de errores y comandos de descubrimiento para
   agentes.
 category: Reference
+tags:
+  - ai-agents
+  - cli
 order: 51
 language: es
-sourceHash: "cc88f8f06960df3a"
+sourceHash: "36ba86893c3817ac"
 sourceCommit: "23543669cd22bce3f14d69a0886bac8a12061412"
 ---
 

@@ -2,9 +2,12 @@
 title: 설정 저장소
 description: 패스키, 마스터 비밀번호, 복구 코드 잠금 해제를 지원하는 영지식 암호화 설정 동기화
 category: Guides
+tags:
+  - account
+  - security
 order: 8
 language: ko
-sourceHash: "97c64241ff4c0d81"
+sourceHash: "e4b2eecb8bdf0015"
 sourceCommit: "433347c5ea4754300fe3da80c4bfcee42dd161bc"
 ---
 

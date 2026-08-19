@@ -43,19 +43,30 @@
   transform: rotate(180deg);
 }
 
-/* Panel */
+/* Panel. This is an `auto` popover, so it lives in the top layer and the UA stylesheet
+   applies `inset: 0` and `margin: auto` to centre it in the viewport. Both must be undone
+   or the menu lands in the middle of the page instead of under its trigger; `inset: auto`
+   is what lets top/left take effect again. No z-index: the top layer paints above every
+   stacking context, which is precisely why the old `--z-popover` race is gone. */
 .persona-menu-panel {
   position: fixed;
+  inset: auto;
   top: var(--nav-top-offset);
   left: 50%;
+  margin: 0;
   transform: translateX(-50%);
   width: min(calc(100vw - var(--space-8) * 2), 1020px);
+  max-width: none;
+  max-height: none;
+  overflow: visible;
   background-color: var(--color-bg-alt);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow);
-  z-index: var(--z-popover);
   padding: var(--space-6);
+}
+
+.persona-menu-panel:popover-open {
   animation: personaMenuFadeIn var(--transition-duration-fast) var(--ease-standard) forwards;
 }
 

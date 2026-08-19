@@ -2,9 +2,11 @@
 title: "DSGVO-Konformität"
 description: "Wie die Self-Hosted-Architektur von Rediacc den DSGVO-Anforderungen für Datenschutz und Privatsphäre entspricht."
 category: "Legal"
+tags:
+  - compliance
 order: 1
 language: de
-sourceHash: "76d2b3a911e0d14c"
+sourceHash: "85a342068d855709"
 sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
 ---
 

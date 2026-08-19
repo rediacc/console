@@ -2,10 +2,12 @@
 title: RDC CLI Hızlı Referans
 description: "rdc komutları için hızlı referans: yapılandırmalar, depolar, makineler, senkronizasyon ve konteynerler. Tüm seçenekleri görmek için herhangi bir komuta --help ekleyin."
 category: Guides
+tags:
+  - cli
 order: 3
 cardGrid: true
 language: tr
-sourceHash: "26e60c6b486eadd0"
+sourceHash: "14ed5791afa44326"
 sourceCommit: "45cd71f8a80949d4cd621f233377c48715bbf531"
 ---
 

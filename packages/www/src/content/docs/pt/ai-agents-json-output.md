@@ -2,9 +2,12 @@
 title: Referência de Saída JSON
 description: Referência completa para o formato de saída JSON da CLI rdc, esquema do envelope, tratamento de erros e comandos de descoberta para agentes.
 category: Reference
+tags:
+  - ai-agents
+  - cli
 order: 51
 language: pt
-sourceHash: "cc88f8f06960df3a"
+sourceHash: "36ba86893c3817ac"
 sourceCommit: "23543669cd22bce3f14d69a0886bac8a12061412"
 ---
 

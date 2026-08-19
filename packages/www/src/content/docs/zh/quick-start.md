@@ -2,9 +2,12 @@
 title: 快速开始
 description: 几分钟内在您的服务器上运行容器化服务。
 category: Guides
+tags:
+  - getting-started
+  - containers
 order: -1
 language: zh
-sourceHash: "b2745d4f0d99d7a4"
+sourceHash: "05e91da1e94dddfc"
 sourceCommit: "a56b03aa5da8df74255a6bc9bc9463665c3499b6"
 ---
 

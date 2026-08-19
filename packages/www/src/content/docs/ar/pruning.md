@@ -2,9 +2,12 @@
 title: "التنظيف"
 description: "إزالة النسخ الاحتياطية المعزولة واللقطات القديمة وصور المستودعات وبقايا الإعدادات المحلية لاستعادة مساحة القرص والحفاظ على تماسك الحالة."
 category: "Guides"
+tags:
+  - storage
+  - operations
 order: 12
 language: ar
-sourceHash: "928f117282b38484"
+sourceHash: "7d9a82ee410c420a"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 

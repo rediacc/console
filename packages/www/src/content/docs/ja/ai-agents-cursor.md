@@ -2,9 +2,12 @@
 title: Cursor セットアップガイド
 description: .cursorrules とターミナル統合を使用して、Cursor IDE を Rediacc インフラストラクチャと連携させる設定方法。
 category: Guides
+tags:
+  - ai-agents
+  - cli
 order: 32
 language: ja
-sourceHash: "bab7e70ffbd9f32b"
+sourceHash: "e0fb319a9e477324"
 sourceCommit: "23543669cd22bce3f14d69a0886bac8a12061412"
 ---
 

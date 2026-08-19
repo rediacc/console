@@ -2,9 +2,12 @@
 title: 従来のデータベースのスケーリング
 description: リアルタイムのデータ レプリケーションとクエリ分散を活用することで、移行せずにレガシー データベースを拡張します。
 category: Use Cases
+tags:
+  - migration
+  - forking
 order: 3
 language: ja
-sourceHash: "b15507f1e0da46d2"
+sourceHash: "7131eacdf2a43da5"
 sourceCommit: "8b37b0a2c25c0ba7e5a8a63c8d3ed0da48b78a10"
 ---
 

@@ -2,6 +2,9 @@
 title: "HIPAA Compliance"
 description: "How Rediacc's encryption and isolation architecture maps to HIPAA safeguard requirements for protecting health information."
 category: "Legal"
+tags:
+  - compliance
+  - security
 order: 3
 language: en
 ---

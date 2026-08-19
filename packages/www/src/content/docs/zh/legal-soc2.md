@@ -2,9 +2,11 @@
 title: "SOC 2 合规"
 description: "SOC 2 的核心问题是：审计人员需要你的控制措施有效的证据。Rediacc 为你提供日志、变更管理追踪以及审计人员会询问的一切。"
 category: "Legal"
+tags:
+  - compliance
 order: 2
 language: zh
-sourceHash: "28b4309f81f43d8d"
+sourceHash: "8ccd82a1265e268e"
 sourceCommit: "5fab1177d6ceae5211c25cf8fa0176d67259d40e"
 ---
 

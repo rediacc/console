@@ -2,10 +2,12 @@
 title: "Git-like branching"
 description: "Tratta i fork copy-on-write come commit git: congela un fork in uno stato immutabile, assegna nomi ai branch, ripristina i commit in fork scrivibili e unisci le storie senza mai mutare un repository live."
 category: Reference
-subcategory: advanced
+tags:
+  - forking
+  - repositories
 order: 41
 language: it
-sourceHash: "b8bd3176ecabfa4b"
+sourceHash: "7aaa25bc83dfcf5b"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 

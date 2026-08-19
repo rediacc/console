@@ -1,8 +1,11 @@
 ---
-sourceHash: "7a75ab45703267eb"
+sourceHash: "3b4e598914ece1c4"
 title: Scalabilità Dinamica delle Risorse
 description: Costruisci un'architettura cloud con flessibilità illimitata per il training AI e i carichi di lavoro dinamici.
 category: Use Cases
+tags:
+  - storage
+  - operations
 order: 1
 language: it
 ---

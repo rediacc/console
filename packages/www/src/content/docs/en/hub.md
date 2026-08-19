@@ -2,6 +2,9 @@
 title: "Hub"
 description: "Provide authenticated, per-user containerized environments with per-user Docker daemons, multi-template selection, CRIU checkpoint/restore, audit logs, and data-root garbage collection."
 category: "Guides"
+tags:
+  - containers
+  - security
 order: 14
 language: en
 ---

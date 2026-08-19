@@ -2,9 +2,12 @@
 title: Çapraz Yedekleme Stratejisi
 description: "Yedeklemeleriniz makinesi çöktüğü anda çöker. Rediacc anlık görüntüleri ayrı bir makineye çoğaltarak, tek bir disk arızasının tüm verileri ele geçirmesini engeller."
 category: Use Cases
+tags:
+  - backup
+  - migration
 order: 5
 language: tr
-sourceHash: "39dbeac1faec121c"
+sourceHash: "a565990a48aa0593"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 

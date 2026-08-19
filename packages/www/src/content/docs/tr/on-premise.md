@@ -2,9 +2,12 @@
 title: "Yerinde (On-Premise) Kurulum"
 description: "Hesap sunucusunu ve CLI dağıtımını kendi altyapınızda çalıştırma."
 category: "Guides"
+tags:
+  - account
+  - operations
 order: 5
 language: tr
-sourceHash: "f05bd90f123befad"
+sourceHash: "2c3ac4a96a028b3f"
 sourceCommit: "018665c7c35e0bea3349818b12a5906828240a29"
 ---
 

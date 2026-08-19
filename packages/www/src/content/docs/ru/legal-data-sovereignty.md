@@ -2,9 +2,11 @@
 title: "Суверенитет данных"
 description: "Как архитектура самостоятельного размещения Rediacc удовлетворяет требования к резидентности и суверенитету данных в глобальных юрисдикциях."
 category: "Legal"
+tags:
+  - compliance
 order: 7
 language: ru
-sourceHash: "dba51d5d6dcf8197"
+sourceHash: "1e10165626ba3730"
 sourceCommit: "8b37b0a2c25c0ba7e5a8a63c8d3ed0da48b78a10"
 ---
 

@@ -71,6 +71,16 @@
     "error": "حدث خطأ ما. يرجى المحاولة مرة أخرى.",
     "close": "إغلاق"
   },
+  "documentation": {
+    "categories": {
+      "tutorials": "دروس تعليمية",
+      "guides": "أدلة",
+      "concepts": "مفاهيم",
+      "reference": "مرجع",
+      "useCases": "حالات الاستخدام",
+      "legal": "قانوني"
+    }
+  },
   "footer": {
     "columns": {
       "product": "المنتج",
@@ -147,7 +157,9 @@
       }
     },
     "forAiAgents": "لوكلاء AI",
-    "account": "الحساب"
+    "account": "الحساب",
+    "learn": "تعلّم",
+    "browseAllDocs": "تصفح كل الوثائق"
   },
   "newsletter": {
     "title": "النشرة البريدية",

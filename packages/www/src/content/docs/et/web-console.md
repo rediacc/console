@@ -2,9 +2,12 @@
 title: Veebikonsool
 description: Käivita kogu rdc CLI oma brauserist vormide, ressursivalijate ja käivituste ajalooga
 category: Guides
+tags:
+  - cli
+  - account
 order: 8
 language: et
-sourceHash: "b735dd2fd77435c5"
+sourceHash: "972ed654ae294102"
 sourceCommit: "5197d1c0349438c2bff2442377a5166d0b8214b6"
 ---
 

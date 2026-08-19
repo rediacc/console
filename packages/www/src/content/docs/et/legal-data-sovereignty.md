@@ -1,8 +1,10 @@
 ---
-sourceHash: "dba51d5d6dcf8197"
+sourceHash: "1e10165626ba3730"
 title: "Andmesuveräänsus"
 description: "Kuidas Rediacc'i ise majutatud arhitektuur rahuldab andmete elukoha ja suveräänsuse nõuded ülemaailmsetes jurisdiktsioonides."
 category: "Legal"
+tags:
+  - compliance
 order: 7
 language: et
 ---

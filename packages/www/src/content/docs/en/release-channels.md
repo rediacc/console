@@ -2,6 +2,9 @@
 title: "Release Channels"
 description: "How Edge and Stable differ, and which channel to run."
 category: "Concepts"
+tags:
+  - cli
+  - operations
 order: 2
 language: en
 ---

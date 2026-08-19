@@ -2,9 +2,12 @@
 title: "Hub"
 description: "提供经过身份验证的按用户容器化环境，支持每用户 Docker daemon、多模板选择、CRIU 检查点/恢复、审计日志和 data-root 垃圾回收。"
 category: "Guides"
+tags:
+  - containers
+  - security
 order: 14
 language: zh
-sourceHash: "6fa16a1c73af497e"
+sourceHash: "fb8ab2f49f1a395b"
 sourceCommit: "b997ae00deb9e814edaf2fc449f4d9e36cfafe81"
 ---
 

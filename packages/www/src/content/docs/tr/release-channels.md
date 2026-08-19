@@ -2,9 +2,12 @@
 title: "Sürüm Kanalları"
 description: "Edge ve Stable'ın farkları ve hangi kanalı çalıştırmalısınız."
 category: "Concepts"
+tags:
+  - cli
+  - operations
 order: 2
 language: tr
-sourceHash: "6669b5b089f94a39"
+sourceHash: "0cc32d712c02538f"
 sourceCommit: "23543669cd22bce3f14d69a0886bac8a12061412"
 ---
 

@@ -2,9 +2,12 @@
 title: "Kubernetes"
 description: "Kubernetes mit der Rediacc-Repo-Mentalität betreiben: einen laufenden Cluster forken oder verschieben, einschließlich seiner Daten, auf eine andere Maschine oder ein Rechenzentrum mit kurzem Cutover."
 category: "Guides"
+tags:
+  - containers
+  - migration
 order: 6
 language: de
-sourceHash: "6ad4b60e09edde94"
+sourceHash: "22eef465dfd46ccf"
 sourceCommit: "23543669cd22bce3f14d69a0886bac8a12061412"
 ---
 

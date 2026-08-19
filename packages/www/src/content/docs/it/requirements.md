@@ -2,9 +2,11 @@
 title: Requisiti
 description: Requisiti di sistema e piattaforme supportate per eseguire Rediacc.
 category: Guides
+tags:
+  - getting-started
 order: 0
 language: it
-sourceHash: "88e8186bc7c0e629"
+sourceHash: "a605c6b2fac9bea2"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 

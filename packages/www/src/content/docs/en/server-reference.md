@@ -2,6 +2,9 @@
 title: "Server Reference"
 description: "Directory layout, renet commands, systemd services, and workflows for the remote server."
 category: "Concepts"
+tags:
+  - operations
+  - cli
 order: 3
 language: en
 ---

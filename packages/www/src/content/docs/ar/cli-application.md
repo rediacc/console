@@ -2,11 +2,13 @@
 title: "تطبيق سطر الأوامر"
 description: "دليل شامل لاستخدام واجهة سطر أوامر Rediacc لإدارة المنصة"
 category: "Reference"
+tags:
+  - cli
 order: 2
 language: ar
 generated: true
 generatedFrom: packages/cli/src/i18n/locales/ar/cli.json
-sourceHash: "bb3ff8daf0bc61cb"
+sourceHash: "b6ae8408bdbd2fe7"
 ---
 
 <!-- THIS FILE IS AUTO-GENERATED. Do not edit manually. -->

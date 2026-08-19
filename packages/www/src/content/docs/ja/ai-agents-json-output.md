@@ -2,9 +2,12 @@
 title: JSON出力リファレンス
 description: rdc CLIのJSON出力形式、エンベロープスキーマ、エラー処理、エージェント検出コマンドの完全なリファレンス。
 category: Reference
+tags:
+  - ai-agents
+  - cli
 order: 51
 language: ja
-sourceHash: "cc88f8f06960df3a"
+sourceHash: "36ba86893c3817ac"
 sourceCommit: "23543669cd22bce3f14d69a0886bac8a12061412"
 ---
 

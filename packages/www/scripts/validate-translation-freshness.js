@@ -535,7 +535,11 @@ function parseArgs(argv) {
   return args;
 }
 
-if (import.meta.url === pathToFileURL(process.argv[1]).href) {
+// `process.argv[1]` is undefined when this module is imported rather than run (a test
+// harness, `node -e "await import(...)"`), and `pathToFileURL(undefined)` throws
+// ERR_INVALID_ARG_TYPE before the guard can ever be false. The presence check is what
+// makes the module importable at all.
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   const args = parseArgs(process.argv.slice(2));
   const result = validateTranslationFreshness({
     strictAll: args.strictAll,

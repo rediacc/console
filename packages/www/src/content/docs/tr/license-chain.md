@@ -2,9 +2,12 @@
 title: "Lisans Zinciri ve Yetkilendirme"
 description: "Kurcalamaya karşı kanıt lisans düzenleme, yerinde yetkilendirilmiş imzalama ve çatal algılama."
 category: "Guides"
+tags:
+  - account
+  - security
 order: 8
 language: tr
-sourceHash: "6486263bfb9ebf98"
+sourceHash: "d6d980d721be2373"
 sourceCommit: "fc24769cfd0684622952395c5bafe44e6180530d"
 ---
 

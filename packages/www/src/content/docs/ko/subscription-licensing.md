@@ -2,9 +2,11 @@
 title: 구독 및 라이선싱
 description: '계정, rdc, renet이 머신 슬롯, 저장소 라이선스, 요금제 제한을 어떻게 처리하는지 이해합니다.'
 category: Guides
+tags:
+  - account
 order: 7
 language: ko
-sourceHash: "4e7aa81c81aef1e9"
+sourceHash: "15886ad7ee04e90c"
 sourceCommit: "fd9d3476b1fdf0ac6ffaa14f486f20f9642fe2d5"
 ---
 

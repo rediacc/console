@@ -2,9 +2,12 @@
 title: "Chaîne de licence et délégation"
 description: "Émission de licences inviolable, signature déléguée pour l'on-premise et détection de fork."
 category: "Guides"
+tags:
+  - account
+  - security
 order: 8
 language: fr
-sourceHash: "6486263bfb9ebf98"
+sourceHash: "d6d980d721be2373"
 sourceCommit: "fc24769cfd0684622952395c5bafe44e6180530d"
 ---
 

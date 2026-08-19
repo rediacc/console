@@ -2,6 +2,9 @@
 title: "Backup & Restore"
 description: "Copy a live repository to a second machine, take the first one offline, and bring the data back."
 category: "Tutorials"
+tags:
+  - backup
+  - migration
 subcategory: advanced
 order: 11
 language: en
@@ -9,15 +12,13 @@ language: en
 
 import TutorialStep from '../../../components/tutorial/TutorialStep.astro';
 
+![Tutorial: Backup and restore](/assets/tutorials/tutorial-backup-restore.cast)
+
 # Backup & Restore
 
 Your app is live in production. Back it up. `rdc` copies an entire repository, the app, its database, its files and its configuration, to a second machine, and brings it back when the first one is gone.
 
 This tutorial does not describe that. It does it, on two real machines, and reads the data back out at the end.
-
-## Watch the tutorial
-
-![Tutorial: Backup and restore](/assets/tutorials/tutorial-backup-restore.cast)
 
 ## Three steps
 

@@ -2,22 +2,23 @@
 title: "增量传输"
 description: "首次推送到另一台机器时传输全量数据；此后每次推送只传输变更的数据块，自动完成，无需任何配置。"
 category: "Tutorials"
+tags:
+  - backup
+  - storage
 subcategory: advanced
 order: 17
 language: zh
-sourceHash: "6dabbcbb0670ac60"
+sourceHash: "1fd12000a2875e6d"
 sourceCommit: "3fb35b9a33c7e8ec6753ecd56231f2018e8f4803"
 ---
 
 import TutorialStep from '../../../components/tutorial/TutorialStep.astro';
 
+![Tutorial: Delta transfer](/assets/tutorials/tutorial-delta-transfer.cast)
+
 # 增量传输
 
 把仓库推送到另一台机器两次。第一次传输全部内容，第二次只传输变更部分。同一条命令，无需额外参数，无需手动记录。而且你不必凭信念接受这一点，因为推送输出会精确打印传输了多少数据。
-
-## 观看教程
-
-![Tutorial: Delta transfer](/assets/tutorials/tutorial-delta-transfer.cast)
 
 ## 数据块，而非字节流
 

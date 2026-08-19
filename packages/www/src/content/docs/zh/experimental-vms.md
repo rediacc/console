@@ -2,9 +2,12 @@
 title: 实验性虚拟机
 description: 使用 rdc ops 在工作站上配置本地 VM 集群，用于开发和测试。
 category: Concepts
+tags:
+  - operations
+  - containers
 order: 2
 language: zh
-sourceHash: aafca00c006ded0b
+sourceHash: 5fad635a61089758
 ---
 
 # 实验性虚拟机

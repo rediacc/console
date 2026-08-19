@@ -2,9 +2,11 @@
 title: "CCPA 준수"
 description: "Rediacc의 자체 호스팅 모델이 소비자 데이터 보호에 관한 캘리포니아 소비자 개인정보 보호법(CCPA) 요건을 어떻게 충족하는지 설명합니다."
 category: "Legal"
+tags:
+  - compliance
 order: 4
 language: ko
-sourceHash: "3cee3262b53f7afd"
+sourceHash: "0d297fb9552dcfeb"
 sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
 ---
 

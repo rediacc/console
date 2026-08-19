@@ -2,6 +2,9 @@
 title: Cursor Setup Guide
 description: Configure Cursor IDE to work with Rediacc infrastructure using .cursorrules and terminal integration.
 category: Guides
+tags:
+  - ai-agents
+  - cli
 order: 32
 language: en
 ---

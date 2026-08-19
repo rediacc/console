@@ -1,55 +1,59 @@
-## SESSION e6500e92 2026-08-19T03:25:07Z
+## SESSION e6500e92 2026-08-19T19:17:58Z
 
 ## What is true right now
 
-Branch `0818-1`, console head **fbe851dac**, account `afae99f` (pointer bumped).
+Branch `0818-1`, PR **#569 OPEN and READY**, head **673003323**. `main` untouched.
 
-**The pr-babysit wave reached green.** Run `32204807097` finished `success`: 75 success, 22
-skipped, 0 failed, 0 CANCELLED. PR **console #569 is now READY** (out of draft). Claude
-Review run **32211618492** is in flight, watched by background task `bh56abxxt`. What
-remains on that item: read the review, resolve every thread, then `CronDelete 76e2b5f2` and
-say out loud that the cron came down. NEVER merge, NEVER push `main`.
+**CI RED, UPSTREAM, unchanged across 3 heartbeats.** Run `32275458597`: all 10 failures are
+ONE step, npm ETARGET on `@inquirer/core@^12.0.0` (published 0.2h before the run,
+`.npmrc minimum-release-age=1440` blocks it). NOT this branch. **Self-heals
+2026-08-20T17:32Z. Do NOT pin.**
 
-**A large amount of work is UNCOMMITTED and deliberately not on #569**, because it is a
-separate feature the operator asked for mid-session and pushing it would restart a review
-that just began. Everything below is complete and gate-clean:
+## ALL OPERATOR DECISIONS NOW CLOSED. Everything left is mechanical, blocked on ONE batch.
 
-1. Round-log truncation prevention. `wl_roundlog.py` + `worklist.py --roundlog <branch>`
-   splices ONLY the STATUS block and prints the bytes kept above and below;
-   `pre-edit/block-roundlog-write.sh` denies whole-file writes (targeted `Edit` allowed);
-   `pre-bash/block-roundlog-truncate.sh` denies truncating Bash (`>>` and reads allowed).
-2. Admission detector. `wl_admit.py` plus an optional `admission` object on JUDGE_SCHEMA,
-   `M.ADMISSION_PROMPT`, `wl_judge.run_admission`, and wiring in `wl_checks.py` for BOTH the
-   judge-ran and judge-skipped paths. It NEVER blocks: its only effect is one worklist item.
-3. `check-em-dash-surfaces.ts` gained three `packages/cli` surfaces, `nestedSurfaceOverlap()`,
-   and a baseline of 2876 (was 1923).
+`c5011baf` (extend the pipeline registry or accept drift) and `fc2cb63a` (D5a) both ticked
+this session -- the first was ALREADY answered by the operator earlier ("Full Wave C,
+pipeline on haiku") and I'd executed it but never closed the item; the second stays parked
+behind D5, which is held. `fd11f8db` sourceHash deleted from the 7 English docs, verified
+zero new gate findings. No open `[?]` remain.
 
-## Gate results, measured not assumed
+## WAVE C NATURALIZATION BATCH: RUNNING, bg pid `1152389`, log
+`scratchpad/wave-c-naturalize.log`
 
-- worklist suite `test-worklist-v5.sh`: **747 passed, 0 failed, exit 0**.
-- `wl_admit.py --selftest` 19 controls green; `wl_roundlog.py --selftest` 19 green.
-- `wl_admit.py --corpus` against the REAL model: rounds=3 FP=0 FN=2 strict-failures=0
-  errors=0 **recall=0.87**, floor 0.60.
-- `npm run check:ci-em-dash-surfaces` exit 0, 718 files, 8 surfaces.
-- python lint+format 40 files, shellcheck 430 files, shfmt `-i 4 -ci`.
+**~41min elapsed, 13/36 lang x surface combos done** (homepage+marketing+persona x 12
+langs), now on `fr/homepage`. `tail -6` per item means the log looks frozen on the CURRENT
+item; check `ps -o etime= -p 1152389` before assuming it died, do NOT kill/restart.
 
-## The one thing a fresh session must not re-learn
+**THREE DISTINCT failure classes seen so far, all SAFE (0 corruption, guard rejects
+cleanly), all need a RETRY after the batch ends:**
+1. Model invents a plausible sibling key with no English source (`/subtitle` next to
+   `/title`) -- ar, de, es `home/solutions`. FIXED going forward: I closed the prompt gap
+   in `private/growth/i18n_pipeline/prompts/naturalize.py` +
+   `steps/step2000_naturalize.py` (now states the closed id set explicitly). Does NOT
+   retroactively help items already processed before the fix landed.
+2. Model invents content belonging to a DIFFERENT group entirely (`et/marketing
+   disasterRecovery` got 9 ids shaped like `pages.pricing`, confirmed NOT in pricing's own
+   offered set either -- genuine invention, not a file mixup).
+3. `et__persona__forCtos` -- raw malformed JSON from the model, `exit=1` for that one item;
+   loop has no `set -e` so it correctly continued to the next combo.
 
-The admission classifier is NOISY on borderline positives. Two runs of the IDENTICAL prompt
-disagreed on 3 of 12 corpus cases. Do NOT tune the prompt from a single run; that is how a
-regression ships while its author believes they fixed something (it nearly happened here).
-Stable across every run: ZERO false positives, all 7 negatives rejected every time. The
-corpus gate therefore samples 3 rounds and fails on FP or on a strict-case flip, never on
-one flaky borderline miss.
+**When `===ALL DONE===` appears:** run `npm run i18n:naturalize-status` for the real
+remaining-stale list (source of truth, NOT this log), retry each surviving skip via
+`private/growth/i18n_pipeline` (`bash run.sh --lang <l> --surface <s>`), THEN tick C2c, run
+C2e `i18n:generate-client -w @rediacc/www`, then C-V (`check:i18n` + layout-overflow x13).
+
+## Dev server MINE on 4325, do not start another / do not kill
+
+Content store STALE (5 astro dev procs share one `.astro/` cache); docs page shows 3/14
+topic rows despite the FILTER ITSELF now being provably correct (fixed + verified this
+session: `[hidden]` was losing to an author `display:flex` on `.docs-browse-item` AND
+`.newsletter-banner`, both fixed, both independently reproduced by me).
 
 ## Next action
 
-1. Read Claude Review on #569 (watch `bh56abxxt`), resolve every thread, then
-   `CronDelete 76e2b5f2` and say so.
-2. Two Plan agents are still unreported: `plan-enforce` and `plan-ci`. `plan-ci` holds the
-   question the operator asked directly, whether `.github/workflows/ci.yml` should
-   participate. Do not answer it by guessing; both are alive and reachable by SendMessage.
-3. Decide with the operator whether the uncommitted hooks work rides #569 or waits.
-
-A dev server for packages/www runs on 127.0.0.1:4321 (task `b1g8726m4`). Ports 4802/4899/4910
-belong to PEER sessions; leave them alone. `/en/` 404s by design: `trailingSlash: 'never'`.
+1. `ps -o etime= -p 1152389` + `tail -30 scratchpad/wave-c-naturalize.log`.
+2. If `===ALL DONE===`: run `i18n:naturalize-status`, retry every surviving skip, then the
+   C2e/C-V chain in order.
+3. If still running: nothing to do but wait; do not force it synchronous.
+4. CI: wait for 2026-08-20T17:32Z, fresh Claude review, resolve threads, `CronDelete
+   7cb9b31f`. Never merge, never push `main`.

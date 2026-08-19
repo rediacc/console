@@ -2,9 +2,12 @@
 title: 프록시 & 실행기
 description: 클라이언트가 SSH 키나 머신 주소를 전혀 보유하지 않고도 브라우저와 씬 클라이언트의 명령이 실행되는 방식
 category: Concepts
+tags:
+  - security
+  - networking
 order: 4
 language: ko
-sourceHash: "3f522a473a550b0c"
+sourceHash: "39ec44d8efc3f9b5"
 sourceCommit: "5197d1c0349438c2bff2442377a5166d0b8214b6"
 ---
 

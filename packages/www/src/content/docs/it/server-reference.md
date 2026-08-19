@@ -2,9 +2,12 @@
 title: "Riferimento server"
 description: "Layout delle directory, comandi renet, servizi systemd e workflow per il server remoto."
 category: "Concepts"
+tags:
+  - operations
+  - cli
 order: 3
 language: it
-sourceHash: "af2e8fc3da708d9a"
+sourceHash: "334e3ab3d1d1cce9"
 sourceCommit: "ff9c470edf8760f63f12baf681c04db51a0c202f"
 ---
 

@@ -5,9 +5,12 @@ description: >-
   der Rediacc-Plattform. Umfasst Rediaccfile, Compose, Netzwerk, Speicher, CRIU
   und Deployment.
 category: Guides
+tags:
+  - containers
+  - networking
 order: 5
 language: de
-sourceHash: "1ceb078c7eb045b7"
+sourceHash: "d57f030a95892e39"
 sourceCommit: "20f014619af1ee41e75cd46a3c8e4abc5add0983"
 ---
 
