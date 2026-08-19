@@ -26,6 +26,14 @@ of the first can fall through to the second. It does not mandate a particular
 mirror, a particular retry count, or a particular shape of fallback; it only
 refuses the shape that has already cost this repo a night.
 
+AND IT CHECKS THE SEQUENCING, because naming a second host is necessary and not
+sufficient. A fallback guarded on the LAST loop iteration fires after the final
+attempt, so nothing is left to use it: two hosts appear, the shallow reading of
+this gate passes, and the build still dies exactly as before. That is the precise
+shape of box-ticking a regression gate is supposed to refuse, so the guard
+iteration is compared against the loop bound and a fallback that cannot help is
+reported with the numbers that make it useless.
+
 WHAT IT DELIBERATELY DOES NOT DO. It does not police Dockerfiles that never
 rewrite apt sources. The stock `archive.ubuntu.com` is already a load-balanced
 pool of many machines, so a file that leaves sources alone is not carrying the
@@ -72,15 +80,66 @@ def run_blocks(text):
 
 
 def offenders(text):
-    """[(host, block_excerpt)] for blocks that pin apt to exactly ONE host."""
+    """[(reason, block_excerpt)] for blocks whose apt sourcing cannot survive one
+    dead mirror.
+
+    TWO classes, because naming a second host is necessary and not sufficient.
+
+    1. `pinned to <host>`: the block rewrites apt to exactly one host, so every
+       retry targets the same machine. This is the 2026-08-19 incident.
+    2. `fallback cannot help`: a second host IS named, but the switch is
+       sequenced so that it never gets used. Caught because "has a fallback"
+       is exactly the kind of box-ticking that passes a shallow gate while
+       leaving the failure intact:
+         - the switch is guarded on the LAST loop iteration, so it happens after
+           the final attempt and no attempt remains to benefit from it;
+         - the switch rewrites to the same host it is switching away from.
+    """
     bad = []
     for block in run_blocks(text):
         hosts = {m.group(1).lower() for m in REWRITE.finditer(block)}
         if not hosts:
             continue  # this block does not rewrite apt sources at all
+        excerpt = re.sub(r"\s+", " ", block)[:120]
         if len(hosts) < 2:
-            bad.append((min(hosts), re.sub(r"\s+", " ", block)[:120]))
+            bad.append(("pinned to %s" % min(hosts), excerpt))
+            continue
+        last = last_attempt(block)
+        guard = fallback_iteration(block)
+        if last is not None and guard is not None and guard >= last:
+            bad.append(
+                (
+                    "fallback is guarded on iteration %d of %d, so it fires after the "
+                    "last attempt and no retry can use it" % (guard, last),
+                    excerpt,
+                )
+            )
     return bad
+
+
+def last_attempt(block):
+    """Highest iteration in a `for i in 1 2 3 ...` loop, or None if no such loop."""
+    m = re.search(r"for\s+\w+\s+in\s+((?:\d+\s+)*\d+)\s*;?\s*do", block)
+    if not m:
+        return None
+    nums = [int(n) for n in m.group(1).split()]
+    return max(nums) if nums else None
+
+
+def fallback_iteration(block):
+    """Iteration N from a `[ "$i" = "N" ]` guard that wraps a source rewrite.
+
+    Returns the guard that protects a REWRITE, not the guard that protects the
+    give-up branch, which is why the search is anchored on a following sed rather
+    than on any equality test.
+    """
+    best = None
+    for m in re.finditer(r'\[\s*"?\$\{?\w+\}?"?\s*=\s*"?(\d+)"?\s*\]', block):
+        tail = block[m.end() : m.end() + 400]
+        if REWRITE.search(tail):
+            n = int(m.group(1))
+            best = n if best is None else min(best, n)
+    return best
 
 
 def selftest():
@@ -109,11 +168,48 @@ def selftest():
     )
     none = "RUN apt-get update && apt-get install -y curl\n"
 
+    # A fallback that fires only on the LAST attempt: two hosts are named, so the
+    # shallow "does a second host appear" test passes, and it still cannot help.
+    too_late = (
+        "RUN find /etc/apt -name 'sources.list' | xargs -r sed -i \\\n"
+        "        -e 's|http://archive.ubuntu.com/ubuntu|http://azure.archive.ubuntu.com/ubuntu|g' \\\n"
+        "    && for i in 1 2 3 4 5; do apt-get update && break; \\\n"
+        '        if [ "$i" = "5" ]; then \\\n'
+        "            sed -i -e 's|http://azure.archive.ubuntu.com/ubuntu|http://archive.ubuntu.com/ubuntu|g' /etc/apt/sources.list; \\\n"
+        "        fi; \\\n"
+        "    done\n"
+    )
+
     # THE INCIDENT ITSELF, as the positive control.
     check("a single-mirror rewrite is caught", len(offenders(single)) == 1, offenders(single))
     check(
         "it names the pinned host",
-        offenders(single)[0][0] == "azure.archive.ubuntu.com" if offenders(single) else False,
+        offenders(single)[0][0].endswith("azure.archive.ubuntu.com")
+        if offenders(single)
+        else False,
+        offenders(single),
+    )
+    # SEQUENCING. Naming a second host is necessary, not sufficient.
+    check(
+        "a fallback guarded on the LAST attempt is caught",
+        len(offenders(too_late)) == 1,
+        offenders(too_late),
+    )
+    check(
+        "and it says why, rather than just failing",
+        "no retry can use it" in offenders(too_late)[0][0] if offenders(too_late) else False,
+        offenders(too_late),
+    )
+    check("the loop bound is read", last_attempt(too_late) == 5, last_attempt(too_late))
+    check(
+        "the fallback guard is read",
+        fallback_iteration(too_late) == 5,
+        fallback_iteration(too_late),
+    )
+    check(
+        "an early fallback guard is read as early",
+        fallback_iteration(both) == 1 or fallback_iteration(both) is None,
+        fallback_iteration(both),
     )
     # The fixed shape must pass, or the gate blocks the very remedy it demands.
     check("a rewrite WITH a fallback passes", offenders(both) == [], offenders(both))
