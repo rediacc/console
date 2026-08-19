@@ -15,6 +15,7 @@ import pathlib
 import re
 import time
 
+import wl_admit
 import wl_agents as A
 import wl_checklist
 import wl_ci
@@ -3764,6 +3765,50 @@ def run_stop(event, event_ok, worklist, hook_file):
             audit_batch.append(r)
             if len(audit_batch) >= S.DEFER_AUDIT_BATCH:
                 break
+    # ADMISSION DETECTOR (wl_admit.py). The prefilter runs on every stop and is
+    # measured at under 0.4 ms with zero tokens, firing on ~1% of real turns. It
+    # decides only whether to SPEND a model call; it is never the last word on a
+    # negative, because the regexes provably miss the euphemistic phrasings.
+    #
+    # Tier R records the hit HERE, before anything that can fail. A hit banked
+    # only after a successful verdict would vanish exactly when the judge times
+    # out, which is when the record matters most.
+    admit_text = wl_admit.turn_text(event.get("transcript_path", "")) or last_msg
+    admit_sig = wl_admit.turn_sig(admit_text)
+    admit_settled, _admit_corrupt = wl_admit.load_settled(worklist, session_id)
+    admit_hits = [] if admit_sig in admit_settled else wl_admit.prefilter(admit_text)
+    if admit_hits:
+        wl_admit.record_hits(worklist, session_id, admit_hits, admit_sig)
+        # THE JUDGE-SKIPPED PATH. The main judge runs only when something
+        # remains or a fix signal fired. A stop with a clean board and an
+        # admission in its final message would otherwise be seen by nobody, and
+        # that is a likely shape: the session finished its work, and says on the
+        # way out that it broke something along the way.
+        if not ((something_remains or reg_signals) and not wl_judge.JUDGE_DISABLED):
+            _ad, _aerr = wl_judge.run_admission(admit_text)
+            if _aerr:
+                # Recorded, never raised. Tier R already holds the hit, so the
+                # admission survives an unavailable judge; this only adds why.
+                wl_admit.record_hits(
+                    worklist,
+                    session_id,
+                    admit_hits,
+                    admit_sig,
+                    extra={"verdict": "error", "detail": _aerr[:200]},
+                )
+            else:
+                wl_admit.process_admission(
+                    _ad,
+                    admit_text,
+                    worklist,
+                    session_id,
+                    me8,
+                    admit_hits,
+                    admit_sig,
+                    admit_settled,
+                    S.add_item,
+                )
+            admit_hits = []
     audit_note = ""
     judge_cached = False
     if (something_remains or reg_signals) and not wl_judge.JUDGE_DISABLED:
@@ -3860,7 +3905,12 @@ def run_stop(event, event_ok, worklist, hook_file):
                 streak,
                 loop_desc,
                 cited_excerpts(root, last_msg),
-                extra=reg_extra + audit_extra + queue_extra,
+                extra=reg_extra
+                + audit_extra
+                + queue_extra
+                # Only on a firing stop, so an ordinary judge call is
+                # byte-identical to what it was before this existed.
+                + (M.ADMISSION_PROMPT if admit_hits else ""),
                 # Headings only (operator decision 2026-07-30): titles of
                 # hard-won facts let the judge tell a real constraint from an
                 # excuse, without turning a file designed to grow forever into
@@ -3880,6 +3930,25 @@ def run_stop(event, event_ok, worklist, hook_file):
                     + guide_tail,
                 }
             )
+        # ADMISSION VERDICT. Processed first and separately, because unlike every
+        # other verdict here it CANNOT block: its whole consequence is one
+        # tracked item. The Stop battery already refuses to end a turn while an
+        # item tagged with this session is open, so detection borrows proven
+        # enforcement instead of adding another blocking path.
+        if admit_hits:
+            wl_admit.process_admission(
+                verdict.get("admission"),
+                admit_text,
+                worklist,
+                session_id,
+                me8,
+                admit_hits,
+                admit_sig,
+                admit_settled,
+                S.add_item,
+            )
+            admit_hits = []  # handled; the standalone path below must not re-ask
+
         # v7: the regression verdict is processed BEFORE the stop/continue
         # verdict, so a settle persists (and a regression block fires) even
         # when the judge would also say continue for other reasons.

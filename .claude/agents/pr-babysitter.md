@@ -160,6 +160,8 @@ doing:    <what you are fixing right now>
 blocked:  <the ruling you need, or "nothing">
 ```
 
+**Refresh it with the verb, never by hand:** `.claude/hooks/stop/worklist.py --roundlog <branch>` with the BODY on stdin. This is not a style preference. "Overwritten in place" invites the obvious splice, `text[:i] + new`, which replaces from the STATUS heading to END OF FILE and silently takes the entire history appendix (part 3 below) with it. That happened on 2026-08-19, during a heartbeat tick whose whole purpose was keeping the log current, to a file with no backup. The verb replaces only the block, prints the bytes it kept above and below so a truncation cannot pass for a routine update, and stamps the time itself, because a hand-typed stamp can be copied forward from the previous round and this stamp is exactly what a watchdog reads to decide whether you are wedged. Two hooks enforce it (`pre-edit/block-roundlog-write.sh`, `pre-bash/block-roundlog-truncate.sh`); targeted `Edit`s and `>>` appends stay allowed, since neither can swallow an appendix it never named.
+
 This block has two consumers, which is why it must not rot: (a) **warm-start** - on resume, replacement, or post-compaction, read the wave header + STATUS first; the history below is appendix; (b) **liveness** - in delegated mode the lead's watchdog judges you alive by this block's timestamp.
 
 **3. Append-only per-round detail** below: run id + URL, each failed job, root cause, tier, fix, commit shas per repo, files touched (and which worker touched them), and **every escalation and the ruling you got** - including rulings you tested and refuted, with the evidence. That record is the point: a replacement agent warm-starts from it, and it seeds the memory write-back at the end.

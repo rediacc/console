@@ -510,6 +510,33 @@ check 2 pre-bash/warn-remote-drift.sh "$(bash_json 'git push')" "remote-drift: p
 export CLAUDE_PROJECT_DIR="$DRIFT_TMP/writer"
 check 0 pre-bash/warn-remote-drift.sh "$(bash_json 'git push')" "remote-drift: aligned local pushes freely"
 check 0 pre-bash/warn-remote-drift.sh "$(bash_json 'git status')" "remote-drift: non-push commands untouched"
+
+# --- pr-babysit ROUND LOG: the truncation guard, both directions ------------
+# On 2026-08-19 a heartbeat tick refreshed the STATUS block with
+# `p.write_text(s[:i] + new)`, which replaces from the STATUS heading to END OF
+# FILE and silently deleted the entire round-history appendix, on a file with no
+# backup. Two guards close it: a pre-edit one for whole-file tool writes, and a
+# pre-bash one for the Bash heredoc that actually did it. Both must also NOT
+# block the legitimate shapes, which is why every deny below has an allow beside
+# it -- a guard that blocks everything gets routed around, and being routed
+# around is worse than a named residual.
+RLOG='/home/x/.claude/projects/-home-muhammed-monorepo-console/reports/pr-babysit-0818-1.md'
+RL_HEREDOC="python3 - <<'PY'
+from pathlib import Path
+p=Path('$RLOG'); s=p.read_text(); i=s.index('## STATUS')
+p.write_text(s[:i] + new)
+PY"
+check 2 pre-edit/block-roundlog-write.sh "$(tool_json Write "$RLOG" content x)" "roundlog: a whole-file Write is blocked"
+check 0 pre-edit/block-roundlog-write.sh "$(tool_json Edit "$RLOG" new_string x)" "roundlog: a targeted Edit passes (it cannot swallow an unnamed appendix)"
+check 0 pre-edit/block-roundlog-write.sh "$(tool_json Write /r/reports/pr-babysit-0818-1-briefing.md content x)" "roundlog: a briefing has its own contract, not this guard's"
+check 0 pre-edit/block-roundlog-write.sh "$(tool_json Write packages/www/src/x.astro content x)" "roundlog: an unrelated file is untouched"
+check 2 pre-bash/block-roundlog-truncate.sh "$(bash_json "$RL_HEREDOC")" "roundlog: the exact 2026-08-19 heredoc is blocked"
+check 2 pre-bash/block-roundlog-truncate.sh "$(bash_json "echo hi > $RLOG")" "roundlog: truncating redirection is blocked"
+check 2 pre-bash/block-roundlog-truncate.sh "$(bash_json "sed -i s/a/b/ $RLOG")" "roundlog: sed -i is blocked"
+check 0 pre-bash/block-roundlog-truncate.sh "$(bash_json "echo hi >> $RLOG")" "roundlog: appending passes (it cannot truncate)"
+check 0 pre-bash/block-roundlog-truncate.sh "$(bash_json "grep -n STATUS $RLOG")" "roundlog: reading passes"
+check 0 pre-bash/block-roundlog-truncate.sh "$(bash_json "worklist.py --roundlog 0818-1")" "roundlog: the sanctioned verb passes"
+check 0 pre-bash/block-roundlog-truncate.sh "$(bash_json 'npm run ci')" "roundlog: an unrelated command is untouched"
 unset CLAUDE_PROJECT_DIR
 rm -rf "$DRIFT_TMP"
 
@@ -518,6 +545,26 @@ rm -rf "$DRIFT_TMP"
 # shape every case above uses. Delegating keeps both readable, and running it
 # from here is what makes it reachable: a test nothing invokes is dead code, and
 # the dead-bash gate is right to say so.
+# The round-log splice's own controls. Separate from the two guard hooks above:
+# those prove the WRONG way is blocked, this proves the RIGHT way preserves the
+# appendix, and it carries a control asserting the naive splice still destroys
+# it, so the suite cannot quietly stop reproducing the bug it was written for.
+RLOG_MOD="$DIR/stop/wl_roundlog.py"
+if [[ -f "$RLOG_MOD" ]]; then
+    if out="$(python3 "$RLOG_MOD" --selftest 2>&1)"; then
+        n=$(grep -c "^  PASS " <<<"$out")
+        PASS=$((PASS + n))
+        echo "ok   [0] stop/wl_roundlog.py --selftest: $n control(s) passed"
+    else
+        FAIL=$((FAIL + 1))
+        echo "FAIL [1] stop/wl_roundlog.py --selftest"
+        grep -E "^  FAIL " <<<"$out" | sed 's/^/       /'
+    fi
+else
+    FAIL=$((FAIL + 1))
+    echo "FAIL [1] stop/wl_roundlog.py missing"
+fi
+
 STOP_SUITE="$DIR/stop/test-worklist-v5.sh"
 if [[ -x "$STOP_SUITE" ]]; then
     echo

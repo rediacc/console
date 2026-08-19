@@ -61,6 +61,36 @@ JUDGE_SCHEMA = {
         # so ONE schema, no variants), but its own properties are all
         # required. On a fix-signal stop a missing or malformed object is a
         # judge error and fails closed, same as an invalid verdict.
+        # v11: the admission object, same optional-at-top-level shape as
+        # regression_gate above and for the same reason. UNLIKE regression_gate,
+        # a missing or malformed object here NEVER fails closed: this detector's
+        # only consequence is a tracked item, and a session blocked by a phantom
+        # regret learns to phrase things evasively, which costs more than the
+        # detection is worth. See wl_admit.py.
+        "admission": {
+            "type": "object",
+            "properties": {
+                "present": {"type": "boolean"},
+                "quote": {"type": "string", "maxLength": 400},
+                "agency": {"type": "boolean"},
+                "completed": {"type": "boolean"},
+                "residue": {"type": "string", "enum": ["none", "damage", "machinery"]},
+                "artifact": {"type": "string", "maxLength": 200},
+                "recurrence": {"type": "string", "maxLength": 300},
+                "guard": {"type": "string", "maxLength": 300},
+            },
+            "required": [
+                "present",
+                "quote",
+                "agency",
+                "completed",
+                "residue",
+                "artifact",
+                "recurrence",
+                "guard",
+            ],
+            "additionalProperties": False,
+        },
         "regression_gate": {
             "type": "object",
             "properties": {
@@ -235,6 +265,78 @@ def run_triage(finding, context):
     if not isinstance(out, dict) or out.get("verdict") not in TRIAGE_VERDICTS:
         return None, "triage produced no usable structured_output: %s" % repr(out)[:300]
     return out, None
+
+
+ADMISSION_SCHEMA = {
+    "type": "object",
+    "properties": {"admission": JUDGE_SCHEMA["properties"]["admission"]},
+    "required": ["admission"],
+    "additionalProperties": False,
+}
+
+
+def run_admission(message):
+    """(admission_dict, error_string). Exactly one is non-None.
+
+    The standalone path, for a stop where the prefilter fired but the main judge
+    was never invoked (nothing else remained to judge). Modeled on run_triage
+    down to the recursion guard and the workdir, because the transport is the
+    same and a second copy that drifts is a second bug.
+
+    It DEGRADES, never blocks, like run_triage and unlike run_judge. An admission
+    detector that could block on its own unavailability would punish a session
+    for the honesty that triggered it.
+    """
+    exe = resolve_claude()
+    if not exe or not os.path.exists(exe):
+        return None, "claude CLI not found (looked at PATH and ~/.local/bin/claude)"
+    workdir = pathlib.Path(os.environ.get("TMPDIR", "/tmp")) / "claude-worklist" / ".judge"
+    try:
+        workdir.mkdir(parents=True, exist_ok=True)
+    except OSError as exc:
+        return None, "admission workdir unusable: %s" % exc
+    prompt = M.ADMISSION_PROMPT + "\n\nMESSAGE:\n" + message[-8000:]
+    env = dict(os.environ)
+    env["STOPHOOK_CHILD"] = "1"
+    try:
+        proc = subprocess.run(
+            [
+                exe,
+                "-p",
+                prompt,
+                "--output-format",
+                "json",
+                "--json-schema",
+                json.dumps(ADMISSION_SCHEMA),
+                "--model",
+                JUDGE_MODEL,
+                "--max-budget-usd",
+                JUDGE_BUDGET_USD,
+            ],
+            capture_output=True,
+            text=True,
+            timeout=JUDGE_TIMEOUT_S,
+            env=env,
+            check=False,
+            cwd=str(workdir),
+            stdin=subprocess.DEVNULL,
+        )
+    except subprocess.TimeoutExpired:
+        return None, "admission timed out after %ds" % JUDGE_TIMEOUT_S
+    except OSError as exc:
+        return None, "admission could not be launched: %s" % exc
+    if proc.returncode != 0:
+        return None, _explain_failed_exit("admission", proc)
+    try:
+        env_out = json.loads(proc.stdout)
+    except ValueError:
+        return None, "admission returned unparseable stdout: %s" % (proc.stdout or "")[-300:]
+    if env_out.get("is_error"):
+        return None, "admission reported is_error (subtype=%s)" % env_out.get("subtype")
+    out = env_out.get("structured_output")
+    if not isinstance(out, dict) or not isinstance(out.get("admission"), dict):
+        return None, "admission produced no usable structured_output: %s" % repr(out)[:300]
+    return out["admission"], None
 
 
 def apply_defer_audit(rows, batch):
