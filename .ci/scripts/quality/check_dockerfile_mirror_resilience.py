@@ -123,6 +123,20 @@ def offenders(text):
                     excerpt,
                 )
             )
+        elif guard is not None and last is None:
+            # ANTI-VACUITY. Both sequencing checks above are guarded on having
+            # parsed a number, so an edit that makes the loop unreadable would
+            # skip them SILENTLY and the file would pass while nothing had been
+            # verified. A conditional fallback whose loop cannot be parsed is
+            # reported as unverifiable rather than waved through: this gate must
+            # not be able to say "fine" when it means "I could not tell".
+            bad.append(
+                (
+                    "fallback is guarded on iteration %d but the retry loop's bounds "
+                    "cannot be parsed, so its reachability is unverifiable" % guard,
+                    excerpt,
+                )
+            )
     return bad
 
 
@@ -271,6 +285,37 @@ def selftest():
         "a fallback BEFORE the give-up point still passes",
         offenders(both) == [] and giveup_iteration(both) is None,
         (offenders(both), giveup_iteration(both)),
+    )
+
+    # ANTI-VACUITY. Both sequencing checks are guarded on having parsed a number,
+    # so an unparseable loop would skip them silently and the file would pass
+    # while NOTHING had been verified. That is the exact shape this repo calls a
+    # gate that cannot fail, and it must be reported instead.
+    unparseable = (
+        "RUN sed -i -e 's|http://archive.ubuntu.com/ubuntu|http://azure.archive.ubuntu.com/ubuntu|g' /etc/apt/sources.list \\\n"
+        "    && while read -r attempt; do apt-get update && break; \\\n"
+        '        if [ "$attempt" = "2" ]; then \\\n'
+        "            sed -i -e 's|http://azure.archive.ubuntu.com/ubuntu|http://archive.ubuntu.com/ubuntu|g' /etc/apt/sources.list; \\\n"
+        "        fi; \\\n"
+        "    done < /tmp/attempts\n"
+    )
+    check("an unparseable loop yields no bound", last_attempt(unparseable) is None)
+    check(
+        "a guarded fallback with an unparseable loop is reported, not waved through",
+        len(offenders(unparseable)) == 1,
+        offenders(unparseable),
+    )
+    check(
+        "and it says the reachability is unverifiable",
+        "unverifiable" in offenders(unparseable)[0][0] if offenders(unparseable) else False,
+        offenders(unparseable),
+    )
+    # A fallback applied EVERY iteration has no guard at all, so there is nothing
+    # to sequence and nothing to be unverifiable about. It must stay legal.
+    check(
+        "an unconditional fallback needs no guard and still passes",
+        fallback_iteration(both) is None and offenders(both) == [],
+        (fallback_iteration(both), offenders(both)),
     )
     # The fixed shape must pass, or the gate blocks the very remedy it demands.
     check("a rewrite WITH a fallback passes", offenders(both) == [], offenders(both))
