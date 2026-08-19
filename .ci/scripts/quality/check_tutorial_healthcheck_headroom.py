@@ -166,7 +166,9 @@ services:
         if not findings and checked == 1:
             print("  ok    a 390s budget is accepted, and was actually inspected")
         else:
-            print(f"  FAIL  generous healthcheck should pass and be counted; {findings=} {checked=}")
+            print(
+                f"  FAIL  generous healthcheck should pass and be counted; {findings=} {checked=}"
+            )
             ok = False
 
         findings, checked = scan([])
@@ -176,7 +178,9 @@ services:
             print(f"  FAIL  empty file set reported {checked} inspections")
             ok = False
 
-    print(f"\nselftest: {'passed' if ok else 'FAILED'} -- the detector fires on the known-bad value")
+    print(
+        f"\nselftest: {'passed' if ok else 'FAILED'} -- the detector fires on the known-bad value"
+    )
     return 0 if ok else 1
 
 
@@ -209,7 +213,9 @@ def main() -> int:
         )
         return 1
 
-    print(f"{checked} healthcheck(s) in {len(paths)} compose file(s); floor {MIN_BUDGET_SECONDS:g}s")
+    print(
+        f"{checked} healthcheck(s) in {len(paths)} compose file(s); floor {MIN_BUDGET_SECONDS:g}s"
+    )
 
     if findings:
         print(f"\n✗ {len(findings)} healthcheck(s) sized for a fast host only:", file=sys.stderr)

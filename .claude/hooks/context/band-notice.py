@@ -54,10 +54,7 @@ def describe_state_md(path, st, usage, threshold):
     import time
 
     if not path.is_file():
-        return (
-            "No compact-recovery document exists for this session at %s."
-            % path.as_posix()
-        )
+        return "No compact-recovery document exists for this session at %s." % path.as_posix()
     mtime = path.stat().st_mtime
     age_min = int((time.time() - mtime) / 60)
     written_at = st.get("state_written_usage")
@@ -113,14 +110,12 @@ def build_text(band_name, usage, res, st, state_md):
             "The transcript reports the model as %r, whose default window would "
             "put the threshold far below the context this session is already "
             "carrying. That cap is disproven, so the configured window is used "
-            "instead and the threshold above is a floor, not a measurement."
-            % (res["model"],)
+            "instead and the threshold above is a floor, not a measurement." % (res["model"],)
         )
     elif not res["confident"]:
         lines.append(
             "The model id %r is not one this hook recognises, so the threshold "
-            "above is derived from the configured window alone and may be wrong."
-            % (res["model"],)
+            "above is derived from the configured window alone and may be wrong." % (res["model"],)
         )
     lines.append("(band: %s)" % band_name)
     return "\n".join(lines)

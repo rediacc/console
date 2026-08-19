@@ -2,13 +2,11 @@
 title: "Applicazione CLI"
 description: "Guida completa all'uso dell'interfaccia a riga di comando Rediacc per la gestione della piattaforma"
 category: "Reference"
-tags:
-  - cli
 order: 2
 language: it
 generated: true
 generatedFrom: packages/cli/src/i18n/locales/it/cli.json
-sourceHash: "b6ae8408bdbd2fe7"
+sourceHash: "bb3ff8daf0bc61cb"
 ---
 
 <!-- THIS FILE IS AUTO-GENERATED. Do not edit manually. -->

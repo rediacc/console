@@ -280,8 +280,7 @@ def test_bands(hooks_dir=HERE, expect=None):
             "text is factual, not an imperative",
             bool(ctx)
             and not any(
-                w in ctx.lower()
-                for w in ("you must", "you should", "rewrite now", "immediately")
+                w in ctx.lower() for w in ("you must", "you should", "rewrite now", "immediately")
             ),
         )
 
@@ -297,7 +296,11 @@ def test_bands(hooks_dir=HERE, expect=None):
         p = sb.post_tool()
         ctx = fired(p)
         check("fires on the late band", ctx is not None)
-        check("late text reports headroom", bool(ctx) and "15,000" in ctx, repr(ctx)[:300] if ctx else "")
+        check(
+            "late text reports headroom",
+            bool(ctx) and "15,000" in ctx,
+            repr(ctx)[:300] if ctx else "",
+        )
         p = sb.post_tool()
         check("silent on a second call in the late band", fired(p) is None)
 
@@ -355,7 +358,11 @@ def test_bands(hooks_dir=HERE, expect=None):
         sb6.write_transcript(395_590, model="claude-opus-5")
         p = sb6.post_tool()
         ctx = fired(p)
-        check("disproven cap does not fire a false late band", ctx is None, repr(ctx)[:200] if ctx else "")
+        check(
+            "disproven cap does not fire a false late band",
+            ctx is None,
+            repr(ctx)[:200] if ctx else "",
+        )
         check(
             "disproven cap is recorded",
             sb6.band_state().get("cap_disproven") is True,
@@ -511,7 +518,11 @@ def test_precompact(hooks_dir=HERE):
             ("agent/%s/STATE.md" % SLUG) in out,
             repr(out[:300]),
         )
-        check("precompact writes nothing to stderr", not (p.stderr or "").strip(), repr(p.stderr[:200]))
+        check(
+            "precompact writes nothing to stderr",
+            not (p.stderr or "").strip(),
+            repr(p.stderr[:200]),
+        )
         check(
             "instructions are not JSON (stdout becomes custom instructions)",
             not out.startswith("{"),
@@ -556,7 +567,11 @@ def test_precompact(hooks_dir=HERE):
         sb2 = Sandbox(hooks_dir)
         sb2.write_transcript(850_000)
         p2 = sb2.pre_compact()
-        check("precompact is silent with nothing to say", not (p2.stdout or "").strip(), repr(p2.stdout[:200]))
+        check(
+            "precompact is silent with nothing to say",
+            not (p2.stdout or "").strip(),
+            repr(p2.stdout[:200]),
+        )
         check("precompact still exits 0 with nothing to say", p2.returncode == 0)
         check(
             "precompact still writes the snapshot when silent",
@@ -599,7 +614,11 @@ MUTANTS = [
         "bands fire always",
         "band-notice.py",
         None,
-        ("ctx_budget.py", 'BANDS = (("early", 0.75), ("late", 0.98))', 'BANDS = (("early", 0.0), ("late", 0.0))'),
+        (
+            "ctx_budget.py",
+            'BANDS = (("early", 0.75), ("late", 0.98))',
+            'BANDS = (("early", 0.0), ("late", 0.0))',
+        ),
         ["silent below the early band"],
     ),
     (
@@ -642,12 +661,15 @@ MUTANTS = [
             "    return observed_usage > (mmax - HARD_LIMIT_MARGIN) and configured > mmax",
             "    return True",
         ),
-        ["genuine 200K session keeps its cap and fires", "200K notice quotes the 185,000 threshold"],
+        [
+            "genuine 200K session keeps its cap and fires",
+            "200K notice quotes the 185,000 threshold",
+        ],
     ),
     (
         "window-floor correction removed",
         "band-notice.py",
-        ("        if high > res[\"threshold\"]:", "        if False:"),
+        ('        if high > res["threshold"]:', "        if False:"),
         None,
         [
             "usage above the derived threshold corrects the window upward",
@@ -675,7 +697,11 @@ MUTANTS = [
         "model cap ignored",
         "band-notice.py",
         None,
-        ("ctx_budget.py", "window = min(configured, mmax) if mmax else configured", "window = configured"),
+        (
+            "ctx_budget.py",
+            "window = min(configured, mmax) if mmax else configured",
+            "window = configured",
+        ),
         ["200K model caps the pinned window"],
     ),
 ]
@@ -688,7 +714,10 @@ PRECOMPACT_MUTANTS = [
     ),
     (
         "precompact always speaks",
-        ("        if not have_doc and not ids:\n            return\n", "        if False:\n            return\n"),
+        (
+            "        if not have_doc and not ids:\n            return\n",
+            "        if False:\n            return\n",
+        ),
         ["precompact is silent with nothing to say"],
     ),
     (
@@ -768,8 +797,7 @@ def test_arithmetic_in(hooks_dir):
     through a subprocess so the mutated module is the one imported."""
     code = (
         "import sys, json; sys.path.insert(0, %r); import ctx_budget as B; "
-        "print(json.dumps(B.resolve_threshold('claude-opus-5', sys.argv[1])))"
-        % str(hooks_dir)
+        "print(json.dumps(B.resolve_threshold('claude-opus-5', sys.argv[1])))" % str(hooks_dir)
     )
     sb = Sandbox(hooks_dir)
     try:
