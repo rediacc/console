@@ -58,6 +58,20 @@ ENV DO_NOT_TRACK=1 \
 # size" race (launchpad #2107223). Acquire::http::Timeout=30 fails each
 # stuck HTTP request fast (default is 120s) so a bad attempt does not eat
 # 20 minutes before the next retry begins.
+#
+# "EFFECTIVELY NEVER" RAN OUT ON 2026-08-19. azure.archive.ubuntu.com
+# (20.106.104.242) refused connections on port 80 for over ninety minutes, and
+# because EVERY source had been rewritten to that one host, all five retries
+# hammered the same dead mirror: four consecutive CI attempts died, two by
+# exhausting the retries and two by running past the 30-minute job timeout while
+# doing so. Retrying a single point of failure five times is still a single point
+# of failure.
+#
+# So the loop now FALLS BACK after the first failure: attempt 1 still uses the
+# fast in-datacenter mirror, and attempts 2 to 5 revert to the canonical
+# archive.ubuntu.com. This keeps the speed argument above intact for the normal
+# case, which is the whole reason the rewrite exists, while removing the
+# assumption that one host is always up.
 RUN find /etc/apt -name 'ubuntu.sources' -o -name 'sources.list' 2>/dev/null \
         | xargs -r sed -i \
             -e 's|http://archive\.ubuntu\.com/ubuntu|http://azure.archive.ubuntu.com/ubuntu|g' \
@@ -110,6 +124,12 @@ RUN find /etc/apt -name 'ubuntu.sources' -o -name 'sources.list' 2>/dev/null \
             break; \
         fi; \
         if [ "$i" = "5" ]; then echo "apt operations failed after 5 attempts" >&2; exit 1; fi; \
+        if [ "$i" = "1" ]; then \
+            echo "azure mirror unreachable; falling back to archive.ubuntu.com" >&2; \
+            find /etc/apt -name 'ubuntu.sources' -o -name 'sources.list' 2>/dev/null \
+                | xargs -r sed -i \
+                    -e 's|http://azure\.archive\.ubuntu\.com/ubuntu|http://archive.ubuntu.com/ubuntu|g'; \
+        fi; \
         echo "apt attempt $i/5 failed, retrying in $((i * 30))s..." >&2; \
         sleep $((i * 30)); \
     done \
