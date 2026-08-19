@@ -92,6 +92,12 @@ on:
         required: false
       R2_MEDIA_ENDPOINT:
         required: false
+      # Optional on purpose: without it the Docker Hub freshness gate falls back to the
+      # anonymous rate limit, and its own logic REFUSES on a limited response rather than
+      # reporting everything current. A fork without the secret gets an honest failure, not
+      # a vacuous pass.
+      DOCKERHUB_TOKEN:
+        required: false
 
 permissions:
   contents: read
