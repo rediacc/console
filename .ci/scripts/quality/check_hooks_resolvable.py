@@ -120,6 +120,40 @@ def controls(root):
     return None
 
 
+# Guard directories, and the naming convention that separates a guard from its
+# own test. `block-*`/`warn-*` are hooks; `test-*` are the suites that drive them.
+GUARD_DIRS = ("pre-bash", "pre-edit", "post-bash")
+GUARD_PREFIXES = ("block-", "warn-")
+
+
+def unregistered_guards(root, refs):
+    """Guard scripts on disk that settings.json never names.
+
+    THE OTHER HALF OF THIS GATE. Everything above answers "settings.json names a
+    script, does it exist?". This answers the reverse, "a guard exists, is it
+    wired?", and the reverse is the direction an AUTHOR gets wrong: writing a
+    guard, testing it by hand, and never adding it to settings.json. The result
+    is indistinguishable from a guard that works, because a hook that is never
+    invoked never complains, and the author's hand-test passed.
+
+    Found by probing rather than reasoning, 2026-08-19: two guards were added
+    that day and nothing in CI would have noticed if either registration line had
+    been skipped.
+
+    Names are compared, not paths, because settings.json interpolates
+    $CLAUDE_PROJECT_DIR and a path comparison would be brittle against that.
+    """
+    named = {pathlib.Path(r).name for r in refs}
+    missing = []
+    for d in GUARD_DIRS:
+        for f in sorted((root / ".claude" / "hooks" / d).glob("*.sh")):
+            if not f.name.startswith(GUARD_PREFIXES):
+                continue  # a test script is not a hook
+            if f.name not in named:
+                missing.append(f"{d}/{f.name}")
+    return missing
+
+
 def main(argv=None):
     argparse.ArgumentParser(description=__doc__).parse_args(argv)
     root = pathlib.Path(__file__).resolve().parents[3]
@@ -158,9 +192,26 @@ def main(argv=None):
             print(f"  - {p}", file=sys.stderr)
         return 1
 
+    orphans = unregistered_guards(root, refs)
+    if orphans:
+        print(
+            "Guard hooks exist on disk but settings.json never invokes them, so they "
+            "silently do nothing:",
+            file=sys.stderr,
+        )
+        for o in orphans:
+            print(f"  - .claude/hooks/{o}", file=sys.stderr)
+        print(
+            "  Add each to the matching PreToolUse block in .claude/settings.json, or "
+            "delete it. A guard nobody calls is worse than no guard: it reads as "
+            "coverage.",
+            file=sys.stderr,
+        )
+        return 1
+
     print(
-        f"{len(set(refs))} hook script(s) across {len(cmds)} command(s) all resolve "
-        f"(controls fired in both directions)"
+        f"{len(set(refs))} hook script(s) across {len(cmds)} command(s) all resolve, and "
+        f"every guard on disk is registered (controls fired in both directions)"
     )
     return 0
 
