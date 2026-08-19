@@ -4,9 +4,12 @@ description: >-
   Claude
   Code、Cursor、その他のAIコーディングアシスタントをRediaccインフラストラクチャと連携させるためのコピー＆ペーストテンプレート。
 category: Reference
+tags:
+  - ai-agents
+  - cli
 order: 50
 language: ja
-sourceHash: "1edff3471ded906d"
+sourceHash: "7592f803f8caf5f4"
 sourceCommit: "23543669cd22bce3f14d69a0886bac8a12061412"
 ---
 

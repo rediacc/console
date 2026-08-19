@@ -2,9 +2,12 @@
 title: "本地部署安装"
 description: "在您自己的基础设施上运行账户服务器和 CLI 分发端点。"
 category: "Guides"
+tags:
+  - account
+  - operations
 order: 5
 language: zh
-sourceHash: "f05bd90f123befad"
+sourceHash: "2c3ac4a96a028b3f"
 sourceCommit: "018665c7c35e0bea3349818b12a5906828240a29"
 ---
 

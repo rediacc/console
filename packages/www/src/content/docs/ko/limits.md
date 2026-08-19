@@ -3,9 +3,12 @@ title: 제한 및 할당량
 description: >-
   Rediacc 저장소, 서비스, 네트워킹 및 스토리지에 적용되는 제한, 최댓값 및 할당량 참고 자료.
 category: Reference
+tags:
+  - storage
+  - account
 order: 99
 language: ko
-sourceHash: "58ee35faeda9b8df"
+sourceHash: "2c014598b66bdeb7"
 sourceCommit: "79c84ad044d5730b6d0a20aaf7b21f21914b6bda"
 ---
 

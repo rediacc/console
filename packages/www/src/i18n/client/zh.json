@@ -71,6 +71,16 @@
     "error": "出现错误，请重试。",
     "close": "关闭"
   },
+  "documentation": {
+    "categories": {
+      "tutorials": "教程",
+      "guides": "指南",
+      "concepts": "概念",
+      "reference": "参考",
+      "useCases": "使用场景",
+      "legal": "法律合规"
+    }
+  },
   "footer": {
     "columns": {
       "product": "产品",
@@ -147,7 +157,9 @@
       }
     },
     "forAiAgents": "面向AI Agent",
-    "account": "账户"
+    "account": "账户",
+    "learn": "学习",
+    "browseAllDocs": "浏览全部文档"
   },
   "newsletter": {
     "title": "通讯",

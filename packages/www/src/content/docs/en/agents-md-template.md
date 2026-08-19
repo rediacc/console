@@ -2,6 +2,9 @@
 title: AGENTS.md Template for AI Assistants
 description: Copy-paste template for configuring Claude Code, Cursor, and other AI coding assistants to work with Rediacc infrastructure.
 category: Reference
+tags:
+  - ai-agents
+  - cli
 order: 50
 language: en
 ---

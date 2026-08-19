@@ -2,9 +2,12 @@
 title: Aggiornamenti senza rischi
 description: Testa gli aggiornamenti del database senza rischi grazie alla clonazione istantanea e agli snapshot orari.
 category: Use Cases
+tags:
+  - forking
+  - backup
 order: 4
 language: it
-sourceHash: "242617b8bede9535"
+sourceHash: "852e967b9d505861"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 

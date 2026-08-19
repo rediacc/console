@@ -1,9 +1,381 @@
 ---
+/**
+ * The docs browse surface.
+ *
+ * This route used to be `Astro.redirect('/<lang>/docs/quick-start', 301)`, so there was no
+ * way to see what documentation exists: every entry point landed on one article and the
+ * only way to discover the rest was the sidebar of a page you had already reached.
+ *
+ * Filtering is a plain `<details>`-free, JS-light progressive enhancement: the page renders
+ * every card server-side, grouped by category, and the filter controls only toggle a
+ * `hidden` attribute. With scripting off it degrades to a complete, readable index rather
+ * than an empty shell, which also means the crawler sees all 79 documents.
+ *
+ * TWO AXES, and they are independent on purpose. `category` answers "what shape is this"
+ * (tutorial, reference, legal); `tags` answers "what is it about" (backup, security). Both
+ * live in the URL, `?category=` and `?tag=`, so a link can carry either or both; the header
+ * Learn menu deep-links the first. A third control, `?q=`, filters titles and descriptions
+ * in-page. It is NOT the site search: full-text search over section bodies stays in the
+ * Cmd+K modal, which reads `search-index-<lang>.json`. That index carries no per-document
+ * category at all (its `category` field is the literal collection name, `'Documentation'`),
+ * which is why the facets are computed from the rendered cards instead of fetched.
+ */
+import { getCollection } from 'astro:content';
+import DocsLayout from '../../../layouts/DocsLayout.astro';
 import { getLanguagePaths } from '../../../i18n/language-utils';
+import { createTranslator } from '../../../i18n/utils';
+import { getBaseSlug } from '../../../utils/slug';
+import { DEFAULT_LANGUAGE } from '../../../i18n/language-utils';
+import {
+  CATEGORY_GLYPHS,
+  CATEGORY_ORDER,
+  categoryAnchor,
+  groupByCategory,
+  makeCategoryLabel,
+  makeTagLabel,
+  tagCounts,
+} from '../../../utils/docs-categories';
 import type { Language } from '../../../i18n/types';
+import '../../../styles/docs-browse.css';
 
 export const getStaticPaths = getLanguagePaths;
 
 const { lang } = Astro.props as { lang: Language };
-return Astro.redirect(`/${lang}/docs/quick-start`, 301);
+const currentLang = lang;
+const { t } = createTranslator(currentLang);
+const categoryLabel = makeCategoryLabel(t);
+const tagLabel = makeTagLabel(t);
+
+// Docs for THIS locale, falling back to English for anything not yet translated, so a
+// locale with partial coverage still browses a complete index instead of a short one.
+const all = await getCollection('docs');
+const inLang = all.filter((doc) => (doc.data.language || DEFAULT_LANGUAGE) === currentLang);
+const translatedSlugs = new Set(inLang.map((doc) => getBaseSlug(doc.slug)));
+const english = all.filter(
+  (doc) =>
+    (doc.data.language || DEFAULT_LANGUAGE) === DEFAULT_LANGUAGE &&
+    !translatedSlugs.has(getBaseSlug(doc.slug))
+);
+
+const shown = [...inLang, ...english];
+const groups = groupByCategory(shown);
+const total = groups.reduce((n, g) => n + g.docs.length, 0);
+const topics = tagCounts(shown);
+
+const title = t('documentation.browse.title');
+const description = t('documentation.browse.description');
 ---
+
+<DocsLayout
+  frontmatter={{ title, description }}
+  url={`/${currentLang}/docs`}
+  currentLang={currentLang}
+  variant="index"
+  showTOC={false}
+>
+  <div class="docs-browse">
+    {/* Full-bleed hero ABOVE the two-column body, so the page introduces itself once and
+        the rail beside the grid is purely controls. */}
+    <header class="docs-browse-hero">
+      <svg class="docs-browse-hero-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+        <path d={CATEGORY_GLYPHS.Guides} />
+      </svg>
+      <h1>{title}</h1>
+      <p class="docs-browse-lede">{description}</p>
+    </header>
+
+    <div class="docs-browse-body">
+      {/* The filter RAIL. `<details>` for the collapsible groups because it is keyboard
+          accessible and screen-reader announced with no JavaScript at all, and real
+          `<input type="checkbox">` rather than styled divs for the same reason: multi-select
+          is what the control claims, so it should be the control the platform provides. */}
+      <aside class="docs-rail" aria-label={t('documentation.browse.filterLabel')}>
+        <h2 class="docs-rail-heading">{t('documentation.browse.filterHeading', 'Filter')}</h2>
+
+        <label class="docs-rail-search">
+          <span class="sr-only">{t('documentation.browse.searchLabel')}</span>
+          <input
+            type="search"
+            class="docs-browse-search-input"
+            autocomplete="off"
+            placeholder={t('documentation.browse.searchPlaceholder')}
+          />
+        </label>
+
+        {/* Category is FIRST, always open, and heavier than what follows. The hierarchy is
+            order and weight, not a second widget. */}
+        <details class="docs-rail-group docs-rail-group--primary" open>
+          <summary class="docs-rail-summary">{t('documentation.browse.filterLabel')}</summary>
+          <ul class="docs-rail-list">
+            {
+              CATEGORY_ORDER.filter((category) => groups.some((g) => g.category === category)).map(
+                (category) => (
+                  <li>
+                    <label class="docs-rail-option">
+                      <input type="checkbox" class="docs-facet" data-facet="category" value={category} />
+                      <span class="docs-rail-option-label">{categoryLabel(category)}</span>
+                      <span class="docs-rail-count" data-count-for={`category:${category}`}>
+                        {groups.find((g) => g.category === category)?.docs.length ?? 0}
+                      </span>
+                    </label>
+                  </li>
+                )
+              )
+            }
+          </ul>
+        </details>
+
+        {/* Topics are the SUB-GROUPS: the same vocabulary, scoped by whatever categories are
+            checked, with counts recomputed live. There is no second authored taxonomy. */}
+        <details class="docs-rail-group">
+          <summary class="docs-rail-summary">{t('documentation.browse.topicLabel')}</summary>
+          <ul class="docs-rail-list">
+            {
+              topics.map(({ tag, count }) => (
+                <li data-topic-row={tag}>
+                  <label class="docs-rail-option">
+                    <input type="checkbox" class="docs-facet" data-facet="tag" value={tag} />
+                    <span class="docs-rail-option-label">{tagLabel(tag)}</span>
+                    <span class="docs-rail-count" data-count-for={`tag:${tag}`}>{count}</span>
+                  </label>
+                </li>
+              ))
+            }
+          </ul>
+        </details>
+
+        <button type="button" class="docs-browse-clear" hidden>
+          {t('documentation.browse.clear')}
+        </button>
+      </aside>
+
+      <div class="docs-browse-results">
+        <p class="docs-browse-status">
+          <output class="docs-browse-tally" aria-live="polite">{total} / {total}</output>
+        </p>
+
+    {
+      groups.map((group) => (
+        <section
+          class="docs-browse-group"
+          id={categoryAnchor(group.category)}
+          data-category={group.category}
+        >
+          <h2 class="docs-browse-group-title">{categoryLabel(group.category)}</h2>
+          <ul class="docs-browse-grid">
+            {group.docs.map((doc) => {
+              const slug = getBaseSlug(doc.slug);
+              const tags = doc.data.tags ?? [];
+              // The slug goes into the search haystack twice, hyphenated and spaced, because
+              // a reader types what they remember rather than what the title says: `vscode`
+              // matched nothing while `tutorial-vscode-browser` sat in the grid, since the
+              // title spells it `VS Code`.
+              const haystack = [
+                doc.data.title,
+                doc.data.description,
+                categoryLabel(group.category),
+                tags.map(tagLabel).join(' '),
+                slug.replaceAll('-', ' '),
+                slug,
+              ]
+                .join(' ')
+                .toLowerCase();
+              return (
+                <li
+                  class="docs-browse-item"
+                  data-category={group.category}
+                  data-tags={tags.join(' ')}
+                  data-text={haystack}
+                >
+                  <div class="docs-card">
+                    {/* One hand-authored file per document, committed under
+                        public/img/docs-thumbs/. It replaced a build-time generator that
+                        drew abstract geometry from (category, tags): that could only ever
+                        encode what the tags said, so the 28 documents sharing a tag
+                        signature drew near-identical cards and none of the 79 said
+                        anything about its own subject. These depict the document's actual
+                        topic instead. `alt=""` because the picture restates the title and
+                        category the card already gives in words. */}
+                    <img
+                      class="docs-card-thumb"
+                      src={`/img/docs-thumbs/${slug}.svg`}
+                      alt=""
+                      width="320"
+                      height="120"
+                      loading="lazy"
+                      decoding="async"
+                    />
+                    <h3 class="docs-card-title">
+                      {/* The stretched ::after on this link is what makes the whole card
+                          clickable. It is a LINK inside a DIV, not a card-wide anchor, so the
+                          info button below can be a SIBLING rather than a nested control:
+                          a <button> inside an <a> is invalid and breaks both keyboard order
+                          and screen-reader semantics. */}
+                      <a class="docs-card-link" href={`/${currentLang}/docs/${slug}`}>
+                        {doc.data.title}
+                      </a>
+                    </h3>
+                    <span class="docs-card-chip">
+                      <svg class="docs-chip-glyph" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                        <path d={CATEGORY_GLYPHS[group.category]} />
+                      </svg>
+                      {categoryLabel(group.category)}
+                    </span>
+                    {/* Kept in the DOM and only visually clipped: it is what a crawler and a
+                        screen reader read, and `opacity` (never `display` or `visibility`)
+                        is what keeps it in the accessibility tree while it is out of sight. */}
+                    <p class="docs-card-description" id={`docdesc-${slug}`}>
+                      {doc.data.description}
+                    </p>
+                    <button
+                      type="button"
+                      class="docs-card-info"
+                      aria-controls={`docdesc-${slug}`}
+                      aria-expanded="false"
+                      aria-label={t('documentation.browse.showDescription', 'Show description')}
+                    >
+                      <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                        <circle cx="12" cy="12" r="9" />
+                        <path d="M12 11v5" />
+                        <path d="M12 7.6v.6" />
+                      </svg>
+                    </button>
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        </section>
+      ))
+    }
+
+        <p class="docs-browse-empty" hidden>{t('documentation.browse.empty')}</p>
+      </div>
+    </div>
+  </div>
+</DocsLayout>
+
+<script>
+  // Multi-select facets over the server-rendered cards. OR within a facet, AND across
+  // facets, plus a free-text pass; the URL carries `?category=a,b&tag=c,d&q=...` so any
+  // combination is linkable and single values keep resolving.
+  const facets = document.querySelectorAll<HTMLInputElement>('.docs-facet');
+  const groups = document.querySelectorAll<HTMLElement>('.docs-browse-group');
+  const items = document.querySelectorAll<HTMLElement>('.docs-browse-item');
+  const empty = document.querySelector<HTMLElement>('.docs-browse-empty');
+  const tally = document.querySelector<HTMLElement>('.docs-browse-tally');
+  const clear = document.querySelector<HTMLButtonElement>('.docs-browse-clear');
+  const search = document.querySelector<HTMLInputElement>('.docs-browse-search-input');
+  const totalCount = items.length;
+
+  type Facet = 'category' | 'tag';
+  const checked = (facet: Facet) =>
+    new Set([...facets].filter((f) => f.dataset.facet === facet && f.checked).map((f) => f.value));
+
+  const tagsOf = (item: HTMLElement) => (item.dataset.tags || '').split(' ').filter(Boolean);
+  const query = () => (search?.value || '').trim().toLowerCase();
+
+  /** Does one card survive the given facets? `skip` omits one axis, for facet counting. */
+  function matches(item: HTMLElement, cats: Set<string>, tags: Set<string>, q: string, skip?: Facet) {
+    const byCategory =
+      skip === 'category' || cats.size === 0 || cats.has(item.dataset.category || '');
+    const byTag = skip === 'tag' || tags.size === 0 || tagsOf(item).some((t) => tags.has(t));
+    const byText = q === '' || (item.dataset.text || '').includes(q);
+    return byCategory && byTag && byText;
+  }
+
+  function paint() {
+    const cats = checked('category');
+    const tags = checked('tag');
+    const q = query();
+
+    let visible = 0;
+    for (const item of items) {
+      const on = matches(item, cats, tags, q);
+      item.hidden = !on;
+      if (on) visible += 1;
+    }
+    for (const group of groups) {
+      group.hidden = ![...group.querySelectorAll<HTMLElement>('.docs-browse-item')].some(
+        (item) => !item.hidden
+      );
+    }
+
+    // Facet counts are computed with that facet's OWN selection removed, which is what makes
+    // a count mean "how many would I get if I ticked this" rather than "how many are on
+    // screen". A topic that can add nothing is hidden outright: that is the sub-group rule,
+    // the topic list under a chosen category IS that category's topics and nothing else.
+    for (const facet of facets) {
+      const axis = facet.dataset.facet as Facet;
+      const pool = [...items].filter((item) => matches(item, cats, tags, q, axis));
+      const n = pool.filter((item) =>
+        axis === 'category'
+          ? item.dataset.category === facet.value
+          : tagsOf(item).includes(facet.value)
+      ).length;
+      const badge = document.querySelector<HTMLElement>(
+        `[data-count-for="${axis}:${CSS.escape(facet.value)}"]`
+      );
+      if (badge) badge.textContent = String(n);
+      const row = facet.closest<HTMLElement>('li');
+      if (row && axis === 'tag') row.hidden = n === 0 && !facet.checked;
+    }
+
+    if (empty) empty.hidden = visible > 0;
+    if (tally) tally.textContent = `${visible} / ${totalCount}`;
+    if (clear) clear.hidden = cats.size === 0 && tags.size === 0 && q === '';
+  }
+
+  function writeUrl() {
+    const url = new URL(window.location.href);
+    const set = (key: string, values: Set<string> | string) => {
+      const value = typeof values === 'string' ? values : [...values].join(',');
+      if (value === '') url.searchParams.delete(key);
+      else url.searchParams.set(key, value);
+    };
+    set('category', checked('category'));
+    set('tag', checked('tag'));
+    set('q', query());
+    history.replaceState(null, '', url);
+  }
+
+  const update = () => {
+    paint();
+    writeUrl();
+  };
+
+  for (const facet of facets) facet.addEventListener('change', update);
+  search?.addEventListener('input', update);
+  clear?.addEventListener('click', () => {
+    for (const facet of facets) facet.checked = false;
+    if (search) search.value = '';
+    update();
+  });
+
+  // The info button is the TOUCH path to the description: hover and focus-within are both
+  // CSS, and neither exists on a tablet. It is a sibling of the card link, never a
+  // descendant, so pressing it cannot navigate.
+  for (const button of document.querySelectorAll<HTMLButtonElement>('.docs-card-info')) {
+    button.addEventListener('click', () => {
+      const card = button.closest<HTMLElement>('.docs-card');
+      const open = card?.classList.toggle('is-revealed') ?? false;
+      button.setAttribute('aria-expanded', String(open));
+    });
+  }
+
+  // Deep links. Unknown values are dropped rather than hiding every card, so a stale link
+  // shows a full index instead of a page that looks broken. The URL is NOT rewritten on
+  // load, which leaves whatever the reader was sent intact.
+  const params = new URLSearchParams(window.location.search);
+  const wanted = (key: string) => new Set((params.get(key) || '').split(',').filter(Boolean));
+  const wantedCats = wanted('category');
+  const wantedTags = wanted('tag');
+  for (const facet of facets) {
+    const axis = facet.dataset.facet;
+    facet.checked =
+      (axis === 'category' && wantedCats.has(facet.value)) ||
+      (axis === 'tag' && wantedTags.has(facet.value));
+  }
+  if (search) search.value = (params.get('q') || '').trim();
+  paint();
+</script>

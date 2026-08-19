@@ -2,9 +2,12 @@
 title: "Backup & Wiederherstellung"
 description: "Sichern Sie verschlüsselte Repositories per Snapshot in inhaltsadressiertem Chunk-Storage, wo nur geänderte Zellen hochgeladen werden und sich jeder Snapshot direkt wiederherstellen lässt. Oder bewahren Sie eine Kopie auf einer anderen Maschine auf. Stellen Sie überall wieder her und automatisieren Sie es mit benannten Strategien und systemd-Timern."
 category: "Guides"
+tags:
+  - backup
+  - storage
 order: 7
 language: de
-sourceHash: "91f6072e230b059c"
+sourceHash: "c35328105c2f3e8c"
 sourceCommit: "79c84ad044d5730b6d0a20aaf7b21f21914b6bda"
 ---
 

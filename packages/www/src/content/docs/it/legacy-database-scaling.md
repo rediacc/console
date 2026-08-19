@@ -1,8 +1,11 @@
 ---
-sourceHash: "b15507f1e0da46d2"
+sourceHash: "7131eacdf2a43da5"
 title: Scalabilità dei Database Legacy
 description: Scala i database legacy senza migrazione sfruttando la replica dei dati in tempo reale e la distribuzione delle query.
 category: Use Cases
+tags:
+  - migration
+  - forking
 order: 3
 language: it
 ---

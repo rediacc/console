@@ -2,9 +2,12 @@
 title: Recupero nel Tempo
 description: "Recupera dati eliminati settimane fa tramite snapshot btrfs, anche dopo che i tuoi backup normali li hanno già sovrascritti."
 category: Use Cases
+tags:
+  - backup
+  - storage
 order: 2
 language: it
-sourceHash: "e55d51b8df91b20f"
+sourceHash: "2fce69fb1631f640"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 

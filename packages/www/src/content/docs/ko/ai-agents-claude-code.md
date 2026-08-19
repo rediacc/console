@@ -2,9 +2,12 @@
 title: Claude Code 설정 가이드
 description: 자율적인 Rediacc 인프라 관리를 위한 Claude Code 구성 단계별 가이드.
 category: Guides
+tags:
+  - ai-agents
+  - cli
 order: 31
 language: ko
-sourceHash: "c0034de091da3349"
+sourceHash: "2c925f7e46d63e9a"
 sourceCommit: "23543669cd22bce3f14d69a0886bac8a12061412"
 ---
 

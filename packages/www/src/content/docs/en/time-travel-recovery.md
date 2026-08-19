@@ -2,6 +2,9 @@
 title: Time Travel Recovery
 description: "Recover data deleted weeks ago using btrfs snapshots, even after your normal backups have rolled past it."
 category: Use Cases
+tags:
+  - backup
+  - storage
 order: 2
 language: en
 ---

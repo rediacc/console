@@ -2,9 +2,12 @@
 title: "Hub"
 description: "توفير بيئات حاويات مصادق عليها لكل مستخدم مع Docker daemon خاص لكل مستخدم واختيار قوالب متعددة ونقاط حفظ/استعادة CRIU وسجلات تدقيق وجمع مهملات جذور البيانات."
 category: "Guides"
+tags:
+  - containers
+  - security
 order: 14
 language: ar
-sourceHash: "6fa16a1c73af497e"
+sourceHash: "fb8ab2f49f1a395b"
 sourceCommit: "b997ae00deb9e814edaf2fc449f4d9e36cfafe81"
 ---
 

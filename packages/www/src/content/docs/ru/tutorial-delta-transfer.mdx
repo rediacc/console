@@ -2,22 +2,23 @@
 title: "Дельта-передача"
 description: "Первая отправка на другую машину копирует всё; каждая следующая передаёт только изменившиеся блоки – автоматически."
 category: "Tutorials"
+tags:
+  - backup
+  - storage
 subcategory: advanced
 order: 17
 language: ru
-sourceHash: "6dabbcbb0670ac60"
+sourceHash: "1fd12000a2875e6d"
 sourceCommit: "3fb35b9a33c7e8ec6753ecd56231f2018e8f4803"
 ---
 
 import TutorialStep from '../../../components/tutorial/TutorialStep.astro';
 
+![Tutorial: Delta transfer](/assets/tutorials/tutorial-delta-transfer.cast)
+
 # Дельта-передача
 
 Отправьте репозиторий на другую машину дважды. Первая отправка несёт всё. Вторая – только изменившееся: та же команда, без флагов, без учётной записи. И принимать это на веру не нужно, потому что вывод команды push печатает ровно столько, сколько было передано.
-
-## Смотреть урок
-
-![Tutorial: Delta transfer](/assets/tutorials/tutorial-delta-transfer.cast)
 
 ## Блоки, не байты
 

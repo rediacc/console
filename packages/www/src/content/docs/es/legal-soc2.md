@@ -2,9 +2,11 @@
 title: "Cumplimiento de SOC 2"
 description: "Aquí está el punto sobre SOC 2: los auditores quieren evidencia de que tus controles funcionan. Rediacc te proporciona los registros, el rastro de gestión de cambios y todo lo demás que van a pedir."
 category: "Legal"
+tags:
+  - compliance
 order: 2
 language: es
-sourceHash: "28b4309f81f43d8d"
+sourceHash: "8ccd82a1265e268e"
 sourceCommit: "5fab1177d6ceae5211c25cf8fa0176d67259d40e"
 ---
 

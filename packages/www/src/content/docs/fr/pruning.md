@@ -2,9 +2,12 @@
 title: "Nettoyage"
 description: "Supprimer les sauvegardes orphelines, les snapshots obsolètes, les images de dépôt et les résidus de configuration locale pour récupérer de l'espace disque et garder un état cohérent."
 category: "Guides"
+tags:
+  - storage
+  - operations
 order: 12
 language: fr
-sourceHash: "928f117282b38484"
+sourceHash: "7d9a82ee410c420a"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 

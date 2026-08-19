@@ -2,9 +2,12 @@
 title: Rediacc 规则
 description: 在 Rediacc 平台上构建应用程序的基本规则和约定。涵盖 Rediaccfile、compose、网络、存储、CRIU 和部署。
 category: Guides
+tags:
+  - containers
+  - networking
 order: 5
 language: zh
-sourceHash: "1ceb078c7eb045b7"
+sourceHash: "d57f030a95892e39"
 sourceCommit: "20f014619af1ee41e75cd46a3c8e4abc5add0983"
 ---
 

@@ -2,9 +2,12 @@
 title: الأجهزة الافتراضية التجريبية
 description: إنشاء مجموعات أجهزة افتراضية محلية للتطوير والاختبار باستخدام rdc ops.
 category: Concepts
+tags:
+  - operations
+  - containers
 order: 2
 language: ar
-sourceHash: aafca00c006ded0b
+sourceHash: 5fad635a61089758
 ---
 
 # الأجهزة الافتراضية التجريبية

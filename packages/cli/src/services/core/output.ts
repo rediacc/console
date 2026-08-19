@@ -29,6 +29,104 @@ interface TableColumn {
   format?: (value: unknown) => string;
 }
 
+/**
+ * cli-table3's `colWidths` are FULL cell widths: they already include the one
+ * space of padding on each side. Only the `│` separators are extra, and there
+ * are (columns + 1) of them. Modelling the padding as extra chrome instead
+ * under-sizes every column and ellipsises content that had room -- measured:
+ * a 107-column budget produced an 87-column table of "Vers…"/"Adap…"/"1880…".
+ */
+const CELL_PADDING = 2;
+/** Below this a column shows nothing useful, so stop shrinking and overflow honestly. */
+const MIN_COL_WIDTH = 8;
+
+/**
+ * Columns available on the destination terminal.
+ *
+ * Not a TTY (a pipe, a CI log, an asciinema recording harness) has no width, so
+ * fall back to the POSIX default of 80 rather than to "unlimited" -- unlimited
+ * is what produced the 147-column table that no terminal could hold.
+ */
+export function terminalWidth(): number {
+  const cols = process.stdout.columns;
+  if (typeof cols === 'number' && cols > 0) return cols;
+  const env = Number.parseInt(process.env.COLUMNS ?? '', 10);
+  return Number.isFinite(env) && env > 0 ? env : 80;
+}
+
+/**
+ * Per-column widths that make the table fit `budget`, or null to let cli-table3
+ * size it naturally when it already fits.
+ *
+ * Shrinks the widest column repeatedly rather than scaling everything down, so
+ * a table blown out by one long id (a 36-char GUID) keeps its short columns
+ * intact instead of wrapping every one of them.
+ */
+export function fitColumnWidths(
+  cols: { key: string; header: string }[],
+  items: Record<string, unknown>[],
+  budget: number
+): number[] | undefined {
+  const natural = cols.map(
+    (c) =>
+      Math.max(
+        c.header.length,
+        ...items.map((it) => {
+          const v = it[c.key];
+          return v === null || v === undefined ? 0 : String(v).length;
+        })
+      ) + CELL_PADDING
+  );
+  const chrome = cols.length + 1; // the `│` separators, nothing else
+  const total = () => natural.reduce((a, b) => a + b, 0) + chrome;
+  if (total() <= budget) return undefined;
+
+  // Shrink the current widest column by one until it fits or nothing can give.
+  let guard = 10_000;
+  while (total() > budget && guard-- > 0) {
+    let widest = 0;
+    for (let i = 1; i < natural.length; i++) if (natural[i] > natural[widest]) widest = i;
+    if (natural[widest] <= MIN_COL_WIDTH) break;
+    natural[widest] -= 1;
+  }
+  return natural;
+}
+
+/**
+ * Break prose to `width`, on spaces only.
+ *
+ * A token longer than the width (a URL, a GUID, a path) is left INTACT on its own
+ * line: breaking those makes them uncopyable, which is worse than one long line.
+ * Existing newlines are preserved, so multi-line messages keep their shape.
+ *
+ * Wrapping happens before colouring. Doing it after would slice through a chalk
+ * escape sequence and leave the colour open across the break.
+ */
+function wrapParagraph(paragraph: string, width: number): string[] {
+  if (paragraph.length <= width) return [paragraph];
+  // Keep any leading indent on continuation lines so lists stay aligned.
+  const indent = /^\s*/.exec(paragraph)?.[0] ?? '';
+  const out: string[] = [];
+  let line = '';
+  for (const word of paragraph.trimStart().split(/\s+/)) {
+    const candidate = line ? `${line} ${word}` : `${indent}${word}`;
+    // `line === ''` keeps an over-long token INTACT on its own line.
+    if (candidate.length <= width || line === '') {
+      line = candidate;
+    } else {
+      out.push(line);
+      line = `${indent}${word}`;
+    }
+  }
+  if (line) out.push(line);
+  return out;
+}
+
+export function wrapProse(text: string, width: number): string[] {
+  if (width <= 0) return [text];
+  return text.split('\n').flatMap((paragraph) => wrapParagraph(paragraph, width));
+}
+
 class OutputService {
   private readonly ttyColor: boolean;
   /** Used when no request context is active: the CLI, one command per process. */
@@ -68,6 +166,22 @@ class OutputService {
     const context = currentRequestContext();
     if (context) context.stderr.push(text);
     else console.error(text);
+  }
+
+  /**
+   * Human-facing prose, wrapped to the terminal.
+   *
+   * Not wrapped when a request context is active: that buffer feeds the JSON
+   * envelope consumed by the console and MCP, where inserted newlines would be
+   * data corruption rather than layout.
+   */
+  private writeProse(message: string, paint: (line: string) => string): void {
+    const context = currentRequestContext();
+    if (context) {
+      context.stderr.push(message);
+      return;
+    }
+    for (const line of wrapProse(message, terminalWidth())) console.error(paint(line));
   }
 
   setQuiet(quiet: boolean): void {
@@ -174,6 +288,20 @@ class OutputService {
     }
 
     const Table = loadTable();
+    // Without these two, a table wider than the terminal is emitted at its
+    // natural width and the TERMINAL wraps it: the overflowing columns land
+    // on the next physical line and interleave with the row below, which
+    // shreds the box-drawing borders into unreadable noise. `rdc config show`
+    // is 147 columns and did exactly that on any terminal narrower than that,
+    // including every recorded tutorial (107 cols) and any 80-column SSH
+    // session. wordWrap makes cli-table3 wrap INSIDE each cell instead.
+    //
+    // colWidths must be OMITTED, not passed as undefined, when the table already
+    // fits. cli-table3 reads options.colWidths[0] unconditionally, so an explicit
+    // undefined throws "Cannot read properties of undefined (reading '0')" and
+    // takes down every table narrow enough to need no shrinking - which is most
+    // of them.
+    const widths = fitColumnWidths(cols, items, terminalWidth());
     const table = new Table({
       head: cols.map((c) => this.bold(c.header)),
       style: {
@@ -181,6 +309,8 @@ class OutputService {
         border: [],
       },
       colAligns: cols.map((c) => c.align ?? DEFAULTS.UI.TABLE_ALIGN),
+      ...(widths ? { colWidths: widths } : {}),
+      wordWrap: true,
     });
 
     for (const item of items) {
@@ -222,17 +352,17 @@ class OutputService {
   // Convenience methods for colored output (stderr to avoid polluting data output)
   success(message: string): void {
     if (this.state.quiet) return;
-    this.writeErr(this.colorEnabled ? chalk.green(message) : message);
+    this.writeProse(message, (line) => (this.colorEnabled ? chalk.green(line) : line));
   }
 
   error(message: string): void {
-    this.writeErr(this.colorEnabled ? chalk.red(message) : message);
+    this.writeProse(message, (line) => (this.colorEnabled ? chalk.red(line) : line));
   }
 
   warn(message: string): void {
     this.state.warnings.push(message);
     if (this.state.quiet) return;
-    this.writeErr(this.colorEnabled ? chalk.yellow(message) : message);
+    this.writeProse(message, (line) => (this.colorEnabled ? chalk.yellow(line) : line));
   }
 
   info(message: string): void {
@@ -241,7 +371,7 @@ class OutputService {
     // terminal backgrounds. The default chalk.blue (ANSI 4) renders as a
     // dark navy on standard 16-color palettes and was reported unreadable
     // against black backgrounds (see `rdc repo template list` output).
-    this.writeErr(this.colorEnabled ? chalk.blueBright(message) : message);
+    this.writeProse(message, (line) => (this.colorEnabled ? chalk.blueBright(line) : line));
   }
 
   dim(text: string): string {

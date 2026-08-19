@@ -2,9 +2,11 @@
 title: "Ce que la conformité requiert vraiment"
 description: "Rediacc s'exécute sur votre infrastructure. Vous contrôlez vos données. Voici comment cela s'aligne avec les principaux cadres de conformité."
 category: "Legal"
+tags:
+  - compliance
 order: 0
 language: fr
-sourceHash: "e6044a3b067b54d5"
+sourceHash: "f3c999aa355997c6"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 

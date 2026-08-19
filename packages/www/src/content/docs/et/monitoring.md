@@ -2,9 +2,11 @@
 title: "Jälgimine"
 description: "Jälgige masina tervist, konteinereid, teenuseid, hoidlaid ning käivitage diagnostikat."
 category: "Guides"
+tags:
+  - operations
 order: 9
 language: et
-sourceHash: "ab050e731db18848"
+sourceHash: "9c5882697da43a8f"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 

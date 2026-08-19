@@ -2,10 +2,12 @@
 title: "Ramificación tipo git"
 description: "Trate las bifurcaciones de copia en escritura como commits de git: congele una bifurcación en un commit inmutable, nombre ramas, revise commits en bifurcaciones escribibles, recorra el historial y fusione sin mutar nunca un repositorio activo."
 category: Reference
-subcategory: advanced
+tags:
+  - forking
+  - repositories
 order: 41
 language: es
-sourceHash: "b8bd3176ecabfa4b"
+sourceHash: "7aaa25bc83dfcf5b"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 

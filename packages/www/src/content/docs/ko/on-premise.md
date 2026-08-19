@@ -2,9 +2,12 @@
 title: "온프레미스 설치"
 description: "자체 인프라에서 계정 서버 및 CLI 배포를 실행하는 방법입니다."
 category: "Guides"
+tags:
+  - account
+  - operations
 order: 5
 language: ko
-sourceHash: "f05bd90f123befad"
+sourceHash: "2c3ac4a96a028b3f"
 sourceCommit: "018665c7c35e0bea3349818b12a5906828240a29"
 ---
 

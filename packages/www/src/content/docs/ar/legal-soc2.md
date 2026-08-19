@@ -2,9 +2,11 @@
 title: "الامتثال لـ SOC 2"
 description: "الحقيقة بشأن SOC 2: المدققون يريدون أدلة على أن ضوابطك تعمل بفعالية. يوفر Rediacc السجلات وأثر إدارة التغييرات وكل ما سيطلبونه."
 category: "Legal"
+tags:
+  - compliance
 order: 2
 language: ar
-sourceHash: "28b4309f81f43d8d"
+sourceHash: "8ccd82a1265e268e"
 sourceCommit: "5fab1177d6ceae5211c25cf8fa0176d67259d40e"
 ---
 

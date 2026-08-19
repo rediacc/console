@@ -2,9 +2,12 @@
 title: JSON-väljundi viide
 description: Täielik viide rdc CLI JSON-väljundi formaadi, ümbriku skeemi, veakäsitluse ja agendi avastamiskäskude jaoks.
 category: Reference
+tags:
+  - ai-agents
+  - cli
 order: 51
 language: et
-sourceHash: "cc88f8f06960df3a"
+sourceHash: "36ba86893c3817ac"
 sourceCommit: "23543669cd22bce3f14d69a0886bac8a12061412"
 ---
 

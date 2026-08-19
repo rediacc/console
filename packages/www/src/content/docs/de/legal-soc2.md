@@ -2,9 +2,11 @@
 title: "SOC 2-Konformität"
 description: "Das ist der Knackpunkt bei SOC 2: Auditoren brauchen Nachweise, dass Ihre Controls funktionieren. Rediacc liefert Ihnen die Logs, den Änderungsmanagement-Trail und alles andere, das Auditoren fragen werden."
 category: "Legal"
+tags:
+  - compliance
 order: 2
 language: de
-sourceHash: "28b4309f81f43d8d"
+sourceHash: "8ccd82a1265e268e"
 sourceCommit: "5fab1177d6ceae5211c25cf8fa0176d67259d40e"
 ---
 

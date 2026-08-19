@@ -71,6 +71,16 @@
     "error": "エラーが発生しました。もう一度お試しください。",
     "close": "閉じる"
   },
+  "documentation": {
+    "categories": {
+      "tutorials": "チュートリアル",
+      "guides": "ガイド",
+      "concepts": "コンセプト",
+      "reference": "リファレンス",
+      "useCases": "ユースケース",
+      "legal": "法務"
+    }
+  },
   "footer": {
     "columns": {
       "product": "製品",
@@ -147,7 +157,9 @@
       }
     },
     "forAiAgents": "AIエージェント向け",
-    "account": "アカウント"
+    "account": "アカウント",
+    "learn": "学ぶ",
+    "browseAllDocs": "すべてのドキュメントを見る"
   },
   "newsletter": {
     "title": "メールマガジン",

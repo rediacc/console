@@ -2,9 +2,11 @@
 title: "故障排除"
 description: "SSH、设置、仓库、服务和 Docker 常见问题的修复方法。"
 category: "Guides"
+tags:
+  - operations
 order: 10
 language: zh
-sourceHash: "429b4004d99c37e6"
+sourceHash: "7a4072220b0985f8"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 

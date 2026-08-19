@@ -2,22 +2,23 @@
 title: "ライブマイグレーション"
 description: "実行中のリポジトリ（コンテナ、データベース、プロセスメモリを含む）を1つのコマンドで別のマシンへ移行します。ダウンタイムは最小限です。"
 category: "Tutorials"
+tags:
+  - migration
+  - containers
 subcategory: advanced
 order: 16
 language: ja
-sourceHash: "0d0c4df847c6ba17"
+sourceHash: "6b14c6eb4a0b643a"
 sourceCommit: "3fb35b9a33c7e8ec6753ecd56231f2018e8f4803"
 ---
 
 import TutorialStep from '../../../components/tutorial/TutorialStep.astro';
 
+![チュートリアル: ライブマイグレーション](/assets/tutorials/tutorial-live-migration.cast)
+
 # ライブマイグレーション
 
 サーバーは交換が必要になります。ハードウェアの老朽化、プロバイダーの変更、リージョンの移動。`rdc repo migrate` は実行中のリポジトリを1つのコマンドで別のマシンへ移行します。`--checkpoint` を使えばプロセスメモリも一緒に運べます。デモアプリの `pulse` はカウンターをメモリに保持しており、移行後もリセットせずにカウントを続けます。
-
-## チュートリアル動画
-
-![チュートリアル: ライブマイグレーション](/assets/tutorials/tutorial-live-migration.cast)
 
 ## 移行の仕組み
 

@@ -2,9 +2,12 @@
 title: "自動起動と回復"
 description: "自動起動の仕組み、ブート後に停止したリポジトリを回復する定期リコンサイラー、および回復状態の確認方法。"
 category: "Guides"
+tags:
+  - operations
+  - containers
 order: 5
 language: ja
-sourceHash: "62148f7a55752783"
+sourceHash: "0a87131bd0d87a34"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 

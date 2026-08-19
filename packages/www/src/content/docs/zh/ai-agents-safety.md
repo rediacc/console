@@ -3,9 +3,12 @@ title: AI 智能体安全与防护机制
 description: >-
   Rediacc CLI 如何防止 AI 编程助手泄露密钥、覆盖凭据或提升权限。知识门控、脱敏处理、祖先验证覆盖以及哈希链接审计日志。
 category: Concepts
+tags:
+  - ai-agents
+  - security
 order: 35
 language: zh
-sourceHash: "5dac7c4162cbbb8e"
+sourceHash: "e008783008d8e887"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 

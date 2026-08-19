@@ -2,9 +2,12 @@
 title: "Instalación en Infraestructura Propia"
 description: "Ejecutar el servidor de cuentas y la distribución del CLI en tu propia infraestructura."
 category: "Guides"
+tags:
+  - account
+  - operations
 order: 5
 language: es
-sourceHash: "f05bd90f123befad"
+sourceHash: "2c3ac4a96a028b3f"
 sourceCommit: "018665c7c35e0bea3349818b12a5906828240a29"
 ---
 

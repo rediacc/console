@@ -3,9 +3,12 @@ title: ترقيات خالية من المخاطر
 description: >-
   اختبر ترقيات قاعدة البيانات دون المخاطرة باستخدام الاستنساخ الفوري واللقطات كل ساعة.
 category: Use Cases
+tags:
+  - forking
+  - backup
 order: 4
 language: ar
-sourceHash: "242617b8bede9535"
+sourceHash: "852e967b9d505861"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 

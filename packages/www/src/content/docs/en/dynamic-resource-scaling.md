@@ -2,6 +2,9 @@
 title: Dynamic Resource Scaling
 description: Build cloud architecture with limitless flexibility for AI training and dynamic workloads.
 category: Use Cases
+tags:
+  - storage
+  - operations
 order: 1
 language: en
 ---

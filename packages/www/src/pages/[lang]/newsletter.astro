@@ -113,6 +113,14 @@ const breadcrumbItems = [
     font-size: var(--font-size-base);
   }
 
+  /* Both banners are toggled by the `hidden` attribute, above and in the script below, and
+     `display` outranks the UA sheet's `[hidden] { display: none }`. Without this rule the
+     two mutually exclusive states painted TOGETHER on every visit: a first-time reader was
+     told the subscription was confirmed and that they had unsubscribed, at once. */
+  .newsletter-banner[hidden] {
+    display: none;
+  }
+
   .newsletter-banner-success {
     background: rgba(40, 167, 69, 0.1);
     color: var(--color-success);

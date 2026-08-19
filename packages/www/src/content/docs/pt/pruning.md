@@ -2,9 +2,12 @@
 title: "Pruning"
 description: "Remover backups órfãos, snapshots obsoletos, imagens de repositório e resíduos da config local para recuperar espaço em disco e manter a coerência do estado."
 category: "Guides"
+tags:
+  - storage
+  - operations
 order: 12
 language: pt
-sourceHash: "928f117282b38484"
+sourceHash: "7d9a82ee410c420a"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 

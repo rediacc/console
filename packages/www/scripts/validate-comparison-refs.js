@@ -197,6 +197,101 @@ function validateOffline(translations, errors) {
   }
 }
 
+/**
+ * Stat-callout references, the SECOND ref axis on these pages.
+ *
+ * WHY THIS EXISTS. `validateOffline` walks `comparison.features` and nothing
+ * else, so `problem.statCallouts[].ref` has never been validated by anything.
+ * `SPProblem.astro` resolves a callout's ref against `references.items` and
+ * degrades to unlinked text when it does not resolve, silently: an out-of-range
+ * ref costs that callout its citation and no gate, build or test says a word.
+ * That matters more now that the Sources disclosure makes citations the primary
+ * evidence surface on these pages.
+ *
+ * A SEPARATE LOOP RATHER THAN A BRANCH IN THE EXISTING ONE, and that is the
+ * point rather than a style choice: the comparison loop opens with
+ * `if (!comparison?.features) continue`, so a page with callouts and no
+ * comparison table is skipped entirely. Measured on the current catalog: 3 of
+ * the 25 solution pages are in exactly that state, and folding this in there
+ * would have left them uncovered while looking complete.
+ *
+ * `personaPages` is walked too. It has 12 callouts and, today, zero of them
+ * carry a `ref` at all, so this contributes an empty backlog rather than
+ * findings. It is included because the shape is identical and a future ref
+ * added there would otherwise be unwatched. (Note for anyone reading
+ * `SPProblem.astro`: its comment asserts personaPages "carries `ref` numbers".
+ * That is not true of the catalog as it stands.)
+ *
+ * `ref: 0` IS VALID AND MEANS "no citation", matching the sentinel the
+ * comparison axis already documents at the top of this file. One callout uses
+ * it today. Treating 0 as an error here would contradict the rule one function
+ * up and manufacture a finding out of correct data.
+ */
+function validateStatCallouts(translations, errors) {
+  const groups = [
+    ['solutionPages', translations?.pages?.solutionPages],
+    ['personaPages', translations?.pages?.personaPages],
+  ];
+  for (const [groupName, pages] of groups) {
+    if (!pages) continue;
+    for (const [pageKey, pageData] of Object.entries(pages)) {
+      const callouts = pageData?.problem?.statCallouts;
+      if (!Array.isArray(callouts)) continue;
+      const refItems = pageData?.references?.items ?? [];
+      const file = `${groupName}.${pageKey}`;
+
+      for (let ci = 0; ci < callouts.length; ci++) {
+        const callout = callouts[ci];
+        if (!callout || typeof callout !== 'object' || !('ref' in callout)) continue;
+        const ref = callout.ref;
+        const calloutPath = `${file}.problem.statCallouts[${ci}]`;
+        const claim = displayText(String(callout.text ?? '').slice(0, 60), '(no text)');
+
+        if (typeof ref !== 'number' || !Number.isInteger(ref) || ref < 0) {
+          addError(
+            errors,
+            'invalid-statcallout-ref',
+            calloutPath,
+            0,
+            `Callout "${claim}" has ref = ${JSON.stringify(ref)}, which is not a whole number >= 0`,
+            `ref: ${JSON.stringify(ref)}`,
+            'Each ref must be 0 (no citation) or a positive 1-based index into references.items'
+          );
+          continue;
+        }
+        if (ref === 0) continue; // the documented "no citation" sentinel
+
+        if (ref > refItems.length) {
+          addError(
+            errors,
+            'invalid-statcallout-ref',
+            calloutPath,
+            0,
+            `Callout "${claim}" has ref = ${ref} but references.items holds ${refItems.length} item(s)`,
+            `ref: ${ref}`,
+            refItems.length === 0
+              ? 'This page has no references.items at all, so no ref can resolve. Add the sources, or set ref to 0.'
+              : `Use a ref between 1 and ${refItems.length}, or 0 for no citation`
+          );
+          continue;
+        }
+        const item = refItems[ref - 1];
+        if (!item?.url || String(item.url).trim() === '') {
+          addError(
+            errors,
+            'missing-statcallout-ref-url',
+            calloutPath,
+            0,
+            `Callout "${claim}" cites references.items[${ref - 1}], which has no url`,
+            `ref: ${ref} -> "${displayText(String(item?.text ?? '').slice(0, 60), '(unknown)')}"`,
+            'A cited source needs a url, or the marker links the reader to nothing'
+          );
+        }
+      }
+    }
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Online validation rules
 // ---------------------------------------------------------------------------
@@ -428,6 +523,7 @@ Rules (--online only):
 
   // Offline checks
   validateOffline(translations, errors);
+  validateStatCallouts(translations, errors);
 
   // Online checks
   if (online) {

@@ -2,9 +2,12 @@
 title: "Ambientes de Desenvolvimento Semelhantes à Produção em Minutos"
 description: "Reduza a configuração de ambientes de desenvolvimento de dias para minutos com deduplicação ao nível de bloco."
 category: Use Cases
+tags:
+  - forking
+  - storage
 order: 7
 language: pt
-sourceHash: "2aa115fc621f5258"
+sourceHash: "a9c98112fe890a13"
 sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 ---
 

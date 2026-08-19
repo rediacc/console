@@ -1,0 +1,104 @@
+---
+/**
+ * The citation list, collapsed.
+ *
+ * Round 3 stacked every source under the stat callout it belonged to, which put 166px of
+ * bibliography in the middle of the problem section. The sources are still the reason to
+ * believe the numbers, so they stay on the page: they move here, to the last content
+ * section before the black zone, behind a disclosure that is CLOSED on load.
+ *
+ * A native `<details>` carries the open/close state, the keyboard handling and the summary's
+ * button semantics on its own, so there is no component state and nothing for a script to
+ * get wrong. A `ref` marker on a stat callout is a plain fragment link to an `<li>` id below.
+ *
+ * THE ONE THING THE BROWSER DOES NOT DO, MEASURED not assumed. The plan for this component
+ * was zero JS, on the understanding that navigating to a fragment inside a closed `<details>`
+ * makes the browser reveal it. Chrome 145 does that for a LOAD carrying the fragment and for
+ * a `location.hash` assignment, and does NOT do it for a CLICK on an in-page anchor: the
+ * click sets `location.hash`, and then `:target` matches nothing and the `<details>` stays
+ * shut. Both halves were driven in a real browser on this page. The inline listener below is
+ * the whole remedy, and it does not reimplement the reveal -- it re-issues the navigation as
+ * the assignment the browser already handles correctly. With scripting off, a direct link
+ * still opens the disclosure and a marker click still scrolls to the section.
+ *
+ * `items` is `pages.*.references.items[]`, already authored and already translated in all
+ * thirteen catalogs. Round 3 deleted the rendered section but deliberately kept this array,
+ * so nothing new is authored here.
+ */
+interface ReferenceItem {
+  text: string;
+  url: string;
+}
+
+interface Props {
+  items?: ReferenceItem[];
+  /** Localized noun for the disclosure, e.g. "Sources". The count is appended. */
+  title: string;
+}
+
+const { items = [], title } = Astro.props;
+---
+
+{items.length > 0 && (
+  <section class="sp-sources" id="sources">
+    <div class="sp-sources-inner">
+      <details class="sp-sources-details">
+        <summary class="sp-sources-summary">
+          {title}
+          <span class="sp-sources-count">({items.length})</span>
+        </summary>
+        <ol class="sp-sources-list">
+          {items.map((item, i) => (
+            <li class="sp-sources-item" id={`sp-ref-${i + 1}`}>
+              {item.url ? (
+                <a
+                  href={item.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="sp-source-link"
+                >{item.text}</a>
+              ) : item.text}
+            </li>
+          ))}
+        </ol>
+      </details>
+    </div>
+    <script is:inline>
+      document.addEventListener('click', function (event) {
+        var target = event.target;
+        var link = target && target.closest ? target.closest('a.sp-stat-ref') : null;
+        if (!link) return;
+        var hash = link.getAttribute('href') || '';
+        if (hash.charAt(0) !== '#') return;
+        var item = document.getElementById(hash.slice(1));
+        if (!item) return;
+        event.preventDefault();
+        // Re-issuing the same hash is a no-op, so drop it first. `replaceState` rather than
+        // `location.hash = ''` keeps the extra step out of the back button.
+        if (location.hash === hash) {
+          history.replaceState(null, '', location.pathname + location.search);
+        }
+        location.hash = hash;
+        // The browser now smooth-scrolls towards a position it measured before the
+        // disclosure expanded, and lazy images resolving on the way move it again. Measured
+        // on a 390px viewport: the first click landed the entry at the very bottom edge and
+        // the second, on a settled page, centred it. So the landing is corrected once the
+        // browser's own scroll has finished, and ONLY if the entry is not already fully
+        // visible, so a reader who scrolled away on purpose is not yanked back.
+        var settle = function () {
+          var box = item.closest('details');
+          if (box) box.open = true;
+          var rect = item.getBoundingClientRect();
+          if (rect.top < 0 || rect.bottom > window.innerHeight) {
+            item.scrollIntoView({ block: 'center' });
+          }
+        };
+        if ('onscrollend' in window) {
+          window.addEventListener('scrollend', settle, { once: true });
+        } else {
+          setTimeout(settle, 500);
+        }
+      });
+    </script>
+  </section>
+)}

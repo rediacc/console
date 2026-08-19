@@ -2,9 +2,12 @@
 title: Quick Start
 description: Avvia un servizio containerizzato sul tuo server in pochi minuti.
 category: Guides
+tags:
+  - getting-started
+  - containers
 order: -1
 language: it
-sourceHash: "b2745d4f0d99d7a4"
+sourceHash: "05e91da1e94dddfc"
 sourceCommit: "a56b03aa5da8df74255a6bc9bc9463665c3499b6"
 ---
 

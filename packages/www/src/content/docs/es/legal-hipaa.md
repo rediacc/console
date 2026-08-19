@@ -2,9 +2,12 @@
 title: "Cumplimiento de HIPAA"
 description: "Cómo la arquitectura de cifrado y aislamiento de Rediacc se ajusta a los requisitos de salvaguardas de HIPAA para proteger información de salud."
 category: "Legal"
+tags:
+  - compliance
+  - security
 order: 3
 language: es
-sourceHash: "58f208db31474a81"
+sourceHash: "1a0a2df716f6628b"
 sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
 ---
 

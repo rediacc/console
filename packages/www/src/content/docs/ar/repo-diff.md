@@ -2,10 +2,12 @@
 title: "rdc repo diff"
 description: "عرض الفروقات بين مستودعَي نسخ-عند-الكتابة المتشعبَين على مستوى الملف بأسلوب git، من خلال مقارنة صورهما المشفرة على مستوى الكتل، دون الحاجة إلى فك التشفير."
 category: Reference
-subcategory: advanced
+tags:
+  - forking
+  - storage
 order: 40
 language: ar
-sourceHash: "b555f4ca6b58ff4b"
+sourceHash: "6f5ccba93044665a"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 

@@ -2,9 +2,12 @@
 title: Konfigurationsspeicher
 description: Zero-Knowledge-verschlüsselte Konfigurationssynchronisierung mit Passkey, Master-Passwort und Wiederherstellungscode-Entsperrung
 category: Guides
+tags:
+  - account
+  - security
 order: 8
 language: de
-sourceHash: "97c64241ff4c0d81"
+sourceHash: "e4b2eecb8bdf0015"
 sourceCommit: "433347c5ea4754300fe3da80c4bfcee42dd161bc"
 ---
 

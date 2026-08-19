@@ -2,9 +2,12 @@
 title: MCP 服务器设置
 description: 使用模型上下文协议 (MCP) 服务器将 AI 代理连接到 Rediacc 基础设施。
 category: Guides
+tags:
+  - ai-agents
+  - cli
 order: 33
 language: zh
-sourceHash: "d515d5491751e1fe"
+sourceHash: "442b5cfa49239dbc"
 sourceCommit: "20f014619af1ee41e75cd46a3c8e4abc5add0983"
 ---
 

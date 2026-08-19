@@ -2,9 +2,12 @@
 title: "정리(Pruning)"
 description: "고아 백업, 오래된 스냅샷, 리포지터리 이미지, 로컬 config 잔여물을 제거하여 디스크 공간을 확보하고 상태를 일관되게 유지합니다."
 category: "Guides"
+tags:
+  - storage
+  - operations
 order: 12
 language: ko
-sourceHash: "928f117282b38484"
+sourceHash: "7d9a82ee410c420a"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 

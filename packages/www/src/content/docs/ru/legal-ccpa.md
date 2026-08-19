@@ -2,9 +2,11 @@
 title: "Соответствие CCPA"
 description: "Как модель самостоятельного размещения Rediacc соответствует требованиям Закона о конфиденциальности потребителей Калифорнии для защиты данных потребителей."
 category: "Legal"
+tags:
+  - compliance
 order: 4
 language: ru
-sourceHash: "3cee3262b53f7afd"
+sourceHash: "0d297fb9552dcfeb"
 sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
 ---
 

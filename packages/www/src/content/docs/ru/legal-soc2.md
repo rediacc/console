@@ -2,9 +2,11 @@
 title: "Соответствие SOC 2"
 description: "Суть SOC 2: аудиторы ищут доказательства работы ваших контролей. Rediacc предоставляет логи, историю управления изменениями и всё остальное, что они запросят."
 category: "Legal"
+tags:
+  - compliance
 order: 2
 language: ru
-sourceHash: "28b4309f81f43d8d"
+sourceHash: "8ccd82a1265e268e"
 sourceCommit: "5fab1177d6ceae5211c25cf8fa0176d67259d40e"
 ---
 

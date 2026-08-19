@@ -2,9 +2,12 @@
 title: "Backup e Restauro"
 description: "Faça snapshot de repositórios encriptados para um armazenamento em chunks endereçado por conteúdo, onde só as células alteradas são enviadas e cada snapshot restaura diretamente. Ou mantenha uma cópia noutra máquina. Restaure em qualquer lugar, e automatize com estratégias nomeadas e temporizadores systemd."
 category: "Guides"
+tags:
+  - backup
+  - storage
 order: 7
 language: pt
-sourceHash: "91f6072e230b059c"
+sourceHash: "c35328105c2f3e8c"
 sourceCommit: "79c84ad044d5730b6d0a20aaf7b21f21914b6bda"
 ---
 

@@ -98,11 +98,17 @@
     "title": "联系我们"
   },
   "documentation": {
-    "theme": {
-      "label": "主题",
-      "light": "浅色",
-      "dark": "深色",
-      "auto": "自动"
+    "browse": {
+      "clear": "清除筛选",
+      "description": "所有指南、教程和参考资料，一站汇总。",
+      "empty": "没有符合此筛选条件的文档。",
+      "filterHeading": "筛选",
+      "filterLabel": "按分类筛选",
+      "searchLabel": "搜索文档",
+      "searchPlaceholder": "搜索标题和描述",
+      "showDescription": "显示描述",
+      "title": "文档",
+      "topicLabel": "按主题筛选"
     },
     "categories": {
       "concepts": "概念",
@@ -115,14 +121,36 @@
     "cliReference": "CLI 参考",
     "cliReferenceLabel": "CLI参考：",
     "copied": "已复制！",
-    "copyCode": "复制代码",
     "copyAsMarkdown": "复制为Markdown",
+    "copyCode": "复制代码",
     "copyFullPageAriaLabel": "将整页复制为Markdown",
     "openInNewTab": "在新标签页中打开",
     "searchDocs": "搜索文档",
     "subcategories": {
       "advanced": "进阶",
       "essentials": "基础"
+    },
+    "tags": {
+      "account": "账户",
+      "aiAgents": "AI 代理",
+      "backup": "备份",
+      "cli": "CLI",
+      "compliance": "合规",
+      "containers": "容器",
+      "forking": "克隆",
+      "gettingStarted": "入门",
+      "migration": "迁移",
+      "networking": "网络",
+      "operations": "操作",
+      "repositories": "仓库",
+      "security": "安全",
+      "storage": "存储"
+    },
+    "theme": {
+      "auto": "自动",
+      "dark": "深色",
+      "label": "主题",
+      "light": "浅色"
     }
   },
   "footer": {
@@ -193,9 +221,9 @@
     }
   },
   "navigation": {
-    "moreOptions": "更多选项",
     "account": "账户",
     "blog": "博客",
+    "browseAllDocs": "浏览全部文档",
     "builtForYou": "为您打造",
     "builtForYourRole": "为您的角色打造",
     "contact": "联系我们",
@@ -210,7 +238,9 @@
     "home": "首页",
     "install": "安装",
     "languageSelectionMenu": "语言选择菜单",
+    "learn": "学习",
     "login": "登录",
+    "moreOptions": "更多选项",
     "partners": "合作伙伴",
     "personas": {
       "ai-agent": {
@@ -564,14 +594,14 @@
         "title": "灾难恢复定价和基础保护方案 - 为企业提供简单透明的完整备份和业务恢复保护 | Rediacc"
       },
       "plans": {
+        "assessment": {
+          "name": "恢复评估"
+        },
         "program": {
           "name": "恢复计划"
         },
         "retainer": {
           "name": "恢复顾问服务"
-        },
-        "assessment": {
-          "name": "恢复评估"
         }
       },
       "psTeaser": {
@@ -606,6 +636,11 @@
         ],
         "recoveryNote": "RPO（恢复点目标）：您可以承受丢失多少数据，按时间衡量。例如，15分钟RPO意味着您可能会丢失最多15分钟的最近更改。\n\nRTO（恢复时间目标）：灾难发生后您需要多快恢复在线。例如，4小时RTO意味着您的系统将在4小时内恢复。",
         "values": {
+          "assessment": {
+            "auditLogs": "30天",
+            "rpo": "约 15 分钟",
+            "rto": "时间点恢复"
+          },
           "program": {
             "auditLogs": "90天",
             "rpo": "~5 分钟（连续）",
@@ -615,11 +650,6 @@
             "auditLogs": "1年以上",
             "rpo": "自定义（接近于零）",
             "rto": "15-60 分钟（定制）"
-          },
-          "assessment": {
-            "auditLogs": "30天",
-            "rpo": "约 15 分钟",
-            "rto": "时间点恢复"
           }
         }
       },
@@ -630,14 +660,14 @@
         "contactUs": "联系我们",
         "contactUsSub": "自定义限制和条款",
         "cta": {
+          "assessment": {
+            "primary": "开始免费试用"
+          },
           "program": {
             "primary": "开始免费试用"
           },
           "retainer": {
             "primary": "预约演示"
-          },
-          "assessment": {
-            "primary": "开始免费试用"
           }
         }
       }
@@ -1840,47 +1870,47 @@
     "pricing": {
       "comparison": {
         "allPlansInclude": "所有方案均包含：用户与团队不限、仓库数量不限、快照恢复、持续数据保护、地理冗余存储、LUKS 加密、审计日志、基于角色的访问、手动与自动调度，以及集成 API。",
-        "rows": [
-          {
-            "label": "专属客户经理",
-            "professional": false,
-            "business": true,
-            "enterprise": true
-          },
-          {
-            "label": "电话支持",
-            "professional": false,
-            "business": true,
-            "enterprise": true
-          },
-          {
-            "label": "24/7/365 全天候支持",
-            "professional": false,
-            "business": false,
-            "enterprise": true
-          },
-          {
-            "label": "高管支持升级",
-            "professional": false,
-            "business": false,
-            "enterprise": true
-          },
-          {
-            "label": "安全评审",
-            "professional": false,
-            "business": false,
-            "enterprise": true
-          },
-          {
-            "label": "自定义工作流",
-            "professional": false,
-            "business": false,
-            "enterprise": true
-          }
-        ],
         "heading": "查看套餐详细对比",
         "included": "包含",
-        "notIncluded": "不包含"
+        "notIncluded": "不包含",
+        "rows": [
+          {
+            "business": true,
+            "enterprise": true,
+            "label": "专属客户经理",
+            "professional": false
+          },
+          {
+            "business": true,
+            "enterprise": true,
+            "label": "电话支持",
+            "professional": false
+          },
+          {
+            "business": false,
+            "enterprise": true,
+            "label": "24/7/365 全天候支持",
+            "professional": false
+          },
+          {
+            "business": false,
+            "enterprise": true,
+            "label": "高管支持升级",
+            "professional": false
+          },
+          {
+            "business": false,
+            "enterprise": true,
+            "label": "安全评审",
+            "professional": false
+          },
+          {
+            "business": false,
+            "enterprise": true,
+            "label": "自定义工作流",
+            "professional": false
+          }
+        ]
       },
       "edgeChannel": {
         "cta": "探索 Edge 渠道",
@@ -2976,8 +3006,6 @@
     },
     "solutionPages": {
       "aiPentesting": {
-        "label": "AI 渗透测试",
-        "blurb": "克隆生产环境，让 AI 发起攻击。",
         "benefits": {
           "items": [
             {
@@ -2999,6 +3027,7 @@
           "overline": "重要意义",
           "title": "您将获得什么"
         },
+        "blurb": "克隆生产环境，让 AI 发起攻击。",
         "bottomCta": {
           "command": "rdc repo fork production --tag pentest",
           "ctaText": "免费开始",
@@ -3104,6 +3133,7 @@
           ],
           "title": "一条命令，零风险。"
         },
+        "label": "AI 渗透测试",
         "meta": {
           "description": "创建基础设施的完全副本，运行 AI 驱动的自动化渗透测试和全面安全扫描，精准发现潜在安全漏洞，全程不影响生产环境。",
           "keywords": "AI 渗透测试, 渗透测试, 安全测试, 漏洞扫描, 克隆攻击",
@@ -3239,8 +3269,6 @@
         }
       },
       "auditTrail": {
-        "label": "审计追踪",
-        "blurb": "每项操作都有记录，无任何隐藏。",
         "benefits": {
           "items": [
             {
@@ -3262,6 +3290,7 @@
           "overline": "重要意义",
           "title": "您将获得什么"
         },
+        "blurb": "每项操作都有记录，无任何隐藏。",
         "bottomCta": {
           "command": "rdc repo status production",
           "ctaText": "免费开始使用社区版",
@@ -3421,6 +3450,7 @@
           ],
           "title": "一条命令，完全可见。"
         },
+        "label": "审计追踪",
         "meta": {
           "description": "全面了解谁在何时做了什么操作以及原因。每项操作都有防篡改的详细审计日志，确保完全合规性与安全可追溯性。",
           "keywords": "审计追踪, 合规日志, 防篡改日志, SHA-256 签名, 审计报告",
@@ -3592,8 +3622,6 @@
         }
       },
       "backupVerification": {
-        "label": "备份验证",
-        "blurb": "每次备份自动验证",
         "benefits": {
           "items": [
             {
@@ -3615,6 +3643,7 @@
           "overline": "重要意义",
           "title": "您将获得什么"
         },
+        "blurb": "每次备份自动验证",
         "bottomCta": {
           "command": "rdc backup verify my-app",
           "description": "从免费的社区版开始。一分钟内验证你的第一个备份。",
@@ -3775,6 +3804,7 @@
           ],
           "title": "一条命令，零意外。"
         },
+        "label": "备份验证",
         "meta": {
           "description": "不要等到灾难发生才发现备份已损坏。Rediacc 在每个备份创建时自动验证其完整性和可恢复性，确保关键数据随时可用。",
           "keywords": "备份验证, 备份测试, 还原验证, 备份完整性, 自动备份检查, btrfs clone, 备份健康检查",
@@ -3956,8 +3986,6 @@
         }
       },
       "cloudOutageProtection": {
-        "label": "云故障保护",
-        "blurb": "AWS 宕机时，您不受影响",
         "benefits": {
           "items": [
             {
@@ -3979,6 +4007,7 @@
           "overline": "重要意义",
           "title": "您将获得什么"
         },
+        "blurb": "AWS 宕机时，您不受影响",
         "bottomCta": {
           "command": "rdc repo push production --to secondary-dc",
           "description": "从免费的社区版开始。免费跨地域复制。无需信用卡。",
@@ -4140,6 +4169,7 @@
           ],
           "title": "一条命令，始终在线。"
         },
+        "label": "云故障保护",
         "meta": {
           "description": "您的基础设施部署在多个云平台上。当某个云服务发生故障时，其他平台自动无缝接管，确保业务连续性和服务可用。",
           "keywords": "云故障保护, 多云故障转移, 跨云复制, 灾难恢复, 云冗余, 自动故障转移, btrfs 复制",
@@ -4317,8 +4347,6 @@
         }
       },
       "continuousSecurityTesting": {
-        "label": "持续安全测试",
-        "blurb": "持续测试安全性，而非每年一次",
         "benefits": {
           "items": [
             {
@@ -4340,6 +4368,7 @@
           "overline": "重要意义",
           "title": "您将获得什么"
         },
+        "blurb": "持续测试安全性，而非每年一次",
         "bottomCta": {
           "command": "rdc backup restore production --as production-verify -m primary --up",
           "ctaText": "免费开始",
@@ -4440,6 +4469,7 @@
           ],
           "title": "一条命令，每日覆盖。"
         },
+        "label": "持续安全测试",
         "meta": {
           "description": "每天在新鲜的生产环境克隆上运行全面的安全测试。在安全漏洞出现的第一时间及时发现并修复，而非等到数月之后才得知。",
           "keywords": "持续安全测试, 每日渗透测试, 自动化安全, 漏洞检测",
@@ -4575,8 +4605,6 @@
         }
       },
       "dataSovereignty": {
-        "label": "数据主权",
-        "blurb": "您的服务器，您的密钥，您的司法管辖。",
         "benefits": {
           "items": [
             {
@@ -4598,6 +4626,7 @@
           "overline": "重要意义",
           "title": "您将获得什么"
         },
+        "blurb": "您的服务器，您的密钥，您的司法管辖。",
         "bottomCta": {
           "command": "rdc config show",
           "ctaText": "免费开始使用社区版",
@@ -4755,6 +4784,7 @@
           ],
           "title": "三个步骤。一套主权栈。"
         },
+        "label": "数据主权",
         "meta": {
           "description": "您自主托管，您掌握密钥。通过架构设计规避 CLOUD Act 管辖，无需依赖合规证书。Rediacc 自托管备份，客户自管密钥，数据主权由您掌控。",
           "keywords": "数据主权, CLOUD Act豁免, 客户管理密钥, GDPR Schrems II, EU数据法, 自托管, 主权备份, SecNumCloud, DORA",
@@ -4945,8 +4975,6 @@
         "title": "时间有限？"
       },
       "encryption": {
-        "label": "您掌控的加密",
-        "blurb": "您的密钥，您的加密，没有例外。",
         "benefits": {
           "items": [
             {
@@ -4968,6 +4996,7 @@
           "overline": "重要意义",
           "title": "您将获得什么"
         },
+        "blurb": "您的密钥，您的加密，没有例外。",
         "bottomCta": {
           "command": "rdc repo up production",
           "ctaText": "免费开始使用社区版",
@@ -5127,6 +5156,7 @@
           ],
           "title": "一条命令，全面掌控。"
         },
+        "label": "您掌控的加密",
         "meta": {
           "description": "每个备份都使用您自己的加密密钥进行保护。不是厂商的密钥，不是共享密钥，只有您自己才能解密和访问数据。",
           "keywords": "加密, 零知识, 客户持有密钥, AES-256, 备份加密",
@@ -5330,8 +5360,6 @@
         }
       },
       "environmentCloning": {
-        "label": "环境克隆",
-        "blurb": "60 秒克隆生产环境",
         "benefits": {
           "items": [
             {
@@ -5353,6 +5381,7 @@
           "overline": "重要意义",
           "title": "您将获得什么"
         },
+        "blurb": "60 秒克隆生产环境",
         "bottomCta": {
           "command": "rdc repo fork production --tag my-first-clone",
           "description": "从免费的社区版开始。免费克隆最多 10 个工作负载。无需信用卡。",
@@ -5514,6 +5543,7 @@
           ],
           "title": "一条命令，六十秒完成。"
         },
+        "label": "环境克隆",
         "meta": {
           "description": "快速创建生产环境的精确完整副本，包含所有应用、数据库和配置文件，用于开发和测试。无需提交工单审批，无需漫长等待。",
           "keywords": "环境克隆, 生产环境克隆, 开发环境, 即时配置, btrfs clone, copy-on-write, 临时环境",
@@ -5695,8 +5725,6 @@
         }
       },
       "failoverTesting": {
-        "label": "故障转移测试",
-        "blurb": "在需要之前测试您的故障转移",
         "benefits": {
           "items": [
             {
@@ -5718,6 +5746,7 @@
           "overline": "重要意义",
           "title": "您将获得什么"
         },
+        "blurb": "在需要之前测试您的故障转移",
         "bottomCta": {
           "command": "rdc repo push production --to secondary --checkpoint",
           "description": "从免费的社区版开始。5 分钟内运行你的第一次 DR 测试。",
@@ -5878,6 +5907,7 @@
           ],
           "title": "一条命令，完全信心。"
         },
+        "label": "故障转移测试",
         "meta": {
           "description": "安全地运行完整的灾难模拟和故障转移测试。确认您的恢复方案确实有效，在真正需要的关键时刻不会留下任何意外。",
           "keywords": "故障转移测试, 灾难恢复测试, DR 模拟, DR 测试自动化, 恢复验证, btrfs clone, RTO RPO 测试",
@@ -6047,8 +6077,6 @@
         }
       },
       "immutableBackups": {
-        "label": "不可变备份",
-        "blurb": "勒索软件无法触及的备份",
         "benefits": {
           "items": [
             {
@@ -6070,6 +6098,7 @@
           "overline": "重要意义",
           "title": "您将获得什么"
         },
+        "blurb": "勒索软件无法触及的备份",
         "bottomCta": {
           "command": "rdc repo push production --to backup-vault",
           "description": "从免费的社区版开始。免费保护最多 10 个工作负载。无需信用卡。",
@@ -6230,6 +6259,7 @@
           ],
           "title": "一条命令，全面保护。"
         },
+        "label": "不可变备份",
         "meta": {
           "description": "您的备份从创建之日起即完全不可更改。没有任何人能修改或删除它们，黑客不能，内部人员不能，甚至您自己也不能。",
           "keywords": "不可变备份, 勒索软件防护, btrfs 快照, 备份验证, 灾难恢复, copy-on-write, 封存备份",
@@ -6439,8 +6469,6 @@
         }
       },
       "infrastructureCosts": {
-        "label": "基础设施成本",
-        "blurb": "不再为闲置环境付费",
         "benefits": {
           "items": [
             {
@@ -6462,6 +6490,7 @@
           "overline": "重要意义",
           "title": "您将获得什么"
         },
+        "blurb": "不再为闲置环境付费",
         "bottomCta": {
           "command": "rdc repo fork production --tag dev-loadtest",
           "description": "从免费的社区版开始。包含按需克隆功能。",
@@ -6617,6 +6646,7 @@
           ],
           "title": "一条命令，零浪费。"
         },
+        "label": "基础设施成本",
         "meta": {
           "description": "按需创建开发和测试环境，使用完毕即销毁释放资源。只为实际使用的基础设施资源付费，大幅降低运维成本支出。",
           "keywords": "基础设施成本, 闲置环境, 按需环境, 成本优化, btrfs clone, copy-on-write, TTL, 自动销毁",
@@ -6774,8 +6804,6 @@
         }
       },
       "instantRecovery": {
-        "label": "即时恢复",
-        "blurb": "分钟级完整环境恢复",
         "benefits": {
           "items": [
             {
@@ -6797,6 +6825,7 @@
           "overline": "重要意义",
           "title": "您将获得什么"
         },
+        "blurb": "分钟级完整环境恢复",
         "bottomCta": {
           "command": "rdc repo pull production --from daily-2026-02-27",
           "description": "从免费的社区版开始。5 分钟内恢复你的第一个环境。",
@@ -6959,6 +6988,7 @@
           ],
           "title": "一条命令，全部恢复。"
         },
+        "label": "即时恢复",
         "meta": {
           "description": "不仅是文件恢复，而是整个环境。包括服务器、配置和数据库在内的所有组件，都能在几分钟内完全恢复并正常运行。",
           "keywords": "即时恢复, 全环境还原, btrfs clone, 灾难恢复, 备份还原, 时间点恢复, 健康检查, 单命令恢复",
@@ -7136,8 +7166,6 @@
         }
       },
       "integrations": {
-        "label": "CI/CD 集成",
-        "blurb": "融入您现有的工作流程",
         "benefits": {
           "items": [
             {
@@ -7159,6 +7187,7 @@
           "overline": "重要意义",
           "title": "您将获得什么"
         },
+        "blurb": "融入您现有的工作流程",
         "bottomCta": {
           "command": "rdc repo fork production --tag ci-build",
           "description": "从免费的社区版开始。包含 Git 集成。",
@@ -7288,6 +7317,7 @@
           ],
           "title": "一条命令，零脚本。"
         },
+        "label": "CI/CD 集成",
         "meta": {
           "description": "Git 推送自动触发创建全新环境。测试在生产克隆上运行。CI/CD 集成完全开箱即用，无需编写任何自定义脚本。",
           "keywords": "CI/CD 集成, GitLab CI, GitHub Actions, webhook, 生产克隆, 测试环境, 流水线自动化",
@@ -7453,8 +7483,6 @@
         }
       },
       "kubernetesClusterMobility": {
-        "label": "Kubernetes 集群迁移",
-        "blurb": "克隆或迁移正在运行的集群，数据一起带走",
         "benefits": {
           "items": [
             {
@@ -7476,6 +7504,7 @@
           "overline": "重要意义",
           "title": "保留你的 Kubernetes，获得迁移能力。"
         },
+        "blurb": "克隆或迁移正在运行的集群，数据一起带走",
         "bottomCta": {
           "command": "rdc cluster fork prod --tag staging",
           "ctaText": "免费开始使用社区版",
@@ -7602,6 +7631,7 @@
           ],
           "title": "整个集群就是一组文件"
         },
+        "label": "Kubernetes 集群迁移",
         "meta": {
           "description": "把运行中的 Kubernetes 集群克隆或迁移到另一台机器或数据中心，数据一起带走。切换时间短且可实测。基于 Ceph RBD 和 k3s 构建。",
           "keywords": "kubernetes 集群迁移, 集群克隆, ceph rbd, k3s, 数据中心迁移能力, kubernetes 可移植性",
@@ -7765,8 +7795,6 @@
         "title": "获取技术简报"
       },
       "migrationSafety": {
-        "label": "迁移安全",
-        "blurb": "迁移不冒数据风险",
         "benefits": {
           "items": [
             {
@@ -7788,6 +7816,7 @@
           "overline": "重要意义",
           "title": "您将获得什么"
         },
+        "blurb": "迁移不冒数据风险",
         "bottomCta": {
           "command": "rdc repo push production --to secondary",
           "description": "从免费的社区版开始。包含加密迁移功能。",
@@ -7946,6 +7975,7 @@
           ],
           "title": "一条命令，零暴露。"
         },
+        "label": "迁移安全",
         "meta": {
           "description": "在不同服务器、云平台或供应商之间安全迁移数据。加密备份确保传输全程安全，零数据暴露风险，零数据丢失可能。",
           "keywords": "加密迁移, 零暴露传输, 数据迁移安全, 加密备份传输, btrfs 迁移, 服务器迁移, 云迁移加密",
@@ -8123,8 +8153,6 @@
         }
       },
       "productionParity": {
-        "label": "生产一致性",
-        "blurb": "与生产完全一致的开发环境",
         "benefits": {
           "items": [
             {
@@ -8146,6 +8174,7 @@
           "overline": "重要意义",
           "title": "您将获得什么"
         },
+        "blurb": "与生产完全一致的开发环境",
         "bottomCta": {
           "command": "rdc backup restore dev-sarah --as dev-sarah-verify --up",
           "description": "从免费的社区版开始。包含生产一致性功能。",
@@ -8302,6 +8331,7 @@
           ],
           "title": "一条命令，完美一致。"
         },
+        "label": "生产一致性",
         "meta": {
           "description": "彻底告别\"在我机器上能跑\"的问题。每个开发和测试环境都是生产环境的完全克隆，确保开发与生产环境完全一致。",
           "keywords": "生产一致性, 环境偏差, 开发环境, 完全克隆, btrfs clone, copy-on-write, 配置匹配",
@@ -8455,8 +8485,6 @@
         }
       },
       "rapidRecovery": {
-        "label": "快速恢复",
-        "blurb": "分钟级恢复，而非数天",
         "benefits": {
           "items": [
             {
@@ -8478,6 +8506,7 @@
           "overline": "重要意义",
           "title": "您将获得什么"
         },
+        "blurb": "分钟级恢复，而非数天",
         "bottomCta": {
           "command": "rdc repo pull production --from backup-vault --force",
           "ctaText": "免费开始使用社区版",
@@ -8633,6 +8662,7 @@
           ],
           "title": "一条命令，恢复上线。"
         },
+        "label": "快速恢复",
         "meta": {
           "description": "当勒索软件来袭时，每分钟停机都在造成巨大的经济损失。Rediacc 让您在损害进一步扩散之前快速恢复业务上线运行。",
           "keywords": "快速恢复, 勒索软件恢复, 灾难恢复, btrfs 还原, 快速恢复",
@@ -8824,8 +8854,6 @@
         }
       },
       "retentionCompliance": {
-        "label": "留存合规",
-        "blurb": "按法律要求保留数据",
         "benefits": {
           "items": [
             {
@@ -8847,6 +8875,7 @@
           "overline": "重要意义",
           "title": "您将获得什么"
         },
+        "blurb": "按法律要求保留数据",
         "bottomCta": {
           "command": "rdc config backup-strategy set --cron '0 2 * * *'",
           "description": "从免费的社区版开始。30 秒内设置你的第一个保留策略。",
@@ -9008,6 +9037,7 @@
           ],
           "title": "一条命令，全面合规。"
         },
+        "label": "留存合规",
         "meta": {
           "description": "灵活可配置的数据保留策略满足各类合规要求。HIPAA、SOC2、GDPR 等主要法规默认覆盖，确保您的数据存储合规。",
           "keywords": "保留合规, 数据保留, HIPAA 合规, SOC2, GDPR, 备份保留, 审计就绪, 合规自动化",
@@ -9217,8 +9247,6 @@
         }
       },
       "safeOsTesting": {
-        "label": "安全的操作系统测试",
-        "blurb": "无风险测试操作系统更新",
         "benefits": {
           "items": [
             {
@@ -9240,6 +9268,7 @@
           "overline": "重要意义",
           "title": "您将获得什么"
         },
+        "blurb": "无风险测试操作系统更新",
         "bottomCta": {
           "command": "rdc repo fork production --tag patch-test",
           "description": "从免费的社区版开始。免费克隆、测试和验证。无需信用卡。",
@@ -9400,6 +9429,7 @@
           ],
           "title": "一条命令，零风险。"
         },
+        "label": "安全的操作系统测试",
         "meta": {
           "description": "克隆您的生产环境，在副本上应用系统补丁和更新，全面检查兼容性问题。必要时一键回滚，所有操作都不触及生产环境。",
           "keywords": "安全 OS 测试, 补丁测试, 操作系统更新测试, btrfs clone, 生产克隆, 零风险补丁, 更新验证",
@@ -9577,8 +9607,6 @@
         }
       },
       "vendorLockIn": {
-        "label": "供应商锁定自由",
-        "blurb": "您的基础设施，您的选择，始终如此。",
         "benefits": {
           "items": [
             {
@@ -9600,6 +9628,7 @@
           "overline": "重要意义",
           "title": "您将获得什么"
         },
+        "blurb": "您的基础设施，您的选择，始终如此。",
         "bottomCta": {
           "command": "rdc repo push production --to new-provider --checkpoint",
           "ctaText": "免费开始使用社区版",
@@ -9760,6 +9789,7 @@
           ],
           "title": "一条命令，完全自由。"
         },
+        "label": "供应商锁定自由",
         "meta": {
           "description": "随处部署，随时迁移。无锁定合同条款，无专有数据格式限制。您的基础设施和数据始终完全属于您自己，自主可控。",
           "keywords": "厂商锁定, 云迁移, 多云, 可移植性, btrfs 迁移",
@@ -9927,8 +9957,6 @@
         }
       },
       "vulnerabilityManagement": {
-        "label": "漏洞管理",
-        "blurb": "在攻击者到来之前修复漏洞",
         "benefits": {
           "items": [
             {
@@ -9950,6 +9978,7 @@
           "overline": "重要意义",
           "title": "您将获得什么"
         },
+        "blurb": "在攻击者到来之前修复漏洞",
         "bottomCta": {
           "command": "rdc term production cve-2026-1234-fix",
           "description": "从免费的社区版开始。4 分钟内验证你的第一个补丁。",
@@ -10051,6 +10080,7 @@
           ],
           "title": "一条命令，经过验证的修复。"
         },
+        "label": "漏洞管理",
         "meta": {
           "description": "在安全的生产环境克隆上发现、测试和修补安全漏洞。验证修复效果后满怀信心地将安全补丁部署到生产环境中。",
           "keywords": "漏洞管理, 补丁验证, CVE 修复, 基于克隆的补丁, 安全补丁, 安全测试, 漏洞修复验证",
@@ -10665,16 +10695,6 @@
     "title": "选择您的账户区域"
   },
   "solutions": {
-    "roles": {
-      "copy": "复制",
-      "test": "测试",
-      "recover": "恢复",
-      "property": "平台"
-    },
-    "constellation": {
-      "centre": "每个解决方案都是对您的生产环境副本执行的一件事。",
-      "title": "探索其他解决方案"
-    },
     "categories": {
       "backups": "可靠备份",
       "defense": "主动防御",
@@ -10682,6 +10702,19 @@
       "encryption": "加密控制",
       "multi-cloud": "多云架构",
       "ransomware": "勒索危机应对"
+    },
+    "constellation": {
+      "centre": "每个解决方案都是对您的生产环境副本执行的一件事。",
+      "title": "探索其他解决方案"
+    },
+    "references": {
+      "title": "来源"
+    },
+    "roles": {
+      "copy": "复制",
+      "property": "平台",
+      "recover": "恢复",
+      "test": "测试"
     },
     "title": "让业务永不中断"
   },

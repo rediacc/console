@@ -1,8 +1,11 @@
 ---
-sourceHash: "b15507f1e0da46d2"
+sourceHash: "7131eacdf2a43da5"
 title: Escalamento de Bases de Dados Legadas
 description: Escale bases de dados legadas sem migração, aproveitando a replicação de dados em tempo real e a distribuição de consultas.
 category: Use Cases
+tags:
+  - migration
+  - forking
 order: 3
 language: pt
 ---

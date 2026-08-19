@@ -4,9 +4,12 @@ description: >-
   Come funziona Rediacc: architettura a due strumenti, rilevamento dell'adattatore, modello di sicurezza e
   struttura della configurazione.
 category: Concepts
+tags:
+  - repositories
+  - containers
 order: 0
 language: it
-sourceHash: "16b02000a82f3acd"
+sourceHash: "878b744629cb8b14"
 sourceCommit: "5fab1177d6ceae5211c25cf8fa0176d67259d40e"
 ---
 

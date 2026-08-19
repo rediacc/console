@@ -2,9 +2,12 @@
 title: "HIPAA 준수"
 description: "Rediacc의 암호화 및 격리 아키텍처가 의료정보 보호를 위한 HIPAA 보호 요건에 어떻게 매핑되는지 설명합니다."
 category: "Legal"
+tags:
+  - compliance
+  - security
 order: 3
 language: ko
-sourceHash: "58f208db31474a81"
+sourceHash: "1a0a2df716f6628b"
 sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
 ---
 

@@ -1,8 +1,11 @@
 ---
-sourceHash: "6fa16a1c73af497e"
+sourceHash: "fb8ab2f49f1a395b"
 title: "Hub"
 description: "사용자별 Docker 데몬, 다중 템플릿 선택, CRIU 체크포인트/복원, 감사 로그, 데이터 루트 가비지 컬렉션을 갖춘 인증된 사용자별 컨테이너 환경을 제공합니다."
 category: "Guides"
+tags:
+  - containers
+  - security
 order: 14
 language: ko
 ---

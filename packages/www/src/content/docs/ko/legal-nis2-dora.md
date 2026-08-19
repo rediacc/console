@@ -2,9 +2,11 @@
 title: "NIS2 및 DORA"
 description: "Rediacc가 EU NIS2 사이버보안 지침 및 DORA 디지털 운영 복원력 요건을 어떻게 충족하는지 설명합니다."
 category: "Legal"
+tags:
+  - compliance
 order: 8
 language: ko
-sourceHash: "72a61496d38955d3"
+sourceHash: "9179eb8e594f2ed0"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 

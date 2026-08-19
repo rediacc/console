@@ -2,9 +2,12 @@
 title: "Entornos de desarrollo similares a producción en minutos"
 description: "Reduce la configuración del entorno de días a minutos con deduplicación a nivel de bloque."
 category: Use Cases
+tags:
+  - forking
+  - storage
 order: 7
 language: es
-sourceHash: "2aa115fc621f5258"
+sourceHash: "a9c98112fe890a13"
 sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 ---
 

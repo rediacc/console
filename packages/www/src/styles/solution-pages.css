@@ -295,11 +295,29 @@ button.sp-illustration-trigger:focus-visible {
   font-weight: 700;
   color: var(--sp-text-primary);
 }
-.sp-stat-callout-source {
+
+/* B4: the stacked source line is gone; this marker replaces it. It is a fragment link into
+   the SPSources disclosure, and SPProblem renders it only when the `ref` resolves, so this
+   rule never paints a dead anchor. Sized off `--font-size-xs` rather than `<sup>` so the
+   callout's baseline row does not shift. */
+.sp-stat-ref {
+  align-self: flex-start;
+  margin-inline-start: 2px;
+  font-family: var(--sp-font-mono);
   font-size: var(--font-size-xs);
-  color: var(--sp-text-muted-light);
-  display: block;
-  margin-top: 2px;
+  line-height: 1;
+  color: var(--sp-brand-primary);
+  text-decoration: none;
+  padding: 2px 5px;
+  border: 1px solid var(--sp-border-light);
+  border-radius: var(--radius-sm, 4px);
+  cursor: pointer;
+}
+.sp-stat-ref:hover,
+.sp-stat-ref:focus-visible {
+  color: var(--sp-bg-white);
+  background: var(--sp-brand-primary);
+  border-color: var(--sp-brand-primary);
 }
 
 /* Timeline */
@@ -2041,6 +2059,34 @@ button.sp-illustration-trigger:focus-visible {
   background: var(--sp-bg-light, var(--color-bg-light));
 }
 
+/* B2: the two download CTAs share one row. `auto-fit` rather than a fixed
+   `1fr 1fr`, because the row must degrade to ONE column, and that is not an edge
+   case: LeadMagnetButton.tsx:88 returns null while `!visible`, and it starts
+   invisible whenever the scroll gate is on, and its dismissal persists in
+   sessionStorage. So the ABSENT gated column is the normal first-paint state and
+   the permanent state after any dismissal. */
+.sp-downloads-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(28rem, 100%), 1fr));
+  background: var(--sp-bg-light, var(--color-bg-light));
+}
+
+/* The gated wrapper is always in the DOM even when its button renders nothing, so
+   the grid would otherwise hold an empty 56px-tall column beside a real card.
+   `:has()` collapses it from the CSS side, which keeps the whole thing zero-JS:
+   no wrapper, no column. */
+.sp-downloads-row > .sp-download-gated-wrapper:not(:has(.sp-lead-magnet-button)) {
+  display: none;
+}
+
+/* Inside the row the children are columns, not full-width bands, so their own
+   band background and horizontal padding would double up. */
+.sp-downloads-row > .sp-download-gated-wrapper,
+.sp-downloads-row > .sp-download-short {
+  background: none;
+  padding-block: 56px;
+}
+
 /* Card container for the short variant only. */
 .sp-download-short__card {
   position: relative;
@@ -2091,6 +2137,84 @@ button.sp-illustration-trigger:focus-visible {
 }
 .sp-download-short__button svg {
   stroke: currentColor;
+}
+
+/* ========== SOURCES DISCLOSURE ==========
+   The citation list, collapsed, as the last content section before the black zone. The
+   open/close behaviour is the native `<details>` -- the summary is already a button to a
+   keyboard and to a screen reader, and nothing here overrides that. The one script in
+   SPSources.astro exists only because a fragment CLICK does not reveal a closed `<details>`
+   in Chrome 145; it does not participate in the styling below. */
+.sp-sources {
+  background: var(--sp-bg-light);
+  padding: 48px;
+}
+.sp-sources-inner {
+  max-width: var(--sp-content-max);
+  margin: 0 auto;
+}
+.sp-sources-summary {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--sp-text-body);
+  padding: 6px 0;
+}
+/* The disclosure triangle has to be drawn back in. Chrome renders `::marker` on a
+   `<summary>` only while it is `display: list-item`, and this one is `inline-flex` so the
+   label and the count can sit on one row with a gap. Without this the only affordance that
+   the section opens is the cursor, which a keyboard user never sees. Logical borders, so
+   the arrow points into the text in RTL as well as LTR. */
+.sp-sources-summary::before {
+  content: "";
+  flex: none;
+  width: 0;
+  height: 0;
+  border-inline-start: 6px solid currentColor;
+  border-block-start: 4px solid transparent;
+  border-block-end: 4px solid transparent;
+  transition: transform 0.15s ease;
+}
+.sp-sources-details[open] > .sp-sources-summary::before {
+  transform: rotate(90deg);
+}
+.sp-sources-summary:hover,
+.sp-sources-details:focus-within > .sp-sources-summary {
+  color: var(--sp-brand-primary);
+}
+.sp-sources-count {
+  font-family: var(--sp-font-mono);
+  font-weight: 400;
+  text-transform: none;
+}
+.sp-sources-list {
+  margin: 16px 0 0;
+  padding-inline-start: 1.75em;
+  max-width: 720px;
+}
+.sp-sources-item {
+  font-size: var(--font-size-sm);
+  line-height: 1.6;
+  color: var(--sp-text-body);
+  margin-bottom: 12px;
+}
+/* The jump target is the `<li>`, so give the landing something visible. `:target` is the
+   only feedback a zero-JS jump can offer once the browser has auto-opened the disclosure. */
+.sp-sources-item:target {
+  scroll-margin-block-start: 96px;
+  border-inline-start: 3px solid var(--sp-brand-primary);
+  margin-inline-start: -12px;
+  padding-inline-start: 9px;
+}
+@media (max-width: 768px) {
+  .sp-sources {
+    padding: 32px 20px;
+  }
 }
 
 /* Mobile breakpoint. */

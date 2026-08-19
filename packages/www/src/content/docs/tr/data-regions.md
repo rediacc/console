@@ -2,9 +2,12 @@
 title: "Veri Bölgeleri"
 description: "Verilerinizin nerede saklandığı ve bölgesel veri yerleşiminin nasıl çalıştığı."
 category: "Concepts"
+tags:
+  - compliance
+  - account
 order: 3
 language: tr
-sourceHash: "c87be32ef22a725d"
+sourceHash: "c03afe9324e59b45"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 

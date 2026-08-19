@@ -2,6 +2,8 @@
 title: "What Compliance Actually Requires"
 description: "Rediacc runs on your infrastructure. You control your data. Here's how that aligns with major compliance frameworks."
 category: "Legal"
+tags:
+  - compliance
 order: 0
 language: en
 ---

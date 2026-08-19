@@ -5,9 +5,12 @@ description: >-
   sobrescrevam credenciais ou escalonem privilégios. Portões de conhecimento,
   redação, anulações verificadas por ancestralidade e um registro de auditoria encadeado por hash.
 category: Concepts
+tags:
+  - ai-agents
+  - security
 order: 35
 language: pt
-sourceHash: "5dac7c4162cbbb8e"
+sourceHash: "e008783008d8e887"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 

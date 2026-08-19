@@ -2,9 +2,12 @@
 title: "Backup e Ripristino"
 description: "Esegui lo snapshot dei repository cifrati verso uno storage a chunk indirizzato per contenuto, dove vengono caricate solo le celle modificate e ogni snapshot si ripristina direttamente. Oppure conserva una copia su un'altra macchina. Ripristina ovunque, e automatizza con strategie denominate e timer systemd."
 category: "Guides"
+tags:
+  - backup
+  - storage
 order: 7
 language: it
-sourceHash: "91f6072e230b059c"
+sourceHash: "c35328105c2f3e8c"
 sourceCommit: "79c84ad044d5730b6d0a20aaf7b21f21914b6bda"
 ---
 

@@ -4,9 +4,11 @@ description: >-
   Erfahren Sie, wie Account, rdc und renet Maschinenplätze, Repo-Lizenzen und
   Planlimits verwalten.
 category: Guides
+tags:
+  - account
 order: 7
 language: de
-sourceHash: "4e7aa81c81aef1e9"
+sourceHash: "15886ad7ee04e90c"
 sourceCommit: "fd9d3476b1fdf0ac6ffaa14f486f20f9642fe2d5"
 ---
 

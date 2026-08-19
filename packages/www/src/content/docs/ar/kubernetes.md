@@ -2,9 +2,12 @@
 title: "Kubernetes"
 description: "شغّل Kubernetes بعقلية مستودع Rediacc: فرّع أو انقل عنقوداً قيد التشغيل، بما في ذلك بياناته، إلى جهاز أو مركز بيانات آخر بفترة انتقال قصيرة."
 category: "Guides"
+tags:
+  - containers
+  - migration
 order: 6
 language: ar
-sourceHash: "6ad4b60e09edde94"
+sourceHash: "22eef465dfd46ccf"
 sourceCommit: "23543669cd22bce3f14d69a0886bac8a12061412"
 ---
 

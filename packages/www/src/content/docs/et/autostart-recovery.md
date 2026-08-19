@@ -2,9 +2,12 @@
 title: "Automaatkäivitus ja taastamine"
 description: "Kuidas automaatkäivitus toimib, perioodiline leppija, mis taastab pärast käivitamist seiskunud repositooriumeid, ning kuidas kontrollida taastamisolekut."
 category: "Guides"
+tags:
+  - operations
+  - containers
 order: 5
 language: et
-sourceHash: "62148f7a55752783"
+sourceHash: "0a87131bd0d87a34"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 

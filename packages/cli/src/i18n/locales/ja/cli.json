@@ -5,16 +5,16 @@
   "commands": {
     "backup": {
       "browse": {
+        "completed": "{{name}} を一覧表示しました",
         "description": "リポジトリに含まれるファイルを一覧表示する。リポジトリイメージへのローカルな読み取り専用アクセスであり、アカウントサーバーにもネットワークにも接続しない。暗号化されたリポジトリは、開く前にマウント済みであるか、キーファイルがデプロイ済みである必要がある。browse は空の一覧を返すのではなく、その旨を報告する。チャンクストアにのみ存在するスナップショットは一覧表示できない。先にリストアしてから、その結果を参照すること。",
         "descriptionShort": "リポジトリのファイルを一覧表示する（ローカル、読み取り専用）",
-        "optionPath": "一覧表示をこのサブツリーに限定する",
+        "empty": "{{name}} にはファイルがありません。",
+        "failed": "{{name}} を一覧表示できませんでした",
         "optionDepth": "階層の深さをNレベルに制限する（0で無制限）",
         "optionLimit": "返すエントリの最大数（0で無制限）",
+        "optionPath": "一覧表示をこのサブツリーに限定する",
         "starting": "{{name}} を一覧表示中...",
-        "completed": "{{name}} を一覧表示しました",
-        "failed": "{{name}} を一覧表示できませんでした",
-        "truncated": "一覧は {{limit}} 件で打ち切られました。--path で絞り込むか、--limit を増やしてください。",
-        "empty": "{{name}} にはファイルがありません。"
+        "truncated": "一覧は {{limit}} 件で打ち切られました。--path で絞り込むか、--limit を増やしてください。"
       },
       "cancel": {
         "cancelled": "{{name}} をキャンセルしました",
@@ -45,8 +45,8 @@
         "atResolved": "{{at}} をスナップショット {{snapshot}}（{{created}} に取得）に解決しました",
         "atUnparsable": "--at \"{{at}}\" はスナップショットIDでも時刻でもありません。`rdc backup manifests` から取得したスナップショットID、または2026-08-14T12:00:00ZのようなRFC3339形式の時刻を指定してください",
         "datastoreUnattached": "データストア \"{{datastore}}\" はどのマシンにもアタッチされていません。先にアタッチしてください: rdc datastore attach {{datastore}} --to <machine>",
-        "deployFailed": "復元した {{name}} のデプロイに失敗しました",
         "deployed": "{{machine}} に {{name}} をデプロイしました",
+        "deployFailed": "復元した {{name}} のデプロイに失敗しました",
         "deploying": "{{machine}} に {{name}} をデプロイ中...",
         "description": "バックアップアーティファクトを稼働中のリポジトリに変換する。配置先はここで指定する",
         "examples": {
@@ -58,9 +58,9 @@
         "optionAt": "特定時点への復元: スナップショットIDまたはRFC3339形式の時刻（チャンクストアからの復元）",
         "optionDatastore": "この名前付きデータストアに復元する（アタッチ先のマシンがホストする）",
         "optionUp": "転送後に復元したリポジトリをデプロイする",
-        "placeRequired": "復元対象のアーティファクトは所在地を明示する必要がある: repo@place の形式を使用（例: shop:nightly@backup-1）",
         "placementExclusive": "配置先フラグは --machine か --datastore のどちらか一方のみを指定してください",
         "placementRequired": "復元先を指定してください: --machine <m>（Docker）または --datastore <d>（名前付きデータストア）",
+        "placeRequired": "復元対象のアーティファクトは所在地を明示する必要がある: repo@place の形式を使用（例: shop:nightly@backup-1）",
         "pulling": "{{place}} から {{name}} をプル中...",
         "restored": "{{machine}} に {{name}} を復元しました",
         "restoringSnapshot": "スナップショット {{snapshot}} から {{name}} を復元中...",
@@ -1473,8 +1473,8 @@
         "starting": "\"{{machine}}\" 上で \"{{fork}}\" のデータを使って \"{{grand}}\" を引き継いでいます..."
       },
       "pull": {
-        "deployFailed": "pull後の\"{{repo}}\"のデプロイに失敗しました",
         "deployed": "リポジトリ\"{{repo}}\"が{{machine}}にデプロイされました",
+        "deployFailed": "pull後の\"{{repo}}\"のデプロイに失敗しました",
         "deploying": "\"{{repo}}\"を{{machine}}にデプロイ中...",
         "description": "別のマシンからリポジトリをプル。ストレージソースは廃止されました。時点リストアには `rdc backup restore` を使用してください。ソースタイプは設定から自動検出されます。pull後にデプロイするには --up を使用",
         "descriptionShort": "別のマシンからリポジトリをプル",
@@ -1493,8 +1493,8 @@
         "storageRetired": "ストレージバックエンドからのプルは廃止されました。rclone のクラウド系統が削除されたためです。時点リストアはチャンクストア経由の `rdc backup restore <repo> --at <snapshot>` を使います。マシン間の転送はこれまでどおりで、--from-machine を指定してください"
       },
       "push": {
-        "deployFailed": "プッシュ後の \"{{repo}}\" のデプロイに失敗しました",
         "deployed": "リポジトリ \"{{repo}}\" が {{machine}} にデプロイされました",
+        "deployFailed": "プッシュ後の \"{{repo}}\" のデプロイに失敗しました",
         "deploying": "{{machine}} に \"{{repo}}\" をデプロイ中...",
         "description": "リポジトリを別のマシンにプッシュ。ストレージ宛先は廃止されました。時点バックアップには `rdc backup snapshot` を使用してください。マシン間転送では、暗号化されたリポジトリイメージが同じGUIDでコピーされます。これはバックアップ/移行であり、forkではありません。独立したforkを作成するには、まず'repo fork'を使用してからpush。プッシュされたコピーはバックアップアーティファクトとして配置されます: 'backup restore <ref> --as <name> -m <target> --up' でターゲット上に起動してください",
         "descriptionShort": "リポジトリを別のマシンにプッシュ",

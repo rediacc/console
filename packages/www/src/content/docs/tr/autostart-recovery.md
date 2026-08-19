@@ -2,9 +2,12 @@
 title: "Otomatik Başlatma ve Kurtarma"
 description: "Otomatik başlatmanın nasıl çalıştığı, önyükleme sonrası duran depoları kurtaran periyodik uzlaştırıcı ve kurtarma durumunun nasıl inceleneceği."
 category: "Guides"
+tags:
+  - operations
+  - containers
 order: 5
 language: tr
-sourceHash: "62148f7a55752783"
+sourceHash: "0a87131bd0d87a34"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 

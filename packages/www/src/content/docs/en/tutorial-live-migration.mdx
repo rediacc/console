@@ -2,6 +2,9 @@
 title: "Live Migration"
 description: "Move a running repository, containers, database, and process memory included, to another machine with one command and minimal downtime."
 category: "Tutorials"
+tags:
+  - migration
+  - containers
 subcategory: advanced
 order: 16
 language: en
@@ -9,13 +12,11 @@ language: en
 
 import TutorialStep from '../../../components/tutorial/TutorialStep.astro';
 
+![Tutorial: Live migration](/assets/tutorials/tutorial-live-migration.cast)
+
 # Live Migration
 
 Servers get replaced: hardware ages, providers change, regions move. `rdc repo migrate` moves a running repository to another machine with one command, and with `--checkpoint` even process memory makes the trip. The demo app, `pulse`, keeps a counter in RAM; after the move it keeps counting instead of starting over.
-
-## Watch the tutorial
-
-![Tutorial: Live migration](/assets/tutorials/tutorial-live-migration.cast)
 
 ## How it moves
 

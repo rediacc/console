@@ -2,9 +2,12 @@
 title: 停電時の銀行業務の継続
 description: 大陸間のデータミラーリングにより、停電中でも銀行業務を維持します。
 category: Use Cases
+tags:
+  - backup
+  - migration
 order: 6
 language: ja
-sourceHash: "63861113cf5e7809"
+sourceHash: "8817b7a0a9304cd0"
 sourceCommit: "b8e332b73573133a282b5c508bc049af1fbeb581"
 ---
 

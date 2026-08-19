@@ -2,9 +2,12 @@
 title: "도구"
 description: "파일 동기화, 터미널 접속, VS Code 통합, CLI 업데이트."
 category: "Guides"
+tags:
+  - cli
+  - operations
 order: 9
 language: ko
-sourceHash: "2b8afb656455d6ec"
+sourceHash: "3c5f1e7f8063438b"
 sourceCommit: "3fb35b9a33c7e8ec6753ecd56231f2018e8f4803"
 ---
 

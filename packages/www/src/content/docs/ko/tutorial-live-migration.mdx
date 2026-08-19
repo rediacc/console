@@ -2,22 +2,23 @@
 title: "라이브 마이그레이션"
 description: "명령 하나로 실행 중인 저장소(컨테이너, 데이터베이스, 프로세스 메모리 포함)를 다른 머신으로 최소한의 다운타임으로 이전합니다."
 category: "Tutorials"
+tags:
+  - migration
+  - containers
 subcategory: advanced
 order: 16
 language: ko
-sourceHash: "0d0c4df847c6ba17"
+sourceHash: "6b14c6eb4a0b643a"
 sourceCommit: "3fb35b9a33c7e8ec6753ecd56231f2018e8f4803"
 ---
 
 import TutorialStep from '../../../components/tutorial/TutorialStep.astro';
 
+![Tutorial: Live migration](/assets/tutorials/tutorial-live-migration.cast)
+
 # 라이브 마이그레이션
 
 서버는 교체됩니다. 하드웨어가 노후화되고, 공급자가 바뀌고, 리전이 이동합니다. `rdc repo migrate`는 명령 하나로 실행 중인 저장소를 다른 머신으로 이전합니다. `--checkpoint`를 추가하면 프로세스 메모리까지 함께 이동합니다. 데모 앱 `pulse`는 카운터를 RAM에 유지하는데, 이전 후에도 처음부터 다시 시작하지 않고 계속 카운트합니다.
-
-## 튜토리얼 보기
-
-![Tutorial: Live migration](/assets/tutorials/tutorial-live-migration.cast)
 
 ## 이전 방식
 

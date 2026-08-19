@@ -2,22 +2,23 @@
 title: "Migration en direct"
 description: "Déplacez un dépôt en cours d'exécution, conteneurs, base de données et mémoire de processus inclus, vers une autre machine avec une seule commande et un temps d'arrêt minimal."
 category: "Tutorials"
+tags:
+  - migration
+  - containers
 subcategory: advanced
 order: 16
 language: fr
-sourceHash: "0d0c4df847c6ba17"
+sourceHash: "6b14c6eb4a0b643a"
 sourceCommit: "3fb35b9a33c7e8ec6753ecd56231f2018e8f4803"
 ---
 
 import TutorialStep from '../../../components/tutorial/TutorialStep.astro';
 
+![Tutorial: Live migration](/assets/tutorials/tutorial-live-migration.cast)
+
 # Migration en direct
 
 Les serveurs se remplacent : le matériel vieillit, les fournisseurs changent, les régions évoluent. `rdc repo migrate` déplace un dépôt en cours d'exécution vers une autre machine avec une seule commande, et avec `--checkpoint` même la mémoire de processus fait le voyage. L'application de démonstration, `pulse`, maintient un compteur en RAM ; après le déplacement, il continue de compter au lieu de repartir de zéro.
-
-## Regarder le tutoriel
-
-![Tutorial: Live migration](/assets/tutorials/tutorial-live-migration.cast)
 
 ## Comment ça se déplace
 

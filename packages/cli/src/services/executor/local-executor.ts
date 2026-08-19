@@ -19,10 +19,11 @@ import { t } from '../../i18n/index.js';
 import type { SFTPClient } from '../../remote/sftp/index.js';
 import type { RepositoryConfig } from '../../types/index.js';
 import { isAgentEnvironment } from '../../utils/agent-guard.js';
-import { isDevBuild } from '../../utils/platform.js';
-import { ValidationError } from '../../utils/errors.js';
 import { CliExitError } from '../../utils/cli-exit-error.js';
+import { debugEnabled } from '../../utils/debug.js';
+import { ValidationError } from '../../utils/errors.js';
 import { formatDuration } from '../../utils/format.js';
+import { isDevBuild } from '../../utils/platform.js';
 import { shellQuote } from '../../utils/shell-quote.js';
 import { startSpinner, stopSpinner } from '../../utils/spinner.js';
 import { formatStepDuration, getActiveLabel, getDoneLabel } from '../../utils/timeline.js';
@@ -30,8 +31,8 @@ import { accountServerFetch } from '../account/account-client.js';
 import {
   isDatastoreScopedId,
   issueRepoLicense,
-  readRuntimeRepoLicenseStatuses,
   type RepoBatchRecoveryFailureMode,
+  readRuntimeRepoLicenseStatuses,
   refreshRepoLicenseIdentity,
   refreshRepoLicensesBatch,
 } from '../account/license.js';
@@ -61,9 +62,14 @@ import {
   type RenetLicenseFailure,
   usesTagAsProvisioningTarget,
 } from '../renet/renet-license-contract.js';
-import { cleanRelayLine, isLogrusLine, stripRelayPrefix } from './output-lines.js';
 import { fetchOtlpCredentials } from '../telemetry/otlp-credentials.js';
 import { isTelemetryDisabled, telemetryService } from '../telemetry/telemetry.js';
+import {
+  cleanRelayLine,
+  createQuietStderrPump,
+  isLogrusLine,
+  stripRelayPrefix,
+} from './output-lines.js';
 
 /** Run a step with spinner + timing. Shows "Loading..." then "✓ Loaded (1.2s)" on the same line. */
 async function timedStep<T>(
@@ -88,6 +94,10 @@ async function timedStep<T>(
   }
 }
 
+// Type-only, so nothing from the command layer is pulled in at runtime. The
+// declaration is imported rather than restated because it is a WIRE shape: a
+// hand-written twin here is how the two sides drift apart while both stay green.
+import type { BackupManifestsResponse } from '../../commands/backup-storage.js';
 import { isRefreshDue, markRefreshAttempted } from '../account/license-refresh-state.js';
 import { getSubscriptionTokenState } from '../account/subscription-auth.js';
 import { resolveExtraMachines } from './extra-machines.js';
@@ -106,10 +116,6 @@ import {
 } from './job-client.js';
 import { followJobLogs, readJobStatus, renderJobEvent } from './job-remote.js';
 import type { ExecuteOptions, ExecuteResult, RenetEvent } from './types.js';
-// Type-only, so nothing from the command layer is pulled in at runtime. The
-// declaration is imported rather than restated because it is a WIRE shape: a
-// hand-written twin here is how the two sides drift apart while both stay green.
-import type { BackupManifestsResponse } from '../../commands/backup-storage.js';
 
 // ExecuteResult only. The other seam types are consumed from executor-factory,
 // which is the entry point to this layer; re-exporting them here as well just
@@ -1896,6 +1902,18 @@ class LocalExecutorService {
     // stdout. Echo them live in interactive text mode — to OUR stderr, same
     // "stdout belongs to the command" rule as createStdoutHandler.
     const echoStderrLive = Boolean(!options.captureOutput && !options.eventsMode);
+    // Quiet logrus lines are WITHHELD from the live terminal and replayed only if
+    // the command fails. They were 227-358 columns wide and wrapped into garbage
+    // in every tutorial recording; dropping them outright is worse and was tried
+    // (see daemon/client.ts), because a failing child explains itself at info
+    // level. REDIACC_DEBUG restores the old firehose.
+    //
+    // This USES the shared pump rather than restating it: an inline copy lived
+    // here first, and it was a byte-for-byte duplicate of createQuietStderrPump
+    // whose only lasting effect was to push this function past the complexity
+    // gate. Two copies of a withhold-and-replay buffer is exactly how the two
+    // drift apart while both keep passing.
+    const stderrPump = createQuietStderrPump({ echoAll: debugEnabled() });
     const execStart = Date.now();
     const exitCode = await sftp.execStreaming(command, {
       stdin: vault,
@@ -1907,11 +1925,13 @@ class LocalExecutorService {
       },
       onStderr: (data) => {
         stderr += data;
-        if (echoStderrLive) process.stderr.write(data);
+        if (echoStderrLive) stderrPump.write(String(data));
       },
     });
     // Emit any final line that arrived without a trailing newline.
     stdoutHandler.flush?.();
+    // The command failed, so what we withheld is exactly what explains it.
+    if (echoStderrLive) stderrPump.flush(exitCode !== 0);
 
     if (collector) stdout = collector.stdout;
 

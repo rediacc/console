@@ -2,9 +2,11 @@
 title: "データ主権"
 description: "Rediaccのセルフホスト型アーキテクチャがグローバルな管轄区域のデータレジデンシーと主権要件をどのように満たすか。"
 category: "Legal"
+tags:
+  - compliance
 order: 7
 language: ja
-sourceHash: "dba51d5d6dcf8197"
+sourceHash: "1e10165626ba3730"
 sourceCommit: "8b37b0a2c25c0ba7e5a8a63c8d3ed0da48b78a10"
 ---
 

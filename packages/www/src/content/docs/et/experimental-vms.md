@@ -2,9 +2,12 @@
 title: "Eksperimentaalsed VM-id ülevaade"
 description: "Valmistage ette kohalikud VM-klastrid arenduseks ja testimiseks rdc ops abil ühe käsuga."
 category: "Concepts"
+tags:
+  - operations
+  - containers
 order: 2
 language: et
-sourceHash: "aafca00c006ded0b"
+sourceHash: "5fad635a61089758"
 sourceCommit: "6cf65c4fe8617378da6a6dd21cce2feecff7ca9f"
 ---
 

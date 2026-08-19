@@ -2,22 +2,23 @@
 title: "Migración en vivo"
 description: "Mueve un repositorio en ejecución, contenedores, base de datos y memoria de procesos incluidos, a otra máquina con un solo comando y un tiempo de inactividad mínimo."
 category: "Tutorials"
+tags:
+  - migration
+  - containers
 subcategory: advanced
 order: 16
 language: es
-sourceHash: "0d0c4df847c6ba17"
+sourceHash: "6b14c6eb4a0b643a"
 sourceCommit: "3fb35b9a33c7e8ec6753ecd56231f2018e8f4803"
 ---
 
 import TutorialStep from '../../../components/tutorial/TutorialStep.astro';
 
+![Tutorial: Live migration](/assets/tutorials/tutorial-live-migration.cast)
+
 # Migración en vivo
 
 Los servidores se reemplazan: el hardware envejece, los proveedores cambian, las regiones se mueven. `rdc repo migrate` traslada un repositorio en ejecución a otra máquina con un solo comando, y con `--checkpoint` hasta la memoria de procesos viaja también. La app de demo, `pulse`, mantiene un contador en RAM; tras el traslado sigue contando en lugar de empezar desde cero.
-
-## Ver el tutorial
-
-![Tutorial: Live migration](/assets/tutorials/tutorial-live-migration.cast)
 
 ## Cómo funciona el traslado
 

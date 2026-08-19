@@ -2,9 +2,12 @@
 title: Strategia di Backup Incrociato
 description: "Il backup fallisce nel momento in cui la macchina si guasta. Rediacc replica gli snapshot su una macchina separata affinché un singolo guasto del disco non comporti la perdita di tutto."
 category: Use Cases
+tags:
+  - backup
+  - migration
 order: 5
 language: it
-sourceHash: "39dbeac1faec121c"
+sourceHash: "a565990a48aa0593"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 

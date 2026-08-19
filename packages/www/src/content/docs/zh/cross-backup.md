@@ -2,9 +2,12 @@
 title: 交叉备份策略
 description: "您的备份与其所在机器一起失败。Rediacc 通过将快照复制到独立的机器，确保单一磁盘故障不会导致全部数据丧失。"
 category: Use Cases
+tags:
+  - backup
+  - migration
 order: 5
 language: zh
-sourceHash: "39dbeac1faec121c"
+sourceHash: "a565990a48aa0593"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 

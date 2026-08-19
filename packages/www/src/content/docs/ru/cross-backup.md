@@ -2,9 +2,12 @@
 title: Стратегия перекрестного резервного копирования
 description: "Резервная копия отказывает вместе со своим сервером. Rediacc реплицирует снимки на отдельную машину, чтобы один отказ диска не приводил к потере всех данных."
 category: Use Cases
+tags:
+  - backup
+  - migration
 order: 5
 language: ru
-sourceHash: "39dbeac1faec121c"
+sourceHash: "a565990a48aa0593"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 

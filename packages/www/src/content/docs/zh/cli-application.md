@@ -2,11 +2,13 @@
 title: "CLI 应用程序"
 description: "使用 Rediacc 命令行界面进行平台管理的完整指南"
 category: "Reference"
+tags:
+  - cli
 order: 2
 language: zh
 generated: true
 generatedFrom: packages/cli/src/i18n/locales/zh/cli.json
-sourceHash: "bb3ff8daf0bc61cb"
+sourceHash: "b6ae8408bdbd2fe7"
 ---
 
 <!-- THIS FILE IS AUTO-GENERATED. Do not edit manually. -->

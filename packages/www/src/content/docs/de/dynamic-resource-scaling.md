@@ -2,9 +2,12 @@
 title: Dynamische Ressourcenskalierung
 description: Erstellen Sie eine Cloud-Architektur mit grenzenloser Flexibilität für KI-Training und dynamische Workloads.
 category: Use Cases
+tags:
+  - storage
+  - operations
 order: 1
 language: de
-sourceHash: "7a75ab45703267eb"
+sourceHash: "3b4e598914ece1c4"
 sourceCommit: "8b37b0a2c25c0ba7e5a8a63c8d3ed0da48b78a10"
 ---
 

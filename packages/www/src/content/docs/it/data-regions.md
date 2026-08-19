@@ -2,9 +2,12 @@
 title: "Regioni dei Dati"
 description: "Dove vengono archiviati i tuoi dati e come funziona la residenza regionale dei dati."
 category: "Concepts"
+tags:
+  - compliance
+  - account
 order: 3
 language: it
-sourceHash: "c87be32ef22a725d"
+sourceHash: "c03afe9324e59b45"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 

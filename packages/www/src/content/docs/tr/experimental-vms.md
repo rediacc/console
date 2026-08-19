@@ -2,9 +2,12 @@
 title: Deneysel VM'ler
 description: rdc ops ile geliştirme ve test için yerel VM kümeleri oluşturma.
 category: Concepts
+tags:
+  - operations
+  - containers
 order: 2
 language: tr
-sourceHash: aafca00c006ded0b
+sourceHash: 5fad635a61089758
 ---
 
 # Deneysel VM'ler

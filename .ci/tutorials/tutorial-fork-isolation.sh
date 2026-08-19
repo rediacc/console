@@ -14,7 +14,7 @@ source "$SCRIPT_DIR/lib/tutorial-helpers.sh"
 
 # Silence pre-recording setup so its output doesn't bleed into the cast.
 exec 3>&1 4>&2
-exec >/dev/null 2>&1
+exec >"$TUTORIAL_SETUP_LOG" 2>&1
 
 M="$TUTORIAL_MACHINE_NAME"
 APP_DIR="$SCRIPT_DIR/apps/demo-pgadmin"

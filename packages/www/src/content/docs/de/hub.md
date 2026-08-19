@@ -2,9 +2,12 @@
 title: "Hub"
 description: "Stellt authentifizierte Container-Umgebungen pro Benutzer bereit, mit benutzereigenem Docker-Daemon, Auswahl aus mehreren Vorlagen, CRIU-Prüfpunkt-Wiederherstellung, Prüfprotokollen und Garbage-Collection für Datenwurzeln."
 category: "Guides"
+tags:
+  - containers
+  - security
 order: 14
 language: de
-sourceHash: "6fa16a1c73af497e"
+sourceHash: "fb8ab2f49f1a395b"
 sourceCommit: "b997ae00deb9e814edaf2fc449f4d9e36cfafe81"
 ---
 

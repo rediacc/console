@@ -2,9 +2,12 @@
 title: "rdc vs renet"
 description: "Quand utiliser rdc et quand utiliser renet."
 category: Concepts
+tags:
+  - cli
+  - operations
 order: 1
 language: fr
-sourceHash: "938f63c27cdbb192"
+sourceHash: "ac6dd16161829495"
 sourceCommit: "ff9c470edf8760f63f12baf681c04db51a0c202f"
 ---
 

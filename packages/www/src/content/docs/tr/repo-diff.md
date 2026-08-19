@@ -2,10 +2,12 @@
 title: "rdc repo diff"
 description: "İki copy-on-write forked depo arasında git benzeri, dosya düzeyinde fark göster - şifrelenmiş görüntülerini blok düzeyinde karşılaştırarak, şifre çözmeksizin."
 category: Reference
-subcategory: advanced
+tags:
+  - forking
+  - storage
 order: 40
 language: tr
-sourceHash: "b555f4ca6b58ff4b"
+sourceHash: "6f5ccba93044665a"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 

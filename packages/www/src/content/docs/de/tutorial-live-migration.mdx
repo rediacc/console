@@ -2,22 +2,23 @@
 title: "Live-Migration"
 description: "Verschieben Sie ein laufendes Repository - Container, Datenbank und Prozessspeicher eingeschlossen - mit einem einzigen Befehl auf eine andere Maschine mit minimaler Ausfallzeit."
 category: "Tutorials"
+tags:
+  - migration
+  - containers
 subcategory: advanced
 order: 16
 language: de
-sourceHash: "0d0c4df847c6ba17"
+sourceHash: "6b14c6eb4a0b643a"
 sourceCommit: "3fb35b9a33c7e8ec6753ecd56231f2018e8f4803"
 ---
 
 import TutorialStep from '../../../components/tutorial/TutorialStep.astro';
 
+![Tutorial: Live-Migration](/assets/tutorials/tutorial-live-migration.cast)
+
 # Live-Migration
 
 Server werden ersetzt: Hardware altert, Anbieter wechseln, Regionen verschieben sich. `rdc repo migrate` verschiebt ein laufendes Repository mit einem einzigen Befehl auf eine andere Maschine, und mit `--checkpoint` macht sogar der Prozessspeicher den Trip mit. Die Demo-App `pulse` hält einen Zähler im RAM; nach dem Umzug zählt sie weiter, statt von vorn zu beginnen.
-
-## Tutorial ansehen
-
-![Tutorial: Live-Migration](/assets/tutorials/tutorial-live-migration.cast)
 
 ## So läuft der Umzug ab
 

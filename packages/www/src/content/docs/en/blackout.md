@@ -2,6 +2,9 @@
 title: Banking Continuity During Blackout
 description: Maintain banking operations during power outages with intercontinental data mirroring.
 category: Use Cases
+tags:
+  - backup
+  - migration
 order: 6
 language: en
 ---

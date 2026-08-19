@@ -2,9 +2,12 @@
 title: MCPサーバーのセットアップ
 description: Model Context Protocol（MCP）サーバーを使用して、AIエージェントをRediacc基盤に接続します。
 category: Guides
+tags:
+  - ai-agents
+  - cli
 order: 33
 language: ja
-sourceHash: "d515d5491751e1fe"
+sourceHash: "442b5cfa49239dbc"
 sourceCommit: "20f014619af1ee41e75cd46a3c8e4abc5add0983"
 ---
 

@@ -1,8 +1,11 @@
 ---
-sourceHash: "d534fc11b7ba4fa7"
+sourceHash: "dd05b3e00f6f921d"
 title: Arenduskeskkonnad, mis käivituvad sekunditega
 description: Lõpetage päevade kaupa arenduskeskkondade ootamine. Kloonige oma täielik tootmisinfrastruktuur alla 60 sekundiga nõudmisel loodavate ajutiste keskkondadega.
 category: Use Cases
+tags:
+  - forking
+  - containers
 order: 10
 language: et
 ---

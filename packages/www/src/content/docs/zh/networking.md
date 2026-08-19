@@ -2,9 +2,12 @@
 title: 网络
 description: 通过反向代理、Docker 标签、TLS 证书、DNS 和 TCP/UDP 端口转发来暴露服务。
 category: Guides
+tags:
+  - networking
+  - containers
 order: 6
 language: zh
-sourceHash: "89a755491d11fbd6"
+sourceHash: "6c5538c8919e9089"
 sourceCommit: "20f014619af1ee41e75cd46a3c8e4abc5add0983"
 ---
 

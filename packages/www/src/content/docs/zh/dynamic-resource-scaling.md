@@ -2,9 +2,12 @@
 title: 动态资源扩展
 description: 为 AI 训练和动态工作负载构建具有无限灵活性的云架构。
 category: Use Cases
+tags:
+  - storage
+  - operations
 order: 1
 language: zh
-sourceHash: "7a75ab45703267eb"
+sourceHash: "3b4e598914ece1c4"
 sourceCommit: "8b37b0a2c25c0ba7e5a8a63c8d3ed0da48b78a10"
 ---
 

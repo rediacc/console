@@ -2,9 +2,12 @@
 title: "릴리스 채널"
 description: "Edge와 Stable의 차이점, 그리고 어느 채널을 사용할지 선택하는 방법."
 category: "Concepts"
+tags:
+  - cli
+  - operations
 order: 2
 language: ko
-sourceHash: "6669b5b089f94a39"
+sourceHash: "0cc32d712c02538f"
 sourceCommit: "23543669cd22bce3f14d69a0886bac8a12061412"
 ---
 

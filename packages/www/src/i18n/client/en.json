@@ -71,6 +71,16 @@
     "error": "Something went wrong. Please try again.",
     "close": "Close"
   },
+  "documentation": {
+    "categories": {
+      "tutorials": "Tutorials",
+      "guides": "Guides",
+      "concepts": "Concepts",
+      "reference": "Reference",
+      "useCases": "Use Cases",
+      "legal": "Legal"
+    }
+  },
   "footer": {
     "columns": {
       "product": "Product",
@@ -147,7 +157,9 @@
       }
     },
     "forAiAgents": "For AI Agents",
-    "account": "Account"
+    "account": "Account",
+    "learn": "Learn",
+    "browseAllDocs": "Browse all docs"
   },
   "newsletter": {
     "title": "Newsletter",

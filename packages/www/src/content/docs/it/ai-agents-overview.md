@@ -2,9 +2,12 @@
 title: Panoramica sull'integrazione degli agenti AI
 description: "Come Claude Code, Cursor e Cline gestiscono l'infrastruttura Rediacc tramite rdc: output JSON, introspezione degli agenti e guardrail di sicurezza."
 category: Guides
+tags:
+  - ai-agents
+  - cli
 order: 30
 language: it
-sourceHash: "29eb3ce5a55c36d1"
+sourceHash: "c544cf8514d36558"
 sourceCommit: "23543669cd22bce3f14d69a0886bac8a12061412"
 ---
 

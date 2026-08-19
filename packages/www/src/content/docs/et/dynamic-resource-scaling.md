@@ -1,8 +1,11 @@
 ---
-sourceHash: "7a75ab45703267eb"
+sourceHash: "3b4e598914ece1c4"
 title: Dünaamiline ressursside skaleerimine
 description: Ehitage piiramatu paindlikkusega pilvearenhitektuur tehisintellekti treenimise ja dünaamiliste töökoormuste jaoks.
 category: Use Cases
+tags:
+  - storage
+  - operations
 order: 1
 language: et
 ---

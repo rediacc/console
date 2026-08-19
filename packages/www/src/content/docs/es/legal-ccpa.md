@@ -2,9 +2,11 @@
 title: "Cumplimiento de CCPA"
 description: "Cómo el modelo autoalojado de Rediacc cumple con los requisitos de la Ley de Privacidad del Consumidor de California para la protección de datos del consumidor."
 category: "Legal"
+tags:
+  - compliance
 order: 4
 language: es
-sourceHash: "3cee3262b53f7afd"
+sourceHash: "0d297fb9552dcfeb"
 sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
 ---
 

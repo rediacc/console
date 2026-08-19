@@ -2,9 +2,12 @@
 title: "Hub"
 description: "Предоставляет аутентифицированные контейнерные среды для каждого пользователя с персональными Docker daemon, выбором множества шаблонов, контрольными точками/восстановлением CRIU, журналами аудита и сборкой мусора data-root."
 category: "Guides"
+tags:
+  - containers
+  - security
 order: 14
 language: ru
-sourceHash: "6fa16a1c73af497e"
+sourceHash: "fb8ab2f49f1a395b"
 sourceCommit: "b997ae00deb9e814edaf2fc449f4d9e36cfafe81"
 ---
 

@@ -2,9 +2,12 @@
 title: "Cadena de Licencias y Delegación"
 description: "Emisión de licencias con evidencia de manipulación, firma delegada para on-premise y detección de bifurcaciones."
 category: "Guides"
+tags:
+  - account
+  - security
 order: 8
 language: es
-sourceHash: "6486263bfb9ebf98"
+sourceHash: "d6d980d721be2373"
 sourceCommit: "fc24769cfd0684622952395c5bafe44e6180530d"
 ---
 

@@ -1,4 +1,5 @@
 {
+  "autoCompactWindow": 1000000,
   "hooks": {
     "PreToolUse": [
       {
@@ -145,6 +146,26 @@
             "command": "python3 \"$CLAUDE_PROJECT_DIR/.claude/hooks/stop/wl_wait.py\" --nudge"
           }
         ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$CLAUDE_PROJECT_DIR/.claude/hooks/context/band-notice.py\"",
+            "timeout": 15
+          }
+        ]
+      }
+    ],
+    "PreCompact": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$CLAUDE_PROJECT_DIR/.claude/hooks/context/precompact-floor.py\"",
+            "timeout": 45
+          }
+        ]
       }
     ],
     "SubagentStop": [
@@ -182,6 +203,15 @@
           {
             "type": "command",
             "command": "python3 \"$CLAUDE_PROJECT_DIR/.claude/hooks/stop/wl_report.py\" --post-compact"
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$CLAUDE_PROJECT_DIR/.claude/hooks/context/epoch-reset.py\"",
+            "timeout": 15
           }
         ]
       }

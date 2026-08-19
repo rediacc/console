@@ -11,8 +11,16 @@ ROOT_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
 
 TUTORIAL_SCRIPT="${1:?Usage: record.sh <script> <output.cast> [cols] [rows]}"
 OUTPUT_CAST="${2:?Usage: record.sh <script> <output.cast> [cols] [rows]}"
-COLS="${3:-100}"
-ROWS="${4:-30}"
+# The recorded terminal geometry. This default is the SAME value run.sh passes,
+# deliberately: they disagreed for a long time (100x30 here vs 107x32 there), so a
+# manual `record.sh foo.sh foo.cast` silently produced a cast of the wrong width
+# that nothing detected. Change both together, or better, change only here.
+COLS="${3:-${TUTORIAL_COLS:-107}}"
+ROWS="${4:-${TUTORIAL_ROWS:-32}}"
+# Tutorial scripts size their own output to this (see tutorial-helpers.sh
+# _format_display_cmd), so it has to reach them.
+export TUTORIAL_COLS="$COLS"
+export TUTORIAL_ROWS="$ROWS"
 
 # Resolve to absolute path
 TUTORIAL_SCRIPT="$(cd "$(dirname "$TUTORIAL_SCRIPT")" && pwd)/$(basename "$TUTORIAL_SCRIPT")"
@@ -58,7 +66,40 @@ if [[ -f "$EXIT_CODE_FILE" ]]; then
     if [[ "$SCRIPT_EXIT" != "0" ]]; then
         echo "Error: tutorial script exited with code $SCRIPT_EXIT" >&2
         echo "Script: $TUTORIAL_SCRIPT" >&2
-        rm -f "$RAW_CAST"
+        # PRESERVE the recording. Deleting it here destroyed the only artifact that
+        # explains the failure: the tutorial silences its own setup with
+        # exec >/dev/null, so the cast is the sole record of what the CLI printed.
+        FAILED_CAST="/tmp/tutorial-failed-$(basename "$TUTORIAL_SCRIPT" .sh).cast"
+        cp -f "$RAW_CAST" "$FAILED_CAST" 2>/dev/null &&
+            echo "Recording kept for diagnosis: $FAILED_CAST" >&2
+        # Replay the tail on stderr so the reason reaches the caller's log without
+        # anyone having to fetch a file off the recording host.
+        echo "--- last terminal output before the failure ---" >&2
+        node -e '
+            const fs = require("fs");
+            const lines = fs.readFileSync(process.argv[1], "utf8").split("\n");
+            let out = "";
+            for (const line of lines) {
+                if (!line.startsWith("[")) continue;
+                let ev;
+                try { ev = JSON.parse(line); } catch { continue; }
+                if (Array.isArray(ev) && ev[1] === "o") out += ev[2];
+            }
+            const rows = out.split(/\r?\n/).filter((r) => r.trim() !== "");
+            process.stderr.write(rows.slice(-40).join("\n") + "\n");
+        ' "$RAW_CAST" >&2 || echo "(could not replay the cast)" >&2
+        echo "--- end of recorded output ---" >&2
+        # A tutorial that dies in PRE-RECORDING setup produces an EMPTY replay
+        # above, because setup runs before output is restored to the camera.
+        # That is not "no information available" - the setup log has it.
+        SETUP_LOG="/tmp/tutorial-setup-$(basename "$TUTORIAL_SCRIPT" .sh).log"
+        if [[ -s "$SETUP_LOG" ]]; then
+            echo "--- last 40 lines of PRE-RECORDING setup ($SETUP_LOG) ---" >&2
+            tail -40 "$SETUP_LOG" >&2
+            echo "--- end of setup log ---" >&2
+        else
+            echo "(no setup log at $SETUP_LOG; an older tutorial script may still discard setup output)" >&2
+        fi
         exit 1
     fi
 else

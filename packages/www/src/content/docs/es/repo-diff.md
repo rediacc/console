@@ -2,10 +2,12 @@
 title: "rdc repo diff"
 description: "Mostrar una comparación de nivel de archivo estilo git entre dos repositorios bifurcados de copia en escritura, comparando sus imágenes cifradas a nivel de bloque, sin desencriptación."
 category: Reference
-subcategory: advanced
+tags:
+  - forking
+  - storage
 order: 40
 language: es
-sourceHash: "b555f4ca6b58ff4b"
+sourceHash: "6f5ccba93044665a"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 

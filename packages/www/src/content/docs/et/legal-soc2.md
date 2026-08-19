@@ -2,9 +2,11 @@
 title: "SOC 2 vastavus"
 description: "SOC 2-ga on asi lihtne: audiitorid tahavad tõendeid, et sinu kontrollid toimivad. Rediacc annab sulle logid, muudatuste haldamise jälje ja kõik muu, mida nad küsivad."
 category: "Legal"
+tags:
+  - compliance
 order: 2
 language: et
-sourceHash: "28b4309f81f43d8d"
+sourceHash: "8ccd82a1265e268e"
 sourceCommit: "5fab1177d6ceae5211c25cf8fa0176d67259d40e"
 ---
 

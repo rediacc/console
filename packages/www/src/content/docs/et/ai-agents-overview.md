@@ -2,9 +2,12 @@
 title: Tehisintellekti agentide integreerimise ülevaade
 description: "Kuidas Claude Code, Cursor ja Cline haldavad Rediacc infrastruktuuri rdc kaudu: JSON-väljund, agendi introspektion ja turvamehhanismid."
 category: Guides
+tags:
+  - ai-agents
+  - cli
 order: 30
 language: et
-sourceHash: "29eb3ce5a55c36d1"
+sourceHash: "c544cf8514d36558"
 sourceCommit: "23543669cd22bce3f14d69a0886bac8a12061412"
 ---
 

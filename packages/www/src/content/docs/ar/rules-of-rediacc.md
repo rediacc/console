@@ -4,9 +4,12 @@ description: >-
   القواعد والاصطلاحات الأساسية لبناء التطبيقات على منصة Rediacc. يغطي
   Rediaccfile و compose والشبكات والتخزين و CRIU والنشر.
 category: Guides
+tags:
+  - containers
+  - networking
 order: 5
 language: ar
-sourceHash: "1ceb078c7eb045b7"
+sourceHash: "d57f030a95892e39"
 sourceCommit: "20f014619af1ee41e75cd46a3c8e4abc5add0983"
 ---
 

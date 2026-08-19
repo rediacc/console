@@ -2,9 +2,11 @@
 title: "문제 해결"
 description: "일반적인 SSH, 설정, 저장소, 서비스, Docker 문제에 대한 해결책."
 category: "Guides"
+tags:
+  - operations
 order: 10
 language: ko
-sourceHash: "429b4004d99c37e6"
+sourceHash: "7a4072220b0985f8"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 

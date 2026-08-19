@@ -2,9 +2,12 @@
 title: "Rete"
 description: "Esponi i servizi con il reverse proxy, le etichette Docker, i certificati TLS, il DNS e il forwarding TCP/UDP. È tutto configurabile e già pronto all'uso."
 category: "Guides"
+tags:
+  - networking
+  - containers
 order: 6
 language: it
-sourceHash: "89a755491d11fbd6"
+sourceHash: "6c5538c8919e9089"
 sourceCommit: "20f014619af1ee41e75cd46a3c8e4abc5add0983"
 ---
 

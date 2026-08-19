@@ -2,9 +2,12 @@
 title: MCP 서버 설정
 description: Model Context Protocol (MCP) 서버를 사용하여 AI 에이전트를 Rediacc 인프라에 연결하기.
 category: Guides
+tags:
+  - ai-agents
+  - cli
 order: 33
 language: ko
-sourceHash: "d515d5491751e1fe"
+sourceHash: "442b5cfa49239dbc"
 sourceCommit: "20f014619af1ee41e75cd46a3c8e4abc5add0983"
 ---
 

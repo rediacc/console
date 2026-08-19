@@ -2,9 +2,11 @@
 title: "NIS2 ve DORA"
 description: "Rediacc'ın AB NIS2 siber güvenlik direktifi ve DORA dijital operasyonel dayanıklılık gereksinimlerini nasıl karşıladığı."
 category: "Legal"
+tags:
+  - compliance
 order: 8
 language: tr
-sourceHash: "72a61496d38955d3"
+sourceHash: "9179eb8e594f2ed0"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 

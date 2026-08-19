@@ -2,10 +2,12 @@
 title: "类 Git 分支管理"
 description: "将写时复制 fork 当作 git 提交使用：将 fork 冻结为不可变提交、命名分支、将提交检出为可写 fork、遍历历史记录，以及在不改变任何实时仓库的情况下进行合并。"
 category: Reference
-subcategory: advanced
+tags:
+  - forking
+  - repositories
 order: 41
 language: zh
-sourceHash: "b8bd3176ecabfa4b"
+sourceHash: "7aaa25bc83dfcf5b"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 

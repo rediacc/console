@@ -2,9 +2,12 @@
 title: "ISO 27001 合规"
 description: "Rediacc 如何满足 ISO 27001 加密、访问管理和运营安全的信息安全控制要求。"
 category: "Legal"
+tags:
+  - compliance
+  - security
 order: 5
 language: zh
-sourceHash: "1e23c89ae8cf0185"
+sourceHash: "249b81c87ea92b97"
 sourceCommit: "70a4ca883754f1c0a7f4684c9fde02a5a01d3681"
 ---
 

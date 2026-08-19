@@ -35,6 +35,7 @@ import SPComparisonTable from './SPComparisonTable.astro';
 import SPBottomCta from './SPBottomCta.astro';
 import SPDownloadGated from './SPDownloadGated.astro';
 import SPDownloadShort from './SPDownloadShort.astro';
+import SPSources from './SPSources.astro';
 import SolutionConstellation from './SolutionConstellation.astro';
 import { slugsForRole } from './constellation';
 import { createTranslator } from '../../i18n/utils';
@@ -75,6 +76,10 @@ const ctaHref = rawCtaHref === 'CONSULTATION'
 // of the same string in every locale. The transitional fallback to
 // `environmentCloning.explore.title` is gone with those arrays.
 const exploreHeading = t('solutions.constellation.title', 'Explore Other Solutions');
+
+// One harvested noun for the citation disclosure, alongside the constellation's. The count
+// is appended by the component, so this stays a plain noun in every locale.
+const sourcesTitle = t('solutions.references.title', 'Sources');
 
 // Breadcrumb items
 const pageTitle = (content as any).hero?.title ?? slug;
@@ -129,8 +134,20 @@ const breadcrumbItems = [
       <SPBenefits benefits={(content as any).benefits} />
     )}
 
-    {has('downloadGated') && (
-      <SPDownloadGated lang={lang} slug={slug} category={config.category} />
+    {/* B1+B2: the two download CTAs used to sit FOUR sections apart, with the comparison
+        table and the black bottom CTA between them. They ask for the same thing in two
+        registers, so they share one row. Render order is fixed JSX here, NOT data: `has()`
+        at :63 is a membership test, so reordering ALL_SECTIONS in the config changes
+        nothing on the page. */}
+    {(has('downloadGated') || has('downloadShort')) && (
+      <div class="sp-downloads-row">
+        {has('downloadGated') && (
+          <SPDownloadGated lang={lang} slug={slug} category={config.category} />
+        )}
+        {has('downloadShort') && (
+          <SPDownloadShort lang={lang} slug={slug} category={config.category} />
+        )}
+      </div>
     )}
 
     {has('competitorComparison') && config.competitors && (
@@ -143,14 +160,16 @@ const breadcrumbItems = [
 
     {/* SPSocialProof was rendered here — see the SOCIAL PROOF note in the frontmatter. */}
 
-    {has('bottomCta') && (
-      <SPBottomCta bottomCta={(content as any).bottomCta} ctaHref={ctaHref} lang={lang} />
-    )}
+    {/* B3: the citations are the LAST content section, immediately above the black zone.
+        They are rendered from data, not from `config.sections`: `has()` at :63 is a
+        membership test over a fixed section vocabulary, and a page either has
+        `references.items` or it does not. */}
+    <SPSources items={(content as any).references?.items} title={sourcesTitle} />
 
-    {has('downloadShort') && (
-      <SPDownloadShort lang={lang} slug={slug} category={config.category} />
-    )}
-
+    {/* D1: exploreSolutions moves ABOVE the bottom CTA so the CTA is the LAST thing before
+        the footer. Both are `--sp-bg-hero`, so with nothing between them the CTA and the
+        footer read as one continuous black band. Previously "Explore Other Solutions" and
+        "Short on time?" sat between them and broke it into stripes. */}
     {has('exploreSolutions') && (
       <SolutionConstellation
         lang={lang}
@@ -159,6 +178,10 @@ const breadcrumbItems = [
         currentSlug={slug}
         heading={exploreHeading}
       />
+    )}
+
+    {has('bottomCta') && (
+      <SPBottomCta bottomCta={(content as any).bottomCta} ctaHref={ctaHref} lang={lang} />
     )}
   </div>
 

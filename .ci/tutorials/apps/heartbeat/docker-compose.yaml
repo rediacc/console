@@ -20,8 +20,10 @@ services:
       test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER:-heartbeat} -h $${SERVICE_IP:-localhost} -p 5433"]
       interval: 10s
       timeout: 5s
-      retries: 5
-      start_period: 30s
+      # Widened with its demo-pgadmin sibling: same class of failure, and a slow
+      # host is exactly where a 30s grace stops being enough.
+      retries: 12
+      start_period: 90s
 
   heartbeat:
     container_name: heartbeat_app

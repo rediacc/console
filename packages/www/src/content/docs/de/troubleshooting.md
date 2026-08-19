@@ -2,9 +2,11 @@
 title: "Fehlerbehebung"
 description: "Lösungen für häufig auftretende SSH-, Setup-, Repository-, Service- und Docker-Probleme."
 category: "Guides"
+tags:
+  - operations
 order: 10
 language: de
-sourceHash: "429b4004d99c37e6"
+sourceHash: "7a4072220b0985f8"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 

@@ -2,9 +2,12 @@
 title: "Conformidade com PCI DSS"
 description: "Como o Rediacc cumpre os requisitos PCI DSS: backups imutáveis, isolamento automático de rede e controlo de acesso ao nível da infraestrutura."
 category: "Legal"
+tags:
+  - compliance
+  - security
 order: 6
 language: pt
-sourceHash: "05ca01c69d8bab61"
+sourceHash: "f0349ad8df33656e"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 

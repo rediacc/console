@@ -2,9 +2,11 @@
 title: "実際のコンプライアンス要件"
 description: "Rediaccはお客様のインフラストラクチャ上で動作し、データの管理はお客様が行います。主要なコンプライアンスフレームワークとの適合をご説明します。"
 category: "Legal"
+tags:
+  - compliance
 order: 0
 language: ja
-sourceHash: "e6044a3b067b54d5"
+sourceHash: "f3c999aa355997c6"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 

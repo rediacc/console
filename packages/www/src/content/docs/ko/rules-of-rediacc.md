@@ -2,9 +2,12 @@
 title: "Rediacc 규칙"
 description: "Rediacc 플랫폼에서 애플리케이션을 구축하기 위한 필수 규칙과 규약. Rediaccfile, compose, 네트워킹, 스토리지, CRIU 및 배포를 다룹니다."
 category: "Guides"
+tags:
+  - containers
+  - networking
 order: 5
 language: ko
-sourceHash: "1ceb078c7eb045b7"
+sourceHash: "d57f030a95892e39"
 sourceCommit: "20f014619af1ee41e75cd46a3c8e4abc5add0983"
 ---
 

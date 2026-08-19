@@ -2,9 +2,12 @@
 title: "Avvio automatico e ripristino"
 description: "Come funziona l'avvio automatico, il riconciliatore periodico che ripristina i repository che si interrompono dopo l'avvio, e come verificare lo stato di ripristino."
 category: "Guides"
+tags:
+  - operations
+  - containers
 order: 5
 language: it
-sourceHash: "62148f7a55752783"
+sourceHash: "0a87131bd0d87a34"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 

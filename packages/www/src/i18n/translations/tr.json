@@ -98,11 +98,17 @@
     "title": "İletişime Geçin"
   },
   "documentation": {
-    "theme": {
-      "label": "Tema",
-      "light": "Açık",
-      "dark": "Koyu",
-      "auto": "Otomatik"
+    "browse": {
+      "clear": "Filtreleri temizle",
+      "description": "Tüm kılavuzlar, öğreticiler ve başvuru kaynakları tek bir yerde.",
+      "empty": "Bu filtreyle eşleşen belge yok.",
+      "filterHeading": "Filtreler",
+      "filterLabel": "Kategoriye göre filtrele",
+      "searchLabel": "Bu dokümanlarda ara",
+      "searchPlaceholder": "Başlıklarda ve açıklamalarda ara",
+      "showDescription": "Açıklamayı göster",
+      "title": "Dokümantasyon",
+      "topicLabel": "Konuya göre filtrele"
     },
     "categories": {
       "concepts": "Kavramlar",
@@ -115,14 +121,36 @@
     "cliReference": "CLI Referansı",
     "cliReferenceLabel": "CLI başvurusu:",
     "copied": "Kopyalandı!",
-    "copyCode": "Kodu kopyala",
     "copyAsMarkdown": "Markdown olarak kopyala",
+    "copyCode": "Kodu kopyala",
     "copyFullPageAriaLabel": "Tüm sayfayı Markdown olarak kopyala",
     "openInNewTab": "Yeni sekmede aç",
     "searchDocs": "Belgelerde ara",
     "subcategories": {
       "advanced": "Gelişmiş",
       "essentials": "Temel Bilgiler"
+    },
+    "tags": {
+      "account": "Hesaplar",
+      "aiAgents": "Yapay Zeka Ajanları",
+      "backup": "Yedekleme",
+      "cli": "CLI",
+      "compliance": "Uyumluluk",
+      "containers": "Konteynerler",
+      "forking": "Fork'lama",
+      "gettingStarted": "Başlarken",
+      "migration": "Taşıma",
+      "networking": "Ağ",
+      "operations": "İşlemler",
+      "repositories": "Depolar",
+      "security": "Güvenlik",
+      "storage": "Depolama"
+    },
+    "theme": {
+      "auto": "Otomatik",
+      "dark": "Koyu",
+      "label": "Tema",
+      "light": "Açık"
     }
   },
   "footer": {
@@ -193,9 +221,9 @@
     }
   },
   "navigation": {
-    "moreOptions": "Diğer seçenekler",
     "account": "Hesap",
     "blog": "Blog",
+    "browseAllDocs": "Tüm dokümanları görüntüle",
     "builtForYou": "Size özel",
     "builtForYourRole": "Rolünüze özel",
     "contact": "İletişim",
@@ -210,7 +238,9 @@
     "home": "Ana Sayfa",
     "install": "Yükle",
     "languageSelectionMenu": "Dil seçim menüsü",
+    "learn": "Öğrenme",
     "login": "Giriş",
+    "moreOptions": "Diğer seçenekler",
     "partners": "Ortaklar",
     "personas": {
       "ai-agent": {
@@ -566,14 +596,14 @@
         "title": "Felaket Kurtarma Fiyatlandırması | Rediacc"
       },
       "plans": {
+        "assessment": {
+          "name": "Kurtarma Değerlendirmesi"
+        },
         "program": {
           "name": "Kurtarma Programı"
         },
         "retainer": {
           "name": "Kurtarma Anlaşması"
-        },
-        "assessment": {
-          "name": "Kurtarma Değerlendirmesi"
         }
       },
       "psTeaser": {
@@ -608,6 +638,11 @@
         ],
         "recoveryNote": "RPO (Kurtarma Noktası Hedefi): Ne kadar veriyi kaybetmeyi göze alabileceğiniz, zaman içinde ölçülür. Örneğin, 15 dakikalık RPO, son değişikliklerin 15 dakikaya kadarını kaybedebileceğiniz anlamına gelir.\n\nRTO (Kurtarma Süresi Hedefi): Bir felaketten sonra ne kadar hızlı tekrar çevrimiçi olmanız gerekir. Örneğin 4 saatlik RTO, sistemlerinizin 4 saat içinde geri yükleneceği anlamına gelir.",
         "values": {
+          "assessment": {
+            "auditLogs": "30 gün",
+            "rpo": "~15 dakika",
+            "rto": "Belirli bir noktaya geri yükleme"
+          },
           "program": {
             "auditLogs": "90 gün",
             "rpo": "~5 dakika (sürekli)",
@@ -617,11 +652,6 @@
             "auditLogs": "1+ yıl",
             "rpo": "Özel (sıfıra yakın)",
             "rto": "15–60 dakika (özel)"
-          },
-          "assessment": {
-            "auditLogs": "30 gün",
-            "rpo": "~15 dakika",
-            "rto": "Belirli bir noktaya geri yükleme"
           }
         }
       },
@@ -632,14 +662,14 @@
         "contactUs": "Bize Ulaşın",
         "contactUsSub": "Özel limitler ve koşullar",
         "cta": {
+          "assessment": {
+            "primary": "Ücretsiz Dene"
+          },
           "program": {
             "primary": "Ücretsiz Dene"
           },
           "retainer": {
             "primary": "Demo Planlayın"
-          },
-          "assessment": {
-            "primary": "Ücretsiz Dene"
           }
         }
       }
@@ -1848,47 +1878,47 @@
     "pricing": {
       "comparison": {
         "allPlansInclude": "Tüm planlara dahil: sınırsız kullanıcı ve ekip, sınırsız depo, anlık görüntüden geri yükleme, sürekli veri koruma, coğrafi yedekli depolama, LUKS şifreleme, denetim kayıtları, rol tabanlı erişim, elle ve otomatik zamanlama ve entegrasyon API'si.",
-        "rows": [
-          {
-            "label": "Özel CSM",
-            "professional": false,
-            "business": true,
-            "enterprise": true
-          },
-          {
-            "label": "Telefon Desteği",
-            "professional": false,
-            "business": true,
-            "enterprise": true
-          },
-          {
-            "label": "7/24/365 Destek",
-            "professional": false,
-            "business": false,
-            "enterprise": true
-          },
-          {
-            "label": "Yönetici Kademelendirme",
-            "professional": false,
-            "business": false,
-            "enterprise": true
-          },
-          {
-            "label": "Güvenlik İncelemeleri",
-            "professional": false,
-            "business": false,
-            "enterprise": true
-          },
-          {
-            "label": "Özel İş Akışları",
-            "professional": false,
-            "business": false,
-            "enterprise": true
-          }
-        ],
         "heading": "Planları Detaylı Karşılaştırın",
         "included": "Dahil",
-        "notIncluded": "Dahil değil"
+        "notIncluded": "Dahil değil",
+        "rows": [
+          {
+            "business": true,
+            "enterprise": true,
+            "label": "Özel CSM",
+            "professional": false
+          },
+          {
+            "business": true,
+            "enterprise": true,
+            "label": "Telefon Desteği",
+            "professional": false
+          },
+          {
+            "business": false,
+            "enterprise": true,
+            "label": "7/24/365 Destek",
+            "professional": false
+          },
+          {
+            "business": false,
+            "enterprise": true,
+            "label": "Yönetici Kademelendirme",
+            "professional": false
+          },
+          {
+            "business": false,
+            "enterprise": true,
+            "label": "Güvenlik İncelemeleri",
+            "professional": false
+          },
+          {
+            "business": false,
+            "enterprise": true,
+            "label": "Özel İş Akışları",
+            "professional": false
+          }
+        ]
       },
       "edgeChannel": {
         "cta": "Edge kanalını keşfedin",
@@ -3001,8 +3031,6 @@
     },
     "solutionPages": {
       "aiPentesting": {
-        "label": "Yapay Zeka Sızma Testi",
-        "blurb": "Üretimi klonlayın. Yapay zekanın saldırmasına izin verin.",
         "benefits": {
           "items": [
             {
@@ -3024,6 +3052,7 @@
           "overline": "NEDEN ÖNEMLİ",
           "title": "Ne elde edersiniz"
         },
+        "blurb": "Üretimi klonlayın. Yapay zekanın saldırmasına izin verin.",
         "bottomCta": {
           "command": "rdc repo fork production --tag pentest",
           "ctaText": "Ücretsiz Başlayın",
@@ -3129,6 +3158,7 @@
           ],
           "title": "Tek komut. Sıfır risk."
         },
+        "label": "Yapay Zeka Sızma Testi",
         "meta": {
           "description": "Altyapınızın birebir kopyalarını oluşturun ve AI destekli sızma testleri çalıştırın — üretim ortamını riske atmadan.",
           "keywords": "AI sızma testi, penetrasyon testi, güvenlik testi, güvenlik açığı taraması, klon saldırısı",
@@ -3264,8 +3294,6 @@
         }
       },
       "auditTrail": {
-        "label": "Denetim İzi",
-        "blurb": "Her eylem kayıt altında. Gizli bir şey yok.",
         "benefits": {
           "items": [
             {
@@ -3287,6 +3315,7 @@
           "overline": "NEDEN ÖNEMLİ",
           "title": "Ne elde edersiniz"
         },
+        "blurb": "Her eylem kayıt altında. Gizli bir şey yok.",
         "bottomCta": {
           "command": "rdc repo status production",
           "ctaText": "Community ile Ücretsiz Başlayın",
@@ -3446,6 +3475,7 @@
           ],
           "title": "Tek komut. Tam görünürlük."
         },
+        "label": "Denetim İzi",
         "meta": {
           "description": "Kimin ne yaptığına, ne zaman ve neden yaptığına tam görünürlük. Her işlem için kurcalamaya dayanıklı denetim günlükleri.",
           "keywords": "denetim izi, uyumluluk günlüğü, kurcalamaya dayanıklı günlükler, SHA-256 imzalı, denetim raporu",
@@ -3617,8 +3647,6 @@
         }
       },
       "backupVerification": {
-        "label": "Yedek Doğrulama",
-        "blurb": "Her yedek otomatik olarak doğrulanır",
         "benefits": {
           "items": [
             {
@@ -3640,6 +3668,7 @@
           "overline": "NEDEN ÖNEMLİ",
           "title": "Ne elde edersiniz"
         },
+        "blurb": "Her yedek otomatik olarak doğrulanır",
         "bottomCta": {
           "command": "rdc backup verify my-app",
           "description": "Ücretsiz Community sürümüyle başlayın. İlk yedeklemenizi bir dakikadan kısa sürede doğrulayın.",
@@ -3800,6 +3829,7 @@
           ],
           "title": "Tek komut. Sıfır sürpriz."
         },
+        "label": "Yedek Doğrulama",
         "meta": {
           "description": "Yedeklemenizin bozuk olduğunu öğrenmek için felaket beklemeyin. Rediacc her yedeklemeyi oluşturulduğu anda kontrol eder.",
           "keywords": "yedekleme doğrulaması, yedekleme testi, geri yükleme doğrulaması, yedekleme bütünlüğü, otomatik yedekleme kontrolü, btrfs klonu, yedekleme sağlık kontrolü",
@@ -3981,8 +4011,6 @@
         }
       },
       "cloudOutageProtection": {
-        "label": "Bulut Kesinti Koruması",
-        "blurb": "AWS çökünce siz çökmezsiniz",
         "benefits": {
           "items": [
             {
@@ -4004,6 +4032,7 @@
           "overline": "NEDEN ÖNEMLİ",
           "title": "Ne elde edersiniz"
         },
+        "blurb": "AWS çökünce siz çökmezsiniz",
         "bottomCta": {
           "command": "rdc repo push production --to secondary-dc",
           "description": "Ücretsiz Community sürümüyle başlayın. Konumlar arasında ücretsiz çoğaltın. Kredi kartı gerekmez.",
@@ -4165,6 +4194,7 @@
           ],
           "title": "Tek komut. Her zaman çevrimiçi."
         },
+        "label": "Bulut Kesinti Koruması",
         "meta": {
           "description": "Altyapınız birden fazla bulutta çalışır. Biri çökünce, diğerleri devralır. Otomatik olarak.",
           "keywords": "bulut kesintisi koruması, çoklu bulut yük devretme, çapraz bulut replikasyonu, felaket kurtarma, bulut yedekliliği, otomatik yük devretme, btrfs replikasyonu",
@@ -4342,8 +4372,6 @@
         }
       },
       "continuousSecurityTesting": {
-        "label": "Sürekli Güvenlik Testi",
-        "blurb": "Güvenliği yılda bir değil, sürekli test edin",
         "benefits": {
           "items": [
             {
@@ -4365,6 +4393,7 @@
           "overline": "NEDEN ÖNEMLİ",
           "title": "Ne elde edersiniz"
         },
+        "blurb": "Güvenliği yılda bir değil, sürekli test edin",
         "bottomCta": {
           "command": "rdc backup restore production --as production-verify -m primary --up",
           "ctaText": "Ücretsiz Başlayın",
@@ -4465,6 +4494,7 @@
           ],
           "title": "Tek komut. Günlük kapsam."
         },
+        "label": "Sürekli Güvenlik Testi",
         "meta": {
           "description": "Her gün taze üretim klonlarında güvenlik testleri çalıştırın. Güvenlik açıklarını ortaya çıktıklarında bulun — aylar sonra değil.",
           "keywords": "sürekli güvenlik testi, günlük sızma testi, otomatik güvenlik, güvenlik açığı tespiti",
@@ -4600,8 +4630,6 @@
         }
       },
       "dataSovereignty": {
-        "label": "Veri Egemenliği",
-        "blurb": "Sunucularınız, anahtarlarınız, yargı yetkiniz.",
         "benefits": {
           "items": [
             {
@@ -4623,6 +4651,7 @@
           "overline": "NEDEN ÖNEMLİ",
           "title": "Ne elde edersiniz"
         },
+        "blurb": "Sunucularınız, anahtarlarınız, yargı yetkiniz.",
         "bottomCta": {
           "command": "rdc config show",
           "ctaText": "Community ile Ücretsiz Başlayın",
@@ -4780,6 +4809,7 @@
           ],
           "title": "Üç adım. Tek egemen yığın."
         },
+        "label": "Veri Egemenliği",
         "meta": {
           "description": "Sunucuyu siz barındırır, anahtarları siz tutarsınız. CLOUD Act koruması mimari güvenceyle sağlanır. Müşteri anahtarlı öz barındırmalı yedekleme.",
           "keywords": "veri egemenliği, CLOUD Act bağışıklığı, müşteriye ait anahtarlar, GDPR Schrems II, AB Veri Yasası, kendi barındırma, egemen yedekleme, SecNumCloud, DORA",
@@ -4974,8 +5004,6 @@
         "title": "Zamanınız mı kısıtlı?"
       },
       "encryption": {
-        "label": "Sizin Kontrolünüzde Şifreleme",
-        "blurb": "Sizin anahtarlarınız. Sizin şifrelemeniz. İstisna yok.",
         "benefits": {
           "items": [
             {
@@ -4997,6 +5025,7 @@
           "overline": "NEDEN ÖNEMLİ",
           "title": "Ne elde edersiniz"
         },
+        "blurb": "Sizin anahtarlarınız. Sizin şifrelemeniz. İstisna yok.",
         "bottomCta": {
           "command": "rdc repo up production",
           "ctaText": "Community ile Ücretsiz Başlayın",
@@ -5156,6 +5185,7 @@
           ],
           "title": "Tek komut. Tam kontrol."
         },
+        "label": "Sizin Kontrolünüzde Şifreleme",
         "meta": {
           "description": "Her yedekleme sizin sahip olduğunuz anahtarlarla şifrelenir. Sağlayıcınızın anahtarları değil. Paylaşılan anahtarlar değil. Yalnızca sizin.",
           "keywords": "şifreleme, sıfır bilgi, müşteri tutumlu anahtarlar, AES-256, yedekleme şifreleme",
@@ -5359,8 +5389,6 @@
         }
       },
       "environmentCloning": {
-        "label": "Ortam Klonlama",
-        "blurb": "Üretimi 60 saniyede klonlayın",
         "benefits": {
           "items": [
             {
@@ -5382,6 +5410,7 @@
           "overline": "NEDEN ÖNEMLİ",
           "title": "Ne elde edersiniz"
         },
+        "blurb": "Üretimi 60 saniyede klonlayın",
         "bottomCta": {
           "command": "rdc repo fork production --tag my-first-clone",
           "description": "Ücretsiz Community sürümüyle başlayın. 10 iş yüküne kadar ücretsiz klonlayın. Kredi kartı gerekmez.",
@@ -5543,6 +5572,7 @@
           ],
           "title": "Tek komut. Altmış saniye."
         },
+        "label": "Ortam Klonlama",
         "meta": {
           "description": "Üretim ortamının birebir kopyalarını oluşturun — uygulama, veritabanı ve yapılandırma — geliştirme ve test için. Talep açmadan. Beklemeden.",
           "keywords": "ortam klonlama, üretim klonu, geliştirme ortamı, anında hazırlama, btrfs klonu, copy-on-write, geçici ortamlar",
@@ -5724,8 +5754,6 @@
         }
       },
       "failoverTesting": {
-        "label": "Yük Devretme Testi",
-        "blurb": "Yük devretmenizi ihtiyaç duymadan önce test edin",
         "benefits": {
           "items": [
             {
@@ -5747,6 +5775,7 @@
           "overline": "NEDEN ÖNEMLİ",
           "title": "Ne elde edersiniz"
         },
+        "blurb": "Yük devretmenizi ihtiyaç duymadan önce test edin",
         "bottomCta": {
           "command": "rdc repo push production --to secondary --checkpoint",
           "description": "Ücretsiz Community sürümüyle başlayın. İlk felaket kurtarma testinizi 5 dakikadan kısa sürede çalıştırın.",
@@ -5907,6 +5936,7 @@
           ],
           "title": "Tek komut. Tam güven."
         },
+        "label": "Yük Devretme Testi",
         "meta": {
           "description": "Felaket simülasyonlarını güvenle çalıştırın. Kurtarmanızın gerçekten çalıştığını bilin. En çok ihtiyaç duyduğunuz anda sürpriz yok.",
           "keywords": "yük devretme testi, felaket kurtarma testi, DR simülasyonu, DR test otomasyonu, kurtarma doğrulama, btrfs klonu, RTO RPO testi",
@@ -6076,8 +6106,6 @@
         }
       },
       "immutableBackups": {
-        "label": "Değiştirilemez Yedekler",
-        "blurb": "Fidye yazılımının dokunamayacağı yedekler",
         "benefits": {
           "items": [
             {
@@ -6099,6 +6127,7 @@
           "overline": "NEDEN ÖNEMLİ",
           "title": "Ne elde edersiniz"
         },
+        "blurb": "Fidye yazılımının dokunamayacağı yedekler",
         "bottomCta": {
           "command": "rdc repo push production --to backup-vault",
           "description": "Ücretsiz Community sürümüyle başlayın. 10 iş yüküne kadar ücretsiz koruyun. Kredi kartı gerekmez.",
@@ -6259,6 +6288,7 @@
           ],
           "title": "Tek komut. Tam koruma."
         },
+        "label": "Değiştirilemez Yedekler",
         "meta": {
           "description": "Yedeklemeleriniz oluşturuldukları andan itibaren değiştirilemez. Kimse onları değiştiremez. Bilgisayar korsanları da. Siz bile.",
           "keywords": "değiştirilemez yedeklemeler, fidye yazılımı koruması, btrfs anlık görüntüler, yedekleme doğrulama, felaket kurtarma, copy-on-write, mühürlü yedeklemeler",
@@ -6468,8 +6498,6 @@
         }
       },
       "infrastructureCosts": {
-        "label": "Altyapı Maliyetleri",
-        "blurb": "Boşta kalan ortamlar için ödeme yapmayı bırakın",
         "benefits": {
           "items": [
             {
@@ -6491,6 +6519,7 @@
           "overline": "NEDEN ÖNEMLİ",
           "title": "Ne elde edersiniz"
         },
+        "blurb": "Boşta kalan ortamlar için ödeme yapmayı bırakın",
         "bottomCta": {
           "command": "rdc repo fork production --tag dev-loadtest",
           "description": "Ücretsiz Community sürümüyle başlayın. İsteğe bağlı klonlama dahil.",
@@ -6646,6 +6675,7 @@
           ],
           "title": "Tek komut. Sıfır israf."
         },
+        "label": "Altyapı Maliyetleri",
         "meta": {
           "description": "İhtiyaç duyduğunuzda ortam oluşturun. İşiniz bitince yok edin. Yalnızca gerçekten kullandığınız için ödeme yapın.",
           "keywords": "altyapı maliyetleri, boşta ortamlar, isteğe bağlı ortamlar, maliyet optimizasyonu, btrfs klonu, copy-on-write, TTL, otomatik yok etme",
@@ -6803,8 +6833,6 @@
         }
       },
       "instantRecovery": {
-        "label": "Anında Kurtarma",
-        "blurb": "Dakikalar içinde tam ortam kurtarma",
         "benefits": {
           "items": [
             {
@@ -6826,6 +6854,7 @@
           "overline": "NEDEN ÖNEMLİ",
           "title": "Ne elde edersiniz"
         },
+        "blurb": "Dakikalar içinde tam ortam kurtarma",
         "bottomCta": {
           "command": "rdc repo pull production --from daily-2026-02-27",
           "description": "Ücretsiz Community sürümüyle başlayın. İlk ortamınızı 5 dakikadan kısa sürede geri yükleyin.",
@@ -6988,6 +7017,7 @@
           ],
           "title": "Tek komut. Her şey geri."
         },
+        "label": "Anında Kurtarma",
         "meta": {
           "description": "Sadece dosyalar değil. Tüm ortamlar — sunucular, yapılandırmalar, veritabanları — dakikalar içinde geri yüklenir ve çalışır.",
           "keywords": "anında kurtarma, tam ortam geri yükleme, btrfs klonu, felaket kurtarma, yedekleme geri yükleme, belirli zaman noktası kurtarma, sağlık kontrolleri, tek komutla kurtarma",
@@ -7165,8 +7195,6 @@
         }
       },
       "integrations": {
-        "label": "CI/CD Entegrasyonları",
-        "blurb": "Mevcut iş akışınıza entegre edin",
         "benefits": {
           "items": [
             {
@@ -7188,6 +7216,7 @@
           "overline": "NEDEN ÖNEMLİ",
           "title": "Ne elde edersiniz"
         },
+        "blurb": "Mevcut iş akışınıza entegre edin",
         "bottomCta": {
           "command": "rdc repo fork production --tag ci-build",
           "description": "Ücretsiz Community sürümüyle başlayın. Git entegrasyonu dahil.",
@@ -7317,6 +7346,7 @@
           ],
           "title": "Tek komut. Sıfır betik."
         },
+        "label": "CI/CD Entegrasyonları",
         "meta": {
           "description": "Git push yeni bir ortam tetikler. Testler üretim klonlarında çalışır. CI/CD özel betik gerektirmeden çalışır.",
           "keywords": "CI/CD entegrasyonu, GitLab CI, GitHub Actions, webhook, üretim klonu, test ortamı, pipeline otomasyonu",
@@ -7482,8 +7512,6 @@
         }
       },
       "kubernetesClusterMobility": {
-        "label": "Kubernetes Cluster Taşınabilirliği",
-        "blurb": "Çalışan bir cluster'ı fork'layın veya taşıyın, veri dahil",
         "benefits": {
           "items": [
             {
@@ -7505,6 +7533,7 @@
           "overline": "NEDEN ÖNEMLİ",
           "title": "Kubernetes'inizi koruyun. Taşınabilirlik kazanın."
         },
+        "blurb": "Çalışan bir cluster'ı fork'layın veya taşıyın, veri dahil",
         "bottomCta": {
           "command": "rdc cluster fork prod --tag staging",
           "ctaText": "Ücretsiz başlayın",
@@ -7631,6 +7660,7 @@
           ],
           "title": "Cluster'ın tamamı tek bir dosya grubudur"
         },
+        "label": "Kubernetes Cluster Taşınabilirliği",
         "meta": {
           "description": "Çalışan bir Kubernetes cluster'ını, veri dahil, başka bir makineye veya veri merkezine fork'layın. Kısa, ölçülmüş kesinti. Ceph RBD ve k3s üzerine kurulu.",
           "keywords": "kubernetes cluster göçü, cluster fork, ceph rbd, k3s, veri merkezi taşınabilirliği, kubernetes taşınabilirliği",
@@ -7794,8 +7824,6 @@
         "title": "Teknik özeti edinin"
       },
       "migrationSafety": {
-        "label": "Taşıma Güvenliği",
-        "blurb": "Verilerinizi riske atmadan taşıyın",
         "benefits": {
           "items": [
             {
@@ -7817,6 +7845,7 @@
           "overline": "NEDEN ÖNEMLİ",
           "title": "Ne elde edersiniz"
         },
+        "blurb": "Verilerinizi riske atmadan taşıyın",
         "bottomCta": {
           "command": "rdc repo push production --to secondary",
           "description": "Ücretsiz Community sürümüyle başlayın. Şifreli göç dahil.",
@@ -7975,6 +8004,7 @@
           ],
           "title": "Tek komut. Sıfır maruz kalma."
         },
+        "label": "Taşıma Güvenliği",
         "meta": {
           "description": "Sunucular, bulutlar veya sağlayıcılar arasında geçiş mi yapıyorsunuz? Şifrelenmiş yedeklemeleriniz güvenle taşınır. Maruz kalma yok. Veri kaybı yok.",
           "keywords": "şifreli göç, sıfır maruziyetli transfer, veri göçü güvenliği, şifreli yedekleme transferi, btrfs göçü, sunucu göçü, bulut göçü şifreleme",
@@ -8152,8 +8182,6 @@
         }
       },
       "productionParity": {
-        "label": "Üretim Eşitliği",
-        "blurb": "Üretimle birebir eşleşen geliştirme ortamları",
         "benefits": {
           "items": [
             {
@@ -8175,6 +8203,7 @@
           "overline": "NEDEN ÖNEMLİ",
           "title": "Ne elde edersiniz"
         },
+        "blurb": "Üretimle birebir eşleşen geliştirme ortamları",
         "bottomCta": {
           "command": "rdc backup restore dev-sarah --as dev-sarah-verify --up",
           "description": "Ücretsiz Community sürümüyle başlayın. Üretim eşliği dahil.",
@@ -8331,6 +8360,7 @@
           ],
           "title": "Tek komut. Mükemmel eşlik."
         },
+        "label": "Üretim Eşitliği",
         "meta": {
           "description": "Artık \"benim makinemde çalışıyor\" yok. Her geliştirme ortamı üretim ortamının birebir klonudur.",
           "keywords": "üretim eşliği, ortam sapması, geliştirme ortamı, birebir klon, btrfs klonu, copy-on-write, yapılandırma eşleşmesi",
@@ -8484,8 +8514,6 @@
         }
       },
       "rapidRecovery": {
-        "label": "Hızlı Kurtarma",
-        "blurb": "Günler değil, dakikalar içinde kurtarın",
         "benefits": {
           "items": [
             {
@@ -8507,6 +8535,7 @@
           "overline": "NEDEN ÖNEMLİ",
           "title": "Ne elde edersiniz"
         },
+        "blurb": "Günler değil, dakikalar içinde kurtarın",
         "bottomCta": {
           "command": "rdc repo pull production --from backup-vault --force",
           "ctaText": "Community ile Ücretsiz Başlayın",
@@ -8662,6 +8691,7 @@
           ],
           "title": "Tek komut. Tekrar çevrimiçi."
         },
+        "label": "Hızlı Kurtarma",
         "meta": {
           "description": "Fidye yazılımı saldırdığında her dakika para kaybettirir. Rediacc hasar yayılmadan sizi tekrar çevrimiçi getirir.",
           "keywords": "hızlı kurtarma, fidye yazılımı kurtarma, felaket kurtarma, btrfs geri yükleme, hızlı kurtarma",
@@ -8853,8 +8883,6 @@
         }
       },
       "retentionCompliance": {
-        "label": "Saklama Uyumluluğu",
-        "blurb": "Verilerinizi yasaların gerektirdiği süre boyunca saklayın",
         "benefits": {
           "items": [
             {
@@ -8876,6 +8904,7 @@
           "overline": "NEDEN ÖNEMLİ",
           "title": "Ne elde edersiniz"
         },
+        "blurb": "Verilerinizi yasaların gerektirdiği süre boyunca saklayın",
         "bottomCta": {
           "command": "rdc config backup-strategy set --cron '0 2 * * *'",
           "description": "Ücretsiz Community sürümüyle başlayın. İlk saklama politikanızı 30 saniyede ayarlayın.",
@@ -9037,6 +9066,7 @@
           ],
           "title": "Tek komut. Tam uyumluluk."
         },
+        "label": "Saklama Uyumluluğu",
         "meta": {
           "description": "Uyumluluk gereksinimlerini karşılayan yapılandırılabilir saklama politikaları. HIPAA, SOC2, GDPR — varsayılan olarak kapsanır.",
           "keywords": "saklama uyumluluğu, veri saklama, HIPAA uyumluluğu, SOC2, GDPR, yedekleme saklama, denetim hazır, uyumluluk otomasyonu",
@@ -9246,8 +9276,6 @@
         }
       },
       "safeOsTesting": {
-        "label": "Güvenli İşletim Sistemi Testi",
-        "blurb": "İşletim sistemi güncellemelerini risksiz test edin",
         "benefits": {
           "items": [
             {
@@ -9269,6 +9297,7 @@
           "overline": "NEDEN ÖNEMLİ",
           "title": "Ne elde edersiniz"
         },
+        "blurb": "İşletim sistemi güncellemelerini risksiz test edin",
         "bottomCta": {
           "command": "rdc repo fork production --tag patch-test",
           "description": "Ücretsiz Community sürümüyle başlayın. Ücretsiz klonlayın, test edin ve doğrulayın. Kredi kartı gerekmez.",
@@ -9429,6 +9458,7 @@
           ],
           "title": "Tek komut. Sıfır risk."
         },
+        "label": "Güvenli İşletim Sistemi Testi",
         "meta": {
           "description": "Üretim ortamınızı klonlayın. Yamayı uygulayın. Neyin bozulduğunu görün. Gerekirse geri alın. Üretim ortamına dokunmadan.",
           "keywords": "güvenli işletim sistemi testi, yama testi, işletim sistemi güncelleme testi, btrfs klonu, üretim klonu, sıfır riskli yamalama, güncelleme doğrulama",
@@ -9606,8 +9636,6 @@
         }
       },
       "vendorLockIn": {
-        "label": "Tedarikçi Bağımlılığından Kurtulma",
-        "blurb": "Sizin altyapınız. Sizin seçiminiz. Her zaman.",
         "benefits": {
           "items": [
             {
@@ -9629,6 +9657,7 @@
           "overline": "NEDEN ÖNEMLİ",
           "title": "Ne elde edersiniz"
         },
+        "blurb": "Sizin altyapınız. Sizin seçiminiz. Her zaman.",
         "bottomCta": {
           "command": "rdc repo push production --to new-provider --checkpoint",
           "ctaText": "Community ile Ücretsiz Başlayın",
@@ -9789,6 +9818,7 @@
           ],
           "title": "Tek komut. Tam özgürlük."
         },
+        "label": "Tedarikçi Bağımlılığından Kurtulma",
         "meta": {
           "description": "İstediğiniz yere dağıtın. İstediğiniz zaman göç edin. Bağlayıcı sözleşme yok. Tescilli format yok. Verileriniz sizin kalır.",
           "keywords": "sağlayıcı bağımlılığı, bulut göçü, çoklu bulut, taşınabilirlik, btrfs göçü",
@@ -9956,8 +9986,6 @@
         }
       },
       "vulnerabilityManagement": {
-        "label": "Güvenlik Açığı Yönetimi",
-        "blurb": "Saldırganlar gelmeden güvenlik açıklarını düzeltin",
         "benefits": {
           "items": [
             {
@@ -9979,6 +10007,7 @@
           "overline": "NEDEN ÖNEMLİ",
           "title": "Ne elde edersiniz"
         },
+        "blurb": "Saldırganlar gelmeden güvenlik açıklarını düzeltin",
         "bottomCta": {
           "command": "rdc term production cve-2026-1234-fix",
           "description": "Ücretsiz Community sürümüyle başlayın. İlk yamanızı 4 dakikadan kısa sürede doğrulayın.",
@@ -10080,6 +10109,7 @@
           ],
           "title": "Tek komut. Doğrulanmış düzeltmeler."
         },
+        "label": "Güvenlik Açığı Yönetimi",
         "meta": {
           "description": "Güvenli klonlarda güvenlik açıklarını bulun, test edin ve yamalayın. Yamaları güvenle üretime dağıtın.",
           "keywords": "güvenlik açığı yönetimi, yama doğrulaması, CVE iyileştirme, klon tabanlı yamalama, güvenli yamalama, güvenlik testi, güvenlik açığı düzeltme doğrulaması",
@@ -10702,16 +10732,6 @@
     "title": "Hesap bölgenizi seçin"
   },
   "solutions": {
-    "roles": {
-      "copy": "Kopyala",
-      "test": "Test",
-      "recover": "Kurtarma",
-      "property": "Platform"
-    },
-    "constellation": {
-      "centre": "Her çözüm, canlı sisteminizin bir kopyasına yapılan tek bir işlemdir.",
-      "title": "Diğer Çözümleri Keşfedin"
-    },
     "categories": {
       "backups": "Doğrulanmış Yedeklemeler",
       "defense": "Proaktif Savunma",
@@ -10719,6 +10739,19 @@
       "encryption": "Şifreleme Kontrolü",
       "multi-cloud": "Çoklu Bulut",
       "ransomware": "Fidye Yazılımından Kurtulma"
+    },
+    "constellation": {
+      "centre": "Her çözüm canlı sisteminizin bir kopyası üzerinde yapılan tek bir işlemdir.",
+      "title": "Diğer Çözümleri Keşfedin"
+    },
+    "references": {
+      "title": "Kaynaklar"
+    },
+    "roles": {
+      "copy": "Kopyala",
+      "property": "Platform",
+      "recover": "Kurtarma",
+      "test": "Sınama"
     },
     "title": "İş Sürekliliğini Nasıl Sağlıyoruz"
   },

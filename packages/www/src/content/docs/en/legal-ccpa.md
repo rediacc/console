@@ -2,6 +2,8 @@
 title: "CCPA Compliance"
 description: "How Rediacc's self-hosted model addresses California Consumer Privacy Act requirements for consumer data protection."
 category: "Legal"
+tags:
+  - compliance
 order: 4
 language: en
 ---

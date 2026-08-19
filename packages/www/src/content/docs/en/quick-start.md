@@ -2,6 +2,9 @@
 title: Quick Start
 description: Get a containerized service running on your server in minutes.
 category: Guides
+tags:
+  - getting-started
+  - containers
 order: -1
 language: en
 ---

@@ -2,9 +2,12 @@
 title: "Depolar"
 description: "Uzak makinelerde LUKS ile şifrelenmiş depoları oluşturma, yönetme ve işletme."
 category: "Guides"
+tags:
+  - repositories
+  - security
 order: 4
 language: tr
-sourceHash: "b67203062ab832f8"
+sourceHash: "e1d1a463cc4049d4"
 sourceCommit: "70a4ca883754f1c0a7f4684c9fde02a5a01d3681"
 ---
 

@@ -2,9 +2,12 @@
 title: نظرة عامة على تكامل وكلاء الذكاء الاصطناعي
 description: "كيف تُدير Claude Code وCursor وCline بنية Rediacc التحتية عبر rdc: مخرجات JSON، واستبطان الوكيل، وضوابط الأمان."
 category: Guides
+tags:
+  - ai-agents
+  - cli
 order: 30
 language: ar
-sourceHash: "29eb3ce5a55c36d1"
+sourceHash: "c544cf8514d36558"
 sourceCommit: "23543669cd22bce3f14d69a0886bac8a12061412"
 ---
 

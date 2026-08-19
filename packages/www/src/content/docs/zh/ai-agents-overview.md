@@ -2,9 +2,12 @@
 title: AI 代理集成概述
 description: "Claude Code、Cursor 和 Cline 如何通过 rdc 管理 Rediacc 基础设施：JSON 输出、代理内省以及安全防护机制。"
 category: Guides
+tags:
+  - ai-agents
+  - cli
 order: 30
 language: zh
-sourceHash: "29eb3ce5a55c36d1"
+sourceHash: "c544cf8514d36558"
 sourceCommit: "23543669cd22bce3f14d69a0886bac8a12061412"
 ---
 

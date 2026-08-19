@@ -2,9 +2,12 @@
 title: "자동 시작 및 복구"
 description: "자동 시작의 작동 방식, 부팅 후 중단된 레포지토리를 복구하는 주기적 조정자, 그리고 복구 상태를 확인하는 방법."
 category: "Guides"
+tags:
+  - operations
+  - containers
 order: 5
 language: ko
-sourceHash: "62148f7a55752783"
+sourceHash: "0a87131bd0d87a34"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 

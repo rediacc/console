@@ -2,9 +2,12 @@
 title: "Правила Rediacc"
 description: "Основные правила и соглашения для разработки приложений на платформе Rediacc. Охватывает Rediaccfile, compose, сетевую конфигурацию, хранение, CRIU и развёртывание."
 category: Guides
+tags:
+  - containers
+  - networking
 order: 5
 language: ru
-sourceHash: "1ceb078c7eb045b7"
+sourceHash: "d57f030a95892e39"
 sourceCommit: "20f014619af1ee41e75cd46a3c8e4abc5add0983"
 ---
 

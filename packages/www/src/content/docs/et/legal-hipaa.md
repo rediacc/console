@@ -2,9 +2,12 @@
 title: "HIPAA vastavus"
 description: "Kuidas Rediacc'i krüptimis- ja eraldusarhitektuur vastab HIPAA kaitsemeetmete nõuetele terviseteabe kaitsmisel."
 category: "Legal"
+tags:
+  - compliance
+  - security
 order: 3
 language: et
-sourceHash: "58f208db31474a81"
+sourceHash: "1a0a2df716f6628b"
 sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
 ---
 

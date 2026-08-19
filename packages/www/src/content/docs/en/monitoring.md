@@ -2,6 +2,8 @@
 title: "Monitoring"
 description: "Monitor machine health, containers, services, repositories, and run diagnostics."
 category: "Guides"
+tags:
+  - operations
 order: 9
 language: en
 ---

@@ -3,9 +3,12 @@ title: 架构
 description: >-
   Rediacc 的工作原理：双工具架构、适配器检测、安全模型和配置结构。
 category: Concepts
+tags:
+  - repositories
+  - containers
 order: 0
 language: zh
-sourceHash: "16b02000a82f3acd"
+sourceHash: "878b744629cb8b14"
 sourceCommit: "5fab1177d6ceae5211c25cf8fa0176d67259d40e"
 ---
 

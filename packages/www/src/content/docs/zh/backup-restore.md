@@ -2,9 +2,12 @@
 title: "备份与恢复"
 description: "将加密仓库快照到内容寻址的分块存储中,只上传发生变化的单元格,任何一个快照都能直接恢复。也可以在另一台机器上保留一份副本。可以恢复到任意位置,并通过命名策略和 systemd 定时器实现自动化。"
 category: "Guides"
+tags:
+  - backup
+  - storage
 order: 7
 language: zh
-sourceHash: "91f6072e230b059c"
+sourceHash: "c35328105c2f3e8c"
 sourceCommit: "79c84ad044d5730b6d0a20aaf7b21f21914b6bda"
 ---
 

@@ -269,6 +269,32 @@ export const GATES: readonly GateSpec[] = [
     },
   },
   {
+    id: 'check:ci-tutorial-healthcheck-headroom',
+    run: 'npm run check:ci-tutorial-healthcheck-headroom',
+    gate: true,
+    leaves: ['.ci/scripts/quality/check_tutorial_healthcheck_headroom.py'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-packages',
+      step: 'Tutorial healthcheck headroom',
+    },
+  },
+  {
+    id: 'check:ci-guard-mutations',
+    run: 'npm run check:ci-guard-mutations',
+    gate: true,
+    weight: 2,
+    heavy: true,
+    leaves: ['scripts/check-guard-mutations.ts'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-packages',
+      step: 'Guard mutations',
+    },
+  },
+  {
     id: 'check:test-cli',
     run: 'npm run check:test-cli',
     gate: true,

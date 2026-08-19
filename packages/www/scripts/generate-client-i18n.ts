@@ -85,6 +85,12 @@ const CLIENT_KEY_PATHS: Record<BundleName, readonly string[]> = {
     'captchaRequired',
     'common',
     'contactModal',
+    // LearnMenu renders the six docs categories by their translated LABEL while
+    // routing on the English identifier. It is a client island, so without this
+    // the panel shipped "documentation.categories.tutorials" as visible text --
+    // caught in the browser, not by the type checker, because an unresolved t()
+    // key is a perfectly valid string.
+    'documentation.categories',
     'footer',
     'navigation',
     'newsletter',

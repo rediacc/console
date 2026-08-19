@@ -2,9 +2,12 @@
 title: AIエージェント統合の概要
 description: "Claude Code、Cursor、Clineが rdc を通じてRediaccインフラを管理する方法: JSON出力、エージェントイントロスペクション、安全ガードレール。"
 category: Guides
+tags:
+  - ai-agents
+  - cli
 order: 30
 language: ja
-sourceHash: "29eb3ce5a55c36d1"
+sourceHash: "c544cf8514d36558"
 sourceCommit: "23543669cd22bce3f14d69a0886bac8a12061412"
 ---
 

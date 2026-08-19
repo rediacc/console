@@ -2,9 +2,12 @@
 title: Récupération par voyage dans le temps
 description: "Récupérez des données supprimées il y a des semaines à l'aide d'instantanés btrfs, même après que vos sauvegardes normales les aient dépassées."
 category: Use Cases
+tags:
+  - backup
+  - storage
 order: 2
 language: fr
-sourceHash: "e55d51b8df91b20f"
+sourceHash: "2fce69fb1631f640"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 

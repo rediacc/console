@@ -2,22 +2,23 @@
 title: "Elus migratsioon"
 description: "Tõsta töötav repositoorium, konteinerid, andmebaas ja protsessimälu kaasa arvatud, teisele masinale ühe käsuga ja minimaalse seisakuajaga."
 category: "Tutorials"
+tags:
+  - migration
+  - containers
 subcategory: advanced
 order: 16
 language: et
-sourceHash: "0d0c4df847c6ba17"
+sourceHash: "6b14c6eb4a0b643a"
 sourceCommit: "3fb35b9a33c7e8ec6753ecd56231f2018e8f4803"
 ---
 
 import TutorialStep from '../../../components/tutorial/TutorialStep.astro';
 
+![Tutorial: Live migration](/assets/tutorials/tutorial-live-migration.cast)
+
 # Elus migratsioon
 
 Servereid vahetatakse: riistvara vananeb, teenusepakkujad muutuvad, regioonid liiguvad. `rdc repo migrate` tõstab töötava repositooriumi teisele masinale ühe käsuga -- ja `--checkpoint`-iga reisib isegi protsessimälu kaasa. Demokäivitus `pulse` hoiab loendajat RAM-is; pärast liikumist jätkab see loendamist otsast alustamise asemel.
-
-## Vaata juhendvideot
-
-![Tutorial: Live migration](/assets/tutorials/tutorial-live-migration.cast)
 
 ## Kuidas see liigub
 

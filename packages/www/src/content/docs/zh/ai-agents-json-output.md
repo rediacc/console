@@ -2,9 +2,12 @@
 title: JSON 输出参考
 description: rdc CLI JSON 输出格式、信封模式、错误处理和代理发现命令的完整参考。
 category: Reference
+tags:
+  - ai-agents
+  - cli
 order: 51
 language: zh
-sourceHash: "cc88f8f06960df3a"
+sourceHash: "36ba86893c3817ac"
 sourceCommit: "23543669cd22bce3f14d69a0886bac8a12061412"
 ---
 

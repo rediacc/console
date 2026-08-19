@@ -3,9 +3,12 @@ title: サービス
 description: >-
   Rediaccfile、サービスネットワーキング、自動開始を使用してコンテナ化されたサービスをデプロイおよび管理します。
 category: Guides
+tags:
+  - containers
+  - operations
 order: 5
 language: ja
-sourceHash: "f33bcf4598caedc8"
+sourceHash: "8eef0f7b9e1dcd39"
 sourceCommit: "3fb35b9a33c7e8ec6753ecd56231f2018e8f4803"
 ---
 

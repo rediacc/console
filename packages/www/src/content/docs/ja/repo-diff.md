@@ -2,10 +2,12 @@
 title: "rdc repo diff"
 description: "Copy-on-Write フォーク済みリポジトリ間の、暗号化されたイメージをブロックレベルで比較し、復号化なしで git スタイルのファイルレベルの差分を表示します"
 category: Reference
-subcategory: advanced
+tags:
+  - forking
+  - storage
 order: 40
 language: ja
-sourceHash: "b555f4ca6b58ff4b"
+sourceHash: "6f5ccba93044665a"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 

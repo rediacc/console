@@ -2,9 +2,12 @@
 title: Mise à l'échelle de la base de données héritée
 description: Faites évoluer les bases de données existantes sans migration en tirant parti de la réplication des données en temps réel et de la distribution des requêtes.
 category: Use Cases
+tags:
+  - migration
+  - forking
 order: 3
 language: fr
-sourceHash: "b15507f1e0da46d2"
+sourceHash: "7131eacdf2a43da5"
 sourceCommit: "8b37b0a2c25c0ba7e5a8a63c8d3ed0da48b78a10"
 ---
 

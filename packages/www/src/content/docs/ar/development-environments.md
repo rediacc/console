@@ -4,9 +4,12 @@ description: >-
   توقف عن انتظار أيام بيئات التطوير. قم باستنساخ البنية الأساسية للإنتاج الكاملة
   لديك في أقل من 60 ثانية باستخدام بيئات سريعة الزوال عند الطلب.
 category: Use Cases
+tags:
+  - forking
+  - containers
 order: 10
 language: ar
-sourceHash: "d534fc11b7ba4fa7"
+sourceHash: "dd05b3e00f6f921d"
 sourceCommit: "8b37b0a2c25c0ba7e5a8a63c8d3ed0da48b78a10"
 ---
 

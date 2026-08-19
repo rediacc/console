@@ -2,9 +2,12 @@
 title: Руководство по настройке Cursor
 description: Настройка Cursor IDE для работы с инфраструктурой Rediacc с помощью .cursorrules и интеграции терминала.
 category: Guides
+tags:
+  - ai-agents
+  - cli
 order: 32
 language: ru
-sourceHash: "bab7e70ffbd9f32b"
+sourceHash: "e0fb319a9e477324"
 sourceCommit: "23543669cd22bce3f14d69a0886bac8a12061412"
 ---
 

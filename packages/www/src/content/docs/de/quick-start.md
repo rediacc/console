@@ -2,9 +2,12 @@
 title: Schnellstart
 description: Starten Sie einen containerisierten Dienst auf Ihrem Server in wenigen Minuten.
 category: Guides
+tags:
+  - getting-started
+  - containers
 order: -1
 language: de
-sourceHash: "b2745d4f0d99d7a4"
+sourceHash: "05e91da1e94dddfc"
 sourceCommit: "a56b03aa5da8df74255a6bc9bc9463665c3499b6"
 ---
 

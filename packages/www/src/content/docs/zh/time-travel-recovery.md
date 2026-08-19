@@ -2,9 +2,12 @@
 title: 时间旅行恢复
 description: "使用 btrfs 快照恢复数周前删除的数据，即使你的常规备份已经滚动过了。"
 category: Use Cases
+tags:
+  - backup
+  - storage
 order: 2
 language: zh
-sourceHash: "e55d51b8df91b20f"
+sourceHash: "2fce69fb1631f640"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 

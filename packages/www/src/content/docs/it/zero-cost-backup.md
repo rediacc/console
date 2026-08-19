@@ -2,9 +2,12 @@
 title: "Ambienti di Sviluppo Fedeli alla Produzione in Pochi Minuti"
 description: "Riduci la configurazione dell'ambiente da giorni a minuti grazie alla deduplicazione a livello di blocco: più velocità, zero sprechi."
 category: Use Cases
+tags:
+  - forking
+  - storage
 order: 7
 language: it
-sourceHash: "2aa115fc621f5258"
+sourceHash: "a9c98112fe890a13"
 sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 ---
 

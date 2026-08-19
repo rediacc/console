@@ -4,9 +4,12 @@ description: >-
   Référence complète du format de sortie JSON du CLI rdc, schéma de l'enveloppe,
   gestion des erreurs et commandes de découverte pour les agents.
 category: Reference
+tags:
+  - ai-agents
+  - cli
 order: 51
 language: fr
-sourceHash: "cc88f8f06960df3a"
+sourceHash: "36ba86893c3817ac"
 sourceCommit: "23543669cd22bce3f14d69a0886bac8a12061412"
 ---
 

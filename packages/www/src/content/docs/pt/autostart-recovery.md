@@ -2,9 +2,12 @@
 title: "Autostart e Recuperação"
 description: "Como funciona o autostart, o reconciliador periódico que recupera repositórios que caem após o arranque, e como inspeccionar o estado de recuperação."
 category: "Guides"
+tags:
+  - operations
+  - containers
 order: 5
 language: pt
-sourceHash: "62148f7a55752783"
+sourceHash: "0a87131bd0d87a34"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 

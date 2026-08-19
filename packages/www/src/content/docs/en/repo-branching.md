@@ -2,7 +2,9 @@
 title: "Git-like branching"
 description: "Treat copy-on-write forks as git commits: freeze a fork into an immutable commit, name branches, check commits out into writable forks, walk history, and merge without ever mutating a live repository."
 category: Reference
-subcategory: advanced
+tags:
+  - forking
+  - repositories
 order: 41
 language: en
 ---

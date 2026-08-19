@@ -5,16 +5,16 @@
   "commands": {
     "backup": {
       "browse": {
+        "completed": "{{name}} aufgelistet",
         "description": "Listet die Dateien auf, die ein Repository enthält. Ein lokaler, schreibgeschützter Durchlauf des Repository-Images: kein Account-Server und kein Netzwerk. Ein verschlüsseltes Repository muss eingehängt sein oder seine Schlüsseldatei bereitgestellt haben, bevor es geöffnet werden kann; browse meldet das, statt nichts aufzulisten. Kann keine Snapshots auflisten, die nur im Chunk-Store existieren; zuerst wiederherstellen, dann das Ergebnis durchsuchen.",
         "descriptionShort": "Dateien eines Repositorys auflisten (lokal, schreibgeschützt)",
-        "optionPath": "Auflistung auf diesen Teilbaum beschränken",
+        "empty": "{{name}} enthält keine Dateien.",
+        "failed": "{{name}} konnte nicht aufgelistet werden",
         "optionDepth": "Abstiegstiefe auf N Ebenen begrenzen (0 für unbegrenzt)",
         "optionLimit": "Maximale Anzahl zurückgegebener Einträge (0 für unbegrenzt)",
+        "optionPath": "Auflistung auf diesen Teilbaum beschränken",
         "starting": "{{name}} wird aufgelistet...",
-        "completed": "{{name}} aufgelistet",
-        "failed": "{{name}} konnte nicht aufgelistet werden",
-        "truncated": "Auflistung bei {{limit}} Einträgen abgeschnitten. Grenzen Sie mit --path ein, oder erhöhen Sie --limit.",
-        "empty": "{{name}} enthält keine Dateien."
+        "truncated": "Auflistung bei {{limit}} Einträgen abgeschnitten. Grenzen Sie mit --path ein, oder erhöhen Sie --limit."
       },
       "cancel": {
         "cancelled": "{{name}} abgebrochen",
@@ -45,8 +45,8 @@
         "atResolved": "{{at}} wurde zu Snapshot {{snapshot}} aufgelöst (erstellt am {{created}}).",
         "atUnparsable": "--at \"{{at}}\" ist weder eine Snapshot-ID noch ein Zeitpunkt. Geben Sie eine Snapshot-ID aus `rdc backup manifests` an oder eine RFC3339-Zeit wie 2026-08-14T12:00:00Z.",
         "datastoreUnattached": "Datenspeicher \"{{datastore}}\" ist an keine Maschine angehängt. Zuerst anhängen: rdc datastore attach {{datastore}} --to <machine>.",
-        "deployFailed": "Bereitstellung des wiederhergestellten {{name}} fehlgeschlagen",
         "deployed": "{{name}} auf {{machine}} bereitgestellt",
+        "deployFailed": "Bereitstellung des wiederhergestellten {{name}} fehlgeschlagen",
         "deploying": "{{name}} wird auf {{machine}} bereitgestellt...",
         "description": "Ein Backup-Artefakt in ein lebendes Repository verwandeln. Die Platzierung wird hier festgelegt.",
         "examples": {
@@ -58,9 +58,9 @@
         "optionAt": "Zu einem Zeitpunkt wiederherstellen: eine Snapshot-ID oder eine RFC3339-Zeit (Chunk-Store-Wiederherstellung)",
         "optionDatastore": "In diesen benannten Datenspeicher wiederherstellen (dessen angehängte Maschine hostet ihn)",
         "optionUp": "Das wiederhergestellte Repository nach der Übertragung bereitstellen",
-        "placeRequired": "Ein Wiederherstellungs-Artefakt muss angeben, wo es liegt: verwenden Sie repo@place (z. B. shop:nightly@backup-1).",
         "placementExclusive": "Geben Sie genau ein Platzierungs-Flag an: --machine oder --datastore.",
         "placementRequired": "Geben Sie an, wohin wiederhergestellt werden soll: --machine <m> (Docker) oder --datastore <d> (benannter Datenspeicher).",
+        "placeRequired": "Ein Wiederherstellungs-Artefakt muss angeben, wo es liegt: verwenden Sie repo@place (z. B. shop:nightly@backup-1).",
         "pulling": "{{name}} wird von {{place}} abgerufen...",
         "restored": "{{name}} auf {{machine}} wiederhergestellt",
         "restoringSnapshot": "{{name}} wird aus Snapshot {{snapshot}} wiederhergestellt...",
@@ -1473,8 +1473,8 @@
         "starting": "\"{{grand}}\" wird mit Daten aus \"{{fork}}\" auf \"{{machine}}\" übernommen..."
       },
       "pull": {
-        "deployFailed": "Bereitstellung von \"{{repo}}\" nach Pull fehlgeschlagen",
         "deployed": "Repository \"{{repo}}\" auf {{machine}} bereitgestellt",
+        "deployFailed": "Bereitstellung von \"{{repo}}\" nach Pull fehlgeschlagen",
         "deploying": "\"{{repo}}\" wird auf {{machine}} bereitgestellt...",
         "description": "Repository von einer anderen Maschine pullen. Speicherquellen sind eingestellt; nutzen Sie `rdc backup restore` für eine Point-in-Time-Wiederherstellung. Der Quelltyp wird automatisch aus der Konfiguration erkannt. Verwenden Sie --up zum Bereitstellen nach dem Pull",
         "descriptionShort": "Repository von einer anderen Maschine pullen",
@@ -1493,8 +1493,8 @@
         "storageRetired": "Das Pullen von einem Storage-Backend ist eingestellt: der rclone-Cloud-Arm wurde entfernt. Die Point-in-Time-Wiederherstellung läuft über `rdc backup restore <repo> --at <snapshot>` im Chunk-Store. Der Transfer zwischen Maschinen bleibt unberührt: nutze --from-machine"
       },
       "push": {
-        "deployFailed": "Bereitstellung von \"{{repo}}\" nach Push fehlgeschlagen",
         "deployed": "Repository \"{{repo}}\" auf {{machine}} bereitgestellt",
+        "deployFailed": "Bereitstellung von \"{{repo}}\" nach Push fehlgeschlagen",
         "deploying": "\"{{repo}}\" wird auf {{machine}} bereitgestellt...",
         "description": "Repository an eine andere Maschine pushen. Speicherziele sind eingestellt; nutzen Sie `rdc backup snapshot` für eine Point-in-Time-Sicherung. Bei Maschine-zu-Maschine-Transfer wird das verschlüsselte Repo-Image mit derselben GUID kopiert: dies ist ein Backup oder eine Migration, kein Fork. Für einen unabhängigen Fork verwenden Sie zuerst 'repo fork', dann push. Eine gepushte Kopie landet als Backup-ARTEFAKT: starten Sie es auf dem Ziel mit 'backup restore <ref> --as <name> -m <target> --up'",
         "descriptionShort": "Repository an eine andere Maschine pushen",

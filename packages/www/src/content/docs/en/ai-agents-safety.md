@@ -5,6 +5,9 @@ description: >-
   overwriting credentials, or escalating privilege. Knowledge-gates,
   redaction, ancestry-verified overrides, and a hash-chained audit log.
 category: Concepts
+tags:
+  - ai-agents
+  - security
 order: 35
 language: en
 ---

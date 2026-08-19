@@ -3,9 +3,12 @@ title: AIエージェントの安全性とガードレール
 description: >-
   RediaccのCLIがAIコーディングアシスタントによるシークレット漏洩、認証情報の上書き、権限昇格を防ぐ仕組み。ナレッジゲート、秘匿化、祖先検証済みオーバーライド、ハッシュ連鎖監査ログ。
 category: Concepts
+tags:
+  - ai-agents
+  - security
 order: 35
 language: ja
-sourceHash: "5dac7c4162cbbb8e"
+sourceHash: "e008783008d8e887"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 

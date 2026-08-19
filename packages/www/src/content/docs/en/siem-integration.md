@@ -2,6 +2,9 @@
 title: SIEM Integration
 description: Route Rediacc audit events to Splunk, OpenSearch, Sentinel, or any OpenTelemetry-compatible SIEM
 category: Guides
+tags:
+  - security
+  - operations
 order: 15
 language: en
 ---

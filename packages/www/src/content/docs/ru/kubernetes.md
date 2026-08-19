@@ -2,9 +2,12 @@
 title: "Kubernetes"
 description: "Работайте с Kubernetes в духе репозиториев Rediacc: форкайте или переносите работающий кластер вместе с его данными на другую машину или в другой дата-центр с коротким переключением."
 category: "Guides"
+tags:
+  - containers
+  - migration
 order: 6
 language: ru
-sourceHash: "6ad4b60e09edde94"
+sourceHash: "22eef465dfd46ccf"
 sourceCommit: "4401262fffbf29b9480dee8ecd209013e4b87f60"
 ---
 

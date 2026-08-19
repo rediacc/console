@@ -2,9 +2,12 @@
 title: "Environnements de développement similaires à la production en quelques minutes"
 description: "Réduisez la configuration de l'environnement de développement de quelques jours à quelques minutes grâce à la déduplication au niveau des blocs."
 category: Use Cases
+tags:
+  - forking
+  - storage
 order: 7
 language: fr
-sourceHash: "2aa115fc621f5258"
+sourceHash: "a9c98112fe890a13"
 sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 ---
 

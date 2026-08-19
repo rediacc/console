@@ -2,22 +2,23 @@
 title: "Delta Transfer"
 description: "Il primo push su un'altra macchina copia tutto; ogni push successivo trasferisce solo i blocchi cambiati, automaticamente."
 category: "Tutorials"
+tags:
+  - backup
+  - storage
 subcategory: advanced
 order: 17
 language: it
-sourceHash: "6dabbcbb0670ac60"
+sourceHash: "1fd12000a2875e6d"
 sourceCommit: "3fb35b9a33c7e8ec6753ecd56231f2018e8f4803"
 ---
 
 import TutorialStep from '../../../components/tutorial/TutorialStep.astro';
 
+![Tutorial: Delta transfer](/assets/tutorials/tutorial-delta-transfer.cast)
+
 # Delta Transfer
 
 Invia un repository su un'altra macchina due volte. Il primo push porta tutto. Il secondo porta solo ciò che e cambiato: stesso comando, nessun flag, nessuna contabilita. E non devi crederci sulla fiducia, perche l'output del push stampa esattamente quanto ha spostato.
-
-## Guarda il tutorial
-
-![Tutorial: Delta transfer](/assets/tutorials/tutorial-delta-transfer.cast)
 
 ## Blocchi, non byte
 

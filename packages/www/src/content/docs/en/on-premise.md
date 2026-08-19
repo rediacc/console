@@ -2,6 +2,9 @@
 title: "On-Premise Installation"
 description: "Running the account server and CLI distribution on your own infrastructure."
 category: "Guides"
+tags:
+  - account
+  - operations
 order: 5
 language: en
 ---

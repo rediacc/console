@@ -2,9 +2,12 @@
 title: "Respaldo y Restauración"
 description: "Toma snapshots de repositorios cifrados hacia almacenamiento fragmentado direccionado por contenido, donde solo se suben las celdas cambiadas y cada snapshot se restaura directamente. O conserva una copia en otra máquina. Restaura en cualquier lugar, y automatízalo con estrategias nombradas y temporizadores systemd."
 category: "Guides"
+tags:
+  - backup
+  - storage
 order: 7
 language: es
-sourceHash: "91f6072e230b059c"
+sourceHash: "c35328105c2f3e8c"
 sourceCommit: "79c84ad044d5730b6d0a20aaf7b21f21914b6bda"
 ---
 

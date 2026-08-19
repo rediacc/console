@@ -2,6 +2,9 @@
 title: "Machine Setup"
 description: "Create a config, add machines, provision servers, and configure infrastructure."
 category: "Guides"
+tags:
+  - getting-started
+  - operations
 order: 3
 language: en
 ---

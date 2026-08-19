@@ -98,40 +98,51 @@ const PersonaMegaMenu: React.FC<PersonaMegaMenuProps> = ({ isOpen, onToggle, onC
   const triggerRef = useRef<HTMLButtonElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const cardRefs = useRef<(HTMLAnchorElement | null)[]>([]);
-  const hoverTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const personas = to('navigation.personas') as
     | Record<string, { tagline: string; cta: string }>
     | undefined;
 
-  // Click-outside
-  const handleClickOutside = useCallback(
-    (event: MouseEvent) => {
-      if (
-        panelRef.current &&
-        !panelRef.current.contains(event.target as Node) &&
-        !triggerRef.current?.contains(event.target as Node)
-      ) {
-        onClose();
-      }
-    },
-    [onClose]
-  );
+  // Dismissal is the browser's job now. The panel is an `auto` popover, so the UA gives us
+  // light-dismiss, Esc, top-layer stacking (no z-index race), the ::backdrop that dims the
+  // page, and mutual exclusion with the CTA menu, which is also an auto popover.
+  //
+  // `isOpen` stays the single source of truth because FOUR of Navigation's closes are not
+  // dismissals the popover knows anything about: scroll past 80px, opening the sidebar,
+  // opening search, and astro:after-swap. Those set React state, so state drives the
+  // popover here, and the `toggle` event drives state back when the UA dismisses.
+  useEffect(() => {
+    const panel = panelRef.current;
+    if (!panel) return;
+    // Calling show/hide against the wrong current state throws InvalidStateError.
+    const shown = panel.matches(':popover-open');
+    if (isOpen && !shown) panel.showPopover();
+    else if (!isOpen && shown) panel.hidePopover();
+  }, [isOpen]);
 
   useEffect(() => {
-    if (isOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-      return () => document.removeEventListener('mousedown', handleClickOutside);
-    }
-  }, [isOpen, handleClickOutside]);
+    const panel = panelRef.current;
+    if (!panel) return;
+    const onToggleEvent = (event: Event) => {
+      // Light-dismiss and Esc close the popover without telling React.
+      if ((event as ToggleEvent).newState === 'closed') onClose();
+    };
+    panel.addEventListener('toggle', onToggleEvent);
+    return () => panel.removeEventListener('toggle', onToggleEvent);
+  }, [onClose]);
 
-  // Keyboard navigation
+  // Keyboard navigation. The popover closes ITSELF on Esc, but roving focus across the
+  // cards is a menu behaviour the Popover API does not provide, so this listener stays.
+  // Deleting it wholesale (which the line count invites) would strip arrow-key navigation
+  // from the nav on every page.
   const handleKeyDown = useCallback(
     (event: KeyboardEvent) => {
       if (!isOpen) return;
       switch (event.key) {
         case 'Escape':
-          onClose();
+          // Closing is the UA's; only the focus return is ours, and it must be explicit
+          // because this popover is opened by showPopover() rather than by a
+          // popovertarget invoker, so there is no invoker for the UA to restore to.
           triggerRef.current?.focus();
           break;
         case 'ArrowDown':
@@ -172,67 +183,20 @@ const PersonaMegaMenu: React.FC<PersonaMegaMenuProps> = ({ isOpen, onToggle, onC
     }
   }, [isOpen, handleKeyDown]);
 
-  // Hover intent. `hoverOpenedRef` marks an open that hover initiated: the
-  // first trigger CLICK after a hover-open pins the menu instead of closing
-  // it. Without this, hovering onto the trigger opens the panel and the very
-  // click that meant "open" slams it shut - the defect the old solutions mega
-  // menu shipped with.
-  const clearHoverTimeout = () => {
-    if (hoverTimeoutRef.current) {
-      clearTimeout(hoverTimeoutRef.current);
-      hoverTimeoutRef.current = null;
-    }
-  };
-
-  const hoverOpenedRef = useRef(false);
-
-  const handleMouseEnter = () => {
-    clearHoverTimeout();
-    if (!isOpen) {
-      hoverTimeoutRef.current = setTimeout(() => {
-        hoverOpenedRef.current = true;
-        onToggle();
-      }, 100);
-    }
-  };
-
-  const handleTriggerClick = () => {
-    // Cancel any pending hover-open FIRST. Without this, a click landing inside the 100ms
-    // hover window opens the menu here and the orphaned timer then fires and toggles it
-    // straight back shut, so the click appears to do nothing. Deterministic under
-    // automation (it cost a wave a browser run), intermittent for a fast human, which is
-    // the worst of both.
-    clearHoverTimeout();
-    if (isOpen && hoverOpenedRef.current) {
-      hoverOpenedRef.current = false;
-      return;
-    }
-    hoverOpenedRef.current = false;
-    onToggle();
-  };
-
-  const handleMouseLeave = () => {
-    clearHoverTimeout();
-    if (isOpen) {
-      hoverTimeoutRef.current = setTimeout(onClose, 150);
-    }
-  };
-
-  useEffect(() => {
-    return () => clearHoverTimeout();
-  }, []);
+  // Hover-to-open is GONE, deliberately, and this is a behaviour change rather than a
+  // refactor: the menu is now click-only, like claude.com's. The two hover timers carried
+  // two bugs that had already been paid for in live waves (a hover-open whose own click
+  // slammed it shut, and an orphaned 100ms timer that reopened what a click had closed),
+  // and neither bug can exist without the feature. Hover also has no keyboard or touch
+  // equivalent, so nothing that hover offered is lost for those users.
 
   return (
-    <div
-      className="persona-menu-wrapper"
-      onMouseEnter={handleMouseEnter}
-      onMouseLeave={handleMouseLeave}
-    >
+    <div className="persona-menu-wrapper">
       <button
         ref={triggerRef}
         type="button"
         className="nav-link persona-menu-trigger"
-        onClick={handleTriggerClick}
+        onClick={onToggle}
         aria-haspopup="menu"
         aria-expanded={isOpen}
         aria-controls="persona-menu-panel"
@@ -254,16 +218,17 @@ const PersonaMegaMenu: React.FC<PersonaMegaMenuProps> = ({ isOpen, onToggle, onC
         </svg>
       </button>
 
-      {isOpen && (
-        <div
-          ref={panelRef}
-          id="persona-menu-panel"
-          className="persona-menu-panel"
-          role="menu"
-          aria-label={t('navigation.builtForYou')}
-          onMouseEnter={handleMouseEnter}
-          onMouseLeave={handleMouseLeave}
-        >
+      {/* Always rendered, unlike the old `isOpen && ...`: an auto popover has to BE in the
+          DOM for showPopover() to have anything to show, and the UA hides it with
+          `[popover]:not(:popover-open) { display: none }` until then. */}
+      <div
+        ref={panelRef}
+        id="persona-menu-panel"
+        className="persona-menu-panel"
+        popover="auto"
+        role="menu"
+        aria-label={t('navigation.builtForYou')}
+      >
           <div className="persona-menu-grid">
             {PERSONA_CARDS.map(({ slug, titleKey, personaKey, Icon }, idx) => {
               const persona = personas?.[personaKey];
@@ -303,8 +268,7 @@ const PersonaMegaMenu: React.FC<PersonaMegaMenuProps> = ({ isOpen, onToggle, onC
               );
             })}
           </div>
-        </div>
-      )}
+      </div>
     </div>
   );
 };

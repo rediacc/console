@@ -2,9 +2,11 @@
 title: "ما تتطلبه الامتثالية فعلاً"
 description: "يعمل Rediacc على بنيتك التحتية. أنت تتحكم في بياناتك. إليك كيف يتوافق ذلك مع أطر الامتثالية الرئيسية."
 category: "Legal"
+tags:
+  - compliance
 order: 0
 language: ar
-sourceHash: "e6044a3b067b54d5"
+sourceHash: "f3c999aa355997c6"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 

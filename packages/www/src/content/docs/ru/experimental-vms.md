@@ -4,9 +4,12 @@ description: >-
   Создание локальных кластеров VM для разработки и тестирования с помощью rdc
   ops.
 category: Concepts
+tags:
+  - operations
+  - containers
 order: 2
 language: ru
-sourceHash: aafca00c006ded0b
+sourceHash: 5fad635a61089758
 ---
 
 # Экспериментальные VM

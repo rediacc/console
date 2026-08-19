@@ -2,9 +2,11 @@
 title: "Veri Egemenliği"
 description: "Rediacc'ın kendi sunucunuzda barındırma mimarisi küresel yetki alanlarındaki veri yerleşimi ve egemenlik gereksinimlerini nasıl karşılar."
 category: "Legal"
+tags:
+  - compliance
 order: 7
 language: tr
-sourceHash: "dba51d5d6dcf8197"
+sourceHash: "1e10165626ba3730"
 sourceCommit: "8b37b0a2c25c0ba7e5a8a63c8d3ed0da48b78a10"
 ---
 

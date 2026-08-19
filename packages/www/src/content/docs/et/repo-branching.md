@@ -2,10 +2,12 @@
 title: "Git-laadne hargnemine"
 description: "Käsitle koopiakirjutamise harke git-komitidena: külmuta hark muutumatuks komitiks, nimeta harusid, võta komitid välja kirjutatavate harkidena, jaluta ajalugu ja ühenda ilma kunagi elavat repositooriumi muutmata."
 category: Reference
-subcategory: advanced
+tags:
+  - forking
+  - repositories
 order: 41
 language: et
-sourceHash: "b8bd3176ecabfa4b"
+sourceHash: "7aaa25bc83dfcf5b"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 

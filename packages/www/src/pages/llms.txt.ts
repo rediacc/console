@@ -71,7 +71,7 @@ export const GET: APIRoute = async () => {
 
 > Self-hosted infrastructure platform with encrypted repositories, container isolation, and automated disaster recovery.
 
-Rediacc enables you to deploy and manage isolated, encrypted application environments on your own servers. Each repository gets its own Docker daemon, network namespace, and encrypted storage.
+Rediacc deploys and manages isolated, encrypted application environments on self-hosted servers. Each repository gets its own Docker daemon, network namespace, and encrypted storage.
 
 ## AI Agent Instructions
 

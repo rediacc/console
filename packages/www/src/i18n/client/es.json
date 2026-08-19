@@ -71,6 +71,16 @@
     "error": "Algo salió mal. Por favor, inténtelo de nuevo.",
     "close": "Cerrar"
   },
+  "documentation": {
+    "categories": {
+      "tutorials": "Tutoriales",
+      "guides": "Guías",
+      "concepts": "Conceptos",
+      "reference": "Referencia",
+      "useCases": "Casos de uso",
+      "legal": "Legal"
+    }
+  },
   "footer": {
     "columns": {
       "product": "Producto",
@@ -147,7 +157,9 @@
       }
     },
     "forAiAgents": "Para agentes de IA",
-    "account": "Cuenta"
+    "account": "Cuenta",
+    "learn": "Aprender",
+    "browseAllDocs": "Ver toda la documentación"
   },
   "newsletter": {
     "title": "Boletín",

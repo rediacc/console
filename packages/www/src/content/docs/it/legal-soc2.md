@@ -2,9 +2,11 @@
 title: "Conformità SOC 2"
 description: "Dove Rediacc ti fornisce evidenze SOC 2: i log, la traccia di change management e i controlli su cui gli auditor fanno domande."
 category: "Legal"
+tags:
+  - compliance
 order: 2
 language: it
-sourceHash: "28b4309f81f43d8d"
+sourceHash: "8ccd82a1265e268e"
 sourceCommit: "5fab1177d6ceae5211c25cf8fa0176d67259d40e"
 ---
 

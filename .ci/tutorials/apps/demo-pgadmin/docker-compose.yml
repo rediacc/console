@@ -26,8 +26,12 @@ services:
       test: ["CMD-SHELL", "pg_isready -U demo -d demo -h $$SERVICE_IP -p 5433"]
       interval: 5s
       timeout: 5s
-      retries: 10
-      start_period: 20s
+      # Sized for a SLOW recording host, not a fast one. start_period failures do
+      # not count against retries and the container is marked healthy the moment a
+      # check passes, so raising these costs a fast machine nothing and is the only
+      # thing that keeps a slow one from failing `repo up` outright.
+      retries: 20
+      start_period: 90s
     labels:
       - "rediacc.service_name=db"
 
@@ -64,8 +68,12 @@ services:
       test: ["CMD", "python3", "-c", "import urllib.request,os; urllib.request.urlopen('http://%s:80/misc/ping' % os.environ['SERVICE_IP'])"]
       interval: 3s
       timeout: 5s
-      retries: 10
-      start_period: 120s
+      # pgAdmin's first boot (Python imports + schema migration) is the slowest
+      # thing in the tutorial fleet and scales badly with CPU clock. At 120s/10
+      # it failed `container pgadmin is unhealthy` on a downclocked host, which
+      # aborted the whole 18-cast recording at tutorial 9.
+      retries: 30
+      start_period: 300s
     depends_on:
       db:
         condition: service_healthy

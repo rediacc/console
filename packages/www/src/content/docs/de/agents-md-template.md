@@ -4,9 +4,12 @@ description: >-
   Kopierfertige Vorlage zur Konfiguration von Claude Code, Cursor und anderen
   KI-Coding-Assistenten für die Arbeit mit der Rediacc-Infrastruktur.
 category: Reference
+tags:
+  - ai-agents
+  - cli
 order: 50
 language: de
-sourceHash: "1edff3471ded906d"
+sourceHash: "7592f803f8caf5f4"
 sourceCommit: "23543669cd22bce3f14d69a0886bac8a12061412"
 ---
 

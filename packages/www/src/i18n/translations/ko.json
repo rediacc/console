@@ -98,11 +98,17 @@
     "title": "문의하기"
   },
   "documentation": {
-    "theme": {
-      "label": "테마",
-      "light": "라이트",
-      "dark": "다크",
-      "auto": "자동"
+    "browse": {
+      "clear": "필터 초기화",
+      "description": "모든 가이드, 튜토리얼, 참조 자료를 한곳에서.",
+      "empty": "이 필터와 일치하는 문서가 없습니다.",
+      "filterHeading": "필터",
+      "filterLabel": "카테고리별 필터",
+      "searchLabel": "문서 검색",
+      "searchPlaceholder": "제목 및 설명 검색",
+      "showDescription": "설명 보기",
+      "title": "문서",
+      "topicLabel": "주제별 필터"
     },
     "categories": {
       "concepts": "개념",
@@ -115,14 +121,36 @@
     "cliReference": "CLI 참조",
     "cliReferenceLabel": "CLI 참조:",
     "copied": "복사됨!",
-    "copyCode": "코드 복사",
     "copyAsMarkdown": "Markdown으로 복사",
+    "copyCode": "코드 복사",
     "copyFullPageAriaLabel": "전체 페이지를 Markdown으로 복사",
     "openInNewTab": "새 탭에서 열기",
     "searchDocs": "문서 검색",
     "subcategories": {
       "advanced": "고급",
       "essentials": "필수"
+    },
+    "tags": {
+      "account": "계정",
+      "aiAgents": "AI 에이전트",
+      "backup": "백업",
+      "cli": "CLI",
+      "compliance": "컴플라이언스",
+      "containers": "컨테이너",
+      "forking": "포크",
+      "gettingStarted": "시작하기",
+      "migration": "마이그레이션",
+      "networking": "네트워킹",
+      "operations": "운영",
+      "repositories": "저장소",
+      "security": "보안",
+      "storage": "스토리지"
+    },
+    "theme": {
+      "auto": "자동",
+      "dark": "다크",
+      "label": "테마",
+      "light": "라이트"
     }
   },
   "footer": {
@@ -193,9 +221,9 @@
     }
   },
   "navigation": {
-    "moreOptions": "추가 옵션",
     "account": "계정",
     "blog": "블로그",
+    "browseAllDocs": "전체 문서 보기",
     "builtForYou": "나를 위해 만들어진",
     "builtForYourRole": "역할에 맞게 설계됨",
     "contact": "문의",
@@ -210,7 +238,9 @@
     "home": "홈",
     "install": "설치",
     "languageSelectionMenu": "언어 선택 메뉴",
+    "learn": "학습",
     "login": "로그인",
+    "moreOptions": "추가 옵션",
     "partners": "파트너",
     "personas": {
       "ai-agent": {
@@ -570,14 +600,14 @@
         "title": "재해복구 전문 보유, 비즈니스 연속성을 완벽히 보장하는 맞춤형 요금제 | Rediacc"
       },
       "plans": {
+        "assessment": {
+          "name": "복구 진단"
+        },
         "program": {
           "name": "복구 프로그램"
         },
         "retainer": {
           "name": "복구 자문 계약"
-        },
-        "assessment": {
-          "name": "복구 진단"
         }
       },
       "psTeaser": {
@@ -612,6 +642,11 @@
         ],
         "recoveryNote": "RPO(복구 목표 시점): 감수할 수 있는 데이터 손실량(시간 기준). 예를 들어, RPO가 15분이면 최대 15분의 최근 변경 사항을 손실할 수 있습니다.\n\nRTO(복구 목표 시간): 재해 발생 후 온라인 복귀에 필요한 시간. 예를 들어, RTO가 4시간이면 4시간 내에 시스템이 복구됩니다.",
         "values": {
+          "assessment": {
+            "auditLogs": "30일",
+            "rpo": "약 15분",
+            "rto": "특정 시점 복원"
+          },
           "program": {
             "auditLogs": "90일",
             "rpo": "약 5분(연속)",
@@ -621,11 +656,6 @@
             "auditLogs": "1년 이상",
             "rpo": "맞춤(거의 0)",
             "rto": "15~60분(맞춤)"
-          },
-          "assessment": {
-            "auditLogs": "30일",
-            "rpo": "약 15분",
-            "rto": "특정 시점 복원"
           }
         }
       },
@@ -636,14 +666,14 @@
         "contactUs": "문의하기",
         "contactUsSub": "맞춤 한도 및 약관",
         "cta": {
+          "assessment": {
+            "primary": "무료 평가판 시작하기"
+          },
           "program": {
             "primary": "무료 평가판 시작하기"
           },
           "retainer": {
             "primary": "데모 예약"
-          },
-          "assessment": {
-            "primary": "무료 평가판 시작하기"
           }
         }
       }
@@ -1852,47 +1882,47 @@
     "pricing": {
       "comparison": {
         "allPlansInclude": "모든 요금제에 포함: 사용자와 팀 무제한, 리포지토리 무제한, 스냅샷 복원, 지속적 데이터 보호, 지역 이중화 스토리지, LUKS 암호화, 감사 로그, 역할 기반 접근, 수동 및 자동 스케줄링, 연동 API.",
-        "rows": [
-          {
-            "label": "전담 계정 담당자",
-            "professional": false,
-            "business": true,
-            "enterprise": true
-          },
-          {
-            "label": "전화 지원",
-            "professional": false,
-            "business": true,
-            "enterprise": true
-          },
-          {
-            "label": "24/7/365 지원",
-            "professional": false,
-            "business": false,
-            "enterprise": true
-          },
-          {
-            "label": "경영진 에스컬레이션",
-            "professional": false,
-            "business": false,
-            "enterprise": true
-          },
-          {
-            "label": "보안 검토",
-            "professional": false,
-            "business": false,
-            "enterprise": true
-          },
-          {
-            "label": "커스텀 워크플로우",
-            "professional": false,
-            "business": false,
-            "enterprise": true
-          }
-        ],
         "heading": "플랜 상세 비교",
         "included": "포함",
-        "notIncluded": "미포함"
+        "notIncluded": "미포함",
+        "rows": [
+          {
+            "business": true,
+            "enterprise": true,
+            "label": "전담 계정 담당자",
+            "professional": false
+          },
+          {
+            "business": true,
+            "enterprise": true,
+            "label": "전화 지원",
+            "professional": false
+          },
+          {
+            "business": false,
+            "enterprise": true,
+            "label": "24/7/365 지원",
+            "professional": false
+          },
+          {
+            "business": false,
+            "enterprise": true,
+            "label": "경영진 에스컬레이션",
+            "professional": false
+          },
+          {
+            "business": false,
+            "enterprise": true,
+            "label": "보안 검토",
+            "professional": false
+          },
+          {
+            "business": false,
+            "enterprise": true,
+            "label": "커스텀 워크플로우",
+            "professional": false
+          }
+        ]
       },
       "edgeChannel": {
         "cta": "Edge 채널 살펴보기",
@@ -3019,8 +3049,6 @@
     },
     "solutionPages": {
       "aiPentesting": {
-        "label": "AI 침투 테스트",
-        "blurb": "프로덕션을 복제하고, AI가 공격하게 하세요.",
         "benefits": {
           "items": [
             {
@@ -3042,6 +3070,7 @@
           "overline": "왜 중요한가",
           "title": "제공되는 혜택"
         },
+        "blurb": "프로덕션을 복제하고, AI가 공격하게 하세요.",
         "bottomCta": {
           "command": "rdc repo fork production --tag pentest",
           "ctaText": "무료 시작",
@@ -3147,6 +3176,7 @@
           ],
           "title": "명령어 하나. 위험 제로."
         },
+        "label": "AI 침투 테스트",
         "meta": {
           "description": "인프라의 완전한 복사본을 만들고 AI 기반 침투 테스트를 실행하세요. 프로덕션 환경에 위험을 주지 않습니다.",
           "keywords": "AI 침투 테스트, 침투 테스트, 보안 테스트, 취약점 스캔, 클론 공격",
@@ -3282,8 +3312,6 @@
         }
       },
       "auditTrail": {
-        "label": "감사 추적",
-        "blurb": "모든 작업이 기록됩니다. 숨겨진 것은 없습니다.",
         "benefits": {
           "items": [
             {
@@ -3305,6 +3333,7 @@
           "overline": "왜 중요한가",
           "title": "제공되는 혜택"
         },
+        "blurb": "모든 작업이 기록됩니다. 숨겨진 것은 없습니다.",
         "bottomCta": {
           "command": "rdc repo status production",
           "ctaText": "Community로 무료 시작",
@@ -3464,6 +3493,7 @@
           ],
           "title": "명령어 하나. 완전한 가시성."
         },
+        "label": "감사 추적",
         "meta": {
           "description": "누가, 언제, 무엇을, 왜 했는지 완전한 가시성을 확보하세요. 모든 작업에 대한 변조 방지 감사 로그.",
           "keywords": "감사 추적, 규정 준수 로깅, 변조 방지 로그, SHA-256 서명, 감사 보고서",
@@ -3635,8 +3665,6 @@
         }
       },
       "backupVerification": {
-        "label": "백업 검증",
-        "blurb": "모든 백업 자동 검증",
         "benefits": {
           "items": [
             {
@@ -3658,6 +3686,7 @@
           "overline": "왜 중요한가",
           "title": "제공되는 혜택"
         },
+        "blurb": "모든 백업 자동 검증",
         "bottomCta": {
           "command": "rdc backup verify my-app",
           "description": "무료 Community 에디션으로 시작하세요. 1분 이내에 첫 백업을 검증하세요.",
@@ -3818,6 +3847,7 @@
           ],
           "title": "명령어 하나. 놀라움 제로."
         },
+        "label": "백업 검증",
         "meta": {
           "description": "백업이 손상되었다는 것을 재해 발생 후에야 알게 되는 일이 없도록 하세요. Rediacc는 백업이 생성되는 즉시 모든 백업을 확인합니다.",
           "keywords": "백업 검증, 백업 테스트, 복원 검증, 백업 무결성, 자동화 백업 검사, btrfs 클론, 백업 상태 확인",
@@ -3999,8 +4029,6 @@
         }
       },
       "cloudOutageProtection": {
-        "label": "클라우드 장애 보호",
-        "blurb": "AWS가 다운되어도 귀사는 계속 운영됩니다",
         "benefits": {
           "items": [
             {
@@ -4022,6 +4050,7 @@
           "overline": "왜 중요한가",
           "title": "제공되는 혜택"
         },
+        "blurb": "AWS가 다운되어도 귀사는 계속 운영됩니다",
         "bottomCta": {
           "command": "rdc repo push production --to secondary-dc",
           "description": "무료 Community 에디션으로 시작하세요. 무료로 여러 위치에 복제하세요. 신용카드 불필요.",
@@ -4183,6 +4212,7 @@
           ],
           "title": "명령어 하나. 항상 온라인."
         },
+        "label": "클라우드 장애 보호",
         "meta": {
           "description": "인프라가 여러 클라우드에서 동시에 실행됩니다. 하나가 실패하면 다른 클라우드가 자동으로 인계받습니다.",
           "keywords": "클라우드 장애 보호, 멀티 클라우드 페일오버, 크로스 클라우드 복제, 재해 복구, 클라우드 이중화, 자동 페일오버, btrfs 복제",
@@ -4360,8 +4390,6 @@
         }
       },
       "continuousSecurityTesting": {
-        "label": "지속적 보안 테스트",
-        "blurb": "연간이 아닌 지속적으로 보안을 테스트하세요",
         "benefits": {
           "items": [
             {
@@ -4383,6 +4411,7 @@
           "overline": "왜 중요한가",
           "title": "제공되는 혜택"
         },
+        "blurb": "연간이 아닌 지속적으로 보안을 테스트하세요",
         "bottomCta": {
           "command": "rdc backup restore production --as production-verify -m primary --up",
           "ctaText": "무료 시작",
@@ -4483,6 +4512,7 @@
           ],
           "title": "명령어 하나. 일일 커버리지."
         },
+        "label": "지속적 보안 테스트",
         "meta": {
           "description": "신선한 프로덕션 클론에서 매일 보안 테스트를 실행하세요. 취약점이 나타나는 즉시 발견하세요. 수개월 후가 아니라.",
           "keywords": "지속적 보안 테스트, 일일 침투 테스트, 자동화 보안, 취약점 탐지",
@@ -4618,8 +4648,6 @@
         }
       },
       "dataSovereignty": {
-        "label": "데이터 주권",
-        "blurb": "귀사의 서버, 귀사의 키, 귀사의 관할권.",
         "benefits": {
           "items": [
             {
@@ -4641,6 +4669,7 @@
           "overline": "왜 중요한가",
           "title": "귀사가 얻는 것"
         },
+        "blurb": "귀사의 서버, 귀사의 키, 귀사의 관할권.",
         "bottomCta": {
           "command": "rdc config show",
           "ctaText": "Community로 무료 시작",
@@ -4798,6 +4827,7 @@
           ],
           "title": "세 단계. 하나의 주권적 스택."
         },
+        "label": "데이터 주권",
         "meta": {
           "description": "직접 호스팅하고 키도 직접 보유하세요. 인증서가 아닌 아키텍처로 CLOUD Act를 준수합니다. 고객 관리 키를 사용하는 셀프 호스팅 백업 솔루션입니다.",
           "keywords": "데이터 주권, CLOUD Act 면제, 고객 관리 키, GDPR Schrems II, EU 데이터법, 자체 호스팅, 주권적 백업, SecNumCloud, DORA",
@@ -4988,8 +5018,6 @@
         "title": "시간이 부족하신가요?"
       },
       "encryption": {
-        "label": "직접 제어하는 암호화",
-        "blurb": "귀하의 키. 귀하의 암호화. 예외 없음.",
         "benefits": {
           "items": [
             {
@@ -5011,6 +5039,7 @@
           "overline": "중요한 이유",
           "title": "제공되는 기능"
         },
+        "blurb": "귀하의 키. 귀하의 암호화. 예외 없음.",
         "bottomCta": {
           "command": "rdc repo up production",
           "ctaText": "커뮤니티 플랜으로 무료 시작",
@@ -5170,6 +5199,7 @@
           ],
           "title": "명령 하나. 완전한 제어."
         },
+        "label": "직접 제어하는 암호화",
         "meta": {
           "description": "모든 백업은 귀하가 소유한 키로 암호화됩니다. 공급업체의 키가 아닙니다. 공유 키가 아닙니다. 오직 귀하의 키입니다.",
           "keywords": "암호화, 제로 지식, 고객 보유 키, AES-256, 백업 암호화",
@@ -5373,8 +5403,6 @@
         }
       },
       "environmentCloning": {
-        "label": "환경 복제",
-        "blurb": "60초 만에 프로덕션 복제",
         "benefits": {
           "items": [
             {
@@ -5396,6 +5424,7 @@
           "overline": "중요한 이유",
           "title": "제공되는 기능"
         },
+        "blurb": "60초 만에 프로덕션 복제",
         "bottomCta": {
           "command": "rdc repo fork production --tag my-first-clone",
           "description": "무료 커뮤니티 에디션으로 시작하세요. 최대 10개 워크로드를 무료로 복제할 수 있습니다. 신용카드 불필요.",
@@ -5557,6 +5586,7 @@
           ],
           "title": "명령 하나. 60초."
         },
+        "label": "환경 복제",
         "meta": {
           "description": "개발 및 테스트를 위해 애플리케이션, 데이터베이스, 설정을 포함한 프로덕션의 정확한 복사본을 생성하세요. 티켓 없음. 대기 없음.",
           "keywords": "환경 복제, 프로덕션 복제, 개발 환경, 즉시 프로비저닝, btrfs 복제, copy-on-write, 임시 환경",
@@ -5738,8 +5768,6 @@
         }
       },
       "failoverTesting": {
-        "label": "페일오버 테스트",
-        "blurb": "필요하기 전에 페일오버를 테스트하세요",
         "benefits": {
           "items": [
             {
@@ -5761,6 +5789,7 @@
           "overline": "중요한 이유",
           "title": "제공되는 혜택"
         },
+        "blurb": "필요하기 전에 페일오버를 테스트하세요",
         "bottomCta": {
           "command": "rdc repo push production --to secondary --checkpoint",
           "description": "무료 Community 에디션으로 시작하세요. 5분 이내에 첫 DR 테스트를 실행하세요.",
@@ -5921,6 +5950,7 @@
           ],
           "title": "명령 하나. 완전한 자신감."
         },
+        "label": "페일오버 테스트",
         "meta": {
           "description": "재해 시뮬레이션을 안전하게 실행하세요. 복구가 실제로 작동하는지 확인하세요. 가장 중요한 순간에 놀라움이 없도록.",
           "keywords": "장애 조치 테스트, 재해 복구 테스트, DR 시뮬레이션, DR 테스트 자동화, 복구 검증, btrfs 클론, RTO RPO 테스트",
@@ -6090,8 +6120,6 @@
         }
       },
       "immutableBackups": {
-        "label": "불변 백업",
-        "blurb": "랜섬웨어가 건드릴 수 없는 백업",
         "benefits": {
           "items": [
             {
@@ -6113,6 +6141,7 @@
           "overline": "중요한 이유",
           "title": "제공되는 혜택"
         },
+        "blurb": "랜섬웨어가 건드릴 수 없는 백업",
         "bottomCta": {
           "command": "rdc repo push production --to backup-vault",
           "description": "무료 Community 에디션으로 시작하세요. 최대 10개의 워크로드를 무료로 보호합니다. 신용카드 불필요.",
@@ -6273,6 +6302,7 @@
           ],
           "title": "명령 하나. 완전한 보호."
         },
+        "label": "불변 백업",
         "meta": {
           "description": "백업은 생성되는 순간부터 불변입니다. 누구도 변경할 수 없습니다. 해커도, 심지어 당신도.",
           "keywords": "불변 백업, 랜섬웨어 방어, btrfs 스냅샷, 백업 검증, 재해 복구, copy-on-write, 봉인 백업",
@@ -6482,8 +6512,6 @@
         }
       },
       "infrastructureCosts": {
-        "label": "인프라 비용",
-        "blurb": "유휴 환경 비용 지불 중단",
         "benefits": {
           "items": [
             {
@@ -6505,6 +6533,7 @@
           "overline": "중요한 이유",
           "title": "제공되는 혜택"
         },
+        "blurb": "유휴 환경 비용 지불 중단",
         "bottomCta": {
           "command": "rdc repo fork production --tag dev-loadtest",
           "description": "무료 Community 에디션으로 시작하세요. 온디맨드 클로닝 포함.",
@@ -6660,6 +6689,7 @@
           ],
           "title": "명령 하나. 낭비 제로."
         },
+        "label": "인프라 비용",
         "meta": {
           "description": "필요할 때 환경을 생성하고 작업이 끝나면 삭제하세요. 실제로 사용한 것에만 비용을 지불하세요.",
           "keywords": "인프라 비용, 유휴 환경, 온디맨드 환경, 비용 최적화, btrfs 클론, copy-on-write, TTL, auto-destroy",
@@ -6817,8 +6847,6 @@
         }
       },
       "instantRecovery": {
-        "label": "즉각적인 복구",
-        "blurb": "전체 환경을 몇 분 안에 복구",
         "benefits": {
           "items": [
             {
@@ -6840,6 +6868,7 @@
           "overline": "중요한 이유",
           "title": "제공되는 혜택"
         },
+        "blurb": "전체 환경을 몇 분 안에 복구",
         "bottomCta": {
           "command": "rdc repo pull production --from daily-2026-02-27",
           "description": "무료 Community 에디션으로 시작하세요. 첫 번째 환경을 5분 이내에 복원하세요.",
@@ -7002,6 +7031,7 @@
           ],
           "title": "명령어 하나. 모든 것이 돌아옵니다."
         },
+        "label": "즉각적인 복구",
         "meta": {
           "description": "파일만이 아닙니다. 서버, 설정, 데이터베이스를 포함한 전체 환경을 몇 분 안에 복원하여 실행합니다.",
           "keywords": "즉각적인 복구, 전체 환경 복원, btrfs 클론, 재해 복구, 백업 복원, 시점 복구, 헬스 체크, 단일 명령어 복구",
@@ -7179,8 +7209,6 @@
         }
       },
       "integrations": {
-        "label": "CI/CD 통합",
-        "blurb": "기존 워크플로에 바로 연결",
         "benefits": {
           "items": [
             {
@@ -7202,6 +7230,7 @@
           "overline": "중요한 이유",
           "title": "제공되는 혜택"
         },
+        "blurb": "기존 워크플로에 바로 연결",
         "bottomCta": {
           "command": "rdc repo fork production --tag ci-build",
           "description": "무료 Community 에디션으로 시작하세요. Git 통합이 포함됩니다.",
@@ -7331,6 +7360,7 @@
           ],
           "title": "명령어 하나. 스크립트 제로."
         },
+        "label": "CI/CD 통합",
         "meta": {
           "description": "Git 푸시로 새로운 환경이 자동 생성됩니다. 테스트는 프로덕션 클론에서 실행됩니다. 별도 스크립트 없이 CI/CD가 바로 작동합니다.",
           "keywords": "CI/CD 통합, GitLab CI, GitHub Actions, 웹훅, 프로덕션 클론, 테스트 환경, 파이프라인 자동화",
@@ -7496,8 +7526,6 @@
         }
       },
       "kubernetesClusterMobility": {
-        "label": "Kubernetes 클러스터 이동성",
-        "blurb": "실행 중인 클러스터를 포크하거나 이동, 데이터까지 포함",
         "benefits": {
           "items": [
             {
@@ -7519,6 +7547,7 @@
           "overline": "중요한 이유",
           "title": "쓰던 Kubernetes는 그대로. 이동성은 새롭게."
         },
+        "blurb": "실행 중인 클러스터를 포크하거나 이동, 데이터까지 포함",
         "bottomCta": {
           "command": "rdc cluster fork prod --tag staging",
           "ctaText": "Community로 무료 시작",
@@ -7645,6 +7674,7 @@
           ],
           "title": "클러스터 전체가 하나의 파일 세트입니다"
         },
+        "label": "Kubernetes 클러스터 이동성",
         "meta": {
           "description": "실행 중인 Kubernetes 클러스터를 데이터까지 포함해 다른 머신이나 데이터센터로 포크하거나 이동하세요. 짧고 측정된 컷오버. Ceph RBD와 k3s 기반.",
           "keywords": "kubernetes 클러스터 마이그레이션, 클러스터 포크, ceph rbd, k3s, 데이터센터 이동성, kubernetes 이식성",
@@ -7808,8 +7838,6 @@
         "title": "기술 브리프 받기"
       },
       "migrationSafety": {
-        "label": "안전한 마이그레이션",
-        "blurb": "데이터를 위험에 빠뜨리지 않고 마이그레이션",
         "benefits": {
           "items": [
             {
@@ -7831,6 +7859,7 @@
           "overline": "중요한 이유",
           "title": "제공되는 혜택"
         },
+        "blurb": "데이터를 위험에 빠뜨리지 않고 마이그레이션",
         "bottomCta": {
           "command": "rdc repo push production --to secondary",
           "description": "무료 Community 에디션으로 시작하세요. 암호화된 마이그레이션이 포함됩니다.",
@@ -7989,6 +8018,7 @@
           ],
           "title": "명령어 하나. 노출 제로."
         },
+        "label": "안전한 마이그레이션",
         "meta": {
           "description": "서버, 클라우드, 공급자 간 이동 시에도 암호화된 백업이 안전하게 전송됩니다. 노출 없음. 데이터 손실 없음.",
           "keywords": "암호화된 마이그레이션, 무노출 전송, 데이터 마이그레이션 보안, 암호화된 백업 전송, btrfs 마이그레이션, 서버 마이그레이션, 클라우드 마이그레이션 암호화",
@@ -8166,8 +8196,6 @@
         }
       },
       "productionParity": {
-        "label": "프로덕션 패리티",
-        "blurb": "프로덕션과 정확히 일치하는 개발 환경",
         "benefits": {
           "items": [
             {
@@ -8189,6 +8217,7 @@
           "overline": "중요한 이유",
           "title": "제공되는 혜택"
         },
+        "blurb": "프로덕션과 정확히 일치하는 개발 환경",
         "bottomCta": {
           "command": "rdc backup restore dev-sarah --as dev-sarah-verify --up",
           "description": "무료 Community 에디션으로 시작하세요. 프로덕션 패리티가 포함됩니다.",
@@ -8345,6 +8374,7 @@
           ],
           "title": "명령어 하나. 완벽한 패리티."
         },
+        "label": "프로덕션 패리티",
         "meta": {
           "description": "\"내 컴퓨터에서는 됩니다\"는 이제 없습니다. 모든 개발 환경이 프로덕션의 동일한 클론입니다.",
           "keywords": "프로덕션 패리티, 환경 드리프트, 개발 환경, 동일한 클론, btrfs 클론, copy-on-write, 설정 일치",
@@ -8498,8 +8528,6 @@
         }
       },
       "rapidRecovery": {
-        "label": "신속한 복구",
-        "blurb": "며칠이 아닌 몇 분 안에 복구",
         "benefits": {
           "items": [
             {
@@ -8521,6 +8549,7 @@
           "overline": "중요한 이유",
           "title": "제공되는 혜택"
         },
+        "blurb": "며칠이 아닌 몇 분 안에 복구",
         "bottomCta": {
           "command": "rdc repo pull production --from backup-vault --force",
           "ctaText": "Community로 무료 시작",
@@ -8676,6 +8705,7 @@
           ],
           "title": "명령어 하나. 온라인으로 복귀."
         },
+        "label": "신속한 복구",
         "meta": {
           "description": "랜섬웨어가 공격하면 매 분이 손실입니다. Rediacc은 피해가 확산되기 전에 온라인으로 복귀시킵니다.",
           "keywords": "신속한 복구, 랜섬웨어 복구, 재해 복구, btrfs 복원, 빠른 복구",
@@ -8867,8 +8897,6 @@
         }
       },
       "retentionCompliance": {
-        "label": "보존 규정 준수",
-        "blurb": "법이 요구하는 기간만큼 데이터를 보관하세요",
         "benefits": {
           "items": [
             {
@@ -8890,6 +8918,7 @@
           "overline": "중요한 이유",
           "title": "제공되는 기능"
         },
+        "blurb": "법이 요구하는 기간만큼 데이터를 보관하세요",
         "bottomCta": {
           "command": "rdc config backup-strategy set --cron '0 2 * * *'",
           "description": "무료 커뮤니티 에디션으로 시작하세요. 30초 만에 첫 보존 정책을 설정할 수 있습니다.",
@@ -9051,6 +9080,7 @@
           ],
           "title": "명령어 하나로. 완전한 규정 준수."
         },
+        "label": "보존 규정 준수",
         "meta": {
           "description": "규정 요건을 충족하는 구성 가능한 보존 정책. HIPAA, SOC 2, GDPR - 기본으로 적용됩니다.",
           "keywords": "보존 규정 준수, 데이터 보존, HIPAA 규정 준수, SOC 2, GDPR, 백업 보존, 감사 준비 완료, 컴플라이언스 자동화",
@@ -9260,8 +9290,6 @@
         }
       },
       "safeOsTesting": {
-        "label": "안전한 OS 테스트",
-        "blurb": "위험 없이 OS 업데이트 테스트",
         "benefits": {
           "items": [
             {
@@ -9283,6 +9311,7 @@
           "overline": "중요한 이유",
           "title": "제공되는 기능"
         },
+        "blurb": "위험 없이 OS 업데이트 테스트",
         "bottomCta": {
           "command": "rdc repo fork production --tag patch-test",
           "description": "무료 커뮤니티 에디션으로 시작하세요. 비용 없이 복제, 테스트, 검증하세요. 신용카드 불필요.",
@@ -9443,6 +9472,7 @@
           ],
           "title": "명령어 하나로. 위험 없이."
         },
+        "label": "안전한 OS 테스트",
         "meta": {
           "description": "프로덕션 환경을 복제하세요. 패치를 적용하세요. 문제가 생기면 확인하세요. 필요하면 롤백하세요. 프로덕션은 전혀 건드리지 않습니다.",
           "keywords": "안전한 OS 테스트, 패치 테스트, OS 업데이트 테스트, btrfs 복제, 프로덕션 복제, 위험 없는 패치, 업데이트 검증",
@@ -9620,8 +9650,6 @@
         }
       },
       "vendorLockIn": {
-        "label": "벤더 종속성 탈피",
-        "blurb": "귀사의 인프라. 귀사의 선택. 언제나.",
         "benefits": {
           "items": [
             {
@@ -9643,6 +9671,7 @@
           "overline": "중요한 이유",
           "title": "제공되는 기능"
         },
+        "blurb": "귀사의 인프라. 귀사의 선택. 언제나.",
         "bottomCta": {
           "command": "rdc repo push production --to new-provider --checkpoint",
           "ctaText": "커뮤니티 에디션으로 무료 시작",
@@ -9803,6 +9832,7 @@
           ],
           "title": "명령어 하나로. 완전한 자유."
         },
+        "label": "벤더 종속성 탈피",
         "meta": {
           "description": "어디에나 배포하세요. 언제든지 마이그레이션하세요. 종속 계약 없음. 독점 형식 없음. 데이터는 언제나 귀사의 것입니다.",
           "keywords": "벤더 종속성, 클라우드 마이그레이션, 멀티 클라우드, 이식성, btrfs 마이그레이션",
@@ -9970,8 +10000,6 @@
         }
       },
       "vulnerabilityManagement": {
-        "label": "취약점 관리",
-        "blurb": "공격자가 오기 전에 취약점을 수정",
         "benefits": {
           "items": [
             {
@@ -9993,6 +10021,7 @@
           "overline": "중요한 이유",
           "title": "제공되는 기능"
         },
+        "blurb": "공격자가 오기 전에 취약점을 수정",
         "bottomCta": {
           "command": "rdc term production cve-2026-1234-fix",
           "description": "무료 커뮤니티 에디션으로 시작하세요. 4분 이내에 첫 패치를 검증하세요.",
@@ -10094,6 +10123,7 @@
           ],
           "title": "명령어 하나로. 검증된 수정."
         },
+        "label": "취약점 관리",
         "meta": {
           "description": "안전한 복제본에서 보안 취약점을 찾아 테스트하고 패치하세요. 자신 있게 프로덕션에 수정 사항을 배포하세요.",
           "keywords": "취약점 관리, 패치 검증, CVE 수정, 복제 기반 패치, 안전한 패치, 보안 테스트, 취약점 수정 검증",
@@ -10714,16 +10744,6 @@
     "title": "데이터를 어디에 저장할까요?"
   },
   "solutions": {
-    "roles": {
-      "copy": "복사",
-      "test": "테스트",
-      "recover": "복구",
-      "property": "플랫폼"
-    },
-    "constellation": {
-      "centre": "모든 솔루션은 당신의 라이브 시스템 복사본에 가하는 하나의 작업입니다.",
-      "title": "다른 솔루션 탐색"
-    },
     "categories": {
       "backups": "신뢰할 수 있는 백업",
       "defense": "사전 방어",
@@ -10731,6 +10751,19 @@
       "encryption": "암호화 관리",
       "multi-cloud": "멀티 클라우드",
       "ransomware": "랜섬웨어 공격 극복"
+    },
+    "constellation": {
+      "centre": "모든 솔루션은 당신의 라이브 시스템 복사본에 가하는 하나의 작업입니다.",
+      "title": "다른 솔루션 탐색"
+    },
+    "references": {
+      "title": "출처"
+    },
+    "roles": {
+      "copy": "복사",
+      "property": "플랫폼",
+      "recover": "복구",
+      "test": "테스트"
     },
     "title": "비즈니스 연속성, 이렇게 지킵니다"
   },

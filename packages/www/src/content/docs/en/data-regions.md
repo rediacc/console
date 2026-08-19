@@ -2,6 +2,9 @@
 title: "Data Regions"
 description: "Where your data is stored and how regional data residency works."
 category: "Concepts"
+tags:
+  - compliance
+  - account
 order: 3
 language: en
 ---

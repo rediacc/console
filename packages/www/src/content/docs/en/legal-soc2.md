@@ -2,6 +2,8 @@
 title: "SOC 2 Compliance"
 description: "Here's the thing about SOC 2: auditors want evidence your controls work. Rediacc gives you the logs, the change-management trail, and everything else they're going to ask for."
 category: "Legal"
+tags:
+  - compliance
 order: 2
 language: en
 ---

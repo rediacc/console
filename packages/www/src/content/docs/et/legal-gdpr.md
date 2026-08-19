@@ -2,9 +2,11 @@
 title: "GDPR-i vastavus"
 description: "Kuidas Rediacc'i ise majutatud arhitektuur vastab GDPR-i nõuetele andmekaitse ja privaatsuse valdkonnas."
 category: "Legal"
+tags:
+  - compliance
 order: 1
 language: et
-sourceHash: "76d2b3a911e0d14c"
+sourceHash: "85a342068d855709"
 sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
 ---
 

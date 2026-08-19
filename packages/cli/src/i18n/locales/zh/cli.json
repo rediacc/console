@@ -5,16 +5,16 @@
   "commands": {
     "backup": {
       "browse": {
+        "completed": "已列出 {{name}}",
         "description": "列出仓库包含的文件。这是对仓库镜像的本地只读遍历：不联系账户服务器，也不联网。加密仓库必须已挂载，或已部署其密钥文件，才能被打开；browse 会报告这一点，而不是显示空列表。它无法列出仅存在于块存储中的快照；请先恢复该快照，再浏览结果。",
         "descriptionShort": "列出仓库文件（本地，只读）",
-        "optionPath": "将列表限制在此子目录内",
+        "empty": "{{name}} 不包含任何文件。",
+        "failed": "无法列出 {{name}}",
         "optionDepth": "将遍历深度限制为 N 层（0 表示不限）",
         "optionLimit": "返回的最大条目数（0 表示不限）",
+        "optionPath": "将列表限制在此子目录内",
         "starting": "正在列出 {{name}}...",
-        "completed": "已列出 {{name}}",
-        "failed": "无法列出 {{name}}",
-        "truncated": "列表已在 {{limit}} 条处截断。请使用 --path 缩小范围，或提高 --limit。",
-        "empty": "{{name}} 不包含任何文件。"
+        "truncated": "列表已在 {{limit}} 条处截断。请使用 --path 缩小范围，或提高 --limit。"
       },
       "cancel": {
         "cancelled": "已取消 {{name}}",
@@ -45,8 +45,8 @@
         "atResolved": "已将 {{at}} 解析为快照 {{snapshot}}（创建于 {{created}}）。",
         "atUnparsable": "--at \"{{at}}\" 既不是快照 ID 也不是时间。请传入来自 `rdc backup manifests` 的快照 ID，或者传入 RFC3339 格式的时间，例如 2026-08-14T12:00:00Z。",
         "datastoreUnattached": "数据存储 \"{{datastore}}\" 未挂接到任何机器。请先挂接：rdc datastore attach {{datastore}} --to <machine>。",
-        "deployFailed": "已恢复的 {{name}} 部署失败",
         "deployed": "已在 {{machine}} 上部署 {{name}}",
+        "deployFailed": "已恢复的 {{name}} 部署失败",
         "deploying": "正在 {{machine}} 上部署 {{name}}...",
         "description": "将备份产物转换为可运行的仓库。放置位置在此指定。",
         "examples": {
@@ -58,9 +58,9 @@
         "optionAt": "恢复到某个时间点：快照 ID 或 RFC3339 时间（分块存储恢复）",
         "optionDatastore": "恢复到此命名数据存储中（由其挂接的机器承载）",
         "optionUp": "传输完成后部署恢复的仓库",
-        "placeRequired": "恢复产物必须指明其所在位置：使用 repo@place 格式（例如 shop:nightly@backup-1）。",
         "placementExclusive": "只能传入一个放置标志：--machine 或 --datastore。",
         "placementRequired": "请指明恢复位置：--machine <m>（Docker）或 --datastore <d>（命名数据存储）。",
+        "placeRequired": "恢复产物必须指明其所在位置：使用 repo@place 格式（例如 shop:nightly@backup-1）。",
         "pulling": "正在从 {{place}} 拉取 {{name}}...",
         "restored": "已将 {{name}} 恢复到 {{machine}}",
         "restoringSnapshot": "正在从快照 {{snapshot}} 恢复 {{name}}...",
@@ -1473,8 +1473,8 @@
         "starting": "正在用 \"{{fork}}\" 的数据接管 \"{{machine}}\" 上的 \"{{grand}}\"..."
       },
       "pull": {
-        "deployFailed": "pull后部署\"{{repo}}\"失败",
         "deployed": "仓库\"{{repo}}\"已部署到{{machine}}",
+        "deployFailed": "pull后部署\"{{repo}}\"失败",
         "deploying": "正在将\"{{repo}}\"部署到{{machine}}...",
         "description": "从另一台机器拉取仓库。存储源已停用；如需按时间点恢复，请使用 `rdc backup restore`。源类型从配置中自动检测。使用 --up 在 pull 后部署",
         "descriptionShort": "从另一台机器拉取仓库",
@@ -1493,8 +1493,8 @@
         "storageRetired": "从存储后端拉取已停用：rclone 云分支已移除。时间点恢复改用 `rdc backup restore <repo> --at <snapshot>`，走块存储。机器之间的传输不受影响：请使用 --from-machine"
       },
       "push": {
-        "deployFailed": "推送后部署 \"{{repo}}\" 失败",
         "deployed": "仓库 \"{{repo}}\" 已部署到 {{machine}}",
+        "deployFailed": "推送后部署 \"{{repo}}\" 失败",
         "deploying": "正在 {{machine}} 上部署 \"{{repo}}\"...",
         "description": "将仓库推送到另一台机器。存储目标已停用；如需按时间点备份，请使用 `rdc backup snapshot`。机器间传输时，加密的仓库镜像会以相同的 GUID 复制：这是备份/迁移，而非 fork。要创建独立的 fork，请先使用 'repo fork'，再执行 push。推送后的副本会作为备份产物存在：请在目标机器上使用 'backup restore <ref> --as <name> -m <target> --up' 启动它",
         "descriptionShort": "将仓库推送到另一台机器",
