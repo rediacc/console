@@ -3379,6 +3379,11 @@ ARITY = {
     "R_REGGATE_MALFORMED": ("p", "f"), "R_JUDGE_CONTINUE": ("r", "n", "t"),
     "R_REGGATE_BLOCK": ("b", "i", "", "", "m", "t"),
     "R_REGGATE_HALLUCINATED": ("g",), "CLI_REQUEST_USAGE": None,
+    # Round-log splice verb (wl_roundlog.py) and the admission detector
+    # (wl_admit.py). USAGE and PROMPT carry no placeholders; REFUSED takes
+    # (reason, detail) and NO_LOG takes the target path.
+    "CLI_ROUNDLOG_USAGE": None, "ADMISSION_PROMPT": None,
+    "CLI_ROUNDLOG_REFUSED": ("v", "d"), "CLI_ROUNDLOG_NO_LOG": ("p",),
     "CLI_BODY_REFUSED": ("b", 1200, 1000), "CTX_SESSION_START": ("s", "d", "l", ""),
     "CTX_SESSION_START_STALE": (3, "s"),
     "CTX_POSTCOMPACT_MISSING": ("p", "m"),
@@ -8529,6 +8534,20 @@ NO_ME = {
                               # explicitly as `--reports --read` and
                               # `--reports --list --as`, and it is recorded
                               # covered by both.
+    "--roundlog",             # takes a BRANCH, not an identity: it splices the
+                              # STATUS block of reports/pr-babysit-<branch>.md,
+                              # a single-owner document with no per-session
+                              # sections to protect. An L1_TABLE row would
+                              # substitute @ME@ into the branch slot and assert
+                              # nothing real. It is covered where its risk actually
+                              # lives instead: 19 splice controls in
+                              # `wl_roundlog.py --selftest` (including one that
+                              # asserts the naive splice still destroys the
+                              # appendix) and 11 guard cases in test-hooks.sh.
+                              # IF IT EVER TAKES A <me>, delete this line: the
+                              # exemption would then be hiding real identity
+                              # handling, which is the hole this check exists
+                              # to keep shut.
 }
 covered = {ln.strip() for ln in pathlib.Path(sys.argv[2]).read_text().splitlines() if ln.strip()}
 # The derivation's own control. An empty or broken regex would produce an empty

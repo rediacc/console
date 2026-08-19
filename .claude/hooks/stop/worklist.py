@@ -156,6 +156,7 @@ for _name in (
     "wl_judge",
     "wl_email",
     "wl_checks",
+    "wl_roundlog",
     "worklist_messages",
 ):
     try:
@@ -170,6 +171,7 @@ R = _MODS["wl_requests"]
 CK = _MODS["wl_checks"]
 J = _MODS["wl_judge"]
 M = _MODS["worklist_messages"]
+RL = _MODS["wl_roundlog"]
 
 # Re-exported for direct importers (the suite drives these two as library
 # functions; keeping them on this module is part of the compatibility
@@ -1081,6 +1083,87 @@ def main():
                 "  sections REAPED as dead: %s; archived to %s"
                 % (", ".join(reaped_rows), reaped_path)
             )
+        return
+    if sys.argv[1:2] == ["--roundlog"] and len(sys.argv) < 3:
+        # Matched on argv[1] ALONE, the same shape as the `--state` guard above
+        # and for the same reason: a bare verb that falls through to the hook
+        # path hangs forever reading an event off stdin.
+        sys.stderr.write(M.CLI_ROUNDLOG_USAGE)
+        sys.exit(2)
+    if len(sys.argv) > 2 and sys.argv[1] == "--roundlog":
+        # `... --roundlog <branch> [round]` with the STATUS BODY on stdin.
+        #
+        # The round log is wave header, then STATUS overwritten in place, then
+        # the history appendix. On 2026-08-19 a heartbeat tick refreshed STATUS
+        # with `text[:i] + new` and deleted the appendix, because that splice
+        # replaces from the heading to END OF FILE. There was no backup of that
+        # file anywhere. This verb cannot express that: it replaces the middle
+        # part only, and REPORTS the bytes it kept on either side, so a
+        # truncation could never again look like a routine success.
+        branch = sys.argv[2]
+        explicit_round = None
+        if len(sys.argv) > 3:
+            try:
+                explicit_round = int(sys.argv[3])
+            except ValueError:
+                sys.stderr.write(M.CLI_ROUNDLOG_REFUSED % ("bad-round", sys.argv[3]))
+                sys.exit(2)
+        body = "" if sys.stdin.isatty() else sys.stdin.read()
+        verdict, detail = RL.shape(body)
+        if verdict != "ok":
+            sys.stderr.write(M.CLI_ROUNDLOG_REFUSED % (verdict, detail))
+            sys.exit(2)
+        root = C.project_root(C.project_start())
+        target = RL.roundlog_path(C.projects_dir(root), branch)
+        try:
+            current = target.read_text(encoding="utf-8", errors="replace")
+        except OSError:
+            current = ""
+        if not RL.WAVE_HEADER_RE.search(current):
+            sys.stderr.write(M.CLI_ROUNDLOG_NO_LOG % target)
+            sys.exit(2)
+        # Same write discipline as --state: flock, a .prev slot, tempfile and
+        # os.replace. A delegated babysitter and its lead can both hold this
+        # path, so the lock is not ceremony.
+        backup = target.with_suffix(".md.prev")
+        lock_path = str(target) + ".lock"
+        with open(lock_path, "w", encoding="utf-8") as lf:
+            fcntl.flock(lf, fcntl.LOCK_EX)
+            # Re-read UNDER the lock: a pre-lock snapshot would splice into a
+            # document a racing writer has already moved on from.
+            try:
+                current = target.read_text(encoding="utf-8", errors="replace")
+            except OSError:
+                current = ""
+            backed_up = False
+            try:
+                backup.write_text(current, encoding="utf-8")
+                backed_up = True
+            except OSError:
+                pass  # unwritable slot; confessed in the line below
+            new, rep = RL.splice(current, body, round_no=explicit_round)
+            fd, tmp = tempfile.mkstemp(dir=str(target.parent), suffix=".tmp")
+            with os.fdopen(fd, "w", encoding="utf-8") as f:
+                f.write(new)
+            os.replace(tmp, target)
+        print(
+            "round log %s: STATUS is now round %d (%s)\n"
+            "  wave header kept: %d bytes\n"
+            "  STATUS replaced:  %d bytes -> %d bytes\n"
+            "  appendix kept:    %d bytes%s"
+            % (
+                target.name,
+                rep["round"],
+                RL.stamp(),
+                rep["head_bytes"],
+                rep["replaced_bytes"],
+                len(new) - rep["head_bytes"] - rep["tail_bytes"],
+                rep["tail_bytes"],
+                "" if rep["tail_bytes"] else "  <- nothing below STATUS yet",
+            )
+        )
+        if not backed_up:
+            print("  WARNING: the .prev backup copy FAILED")
         return
     if sys.argv[1:2] == ["--session-start"]:
         ev, _ok = _read_event()
