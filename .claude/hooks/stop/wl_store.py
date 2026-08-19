@@ -174,6 +174,40 @@ AGENT_STATE_ADOPT_MAX_MIN = int(os.environ.get("WORKLIST_AGENT_ADOPT_MAX_MIN", "
 # padding. Case-insensitive, any heading level.
 AGENT_NEXT_RE = re.compile(r"^\s*#{1,6}\s*next action\b", re.IGNORECASE | re.MULTILINE)
 
+# THE FIRST STEP OF '## Next action' MAY NOT BE A WAIT.
+#
+# WHY (operator, 2026-08-19): "you should continue for the rest of the remaining
+# tasks instead of waiting only for CI... this is a general problem after
+# compaction. WHY THIS HAPPENS? WE MUST SOLVE THE ROOT OF THE PROBLEM FIRST."
+#
+# The root cause was not a missing instrument. The Stop battery printed "39 OPEN
+# worklist item(s). Do the next one" on essentially every stop, and the no-op
+# wake ladder correctly stayed silent because the session was never idle: it
+# ticked, leased and pushed on every wake. It was busy on the wrong thing.
+#
+# What made that survive COMPACTION is this document. A session whose
+# '## Next action' opened with "1. Watch <worker>" handed exactly that priority
+# to whoever picked the session up, who then did CI first and rewrote the
+# document saying "watch CI first" again. The inversion was authored, inherited,
+# and re-authored, once per compaction, with nothing in the loop to break it.
+#
+# So a wait may APPEAR in the next action; it may not LEAD it. A background watch
+# is a CONDITION the session is under, not an action a recovered session takes:
+# the watch is already armed and will wake somebody by itself, whereas the open
+# items will not. Leading with it spends the one artifact designed to survive
+# compaction on the one instruction that needs no carrying.
+#
+# Deliberately BODY-ONLY, with no store lookup: "lead with real work" holds even
+# at zero open items, and a rule that reads the store would be unable to explain
+# itself from the text a session just wrote.
+AGENT_WAIT_LEAD_RE = re.compile(
+    r"^\s*(?:[-*+]|\d+[.)])?\s*"
+    r"(?:then\s+|first[,:]?\s+|just\s+|simply\s+)?"
+    r"(?:wait(?:\s+for|ing)?|watch(?:ing)?|poll(?:ing)?|monitor(?:ing)?"
+    r"|keep\s+watching|re-?arm|await(?:ing)?|sit\s+on|babysit)\b",
+    re.IGNORECASE,
+)
+
 # A [?] whose DEFAULT has stood unanswered this long is EXECUTED, not
 # restated: the operator said they almost always take the recommended
 # action, so the recommendation IS the decision after the window closes.
@@ -1449,9 +1483,33 @@ def agent_state_shape(body):
         return "thin", "%d chars, minimum %d" % (len(text), AGENT_STATE_MIN_CHARS)
     if len(text) > AGENT_STATE_MAX_CHARS:
         return "bloated", "%d chars, maximum %d" % (len(text), AGENT_STATE_MAX_CHARS)
-    if not AGENT_NEXT_RE.search(text):
+    m = AGENT_NEXT_RE.search(text)
+    if not m:
         return "aimless", "no '## Next action' section; the next action IS the value"
+    lead, lead_text = agent_next_lead(text, m.end())
+    if lead == "wait":
+        return "waitled", "the first step is %r; a wait is a CONDITION, not a next action" % (
+            lead_text[:70],
+        )
     return "ok", "%d chars" % len(text)
+
+
+def agent_next_lead(text, start):
+    """('wait'|'work'|'empty', first_step_text) for the '## Next action' section.
+
+    The FIRST non-blank, non-heading line after the heading is the step that a
+    recovered session reads as its instruction, so that is the only line judged.
+    A wait mentioned in step 2 or later is fine and often correct; what is
+    refused is a wait occupying the position that tells someone what to do.
+    """
+    for raw in text[start:].splitlines():
+        line = raw.strip()
+        if not line:
+            continue
+        if line.startswith("#"):  # the next heading: the section held no step
+            break
+        return ("wait" if AGENT_WAIT_LEAD_RE.match(line) else "work"), line
+    return "empty", ""
 
 
 def agent_state_stamp(epoch):

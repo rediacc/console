@@ -945,6 +945,14 @@ def main():
         # compaction broken while the session believes it is fine; refusing
         # leaves the previous good document untouched.
         verdict, detail = S.agent_state_shape(body)
+        if verdict == "waitled":
+            # Its own message: the generic one talks about char limits, which
+            # says nothing about why leading with a watch is refused, and a
+            # refusal a session cannot act on is a refusal it routes around.
+            _m = S.AGENT_NEXT_RE.search(body)
+            _lead = S.agent_next_lead(body, _m.end())[1] if _m else ""
+            sys.stderr.write(M.CLI_STATE_WAIT_LED % _lead[:120])
+            sys.exit(2)
         if verdict != "ok":
             sys.stderr.write(
                 M.CLI_STATE_REFUSED
