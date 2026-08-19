@@ -24,10 +24,11 @@ THREE THINGS THIS HOOK DELIBERATELY DOES NOT DO:
 import json
 import os
 import sys
+import time
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-import ctx_budget as B  # noqa: E402
+import ctx_budget as B
 
 
 def emit(text):
@@ -51,8 +52,6 @@ def describe_state_md(path, st, usage, threshold):
     burn 200K tokens in ten minutes or 5K in an hour. What matters is how much
     of the window has gone by since the document was last true.
     """
-    import time
-
     if not path.is_file():
         return "No compact-recovery document exists for this session at %s." % path.as_posix()
     mtime = path.stat().st_mtime
@@ -98,12 +97,16 @@ def build_text(band_name, usage, res, st, state_md):
             res["source"],
             head,
         ),
-        "At the threshold Claude Code replaces this transcript with a summary; "
-        "files on disk are what survive it.",
+        (
+            "At the threshold Claude Code replaces this transcript with a summary; "
+            "files on disk are what survive it."
+        ),
         describe_state_md(state_md, st, usage, threshold),
-        "Measured in this repo across 414 real `worklist.py --state` writes: a "
-        "rewrite turn costs about 2,200 tokens at the median, 4,900 at the 99th "
-        "percentile, and 17,800 in the worst case observed.",
+        (
+            "Measured in this repo across 414 real `worklist.py --state` writes: a "
+            "rewrite turn costs about 2,200 tokens at the median, 4,900 at the 99th "
+            "percentile, and 17,800 in the worst case observed."
+        ),
     ]
     if res.get("cap_disproven"):
         lines.append(

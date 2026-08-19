@@ -46,6 +46,7 @@ highest-scope-first, then the model cap, then evidence):
 import json
 import os
 import re
+import sys
 import time
 from pathlib import Path
 
@@ -153,7 +154,7 @@ def configured_window(project_dir):
     for f in _settings_files(project_dir):
         try:
             data = json.loads(f.read_text(encoding="utf-8"))
-        except Exception:  # noqa: BLE001 -- an unreadable settings file is not this hook's problem
+        except Exception:  # noqa: BLE001, S112 -- an unreadable settings file is not this hook's problem
             continue
         v = data.get("autoCompactWindow")
         if isinstance(v, int) and WINDOW_MIN <= v <= WINDOW_MAX:
@@ -273,13 +274,13 @@ def last_usage(transcript_path):
             start, lines = _iter_tail_lines(p, chunk)
         except OSError:
             return None
-        for raw in reversed(lines):
-            raw = raw.strip()
+        for raw_line in reversed(lines):
+            raw = raw_line.strip()
             if not raw or not raw.startswith(b"{"):
                 continue
             try:
                 d = json.loads(raw)
-            except Exception:  # noqa: BLE001 -- a torn line is expected at a tail boundary
+            except Exception:  # noqa: BLE001, S112 -- a torn line is expected at a tail boundary
                 continue
             if d.get("type") != "assistant" or d.get("isSidechain"):
                 continue
@@ -318,10 +319,7 @@ def state_dir():
     scratch directory instead of the live one.
     """
     override = os.environ.get("CTX_BAND_STATE_DIR")
-    if override:
-        d = Path(override)
-    else:
-        d = Path(__file__).resolve().parent / "state"
+    d = Path(override) if override else Path(__file__).resolve().parent / "state"
     d.mkdir(parents=True, exist_ok=True)
     return d
 
@@ -372,8 +370,6 @@ def log_error(where, exc):
 
 def read_event():
     """The hook event off stdin. Never blocks on a terminal."""
-    import sys
-
     if sys.stdin.isatty():
         return {}
     try:
@@ -401,4 +397,4 @@ def state_md_path(project, session_id):
 
 
 def fmt(n):
-    return "{:,}".format(int(n))
+    return f"{int(n):,}"

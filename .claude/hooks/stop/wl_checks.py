@@ -752,6 +752,17 @@ def docs_drift(root):
         return "absent", 0, str(docs)
     n = C._git(root, "rev-list", "--count", "%s..HEAD" % base, "--", *PROGRAM_SURFACE)
     drift = int(n) if n.isdigit() else 0
+    # UNCOMMITTED doc edits count. The baseline above is the last COMMIT
+    # touching the docs, and this repo's standing rule is that work stays
+    # uncommitted until the operator asks for it. Without this, a session
+    # that dutifully updated the design docs was told at EVERY stop that
+    # they had drifted, and the only way to satisfy the check was to commit
+    # -- which that same rule forbids doing unilaterally. The check could
+    # not distinguish "nobody updated the docs" from "somebody did, and is
+    # not allowed to commit yet", so it demanded the one action it must not
+    # provoke.
+    if drift > DOCS_DRIFT_MAX and C._git(root, "status", "--porcelain", "--", DESIGN_DOCS):
+        return "pending", drift, str(docs)
     return ("drifted" if drift > DOCS_DRIFT_MAX else "ok"), drift, str(docs)
 
 
@@ -1652,14 +1663,18 @@ def handle_session_start(event):
         blocks.append(
             M.CTX_SESSION_START % (" ".join(PROGRAM_SURFACE), DESIGN_DOCS, listing, stale)
         )
-        summary.append(
-            "%d standing program doc(s) in %s%s"
-            % (
-                len(files),
-                DESIGN_DOCS,
-                "" if state != "drifted" else " (DRIFTED by %d commits)" % drift,
+        # "pending" is NOT silence: the docs were updated but the edit is
+        # uncommitted, so a fresh session must be told a commit is owed rather
+        # than inferring from a clean line that nothing is outstanding.
+        if state == "drifted":
+            note = " (DRIFTED by %d commits)" % drift
+        elif state == "pending":
+            note = (
+                " (updated but UNCOMMITTED; %d commits of drift are covered by that edit)" % drift
             )
-        )
+        else:
+            note = ""
+        summary.append("%d standing program doc(s) in %s%s" % (len(files), DESIGN_DOCS, note))
     listing, live = plans_block(root)
     if listing:
         blocks.append(M.CTX_PLANS % listing)

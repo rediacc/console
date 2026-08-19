@@ -37,6 +37,7 @@ opportunity. Note that Claude Code folds STDERR into the same string, so this
 hook must never write to stderr either; failures go to state/errors.log.
 """
 
+import os
 import re
 import subprocess
 import sys
@@ -44,7 +45,7 @@ import time
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-import ctx_budget as B  # noqa: E402
+import ctx_budget as B
 
 ITEM_RE = re.compile(r"^\s*- \[[ >?]\] #([0-9a-fA-F]{6,16})\b")
 
@@ -61,6 +62,7 @@ def run(cmd, cwd, timeout=15):
             capture_output=True,
             text=True,
             timeout=timeout,
+            check=False,
         )
         return p.stdout
     except Exception as exc:  # noqa: BLE001 -- a missing git or a slow store must not break compaction
@@ -89,10 +91,10 @@ def open_items(project, slug):
 
 
 def facts(project, event, slug):
-    git = lambda *a: run(["git"] + list(a), project).strip()  # noqa: E731
+    git = lambda *a: run(["git", *a], project).strip()  # noqa: E731
     branch = git("rev-parse", "--abbrev-ref", "HEAD") or "(detached or unknown)"
     head = git("log", "-1", "--format=%h %s")
-    dirty = [l for l in git("status", "--porcelain").splitlines() if l.strip()]
+    dirty = [line for line in git("status", "--porcelain").splitlines() if line.strip()]
     ids, listing = open_items(project, slug)
     state_md = B.state_md_path(project, event.get("session_id") or "")
     if state_md.is_file():
@@ -123,7 +125,7 @@ def facts(project, event, slug):
         "## Uncommitted paths (first 40)",
         "",
     ]
-    body += ["    " + l for l in dirty[:40]] or ["    (clean)"]
+    body += ["    " + line for line in dirty[:40]] or ["    (clean)"]
     body += ["", "## Open worklist items", "", listing.rstrip() or "(none)"]
     return "\n".join(body) + "\n", ids, state_md
 
@@ -139,8 +141,6 @@ def main():
         snapshot = B.state_dir() / ("%s-precompact-facts.md" % slug)
         tmp = snapshot.with_suffix(".tmp")
         tmp.write_text(text, encoding="utf-8")
-        import os
-
         os.replace(tmp, snapshot)
 
         # Silence unless there is something worth carrying across the summary.
