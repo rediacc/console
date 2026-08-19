@@ -3,6 +3,7 @@ import { getCollection } from 'astro:content';
 import type { Language } from '../i18n/types';
 import { createTranslator } from '../i18n/utils';
 import { getBaseSlug } from '../utils/slug';
+import { CATEGORY_KEYS, categoryAnchor, groupByCategory, type DocCategory } from '../utils/docs-categories';
 
 interface Props {
   currentLang: Language;
@@ -18,63 +19,35 @@ const {
 
 const { t } = createTranslator(currentLang);
 
-const CATEGORY_KEYS: Record<string, string> = {
-  'Tutorials': 'documentation.categories.tutorials',
-  'Guides': 'documentation.categories.guides',
-  'Concepts': 'documentation.categories.concepts',
-  'Reference': 'documentation.categories.reference',
-  'Use Cases': 'documentation.categories.useCases',
-  'Legal': 'documentation.categories.legal',
-};
+// The category vocabulary, its display order and the browse page's anchor transform all
+// come from utils/docs-categories. This component used to carry a second copy of all
+// three, which is the exact drift that module's header comment exists to prevent: the
+// tabs and the browse page agreed on six categories and on `#use-cases` by coincidence,
+// not by contract.
 function categoryLabel(cat: string): string {
-  const k = CATEGORY_KEYS[cat];
+  const k = CATEGORY_KEYS[cat as DocCategory];
   // The schema (src/content/config.ts) restricts category to this vocabulary.
   // Failing loudly here keeps the invariant if the two lists ever drift: the
   // silent fallback used to render the raw frontmatter string as a seventh tab.
+  // (docs-categories' makeCategoryLabel is deliberately LENIENT, which is right for
+  // the browse page's headings and wrong for navigation chrome on 1,015 pages.)
   if (!k) throw new Error(`Unknown docs category "${cat}"; expected one of: ${Object.keys(CATEGORY_KEYS).join(', ')}`);
   return t(k);
 }
 
 const allDocs = await getCollection('docs');
-const docs = allDocs
-  .filter((doc) => doc.data.language === currentLang)
-  .sort((a, b) => {
-    const categorySort = a.data.category.localeCompare(b.data.category);
-    if (categorySort !== 0) return categorySort;
-    return (a.data.order ?? 999) - (b.data.order ?? 999);
-  });
-
-const docsByCategory = docs.reduce((acc, doc) => {
-  const category = doc.data.category;
-  if (!acc[category]) acc[category] = [];
-  acc[category].push(doc);
-  return acc;
-}, {} as Record<string, typeof docs>);
-
-const categoryOrder: Record<string, number> = {
-  Tutorials: 0,
-  Guides: 1,
-  Concepts: 2,
-  Reference: 3,
-  'Use Cases': 4,
-  'Legal': 5,
-};
-
-const categories = Object.keys(docsByCategory).sort((a, b) => {
-  const pa = categoryOrder[a] ?? 99;
-  const pb = categoryOrder[b] ?? 99;
-  if (pa !== pb) return pa - pb;
-  return a.localeCompare(b);
-});
+// groupByCategory orders by CATEGORY_ORDER, sorts each group by frontmatter `order` and
+// drops empty groups, which is precisely what the local reduce-plus-sort pair did.
+const groups = groupByCategory(allDocs.filter((doc) => doc.data.language === currentLang));
 ---
 
 <nav class="docs-top-tabs" aria-label={t('common.aria.docsSections')}>
   <ul class="docs-top-tabs-list">
-    {categories.map((category) => {
-      const firstDoc = docsByCategory[category][0];
+    {groups.map(({ category, docs }) => {
+      const anchor = categoryAnchor(category);
       const href = variant === 'index'
-        ? `#${category.toLowerCase().replace(/\s+/g, '-')}`
-        : `/${currentLang}/docs/${getBaseSlug(firstDoc.slug)}`;
+        ? `#${anchor}`
+        : `/${currentLang}/docs/${getBaseSlug(docs[0].slug)}`;
       const isActive = variant === 'article' && currentCategory === category;
 
       return (
@@ -82,7 +55,7 @@ const categories = Object.keys(docsByCategory).sort((a, b) => {
           <a
             href={href}
             class={`docs-top-tab-link ${isActive ? 'active' : ''}`}
-            data-docs-tab={category.toLowerCase().replace(/\s+/g, '-')}
+            data-docs-tab={anchor}
           >
             {categoryLabel(category)}
           </a>
@@ -109,6 +82,23 @@ const categories = Object.keys(docsByCategory).sort((a, b) => {
       };
 
       setActiveFromHash();
+
+      // `hashchange` alone was NEVER enough, and the tab highlight has therefore never
+      // worked for a real click. Astro's client router intercepts same-origin link clicks
+      // and updates the URL through the History API, which does not emit `hashchange`;
+      // only a programmatic `location.hash = ...` did, which is why this read correct in
+      // every console test. Measured on the built browse page: after clicking the
+      // `Use Cases` tab the hash was `#use-cases` and NO tab carried `.active`.
+      // The click path therefore sets the state from the link itself rather than waiting
+      // for an event that will not arrive, and `hashchange` stays for back/forward.
+      tabs.forEach((tab) => {
+        tab.addEventListener('click', () => {
+          const wanted = tab.getAttribute('data-docs-tab');
+          tabs.forEach((other) => {
+            other.classList.toggle('active', other.getAttribute('data-docs-tab') === wanted);
+          });
+        });
+      });
       window.addEventListener('hashchange', setActiveFromHash);
     }
 

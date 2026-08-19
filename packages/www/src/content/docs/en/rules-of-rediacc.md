@@ -2,6 +2,9 @@
 title: "Rules of Rediacc"
 description: "Essential rules and conventions for building applications on the Rediacc platform. Covers Rediaccfile, compose, networking, storage, CRIU, and deployment."
 category: "Guides"
+tags:
+  - containers
+  - networking
 order: 5
 language: en
 ---

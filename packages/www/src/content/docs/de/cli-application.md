@@ -2,11 +2,13 @@
 title: "CLI-Anwendung"
 description: "Vollständige Anleitung zur Verwendung der Rediacc-Befehlszeilenschnittstelle für die Plattformverwaltung"
 category: "Reference"
+tags:
+  - cli
 order: 2
 language: de
 generated: true
 generatedFrom: packages/cli/src/i18n/locales/de/cli.json
-sourceHash: "bb3ff8daf0bc61cb"
+sourceHash: "b6ae8408bdbd2fe7"
 ---
 
 <!-- THIS FILE IS AUTO-GENERATED. Do not edit manually. -->

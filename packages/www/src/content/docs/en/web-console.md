@@ -2,9 +2,11 @@
 title: Web Console
 description: Run the entire rdc CLI from your browser with forms, resource pickers, and run history
 category: Guides
+tags:
+  - cli
+  - account
 order: 8
 language: en
-sourceHash: "b735dd2fd77435c5"
 ---
 
 # Web Console

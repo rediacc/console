@@ -2,9 +2,12 @@
 title: 数秒で起動する開発環境
 description: 開発環境を何日も待つ必要はありません。 オンデマンドの一時的な環境を使用して、本番インフラストラクチャ全体のクローンを 60 秒以内に作成します。
 category: Use Cases
+tags:
+  - forking
+  - containers
 order: 10
 language: ja
-sourceHash: "d534fc11b7ba4fa7"
+sourceHash: "dd05b3e00f6f921d"
 sourceCommit: "8b37b0a2c25c0ba7e5a8a63c8d3ed0da48b78a10"
 ---
 

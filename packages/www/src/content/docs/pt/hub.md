@@ -1,8 +1,11 @@
 ---
-sourceHash: "6fa16a1c73af497e"
+sourceHash: "fb8ab2f49f1a395b"
 title: "Hub"
 description: "Forneça ambientes contentorizados autenticados por utilizador com daemons Docker por utilizador, seleção de múltiplos modelos, checkpoint/restauro CRIU, registos de auditoria e recolha de lixo do data-root."
 category: "Guides"
+tags:
+  - containers
+  - security
 order: 14
 language: pt
 ---

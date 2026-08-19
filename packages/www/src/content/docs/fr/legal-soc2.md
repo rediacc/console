@@ -2,9 +2,11 @@
 title: "Conformité SOC 2"
 description: "Voilà SOC 2 : les auditeurs veulent des preuves que vos contrôles fonctionnent. Rediacc vous donne les journaux, la piste de gestion des changements et tout ce qu'ils demandent d'autre."
 category: "Legal"
+tags:
+  - compliance
 order: 2
 language: fr
-sourceHash: "28b4309f81f43d8d"
+sourceHash: "8ccd82a1265e268e"
 sourceCommit: "5fab1177d6ceae5211c25cf8fa0176d67259d40e"
 ---
 

@@ -2,9 +2,12 @@
 title: Cross-Backup-Strategie
 description: "Ihr Backup ist nur so sicher wie die Maschine, auf der es läuft. Rediacc repliziert Snapshots auf einer separaten Maschine – so dass ein Laufwerksausfall nicht alles mitreißt."
 category: Use Cases
+tags:
+  - backup
+  - migration
 order: 5
 language: de
-sourceHash: "39dbeac1faec121c"
+sourceHash: "a565990a48aa0593"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 

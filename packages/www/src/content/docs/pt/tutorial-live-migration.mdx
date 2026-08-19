@@ -2,22 +2,23 @@
 title: "Migração em Direto"
 description: "Mova um repositório em execução, contentores, base de dados e memória de processo incluídos, para outra máquina com um único comando e tempo de inatividade mínimo."
 category: "Tutorials"
+tags:
+  - migration
+  - containers
 subcategory: advanced
 order: 16
 language: pt
-sourceHash: "0d0c4df847c6ba17"
+sourceHash: "6b14c6eb4a0b643a"
 sourceCommit: "3fb35b9a33c7e8ec6753ecd56231f2018e8f4803"
 ---
 
 import TutorialStep from '../../../components/tutorial/TutorialStep.astro';
 
+![Tutorial: Live migration](/assets/tutorials/tutorial-live-migration.cast)
+
 # Migração em Direto
 
 Os servidores são substituídos: o hardware envelhece, os fornecedores mudam, as regiões movem-se. O `rdc repo migrate` move um repositório em execução para outra máquina com um único comando, e com `--checkpoint` até a memória de processo faz a viagem. A aplicação de demonstração, `pulse`, mantém um contador em RAM; após a migração continua a contar em vez de recomeçar do zero.
-
-## Ver o tutorial
-
-![Tutorial: Live migration](/assets/tutorials/tutorial-live-migration.cast)
 
 ## Como se move
 

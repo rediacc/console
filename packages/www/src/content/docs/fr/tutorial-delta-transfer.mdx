@@ -2,22 +2,23 @@
 title: "Transfert delta"
 description: "Le premier push vers une autre machine copie tout ; chaque push suivant ne transfère que les blocs modifiés, automatiquement."
 category: "Tutorials"
+tags:
+  - backup
+  - storage
 subcategory: advanced
 order: 17
 language: fr
-sourceHash: "6dabbcbb0670ac60"
+sourceHash: "1fd12000a2875e6d"
 sourceCommit: "3fb35b9a33c7e8ec6753ecd56231f2018e8f4803"
 ---
 
 import TutorialStep from '../../../components/tutorial/TutorialStep.astro';
 
+![Tutorial: Delta transfer](/assets/tutorials/tutorial-delta-transfer.cast)
+
 # Transfert delta
 
 Poussez un dépôt vers une autre machine deux fois. Le premier push transfère tout. Le deuxième ne transfère que ce qui a changé : même commande, aucun flag, aucun suivi manuel. Et vous n'avez pas à le croire sur parole, car la sortie du push affiche exactement la quantité déplacée.
-
-## Regarder le tutoriel
-
-![Tutorial: Delta transfer](/assets/tutorials/tutorial-delta-transfer.cast)
 
 ## Des blocs, pas des octets
 

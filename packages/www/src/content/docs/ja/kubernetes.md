@@ -2,9 +2,12 @@
 title: "Kubernetes"
 description: "Rediaccのリポジトリの考え方でKubernetesを運用する: 実行中のクラスターを、そのデータごと、短いカットオーバーで別のマシンやデータセンターへフォークまたは移動できます。"
 category: "Guides"
+tags:
+  - containers
+  - migration
 order: 6
 language: ja
-sourceHash: "6ad4b60e09edde94"
+sourceHash: "22eef465dfd46ccf"
 sourceCommit: "4401262fffbf29b9480dee8ecd209013e4b87f60"
 ---
 

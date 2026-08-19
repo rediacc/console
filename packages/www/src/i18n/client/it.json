@@ -71,6 +71,16 @@
     "error": "Qualcosa è andato storto. Riprova.",
     "close": "Chiudi"
   },
+  "documentation": {
+    "categories": {
+      "tutorials": "Tutorial",
+      "guides": "Guide",
+      "concepts": "Concetti",
+      "reference": "Riferimento",
+      "useCases": "Casi d'uso",
+      "legal": "Note legali"
+    }
+  },
   "footer": {
     "columns": {
       "product": "Prodotto",
@@ -147,7 +157,9 @@
       }
     },
     "forAiAgents": "Per agenti AI",
-    "account": "Il mio account"
+    "account": "Il mio account",
+    "learn": "Impara",
+    "browseAllDocs": "Sfoglia tutta la documentazione"
   },
   "newsletter": {
     "title": "Newsletter",

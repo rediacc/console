@@ -4,6 +4,9 @@ description: >-
   How Rediacc works: two-tool architecture, adapter detection, security model, and
   configuration structure.
 category: Concepts
+tags:
+  - repositories
+  - containers
 order: 0
 language: en
 ---

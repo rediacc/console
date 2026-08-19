@@ -2,10 +2,12 @@
 title: "Gestion de branches façon Git"
 description: "Traiter les forks copy-on-write comme des commits git : geler un fork en commit immuable, nommer des branches, extraire des commits dans des forks modifiables, parcourir l'historique et fusionner sans jamais muter un dépôt en cours d'exécution."
 category: Reference
-subcategory: advanced
+tags:
+  - forking
+  - repositories
 order: 41
 language: fr
-sourceHash: "b8bd3176ecabfa4b"
+sourceHash: "7aaa25bc83dfcf5b"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 

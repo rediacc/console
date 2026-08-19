@@ -2,10 +2,12 @@
 title: "Gitライクなブランチ管理"
 description: "コピーオンライトフォークをgitコミットとして扱う：フォークをイミュータブルなコミットとして凍結し、ブランチに名前を付け、コミットを書き込み可能なフォークにチェックアウトし、履歴を確認し、実行中のリポジトリを変更することなくマージする。"
 category: Reference
-subcategory: advanced
+tags:
+  - forking
+  - repositories
 order: 41
 language: ja
-sourceHash: "b8bd3176ecabfa4b"
+sourceHash: "7aaa25bc83dfcf5b"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 

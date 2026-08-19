@@ -5,9 +5,12 @@ description: >-
   de producción completa en menos de 60 segundos con entornos efímeros bajo
   demanda.
 category: Use Cases
+tags:
+  - forking
+  - containers
 order: 10
 language: es
-sourceHash: "d534fc11b7ba4fa7"
+sourceHash: "dd05b3e00f6f921d"
 sourceCommit: "8b37b0a2c25c0ba7e5a8a63c8d3ed0da48b78a10"
 ---
 

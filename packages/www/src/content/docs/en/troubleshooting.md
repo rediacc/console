@@ -2,6 +2,8 @@
 title: "Troubleshooting"
 description: "Fixes for common SSH, setup, repository, service, and Docker issues."
 category: "Guides"
+tags:
+  - operations
 order: 10
 language: en
 ---

@@ -2,9 +2,12 @@
 title: "バックアップと復元"
 description: "暗号化されたリポジトリをコンテンツアドレス方式のチャンクストレージにスナップショットし、変更されたセルだけをアップロードして、どのスナップショットからも直接復元できます。あるいは別のマシンにコピーを残すこともできます。どこへでも復元でき、名前付き戦略とsystemdタイマーで自動化できます。"
 category: "Guides"
+tags:
+  - backup
+  - storage
 order: 7
 language: ja
-sourceHash: "91f6072e230b059c"
+sourceHash: "c35328105c2f3e8c"
 sourceCommit: "79c84ad044d5730b6d0a20aaf7b21f21914b6bda"
 ---
 

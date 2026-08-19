@@ -2,9 +2,12 @@
 title: "许可证链与委托"
 description: "可验证防篡改的许可证颁发、本地部署的委托签名以及分叉检测。"
 category: "Guides"
+tags:
+  - account
+  - security
 order: 8
 language: zh
-sourceHash: "6486263bfb9ebf98"
+sourceHash: "d6d980d721be2373"
 sourceCommit: "fc24769cfd0684622952395c5bafe44e6180530d"
 ---
 

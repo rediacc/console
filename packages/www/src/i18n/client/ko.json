@@ -71,6 +71,16 @@
     "error": "문제가 발생했습니다. 다시 시도해 주세요.",
     "close": "닫기"
   },
+  "documentation": {
+    "categories": {
+      "tutorials": "튜토리얼",
+      "guides": "가이드",
+      "concepts": "개념",
+      "reference": "참조",
+      "useCases": "사용 사례",
+      "legal": "법적 고지"
+    }
+  },
   "footer": {
     "columns": {
       "product": "제품",
@@ -147,7 +157,9 @@
       }
     },
     "forAiAgents": "AI 에이전트용",
-    "account": "계정"
+    "account": "계정",
+    "learn": "학습",
+    "browseAllDocs": "전체 문서 보기"
   },
   "newsletter": {
     "title": "뉴스레터",

@@ -2,9 +2,12 @@
 title: "Conformidade com a HIPAA"
 description: "Como a arquitetura de encriptação e isolamento da Rediacc se mapeia com os requisitos de salvaguardas da HIPAA para a proteção de informações de saúde."
 category: "Legal"
+tags:
+  - compliance
+  - security
 order: 3
 language: pt
-sourceHash: "58f208db31474a81"
+sourceHash: "1a0a2df716f6628b"
 sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
 ---
 

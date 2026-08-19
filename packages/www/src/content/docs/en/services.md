@@ -4,6 +4,9 @@ description: >-
   Deploy and manage containerized services using Rediaccfiles, service
   networking, and autostart.
 category: Guides
+tags:
+  - containers
+  - operations
 order: 5
 language: en
 ---

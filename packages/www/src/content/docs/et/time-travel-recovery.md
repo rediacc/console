@@ -2,9 +2,12 @@
 title: Ajarändel põhinev taastamine
 description: "Taasta nädala tagasi kustutatud andmed btrfs hetktõmmiste abil, isegi kui tavapärased varukoopiad on sellest ajast juba edasi liikunud."
 category: Use Cases
+tags:
+  - backup
+  - storage
 order: 2
 language: et
-sourceHash: "e55d51b8df91b20f"
+sourceHash: "2fce69fb1631f640"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 

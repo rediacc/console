@@ -2,10 +2,12 @@
 title: "rdc repo diff"
 description: "Näita git-stiilis failipõhist erinevust kahe kopeerimise ajal kirjutusega hargnemise hoidla vahel, võrreldes nende krüpteeritud kettaandmeid plokitasandil, dekrüpteerimiseta."
 category: Reference
-subcategory: advanced
+tags:
+  - forking
+  - storage
 order: 40
 language: et
-sourceHash: "b555f4ca6b58ff4b"
+sourceHash: "6f5ccba93044665a"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 

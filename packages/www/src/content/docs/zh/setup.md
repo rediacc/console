@@ -2,9 +2,12 @@
 title: "机器设置"
 description: "创建配置、添加机器、配置服务器和设置基础设施。"
 category: "Guides"
+tags:
+  - getting-started
+  - operations
 order: 3
 language: zh
-sourceHash: "6e0b338423280f98"
+sourceHash: "a0f69282724c27ea"
 sourceCommit: "5fab1177d6ceae5211c25cf8fa0176d67259d40e"
 ---
 

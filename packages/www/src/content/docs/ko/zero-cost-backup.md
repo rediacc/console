@@ -2,9 +2,12 @@
 title: "몇 분 만에 프로덕션과 동일한 개발 환경 구축"
 description: "블록 수준 중복 제거로 개발 환경 설정 시간을 며칠에서 몇 분으로 줄입니다."
 category: Use Cases
+tags:
+  - forking
+  - storage
 order: 7
 language: ko
-sourceHash: "2aa115fc621f5258"
+sourceHash: "a9c98112fe890a13"
 sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 ---
 

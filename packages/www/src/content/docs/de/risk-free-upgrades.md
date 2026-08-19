@@ -4,9 +4,12 @@ description: >-
   Testen Sie Datenbank-Upgrades ohne Risiko mithilfe von Instant Cloning und
   stündlichen Snapshots.
 category: Use Cases
+tags:
+  - forking
+  - backup
 order: 4
 language: de
-sourceHash: "242617b8bede9535"
+sourceHash: "852e967b9d505861"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 

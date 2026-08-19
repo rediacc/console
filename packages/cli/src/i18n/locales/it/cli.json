@@ -5,16 +5,16 @@
   "commands": {
     "backup": {
       "browse": {
+        "completed": "{{name}} elencato",
         "description": "Elenca i file contenuti in un repository. Una scansione locale in sola lettura dell'immagine del repository: nessun server account e nessuna rete. Un repository cifrato deve essere montato, o avere il proprio keyfile distribuito, prima di poter essere aperto; browse lo segnala invece di mostrare un elenco vuoto. Non può elencare uno snapshot che esiste solo nel chunk store; ripristinalo prima, poi esplora il risultato.",
         "descriptionShort": "Elenca i file di un repository (locale, sola lettura)",
-        "optionPath": "Limita l'elenco a questo sottoalbero",
+        "empty": "{{name}} non contiene file.",
+        "failed": "Impossibile elencare {{name}}",
         "optionDepth": "Limita la discesa a N livelli (0 per illimitato)",
         "optionLimit": "Numero massimo di voci da restituire (0 per illimitato)",
+        "optionPath": "Limita l'elenco a questo sottoalbero",
         "starting": "Elenco di {{name}} in corso...",
-        "completed": "{{name}} elencato",
-        "failed": "Impossibile elencare {{name}}",
-        "truncated": "Elenco troncato a {{limit}} voci. Restringilo con --path, oppure aumenta --limit.",
-        "empty": "{{name}} non contiene file."
+        "truncated": "Elenco troncato a {{limit}} voci. Restringilo con --path, oppure aumenta --limit."
       },
       "cancel": {
         "cancelled": "{{name}} annullato",
@@ -45,8 +45,8 @@
         "atResolved": "{{at}} risolto nello snapshot {{snapshot}} (eseguito il {{created}}).",
         "atUnparsable": "--at \"{{at}}\" non è né un ID di snapshot né un orario. Passa un ID di snapshot da `rdc backup manifests`, oppure un orario RFC3339 come 2026-08-14T12:00:00Z.",
         "datastoreUnattached": "Il datastore \"{{datastore}}\" non è collegato a nessuna macchina. Collegalo prima con: rdc datastore attach {{datastore}} --to <macchina>.",
-        "deployFailed": "Distribuzione di {{name}} ripristinato non riuscita",
         "deployed": "{{name}} distribuito su {{machine}}",
+        "deployFailed": "Distribuzione di {{name}} ripristinato non riuscita",
         "deploying": "Distribuzione di {{name}} su {{machine}} in corso...",
         "description": "Trasforma un artefatto di backup in un repository attivo. Il posizionamento si specifica qui.",
         "examples": {
@@ -58,9 +58,9 @@
         "optionAt": "Ripristina a un punto nel tempo: un ID di snapshot o un orario RFC3339 (ripristino da storage a chunk)",
         "optionDatastore": "Ripristina in questo datastore con nome (la macchina a cui è collegato lo ospita)",
         "optionUp": "Distribuisci il repository ripristinato dopo il trasferimento",
-        "placeRequired": "Un artefatto da ripristinare deve indicare dove si trova: usa repo@luogo (es. shop:nightly@backup-1).",
         "placementExclusive": "Passa esattamente un flag di posizionamento: --machine oppure --datastore.",
         "placementRequired": "Indica dove ripristinare: --machine <m> (docker) oppure --datastore <d> (datastore con nome).",
+        "placeRequired": "Un artefatto da ripristinare deve indicare dove si trova: usa repo@luogo (es. shop:nightly@backup-1).",
         "pulling": "Download di {{name}} da {{place}} in corso...",
         "restored": "{{name}} ripristinato su {{machine}}",
         "restoringSnapshot": "Ripristino di {{name}} dallo snapshot {{snapshot}} in corso...",
@@ -1473,8 +1473,8 @@
         "starting": "Takeover di \"{{grand}}\" con i dati di \"{{fork}}\" su \"{{machine}}\"..."
       },
       "pull": {
-        "deployFailed": "Impossibile distribuire \"{{repo}}\" dopo il pull",
         "deployed": "Repository \"{{repo}}\" distribuito su {{machine}}",
+        "deployFailed": "Impossibile distribuire \"{{repo}}\" dopo il pull",
         "deploying": "Distribuzione di \"{{repo}}\" su {{machine}}...",
         "description": "Scarica un repository da un'altra macchina. Le sorgenti di storage sono dismesse: usa `rdc backup restore` per un ripristino puntuale. Il tipo di sorgente viene rilevato automaticamente dalla configurazione. Usa --up per distribuire dopo il pull.",
         "descriptionShort": "Scarica un repository da un'altra macchina",
@@ -1493,8 +1493,8 @@
         "storageRetired": "Il pull da un backend di storage è dismesso: il braccio cloud rclone è stato rimosso. Il ripristino puntuale si fa con `rdc backup restore <repo> --at <snapshot>` sul chunk store. Il trasferimento tra macchine non cambia: usa --from-machine"
       },
       "push": {
-        "deployFailed": "Impossibile distribuire \"{{repo}}\" dopo il push",
         "deployed": "Repository \"{{repo}}\" distribuito su {{machine}}",
+        "deployFailed": "Impossibile distribuire \"{{repo}}\" dopo il push",
         "deploying": "Distribuzione di \"{{repo}}\" su {{machine}}...",
         "description": "Invia un repository a un'altra macchina. Le destinazioni di storage sono dismesse: usa `rdc backup snapshot` per un backup puntuale. Per il trasferimento tra macchine, l'immagine cifrata del repo viene copiata con lo STESSO GUID: si tratta di un backup o di una migrazione, non di un fork. Per creare un fork indipendente, usa prima 'repo fork', poi push. Una copia inviata con push diventa un ARTEFATTO di backup: avviala sulla destinazione con 'backup restore <ref> --as <name> -m <target> --up'",
         "descriptionShort": "Invia un repository a un'altra macchina",

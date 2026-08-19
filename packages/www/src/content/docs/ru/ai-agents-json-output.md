@@ -4,9 +4,12 @@ description: >-
   Полный справочник по формату JSON-вывода rdc CLI, схеме конверта, обработке
   ошибок и командам обнаружения агентов.
 category: Reference
+tags:
+  - ai-agents
+  - cli
 order: 51
 language: ru
-sourceHash: "cc88f8f06960df3a"
+sourceHash: "36ba86893c3817ac"
 sourceCommit: "23543669cd22bce3f14d69a0886bac8a12061412"
 ---
 

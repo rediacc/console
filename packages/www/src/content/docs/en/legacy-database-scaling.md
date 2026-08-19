@@ -2,6 +2,9 @@
 title: Legacy Database Scaling
 description: Scale legacy databases without migration by leveraging real-time data replication and query distribution.
 category: Use Cases
+tags:
+  - migration
+  - forking
 order: 3
 language: en
 ---

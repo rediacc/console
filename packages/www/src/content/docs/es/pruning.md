@@ -2,9 +2,12 @@
 title: "Limpieza"
 description: "Eliminar copias de seguridad huérfanas, snapshots obsoletos, imágenes de repositorio y restos de configuración local para recuperar espacio en disco y mantener el estado coherente."
 category: "Guides"
+tags:
+  - storage
+  - operations
 order: 12
 language: es
-sourceHash: "928f117282b38484"
+sourceHash: "7d9a82ee410c420a"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 

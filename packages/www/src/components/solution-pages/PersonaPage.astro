@@ -29,6 +29,7 @@ import SPComparisonTable from './SPComparisonTable.astro';
 import SPBottomCta from './SPBottomCta.astro';
 import SolutionConstellation from './SolutionConstellation.astro';
 import SPShareWithTeam from './SPShareWithTeam.astro';
+import SPSources from './SPSources.astro';
 import { createTranslator } from '../../i18n/utils';
 import type { Language } from '../../i18n/types';
 import { PERSONA_PAGES, PERSONA_CTA_MAP } from '../../config/persona-pages';
@@ -54,6 +55,11 @@ const content = to(`pages.personaPages.${config.contentKey}` as any);
 const metaPath = `pages.personaPages.${config.contentKey}.meta`;
 
 const has = (section: string) => config.sections.includes(section as any);
+
+// Same harvested noun the solution pages use. Persona pages carry no `references` branch
+// today, so SPSources renders nothing here -- the component is wired so that authoring one
+// is a data change and not a template change.
+const sourcesTitle = t('solutions.references.title', 'Sources');
 
 // Resolve CTA href: per-page override → persona default
 const rawCtaHref = config.ctaHref ?? PERSONA_CTA_MAP[config.personaType];
@@ -126,6 +132,9 @@ const breadcrumbItems = [
     )}
 
     {/* SPSocialProof was rendered here — see the SOCIAL PROOF note in the frontmatter. */}
+
+    {/* B3: last content section, above the black zone. See SolutionPage.astro. */}
+    <SPSources items={(content as any).references?.items} title={sourcesTitle} />
 
     {has('relatedSolutions') && config.relatedSolutions && (
       <SolutionConstellation

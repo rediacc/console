@@ -2,9 +2,12 @@
 title: Cursor Einrichtungsanleitung
 description: Konfiguration der Cursor-IDE für die Arbeit mit der Rediacc-Infrastruktur über .cursorrules und Terminal-Integration.
 category: Guides
+tags:
+  - ai-agents
+  - cli
 order: 32
 language: de
-sourceHash: "bab7e70ffbd9f32b"
+sourceHash: "e0fb319a9e477324"
 sourceCommit: "23543669cd22bce3f14d69a0886bac8a12061412"
 ---
 

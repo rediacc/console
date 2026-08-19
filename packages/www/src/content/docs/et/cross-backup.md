@@ -2,9 +2,12 @@
 title: Ristivarunduse strateegia
 description: "Teie varukoopia ei toimi hetkel, kui tema masin rikki läheb. Rediacc kopeerib hetktõmmised eraldi masinasse, et ühe ketta rike ei võtaks kaasa kõike."
 category: Use Cases
+tags:
+  - backup
+  - migration
 order: 5
 language: et
-sourceHash: "39dbeac1faec121c"
+sourceHash: "a565990a48aa0593"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 

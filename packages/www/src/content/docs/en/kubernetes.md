@@ -2,6 +2,9 @@
 title: "Kubernetes"
 description: "Run Kubernetes with the Rediacc repo mentality: fork or move a running cluster, including its data, to another machine or datacenter with a short cutover."
 category: "Guides"
+tags:
+  - containers
+  - migration
 order: 6
 language: en
 ---

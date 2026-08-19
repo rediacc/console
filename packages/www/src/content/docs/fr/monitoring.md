@@ -4,9 +4,11 @@ description: >-
   Supervisez la santé des machines, les conteneurs, les services, les dépôts et
   exécutez des diagnostics.
 category: Guides
+tags:
+  - operations
 order: 9
 language: fr
-sourceHash: "ab050e731db18848"
+sourceHash: "9c5882697da43a8f"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 

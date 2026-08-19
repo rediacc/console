@@ -2,9 +2,11 @@
 title: 시스템 요구 사항
 description: Rediacc 실행을 위한 시스템 요구 사항 및 지원 플랫폼.
 category: Guides
+tags:
+  - getting-started
 order: 0
 language: ko
-sourceHash: "88e8186bc7c0e629"
+sourceHash: "a605c6b2fac9bea2"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 

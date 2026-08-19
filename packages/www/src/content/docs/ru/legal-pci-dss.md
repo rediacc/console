@@ -2,9 +2,12 @@
 title: "Соответствие PCI DSS"
 description: "Как Rediacc соответствует требованиям PCI DSS: неизменяемые резервные копии, автоматическая изоляция сети и контроль доступа на инфраструктурном уровне."
 category: "Legal"
+tags:
+  - compliance
+  - security
 order: 6
 language: ru
-sourceHash: "05ca01c69d8bab61"
+sourceHash: "f0349ad8df33656e"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 

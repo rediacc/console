@@ -2,9 +2,12 @@
 title: استراتيجية النسخ الاحتياطي المتقاطع
 description: "النسخة الاحتياطية الموجودة على نفس الجهاز تفشل عند فشل ذلك الجهاز. يقوم Rediacc بنسخ اللقطات إلى جهاز منفصل، بحيث لا يؤدي فشل قرص واحد إلى فقدان البيانات بالكامل."
 category: Use Cases
+tags:
+  - backup
+  - migration
 order: 5
 language: ar
-sourceHash: "39dbeac1faec121c"
+sourceHash: "a565990a48aa0593"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 

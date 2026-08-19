@@ -2,9 +2,11 @@
 title: "O Que a Conformidade Realmente Exige"
 description: "A Rediacc funciona na sua infraestrutura. Os seus dados estão sob o seu controlo. Veja como isto se alinha com os principais referenciais de conformidade."
 category: "Legal"
+tags:
+  - compliance
 order: 0
 language: pt
-sourceHash: "e6044a3b067b54d5"
+sourceHash: "f3c999aa355997c6"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 

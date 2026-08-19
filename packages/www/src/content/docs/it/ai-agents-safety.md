@@ -5,9 +5,12 @@ description: >-
   segreti, sovrascrivere credenziali o escalare i privilegi. Gate di conoscenza,
   redazione, override verificati per ascendenza e log di audit con catena hash.
 category: Concepts
+tags:
+  - ai-agents
+  - security
 order: 35
 language: it
-sourceHash: "5dac7c4162cbbb8e"
+sourceHash: "e008783008d8e887"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 

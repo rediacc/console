@@ -72,6 +72,16 @@ const breadcrumbItems = variant === 'article'
 const tocFromContent = generateTOCFromHtml(await Astro.slots.render('default'));
 const toc = tocItems ?? tocFromContent;
 const shouldTrackTOC = !tocItems && toc.length > 0;
+// Whether the TOC rail is actually RENDERED. The grid reserved its 250px track
+// unconditionally, so the browse page (showTOC={false}) laid out as
+// `250px 0px 765px 0px 250px` at 1440 and parked a quarter of the viewport, empty, to
+// the right of content that had nothing docked against it.
+const hasTOC = showTOC && toc.length > 0;
+// Hoisted out of the `class:list` below rather than written inline as
+// `variant === 'index' && '...'`: check:ci-css-dom-refs harvests every string literal in a
+// class position, so the comparison's `'index'` was reported as a rendered-but-unstyled
+// class. The flag reads better anyway.
+const isBrowse = variant === 'index';
 
 // A long TOC is rendered flat and simply scrolls. The grouping that used to be
 // computed here fed a collapsible rail whose only job was to fit a long list
@@ -87,14 +97,25 @@ const shouldTrackTOC = !tocItems && toc.length > 0;
   lang={currentLang}
 >
   {mdUrl && <link slot="head" rel="alternate" type="text/markdown" href={mdUrl} />}
-  <div class="docs-shell">
+  {/* `docs-shell-browse` is TOTAL -- it replaces the whole track list with one track --
+      so the no-TOC modifier must not ride along beside it. Both set `--docs-tracks` at
+      the same specificity, and the no-TOC rule is further down the sheet, so a browse
+      page carrying both classes laid out as `250px 123.5px 800px 123.5px` and
+      auto-placed its content into the 250px rail track. */}
+  <div class:list={['docs-shell', !hasTOC && !isBrowse && 'docs-shell-no-toc', isBrowse && 'docs-shell-browse']}>
     <div class="docs-shell-top">
       <div class="docs-header-row">
-        <DocsTopTabs
-          currentLang={currentLang}
-          currentCategory={frontmatter.category}
-          variant={variant}
-        />
+        {/* Article pages only. On the browse page the same six categories render
+            immediately below as filter pills that actually DRIVE the filter, so a tab
+            row there is a second control for one axis whose only power is to jump to
+            an anchor. On an article page it is the real between-section navigation. */}
+        {!isBrowse && (
+          <DocsTopTabs
+            currentLang={currentLang}
+            currentCategory={frontmatter.category}
+            variant={variant}
+          />
+        )}
         <div class="docs-header-tools">
           {/* Server-rendered trigger, not part of the React island. The island
               below is headless: it carries the modal and nothing else, so the
@@ -152,19 +173,30 @@ const shouldTrackTOC = !tocItems && toc.length > 0;
     </div>
 
     <div class="docs-layout">
-      <button class="docs-sidebar-toggle" type="button" aria-expanded="false" aria-controls="docs-sidebar-nav">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <line x1="3" y1="6" x2="21" y2="6" />
-          <line x1="3" y1="12" x2="21" y2="12" />
-          <line x1="3" y1="18" x2="21" y2="18" />
-        </svg>
-        <span>{t('pages.docs.title')}</span>
-      </button>
-      <DocsSidebar
-        currentLang={currentLang}
-        currentUrl={url}
-        visibleCategory={variant === 'article' ? frontmatter.category : undefined}
-      />
+      {/* The article navigation tree, and the control that opens it on a phone, are
+          ARTICLE furniture. The browse page is the index of that tree: rendering the
+          tree beside it duplicated the page's own job and squeezed the cards into a
+          middle column. Both the rail and its toggle are omitted there, which leaves
+          the browse page a single full-width slot to lay its filter rail out in.
+          The toggle script below reads both elements and returns early when either is
+          missing, so nothing is left dangling. */}
+      {!isBrowse && (
+        <button class="docs-sidebar-toggle" type="button" aria-expanded="false" aria-controls="docs-sidebar-nav">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <line x1="3" y1="6" x2="21" y2="6" />
+            <line x1="3" y1="12" x2="21" y2="12" />
+            <line x1="3" y1="18" x2="21" y2="18" />
+          </svg>
+          <span>{t('pages.docs.title')}</span>
+        </button>
+      )}
+      {!isBrowse && (
+        <DocsSidebar
+          currentLang={currentLang}
+          currentUrl={url}
+          visibleCategory={frontmatter.category}
+        />
+      )}
 
       {/* A <div>, not a <main>: BaseLayout.astro:321 already emits the page's one
           <main id="main-content"> and this sits inside it. Nesting a second landmark
@@ -229,7 +261,7 @@ const shouldTrackTOC = !tocItems && toc.length > 0;
         </article>
       </div>
 
-      {showTOC && toc.length > 0 && (
+      {hasTOC && (
         <aside class="sidebar-base sidebar-toc toc-sidebar" data-track={shouldTrackTOC ? 'true' : 'false'} data-selector={tocTrackingSelector}>
           <nav class="sidebar-nav sidebar-nav-with-accent toc-nav" role="navigation" aria-label={t('common.aria.tableOfContents')}>
             <h3 class="sidebar-title toc-title">{t('pages.docs.tableOfContents')}</h3>
@@ -649,6 +681,27 @@ const shouldTrackTOC = !tocItems && toc.length > 0;
       --docs-rail-toc: 250px;
       --docs-measure: 800px;
       --docs-slack: 1fr;
+
+      /* The track list, composed rather than written out at the grid, so the
+         no-TOC variant drops the last track by leaving the toc rail off the
+         end instead of restating the other four. It is a custom property and
+         NOT a second `grid-template-columns` rule on purpose: a modifier class
+         would outrank the two responsive rules below, which set the property
+         literally and have no business being beaten by a page that happens to
+         lack a TOC. */
+      --docs-tracks-body:
+        var(--docs-rail-nav)
+        minmax(0, var(--docs-slack))
+        minmax(0, var(--docs-measure))
+        minmax(0, var(--docs-slack));
+      --docs-tracks: var(--docs-tracks-body) var(--docs-rail-toc);
+
+      /* The PROSE measure, which is not the same thing as the measure TRACK. The
+         track decides how much room the article gets; this decides how much of it
+         the running text is allowed to use. 34rem is not a round number picked for
+         looks: at the 16px body size the article column rendered 101 characters per
+         line, and 544/765 of that is ~72, inside the 65-75 that reads comfortably. */
+      --docs-prose: 34rem;
     }
 
     /* A cheat sheet is a reference table, not prose: it wants every pixel, so
@@ -663,6 +716,42 @@ const shouldTrackTOC = !tocItems && toc.length > 0;
     .docs-shell:has(.cs-cards) {
       --docs-measure: 1fr;
       --docs-slack: 0px;
+    }
+
+    /* Tutorial pages release the measure for the same reason cheat sheets do:
+       the payload is not prose. The player has no intrinsic max-width
+       (tutorial-video.css), so at the 800px measure a 1920x1080 render is drawn
+       at 800x450 and the recorded 107-column terminal gets ~7px per character --
+       about an 11.7px effective font, at the legibility floor before anything
+       else goes wrong. Widening the page buys back roughly a third of that and,
+       unlike re-recording, it improves every video already published.
+       Same specificity note as above: it must live here, not in the component. */
+    .docs-shell:has(.tutorial-video-container) {
+      --docs-measure: 1fr;
+      --docs-slack: 0px;
+    }
+
+    /* The browse page is ONE track: no article rail, no TOC, no measure cap. It is
+       not prose, it is an index, and it owns its own rail and its own cap
+       (styles/docs-browse.css). Everything this layout used to impose on it --
+       250px of navigation, 250px of phantom TOC and an 800px measure -- was
+       subtracting from a page whose job is to show many cards at once. */
+    .docs-shell-browse {
+      --docs-tracks: minmax(0, 1fr);
+    }
+
+    /* One track, so the base rule's `grid-column: 3` would conjure two implicit
+       tracks before it. Same hand-back the embed override and both breakpoints do. */
+    .docs-shell-browse .docs-layout > .docs-content {
+      grid-column: auto;
+    }
+
+    /* With the tab strip gone the row has no flexible child left to push the tools
+       to the end, so the auto margin does it. Scoped to the browse page: on an
+       article page .docs-top-tabs still grows and this would compute to zero
+       anyway, and a rule that can only be a no-op is a rule nobody can verify. */
+    .docs-shell-browse .docs-header-tools {
+      margin-inline-start: auto;
     }
 
     .docs-shell.docs-shell-embed {
@@ -886,14 +975,20 @@ const shouldTrackTOC = !tocItems && toc.length > 0;
        property instead of fighting a max-width with !important. */
     .docs-layout {
       display: grid;
-      grid-template-columns:
-        var(--docs-rail-nav)
-        minmax(0, var(--docs-slack))
-        minmax(0, var(--docs-measure))
-        minmax(0, var(--docs-slack))
-        var(--docs-rail-toc);
+      grid-template-columns: var(--docs-tracks);
       gap: var(--space-8);
       padding: 0;
+    }
+
+    /* No TOC rendered, no TOC track. Dropping the track takes its gap with it,
+       which a `--docs-rail-toc: 0px` override would not: a zero-width track
+       still costs a full `gap` between it and the one before. It has to sit on
+       .docs-shell rather than on .docs-layout because a custom property's
+       var() references are substituted on the element that DECLARES it: an
+       override further down the tree arrives too late to change the composed
+       list it inherits. */
+    .docs-shell-no-toc {
+      --docs-tracks: var(--docs-tracks-body);
     }
 
     /* Explicit placement, because auto-placement fills tracks in DOM order and
@@ -931,9 +1026,41 @@ const shouldTrackTOC = !tocItems && toc.length > 0;
       box-shadow: none;
     }
 
-    /* No max-width. The measure is the grid track's job now; see .docs-layout. */
     .docs-article {
       overflow-wrap: break-word;
+    }
+
+    /* The cap sits on the article's flow CHILDREN, not on .article-content itself,
+       and that is the whole design: a child cannot be wider than a capped parent, so
+       capping the wrapper would have dragged the tutorial player down with the text.
+       The player and the cheat-sheet card grid are payloads, not prose -- the layout
+       already widens their whole page for them (see the two :has() rules above) --
+       so they opt out here and keep the full column while the words around them do
+       not. Centred rather than start-aligned so the text sits under its own heading
+       block wherever the track is wider than the measure.
+       Two surfaces are excluded by ancestor, and the exclusion has to be the SELECTOR
+       rather than a `--docs-prose: none` override, which was tried and is worse: the
+       cap is `max-inline-size` and the browse page's own cap is `max-width`, the same
+       used value under two property names, so the token version did not step aside --
+       it WON at `none` and blew `.docs-browse` from its own 1152px out to 1393px.
+       The browse page is an index, not prose (uncapped, its single slot child is
+       `.docs-browse`), and the CLI-reference embed is an iframe up to 1200px whose
+       whole purpose is to use the space it was given.
+       The breadcrumb, the fallback notice and the title block are capped with the same
+       measure because they are the same column of reading: capping only .article-content
+       left an H1 starting 110px to the LEFT of the first paragraph under it. */
+    .docs-shell:not(.docs-shell-browse):not(.docs-shell-embed) .article-content > :global(*),
+    .docs-shell:not(.docs-shell-browse):not(.docs-shell-embed) .docs-article > :global(.breadcrumb),
+    .docs-shell:not(.docs-shell-browse):not(.docs-shell-embed) .docs-article > .fallback-notice,
+    .docs-shell:not(.docs-shell-browse):not(.docs-shell-embed) .docs-article > .article-header {
+      max-inline-size: var(--docs-prose);
+      margin-inline: auto;
+    }
+
+    .docs-shell:not(.docs-shell-browse):not(.docs-shell-embed) .article-content > :global(.tutorial-video-container),
+    .docs-shell:not(.docs-shell-browse):not(.docs-shell-embed) .article-content > :global(.cs-cards),
+    .docs-shell:not(.docs-shell-browse):not(.docs-shell-embed) .article-content > :global(.print-page-header) {
+      max-inline-size: none;
     }
 
     /* Fallback Notice */
@@ -1196,6 +1323,14 @@ const shouldTrackTOC = !tocItems && toc.length > 0;
          left to dock anything against. */
       .docs-layout {
         grid-template-columns: var(--docs-rail-nav) minmax(0, 1fr);
+      }
+
+      /* The browse page has no rail to make room for, at any width. Without this it
+         inherited the nav track anyway and, having nothing to put in it, auto-placed
+         the whole card grid INTO it: measured at 1100, `.docs-browse` came out 250px
+         wide. The breakpoint below is safe only because one track is one track. */
+      .docs-shell-browse .docs-layout {
+        grid-template-columns: minmax(0, 1fr);
       }
 
       /* Two tracks now, so hand placement back to auto: rail then article, in

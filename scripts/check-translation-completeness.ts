@@ -41,6 +41,22 @@ const ALLOWED_IDENTICAL = new Set([
   'Professional',
   // Common loanwords used identically in many languages
   'Newsletter',
+  // 'Compliance' is the established term in this catalog's own German, and the
+  // count is not close: 45 de values already use the loanword against 1 using
+  // 'Konformität'. It is also the ordinary word in German regulatory writing.
+  // Added on 2026-08-19 because the gate was pushing a translator AWAY from the
+  // site's own convention: unable to edit this file, they reached for
+  // 'Konformität' purely to avoid an identical-value finding, which would have
+  // left one tag label disagreeing with 45 sibling strings. A gate that makes
+  // correct copy fail is a gate that gets written around.
+  'Compliance',
+  // 'Migration' for the same reason and on its own count: 23 German values
+  // already use the EN-identical singular against 3 using 'Migrationen'.
+  // Deliberately NOT added for French, where the same count is 4 against 2:
+  // six data points is a split, not a convention, and an allowlist entry added
+  // on a coin-flip is how an allowlist stops meaning anything. The French tag
+  // keeps its plural until there is evidence either way.
+  'Migration',
   // Partner-program tier badge names. Several locales (it/ja/pt/ru/zh/tr)
   // keep these in English because their existing cross-reference copy
   // embeds the English names ("livello Registered", "Silver ortağın...");

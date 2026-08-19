@@ -2,9 +2,12 @@
 title: Archivio di Configurazione
 description: Sincronizzazione cifrata zero-knowledge della configurazione con sblocco tramite passkey, password principale o codice di recupero
 category: Guides
+tags:
+  - account
+  - security
 order: 8
 language: it
-sourceHash: "97c64241ff4c0d81"
+sourceHash: "e4b2eecb8bdf0015"
 sourceCommit: "433347c5ea4754300fe3da80c4bfcee42dd161bc"
 ---
 

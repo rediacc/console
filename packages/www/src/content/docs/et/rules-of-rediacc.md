@@ -2,9 +2,12 @@
 title: "Rediacci reeglid"
 description: "Olulised reeglid ja kokkulepped rakenduste ehitamiseks Rediacci platvormil. Katab Rediaccfile'i, compose'i, võrgunduse, salvestuse, CRIU ja juurutamise."
 category: "Guides"
+tags:
+  - containers
+  - networking
 order: 5
 language: et
-sourceHash: "1ceb078c7eb045b7"
+sourceHash: "d57f030a95892e39"
 sourceCommit: "20f014619af1ee41e75cd46a3c8e4abc5add0983"
 ---
 

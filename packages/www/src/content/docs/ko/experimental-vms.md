@@ -2,9 +2,12 @@
 title: "실험적 VM"
 description: "rdc ops를 사용하여 개발 및 테스트를 위한 로컬 VM 클러스터를 프로비저닝합니다."
 category: "Concepts"
+tags:
+  - operations
+  - containers
 order: 2
 language: ko
-sourceHash: "aafca00c006ded0b"
+sourceHash: "5fad635a61089758"
 sourceCommit: "6cf65c4fe8617378da6a6dd21cce2feecff7ca9f"
 ---
 

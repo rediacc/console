@@ -2,9 +2,12 @@
 title: 迁移指南
 description: 将现有项目迁移到加密的 Rediacc 仓库中。
 category: Guides
+tags:
+  - migration
+  - repositories
 order: 11
 language: zh
-sourceHash: "6817858de56705e6"
+sourceHash: "53730ef01c5acb58"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 

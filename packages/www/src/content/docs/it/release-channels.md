@@ -2,9 +2,12 @@
 title: "Canali di Rilascio"
 description: "Differenze tra Edge e Stable, e perché scegliere l'uno o l'altro canale."
 category: "Concepts"
+tags:
+  - cli
+  - operations
 order: 2
 language: it
-sourceHash: "6669b5b089f94a39"
+sourceHash: "0cc32d712c02538f"
 sourceCommit: "23543669cd22bce3f14d69a0886bac8a12061412"
 ---
 

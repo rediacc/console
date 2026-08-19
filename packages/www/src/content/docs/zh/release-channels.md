@@ -2,9 +2,12 @@
 title: "发布通道"
 description: "Edge 与 Stable 的区别，以及该运行哪个通道。"
 category: "Concepts"
+tags:
+  - cli
+  - operations
 order: 2
 language: zh
-sourceHash: "6669b5b089f94a39"
+sourceHash: "0cc32d712c02538f"
 sourceCommit: "23543669cd22bce3f14d69a0886bac8a12061412"
 ---
 

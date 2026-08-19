@@ -2,9 +2,12 @@
 title: MCP-Server-Einrichtung
 description: Verknüpfen Sie KI-Agenten über den Model Context Protocol (MCP) Server mit Ihrer Rediacc-Infrastruktur.
 category: Guides
+tags:
+  - ai-agents
+  - cli
 order: 33
 language: de
-sourceHash: "d515d5491751e1fe"
+sourceHash: "442b5cfa49239dbc"
 sourceCommit: "20f014619af1ee41e75cd46a3c8e4abc5add0983"
 ---
 

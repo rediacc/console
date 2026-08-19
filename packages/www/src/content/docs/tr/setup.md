@@ -2,9 +2,12 @@
 title: "Makine Kurulumu"
 description: "Yapılandırma oluşturma, makine ekleme, sunucuları hazırlama ve altyapı yapılandırması."
 category: "Guides"
+tags:
+  - getting-started
+  - operations
 order: 3
 language: tr
-sourceHash: "6e0b338423280f98"
+sourceHash: "a0f69282724c27ea"
 sourceCommit: "5fab1177d6ceae5211c25cf8fa0176d67259d40e"
 ---
 

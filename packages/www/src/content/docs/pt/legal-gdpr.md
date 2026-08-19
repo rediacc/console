@@ -2,9 +2,11 @@
 title: "Conformidade com o RGPD"
 description: "Como a arquitetura self-hosted da Rediacc se mapeia com os requisitos do RGPD em matéria de proteção de dados e privacidade."
 category: "Legal"
+tags:
+  - compliance
 order: 1
 language: pt
-sourceHash: "76d2b3a911e0d14c"
+sourceHash: "85a342068d855709"
 sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
 ---
 

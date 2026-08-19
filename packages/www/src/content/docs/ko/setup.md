@@ -2,9 +2,12 @@
 title: "머신 설정"
 description: "구성 생성, 머신 추가, 서버 프로비저닝, 인프라 구성."
 category: "Guides"
+tags:
+  - getting-started
+  - operations
 order: 3
 language: ko
-sourceHash: "6e0b338423280f98"
+sourceHash: "a0f69282724c27ea"
 sourceCommit: "5fab1177d6ceae5211c25cf8fa0176d67259d40e"
 ---
 

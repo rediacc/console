@@ -2,9 +2,12 @@
 title: AGENTS.md Mall AI-assistentidele
 description: Kopeeritav mall Claude Code'i, Cursori ja teiste AI-koodiassistentide konfigureerimiseks Rediacc infrastruktuuriga töötamiseks.
 category: Reference
+tags:
+  - ai-agents
+  - cli
 order: 50
 language: et
-sourceHash: "1edff3471ded906d"
+sourceHash: "7592f803f8caf5f4"
 sourceCommit: "23543669cd22bce3f14d69a0886bac8a12061412"
 ---
 

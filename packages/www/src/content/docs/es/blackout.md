@@ -4,9 +4,12 @@ description: >-
   Mantenga las operaciones bancarias durante cortes de energía con duplicación
   de datos intercontinental.
 category: Use Cases
+tags:
+  - backup
+  - migration
 order: 6
 language: es
-sourceHash: "63861113cf5e7809"
+sourceHash: "8817b7a0a9304cd0"
 sourceCommit: "b8e332b73573133a282b5c508bc049af1fbeb581"
 ---
 

@@ -3,6 +3,7 @@ import { useLanguage } from '../hooks/useLanguage';
 import { SUPPORTED_LANGUAGES } from '../i18n/language-utils';
 import { useTranslation } from '../i18n/react';
 import LanguageMenu from './LanguageMenu';
+import LearnMenu from './LearnMenu';
 import NavCtaMenu from './NavCtaMenu';
 import PersonaMegaMenu from './PersonaMegaMenu';
 import SearchModal from './SearchModal';
@@ -29,6 +30,7 @@ const Navigation: React.FC<NavigationProps> = ({ lang, origin }) => {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isPersonaMenuOpen, setIsPersonaMenuOpen] = useState(false);
   const [isCtaMenuOpen, setIsCtaMenuOpen] = useState(false);
+  const [isLearnMenuOpen, setIsLearnMenuOpen] = useState(false);
   const wordmarkRef = useRef<HTMLSpanElement>(null);
   const detectedLang = useLanguage();
   const currentLang = lang ?? detectedLang;
@@ -89,6 +91,7 @@ const Navigation: React.FC<NavigationProps> = ({ lang, origin }) => {
         body.setAttribute('data-nav-collapsed', 'true');
         setIsPersonaMenuOpen(false);
         setIsCtaMenuOpen(false);
+        setIsLearnMenuOpen(false);
       } else {
         body.removeAttribute('data-nav-collapsed');
       }
@@ -112,6 +115,7 @@ const Navigation: React.FC<NavigationProps> = ({ lang, origin }) => {
     setIsSidebarOpen(!isSidebarOpen);
     setIsPersonaMenuOpen(false);
     setIsCtaMenuOpen(false);
+    setIsLearnMenuOpen(false);
   };
 
   const closeSidebar = () => {
@@ -122,6 +126,7 @@ const Navigation: React.FC<NavigationProps> = ({ lang, origin }) => {
     setIsSearchOpen(true);
     setIsPersonaMenuOpen(false);
     setIsCtaMenuOpen(false);
+    setIsLearnMenuOpen(false);
     // Tell the docs-scoped modal to close. Docs pages mount their own SearchModal, and
     // without this the two can be open at once via the CLICK paths (the CTA menu entry and
     // the mobile drawer row). The HOTKEY path was already covered, because both mounts
@@ -145,11 +150,21 @@ const Navigation: React.FC<NavigationProps> = ({ lang, origin }) => {
   };
   const closeCtaMenu = () => setIsCtaMenuOpen(false);
 
+  // Native auto-popovers already close each other, so these siblings are
+  // belt-and-braces for React state rather than the dismissal mechanism.
+  const toggleLearnMenu = () => {
+    setIsLearnMenuOpen((prev) => !prev);
+    setIsPersonaMenuOpen(false);
+    setIsCtaMenuOpen(false);
+  };
+  const closeLearnMenu = () => setIsLearnMenuOpen(false);
+
   // Close menus on Astro page navigation
   useEffect(() => {
     const handleNavigation = () => {
       setIsPersonaMenuOpen(false);
       setIsCtaMenuOpen(false);
+      setIsLearnMenuOpen(false);
     };
     document.addEventListener('astro:after-swap', handleNavigation);
     return () => document.removeEventListener('astro:after-swap', handleNavigation);
@@ -243,15 +258,15 @@ const Navigation: React.FC<NavigationProps> = ({ lang, origin }) => {
             >
               {t('navigation.pricing')}
             </a>
-            <a
-              href={`/${currentLang}/docs/quick-start`}
-              className="nav-link"
-              data-track="cta_click"
-              data-track-label="nav-link"
-              data-track-dest="docs"
-            >
-              {t('navigation.docs')}
-            </a>
+            {/* Replaces a bare Docs link that pointed at /docs/quick-start, i.e. straight
+                past the index into one article. Every entry deep-links into the browse
+                page's category filter. */}
+            <LearnMenu
+              lang={currentLang}
+              isOpen={isLearnMenuOpen}
+              onToggle={toggleLearnMenu}
+              onClose={closeLearnMenu}
+            />
             <a
               href={`/${currentLang}/blog`}
               className="nav-link"

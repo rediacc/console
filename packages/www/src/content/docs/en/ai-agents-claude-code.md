@@ -2,6 +2,9 @@
 title: Claude Code Setup Guide
 description: Step-by-step guide to configuring Claude Code for autonomous Rediacc infrastructure management.
 category: Guides
+tags:
+  - ai-agents
+  - cli
 order: 31
 language: en
 ---

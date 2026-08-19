@@ -16,9 +16,11 @@
  */
 
 import { execFileSync } from 'node:child_process';
-import { existsSync, readdirSync } from 'node:fs';
+import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { loadManifest, saveManifest, setManifestEntryOn } from './lib/update-video-manifest.ts';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.join(__dirname, '../../..');
@@ -70,6 +72,34 @@ function listCastKeys(lang: string): string[] {
     .map((f) => f.slice(0, -'.mp4'.length));
 }
 
+/**
+ * Where upload-media-to-r2.sh appends manifest tuples instead of rewriting the
+ * manifest per file. A full sweep is 1170 files; updating per file meant 1170
+ * cold `npx tsx` starts each rewriting a 440 KB committed JSON, which dominated
+ * the wall clock. Uploads and their HEAD readbacks are unchanged -- only the
+ * bookkeeping moves to the end.
+ */
+let deferFile: string | null = null;
+
+/** Apply every deferred tuple against ONE load/save of the manifest. */
+function applyDeferredManifest(): number {
+  if (!deferFile || !existsSync(deferFile)) return 0;
+  const rows = readFileSync(deferFile, 'utf8').split('\n').filter(Boolean);
+  if (rows.length === 0) return 0;
+  const manifest = loadManifest();
+  for (const row of rows) {
+    const [kind, key, lang, field, remotePath, size, sha256, engine] = row.split('\t');
+    setManifestEntryOn(manifest, kind as 'tutorials' | 'solutions', key, lang, field, {
+      path: remotePath,
+      size: Number(size),
+      sha256,
+      ...(engine ? { engine } : {}),
+    });
+  }
+  saveManifest(manifest);
+  return rows.length;
+}
+
 function publishOne(castKey: string, lang: string): void {
   const langDir = path.join(TUTORIALS_DIR, lang);
   let uploaded = 0;
@@ -94,6 +124,7 @@ function publishOne(castKey: string, lang: string): void {
         field,
         '--file',
         filePath,
+        ...(deferFile ? ['--defer-manifest', deferFile] : []),
       ],
       { stdio: 'inherit' }
     );
@@ -116,12 +147,30 @@ function main(): void {
     }
   }
 
+  // Batch the manifest for the bulk modes only. A single --cast/--lang publish
+  // keeps the per-file path, so the common interactive case is unchanged and the
+  // batch code cannot silently become the only tested route.
+  const bulk = args.all || args.allLangs;
+  let tmpDir: string | null = null;
+  if (bulk) {
+    tmpDir = mkdtempSync(path.join(tmpdir(), 'publish-manifest-'));
+    deferFile = path.join(tmpDir, 'entries.tsv');
+    writeFileSync(deferFile, '');
+  }
+  const finishBatch = (): void => {
+    if (!bulk) return;
+    const applied = applyDeferredManifest();
+    console.log(`manifest: ${applied} entr(ies) written in one pass`);
+    if (tmpDir) rmSync(tmpDir, { recursive: true, force: true });
+  };
+
   if (args.all) {
     for (const lang of listLangDirs()) {
       for (const castKey of listCastKeys(lang)) {
         publishOne(castKey, lang);
       }
     }
+    finishBatch();
     return;
   }
 
@@ -136,6 +185,7 @@ function main(): void {
         publishOne(args.cast, lang);
       }
     }
+    finishBatch();
     return;
   }
 

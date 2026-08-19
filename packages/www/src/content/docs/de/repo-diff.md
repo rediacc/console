@@ -2,10 +2,12 @@
 title: "rdc repo diff"
 description: "Zeigt einen git-ähnlichen, dateiebenen Diff zwischen zwei Copy-on-Write geforkten Repositories durch Vergleich ihrer verschlüsselten Images auf Block-Ebene, ohne Entschlüsselung."
 category: Reference
-subcategory: advanced
+tags:
+  - forking
+  - storage
 order: 40
 language: de
-sourceHash: "b555f4ca6b58ff4b"
+sourceHash: "6f5ccba93044665a"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 

@@ -5,9 +5,12 @@ description: >-
   повышение привилегий AI-ассистентами кодирования. Шлюзы знаний, редактирование,
   переопределения с проверкой цепочки предков и журнал аудита с хэш-связыванием.
 category: Concepts
+tags:
+  - ai-agents
+  - security
 order: 35
 language: ru
-sourceHash: "5dac7c4162cbbb8e"
+sourceHash: "e008783008d8e887"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 

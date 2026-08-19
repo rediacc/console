@@ -2,9 +2,12 @@
 title: "Guida alla Migrazione"
 description: "Migra i progetti esistenti in repository Rediacc cifrati."
 category: "Guides"
+tags:
+  - migration
+  - repositories
 order: 11
 language: it
-sourceHash: "6817858de56705e6"
+sourceHash: "53730ef01c5acb58"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 

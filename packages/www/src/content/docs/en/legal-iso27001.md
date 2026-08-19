@@ -2,6 +2,9 @@
 title: "ISO 27001 Compliance"
 description: "How Rediacc maps to ISO 27001 information security controls for encryption, access management, and operations security."
 category: "Legal"
+tags:
+  - compliance
+  - security
 order: 5
 language: en
 ---

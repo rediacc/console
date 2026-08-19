@@ -2,9 +2,12 @@
 title: 웹 콘솔
 description: 폼, 리소스 선택기, 실행 기록과 함께 브라우저에서 전체 rdc CLI를 실행하세요
 category: Guides
+tags:
+  - cli
+  - account
 order: 8
 language: ko
-sourceHash: "b735dd2fd77435c5"
+sourceHash: "972ed654ae294102"
 sourceCommit: "5197d1c0349438c2bff2442377a5166d0b8214b6"
 ---
 

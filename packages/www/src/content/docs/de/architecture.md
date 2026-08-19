@@ -4,9 +4,12 @@ description: >-
   Wie Rediacc funktioniert: Zwei-Tool-Architektur, Adapter-Erkennung,
   Sicherheitsmodell und Konfigurationsstruktur.
 category: Concepts
+tags:
+  - repositories
+  - containers
 order: 0
 language: de
-sourceHash: "16b02000a82f3acd"
+sourceHash: "878b744629cb8b14"
 sourceCommit: "23543669cd22bce3f14d69a0886bac8a12061412"
 ---
 

@@ -2,10 +2,12 @@
 title: "Git 방식의 브랜칭"
 description: "copy-on-write 포크를 git 커밋처럼 다루세요: 포크를 변경 불가능한 커밋으로 고정하고, 브랜치를 명명하고, 커밋을 쓰기 가능한 포크로 체크아웃하고, 이력을 탐색하고, 라이브 리포지터리를 변경하지 않고 병합합니다."
 category: Reference
-subcategory: advanced
+tags:
+  - forking
+  - repositories
 order: 41
 language: ko
-sourceHash: "b8bd3176ecabfa4b"
+sourceHash: "7aaa25bc83dfcf5b"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 

@@ -2,9 +2,12 @@
 title: "Kubernetes"
 description: "Execute Kubernetes com a mentalidade de repositório da Rediacc: faça fork ou mova um cluster em execução, incluindo os seus dados, para outra máquina ou centro de dados com um curto período de corte."
 category: "Guides"
+tags:
+  - containers
+  - migration
 order: 6
 language: pt
-sourceHash: "6ad4b60e09edde94"
+sourceHash: "22eef465dfd46ccf"
 sourceCommit: "4401262fffbf29b9480dee8ecd209013e4b87f60"
 ---
 

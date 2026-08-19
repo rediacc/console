@@ -2,9 +2,11 @@
 title: "На что действительно обязывает нормативное соответствие"
 description: "Rediacc работает на вашей инфраструктуре. Вы контролируете свои данные. Вот как архитектура выравнивается с основными системами соответствия требованиям."
 category: "Legal"
+tags:
+  - compliance
 order: 0
 language: ru
-sourceHash: "e6044a3b067b54d5"
+sourceHash: "f3c999aa355997c6"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 

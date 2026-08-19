@@ -5,16 +5,16 @@
   "commands": {
     "backup": {
       "browse": {
+        "completed": "{{name}} loetletud",
         "description": "Loetle hoidla failid. Kohalik kirjutuskaitstud läbikäik hoidla kujutisest: ei kasuta kontoserverit ega võrku. Krüpteeritud hoidla peab olema haagitud või selle võtmefail peab olema juurutatud, enne kui seda saab avada; browse teatab sellest, selle asemel et näidata tühja loetelu. Ei saa loetleda hetktõmmist, mis on olemas ainult tükihoidlas; taasta see esmalt ja seejärel sirvi tulemust.",
         "descriptionShort": "Loetle hoidla failid (kohalik, kirjutuskaitstud)",
-        "optionPath": "Piira loetelu selle alampuuga",
+        "empty": "{{name}} ei sisalda faile.",
+        "failed": "{{name}} loetlemine ebaõnnestus",
         "optionDepth": "Piira laskumine N tasemega (0 piiramatuks)",
         "optionLimit": "Tagastatavate kirjete maksimaalne arv (0 piiramatuks)",
+        "optionPath": "Piira loetelu selle alampuuga",
         "starting": "{{name}} loetlemine...",
-        "completed": "{{name}} loetletud",
-        "failed": "{{name}} loetlemine ebaõnnestus",
-        "truncated": "Loetelu katkestati {{limit}} kirje juures. Kitsenda seda --path abil või tõsta --limit väärtust.",
-        "empty": "{{name}} ei sisalda faile."
+        "truncated": "Loetelu katkestati {{limit}} kirje juures. Kitsenda seda --path abil või tõsta --limit väärtust."
       },
       "cancel": {
         "cancelled": "{{name}} katkestatud",
@@ -45,8 +45,8 @@
         "atResolved": "{{at}} lahendati hetktõmmiseks {{snapshot}} (tehtud {{created}}).",
         "atUnparsable": "--at \"{{at}}\" ei ole hetktõmmise ID ega ajahetk. Kasuta hetktõmmise ID-d käsust `rdc backup manifests` või RFC3339 aega, näiteks 2026-08-14T12:00:00Z.",
         "datastoreUnattached": "Andmehoidla \"{{datastore}}\" ei ole ühegi masinaga ühendatud. Ühenda see esmalt: rdc datastore attach {{datastore}} --to <machine>.",
-        "deployFailed": "Taastatud \"{{name}}\" juurutamine ebaõnnestus",
         "deployed": "\"{{name}}\" juurutatud masinal {{machine}}",
+        "deployFailed": "Taastatud \"{{name}}\" juurutamine ebaõnnestus",
         "deploying": "\"{{name}}\" juurutamine masinal {{machine}}...",
         "description": "Muuda varukoopia artefakt töötavaks hoidlaks. Asukoht määratakse siin.",
         "examples": {
@@ -58,9 +58,9 @@
         "optionAt": "Taasta ajahetk: hetktõmmise ID või RFC3339 aeg (chunk-hoidla taastamine)",
         "optionDatastore": "Taasta sellesse nimega andmehoidlasse (seda majutab hoidla ühendatud masin)",
         "optionUp": "Juuruta taastatud hoidla pärast ülekannet",
-        "placeRequired": "Taastamise artefakt peab nimetama, kus see asub: kasuta repo@place (nt shop:nightly@backup-1).",
         "placementExclusive": "Anna täpselt üks asukohalipp: --machine või --datastore.",
         "placementRequired": "Määra, kuhu taastada: --machine <m> (docker) või --datastore <d> (nimega andmehoidla).",
+        "placeRequired": "Taastamise artefakt peab nimetama, kus see asub: kasuta repo@place (nt shop:nightly@backup-1).",
         "pulling": "\"{{name}}\" tõmbamine asukohast {{place}}...",
         "restored": "\"{{name}}\" taastatud masinale {{machine}}",
         "restoringSnapshot": "\"{{name}}\" taastamine hetktõmmisest {{snapshot}}...",
@@ -1473,8 +1473,8 @@
         "starting": "Põhihoidla \"{{grand}}\" ülevõtmine forgi \"{{fork}}\" andmetega masinal \"{{machine}}\"..."
       },
       "pull": {
-        "deployFailed": "Hoidla \"{{repo}}\" juurutamine pärast tõmbamist ebaõnnestus",
         "deployed": "Hoidla \"{{repo}}\" juurutatud masinal {{machine}}",
+        "deployFailed": "Hoidla \"{{repo}}\" juurutamine pärast tõmbamist ebaõnnestus",
         "deploying": "Hoidla \"{{repo}}\" juurutamine masinal {{machine}}...",
         "description": "Tõmba hoidla teisest masinast. Salvestusallikad on kasutuselt kõrvaldatud; kasuta ajahetke taasteks käsku `rdc backup restore`. Allika tüüp tuvastatakse automaatselt konfiguratsioonist. Kasuta --up, et juurutada pärast tõmbamist",
         "descriptionShort": "Tõmba hoidla teisest masinast",
@@ -1493,8 +1493,8 @@
         "storageRetired": "Salvestusteenusest tõmbamine on lõpetatud: rclone'i pilveharu eemaldati. Ajahetke taaste käib käsuga `rdc backup restore <repo> --at <snapshot>` tükihoidla kaudu. Masinatevaheline ülekanne ei muutunud: kasuta --from-machine"
       },
       "push": {
-        "deployFailed": "Hoidla \"{{repo}}\" juurutamine pärast pushumist ebaõnnestus",
         "deployed": "Hoidla \"{{repo}}\" juurutatud masinal {{machine}}",
+        "deployFailed": "Hoidla \"{{repo}}\" juurutamine pärast pushumist ebaõnnestus",
         "deploying": "Hoidla \"{{repo}}\" juurutamine masinal {{machine}}...",
         "description": "Lükka hoidla teise masinasse. Salvestussihtkohad on kasutuselt kõrvaldatud; kasuta ajahetke varunduseks käsku `rdc backup snapshot`. Masinate vahelisel ülekandel kopeeritakse krüpteeritud hoidlakujutis SAMA GUID-iga, mistõttu see on varukoopia või migratsioon, mitte fork. Iseseisva forgi loomiseks kasuta kõigepealt 'repo fork' ja seejärel push. Lükatud koopia maandub varukoopia ARTEFAKTINA: käivita see sihtmasinal käsuga 'backup restore <ref> --as <name> -m <target> --up'",
         "descriptionShort": "Lükka hoidla teise masinasse",

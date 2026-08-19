@@ -23,6 +23,7 @@ import { configService } from '../config/config-resources.js';
 import { outputService } from '../core/output.js';
 import { writeStderr, writeStdout } from '../core/request-context.js';
 import { type MachineConnectionLease, machineConnections } from '../machine/machine-connection.js';
+import { isMachineReadableRelayLine } from './output-lines.js';
 import { provisionRenetToRemote } from '../renet/renet-execution.js';
 import {
   buildJobCancelCommand,
@@ -420,6 +421,11 @@ function logLine(event: RenetEvent): EventLine | null {
 
 function outputLine(event: RenetEvent): EventLine | null {
   if (!event.msg) return null;
+  // renet's machine-readable lines are protocol, not output. They are parsed
+  // from CAPTURED stdout, which is collected separately from rendering, so
+  // dropping them here breaks no consumer and keeps a 400-column JSON blob off
+  // the terminal - where it wrapped into unreadable ribbon in every tutorial.
+  if (isMachineReadableRelayLine(event.msg)) return null;
   return { stream: 'out', text: event.msg.endsWith('\n') ? event.msg : `${event.msg}\n` };
 }
 

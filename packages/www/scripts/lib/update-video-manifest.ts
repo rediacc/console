@@ -125,6 +125,28 @@ export function saveManifest(manifest: VideoManifest): void {
  * write, no batching required for the volumes involved here (a few hundred
  * KB of JSON total).
  */
+/**
+ * Place one entry into an ALREADY-LOADED manifest.
+ *
+ * Split out so a batched publisher can apply many entries against a single
+ * load/save: a full tutorial sweep is 1170 files, and one load+save each meant
+ * rewriting a 440 KB committed JSON 1170 times. Both paths share this function,
+ * so there is still exactly one definition of where an entry lives.
+ */
+export function setManifestEntryOn(
+  manifest: VideoManifest,
+  kind: MediaKind,
+  key: string,
+  lang: string,
+  field: string,
+  asset: ManifestAsset
+): void {
+  manifest[kind][key] ??= {};
+  manifest[kind][key][lang] ??= {};
+  manifest[kind][key][lang][field] = asset;
+}
+
+/** Read-modify-write one entry. Used by the per-file CLI path below. */
 function setManifestEntry(
   kind: MediaKind,
   key: string,
@@ -133,9 +155,7 @@ function setManifestEntry(
   asset: ManifestAsset
 ): void {
   const manifest = loadManifest();
-  manifest[kind][key] ??= {};
-  manifest[kind][key][lang] ??= {};
-  manifest[kind][key][lang][field] = asset;
+  setManifestEntryOn(manifest, kind, key, lang, field, asset);
   saveManifest(manifest);
 }
 

@@ -36,7 +36,6 @@ import { createTranslator } from '../../i18n/utils';
 import { SOLUTION_PAGES } from '../../config/solution-pages';
 import {
   buildConstellation,
-  EN_FALLBACK,
   LEGACY_EXPLORE_SOURCE,
   type ConstellationPreset,
 } from './constellation';
@@ -92,8 +91,12 @@ interface LegacyExploreEntry {
  */
 const labelBlurb = (slug: string): { label: string; blurb: string } => {
   const ck = SOLUTION_PAGES[slug].contentKey;
-  const label = t(`pages.solutionPages.${ck}.label`, '') || EN_FALLBACK[slug]?.label || slug;
-  const blurb = t(`pages.solutionPages.${ck}.blurb`, '') || EN_FALLBACK[slug]?.blurb || '';
+  // Falls back to the SLUG, deliberately, not to English prose. An identifier on
+  // the page is visibly wrong and gets fixed; English served into a Japanese page
+  // is invisibly wrong and survives. The English fallback map that used to sit
+  // between these was dead in all 13 locales; see constellation.ts.
+  const label = t(`pages.solutionPages.${ck}.label`, '') || slug;
+  const blurb = t(`pages.solutionPages.${ck}.blurb`, '') || '';
   return { label, blurb };
 };
 

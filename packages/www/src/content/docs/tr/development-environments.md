@@ -4,9 +4,12 @@ description: >-
   Geliştirme ortamları için günlerce beklemeye son verin. Talep üzerine geçici
   ortamlarla tüm üretim altyapınızı 60 saniyeden kısa sürede klonlayın.
 category: Use Cases
+tags:
+  - forking
+  - containers
 order: 10
 language: tr
-sourceHash: "d534fc11b7ba4fa7"
+sourceHash: "dd05b3e00f6f921d"
 sourceCommit: "8b37b0a2c25c0ba7e5a8a63c8d3ed0da48b78a10"
 ---
 

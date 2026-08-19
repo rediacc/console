@@ -2,9 +2,12 @@
 title: تخزين الإعدادات
 description: مزامنة مشفرة بدون معرفة للإعدادات، بمفتاح مرور، أو كلمة مرور رئيسية، أو رمز استرداد لفك القفل
 category: Guides
+tags:
+  - account
+  - security
 order: 8
 language: ar
-sourceHash: "97c64241ff4c0d81"
+sourceHash: "e4b2eecb8bdf0015"
 sourceCommit: "433347c5ea4754300fe3da80c4bfcee42dd161bc"
 ---
 

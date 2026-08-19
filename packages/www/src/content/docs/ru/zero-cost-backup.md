@@ -2,9 +2,12 @@
 title: "Производственные среды разработки за минуты"
 description: "Сократите настройку среды разработки с дней до минут с помощью дедупликации на уровне блоков."
 category: Use Cases
+tags:
+  - forking
+  - storage
 order: 7
 language: ru
-sourceHash: "2aa115fc621f5258"
+sourceHash: "a9c98112fe890a13"
 sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 ---
 

@@ -2,9 +2,12 @@
 title: "Bereinigung"
 description: "Verwaiste Backups, überholte Snapshots, Repo-Images und lokale Konfigurationsreste entfernen, um Speicherplatz zurückzugewinnen und den Zustand kohärent zu halten."
 category: "Guides"
+tags:
+  - storage
+  - operations
 order: 12
 language: de
-sourceHash: "928f117282b38484"
+sourceHash: "7d9a82ee410c420a"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 

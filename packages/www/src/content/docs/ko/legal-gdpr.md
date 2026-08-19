@@ -2,9 +2,11 @@
 title: "GDPR 준수"
 description: "Rediacc의 자체 호스팅 아키텍처가 데이터 보호 및 개인정보 보호에 관한 GDPR 요건에 어떻게 매핑되는지 설명합니다."
 category: "Legal"
+tags:
+  - compliance
 order: 1
 language: ko
-sourceHash: "76d2b3a911e0d14c"
+sourceHash: "85a342068d855709"
 sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
 ---
 

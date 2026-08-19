@@ -259,6 +259,12 @@
   --container-md: 800px;
   --container-lg: 1000px;
   --container-xl: 1200px;
+  /* The header frame. Wider than --container-xl so the bar feels open, but
+     bounded so the CTA never hugs the viewport edge: at 1440 this yields 80px
+     gutters. claude.com uses max-width:1440 with 64px gutters and space-between;
+     we sit between that and our 1200px content column, so the logo overhangs the
+     content by 40px a side, which reads as deliberate framing. */
+  --container-nav: 1280px;
   --container-2xl: 1400px;
   --box-padding: 2.5rem;
 
@@ -935,8 +941,26 @@ body[data-nav-collapsed='true'] .nav-translate {
   }
 }
 
+/* Every native popover dims the page behind it.
+ *
+ * WHY THIS IS GLOBAL RATHER THAN PER-COMPONENT. The Popover API puts the element
+ * in the top layer and gives it a ::backdrop pseudo-element, which is TRANSPARENT
+ * by default. Nothing here styled it, so the solution constellation's popup opened
+ * as a white card on a white page with the graph behind it at full contrast: the
+ * popup was easy to miss, which is what was reported.
+ *
+ * Attaching this to [popover] rather than to .cx-pop means the nav menus get it
+ * too, so a dropdown and a dialog dim the page identically instead of each
+ * component re-deciding.
+ */
+[popover]::backdrop {
+  background: rgb(0 0 0 / 45%);
+}
+
 .nav-container {
   width: 100%;
+  max-width: var(--container-nav);
+  margin-inline: auto;
   padding: 0 var(--space-4);
   display: grid;
   grid-template-columns: auto auto 1fr auto auto;
@@ -1654,20 +1678,42 @@ body[data-nav-collapsed='true'] .nav-translate {
    persona panel: this one is 12rem wide and sits at the end of the bar, so a
    centred panel would hang off the viewport. .nav clips its own top edge and
    leaves downward overflow alone, which is what lets this escape the bar. */
+/* An `auto` popover, so it renders in the top layer and its containing block is the
+   VIEWPORT, not `.nav-cta-split`. The old `position: absolute; top: 100%;
+   inset-inline-end: 0` therefore resolved against the viewport and dropped the panel to
+   the bottom-left corner (measured at top 641, left 0, with its caret at right 1249).
+   Fixed positioning with the nav container's own gutter is what keeps it under the caret:
+   the gutter is `--space-4` until the viewport exceeds `--container-nav`, and half the
+   overflow after that, which is exactly `.nav-container`'s `max-width` + `margin-inline:
+   auto` expressed as an offset. `inset: auto` and `margin: 0` undo the UA popover styles
+   (`inset: 0; margin: auto`), which would otherwise centre it. */
 .nav-cta-menu {
-  position: absolute;
-  top: calc(100% + var(--space-2));
-  inset-inline-end: 0;
+  position: fixed;
+  inset: auto;
+  top: var(--nav-top-offset);
+  /* 100%, NOT 100vw: for a fixed element this resolves against the initial containing
+     block, which excludes the scrollbar, and so does the nav container's own centering.
+     100vw includes the scrollbar and would sit the panel ~7px off from its caret. */
+  inset-inline-end: max(var(--space-4), calc((100% - var(--container-nav)) / 2));
+  margin: 0;
   min-width: 12rem;
   max-width: min(20rem, calc(100vw - var(--space-8)));
-  display: flex;
   flex-direction: column;
   padding: var(--space-2);
   background-color: var(--color-bg-alt);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
   box-shadow: var(--shadow);
-  z-index: var(--z-popover);
+}
+
+/* `display` MUST be set only in the open state. The UA hides a closed popover with
+   `[popover]:not(:popover-open) { display: none }`, but that is a UA rule and ANY author
+   `display` beats it. This panel used to carry `display: flex` unconditionally, which was
+   harmless while it was conditionally mounted and became a permanently visible menu on
+   every page the moment it started living in the DOM full time. Measured: popover-open
+   false, computed display flex, a real 192x106 box under the caret. */
+.nav-cta-menu:popover-open {
+  display: flex;
 }
 
 .nav-cta-menu-item {
@@ -2734,13 +2780,33 @@ a.cf-guarantee-link:hover {
 }
 
 /* ===== FOOTER ===== */
+/* The footer is BLACK IN BOTH THEMES and shares its background token with
+ * `.sp-bottom-cta`, so the final CTA and the footer read as ONE continuous black
+ * band at the bottom of the page rather than a dark strip above a white island.
+ *
+ * The text colours are re-pointed HERE, on the container, rather than by editing
+ * the thirty `.footer-*` rules below: they all consume the semantic tokens, so
+ * redefining the tokens at this level flips every descendant at once and keeps
+ * this reversible. The values are the site's own dark-theme values from the
+ * `[data-theme]` block (main.css:482,485), whose contrast ratios are already
+ * measured at 13.71:1 and 6.79:1, so the footer does not invent its own palette.
+ *
+ * This is SITE-WIDE: BaseLayout.astro renders the footer on every page, docs and
+ * legal included, which is deliberate.
+ */
 .footer {
-  background-color: var(--color-bg-alt);
+  background-color: var(--sp-bg-hero);
   padding: var(--space-20) 0 var(--space-8);
+  --color-text: #e4e4e7;
+  --color-text-secondary: #a1a1aa;
+  --color-border: rgb(255 255 255 / 12%);
+  --color-interactive-hover: rgb(255 255 255 / 8%);
+  --color-interactive-active: rgb(255 255 255 / 14%);
+  color: var(--color-text);
 }
 
 .footer-container {
-  max-width: var(--max-width);
+  max-width: var(--container-nav);
   margin: 0 auto;
   padding: 0 var(--space-4);
 }

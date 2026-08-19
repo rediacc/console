@@ -2,9 +2,12 @@
 title: "Conformité ISO 27001"
 description: "Comment Rediacc correspond aux contrôles de sécurité de l'information ISO 27001 pour le chiffrement, la gestion des accès et la sécurité opérationnelle."
 category: "Legal"
+tags:
+  - compliance
+  - security
 order: 5
 language: fr
-sourceHash: "1e23c89ae8cf0185"
+sourceHash: "249b81c87ea92b97"
 sourceCommit: "70a4ca883754f1c0a7f4684c9fde02a5a01d3681"
 ---
 

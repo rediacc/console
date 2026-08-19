@@ -2,9 +2,11 @@
 title: "NIS2 ja DORA"
 description: "Kuidas Rediacc käsitleb EL-i NIS2 küberturvalisuse direktiivi ja DORA digitaalse tegevuskerksuse nõudeid."
 category: "Legal"
+tags:
+  - compliance
 order: 8
 language: et
-sourceHash: "72a61496d38955d3"
+sourceHash: "9179eb8e594f2ed0"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 

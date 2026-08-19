@@ -2,9 +2,12 @@
 title: Escalado de bases de datos heredadas
 description: Escale las bases de datos heredadas sin migrar aprovechando la replicación de datos y la distribución de consultas en tiempo real.
 category: Use Cases
+tags:
+  - migration
+  - forking
 order: 3
 language: es
-sourceHash: "b15507f1e0da46d2"
+sourceHash: "7131eacdf2a43da5"
 sourceCommit: "8b37b0a2c25c0ba7e5a8a63c8d3ed0da48b78a10"
 ---
 

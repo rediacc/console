@@ -2,9 +2,12 @@
 title: وحدة التحكم على الويب
 description: شغّل واجهة سطر أوامر rdc بأكملها من متصفحك بنماذج، وأدوات اختيار موارد، وسجل تشغيل
 category: Guides
+tags:
+  - cli
+  - account
 order: 8
 language: ar
-sourceHash: "b735dd2fd77435c5"
+sourceHash: "972ed654ae294102"
 sourceCommit: "5197d1c0349438c2bff2442377a5166d0b8214b6"
 ---
 

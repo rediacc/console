@@ -3,9 +3,12 @@ title: Rediaccのルール
 description: >-
   Rediaccプラットフォームでアプリケーションを構築するための必須ルールと規則。Rediaccfile、Compose、ネットワーク、ストレージ、CRIU、デプロイについて説明します。
 category: Guides
+tags:
+  - containers
+  - networking
 order: 5
 language: ja
-sourceHash: "1ceb078c7eb045b7"
+sourceHash: "d57f030a95892e39"
 sourceCommit: "20f014619af1ee41e75cd46a3c8e4abc5add0983"
 ---
 

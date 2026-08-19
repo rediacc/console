@@ -2,9 +2,11 @@
 title: 监控
 description: 监控机器健康状况、容器、服务、仓库，并运行诊断。
 category: Guides
+tags:
+  - operations
 order: 9
 language: zh
-sourceHash: "ab050e731db18848"
+sourceHash: "9c5882697da43a8f"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 

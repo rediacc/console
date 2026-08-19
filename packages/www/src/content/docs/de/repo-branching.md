@@ -2,10 +2,12 @@
 title: "Git-ähnliches Branching"
 description: "Copy-on-Write-Forks wie Git-Commits behandeln: einen Fork in einen unveränderlichen Commit einfrieren, Branches benennen, Commits in beschreibbare Forks auschecken, den Verlauf durchlaufen und mergen, ohne jemals ein aktives Repository direkt zu verändern."
 category: Reference
-subcategory: advanced
+tags:
+  - forking
+  - repositories
 order: 41
 language: de
-sourceHash: "b8bd3176ecabfa4b"
+sourceHash: "7aaa25bc83dfcf5b"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 

@@ -2,9 +2,12 @@
 title: "Yedekleme ve Geri Yükleme"
 description: "Şifreli depoların anlık görüntüsünü, yalnızca değişen hücrelerin yüklendiği ve her anlık görüntünün doğrudan geri yüklenebildiği içerik adresli chunk depolamaya alın. Ya da başka bir makinede bir kopya tutun. Her yere geri yükleyin, adlandırılmış stratejiler ve systemd zamanlayıcılarıyla otomatikleştirin."
 category: "Guides"
+tags:
+  - backup
+  - storage
 order: 7
 language: tr
-sourceHash: "91f6072e230b059c"
+sourceHash: "c35328105c2f3e8c"
 sourceCommit: "79c84ad044d5730b6d0a20aaf7b21f21914b6bda"
 ---
 

@@ -4,9 +4,12 @@ description: >-
   Modèle prêt à copier-coller pour configurer Claude Code, Cursor et d'autres
   assistants de programmation IA afin de gérer l'infrastructure Rediacc.
 category: Reference
+tags:
+  - ai-agents
+  - cli
 order: 50
 language: fr
-sourceHash: "1edff3471ded906d"
+sourceHash: "7592f803f8caf5f4"
 sourceCommit: "23543669cd22bce3f14d69a0886bac8a12061412"
 ---
 

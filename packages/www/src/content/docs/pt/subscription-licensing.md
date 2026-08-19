@@ -4,9 +4,11 @@ description: >-
   Compreenda como account, rdc e renet lidam com slots de máquina, licenças de
   repositório e limites de plano.
 category: Guides
+tags:
+  - account
 order: 7
 language: pt
-sourceHash: "4e7aa81c81aef1e9"
+sourceHash: "15886ad7ee04e90c"
 sourceCommit: "fd9d3476b1fdf0ac6ffaa14f486f20f9642fe2d5"
 ---
 

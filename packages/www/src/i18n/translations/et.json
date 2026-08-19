@@ -98,11 +98,17 @@
     "title": "Võta ühendust"
   },
   "documentation": {
-    "theme": {
-      "label": "Teema",
-      "light": "Hele",
-      "dark": "Tume",
-      "auto": "Automaatne"
+    "browse": {
+      "clear": "Tühjenda filtrid",
+      "description": "Kõik juhendid, õpetused ja viited ühes kohas.",
+      "empty": "Ükski dokument ei vasta sellele filtrile.",
+      "filterHeading": "Filtrid",
+      "filterLabel": "Filtreeri kategooria järgi",
+      "searchLabel": "Otsi nendest dokumentidest",
+      "searchPlaceholder": "Otsi pealkirjadest ja kirjeldustest",
+      "showDescription": "Kuva kirjeldus",
+      "title": "Dokumentatsioon",
+      "topicLabel": "Filtreeri teema järgi"
     },
     "categories": {
       "concepts": "Mõisted",
@@ -115,14 +121,36 @@
     "cliReference": "CLI viide",
     "cliReferenceLabel": "CLI viide:",
     "copied": "Kopeeritud!",
-    "copyCode": "Kopeeri kood",
     "copyAsMarkdown": "Kopeeri Markdownina",
+    "copyCode": "Kopeeri kood",
     "copyFullPageAriaLabel": "Kopeeri kogu lehekülg Markdownina",
     "openInNewTab": "Ava uuel vahekaardil",
     "searchDocs": "Otsi dokumentatsiooni",
     "subcategories": {
       "advanced": "Edasijõudnutele",
       "essentials": "Alused"
+    },
+    "tags": {
+      "account": "Kontod",
+      "aiAgents": "Tehisintellekti agendid",
+      "backup": "Varundus",
+      "cli": "CLI",
+      "compliance": "Vastavus",
+      "containers": "Konteinerid",
+      "forking": "Forkimine",
+      "gettingStarted": "Alustamine",
+      "migration": "Migreerimine",
+      "networking": "Võrgundus",
+      "operations": "Operatsioonid",
+      "repositories": "Hoidlad",
+      "security": "Turvalisus",
+      "storage": "Salvestusruum"
+    },
+    "theme": {
+      "auto": "Automaatne",
+      "dark": "Tume",
+      "label": "Teema",
+      "light": "Hele"
     }
   },
   "footer": {
@@ -193,9 +221,9 @@
     }
   },
   "navigation": {
-    "moreOptions": "Rohkem valikuid",
     "account": "Konto",
     "blog": "Blogi",
+    "browseAllDocs": "Sirvi kõiki dokumente",
     "builtForYou": "Loodud sulle",
     "builtForYourRole": "Loodud sinu rollile",
     "contact": "Kontakt",
@@ -210,7 +238,9 @@
     "home": "Avaleht",
     "install": "Installi",
     "languageSelectionMenu": "Keele valimise menüü",
+    "learn": "Õppimine",
     "login": "Logi sisse",
+    "moreOptions": "Rohkem valikuid",
     "partners": "Partnerid",
     "personas": {
       "ai-agent": {
@@ -570,14 +600,14 @@
         "title": "Katastroofi taastamise hinnad | Rediacc"
       },
       "plans": {
+        "assessment": {
+          "name": "Taasteanalüüs"
+        },
         "program": {
           "name": "Taasteprogramm"
         },
         "retainer": {
           "name": "Taasteleping"
-        },
-        "assessment": {
-          "name": "Taasteanalüüs"
         }
       },
       "psTeaser": {
@@ -612,6 +642,11 @@
         ],
         "recoveryNote": "RPO (taaste punkti eesmärk): kui palju andmeid saate endale lubada kaotada - mõõdetuna ajas. Näiteks 15-minutiline RPO tähendab, et võite kaotada kuni 15 minutit hiljutisi muudatusi.\n\nRTO (taaste aja eesmärk): kui kiiresti pead pärast katastroofi uuesti tööle saama. Näiteks 4-tunnine RTO tähendab, et teie süsteemid taastatakse 4 tunni jooksul.",
         "values": {
+          "assessment": {
+            "auditLogs": "30 päeva",
+            "rpo": "~15 minutit",
+            "rto": "Ajahetke taaste"
+          },
           "program": {
             "auditLogs": "90 päeva",
             "rpo": "~5 minutit (pidev)",
@@ -621,11 +656,6 @@
             "auditLogs": "1+ aasta",
             "rpo": "Kohandatud (peaaegu null)",
             "rto": "15–60 minutit (kohandatud)"
-          },
-          "assessment": {
-            "auditLogs": "30 päeva",
-            "rpo": "~15 minutit",
-            "rto": "Ajahetke taaste"
           }
         }
       },
@@ -636,14 +666,14 @@
         "contactUs": "Võta ühendust",
         "contactUsSub": "Kohandatud piirid ja tingimused",
         "cta": {
+          "assessment": {
+            "primary": "Alusta tasuta prooviga"
+          },
           "program": {
             "primary": "Alusta tasuta prooviga"
           },
           "retainer": {
             "primary": "Broneeri demo"
-          },
-          "assessment": {
-            "primary": "Alusta tasuta prooviga"
           }
         }
       }
@@ -1855,47 +1885,47 @@
     "pricing": {
       "comparison": {
         "allPlansInclude": "Kõik paketid sisaldavad: piiramatult kasutajaid ja meeskondi, piiramatult repositooriume, taastamist hetktõmmistest, pidevat andmekaitset, georedundantset salvestust, LUKS-krüpteeringut, auditilogisid, rollipõhist ligipääsu, käsitsi ja automaatset ajastamist ning integratsioonide API-t.",
-        "rows": [
-          {
-            "label": "Pühendatud kontohaldur",
-            "professional": false,
-            "business": true,
-            "enterprise": true
-          },
-          {
-            "label": "Telefonitugi",
-            "professional": false,
-            "business": true,
-            "enterprise": true
-          },
-          {
-            "label": "Ööpäevaringne tugi 365 päeva aastas",
-            "professional": false,
-            "business": false,
-            "enterprise": true
-          },
-          {
-            "label": "Juhtkonna eskalatsioon",
-            "professional": false,
-            "business": false,
-            "enterprise": true
-          },
-          {
-            "label": "Turvaülevaated",
-            "professional": false,
-            "business": false,
-            "enterprise": true
-          },
-          {
-            "label": "Kohandatud töövood",
-            "professional": false,
-            "business": false,
-            "enterprise": true
-          }
-        ],
         "heading": "Pakettide üksikasjalik võrdlus",
         "included": "Sisaldub",
-        "notIncluded": "Ei sisaldu"
+        "notIncluded": "Ei sisaldu",
+        "rows": [
+          {
+            "business": true,
+            "enterprise": true,
+            "label": "Pühendatud kontohaldur",
+            "professional": false
+          },
+          {
+            "business": true,
+            "enterprise": true,
+            "label": "Telefonitugi",
+            "professional": false
+          },
+          {
+            "business": false,
+            "enterprise": true,
+            "label": "Ööpäevaringne tugi 365 päeva aastas",
+            "professional": false
+          },
+          {
+            "business": false,
+            "enterprise": true,
+            "label": "Juhtkonna eskalatsioon",
+            "professional": false
+          },
+          {
+            "business": false,
+            "enterprise": true,
+            "label": "Turvaülevaated",
+            "professional": false
+          },
+          {
+            "business": false,
+            "enterprise": true,
+            "label": "Kohandatud töövood",
+            "professional": false
+          }
+        ]
       },
       "edgeChannel": {
         "cta": "Uuri Edge kanalit",
@@ -2465,30 +2495,30 @@
         },
         "companions": {
           "heading": "Seotud lahenduste lehed",
-          "intro": "Sama arhitektuur, rakendatuna konkreetsetele ostjaküsimustele:",
+          "intro": "Sama lahendus, aga vastused teie küsimustele:",
           "readMore": "Loe edasi"
         },
         "faq": {
           "heading": "Lugejate küsimused",
           "items": [
             {
-              "a": "CISO-le, CTO-le või vaneminfrastruktuuri insenerile, kes hindab arhitektuuri. Eeldatakse, et oled kursis varundustöövoogude, salvestamise põhitõdete ning regulatiivse maastikuga, millega sinu infrastruktuur juba kokku puutub.",
+              "a": "CISO, CTO või vaneminfrastruktuuriinsenerile, kes hindab disaini. Eeldame, et oled kursis varundustöövoogudega, salvestamisega ja nõuetega, millega sinu infrastruktuur juba kokkupuutub.",
               "q": "Kellele see ülevaade on kirjutatud?"
             },
             {
-              "a": "Jah. Pärast e-posti sisestamist leiad sama lehelt juhtkonnaversioon (PDF), mida saad edasi saata CFO-le, IT-direktorile või juhatuse liikmele.",
+              "a": "Jah. Pärast e-posti sisestamist leiad sama lehelt juhtkonnaversioon (PDF, ~5 minutit), mida saad edasi saata CFO-le, IT-direktorile või juhatuse liikmele.",
               "q": "Kas on ka mittetehniline versioon?"
             },
             {
-              "a": "Üks kinnituse e-kiri. Sind lisatakse meie uudiskirja (üks lühipostitus kuus, kogu toote kohta). Tühista tellimus ühe klikiga. Sinu e-post asub vaikimisi EL-is vastavalt Rediacc andmete asukohapoliitikale.",
+              "a": "Üks kinnituse e-kiri ja meie uudiskiri (üks posti kuus, kogu toote kohta). Tühista tellimus ühe klikiga. Sinu e-post asub vaikimisi EL-is vastavalt Rediacc andmete asukohapoliitikale.",
               "q": "Mis saab minu e-postiga?"
             },
             {
-              "a": "Ülevaade käsitleb seda põhjalikult. Lühiversioon: btrfs paigutab muutumatuse ja hetktõmmiste otse salvestuskihti, mitte rakendusele. Saatmisfunktsioon viib need kopiad väljaspoole. Nii ründaja, kes teie administraatori parooli omab, ei saa neid muuta ega kustutada.",
+              "a": "Ülevaade käsitleb seda üksikasjalikult. Lühidalt: btrfs paigutab kirjutuskaitse ja hetktõmmised otse salvestuskihti – mitte rakenduse peale. Saatmis- ja vastuvõtufunktsioon viib kopiad masinast välja. Nii et ründaja, isegi administraatorõigustega, ei saa neid muuta ega kustutada.",
               "q": "Miks btrfs?"
             },
             {
-              "a": "Mitte otse. Arhitektuur käsitleb ise hallatavaid servereid, kus andmebaasid jooksevad Docker-il btrfs salvestusel. Kui teie kriitilised andmed asuvad RDS-is või Auroras, märgib ülevaade seda ja näitab, kus mudel kehtib ja kus mitte.",
+              "a": "Mitte otse. Disain käsitleb ise hallatavaid servereid, mis käitavad andmebaase Docker-il btrfs salvestusel. Kui kriitilised andmed asuvad RDS-is või Auroras, märgib ülevaade seda selgelt. Seejärel näitab, kus mudel kehtib ja kus mitte.",
               "q": "Kas see kehtib haldatavate teenuste kohta, nagu AWS RDS?"
             }
           ]
@@ -2498,7 +2528,7 @@
           "downloadButton": "Laadi tehniline ülevaade alla",
           "eyebrow": "Tasuta allalaadimine · A4 PDF · CISO / CTO tase",
           "openInBrowser": "Ava brauseris",
-          "subtitle": "Sinu arendajad kirjutavad koodi 4,5 tundi nädalas. Ülejäänud aeg läheb keskkondade ootamisele. 50-liikmelise meeskonna seadistuskulu on aastas 720 000–1 200 000 dollarit.",
+          "subtitle": "Arendajad kirjutavad koodi 4,5 tundi nädalas. Ülejäänud aeg läheb keskkondade ootamisele. 50-liikmelise meeskonna seadistuskulu on aastas 720 000–1 200 000 dollarit.",
           "title": "Arenduskeskkonnad"
         },
         "meta": {
@@ -2508,16 +2538,16 @@
         },
         "toc": {
           "heading": "Mis on sees",
-          "intro": "Ülevaade käsitleb kaitsearhitektuuri, ohusituatsioonide liike, mida see blokeerib, regulatiivset maastikku ning tõendeid, mida audiitor küsib. Ligikaudu 10–14 tihedat lehekülge.",
+          "intro": "Kuidas see kaitseb ja mida see tähendab. Milliseid nõudeid täidab. Tõendid, mida audiitor nõuab. Umbes 10–14 tihedat lehekülge.",
           "items": [
-            "Mida te tegelikult kaitsete – lihtsatel sõnadel",
+            "Mis on tegelik oht – selgesti öeldud",
             "Kuidas see töötab ja miks ründajad selle murra ei saa",
             "Mida see blokeerib – tegelike näidete põhjal",
             "Vastavuskaart: konkreetsed reeglid, trahvid, aruandlustähtajad",
             "Kuluarvutused avaldatud andmete põhjal",
             "Tarnijate võrdlus tehnilise lähenemise alusel (mitte ARR põhjal)",
             "Kasutuselevõtu kuju ja teadaolevad ulatus-piirangud",
-            "Tõendid, mida teie audiitor küsib"
+            "Tõendid, mida audiitor kindlasti küsib"
           ]
         }
       },
@@ -2530,30 +2560,30 @@
         },
         "companions": {
           "heading": "Seotud lahenduste lehed",
-          "intro": "Sama lähenemine, teie küsimuste jaoks:",
+          "intro": "Sama lahendus, aga vastused teie küsimustele:",
           "readMore": "Loe edasi"
         },
         "faq": {
           "heading": "Lugejate küsimused",
           "items": [
             {
-              "a": "CISO-le, CTO-le või vaneminfrastruktuuriinsenerile. Eeldame, et tead varundustöövoogusid, failisüsteeme ja reegleid, millega su infrastruktuur juba kokku puutub.",
+              "a": "CISO, CTO või vaneminfrastruktuuriinsenerile, kes hindab disaini. Eeldame, et oled kursis varundustöövoogudega, salvestamisega ja nõuetega, millega sinu infrastruktuur juba kokkupuutub.",
               "q": "Kellele see ülevaade on kirjutatud?"
             },
             {
-              "a": "Jah. Pärast e-posti sisestamist näitab leht viie-minutilise juhtversiooni, mida saad CFO-le, IT-direktorile või juhatuse liikmele edasi saata.",
+              "a": "Jah. Pärast e-posti sisestamist leiad sama lehelt juhtkonnaversioon (PDF, ~5 minutit), mida saad edasi saata CFO-le, IT-direktorile või juhatuse liikmele.",
               "q": "Kas on ka mittetehniline versioon?"
             },
             {
-              "a": "Üks kinnituse e-kiri. Sind lisatakse meie uudiskirjale (üks posti kuus, kogu tootest). Tühista tellimus ühe klikiga. Sinu e-post asub vaikimisi EL-is Rediacc andmete asukohapoliitika järgi.",
+              "a": "Üks kinnituse e-kiri ja meie uudiskiri (üks posti kuus, kogu toote kohta). Tühista tellimus ühe klikiga. Sinu e-post asub vaikimisi EL-is vastavalt Rediacc andmete asukohapoliitikale.",
               "q": "Mis saab minu e-postiga?"
             },
             {
-              "a": "Ülevaade käsitleb seda detailselt. Lühidalt: btrfs paigutab kirjutuskaitse, hetktõmmised ja saadetised salvestuskihti, mitte rakenduse peale. Nii ei saa ründaja administraatoriparoolist neid muuta ega kustutada.",
+              "a": "Ülevaade käsitleb seda üksikasjalikult. Lühidalt: btrfs paigutab kirjutuskaitse ja hetktõmmised otse salvestuskihti – mitte rakenduse peale. Saatmis- ja vastuvõtufunktsioon viib kopiad masinast välja. Nii et ründaja, isegi administraatorõigustega, ei saa neid muuta ega kustutada.",
               "q": "Miks btrfs?"
             },
             {
-              "a": "Mitte otse. Arhitektuur käsitleb teie enda servereid, mis käitavad andmebaase Docker-s btrfs salvestamisel. Kui teie kriitilised andmed asuvad RDS-is või Auroras, märgime seda selgelt. Seejärel näitame, kus mudel kehtib ja kus mitte.",
+              "a": "Mitte otse. Disain käsitleb ise hallatavaid servereid, mis käitavad andmebaase Docker-il btrfs salvestusel. Kui kriitilised andmed asuvad RDS-is või Auroras, märgib ülevaade seda selgelt. Seejärel näitab, kus mudel kehtib ja kus mitte.",
               "q": "Kas see kehtib haldatavate teenuste kohta, nagu AWS RDS?"
             }
           ]
@@ -2567,15 +2597,15 @@
           "title": "Krüpteerimise kontroll"
         },
         "meta": {
-          "description": "Juhtid ise võtmeid. Andmed jäävad krüpteerituks ka teenusepakkujat vahetades. Schrems II kooskõlas. CISO/CTO ja juhtkonnaversioon.",
+          "description": "Võtmed käes. Andmed jäävad krüpteerituks ka teenusepakkujat vahetades. Schrems II kooskõlas. CISO/CTO ja juhtkonna versioon.",
           "keywords": "krüpteerimise kontroll, pdf, rediacc, btrfs varundus, muutumatu varundus, tehniline ülevaade",
           "title": "Krüpteerimise kontroll: tasuta tehniline ülevaade"
         },
         "toc": {
           "heading": "Mis on sees",
-          "intro": "Sees: mida see kaitseb ja kuidas see töötab. Milliste reeglitega saad kooskõlla jõuda. Tõendid, mida audiitor küsib. Umbes 10–14 tihedat lehekülge.",
+          "intro": "Kuidas see kaitseb ja mida see tähendab. Milliseid nõudeid täidab. Tõendid, mida audiitor nõuab. Umbes 10–14 tihedat lehekülge.",
           "items": [
-            "Mida sa tegelikult kaitsed — lihtsal keelel",
+            "Mis on tegelik oht – selgesti öeldud",
             "Kuidas see töötab ja miks ründaja seda murra ei saa",
             "Mida see peatab: päris näited ja juhtumid",
             "Millised reeglid kehtivad: trahvid, tähtajad, sõnastus",
@@ -2595,30 +2625,30 @@
         },
         "companions": {
           "heading": "Seotud lahenduste lehed",
-          "intro": "Sama lahendus, raamitud tellija küsimustele:",
+          "intro": "Sama lahendus, aga vastused teie küsimustele:",
           "readMore": "Loe edasi"
         },
         "faq": {
           "heading": "Lugejate küsimused",
           "items": [
             {
-              "a": "CISO-le, CTO-le või vaneminfrastruktuuriinsenerile, kes hindab arhitektuuri. Eeldame, et tunned varundustöövoogusid, talletamise põhitõdesid ja regulatiivset maastikku, millega sinu infrastruktuur juba kohatub.",
+              "a": "CISO, CTO või vaneminfrastruktuuriinsenerile, kes hindab disaini. Eeldame, et oled kursis varundustöövoogudega, salvestamisega ja nõuetega, millega sinu infrastruktuur juba kokkupuutub.",
               "q": "Kellele see ülevaade on kirjutatud?"
             },
             {
-              "a": "Jah. Pärast e-posti sisestamist näitab sama leht juhtimisbrieffi (5 minutit, PDF), mida saad saata CFO-le, IT-direktorile või juhatuse liikmele.",
+              "a": "Jah. Pärast e-posti sisestamist leiad sama lehelt juhtkonnaversioon (PDF, ~5 minutit), mida saad edasi saata CFO-le, IT-direktorile või juhatuse liikmele.",
               "q": "Kas on ka mittetehniline versioon?"
             },
             {
-              "a": "Üks kinnituse e-kiri. Sind lisatakse meie uudiskirja (üks lühipostitus kuus, kogu toote kohta). Tühista tellimus ühe klikiga. Sinu e-post asub vaikimisi EL-is vastavalt Rediacc andmete asukohapoliitikale.",
+              "a": "Üks kinnituse e-kiri ja meie uudiskiri (üks posti kuus, kogu toote kohta). Tühista tellimus ühe klikiga. Sinu e-post asub vaikimisi EL-is vastavalt Rediacc andmete asukohapoliitikale.",
               "q": "Mis saab minu e-postiga?"
             },
             {
-              "a": "Brief käsitleb seda põhjalikult. Lühiversioon: btrfs paneb muutumatused ja hetkeliste kloonide kopiad salvestuskihti, mitte rakenduse sisse. Send/receive-funktsioon viib neid koopaid masina välja. Nii et ründaja admin-parooliga ei saa neid muuta ega kustutada.",
+              "a": "Ülevaade käsitleb seda üksikasjalikult. Lühidalt: btrfs paigutab kirjutuskaitse ja hetktõmmised otse salvestuskihti – mitte rakenduse peale. Saatmis- ja vastuvõtufunktsioon viib kopiad masinast välja. Nii et ründaja, isegi administraatorõigustega, ei saa neid muuta ega kustutada.",
               "q": "Miks btrfs?"
             },
             {
-              "a": "Mitte otseselt. Mudel hõlmab teie servereid, kus andmebaasid töötavad Docker-l btrfs-salvestusel. Kui kriitilised andmed asuvad RDS-is või Auroras, märgib brief seda ja näitab, kus lahendus kehtib ja kus mitte.",
+              "a": "Mitte otse. Disain käsitleb ise hallatavaid servereid, mis käitavad andmebaase Docker-il btrfs salvestusel. Kui kriitilised andmed asuvad RDS-is või Auroras, märgib ülevaade seda selgelt. Seejärel näitab, kus mudel kehtib ja kus mitte.",
               "q": "Kas see kehtib haldatavate teenuste kohta, nagu AWS RDS?"
             }
           ]
@@ -2628,26 +2658,26 @@
           "downloadButton": "Laadi tehniline brief alla",
           "eyebrow": "Tasuta allalaadimine · A4 PDF · CISO / CTO tase",
           "openInBrowser": "Ava brauseris",
-          "subtitle": "AWS US-EAST-1 katkestas töö 15 tunniks 20. oktoobril 2025. Snapchat, Robinhood, Uber, Delta. Kas oleksid saanud pilve vahetada õigeaegselt?",
+          "subtitle": "AWS US-EAST-1 oli 15 tundi maas 20. oktoobril 2025. Snapchat, Robinhood, Uber, Delta. Pilve vahetamine tuleb planeerida enne häiret.",
           "title": "Mitmepilv alati"
         },
         "meta": {
-          "description": "Varundused pilvede vahel ja testitud failover – teie äri jätkab tööd ka pilve häire ajal. CISO/CTO ülevaade ja juhtkonna versioon.",
+          "description": "Ülekandekõlbulikud varundused ja testitud failover pilvede vahel. Äri jätkab tööd ka pilve häire korral. CISO/CTO ja juhtkonna versioon.",
           "keywords": "multi-cloud always, pdf, rediacc, btrfs varundus, muutumatu varundus, tehniline ülevaade",
           "title": "Multi-Cloud alati: tasuta tehniline brief PDF"
         },
         "toc": {
           "heading": "Mis on sees",
-          "intro": "Kuidas see kaitseb ja toimib. Millised reeglid kehtivad. Tõendid, mida audiitor küsib. Umbes 10–14 tihedat lehekülge.",
+          "intro": "Kuidas see kaitseb ja mida see tähendab. Milliseid nõudeid täidab. Tõendid, mida audiitor nõuab. Umbes 10–14 tihedat lehekülge.",
           "items": [
-            "Millest sa tõesti kaitstud oled – selgeid sõnadega",
+            "Mis on tegelik oht – selgesti öeldud",
             "Kuidas see töötab ja miks ründaja ei saa seda murda",
             "Mida see peatab – reaalsed näited",
             "Millised reeglid kehtivad: trahvid, tähtajad, täpne sõnastus",
             "Kulude arvutus: avalike andmete põhjal",
             "Kuidas me vahime: tehnilisel poole, mitte hinna poolest",
             "Kuidas paigaldada – ja mida me ei kata",
-            "Tõendid, mida audiitor küsib"
+            "Tõendid, mida audiitor kindlasti küsib"
           ]
         }
       },
@@ -2660,30 +2690,30 @@
         },
         "companions": {
           "heading": "Seotud lahenduste lehed",
-          "intro": "Sama arhitektuur, aga vastused, mida teilt küsitakse:",
+          "intro": "Sama lahendus, aga vastused teie küsimustele:",
           "readMore": "Loe edasi"
         },
         "faq": {
           "heading": "Lugejate küsimused",
           "items": [
             {
-              "a": "CISO-le, CTO-le või vaneminfrastruktuuriinsenerile, kes arhitektuuri hindab. Eeldame, et tead, kuidas varukoopiad ja salvestus toimivad, ja milliseid nõudeid sinu infrastruktuur juba järgib.",
+              "a": "CISO, CTO või vaneminfrastruktuuriinsenerile, kes hindab disaini. Eeldame, et oled kursis varundustöövoogudega, salvestamisega ja nõuetega, millega sinu infrastruktuur juba kokkupuutub.",
               "q": "Kellele see ülevaade on kirjutatud?"
             },
             {
-              "a": "Jah. Pärast e-posti sisestamist leiad sama lehelt viie-minuti juhtkonnaversiooni PDF-na, mida saad CFO-le, IT-direktorile või juhatuse liikmele saata.",
+              "a": "Jah. Pärast e-posti sisestamist leiad sama lehelt juhtkonnaversioon (PDF, ~5 minutit), mida saad edasi saata CFO-le, IT-direktorile või juhatuse liikmele.",
               "q": "Kas on ka mittetehniline versioon?"
             },
             {
-              "a": "Üks kinnituse e-kiri. Lisame sinut uudiskirjale (üks lühipostitus kuus, kogu toote kohta). Tühista ühe klikiga. Sinu e-post asub vaikimisi EL-is Rediacc andmekaitenõudluse alusel.",
+              "a": "Üks kinnituse e-kiri ja meie uudiskiri (üks posti kuus, kogu toote kohta). Tühista tellimus ühe klikiga. Sinu e-post asub vaikimisi EL-is vastavalt Rediacc andmete asukohapoliitikale.",
               "q": "Mis saab minu e-postiga?"
             },
             {
-              "a": "Ülevaade selgitab seda põhjalikult. Lühidalt: btrfs asetab muutumatud koopiad ja hetketõmmised salvestuskihile, mitte rakenduse peale. Saatmis/vastuvõtufunktsioon lohistab koopiad seadmest välja. Nii et ründaja, kel sul admin-parool käes, neid kustutada ei saa.",
+              "a": "Ülevaade käsitleb seda üksikasjalikult. Lühidalt: btrfs paigutab kirjutuskaitse ja hetktõmmised otse salvestuskihti – mitte rakenduse peale. Saatmis- ja vastuvõtufunktsioon viib kopiad masinast välja. Nii et ründaja, isegi administraatorõigustega, ei saa neid muuta ega kustutada.",
               "q": "Miks btrfs?"
             },
             {
-              "a": "Mitte otse. Disain hõlmab enda servereid, mis käitavad andmebaaside konteinereid Docker-il btrfs salvetusel. Kui sinu kriitilised andmed elavad RDS-is või Auroras, märgib ülevaade seda. Näitab, kus mudel töötab ja kus mitte.",
+              "a": "Mitte otse. Disain käsitleb ise hallatavaid servereid, mis käitavad andmebaase Docker-il btrfs salvestusel. Kui kriitilised andmed asuvad RDS-is või Auroras, märgib ülevaade seda selgelt. Seejärel näitab, kus mudel kehtib ja kus mitte.",
               "q": "Kas see kehtib haldatavate teenuste kohta, nagu AWS RDS?"
             }
           ]
@@ -2693,7 +2723,7 @@
           "downloadButton": "Laadi ülevaade alla",
           "eyebrow": "Tasuta allalaadimine · A4 PDF · CISO/CTO tase",
           "openInBrowser": "Ava brauseris",
-          "subtitle": "Testi päris süsteeme kloonil. Midagi ei katkeegi. Kloon võtab ohtlikud löögid vastu.",
+          "subtitle": "Testi päris süsteemide klooni. Midagi ei katkeegi. Kloon võtab ohtlikud löögid vastu.",
           "title": "Ennetav kaitse"
         },
         "meta": {
@@ -2703,16 +2733,16 @@
         },
         "toc": {
           "heading": "Mis on sees",
-          "intro": "Millest kaitseb ja kuidas töötab. Millised reeglid kehtivad. Tõendid, mida audiitor nõuab. Umbes 10–14 tihedat lehekülge.",
+          "intro": "Kuidas see kaitseb ja mida see tähendab. Milliseid nõudeid täidab. Tõendid, mida audiitor nõuab. Umbes 10–14 tihedat lehekülge.",
           "items": [
-            "Mis on tegelikult ohuks – selgesti sõnadega",
+            "Mis on tegelik oht – selgesti öeldud",
             "Kuidas töötab ja miks ründaja seda murra ei saa",
             "Mida see peatab – päriseluliste näidetega",
             "Millised reeglid kehtivad: trahvid, tähtajad, sõnastus",
             "Kuidas maksab – faktidele toetudes",
             "Kuidas võistleme – tehnikal, mitte hinnal",
             "Kuidas alustada ja millised piirangud",
-            "Tõendid, mida audiitor küsib"
+            "Tõendid, mida audiitor kindlasti küsib"
           ]
         }
       },
@@ -2725,30 +2755,30 @@
         },
         "companions": {
           "heading": "Seotud lahenduste lehed",
-          "intro": "Sama lähenemine, eri küsimuste jaoks sõnastatud:",
+          "intro": "Sama lahendus, aga vastused teie küsimustele:",
           "readMore": "Loe edasi"
         },
         "faq": {
           "heading": "Lugejate küsimused",
           "items": [
             {
-              "a": "CISO-le, CTO-le või vaneminfrastruktuuri insenerile, kes hindab lahendust. Eeldame, et tunnete varundustöövoogasid, salvestust ja reegleid, millega juba kokkupuutes.",
+              "a": "CISO, CTO või vaneminfrastruktuuriinsenerile, kes hindab disaini. Eeldame, et oled kursis varundustöövoogudega, salvestamisega ja nõuetega, millega sinu infrastruktuur juba kokkupuutub.",
               "q": "Kellele see ülevaade on mõeldud?"
             },
             {
-              "a": "Jah. Pärast e-posti sisestamist näed sama lehel juhtivversionit – viie minuti PDF, mida saad CFO-le, IT-direktorile või juhatuse liikmele edasi saata.",
+              "a": "Jah. Pärast e-posti sisestamist leiad sama lehelt juhtkonnaversioon (PDF, ~5 minutit), mida saad edasi saata CFO-le, IT-direktorile või juhatuse liikmele.",
               "q": "Kas on ka mittetehniline versioon?"
             },
             {
-              "a": "Saad meie uudiskirja (üks lühike postitus kuus, kogu toote kohta). Sinu e-post asub EL-is vastavalt Rediacc andmete asukohapoliitikale.",
+              "a": "Üks kinnituse e-kiri ja meie uudiskiri (üks posti kuus, kogu toote kohta). Tühista tellimus ühe klikiga. Sinu e-post asub vaikimisi EL-is vastavalt Rediacc andmete asukohapoliitikale.",
               "q": "Mis saab minu e-postiga?"
             },
             {
-              "a": "Ülevaade käsitleb seda põhjalikult. Lühiversioon: btrfs paneb muutumatuse ja hetktõmmised otse salvestuskihti, mitte rakenduse peale. Saatmis- ja vastuvõtufunktsioon viib kopiad masinast välja. Nii et ründaja, isegi administraatoriõigustega, ei saa neid muuta ega kustutada.",
+              "a": "Ülevaade käsitleb seda üksikasjalikult. Lühidalt: btrfs paigutab kirjutuskaitse ja hetktõmmised otse salvestuskihti – mitte rakenduse peale. Saatmis- ja vastuvõtufunktsioon viib kopiad masinast välja. Nii et ründaja, isegi administraatorõigustega, ei saa neid muuta ega kustutada.",
               "q": "Miks btrfs?"
             },
             {
-              "a": "Mitte otse. Käsitlus hõlmab enda andmebaase btrfs salvestuses. Kui sinu kriitilised andmed on RDS-is või Auroras, märgib ülevaade seda. Näitab, kus mudel kehtib ja kus mitte.",
+              "a": "Mitte otse. Disain käsitleb ise hallatavaid servereid, mis käitavad andmebaase Docker-il btrfs salvestusel. Kui kriitilised andmed asuvad RDS-is või Auroras, märgib ülevaade seda selgelt. Seejärel näitab, kus mudel kehtib ja kus mitte.",
               "q": "Kas see kehtib haldatavate teenuste kohta, nagu AWS RDS?"
             }
           ]
@@ -2768,16 +2798,16 @@
         },
         "toc": {
           "heading": "Mis on sees",
-          "intro": "Sees: millist ohtu kaitstakse ja kuidas see töötab. Milliseid reegleid tuleb täita. Operaatoritaseme tõendid, mida audiitor küsib. Umbes 10–14 tihedat lehekülge.",
+          "intro": "Kuidas see kaitseb ja mida see tähendab. Milliseid nõudeid aitab täita. Tõendid, mida audiitor küsib. Umbes 10–14 tihedat lehekülge.",
           "items": [
-            "Millist ohtu tõesti kaitstakse",
+            "Mis on tegelik oht – selgesti öeldud",
             "Kuidas see töötab ja miks ründaja seda murda ei saa",
             "Mida see peatab – tõeliste näidetega",
             "Millised reeglid kehtivad: trahvid, tähtajad, täpne tekst",
             "Kuluarvutused avaldatud andmete põhjal",
             "Kuidas jääme teiste kõrval – tehnoloogial, mitte hinnaga",
             "Kuidas paigaldada ja mis jääb välja",
-            "Tõendid, mida audiitor küsib"
+            "Tõendid, mida audiitor kindlasti küsib"
           ]
         }
       },
@@ -2790,30 +2820,30 @@
         },
         "companions": {
           "heading": "Seotud lahenduste lehed",
-          "intro": "Sama arhitektuur, rakendatuna konkreetsetele ostjaküsimustele:",
+          "intro": "Sama lahendus, aga vastused teie küsimustele:",
           "readMore": "Loe edasi"
         },
         "faq": {
           "heading": "Lugejate küsimused",
           "items": [
             {
-              "a": "CISO-le, CTO-le või vaneminfrastruktuuri insenerile, kes hindab arhitektuuri. Eeldatakse, et oled kursis varundustöövoogude, failisüsteemi põhitõdede ning regulatiivse maastikuga, millega sinu infrastruktuur juba kokku puutub.",
+              "a": "CISO, CTO või vaneminfrastruktuuriinsenerile, kes hindab disaini. Eeldame, et oled kursis varundustöövoogudega, salvestamisega ja nõuetega, millega sinu infrastruktuur juba kokkupuutub.",
               "q": "Kellele see ülevaade on kirjutatud?"
             },
             {
-              "a": "Jah. Pärast e-posti sisestamist viitab sama leht viie minuti juhtivversioonile PDF-ina, mida saad edasi saata CFO-le, IT-direktorile või juhatuse liikmele.",
+              "a": "Jah. Pärast e-posti sisestamist leiad sama lehelt juhtkonnaversioon (PDF, ~5 minutit), mida saad edasi saata CFO-le, IT-direktorile või juhatuse liikmele.",
               "q": "Kas on ka mittetehniline versioon?"
             },
             {
-              "a": "Üks kinnituse e-kiri. Sind lisatakse meie uudiskirja (üks lühipostitus kuus, kogu toote kohta). Tühista tellimus ühe klikiga. Sinu e-post asub vaikimisi EL-is vastavalt Rediacc andmete asukohapoliitikale.",
+              "a": "Üks kinnituse e-kiri ja meie uudiskiri (üks posti kuus, kogu toote kohta). Tühista tellimus ühe klikiga. Sinu e-post asub vaikimisi EL-is vastavalt Rediacc andmete asukohapoliitikale.",
               "q": "Mis saab minu e-postiga?"
             },
             {
-              "a": "Ülevaade selgitab seda üksikasjalikult. Lühiversioon: btrfs muudab muutumatuse, copy-on-write hetktõmmised ning inkrementaalsed saatmis-/vastuvõtmisomadused salvestuskihi omadusteks, mitte nende peal jooksva rakenduse omadusteks. See muudab seda, mida ründaja root-õigustega suudab ületada.",
+              "a": "Ülevaade käsitleb seda üksikasjalikult. Lühidalt: btrfs paigutab kirjutuskaitse ja hetktõmmised otse salvestuskihti – mitte rakenduse peale. Saatmis- ja vastuvõtufunktsioon viib kopiad masinast välja. Nii et ründaja, isegi administraatorõigustega, ei saa neid muuta ega kustutada.",
               "q": "Miks btrfs?"
             },
             {
-              "a": "Mitte otse. Arhitektuur hõlmab ise hallatavat arvutust, kus on btrfs-tagatud mahutitel töötavad konteineriseeritud andmebaasid. Kui sinu taastetähtsusega keskkond asub RDS-is või Auroras, märgib ülevaade seda selgesõnaliselt ja osutab, kus mudel kehtib ja kus mitte.",
+              "a": "Mitte otse. Disain käsitleb ise hallatavaid servereid, mis käitavad andmebaase Docker-il btrfs salvestusel. Kui kriitilised andmed asuvad RDS-is või Auroras, märgib ülevaade seda selgelt. Seejärel näitab, kus mudel kehtib ja kus mitte.",
               "q": "Kas see kehtib haldatavate teenuste kohta, nagu AWS RDS?"
             }
           ]
@@ -2823,7 +2853,7 @@
           "downloadButton": "Laadi tehniline ülevaade alla",
           "eyebrow": "Tasuta allalaadimine · A4 PDF · CISO / CTO tase",
           "openInBrowser": "Ava brauseris",
-          "subtitle": "Taastamisel ebaõnnestub 58% varukoopiatest. Enamusele ettevõtetest selgub see alles katastroofi ajal.",
+          "subtitle": "Taastumine ebaõnnestub 58%-l varukoopiatest. Enamusele ettevõtetest selgub see alles katastroofi ajal.",
           "title": "Tõendatud varukoopiad"
         },
         "meta": {
@@ -2833,16 +2863,16 @@
         },
         "toc": {
           "heading": "Mis on sees",
-          "intro": "Ülevaade käsitleb, mida arhitektuur kaitseb, kuidas see töötab, milliseid reegleid see täidab ja auditoritõendeid. Umbes 10–14 tihedat lehekülge.",
+          "intro": "Kuidas see kaitseb ja mida see tähendab. Milliseid nõudeid täidab. Tõendid, mida audiitor nõuab. Umbes 10–14 tihedat lehekülge.",
           "items": [
-            "Mida sa tegelikult kaitsed – selgesõnaliselt",
+            "Mis on tegelik oht – selgesti öeldud",
             "Kuidas süsteem töötab ja miks ründaja seda ei murra",
             "Mida see peatab – päriseluliste näidetega",
             "Milliseid reegleid pead järgima: trahvid, tähtajad, täpne tekst",
             "ROI-arvutus avaldatud andmete põhjal",
             "Meie vs teised – tehnika järgi, mitte hind",
             "Kuidas seda seadistada ja mida me ei katvame",
-            "Auditiks valmis tõendid, mida arhitektuur toodab"
+            "Tõendid, mida audiitor kindlasti küsib"
           ]
         }
       }
@@ -3024,8 +3054,6 @@
     },
     "solutionPages": {
       "aiPentesting": {
-        "label": "Tehisintellekti läbitungimistestimine",
-        "blurb": "Klooni tootmiskeskkond. Lase tehisintellektil seda rünnata.",
         "benefits": {
           "items": [
             {
@@ -3047,6 +3075,7 @@
           "overline": "MIKS SEE ON OLULINE",
           "title": "Mida saate"
         },
+        "blurb": "Klooni tootmiskeskkond. Lase tehisintellektil seda rünnata.",
         "bottomCta": {
           "command": "rdc repo fork production --tag pentest",
           "ctaText": "Alusta tasuta",
@@ -3152,6 +3181,7 @@
           ],
           "title": "Üks käsk. Null riski."
         },
+        "label": "Tehisintellekti läbitungimistestimine",
         "meta": {
           "description": "Looge identne koopia oma infrastruktuurist ja käivitage tehisintellektipõhised läbitungimistestid - ilma tootmiskeskkonda ohustamata.",
           "keywords": "ai pentesting, läbitungimistestimine, turvatestid, haavatavuste skaneerimine, klooni rünnak",
@@ -3287,8 +3317,6 @@
         }
       },
       "auditTrail": {
-        "label": "Auditirada",
-        "blurb": "Iga tegevus logitud. Mitte midagi peidetud.",
         "benefits": {
           "items": [
             {
@@ -3310,6 +3338,7 @@
           "overline": "MIKS SEE ON OLULINE",
           "title": "Mida saate"
         },
+        "blurb": "Iga tegevus logitud. Mitte midagi peidetud.",
         "bottomCta": {
           "command": "rdc repo status production",
           "ctaText": "Alusta tasuta Community väljaandega",
@@ -3469,6 +3498,7 @@
           ],
           "title": "Üks käsk. Täielik ülevaade."
         },
+        "label": "Auditirada",
         "meta": {
           "description": "Täielik ülevaade sellest, kes mida tegi, millal ja miks. Rikkumiskindlad auditirajalogid iga operatsiooni kohta.",
           "keywords": "auditirada, vastavuse logimine, rikkumiskindlad logid, SHA-256 allkirjastatud, auditiaruanne",
@@ -3640,8 +3670,6 @@
         }
       },
       "backupVerification": {
-        "label": "Varukoopiate kontrollimine",
-        "blurb": "Iga varukoopia kontrollitakse automaatselt",
         "benefits": {
           "items": [
             {
@@ -3663,6 +3691,7 @@
           "overline": "MIKS SEE ON OLULINE",
           "title": "Mida saate"
         },
+        "blurb": "Iga varukoopia kontrollitakse automaatselt",
         "bottomCta": {
           "command": "rdc backup verify my-app",
           "description": "Alustage tasuta Community väljaandega. Kontrollige esimene varukoopia alla minutiga.",
@@ -3823,6 +3852,7 @@
           ],
           "title": "Üks käsk. Null üllatusi."
         },
+        "label": "Varukoopiate kontrollimine",
         "meta": {
           "description": "Ärge oodake katastroofi, et avastada varukoopia rikutus. Rediacc kontrollib iga varukoopiat selle loomise hetkel.",
           "keywords": "varukoopiate kontrollimine, varukoopiate testimine, taastamise kontrollimine, varukoopiate terviklikkus, automatiseeritud varukoopiate kontroll, btrfs kloon, varukoopiate tervisekontroll",
@@ -4004,8 +4034,6 @@
         }
       },
       "cloudOutageProtection": {
-        "label": "Pilve katkestuste kaitse",
-        "blurb": "Kui AWS läheb alla, teie ei lähe",
         "benefits": {
           "items": [
             {
@@ -4027,6 +4055,7 @@
           "overline": "MIKS SEE ON OLULINE",
           "title": "Mida saate"
         },
+        "blurb": "Kui AWS läheb alla, teie ei lähe",
         "bottomCta": {
           "command": "rdc repo push production --to secondary-dc",
           "description": "Alustage tasuta Community väljaandega. Replitseerige asukohtade vahel tasuta. Krediitkaart pole vajalik.",
@@ -4188,6 +4217,7 @@
           ],
           "title": "Üks käsk. Alati võrgus."
         },
+        "label": "Pilve katkestuste kaitse",
         "meta": {
           "description": "Teie infrastruktuur töötab mitmes pilves. Kui üks ebaõnnestub, võtavad teised üle. Automaatselt.",
           "keywords": "pilve katkestuste kaitse, mitme pilve tõrkesiire, ristpilve replikatsioon, katastroofist taastumine, pilve redundants, automaatne tõrkesiire, btrfs replikatsioon",
@@ -4365,8 +4395,6 @@
         }
       },
       "continuousSecurityTesting": {
-        "label": "Pidev turvatestid",
-        "blurb": "Testa turvalisust pidevalt, mitte aastase intervalliga",
         "benefits": {
           "items": [
             {
@@ -4388,6 +4416,7 @@
           "overline": "MIKS SEE ON OLULINE",
           "title": "Mida saate"
         },
+        "blurb": "Testa turvalisust pidevalt, mitte aastase intervalliga",
         "bottomCta": {
           "command": "rdc backup restore production --as production-verify -m primary --up",
           "ctaText": "Alusta tasuta",
@@ -4488,6 +4517,7 @@
           ],
           "title": "Üks käsk. Igapäevane kaetus."
         },
+        "label": "Pidev turvatestid",
         "meta": {
           "description": "Käivitage turvateste iga päev värsketel tootmiskloonidel. Leidke haavatavused nende ilmnemisel - mitte kuude pärast.",
           "keywords": "pidev turvatestid, igapäevane läbitungimistestimine, automatiseeritud turvalisus, haavatavuste tuvastamine",
@@ -4623,8 +4653,6 @@
         }
       },
       "dataSovereignty": {
-        "label": "Andmesuveräänsus",
-        "blurb": "Teie serverid, teie võtmed, teie jurisdiktsioon.",
         "benefits": {
           "items": [
             {
@@ -4646,6 +4674,7 @@
           "overline": "MIKS SEE LOEB",
           "title": "Mida saate"
         },
+        "blurb": "Teie serverid, teie võtmed, teie jurisdiktsioon.",
         "bottomCta": {
           "command": "rdc config show",
           "ctaText": "Alusta tasuta Community väljaandega",
@@ -4803,6 +4832,7 @@
           ],
           "title": "Kolm sammu. Üks suveräänne virn."
         },
+        "label": "Andmesuveräänsus",
         "meta": {
           "description": "Majutad ise, hoiad võtmeid ise. CLOUD Act immuunsus arhitektuuri tasemel, mitte sertifikaadiga. Kliendihaldusega võtmed ja isehostitav varukoopia.",
           "keywords": "andmesuveräänsus, CLOUD Act-i immuunsus, kliendi hallatavad võtmed, GDPR Schrems II, EL-i andmemäärus, ise hostitud, suveräänne varukoopia, SecNumCloud, DORA",
@@ -4997,8 +5027,6 @@
         "title": "Aeg on piiratud?"
       },
       "encryption": {
-        "label": "Krüpteerimine, mida kontrollib teie",
-        "blurb": "Teie võtmed. Teie krüpteerimine. Ilma eranditeta.",
         "benefits": {
           "items": [
             {
@@ -5020,6 +5048,7 @@
           "overline": "MIKS SEE OLULINE ON",
           "title": "Mida saate"
         },
+        "blurb": "Teie võtmed. Teie krüpteerimine. Ilma eranditeta.",
         "bottomCta": {
           "command": "rdc repo up production",
           "ctaText": "Alusta tasuta Community versiooniga",
@@ -5179,6 +5208,7 @@
           ],
           "title": "Üks käsk. Täielik kontroll."
         },
+        "label": "Krüpteerimine, mida kontrollib teie",
         "meta": {
           "description": "Iga varukoopia on krüpteeritud võtmetega, mis kuuluvad teile. Mitte teie tarnija võtmetega. Mitte jagatud võtmetega. Ainult teile.",
           "keywords": "krüpteerimine, nullteadlikkus, kliendi omavõtmed, AES-256, varukoopia krüpteerimine",
@@ -5382,8 +5412,6 @@
         }
       },
       "environmentCloning": {
-        "label": "Keskkonna kloonimine",
-        "blurb": "Klooni tootmiskeskkond 60 sekundiga",
         "benefits": {
           "items": [
             {
@@ -5405,6 +5433,7 @@
           "overline": "MIKS SEE OLULINE ON",
           "title": "Mida saate"
         },
+        "blurb": "Klooni tootmiskeskkond 60 sekundiga",
         "bottomCta": {
           "command": "rdc repo fork production --tag my-first-clone",
           "description": "Alustage tasuta Community versiooniga. Kloonige kuni 10 töökoormust tasuta. Ilma krediitkaardita.",
@@ -5566,6 +5595,7 @@
           ],
           "title": "Üks käsk. Kuuskümmend sekundit."
         },
+        "label": "Keskkonna kloonimine",
         "meta": {
           "description": "Loo täpseid koopiaid tootmisest — rakendus, andmebaas ja konfiguratsioon — arenduseks ja testimiseks. Ilma piletiteta. Ilma ootamiseta.",
           "keywords": "keskkonna kloonimine, tootmiskloon, arenduskeskkond, kohene ettevalmistamine, btrfs kloon, copy-on-write, ajutised keskkonnad",
@@ -5747,8 +5777,6 @@
         }
       },
       "failoverTesting": {
-        "label": "Tõrkesiire testimine",
-        "blurb": "Testi oma tõrkeüleminek enne, kui seda vajad",
         "benefits": {
           "items": [
             {
@@ -5770,6 +5798,7 @@
           "overline": "MIKS SEE OLULINE ON",
           "title": "Mida saate"
         },
+        "blurb": "Testi oma tõrkeüleminek enne, kui seda vajad",
         "bottomCta": {
           "command": "rdc repo push production --to secondary --checkpoint",
           "description": "Alustage tasuta Community versiooniga. Käivitage oma esimene KT-test alla 5 minutiga.",
@@ -5930,6 +5959,7 @@
           ],
           "title": "Üks käsk. Täielik kindlustunne."
         },
+        "label": "Tõrkesiire testimine",
         "meta": {
           "description": "Käivita katastroofisimulatsioone turvaliselt. Tea, et taastamine tegelikult toimib. Üllatusi pole, kui see kõige rohkem loeb.",
           "keywords": "tõrkesiire testimine, katastroofitaaste testimine, KT-simulatsioon, KT-testi automatiseerimine, taastamise kontrollimine, btrfs kloon, RTO RPO testimine",
@@ -6099,8 +6129,6 @@
         }
       },
       "immutableBackups": {
-        "label": "Muutumatud varukoopiad",
-        "blurb": "Varukoopiad, mida lunavara ei puutu",
         "benefits": {
           "items": [
             {
@@ -6122,6 +6150,7 @@
           "overline": "MIKS SEE OLULINE ON",
           "title": "Mida saate"
         },
+        "blurb": "Varukoopiad, mida lunavara ei puutu",
         "bottomCta": {
           "command": "rdc repo push production --to backup-vault",
           "description": "Alustage tasuta Community versiooniga. Kaitske kuni 10 töökoormust tasuta. Ilma krediitkaardita.",
@@ -6282,6 +6311,7 @@
           ],
           "title": "Üks käsk. Täielik kaitse."
         },
+        "label": "Muutumatud varukoopiad",
         "meta": {
           "description": "Teie varukoopiad on muutumatud hetkest, mil need luuakse. Keegi ei saa neid muuta. Ei häkkerid. Isegi mitte teie.",
           "keywords": "muutumatud varukoopiad, lunavara kaitse, btrfs hetktõmmised, varukoopia kontrollimine, katastroofitaaste, copy-on-write, suletud varukoopiad",
@@ -6491,8 +6521,6 @@
         }
       },
       "infrastructureCosts": {
-        "label": "Infrastruktuuri kulud",
-        "blurb": "Lõpeta maksmast jõudeolekus keskkondade eest",
         "benefits": {
           "items": [
             {
@@ -6514,6 +6542,7 @@
           "overline": "MIKS SEE OLULINE ON",
           "title": "Mida saate"
         },
+        "blurb": "Lõpeta maksmast jõudeolekus keskkondade eest",
         "bottomCta": {
           "command": "rdc repo fork production --tag dev-loadtest",
           "description": "Alustage tasuta Community versiooniga. Nõudmisel kloonimine on kaasas.",
@@ -6669,6 +6698,7 @@
           ],
           "title": "Üks käsk. Null raiskamist."
         },
+        "label": "Infrastruktuuri kulud",
         "meta": {
           "description": "Loo keskkonnad nõudmisel. Hävita need, kui oled lõpetanud. Maksa ainult selle eest, mida tegelikult kasutad.",
           "keywords": "infrastruktuuri kulud, jõudeolekus keskkonnad, nõudmisel keskkonnad, kulude optimeerimine, btrfs kloon, copy-on-write, TTL, automaatne hävitamine",
@@ -6826,8 +6856,6 @@
         }
       },
       "instantRecovery": {
-        "label": "Kiirtaaste",
-        "blurb": "Täieliku keskkonna taastamine minutitega",
         "benefits": {
           "items": [
             {
@@ -6849,6 +6877,7 @@
           "overline": "MIKS SEE ON OLULINE",
           "title": "Mida saate"
         },
+        "blurb": "Täieliku keskkonna taastamine minutitega",
         "bottomCta": {
           "command": "rdc repo pull production --from daily-2026-02-27",
           "description": "Alusta tasuta Community versiooniga. Taasta oma esimene keskkond alla 5 minutiga.",
@@ -7011,6 +7040,7 @@
           ],
           "title": "Üks käsk. Kõik tagasi."
         },
+        "label": "Kiirtaaste",
         "meta": {
           "description": "Mitte ainult failid. Terved keskkonnad - serverid, konfiguratsioonid, andmebaasid - taastatakse ja töötavad minutitega.",
           "keywords": "kiirtaaste, täieliku keskkonna taastamine, btrfs kloon, katastroofitaaste, varunduse taastamine, ajahetke taastamine, tervisekontrollid, ühe käsuga taastamine",
@@ -7188,8 +7218,6 @@
         }
       },
       "integrations": {
-        "label": "CI/CD integratsioonid",
-        "blurb": "Ühenda oma olemasoleva töövooguga",
         "benefits": {
           "items": [
             {
@@ -7211,6 +7239,7 @@
           "overline": "MIKS SEE ON OLULINE",
           "title": "Mida saate"
         },
+        "blurb": "Ühenda oma olemasoleva töövooguga",
         "bottomCta": {
           "command": "rdc repo fork production --tag ci-build",
           "description": "Alusta tasuta Community versiooniga. Git-integratsioon on kaasas.",
@@ -7340,6 +7369,7 @@
           ],
           "title": "Üks käsk. Nullskripte."
         },
+        "label": "CI/CD integratsioonid",
         "meta": {
           "description": "Git push käivitab värske keskkonna. Testid töötavad tootmiskloonidel. CI/CD lihtsalt toimib - ilma kohandatud skriptideta.",
           "keywords": "CI/CD integratsioon, GitLab CI, GitHub Actions, webhook, tootmiskloon, testkeskkond, torujuhtme automatiseerimine",
@@ -7505,8 +7535,6 @@
         }
       },
       "kubernetesClusterMobility": {
-        "label": "Kubernetese klastri liikuvus",
-        "blurb": "Forki või vii üle töötav klaster, andmed kaasas",
         "benefits": {
           "items": [
             {
@@ -7528,6 +7556,7 @@
           "overline": "MIKS SEE OLULINE ON",
           "title": "Hoia oma Kubernetes. Saa liikuvus juurde."
         },
+        "blurb": "Forki või vii üle töötav klaster, andmed kaasas",
         "bottomCta": {
           "command": "rdc cluster fork prod --tag staging",
           "ctaText": "Alusta tasuta prooviga",
@@ -7654,6 +7683,7 @@
           ],
           "title": "Terve klaster on üks failikomplekt"
         },
+        "label": "Kubernetese klastri liikuvus",
         "meta": {
           "description": "Forki või vii üle töötav Kubernetese klaster, andmed kaasas, teise masinasse või andmekeskusesse. Lühike mõõdetud ümberlülitus. Ehitatud Ceph RBD ja k3s peale.",
           "keywords": "kubernetese klastri migratsioon, klastri fork, ceph rbd, k3s, andmekeskuse liikuvus, kubernetese kaasaskantavus",
@@ -7817,8 +7847,6 @@
         "title": "Hangi tehniline ülevaade"
       },
       "migrationSafety": {
-        "label": "Migreerimise turvalisus",
-        "blurb": "Migreeri ilma andmeid riskimata",
         "benefits": {
           "items": [
             {
@@ -7840,6 +7868,7 @@
           "overline": "MIKS SEE ON OLULINE",
           "title": "Mida saate"
         },
+        "blurb": "Migreeri ilma andmeid riskimata",
         "bottomCta": {
           "command": "rdc repo push production --to secondary",
           "description": "Alusta tasuta Community versiooniga. Krüpteeritud migreerimine on kaasas.",
@@ -7998,6 +8027,7 @@
           ],
           "title": "Üks käsk. Null kokkupuudet."
         },
+        "label": "Migreerimise turvalisus",
         "meta": {
           "description": "Liigute serverite, pilvede või teenusepakkujate vahel? Teie krüpteeritud varukoopiad liiguvad turvaliselt. Ilma paljastumiseta. Ilma andmekaduta.",
           "keywords": "krüpteeritud migreerimine, nullkokkupuutega ülekanne, andmete migreerimise turvalisus, krüpteeritud varunduse ülekanne, btrfs migreerimine, serveri migreerimine, pilve migreerimise krüpteerimine",
@@ -8175,8 +8205,6 @@
         }
       },
       "productionParity": {
-        "label": "Tootmispariteetsus",
-        "blurb": "Arenduskeskkonnad, mis vastavad tootmisele täpselt",
         "benefits": {
           "items": [
             {
@@ -8198,6 +8226,7 @@
           "overline": "MIKS SEE ON OLULINE",
           "title": "Mida saate"
         },
+        "blurb": "Arenduskeskkonnad, mis vastavad tootmisele täpselt",
         "bottomCta": {
           "command": "rdc backup restore dev-sarah --as dev-sarah-verify --up",
           "description": "Alusta tasuta Community versiooniga. Tootmispariteetsus on kaasas.",
@@ -8354,6 +8383,7 @@
           ],
           "title": "Üks käsk. Täiuslik pariteetsus."
         },
+        "label": "Tootmispariteetsus",
         "meta": {
           "description": "Ei rohkem \"töötab minu masinal\". Iga arenduskeskkond on tootmise identne kloon.",
           "keywords": "tootmispariteetsus, keskkonnakõrvalekalle, arenduskeskkond, identne kloon, btrfs kloon, copy-on-write, konfiguratsiooni vastavus",
@@ -8507,8 +8537,6 @@
         }
       },
       "rapidRecovery": {
-        "label": "Kiireloomuline taastamine",
-        "blurb": "Taasta minutitega, mitte päevadega",
         "benefits": {
           "items": [
             {
@@ -8530,6 +8558,7 @@
           "overline": "MIKS SEE ON OLULINE",
           "title": "Mida saate"
         },
+        "blurb": "Taasta minutitega, mitte päevadega",
         "bottomCta": {
           "command": "rdc repo pull production --from backup-vault --force",
           "ctaText": "Alusta tasuta Community-ga",
@@ -8685,6 +8714,7 @@
           ],
           "title": "Üks käsk. Tagasi võrku."
         },
+        "label": "Kiireloomuline taastamine",
         "meta": {
           "description": "Kui lunavara tabab, maksab iga minut. Rediacc viib teid tagasi võrku enne kahju levimist.",
           "keywords": "kiireloomuline taastamine, lunavara taastamine, katastroofitaaste, btrfs taastamine, kiire taastamine",
@@ -8876,8 +8906,6 @@
         }
       },
       "retentionCompliance": {
-        "label": "Säilitusvastavus",
-        "blurb": "Hoidke andmeid nii kaua, kui seadus nõuab",
         "benefits": {
           "items": [
             {
@@ -8899,6 +8927,7 @@
           "overline": "MIKS SEE OLULINE ON",
           "title": "Mida te saate"
         },
+        "blurb": "Hoidke andmeid nii kaua, kui seadus nõuab",
         "bottomCta": {
           "command": "rdc config backup-strategy set --cron '0 2 * * *'",
           "description": "Alustage tasuta Community väljaandega. Seadistage oma esimene säilituspoliitika 30 sekundiga.",
@@ -9060,6 +9089,7 @@
           ],
           "title": "Üks käsk. Täielik vastavus."
         },
+        "label": "Säilitusvastavus",
         "meta": {
           "description": "Seadistatavad säilituspoliitikad, mis vastavad nõuetele. HIPAA, SOC2, GDPR - vaikimisi kaetud.",
           "keywords": "säilitusvastavus, andmete säilitamine, HIPAA vastavus, SOC2, GDPR, varukoopiate säilitamine, auditivalmisolek, vastavuse automatiseerimine",
@@ -9269,8 +9299,6 @@
         }
       },
       "safeOsTesting": {
-        "label": "Ohutu OS-i testimine",
-        "blurb": "Testige OS-i uuendusi riskivabalt",
         "benefits": {
           "items": [
             {
@@ -9292,6 +9320,7 @@
           "overline": "MIKS SEE OLULINE ON",
           "title": "Mida te saate"
         },
+        "blurb": "Testige OS-i uuendusi riskivabalt",
         "bottomCta": {
           "command": "rdc repo fork production --tag patch-test",
           "description": "Alustage tasuta Community väljaandega. Kloonige, testige ja kontrollige tasuta. Krediitkaarti ei nõuta.",
@@ -9452,6 +9481,7 @@
           ],
           "title": "Üks käsk. Null riski."
         },
+        "label": "Ohutu OS-i testimine",
         "meta": {
           "description": "Kloonige tootmiskeskkond. Rakendage paik. Vaadake, mis puruneb. Vajadusel tehke tagasipööramine. Kõik ilma tootmist puutumata.",
           "keywords": "ohutu OS-i testimine, paikade testimine, OS-i uuenduste testimine, btrfs kloon, tootmiskloon, riskivaba paigaldamine, uuenduste kontrollimine",
@@ -9629,8 +9659,6 @@
         }
       },
       "vendorLockIn": {
-        "label": "Tarnija lukustusest vabanemine",
-        "blurb": "Teie taristu. Teie valik. Alati.",
         "benefits": {
           "items": [
             {
@@ -9652,6 +9680,7 @@
           "overline": "MIKS SEE OLULINE ON",
           "title": "Mida te saate"
         },
+        "blurb": "Teie taristu. Teie valik. Alati.",
         "bottomCta": {
           "command": "rdc repo push production --to new-provider --checkpoint",
           "ctaText": "Alusta tasuta Community-ga",
@@ -9812,6 +9841,7 @@
           ],
           "title": "Üks käsk. Täielik vabadus."
         },
+        "label": "Tarnija lukustusest vabanemine",
         "meta": {
           "description": "Paigaldage kuhu tahes. Migreerige millal tahes. Lukustusleppeid pole. Esialgseid vorminguid pole. Teie andmed jäävad teie omaks.",
           "keywords": "tarnija lukustus, pilverändlus, multi-cloud, kaasaskantavus, btrfs migratsioon",
@@ -9979,8 +10009,6 @@
         }
       },
       "vulnerabilityManagement": {
-        "label": "Haavatavuste haldamine",
-        "blurb": "Paigake haavatavused enne ründajate saabumist",
         "benefits": {
           "items": [
             {
@@ -10002,6 +10030,7 @@
           "overline": "MIKS SEE OLULINE ON",
           "title": "Mida te saate"
         },
+        "blurb": "Paigake haavatavused enne ründajate saabumist",
         "bottomCta": {
           "command": "rdc term production cve-2026-1234-fix",
           "description": "Alustage tasuta Community väljaandega. Kontrollige oma esimest paika alla 4 minutiga.",
@@ -10103,6 +10132,7 @@
           ],
           "title": "Üks käsk. Kontrollitud parandused."
         },
+        "label": "Haavatavuste haldamine",
         "meta": {
           "description": "Leidke, testige ja paigake turvalüngad ohututes kloonides. Paigaldage parandused tootmises kindlalt.",
           "keywords": "haavatavuste haldamine, paikade kontrollimine, CVE kõrvaldamine, kloonipõhine paikamine, ohutu paikamine, turvatests, haavatavuse paranduse kontrollimine",
@@ -10723,16 +10753,6 @@
     "title": "Vali oma konto piirkond"
   },
   "solutions": {
-    "roles": {
-      "copy": "Kopeeri",
-      "test": "Test",
-      "recover": "Taasta",
-      "property": "Platvorm"
-    },
-    "constellation": {
-      "centre": "Iga lahendus teeb ühe asja sinu tootmissüsteemi koopiaga.",
-      "title": "Uuri teisi lahendusi"
-    },
     "categories": {
       "backups": "Kontrollitud varukoopiad",
       "defense": "Ennetav kaitse",
@@ -10740,6 +10760,19 @@
       "encryption": "Krüptimise kontroll",
       "multi-cloud": "Mitu pilve",
       "ransomware": "Lunavararünnakutest ellujäämine"
+    },
+    "constellation": {
+      "centre": "Iga lahendus teeb ühe asja sinu tootmissüsteemi koopiaga.",
+      "title": "Uuri teisi lahendusi"
+    },
+    "references": {
+      "title": "Allikad"
+    },
+    "roles": {
+      "copy": "Kopeeri",
+      "property": "Platvorm",
+      "recover": "Taasta",
+      "test": "Test"
     },
     "title": "Kuidas tagame äri järjepidevuse"
   },

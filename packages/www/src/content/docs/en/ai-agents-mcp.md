@@ -2,6 +2,9 @@
 title: MCP Server Setup
 description: Connect AI agents to Rediacc infrastructure using the Model Context Protocol (MCP) server.
 category: Guides
+tags:
+  - ai-agents
+  - cli
 order: 33
 language: en
 ---

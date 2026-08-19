@@ -2,9 +2,12 @@
 title: "Canaux de publication"
 description: "Comment Edge et Stable diffèrent, et quel canal utiliser."
 category: "Concepts"
+tags:
+  - cli
+  - operations
 order: 2
 language: fr
-sourceHash: "6669b5b089f94a39"
+sourceHash: "0cc32d712c02538f"
 sourceCommit: "23543669cd22bce3f14d69a0886bac8a12061412"
 ---
 

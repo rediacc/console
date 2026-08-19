@@ -14,6 +14,7 @@
  */
 
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { findRegressions, loadBacklog, writeBacklog } from './lib/p7-backlog.js';
@@ -33,6 +34,20 @@ const colors = {
 };
 
 /** Patterns that indicate a command produced error output. */
+/** Cursor-home / erase-line, which restart a display line just as `\r` does. */
+const LINE_RESET_RE = /\r(?!\n)|\u001b\[[0-9]*[GK]/;
+
+/**
+ * Structured logs BELOW error level. They are not a correctness failure, they are
+ * a "should never have been on camera" failure: the widest lines in the corpus
+ * were 227-358 column `level=info` go-executor relays. Kept separate from
+ * ERROR_PATTERNS so the two failures read differently in the report.
+ */
+const NOISE_PATTERNS = [/\blevel=(info|warning|warn|debug|trace)\b/, /^time="\d{4}-/];
+
+/** Must match run.sh's TUTORIAL_COLS. A cast recorded at another width is a bug. */
+const TUTORIAL_COLS = 107;
+
 const ERROR_PATTERNS = [
   /^error:\s/i,
   /unknown command/i,
@@ -66,6 +81,51 @@ const ANSI_OSC_RE = new RegExp(`${ESC}\\][^${BEL}]*${BEL}`, 'g');
 /** Strip ANSI escape sequences and OSC sequences from text. */
 function stripAnsi(text) {
   return text.replaceAll(ANSI_CSI_RE, '').replaceAll(ANSI_OSC_RE, '');
+}
+
+/**
+ * Every run of text the terminal drew as one line, split at the points where the
+ * cursor went back to the start.
+ *
+ * Two wrong models were tried before this one. Measuring raw `\n`-split lines
+ * concatenates every spinner frame into a 22,562-column pseudo-line
+ * (tutorial-live-migration), so all 24 of its "violations" are phantom. Keeping
+ * only the LAST segment -- what finally settles on screen -- is wrong in the
+ * opposite direction: a 358-column logrus line WRAPS across four rows when it is
+ * written, and a following spinner repaint only overwrites the last of them, so
+ * the check silently discarded the exact lines it exists to catch.
+ *
+ * Each segment is measured on its own. A spinner frame is short and passes; a
+ * line that wrapped when it was drawn is caught, whatever happened afterwards.
+ */
+function drawnSegments(text) {
+  const out = [];
+  for (const physical of text.split('\n')) {
+    for (const segment of physical.split(LINE_RESET_RE)) out.push(stripAnsi(segment));
+  }
+  return out;
+}
+
+/** Display width, counting a wide CJK glyph as the two cells it occupies. */
+function displayWidth(line) {
+  let w = 0;
+  for (const ch of line) {
+    const c = ch.codePointAt(0);
+    if (c === undefined) continue;
+    // Combining marks take no cell; CJK/fullwidth take two.
+    if (c >= 0x0300 && c <= 0x036f) continue;
+    w +=
+      (c >= 0x1100 && c <= 0x115f) ||
+      (c >= 0x2e80 && c <= 0xa4cf) ||
+      (c >= 0xac00 && c <= 0xd7a3) ||
+      (c >= 0xf900 && c <= 0xfaff) ||
+      (c >= 0xfe30 && c <= 0xfe6f) ||
+      (c >= 0xff00 && c <= 0xff60) ||
+      (c >= 0xffe0 && c <= 0xffe6)
+        ? 2
+        : 1;
+  }
+  return w;
 }
 
 function pushError(errors, file, message, suggestion) {
@@ -102,7 +162,26 @@ function validateCastFile(castFile, errors, expectFailLabels) {
     return;
   }
 
-  // Line 1 is the JSON header -- skip it
+  // The header is line 1. Every other consumer of a cast reads it
+  // (scenes/cast.ts passes header.width into the renderer); this validator used
+  // to skip it, which is precisely why `width` was the one field no check could
+  // see, and why ~200 wrapped lines shipped unnoticed.
+  let headerWidth = TUTORIAL_COLS;
+  try {
+    const header = JSON.parse(lines[0]);
+    if (typeof header.width === 'number') headerWidth = header.width;
+    if (headerWidth !== TUTORIAL_COLS) {
+      pushError(
+        errors,
+        relPath,
+        `Recorded at ${headerWidth} columns, but the pipeline records ${TUTORIAL_COLS}`,
+        'Re-record with ./run.sh www tutorials record (record.sh defaults drifted from run.sh once)'
+      );
+    }
+  } catch {
+    pushError(errors, relPath, 'Unreadable cast header', 'Re-record tutorial');
+  }
+
   let currentMarker = null;
   let currentOutput = [];
   let sawComplete = false;
@@ -122,7 +201,14 @@ function validateCastFile(castFile, errors, expectFailLabels) {
     if (type === 'm') {
       // Flush previous marker's output
       if (currentMarker !== null) {
-        checkMarkerOutput(currentMarker, currentOutput, relPath, errors, expectFailLabels);
+        checkMarkerOutput(
+          currentMarker,
+          currentOutput,
+          relPath,
+          errors,
+          expectFailLabels,
+          headerWidth
+        );
       }
       currentMarker = data;
       currentOutput = [];
@@ -143,7 +229,7 @@ function validateCastFile(castFile, errors, expectFailLabels) {
 
   // Flush last marker
   if (currentMarker !== null) {
-    checkMarkerOutput(currentMarker, currentOutput, relPath, errors, expectFailLabels);
+    checkMarkerOutput(currentMarker, currentOutput, relPath, errors, expectFailLabels, headerWidth);
   }
 
   const leaked = leakedAfterComplete.trim();
@@ -157,7 +243,7 @@ function validateCastFile(castFile, errors, expectFailLabels) {
   }
 }
 
-function checkMarkerOutput(markerLabel, outputChunks, file, errors, expectFailLabels) {
+function checkMarkerOutput(markerLabel, outputChunks, file, errors, expectFailLabels, width) {
   for (const { pattern, message } of MARKER_HACK_PATTERNS) {
     if (pattern.test(markerLabel)) {
       pushError(
@@ -177,6 +263,50 @@ function checkMarkerOutput(markerLabel, outputChunks, file, errors, expectFailLa
       `Command "${markerLabel}" printed a raw CLI JSON envelope`,
       'The command should render a table in recordings (REDIACC_DEFAULT_OUTPUT=table)'
     );
+  }
+
+  // Any settled line that is JSON, not only the CLI envelope. The 322-column
+  // {"push_result":...} dump has no "success" key and sailed through the probe
+  // above for as long as it existed.
+  for (const line of drawnSegments(outputChunks.join(''))) {
+    const t = line.trim();
+    if (t.length > 40 && t.startsWith('{') && t.endsWith('}')) {
+      pushError(
+        errors,
+        file,
+        `Command "${markerLabel}" printed a raw JSON object on camera: ${t.slice(0, 60)}...`,
+        'Renet machine-readable output must be consumed by the CLI, not echoed to the terminal'
+      );
+      break;
+    }
+  }
+
+  // The check this file existed without: does the output FIT?
+  for (const line of drawnSegments(outputChunks.join(''))) {
+    const w = displayWidth(line);
+    if (w > width) {
+      pushError(
+        errors,
+        file,
+        `Command "${markerLabel}" printed a ${w}-column line into a ${width}-column terminal: ${line.slice(0, 60)}...`,
+        'The terminal wraps it into the row below and shreds the layout. Narrow the output at source'
+      );
+      break;
+    }
+  }
+
+  // Structured logs below error level: never intended for a viewer, and the
+  // widest lines in the whole corpus.
+  for (const line of drawnSegments(outputChunks.join(''))) {
+    if (NOISE_PATTERNS.some((re) => re.test(line))) {
+      pushError(
+        errors,
+        file,
+        `Command "${markerLabel}" leaked a structured log line: ${line.slice(0, 60)}...`,
+        'Withhold info/debug relay lines from the live terminal (see executor/output-lines.ts isQuietLogrusLine)'
+      );
+      break;
+    }
   }
 
   // Failure demos: the denial output is intentional.
@@ -281,6 +411,115 @@ function validateTutorialScripts(errors) {
   }
 }
 
+/**
+ * Prove the detector can both FIRE and STAY QUIET before anyone trusts a green run.
+ *
+ * The quiet cases are the ones that matter here. Two earlier versions of this
+ * check were wrong in opposite directions -- one counted concatenated spinner
+ * frames as a 22,562-column line, the other threw away wrapped logrus lines
+ * because a later repaint overwrote their last row. Both looked plausible.
+ */
+function selftest() {
+  const ESC = String.fromCharCode(27);
+  const cast = (events) =>
+    [JSON.stringify({ version: 2, width: TUTORIAL_COLS, height: 32 })]
+      .concat(events.map((e) => JSON.stringify(e)))
+      .join('\n');
+
+  const spinner = Array.from(
+    { length: 200 },
+    () => `${ESC}[2K${ESC}[1G_ Provisioning renet...`
+  ).join('');
+  const wide = 'x'.repeat(150);
+  const cases = [
+    [
+      'clean output passes',
+      cast([
+        [1, 'm', 'rdc repo list'],
+        [1, 'o', 'NAME   STATUS\nweb    up\n'],
+      ]),
+      false,
+    ],
+    [
+      '200 spinner frames pass (no phantom width)',
+      cast([
+        [1, 'm', 'rdc repo up demo'],
+        [1, 'o', spinner],
+      ]),
+      false,
+    ],
+    [
+      'a 150-column line FAILS',
+      cast([
+        [1, 'm', 'rdc config show'],
+        [1, 'o', `${wide}\n`],
+      ]),
+      true,
+    ],
+    [
+      'a level=info relay line FAILS',
+      cast([
+        [1, 'm', 'rdc repo up demo'],
+        [1, 'o', 'time="2026-01-01T00:00:00Z" level=info msg="x"\n'],
+      ]),
+      true,
+    ],
+    [
+      'a raw JSON dump FAILS',
+      cast([
+        [1, 'm', 'rdc backup push demo'],
+        [1, 'o', '{"push_result":{"repository":"abc","size":2147483648,"method":"rsync"}}\n'],
+      ]),
+      true,
+    ],
+  ];
+
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'castgate-'));
+  let failed = 0;
+  for (const [name, body, expectError] of cases) {
+    const file = path.join(tmp, 'tutorial-probe.cast');
+    fs.writeFileSync(file, body);
+    const errs = [];
+    validateCastFile(file, errs, []);
+    const fired = errs.length > 0;
+    if (fired !== expectError) {
+      failed++;
+      console.error(
+        `FAIL  ${name}: expected ${expectError ? 'an error' : 'no error'}, got ${errs.length}`
+      );
+      for (const e of errs.slice(0, 2)) console.error(`        ${e.message}`);
+    } else {
+      console.log(`ok    ${name}`);
+    }
+  }
+  // Header width drift is its own case: a cast recorded at another width.
+  const drifted = path.join(tmp, 'tutorial-drift.cast');
+  fs.writeFileSync(
+    drifted,
+    [JSON.stringify({ version: 2, width: 100, height: 30 }), JSON.stringify([1, 'o', 'hi\n'])].join(
+      '\n'
+    )
+  );
+  const driftErrs = [];
+  validateCastFile(drifted, driftErrs, []);
+  if (!driftErrs.some((e) => /columns, but the pipeline records/.test(e.message))) {
+    failed++;
+    console.error('FAIL  a cast recorded at 100 columns must be reported');
+  } else {
+    console.log('ok    a cast recorded at 100 columns is reported');
+  }
+
+  fs.rmSync(tmp, { recursive: true, force: true });
+  if (failed > 0) {
+    console.error(`\nselftest: ${failed} control(s) failed. This gate is not trustworthy.`);
+    process.exit(1);
+  }
+  console.log(
+    '\nselftest: 6 controls passed -- fires on width, noise, JSON and drift; quiet on clean output and spinners.'
+  );
+  process.exit(0);
+}
+
 function main() {
   const castFiles = fs
     .readdirSync(CAST_DIR)
@@ -383,4 +622,5 @@ function main() {
   process.exit(1);
 }
 
+if (process.argv.includes('--selftest')) selftest();
 main();

@@ -2,9 +2,12 @@
 title: Actualizaciones sin riesgos
 description: Pruebe las actualizaciones de la base de datos sin riesgos mediante la clonación instantánea y las instantáneas cada hora.
 category: Use Cases
+tags:
+  - forking
+  - backup
 order: 4
 language: es
-sourceHash: "242617b8bede9535"
+sourceHash: "852e967b9d505861"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 

@@ -2,9 +2,12 @@
 title: "PCI DSS 준수"
 description: "Rediacc가 PCI DSS 요구사항을 충족하는 방식: 불변 백업, 자동 네트워크 격리, 인프라 수준의 접근 제어"
 category: "Legal"
+tags:
+  - compliance
+  - security
 order: 6
 language: ko
-sourceHash: "05ca01c69d8bab61"
+sourceHash: "f0349ad8df33656e"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 

@@ -2,9 +2,12 @@
 title: "プルーニング"
 description: "孤立したバックアップ、古いスナップショット、リポジトリイメージ、ローカル設定の残存物を削除して、ディスク容量を回復し、状態の整合性を保ちます。"
 category: "Guides"
+tags:
+  - storage
+  - operations
 order: 12
 language: ja
-sourceHash: "928f117282b38484"
+sourceHash: "7d9a82ee410c420a"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 

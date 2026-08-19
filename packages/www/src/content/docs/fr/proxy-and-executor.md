@@ -4,9 +4,12 @@ description: >-
   Comment les commandes du navigateur et du client léger s'exécutent sans que
   le client ne détienne jamais de clés SSH ni d'adresses machine
 category: Concepts
+tags:
+  - security
+  - networking
 order: 4
 language: fr
-sourceHash: "3f522a473a550b0c"
+sourceHash: "39ec44d8efc3f9b5"
 sourceCommit: "5197d1c0349438c2bff2442377a5166d0b8214b6"
 ---
 

@@ -2,9 +2,11 @@
 title: "Migration Guide"
 description: "Migrate existing projects into encrypted Rediacc repositories."
 category: "Guides"
+tags:
+  - migration
+  - repositories
 order: 11
 language: en
-sourceHash: "feb1fcafc824b4b2"
 ---
 
 # Migration Guide

@@ -2,9 +2,12 @@
 title: "VM Sperimentali"
 description: "Provisiona cluster VM locali per sviluppo e test con rdc ops. È una funzionalità sperimentale attivabile subito."
 category: "Concepts"
+tags:
+  - operations
+  - containers
 order: 2
 language: it
-sourceHash: "aafca00c006ded0b"
+sourceHash: "5fad635a61089758"
 sourceCommit: "6cf65c4fe8617378da6a6dd21cce2feecff7ca9f"
 ---
 

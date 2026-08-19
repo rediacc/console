@@ -1,8 +1,10 @@
 ---
-sourceHash: "dba51d5d6dcf8197"
+sourceHash: "1e10165626ba3730"
 title: "데이터 주권"
 description: "Rediacc의 자체 호스팅 아키텍처가 글로벌 관할권에 걸친 데이터 거주지 및 주권 요건을 어떻게 충족하는지 설명합니다."
 category: "Legal"
+tags:
+  - compliance
 order: 7
 language: ko
 ---

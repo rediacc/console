@@ -1,8 +1,11 @@
 ---
-sourceHash: "d534fc11b7ba4fa7"
+sourceHash: "dd05b3e00f6f921d"
 title: 몇 초 만에 구동되는 개발 환경
 description: 개발 환경 준비에 며칠씩 기다리지 마십시오. 60초 이내에 전체 프로덕션 인프라를 복제하여 온디맨드 임시 환경을 구성할 수 있습니다.
 category: Use Cases
+tags:
+  - forking
+  - containers
 order: 10
 language: ko
 ---

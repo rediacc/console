@@ -3,9 +3,12 @@ title: 아키텍처
 description: >-
   Rediacc의 작동 방식: 두 도구 아키텍처, 어댑터 감지, 보안 모델, 설정 구조.
 category: Concepts
+tags:
+  - repositories
+  - containers
 order: 0
 language: ko
-sourceHash: "16b02000a82f3acd"
+sourceHash: "878b744629cb8b14"
 sourceCommit: "5fab1177d6ceae5211c25cf8fa0176d67259d40e"
 ---
 

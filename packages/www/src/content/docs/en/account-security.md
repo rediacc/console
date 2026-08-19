@@ -2,6 +2,9 @@
 title: Account Security & API
 description: Authentication, API tokens, session management, and the permission model.
 category: Guides
+tags:
+  - account
+  - security
 order: 13
 language: en
 ---

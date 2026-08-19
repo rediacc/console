@@ -2,9 +2,12 @@
 title: Mise à l'échelle dynamique des ressources
 description: Créez une architecture cloud avec une flexibilité illimitée pour la formation en IA et les charges de travail dynamiques.
 category: Use Cases
+tags:
+  - storage
+  - operations
 order: 1
 language: fr
-sourceHash: "7a75ab45703267eb"
+sourceHash: "3b4e598914ece1c4"
 sourceCommit: "8b37b0a2c25c0ba7e5a8a63c8d3ed0da48b78a10"
 ---
 

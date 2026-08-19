@@ -2,9 +2,12 @@
 title: Kontosicherheit & API-Schlüssel
 description: Authentifizierung, API-Token-Verwaltung, Sitzungsüberwachung und das Zugriffs- und Berechtigungsmodell für Ihre Organisation.
 category: Guides
+tags:
+  - account
+  - security
 order: 13
 language: de
-sourceHash: "dcd061b971573573"
+sourceHash: "c898204d1ff917f8"
 sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 ---
 

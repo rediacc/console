@@ -2,10 +2,12 @@
 title: "rdc repo diff"
 description: "Выводит git-подобный diff уровня файлов между двумя форками репозиториев с copy-on-write путем сравнения зашифрованных образов на уровне блоков без их расшифровки."
 category: Reference
-subcategory: advanced
+tags:
+  - forking
+  - storage
 order: 40
 language: ru
-sourceHash: "b555f4ca6b58ff4b"
+sourceHash: "6f5ccba93044665a"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 

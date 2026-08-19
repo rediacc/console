@@ -3,9 +3,12 @@ title: الخدمات
 description: >-
   نشر وإدارة الخدمات المحتوية باستخدام ملفات Rediaccfile وشبكات الخدمات والتشغيل التلقائي.
 category: Guides
+tags:
+  - containers
+  - operations
 order: 5
 language: ar
-sourceHash: "f33bcf4598caedc8"
+sourceHash: "8eef0f7b9e1dcd39"
 sourceCommit: "3fb35b9a33c7e8ec6753ecd56231f2018e8f4803"
 ---
 

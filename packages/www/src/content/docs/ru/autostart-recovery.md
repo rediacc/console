@@ -2,9 +2,12 @@
 title: "Автозапуск и восстановление"
 description: "Как работает автозапуск, периодический реконсилятор, восстанавливающий репозитории, остановившиеся после загрузки, и как проверять состояние восстановления."
 category: "Guides"
+tags:
+  - operations
+  - containers
 order: 5
 language: ru
-sourceHash: "62148f7a55752783"
+sourceHash: "0a87131bd0d87a34"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 

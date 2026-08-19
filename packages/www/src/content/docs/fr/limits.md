@@ -4,9 +4,12 @@ description: >-
   Référence des limites, maximums et quotas qui s'appliquent aux
   repositories, services, réseaux et stockage Rediacc.
 category: Reference
+tags:
+  - storage
+  - account
 order: 99
 language: fr
-sourceHash: "58ee35faeda9b8df"
+sourceHash: "2c014598b66bdeb7"
 sourceCommit: "79c84ad044d5730b6d0a20aaf7b21f21914b6bda"
 ---
 

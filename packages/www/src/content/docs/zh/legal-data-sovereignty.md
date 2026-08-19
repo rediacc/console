@@ -2,9 +2,11 @@
 title: "数据主权"
 description: "Rediacc 的自托管架构如何满足全球各司法管辖区的数据驻留和主权要求。"
 category: "Legal"
+tags:
+  - compliance
 order: 7
 language: zh
-sourceHash: "dba51d5d6dcf8197"
+sourceHash: "1e10165626ba3730"
 sourceCommit: "8b37b0a2c25c0ba7e5a8a63c8d3ed0da48b78a10"
 ---
 

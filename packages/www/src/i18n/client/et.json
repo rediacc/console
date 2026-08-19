@@ -71,6 +71,16 @@
     "error": "Midagi läks valesti. Proovi uuesti.",
     "close": "Sulge"
   },
+  "documentation": {
+    "categories": {
+      "tutorials": "Õpetused",
+      "guides": "Juhendid",
+      "concepts": "Mõisted",
+      "reference": "Viide",
+      "useCases": "Kasutusjuhud",
+      "legal": "Õiguslik"
+    }
+  },
   "footer": {
     "columns": {
       "product": "Toode",
@@ -147,7 +157,9 @@
       }
     },
     "forAiAgents": "AI agentidele",
-    "account": "Konto"
+    "account": "Konto",
+    "learn": "Õppimine",
+    "browseAllDocs": "Sirvi kõiki dokumente"
   },
   "newsletter": {
     "title": "Uudiskiri",

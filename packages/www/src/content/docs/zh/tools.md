@@ -2,9 +2,12 @@
 title: 工具
 description: 文件同步、终端访问、VS Code 集成和 CLI 更新。
 category: Guides
+tags:
+  - cli
+  - operations
 order: 9
 language: zh
-sourceHash: "2b8afb656455d6ec"
+sourceHash: "3c5f1e7f8063438b"
 sourceCommit: "3fb35b9a33c7e8ec6753ecd56231f2018e8f4803"
 ---
 

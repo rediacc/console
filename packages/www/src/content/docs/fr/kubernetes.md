@@ -2,9 +2,12 @@
 title: "Kubernetes"
 description: "Exécutez Kubernetes avec la mentalité du dépôt Rediacc : forkez ou déplacez un cluster en cours d'exécution, données comprises, vers une autre machine ou un autre datacenter avec une bascule courte."
 category: "Guides"
+tags:
+  - containers
+  - migration
 order: 6
 language: fr
-sourceHash: "6ad4b60e09edde94"
+sourceHash: "22eef465dfd46ccf"
 sourceCommit: "4401262fffbf29b9480dee8ecd209013e4b87f60"
 ---
 

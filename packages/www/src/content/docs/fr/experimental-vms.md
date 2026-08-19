@@ -4,9 +4,12 @@ description: >-
   Provisionner des clusters de VM locaux pour le développement et les tests avec
   rdc ops.
 category: Concepts
+tags:
+  - operations
+  - containers
 order: 2
 language: fr
-sourceHash: aafca00c006ded0b
+sourceHash: 5fad635a61089758
 ---
 
 # Experimental VMs

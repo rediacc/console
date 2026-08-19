@@ -2,9 +2,12 @@
 title: Estrategia de copia de seguridad cruzada
 description: "Tu copia de seguridad falla en el momento en que falha su máquina. Rediacc replica instantáneas en una máquina separada para que una falla de disco no se lleve todo consigo."
 category: Use Cases
+tags:
+  - backup
+  - migration
 order: 5
 language: es
-sourceHash: "39dbeac1faec121c"
+sourceHash: "a565990a48aa0593"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 

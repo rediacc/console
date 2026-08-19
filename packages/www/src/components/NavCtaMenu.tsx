@@ -11,13 +11,17 @@ import { AccountCta } from './AccountCta';
  * and the secondary one carried the same brand outline as the primary, so the
  * header opened with two competing greens.
  *
- * The popover contract is `PersonaMegaMenu`'s, deliberately, down to the
- * `hoverOpenedRef` guard: click-outside, Escape restores focus to the trigger,
- * roving arrows/Home/End, and `aria-haspopup`/`aria-expanded`/`aria-controls`.
+ * The popover contract is `PersonaMegaMenu`'s, deliberately: both are now NATIVE
+ * `popover="auto"` panels, so the UA supplies light-dismiss, Escape, top-layer
+ * stacking, the dimming `::backdrop`, and mutual exclusion between the two menus.
+ * What stays hand-written is what the Popover API does not provide: roving
+ * arrows/Home/End, the focus return to the trigger on Escape, and
+ * `aria-haspopup`/`aria-expanded`/`aria-controls`.
  * Open state is LIFTED into `Navigation` for the same reason the persona menu
  * lifts it - that is what puts this menu under the existing close-on-scroll,
  * close-on-hamburger and `astro:after-swap` handlers instead of giving it three
- * more of its own.
+ * more of its own. Those four closes are precisely why the popover cannot own the
+ * state outright: none of them is a dismissal the popover can see.
  *
  * `Log in` stays an `AccountCta`, so the region-picker interception in that
  * component (`window.openRegionPicker`) is reached by exactly the same path it
@@ -62,28 +66,28 @@ const NavCtaMenu: React.FC<NavCtaMenuProps> = ({
   const triggerRef = useRef<HTMLButtonElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const itemRefs = useRef<(HTMLElement | null)[]>([]);
-  const hoverTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Click-outside
-  const handleClickOutside = useCallback(
-    (event: MouseEvent) => {
-      if (
-        panelRef.current &&
-        !panelRef.current.contains(event.target as Node) &&
-        !triggerRef.current?.contains(event.target as Node)
-      ) {
-        onClose();
-      }
-    },
-    [onClose]
-  );
+  // Dismissal is the UA's, exactly as in PersonaMegaMenu: light-dismiss, Esc, top layer,
+  // the dimming ::backdrop, and mutual exclusion with the persona menu, which is the other
+  // auto popover. `isOpen` remains the source of truth because Navigation closes both menus
+  // on scroll, sidebar, search and astro:after-swap, none of which the popover can see.
+  useEffect(() => {
+    const panel = panelRef.current;
+    if (!panel) return;
+    const shown = panel.matches(':popover-open');
+    if (isOpen && !shown) panel.showPopover();
+    else if (!isOpen && shown) panel.hidePopover();
+  }, [isOpen]);
 
   useEffect(() => {
-    if (isOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-      return () => document.removeEventListener('mousedown', handleClickOutside);
-    }
-  }, [isOpen, handleClickOutside]);
+    const panel = panelRef.current;
+    if (!panel) return;
+    const onToggleEvent = (event: Event) => {
+      if ((event as ToggleEvent).newState === 'closed') onClose();
+    };
+    panel.addEventListener('toggle', onToggleEvent);
+    return () => panel.removeEventListener('toggle', onToggleEvent);
+  }, [onClose]);
 
   // Keyboard navigation
   const handleKeyDown = useCallback(
@@ -93,7 +97,8 @@ const NavCtaMenu: React.FC<NavCtaMenuProps> = ({
       const currentIdx = itemRefs.current.indexOf(focused);
       switch (event.key) {
         case 'Escape':
-          onClose();
+          // The UA closes the popover; only the focus return is ours, because a popover
+          // opened via showPopover() has no invoker for the UA to restore focus to.
           triggerRef.current?.focus();
           break;
         case 'ArrowDown':
@@ -130,56 +135,11 @@ const NavCtaMenu: React.FC<NavCtaMenuProps> = ({
     }
   }, [isOpen, handleKeyDown]);
 
-  // Hover intent on the caret segment only. `hoverOpenedRef` marks an open that
-  // hover initiated so the first CLICK after it pins the menu instead of
-  // slamming it shut. Hover never covers the primary segment: a pointer on its
-  // way to `Get Started` must not be answered with a menu.
-  const clearHoverTimeout = () => {
-    if (hoverTimeoutRef.current) {
-      clearTimeout(hoverTimeoutRef.current);
-      hoverTimeoutRef.current = null;
-    }
-  };
-
-  const hoverOpenedRef = useRef(false);
-
-  const handleMouseEnter = () => {
-    clearHoverTimeout();
-    if (!isOpen) {
-      hoverTimeoutRef.current = setTimeout(() => {
-        hoverOpenedRef.current = true;
-        onToggle();
-      }, 100);
-    }
-  };
-
-  const handleTriggerClick = () => {
-    // Cancel any hover-open still in flight. Without this a click that lands
-    // inside the 100ms hover delay opens the menu and the timer then fires and
-    // toggles it straight back shut: the pointer moves onto the caret, the timer
-    // starts, the click opens, 100ms later the timeout still sees the isOpen it
-    // captured (false) and calls onToggle() a second time. It is deterministic
-    // under automation and merely intermittent for a fast human, which is the
-    // worst combination to leave in.
-    clearHoverTimeout();
-    if (isOpen && hoverOpenedRef.current) {
-      hoverOpenedRef.current = false;
-      return;
-    }
-    hoverOpenedRef.current = false;
-    onToggle();
-  };
-
-  const handleMouseLeave = () => {
-    clearHoverTimeout();
-    if (isOpen) {
-      hoverTimeoutRef.current = setTimeout(onClose, 150);
-    }
-  };
-
-  useEffect(() => {
-    return () => clearHoverTimeout();
-  }, []);
+  // Hover-to-open is gone here too, for the same reason as in PersonaMegaMenu: the two
+  // timers existed only to serve hover, and both carried bugs that had already been paid
+  // for. Click-only also removes the special case this menu needed on top of the persona
+  // one, where hover had to cover the caret segment but NOT the primary `Get Started`
+  // button, so a pointer travelling to the CTA was not answered with a menu.
 
   const handleSearchClick = () => {
     onClose();
@@ -187,7 +147,7 @@ const NavCtaMenu: React.FC<NavCtaMenuProps> = ({
   };
 
   return (
-    <div className="nav-cta-split" onMouseLeave={handleMouseLeave}>
+    <div className="nav-cta-split">
       <AccountCta
         origin={origin}
         label={getStartedLabel}
@@ -200,8 +160,7 @@ const NavCtaMenu: React.FC<NavCtaMenuProps> = ({
         id={TRIGGER_ID}
         type="button"
         className="nav-cta-btn nav-cta-caret"
-        onClick={handleTriggerClick}
-        onMouseEnter={handleMouseEnter}
+        onClick={onToggle}
         aria-label={menuLabel}
         aria-haspopup="menu"
         aria-expanded={isOpen}
@@ -223,15 +182,15 @@ const NavCtaMenu: React.FC<NavCtaMenuProps> = ({
         </svg>
       </button>
 
-      {isOpen && (
-        <div
-          ref={panelRef}
-          id="nav-cta-menu"
-          className="nav-cta-menu"
-          role="menu"
-          aria-labelledby={TRIGGER_ID}
-          onMouseEnter={clearHoverTimeout}
-        >
+      {/* Always in the DOM: an auto popover must exist for showPopover() to reveal it. */}
+      <div
+        ref={panelRef}
+        id="nav-cta-menu"
+        className="nav-cta-menu"
+        popover="auto"
+        role="menu"
+        aria-labelledby={TRIGGER_ID}
+      >
           <AccountCta
             origin={origin}
             label={loginLabel}
@@ -273,8 +232,7 @@ const NavCtaMenu: React.FC<NavCtaMenuProps> = ({
             </svg>
             {searchLabel}
           </button>
-        </div>
-      )}
+      </div>
     </div>
   );
 };

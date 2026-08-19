@@ -2,9 +2,12 @@
 title: 代理与执行器
 description: 浏览器和轻客户端命令如何在客户端不持有SSH密钥或机器地址的情况下运行
 category: Concepts
+tags:
+  - security
+  - networking
 order: 4
 language: zh
-sourceHash: "3f522a473a550b0c"
+sourceHash: "39ec44d8efc3f9b5"
 sourceCommit: "5197d1c0349438c2bff2442377a5166d0b8214b6"
 ---
 

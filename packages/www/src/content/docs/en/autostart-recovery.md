@@ -2,6 +2,9 @@
 title: "Autostart & Recovery"
 description: "How autostart works, the periodic reconciler that recovers repositories that go down after boot, and how to inspect recovery state."
 category: "Guides"
+tags:
+  - operations
+  - containers
 order: 5
 language: en
 ---

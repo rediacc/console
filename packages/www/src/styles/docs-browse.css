@@ -1,0 +1,459 @@
+/* Docs browse surface. Paired with pages/[lang]/docs/index.astro. */
+
+/* The layout column is 1393px at 1440 now that `variant="index"` drops the article sidebar
+   and the table-of-contents track. The old 72rem cap was sized for a 765px column and is
+   what would keep the rail and the grid fighting over half the page. */
+.docs-browse {
+  max-width: 84rem;
+  margin-inline: auto;
+}
+
+/* Hero: full width above the two-column body, so the page introduces itself once. */
+.docs-browse-hero {
+  margin-block-end: var(--space-10);
+}
+
+.docs-browse-hero-icon {
+  width: 2.5rem;
+  height: 2.5rem;
+  margin-block-end: var(--space-3);
+  fill: none;
+  stroke: var(--color-primary);
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* Rail beside grid. `minmax(0, 1fr)` on the results column, never plain `1fr`: a grid item's
+   automatic minimum size is its content, so a long card title would push the column wider
+   than the track and take the rail's width with it. */
+.docs-browse-body {
+  display: grid;
+  grid-template-columns: 15rem minmax(0, 1fr);
+  gap: var(--space-10);
+  align-items: start;
+}
+
+/* `min-width: 0` belt-and-braces with the track's `minmax(0, 1fr)`. Either alone is enough
+   today; together they mean a future change to one cannot let a long card title widen the
+   column and squeeze the rail. */
+.docs-browse-results {
+  min-width: 0;
+}
+
+.docs-rail {
+  position: sticky;
+  inset-block-start: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.docs-rail-heading {
+  margin: 0;
+  font-size: var(--font-size-base);
+}
+
+.docs-rail-search {
+  display: block;
+}
+
+.docs-rail-group {
+  border-block-start: 1px solid var(--color-border);
+  padding-block-start: var(--space-3);
+}
+
+.docs-rail-summary {
+  cursor: pointer;
+  list-style: none;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+.docs-rail-summary::-webkit-details-marker {
+  display: none;
+}
+
+.docs-rail-summary::after {
+  content: '';
+  float: inline-end;
+  width: 0.5rem;
+  height: 0.5rem;
+  margin-block-start: 0.35em;
+  border-inline-end: 1.5px solid currentColor;
+  border-block-end: 1.5px solid currentColor;
+  transform: rotate(45deg);
+}
+
+.docs-rail-group[open] > .docs-rail-summary::after {
+  transform: rotate(-135deg);
+}
+
+/* Category is the primary axis: larger and bolder than the groups beneath it, which is the
+   whole hierarchy. No second widget, just weight and order. */
+.docs-rail-group--primary {
+  border-block-start: 0;
+  padding-block-start: 0;
+}
+
+.docs-rail-group--primary > .docs-rail-summary {
+  font-size: var(--font-size-base);
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.docs-rail-list {
+  list-style: none;
+  margin: var(--space-2) 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.docs-rail-option {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding-block: 0.15rem;
+  font-size: var(--font-size-sm);
+  cursor: pointer;
+}
+
+.docs-rail-option-label {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.docs-rail-count {
+  font-variant-numeric: tabular-nums;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+}
+
+/* A real <input type="checkbox">, only resized. Not a styled div: multi-select is what the
+   control claims, so it should be the control the platform already announces, focuses and
+   toggles. */
+.docs-facet {
+  flex: none;
+  width: 1rem;
+  height: 1rem;
+  accent-color: var(--color-primary);
+  cursor: pointer;
+}
+
+@media (max-width: 60rem) {
+  .docs-browse-body {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-6);
+  }
+
+  .docs-rail {
+    position: static;
+  }
+}
+
+.docs-browse-lede {
+  color: var(--color-text-secondary);
+  max-width: 60ch;
+}
+
+.docs-browse-search-input {
+  width: 100%;
+  max-width: 28rem;
+  padding: var(--space-2) var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-full);
+  background-color: var(--color-bg);
+  color: var(--color-text);
+  font-size: var(--font-size-sm);
+}
+
+.docs-browse-status {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  margin: 0 0 var(--space-6);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+.docs-browse-tally {
+  font-variant-numeric: tabular-nums;
+}
+
+.docs-browse-clear {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--color-primary);
+  font-size: inherit;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+/* Groups and cards */
+.docs-browse-group {
+  margin-block-end: var(--space-10);
+}
+
+.docs-browse-group-title {
+  font-size: var(--font-size-lg);
+  margin-block-end: var(--space-4);
+}
+
+.docs-browse-grid {
+  display: grid;
+  /* 14rem, not 16: the docs layout gives this column 765px at 1440 (its grid reserves a
+     250px table-of-contents track even on this page, which has no TOC), and 16rem fitted
+     only two cards across. Three cards is what takes the page from 21,708px to a length a
+     reader will actually scroll. */
+  grid-template-columns: repeat(auto-fill, minmax(14rem, 1fr));
+  gap: var(--space-4);
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.docs-browse-item {
+  display: flex;
+}
+
+/* The filter hides cards with the `hidden` ATTRIBUTE, and `display` above outranks the
+   `[hidden] { display: none }` that only the UA sheet provides, so every filtered-out card
+   kept painting: `?tag=forking` counted 2 and drew 6. Category filtering hid its own
+   misses by accident, because the grid is sectioned BY category and whole sections do
+   respond to `hidden`; topic and text cut across sections, which is why only those two
+   looked broken. The attribute stays the mechanism (it is what keeps a filtered card out
+   of the accessibility tree and the tab order); this rule only restores what it means. */
+.docs-browse-item[hidden] {
+  display: none;
+}
+
+.docs-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  width: 100%;
+  padding: 0 var(--space-4) var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background-color: var(--color-bg-alt);
+  color: inherit;
+  overflow: hidden;
+}
+
+.docs-card:hover,
+.docs-card:focus-within {
+  border-color: var(--color-primary);
+}
+
+/* The stretched link. `inset: 0` on a pseudo-element of the title's anchor makes the whole
+   card a click target WITHOUT wrapping the card in an anchor, which is the only way the
+   info button below can be a sibling rather than a nested <button> inside an <a>. */
+.docs-card-link {
+  color: inherit;
+  text-decoration: none;
+}
+
+.docs-card-link::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+}
+
+.docs-card-link:focus-visible {
+  outline: none;
+}
+
+.docs-card:focus-within {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+/* Prefixed with `.docs-browse`, and that is not decoration.
+   This page renders inside `.article-content`, whose `h3` rule is `--font-size-xl` and
+   whose grouped heading rule adds `margin: var(--space-8) 0 var(--space-4)`. Both outrank a
+   bare `.docs-card-title`, so the card titles came out as full section headings: four lines
+   tall, coloured, and pushing every card past 500px. Card typography has to state its own
+   size, colour, spacing and leading rather than assume the article defaults do not apply. */
+.docs-browse .docs-card-title {
+  font-size: var(--font-size-base);
+  line-height: var(--leading-snug);
+  color: inherit;
+  margin: 0;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+  overflow: hidden;
+}
+
+.docs-browse-empty {
+  color: var(--color-text-secondary);
+}
+
+/* One hue per category, for the CHIP GLYPH.
+
+   The thumbnails do NOT read this. They are hand-authored files under
+   public/img/docs-thumbs/, and an `<img>`-referenced SVG is a standalone document that
+   cannot see a custom property, so each one carries its category's colours as literal
+   hex. That duplication is unavoidable rather than sloppy: there is no other way to
+   colour a standalone document. If a category hue changes here, the affected files under
+   public/img/docs-thumbs/ have to be edited to match.
+
+   Hues share one saturation and lightness so the six read as a family rather than as six
+   unrelated accents, and no TEXT is painted with any of them: the chip label keeps
+   --color-text-secondary and the artwork is decorative, so none of this touches the
+   contrast budget the dark-theme block in main.css is careful about. */
+.docs-browse-group[data-category='Tutorials'] {
+  --docs-hue: 150;
+}
+
+.docs-browse-group[data-category='Guides'] {
+  --docs-hue: 220;
+}
+
+.docs-browse-group[data-category='Concepts'] {
+  --docs-hue: 280;
+}
+
+.docs-browse-group[data-category='Reference'] {
+  --docs-hue: 185;
+}
+
+.docs-browse-group[data-category='Use Cases'] {
+  --docs-hue: 35;
+}
+
+.docs-browse-group[data-category='Legal'] {
+  --docs-hue: 345;
+}
+
+.docs-card-thumb {
+  display: block;
+  width: calc(100% + var(--space-8));
+  height: auto;
+  margin-inline: calc(var(--space-4) * -1);
+  margin-block-end: var(--space-3);
+  aspect-ratio: 320 / 120;
+}
+
+/* Dark theme, and this rule is the whole reason the artwork can be a FILE at all.
+
+   An `<img>`-referenced SVG is an isolated document: it cannot inherit `--docs-hue`, cannot
+   resolve `currentColor`, and cannot see `:root[data-theme='dark']`. Untreated, the light
+   artwork renders as glaring panels on the #0f0f10 docs page -- photographed both ways
+   before choosing this. `prefers-color-scheme` inside the SVG is NOT the alternative: this
+   site's dark mode is a user toggle writing `data-theme`, so an OS media query would be
+   right for the default and wrong for anyone who overrode it.
+
+   Inverting and rotating the hue 180deg lands back on the original hue at inverted
+   lightness, so green stays green and rose stays rose; the brightness and saturation trims
+   stop the result reading as a lightbox against the surrounding surface. One rule here beats
+   the alternative of generating a second dark variant per document, which would double 79
+   artefacts to solve what a single line solves. */
+:root[data-theme='dark'] .docs-card-thumb {
+  filter: invert(1) hue-rotate(180deg) brightness(0.82) saturate(1.15);
+}
+
+/* The chip carries the icon the thumbnail used to. One glyph per card, not two. */
+.docs-card-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  margin-block-start: auto;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xs);
+}
+
+.docs-chip-glyph {
+  width: 1rem;
+  height: 1rem;
+  flex: none;
+  fill: none;
+  stroke: hsl(var(--docs-hue) 45% 38%);
+  stroke-width: 1.75;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+:root[data-theme='dark'] .docs-chip-glyph {
+  stroke: hsl(var(--docs-hue) 45% 68%);
+}
+
+/* The description: present, clipped, revealed inside the card.
+
+   OVERLAY rather than expansion, on purpose. Growing the card on hover reflows its
+   neighbours and the grid jumps under the cursor, which is worse than not having the
+   preview at all. And it is bounded by the card's own box rather than floated: a
+   positioned layer has to resolve against a containing block, and three separate panels on
+   this page landed in the wrong place today doing exactly that (left 0, the viewport
+   corner, 855 versus 0). A box that cannot escape its parent cannot land anywhere wrong.
+
+   `opacity`, never `display: none` or `visibility: hidden`, because the description has to
+   stay in the accessibility tree and in the crawlable text the whole time. */
+.docs-card-description {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  margin: 0;
+  padding: var(--space-4);
+  background-color: var(--color-bg-alt);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  line-height: var(--leading-normal);
+  overflow: hidden;
+  opacity: 0;
+  /* Never intercepts the pointer, so the stretched link keeps working over the reveal. */
+  pointer-events: none;
+  transition: opacity 120ms ease;
+}
+
+.docs-card:hover .docs-card-description,
+.docs-card:focus-within .docs-card-description,
+.docs-card.is-revealed .docs-card-description {
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .docs-card-description {
+    transition: none;
+  }
+}
+
+/* The touch affordance. Above the stretched link in the stacking order, which is what makes
+   it pressable at all, and a sibling of it in the DOM, which is what makes it valid. */
+.docs-card-info {
+  position: absolute;
+  inset-block-start: var(--space-2);
+  inset-inline-end: var(--space-2);
+  z-index: 3;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-full);
+  background-color: var(--color-bg-alt);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+}
+
+.docs-card-info svg {
+  width: 1.1rem;
+  height: 1.1rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.75;
+  stroke-linecap: round;
+}
+
+.docs-card-info:hover,
+.docs-card-info:focus-visible {
+  color: var(--color-primary);
+}

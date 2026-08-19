@@ -2,9 +2,12 @@
 title: Recuperación del viaje en el tiempo
 description: "Recupere datos borrados hace semanas usando instantáneas btrfs, incluso después de que sus copias de seguridad normales ya las hayan descartado."
 category: Use Cases
+tags:
+  - backup
+  - storage
 order: 2
 language: es
-sourceHash: "e55d51b8df91b20f"
+sourceHash: "2fce69fb1631f640"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 

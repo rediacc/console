@@ -2,9 +2,11 @@
 title: "컴플라이언스가 실제로 요구하는 것"
 description: "Rediacc는 귀하의 인프라에서 실행됩니다. 귀하가 데이터를 제어합니다. 주요 컴플라이언스 프레임워크와 어떻게 일치하는지 알아보세요."
 category: "Legal"
+tags:
+  - compliance
 order: 0
 language: ko
-sourceHash: "e6044a3b067b54d5"
+sourceHash: "f3c999aa355997c6"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 

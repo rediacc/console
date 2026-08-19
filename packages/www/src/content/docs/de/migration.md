@@ -2,9 +2,12 @@
 title: Migrationsleitfaden
 description: Bestehende Projekte in verschlüsselte Rediacc-Repositories migrieren.
 category: Guides
+tags:
+  - migration
+  - repositories
 order: 11
 language: de
-sourceHash: "6817858de56705e6"
+sourceHash: "53730ef01c5acb58"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 

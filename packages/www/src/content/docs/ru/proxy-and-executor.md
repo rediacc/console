@@ -4,9 +4,12 @@ description: >-
   Как команды из браузера и тонких клиентов выполняются без того, чтобы
   клиент когда-либо хранил SSH-ключи или адреса машин
 category: Concepts
+tags:
+  - security
+  - networking
 order: 4
 language: ru
-sourceHash: "3f522a473a550b0c"
+sourceHash: "39ec44d8efc3f9b5"
 sourceCommit: "5197d1c0349438c2bff2442377a5166d0b8214b6"
 ---
 

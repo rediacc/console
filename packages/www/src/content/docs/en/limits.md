@@ -4,6 +4,9 @@ description: >-
   Reference for the limits, maximums, and quotas that apply to Rediacc
   repositories, services, networking, and storage.
 category: Reference
+tags:
+  - storage
+  - account
 order: 99
 language: en
 ---

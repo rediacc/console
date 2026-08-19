@@ -2,9 +2,12 @@
 title: Масштабирование устаревшей базы данных
 description: Масштабируйте устаревшие базы данных без миграции, используя репликацию данных в реальном времени и распределение запросов.
 category: Use Cases
+tags:
+  - migration
+  - forking
 order: 3
 language: ru
-sourceHash: "b15507f1e0da46d2"
+sourceHash: "7131eacdf2a43da5"
 sourceCommit: "8b37b0a2c25c0ba7e5a8a63c8d3ed0da48b78a10"
 ---
 

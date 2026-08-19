@@ -4,9 +4,12 @@ description: >-
   Guía paso a paso para configurar Claude Code para la gestión autónoma de
   infraestructura Rediacc.
 category: Guides
+tags:
+  - ai-agents
+  - cli
 order: 31
 language: es
-sourceHash: "c0034de091da3349"
+sourceHash: "2c925f7e46d63e9a"
 sourceCommit: "23543669cd22bce3f14d69a0886bac8a12061412"
 ---
 

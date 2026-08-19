@@ -2,9 +2,12 @@
 title: "本番に近い開発環境を数分で"
 description: "ブロックレベルの重複排除により、開発環境のセットアップを数日から数分に短縮します。"
 category: Use Cases
+tags:
+  - forking
+  - storage
 order: 7
 language: ja
-sourceHash: "2aa115fc621f5258"
+sourceHash: "a9c98112fe890a13"
 sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 ---
 

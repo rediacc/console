@@ -43,6 +43,7 @@ LANG=""
 FIELD=""
 FILE=""
 ENGINE=""
+DEFER_MANIFEST=""
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
@@ -71,6 +72,15 @@ while [[ $# -gt 0 ]]; do
         # that do not know it simply omit the flag.
         --engine)
             ENGINE="$2"
+            shift 2
+            ;;
+        # Append the manifest tuple to this file instead of updating the manifest
+        # now. A full tutorial sweep is 1170 files, and updating per file means
+        # 1170 cold `npx tsx` starts each rewriting a 440 KB JSON -- hours of pure
+        # overhead. The caller applies the whole file in one process afterwards.
+        # Omitted by every other caller, which keeps the original behaviour.
+        --defer-manifest)
+            DEFER_MANIFEST="$2"
             shift 2
             ;;
         *)
@@ -127,8 +137,16 @@ if [[ -n "$ENGINE" ]]; then
     ENGINE_ARGS=(--engine "$ENGINE")
 fi
 
-npx tsx "$MANIFEST_HELPER" \
-    --kind "$KIND" --key "$KEY" --lang "$LANG" --field "$FIELD" \
-    --path "$REMOTE_KEY" --size "$SIZE" --sha256 "$SHA256" "${ENGINE_ARGS[@]}"
+if [[ -n "$DEFER_MANIFEST" ]]; then
+    # Tab-separated so the reader never has to guess at quoting. The upload and
+    # its HEAD readback have already happened; only the bookkeeping is deferred.
+    printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' \
+        "$KIND" "$KEY" "$LANG" "$FIELD" "$REMOTE_KEY" "$SIZE" "$SHA256" "$ENGINE" \
+        >>"$DEFER_MANIFEST"
+else
+    npx tsx "$MANIFEST_HELPER" \
+        --kind "$KIND" --key "$KEY" --lang "$LANG" --field "$FIELD" \
+        --path "$REMOTE_KEY" --size "$SIZE" --sha256 "$SHA256" "${ENGINE_ARGS[@]}"
+fi
 
 log_info "Done: https://media.rediacc.com/${REMOTE_KEY}"

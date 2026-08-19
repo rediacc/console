@@ -2,9 +2,12 @@
 title: 무위험 업그레이드
 description: 즉각적인 클로닝과 시간별 스냅샷을 활용하여 위험 없이 데이터베이스 업그레이드를 테스트하십시오.
 category: Use Cases
+tags:
+  - forking
+  - backup
 order: 4
 language: ko
-sourceHash: "242617b8bede9535"
+sourceHash: "852e967b9d505861"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 

@@ -2,9 +2,12 @@
 title: AI Ajan Güvenliği ve Koruma Önlemleri
 description: 'Rediacc CLI''ı, AI kodlama asistanlarının sırları sızdırmasını, kimlik bilgilerinin üzerine yazmasını veya ayrıcalıkları yükseltmesini nasıl önler. Bilgi kapıları, gizleme, soy ağacı doğrulamalı geçersiz kılmalar ve karma zincirli denetim kaydı.'
 category: Concepts
+tags:
+  - ai-agents
+  - security
 order: 35
 language: tr
-sourceHash: "5dac7c4162cbbb8e"
+sourceHash: "e008783008d8e887"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 

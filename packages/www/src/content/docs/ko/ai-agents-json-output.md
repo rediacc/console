@@ -2,9 +2,12 @@
 title: JSON 출력 참조
 description: rdc CLI JSON 출력 형식, 엔벨로프 스키마, 오류 처리 및 에이전트 검색 명령에 대한 전체 참조.
 category: Reference
+tags:
+  - ai-agents
+  - cli
 order: 51
 language: ko
-sourceHash: "cc88f8f06960df3a"
+sourceHash: "36ba86893c3817ac"
 sourceCommit: "23543669cd22bce3f14d69a0886bac8a12061412"
 ---
 

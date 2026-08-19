@@ -2,6 +2,9 @@
 title: AI Agent Integration Overview
 description: "How Claude Code, Cursor, and Cline manage Rediacc infrastructure via rdc: JSON output, agent introspection, and safety guardrails."
 category: Guides
+tags:
+  - ai-agents
+  - cli
 order: 30
 language: en
 ---

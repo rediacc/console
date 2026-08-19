@@ -2,9 +2,12 @@
 title: "Temizleme"
 description: "Sahipsiz yedekleri, eski anlık görüntüleri, depo görüntülerini ve yerel yapılandırma artıklarını kaldırarak disk alanı kazanın ve durumu tutarlı tutun."
 category: "Guides"
+tags:
+  - storage
+  - operations
 order: 12
 language: tr
-sourceHash: "928f117282b38484"
+sourceHash: "7d9a82ee410c420a"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 

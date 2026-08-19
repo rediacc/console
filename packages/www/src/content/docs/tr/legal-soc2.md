@@ -2,9 +2,11 @@
 title: "SOC 2 Uyumluluğu"
 description: "SOC 2'nin özü: denetçiler kontrollerinizin çalıştığına dair kanıt isterler. Rediacc size günlükleri, değişiklik yönetimi izini ve denetçilerin talep edecekleri her şeyi sağlar."
 category: "Legal"
+tags:
+  - compliance
 order: 2
 language: tr
-sourceHash: "28b4309f81f43d8d"
+sourceHash: "8ccd82a1265e268e"
 sourceCommit: "5fab1177d6ceae5211c25cf8fa0176d67259d40e"
 ---
 

@@ -2,9 +2,11 @@
 title: "Conformidade com SOC 2"
 description: "A verdade sobre SOC 2: os auditores querem evidências de que os seus controlos funcionam. O Rediacc fornece os registos, o rasto de gestão de alterações e tudo o resto que vão pedir."
 category: "Legal"
+tags:
+  - compliance
 order: 2
 language: pt
-sourceHash: "28b4309f81f43d8d"
+sourceHash: "8ccd82a1265e268e"
 sourceCommit: "5fab1177d6ceae5211c25cf8fa0176d67259d40e"
 ---
 

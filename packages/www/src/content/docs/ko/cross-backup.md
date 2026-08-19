@@ -2,9 +2,12 @@
 title: 크로스 백업 전략
 description: "백업 머신이 고장 나면 백업도 실패합니다. Rediacc는 스냅샷을 별도 머신에 복제하여 단일 디스크 오류로 모든 데이터를 잃지 않도록 합니다."
 category: Use Cases
+tags:
+  - backup
+  - migration
 order: 5
 language: ko
-sourceHash: "39dbeac1faec121c"
+sourceHash: "a565990a48aa0593"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 

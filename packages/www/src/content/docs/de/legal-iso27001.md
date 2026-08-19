@@ -2,9 +2,12 @@
 title: "ISO 27001-Konformität"
 description: "Wie Rediacc den Informationssicherheitskontrollen von ISO 27001 für Verschlüsselung, Zugangsverwaltung und Betriebssicherheit entspricht."
 category: "Legal"
+tags:
+  - compliance
+  - security
 order: 5
 language: de
-sourceHash: "1e23c89ae8cf0185"
+sourceHash: "249b81c87ea92b97"
 sourceCommit: "70a4ca883754f1c0a7f4684c9fde02a5a01d3681"
 ---
 

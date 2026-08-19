@@ -2,9 +2,12 @@
 title: "Hub"
 description: "Fournit des environnements de conteneurs par utilisateur avec authentification, Docker daemons par utilisateur, sélection de modèles multiples, checkpoint/restauration CRIU, journaux d'audit et collecte des déchets des data-roots."
 category: "Guides"
+tags:
+  - containers
+  - security
 order: 14
 language: fr
-sourceHash: "6fa16a1c73af497e"
+sourceHash: "fb8ab2f49f1a395b"
 sourceCommit: "b997ae00deb9e814edaf2fc449f4d9e36cfafe81"
 ---
 

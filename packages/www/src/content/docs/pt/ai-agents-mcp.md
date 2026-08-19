@@ -2,9 +2,12 @@
 title: Configuração do Servidor MCP
 description: Ligue agentes de IA à infraestrutura Rediacc usando o servidor Model Context Protocol (MCP).
 category: Guides
+tags:
+  - ai-agents
+  - cli
 order: 33
 language: pt
-sourceHash: "d515d5491751e1fe"
+sourceHash: "442b5cfa49239dbc"
 sourceCommit: "20f014619af1ee41e75cd46a3c8e4abc5add0983"
 ---
 

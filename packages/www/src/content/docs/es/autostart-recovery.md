@@ -2,9 +2,12 @@
 title: "Inicio Automático y Recuperación"
 description: "Cómo funciona el inicio automático, el reconciliador periódico que recupera repositorios que se caen después del arranque, y cómo inspeccionar el estado de recuperación."
 category: "Guides"
+tags:
+  - operations
+  - containers
 order: 5
 language: es
-sourceHash: "62148f7a55752783"
+sourceHash: "0a87131bd0d87a34"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 

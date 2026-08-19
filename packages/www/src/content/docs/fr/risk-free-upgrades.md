@@ -2,9 +2,12 @@
 title: Mises à niveau sans risque
 description: Testez les mises à niveau des bases de données sans risque grâce au clonage instantané et aux instantanés horaires.
 category: Use Cases
+tags:
+  - forking
+  - backup
 order: 4
 language: fr
-sourceHash: "242617b8bede9535"
+sourceHash: "852e967b9d505861"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 

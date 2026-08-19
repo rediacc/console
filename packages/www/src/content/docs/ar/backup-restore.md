@@ -5,9 +5,12 @@ description: >-
   الخلايا المتغيّرة وتُستعاد كل لقطة مباشرة. أو احتفظ بنسخة على جهاز آخر.
   استعد في أي مكان، وأتمتة العملية باستراتيجيات مسماة ومؤقتات systemd.
 category: "Guides"
+tags:
+  - backup
+  - storage
 order: 7
 language: ar
-sourceHash: "91f6072e230b059c"
+sourceHash: "c35328105c2f3e8c"
 sourceCommit: "79c84ad044d5730b6d0a20aaf7b21f21914b6bda"
 ---
 

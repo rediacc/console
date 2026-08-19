@@ -2,6 +2,9 @@
 title: "Production-Like Dev Environments in Minutes"
 description: "Cut dev environment setup from days to minutes with block-level deduplication."
 category: Use Cases
+tags:
+  - forking
+  - storage
 order: 7
 language: en
 ---

@@ -4,9 +4,12 @@ description: >-
   Готовый шаблон для настройки Claude Code, Cursor и других AI-ассистентов для
   кодирования для работы с инфраструктурой Rediacc.
 category: Reference
+tags:
+  - ai-agents
+  - cli
 order: 50
 language: ru
-sourceHash: "1edff3471ded906d"
+sourceHash: "7592f803f8caf5f4"
 sourceCommit: "23543669cd22bce3f14d69a0886bac8a12061412"
 ---
 

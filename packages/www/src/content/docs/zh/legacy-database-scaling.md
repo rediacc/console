@@ -2,9 +2,12 @@
 title: 遗留数据库扩展
 description: 利用实时数据复制和查询分发，无需迁移即可扩展旧数据库。
 category: Use Cases
+tags:
+  - migration
+  - forking
 order: 3
 language: zh
-sourceHash: "b15507f1e0da46d2"
+sourceHash: "7131eacdf2a43da5"
 sourceCommit: "8b37b0a2c25c0ba7e5a8a63c8d3ed0da48b78a10"
 ---
 

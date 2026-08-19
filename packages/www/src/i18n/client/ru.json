@@ -71,6 +71,16 @@
     "error": "Что-то пошло не так. Попробуйте ещё раз.",
     "close": "Закрыть"
   },
+  "documentation": {
+    "categories": {
+      "tutorials": "Учебные пособия",
+      "guides": "Руководства",
+      "concepts": "Концепции",
+      "reference": "Справочник",
+      "useCases": "Сценарии использования",
+      "legal": "Правовая информация"
+    }
+  },
   "footer": {
     "columns": {
       "product": "Продукт",
@@ -147,7 +157,9 @@
       }
     },
     "forAiAgents": "Для AI-агентов",
-    "account": "Аккаунт"
+    "account": "Аккаунт",
+    "learn": "Обучение",
+    "browseAllDocs": "Просмотреть всю документацию"
   },
   "newsletter": {
     "title": "Рассылка",

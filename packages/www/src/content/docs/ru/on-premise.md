@@ -2,9 +2,12 @@
 title: "Локальная установка"
 description: "Развёртывание сервера учётных записей и дистрибуции CLI на собственной инфраструктуре."
 category: "Guides"
+tags:
+  - account
+  - operations
 order: 5
 language: ru
-sourceHash: "f05bd90f123befad"
+sourceHash: "2c3ac4a96a028b3f"
 sourceCommit: "018665c7c35e0bea3349818b12a5906828240a29"
 ---
 

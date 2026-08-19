@@ -2,9 +2,12 @@
 title: دليل إعداد Cursor
 description: تهيئة بيئة تطوير Cursor للعمل مع بنية Rediacc التحتية باستخدام .cursorrules وتكامل الطرفية.
 category: Guides
+tags:
+  - ai-agents
+  - cli
 order: 32
 language: ar
-sourceHash: "bab7e70ffbd9f32b"
+sourceHash: "e0fb319a9e477324"
 sourceCommit: "23543669cd22bce3f14d69a0886bac8a12061412"
 ---
 

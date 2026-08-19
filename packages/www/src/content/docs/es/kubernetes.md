@@ -2,9 +2,12 @@
 title: "Kubernetes"
 description: "Ejecuta Kubernetes con la mentalidad de repo de Rediacc: bifurca o mueve un clúster en ejecución, incluidos sus datos, a otra máquina o centro de datos con un cutover corto."
 category: "Guides"
+tags:
+  - containers
+  - migration
 order: 6
 language: es
-sourceHash: "6ad4b60e09edde94"
+sourceHash: "22eef465dfd46ccf"
 sourceCommit: "23543669cd22bce3f14d69a0886bac8a12061412"
 ---
 

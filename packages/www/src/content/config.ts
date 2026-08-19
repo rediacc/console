@@ -1,5 +1,6 @@
 import { defineCollection, z } from 'astro:content';
 import { LANGUAGES } from '../i18n/types';
+import { DOC_TAGS } from '../utils/docs-categories';
 
 const blogCollection = defineCollection({
   type: 'content',
@@ -29,6 +30,11 @@ const docsCollection = defineCollection({
     // catalogs. A translated value here once shipped a seventh docs tab whose
     // label appeared twice in Arabic.
     category: z.enum(['Tutorials', 'Guides', 'Concepts', 'Reference', 'Use Cases', 'Legal']),
+    // The English TAG vocabulary, in EVERY locale, for the same reason `category` is: a
+    // tag is an identifier the browse filter matches on, not display text. The single
+    // source is `utils/docs-categories.ts`; the translated label lives under
+    // documentation.tags.* in the locale catalogs.
+    tags: z.array(z.enum(DOC_TAGS)).default([]),
     subcategory: z.enum(['essentials', 'advanced']).optional(),
     order: z.number().optional(),
     toc: z.boolean().default(true),

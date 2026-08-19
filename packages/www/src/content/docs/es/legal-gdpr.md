@@ -2,9 +2,11 @@
 title: "Cumplimiento del GDPR"
 description: "Cómo la arquitectura autoalojada de Rediacc se ajusta a los requisitos del GDPR para la protección de datos y privacidad."
 category: "Legal"
+tags:
+  - compliance
 order: 1
 language: es
-sourceHash: "76d2b3a911e0d14c"
+sourceHash: "85a342068d855709"
 sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
 ---
 

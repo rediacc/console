@@ -2,9 +2,12 @@
 title: "الامتثال لـ PCI DSS"
 description: "كيف يتوافق Rediacc مع متطلبات PCI DSS: النسخ الاحتياطية غير القابلة للتغيير، وعزل الشبكة التلقائي، والتحكم في الوصول على مستوى البنية الأساسية."
 category: "Legal"
+tags:
+  - compliance
+  - security
 order: 6
 language: ar
-sourceHash: "05ca01c69d8bab61"
+sourceHash: "f0349ad8df33656e"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 

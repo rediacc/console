@@ -2,9 +2,12 @@
 title: AI 어시스턴트용 AGENTS.md 템플릿
 description: Claude Code, Cursor 및 기타 AI 코딩 어시스턴트를 Rediacc 인프라와 함께 작동하도록 구성하기 위한 복사/붙여넣기 템플릿.
 category: Reference
+tags:
+  - ai-agents
+  - cli
 order: 50
 language: ko
-sourceHash: "1edff3471ded906d"
+sourceHash: "7592f803f8caf5f4"
 sourceCommit: "23543669cd22bce3f14d69a0886bac8a12061412"
 ---
 

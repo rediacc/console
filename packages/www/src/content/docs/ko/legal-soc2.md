@@ -2,9 +2,11 @@
 title: "SOC 2 준수"
 description: "SOC 2의 관건은 감사인이 당신의 통제가 실제로 작동한다는 증거를 원한다는 점입니다. Rediacc는 로그, 변경 관리 추적, 그리고 감사인이 요구할 모든 정보를 제공합니다."
 category: "Legal"
+tags:
+  - compliance
 order: 2
 language: ko
-sourceHash: "28b4309f81f43d8d"
+sourceHash: "8ccd82a1265e268e"
 sourceCommit: "5fab1177d6ceae5211c25cf8fa0176d67259d40e"
 ---
 

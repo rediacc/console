@@ -2,24 +2,25 @@
 title: "Резервное копирование и восстановление"
 description: "Скопируйте работающий репозиторий на вторую машину, выведите первую из строя и верните данные обратно."
 category: "Tutorials"
+tags:
+  - backup
+  - migration
 subcategory: advanced
 order: 11
 language: ru
-sourceHash: "bacd754fbeb6fb99"
+sourceHash: "be0942ac234c472c"
 sourceCommit: "79c84ad044d5730b6d0a20aaf7b21f21914b6bda"
 ---
 
 import TutorialStep from '../../../components/tutorial/TutorialStep.astro';
+
+![Tutorial: Backup and restore](/assets/tutorials/tutorial-backup-restore.cast)
 
 # Резервное копирование и восстановление
 
 Ваше приложение работает в продакшене. Создайте резервную копию. `rdc` копирует целый репозиторий, приложение, его базу данных, файлы и конфигурацию, на вторую машину и возвращает его обратно, когда первая машина исчезает.
 
 Этот урок не просто рассказывает об этом. Он проделывает это на двух реальных машинах и в конце считывает данные обратно.
-
-## Смотреть урок
-
-![Tutorial: Backup and restore](/assets/tutorials/tutorial-backup-restore.cast)
 
 ## Три шага
 

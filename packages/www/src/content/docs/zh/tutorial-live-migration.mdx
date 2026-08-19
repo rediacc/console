@@ -2,22 +2,23 @@
 title: "在线迁移"
 description: "用一条命令将运行中的仓库（数据库、文件、容器）迁移到另一台机器，停机时间极短。"
 category: "Tutorials"
+tags:
+  - migration
+  - containers
 subcategory: advanced
 order: 16
 language: zh
-sourceHash: "0d0c4df847c6ba17"
+sourceHash: "6b14c6eb4a0b643a"
 sourceCommit: "3fb35b9a33c7e8ec6753ecd56231f2018e8f4803"
 ---
 
 import TutorialStep from '../../../components/tutorial/TutorialStep.astro';
 
+![Tutorial: Live migration](/assets/tutorials/tutorial-live-migration.cast)
+
 # 在线迁移
 
 服务器总需要更换：硬件老化、供应商变更、区域迁移。`rdc repo migrate` 用一条命令将运行中的仓库迁移到另一台机器，加上 `--checkpoint` 连进程内存也能随行。演示应用 `pulse` 在内存中维护一个计数器；迁移完成后它继续计数，而不是从头开始。
-
-## 观看教程
-
-![Tutorial: Live migration](/assets/tutorials/tutorial-live-migration.cast)
 
 ## 迁移方式
 

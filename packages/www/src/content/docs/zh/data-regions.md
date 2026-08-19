@@ -2,9 +2,12 @@
 title: "数据区域"
 description: "您的数据存储位置及区域数据驻留的工作原理。"
 category: "Concepts"
+tags:
+  - compliance
+  - account
 order: 3
 language: zh
-sourceHash: "c87be32ef22a725d"
+sourceHash: "c03afe9324e59b45"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 

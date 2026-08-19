@@ -2,6 +2,9 @@
 title: JSON Output Reference
 description: Complete reference for rdc CLI JSON output format, envelope schema, error handling, and agent discovery commands.
 category: Reference
+tags:
+  - ai-agents
+  - cli
 order: 51
 language: en
 ---

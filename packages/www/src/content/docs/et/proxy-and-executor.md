@@ -2,9 +2,12 @@
 title: Proxy ja käitaja
 description: Kuidas brauseri ja õhukese kliendi käsud töötavad ilma, et klient hoiaks kunagi SSH-võtmeid või masinate aadresse
 category: Concepts
+tags:
+  - security
+  - networking
 order: 4
 language: et
-sourceHash: "3f522a473a550b0c"
+sourceHash: "39ec44d8efc3f9b5"
 sourceCommit: "5197d1c0349438c2bff2442377a5166d0b8214b6"
 ---
 

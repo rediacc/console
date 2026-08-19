@@ -3,9 +3,12 @@ title: 서비스
 description: >-
   Rediaccfile, 서비스 네트워킹, autostart를 사용하여 컨테이너화된 서비스를 배포하고 관리하십시오.
 category: Guides
+tags:
+  - containers
+  - operations
 order: 5
 language: ko
-sourceHash: "f33bcf4598caedc8"
+sourceHash: "8eef0f7b9e1dcd39"
 sourceCommit: "3fb35b9a33c7e8ec6753ecd56231f2018e8f4803"
 ---
 

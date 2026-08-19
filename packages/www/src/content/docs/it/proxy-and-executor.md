@@ -2,9 +2,12 @@
 title: Proxy ed Executor
 description: Come i comandi da browser e da client leggero vengono eseguiti senza che il client detenga mai chiavi SSH o indirizzi macchina
 category: Concepts
+tags:
+  - security
+  - networking
 order: 4
 language: it
-sourceHash: "3f522a473a550b0c"
+sourceHash: "39ec44d8efc3f9b5"
 sourceCommit: "5197d1c0349438c2bff2442377a5166d0b8214b6"
 ---
 

@@ -2,24 +2,25 @@
 title: "备份与恢复"
 description: "将正在运行的仓库复制到第二台机器，让第一台下线，然后把数据取回来。"
 category: "Tutorials"
+tags:
+  - backup
+  - migration
 subcategory: advanced
 order: 11
 language: zh
-sourceHash: "bacd754fbeb6fb99"
+sourceHash: "be0942ac234c472c"
 sourceCommit: "79c84ad044d5730b6d0a20aaf7b21f21914b6bda"
 ---
 
 import TutorialStep from '../../../components/tutorial/TutorialStep.astro';
+
+![Tutorial: Backup and restore](/assets/tutorials/tutorial-backup-restore.cast)
 
 # 备份与恢复
 
 你的应用已在生产环境运行。立即备份。`rdc` 会把整个仓库、应用本身、它的数据库、文件和配置，一并复制到第二台机器上；第一台机器消失后，再从那里把它取回来。
 
 本教程不只是讲讲而已，而是在两台真实机器上实际操作一遍,最后把数据读出来确认。
-
-## 观看教程
-
-![Tutorial: Backup and restore](/assets/tutorials/tutorial-backup-restore.cast)
 
 ## 三个步骤
 
