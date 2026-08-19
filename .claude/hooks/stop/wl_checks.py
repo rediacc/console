@@ -3269,9 +3269,7 @@ def run_stop(event, event_ok, worklist, hook_file):
     # v22 SOLO GRIND. Advisory tier (always=False) so the cadence can pause it:
     # it is a prompt to think, not a fact that must be answered this turn.
     try:
-        _n_mates = wl_liveness.live_teammate_transcripts(
-            event.get("cwd"), session_id=session_id
-        )
+        _n_mates = wl_liveness.live_teammate_transcripts(event.get("cwd"), session_id=session_id)
     except Exception:  # noqa: BLE001 -- a fact-gatherer must never wedge a stop
         _n_mates = 0
     if solo_grind_due(len(open_items), _n_mates, state_doc):
