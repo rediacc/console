@@ -1253,8 +1253,15 @@ def _selftest():
         wl = pathlib.Path(td) / "w.jsonl"
         ok1 = record_verdict(wl, "abcdefgh", "s1", "faithful", ["shortfall"], 13, 2, "why")
         ok2 = record_verdict(
-            wl, "abcdefgh", "s1", "block", ["shortfall", "umbrella"], 13, 2,
-            "d", extra={"n_umbrella": 2, "n_missing": 5},
+            wl,
+            "abcdefgh",
+            "s1",
+            "block",
+            ["shortfall", "umbrella"],
+            13,
+            2,
+            "d",
+            extra={"n_umbrella": 2, "n_missing": 5},
         )
         raw = verdict_log_path(wl, "abcdefgh").read_text(encoding="utf-8").strip().splitlines()
         rows = [json.loads(x) for x in raw]
@@ -1262,7 +1269,8 @@ def _selftest():
         check("the branch is named", [r["branch"] for r in rows] == ["faithful", "block"])
         check(
             "the row names the Tier-1 signals that fired",
-            rows[1]["signals"] == ["shortfall", "umbrella"], repr(rows[1]),
+            rows[1]["signals"] == ["shortfall", "umbrella"],
+            repr(rows[1]),
         )
         check(
             "the row carries a timestamp and the plan signature",
@@ -1272,22 +1280,30 @@ def _selftest():
             "a block records how much evidence survived verification",
             rows[1].get("n_missing") == 5 and rows[1].get("n_umbrella") == 2,
         )
-        check("records APPEND: the first row survives the second write",
-              rows[0]["branch"] == "faithful")
+        check(
+            "records APPEND: the first row survives the second write",
+            rows[0]["branch"] == "faithful",
+        )
         sp2 = state_path(wl, "abcdefgh")
         save_state(sp2, {"scanned": 7, "plan": "/p.md", "settled": {"s1": {"verdict": "faithful"}}})
         record_verdict(wl, "abcdefgh", "s1", "unevidenced", [], 13, 2)
         st3, forgot3 = load_state(sp2)
         check(
             "logging cannot corrupt the settled state",
-            st3["settled"].get("s1", {}).get("verdict") == "faithful" and not forgot3, repr(st3),
+            st3["settled"].get("s1", {}).get("verdict") == "faithful" and not forgot3,
+            repr(st3),
         )
-        check("the grep the suite uses matches the written bytes",
-              '"branch": "block"' in raw[1], raw[1][:90])
+        check(
+            "the grep the suite uses matches the written bytes",
+            '"branch": "block"' in raw[1],
+            raw[1][:90],
+        )
     check(
         "an unwritable log never raises",
-        record_verdict(pathlib.Path("/proc/nonexistent/w.jsonl"), "abcdefgh",
-                       "s1", "block", [], 1, 1) is False,
+        record_verdict(
+            pathlib.Path("/proc/nonexistent/w.jsonl"), "abcdefgh", "s1", "block", [], 1, 1
+        )
+        is False,
     )
 
     check(
