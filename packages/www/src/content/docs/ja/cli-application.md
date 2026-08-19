@@ -2,13 +2,11 @@
 title: "CLIアプリケーション"
 description: "プラットフォーム管理のためのRediaccコマンドラインインターフェースの完全ガイド"
 category: "Reference"
-tags:
-  - cli
 order: 2
 language: ja
 generated: true
 generatedFrom: packages/cli/src/i18n/locales/ja/cli.json
-sourceHash: "b6ae8408bdbd2fe7"
+sourceHash: "bb3ff8daf0bc61cb"
 ---
 
 <!-- THIS FILE IS AUTO-GENERATED. Do not edit manually. -->

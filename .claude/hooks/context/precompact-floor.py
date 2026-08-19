@@ -162,7 +162,9 @@ def main():
             # instruction. The full set is in the snapshot either way.
             shown = ids[:MAX_IDS]
             tail = (
-                "" if len(ids) <= MAX_IDS else " (+%d more in the snapshot below)" % (len(ids) - MAX_IDS)
+                ""
+                if len(ids) <= MAX_IDS
+                else " (+%d more in the snapshot below)" % (len(ids) - MAX_IDS)
             )
             parts.append(
                 "Open worklist ids that must appear in the summary verbatim: %s%s."
@@ -173,8 +175,7 @@ def main():
             "open items) is at %s." % snapshot.as_posix()
         )
         parts.append(
-            "Preserve these paths and ids exactly as written; they are how the "
-            "session resumes."
+            "Preserve these paths and ids exactly as written; they are how the session resumes."
         )
         sys.stdout.write(" ".join(parts) + "\n")
     except Exception as exc:  # noqa: BLE001 -- never break a compaction
