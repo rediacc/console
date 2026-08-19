@@ -173,21 +173,52 @@ interface TagInfo {
   pushedMs: number | null;
 }
 
+/** Why a listing failed, so "unknown" can name its own cause instead of guessing. */
+const lastFailure = new Map<string, string>();
+
 async function listHubTags(repo: string): Promise<TagInfo[] | null> {
   const token = await hubToken();
-  const headers: Record<string, string> = token ? { Authorization: `Bearer ${token}` } : {};
   const url = `https://hub.docker.com/v2/repositories/${repo}/tags?page_size=100&ordering=last_updated`;
-  try {
-    const r = await fetch(url, { headers });
-    if (!r.ok) return null; // includes 429: UNKNOWN, never a pass
-    const j = (await r.json()) as { results?: { name: string; last_updated?: string }[] };
-    return (j.results ?? []).map((t) => ({
-      name: t.name,
-      pushedMs: t.last_updated ? Date.parse(t.last_updated) : null,
-    }));
-  } catch {
-    return null;
+
+  // A REJECTED CREDENTIAL MUST NOT BE WORSE THAN NO CREDENTIAL.
+  //
+  // Measured on CI run 32200906643: the job received DOCKERHUB_TOKEN (the step env shows
+  // it masked), every one of the five images failed to list, and the same gate had listed
+  // them anonymously in earlier runs of this branch. So the token was being rejected and
+  // sending it unconditionally turned a working anonymous path into a total failure.
+  //
+  // A token still buys the higher rate limit when it is valid, so it is tried FIRST. On a
+  // 401 or 403 the request is retried without it; anything else, 429 included, stays a
+  // failure, because a rate limit is genuinely unknown and unknown is never a pass.
+  const attempts: { label: string; headers: Record<string, string> }[] = token
+    ? [
+        { label: 'token', headers: { Authorization: `Bearer ${token}` } },
+        { label: 'anonymous after the token was rejected', headers: {} },
+      ]
+    : [{ label: 'anonymous', headers: {} }];
+
+  let why = 'no attempt made';
+  for (const attempt of attempts) {
+    try {
+      const r = await fetch(url, { headers: attempt.headers });
+      if (r.ok) {
+        const j = (await r.json()) as { results?: { name: string; last_updated?: string }[] };
+        lastFailure.delete(repo);
+        return (j.results ?? []).map((t) => ({
+          name: t.name,
+          pushedMs: t.last_updated ? Date.parse(t.last_updated) : null,
+        }));
+      }
+      why = `HTTP ${r.status} (${attempt.label})`;
+      // Only a rejected credential is worth retrying without it.
+      if (r.status !== 401 && r.status !== 403) break;
+    } catch (e) {
+      why = `${(e as Error).name} (${attempt.label})`;
+      break;
+    }
   }
+  lastFailure.set(repo, why);
+  return null;
 }
 
 function selftest(): number {
@@ -261,7 +292,9 @@ async function main(): Promise<void> {
     if (repo === null) continue; // non-Hub registry (e.g. mcr): not listed here
     const tags = await listHubTags(repo);
     if (tags === null) {
-      unknown.push(`${p.image}:${p.tag} (${p.file}:${p.line}) — tags could not be listed`);
+      unknown.push(
+        `${p.image}:${p.tag} (${p.file}:${p.line}) - ${lastFailure.get(repo) ?? 'tags could not be listed'}`
+      );
       continue;
     }
     checked++;
