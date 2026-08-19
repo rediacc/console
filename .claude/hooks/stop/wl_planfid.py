@@ -511,9 +511,7 @@ def apply_planfid_verdict(pf, plan_text, mine, sig, lines, me8, item_re):
     raw_missing = pf.get("missing")
     miss = []
     if isinstance(raw_missing, list):
-        for x in raw_missing:
-            if matches_a_task(str(x), task_tokens):
-                miss.append(str(x))
+        miss = [str(x) for x in raw_missing if matches_a_task(str(x), task_tokens)]
     if not miss:
         # AN UMBRELLA CLAIM ALONE DOES NOT BLOCK, and this is deliberate. "This
         # item is a container label" is a judgement; "this plan task is tracked
