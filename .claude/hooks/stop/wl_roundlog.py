@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """wl_roundlog: replace a pr-babysit round log's STATUS block WITHOUT eating the
 history underneath it.
 

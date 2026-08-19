@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """wl_admit: turn a session's own admission of an unpreventable mistake into
 tracked prevention work.
 
