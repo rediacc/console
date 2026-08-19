@@ -111,6 +111,7 @@ import pathlib
 import re
 import sys
 import tempfile
+import time
 
 import wl_judge
 
@@ -428,6 +429,64 @@ def save_state(path, state):
         path.write_text(json.dumps(state, indent=1), encoding="utf-8")
 
 
+def verdict_log_path(worklist, session_id):
+    """The Tier-2 observation log. Beside the worklist, per session, append-only.
+
+    A SIDECAR rather than a field in the state file, and the choice is the point.
+    load_state discards a malformed state file WHOLE -- no field-wise salvage,
+    because a half-read decision file silently resurrects an answered question as
+    settled -- so an observation field living in there could take every settled
+    verdict and the scan offset down with it. Instrumentation must not be able to
+    damage the thing it observes. Nothing reads this file to make a decision, it
+    never round-trips through a read-modify-write, and it does not enlarge a file
+    that is rewritten on every stop. Same shape, same reason, as wl_admit Tier R.
+    """
+    sid = (session_id or "unknown")[:8]
+    return pathlib.Path(str(worklist) + ".planfid-verdicts-%s.jsonl" % sid)
+
+
+def record_verdict(
+    worklist, session_id, sig, branch, signals, n_tasks, n_items, detail="", extra=None
+):
+    """Append ONE Tier-2 outcome. Best effort, never raises, never blocks.
+
+    A MEASUREMENT, not a mechanism, and it exists because of a specific thing
+    nobody currently knows. Four clean corpus runs put the miss rate near 8%, all
+    of it on the shape whose items are NOT umbrella-shaped. Which BRANCH a miss
+    lands on was never established: it could not be reproduced in four further
+    attempts. That distinction decides how bad the hole is, because `faithful`
+    banks for the life of the plan while `unevidenced` expires the moment the
+    worklist grows. Building a remedy without counting that first is building
+    confidently for a failure whose shape nobody has seen.
+
+    `signals` is what makes this answer the real question instead of merely
+    counting outcomes: it records WHICH Tier-1 signals fired, so a week of live
+    sessions says whether misses cluster on the shortfall-only shape -- the one
+    a deterministic floor cannot reach by construction -- or spread evenly.
+
+    Read it back with:
+        python3 -c "import json,sys; [print(json.loads(l)) for l in open(sys.argv[1])]" \\
+            <worklist>.planfid-verdicts-<sid>.jsonl
+    """
+    row = {
+        "ts": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+        "sig": sig,
+        "branch": branch,
+        "signals": list(signals or []),
+        "tasks": n_tasks,
+        "items": n_items,
+        "detail": (detail or "")[:200],
+    }
+    if extra:
+        row.update(extra)
+    try:
+        with open(verdict_log_path(worklist, session_id), "a", encoding="utf-8") as f:
+            f.write(json.dumps(row) + "\n")
+        return True
+    except OSError:
+        return False
+
+
 def is_settled(state, sig, n_items):
     """Has this plan's question already been answered, for this many items?
 
@@ -507,32 +566,63 @@ def apply_planfid_verdict(pf, plan_text, mine, sig, lines, me8, item_re):
     # walled in. Matching against plan_tasks() closes it deterministically: the
     # same parser that decides whether to spend a call decides what counts as
     # evidence, so context and locked decisions cannot be cited as work.
-    task_tokens = [set(_norm(t).split()) for t in plan_tasks(plan_text)]
+    tasks = plan_tasks(plan_text)
+    task_tokens = [set(_norm(t).split()) for t in tasks]
     raw_missing = pf.get("missing")
     miss = []
     if isinstance(raw_missing, list):
         miss = [str(x) for x in raw_missing if matches_a_task(str(x), task_tokens)]
+    instruction = str(pf.get("instruction", ""))[:300]
     if not miss:
-        # AN UMBRELLA CLAIM ALONE DOES NOT BLOCK, and this is deliberate. "This
-        # item is a container label" is a judgement; "this plan task is tracked
-        # by nothing" is checkable, and it is also the actionable half -- the
-        # remedy is to add the missing items. Requiring the checkable half means
-        # a session whose every plan task IS tracked somewhere is never blocked
-        # over the wording of an item, which is the false positive that would
-        # teach people to route around this. Umbrella ids still ride the message,
-        # because naming the item that swallowed the work is what makes the
-        # instruction concrete.
-        return (
-            "settle",
-            "unevidenced",
-            "judge said unfaithful but named no plan TASK that nothing tracks "
-            "(%d umbrella id(s) survived verification)" % len(umb),
-        )
+        # A VERIFIED UMBRELLA ID BLOCKS WHEN THE DETERMINISTIC SHORTFALL ALSO
+        # FIRED, and this replaces the flat "an umbrella claim alone never
+        # blocks" rule that used to live here.
+        #
+        # THE OLD RULE WAS MEASURED AND IT WAS THE DEFECT. Twenty trials on the
+        # prose-umbrella shape: 17 blocks, 3 misses, and every one of the three
+        # misses came back `faithful=False` naming a REAL verified umbrella id
+        # with an EMPTY missing list. The judge was right all three times and
+        # this branch threw the detection away. That is a very different failure
+        # from a classifier that misses, and it was in the verification, not in
+        # the model.
+        #
+        # The old reasoning ("the checkable half is the actionable half") is
+        # still sound in isolation and simply does not generalise off the
+        # incident shape: on a plan whose items are prose rather than wave
+        # labels, the judge reliably points at the ITEM and does not enumerate
+        # the tasks.
+        #
+        # THE CONJUNCTION IS WHAT KEEPS THE FALSE-POSITIVE BOUND. `shortfall` is
+        # arithmetic, computed from the plan and the store with no model in the
+        # loop; the umbrella id is a model claim already checked against the real
+        # open items. Two independent sources, neither sufficient alone. Measured
+        # on a worklist that legitimately covers 15 plan tasks with 8 grouped
+        # items: 10 of 10 answers came back faithful with ZERO umbrella ids, so
+        # the rule added 0 false positives in 10 trials. N is small.
+        #
+        # prefilter() is REUSED rather than re-deriving the threshold, so the
+        # shortfall this consults can never drift from the one that decided to
+        # spend the call in the first place.
+        if not (umb and any(k == "shortfall" for k, _d in prefilter(tasks, mine))):
+            return (
+                "settle",
+                "unevidenced",
+                "judge said unfaithful but named no plan TASK that nothing tracks, "
+                "and there is no shortfall to corroborate the %d umbrella id(s)" % len(umb),
+            )
+        # No task list to show, so the arithmetic goes into the instruction the
+        # block already renders. Deliberately not a new field: reshaping
+        # V_PLANFID would mean editing the message module and its ARITY entry
+        # for information that fits where the reader is already looking.
+        instruction = (
+            "%d tracked item(s) against %d plan task(s), and the item(s) named above are "
+            "container labels rather than tasks. %s" % (len(mine), len(tasks), instruction)
+        )[:300]
     detail = "%d umbrella item(s), %d untracked plan task(s)" % (len(umb), len(miss))
     payload = {
         "umbrella": [(i, by_id.get(i, "")[:160]) for i in umb[:8]],
         "missing": [m[:200] for m in miss[:12]],
-        "instruction": str(pf.get("instruction", ""))[:300],
+        "instruction": instruction,
         "token": token,
         "me8": me8,
     }
@@ -1047,12 +1137,46 @@ def _selftest():
         item_re,
     )
     check("a DECISION bullet quoted as a task is not evidence", k == "settle", "%s %s" % (k, d))
+    # REWRITTEN 2026-08-19, and the rewrite is the point rather than a repair.
+    # This used to assert "an umbrella claim ALONE never blocks", full stop, and
+    # it correctly went red when that rule was replaced. The rule was replaced
+    # because it was MEASURED as the defect: on 20 trials of the prose-umbrella
+    # shape, all 3 misses returned a real verified umbrella id with an empty
+    # missing list, and this branch discarded a correct detection every time.
+    #
+    # The property worth keeping is the FALSE-POSITIVE BOUND, which is narrower
+    # than the old claim: an umbrella id alone still cannot block. It needs the
+    # deterministic shortfall alongside it, and DECOMPOSED_ITEMS has no
+    # shortfall, so this is the case that pins the conjunction from that side.
+    # The umbrella id MUST be one that exists in DECOMPOSED_ITEMS, or this control
+    # is vacuous and I proved that the hard way: the first version reused `good`,
+    # whose ids live only in INCIDENT_ITEMS, so verification dropped them, `umb`
+    # came back empty, and the branch settled no matter what the conjunction did.
+    # Mutating the shortfall test away did not turn it red. With a REAL id the
+    # control finally pins the half it claims to: verified umbrella, no shortfall,
+    # still no block.
     check(
-        "an umbrella claim ALONE never blocks (the checkable half is required)",
+        "an umbrella claim without a shortfall still never blocks",
         apply_planfid_verdict(
-            {**good, "missing": []}, REAL_PLAN, INCIDENT_ITEMS, sig, [], "e6500e92", item_re
+            {**good, "umbrella_ids": ["97e5b05d"], "missing": []},
+            REAL_PLAN,
+            DECOMPOSED_ITEMS,
+            sig,
+            [],
+            "e6500e92",
+            item_re,
         )[0]
         == "settle",
+    )
+    # And the other side: with the shortfall present, the same answer now blocks.
+    _k, _pp, _dd = apply_planfid_verdict(
+        {**good, "missing": []}, REAL_PLAN, INCIDENT_ITEMS, sig, [], "e6500e92", item_re
+    )
+    check("a verified umbrella WITH a shortfall now blocks", _k == "block", "%s %s" % (_k, _dd))
+    check(
+        "and its instruction carries the arithmetic",
+        _k == "block" and "tracked item(s) against" in _pp["instruction"],
+        _pp if _k == "block" else _k,
     )
     k, _p, _d = apply_planfid_verdict(
         {**good, "umbrella_ids": [], "missing": ["Callouts lose only their `source` line."]},
@@ -1123,6 +1247,49 @@ def _selftest():
     check(
         "the rendered item list carries ids and states", "#aaaa1111" in render_items(INCIDENT_ITEMS)
     )
+    # ---- Tier-2 instrumentation. It must record the BRANCH and the SIGNALS,
+    # and it must not be able to damage the state it sits beside.
+    with tempfile.TemporaryDirectory() as td:
+        wl = pathlib.Path(td) / "w.jsonl"
+        ok1 = record_verdict(wl, "abcdefgh", "s1", "faithful", ["shortfall"], 13, 2, "why")
+        ok2 = record_verdict(
+            wl, "abcdefgh", "s1", "block", ["shortfall", "umbrella"], 13, 2,
+            "d", extra={"n_umbrella": 2, "n_missing": 5},
+        )
+        raw = verdict_log_path(wl, "abcdefgh").read_text(encoding="utf-8").strip().splitlines()
+        rows = [json.loads(x) for x in raw]
+        check("a verdict is recorded", ok1 and ok2 and len(rows) == 2, repr(raw))
+        check("the branch is named", [r["branch"] for r in rows] == ["faithful", "block"])
+        check(
+            "the row names the Tier-1 signals that fired",
+            rows[1]["signals"] == ["shortfall", "umbrella"], repr(rows[1]),
+        )
+        check(
+            "the row carries a timestamp and the plan signature",
+            rows[0]["sig"] == "s1" and rows[0]["ts"].endswith("Z"),
+        )
+        check(
+            "a block records how much evidence survived verification",
+            rows[1].get("n_missing") == 5 and rows[1].get("n_umbrella") == 2,
+        )
+        check("records APPEND: the first row survives the second write",
+              rows[0]["branch"] == "faithful")
+        sp2 = state_path(wl, "abcdefgh")
+        save_state(sp2, {"scanned": 7, "plan": "/p.md", "settled": {"s1": {"verdict": "faithful"}}})
+        record_verdict(wl, "abcdefgh", "s1", "unevidenced", [], 13, 2)
+        st3, forgot3 = load_state(sp2)
+        check(
+            "logging cannot corrupt the settled state",
+            st3["settled"].get("s1", {}).get("verdict") == "faithful" and not forgot3, repr(st3),
+        )
+        check("the grep the suite uses matches the written bytes",
+              '"branch": "block"' in raw[1], raw[1][:90])
+    check(
+        "an unwritable log never raises",
+        record_verdict(pathlib.Path("/proc/nonexistent/w.jsonl"), "abcdefgh",
+                       "s1", "block", [], 1, 1) is False,
+    )
+
     check(
         "an empty item list still renders something readable", "tracks no items" in render_items([])
     )

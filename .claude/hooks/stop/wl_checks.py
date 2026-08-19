@@ -1907,8 +1907,67 @@ def _agent_state_because(astate, aage):
     if astate == "stale":
         base = "; your world signature moved since it was written"
         return " (%s)" % base.lstrip("; ") if aage is None else " (%d min old%s)" % (aage, base)
+    if astate == "waitled":
+        # Also age-irrelevant, and the cause has to be stated or the reader
+        # rewrites the same ordering: the document leads its '## Next action'
+        # with a wait, which hands the next session "sit and watch" as its
+        # instruction and survives compaction to say it again.
+        return (
+            " (its '## Next action' LEADS with a wait; a watch is a condition,"
+            " not the next action -- put the real work first)"
+        )
 
     return ""
+
+
+# ---- v22: THE SOLO GRIND ADVISORY -------------------------------------------
+# WHY (operator, 2026-08-19): "we're on an inefficient way for the remaining
+# items! Normally, for each wave we should use sub-agents that way we can go in
+# parallel and save context for the current session."
+#
+# The session it was said to had ~39 open items and was working them ONE AT A
+# TIME in its own context, with zero writer teammates, on waves whose file sets
+# were naturally disjoint. Nothing was wrong with any single decision; the
+# failure was only visible in aggregate, which is exactly the shape a human
+# notices and a per-stop check does not.
+#
+# ADVISORY, never blocking, and the asymmetry is deliberate. The DETECTABLE half
+# is a fact: this many open items, this many live teammates. The half that
+# decides whether delegation is right is a JUDGEMENT the hook cannot make --
+# items can be strictly sequential (the i18n cascade is), interdependent, or too
+# small to be worth a brief. Blocking on a fact that only sometimes implies the
+# remedy would teach sessions to route around it, and a session that spawns two
+# agents onto serial work has been made worse, not better.
+#
+# ONCE PER EPISODE, not once per stop. It re-arms only after the queue drops
+# back under the floor, so a long wave is asked once rather than nagged for
+# hours -- the same reason the no-op ladder needs a streak before it speaks.
+SOLO_GRIND_MIN_ITEMS = int(os.environ.get("WORKLIST_SOLO_MIN", "12"))
+
+
+def solo_grind_due(n_open, n_teammates, state_doc):
+    """True when a long solo queue deserves ONE mention. Mutates state_doc.
+
+    Returns False the moment any teammate is live: the session has already made
+    the call, and repeating the advice at that point is noise.
+    """
+    # int() at the boundary, NOT a bare comparison. live_teammate_transcripts
+    # returns None when it has no view to report, and a try/except around the
+    # CALL does not catch a bad RETURN: the first suite run after this landed
+    # crashed the whole hook with "'>' not supported between instances of
+    # 'NoneType' and 'int'". A fact-gatherer that cannot answer must read as
+    # "no teammates seen", which is the conservative direction here (it lets
+    # the advisory speak) rather than silently suppressing it.
+    n_teammates = int(n_teammates or 0)
+    n_open = int(n_open or 0)
+    if n_open < SOLO_GRIND_MIN_ITEMS or n_teammates > 0:
+        # Episode over. Re-arm so a queue that grows again is asked again.
+        state_doc.pop("solognd", None)
+        return False
+    if state_doc.get("solognd"):
+        return False
+    state_doc["solognd"] = n_open
+    return True
 
 
 # ---- CADENCE (operator-approved 2026-08-15, PLAN-stop-hook-cadence.md sec 3) --
@@ -1986,10 +2045,31 @@ def planfid_check(worklist, session_id, event, fold, lines, me8, last_msg, vadd)
         return lost
     pf, err = wl_judge.run_planfid(plan_text, wl_planfid.render_items(mine), last_msg or "")
     wl_planfid.save_state(sp, state)
+    signals = sorted({k for k, _d in hits})
     if err:
+        wl_planfid.record_verdict(
+            worklist, session_id, sig, "error", signals, len(tasks), len(mine), err[:160]
+        )
         return (M.V_PLANFID_DEGRADED % err[:160]) + lost
     kind, payload, detail = wl_planfid.apply_planfid_verdict(
         pf, plan_text, mine, sig, lines, me8, C.ITEM
+    )
+    # ONE call site for every non-error outcome, placed BEFORE the branching so a
+    # branch added later cannot be added without passing through it. The settle
+    # verdicts carry their own name (`faithful` / `deferred` / `unevidenced`),
+    # which is the distinction the whole log exists to count.
+    wl_planfid.record_verdict(
+        worklist,
+        session_id,
+        sig,
+        payload if kind == "settle" else kind,
+        signals,
+        len(tasks),
+        len(mine),
+        detail[:160] if isinstance(detail, str) else "",
+        extra=None
+        if kind != "block"
+        else {"n_umbrella": len(payload["umbrella"]), "n_missing": len(payload["missing"])},
     )
     if kind == "malformed":
         return (M.V_PLANFID_DEGRADED % ("the judge returned %s" % payload)[:160]) + lost
@@ -3181,7 +3261,30 @@ def run_stop(event, event_ok, worklist, hook_file):
     # statement of plan can substitute for.
     if astate == "stale" and _intent:
         astate = "ok"
-    if something_remains and astate in ("missing", "thin", "bloated", "aimless", "stale"):
+    # `waitled` is in this tuple and its absence was a real hole: the rule was
+    # enforced at WRITE time by the verb and invisible at READ time here, so a
+    # document that predates the rule, or one written by any path that bypasses
+    # the verb, would sail through the Stop check forever. A rule enforced on
+    # only one of two paths is a rule with a documented way around it.
+    # v22 SOLO GRIND. Advisory tier (always=False) so the cadence can pause it:
+    # it is a prompt to think, not a fact that must be answered this turn.
+    try:
+        _n_mates = wl_liveness.live_teammate_transcripts(
+            event.get("cwd"), session_id=session_id
+        )
+    except Exception:  # noqa: BLE001 -- a fact-gatherer must never wedge a stop
+        _n_mates = 0
+    if solo_grind_due(len(open_items), _n_mates, state_doc):
+        vadd("solo-grind", False, M.V_SOLO_GRIND % (len(open_items), SOLO_GRIND_MIN_ITEMS))
+
+    if something_remains and astate in (
+        "missing",
+        "thin",
+        "bloated",
+        "aimless",
+        "stale",
+        "waitled",
+    ):
         vadd(
             "agent-state",
             False,

@@ -961,7 +961,12 @@ plant_state 'You are picking up the ci-overhaul session driving PR #543 to green
 
 ## Next action
 
-Watch the run and diagnose from the job logs API.'
+Diagnose the red from its complete failed-step log, then fix the gate it names.'
+# The lead used to be "Watch the run and diagnose from the job logs API", which the
+# v21 waitled rule now refuses. Reworded rather than exempted, and worth noting: this
+# fixture predates the rule by months, so the wait-led habit it encodes was in the
+# repo's own suite before any one session picked it up. The case still tests what it
+# always tested, that a document WITH a Next action section is not aimless.
 check "the same document WITH a Next action section is fine" allow ""
 # Case-insensitivity probed as a UNIT assertion rather than a third stop:
 # three consecutive stops on an unmoved world trip the stuck detector, which
@@ -974,6 +979,73 @@ sys.exit(0 if v == 'ok' else 1)"; then
     pass "the Next action heading is matched case-insensitively"
 else
     fail "a shouted '## NEXT ACTION' heading was not recognised"
+fi
+
+# ---- v21 WAITLED: '## Next action' may not LEAD with a wait -----------------
+# The root cause of a wave spent watching CI while dozens of open items sat
+# untouched. Every instrument was correctly silent: the no-op wake ladder needs
+# a wake where NOTHING moved, and the session moved something every time. What
+# carried the inversion across compaction was STATE.md itself, whose next action
+# opened with "1. Watch <worker>", so the recovered session did CI first and
+# then wrote the same instruction again.
+# Both directions, because a rule that only ever fires is as useless as one that
+# never does: the wait must be refused in the LEAD and allowed further down.
+_shape() { python3 -c "
+import sys; sys.path.insert(0, '$(dirname "$HOOK")')
+import wl_store as S
+print(S.agent_state_shape('x'*300 + chr(10)*2 + '## Next action' + chr(10)*2 + sys.argv[1])[0])" "$1"; }
+
+for lead in \
+    "1. Watch \`byvmf1xid\`; re-check with gh api." \
+    "Wait for the run to finish, then review." \
+    "- Watch CI run 32259770610" \
+    "1) Monitor the watch, 2) resume" \
+    "Keep watching the run." \
+    "1. Re-arm the watch on the run." \
+    "1. Await green, then review."; do
+    if [ "$(_shape "$lead")" = "waitled" ]; then
+        pass "waitled: refused a next action leading with '${lead:0:28}...'"
+    else
+        fail "waitled: a wait-led next action was ACCEPTED: $lead"
+    fi
+done
+
+# CONTROLS. Each is a document that must still pass, so the rule cannot be
+# satisfied by rejecting everything. The last two matter most: a substring match
+# would reject both, and rejecting a correct document is how a check gets routed
+# around rather than obeyed.
+for ok_lead in \
+    "1. Wire A4 into Navigation.tsx.\n2. Watch CI 322; on green, review." \
+    "1. Finish #c84a8a4b, CI is watched by bg byvmf1xid." \
+    "1. Read the watchdog classifier verdict and fix the gate." \
+    "1. Document the wait semantics in RULES.md."; do
+    if [ "$(_shape "$(printf '%b' "$ok_lead")")" = "ok" ]; then
+        pass "waitled CONTROL: work-led next action still passes"
+    else
+        fail "waitled CONTROL: a legitimate next action was refused: $ok_lead"
+    fi
+done
+
+# ---- v22 SOLO GRIND: a long queue worked alone gets asked ONCE --------------
+# Advisory, never blocking. The controls that matter are the SILENT ones: it must
+# not fire twice in an episode, must not fire while a teammate is live, and must
+# re-arm only after the queue actually drains. A nag would be routed around.
+if python3 -c "
+import sys; sys.path.insert(0, '$(dirname "$HOOK")')
+import wl_checks as C
+d = {}
+ok = C.solo_grind_due(39, 0, d) is True            # fires: long queue, working alone
+ok = ok and C.solo_grind_due(39, 0, d) is False    # once per episode, not per stop
+ok = ok and C.solo_grind_due(39, 2, d) is False    # silent once a teammate is live
+ok = ok and C.solo_grind_due(3, 0, d) is False     # queue drained: episode ends
+ok = ok and C.solo_grind_due(20, 0, d) is True     # and it re-arms when it climbs back
+ok = ok and C.solo_grind_due(11, 0, {}) is False   # below the floor it never speaks
+ok = ok and C.solo_grind_due(39, None, {}) is True  # a fact-gatherer that returns None
+ok = ok and C.solo_grind_due(None, 0, {}) is False  # crashed the whole hook once
+sys.exit(0 if ok else 1)"; then
+    pass "solo-grind fires once per episode, stays silent with a teammate live"
+else
+    fail "solo-grind advisory logic is wrong"
 fi
 
 echo "== 29b. --state REFUSES a bad body instead of accepting then blocking =="
@@ -1425,7 +1497,7 @@ BACKUP="${BACKUP%.md}.agentstate.prev.deadbeef.md"
 VICTIM='This is the document a SECOND session wrote and must be able to get back. It carries the one fact that would otherwise die with it: PR #547 merged to main at 01:30Z, so the nightly is now watchable on main rather than on the branch.
 
 ## Next action
-Watch the scheduled nightly run on main and diagnose any red from its full log.'
+Diagnose any red in the nightly from its full log; the run itself is scheduled on main.'
 printf '%s' "$VICTIM" |
     TMPDIR="$BASE/tmp" CLAUDE_PROJECT_DIR="$BASE/proj" WORKLIST_AGENT_BRANCH=agenttest \
         python3 "$HOOK" --state deadbeef >/dev/null 2>&1
@@ -3296,6 +3368,10 @@ ARITY = {
     "V_AGENT_STILL_ABSENT": ("me",),
     "CLI_STATE_REFUSED": ("v", "d", 250, 4000),
     "N_AGENT_PEERS": ("rows",), "CLI_STATE_WHOLE_DOC": ("m",),
+    # One substitution: the offending first step, quoted back so the refusal names
+    # what it saw rather than restating the rule in the abstract.
+    "CLI_STATE_WAIT_LED": ("lead",),
+    "V_SOLO_GRIND": (39, 12),
     "N_UNREAD_REPORTS": (2, "b", "rows", "p", "p", "m"),
     "CLI_REAP_USAGE": (), "CLI_REAP_UNKNOWN": ("t", "l"),
     "N_ROSTER_STALE": (20, 1, 19, "p", "m"),
@@ -11343,6 +11419,28 @@ if grep -qF "plan-fidelity check could not run" "${WL%.md}.state-deadbeef.json" 
     pass "220f the failure is queued for the session, not swallowed"
 else
     fail "220f: a failed plan-fidelity run left no trace at all"
+fi
+
+# ---- 220h. the Tier-2 verdict log ------------------------------------------
+# The wl_checks call sites are INVISIBLE to wl_planfid's own --selftest, so this
+# is their only coverage: delete either one and the module controls stay green.
+# The error branch specifically, because a judge that could not be reached is
+# exactly the outcome nobody currently counts.
+echo "== 220h. a failed Tier-2 call is RECORDED, not just reported =="
+setup
+say "seeded the round"
+brief_now
+plant_plan
+reqcli --add deadbeef 'www round 4 Wave A' >/dev/null
+reqcli --add deadbeef 'www round 4 Waves B-D' >/dev/null
+printf '#!/bin/bash\nexit 3\n' >"$BASE/binonly/claude"
+chmod +x "$BASE/binonly/claude"
+runj >/dev/null
+VLOG="$WL.planfid-verdicts-deadbeef.jsonl"
+if [[ -f "$VLOG" ]] && grep -q '"branch": "error"' "$VLOG"; then
+    pass "220h an unreachable judge leaves an error row in the verdict log"
+else
+    fail "220h no error row: $(head -c 200 "$VLOG" 2>&1)"
 fi
 
 echo

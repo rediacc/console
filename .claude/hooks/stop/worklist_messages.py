@@ -551,8 +551,46 @@ N_CL_FOREIGN_DRIFT = (
 
 CLI_STATE_REFUSED = (
     "STATE REFUSED (%s: %s). Limits for YOUR SECTION: %d-%d chars and a "
-    "'## Next action' section. Nothing was written; the previous STATE.md is "
-    "untouched, including every other session's section.\n"
+    "'## Next action' section whose FIRST step is real work rather than a wait. "
+    "Nothing was written; the previous STATE.md is untouched, including every "
+    "other session's section.\n"
+)
+
+# The waitled refusal, which needs to teach rather than merely deny: the habit it
+# breaks is invisible from inside a single session and only shows up across a
+# compaction boundary.
+V_SOLO_GRIND = (
+    "%s OPEN ITEMS AND NO WRITER TEAMMATE. This is not a violation and it does not\n"
+    "block; it is the one thing a per-stop check cannot see and a human watching\n"
+    "the whole wave can. Working a long queue one item at a time in this context\n"
+    "spends the scarcest resource you have on work that may parallelise.\n"
+    "\n"
+    "Ask it once, then carry on either way:\n"
+    "  - Do the remaining items split into groups with DISJOINT file sets?\n"
+    "  - If yes, two writer sub-agents (repo rule 4 caps it at two) with the exact\n"
+    "    files each one owns stated verbatim, and the shared files reserved to you.\n"
+    "  - If no, say so and keep going. Serial work is serial: an i18n cascade, a\n"
+    "    migration whose steps depend on each other, or a queue small enough that\n"
+    "    briefing costs more than doing. Splitting those makes it worse.\n"
+    "\n"
+    "Asked ONCE per episode, not per stop; it re-arms only if the queue drops\n"
+    "below %s and climbs back."
+)
+
+CLI_STATE_WAIT_LED = (
+    "STATE REFUSED (waitled): the first step under '## Next action' is\n"
+    "    %s\n"
+    "A background watch is a CONDITION you are under, not the next action. It is\n"
+    "already armed and it will wake somebody by itself; your open items will not.\n"
+    "Leading with it hands the NEXT session the instruction to sit and wait, and\n"
+    "that session then writes the same thing again -- which is how one session\n"
+    "spent a wave watching CI while dozens of open items went untouched, once per\n"
+    "compaction, with every instrument correctly silent because it was busy.\n"
+    "\n"
+    "Put the substantive work first and name the wait as a condition:\n"
+    "    1. <the next real item, with its id>\n"
+    "    2. CI run <id> is in flight on worker <bg-id>; on green, <what follows>.\n"
+    "Nothing was written; the previous STATE.md is untouched.\n"
 )
 
 # The refusal an in-flight session running the pre-section instructions will
