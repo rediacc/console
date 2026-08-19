@@ -196,9 +196,9 @@ def main() -> int:
     paths = sorted(glob.glob(APPS_GLOB, recursive=True))
     if not paths:
         print(
-            f"FAIL: required subject missing -- no compose files under "
-            f".ci/tutorials/apps/. A headroom check with nothing to check asserts "
-            f"nothing and must not report success.",
+            "FAIL: required subject missing -- no compose files under "
+            ".ci/tutorials/apps/. A headroom check with nothing to check asserts "
+            "nothing and must not report success.",
             file=sys.stderr,
         )
         return 1
