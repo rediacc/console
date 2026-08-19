@@ -93,6 +93,7 @@
     "check:ci-secret-reachability": ".ci/scripts/quality/check_secret_reachability.py",
     "check:ci-scope-completeness": ".ci/scripts/quality/check_scope_completeness.py",
     "check:ci-hooks-resolvable": ".ci/scripts/quality/check_hooks_resolvable.py",
+    "check:ci-dockerfile-mirror-resilience": ".ci/scripts/quality/check_dockerfile_mirror_resilience.py",
     "check:ci-workflow-submodule-deps": ".ci/scripts/quality/check_workflow_submodule_deps.py",
     "check:ci-python-gate-deps": ".ci/scripts/quality/check_python_gate_deps.py",
     "check:ci-tutorial-cli-validity": ".ci/scripts/quality/check_tutorial_cli_validity.py",
