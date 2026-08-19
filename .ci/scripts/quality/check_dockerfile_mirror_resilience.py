@@ -341,14 +341,15 @@ def selftest():
     # delta that added this file. Each shape below is the SAME defect written a different
     # legal way, and every one must still be caught.
     for label, test in (
-        ("[[ $i -eq N ]]", '[[ $i -eq 5 ]]'),
+        ("[[ $i -eq N ]]", "[[ $i -eq 5 ]]"),
         ('[[ "$i" == "N" ]]', '[[ "$i" == "5" ]]'),
         ('[ "$i" -eq "N" ]', '[ "$i" -eq "5" ]'),
     ):
         variant = (
             "RUN sed -i -e 's|http://archive.ubuntu.com/ubuntu|http://azure.archive.ubuntu.com/ubuntu|g' /etc/apt/sources.list \\\n"
             "    && for i in 1 2 3 4 5; do apt-get update && break; \\\n"
-            "        if %s; then \\\n" % test
+            "        if %s; then \\\n"
+            % test
             + "            sed -i -e 's|http://azure.archive.ubuntu.com/ubuntu|http://archive.ubuntu.com/ubuntu|g' /etc/apt/sources.list; \\\n"
             "        fi; \\\n"
             "    done\n"

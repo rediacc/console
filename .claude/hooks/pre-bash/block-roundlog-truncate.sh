@@ -69,7 +69,10 @@ echo "$CMD" | grep -qE "[^>&2]>[[:space:]]*[^>|&[:space:]]*$RL" && TRUNCATING=1
 # /backup/` names the log as a SOURCE, which is a pure read, and blocking it contradicted
 # this file's own "reads are untouched" guarantee two paragraphs up. Backing the log up is
 # the single most useful thing a session can do with it, and this refused it.
-echo "$CMD" | grep -qE "(^|[[:space:];|&])cp[[:space:]]$SEG$RL[[:space:]]*($|[;|&])" && TRUNCATING=1
+# `${RL}` braced, not `$RL`: a `[` directly after a bare name reads as an array subscript
+# to shellcheck (SC1087, an error not a warning), and here the bracket opens a character
+# class in the regex rather than an index.
+echo "$CMD" | grep -qE "(^|[[:space:];|&])cp[[:space:]]${SEG}${RL}[[:space:]]*($|[;|&])" && TRUNCATING=1
 # mv and truncate stay position-independent, and NOT by oversight: `mv <log> elsewhere`
 # reads as a source too, but it REMOVES the log from its path, so unlike cp it is
 # destructive in exactly the way this guard exists to catch.
