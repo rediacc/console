@@ -49,17 +49,36 @@ import sys
 # the DESTINATION host, which is what has to vary for a fallback to exist.
 REWRITE = re.compile(r"s\|https?://[^|]*?ubuntu[^|]*?\|https?://([a-z0-9.-]+)/", re.IGNORECASE)
 
-# Anti-vacuity floor. This repo has at least one Dockerfile; a scan finding none
-# means the glob broke, not that the tree is clean.
-MIN_DOCKERFILES = 1
+# Anti-vacuity floor. This repo has hundreds of tracked Dockerfiles and shell
+# scripts; a scan finding none means the glob broke, not that the tree is clean.
+MIN_SCANNED = 50
 
 
-def tracked_dockerfiles(root):
-    """Every tracked Dockerfile. Uses git so an untracked scratch file cannot
-    change the verdict in either direction."""
+def tracked_files(root):
+    """Every tracked Dockerfile AND shell script.
+
+    SHELL SCRIPTS WERE ADDED THE HARD WAY, hours after the Dockerfile-only
+    version shipped. The same single-mirror rewrite lived in
+    `.ci/scripts/test/test-install-methods.sh`, which drives apt inside
+    ubuntu:22.04 and ubuntu:24.04 containers, and it took down `Validate
+    Promotion` in the very next CI run while this gate reported the tree clean.
+    A gate scoped to the file where a defect was FOUND, rather than to the shape
+    of the defect, sweeps the instance and misses the class.
+
+    Uses git so an untracked scratch file cannot change the verdict either way.
+    """
     try:
         out = subprocess.run(
-            ["git", "-C", str(root), "ls-files", "*Dockerfile", "*Dockerfile.*", "*.dockerfile"],
+            [
+                "git",
+                "-C",
+                str(root),
+                "ls-files",
+                "*Dockerfile",
+                "*Dockerfile.*",
+                "*.dockerfile",
+                "*.sh",
+            ],
             capture_output=True,
             text=True,
             check=False,
@@ -96,7 +115,14 @@ def offenders(text):
          - the switch rewrites to the same host it is switching away from.
     """
     bad = []
-    for block in run_blocks(text):
+    blocks = run_blocks(text)
+    if not blocks and REWRITE.search(text):
+        # A shell script, not a Dockerfile: there is no RUN instruction to scope
+        # by, so the whole file is one scope. Coarser than the Dockerfile path on
+        # purpose, and still decisive for the shape that matters: a file that
+        # rewrites apt to exactly one host names one destination and nothing else.
+        blocks = [re.sub(r"\\\s*\n", " ", text)]
+    for block in blocks:
         hosts = {m.group(1).lower() for m in REWRITE.finditer(block)}
         if not hosts:
             continue  # this block does not rewrite apt sources at all
@@ -342,11 +368,12 @@ def main(argv):
         print("REFUSING to report on the tree: this gate's own controls failed.", file=sys.stderr)
         return 1
 
-    files = tracked_dockerfiles(root)
-    if len(files) < MIN_DOCKERFILES:
+    files = tracked_files(root)
+    if len(files) < MIN_SCANNED:
         print(
-            "found %d tracked Dockerfile(s), floor %d. The scan is broken, not the tree: "
-            "a gate that inspects nothing reports success forever." % (len(files), MIN_DOCKERFILES),
+            "found %d tracked Dockerfile(s) and shell script(s), floor %d. The scan is broken, "
+            "not the tree: "
+            "a gate that inspects nothing reports success forever." % (len(files), MIN_SCANNED),
             file=sys.stderr,
         )
         return 1
@@ -378,7 +405,8 @@ def main(argv):
         return 1
 
     print(
-        "%d Dockerfile(s) scanned; no apt source is pinned to a single mirror "
+        "%d Dockerfile(s) and shell script(s) scanned; no apt source is pinned to a "
+        "single mirror "
         "(controls fired in both directions)" % len(files)
     )
     return 0
