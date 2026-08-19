@@ -561,6 +561,25 @@ export const GATES: readonly GateSpec[] = [
     },
   },
   {
+    // An apt source rewritten to ONE mirror must carry a fallback to another.
+    // Born 2026-08-19, when azure.archive.ubuntu.com refused connections for
+    // ninety minutes and took down four consecutive CI attempts: every apt
+    // source had been rewritten to that single host, so the surrounding
+    // five-attempt retry loop hammered the same dead mirror five times.
+    // Existing checks counted retry ATTEMPTS and never asked whether the
+    // attempts could reach a different SOURCE, which is why nothing caught it.
+    id: 'check:ci-dockerfile-mirror-resilience',
+    run: 'npm run check:ci-dockerfile-mirror-resilience',
+    gate: true,
+    leaves: ['.ci/scripts/quality/check_dockerfile_mirror_resilience.py'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-static',
+      step: 'Dockerfile mirror resilience',
+    },
+  },
+  {
     id: 'check:ci-workflow-submodule-deps',
     run: 'npm run check:ci-workflow-submodule-deps',
     gate: true,
