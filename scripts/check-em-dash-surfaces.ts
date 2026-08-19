@@ -75,6 +75,19 @@ const SURFACES: readonly Surface[] = [
   { dir: '.claude/commands', kind: 'markdown', exts: ['.md'], minFiles: 3 },
   { dir: '.claude/agents', kind: 'markdown', exts: ['.md'], minFiles: 8 },
   { dir: '.claude/hooks', kind: 'source', exts: ['.sh', '.py'], minFiles: 20 },
+  // packages/cli. The first two join at ZERO (measured clean when they were
+  // added); the third rides the baseline, because 93 percent of its findings are
+  // prose inside JSDoc where the dash often does real syntactic work, and a
+  // mechanical pass over that changes documented meaning.
+  //
+  // THE NESTING IS LOAD-BEARING. `packages/cli/src/i18n/locales` sits INSIDE
+  // `packages/cli/src`, and they stay disjoint only because their extension sets
+  // do not intersect. Adding '.json' to the source surface would count every
+  // catalog finding twice. `nestedSurfaceOverlap()` below turns that from a
+  // comment into a check.
+  { dir: 'packages/cli/src/i18n/locales', kind: 'catalog', exts: ['.json'], minFiles: 10 },
+  { dir: 'packages/cli/scripts', kind: 'source', exts: ['.ts'], minFiles: 8 },
+  { dir: 'packages/cli/src', kind: 'source', exts: ['.ts'], minFiles: 300 },
 ];
 
 /**
@@ -153,7 +166,41 @@ const GENERATED_CATALOG_DIRS = ['client', 'client-route'];
  * real state rather than an aspiration. `packages/www` is not and cannot be on this list:
  * it joined with 1,924 known findings.
  */
-const ZERO_SURFACES: readonly string[] = ['.claude/commands', '.claude/hooks', '.claude/agents'];
+/**
+ * Surfaces that CONTAIN another surface, paired with the one they contain.
+ *
+ * Two surfaces may legitimately nest (packages/cli/src holds
+ * packages/cli/src/i18n/locales) as long as their extension sets are disjoint,
+ * because then no file belongs to both and no finding is counted twice. This
+ * returns every pair where that has stopped being true, so the invariant is a
+ * check rather than a comment somebody edits past.
+ */
+export const nestedSurfaceOverlap = (surfaces: readonly Surface[]): string[] => {
+  const bad: string[] = [];
+  for (const outer of surfaces) {
+    for (const inner of surfaces) {
+      if (outer === inner || !inner.dir.startsWith(`${outer.dir}/`)) continue;
+      const shared = inner.exts.filter((e) => outer.exts.includes(e));
+      if (shared.length > 0) {
+        bad.push(`${inner.dir} nests in ${outer.dir} and shares ${shared.join(',')}`);
+      }
+    }
+  }
+  return bad;
+};
+
+const ZERO_SURFACES: readonly string[] = [
+  '.claude/commands',
+  '.claude/hooks',
+  '.claude/agents',
+  // Both measured clean when they joined, and both are reader-facing:
+  // the locales are what `rdc --help` prints. Listing them here is what
+  // makes 'joins at zero' a RULE rather than a fact about one afternoon,
+  // because --write-baseline refuses to bake in a finding from a zero
+  // surface.
+  'packages/cli/src/i18n/locales',
+  'packages/cli/scripts',
+];
 
 /** Is this finding's file inside a surface that is supposed to be at zero? */
 const inZeroSurface = (file: string): boolean =>
@@ -446,6 +493,30 @@ function selftest(): boolean {
     'every zero surface is actually a configured surface',
     ZERO_SURFACES.every((z) => SURFACES.some((s) => s.dir === z)),
     `zero surfaces ${JSON.stringify(ZERO_SURFACES)} vs configured ${JSON.stringify(SURFACES.map((s) => s.dir))}`
+  );
+  // THE NESTING INVARIANT, both directions. packages/cli/src/i18n/locales lives
+  // inside packages/cli/src and they are disjoint only by extension, which is one
+  // character away from double-counting every catalog finding.
+  check(
+    'the live surface table has no nested surface sharing an extension',
+    nestedSurfaceOverlap(SURFACES).length === 0,
+    JSON.stringify(nestedSurfaceOverlap(SURFACES))
+  );
+  check(
+    'CONTROL: a nested surface that DOES share an extension is caught',
+    nestedSurfaceOverlap([
+      { dir: 'a/b', kind: 'source', exts: ['.ts', '.json'], minFiles: 1 },
+      { dir: 'a/b/c', kind: 'catalog', exts: ['.json'], minFiles: 1 },
+    ]).length === 1,
+    'without this the invariant above could be vacuously true'
+  );
+  check(
+    'CONTROL: nesting with disjoint extensions is NOT flagged',
+    nestedSurfaceOverlap([
+      { dir: 'a/b', kind: 'source', exts: ['.ts'], minFiles: 1 },
+      { dir: 'a/b/c', kind: 'catalog', exts: ['.json'], minFiles: 1 },
+    ]).length === 0,
+    'the legitimate shape must stay legal, or the invariant blocks real work'
   );
   check(
     'every configured surface carries a floor above zero',
