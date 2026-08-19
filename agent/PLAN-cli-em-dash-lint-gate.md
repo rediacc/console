@@ -1,7 +1,7 @@
 # PLAN: Bring packages/cli under the em dash gate
 Status: executing
 Owner: e6500e92
-Updated: 2026-08-18
+Updated: 2026-08-19
 
 Scope: extend `scripts/check-em-dash-surfaces.ts` to cover `packages/cli`, drain the
 reader-facing half to zero, baseline the rest, and close one hole in the existing gate that
@@ -216,6 +216,38 @@ Why the `packages/cli/src` residue is baselined: 951 ids across 476 files, 93 pe
 prose inside JSDoc where the dash is often doing real syntactic work in a technical
 explanation. Rewriting that is not a mechanical edit, and a bad pass changes documented
 meaning. It shrinks over time under the existing shrink-only rule.
+
+## 4b. A SECOND hole, found 2026-08-19 while the gate was green
+
+Steps 1 to 4 are committed. Before step 6 runs, one thing changed in the gate this plan
+edits, and it changes how the new surfaces must be tested.
+
+`test-gate-paths-exist.sh` failed the Security lane on this gate:
+
+```
+TIER-B scripts/check-em-dash-surfaces.ts:432: packages/www/src/x.tsx
+```
+
+That literal was a fixture inside the zero-surface selftest. `inZeroSurface` is pure string
+comparison and never touches the filesystem, so the fixture names nothing on disk ON
+PURPOSE, and the dead-path detector cannot tell that apart from a real constant pointing at
+a file somebody deleted. The detector is right to be strict: it exists because gates
+silently produced empty globs and empty file lists when their paths moved underneath them.
+
+Fixed by deriving both fixtures from `ZERO_SURFACES` and `SURFACES` at runtime, which is
+the form that detector documents as ignored, and is also the better test: a derived fixture
+keeps exercising the real configuration instead of drifting the moment either list is
+edited. The assertion was re-proved with a planted control (`startsWith(dir)` without the
+trailing slash), which makes it fail as it should, and the file was restored byte-identical
+afterwards.
+
+**Consequence for steps 6 to 8, and the reason this is recorded here rather than in a
+commit message.** The three surfaces this plan adds name REAL directories, so they are not
+affected. But section 7's new selftest controls must NOT introduce synthetic path literals
+for the `packages/cli` surfaces the way the www fixture did. Any fixture path that does not
+exist on disk has to be assembled at runtime, or the Security lane goes red on a gate that
+is otherwise correct, and the failure will look like it belongs to this plan's change
+rather than to its test fixtures.
 
 ## 5. The hole this plan must close first
 
