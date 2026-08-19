@@ -23,6 +23,7 @@ import wl_core as C
 import wl_email
 import wl_judge
 import wl_liveness
+import wl_planfid
 import wl_reggate
 import wl_report
 import wl_requests
@@ -498,7 +499,13 @@ CITE_RE = re.compile(
     # program's surface: a citation check that looked strict was unsatisfiable
     # for exactly the paths it most needed to accept. Caught by the check firing
     # on a tick of mine that cited .ci/scripts/autopilot/autopilot-gate.sh.
-    r"(?<![\w./-])(\.?[\w][\w./-]*\.(?:py|ts|tsx|js|cjs|mjs|sh|json|md|ya?ml|go|toml))"
+    # `astro` and `css` added 2026-08-19. They were missing, and the omission
+    # was not cosmetic: 107 tracked .astro files and 19 .css files could not be
+    # cited AT ALL, and .astro is the primary component format in packages/www.
+    # So a session doing www work could not cite the files it had just changed,
+    # which pushes it toward citing something unrelated or not ticking. Found by
+    # a tick of mine being refused while citing main.css and BaseLayout.astro.
+    r"(?<![\w./-])(\.?[\w][\w./-]*\.(?:py|ts|tsx|js|cjs|mjs|sh|json|md|ya?ml|go|toml|astro|css))"
     r":(\d+)(?:-\d+)?\b"
 )
 
@@ -1921,6 +1928,102 @@ CADENCE_MAX_PAUSES = int(os.environ.get("WORKLIST_CADENCE_MAX", "3"))
 JUDGE_TIER_KEYS = frozenset(
     {"unjustified", "defer-expired", "completion", "undefaulted", "no-remaining"}
 )
+
+
+def planfid_check(worklist, session_id, event, fold, lines, me8, last_msg, vadd):
+    """v20 PLAN FIDELITY (see wl_planfid.py). Returns a degraded-note string.
+
+    Appends at most ONE violation, keyed 'plan-fidelity', in the ALWAYS tier.
+
+    IT LIVES INSIDE THE BATTERY, not after it, and that placement is the whole
+    reason it can see anything. The state it detects -- an approved plan tracked
+    as two umbrella items -- ALWAYS coexists with open items, and open items make
+    the battery emit long before the admission detector or the judge is reached.
+    A plan-fidelity check placed beside those two would have run only on a clean
+    board, which is precisely the board this defect never produces. Measured
+    against the 2026-08-19 incident: the session held two open items for the
+    whole episode, so a post-battery check would have fired zero times.
+
+    ALWAYS tier, because its text costs a model call to compute. Rotating it away
+    would spend the call and swallow the answer, which is the same argument the
+    tier comment above makes for latched one-shots.
+
+    Every failure DEGRADES to a queued note rather than blocking. See wl_planfid's
+    header for why this one does not share wl_judge's no-escape-hatch contract.
+    """
+    sp = wl_planfid.state_path(worklist, session_id)
+    state, forgot = wl_planfid.load_state(sp)
+    # ONE line, never silence, on every path out of here -- the same fail-safe
+    # contract wl_reggate states for its own marker. The first draft returned it
+    # only from the blocking branch, which meant a corrupt marker on a stop with
+    # no plan (the common shape) forgot every settled verdict and said nothing.
+    lost = " [plan-fidelity marker was corrupt; settled verdicts forgotten]" if forgot else ""
+    plan_path, scanned = wl_planfid.scan_plan_exit(
+        event.get("transcript_path", ""), int(state.get("scanned") or 0)
+    )
+    if plan_path:
+        state["plan"] = plan_path
+    state["scanned"] = max(int(scanned or 0), 0)
+    plan_text = wl_planfid.read_plan(state.get("plan") or "")
+    if not plan_text:
+        # No approved plan in this session, which is the common case and must
+        # stay free: no model call, no note, no violation.
+        wl_planfid.save_state(sp, state)
+        return lost
+    tasks = wl_planfid.plan_tasks(plan_text)
+    mine = [
+        (r["id"], r["state"], S.brief_text(r, cap=220))
+        for r in fold.items
+        if C.owned_by_me(r.get("owner"), session_id)
+    ]
+    sig = wl_planfid.plan_sig(state["plan"], plan_text)
+    if wl_planfid.is_settled(state, sig, len(mine)):
+        wl_planfid.save_state(sp, state)
+        return lost
+    hits = wl_planfid.prefilter(tasks, mine)
+    if not hits:
+        wl_planfid.save_state(sp, state)
+        return lost
+    pf, err = wl_judge.run_planfid(plan_text, wl_planfid.render_items(mine), last_msg or "")
+    wl_planfid.save_state(sp, state)
+    if err:
+        return (M.V_PLANFID_DEGRADED % err[:160]) + lost
+    kind, payload, detail = wl_planfid.apply_planfid_verdict(
+        pf, plan_text, mine, sig, lines, me8, C.ITEM
+    )
+    if kind == "malformed":
+        return (M.V_PLANFID_DEGRADED % ("the judge returned %s" % payload)[:160]) + lost
+    if kind == "settle":
+        # STICKY by plan signature, never by item set: a settled plan is not
+        # re-asked, and editing the plan reopens the question. Keying on the
+        # items instead would re-pay the call on every item a correct
+        # decomposition adds.
+        state.setdefault("settled", {})[sig] = {
+            "verdict": payload,
+            # Only meaningful for `unevidenced`; see wl_planfid.is_settled for
+            # why that verdict expires when the worklist grows and the other
+            # two do not.
+            "items": len(mine),
+            "detail": detail[:200],
+            "at": C.stamp_now(),
+        }
+        wl_planfid.save_state(sp, state)
+        return lost
+    vadd(
+        "plan-fidelity",
+        True,
+        M.V_PLANFID
+        % (
+            state["plan"],
+            "\n".join("    #%s %s" % (i, t) for i, t in payload["umbrella"]) or "    (none named)",
+            "\n".join("    - %s" % m for m in payload["missing"]) or "    (none named)",
+            payload["instruction"] or "decompose the plan into one item per task",
+            me8,
+            me8,
+            payload["token"],
+        ),
+    )
+    return lost
 
 
 def run_stop(event, event_ok, worklist, hook_file):
@@ -3490,6 +3593,24 @@ def run_stop(event, event_ok, worklist, hook_file):
         vadd("unstated", False, M.V_UNSTATED % ", ".join("#" + i for i in unstated))
     if mislabelled:
         vadd("mislabelled", False, M.V_MISLABELLED % "; ".join(mislabelled))
+    # ---- v20 PLAN FIDELITY. Cheap when there is no approved plan (one bounded
+    # transcript scan, incremental after the first stop), and it spends a model
+    # call only when a plan EXISTS and the tracked items look coarse against it.
+    # A degraded run is QUEUED rather than blocked or dropped: the queue survives
+    # the block stops this session is likely to be having, so the note lands on
+    # the first clean one instead of vanishing. The trade is that a session which
+    # never reaches a clean stop is told late, the same trade the agent hint
+    # already makes and for the same reason.
+    if not wl_judge.JUDGE_DISABLED:
+        _pf_note = ""
+        try:
+            _pf_note = planfid_check(worklist, session_id, event, fold, lines, me8, last_msg, vadd)
+        except Exception as exc:  # noqa: BLE001 -- a heuristic must never wedge a stop
+            _pf_note = M.V_PLANFID_DEGRADED % ("it raised %s: %s" % (type(exc).__name__, exc))[:160]
+        if _pf_note:
+            outq_add(
+                worklist, session_id, state_doc, "planfid-degraded", _pf_note, 1, refresh_min=60
+            )
     # DELIBERATELY NOT CHECKED: "no task is in_progress". A queue where everything
     # is honestly parked is a legitimate state, and blocking on it would nag a
     # session that is correctly waiting. The case that actually matters -- driving

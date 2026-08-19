@@ -3392,6 +3392,13 @@ ARITY = {
     "JUDGE_PROMPT": {"streak": 1, "remaining": "r", "leases": 0, "loop": "l",
                      "citations": "c", "message": "m", "traps": "t"},
     "REGGATE_PROMPT": {"fixset": "f", "keys": "k"},
+    # v20 plan fidelity (wl_planfid.py). V_PLANFID takes the plan path, the
+    # umbrella rows, the untracked-task rows, the judge's instruction, and then
+    # the session prefix TWICE (once for the --add exit, once as the owner tag
+    # of the deferral line) before the planfid: token.
+    "V_PLANFID": ("p", "u", "m", "i", "me", "me", "t"),
+    "V_PLANFID_DEGRADED": ("e",),
+    "PLANFID_PROMPT": {"plan": "p", "items": "i", "message": "m"},
 }
 fail = 0
 for name, args in ARITY.items():
@@ -11105,6 +11112,237 @@ assert R._is_dirty(clean, '/nonexistent-repo-root') is True, 'a git failure must
     pass "219b CONTROL: an untouched gate is seeded, not re-run"
 else
     fail "219b: dirty-detection does not discriminate ($(cat "$BASE/reggate-dirty.err"))"
+fi
+
+# ============================================================================
+# 220. PLAN FIDELITY (stop/wl_planfid.py, wired in wl_checks.planfid_check).
+#
+# The 2026-08-19 incident, driven end to end through the real hook: an operator
+# approved a plan with several discrete tasks and the session tracked it as two
+# umbrella items ('www round 4 Wave A', 'www round 4 Waves B-D'), which leaves
+# the open-item gate unable to tell one task from twenty.
+#
+# Every case here carries its own control, and 220c is the one that matters
+# most: the shim still says 'unfaithful' and the check must stay SILENT because
+# no plan was ever approved. Without it, a passing 220 would only prove that a
+# canned answer can be printed.
+# ============================================================================
+
+shim_planfid() { # shim_planfid '<plan_fidelity JSON>' -- a canned claude
+    # Answers the PLAN-FIDELITY call and gives every other call the ordinary
+    # 'stop' verdict, because a case that turns the judge on must not make the
+    # main judge fail closed on an answer meant for someone else. Every
+    # invocation is COUNTED, which is what lets a case assert that the
+    # PREFILTER, and not the model, was the thing that stayed quiet.
+    cat >"$BASE/binonly/claude" <<SHIMEOF
+#!/usr/bin/env python3
+import json, sys
+prompt = " ".join(sys.argv[1:])
+if "DECOMPOSITION" in prompt:
+    open("$BASE/planfid-calls", "a").write("call\n")
+    out = {"is_error": False,
+           "structured_output": {"plan_fidelity": json.loads('''$1''')}}
+else:
+    out = {"is_error": False,
+           "structured_output": {"verdict": "stop", "reason": "ok", "next_action": "none"}}
+print(json.dumps(out))
+SHIMEOF
+    chmod +x "$BASE/binonly/claude"
+    : >"$BASE/planfid-calls"
+}
+
+planfid_calls() { # how many times the plan-fidelity call was actually made
+    if [[ -f "$BASE/planfid-calls" ]]; then wc -l <"$BASE/planfid-calls"; else echo 0; fi
+}
+
+plant_plan() { # plant_plan -- write the fixture plan and record its APPROVAL
+    cat >"$BASE/plan.md" <<'PLANEOF'
+# round 4: the page frame, the voice, and a docs surface
+
+## Context
+
+Round 3 shipped and is on the open PR. This round is the operator's next pass,
+and the decisions below are locked by them.
+
+## Waves
+
+### Wave A: the page frame
+
+- The nav container gains a 1280px max-width and 80px gutters.
+- The footer background goes black, full bleed, matching the header container.
+- Both menus are rebuilt on the native popover API, deleting the hover timers.
+- One backdrop rule dims the page behind the popup and both menus.
+
+### Wave B: the solution-page bottom
+
+- Move the two download sections adjacent and pair them in one two-column row.
+- The row must degrade to one column when the gated button is absent.
+- New sources component: a native details element rendering the reference items.
+- Callouts lose only their source line.
+
+### Wave C: the voice
+
+1. Rewrite English second person to imperative across the solution pages.
+2. Regenerate the translation hashes and re-naturalize only the changed delta.
+PLANEOF
+    python3 -c '
+import json, sys
+rec = {"type": "attachment", "isSidechain": False,
+       "attachment": {"type": "plan_mode_exit", "planFilePath": sys.argv[1],
+                      "planExists": True}}
+open(sys.argv[2], "a").write(json.dumps(rec) + "\n")
+' "$BASE/plan.md" "$BASE/t.jsonl"
+}
+
+echo "== 220. an approved plan tracked as two umbrella items BLOCKS =="
+setup
+say "seeded the round"
+brief_now
+plant_plan
+A_ID=$(reqcli --add deadbeef 'www round 4 Wave A' | sed -n 's/^added #\([0-9a-f]*\).*/\1/p')
+B_ID=$(reqcli --add deadbeef 'www round 4 Waves B-D' | sed -n 's/^added #\([0-9a-f]*\).*/\1/p')
+# Both umbrella ids named, and ONE plan task quoted verbatim. Both kinds of
+# evidence are verified against the artifacts before they can block; 220e is
+# the case that proves the verification is load-bearing.
+shim_planfid "{\"faithful\":false,\"umbrella_ids\":[\"$A_ID\",\"$B_ID\"],\"missing\":[\"Callouts lose only their source line.\"],\"instruction\":\"split these into one item per plan task\"}"
+OUT="$(runj)"
+if grep -qF '"decision": "block"' <<<"$OUT" &&
+    grep -qF "AN APPROVED PLAN IS NOT DECOMPOSED" <<<"$OUT" &&
+    grep -qF "DECOMPOSE" <<<"$OUT" && grep -qF "REBUT" <<<"$OUT" && grep -qF "DEFER" <<<"$OUT"; then
+    pass "220 FIRE: two umbrella items for an approved plan block, naming three exits"
+else
+    fail "220 FIRE: no plan-fidelity block: ${OUT:0:300}"
+fi
+if grep -qF "$A_ID" <<<"$OUT" && grep -qF "Callouts lose only their source line" <<<"$OUT"; then
+    pass "220 the block names the real umbrella item and quotes the untracked task"
+else
+    fail "220 the block carries no verified evidence: ${OUT:0:300}"
+fi
+PFTOK="$(grep -o 'planfid:[0-9a-f]\{8\}' <<<"$OUT" | head -n1)"
+if [[ -n "$PFTOK" ]]; then
+    pass "220 the block hands the session its exact deferral token ($PFTOK)"
+else
+    fail "220 no planfid deferral token in the block"
+fi
+
+echo "== 220a. the DEFERRAL exit settles it =="
+printf -- '- [?] (deadbeef) %s is this plan superseded? DEFAULT: decompose it WHY: the scope may have moved HOW: the operator answers\n' "$PFTOK" >>"$WL"
+OUT="$(runj)"
+if ! grep -qF "AN APPROVED PLAN IS NOT DECOMPOSED" <<<"$OUT"; then
+    pass "220a CONTROL: a deferred item carrying the token settles the question"
+else
+    fail "220a: the deferral exit did not settle it: ${OUT:0:300}"
+fi
+
+echo "== 220b. faithful=true settles, and is never asked again =="
+setup
+say "seeded the round"
+brief_now
+plant_plan
+reqcli --add deadbeef 'www round 4 Wave A' >/dev/null
+reqcli --add deadbeef 'www round 4 Waves B-D' >/dev/null
+shim_planfid '{"faithful":true,"umbrella_ids":[],"missing":[],"instruction":"nothing to do"}'
+OUT="$(runj)"
+if ! grep -qF "AN APPROVED PLAN IS NOT DECOMPOSED" <<<"$OUT"; then
+    pass "220b CONTROL A: a faithful verdict does not block"
+else
+    fail "220b: a faithful verdict still blocked: ${OUT:0:300}"
+fi
+N1=$(planfid_calls)
+OUT="$(runj)"
+N2=$(planfid_calls)
+if [[ "$N1" -ge 1 ]] && [[ "$N2" == "$N1" ]]; then
+    pass "220b CONTROL B: a settled plan is never re-asked (calls stayed at $N1)"
+else
+    fail "220b: the settled plan was re-judged ($N1 -> $N2)"
+fi
+if grep -q '"verdict": "faithful"' "$WL.planfid-deadbeef.json" 2>/dev/null; then
+    pass "220b the verdict is recorded in the planfid marker"
+else
+    fail "220b no faithful verdict in the marker"
+fi
+
+echo "== 220c. THE INSTRUMENT BLIND: no approved plan, same accusing shim =="
+setup
+say "seeded the round"
+brief_now
+# Deliberately NO plant_plan. Same umbrella items, same shim that would accuse.
+reqcli --add deadbeef 'www round 4 Wave A' >/dev/null
+reqcli --add deadbeef 'www round 4 Waves B-D' >/dev/null
+shim_planfid '{"faithful":false,"umbrella_ids":["aaaa1111"],"missing":["Callouts lose only their source line."],"instruction":"split them"}'
+OUT="$(runj)"
+if ! grep -qF "AN APPROVED PLAN IS NOT DECOMPOSED" <<<"$OUT" && [[ "$(planfid_calls)" == "0" ]]; then
+    pass "220c CONTROL: with no approved plan the check says nothing and spends no call"
+else
+    fail "220c: fired without a plan (calls=$(planfid_calls)): ${OUT:0:300}"
+fi
+
+echo "== 220d. a DECOMPOSED worklist never reaches the model at all =="
+setup
+say "seeded the round"
+brief_now
+plant_plan
+for t in \
+    'r4-A1 nav container 1280px max-width and 80px gutters' \
+    'r4-A2 footer background black, full bleed, matching container' \
+    'r4-A3 rebuild both menus on the native popover API' \
+    'r4-A4 one backdrop rule dims the page behind popup and menus' \
+    'r4-B1 move the two download sections adjacent to each other' \
+    'r4-B2 the row degrades to one column when the gated button is absent' \
+    'r4-B3 new sources component using a native details element' \
+    'r4-B4 callouts lose only their source line' \
+    'r4-C1 rewrite English second person to imperative on solution pages' \
+    'r4-C2 regenerate hashes and re-naturalize only the changed delta'; do
+    reqcli --add deadbeef "$t" >/dev/null
+done
+shim_planfid '{"faithful":false,"umbrella_ids":["aaaa1111"],"missing":["Callouts lose only their source line."],"instruction":"split them"}'
+OUT="$(runj)"
+if ! grep -qF "AN APPROVED PLAN IS NOT DECOMPOSED" <<<"$OUT" && [[ "$(planfid_calls)" == "0" ]]; then
+    pass "220d CONTROL: a faithful decomposition is filtered out before any model call"
+else
+    fail "220d: false positive on a decomposed worklist (calls=$(planfid_calls)): ${OUT:0:300}"
+fi
+
+echo "== 220e. an INVENTED item id cannot manufacture a block =="
+setup
+say "seeded the round"
+brief_now
+plant_plan
+reqcli --add deadbeef 'www round 4 Wave A' >/dev/null
+reqcli --add deadbeef 'www round 4 Waves B-D' >/dev/null
+# Both axes hallucinated at once: an id no item carries, and a 'plan task' that
+# appears nowhere in the plan. Neither survives verification, so no evidence is
+# left and the check must not block on the model's word alone.
+shim_planfid '{"faithful":false,"umbrella_ids":["9999zzzz"],"missing":["rewrite the kernel scheduler in rust"],"instruction":"do it"}'
+OUT="$(runj)"
+if ! grep -qF "AN APPROVED PLAN IS NOT DECOMPOSED" <<<"$OUT" && [[ "$(planfid_calls)" -ge 1 ]]; then
+    pass "220e CONTROL: the model was asked, and its unevidenced verdict was refused"
+else
+    fail "220e: an unevidenced verdict blocked (calls=$(planfid_calls)): ${OUT:0:300}"
+fi
+
+echo "== 220f. a broken judge DEGRADES, it does not wall the session in =="
+setup
+say "seeded the round"
+brief_now
+plant_plan
+reqcli --add deadbeef 'www round 4 Wave A' >/dev/null
+reqcli --add deadbeef 'www round 4 Waves B-D' >/dev/null
+# A claude that exits non-zero. wl_judge fails CLOSED on the stop verdict, and
+# this check deliberately does not: a heuristic trigger must not become a wall
+# when the model is unreachable. It must also not go quiet about it.
+printf '#!/bin/bash\nexit 3\n' >"$BASE/binonly/claude"
+chmod +x "$BASE/binonly/claude"
+OUT="$(runj)"
+if ! grep -qF "AN APPROVED PLAN IS NOT DECOMPOSED" <<<"$OUT"; then
+    pass "220f CONTROL: an unreachable judge does not block on plan fidelity"
+else
+    fail "220f: a broken judge produced a plan-fidelity block: ${OUT:0:300}"
+fi
+if grep -qF "plan-fidelity check could not run" "${WL%.md}.state-deadbeef.json" 2>/dev/null; then
+    pass "220f the failure is queued for the session, not swallowed"
+else
+    fail "220f: a failed plan-fidelity run left no trace at all"
 fi
 
 echo
