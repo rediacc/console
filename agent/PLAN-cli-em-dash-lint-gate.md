@@ -1,7 +1,7 @@
 # PLAN: Bring packages/cli under the em dash gate
-Status: executing
+Status: done
 Owner: e6500e92
-Updated: 2026-08-19
+Updated: 2026-08-19 (closed)
 
 Scope: extend `scripts/check-em-dash-surfaces.ts` to cover `packages/cli`, drain the
 reader-facing half to zero, baseline the rest, and close one hole in the existing gate that
@@ -452,3 +452,39 @@ constraint that already rejected one placement of this gate.
   step 7, after the drains, and certify the result by the shape check in section 8.
 * **`command-metadata.ts` findings are cheap to drain and were mis-attributed as user facing.**
   Draining them is still correct, but do not cite them as shipped text in the commit message.
+
+
+## 11. Outcome, 2026-08-19 (this plan is CLOSED)
+
+All eight steps in section 6 are done and committed. Verified at close rather than
+assumed:
+
+* Steps 1 to 4, the drains, landed earlier in the session. Re-measured at close:
+  `packages/cli/scripts` and `packages/cli/src/i18n/locales` both carry ZERO em dashes.
+* Step 5: `check-translation-hashes.ts` reports "Translation hashes are up-to-date",
+  and `check:i18n:completeness` passes, so the twelve locales were re-translated
+  before the re-hash rather than stamped current over stale text, which was the
+  ordering hazard this section existed to force.
+* Steps 6 to 8 landed in `82def0b11`. Three surfaces added; the two clean ones are
+  also in `ZERO_SURFACES`, so the zero-join is enforced rather than merely true on
+  the day. Baseline 1923 to 2876 (+953), delta verified BY SHAPE: no entry in the
+  baseline belongs to any zero surface.
+
+Two things this plan did not predict, both recorded above rather than left to be
+rediscovered:
+
+* Section 4b, a dead path constant inside the very gate being extended, found only
+  because `test-gate-paths-exist.sh` failed the Security lane while everything else
+  was green. It constrained how the new surfaces' own fixtures had to be written.
+* `nestedSurfaceOverlap()` was added beyond section 7's test list. Section 3 called
+  the nesting "one character away from breaking" and left it as prose; a comment is
+  not a control, so it became a check with a case in both directions.
+
+Live proof the zero-join holds, run at close: planting an em dash in
+`packages/cli/scripts` made `--write-baseline` exit 1 naming the file and the reason,
+with the baseline unchanged at 2876. Removing it returned the gate to exit 0 over 718
+files in 8 surfaces.
+
+The residue in `packages/cli/src` (about 950 ids, JSDoc prose) stays baselined and
+shrinks under the existing shrink-only rule. Nobody is assigned to drain it, by
+design.
