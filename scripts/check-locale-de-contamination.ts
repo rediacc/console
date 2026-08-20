@@ -54,6 +54,13 @@ import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { DEFAULT_LOCALE, isSiteLocale, SITE_LOCALES } from '@rediacc/locales';
 
+import {
+  baselineAdditions,
+  renderRefusal,
+  sharedSelftestCases,
+  writeBaselineVerdict,
+} from './lib/shrink-only-baseline.js';
+
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
 const DEFAULT_BASELINE = 'scripts/data/locale-de-contamination-baseline.json';
@@ -515,6 +522,10 @@ function selftest(): boolean {
 
   fs.rmSync(root, { recursive: true, force: true });
   fs.rmSync(flatRoot, { recursive: true, force: true });
+
+  // THE SHRINK-ONLY COMPOSITION RULE, shared with every other baselined gate here.
+  for (const c of sharedSelftestCases()) check(c.name, c.ok, true);
+
   if (failures.length > 0) {
     console.error(`\n${failures.length} self-test failure(s)`);
     return false;
@@ -556,9 +567,36 @@ function main(): void {
 
   if (argv.includes('--write-baseline')) {
     const ids = findings.map(idOf).sort();
+
+    // COMPOSITION. This file's header is the one OTHER gates cite as the model for "the
+    // baseline only shrinks", and it did not enforce that on the write path either: the
+    // reseed below was unconditional, so a drain could shed findings, absorb a fresh one,
+    // and print a smaller number. Being the precedent is exactly why it had to be fixed.
+    const had = fs.existsSync(baselineFile);
+    const previous = loadBaseline(baselineFile);
+    const verdict = writeBaselineVerdict({
+      baselineExists: had,
+      firstSeedFlag: argv.includes('--first-seed'),
+      additions: had ? baselineAdditions(previous, ids) : [],
+    });
+    if (verdict !== null) {
+      console.error(
+        `✗ ${renderRefusal(verdict, {
+          baselineLabel: path.relative(base, baselineFile),
+          noun: 'contaminated value',
+          previousCount: previous.length,
+          newCount: ids.length,
+        })}`
+      );
+      process.exit(1);
+    }
+
     fs.mkdirSync(path.dirname(baselineFile), { recursive: true });
     fs.writeFileSync(baselineFile, `${JSON.stringify(ids, null, 2)}\n`);
-    console.log(`Wrote ${ids.length} baselined finding(s) to ${path.relative(base, baselineFile)}`);
+    console.log(
+      `Wrote ${ids.length} baselined finding(s) to ${path.relative(base, baselineFile)} ` +
+        `(${previous.length} before, ${previous.filter((i) => !ids.includes(i)).length} drained, 0 added).`
+    );
     return;
   }
 

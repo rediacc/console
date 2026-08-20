@@ -45,6 +45,7 @@
     "check:ci-design-tree": "tsx scripts/check-design-tree.ts",
     "check:ci-i18n-placeholders": "tsx scripts/check-i18n-placeholders.ts",
     "check:ci-i18n-locale-only": "tsx scripts/check-locale-only-edits.ts",
+    "check:ci-i18n-media": "npm run validate:content-media -w @rediacc/www",
     "check:ci-locale-sources": "tsx scripts/check-locale-sources.ts --selftest && tsx scripts/check-locale-sources.ts",
     "check:ci-i18n-cross-locale": "tsx scripts/check-i18n-cross-locale.ts && npm run check:ci-locale-de-contamination && npm run check:ci-locale-config-divergence",
     "check:ci-docs-structure-parity": "tsx scripts/check-docs-structure-parity.ts",

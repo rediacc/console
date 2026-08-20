@@ -45,6 +45,31 @@ const LINE_RESET_RE = /\r(?!\n)|\u001b\[[0-9]*[GK]/;
  */
 const NOISE_PATTERNS = [/\blevel=(info|warning|warn|debug|trace)\b/, /^time="\d{4}-/];
 
+/**
+ * Is this line over-width ONLY because of a single URL nothing may break?
+ *
+ * `rdc vscode connect --browser` prints a 162-column line whose bulk is one URL
+ * with an auth token in it. Wrapping a URL makes it uncopyable, which is worse
+ * for the viewer than one long line, so the pipeline deliberately does not wrap
+ * it. A gate that demands the impossible gets suppressed, so it is exempted
+ * here EXPLICITLY rather than by widening the check.
+ *
+ * Deliberately narrow, and narrower than the first version: the token must be a
+ * URL. Exempting any unbreakable token was tried and the gate's OWN selftest
+ * caught it - the 150-column control is a single long token, so that version
+ * silently stopped detecting the thing the gate exists for. Only URLs carry the
+ * copy-paste argument; a long path, hash or joined field has no such defence and
+ * still fails.
+ */
+function overflowIsOneUnbreakableUrl(line, width) {
+  const tokens = line.split(/\s+/).filter(Boolean);
+  const urls = tokens.filter((tok) => /^https?:\/\//.test(tok));
+  const longest = urls.reduce((a, b) => (b.length > a.length ? b : a), '');
+  if (longest.length <= width) return false;
+  const withoutIt = line.replace(longest, '').trimEnd();
+  return displayWidth(withoutIt) <= width;
+}
+
 /** Must match run.sh's TUTORIAL_COLS. A cast recorded at another width is a bug. */
 const TUTORIAL_COLS = 107;
 
@@ -284,7 +309,7 @@ function checkMarkerOutput(markerLabel, outputChunks, file, errors, expectFailLa
   // The check this file existed without: does the output FIT?
   for (const line of drawnSegments(outputChunks.join(''))) {
     const w = displayWidth(line);
-    if (w > width) {
+    if (w > width && !overflowIsOneUnbreakableUrl(line, width)) {
       pushError(
         errors,
         file,
@@ -297,7 +322,17 @@ function checkMarkerOutput(markerLabel, outputChunks, file, errors, expectFailLa
 
   // Structured logs below error level: never intended for a viewer, and the
   // widest lines in the whole corpus.
-  for (const line of drawnSegments(outputChunks.join(''))) {
+  //
+  // EXCEPT in a failure demo. When a command fails, the CLI deliberately replays
+  // the info-level diagnostics it withheld while the command was running,
+  // because dropping them outright was tried and made real failures unreadable
+  // (executor/output-lines.ts). In a `run_cmd_expect_fail` scene the failure IS
+  // the demo, so that explanation is the payoff the viewer came for, and this
+  // rule would otherwise require deleting it. Scoped to the noise class ONLY:
+  // an over-width line or a raw JSON dump is still a defect in a failure demo,
+  // which is why those checks run above this point and are not exempted.
+  const isFailureDemo = expectFailLabels.some((re) => re.test(markerLabel));
+  for (const line of isFailureDemo ? [] : drawnSegments(outputChunks.join(''))) {
     if (NOISE_PATTERNS.some((re) => re.test(line))) {
       pushError(
         errors,
@@ -310,7 +345,7 @@ function checkMarkerOutput(markerLabel, outputChunks, file, errors, expectFailLa
   }
 
   // Failure demos: the denial output is intentional.
-  if (expectFailLabels.some((re) => re.test(markerLabel))) return;
+  if (isFailureDemo) return;
 
   const errorLine = findErrorInOutput(outputChunks);
   if (errorLine) {
@@ -457,6 +492,26 @@ function selftest() {
       true,
     ],
     [
+      // The exemption that lets `rdc vscode connect --browser` through. Pinned so a
+      // future widening of it shows up here rather than silently disarming the
+      // width check, which is what the first version of it did.
+      'a lone over-long URL is EXEMPT (wrapping one makes it uncopyable)',
+      cast([
+        [1, 'm', 'rdc vscode connect my-app --browser --no-open'],
+        [1, 'o', `Open VS Code in your browser: http://localhost:46287/?tkn=${'M'.repeat(140)}\n`],
+      ]),
+      false,
+    ],
+    [
+      // Same shape, NOT a URL: a long path has no copy-paste defence and must fail.
+      'a lone over-long non-URL token still FAILS',
+      cast([
+        [1, 'm', 'rdc repo list'],
+        [1, 'o', `/var/lib/rediacc/${'p'.repeat(160)}\n`],
+      ]),
+      true,
+    ],
+    [
       'a level=info relay line FAILS',
       cast([
         [1, 'm', 'rdc repo up demo'],
@@ -476,7 +531,9 @@ function selftest() {
 
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'castgate-'));
   let failed = 0;
+  let ran = 0;
   for (const [name, body, expectError] of cases) {
+    ran++;
     const file = path.join(tmp, 'tutorial-probe.cast');
     fs.writeFileSync(file, body);
     const errs = [];
@@ -502,6 +559,7 @@ function selftest() {
   );
   const driftErrs = [];
   validateCastFile(drifted, driftErrs, []);
+  ran++;
   if (!driftErrs.some((e) => /columns, but the pipeline records/.test(e.message))) {
     failed++;
     console.error('FAIL  a cast recorded at 100 columns must be reported');
@@ -509,13 +567,61 @@ function selftest() {
     console.log('ok    a cast recorded at 100 columns is reported');
   }
 
+  // The failure-demo exemption, pinned in BOTH directions. It is the only place
+  // this gate is allowed to stay quiet about a logrus line, so a widening of it
+  // has to show up here rather than silently disarming the noise class.
+  const demoLabel = 'rdc repo up my-app:test';
+  const demoCases = [
+    [
+      'a failure demo may replay its info-level diagnostic',
+      cast([
+        [1, 'm', demoLabel],
+        [1, 'o', 'time="2026-08-19T21:47:23Z" level=info msg="denied by the sandbox"\n'],
+      ]),
+      false,
+    ],
+    [
+      'the SAME line outside a failure demo still FAILS',
+      cast([
+        [1, 'm', 'rdc repo list'],
+        [1, 'o', 'time="2026-08-19T21:47:23Z" level=info msg="denied by the sandbox"\n'],
+      ]),
+      true,
+    ],
+    [
+      'a failure demo is NOT exempt from the width rule',
+      cast([
+        [1, 'm', demoLabel],
+        [1, 'o', `${'w'.repeat(150)}\n`],
+      ]),
+      true,
+    ],
+  ];
+  for (const [name, body, expectError] of demoCases) {
+    ran++;
+    const file = path.join(tmp, 'tutorial-demo-probe.cast');
+    fs.writeFileSync(file, body);
+    const errs = [];
+    validateCastFile(file, errs, [new RegExp(`^${demoLabel.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`)]);
+    const fired = errs.length > 0;
+    if (fired !== expectError) {
+      failed++;
+      console.error(`FAIL  ${name}: expected ${expectError ? 'an error' : 'no error'}, got ${errs.length}`);
+      for (const e of errs.slice(0, 2)) console.error(`        ${e.message}`);
+    } else {
+      console.log(`ok    ${name}`);
+    }
+  }
+
   fs.rmSync(tmp, { recursive: true, force: true });
   if (failed > 0) {
     console.error(`\nselftest: ${failed} control(s) failed. This gate is not trustworthy.`);
     process.exit(1);
   }
+  // COUNTED, not hardcoded: the literal said 6 while 8 controls ran, which is a
+  // gate quietly misreporting its own coverage.
   console.log(
-    '\nselftest: 6 controls passed -- fires on width, noise, JSON and drift; quiet on clean output and spinners.'
+    `\nselftest: ${ran} controls passed -- fires on width, noise, JSON and drift; quiet on clean output and spinners.`
   );
   process.exit(0);
 }

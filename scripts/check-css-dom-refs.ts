@@ -29,6 +29,13 @@ import path from 'node:path';
 import process from 'node:process';
 import { globSync } from 'glob';
 
+import {
+  baselineAdditions,
+  renderRefusal,
+  sharedSelftestCases,
+  writeBaselineVerdict,
+} from './lib/shrink-only-baseline.js';
+
 const ROOT = path.resolve(import.meta.dirname, '..');
 const WWW = path.join(ROOT, 'packages/www');
 const BASELINE = path.join(ROOT, 'scripts/data/css-dom-refs-baseline.json');
@@ -143,6 +150,9 @@ function selftest(): number {
     'CONTROL: a used-but-unstyled class IS detected',
     used.has('metric-label') && !styled.has('metric-label')
   );
+  // THE SHRINK-ONLY COMPOSITION RULE, shared with every other baselined gate here.
+  for (const c of sharedSelftestCases()) check(c.name, c.ok);
+
   return failures;
 }
 
@@ -163,11 +173,38 @@ function main(): void {
   const orphans = [...used.keys()].filter((c) => !styled.has(c)).sort();
 
   if (argv.includes('--write-baseline')) {
+    // COMPOSITION. The header two dozen lines up says this baseline "only ever shrinks",
+    // and until now nothing enforced that on the WRITE path: a reseed could drop ten
+    // orphans, absorb one fresh one, and print a smaller number while doing it. The ids
+    // here carry the SELECTOR text, so rewriting a rule re-keys the entry; hand-edit the
+    // one line rather than reseeding when that happens.
+    const had = existsSync(BASELINE);
+    const previous: string[] = had ? JSON.parse(readFileSync(BASELINE, 'utf8')).orphans : [];
+    const verdict = writeBaselineVerdict({
+      baselineExists: had,
+      firstSeedFlag: argv.includes('--first-seed'),
+      additions: had ? baselineAdditions(previous, orphans) : [],
+    });
+    if (verdict !== null) {
+      console.error(
+        `\n\x1b[31m✗\x1b[0m ${renderRefusal(verdict, {
+          baselineLabel: path.relative(ROOT, BASELINE),
+          noun: 'orphan',
+          previousCount: previous.length,
+          newCount: orphans.length,
+          rekeyHint: true,
+        })}`
+      );
+      process.exit(1);
+    }
     writeFileSync(
       BASELINE,
       `${JSON.stringify({ note: 'shrink-only; see scripts/check-css-dom-refs.ts', orphans }, null, 2)}\n`
     );
-    console.log(`baseline written: ${orphans.length} entr(ies)`);
+    console.log(
+      `baseline written: ${orphans.length} entr(ies) (${previous.length} before, ` +
+        `${previous.filter((o) => !orphans.includes(o)).length} drained, 0 added)`
+    );
     return;
   }
 

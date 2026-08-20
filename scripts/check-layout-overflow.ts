@@ -38,6 +38,13 @@ import path from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 
+import {
+  baselineAdditions,
+  renderRefusal,
+  sharedSelftestCases,
+  writeBaselineVerdict,
+} from './lib/shrink-only-baseline.js';
+
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const WWW = 'packages/www';
 
@@ -379,6 +386,9 @@ function selftest(): boolean {
   check('the walker finds stylesheets on disk', walk(tmp, ['.css']).length === 1);
   fs.rmSync(tmp, { recursive: true, force: true });
 
+  // THE SHRINK-ONLY COMPOSITION RULE, shared with every other baselined gate here.
+  for (const c of sharedSelftestCases()) check(c.name, c.ok, c.detail ?? '');
+
   if (failures.length > 0) {
     console.error(`\n✗ ${failures.length} self-test failure(s)`);
     return false;
@@ -444,11 +454,39 @@ function main(): void {
   const nowrapFound = findings.filter((f) => f.rule === 'static-nowrap');
   const hard = findings.filter((f) => f.rule !== 'static-nowrap');
   if (argv.includes('--write-baseline')) {
+    // COMPOSITION. "Shrink-only" was enforced on the read path only, so a reseed could
+    // drop several nowrap entries, absorb one fresh one, and still print a smaller
+    // number. Keys carry the SELECTOR, so a rewritten rule re-keys its entry.
+    const entries = nowrapFound.map(nowrapKey).sort();
+    const had = fs.existsSync(NOWRAP_BASELINE);
+    const previous: string[] = had
+      ? JSON.parse(fs.readFileSync(NOWRAP_BASELINE, 'utf8')).entries
+      : [];
+    const verdict = writeBaselineVerdict({
+      baselineExists: had,
+      firstSeedFlag: argv.includes('--first-seed'),
+      additions: had ? baselineAdditions(previous, entries) : [],
+    });
+    if (verdict !== null) {
+      console.error(
+        `✗ ${renderRefusal(verdict, {
+          baselineLabel: NOWRAP_BASELINE,
+          noun: 'static-nowrap entry',
+          previousCount: previous.length,
+          newCount: entries.length,
+          rekeyHint: true,
+        })}`
+      );
+      process.exit(1);
+    }
     fs.writeFileSync(
       NOWRAP_BASELINE,
-      `${JSON.stringify({ note: 'shrink-only; see RULE 3', entries: nowrapFound.map(nowrapKey).sort() }, null, 2)}\n`
+      `${JSON.stringify({ note: 'shrink-only; see RULE 3', entries }, null, 2)}\n`
     );
-    console.log(`static-nowrap baseline written: ${nowrapFound.length} entr(ies)`);
+    console.log(
+      `static-nowrap baseline written: ${entries.length} entr(ies) (${previous.length} before, ` +
+        `${previous.filter((e) => !entries.includes(e)).length} drained, 0 added)`
+    );
     process.exit(0);
   }
   const knownNowrap = new Set<string>(

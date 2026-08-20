@@ -34,6 +34,10 @@
   color: "FEF2C0"
   description: "Skips externally-dependent quality checks (npm deps, security audit, Go deps)"
 
+- name: no-media-quality
+  color: "FEF2C0"
+  description: "Holds the tutorial-media gates (casts, parity, transcripts, audio) while media is re-recorded"
+
 - name: full-ci
   color: "FEF2C0"
   description: "Forces an unconditional full CI round, bypassing the scope engine's job skips"
