@@ -1,64 +1,60 @@
-## SESSION e6500e92 2026-08-20T11:40:05Z
+## SESSION e6500e92 2026-08-20T15:08:27Z
 
 ## What is true right now
 
-Branch `0818-1`, PR **#569 OPEN, READY**. **Pushed: local HEAD == `origin/0818-1` ==
-`37f6433a6`.** Working tree holds only OTHER sessions' live work (`.claude/hooks/**`,
-`.claude/agents/**`) plus the cosmetic `package-lock.json` npm11 flip. **None of it is mine.**
+Branch `0818-1`, PR **#569 OPEN, READY, non-draft**. Pushed: `origin/0818-1` == `61dc7d71d`.
+CI run `32383638044` queued on it.
 
-Three PRs open, all linked in #569's body because the submodule gate REQUIRES the link:
-console **#569**, account **#80** (`3cd870b`), renet **#104** (`c452df8`). `private/growth`
-(NOT a submodule, gitignored) at `d231757`.
+**CI REACHED FULLY GREEN** two heads ago on `b3d59b71d` (run `32376107783`): conclusion
+`success`, **78 success, 20 skipped, ZERO failures, ZERO cancelled, ZERO neutral.** The zeros
+are the point; earlier runs looked similar while up to 24 jobs had been cancelled without
+reporting.
 
-**Still owed:** `gh label delete no-media-quality` AND removing its entry from
-`.github/labels.yml` -- `check-label-inventory.sh` compares both directions.
+Three PRs open, all linked in #569's body (the submodule gate REQUIRES the link): console
+**#569**, account **#80** (`3cd870b`), renet **#104** (`f3fcf78`). All four submodules CLEAN.
 
-## CI `32364765277` on `37f6433a6`, in flight. Watch `byi8tz15e`.
+## Uncommitted right now, and what to do with each
 
-**Every QUALITY gate has been green for several runs.** Only E2E infra has been red.
+- `.claude/hooks/test-hooks.sh` -- peer session's hardening: the per-suite counter now REFUSES
+  a zero case-count (it had shipped one run reporting "0 case(s) passed" and still exiting ok).
+  **Commit it, but only after `bash .claude/hooks/test-hooks.sh` passes** (~6 min, expect
+  PASS=1168 FAIL=0). A waiter is armed.
+- `agent/e6500e92/STATE.md` -- mine, commit with it.
+- `package-lock.json` -- if it shows ONLY `"dev": true` deletions it is the cosmetic npm11
+  flip. Restore with `npx -y npm@10 install --package-lock-only --ignore-scripts`. NEVER
+  commit it.
+- **`private/growth` has ONE modified file, `corporate/legal-tax/maasikas.emta.ee`.** That is a
+  SEPARATE GitLab repo, not a submodule: it cannot enter the console PR, it is unrelated to
+  this wave, and committing there needs an explicit operator request. **ASKED, not assumed.**
 
-**Read the CONSOLE CI run by workflow name**, never the newest run on the branch (usually a
-`Watchdog:` run). Distinguish the two cancelled shapes: **cancelled + ZERO failures + a newer
-commit = SUPERSEDED** (my own push auto-cancels), while cancelled alongside a failure = the
-watchdog killing the run.
+## Done, do not re-open
 
-**Self-inflicted pattern to avoid repeating:** `Concurrent Fork Isolation` has not reported
-since `ef40cd2aa`, because each fix I pushed cancelled the run that would have judged the
-previous one. If you need that job's verdict, WAIT for the run rather than pushing.
+- **console#440 was NEVER regressed.** Two withhold paths; `repo up` routes through the DAEMON,
+  not `local-executor`. Pinned by `check:ci-guard-mutations`.
+- **Ceph** was an unpinned floating container tag rebuilt in place upstream on 2026-08-19.
+  Pinned `v19.2.3-20250717` (renet `f3fcf78`). **The image must match the host's ceph-common
+  EXACTLY; major-line matching was MY hypothesis and a live 6-VM fleet disproved it.**
+- **`no-media-quality` stays declared and live, and stays OFF #569.** I deleted it once;
+  `test-label-references.sh` refused a label referenced by code but not declared, so `046303fe5`
+  was reverted in `fa9894881`. An unapplied label is the NORMAL state for a hold.
+- `docs/ci-overhaul/06-progress.md` updated for this wave.
 
-## Both `--debug` withhold paths are now closed
+## Two constraints that are NOT mine to act on
 
-There were TWO, and the first fix alone could not work. `repo up` routes through the DAEMON,
-not `local-executor` -- proven from the test log, where the spinner and `Checkpoint created`
-are `renderJobEvent` output, which only exists on the daemon path.
-
-    output-lines.ts    shouldEchoRelayLive(options)   fixed 7525913da / ef40cd2aa
-    daemon/client.ts   routeLogEvent(..., echoAll)    fixed 37f6433a6
-
-Class swept independently by BOTH sessions, counts agree: the only `debugEnabled()` left in
-`packages/cli/src` outside tests and `utils/debug.ts` is inside `shouldEchoRelayLive`.
-Verified by my own mutation (1 FAILED/10 passed, restored 11) and `check:ci-guard-mutations`
-6 of 6.
-
-**NOT proven end to end.** The controls pin both decisions and both pumps, not renet's line
-surviving the daemon relay over SSH into the grepped log. **Two sessions have now reasoned
-from code to a WRONG conclusion about which pump `repo up` uses. If it fails again, do NOT do
-a third code read -- pull the runner's captured `--debug` stderr from the job artifact.**
-
-## Ceph: root-caused and FIXED, do not re-investigate
-
-`cephadm bootstrap` ran with no `--image`, so it pulled a floating tag, and quay.io rebuilt
-EVERY Ceph tag in place on 2026-08-19. The next run bootstrapped Ceph 20 against noble's
-ceph-common 19.2.3 (unchanged since 2026-02-24); a 32-byte type-2 admin key is unreadable to a
-19.x client. Pinned to a dated tag in renet `c452df8`, gated by `check:ci-ceph-image-pin`
-(review date, floating-tag detection, file/code agreement). **Two earlier hypotheses were WRONG
-and are recorded so nobody retries them: it is NOT the 1800s resetVMs cap, and NOT apt drift.**
+- **A 6-VM KVM fleet is running, ~21.5 GB.** **Do NOT run `./rdc.sh ops down`: releasing it is
+  RESERVED TO THE OPERATOR** and the stop gate rejects it as an action. Report it only.
+- Never merge, never push `main`.
 
 ## Next action
 
-1. Read `byi8tz15e` (or re-check `32364765277`). Count `cancelled` AND `neutral` as DID NOT
-   REPORT (#4179d239).
-2. Then a FRESH Claude review: the head has moved eighteen times, the marker no longer
-   matches, `Review Complete` would go `neutral`. Resolve every thread.
-3. Then delete the label in BOTH places, then `CronDelete 7cb9b31f`.
-4. Never merge, never push `main`.
+1. Read the hooks-suite waiter, then commit the two console files above (#4179d239).
+2. Then a **FRESH Claude review**: the head has moved many times, the
+   `<!-- claude-reviewed: <sha> -->` marker no longer matches, and `Review Complete` currently
+   FAILS for exactly that reason. That failure is expected and the review is its fix. Then
+   resolve EVERY thread.
+3. Then `CronDelete 7cb9b31f` and say so in the final report.
+
+**If CI reds:** read the CONSOLE CI run by workflow NAME (the newest run is usually a
+`Watchdog:` run), count `cancelled` AND `neutral` as DID NOT REPORT, and do NOT push while
+waiting on a specific job -- a push auto-cancels the run, which cost five consecutive verdicts
+earlier in this wave.
