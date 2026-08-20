@@ -66,7 +66,7 @@ export function makeCategoryLabel(t: (key: string) => string) {
  */
 export function groupByCategory<T extends { data: { category: string; order?: number }; slug: string }>(
   docs: T[]
-): Array<{ category: DocCategory; docs: T[] }> {
+): { category: DocCategory; docs: T[] }[] {
   return CATEGORY_ORDER.map((category) => ({
     category,
     docs: docs
@@ -144,7 +144,12 @@ const TAG_KEYS: Record<DocTag, { key: string; en: string }> = {
  */
 export function makeTagLabel(t: (key: string, fallback?: string) => string) {
   return (tag: string): string => {
-    const entry = TAG_KEYS[tag as DocTag];
+    // Typed as possibly-undefined on purpose. `tag` arrives as a plain string, so the
+    // cast is a claim rather than a guarantee and an unknown tag really does miss the
+    // table. Without the annotation TypeScript reads the lookup as total and calls the
+    // guard below "always truthy" -- deleting it to satisfy that would crash on exactly
+    // the input the guard exists for.
+    const entry = (TAG_KEYS as Partial<Record<string, (typeof TAG_KEYS)[DocTag]>>)[tag];
     return entry ? t(entry.key, entry.en) : tag;
   };
 }
@@ -152,7 +157,7 @@ export function makeTagLabel(t: (key: string, fallback?: string) => string) {
 /** Tags actually present in a set of docs, in DOC_TAGS order, with their counts. */
 export function tagCounts<T extends { data: { tags?: readonly string[] } }>(
   docs: T[]
-): Array<{ tag: DocTag; count: number }> {
+): { tag: DocTag; count: number }[] {
   return DOC_TAGS.map((tag) => ({
     tag,
     count: docs.filter((doc) => doc.data.tags?.includes(tag)).length,
