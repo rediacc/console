@@ -20,7 +20,6 @@ import type { SFTPClient } from '../../remote/sftp/index.js';
 import type { RepositoryConfig } from '../../types/index.js';
 import { isAgentEnvironment } from '../../utils/agent-guard.js';
 import { CliExitError } from '../../utils/cli-exit-error.js';
-import { debugEnabled } from '../../utils/debug.js';
 import { ValidationError } from '../../utils/errors.js';
 import { formatDuration } from '../../utils/format.js';
 import { isDevBuild } from '../../utils/platform.js';
@@ -67,6 +66,7 @@ import { isTelemetryDisabled, telemetryService } from '../telemetry/telemetry.js
 import {
   cleanRelayLine,
   createQuietStderrPump,
+  shouldEchoRelayLive,
   isLogrusLine,
   stripRelayPrefix,
 } from './output-lines.js';
@@ -1920,7 +1920,7 @@ class LocalExecutorService {
     // "restored from checkpoint" (emitted with log.Infof), found nothing, and
     // blamed console#440 for a regression that had not happened. The two sibling
     // call sites already pass options.debug; this one reached past it.
-    const stderrPump = createQuietStderrPump({ echoAll: debugEnabled() || Boolean(options.debug) });
+    const stderrPump = createQuietStderrPump({ echoAll: shouldEchoRelayLive(options) });
     const execStart = Date.now();
     const exitCode = await sftp.execStreaming(command, {
       stdin: vault,
