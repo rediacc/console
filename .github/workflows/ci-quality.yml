@@ -514,12 +514,6 @@ jobs:
       - name: Block non-executable invoked scripts
         run: .ci/scripts/quality/check-script-exec-bit.sh
 
-      # Reads the committed naturalization provenance. private/growth is a separate
-      # repo and gitignored here, so the ledger is the only place CI can see which
-      # model actually ran.
-      - name: Naturalization model policy
-        run: npm run check:ci-naturalization-model-policy
-
       - uses: ./.github/actions/app-token
         id: app-token
         with:
@@ -543,6 +537,16 @@ jobs:
         uses: ./.github/actions/setup-workspace
         with:
           account: 'true'
+
+      # Runs AFTER setup-workspace on purpose: this one is TypeScript and needs tsx,
+      # unlike the two text-only checks above it in this job. Placing it beside them
+      # cost a CI cycle to "tsx: not found" (exit 127).
+      #
+      # Reads the committed naturalization provenance. private/growth is a separate
+      # repo and gitignored here, so the ledger is the only place CI can see which
+      # model actually ran.
+      - name: Naturalization model policy
+        run: npm run check:ci-naturalization-model-policy
 
       - name: Verify no peer dependency conflicts
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
