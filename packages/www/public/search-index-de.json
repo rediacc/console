@@ -15438,7 +15438,7 @@
   },
   {
     "id": "search-3996",
-    "content": "Branching - Commit & Rollback",
+    "content": "Branching: Commit & Rollback",
     "excerpt": "Frieren Sie Repository-Zustände in unveränderliche Commits ein, benennen Sie sie mit Branches und checken Sie jeden Commit als beschreibbaren Fork wieder aus.",
     "category": "Documentation",
     "page": "/de/docs/tutorial-branching",
@@ -15478,7 +15478,7 @@
   },
   {
     "id": "search-4000",
-    "content": "Branching - Commit & Rollback",
+    "content": "Branching: Commit & Rollback",
     "body": "Tutorial: Branching, Commit und Rollback # Branching: Commit & Rollback Versionieren Sie Ihre Repositories wie Code. Ein Commit friert einen Fork in ein unveränderliches Image ein; ein Branch benennt es; Checkout verwandelt jeden Commit zurück in einen frischen, beschreibbaren Fork. In diesem Tutorial speichern wir einen bekannt guten Zustand, löschen eine echte PostgreSQL-Tabelle und haben alle Zeilen in Sekunden zurück.",
     "excerpt": "Tutorial: Branching, Commit und Rollback # Branching: Commit & Rollback Versionieren Sie Ihre Repositories wie Code. Ein Commit friert einen Fork in e...",
     "category": "Documentation",

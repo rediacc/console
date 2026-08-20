@@ -41,6 +41,7 @@ import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 
 import { flatten } from './lib/language-detect.js';
+import { subset } from '@rediacc/locales';
 import {
   baselineAdditions,
   renderRefusal,
@@ -74,6 +75,17 @@ interface Surface {
   minFiles: number;
 }
 
+// Declared with subset() rather than as a literal so an unknown or misspelled code throws
+// at module load. A literal cannot: it just silently scans a directory that does not exist,
+// which is how a locale goes unchecked for months while the gate reports green.
+//
+// ru is EXCLUDED ON PURPOSE and this is the single place that records it: Russian narration
+// keeps its copula dash, because `Репозиторий — это ...` is grammatically required where
+// English uses "is". The catalog surface still includes ru; only transcripts are exempt.
+const TRANSCRIPT_DASH_LOCALES = subset('em-dash-transcripts', [
+  'en', 'de', 'es', 'et', 'fr', 'it', 'ja', 'ko', 'pt', 'tr', 'zh', 'ar',
+]);
+
 const SURFACES: readonly Surface[] = [
   // 13 locales today; the floor sits below that so it catches a collapsed glob, not a
   // deliberate locale change. The two `.`-prefixed hash sidecars in this directory are
@@ -101,7 +113,7 @@ const SURFACES: readonly Surface[] = [
   //
   // fr and pt WERE cleaned (operator's call), so they stay in scope and any new
   // dash there fails.
-  ...['en', 'de', 'es', 'et', 'fr', 'it', 'ja', 'ko', 'pt', 'tr', 'zh', 'ar'].map(
+  ...TRANSCRIPT_DASH_LOCALES.map(
     (lang): Surface => ({
       dir: `packages/www/src/data/tutorial-transcripts/${lang}`,
       kind: 'catalog',
