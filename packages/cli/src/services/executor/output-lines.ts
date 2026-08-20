@@ -46,7 +46,7 @@ export function isLogrusLine(line: string): boolean {
  * every explanatory line was info-level. Callers withhold these and flush them
  * only when the job actually fails.
  */
-export function isQuietLogrusLine(line: string): boolean {
+function isQuietLogrusLine(line: string): boolean {
   return isLogrusLine(line) && !LOGRUS_LOUD_RE.test(line);
 }
 
