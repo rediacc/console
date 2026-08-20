@@ -18,6 +18,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { findRegressions, loadBacklog, writeBacklog } from './lib/p7-backlog.js';
+import { displayWidth, drawnSegments, stripAnsi } from './lib/terminal-cells.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..');
@@ -35,7 +36,6 @@ const colors = {
 
 /** Patterns that indicate a command produced error output. */
 /** Cursor-home / erase-line, which restart a display line just as `\r` does. */
-const LINE_RESET_RE = /\r(?!\n)|\u001b\[[0-9]*[GK]/;
 
 /**
  * Structured logs BELOW error level. They are not a correctness failure, they are
@@ -92,66 +92,6 @@ const MARKER_HACK_PATTERNS = [
   { pattern: />\s*\/dev\/null/, message: 'typed command suppresses output with >/dev/null' },
   { pattern: /\btimeout\s+[\d.]+/, message: 'typed command is wrapped in "timeout"' },
 ];
-
-// Built from named char codes rather than written as `\x1b` literals: raw
-// control characters inside a regex are exactly what no-control-regex exists to
-// catch, and these two are the only place the gate legitimately needs them.
-const ESC = String.fromCharCode(0x1b);
-const BEL = String.fromCharCode(0x07);
-/** CSI sequence: ESC [ params final-byte (colours, cursor moves). */
-const ANSI_CSI_RE = new RegExp(`${ESC}\\[[0-9;]*[a-zA-Z]`, 'g');
-/** OSC sequence: ESC ] ... BEL (window title and friends). */
-const ANSI_OSC_RE = new RegExp(`${ESC}\\][^${BEL}]*${BEL}`, 'g');
-
-/** Strip ANSI escape sequences and OSC sequences from text. */
-function stripAnsi(text) {
-  return text.replaceAll(ANSI_CSI_RE, '').replaceAll(ANSI_OSC_RE, '');
-}
-
-/**
- * Every run of text the terminal drew as one line, split at the points where the
- * cursor went back to the start.
- *
- * Two wrong models were tried before this one. Measuring raw `\n`-split lines
- * concatenates every spinner frame into a 22,562-column pseudo-line
- * (tutorial-live-migration), so all 24 of its "violations" are phantom. Keeping
- * only the LAST segment -- what finally settles on screen -- is wrong in the
- * opposite direction: a 358-column logrus line WRAPS across four rows when it is
- * written, and a following spinner repaint only overwrites the last of them, so
- * the check silently discarded the exact lines it exists to catch.
- *
- * Each segment is measured on its own. A spinner frame is short and passes; a
- * line that wrapped when it was drawn is caught, whatever happened afterwards.
- */
-function drawnSegments(text) {
-  const out = [];
-  for (const physical of text.split('\n')) {
-    for (const segment of physical.split(LINE_RESET_RE)) out.push(stripAnsi(segment));
-  }
-  return out;
-}
-
-/** Display width, counting a wide CJK glyph as the two cells it occupies. */
-function displayWidth(line) {
-  let w = 0;
-  for (const ch of line) {
-    const c = ch.codePointAt(0);
-    if (c === undefined) continue;
-    // Combining marks take no cell; CJK/fullwidth take two.
-    if (c >= 0x0300 && c <= 0x036f) continue;
-    w +=
-      (c >= 0x1100 && c <= 0x115f) ||
-      (c >= 0x2e80 && c <= 0xa4cf) ||
-      (c >= 0xac00 && c <= 0xd7a3) ||
-      (c >= 0xf900 && c <= 0xfaff) ||
-      (c >= 0xfe30 && c <= 0xfe6f) ||
-      (c >= 0xff00 && c <= 0xff60) ||
-      (c >= 0xffe0 && c <= 0xffe6)
-        ? 2
-        : 1;
-  }
-  return w;
-}
 
 function pushError(errors, file, message, suggestion) {
   errors.push({ file, message, suggestion });
@@ -602,7 +542,7 @@ function selftest() {
     const file = path.join(tmp, 'tutorial-demo-probe.cast');
     fs.writeFileSync(file, body);
     const errs = [];
-    validateCastFile(file, errs, [new RegExp(`^${demoLabel.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`)]);
+    validateCastFile(file, errs, [new RegExp(`^${demoLabel.replaceAll(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`)]);
     const fired = errs.length > 0;
     if (fired !== expectError) {
       failed++;
