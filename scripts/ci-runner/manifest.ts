@@ -455,6 +455,18 @@ export const GATES: readonly GateSpec[] = [
     },
   },
   {
+    id: 'check:ci-script-exec-bit',
+    run: 'npm run check:ci-script-exec-bit',
+    gate: true,
+    leaves: ['.ci/scripts/quality/check-script-exec-bit.sh'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-code',
+      step: 'Block non-executable invoked scripts',
+    },
+  },
+  {
     id: 'check:ci-lockfile',
     run: 'npm run check:ci-lockfile',
     gate: true,
