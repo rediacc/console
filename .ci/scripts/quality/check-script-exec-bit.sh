@@ -32,22 +32,46 @@ OFF=$'\033[0m'
 # Collect `./something.sh` references out of the given files, then report any
 # whose git index mode is not 100755. Echoes one offender per line.
 scan_repo() {
-    local root="$1" ref f mode
+    local root="$1" hit src rest text ref f mode
     (
         cd "$root" || exit 0
         # ANCHORED with a negative lookbehind, which is why this is -P and not -E.
-        # An unanchored `\./` also matches the SECOND dot of a `../` reference: the
-        # text `../scripts/lib/foo.sh` yields `./scripts/lib/foo.sh`, which strips to
-        # a repo-root path that is a DIFFERENT FILE from the one referenced. That is
-        # both a false positive on the wrong file and no coverage of the right one.
-        # The same hole swallows `somepath./bar.sh`. Caught in review on this PR.
-        git grep -hoP '(?<![\w./-])\./[\w./-]+\.sh' -- \
+        # An unanchored `\./` also matches the SECOND dot of a `../` reference:
+        # `../scripts/lib/foo.sh` yields `./scripts/lib/foo.sh`, a DIFFERENT file.
+        #
+        # NOT -h: the referencing FILE is load-bearing. `./sibling.sh` means a sibling
+        # of the file that says it, not of the repo root. Resolving everything against
+        # the root skipped every nested invocation -- which is the pattern used
+        # throughout .ci/scripts/, i.e. exactly the class this gate exists for. It
+        # checked 9 repo-root scripts and silently passed on the rest. Caught in
+        # review on this PR; the earlier two controls both used repo-root references,
+        # so they proved detection while overstating coverage.
+        # Whole LINES, not just the match, so comment lines can be dropped. A `./x.sh`
+        # inside `# Usage: ./x.sh` or `# shellcheck source=./lib/x.sh` is documentation,
+        # not an invocation, and both produced false positives the moment the path
+        # resolution above started working: one file the Dockerfile chmods itself, one
+        # that is SOURCED and therefore needs no exec bit at all.
+        git grep -nP '(?<![\w./-])\./[\w./-]+\.sh' -- \
             '*.sh' '*.yml' '*.yaml' '*.json' '*.md' '*.ts' 2>/dev/null |
+            while IFS= read -r hit; do
+                src="${hit%%:*}"
+                rest="${hit#*:}"
+                text="${rest#*:}"
+                case "$(printf '%s' "$text" | sed 's/^[[:space:]]*//')" in
+                    '#'* | '//'* | '*'*) continue ;;
+                esac
+                ref="$(printf '%s' "$text" | grep -oP '(?<![\w./-])\./[\w./-]+\.sh' | head -1)"
+                [ -z "$ref" ] && continue
+                # Resolve against the referencing file's own directory, then normalise
+                # a leading "./" away. A file at the repo root gives dir ".".
+                f="$(dirname "$src")/${ref#./}"
+                f="${f#./}"
+                echo "$f"
+            done |
             sort -u |
-            while read -r ref; do
-                f="${ref#./}"
-                # Only judge paths that are actually tracked here; a `./x.sh`
-                # inside a heredoc for some other checkout is not ours.
+            while read -r f; do
+                # Only judge paths actually tracked here; a `./x.sh` inside a heredoc
+                # meant for another checkout is not ours.
                 mode=$(git ls-files -s -- "$f" 2>/dev/null | awk '{print $1}')
                 [ -z "$mode" ] && continue
                 [ "$mode" = "100755" ] && continue
