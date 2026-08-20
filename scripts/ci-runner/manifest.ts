@@ -455,6 +455,18 @@ export const GATES: readonly GateSpec[] = [
     },
   },
   {
+    id: 'check:ci-ceph-image-pin',
+    run: 'npm run check:ci-ceph-image-pin',
+    gate: true,
+    leaves: ['scripts/check-ceph-image-pin.ts'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-code',
+      step: 'Ceph image pin freshness',
+    },
+  },
+  {
     id: 'check:ci-naturalization-model-policy',
     run: 'npm run check:ci-naturalization-model-policy',
     gate: true,
