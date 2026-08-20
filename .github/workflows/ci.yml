@@ -1270,10 +1270,32 @@ jobs:
   validate-install:
     name: Validate Install Methods
     needs: [initialize, stage-artifacts]
+    # THE CHANNEL CONDITION IS LOAD-BEARING, and its absence was a standing red.
+    #
+    # `run_install_methods` comes from the `scope` step, which is gated on
+    # `github.event_name == 'pull_request'` (see `id: scope` above). On a
+    # schedule run that step never executes, so the output is EMPTY, and empty
+    # is not the string 'false' -- the guard reads like one and admits the job.
+    #
+    # It then runs with channel='' (assert-channel-for-event.sh requires that
+    # for schedule), so docker_tag is '' and constants.sh:27 rewrites it to
+    # `latest`. The job pulls the last RELEASED image and asserts next_version
+    # against it, which fails whenever main carries commits since the last tag.
+    # Measured on nightlies 32323997586 and 32208001410: "Version mismatch:
+    # expected '1.2.27', got '1.2.26'". Deterministic, not flaky, and `bump-none`
+    # merges widen the gap because they deliberately cut no release.
+    #
+    # Skipping is the honest outcome, the same ruling `validate-promote` records
+    # below for the same cause: with no channel there is nothing staged, so the
+    # job has no subject. That comment already names Validate Install Methods as
+    # one of the three instances of this class; this is the site it missed.
+    # VALIDATE_INSTALL is soft-required in assert-ci-complete.sh, which forgives
+    # `skipped`.
     if: >-
       always() &&
       needs.stage-artifacts.result == 'success' &&
-      needs.initialize.outputs.run_install_methods != 'false'
+      needs.initialize.outputs.run_install_methods != 'false' &&
+      needs.initialize.outputs.channel != ''
     uses: ./.github/workflows/ct-install-methods.yml
     with:
       version: ${{ needs.initialize.outputs.next_version }}

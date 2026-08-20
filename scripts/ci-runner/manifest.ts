@@ -2106,6 +2106,18 @@ export const GATES: readonly GateSpec[] = [
     },
   },
   {
+    id: 'check:ci-workflow-invariants',
+    run: 'npm run check:ci-workflow-invariants',
+    gate: true,
+    leaves: ['.ci/scripts/security/check-ci-workflow-invariants.sh'],
+    ci: {
+      kind: 'test',
+      test: '.ci/scripts/test/gates/test-ci-workflow-invariants.sh',
+      blocker:
+        'BLOCKER: no quality lane runs this against the live workflow, but test-ci-workflow-invariants.sh points both GATE and REAL at the real .github/workflows/ci.yml, so run-all.sh (ci-quality.yml quality-security, "Quality-gate unit tests") executes the real scan over the real tree every CI run',
+    },
+  },
+  {
     id: 'check:ci-autopilot-bp-align',
     run: 'npm run check:ci-autopilot-bp-align',
     gate: true,
@@ -2534,6 +2546,19 @@ export const GATES: readonly GateSpec[] = [
     gate: true,
     qualityGateTest: true,
     leaves: ['.ci/scripts/test/gates/test-autopilot-no-bypass.sh'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-security',
+      step: 'Quality-gate unit tests',
+    },
+  },
+  {
+    id: 'gate-test:ci-workflow-invariants',
+    run: '.ci/scripts/test/gates/test-ci-workflow-invariants.sh',
+    gate: true,
+    qualityGateTest: true,
+    leaves: ['.ci/scripts/test/gates/test-ci-workflow-invariants.sh'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
