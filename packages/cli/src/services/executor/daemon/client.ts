@@ -18,7 +18,7 @@ import * as net from 'node:net';
 import { debugEnabled } from '../../../utils/debug.js';
 import { currentRequestContext } from '../../core/request-context.js';
 import { renderJobEvent } from '../job-remote.js';
-import { writeWrappedToStderr } from '../output-lines.js';
+import { shouldEchoRelayLive, writeWrappedToStderr } from '../output-lines.js';
 import type { ExecuteOptions, ExecuteResult, Executor, RenetEvent } from '../types.js';
 import {
   daemonSocketPath,
@@ -74,12 +74,24 @@ class DaemonUnavailable extends Error {}
  * Extracted from the frame switch rather than inlined: inline it pushed that
  * function past the cognitive-complexity gate.
  */
-function routeLogEvent(event: RenetEvent, remember: (line: string) => void): void {
+export function routeLogEvent(
+  event: RenetEvent,
+  remember: (line: string) => void,
+  echoAll: boolean
+): void {
   if (event.type !== 'log' || !event.msg) {
     renderJobEvent(event);
     return;
   }
-  if (event.level === 'error' || event.level === 'warning' || debugEnabled()) {
+  // `echoAll`, not `debugEnabled()` alone. THE SECOND HALF OF THE SAME BUG: the
+  // direct path was fixed to honour `--debug` and this one was not, and `repo up`
+  // routes HERE, through the daemon. So `rdc repo up --debug` still withheld
+  // renet's info-level lines and the concurrent-fork-isolation suite still could
+  // not find "restored from checkpoint" in its own --debug log. Fixing the
+  // instance in front of us instead of sweeping the class cost a second CI run.
+  // `shouldEchoRelayLive` is shared with the direct path deliberately: a third
+  // copy of this decision is what the extraction existed to prevent.
+  if (event.level === 'error' || event.level === 'warning' || echoAll) {
     process.stderr.write(`${event.msg}\n`);
     return;
   }
@@ -265,7 +277,7 @@ async function runViaDaemon(options: ExecuteOptions, deps: ResolvedDeps): Promis
             // exists for detached-job replays; hiding info-level diagnostics
             // here made real failures unreadable — a renet child exited 1 and
             // every explanatory line was an info-level log event.
-            routeLogEvent(frame.event, rememberLog);
+            routeLogEvent(frame.event, rememberLog, shouldEchoRelayLive(options));
           }
           return;
         case 'jobStarted':
