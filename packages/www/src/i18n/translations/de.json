@@ -7544,7 +7544,7 @@
           "overline": "WARUM ES WICHTIG IST",
           "title": "Behalten Sie Ihr Kubernetes. Gewinnen Sie Mobilität."
         },
-        "blurb": "Laufenden Cluster forken oder verschieben, Daten inklusive",
+        "blurb": "Forken oder verschieben Sie Ihren Cluster – mit allen Daten",
         "bottomCta": {
           "command": "rdc cluster fork prod --tag staging",
           "ctaText": "Kostenlos starten",
@@ -7558,12 +7558,18 @@
             {
               "name": "Sichert Apps und Volumes",
               "refs": [4, 5, 0, 9, 0],
-              "values": ["check", "check", "cross", "Volumes only", "rediacc"]
+              "values": ["check", "check", "cross", "Nur Volumes", "rediacc"]
             },
             {
               "name": "Verschiebt einen ganzen Cluster samt Daten",
               "refs": [6, 7, 8, 0, 0],
-              "values": ["Stop and restore", "Stop and restore", "Shape only", "cross", "rediacc"]
+              "values": [
+                "Stopp und Wiederherstellung",
+                "Stopp und Wiederherstellung",
+                "Nur Struktur",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Forkt einen laufenden Cluster, Daten inklusive",
@@ -7578,7 +7584,7 @@
             {
               "name": "Kopiert Daten ohne vollständiges Neuschreiben",
               "refs": [0, 0, 0, 10, 0],
-              "values": ["cross", "cross", "cross", "Async copy", "rediacc"]
+              "values": ["cross", "cross", "cross", "Asynchrones Kopieren", "rediacc"]
             },
             {
               "name": "Kurze, gemessene Umschaltung für einen geplanten Umzug",
@@ -7591,7 +7597,7 @@
         },
         "hero": {
           "primaryCta": "Kostenlos starten",
-          "subtitle": "Ihr Cluster zieht als ein Ganzes um: Nodes, Konfiguration und Daten. Auf eine andere Maschine oder in ein anderes Rechenzentrum. Die Umschaltung dauert Sekunden, kein Wochenende.",
+          "subtitle": "Ihr Cluster zieht als ganzes um: Nodes, Konfiguration, Daten. Auf eine andere Maschine oder in ein anderes Rechenzentrum. Die Umschaltung dauert Sekunden, nicht ein Wochenende.",
           "title": "Einen laufenden Kubernetes-Cluster forken oder verschieben"
         },
         "howItWorks": {
@@ -7675,7 +7681,7 @@
         "meta": {
           "description": "Forken oder verschieben Sie einen laufenden Kubernetes-Cluster mit Daten auf eine andere Maschine oder ins Rechenzentrum. Kurzer Wechsel. Mit Ceph RBD und k3s.",
           "keywords": "Kubernetes-Cluster-Migration, Cluster-Fork, Ceph RBD, k3s, Rechenzentrums-Mobilität, Kubernetes-Portabilität",
-          "title": "Fork or Move a Kubernetes Cluster | Rediacc"
+          "title": "Kubernetes-Cluster forken oder verschieben | Rediacc"
         },
         "problem": {
           "description": "Kubernetes hat Ihre Apps portabel gemacht. Der Cluster selbst ist es nicht. Die Daten liegen in einem einzigen Rechenzentrum. Ihn zu verschieben bedeutet ein Neuaufbau-Projekt: neue Nodes, neuer Speicher, Wiederherstellung aus dem Backup, alles neu testen. Deshalb ziehen die meisten Teams nie um. Und ihr Anbieter weiß das.",
@@ -7702,7 +7708,7 @@
           ],
           "timeline": {
             "newLabel": "MIT REDIACC",
-            "newSteps": ["Pre-copy", "16s cutover", "Live"],
+            "newSteps": ["Vorkopieren", "16s-Umschaltung", "Live"],
             "oldLabel": "DER ALTE WEG",
             "oldSteps": [
               {
@@ -7732,43 +7738,43 @@
         "references": {
           "items": [
             {
-              "text": "Flexera, \"2024 State of the Cloud Report,\" 2024. \"27% of cloud spend continues to be wasted.\"",
+              "text": "Flexera, \"2024 State of the Cloud Report,\" 2024. „27 % der Cloud-Ausgaben werden weiterhin verschwendet.\"",
               "url": "https://www.flexera.com/about-us/press-center/flexera-2024-state-of-the-cloud-managing-spending-top-challenge"
             },
             {
-              "text": "Flexera, \"2025 State of the Cloud Report,\" 2025. \"With cloud budgets already exceeding limits by 17%, organizations are increasingly turning to managed service providers.\"",
+              "text": "Flexera, \"2025 State of the Cloud Report,\" 2025. „Da Cloud-Budgets bereits um 17 % die Grenzen überschreiten, wenden sich Organisationen zunehmend an verwaltete Service-Provider.\"",
               "url": "https://www.flexera.com/about-us/press-center/new-flexera-report-finds-84-percent-of-organizations-struggle-to-manage-cloud-spend"
             },
             {
-              "text": "AWS, \"Amazon S3 Pricing — Data Transfer,\" 2024. \"Data Transfer OUT from Amazon S3 to Internet: $0.09 per GB for the first 10 TB/month.\"",
+              "text": "AWS, \"Amazon S3 Pricing — Data Transfer,\" 2024. „Datenübertragung AUS Amazon S3 ins Internet: $0,09 pro GB für die ersten 10 TB/Monat.\"",
               "url": "https://aws.amazon.com/s3/pricing/"
             },
             {
-              "text": "Velero backs up Kubernetes cluster resources and persistent volumes and restores them into a cluster.",
+              "text": "Velero sichert Kubernetes-Cluster-Ressourcen und persistente Volumes und stellt sie in einem Cluster wieder her.",
               "url": "https://velero.io/docs/"
             },
             {
-              "text": "Kasten K10 provides backup and restore of Kubernetes applications, including application data.",
+              "text": "Kasten K10 bietet Backup und Wiederherstellung von Kubernetes-Anwendungen, einschließlich Anwendungsdaten.",
               "url": "https://docs.kasten.io/"
             },
             {
-              "text": "Velero cluster migration restores a backup into a new cluster; workloads are recreated from the backup point, not moved live.",
+              "text": "Velero-Cluster-Migration stellt ein Backup in einem neuen Cluster wieder her. Workloads werden vom Backup-Punkt aus neu erstellt, nicht live verschoben.",
               "url": "https://velero.io/docs/main/migration-case/"
             },
             {
-              "text": "Kasten K10 migrates applications between clusters by exporting a restore point and importing it into the target cluster.",
+              "text": "Kasten K10 migriert Anwendungen zwischen Clustern, indem ein Wiederherstellungspunkt exportiert und in den Ziel-Cluster importiert wird.",
               "url": "https://docs.kasten.io/latest/usage/migration.html"
             },
             {
-              "text": "Cluster API's clusterctl move relocates Cluster API objects (the cluster's definition) to another management cluster; it does not move workload data.",
+              "text": "Cluster API's clusterctl move verschiebt Cluster-API-Objekte (die Cluster-Definition) zu einem anderen Management-Cluster. Die Workload-Daten werden nicht verschoben.",
               "url": "https://cluster-api.sigs.k8s.io/clusterctl/commands/move"
             },
             {
-              "text": "Ceph RBD mirroring replicates block device images between Ceph clusters; it covers volumes, not Kubernetes cluster state.",
+              "text": "Ceph-RBD-Mirroring repliziert Block-Device-Abbilder zwischen Ceph-Clustern. Es umfasst Volumes, nicht den Kubernetes-Cluster-Status.",
               "url": "https://docs.ceph.com/en/latest/rbd/rbd-mirroring/"
             },
             {
-              "text": "Ceph RBD mirroring is asynchronous, based on journaling or periodic snapshots, and is designed for disaster recovery.",
+              "text": "Ceph-RBD-Mirroring ist asynchron, basiert auf Journaling oder periodischen Snapshots und ist für die Notfall-Recovery konzipiert.",
               "url": "https://docs.ceph.com/en/latest/rbd/rbd-mirroring/"
             }
           ]
@@ -7776,17 +7782,17 @@
         "stats": [
           {
             "icon": "layers",
-            "label": "Whole 2-node cluster fork",
+            "label": "Kompletter 2-Node-Cluster-Fork",
             "number": "46s"
           },
           {
             "icon": "clock",
-            "label": "Migrate cutover, measured",
+            "label": "Migrations-Umschaltung, gemessen",
             "number": "16s"
           },
           {
             "icon": "zap",
-            "label": "Namespace fork",
+            "label": "Namespace-Fork",
             "number": "1-5s"
           }
         ],

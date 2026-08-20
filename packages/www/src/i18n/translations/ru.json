@@ -7518,30 +7518,30 @@
         "benefits": {
           "items": [
             {
-              "description": "Rediacc сам развернёт k3s или подключится к уже существующему кластеру. Тома работают поверх ceph-csi RBD. Ваши манифесты остаются вашими.",
+              "description": "Rediacc развернёт k3s или подключится к существующему кластеру. Тома работают с ceph-csi RBD. Ваши манифесты остаются вашими.",
               "icon": "check-circle",
-              "title": "Сохраните свой Kubernetes"
+              "title": "Сохраните Kubernetes"
             },
             {
-              "description": "Разворачивайте на собственных KVM-хостах или в облаках вроде Linode с приватными VLAN. Пулы узлов разделяют дисковые узлы Ceph и вычислительные узлы Kubernetes.",
+              "description": "Разворачивайте на своих KVM-хостах или в облаках вроде Linode с приватными VLAN. Пулы узлов разделяют дисковые узлы Ceph и вычислительные узлы Kubernetes.",
               "icon": "arrow-right-circle",
               "title": "Настоящая мобильность между дата-центрами"
             },
             {
-              "description": "Приложение Kubernetes — это namespace. Форкните его как любой репозиторий: 1–5 секунд, вместе с данными. Те же команды, что вы уже используете для Docker-репозиториев.",
+              "description": "Приложение Kubernetes — это namespace. Клонируйте его как обычный репозиторий: 1–5 секунд, вместе с данными. Те же команды, что вы используете для Docker-репозиториев.",
               "icon": "git-branch",
               "title": "Единый подход ко всему"
             }
           ],
           "overline": "ПОЧЕМУ ЭТО ВАЖНО",
-          "title": "Сохраните свой Kubernetes. Получите мобильность."
+          "title": "Сохраните Kubernetes. Получите мобильность."
         },
-        "blurb": "Форкайте или переносите работающий кластер вместе с данными",
+        "blurb": "Клонируйте или переместите работающий кластер с данными",
         "bottomCta": {
           "command": "rdc cluster fork prod --tag staging",
           "ctaText": "Начать бесплатно",
-          "description": "Сделайте форк, протестируйте перенос, а затем мигрируйте по-настоящему. Начните бесплатный 14-дневный период.",
-          "title": "Дайте своему кластеру запасной выход"
+          "description": "Клонируйте, протестируйте перенос, затем делайте по-настоящему. Запустите бесплатный пробный период на 14 дней.",
+          "title": "Дайте кластеру путь к свободе"
         },
         "comparison": {
           "capabilityLabel": "Возможность",
@@ -7550,12 +7550,18 @@
             {
               "name": "Резервирует приложения и тома",
               "refs": [4, 5, 0, 9, 0],
-              "values": ["check", "check", "cross", "Volumes only", "rediacc"]
+              "values": ["check", "check", "cross", "Только тома", "rediacc"]
             },
             {
               "name": "Переносит весь кластер вместе с данными",
               "refs": [6, 7, 8, 0, 0],
-              "values": ["Stop and restore", "Stop and restore", "Shape only", "cross", "rediacc"]
+              "values": [
+                "Остановить и восстановить",
+                "Остановить и восстановить",
+                "Только конфигурация",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Форкает работающий кластер вместе с данными",
@@ -7570,7 +7576,7 @@
             {
               "name": "Копирует данные без полной перезаписи",
               "refs": [0, 0, 0, 10, 0],
-              "values": ["cross", "cross", "cross", "Async copy", "rediacc"]
+              "values": ["cross", "cross", "cross", "Асинхронное копирование", "rediacc"]
             },
             {
               "name": "Короткое измеримое переключение при плановом переносе",
@@ -7583,19 +7589,19 @@
         },
         "hero": {
           "primaryCta": "Начать бесплатно",
-          "subtitle": "Ваш кластер переезжает единым целым: узлы, конфигурация и данные. На другую машину или в другой дата-центр. Переключение измеряется секундами, а не выходными.",
+          "subtitle": "Ваш кластер переезжает единым целым: узлы, конфигурация и данные. На другую машину или в другой дата-центр. Переключение займёт секунды, а не выходные.",
           "title": "Форкните или перенесите работающий кластер Kubernetes"
         },
         "howItWorks": {
           "cloneVisual": {
             "arrow": {
               "icon": "arrow-right-circle-arrow",
-              "label": "Fork",
+              "label": "Клон",
               "time": "46s"
             },
             "clone": {
               "cardClass": "restored",
-              "containerCount": "Fork",
+              "containerCount": "Клон",
               "services": [
                 {
                   "name": "Nodes",
@@ -7663,14 +7669,14 @@
           ],
           "title": "Весь кластер — это один набор файлов"
         },
-        "label": "Мобильность кластеров Kubernetes",
+        "label": "Мобильность кластера Kubernetes",
         "meta": {
           "description": "Форкните или перенесите работающий кластер Kubernetes с данными на другую машину или в другой дата-центр. Короткое переключение. На основе Ceph RBD и k3s.",
           "keywords": "миграция кластера kubernetes, форк кластера, ceph rbd, k3s, мобильность дата-центра, портируемость kubernetes",
-          "title": "Fork or Move a Kubernetes Cluster | Rediacc"
+          "title": "Клонируйте или переместите кластер K8s | Rediacc"
         },
         "problem": {
-          "description": "Kubernetes сделал ваши приложения переносимыми. Но не сам кластер. Данные живут в одном дата-центре. Перенос означает проект с нуля: новые узлы, новое хранилище, восстановление из бэкапа, повторное тестирование всего. Поэтому большинство команд никогда не переезжают. И их провайдер это знает.",
+          "description": "Kubernetes сделал приложения переносимыми. Но не сам кластер. Данные живут в одном дата-центре. Перенос означает проект: новые узлы, новое хранилище, восстановление из резервной копии, повторное тестирование всего. Поэтому большинство команд никогда не переезжают. И их провайдер это знает.",
           "overline": "ПРОБЛЕМА",
           "statCallouts": [
             {
@@ -7688,13 +7694,13 @@
             {
               "number": "$0.09/GB",
               "ref": 3,
-              "source": "AWS/Azure/GCP Pricing 2024",
+              "source": "AWS/Azure/GCP Цены 2024",
               "text": "комиссии за выгрузку данных — специально, чтобы уход был дорогим"
             }
           ],
           "timeline": {
             "newLabel": "С REDIACC",
-            "newSteps": ["Pre-copy", "16s cutover", "Live"],
+            "newSteps": ["Подготовка", "Переключение 16сек", "Активно"],
             "oldLabel": "СТАРЫЙ ПОДХОД",
             "oldSteps": [
               {
@@ -7724,43 +7730,43 @@
         "references": {
           "items": [
             {
-              "text": "Flexera, \"2024 State of the Cloud Report,\" 2024. \"27% of cloud spend continues to be wasted.\"",
+              "text": "Flexera, «2024 State of the Cloud Report», 2024. «27% облачных расходов остаются впустую».",
               "url": "https://www.flexera.com/about-us/press-center/flexera-2024-state-of-the-cloud-managing-spending-top-challenge"
             },
             {
-              "text": "Flexera, \"2025 State of the Cloud Report,\" 2025. \"With cloud budgets already exceeding limits by 17%, organizations are increasingly turning to managed service providers.\"",
+              "text": "Flexera, «2025 State of the Cloud Report», 2025. «Облачные бюджеты уже превышают лимиты на 17%, и организации всё чаще обращаются к поставщикам управляемых услуг».",
               "url": "https://www.flexera.com/about-us/press-center/new-flexera-report-finds-84-percent-of-organizations-struggle-to-manage-cloud-spend"
             },
             {
-              "text": "AWS, \"Amazon S3 Pricing — Data Transfer,\" 2024. \"Data Transfer OUT from Amazon S3 to Internet: $0.09 per GB for the first 10 TB/month.\"",
+              "text": "AWS, «Amazon S3 Pricing — Data Transfer», 2024. «Передача данных из Amazon S3 в интернет: 0,09 $ за ГБ для первых 10 ТБ/месяц».",
               "url": "https://aws.amazon.com/s3/pricing/"
             },
             {
-              "text": "Velero backs up Kubernetes cluster resources and persistent volumes and restores them into a cluster.",
+              "text": "Velero создаёт резервные копии ресурсов кластера Kubernetes и постоянных томов и восстанавливает их в кластер.",
               "url": "https://velero.io/docs/"
             },
             {
-              "text": "Kasten K10 provides backup and restore of Kubernetes applications, including application data.",
+              "text": "Kasten K10 обеспечивает резервное копирование и восстановление приложений Kubernetes, включая данные приложений.",
               "url": "https://docs.kasten.io/"
             },
             {
-              "text": "Velero cluster migration restores a backup into a new cluster; workloads are recreated from the backup point, not moved live.",
+              "text": "Миграция кластера Velero восстанавливает резервную копию в новом кластере; рабочие нагрузки воссоздаются из точки резервной копии, а не переносятся на лету.",
               "url": "https://velero.io/docs/main/migration-case/"
             },
             {
-              "text": "Kasten K10 migrates applications between clusters by exporting a restore point and importing it into the target cluster.",
+              "text": "Kasten K10 переносит приложения между кластерами путём экспорта точки восстановления и импорта её в целевой кластер.",
               "url": "https://docs.kasten.io/latest/usage/migration.html"
             },
             {
-              "text": "Cluster API's clusterctl move relocates Cluster API objects (the cluster's definition) to another management cluster; it does not move workload data.",
+              "text": "Команда clusterctl move Cluster API переносит объекты Cluster API (определение кластера) в другой управляющий кластер; данные рабочих нагрузок не перемещаются.",
               "url": "https://cluster-api.sigs.k8s.io/clusterctl/commands/move"
             },
             {
-              "text": "Ceph RBD mirroring replicates block device images between Ceph clusters; it covers volumes, not Kubernetes cluster state.",
+              "text": "Зеркалирование Ceph RBD реплицирует образы блочных устройств между кластерами Ceph; охватывает тома, но не состояние кластера Kubernetes.",
               "url": "https://docs.ceph.com/en/latest/rbd/rbd-mirroring/"
             },
             {
-              "text": "Ceph RBD mirroring is asynchronous, based on journaling or periodic snapshots, and is designed for disaster recovery.",
+              "text": "Зеркалирование Ceph RBD асинхронно, основано на журналировании или периодических снимках и предназначено для аварийного восстановления.",
               "url": "https://docs.ceph.com/en/latest/rbd/rbd-mirroring/"
             }
           ]
@@ -7768,17 +7774,17 @@
         "stats": [
           {
             "icon": "layers",
-            "label": "Whole 2-node cluster fork",
+            "label": "Клон кластера с 2 узлами целиком",
             "number": "46s"
           },
           {
             "icon": "clock",
-            "label": "Migrate cutover, measured",
+            "label": "Переключение при миграции",
             "number": "16s"
           },
           {
             "icon": "zap",
-            "label": "Namespace fork",
+            "label": "Клон namespace",
             "number": "1-5s"
           }
         ],

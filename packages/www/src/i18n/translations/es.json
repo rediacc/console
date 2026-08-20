@@ -7522,30 +7522,30 @@
         "benefits": {
           "items": [
             {
-              "description": "Rediacc ejecuta k3s por ti, o se conecta a un clúster que ya tienes. Los volúmenes viajan sobre ceph-csi RBD. Tus manifiestos siguen siendo tuyos.",
+              "description": "Rediacc ejecuta k3s por ti, o se conecta a un clúster existente. Los volúmenes corren sobre ceph-csi RBD. Tus manifiestos nunca cambian.",
               "icon": "check-circle",
-              "title": "Conserva tu Kubernetes"
+              "title": "Mantén tu Kubernetes"
             },
             {
-              "description": "Aprovisiona en tus propios hosts KVM o en nubes como Linode con VLANs privadas. Los pools de nodos separan los nodos Ceph, intensivos en disco, de los nodos Kubernetes, intensivos en CPU.",
+              "description": "Aprovisiona en hosts KVM locales o en nubes como Linode con VLANs privadas. Los node pools mantienen separados los nodos Ceph —intensivos en disco— de los nodos Kubernetes —intensivos en CPU.",
               "icon": "arrow-right-circle",
               "title": "Movilidad real entre datacenters"
             },
             {
-              "description": "Una app de Kubernetes es un namespace. Haz fork de ella como cualquier repositorio: 1 a 5 segundos, datos incluidos. Los mismos comandos que ya usas para tus repositorios Docker.",
+              "description": "Una app de Kubernetes es un namespace. Clónalo como cualquier repo: de 1 a 5 segundos, datos incluidos. Los mismos comandos que usas con tus repositorios Docker.",
               "icon": "git-branch",
               "title": "Una sola forma de pensar para todo"
             }
           ],
           "overline": "POR QUÉ IMPORTA",
-          "title": "Conserva tu Kubernetes. Gana movilidad."
+          "title": "Mantén tu Kubernetes. Gana movilidad."
         },
-        "blurb": "Haga fork o mueva un clúster en ejecución, datos incluidos",
+        "blurb": "Clona o traslada tu clúster en ejecución, datos incluidos",
         "bottomCta": {
           "command": "rdc cluster fork prod --tag staging",
           "ctaText": "Empieza gratis",
-          "description": "Haz fork, prueba el movimiento y luego migra de verdad. Empieza tu prueba gratuita de 14 días.",
-          "title": "Dale a tu clúster una ruta de salida"
+          "description": "Clónalo, prueba el cambio y luego migra de verdad. Inicia tu prueba gratuita de 14 días.",
+          "title": "Dale a tu clúster una puerta de salida"
         },
         "comparison": {
           "capabilityLabel": "Capacidad",
@@ -7554,12 +7554,18 @@
             {
               "name": "Hace backup de apps y volúmenes",
               "refs": [4, 5, 0, 9, 0],
-              "values": ["check", "check", "cross", "Volumes only", "rediacc"]
+              "values": ["check", "check", "cross", "Solo volúmenes", "rediacc"]
             },
             {
               "name": "Mueve un clúster completo con sus datos",
               "refs": [6, 7, 8, 0, 0],
-              "values": ["Stop and restore", "Stop and restore", "Shape only", "cross", "rediacc"]
+              "values": [
+                "Detener y restaurar",
+                "Detener y restaurar",
+                "Solo la forma",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Hace fork de un clúster en ejecución, datos incluidos",
@@ -7574,7 +7580,7 @@
             {
               "name": "Copia datos sin una reescritura completa",
               "refs": [0, 0, 0, 10, 0],
-              "values": ["cross", "cross", "cross", "Async copy", "rediacc"]
+              "values": ["cross", "cross", "cross", "Copia asíncrona", "rediacc"]
             },
             {
               "name": "Corte breve y medido para un movimiento planificado",
@@ -7587,7 +7593,7 @@
         },
         "hero": {
           "primaryCta": "Empieza gratis",
-          "subtitle": "Tu clúster se mueve como un solo conjunto: nodos, configuración y datos. A otra máquina o a otro datacenter. El corte se mide en segundos, no en un fin de semana.",
+          "subtitle": "Se mueve como un solo conjunto: nodos, config y datos. A otra máquina u otro datacenter. El cambio se mide en segundos, no en fin de semana.",
           "title": "Haz fork o mueve un clúster de Kubernetes en ejecución"
         },
         "howItWorks": {
@@ -7667,38 +7673,38 @@
           ],
           "title": "Todo el clúster es un solo conjunto de archivos"
         },
-        "label": "Movilidad de clústeres Kubernetes",
+        "label": "Movilidad del clúster Kubernetes",
         "meta": {
           "description": "Haz fork o mueve un clúster de Kubernetes en ejecución, datos incluidos, a otra máquina o datacenter. Corte breve y medido. Construido sobre Ceph RBD y k3s.",
           "keywords": "migración de clústeres kubernetes, fork de clúster, ceph rbd, k3s, movilidad entre datacenters, portabilidad de kubernetes",
-          "title": "Fork or Move a Kubernetes Cluster | Rediacc"
+          "title": "Clona o mueve un clúster Kubernetes | Rediacc"
         },
         "problem": {
-          "description": "Kubernetes hizo portátiles tus apps. El clúster en sí no lo es. Los datos viven en un solo datacenter. Moverlo significa un proyecto de reconstrucción: nodos nuevos, almacenamiento nuevo, restaurar desde backup, volver a probar todo. Por eso la mayoría de los equipos nunca se muda. Y su proveedor lo sabe.",
+          "description": "Kubernetes volvió portátiles tus apps. El clúster, no. Los datos viven en un solo datacenter. Moverlos significa reconstruir: nodos nuevos, almacenamiento nuevo, restaurar desde backup, retest total. Por eso la mayoría de los equipos nunca se muda. Y el proveedor lo sabe.",
           "overline": "EL PROBLEMA",
           "statCallouts": [
             {
               "number": "27%",
               "ref": 1,
-              "source": "Flexera 2024 State of the Cloud Report",
+              "source": "Reporte State of the Cloud 2024 de Flexera",
               "text": "del gasto en IaaS/PaaS en la nube se desperdicia en las organizaciones"
             },
             {
               "number": "17%",
               "ref": 2,
-              "source": "Flexera 2025 State of the Cloud Report",
+              "source": "Reporte State of the Cloud 2025 de Flexera",
               "text": "exceso promedio del presupuesto de nube por las organizaciones"
             },
             {
               "number": "$0.09/GB",
               "ref": 3,
-              "source": "AWS/Azure/GCP Pricing 2024",
+              "source": "Precios AWS/Azure/GCP 2024",
               "text": "tarifas de egreso que hacen que irse sea costoso por diseño"
             }
           ],
           "timeline": {
             "newLabel": "CON REDIACC",
-            "newSteps": ["Pre-copy", "16s cutover", "Live"],
+            "newSteps": ["Pre-copia", "Cambio de 16s", "En vivo"],
             "oldLabel": "LA FORMA ANTIGUA",
             "oldSteps": [
               {
@@ -7728,43 +7734,43 @@
         "references": {
           "items": [
             {
-              "text": "Flexera, \"2024 State of the Cloud Report,\" 2024. \"27% of cloud spend continues to be wasted.\"",
+              "text": "Flexera, «Reporte State of the Cloud 2024», 2024. «El 27 % del gasto en cloud sigue siendo desperdiciado».",
               "url": "https://www.flexera.com/about-us/press-center/flexera-2024-state-of-the-cloud-managing-spending-top-challenge"
             },
             {
-              "text": "Flexera, \"2025 State of the Cloud Report,\" 2025. \"With cloud budgets already exceeding limits by 17%, organizations are increasingly turning to managed service providers.\"",
+              "text": "Flexera, «Reporte State of the Cloud 2025», 2025. «Con presupuestos en cloud ya sobrepasando límites en 17 %, las organizaciones recurren cada vez más a proveedores de servicios gestionados».",
               "url": "https://www.flexera.com/about-us/press-center/new-flexera-report-finds-84-percent-of-organizations-struggle-to-manage-cloud-spend"
             },
             {
-              "text": "AWS, \"Amazon S3 Pricing — Data Transfer,\" 2024. \"Data Transfer OUT from Amazon S3 to Internet: $0.09 per GB for the first 10 TB/month.\"",
+              "text": "AWS, «Precios de transferencia de datos de Amazon S3», 2024. «Transferencia de datos FUERA de Amazon S3 a Internet: $0,09 por GB en los primeros 10 TB/mes».",
               "url": "https://aws.amazon.com/s3/pricing/"
             },
             {
-              "text": "Velero backs up Kubernetes cluster resources and persistent volumes and restores them into a cluster.",
+              "text": "Velero respalda recursos del clúster Kubernetes y volúmenes persistentes, y los restaura en otro clúster.",
               "url": "https://velero.io/docs/"
             },
             {
-              "text": "Kasten K10 provides backup and restore of Kubernetes applications, including application data.",
+              "text": "Kasten K10 proporciona copia de seguridad y restauración de aplicaciones Kubernetes, incluidos datos de aplicaciones.",
               "url": "https://docs.kasten.io/"
             },
             {
-              "text": "Velero cluster migration restores a backup into a new cluster; workloads are recreated from the backup point, not moved live.",
+              "text": "La migración de clústeres Velero restaura un respaldo en un nuevo clúster; las cargas de trabajo se recrean desde el punto de respaldo, no se mueven en vivo.",
               "url": "https://velero.io/docs/main/migration-case/"
             },
             {
-              "text": "Kasten K10 migrates applications between clusters by exporting a restore point and importing it into the target cluster.",
+              "text": "Kasten K10 migra aplicaciones entre clústeres exportando un punto de restauración e importándolo en el clúster destino.",
               "url": "https://docs.kasten.io/latest/usage/migration.html"
             },
             {
-              "text": "Cluster API's clusterctl move relocates Cluster API objects (the cluster's definition) to another management cluster; it does not move workload data.",
+              "text": "El comando clusterctl move de Cluster API reubica objetos de Cluster API (la definición del clúster) a otro clúster de gestión; no mueve datos de carga de trabajo.",
               "url": "https://cluster-api.sigs.k8s.io/clusterctl/commands/move"
             },
             {
-              "text": "Ceph RBD mirroring replicates block device images between Ceph clusters; it covers volumes, not Kubernetes cluster state.",
+              "text": "La replicación de RBD de Ceph replica imágenes de dispositivos de bloque entre clústeres Ceph; cubre volúmenes, no estado del clúster Kubernetes.",
               "url": "https://docs.ceph.com/en/latest/rbd/rbd-mirroring/"
             },
             {
-              "text": "Ceph RBD mirroring is asynchronous, based on journaling or periodic snapshots, and is designed for disaster recovery.",
+              "text": "La replicación de RBD de Ceph es asíncrona, basada en journaling o snapshots periódicos, y está diseñada para recuperación ante desastres.",
               "url": "https://docs.ceph.com/en/latest/rbd/rbd-mirroring/"
             }
           ]
@@ -7772,17 +7778,17 @@
         "stats": [
           {
             "icon": "layers",
-            "label": "Whole 2-node cluster fork",
+            "label": "Fork del clúster de 2 nodos",
             "number": "46s"
           },
           {
             "icon": "clock",
-            "label": "Migrate cutover, measured",
+            "label": "Cambio medido",
             "number": "16s"
           },
           {
             "icon": "zap",
-            "label": "Namespace fork",
+            "label": "Fork del namespace",
             "number": "1-5s"
           }
         ],
@@ -7834,40 +7840,40 @@
         "benefits": {
           "items": [
             {
-              "description": "Los datos permanecen cifrados con AES-256 durante cada paso de la migración. Sin descifrado temporal en ninguna etapa.",
+              "description": "Los datos permanecen cifrados con AES-256 en cada paso de la migración. Nunca se descifran, ni siquiera por un instante.",
               "icon": "lock",
               "title": "Cifrado en tránsito"
             },
             {
-              "description": "Configuración de cifrado, claves en manos del cliente, ajustes de Docker y políticas de red migran como una unidad atómica.",
+              "description": "La configuración de cifrado, las claves, los ajustes de Docker y las políticas de red migran como una sola unidad.",
               "icon": "package",
               "title": "La configuración viaja con los datos"
             },
             {
               "description": "Sin descifrado temporal. Sin ventanas de exposición. Ningún intermediario ve los datos en texto plano.",
               "icon": "eye-off",
-              "title": "Transferencia de confianza cero"
+              "title": "Privacidad total"
             }
           ],
           "overline": "POR QUÉ IMPORTA",
           "title": "Lo que obtienes"
         },
-        "blurb": "Migre sin arriesgar sus datos",
+        "blurb": "Migra sin arriesgar tus datos",
         "bottomCta": {
           "command": "rdc repo push production --to secondary",
-          "description": "Comienza con la edición Community gratuita. Migración cifrada incluida.",
+          "description": "La migración cifrada viene incluida. Comienza tu prueba gratuita de 14 días.",
           "primaryCta": "Empieza gratis",
-          "tierBadge": "Gratis hasta 5 repositorios · Sin tarjeta de crédito",
-          "title": "Migra de forma segura, siempre"
+          "tierBadge": "Prueba gratuita 14 días · Cancela en cualquier momento",
+          "title": "Migra de forma segura, cada vez"
         },
         "calculator": {
           "annualLabel": "Riesgo anual de migración",
-          "description": "Cada migración sin cifrado de extremo a extremo es un incidente de cumplimiento esperando ocurrir.",
-          "footnote": "Asume $200/hr de coste laboral para reconfiguración de cifrado, $4,880/TB prima por brecha (IBM 2024), y 1% de probabilidad de brecha por ventana de exposición. Rediacc mantiene el cifrado durante todo el proceso — cero ventanas de exposición, cero re-cifrado necesario.",
+          "description": "Toda migración sin cifrado de extremo a extremo es un incidente de cumplimiento esperando suceder.",
+          "footnote": "Asume $200/hora de coste laboral para reconfiguración de cifrado, $4.880/TB de prima por brecha (IBM 2024), y 1% de probabilidad de brecha por ventana de exposición. Rediacc mantiene el cifrado en todo momento - cero ventanas de exposición, cero re-cifrado necesario.",
           "headerTitle": "Calculadora de riesgo de migración",
           "overline": "EL COSTE REAL",
           "results": {
-            "labor": "Coste laboral de re-cifrado",
+            "labor": "Coste de trabajo de re-cifrado",
             "risk": "Datos en riesgo por migración",
             "windows": "Ventanas de exposición / año"
           },
@@ -7876,7 +7882,7 @@
             "hours": "Horas de exposición por migración",
             "migrations": "Migraciones por año"
           },
-          "title": "Lo que el riesgo de migración te está costando",
+          "title": "Lo que realmente te cuesta el riesgo de migración",
           "withAnnual": "$0",
           "withoutTag": "Sin Rediacc",
           "withResults": {
@@ -7888,7 +7894,7 @@
         },
         "comparison": {
           "capabilityLabel": "Capacidad",
-          "description": "La mayoría de las herramientas de backup tratan la migración como algo secundario. Rediacc la trata como una operación cifrada de primera clase.",
+          "description": "La mayoría de las herramientas de backup ven la migración como un complemento. Rediacc la integró desde el inicio, cifrada de principio a fin.",
           "features": [
             {
               "name": "Migración sin descifrado",
@@ -7931,7 +7937,7 @@
         },
         "hero": {
           "primaryCta": "Empieza gratis",
-          "subtitle": "¿Moviendo entre servidores, nubes o proveedores? Tus copias cifradas viajan de forma segura. Sin exposición. Sin pérdida de datos.",
+          "subtitle": "¿Cambias de servidor, nube o proveedor? Los backups permanecen cifrados durante todo el proceso. Sin exposición. Sin pérdidas.",
           "title": "Migra sin arriesgar tus datos"
         },
         "howItWorks": {
@@ -7994,55 +8000,55 @@
           "overline": "CÓMO FUNCIONA",
           "steps": [
             {
-              "description": "Sus snapshots cifrados de btrfs se empaquetan con claves, configuraciones y políticas intactas. Nada se descifra.",
+              "description": "Los snapshots cifrados de btrfs se empaquetan con claves, configuraciones y políticas intactas. Nada se descifra nunca.",
               "icon": "package",
-              "title": "Pack"
+              "title": "Empaqueta"
             },
             {
-              "description": "Transfiera a cualquier destino por un canal cifrado. AES-256 nunca se interrumpe durante el tránsito.",
+              "description": "Envíalos a cualquier servidor, nube o proveedor. Los datos permanecen cifrados durante todo el trayecto. AES-256 nunca se desactiva.",
               "icon": "arrow-right-circle",
-              "title": "Move"
+              "title": "Transfiere"
             },
             {
-              "description": "Las verificaciones de integridad SHA-256 confirman que cada byte llegó intacto. Reversión automática si algo falla.",
+              "description": "Las verificaciones de integridad SHA-256 confirman que cada archivo llegó intacto. Si falta un solo byte, la migración se revierte automáticamente.",
               "icon": "check-circle",
-              "title": "Verificar"
+              "title": "Verifica"
             }
           ],
           "title": "Un comando. Cero exposición."
         },
-        "label": "Seguridad en la migración",
+        "label": "Migración segura",
         "meta": {
-          "description": "¿Moviendo entre servidores, nubes o proveedores? Tus copias cifradas viajan de forma segura. Sin exposición. Sin pérdida de datos.",
+          "description": "¿Cambias de servidor, nube o proveedor? Tus copias cifradas se transfieren de forma segura. Sin exposición. Sin pérdidas.",
           "keywords": "migración cifrada, transferencia sin exposición, seguridad en migración de datos, transferencia de backup cifrada, migración btrfs, migración de servidores, cifrado de migración en la nube",
-          "title": "Migración segura - Sin riesgo de datos | Rediacc"
+          "title": "Migración segura - Datos sin riesgo | Rediacc"
         },
         "problem": {
-          "description": "Mover datos entre sistemas crea exposición. Archivos temporales, transferencias sin cifrar, configuraciones incompatibles. Cada migración es una ventana de riesgo. Y la mayoría de las herramientas pierden la configuración de cifrado cuando mueves — obligándote a reconfigurar todo desde cero en el otro lado.",
+          "description": "Mover datos entre sistemas crea exposición. Las herramientas convencionales descifran primero, luego copian, dejando tus archivos sin protección durante la transferencia. Un error y se filtran. Y cuando termina la migración, pierdes la configuración de cifrado anterior, obligándote a reconfigurar todo desde cero.",
           "overline": "EL PROBLEMA",
           "statCallouts": [
             {
               "number": "89%",
               "ref": 2,
               "source": "Flexera 2024 / Thales 2025",
-              "text": "de las empresas operan multi-nube, pero solo el 8% cifra más del 80% de los datos en la nube"
+              "text": "de las empresas usan múltiples nubes, pero solo el 8% cifran más del 80% de sus datos en la nube"
             },
             {
               "number": "$4.88M",
               "ref": 3,
               "source": "IBM Cost of Data Breach 2024",
-              "text": "costo promedio de una brecha de datos a nivel global"
+              "text": "coste promedio de una brecha de datos a nivel mundial"
             },
             {
               "number": "$90K–$300K",
               "ref": 4,
               "source": "Cloud provider pricing",
-              "text": "costo de egreso por petabyte al migrar datos cifrados entre nubes"
+              "text": "en costes de transferencia de datos por petabyte entre nubes"
             }
           ],
           "timeline": {
             "newLabel": "Con Rediacc",
-            "newSteps": ["Ejecutar migración", "0 exposición", "Verificado"],
+            "newSteps": ["Un solo comando", "Cero exposición", "Verificado"],
             "oldLabel": "Migración tradicional",
             "oldSteps": [
               {
@@ -8067,60 +8073,60 @@
               }
             ]
           },
-          "title": "La migración es cuando los datos son más vulnerables"
+          "title": "La migración es cuando tus datos están más expuestos"
         },
         "references": {
           "items": [
             {
-              "text": "Flexera, “2024 State of the Cloud Report,” 2024. “Multi-cloud usage up from 87% last year to 89% this year.”",
+              "text": "Flexera, \"2024 State of the Cloud Report,\" 2024. \"El uso de multi-nube aumentó de 87% el año pasado a 89% este año.\"",
               "url": "https://www.flexera.com/about-us/press-center/flexera-2024-state-of-the-cloud-managing-spending-top-challenge"
             },
             {
-              "text": "Thales, “2025 Cloud Security Study,” conducted by S&P Global 451 Research, 2025. “Only 8% of organizations encrypt 80% or more of their cloud data.”",
+              "text": "Thales, \"2025 Cloud Security Study,\" conducido por S&P Global 451 Research, 2025. \"Solo el 8% de las organizaciones cifran el 80% o más de sus datos en la nube.\"",
               "url": "https://cpl.thalesgroup.com/about-us/newsroom/thales-2025-cloud-security-study-reveals-ai-tool-sprawl-security-gap"
             },
             {
-              "text": "IBM Security, “Cost of a Data Breach Report 2024,” July 2024. “The global average cost of a data breach reached $4.88 million in 2024.”",
+              "text": "IBM Security, \"Cost of a Data Breach Report 2024,\" julio de 2024. \"El coste promedio global de una brecha de datos alcanzó $4,88 millones en 2024.\"",
               "url": "https://newsroom.ibm.com/2024-07-30-ibm-report-escalating-data-breach-disruption-pushes-costs-to-new-highs"
             },
             {
-              "text": "AWS, “Amazon S3 Pricing — Data Transfer,” 2024. “Data Transfer OUT from Amazon S3 to Internet: $0.09 per GB for the first 10 TB/month.”",
+              "text": "AWS, \"Amazon S3 Pricing - Data Transfer,\" 2024. \"Transferencia de datos salientes de Amazon S3 a Internet: $0,09 por GB para los primeros 10 TB/mes.\"",
               "url": "https://aws.amazon.com/s3/pricing/"
             },
             {
-              "text": "Commvault CommCell Migration moves entire clients including configuration, backup history, and data as a single operation.",
+              "text": "Commvault CommCell Migration traslada clientes completos incluyendo configuración, historial de backups y datos como una sola operación.",
               "url": "https://documentation.commvault.com/v11/commcell-console/commcell_migration_overview.html"
             },
             {
-              "text": "Veeam SureBackup verifies data integrity post-transfer by booting VMs and running application-level health checks.",
+              "text": "Veeam SureBackup verifica la integridad de los datos después de la transferencia iniciando máquinas virtuales y ejecutando controles de salud a nivel de aplicación.",
               "url": "https://helpcenter.veeam.com/docs/vbr/userguide/surebackup_recovery_verification.html"
             },
             {
-              "text": "Rubrik performs automated integrity checks on ingested data using its append-only file system verification.",
+              "text": "Rubrik realiza controles de integridad automatizados en datos ingeridos utilizando su verificación del sistema de archivos de solo adición.",
               "url": "https://docs.rubrik.com/en-us/saas/saas/common_sla_policy_tasks.html"
             },
             {
-              "text": "Commvault validates data integrity post-transfer using CRC checksums at multiple stages including Data Verification jobs.",
+              "text": "Commvault valida la integridad de los datos después de la transferencia utilizando sumas de comprobación CRC en múltiples etapas incluyendo trabajos de Verificación de Datos.",
               "url": "https://documentation.commvault.com/2024e/commcell-console/data_integrity_validation.html"
             },
             {
-              "text": "Druva Restore Check proactively verifies backup data consistency and device snapshots on an automated schedule.",
+              "text": "Druva Restore Check verifica proactivamente la consistencia de datos de backup e instantáneas de dispositivos en un cronograma automatizado.",
               "url": "https://help.druva.com/en/articles/8513279-verify-the-integrity-of-the-downloaded-data"
             },
             {
-              "text": "Veeam supports cross-platform recovery including VMware-to-Hyper-V, physical-to-virtual, and cloud migrations via Instant Recovery.",
+              "text": "Veeam admite recuperación multiplataforma incluyendo migraciones de VMware a Hyper-V, físico a virtual, y migraciones a la nube mediante Instant Recovery.",
               "url": "https://helpcenter.veeam.com/docs/vbr/userguide/instant_recovery.html"
             },
             {
-              "text": "Rubrik supports cross-platform Live Mount and export to VMware, Hyper-V, AWS, and Azure environments.",
+              "text": "Rubrik admite Live Mount multiplataforma y exportación a entornos VMware, Hyper-V, AWS, y Azure.",
               "url": "https://docs.rubrik.com/en-us/saas/saas/vs_performing_an_instant_recovery.html"
             },
             {
-              "text": "Commvault supports cross-hypervisor restores (VM conversion) between VMware, Hyper-V, AWS, Azure, GCP, and more.",
+              "text": "Commvault admite restauraciones entre hipervísores (conversión de máquinas virtuales) entre VMware, Hyper-V, AWS, Azure, GCP, y más.",
               "url": "https://documentation.commvault.com/saas/cross_hypervisor_restores_vm_conversion.html"
             },
             {
-              "text": "Commvault Undo Failover automatically rolls back to pre-failover state by restoring original VM configuration.",
+              "text": "Commvault Undo Failover revierte automáticamente al estado previo a la conmutación por error al restaurar la configuración original de la máquina virtual.",
               "url": "https://documentation.commvault.com/v11/software/undoing_failover.html"
             }
           ]
@@ -8139,36 +8145,36 @@
             },
             "improvement": "Cero ventanas de exposición · 10x más rápido"
           },
-          "quote": "Migramos 42 servidores de Hetzner a OVH en un fin de semana. 350 TB de datos cifrados transferidos sin un solo byte expuesto. Nuestra migración anterior — solo 8 servidores — tomó tres semanas y requirió descifrar todo en un área de staging. Esa fue la última vez que aceptamos ese riesgo."
+          "quote": "Migramos 42 servidores de Hetzner a OVH en un fin de semana. 350 TB de datos cifrados transferidos sin un solo byte expuesto. Nuestra migración anterior - solo 8 servidores - tomó tres semanas y requirió descifrar todo en un área de staging. Esa fue la última vez que aceptamos ese riesgo."
         },
         "stats": [
           {
             "icon": "shield",
-            "label": "Data Exposed During Migration",
+            "label": "Datos expuestos durante la migración",
             "number": "0"
           },
           {
             "icon": "check-circle",
-            "label": "Encryption Maintained",
+            "label": "Cifrado mantenido",
             "number": "100%"
           },
           {
             "icon": "arrow-right-circle",
-            "label": "Destination Supported",
+            "label": "Destino compatible",
             "number": "Any"
           }
         ],
         "techDiff": {
-          "description": "Las herramientas de migración tradicionales descifran los datos antes de transferirlos, creando ventanas de exposición donde tus datos quedan desprotegidos. Rediacc nunca descifra durante la migración — las instantáneas btrfs cifradas se transfieren como bloques sellados.",
+          "description": "Las herramientas de migración tradicionales descifran los datos antes de transferirlos, creando ventanas de exposición donde tus datos quedan desprotegidos. Rediacc nunca descifra durante la migración - las instantáneas btrfs cifradas se transfieren como bloques sellados.",
           "overline": "BAJO EL CAPÓ",
           "rediaccLabel": "Rediacc",
           "rows": [
             {
-              "rediacc": "Envío/recepción cifrada de btrfs — nunca se descifra",
+              "rediacc": "Envío/recepción cifrada de btrfs - nunca se descifra",
               "traditional": "Pipeline de descifrar → transferir → re-cifrar"
             },
             {
-              "rediacc": "Las claves viajan por separado, en manos del cliente en todo momento",
+              "rediacc": "Las claves viajan por separado, siempre en manos del cliente",
               "traditional": "Las claves de cifrado deben compartirse con la herramienta de transferencia"
             },
             {
@@ -8177,14 +8183,14 @@
             },
             {
               "rediacc": "Verificación de checksum SHA-256 por repositorio después de la transferencia",
-              "traditional": "Integridad asumida — sin verificación automática"
+              "traditional": "Integridad asumida - sin verificación automática"
             },
             {
-              "rediacc": "Haz fork del clúster primero. Prueba el movimiento antes de hacer el corte",
+              "rediacc": "Crea un fork del clúster primero. Prueba la migración antes de hacer el corte.",
               "traditional": "Las migraciones de clústeres exigen una infraestructura paralela y un acto de fe"
             }
           ],
-          "title": "Descifrar-transferir-re-cifrar vs. migración sin exposición",
+          "title": "Descifrar-Copiar-Re-cifrar vs. Migración sin exposición",
           "traditionalLabel": "Migración tradicional"
         }
       },

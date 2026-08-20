@@ -7558,12 +7558,18 @@
             {
               "name": "Sauvegarde les apps et les volumes",
               "refs": [4, 5, 0, 9, 0],
-              "values": ["check", "check", "cross", "Volumes only", "rediacc"]
+              "values": ["check", "check", "cross", "Volumes uniquement", "rediacc"]
             },
             {
               "name": "Déplace un cluster entier avec ses données",
               "refs": [6, 7, 8, 0, 0],
-              "values": ["Stop and restore", "Stop and restore", "Shape only", "cross", "rediacc"]
+              "values": [
+                "Arrêt et restauration",
+                "Arrêt et restauration",
+                "Schéma uniquement",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Forke un cluster actif, données incluses",
@@ -7578,7 +7584,7 @@
             {
               "name": "Copie les données sans réécriture complète",
               "refs": [0, 0, 0, 10, 0],
-              "values": ["cross", "cross", "cross", "Async copy", "rediacc"]
+              "values": ["cross", "cross", "cross", "Copie asynchrone", "rediacc"]
             },
             {
               "name": "Basculement court et mesuré pour un déplacement planifié",
@@ -7598,12 +7604,12 @@
           "cloneVisual": {
             "arrow": {
               "icon": "arrow-right-circle-arrow",
-              "label": "Fork",
+              "label": "Dupliquer",
               "time": "46s"
             },
             "clone": {
               "cardClass": "restored",
-              "containerCount": "Fork",
+              "containerCount": "Dupliquer",
               "services": [
                 {
                   "name": "Nodes",
@@ -7624,7 +7630,7 @@
               ],
               "size": "46s",
               "status": "Running",
-              "title": "prod-staging (Datacenter B)"
+              "title": "prod-staging (Centre de données B)"
             },
             "production": {
               "containerCount": "Source",
@@ -7648,7 +7654,7 @@
               ],
               "size": "Untouched",
               "status": "Running",
-              "title": "prod (Datacenter A)"
+              "title": "prod (Centre de données A)"
             }
           },
           "overline": "COMMENT ÇA MARCHE",
@@ -7675,7 +7681,7 @@
         "meta": {
           "description": "Forkez ou déplacez un cluster Kubernetes actif, données incluses, vers une autre machine ou datacenter. Bascule courte. Construit sur Ceph RBD et k3s.",
           "keywords": "migration de cluster kubernetes, fork de cluster, ceph rbd, k3s, mobilité datacenter, portabilité kubernetes",
-          "title": "Fork or Move a Kubernetes Cluster | Rediacc"
+          "title": "Dupliquer ou déplacer un cluster Kubernetes | Rediacc"
         },
         "problem": {
           "description": "Kubernetes a rendu vos apps portables. Le cluster, lui, ne l'est pas. Les données vivent dans un seul datacenter. Le déplacer, c'est un projet de reconstruction : nouveaux nœuds, nouveau stockage, restauration depuis un backup, retest de tout. Alors la plupart des équipes ne bougent jamais. Et leur fournisseur le sait très bien.",
@@ -7702,7 +7708,7 @@
           ],
           "timeline": {
             "newLabel": "AVEC REDIACC",
-            "newSteps": ["Pre-copy", "16s cutover", "Live"],
+            "newSteps": ["Pré-copie", "Basculement 16s", "En production"],
             "oldLabel": "L'ANCIENNE MÉTHODE",
             "oldSteps": [
               {
@@ -7732,43 +7738,43 @@
         "references": {
           "items": [
             {
-              "text": "Flexera, \"2024 State of the Cloud Report,\" 2024. \"27% of cloud spend continues to be wasted.\"",
+              "text": "Flexera, « 2024 State of the Cloud Report », 2024. « 27 % des dépenses cloud continuent d'être gaspillées. »",
               "url": "https://www.flexera.com/about-us/press-center/flexera-2024-state-of-the-cloud-managing-spending-top-challenge"
             },
             {
-              "text": "Flexera, \"2025 State of the Cloud Report,\" 2025. \"With cloud budgets already exceeding limits by 17%, organizations are increasingly turning to managed service providers.\"",
+              "text": "Flexera, « 2025 State of the Cloud Report », 2025. « Avec les budgets cloud dépassant déjà les limites de 17 %, les entreprises se tournent de plus en plus vers des prestataires de services gérés. »",
               "url": "https://www.flexera.com/about-us/press-center/new-flexera-report-finds-84-percent-of-organizations-struggle-to-manage-cloud-spend"
             },
             {
-              "text": "AWS, \"Amazon S3 Pricing — Data Transfer,\" 2024. \"Data Transfer OUT from Amazon S3 to Internet: $0.09 per GB for the first 10 TB/month.\"",
+              "text": "AWS, « Amazon S3 Pricing — Data Transfer », 2024. « Transfert de données depuis Amazon S3 vers Internet : 0,09 $ par Go pour les 10 premiers To/mois. »",
               "url": "https://aws.amazon.com/s3/pricing/"
             },
             {
-              "text": "Velero backs up Kubernetes cluster resources and persistent volumes and restores them into a cluster.",
+              "text": "Velero sauvegarde les ressources de cluster Kubernetes et les volumes persistants, et les restaure dans un cluster.",
               "url": "https://velero.io/docs/"
             },
             {
-              "text": "Kasten K10 provides backup and restore of Kubernetes applications, including application data.",
+              "text": "Kasten K10 assure la sauvegarde et la restauration des applications Kubernetes, y compris les données applicatives.",
               "url": "https://docs.kasten.io/"
             },
             {
-              "text": "Velero cluster migration restores a backup into a new cluster; workloads are recreated from the backup point, not moved live.",
+              "text": "La migration de cluster Velero restaure une sauvegarde dans un nouveau cluster ; les charges de travail sont recréées à partir du point de sauvegarde, et non migrées en direct.",
               "url": "https://velero.io/docs/main/migration-case/"
             },
             {
-              "text": "Kasten K10 migrates applications between clusters by exporting a restore point and importing it into the target cluster.",
+              "text": "Kasten K10 migre les applications entre clusters en exportant un point de restauration et en l'important dans le cluster cible.",
               "url": "https://docs.kasten.io/latest/usage/migration.html"
             },
             {
-              "text": "Cluster API's clusterctl move relocates Cluster API objects (the cluster's definition) to another management cluster; it does not move workload data.",
+              "text": "Le clusterctl move de Cluster API déplace les objets Cluster API (la définition du cluster) vers un autre cluster de gestion ; il ne déplace pas les données de charge de travail.",
               "url": "https://cluster-api.sigs.k8s.io/clusterctl/commands/move"
             },
             {
-              "text": "Ceph RBD mirroring replicates block device images between Ceph clusters; it covers volumes, not Kubernetes cluster state.",
+              "text": "La réplication RBD de Ceph duplique les images de périphérique de bloc entre clusters Ceph ; elle couvre les volumes, pas l'état du cluster Kubernetes.",
               "url": "https://docs.ceph.com/en/latest/rbd/rbd-mirroring/"
             },
             {
-              "text": "Ceph RBD mirroring is asynchronous, based on journaling or periodic snapshots, and is designed for disaster recovery.",
+              "text": "La réplication RBD de Ceph est asynchrone, basée sur la journalisation ou les snapshots périodiques, et est conçue pour la récupération après sinistre.",
               "url": "https://docs.ceph.com/en/latest/rbd/rbd-mirroring/"
             }
           ]
@@ -7776,17 +7782,17 @@
         "stats": [
           {
             "icon": "layers",
-            "label": "Whole 2-node cluster fork",
+            "label": "Dupliquer un cluster 2-nœuds complet",
             "number": "46s"
           },
           {
             "icon": "clock",
-            "label": "Migrate cutover, measured",
+            "label": "Basculement migration mesuré",
             "number": "16s"
           },
           {
             "icon": "zap",
-            "label": "Namespace fork",
+            "label": "Dupliquer un namespace",
             "number": "1-5s"
           }
         ],
