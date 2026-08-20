@@ -43,7 +43,7 @@ const LearnMenu: React.FC<LearnMenuProps> = ({ lang, isOpen, onToggle, onClose }
 
   const entries = [
     ...CATEGORY_ORDER.map((category) => ({
-      key: category as string,
+      key: category,
       label: t(CATEGORY_KEYS[category]),
       href: `/${lang}/docs?category=${encodeURIComponent(category)}`,
     })),
