@@ -2490,30 +2490,30 @@
         },
         "companions": {
           "heading": "관련 솔루션 페이지",
-          "intro": "같은 접근법을 구매자가 자주 받는 질문 형태로 다시 설명했습니다:",
+          "intro": "같은 방식을, 자주 나오는 질문별로 설명하면:",
           "readMore": "더 읽기"
         },
         "faq": {
           "heading": "독자들이 자주 묻는 질문",
           "items": [
             {
-              "a": "아키텍처를 검토하는 CISO, CTO, 또는 시니어 인프라 엔지니어를 위한 것입니다. 백업이 어떻게 작동하고, 스토리지가 어떻게 작동하며, 현재 스택이 이미 따라야 하는 규제를 알고 있다고 가정합니다.",
+              "a": "아키텍처를 검토하는 CISO, CTO, 시니어 인프라 엔지니어용입니다. 백업, 스토리지, 현재 규제 요구사항에 대한 기본 지식을 갖추고 있다고 가정해요.",
               "q": "이 브리프는 누구를 위해 작성되었나요?"
             },
             {
-              "a": "네. 이메일을 제출하면 같은 페이지에서 CFO, IT 디렉터, 또는 이사회 구성원에게 전달할 수 있는 5분짜리 경영진 PDF 링크를 찾을 수 있습니다.",
+              "a": "네. 이메일을 입력하면 같은 페이지에서 5분짜리 임원진용 PDF를 바로 다운로드할 수 있어요. CFO, IT 디렉터, 이사회 멤버에게 공유하세요.",
               "q": "비기술적 버전도 있나요?"
             },
             {
-              "a": "확인 이메일 한 통만 발송됩니다. 뉴스레터(월 1회 짧은 소식)에 추가됩니다. 언제든 원 클릭으로 구독을 취소할 수 있습니다. Rediacc의 데이터 거주 정책에 따라 기본적으로 이메일이 EU에 저장됩니다.",
+              "a": "확인 이메일 1통만 받아요. 월 1회 뉴스레터(전체 제품 소식)에 추가됩니다. 원클릭으로 언제든 구독 취소 가능. 이메일은 Rediacc의 데이터 거주 정책에 따라 기본적으로 EU에 저장돼요.",
               "q": "제 이메일은 어떻게 되나요?"
             },
             {
-              "a": "브리프에서 자세히 설명합니다. 간단히 말하면 btrfs는 한 번만 쓸 수 있는 사본과 즉시 클론(스냅샷)을 스토리지 레이어에 직접 구현합니다. 앱 레이어가 아니라 스토리지 자체에 내장된 기능입니다. 송수신 기능으로 복사본을 머신 밖으로 옮기므로, 루트 권한을 가진 공격자도 이들을 변경하거나 삭제할 수 없습니다.",
+              "a": "브리프에서 자세히 다뤄요. 간단히 말하면, btrfs는 쓰기 금지 복사본과 순간 클론을 앱이 아닌 스토리지 자체에 만듭니다. send/receive 기능으로 복사본을 다른 머신으로 보내니까, 관리자 암호를 가진 공격자도 수정하거나 지울 수 없어요.",
               "q": "왜 btrfs인가요?"
             },
             {
-              "a": "직접 적용되지는 않습니다. 이 설계는 자신의 서버에서 Docker를 통해 btrfs 스토리지 위에서 데이터베이스를 실행하는 경우를 다룹니다. 중요 데이터가 RDS나 Aurora에 있다면 브리프에서 이를 명확히 설명하고, 어느 부분이 적용되고 어느 부분이 적용되지 않는지 보여줍니다.",
+              "a": "아니요. 자체 서버에서 Docker로 데이터베이스를 실행할 때, btrfs 스토리지 기반 설계입니다. 중요 데이터가 RDS나 Aurora에 있으면 브리프에서 명확히 표시하고, 어디까지 적용되는지 보여줘요.",
               "q": "AWS RDS와 같은 관리형 서비스에도 적용되나요?"
             }
           ]
@@ -2523,7 +2523,7 @@
           "downloadButton": "기술 브리프 다운로드",
           "eyebrow": "무료 다운로드 · A4 PDF · CISO/CTO 수준",
           "openInBrowser": "브라우저에서 열기",
-          "subtitle": "개발자들은 주 4.5시간만 코드를 작성합니다. 나머지 시간은 환경을 기다리는 데 씁니다. 50명 규모 팀은 환경 구성에 연간 $720K~$1.2M을 낭비합니다.",
+          "subtitle": "개발자들은 주 4.5시간만 코드를 짜요. 나머지 시간은 개발 환경을 기다립니다. 50명 팀이라면 환경 구성에 연간 $720K~$1.2M을 쏟아붓는 거죠.",
           "title": "개발 환경"
         },
         "meta": {
@@ -2533,16 +2533,16 @@
         },
         "toc": {
           "heading": "이 안에 들어있는 것들",
-          "intro": "무엇으로부터 보호하는지, 어떻게 작동하는지. 준수해야 할 규제는 무엇인지. 감사자가 원할 근거. 약 10~14페이지 분량의 밀도 높은 내용입니다.",
+          "intro": "개발 환경 설계 방식, 작동 원리, 준수할 규제, 감사 증거까지. 10~14페이지 분량의 알찬 내용입니다.",
           "items": [
-            "실제로 방어해야 할 위협이 무엇인가—평범한 용어로",
+            "실제로 막아야 할 위협이 뭔지, 쉽게 설명",
             "시스템이 어떻게 작동하고, 공격자가 뚫 수 없게 설계된 이유",
             "어떤 위협을 막는지, 실제 사례",
             "어떤 규제가 적용되는지: 과태료, 기한, 정확한 조항",
             "비용 계산: 공개된 수치 기반",
             "기술 관점에서 경쟁사와의 비교 (가격 비교가 아님)",
             "셋업이 어떤 형태인지, 그리고 우리가 커버하지 않는 부분",
-            "감사자가 요구할 근거"
+            "감사자가 요청할 증거 자료"
           ]
         }
       },
@@ -2555,30 +2555,30 @@
         },
         "companions": {
           "heading": "관련 솔루션 페이지",
-          "intro": "같은 설계, 다양한 질문별로 설명하면:",
+          "intro": "같은 방식을, 자주 나오는 질문별로 설명하면:",
           "readMore": "더 읽기"
         },
         "faq": {
           "heading": "자주 나오는 질문",
           "items": [
             {
-              "a": "설계를 평가하는 CISO, CTO, 또는 시니어 인프라 엔지니어를 위합니다. 백업과 스토리지가 어떻게 작동하는지, 현재 스택이 따라야 할 규정이 무엇인지 안다고 가정합니다.",
+              "a": "아키텍처를 검토하는 CISO, CTO, 시니어 인프라 엔지니어용입니다. 백업, 스토리지, 현재 규제 요구사항에 대한 기본 지식을 갖추고 있다고 가정해요.",
               "q": "이 브리프는 누구를 위해 만들었나요?"
             },
             {
-              "a": "네, 이메일 제출 후 같은 페이지에서 5분짜리 경영진용 PDF 링크를 얻을 수 있어요. CFO, IT 디렉터, 이사회 멤버에게 바로 공유할 수 있습니다.",
+              "a": "네. 이메일을 입력하면 같은 페이지에서 5분짜리 임원진용 PDF를 바로 다운로드할 수 있어요. CFO, IT 디렉터, 이사회 멤버에게 공유하세요.",
               "q": "비기술적 버전도 있나요?"
             },
             {
-              "a": "확인 이메일 한 통만 받습니다. 월 1회 뉴스레터(전체 제품 소식)에 추가됩니다. 한 클릭으로 언제든 구독 취소 가능. 당신의 이메일은 Rediacc의 데이터 거주 정책에 따라 기본적으로 EU에 보관됩니다.",
+              "a": "확인 이메일 1통만 받아요. 월 1회 뉴스레터(전체 제품 소식)에 추가됩니다. 원클릭으로 언제든 구독 취소 가능. 이메일은 Rediacc의 데이터 거주 정책에 따라 기본적으로 EU에 저장돼요.",
               "q": "내 이메일은 어떻게 되나요?"
             },
             {
-              "a": "브리프에서 자세히 설명합니다. 간단히 말하면, btrfs는 읽기 전용 복사본과 즉각 클론을 애플리케이션이 아닌 스토리지 자체에 넣습니다. send/receive로 복사본을 다른 머신으로 옮기기 때문에, 최고 관리자 암호를 탈취해도 이들을 수정하거나 삭제할 수 없습니다.",
+              "a": "브리프에서 자세히 다뤄요. 간단히 말하면, btrfs는 쓰기 금지 복사본과 순간 클론을 앱이 아닌 스토리지 자체에 만듭니다. send/receive 기능으로 복사본을 다른 머신으로 보내니까, 관리자 암호를 가진 공격자도 수정하거나 지울 수 없어요.",
               "q": "왜 btrfs인가요?"
             },
             {
-              "a": "아니요. 이 설계는 당신이 관리하는 서버에서 btrfs 스토리지 위의 Docker에 데이터베이스를 올릴 때의 이야기입니다. 중요 데이터가 RDS나 Aurora에 있다면 브리프에서 명확히 표시하고, 이 모델이 적용되는 범위와 그렇지 않은 범위를 보여줍니다.",
+              "a": "아니요. 자체 서버에서 Docker로 데이터베이스를 실행할 때, btrfs 스토리지 기반 설계입니다. 중요 데이터가 RDS나 Aurora에 있으면 브리프에서 명확히 표시하고, 어디까지 적용되는지 보여줘요.",
               "q": "AWS RDS 같은 관리형 서비스에도 적용되나요?"
             }
           ]
@@ -2592,15 +2592,15 @@
           "title": "암호화 제어"
         },
         "meta": {
-          "description": "키를 직접 관리하세요. 벤더를 바꿔도 데이터는 암호화된 채로 유지됩니다. Schrems II 준수. CISO/CTO 브리프, 경영진 요약본 포함.",
+          "description": "암호화 키를 직접 관리해요. 벤더를 바꿔도 데이터는 암호화된 상태로. Schrems II 준수. CISO/CTO 기술 브리프와 임원진 요약본 포함.",
           "keywords": "암호화 제어권, pdf, rediacc, btrfs 백업, 불변 백업, 기술 브리프",
           "title": "암호화 제어 및 관리 가이드: 무료 기술 브리프 PDF"
         },
         "toc": {
           "heading": "무엇이 포함되어 있나",
-          "intro": "아키텍처와 방어 대상, 규제 요구사항, 감사자용 증거 자료까지. 밀도 있는 10~14페이지 분량입니다.",
+          "intro": "암호화 제어 방식, 작동 원리, 준수할 규제, 감사 증거까지. 10~14페이지 분량의 알찬 내용입니다.",
           "items": [
-            "실제로 방어해야 할 것들, 평문으로 설명",
+            "실제로 막아야 할 위협이 뭔지, 쉽게 설명",
             "어떻게 작동하는지, 왜 뚫리지 않는지",
             "막아내는 공격들, 구체적 사례",
             "어떤 규정이 적용되는지: 과태료, 기한, 정확한 조항",
@@ -2620,30 +2620,30 @@
         },
         "companions": {
           "heading": "관련 솔루션 페이지",
-          "intro": "같은 접근 방식, 다양한 질문에 대한 답변:",
+          "intro": "같은 방식을, 자주 나오는 질문별로 설명하면:",
           "readMore": "더 읽기"
         },
         "faq": {
           "heading": "독자들의 질문",
           "items": [
             {
-              "a": "설계를 검토하는 CISO, CTO, 시니어 인프라 엔지니어 대상입니다. 백업, 스토리지, 현재 스택의 규제 요구사항 기본 지식을 갖추고 있다고 가정해요.",
+              "a": "아키텍처를 검토하는 CISO, CTO, 시니어 인프라 엔지니어용입니다. 백업, 스토리지, 현재 규제 요구사항에 대한 기본 지식을 갖추고 있다고 가정해요.",
               "q": "누구를 위한 브리프인가요?"
             },
             {
-              "a": "있어요. 이메일 제출 후 같은 페이지에서 CFO, IT 디렉터, 이사회 멤버에게 공유할 수 있는 5분짜리 경영진 PDF를 찾을 수 있어요.",
+              "a": "네. 이메일을 입력하면 같은 페이지에서 5분짜리 임원진용 PDF를 바로 다운로드할 수 있어요. CFO, IT 디렉터, 이사회 멤버에게 공유하세요.",
               "q": "비기술적 버전도 있나요?"
             },
             {
-              "a": "확인 이메일 1개만 받아요. 뉴스레터(월 1회 짧은 글, 전체 제품 소식)에 추가돼요. 원클릭 구독 취소 가능해요. 당신의 이메일은 Rediacc의 데이터 거주 정책에 따라 기본적으로 EU에 저장돼요.",
+              "a": "확인 이메일 1통만 받아요. 월 1회 뉴스레터(전체 제품 소식)에 추가됩니다. 원클릭으로 언제든 구독 취소 가능. 이메일은 Rediacc의 데이터 거주 정책에 따라 기본적으로 EU에 저장돼요.",
               "q": "제 이메일은 어떻게 되나요?"
             },
             {
-              "a": "브리프에서 자세히 설명해요. 간단히 말하면, btrfs는 쓰기 금지 복사본과 순간 클론을 애플리케이션이 아닌 스토리지 계층에 만듭니다. Send/receive 기능으로 이 복사본을 다른 머신으로 전송해요. 그래서 관리자 암호를 가진 공격자도 이들을 변경하거나 삭제할 수 없어요.",
+              "a": "브리프에서 자세히 다뤄요. 간단히 말하면, btrfs는 쓰기 금지 복사본과 순간 클론을 앱이 아닌 스토리지 자체에 만듭니다. send/receive 기능으로 복사본을 다른 머신으로 보내니까, 관리자 암호를 가진 공격자도 수정하거나 지울 수 없어요.",
               "q": "왜 btrfs인가요?"
             },
             {
-              "a": "직접 적용되지는 않습니다. 이 설계는 btrfs 스토리지 위의 Docker에서 실행되는 자체 관리 서버의 데이터베이스를 다룹니다. 중요 데이터가 RDS나 Aurora에 있다면, 브리프에서 명확히 표시하고 모델이 적용되는 곳과 안 되는 곳을 보여줘요.",
+              "a": "아니요. 자체 서버에서 Docker로 데이터베이스를 실행할 때, btrfs 스토리지 기반 설계입니다. 중요 데이터가 RDS나 Aurora에 있으면 브리프에서 명확히 표시하고, 어디까지 적용되는지 보여줘요.",
               "q": "AWS RDS 같은 관리형 서비스에도 적용되나요?"
             }
           ]
@@ -2653,26 +2653,26 @@
           "downloadButton": "기술 가이드 다운로드",
           "eyebrow": "무료 · A4 PDF · CISO/CTO급",
           "openInBrowser": "브라우저에서 열기",
-          "subtitle": "AWS US-EAST-1이 2025년 10월 20일 15시간 동안 다운됐어요. Snapchat, Robinhood, Uber, Delta가 모두 영향을 받았습니다. 당신이라면 시간 내에 클라우드를 전환했을까요?",
+          "subtitle": "AWS US-EAST-1이 2025년 10월 20일 15시간 동안 먹통이었어요. Snapchat, Robinhood, Uber, Delta가 모두 영향받았죠. 클라우드 간 전환은 미리 계획할 때만 빠릅니다.",
           "title": "멀티 클라우드 상시"
         },
         "meta": {
-          "description": "클라우드 장애 중에도 비즈니스를 지속하는 이식 가능한 백업과 검증된 클라우드 간 페일오버. CISO/CTO 기술 브리핑과 임원 버전 포함.",
+          "description": "클라우드 장애에서 살아남을 수 있는 이식 가능한 백업과 검증된 클라우드 간 전환. CISO/CTO 기술 브리프와 임원진 요약본 포함.",
           "keywords": "멀티 클라우드 상시 운영, pdf, rediacc, btrfs 백업, 불변 백업, 기술 브리프",
           "title": "멀티클라우드 상시 운영: 무료 기술 브리핑 PDF 가이드"
         },
         "toc": {
           "heading": "내용 살펴보기",
-          "intro": "어떤 장애를 막고 어떻게 작동하는지, 준수할 규제, 감사자가 원하는 근거. 약 10~14페이지의 밀도 높은 내용입니다.",
+          "intro": "클라우드 장애 방어 방식, 작동 원리, 준수할 규제, 감사 증거까지. 10~14페이지 분량의 알찬 내용입니다.",
           "items": [
-            "실제로 지켜야 할 것, 쉽게 설명",
+            "실제로 막아야 할 위협이 뭔지, 쉽게 설명",
             "시스템의 작동 방식과 공격자가 우회할 수 없는 이유",
             "차단되는 장애 시나리오와 실제 사례",
             "적용되는 규제: 과태료, 기한, 정확한 조항",
             "공개된 수치에 근거한 ROI 계산",
             "기술적 접근 방식 기반 벤더 비교 (가격 아님)",
             "설정 과정과 적용 범위의 한계",
-            "감사자가 물어볼 근거 자료"
+            "감사자가 요청할 증거 자료"
           ]
         }
       },
@@ -2685,30 +2685,30 @@
         },
         "companions": {
           "heading": "관련 솔루션 페이지",
-          "intro": "같은 아키텍처, 고객이 묻는 질문별 페이지:",
+          "intro": "같은 방식을, 자주 나오는 질문별로 설명하면:",
           "readMore": "더 읽기"
         },
         "faq": {
           "heading": "독자들이 묻는 질문들",
           "items": [
             {
-              "a": "CISO, CTO, 또는 시니어 인프라 엔지니어가 대상입니다. 백업, 스토리지, 규제 요구사항에 대한 기본 이해가 있다고 가정합니다.",
+              "a": "아키텍처를 검토하는 CISO, CTO, 시니어 인프라 엔지니어용입니다. 백업, 스토리지, 현재 규제 요구사항에 대한 기본 지식을 갖추고 있다고 가정해요.",
               "q": "이 브리프는 누구를 위한 것인가요?"
             },
             {
-              "a": "있습니다. 이메일 제출 후 같은 페이지에서 5분짜리 임원진 버전 PDF를 다운로드할 수 있습니다. CFO나 IT 리더, 이사회 멤버에게 공유하세요.",
+              "a": "네. 이메일을 입력하면 같은 페이지에서 5분짜리 임원진용 PDF를 바로 다운로드할 수 있어요. CFO, IT 디렉터, 이사회 멤버에게 공유하세요.",
               "q": "비기술적 버전도 있나요?"
             },
             {
-              "a": "확인 메일 한 통, 월간 뉴스레터(제품 소식) 구독 추가. 언제든 클릭 한 번으로 구독 취소 가능합니다. 이메일은 Rediacc의 데이터 거주 정책에 따라 EU 내 보관됩니다.",
+              "a": "확인 이메일 1통만 받아요. 월 1회 뉴스레터(전체 제품 소식)에 추가됩니다. 원클릭으로 언제든 구독 취소 가능. 이메일은 Rediacc의 데이터 거주 정책에 따라 기본적으로 EU에 저장돼요.",
               "q": "제 이메일은 어떻게 처리되나요?"
             },
             {
-              "a": "브리프에서 자세히 다룹니다. 핵심: btrfs는 불변 스냅샷, 원격 복제를 애플리케이션이 아닌 스토리지 계층에 구현합니다. 따라서 최고 관리자 권한을 탈취한 공격자도 복사본을 삭제하거나 조작할 수 없습니다.",
+              "a": "브리프에서 자세히 다뤄요. 간단히 말하면, btrfs는 쓰기 금지 복사본과 순간 클론을 앱이 아닌 스토리지 자체에 만듭니다. send/receive 기능으로 복사본을 다른 머신으로 보내니까, 관리자 암호를 가진 공격자도 수정하거나 지울 수 없어요.",
               "q": "왜 btrfs인가요?"
             },
             {
-              "a": "직접적이지는 않습니다. 이 아키텍처는 btrfs 스토리지 기반의 자체 관리 데이터베이스 환경을 다룹니다. 중요 데이터가 RDS나 Aurora에 있다면 브리프에서 명시하고, 어디까지 적용되는지 안내합니다.",
+              "a": "아니요. 자체 서버에서 Docker로 데이터베이스를 실행할 때, btrfs 스토리지 기반 설계입니다. 중요 데이터가 RDS나 Aurora에 있으면 브리프에서 명확히 표시하고, 어디까지 적용되는지 보여줘요.",
               "q": "AWS RDS 같은 관리형 서비스에도 적용되나요?"
             }
           ]
@@ -2718,7 +2718,7 @@
           "downloadButton": "기술 브리프 다운로드",
           "eyebrow": "무료 · A4 PDF · CISO/CTO 수준",
           "openInBrowser": "브라우저에서 열기",
-          "subtitle": "인프라를 복사해 테스트하세요. 실제 운영 환경은 안전합니다. 모든 위험은 사본이 감수합니다.",
+          "subtitle": "실제 인프라 사본으로 테스트해요. 본 환경은 안전하고, 모든 위험은 사본이 감수합니다.",
           "title": "선제적 방어"
         },
         "meta": {
@@ -2728,16 +2728,16 @@
         },
         "toc": {
           "heading": "내용 살펴보기",
-          "intro": "아키텍처, 차단되는 위협, 규제 요구사항, 감사 근거를 담습니다. 10~14페이지의 밀도 높은 내용입니다.",
+          "intro": "방어 설계 방식, 작동 원리, 준수할 규제, 감사 증거까지. 10~14페이지 분량의 알찬 내용입니다.",
           "items": [
-            "실제 방어해야 할 위협, 명확하게 설명",
+            "실제로 막아야 할 위협이 뭔지, 쉽게 설명",
             "시스템 아키텍처와 공격자가 넘을 수 없는 이유",
             "차단되는 공격과 실제 사례",
             "적용되는 규정: 과태료, 기한, 조항 명시",
             "비용 효율성 분석: 공개된 수치 기반",
             "기술 기반 벤더 비교 (가격 아님)",
             "설정 방법과 적용 범위의 제한",
-            "감사인이 필요로 하는 증거 자료"
+            "감사자가 요청할 증거 자료"
           ]
         }
       },
@@ -2750,30 +2750,30 @@
         },
         "companions": {
           "heading": "관련 솔루션 페이지",
-          "intro": "같은 아키텍처를 다양한 구매자 질문에 맞춰 설명한 페이지들:",
+          "intro": "같은 방식을, 자주 나오는 질문별로 설명하면:",
           "readMore": "더 읽기"
         },
         "faq": {
           "heading": "독자들이 자주 묻는 질문",
           "items": [
             {
-              "a": "이 브리프는 아키텍처를 검토하는 CISO, CTO, 또는 시니어 인프라 엔지니어를 위한 것입니다. 백업의 동작 원리, 스토리지 시스템, 현재 시스템이 따라야 하는 규제에 대한 기본 지식을 가정합니다.",
+              "a": "아키텍처를 검토하는 CISO, CTO, 시니어 인프라 엔지니어용입니다. 백업, 스토리지, 현재 규제 요구사항에 대한 기본 지식을 갖추고 있다고 가정해요.",
               "q": "이 브리프는 누구를 위해 작성되었나요?"
             },
             {
-              "a": "있습니다. 이메일을 제출하시면 같은 페이지에서 CFO, IT 이사, 또는 이사회 멤버에게 전달할 수 있는 5분 분량의 경영진 PDF 링크를 제공합니다.",
+              "a": "네. 이메일을 입력하면 같은 페이지에서 5분짜리 임원진용 PDF를 바로 다운로드할 수 있어요. CFO, IT 디렉터, 이사회 멤버에게 공유하세요.",
               "q": "비기술적 버전도 있나요?"
             },
             {
-              "a": "확인 이메일 한 통만 발송됩니다. 뉴스레터(월 1회 짧은 글, 모든 제품 정보)에 추가됩니다. 원클릭으로 구독 취소할 수 있습니다. 당신의 이메일은 Rediacc의 데이터 거주 정책에 따라 EU 내에 기본 보관됩니다.",
+              "a": "확인 이메일 1통만 받아요. 월 1회 뉴스레터(전체 제품 소식)에 추가됩니다. 원클릭으로 언제든 구독 취소 가능. 이메일은 Rediacc의 데이터 거주 정책에 따라 기본적으로 EU에 저장돼요.",
               "q": "제 이메일은 어떻게 사용되나요?"
             },
             {
-              "a": "브리프에서 자세히 다룹니다. 요약하면, btrfs는 쓰기 방지 사본과 즉시 클론을 애플리케이션이 아닌 스토리지 계층 자체에 내장합니다. send/receive 기능으로 이 사본들을 오프머신에 보냅니다. 따라서 최고 관리자 자격증명을 갈취한 공격자도 이를 변경하거나 삭제할 수 없습니다.",
+              "a": "브리프에서 자세히 다뤄요. 간단히 말하면, btrfs는 쓰기 금지 복사본과 순간 클론을 앱이 아닌 스토리지 자체에 만듭니다. send/receive 기능으로 복사본을 다른 머신으로 보내니까, 관리자 암호를 가진 공격자도 수정하거나 지울 수 없어요.",
               "q": "왜 btrfs인가요?"
             },
             {
-              "a": "직접 적용되지는 않습니다. 이 아키텍처는 btrfs 스토리지에서 Docker 내 데이터베이스를 실행하는 자체 관리 서버를 다룹니다. 핵심 데이터가 RDS나 Aurora에 있다면, 브리프에서 이를 명시하고 모델이 작동하는 범위와 한계를 설명합니다.",
+              "a": "아니요. 자체 서버에서 Docker로 데이터베이스를 실행할 때, btrfs 스토리지 기반 설계입니다. 중요 데이터가 RDS나 Aurora에 있으면 브리프에서 명확히 표시하고, 어디까지 적용되는지 보여줘요.",
               "q": "AWS RDS 같은 관리형 서비스에도 적용되나요?"
             }
           ]
@@ -2793,16 +2793,16 @@
         },
         "toc": {
           "heading": "내용 살펴보기",
-          "intro": "무엇을 방어하고 어떻게 작동하는지, 충족해야 할 규제, 감사자가 원하는 증거를 담았습니다. 약 10~14페이지의 밀도 높은 내용입니다.",
+          "intro": "랜섬웨어 방어 방식, 작동 원리, 준수할 규제, 감사 증거까지. 10~14페이지 분량의 알찬 내용입니다.",
           "items": [
-            "당신이 정말 방어하고 있는 것 (쉽게 설명)",
+            "실제로 막아야 할 위협이 뭔지, 쉽게 설명",
             "시스템이 어떻게 작동하고, 공격자가 우회할 수 없는 이유",
             "차단되는 공격 시나리오와 실제 사례",
             "컴플라이언스 지도: 적용 규정, 과태료, 보고 기한",
             "비용 계산: 공개 데이터 기반",
             "기술로 비교하는 경쟁업체 분석 (가격이 아닌)",
             "구현 방식과 미지원 범위",
-            "감사자가 원하는 증거 자료"
+            "감사자가 요청할 증거 자료"
           ]
         }
       },
@@ -2815,30 +2815,30 @@
         },
         "companions": {
           "heading": "관련 솔루션 페이지",
-          "intro": "같은 방식, 자주 묻는 질문별로 정리했습니다.",
+          "intro": "같은 방식을, 자주 나오는 질문별로 설명하면:",
           "readMore": "더 읽기"
         },
         "faq": {
           "heading": "자주 묻는 질문",
           "items": [
             {
-              "a": "CISO, CTO, 또는 시니어 인프라 엔지니어가 아키텍처를 평가할 때를 염두에 두고 작성했습니다. 백업과 스토리지 기초, 그리고 현재 환경의 규제 요구사항에 대한 기본 이해를 가정합니다.",
+              "a": "아키텍처를 검토하는 CISO, CTO, 시니어 인프라 엔지니어용입니다. 백업, 스토리지, 현재 규제 요구사항에 대한 기본 지식을 갖추고 있다고 가정해요.",
               "q": "이 브리프는 누구를 위해 작성되었나요?"
             },
             {
-              "a": "있습니다. 이메일을 입력하면 같은 페이지에서 5분짜리 임원진용 PDF를 다운로드할 수 있습니다. CFO, IT 디렉터, 이사회 멤버와 바로 공유할 수 있어요.",
+              "a": "네. 이메일을 입력하면 같은 페이지에서 5분짜리 임원진용 PDF를 바로 다운로드할 수 있어요. CFO, IT 디렉터, 이사회 멤버에게 공유하세요.",
               "q": "비기술적 버전도 있나요?"
             },
             {
-              "a": "확인 메일 한 통만 발송되고, 월 1회 뉴스레터에 추가됩니다. 원 클릭으로 언제든 구독을 취소할 수 있습니다. 이메일은 Rediacc의 데이터 거주 정책에 따라 EU에 보관됩니다.",
+              "a": "확인 이메일 1통만 받아요. 월 1회 뉴스레터(전체 제품 소식)에 추가됩니다. 원클릭으로 언제든 구독 취소 가능. 이메일은 Rediacc의 데이터 거주 정책에 따라 기본적으로 EU에 저장돼요.",
               "q": "제 이메일은 어떻게 되나요?"
             },
             {
-              "a": "브리프에서 자세히 다룹니다. 간단히 말하면, btrfs는 불변성 백업 복사본과 순간 복제를 앱 레이어가 아닌 스토리지 자체에 넣습니다. send/receive 기능으로 서버 밖으로 보냅니다. 그래서 최고 관리자 암호를 가진 공격자도 백업을 수정하거나 삭제할 수 없습니다.",
+              "a": "브리프에서 자세히 다뤄요. 간단히 말하면, btrfs는 쓰기 금지 복사본과 순간 클론을 앱이 아닌 스토리지 자체에 만듭니다. send/receive 기능으로 복사본을 다른 머신으로 보내니까, 관리자 암호를 가진 공격자도 수정하거나 지울 수 없어요.",
               "q": "왜 btrfs인가요?"
             },
             {
-              "a": "직접 적용되지는 않습니다. 자체 서버에서 Docker로 데이터베이스를 실행하고 btrfs 스토리지를 쓸 때의 설계입니다. 핵심 데이터가 RDS나 Aurora에 있으면, 브리프에서 이를 표시하고 어디까지 적용되는지 보여줍니다.",
+              "a": "아니요. 자체 서버에서 Docker로 데이터베이스를 실행할 때, btrfs 스토리지 기반 설계입니다. 중요 데이터가 RDS나 Aurora에 있으면 브리프에서 명확히 표시하고, 어디까지 적용되는지 보여줘요.",
               "q": "AWS RDS 같은 관리형 서비스에도 적용되나요?"
             }
           ]
@@ -2848,7 +2848,7 @@
           "downloadButton": "기술 브리프 다운로드",
           "eyebrow": "무료 다운로드 · A4 PDF · CISO/CTO급",
           "openInBrowser": "브라우저에서 열기",
-          "subtitle": "백업의 58%는 복구할 때 실패합니다. 많은 회사들이 실제 장애가 터질 때 비로소 이 사실을 알게 됩니다.",
+          "subtitle": "백업의 58%는 복구할 때 실패해요. 많은 회사는 실제 장애가 터질 때야 이 사실을 알게 되죠.",
           "title": "검증된 백업"
         },
         "meta": {
@@ -2858,16 +2858,16 @@
         },
         "toc": {
           "heading": "포함된 내용",
-          "intro": "위협 방어 방식, 규제 요구사항, 감사자가 필요한 증거를 담고 있습니다. 약 10~14페이지의 알찬 내용입니다.",
+          "intro": "백업 복구 방식, 작동 원리, 준수할 규제, 감사 증거까지. 10~14페이지 분량의 알찬 내용입니다.",
           "items": [
-            "실제로 막아야 할 위협들",
+            "실제로 막아야 할 위협이 뭔지, 쉽게 설명",
             "시스템 구조와 공격자가 우회할 수 없는 이유",
             "차단되는 장애 시나리오와 실제 사례",
             "적용되는 규정들: 과태료, 기한, 정확한 문구",
             "공개된 수치에 근거한 ROI 계산",
             "기술 관점으로 비교한 경쟁 솔루션",
             "구축 과정과 적용 범위 한계",
-            "감사자가 요청할 증거"
+            "감사자가 요청할 증거 자료"
           ]
         }
       }
@@ -7529,29 +7529,29 @@
         "benefits": {
           "items": [
             {
-              "description": "Rediacc가 k3s를 직접 운영해 드리거나, 이미 가지고 계신 클러스터에 연결합니다. 볼륨은 ceph-csi RBD 위에서 동작합니다. 매니페스트는 그대로 귀사의 것입니다.",
+              "description": "Rediacc는 k3s를 직접 운영하거나 기존 클러스터에 연결합니다. 볼륨은 ceph-csi RBD 위에서 작동해요. 매니페스트는 그대로입니다.",
               "icon": "check-circle",
-              "title": "쓰던 Kubernetes 그대로"
+              "title": "쓰던 Kubernetes는 그대로"
             },
             {
-              "description": "자체 KVM 호스트나 Linode 같은 클라우드에서 프라이빗 VLAN으로 프로비저닝하세요. 노드 풀이 디스크 부하가 큰 Ceph 노드와 CPU 부하가 큰 Kubernetes 노드를 분리해 관리합니다.",
+              "description": "자체 KVM 호스트나 Linode 같은 클라우드에서 프라이빗 VLAN으로 프로비저닝하세요. 노드 풀이 디스크 부하가 높은 Ceph 노드와 CPU 부하가 높은 Kubernetes 노드를 깔끔하게 분리합니다.",
               "icon": "arrow-right-circle",
               "title": "진짜 데이터센터 이동성"
             },
             {
-              "description": "Kubernetes 앱은 네임스페이스입니다. 다른 저장소처럼 포크하세요: 1~5초, 데이터까지 포함. Docker 저장소에서 쓰던 것과 같은 명령어입니다.",
+              "description": "Kubernetes 앱은 네임스페이스입니다. 다른 저장소처럼 포크하면 1~5초면 되고, 데이터까지 포함돼요. Docker에서 평소처럼 쓰는 명령어와 동일합니다.",
               "icon": "git-branch",
               "title": "모든 것에 하나의 방식"
             }
           ],
           "overline": "중요한 이유",
-          "title": "쓰던 Kubernetes는 그대로. 이동성은 새롭게."
+          "title": "Kubernetes는 그대로. 이동성은 새롭게."
         },
-        "blurb": "실행 중인 클러스터를 포크하거나 이동, 데이터까지 포함",
+        "blurb": "실행 중인 클러스터를 포크하거나 옮기세요. 데이터까지 한 번에.",
         "bottomCta": {
           "command": "rdc cluster fork prod --tag staging",
           "ctaText": "Community로 무료 시작",
-          "description": "무료 Community 에디션으로 시작하세요. 포크한 뒤 이동을 테스트하고, 실제로 마이그레이션하세요.",
+          "description": "포크해서 이동을 테스트한 후, 실제로 마이그레이션하세요. 14일 무료 체험을 시작하세요.",
           "title": "클러스터에 탈출구를 마련하세요"
         },
         "comparison": {
@@ -7561,12 +7561,12 @@
             {
               "name": "앱과 볼륨을 백업",
               "refs": [4, 5, 0, 9, 0],
-              "values": ["check", "check", "cross", "Volumes only", "rediacc"]
+              "values": ["check", "check", "cross", "볼륨만", "rediacc"]
             },
             {
               "name": "클러스터 전체를 데이터와 함께 이동",
               "refs": [6, 7, 8, 0, 0],
-              "values": ["Stop and restore", "Stop and restore", "Shape only", "cross", "rediacc"]
+              "values": ["중지 후 복원", "중지 후 복원", "구조만", "cross", "rediacc"]
             },
             {
               "name": "실행 중인 클러스터를 포크, 데이터까지 포함",
@@ -7581,7 +7581,7 @@
             {
               "name": "전체 재작성 없이 데이터 복사",
               "refs": [0, 0, 0, 10, 0],
-              "values": ["cross", "cross", "cross", "Async copy", "rediacc"]
+              "values": ["cross", "cross", "cross", "비동기 복사", "rediacc"]
             },
             {
               "name": "계획된 이동을 위한 짧고 측정된 컷오버",
@@ -7594,19 +7594,19 @@
         },
         "hero": {
           "primaryCta": "Community로 무료 시작",
-          "subtitle": "클러스터가 하나의 세트로 함께 이동합니다: 노드, 설정, 데이터까지. 다른 머신으로, 혹은 다른 데이터센터로. 컷오버는 주말이 아니라 초 단위로 측정됩니다.",
+          "subtitle": "클러스터가 통째로 이동합니다. 노드도, 설정도, 데이터도 모두. 다른 머신으로든, 다른 데이터센터로든. 컷오버는 주말이 아니라 초 단위예요.",
           "title": "실행 중인 Kubernetes 클러스터를 포크하거나 이동하세요"
         },
         "howItWorks": {
           "cloneVisual": {
             "arrow": {
               "icon": "arrow-right-circle-arrow",
-              "label": "Fork",
+              "label": "포크",
               "time": "46s"
             },
             "clone": {
               "cardClass": "restored",
-              "containerCount": "Fork",
+              "containerCount": "포크",
               "services": [
                 {
                   "name": "Nodes",
@@ -7674,14 +7674,14 @@
           ],
           "title": "클러스터 전체가 하나의 파일 세트입니다"
         },
-        "label": "Kubernetes 클러스터 이동성",
+        "label": "쿠버네티스 클러스터 이동",
         "meta": {
           "description": "실행 중인 Kubernetes 클러스터를 데이터까지 포함해 다른 머신이나 데이터센터로 포크하거나 이동하세요. 짧고 측정된 컷오버. Ceph RBD와 k3s 기반.",
           "keywords": "kubernetes 클러스터 마이그레이션, 클러스터 포크, ceph rbd, k3s, 데이터센터 이동성, kubernetes 이식성",
-          "title": "Fork or Move a Kubernetes Cluster | Rediacc"
+          "title": "Kubernetes 클러스터 포크 또는 이동 | Rediacc"
         },
         "problem": {
-          "description": "Kubernetes는 앱을 이식 가능하게 만들었습니다. 하지만 클러스터 자체는 그렇지 않습니다. 데이터는 하나의 데이터센터에 머물러 있습니다. 옮기려면 재구축 프로젝트가 필요합니다: 새 노드, 새 스토리지, 백업에서 복원, 모든 것을 다시 테스트. 그래서 대부분의 팀은 절대 옮기지 않습니다. 그리고 그들의 제공업체도 그걸 잘 알고 있습니다.",
+          "description": "Kubernetes는 앱을 이식 가능하게 만들었어요. 하지만 클러스터 자체는 아니에요. 데이터는 한 데이터센터에 갇혀 있죠. 옮기려면 거의 재구축 수준의 작업이 필요해요. 새 노드, 새 스토리지, 백업 복원, 모든 것 재테스트. 그래서 대부분의 팀은 절대 옮기지 않아요. 그리고 클라우드 제공업체도 이걸 알아요.",
           "overline": "문제",
           "statCallouts": [
             {
@@ -7705,7 +7705,7 @@
           ],
           "timeline": {
             "newLabel": "Rediacc 사용 시",
-            "newSteps": ["Pre-copy", "16s cutover", "Live"],
+            "newSteps": ["사전 복사", "16초 컷오버", "운영 중"],
             "oldLabel": "기존 방식",
             "oldSteps": [
               {
@@ -7730,48 +7730,48 @@
               }
             ]
           },
-          "title": "클러스터는 처음 구축한 곳에 갇혀 있습니다"
+          "title": "클러스터는 지은 곳에 갇혀 있어요"
         },
         "references": {
           "items": [
             {
-              "text": "Flexera, \"2024 State of the Cloud Report,\" 2024. \"27% of cloud spend continues to be wasted.\"",
+              "text": "Flexera, \"2024 State of the Cloud Report,\" 2024. \"클라우드 지출의 27%가 계속해서 낭비되고 있습니다.\"",
               "url": "https://www.flexera.com/about-us/press-center/flexera-2024-state-of-the-cloud-managing-spending-top-challenge"
             },
             {
-              "text": "Flexera, \"2025 State of the Cloud Report,\" 2025. \"With cloud budgets already exceeding limits by 17%, organizations are increasingly turning to managed service providers.\"",
+              "text": "Flexera, \"2025 State of the Cloud Report,\" 2025. \"클라우드 예산이 이미 17%를 초과하면서 많은 조직이 관리형 서비스 제공업체로 눈을 돌리고 있습니다.\"",
               "url": "https://www.flexera.com/about-us/press-center/new-flexera-report-finds-84-percent-of-organizations-struggle-to-manage-cloud-spend"
             },
             {
-              "text": "AWS, \"Amazon S3 Pricing — Data Transfer,\" 2024. \"Data Transfer OUT from Amazon S3 to Internet: $0.09 per GB for the first 10 TB/month.\"",
+              "text": "AWS, \"Amazon S3 Pricing — Data Transfer,\" 2024. \"Amazon S3에서 인터넷으로의 데이터 전송: 처음 10TB/월에 대해 GB당 $0.09.\"",
               "url": "https://aws.amazon.com/s3/pricing/"
             },
             {
-              "text": "Velero backs up Kubernetes cluster resources and persistent volumes and restores them into a cluster.",
+              "text": "Velero는 Kubernetes 클러스터 리소스와 영구 볼륨을 백업하고 클러스터로 복원합니다.",
               "url": "https://velero.io/docs/"
             },
             {
-              "text": "Kasten K10 provides backup and restore of Kubernetes applications, including application data.",
+              "text": "Kasten K10은 애플리케이션 데이터를 포함한 Kubernetes 애플리케이션의 백업 및 복원을 제공합니다.",
               "url": "https://docs.kasten.io/"
             },
             {
-              "text": "Velero cluster migration restores a backup into a new cluster; workloads are recreated from the backup point, not moved live.",
+              "text": "Velero 클러스터 마이그레이션은 백업을 새 클러스터로 복원하며, 워크로드는 백업 시점에서 재생성됩니다. 라이브 이동이 아닙니다.",
               "url": "https://velero.io/docs/main/migration-case/"
             },
             {
-              "text": "Kasten K10 migrates applications between clusters by exporting a restore point and importing it into the target cluster.",
+              "text": "Kasten K10은 복원 포인트를 내보내고 대상 클러스터로 가져와서 클러스터 간에 애플리케이션을 마이그레이션합니다.",
               "url": "https://docs.kasten.io/latest/usage/migration.html"
             },
             {
-              "text": "Cluster API's clusterctl move relocates Cluster API objects (the cluster's definition) to another management cluster; it does not move workload data.",
+              "text": "Cluster API의 clusterctl move는 Cluster API 객체(클러스터 정의)를 다른 관리 클러스터로 재배치하며, 워크로드 데이터는 이동하지 않습니다.",
               "url": "https://cluster-api.sigs.k8s.io/clusterctl/commands/move"
             },
             {
-              "text": "Ceph RBD mirroring replicates block device images between Ceph clusters; it covers volumes, not Kubernetes cluster state.",
+              "text": "Ceph RBD 미러링은 Ceph 클러스터 간에 블록 디바이스 이미지를 복제하며, 볼륨만 포함하고 Kubernetes 클러스터 상태는 포함하지 않습니다.",
               "url": "https://docs.ceph.com/en/latest/rbd/rbd-mirroring/"
             },
             {
-              "text": "Ceph RBD mirroring is asynchronous, based on journaling or periodic snapshots, and is designed for disaster recovery.",
+              "text": "Ceph RBD 미러링은 저널링 또는 주기적 스냅샷을 기반으로 비동기이며 재해 복구용으로 설계되었습니다.",
               "url": "https://docs.ceph.com/en/latest/rbd/rbd-mirroring/"
             }
           ]
@@ -7779,17 +7779,17 @@
         "stats": [
           {
             "icon": "layers",
-            "label": "Whole 2-node cluster fork",
+            "label": "2노드 클러스터 전체 포크",
             "number": "46s"
           },
           {
             "icon": "clock",
-            "label": "Migrate cutover, measured",
+            "label": "마이그레이션 컷오버 시간",
             "number": "16s"
           },
           {
             "icon": "zap",
-            "label": "Namespace fork",
+            "label": "네임스페이스 포크",
             "number": "1-5s"
           }
         ],
@@ -7841,61 +7841,61 @@
         "benefits": {
           "items": [
             {
-              "description": "마이그레이션의 모든 단계에서 데이터가 AES-256 암호화 상태를 유지합니다. 어떤 단계에서도 임시 복호화 없음.",
+              "description": "모든 단계에서 데이터가 AES-256으로 잠금 상태. 잠깐이라도 복호화되지 않습니다.",
               "icon": "lock",
               "title": "전송 중 암호화"
             },
             {
-              "description": "암호화 설정, 고객 보유 키, Docker 설정, 네트워크 정책이 모두 하나의 원자적 단위로 마이그레이션됩니다.",
+              "description": "암호화 설정, 고객 보유 키, Docker 설정, 네트워크 규칙. 모두 하나의 묶음으로 이동합니다.",
               "icon": "package",
-              "title": "설정이 데이터와 함께 이동"
+              "title": "설정이 데이터와 함께"
             },
             {
-              "description": "임시 복호화 없음. 노출 창구 없음. 중간자가 평문 데이터를 볼 수 없음.",
+              "description": "복호화되는 구간이 없습니다. 노출 구간이 없습니다. 누구도 평문 데이터를 볼 수 없습니다.",
               "icon": "eye-off",
-              "title": "제로 트러스트 전송"
+              "title": "아무도 데이터를 보지 않음"
             }
           ],
-          "overline": "중요한 이유",
-          "title": "제공되는 혜택"
+          "overline": "왜 중요할까요",
+          "title": "포함된 기능"
         },
-        "blurb": "데이터를 위험에 빠뜨리지 않고 마이그레이션",
+        "blurb": "데이터 노출 없이 마이그레이션하세요",
         "bottomCta": {
           "command": "rdc repo push production --to secondary",
-          "description": "무료 Community 에디션으로 시작하세요. 암호화된 마이그레이션이 포함됩니다.",
-          "primaryCta": "무료 시작",
-          "tierBadge": "저장소 5개까지 무료 · 신용카드 불필요",
-          "title": "항상 안전하게 마이그레이션하세요"
+          "description": "암호화 마이그레이션이 기본으로 포함됩니다. 14일 무료 체험을 시작하세요.",
+          "primaryCta": "무료 체험 시작",
+          "tierBadge": "14일 무료 체험 · 언제든 취소 가능",
+          "title": "매번 안전하게 마이그레이션하세요"
         },
         "calculator": {
           "annualLabel": "연간 마이그레이션 위험",
-          "description": "종단 간 암호화 없이 진행되는 모든 마이그레이션은 잠재적인 컴플라이언스 사고입니다.",
-          "footnote": "재암호화 설정 인건비 시간당 $200, IBM 2024 기준 TB당 침해 프리미엄 $4,880, 노출 창구당 침해 확률 1% 가정. Rediacc은 전 과정에서 암호화를 유지합니다. 노출 창구 제로, 재암호화 불필요.",
+          "description": "종단 간 암호화 없는 모든 마이그레이션은 컴플라이언스 침해 사건입니다.",
+          "footnote": "재암호화 설정 비용 시간당 $200, IBM 2024 기준 TB당 침해 비용 $4,880, 노출 구간당 침해 확률 1% 가정. Rediacc은 처음부터 끝까지 암호화를 유지합니다. 노출 구간 없음, 재암호화 불필요.",
           "headerTitle": "마이그레이션 위험 계산기",
           "overline": "실제 비용",
           "results": {
-            "labor": "재암호화 인건비",
+            "labor": "재암호화 작업 비용",
             "risk": "마이그레이션당 위험 데이터",
-            "windows": "연간 노출 창구"
+            "windows": "연간 노출 구간"
           },
           "sliders": {
-            "data": "데이터 볼륨 (TB)",
+            "data": "데이터 크기 (TB)",
             "hours": "마이그레이션당 노출 시간",
             "migrations": "연간 마이그레이션 횟수"
           },
-          "title": "마이그레이션 위험의 실제 비용",
+          "title": "마이그레이션 위험의 진짜 대가",
           "withAnnual": "$0",
-          "withoutTag": "Rediacc 미사용 시",
+          "withoutTag": "Rediacc 없이",
           "withResults": {
             "labor": "$0",
             "risk": "0 TB",
             "windows": "0시간"
           },
-          "withTag": "Rediacc 사용 시"
+          "withTag": "Rediacc 사용"
         },
         "comparison": {
           "capabilityLabel": "기능",
-          "description": "대부분의 백업 도구는 마이그레이션을 부수적 기능으로 취급합니다. Rediacc은 마이그레이션을 핵심 암호화 작업으로 다룹니다.",
+          "description": "대부분의 백업 도구는 마이그레이션을 나중에 더한 기능처럼 취급합니다. 우리는 처음부터 암호화와 함께 만들었습니다.",
           "features": [
             {
               "name": "복호화 없는 마이그레이션",
@@ -7934,12 +7934,12 @@
             }
           ],
           "overline": "차이점",
-          "title": "마이그레이션 시 다른 곳이 할 수 없는 것"
+          "title": "마이그레이션 중 다른 도구가 못하는 것"
         },
         "hero": {
-          "primaryCta": "무료 시작",
-          "subtitle": "서버, 클라우드, 공급자 간 이동 시에도 암호화된 백업이 안전하게 전송됩니다. 노출 없음. 데이터 손실 없음.",
-          "title": "데이터를 위험에 빠뜨리지 않고 마이그레이션"
+          "primaryCta": "무료 체험 시작",
+          "subtitle": "서버, 클라우드, 공급자를 바꿔도 데이터는 항상 잠금 상태. 노출도, 손실도 없습니다.",
+          "title": "데이터 노출 걱정 없이 마이그레이션하세요"
         },
         "howItWorks": {
           "cloneVisual": {
@@ -7995,44 +7995,44 @@
               ],
               "size": "총 350 GB",
               "status": "내보내는 중",
-              "title": "소스"
+              "title": "원본"
             }
           },
-          "overline": "작동 방식",
+          "overline": "작동 원리",
           "steps": [
             {
-              "description": "암호화된 btrfs 스냅샷이 키, 설정, 정책과 함께 묶입니다. 복호화되지 않습니다.",
+              "description": "저장된 복사본은 항상 잠금 상태. 키, 설정, 규칙이 함께 이동합니다. 복호화되지 않습니다.",
               "icon": "package",
               "title": "패킹"
             },
             {
-              "description": "암호화된 채널을 통해 모든 대상으로 전송합니다. 전송 중에도 AES-256 암호화가 유지됩니다.",
+              "description": "어느 서버, 클라우드, 공급자로든 전송. 전송 내내 데이터는 잠금 상태. AES-256이 끝까지 유지됩니다.",
               "icon": "arrow-right-circle",
-              "title": "이동"
+              "title": "전송"
             },
             {
-              "description": "SHA-256 무결성 검사로 모든 바이트가 온전히 도착했는지 확인합니다. 오류 발생 시 자동 롤백.",
+              "description": "지문 검사로 모든 파일이 온전히 도착했는지 확인합니다. 1바이트라도 문제가 있으면 자동으로 이동을 되돌립니다.",
               "icon": "check-circle",
               "title": "검증"
             }
           ],
           "title": "명령어 하나. 노출 제로."
         },
-        "label": "안전한 마이그레이션",
+        "label": "마이그레이션 보안",
         "meta": {
-          "description": "서버, 클라우드, 공급자 간 이동 시에도 암호화된 백업이 안전하게 전송됩니다. 노출 없음. 데이터 손실 없음.",
+          "description": "서버든, 클라우드든, 공급자가 바뀌든 안전합니다. 암호화된 백업이 안전하게 이동되어 데이터 노출이나 손실 걱정이 없습니다.",
           "keywords": "암호화된 마이그레이션, 무노출 전송, 데이터 마이그레이션 보안, 암호화된 백업 전송, btrfs 마이그레이션, 서버 마이그레이션, 클라우드 마이그레이션 암호화",
-          "title": "안전한 마이그레이션 - 데이터 위험 없는 이전 | Rediacc"
+          "title": "마이그레이션 보안 - 데이터 안전 전송 | Rediacc"
         },
         "problem": {
-          "description": "시스템 간 데이터 이동 시 노출이 발생합니다. 임시 파일, 암호화되지 않은 전송, 설정 불일치. 모든 마이그레이션은 위험의 창구입니다. 대부분의 도구는 이동 시 암호화 설정을 잃어버려 대상 서버에서 처음부터 모든 것을 재설정해야 합니다.",
-          "overline": "문제",
+          "description": "시스템 이동이 가장 위험한 순간입니다. 대부분의 도구는 먼저 데이터를 풀고, 그 상태에서 복사합니다. 파일들이 전송 중에 완전히 노출되죠. 한 번의 실수가 데이터 침해로 이어집니다. 이동이 끝나도 기존 암호화 설정은 사라지고, 대상 서버에서 모든 걸 처음부터 다시 설정해야 합니다.",
+          "overline": "문제가 뭘까요",
           "statCallouts": [
             {
               "number": "89%",
               "ref": 2,
               "source": "Flexera 2024 / Thales 2025",
-              "text": "의 기업이 멀티 클라우드를 운영하지만, 클라우드 데이터의 80% 이상을 암호화하는 곳은 8%뿐"
+              "text": "기업 대부분이 2개 이상 클라우드를 쓰는데, 클라우드 데이터의 80% 이상을 암호화하는 곳은 8%뿐"
             },
             {
               "number": "$488만",
@@ -8044,13 +8044,13 @@
               "number": "$9만~$30만",
               "ref": 4,
               "source": "클라우드 공급자 가격 정책",
-              "text": "클라우드 간 암호화 데이터 마이그레이션 시 페타바이트당 이그레스 비용"
+              "text": "클라우드 간 1 페타바이트 암호화 데이터 마이그레이션 시 아웃바운드 비용"
             }
           ],
           "timeline": {
-            "newLabel": "Rediacc 사용 시",
-            "newSteps": ["마이그레이션 실행", "노출 0", "검증 완료"],
-            "oldLabel": "기존 마이그레이션",
+            "newLabel": "Rediacc 방식",
+            "newSteps": ["명령어 하나만 실행", "노출 없음", "검증 완료"],
+            "oldLabel": "기존 방식",
             "oldSteps": [
               {
                 "day": "1단계",
@@ -8058,7 +8058,7 @@
               },
               {
                 "day": "2단계",
-                "text": "스테이징으로 내보내기"
+                "text": "임시 영역으로 복사"
               },
               {
                 "day": "3단계",
@@ -8066,20 +8066,20 @@
               },
               {
                 "day": "4단계",
-                "text": "대상에서 재암호화"
+                "text": "대상에서 다시 암호화"
               },
               {
                 "day": "결과",
-                "text": "설정 소실"
+                "text": "설정 손실"
               }
             ]
           },
-          "title": "마이그레이션은 데이터가 가장 취약한 순간입니다"
+          "title": "마이그레이션할 때 데이터가 가장 노출됩니다"
         },
         "references": {
           "items": [
             {
-              "text": "Flexera, \"2024 State of the Cloud Report,\" 2024. \"멀티 클라우드 사용률이 지난해 87%에서 올해 89%로 증가.\"",
+              "text": "Flexera, \"2024 State of the Cloud Report,\" 2024. \"멀티 클라우드 사용이 지난해 87%에서 올해 89%로 증가했습니다.\"",
               "url": "https://www.flexera.com/about-us/press-center/flexera-2024-state-of-the-cloud-managing-spending-top-challenge"
             },
             {
@@ -8087,15 +8087,15 @@
               "url": "https://cpl.thalesgroup.com/about-us/newsroom/thales-2025-cloud-security-study-reveals-ai-tool-sprawl-security-gap"
             },
             {
-              "text": "IBM Security, \"Cost of a Data Breach Report 2024,\" 2024년 7월. \"2024년 전 세계 데이터 침해 평균 비용이 488만 달러에 달했습니다.\"",
+              "text": "IBM Security, \"Cost of a Data Breach Report 2024,\" 2024년 7월. \"2024년 전 세계 데이터 침해 평균 비용이 $4.88백만에 달했습니다.\"",
               "url": "https://newsroom.ibm.com/2024-07-30-ibm-report-escalating-data-breach-disruption-pushes-costs-to-new-highs"
             },
             {
-              "text": "AWS, \"Amazon S3 Pricing - Data Transfer,\" 2024. \"Amazon S3에서 인터넷으로 아웃바운드 데이터 전송: 첫 10 TB/월에 GB당 $0.09.\"",
+              "text": "AWS, \"Amazon S3 Pricing - Data Transfer,\" 2024. \"Amazon S3에서 인터넷으로의 아웃바운드 전송: 매월 첫 10 TB까지 GB당 $0.09.\"",
               "url": "https://aws.amazon.com/s3/pricing/"
             },
             {
-              "text": "Commvault CommCell Migration은 설정, 백업 이력, 데이터를 포함한 전체 클라이언트를 단일 작업으로 이동합니다.",
+              "text": "Commvault CommCell Migration은 설정, 백업 이력, 데이터를 포함한 전체 클라이언트를 하나의 작업으로 이동합니다.",
               "url": "https://documentation.commvault.com/v11/commcell-console/commcell_migration_overview.html"
             },
             {
@@ -8103,7 +8103,7 @@
               "url": "https://helpcenter.veeam.com/docs/vbr/userguide/surebackup_recovery_verification.html"
             },
             {
-              "text": "Rubrik은 추가 전용 파일 시스템 검증을 사용하여 수집된 데이터에 자동 무결성 검사를 수행합니다.",
+              "text": "Rubrik은 추가 전용 파일 시스템 검증으로 수집된 데이터에 자동 무결성 검사를 수행합니다.",
               "url": "https://docs.rubrik.com/en-us/saas/saas/common_sla_policy_tasks.html"
             },
             {
@@ -8111,7 +8111,7 @@
               "url": "https://documentation.commvault.com/2024e/commcell-console/data_integrity_validation.html"
             },
             {
-              "text": "Druva Restore Check는 자동화된 일정에 따라 백업 데이터 일관성과 장치 스냅샷을 사전에 검증합니다.",
+              "text": "Druva Restore Check는 자동 일정에 따라 백업 데이터 일관성과 장치 스냅샷을 사전에 검증합니다.",
               "url": "https://help.druva.com/en/articles/8513279-verify-the-integrity-of-the-downloaded-data"
             },
             {
@@ -8119,11 +8119,11 @@
               "url": "https://helpcenter.veeam.com/docs/vbr/userguide/instant_recovery.html"
             },
             {
-              "text": "Rubrik은 VMware, Hyper-V, AWS, Azure 환경으로의 크로스 플랫폼 Live Mount 및 내보내기를 지원합니다.",
+              "text": "Rubrik은 VMware, Hyper-V, AWS, Azure 환경으로의 크로스 플랫폼 Live Mount와 내보내기를 지원합니다.",
               "url": "https://docs.rubrik.com/en-us/saas/saas/vs_performing_an_instant_recovery.html"
             },
             {
-              "text": "Commvault는 VMware, Hyper-V, AWS, Azure, GCP 등 크로스 하이퍼바이저 복원(VM 변환)을 지원합니다.",
+              "text": "Commvault은 VMware, Hyper-V, AWS, Azure, GCP 등에서 크로스 하이퍼바이저 복구(VM 변환)를 지원합니다.",
               "url": "https://documentation.commvault.com/saas/cross_hypervisor_restores_vm_conversion.html"
             },
             {
@@ -8133,8 +8133,8 @@
           ]
         },
         "socialProof": {
-          "author": "인프라 총괄",
-          "company": "유럽 SaaS 공급자, 서버 42대, 6개 리전",
+          "author": "인프라 책임자",
+          "company": "유럽 SaaS 제공업체, 서버 42대, 6개 리전",
           "impact": {
             "after": {
               "label": "도입 후",
@@ -8144,54 +8144,54 @@
               "label": "도입 전",
               "value": "3주"
             },
-            "improvement": "노출 창구 제로 · 10배 빠름"
+            "improvement": "노출 구간 없음 · 10배 빠름"
           },
-          "quote": "주말 동안 Hetzner에서 OVH로 서버 42대를 마이그레이션했습니다. 350 TB의 암호화된 데이터가 단 한 바이트도 노출되지 않고 전송되었습니다. 이전 마이그레이션에서는 서버 8대만으로도 3주가 걸렸고, 모든 데이터를 스테이징 영역에서 복호화해야 했습니다. 그것이 마지막 위험 감수였습니다."
+          "quote": "주말 사이에 Hetzner에서 OVH로 서버 42대를 마이그레이션했습니다. 350 TB의 암호화된 데이터가 1바이트도 노출되지 않고 전송되었습니다. 이전 마이그레이션은 서버 8대에 3주가 걸렸고, 모든 데이터를 임시 영역에서 복호화해야 했습니다. 그게 마지막 위험 감수였습니다."
         },
         "stats": [
           {
             "icon": "shield",
-            "label": "마이그레이션 중 데이터 노출",
+            "label": "마이그레이션 중 노출되는 데이터",
             "number": "0"
           },
           {
             "icon": "check-circle",
-            "label": "암호화 유지",
+            "label": "암호화 유지율",
             "number": "100%"
           },
           {
             "icon": "arrow-right-circle",
-            "label": "대상 지원",
+            "label": "지원하는 대상",
             "number": "모든"
           }
         ],
         "techDiff": {
-          "description": "기존 마이그레이션 도구는 전송 전에 데이터를 복호화하여 데이터가 무방비 상태로 노출되는 구간을 만듭니다. Rediacc은 마이그레이션 중에 절대 복호화하지 않습니다. 암호화된 btrfs 스냅샷이 밀봉된 블록으로 전송됩니다.",
-          "overline": "내부 동작 원리",
+          "description": "기존 도구는 전송 전에 데이터를 복호화합니다. 그러면 파일들이 무방비 상태로 노출되는 구간이 생깁니다. 우리는 절대 데이터를 풀지 않습니다. 암호화된 복사본이 처음부터 끝까지 밀봉 상태로 이동합니다.",
+          "overline": "내부 구조",
           "rediaccLabel": "Rediacc",
           "rows": [
             {
-              "rediacc": "암호화된 btrfs send/receive - 복호화 없음",
-              "traditional": "복호화 → 전송 → 재암호화 파이프라인"
+              "rediacc": "암호화된 상태로 전송하고 수신, 절대 복호화 안 함",
+              "traditional": "복호화 → 복사 → 재암호화"
             },
             {
-              "rediacc": "키가 별도로 전송되며 항상 고객이 보유",
-              "traditional": "전송 도구와 암호화 키를 공유해야 함"
+              "rediacc": "키는 원본 서버를 벗어나지 않음",
+              "traditional": "전송 도구에 암호화 키를 공유해야 함"
             },
             {
-              "rediacc": "암호화 설정, Docker 설정, 네트워크 경로가 함께 마이그레이션",
-              "traditional": "대상 서버에서 설정과 정책을 수동으로 재구축"
+              "rediacc": "암호화 설정, Docker 설정, 네트워크 경로가 함께 이동",
+              "traditional": "대상 서버에서 설정을 수동으로 재구축해야 함"
             },
             {
-              "rediacc": "전송 후 저장소별 SHA-256 체크섬 검증",
-              "traditional": "무결성 가정 - 자동 검증 없음"
+              "rediacc": "전송 후 모든 저장소의 SHA-256 체크섬으로 검증",
+              "traditional": "데이터가 제대로 도착했는지 확인하지 않음"
             },
             {
-              "rediacc": "먼저 클러스터를 포크하세요. 전환하기 전에 이동을 테스트하세요",
+              "rediacc": "먼저 클러스터를 포크하세요. 전환 전에 이동을 테스트하세요.",
               "traditional": "클러스터 마이그레이션에는 병행 구축과 믿음의 도약이 필요합니다"
             }
           ],
-          "title": "복호화-전송-재암호화 방식 vs. 무노출 마이그레이션",
+          "title": "복호화-복사-재암호화 vs. 계속 잠금 상태 전송",
           "traditionalLabel": "기존 마이그레이션"
         }
       },

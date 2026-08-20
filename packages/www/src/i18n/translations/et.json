@@ -1442,7 +1442,7 @@
         "benefits": {
           "items": [
             {
-              "description": "Ilma pilve juurdehindluseta, isikupõhise maksimiseta ja väljamineku tasudeta. Kasuta oma riistvara.",
+              "description": "Vabane pilvejuurdehindlusest, isikupõhisest maksimisest ja väljaminekutasudest. Kasuta oma juba olemasolevat riistvara.",
               "icon": "trend-up",
               "title": "60% madalam TCO"
             },
@@ -1458,18 +1458,18 @@
             }
           ],
           "overline": "STRATEEGILINE VÄÄRTUS",
-          "title": "Mida Rediacc sinu tehisele tähendab"
+          "title": "Mida Rediacc sinu infrastruktuurile tähendab"
         },
         "bottomCta": {
-          "description": "Broneeri 30-minutiline arhitektuuriülevaade. Näitame sulle TCO prognoose sinu infrastruktuuri jaoks.",
+          "description": "Broneeri 30-minutiline arhitektuuriülevaade meie tiimiga – kaasa TCO prognoosid sinu infrastruktuuri jaoks.",
           "primaryCta": "Broneeri demo",
           "title": "Vaata seda tööl"
         },
         "calculator": {
           "annualLabel": "Aastased kogukulud",
-          "description": "Seadistage liugured oma infrastruktuurile. Vaadake, kuidas Rediacc teie hetkekuludega võrreldes välja näeb.",
+          "description": "Liiguta liugureid oma seadistuse järgi. Näe, kuidas Rediacc sinu hetkekuludega võrreldes välja näeb.",
           "footnote": "Hinnangud põhinevad tööstuse TCO mudelitel, mis võrdlevad omahosting infrastruktuuri samaväärsete pilveteenustega. Tegelikud säästud sõltuvad töökoormuse, seadistuse ja skaala.",
-          "headerTitle": "Arvutage oma infrastruktuuri kulusäästud",
+          "headerTitle": "Arvuta oma kulusäästud",
           "overline": "TEGELIK KULU",
           "results": {
             "blockedTime": "Aastane infrastruktuuri kulu",
@@ -1482,7 +1482,7 @@
             "reqs": "Keskmine igakuine pilvekulutus ($)",
             "wait": "Seisakutunde aastas"
           },
-          "title": "Mida teie infrastruktuur tegelikult maksab?",
+          "title": "Kui palju teie infrastruktuur tegelikult maksab?",
           "withAnnual": "Arvuta →",
           "withoutTag": "Praegused kulud",
           "withResults": {
@@ -1495,7 +1495,7 @@
         },
         "comparison": {
           "capabilityLabel": "Omadus",
-          "description": "Ettevõtete varundustööriistad küsivad tasu sokli, VM-i või TB alusel. Rediacc küsib tasu masina kohta ja jookseb sinu riistvaral.",
+          "description": "Ettevõtete varundustööriistad küsivad tasu sokli, VM-i või TB alusel. Rediacc küsib tasu masinakaupa ja töötab sinu riistvaral.",
           "features": [
             {
               "name": "Omahosting / ettevõttesisene",
@@ -1532,15 +1532,15 @@
         "hero": {
           "primaryCta": "Broneeri demo",
           "subtitle": "Enda riistvaral jooksev infrastruktuuri kaitse. Pole pilve juurdehindlust, pole isikupõhist hinnakujundust, taastamine minutites, mitte tundides.",
-          "title": "Infrastruktuuri TCO 60% väiksem. Skaleeruge oma riistvaral."
+          "title": "Vähenda infrastruktuuri TCO-d 60%. Skaleeri oma riistvaral."
         },
         "meta": {
-          "description": "Enda riistvaral jooksev infrastruktuuri kaitse. TCO 60% väiksem, pole tarnijasõltuvust, taastamine minutites, mitte tundides.",
+          "description": "Infrastruktuuri kaitse oma riistvaral. Vähenda TCO-d 60%, vabane tarnijasõltuvusest ja taasta kõik katastroofist minutites.",
           "keywords": "CTO, infrastruktuuri TCO, omahosting, katastroofitaaste, tarnija lukustus, btrfs hetktõmmised, vastavus, skaleeritavus",
           "title": "CTO-dele: TCO 60% madalam | Rediacc"
         },
         "problem": {
-          "description": "Pilvekulud kasvavad igal aastal 15–20% võrra. Isikupõhine litsentsimiskorraldus teeb meeskonna kasvu kalliks. Kui midagi läheb katki, võtab teie \"kohene taastamine\" tegelikult tunde, sest varundustööriistad, mis lubavad minutilise RPO-d, annavad tegelikult päevaseid viivitusi. Ja iga uuendusega muutub tarnija ökosüsteem, kuhu olete kinni jäänud, veelgi kallimaks.",
+          "description": "Pilvekulud kasvavad 15–20% aastas. Kasutaja-põhine litsentsimiskorraldus muudab meeskonna kasvu kalliks. Kui midagi katkeb, võtab teie \"kohene taastamine\" ikkagi tunde – sest varundustööriistad, mis lubavad minutilise RPO, annavad tegelikult päevaseid viivitusi. Iga uuendusega muutub tarnija ökosüsteem kallimaks.",
           "overline": "PROBLEEM",
           "statCallouts": [
             {
@@ -1594,9 +1594,9 @@
         "shareWithTeam": {
           "ctaSlug": "for-devops",
           "ctaText": "Jaga DevOpsi materjale",
-          "description": "Insenerid armstavad käsurea töövooge ja kiireid keskkondi. Jaga tehnilist ülevaadet DevOpsi meeskonnaga.",
+          "description": "Insenerid armstavad käsurea-esmast töövooge ja kiirvalmis keskkondi. Jaga neile tehnilist süvaaset.",
           "overline": "JAGA MEESKONNAGA",
-          "title": "Kaasage DevOpsi tiim"
+          "title": "Kaasage DevOps-tiim"
         },
         "socialProof": {
           "author": "CTO",
@@ -1628,7 +1628,7 @@
           }
         ],
         "techDiff": {
-          "description": "Rediacc töötab teie riistvaral, kasutades btrfs copy-on-write hetktõmmiseid koheste varukoopiate ja taaste jaoks. Iga hetktõmmis on failisüsteemi tasemel muutmatu. Lunavara ei suuda krüpteerida seda, mida kernel kaitseb. Taastamine tähendab osuti vahetamist, mitte terabaitide taastamist.",
+          "description": "Rediacc töötab sinu riistvaral, kasutades btrfs copy-on-write hetktõmmiseid koheste varukoopiate ja taaste jaoks. Iga hetktõmmis on failisüsteemi tasemel muutmatu – lunavara ei suuda krüpteerida seda, mida kernel kaitseb. Taastamine on lihtsalt osuti vahetus, mitte terabaidi kaupa andmete taastamine.",
           "overline": "ARHITEKTUUR",
           "rediaccLabel": "Rediacc (omahosting)",
           "rows": [
@@ -1641,7 +1641,7 @@
               "traditional": "Taastamine: tunde pilve varukoopiast taastamiseks"
             },
             {
-              "rediacc": "Avatud vorming: teie andmed teie failisüsteemis",
+              "rediacc": "Avatud vorming: andmed sinu failisüsteemis",
               "traditional": "Tarnija lukustus: andmed patenteeritud vormingus"
             },
             {
@@ -1653,7 +1653,7 @@
               "traditional": "Kubernetes seob sind andmekeskusega, kuhu selle algselt ehitasid"
             }
           ],
-          "title": "Kuidas Rediacc teie infrastruktuuri kaitseb",
+          "title": "Kuidas Rediacc sinu infrastruktuuri kaitseb",
           "traditionalLabel": "Pilv / pärandkatastroofitaaste"
         }
       },
@@ -7538,30 +7538,30 @@
         "benefits": {
           "items": [
             {
-              "description": "Rediacc käitab sinu eest k3s-i või ühendub klastriga, mis sul juba on. Mahud töötavad ceph-csi RBD peal. Sinu manifestid jäävad sinu omaks.",
+              "description": "Rediacc käitab k3s-i või ühendub olemasoleva klastriga. Mahud käivad ceph-csi RBD peal. Manifestid jäävad puutumata.",
               "icon": "check-circle",
-              "title": "Hoia oma Kubernetes"
+              "title": "Kubernetesest kinni pidamine"
             },
             {
-              "description": "Valmista ette oma KVM-hostidel või pilvedes nagu Linode, kasutades privaatseid VLAN-e. Sõlmede kogumid hoiavad kettamahukad Ceph-sõlmed protsessorimahukatest Kubernetese sõlmedest eraldi.",
+              "description": "Kasuta omaenda KVM-hostidel või pilveplatvormidel nagu Linode privaatsete VLAN-idega. Sõlmekogumid eraldavad kettamahukad Ceph-sõlmed protsessoriintensiivsetest Kubernetese sõlmedest.",
               "icon": "arrow-right-circle",
               "title": "Tõeline andmekeskuste liikuvus"
             },
             {
-              "description": "Kubernetese rakendus on nimeruum. Forki see nagu iga teine hoidla: 1 kuni 5 sekundit, andmed kaasas. Samad käsud, mida juba kasutad Dockeri hoidlate jaoks.",
+              "description": "Kubernetese rakendus = nimeruum. Kloonita nagu igapäevast hoidlat: 1–5 sekundit, andmed kaasas. Need käsud, mida Docker hoidlatele kasutad.",
               "icon": "git-branch",
               "title": "Üks mõtteviis kõige jaoks"
             }
           ],
           "overline": "MIKS SEE OLULINE ON",
-          "title": "Hoia oma Kubernetes. Saa liikuvus juurde."
+          "title": "Pea Kubernetesest kinni. Võida liikuvus."
         },
-        "blurb": "Forki või vii üle töötav klaster, andmed kaasas",
+        "blurb": "Kloonida või teisaldada töötava klastri andmed kaasas",
         "bottomCta": {
           "command": "rdc cluster fork prod --tag staging",
           "ctaText": "Alusta tasuta prooviga",
-          "description": "Forki see, testi kolimist ja seejärel migreeri päriselt. Alusta oma 14-päevast tasuta prooviaega.",
-          "title": "Anna oma klastrile väljapääsutee"
+          "description": "Kloonita, testi üleminekut, siis migreeri päriselt. Käivita 14-päevane tasuta prooviaeg.",
+          "title": "Anna klastrile väljapääs"
         },
         "comparison": {
           "capabilityLabel": "Võimekus",
@@ -7570,12 +7570,18 @@
             {
               "name": "Varundab rakendusi ja mahte",
               "refs": [4, 5, 0, 9, 0],
-              "values": ["check", "check", "cross", "Volumes only", "rediacc"]
+              "values": ["check", "check", "cross", "Ainult mahud", "rediacc"]
             },
             {
               "name": "Viib üle terve klastri koos andmetega",
               "refs": [6, 7, 8, 0, 0],
-              "values": ["Stop and restore", "Stop and restore", "Shape only", "cross", "rediacc"]
+              "values": [
+                "Seiskamine ja taastumine",
+                "Seiskamine ja taastumine",
+                "Ainult konfiguratsioon",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Forkib töötava klastri, andmed kaasas",
@@ -7590,7 +7596,7 @@
             {
               "name": "Kopeerib andmed ilma täieliku ümberkirjutamiseta",
               "refs": [0, 0, 0, 10, 0],
-              "values": ["cross", "cross", "cross", "Async copy", "rediacc"]
+              "values": ["cross", "cross", "cross", "Asünkroonne kopeerimine", "rediacc"]
             },
             {
               "name": "Lühike mõõdetud ümberlülitus plaanitud kolimiseks",
@@ -7603,7 +7609,7 @@
         },
         "hero": {
           "primaryCta": "Alusta tasuta prooviga",
-          "subtitle": "Sinu klaster liigub tervikuna: sõlmed, seaded ja andmed. Teise masinasse või teise andmekeskusesse. Ümberlülitus on mõõdetud sekundites, mitte nädalavahetuses.",
+          "subtitle": "Klaster liigub tervelt – sõlmed, seaded, andmed koos. Teise masinasse või andmekeskusesse. Ümberlülitus toimub sekundites, mitte nädalapikkusel üleminekul.",
           "title": "Forki või vii üle töötav Kubernetese klaster"
         },
         "howItWorks": {
@@ -7636,7 +7642,7 @@
               ],
               "size": "46s",
               "status": "Running",
-              "title": "prod-staging (Datacenter B)"
+              "title": "prod-staging (Andmekeskus B)"
             },
             "production": {
               "containerCount": "Vanem",
@@ -7660,7 +7666,7 @@
               ],
               "size": "Untouched",
               "status": "Running",
-              "title": "prod (Datacenter A)"
+              "title": "prod (Andmekeskus A)"
             }
           },
           "overline": "KUIDAS SEE TOIMIB",
@@ -7687,10 +7693,10 @@
         "meta": {
           "description": "Forki või vii üle töötav Kubernetese klaster, andmed kaasas, teise masinasse või andmekeskusesse. Lühike mõõdetud ümberlülitus. Ehitatud Ceph RBD ja k3s peale.",
           "keywords": "kubernetese klastri migratsioon, klastri fork, ceph rbd, k3s, andmekeskuse liikuvus, kubernetese kaasaskantavus",
-          "title": "Fork or Move a Kubernetes Cluster | Rediacc"
+          "title": "Forki või teisalda Kubernetese klaster | Rediacc"
         },
         "problem": {
-          "description": "Kubernetes muutis sinu rakendused kaasaskantavaks. Klaster ise seda ei ole. Andmed asuvad ühes andmekeskuses. Selle ümbertõstmine tähendab tervet ülesehitusprojekti: uued sõlmed, uus salvestus, taastamine varukoopiast, kõige uuesti testimine. Seepärast enamik meeskondi ei liigugi kunagi. Ja nende tarnija teab seda.",
+          "description": "Kubernetes muutis sinu rakendused kaasaskantavaks. Klaster ise ei ole. Andmed on lukus ühes andmekeskuses. Selle liigutamine tähendab tervet uuestiehitamist: uued sõlmed, uus salvestus, varukoopiast taastumine, kõik uuesti testida. Seepärast enamik meeskondi kunagi minna ei hakka. Ja nende teenusepakkuja seda teab.",
           "overline": "PROBLEEM",
           "statCallouts": [
             {
@@ -7714,7 +7720,7 @@
           ],
           "timeline": {
             "newLabel": "REDIACCIGA",
-            "newSteps": ["Pre-copy", "16s cutover", "Live"],
+            "newSteps": ["Eelne kopeerimine", "16s ümberlülitus", "Aktiivne"],
             "oldLabel": "VANA VIIS",
             "oldSteps": [
               {
@@ -7739,7 +7745,7 @@
               }
             ]
           },
-          "title": "Sinu klaster on kinni seal, kuhu sa selle ehitasid"
+          "title": "Klaster jääb sinna, kuhu oled selle ehitanud"
         },
         "references": {
           "items": [
@@ -7788,17 +7794,17 @@
         "stats": [
           {
             "icon": "layers",
-            "label": "Whole 2-node cluster fork",
+            "label": "2-sõlmelise klastri täielik fork",
             "number": "46s"
           },
           {
             "icon": "clock",
-            "label": "Migrate cutover, measured",
+            "label": "Migratsiooni ümberlülitus sekundites",
             "number": "16s"
           },
           {
             "icon": "zap",
-            "label": "Namespace fork",
+            "label": "Nimeruu fork",
             "number": "1-5s"
           }
         ],
@@ -7850,49 +7856,49 @@
         "benefits": {
           "items": [
             {
-              "description": "Andmed jäävad AES-256 krüpteerituks iga migreerimise sammu ajal. Ajutist dekrüpteerimist ei toimu üheski etapis.",
+              "description": "Andmed jäävad AES-256 krüpteeruks kogu tee. Ajutist lahtivastuks ei toimu ühegi sammuna.",
               "icon": "lock",
-              "title": "Krüpteerimine transiidi ajal"
+              "title": "Krüpteerimine transiidil"
             },
             {
-              "description": "Krüpteerimisseaded, kliendi hoitavad võtmed, Dockeri seaded ja võrgupoliitikad migreeruvad kõik ühe aatomiüksusena.",
+              "description": "Krüpteerimisseaded, võtmed, Dockeri valikud, võrgupoliitikad – kõik kaasas ühe paketina.",
               "icon": "package",
-              "title": "Seaded liiguvad koos andmetega"
+              "title": "Seaded liiguvad andmetega"
             },
             {
-              "description": "Ajutist dekrüpteerimist ei toimu. Kokkupuute aknaid pole. Ükski vahendaja ei näe kunagi lihtteksti andmeid.",
+              "description": "Ajutist dekrüpteerimist pole. Kokkupuute aknakesi pole. Vahendaja ei näe kunagi lihtteksti.",
               "icon": "eye-off",
-              "title": "Nullusaldusel põhinev ülekanne"
+              "title": "Keegi ei näe andmeid"
             }
           ],
-          "overline": "MIKS SEE ON OLULINE",
+          "overline": "MIKS SEE OLULINE ON",
           "title": "Mida saate"
         },
-        "blurb": "Migreeri ilma andmeid riskimata",
+        "blurb": "Migreeri turvaliselt – andmeid ei paljastuks",
         "bottomCta": {
           "command": "rdc repo push production --to secondary",
-          "description": "Alusta tasuta Community versiooniga. Krüpteeritud migreerimine on kaasas.",
+          "description": "Turvaline migreerimine on kaasas. Alusta 14-päevast tasuta prooviga.",
           "primaryCta": "Alusta tasuta",
-          "tierBadge": "Tasuta kuni 5 repositooriumile · Krediitkaarti ei nõuta",
-          "title": "Migreeri turvaliselt, alati"
+          "tierBadge": "14 päeva tasuta · Tühista millal tahes",
+          "title": "Migreeri turvaliselt – alati"
         },
         "calculator": {
           "annualLabel": "Aastane migratsioonirisk",
-          "description": "Iga migreerimine ilma otsast lõpuni krüpteerimiseta on vastavusintsidenti ootav tulevikuprobleem.",
-          "footnote": "Eeldab $200/h tööjõukulu uuesti krüpteerimise seadistamiseks, $4880/TB rikkumise preemiat (IBM 2024) ja 1% rikkumise tõenäosust kokkupuuteakna kohta. Rediacc säilitab krüpteerimise kogu protsessi vältel - nullkokkupuute aknaid, nulluuesti krüpteerimist.",
-          "headerTitle": "Migratsiooni riskikalkulaator",
-          "overline": "TEGELIK KULU",
+          "description": "Iga migreerimine ilma otsast lõpuni krüpteerimiseta on tulevane vastavusrikkumine.",
+          "footnote": "Arvestab $200/h tööjõukulusid, $4880 TB kohta rikkumishinna (IBM 2024) ja 1% rikkumise tõenäosust kokkupuute raami kohta. Rediacc säilitab krüpteerimise kogu aja – null kokkupuute raame, null uuesti krüpteerimist.",
+          "headerTitle": "Migratsiooniriskide kalkulaator",
+          "overline": "TEGELIK HIND",
           "results": {
-            "labor": "Uuesti krüpteerimise tööjõukulu",
-            "risk": "Ohustatud andmed migreerimise kohta",
-            "windows": "Kokkupuute aknad / aastas"
+            "labor": "Uuesti krüpteerimistöö",
+            "risk": "Oht migreerimise kohta",
+            "windows": "Kokkupuute raamid aastas"
           },
           "sliders": {
-            "data": "Andmemaht TB-des",
-            "hours": "Kokkupuute tunde migreerimise kohta",
+            "data": "Andmemaht (TB)",
+            "hours": "Kokkupuute tunnid migreerimise kohta",
             "migrations": "Migreerimisi aastas"
           },
-          "title": "Mida maksab migratsiooni risk",
+          "title": "Mida maksab migratsioonirisk?",
           "withAnnual": "$0",
           "withoutTag": "Ilma Rediaccita",
           "withResults": {
@@ -7904,7 +7910,7 @@
         },
         "comparison": {
           "capabilityLabel": "Võimekus",
-          "description": "Enamik varundustööriistu kohtleb migreerimist järelmõttena. Rediacc kohtleb seda esmaklassilise krüpteeritud operatsioonina.",
+          "description": "Enamik varundustööriistu lisavad migreerimise järelmõttena. Rediacc ehitas selle sisse algusest – krüpteeritud.",
           "features": [
             {
               "name": "Nulldekrüpteerimisega migreerimine",
@@ -7943,12 +7949,12 @@
             }
           ],
           "overline": "LÕHE",
-          "title": "Mida teised migreerimise ajal ei suuda"
+          "title": "Mida teised migreerimisega ei suuda"
         },
         "hero": {
           "primaryCta": "Alusta tasuta",
-          "subtitle": "Liigute serverite, pilvede või teenusepakkujate vahel? Teie krüpteeritud varukoopiad liiguvad turvaliselt. Ilma paljastumiseta. Ilma andmekaduta.",
-          "title": "Migreeri ilma andmeid riskimata"
+          "subtitle": "Vahetad servereid, pilvi või pakkujat? Krüpteerimine jääb paigale kogu tee. Andmed jäävad suletuks.",
+          "title": "Migreeri turvaliselt – andmeid ei paljastuks"
         },
         "howItWorks": {
           "cloneVisual": {
@@ -8010,56 +8016,56 @@
           "overline": "KUIDAS SEE TOIMIB",
           "steps": [
             {
-              "description": "Teie krüpteeritud btrfs-hetktõmmised pakitakse koos võtmete, konfiguratsioonide ja poliitikate säilimisel. Midagi ei dekrüpteerita.",
+              "description": "Krüpteeritud hetktõmmised jäävad lukuks. Võtmed, seaded ja reeglid kaasas. Midagi ei dekrüpteerita.",
               "icon": "package",
               "title": "Paki"
             },
             {
-              "description": "Edasta mis tahes sihtkohta krüpteeritud kanali kaudu. AES-256 ei lange transiidi ajal.",
+              "description": "Edasta sihtkohta krüpteeritud kanalisse. AES-256 on kogu tee lukus.",
               "icon": "arrow-right-circle",
               "title": "Liiguta"
             },
             {
-              "description": "SHA-256 terviklikkuse kontrollid kinnitavad, et iga bait jõudis kohale tervelt. Automaatne tagasipööramine, kui midagi ebaõnnestub.",
+              "description": "SHA-256 kontroll kinnitab, et iga bait jõudis terve. Kui miski ebaõnnestub, taaskehtestab süsteem ise.",
               "icon": "check-circle",
               "title": "Tõenda"
             }
           ],
           "title": "Üks käsk. Null kokkupuudet."
         },
-        "label": "Migreerimise turvalisus",
+        "label": "Turvaline migreerimine",
         "meta": {
-          "description": "Liigute serverite, pilvede või teenusepakkujate vahel? Teie krüpteeritud varukoopiad liiguvad turvaliselt. Ilma paljastumiseta. Ilma andmekaduta.",
+          "description": "Vahetad servereid, pilvi või teenusepakkujat? Andmeid ei paljastuks. Krüpteerimine jääb sisse kogu aeg.",
           "keywords": "krüpteeritud migreerimine, nullkokkupuutega ülekanne, andmete migreerimise turvalisus, krüpteeritud varunduse ülekanne, btrfs migreerimine, serveri migreerimine, pilve migreerimise krüpteerimine",
-          "title": "Migreerimise turvalisus - riskivaba migreerimine"
+          "title": "Turvaline migreerimine | Rediacc"
         },
         "problem": {
-          "description": "Andmete liigutamine süsteemide vahel loob kokkupuute. Ajutised failid, krüpteerimata ülekanded, mittevastavad konfiguratsioonid. Iga migreerimine on riskiaken. Ja enamik tööriistu kaotab krüpteerimisseaded liikumisel - sundides teid teises otsas kõik nullist uuesti seadistama.",
+          "description": "Migreerimiseks tuleb sageli andmeid ajutiselt dekrüpteerida, kopeerida, siis uuesti krüpteerida. Sel ajal istuvad failid lahti ja haavatavad. Ning kui migreerimine lõpeb, jääb krüpteerimisseade ümber ehitada käsitsi.",
           "overline": "PROBLEEM",
           "statCallouts": [
             {
               "number": "89%",
               "ref": 2,
               "source": "Flexera 2024 / Thales 2025",
-              "text": "ettevõtetest kasutab mitut pilve, kuid ainult 8% krüpteerib 80%+ pilveandmetest"
+              "text": "ettevõtetest kasutab mitut pilve, kuid vaid 8% krüpteerib 80%+ pilveandmetest"
             },
             {
               "number": "$4,88M",
               "ref": 3,
               "source": "IBM Cost of Data Breach 2024",
-              "text": "andmerikkumise keskmine kulu maailmas"
+              "text": "andmerikkumise keskmine hind maailmas"
             },
             {
               "number": "$90K-$300K",
               "ref": 4,
-              "source": "Pilveserverite hinnad",
-              "text": "väljundkulu petabaidi kohta krüpteeritud andmete pilvede vahel migreerimisel"
+              "source": "Pilveseaduste hinnad",
+              "text": "väljaminekukulud petabaidi kaupa, andmeid pilvede vahel liigutades"
             }
           ],
           "timeline": {
             "newLabel": "Rediacciga",
-            "newSteps": ["Käivita migreerimine", "0 kokkupuudet", "Tõendatud"],
-            "oldLabel": "Traditsiooniline migreerimine",
+            "newSteps": ["Üks käsk", "Andmeid ei paljastata", "Tõendatud"],
+            "oldLabel": "Traditsiooniline viis",
             "oldSteps": [
               {
                 "day": "Samm 1",
@@ -8067,19 +8073,19 @@
               },
               {
                 "day": "Samm 2",
-                "text": "Ekspordi vahekeskkonda"
+                "text": "Kopeeri vahekeskkonda"
               },
               {
                 "day": "Samm 3",
-                "text": "Edasta krüpteerimata"
+                "text": "Edasta lahtivastuks"
               },
               {
                 "day": "Samm 4",
-                "text": "Krüpteeri sihtkohtas uuesti"
+                "text": "Krüpteeri sihtkohas"
               },
               {
                 "day": "Tulemus",
-                "text": "Konfiguratsioon kaotatud"
+                "text": "Seaded kaotatud"
               }
             ]
           },
@@ -8088,62 +8094,62 @@
         "references": {
           "items": [
             {
-              "text": "Flexera, \"2024 State of the Cloud Report\", 2024. \"Mitme pilve kasutamine kasvas eelmise aasta 87%-lt 89%-le.\"",
+              "text": "Flexera, \"2024 State of the Cloud Report\", 2024. \"Mitme pilve kasutus kasvas 87%-lt 89%-le.\"",
               "url": "https://www.flexera.com/about-us/press-center/flexera-2024-state-of-the-cloud-managing-spending-top-challenge"
             },
             {
-              "text": "Thales, \"2025 Cloud Security Study\", läbi viinud S&P Global 451 Research, 2025. \"Ainult 8% organisatsioonidest krüpteerib 80% või rohkem oma pilveandmetest.\"",
+              "text": "Thales, \"2025 Cloud Security Study\", S&P Global 451 Research, 2025. \"Vaid 8% organisatsioonidest krüpteerib 80%+ oma pilveandmetest.\"",
               "url": "https://cpl.thalesgroup.com/about-us/newsroom/thales-2025-cloud-security-study-reveals-ai-tool-sprawl-security-gap"
             },
             {
-              "text": "IBM Security, \"Cost of a Data Breach Report 2024\", juuli 2024. \"Andmerikkumise ülemaailmne keskmine kulu jõudis 2024. aastal 4,88 miljoni dollarini.\"",
+              "text": "IBM Security, \"Cost of a Data Breach Report 2024\", juuli 2024. \"Andmerikkumise ülemaailmne keskmine kulu oli 4,88 miljonit dollarit.\"",
               "url": "https://newsroom.ibm.com/2024-07-30-ibm-report-escalating-data-breach-disruption-pushes-costs-to-new-highs"
             },
             {
-              "text": "AWS, \"Amazon S3 Pricing - Data Transfer\", 2024. \"Andmete ülekanne Amazon S3-st Internetti: $0,09 GB kohta esimese 10 TB/kuu jooksul.\"",
+              "text": "AWS, \"Amazon S3 hinnakirjad – andmeviimine\", 2024. \"Andmete väljaminek S3-st internetti: $0,09 GB kohta esimese 10 TB/kuu kohta.\"",
               "url": "https://aws.amazon.com/s3/pricing/"
             },
             {
-              "text": "Commvault CommCell Migration liigutab terveid kliente koos konfiguratsiooni, varundusajaloo ja andmetega ühe operatsioonina.",
+              "text": "Commvault CommCell Migration liigutab terveid kliente – konfiguratsioon, ajalugu, andmed – ühe operatsioonina.",
               "url": "https://documentation.commvault.com/v11/commcell-console/commcell_migration_overview.html"
             },
             {
-              "text": "Veeam SureBackup tõendab andmete terviklikkust pärast ülekannet, käivitades VM-id ja käitades rakenduse tasemel tervisekontrolle.",
+              "text": "Veeam SureBackup tõendab andmete tervet pärast ülekannet, käivitades VM-id ja rakenduse kontrolle.",
               "url": "https://helpcenter.veeam.com/docs/vbr/userguide/surebackup_recovery_verification.html"
             },
             {
-              "text": "Rubrik teostab automaatseid terviklikkuse kontrolle sissevõetud andmetele, kasutades oma ainult-lisatavat failisüsteemi tõendamist.",
+              "text": "Rubrik teostab automaatseid terve-kontrolle, kasutades ainult-lisatavat failisüsteemi.",
               "url": "https://docs.rubrik.com/en-us/saas/saas/common_sla_policy_tasks.html"
             },
             {
-              "text": "Commvault tõendab andmete terviklikkust pärast ülekannet CRC kontrollsummade abil mitmes etapis, sealhulgas Data Verification töödega.",
+              "text": "Commvault tõendab andmete tervet CRC-summade abil mitmes etapis, sealhulgas Data Verification töödes.",
               "url": "https://documentation.commvault.com/2024e/commcell-console/data_integrity_validation.html"
             },
             {
-              "text": "Druva Restore Check tõendab ennetavalt varunduse andmete järjepidevust ja seadme hetktõmmiseid automaatse ajakavaga.",
+              "text": "Druva Restore Check tõendab ennetavalt varunduste järjepidevust ja hetktõmmiseid automaatsel ajakaval.",
               "url": "https://help.druva.com/en/articles/8513279-verify-the-integrity-of-the-downloaded-data"
             },
             {
-              "text": "Veeam toetab platvormideülest taastamist, sealhulgas VMware-lt Hyper-V-le, füüsilisest virtuaalseks ja pilve migreerimisi Instant Recovery kaudu.",
+              "text": "Veeam toetab platvormideülest taastamist – VMware-lt Hyper-V-le, füüsiline virtualks, pilvesse Instant Recovery-ga.",
               "url": "https://helpcenter.veeam.com/docs/vbr/userguide/instant_recovery.html"
             },
             {
-              "text": "Rubrik toetab platvormideülest Live Mount ja eksportimist VMware, Hyper-V, AWS ja Azure keskkondadesse.",
+              "text": "Rubrik toetab Live Mount ja eksportimist VMware, Hyper-V, AWS ja Azure keskkondadesse.",
               "url": "https://docs.rubrik.com/en-us/saas/saas/vs_performing_an_instant_recovery.html"
             },
             {
-              "text": "Commvault toetab hüperviisoriteüleseid taastamisi (VM teisendamine) VMware, Hyper-V, AWS, Azure, GCP ja muude vahel.",
+              "text": "Commvault toetab hüperviisoriteülest taastamist (VM-teisendamine) VMware, Hyper-V, AWS, Azure, GCP vahel.",
               "url": "https://documentation.commvault.com/saas/cross_hypervisor_restores_vm_conversion.html"
             },
             {
-              "text": "Commvault Undo Failover pöördub automaatselt tagasi eelfailover-olekusse, taastades algse VM-i konfiguratsiooni.",
+              "text": "Commvault Undo Failover pöördub tagasi eelpõhja olekusse, taastades algse VM-seade.",
               "url": "https://documentation.commvault.com/v11/software/undoing_failover.html"
             }
           ]
         },
         "socialProof": {
           "author": "Infrastruktuuri juht",
-          "company": "Euroopa SaaS-teenusepakkuja, 42 serverit, 6 regiooni",
+          "company": "Euroopa SaaS-teenus, 42 serverit, 6 regiooni",
           "impact": {
             "after": {
               "label": "Pärast",
@@ -8153,19 +8159,19 @@
               "label": "Enne",
               "value": "3 nädalat"
             },
-            "improvement": "Null kokkupuute aknaid · 10x kiirem"
+            "improvement": "Null kokkupuete aknakesi · 10x kiirem"
           },
-          "quote": "Migreeerisime 42 serverit Hetznerist OVH-le nädalavahetusel. 350 TB krüpteeritud andmeid edastati ilma ühe baiti paljastamiseta. Eelmine migreerimine - ainult 8 serverit - võttis kolm nädalat ja nõudis kõige dekrüpteerimist vahekeskkonda. See oli viimane kord, kui me seda riski aktsepteerisime."
+          "quote": "Migreesime 42 serverit Hetzner st OVH-le nädalavahetusel. 350 TB krüpteeritud andmeid ilma ühe baidita avaldatud. Eelmise migreerimise – 8 serveriga – võttis kolm nädalat ja dekrüpteerimist vahekeskkonda. See oli viimane kord, kui nii riskisime."
         },
         "stats": [
           {
             "icon": "shield",
-            "label": "Paljastunud andmeid migreerimise ajal",
+            "label": "Andmeid, mis paljastuvad migreerimisega",
             "number": "0"
           },
           {
             "icon": "check-circle",
-            "label": "Krüpteerimine säilinud",
+            "label": "Krüpteerimine säilib",
             "number": "100%"
           },
           {
@@ -8175,32 +8181,32 @@
           }
         ],
         "techDiff": {
-          "description": "Traditsioonilised migreerimistööriistad dekrüpteerivad andmed enne ülekannet, luues kokkupuuteaknad, kus teie andmed on kaitsmata. Rediacc ei dekrüpteeri migreerimise ajal kunagi - krüpteeritud btrfs-hetktõmmised edastatakse suletud plokkidena.",
+          "description": "Tavapärased tööristad dekrüpteerivad enne saatmist – sellest tulevad kokkupuute aknakesed, kus andmed on avatud. Rediacc ei dekrüpteeri kunagi. Krüpteeritud hetktõmmised liiguvad suletud plokkidena.",
           "overline": "KAPOTI ALL",
           "rediaccLabel": "Rediacc",
           "rows": [
             {
-              "rediacc": "Krüpteeritud btrfs send/receive - kunagi ei dekrüpteerita",
-              "traditional": "Dekrüpteeri → edasta → uuesti krüpteeri torujuhe"
+              "rediacc": "Krüpteeritud hetktõmmised edasi-tagasi, kunagi ei dekrüpteerita",
+              "traditional": "Dekrüpteeri → edasta → krüpteeri uuesti"
             },
             {
-              "rediacc": "Võtmed liiguvad eraldi, klient hoiab neid kogu aeg",
-              "traditional": "Krüpteerimisvõtmed tuleb ülekande tööriistaga jagada"
+              "rediacc": "Võtmed jäävad allikamasinasse – klient hoiab neid",
+              "traditional": "Ülekande tööriist vajab krüpteerimisvõtmeid"
             },
             {
-              "rediacc": "Krüpteerimisseaded, Dockeri seaded, võrguteekond migreeruvad koos",
-              "traditional": "Konfiguratsioon ja poliitikad ehitatakse sihtkohtas käsitsi uuesti"
+              "rediacc": "Krüpteerimisseaded, Dockeri valikud, võrguteekond migreeruvad koos",
+              "traditional": "Seaded ehitatakse sihtkohas käsitsi uuesti"
             },
             {
-              "rediacc": "SHA-256 kontrollsumma tõendamine repositooriumi kohta pärast ülekannet",
-              "traditional": "Terviklikkus eeldatav - automaatne tõendamine puudub"
+              "rediacc": "SHA-256 kontrollid iga repositooriumi jaoks pärast",
+              "traditional": "Lootus, et andmed jõudsid terved – kontrolli ei ole"
             },
             {
-              "rediacc": "Forki klaster kõigepealt. Testi kolimist enne ümberlülitumist",
+              "rediacc": "Forgi klaster enne. Testi üleminekut enne ümberlülitust",
               "traditional": "Klastri migratsioonid vajavad paralleelset ülesehitust ja pimesi lootmist"
             }
           ],
-          "title": "Dekrüpteeri-edasta-krüpteeri vs. nullkokkupuutega migreerimine",
+          "title": "Dekrüpteeri-edasta-krüpteeri vs. turvaline migreerimine",
           "traditionalLabel": "Traditsiooniline migreerimine"
         }
       },
