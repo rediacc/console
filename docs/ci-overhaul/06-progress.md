@@ -3878,3 +3878,100 @@ the identical gap, which would have failed a deploy rather than merely CI.
   fails in CI and passes locally on the SAME pinned ruff 0.16.1, same `100644` mode, with
   `os.access(X_OK)` correctly False. "Run the gates locally first" does not cover EXE
   rules on this machine.
+
+### Two gates added from outside this program (session 3fe0b2ed, tutorial-width work)
+
+Recorded here because they widen the `quality-packages` job and the manifest, which is
+this program's surface, not because they belong to its waves. Both are UNCOMMITTED at the
+time of writing.
+
+- **`check:ci-guard-mutations`** (`scripts/check-guard-mutations.ts`) runs the CLI unit
+  tests against a deliberately broken COPY of the source and requires them to FAIL. It
+  exists because `check:test-cli` is blind by construction to whether an assertion pins
+  anything: a `wrapProse` test shipped green while the guard it claimed to test was
+  deleted. Mutation happens in a per-process sandbox under `packages/cli/*.tmp`, never in
+  the tree, because `npm run ci` is a parallel pool and a fixed path let two runs delete
+  each other's sandbox. That failure surfaced as a CONTROL failure, not a false finding,
+  which is the only reason it was diagnosable.
+- **`check:ci-tutorial-healthcheck-headroom`**
+  (`.ci/scripts/quality/check_tutorial_healthcheck_headroom.py`) requires every healthcheck
+  under `.ci/tutorials/apps/` to allow `start_period + interval * retries >= 180s`. A
+  window sized on a fast machine aborted the non-resumable 18-cast tutorial recording at
+  tutorial 9 the moment the host was downclocked. The floor is evidence-based: the
+  configuration observed to fail had a budget of exactly 150s.
+
+Both are registered in `.ci/scripts/test/gates/test-gate-anti-vacuity.sh`, so the existing
+meta-gate proves each one FAILS when pointed at an empty tree rather than reporting a
+green it never earned.
+
+## A re-recording pass should not redden a PR: `media_quality` (2026-08-20)
+
+The label is **`no-media-quality`** (`.github/labels.yml`, colour `FEF2C0`); the
+workflow output it feeds is `media_quality`.
+
+PR #569 was green on everything it changed and red on tutorial media, because a
+different session was midway through re-recording every `.cast` in the tree.
+That work is not resumable: between the first re-recording and the last, the
+media tree is internally inconsistent by construction, and three gates
+correctly say so for hours. The red was accurate and useless -- it named a
+defect already being fixed, by someone who knew, and it blocked a PR that had
+nothing to do with it.
+
+**The shape that landed**, copied from `external_quality` rather than invented:
+one initialize output `media_quality` passed into ci-quality.yml as a
+`workflow_call` input (`default: 'hard'`, so a caller that forgets to pass it
+fails closed), consumed as `inputs.media_quality != 'skip'` in three STEP-level
+`if:` blocks. Not job-level: this file already records (`quality-security`)
+that a job-level opt-out skipped four unrelated offline gates alongside the one
+step it aimed at, and was reverted for it.
+
+**Two states, not three.** `external_quality` needs `soft` because the world
+moves underneath a nightly. Nothing here reads the outside world, so a media
+failure on `schedule` means main's own media is inconsistent, which is exactly
+the red the nightly exists to carry. With no soft state there is nothing to
+downgrade, so there is no wrapper either: `run-external-gate.sh` was left
+untouched rather than generalized for a caller that would only ever pass
+`hard`.
+
+**The skip set is five validators in three steps, and it was argued down, not
+up:** `check:ci-tutorial-casts` and `check:ci-tutorial-parity` in
+`quality-content`, and the new `Tutorial media` step in `quality-i18n` running
+`check:ci-i18n-media` (transcripts + narration audio + cast output, split out
+of `check:i18n` in the same wave so the label could hold them without touching
+the rest of the i18n surface). Eleven neighbouring tutorial and solution-video
+gates stay HARD, each for a stated reason: the `.sh`-reading ones would flag
+genuinely new breakage in the five tutorial scripts being edited right now,
+`check:ci-tutorial-caption-sync` reads PUBLISHED CDN content so its red is a
+production defect until the new media ships, and the solution-video gates are a
+different asset family entirely. The reasons are in
+docs/agent-reference/ci-gates.md, because a skip set nobody can audit grows.
+
+**The hole this design has, and what closes it.** A skipped step leaves its job
+`success` and prints NOTHING, so a run with every media gate held looks
+identical to a run where they all passed -- and a hold nobody can see is how a
+hold becomes an exemption. Both consuming jobs therefore run
+`.ci/scripts/quality/announce-gate-skips.sh` UNCONDITIONALLY, outside the mode
+`if:`. In `skip` it emits a `::warning::` plus a step summary naming every gate
+that did not run and the instruction to remove the label; in `hard` it prints
+the count of gates enforced, so a missing announcer cannot be mistaken for a
+quiet one. It also refuses (exit 2) an unrecognised `media_quality` value: the
+step `if:` treats anything it does not recognise as "run", which is fail-closed
+but completely silent, and this is the only place such a typo is ever reported.
+
+**Proofs run, not reasoned.** Four mutations of the announcer each reddened
+`test-gate-skip-announcer.sh` and were reverted (skip stops warning; unknown
+mode falls through -- which landed on the SKIP branch, worse than the guessed
+hard; unset defaults to skip; zero gate names accepted). Three more mutations
+of a COPY of ci-quality.yml, reached through a `GATE_SKIP_WORKFLOW` seam so the
+shared tree was never touched, reddened the wiring assertion (announcer
+removed; a gate announced that no step runs; a gate un-held). The label gates
+fired on this work twice before passing: `check-label-inventory` rejected a
+125-character description (GitHub's limit is 100) and then correctly refused a
+label declared but not created live; `check-label-references` was proven to
+police the new literal by stripping its declaration from a copy of labels.yml
+and watching all five reference sites be named. actionlint, check-workflows,
+check-workflow-gates and a YAML parse of both workflow files are green.
+
+**This label MUST be removed once the re-recording session publishes.** It is a
+hold on gates that are being actively repaired, not a decision that the media
+tree may be inconsistent. The announcer says so on every run it fires.

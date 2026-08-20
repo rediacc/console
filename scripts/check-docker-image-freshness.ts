@@ -100,6 +100,12 @@ function readGitmodulePaths(): string[] {
 }
 
 import { getMinReleaseAgeMs, isWithinFreshnessWindow } from './lib/release-age.js';
+import {
+  baselineAdditions,
+  renderRefusal,
+  sharedSelftestCases,
+  writeBaselineVerdict,
+} from './lib/shrink-only-baseline.js';
 
 const ROOT = path.resolve(import.meta.dirname, '..');
 const BASELINE = path.join(ROOT, 'scripts/data/docker-image-freshness-baseline.json');
@@ -246,6 +252,10 @@ function selftest(): number {
     'CONTROL: a release published right now is deferred',
     isWithinFreshnessWindow(Date.now(), Date.now(), win)
   );
+
+  // THE SHRINK-ONLY COMPOSITION RULE, shared with every other baselined gate here.
+  for (const c of sharedSelftestCases()) check(c.name, c.ok);
+
   return bad;
 }
 
@@ -323,8 +333,35 @@ async function main(): Promise<void> {
   // frozen and NEW staleness fails immediately. Drain with --write-baseline as pins move.
   const keyed = stale.map((s) => s.trim().replace(/\s+->\s+.*$/, ''));
   if (process.argv.includes('--write-baseline')) {
-    writeFileSync(BASELINE, `${JSON.stringify(keyed.sort(), null, 2)}\n`);
-    console.log(`baseline written: ${keyed.length} known-stale pin(s)`);
+    // COMPOSITION. "Drain with --write-baseline as pins move" was an unconditional
+    // reseed, so a drain could retire two pins that had been bumped and quietly enshrine
+    // a third that had just gone stale, while printing a smaller number. A newly stale
+    // pin is the exact finding this gate exists to raise, so absorbing one silently
+    // inverts its purpose.
+    const sorted = keyed.slice().sort();
+    const had = existsSync(BASELINE);
+    const previous: string[] = had ? JSON.parse(readFileSync(BASELINE, 'utf8')) : [];
+    const verdict = writeBaselineVerdict({
+      baselineExists: had,
+      firstSeedFlag: process.argv.includes('--first-seed'),
+      additions: had ? baselineAdditions(previous, sorted) : [],
+    });
+    if (verdict !== null) {
+      console.error(
+        `\n\x1b[31m✗\x1b[0m ${renderRefusal(verdict, {
+          baselineLabel: path.relative(ROOT, BASELINE),
+          noun: 'known-stale pin',
+          previousCount: previous.length,
+          newCount: sorted.length,
+        })}`
+      );
+      process.exit(1);
+    }
+    writeFileSync(BASELINE, `${JSON.stringify(sorted, null, 2)}\n`);
+    console.log(
+      `baseline written: ${sorted.length} known-stale pin(s) (${previous.length} before, ` +
+        `${previous.filter((b) => !sorted.includes(b)).length} drained, 0 added)`
+    );
     process.exit(0);
   }
   const base: string[] = existsSync(BASELINE) ? JSON.parse(readFileSync(BASELINE, 'utf8')) : [];

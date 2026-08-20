@@ -18,6 +18,12 @@ import { fileURLToPath } from 'node:url';
 import { markerTimestamps, parseCast } from './lib/cast-splitter.ts';
 import { rdcCommandPath } from './lib/cli-reference-catalog.js';
 import { readStoryboard } from './lib/storyboard.ts';
+import {
+  baselineAdditions,
+  renderRefusal,
+  sharedSelftestCases,
+  writeBaselineVerdict,
+} from '../../../scripts/lib/shrink-only-baseline.js';
 
 const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 const wwwRoot = path.resolve(scriptDir, '..');
@@ -457,7 +463,78 @@ function applyBaseline(issues: Issue[], baseline: Baseline): { live: Issue[]; de
   return { live, deferred: matched.size };
 }
 
+/**
+ * CONTROL for the shrink-only guard on this gate's parity backlog.
+ *
+ * WHY, given the guard is shared and already tested elsewhere. Because this backlog is
+ * currently DRAINED TO ZERO, so the only refusal reachable on the live tree is
+ * `missing-baseline`. The `would-grow` path is guarded and never exercised, and "no scene
+ * has drifted right now" is a fact about today's recordings, not about the code. A guard
+ * that cannot fire is the shape this cluster exists to eliminate, so the growth path is
+ * driven here against fixtures.
+ *
+ * Unlike the P7 backlog, this gate refuses by RETURNING, so the verdict is asserted
+ * in-process without a child.
+ */
+function selftest(): boolean {
+  const failures: string[] = [];
+  const check = (name: string, ok: boolean, detail = ''): void => {
+    if (ok) console.log(`  PASS  ${name}`);
+    else {
+      console.error(`  FAIL  ${name}${detail ? `\n        ${detail}` : ''}`);
+      failures.push(name);
+    }
+  };
+
+  for (const c of sharedSelftestCases()) check(c.name, c.ok, c.detail ?? '');
+
+  // This gate's own id shape: the scene KEY. A re-cut scene re-keys its entry, which is why
+  // the refusal carries the hand-edit hint rather than telling anyone to reseed.
+  const frozen = ['add-server:3', 'forking:7'];
+  const verdict = (live: string[]) =>
+    writeBaselineVerdict({
+      baselineExists: true,
+      firstSeedFlag: false,
+      additions: baselineAdditions(frozen, live),
+    });
+  check('an unchanged parity backlog is written', verdict(frozen) === null);
+  check('a drained scene is written (the backlog shrank)', verdict(['add-server:3']) === null);
+  check(
+    'CONTROL: a newly drifted scene is REFUSED, though the total is unchanged',
+    verdict(['add-server:3', 'networking:2'])?.kind === 'would-grow',
+    'the count stays at 2, so only a SET comparison can see this'
+  );
+  check(
+    'CONTROL: a re-keyed scene is REFUSED rather than absorbed',
+    verdict(['add-server:3', 'forking:8'])?.kind === 'would-grow',
+    'a re-cut scene must be hand-edited, never reseeded'
+  );
+  check(
+    'the refusal tells the reader not to baseline it',
+    renderRefusal(
+      { kind: 'would-grow', added: ['x:1'] },
+      {
+        baselineLabel: 'b.json',
+        noun: 'drifted scene',
+        previousCount: 2,
+        newCount: 2,
+        rekeyHint: true,
+      }
+    ).includes('Do NOT add it to')
+  );
+
+  if (failures.length > 0) {
+    console.error(`\n✗ ${failures.length} self-test failure(s)`);
+    return false;
+  }
+  return true;
+}
+
 function main(): number {
+  if (process.argv.includes('--selftest')) return selftest() ? 0 : 1;
+  // Runs on EVERY invocation, CI included. A control behind a flag is a control nobody runs.
+  if (!process.argv.includes('--skip-control') && !selftest()) return 1;
+
   const slugs = listStoryboards();
   const issues: Issue[] = [];
   for (const slug of slugs) {
@@ -480,8 +557,39 @@ function main(): number {
       if (drift) next[drift.key] = { commandFull: drift.commandFull, recorded: drift.recorded };
     }
     const sorted = Object.fromEntries(Object.entries(next).sort(([a], [b]) => a.localeCompare(b)));
+
+    // COMPOSITION. This backlog re-froze unconditionally, so a reseed could retire two
+    // re-recorded scenes and enshrine a third that had just drifted, while printing a
+    // smaller number. The id is the scene KEY, so a scene renamed or re-cut re-keys its
+    // entry; hand-edit that line rather than reseeding when that happens.
+    //
+    // The baseline file does not exist today, this backlog having been drained to zero,
+    // so recreating it is a deliberate act and needs --first-seed.
+    const had = existsSync(baselinePath);
+    const previous = Object.keys(had ? loadBaseline() : {});
+    const verdict = writeBaselineVerdict({
+      baselineExists: had,
+      firstSeedFlag: process.argv.includes('--first-seed'),
+      additions: had ? baselineAdditions(previous, Object.keys(sorted)) : [],
+    });
+    if (verdict !== null) {
+      console.error(
+        `✗ ${renderRefusal(verdict, {
+          baselineLabel: path.relative(wwwRoot, baselinePath),
+          noun: 'drifted scene',
+          previousCount: previous.length,
+          newCount: Object.keys(sorted).length,
+          rekeyHint: true,
+        })}`
+      );
+      return 1;
+    }
+
     writeFileSync(baselinePath, `${JSON.stringify(sorted, null, 2)}\n`);
-    console.log(`Wrote stale-recording parity backlog: ${Object.keys(sorted).length} scene(s).`);
+    console.log(
+      `Wrote stale-recording parity backlog: ${Object.keys(sorted).length} scene(s) ` +
+        `(${previous.length} before, 0 added).`
+    );
     return 0;
   }
 

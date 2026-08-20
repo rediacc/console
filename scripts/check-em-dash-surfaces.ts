@@ -28,7 +28,9 @@
  *
  * Usage:
  *   tsx scripts/check-em-dash-surfaces.ts [--root <dir>] [--baseline <file>]
- *   tsx scripts/check-em-dash-surfaces.ts --write-baseline   (drain/reseed)
+ *   tsx scripts/check-em-dash-surfaces.ts --write-baseline   (drain; REFUSES to add)
+ *   tsx scripts/check-em-dash-surfaces.ts --write-baseline --seed-surface <dir>
+ *   tsx scripts/check-em-dash-surfaces.ts --write-baseline --first-seed
  *   tsx scripts/check-em-dash-surfaces.ts --selftest
  */
 import crypto from 'node:crypto';
@@ -39,6 +41,12 @@ import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 
 import { flatten } from './lib/language-detect.js';
+import {
+  baselineAdditions,
+  renderRefusal,
+  sharedSelftestCases,
+  writeBaselineVerdict,
+} from './lib/shrink-only-baseline.js';
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const DEFAULT_BASELINE = 'scripts/data/em-dash-surfaces-baseline.json';
@@ -72,6 +80,35 @@ const SURFACES: readonly Surface[] = [
   // skipped by the walker, which is why the real count is 13 and not the 15 `find` reports.
   { dir: 'packages/www/src/i18n/translations', kind: 'catalog', exts: ['.json'], minFiles: 10 },
   { dir: 'packages/www/src', kind: 'source', exts: ['.astro', '.tsx'], minFiles: 50 },
+  // Tutorial narration. This surface was MISSING and it is the one that reaches a
+  // user's ears: these strings are spoken by the TTS engine and rendered as VTT
+  // captions, so an em dash here is not a style nit, it is something a listener
+  // hears as an odd pause. 234 files across 13 locales; the floor sits well below
+  // that so it catches a collapsed glob rather than a deliberate locale change.
+  //
+  // NESTED inside `packages/www/src` above and disjoint from it only by extension
+  // (.json here, .astro/.tsx there), the same arrangement as the packages/cli pair.
+  // `nestedSurfaceOverlap()` turns that from a claim into a check.
+  //
+  // SCOPED TO THE LOCALES WHERE THE RULE APPLIES, which is not all of them. The
+  // rule exists to remove an English AI tell. Russian narration keeps 36 dashes
+  // ON PURPOSE: `Репозиторий — это ...` is the copula dash, grammatically
+  // REQUIRED where English uses "is", and deleting it produces ungrammatical
+  // Russian that a listener would hear. Applying an English style rule across
+  // locales is the failure class this pipeline has been bitten by before, so the
+  // exemption is expressed as a narrower surface rather than a baseline entry
+  // that would read as debt someone should pay off.
+  //
+  // fr and pt WERE cleaned (operator's call), so they stay in scope and any new
+  // dash there fails.
+  ...['en', 'de', 'es', 'et', 'fr', 'it', 'ja', 'ko', 'pt', 'tr', 'zh', 'ar'].map(
+    (lang): Surface => ({
+      dir: `packages/www/src/data/tutorial-transcripts/${lang}`,
+      kind: 'catalog',
+      exts: ['.json'],
+      minFiles: 15,
+    })
+  ),
   { dir: '.claude/commands', kind: 'markdown', exts: ['.md'], minFiles: 3 },
   { dir: '.claude/agents', kind: 'markdown', exts: ['.md'], minFiles: 8 },
   { dir: '.claude/hooks', kind: 'source', exts: ['.sh', '.py'], minFiles: 20 },
@@ -317,6 +354,21 @@ function loadBaseline(file: string): string[] {
 }
 
 /**
+ * COMPOSITION lives in scripts/lib/shrink-only-baseline.ts, shared with the six other
+ * gates in this repo that freeze a backlog and call it shrink-only. Every one of them
+ * enforced that on the READ path and reseeded UNCONDITIONALLY on the write path, so a
+ * drain could shed thirty findings, absorb one fresh one, and print a smaller number while
+ * doing it. This gate is where that was first noticed and fixed; the module carries the
+ * reasoning and the set-math controls.
+ *
+ * THE SEED TARGET HERE IS A SURFACE. Joining a surface that already carries a backlog is
+ * the one legitimate reason a new id may appear, and it is exactly how `packages/cli/src`
+ * joined: 93 percent of its findings are prose inside JSDoc where the dash does real
+ * syntactic work. `--seed-surface <dir>` permits new ids from THAT directory only, so
+ * every already-joined surface keeps refusing while the new one seeds.
+ */
+
+/**
  * CONTROL. Plant an em dash in each surface shape and require both to be reported, then
  * plant a clean file of each shape and require silence.
  *
@@ -524,6 +576,36 @@ function selftest(): boolean {
     JSON.stringify(SURFACES.map((s) => [s.dir, s.minFiles]))
   );
 
+  // THE COMPOSITION RULE. The set math and the write-path verdict are shared with every
+  // other shrink-only baseline in this repo, so the cases are written once and executed
+  // here. A gate that imports a refusal without exercising it is trusting a module it
+  // never ran.
+  for (const c of sharedSelftestCases()) check(c.name, c.ok, c.detail);
+
+  // The one piece that is THIS gate's own: its seed targets are its configured surfaces.
+  check(
+    'a configured surface is a legal --seed-surface target',
+    writeBaselineVerdict({
+      baselineExists: true,
+      firstSeedFlag: false,
+      seed: SURFACES[0].dir,
+      knownSeeds: SURFACES.map((x) => x.dir),
+      additions: [],
+    }) === null,
+    'joining a surface that carries a backlog has to stay possible'
+  );
+  check(
+    'CONTROL: a near-miss surface name is refused as a seed target',
+    writeBaselineVerdict({
+      baselineExists: true,
+      firstSeedFlag: false,
+      seed: 'packages/www/src/i18n/translation',
+      knownSeeds: SURFACES.map((x) => x.dir),
+      additions: ['a.json:k'],
+    })?.kind === 'unknown-seed',
+    'a typo that permits nothing while looking permissive is the worst of both'
+  );
+
   fs.rmSync(root, { recursive: true, force: true });
   if (failures.length > 0) {
     console.error(`\n✗ ${failures.length} self-test failure(s)`);
@@ -584,9 +666,55 @@ function main(): void {
       process.exit(1);
     }
     const ids = findings.map(idOf).sort();
+
+    // `path.relative` renders an out-of-tree baseline as a wall of `../`, so show the
+    // tree-relative form only when the file is actually IN the tree.
+    const shown = baselineFile.startsWith(`${base}${path.sep}`)
+      ? path.relative(base, baselineFile)
+      : baselineFile;
+    const firstSeed = !fs.existsSync(baselineFile);
+    const seedSurface = arg('--seed-surface');
+    const previous = loadBaseline(baselineFile);
+    const verdict = writeBaselineVerdict({
+      baselineExists: !firstSeed,
+      firstSeedFlag: argv.includes('--first-seed'),
+      seed: seedSurface,
+      knownSeeds: SURFACES.map((s) => s.dir),
+      additions: firstSeed ? [] : baselineAdditions(previous, ids, seedSurface),
+    });
+    if (verdict !== null) {
+      console.error(
+        `✗ ${renderRefusal(verdict, {
+          baselineLabel: shown,
+          noun: 'finding',
+          previousCount: previous.length,
+          newCount: ids.length,
+          seedHelp:
+            '--write-baseline --seed-surface <dir>, for joining a surface that already ' +
+            'carries a backlog. It permits new ids from that directory ONLY.',
+        })}`
+      );
+      process.exit(1);
+    }
+    if (firstSeed) {
+      console.log(
+        `First seed: no existing baseline at ${shown}; ${ids.length} finding(s) recorded.`
+      );
+    }
+
+    // PRINT THE SHAPE, not just the verdict. `permitted` counts ids a --seed-surface let
+    // through: reporting a flat "0 added" there would hide the one operation that is
+    // allowed to grow the set, which is the only one worth reading closely.
+    const written = new Set(ids);
+    const drained = previous.filter((id) => !written.has(id)).length;
+    const permitted = firstSeed ? 0 : baselineAdditions(previous, ids).length;
     fs.mkdirSync(path.dirname(baselineFile), { recursive: true });
     fs.writeFileSync(baselineFile, `${JSON.stringify(ids, null, 2)}\n`);
-    console.log(`Wrote ${ids.length} baselined finding(s) to ${path.relative(base, baselineFile)}`);
+    console.log(
+      `Wrote ${ids.length} baselined finding(s) to ${shown} ` +
+        `(${previous.length} before, ${drained} drained, ${permitted} added` +
+        `${permitted > 0 ? ` under --seed-surface ${seedSurface}` : ''}).`
+    );
     return;
   }
 

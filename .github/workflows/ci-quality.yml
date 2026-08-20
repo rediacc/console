@@ -83,6 +83,18 @@ on:
         type: string
         required: false
         default: 'hard'
+      # Two-state control for the gates that read in-flight tutorial media,
+      # computed by ci.yml's initialize: 'hard' (normal PR and every non-PR
+      # event: failures block) or 'skip' (PR carrying the no-media-quality
+      # label, while a re-recording pass leaves the media tree temporarily
+      # inconsistent). No soft state and no wrapper: these gates read this
+      # tree, not the outside world, so there is no drift to downgrade.
+      # Default 'hard' fails closed if a caller forgets to pass it, and both
+      # consuming jobs run announce-gate-skips.sh so a skip is never silent.
+      media_quality:
+        type: string
+        required: false
+        default: 'hard'
     secrets:
       APP_PRIVATE_KEY:
         required: false
@@ -773,8 +785,12 @@ jobs:
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: npm run check:ci-solution-video-engine
 
+      # media_quality: reads the recorded .cast files themselves, so a
+      # re-recording pass in flight makes it red on media that is already
+      # being repaired. Skipped ONLY on a no-media-quality PR; the announcer
+      # step at the end of this job names it when that happens.
       - name: Block fallback hacks and error output in tutorial recordings
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' && inputs.media_quality != 'skip' }}
         run: npm run check:ci-tutorial-casts
 
       - name: Validate published tutorial word-timing sync (real ASR alignment, not estimated)
@@ -847,8 +863,11 @@ jobs:
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: npm run check:ci-retired-commands
 
+      # media_quality: cross-checks the recordings against their storyboards
+      # and transcripts, so it fails on any half-finished re-recording pass.
+      # Same narrow, announced hold as the cast gate above.
       - name: Validate tutorial cast/storyboard/transcript/mdx parity
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' && inputs.media_quality != 'skip' }}
         run: npm run check:ci-tutorial-parity
 
       - name: Validate account onboarding splash against canonical tutorials
@@ -904,6 +923,18 @@ jobs:
         run: .ci/scripts/quality/run-external-gate.sh npm run check:ci-dkim-notify
         env:
           EXTERNAL_QUALITY_MODE: ${{ inputs.external_quality }}
+
+      # Runs unconditionally, and is NOT behind media_quality: a skipped step
+      # is invisible (the job still reports success), so without this the two
+      # holds above would leave no trace anywhere in the log. It also refuses
+      # an unrecognised media_quality value, which is the only place a typo in
+      # that wiring is ever reported -- the step `if:` above would silently
+      # treat it as "run".
+      - name: Announce media gates held by label
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        env:
+          GATE_SKIP_MODE: ${{ inputs.media_quality }}
+        run: .ci/scripts/quality/announce-gate-skips.sh no-media-quality check:ci-tutorial-casts check:ci-tutorial-parity
 
   # ============================================================================
   # L6 PACKAGES -- node + submodules + built packages + native modules.
@@ -1044,7 +1075,7 @@ jobs:
           filter: blob:none   # see quality-branch
       - name: Initialize account submodule
         run: git submodule update --init --depth 1 private/account
-      # build-packages: check:i18n ends with check:cli-docs, which imports the
+      # build-packages: check:i18n runs check:cli-docs, which imports the
       # LIVE Commander tree (packages/cli/src/cli.js) rather than a
       # hand-maintained list. That import pulls in kvm-provisioner.ts ->
       # @rediacc/provisioning, whose package main is ./dist/index.js. Without
@@ -1056,12 +1087,18 @@ jobs:
           account: 'true'
           build-packages: 'true'
 
-      # check:i18n -> validate:content -> validate:tutorial-audio asserts that every
-      # narration .mp3 referenced by a tutorial timeline exists on disk. The audio cache
-      # is gitignored and lives in R2, so without this restore AUDIO_TREE_PRESENT is
-      # false (validate-tutorial-audio.js:63) and that assertion silently skips --
-      # the gate has never once run it in CI. Failing here is deliberate: a skip is
-      # exactly the false-green this step exists to remove.
+      # check:ci-i18n-media -> validate:content-media -> validate:tutorial-audio
+      # asserts that every narration .mp3 referenced by a tutorial timeline
+      # exists on disk. The audio cache is gitignored and lives in R2, so
+      # without this restore AUDIO_TREE_PRESENT is false
+      # (validate-tutorial-audio.js:63) and that assertion silently skips --
+      # the gate has never once run it in CI. Failing here is deliberate: a
+      # skip is exactly the false-green this step exists to remove.
+      #
+      # Deliberately NOT held by media_quality: it is a setup step, not a
+      # gate. On a labelled PR it restores a cache nothing then reads, which
+      # costs a little time and removes one more way for the label to change
+      # what the job does beyond the three gates it is allowed to hold.
       - name: Restore tutorial-narration audio cache from R2
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         env:
@@ -1073,6 +1110,24 @@ jobs:
       - name: i18n
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: npm run check:i18n
+
+      # The three tutorial-media validators (transcripts, narration audio,
+      # cast output), split out of check:i18n so the no-media-quality label
+      # can hold exactly these without touching the rest of the i18n surface.
+      # check:i18n no longer chains them, so this step is the only thing that
+      # runs them in CI -- check:ci-parity holds the step name and the
+      # manifest entry to each other in both directions.
+      - name: Tutorial media
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' && inputs.media_quality != 'skip' }}
+        run: npm run check:ci-i18n-media
+
+      # Unconditional, for the same reason as the twin in quality-content: a
+      # held gate that prints nothing is indistinguishable from a passing one.
+      - name: Announce media gates held by label
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        env:
+          GATE_SKIP_MODE: ${{ inputs.media_quality }}
+        run: .ci/scripts/quality/announce-gate-skips.sh no-media-quality check:ci-i18n-media
 
       - name: Search index
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
