@@ -7,13 +7,13 @@
   "audioFormat": "mp3",
   "sampleRateHz": 48000,
   "voiceFingerprint": "2e1d6ed48abe",
-  "transcriptHash": "b27cda8ad05395ae44b2224d86e263b2367b66919fa4baedfbe81dd57d5f20ef",
+  "transcriptHash": "7d821a88c11bc2b87bce263f786e8b5acc5d096ab7981a374c2f961b661b80e4",
   "steps": [
     {
       "id": "tutorial-installation-01",
       "markerIndex": 0,
-      "replayStartSec": 1.624699,
-      "replayEndSec": 8.885041,
+      "replayStartSec": 1.618316,
+      "replayEndSec": 8.390281,
       "narrationText": "أولًا، نتأكد من وجود أداة CLI في المسار. تشغيل الأداة مع علامة الإصدار يطبع الإصدار المثبت ويؤكد اكتمال التثبيت بنجاح.",
       "audioSrc": "/assets/tutorials/audio/ar/tutorial-installation/tutorial-installation-01.2eb3d0c4.mp3",
       "textHash": "2eb3d0c4d359d9ba3030c1c2ccd8fa0bebe0d1a4c15eef6371d5d307dc980974",
@@ -161,8 +161,8 @@
     {
       "id": "tutorial-installation-02",
       "markerIndex": 1,
-      "replayStartSec": 8.885041,
-      "replayEndSec": 10.904926,
+      "replayStartSec": 8.390281,
+      "replayEndSec": 10.380445,
       "narrationText": "بعد ذلك نشغّل الفحص الصحي للأداة. يمر على المتطلبات التي تحتاجها الأداة، وهي Node وSSH وما سواها، ويُبلّغ عن أي ثغرات. تقرير نظيف يعني أنك مستعد لإضافة خادم.",
       "audioSrc": "/assets/tutorials/audio/ar/tutorial-installation/tutorial-installation-02.0181b7e7.mp3",
       "textHash": "0181b7e752e7effe0bd0e3f44990d26bc43ed46f28570714003e3ffd28798815",

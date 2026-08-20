@@ -6,7 +6,7 @@
     {
       "id": "tutorial-storage-management-01",
       "markerIndex": 0,
-      "at": 2.415408,
+      "at": 2.409491,
       "text": "Füll das repository fast bis zum Anschlag und prüfe: Das Dateisystem wird eng.",
       "afterText": "Fast voll. Zeit zum Wachsen.",
       "cardLabel": "Befüllen",
@@ -15,7 +15,7 @@
     {
       "id": "tutorial-storage-management-02",
       "markerIndex": 1,
-      "at": 10.51664,
+      "at": 11.307515,
       "text": "Erweitere es online. Der verschlüsselte Container und das Dateisystem wachsen, während die Container weiterlaufen, null Ausfallzeit, kein Unmount.",
       "afterText": "Jetzt vier Gigabyte. Nichts wurde neu gestartet.",
       "cardLabel": "Online Erweitern",
@@ -24,7 +24,7 @@
     {
       "id": "tutorial-storage-management-03",
       "markerIndex": 2,
-      "at": 14.693193,
+      "at": 15.610035,
       "text": "Prüfe es von innen: gleiches Volume, doppelt so viel Platz.",
       "afterText": "Die App hat es nicht bemerkt.",
       "cardLabel": "Größe Prüfen",
@@ -33,7 +33,7 @@
     {
       "id": "tutorial-storage-management-04",
       "markerIndex": 3,
-      "at": 19.546232,
+      "at": 22.257209,
       "text": "Jetzt die andere Richtung. Lösche die große Datei, aber schau genau hin: Der Pool bekommt den Platz noch nicht zurück. Gelöschte Blöcke bleiben im Image reserviert.",
       "afterText": "Im repo freigegeben, noch im Besitz des Images.",
       "cardLabel": "Daten Löschen",
@@ -42,7 +42,7 @@
     {
       "id": "tutorial-storage-management-05",
       "markerIndex": 4,
-      "at": 23.813547,
+      "at": 27.992754,
       "text": "Trim gibt diese Blöcke online an den Datastore-Pool zurück. Diesen Schritt vergessen die meisten Setups.",
       "afterText": "Zurückgewonnen. Der Pool kann wieder atmen.",
       "cardLabel": "Trim",
@@ -51,7 +51,7 @@
     {
       "id": "tutorial-storage-management-06",
       "markerIndex": 5,
-      "at": 28.710567,
+      "at": 32.61646,
       "text": "Jetzt hör auf, das von Hand zu machen. Die Policy aktiviert automatisches Wachstum bis zu einer Obergrenze, die du wählst, plus geplante Trims.",
       "afterText": "Policy gespeichert. Die Maschine übernimmt ab hier.",
       "cardLabel": "Richtlinie Setzen",
@@ -60,7 +60,7 @@
     {
       "id": "tutorial-storage-management-07",
       "markerIndex": 6,
-      "at": 36.110527,
+      "at": 39.426457,
       "text": "Lies sie aus: Auto-Grow an, Obergrenze bei acht Gigabyte, Trim nach Zeitplan.",
       "afterText": "Einmal gesetzt, sicher vergessen.",
       "cardLabel": "Richtlinie Prüfen",
@@ -69,7 +69,7 @@
     {
       "id": "tutorial-storage-management-08",
       "markerIndex": 7,
-      "at": 41.090184,
+      "at": 43.622603,
       "text": "Und die Ansicht, die alles zusammenführt: Storage Health zeigt die Nutzung jedes repos, den Pool und wie viel dir Copy-on-Write-Sharing spart.",
       "afterText": "Eine Ansicht: Nutzung, Einsparungen und Platz zum Wachsen.",
       "cardLabel": "Systemzustand",

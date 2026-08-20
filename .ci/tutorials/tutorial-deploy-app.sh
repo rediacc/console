@@ -59,7 +59,10 @@ run_cmd "rdc repo up my-app"
 pause 2
 
 section "Verify what's running"
-run_cmd "rdc term connect my-app --command 'docker ps'"
+# Narrow --format, not bare `docker ps`: the default table is 122 columns and
+# the recorded terminal is 107, so it wrapped into the row below and shredded
+# the layout. Name/Status/Ports is what the demo is actually showing.
+run_cmd "rdc term connect my-app --command 'docker ps --format \"table {{.Names}}\t{{.Status}}\t{{.Ports}}\"'"
 
 pause 2
 

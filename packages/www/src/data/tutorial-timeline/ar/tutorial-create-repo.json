@@ -7,13 +7,13 @@
   "audioFormat": "mp3",
   "sampleRateHz": 48000,
   "voiceFingerprint": "2e1d6ed48abe",
-  "transcriptHash": "5ce1de40a3e337dae621a0b9ecafe3a980c9f8bb4d0fbbddc8879cf240bdfe4f",
+  "transcriptHash": "02b1389f5065d6aa99a25b4488f56ba2d5e152f34607d20d58783ec98a88e4f5",
   "steps": [
     {
       "id": "tutorial-create-repo-01",
       "markerIndex": 0,
-      "replayStartSec": 2.41017,
-      "replayEndSec": 10.688129,
+      "replayStartSec": 2.416628,
+      "replayEndSec": 10.155124,
       "narrationText": "ننشئ مستودعًا مشفرًا بحجم 2 جيجابايت على الخادم. المستودع هو ملف مشفر واحد في حالة السكون. عند تحميله، يصبح مجلدًا بمحرك Docker خاص به وبيانات تطبيق خاصة به، معزول تمامًا عن أي شيء آخر على الخادم.",
       "audioSrc": "/assets/tutorials/audio/ar/tutorial-create-repo/tutorial-create-repo-01.a1e47ee4.mp3",
       "textHash": "a1e47ee41fbe0d8474d1178c087e4d33073087ff854a9e23fbb0242a62fb1271",
@@ -227,8 +227,8 @@
     {
       "id": "tutorial-create-repo-02",
       "markerIndex": 1,
-      "replayStartSec": 10.688129,
-      "replayEndSec": 16.425103,
+      "replayStartSec": 10.155124,
+      "replayEndSec": 15.356468,
       "narrationText": "ندرج المستودعات على الجهاز للتأكد من تسجيل المستودع الجديد. من هنا، يمكن فتح المستودع في VS Code أو نشره أو نسخه أو نسخه احتياطيًا، كل ذلك من حاسوبك.",
       "audioSrc": "/assets/tutorials/audio/ar/tutorial-create-repo/tutorial-create-repo-02.35c8e764.mp3",
       "textHash": "35c8e7647d96bf832cb9745b14528bf78cda1080db45fa7e8a1934ca11473835",
@@ -412,8 +412,8 @@
     {
       "id": "tutorial-create-repo-03",
       "markerIndex": 2,
-      "replayStartSec": 16.425103,
-      "replayEndSec": 18.266995,
+      "replayStartSec": 15.356468,
+      "replayEndSec": 17.167873,
       "narrationText": "خيار مفيد: يمكنك فتح الـ repo مباشرةً في VS Code باستخدام هذا الأمر. لن نشغّل المحرر هنا، لكنه يبدأ جلسة بعيدة داخل الـ repo عبر SSH حتى تتمكن من تحرير ملفاته.",
       "audioSrc": "/assets/tutorials/audio/ar/tutorial-create-repo/tutorial-create-repo-03.28240b46.mp3",
       "textHash": "28240b46c034cbc37b0478cd96bdef94684ef561ed45ee593133c4b2198479ad",

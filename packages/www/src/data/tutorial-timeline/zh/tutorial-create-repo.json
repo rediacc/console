@@ -7,13 +7,13 @@
   "audioFormat": "mp3",
   "sampleRateHz": 48000,
   "voiceFingerprint": "f41b43ee7452",
-  "transcriptHash": "ae3aff74ae1d934c1b5162e31d6ec77b5a975f1f4b7186512341e0a70a80e309",
+  "transcriptHash": "e5a0bf2f44a5e3a665c56db951e8ba3b6f0dda3289bf0d60f0a3d7bf43700b15",
   "steps": [
     {
       "id": "tutorial-create-repo-01",
       "markerIndex": 0,
-      "replayStartSec": 2.41017,
-      "replayEndSec": 10.688129,
+      "replayStartSec": 2.416628,
+      "replayEndSec": 10.155124,
       "narrationText": "让我们在服务器上创建一个 2 GB 的加密仓库。仓库静态时是一个单一加密文件，挂载后变成拥有独立 Docker 守护进程和独立应用数据的文件夹，与服务器上的其他一切完全隔离。",
       "audioSrc": "/assets/tutorials/audio/zh/tutorial-create-repo/tutorial-create-repo-01.80d1ff14.mp3",
       "textHash": "80d1ff1442475fd8a69971e586d588e07ab658ba2b3a2ae70a34b45f301b948b",
@@ -557,8 +557,8 @@
     {
       "id": "tutorial-create-repo-02",
       "markerIndex": 1,
-      "replayStartSec": 10.688129,
-      "replayEndSec": 16.425103,
+      "replayStartSec": 10.155124,
+      "replayEndSec": 15.356468,
       "narrationText": "让我们列出机器上的仓库，确认新仓库已注册。从这里开始，仓库可以在 VS Code 中打开、部署、fork 或备份，全都从笔记本完成。",
       "audioSrc": "/assets/tutorials/audio/zh/tutorial-create-repo/tutorial-create-repo-02.b6b6dbbb.mp3",
       "textHash": "b6b6dbbba2862d61c4e2855e786cc43e2d160d0ea97be7c5564ce31d6d677470",
@@ -916,8 +916,8 @@
     {
       "id": "tutorial-create-repo-03",
       "markerIndex": 2,
-      "replayStartSec": 16.425103,
-      "replayEndSec": 18.266995,
+      "replayStartSec": 15.356468,
+      "replayEndSec": 17.167873,
       "narrationText": "一个实用选项：用这条命令直接在 VS Code 中打开 repo。我们这里不会启动编辑器，但它会通过 SSH 建立一个进入 repo 的远程会话，让你可以编辑其中的文件。",
       "audioSrc": "/assets/tutorials/audio/zh/tutorial-create-repo/tutorial-create-repo-03.7978cacc.mp3",
       "textHash": "7978cacc1c3ff34d9c905b910c79234e99ab0ad59b49bfc027ca4a228cdaeec3",

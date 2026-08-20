@@ -7,13 +7,13 @@
   "audioFormat": "mp3",
   "sampleRateHz": 48000,
   "voiceFingerprint": "076d6d7077b5",
-  "transcriptHash": "fea070bcc68f93282d2770271d342fd96690aba413047ae7f45bba4feb4c1ef8",
+  "transcriptHash": "e8cd0b02dd7e28028bd4d9d7ebf4e37f94011d752be37480eb8c1f0ee7008eba",
   "steps": [
     {
       "id": "tutorial-add-server-01",
       "markerIndex": 0,
-      "replayStartSec": 1.627855,
-      "replayEndSec": 7.25092,
+      "replayStartSec": 1.613148,
+      "replayEndSec": 7.714792,
       "narrationText": "Wir beginnen damit, ein Konfigurationsprofil zu erstellen. Das Profil enthält den SSH-Schlüssel, die Maschinenliste und die Infrastruktureinstellungen für alles, was wir von hier an tun.",
       "audioSrc": "/assets/tutorials/audio/de/tutorial-add-server/tutorial-add-server-01.cfdc6022.mp3",
       "textHash": "cfdc6022220a69cc1d55ab97784af280906778f18cf8819df027011e104c4457",
@@ -251,8 +251,8 @@
     {
       "id": "tutorial-add-server-02",
       "markerIndex": 1,
-      "replayStartSec": 7.25092,
-      "replayEndSec": 13.396171,
+      "replayStartSec": 7.714792,
+      "replayEndSec": 15.024927,
       "narrationText": "Jetzt registrieren wir den Server bei der CLI, indem wir Namen, IP-Adresse und SSH-Benutzer angeben. Host-Schlüssel werden automatisch für vertrauenswürdigen Zugang gescannt.",
       "audioSrc": "/assets/tutorials/audio/de/tutorial-add-server/tutorial-add-server-02.17a3e510.mp3",
       "textHash": "17a3e5102b24c4bda91f8895a5040cf89e18302bff4ac601d696a26f1a27868c",
@@ -424,8 +424,8 @@
     {
       "id": "tutorial-add-server-03",
       "markerIndex": 2,
-      "replayStartSec": 13.396171,
-      "replayEndSec": 15.698213,
+      "replayStartSec": 15.024927,
+      "replayEndSec": 18.069081,
       "narrationText": "Als Nächstes stellen wir den Server bereit. Dabei wird renet installiert und der verschlüsselte Datenspeicher erstellt. Danach ist der Server bereit, Repositories zu hosten.",
       "audioSrc": "/assets/tutorials/audio/de/tutorial-add-server/tutorial-add-server-03.f24af517.mp3",
       "textHash": "f24af517f160fdb25f361e7838750b3eeb94bc350fa2f4d7001b6641c2397386",

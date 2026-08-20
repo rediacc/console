@@ -7,13 +7,13 @@
   "audioFormat": "mp3",
   "sampleRateHz": 48000,
   "voiceFingerprint": "1359e9dc99d9",
-  "transcriptHash": "07287f4a29113da0515c98df009ddc5db7093317e53432244b12be33684d4b27",
+  "transcriptHash": "5185bbbb9f9adbdf505bfb7acf10b0676047c4210e783fdb59cdfe1ee9e3e01c",
   "steps": [
     {
       "id": "tutorial-create-repo-01",
       "markerIndex": 0,
-      "replayStartSec": 2.41017,
-      "replayEndSec": 10.688129,
+      "replayStartSec": 2.416628,
+      "replayEndSec": 10.155124,
       "narrationText": "サーバーに 2 ギガバイトの暗号化リポジトリを作成します。リポジトリは静止時には1つの暗号化ファイルです。マウントすると、専用の Docker デーモンと固有のアプリケーションデータを持つフォルダになり、サーバー上の他のものから完全に分離されます。",
       "audioSrc": "/assets/tutorials/audio/ja/tutorial-create-repo/tutorial-create-repo-01.7799cf1b.mp3",
       "textHash": "7799cf1bcd6d1f3ce94800d70298340988c8cf7ee81ec19c4b8c7d9a02761c0c",
@@ -449,8 +449,8 @@
     {
       "id": "tutorial-create-repo-02",
       "markerIndex": 1,
-      "replayStartSec": 10.688129,
-      "replayEndSec": 16.425103,
+      "replayStartSec": 10.155124,
+      "replayEndSec": 15.356468,
       "narrationText": "マシン上のリポジトリ一覧を表示して、新しいリポジトリが登録されていることを確認します。この後、リポジトリは VS Code で開いたり、デプロイ、フォーク、バックアップなど、すべてラップトップから操作できます。",
       "audioSrc": "/assets/tutorials/audio/ja/tutorial-create-repo/tutorial-create-repo-02.fdb7e0ac.mp3",
       "textHash": "fdb7e0ac77e5099993afcd2e25cb3d4de2c05c5709726c138606c6c02b66edc2",
@@ -814,8 +814,8 @@
     {
       "id": "tutorial-create-repo-03",
       "markerIndex": 2,
-      "replayStartSec": 16.425103,
-      "replayEndSec": 18.266995,
+      "replayStartSec": 15.356468,
+      "replayEndSec": 17.167873,
       "narrationText": "便利なオプションとして、このコマンドでrepoをVS Codeで直接開けます。ここではエディタを起動しませんが、SSH経由でrepoへのリモートセッションを開始してファイルを編集できます。",
       "audioSrc": "/assets/tutorials/audio/ja/tutorial-create-repo/tutorial-create-repo-03.54a17730.mp3",
       "textHash": "54a17730b09f63a3f37989b4d8bd8b8e47d2f3e237aa50d287ce5ba25402bd2d",

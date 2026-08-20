@@ -6,7 +6,7 @@
     {
       "id": "tutorial-deploy-app-01",
       "markerIndex": 0,
-      "at": 2.420634,
+      "at": 2.41474,
       "text": "1단계: 사용 가능한 템플릿을 나열해 봅니다. Rediacc는 일반적인 앱을 위한 준비된 설정을 제공하므로, docker-compose를 처음부터 작성할 필요가 없습니다.",
       "afterText": "전체 템플릿 카탈로그입니다. 각 항목은 검증된 compose와 Rediaccfile 조합입니다.",
       "cardLabel": "템플릿 목록",
@@ -15,7 +15,7 @@
     {
       "id": "tutorial-deploy-app-02",
       "markerIndex": 1,
-      "at": 6.399014,
+      "at": 7.038713,
       "text": "2단계: app-postgres 템플릿을 repo에 추가합니다. 테스트된 파일 세트가 그대로 복사됩니다.",
       "afterText": "템플릿이 적용되었습니다. 이제 repo에 compose 파일과 Rediaccfile이 갖추어졌습니다.",
       "cardLabel": "템플릿 적용",
@@ -24,7 +24,7 @@
     {
       "id": "tutorial-deploy-app-03",
       "markerIndex": 2,
-      "at": 12.523372,
+      "at": 13.374786,
       "text": "repo 내부를 살펴보고 어떤 파일이 들어왔는지 확인합니다. 시작 및 중지 훅을 담은 Rediaccfile과 container를 설명하는 docker-compose 파일이 있습니다.",
       "afterText": "컨테이너가 실행 중이고, 볼륨이 마운트되었으며, 격리된 Docker 데몬이 가동되었습니다.",
       "cardLabel": "파일 확인",
@@ -33,7 +33,7 @@
     {
       "id": "tutorial-deploy-app-04",
       "markerIndex": 3,
-      "at": 17.108804,
+      "at": 18.627226,
       "text": "3단계: repo를 실행합니다. 명령 하나로 CLI가 암호화된 볼륨을 마운트하고, 격리된 Docker daemon을 시작하고, container를 실행합니다.",
       "afterText": "이 repo의 컨테이너만 보입니다. 격리는 설정이 아니라 실제로 작동합니다.",
       "cardLabel": "Repo 시작",
@@ -42,7 +42,7 @@
     {
       "id": "tutorial-deploy-app-05",
       "markerIndex": 4,
-      "at": 22.317819,
+      "at": 24.080812,
       "text": "실행 중인 항목을 확인합니다. 여기서 Docker ps는 이 repo의 container만 나열합니다. 이 서버의 다른 모든 repo는 자체 daemon을 가지며, 이 화면에서는 전혀 보이지 않습니다.",
       "afterText": "이 repo의 컨테이너만 표시됩니다. 격리는 설정이 아닌 실제입니다.",
       "cardLabel": "격리 확인",

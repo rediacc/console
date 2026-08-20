@@ -6,7 +6,7 @@
     {
       "id": "tutorial-production-mode-01",
       "markerIndex": 0,
-      "at": 2.431606,
+      "at": 2.407237,
       "text": "Avviamo l'app in modalita' produzione dal laptop. Il comando di deploy chiama la stessa funzione up usata durante lo sviluppo, ma viene eseguita in modalita' distaccata. Puoi chiudere il laptop e l'app continua a girare.",
       "afterText": "App in esecuzione in produzione. Stesso comando, stesso risultato, sul server reale.",
       "cardLabel": "Avvia Prod",
@@ -15,7 +15,7 @@
     {
       "id": "tutorial-production-mode-02",
       "markerIndex": 1,
-      "at": 7.724616,
+      "at": 7.839243,
       "text": "Abilitiamo l'avvio automatico cosi' l'app sopravvive al riavvio del server. Da questo momento, se il server si riavvia, questo repo torna su automaticamente.",
       "afterText": "Avvio automatico attivo. L'app sopravvive ai riavvii.",
       "cardLabel": "Abilita Avvio Automatico",
@@ -24,7 +24,7 @@
     {
       "id": "tutorial-production-mode-03",
       "markerIndex": 2,
-      "at": 13.316649,
+      "at": 13.238038,
       "text": "Elenchiamo i repository con l'avvio automatico abilitato. Conferma che la nostra app è ora nella lista di avvio.",
       "afterText": "Eccola, nella lista di avvio.",
       "cardLabel": "Elenca Avvio Automatico",
@@ -33,7 +33,7 @@
     {
       "id": "tutorial-production-mode-04",
       "markerIndex": 3,
-      "at": 19.488192,
+      "at": 19.058878,
       "text": "E per fermare l'app, un solo comando dal laptop. Un comando per avviare, uno per fermare. Tutto dal tuo terminale, senza piu' sessioni interattive.",
       "afterText": "Fermata. Un comando per avviare, uno per fermare.",
       "cardLabel": "Ferma Repo",

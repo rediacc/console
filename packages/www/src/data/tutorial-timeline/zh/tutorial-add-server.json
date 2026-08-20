@@ -7,13 +7,13 @@
   "audioFormat": "mp3",
   "sampleRateHz": 48000,
   "voiceFingerprint": "f41b43ee7452",
-  "transcriptHash": "c7b41416590f817626b14c1955894f88596c73bdc3cc2e76ee47c3b30901ba93",
+  "transcriptHash": "0d6c1c32632c508957e19e3c2bd287b7b926a05ea672178eec72cc3ed02a0a4b",
   "steps": [
     {
       "id": "tutorial-add-server-01",
       "markerIndex": 0,
-      "replayStartSec": 1.627855,
-      "replayEndSec": 7.25092,
+      "replayStartSec": 1.613148,
+      "replayEndSec": 7.714792,
       "narrationText": "首先，让我们创建一个配置文件。该文件将保存 SSH 密钥、机器列表以及后续所有操作的基础设施配置。",
       "audioSrc": "/assets/tutorials/audio/zh/tutorial-add-server/tutorial-add-server-01.bfdc97aa.mp3",
       "textHash": "bfdc97aaaba8f467854ba926d45efc831108bc20ee9b300e4e6a3b09a2c5b83a",
@@ -395,8 +395,8 @@
     {
       "id": "tutorial-add-server-02",
       "markerIndex": 1,
-      "replayStartSec": 7.25092,
-      "replayEndSec": 13.396171,
+      "replayStartSec": 7.714792,
+      "replayEndSec": 15.024927,
       "narrationText": "现在让我们从命令行注册服务器，提供其名称、IP 地址和 SSH 用户名。主机密钥会自动扫描以建立信任连接。",
       "audioSrc": "/assets/tutorials/audio/zh/tutorial-add-server/tutorial-add-server-02.56c5a599.mp3",
       "textHash": "56c5a5996452206ba9e9af987f943c4d4c4df91491e1b31921a12ccd9a63b203",
@@ -754,8 +754,8 @@
     {
       "id": "tutorial-add-server-03",
       "markerIndex": 2,
-      "replayStartSec": 13.396171,
-      "replayEndSec": 15.698213,
+      "replayStartSec": 15.024927,
+      "replayEndSec": 18.069081,
       "narrationText": "接下来让我们配置服务器。这一步会安装 renet 并创建加密数据存储。完成后，服务器就可以托管仓库了。",
       "audioSrc": "/assets/tutorials/audio/zh/tutorial-add-server/tutorial-add-server-03.be97da30.mp3",
       "textHash": "be97da306971e217afa8ec833627bd9a071d29446b113d43a535a5d1d739cc42",

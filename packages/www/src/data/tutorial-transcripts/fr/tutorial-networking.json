@@ -6,7 +6,7 @@
     {
       "id": "tutorial-networking-01",
       "markerIndex": 0,
-      "at": 2.427234,
+      "at": 2.411171,
       "text": "Deuxième étape. Nous saisissons l'IP publique, le domaine de base, l'adresse email pour le certificat et le token API Cloudflare depuis la ligne de commande. L'email de certificat et le token sont partagés entre toutes vos machines, donc vous ne les définissez qu'une seule fois.",
       "afterText": "Infrastructure enregistrée dans votre config.",
       "cardLabel": "Configurer l'infra",
@@ -15,7 +15,7 @@
     {
       "id": "tutorial-networking-02",
       "markerIndex": 1,
-      "at": 12.223183,
+      "at": 11.974503,
       "text": "Confirmons que les paramètres d'infrastructure ont bien été enregistrés. IP publique, domaine de base, adresse email pour le certificat, tout est visible dans la configuration.",
       "afterText": "Paramètres enregistrés. Prêt à pousser vers le serveur.",
       "cardLabel": "Afficher l'infra",
@@ -24,7 +24,7 @@
     {
       "id": "tutorial-networking-03",
       "markerIndex": 2,
-      "at": 16.437274,
+      "at": 16.497836,
       "text": "Étape trois : poussez la configuration vers le serveur. Avec un vrai token, cela crée vos enregistrements DNS sur Cloudflare automatiquement et prépare la configuration du proxy.",
       "afterText": "Poussé. Les enregistrements DNS sont en train d'être créés sur Cloudflare.",
       "cardLabel": "Pousser l'infra",
@@ -33,7 +33,7 @@
     {
       "id": "tutorial-networking-04",
       "markerIndex": 3,
-      "at": 19.770637,
+      "at": 19.729838,
       "text": "Étape quatre : créez un petit repo nommé infra. Pourquoi son propre repo ? Le proxy achemine le trafic pour chaque application sur ce serveur. L'infrastructure mérite sa propre boîte isolée, loin de votre code applicatif.",
       "afterText": "Repo infra créé. Isolé de vos repos d'application.",
       "cardLabel": "Créer un repo",
@@ -42,7 +42,7 @@
     {
       "id": "tutorial-networking-05",
       "markerIndex": 4,
-      "at": 26.52638,
+      "at": 25.899874,
       "text": "Nous appliquons le modèle proxy intégré. Il contient Traefik ainsi que la configuration pour Let's Encrypt et les challenges DNS-01 de Cloudflare, prêt à l'emploi.",
       "afterText": "Configuration Traefik en place.",
       "cardLabel": "Appliquer le modèle"
@@ -50,7 +50,7 @@
     {
       "id": "tutorial-networking-06",
       "markerIndex": 5,
-      "at": 31.688233,
+      "at": 31.172539,
       "text": "Et nous démarrons le proxy. Traefik découvre vos conteneurs toutes les cinq secondes. Les certificats TLS proviennent de Let's Encrypt automatiquement. Votre application est maintenant accessible sur internet via HTTPS.",
       "afterText": "Proxy en ligne. Les certificats TLS arriveront automatiquement.",
       "cardLabel": "Déployer le proxy",

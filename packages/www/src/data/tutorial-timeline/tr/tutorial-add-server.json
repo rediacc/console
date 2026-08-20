@@ -7,13 +7,13 @@
   "audioFormat": "mp3",
   "sampleRateHz": 48000,
   "voiceFingerprint": "f53f3b97493c",
-  "transcriptHash": "7cd27db49c70f308129fceb937e5487e6e00cbe8bf401a7a69be9dd865fc7ba1",
+  "transcriptHash": "d0b01234902fad25cdeb6114bfef34121d8d673cb065331c782fa85cee87a234",
   "steps": [
     {
       "id": "tutorial-add-server-01",
       "markerIndex": 0,
-      "replayStartSec": 1.627855,
-      "replayEndSec": 7.25092,
+      "replayStartSec": 1.613148,
+      "replayEndSec": 7.714792,
       "narrationText": "SSH anahtarını, makine listesini ve altyapı ayarlarını barındıracak bir yapılandırma profili oluşturarak başlıyoruz. Bu profil, buradan itibaren yapacağımız her işlem için temel oluşturuyor.",
       "audioSrc": "/assets/tutorials/audio/tr/tutorial-add-server/tutorial-add-server-01.ecf414c2.mp3",
       "textHash": "ecf414c2cb31a56d16bb0646bbd2af0c8537b0b4e48c29077613c335de5a0134",
@@ -191,8 +191,8 @@
     {
       "id": "tutorial-add-server-02",
       "markerIndex": 1,
-      "replayStartSec": 7.25092,
-      "replayEndSec": 13.396171,
+      "replayStartSec": 7.714792,
+      "replayEndSec": 15.024927,
       "narrationText": "Şimdi sunucuyu komut satırına kaydediyoruz: adını, IP adresini ve SSH kullanıcısını belirtiyoruz. Host anahtarları güvenilir erişim için otomatik olarak taranıyor.",
       "audioSrc": "/assets/tutorials/audio/tr/tutorial-add-server/tutorial-add-server-02.d4bf5282.mp3",
       "textHash": "d4bf5282ba32110b5ccbe8eafe96133472a77ac99c36d8cd88c35626fa220ced",
@@ -334,8 +334,8 @@
     {
       "id": "tutorial-add-server-03",
       "markerIndex": 2,
-      "replayStartSec": 13.396171,
-      "replayEndSec": 15.698213,
+      "replayStartSec": 15.024927,
+      "replayEndSec": 18.069081,
       "narrationText": "Sırada sunucunun yapılandırılması var. Bu adım renet'i yüklüyor ve şifreli veri deposunu oluşturuyor. Tamamlandığında sunucu depo barındırmaya hazır.",
       "audioSrc": "/assets/tutorials/audio/tr/tutorial-add-server/tutorial-add-server-03.c3c353ca.mp3",
       "textHash": "c3c353cadb1bdbb5197a201a2166de292593e97f063dba68b96f4fe77f03c8cd",

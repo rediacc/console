@@ -7,13 +7,13 @@
   "audioFormat": "mp3",
   "sampleRateHz": 48000,
   "voiceFingerprint": "3735aa4aaf13",
-  "transcriptHash": "92b94ace7deddbb7bb4ff648d7e9c4c05eb7b5ce1093c97819adfbb18b1c3e4c",
+  "transcriptHash": "f024ce71ea172aa26e457295e54a48f2d5a7b4f26b3529f1e8ad2976dab0d862",
   "steps": [
     {
       "id": "tutorial-installation-01",
       "markerIndex": 0,
-      "replayStartSec": 1.624699,
-      "replayEndSec": 8.885041,
+      "replayStartSec": 1.618316,
+      "replayEndSec": 8.390281,
       "narrationText": "Сначала убедимся, что CLI доступен в системе. Запустим CLI с флагом версии: он выведет установленную версию и подтвердит, что установка прошла успешно.",
       "audioSrc": "/assets/tutorials/audio/ru/tutorial-installation/tutorial-installation-01.6a57c81d.mp3",
       "textHash": "6a57c81da06fb62ab273fa0bb2d3825daea585abb86f3d49972d9c4c5b49465f",
@@ -149,8 +149,8 @@
     {
       "id": "tutorial-installation-02",
       "markerIndex": 1,
-      "replayStartSec": 8.885041,
-      "replayEndSec": 10.904926,
+      "replayStartSec": 8.390281,
+      "replayEndSec": 10.380445,
       "narrationText": "Теперь запустим диагностическую проверку. Она проверяет все зависимости, которые нужны CLI: Node, SSH и остальное, и сообщает о пробелах. Чистый отчёт означает, что можно добавлять сервер.",
       "audioSrc": "/assets/tutorials/audio/ru/tutorial-installation/tutorial-installation-02.632489ba.mp3",
       "textHash": "632489ba8d6a8d7d4fbac00f8706a0aaefe9e7dfca9e973611e74e06845ff369",

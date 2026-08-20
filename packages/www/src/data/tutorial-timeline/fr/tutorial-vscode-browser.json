@@ -7,13 +7,13 @@
   "audioFormat": "mp3",
   "sampleRateHz": 48000,
   "voiceFingerprint": "614e9d2597f7",
-  "transcriptHash": "f4472b707bc55ed7729bdc1f42637eb41d122012688aac715e0d44a17a503f2d",
+  "transcriptHash": "8d2cf4dd5a9a3ff20374b342e53f3e75598e05c0db65dd5e0a9f15d3515c0638",
   "steps": [
     {
       "id": "tutorial-vscode-browser-01",
       "markerIndex": 0,
-      "replayStartSec": 2.418779,
-      "replayEndSec": 10.10448,
+      "replayStartSec": 2.412438,
+      "replayEndSec": 9.979633,
       "narrationText": "Une seule commande. Le CLI installe le serveur d'éditeur sur la machine une fois, le démarre dans le sandbox du repo, ouvre un tunnel et vous donne un lien. Pas de VS Code local, pas d'extensions à configurer.",
       "audioSrc": "/assets/tutorials/audio/fr/tutorial-vscode-browser/tutorial-vscode-browser-01.fab616d8.mp3",
       "textHash": "fab616d8f44dab1c74e44bd53d83c82df5189e6f5b85f31ba662392ece6fd534",
@@ -353,8 +353,8 @@
     {
       "id": "tutorial-vscode-browser-02",
       "markerIndex": 1,
-      "replayStartSec": 10.10448,
-      "replayEndSec": 14.856043,
+      "replayStartSec": 9.979633,
+      "replayEndSec": 14.898378,
       "narrationText": "Le même repo depuis le terminal classique : le répertoire de travail, c'est le repo, les fichiers sont ceux du repo.",
       "audioSrc": "/assets/tutorials/audio/fr/tutorial-vscode-browser/tutorial-vscode-browser-02.29ff9a92.mp3",
       "textHash": "29ff9a92f0da374a3acb309f08b067df4710694d49e6fed290a5150942fbea64",
@@ -550,8 +550,8 @@
     {
       "id": "tutorial-vscode-browser-03",
       "markerIndex": 2,
-      "replayStartSec": 14.856043,
-      "replayEndSec": 19.933198,
+      "replayStartSec": 14.898378,
+      "replayEndSec": 20.176159,
       "narrationText": "Et le fichier qu'on a créé dans l'éditeur du navigateur ? Le voilà. Les fichiers créés dans VS Code sont de vrais fichiers du repo, instantanément.",
       "audioSrc": "/assets/tutorials/audio/fr/tutorial-vscode-browser/tutorial-vscode-browser-03.2024fd59.mp3",
       "textHash": "2024fd59f867b6cded48da72644735768ac092db73ccd81b92efe2f9cdeedd47",
@@ -789,8 +789,8 @@
     {
       "id": "tutorial-vscode-browser-04",
       "markerIndex": 3,
-      "replayStartSec": 19.933198,
-      "replayEndSec": 23.377274,
+      "replayStartSec": 20.176159,
+      "replayEndSec": 23.521375,
       "narrationText": "Essayons maintenant de sortir. Lister la racine du serveur : permission refusée. Le kernel confine l'éditeur, son terminal et chaque processus enfant à ce repo.",
       "audioSrc": "/assets/tutorials/audio/fr/tutorial-vscode-browser/tutorial-vscode-browser-04.6044547a.mp3",
       "textHash": "6044547a397ec46944816dabc1af6140153cf7c17be24c55db8605ac81015767",
@@ -974,164 +974,12 @@
     {
       "id": "tutorial-vscode-browser-05",
       "markerIndex": 4,
-      "replayStartSec": 23.377274,
-      "replayEndSec": 26.980129,
-      "narrationText": "Les répertoires personnels des autres utilisateurs ? Refusés aussi. Tout ce qui tourne dans ce sandbox — éditeurs, terminaux, outils de build — s'arrête aux murs du repo.",
-      "audioSrc": "/assets/tutorials/audio/fr/tutorial-vscode-browser/tutorial-vscode-browser-05.c5dc5c6a.mp3",
-      "textHash": "c5dc5c6a1ba0c40811f1fcf1f6e5f05ed8c8f61865945700db6c63ec3f515f66",
-      "audioDurationSec": 9.96,
-      "wordTimings": [
-        {
-          "startSec": 0.0,
-          "endSec": 0.16,
-          "startChar": 0,
-          "endChar": 3
-        },
-        {
-          "startSec": 0.16,
-          "endSec": 0.64,
-          "startChar": 4,
-          "endChar": 15
-        },
-        {
-          "startSec": 0.64,
-          "endSec": 1.2,
-          "startChar": 16,
-          "endChar": 26
-        },
-        {
-          "startSec": 1.2,
-          "endSec": 1.44,
-          "startChar": 27,
-          "endChar": 30
-        },
-        {
-          "startSec": 1.44,
-          "endSec": 1.84,
-          "startChar": 31,
-          "endChar": 37
-        },
-        {
-          "startSec": 1.84,
-          "endSec": 2.56,
-          "startChar": 38,
-          "endChar": 50
-        },
-        {
-          "startSec": 3.04,
-          "endSec": 3.6,
-          "startChar": 53,
-          "endChar": 60
-        },
-        {
-          "startSec": 3.6,
-          "endSec": 4.0,
-          "startChar": 61,
-          "endChar": 66
-        },
-        {
-          "startSec": 4.4,
-          "endSec": 4.48,
-          "startChar": 68,
-          "endChar": 72
-        },
-        {
-          "startSec": 4.48,
-          "endSec": 4.56,
-          "startChar": 73,
-          "endChar": 75
-        },
-        {
-          "startSec": 4.56,
-          "endSec": 4.72,
-          "startChar": 76,
-          "endChar": 79
-        },
-        {
-          "startSec": 4.72,
-          "endSec": 5.12,
-          "startChar": 80,
-          "endChar": 86
-        },
-        {
-          "startSec": 5.12,
-          "endSec": 5.2,
-          "startChar": 87,
-          "endChar": 91
-        },
-        {
-          "startSec": 5.2,
-          "endSec": 5.28,
-          "startChar": 92,
-          "endChar": 94
-        },
-        {
-          "startSec": 5.28,
-          "endSec": 5.6,
-          "startChar": 95,
-          "endChar": 102
-        },
-        {
-          "startSec": 6.0,
-          "endSec": 6.64,
-          "startChar": 105,
-          "endChar": 112
-        },
-        {
-          "startSec": 6.72,
-          "endSec": 7.28,
-          "startChar": 115,
-          "endChar": 124
-        },
-        {
-          "startSec": 7.6,
-          "endSec": 7.84,
-          "startChar": 126,
-          "endChar": 132
-        },
-        {
-          "startSec": 7.84,
-          "endSec": 8.0,
-          "startChar": 133,
-          "endChar": 135
-        },
-        {
-          "startSec": 8.0,
-          "endSec": 8.32,
-          "startChar": 136,
-          "endChar": 141
-        },
-        {
-          "startSec": 8.56,
-          "endSec": 9.04,
-          "startChar": 144,
-          "endChar": 152
-        },
-        {
-          "startSec": 9.04,
-          "endSec": 9.12,
-          "startChar": 153,
-          "endChar": 155
-        },
-        {
-          "startSec": 9.12,
-          "endSec": 9.36,
-          "startChar": 157,
-          "endChar": 160
-        },
-        {
-          "startSec": 9.36,
-          "endSec": 9.52,
-          "startChar": 162,
-          "endChar": 164
-        },
-        {
-          "startSec": 9.52,
-          "endSec": 9.84,
-          "startChar": 165,
-          "endChar": 169
-        }
-      ],
+      "replayStartSec": 23.521375,
+      "replayEndSec": 27.005514,
+      "narrationText": "Les répertoires personnels des autres utilisateurs ? Refusés aussi. Tout ce qui tourne dans ce sandbox, éditeurs, terminaux et outils de build compris, s'arrête aux murs du repo.",
+      "audioSrc": "/assets/tutorials/audio/fr/tutorial-vscode-browser/tutorial-vscode-browser-05.f1a9d6b5.mp3",
+      "textHash": "f1a9d6b5310214728809687f7e4cf00b293664ebcdc06bb50528cf5e6bea0da2",
+      "audioDurationSec": 9.624,
       "afterAudioSrc": "/assets/tutorials/audio/fr/tutorial-vscode-browser/tutorial-vscode-browser-05-after.91c2a441.mp3",
       "afterAudioDurationSec": 2.424,
       "afterTextHash": "91c2a44148d0d94595b6811d69d5daef733b010f26c85a11f6bf9b819016a9e1",

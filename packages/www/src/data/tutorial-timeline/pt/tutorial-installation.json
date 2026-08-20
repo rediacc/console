@@ -7,13 +7,13 @@
   "audioFormat": "mp3",
   "sampleRateHz": 48000,
   "voiceFingerprint": "ceee56ff81ab",
-  "transcriptHash": "2e801091165cdd72252ea2a0a2c806d23cb8a50bfc1406a66ea6cbe6b18a0b6e",
+  "transcriptHash": "0ae4fcde52a4cd855512c2a25fdbdcdca3cea1633b423982bb4382c0c4fcfa50",
   "steps": [
     {
       "id": "tutorial-installation-01",
       "markerIndex": 0,
-      "replayStartSec": 1.624699,
-      "replayEndSec": 8.885041,
+      "replayStartSec": 1.618316,
+      "replayEndSec": 8.390281,
       "narrationText": "Primeiro, vamos confirmar que a ferramenta está instalada. A opção de versão imprime a versão instalada, para sabermos que a instalação ficou completa.",
       "audioSrc": "/assets/tutorials/audio/pt/tutorial-installation/tutorial-installation-01.801b1912.mp3",
       "textHash": "801b1912ccbf9d057998a436895fe5ef70c86a4f0b9b022eec219560e6d0a199",
@@ -209,8 +209,8 @@
     {
       "id": "tutorial-installation-02",
       "markerIndex": 1,
-      "replayStartSec": 8.885041,
-      "replayEndSec": 10.904926,
+      "replayStartSec": 8.390281,
+      "replayEndSec": 10.380445,
       "narrationText": "Agora vamos executar a verificação de diagnóstico. Este comando verifica todas as dependências de que a ferramenta necessita -- Node, SSH, Docker, o binário renet -- e reporta o que faltar. Um relatório limpo significa que estamos prontos para avançar.",
       "audioSrc": "/assets/tutorials/audio/pt/tutorial-installation/tutorial-installation-02.bf525c1c.mp3",
       "textHash": "bf525c1c391ecc07e5500410e07d167876d2c592ebe1472990670b016e837e75",

@@ -6,7 +6,7 @@
     {
       "id": "tutorial-monitoring-01",
       "markerIndex": 0,
-      "at": 2.425818,
+      "at": 2.404688,
       "text": "Vamos começar com a vista do sistema. O comando de consulta de máquina com o filtro --system mostra o tempo de funcionamento, o uso do disco e o estado do armazenamento.",
       "afterText": "Tempo de funcionamento, disco, armazenamento. Tudo o que precisa, num relance.",
       "cardLabel": "Saúde do Sistema",
@@ -15,7 +15,7 @@
     {
       "id": "tutorial-monitoring-02",
       "markerIndex": 1,
-      "at": 7.947473,
+      "at": 7.745073,
       "text": "Agora os contentores. Esta vista lista todos os contentores em execução em todos os repositórios da máquina: nome, estado, saúde, CPU, memória e qual o repositório a que cada um pertence.",
       "afterText": "Todos os contentores em todos os repos, numa só vista.",
       "cardLabel": "Contentores",
@@ -24,7 +24,7 @@
     {
       "id": "tutorial-monitoring-03",
       "markerIndex": 2,
-      "at": 13.691193,
+      "at": 13.306932,
       "text": "E os próprios repositórios. Tamanho, estado de montagem, estado do daemon Docker, uso do disco. Tudo o que precisamos saber sobre cada ambiente isolado.",
       "afterText": "Todos os repos, todos os seus daemons, todo o seu uso de disco.",
       "cardLabel": "Repositórios",
@@ -33,7 +33,7 @@
     {
       "id": "tutorial-monitoring-04",
       "markerIndex": 3,
-      "at": 19.532776,
+      "at": 18.961922,
       "text": "O comando de consulta de máquina sem filtros dá-nos tudo de uma vez. Informação do sistema, contentores, repositórios -- tudo junto.",
       "afterText": "Tudo junto, sem precisar de filtros.",
       "cardLabel": "Query Completa",
@@ -42,7 +42,7 @@
     {
       "id": "tutorial-monitoring-05",
       "markerIndex": 4,
-      "at": 24.783224,
+      "at": 23.990538,
       "text": "E por fim a verificação de diagnóstico para uma verificação local no portátil. Node, chave SSH, renet, Docker -- tudo aquilo de que a linha de comandos depende. Esta é a série completa. Da instalação à monitorização, tudo a partir do terminal.",
       "afterText": "Tudo a verde significa que a sua CLI local está saudável.",
       "cardLabel": "Doctor",

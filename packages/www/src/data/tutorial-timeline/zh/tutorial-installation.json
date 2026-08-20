@@ -7,13 +7,13 @@
   "audioFormat": "mp3",
   "sampleRateHz": 48000,
   "voiceFingerprint": "f41b43ee7452",
-  "transcriptHash": "47db82660fb7c80b092506da3dc7db95a4800058a615ef2a6d32b5b4e380d598",
+  "transcriptHash": "8c1b6dfbbb5a89fa08fbf666e00a369d418cfd9a9339f75d81bc15fa9c5a5297",
   "steps": [
     {
       "id": "tutorial-installation-01",
       "markerIndex": 0,
-      "replayStartSec": 1.624699,
-      "replayEndSec": 8.885041,
+      "replayStartSec": 1.618316,
+      "replayEndSec": 8.390281,
       "narrationText": "首先，让我们确认命令行工具已安装。使用版本标志可以打印已安装的版本号，确认安装已顺利完成。",
       "audioSrc": "/assets/tutorials/audio/zh/tutorial-installation/tutorial-installation-01.2fb862a3.mp3",
       "textHash": "2fb862a3597bf412008a2d8b91a725cdb5c1283ab6b32746bb483889a6d808dd",
@@ -359,8 +359,8 @@
     {
       "id": "tutorial-installation-02",
       "markerIndex": 1,
-      "replayStartSec": 8.885041,
-      "replayEndSec": 10.904926,
+      "replayStartSec": 8.390281,
+      "replayEndSec": 10.380445,
       "narrationText": "现在让我们运行诊断检查。它会逐一检查命令行工具所需的每项依赖（Node、SSH、Docker 以及 renet 二进制文件），并报告任何缺失项。报告无误，就说明我们已准备就绪。",
       "audioSrc": "/assets/tutorials/audio/zh/tutorial-installation/tutorial-installation-02.a0630c24.mp3",
       "textHash": "a0630c242e2e96153d033fdc33ae3e24c8c8070f4cd1c1804d29a696eba83cf8",

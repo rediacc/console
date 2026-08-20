@@ -6,7 +6,7 @@
     {
       "id": "tutorial-deploy-app-01",
       "markerIndex": 0,
-      "at": 2.420634,
+      "at": 2.41474,
       "text": "Schritt eins: die verfügbaren Templates auflisten. Rediacc liefert fertige Setups für gängige Apps, sodass kein docker-compose von Grund auf neu geschrieben werden muss.",
       "afterText": "Der komplette Template-Katalog. Jedes ist eine getestete Kombination aus Compose und Rediaccfile.",
       "cardLabel": "Vorlagen Auflisten",
@@ -15,7 +15,7 @@
     {
       "id": "tutorial-deploy-app-02",
       "markerIndex": 1,
-      "at": 6.399014,
+      "at": 7.038713,
       "text": "Schritt zwei: das app-postgres-Template ins repo einfügen. Ein getesteter Satz an Dateien, direkt hineinkopiert.",
       "afterText": "Template angewendet. Das Repo hat jetzt seine Compose-Datei und das Rediaccfile.",
       "cardLabel": "Vorlage Anwenden",
@@ -24,7 +24,7 @@
     {
       "id": "tutorial-deploy-app-03",
       "markerIndex": 2,
-      "at": 12.523372,
+      "at": 13.374786,
       "text": "Schau ins repo rein und sieh, was gelandet ist: ein Rediaccfile mit den Start- und Stopp-Hooks und eine docker-compose-Datei, die die container beschreibt.",
       "afterText": "Container laufen, Volume gemountet, isolierter Docker-Daemon ist oben.",
       "cardLabel": "Dateien Anzeigen",
@@ -33,7 +33,7 @@
     {
       "id": "tutorial-deploy-app-04",
       "markerIndex": 3,
-      "at": 17.108804,
+      "at": 18.627226,
       "text": "Schritt drei: das repo hochfahren. Ein einziger Befehl, die CLI hängt das verschlüsselte Volume ein, startet den isolierten Docker daemon und bringt die container zum Laufen.",
       "afterText": "Nur die Container dieses Repos. Die Isolation ist echt, nicht nur Konfiguration.",
       "cardLabel": "Repo Starten",
@@ -42,7 +42,7 @@
     {
       "id": "tutorial-deploy-app-05",
       "markerIndex": 4,
-      "at": 22.317819,
+      "at": 24.080812,
       "text": "Überprüfen, was läuft. Docker ps listet hier nur die container dieses repos. Jedes andere repo auf diesem Server hat seinen eigenen daemon, von hier aus völlig unsichtbar.",
       "afterText": "Nur die Container dieses Repos. Die Isolation ist real, keine bloße Konfiguration.",
       "cardLabel": "Isolation Prüfen",

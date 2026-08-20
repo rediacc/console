@@ -6,7 +6,7 @@
     {
       "id": "tutorial-fork-isolation-01",
       "markerIndex": 0,
-      "at": 2.43605,
+      "at": 2.404578,
       "text": "Tutvu rakendusega: demo-pgadmin, PostgreSQL koos pgAdmin liidesega, mounditud ja töötamas.",
       "afterText": "Üks reaalajas repo. Kloonime selle.",
       "cardLabel": "Reaalajaline rakendus",
@@ -15,7 +15,7 @@
     {
       "id": "tutorial-fork-isolation-02",
       "markerIndex": 1,
-      "at": 7.868777,
+      "at": 7.50024,
       "text": "Tee sellest fork. Copy-on-write kloon võtab aega vaid mõne sekundi, olenemata suurusest; detach naaseb kohe, kui konteinerid käivituvad, samal ajal kui health checkid jätkuvad taustal.",
       "afterText": "Forkitud ja käivitub. Andmeid ei kopeeritud, need jagati, kuni üks pool neid muudab.",
       "cardLabel": "Fork + Up",
@@ -24,7 +24,7 @@
     {
       "id": "tutorial-fork-isolation-03",
       "markerIndex": 2,
-      "at": 16.847684,
+      "at": 16.690953,
       "text": "Nüüd on kaks repositooriumi: originaal ja eksperiment, kummalgi omad konteinerid, oma võrk ja oma kettavaade.",
       "afterText": "Sama masin, kaks isoleeritud maailma.",
       "cardLabel": "Kõrvuti",
@@ -33,7 +33,7 @@
     {
       "id": "tutorial-fork-isolation-04",
       "markerIndex": 3,
-      "at": 22.322161,
+      "at": 22.013241,
       "text": "Katsetamine läbi? Kustuta fork. Sekunditega loodud, sekunditega kadunud, originaal ei saanudki teada, et see üldse eksisteeris.",
       "afterText": "Kadunud. Originaal teenis kogu selle aja.",
       "cardLabel": "Kustuta Fork",

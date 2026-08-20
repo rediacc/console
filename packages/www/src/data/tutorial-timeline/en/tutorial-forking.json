@@ -7,13 +7,13 @@
   "audioFormat": "mp3",
   "sampleRateHz": 48000,
   "voiceFingerprint": "6c6cf1ee371d",
-  "transcriptHash": "a48c86d343b7699b7409b36e6b71306ffbcbc87e243916e53bd43afa7baf8887",
+  "transcriptHash": "c15259ca90cf5f4b90216420d42c269038a63a5fc6452a038321175605c21867",
   "steps": [
     {
       "id": "tutorial-forking-01",
       "markerIndex": 0,
-      "replayStartSec": 2.424604,
-      "replayEndSec": 9.790706,
+      "replayStartSec": 2.404789,
+      "replayEndSec": 10.171052,
       "narrationText": "Now the fork. One command will clone the entire repo, the app, the database, the config files, regardless of size. One gigabyte, one hundred gigabytes, one terabyte: the size simply does not matter.",
       "audioSrc": "/assets/tutorials/audio/en/tutorial-forking/tutorial-forking-01.dfb51d4f.mp3",
       "textHash": "dfb51d4f11dfa8396b931b7794c3650d6f2e9f8a03e8ebfa666c925c84799123",
@@ -239,8 +239,8 @@
     {
       "id": "tutorial-forking-02",
       "markerIndex": 1,
-      "replayStartSec": 9.790706,
-      "replayEndSec": 15.362139,
+      "replayStartSec": 10.171052,
+      "replayEndSec": 15.249726,
       "narrationText": "Both repos exist side by side now. Same machine, same disk, two completely independent environments.",
       "audioSrc": "/assets/tutorials/audio/en/tutorial-forking/tutorial-forking-02.0445e6a0.mp3",
       "textHash": "0445e6a0e355b87aced5be1461c0c2f446329f9c0efa8314c0ce0c076f3c26f4",
@@ -400,8 +400,8 @@
     {
       "id": "tutorial-forking-03",
       "markerIndex": 2,
-      "replayStartSec": 15.362139,
-      "replayEndSec": 20.531281,
+      "replayStartSec": 15.249726,
+      "replayEndSec": 20.51004,
       "narrationText": "Let us prove the isolation. In the original, our marker file is right where we left it. The fork existence did not change anything in the parent.",
       "audioSrc": "/assets/tutorials/audio/en/tutorial-forking/tutorial-forking-03.2c267310.mp3",
       "textHash": "2c267310526e69f349aea1291b0081cd863c5e1d03ad8d3acbb9bfae7521b3a7",
@@ -627,8 +627,8 @@
     {
       "id": "tutorial-forking-04",
       "markerIndex": 3,
-      "replayStartSec": 20.531281,
-      "replayEndSec": 26.727498,
+      "replayStartSec": 20.51004,
+      "replayEndSec": 26.714222,
       "narrationText": "Now let us delete that file, but only inside the fork. We are making a destructive change here.",
       "audioSrc": "/assets/tutorials/audio/en/tutorial-forking/tutorial-forking-04.7bc64d2e.mp3",
       "textHash": "7bc64d2eedd2e914114e2b31e5b4212cff20275ed8a72b5d7a3ecf41832f6ad6",
@@ -800,8 +800,8 @@
     {
       "id": "tutorial-forking-05",
       "markerIndex": 4,
-      "replayStartSec": 26.727498,
-      "replayEndSec": 31.831236,
+      "replayStartSec": 26.714222,
+      "replayEndSec": 31.950484,
       "narrationText": "Back to the original. The marker file is still here, untouched. Same image, separate Docker daemons, separate filesystems.",
       "audioSrc": "/assets/tutorials/audio/en/tutorial-forking/tutorial-forking-05.d6683902.mp3",
       "textHash": "d66839026bd2dbf7a2976259012b920e436ff0339074c6088269fdd8064091e0",
@@ -955,8 +955,8 @@
     {
       "id": "tutorial-forking-06",
       "markerIndex": 5,
-      "replayStartSec": 31.831236,
-      "replayEndSec": 37.012611,
+      "replayStartSec": 31.950484,
+      "replayEndSec": 37.475693,
       "narrationText": "When you are done, just delete the fork. The original stays exactly as it was. Fork, experiment, break things, delete. No risk.",
       "audioSrc": "/assets/tutorials/audio/en/tutorial-forking/tutorial-forking-06.d65ebad3.mp3",
       "textHash": "d65ebad3c8d5a36e6733349029a4a8a46f63efb35c97f94931eec226cbf9692d",
@@ -2230,156 +2230,10 @@
     },
     {
       "id": "next-tutorial",
-      "textHash": "004e1d7c9d9b8ef6edff44d8709f7d20149a92d42869fd1b529dc103eca89597",
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-forking/next-tutorial.004e1d7c.mp3",
-      "narrationText": "You just saw the commands. Next we make it visual: a real database app, forked live, edited side by side — and the original never flinches.",
-      "audioDurationSec": 9.312,
-      "wordTimings": [
-        {
-          "startSec": 0.0,
-          "endSec": 0.08,
-          "startChar": 0,
-          "endChar": 3
-        },
-        {
-          "startSec": 0.08,
-          "endSec": 0.32,
-          "startChar": 4,
-          "endChar": 8
-        },
-        {
-          "startSec": 0.32,
-          "endSec": 0.64,
-          "startChar": 9,
-          "endChar": 12
-        },
-        {
-          "startSec": 0.64,
-          "endSec": 0.72,
-          "startChar": 13,
-          "endChar": 16
-        },
-        {
-          "startSec": 0.72,
-          "endSec": 1.36,
-          "startChar": 17,
-          "endChar": 25
-        },
-        {
-          "startSec": 1.76,
-          "endSec": 2.08,
-          "startChar": 27,
-          "endChar": 31
-        },
-        {
-          "startSec": 2.08,
-          "endSec": 2.16,
-          "startChar": 32,
-          "endChar": 34
-        },
-        {
-          "startSec": 2.16,
-          "endSec": 2.32,
-          "startChar": 35,
-          "endChar": 39
-        },
-        {
-          "startSec": 2.32,
-          "endSec": 2.48,
-          "startChar": 40,
-          "endChar": 42
-        },
-        {
-          "startSec": 2.48,
-          "endSec": 2.88,
-          "startChar": 43,
-          "endChar": 50
-        },
-        {
-          "startSec": 3.36,
-          "endSec": 3.68,
-          "startChar": 53,
-          "endChar": 57
-        },
-        {
-          "startSec": 3.68,
-          "endSec": 4.16,
-          "startChar": 58,
-          "endChar": 66
-        },
-        {
-          "startSec": 4.24,
-          "endSec": 4.48,
-          "startChar": 67,
-          "endChar": 70
-        },
-        {
-          "startSec": 5.04,
-          "endSec": 5.44,
-          "startChar": 72,
-          "endChar": 78
-        },
-        {
-          "startSec": 5.44,
-          "endSec": 5.76,
-          "startChar": 79,
-          "endChar": 83
-        },
-        {
-          "startSec": 6.16,
-          "endSec": 6.56,
-          "startChar": 85,
-          "endChar": 91
-        },
-        {
-          "startSec": 6.56,
-          "endSec": 6.88,
-          "startChar": 92,
-          "endChar": 96
-        },
-        {
-          "startSec": 6.88,
-          "endSec": 6.96,
-          "startChar": 97,
-          "endChar": 99
-        },
-        {
-          "startSec": 6.96,
-          "endSec": 7.44,
-          "startChar": 100,
-          "endChar": 104
-        },
-        {
-          "startSec": 7.68,
-          "endSec": 7.84,
-          "startChar": 107,
-          "endChar": 110
-        },
-        {
-          "startSec": 7.84,
-          "endSec": 7.92,
-          "startChar": 111,
-          "endChar": 114
-        },
-        {
-          "startSec": 7.92,
-          "endSec": 8.32,
-          "startChar": 115,
-          "endChar": 123
-        },
-        {
-          "startSec": 8.32,
-          "endSec": 8.56,
-          "startChar": 124,
-          "endChar": 129
-        },
-        {
-          "startSec": 8.56,
-          "endSec": 9.04,
-          "startChar": 130,
-          "endChar": 138
-        }
-      ]
+      "textHash": "ae68f41c7c6767df3c584c243fb5e1afafcf863c8c1d633e27e2eefa9859f88b",
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-forking/next-tutorial.ae68f41c.mp3",
+      "narrationText": "You just saw the commands. Next we make it visual: a real database app, forked live, edited side by side, and the original never flinches.",
+      "audioDurationSec": 9.48
     }
   ]
 }

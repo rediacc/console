@@ -7,13 +7,13 @@
   "audioFormat": "mp3",
   "sampleRateHz": 48000,
   "voiceFingerprint": "cebc3398c951",
-  "transcriptHash": "b20576a2317c89997fc245abbd9239ee6d25b68dcfe821b9e38c6ed214c7865e",
+  "transcriptHash": "671aede9c83500b20638c844b33fdb1c0017a30dff86b98cc4e84d94caf1806b",
   "steps": [
     {
       "id": "tutorial-installation-01",
       "markerIndex": 0,
-      "replayStartSec": 1.624699,
-      "replayEndSec": 8.885041,
+      "replayStartSec": 1.618316,
+      "replayEndSec": 8.390281,
       "narrationText": "Prima di tutto, confermiamo che la CLI sia nel path. Eseguendo la CLI con il flag version si ottiene la versione installata e si verifica che l'installazione sia andata a buon fine.",
       "audioSrc": "/assets/tutorials/audio/it/tutorial-installation/tutorial-installation-01.e0800ebd.mp3",
       "textHash": "e0800ebd08ad9d673e5ff45c4f7b29c4c2af17d15c218f5f2c6382a7599f8c91",
@@ -263,8 +263,8 @@
     {
       "id": "tutorial-installation-02",
       "markerIndex": 1,
-      "replayStartSec": 8.885041,
-      "replayEndSec": 10.904926,
+      "replayStartSec": 8.390281,
+      "replayEndSec": 10.380445,
       "narrationText": "Ora eseguiamo il controllo diagnostico. Controlla tutte le dipendenze necessarie alla CLI -- Node, SSH e le restanti -- e segnala eventuali mancanze. Un rapporto pulito significa che sei pronto ad aggiungere un server.",
       "audioSrc": "/assets/tutorials/audio/it/tutorial-installation/tutorial-installation-02.6e619039.mp3",
       "textHash": "6e6190396a7118f178b6d41b8a3270398577e2910c03c8fed26a0c3d9b3db4ae",

@@ -6,7 +6,7 @@
     {
       "id": "tutorial-storage-management-01",
       "markerIndex": 0,
-      "at": 2.415408,
+      "at": 2.409491,
       "text": "repository를 거의 가득 채우고 확인합니다. 파일 시스템이 빠듯해지고 있습니다.",
       "afterText": "거의 꽉 찼습니다. 이제 늘릴 시간입니다.",
       "cardLabel": "채우는 중",
@@ -15,7 +15,7 @@
     {
       "id": "tutorial-storage-management-02",
       "markerIndex": 1,
-      "at": 10.51664,
+      "at": 11.307515,
       "text": "온라인으로 확장합니다. Docker 컨테이너가 실행 중인 상태에서 암호화된 컨테이너와 파일 시스템이 함께 커집니다. 다운타임도 없고, 마운트 해제도 없습니다.",
       "afterText": "이제 4기가바이트입니다. 재시작된 것은 없습니다.",
       "cardLabel": "온라인 확장",
@@ -24,7 +24,7 @@
     {
       "id": "tutorial-storage-management-03",
       "markerIndex": 2,
-      "at": 14.693193,
+      "at": 15.610035,
       "text": "내부에서 확인합니다. 같은 볼륨인데, 공간은 두 배입니다.",
       "afterText": "앱은 전혀 눈치채지 못했습니다.",
       "cardLabel": "크기 확인",
@@ -33,7 +33,7 @@
     {
       "id": "tutorial-storage-management-04",
       "markerIndex": 3,
-      "at": 19.546232,
+      "at": 22.257209,
       "text": "이번엔 반대 방향입니다. 큰 파일을 삭제합니다. 그런데 보세요, pool은 아직 공간을 돌려받지 못합니다. 삭제된 블록은 이미지 안에 예약된 채로 남아 있습니다.",
       "afterText": "repo 내부에서 해제되었지만, 여전히 이미지가 소유하고 있습니다.",
       "cardLabel": "데이터 삭제",
@@ -42,7 +42,7 @@
     {
       "id": "tutorial-storage-management-05",
       "markerIndex": 4,
-      "at": 23.813547,
+      "at": 27.992754,
       "text": "Trim이 그 블록들을 datastore pool에 온라인으로 돌려줍니다. 대부분의 환경이 잊고 넘어가는 단계입니다.",
       "afterText": "회수되었습니다. 이제 pool이 다시 숨 쉴 수 있습니다.",
       "cardLabel": "Trim",
@@ -51,7 +51,7 @@
     {
       "id": "tutorial-storage-management-06",
       "markerIndex": 5,
-      "at": 28.710567,
+      "at": 32.61646,
       "text": "이제 이 작업을 손으로 하지 않아도 됩니다. 정책을 설정하면 직접 정한 상한선까지 자동으로 확장되고, 예약된 trim도 함께 실행됩니다.",
       "afterText": "정책이 저장되었습니다. 이제부터는 기계가 알아서 합니다.",
       "cardLabel": "정책 설정",
@@ -60,7 +60,7 @@
     {
       "id": "tutorial-storage-management-07",
       "markerIndex": 6,
-      "at": 36.110527,
+      "at": 39.426457,
       "text": "다시 읽어봅니다. 자동 확장 켜짐, 상한선 8기가바이트, 예약 trim 설정됨.",
       "afterText": "한 번 설정하면, 안심하고 잊어도 됩니다.",
       "cardLabel": "정책 확인",
@@ -69,7 +69,7 @@
     {
       "id": "tutorial-storage-management-08",
       "markerIndex": 7,
-      "at": 41.090184,
+      "at": 43.622603,
       "text": "그리고 이 모든 것을 하나로 묶어 보여주는 화면입니다. 스토리지 상태는 각 repo의 사용량, pool, 그리고 copy-on-write 공유가 얼마나 절약해 주는지를 보여줍니다.",
       "afterText": "한눈에: 사용량, 절감량, 그리고 성장 여지.",
       "cardLabel": "상태 보기",

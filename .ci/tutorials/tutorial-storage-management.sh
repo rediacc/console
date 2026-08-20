@@ -40,7 +40,13 @@ exec >&3 2>&4
 clear_screen
 
 section "The repo is filling up"
-run_cmd "rdc term connect data-app --command 'dd if=/dev/zero of=big.bin bs=1M count=1200 status=none && df -h .'"
+# Two widths to respect here, and they pull against each other. `df -h .`
+# OUTPUT is 128 columns because the Filesystem column carries
+# /dev/mapper/<36-char GUID>, so --output drops it. But --output also makes the
+# TYPED line longer, and with `status=none` it reached 113 columns against a
+# 107-column terminal. Dropping status=none brings the typed line to 101; dd's
+# own three-line summary is short and harmless on camera.
+run_cmd "rdc term connect data-app --command 'dd if=/dev/zero of=big.bin bs=1M count=1200 && df -h --output=size,used,avail,pcent .'"
 
 pause 2
 
@@ -49,12 +55,12 @@ run_cmd "rdc repo expand data-app --size 4G"
 
 pause 1
 
-run_cmd "rdc term connect data-app --command 'df -h .'"
+run_cmd "rdc term connect data-app --command 'df -h --output=size,used,avail,pcent .'"
 
 pause 2
 
 section "Delete data, then give the blocks back to the pool"
-run_cmd "rdc term connect data-app --command 'rm big.bin && df -h .'"
+run_cmd "rdc term connect data-app --command 'rm big.bin && df -h --output=size,used,avail,pcent .'"
 
 pause 1
 

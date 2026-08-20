@@ -7,13 +7,13 @@
   "audioFormat": "mp3",
   "sampleRateHz": 48000,
   "voiceFingerprint": "cebc3398c951",
-  "transcriptHash": "cf993254632824b20bc1403bf131158756f172b199d1346b5b06af5d149b481c",
+  "transcriptHash": "81bd6a90b3a2bf9e299eb581f06662ad58a42cee604235f3fcbbe63bb61f182f",
   "steps": [
     {
       "id": "tutorial-add-server-01",
       "markerIndex": 0,
-      "replayStartSec": 1.627855,
-      "replayEndSec": 7.25092,
+      "replayStartSec": 1.613148,
+      "replayEndSec": 7.714792,
       "narrationText": "Iniziamo creando un profilo di configurazione. Il profilo contiene la chiave SSH, l'elenco delle macchine e le impostazioni dell'infrastruttura per tutto cio' che faremo da qui in avanti.",
       "audioSrc": "/assets/tutorials/audio/it/tutorial-add-server/tutorial-add-server-01.3a1510a9.mp3",
       "textHash": "3a1510a9322cca0a26feee3b8b669806951817c130f5ecae968a2fd52826404d",
@@ -269,8 +269,8 @@
     {
       "id": "tutorial-add-server-02",
       "markerIndex": 1,
-      "replayStartSec": 7.25092,
-      "replayEndSec": 13.396171,
+      "replayStartSec": 7.714792,
+      "replayEndSec": 15.024927,
       "narrationText": "Ora registriamo il server dalla riga di comando, fornendo il nome, l'indirizzo IP e l'utente SSH. Le host key vengono scansionate automaticamente per un accesso sicuro.",
       "audioSrc": "/assets/tutorials/audio/it/tutorial-add-server/tutorial-add-server-02.ba2f6c67.mp3",
       "textHash": "ba2f6c67b4e17d37d9bff1e0937c8ee9a694cfe9ed762d4fb7ca361b9c239586",
@@ -472,8 +472,8 @@
     {
       "id": "tutorial-add-server-03",
       "markerIndex": 2,
-      "replayStartSec": 13.396171,
-      "replayEndSec": 15.698213,
+      "replayStartSec": 15.024927,
+      "replayEndSec": 18.069081,
       "narrationText": "Poi effettuiamo il provisioning del server. Questo installa renet e crea il datastore cifrato. Al termine, il server è pronto ad ospitare repository.",
       "audioSrc": "/assets/tutorials/audio/it/tutorial-add-server/tutorial-add-server-03.10259e12.mp3",
       "textHash": "10259e129a4b8c94afda46e9304d8852c09bdec9088aab19a7441236a7dd74cf",

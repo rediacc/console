@@ -6,7 +6,7 @@
     {
       "id": "tutorial-backup-restore-01",
       "markerIndex": 0,
-      "at": 2.799671,
+      "at": 2.416144,
       "text": "Alustame sellest, mis peab üle elama. Töötavas repository's on fail, milles on üks ainus tellimuse rida. Jälgi seda, sest kohe võtame selle masina võrguühenduseta ja toome selle rea kuskilt mujalt tagasi.",
       "afterText": "See ongi see rida. Edaspidi käib kõik selle tagasitoomisest.",
       "cardLabel": "Andmed",
@@ -15,7 +15,7 @@
     {
       "id": "tutorial-backup-restore-02",
       "markerIndex": 1,
-      "at": 9.00514,
+      "at": 7.552816,
       "text": "Kopeeri terve repository teise masinasse. Esimene koopia kannab üle kogu krüpteeritud image'i SSH kaudu, siin umbes kaks gigabaiti poole minutiga. Teisele poole jõuab varukoopia artefakt, mitte teine töötav rakendus.",
       "afterText": "Koopia on nüüd varundusmasinas.",
       "cardLabel": "Tõuka Varundusmasinasse",
@@ -24,7 +24,7 @@
     {
       "id": "tutorial-backup-restore-03",
       "markerIndex": 2,
-      "at": 17.993741,
+      "at": 15.166453,
       "text": "Küsi varundusmasinalt, mida ta hoiab. Repository on seal, oma nime all. Teine rida, mis näitab toorest identifikaatorit, on säilitatud baas, mis lubab järgmisel tõukel saata ainult muutunu.",
       "afterText": "Mõlemad read on oodatud: koopia ja baas, mis hoiab hilisemad tõuked väikesena.",
       "cardLabel": "Kinnita Koopia",
@@ -33,7 +33,7 @@
     {
       "id": "tutorial-backup-restore-04",
       "markerIndex": 3,
-      "at": 23.318642,
+      "at": 20.269124,
       "text": "Nüüd katastroof. Peata peamasin ja ühenda selle krüpteeritud köide lahti. Selle masina jaoks on rakendus kadunud.",
       "afterText": "Peatatud ja lahti ühendatud. Kõik edasine töötab koopia peal.",
       "cardLabel": "Katastroof",
@@ -42,7 +42,7 @@
     {
       "id": "tutorial-backup-restore-05",
       "markerIndex": 4,
-      "at": 28.951964,
+      "at": 25.688963,
       "text": "Muuda artefakt töötavaks repository'ks. Restore on käsk, mis seda teeb. Üks lipp nimetab uue repository, teine paigutab selle varundusmasinasse ja kolmas jätab kinnituse vahele.",
       "afterText": "Koopia on nüüd repository, omal nimel.",
       "cardLabel": "Taasta Artefakt",
@@ -51,7 +51,7 @@
     {
       "id": "tutorial-backup-restore-06",
       "markerIndex": 5,
-      "at": 39.005334,
+      "at": 34.978427,
       "text": "Ühenda taastatud repository. Me ei käivita teadlikult selle konteinereid, sest tõestus, mida soovime, on andmed, mitte rakendus.",
       "afterText": "Ühendatud ja valmis lugemiseks.",
       "cardLabel": "Ühenda See",
@@ -60,7 +60,7 @@
     {
       "id": "tutorial-backup-restore-07",
       "markerIndex": 6,
-      "at": 46.52408,
+      "at": 40.371515,
       "text": "Sama käsk, mille käivitasime alguses, seekord repository vastu, mida kaks käsku tagasi veel ei eksisteerinud. Sama fail, sama rida, sama tellimus.",
       "afterText": "Selles seisnebki asja mõte. Andmed tulid tagasi.",
       "cardLabel": "Andmed Jäid Alles",
@@ -69,7 +69,7 @@
     {
       "id": "tutorial-backup-restore-08",
       "markerIndex": 7,
-      "at": 52.091103,
+      "at": 45.900768,
       "text": "Veel üks, varukoopiate jaoks, mille kaudu saad ajas tagasi kerida. Hetktõmmised lähevad chunk-hoidlasse, kus esimene käivitus laadib üles kõik ja iga järgnev käivitus laadib üles ainult muutunud plokid. Iga hetktõmmis taastub iseseisvalt. Selleks on vaja kontot ja litsentseeritud repository't, seega on see siin ainult kirjutatud, mitte käivitatud.",
       "afterText": "Kirjuta see oma installatsioonis, kui sul on konto, ja see töötab.",
       "cardLabel": "Ajahetke Varukoopiad",

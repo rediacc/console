@@ -6,7 +6,7 @@
     {
       "id": "tutorial-fork-isolation-01",
       "markerIndex": 0,
-      "at": 2.43605,
+      "at": 2.404578,
       "text": "Ecco l'app: demo-pgadmin, un PostgreSQL con interfaccia pgAdmin, montato e in esecuzione.",
       "afterText": "Un repo live. Cloniamolo.",
       "cardLabel": "App Live",
@@ -15,7 +15,7 @@
     {
       "id": "tutorial-fork-isolation-02",
       "markerIndex": 1,
-      "at": 7.868777,
+      "at": 7.50024,
       "text": "Fai il fork. Il clone copy-on-write richiede pochi secondi indipendentemente dalla dimensione; con detach il controllo ritorna appena i container partono, mentre i controlli di salute continuano in background.",
       "afterText": "Fork avviato. I dati non sono stati copiati, sono stati condivisi, finché uno dei due lati non li modifica.",
       "cardLabel": "Fork + Up",
@@ -24,7 +24,7 @@
     {
       "id": "tutorial-fork-isolation-03",
       "markerIndex": 2,
-      "at": 16.847684,
+      "at": 16.690953,
       "text": "Due repository ora: l'originale e l'esperimento, ciascuno con i propri container, la propria rete e la propria vista del disco.",
       "afterText": "Stessa macchina, due mondi isolati.",
       "cardLabel": "Fianco a Fianco",
@@ -33,7 +33,7 @@
     {
       "id": "tutorial-fork-isolation-04",
       "markerIndex": 3,
-      "at": 22.322161,
+      "at": 22.013241,
       "text": "Finito di sperimentare? Elimina il fork. Pochi secondi per crearlo, pochi secondi per buttarlo via: l'originale non ha mai saputo che esistesse.",
       "afterText": "Eliminato. L'originale ha continuato a rispondere per tutto il tempo.",
       "cardLabel": "Elimina Fork",

@@ -7,13 +7,13 @@
   "audioFormat": "mp3",
   "sampleRateHz": 48000,
   "voiceFingerprint": "3735aa4aaf13",
-  "transcriptHash": "51bc3266e61556bd5df47aaece5b89cef72583bf59f6fc4226e672132583df42",
+  "transcriptHash": "b705a2179e8b4f2c37ced81a8d956460ff25d8cb513bdecfcfac507abf5e0174",
   "steps": [
     {
       "id": "tutorial-add-server-01",
       "markerIndex": 0,
-      "replayStartSec": 1.627855,
-      "replayEndSec": 7.25092,
+      "replayStartSec": 1.613148,
+      "replayEndSec": 7.714792,
       "narrationText": "Начнём с создания профиля конфигурации. Профиль хранит SSH-ключ, список машин и настройки инфраструктуры для всего, что мы будем делать дальше.",
       "audioSrc": "/assets/tutorials/audio/ru/tutorial-add-server/tutorial-add-server-01.3cd98029.mp3",
       "textHash": "3cd98029ac892490efe82c6e746027c7803527c00a0a867031596d85b83b4ee1",
@@ -191,8 +191,8 @@
     {
       "id": "tutorial-add-server-02",
       "markerIndex": 1,
-      "replayStartSec": 7.25092,
-      "replayEndSec": 13.396171,
+      "replayStartSec": 7.714792,
+      "replayEndSec": 15.024927,
       "narrationText": "Теперь регистрируем сервер в CLI: указываем имя, IP-адрес и SSH-пользователя. Ключи хоста сканируются автоматически для доверенного доступа.",
       "audioSrc": "/assets/tutorials/audio/ru/tutorial-add-server/tutorial-add-server-02.fef890be.mp3",
       "textHash": "fef890be38fb38104a79bd357fe0faefc4367c64810ceec8953f0aff9f286958",
@@ -304,8 +304,8 @@
     {
       "id": "tutorial-add-server-03",
       "markerIndex": 2,
-      "replayStartSec": 13.396171,
-      "replayEndSec": 15.698213,
+      "replayStartSec": 15.024927,
+      "replayEndSec": 18.069081,
       "narrationText": "Далее выполняем подготовку сервера. Устанавливается renet и создаётся зашифрованное хранилище данных. После этого сервер готов к размещению репозиториев.",
       "audioSrc": "/assets/tutorials/audio/ru/tutorial-add-server/tutorial-add-server-03.44541925.mp3",
       "textHash": "445419255c8332e86cf523ea222e2267339166f4d3b86d529231dad4c3b37826",
