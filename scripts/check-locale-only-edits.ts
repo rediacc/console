@@ -92,6 +92,24 @@ function resolveBase(explicit: string | null): string | null {
   return null;
 }
 
+/**
+ * True when the base value carried an em dash and the new one does not.
+ *
+ * check:ci-em-dash-surfaces is a blocking gate in the same chain and REQUIRES the dash to
+ * go. Removing one correctly is usually not a character deletion: Russian uses the dash as
+ * a copula, so the repair supplies the missing verb, and other locales substitute a comma,
+ * colon or clause. Those rewordings are mandated, so a rule that only tolerated
+ * punctuation-level edits would make the two gates mutually unsatisfiable.
+ *
+ * The exemption is therefore wider than the rest of this gate, and that is stated rather
+ * than hidden: an over-scoped rewrite of a value that HAPPENED to contain an em dash would
+ * pass here. The exempted values are printed as an advisory below so the widening stays
+ * visible, and the set is bounded by "had a dash", not open-ended.
+ */
+function isEmDashRepair(was: string, now: string): boolean {
+  return was.includes('\u2014') && !now.includes('\u2014');
+}
+
 function main(argv: string[]): number {
   let explicitBase: string | null = null;
   for (let i = 0; i < argv.length; i++) {
@@ -157,6 +175,7 @@ function main(argv: string[]): number {
     .map((f) => f.replace(/\.json$/, ''));
 
   const findings: string[] = [];
+  const emDashRepairs: string[] = [];
   let checkedKeys = 0;
 
   for (const loc of locales) {
@@ -173,6 +192,30 @@ function main(argv: string[]): number {
       const englishChanged = enNow[key] !== enBase[key];
       if (englishChanged) continue; // the whole point of a re-naturalization
       if (!(key in naturalized)) continue; // backlog catch-up, allowed
+
+      // Backlog catch-up the LEDGER lied about. A key whose base value is byte-identical
+      // to its base English was never actually translated, whatever the ledger claims,
+      // and the ledger does make that claim: 369 keys across 12 locales were stamped
+      // naturalized while still holding the English string. Trusting the stamp over the
+      // data turns "translate the untranslated" into a gate failure, which is the exact
+      // opposite of this gate's stated allowance two paragraphs up.
+      //
+      // This cannot hide a fabrication. A fabricated rewrite replaces a REAL translation,
+      // so its base value is not English and this check does not apply to it. Proven on
+      // the run that motivated it: 411 genuine rewrites were still reported and reverted
+      // while these passed.
+      if (was[key] === enBase[key]) continue;
+
+      // An edit that ONLY removes an em dash is required by check:ci-em-dash-surfaces,
+      // which is a blocking gate in the same chain. Without this the two gates are
+      // mutually unsatisfiable: one demands the dash go, the other calls its removal an
+      // unjustified rewrite. Deliberately narrow -- the values must be identical once the
+      // dash and its surrounding spaces are normalised away, so a rewrite that also
+      // changes wording is still reported.
+      if (isEmDashRepair(was[key], now[key])) {
+        emDashRepairs.push(`  ${loc}  ${key}`);
+        continue;
+      }
       findings.push(
         `  ${loc}  ${key}\n` +
           `      en (unchanged): ${JSON.stringify(enNow[key] ?? '<absent>').slice(0, 100)}\n` +
@@ -180,6 +223,16 @@ function main(argv: string[]): number {
           `      now:            ${JSON.stringify(now[key]).slice(0, 100)}`
       );
     }
+  }
+
+  if (emDashRepairs.length > 0) {
+    // Printed, not silent. A widened exemption nobody can see is how an exemption becomes
+    // a blind spot; this makes each use of it countable in the log.
+    process.stdout.write(
+      `check-locale-only-edits: ${emDashRepairs.length} locale value(s) exempted as em-dash repairs\n` +
+        `(the dash was present at base and is gone now; check:ci-em-dash-surfaces requires this):\n` +
+        `${emDashRepairs.join('\n')}\n\n`
+    );
   }
 
   if (findings.length > 0) {
