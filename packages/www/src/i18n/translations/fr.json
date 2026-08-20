@@ -546,14 +546,14 @@
     "disasterRecovery": {
       "enterpriseCta": {
         "button": "Contacter les ventes",
-        "description": "Si aucun plan ne correspond à votre cas, décrivez-nous votre infrastructure. On trouvera une solution.",
-        "heading": "Configuration spéciale ? Dites-nous ce que vous avez."
+        "description": "Si aucun plan ne vous convient, décrivez votre contexte. On trouvera une solution.",
+        "heading": "Configuration sur mesure ? On vous écoute."
       },
       "faq": {
         "heading": "Foire aux questions",
         "items": [
           {
-            "answer": "Oui, vous pouvez modifier votre plan quand vous le souhaitez. Les montées en gamme prennent effet immédiatement. Les rétrogradations s'appliquent au prochain cycle de facturation.",
+            "answer": "Oui. Les changements s'appliquent immédiatement pour une montée, au cycle suivant pour une réduction.",
             "question": "Puis-je changer mon plan ?"
           },
           {
@@ -561,7 +561,7 @@
             "question": "Quels modes de paiement acceptez-vous ?"
           },
           {
-            "answer": "Oui. L'Évaluation de reprise et le Programme de reprise commencent par 14 jours d'essai gratuit. Vous ajoutez une carte à l'inscription et n'êtes débité qu'à la fin de l'essai. Annulez avant et vous ne payez rien.",
+            "answer": "Oui. L'Évaluation et le Programme commencent par 14 jours gratuits. Vous ajoutez une carte à l'inscription, mais rien n'est débité avant la fin de l'essai. Annulez avant et vous ne payez rien.",
             "question": "Y a-t-il une période d'essai gratuite ?"
           },
           {
@@ -569,15 +569,15 @@
             "question": "Qu'y a-t-il dans l'assistance ?"
           },
           {
-            "answer": "Le délai de reprise dépend de votre contrat. L'Évaluation de reprise vous ramène à n'importe quel point des dernières 24 heures. Le Programme de reprise garantit une reprise en 4 heures. Le Contrat de reprise vous remet en ligne en 15 à 60 minutes, selon votre propre calendrier.",
+            "answer": "Ça dépend du plan. L'Évaluation vous ramène à n'importe quel point des 24 dernières heures. Le Programme garantit 4 heures. Le Contrat, 15 à 60 minutes selon votre calendrier.",
             "question": "Quelle est la vitesse de reprise après sinistre ?"
           },
           {
-            "answer": "Oui, et je tiens à ça personnellement. On teste chaque sauvegarde par une restauration d'essai. Vous savez qu'elle fonctionne avant d'en avoir réellement besoin.",
+            "answer": "Oui, et c'est important pour moi. On restaure chaque sauvegarde pour vérifier qu'elle marche. Vous savez qu'elle fonctionne avant d'en avoir besoin.",
             "question": "Mes sauvegardes sont-elles vraiment testées ?"
           },
           {
-            "answer": "Vos données restent chiffrées où vous les avez mises. Vous gardez le contrôle total et accédez à vos sauvegardes même si notre service s'arrête.",
+            "answer": "Vos données restent chiffrées où vous les mettez. Vous gardez le contrôle et y accédez même si notre service s'arrête.",
             "question": "Qu'arrive-t-il à mes données si le service s'arrête ?"
           }
         ]
@@ -616,10 +616,10 @@
         "viewDetails": "Découvrez les services professionnels"
       },
       "strategy": {
-        "copy": "Voyez les choses ainsi : commencez où vous êtes. La plupart des équipes y restent plus longtemps que prévu. Montez en gamme seulement quand une reprise lente coûterait vraiment à l'entreprise. Même produit d'un bout à l'autre. Vous utilisez Kubernetes ? Les clusters entiers migrent de la même façon, avec une bascule courte et maîtrisée.",
+        "copy": "Commencez par le plan qui vous convient aujourd'hui. La plupart des équipes y restent bien plus longtemps qu'elles l'imaginent. Montez en gamme seulement si une reprise lente vous coûte vraiment. Même produit partout. Kubernetes ? Les clusters basculent ensemble, rapidement et maîtrisés.",
         "distribution": [
-          "De l'Évaluation de reprise au Programme de reprise : vos sauvegardes sont stockées sur un second site. Chaque modification est enregistrée dès qu'elle se produit. Vous disposez d'une fenêtre garantie de 4 heures pour être de nouveau en ligne. Un interlocuteur dédié au support est inclus.",
-          "Du Programme de reprise au Contrat de reprise : vous choisissez la vitesse à laquelle vous devez revenir en ligne. Cette fenêtre va de 15 à 60 minutes. La reprise se déroule dans un environnement entièrement distinct auquel vos systèmes en production ne touchent pas, et un accompagnement humain est là quand cela compte."
+          "De l'Évaluation au Programme : sauvegardes sur un site secondaire. Chaque modification est capturée à l'instant. 4 heures garanties pour revenir en ligne. Support dédié inclus.",
+          "Du Programme au Contrat : vous choisissez votre délai de retour en ligne, entre 15 et 60 minutes. La récupération se fait dans un environnement entièrement isolé, inaccessible à votre production. Support humain quand ça compte."
         ],
         "heading": "Pensé pour chaque étape"
       },
@@ -640,7 +640,7 @@
             "label": "Rétention des journaux d'audit"
           }
         ],
-        "recoveryNote": "RPO (Objectif de point de récupération) : quantité de données que vous pouvez vous permettre de perdre, mesurée dans le temps. Par exemple, un RPO de 15 minutes signifie que vous risquez de perdre jusqu'à 15 minutes de modifications récentes.\n\nRTO (Objectif de temps de récupération) : la rapidité avec laquelle vous devez être de nouveau en ligne après un sinistre. Par exemple, un RTO de 4 heures signifie que vos systèmes seront restaurés en 4 heures.",
+        "recoveryNote": "RPO (Objectif de point de récupération) : quantité de données perdues en cas de sinistre, mesurée en temps. Par exemple, un RPO de 15 minutes = jusqu'à 15 minutes de modifications risquent d'être perdues.\n\nRTO (Objectif de temps de récupération) : délai pour revenir en ligne après un sinistre. Par exemple, un RTO de 4 heures = vos systèmes sont rétablis en 4 heures.",
         "values": {
           "assessment": {
             "auditLogs": "30 jours",
@@ -653,9 +653,9 @@
             "rto": "4 heures (garanties)"
           },
           "retainer": {
-            "auditLogs": "1 an ou plus",
-            "rpo": "Sur mesure (quasi-zéro)",
-            "rto": "15-60 minutes (sur mesure)"
+            "auditLogs": "1+ ans",
+            "rpo": "Personnalisé (quasi-zéro)",
+            "rto": "15-60 minutes (personnalisé)"
           }
         }
       },
@@ -1076,7 +1076,7 @@
         "benefits": {
           "items": [
             {
-              "description": "Posez AGENTS.md dans le projet. Votre assistant IA maîtrise immédiatement chaque commande, flag et workflow disponible.",
+              "description": "Glissez AGENTS.md dans le projet. Votre assistant IA maîtrise d'emblée chaque commande, chaque flag, chaque workflow.",
               "icon": "zap",
               "title": "Zéro effort d'intégration"
             },
@@ -1096,14 +1096,14 @@
         },
         "bottomCta": {
           "command": "curl -fsSL https://www.rediacc.com/install.sh | bash",
-          "description": "Installez le CLI. Ajoutez le modèle AGENTS.md. Votre assistant IA s'occupe du reste.",
+          "description": "Installez la CLI. Ajoutez le template AGENTS.md. Votre agent IA s'occupe du reste.",
           "primaryCta": "Essayer gratuitement",
-          "title": "Laissez votre agent IA gérer votre infrastructure"
+          "title": "Laissez votre agent IA piloter l'infra."
         },
         "hero": {
           "primaryCta": "Essayer gratuitement",
           "subtitle": "CLI d'abord. Basé sur SSH. JSON par défaut. Chaque commande rdc est conçue pour les agents autonomes : pas d'interface graphique, pas d'automatisation de navigateur, pas d'intégrations personnalisées.",
-          "title": "L'infrastructure que votre agent IA sait déjà utiliser."
+          "title": "L'infra que votre agent IA maîtrise d'emblée."
         },
         "howItWorks": {
           "cloneVisual": {
@@ -1163,7 +1163,7 @@
           "overline": "COMMENT ÇA MARCHE",
           "steps": [
             {
-              "description": "Posez un template AGENTS.md à la racine du projet. Votre assistant IA le lit au démarrage et connaît chaque commande rdc.",
+              "description": "Posez un template AGENTS.md à la racine du projet. Votre assistant IA le lit au lancement et maîtrise chaque commande rdc.",
               "icon": "terminal",
               "title": "Configurer"
             },
@@ -1186,7 +1186,7 @@
           "title": "Pour agents IA - Automatisation CLI-native | Rediacc"
         },
         "problem": {
-          "description": "Votre assistant de codage IA peut écrire, tester et déboguer du code en autonomie. Mais au moment du déploiement, de la vérification d'état ou de la gestion d'infrastructure, ça bloque : tableaux de bord GUI uniquement, flux OAuth navigateur, API instables, réponses qui débordent la fenêtre de contexte.",
+          "description": "Votre assistant IA sait écrire, tester et déboguer seul. Mais dès qu'il faut déployer, vérifier le statut ou gérer l'infra, ça coince : interfaces GUI uniquement, flux OAuth navigateur, APIs instables, et réponses trop volumineuses pour la fenêtre de contexte.",
           "overline": "LE PROBLÈME",
           "statCallouts": [
             {
@@ -1288,17 +1288,17 @@
         "benefits": {
           "items": [
             {
-              "description": "Un tarif fixe par machine. Pas de frais par utilisateur, pas de surprise en facture, pas de frais de sortie. Votre budget reste prévisible à mesure que vous grandissez.",
+              "description": "Un tarif fixe par machine. Zéro frais par siège, zéro surprise en facture, zéro frais de sortie. Votre budget reste prévisible à mesure que vous grandissez.",
               "icon": "tag",
               "title": "Coûts prévisibles"
             },
             {
-              "description": "Les données restent sur du matériel que vous possédez, dans des formats ouverts. Aucun tiers ne peut les prendre en otage ni vous facturer pour y accéder.",
+              "description": "Vos données restent sur votre matériel, dans des formats ouverts. Aucun fournisseur ne peut les verrouiller ni vous facturer pour y accéder.",
               "icon": "lock",
-              "title": "Vos données, votre contrôle"
+              "title": "Données maîtrisées, contrôle total"
             },
             {
-              "description": "Reprise complète en moins de 5 minutes. Des sauvegardes verrouillées, en écriture unique, que les ransomwares ne peuvent pas modifier. Votre entreprise continue de tourner. Si un fournisseur vous laisse tomber, tout le système peut migrer, Kubernetes compris.",
+              "description": "Récupération totale en moins de 5 minutes. Des sauvegardes verrouillées en écriture unique que les ransomwares ne peuvent pas modifier. Votre activité continue. Si un fournisseur tombe, tout le système migre, Kubernetes inclus.",
               "icon": "shield",
               "title": "Continuité d'activité"
             }
@@ -1313,8 +1313,8 @@
         },
         "calculator": {
           "annualLabel": "Coût annuel total",
-          "description": "Ajustez les curseurs pour correspondre à votre entreprise. Voyez le vrai coût du cloud vs l'auto-hébergement.",
-          "footnote": "Estimations basées sur des modèles TCO industriels. Les économies dépendent de votre infrastructure et de votre taille.",
+          "description": "Réglez les curseurs pour votre situation. Comparez le coût réel du cloud et de l'auto-hébergement.",
+          "footnote": "Ces chiffres sont des estimations basées sur des modèles de coûts courants. Vos véritables économies dépendent de votre infrastructure et de votre taille.",
           "headerTitle": "Calculez vos économies",
           "overline": "LES CHIFFRES",
           "results": {
@@ -1328,29 +1328,29 @@
             "reqs": "Dépense cloud mensuelle actuelle ($)",
             "wait": "Heures d'indisponibilité par an"
           },
-          "title": "Combien pourriez-vous économiser ?",
+          "title": "Combien d'économies ?",
           "withAnnual": "Calculer →",
           "withoutTag": "Coûts cloud actuels",
           "withResults": {
             "blockedTime": "60 % de moins",
             "contextSwitching": "<5 minutes",
-            "quarterlySlip": "100 % à vous",
+            "quarterlySlip": "Entièrement vôtre",
             "sprintCapacity": "Minimisé"
           },
           "withTag": "Avec Rediacc"
         },
         "hero": {
           "primaryCta": "Voir les tarifs",
-          "subtitle": "Protégez les données de votre entreprise sur du matériel que vous possédez. Un prix fixe par machine. Pas de frais par siège, pas de facture cloud surprise, pas de fournisseur qui vous tient en otage.",
-          "title": "Un tarif unique par serveur. Vos données restent vôtres."
+          "subtitle": "Protégez vos données sur votre propre matériel. Un tarif unique par machine. Zéro frais par siège, zéro facture surprise, zéro fournisseur qui vous tient.",
+          "title": "Un prix fixe par serveur. Vos données restent vôtres."
         },
         "meta": {
-          "description": "Sauvegardez vos systèmes sur vos serveurs. Un prix fixe par machine. Zéro frais par utilisateur. Zéro facture surprise. Vos données restent vôtres.",
+          "description": "Sauvegardez vos systèmes sur vos serveurs. Un tarif unique par machine. Zéro frais par siège, zéro facture surprise. Vos données restent vôtres.",
           "keywords": "PDG, coûts d'infrastructure, auto-hébergé, protection des données, verrouillage fournisseur, tarification prévisible, continuité d'activité, PME",
           "title": "Pour les PDG - Tarifs Prévisibles, Zéro Dépendance | Rediacc"
         },
         "problem": {
-          "description": "Votre équipe a commencé avec une petite facture cloud. Aujourd'hui, c'est votre troisième plus grosse dépense, et elle augmente de 20 % par an. La tarification par siège vous pénalise à chaque embauche. Vos données sont dans le datacenter de quelqu'un d'autre, enfermées dans un format propriétaire. Et si vous décidez de partir ? Ils vous facturent des frais de sortie pour accéder à vos propres données.",
+          "description": "On a commencé petit avec le cloud. Aujourd'hui ? C'est votre troisième poste de dépense, et ça monte de 20 % chaque année. Le tarif par utilisateur vous pénalise à chaque embauche. Vos données ? Elles sont dans le datacenter d'un tiers, enfermées dans un format propriétaire. Et si vous partez ? Ils vous réclament des frais de sortie rien que pour récupérer vos données.",
           "overline": "LE PROBLÈME",
           "statCallouts": [
             {
@@ -1396,7 +1396,7 @@
               }
             ]
           },
-          "title": "Vos factures cloud s'envolent. Vos données ne vous appartiennent pas vraiment."
+          "title": "Vos factures cloud grimpent. Quelqu'un d'autre contrôle vos données."
         },
         "relatedSolutions": {
           "title": "Comment ça marche"
@@ -1404,9 +1404,9 @@
         "shareWithTeam": {
           "ctaSlug": "for-ctos",
           "ctaText": "Partagez l'analyse CTO approfondie",
-          "description": "Votre équipe technique doit vérifier la compatibilité. Envoyez-leur l'analyse CTO approfondie. Elle contient tous les détails qu'ils demandent.",
+          "description": "Votre équipe tech doit vérifier la compatibilité avec votre stack. Envoyez-leur l'analyse CTO approfondie. Elle contient tous les détails qu'ils demanderont.",
           "overline": "PROCHAINE ÉTAPE",
-          "title": "Partagez avec votre CTO"
+          "title": "À partager avec votre CTO"
         },
         "socialProof": {
           "author": "PDG et Fondateur",
@@ -1666,12 +1666,12 @@
               "title": "Environnements en 60 secondes"
             },
             {
-              "description": "Tout est une commande. Intégrez avec CI/CD, les hooks Git ou votre propre automatisation. Aucune interface graphique requise. Kubernetes inclus : un namespace se fork comme n'importe quel dépôt.",
+              "description": "Tout est une commande. Intégrez-le à CI/CD, aux hooks Git, ou à n'importe quelle automatisation. Pas d'interface graphique. Kubernetes inclus : un namespace se fork comme un repo.",
               "icon": "terminal",
               "title": "CLI en premier, scriptable"
             },
             {
-              "description": "Snapshots immuables de btrfs : restaurez n'importe quel environnement en secondes, sans perte de données, sans indisponibilité.",
+              "description": "Snapshots immuables Btrfs : restaurez n'importe quel environnement en secondes. Zéro perte. Zéro downtime.",
               "icon": "shield",
               "title": "Restauration instantanée"
             }
@@ -1683,11 +1683,11 @@
           "command": "curl -fsSL https://www.rediacc.com/install.sh | bash",
           "description": "Installez le CLI. Clonez votre premier environnement. Commencez votre essai gratuit de 14 jours, sans appel commercial.",
           "primaryCta": "Commencer l'essai gratuit",
-          "title": "Essayez par vous-même"
+          "title": "Essayez"
         },
         "hero": {
           "primaryCta": "Commencer l'essai gratuit",
-          "subtitle": "Clonez la production en 60 secondes, restaurez en moins de 5 minutes, sur votre matériel. Pas de tickets, pas d'attente. Vos données restent vôtres.",
+          "subtitle": "Infrastructure CLI-first : clonez la prod en 60 secondes, restaurez en moins de 5 minutes, sur votre matériel. Zéro ticket. Zéro attente. Les données restent vôtres.",
           "title": "Clonez la prod en 1 minute. Restaurez en 5 minutes. Plus de tickets."
         },
         "howItWorks": {
@@ -1748,7 +1748,7 @@
           "overline": "COMMENT ÇA MARCHE",
           "steps": [
             {
-              "description": "Lancez rdc ceph snapshot create production. Btrfs CoW crée un snapshot en une fraction de seconde : application, base de données, configuration.",
+              "description": "Lancez rdc ceph snapshot create production. Btrfs CoW crée un snapshot en une fraction de seconde : app, base de données, config.",
               "icon": "terminal",
               "title": "Cloner"
             },
@@ -1758,7 +1758,7 @@
               "title": "Travailler"
             },
             {
-              "description": "Quelque chose casse ? Restaurez en secondes. Les snapshots immuables garantissent que vous ne perdez jamais de données.",
+              "description": "Quelque chose casse ? Restaurez en secondes. Snapshots immuables = zéro perte de données.",
               "icon": "shield",
               "title": "Récupérer"
             }
@@ -1766,12 +1766,12 @@
           "title": "Une commande. Un clone complet de la production."
         },
         "meta": {
-          "description": "Clonez la production en 60 secondes, restaurez en moins de 5 minutes, sur votre matériel. Infrastructure CLI-first de DR pour les équipes DevOps.",
+          "description": "Clonez la production en 60 secondes, restaurez en moins de 5 minutes, sur votre matériel. CLI-first DR pour équipes DevOps.",
           "keywords": "devops, automatisation d'infrastructure, CLI, snapshots btrfs, auto-hébergé, clonage d'environnement, rollback instantané, parité production",
           "title": "Rediacc pour DevOps : clonez la prod, récupérez vite"
         },
         "problem": {
-          "description": "Votre pipeline CI/CD déploie en minutes. Votre IaC provisionne en secondes. Mais quand vous avez besoin d'un environnement de test avec des données réelles, vous créez un ticket et attendez trois jours. Pendant ce temps, le staging est partagé, instable et ne ressemble en rien à la production.",
+          "description": "CI/CD déploie en minutes. IaC provisionne en secondes. Mais un environnement de test avec vraies données ? C'est un ticket et trois jours d'attente. Pendant ce temps, le staging est partagé, instable et ne ressemble en rien à la prod.",
           "overline": "LE PROBLÈME",
           "statCallouts": [
             {
@@ -1817,7 +1817,7 @@
               }
             ]
           },
-          "title": "Vous automatisez tout. Sauf l'environnement de test."
+          "title": "Tout est automatisé. Sauf l'environnement de test."
         },
         "relatedSolutions": {
           "title": "Solutions associées"
@@ -1892,31 +1892,31 @@
           {
             "business": true,
             "enterprise": true,
-            "label": "Gestionnaire de compte dédié",
+            "label": "Responsable compte dédié",
             "professional": false
           },
           {
             "business": true,
             "enterprise": true,
-            "label": "Support téléphonique",
+            "label": "Support par téléphone",
             "professional": false
           },
           {
             "business": false,
             "enterprise": true,
-            "label": "Support 24/7/365",
+            "label": "Support 24h/24, 7j/7",
             "professional": false
           },
           {
             "business": false,
             "enterprise": true,
-            "label": "Escalade exécutive",
+            "label": "Escalade vers les cadres",
             "professional": false
           },
           {
             "business": false,
             "enterprise": true,
-            "label": "Revues de sécurité",
+            "label": "Audits de sécurité",
             "professional": false
           },
           {
@@ -1936,15 +1936,15 @@
         "heading": "Foire aux questions",
         "items": [
           {
-            "answer": "Oui. Les forfaits Professional et Business commencent tous deux par un essai gratuit de 14 jours. Le premier prélèvement n'a lieu qu'à la fin de l'essai, donc annulez avant et vous ne payez rien. Si vous annulez, votre compte repasse au plan Community gratuit, qui garde une machine active avec 10 Go par dépôt et 100 configurations par mois.",
+            "answer": "Oui. Professional et Business offrent 14 jours d'essai gratuit. Aucun prélèvement jusqu'à la fin de l'essai ; annulez avant et c'est gratuit. En cas d'annulation, vous repassez au plan Community gratuit : une machine, 10 Go par dépôt, 100 configurations par mois.",
             "question": "Y a-t-il un essai gratuit ?"
           },
           {
-            "answer": "Oui. Les deux forfaits payants demandent une carte à l'inscription pour que l'essai puisse basculer vers un abonnement. Vous n'êtes prélevé qu'à la fin de l'essai de 14 jours, et vous pouvez annuler à tout moment avant cette échéance.",
+            "answer": "Oui. Les deux forfaits payants demandent une carte pour que l'essai puisse se convertir en abonnement. Aucun prélèvement avant la fin des 14 jours, et vous pouvez annuler n'importe quand avant.",
             "question": "Ai-je besoin d'une carte bancaire pour commencer ?"
           },
           {
-            "answer": "Oui, vous pouvez changer de forfait à tout moment. Les mises à niveau prennent effet immédiatement, et les rétrogradations s'appliquent au début du cycle de facturation suivant. Aucune pénalité ni frais.",
+            "answer": "Oui. Les mises à niveau prennent effet immédiatement ; les réductions au prochain cycle de facturation. Aucune pénalité, aucun frais.",
             "question": "Puis-je mettre à niveau ou rétrograder mon forfait ?"
           },
           {
@@ -1964,11 +1964,11 @@
             "question": "Rediacc fonctionne-t-il sur mes propres serveurs ?"
           },
           {
-            "answer": "Chaque forfait en libre-service inclut une machine (une licence flottante). Si vous devez exécuter Rediacc sur plusieurs machines, il s'agit d'une configuration Enterprise vendue via nos partenaires. Contactez-nous et nous l'adapterons avec vous.",
+            "answer": "Chaque forfait en libre-service inclut une machine (une licence flottante). Déployer Rediacc sur plusieurs machines, c'est une configuration Enterprise vendue via nos partenaires. Contactez-nous pour dimensionner ensemble.",
             "question": "Combien de machines chaque forfait couvre-t-il ?"
           },
           {
-            "answer": "Enterprise est conçu pour votre configuration et vendu via nos partenaires. Vous choisissez les conditions, déployez sur plusieurs machines, et bénéficiez de votre propre espace serveur, d'une promesse de reprise sur mesure et d'un support 24h/24, 7j/7. Plus des audits de sécurité et des exercices réguliers.",
+            "answer": "Enterprise s'adapte à votre besoin et se vend via nos partenaires. Conditions négociables, déploiement multi-machines, espace serveur dédié, reprise sur mesure, support 24h/24. Plus audits de sécurité et exercices réguliers.",
             "question": "Que comprend la tarification Enterprise ?"
           },
           {
@@ -1976,11 +1976,11 @@
             "question": "Proposez-vous des tarifs réduits pour l'éducation ou les associations ?"
           },
           {
-            "answer": "Annulez pendant l'essai de 14 jours et vous ne serez jamais facturé. Annulez un forfait payant plus tard et vous gardez ses fonctionnalités jusqu'à la fin de la période de facturation, puis votre compte repasse au forfait Community gratuit. Vos dépôts continuent de tourner pendant tout ce temps.",
+            "answer": "Annulez durant les 14 jours et rien n'est débité. Annulez plus tard, et les fonctionnalités restent jusqu'à la fin du cycle. Ensuite, vous repassez au plan Community gratuit. Vos dépôts tournent le temps entier.",
             "question": "Que se passe-t-il si j'annule ?"
           },
           {
-            "answer": "Chaque nœud d'un cluster est une machine, et chacun compte comme une machine. Il n'y a pas d'allocation partagée pour le cluster ni de remise pour regrouper des serveurs. Un nœud n'occupe un emplacement que lorsqu'un dépôt y est déployé, donc la construction du cluster lui-même ne coûte rien. Le clustering est vendu par nos partenaires dans le cadre d'un contrat Enterprise, et le nombre de nœuds est convenu au moment de la commande.",
+            "answer": "Chaque nœud est une machine, chacun compte. Pas d'allocation partagée, pas de remise groupée. Un nœud n'occupe un slot que quand un dépôt s'y déploie — la construction est gratuite. Le clustering se vend via nos partenaires (Enterprise), avec le nombre de nœuds convenu à la commande.",
             "question": "Comment les nœuds d'un cluster sont-ils comptés ?"
           }
         ]
@@ -1990,15 +1990,15 @@
           "startFree": "Commencez gratuitement",
           "talkToSales": "Parler aux commerciaux"
         },
-        "description": "Installez en 5 minutes. Commencez votre essai gratuit de 14 jours.",
-        "heading": "Sécurisez votre infrastructure"
+        "description": "Installation en 5 minutes. Essai gratuit de 14 jours.",
+        "heading": "Protégez votre infrastructure"
       },
       "hero": {
-        "subtitle": "Choisissez votre formule. Tarification simple, aucun frais surprise, résiliez quand vous le souhaitez.",
+        "subtitle": "Le forfait qui vous convient. Tarification simple, pas de frais cachés, annulation libre.",
         "title": "Pensé pour les vrais besoins"
       },
       "meta": {
-        "description": "Choisissez le forfait adapté à votre équipe. Chaque forfait payant commence par un essai gratuit de 14 jours. Zéro frais caché.",
+        "description": "Choisissez le forfait qui correspond à votre équipe. Les forfaits payants incluent 14 jours d'essai gratuit. Aucun frais caché.",
         "keywords": "tarification, automatisation d'infrastructure, plans DevOps, exécution de tâches",
         "title": "Tarification | Conçu pour vos opérations réelles"
       },
@@ -2018,12 +2018,12 @@
       },
       "professionalServices": {
         "benefits": {
-          "description": "Quand vos serveurs s'arrêtent, des vrais ingénieurs au téléphone. Pas de file d'attente de tickets. Un vrai humain, le jour même.",
+          "description": "Quand ça s'arrête, des ingénieurs au téléphone. Pas de file d'attente. Un humain le jour même.",
           "heading": "Pourquoi les services professionnels ?",
           "items": [
-            "Une équipe d'experts dédiée assignée à votre projet",
+            "Une équipe d'experts dédiée au projet",
             "Délais de réponse garantis par contrat",
-            "Basculez entre les services selon l'évolution de vos besoins",
+            "Changez de service selon vos besoins",
             "Ligne d'urgence 24/7 pour les incidents critiques"
           ],
           "statistics": [
@@ -2034,7 +2034,7 @@
         "categories": {
           "items": [
             {
-              "description": "Formation pratique pour votre équipe, du tutoriel de mise en place guidée aux ateliers de plusieurs jours couvrant les workflows avancés et les procédures de réponse aux incidents.",
+              "description": "Formation pratique pour votre équipe, du tutoriel d'installation guidé aux ateliers multi-jours sur les workflows avancés et la gestion des incidents.",
               "icon": "team-training",
               "id": "training",
               "name": "Formation"
@@ -2046,7 +2046,7 @@
               "name": "Assistance"
             },
             {
-              "description": "Migration et intégration sur mesure de bout en bout, d'une migration de données entièrement validée à un basculement rapide le jour même quand vous êtes sous pression.",
+              "description": "Migration intégrale et intégrations sur mesure : de la migration validée au basculement le jour même, même sous pression.",
               "icon": "data-migration",
               "id": "migration",
               "name": "Migrations"
@@ -2058,7 +2058,7 @@
               "name": "Reprise d'activité"
             },
             {
-              "description": "Audits de sécurité, checklists de durcissement, runbooks de conformité et contrats de gestion d'incident, adaptés à votre environnement et à vos exigences d'audit.",
+              "description": "Audits de sécurité, guides de durcissement, procédures de conformité et contrats d'intervention sur incidents, adaptés à votre environnement.",
               "icon": "storage-hardening",
               "id": "security",
               "name": "Sécurité et conformité"
@@ -2066,7 +2066,7 @@
           ]
         },
         "cta": {
-          "description": "Chaque projet est adapté à votre infrastructure. Contactez-nous et trouvons ensemble le plan qui vous convient.",
+          "description": "Chaque engagement s'adapte à votre infrastructure. Contactez-nous pour trouver ensemble la bonne solution.",
           "heading": "Besoin d'une assistance professionnelle ?"
         },
         "header": {
@@ -2074,7 +2074,7 @@
         }
       },
       "roiCta": {
-        "description": "Utilisez notre calculateur de ROI interactif pour voir combien vous pouvez économiser avec Rediacc.",
+        "description": "Calculez votre ROI avec notre outil interactif pour voir ce que Rediacc vous économise.",
         "heading": "Vous hésitez sur le bon forfait ?"
       },
       "technicalSummary": {
@@ -2135,16 +2135,16 @@
         }
       },
       "trustSection": {
-        "corporateGuarantee": "Si Rediacc ne vous convient pas, nous vous aidons à migrer en arrière.",
-        "heading": "Votre infrastructure. Vos règles.",
+        "corporateGuarantee": "Si Rediacc ne convient pas, nous vous aidons à migrer ailleurs.",
+        "heading": "Pas de verrouillage. Jamais.",
         "rows": [
           {
-            "description": "Démarrer, arrêter et supprimer fonctionnent toujours, même des années après l'expiration de votre abonnement. Vos données restent accessibles sur vos propres machines.",
-            "title": "Vos applications tournent indéfiniment."
+            "description": "Démarrer, arrêter, supprimer : ça marche toujours, même après la fin de l'abonnement. Vos données restent accessibles sur vos serveurs.",
+            "title": "Les apps tournent pour toujours"
           },
           {
-            "description": "Vos outils d'exploitation continuent de fonctionner : accès SSH, édition à distance, toutes les commandes de gestion. Aucune licence n'est jamais nécessaire.",
-            "title": "Accès complet à vos outils."
+            "description": "Les outils d'exploitation fonctionnent toujours : SSH, édition distante, toutes les commandes. Aucune licence jamais.",
+            "title": "Accès total à tous les outils"
           },
           {
             "description": "Pour créer un nouveau serveur ou en copier un existant, il vous faut un abonnement actif. Le redimensionnement et l'extension continuent de fonctionner pendant 60 jours après l'expiration de votre abonnement. Vos serveurs, eux, continuent de tourner indéfiniment.",
@@ -2155,15 +2155,15 @@
             "title": "60 jours de grâce pour la mise à l’échelle."
           },
           {
-            "description": "Une licence flottante n'est utilisée que lorsque vous créez ou copiez un serveur. Votre travail quotidien n'en consomme jamais. Les licences se libèrent après 5 heures d'inactivité, si bien qu'une seule licence flottante peut couvrir de nombreuses machines dans la durée. Aucun frais par machine, jamais.",
+            "description": "Une licence flottante s'utilise uniquement pour créer ou copier un serveur. Le travail normal n'en consomme jamais. Après 5 heures inactives, la licence se libère — une seule couvre des tonnes de machines. Aucun frais par machine, jamais.",
             "title": "Machines illimitées. Payez seulement à la création."
           },
           {
-            "description": "Chaque licence est liée à son serveur. Si votre hébergeur le migre, l'ID change — mais vous avez 40 jours. Au prochain check-in, c'est automatique. Zéro downtime, zéro step manuelle.",
-            "title": "40 jours de grace lors d'un changement de matériel."
+            "description": "Chaque licence est liée au serveur d'origine. Si le matériel change, vous avez 40 jours. Au prochain check-in, c'est automatique. Zéro downtime, aucune action manuelle.",
+            "title": "40 jours de grâce lors d'un changement de matériel"
           }
         ],
-        "subtitle": "Les licences Rediacc sont conçues pour que vous ne soyez jamais enfermé. Voici ce que cela signifie concrètement."
+        "subtitle": "Les licences Rediacc sont conçues pour éviter l'enfermement. Voici ce que ça veut dire concrètement."
       },
       "ui": {
         "billingToggle": {
