@@ -89,6 +89,13 @@ const MUTANTS: Mutant[] = [
     replace: 'process.stderr.write(`${line}\\n`);',
     test: 'src/services/__tests__/quiet-stderr-replay.test.ts',
   },
+  {
+    name: '--debug enables the relay firehose, not just REDIACC_DEBUG',
+    file: 'src/services/executor/output-lines.ts',
+    find: 'return debugEnabled() || Boolean(options.debug);',
+    replace: 'return debugEnabled();',
+    test: 'src/services/__tests__/quiet-stderr-replay.test.ts',
+  },
 ];
 
 /** A mutation that provably changes no behaviour, used only by --selftest. */

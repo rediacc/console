@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { createQuietStderrPump } from '../executor/output-lines.js';
+import { createQuietStderrPump, shouldEchoRelayLive } from '../executor/output-lines.js';
 
 /**
  * A withheld logrus line is 115-358 columns wide. When the command fails it is
@@ -80,5 +80,35 @@ describe('createQuietStderrPump replay width', () => {
     pump.write(`${LONG}\n`);
     pump.flush(false);
     expect(written).toEqual([]);
+  });
+});
+
+/**
+ * The WIRING, not the pump. A peer proved the previous coverage gap by reverting the
+ * flag half of this decision and re-running the pump tests: 5 passed either way. The
+ * pump contract was pinned; the decision feeding it was not, so `--debug` could go
+ * back to meaning nothing with no test going red.
+ */
+describe('shouldEchoRelayLive', () => {
+  const saved = process.env.REDIACC_DEBUG;
+  afterEach(() => {
+    if (saved === undefined) delete process.env.REDIACC_DEBUG;
+    else process.env.REDIACC_DEBUG = saved;
+  });
+
+  it('is TRUE for the --debug flag alone, with no env var', () => {
+    delete process.env.REDIACC_DEBUG;
+    expect(shouldEchoRelayLive({ debug: true })).toBe(true);
+  });
+
+  it('is TRUE for REDIACC_DEBUG alone, with no flag', () => {
+    process.env.REDIACC_DEBUG = '1';
+    expect(shouldEchoRelayLive({})).toBe(true);
+  });
+
+  it('is FALSE when neither is set, so the quiet default survives', () => {
+    delete process.env.REDIACC_DEBUG;
+    expect(shouldEchoRelayLive({})).toBe(false);
+    expect(shouldEchoRelayLive({ debug: false })).toBe(false);
   });
 });

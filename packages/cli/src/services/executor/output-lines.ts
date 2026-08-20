@@ -16,6 +16,7 @@
  * array's first character after `[` is never an identifier character.
  */
 
+import { debugEnabled } from '../../utils/debug.js';
 import { terminalWidth, wrapProse } from '../core/output.js';
 
 /** `[<function>] ` as emitted by renet's output relay. */
@@ -101,6 +102,25 @@ export function writeWrappedToStderr(line: string): void {
  * Spinner and progress repaints carry no newline, so a tail without one is
  * passed straight through -- holding it would freeze the animation on screen.
  */
+/**
+ * Should renet's relayed stderr be echoed LIVE rather than withheld?
+ *
+ * TRUE for the env var OR the `--debug` flag. Extracted from the call site
+ * because an inline expression there was UNPINNABLE: a peer proved the point by
+ * reverting the flag half and re-running the pump tests, which stayed green 5/5.
+ * The pump's own contract was covered; the decision feeding it was not, so the
+ * regression could return through that one line with nothing going red.
+ *
+ * The regression it exists to stop: `debugEnabled()` reads only REDIACC_DEBUG,
+ * so `rdc repo up --debug` still withheld info-level lines. The
+ * concurrent-fork-isolation suite greps a `--debug` log for renet's
+ * "restored from checkpoint" (log.Infof), found nothing, and reported
+ * console#440 as regressed when the checkpoint had in fact worked.
+ */
+export function shouldEchoRelayLive(options: { debug?: boolean } = {}): boolean {
+  return debugEnabled() || Boolean(options.debug);
+}
+
 export function createQuietStderrPump(options: { echoAll?: boolean } = {}) {
   const echoAll = options.echoAll ?? false;
   const withheld: string[] = [];
