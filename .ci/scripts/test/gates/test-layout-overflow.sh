@@ -43,14 +43,20 @@ test_the_control_can_actually_fail() {
     # MUTATE THE GATE, not the tree: strip the pseudo-element rule and require the
     # gate to declare itself broken. Without this the PASS lines above prove only that
     # a string was printed.
-    local tmp
-    tmp="$(mktemp -d)"
-    # BLOCKER: expanding tmp now binds the specific path into the trap so cleanup fires even if the variable is reassigned
+    # The mutant is written BESIDE the gate, not into a temp dir. The gate imports
+    # ./lib/shrink-only-baseline.ts by relative path, and a copy in /tmp cannot resolve
+    # that: the run dies on "Cannot find module" before any control executes, and the
+    # assertion below then fails for the wrong reason. It reads as "the controls are not
+    # load-bearing" when in fact the gate never started. Same directory, same relative
+    # imports, so the mutant differs from the gate only in the mutation.
+    local mutant
+    mutant="$(dirname "$GATE")/.mutant-layout-overflow.ts"
+    # BLOCKER: expanding mutant now binds the specific path into the trap so cleanup fires even if the variable is reassigned
     # shellcheck disable=SC2064
-    trap "rm -rf '$tmp'" RETURN
-    sed "s/d.get('white-space') === 'nowrap' &&/false \&\&/" "$GATE" >"$tmp/mutant.ts"
+    trap "rm -f '$mutant'" RETURN
+    sed "s/d.get('white-space') === 'nowrap' &&/false \&\&/" "$GATE" >"$mutant"
     local out rc=0
-    out="$(cd "$REPO_ROOT" && npx tsx "$tmp/mutant.ts" --selftest 2>&1)" || rc=$?
+    out="$(cd "$REPO_ROOT" && npx tsx "$mutant" --selftest 2>&1)" || rc=$?
     assert_exit_code 1 "$rc" "a gate that stopped detecting the nowrap shape must FAIL its own controls"
     assert_contains "$out" "FAIL" "the mutant must name the failing control"
     log_pass "removing the detector flips the gate's controls red (the controls are load-bearing)"
