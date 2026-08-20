@@ -740,7 +740,7 @@
       "meta": {
         "description": "Kloonige tootmist 60 sekundiga. Taastuge katastroofidest alla 5 minutiga. Omahosted, töötab teie riistvaral.",
         "keywords": "infrastruktuuri automatiseerimine, arenduskeskkonnad, katastroofitaaste, DevOpsi automatiseerimine, CI/CD konveier, pilveinfrastruktuur, arenduse operatsioonid, mudeli konteksti protokoll, tehisintellektile ohutu infrastruktuur",
-        "title": "Rediacc - Kloonige tootmist. Ärge rikkuge midagi."
+        "title": "Rediacc: Kloonida julgelt. Midagi ei riku."
       }
     },
     "install": {
@@ -6372,15 +6372,15 @@
         "references": {
           "items": [
             {
-              "text": "Sophos, \"The Impact of Compromised Backups on Ransomware Outcomes,\" March 2024. \"94% of organizations hit by ransomware in the past year said that the cybercriminals attempted to compromise their backups during the attack.\"",
+              "text": "Sophos, “The Impact of Compromised Backups on Ransomware Outcomes,” March 2024. “94% of organizations hit by ransomware in the past year said that the cybercriminals attempted to compromise their backups during the attack.”",
               "url": "https://www.sophos.com/en-us/blog/the-impact-of-compromised-backups-on-ransomware-outcomes/"
             },
             {
-              "text": "IBM Security, \"Cost of a Data Breach Report 2024,\" July 2024. \"The global average cost of a data breach reached $4.88 million in 2024, as breaches grow more disruptive and further expand demands on cyber teams.\"",
+              "text": "IBM Security, “Cost of a Data Breach Report 2024,” July 2024. “The global average cost of a data breach reached $4.88 million in 2024, as breaches grow more disruptive and further expand demands on cyber teams.”",
               "url": "https://newsroom.ibm.com/2024-07-30-ibm-report-escalating-data-breach-disruption-pushes-costs-to-new-highs"
             },
             {
-              "text": "Coveware, \"Quarterly Ransomware Report Q2 2022,\" July 2022. \"In Q2, the average days of downtime was measured at 24 days, a decrease of 8% from Q1 2022.\"",
+              "text": "Coveware, “Quarterly Ransomware Report Q2 2022,” July 2022. “In Q2, the average days of downtime was measured at 24 days, a decrease of 8% from Q1 2022.”",
               "url": "https://www.coveware.com/blog/2022/7/27/fewer-ransomware-victims-pay-as-medium-ransom-falls-in-q2-2022"
             },
             {
@@ -7758,7 +7758,7 @@
               "url": "https://www.flexera.com/about-us/press-center/new-flexera-report-finds-84-percent-of-organizations-struggle-to-manage-cloud-spend"
             },
             {
-              "text": "AWS, \"Amazon S3 Pricing — Data Transfer,\" 2024. \"Data Transfer OUT from Amazon S3 to Internet: $0.09 per GB for the first 10 TB/month.\"",
+              "text": "AWS, \"Amazon S3 hinnakiri: andmete ülekanne,\" 2024. \"Andmete ülekanne välja Amazon S3-st internetti: $0,09 GB kohta esimese 10 TB/kuu kohta.\"",
               "url": "https://aws.amazon.com/s3/pricing/"
             },
             {
@@ -7885,7 +7885,7 @@
         "calculator": {
           "annualLabel": "Aastane migratsioonirisk",
           "description": "Iga migreerimine ilma otsast lõpuni krüpteerimiseta on tulevane vastavusrikkumine.",
-          "footnote": "Arvestab $200/h tööjõukulusid, $4880 TB kohta rikkumishinna (IBM 2024) ja 1% rikkumise tõenäosust kokkupuute raami kohta. Rediacc säilitab krüpteerimise kogu aja – null kokkupuute raame, null uuesti krüpteerimist.",
+          "footnote": "Arvestab $200/h töökulusid ümberkribteerimiseks, $4,880/TB andmerikkumise kulusid (IBM 2024) ja 1% rikkumise tõenäosust migreerimise ajal. Rediacc säilitab andmete krüpteerimise kogu protsessis – riskiperioode ei ole, ümberkribteerimist ei ole.",
           "headerTitle": "Migratsiooniriskide kalkulaator",
           "overline": "TEGELIK HIND",
           "results": {
@@ -8106,7 +8106,7 @@
               "url": "https://newsroom.ibm.com/2024-07-30-ibm-report-escalating-data-breach-disruption-pushes-costs-to-new-highs"
             },
             {
-              "text": "AWS, \"Amazon S3 hinnakirjad – andmeviimine\", 2024. \"Andmete väljaminek S3-st internetti: $0,09 GB kohta esimese 10 TB/kuu kohta.\"",
+              "text": "AWS, \"Amazon S3 hinnakirjad: andmete edastamine\", 2024. \"Andmete edastamine S3-st internetti: $0,09 GB kohta esimese 10 TB kuus.\"",
               "url": "https://aws.amazon.com/s3/pricing/"
             },
             {
@@ -8161,7 +8161,7 @@
             },
             "improvement": "Null kokkupuete aknakesi · 10x kiirem"
           },
-          "quote": "Migreesime 42 serverit Hetzner st OVH-le nädalavahetusel. 350 TB krüpteeritud andmeid ilma ühe baidita avaldatud. Eelmise migreerimise – 8 serveriga – võttis kolm nädalat ja dekrüpteerimist vahekeskkonda. See oli viimane kord, kui nii riskisime."
+          "quote": "Migreesime 42 serverit Hetzner-st OVH-le ühe nädalavahetusel. 350 TB krüpteeritud andmeid – ükski bait ei jäänud avastamata. Eelmise migreerimise ajal käis 8 serveriga kolm nädalat ja andmeid tuli dekrüpteerida vahekeskkonda. Nii suurt riski me enam ei võta."
         },
         "stats": [
           {

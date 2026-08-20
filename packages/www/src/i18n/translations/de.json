@@ -738,7 +738,7 @@
       "meta": {
         "description": "Produktion in 60 Sekunden klonen. Notfallwiederherstellung in unter 5 Minuten. Self-Hosted, läuft auf Ihrer Hardware.",
         "keywords": "Infrastrukturautomatisierung, Entwicklungsumgebungen, Disaster Recovery, DevOps-Automatisierung, CI/CD-Pipeline, Cloud-Infrastruktur, Entwicklungsbetrieb, Model Context Protocol, KI-sichere Infrastruktur",
-        "title": "Rediacc — Produktion klonen. Nichts kaputt machen."
+        "title": "Rediacc: Produktion klonen. Risikofrei."
       }
     },
     "install": {
@@ -7746,7 +7746,7 @@
               "url": "https://www.flexera.com/about-us/press-center/new-flexera-report-finds-84-percent-of-organizations-struggle-to-manage-cloud-spend"
             },
             {
-              "text": "AWS, \"Amazon S3 Pricing — Data Transfer,\" 2024. „Datenübertragung AUS Amazon S3 ins Internet: $0,09 pro GB für die ersten 10 TB/Monat.\"",
+              "text": "AWS, „Amazon S3 Preise: Datentransfer,\" 2024. „Datentransfer von Amazon S3 ins Internet: $0,09 pro GB für die ersten 10 TB/Monat.\"",
               "url": "https://aws.amazon.com/s3/pricing/"
             },
             {
@@ -7844,49 +7844,49 @@
         "benefits": {
           "items": [
             {
-              "description": "Daten bleiben waehrend jedes Migrationsschritts AES-256-verschluesselt. Keine temporaere Entschluesselung in irgendeiner Phase.",
+              "description": "Die Daten bleiben durchgehend mit AES-256 verschlüsselt. Nie entschlüsselt, auch nicht für eine Sekunde.",
               "icon": "lock",
-              "title": "Verschluesselung waehrend der Uebertragung"
+              "title": "Verschlüsselung während der Übertragung"
             },
             {
-              "description": "Verschluesselungskonfiguration, kundeneigene Schluessel, Docker-Einstellungen und Netzwerkrichtlinien migrieren als eine atomare Einheit.",
+              "description": "Verschlüsselungskonfiguration, Schlüssel, Docker-Einstellungen und Netzwerkrichtlinien – alles wandert als eine Einheit.",
               "icon": "package",
-              "title": "Einstellungen reisen mit den Daten"
+              "title": "Einstellungen migrieren zusammen"
             },
             {
-              "description": "Keine temporaere Entschluesselung. Keine Expositionsfenster. Kein Vermittler sieht jemals Klartextdaten.",
+              "description": "Keine Entschlüsselung unterwegs. Keine Expositionsfenster. Niemand außer Ihnen sieht je die rohen Daten.",
               "icon": "eye-off",
-              "title": "Zero-Trust-Uebertragung"
+              "title": "Niemand sieht die Daten"
             }
           ],
           "overline": "WARUM ES WICHTIG IST",
-          "title": "Was Sie bekommen"
+          "title": "Das bekommen Sie"
         },
-        "blurb": "Migrieren ohne Ihre Daten zu gefaehrden",
+        "blurb": "Sicher migrieren – ohne Datenverlust",
         "bottomCta": {
           "command": "rdc repo push production --to secondary",
-          "description": "Starten Sie mit der kostenlosen Community-Edition. Verschlüsselte Migration inklusive.",
+          "description": "Verschlüsselte Migration ist schon dabei. Starten Sie Ihre kostenlose 14-Tage-Testversion.",
           "primaryCta": "Kostenlos starten",
-          "tierBadge": "Kostenlos für bis zu 5 Repositories · Keine Kreditkarte erforderlich",
-          "title": "Jedes Mal sicher migrieren"
+          "tierBadge": "14 Tage kostenlos · Jederzeit kündbar",
+          "title": "Sicher migrieren – jedes Mal"
         },
         "calculator": {
           "annualLabel": "Jährliches Migrationsrisiko",
-          "description": "Jede Migration ohne Ende-zu-Ende-Verschlüsselung ist ein Compliance-Vorfall, der darauf wartet zu passieren.",
-          "footnote": "Annahme: 200 $/Std. Arbeitskosten für Neuverschlüsselungskonfiguration, 4.880 $/TB Verstoßprämie (IBM 2024) und 1 % Verstoßwahrscheinlichkeit pro Expositionsfenster. Rediacc bewahrt die Verschlüsselung durchgehend — null Expositionsfenster, keine Neuverschlüsselung erforderlich.",
+          "description": "Jede Migration ohne durchgehende Verschlüsselung ist ein Compliance-Verstoß, der nur auf seine Stunde wartet.",
+          "footnote": "Annahmen: 200 $/Stunde für Neuverschlüsselungskonfiguration, 4.880 $/TB Schaden durch Datenpanne (IBM 2024), 1 % Wahrscheinlichkeit pro Expositionsfenster. Rediacc verschlüsselt durchgehend – null Expositionsfenster, keine Neuverschlüsselung nötig.",
           "headerTitle": "Migrationsrisiko-Rechner",
           "overline": "DIE WAHREN KOSTEN",
           "results": {
-            "labor": "Neuverschlüsselungsarbeit",
+            "labor": "Aufwand Neuverschlüsselung",
             "risk": "Gefährdete Daten pro Migration",
-            "windows": "Expositionsfenster / Jahr"
+            "windows": "Expositionsfenster pro Jahr"
           },
           "sliders": {
             "data": "Datenvolumen in TB",
             "hours": "Stunden Exposition pro Migration",
             "migrations": "Migrationen pro Jahr"
           },
-          "title": "Was Migrationsrisiko Sie kostet",
+          "title": "Das wahre Kostenrisiko einer Migration",
           "withAnnual": "$0",
           "withoutTag": "Ohne Rediacc",
           "withResults": {
@@ -7898,7 +7898,7 @@
         },
         "comparison": {
           "capabilityLabel": "Fähigkeit",
-          "description": "Die meisten Backup-Tools behandeln Migration als Nebensache. Rediacc behandelt sie als erstklassige verschlüsselte Operation.",
+          "description": "Migration ist für die meisten ein Zusatz. Für uns ein Kernfeature – verschlüsselt von vorne herein.",
           "features": [
             {
               "name": "Migration ohne Entschluesselung",
@@ -7941,8 +7941,8 @@
         },
         "hero": {
           "primaryCta": "Kostenlos starten",
-          "subtitle": "Wechsel zwischen Servern, Clouds oder Anbietern? Ihre verschlüsselten Backups reisen sicher. Keine Exposition. Kein Datenverlust.",
-          "title": "Migrieren ohne Datenrisiko"
+          "subtitle": "Wechsel zwischen Servern, Clouds oder Anbietern? Ihre Daten bleiben verschlüsselt – vom Start bis ins Ziel. Keine Exposition. Kein Datenverlust.",
+          "title": "Sicher migrieren – ohne Datenverlust"
         },
         "howItWorks": {
           "cloneVisual": {
@@ -8004,38 +8004,38 @@
           "overline": "SO FUNKTIONIERT ES",
           "steps": [
             {
-              "description": "Ihre verschluesselten btrfs-Snapshots buendeln Schluessel, Konfigurationen und Richtlinien. Nichts wird entschluesselt.",
+              "description": "Gespeicherte Kopien bleiben verschlüsselt. Schlüssel, Einstellungen und Richtlinien reisen mit ihnen. Nichts wird entschlüsselt.",
               "icon": "package",
-              "title": "Pack"
+              "title": "Packen"
             },
             {
-              "description": "Uebertragung an ein beliebiges Ziel ueber einen verschluesselten Kanal. AES-256 wird waehrend des Transits nie unterbrochen.",
+              "description": "An jeden Server, jede Cloud, jeden Provider. Die Daten bleiben verschlüsselt. AES-256 wird nie abgeschaltet.",
               "icon": "arrow-right-circle",
-              "title": "Move"
+              "title": "Verschieben"
             },
             {
-              "description": "SHA-256-Integritaetspruefungen bestaetigen, dass jedes Byte intakt angekommen ist. Automatischer Rollback bei Fehlern.",
+              "description": "Eine Fingerprint-Prüfung bestätigt, dass jede Datei vollständig angekommen ist. Bei Abweichungen wird die Migration automatisch rückgängig gemacht.",
               "icon": "check-circle",
               "title": "Verifizieren"
             }
           ],
           "title": "Ein Befehl. Null Exposition."
         },
-        "label": "Migrationssicherheit",
+        "label": "Sichere Migration",
         "meta": {
-          "description": "Wechsel zwischen Servern, Clouds oder Anbietern? Ihre verschlüsselten Backups reisen sicher. Keine Exposition. Kein Datenverlust.",
+          "description": "Wechsel zwischen Servern, Clouds oder Anbietern? Verschlüsselte Backups reisen sicher – keine Exposition, kein Datenverlust.",
           "keywords": "verschluesselte Migration, Zero-Exposure-Transfer, Datenmigrationssicherheit, verschluesselter Backup-Transfer, btrfs-Migration, Servermigration, Cloud-Migrationsverschluesselung",
-          "title": "Migrationssicherheit — Migrieren ohne Datenrisiko | Rediacc"
+          "title": "Sichere Datenmigration ohne Risiko | Rediacc"
         },
         "problem": {
-          "description": "Das Verschieben von Daten zwischen Systemen schafft Exposition. Temporäre Dateien, unverschlüsselte Übertragungen, nicht übereinstimmende Konfigurationen. Jede Migration ist ein Risikofenster. Und die meisten Tools verlieren Verschlüsselungseinstellungen bei der Verschiebung — was Sie zwingt, alles auf der anderen Seite von Grund auf neu zu konfigurieren.",
+          "description": "Datenmigration schafft Exposition. Temporäre Dateien, unverschlüsselte Übertragungen, widersprüchliche Konfigurationen – jede Migration ist ein Risikofenster. Und die meisten Tools verlieren dabei die Verschlüsselungseinstellungen. Das zwingt Sie, alles auf der anderen Seite von Grund auf neu zu konfigurieren.",
           "overline": "DAS PROBLEM",
           "statCallouts": [
             {
               "number": "89%",
               "ref": 2,
               "source": "Flexera 2024 / Thales 2025",
-              "text": "der Unternehmen arbeiten Multi-Cloud, aber nur 8% verschluesseln 80%+ der Cloud-Daten"
+              "text": "der Unternehmen arbeiten Multi-Cloud, aber nur 8 % verschlüsseln 80 % oder mehr ihrer Cloud-Daten"
             },
             {
               "number": "$4,88M",
@@ -8047,17 +8047,17 @@
               "number": "$90K–$300K",
               "ref": 4,
               "source": "Cloud provider pricing",
-              "text": "Egress-Kosten pro Petabyte bei der Migration verschluesselter Daten zwischen Clouds"
+              "text": "in Egress-Kosten pro Petabyte beim Transfer verschlüsselter Daten zwischen Clouds"
             }
           ],
           "timeline": {
             "newLabel": "Mit Rediacc",
-            "newSteps": ["Migration starten", "0 Exposition", "Verifiziert"],
-            "oldLabel": "Traditionelle Migration",
+            "newSteps": ["Ein Befehl. Fertig.", "Null Exposition", "Verifiziert"],
+            "oldLabel": "Die alte Methode",
             "oldSteps": [
               {
                 "day": "Schritt 1",
-                "text": "Daten entschluesseln"
+                "text": "Daten entschlüsseln"
               },
               {
                 "day": "Schritt 2",
@@ -8065,11 +8065,11 @@
               },
               {
                 "day": "Schritt 3",
-                "text": "Unverschluesselt uebertragen"
+                "text": "Unverschlüsselt übertragen"
               },
               {
                 "day": "Schritt 4",
-                "text": "Auf Zielsystem neu verschluesseln"
+                "text": "Auf Zielsystem neu verschlüsseln"
               },
               {
                 "day": "Ergebnis",
@@ -8077,7 +8077,7 @@
               }
             ]
           },
-          "title": "Migration ist der verletzlichste Moment für Daten"
+          "title": "Migration ist der kritischste Moment für Ihre Daten"
         },
         "references": {
           "items": [
@@ -8094,7 +8094,7 @@
               "url": "https://newsroom.ibm.com/2024-07-30-ibm-report-escalating-data-breach-disruption-pushes-costs-to-new-highs"
             },
             {
-              "text": "AWS, “Amazon S3 Pricing — Data Transfer,” 2024. “Data Transfer OUT from Amazon S3 to Internet: $0.09 per GB for the first 10 TB/month.”",
+              "text": "AWS, “Amazon S3 Pricing: Data Transfer,” 2024. “Data Transfer OUT from Amazon S3 to Internet: $0.09 per GB for the first 10 TB/month.”",
               "url": "https://aws.amazon.com/s3/pricing/"
             },
             {
@@ -8149,52 +8149,52 @@
             },
             "improvement": "Null Expositionsfenster · 10x schneller"
           },
-          "quote": "Wir haben 42 Server von Hetzner zu OVH an einem Wochenende migriert. 350 TB verschlüsselter Daten wurden ohne ein einziges exponiertes Byte übertragen. Unsere vorherige Migration — nur 8 Server — dauerte drei Wochen und erforderte die Entschlüsselung von allem in einen Staging-Bereich. Das war das letzte Mal, dass wir dieses Risiko akzeptierten."
+          "quote": "Wir haben 42 Server von Hetzner zu OVH an einem Wochenende migriert. 350 TB verschlüsselter Daten – ohne ein einziges exponiertes Byte. Unsere vorherige Migration, nur 8 Server, dauerte drei Wochen und erforderte die komplette Entschlüsselung in einen Staging-Bereich. Das war das letzte Mal, dass wir dieses Risiko eingegangen sind."
         },
         "stats": [
           {
             "icon": "shield",
-            "label": "Data Exposed During Migration",
+            "label": "Exponierte Daten bei der Migration",
             "number": "0"
           },
           {
             "icon": "check-circle",
-            "label": "Encryption Maintained",
+            "label": "Verschlüsselung durchgehend",
             "number": "100%"
           },
           {
             "icon": "arrow-right-circle",
-            "label": "Destination Supported",
+            "label": "Beliebiges Ziel unterstützt",
             "number": "Any"
           }
         ],
         "techDiff": {
-          "description": "Traditionelle Migrationstools entschlüsseln Daten vor der Übertragung und schaffen Expositionsfenster, in denen Ihre Daten ungeschützt liegen. Rediacc entschlüsselt niemals während der Migration — verschlüsselte btrfs-Snapshots werden als versiegelte Blöcke übertragen.",
+          "description": "Traditionelle Migrationstools entschlüsseln Daten vor der Übertragung – das schafft Expositionsfenster, in denen Ihre Daten ungeschützt liegen. Wir entschlüsseln nie. Verschlüsselte Blöcke werden als versiegelte Einheit übertragen.",
           "overline": "UNTER DER HAUBE",
           "rediaccLabel": "Rediacc",
           "rows": [
             {
-              "rediacc": "Verschluesseltes btrfs send/receive — wird nie entschluesselt",
-              "traditional": "Entschluesseln → uebertragen → neu verschluesseln Pipeline"
+              "rediacc": "Verschlüsseltes btrfs send/receive – wird niemals entschlüsselt",
+              "traditional": "Entschlüsseln → Übertragen → Neu-verschlüsseln"
             },
             {
-              "rediacc": "Schluessel reisen separat, stets beim Kunden",
-              "traditional": "Verschluesselungsschluessel muessen mit dem Uebertragungstool geteilt werden"
+              "rediacc": "Schlüssel verlassen die Quellmaschine nie",
+              "traditional": "Das Migrationstool braucht Zugriff auf die Schlüssel"
             },
             {
-              "rediacc": "Verschluesselungskonfiguration, Docker-Einstellungen, Netzwerkrouten migrieren gemeinsam",
-              "traditional": "Konfiguration und Richtlinien werden manuell auf dem Zielsystem neu erstellt"
+              "rediacc": "Verschlüsselungskonfiguration, Docker-Einstellungen und Netzwerkrouten migrieren zusammen",
+              "traditional": "Einstellungen müssen auf der Zielseite manuell neu konfiguriert werden"
             },
             {
-              "rediacc": "SHA-256-Pruefsummenverifizierung pro Repository nach der Uebertragung",
-              "traditional": "Integritaet wird angenommen — keine automatische Verifizierung"
+              "rediacc": "SHA-256-Checksummen-Verifizierung pro Repository nach der Übertragung",
+              "traditional": "Man hofft, dass alles angekommen ist – ohne Prüfung"
             },
             {
-              "rediacc": "Zuerst den Cluster forken. Den Umzug testen, bevor Sie umschalten",
+              "rediacc": "Cluster forken → testen → umschalten",
               "traditional": "Cluster-Migrationen brauchen einen parallelen Aufbau und einen Vertrauensvorschuss"
             }
           ],
-          "title": "Entschlüsseln-Übertragen-Neuverschlüsseln vs. Zero-Exposure-Migration",
+          "title": "Entschlüsseln-Kopieren-Neuverschlüsseln vs. Locked Migration",
           "traditionalLabel": "Traditionelle Migration"
         }
       },

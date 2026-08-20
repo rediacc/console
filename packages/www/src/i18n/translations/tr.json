@@ -736,7 +736,7 @@
       "meta": {
         "description": "Üretimi 60 saniyede klonla. Felaketlerden 5 min içinde kurtar. Kendi altyapınızda, tamamen kontrol sizde.",
         "keywords": "altyapı otomasyonu, geliştirme ortamları, olağanüstü durum kurtarma, DevOps otomasyonu, CI/CD hattı, bulut altyapısı, geliştirme işlemleri, Model Bağlam Protokolü, yapay zeka güvenli altyapı",
-        "title": "Rediacc — Canlı ortamı klonla. Hiçbir şeyi bozma."
+        "title": "Rediacc: Canlı Ortamı Klonla. Sorun Yok."
       }
     },
     "install": {
@@ -1291,7 +1291,7 @@
               "title": "Verileriniz Sizin, Tam Kontrol"
             },
             {
-              "description": "5 dakikada tam kurtarma. Fidye yazılımı değiştiremez — kilitli, değişmez yedekler. İşletmeniz hiç durmaz. Bir sağlayıcı sizi bırakırsa, Kubernetes'le birlikte tüm sistem taşınabilir.",
+              "description": "5 dakikada tam kurtarma. Fidye yazılımı değiştiremez: yedekler kilitli ve değişmezdir. İşletmeniz hiç durmaz. Bir sağlayıcı sizi bırakırsa, Kubernetes'le birlikte tüm sistem taşınabilir.",
               "icon": "shield",
               "title": "İş sürekliliği"
             }
@@ -1306,7 +1306,7 @@
         },
         "calculator": {
           "annualLabel": "Toplam yıllık maliyet",
-          "description": "Kaydırıcıları işletmenize göre ayarlayın. Bulut maliyeti ve kendi altyapı — gerçek farkı hemen görün.",
+          "description": "Kaydırıcıları işletmenize göre ayarlayın. Bulut maliyeti ile kendi altyapınızın maliyeti arasındaki gerçek farkı hemen görün.",
           "footnote": "Sayılar yaygın maliyet modellerine dayanan tahminler. Gerçek tasarruf altyapınıza ve ölçeğinize bağlıdır.",
           "headerTitle": "Tasarrufu hesapla",
           "overline": "RAKAMLAR",
@@ -7735,7 +7735,7 @@
               "url": "https://www.flexera.com/about-us/press-center/new-flexera-report-finds-84-percent-of-organizations-struggle-to-manage-cloud-spend"
             },
             {
-              "text": "AWS, \"Amazon S3 Pricing — Data Transfer,\" 2024. \"Data Transfer OUT from Amazon S3 to Internet: $0,09 per GB for the first 10 TB/month.\"",
+              "text": "AWS, \"Amazon S3 Fiyatlandırması: Veri Aktarımı,\" 2024. \"Amazon S3'den İnternete Veri Aktarımı: aylık ilk 10 TB'de GB başına $0,09.\"",
               "url": "https://aws.amazon.com/s3/pricing/"
             },
             {
@@ -7833,36 +7833,36 @@
         "benefits": {
           "items": [
             {
-              "description": "Veriler taşımanın her adımında AES-256 şifreli kalır. Hiçbir aşamada geçici şifre çözme yok.",
+              "description": "Veriler taşımanın her adımında AES-256 ile şifreli kalır. Asla şifre çözmeyiz, bir saniye bile değil.",
               "icon": "lock",
               "title": "Aktarım sırasında şifreleme"
             },
             {
-              "description": "Şifreleme yapılandırması, müşteri tarafında tutulan anahtarlar, Docker ayarları ve ağ politikaları tek bir atomik birim olarak taşınır.",
+              "description": "Ayarlar veriyle bir paket halinde taşınır. Şifreleme kurulumu, anahtarlar, Docker yapılandırması, ağ kuralları. Hepsi.",
               "icon": "package",
               "title": "Ayarlar veriyle birlikte taşınır"
             },
             {
-              "description": "Geçici şifre çözme yok. Maruziyet pencereleri yok. Hiçbir aracı düz metin veriyi asla görmez.",
+              "description": "Yolda hiçbir şey şifre çözülmez. Açık pencereler yok. Hiçbir aracı ham veriyi asla görmez.",
               "icon": "eye-off",
               "title": "Sıfır güven transferi"
             }
           ],
           "overline": "NEDEN ÖNEMLİ",
-          "title": "Ne elde edersiniz"
+          "title": "Neler Alırsınız"
         },
-        "blurb": "Verilerinizi riske atmadan taşıyın",
+        "blurb": "Veri kaybı riskine girmeden göç yapın",
         "bottomCta": {
           "command": "rdc repo push production --to secondary",
-          "description": "Ücretsiz Community sürümüyle başlayın. Şifreli göç dahil.",
-          "primaryCta": "Ücretsiz Başlayın",
-          "tierBadge": "5 depoya kadar ücretsiz · Kredi kartı gerekmez",
+          "description": "Şifreli göç yerleşiktir. 14 günlük ücretsiz denemeyi başlayın.",
+          "primaryCta": "Ücretsiz Dene",
+          "tierBadge": "14 günlük ücretsiz deneme · İstediğiniz zaman iptal edin",
           "title": "Her seferinde güvenle göç edin"
         },
         "calculator": {
           "annualLabel": "Yıllık göç riski",
-          "description": "Uçtan uca şifreleme olmayan her göç, gerçekleşmeyi bekleyen bir uyumluluk olayıdır.",
-          "footnote": "Yeniden şifreleme yapılandırması için $200/saat işçilik, $4,880/TB ihlal primi (IBM 2024) ve maruz kalma penceresi başına %1 ihlal olasılığı varsayılmıştır. Rediacc şifrelemeyi sürdürür — sıfır maruz kalma penceresi, sıfır yeniden şifreleme gereksinimi.",
+          "description": "Uçtan uca şifreleme olmayan her göç, yakında gerçekleşecek bir uyumluluk olayıdır.",
+          "footnote": "Yeniden şifreleme yapılandırması için saat başına 200 dolar işçilik, TB başına 4.880 dolar ihlal primi (IBM 2024) ve maruz kalma penceresi başına %1 ihlal olasılığı varsayılmıştır. Rediacc şifrelemeyi baştan sona sürdürür — sıfır maruz kalma pencereleri, sıfır yeniden şifreleme ihtiyacı.",
           "headerTitle": "Göç Risk Hesaplayıcı",
           "overline": "GERÇEK MALİYET",
           "results": {
@@ -7871,7 +7871,7 @@
             "windows": "Yıllık maruz kalma pencereleri"
           },
           "sliders": {
-            "data": "TB cinsinden veri hacmi",
+            "data": "Veri hacmi (TB)",
             "hours": "Göç başına maruz kalma saati",
             "migrations": "Yıllık göç sayısı"
           },
@@ -7887,7 +7887,7 @@
         },
         "comparison": {
           "capabilityLabel": "Özellik",
-          "description": "Çoğu yedekleme aracı göçü sonradan düşünür. Rediacc bunu birinci sınıf şifreli bir işlem olarak ele alır.",
+          "description": "Çoğu yedekleme aracı göçü sonradan ekler. Biz onu baştan beri şifreli olarak inşa ettik.",
           "features": [
             {
               "name": "Sıfır şifre çözme ile taşıma",
@@ -7926,12 +7926,12 @@
             }
           ],
           "overline": "FARK",
-          "title": "Başkalarının göç sırasında yapamadığı şey"
+          "title": "Başkalarının göç sırasında yapamadığı"
         },
         "hero": {
-          "primaryCta": "Ücretsiz Başlayın",
-          "subtitle": "Sunucular, bulutlar veya sağlayıcılar arasında geçiş mi yapıyorsunuz? Şifrelenmiş yedeklemeleriniz güvenle taşınır. Maruz kalma yok. Veri kaybı yok.",
-          "title": "Verilerinizi riske atmadan göç edin"
+          "primaryCta": "Ücretsiz Dene",
+          "subtitle": "Sunucu, bulut veya sağlayıcılar arasında geçiş yapıyor musunuz? Yedeklemeler baştan sona şifreli kalır. Maruziyet yok. Veri kaybı yok.",
+          "title": "Veri kaybı riskine girmeden göç yapın"
         },
         "howItWorks": {
           "cloneVisual": {
@@ -7993,68 +7993,68 @@
           "overline": "NASIL ÇALIŞIR",
           "steps": [
             {
-              "description": "Şifreli btrfs anlık görüntüleriniz anahtarlar, yapılandırmalar ve politikalarla birlikte paketlenir. Hiçbir şey çözülmez.",
+              "description": "Kaydedilen kopyalar şifreli kalır. Anahtarlar, ayarlar ve kurallar onlarla birlikte taşınır. Hiçbir şey çözülmez.",
               "icon": "package",
-              "title": "Pack"
+              "title": "Paketle"
             },
             {
-              "description": "Şifreli kanal üzerinden herhangi bir hedefe transfer edin. AES-256 aktarım sırasında asla düşmez.",
+              "description": "Herhangi bir sunucu, bulut veya sağlayıcıya gönderin. Veri yolun tamamında şifreli kalır. AES-256 asla kapanmaz.",
               "icon": "arrow-right-circle",
-              "title": "Move"
+              "title": "Taşı"
             },
             {
-              "description": "SHA-256 bütünlük kontrolleri her baytın bozulmadan ulaştığını onaylar. Herhangi bir şey başarısız olursa otomatik geri alma.",
+              "description": "Parmak izi kontrolü her dosyanın tam olarak geldiğini onaylar. Tek bir bayt hatalıysa, taşıma otomatik olarak geri alınır.",
               "icon": "check-circle",
               "title": "Doğrula"
             }
           ],
           "title": "Tek komut. Sıfır maruz kalma."
         },
-        "label": "Taşıma Güvenliği",
+        "label": "Göç Güvenliği",
         "meta": {
-          "description": "Sunucular, bulutlar veya sağlayıcılar arasında geçiş mi yapıyorsunuz? Şifrelenmiş yedeklemeleriniz güvenle taşınır. Maruz kalma yok. Veri kaybı yok.",
+          "description": "Bulutlar arası geçiş yapıyor musunuz? Şifreli yedeklemeler güvenle transfer edilir. Maruziyet yok. Veri kaybı yok.",
           "keywords": "şifreli göç, sıfır maruziyetli transfer, veri göçü güvenliği, şifreli yedekleme transferi, btrfs göçü, sunucu göçü, bulut göçü şifreleme",
-          "title": "Göç Güvenliği - Risksiz Veri Taşıma | Rediacc"
+          "title": "Güvenli Veri Göçü - Sıfır Risk | Rediacc"
         },
         "problem": {
-          "description": "Sistemler arasında veri taşımak maruz kalma oluşturur. Geçici dosyalar, şifrelenmemiş transferler, uyumsuz yapılandırmalar. Her göç bir risk penceresidir. Ve çoğu araç taşıma sırasında şifreleme ayarlarını kaybeder — diğer tarafta her şeyi sıfırdan yeniden yapılandırmanızı gerektirir.",
-          "overline": "SORUN",
+          "description": "Her göçün korkutucu yönü budur. Çoğu araç önce veriyi şifre çözer, sonra kopyalar. Böylece dosyalar transfer sırasında açık bulunur. Bir hata yeterli ve sızıntı olur. Göç bittiğinde eski şifreleme ayarı silinir — diğer tarafta el ile yeniden yapılmayı bekler.",
+          "overline": "SORUN NEDİR",
           "statCallouts": [
             {
               "number": "89%",
               "ref": 2,
               "source": "Flexera 2024 / Thales 2025",
-              "text": "işletmelerin çoklu bulut kullanması, ancak yalnızca %8'inin bulut verilerinin %80+'ını şifrelemesi"
+              "text": "%89'u çoklu bulut kullanıyor, ancak sadece %8'i bulut verilerinin %80'inin üzerinde şifreli"
             },
             {
               "number": "$4,88M",
               "ref": 3,
               "source": "IBM Cost of Data Breach 2024",
-              "text": "küresel olarak ortalama veri ihlali maliyeti"
+              "text": "bir veri ihlalinin dünya genelinde ortalama maliyeti"
             },
             {
               "number": "$90K–$300K",
               "ref": 4,
               "source": "Cloud provider pricing",
-              "text": "bulutlar arası şifreli veri taşımada petabayt başına çıkış maliyeti"
+              "text": "bulutlar arası şifreli veri aktarımı için bir petabayt başına çıkış maliyeti"
             }
           ],
           "timeline": {
             "newLabel": "Rediacc ile",
-            "newSteps": ["Taşımayı çalıştır", "0 maruziyet", "Doğrulandı"],
-            "oldLabel": "Geleneksel göç",
+            "newSteps": ["Tek komutu çalıştır", "Sıfır maruz kalma", "Doğrulandı"],
+            "oldLabel": "Eski Yöntemi",
             "oldSteps": [
               {
                 "day": "Adım 1",
-                "text": "Veriyi çöz"
+                "text": "Şifreyi aç"
               },
               {
                 "day": "Adım 2",
-                "text": "Hazırlığa aktar"
+                "text": "Geçici depolama alanına kopyala"
               },
               {
                 "day": "Adım 3",
-                "text": "Şifresiz transfer"
+                "text": "Şifresiz olarak gönder"
               },
               {
                 "day": "Adım 4",
@@ -8066,60 +8066,60 @@
               }
             ]
           },
-          "title": "Göç, verinin en savunmasız olduğu andır"
+          "title": "Veri taşıma sırasında en fazla maruz kalır"
         },
         "references": {
           "items": [
             {
-              "text": "Flexera, “2024 State of the Cloud Report,” 2024. “Multi-cloud usage up from 87% last year to 89% this year.”",
+              "text": "Flexera, \"2024 Bulut Durumu Raporu,\" 2024. \"Çoklu bulut kullanımı geçen yılın %87'sinden bu yılın %89'una yükseldi.\"",
               "url": "https://www.flexera.com/about-us/press-center/flexera-2024-state-of-the-cloud-managing-spending-top-challenge"
             },
             {
-              "text": "Thales, “2025 Cloud Security Study,” conducted by S&P Global 451 Research, 2025. “Only 8% of organizations encrypt 80% or more of their cloud data.”",
+              "text": "Thales, \"2025 Bulut Güvenliği Araştırması,\" S&P Global 451 Research tarafından yapıldı, 2025. \"Kuruluşların sadece %8'i bulut verilerinin %80 ve üzerini şifreler.\"",
               "url": "https://cpl.thalesgroup.com/about-us/newsroom/thales-2025-cloud-security-study-reveals-ai-tool-sprawl-security-gap"
             },
             {
-              "text": "IBM Security, “Cost of a Data Breach Report 2024,” July 2024. “The global average cost of a data breach reached $4.88 million in 2024.”",
+              "text": "IBM Security, \"Veri İhlali Maliyeti Raporu 2024,\" Temmuz 2024. \"2024'te bir veri ihlalinin küresel ortalama maliyeti 4,88 milyon dolara ulaştı.\"",
               "url": "https://newsroom.ibm.com/2024-07-30-ibm-report-escalating-data-breach-disruption-pushes-costs-to-new-highs"
             },
             {
-              "text": "AWS, “Amazon S3 Pricing — Data Transfer,” 2024. “Data Transfer OUT from Amazon S3 to Internet: $0.09 per GB for the first 10 TB/month.”",
+              "text": "AWS, \"Amazon S3 Fiyatlandırması: Veri Transfer,\" 2024. \"Amazon S3'ten İnternete Veri Transfer: İlk 10 TB/ay için GB başına $0,09.\"",
               "url": "https://aws.amazon.com/s3/pricing/"
             },
             {
-              "text": "Commvault CommCell Migration moves entire clients including configuration, backup history, and data as a single operation.",
+              "text": "Commvault CommCell Migration, yapılandırma, yedek geçmişi ve veriler dahil olmak üzere tüm istemcileri tek bir işlem olarak taşır.",
               "url": "https://documentation.commvault.com/v11/commcell-console/commcell_migration_overview.html"
             },
             {
-              "text": "Veeam SureBackup verifies data integrity post-transfer by booting VMs and running application-level health checks.",
+              "text": "Veeam SureBackup, sanal makineleri başlatarak ve uygulama düzeyinde sağlık kontrolleri çalıştırarak transfer sonrası veri bütünlüğünü doğrular.",
               "url": "https://helpcenter.veeam.com/docs/vbr/userguide/surebackup_recovery_verification.html"
             },
             {
-              "text": "Rubrik performs automated integrity checks on ingested data using its append-only file system verification.",
+              "text": "Rubrik, ek yalnızca dosya sistemi doğrulaması kullanarak alınan veriler üzerinde otomatik bütünlük kontrolleri gerçekleştirir.",
               "url": "https://docs.rubrik.com/en-us/saas/saas/common_sla_policy_tasks.html"
             },
             {
-              "text": "Commvault validates data integrity post-transfer using CRC checksums at multiple stages including Data Verification jobs.",
+              "text": "Commvault, Veri Doğrulama işleri dahil olmak üzere birden çok aşamada CRC sağlama toplamları kullanarak transfer sonrası veri bütünlüğünü doğrular.",
               "url": "https://documentation.commvault.com/2024e/commcell-console/data_integrity_validation.html"
             },
             {
-              "text": "Druva Restore Check proactively verifies backup data consistency and device snapshots on an automated schedule.",
+              "text": "Druva Restore Check, otomatik bir zamanlamada yedek veri tutarlılığını ve cihaz anlık görüntülerini proaktif olarak doğrular.",
               "url": "https://help.druva.com/en/articles/8513279-verify-the-integrity-of-the-downloaded-data"
             },
             {
-              "text": "Veeam supports cross-platform recovery including VMware-to-Hyper-V, physical-to-virtual, and cloud migrations via Instant Recovery.",
+              "text": "Veeam, Anlık Kurtarma aracılığıyla VMware-to-Hyper-V, fiziksel-sanal ve bulut göçleri dahil olmak üzere platformlar arası kurtarmayı destekler.",
               "url": "https://helpcenter.veeam.com/docs/vbr/userguide/instant_recovery.html"
             },
             {
-              "text": "Rubrik supports cross-platform Live Mount and export to VMware, Hyper-V, AWS, and Azure environments.",
+              "text": "Rubrik, VMware, Hyper-V, AWS ve Azure ortamlarına platformlar arası Live Mount ve dışa aktarımı destekler.",
               "url": "https://docs.rubrik.com/en-us/saas/saas/vs_performing_an_instant_recovery.html"
             },
             {
-              "text": "Commvault supports cross-hypervisor restores (VM conversion) between VMware, Hyper-V, AWS, Azure, GCP, and more.",
+              "text": "Commvault, VMware, Hyper-V, AWS, Azure, GCP ve daha fazlası arasında hiper yönetici çapraz geri yüklemeleri (VM dönüştürme) destekler.",
               "url": "https://documentation.commvault.com/saas/cross_hypervisor_restores_vm_conversion.html"
             },
             {
-              "text": "Commvault Undo Failover automatically rolls back to pre-failover state by restoring original VM configuration.",
+              "text": "Commvault Undo Failover, orijinal VM yapılandırmasını geri yükleyerek failover öncesi durumuna otomatik olarak geri döner.",
               "url": "https://documentation.commvault.com/v11/software/undoing_failover.html"
             }
           ]
@@ -8136,54 +8136,54 @@
               "label": "Önce",
               "value": "3 hafta"
             },
-            "improvement": "Sıfır maruz kalma penceresi · 10 kat daha hızlı"
+            "improvement": "Sıfır maruz kalma pencereleri · 10 kat daha hızlı"
           },
-          "quote": "Bir hafta sonu boyunca 42 sunucuyu Hetzner'den OVH'ye göç ettirdik. 350 TB şifreli veri tek bir bayt maruz kalmadan transfer edildi. Önceki göçümüz — sadece 8 sunucu — üç hafta sürdü ve her şeyin bir staging alanına şifresinin çözülmesini gerektirdi. O riski kabul ettiğimiz son sefer oldu."
+          "quote": "Bir hafta sonu boyunca 42 sunucuyu Hetzner'den OVH'ye göç ettirdik. 350 TB şifreli veri, tek bir bayt bile maruz kalmadan transfer edildi. Önceki göçümüz — sadece 8 sunucu — üç hafta sürdü ve verinin tamamını staging alanında şifresini çözmüştü. O riski kabul ettiğimiz son sefer oldu."
         },
         "stats": [
           {
             "icon": "shield",
-            "label": "Data Exposed During Migration",
+            "label": "Göç Sırasında Maruz Kalan Veri",
             "number": "0"
           },
           {
             "icon": "check-circle",
-            "label": "Encryption Maintained",
+            "label": "Şifreleme Korundu",
             "number": "100%"
           },
           {
             "icon": "arrow-right-circle",
-            "label": "Destination Supported",
+            "label": "Tüm Hedefler Desteklenir",
             "number": "Any"
           }
         ],
         "techDiff": {
-          "description": "Geleneksel göç araçları aktarımdan önce veriyi şifre çözer ve verilerinizin korumasız durduğu maruz kalma pencereleri oluşturur. Rediacc göç sırasında asla şifre çözmez — şifrelenmiş btrfs anlık görüntüleri mühürlü bloklar olarak transfer edilir.",
-          "overline": "KAPUTUN ALTINDA",
+          "description": "Eski araçlar veriyi göndermeden önce şifre çözerler. Bu, dosyaların korumasız kaldığı bir pencere oluşturur. Biz hiçbir zaman şifre çözmeyiz. Şifreli kopyalar baştan sona mühürlü bloklar olarak taşınır.",
+          "overline": "ALTYAPIDA",
           "rediaccLabel": "Rediacc",
           "rows": [
             {
-              "rediacc": "Şifreli btrfs gönder/al — asla çözülmez",
-              "traditional": "Çöz → transfer et → yeniden şifrele hattı"
+              "rediacc": "Şifreli kopyalar gönder/al — asla çözülmez",
+              "traditional": "Çöz → transfer et → yeniden şifrele"
             },
             {
-              "rediacc": "Anahtarlar ayrı taşınır, her zaman müşteride kalır",
-              "traditional": "Şifreleme anahtarları transfer aracıyla paylaşılmalı"
+              "rediacc": "Anahtarlar kaynak makineyi asla terk etmez",
+              "traditional": "Şifre anahtarları transfer aracıyla paylaşılmalı"
             },
             {
-              "rediacc": "Şifreleme yapılandırması, Docker ayarları, ağ yolları birlikte taşınır",
-              "traditional": "Yapılandırma ve politikalar hedefte manuel olarak yeniden oluşturulur"
+              "rediacc": "Şifreleme yapılandırması, Docker ayarları ve ağ kuralları birlikte taşınır",
+              "traditional": "Ayarlar hedefte el ile yeniden yapılandırılır"
             },
             {
-              "rediacc": "Transfer sonrası depo başına SHA-256 sağlama toplamı doğrulaması",
-              "traditional": "Bütünlük varsayılır — otomatik doğrulama yok"
+              "rediacc": "Transfer sonrası her depo için parmak izi kontrolü",
+              "traditional": "Verinin tam ulaştığını umar — otomatik doğrulama yok"
             },
             {
-              "rediacc": "Önce cluster'ı fork'layın. Kesintiye geçmeden önce taşımayı test edin",
+              "rediacc": "Önce cluster'ı klonlayın. Kesintiye geçmeden önce taşımayı test edin",
               "traditional": "Cluster göçleri paralel bir kurulum ve umuda bel bağlamayı gerektirir"
             }
           ],
-          "title": "Çöz-aktar-yeniden şifrele vs. sıfır maruziyetli göç",
+          "title": "Çöz-aktar-yeniden şifrele vs. Şifreli göç",
           "traditionalLabel": "Geleneksel Göç"
         }
       },

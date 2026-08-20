@@ -734,7 +734,7 @@
       "meta": {
         "description": "利用 Rediacc 的基础设施自动化能力实现开发流程转型。获得即时环境克隆、完整灾难恢复方案和 AI 驱动的安全运维能力。",
         "keywords": "基础设施自动化、开发环境、灾难恢复、DevOps 自动化、CI/CD 管道、云基础设施、开发运营、模型上下文协议、AI 安全基础设施",
-        "title": "Rediacc - 克隆生产环境，安全测试，实现零风险基础设施部署与管理"
+        "title": "Rediacc - 克隆生产环境，放心测试，零风险部署。运维无忧，破坏不了。"
       }
     },
     "install": {
@@ -2019,7 +2019,7 @@
         "categories": {
           "items": [
             {
-              "description": "为团队提供实操培训——从一步步带你设置，到覆盖高级工作流和应急响应的多天工作坊。",
+              "description": "为团队提供实操培训：从一步步带你设置，到覆盖高级工作流和应急响应的多天工作坊。",
               "icon": "team-training",
               "id": "training",
               "name": "培训"
@@ -2128,7 +2128,7 @@
             "title": "应用永远在运行"
           },
           {
-            "description": "运维工具始终可用——SSH 访问、远程编辑、所有管理命令，都不需要许可证。",
+            "description": "运维工具始终可用：SSH 访问、远程编辑、所有管理命令，都不需要许可证。",
             "title": "工具完全在你手中"
           },
           {
@@ -7700,7 +7700,7 @@
               "url": "https://www.flexera.com/about-us/press-center/new-flexera-report-finds-84-percent-of-organizations-struggle-to-manage-cloud-spend"
             },
             {
-              "text": "AWS，\"Amazon S3 定价 — 数据传输\"，2024 年。\"从 Amazon S3 到互联网的数据传输：每 GB 0.09 美元（前 10 TB/月）。\"",
+              "text": "AWS，\"Amazon S3 数据传输定价\"，2024 年。\"从 Amazon S3 向互联网传输数据：每 GB 0.09 美元，前 10 TB/月。\"",
               "url": "https://aws.amazon.com/s3/pricing/"
             },
             {
@@ -7803,7 +7803,7 @@
               "title": "传输中加密"
             },
             {
-              "description": "加密配置、客户持有的密钥、Docker 设置和网络策略作为一个原子单元迁移。",
+              "description": "加密配置、客户持有的密钥、Docker 设置和网络策略作为一个整体迁移。",
               "icon": "package",
               "title": "设置随数据迁移"
             },
@@ -7813,34 +7813,34 @@
               "title": "零信任传输"
             }
           ],
-          "overline": "重要意义",
+          "overline": "为何重要",
           "title": "您将获得什么"
         },
-        "blurb": "迁移不冒数据风险",
+        "blurb": "迁移数据，零风险",
         "bottomCta": {
           "command": "rdc repo push production --to secondary",
-          "description": "从免费的社区版开始。包含加密迁移功能。",
-          "primaryCta": "免费开始",
-          "tierBadge": "最多 5 个仓库免费 · 无需信用卡",
+          "description": "内置加密迁移功能。开始 14 天免费试用。",
+          "primaryCta": "免费试用",
+          "tierBadge": "14 天免费试用 · 随时取消",
           "title": "每次都安全迁移"
         },
         "calculator": {
           "annualLabel": "年度迁移风险",
-          "description": "每次没有端到端加密的迁移都是一个等待发生的合规事故。",
-          "footnote": "假设重新加密配置人力成本 $200/小时，$4,880/TB 泄露溢价（IBM 2024），以及每个暴露窗口 1% 的泄露概率。Rediacc 全程保持加密——零暴露窗口，零重新加密需求。",
+          "description": "每次没有端到端加密的迁移都是一场合规事故在等待发生。",
+          "footnote": "假设重新加密配置人力成本 $200/小时，每 TB 数据泄露溢价 $4,880（IBM 2024），以及每个暴露窗口 1% 的泄露概率。Rediacc 全程保持加密——零暴露窗口，零重新加密需求。",
           "headerTitle": "迁移风险计算器",
           "overline": "真实成本",
           "results": {
             "labor": "重新加密人力成本",
             "risk": "每次迁移的风险数据",
-            "windows": "每年的暴露窗口"
+            "windows": "每年暴露窗口"
           },
           "sliders": {
             "data": "数据量（TB）",
-            "hours": "每次迁移的暴露小时数",
+            "hours": "每次迁移的暴露时长（小时）",
             "migrations": "每年迁移次数"
           },
-          "title": "迁移风险正在花费你多少钱",
+          "title": "迁移风险的真实代价",
           "withAnnual": "$0",
           "withoutTag": "不使用 Rediacc",
           "withResults": {
@@ -7852,7 +7852,7 @@
         },
         "comparison": {
           "capabilityLabel": "功能",
-          "description": "大多数备份工具将迁移视为附属功能。Rediacc 将其视为一等加密操作。",
+          "description": "大多数备份工具临时拼凑迁移功能。我们从一开始就内置了加密迁移。",
           "features": [
             {
               "name": "零解密迁移",
@@ -7890,13 +7890,13 @@
               "values": ["cross", "cross", "check", "cross", "rediacc"]
             }
           ],
-          "overline": "差距对比",
-          "title": "其他厂商在迁移过程中无法做到的"
+          "overline": "差距",
+          "title": "竞争对手在迁移中无法做到的"
         },
         "hero": {
-          "primaryCta": "免费开始",
-          "subtitle": "在服务器、云或供应商之间迁移？您的加密备份安全传输。零暴露，零数据丢失。",
-          "title": "无风险迁移数据"
+          "primaryCta": "免费试用",
+          "subtitle": "跨服务器、云或供应商迁移？加密备份全程保护。零暴露，零丢失。",
+          "title": "迁移数据，零风险"
         },
         "howItWorks": {
           "cloneVisual": {
@@ -7960,12 +7960,12 @@
             {
               "description": "您的加密 btrfs 快照连同密钥、配置和策略一起打包。不进行任何解密。",
               "icon": "package",
-              "title": "Pack"
+              "title": "打包"
             },
             {
-              "description": "通过加密通道传输到任何目标。AES-256 在传输过程中始终不会降级。",
+              "description": "通过加密通道传输到任何目标。AES-256 在传输过程中始终不降级。",
               "icon": "arrow-right-circle",
-              "title": "Move"
+              "title": "传输"
             },
             {
               "description": "SHA-256 完整性检查确认每个字节完整到达。如有任何失败，自动回滚。",
@@ -7973,16 +7973,16 @@
               "title": "验证"
             }
           ],
-          "title": "一条命令，零暴露。"
+          "title": "一条命令，零暴露"
         },
-        "label": "迁移安全",
+        "label": "安全迁移",
         "meta": {
-          "description": "在不同服务器、云平台或供应商之间安全迁移数据。加密备份确保传输全程安全，零数据暴露风险，零数据丢失可能。",
+          "description": "在服务器、云或供应商间迁移？加密备份确保全程安全传输。无任何数据暴露，无数据丢失风险。您可以完全放心。",
           "keywords": "加密迁移, 零暴露传输, 数据迁移安全, 加密备份传输, btrfs 迁移, 服务器迁移, 云迁移加密",
-          "title": "迁移安全 - 零风险实现跨平台安全数据迁移 | Rediacc"
+          "title": "迁移安全保障方案 - 实现跨服务器、云和供应商的完全零风险数据迁移 | Rediacc"
         },
         "problem": {
-          "description": "在系统之间移动数据会创建暴露窗口。临时文件、未加密传输、配置不匹配。每次迁移都是一个风险窗口。而大多数工具在迁移时会丢失加密设置——迫使你在另一端从头重新配置一切。",
+          "description": "迁移数据时最危险。大多数工具先解密数据再复制，导致文件在传输过程中暴露。一个疏漏就会泄露。更糟的是，迁移结束后原有加密配置也会丢失，必须在另一端手动重新设置。",
           "overline": "问题所在",
           "statCallouts": [
             {
@@ -8001,12 +8001,12 @@
               "number": "$90K–$300K",
               "ref": 4,
               "source": "Cloud provider pricing",
-              "text": "在云之间迁移加密数据的每 PB 出站流量成本"
+              "text": "云间迁移每 PB 加密数据的出站成本"
             }
           ],
           "timeline": {
             "newLabel": "使用 Rediacc",
-            "newSteps": ["运行迁移", "零暴露", "已验证"],
+            "newSteps": ["一键迁移", "零暴露", "已验证"],
             "oldLabel": "传统迁移",
             "oldSteps": [
               {
@@ -8015,15 +8015,15 @@
               },
               {
                 "day": "步骤 2",
-                "text": "导出到暂存区"
+                "text": "复制到暂存区"
               },
               {
                 "day": "步骤 3",
-                "text": "未加密传输"
+                "text": "明文传输"
               },
               {
                 "day": "步骤 4",
-                "text": "在目标上重新加密"
+                "text": "重新加密"
               },
               {
                 "day": "结果",
@@ -8031,60 +8031,60 @@
               }
             ]
           },
-          "title": "迁移是数据最脆弱的时刻"
+          "title": "迁移时，数据最脆弱"
         },
         "references": {
           "items": [
             {
-              "text": "Flexera, “2024 State of the Cloud Report,” 2024. “Multi-cloud usage up from 87% last year to 89% this year.”",
+              "text": "Flexera，《2024 云计算现状报告》，2024。\"多云使用率从去年的 87% 上升到今年的 89%。\"",
               "url": "https://www.flexera.com/about-us/press-center/flexera-2024-state-of-the-cloud-managing-spending-top-challenge"
             },
             {
-              "text": "Thales, “2025 Cloud Security Study,” conducted by S&P Global 451 Research, 2025. “Only 8% of organizations encrypt 80% or more of their cloud data.”",
+              "text": "Thales，由 S&P Global 451 Research 进行的《2025 云安全研究》，2025。\"仅 8% 的组织加密了 80% 或更多的云数据。\"",
               "url": "https://cpl.thalesgroup.com/about-us/newsroom/thales-2025-cloud-security-study-reveals-ai-tool-sprawl-security-gap"
             },
             {
-              "text": "IBM Security, “Cost of a Data Breach Report 2024,” July 2024. “The global average cost of a data breach reached $4.88 million in 2024.”",
+              "text": "IBM Security，《2024 年数据泄露成本报告》，2024 年 7 月。\"2024 年全球数据泄露的平均成本达到 488 万美元。\"",
               "url": "https://newsroom.ibm.com/2024-07-30-ibm-report-escalating-data-breach-disruption-pushes-costs-to-new-highs"
             },
             {
-              "text": "AWS, “Amazon S3 Pricing — Data Transfer,” 2024. “Data Transfer OUT from Amazon S3 to Internet: $0.09 per GB for the first 10 TB/month.”",
+              "text": "AWS，《Amazon S3 定价 - 数据传输》，2024。\"从 Amazon S3 到互联网的数据传输：前 10 TB/月为每 GB $0.09。\"",
               "url": "https://aws.amazon.com/s3/pricing/"
             },
             {
-              "text": "Commvault CommCell Migration moves entire clients including configuration, backup history, and data as a single operation.",
+              "text": "Commvault CommCell 迁移在一个操作中迁移整个客户端，包括配置、备份历史和数据。",
               "url": "https://documentation.commvault.com/v11/commcell-console/commcell_migration_overview.html"
             },
             {
-              "text": "Veeam SureBackup verifies data integrity post-transfer by booting VMs and running application-level health checks.",
+              "text": "Veeam SureBackup 通过启动虚拟机并运行应用级健康检查来验证传输后的数据完整性。",
               "url": "https://helpcenter.veeam.com/docs/vbr/userguide/surebackup_recovery_verification.html"
             },
             {
-              "text": "Rubrik performs automated integrity checks on ingested data using its append-only file system verification.",
+              "text": "Rubrik 使用仅追加文件系统验证对摄取的数据执行自动完整性检查。",
               "url": "https://docs.rubrik.com/en-us/saas/saas/common_sla_policy_tasks.html"
             },
             {
-              "text": "Commvault validates data integrity post-transfer using CRC checksums at multiple stages including Data Verification jobs.",
+              "text": "Commvault 使用 CRC 校验和在多个阶段验证传输后的数据完整性，包括数据验证任务。",
               "url": "https://documentation.commvault.com/2024e/commcell-console/data_integrity_validation.html"
             },
             {
-              "text": "Druva Restore Check proactively verifies backup data consistency and device snapshots on an automated schedule.",
+              "text": "Druva Restore Check 按自动计划主动验证备份数据一致性和设备快照。",
               "url": "https://help.druva.com/en/articles/8513279-verify-the-integrity-of-the-downloaded-data"
             },
             {
-              "text": "Veeam supports cross-platform recovery including VMware-to-Hyper-V, physical-to-virtual, and cloud migrations via Instant Recovery.",
+              "text": "Veeam 支持跨平台恢复，包括 VMware 到 Hyper-V、物理到虚拟以及通过即时恢复进行云迁移。",
               "url": "https://helpcenter.veeam.com/docs/vbr/userguide/instant_recovery.html"
             },
             {
-              "text": "Rubrik supports cross-platform Live Mount and export to VMware, Hyper-V, AWS, and Azure environments.",
+              "text": "Rubrik 支持跨平台实时挂载和导出到 VMware、Hyper-V、AWS 和 Azure 环境。",
               "url": "https://docs.rubrik.com/en-us/saas/saas/vs_performing_an_instant_recovery.html"
             },
             {
-              "text": "Commvault supports cross-hypervisor restores (VM conversion) between VMware, Hyper-V, AWS, Azure, GCP, and more.",
+              "text": "Commvault 支持 VMware、Hyper-V、AWS、Azure、GCP 等之间的跨虚拟机管理程序恢复（虚拟机转换）。",
               "url": "https://documentation.commvault.com/saas/cross_hypervisor_restores_vm_conversion.html"
             },
             {
-              "text": "Commvault Undo Failover automatically rolls back to pre-failover state by restoring original VM configuration.",
+              "text": "Commvault 撤销故障转移功能通过恢复原始虚拟机配置自动回滚到故障转移前状态。",
               "url": "https://documentation.commvault.com/v11/software/undoing_failover.html"
             }
           ]
@@ -8108,43 +8108,43 @@
         "stats": [
           {
             "icon": "shield",
-            "label": "Data Exposed During Migration",
+            "label": "迁移中的数据暴露",
             "number": "0"
           },
           {
             "icon": "check-circle",
-            "label": "Encryption Maintained",
+            "label": "全程加密",
             "number": "100%"
           },
           {
             "icon": "arrow-right-circle",
-            "label": "Destination Supported",
+            "label": "覆盖所有目标",
             "number": "Any"
           }
         ],
         "techDiff": {
-          "description": "传统迁移工具在传输前解密数据，产生数据未受保护的暴露窗口。Rediacc 在迁移过程中从不解密——加密的 btrfs 快照作为封存块传输。",
+          "description": "传统工具在传输前解密数据，产生数据未受保护的暴露窗口。我们从不解密——加密的 btrfs 快照作为封存块从头到尾传输。",
           "overline": "底层技术",
           "rediaccLabel": "Rediacc",
           "rows": [
             {
-              "rediacc": "加密的 btrfs 发送/接收——从不解密",
-              "traditional": "解密 → 传输 → 重新加密流程"
+              "rediacc": "加密的 btrfs 发送/接收，从不解密",
+              "traditional": "解密 → 传输 → 重新加密"
             },
             {
-              "rediacc": "密钥单独传输，始终由客户持有",
-              "traditional": "加密密钥必须与传输工具共享"
+              "rediacc": "密钥始终留在源机器，客户持有",
+              "traditional": "密钥必须与传输工具共享"
             },
             {
               "rediacc": "加密配置、Docker 设置、网络路由一起迁移",
-              "traditional": "配置和策略在目标上手动重建"
+              "traditional": "配置在目标上手动重建"
             },
             {
-              "rediacc": "传输后每个仓库进行 SHA-256 校验和验证",
-              "traditional": "假设完整性——无自动验证"
+              "rediacc": "传输后每个仓库进行 SHA-256 校验验证",
+              "traditional": "假设完整性，无自动验证"
             },
             {
-              "rediacc": "先克隆集群，切换前先测试迁移是否可行",
+              "rediacc": "先克隆集群，测试无误后再切换",
               "traditional": "集群迁移需要搭建一套平行环境，然后祈求顺利"
             }
           ],
