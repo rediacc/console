@@ -7,13 +7,13 @@
   "audioFormat": "mp3",
   "sampleRateHz": 48000,
   "voiceFingerprint": "6c6cf1ee371d",
-  "transcriptHash": "89e34d7938da394d7fbafc5c8c8cb91161e83a1933ed230046e86acc4116443a",
+  "transcriptHash": "1e66bcd205510ac08e4bf10407160216e9d6594b6a7e4a74579daf8057a9acf8",
   "steps": [
     {
       "id": "tutorial-fork-isolation-01",
       "markerIndex": 0,
-      "replayStartSec": 2.43605,
-      "replayEndSec": 7.868777,
+      "replayStartSec": 2.404578,
+      "replayEndSec": 7.50024,
       "narrationText": "Meet the app: demo-pgadmin, a PostgreSQL with a pgAdmin interface, mounted and running.",
       "audioSrc": "/assets/tutorials/audio/en/tutorial-fork-isolation/tutorial-fork-isolation-01.0a47a179.mp3",
       "textHash": "0a47a179980342172c1a2c583386b7910a1facc861f06be960529e0c9451c413",
@@ -131,8 +131,8 @@
     {
       "id": "tutorial-fork-isolation-02",
       "markerIndex": 1,
-      "replayStartSec": 7.868777,
-      "replayEndSec": 16.847684,
+      "replayStartSec": 7.50024,
+      "replayEndSec": 16.690953,
       "narrationText": "Fork it. The copy-on-write clone takes seconds regardless of size; detach returns as soon as the containers start, while health checks continue in the background.",
       "audioSrc": "/assets/tutorials/audio/en/tutorial-fork-isolation/tutorial-fork-isolation-02.2f8efc44.mp3",
       "textHash": "2f8efc4468cf27675485fdffb78f1f70bf07861d2a7ff709fc1dcdaa822c4d92",
@@ -289,119 +289,15 @@
           "endChar": 161
         }
       ],
-      "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-fork-isolation/tutorial-fork-isolation-02-after.6d47ae4b.mp3",
-      "afterAudioDurationSec": 6.6,
-      "afterTextHash": "6d47ae4b71348487fbce572b3293dd98785ea6f719c768437188bc859dd72a92",
-      "afterWordTimings": [
-        {
-          "startSec": 0.16,
-          "endSec": 0.56,
-          "startChar": 0,
-          "endChar": 6
-        },
-        {
-          "startSec": 0.8,
-          "endSec": 0.96,
-          "startChar": 7,
-          "endChar": 10
-        },
-        {
-          "startSec": 0.96,
-          "endSec": 1.44,
-          "startChar": 11,
-          "endChar": 19
-        },
-        {
-          "startSec": 2.16,
-          "endSec": 2.24,
-          "startChar": 21,
-          "endChar": 24
-        },
-        {
-          "startSec": 2.24,
-          "endSec": 2.56,
-          "startChar": 25,
-          "endChar": 29
-        },
-        {
-          "startSec": 2.56,
-          "endSec": 2.72,
-          "startChar": 30,
-          "endChar": 33
-        },
-        {
-          "startSec": 2.72,
-          "endSec": 2.96,
-          "startChar": 34,
-          "endChar": 37
-        },
-        {
-          "startSec": 2.96,
-          "endSec": 3.2,
-          "startChar": 38,
-          "endChar": 41
-        },
-        {
-          "startSec": 3.2,
-          "endSec": 3.68,
-          "startChar": 42,
-          "endChar": 48
-        },
-        {
-          "startSec": 4.0,
-          "endSec": 4.08,
-          "startChar": 51,
-          "endChar": 53
-        },
-        {
-          "startSec": 4.08,
-          "endSec": 4.32,
-          "startChar": 54,
-          "endChar": 57
-        },
-        {
-          "startSec": 4.32,
-          "endSec": 4.72,
-          "startChar": 58,
-          "endChar": 64
-        },
-        {
-          "startSec": 4.96,
-          "endSec": 5.28,
-          "startChar": 66,
-          "endChar": 71
-        },
-        {
-          "startSec": 5.28,
-          "endSec": 5.52,
-          "startChar": 72,
-          "endChar": 75
-        },
-        {
-          "startSec": 5.52,
-          "endSec": 5.84,
-          "startChar": 76,
-          "endChar": 80
-        },
-        {
-          "startSec": 5.84,
-          "endSec": 6.32,
-          "startChar": 81,
-          "endChar": 88
-        },
-        {
-          "startSec": 6.32,
-          "endSec": 6.4,
-          "startChar": 89,
-          "endChar": 91
-        }
-      ]
+      "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-fork-isolation/tutorial-fork-isolation-02-after.c3e76c50.mp3",
+      "afterAudioDurationSec": 6.432,
+      "afterTextHash": "c3e76c50ebc0e79a6c0a5c8dc87ea4503fbb2f94445020ef348668956978f6dc"
     },
     {
       "id": "tutorial-fork-isolation-03",
       "markerIndex": 2,
-      "replayStartSec": 16.847684,
-      "replayEndSec": 22.322161,
+      "replayStartSec": 16.690953,
+      "replayEndSec": 22.013241,
       "narrationText": "Two repositories now: the original and the experiment, each with its own containers, network, and disk view.",
       "audioSrc": "/assets/tutorials/audio/en/tutorial-fork-isolation/tutorial-fork-isolation-03.7f4faf12.mp3",
       "textHash": "7f4faf12bda642dc98f6aa4c3547ec65328e117ad44adc3366db489f6c09b319",
@@ -549,122 +445,12 @@
     {
       "id": "tutorial-fork-isolation-04",
       "markerIndex": 3,
-      "replayStartSec": 22.322161,
-      "replayEndSec": 28.246533,
-      "narrationText": "Done experimenting? Delete the fork. Seconds to create, seconds to throw away — the original never knew it existed.",
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-fork-isolation/tutorial-fork-isolation-04.35e44c68.mp3",
-      "textHash": "35e44c68469c42dfdb26b61c8f2d24d1fee01a603162513a0a3a9736d1a7bfdd",
-      "audioDurationSec": 7.392,
-      "wordTimings": [
-        {
-          "startSec": 0.0,
-          "endSec": 0.16,
-          "startChar": 0,
-          "endChar": 4
-        },
-        {
-          "startSec": 0.16,
-          "endSec": 1.04,
-          "startChar": 5,
-          "endChar": 18
-        },
-        {
-          "startSec": 1.44,
-          "endSec": 1.76,
-          "startChar": 20,
-          "endChar": 26
-        },
-        {
-          "startSec": 1.76,
-          "endSec": 1.84,
-          "startChar": 27,
-          "endChar": 30
-        },
-        {
-          "startSec": 1.92,
-          "endSec": 2.16,
-          "startChar": 31,
-          "endChar": 35
-        },
-        {
-          "startSec": 2.72,
-          "endSec": 3.2,
-          "startChar": 37,
-          "endChar": 44
-        },
-        {
-          "startSec": 3.28,
-          "endSec": 3.36,
-          "startChar": 45,
-          "endChar": 47
-        },
-        {
-          "startSec": 3.36,
-          "endSec": 3.68,
-          "startChar": 48,
-          "endChar": 54
-        },
-        {
-          "startSec": 3.76,
-          "endSec": 4.24,
-          "startChar": 56,
-          "endChar": 63
-        },
-        {
-          "startSec": 4.24,
-          "endSec": 4.32,
-          "startChar": 64,
-          "endChar": 66
-        },
-        {
-          "startSec": 4.32,
-          "endSec": 4.56,
-          "startChar": 67,
-          "endChar": 72
-        },
-        {
-          "startSec": 4.56,
-          "endSec": 4.88,
-          "startChar": 73,
-          "endChar": 77
-        },
-        {
-          "startSec": 5.44,
-          "endSec": 5.6,
-          "startChar": 80,
-          "endChar": 83
-        },
-        {
-          "startSec": 5.6,
-          "endSec": 6.08,
-          "startChar": 84,
-          "endChar": 92
-        },
-        {
-          "startSec": 6.08,
-          "endSec": 6.32,
-          "startChar": 93,
-          "endChar": 98
-        },
-        {
-          "startSec": 6.32,
-          "endSec": 6.56,
-          "startChar": 99,
-          "endChar": 103
-        },
-        {
-          "startSec": 6.56,
-          "endSec": 6.64,
-          "startChar": 104,
-          "endChar": 106
-        },
-        {
-          "startSec": 6.64,
-          "endSec": 7.2,
-          "startChar": 107,
-          "endChar": 114
-        }
-      ],
+      "replayStartSec": 22.013241,
+      "replayEndSec": 28.180478,
+      "narrationText": "Done experimenting? Delete the fork. Seconds to create, seconds to throw away. The original never knew it existed.",
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-fork-isolation/tutorial-fork-isolation-04.966e3213.mp3",
+      "textHash": "966e321302d83122cfab8027031ef72fc88a372db53dbde71a022d0072489a52",
+      "audioDurationSec": 7.56,
       "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-fork-isolation/tutorial-fork-isolation-04-after.c5cce217.mp3",
       "afterAudioDurationSec": 3.24,
       "afterTextHash": "c5cce2172dbe1c739a97d4b57af06ea50b367bf354de28705d7cfa1ae439bcd8",

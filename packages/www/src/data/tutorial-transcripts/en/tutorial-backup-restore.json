@@ -20,7 +20,7 @@
     {
       "id": "tutorial-backup-restore-01",
       "markerIndex": 0,
-      "at": 2.799671,
+      "at": 2.416144,
       "text": "Start with the thing that has to survive. Inside the live repository there is a file holding a single order line. Keep an eye on it, because we are about to take this machine offline and get that line back from somewhere else.",
       "afterText": "That is the line. Everything from here is about getting it back.",
       "cardLabel": "The Data",
@@ -29,7 +29,7 @@
     {
       "id": "tutorial-backup-restore-02",
       "markerIndex": 1,
-      "at": 9.00514,
+      "at": 7.552816,
       "text": "Copy the whole repository to a second machine. The first copy carries the entire encrypted image over SSH, about two gigabytes in half a minute here. What lands on the other side is a backup artifact, not a second running app.",
       "afterText": "The copy is on the backup machine now.",
       "cardLabel": "Push To Backup Machine",
@@ -38,7 +38,7 @@
     {
       "id": "tutorial-backup-restore-03",
       "markerIndex": 2,
-      "at": 17.993741,
+      "at": 15.166453,
       "text": "Ask the backup machine what it is holding. The repository is there under its own name. The second row, the one showing a raw identifier, is the retained base that lets the next push send only what changed.",
       "afterText": "Both rows are expected: the copy, and the base that keeps later pushes small.",
       "cardLabel": "Confirm The Copy",
@@ -47,7 +47,7 @@
     {
       "id": "tutorial-backup-restore-04",
       "markerIndex": 3,
-      "at": 23.318642,
+      "at": 20.269124,
       "text": "Now the disaster. Stop the primary and unmount its encrypted volume. As far as this machine is concerned, the application is gone.",
       "afterText": "Down and unmounted. Everything after this runs against the copy.",
       "cardLabel": "Disaster",
@@ -56,7 +56,7 @@
     {
       "id": "tutorial-backup-restore-05",
       "markerIndex": 4,
-      "at": 28.951964,
+      "at": 25.688963,
       "text": "Turn the artifact into a running repository. Restore is the verb that does it. One flag names the new repository, one places it on the backup machine, and one skips the confirmation.",
       "afterText": "The copy is a repository now, under a name of its own.",
       "cardLabel": "Restore The Artifact",
@@ -65,7 +65,7 @@
     {
       "id": "tutorial-backup-restore-06",
       "markerIndex": 5,
-      "at": 39.005334,
+      "at": 34.978427,
       "text": "Mount the restored repository. We are deliberately not starting its containers, because the proof we want is the data, not the application.",
       "afterText": "Mounted, and ready to read.",
       "cardLabel": "Mount It",
@@ -74,7 +74,7 @@
     {
       "id": "tutorial-backup-restore-07",
       "markerIndex": 6,
-      "at": 46.52408,
+      "at": 40.371515,
       "text": "The same command we ran at the start, against a repository that did not exist two commands ago. Same file, same line, same order.",
       "afterText": "That is the whole point. The data came back.",
       "cardLabel": "The Data Survived",
@@ -83,7 +83,7 @@
     {
       "id": "tutorial-backup-restore-08",
       "markerIndex": 7,
-      "at": 52.091103,
+      "at": 45.900768,
       "text": "One more, for backups you can roll back through. Snapshots go to the chunk store, where the first run uploads everything and every run after it uploads only the blocks that changed. Any snapshot restores on its own. It needs an account and a licensed repository, so here it is typed rather than run.",
       "afterText": "Type it on your own installation once you have an account, and it will run.",
       "cardLabel": "Point In Time Backups",

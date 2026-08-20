@@ -125,9 +125,46 @@ _format_display_cmd() {
         return
     fi
     if ((param_count == 0)); then
-        # Nothing to split on: one long token (usually a quoted shell payload).
-        # Emitting it flat is honest; the recording gate reports it and the fix
-        # is a shorter display form via run_cmd's second argument.
+        # No `--option` boundaries. Before giving up, try SINGLE-dash options:
+        # `ssh-copy-id -i <key> -o StrictHostKeyChecking=no user@host` has none of
+        # the former and recorded at 111 columns. Only attempted when the flat
+        # form does not fit, so ordinary short commands are never split.
+        if ((${#cmd} > budget)); then
+            local sseg="" sq="" j
+            local -a ssegs=()
+            for ((j = 0; j < ${#cmd}; j++)); do
+                c="${cmd:$j:1}"
+                if [[ -n "$sq" ]]; then
+                    sseg+="$c"
+                    [[ "$c" == "$sq" ]] && sq=""
+                    continue
+                fi
+                if [[ "$c" == "'" || "$c" == '"' ]]; then
+                    sq="$c"
+                    sseg+="$c"
+                    continue
+                fi
+                # ` -x`, but never ` --` (handled above) and never a bare dash.
+                if [[ "$c" == " " && "${cmd:$((j + 1)):1}" == "-" && "${cmd:$((j + 2)):1}" != "-" && -n "${cmd:$((j + 2)):1}" ]]; then
+                    ssegs+=("$sseg")
+                    sseg=""
+                    continue
+                fi
+                sseg+="$c"
+            done
+            ssegs+=("$sseg")
+            if ((${#ssegs[@]} > 1)); then
+                local sout="${ssegs[0]}"
+                for ((j = 1; j < ${#ssegs[@]}; j++)); do
+                    sout+=" \\"$'\n'"    ${ssegs[$j]}"
+                done
+                printf '%s' "$sout"
+                return
+            fi
+        fi
+        # Genuinely one long token (usually a quoted shell payload). Emitting it
+        # flat is honest; the recording gate reports it and the fix is a shorter
+        # display form via run_cmd's second argument.
         printf '%s' "$cmd"
         return
     fi

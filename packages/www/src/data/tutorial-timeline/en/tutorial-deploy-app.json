@@ -7,13 +7,13 @@
   "audioFormat": "mp3",
   "sampleRateHz": 48000,
   "voiceFingerprint": "6c6cf1ee371d",
-  "transcriptHash": "0223733d231b819a9268594c5acedb885d000a9fd1ce68d03902be4b65ddb131",
+  "transcriptHash": "65f74a6f91c9516f0aa9e36f3be690fbd126ea9bc69145a4fd9ead7dafc18919",
   "steps": [
     {
       "id": "tutorial-deploy-app-01",
       "markerIndex": 0,
-      "replayStartSec": 2.420634,
-      "replayEndSec": 6.399014,
+      "replayStartSec": 2.41474,
+      "replayEndSec": 7.038713,
       "narrationText": "Step one: list the available templates. Rediacc ships ready-made setups for common apps, so there is no docker-compose to write from scratch.",
       "audioSrc": "/assets/tutorials/audio/en/tutorial-deploy-app/tutorial-deploy-app-01.92cc9fbc.mp3",
       "textHash": "92cc9fbc31fb167d5a20b516f9952c45089806779b6196606db62da443501a74",
@@ -227,8 +227,8 @@
     {
       "id": "tutorial-deploy-app-02",
       "markerIndex": 1,
-      "replayStartSec": 6.399014,
-      "replayEndSec": 12.523372,
+      "replayStartSec": 7.038713,
+      "replayEndSec": 13.374786,
       "narrationText": "Step two: drop the app-postgres template into the repo. A tested set of files, copied straight in.",
       "audioSrc": "/assets/tutorials/audio/en/tutorial-deploy-app/tutorial-deploy-app-02.f7a391f5.mp3",
       "textHash": "f7a391f5ef672b2272ce08c0582a39ed8a2f5a4a8a0b6ee7d42ff64d6280b54f",
@@ -400,8 +400,8 @@
     {
       "id": "tutorial-deploy-app-03",
       "markerIndex": 2,
-      "replayStartSec": 12.523372,
-      "replayEndSec": 17.108804,
+      "replayStartSec": 13.374786,
+      "replayEndSec": 18.627226,
       "narrationText": "Peek inside the repo and list what landed: a Rediaccfile holding the start and stop hooks, and a docker-compose file describing the containers.",
       "audioSrc": "/assets/tutorials/audio/en/tutorial-deploy-app/tutorial-deploy-app-03.801669ec.mp3",
       "textHash": "801669eca3e9f21c22156734577fb85df158c8814f379d802363d5597f8704b9",
@@ -621,152 +621,12 @@
     {
       "id": "tutorial-deploy-app-04",
       "markerIndex": 3,
-      "replayStartSec": 17.108804,
-      "replayEndSec": 22.317819,
-      "narrationText": "Step three: bring the repo up. One command — the CLI mounts the encrypted volume, starts the isolated Docker daemon, and launches the containers.",
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-deploy-app/tutorial-deploy-app-04.02b432d7.mp3",
-      "textHash": "02b432d73ebec4e689b38753251f566a064dd1620c06b04e924b4594b808c639",
-      "audioDurationSec": 9.144,
-      "wordTimings": [
-        {
-          "startSec": 0.16,
-          "endSec": 0.56,
-          "startChar": 0,
-          "endChar": 4
-        },
-        {
-          "startSec": 0.56,
-          "endSec": 0.88,
-          "startChar": 5,
-          "endChar": 10
-        },
-        {
-          "startSec": 1.2,
-          "endSec": 1.52,
-          "startChar": 12,
-          "endChar": 17
-        },
-        {
-          "startSec": 1.52,
-          "endSec": 1.6,
-          "startChar": 18,
-          "endChar": 21
-        },
-        {
-          "startSec": 1.6,
-          "endSec": 2.08,
-          "startChar": 22,
-          "endChar": 26
-        },
-        {
-          "startSec": 2.08,
-          "endSec": 2.32,
-          "startChar": 27,
-          "endChar": 29
-        },
-        {
-          "startSec": 2.72,
-          "endSec": 2.88,
-          "startChar": 31,
-          "endChar": 34
-        },
-        {
-          "startSec": 2.88,
-          "endSec": 3.36,
-          "startChar": 35,
-          "endChar": 42
-        },
-        {
-          "startSec": 3.6,
-          "endSec": 3.68,
-          "startChar": 45,
-          "endChar": 48
-        },
-        {
-          "startSec": 3.68,
-          "endSec": 4.16,
-          "startChar": 49,
-          "endChar": 52
-        },
-        {
-          "startSec": 4.16,
-          "endSec": 4.48,
-          "startChar": 53,
-          "endChar": 59
-        },
-        {
-          "startSec": 4.48,
-          "endSec": 4.56,
-          "startChar": 60,
-          "endChar": 63
-        },
-        {
-          "startSec": 4.56,
-          "endSec": 5.04,
-          "startChar": 64,
-          "endChar": 73
-        },
-        {
-          "startSec": 5.04,
-          "endSec": 5.52,
-          "startChar": 74,
-          "endChar": 80
-        },
-        {
-          "startSec": 5.76,
-          "endSec": 6.16,
-          "startChar": 82,
-          "endChar": 88
-        },
-        {
-          "startSec": 6.24,
-          "endSec": 6.4,
-          "startChar": 89,
-          "endChar": 92
-        },
-        {
-          "startSec": 6.4,
-          "endSec": 6.96,
-          "startChar": 93,
-          "endChar": 101
-        },
-        {
-          "startSec": 6.96,
-          "endSec": 7.28,
-          "startChar": 102,
-          "endChar": 108
-        },
-        {
-          "startSec": 7.28,
-          "endSec": 7.68,
-          "startChar": 109,
-          "endChar": 115
-        },
-        {
-          "startSec": 7.92,
-          "endSec": 8.08,
-          "startChar": 117,
-          "endChar": 120
-        },
-        {
-          "startSec": 8.08,
-          "endSec": 8.48,
-          "startChar": 121,
-          "endChar": 129
-        },
-        {
-          "startSec": 8.48,
-          "endSec": 8.56,
-          "startChar": 130,
-          "endChar": 133
-        },
-        {
-          "startSec": 8.56,
-          "endSec": 9.04,
-          "startChar": 134,
-          "endChar": 144
-        }
-      ],
+      "replayStartSec": 18.627226,
+      "replayEndSec": 24.080812,
+      "narrationText": "Step three: bring the repo up. One command: the CLI mounts the encrypted volume, starts the isolated Docker daemon, and launches the containers.",
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-deploy-app/tutorial-deploy-app-04.43f07c8a.mp3",
+      "textHash": "43f07c8aaf9e5742be9b6049ca78893b9a61c005b1f8d4bf401159001f739c8a",
+      "audioDurationSec": 7.872,
       "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-deploy-app/tutorial-deploy-app-04-after.ae75bac7.mp3",
       "afterAudioDurationSec": 3.552,
       "afterTextHash": "ae75bac7fe8f57bcf6761609be68df74080a0994a5d3614b92dbdbc2bcdc91f9",
@@ -824,8 +684,8 @@
     {
       "id": "tutorial-deploy-app-05",
       "markerIndex": 4,
-      "replayStartSec": 22.317819,
-      "replayEndSec": 25.935582,
+      "replayStartSec": 24.080812,
+      "replayEndSec": 30.831082,
       "narrationText": "Verify what is running. Docker ps here lists only this repo's containers. Every other repo on this server has its own daemon, completely invisible from this view.",
       "audioSrc": "/assets/tutorials/audio/en/tutorial-deploy-app/tutorial-deploy-app-05.b458a9f8.mp3",
       "textHash": "b458a9f84c31e9ef04912be4bd2898aaaccbccaf36b294c697026fd24451dd81",

@@ -7,13 +7,13 @@
   "audioFormat": "mp3",
   "sampleRateHz": 48000,
   "voiceFingerprint": "0721bbd27dad",
-  "transcriptHash": "49571bf29107d4c72fb5f96568c81ed8548edc878f9e04e76bb0c74c458a8a74",
+  "transcriptHash": "7b9478f1796ddafab8347d08750921aca84582e40387834a5237b1751c7e52c5",
   "steps": [
     {
       "id": "tutorial-ssh-keys-01",
       "markerIndex": 0,
-      "replayStartSec": 1.625253,
-      "replayEndSec": 6.458857,
+      "replayStartSec": 1.613265,
+      "replayEndSec": 6.244832,
       "narrationText": "Paso uno. Vamos a generar una nueva clave SSH de tipo ed25519. El algoritmo ed25519 es el estándar moderno: pequeño, rápido y ampliamente compatible. Solo necesitas hacerlo una vez para todos los servidores que vayas a agregar.",
       "audioSrc": "/assets/tutorials/audio/es/tutorial-ssh-keys/tutorial-ssh-keys-01.4bf10a4d.mp3",
       "textHash": "4bf10a4d6516b86b90e4459a6f61b3d469ac7db95a6c1255e4bc07487f4f065b",
@@ -311,8 +311,8 @@
     {
       "id": "tutorial-ssh-keys-02",
       "markerIndex": 1,
-      "replayStartSec": 6.458857,
-      "replayEndSec": 13.298492,
+      "replayStartSec": 6.244832,
+      "replayEndSec": 13.509433,
       "narrationText": "Paso dos. Copiamos la clave pública al servidor con ssh guion copy guion id. Se pide la contraseña del servidor por última vez. Después de esto, la autenticación por contraseña ya no es necesaria para ese servidor.",
       "audioSrc": "/assets/tutorials/audio/es/tutorial-ssh-keys/tutorial-ssh-keys-02.e3710d0a.mp3",
       "textHash": "e3710d0a27ef33dcfcd8f46b20820cfbf713cc39dbfc7b8869453efbdc9dad9b",
@@ -586,8 +586,8 @@
     {
       "id": "tutorial-ssh-keys-03",
       "markerIndex": 2,
-      "replayStartSec": 13.298492,
-      "replayEndSec": 19.181151,
+      "replayStartSec": 13.509433,
+      "replayEndSec": 19.537172,
       "narrationText": "Paso tres. Registramos la clave en el CLI. A partir de ahora, cada comando del CLI se autentica con esta clave. Sin contraseñas, sin prompts interactivos.",
       "audioSrc": "/assets/tutorials/audio/es/tutorial-ssh-keys/tutorial-ssh-keys-03.f3081cc6.mp3",
       "textHash": "f3081cc650dfd6aab9ea83dca871c26629c0fb38293da66db32ffab6226fd685",

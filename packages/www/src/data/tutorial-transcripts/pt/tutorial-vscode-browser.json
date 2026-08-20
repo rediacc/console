@@ -6,7 +6,7 @@
     {
       "id": "tutorial-vscode-browser-01",
       "markerIndex": 0,
-      "at": 2.418779,
+      "at": 2.412438,
       "text": "Um comando só. O CLI instala o servidor do editor na máquina uma vez, inicia dentro do sandbox do repo, abre um tunnel e te entrega um link. Sem VS Code local, sem extensões para configurar.",
       "afterText": "Esse URL é o seu editor. Funciona em qualquer sistema operacional, o único requisito é um navegador.",
       "cardLabel": "Conectar Navegador",
@@ -15,7 +15,7 @@
     {
       "id": "tutorial-vscode-browser-02",
       "markerIndex": 1,
-      "at": 10.10448,
+      "at": 9.979633,
       "text": "O mesmo repo, agora pelo terminal puro: o diretório de trabalho é o repo, os arquivos são os arquivos do repo.",
       "afterText": "Terminal e editor confirmam, é o mesmo sandbox.",
       "cardLabel": "Mesma Vista",
@@ -24,7 +24,7 @@
     {
       "id": "tutorial-vscode-browser-03",
       "markerIndex": 2,
-      "at": 14.856043,
+      "at": 14.898378,
       "text": "E o arquivo que criamos no editor do navegador? Bem aqui. Arquivos feitos no VS Code são arquivos reais do repo, na hora.",
       "afterText": "Criado no navegador, legível pelo terminal. Um repo, duas portas.",
       "cardLabel": "Ida e Volta",
@@ -33,7 +33,7 @@
     {
       "id": "tutorial-vscode-browser-04",
       "markerIndex": 3,
-      "at": 19.933198,
+      "at": 20.176159,
       "text": "Agora tente sair. Listando a raiz do servidor: permissão negada. O kernel confina o editor, o terminal e todo processo filho a este repo.",
       "afterText": "Negado pelo kernel, não pela configuração.",
       "cardLabel": "Root Negado",
@@ -42,8 +42,8 @@
     {
       "id": "tutorial-vscode-browser-05",
       "markerIndex": 4,
-      "at": 23.377274,
-      "text": "As pastas de outros usuários? Também negadas. Tudo que roda dentro deste sandbox — editores, terminais, ferramentas de build — termina nas paredes do repo.",
+      "at": 23.521375,
+      "text": "As pastas de outros usuários? Também negadas. Tudo que roda dentro deste sandbox, incluindo editores, terminais e ferramentas de build, termina nas paredes do repo.",
       "afterText": "O sandbox não tem exceções. Esse é o ponto.",
       "cardLabel": "Home Negado",
       "prose": "Outros diretórios como /home também são negados. O sandbox se aplica a tudo que é iniciado dentro dele."

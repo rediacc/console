@@ -6,7 +6,7 @@
     {
       "id": "tutorial-ssh-keys-01",
       "markerIndex": 0,
-      "at": 1.625253,
+      "at": 1.613265,
       "text": "Esimene samm. Genereerime uue ed25519 SSH võtme. ed25519 on kaasaegne vaikimisi valik -- väike, kiire ja laialt toetatud. Seda tuleb teha ainult üks kord kõigi serverite jaoks, mida kunagi lisad.",
       "afterText": "Võti genereeritud. Avalik pool on see, mille serverisse kopeerime.",
       "cardLabel": "Genereeri Võti",
@@ -16,7 +16,7 @@
     {
       "id": "tutorial-ssh-keys-02",
       "markerIndex": 1,
-      "at": 6.458857,
+      "at": 6.244832,
       "text": "Teine samm. Kopeerime avaliku võtme serverisse ssh-copy-id abil. Serveri parooli küsitakse viimast korda. Pärast seda ei ole selle serveri jaoks parooliga autentimine enam vajalik.",
       "afterText": "Käivita see oma sülearvutis. Kui see õnnestub, on paroolid välistatud.",
       "cardLabel": "Autoriseeri Server 1",
@@ -25,7 +25,7 @@
     {
       "id": "tutorial-ssh-keys-03",
       "markerIndex": 2,
-      "at": 13.298492,
+      "at": 13.509433,
       "text": "Kolmas samm. Registreerime võtme CLI-s. Edaspidi autentib iga CLI käsk selle võtmega. Rohkem paroole ega interaktiivseid päringuid.",
       "afterText": "Võti registreeritud CLI-s.",
       "cardLabel": "Autoriseeri Server 2",

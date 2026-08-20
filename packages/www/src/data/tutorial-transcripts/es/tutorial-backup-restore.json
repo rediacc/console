@@ -6,7 +6,7 @@
     {
       "id": "tutorial-backup-restore-01",
       "markerIndex": 0,
-      "at": 2.799671,
+      "at": 2.416144,
       "text": "Empecemos por lo que tiene que sobrevivir. Dentro del repositorio en vivo hay un archivo con una sola línea de pedido. Vigílala, porque estamos a punto de poner esta máquina offline y recuperar esa línea desde otro sitio.",
       "afterText": "Esa es la línea. A partir de aquí, todo consiste en recuperarla.",
       "cardLabel": "Los Datos",
@@ -15,7 +15,7 @@
     {
       "id": "tutorial-backup-restore-02",
       "markerIndex": 1,
-      "at": 9.00514,
+      "at": 7.552816,
       "text": "Copia el repositorio entero a una segunda máquina. La primera copia transfiere la imagen cifrada completa por SSH, unos dos gigabytes en medio minuto aquí. Lo que llega al otro lado es un artefacto de respaldo, no una segunda app en marcha.",
       "afterText": "La copia ya está en la máquina de respaldo.",
       "cardLabel": "Enviar A La Máquina De Respaldo",
@@ -24,7 +24,7 @@
     {
       "id": "tutorial-backup-restore-03",
       "markerIndex": 2,
-      "at": 17.993741,
+      "at": 15.166453,
       "text": "Pregúntale a la máquina de respaldo qué tiene guardado. El repositorio está ahí, con su propio nombre. La segunda fila, la que muestra un identificador en bruto, es la base retenida que permite que el próximo envío mande solo lo que cambió.",
       "afterText": "Ambas filas son normales: la copia, y la base que mantiene pequeños los envíos posteriores.",
       "cardLabel": "Confirmar La Copia",
@@ -33,7 +33,7 @@
     {
       "id": "tutorial-backup-restore-04",
       "markerIndex": 3,
-      "at": 23.318642,
+      "at": 20.269124,
       "text": "Ahora el desastre. Detén la máquina principal y desmonta su volumen cifrado. Para esta máquina, la aplicación ha desaparecido.",
       "afterText": "Apagada y desmontada. Todo lo que sigue funciona contra la copia.",
       "cardLabel": "El Desastre",
@@ -42,7 +42,7 @@
     {
       "id": "tutorial-backup-restore-05",
       "markerIndex": 4,
-      "at": 28.951964,
+      "at": 25.688963,
       "text": "Convierte el artefacto en un repositorio en marcha. Restore es el comando que lo hace. Un flag nombra el nuevo repositorio, otro lo ubica en la máquina de respaldo, y otro se salta la confirmación.",
       "afterText": "La copia ya es un repositorio, con nombre propio.",
       "cardLabel": "Restaurar El Artefacto",
@@ -51,7 +51,7 @@
     {
       "id": "tutorial-backup-restore-06",
       "markerIndex": 5,
-      "at": 39.005334,
+      "at": 34.978427,
       "text": "Monta el repositorio restaurado. Deliberadamente no arrancamos sus contenedores, porque la prueba que buscamos son los datos, no la aplicación.",
       "afterText": "Montado, y listo para leer.",
       "cardLabel": "Montarlo",
@@ -60,7 +60,7 @@
     {
       "id": "tutorial-backup-restore-07",
       "markerIndex": 6,
-      "at": 46.52408,
+      "at": 40.371515,
       "text": "El mismo comando que ejecutamos al principio, ahora contra un repositorio que hace dos comandos ni siquiera existía. Mismo archivo, misma línea, mismo pedido.",
       "afterText": "Ese es el punto. Los datos volvieron.",
       "cardLabel": "Los Datos Sobrevivieron",
@@ -69,7 +69,7 @@
     {
       "id": "tutorial-backup-restore-08",
       "markerIndex": 7,
-      "at": 52.091103,
+      "at": 45.900768,
       "text": "Una más, para copias de seguridad a las que puedes volver en el tiempo. Los snapshots van al almacenamiento fragmentado, donde la primera ejecución sube todo y cada ejecución posterior sube solo los bloques que cambiaron. Cualquier snapshot se restaura por sí solo. Necesita una cuenta y un repositorio con licencia, así que aquí solo se escribe, no se ejecuta.",
       "afterText": "Escríbelo en tu propia instalación en cuanto tengas una cuenta, y funcionará.",
       "cardLabel": "Copias de Seguridad por Punto en el Tiempo",

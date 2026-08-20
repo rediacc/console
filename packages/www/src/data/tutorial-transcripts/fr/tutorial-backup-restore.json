@@ -6,7 +6,7 @@
     {
       "id": "tutorial-backup-restore-01",
       "markerIndex": 0,
-      "at": 2.799671,
+      "at": 2.416144,
       "text": "Commençons par ce qui doit survivre. Dans le repository actif se trouve un fichier contenant l'enregistrement d'une commande. Gardez-le à l'œil, car nous allons mettre cette machine hors ligne et récupérer cet enregistrement depuis ailleurs.",
       "afterText": "Voilà cet enregistrement. À partir d'ici, tout consiste à le récupérer.",
       "cardLabel": "Les Données",
@@ -15,7 +15,7 @@
     {
       "id": "tutorial-backup-restore-02",
       "markerIndex": 1,
-      "at": 9.00514,
+      "at": 7.552816,
       "text": "Copiez le repository entier vers une deuxième machine. La première copie transporte l'image chiffrée complète via SSH, environ deux gigaoctets en une demi-minute ici. Ce qui arrive de l'autre côté est un artefact de sauvegarde, pas une deuxième application en cours d'exécution.",
       "afterText": "La copie est maintenant sur la machine de sauvegarde.",
       "cardLabel": "Pousser Vers La Machine De Sauvegarde",
@@ -24,7 +24,7 @@
     {
       "id": "tutorial-backup-restore-03",
       "markerIndex": 2,
-      "at": 17.993741,
+      "at": 15.166453,
       "text": "Demandez à la machine de sauvegarde ce qu'elle contient. Le repository est là, sous son propre nom. La deuxième ligne, celle qui affiche un identifiant brut, est la base conservée qui permet au prochain push de n'envoyer que ce qui a changé.",
       "afterText": "Les deux lignes sont normales : la copie, et la base qui garde les prochains push légers.",
       "cardLabel": "Confirmer La Copie",
@@ -33,7 +33,7 @@
     {
       "id": "tutorial-backup-restore-04",
       "markerIndex": 3,
-      "at": 23.318642,
+      "at": 20.269124,
       "text": "Voici maintenant le désastre. Arrêtez la machine principale et démontez son volume chiffré. Pour cette machine, l'application a disparu.",
       "afterText": "Arrêtée et démontée. Tout ce qui suit fonctionne sur la copie.",
       "cardLabel": "Le Désastre",
@@ -42,7 +42,7 @@
     {
       "id": "tutorial-backup-restore-05",
       "markerIndex": 4,
-      "at": 28.951964,
+      "at": 25.688963,
       "text": "Transformez l'artefact en repository actif. Restore est la commande qui fait cela. Un flag nomme le nouveau repository, un autre le place sur la machine de sauvegarde, et un dernier saute la confirmation.",
       "afterText": "La copie est maintenant un repository, avec son propre nom.",
       "cardLabel": "Restaurer L'Artefact",
@@ -51,7 +51,7 @@
     {
       "id": "tutorial-backup-restore-06",
       "markerIndex": 5,
-      "at": 39.005334,
+      "at": 34.978427,
       "text": "Montez le repository restauré. Nous ne démarrons volontairement pas ses conteneurs, car la preuve recherchée, ce sont les données, pas l'application.",
       "afterText": "Monté, et prêt à être lu.",
       "cardLabel": "Le Monter",
@@ -60,7 +60,7 @@
     {
       "id": "tutorial-backup-restore-07",
       "markerIndex": 6,
-      "at": 46.52408,
+      "at": 40.371515,
       "text": "La même commande que celle du début, exécutée cette fois contre un repository qui n'existait pas deux commandes plus tôt. Même fichier, même ligne, même enregistrement.",
       "afterText": "C'est bien tout l'enjeu. Les données sont revenues.",
       "cardLabel": "Les Données Ont Survécu",
@@ -69,7 +69,7 @@
     {
       "id": "tutorial-backup-restore-08",
       "markerIndex": 7,
-      "at": 52.091103,
+      "at": 45.900768,
       "text": "Encore une chose, pour des sauvegardes à travers lesquelles vous pouvez revenir en arrière. Les instantanés partent vers le stockage fragmenté : le premier envoi téléverse tout, et chaque envoi suivant ne téléverse que les blocs modifiés. N'importe quel instantané se restaure seul. Cela nécessite un compte et un repository sous licence, donc ici la commande est seulement tapée, pas exécutée.",
       "afterText": "Tapez-la sur votre propre installation une fois que vous avez un compte, et elle s'exécutera.",
       "cardLabel": "Sauvegardes à un Instant Donné",

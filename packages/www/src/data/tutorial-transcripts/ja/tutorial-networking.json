@@ -6,7 +6,7 @@
     {
       "id": "tutorial-networking-01",
       "markerIndex": 0,
-      "at": 2.427234,
+      "at": 2.411171,
       "text": "ステップ2です。CLI にパブリック IP、ベースドメイン、証明書のメールアドレス、Cloudflare API トークンを設定します。証明書のメールアドレスとトークンはすべてのマシンで共有されるため、一度だけ設定すれば十分です。",
       "afterText": "インフラ情報が設定に記録されました。",
       "cardLabel": "インフラ設定",
@@ -15,7 +15,7 @@
     {
       "id": "tutorial-networking-02",
       "markerIndex": 1,
-      "at": 12.223183,
+      "at": 11.974503,
       "text": "インフラ設定が保存されているか確認します。パブリック IP、ベースドメイン、証明書のメールアドレスが設定内容に表示されています。",
       "afterText": "設定が保存されました。サーバーへのプッシュ準備が整いました。",
       "cardLabel": "インフラ確認",
@@ -24,7 +24,7 @@
     {
       "id": "tutorial-networking-03",
       "markerIndex": 2,
-      "at": 16.437274,
+      "at": 16.497836,
       "text": "ステップ3: 設定をサーバーにプッシュします。本物のトークンがあれば、CloudflareにDNSレコードが自動で作成され、proxyの設定も準備されます。",
       "afterText": "プッシュされました。Cloudflare 上で DNS レコードが作成されています。",
       "cardLabel": "インフラ反映",
@@ -33,7 +33,7 @@
     {
       "id": "tutorial-networking-04",
       "markerIndex": 3,
-      "at": 19.770637,
+      "at": 19.729838,
       "text": "ステップ4: infraという名前の小さなrepoを作ります。なぜ専用のrepoなのか。proxyはこのサーバー上のすべてのアプリのトラフィックをルーティングしています。インフラはアプリケーションコードから切り離された、独自の場所を持つべきです。",
       "afterText": "infra リポジトリが作成されました。アプリのリポジトリから分離されています。",
       "cardLabel": "リポジトリ作成",
@@ -42,7 +42,7 @@
     {
       "id": "tutorial-networking-05",
       "markerIndex": 4,
-      "at": 26.52638,
+      "at": 25.899874,
       "text": "組み込みの proxy テンプレートを適用します。Traefik に加えて、Let's Encrypt と Cloudflare の DNS-01 チャレンジの設定がすぐに使える状態で含まれています。",
       "afterText": "Traefik 設定が適用されました。",
       "cardLabel": "テンプレート適用"
@@ -50,7 +50,7 @@
     {
       "id": "tutorial-networking-06",
       "markerIndex": 5,
-      "at": 31.688233,
+      "at": 31.172539,
       "text": "プロキシを起動します。Traefik は5秒ごとにコンテナを自動検出します。TLS 証明書は Let's Encrypt から自動的に取得されます。アプリが HTTPS でインターネットからアクセスできるようになりました。",
       "afterText": "プロキシが稼働中です。TLS 証明書は自動的に取得されます。",
       "cardLabel": "プロキシをデプロイ",

@@ -7,13 +7,13 @@
   "audioFormat": "mp3",
   "sampleRateHz": 48000,
   "voiceFingerprint": "ceee56ff81ab",
-  "transcriptHash": "d3d22d307e4d179e6756679329a198dbfe527672f6caec6eba3e347179a410f8",
+  "transcriptHash": "80496cc7d3484e5984dae92e219700f8abbc97e6f99bdc9b9232cfa3f41c94ea",
   "steps": [
     {
       "id": "tutorial-add-server-01",
       "markerIndex": 0,
-      "replayStartSec": 1.627855,
-      "replayEndSec": 7.25092,
+      "replayStartSec": 1.613148,
+      "replayEndSec": 7.714792,
       "narrationText": "Começamos por criar um perfil de configuração que vai guardar a chave SSH, a lista de máquinas e as definições de infraestrutura.",
       "audioSrc": "/assets/tutorials/audio/pt/tutorial-add-server/tutorial-add-server-01.0f2b7295.mp3",
       "textHash": "0f2b7295b48b832347a351c721f24dd4a983a0d954cdbbc211fda9d7ed91c706",
@@ -221,8 +221,8 @@
     {
       "id": "tutorial-add-server-02",
       "markerIndex": 1,
-      "replayStartSec": 7.25092,
-      "replayEndSec": 13.396171,
+      "replayStartSec": 7.714792,
+      "replayEndSec": 15.024927,
       "narrationText": "Agora vamos registar o servidor a partir da linha de comandos, fornecendo o nome, o endereço IP e o utilizador SSH. As chaves de anfitrião são verificadas automaticamente para acesso seguro.",
       "audioSrc": "/assets/tutorials/audio/pt/tutorial-add-server/tutorial-add-server-02.10ce3212.mp3",
       "textHash": "10ce321286cf68782e7f87abda057584200c0c9a3117a2c68c966a4941461fa7",
@@ -454,8 +454,8 @@
     {
       "id": "tutorial-add-server-03",
       "markerIndex": 2,
-      "replayStartSec": 13.396171,
-      "replayEndSec": 15.698213,
+      "replayStartSec": 15.024927,
+      "replayEndSec": 18.069081,
       "narrationText": "De seguida, vamos provisionar o servidor. Este passo instala o renet e cria o repositório de dados encriptado.",
       "audioSrc": "/assets/tutorials/audio/pt/tutorial-add-server/tutorial-add-server-03.004a16ea.mp3",
       "textHash": "004a16ea85ed4d6120379393e6aa6f3253bfa2397c57543bbc3079da8957c1ba",

@@ -6,7 +6,7 @@
     {
       "id": "tutorial-storage-management-01",
       "markerIndex": 0,
-      "at": 2.415408,
+      "at": 2.409491,
       "text": "Repository'yi neredeyse tamamen doldurun ve kontrol edin: dosya sistemi daralıyor.",
       "afterText": "Neredeyse dolu. Büyüme zamanı.",
       "cardLabel": "Dolduruluyor",
@@ -15,7 +15,7 @@
     {
       "id": "tutorial-storage-management-02",
       "markerIndex": 1,
-      "at": 10.51664,
+      "at": 11.307515,
       "text": "Çevrimiçi olarak büyütün. Şifreli container ve dosya sistemi, container'lar çalışmaya devam ederken genişler; sıfır kesinti, sıfır unmount.",
       "afterText": "Artık dört gigabayt. Hiçbir şey yeniden başlatılmadı.",
       "cardLabel": "Çevrimiçi Genişlet",
@@ -24,7 +24,7 @@
     {
       "id": "tutorial-storage-management-03",
       "markerIndex": 2,
-      "at": 14.693193,
+      "at": 15.610035,
       "text": "İçeriden doğrulayın: aynı volume, iki katı alan.",
       "afterText": "Uygulama hiç fark etmedi.",
       "cardLabel": "Boyutu Doğrula",
@@ -33,7 +33,7 @@
     {
       "id": "tutorial-storage-management-04",
       "markerIndex": 3,
-      "at": 19.546232,
+      "at": 22.257209,
       "text": "Şimdi ters yönde. Büyük dosyayı silin, ama dikkat edin: pool alanı hemen geri almaz. Silinen bloklar image içinde rezerve kalır.",
       "afterText": "repo içinde serbest bırakıldı, hâlâ image'a ait.",
       "cardLabel": "Veriyi Sil",
@@ -42,7 +42,7 @@
     {
       "id": "tutorial-storage-management-05",
       "markerIndex": 4,
-      "at": 23.813547,
+      "at": 27.992754,
       "text": "Trim, bu blokları çevrimiçi olarak datastore pool'una geri verir. Çoğu kurulumun unuttuğu adım budur.",
       "afterText": "Geri alındı. Havuz tekrar nefes alabilir.",
       "cardLabel": "Trim",
@@ -51,7 +51,7 @@
     {
       "id": "tutorial-storage-management-06",
       "markerIndex": 5,
-      "at": 28.710567,
+      "at": 32.61646,
       "text": "Artık bunu elle yapmayı bırakın. Politika, sizin belirlediğiniz bir üst sınıra kadar otomatik büyümeyi ve zamanlanmış trim'leri devreye sokar.",
       "afterText": "Politika kaydedildi. Makine buradan devralıyor.",
       "cardLabel": "Politika Ayarla",
@@ -60,7 +60,7 @@
     {
       "id": "tutorial-storage-management-07",
       "markerIndex": 6,
-      "at": 36.110527,
+      "at": 39.426457,
       "text": "Geri okuyun: otomatik büyüme açık, üst sınır sekiz gigabayt, trim zamanlanmış.",
       "afterText": "Bir kez ayarlandı, güvenle unutuldu.",
       "cardLabel": "Politika Kontrolü",
@@ -69,7 +69,7 @@
     {
       "id": "tutorial-storage-management-08",
       "markerIndex": 7,
-      "at": 41.090184,
+      "at": 43.622603,
       "text": "Ve hepsini bir araya getiren görünüm: storage health, her repo'nun kullanımını, pool'u ve copy-on-write paylaşımının size ne kadar tasarruf sağladığını gösterir.",
       "afterText": "Tek görünüm: kullanım, tasarruf ve büyüme alanı.",
       "cardLabel": "Sağlık Görünümü",

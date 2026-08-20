@@ -7,13 +7,13 @@
   "audioFormat": "mp3",
   "sampleRateHz": 48000,
   "voiceFingerprint": "f41b43ee7452",
-  "transcriptHash": "b8c64b502575ac6c805e9c1b4a020aaad8f14b5e0388fbe98dedd935ab5762e7",
+  "transcriptHash": "1aabfa587b92103ca78a360e028093617c08cdaaa6b81fc1a112c233e53b4f67",
   "steps": [
     {
       "id": "tutorial-ssh-keys-01",
       "markerIndex": 0,
-      "replayStartSec": 1.625253,
-      "replayEndSec": 6.458857,
+      "replayStartSec": 1.613265,
+      "replayEndSec": 6.244832,
       "narrationText": "第一步。让我们生成一个新的 ed25519 SSH 密钥。ed25519 是现代默认算法，体积小、速度快、兼容性好。在你将要添加的所有服务器上，这一步只需做一次。",
       "audioSrc": "/assets/tutorials/audio/zh/tutorial-ssh-keys/tutorial-ssh-keys-01.3fc21e13.mp3",
       "textHash": "3fc21e13977b391de273e41ad23892716fb86db30309167cbed2aaa1e25e5023",
@@ -461,8 +461,8 @@
     {
       "id": "tutorial-ssh-keys-02",
       "markerIndex": 1,
-      "replayStartSec": 6.458857,
-      "replayEndSec": 13.298492,
+      "replayStartSec": 6.244832,
+      "replayEndSec": 13.509433,
       "narrationText": "第二步。用 ssh-copy-id 将公钥复制到服务器。系统会最后一次要求输入服务器密码，此后该服务器就不再需要密码认证了。",
       "audioSrc": "/assets/tutorials/audio/zh/tutorial-ssh-keys/tutorial-ssh-keys-02.cd5a96e6.mp3",
       "textHash": "cd5a96e64d4700b5694b62859cc86749d4ddc322675be986adcf0c5e301b7e14",
@@ -898,8 +898,8 @@
     {
       "id": "tutorial-ssh-keys-03",
       "markerIndex": 2,
-      "replayStartSec": 13.298492,
-      "replayEndSec": 19.181151,
+      "replayStartSec": 13.509433,
+      "replayEndSec": 19.537172,
       "narrationText": "第三步。现在让我们将密钥注册到命令行工具。从此以后，每条命令都使用此密钥进行认证。不再需要密码，不再有交互提示。",
       "audioSrc": "/assets/tutorials/audio/zh/tutorial-ssh-keys/tutorial-ssh-keys-03.e3179efb.mp3",
       "textHash": "e3179efbfa5deb85a804e22ff7c3099eca9a899ef83b30c83ca7d2b282fd198d",

@@ -6,7 +6,7 @@
     {
       "id": "tutorial-live-migration-01",
       "markerIndex": 0,
-      "at": 2.420835,
+      "at": 2.403264,
       "text": "Voici pulse. Il garde un compteur en mémoire de processus et affiche un battement toutes les cinq secondes. Le compteur est à six et monte, et il vit uniquement en RAM. Redémarrez le processus et il repart à un.",
       "afterText": "Un compteur en direct, battant en mémoire. C'est notre preuve.",
       "cardLabel": "Compteur en direct",
@@ -15,7 +15,7 @@
     {
       "id": "tutorial-live-migration-02",
       "markerIndex": 1,
-      "at": 8.294774,
+      "at": 8.337429,
       "text": "Une seule commande le déplace, en direct. La première phase transfère l'essentiel, deux gigaoctets en environ une demi-minute, pendant que la source continue de tourner. Puis la bascule : elle crée un checkpoint des processus en cours, transfère les derniers mégaoctets, et affiche le temps d'arrêt directement. Environ vingt secondes, pour un déplacement de deux gigaoctets.",
       "afterText": "Deux gigaoctets déplacés pendant que l'application continuait de tourner. La ligne de temps d'arrêt montre ce que le déplacement a réellement coûté.",
       "cardLabel": "Migrer en direct",
@@ -24,7 +24,7 @@
     {
       "id": "tutorial-live-migration-03",
       "markerIndex": 2,
-      "at": 94.394579,
+      "at": 101.02615,
       "text": "Vérifiez la nouvelle machine : la voilà. Montée, Docker en cours d'exécution, deux containers actifs.",
       "afterText": "Même repo, nouvel emplacement, déjà en cours d'exécution.",
       "cardLabel": "Nouvel emplacement",
@@ -33,7 +33,7 @@
     {
       "id": "tutorial-live-migration-04",
       "markerIndex": 3,
-      "at": 99.812481,
+      "at": 106.193621,
       "text": "Et la source ? Le repository est toujours listé, mais regardez la ligne : non monté, pas de Docker, zéro container. Rien ne tourne ici. L'image reste intentionnellement, comme base pour le prochain transfert delta.",
       "afterText": "Arrêtée et démontée. L'image restante est une base delta, pas une application en cours d'exécution.",
       "cardLabel": "Source arrêtée",
@@ -42,7 +42,7 @@
     {
       "id": "tutorial-live-migration-05",
       "markerIndex": 4,
-      "at": 105.151877,
+      "at": 111.315305,
       "text": "Voici le moment clé. Le compteur affiche dix-sept, dix-huit, dix-neuf, il monte toujours. Il a repris exactement là où le checkpoint l'avait figé, au lieu de repartir à un. Le processus n'a jamais remarqué qu'il avait changé de machine.",
       "afterText": "Le compteur a continué de compter. La mémoire de processus a fait le voyage.",
       "cardLabel": "Compteur continu",

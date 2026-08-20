@@ -7,13 +7,13 @@
   "audioFormat": "mp3",
   "sampleRateHz": 48000,
   "voiceFingerprint": "614e9d2597f7",
-  "transcriptHash": "1d7d2ac2e0b3d93dc000c34dd877c4d893d8e2f363530c5b469d33b12c7350c1",
+  "transcriptHash": "b611a36c16381baa3dbf9e1ee729b7e1a221f8ce0117f2a9a48491b046d3852c",
   "steps": [
     {
       "id": "tutorial-ssh-keys-01",
       "markerIndex": 0,
-      "replayStartSec": 1.625253,
-      "replayEndSec": 6.458857,
+      "replayStartSec": 1.613265,
+      "replayEndSec": 6.244832,
       "narrationText": "Première étape. Nous allons générer une nouvelle clé SSH ed25519. ed25519 est le standard moderne : compact, rapide et bien supporté. Vous n'avez besoin de faire cela qu'une seule fois pour tous les serveurs que vous ajouterez.",
       "audioSrc": "/assets/tutorials/audio/fr/tutorial-ssh-keys/tutorial-ssh-keys-01.a28bedf2.mp3",
       "textHash": "a28bedf2ff90c088ab141e3ace2678113f949e89376794e9eaadaa54d37eeca9",
@@ -311,8 +311,8 @@
     {
       "id": "tutorial-ssh-keys-02",
       "markerIndex": 1,
-      "replayStartSec": 6.458857,
-      "replayEndSec": 13.298492,
+      "replayStartSec": 6.244832,
+      "replayEndSec": 13.509433,
       "narrationText": "Deuxième étape. Nous copions la clé publique sur le serveur avec ssh-copy-id. Le mot de passe du serveur est demandé une dernière fois. Après cela, l'authentification par mot de passe n'est plus nécessaire pour ce serveur.",
       "audioSrc": "/assets/tutorials/audio/fr/tutorial-ssh-keys/tutorial-ssh-keys-02.75b2106e.mp3",
       "textHash": "75b2106ecebc5e338ed192d2eb8cc090883d65549159e68cc7534ef4313d8dec",
@@ -616,8 +616,8 @@
     {
       "id": "tutorial-ssh-keys-03",
       "markerIndex": 2,
-      "replayStartSec": 13.298492,
-      "replayEndSec": 19.181151,
+      "replayStartSec": 13.509433,
+      "replayEndSec": 19.537172,
       "narrationText": "Troisième étape. Nous enregistrons maintenant la clé auprès de la ligne de commande. Désormais, chaque commande s'authentifie avec cette clé. Plus de mots de passe, plus d'invites interactives.",
       "audioSrc": "/assets/tutorials/audio/fr/tutorial-ssh-keys/tutorial-ssh-keys-03.644d5d25.mp3",
       "textHash": "644d5d25c3251d44cb6f481b2eb1e397a545408bda5ddeb120e26f2eb5a54a12",

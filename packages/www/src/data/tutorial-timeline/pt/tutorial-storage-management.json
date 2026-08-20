@@ -7,13 +7,13 @@
   "audioFormat": "mp3",
   "sampleRateHz": 48000,
   "voiceFingerprint": "ceee56ff81ab",
-  "transcriptHash": "751090a3c3300647afd716f5fca6089a74484a16599f4b308a566131f5d71562",
+  "transcriptHash": "30cb78081c806ee52d21c5d4ca7b216e35dde65dece422d245053f3f2f0bcfee",
   "steps": [
     {
       "id": "tutorial-storage-management-01",
       "markerIndex": 0,
-      "replayStartSec": 2.415408,
-      "replayEndSec": 10.51664,
+      "replayStartSec": 2.409491,
+      "replayEndSec": 11.307515,
       "narrationText": "Encha o repository quase até o limite e veja: o filesystem está ficando apertado.",
       "audioSrc": "/assets/tutorials/audio/pt/tutorial-storage-management/tutorial-storage-management-01.72667e85.mp3",
       "textHash": "72667e8552238c544189b555b6513faee4f839aa0ce5bfdbef4e4ce75daadd17",
@@ -131,122 +131,12 @@
     {
       "id": "tutorial-storage-management-02",
       "markerIndex": 1,
-      "replayStartSec": 10.51664,
-      "replayEndSec": 14.693193,
-      "narrationText": "Expanda online. O container criptografado e o filesystem crescem enquanto os containers continuam rodando — zero downtime, zero unmount.",
-      "audioSrc": "/assets/tutorials/audio/pt/tutorial-storage-management/tutorial-storage-management-02.12973857.mp3",
-      "textHash": "12973857b650b3feb2a9b22899436862014c5cf172b68132abd216a725a70069",
-      "audioDurationSec": 9.48,
-      "wordTimings": [
-        {
-          "startSec": 0.0,
-          "endSec": 0.8,
-          "startChar": 0,
-          "endChar": 7
-        },
-        {
-          "startSec": 1.04,
-          "endSec": 1.28,
-          "startChar": 8,
-          "endChar": 14
-        },
-        {
-          "startSec": 2.08,
-          "endSec": 2.16,
-          "startChar": 16,
-          "endChar": 17
-        },
-        {
-          "startSec": 2.16,
-          "endSec": 2.72,
-          "startChar": 18,
-          "endChar": 27
-        },
-        {
-          "startSec": 2.88,
-          "endSec": 3.76,
-          "startChar": 28,
-          "endChar": 41
-        },
-        {
-          "startSec": 3.76,
-          "endSec": 3.84,
-          "startChar": 42,
-          "endChar": 43
-        },
-        {
-          "startSec": 3.84,
-          "endSec": 4.08,
-          "startChar": 46,
-          "endChar": 50
-        },
-        {
-          "startSec": 4.16,
-          "endSec": 4.4,
-          "startChar": 50,
-          "endChar": 56
-        },
-        {
-          "startSec": 4.64,
-          "endSec": 5.12,
-          "startChar": 57,
-          "endChar": 64
-        },
-        {
-          "startSec": 5.2,
-          "endSec": 5.52,
-          "startChar": 65,
-          "endChar": 73
-        },
-        {
-          "startSec": 5.52,
-          "endSec": 5.6,
-          "startChar": 74,
-          "endChar": 76
-        },
-        {
-          "startSec": 5.6,
-          "endSec": 6.16,
-          "startChar": 77,
-          "endChar": 87
-        },
-        {
-          "startSec": 6.16,
-          "endSec": 6.64,
-          "startChar": 88,
-          "endChar": 97
-        },
-        {
-          "startSec": 6.64,
-          "endSec": 7.2,
-          "startChar": 98,
-          "endChar": 105
-        },
-        {
-          "startSec": 7.28,
-          "endSec": 7.68,
-          "startChar": 108,
-          "endChar": 112
-        },
-        {
-          "startSec": 7.68,
-          "endSec": 8.0,
-          "startChar": 113,
-          "endChar": 121
-        },
-        {
-          "startSec": 8.56,
-          "endSec": 9.04,
-          "startChar": 123,
-          "endChar": 127
-        },
-        {
-          "startSec": 9.04,
-          "endSec": 9.28,
-          "startChar": 128,
-          "endChar": 136
-        }
-      ],
+      "replayStartSec": 11.307515,
+      "replayEndSec": 15.610035,
+      "narrationText": "Expanda online. O container criptografado e o filesystem crescem enquanto os containers continuam rodando: zero downtime, zero unmount.",
+      "audioSrc": "/assets/tutorials/audio/pt/tutorial-storage-management/tutorial-storage-management-02.7b97b025.mp3",
+      "textHash": "7b97b0255912dccf4adb2a4d0a0e1f63f594efc090cb6b91f29bb50047b12907",
+      "audioDurationSec": 11.4,
       "afterAudioSrc": "/assets/tutorials/audio/pt/tutorial-storage-management/tutorial-storage-management-02-after.648412d1.mp3",
       "afterAudioDurationSec": 3.72,
       "afterTextHash": "648412d141258daa57453ed84876c01d869b6577a0e9a6a2f4a1190d604aa9f7",
@@ -292,8 +182,8 @@
     {
       "id": "tutorial-storage-management-03",
       "markerIndex": 2,
-      "replayStartSec": 14.693193,
-      "replayEndSec": 19.546232,
+      "replayStartSec": 15.610035,
+      "replayEndSec": 22.257209,
       "narrationText": "Verifique por dentro: mesmo volume, o dobro do espaço.",
       "audioSrc": "/assets/tutorials/audio/pt/tutorial-storage-management/tutorial-storage-management-03.6deb6fda.mp3",
       "textHash": "6deb6fda7d5cac182138a04076344b70ee79dc0ef92b4ef5662667263d888a7f",
@@ -387,164 +277,12 @@
     {
       "id": "tutorial-storage-management-04",
       "markerIndex": 3,
-      "replayStartSec": 19.546232,
-      "replayEndSec": 23.813547,
-      "narrationText": "Agora na direção contrária. Exclua o arquivo grande — mas repare: o pool ainda não recupera o espaço. Os blocos excluídos ficam reservados dentro da imagem.",
-      "audioSrc": "/assets/tutorials/audio/pt/tutorial-storage-management/tutorial-storage-management-04.31b6d5bd.mp3",
-      "textHash": "31b6d5bdc2080b63ed7d0eeb4378fee06349cdab280243221f8718accb129079",
-      "audioDurationSec": 10.92,
-      "wordTimings": [
-        {
-          "startSec": 0.0,
-          "endSec": 0.48,
-          "startChar": 0,
-          "endChar": 5
-        },
-        {
-          "startSec": 0.8,
-          "endSec": 0.96,
-          "startChar": 6,
-          "endChar": 8
-        },
-        {
-          "startSec": 0.96,
-          "endSec": 1.52,
-          "startChar": 9,
-          "endChar": 16
-        },
-        {
-          "startSec": 1.52,
-          "endSec": 2.0,
-          "startChar": 17,
-          "endChar": 26
-        },
-        {
-          "startSec": 2.48,
-          "endSec": 3.04,
-          "startChar": 28,
-          "endChar": 34
-        },
-        {
-          "startSec": 3.04,
-          "endSec": 3.12,
-          "startChar": 35,
-          "endChar": 36
-        },
-        {
-          "startSec": 3.12,
-          "endSec": 3.52,
-          "startChar": 37,
-          "endChar": 44
-        },
-        {
-          "startSec": 3.52,
-          "endSec": 3.92,
-          "startChar": 45,
-          "endChar": 51
-        },
-        {
-          "startSec": 4.08,
-          "endSec": 4.4,
-          "startChar": 54,
-          "endChar": 57
-        },
-        {
-          "startSec": 4.4,
-          "endSec": 4.8,
-          "startChar": 58,
-          "endChar": 64
-        },
-        {
-          "startSec": 5.12,
-          "endSec": 5.2,
-          "startChar": 66,
-          "endChar": 67
-        },
-        {
-          "startSec": 5.28,
-          "endSec": 5.52,
-          "startChar": 68,
-          "endChar": 71
-        },
-        {
-          "startSec": 5.52,
-          "endSec": 5.84,
-          "startChar": 73,
-          "endChar": 78
-        },
-        {
-          "startSec": 5.84,
-          "endSec": 5.92,
-          "startChar": 79,
-          "endChar": 82
-        },
-        {
-          "startSec": 5.92,
-          "endSec": 6.48,
-          "startChar": 83,
-          "endChar": 91
-        },
-        {
-          "startSec": 6.48,
-          "endSec": 6.56,
-          "startChar": 92,
-          "endChar": 93
-        },
-        {
-          "startSec": 6.56,
-          "endSec": 7.12,
-          "startChar": 94,
-          "endChar": 100
-        },
-        {
-          "startSec": 7.36,
-          "endSec": 7.52,
-          "startChar": 102,
-          "endChar": 104
-        },
-        {
-          "startSec": 7.52,
-          "endSec": 7.92,
-          "startChar": 105,
-          "endChar": 111
-        },
-        {
-          "startSec": 7.92,
-          "endSec": 8.72,
-          "startChar": 112,
-          "endChar": 121
-        },
-        {
-          "startSec": 8.88,
-          "endSec": 9.2,
-          "startChar": 122,
-          "endChar": 127
-        },
-        {
-          "startSec": 9.2,
-          "endSec": 9.92,
-          "startChar": 128,
-          "endChar": 138
-        },
-        {
-          "startSec": 9.92,
-          "endSec": 10.24,
-          "startChar": 139,
-          "endChar": 145
-        },
-        {
-          "startSec": 10.24,
-          "endSec": 10.32,
-          "startChar": 146,
-          "endChar": 148
-        },
-        {
-          "startSec": 10.32,
-          "endSec": 10.8,
-          "startChar": 149,
-          "endChar": 155
-        }
-      ],
+      "replayStartSec": 22.257209,
+      "replayEndSec": 27.992754,
+      "narrationText": "Agora na direção contrária. Exclua o arquivo grande, mas repare: o pool ainda não recupera o espaço. Os blocos excluídos ficam reservados dentro da imagem.",
+      "audioSrc": "/assets/tutorials/audio/pt/tutorial-storage-management/tutorial-storage-management-04.ae8f9e39.mp3",
+      "textHash": "ae8f9e393a77ef4ddd3b9098a333c8f69581ca8d1e80dac6205e5886293e7b41",
+      "audioDurationSec": 10.584,
       "afterAudioSrc": "/assets/tutorials/audio/pt/tutorial-storage-management/tutorial-storage-management-04-after.b63a4433.mp3",
       "afterAudioDurationSec": 4.032,
       "afterTextHash": "b63a44335c730b642518462e4ec5873325408af4b9cecdc8efadb29fe4d6187c",
@@ -608,8 +346,8 @@
     {
       "id": "tutorial-storage-management-05",
       "markerIndex": 4,
-      "replayStartSec": 23.813547,
-      "replayEndSec": 28.710567,
+      "replayStartSec": 27.992754,
+      "replayEndSec": 32.61646,
       "narrationText": "O trim devolve esses blocos ao pool do datastore, online. É o passo que a maioria das configurações esquece.",
       "audioSrc": "/assets/tutorials/audio/pt/tutorial-storage-management/tutorial-storage-management-05.153e013a.mp3",
       "textHash": "153e013a140653e5263ced043c4d2c10441da4428072f171b659cd1acc623d70",
@@ -751,8 +489,8 @@
     {
       "id": "tutorial-storage-management-06",
       "markerIndex": 5,
-      "replayStartSec": 28.710567,
-      "replayEndSec": 36.110527,
+      "replayStartSec": 32.61646,
+      "replayEndSec": 39.426457,
       "narrationText": "Agora pare de fazer isso na mão. A política permite crescimento automático até um limite que você escolhe, mais trims agendados.",
       "audioSrc": "/assets/tutorials/audio/pt/tutorial-storage-management/tutorial-storage-management-06.736b05d7.mp3",
       "textHash": "736b05d73295684fe30a971cba53ae6f18ea69d3556ef7d14f8d7bd8bc10a00e",
@@ -930,8 +668,8 @@
     {
       "id": "tutorial-storage-management-07",
       "markerIndex": 6,
-      "replayStartSec": 36.110527,
-      "replayEndSec": 41.090184,
+      "replayStartSec": 39.426457,
+      "replayEndSec": 43.622603,
       "narrationText": "Leia de volta: crescimento automático ativado, limite em oito gigabytes, trim programado.",
       "audioSrc": "/assets/tutorials/audio/pt/tutorial-storage-management/tutorial-storage-management-07.de2a9af0.mp3",
       "textHash": "de2a9af0905e0f60f4145f2ccea83bf05e80f31158a63b47cbab4a2ba0155316",
@@ -1049,8 +787,8 @@
     {
       "id": "tutorial-storage-management-08",
       "markerIndex": 7,
-      "replayStartSec": 41.090184,
-      "replayEndSec": 45.796282,
+      "replayStartSec": 43.622603,
+      "replayEndSec": 48.299656,
       "narrationText": "E a visão que amarra tudo: a saúde do armazenamento mostra o uso de cada repo, o pool, e quanto o compartilhamento copy-on-write está economizando para você.",
       "audioSrc": "/assets/tutorials/audio/pt/tutorial-storage-management/tutorial-storage-management-08.99c4e684.mp3",
       "textHash": "99c4e684f9862903215c49dde37d91e5fee8913915a309264af7f0e910a13c44",

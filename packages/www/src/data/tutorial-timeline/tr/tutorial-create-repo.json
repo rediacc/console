@@ -7,13 +7,13 @@
   "audioFormat": "mp3",
   "sampleRateHz": 48000,
   "voiceFingerprint": "f53f3b97493c",
-  "transcriptHash": "b9c27c13cf6c954363f49cd7bd83bbb76e1db84ebf9e9251588abd7f2510b06c",
+  "transcriptHash": "ad28d1eb45658400d6f1ce69f4ecd18f9b04938a11d9b125c49ebe7e15364d0d",
   "steps": [
     {
       "id": "tutorial-create-repo-01",
       "markerIndex": 0,
-      "replayStartSec": 2.41017,
-      "replayEndSec": 10.688129,
+      "replayStartSec": 2.416628,
+      "replayEndSec": 10.155124,
       "narrationText": "Sunucuda 2 gigabaytlık şifreli bir depo oluşturuyoruz. Depo, depolandığında tek bir şifreli dosyadır. Bağlandığında kendi Docker daemon'ı ve kendi uygulama verisiyle birlikte bir klasöre dönüşür; sunucudaki her şeyden tamamen izole edilmiş.",
       "audioSrc": "/assets/tutorials/audio/tr/tutorial-create-repo/tutorial-create-repo-01.78f7c7de.mp3",
       "textHash": "78f7c7ded0c7efa6595b88b048ecc3074cbee5c491152c13f24b19eeade865f6",
@@ -245,8 +245,8 @@
     {
       "id": "tutorial-create-repo-02",
       "markerIndex": 1,
-      "replayStartSec": 10.688129,
-      "replayEndSec": 16.425103,
+      "replayStartSec": 10.155124,
+      "replayEndSec": 15.356468,
       "narrationText": "Yeni deponun kayıtlı olduğunu doğrulamak için makinedeki depoları listeliyoruz. Buradan itibaren depo, VS Code'da açılabilir, dağıtılabilir, fork'lanabilir veya yedeklenebilir; hepsi dizüstü bilgisayarınızdan.",
       "audioSrc": "/assets/tutorials/audio/tr/tutorial-create-repo/tutorial-create-repo-02.87aabd67.mp3",
       "textHash": "87aabd67721988a09ab0014b50f892c65a20011e7644ef66b4053ba028ce5e5d",
@@ -406,8 +406,8 @@
     {
       "id": "tutorial-create-repo-03",
       "markerIndex": 2,
-      "replayStartSec": 16.425103,
-      "replayEndSec": 18.266995,
+      "replayStartSec": 15.356468,
+      "replayEndSec": 17.167873,
       "narrationText": "Kullanışlı bir seçenek: bu komutla repoyu doğrudan VS Code'da açabilirsiniz. Editörü burada başlatmayacağız, ancak SSH üzerinden repoya uzak bir oturum başlatarak dosyalarını düzenleyebilirsiniz.",
       "audioSrc": "/assets/tutorials/audio/tr/tutorial-create-repo/tutorial-create-repo-03.cf63afbf.mp3",
       "textHash": "cf63afbfea2509c59aea042faefd2915ff3a461c8ab7b474ccad008814de7eca",

@@ -6,7 +6,7 @@
     {
       "id": "tutorial-storage-management-01",
       "markerIndex": 0,
-      "at": 2.415408,
+      "at": 2.409491,
       "text": "把 repository 填到快满，然后检查：文件系统已经开始吃紧了。",
       "afterText": "快满了。是时候扩容了。",
       "cardLabel": "填充数据",
@@ -15,7 +15,7 @@
     {
       "id": "tutorial-storage-management-02",
       "markerIndex": 1,
-      "at": 10.51664,
+      "at": 11.307515,
       "text": "在线扩容。加密容器和文件系统在容器持续运行的同时一起扩展，零停机，零卸载。",
       "afterText": "现在是四 GB。没有任何重启。",
       "cardLabel": "在线扩容",
@@ -24,7 +24,7 @@
     {
       "id": "tutorial-storage-management-03",
       "markerIndex": 2,
-      "at": 14.693193,
+      "at": 15.610035,
       "text": "从内部验证：还是同一个卷，空间却翻了一倍。",
       "afterText": "应用程序毫无察觉。",
       "cardLabel": "验证容量",
@@ -33,7 +33,7 @@
     {
       "id": "tutorial-storage-management-04",
       "markerIndex": 3,
-      "at": 19.546232,
+      "at": 22.257209,
       "text": "现在反过来。删掉那个大文件，但要注意：pool 此时还拿不回空间。被删除的块仍然被镜像占着。",
       "afterText": "在 repo 内部已释放，但仍归镜像所有。",
       "cardLabel": "删除数据",
@@ -42,7 +42,7 @@
     {
       "id": "tutorial-storage-management-05",
       "markerIndex": 4,
-      "at": 23.813547,
+      "at": 27.992754,
       "text": "Trim 会把这些块在线归还给 datastore pool。这一步是大多数方案都会忘掉的。",
       "afterText": "已回收。存储池再次畅通。",
       "cardLabel": "Trim",
@@ -51,7 +51,7 @@
     {
       "id": "tutorial-storage-management-06",
       "markerIndex": 5,
-      "at": 28.710567,
+      "at": 32.61646,
       "text": "现在别再手动做这些了。策略可以开启自动增长，上限由你设定，还能定时执行 trim。",
       "afterText": "策略已保存。接下来由机器接管。",
       "cardLabel": "设置策略",
@@ -60,7 +60,7 @@
     {
       "id": "tutorial-storage-management-07",
       "markerIndex": 6,
-      "at": 36.110527,
+      "at": 39.426457,
       "text": "读回来看看：自动增长已开启，上限八 GB，trim 按计划执行。",
       "afterText": "设置一次，从此无需操心。",
       "cardLabel": "策略检查",
@@ -69,7 +69,7 @@
     {
       "id": "tutorial-storage-management-08",
       "markerIndex": 7,
-      "at": 41.090184,
+      "at": 43.622603,
       "text": "最后是把一切串起来的视图：存储健康状态会显示每个 repo 的用量、pool，以及写时复制共享帮你省下了多少空间。",
       "afterText": "一个视图：使用情况、节省量和扩展空间。",
       "cardLabel": "健康视图",

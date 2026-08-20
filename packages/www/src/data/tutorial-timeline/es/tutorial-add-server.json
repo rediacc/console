@@ -7,13 +7,13 @@
   "audioFormat": "mp3",
   "sampleRateHz": 48000,
   "voiceFingerprint": "0721bbd27dad",
-  "transcriptHash": "5af181cf8e5dec60057785ebaf8efb0e93bdd3028f684cc32e3e243b4fab1cee",
+  "transcriptHash": "2e4bbdfd7e1ffe6859604f7187c26a8e7a53d07ec713cdbf313ff97d7ac8f393",
   "steps": [
     {
       "id": "tutorial-add-server-01",
       "markerIndex": 0,
-      "replayStartSec": 1.627855,
-      "replayEndSec": 7.25092,
+      "replayStartSec": 1.613148,
+      "replayEndSec": 7.714792,
       "narrationText": "Empezamos creando un perfil de configuración. El perfil contiene la clave SSH, la lista de máquinas y los ajustes de infraestructura para todo lo que haremos a partir de aquí.",
       "audioSrc": "/assets/tutorials/audio/es/tutorial-add-server/tutorial-add-server-01.4d23aaa2.mp3",
       "textHash": "4d23aaa2d839b71fe6a92c9766010c4a1a3ce1a7856a647ac77c46ccb0758368",
@@ -269,8 +269,8 @@
     {
       "id": "tutorial-add-server-02",
       "markerIndex": 1,
-      "replayStartSec": 7.25092,
-      "replayEndSec": 13.396171,
+      "replayStartSec": 7.714792,
+      "replayEndSec": 15.024927,
       "narrationText": "Ahora registramos el servidor en el CLI, indicando su nombre, dirección IP y usuario SSH. Las claves de host se escanean automáticamente para un acceso de confianza.",
       "audioSrc": "/assets/tutorials/audio/es/tutorial-add-server/tutorial-add-server-02.e83f28c0.mp3",
       "textHash": "e83f28c0d4a62a585cf6db27782d371eeb353f5bee15b1a38140f9625acb558d",
@@ -502,8 +502,8 @@
     {
       "id": "tutorial-add-server-03",
       "markerIndex": 2,
-      "replayStartSec": 13.396171,
-      "replayEndSec": 15.698213,
+      "replayStartSec": 15.024927,
+      "replayEndSec": 18.069081,
       "narrationText": "Vamos a aprovisionar el servidor. Esto instala renet y crea el almacén cifrado. Después de esto, el servidor está listo para alojar repositorios.",
       "audioSrc": "/assets/tutorials/audio/es/tutorial-add-server/tutorial-add-server-03.3c21c902.mp3",
       "textHash": "3c21c902f7bb1c92f8fcb068091581bd23e4f41ef78e38f4142050e206c7a51e",

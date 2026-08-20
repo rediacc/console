@@ -2,9 +2,9 @@
   "cast": "/assets/tutorials/tutorial-branching.cast",
   "language": "en",
   "version": 1,
-  "title": "Branching — Commit & Rollback",
+  "title": "Branching: Commit & Rollback",
   "chapters": {
-    "intro": "Branching — Commit & Rollback",
+    "intro": "Branching: Commit & Rollback",
     "commit-model": "Commits, branches, checkout",
     "cast-step-0": "Step 1: Version one",
     "cast-step-1": "Step 2: Real data, three rows",
@@ -26,8 +26,8 @@
     {
       "id": "tutorial-branching-01",
       "markerIndex": 0,
-      "at": 2.423373,
-      "text": "Our working fork holds version one of the app state — a simple marker file makes it visible.",
+      "at": 2.409747,
+      "text": "Our working fork holds version one of the app state. A simple marker file makes it visible.",
       "afterText": "Version one, on disk.",
       "cardLabel": "Version One",
       "prose": "Write version one of your state into the working fork."
@@ -35,7 +35,7 @@
     {
       "id": "tutorial-branching-02",
       "markerIndex": 1,
-      "at": 8.659919,
+      "at": 8.689895,
       "text": "It is not just files. A real PostgreSQL database lives in this fork too, and the customers table holds three rows. Remember that number.",
       "afterText": "Three rows. That's the data we're about to put in danger.",
       "cardLabel": "Three Rows",
@@ -44,7 +44,7 @@
     {
       "id": "tutorial-branching-03",
       "markerIndex": 2,
-      "at": 16.216982,
+      "at": 16.465037,
       "text": "Freeze it. The commit captures the entire repository as an immutable image, with a message, an author, and a parent. Exactly like git, but for everything, database included.",
       "afterText": "Committed. This snapshot can never change. It refuses to even mount.",
       "cardLabel": "Commit v1",
@@ -53,16 +53,16 @@
     {
       "id": "tutorial-branching-04",
       "markerIndex": 3,
-      "at": 21.875788,
+      "at": 22.23398,
       "text": "Give the commit a name. The stable branch now points at version one.",
       "afterText": "A branch is a name you can come back to.",
       "cardLabel": "Branch Stable",
-      "prose": "Create a branch pointing at the commit — a human name for the frozen state."
+      "prose": "Create a branch pointing at the commit, a human name for the frozen state."
     },
     {
       "id": "tutorial-branching-05",
       "markerIndex": 4,
-      "at": 26.408746,
+      "at": 27.29532,
       "text": "Keep working. Version two replaces version one in the working fork. The commit does not care.",
       "afterText": "The working fork moved on. The history did not.",
       "cardLabel": "Version Two",
@@ -71,7 +71,7 @@
     {
       "id": "tutorial-branching-06",
       "markerIndex": 5,
-      "at": 32.630295,
+      "at": 33.551454,
       "text": "Now the disaster. The risky change drops the customers table. In real life this is the moment your stomach sinks.",
       "afterText": "Drop table ran. The data is gone from the working fork.",
       "cardLabel": "Drop The Table",
@@ -80,7 +80,7 @@
     {
       "id": "tutorial-branching-07",
       "markerIndex": 6,
-      "at": 38.597418,
+      "at": 39.850347,
       "text": "Ask for the rows again and the database says it straight: relation customers does not exist. The disaster is real. Every row is gone.",
       "afterText": "Relation does not exist. Three rows, gone.",
       "cardLabel": "Table Is Gone",
@@ -89,7 +89,7 @@
     {
       "id": "tutorial-branching-08",
       "markerIndex": 7,
-      "at": 45.023533,
+      "at": 46.251513,
       "text": "Commit the risky change too, broken table and all. History records what actually happened. Two commits now, parent and child.",
       "afterText": "Two snapshots in the chain.",
       "cardLabel": "Commit v2",
@@ -98,34 +98,34 @@
     {
       "id": "tutorial-branching-09",
       "markerIndex": 8,
-      "at": 50.876553,
+      "at": 52.196298,
       "text": "And there is the history: version two on top, version one below it, messages and authors included, without unlocking a single image.",
       "afterText": "A repo log, exactly like a git log.",
       "cardLabel": "Repo Log",
-      "prose": "Walk the commit history with repo log — messages, authors, parents."
+      "prose": "Walk the commit history with repo log: messages, authors, parents."
     },
     {
       "id": "tutorial-branching-10",
       "markerIndex": 9,
-      "at": 55.851239,
+      "at": 56.077573,
       "text": "Now the payoff. Check the stable branch out into a brand new writable fork. Reflink clone: near-instant, any size.",
       "afterText": "A writable copy of the frozen version one, in about a second.",
       "cardLabel": "Checkout",
-      "prose": "Check the stable branch out into a fresh writable fork — near-instant thanks to copy-on-write."
+      "prose": "Check the stable branch out into a fresh writable fork, near-instant thanks to copy-on-write."
     },
     {
       "id": "tutorial-branching-11",
       "markerIndex": 10,
-      "at": 60.773115,
+      "at": 61.783031,
       "text": "Start the rollback fork like any other repo.",
       "afterText": "Two forks running: today's version and the checkpoint.",
       "cardLabel": "Start Rollback",
-      "prose": "Bring the rollback fork up — it runs alongside the working fork."
+      "prose": "Bring the rollback fork up. It runs alongside the working fork."
     },
     {
       "id": "tutorial-branching-12",
       "markerIndex": 11,
-      "at": 67.070568,
+      "at": 68.446131,
       "text": "And the proof: the rollback fork reads version one. The working fork still has version two. History you can run.",
       "afterText": "Rollback complete. Nothing was overwritten to get here.",
       "cardLabel": "Proof: v1",
@@ -134,7 +134,7 @@
     {
       "id": "tutorial-branching-13",
       "markerIndex": 12,
-      "at": 72.350149,
+      "at": 73.904275,
       "text": "And the part that matters most: the dropped table is back, all three rows of it. The rollback restored the database, not just the files.",
       "afterText": "Three rows again. The disaster is undone.",
       "cardLabel": "Data Restored",

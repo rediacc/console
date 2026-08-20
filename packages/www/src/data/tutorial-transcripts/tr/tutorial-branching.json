@@ -6,7 +6,7 @@
     {
       "id": "tutorial-branching-01",
       "markerIndex": 0,
-      "at": 2.423373,
+      "at": 2.409747,
       "text": "Çalışma fork'umuz uygulamanın birinci sürümünü tutuyor; basit bir işaret dosyası bunu gözler önüne seriyor.",
       "afterText": "Birinci sürüm, diskte.",
       "cardLabel": "Birinci Sürüm",
@@ -15,7 +15,7 @@
     {
       "id": "tutorial-branching-02",
       "markerIndex": 1,
-      "at": 8.659919,
+      "at": 8.689895,
       "text": "Sadece dosyalar değil. Bu fork'ta gerçek bir PostgreSQL veritabanı da çalışıyor ve customers tablosu üç satır içeriyor. Bu sayıyı aklınızda tutun.",
       "afterText": "Üç satır. Tehlikeye atmak üzere olduğumuz veri bu.",
       "cardLabel": "Üç Satır",
@@ -24,7 +24,7 @@
     {
       "id": "tutorial-branching-03",
       "markerIndex": 2,
-      "at": 16.216982,
+      "at": 16.465037,
       "text": "Dondurun. Commit, tüm repository'yi bir mesaj, bir yazar ve bir üst öğeyle birlikte değişmez bir imaj olarak yakalar. Tıpkı git gibi, ama her şey için; veritabanı dahil.",
       "afterText": "Commit atıldı. Bu anlık görüntü hiçbir zaman değişemez. Mount edilmeyi bile reddeder.",
       "cardLabel": "Commit v1",
@@ -33,7 +33,7 @@
     {
       "id": "tutorial-branching-04",
       "markerIndex": 3,
-      "at": 21.875788,
+      "at": 22.23398,
       "text": "Commit'e bir isim verin. Stable branch artık birinci sürümü gösteriyor.",
       "afterText": "Branch, geri dönebileceğiniz bir isimdir.",
       "cardLabel": "Stable Branch",
@@ -42,7 +42,7 @@
     {
       "id": "tutorial-branching-05",
       "markerIndex": 4,
-      "at": 26.408746,
+      "at": 27.29532,
       "text": "Çalışmaya devam edin. Çalışma fork'unda ikinci sürüm birincinin yerini alıyor. Commit'in umurunda değil.",
       "afterText": "Çalışma fork'u ilerledi. Geçmiş ilerlemedi.",
       "cardLabel": "İkinci Sürüm",
@@ -51,7 +51,7 @@
     {
       "id": "tutorial-branching-06",
       "markerIndex": 5,
-      "at": 32.630295,
+      "at": 33.551454,
       "text": "Şimdi felaket. Riskli değişiklik customers tablosunu siliyor. Gerçek hayatta bu, midenizin bulandığı andır.",
       "afterText": "Drop table çalıştı. Veri çalışma fork'undan silindi.",
       "cardLabel": "Tabloyu Sil",
@@ -60,7 +60,7 @@
     {
       "id": "tutorial-branching-07",
       "markerIndex": 6,
-      "at": 38.597418,
+      "at": 39.850347,
       "text": "Satırları tekrar isteyin, veritabanı açıkça söylüyor: customers ilişkisi mevcut değil. Felaket gerçek. Her satır gitti.",
       "afterText": "İlişki mevcut değil. Üç satır, gitti.",
       "cardLabel": "Tablo Silindi",
@@ -69,7 +69,7 @@
     {
       "id": "tutorial-branching-08",
       "markerIndex": 7,
-      "at": 45.023533,
+      "at": 46.251513,
       "text": "Riskli değişikliği de commit edin; bozuk tablo ve her şeyiyle. Geçmiş gerçekte ne olduğunu kaydeder. Artık iki commit var, üst ve alt.",
       "afterText": "Zincirde iki anlık görüntü.",
       "cardLabel": "Commit v2",
@@ -78,7 +78,7 @@
     {
       "id": "tutorial-branching-09",
       "markerIndex": 8,
-      "at": 50.876553,
+      "at": 52.196298,
       "text": "İşte geçmiş: üstte ikinci sürüm, altında birinci sürüm, mesajlar ve yazarlar dahil; tek bir imajın kilidini açmadan.",
       "afterText": "Bir repo log, tıpkı git log gibi.",
       "cardLabel": "Repo Log",
@@ -87,7 +87,7 @@
     {
       "id": "tutorial-branching-10",
       "markerIndex": 9,
-      "at": 55.851239,
+      "at": 56.077573,
       "text": "İşte ödül anı. Stable branch'i yeni bir yazılabilir fork'a checkout edin. Reflink klonu: neredeyse anında, her boyutta.",
       "afterText": "Dondurulmuş birinci sürümün yazılabilir bir kopyası, yaklaşık bir saniyede.",
       "cardLabel": "Checkout",
@@ -96,7 +96,7 @@
     {
       "id": "tutorial-branching-11",
       "markerIndex": 10,
-      "at": 60.773115,
+      "at": 61.783031,
       "text": "Rollback fork'unu diğer repo'lar gibi başlatın.",
       "afterText": "İki fork çalışıyor: güncel sürüm ve kontrol noktası.",
       "cardLabel": "Rollback Başlat",
@@ -105,7 +105,7 @@
     {
       "id": "tutorial-branching-12",
       "markerIndex": 11,
-      "at": 67.070568,
+      "at": 68.446131,
       "text": "İşte kanıt: rollback fork'u birinci sürümü okuyor. Çalışma fork'unda hâlâ ikinci sürüm var. Çalıştırabileceğiniz bir geçmiş.",
       "afterText": "Rollback tamamlandı. Buraya gelmek için hiçbir şeyin üzerine yazılmadı.",
       "cardLabel": "Kanıt: v1",
@@ -114,7 +114,7 @@
     {
       "id": "tutorial-branching-13",
       "markerIndex": 12,
-      "at": 72.350149,
+      "at": 73.904275,
       "text": "Ve en önemli kısım: silinen tablo geri geldi, üç satırıyla birlikte. Rollback yalnızca dosyaları değil, veritabanını da geri yükledi.",
       "afterText": "Yine üç satır. Felaket geri alındı.",
       "cardLabel": "Veri Geri Yüklendi",

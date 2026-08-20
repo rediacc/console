@@ -6,7 +6,7 @@
     {
       "id": "tutorial-backup-restore-01",
       "markerIndex": 0,
-      "at": 2.799671,
+      "at": 2.416144,
       "text": "Iniziamo da ciò che deve sopravvivere. Dentro il repository attivo c'è un file che contiene una singola riga d'ordine. Tienila d'occhio, perché stiamo per portare questa macchina offline e recuperare quella riga da un altro posto.",
       "afterText": "Ecco la riga. Da qui in poi si tratta solo di recuperarla.",
       "cardLabel": "I Dati",
@@ -15,7 +15,7 @@
     {
       "id": "tutorial-backup-restore-02",
       "markerIndex": 1,
-      "at": 9.00514,
+      "at": 7.552816,
       "text": "Copia l'intero repository su una seconda macchina. La prima copia trasferisce l'intera immagine cifrata via SSH, qui circa due gigabyte in mezzo minuto. Quello che arriva dall'altra parte è un artefatto di backup, non una seconda app in esecuzione.",
       "afterText": "La copia è ora sulla macchina di backup.",
       "cardLabel": "Invia Alla Macchina Di Backup",
@@ -24,7 +24,7 @@
     {
       "id": "tutorial-backup-restore-03",
       "markerIndex": 2,
-      "at": 17.993741,
+      "at": 15.166453,
       "text": "Chiedi alla macchina di backup cosa contiene. Il repository è lì, con il proprio nome. La seconda riga, quella con un identificatore grezzo, è la base conservata che permette al prossimo invio di mandare solo ciò che è cambiato.",
       "afterText": "Entrambe le righe sono previste: la copia, e la base che mantiene leggeri gli invii successivi.",
       "cardLabel": "Conferma La Copia",
@@ -33,7 +33,7 @@
     {
       "id": "tutorial-backup-restore-04",
       "markerIndex": 3,
-      "at": 23.318642,
+      "at": 20.269124,
       "text": "Ora il disastro. Ferma la macchina primaria e smonta il suo volume cifrato. Per questa macchina, l'applicazione è sparita.",
       "afterText": "Fermata e smontata. Tutto ciò che segue funziona sulla copia.",
       "cardLabel": "Il Disastro",
@@ -42,7 +42,7 @@
     {
       "id": "tutorial-backup-restore-05",
       "markerIndex": 4,
-      "at": 28.951964,
+      "at": 25.688963,
       "text": "Trasforma l'artefatto in un repository attivo. Restore è il comando che lo fa. Un flag nomina il nuovo repository, uno lo posiziona sulla macchina di backup, e uno salta la conferma.",
       "afterText": "La copia è ora un repository, con un nome tutto suo.",
       "cardLabel": "Ripristina L'Artefatto",
@@ -51,7 +51,7 @@
     {
       "id": "tutorial-backup-restore-06",
       "markerIndex": 5,
-      "at": 39.005334,
+      "at": 34.978427,
       "text": "Monta il repository ripristinato. Deliberatamente non avviamo i suoi container, perché la prova che vogliamo sono i dati, non l'applicazione.",
       "afterText": "Montato, e pronto per la lettura.",
       "cardLabel": "Montalo",
@@ -60,7 +60,7 @@
     {
       "id": "tutorial-backup-restore-07",
       "markerIndex": 6,
-      "at": 46.52408,
+      "at": 40.371515,
       "text": "Lo stesso comando eseguito all'inizio, questa volta contro un repository che due comandi fa non esisteva ancora. Stesso file, stessa riga, stesso ordine.",
       "afterText": "Questo è il punto. I dati sono tornati.",
       "cardLabel": "I Dati Sono Sopravvissuti",
@@ -69,7 +69,7 @@
     {
       "id": "tutorial-backup-restore-08",
       "markerIndex": 7,
-      "at": 52.091103,
+      "at": 45.900768,
       "text": "Un'ultima cosa, per i backup attraverso cui puoi tornare indietro nel tempo. Gli snapshot vanno nel chunk store, dove la prima esecuzione carica tutto e ogni esecuzione successiva carica solo i blocchi modificati. Qualsiasi snapshot si ripristina da solo. Serve un account e un repository con licenza, quindi qui il comando è solo scritto, non eseguito.",
       "afterText": "Digitalo sulla tua installazione una volta che hai un account, e funzionerà.",
       "cardLabel": "Backup a Punto nel Tempo",

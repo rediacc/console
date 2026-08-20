@@ -6,7 +6,7 @@
     {
       "id": "tutorial-delta-transfer-01",
       "markerIndex": 0,
-      "at": 2.414842,
+      "at": 2.411872,
       "text": "第一次推送到另一台机器会传输完整镜像，输出结果写得很清楚：传输了两 GB，标记为 full。这就是基准线。",
       "afterText": "四十四秒传输两 GB，标记为 full。CLI 同时在两端保留了相同的基础镜像，这就是后续魔法的前提。",
       "cardLabel": "完整推送",
@@ -15,7 +15,7 @@
     {
       "id": "tutorial-delta-transfer-02",
       "markerIndex": 1,
-      "at": 8.165229,
+      "at": 9.893704,
       "text": "修改少量数据：两 GB 中的 50 MB。",
       "afterText": "大镜像中的一点小改动。",
       "cardLabel": "修改数据",
@@ -24,7 +24,7 @@
     {
       "id": "tutorial-delta-transfer-03",
       "markerIndex": 2,
-      "at": 16.388163,
+      "at": 18.416762,
       "text": "再次推送。命令一模一样，但这次看看输出：约 50 MB 已传输，标记为 delta，对比的是两 GB 的镜像。只有发生变化的块被传输了。",
       "afterText": "两 GB 的镜像，50 MB 在不到六秒内传输完毕。数字就是证明。",
       "cardLabel": "增量推送",
@@ -33,7 +33,7 @@
     {
       "id": "tutorial-delta-transfer-04",
       "markerIndex": 3,
-      "at": 22.149817,
+      "at": 24.289237,
       "text": "两台机器都保有相同的 repository，几秒内完成同步。如果你愿意，每小时运行一次也没问题，费用取决于变更量，而不是总大小。",
       "afterText": "频繁备份不再昂贵。",
       "cardLabel": "已同步",

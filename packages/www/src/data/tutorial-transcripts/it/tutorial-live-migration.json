@@ -6,7 +6,7 @@
     {
       "id": "tutorial-live-migration-01",
       "markerIndex": 0,
-      "at": 2.420835,
+      "at": 2.403264,
       "text": "Ecco pulse. Mantiene un contatore nella memoria del processo e stampa un battito ogni cinque secondi. Il contatore è a sei e sale, e vive solo nella RAM. Riavvia il processo e riparte da uno.",
       "afterText": "Un contatore in tempo reale, che batte in memoria. Questa è la nostra prova.",
       "cardLabel": "Contatore Live",
@@ -15,7 +15,7 @@
     {
       "id": "tutorial-live-migration-02",
       "markerIndex": 1,
-      "at": 8.294774,
+      "at": 8.337429,
       "text": "Un solo comando lo sposta, a caldo. La fase uno trasferisce la parte principale, due gigabyte in circa mezzo minuto, mentre il sorgente continua a girare. Poi il cutover: crea un checkpoint dei processi in esecuzione, trasporta gli ultimi megabyte e stampa il downtime lì, sul momento. Circa venti secondi, per uno spostamento da due gigabyte.",
       "afterText": "Due gigabyte spostati mentre l'app continuava a girare. La riga del downtime mostra quanto è costato davvero lo spostamento.",
       "cardLabel": "Migrazione Live",
@@ -24,7 +24,7 @@
     {
       "id": "tutorial-live-migration-03",
       "markerIndex": 2,
-      "at": 94.394579,
+      "at": 101.02615,
       "text": "Controlla la nuova macchina: eccolo. Montato, Docker in esecuzione, due container attivi.",
       "afterText": "Stesso repo, nuova casa, già in esecuzione.",
       "cardLabel": "Nuova Casa",
@@ -33,7 +33,7 @@
     {
       "id": "tutorial-live-migration-04",
       "markerIndex": 3,
-      "at": 99.812481,
+      "at": 106.193621,
       "text": "E il sorgente? Il repository è ancora elencato, ma guarda la riga: non montato, nessun Docker, zero container. Qui non gira più niente. L'immagine rimane intenzionalmente, come base per il prossimo trasferimento delta.",
       "afterText": "Fermato e smontato. L'immagine residua è una base delta, non un'app in esecuzione.",
       "cardLabel": "Sorgente Fermata",
@@ -42,7 +42,7 @@
     {
       "id": "tutorial-live-migration-05",
       "markerIndex": 4,
-      "at": 105.151877,
+      "at": 111.315305,
       "text": "Ora il colpo di scena. Il contatore segna diciassette, diciotto, diciannove, ancora in salita. Ha ripreso esattamente dal punto in cui il checkpoint lo aveva congelato, invece di ripartire da uno. Il processo non si è mai accorto di aver cambiato macchina.",
       "afterText": "Il contatore ha continuato a contare. La memoria del processo ha fatto il viaggio.",
       "cardLabel": "Contatore Continuato",

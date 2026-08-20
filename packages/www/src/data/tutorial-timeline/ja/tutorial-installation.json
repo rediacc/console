@@ -7,13 +7,13 @@
   "audioFormat": "mp3",
   "sampleRateHz": 48000,
   "voiceFingerprint": "1359e9dc99d9",
-  "transcriptHash": "801911142558215b1fba77979d68f0062ca458521cbbc239ac8786a8fb56116b",
+  "transcriptHash": "df0f22f1ca5400d8cc76ec0445f3782f584d9f7adce4c9502e6272f18485b925",
   "steps": [
     {
       "id": "tutorial-installation-01",
       "markerIndex": 0,
-      "replayStartSec": 1.624699,
-      "replayEndSec": 8.885041,
+      "replayStartSec": 1.618316,
+      "replayEndSec": 8.390281,
       "narrationText": "まず、CLI がパスに追加されているか確認します。バージョンフラグを付けて CLI を実行すると、インストールされているバージョンが表示され、インストールが正常に完了したことを確認できます。",
       "audioSrc": "/assets/tutorials/audio/ja/tutorial-installation/tutorial-installation-01.03c0a0e8.mp3",
       "textHash": "03c0a0e8718c6d15829889c9f32cd77bd8dee6c62ecf7a3fec1226ee33ac5f81",
@@ -371,8 +371,8 @@
     {
       "id": "tutorial-installation-02",
       "markerIndex": 1,
-      "replayStartSec": 8.885041,
-      "replayEndSec": 10.904926,
+      "replayStartSec": 8.390281,
+      "replayEndSec": 10.380445,
       "narrationText": "次に、CLI の doctor コマンドを実行します。Node、SSH など、CLI が必要とする依存関係を順番にチェックし、不足しているものを報告します。問題なければサーバーを追加する準備が整っています。",
       "audioSrc": "/assets/tutorials/audio/ja/tutorial-installation/tutorial-installation-02.ab8fbd13.mp3",
       "textHash": "ab8fbd1326ad69de35b5e8542eabba62a8225413721c54f76c207f628e31893e",

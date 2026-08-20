@@ -6,7 +6,7 @@
     {
       "id": "tutorial-backup-restore-01",
       "markerIndex": 0,
-      "at": 2.799671,
+      "at": 2.416144,
       "text": "Fangen wir mit dem an, was überleben muss. Im laufenden Repository liegt eine Datei mit genau einer Bestellzeile. Behalten Sie sie im Auge, denn gleich nehmen wir diese Maschine offline und holen diese Zeile von woanders zurück.",
       "afterText": "Das ist die Zeile. Ab jetzt dreht sich alles darum, sie zurückzuholen.",
       "cardLabel": "Die Daten",
@@ -15,7 +15,7 @@
     {
       "id": "tutorial-backup-restore-02",
       "markerIndex": 1,
-      "at": 9.00514,
+      "at": 7.552816,
       "text": "Kopieren Sie das gesamte Repository auf eine zweite Maschine. Die erste Kopie überträgt das komplette verschlüsselte Image per SSH, hier etwa zwei Gigabyte in einer halben Minute. Auf der anderen Seite landet ein Backup-Artefakt, keine zweite laufende App.",
       "afterText": "Die Kopie liegt jetzt auf der Backup-Maschine.",
       "cardLabel": "Auf die Backup-Maschine pushen",
@@ -24,7 +24,7 @@
     {
       "id": "tutorial-backup-restore-03",
       "markerIndex": 2,
-      "at": 17.993741,
+      "at": 15.166453,
       "text": "Fragen Sie die Backup-Maschine, was sie hat. Das Repository ist dort, unter seinem eigenen Namen. Die zweite Zeile, die mit der rohen Kennung, ist die aufbewahrte Basis, die den nächsten Push wieder nur die Änderungen senden lässt.",
       "afterText": "Beide Zeilen sind normal: die Kopie und die Basis, die spätere Pushes klein hält.",
       "cardLabel": "Die Kopie bestätigen",
@@ -33,7 +33,7 @@
     {
       "id": "tutorial-backup-restore-04",
       "markerIndex": 3,
-      "at": 23.318642,
+      "at": 20.269124,
       "text": "Jetzt die Katastrophe. Die primäre Maschine wird gestoppt und ihr verschlüsseltes Volume ausgehängt. Für diese Maschine ist die Anwendung verschwunden.",
       "afterText": "Gestoppt und ausgehängt. Alles danach läuft gegen die Kopie.",
       "cardLabel": "Die Katastrophe",
@@ -42,7 +42,7 @@
     {
       "id": "tutorial-backup-restore-05",
       "markerIndex": 4,
-      "at": 28.951964,
+      "at": 25.688963,
       "text": "Verwandeln Sie das Artefakt in ein laufendes Repository. Restore ist der Befehl dafür. Ein Flag benennt das neue Repository, eines platziert es auf der Backup-Maschine, und eines überspringt die Bestätigung.",
       "afterText": "Die Kopie ist jetzt ein Repository, mit einem eigenen Namen.",
       "cardLabel": "Das Artefakt wiederherstellen",
@@ -51,7 +51,7 @@
     {
       "id": "tutorial-backup-restore-06",
       "markerIndex": 5,
-      "at": 39.005334,
+      "at": 34.978427,
       "text": "Binden Sie das wiederhergestellte Repository ein. Wir starten die Container bewusst nicht, denn der Beweis, den wir wollen, sind die Daten, nicht die Anwendung.",
       "afterText": "Eingebunden und bereit zum Lesen.",
       "cardLabel": "Einbinden",
@@ -60,7 +60,7 @@
     {
       "id": "tutorial-backup-restore-07",
       "markerIndex": 6,
-      "at": 46.52408,
+      "at": 40.371515,
       "text": "Derselbe Befehl, den wir am Anfang ausgeführt haben, diesmal gegen ein Repository, das vor zwei Befehlen noch gar nicht existierte. Gleiche Datei, gleiche Zeile, gleiche Bestellung.",
       "afterText": "Genau darum geht es. Die Daten sind zurück.",
       "cardLabel": "Die Daten haben überlebt",
@@ -69,7 +69,7 @@
     {
       "id": "tutorial-backup-restore-08",
       "markerIndex": 7,
-      "at": 52.091103,
+      "at": 45.900768,
       "text": "Noch eins, für Backups, durch die du zurückspulen kannst. Snapshots gehen in den Chunk-Store: Der erste Lauf lädt alles hoch, jeder Lauf danach nur die geänderten Blöcke. Jeder Snapshot lässt sich einzeln wiederherstellen. Dafür braucht es einen Account und ein lizenziertes repository, deshalb wird der Befehl hier nur getippt, nicht ausgeführt.",
       "afterText": "Tippe ihn auf deiner eigenen Installation, sobald du einen Account hast, und er läuft.",
       "cardLabel": "Zeitpunkt-Backups",

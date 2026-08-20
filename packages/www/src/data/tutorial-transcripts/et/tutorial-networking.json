@@ -6,7 +6,7 @@
     {
       "id": "tutorial-networking-01",
       "markerIndex": 0,
-      "at": 2.427234,
+      "at": 2.411171,
       "text": "Teine samm. Ütleme CLI-le avaliku IP, baasdomäni, sertifikaadi e-posti ja Cloudflare API tokeni. Sertifikaadi e-post ja token on jagatud kõigi sinu masinate vahel, seega seadistad need ainult üks kord.",
       "afterText": "Infrastruktuur salvestatud sinu konfiguratsiooni.",
       "cardLabel": "Seadista Infra",
@@ -15,7 +15,7 @@
     {
       "id": "tutorial-networking-02",
       "markerIndex": 1,
-      "at": 12.223183,
+      "at": 11.974503,
       "text": "Kinnitame, et infrastruktuuri seaded on salvestatud. Avalik IP, baasdomeen, sertifikaadi e-post -- kõik on konfiguratsioonis nähtav.",
       "afterText": "Seaded salvestatud. Valmis serverisse tõugatamiseks.",
       "cardLabel": "Kuva Infra",
@@ -24,7 +24,7 @@
     {
       "id": "tutorial-networking-03",
       "markerIndex": 2,
-      "at": 16.437274,
+      "at": 16.497836,
       "text": "Kolmas samm: lükka konfiguratsioon serverisse. Päris tokeniga loob see sinu DNS-kirjed Cloudflare'is automaatselt ja valmistab proxy konfiguratsiooni ette.",
       "afterText": "Tõugatud. DNS-kirjeid luuakse Cloudflare'is.",
       "cardLabel": "Lükka Infra",
@@ -33,7 +33,7 @@
     {
       "id": "tutorial-networking-04",
       "markerIndex": 3,
-      "at": 19.770637,
+      "at": 19.729838,
       "text": "Neljas samm: loo väike repo nimega infra. Miks oma repo? Proxy suunab liiklust kõigi selle serveri rakenduste vahel. Infrastruktuur väärib oma eraldatud kasti, eemal sinu rakenduse koodist.",
       "afterText": "Infra repo loodud. Isoleeritud su rakenduse repodest.",
       "cardLabel": "Loo Repo",
@@ -42,7 +42,7 @@
     {
       "id": "tutorial-networking-05",
       "markerIndex": 4,
-      "at": 26.52638,
+      "at": 25.899874,
       "text": "Rakendame sisseehitatud proksi malli. See sisaldab Traefikut koos Let's Encrypt ja Cloudflare DNS-01 väljakutsete konfiguratsiooniga, töövalmis.",
       "afterText": "Traefiku konfiguratsioon paigas.",
       "cardLabel": "Rakenda Mall"
@@ -50,7 +50,7 @@
     {
       "id": "tutorial-networking-06",
       "markerIndex": 5,
-      "at": 31.688233,
+      "at": 31.172539,
       "text": "Ja käivitame proksi. Traefik avastab sinu konteinerid iga viie sekundi järel. TLS sertifikaadid tulevad Let's Encryptist automaatselt. Sinu rakendus on nüüd internetis HTTPS kaudu kättesaadav.",
       "afterText": "Proksi on töös. TLS sertifikaadid saabuvad automaatselt.",
       "cardLabel": "Juuruta Puhverserver",

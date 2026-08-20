@@ -6,7 +6,7 @@
     {
       "id": "tutorial-networking-01",
       "markerIndex": 0,
-      "at": 2.427234,
+      "at": 2.411171,
       "text": "Schritt zwei. Wir teilen der CLI die öffentliche IP, die Basisdomain, die Zertifikats-E-Mail und das Cloudflare-API-Token mit. Die Zertifikats-E-Mail und das Token werden über alle Ihre Maschinen geteilt, sodass Sie sie nur einmal setzen müssen.",
       "afterText": "Infrastruktur in deiner Konfig hinterlegt.",
       "cardLabel": "Infra Einrichten",
@@ -15,7 +15,7 @@
     {
       "id": "tutorial-networking-02",
       "markerIndex": 1,
-      "at": 12.223183,
+      "at": 11.974503,
       "text": "Wir bestätigen, dass die Infrastruktureinstellungen gespeichert wurden. Öffentliche IP, Basisdomain, Zertifikats-E-Mail, alles in der Konfiguration sichtbar.",
       "afterText": "Einstellungen gespeichert. Bereit, sie auf den Server zu pushen.",
       "cardLabel": "Infra Anzeigen",
@@ -24,7 +24,7 @@
     {
       "id": "tutorial-networking-03",
       "markerIndex": 2,
-      "at": 16.437274,
+      "at": 16.497836,
       "text": "Schritt drei: die Konfiguration auf den Server pushen. Mit einem echten Token werden deine DNS-Einträge auf Cloudflare automatisch angelegt und die Proxy-Konfiguration vorbereitet.",
       "afterText": "Gepusht. DNS-Einträge werden auf Cloudflare angelegt.",
       "cardLabel": "Infra Pushen",
@@ -33,7 +33,7 @@
     {
       "id": "tutorial-networking-04",
       "markerIndex": 3,
-      "at": 19.770637,
+      "at": 19.729838,
       "text": "Schritt vier: ein kleines repo namens infra erstellen. Warum ein eigenes repo? Der Proxy leitet den Traffic für jede App auf diesem Server. Infrastruktur verdient eine eigene isolierte Box, getrennt von deinem Anwendungscode.",
       "afterText": "Infra-Repo angelegt. Isoliert von deinen App-Repos.",
       "cardLabel": "Repo Erstellen",
@@ -42,7 +42,7 @@
     {
       "id": "tutorial-networking-05",
       "markerIndex": 4,
-      "at": 26.52638,
+      "at": 25.899874,
       "text": "Wir wenden die integrierte proxy-Vorlage an. Sie enthält Traefik sowie die Konfiguration für Let's Encrypt und Cloudflare DNS-01-Challenges, direkt einsatzbereit.",
       "afterText": "Traefik-Konfiguration steht.",
       "cardLabel": "Vorlage Anwenden"
@@ -50,7 +50,7 @@
     {
       "id": "tutorial-networking-06",
       "markerIndex": 5,
-      "at": 31.688233,
+      "at": 31.172539,
       "text": "Und wir starten den Proxy. Traefik erkennt Ihre Container alle fünf Sekunden. TLS-Zertifikate kommen automatisch von Let's Encrypt. Ihre App ist jetzt über HTTPS im Internet erreichbar.",
       "afterText": "Proxy ist live. TLS-Zertifikate kommen automatisch.",
       "cardLabel": "Proxy Bereitstellen",

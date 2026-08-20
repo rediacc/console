@@ -6,7 +6,7 @@
     {
       "id": "tutorial-production-mode-01",
       "markerIndex": 0,
-      "at": 2.431606,
+      "at": 2.407237,
       "text": "Käivitame rakenduse tootmisrežiimis sülearvutist. CLI repo up kutsub sama up funktsiooni, mida kasutasime arenduse ajal, kuid käivitab selle eraldatult. Saad sülearvuti sulgeda ja rakendus jätkab tööd.",
       "afterText": "Rakendus töötab tootmises. Sama käsk, sama tulemus, päris serveris.",
       "cardLabel": "Käivita Prod",
@@ -15,7 +15,7 @@
     {
       "id": "tutorial-production-mode-02",
       "markerIndex": 1,
-      "at": 7.724616,
+      "at": 7.839243,
       "text": "Lubame autostarti, et rakendus jääks ellu serveri taaskäivituse korral. Edaspidi, kui server taaskäivitub, tuleb see repositoorium automaatselt tagasi.",
       "afterText": "Autostart sees. Rakendus elab taaskäivituse üle.",
       "cardLabel": "Luba Autostart",
@@ -24,7 +24,7 @@
     {
       "id": "tutorial-production-mode-03",
       "markerIndex": 2,
-      "at": 13.316649,
+      "at": 13.238038,
       "text": "Loetleme, millel repositooriumidel on autostart lubatud. Kinnitab, et meie rakendus on nüüd käivitusnimekirjas.",
       "afterText": "Seal see on, käivitusnimekirjas.",
       "cardLabel": "Autostart Loend",
@@ -33,7 +33,7 @@
     {
       "id": "tutorial-production-mode-04",
       "markerIndex": 3,
-      "at": 19.488192,
+      "at": 19.058878,
       "text": "Rakenduse peatamiseks üks käsk sülearvutist. Üks käsk üles, üks käsk alla. Kõik sinu terminalist, ilma interaktiivsete seanssideta.",
       "afterText": "Peatatud. Üks käsk üles, üks käsk alla.",
       "cardLabel": "Peata Repo",

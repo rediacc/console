@@ -7,13 +7,13 @@
   "audioFormat": "mp3",
   "sampleRateHz": 48000,
   "voiceFingerprint": "614e9d2597f7",
-  "transcriptHash": "86e5fed9753c9c7e71c3564960cbe2c6278d72da636bb46fee0945165899a292",
+  "transcriptHash": "8b6d0a0fa98b216c4f22ddaf94c82ce0489534e2ec2a2b9ab963509bfce8b601",
   "steps": [
     {
       "id": "tutorial-add-server-01",
       "markerIndex": 0,
-      "replayStartSec": 1.627855,
-      "replayEndSec": 7.25092,
+      "replayStartSec": 1.613148,
+      "replayEndSec": 7.714792,
       "narrationText": "Nous commençons par créer un profil de configuration. Ce profil contient la clé SSH, la liste des machines et les paramètres d'infrastructure pour tout ce que nous allons faire.",
       "audioSrc": "/assets/tutorials/audio/fr/tutorial-add-server/tutorial-add-server-01.2ccc8b25.mp3",
       "textHash": "2ccc8b25f91f1632a6926e582d220fe0902915456711243d4e4588802a2c1161",
@@ -281,8 +281,8 @@
     {
       "id": "tutorial-add-server-02",
       "markerIndex": 1,
-      "replayStartSec": 7.25092,
-      "replayEndSec": 13.396171,
+      "replayStartSec": 7.714792,
+      "replayEndSec": 15.024927,
       "narrationText": "Maintenant, nous enregistrons le serveur depuis la ligne de commande en fournissant son nom, son adresse IP et l'utilisateur SSH. Les clés hôtes sont scannées automatiquement pour un accès sécurisé.",
       "audioSrc": "/assets/tutorials/audio/fr/tutorial-add-server/tutorial-add-server-02.876f734b.mp3",
       "textHash": "876f734b8f89a254b2f3a70abcfc31db32be80e2576ddaf250b90efa8a0a0e00",
@@ -520,8 +520,8 @@
     {
       "id": "tutorial-add-server-03",
       "markerIndex": 2,
-      "replayStartSec": 13.396171,
-      "replayEndSec": 15.698213,
+      "replayStartSec": 15.024927,
+      "replayEndSec": 18.069081,
       "narrationText": "Voyons ensuite le provisionnement du serveur. Cette étape installe renet et crée le datastore chiffré. Après cela, le serveur est prêt à héberger des dépôts.",
       "audioSrc": "/assets/tutorials/audio/fr/tutorial-add-server/tutorial-add-server-03.848dcc8d.mp3",
       "textHash": "848dcc8d2de51a6c2e3f85723521d04131221b6b64d623607256353f5b48c3ba",

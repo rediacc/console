@@ -7,13 +7,13 @@
   "audioFormat": "mp3",
   "sampleRateHz": 48000,
   "voiceFingerprint": "614e9d2597f7",
-  "transcriptHash": "538473b0e3748ff16eed08080f769a103ae45f564c3422c83c00e94f8799b8ed",
+  "transcriptHash": "06d75eb1db552b729edb342fdc35d55eb5573097977790e13c333b2bafa9e600",
   "steps": [
     {
       "id": "tutorial-installation-01",
       "markerIndex": 0,
-      "replayStartSec": 1.624699,
-      "replayEndSec": 8.885041,
+      "replayStartSec": 1.618316,
+      "replayEndSec": 8.390281,
       "narrationText": "Commençons par confirmer que l'outil est installé. Le flag version affiche la version installée et nous confirme que l'installation s'est bien déroulée.",
       "audioSrc": "/assets/tutorials/audio/fr/tutorial-installation/tutorial-installation-01.e7fecfec.mp3",
       "textHash": "e7fecfec552dcdd7e3cb779ca428edb5faad0cbc5ae907c7738015ab05e0f8ac",
@@ -209,8 +209,8 @@
     {
       "id": "tutorial-installation-02",
       "markerIndex": 1,
-      "replayStartSec": 8.885041,
-      "replayEndSec": 10.904926,
+      "replayStartSec": 8.390281,
+      "replayEndSec": 10.380445,
       "narrationText": "Maintenant, lançons le contrôle de diagnostic. Il parcourt toutes les dépendances dont la ligne de commande a besoin, Node, SSH, Docker, le binaire renet, et signale les éventuels manques. Un rapport propre signifie que vous êtes prêt.",
       "audioSrc": "/assets/tutorials/audio/fr/tutorial-installation/tutorial-installation-02.7967709a.mp3",
       "textHash": "7967709ac7963e62622012c3b896ebe75db0e325785ff15199eb1f48438b5e7e",

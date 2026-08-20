@@ -7,13 +7,13 @@
   "audioFormat": "mp3",
   "sampleRateHz": 48000,
   "voiceFingerprint": "32e0e7274a33",
-  "transcriptHash": "b20040af6b7e1f4d2edd82aaf0bc4954dae027bf219d9b74dd35a8dd620bed0c",
+  "transcriptHash": "75e8d8e6c5aadf27cf8fdc7480ded7abe54a53081c06094cd44dc347ffc2f564",
   "steps": [
     {
       "id": "tutorial-installation-01",
       "markerIndex": 0,
-      "replayStartSec": 1.624699,
-      "replayEndSec": 8.885041,
+      "replayStartSec": 1.618316,
+      "replayEndSec": 8.390281,
       "narrationText": "Esmalt kinnitame, et CLI on teel. CLI käivitamine versioonilipuga prindib paigaldatud versiooni ja näitab, et paigaldamine lõpetati edukalt.",
       "audioSrc": "/assets/tutorials/audio/et/tutorial-installation/tutorial-installation-01.a176858d.mp3",
       "textHash": "a176858de3aa7596bd059a73663c06159d68ac9c9f61a9610c2c4c9748239653",
@@ -119,8 +119,8 @@
     {
       "id": "tutorial-installation-02",
       "markerIndex": 1,
-      "replayStartSec": 8.885041,
-      "replayEndSec": 10.904926,
+      "replayStartSec": 8.390281,
+      "replayEndSec": 10.380445,
       "narrationText": "Järgmisena käivitame CLI doctor. See kontrollib sõltuvusi, mida CLI vajab -- Node, SSH ja ülejäänud -- ning teatab puuduvatest komponentidest. Puhas aruanne tähendab, et oled valmis serverit lisama.",
       "audioSrc": "/assets/tutorials/audio/et/tutorial-installation/tutorial-installation-02.6ce2e2d7.mp3",
       "textHash": "6ce2e2d76158bc014926738fa0d4d00d84c85b7babafc209a0fce29cacbadc0a",

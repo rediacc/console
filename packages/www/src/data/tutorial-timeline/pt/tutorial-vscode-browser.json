@@ -7,13 +7,13 @@
   "audioFormat": "mp3",
   "sampleRateHz": 48000,
   "voiceFingerprint": "ceee56ff81ab",
-  "transcriptHash": "47527dafbd3362599f3b80c91690bb1cf1d91c9635cb19ccd7e329dd3c9efc32",
+  "transcriptHash": "d12974e9fa505c5d92e1f567e4124fc14fcd02081762fc2cafdaa336dbe11ce0",
   "steps": [
     {
       "id": "tutorial-vscode-browser-01",
       "markerIndex": 0,
-      "replayStartSec": 2.418779,
-      "replayEndSec": 10.10448,
+      "replayStartSec": 2.412438,
+      "replayEndSec": 9.979633,
       "narrationText": "Um comando só. O CLI instala o servidor do editor na máquina uma vez, inicia dentro do sandbox do repo, abre um tunnel e te entrega um link. Sem VS Code local, sem extensões para configurar.",
       "audioSrc": "/assets/tutorials/audio/pt/tutorial-vscode-browser/tutorial-vscode-browser-01.acc93c40.mp3",
       "textHash": "acc93c40512ff00ce83bcc5761da62f47cb137190fde4799012721283e87968d",
@@ -323,8 +323,8 @@
     {
       "id": "tutorial-vscode-browser-02",
       "markerIndex": 1,
-      "replayStartSec": 10.10448,
-      "replayEndSec": 14.856043,
+      "replayStartSec": 9.979633,
+      "replayEndSec": 14.898378,
       "narrationText": "O mesmo repo, agora pelo terminal puro: o diretório de trabalho é o repo, os arquivos são os arquivos do repo.",
       "audioSrc": "/assets/tutorials/audio/pt/tutorial-vscode-browser/tutorial-vscode-browser-02.3fc6fbb6.mp3",
       "textHash": "3fc6fbb67cd3f48c9ad69a6ed8fd5c86f793d98f1505721a2c4ec70104140aa7",
@@ -478,8 +478,8 @@
     {
       "id": "tutorial-vscode-browser-03",
       "markerIndex": 2,
-      "replayStartSec": 14.856043,
-      "replayEndSec": 19.933198,
+      "replayStartSec": 14.898378,
+      "replayEndSec": 20.176159,
       "narrationText": "E o arquivo que criamos no editor do navegador? Bem aqui. Arquivos feitos no VS Code são arquivos reais do repo, na hora.",
       "audioSrc": "/assets/tutorials/audio/pt/tutorial-vscode-browser/tutorial-vscode-browser-03.47c0de5a.mp3",
       "textHash": "47c0de5aae8d2ced8da37665cfd193bddddddea16a9ab4b6236725eb6c9eb17b",
@@ -669,8 +669,8 @@
     {
       "id": "tutorial-vscode-browser-04",
       "markerIndex": 3,
-      "replayStartSec": 19.933198,
-      "replayEndSec": 23.377274,
+      "replayStartSec": 20.176159,
+      "replayEndSec": 23.521375,
       "narrationText": "Agora tente sair. Listando a raiz do servidor: permissão negada. O kernel confina o editor, o terminal e todo processo filho a este repo.",
       "audioSrc": "/assets/tutorials/audio/pt/tutorial-vscode-browser/tutorial-vscode-browser-04.d03b438e.mp3",
       "textHash": "d03b438e4f00a19a39ef6d111c95c647de0480aec0f58c69406afac0d511f5c4",
@@ -866,134 +866,12 @@
     {
       "id": "tutorial-vscode-browser-05",
       "markerIndex": 4,
-      "replayStartSec": 23.377274,
-      "replayEndSec": 26.980129,
-      "narrationText": "As pastas de outros usuários? Também negadas. Tudo que roda dentro deste sandbox — editores, terminais, ferramentas de build — termina nas paredes do repo.",
-      "audioSrc": "/assets/tutorials/audio/pt/tutorial-vscode-browser/tutorial-vscode-browser-05.b5955590.mp3",
-      "textHash": "b595559018582afdb722429825efd236d582ba5fc5a2a14fb1f3fc7d43eac23f",
-      "audioDurationSec": 14.28,
-      "wordTimings": [
-        {
-          "startSec": 0.64,
-          "endSec": 0.8,
-          "startChar": 10,
-          "endChar": 12
-        },
-        {
-          "startSec": 0.8,
-          "endSec": 1.28,
-          "startChar": 13,
-          "endChar": 19
-        },
-        {
-          "startSec": 1.28,
-          "endSec": 2.32,
-          "startChar": 20,
-          "endChar": 28
-        },
-        {
-          "startSec": 3.44,
-          "endSec": 3.68,
-          "startChar": 30,
-          "endChar": 36
-        },
-        {
-          "startSec": 3.76,
-          "endSec": 4.0,
-          "startChar": 37,
-          "endChar": 44
-        },
-        {
-          "startSec": 5.04,
-          "endSec": 5.28,
-          "startChar": 46,
-          "endChar": 50
-        },
-        {
-          "startSec": 5.36,
-          "endSec": 5.52,
-          "startChar": 51,
-          "endChar": 54
-        },
-        {
-          "startSec": 5.52,
-          "endSec": 5.84,
-          "startChar": 55,
-          "endChar": 59
-        },
-        {
-          "startSec": 5.92,
-          "endSec": 6.32,
-          "startChar": 60,
-          "endChar": 66
-        },
-        {
-          "startSec": 6.32,
-          "endSec": 6.64,
-          "startChar": 67,
-          "endChar": 72
-        },
-        {
-          "startSec": 6.64,
-          "endSec": 7.84,
-          "startChar": 73,
-          "endChar": 80
-        },
-        {
-          "startSec": 8.32,
-          "endSec": 9.28,
-          "startChar": 83,
-          "endChar": 91
-        },
-        {
-          "startSec": 9.68,
-          "endSec": 10.56,
-          "startChar": 93,
-          "endChar": 102
-        },
-        {
-          "startSec": 10.88,
-          "endSec": 11.52,
-          "startChar": 104,
-          "endChar": 115
-        },
-        {
-          "startSec": 11.52,
-          "endSec": 11.6,
-          "startChar": 116,
-          "endChar": 118
-        },
-        {
-          "startSec": 11.6,
-          "endSec": 11.84,
-          "startChar": 119,
-          "endChar": 124
-        },
-        {
-          "startSec": 12.56,
-          "endSec": 12.96,
-          "startChar": 127,
-          "endChar": 134
-        },
-        {
-          "startSec": 12.96,
-          "endSec": 13.12,
-          "startChar": 135,
-          "endChar": 138
-        },
-        {
-          "startSec": 13.2,
-          "endSec": 13.6,
-          "startChar": 139,
-          "endChar": 146
-        },
-        {
-          "startSec": 13.68,
-          "endSec": 13.76,
-          "startChar": 147,
-          "endChar": 149
-        }
-      ],
+      "replayStartSec": 23.521375,
+      "replayEndSec": 27.005514,
+      "narrationText": "As pastas de outros usuários? Também negadas. Tudo que roda dentro deste sandbox, incluindo editores, terminais e ferramentas de build, termina nas paredes do repo.",
+      "audioSrc": "/assets/tutorials/audio/pt/tutorial-vscode-browser/tutorial-vscode-browser-05.a296f3f9.mp3",
+      "textHash": "a296f3f9fa782bd6294e971c0698af9296e8d6ab42cf5883f901a014ae4d7471",
+      "audioDurationSec": 11.712,
       "afterAudioSrc": "/assets/tutorials/audio/pt/tutorial-vscode-browser/tutorial-vscode-browser-05-after.53cb095e.mp3",
       "afterAudioDurationSec": 3.24,
       "afterTextHash": "53cb095e210ae107d5b589a074001a356f4bd36135191305d7fdba2ab90440ae",

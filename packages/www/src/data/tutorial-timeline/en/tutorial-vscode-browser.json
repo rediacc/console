@@ -7,13 +7,13 @@
   "audioFormat": "mp3",
   "sampleRateHz": 48000,
   "voiceFingerprint": "6c6cf1ee371d",
-  "transcriptHash": "f80c54216306ef100c0a893754d46b99496d58ee7d2fdd382040c975d6ebb0c0",
+  "transcriptHash": "a450e391fe4f4c81ad9399174d7652b587ef11c3eb5cb9c1b3f629c3471a2bdf",
   "steps": [
     {
       "id": "tutorial-vscode-browser-01",
       "markerIndex": 0,
-      "replayStartSec": 2.418779,
-      "replayEndSec": 10.10448,
+      "replayStartSec": 2.412438,
+      "replayEndSec": 9.979633,
       "narrationText": "One command. The CLI installs the editor server on the machine once, starts it inside the repo sandbox, opens a tunnel, and hands you a link. No local VS Code, no extensions to set up.",
       "audioSrc": "/assets/tutorials/audio/en/tutorial-vscode-browser/tutorial-vscode-browser-01.c1a06b62.mp3",
       "textHash": "c1a06b62705f72ad049f89d7b9e1c5ece2f8460b2bddd21b7618976b63af829a",
@@ -218,101 +218,15 @@
           "endChar": 183
         }
       ],
-      "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-vscode-browser/tutorial-vscode-browser-01-after.984c6e61.mp3",
-      "afterAudioDurationSec": 5.304,
-      "afterTextHash": "984c6e615dae5c221fb3108fe4ba4bc91978b06b18541c403169a4441c95dc93",
-      "afterWordTimings": [
-        {
-          "startSec": 0.0,
-          "endSec": 0.16,
-          "startChar": 0,
-          "endChar": 4
-        },
-        {
-          "startSec": 0.16,
-          "endSec": 0.64,
-          "startChar": 5,
-          "endChar": 8
-        },
-        {
-          "startSec": 0.72,
-          "endSec": 0.8,
-          "startChar": 9,
-          "endChar": 11
-        },
-        {
-          "startSec": 0.8,
-          "endSec": 0.96,
-          "startChar": 12,
-          "endChar": 16
-        },
-        {
-          "startSec": 1.04,
-          "endSec": 1.52,
-          "startChar": 17,
-          "endChar": 23
-        },
-        {
-          "startSec": 1.76,
-          "endSec": 2.0,
-          "startChar": 25,
-          "endChar": 30
-        },
-        {
-          "startSec": 2.0,
-          "endSec": 2.16,
-          "startChar": 31,
-          "endChar": 35
-        },
-        {
-          "startSec": 2.16,
-          "endSec": 2.4,
-          "startChar": 36,
-          "endChar": 39
-        },
-        {
-          "startSec": 2.4,
-          "endSec": 2.96,
-          "startChar": 40,
-          "endChar": 42
-        },
-        {
-          "startSec": 3.2,
-          "endSec": 3.36,
-          "startChar": 45,
-          "endChar": 48
-        },
-        {
-          "startSec": 3.36,
-          "endSec": 3.6,
-          "startChar": 49,
-          "endChar": 53
-        },
-        {
-          "startSec": 3.6,
-          "endSec": 4.24,
-          "startChar": 54,
-          "endChar": 65
-        },
-        {
-          "startSec": 4.32,
-          "endSec": 4.48,
-          "startChar": 66,
-          "endChar": 68
-        },
-        {
-          "startSec": 4.48,
-          "endSec": 5.04,
-          "startChar": 71,
-          "endChar": 78
-        }
-      ]
+      "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-vscode-browser/tutorial-vscode-browser-01-after.a6a12ea0.mp3",
+      "afterAudioDurationSec": 5.16,
+      "afterTextHash": "a6a12ea09f67044b777a92e6691e67bbdc21f86b27889d08b8bf928acdac40b7"
     },
     {
       "id": "tutorial-vscode-browser-02",
       "markerIndex": 1,
-      "replayStartSec": 10.10448,
-      "replayEndSec": 14.856043,
+      "replayStartSec": 9.979633,
+      "replayEndSec": 14.898378,
       "narrationText": "Same repo from the plain terminal: the working directory is the repo, the files are the repo's files.",
       "audioSrc": "/assets/tutorials/audio/en/tutorial-vscode-browser/tutorial-vscode-browser-02.9239d82d.mp3",
       "textHash": "9239d82de2bce1394979fa153e58bb4d24d734f97af6163ece9164827c5e6934",
@@ -427,71 +341,15 @@
           "endChar": 100
         }
       ],
-      "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-vscode-browser/tutorial-vscode-browser-02-after.d848be98.mp3",
+      "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-vscode-browser/tutorial-vscode-browser-02-after.ab18d2eb.mp3",
       "afterAudioDurationSec": 3.72,
-      "afterTextHash": "d848be98735a45c9410477daf51d6871860e833ddda8469aef8aa2fec6d3fac4",
-      "afterWordTimings": [
-        {
-          "startSec": 0.16,
-          "endSec": 0.64,
-          "startChar": 0,
-          "endChar": 8
-        },
-        {
-          "startSec": 0.72,
-          "endSec": 0.8,
-          "startChar": 9,
-          "endChar": 12
-        },
-        {
-          "startSec": 0.88,
-          "endSec": 1.2,
-          "startChar": 13,
-          "endChar": 19
-        },
-        {
-          "startSec": 1.28,
-          "endSec": 1.6,
-          "startChar": 20,
-          "endChar": 25
-        },
-        {
-          "startSec": 2.16,
-          "endSec": 2.24,
-          "startChar": 28,
-          "endChar": 30
-        },
-        {
-          "startSec": 2.24,
-          "endSec": 2.4,
-          "startChar": 31,
-          "endChar": 33
-        },
-        {
-          "startSec": 2.4,
-          "endSec": 2.48,
-          "startChar": 34,
-          "endChar": 37
-        },
-        {
-          "startSec": 2.48,
-          "endSec": 2.88,
-          "startChar": 38,
-          "endChar": 42
-        },
-        {
-          "startSec": 2.88,
-          "endSec": 3.6,
-          "startChar": 43,
-          "endChar": 50
-        }
-      ]
+      "afterTextHash": "ab18d2eb11b34f6f134e3eb36824c9a1b392570d7b53d59c34e21c4041aa7726"
     },
     {
       "id": "tutorial-vscode-browser-03",
       "markerIndex": 2,
-      "replayStartSec": 14.856043,
-      "replayEndSec": 19.933198,
+      "replayStartSec": 14.898378,
+      "replayEndSec": 20.176159,
       "narrationText": "And the file we created in the browser editor? Right here. Files made in VS Code are real repo files, instantly.",
       "audioSrc": "/assets/tutorials/audio/en/tutorial-vscode-browser/tutorial-vscode-browser-03.e2fde92c.mp3",
       "textHash": "e2fde92ce4b369fc4deedfc85b2d74c9b8af5a875350e7dde53e4ab5cb8bb4dc",
@@ -699,8 +557,8 @@
     {
       "id": "tutorial-vscode-browser-04",
       "markerIndex": 3,
-      "replayStartSec": 19.933198,
-      "replayEndSec": 23.377274,
+      "replayStartSec": 20.176159,
+      "replayEndSec": 23.521375,
       "narrationText": "Now try to leave. Listing the root of the server: permission denied. The kernel scopes the editor, its terminal, and every child process to this repo.",
       "audioSrc": "/assets/tutorials/audio/en/tutorial-vscode-browser/tutorial-vscode-browser-04.320ad175.mp3",
       "textHash": "320ad175416675120e59b59927c77f101d44b1e4b184258901b0755b67d0ef65",
@@ -896,122 +754,12 @@
     {
       "id": "tutorial-vscode-browser-05",
       "markerIndex": 4,
-      "replayStartSec": 23.377274,
-      "replayEndSec": 26.980129,
-      "narrationText": "Other users' homes? Also denied. Whatever runs inside this sandbox — editors, terminals, build tools — ends at the repo's walls.",
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-vscode-browser/tutorial-vscode-browser-05.45c4dab7.mp3",
-      "textHash": "45c4dab7fd60fc359653c97b3868663674cba9bf2166bd77e7d486496102de95",
-      "audioDurationSec": 9.312,
-      "wordTimings": [
-        {
-          "startSec": 0.0,
-          "endSec": 0.24,
-          "startChar": 0,
-          "endChar": 5
-        },
-        {
-          "startSec": 0.24,
-          "endSec": 0.64,
-          "startChar": 6,
-          "endChar": 12
-        },
-        {
-          "startSec": 0.64,
-          "endSec": 1.12,
-          "startChar": 13,
-          "endChar": 18
-        },
-        {
-          "startSec": 1.28,
-          "endSec": 1.52,
-          "startChar": 20,
-          "endChar": 24
-        },
-        {
-          "startSec": 1.52,
-          "endSec": 1.92,
-          "startChar": 25,
-          "endChar": 31
-        },
-        {
-          "startSec": 2.32,
-          "endSec": 2.64,
-          "startChar": 33,
-          "endChar": 41
-        },
-        {
-          "startSec": 2.64,
-          "endSec": 3.04,
-          "startChar": 42,
-          "endChar": 46
-        },
-        {
-          "startSec": 3.04,
-          "endSec": 3.52,
-          "startChar": 47,
-          "endChar": 53
-        },
-        {
-          "startSec": 3.52,
-          "endSec": 3.68,
-          "startChar": 54,
-          "endChar": 58
-        },
-        {
-          "startSec": 3.68,
-          "endSec": 4.48,
-          "startChar": 59,
-          "endChar": 66
-        },
-        {
-          "startSec": 4.8,
-          "endSec": 5.36,
-          "startChar": 69,
-          "endChar": 76
-        },
-        {
-          "startSec": 5.6,
-          "endSec": 6.24,
-          "startChar": 78,
-          "endChar": 87
-        },
-        {
-          "startSec": 6.48,
-          "endSec": 6.8,
-          "startChar": 89,
-          "endChar": 94
-        },
-        {
-          "startSec": 6.8,
-          "endSec": 7.28,
-          "startChar": 95,
-          "endChar": 100
-        },
-        {
-          "startSec": 7.6,
-          "endSec": 7.84,
-          "startChar": 103,
-          "endChar": 107
-        },
-        {
-          "startSec": 7.84,
-          "endSec": 8.08,
-          "startChar": 108,
-          "endChar": 110
-        },
-        {
-          "startSec": 8.08,
-          "endSec": 8.48,
-          "startChar": 115,
-          "endChar": 121
-        },
-        {
-          "startSec": 8.48,
-          "endSec": 9.04,
-          "startChar": 122,
-          "endChar": 127
-        }
-      ],
+      "replayStartSec": 23.521375,
+      "replayEndSec": 27.005514,
+      "narrationText": "Other users' homes? Also denied. Whatever runs inside this sandbox, from editors to terminals to build tools, ends at the repo's walls.",
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-vscode-browser/tutorial-vscode-browser-05.abbf9e9b.mp3",
+      "textHash": "abbf9e9b806c3049a606a15f498324174e29c05cc4c12d3871e8a58764d89b81",
+      "audioDurationSec": 8.352,
       "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-vscode-browser/tutorial-vscode-browser-05-after.31799504.mp3",
       "afterAudioDurationSec": 3.24,
       "afterTextHash": "3179950499dcd59b3370342af5303863783253ee89cbf06fd5d72ff9e6586127",

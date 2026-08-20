@@ -7,13 +7,13 @@
   "audioFormat": "mp3",
   "sampleRateHz": 48000,
   "voiceFingerprint": "3c3406006ca5",
-  "transcriptHash": "4427c1b08e99c8f3d25ea2f1ee81dc8bd3bfe53a21795bc1d423bc693b6ba832",
+  "transcriptHash": "3d8304f94afccf4b66037def1b70de89285ecae43e958777f1ae28f2f3147914",
   "steps": [
     {
       "id": "tutorial-ssh-keys-01",
       "markerIndex": 0,
-      "replayStartSec": 1.625253,
-      "replayEndSec": 6.458857,
+      "replayStartSec": 1.613265,
+      "replayEndSec": 6.244832,
       "narrationText": "1단계입니다. 새로운 ed25519 SSH 키를 생성합니다. ed25519는 현대적인 기본값으로 작고 빠르며 널리 지원됩니다. 앞으로 추가하는 모든 서버에 대해 한 번만 생성하면 됩니다.",
       "audioSrc": "/assets/tutorials/audio/ko/tutorial-ssh-keys/tutorial-ssh-keys-01.f02450fa.mp3",
       "textHash": "f02450fac00cff5a1a6da7057ce6f98e96265751526c2a8dd243769b90e3d35b",
@@ -251,8 +251,8 @@
     {
       "id": "tutorial-ssh-keys-02",
       "markerIndex": 1,
-      "replayStartSec": 6.458857,
-      "replayEndSec": 13.298492,
+      "replayStartSec": 6.244832,
+      "replayEndSec": 13.509433,
       "narrationText": "2단계입니다. ssh-copy-id로 공개 키를 서버에 복사합니다. 서버 비밀번호를 마지막으로 한 번 입력해야 합니다. 이후에는 비밀번호 인증이 더 이상 필요하지 않습니다.",
       "audioSrc": "/assets/tutorials/audio/ko/tutorial-ssh-keys/tutorial-ssh-keys-02.24356181.mp3",
       "textHash": "243561812748d71fd1cbd71be29b6a2c201fb688a17f8ed6b9cf45af47ad4612",
@@ -556,8 +556,8 @@
     {
       "id": "tutorial-ssh-keys-03",
       "markerIndex": 2,
-      "replayStartSec": 13.298492,
-      "replayEndSec": 19.181151,
+      "replayStartSec": 13.509433,
+      "replayEndSec": 19.537172,
       "narrationText": "3단계입니다. CLI에 키를 등록합니다. 이제부터 모든 명령은 이 키로 인증됩니다.",
       "audioSrc": "/assets/tutorials/audio/ko/tutorial-ssh-keys/tutorial-ssh-keys-03.140ec462.mp3",
       "textHash": "140ec4626eaaa9f36b98e5bb0bdb3f9d8c98fc7916fb41d71c215604b1c930f4",

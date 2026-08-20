@@ -6,7 +6,7 @@
     {
       "id": "tutorial-backup-restore-01",
       "markerIndex": 0,
-      "at": 2.799671,
+      "at": 2.416144,
       "text": "先从必须存活下来的东西说起。在正在运行的 repository 里，有一个文件保存着一条订单记录。留意它，因为我们马上就要让这台机器下线，再从别处把这条记录找回来。",
       "afterText": "这就是那条记录。接下来的一切，都是为了把它找回来。",
       "cardLabel": "数据",
@@ -15,7 +15,7 @@
     {
       "id": "tutorial-backup-restore-02",
       "markerIndex": 1,
-      "at": 9.00514,
+      "at": 7.552816,
       "text": "把整个 repository 复制到第二台机器上。第一次复制会通过 SSH 传输整个加密镜像，在这里大约两吉字节，用时半分钟。到达另一端的是一个备份产物，而不是第二个正在运行的应用。",
       "afterText": "副本现在已经在备份机器上了。",
       "cardLabel": "推送到备份机器",
@@ -24,7 +24,7 @@
     {
       "id": "tutorial-backup-restore-03",
       "markerIndex": 2,
-      "at": 17.993741,
+      "at": 15.166453,
       "text": "查看备份机器上保存了什么。repository 就在那里，用它自己的名字。第二行，也就是显示原始标识符的那一行，是保留下来的基准，它让下一次推送只需要发送变化的部分。",
       "afterText": "两行都是正常的：副本本身，以及让后续推送保持轻量的基准。",
       "cardLabel": "确认副本",
@@ -33,7 +33,7 @@
     {
       "id": "tutorial-backup-restore-04",
       "markerIndex": 3,
-      "at": 23.318642,
+      "at": 20.269124,
       "text": "现在是灾难时刻。停止主机器，并卸载它的加密卷。对这台机器来说，应用已经不存在了。",
       "afterText": "已停止并卸载。此后的一切都在副本上进行。",
       "cardLabel": "灾难",
@@ -42,7 +42,7 @@
     {
       "id": "tutorial-backup-restore-05",
       "markerIndex": 4,
-      "at": 28.951964,
+      "at": 25.688963,
       "text": "把这个产物变成一个正在运行的 repository。做这件事的命令是 restore。一个参数给新的 repository 命名，一个参数指定它放在备份机器上，还有一个参数跳过确认。",
       "afterText": "副本现在是一个 repository 了，有了属于自己的名字。",
       "cardLabel": "恢复该产物",
@@ -51,7 +51,7 @@
     {
       "id": "tutorial-backup-restore-06",
       "markerIndex": 5,
-      "at": 39.005334,
+      "at": 34.978427,
       "text": "挂载恢复出来的 repository。我们特意不启动它的容器，因为我们想要证明的是数据，而不是应用本身。",
       "afterText": "已挂载，可以读取了。",
       "cardLabel": "挂载它",
@@ -60,7 +60,7 @@
     {
       "id": "tutorial-backup-restore-07",
       "markerIndex": 6,
-      "at": 46.52408,
+      "at": 40.371515,
       "text": "和一开始运行的完全相同的命令，这次针对的是两条命令之前还根本不存在的 repository。同一个文件，同一条记录，同一笔订单。",
       "afterText": "这就是全部意义所在。数据回来了。",
       "cardLabel": "数据活了下来",
@@ -69,7 +69,7 @@
     {
       "id": "tutorial-backup-restore-08",
       "markerIndex": 7,
-      "at": 52.091103,
+      "at": 45.900768,
       "text": "还有一点，关于可以让你回溯的备份。快照会发送到分块存储：第一次运行会上传全部内容，之后每次运行只上传变更的块。任何快照都可以单独恢复。这需要账户和已授权的 repository，所以这里只输入命令，不会执行。",
       "afterText": "拥有账户后，在你自己的安装环境中输入它，它就会运行。",
       "cardLabel": "时间点备份",
