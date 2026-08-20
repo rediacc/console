@@ -96,6 +96,13 @@ const MUTANTS: Mutant[] = [
     replace: 'return debugEnabled();',
     test: 'src/services/__tests__/quiet-stderr-replay.test.ts',
   },
+  {
+    name: 'the DAEMON path honours --debug too, not just the direct path',
+    file: 'src/services/executor/daemon/client.ts',
+    find: "if (event.level === 'error' || event.level === 'warning' || echoAll) {",
+    replace: "if (event.level === 'error' || event.level === 'warning' || debugEnabled()) {",
+    test: 'src/services/__tests__/quiet-stderr-replay.test.ts',
+  },
 ];
 
 /** A mutation that provably changes no behaviour, used only by --selftest. */
