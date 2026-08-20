@@ -15438,7 +15438,7 @@
   },
   {
     "id": "search-8308",
-    "content": "Hargnemine -- commit ja tagasipööramine",
+    "content": "Hargnemine: commit ja tagasipööramine",
     "excerpt": "Külmuta repositooriumi olekud muutumatuteks commit'ideks, nimeta need branch'idega ja vaata iga commit uuesti kirjutatava forkina.",
     "category": "Documentation",
     "page": "/et/docs/tutorial-branching",
@@ -15478,7 +15478,7 @@
   },
   {
     "id": "search-8312",
-    "content": "Hargnemine -- commit ja tagasipööramine",
+    "content": "Hargnemine: commit ja tagasipööramine",
     "body": "Tutorial: Branching, commit and rollback # Hargnemine -- commit ja tagasipööramine Versiooni oma repositooriumid nagu koodi. Commit külmutab forki muutumatuks kujutiseks; branch annab sellele nime; checkout muudab iga commit'i uuesti värskeks kirjutatavaks forkiks. Selles juhendis teeme teadaolevalt töötavast olekust commit'i, langetame päris PostgreSQL tabeli ja saame kõik read tagasi sekunditega.",
     "excerpt": "Tutorial: Branching, commit and rollback # Hargnemine -- commit ja tagasipööramine Versiooni oma repositooriumid nagu koodi. Commit külmutab forki muu...",
     "category": "Documentation",
