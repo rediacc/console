@@ -149,7 +149,11 @@ describe('routeLogEvent honours echoAll', () => {
   });
 
   it('always echoes error level, echoAll or not', () => {
-    routeLogEvent({ type: 'log', level: 'error', msg: 'boom' } as never, (l) => held.push(l), false);
+    routeLogEvent(
+      { type: 'log', level: 'error', msg: 'boom' } as never,
+      (l) => held.push(l),
+      false
+    );
     expect(out.join('')).toContain('boom');
   });
 });
