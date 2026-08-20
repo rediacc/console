@@ -514,6 +514,12 @@ jobs:
       - name: Block non-executable invoked scripts
         run: .ci/scripts/quality/check-script-exec-bit.sh
 
+      # Reads the committed naturalization provenance. private/growth is a separate
+      # repo and gitignored here, so the ledger is the only place CI can see which
+      # model actually ran.
+      - name: Naturalization model policy
+        run: npm run check:ci-naturalization-model-policy
+
       - uses: ./.github/actions/app-token
         id: app-token
         with:
