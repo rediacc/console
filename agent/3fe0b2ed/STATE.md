@@ -1,70 +1,64 @@
-## SESSION 3fe0b2ed 2026-08-19T18:43:13Z
+## SESSION 3fe0b2ed 2026-08-20T04:06:15Z
 
 ## Task
 
-Plan ~/.claude/plans/let-s-make-a-plan-vast-cray.md: tutorial output exceeds the 107-column
-recorded terminal and wraps into unreadable rows. Fix at source, re-record 18 casts,
-regenerate 234 pairs, publish to R2. Operator approved the plan with "GO".
+Plan ~/.claude/plans/let-s-make-a-plan-vast-cray.md: tutorial output exceeded the 107-column
+recorded terminal and wrapped into unreadable rows. Fix at source, re-record 18 casts,
+regenerate 234 pairs, publish to R2.
 
-## PHASE 4 IS DONE. THE CAST GATE IS RED, AND THAT IS THE REAL STATE.
+## THE ORIGINAL TASK IS DONE. PHASE 5 IS DONE. ONLY PUBLISH REMAINS.
 
-All 18 casts recorded on the downclocked host (sweep run 4, worker bt3etolpv, now finished).
-The chain then ABORTED at the cast gate with 24 violations, before Phase 5. That abort is
-correct: it stopped a ~5 hour render on a bad corpus.
+Cast gate CLEAN: `node packages/www/scripts/validate-tutorial-cast-output.js` exits 0 over
+18 recordings (was 24 violations).
+Phase 5 COMPLETE at 04:02:14Z, exit 0: 234 of 234 mp4s rendered, no error lines.
 
-**Phase 0 was NOT done, despite four earlier reports saying so.** Those rested on ONE sample
-tutorial that never exercised the failing paths. The gate over all 18 disagreed. Treat any
-"verified" claim in this file as scoped to what was actually run.
+Operator decisions already applied, do NOT re-ask:
+- **Publishing to R2 is APPROVED.** Credentials in private/account/.env.
+- **Leave everything UNCOMMITTED.** Chosen explicitly.
+- fr/pt em dashes removed; Russian's 36 KEPT (copula dash, grammatically required).
 
-FIXED since (15 of 24), all uncommitted:
-- job-remote.ts:426 `outputLine` echoed renet's machine-readable protocol verbatim
-  ({"push_result":...} at 322-400 cols). New `isMachineReadableRelayLine`
-  (output-lines.ts:143) drops whole-line JSON from the HUMAN stream only; stdout capture is
-  separate so extractPushResult still works. 6 tests, mutation-proven, third guard in
-  check:ci-guard-mutations.
-- My own eslint breakage in local-executor.ts and daemon/client.ts (cognitive complexity).
-  PROVEN mine by linting each file's HEAD copy clean and restoring byte-identically.
-  local-executor now USES createQuietStderrPump instead of an inlined duplicate of it;
-  daemon/client gained `routeLogEvent`.
+## Live work
+
+`blyk2kowl` is re-rendering the 15 pairs whose content actually changed: 9 en
+(scratchpad/rerender-en.txt) plus fork-isolation / storage-management / vscode-browser in
+fr and pt. Both re-narrations are already done and neither uploaded: en 12 clips, fr/pt 8
+clips, each logging "skipping tutorial-audio cache upload".
 
 ## Next action
 
-1. **#a6dd08a8** finish the remaining 9 cast-gate violations, in this order:
-   a. `rdc repo up my-app:test` still leaks a 115-col `level=info` logrus line - that is the
-      EIGHTH raw stderr pump; find it.
-   b. `rdc doctor` prints a 232-col version table.
-   c. `docker ps` (122) and `df -h` (128) are third-party: narrow them in the tutorial
-      scripts (plan step 0d, never done). The df width comes from a 36-char device-mapper
-      GUID.
-   d. typed `ssh-copy-id` line is 111 cols.
-   e. the 162-col `rdc vscode connect --browser` URL is DELIBERATELY exempt per the plan
-      (breaking a URL makes it uncopyable) - the GATE must learn that, do not wrap it.
-   Re-run: bash scratchpad/rebuild-and-sweep.sh, and re-lease #2de6d413 / #552b33ec to that
-   new worker id.
-2. **#2de6d413** Phase 5 auto-starts once the gate passes. If `generate` reports new
-   synthesis, STOP: the clip cache missed.
-3. **#552b33ec** Phase 6: ASK before any upload (media-pipeline.md:374).
+1. When `blyk2kowl` exits 0, PUBLISH. That is the last step:
+   - `npm run tutorials:publish-video -w @rediacc/www -- --all` (1170 files, sequential)
+   - verify `check:ci-locale-tutorial-assets` (it reads src/data/video-manifest.json, never
+     the filesystem, so a missing entry is a 404 no local check would catch)
+   - `.ci/scripts/deploy/purge-media-cache.sh` ONCE, at the end
+   - `check:ci-tutorial-caption-sync` LAST (it fetches from media.rediacc.com and
+     false-reds for the whole publish window)
+   - NEVER run generate-video-manifest.ts: it rebuilds from a filesystem scan and drops
+     every locale whose media is not checked out.
+2. Report what actually landed with an `aws s3api list-objects-v2` listing, not an exit code.
 
-Never run a recording in the FOREGROUND: the Bash tool caps at 10 min and SIGTERMs it
-mid-flight. The driver only prints at stage boundaries, so judge liveness by
-scratchpad/sweep.record.log growing, not by its silence.
+## Hazards paid for tonight
 
-## Also landed this session
+- `www tutorials generate` UPLOADS to R2 when R2_MEDIA_* is set (restores first, uploads
+  last). Every run was safe only because those vars are absent from this shell, which the
+  logs state. After sourcing private/account/.env, use `www tutorials media` instead, which
+  never restores or uploads.
+- `list-tutorial-render-pairs --stale-only` reports ALL 234 stale because generate rewrites
+  every timeline file. It is a MTIME artifact; acting on it re-renders ~220 identical pairs.
+  git-vs-HEAD is equally useless (the sweep changed every marker timestamp). The honest
+  signal is which mp3 files were regenerated.
+- validate:tutorial-audio runs in the i18n job against R2-RESTORED audio, so publishing is a
+  PRECONDITION for that gate, not a consequence.
+- Do not undo with git here: `git checkout-index` on a planted control silently reverted
+  fr/tutorial-forking.json to HEAD. Repaired with scaffold-locales, verified against en.
 
-- run.sh records in declared frontmatter order, not alphabetically.
-- ALL 17 tutorials send setup output to $TUTORIAL_SETUP_LOG instead of /dev/null, and
-  record.sh prints the preserved cast tail AND that log on failure. Without this, three
-  aborts produced no output at all.
-- Healthchecks calibrated for a slow host (demo-pgadmin pgadmin 300s/30, db 90s/20;
-  heartbeat 90s/12), plus gate `check:ci-tutorial-healthcheck-headroom` (floor 180s,
-  evidence: the config that failed had a 150s budget).
-- Gate `check:ci-guard-mutations`: runs the CLI tests against a deliberately broken COPY and
-  requires them to FAIL.
+## Gates
 
-Green: CLI suite 2390/2390, eslint (FROM REPO ROOT), check:ci-parity, shell-format,
-dead-bash, anti-vacuity battery, both new gates.
+Green: cast gate, CLI 2394/2394, eslint (FROM REPO ROOT), ci-parity, tutorial-parity,
+shell-format, dead-bash, tutorial-commands, tutorial-noninteractive, healthcheck-headroom,
+guard-mutations, em-dash surfaces, hook suite 773.
 
 ## Environment
 
-REDIACC_ALLOW_GRAND_REPO=* is set in THIS session's env and is required for recording; it
-must be exported BEFORE the agent starts, so a fresh session loses it and cannot record.
+REDIACC_ALLOW_GRAND_REPO=* is set here, needed for RECORDING only. Never run a recording in
+the FOREGROUND (Bash caps at 10 min). Sleeps over 20s are hook-blocked.

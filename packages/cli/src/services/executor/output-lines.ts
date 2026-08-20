@@ -70,6 +70,23 @@ const WITHHELD_LIMIT = 200;
 const LOGRUS_PARTIAL_PREFIX = 'time="';
 
 /**
+ * Write one diagnostic to stderr, wrapped to the terminal.
+ *
+ * There are TWO withhold-and-replay buffers in the CLI (this module's pump for
+ * the direct path, and the daemon client's deferredLogs), and the first fix
+ * wrapped only one of them, so a 115-column logrus line still shipped in a
+ * recorded tutorial. One helper, used by both, is what stops a third copy from
+ * drifting the same way.
+ *
+ * A replayed line is being read by a human, and at 115-358 columns an unwrapped
+ * one is wrapped by the TERMINAL instead, which interleaves it with the row
+ * below and shreds the layout.
+ */
+export function writeWrappedToStderr(line: string): void {
+  for (const row of wrapProse(line, terminalWidth())) process.stderr.write(`${row}\n`);
+}
+
+/**
  * A stderr pump that WITHHOLDS renet's info/debug chatter and replays it only if
  * the operation failed.
  *
@@ -121,12 +138,7 @@ export function createQuietStderrPump(options: { echoAll?: boolean } = {}) {
       // shreds the layout. `run_cmd_expect_fail` demos in the tutorials are
       // exactly this path - there the failure IS the demo, so the diagnostic is
       // on camera and has to be legible.
-      if (failed) {
-        const width = terminalWidth();
-        for (const line of withheld) {
-          for (const row of wrapProse(line, width)) process.stderr.write(`${row}\n`);
-        }
-      }
+      if (failed) for (const line of withheld) writeWrappedToStderr(line);
       withheld.length = 0;
     },
   };

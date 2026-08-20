@@ -11443,6 +11443,62 @@ else
     fail "220h no error row: $(head -c 200 "$VLOG" 2>&1)"
 fi
 
+echo "== 221. docs drift counts an UNCOMMITTED doc edit =="
+# WHY: docs_drift measured the last COMMIT touching the design docs, and this
+# repo's standing rule is that work stays uncommitted until the operator asks.
+# So a session that DID update the docs was told they had drifted at every
+# stop, and the only way to satisfy the check was to commit -- the one action
+# that rule forbids doing unilaterally. The middle assertion below is the guard
+# rail: a genuinely un-updated docs tree must STILL report drifted, or this fix
+# has merely disarmed the check.
+OUT=$(
+    cd "$(dirname "$HOOK")" && python3 - <<'PYEOF'
+import pathlib, subprocess, sys, tempfile
+sys.path.insert(0, ".")
+import wl_checks as W
+
+
+def sh(cwd, *a):
+    subprocess.run(a, cwd=cwd, check=True, capture_output=True)
+
+
+def build(dirty_docs, extra_commits):
+    d = tempfile.mkdtemp()
+    sh(d, "git", "init", "-q")
+    sh(d, "git", "config", "user.email", "p@x")
+    sh(d, "git", "config", "user.name", "p")
+    docs = pathlib.Path(d, "docs/ci-overhaul")
+    docs.mkdir(parents=True)
+    (docs / "06-progress.md").write_text("start\n")
+    pathlib.Path(d, ".ci").mkdir()
+    pathlib.Path(d, ".ci/a.sh").write_text("x\n")
+    sh(d, "git", "add", "-A")
+    sh(d, "git", "commit", "-qm", "base")
+    for i in range(extra_commits):
+        pathlib.Path(d, ".ci/a.sh").write_text("x%d\n" % i)
+        sh(d, "git", "add", "-A")
+        sh(d, "git", "commit", "-qm", "c%d" % i)
+    if dirty_docs:
+        (docs / "06-progress.md").write_text("start\nuncommitted update\n")
+    return d
+
+
+over = W.DOCS_DRIFT_MAX + 2
+checks = {
+    "quiet-when-aligned": W.docs_drift(build(False, 0))[0] == "ok",
+    "still-fires-when-ignored": W.docs_drift(build(False, over))[0] == "drifted",
+    "uncommitted-edit-counts": W.docs_drift(build(True, over))[0] == "pending",
+}
+bad = [k for k, v in checks.items() if not v]
+print("DRIFT", "OK" if not bad else "BAD:" + ",".join(bad))
+PYEOF
+)
+if grep -q "^DRIFT OK$" <<<"$OUT"; then
+    pass "221: uncommitted doc edits satisfy the drift check, and an ignored docs tree still fires"
+else
+    fail "221: docs_drift states wrong: $(grep '^DRIFT' <<<"$OUT")"
+fi
+
 echo
 echo "  passed=$PASS failed=$FAIL"
 [[ "$FAIL" -eq 0 ]]

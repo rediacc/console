@@ -18,6 +18,7 @@ import * as net from 'node:net';
 import { debugEnabled } from '../../../utils/debug.js';
 import { currentRequestContext } from '../../core/request-context.js';
 import { renderJobEvent } from '../job-remote.js';
+import { writeWrappedToStderr } from '../output-lines.js';
 import type { ExecuteOptions, ExecuteResult, Executor, RenetEvent } from '../types.js';
 import {
   daemonSocketPath,
@@ -228,7 +229,10 @@ async function runViaDaemon(options: ExecuteOptions, deps: ResolvedDeps): Promis
       if (deferredLogs.length > DEFERRED_LOG_LIMIT) deferredLogs.shift();
     };
     const flushDeferredLogs = (): void => {
-      for (const line of deferredLogs) process.stderr.write(`${line}\n`);
+      // WRAPPED, via the same helper the direct path uses. These were dumped raw
+      // and a 115-column logrus line reached a recorded tutorial through this
+      // branch while the other buffer was already fixed.
+      for (const line of deferredLogs) writeWrappedToStderr(line);
       deferredLogs.length = 0;
     };
 
