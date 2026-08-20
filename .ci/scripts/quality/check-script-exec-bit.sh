@@ -95,25 +95,36 @@ trap 'rm -rf "$control_dir"' EXIT
     exit 2
 }
 
-# A parent-relative reference must NOT be mistaken for a repo-root one. Planted as its
-# own control because the unanchored version passed every other check in this file while
-# silently checking the wrong file: `../victim.sh` is not `./victim.sh`.
+# A parent-relative reference must NOT be mistaken for one relative to the referencing
+# file. This control is built so the two behaviours produce DIFFERENT path sets, which
+# the first version of it did not: it planted `../victim.sh` in the SAME directory as an
+# existing `./victim.sh` reference, so both the correct and the broken behaviour deduped
+# to {victim.sh} and the assertion could not fail. Caught in review.
+#
+# Here the decoy lives in a SUBDIRECTORY and is referenced as `../decoy.sh` from a file
+# in that same subdirectory. Correct: the reference is skipped and decoy is never
+# reported. Broken (unanchored): `./decoy.sh` is extracted and resolved against the
+# subdirectory, naming sub/decoy.sh, which IS tracked and IS non-executable, so it is
+# reported. The sets differ by exactly one entry.
 (
     cd "$control_dir" || exit 1
-    printf 'source ../victim.sh\n' >parentref.yml
+    mkdir -p sub
+    printf '#!/bin/bash\necho decoy\n' >sub/decoy.sh
+    chmod 644 sub/decoy.sh
+    printf 'run: ../decoy.sh\n' >sub/parentref.yml
     git add -A >/dev/null 2>&1
 )
-parent_hits=$(scan_repo "$control_dir" | grep -c '^victim.sh' || true)
+parent_hits=$(scan_repo "$control_dir" | grep -c '^sub/decoy.sh' || true)
 
 control_hits=$(scan_repo "$control_dir" | wc -l)
-if [ "$parent_hits" -ne 1 ]; then
+if [ "$parent_hits" -ne 0 ]; then
     # Single quotes on the lines carrying ../x.sh: backticks inside a double-quoted
     # echo are COMMAND SUBSTITUTION, so the error path would try to execute the very
     # script it is complaining about. shfmt caught that here.
-    echo "${RED}REFUSE${OFF}  the parent-relative control is wrong."
-    echo '        Adding a ../victim.sh reference changed the reported count. A'
-    echo '        ../x.sh reference must be IGNORED, not silently read as the'
-    echo '        repo-root x.sh, which is a different file.'
+    echo "${RED}REFUSE${OFF}  a ../decoy.sh reference was resolved as if it were"
+    echo '        ./decoy.sh relative to the referencing file. Those name DIFFERENT'
+    echo '        files. The extraction regex has lost its anchor; see the comment'
+    echo '        above this control.'
     exit 2
 fi
 
