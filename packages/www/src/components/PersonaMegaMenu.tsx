@@ -173,7 +173,7 @@ const PersonaMegaMenu: React.FC<PersonaMegaMenuProps> = ({ isOpen, onToggle, onC
           break;
       }
     },
-    [isOpen, onClose]
+    [isOpen]
   );
 
   useEffect(() => {
