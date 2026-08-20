@@ -7507,30 +7507,30 @@
         "benefits": {
           "items": [
             {
-              "description": "يشغّل Rediacc خدمة k3s نيابة عنك، أو يتصل بكلاستر تملكه بالفعل. الأحجام (volumes) تعمل على ceph-csi RBD. وتبقى ملفات التعريف الخاصة بك ملكًا لك.",
+              "description": "Rediacc يشغل k3s لك أو يتصل بمجموعة Kubernetes موجودة. الأحجام تعمل على ceph-csi RBD. ملفات التعريف تبقى ملكك.",
               "icon": "check-circle",
               "title": "احتفظ بـ Kubernetes الخاص بك"
             },
             {
-              "description": "جهّز البنية التحتية على مضيفات KVM الخاصة بك أو على سحابات مثل Linode باستخدام شبكات VLAN خاصة. تفصل مجموعات العُقد بين عُقد Ceph كثيفة التخزين وعُقد Kubernetes كثيفة المعالجة.",
+              "description": "ادفع على مضيفات KVM الخاصة بك أو على Linode مع شبكات VLAN خاصة. مجموعات العقد تفصل بين عقد Ceph (تخزين) وعقد Kubernetes (معالجة).",
               "icon": "arrow-right-circle",
               "title": "قابلية تنقل حقيقية بين مراكز البيانات"
             },
             {
-              "description": "تطبيق Kubernetes هو namespace. افرعه كأي مستودع آخر: 1 إلى 5 ثوانٍ، مع بياناته كاملة. بنفس الأوامر التي تستخدمها بالفعل لمستودعات Docker.",
+              "description": "تطبيق Kubernetes = namespace. انسخه كأي مستودع: 1–5 ثوانٍ بالبيانات. بنفس أوامر Docker التي تعرفها.",
               "icon": "git-branch",
               "title": "عقلية واحدة لكل شيء"
             }
           ],
           "overline": "لماذا هذا مهم",
-          "title": "احتفظ بـ Kubernetes الخاص بك. واكسب قابلية التنقل."
+          "title": "احتفظ بـ Kubernetes. اكتسب النقل الحر."
         },
-        "blurb": "افرع أو انقل كلاستر يعمل، مع بياناته كاملة",
+        "blurb": "انسخ أو انقل مجموعة تعمل بالكامل مع بياناتها",
         "bottomCta": {
           "command": "rdc cluster fork prod --tag staging",
           "ctaText": "ابدأ مجاناً",
-          "description": "افرعه، اختبر عملية النقل، ثم رحّله فعليًا. ابدأ تجربتك المجانية لمدة 14 يومًا.",
-          "title": "امنح كلاسترك مسار خروج"
+          "description": "انسخها، اختبر الانتقال، ثم رحّلها فعلياً. جرّب 14 يوماً مجاناً.",
+          "title": "حرّر مجموعتك من التقيد"
         },
         "comparison": {
           "capabilityLabel": "القدرة",
@@ -7539,12 +7539,12 @@
             {
               "name": "نسخ احتياطي للتطبيقات والأحجام",
               "refs": [4, 5, 0, 9, 0],
-              "values": ["check", "check", "cross", "Volumes only", "rediacc"]
+              "values": ["check", "check", "cross", "الأحجام فقط", "rediacc"]
             },
             {
               "name": "نقل الكلاستر بأكمله مع بياناته",
               "refs": [6, 7, 8, 0, 0],
-              "values": ["Stop and restore", "Stop and restore", "Shape only", "cross", "rediacc"]
+              "values": ["إيقاف واستعادة", "إيقاف واستعادة", "البنية فقط", "cross", "rediacc"]
             },
             {
               "name": "تفريع كلاستر يعمل، مع بياناته كاملة",
@@ -7559,7 +7559,7 @@
             {
               "name": "نسخ البيانات دون إعادة كتابة كاملة",
               "refs": [0, 0, 0, 10, 0],
-              "values": ["cross", "cross", "cross", "Async copy", "rediacc"]
+              "values": ["cross", "cross", "cross", "نسخ غير متزامنة", "rediacc"]
             },
             {
               "name": "تحويل نهائي قصير ومقاس لعملية نقل مخطط لها",
@@ -7572,19 +7572,19 @@
         },
         "hero": {
           "primaryCta": "ابدأ مجاناً",
-          "subtitle": "الكلاستر بأكمله ينتقل كوحدة واحدة: العُقد، والإعدادات، والبيانات. إلى جهاز آخر أو مركز بيانات آخر. والتحويل النهائي يُقاس بالثواني، لا بعطلة نهاية أسبوع.",
+          "subtitle": "مجموعتك كاملة تنتقل كوحدة واحدة—العقد والإعدادات والبيانات جميعاً. إلى أي جهاز آخر أو مركز بيانات مختلف. الانتقال لا يستغرق سوى ثوانٍ، لا عطلة نهاية أسبوع.",
           "title": "افرع أو انقل كلاستر Kubernetes يعمل"
         },
         "howItWorks": {
           "cloneVisual": {
             "arrow": {
               "icon": "arrow-right-circle-arrow",
-              "label": "Fork",
+              "label": "نسخ",
               "time": "46s"
             },
             "clone": {
               "cardClass": "restored",
-              "containerCount": "Fork",
+              "containerCount": "نسخة",
               "services": [
                 {
                   "name": "Nodes",
@@ -7605,7 +7605,7 @@
               ],
               "size": "46s",
               "status": "Running",
-              "title": "prod-staging (Datacenter B)"
+              "title": "الإنتاج-التجريبي (مركز البيانات B)"
             },
             "production": {
               "containerCount": "الأصل",
@@ -7629,7 +7629,7 @@
               ],
               "size": "Untouched",
               "status": "Running",
-              "title": "prod (Datacenter A)"
+              "title": "الإنتاج (مركز البيانات A)"
             }
           },
           "overline": "كيف يعمل",
@@ -7652,38 +7652,38 @@
           ],
           "title": "الكلاستر بأكمله هو مجموعة ملفات واحدة"
         },
-        "label": "قابلية نقل كلاستر Kubernetes",
+        "label": "قابلية نقل مجموعة Kubernetes",
         "meta": {
           "description": "افرع أو انقل كلاستر Kubernetes يعمل، مع بياناته كاملة، إلى جهاز أو مركز بيانات آخر. تحويل نهائي قصير ومقاس. مبني على Ceph RBD وk3s.",
           "keywords": "ترحيل كلاستر kubernetes, تفريع الكلاستر, ceph rbd, k3s, التنقل بين مراكز البيانات, قابلية نقل kubernetes",
-          "title": "Fork or Move a Kubernetes Cluster | Rediacc"
+          "title": "انسخ أو انقل مجموعة Kubernetes | Rediacc"
         },
         "problem": {
-          "description": "جعل Kubernetes تطبيقاتك قابلة للنقل. لكن الكلاستر نفسه ليس كذلك. فالبيانات تعيش في مركز بيانات واحد. ونقلها يعني مشروع إعادة بناء كامل: عُقد جديدة، تخزين جديد، استعادة من نسخة احتياطية، وإعادة اختبار كل شيء. لذلك معظم الفرق لا تنتقل أبدًا. ومزوّد الخدمة يعرف ذلك جيدًا.",
+          "description": "Kubernetes جعل تطبيقاتك سهلة النقل. لكن المجموعة ذاتها؟ عالقة في مكانها. البيانات تعيش في مركز بيانات واحد. نقلها = إعادة بناء من الصفر: عقد جديدة، تخزين جديد، استعادة من نسخة احتياطية، واختبار كل شيء من جديد. لذلك معظم الفرق لا تنتقل أبداً—والمزودون يعرفون هذا جيداً.",
           "overline": "المشكلة",
           "statCallouts": [
             {
               "number": "27%",
               "ref": 1,
-              "source": "Flexera 2024 State of the Cloud Report",
+              "source": "تقرير Flexera لحالة السحابة 2024",
               "text": "من الإنفاق السحابي يُهدر كل عام"
             },
             {
               "number": "17%",
               "ref": 2,
-              "source": "Flexera 2025 State of the Cloud Report",
+              "source": "تقرير Flexera لحالة السحابة 2025",
               "text": "المتوسط الذي تتجاوزه الشركات في ميزانيتها السحابية"
             },
             {
               "number": "$0.09/GB",
               "ref": 3,
-              "source": "AWS/Azure/GCP Pricing 2024",
+              "source": "AWS/Azure/GCP الأسعار 2024",
               "text": "رسوم لنقل البيانات للخارج، مصممة عمدًا لجعل المغادرة مكلفة"
             }
           ],
           "timeline": {
             "newLabel": "مع Rediacc",
-            "newSteps": ["Pre-copy", "16s cutover", "Live"],
+            "newSteps": ["النسخ المسبق", "انتقال 16 ثانية", "مباشر"],
             "oldLabel": "الطريقة القديمة",
             "oldSteps": [
               {
@@ -7708,48 +7708,48 @@
               }
             ]
           },
-          "title": "كلاسترك عالق في المكان الذي بنيته فيه"
+          "title": "مجموعتك عالقة حيث بنيتها"
         },
         "references": {
           "items": [
             {
-              "text": "Flexera, \"2024 State of the Cloud Report,\" 2024. \"27% of cloud spend continues to be wasted.\"",
+              "text": "Flexera، \"تقرير حالة السحابة 2024\"، 2024. \"27% من إنفاق السحابة يضيع سدى.\"",
               "url": "https://www.flexera.com/about-us/press-center/flexera-2024-state-of-the-cloud-managing-spending-top-challenge"
             },
             {
-              "text": "Flexera, \"2025 State of the Cloud Report,\" 2025. \"With cloud budgets already exceeding limits by 17%, organizations are increasingly turning to managed service providers.\"",
+              "text": "Flexera، \"تقرير حالة السحابة 2025\"، 2025. \"مع تجاوز ميزانيات السحابة الحدود بمقدار 17%، تتجه المؤسسات بشكل متزايد نحو مزودي الخدمات المُدارة.\"",
               "url": "https://www.flexera.com/about-us/press-center/new-flexera-report-finds-84-percent-of-organizations-struggle-to-manage-cloud-spend"
             },
             {
-              "text": "AWS, \"Amazon S3 Pricing — Data Transfer,\" 2024. \"Data Transfer OUT from Amazon S3 to Internet: $0.09 per GB for the first 10 TB/month.\"",
+              "text": "AWS، \"تسعير Amazon S3 — نقل البيانات\"، 2024. \"نقل البيانات خارجاً من Amazon S3 إلى الإنترنت: 0,09 دولار لكل GB لأول 10 TB/شهر.\"",
               "url": "https://aws.amazon.com/s3/pricing/"
             },
             {
-              "text": "Velero backs up Kubernetes cluster resources and persistent volumes and restores them into a cluster.",
+              "text": "Velero يقوم بنسخ احتياطي لموارد مجموعة Kubernetes والأحجام الدائمة واستعادتها في مجموعة.",
               "url": "https://velero.io/docs/"
             },
             {
-              "text": "Kasten K10 provides backup and restore of Kubernetes applications, including application data.",
+              "text": "Kasten K10 توفر نسخ احتياطي واستعادة لتطبيقات Kubernetes، بما فيها بيانات التطبيق.",
               "url": "https://docs.kasten.io/"
             },
             {
-              "text": "Velero cluster migration restores a backup into a new cluster; workloads are recreated from the backup point, not moved live.",
+              "text": "ترحيل مجموعة Velero يستعيد نسخة احتياطية إلى مجموعة جديدة؛ الأحمال تُعاد إنشاؤها من نقطة النسخة الاحتياطية، لا تُنقل مباشرة.",
               "url": "https://velero.io/docs/main/migration-case/"
             },
             {
-              "text": "Kasten K10 migrates applications between clusters by exporting a restore point and importing it into the target cluster.",
+              "text": "Kasten K10 ترحل التطبيقات بين المجموعات بتصدير نقطة استعادة واستيرادها إلى المجموعة المستهدفة.",
               "url": "https://docs.kasten.io/latest/usage/migration.html"
             },
             {
-              "text": "Cluster API's clusterctl move relocates Cluster API objects (the cluster's definition) to another management cluster; it does not move workload data.",
+              "text": "عملية clusterctl move من Cluster API تنقل كائنات Cluster API (تعريف المجموعة) إلى مجموعة إدارة أخرى؛ لا تنقل بيانات الأحمال.",
               "url": "https://cluster-api.sigs.k8s.io/clusterctl/commands/move"
             },
             {
-              "text": "Ceph RBD mirroring replicates block device images between Ceph clusters; it covers volumes, not Kubernetes cluster state.",
+              "text": "مرآة Ceph RBD تنسخ صور الأجهزة الكتلية بين مجموعات Ceph؛ تغطي الأحجام فقط، لا حالة مجموعة Kubernetes.",
               "url": "https://docs.ceph.com/en/latest/rbd/rbd-mirroring/"
             },
             {
-              "text": "Ceph RBD mirroring is asynchronous, based on journaling or periodic snapshots, and is designed for disaster recovery.",
+              "text": "مرآة Ceph RBD غير متزامنة، تعتمد على السجل اليومي أو اللقطات الدورية، وتُصمم لاستعادة الكوارث.",
               "url": "https://docs.ceph.com/en/latest/rbd/rbd-mirroring/"
             }
           ]
@@ -7757,17 +7757,17 @@
         "stats": [
           {
             "icon": "layers",
-            "label": "Whole 2-node cluster fork",
+            "label": "نسخ المجموعة كاملة بـ عقدتين",
             "number": "46s"
           },
           {
             "icon": "clock",
-            "label": "Migrate cutover, measured",
+            "label": "نقل الخدمة محسوب بالثواني",
             "number": "16s"
           },
           {
             "icon": "zap",
-            "label": "Namespace fork",
+            "label": "نسخ مساحة الأسماء",
             "number": "1-5s"
           }
         ],
@@ -7819,49 +7819,49 @@
         "benefits": {
           "items": [
             {
-              "description": "البيانات تبقى مشفرة بـ AES-256 خلال كل خطوة من الترحيل. بدون فك تشفير مؤقت في أي مرحلة.",
+              "description": "البيانات تبقى مشفرة بـ AES-256 في كل خطوة. ما نفك التشفير مؤقتاً في أي لحظة.",
               "icon": "lock",
-              "title": "تشفير أثناء النقل"
+              "title": "التشفير أثناء النقل"
             },
             {
-              "description": "تكوين التشفير والمفاتيح التي يحتفظ بها العميل وإعدادات Docker وسياسات الشبكة تُرحل جميعها كوحدة ذرية واحدة.",
+              "description": "الإعدادات تنتقل مع البيانات كحزمة واحدة. إعدادات التشفير والمفاتيح وإعدادات Docker وسياسات الشبكة. كل شيء.",
               "icon": "package",
               "title": "الإعدادات تنتقل مع البيانات"
             },
             {
-              "description": "بدون فك تشفير مؤقت. بدون نوافذ تعرض. لا وسيط يرى البيانات النصية أبدًا.",
+              "description": "ما فيه فك تشفير مؤقت. ما فيه نوافذ تعرض. ولا وسيط يشوف البيانات الخام.",
               "icon": "eye-off",
-              "title": "نقل بدون ثقة"
+              "title": "بدون وسيط"
             }
           ],
-          "overline": "لماذا هذا مهم",
-          "title": "ما تحصل عليه"
+          "overline": "ليش هذا مهم",
+          "title": "إيش اللي تحصل عليه"
         },
-        "blurb": "رحّل بدون المخاطرة ببياناتك",
+        "blurb": "رحّل بياناتك بأمان كامل",
         "bottomCta": {
           "command": "rdc repo push production --to secondary",
-          "description": "ابدأ مع الإصدار المجاني Community. الترحيل المشفر مُضمّن.",
-          "primaryCta": "ابدأ مجاناً",
-          "tierBadge": "مجاني حتى 5 مستودعات · بدون بطاقة ائتمان",
+          "description": "الترحيل الآمن مضمّن. جرّب النسخة المجانية 14 يوم.",
+          "primaryCta": "جرّب الآن مجاناً",
+          "tierBadge": "14 يوم مجاني · ألغِ في أي وقت",
           "title": "رحّل بأمان، في كل مرة"
         },
         "calculator": {
-          "annualLabel": "مخاطر الترحيل السنوية",
-          "description": "كل ترحيل بدون تشفير شامل هو حادثة امتثال تنتظر الحدوث.",
-          "footnote": "بناءً على 200 دولار/ساعة لإعادة تكوين التشفير، 4,880 دولار/تيرابايت علاوة الاختراق (IBM 2024)، واحتمال اختراق 1% لكل نافذة تعريض. Rediacc يحافظ على التشفير طوال العملية — صفر نوافذ تعريض، صفر إعادة تشفير مطلوبة.",
+          "annualLabel": "إجمالي مخاطر الترحيل السنوية",
+          "description": "أي ترحيل بدون تشفير من الطرف للطرف الآخر = حادثة امتثال في الانتظار.",
+          "footnote": "بناءً على 200 دولار/ساعة لإعادة تكوين التشفير، 4.880 دولار/تيرابايت علاوة الاختراق (IBM 2024)، واحتمال اختراق 1% لكل نافذة تعرض. Rediacc يحافظ على التشفير طول الطريق — صفر نوافذ تعرض، صفر إعادة تشفير.",
           "headerTitle": "حاسبة مخاطر الترحيل",
           "overline": "التكلفة الحقيقية",
           "results": {
-            "labor": "عمالة إعادة التشفير",
+            "labor": "تكاليف إعادة التشفير",
             "risk": "البيانات المعرضة لكل ترحيل",
-            "windows": "نوافذ التعريض / سنة"
+            "windows": "نوافذ التعرض في السنة"
           },
           "sliders": {
-            "data": "حجم البيانات بالتيرابايت",
+            "data": "حجم البيانات (بالتيرابايت)",
             "hours": "ساعات التعريض لكل ترحيل",
-            "migrations": "عمليات الترحيل سنوياً"
+            "migrations": "عمليات ترحيل سنوياً"
           },
-          "title": "كم تكلفك مخاطر الترحيل",
+          "title": "كم تكلفك مخاطر الترحيل فعلاً",
           "withAnnual": "$0",
           "withoutTag": "بدون Rediacc",
           "withResults": {
@@ -7872,8 +7872,8 @@
           "withTag": "مع Rediacc"
         },
         "comparison": {
-          "capabilityLabel": "القدرة",
-          "description": "معظم أدوات النسخ الاحتياطي تعامل الترحيل كفكرة ثانوية. Rediacc يعامله كعملية مشفرة من الدرجة الأولى.",
+          "capabilityLabel": "المقدرة",
+          "description": "معظم أدوات النسخ الاحتياطي تضيف الترحيل كحاجة ثانوية. احنا بنيناه من الأول كعملية مشفرة من الدرجة الأولى.",
           "features": [
             {
               "name": "ترحيل بدون فك تشفير",
@@ -7912,12 +7912,12 @@
             }
           ],
           "overline": "الفجوة",
-          "title": "ما لا يستطيع الآخرون فعله أثناء الترحيل"
+          "title": "اللي ما يقدر الآخرون يعملوه أثناء الترحيل"
         },
         "hero": {
-          "primaryCta": "ابدأ مجاناً",
-          "subtitle": "تنتقل بين الخوادم أو السحابات أو المزودين؟ نسخك الاحتياطية المشفرة تنتقل بأمان. بدون تعريض. بدون فقدان بيانات.",
-          "title": "رحّل بدون تعريض بياناتك للخطر"
+          "primaryCta": "جرّب الآن مجاناً",
+          "subtitle": "تنقل الخوادم أو السحابات أو المزودين؟ نسخك محمية طول الطريق. بدون تعرض البتة. بدون فقد.",
+          "title": "رحّل بياناتك بأمان، بدون قلق"
         },
         "howItWorks": {
           "cloneVisual": {
@@ -7979,56 +7979,56 @@
           "overline": "كيف يعمل",
           "steps": [
             {
-              "description": "لقطات btrfs المشفرة تُجمع مع المفاتيح والتكوينات والسياسات سليمة. لا شيء يُفك تشفيره.",
+              "description": "النسخ المشفرة تُجمع مع المفاتيح والإعدادات والسياسات كلها. لا شيء يُفك تشفيره.",
               "icon": "package",
-              "title": "Pack"
+              "title": "التجميع"
             },
             {
-              "description": "انقل إلى أي وجهة عبر قناة مشفرة. AES-256 لا ينقطع أبدًا أثناء النقل.",
+              "description": "أرسل البيانات لأي خادم أو سحابة أو مزود. البيانات تظل مشفرة طول الطريق. AES-256 ما ينقطع أبداً.",
               "icon": "arrow-right-circle",
-              "title": "Move"
+              "title": "النقل"
             },
             {
-              "description": "فحوصات سلامة SHA-256 تؤكد وصول كل بايت سليمًا. استرجاع تلقائي في حالة فشل أي شيء.",
+              "description": "فحص التوقيع يؤكد وصول كل ملف سليماً. لو بايت واحد نقص، الترحيل يُلغى تلقائياً.",
               "icon": "check-circle",
               "title": "التحقق"
             }
           ],
-          "title": "أمر واحد. صفر تعريض."
+          "title": "أمر واحد. بدون تعرض."
         },
         "label": "أمان الترحيل",
         "meta": {
-          "description": "تنتقل بين الخوادم أو السحابات أو المزودين؟ نسخك الاحتياطية المشفرة تنتقل بأمان. بدون تعريض. بدون فقدان بيانات.",
+          "description": "تنقل إلى خوادم أو سحابات أخرى؟ نسخك المشفرة محمية كل الطريق. بدون تعرض. بدون فقد.",
           "keywords": "ترحيل مشفر, نقل بدون تعريض, أمن ترحيل البيانات, نقل نسخ مشفرة, ترحيل btrfs, ترحيل الخوادم, تشفير ترحيل السحابة",
-          "title": "أمان الترحيل — رحّل بياناتك بدون مخاطر | Rediacc"
+          "title": "الترحيل الآمن للبيانات — هجرة بدون مخاطر | Rediacc"
         },
         "problem": {
-          "description": "نقل البيانات بين الأنظمة يخلق تعرضاً. ملفات مؤقتة، نقل غير مشفر، إعدادات غير متطابقة. كل ترحيل هو نافذة خطر. ومعظم الأدوات تفقد إعدادات التشفير عند النقل — مما يجبرك على إعادة تكوين كل شيء من الصفر على الجانب الآخر.",
+          "description": "نقل البيانات بين الأنظمة مخيف. معظم الأدوات تفك تشفير البيانات أولاً، ثم تنقلها. يعني الملفات تقعد مكشوفة أثناء النقل. خطأ واحد صغير والبيانات تتسرب. وبعدين عندما ينتهي الترحيل، إعدادات التشفير القديمة تختفي، في الانتظار حتى تعيد بناءها يدويً من الصفر على الطرف الثاني.",
           "overline": "المشكلة",
           "statCallouts": [
             {
               "number": "89%",
               "ref": 2,
               "source": "Flexera 2024 / Thales 2025",
-              "text": "من المؤسسات تعمل بسحابة متعددة، لكن 8% فقط تشفر أكثر من 80% من بيانات السحابة"
+              "text": "من الشركات تعمل على سحابات متعددة، لكن 8% فقط تشفر 80% أو أكثر من بيانات السحابة"
             },
             {
               "number": ".88M",
               "ref": 3,
               "source": "IBM Cost of Data Breach 2024",
-              "text": "متوسط تكلفة اختراق البيانات عالميًا"
+              "text": "متوسط تكلفة اختراق البيانات عالمياً"
             },
             {
               "number": "0K–00K",
               "ref": 4,
               "source": "Cloud provider pricing",
-              "text": "تكلفة خروج البيانات لكل بيتابايت عند ترحيل بيانات مشفرة بين السحب"
+              "text": "رسوم نقل البيانات لكل تيرابايت عند ترحيل بيانات مشفرة بين السحب"
             }
           ],
           "timeline": {
             "newLabel": "مع Rediacc",
-            "newSteps": ["تشغيل الترحيل", "0 تعرض", "تم التحقق"],
-            "oldLabel": "الترحيل التقليدي",
+            "newSteps": ["أمر واحد فقط", "بدون تعرض", "محقق تلقائياً"],
+            "oldLabel": "الطريقة القديمة",
             "oldSteps": [
               {
                 "day": "الخطوة 1",
@@ -8036,40 +8036,40 @@
               },
               {
                 "day": "الخطوة 2",
-                "text": "التصدير إلى بيئة الاختبار"
+                "text": "نقل إلى منطقة مؤقتة"
               },
               {
                 "day": "الخطوة 3",
-                "text": "نقل بدون تشفير"
+                "text": "إرسال بدون حماية"
               },
               {
                 "day": "الخطوة 4",
-                "text": "إعادة التشفير على الهدف"
+                "text": "إعادة التشفير من جديد"
               },
               {
                 "day": "النتيجة",
-                "text": "فقدان التكوين"
+                "text": "الإعدادات تُفقد"
               }
             ]
           },
-          "title": "الترحيل هو أكثر وقت تكون فيه البيانات عرضة للخطر"
+          "title": "الترحيل = أخطر وقت لبياناتك"
         },
         "references": {
           "items": [
             {
-              "text": "Flexera, “2024 State of the Cloud Report,” 2024. “Multi-cloud usage up from 87% last year to 89% this year.”",
+              "text": "Flexera, \"2024 State of the Cloud Report,\" 2024. \"Multi-cloud usage up from 87% last year to 89% this year.\"",
               "url": "https://www.flexera.com/about-us/press-center/flexera-2024-state-of-the-cloud-managing-spending-top-challenge"
             },
             {
-              "text": "Thales, “2025 Cloud Security Study,” conducted by S&P Global 451 Research, 2025. “Only 8% of organizations encrypt 80% or more of their cloud data.”",
+              "text": "Thales, \"2025 Cloud Security Study,\" conducted by S&P Global 451 Research, 2025. \"Only 8% of organizations encrypt 80% or more of their cloud data.\"",
               "url": "https://cpl.thalesgroup.com/about-us/newsroom/thales-2025-cloud-security-study-reveals-ai-tool-sprawl-security-gap"
             },
             {
-              "text": "IBM Security, “Cost of a Data Breach Report 2024,” July 2024. “The global average cost of a data breach reached $4.88 million in 2024.”",
+              "text": "IBM Security, \"Cost of a Data Breach Report 2024,\" July 2024. \"The global average cost of a data breach reached $4.88 million in 2024.\"",
               "url": "https://newsroom.ibm.com/2024-07-30-ibm-report-escalating-data-breach-disruption-pushes-costs-to-new-highs"
             },
             {
-              "text": "AWS, “Amazon S3 Pricing — Data Transfer,” 2024. “Data Transfer OUT from Amazon S3 to Internet: $0.09 per GB for the first 10 TB/month.”",
+              "text": "AWS, \"Amazon S3 Pricing — Data Transfer,\" 2024. \"Data Transfer OUT from Amazon S3 to Internet: $0.09 per GB for the first 10 TB/month.\"",
               "url": "https://aws.amazon.com/s3/pricing/"
             },
             {
@@ -8122,54 +8122,54 @@
               "label": "قبل",
               "value": "3 أسابيع"
             },
-            "improvement": "صفر نوافذ تعريض · أسرع 10 مرات"
+            "improvement": "صفر نوافذ تعرض · أسرع 10 مرات"
           },
-          "quote": "رحّلنا 42 خادماً من Hetzner إلى OVH خلال عطلة نهاية الأسبوع. 350 تيرابايت من البيانات المشفرة نُقلت بدون تعريض بايت واحد. ترحيلنا السابق — 8 خوادم فقط — استغرق ثلاثة أسابيع وتطلب فك تشفير كل شيء في منطقة مؤقتة. كانت آخر مرة قبلنا هذا الخطر."
+          "quote": "رحّلنا 42 خادماً من Hetzner إلى OVH خلال عطلة نهاية الأسبوع. 350 تيرابايت من البيانات المشفرة نُقلت بدون تعرض بايت واحد. ترحيلنا اللي قبله — 8 خوادم بس — أخذ ثلاثة أسابيع وفرض فك تشفير كل شيء في منطقة مؤقتة. ما نقبل هالخطر كمان."
         },
         "stats": [
           {
             "icon": "shield",
-            "label": "Data Exposed During Migration",
+            "label": "البيانات المعرضة أثناء الترحيل",
             "number": "0"
           },
           {
             "icon": "check-circle",
-            "label": "Encryption Maintained",
+            "label": "التشفير محفوظ",
             "number": "100%"
           },
           {
             "icon": "arrow-right-circle",
-            "label": "Destination Supported",
+            "label": "الوجهات المدعومة",
             "number": "Any"
           }
         ],
         "techDiff": {
-          "description": "أدوات الترحيل التقليدية تفك تشفير البيانات قبل النقل، مما يخلق نوافذ تعريض حيث تجلس بياناتك بدون حماية. Rediacc لا يفك التشفير أبداً أثناء الترحيل — لقطات btrfs المشفرة تنتقل ككتل مختومة.",
+          "description": "أدوات الترحيل القديمة تفك تشفير البيانات قبل ما تنقلها. يعني فيه نافذة يقعد فيها الملفات بدون حماية. احنا ما نفك التشفير أبداً. لقطات مشفرة تنتقل كأقفال محكمة من الأول للآخر.",
           "overline": "تحت الغطاء",
           "rediaccLabel": "Rediacc",
           "rows": [
             {
-              "rediacc": "إرسال/استقبال btrfs مشفر — لا يُفك تشفيره أبدًا",
-              "traditional": "مسار فك التشفير → النقل → إعادة التشفير"
+              "rediacc": "نسخ مشفرة: ترسل واستقبال، ما تُفك تشفيرها أبداً",
+              "traditional": "فك التشفير → النقل → إعادة التشفير"
             },
             {
-              "rediacc": "المفاتيح تنتقل بشكل منفصل، يحتفظ بها العميل في جميع الأوقات",
-              "traditional": "مفاتيح التشفير يجب مشاركتها مع أداة النقل"
+              "rediacc": "المفاتيح ما تترك الخادم الأصلي أبداً",
+              "traditional": "المفاتيح تُشارك مع أداة النقل"
             },
             {
-              "rediacc": "تكوين التشفير وإعدادات Docker ومسارات الشبكة تُرحل معًا",
-              "traditional": "التكوين والسياسات تُعاد بناؤها يدويًا على الهدف"
+              "rediacc": "إعدادات التشفير وإعدادات Docker ومسارات الشبكة كلها تنتقل معاً",
+              "traditional": "الإعدادات تُعاد بناؤها يدويً على الجانب الآخر"
             },
             {
-              "rediacc": "تحقق من المجموع الاختباري SHA-256 لكل مستودع بعد النقل",
-              "traditional": "السلامة مفترضة — بدون تحقق تلقائي"
+              "rediacc": "فحص التجزئة SHA-256 على كل مستودع بعد النقل",
+              "traditional": "التحقق من السلامة = فرضية، بدون فحص فعلي"
             },
             {
-              "rediacc": "افرع الكلاستر أولاً. اختبر عملية النقل قبل أن تحوّل فعليًا",
+              "rediacc": "افرع الكلاستر أولاً. جرب النقل قبل التحويل الفعلي",
               "traditional": "ترحيل الكلاسترات يحتاج بناءً موازيًا وقفزة إيمان"
             }
           ],
-          "title": "فك التشفير-نقل-إعادة التشفير مقابل ترحيل بدون تعريض",
+          "title": "فك التشفير + النقل مقابل ترحيل آمن",
           "traditionalLabel": "الترحيل التقليدي"
         }
       },

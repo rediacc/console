@@ -2472,30 +2472,30 @@
         },
         "companions": {
           "heading": "İlgili çözüm sayfaları",
-          "intro": "Aynı yapı, alacağınız soruların cevaplarına göre biçimlendirilmiş:",
+          "intro": "Aynı yaklaşım, sorulan sorulara göre biçimlendirilmiş:",
           "readMore": "Daha fazla oku"
         },
         "faq": {
           "heading": "Okuyucuların sorduğu sorular",
           "items": [
             {
-              "a": "CISO, CTO ya da kıdemli altyapı mühendisi için. Yedekleme, depolama, kurumsal uyumluluğun temellerini anlamanız gerekiyor.",
+              "a": "CISO, CTO veya senior altyapı mühendisleri için. Yedekleme, depolama ve kurumsal uyumluluğun temellerini bilmeniz gerekiyor.",
               "q": "Bu özet kimin için yazıldı?"
             },
             {
-              "a": "Evet. E-posta girişinizden sonra, 5 dakikalık yönetici özeti sayfada hazır olacak (CFO'ya, BT müdürüne ya da yönetim kurulu üyesine iletilebilir).",
+              "a": "Evet. E-postanızı gönderdikten sonra, aynı sayfada CFO'ya, BT müdürüne ya da kurul üyelerine iletebileceğiniz 5 dakikalık yönetici özeti bulunuyor.",
               "q": "Teknik olmayan bir versiyonu var mı?"
             },
             {
-              "a": "Tek bir onay e-postası. Sonra aylık bültenimize eklenir (tüm ürünler hakkında kısa yazılar). Tek tıkla abonelikten çık. E-posta adresi, Rediacc'ın veri yerleşimi politikası gereği varsayılan olarak AB'de saklanır.",
+              "a": "Tek onay e-postası. Sonra aylık bültenimize eklenirsiniz (ürünler hakkında kısa yazılar). Tek tıkla abonelikten çıkabilirsiniz. E-posta adresi Rediacc'ın veri yerleşimi politikası gereği varsayılan AB'de tutulur.",
               "q": "E-posta adresime ne olur?"
             },
             {
-              "a": "Özet bunu detaylı açıklıyor. Kısaca: btrfs değiştirilemez kopyaları ve anlık klonları depolama katmanına yerleştiriyor (uygulama üstüne değil). Gönder/al özelliği bu kopyaları başka yerlere gönderiyor. Sonuç: admin parolanız çalınsa bile saldırgan silemez.",
+              "a": "Özet bunu detaylı anlatıyor. Kısaca: btrfs yazılamaz kopyaları ve anlık klonları depolama katmanına koyar, uygulamaya değil. Gönder/al özelliği bu kopyaları sisteminizden çıkarır. Yani root şifresi eline geçse bile saldırgan bunları silemez veya değiştiremez.",
               "q": "Neden btrfs?"
             },
             {
-              "a": "Doğrudan değil. Mimari, Docker içinde btrfs depolamasında çalışan kendi sunucularınızı kapsar. RDS ya da Aurora'da kritik veri varsa, özet onu açıkça belirtir. Nerede geçerli, nerede geçerli olmadığını gösterir.",
+              "a": "Doğrudan hayır. Tasarım, btrfs depolamada Docker ile çalışan kendi sunucularınızı kapsar. Kritik verileriniz RDS veya Aurora'daysa, özet bunu açıkça belirtir ve modelin nerede geçerli, nerede olmadığını gösterir.",
               "q": "Bu, AWS RDS gibi yönetilen hizmetler için de geçerli mi?"
             }
           ]
@@ -2505,7 +2505,7 @@
           "downloadButton": "Teknik özeti indir",
           "eyebrow": "Ücretsiz indir · A4 PDF · CISO/CTO seviyesi",
           "openInBrowser": "Tarayıcıda aç",
-          "subtitle": "Geliştiriciler haftada 4,5 saat kod yazıyor. Kalan zaman ortam beklemeyle tüketiliyor. 50 kişilik ekip, kurulum işlemleri yüzünden yılda 720 bin – 1,2 milyon dolar kaybediyor.",
+          "subtitle": "Geliştiriciler haftada 4,5 saat kod yazıyor. Kalan zaman ortam beklemeyle gidiyor. 50 kişilik ekip, kurulum yüzünden yılda 720.000 ile 1.200.000 dolar kaybediyor.",
           "title": "Geliştirme Ortamları"
         },
         "meta": {
@@ -2515,16 +2515,16 @@
         },
         "toc": {
           "heading": "İçindekiler",
-          "intro": "İçinde tehdit modeli, mimari, nasıl çalıştığı. Hangi kuralları karşılamanız gerektiği. Denetçilerinizin isteyeceği tüm kanıtlar. 10 ila 14 yoğun sayfa.",
+          "intro": "İçinde: ne korur, nasıl çalışır. Hangi kuralları karşılar. Denetçinin soracağı kanıtlar. Yaklaşık 10 ile 14 yoğun sayfa.",
           "items": [
-            "Aslında ne'ye karşı korunuyor: açık konuşursak",
+            "Gerçekten neyi koruyor, basit dille",
             "Mimari nasıl çalışıyor, neden saldırgan başaramıyor",
             "Neyi engelliyor: gerçek dünyadan örnekler",
             "Hangi kurallar geçerli: cezalar, tarihler, tam metinler",
             "Maliyet hesabı: yayımlanmış verilerle kanıtlanmış",
             "Teknik açıdan nasıl konumlanıyor: diğer satıcılara karşı (fiyat hariç)",
             "Kurulum süreci, neleri kapsamıyor",
-            "Denetçilerinizin isteyeceği kanıtlar"
+            "Denetçinin isteyeceği kanıtlar"
           ]
         }
       },
@@ -2537,30 +2537,30 @@
         },
         "companions": {
           "heading": "İlgili Sayfalar",
-          "intro": "Aynı yaklaşım, sizin aldığınız soruların cevapları:",
+          "intro": "Aynı yaklaşım, sorulan sorulara göre biçimlendirilmiş:",
           "readMore": "Daha fazla oku"
         },
         "faq": {
           "heading": "Sıkça Sorulan Sorular",
           "items": [
             {
-              "a": "CISO, CTO ya da kıdemli altyapı mühendisleri için. Yedeklemeleri, depolama sistemlerini ve bulunduğunuz düzenlemeleri anladığınızı varsayıyoruz.",
+              "a": "CISO, CTO veya senior altyapı mühendisleri için. Yedekleme, depolama ve kurumsal uyumluluğun temellerini bilmeniz gerekiyor.",
               "q": "Bu rehber kimin için?"
             },
             {
-              "a": "Evet. E-posta verip indirdikten sonra, CFO, IT direktörü ya da yönetim kuruluna iletebileceğiniz beş dakikalık yönetici özeti bağlantısı geliyor.",
+              "a": "Evet. E-postanızı gönderdikten sonra, aynı sayfada CFO'ya, BT müdürüne ya da kurul üyelerine iletebileceğiniz 5 dakikalık yönetici özeti bulunuyor.",
               "q": "Teknik olmayan versiyonu var mı?"
             },
             {
-              "a": "Tek bir onay e-postası. Sonra aylık bültenimize eklenir (tüm ürünler hakkında kısa yazılar). Tek tıkla abonelikten çık. E-posta adresi, Rediacc'ın veri yerleşimi politikası gereği varsayılan olarak AB'de saklanır.",
+              "a": "Tek onay e-postası. Sonra aylık bültenimize eklenirsiniz (ürünler hakkında kısa yazılar). Tek tıkla abonelikten çıkabilirsiniz. E-posta adresi Rediacc'ın veri yerleşimi politikası gereği varsayılan AB'de tutulur.",
               "q": "E-postama ne olacak?"
             },
             {
-              "a": "Özet bunu detaylı anlatıyor. Kısaca: btrfs, değişmez kopyalar ve anlık klonları depolama katmanının içine yerleştiriyor — üstteki bir uygulamaya değil. Gönder/Al özelliği bu kopyaları makinanın dışına taşıyor. Yani root şifrenize sahip biri bunları silemez ya da değiştiremez.",
+              "a": "Özet bunu detaylı anlatıyor. Kısaca: btrfs yazılamaz kopyaları ve anlık klonları depolama katmanına koyar, uygulamaya değil. Gönder/al özelliği bu kopyaları sisteminizden çıkarır. Yani root şifresi eline geçse bile saldırgan bunları silemez veya değiştiremez.",
               "q": "Neden btrfs?"
             },
             {
-              "a": "Doğrudan değil. Tasarım, kendi sunucularınızda çalışan veritabanlarını kapsar — btrfs depolamada Docker ile. Kritik verileriniz RDS veya Aurora'da bulunuyorsa, özet bunu açıkça belirtir ve modelin nerede işe yaradığını gösterir.",
+              "a": "Doğrudan hayır. Tasarım, btrfs depolamada Docker ile çalışan kendi sunucularınızı kapsar. Kritik verileriniz RDS veya Aurora'daysa, özet bunu açıkça belirtir ve modelin nerede geçerli, nerede olmadığını gösterir.",
               "q": "Yönetilen hizmetlerde (AWS RDS gibi) de geçerli mi?"
             }
           ]
@@ -2574,22 +2574,22 @@
           "title": "Şifreleme Kontrolü"
         },
         "meta": {
-          "description": "Şifrelemeleri siz kontrol edin. Tedarikçi değiştiğinde bile verileriniz korumalı. Schrems II uyumlu. CISO/CTO ve yönetim özetleri dahil.",
+          "description": "Anahtarları siz kontrol edin. Tedarikçi değiştiğinde bile verileriniz şifrelenmiş kalır. Schrems II uyumlu. CISO/CTO ve yönetim özetleri dahil.",
           "keywords": "şifreleme kontrolü, pdf, rediacc, btrfs yedekleme, değiştirilemez yedekleme, teknik özet",
           "title": "Şifreleme Kontrolü: Ücretsiz Teknik Rapor"
         },
         "toc": {
           "heading": "Neler İçeriyor",
-          "intro": "Mimarinin nasıl çalıştığını, tehditleri, kuralları ve denetçinin soracağı kanıtları gösterir. 10-14 sayfa, sıkı yazılı.",
+          "intro": "İçinde: ne korur, nasıl çalışır. Hangi kuralları karşılar. Denetçinin soracağı kanıtlar. Yaklaşık 10 ile 14 yoğun sayfa.",
           "items": [
-            "Gerçekten ne korunuyor: somut tehdit modeli",
+            "Gerçekten neyi koruyor, basit dille",
             "Sistem nasıl çalışır ve saldırganlar bunu neden kıramamaz",
             "Gerçek örneklerle kırılan saldırı senaryoları",
             "Hangi kurallar geçerli: cezalar, son tarihler, kesin ifadeler",
             "Maliyet-fayda: yayımlanmış verilerle somut hesaplar",
             "Rakiplere karşı teknik pozisyonumuz (fiyat değil, mimariler)",
             "Başlama süreci ve kapsamın sınırları",
-            "Denetçinin soracağı deliller"
+            "Denetçinin isteyeceği kanıtlar"
           ]
         }
       },
@@ -2602,30 +2602,30 @@
         },
         "companions": {
           "heading": "İlgili çözüm sayfaları",
-          "intro": "Aynı yaklaşım, size sorulan sorulara yanıt olarak:",
+          "intro": "Aynı yaklaşım, sorulan sorulara göre biçimlendirilmiş:",
           "readMore": "Daha fazla oku"
         },
         "faq": {
           "heading": "Okuyucuların sorduğu sorular",
           "items": [
             {
-              "a": "CISO, CTO veya kıdemli altyapı mühendisi için. Yedekleme, depolama ve mevcut altyapınızın karşı karşıya olduğu düzenleyici kuralları bildiğiniz varsayılıyor.",
+              "a": "CISO, CTO veya senior altyapı mühendisleri için. Yedekleme, depolama ve kurumsal uyumluluğun temellerini bilmeniz gerekiyor.",
               "q": "Bu özet kimin için yazıldı?"
             },
             {
-              "a": "Evet. E-postanızı gönderdikten sonra aynı sayfa, CFO'ya, BT müdürüne veya yönetim kurulu üyesine iletebileceğiniz 5 dakikalık yönetici özetine bağlantı verir.",
+              "a": "Evet. E-postanızı gönderdikten sonra, aynı sayfada CFO'ya, BT müdürüne ya da kurul üyelerine iletebileceğiniz 5 dakikalık yönetici özeti bulunuyor.",
               "q": "Teknik olmayan bir versiyonu var mı?"
             },
             {
-              "a": "Tek bir onay e-postası. Sonra aylık bültenimize eklenir (tüm ürünler hakkında kısa yazılar). Tek tıkla abonelikten çık. E-posta adresi, Rediacc'ın veri yerleşimi politikası gereği varsayılan olarak AB'de saklanır.",
+              "a": "Tek onay e-postası. Sonra aylık bültenimize eklenirsiniz (ürünler hakkında kısa yazılar). Tek tıkla abonelikten çıkabilirsiniz. E-posta adresi Rediacc'ın veri yerleşimi politikası gereği varsayılan AB'de tutulur.",
               "q": "E-posta adresime ne olur?"
             },
             {
-              "a": "Özet bunu detayıyla anlatıyor. Kısaca: btrfs, yazılamaz kopyaları ve anlık klonları depolama katmanının kendisine koymaz, uygulamaya. Gönderme özelliği bu kopyaları sisteminizden dışarı taşır. Root şifresi olan biri bile onları değiştiremez ya da silemez.",
+              "a": "Özet bunu detaylı anlatıyor. Kısaca: btrfs yazılamaz kopyaları ve anlık klonları depolama katmanına koyar, uygulamaya değil. Gönder/al özelliği bu kopyaları sisteminizden çıkarır. Yani root şifresi eline geçse bile saldırgan bunları silemez veya değiştiremez.",
               "q": "Neden btrfs?"
             },
             {
-              "a": "Doğrudan değil. Tasarım, kendi sunucularınızda Docker'de btrfs depolamada çalışan veritabanlarını kapsar. Kritik verileriniz RDS ya da Aurora'da ise, özet bunu açıkça söyler. Daha sonra modelin nereye uyup nereye uymadığını gösterir.",
+              "a": "Doğrudan hayır. Tasarım, btrfs depolamada Docker ile çalışan kendi sunucularınızı kapsar. Kritik verileriniz RDS veya Aurora'daysa, özet bunu açıkça belirtir ve modelin nerede geçerli, nerede olmadığını gösterir.",
               "q": "Yönetilen hizmetlere (AWS RDS gibi) de uygulanır mı?"
             }
           ]
@@ -2635,26 +2635,26 @@
           "downloadButton": "Teknik bülteni indir",
           "eyebrow": "Ücretsiz indir · A4 PDF · CISO/CTO kalitesi",
           "openInBrowser": "Tarayıcıda aç",
-          "subtitle": "AWS US-EAST-1, 20 Ekim 2025'te 15 saat kapandı. Snapchat, Robinhood, Uber, Delta. Siz zamanında geçiş yapabilir miydiniz?",
+          "subtitle": "AWS US-EAST-1 20 Ekim 2025'te 15 saat kapandı. Snapchat, Robinhood, Uber, Delta... Kesinti ortasında bulut değiştirmek için hazırlık gerekir.",
           "title": "Daima Çoklu Bulut"
         },
         "meta": {
-          "description": "Taşınabilir yedekler ve sınanmış bulutlar arası geçişlerle işletmeniz kesintilere hazırlıklı olur. CISO/CTO raporu + yönetici özeti.",
+          "description": "Taşınabilir yedekler, bulutlar arası test edilmiş yük devretme. İşletmeniz bulut kesintilerine hazırlı olur. CISO/CTO ve yönetim özetleri dahil.",
           "keywords": "her koşulda çoklu bulut, pdf, rediacc, btrfs yedekleme, değiştirilemez yedekleme, teknik özet",
           "title": "Çoklu Bulut Her Zaman: Ücretsiz Bülten"
         },
         "toc": {
           "heading": "İçinde neler var",
-          "intro": "İçinde: ne engelliyor, nasıl çalışıyor. Hangi kuralları karşılıyor. Denetçinin soracağı kanıtlar. Yaklaşık 10 ila 14 yoğun sayfa.",
+          "intro": "İçinde: ne korur, nasıl çalışır. Hangi kuralları karşılar. Denetçinin soracağı kanıtlar. Yaklaşık 10 ile 14 yoğun sayfa.",
           "items": [
-            "Sade sözlerle: gerçekte neyi savunuyorsun",
+            "Gerçekten neyi koruyor, basit dille",
             "Sistem nasıl çalışıyor ve neden saldırgan bunu geçemez",
             "Ne'yi engellediği: gerçek örneklerle",
             "Geçerli kurallar: cezalar, son tarihler, tam metinler",
             "Maliyet hesabı: yayımlanmış rakamlarla kanıtlı",
             "Rakipler karşısında: teknoloji bazında kıyaslama",
             "Kurulumun şekli ve sınırları",
-            "Denetçi soracağı kanıtlar"
+            "Denetçinin isteyeceği kanıtlar"
           ]
         }
       },
@@ -2667,30 +2667,30 @@
         },
         "companions": {
           "heading": "İlgili Çözümler",
-          "intro": "Aynı mimari, belirli soruları yanıtlamak üzere şekillendirilmiş:",
+          "intro": "Aynı yaklaşım, sorulan sorulara göre biçimlendirilmiş:",
           "readMore": "Daha fazla oku"
         },
         "faq": {
           "heading": "Okuyuculardan gelen sorular",
           "items": [
             {
-              "a": "CISO, CTO, veya kıdemli altyapı mühendisleri için. Mimariye hakim birisi olmalısınız. Yedekleme, depolama ve geçerli kurallar hakkında temel bilginiz gerekir.",
+              "a": "CISO, CTO veya senior altyapı mühendisleri için. Yedekleme, depolama ve kurumsal uyumluluğun temellerini bilmeniz gerekiyor.",
               "q": "Bu özet kimin için yazıldı?"
             },
             {
-              "a": "Evet. E-posta gönderdikten sonra, CFO, BT direktörü veya kurul üyenize iletebileceğiniz beş dakikalık yönetici özeti PDF'sini bulacaksınız.",
+              "a": "Evet. E-postanızı gönderdikten sonra, aynı sayfada CFO'ya, BT müdürüne ya da kurul üyelerine iletebileceğiniz 5 dakikalık yönetici özeti bulunuyor.",
               "q": "Teknik olmayan bir versiyonu var mı?"
             },
             {
-              "a": "Tek bir onay e-postası. Sonra aylık bültenimize eklenir (tüm ürünler hakkında kısa yazılar). Tek tıkla abonelikten çık. E-posta adresi, Rediacc'ın veri yerleşimi politikası gereği varsayılan olarak AB'de saklanır.",
+              "a": "Tek onay e-postası. Sonra aylık bültenimize eklenirsiniz (ürünler hakkında kısa yazılar). Tek tıkla abonelikten çıkabilirsiniz. E-posta adresi Rediacc'ın veri yerleşimi politikası gereği varsayılan AB'de tutulur.",
               "q": "E-postama ne olur?"
             },
             {
-              "a": "Özette detaylı anlatım var. Kısaca: btrfs, değiştirilemeyen kopyaları ve anlık klonları depolama katmanına koyar (uygulamaya değil). Gönderme/alma özelliği bunları makineden çıkarır. Yani root parolanız ele geçse bile, kopyaları değiştir veya sil edemezler.",
+              "a": "Özet bunu detaylı anlatıyor. Kısaca: btrfs yazılamaz kopyaları ve anlık klonları depolama katmanına koyar, uygulamaya değil. Gönder/al özelliği bu kopyaları sisteminizden çıkarır. Yani root şifresi eline geçse bile saldırgan bunları silemez veya değiştiremez.",
               "q": "Neden btrfs?"
             },
             {
-              "a": "Doğru değil. Mimari, btrfs depolama üzerinde Docker içinde veritabanı çalıştıran kendi sunucularınızı kapsar. Kritik verileriniz RDS veya Aurora'daysa, özet bunu belirtir ve modelin nerelerde geçerli, nerelerde olmadığını gösterir.",
+              "a": "Doğrudan hayır. Tasarım, btrfs depolamada Docker ile çalışan kendi sunucularınızı kapsar. Kritik verileriniz RDS veya Aurora'daysa, özet bunu açıkça belirtir ve modelin nerede geçerli, nerede olmadığını gösterir.",
               "q": "AWS RDS gibi yönetilen hizmetlerde de geçerli mi?"
             }
           ]
@@ -2700,7 +2700,7 @@
           "downloadButton": "Teknik özeti indir",
           "eyebrow": "Ücretsiz indirme · A4 PDF · CISO/CTO düzeyi",
           "openInBrowser": "Tarayıcıda aç",
-          "subtitle": "Üretim sistemlerinin klonunda test edin. Canlıda hiçbir şey kırmayın. Riskli işlemleri klon üzerine atın.",
+          "subtitle": "Gerçek sistemlerin kopyası üzerinde test edin. Üretimde hiçbir şey kırmayın. Kopya riskli işlemleri üstlensin.",
           "title": "Önleyici Savunma"
         },
         "meta": {
@@ -2710,16 +2710,16 @@
         },
         "toc": {
           "heading": "İçinde neler var?",
-          "intro": "Tehdit modeli, çalışma prensibi, uygulanacak kurallar, denetçi kanıtı. 10 ila 14 yoğun sayfada.",
+          "intro": "İçinde: ne korur, nasıl çalışır. Hangi kuralları karşılar. Denetçinin soracağı kanıtlar. Yaklaşık 10 ile 14 yoğun sayfa.",
           "items": [
-            "Hangi tehditlere gerçekten karşı duruyorsunuz",
+            "Gerçekten neyi koruyor, basit dille",
             "Sistem nasıl çalışır ve saldırgan neden başarısız olur",
             "Engellediği saldırılar, gerçek örneklerle",
             "Uygulanacak kurallar: cezalar, son tarihler, kesin metinler",
             "Yayımlanmış verilere dayalı maliyet-fayda",
             "Rakip analizi: teknik temelde, fiyat değil",
             "Kurulum nasıl olur ve neler dışarıda",
-            "Denetçiniz sorabilir: mimarinin sağladığı kanıtlar"
+            "Denetçinin isteyeceği kanıtlar"
           ]
         }
       },
@@ -2732,30 +2732,30 @@
         },
         "companions": {
           "heading": "İlgili Rehberler",
-          "intro": "Aynı yaklaşım, farklı soruların yanıtlarına göre uyarlanmış:",
+          "intro": "Aynı yaklaşım, sorulan sorulara göre biçimlendirilmiş:",
           "readMore": "Daha fazla oku"
         },
         "faq": {
           "heading": "Sık Sorulan Sorular",
           "items": [
             {
-              "a": "CISO, CTO ya da kıdemli altyapı mühendisi için. Yedekleme, depolama sistemi ve uygunluk düzenlemeleri hakkında temel bilgin olduğunu varsayıyoruz.",
+              "a": "CISO, CTO veya senior altyapı mühendisleri için. Yedekleme, depolama ve kurumsal uyumluluğun temellerini bilmeniz gerekiyor.",
               "q": "Bu özet kimin için yazıldı?"
             },
             {
-              "a": "Evet. E-posta gönderdikten sonra aynı sayfada CFO'na, BT müdürüne veya yönetim kurulu üyesine iletebileceğin 5 dakikalık yönetici özetine erişirsin.",
+              "a": "Evet. E-postanızı gönderdikten sonra, aynı sayfada CFO'ya, BT müdürüne ya da kurul üyelerine iletebileceğiniz 5 dakikalık yönetici özeti bulunuyor.",
               "q": "Teknik olmayan bir versiyonu var mı?"
             },
             {
-              "a": "Tek bir onay e-postası. Sonra aylık bültenimize eklenir (tüm ürünler hakkında kısa yazılar). Tek tıkla abonelikten çık. E-posta adresi, Rediacc'ın veri yerleşimi politikası gereği varsayılan olarak AB'de saklanır.",
+              "a": "Tek onay e-postası. Sonra aylık bültenimize eklenirsiniz (ürünler hakkında kısa yazılar). Tek tıkla abonelikten çıkabilirsiniz. E-posta adresi Rediacc'ın veri yerleşimi politikası gereği varsayılan AB'de tutulur.",
               "q": "E-posta adresime ne olur?"
             },
             {
-              "a": "Detaylı açıklamayı rehberde bulabilirsin. Kısa versiyonu: btrfs yazılamaz kopya ve anlık görüntü özellikleri doğrudan depolama katmanında sunar—bir uygulamada değil. Gönder/al özelliği bu kopyaları makine dışına taşır. Sonuç: root parolası olan saldırgan bile onları silip değiştiremez.",
+              "a": "Özet bunu detaylı anlatıyor. Kısaca: btrfs yazılamaz kopyaları ve anlık klonları depolama katmanına koyar, uygulamaya değil. Gönder/al özelliği bu kopyaları sisteminizden çıkarır. Yani root şifresi eline geçse bile saldırgan bunları silemez veya değiştiremez.",
               "q": "Neden btrfs?"
             },
             {
-              "a": "Doğrudan değil. Mimari, Docker'da kendi veritabanlarını çalıştıran btrfs depolamalı sistemleri kapsar. Kritik veriler RDS ya da Aurora'daysa, rehber bunu not eder ve modelin nerelerde uygulanıp nerelerde uygulanmadığını gösterir.",
+              "a": "Doğrudan hayır. Tasarım, btrfs depolamada Docker ile çalışan kendi sunucularınızı kapsar. Kritik verileriniz RDS veya Aurora'daysa, özet bunu açıkça belirtir ve modelin nerede geçerli, nerede olmadığını gösterir.",
               "q": "Bu, AWS RDS gibi yönetilen hizmetler için de geçerli mi?"
             }
           ]
@@ -2775,16 +2775,16 @@
         },
         "toc": {
           "heading": "İçinde Neler Var",
-          "intro": "Tehdit modeli, mimari, teknik önlemler, uygunluk kuralları ve denetçi kanıtları. 10-14 sayfalık kapsamlı rehber.",
+          "intro": "İçinde: ne korur, nasıl çalışır. Hangi kuralları karşılar. Denetçinin soracağı kanıtlar. Yaklaşık 10 ile 14 yoğun sayfa.",
           "items": [
-            "Hangi saldırıları önlüyorsun: açık dille",
+            "Gerçekten neyi koruyor, basit dille",
             "Sistem nasıl çalışıyor, neden saldırgan geçemiyor",
             "Gerçek örneklerle önlenebilen saldırılar",
             "Hangi düzenlemeler geçerli: cezalar, süreler, kuralların tam metni",
             "Yatırım hesabı: yayınlanan verilerle kanıtlanmış",
             "Biz vs diğer tedarikçiler: teknik olarak kıyaslamak (fiyat değil)",
             "Kurulumu nasıl başlatırsın, neler kapsam dışında",
-            "Denetçinin sorduğu sorulara yanıtlar"
+            "Denetçinin isteyeceği kanıtlar"
           ]
         }
       },
@@ -2797,30 +2797,30 @@
         },
         "companions": {
           "heading": "İlgili çözüm sayfaları",
-          "intro": "Aynı yaklaşım, alıcı sorularına göre hazırlanmış:",
+          "intro": "Aynı yaklaşım, sorulan sorulara göre biçimlendirilmiş:",
           "readMore": "Daha fazla oku"
         },
         "faq": {
           "heading": "Okuyucuların sorduğu sorular",
           "items": [
             {
-              "a": "CISO, CTO ya da senior altyapı mühendisleri için. Yedekleme, depolama ve uyumlu kuralları bildiğini varsayıyor.",
+              "a": "CISO, CTO veya senior altyapı mühendisleri için. Yedekleme, depolama ve kurumsal uyumluluğun temellerini bilmeniz gerekiyor.",
               "q": "Bu özet kimin için yazıldı?"
             },
             {
-              "a": "Evet. E-posta girdikten sonra, aynı sayfada CFO/direktör/yönetim kurulu'ya gönderebileceğin 5 dakikalık yönetici özeti linki var.",
+              "a": "Evet. E-postanızı gönderdikten sonra, aynı sayfada CFO'ya, BT müdürüne ya da kurul üyelerine iletebileceğiniz 5 dakikalık yönetici özeti bulunuyor.",
               "q": "Teknik olmayan bir versiyonu var mı?"
             },
             {
-              "a": "Tek bir onay e-postası. Sonra aylık bültenimize eklenir (tüm ürünler hakkında kısa yazılar). Tek tıkla abonelikten çık. E-posta adresi, Rediacc'ın veri yerleşimi politikası gereği varsayılan olarak AB'de saklanır.",
+              "a": "Tek onay e-postası. Sonra aylık bültenimize eklenirsiniz (ürünler hakkında kısa yazılar). Tek tıkla abonelikten çıkabilirsiniz. E-posta adresi Rediacc'ın veri yerleşimi politikası gereği varsayılan AB'de tutulur.",
               "q": "E-posta adresime ne olur?"
             },
             {
-              "a": "Özette ayrıntılı anlatılıyor. Kısaca: btrfs immutable kopyaları ve instant klonları uygulamaya değil storage layer'a koyuyor. Send/receive ile off-site gidiyorlar. Yani admin şifresi çalınsa bile saldırgan silemez.",
+              "a": "Özet bunu detaylı anlatıyor. Kısaca: btrfs yazılamaz kopyaları ve anlık klonları depolama katmanına koyar, uygulamaya değil. Gönder/al özelliği bu kopyaları sisteminizden çıkarır. Yani root şifresi eline geçse bile saldırgan bunları silemez veya değiştiremez.",
               "q": "Neden btrfs?"
             },
             {
-              "a": "Doğrudan hayır. Tasarım, btrfs storage'de Docker ile çalışan kendi serverlarına yönelik. RDS/Aurora'da kritik verileriniz varsa, özet bunu belirtir ve uygulanabilir alanlar gösterir.",
+              "a": "Doğrudan hayır. Tasarım, btrfs depolamada Docker ile çalışan kendi sunucularınızı kapsar. Kritik verileriniz RDS veya Aurora'daysa, özet bunu açıkça belirtir ve modelin nerede geçerli, nerede olmadığını gösterir.",
               "q": "Bu, AWS RDS gibi yönetilen hizmetler için de geçerli mi?"
             }
           ]
@@ -2830,7 +2830,7 @@
           "downloadButton": "Teknik özeti indir",
           "eyebrow": "Ücretsiz indir · A4 PDF · CISO / CTO seviyesi",
           "openInBrowser": "Tarayıcıda aç",
-          "subtitle": "Yedeklerin %58'i geri yüklemede başarısız olur. Çoğu şirket bunu afet yaşadığında öğrenir.",
+          "subtitle": "Yedeklerin %58'i geri yüklemede başarısız olur. Çoğu şirket bunu felaket yaşadığında öğrenir.",
           "title": "Doğrulanmış Yedeklemeler"
         },
         "meta": {
@@ -2840,16 +2840,16 @@
         },
         "toc": {
           "heading": "İçindekiler",
-          "intro": "Tehdit modeli, mimari, korunulan senaryolar, uyumluluk kuralları ve auditor kanıtları. Yaklaşık 10-14 yoğun sayfa.",
+          "intro": "İçinde: ne korur, nasıl çalışır. Hangi kuralları karşılar. Denetçinin soracağı kanıtlar. Yaklaşık 10 ile 14 yoğun sayfa.",
           "items": [
-            "Gerçekten neyi korunuyor (basit dille)",
+            "Gerçekten neyi koruyor, basit dille",
             "Sistem nasıl çalışır, saldırgan neden başarısız",
             "Neleri durduruyor (gerçek örneklerle)",
             "Geçerli kurallar: cezalar, süreler, tam metin",
             "Maliyet hesabı: yayımlanmış verilerle",
             "⟦0⟧ vs rakipler: teknik bazında (fiyat değil)",
             "Kuruluş ve sınırlamalar",
-            "Denetçi soracak kanıtlar"
+            "Denetçinin isteyeceği kanıtlar"
           ]
         }
       }
@@ -7515,30 +7515,30 @@
         "benefits": {
           "items": [
             {
-              "description": "Rediacc sizin için k3s çalıştırır, ya da zaten sahip olduğunuz bir cluster'a bağlanır. Volume'lar ceph-csi RBD üzerinde taşınır. Manifest'leriniz sizde kalır.",
+              "description": "Rediacc k3s çalıştırır ya da varolan cluster'ınıza bağlanır. Volume'lar ceph-csi RBD üzerinde yolculuk yapar. Manifest'leriniz hiç değişmez.",
               "icon": "check-circle",
-              "title": "Kubernetes'inizi koruyun"
+              "title": "Kubernetes'i Koru"
             },
             {
-              "description": "Kendi KVM sunucularınızda veya Linode gibi bulutlarda özel VLAN'larla provizyon yapın. Node havuzları, disk ağırlıklı Ceph node'larını cpu ağırlıklı Kubernetes node'larından ayrı tutar.",
+              "description": "Kendi KVM hostlarında veya Linode gibi bulutlarda özel VLAN'larla çalıştırabilirsiniz. Node havuzları disk yoğun Ceph node'larını CPU yoğun Kubernetes node'larından ayırır.",
               "icon": "arrow-right-circle",
               "title": "Gerçek veri merkezi taşınabilirliği"
             },
             {
-              "description": "Bir Kubernetes uygulaması bir namespace'tir. Onu tıpkı bir repo gibi fork'layın: 1 ila 5 saniye, veri dahil. Docker repolarınız için zaten kullandığınız aynı komutlar.",
+              "description": "Kubernetes uygulaması bir namespace'tir. Herhangi bir repo gibi fork'la: 1-5 saniye, veriler dahil. Docker repo'larında kullandığın aynı komutlar.",
               "icon": "git-branch",
               "title": "Her şey için tek bir yaklaşım"
             }
           ],
           "overline": "NEDEN ÖNEMLİ",
-          "title": "Kubernetes'inizi koruyun. Taşınabilirlik kazanın."
+          "title": "Kubernetes'i koru, taşınabilirlik kazan"
         },
-        "blurb": "Çalışan bir cluster'ı fork'layın veya taşıyın, veri dahil",
+        "blurb": "Çalışan kümeyi fork'la veya taşı, verileriyle birlikte",
         "bottomCta": {
           "command": "rdc cluster fork prod --tag staging",
           "ctaText": "Ücretsiz başlayın",
-          "description": "Ücretsiz Community sürümüyle başlayın. Fork oluşturun, taşımayı test edin, sonra gerçekten göç edin.",
-          "title": "Cluster'ınıza bir çıkış yolu verin"
+          "description": "Fork'la, taşımayı test et, sonra gerçekten göç et. 14 günlük ücretsiz denemeyi başlat.",
+          "title": "Kümenize çıkış yolu aç"
         },
         "comparison": {
           "capabilityLabel": "Özellik",
@@ -7547,12 +7547,18 @@
             {
               "name": "Uygulamaları ve volume'ları yedekler",
               "refs": [4, 5, 0, 9, 0],
-              "values": ["check", "check", "cross", "Volumes only", "rediacc"]
+              "values": ["check", "check", "cross", "Sadece Volume'lar", "rediacc"]
             },
             {
               "name": "Bir cluster'ın tamamını verisiyle taşır",
               "refs": [6, 7, 8, 0, 0],
-              "values": ["Stop and restore", "Stop and restore", "Shape only", "cross", "rediacc"]
+              "values": [
+                "Durdur ve geri yükle",
+                "Durdur ve geri yükle",
+                "Sadece yapı",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Çalışan bir cluster'ı fork'lar, veri dahil",
@@ -7567,7 +7573,7 @@
             {
               "name": "Veriyi tam yeniden yazma olmadan kopyalar",
               "refs": [0, 0, 0, 10, 0],
-              "values": ["cross", "cross", "cross", "Async copy", "rediacc"]
+              "values": ["cross", "cross", "cross", "Zaman uyumsuz kopya", "rediacc"]
             },
             {
               "name": "Planlı bir taşıma için kısa, ölçülmüş kesinti",
@@ -7580,7 +7586,7 @@
         },
         "hero": {
           "primaryCta": "Ücretsiz başlayın",
-          "subtitle": "Cluster'ınız tek bir bütün olarak taşınır: node'lar, yapılandırma ve veri. Başka bir makineye ya da başka bir veri merkezine. Kesinti saniyelerle ölçülür, bir hafta sonuyla değil.",
+          "subtitle": "Kümeniz bir bütün olarak hareket eder: node'lar, ayarlar ve veriler hepsi beraber. Başka bir sunucuya ya da veri merkezine. Geçiş saniyelerle ölçülür, hafta sonlarıyla değil.",
           "title": "Çalışan bir Kubernetes cluster'ını fork'layın veya taşıyın"
         },
         "howItWorks": {
@@ -7613,7 +7619,7 @@
               ],
               "size": "46s",
               "status": "Running",
-              "title": "prod-staging (Datacenter B)"
+              "title": "prod-staging (Veri Merkezi B)"
             },
             "production": {
               "containerCount": "Ana",
@@ -7637,7 +7643,7 @@
               ],
               "size": "Untouched",
               "status": "Running",
-              "title": "prod (Datacenter A)"
+              "title": "prod (Veri Merkezi A)"
             }
           },
           "overline": "NASIL ÇALIŞIR",
@@ -7664,10 +7670,10 @@
         "meta": {
           "description": "Çalışan bir Kubernetes cluster'ını, veri dahil, başka bir makineye veya veri merkezine fork'layın. Kısa, ölçülmüş kesinti. Ceph RBD ve k3s üzerine kurulu.",
           "keywords": "kubernetes cluster göçü, cluster fork, ceph rbd, k3s, veri merkezi taşınabilirliği, kubernetes taşınabilirliği",
-          "title": "Fork or Move a Kubernetes Cluster | Rediacc"
+          "title": "Kubernetes Kümesini Fork'la veya Taşı | Rediacc"
         },
         "problem": {
-          "description": "Kubernetes uygulamalarınızı taşınabilir yaptı. Cluster'ın kendisi değil. Veri tek bir veri merkezinde yaşar. Onu taşımak bir yeniden kurulum projesi demektir: yeni node'lar, yeni depolama, yedekten geri yükleme, her şeyi yeniden test etme. Bu yüzden çoğu ekip hiç taşınmaz. Ve sağlayıcıları bunu bilir.",
+          "description": "Kubernetes uygulamalarınızı taşınabilir yaptı. Kümeyi değil. Veriler tek bir veri merkezinde kalır. Onu taşımak yeniden kurmak demektir: yeni node'lar, yeni depolama, yedekten geri yükleme, hepsi test. Çoğu ekip taşınmıyor hiç. Ve sağlayıcıları bunu iyi bilirler.",
           "overline": "SORUN",
           "statCallouts": [
             {
@@ -7691,7 +7697,7 @@
           ],
           "timeline": {
             "newLabel": "REDİACC İLE",
-            "newSteps": ["Pre-copy", "16s cutover", "Live"],
+            "newSteps": ["Ön kopyalama", "16sn kesinti", "Canlı"],
             "oldLabel": "ESKİ YÖNTEM",
             "oldSteps": [
               {
@@ -7716,48 +7722,48 @@
               }
             ]
           },
-          "title": "Cluster'ınız kurduğunuz yerde sıkışıp kalır"
+          "title": "Küme kurduğu yerde sıkışıp kalır"
         },
         "references": {
           "items": [
             {
-              "text": "Flexera, \"2024 State of the Cloud Report,\" 2024. \"27% of cloud spend continues to be wasted.\"",
+              "text": "Flexera, \"2024 State of the Cloud Report,\" 2024. \"Bulut harcamalarının %27'si boşa gidiyor.\"",
               "url": "https://www.flexera.com/about-us/press-center/flexera-2024-state-of-the-cloud-managing-spending-top-challenge"
             },
             {
-              "text": "Flexera, \"2025 State of the Cloud Report,\" 2025. \"With cloud budgets already exceeding limits by 17%, organizations are increasingly turning to managed service providers.\"",
+              "text": "Flexera, \"2025 State of the Cloud Report,\" 2025. \"Bulut bütçeleri zaten sınırları %17 aşarken, kuruluşlar yönetilen hizmet sağlayıcılara yöneliyor.\"",
               "url": "https://www.flexera.com/about-us/press-center/new-flexera-report-finds-84-percent-of-organizations-struggle-to-manage-cloud-spend"
             },
             {
-              "text": "AWS, \"Amazon S3 Pricing — Data Transfer,\" 2024. \"Data Transfer OUT from Amazon S3 to Internet: $0.09 per GB for the first 10 TB/month.\"",
+              "text": "AWS, \"Amazon S3 Pricing — Data Transfer,\" 2024. \"Data Transfer OUT from Amazon S3 to Internet: $0,09 per GB for the first 10 TB/month.\"",
               "url": "https://aws.amazon.com/s3/pricing/"
             },
             {
-              "text": "Velero backs up Kubernetes cluster resources and persistent volumes and restores them into a cluster.",
+              "text": "Velero, Kubernetes cluster'ı kaynakları ve persistent volume'ları yedekler ve yeni cluster'a geri yükler.",
               "url": "https://velero.io/docs/"
             },
             {
-              "text": "Kasten K10 provides backup and restore of Kubernetes applications, including application data.",
+              "text": "Kasten K10, Kubernetes uygulamalarının yedek alınmasını ve geri yüklenmesini sağlar; uygulama verileri de dahil.",
               "url": "https://docs.kasten.io/"
             },
             {
-              "text": "Velero cluster migration restores a backup into a new cluster; workloads are recreated from the backup point, not moved live.",
+              "text": "Velero cluster göçü, yedekten yeni cluster'a geri yükleme yapar; iş yükleri yedek noktasından yeniden oluşturulur, canlı taşınmaz.",
               "url": "https://velero.io/docs/main/migration-case/"
             },
             {
-              "text": "Kasten K10 migrates applications between clusters by exporting a restore point and importing it into the target cluster.",
+              "text": "Kasten K10, uygulamaları cluster'lar arasında taşır: bir geri yükleme noktasını dışarı aktar, hedef cluster'a içeri aktar.",
               "url": "https://docs.kasten.io/latest/usage/migration.html"
             },
             {
-              "text": "Cluster API's clusterctl move relocates Cluster API objects (the cluster's definition) to another management cluster; it does not move workload data.",
+              "text": "Cluster API'nin clusterctl move komutu, Cluster API nesnelerini (cluster'ın tanımı) başka bir yönetim cluster'ına taşır; iş yükü verileri taşınmaz.",
               "url": "https://cluster-api.sigs.k8s.io/clusterctl/commands/move"
             },
             {
-              "text": "Ceph RBD mirroring replicates block device images between Ceph clusters; it covers volumes, not Kubernetes cluster state.",
+              "text": "Ceph RBD mirroring, blok cihaz görüntülerini Ceph cluster'ları arasında çoğaltır; volume'ları kapsar, Kubernetes cluster durumunu değil.",
               "url": "https://docs.ceph.com/en/latest/rbd/rbd-mirroring/"
             },
             {
-              "text": "Ceph RBD mirroring is asynchronous, based on journaling or periodic snapshots, and is designed for disaster recovery.",
+              "text": "Ceph RBD mirroring, zaman uyumsuz, günlüğe dayalı ya da periyodik snapshot'lara dayanır ve olağanüstü durum kurtarması için tasarlanmıştır.",
               "url": "https://docs.ceph.com/en/latest/rbd/rbd-mirroring/"
             }
           ]
@@ -7765,17 +7771,17 @@
         "stats": [
           {
             "icon": "layers",
-            "label": "Whole 2-node cluster fork",
+            "label": "Tam 2 node'lu küme fork'u",
             "number": "46s"
           },
           {
             "icon": "clock",
-            "label": "Migrate cutover, measured",
+            "label": "Kesinti süresi ölçüldü",
             "number": "16s"
           },
           {
             "icon": "zap",
-            "label": "Namespace fork",
+            "label": "Namespace fork'u",
             "number": "1-5s"
           }
         ],

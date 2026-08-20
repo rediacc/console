@@ -2503,30 +2503,30 @@
         },
         "companions": {
           "heading": "Páginas relacionadas",
-          "intro": "A mesma solução, enquadrada para questões que vai receber:",
+          "intro": "A mesma abordagem, respondendo aos desafios que você vai encarar:",
           "readMore": "Saiba mais"
         },
         "faq": {
           "heading": "Perguntas dos leitores",
           "items": [
             {
-              "a": "Para um CISO, CTO ou engenheiro sénior de infraestrutura a rever a arquitetura. Pressupõe familiaridade com backup, armazenamento e o cenário regulatório que já enfrenta.",
+              "a": "Para CISO, CTO ou arquiteto sénior de infraestrutura. Pressupõe que você já conhece backups, armazenamento e as regulações que seu stack enfrenta.",
               "q": "Para quem é este briefing?"
             },
             {
-              "a": "Sim. Depois de fornecer o seu email, o PDF executivo de cinco minutos aparece para partilhar com o CFO, diretor de TI ou administrador.",
+              "a": "Sim. Quando submete o email, na mesma página aparece um PDF executivo de cinco minutos, pronto para encaminhar ao CFO, diretor de TI ou administrador.",
               "q": "Existe uma versão não técnica?"
             },
             {
-              "a": "Um email de confirmação. Subscrito na nossa newsletter (uma publicação breve mensal, todos os produtos). Cancelar com um clique. O seu email reside na UE por padrão, sob a política de residência de dados da Rediacc.",
+              "a": "Um email de confirmação. Entra na nossa newsletter (um artigo breve por mês sobre todos os produtos). Cancelar em um clique. Seu email fica na UE por padrão, conforme a política de Rediacc.",
               "q": "O que acontece ao meu email?"
             },
             {
-              "a": "O briefing cobre isto em profundidade. Resumido: o btrfs coloca cópias imutáveis e clones instantâneos diretamente na camada de armazenamento, não numa aplicação por cima. A função send/receive envia essas cópias para fora da máquina. Resultado: um atacante com password root não consegue alterá-las ou eliminá-las.",
+              "a": "O guia explica isso em detalhes. Resumidamente: btrfs coloca cópias imutáveis e clones instantâneos na camada de armazenamento, não numa app acima. O send/receive envia essas cópias para fora. Resultado: um atacante com a sua senha root não consegue mudar nem apagar nada.",
               "q": "Por que btrfs?"
             },
             {
-              "a": "Não diretamente. Cobre a sua computação própria com bases de dados em Docker sobre btrfs. Se os seus dados críticos estão em RDS ou Aurora, o briefing marca isso e explica onde o modelo se aplica e onde não.",
+              "a": "Não diretamente. O design cobre seus próprios servidores com bases de dados em Docker sobre btrfs. Se seus dados críticos estão em RDS ou Aurora, o briefing marca isso. Mostra depois onde o modelo funciona e onde não.",
               "q": "Aplica-se a serviços geridos como o AWS RDS?"
             }
           ]
@@ -2536,7 +2536,7 @@
           "downloadButton": "Descarregar o briefing técnico",
           "eyebrow": "Descarregue grátis · PDF A4 · Nível CISO / CTO",
           "openInBrowser": "Abrir no browser",
-          "subtitle": "Os seus programadores escrevem código apenas 4,5 horas por semana. O resto é espera por ambientes. Uma equipa de 50 engenheiros perde 720 000 € a 1,2 M€ anuais em setup.",
+          "subtitle": "Seus programadores escrevem código 4,5 horas por semana. O resto é espera por ambientes. Uma equipa de 50 engenheiros perde €720.000 a €1.200.000 anuais em setup.",
           "title": "Ambientes de Desenvolvimento"
         },
         "meta": {
@@ -2546,9 +2546,9 @@
         },
         "toc": {
           "heading": "O que está incluído",
-          "intro": "O briefing explica o que protege, como funciona, que regras ajuda a cumprir e as provas que o auditor vai pedir. Aproximadamente 10 a 14 páginas densas.",
+          "intro": "Conheça o que protege, como funciona, que regulações cumpre e as provas que o auditor vai pedir. Cerca de 10 a 14 páginas densas.",
           "items": [
-            "Contra o que estão a defender-se, em termos práticos",
+            "O que você está realmente a defender (sem complicações)",
             "Como funciona e por que um atacante não consegue contorná-lo",
             "O que bloqueia, com exemplos do mundo real",
             "Que regras se aplicam: multas, prazos, redação exata",
@@ -2568,30 +2568,30 @@
         },
         "companions": {
           "heading": "Soluções relacionadas",
-          "intro": "A mesma arquitetura, respondendo às perguntas que você vai receber:",
+          "intro": "A mesma abordagem, respondendo aos desafios que você vai encarar:",
           "readMore": "Ler mais"
         },
         "faq": {
           "heading": "Perguntas dos leitores",
           "items": [
             {
-              "a": "Para CISO, CTO ou arquiteto de infraestrutura sénior. Pressupõe que você conhece backup, armazenamento e as regulações que seu stack já enfrenta.",
+              "a": "Para CISO, CTO ou arquiteto sénior de infraestrutura. Pressupõe que você já conhece backups, armazenamento e as regulações que seu stack enfrenta.",
               "q": "A quem se destina?"
             },
             {
-              "a": "Sim. Após enviar seu email, recebe um PDF executivo de cinco minutos para encaminhar ao CFO, diretor de TI ou conselho.",
+              "a": "Sim. Quando submete o email, na mesma página aparece um PDF executivo de cinco minutos, pronto para encaminhar ao CFO, diretor de TI ou administrador.",
               "q": "Existe uma versão não técnica?"
             },
             {
-              "a": "Um email de confirmação. Entra na newsletter (um artigo breve por mês sobre produtos). Cancelar em um clique. Seus dados ficam na UE conforme política da Rediacc.",
+              "a": "Um email de confirmação. Entra na nossa newsletter (um artigo breve por mês sobre todos os produtos). Cancelar em um clique. Seu email fica na UE por padrão, conforme a política de Rediacc.",
               "q": "O que acontece ao meu email?"
             },
             {
-              "a": "O resumo explica em detalhes. Em termos simples: btrfs coloca snapshots imutáveis e clones direto na camada de armazenamento, não em aplicações acima. Send/receive copia para outra máquina. Assim, quem tiver sua senha root não consegue alterar ou deletar.",
+              "a": "O guia explica isso em detalhes. Resumidamente: btrfs coloca cópias imutáveis e clones instantâneos na camada de armazenamento, não numa app acima. O send/receive envia essas cópias para fora. Resultado: um atacante com a sua senha root não consegue mudar nem apagar nada.",
               "q": "Por que btrfs?"
             },
             {
-              "a": "Não diretamente. Cobre computação própria com bases de dados em Docker sobre btrfs. Se seus dados críticos estão em RDS ou Aurora, o guia marca isso e explica onde o modelo se aplica.",
+              "a": "Não diretamente. O design cobre seus próprios servidores com bases de dados em Docker sobre btrfs. Se seus dados críticos estão em RDS ou Aurora, o briefing marca isso. Mostra depois onde o modelo funciona e onde não.",
               "q": "Funciona com serviços gerenciados como AWS RDS?"
             }
           ]
@@ -2605,22 +2605,22 @@
           "title": "Controlo da Encriptação"
         },
         "meta": {
-          "description": "Você controla as chaves. Seus dados ficam encriptados mesmo mudando de fornecedor. Schrems II garantido. Guia técnico CISO/CTO + versão executiva.",
+          "description": "Você controla as chaves. Dados encriptados mesmo mudando de fornecedor. Schrems II garantido. Briefing CISO/CTO + versão executiva.",
           "keywords": "controlo de encriptação, pdf, rediacc, btrfs backup, cópia de segurança imutável, briefing técnico",
           "title": "Controlo da Encriptação: Guia Técnico Grátis"
         },
         "toc": {
           "heading": "O que encontra aqui",
-          "intro": "Neste guia: arquitetura, ameaças bloqueadas, conformidade regulatória e provas de auditoria. Aproximadamente 10 a 14 páginas densas.",
+          "intro": "Conheça o que protege, como funciona, que regulações cumpre e as provas que o auditor vai pedir. Cerca de 10 a 14 páginas densas.",
           "items": [
-            "Os riscos reais em linguagem clara",
+            "O que você está realmente a defender (sem complicações)",
             "Como funciona e por que um atacante não consegue contorná-lo",
             "O que bloqueia, com exemplos reais",
             "Regulações que se aplicam: normas, multas, prazos",
             "O cálculo financeiro baseado em números reais",
             "Como nos comparamos: tecnologia, não preço",
             "Como configurar e o que não cobrimos",
-            "As provas que o auditor pedirá"
+            "As provas que o auditor vai pedir"
           ]
         }
       },
@@ -2633,30 +2633,30 @@
         },
         "companions": {
           "heading": "Guias relacionados",
-          "intro": "A mesma abordagem, respondendo às perguntas que você vai receber:",
+          "intro": "A mesma abordagem, respondendo aos desafios que você vai encarar:",
           "readMore": "Saiba mais"
         },
         "faq": {
           "heading": "Perguntas frequentes",
           "items": [
             {
-              "a": "Para CISO, CTO ou engenheiro sénior de infraestrutura. Presume que você conhece backups, armazenamento e o panorama regulatório do seu stack.",
+              "a": "Para CISO, CTO ou arquiteto sénior de infraestrutura. Pressupõe que você já conhece backups, armazenamento e as regulações que seu stack enfrenta.",
               "q": "Para quem é este briefing?"
             },
             {
-              "a": "Sim. Após submeter seu email, a mesma página oferece um PDF executivo de 5 minutos para você repassar ao CFO, diretor de TI ou conselheiro.",
+              "a": "Sim. Quando submete o email, na mesma página aparece um PDF executivo de cinco minutos, pronto para encaminhar ao CFO, diretor de TI ou administrador.",
               "q": "Existe uma versão executiva?"
             },
             {
-              "a": "Um email de confirmação. Você entra na nossa newsletter (um post curto por mês sobre todos os produtos). Cancela com um clique. Seu email fica na UE por padrão, conforme a política de Rediacc.",
+              "a": "Um email de confirmação. Entra na nossa newsletter (um artigo breve por mês sobre todos os produtos). Cancelar em um clique. Seu email fica na UE por padrão, conforme a política de Rediacc.",
               "q": "O que acontece ao meu email?"
             },
             {
-              "a": "O briefing explica tudo. Resumido: btrfs coloca cópias imutáveis e snapshots na camada de storage, não em uma aplicação. O send/receive replica essas cópias remotamente. Então um atacante com sua senha de root não consegue apagá-las.",
+              "a": "O guia explica isso em detalhes. Resumidamente: btrfs coloca cópias imutáveis e clones instantâneos na camada de armazenamento, não numa app acima. O send/receive envia essas cópias para fora. Resultado: um atacante com a sua senha root não consegue mudar nem apagar nada.",
               "q": "Por que btrfs?"
             },
             {
-              "a": "Não diretamente. O design cobre seus próprios servidores com bancos em Docker em armazenamento btrfs. Se seus dados críticos estão em RDS ou Aurora, o briefing assinala isso e mostra onde o modelo se aplica e onde não.",
+              "a": "Não diretamente. O design cobre seus próprios servidores com bases de dados em Docker sobre btrfs. Se seus dados críticos estão em RDS ou Aurora, o briefing marca isso. Mostra depois onde o modelo funciona e onde não.",
               "q": "Funciona com serviços geridos como AWS RDS?"
             }
           ]
@@ -2666,26 +2666,26 @@
           "downloadButton": "Descarga o briefing técnico",
           "eyebrow": "Descarga grátis · PDF A4 · Para CISO/CTO",
           "openInBrowser": "Abrir no navegador",
-          "subtitle": "AWS US-EAST-1 caiu por 15 horas em 20 de outubro de 2025. Snapchat, Robinhood, Uber, Delta. Conseguia fazer failover a tempo?",
+          "subtitle": "AWS US-EAST-1 caiu por 15 horas em 20 de outubro de 2025. Snapchat, Robinhood, Uber, Delta. Trocar de cloud durante uma queda? Só funciona se planeou com antecedência.",
           "title": "Multi-Cloud Sempre"
         },
         "meta": {
-          "description": "Cópias portáteis e failover testado entre clouds, para seu negócio sobreviver a uma queda. Briefing CISO/CTO grátis, com versão executiva.",
+          "description": "Backups portáteis e failover testado entre clouds. Seu negócio sobrevive a uma queda. Briefing CISO/CTO + versão executiva.",
           "keywords": "multi-cloud always, pdf, rediacc, btrfs backup, cópia de segurança imutável, briefing técnico",
           "title": "Multi-Cloud Sempre: Guia Técnico Gratuito"
         },
         "toc": {
           "heading": "O que inclui",
-          "intro": "O que bloqueia. Como funciona. Regras que cumpre. Provas para seu auditor. Cerca de 10 a 14 páginas densas.",
+          "intro": "Conheça o que bloqueia, como funciona, que regulações cumpre e as provas que seu auditor vai pedir. Cerca de 10 a 14 páginas densas.",
           "items": [
-            "O que realmente você defende (em linguagem simples)",
+            "O que você está realmente a defender (sem complicações)",
             "Como o sistema funciona e por que o atacante não consegue vencer",
             "O que bloqueia (com exemplos do mundo real)",
             "Conformidade: regras, multas, prazos e o texto exato",
             "O valor financeiro (com números publicados)",
             "Como nos comparamos (pela técnica, não pelo preço)",
             "Como configurar e o que não cobrimos",
-            "As provas que seu auditor pedirá"
+            "As provas que o auditor vai pedir"
           ]
         }
       },
@@ -2698,30 +2698,30 @@
         },
         "companions": {
           "heading": "Páginas de solução relacionadas",
-          "intro": "A mesma solução, respondendo aos desafios que enfrenta:",
+          "intro": "A mesma abordagem, respondendo aos desafios que você vai encarar:",
           "readMore": "Ler mais"
         },
         "faq": {
           "heading": "Perguntas dos leitores",
           "items": [
             {
-              "a": "Para um CISO, CTO ou engenheiro de infraestrutura sénior a avaliar a arquitetura. Pressupõe familiaridade com fluxos de trabalho de backup, fundamentos de sistemas de ficheiros e o panorama regulatório com que o seu stack já contacta.",
+              "a": "Para CISO, CTO ou arquiteto sénior de infraestrutura. Pressupõe que você já conhece backups, armazenamento e as regulações que seu stack enfrenta.",
               "q": "Para quem está escrito este briefing?"
             },
             {
-              "a": "Sim. Após submeter o seu email, a mesma página disponibiliza um PDF executivo de cinco minutos que pode reencaminhar para um CFO, diretor de TI ou membro do conselho de administração.",
+              "a": "Sim. Quando submete o email, na mesma página aparece um PDF executivo de cinco minutos, pronto para encaminhar ao CFO, diretor de TI ou administrador.",
               "q": "Existe uma versão não técnica?"
             },
             {
-              "a": "Um email de confirmação. Fica subscrito na nossa newsletter (uma publicação breve por mês, sobre todos os produtos). Cancelar subscrição com um clique. O seu email reside na UE por padrão, de acordo com a política de residência de dados da Rediacc.",
+              "a": "Um email de confirmação. Entra na nossa newsletter (um artigo breve por mês sobre todos os produtos). Cancelar em um clique. Seu email fica na UE por padrão, conforme a política de Rediacc.",
               "q": "O que acontece ao meu email?"
             },
             {
-              "a": "O briefing explica em detalhe. Resumidamente: btrfs coloca cópias imutáveis e clones instantâneos na camada de armazenamento, não numa aplicação em cima. A funcionalidade send/receive envia essas cópias para fora. Um atacante com credenciais root não consegue alterá-las ou eliminá-las.",
+              "a": "O guia explica isso em detalhes. Resumidamente: btrfs coloca cópias imutáveis e clones instantâneos na camada de armazenamento, não numa app acima. O send/receive envia essas cópias para fora. Resultado: um atacante com a sua senha root não consegue mudar nem apagar nada.",
               "q": "Porquê btrfs?"
             },
             {
-              "a": "Não diretamente. A arquitetura cobre computação autogerida com bases de dados containerizadas em volumes suportados por btrfs. Se o seu património crítico de recuperação residir em RDS ou Aurora, o briefing assinala isso explicitamente e indica onde o modelo se aplica e onde não se aplica.",
+              "a": "Não diretamente. O design cobre seus próprios servidores com bases de dados em Docker sobre btrfs. Se seus dados críticos estão em RDS ou Aurora, o briefing marca isso. Mostra depois onde o modelo funciona e onde não.",
               "q": "Aplica-se a serviços geridos como o AWS RDS?"
             }
           ]
@@ -2731,7 +2731,7 @@
           "downloadButton": "Descarregar o briefing técnico",
           "eyebrow": "Download gratuito · PDF A4 · Nível CISO / CTO",
           "openInBrowser": "Abrir no browser",
-          "subtitle": "Teste numa cópia dos seus sistemas. Nada se quebra. O clone absorve os impactos.",
+          "subtitle": "Teste numa cópia dos seus sistemas. Nada quebra em produção. O clone leva os golpes.",
           "title": "Defesa Preventiva"
         },
         "meta": {
@@ -2741,16 +2741,16 @@
         },
         "toc": {
           "heading": "O que está incluído",
-          "intro": "Cobre: ameaças, como defende, conformidade e provas para auditoria. Cerca de 10 a 14 páginas densas.",
+          "intro": "Conheça o que protege, como funciona, que regulações cumpre e as provas que o auditor vai pedir. Cerca de 10 a 14 páginas densas.",
           "items": [
-            "O que está em risco, em termos práticos",
+            "O que você está realmente a defender (sem complicações)",
             "Como funciona e porque nenhum atacante consegue contorná-lo",
             "Modos de falha bloqueados, com precedentes identificados",
             "Mapa de conformidade: regras específicas, coimas, janelas de comunicação",
             "Cálculo de ROI baseado em números publicados",
             "Comparação de fornecedores por abordagem técnica (não por ARR)",
             "Forma de onboarding e limites de âmbito conhecidos",
-            "O que um auditor vai pedir"
+            "As provas que o auditor vai pedir"
           ]
         }
       },
@@ -2763,30 +2763,30 @@
         },
         "companions": {
           "heading": "Páginas de solução relacionadas",
-          "intro": "A mesma abordagem, explicada para as perguntas que vão fazer:",
+          "intro": "A mesma abordagem, respondendo às questões que vão surgir:",
           "readMore": "Ler mais"
         },
         "faq": {
           "heading": "Perguntas dos leitores",
           "items": [
             {
-              "a": "Para um CISO, CTO ou engenheiro de infraestrutura sénior a avaliar a arquitetura. Pressupõe familiaridade com backup, armazenamento e as normas que a sua stack já tem de cumprir.",
+              "a": "Para CISO, CTO ou arquiteto sénior de infraestrutura. Pressupõe que você já conhece backups, armazenamento e as regulações que seu stack enfrenta.",
               "q": "Para quem está escrito este briefing?"
             },
             {
-              "a": "Sim. Depois de enviar o email, a página disponibiliza um PDF de cinco minutos que pode reencaminhar para um CFO, diretor de TI ou membro da administração.",
+              "a": "Sim. Quando submete o email, na mesma página aparece um PDF executivo de cinco minutos, pronto para encaminhar ao CFO, diretor de TI ou administrador.",
               "q": "Existe uma versão não técnica?"
             },
             {
-              "a": "Um email de confirmação. Fica subscrito na newsletter (um artigo breve por mês, multi-produto). Cancele com um clique. O seu email reside na UE por padrão, conforme a política de residência de dados da Rediacc.",
+              "a": "Um email de confirmação. Entra na nossa newsletter (um artigo breve por mês sobre todos os produtos). Cancelar em um clique. Seu email fica na UE por padrão, conforme a política de Rediacc.",
               "q": "O que acontece ao meu email?"
             },
             {
-              "a": "O guia cobre isto em profundidade. Resumindo: o btrfs coloca cópias write-once e clones instantâneos na camada de armazenamento, não numa aplicação acima. O send/receive envia essas cópias para fora da máquina. Um atacante, mesmo com password de root, não consegue modificá-las nem apagá-las.",
+              "a": "O guia explica isso em detalhes. Resumidamente: btrfs coloca cópias imutáveis e clones instantâneos na camada de armazenamento, não numa app acima. O send/receive envia essas cópias para fora. Resultado: um atacante com a sua senha root não consegue mudar nem apagar nada.",
               "q": "Porquê btrfs?"
             },
             {
-              "a": "Não diretamente. A arquitetura cobre computação sua, com bases de dados em Docker em armazenamento btrfs. Se o seu património crítico está em RDS ou Aurora, o briefing assinala isso. Indica depois onde o modelo funciona e onde não.",
+              "a": "Não diretamente. O design cobre seus próprios servidores com bases de dados em Docker sobre btrfs. Se seus dados críticos estão em RDS ou Aurora, o briefing marca isso. Mostra depois onde o modelo funciona e onde não.",
               "q": "Aplica-se a serviços geridos como o AWS RDS?"
             }
           ]
@@ -2806,16 +2806,16 @@
         },
         "toc": {
           "heading": "O que contém",
-          "intro": "O que protege, como funciona, que normas cobre, e as provas que o auditor pedirá. Aproximadamente 10 a 14 páginas densas.",
+          "intro": "Conheça o que protege, como funciona, que regulações cumpre e as provas que seu auditor vai pedir. Cerca de 10 a 14 páginas densas.",
           "items": [
-            "Aquilo contra o que realmente se defende",
+            "O que você está realmente a defender (sem complicações)",
             "Como funciona o sistema e por que um atacante não consegue contorná-lo",
             "O que bloqueia, com exemplos do mundo real",
             "Que normas se aplicam: coimas, prazos, redação exata",
             "As contas do custo, baseadas em dados publicados",
             "Como nos posicionamos: na tecnologia, não no preço",
             "Como é a implementação e o que está fora de âmbito",
-            "As provas que o seu auditor pedirá"
+            "As provas que o auditor vai pedir"
           ]
         }
       },
@@ -2828,30 +2828,30 @@
         },
         "companions": {
           "heading": "Páginas de solução relacionadas",
-          "intro": "A mesma abordagem, respondendo às perguntas que vão fazer:",
+          "intro": "A mesma abordagem, respondendo às questões que vão surgir:",
           "readMore": "Ler mais"
         },
         "faq": {
           "heading": "Perguntas que fazem",
           "items": [
             {
-              "a": "Para um CISO, CTO ou engenheiro sénior de infraestrutura a rever a arquitetura. Pressupõe que sabe como funcionam backups, sistemas de ficheiros e as regulações que o seu stack já tem de seguir.",
+              "a": "Para CISO, CTO ou arquiteto sénior de infraestrutura. Pressupõe que você já conhece backups, armazenamento e as regulações que seu stack enfrenta.",
               "q": "Para quem é este briefing?"
             },
             {
-              "a": "Sim. Depois de submeter o seu email, a mesma página disponibiliza um PDF executivo de cinco minutos que pode enviar a um CFO, diretor de TI ou membro do conselho.",
+              "a": "Sim. Quando submete o email, na mesma página aparece um PDF executivo de cinco minutos, pronto para encaminhar ao CFO, diretor de TI ou administrador.",
               "q": "Existe uma versão não técnica?"
             },
             {
-              "a": "Um email de confirmação. É adicionado à nossa newsletter (um artigo breve por mês, sobre todos os produtos). Desinscreva-se com um clique. O seu email reside na UE por padrão, conforme a política de residência de dados da Rediacc.",
+              "a": "Um email de confirmação. Entra na nossa newsletter (um artigo breve por mês sobre todos os produtos). Cancelar em um clique. Seu email fica na UE por padrão, conforme a política de Rediacc.",
               "q": "O que acontece ao meu email?"
             },
             {
-              "a": "O briefing explica em detalhe. Resumo: o btrfs coloca cópias imutáveis e clones instantâneos na camada de armazenamento, não numa app acima dela. A funcionalidade de envio/receção leva essas cópias para fora da máquina. Resultado: um atacante com a palavra-passe de admin não consegue alterar ou apagar nada.",
+              "a": "O guia explica isso em detalhes. Resumidamente: btrfs coloca cópias imutáveis e clones instantâneos na camada de armazenamento, não numa app acima. O send/receive envia essas cópias para fora. Resultado: um atacante com a sua senha root não consegue mudar nem apagar nada.",
               "q": "Porquê btrfs?"
             },
             {
-              "a": "Não diretamente. A arquitetura cobre os seus servidores a correr bases de dados em Docker em armazenamento btrfs. Se os seus dados críticos estão em RDS ou Aurora, o briefing assinala. Mostra onde o modelo funciona e onde não.",
+              "a": "Não diretamente. O design cobre seus próprios servidores com bases de dados em Docker sobre btrfs. Se seus dados críticos estão em RDS ou Aurora, o briefing marca isso. Mostra depois onde o modelo funciona e onde não.",
               "q": "Aplica-se a serviços geridos como o AWS RDS?"
             }
           ]
@@ -2861,7 +2861,7 @@
           "downloadButton": "Descarregar o briefing técnico",
           "eyebrow": "Download gratuito · PDF A4 · Nível CISO/CTO",
           "openInBrowser": "Abrir no browser",
-          "subtitle": "58% dos backups falham quando tenta restaurá-los. A maioria das empresas só descobre quando chega o desastre.",
+          "subtitle": "58% dos backups falham na restauração. Maioria das empresas só descobre durante o desastre.",
           "title": "Backups Verificados"
         },
         "meta": {
@@ -2871,16 +2871,16 @@
         },
         "toc": {
           "heading": "O que está incluído",
-          "intro": "O que protege e como funciona. Que regulações cumpre. As provas que o auditor vai pedir. Cerca de 10 a 14 páginas densas.",
+          "intro": "Conheça o que protege, como funciona, que regulações cumpre e as provas que o auditor vai pedir. Cerca de 10 a 14 páginas densas.",
           "items": [
-            "O que está realmente a defender (sem jargão)",
+            "O que está realmente em risco (em termos simples)",
             "Como funciona o sistema e por que um atacante não consegue contorná-lo",
             "O que bloqueia, com exemplos reais",
             "Que regulações se aplicam: multas, prazos, texto exato",
             "A matemática dos custos, com números publicados",
             "Como nos comparamos com outros fornecedores na tecnologia, não no preço",
             "Como é o setup e o que não cobrimos",
-            "As evidências que o auditor vai pedir"
+            "As provas que o auditor vai pedir"
           ]
         }
       }
@@ -7546,30 +7546,30 @@
         "benefits": {
           "items": [
             {
-              "description": "O Rediacc corre o k3s por ti, ou liga-se a um cluster que já tenhas. Os volumes assentam sobre ceph-csi RBD. Os teus manifestos continuam teus.",
+              "description": "Rediacc executa k3s por ti, ou conecta-se a um cluster existente. Os volumes funcionam com ceph-csi RBD. Os teus manifestos continuam os mesmos.",
               "icon": "check-circle",
-              "title": "Mantém o teu Kubernetes"
+              "title": "Mantém Kubernetes"
             },
             {
-              "description": "Provisiona nos teus próprios hosts KVM ou em clouds como a Linode com VLANs privadas. Os node pools mantêm os nós Ceph, intensivos em disco, separados dos nós Kubernetes, intensivos em CPU.",
+              "description": "Provisiona em hosts KVM locais ou em clouds como Linode com VLANs privadas. Os node pools mantêm os nós Ceph, intensivos em disco, separados dos nós Kubernetes, intensivos em CPU.",
               "icon": "arrow-right-circle",
               "title": "Mobilidade real entre datacenters"
             },
             {
-              "description": "Uma app Kubernetes é um namespace. Faz fork como em qualquer repo: 1 a 5 segundos, dados incluídos. Os mesmos comandos que já usas para repos Docker.",
+              "description": "Uma app Kubernetes é um namespace. Faz fork como em qualquer repo: 1 a 5 segundos, dados inclusos. Os mesmos comandos que usas para repos Docker.",
               "icon": "git-branch",
               "title": "Uma mentalidade para tudo"
             }
           ],
           "overline": "PORQUE É IMPORTANTE",
-          "title": "Mantém o teu Kubernetes. Ganha mobilidade."
+          "title": "Mantém Kubernetes. Ganha mobilidade."
         },
-        "blurb": "Fork ou mova um cluster em execução, dados incluídos",
+        "blurb": "Faz fork ou move um cluster em execução, com os dados inclusos",
         "bottomCta": {
           "command": "rdc cluster fork prod --tag staging",
           "ctaText": "Começar Gratuitamente",
-          "description": "Faz fork, testa a mudança, depois migra a sério. Começa o teu período de 14 dias grátis.",
-          "title": "Dá ao teu cluster uma rota de saída"
+          "description": "Faz fork, testa a mudança, depois migra a sério. Comece o período de 14 dias grátis.",
+          "title": "Dá ao cluster uma saída"
         },
         "comparison": {
           "capabilityLabel": "Capacidade",
@@ -7578,12 +7578,18 @@
             {
               "name": "Faz backup de apps e volumes",
               "refs": [4, 5, 0, 9, 0],
-              "values": ["check", "check", "cross", "Volumes only", "rediacc"]
+              "values": ["check", "check", "cross", "Apenas volumes", "rediacc"]
             },
             {
               "name": "Move um cluster inteiro com os seus dados",
               "refs": [6, 7, 8, 0, 0],
-              "values": ["Stop and restore", "Stop and restore", "Shape only", "cross", "rediacc"]
+              "values": [
+                "Parar e restaurar",
+                "Parar e restaurar",
+                "Apenas forma",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Faz fork de um cluster em execução, dados incluídos",
@@ -7598,7 +7604,7 @@
             {
               "name": "Copia dados sem uma reescrita completa",
               "refs": [0, 0, 0, 10, 0],
-              "values": ["cross", "cross", "cross", "Async copy", "rediacc"]
+              "values": ["cross", "cross", "cross", "Cópia assíncrona", "rediacc"]
             },
             {
               "name": "Corte curto e medido para uma mudança planeada",
@@ -7611,7 +7617,7 @@
         },
         "hero": {
           "primaryCta": "Começar Gratuitamente",
-          "subtitle": "O teu cluster move-se como um único conjunto: nós, configuração e dados. Para outra máquina ou outro datacenter. O corte é medido em segundos, não num fim de semana.",
+          "subtitle": "O cluster move-se como um único conjunto: nós, configuração e dados. Para outra máquina ou outro datacenter. A transição demora segundos, não um fim de semana.",
           "title": "Faz fork ou move um cluster Kubernetes em execução"
         },
         "howItWorks": {
@@ -7695,34 +7701,34 @@
         "meta": {
           "description": "Faz fork ou move um cluster Kubernetes em execução, dados incluídos, para outra máquina ou datacenter. Corte curto e medido. Construído sobre Ceph RBD e k3s.",
           "keywords": "migração de cluster kubernetes, fork de cluster, ceph rbd, k3s, mobilidade de datacenter, portabilidade kubernetes",
-          "title": "Fork or Move a Kubernetes Cluster | Rediacc"
+          "title": "Fork ou Migre um Cluster Kubernetes | Rediacc"
         },
         "problem": {
-          "description": "O Kubernetes tornou as tuas apps portáteis. O cluster em si não é. Os dados vivem num único datacenter. Movê-los significa um projeto de reconstrução: novos nós, novo armazenamento, restauro a partir de backup, reteste de tudo. Por isso a maioria das equipas nunca muda. E o fornecedor sabe disso.",
+          "description": "Kubernetes tornou as apps portáteis. O cluster em si, não. Os dados vivem num datacenter. Movê-los é um projeto de reconstrução: novos nós, novo armazenamento, restauro de backup, reteste completo. Por isso a maioria das equipas nunca muda. E o fornecedor sabe disso.",
           "overline": "O PROBLEMA",
           "statCallouts": [
             {
               "number": "27%",
               "ref": 1,
-              "source": "Flexera 2024 State of the Cloud Report",
+              "source": "Relatório de Estado da Cloud 2024 — Flexera",
               "text": "da despesa em cloud é desperdiçada todos os anos"
             },
             {
               "number": "17%",
               "ref": 2,
-              "source": "Flexera 2025 State of the Cloud Report",
+              "source": "Relatório de Estado da Cloud 2025 — Flexera",
               "text": "valor médio que as empresas ultrapassam o seu orçamento de cloud"
             },
             {
               "number": "$0.09/GB",
               "ref": 3,
-              "source": "AWS/Azure/GCP Pricing 2024",
+              "source": "AWS/Azure/GCP Preços 2024",
               "text": "em taxas para tirar dados, feitas para tornar a saída dispendiosa"
             }
           ],
           "timeline": {
             "newLabel": "COM A REDIACC",
-            "newSteps": ["Pre-copy", "16s cutover", "Live"],
+            "newSteps": ["Pré-cópia", "Transição em 16s", "Em direto"],
             "oldLabel": "A FORMA ANTIGA",
             "oldSteps": [
               {
@@ -7747,48 +7753,48 @@
               }
             ]
           },
-          "title": "O teu cluster está preso onde o construíste"
+          "title": "O cluster está preso onde foi criado"
         },
         "references": {
           "items": [
             {
-              "text": "Flexera, \"2024 State of the Cloud Report,\" 2024. \"27% of cloud spend continues to be wasted.\"",
+              "text": "Flexera, \"Relatório de Estado da Cloud 2024,\" 2024. \"27% dos gastos em cloud continuam a ser desperdiçados.\"",
               "url": "https://www.flexera.com/about-us/press-center/flexera-2024-state-of-the-cloud-managing-spending-top-challenge"
             },
             {
-              "text": "Flexera, \"2025 State of the Cloud Report,\" 2025. \"With cloud budgets already exceeding limits by 17%, organizations are increasingly turning to managed service providers.\"",
+              "text": "Flexera, \"Relatório de Estado da Cloud 2025,\" 2025. \"Com orçamentos de cloud já a exceder os limites em 17%, as organizações estão cada vez mais a recorrer a prestadores de serviços geridos.\"",
               "url": "https://www.flexera.com/about-us/press-center/new-flexera-report-finds-84-percent-of-organizations-struggle-to-manage-cloud-spend"
             },
             {
-              "text": "AWS, \"Amazon S3 Pricing — Data Transfer,\" 2024. \"Data Transfer OUT from Amazon S3 to Internet: $0.09 per GB for the first 10 TB/month.\"",
+              "text": "AWS, \"Preços de Amazon S3 — Transferência de Dados,\" 2024. \"Transferência de Dados SAÍDA de Amazon S3 para Internet: $0,09 por GB para os primeiros 10 TB/mês.\"",
               "url": "https://aws.amazon.com/s3/pricing/"
             },
             {
-              "text": "Velero backs up Kubernetes cluster resources and persistent volumes and restores them into a cluster.",
+              "text": "Velero faz backup dos recursos do cluster Kubernetes e dos volumes persistentes e restaura-os num cluster.",
               "url": "https://velero.io/docs/"
             },
             {
-              "text": "Kasten K10 provides backup and restore of Kubernetes applications, including application data.",
+              "text": "Kasten K10 fornece backup e restauro de aplicações Kubernetes, incluindo dados da aplicação.",
               "url": "https://docs.kasten.io/"
             },
             {
-              "text": "Velero cluster migration restores a backup into a new cluster; workloads are recreated from the backup point, not moved live.",
+              "text": "A migração de cluster com Velero restaura um backup num novo cluster; as workloads são recriadas a partir do ponto de backup, não movidas em direto.",
               "url": "https://velero.io/docs/main/migration-case/"
             },
             {
-              "text": "Kasten K10 migrates applications between clusters by exporting a restore point and importing it into the target cluster.",
+              "text": "Kasten K10 migra aplicações entre clusters exportando um ponto de restauro e importando-o no cluster de destino.",
               "url": "https://docs.kasten.io/latest/usage/migration.html"
             },
             {
-              "text": "Cluster API's clusterctl move relocates Cluster API objects (the cluster's definition) to another management cluster; it does not move workload data.",
+              "text": "O clusterctl move do Cluster API reloca os objetos do Cluster API (a definição do cluster) para outro cluster de gestão; não move os dados de workload.",
               "url": "https://cluster-api.sigs.k8s.io/clusterctl/commands/move"
             },
             {
-              "text": "Ceph RBD mirroring replicates block device images between Ceph clusters; it covers volumes, not Kubernetes cluster state.",
+              "text": "A replicação Ceph RBD replica imagens de dispositivos em bloco entre clusters Ceph; abrange volumes, não estado do cluster Kubernetes.",
               "url": "https://docs.ceph.com/en/latest/rbd/rbd-mirroring/"
             },
             {
-              "text": "Ceph RBD mirroring is asynchronous, based on journaling or periodic snapshots, and is designed for disaster recovery.",
+              "text": "A replicação Ceph RBD é assíncrona, baseada em journaling ou snapshots periódicos, e é concebida para recuperação de desastres.",
               "url": "https://docs.ceph.com/en/latest/rbd/rbd-mirroring/"
             }
           ]
@@ -7796,17 +7802,17 @@
         "stats": [
           {
             "icon": "layers",
-            "label": "Whole 2-node cluster fork",
+            "label": "Fork de cluster de 2 nós completo",
             "number": "46s"
           },
           {
             "icon": "clock",
-            "label": "Migrate cutover, measured",
+            "label": "Transição de migração cronometrada",
             "number": "16s"
           },
           {
             "icon": "zap",
-            "label": "Namespace fork",
+            "label": "Fork de namespace",
             "number": "1-5s"
           }
         ],
@@ -7858,36 +7864,36 @@
         "benefits": {
           "items": [
             {
-              "description": "Os dados mantêm-se encriptados com AES-256 em cada etapa da migração. Sem desencriptação temporária em qualquer fase.",
+              "description": "Os dados mantêm-se encriptados com AES-256 em cada etapa. Sem desencriptação temporária em qualquer altura.",
               "icon": "lock",
               "title": "Encriptação em trânsito"
             },
             {
-              "description": "A configuração de encriptação, as chaves na posse do cliente, as definições Docker e as políticas de rede migram todas como uma única unidade atómica.",
+              "description": "Tudo viaja junto: encriptação, chaves, configuração Docker, políticas de rede. Sem perder nada no caminho.",
               "icon": "package",
               "title": "Definições viajam com os dados"
             },
             {
-              "description": "Sem desencriptação temporária. Sem janelas de exposição. Nenhum intermediário vê alguma vez dados em texto simples.",
+              "description": "Nada é desencriptado no caminho. Sem janelas abertas. Nenhum intermediário vê os dados em texto simples.",
               "icon": "eye-off",
-              "title": "Transferência de confiança zero"
+              "title": "Ninguém vê os dados"
             }
           ],
           "overline": "POR QUE É IMPORTANTE",
-          "title": "O que obtém"
+          "title": "O que inclui"
         },
-        "blurb": "Migre sem arriscar os seus dados",
+        "blurb": "Migre protegendo os seus dados",
         "bottomCta": {
           "command": "rdc repo push production --to secondary",
-          "description": "Comece com a edição gratuita Community. Migração encriptada incluída.",
-          "primaryCta": "Começar Gratuitamente",
+          "description": "Migração encriptada incluída desde o início. Comece com a edição gratuita.",
+          "primaryCta": "Iniciar Teste Gratuito",
           "tierBadge": "Gratuito até 5 repositórios · Sem cartão de crédito necessário",
-          "title": "Migre em segurança, sempre"
+          "title": "Migre com segurança, sempre"
         },
         "calculator": {
           "annualLabel": "Risco anual de migração",
-          "description": "Cada migração sem encriptação ponta a ponta é um incidente de conformidade à espera de acontecer.",
-          "footnote": "Assume $200/h de trabalho para configuração de re-encriptação, prémio de violação de $4.880/TB (IBM 2024), e probabilidade de violação de 1% por janela de exposição. A Rediacc mantém a encriptação em todo o processo — zero janelas de exposição, zero re-encriptação necessária.",
+          "description": "Qualquer migração sem encriptação ponta a ponta é um incidente de conformidade prestes a acontecer.",
+          "footnote": "Assume $200/hora de trabalho para configuração de re-encriptação, prémio de violação de $4.880/TB (IBM 2024), e probabilidade de 1% de violação por janela de exposição. Rediacc mantém a encriptação do início ao fim — zero janelas de exposição, zero re-encriptação necessária.",
           "headerTitle": "Calculadora de Risco de Migração",
           "overline": "O CUSTO REAL",
           "results": {
@@ -7900,19 +7906,19 @@
             "hours": "Horas de exposição por migração",
             "migrations": "Migrações por ano"
           },
-          "title": "Quanto custa o risco de migração",
+          "title": "O que o risco de migração realmente custa",
           "withAnnual": "$0",
-          "withoutTag": "Sem a Rediacc",
+          "withoutTag": "Sem Rediacc",
           "withResults": {
             "labor": "$0",
             "risk": "0 TB",
             "windows": "0 h"
           },
-          "withTag": "Com a Rediacc"
+          "withTag": "Com Rediacc"
         },
         "comparison": {
           "capabilityLabel": "Capacidade",
-          "description": "A maioria das ferramentas de cópia de segurança trata a migração como um acessório. A Rediacc trata-a como uma operação encriptada de primeira classe.",
+          "description": "A maioria das ferramentas de backup trata a migração como acessório. A Rediacc trata-a como operação encriptada de primeira classe.",
           "features": [
             {
               "name": "Migração sem desencriptação",
@@ -7950,13 +7956,13 @@
               "values": ["cross", "cross", "check", "cross", "rediacc"]
             }
           ],
-          "overline": "A DIFERENÇA",
+          "overline": "O DIFERENCIAL",
           "title": "O que os outros não conseguem fazer durante a migração"
         },
         "hero": {
-          "primaryCta": "Começar Gratuitamente",
-          "subtitle": "A migrar entre servidores, clouds ou fornecedores? As suas cópias de segurança encriptadas viajam em segurança. Sem exposição. Sem perda de dados.",
-          "title": "Migre sem arriscar os seus dados"
+          "primaryCta": "Iniciar Teste Gratuito",
+          "subtitle": "Muda de servidor, cloud ou fornecedor? Os dados permanecem encriptados o tempo todo. Sem exposição. Sem perdas.",
+          "title": "Migre protegendo os seus dados"
         },
         "howItWorks": {
           "cloneVisual": {
@@ -8018,56 +8024,56 @@
           "overline": "COMO FUNCIONA",
           "steps": [
             {
-              "description": "Os seus snapshots btrfs encriptados são agrupados com chaves, configurações e políticas intactas. Nada é desencriptado.",
+              "description": "As suas cópias permanecem encriptadas. Chaves, definições e políticas viajam com elas. Nada é desencriptado.",
               "icon": "package",
               "title": "Empacotar"
             },
             {
-              "description": "Transfira para qualquer destino através de um canal encriptado. O AES-256 nunca cai durante o trânsito.",
+              "description": "Envie para qualquer servidor, cloud ou fornecedor. Os dados permanecem encriptados durante toda a transferência. AES-256 nunca cai.",
               "icon": "arrow-right-circle",
               "title": "Mover"
             },
             {
-              "description": "As verificações de integridade SHA-256 confirmam que cada byte chegou intacto. Reversão automática se algo falhar.",
+              "description": "Verificação de fingerprint confirma que cada ficheiro chegou inteiro. Se algo falhar, a migração reverte automaticamente.",
               "icon": "check-circle",
               "title": "Verificar"
             }
           ],
           "title": "Um comando. Zero exposição."
         },
-        "label": "Segurança na Migração",
+        "label": "Segurança de Migrações",
         "meta": {
-          "description": "A migrar entre servidores, clouds ou fornecedores? As suas cópias de segurança encriptadas viajam em segurança. Sem exposição. Sem perda de dados.",
+          "description": "Muda entre servidores, clouds ou fornecedores? As suas cópias de segurança encriptadas chegam protegidas. Sem exposição. Sem perdas.",
           "keywords": "migração encriptada, transferência sem exposição, segurança na migração de dados, transferência de cópia de segurança encriptada, migração btrfs, migração de servidor, encriptação na migração para cloud",
-          "title": "Segurança na Migração - Dados sem Risco | Rediacc"
+          "title": "Migrações Seguras - Dados Protegidos | Rediacc"
         },
         "problem": {
-          "description": "Mover dados entre sistemas cria exposição. Ficheiros temporários, transferências não encriptadas, configurações incompatíveis. Cada migração é uma janela de risco. E a maioria das ferramentas perde as definições de encriptação quando migra — obrigando-o a reconfigurar tudo do zero no destino.",
+          "description": "Mover dados entre sistemas abre exposição. Ficheiros temporários, transferências desprotegidas, configurações incompatíveis. Cada migração é uma janela de risco. E a maioria das ferramentas perde as definições de encriptação — obrigando-o a reconfigurar tudo do zero no destino.",
           "overline": "O PROBLEMA",
           "statCallouts": [
             {
               "number": "89%",
               "ref": 2,
               "source": "Flexera 2024 / Thales 2025",
-              "text": "das empresas operam em multi-cloud, mas apenas 8% encriptam 80% ou mais dos dados na cloud"
+              "text": "das empresas usam vários clouds, mas apenas 8% encriptam 80% ou mais dos dados"
             },
             {
               "number": "$4,88M",
               "ref": 3,
               "source": "IBM Cost of Data Breach 2024",
-              "text": "custo médio de uma violação de dados globalmente"
+              "text": "custo médio de uma violação de dados no mundo"
             },
             {
               "number": "$90K–$300K",
               "ref": 4,
-              "source": "Preços dos fornecedores de cloud",
-              "text": "custo de saída por petabyte ao migrar dados encriptados entre clouds"
+              "source": "Tabelas de Preços de Cloud",
+              "text": "custo de saída por petabyte ao migrar dados encriptados"
             }
           ],
           "timeline": {
-            "newLabel": "Com a Rediacc",
-            "newSteps": ["Executar migração", "0 exposição", "Verificado"],
-            "oldLabel": "Migração tradicional",
+            "newLabel": "Com Rediacc",
+            "newSteps": ["Um único comando", "Sem exposição", "Verificado"],
+            "oldLabel": "O método antigo",
             "oldSteps": [
               {
                 "day": "Passo 1",
@@ -8075,7 +8081,7 @@
               },
               {
                 "day": "Passo 2",
-                "text": "Exportar para staging"
+                "text": "Copiar para área temporária"
               },
               {
                 "day": "Passo 3",
@@ -8083,24 +8089,24 @@
               },
               {
                 "day": "Passo 4",
-                "text": "Encriptar novamente no destino"
+                "text": "Re-encriptar no destino"
               },
               {
                 "day": "Resultado",
-                "text": "Config perdida"
+                "text": "Configuração perdida"
               }
             ]
           },
-          "title": "A migração é o momento em que os dados estão mais vulneráveis"
+          "title": "Migrações expõem seus dados no momento crítico"
         },
         "references": {
           "items": [
             {
-              "text": "Flexera, \"2024 State of the Cloud Report\", 2024. \"Utilização multi-cloud aumentou de 87% no ano passado para 89% este ano.\"",
+              "text": "Flexera, \"2024 State of the Cloud Report\", 2024. \"Uso de multi-cloud passou de 87% no ano passado para 89% este ano.\"",
               "url": "https://www.flexera.com/about-us/press-center/flexera-2024-state-of-the-cloud-managing-spending-top-challenge"
             },
             {
-              "text": "Thales, \"2025 Cloud Security Study\", realizado pela S&P Global 451 Research, 2025. \"Apenas 8% das organizações encriptam 80% ou mais dos seus dados na cloud.\"",
+              "text": "Thales, \"2025 Cloud Security Study\", pela S&P Global 451 Research, 2025. \"Apenas 8% das organizações encriptam 80% ou mais dos dados na cloud.\"",
               "url": "https://cpl.thalesgroup.com/about-us/newsroom/thales-2025-cloud-security-study-reveals-ai-tool-sprawl-security-gap"
             },
             {
@@ -8108,19 +8114,19 @@
               "url": "https://newsroom.ibm.com/2024-07-30-ibm-report-escalating-data-breach-disruption-pushes-costs-to-new-highs"
             },
             {
-              "text": "AWS, \"Amazon S3 Pricing — Data Transfer\", 2024. \"Transferência de dados para fora do Amazon S3 para a Internet: $0,09 por GB nos primeiros 10 TB/mês.\"",
+              "text": "AWS, \"Amazon S3 Pricing — Data Transfer\", 2024. \"Saída de dados do Amazon S3: $0,09 por GB nos primeiros 10 TB/mês.\"",
               "url": "https://aws.amazon.com/s3/pricing/"
             },
             {
-              "text": "A CommCell Migration do Commvault move clientes inteiros incluindo configuração, histórico de cópias de segurança e dados como uma única operação.",
+              "text": "CommCell Migration do Commvault move clientes inteiros com configuração, histórico de backups e dados como uma única operação.",
               "url": "https://documentation.commvault.com/v11/commcell-console/commcell_migration_overview.html"
             },
             {
-              "text": "O SureBackup da Veeam verifica a integridade dos dados após a transferência ao iniciar VMs e executar verificações de saúde ao nível da aplicação.",
+              "text": "SureBackup do Veeam verifica integridade após transferência iniciando VMs e executando verificações de saúde da aplicação.",
               "url": "https://helpcenter.veeam.com/docs/vbr/userguide/surebackup_recovery_verification.html"
             },
             {
-              "text": "O Rubrik realiza verificações de integridade automáticas nos dados ingeridos usando a verificação do seu sistema de ficheiros append-only.",
+              "text": "O Rubrik realiza verificações de integridade automáticas nos dados ingeridos usando verificação do seu sistema de ficheiros append-only.",
               "url": "https://docs.rubrik.com/en-us/saas/saas/common_sla_policy_tasks.html"
             },
             {
@@ -8128,7 +8134,7 @@
               "url": "https://documentation.commvault.com/2024e/commcell-console/data_integrity_validation.html"
             },
             {
-              "text": "O Restore Check da Druva verifica proativamente a consistência dos dados de cópia de segurança e os snapshots de dispositivos num calendário automatizado.",
+              "text": "Restore Check da Druva verifica proativamente consistência de backups e snapshots em calendário automatizado.",
               "url": "https://help.druva.com/en/articles/8513279-verify-the-integrity-of-the-downloaded-data"
             },
             {
@@ -8150,7 +8156,7 @@
           ]
         },
         "socialProof": {
-          "author": "Responsável de Infraestrutura",
+          "author": "Diretor de Infraestrutura",
           "company": "Fornecedor Europeu de SaaS, 42 servidores, 6 regiões",
           "impact": {
             "after": {
@@ -8163,7 +8169,7 @@
             },
             "improvement": "Zero janelas de exposição · 10x mais rápido"
           },
-          "quote": "Migrámos 42 servidores da Hetzner para a OVH num fim de semana. 350 TB de dados encriptados transferidos sem um único byte exposto. A nossa migração anterior — apenas 8 servidores — demorou três semanas e exigiu desencriptar tudo para uma área de staging. Foi a última vez que aceitámos esse risco."
+          "quote": "Migrámos 42 servidores de Hetzner para OVH num fim de semana. 350 TB de dados encriptados transferidos sem um único byte exposto. A migração anterior — apenas 8 servidores — demorou três semanas e exigiu desencriptar tudo para staging. Nunca mais aceitamos esse risco."
         },
         "stats": [
           {
@@ -8173,42 +8179,42 @@
           },
           {
             "icon": "check-circle",
-            "label": "Encriptação Mantida",
+            "label": "Encriptação Preservada",
             "number": "100%"
           },
           {
             "icon": "arrow-right-circle",
-            "label": "Destino Suportado",
+            "label": "Destino Compatível",
             "number": "Qualquer"
           }
         ],
         "techDiff": {
-          "description": "As ferramentas de migração tradicionais desencriptam os dados antes da transferência, criando janelas de exposição onde os seus dados ficam desprotegidos. A Rediacc nunca desencripta durante a migração — os snapshots btrfs encriptados são transferidos como blocos fechados.",
-          "overline": "SOB O CAPÔ",
+          "description": "Ferramentas antigas desencriptam antes de enviar, criando janelas onde os ficheiros ficam desprotegidos. Nunca desencriptamos nada. Cópias encriptadas viajam como blocos fechados, do início ao fim.",
+          "overline": "NOS BASTIDORES",
           "rediaccLabel": "Rediacc",
           "rows": [
             {
-              "rediacc": "btrfs send/receive encriptado — nunca desencriptado",
-              "traditional": "Pipeline de desencriptação, transferência e re-encriptação"
+              "rediacc": "Cópias encriptadas enviadas e recebidas, nunca desencriptadas",
+              "traditional": "Desencriptar, copiar, re-encriptar"
             },
             {
-              "rediacc": "As chaves viajam separadamente, sempre na posse do cliente",
-              "traditional": "As chaves de encriptação têm de ser partilhadas com a ferramenta de transferência"
+              "rediacc": "As chaves nunca saem da máquina de origem",
+              "traditional": "A ferramenta precisa das chaves de encriptação"
             },
             {
               "rediacc": "Configuração de encriptação, definições Docker e rotas de rede migram em conjunto",
-              "traditional": "Configurações e políticas reconstruídas manualmente no destino"
+              "traditional": "Configurações reconstruídas manualmente no destino"
             },
             {
-              "rediacc": "Verificação de checksum SHA-256 por repositório após a transferência",
-              "traditional": "Integridade assumida — sem verificação automática"
+              "rediacc": "Fingerprint de cada repositório após a transferência",
+              "traditional": "Espera que os dados cheguem inteiros, sem verificação"
             },
             {
-              "rediacc": "Fork do cluster primeiro — testa a mudança antes de fazer o corte",
+              "rediacc": "Fork do cluster primeiro — testa a mudança antes do corte final",
               "traditional": "Migrações de cluster exigem uma build paralela e um salto de fé"
             }
           ],
-          "title": "Desencriptar-transferir-re-encriptar vs. migração sem exposição",
+          "title": "Desencriptar-copiar vs. migrar encriptado",
           "traditionalLabel": "Migração Tradicional"
         }
       },
