@@ -7,13 +7,13 @@
   "audioFormat": "mp3",
   "sampleRateHz": 48000,
   "voiceFingerprint": "6c6cf1ee371d",
-  "transcriptHash": "6dc703c4aaab42e05a1f6708aa58a5c8a8b69ef47c95df85b2b6508ccbffc022",
+  "transcriptHash": "9c15add200cd719019053af303fa0f555e86ba0ddf17a17ae3eeb23eb4a0b11f",
   "steps": [
     {
       "id": "tutorial-ssh-keys-01",
       "markerIndex": 0,
-      "replayStartSec": 1.625253,
-      "replayEndSec": 6.458857,
+      "replayStartSec": 1.613265,
+      "replayEndSec": 6.244832,
       "narrationText": "First, generate a new SSH key on your laptop. Ed25519 is secure, small, and well supported. You do this once; the same key works for every server you add. This is plain SSH, independent of any tooling here.",
       "audioSrc": "/assets/tutorials/audio/en/tutorial-ssh-keys/tutorial-ssh-keys-01.16c1862b.mp3",
       "textHash": "16c1862b0e952057b9a10bcdade0d20de25867137bc7dcdaf3bf0dbb7a421955",
@@ -311,8 +311,8 @@
     {
       "id": "tutorial-ssh-keys-02",
       "markerIndex": 1,
-      "replayStartSec": 6.458857,
-      "replayEndSec": 13.298492,
+      "replayStartSec": 6.244832,
+      "replayEndSec": 13.509433,
       "narrationText": "Now authorize the key on your first server with ssh-copy-id. It appends your public key to the server's authorized list, so future logins skip the password.",
       "audioSrc": "/assets/tutorials/audio/en/tutorial-ssh-keys/tutorial-ssh-keys-02.4cdb3e58.mp3",
       "textHash": "4cdb3e5834be1cb07b46847b2b80897f688e798c2295286f7ca85b668140953b",
@@ -526,8 +526,8 @@
     {
       "id": "tutorial-ssh-keys-03",
       "markerIndex": 2,
-      "replayStartSec": 13.298492,
-      "replayEndSec": 19.181151,
+      "replayStartSec": 13.509433,
+      "replayEndSec": 19.537172,
       "narrationText": "Do the same for every other server you manage. Here we authorize the second one. Just repeat ssh-copy-id for each machine.",
       "audioSrc": "/assets/tutorials/audio/en/tutorial-ssh-keys/tutorial-ssh-keys-03.83bfebf9.mp3",
       "textHash": "83bfebf942c3f42d4c66c589318741de405e8e498afa00fd1254aef54c7685b2",

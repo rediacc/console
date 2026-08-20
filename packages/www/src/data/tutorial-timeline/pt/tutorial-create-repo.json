@@ -7,13 +7,13 @@
   "audioFormat": "mp3",
   "sampleRateHz": 48000,
   "voiceFingerprint": "ceee56ff81ab",
-  "transcriptHash": "84392380a1df66d66787ff98d4f5b006bf796fdcdb1dd8f317ecb21594c6e13e",
+  "transcriptHash": "0c97f6539754dc8d47b712c02069a127f4adf76e764532b16305c5d6a88aa2d8",
   "steps": [
     {
       "id": "tutorial-create-repo-01",
       "markerIndex": 0,
-      "replayStartSec": 2.41017,
-      "replayEndSec": 10.688129,
+      "replayStartSec": 2.416628,
+      "replayEndSec": 10.155124,
       "narrationText": "Vamos criar um repositório encriptado de 2 gigabytes no servidor. Um repositório é um único ficheiro encriptado em repouso. Quando montado, torna-se uma pasta com o seu próprio daemon Docker e os seus próprios dados de aplicação, completamente isolados.",
       "audioSrc": "/assets/tutorials/audio/pt/tutorial-create-repo/tutorial-create-repo-01.da75a8b7.mp3",
       "textHash": "da75a8b75e68f51643aece35503963006a60385ceb8a86ba4839ad65f927694a",
@@ -305,8 +305,8 @@
     {
       "id": "tutorial-create-repo-02",
       "markerIndex": 1,
-      "replayStartSec": 10.688129,
-      "replayEndSec": 16.425103,
+      "replayStartSec": 10.155124,
+      "replayEndSec": 15.356468,
       "narrationText": "Vamos confirmar que o novo repositório está registado. A partir daqui, o repositório pode ser aberto no VS Code, implementado, bifurcado ou incluído numa cópia de segurança -- tudo a partir do portátil.",
       "audioSrc": "/assets/tutorials/audio/pt/tutorial-create-repo/tutorial-create-repo-02.aec3884b.mp3",
       "textHash": "aec3884bcfc095777959dace626f9b725954a6c5a83eb69e4d2e914325929462",
@@ -538,8 +538,8 @@
     {
       "id": "tutorial-create-repo-03",
       "markerIndex": 2,
-      "replayStartSec": 16.425103,
-      "replayEndSec": 18.266995,
+      "replayStartSec": 15.356468,
+      "replayEndSec": 17.167873,
       "narrationText": "Uma opção bem útil: abrir o repo diretamente no VS Code com este comando. Não vamos lançar o editor aqui, mas ele inicia uma sessão remota no repo via SSH para que você possa editar seus arquivos.",
       "audioSrc": "/assets/tutorials/audio/pt/tutorial-create-repo/tutorial-create-repo-03.77a2692e.mp3",
       "textHash": "77a2692e18125a3f868f13ddc2fe18af77e5b1221d1b61329b168db1ce74c1c6",

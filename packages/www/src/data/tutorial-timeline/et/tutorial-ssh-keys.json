@@ -7,13 +7,13 @@
   "audioFormat": "mp3",
   "sampleRateHz": 48000,
   "voiceFingerprint": "32e0e7274a33",
-  "transcriptHash": "119e79cf52002d88985de2cbdaf966baa8eb45435a180b267e204e2fbb2a129e",
+  "transcriptHash": "c8deefde38e5139bbbaa6e1ed419b9c3db8fa268f5cff1a50fe095b98057943d",
   "steps": [
     {
       "id": "tutorial-ssh-keys-01",
       "markerIndex": 0,
-      "replayStartSec": 1.625253,
-      "replayEndSec": 6.458857,
+      "replayStartSec": 1.613265,
+      "replayEndSec": 6.244832,
       "narrationText": "Esimene samm. Genereerime uue ed25519 SSH võtme. ed25519 on kaasaegne vaikimisi valik -- väike, kiire ja laialt toetatud. Seda tuleb teha ainult üks kord kõigi serverite jaoks, mida kunagi lisad.",
       "audioSrc": "/assets/tutorials/audio/et/tutorial-ssh-keys/tutorial-ssh-keys-01.758abe40.mp3",
       "textHash": "758abe409a1d20be738072c2272c94cbcf7b9cb33ecb879b348768dbb5e63acc",
@@ -89,8 +89,8 @@
     {
       "id": "tutorial-ssh-keys-02",
       "markerIndex": 1,
-      "replayStartSec": 6.458857,
-      "replayEndSec": 13.298492,
+      "replayStartSec": 6.244832,
+      "replayEndSec": 13.509433,
       "narrationText": "Teine samm. Kopeerime avaliku võtme serverisse ssh-copy-id abil. Serveri parooli küsitakse viimast korda. Pärast seda ei ole selle serveri jaoks parooliga autentimine enam vajalik.",
       "audioSrc": "/assets/tutorials/audio/et/tutorial-ssh-keys/tutorial-ssh-keys-02.a10b901e.mp3",
       "textHash": "a10b901e4072c419e43dc8588ac9edb9b218b981a0902c60237f195aee584ba1",
@@ -220,8 +220,8 @@
     {
       "id": "tutorial-ssh-keys-03",
       "markerIndex": 2,
-      "replayStartSec": 13.298492,
-      "replayEndSec": 19.181151,
+      "replayStartSec": 13.509433,
+      "replayEndSec": 19.537172,
       "narrationText": "Kolmas samm. Registreerime võtme CLI-s. Edaspidi autentib iga CLI käsk selle võtmega. Rohkem paroole ega interaktiivseid päringuid.",
       "audioSrc": "/assets/tutorials/audio/et/tutorial-ssh-keys/tutorial-ssh-keys-03.1fbe36ad.mp3",
       "textHash": "1fbe36ad960671820be63825bc6ba9b2613178572904c63ef4a79dcbd0850736",

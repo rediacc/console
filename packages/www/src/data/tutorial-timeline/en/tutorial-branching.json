@@ -7,121 +7,17 @@
   "audioFormat": "mp3",
   "sampleRateHz": 48000,
   "voiceFingerprint": "6c6cf1ee371d",
-  "transcriptHash": "5767f38a7f1b202a46a7e2bf40c817fa110cdb1bc12e8a9c59e417665c188b53",
+  "transcriptHash": "2981e760e79cece26962ebe27eb41d7d2904cdf0914268f4768d209a0e64335f",
   "steps": [
     {
       "id": "tutorial-branching-01",
       "markerIndex": 0,
-      "replayStartSec": 2.423373,
-      "replayEndSec": 8.659919,
-      "narrationText": "Our working fork holds version one of the app state — a simple marker file makes it visible.",
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-branching/tutorial-branching-01.7ca408c6.mp3",
-      "textHash": "7ca408c6eaa1067bcb5e1c9b0951edba3b59ace405216665fce8241119df181c",
+      "replayStartSec": 2.409747,
+      "replayEndSec": 8.689895,
+      "narrationText": "Our working fork holds version one of the app state. A simple marker file makes it visible.",
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-branching/tutorial-branching-01.3c88cc7f.mp3",
+      "textHash": "3c88cc7f3590a43ec2f054d7910fb2a9805a119401f2b92fa8ccede0ba4e4602",
       "audioDurationSec": 5.64,
-      "wordTimings": [
-        {
-          "startSec": 0.24,
-          "endSec": 0.4,
-          "startChar": 0,
-          "endChar": 3
-        },
-        {
-          "startSec": 0.4,
-          "endSec": 0.8,
-          "startChar": 4,
-          "endChar": 11
-        },
-        {
-          "startSec": 0.88,
-          "endSec": 1.12,
-          "startChar": 12,
-          "endChar": 16
-        },
-        {
-          "startSec": 1.12,
-          "endSec": 1.52,
-          "startChar": 17,
-          "endChar": 22
-        },
-        {
-          "startSec": 1.52,
-          "endSec": 2.0,
-          "startChar": 23,
-          "endChar": 30
-        },
-        {
-          "startSec": 2.0,
-          "endSec": 2.4,
-          "startChar": 31,
-          "endChar": 34
-        },
-        {
-          "startSec": 2.48,
-          "endSec": 2.64,
-          "startChar": 35,
-          "endChar": 37
-        },
-        {
-          "startSec": 2.64,
-          "endSec": 2.72,
-          "startChar": 38,
-          "endChar": 41
-        },
-        {
-          "startSec": 2.72,
-          "endSec": 2.96,
-          "startChar": 42,
-          "endChar": 45
-        },
-        {
-          "startSec": 2.96,
-          "endSec": 3.28,
-          "startChar": 46,
-          "endChar": 51
-        },
-        {
-          "startSec": 3.6,
-          "endSec": 3.68,
-          "startChar": 54,
-          "endChar": 55
-        },
-        {
-          "startSec": 3.68,
-          "endSec": 4.0,
-          "startChar": 56,
-          "endChar": 62
-        },
-        {
-          "startSec": 4.0,
-          "endSec": 4.32,
-          "startChar": 63,
-          "endChar": 69
-        },
-        {
-          "startSec": 4.4,
-          "endSec": 4.64,
-          "startChar": 70,
-          "endChar": 74
-        },
-        {
-          "startSec": 4.64,
-          "endSec": 4.96,
-          "startChar": 75,
-          "endChar": 80
-        },
-        {
-          "startSec": 4.96,
-          "endSec": 5.04,
-          "startChar": 81,
-          "endChar": 83
-        },
-        {
-          "startSec": 5.04,
-          "endSec": 5.52,
-          "startChar": 84,
-          "endChar": 91
-        }
-      ],
       "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-branching/tutorial-branching-01-after.a1c970d0.mp3",
       "afterAudioDurationSec": 2.112,
       "afterTextHash": "a1c970d05919abb0f3eff690f1d4092dfa568cb16b2a0c0379e0911ccbfad8d4",
@@ -155,8 +51,8 @@
     {
       "id": "tutorial-branching-02",
       "markerIndex": 1,
-      "replayStartSec": 8.659919,
-      "replayEndSec": 16.216982,
+      "replayStartSec": 8.689895,
+      "replayEndSec": 16.465037,
       "narrationText": "It is not just files. A real PostgreSQL database lives in this fork too, and the customers table holds three rows. Remember that number.",
       "audioSrc": "/assets/tutorials/audio/en/tutorial-branching/tutorial-branching-02.cdab9172.mp3",
       "textHash": "cdab9172d751f3e86289ceb1d2bc3efa552069fa101233cc76005d9409f5f2da",
@@ -376,8 +272,8 @@
     {
       "id": "tutorial-branching-03",
       "markerIndex": 2,
-      "replayStartSec": 16.216982,
-      "replayEndSec": 21.875788,
+      "replayStartSec": 16.465037,
+      "replayEndSec": 22.23398,
       "narrationText": "Freeze it. The commit captures the entire repository as an immutable image, with a message, an author, and a parent. Exactly like git, but for everything, database included.",
       "audioSrc": "/assets/tutorials/audio/en/tutorial-branching/tutorial-branching-03.5d66d7d3.mp3",
       "textHash": "5d66d7d3b64dee5e14b4d02b3f92bd04df3095aa6113c40345e4500e2c48e51d",
@@ -621,8 +517,8 @@
     {
       "id": "tutorial-branching-04",
       "markerIndex": 3,
-      "replayStartSec": 21.875788,
-      "replayEndSec": 26.408746,
+      "replayStartSec": 22.23398,
+      "replayEndSec": 27.29532,
       "narrationText": "Give the commit a name. The stable branch now points at version one.",
       "audioSrc": "/assets/tutorials/audio/en/tutorial-branching/tutorial-branching-04.2243eef4.mp3",
       "textHash": "2243eef4ed174217287eb84a0f7b087149e37aafefd3e9e8cc6a1fe4f3f57e23",
@@ -776,8 +672,8 @@
     {
       "id": "tutorial-branching-05",
       "markerIndex": 4,
-      "replayStartSec": 26.408746,
-      "replayEndSec": 32.630295,
+      "replayStartSec": 27.29532,
+      "replayEndSec": 33.551454,
       "narrationText": "Keep working. Version two replaces version one in the working fork. The commit does not care.",
       "audioSrc": "/assets/tutorials/audio/en/tutorial-branching/tutorial-branching-05.170f8a43.mp3",
       "textHash": "170f8a430d56e4e28b84cc2b3f9743828bb41a58161b9c984db0c3aed6dad069",
@@ -943,8 +839,8 @@
     {
       "id": "tutorial-branching-06",
       "markerIndex": 5,
-      "replayStartSec": 32.630295,
-      "replayEndSec": 38.597418,
+      "replayStartSec": 33.551454,
+      "replayEndSec": 39.850347,
       "narrationText": "Now the disaster. The risky change drops the customers table. In real life this is the moment your stomach sinks.",
       "audioSrc": "/assets/tutorials/audio/en/tutorial-branching/tutorial-branching-06.8bd71ba7.mp3",
       "textHash": "8bd71ba74a8674e862579b0d9df7a3e6b4744eee0d6754ea38b4d7b6b09838ee",
@@ -1116,8 +1012,8 @@
     {
       "id": "tutorial-branching-07",
       "markerIndex": 6,
-      "replayStartSec": 38.597418,
-      "replayEndSec": 45.023533,
+      "replayStartSec": 39.850347,
+      "replayEndSec": 46.251513,
       "narrationText": "Ask for the rows again and the database says it straight: relation customers does not exist. The disaster is real. Every row is gone.",
       "audioSrc": "/assets/tutorials/audio/en/tutorial-branching/tutorial-branching-07.20b383de.mp3",
       "textHash": "20b383deafa3b58ed5b891415bc052737cd48e9ff5879f3067db3d6575b9d50c",
@@ -1313,8 +1209,8 @@
     {
       "id": "tutorial-branching-08",
       "markerIndex": 7,
-      "replayStartSec": 45.023533,
-      "replayEndSec": 50.876553,
+      "replayStartSec": 46.251513,
+      "replayEndSec": 52.196298,
       "narrationText": "Commit the risky change too, broken table and all. History records what actually happened. Two commits now, parent and child.",
       "audioSrc": "/assets/tutorials/audio/en/tutorial-branching/tutorial-branching-08.e111cebf.mp3",
       "textHash": "e111cebfcb13ccd4f4fe79476417d31557fc91eb121dd7a96a0b2a706a5fd854",
@@ -1474,8 +1370,8 @@
     {
       "id": "tutorial-branching-09",
       "markerIndex": 8,
-      "replayStartSec": 50.876553,
-      "replayEndSec": 55.851239,
+      "replayStartSec": 52.196298,
+      "replayEndSec": 56.077573,
       "narrationText": "And there is the history: version two on top, version one below it, messages and authors included, without unlocking a single image.",
       "audioSrc": "/assets/tutorials/audio/en/tutorial-branching/tutorial-branching-09.e81ef2b9.mp3",
       "textHash": "e81ef2b9f418a7b9509cd63e74d348e52197a0ee8f2990173b4937285729ec8c",
@@ -1671,8 +1567,8 @@
     {
       "id": "tutorial-branching-10",
       "markerIndex": 9,
-      "replayStartSec": 55.851239,
-      "replayEndSec": 60.773115,
+      "replayStartSec": 56.077573,
+      "replayEndSec": 61.783031,
       "narrationText": "Now the payoff. Check the stable branch out into a brand new writable fork. Reflink clone: near-instant, any size.",
       "audioSrc": "/assets/tutorials/audio/en/tutorial-branching/tutorial-branching-10.9585c8a3.mp3",
       "textHash": "9585c8a3b1fec76ed512f490eabd55c01b2cd882ada50916c9ac480d09227103",
@@ -1880,8 +1776,8 @@
     {
       "id": "tutorial-branching-11",
       "markerIndex": 10,
-      "replayStartSec": 60.773115,
-      "replayEndSec": 67.070568,
+      "replayStartSec": 61.783031,
+      "replayEndSec": 68.446131,
       "narrationText": "Start the rollback fork like any other repo.",
       "audioSrc": "/assets/tutorials/audio/en/tutorial-branching/tutorial-branching-11.a73386d1.mp3",
       "textHash": "a73386d1508b2080402814cb639c354c758fdffdc88a7ec78e92c4bf70caeddb",
@@ -1993,8 +1889,8 @@
     {
       "id": "tutorial-branching-12",
       "markerIndex": 11,
-      "replayStartSec": 67.070568,
-      "replayEndSec": 72.350149,
+      "replayStartSec": 68.446131,
+      "replayEndSec": 73.904275,
       "narrationText": "And the proof: the rollback fork reads version one. The working fork still has version two. History you can run.",
       "audioSrc": "/assets/tutorials/audio/en/tutorial-branching/tutorial-branching-12.e75b7481.mp3",
       "textHash": "e75b7481c5931abd3cc5a70f1587aec856582e3cd5a3ce40b258d1dcdb0d7af5",
@@ -2178,8 +2074,8 @@
     {
       "id": "tutorial-branching-13",
       "markerIndex": 12,
-      "replayStartSec": 72.350149,
-      "replayEndSec": 78.953688,
+      "replayStartSec": 73.904275,
+      "replayEndSec": 80.770105,
       "narrationText": "And the part that matters most: the dropped table is back, all three rows of it. The rollback restored the database, not just the files.",
       "audioSrc": "/assets/tutorials/audio/en/tutorial-branching/tutorial-branching-13.1dd07e3c.mp3",
       "textHash": "1dd07e3c07588e9bd5a951edac3443ff8162df0abd83a431097fc5dd1eaf4177",

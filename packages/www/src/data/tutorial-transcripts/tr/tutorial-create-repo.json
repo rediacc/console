@@ -6,7 +6,7 @@
     {
       "id": "tutorial-create-repo-01",
       "markerIndex": 0,
-      "at": 2.41017,
+      "at": 2.416628,
       "text": "Sunucuda 2 gigabaytlık şifreli bir depo oluşturuyoruz. Depo, depolandığında tek bir şifreli dosyadır. Bağlandığında kendi Docker daemon'ı ve kendi uygulama verisiyle birlikte bir klasöre dönüşür; sunucudaki her şeyden tamamen izole edilmiş.",
       "afterText": "Depo oluşturuldu. Şifreli dosya sunucuda, bağlanmaya hazır.",
       "cardLabel": "Repo Oluştur",
@@ -15,7 +15,7 @@
     {
       "id": "tutorial-create-repo-02",
       "markerIndex": 1,
-      "at": 10.688129,
+      "at": 10.155124,
       "text": "Yeni deponun kayıtlı olduğunu doğrulamak için makinedeki depoları listeliyoruz. Buradan itibaren depo, VS Code'da açılabilir, dağıtılabilir, fork'lanabilir veya yedeklenebilir; hepsi dizüstü bilgisayarınızdan.",
       "afterText": "İşte burada; kayıtlı ve kullanıma hazır.",
       "cardLabel": "Repoları Listele",
@@ -24,7 +24,7 @@
     {
       "id": "tutorial-create-repo-03",
       "markerIndex": 2,
-      "at": 16.425103,
+      "at": 15.356468,
       "text": "Kullanışlı bir seçenek: bu komutla repoyu doğrudan VS Code'da açabilirsiniz. Editörü burada başlatmayacağız, ancak SSH üzerinden repoya uzak bir oturum başlatarak dosyalarını düzenleyebilirsiniz.",
       "afterText": "Reponun dosyalarını VS Code'da düzenlemek için bunu dizüstü bilgisayarınızda çalıştırın.",
       "cardLabel": "VS Code'da Aç",

@@ -6,7 +6,7 @@
     {
       "id": "tutorial-live-migration-01",
       "markerIndex": 0,
-      "at": 2.420835,
+      "at": 2.403264,
       "text": "Das ist pulse. Es hält einen Zähler im Prozessspeicher und gibt alle fünf Sekunden einen Beat aus. Der Zähler steht bei sechs und steigt weiter, er lebt nur im RAM. Startet man den Prozess neu, beginnt er wieder bei eins.",
       "afterText": "Ein Live-Zähler, der im Speicher schlägt. Das ist unser Beweis.",
       "cardLabel": "Live-Zähler",
@@ -15,7 +15,7 @@
     {
       "id": "tutorial-live-migration-02",
       "markerIndex": 1,
-      "at": 8.294774,
+      "at": 8.337429,
       "text": "Ein Befehl verschiebt alles, live. Phase eins überträgt den Großteil, zwei Gigabyte in etwa einer halben Minute, während die Quelle weiterläuft. Dann die Umschaltung: Es erstellt einen Checkpoint der laufenden Prozesse, überträgt die letzten paar Megabytes und gibt die Ausfallzeit direkt aus. Etwa zwanzig Sekunden, für einen Umzug von zwei Gigabyte.",
       "afterText": "Zwei Gigabyte verschoben, während die App weiterlief. Die Ausfallzeile zeigt, was der Umzug tatsächlich gekostet hat.",
       "cardLabel": "Live migrieren",
@@ -24,7 +24,7 @@
     {
       "id": "tutorial-live-migration-03",
       "markerIndex": 2,
-      "at": 94.394579,
+      "at": 101.02615,
       "text": "Ein Blick auf die neue Maschine: da ist es. Gemountet, Docker läuft, zwei Container aktiv.",
       "afterText": "Gleiches Repository, neues Zuhause, läuft bereits.",
       "cardLabel": "Neues Zuhause",
@@ -33,7 +33,7 @@
     {
       "id": "tutorial-live-migration-04",
       "markerIndex": 3,
-      "at": 99.812481,
+      "at": 106.193621,
       "text": "Und die Quelle? Das Repository ist noch aufgeführt, aber schaut man auf die Zeile: nicht gemountet, kein Docker, null Container. Hier läuft nichts mehr. Das Image bleibt bewusst zurück, als Basis für die nächste Delta-Übertragung.",
       "afterText": "Gestoppt und ausgehängt. Das zurückgebliebene Image ist eine Delta-Basis, keine laufende App.",
       "cardLabel": "Quelle gestoppt",
@@ -42,7 +42,7 @@
     {
       "id": "tutorial-live-migration-05",
       "markerIndex": 4,
-      "at": 105.151877,
+      "at": 111.315305,
       "text": "Jetzt die Pointe. Der Zähler zeigt siebzehn, achtzehn, neunzehn, steigt weiter. Er hat genau dort weitergemacht, wo der Checkpoint ihn eingefroren hat, statt wieder bei eins anzufangen. Der Prozess hat nie bemerkt, dass er die Maschine gewechselt hat.",
       "afterText": "Der Zähler zählte weiter. Der Prozessspeicher hat die Reise mitgemacht.",
       "cardLabel": "Zähler fortgesetzt",

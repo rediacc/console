@@ -6,7 +6,7 @@
     {
       "id": "tutorial-storage-management-01",
       "markerIndex": 0,
-      "at": 2.415408,
+      "at": 2.409491,
       "text": "repository をほぼ満杯まで埋めて確認します。ファイルシステムが手狭になってきました。",
       "afterText": "ほぼ満杯です。拡張の時間です。",
       "cardLabel": "データ充填",
@@ -15,7 +15,7 @@
     {
       "id": "tutorial-storage-management-02",
       "markerIndex": 1,
-      "at": 10.51664,
+      "at": 11.307515,
       "text": "オンラインで拡張します。コンテナを稼働させたまま、暗号化コンテナとファイルシステムが拡張されます。ダウンタイムもアンマウントもゼロです。",
       "afterText": "4ギガバイトになりました。再起動はゼロです。",
       "cardLabel": "オンライン拡張",
@@ -24,7 +24,7 @@
     {
       "id": "tutorial-storage-management-03",
       "markerIndex": 2,
-      "at": 14.693193,
+      "at": 15.610035,
       "text": "内部から確認します。同じボリュームなのに、容量は倍になっています。",
       "afterText": "アプリは気づきませんでした。",
       "cardLabel": "サイズ確認",
@@ -33,7 +33,7 @@
     {
       "id": "tutorial-storage-management-04",
       "markerIndex": 3,
-      "at": 19.546232,
+      "at": 22.257209,
       "text": "今度は逆方向です。大きなファイルを削除します。でも見てください。プールにはまだ領域が返ってきません。削除されたブロックはイメージの中に確保されたままです。",
       "afterText": "repository内では解放されましたが、イメージがまだ保持しています。",
       "cardLabel": "データ削除",
@@ -42,7 +42,7 @@
     {
       "id": "tutorial-storage-management-05",
       "markerIndex": 4,
-      "at": 23.813547,
+      "at": 27.992754,
       "text": "trim はそれらのブロックを、オンラインのままデータストアプールに返します。ほとんどの環境が忘れてしまうステップです。",
       "afterText": "回収完了。プールがまた息を吹き返しました。",
       "cardLabel": "トリム",
@@ -51,7 +51,7 @@
     {
       "id": "tutorial-storage-management-06",
       "markerIndex": 5,
-      "at": 28.710567,
+      "at": 32.61646,
       "text": "もう手作業はやめましょう。ポリシーを使えば、指定した上限までの自動拡張と、スケジュールされた trim が有効になります。",
       "afterText": "ポリシーが保存されました。あとはマシンに任せます。",
       "cardLabel": "ポリシー設定",
@@ -60,7 +60,7 @@
     {
       "id": "tutorial-storage-management-07",
       "markerIndex": 6,
-      "at": 36.110527,
+      "at": 39.426457,
       "text": "設定を読み返します。自動拡張オン、上限は8ギガバイト、trim はスケジュール実行です。",
       "afterText": "一度設定すれば、安心して忘れられます。",
       "cardLabel": "ポリシー確認",
@@ -69,7 +69,7 @@
     {
       "id": "tutorial-storage-management-08",
       "markerIndex": 7,
-      "at": 41.090184,
+      "at": 43.622603,
       "text": "そして全体をまとめるビューです。ストレージヘルスは、各 repo の使用量、プールの状態、そしてコピーオンライトの共有がどれだけ節約しているかを示します。",
       "afterText": "1つの画面で、使用量、節約量、成長の余地がわかります。",
       "cardLabel": "ヘルス表示",

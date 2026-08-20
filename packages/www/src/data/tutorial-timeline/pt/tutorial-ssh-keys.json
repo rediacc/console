@@ -7,13 +7,13 @@
   "audioFormat": "mp3",
   "sampleRateHz": 48000,
   "voiceFingerprint": "ceee56ff81ab",
-  "transcriptHash": "cb54dccee9cb0a015e7a01031c3e12455a4fd52ccbe54373e090a6247f2a0b61",
+  "transcriptHash": "1adc5e12da095e66c9704d8465d1188ca58139bbb73206ce4fa8595473ea9bc0",
   "steps": [
     {
       "id": "tutorial-ssh-keys-01",
       "markerIndex": 0,
-      "replayStartSec": 1.625253,
-      "replayEndSec": 6.458857,
+      "replayStartSec": 1.613265,
+      "replayEndSec": 6.244832,
       "narrationText": "Passo um. Vamos gerar uma nova chave SSH ed25519. O ed25519 é o padrão moderno: compacto, rápido e bem suportado. Só é necessário fazer isto uma vez para todos os servidores que venha a adicionar.",
       "audioSrc": "/assets/tutorials/audio/pt/tutorial-ssh-keys/tutorial-ssh-keys-01.066ab520.mp3",
       "textHash": "066ab52013566f75114dd0d85e79c8115ef3ba9fc876e7232becf33f04bf14c5",
@@ -275,8 +275,8 @@
     {
       "id": "tutorial-ssh-keys-02",
       "markerIndex": 1,
-      "replayStartSec": 6.458857,
-      "replayEndSec": 13.298492,
+      "replayStartSec": 6.244832,
+      "replayEndSec": 13.509433,
       "narrationText": "Passo dois. Vamos copiar a chave pública para o servidor com ssh-copy-id. A palavra-passe do servidor é pedida pela última vez. A partir daqui, a autenticação por palavra-passe já não é necessária.",
       "audioSrc": "/assets/tutorials/audio/pt/tutorial-ssh-keys/tutorial-ssh-keys-02.7d9bb70c.mp3",
       "textHash": "7d9bb70c39539e29fc9f92435697aaa2be86bec875b96e1479d9f4e58522cbe3",
@@ -556,8 +556,8 @@
     {
       "id": "tutorial-ssh-keys-03",
       "markerIndex": 2,
-      "replayStartSec": 13.298492,
-      "replayEndSec": 19.181151,
+      "replayStartSec": 13.509433,
+      "replayEndSec": 19.537172,
       "narrationText": "Passo três. Agora vamos registar a chave na ferramenta. A partir deste momento, todos os comandos autenticam com esta chave.",
       "audioSrc": "/assets/tutorials/audio/pt/tutorial-ssh-keys/tutorial-ssh-keys-03.b101ff03.mp3",
       "textHash": "b101ff03719bef4de401e2ce7159215da22e0d0a8adbb289bcd9355fa7882d55",

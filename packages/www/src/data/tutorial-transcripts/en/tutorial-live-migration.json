@@ -17,7 +17,7 @@
     {
       "id": "tutorial-live-migration-01",
       "markerIndex": 0,
-      "at": 2.420835,
+      "at": 2.403264,
       "text": "Meet pulse. It keeps a counter in process memory and prints a beat every five seconds. The counter is at six and climbing, and it lives in RAM only. Restart the process and it starts over at one.",
       "afterText": "A live counter, beating in memory. That's our evidence.",
       "cardLabel": "Live Counter",
@@ -26,7 +26,7 @@
     {
       "id": "tutorial-live-migration-02",
       "markerIndex": 1,
-      "at": 8.294774,
+      "at": 8.337429,
       "text": "One command moves it, live. Phase one transfers the bulk, two gigabytes in about half a minute, while the source keeps running. Then the cutover: it checkpoints the running processes, carries the last few megabytes across, and prints the downtime right there. About twenty seconds, for a two gigabyte move.",
       "afterText": "Two gigabytes moved while the app kept running. The downtime line shows what the move actually cost.",
       "cardLabel": "Migrate Live",
@@ -35,7 +35,7 @@
     {
       "id": "tutorial-live-migration-03",
       "markerIndex": 2,
-      "at": 94.394579,
+      "at": 101.02615,
       "text": "Check the new machine: there it is. Mounted, Docker running, two containers up.",
       "afterText": "Same repo, new home, already running.",
       "cardLabel": "New Home",
@@ -44,7 +44,7 @@
     {
       "id": "tutorial-live-migration-04",
       "markerIndex": 3,
-      "at": 99.812481,
+      "at": 106.193621,
       "text": "And the source? The repository is still listed, but look at the row: not mounted, no Docker, zero containers. Nothing runs here anymore. The image stays behind on purpose, as the base for the next delta transfer.",
       "afterText": "Stopped and unmounted. The leftover image is a delta base, not a running app.",
       "cardLabel": "Source Stopped",
@@ -53,7 +53,7 @@
     {
       "id": "tutorial-live-migration-05",
       "markerIndex": 4,
-      "at": 105.151877,
+      "at": 111.315305,
       "text": "Now the punchline. The counter reads seventeen, eighteen, nineteen, still climbing. It picked up exactly where the checkpoint froze it instead of starting over at one. The process never noticed it changed machines.",
       "afterText": "The counter kept counting. Process memory made the trip.",
       "cardLabel": "Counter Continued",

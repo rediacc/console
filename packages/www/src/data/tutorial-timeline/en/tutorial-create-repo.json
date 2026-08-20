@@ -7,13 +7,13 @@
   "audioFormat": "mp3",
   "sampleRateHz": 48000,
   "voiceFingerprint": "6c6cf1ee371d",
-  "transcriptHash": "f7f33cb67d47dd4aa57b93f9d9aaebf4596a44f1159ba04dbd7a1deed95c71a8",
+  "transcriptHash": "e74444c4d938aa10c1735cc7092bf3cc6574410a0fcd5a42e62db495581505a4",
   "steps": [
     {
       "id": "tutorial-create-repo-01",
       "markerIndex": 0,
-      "replayStartSec": 2.41017,
-      "replayEndSec": 10.688129,
+      "replayStartSec": 2.416628,
+      "replayEndSec": 10.155124,
       "narrationText": "Time to create a 2 gigabyte encrypted repository on the server. A repository is a single encrypted file at rest. Creating it also mounts it, so it immediately becomes a folder with its own Docker daemon and isolated application data, completely separate from everything else.",
       "audioSrc": "/assets/tutorials/audio/en/tutorial-create-repo/tutorial-create-repo-01.3873a634.mp3",
       "textHash": "3873a634de9b6020aac7c1bb9378af421d2d524112c8b48dea54755b46dcbdc7",
@@ -347,8 +347,8 @@
     {
       "id": "tutorial-create-repo-02",
       "markerIndex": 1,
-      "replayStartSec": 10.688129,
-      "replayEndSec": 16.425103,
+      "replayStartSec": 10.155124,
+      "replayEndSec": 15.356468,
       "narrationText": "Let's confirm the new repo is registered. From here it can be deployed, forked, backed up, or opened in your editor, all from your laptop.",
       "audioSrc": "/assets/tutorials/audio/en/tutorial-create-repo/tutorial-create-repo-02.8c1dd632.mp3",
       "textHash": "8c1dd632728d51cec5e17b2eb635dab254ed53dfc0655453fa411bc5fdfe84c4",
@@ -550,8 +550,8 @@
     {
       "id": "tutorial-create-repo-03",
       "markerIndex": 2,
-      "replayStartSec": 16.425103,
-      "replayEndSec": 18.266995,
+      "replayStartSec": 15.356468,
+      "replayEndSec": 17.167873,
       "narrationText": "One handy option: open the repo directly in VS Code with this command. We won't launch the editor here, but it starts a remote session into the repo over SSH so you can edit its files.",
       "audioSrc": "/assets/tutorials/audio/en/tutorial-create-repo/tutorial-create-repo-03.3bde55ce.mp3",
       "textHash": "3bde55cedcbe3d0267fa211f01e1ee7845270f13790cd35df222951a2c0f35cc",

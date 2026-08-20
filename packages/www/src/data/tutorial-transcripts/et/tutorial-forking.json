@@ -6,7 +6,7 @@
     {
       "id": "tutorial-forking-01",
       "markerIndex": 0,
-      "at": 2.424604,
+      "at": 2.404789,
       "text": "Teeme repositooriumist forki ühe käsuga. See kloonib kõik -- rakenduse, andmebaasi, konfiguratsioonifailid. Ja see juhtub sekunditega, olenemata repositooriumi suurusest. Üks gigabait, sada gigabaiti, üks terabait: sama aeg, iga kord.",
       "afterText": "Fork on tehtud. Kloon töötab, sõltumata suurusest.",
       "cardLabel": "Forki Repo",
@@ -15,7 +15,7 @@
     {
       "id": "tutorial-forking-02",
       "markerIndex": 1,
-      "at": 9.790706,
+      "at": 10.171052,
       "text": "Mõlemad repositooriumid eksisteerivad nüüd kõrvuti. Sama masin, sama ketas, kaks täiesti sõltumatut keskkonda. Forkil on oma konteinerid, oma failisüsteem ja oma Dockeri deemon.",
       "afterText": "Kaks repot, üks ketas. Samad andmed, kõik muu eraldi.",
       "cardLabel": "Loetle Repos",
@@ -24,7 +24,7 @@
     {
       "id": "tutorial-forking-03",
       "markerIndex": 2,
-      "at": 15.362139,
+      "at": 15.249726,
       "text": "Tõestame isolatsiooni. Originaalis on meie markerifail täpselt seal, kuhu me selle jätsime. Forki olemasolu ei ole originaalis midagi muutnud.",
       "afterText": "Originaali fail on endiselt seal. Fork seda ei puutunud.",
       "cardLabel": "Originaalfail",
@@ -33,7 +33,7 @@
     {
       "id": "tutorial-forking-04",
       "markerIndex": 3,
-      "at": 20.531281,
+      "at": 20.51004,
       "text": "Nüüd kustutame selle faili -- kuid ainult forki sees. Forki sees on see kadunud. Tegime hävitava muudatuse ja see jäi forki sisse.",
       "afterText": "Forkis kadunud. Originaal jääb puutumata.",
       "cardLabel": "Kustuta Fork'ist",
@@ -42,7 +42,7 @@
     {
       "id": "tutorial-forking-05",
       "markerIndex": 4,
-      "at": 26.727498,
+      "at": 26.714222,
       "text": "Tagasi originaalile. Markerifail on siin ikka alles, puutumata. Originaal ei teadnud, et midagi juhtus. Samad kujutised, eraldi Dockeri deemonid, eraldi failisüsteemid.",
       "afterText": "Endiselt siin. Forgid on korralikult isoleeritud.",
       "cardLabel": "Originaal Puutumata",
@@ -51,7 +51,7 @@
     {
       "id": "tutorial-forking-06",
       "markerIndex": 5,
-      "at": 31.831236,
+      "at": 31.950484,
       "text": "Kui oled lõpetanud, kustuta lihtsalt fork. Originaal jääb täpselt selliseks, nagu ta oli. Tee fork, katse, riku asju, kustuta -- riskita.",
       "afterText": "Fork eemaldatud. Originaal on täpselt selline, nagu jätsime.",
       "cardLabel": "Puhasta",

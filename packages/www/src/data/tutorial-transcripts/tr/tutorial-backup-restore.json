@@ -6,7 +6,7 @@
     {
       "id": "tutorial-backup-restore-01",
       "markerIndex": 0,
-      "at": 2.799671,
+      "at": 2.416144,
       "text": "Hayatta kalması gereken şeyle başlayalım. Çalışan repository'nin içinde tek bir sipariş satırını tutan bir dosya var. Gözünüzü üzerinden ayırmayın, çünkü birazdan bu makineyi çevrimdışına alacak ve bu satırı başka bir yerden geri getireceğiz.",
       "afterText": "İşte bu satır. Bundan sonrası, onu geri getirmekle ilgili.",
       "cardLabel": "Veri",
@@ -15,7 +15,7 @@
     {
       "id": "tutorial-backup-restore-02",
       "markerIndex": 1,
-      "at": 9.00514,
+      "at": 7.552816,
       "text": "Repository'nin tamamını ikinci bir makineye kopyalayın. İlk kopyalama, şifrelenmiş imajın tamamını SSH üzerinden taşır; burada yaklaşık iki gigabayt yarım dakikada tamamlanır. Karşı tarafa ulaşan şey bir yedekleme artefaktıdır, ikinci bir çalışan uygulama değil.",
       "afterText": "Kopya artık yedek makinede.",
       "cardLabel": "Yedek Makineye Gönder",
@@ -24,7 +24,7 @@
     {
       "id": "tutorial-backup-restore-03",
       "markerIndex": 2,
-      "at": 17.993741,
+      "at": 15.166453,
       "text": "Yedek makineye ne tuttuğunu sorun. Repository orada, kendi adı altında duruyor. İkinci satır, yani ham bir tanımlayıcı gösteren satır, sonraki gönderimin yalnızca değişeni göndermesini sağlayan saklanan taban.",
       "afterText": "İki satır da beklenen: kopya ve sonraki gönderimleri küçük tutan taban.",
       "cardLabel": "Kopyayı Doğrula",
@@ -33,7 +33,7 @@
     {
       "id": "tutorial-backup-restore-04",
       "markerIndex": 3,
-      "at": 23.318642,
+      "at": 20.269124,
       "text": "Şimdi felaket anı. Birincil makineyi durdurun ve şifreli birimini unmount edin. Bu makine açısından uygulama artık yok.",
       "afterText": "Durduruldu ve unmount edildi. Bundan sonraki her şey kopya üzerinden yürür.",
       "cardLabel": "Felaket",
@@ -42,7 +42,7 @@
     {
       "id": "tutorial-backup-restore-05",
       "markerIndex": 4,
-      "at": 28.951964,
+      "at": 25.688963,
       "text": "Artefaktı çalışan bir repository'ye dönüştürün. Bunu yapan komut restore. Bir bayrak yeni repository'ye ad verir, bir bayrak onu yedek makineye yerleştirir, bir bayrak da onayı atlar.",
       "afterText": "Kopya artık kendi adına sahip bir repository.",
       "cardLabel": "Artefaktı Geri Yükle",
@@ -51,7 +51,7 @@
     {
       "id": "tutorial-backup-restore-06",
       "markerIndex": 5,
-      "at": 39.005334,
+      "at": 34.978427,
       "text": "Geri yüklenen repository'yi mount edin. Container'larını bilerek başlatmıyoruz, çünkü aradığımız kanıt uygulama değil, veri.",
       "afterText": "Mount edildi, okumaya hazır.",
       "cardLabel": "Mount Edin",
@@ -60,7 +60,7 @@
     {
       "id": "tutorial-backup-restore-07",
       "markerIndex": 6,
-      "at": 46.52408,
+      "at": 40.371515,
       "text": "Başta çalıştırdığımız aynı komut, bu kez iki komut öncesinde henüz var olmayan bir repository'ye karşı. Aynı dosya, aynı satır, aynı sipariş.",
       "afterText": "Bütün mesele bu. Veri geri geldi.",
       "cardLabel": "Veri Hayatta Kaldı",
@@ -69,7 +69,7 @@
     {
       "id": "tutorial-backup-restore-08",
       "markerIndex": 7,
-      "at": 52.091103,
+      "at": 45.900768,
       "text": "Bir şey daha, zaman içinde geri dönebileceğiniz yedekler için. Anlık görüntüler parça depolamaya gider; ilk çalıştırma her şeyi yükler, sonraki her çalıştırma yalnızca değişen parçaları yükler. Herhangi bir anlık görüntü tek başına geri yüklenir. Bunun için bir hesap ve lisanslı bir repository gerekir, bu yüzden burada komut yalnızca yazılır, çalıştırılmaz.",
       "afterText": "Bir hesabınız olduğunda kendi kurulumunuzda yazın, çalışacaktır.",
       "cardLabel": "Belirli Zamana Ait Yedekler",

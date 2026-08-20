@@ -7,13 +7,13 @@
   "audioFormat": "mp3",
   "sampleRateHz": 48000,
   "voiceFingerprint": "f53f3b97493c",
-  "transcriptHash": "66eae2d403f9f068acca1c2cc971069a8577b405422a0c1d4f7ae331a0bdb108",
+  "transcriptHash": "1a6d40cf366c874113177bd80b510c24d5ea088f626e5d47696e25d958546437",
   "steps": [
     {
       "id": "tutorial-ssh-keys-01",
       "markerIndex": 0,
-      "replayStartSec": 1.625253,
-      "replayEndSec": 6.458857,
+      "replayStartSec": 1.613265,
+      "replayEndSec": 6.244832,
       "narrationText": "Birinci adım. Yeni bir ed25519 SSH anahtarı oluşturacağız. ed25519 modern standarttır: küçük, hızlı ve geniş destekli. Bunu ekleyeceğiniz her sunucu için yalnızca bir kez yapmanız yeterlidir.",
       "audioSrc": "/assets/tutorials/audio/tr/tutorial-ssh-keys/tutorial-ssh-keys-01.f85f4376.mp3",
       "textHash": "f85f43762e83f387a530e490ead3b6b30e8957b6ba1e67777e2354c940a94671",
@@ -179,8 +179,8 @@
     {
       "id": "tutorial-ssh-keys-02",
       "markerIndex": 1,
-      "replayStartSec": 6.458857,
-      "replayEndSec": 13.298492,
+      "replayStartSec": 6.244832,
+      "replayEndSec": 13.509433,
       "narrationText": "İkinci adım. Genel anahtarı ssh-copy-id ile sunucuya kopyalıyoruz. Sunucu parolası son kez isteniyor. Bundan sonra o sunucu için parola ile kimlik doğrulama gerekmez.",
       "audioSrc": "/assets/tutorials/audio/tr/tutorial-ssh-keys/tutorial-ssh-keys-02.c1d47fce.mp3",
       "textHash": "c1d47fcee727ecb9c0b4ffc40f9fe624e4387cde426f292299d0afe2d5bbf50a",
@@ -340,8 +340,8 @@
     {
       "id": "tutorial-ssh-keys-03",
       "markerIndex": 2,
-      "replayStartSec": 13.298492,
-      "replayEndSec": 19.181151,
+      "replayStartSec": 13.509433,
+      "replayEndSec": 19.537172,
       "narrationText": "Üçüncü adım. Anahtarı CLI'ye kaydediyoruz. Bundan itibaren her komut bu anahtarla kimlik doğrulaması yapar. Artık parola gerekmez, etkileşimli istemler de olmaz.",
       "audioSrc": "/assets/tutorials/audio/tr/tutorial-ssh-keys/tutorial-ssh-keys-03.13435d2e.mp3",
       "textHash": "13435d2ec213c339323f61e96743b46c53cafae3b20d316d204ade9c26ab6325",

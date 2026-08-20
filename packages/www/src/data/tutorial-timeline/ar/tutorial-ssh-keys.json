@@ -7,13 +7,13 @@
   "audioFormat": "mp3",
   "sampleRateHz": 48000,
   "voiceFingerprint": "2e1d6ed48abe",
-  "transcriptHash": "8a8454fa6a16912a34194b726e0692e2a979057bd128e57ab05b786c6c791ff4",
+  "transcriptHash": "a071ce482e65589dec7ef3dff7fdca8e7f500ae9123b82c23b8250704fe67a5d",
   "steps": [
     {
       "id": "tutorial-ssh-keys-01",
       "markerIndex": 0,
-      "replayStartSec": 1.625253,
-      "replayEndSec": 6.458857,
+      "replayStartSec": 1.613265,
+      "replayEndSec": 6.244832,
       "narrationText": "الخطوة الأولى. ننشئ مفتاح SSH جديدًا من نوع ed25519. هو الخيار الحديث الافتراضي: صغير وسريع ومدعوم على نطاق واسع. تحتاج لفعل ذلك مرة واحدة فقط عبر كل خادم ستضيفه.",
       "audioSrc": "/assets/tutorials/audio/ar/tutorial-ssh-keys/tutorial-ssh-keys-01.145d21f1.mp3",
       "textHash": "145d21f17d6406e1476793b48e7b629d0f340c088f78f3f80d7ba7036a8cf659",
@@ -209,8 +209,8 @@
     {
       "id": "tutorial-ssh-keys-02",
       "markerIndex": 1,
-      "replayStartSec": 6.458857,
-      "replayEndSec": 13.298492,
+      "replayStartSec": 6.244832,
+      "replayEndSec": 13.509433,
       "narrationText": "الخطوة الثانية. ننسخ المفتاح العام إلى الخادم باستخدام ssh-copy-id. تُطلب كلمة مرور الخادم لآخر مرة. بعد ذلك، لن يكون التحقق بكلمة المرور مطلوبًا لذلك الخادم.",
       "audioSrc": "/assets/tutorials/audio/ar/tutorial-ssh-keys/tutorial-ssh-keys-02.89c8e095.mp3",
       "textHash": "89c8e0958cd6c5ce3ae1509deac4efac9c530692e8ff9165acbd706f0f590b62",
@@ -412,8 +412,8 @@
     {
       "id": "tutorial-ssh-keys-03",
       "markerIndex": 2,
-      "replayStartSec": 13.298492,
-      "replayEndSec": 19.181151,
+      "replayStartSec": 13.509433,
+      "replayEndSec": 19.537172,
       "narrationText": "الخطوة الثالثة. نسجّل المفتاح مع الأداة. من الآن فصاعدًا، تتحقق كل أوامر الأداة باستخدام هذا المفتاح. لا كلمات مرور، لا موجّهات تفاعلية.",
       "audioSrc": "/assets/tutorials/audio/ar/tutorial-ssh-keys/tutorial-ssh-keys-03.fcfed43b.mp3",
       "textHash": "fcfed43becc4505acd3ba6e24ec09b938b38f39247ddb3dd834bdf11f049d666",

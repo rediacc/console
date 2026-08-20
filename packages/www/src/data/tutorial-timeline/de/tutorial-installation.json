@@ -7,13 +7,13 @@
   "audioFormat": "mp3",
   "sampleRateHz": 48000,
   "voiceFingerprint": "076d6d7077b5",
-  "transcriptHash": "0b62560c262e6381f0b92f9eabfcc36fa0bc16db50b940ea0d157961868c170b",
+  "transcriptHash": "2bdb870d8160c177ea82be503a209e89e085b32869bb2b82e513d394fa047a04",
   "steps": [
     {
       "id": "tutorial-installation-01",
       "markerIndex": 0,
-      "replayStartSec": 1.624699,
-      "replayEndSec": 8.885041,
+      "replayStartSec": 1.618316,
+      "replayEndSec": 8.390281,
       "narrationText": "Zuerst bestätigen wir, dass die CLI im Pfad verfügbar ist. Das Ausführen der CLI mit dem Versions-Flag gibt die installierte Version aus und zeigt, dass die Installation erfolgreich abgeschlossen wurde.",
       "audioSrc": "/assets/tutorials/audio/de/tutorial-installation/tutorial-installation-01.2e4fbcd4.mp3",
       "textHash": "2e4fbcd434e80429fc06e6bdd6798aad8f8af72ae2fd44f77fbd88121854f08f",
@@ -251,8 +251,8 @@
     {
       "id": "tutorial-installation-02",
       "markerIndex": 1,
-      "replayStartSec": 8.885041,
-      "replayEndSec": 10.904926,
+      "replayStartSec": 8.390281,
+      "replayEndSec": 10.380445,
       "narrationText": "Jetzt führen wir die CLI doctor aus. Sie prüft alle Abhängigkeiten, die die CLI benötigt, also Node, SSH und den Rest, und meldet eventuelle Lücken. Ein sauberer Bericht bedeutet, dass wir bereit sind, einen Server hinzuzufügen.",
       "audioSrc": "/assets/tutorials/audio/de/tutorial-installation/tutorial-installation-02.f543aa96.mp3",
       "textHash": "f543aa96eaabf466b575ef50e1614a59a2c9851cb0ac128809cb39670a13c2d3",

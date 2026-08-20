@@ -7,13 +7,13 @@
   "audioFormat": "mp3",
   "sampleRateHz": 48000,
   "voiceFingerprint": "3c3406006ca5",
-  "transcriptHash": "37e35771cd5c733ea4acac2b6c610eda80b7f4da4628c4c7b939be4ed8dadd39",
+  "transcriptHash": "19044d16d0f42e8ab7442d6040e64cd7366d11f22c69eee415e975de8261cb46",
   "steps": [
     {
       "id": "tutorial-installation-01",
       "markerIndex": 0,
-      "replayStartSec": 1.624699,
-      "replayEndSec": 8.885041,
+      "replayStartSec": 1.618316,
+      "replayEndSec": 8.390281,
       "narrationText": "먼저 CLI가 설치되어 있는지 확인합니다. version 플래그를 실행하면 설치된 버전이 출력되어 설치가 완료되었음을 알 수 있습니다.",
       "audioSrc": "/assets/tutorials/audio/ko/tutorial-installation/tutorial-installation-01.7210a2a1.mp3",
       "textHash": "7210a2a182e45d324510b50b543e4a250089aa84cbcb0325cdc6f1c5d3fd9892",
@@ -227,8 +227,8 @@
     {
       "id": "tutorial-installation-02",
       "markerIndex": 1,
-      "replayStartSec": 8.885041,
-      "replayEndSec": 10.904926,
+      "replayStartSec": 8.390281,
+      "replayEndSec": 10.380445,
       "narrationText": "이제 진단 검사를 실행합니다. CLI에 필요한 모든 의존성(Node, SSH, Docker, renet 바이너리)을 확인하고 부족한 항목을 보고합니다. 보고서에 문제가 없으면 준비가 완료된 것입니다.",
       "audioSrc": "/assets/tutorials/audio/ko/tutorial-installation/tutorial-installation-02.3f27dcb5.mp3",
       "textHash": "3f27dcb5aed5186d372353bff0e56e5db866ddf09fd7d09ebbf918af89219587",

@@ -6,7 +6,7 @@
     {
       "id": "tutorial-vscode-browser-01",
       "markerIndex": 0,
-      "at": 2.418779,
+      "at": 2.412438,
       "text": "Tek komut. CLI, editör sunucusunu makineye bir kez kurar, repo sandbox içinde başlatır, bir tünel açar ve size bir bağlantı verir. Yerel VS Code yok, kurulacak eklenti yok.",
       "afterText": "Bu URL sizin editörünüz. Her işletim sisteminde çalışır, tek gereksinim bir tarayıcı.",
       "cardLabel": "Tarayıcıya Bağlan",
@@ -15,7 +15,7 @@
     {
       "id": "tutorial-vscode-browser-02",
       "markerIndex": 1,
-      "at": 10.10448,
+      "at": 9.979633,
       "text": "Sıradan terminalden aynı repo: çalışma dizini repo, dosyalar da repo'nun dosyaları.",
       "afterText": "Terminal ve editör aynı fikirde, bu aynı sandbox.",
       "cardLabel": "Aynı Görünüm",
@@ -24,7 +24,7 @@
     {
       "id": "tutorial-vscode-browser-03",
       "markerIndex": 2,
-      "at": 14.856043,
+      "at": 14.898378,
       "text": "Peki tarayıcı editöründe oluşturduğumuz dosya? İşte burada. VS Code'da yapılan dosyalar, anında gerçek repo dosyalarına dönüşür.",
       "afterText": "Tarayıcıda oluşturuldu, terminalden okunabilir. Bir repo, iki kapı.",
       "cardLabel": "Gidiş Dönüş",
@@ -33,7 +33,7 @@
     {
       "id": "tutorial-vscode-browser-04",
       "markerIndex": 3,
-      "at": 19.933198,
+      "at": 20.176159,
       "text": "Şimdi dışarı çıkmayı deneyin. Sunucunun kök dizinini listeleyin: erişim reddedildi. Kernel, editörü, terminalini ve her alt süreci bu repo'yla sınırlandırır.",
       "afterText": "Yapılandırmayla değil, kernel tarafından engellendi.",
       "cardLabel": "Kök Reddedildi",
@@ -42,7 +42,7 @@
     {
       "id": "tutorial-vscode-browser-05",
       "markerIndex": 4,
-      "at": 23.377274,
+      "at": 23.521375,
       "text": "Diğer kullanıcıların home dizinleri? Onlar da reddedilir. Bu sandbox içinde çalışan her şey, editörler, terminaller, build araçları, repo'nun duvarlarında son bulur.",
       "afterText": "Sandbox'ın istisnası yoktur. Mesele de bu zaten.",
       "cardLabel": "Home Reddedildi",

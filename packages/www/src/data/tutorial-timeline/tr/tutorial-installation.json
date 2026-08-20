@@ -7,13 +7,13 @@
   "audioFormat": "mp3",
   "sampleRateHz": 48000,
   "voiceFingerprint": "f53f3b97493c",
-  "transcriptHash": "e3413ad3fa83ed78694d9e8fd6e15b879bb580dcbe806889c17db916daf22a33",
+  "transcriptHash": "c6d61141de616439ef88021c16abcdb0949e8a671fe1ce2d06323e2425f8f010",
   "steps": [
     {
       "id": "tutorial-installation-01",
       "markerIndex": 0,
-      "replayStartSec": 1.624699,
-      "replayEndSec": 8.885041,
+      "replayStartSec": 1.618316,
+      "replayEndSec": 8.390281,
       "narrationText": "Önce CLI'nin kurulu olduğunu doğrulayalım. Versiyon bayrağı kurulu versiyonu yazdırır; böylece kurulumun tamamlandığını anlayabiliriz.",
       "audioSrc": "/assets/tutorials/audio/tr/tutorial-installation/tutorial-installation-01.9aa28d01.mp3",
       "textHash": "9aa28d01e85b6d225d5b9c01dcf55cb27f540a02f903f0ca49925dcc4b142eae",
@@ -131,8 +131,8 @@
     {
       "id": "tutorial-installation-02",
       "markerIndex": 1,
-      "replayStartSec": 8.885041,
-      "replayEndSec": 10.904926,
+      "replayStartSec": 8.390281,
+      "replayEndSec": 10.380445,
       "narrationText": "Şimdi tanı denetimini çalıştıralım. CLI'nin ihtiyaç duyduğu her bağımlılığı (Node, SSH, Docker, renet ikili dosyası) tek tek kontrol eder ve eksikleri bildirir. Temiz bir rapor, hazır olduğumuz anlamına gelir.",
       "audioSrc": "/assets/tutorials/audio/tr/tutorial-installation/tutorial-installation-02.834baad6.mp3",
       "textHash": "834baad6a39f1f0a5b7bcbe2f50ae66a7e4c980a85bbf4d1f28bbcb972853ff4",

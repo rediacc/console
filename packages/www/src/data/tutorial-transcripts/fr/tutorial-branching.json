@@ -6,7 +6,7 @@
     {
       "id": "tutorial-branching-01",
       "markerIndex": 0,
-      "at": 2.423373,
+      "at": 2.409747,
       "text": "Notre fork de travail contient la version un de l'état de l'application, un simple fichier marqueur le rend visible.",
       "afterText": "Version un, sur disque.",
       "cardLabel": "Version Un",
@@ -15,7 +15,7 @@
     {
       "id": "tutorial-branching-02",
       "markerIndex": 1,
-      "at": 8.659919,
+      "at": 8.689895,
       "text": "Ce ne sont pas seulement des fichiers. Une vraie base de données PostgreSQL vit aussi dans ce fork, et la table customers contient trois lignes. Retenez ce chiffre.",
       "afterText": "Trois lignes. Ce sont les données que nous allons mettre en danger.",
       "cardLabel": "Trois Lignes",
@@ -24,7 +24,7 @@
     {
       "id": "tutorial-branching-03",
       "markerIndex": 2,
-      "at": 16.216982,
+      "at": 16.465037,
       "text": "Figez-le. Le commit capture l'intégralité du repository sous forme d'image immuable, avec un message, un auteur et un parent. Exactement comme git, mais pour tout, base de données comprise.",
       "afterText": "Commité. Ce snapshot ne peut jamais changer. Il refuse même de se monter.",
       "cardLabel": "Commit v1",
@@ -33,7 +33,7 @@
     {
       "id": "tutorial-branching-04",
       "markerIndex": 3,
-      "at": 21.875788,
+      "at": 22.23398,
       "text": "Donnez un nom au commit. La branche stable pointe maintenant vers la version un.",
       "afterText": "Une branche est un nom sur lequel vous pouvez revenir.",
       "cardLabel": "Branche Stable",
@@ -42,7 +42,7 @@
     {
       "id": "tutorial-branching-05",
       "markerIndex": 4,
-      "at": 26.408746,
+      "at": 27.29532,
       "text": "Continuez à travailler. La version deux remplace la version un dans le fork de travail. Le commit s'en moque.",
       "afterText": "Le fork de travail a avancé. L'historique, lui, non.",
       "cardLabel": "Version Deux",
@@ -51,7 +51,7 @@
     {
       "id": "tutorial-branching-06",
       "markerIndex": 5,
-      "at": 32.630295,
+      "at": 33.551454,
       "text": "Maintenant, le désastre. La modification risquée supprime la table customers. Dans la vraie vie, c'est le moment où l'estomac se noue.",
       "afterText": "Drop table exécuté. Les données ont disparu du fork de travail.",
       "cardLabel": "Supprimer La Table",
@@ -60,7 +60,7 @@
     {
       "id": "tutorial-branching-07",
       "markerIndex": 6,
-      "at": 38.597418,
+      "at": 39.850347,
       "text": "Demandez à nouveau les lignes et la base de données le dit clairement : la relation customers n'existe pas. Le désastre est réel. Chaque ligne a disparu.",
       "afterText": "La relation n'existe pas. Trois lignes, disparues.",
       "cardLabel": "Table Supprimée",
@@ -69,7 +69,7 @@
     {
       "id": "tutorial-branching-08",
       "markerIndex": 7,
-      "at": 45.023533,
+      "at": 46.251513,
       "text": "Commitez aussi la modification risquée, table cassée comprise. L'historique enregistre ce qui s'est réellement passé. Deux commits maintenant, parent et enfant.",
       "afterText": "Deux snapshots dans la chaîne.",
       "cardLabel": "Commit v2",
@@ -78,7 +78,7 @@
     {
       "id": "tutorial-branching-09",
       "markerIndex": 8,
-      "at": 50.876553,
+      "at": 52.196298,
       "text": "Et voilà l'historique : la version deux en haut, la version un en dessous, messages et auteurs inclus, sans déverrouiller une seule image.",
       "afterText": "Un repo log, exactement comme un git log.",
       "cardLabel": "Repo Log",
@@ -87,7 +87,7 @@
     {
       "id": "tutorial-branching-10",
       "markerIndex": 9,
-      "at": 55.851239,
+      "at": 56.077573,
       "text": "Maintenant, la récompense. Extrayez la branche stable dans un tout nouveau fork inscriptible. Clone par reflink : quasi-instantané, quelle que soit la taille.",
       "afterText": "Une copie inscriptible de la version un figée, en environ une seconde.",
       "cardLabel": "Checkout",
@@ -96,7 +96,7 @@
     {
       "id": "tutorial-branching-11",
       "markerIndex": 10,
-      "at": 60.773115,
+      "at": 61.783031,
       "text": "Démarrez le fork de rollback comme n'importe quel autre repo.",
       "afterText": "Deux forks en cours d'exécution : la version d'aujourd'hui et le checkpoint.",
       "cardLabel": "Démarrer Rollback",
@@ -105,7 +105,7 @@
     {
       "id": "tutorial-branching-12",
       "markerIndex": 11,
-      "at": 67.070568,
+      "at": 68.446131,
       "text": "Et la preuve : le fork de rollback lit la version un. Le fork de travail a toujours la version deux. Un historique que vous pouvez exécuter.",
       "afterText": "Rollback terminé. Rien n'a été écrasé pour y arriver.",
       "cardLabel": "Preuve : v1",
@@ -114,7 +114,7 @@
     {
       "id": "tutorial-branching-13",
       "markerIndex": 12,
-      "at": 72.350149,
+      "at": 73.904275,
       "text": "Et la partie qui compte le plus : la table supprimée est de retour, avec ses trois lignes. Le rollback a restauré la base de données, pas seulement les fichiers.",
       "afterText": "Trois lignes à nouveau. Le désastre est annulé.",
       "cardLabel": "Données Restaurées",

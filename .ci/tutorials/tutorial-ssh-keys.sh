@@ -31,12 +31,21 @@ pause 2
 
 section "Step 2: Authorize the key on your first server"
 # ssh-copy-id appends the new public key to the server's authorized_keys.
-run_cmd "ssh-copy-id -i $DEMO_KEY.pub -o StrictHostKeyChecking=no $TUTORIAL_MACHINE_USER@192.168.111.11"
+#
+# The DISPLAY form is the clean command; the EXECUTED form folds stderr to the
+# recorded width. ssh-copy-id's own INFO chatter is 114 columns ("attempting to
+# log in with the new key(s), to filter out any that are already installed"),
+# it is a third-party shell script the CLI never touches, and it has no quiet
+# flag. Folding is presentational only: a viewer who copies the displayed
+# command gets identical behaviour, wrapped to their own terminal instead.
+run_cmd "ssh-copy-id -i $DEMO_KEY.pub -o StrictHostKeyChecking=no $TUTORIAL_MACHINE_USER@192.168.111.11" \
+    "ssh-copy-id -i $DEMO_KEY.pub -o StrictHostKeyChecking=no $TUTORIAL_MACHINE_USER@192.168.111.11 2>&1 | fold -s -w \"${TUTORIAL_COLS:-107}\""
 
 pause 2
 
 section "Step 3: Authorize it on your second server"
-run_cmd "ssh-copy-id -i $DEMO_KEY.pub -o StrictHostKeyChecking=no $TUTORIAL_MACHINE_USER@192.168.111.12"
+run_cmd "ssh-copy-id -i $DEMO_KEY.pub -o StrictHostKeyChecking=no $TUTORIAL_MACHINE_USER@192.168.111.12" \
+    "ssh-copy-id -i $DEMO_KEY.pub -o StrictHostKeyChecking=no $TUTORIAL_MACHINE_USER@192.168.111.12 2>&1 | fold -s -w \"${TUTORIAL_COLS:-107}\""
 
 pause 2
 

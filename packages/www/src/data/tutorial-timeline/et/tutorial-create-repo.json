@@ -7,13 +7,13 @@
   "audioFormat": "mp3",
   "sampleRateHz": 48000,
   "voiceFingerprint": "32e0e7274a33",
-  "transcriptHash": "79da82ae11572405e57d11fcaa6fd4b51cb52ab3fa98bcab6254301a19060aa4",
+  "transcriptHash": "fdf3a0f859bfaae9e72acfd8990b196d43078a62020bb5b1d5e1303c82975bc0",
   "steps": [
     {
       "id": "tutorial-create-repo-01",
       "markerIndex": 0,
-      "replayStartSec": 2.41017,
-      "replayEndSec": 10.688129,
+      "replayStartSec": 2.416628,
+      "replayEndSec": 10.155124,
       "narrationText": "Loome serverile 2 gigabaidise krüpteeritud repositooriumi. Repositoorium on puhkeolekus üksik krüpteeritud fail. Ühendamisel muutub see kaustaks, millel on oma Dockeri deemon ja oma rakenduse andmed, täielikult isoleeritud kõigest muust serveris.",
       "audioSrc": "/assets/tutorials/audio/et/tutorial-create-repo/tutorial-create-repo-01.59e24597.mp3",
       "textHash": "59e24597d654e47f10c8fc23e1411c1e1cb1f9e2fb46bb01fe58d14112466d7e",
@@ -167,8 +167,8 @@
     {
       "id": "tutorial-create-repo-02",
       "markerIndex": 1,
-      "replayStartSec": 10.688129,
-      "replayEndSec": 16.425103,
+      "replayStartSec": 10.155124,
+      "replayEndSec": 15.356468,
       "narrationText": "Loetleme masina repositooriumid, et kinnitada uue registreerimist. Edaspidi saab repositooriumi avada VS Code'is, juurutada, teha sellest forki või varundada -- kõik sülearvutist.",
       "audioSrc": "/assets/tutorials/audio/et/tutorial-create-repo/tutorial-create-repo-02.917d75a7.mp3",
       "textHash": "917d75a7b0ec96b68a25efe6a07d5748c7376d21586c3a9a1687ecf90cfd00f8",
@@ -214,8 +214,8 @@
     {
       "id": "tutorial-create-repo-03",
       "markerIndex": 2,
-      "replayStartSec": 16.425103,
-      "replayEndSec": 18.266995,
+      "replayStartSec": 15.356468,
+      "replayEndSec": 17.167873,
       "narrationText": "Üks kasulik võimalus: avada repo otse VS Code'is selle käsuga. Me ei käivita siin redaktorit, kuid see alustab SSH kaudu repo'sse kaugseanssi, et saaksite selle faile muuta.",
       "audioSrc": "/assets/tutorials/audio/et/tutorial-create-repo/tutorial-create-repo-03.60f61744.mp3",
       "textHash": "60f61744f9a0682f3add41194bc335771334c675b2684b50a4d258df67b8edd0",

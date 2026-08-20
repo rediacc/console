@@ -7,13 +7,13 @@
   "audioFormat": "mp3",
   "sampleRateHz": 48000,
   "voiceFingerprint": "2e1d6ed48abe",
-  "transcriptHash": "938fc4639d32fcb5a312846a07e66f67ec92758e140a9f6e623200e0ca50021b",
+  "transcriptHash": "a37eeddd4818d5f7933231907bbe129659e1c6c8a9a2c0a3bda026e1fc56396a",
   "steps": [
     {
       "id": "tutorial-add-server-01",
       "markerIndex": 0,
-      "replayStartSec": 1.627855,
-      "replayEndSec": 7.25092,
+      "replayStartSec": 1.613148,
+      "replayEndSec": 7.714792,
       "narrationText": "نبدأ بإنشاء ملف تعريف للإعداد. يحتوي الملف على مفتاح SSH وقائمة الأجهزة وإعدادات البنية التحتية لكل ما سنقوم به من الآن فصاعدًا.",
       "audioSrc": "/assets/tutorials/audio/ar/tutorial-add-server/tutorial-add-server-01.9a43e8b2.mp3",
       "textHash": "9a43e8b295121c099223d6dc8b3e9c8c0537aafdee5363ffa091f93dfb3301f1",
@@ -221,8 +221,8 @@
     {
       "id": "tutorial-add-server-02",
       "markerIndex": 1,
-      "replayStartSec": 7.25092,
-      "replayEndSec": 13.396171,
+      "replayStartSec": 7.714792,
+      "replayEndSec": 15.024927,
       "narrationText": "الآن نسجّل الخادم في الأداة، مع تحديد اسمه وعنوان IP ومستخدم SSH. يتم فحص مفاتيح المضيف تلقائيًا للوصول الموثوق.",
       "audioSrc": "/assets/tutorials/audio/ar/tutorial-add-server/tutorial-add-server-02.64221636.mp3",
       "textHash": "64221636bd7a1948090c0c094da34f8333200c2540c97c3cc01d78beb063bf81",
@@ -364,8 +364,8 @@
     {
       "id": "tutorial-add-server-03",
       "markerIndex": 2,
-      "replayStartSec": 13.396171,
-      "replayEndSec": 15.698213,
+      "replayStartSec": 15.024927,
+      "replayEndSec": 18.069081,
       "narrationText": "بعد ذلك نُجهّز الخادم. هذا يثبّت renet ويُنشئ مخزن البيانات المشفر. بعد ذلك يكون الخادم جاهزًا لاستضافة المستودعات.",
       "audioSrc": "/assets/tutorials/audio/ar/tutorial-add-server/tutorial-add-server-03.8b71f67a.mp3",
       "textHash": "8b71f67a6984c69d2d05cf69804325881962ee07a8c2cf369ce050de13925756",

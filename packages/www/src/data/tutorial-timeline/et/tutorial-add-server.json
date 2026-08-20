@@ -7,13 +7,13 @@
   "audioFormat": "mp3",
   "sampleRateHz": 48000,
   "voiceFingerprint": "32e0e7274a33",
-  "transcriptHash": "de5cd1292ac7356dad60e07ad43f0866fef379ed17accf100925bf4fcc1e305a",
+  "transcriptHash": "98a62a65f907f52cfe923faa369a0684cc2c1b307c2eb5009c5aa4336bbc0467",
   "steps": [
     {
       "id": "tutorial-add-server-01",
       "markerIndex": 0,
-      "replayStartSec": 1.627855,
-      "replayEndSec": 7.25092,
+      "replayStartSec": 1.613148,
+      "replayEndSec": 7.714792,
       "narrationText": "Alustame konfiguratsiooniprofiiliga. Profiil sisaldab SSH võtit, masinate loendit ja infrastruktuuri seadeid kõige jaoks, mida edaspidi teeme.",
       "audioSrc": "/assets/tutorials/audio/et/tutorial-add-server/tutorial-add-server-01.8c185fba.mp3",
       "textHash": "8c185fba10f80e6750399b2d87b70878e7633ac6e6d12e04a3498ddd89e45de3",
@@ -53,8 +53,8 @@
     {
       "id": "tutorial-add-server-02",
       "markerIndex": 1,
-      "replayStartSec": 7.25092,
-      "replayEndSec": 13.396171,
+      "replayStartSec": 7.714792,
+      "replayEndSec": 15.024927,
       "narrationText": "Nüüd registreerime serveri CLI-s -- esitades selle nime, IP-aadressi ja SSH kasutajanime. Hosti võtmeid skanneeritakse automaatselt usaldusväärse juurdepääsu jaoks.",
       "audioSrc": "/assets/tutorials/audio/et/tutorial-add-server/tutorial-add-server-02.c6b98fae.mp3",
       "textHash": "c6b98faeb66c1c9de7e9a667a1b4826b7c99bda7ccb85fe64f6a5c321413e1a2",
@@ -166,8 +166,8 @@
     {
       "id": "tutorial-add-server-03",
       "markerIndex": 2,
-      "replayStartSec": 13.396171,
-      "replayEndSec": 15.698213,
+      "replayStartSec": 15.024927,
+      "replayEndSec": 18.069081,
       "narrationText": "Järgmisena valmistame serveri ette. See paigaldab renet-i ja loob krüpteeritud andmehoidla. Pärast seda on server repositooriumite majutamiseks valmis.",
       "audioSrc": "/assets/tutorials/audio/et/tutorial-add-server/tutorial-add-server-03.ae297de5.mp3",
       "textHash": "ae297de5de34e80ea3b1dc098ff4355427229285d771eeefbebd4a2180be6ac2",

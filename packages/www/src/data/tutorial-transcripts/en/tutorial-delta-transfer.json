@@ -6,9 +6,9 @@
   "chapters": {
     "intro": "Delta Transfer",
     "blocks-not-bytes": "Blocks, not bytes",
-    "cast-step-0": "Step 1: First push — full",
+    "cast-step-0": "Step 1: First push, full",
     "cast-step-1": "Step 2: Change some data",
-    "cast-step-2": "Step 3: Second push — delta",
+    "cast-step-2": "Step 3: Second push, delta",
     "cast-step-3": "Step 4: In sync, in seconds",
     "outro": "The series ends here"
   },
@@ -16,7 +16,7 @@
     {
       "id": "tutorial-delta-transfer-01",
       "markerIndex": 0,
-      "at": 2.414842,
+      "at": 2.411872,
       "text": "The first push to another machine carries the whole image, and the output says it plainly: two gigabytes transferred, marked full. This is the baseline.",
       "afterText": "Two gigabytes in forty-four seconds, marked full. The CLI also kept an identical base on both sides; that's the setup for the magic.",
       "cardLabel": "Full Push",
@@ -25,7 +25,7 @@
     {
       "id": "tutorial-delta-transfer-02",
       "markerIndex": 1,
-      "at": 8.165229,
+      "at": 9.893704,
       "text": "Change a little data: fifty megabytes out of two gigabytes.",
       "afterText": "A small change in a big image.",
       "cardLabel": "Change Data",
@@ -34,7 +34,7 @@
     {
       "id": "tutorial-delta-transfer-03",
       "markerIndex": 2,
-      "at": 16.388163,
+      "at": 18.416762,
       "text": "Push again. Same command, but read the output this time: about fifty megabytes transferred, marked delta, against a two gigabyte image. Only the changed blocks travelled.",
       "afterText": "Fifty megabytes in under six seconds, out of a two gigabyte image. The numbers are the proof.",
       "cardLabel": "Delta Push",
@@ -43,11 +43,11 @@
     {
       "id": "tutorial-delta-transfer-04",
       "markerIndex": 3,
-      "at": 22.149817,
-      "text": "Both machines hold the same repository, refreshed in seconds. Run it hourly if you like — the cost is the change, not the size.",
+      "at": 24.289237,
+      "text": "Both machines hold the same repository, refreshed in seconds. Run it hourly if you like. The cost is the change, not the size.",
       "afterText": "Frequent backups stop being expensive.",
       "cardLabel": "In Sync",
-      "prose": "The target machine now holds the updated repository — synchronized at the cost of the delta."
+      "prose": "The target machine now holds the updated repository, synchronized at the cost of the delta."
     }
   ],
   "narrations": [
