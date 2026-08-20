@@ -30,6 +30,13 @@ import path from 'node:path';
 import process from 'node:process';
 import { globSync } from 'glob';
 
+import {
+  baselineAdditions,
+  renderRefusal,
+  sharedSelftestCases,
+  writeBaselineVerdict,
+} from './lib/shrink-only-baseline.js';
+
 const ROOT = path.resolve(import.meta.dirname, '..');
 const WWW = path.join(ROOT, 'packages/www');
 const BASELINE = path.join(ROOT, 'scripts/data/dead-css-baseline.json');
@@ -246,6 +253,9 @@ function selftest(): number {
       return all.size > 0 && fullyDeadSheets(all).includes(rel);
     })()
   );
+  // THE SHRINK-ONLY COMPOSITION RULE, shared with every other baselined gate here.
+  for (const c of sharedSelftestCases()) check(c.name, c.ok);
+
   return bad;
 }
 
@@ -274,8 +284,36 @@ function main(): void {
   }
 
   if (process.argv.includes('--write-baseline')) {
+    // COMPOSITION. Shrink-only used to be enforced on the read path only, so a reseed
+    // could shed twenty dead classes, absorb one fresh one, and print a smaller number.
+    // This gate is the reason `rekeyHint` exists: its ids carry the SELECTOR TEXT, so
+    // editing a rule re-keys the entry and the old id dies while a new one is born.
+    // A reseed would swallow the newcomer; the right move is to hand-edit the one line.
+    const previous: string[] = existsSync(BASELINE)
+      ? JSON.parse(readFileSync(BASELINE, 'utf8'))
+      : [];
+    const verdict = writeBaselineVerdict({
+      baselineExists: existsSync(BASELINE),
+      firstSeedFlag: process.argv.includes('--first-seed'),
+      additions: existsSync(BASELINE) ? baselineAdditions(previous, dead) : [],
+    });
+    if (verdict !== null) {
+      console.error(
+        `\n\x1b[31m✗\x1b[0m ${renderRefusal(verdict, {
+          baselineLabel: path.relative(ROOT, BASELINE),
+          noun: 'dead class',
+          previousCount: previous.length,
+          newCount: dead.length,
+          rekeyHint: true,
+        })}`
+      );
+      process.exit(1);
+    }
     writeFileSync(BASELINE, `${JSON.stringify(dead, null, 2)}\n`);
-    console.log(`baseline written: ${dead.length} dead class(es)`);
+    console.log(
+      `baseline written: ${dead.length} dead class(es) ` +
+        `(${previous.length} before, ${previous.filter((d) => !dead.includes(d)).length} drained, 0 added)`
+    );
     process.exit(0);
   }
 

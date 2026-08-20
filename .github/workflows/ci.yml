@@ -127,6 +127,21 @@ jobs:
       # external drift alone). Consumed by ci-quality.yml steps via the
       # run-external-gate.sh wrapper; push never reaches quality (full_suite).
       external_quality: ${{ github.event_name != 'pull_request' && 'soft' || (contains(github.event.pull_request.labels.*.name, 'no-external-quality') && 'skip' || 'hard') }}
+      # media_quality: TWO-state control for the gates that read in-flight
+      # tutorial media (recorded .cast files and the transcript/audio/parity
+      # artifacts derived from them). 'skip' ONLY on a pull request carrying
+      # the no-media-quality label; every other event, including a label that
+      # cannot be read, resolves to 'hard'. There is deliberately no 'soft'
+      # third state: nothing here depends on the outside world, so a failure
+      # on schedule/dispatch means main's own media is inconsistent, which is
+      # exactly the red the nightly should carry.
+      #
+      # This exists for one narrow situation: a re-recording pass that cannot
+      # be resumed mid-flight leaves the media tree internally inconsistent
+      # for hours, which reddens an otherwise-green PR on a defect that is
+      # already being fixed. The label is a temporary hold, not an exemption,
+      # and quality-content / quality-i18n announce every gate it removes.
+      media_quality: ${{ github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'no-media-quality') && 'skip' || 'hard' }}
       # pointer_bump_only: PR head provably identical in content to a commit
       # that already passed full CI, differing only in submodule pointers that
       # moved to tree-identical commits on the submodules' main (post-squash
@@ -466,6 +481,7 @@ jobs:
       is_bot: ${{ needs.initialize.outputs.is_bot }}
       next_version: ${{ needs.initialize.outputs.next_version }}
       external_quality: ${{ needs.initialize.outputs.external_quality }}
+      media_quality: ${{ needs.initialize.outputs.media_quality }}
     secrets:
       APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
       # quality-i18n restores the R2 narration-audio cache so the tutorial-audio

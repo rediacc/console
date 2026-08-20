@@ -29,9 +29,10 @@
     "validate:tutorial-transcripts": "node scripts/validate-tutorial-transcripts.js",
     "validate:translation-freshness": "node scripts/validate-translation-freshness.js",
     "validate:tutorial-cast-output": "node scripts/validate-tutorial-cast-output.js",
-    "validate:content": "node scripts/validate-content.js && npm run validate:tutorial-transcripts && npm run validate:tutorial-audio && npm run validate:tutorial-cast-output",
+    "validate:content": "node scripts/validate-content.js",
+    "validate:content-media": "npm run validate:tutorial-transcripts && npm run validate:tutorial-audio && npm run validate:tutorial-cast-output",
     "validate:comparison-refs": "node scripts/validate-comparison-refs.js",
-    "validate:content:strict": "node scripts/validate-content.js --strict && npm run validate:tutorial-transcripts && npm run validate:tutorial-audio && npm run validate:tutorial-cast-output"
+    "validate:content:strict": "node scripts/validate-content.js --strict"
   },
   "dependencies": {
     "@astrojs/mdx": "^4.3.14",

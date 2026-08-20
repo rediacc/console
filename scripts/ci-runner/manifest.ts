@@ -186,9 +186,6 @@ export const GATES: readonly GateSpec[] = [
       'packages/www/scripts/validate-landing-cli-usage.js',
       'packages/www/scripts/validate-translation-freshness.js',
       'packages/www/scripts/validate-content.js',
-      'packages/www/scripts/validate-tutorial-transcripts.js',
-      'packages/www/scripts/validate-tutorial-audio.js',
-      'packages/www/scripts/validate-tutorial-cast-output.js',
       'packages/www/scripts/validate-content-accuracy.js',
       'packages/www/scripts/validate-comparison-refs.js',
       'scripts/check-component-hardcoded-strings.ts',
@@ -252,6 +249,29 @@ export const GATES: readonly GateSpec[] = [
       workflow: '.github/workflows/ci-quality.yml',
       job: 'quality-i18n',
       step: 'i18n',
+    },
+  },
+  // Split out of check:i18n so a CI label can skip exactly the tutorial-media
+  // validators without skipping the rest of the i18n surface. Deliberately NOT
+  // chained back into check:i18n -- chaining it would undo the split -- so this
+  // manifest entry is the only thing that keeps it reachable from `npm run ci`.
+  // The comment sits ABOVE the brace on purpose: wl_reggate.py's
+  // _manifest_gate_ids matches /\{\s*id:/, so a comment INSIDE the brace makes the
+  // entry invisible to check:ci-gate-reachability-coverage.
+  {
+    id: 'check:ci-i18n-media',
+    run: 'npm run check:ci-i18n-media',
+    gate: true,
+    leaves: [
+      'packages/www/scripts/validate-tutorial-transcripts.js',
+      'packages/www/scripts/validate-tutorial-audio.js',
+      'packages/www/scripts/validate-tutorial-cast-output.js',
+    ],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-i18n',
+      step: 'Tutorial media',
     },
   },
   {
@@ -2405,6 +2425,22 @@ export const GATES: readonly GateSpec[] = [
   // No mutex is declared here, deliberately, because that trade wants an
   // explicit decision rather than a silent default.
   {
+    // The composition guard shared by every shrink-only baseline here. Registered as a
+    // gate-test rather than a `check:ci-*` npm alias because it RUNS a gates/ script
+    // directly, which is the convention check-gate-id-convention.sh enforces.
+    id: 'gate-test:shrink-only-composition',
+    run: '.ci/scripts/test/gates/test-shrink-only-composition.sh',
+    gate: true,
+    qualityGateTest: true,
+    leaves: ['.ci/scripts/test/gates/test-shrink-only-composition.sh'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-security',
+      step: 'Quality-gate unit tests',
+    },
+  },
+  {
     id: 'gate-test:actions-release-age',
     run: '.ci/scripts/test/gates/test-actions-release-age.sh',
     gate: true,
@@ -3008,6 +3044,19 @@ export const GATES: readonly GateSpec[] = [
     gate: true,
     qualityGateTest: true,
     leaves: ['.ci/scripts/test/gates/test-gate-paths-exist.sh'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-security',
+      step: 'Quality-gate unit tests',
+    },
+  },
+  {
+    id: 'gate-test:gate-skip-announcer',
+    run: '.ci/scripts/test/gates/test-gate-skip-announcer.sh',
+    gate: true,
+    qualityGateTest: true,
+    leaves: ['.ci/scripts/test/gates/test-gate-skip-announcer.sh'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',

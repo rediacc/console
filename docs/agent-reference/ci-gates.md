@@ -281,6 +281,8 @@ job list. A lost dispatch fails open -- the run finishes unwatched, and
 |-------|--------|
 | `no-cancel-push` | Don't cancel older runs on new pushes |
 | `no-auto-retry` | Skip retry, force-cancel immediately on failure |
+| `no-external-quality` | Skip the externally-dependent gates (see `external_quality` below) |
+| `no-media-quality` | Hold the tutorial-media gates (see `media_quality` below) |
 
 There is no label that holds a failing run open. `no-cancel-failure` did, and it
 was removed 2026-08-05: a red run kept alive still has to wait out the 44-minute
@@ -321,6 +323,58 @@ Do not hand a new external gate its own `if:` expression or
 closed (unset or unknown mode behaves as hard), check-ci-parity resolves
 through it (the wrapped command stays the leaf), and
 test-external-gate-wrapper.sh pins all four directions.
+
+### Tutorial-media gates and `media_quality` (hard / skip)
+
+Five validators read the recorded tutorial media -- the `.cast` files and the
+transcript, narration-audio and parity artifacts derived from them, carried by
+three CI steps across two jobs. They are controlled by `media_quality`,
+computed by ci.yml's initialize and passed into ci-quality.yml as a
+`workflow_call` input:
+
+- **hard** -- everything except a labelled PR: a failure blocks.
+- **skip** -- PR carrying the `no-media-quality` label: the three steps that
+  run them do not execute.
+
+There are only two states, deliberately. `external_quality` has a third
+because the world moves underneath a nightly; nothing here reads the outside
+world, so a media failure on `schedule` means main's own media is inconsistent,
+which is a red the nightly should carry. For the same reason there is no
+wrapper: with no soft state there is nothing to downgrade.
+
+**What the label holds, and nothing else:**
+
+| Gate | Job |
+|------|-----|
+| `check:ci-tutorial-casts` | `quality-content` |
+| `check:ci-tutorial-parity` | `quality-content` |
+| `check:ci-i18n-media` (transcripts + narration audio + cast output) | `quality-i18n` |
+
+**What it deliberately does NOT hold**, because each still catches a real
+defect while media is being re-recorded: `check:ci-tutorial-commands`,
+`check:ci-tutorial-noninteractive`, `check:ci-tutorial-cli-validity` and
+`check:ci-tutorial-no-skips` (these read the `.sh` scripts and the live command
+tree, so a red is genuinely new), `check:ci-tutorial-caption-sync` (fetches
+PUBLISHED CDN content, so a red is a production defect until the new media is
+published), `check:ci-tutorial-card-fonts`, `check:ci-locale-tutorial-assets`,
+`check:ci-tutorial-healthcheck-headroom`, `check:ci-tutorial-render-queue`, and
+both solution-video gates (a different asset family entirely). Widening the set
+is not a convenience, it is coverage nobody asked to lose.
+
+**The label is a HOLD, not an exemption, and the log says so.** A skipped step
+leaves its job `success` and prints nothing, so both consuming jobs run
+`.ci/scripts/quality/announce-gate-skips.sh` UNCONDITIONALLY -- it is not
+behind the mode `if:`. In `skip` it emits a `::warning::` and a step summary
+naming every gate that did not run plus the instruction to remove the label; in
+`hard` it prints the count of gates enforced, so a missing announcer and a
+silent one cannot look alike. It also refuses (exit 2) an unrecognised
+`media_quality` value, which is the only place a typo in that wiring is ever
+reported: the step `if:` treats anything it does not recognise as "run", which
+is fail-closed but completely silent. `test-gate-skip-announcer.sh` pins all of
+it, including the workflow wiring itself.
+
+Remove the label as soon as the media work it is waiting on lands, and let the
+run go red if the underlying defect is still there.
 
 Re-running (`gh run rerun`) is only appropriate for transient errors (network, flaky infra) on failed — not cancelled — runs.
 

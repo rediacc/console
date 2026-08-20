@@ -21,7 +21,9 @@
  *   npx tsx scripts/check-cli-docs.ts            # report violations, exit 1 if any
  *   npx tsx scripts/check-cli-docs.ts --fix      # apply curated renames, then report
  */
+import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { EXCLUDED_TOP_LEVEL } from '../packages/cli/scripts/lib/command-tree-lib.js';
@@ -31,6 +33,7 @@ import {
   loadBacklog,
   writeBacklog,
 } from '../packages/www/scripts/lib/p7-backlog.js';
+import { sharedSelftestCases } from './lib/shrink-only-baseline.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..');
@@ -840,7 +843,74 @@ function assertRenameTargetsExist(): void {
   }
 }
 
+/**
+ * CONTROL for the shrink-only guard on this gate's backlog.
+ *
+ * WHY THIS EXISTS AT ALL, given the guard lives in writeBacklog and is shared. Because the
+ * P7 backlog here is currently DRAINED TO ZERO, so the only refusal this gate can reach on
+ * the live tree is `missing-baseline`. The `would-grow` path is guarded and never exercised,
+ * and "there are no violations right now" is a fact about today's tree rather than about the
+ * code. A guard that cannot fire is precisely the shape this cluster exists to eliminate, so
+ * the growth path is driven here against fixtures instead of waiting for real debt.
+ *
+ * The end-to-end half runs in a CHILD PROCESS on purpose: writeBacklog refuses by exiting
+ * non-zero, which is the right behaviour for its four callers and impossible to assert
+ * in-process without killing this one.
+ */
+function selftest(): boolean {
+  const failures: string[] = [];
+  const check = (name: string, ok: boolean, detail = ''): void => {
+    if (ok) console.log(`  PASS  ${name}`);
+    else {
+      console.error(`  FAIL  ${name}${detail ? `\n        ${detail}` : ''}`);
+      failures.push(name);
+    }
+  };
+
+  for (const c of sharedSelftestCases()) check(c.name, c.ok, c.detail ?? '');
+
+  const p7 = path.resolve(__dirname, '../packages/www/scripts/lib/p7-backlog.js');
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'cli-docs-backlog-'));
+  const drive = (frozen: Record<string, number>, errors: { file: string }[]): number => {
+    const bp = path.join(tmp, `b-${Math.random().toString(36).slice(2)}.json`);
+    fs.writeFileSync(bp, `${JSON.stringify(frozen, null, 2)}\n`);
+    const prog =
+      `import { writeBacklog } from ${JSON.stringify(p7)};\n` +
+      `writeBacklog(${JSON.stringify(bp)}, ${JSON.stringify(errors)});`;
+    const r = spawnSync(process.execPath, ['--input-type=module', '-e', prog], {
+      encoding: 'utf-8',
+    });
+    return r.status ?? -1;
+  };
+
+  const e = (file: string, n: number) => Array.from({ length: n }, () => ({ file }));
+
+  check(
+    'CONTROL: writeBacklog EXITS NON-ZERO when a NEW file enters the backlog',
+    drive({ 'a.md': 1 }, [...e('a.md', 1), ...e('b.md', 1)]) === 1
+  );
+  check(
+    'CONTROL: writeBacklog EXITS NON-ZERO when a file allowance GROWS',
+    drive({ 'a.md': 1 }, e('a.md', 2)) === 1,
+    'a set-only check passes this, because the key already exists'
+  );
+  check('a genuine ratchet DOWN is still written', drive({ 'a.md': 3 }, e('a.md', 1)) === 0);
+  check('an unchanged table is still written', drive({ 'a.md': 2 }, e('a.md', 2)) === 0);
+
+  fs.rmSync(tmp, { recursive: true, force: true });
+
+  if (failures.length > 0) {
+    console.error(`\n✗ ${failures.length} self-test failure(s)`);
+    return false;
+  }
+  return true;
+}
+
 function main(): void {
+  if (process.argv.includes('--selftest')) process.exit(selftest() ? 0 : 1);
+  // Runs on EVERY invocation, CI included. A control behind a flag is a control nobody runs.
+  if (!process.argv.includes('--skip-control') && !selftest()) process.exit(1);
+
   assertRenameTargetsExist();
 
   // ★ `--locales-only` runs ONLY the i18n checks (English absolute + per-locale command parity)
@@ -899,6 +969,11 @@ function main(): void {
   // baseline is exactly the stale-entry case.
   const baselinePath = path.resolve(__dirname, 'cli-docs-baseline.json');
   if (process.argv.includes('--write-baseline')) {
+    // The composition guard lives in writeBacklog itself (packages/www/scripts/lib/
+    // p7-backlog.js), which is the choke point all four consumers of this backlog share.
+    // It refuses and exits non-zero rather than returning, so there is nothing to handle
+    // here; duplicating the check at this call site would be a second copy of the rule to
+    // drift, which is exactly what the shared module exists to prevent.
     const { files: n, violations: v } = writeBacklog(baselinePath, violations);
     console.log(`Wrote P7 backlog: ${n} files, ${v} violations.`);
     return;
