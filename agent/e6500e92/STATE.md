@@ -1,64 +1,64 @@
-## SESSION e6500e92 2026-08-20T06:36:54Z
+## SESSION e6500e92 2026-08-20T11:40:05Z
 
 ## What is true right now
 
-Branch `0818-1`, PR **#569 OPEN, READY**. Local HEAD **`d7cad35cb`**, `origin/0818-1` at
-`79554375a`: **4 commits UNPUSHED ON PURPOSE**, held so ONE run covers the whole chain.
+Branch `0818-1`, PR **#569 OPEN, READY**. **Pushed: local HEAD == `origin/0818-1` ==
+`37f6433a6`.** Working tree holds only OTHER sessions' live work (`.claude/hooks/**`,
+`.claude/agents/**`) plus the cosmetic `package-lock.json` npm11 flip. **None of it is mine.**
 
-    2af084b54  gate: ./x.sh scripts must be committed executable
-    689ccc071  gate: naturalization model must match repo policy
-    af1dc058d  lint: clear check:lint (all 4 errors were mine)
-    d7cad35cb  i18n: drain en.json em dashes, 73 chars -> 0
+Three PRs open, all linked in #569's body because the submodule gate REQUIRES the link:
+console **#569**, account **#80** (`3cd870b`), renet **#104** (`c452df8`). `private/growth`
+(NOT a submodule, gitignored) at `d231757`.
 
-Submodule `private/account` pushed at `3cd870b` (PR #80). `private/growth` (NOT a submodule,
-separate GitLab repo, gitignored) at `d9fb7ef`.
+**Still owed:** `gh label delete no-media-quality` AND removing its entry from
+`.github/labels.yml` -- `check-label-inventory.sh` compares both directions.
 
-## NATURALIZATION IS DONE. Do not re-run it.
+## CI `32364765277` on `37f6433a6`, in flight. Watch `byi8tz15e`.
 
-`scripts/check-i18n-naturalization.ts` **EXIT=0**, "all 12 maintained locales covered and
-fresh", **0 stale** (929 at session start, 79 at red-gates' handback). Final sweep census:
-36 combos, 36 exit-0, 0 failures, 24 applies. My sweep process has EXITED; no
-`i18n_pipeline` process should be alive.
+**Every QUALITY gate has been green for several runs.** Only E2E infra has been red.
 
-What made it converge, so nobody re-litigates it: `--reprocess` (a poisoned
-`2000_rewrite.json` cache was short-circuiting the model call across four earlier sweeps) and
-the unescaped-inner-quote JSON repair (`private/growth` `f09b01f`) that unblocked
-`migrationSafety` in five languages.
+**Read the CONSOLE CI run by workflow name**, never the newest run on the branch (usually a
+`Watchdog:` run). Distinguish the two cancelled shapes: **cancelled + ZERO failures + a newer
+commit = SUPERSEDED** (my own push auto-cancels), while cancelled alongside a failure = the
+watchdog killing the run.
 
-## `red-gates` OWNS the locale catalogs right now
+**Self-inflicted pattern to avoid repeating:** `Concurrent Fork Isolation` has not reported
+since `ef40cd2aa`, because each fix I pushed cancelled the run that would have judged the
+previous one. If you need that job's verdict, WAIT for the run rather than pushing.
 
-It is executing step 4: the locale em-dash pass on a FRESH scan, then ONE baseline drain.
-Ruling already given and confirmed: the 44 Russian dashes get the **verb supplied**, ru is
-**NOT exempted** from the catalog surface, and it flags rather than forces any line that
-resists. **Do not touch `packages/www/src/i18n/translations/*.json` until it hands back**, and
-do not reuse its old count of 52 findings; 24 applies moved them.
+## Both `--debug` withhold paths are now closed
 
-`packages/www/src/data/tutorial-timeline/*/tutorial-backup-restore.json` belongs to session
-`3fe0b2ed`. Never touch `agent/3fe0b2ed/**`.
+There were TWO, and the first fix alone could not work. `repo up` routes through the DAEMON,
+not `local-executor` -- proven from the test log, where the spinner and `Checkpoint created`
+are `renderJobEvent` output, which only exists on the daemon path.
 
-`package-lock.json`: if it shows ONLY `"dev": true` deletions that is the cosmetic npm11 flip.
-Restore with `npx -y npm@10 install --package-lock-only --ignore-scripts`; never commit it.
+    output-lines.ts    shouldEchoRelayLive(options)   fixed 7525913da / ef40cd2aa
+    daemon/client.ts   routeLogEvent(..., echoAll)    fixed 37f6433a6
 
-## CI: run `32334401723` terminal, census read job-by-job
+Class swept independently by BOTH sessions, counts agree: the only `debugEnabled()` left in
+`packages/cli/src` outside tests and `utils/debug.ts` is inside `shouldEchoRelayLive`.
+Verified by my own mutation (1 FAILED/10 passed, restored 11) and `check:ci-guard-mutations`
+6 of 6.
 
-10 success (incl. BOTH Procwalk and `Quality / Built-www Gates`), 2 skipped, **1 failure**,
-**7 cancelled**, 0 neutral. The 7 cancelled (i18n, Security, Packages, Go, Code, both Renet
-builds) **DID NOT REPORT** -- unknown, not good. The one failure is
-`check:ci-tutorial-caption-sync`, 8 combos of `tutorial-backup-restore`: **NOT ours and
-deliberately NOT skipped**, since `agent/3fe0b2ed/STATE.md` confirms it purged first and
-verified the flat cues are real. It clears when 3fe0b2ed re-publishes.
+**NOT proven end to end.** The controls pin both decisions and both pumps, not renet's line
+surviving the daemon relay over SSH into the grepped log. **Two sessions have now reasoned
+from code to a WRONG conclusion about which pump `repo up` uses. If it fails again, do NOT do
+a third code read -- pull the runner's captured `--debug` stderr from the job artifact.**
+
+## Ceph: root-caused and FIXED, do not re-investigate
+
+`cephadm bootstrap` ran with no `--image`, so it pulled a floating tag, and quay.io rebuilt
+EVERY Ceph tag in place on 2026-08-19. The next run bootstrapped Ceph 20 against noble's
+ceph-common 19.2.3 (unchanged since 2026-02-24); a 32-byte type-2 admin key is unreadable to a
+19.x client. Pinned to a dated tag in renet `c452df8`, gated by `check:ci-ceph-image-pin`
+(review date, floating-tag detection, file/code agreement). **Two earlier hypotheses were WRONG
+and are recorded so nobody retries them: it is NOT the 1800s resetVMs cap, and NOT apt drift.**
 
 ## Next action
 
-1. **When `red-gates` hands back** (#28a63c89), verify its diff against the artifact rather
-   than its report, then run `npm run check:ci-em-dash-surfaces` and `npm run check:i18n`
-   end to end.
-2. `npm run i18n:generate-client -w @rediacc/www` (#4be5bdee), then `check-layout-overflow`
-   across all 13 locales, because the imperative rewrite changed sentence length and de/ru
-   already run 6-37% longer than English.
-3. **ONE push** of all commits, then re-check CI with `gh api` and count `cancelled` and
-   `neutral` as DID NOT REPORT.
-4. Then FRESH Claude review (head moved, `claude-reviewed:` marker stale, so `Review Complete`
-   would go `neutral`), resolve every thread, `CronDelete 7cb9b31f`.
-5. Owed once `3fe0b2ed` finishes: remove `no-media-quality` from #569 AND
-   `gh label delete no-media-quality`. Never merge, never push `main`.
+1. Read `byi8tz15e` (or re-check `32364765277`). Count `cancelled` AND `neutral` as DID NOT
+   REPORT (#4179d239).
+2. Then a FRESH Claude review: the head has moved eighteen times, the marker no longer
+   matches, `Review Complete` would go `neutral`. Resolve every thread.
+3. Then delete the label in BOTH places, then `CronDelete 7cb9b31f`.
+4. Never merge, never push `main`.
