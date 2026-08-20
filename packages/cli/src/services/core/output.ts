@@ -62,7 +62,7 @@ export function terminalWidth(): number {
  * a table blown out by one long id (a 36-char GUID) keeps its short columns
  * intact instead of wrapping every one of them.
  */
-export function fitColumnWidths(
+function fitColumnWidths(
   cols: { key: string; header: string }[],
   items: Record<string, unknown>[],
   budget: number
