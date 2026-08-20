@@ -3362,6 +3362,8 @@ ARITY = {
     "CI_NOTE_DOWNGRADED": ("9", 1, 2, "", "rows"),
     "V_NO_POLL_CRON": ("m", "m"), "V_NO_WAITER": (2, "p", "m"),
     "N_WAITER_NUDGE": (2, "p", "m", 60), "V_MANY_WORK_CRONS": (2, "l"),
+    # (n waiters, the TaskStop rows, the wl_wait path, me, the fresh timeout)
+    "N_WAITER_DRAINED": (1, "rows", "p", "m", 60),
     "V_MANY_POLL_CRONS": (2,),
     "V_AGENT_STATE": ("me", "s", "", 250, 4000, "m"),
     "V_AGENT_BOOTSTRAP": ("me", "me"),
@@ -6476,6 +6478,155 @@ else
 fi
 kill "$WAITER_PID" 2>/dev/null
 wait "$WAITER_PID" 2>/dev/null
+
+echo "== 163q. v20: a DRAINED session is told to STOP its waiter =="
+# THE OTHER HALF OF 163z/163w. Those two force a session with work to LISTEN;
+# nothing ever told a finished one to stop, so a drained session held a process
+# for up to an hour and was nagged on every tool call to relaunch it. Observed
+# live 2026-08-19: zero open items, zero background jobs, VMs torn down, and
+# still "NOT LISTENING".
+#
+# A REAL wl_wait.py process again, for 163z's reason: the advice is keyed on
+# `confirmed`, so a fixture that only claims the command would prove the string
+# match and not the verdict.
+drained_waiter() { # a live waiter + the BG row that declares it; sets BG
+    WAITER_CMD="python3 $(dirname "$HOOK")/wl_wait.py deadbeef --timeout 3"
+    TMPDIR="$BASE/waittmp" CLAUDE_PROJECT_DIR="$BASE" $WAITER_CMD >/dev/null 2>&1 &
+    WAITER_PID=$!
+    export WORKLIST_HARNESS_PID=$$
+    sleep 1
+    BG="$(
+        python3 - "$WAITER_CMD" <<'PYEOF'
+import json, sys
+print(json.dumps([{"id": "wt9", "type": "shell", "status": "running",
+                   "command": sys.argv[1], "description": "inbox waiter"}]))
+PYEOF
+    )"
+}
+stop_waiter() {
+    kill "$WAITER_PID" 2>/dev/null
+    wait "$WAITER_PID" 2>/dev/null
+}
+drained_setup() { # the common fixture: fresh world, waiter running, queue drainable
+    setup
+    brief_now
+    hand_now
+    mkdir -p "$BASE/bgout"
+    export WORKLIST_BG_OUTPUT_DIR="$BASE/bgout"
+    # The advice is a QUEUED REPORT, not a violation, and OUTQ_PER_STOP is 1 by
+    # default -- so without this the case would be measuring queue position
+    # rather than the check.
+    export WORKLIST_REPORT_PER_STOP=6
+}
+DRAINED_MSG="all of it is finished and the tree is clean
+
+## Remaining
+- nothing open, nothing in flight, no pending task"
+drained_setup
+drained_waiter
+# Premise, asserted rather than assumed, exactly as 163z does: an unconfirmed
+# waiter makes every assertion below vacuous and green.
+VERDICT=$(
+    cd "$BASE" && python3 - "$(dirname "$HOOK")" "$WAITER_CMD" <<'PYEOF'
+import os, sys
+sys.path.insert(0, sys.argv[1])
+import wl_liveness as L
+bg = [{"id": "wt9", "type": "shell", "status": "running", "command": sys.argv[2]}]
+print(L.verify_background(bg, ancestors={int(os.environ["WORKLIST_HARNESS_PID"])}).get("wt9"))
+PYEOF
+)
+if [[ "$VERDICT" == "confirmed" ]]; then
+    pass "163q premise: the live waiter verifies as confirmed"
+else
+    fail "163q premise: waiter verdict is '$VERDICT', not confirmed -- this case is vacuous"
+fi
+say "$DRAINED_MSG"
+OUT="$(run)"
+if grep -qF "DRAINED, AND STILL HOLDING A WAITER" <<<"$OUT"; then
+    pass "163q: a drained session is told to stop its waiter"
+else
+    fail "163q: no advice for a drained session holding a waiter: ${OUT:0:300}"
+fi
+# The remedy must name the task's OWN id. One that does not is a remedy the
+# reader has to guess at, and there is nothing on a Stop event to guess from.
+if grep -qF "TaskStop wt9" <<<"$OUT"; then
+    pass "163q: it names the exact TaskStop command for that task id"
+else
+    fail "163q: the advice carries no TaskStop for wt9: ${OUT:0:300}"
+fi
+# GUIDANCE, NEVER A BLOCK. A stop that blocked on this would keep the session
+# alive to argue about the process it is being told to shut down.
+DEC=$(python3 -c 'import json,sys
+raw=sys.stdin.read().strip()
+print(json.loads(raw).get("decision","allow") if raw else "allow")' <<<"$OUT" 2>/dev/null)
+if [[ "$DEC" != "block" ]]; then
+    pass "163q: the advice does not block the stop"
+else
+    fail "163q: a drained session was BLOCKED over its waiter: ${OUT:0:300}"
+fi
+stop_waiter
+
+# CONTROL 1: WORK OUTSTANDING, same live waiter -- the advice must not fire.
+# A pending harness task rather than an open item, deliberately: an open item
+# BLOCKS, and an absence asserted on a blocking stop proves nothing, because
+# the report queue is not drained on that path.
+drained_setup
+drained_waiter
+task 9 in_progress "still doing the thing"
+say "still working
+
+## Remaining
+- #9 still doing the thing (in_progress)"
+OUT="$(run)"
+if ! grep -qF "DRAINED, AND STILL HOLDING A WAITER" <<<"$OUT"; then
+    pass "163q-c1 CONTROL: a session with a pending task keeps its waiter"
+else
+    fail "163q-c1 CONTROL: told to stop listening while work was pending: ${OUT:0:300}"
+fi
+stop_waiter
+
+# CONTROL 2: drained, but holding NO waiter. There is nothing to stop, and an
+# advisory that fired here would be telling every finished session in the repo
+# to kill a process it does not have.
+drained_setup
+BG='[]'
+say "$DRAINED_MSG"
+OUT="$(run)"
+if ! grep -qF "DRAINED, AND STILL HOLDING A WAITER" <<<"$OUT"; then
+    pass "163q-c2 CONTROL: a drained session with no waiter is told nothing"
+else
+    fail "163q-c2 CONTROL: advice fired with no waiter to stop: ${OUT:0:300}"
+fi
+
+# CONTROL 3: a waiter BESIDE another live background job. That job's report
+# arrives through this very channel, so telling the session to stop listening
+# would make it deaf to the worker it is supervising. This is what
+# `_only_waiters` guards, and it is the assertion that goes red without it.
+drained_setup
+drained_waiter
+BG="$(
+    python3 - "$WAITER_CMD" <<'PYEOF'
+import json, sys
+print(json.dumps([
+    {"id": "wt9", "type": "shell", "status": "running",
+     "command": sys.argv[1], "description": "inbox waiter"},
+    {"id": "job1", "type": "teammate", "status": "running",
+     "description": "a writer sub-agent still running"},
+]))
+PYEOF
+)"
+say "waiting on the worker
+
+## Remaining
+- job1 is still running; its report is what I am waiting for"
+OUT="$(run)"
+if ! grep -qF "DRAINED, AND STILL HOLDING A WAITER" <<<"$OUT"; then
+    pass "163q-c3 CONTROL: a waiter beside a live worker is kept"
+else
+    fail "163q-c3 CONTROL: told to stop listening while a worker was running: ${OUT:0:300}"
+fi
+stop_waiter
+unset WORKLIST_REPORT_PER_STOP WORKLIST_BG_OUTPUT_DIR WORKLIST_HARNESS_PID
 
 echo "== 163v. a roster the session cannot verify is reaped, but only where certain =="
 # THE BUG: after a compaction, or an operator reopening the session, the harness

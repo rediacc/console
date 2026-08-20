@@ -645,6 +645,42 @@ else
     echo "FAIL [1] stop/test-worklist-v5.sh missing or not executable"
 fi
 
+# The report-inbox suite, which this aggregate runner did NOT run. Found by a
+# sub-agent while adding cases to it: 125 cases covering the report inbox and
+# the whole cross-session waiter/nudge mechanism were invisible here, so a break
+# in any of them passed `test-hooks.sh` in silence. Its own header (:5-7) says
+# the cases were meant to migrate into the v5 harness "once it frees"; that
+# never happened, and the gap outlived the note. Mirrors the STOP_SUITE wiring
+# above rather than inventing a second reporting shape.
+INBOX_SUITE="$DIR/stop/test-report-inbox.sh"
+if [[ -x "$INBOX_SUITE" ]]; then
+    echo
+    if out="$(bash "$INBOX_SUITE" 2>&1)"; then
+        # This suite prints `ok <case>`, NOT the v5 harness's `  PASS:`. Copying
+        # the v5 counter verbatim made it count 0 and still report "ok ...
+        # 0 case(s) passed" -- a green that verified nothing, which is the exact
+        # defect this block was added to close. Refuse a zero count outright.
+        n=$(grep -cE "^[[:space:]]*ok[[:space:]]" <<<"$out")
+        if [[ "$n" -eq 0 ]]; then
+            FAIL=$((FAIL + 1))
+            echo "FAIL [1] stop/test-report-inbox.sh: exited 0 but reported 0 cases"
+        else
+            PASS=$((PASS + n))
+            echo "ok   [0] stop/test-report-inbox.sh: $n case(s) passed"
+        fi
+    else
+        FAIL=$((FAIL + 1))
+        echo "FAIL [1] stop/test-report-inbox.sh"
+        echo "       --- failing cases ---"
+        grep -E "^\s*(FAIL|  - )" <<<"$out" | sed 's/^/       /' | head -40
+        echo "       --- tail for context ---"
+        sed 's/^/       /' <<<"$out" | tail -12
+    fi
+else
+    FAIL=$((FAIL + 1))
+    echo "FAIL [1] stop/test-report-inbox.sh missing or not executable"
+fi
+
 echo
 echo "PASS=$PASS FAIL=$FAIL"
 [[ "$FAIL" == 0 ]]
