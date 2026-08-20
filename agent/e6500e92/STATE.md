@@ -1,60 +1,59 @@
-## SESSION e6500e92 2026-08-19T23:58:53Z
+## SESSION e6500e92 2026-08-20T04:12:04Z
 
 ## What is true right now
 
-**Operator away, loop autonomous.** Branch `0818-1`, PR **#569 OPEN/READY**. Run
-`32303077889` (push 4, `bddc5fcd4`) TERMINAL and UNCHANGED for hours -- confirmed via
-direct API repeatedly, no newer push exists. Two real failures on it, both being worked:
-`check:ci-browser-smoke` (judged transient, reproduced clean locally, no fix needed, next
-push gets a fresh attempt) and `Quality/i18n` (the ONE thing actually blocking progress).
+Branch `0818-1`, PR **#569 OPEN/READY**. Plan `~/.claude/plans/memoized-gliding-kay.md`.
+Local HEAD `15a60a652`, ONE COMMIT AHEAD of the last CI run (`bddc5fcd4`, run
+`32303077889`, terminal + red). **Push HELD until the chain below completes.**
 
-## THE i18n STORY, condensed for a cold reader
+## OPERATOR DECISIONS (2026-08-20)
 
-1,046 stale translations were blocking `check-i18n-naturalization.ts`. TWO blind retry
-sweeps (2h+ each) on homepage/marketing/persona only shaved this from 2028->1079->1046 --
-diminishing returns. **Root-caused the real shape of the problem** with a small diagnostic
-script (now deleted) comparing en.json hashes against `.naturalized-hashes.json` exactly
-as the CI gate does: `personaPages 400, pricing 350, solutionPages 132, disasterRecovery
-104, resourcesBrief 60`.
+- **L4** 7-baseline cluster RIDES THIS PR. **L5** DRAIN `en.json`'s 65 em dashes ON THIS PR
+  (overrides the follow-up default). **L6** run AUTONOMOUSLY to CI green + review + threads
+  + `CronDelete 7cb9b31f`.
 
-**The `solutionPages` 132 was a surprise**: I'd deliberately never swept that surface
-tonight (its FULL delta is ~2213 keys/language of untracked backlog, a separate deferred
-wave). But the CI GATE doesn't care about my python pipeline's surface scoping at all --
-it just diffs en.json against the ledger directly, so ANY previously-tracked key going
-stale blocks CI regardless. Verified the 132 is small and separate from the deferred
-backlog: exactly 11 keys x 12 languages, in only 2 of 25 pages
-(kubernetesClusterMobility, migrationSafety).
+## THE ORDERED CHAIN -- order is TECHNICAL, not preference
 
-**EXTENDED THE PIPELINE** (small, mechanical, in `private/growth`, NOT console):
-`ledger.was_tracked()` + a `regressed_only` filter on `delta.stale_groups()`, wired to a
-new `--regressed-only` CLI flag in `main.py`. This isolates EXACTLY the CI-gate-blocking
-subset of a surface (previously naturalized, now stale) without touching its untracked
-majority. Verified: reports 132 exactly, matching my independent count. ALSO found
-`--regressed-only` is a strict subset for `marketing` too (tr 62->42, ru 124->104) but
-IDENTICAL for `persona` (54=54, no untracked component there) -- so it is safe and
-sometimes cheaper to use everywhere, no downside.
+`locale_adapter.py:126` REFUSES to apply when `en.json` changes under a running sweep.
+Nothing below may start until bg pid `3182407` exits (now on `ru`; `tr`, `zh` remain).
 
-## RUNNING NOW: solution-surface regressed-only sweep, bg pid `2147647`
+1. sweep exits -> `npm run i18n:naturalize-status` for the true count
+2. `red-gates` drains the 65 em dashes from `en.json` (English conventions; supply the word
+   the dash stood in for)
+3. `npm run i18n:generate-hashes`
+4. **I** run the re-naturalization of the newly-stale delta (`--regressed-only --reprocess`),
+   NOT the agent
+5. `red-gates` locale em-dash pass + ONE baseline drain, on a FRESH scan taken after step 4
+6. `node scripts/generate-search-index.js` **LAST** (any docs edit reddens it)
+7. `npm run i18n:generate-client -w @rediacc/www`, layout-overflow x13
+8. ONE push, arm a terminal-state watch
 
-Log `scratchpad/wave-c-solution.log`. 2/12 languages (`ar` done clean 2/2 applied; `de` in
-progress at 7+ min, slower than ar's ~2min but not yet worth intervening). Only 132 total
-keys across all 12 languages, so this should finish soon even if de is a slow outlier.
+## DONE + INDEPENDENTLY VERIFIED BY ME
 
-## NEXT (after solution sweep): retry homepage+marketing+persona with --regressed-only
+- **`no-media-quality` label** wired and LIVE. Non-vacuity PROVEN with my own transitive
+  resolver: `check:i18n` walks 15 scripts, hits ZERO tutorial validators; controls hit 3+1.
+- **Shrink-only composition class CLOSED at 11/11.** `scripts/lib/shrink-only-baseline.ts`
+  is the shared guard; `packages/www/scripts/lib/p7-backlog.js::writeBacklog` is the choke
+  point covering the last 3 validators. My spot-check: **8 GUARDED, battery=0**, and the
+  battery has a control proving a comment mentioning the guard does NOT count as consuming
+  it. All 6 live baseline md5s byte-identical. `check:ci-parity` 262 gates / 95 battery.
+  It caught 2 REAL violations within an hour of being written.
+- **`check:ci-search-index`** green (must be re-run at step 6).
 
-Cheaper and safer than the blind full retry already done twice. Then
-`npm run i18n:naturalize-status` for the TRUE remaining count (expect near 0, since
-persona's stale is already fully accounted for and marketing's untracked slice is small).
+## STILL RUNNING
+
+- **Naturalization sweep**, bg pid `3182407`, `scratchpad/wave-c-reprocess.log`.
+- **`red-gates`**: optional `--selftest` for `check-tutorial-parity.ts` only (I WITHDREW the
+  `check-cli-docs` half -- it now routes through p7-backlog, whose growth path is already
+  proven). Then it HOLDS. Its watcher `brbp1wqf1` is READ-ONLY (runs 2 gates, logs exit
+  codes, no edit, no reseed) and will PING rather than act.
 
 ## Next action
 
-1. Check `ps -o etime= -p 2147647` + `tail scratchpad/wave-c-solution.log`. If DONE
-   (`===ALL DONE SOLUTION===`): relaunch homepage+marketing+persona with `--regressed-only`
-   (same 12-language loop shape as prior sweeps, just add the flag).
-2. Once ALL sweeps are done: `npm run i18n:naturalize-status`. If 0: stage
-   `packages/www/src/i18n/translations/*.json` (verify every borderline file via
-   `git diff HEAD` first, same discipline as every commit this wave), commit, push, arm a
-   NEW terminal-state watch.
-3. Then C2e `i18n:generate-client -w @rediacc/www`, C-V verify incl. layout-overflow x13.
-4. Never merge, never push `main`. Session `3fe0b2ed` still owns tutorial/cast work --
-   confirmed multiple times this wave, do not touch.
+1. `ps -o etime= -p 3182407`. On `===ALL DONE REPROCESS===` start the chain at step 1 and
+   tell `red-gates` English is clear for step 2.
+2. `check:ci-em-dash-surfaces` is RED by design right now (the sweep keeps adding dashes);
+   that is step 5's job, not a regression.
+3. Never merge, never push `main`. `3fe0b2ed` owns all tutorial/cast files; D5 stays OUT.
+   Owed once `3fe0b2ed` publishes: remove the label from #569 AND
+   `gh label delete no-media-quality`.
