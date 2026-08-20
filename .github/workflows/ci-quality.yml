@@ -508,6 +508,12 @@ jobs:
       - name: Block legacy-peer-deps workarounds
         run: .ci/scripts/quality/check-npmrc.sh
 
+      # Also text-only and also before node: a script that cannot execute
+      # fails with exit 126 before emitting anything, which is invisible to
+      # any caller that counts output rather than exit codes.
+      - name: Block non-executable invoked scripts
+        run: .ci/scripts/quality/check-script-exec-bit.sh
+
       - uses: ./.github/actions/app-token
         id: app-token
         with:
