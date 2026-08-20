@@ -206,7 +206,13 @@ def _manifest_gate_ids(root):
             src = fh.read()
     except OSError:
         return ids
-    for m in re.finditer(r"\{\s*id:\s*'([^']+)'(.*?)\}", src, re.DOTALL):
+    # `(?:\s|//[^\n]*\n)*`, not `\s*`: a manifest entry whose leading comment sits
+    # INSIDE the brace was invisible to this scan, so the reachability gate silently
+    # checked a smaller set and still printed a healthy "agrees with all N
+    # registrations". Found 2026-08-20 with a planted entry that the gate went green
+    # over; it was already hiding check:ci-dockerfile-mirror-resilience and
+    # check:ci-tutorial-card-fonts (259 of 261 seen).
+    for m in re.finditer(r"\{(?:\s|//[^\n]*\n)*id:\s*'([^']+)'(.*?)\}", src, re.DOTALL):
         if "gate: true" in m.group(2):
             ids.add(m.group(1))
     return ids

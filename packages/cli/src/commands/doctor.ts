@@ -16,7 +16,7 @@ import {
   isSEA as isSEAEmbedded,
   verifyEmbeddedRenetIntegrity,
 } from '../services/core/embedded-assets.js';
-import { outputService } from '../services/core/output.js';
+import { outputService, terminalWidth } from '../services/core/output.js';
 import { resolveChannel } from '../services/update/updater.js';
 import type { OutputFormat } from '../types/index.js';
 import { getInstallMethod, isSEA } from '../utils/platform.js';
@@ -452,13 +452,26 @@ const STATUS_ICONS: Record<CheckStatus, string> = {
   fail: chalk.red('FAIL'),
 };
 
+/** Visible width of the widest status label ('WARN'/'FAIL'), chalk excluded. */
+const STATUS_LABEL_WIDTH = 4;
+/** Never squeeze the value column below this, however narrow the terminal is. */
+const MIN_VALUE_WIDTH = 12;
+
 function formatSection(section: CheckSection): string {
+  const width = terminalWidth();
   const nameWidth = Math.max(16, ...section.checks.map((c) => c.name.length + 2));
+  // The value column takes whatever is left after the 4-space indent, the name
+  // column and the status label. Sizing it from the VALUE instead is what put a
+  // 232-column line on screen: `curl --version` answers with a full banner
+  // ("curl 8.5.0 (x86_64-pc-linux-gnu) libcurl/8.5.0 OpenSSL/3.0.13 ..."), and
+  // padEnd(value.length + 2) simply grew the row to fit it.
+  const valueWidth = Math.max(MIN_VALUE_WIDTH, width - 4 - nameWidth - STATUS_LABEL_WIDTH);
   const lines = [`  ${chalk.bold(section.title)}`];
   for (const check of section.checks) {
-    const valueWidth = Math.max(38, check.value.length + 2);
+    const value =
+      check.value.length > valueWidth ? `${check.value.slice(0, valueWidth - 1)}…` : check.value;
     lines.push(
-      `    ${check.name.padEnd(nameWidth)}${check.value.padEnd(valueWidth)}${STATUS_ICONS[check.status]}`
+      `    ${check.name.padEnd(nameWidth)}${value.padEnd(valueWidth)}${STATUS_ICONS[check.status]}`
     );
     if (check.hint) lines.push(`    ${' '.repeat(nameWidth)}${chalk.dim(check.hint)}`);
   }
