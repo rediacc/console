@@ -1427,7 +1427,13 @@ jobs:
 
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
-          go-version: 'stable'
+          # Pinned to renet's own declared toolchain rather than 'stable'. This job runs
+          # golangci-lint, whose typecheck must DECODE the toolchain's export data; a
+          # 'stable' that races ahead of the pinned linter fails with "export data version
+          # 4 is greater than maximum supported version 2". Go 1.27.0 broke this job on
+          # 2026-08-20 while go.mod still declared 1.25. Build/test jobs may float; the
+          # ones feeding a linter may not.
+          go-version-file: private/renet/go.mod
           cache: true
           cache-dependency-path: private/renet/go.sum
 
