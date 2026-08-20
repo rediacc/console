@@ -35,7 +35,13 @@ scan_repo() {
     local root="$1" ref f mode
     (
         cd "$root" || exit 0
-        git grep -hoE '\./[a-zA-Z0-9_./-]+\.sh' -- \
+        # ANCHORED with a negative lookbehind, which is why this is -P and not -E.
+        # An unanchored `\./` also matches the SECOND dot of a `../` reference: the
+        # text `../scripts/lib/foo.sh` yields `./scripts/lib/foo.sh`, which strips to
+        # a repo-root path that is a DIFFERENT FILE from the one referenced. That is
+        # both a false positive on the wrong file and no coverage of the right one.
+        # The same hole swallows `somepath./bar.sh`. Caught in review on this PR.
+        git grep -hoP '(?<![\w./-])\./[\w./-]+\.sh' -- \
             '*.sh' '*.yml' '*.yaml' '*.json' '*.md' '*.ts' 2>/dev/null |
             sort -u |
             while read -r ref; do
@@ -65,7 +71,25 @@ trap 'rm -rf "$control_dir"' EXIT
     exit 2
 }
 
+# A parent-relative reference must NOT be mistaken for a repo-root one. Planted as its
+# own control because the unanchored version passed every other check in this file while
+# silently checking the wrong file: `../victim.sh` is not `./victim.sh`.
+(
+    cd "$control_dir" || exit 1
+    printf 'source ../victim.sh\n' > parentref.yml
+    git add -A >/dev/null 2>&1
+)
+parent_hits=$(scan_repo "$control_dir" | grep -c '^victim.sh' || true)
+
 control_hits=$(scan_repo "$control_dir" | wc -l)
+if [ "$parent_hits" -ne 1 ]; then
+    echo "${RED}REFUSE${OFF}  the parent-relative control is wrong: adding a `../victim.sh`"
+    echo "        reference changed the reported count. A `../x.sh` reference must be"
+    echo "        ignored, not silently read as the repo-root `x.sh`, which is a"
+    echo "        different file."
+    exit 2
+fi
+
 if [ "$control_hits" -lt 1 ]; then
     echo "${RED}REFUSE${OFF}  the control did not fire: a planted non-executable"
     echo "        ./victim.sh referenced from caller.yml was NOT reported."
