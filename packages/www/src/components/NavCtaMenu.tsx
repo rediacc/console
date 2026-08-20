@@ -125,7 +125,7 @@ const NavCtaMenu: React.FC<NavCtaMenuProps> = ({
           break;
       }
     },
-    [isOpen, onClose]
+    [isOpen]
   );
 
   useEffect(() => {
