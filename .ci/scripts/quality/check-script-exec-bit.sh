@@ -76,17 +76,20 @@ trap 'rm -rf "$control_dir"' EXIT
 # silently checking the wrong file: `../victim.sh` is not `./victim.sh`.
 (
     cd "$control_dir" || exit 1
-    printf 'source ../victim.sh\n' > parentref.yml
+    printf 'source ../victim.sh\n' >parentref.yml
     git add -A >/dev/null 2>&1
 )
 parent_hits=$(scan_repo "$control_dir" | grep -c '^victim.sh' || true)
 
 control_hits=$(scan_repo "$control_dir" | wc -l)
 if [ "$parent_hits" -ne 1 ]; then
-    echo "${RED}REFUSE${OFF}  the parent-relative control is wrong: adding a `../victim.sh`"
-    echo "        reference changed the reported count. A `../x.sh` reference must be"
-    echo "        ignored, not silently read as the repo-root `x.sh`, which is a"
-    echo "        different file."
+    # Single quotes on the lines carrying ../x.sh: backticks inside a double-quoted
+    # echo are COMMAND SUBSTITUTION, so the error path would try to execute the very
+    # script it is complaining about. shfmt caught that here.
+    echo "${RED}REFUSE${OFF}  the parent-relative control is wrong."
+    echo '        Adding a ../victim.sh reference changed the reported count. A'
+    echo '        ../x.sh reference must be IGNORED, not silently read as the'
+    echo '        repo-root x.sh, which is a different file.'
     exit 2
 fi
 
