@@ -65,6 +65,16 @@ describe('createQuietStderrPump replay width', () => {
     expect(rows.some((r) => r.length > 107)).toBe(true);
   });
 
+  it('echoes info lines LIVE when echoAll is set, which is what --debug relies on', () => {
+    // The concurrent-fork-isolation suite greps a `--debug` log for renet's
+    // "restored from checkpoint", emitted with log.Infof. If echoAll does not
+    // pass info-level lines through immediately, that evidence never reaches the
+    // log and the test blames console#440 for a regression that did not happen.
+    const pump = createQuietStderrPump({ echoAll: true });
+    pump.write(`${LONG}\n`);
+    expect(written.join('')).toContain('level=info');
+  });
+
   it('stays silent on success', () => {
     const pump = createQuietStderrPump();
     pump.write(`${LONG}\n`);

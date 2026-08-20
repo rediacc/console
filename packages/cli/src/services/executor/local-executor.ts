@@ -1913,7 +1913,14 @@ class LocalExecutorService {
     // whose only lasting effect was to push this function past the complexity
     // gate. Two copies of a withhold-and-replay buffer is exactly how the two
     // drift apart while both keep passing.
-    const stderrPump = createQuietStderrPump({ echoAll: debugEnabled() });
+    // BOTH the env var and the `--debug` FLAG. This read only the env var, so
+    // `rdc repo up --debug` withheld renet's info-level lines anyway and a flag
+    // named --debug did not enable debug output. It cost a CI test: the
+    // concurrent-fork-isolation suite greps its `--debug` log for renet's
+    // "restored from checkpoint" (emitted with log.Infof), found nothing, and
+    // blamed console#440 for a regression that had not happened. The two sibling
+    // call sites already pass options.debug; this one reached past it.
+    const stderrPump = createQuietStderrPump({ echoAll: debugEnabled() || Boolean(options.debug) });
     const execStart = Date.now();
     const exitCode = await sftp.execStreaming(command, {
       stdin: vault,
