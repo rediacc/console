@@ -313,7 +313,7 @@
   "pages": {
     "home": {
       "meta": {
-        "title": "Rediacc — Clone Production. Break Nothing.",
+        "title": "Rediacc: Clone Production. Break Nothing.",
         "description": "Clone production in 60 seconds. Recover from disasters in under 5 minutes. Self-hosted, runs on your hardware.",
         "keywords": "infrastructure automation, development environments, disaster recovery, DevOps automation, CI/CD pipeline, cloud infrastructure, development operations, Model Context Protocol, AI-safe infrastructure"
       }
@@ -1119,7 +1119,7 @@
             "analyticsData": {
               "title": "2.3 Analytics Data",
               "content": [
-                "We use <a href=\"https://plausible.io\" target=\"_blank\" rel=\"noopener noreferrer\">Plausible Analytics</a>, a privacy-focused, cookieless analytics tool. Plausible does not use cookies, does not collect personal data, and is fully compliant with GDPR, CCPA, and PECR. Analytics data includes page views, referral sources, browser type, and country-level location — all without identifying individual visitors."
+                "We use <a href=\"https://plausible.io\" target=\"_blank\" rel=\"noopener noreferrer\">Plausible Analytics</a>, a privacy-focused, cookieless analytics tool. Plausible does not use cookies, does not collect personal data, and is fully compliant with GDPR, CCPA, and PECR. Analytics data includes page views, referral sources, browser type, and country-level location, all without identifying individual visitors."
               ]
             },
             "productTelemetry": {
@@ -1160,7 +1160,7 @@
           "items": [
             "<strong>Service providers</strong> who assist in operating our platform (e.g., cloud hosting, payment processing), bound by contractual obligations to protect your data",
             "<strong>Plausible Analytics</strong> for cookieless, anonymized website analytics (no personal data is shared)",
-            "<strong>Telemetry processing</strong> — anonymized product usage data is transmitted to our own telemetry endpoint within the EU for aggregation and analysis. No telemetry data is shared with third parties (see our <a href=\"telemetry-policy\">Telemetry Policy</a>)",
+            "<strong>Telemetry processing</strong> for anonymized product usage data, which is transmitted to our own telemetry endpoint within the EU for aggregation and analysis. No telemetry data is shared with third parties (see our <a href=\"telemetry-policy\">Telemetry Policy</a>)",
             "<strong>Law enforcement</strong> if required by law, regulation, or valid legal process"
           ]
         },
@@ -1267,7 +1267,7 @@
           "id": "acceptance",
           "title": "2. Acceptance of Terms",
           "content": [
-            "By accessing or using any part of the Services — including downloading the CLI, installing the Renet Agent on a Machine, creating an Account, or using the Platform — you agree to be bound by these Terms of Service (\"Terms\"). If you are using the Services on behalf of an organization, you represent and warrant that you have the authority to bind that organization to these Terms, and references to \"you\" or \"Customer\" include that organization.",
+            "By accessing or using any part of the Services (including downloading the CLI, installing the Renet Agent on a Machine, creating an Account, or using the Platform), you agree to be bound by these Terms of Service (\"Terms\"). If you are using the Services on behalf of an organization, you represent and warrant that you have the authority to bind that organization to these Terms, and references to \"you\" or \"Customer\" include that organization.",
             "If you do not agree to these Terms, you must not access or use the Services. These Terms constitute a legally binding agreement between you and Rediacc OÜ (registry code 17363830), a company registered in Estonia with its office at Harju maakond, Tallinn, Kesklinna linnaosa, Tartu mnt 67/1-13b, 10115, Estonia (\"Rediacc\", \"we\", \"us\", or \"our\")."
           ]
         },
@@ -1432,7 +1432,7 @@
           "title": "11. Your Data and Encryption",
           "content": [
             "<strong>You own your Customer Data.</strong> Because the On-Premise Software stores Customer Data on Machines you control, encrypted with credentials only you possess, Rediacc does not have access to your Customer Data at rest. We do not access, use, or share your Customer Data except as strictly necessary to provide the Services (for example, processing Platform API requests you initiate).",
-            "Account information (email, organization name, billing details) is processed in accordance with our <a href=\"privacy-policy\">Privacy Policy</a>. Upon termination of your Account, you may export your Account data within thirty (30) days. After thirty (30) days, we will delete your Account data from our active systems. Customer Data on your Machines is unaffected by Account termination — it remains on your infrastructure under your control.",
+            "Account information (email, organization name, billing details) is processed in accordance with our <a href=\"privacy-policy\">Privacy Policy</a>. Upon termination of your Account, you may export your Account data within thirty (30) days. After thirty (30) days, we will delete your Account data from our active systems. Customer Data on your Machines is unaffected by Account termination; it remains on your infrastructure under your control.",
             "In accordance with the EU Data Act (Regulation 2023/2854), if you use the Platform's cloud features, you have the right to switch providers or migrate to a self-hosted setup. Your Customer Data is stored on your own Machines and is always under your control. Any Account data and configuration stored on the Platform can be exported in standard, machine-readable formats. We will provide reasonable assistance during any transition period of up to thirty (30) days following your request."
           ]
         },
@@ -1440,7 +1440,7 @@
           "id": "intellectual-property",
           "title": "12. Intellectual Property",
           "content": [
-            "The Services — including the On-Premise Software, Platform, documentation, APIs, designs, and all content provided by Rediacc — are owned by Rediacc OÜ and protected by intellectual property laws of Estonia, the European Union, and applicable international treaties. Except for the licenses expressly granted in these Terms, no other rights or licenses are implied or granted.",
+            "The Services (including the On-Premise Software, Platform, documentation, APIs, designs, and all content provided by Rediacc) are owned by Rediacc OÜ and protected by intellectual property laws of Estonia, the European Union, and applicable international treaties. Except for the licenses expressly granted in these Terms, no other rights or licenses are implied or granted.",
             "You retain all rights, title, and interest in your Customer Data and any content or applications you create using the Services. By using the Platform, you grant Rediacc a limited, worldwide, royalty-free license to host, process, and display your Account information solely to provide the Services to you. This license terminates when you delete your Account.",
             "We may collect and use anonymized, aggregated data derived from your use of the Services (including Telemetry Data) for product improvement, analytics, and benchmarking purposes. Such aggregated data does not identify you or any individual user."
           ]
@@ -1501,7 +1501,7 @@
           ],
           "items": [
             "Your license to use the On-Premise Software and Platform ceases at the end of your current billing period (or immediately in case of breach)",
-            "Customer Data on your Machines remains under your control — Rediacc has no ability to access or delete it",
+            "Customer Data on your Machines remains under your control; Rediacc has no ability to access or delete it",
             "Account data will be retained for thirty (30) days to allow export, then deleted from our active systems",
             "Sections 1 (Definitions), 11 (Your Data), 12 (Intellectual Property), 14 (Warranties), 15 (Liability), 16 (Indemnification), and 18 (Governing Law) survive termination"
           ]
@@ -1580,10 +1580,10 @@
             "We believe in privacy by default. The following technologies are <strong>not</strong> used on our website:"
           ],
           "items": [
-            "<strong>Tracking cookies</strong> — We do not use Google Analytics, Facebook Pixel, or any tracking cookies",
-            "<strong>Third-party cookies</strong> — No external services set cookies on our website",
-            "<strong>Advertising cookies</strong> — We do not serve or track advertisements",
-            "<strong>Fingerprinting</strong> — We do not use browser or device fingerprinting techniques"
+            "<strong>Tracking cookies:</strong> We do not use Google Analytics, Facebook Pixel, or any tracking cookies",
+            "<strong>Third-party cookies:</strong> No external services set cookies on our website",
+            "<strong>Advertising cookies:</strong> We do not serve or track advertisements",
+            "<strong>Fingerprinting:</strong> We do not use browser or device fingerprinting techniques"
           ],
           "content2": [
             "Note: This Cookie Policy applies to the Rediacc marketing website. Our software products (CLI and Renet Agent) collect separate usage telemetry that does not use cookies. For details on product telemetry, see our <a href=\"telemetry-policy\">Telemetry Policy</a>."
@@ -1809,7 +1809,7 @@
               "content": ["The CLI collects the following categories of data:"],
               "items": [
                 "<strong>Command usage:</strong> command name, CLI version, exit code, success or failure status",
-                "<strong>Anonymized arguments:</strong> command options with sensitive values redacted — passwords, tokens, secrets, API keys, and credentials are replaced with <code>[REDACTED]</code>",
+                "<strong>Anonymized arguments:</strong> command options with sensitive values redacted, so passwords, tokens, secrets, API keys, and credentials are replaced with <code>[REDACTED]</code>",
                 "<strong>Environment:</strong> operating system type, Node.js runtime version, deployment environment",
                 "<strong>Error information:</strong> error type, error message, and limited stack trace when commands fail",
                 "<strong>API interactions:</strong> HTTP method, URL path, response status code, request duration",
@@ -2110,7 +2110,7 @@
         "blurb": "Clone production in 60 seconds",
         "meta": {
           "title": "Environment Cloning - Clone Production Fast | Rediacc",
-          "description": "Spin up exact copies of production — application, database, and configuration — for development and testing. No tickets. No waiting.",
+          "description": "Spin up exact copies of production (application, database, and configuration) for development and testing. No tickets. No waiting.",
           "keywords": "environment cloning, production clone, development environment, instant provisioning, btrfs clone, copy-on-write, ephemeral environments"
         },
         "hero": {
@@ -2213,7 +2213,7 @@
             "quarterlySlip": "0 days"
           },
           "withAnnual": "$0",
-          "footnote": "Based on $160K avg total compensation ($92/hr fully loaded). Env wait cost: blocked time × 60% productivity impact. Context switching: $24K-$50K/dev/year. 69% of developers lose 8+ hours weekly to inefficiencies (Atlassian 2024). Developers aren't fully idle while waiting — but cascading dependencies compound across sprints. Conservative estimates — actual savings often higher."
+          "footnote": "Based on $160K avg total compensation ($92/hr fully loaded). Env wait cost: blocked time × 60% productivity impact. Context switching: $24K-$50K/dev/year. 69% of developers lose 8+ hours weekly to inefficiencies (Atlassian 2024). Developers aren't fully idle while waiting, but cascading dependencies compound across sprints. Conservative estimates; actual savings are often higher."
         },
         "howItWorks": {
           "overline": "HOW IT WORKS",
@@ -2387,7 +2387,7 @@
           ]
         },
         "socialProof": {
-          "quote": "We spun up 12 production-identical test environments in under 10 minutes — each with a full 241 GB PostgreSQL database. Our previous process was manual database dumps to staging. It took 3 engineers and 2 days per environment.",
+          "quote": "We spun up 12 production-identical test environments in under 10 minutes, each with a full 241 GB PostgreSQL database. Our previous process was manual database dumps to staging. It took 3 engineers and 2 days per environment.",
           "author": "Senior DevOps Engineer",
           "company": "Fintech, 80 developers",
           "impact": {
@@ -2748,7 +2748,7 @@
         "socialProof": {
           "quote": "Our monthly infrastructure bill dropped from $4,500 to $1,440 after switching to on-demand clones. We had 15 always-on dev environments running at 30% utilization. Now we spin them up as needed and auto-destroy after 4 hours. The $36K annual savings funded two junior developer salaries.",
           "author": "Director of Platform Engineering",
-          "company": "— E-commerce Company, 24 developers, 8 production services",
+          "company": "E-commerce Company, 24 developers, 8 production services",
           "impact": {
             "beforeLabel": "BEFORE",
             "beforeValue": "$4,500/mo",
@@ -3082,9 +3082,9 @@
           ]
         },
         "socialProof": {
-          "quote": "We tracked every production incident for six months after switching to Rediacc clones. Environment-related bugs went from 14 per quarter to literally zero. Our QA lead thought the tracking system was broken — she’d never seen zero before.",
+          "quote": "We tracked every production incident for six months after switching to Rediacc clones. Environment-related bugs went from 14 per quarter to literally zero. Our QA lead thought the tracking system was broken; she’d never seen zero before.",
           "author": "VP of Engineering",
-          "company": "— B2B SaaS Platform, 32 developers, 11 production services",
+          "company": "B2B SaaS Platform, 32 developers, 11 production services",
           "impact": {
             "beforeLabel": "BEFORE",
             "beforeValue": "14/quarter",
@@ -3142,7 +3142,7 @@
         "blurb": "Plug into the existing workflow",
         "meta": {
           "title": "CI/CD Integrations - Works With Any Pipeline | Rediacc",
-          "description": "Git push triggers a fresh environment. Tests run on production clones. CI/CD just works — no custom scripting required.",
+          "description": "Git push triggers a fresh environment. Tests run on production clones. CI/CD just works, with no custom scripting required.",
           "keywords": "CI/CD integration, GitLab CI, GitHub Actions, webhook, production clone, test environment, pipeline automation"
         },
         "hero": {
@@ -3385,7 +3385,7 @@
         "socialProof": {
           "quote": "We deleted 400 lines of CI provisioning scripts and replaced them with one webhook config line. Our pipeline went from 22-minute provisions with synthetic data to 52-second production clones. Three months later, we’ve had zero CI-related incidents. Before Rediacc, it was four per month.",
           "author": "Senior DevOps Engineer",
-          "company": "— Fintech Startup, 18 developers, GitLab CI",
+          "company": "Fintech Startup, 18 developers, GitLab CI",
           "impact": {
             "beforeLabel": "BEFORE",
             "beforeValue": "400 lines",
@@ -3458,7 +3458,7 @@
         "label": "Immutable Backups",
         "blurb": "Backups that ransomware can’t touch",
         "meta": {
-          "title": "Immutable Backups — Ransomware-Proof Backups | Rediacc",
+          "title": "Immutable Backups - Ransomware-Proof Backups | Rediacc",
           "description": "Backups are immutable from the moment they’re created. No one can change them. Not hackers. Not even the owner.",
           "keywords": "immutable backups, ransomware protection, btrfs snapshots, backup verification, disaster recovery, copy-on-write, sealed backups"
         },
@@ -3562,7 +3562,7 @@
             "reputation": "$0"
           },
           "withAnnual": "~$200",
-          "footnote": "Revenue at risk based on $9,000/min avg downtime cost (Splunk/Oxford Economics 2024). Recovery labor: 6 engineers × recovery hours × $200/hr blended rate. Reputation cost estimated as a percentage of direct costs (industry estimate). With Rediacc: immutable snapshots restore in under 5 minutes — downtime approaches zero."
+          "footnote": "Revenue at risk based on $9,000/min avg downtime cost (Splunk/Oxford Economics 2024). Recovery labor: 6 engineers × recovery hours × $200/hr blended rate. Reputation cost estimated as a percentage of direct costs (industry estimate). With Rediacc: immutable snapshots restore in under 5 minutes, so downtime approaches zero."
         },
         "howItWorks": {
           "overline": "HOW IT WORKS",
@@ -3731,7 +3731,7 @@
           ]
         },
         "socialProof": {
-          "quote": "We got hit with ransomware at 3:17am on a Saturday. The attackers encrypted 14 servers including our backup repository — or so they thought. Rediacc’s immutable snapshots were untouched. By 3:24am all 14 servers were restored from sealed backups. Total data loss: zero bytes. Total ransom paid: zero dollars.",
+          "quote": "We got hit with ransomware at 3:17am on a Saturday. The attackers encrypted 14 servers including our backup repository, or so they thought. Rediacc’s immutable snapshots were untouched. By 3:24am all 14 servers were restored from sealed backups. Total data loss: zero bytes. Total ransom paid: zero dollars.",
           "author": "Infrastructure Lead",
           "company": "Healthcare SaaS, 200+ servers",
           "impact": {
@@ -3952,7 +3952,7 @@
             "labor": "$0"
           },
           "withAnnual": "$0",
-          "footnote": "Assumes $200/hr labor for re-encryption configuration, $4,880/TB breach premium (IBM 2024), and 1% breach probability per exposure window. Rediacc maintains encryption throughout — zero exposure windows, zero re-encryption needed."
+          "footnote": "Assumes $200/hr labor for re-encryption configuration, $4,880/TB breach premium (IBM 2024), and 1% breach probability per exposure window. Rediacc maintains encryption throughout: zero exposure windows, zero re-encryption needed."
         },
         "howItWorks": {
           "overline": "HOW IT WORKS",
@@ -4125,7 +4125,7 @@
           ]
         },
         "socialProof": {
-          "quote": "We migrated 42 servers from Hetzner to OVH over a weekend. 350 TB of encrypted data transferred without a single byte exposed. Our previous migration — just 8 servers — took three weeks and required decrypting everything to a staging area. That was the last time we accepted that risk.",
+          "quote": "We migrated 42 servers from Hetzner to OVH over a weekend. 350 TB of encrypted data transferred without a single byte exposed. Our previous migration (just 8 servers) took three weeks and required decrypting everything to a staging area. That was the last time we accepted that risk.",
           "author": "Head of Infrastructure",
           "company": "European SaaS Provider, 42 servers, 6 regions",
           "impact": {
@@ -4162,7 +4162,7 @@
               "url": "https://newsroom.ibm.com/2024-07-30-ibm-report-escalating-data-breach-disruption-pushes-costs-to-new-highs"
             },
             {
-              "text": "AWS, “Amazon S3 Pricing — Data Transfer,” 2024. “Data Transfer OUT from Amazon S3 to Internet: $0.09 per GB for the first 10 TB/month.”",
+              "text": "AWS, “Amazon S3 Pricing: Data Transfer,” 2024. “Data Transfer OUT from Amazon S3 to Internet: $0.09 per GB for the first 10 TB/month.”",
               "url": "https://aws.amazon.com/s3/pricing/"
             },
             {
@@ -4209,7 +4209,7 @@
         "blurb": "Full environment recovery in minutes",
         "meta": {
           "title": "Instant Recovery - Full Environment Restore | Rediacc",
-          "description": "Not just files. Entire environments — servers, configs, databases — restored and running in minutes.",
+          "description": "Not just files. Entire environments (servers, configs, databases) restored and running in minutes.",
           "keywords": "instant recovery, full environment restore, btrfs clone, disaster recovery, backup restore, point-in-time recovery, health checks, single-command recovery"
         },
         "hero": {
@@ -4314,7 +4314,7 @@
             "churn": "Negligible"
           },
           "withAnnual": "$868",
-          "footnote": "File-level recovery: 2 hrs/service provisioning + reconfiguration. Revenue lost: downtime hours × hourly revenue. Staff labor: 2 engineers × recovery hours × $200/hr. Churn: 20% of lost revenue from SLA breaches. Rediacc: btrfs clone restores full environment in under 5 minutes — one command, no rebuilding."
+          "footnote": "File-level recovery: 2 hrs/service provisioning + reconfiguration. Revenue lost: downtime hours × hourly revenue. Staff labor: 2 engineers × recovery hours × $200/hr. Churn: 20% of lost revenue from SLA breaches. Rediacc: btrfs clone restores full environment in under 5 minutes with one command and no rebuilding."
         },
         "howItWorks": {
           "overline": "HOW IT WORKS",
@@ -4483,7 +4483,7 @@
           ]
         },
         "socialProof": {
-          "quote": "Our primary database server failed at 2:14 AM on a Saturday — corrupted disk controller. With our old setup, this would have been a full weekend of provisioning, restoring, and reconfiguring 11 services. Instead, I ran one command from my phone. By 2:18 AM, everything was back — MariaDB, the API, Nginx, Redis, all of it. Same configs, same state, same data. The on-call engineer went back to sleep.",
+          "quote": "Our primary database server failed at 2:14 AM on a Saturday, taken down by a corrupted disk controller. With our old setup, this would have been a full weekend of provisioning, restoring, and reconfiguring 11 services. Instead, I ran one command from my phone. By 2:18 AM, everything was back: MariaDB, the API, Nginx, Redis, all of it. Same configs, same state, same data. The on-call engineer went back to sleep.",
           "author": "VP of Infrastructure",
           "company": "B2B SaaS, 22 servers, 11 services per environment",
           "impact": {
@@ -4516,7 +4516,7 @@
               "url": "https://itic-corp.com/itic-2024-hourly-cost-of-downtime-report/"
             },
             {
-              "text": "Veeam, “Data Protection Trends Report — BC/DR Trends,” 2024. “Only 13% of organizations utilize orchestrated workflow as part of their disaster recovery processes.”",
+              "text": "Veeam, “Data Protection Trends Report: BC/DR Trends,” 2024. “Only 13% of organizations utilize orchestrated workflow as part of their disaster recovery processes.”",
               "url": "https://www.veeam.com/blog/bc-dr-trends-2024.html"
             },
             {
@@ -4570,7 +4570,7 @@
         "label": "Safe OS Testing",
         "blurb": "Test OS updates without the risk",
         "meta": {
-          "title": "Safe OS Testing — Test Updates Without Risk | Rediacc",
+          "title": "Safe OS Testing - Test Updates Without Risk | Rediacc",
           "description": "Clone the production environment. Apply the patch. See what breaks. Roll back if needed. All without touching production.",
           "keywords": "safe os testing, patch testing, os update testing, btrfs clone, production clone, zero-risk patching, update verification"
         },
@@ -4843,7 +4843,7 @@
           ]
         },
         "socialProof": {
-          "quote": "We had a critical OpenSSL patch last quarter. Normally we’d schedule a maintenance window and pray. Instead, we cloned all 22 production servers, applied the patch, ran our full test suite, and confirmed zero regressions — all in 18 minutes. We patched production the same day with total confidence.",
+          "quote": "We had a critical OpenSSL patch last quarter. Normally we’d schedule a maintenance window and pray. Instead, we cloned all 22 production servers, applied the patch, ran our full test suite, and confirmed zero regressions, all in 18 minutes. We patched production the same day with total confidence.",
           "author": "Lead SRE",
           "company": "Managed hosting provider, 22 production servers",
           "impact": {
@@ -4931,7 +4931,7 @@
         "blurb": "Keep data as long as the law requires",
         "meta": {
           "title": "Retention Compliance - Legal Data Retention | Rediacc",
-          "description": "Configurable retention policies that meet compliance requirements. HIPAA, SOC2, GDPR — covered by default.",
+          "description": "Configurable retention policies that meet compliance requirements. HIPAA, SOC2, GDPR: covered by default.",
           "keywords": "retention compliance, data retention, HIPAA compliance, SOC2, GDPR, backup retention, audit-ready, compliance automation"
         },
         "hero": {
@@ -5034,7 +5034,7 @@
             "labor": "$0"
           },
           "withAnnual": "$0",
-          "footnote": "Prep hours: audits × hours per audit. Gaps: 1 gap per 5 TB of manually managed data (conservative estimate). Penalty: $50K per gap (median GDPR fine for SMB). Labor: prep hours × $200/hr (senior engineer). The average data breach costs $4.88M (IBM 2024). Rediacc generates audit-ready reports instantly — 2 hours per audit, automated policy enforcement."
+          "footnote": "Prep hours: audits × hours per audit. Gaps: 1 gap per 5 TB of manually managed data (conservative estimate). Penalty: $50K per gap (median GDPR fine for SMB). Labor: prep hours × $200/hr (senior engineer). The average data breach costs $4.88M (IBM 2024). Rediacc generates audit-ready reports instantly: 2 hours per audit, automated policy enforcement."
         },
         "howItWorks": {
           "overline": "HOW IT WORKS",
@@ -5961,7 +5961,7 @@
           ]
         },
         "socialProof": {
-          "quote": "We ran our first automated failover test on a Tuesday morning. It found 3 critical gaps — a stale DNS record, a missing SSL cert on the secondary, and a database replication lag of 4 minutes. All three would have caused a real outage. We fixed them in an afternoon. Now we test monthly and sleep better.",
+          "quote": "We ran our first automated failover test on a Tuesday morning. It found 3 critical gaps: a stale DNS record, a missing SSL cert on the secondary, and a database replication lag of 4 minutes. All three would have caused a real outage. We fixed them in an afternoon. Now we test monthly and sleep better.",
           "author": "Head of Platform Engineering",
           "company": "SaaS company, 18 services, 4 engineers",
           "impact": {
@@ -5986,7 +5986,7 @@
         "references": {
           "items": [
             {
-              "text": "Veeam, “2024 Data Protection Trends Report — BC/DR Trends,” 2024. “Only 13% of organizations utilize orchestrated workflow as part of their disaster recovery processes.” “Only 58% of servers met their recovery SLA during their last large-scale attack.” “Only 32% of organizations believe that they could recover 50 workloads within an entire business week.”",
+              "text": "Veeam, “2024 Data Protection Trends Report: BC/DR Trends,” 2024. “Only 13% of organizations utilize orchestrated workflow as part of their disaster recovery processes.” “Only 58% of servers met their recovery SLA during their last large-scale attack.” “Only 32% of organizations believe that they could recover 50 workloads within an entire business week.”",
               "url": "https://www.veeam.com/blog/bc-dr-trends-2024.html"
             },
             {
@@ -6140,7 +6140,7 @@
             "dataLoss": "0"
           },
           "withAnnual": "$0",
-          "footnote": "Corrupted backups: weekly jobs × 52 × corruption rate. Recovery failure: corrupted backups × recovery hours × $100/hr (staff + lost productivity). Data loss: corrupted backups × 8 records at risk per incident × $173/record (IBM Cost of a Data Breach 2024). With daily automated verification, corruption is caught within 24 hours — before it compounds."
+          "footnote": "Corrupted backups: weekly jobs × 52 × corruption rate. Recovery failure: corrupted backups × recovery hours × $100/hr (staff + lost productivity). Data loss: corrupted backups × 8 records at risk per incident × $173/record (IBM Cost of a Data Breach 2024). With daily automated verification, corruption is caught within 24 hours, before it compounds."
         },
         "howItWorks": {
           "overline": "HOW IT WORKS",
@@ -6309,7 +6309,7 @@
           ]
         },
         "socialProof": {
-          "quote": "We ran automated verification on our first week and found 12 corrupted backups across 3 services — a MariaDB dump with truncated tables, a stale Nextcloud config, and a Redis snapshot from 6 months ago. Without Rediacc, we’d have discovered these during an actual disaster. Now every backup is verified within 47 seconds of creation.",
+          "quote": "We ran automated verification on our first week and found 12 corrupted backups across 3 services: a MariaDB dump with truncated tables, a stale Nextcloud config, and a Redis snapshot from 6 months ago. Without Rediacc, we’d have discovered these during an actual disaster. Now every backup is verified within 47 seconds of creation.",
           "author": "Infrastructure Lead",
           "company": "Managed hosting provider, 34 servers, 8 services per server",
           "impact": {
@@ -6338,7 +6338,7 @@
               "url": "https://www.veeam.com/company/press-release/cxo-research-58-percent-of-data-backups-are-failing-creating-data-protection-challenges-and-limiting-digital-transformation-initiatives.html"
             },
             {
-              "text": "Veeam, “Data Protection Trends Report — BC/DR Trends,” 2024. “Only 13% of organizations utilize orchestrated workflow as part of their disaster recovery processes.”",
+              "text": "Veeam, “Data Protection Trends Report: BC/DR Trends,” 2024. “Only 13% of organizations utilize orchestrated workflow as part of their disaster recovery processes.”",
               "url": "https://www.veeam.com/blog/bc-dr-trends-2024.html"
             },
             {
@@ -6525,10 +6525,10 @@
                 "title": "CVE-2026-1234",
                 "status": "Critical",
                 "items": [
-                  "OpenSSL 3.0.8 — VULN",
-                  "Keycloak :8443 — affected",
-                  "Nextcloud :443 — affected",
-                  "GitLab :443 — affected"
+                  "OpenSSL 3.0.8, VULN",
+                  "Keycloak :8443, affected",
+                  "Nextcloud :443, affected",
+                  "GitLab :443, affected"
                 ],
                 "footer": "CVSS 9.8 · 3 services affected"
               },
@@ -6536,10 +6536,10 @@
                 "title": "Clone: Patch Test",
                 "status": "Testing",
                 "items": [
-                  "OpenSSL → 3.0.15 — APPLIED",
-                  "Keycloak restart — healthy",
-                  "Nextcloud restart — healthy",
-                  "247 assertions — 0 failures"
+                  "OpenSSL → 3.0.15, APPLIED",
+                  "Keycloak restart, healthy",
+                  "Nextcloud restart, healthy",
+                  "247 assertions, 0 failures"
                 ],
                 "footer": "2.1 GB CoW · disposable clone"
               },
@@ -6547,10 +6547,10 @@
                 "title": "Production",
                 "status": "Patched",
                 "items": [
-                  "OpenSSL 3.0.15 — FIXED",
-                  "CVE-2026-1234 — PATCHED",
-                  "3/3 services — healthy",
-                  "0 regressions — verified"
+                  "OpenSSL 3.0.15, FIXED",
+                  "CVE-2026-1234, PATCHED",
+                  "3/3 services, healthy",
+                  "0 regressions, verified"
                 ],
                 "footer": "Total time: 3m 41s · zero downtime"
               }
@@ -6614,7 +6614,7 @@
           ]
         },
         "socialProof": {
-          "quote": "A critical CVE dropped on a Friday afternoon. By Saturday morning we’d cloned production, applied the patch, verified it against all 4 affected services, and deployed — zero downtime. Our previous process would have taken 3 weeks and a change management meeting.",
+          "quote": "A critical CVE dropped on a Friday afternoon. By Saturday morning we’d cloned production, applied the patch, verified it against all 4 affected services, and deployed with zero downtime. Our previous process would have taken 3 weeks and a change management meeting.",
           "author": "Head of Infrastructure Security",
           "company": "European Fintech, 28 servers, PCI DSS compliant",
           "impact": {
@@ -6658,7 +6658,7 @@
         "blurb": "Clone production. Let AI attack it.",
         "meta": {
           "title": "AI Pentesting - Automated Security Testing | Rediacc",
-          "description": "Create identical copies of the infrastructure and run AI-powered penetration tests — without risking production.",
+          "description": "Create identical copies of the infrastructure and run AI-powered penetration tests, without risking production.",
           "keywords": "ai pentesting, penetration testing, security testing, vulnerability scanning, clone attack"
         },
         "hero": {
@@ -6882,7 +6882,7 @@
           ]
         },
         "socialProof": {
-          "quote": "We ran our first automated pentest on a production clone and found 23 vulnerabilities — including 2 critical SQL injection vectors that had survived three manual audits. We patched all of them before our next compliance review, and we now run pentests weekly instead of annually.",
+          "quote": "We ran our first automated pentest on a production clone and found 23 vulnerabilities, including 2 critical SQL injection vectors that had survived three manual audits. We patched all of them before our next compliance review, and we now run pentests weekly instead of annually.",
           "author": "Chief Information Security Officer",
           "company": "European Banking Platform, 47 servers, 3 data centers",
           "impact": {
@@ -6920,7 +6920,7 @@
         "label": "Full Encryption Control",
         "blurb": "Own the keys. Own the encryption. No exceptions.",
         "meta": {
-          "title": "Full Encryption Control — Rediacc",
+          "title": "Full Encryption Control | Rediacc",
           "description": "Every backup is encrypted with locally owned keys. Not the vendor's keys. Not shared keys. One owner only.",
           "keywords": "encryption, zero-knowledge, customer-held keys, AES-256, backup encryption"
         },
@@ -7191,7 +7191,7 @@
           ]
         },
         "socialProof": {
-          "quote": "Our healthcare clients require HIPAA-compliant data sovereignty — the encryption keys must never leave our infrastructure. We evaluated every major backup vendor and Rediacc was the only one where we genuinely hold the only key. During our SOC 2 audit, the auditor asked to verify key custody. I ran one command and showed the key was on our HSM, not on any vendor system. Audit finding: zero gaps in key management.",
+          "quote": "Our healthcare clients require HIPAA-compliant data sovereignty: the encryption keys must never leave our infrastructure. We evaluated every major backup vendor and Rediacc was the only one where we genuinely hold the only key. During our SOC 2 audit, the auditor asked to verify key custody. I ran one command and showed the key was on our HSM, not on any vendor system. Audit finding: zero gaps in key management.",
           "author": "Chief Security Officer",
           "company": "Healthcare MSP, 48 servers, 6 compliance frameworks",
           "impact": {
@@ -7305,8 +7305,8 @@
         "label": "Continuous Security Testing",
         "blurb": "Test security continuously, not annually",
         "meta": {
-          "title": "Continuous Security Testing — Rediacc",
-          "description": "Run security tests every day on fresh production clones. Find vulnerabilities when they appear — not months later.",
+          "title": "Continuous Security Testing | Rediacc",
+          "description": "Run security tests every day on fresh production clones. Find vulnerabilities when they appear, not months later.",
           "keywords": "continuous security testing, daily pentesting, automated security, vulnerability detection"
         },
         "hero": {
@@ -7834,7 +7834,7 @@
           ]
         },
         "socialProof": {
-          "quote": "During our SOC 2 Type II audit, the auditor requested 6 months of backup access logs across all 28 servers. With our previous tool, that would have been 2 weeks of manual log aggregation — last year we had 4 findings from incomplete records. I ran one Rediacc command and had a complete, cryptographically verified report in 30 seconds. The auditor said it was the cleanest audit trail she'd seen in 15 years. Zero findings.",
+          "quote": "During our SOC 2 Type II audit, the auditor requested 6 months of backup access logs across all 28 servers. With our previous tool, that would have been 2 weeks of manual log aggregation; last year we had 4 findings from incomplete records. I ran one Rediacc command and had a complete, cryptographically verified report in 30 seconds. The auditor said it was the cleanest audit trail she'd seen in 15 years. Zero findings.",
           "author": "Director of Compliance",
           "company": "Fintech, 28 servers, SOC 2 + PCI DSS",
           "impact": {
@@ -8542,7 +8542,7 @@
           ]
         },
         "socialProof": {
-          "quote": "We went from a 3-day recovery plan to under 4 minutes. During a real ransomware incident at 2am, our on-call engineer ran one command and all 8 production containers were back online by 2:04am. Our previous vendor's estimate was 72 hours — we did it in 240 seconds.",
+          "quote": "We went from a 3-day recovery plan to under 4 minutes. During a real ransomware incident at 2am, our on-call engineer ran one command and all 8 production containers were back online by 2:04am. Our previous vendor's estimate was 72 hours; we did it in 240 seconds.",
           "author": "VP of Engineering",
           "company": "E-commerce platform, 50 engineers",
           "impact": {
@@ -8898,7 +8898,7 @@
               "url": "https://www.flexera.com/about-us/press-center/new-flexera-report-finds-84-percent-of-organizations-struggle-to-manage-cloud-spend"
             },
             {
-              "text": "AWS, \"Amazon S3 Pricing — Data Transfer,\" 2024. \"Data Transfer OUT from Amazon S3 to Internet: $0.09 per GB for the first 10 TB/month.\"",
+              "text": "AWS, \"Amazon S3 Pricing: Data Transfer,\" 2024. \"Data Transfer OUT from Amazon S3 to Internet: $0.09 per GB for the first 10 TB/month.\"",
               "url": "https://aws.amazon.com/s3/pricing/"
             },
             {
@@ -8936,7 +8936,7 @@
         "label": "Vendor Lock-in Freedom",
         "blurb": "Run it anywhere. Move it anytime. Always.",
         "meta": {
-          "title": "Vendor Lock-in Freedom — Rediacc",
+          "title": "Vendor Lock-in Freedom | Rediacc",
           "description": "Deploy anywhere. Migrate anytime. No lock-in contracts. No proprietary formats. The data stays under local control.",
           "keywords": "vendor lock-in, cloud migration, multi-cloud, portability, btrfs migration"
         },
@@ -9040,7 +9040,7 @@
             "leverage": "Renegotiation leverage"
           },
           "withAnnual": "Annual lock-in tax",
-          "footnote": "Vendor markup: annual spend × (price increase × years / 2) — compound effect of not switching. Migration cost: 2 engineers × 6 months × $200/hr (traditional migration project). Egress: estimated data volume × $0.09/GB. With Rediacc, migration takes <1 hour via btrfs incremental transfer."
+          "footnote": "Vendor markup: annual spend × (price increase × years / 2), the compound effect of not switching. Migration cost: 2 engineers × 6 months × $200/hr (traditional migration project). Egress: estimated data volume × $0.09/GB. With Rediacc, migration takes <1 hour via btrfs incremental transfer."
         },
         "howItWorks": {
           "overline": "HOW IT WORKS",
@@ -9212,7 +9212,7 @@
           ]
         },
         "socialProof": {
-          "quote": "Our AWS bill hit $33K/month and climbing 20% yearly. We migrated 14 production services — GitLab, Nextcloud, 3 databases, monitoring, the works — to Hetzner in 45 minutes. Monthly cost dropped to $4,200. Same performance. The migration paid for itself in 8 days.",
+          "quote": "Our AWS bill hit $33K/month and climbing 20% yearly. We migrated 14 production services (GitLab, Nextcloud, 3 databases, monitoring, the works) to Hetzner in 45 minutes. Monthly cost dropped to $4,200. Same performance. The migration paid for itself in 8 days.",
           "author": "CTO",
           "company": "Digital agency, 14 production services, 40 employees",
           "impact": {
@@ -9244,7 +9244,7 @@
               "url": "https://www.flexera.com/about-us/press-center/new-flexera-report-finds-84-percent-of-organizations-struggle-to-manage-cloud-spend"
             },
             {
-              "text": "AWS, \"Amazon S3 Pricing — Data Transfer,\" 2024. \"Data Transfer OUT from Amazon S3 to Internet: $0.09 per GB for the first 10 TB/month.\"",
+              "text": "AWS, \"Amazon S3 Pricing: Data Transfer,\" 2024. \"Data Transfer OUT from Amazon S3 to Internet: $0.09 per GB for the first 10 TB/month.\"",
               "url": "https://aws.amazon.com/s3/pricing/"
             },
             {
