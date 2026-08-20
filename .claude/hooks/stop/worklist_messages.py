@@ -380,6 +380,18 @@ N_WAITER_NUDGE = (
     "notification. It fires once, so relaunch it in the turn you act on it."
 )
 
+N_WAITER_DRAINED = (
+    "DRAINED, AND STILL HOLDING A WAITER. Nothing of yours is open, in flight "
+    "or pending as a task, and every live background task you have is an inbox "
+    "waiter (%d). A waiter earns its keep while you have work to do with what "
+    "it hears; with none it is a process holding for up to an hour on behalf of "
+    "a session that has finished. Stop it and end clean:\n"
+    "%s\n"
+    "Start a FRESH one the moment you pick work up again (a stopped waiter "
+    "cannot be resumed, and it would not see anything that arrived meanwhile "
+    "anyway): python3 %s %s --timeout %d"
+)
+
 V_NO_WAITER = (
     "THIS SESSION HAS A WORK LOOP AND %d LIVE PEER(S), AND IS NOT LISTENING. "
     "No confirmed waiter is running, so a request addressed to you sits unseen "

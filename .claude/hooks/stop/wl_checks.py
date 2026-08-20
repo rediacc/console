@@ -3522,6 +3522,37 @@ def run_stop(event, event_ok, worklist, hook_file):
                 M.V_NO_WAITER
                 % (len(_peers), str(pathlib.Path(__file__).resolve().parent / "wl_wait.py"), me8),
             )
+    # v20: THE OTHER HALF OF THE SAME MECHANISM. Everything above forces a busy
+    # session to LISTEN; nothing ever told a finished one to STOP, so a drained
+    # session kept a process alive for up to an hour and was nagged on every
+    # tool call to relaunch it. Observed live 2026-08-19: zero open items, zero
+    # background jobs, VMs torn down, still being told it was NOT LISTENING.
+    #
+    # `_only_waiters` is the guard that matters, not `_waiters_confirmed`
+    # alone: a session whose OTHER background jobs are still running is not
+    # drained, and their reports arrive through this very channel -- telling it
+    # to stop listening would make it deaf to the workers it is supervising.
+    #
+    # A REPORT, NEVER A VIOLATION. An orphan waiter costs a process, not
+    # correctness, and a stop that BLOCKED on it would keep the session alive
+    # to argue about the thing it is being told to shut down -- the same
+    # backwards trade the nudge's own history above records.
+    if _waiters_confirmed and _only_waiters and not actionable_remains:
+        outq_add(
+            worklist,
+            session_id,
+            state_doc,
+            "waiter-drained",
+            M.N_WAITER_DRAINED
+            % (
+                len(_waiters_confirmed),
+                "\n".join("    TaskStop %s" % (b.get("id") or "?") for b in _waiters_confirmed),
+                str(pathlib.Path(__file__).resolve().parent / "wl_wait.py"),
+                me8,
+                60,
+            ),
+            1,
+        )
     if len(live_work_crons) > 1:
         vadd(
             "many-work-crons",

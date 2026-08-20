@@ -55,7 +55,10 @@ import wl_core as C
 # wl_store / wl_requests / wl_report are imported LAZILY inside wait(). The
 # --nudge mode below runs on EVERY PostToolUse, and importing the whole worklist
 # stack (wl_store alone is ~53 KB) on every tool call is a cost the nudge does
-# not need: it reads two file stamps and a brief list, and nothing else.
+# not need: the COMMON path returns on two file stats and reaches no import at
+# all. Only the tail -- at most once per throttle window, and only when nothing
+# is listening -- reads the brief list, the harness task dir and the item fold
+# (measured together at ~22 ms against the live 1.3 MB event log).
 
 TICK_S = float(os.environ.get("WORKLIST_WAIT_TICK_S", "2"))
 # 60 minutes, matching the hourly work-loop cadence this repo already runs on and
@@ -295,6 +298,12 @@ IT ONLY FIRES ONCE. After it wakes it is gone, and nothing relaunches it for
 you -- a session that does not re-arm goes deaf, which is worse than the cron.
 Relaunch it in the same turn you act on what it told you.
 
+AND STOP IT WHEN YOU ARE DONE. A waiter held by a session with nothing open,
+nothing in flight and no pending task is an orphan process with an hour to run:
+kill the background task (TaskStop <id>) rather than ending the session on top
+of it. The PostToolUse nudge goes quiet for a drained session for the same
+reason, so nothing will ask you to re-arm one you were right to stop.
+
 EXIT CODES / OUTPUT
     0 + INBOX/REPORT lines   something arrived; act on it, then RELAUNCH
     0 + one INBOX-WAIT line  the timeout elapsed with nothing new; relaunch
@@ -340,12 +349,60 @@ def nudges_ignored(worklist, me):
         return 0
 
 
+def outstanding_work(worklist, session_id, transcript_path=""):
+    """Does this session still owe anything? OPEN items, IN-FLIGHT items, and
+    pending harness tasks -- the same three slices the Stop hook already calls
+    `actionable_remains` (wl_checks.py, beside remaining_lines), computed the
+    same way so the two ends of this mechanism cannot drift apart.
+
+    WHAT IS DELIBERATELY NOT COUNTED, and why:
+
+      A `[?]` DEFERRAL is parked on the OPERATOR. Its answer arrives in this
+      session's own turn, or executes as its DEFAULT on a timer the Stop path
+      drives; no peer can deliver one, so there is nothing here for a waiter
+      to hear.
+
+      A BACKGROUND JOB counts only through its `[>]` lease, and that is forced
+      before it is chosen: PostToolUse does not carry `background_tasks` at all
+      (its keys are listed in heartbeat_path above, checked against a captured
+      payload). It is also the right answer for this repo, where background
+      work must carry a `worker:<bg-id>` lease -- the lease is what makes a
+      running job outstanding work rather than a claim, and a fresh one lands
+      in `in_flight` below. An unleased job is invisible from here, and no
+      cheaper oracle for it exists on this event.
+
+    ANY FAILURE ANSWERS TRUE. Silence has to be EARNED by evidence that there
+    is nothing to hear; a store that will not read is not that evidence, and
+    failing the other way would switch the nudge off in exactly the window the
+    worklist is sick.
+    """
+    try:
+        # Tasks first: a directory glob against a resolved path, and the
+        # transcript is consulted only on the cold path (bounded tail read,
+        # and it banks the resolution for every later process).
+        if C.pending_tasks(session_id, transcript_path):
+            return True
+        import wl_store as S  # noqa: PLC0415
+
+        # sync=False is load-bearing, not a default: the sync path takes a
+        # BLOCKING LOCK_EX, and this process must never hold one (see the
+        # module docstring). live_worker_ids is unavailable for the reason
+        # above, so an expired lease fails closed into an open item -- the
+        # conservative direction, and the one that keeps nudging.
+        fold = S.load(worklist, sync=False)
+        open_items, _others, _deferred, in_flight = S.classify_items(fold, session_id)
+    except Exception:  # noqa: BLE001
+        return True
+    return bool(open_items or in_flight)
+
+
 def nudge(event):
-    """PostToolUse: tell a session with no live waiter to start one.
+    """PostToolUse: tell a session with no live waiter to start one -- unless
+    it has nothing left to do, in which case it is told nothing at all.
 
     ORDERED BY COST, cheapest gate first, because this runs on every tool call:
-    one stat for the throttle, one stat for the heartbeat, and only then a read
-    of the briefs file.
+    one stat for the throttle, one stat for the heartbeat, then a read of the
+    briefs file, and only past all three the item fold behind outstanding_work.
     """
     me = str(event.get("session_id") or "")[:8]
     if not me:
@@ -375,6 +432,18 @@ def nudge(event):
         if not C.same_session(k, me) and (S.brief_age_min(worklist, k) or dead_min + 1) <= dead_min
     ]
     if not peers:
+        return
+
+    # AND DO NOT NUDGE A SESSION THAT IS FINISHED. The waiter is how a session
+    # HEARS a peer while it still has something to do with what it hears; a
+    # drained session paid for it twice over -- a process held for up to an
+    # hour, plus this line on every single tool call telling it to relaunch.
+    # Observed live 2026-08-19 on a session with no open items, no background
+    # jobs and its VMs already torn down, still being told it was NOT
+    # LISTENING. Last of the three gates because it is the dearest of them.
+    if not outstanding_work(
+        worklist, str(event.get("session_id") or ""), event.get("transcript_path")
+    ):
         return
 
     np = nudge_path(worklist, me)

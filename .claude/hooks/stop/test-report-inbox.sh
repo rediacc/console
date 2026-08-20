@@ -776,6 +776,14 @@ sys.path.insert(0, os.environ["HERE"])
 import wl_core as C
 print(C.worklist_for(os.environ["CLAUDE_PROJECT_DIR"]))')"
 printf 'bbbbbbbb %s peer session\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" >"${WL%.md}.sessions"
+# v20: THE FIXTURE NOW OWES SOMETHING, and that is not scaffolding. The nudge
+# became work-aware, so an empty worklist is a DRAINED session and this case
+# would have gone silent -- passing its controls and losing its subject. Case
+# 25b below owns the drained half; this case keeps owning "with work to do and
+# nobody listening, the nudge fires".
+NUDGE_ITEM="$(python3 "$HERE/worklist.py" --add aaaaaaaa 'the thing this session still owes' |
+    grep -oE '#[0-9a-f]+' | tr -d '#')"
+[ -n "$NUDGE_ITEM" ] || bad "25 FIXTURE BROKEN: --add produced no item id"
 nudge() {
     printf '{"session_id":"aaaaaaaa-1111","cwd":"%s","tool_name":"Bash"}' "$CLAUDE_PROJECT_DIR" |
         python3 "$HERE/wl_wait.py" --nudge
@@ -801,13 +809,87 @@ os.utime(sys.argv[1], (old, old))' "${WL%.md}.waiter-aaaaaaaa"
 assert_has "25 control: a STALE heartbeat does not silence it" "$(nudge)" "NOT LISTENING"
 # CONTROL 4: no live peer, no nudge. There is nobody who could send anything, so
 # a waiter would be pure cost; over-firing is how this gets routed around.
+# The OPEN ITEM is carried over deliberately: without it this control would be
+# satisfied by the work-awareness gate and would stop saying anything about
+# peers at all -- a control that passes for the wrong reason is not a control.
 scratch
 WL="$(HERE="$HERE" python3 -c '
 import os, sys
 sys.path.insert(0, os.environ["HERE"])
 import wl_core as C
 print(C.worklist_for(os.environ["CLAUDE_PROJECT_DIR"]))')"
+python3 "$HERE/worklist.py" --add aaaaaaaa 'still owed, and still nobody to hear from' >/dev/null
 assert_eq "25 control: with no live peer there is nothing to listen for" "$(nudge)" ""
+
+echo "== 25b. the nudge is WORK-AWARE: a DRAINED session is not nagged =="
+# THE DEFECT, observed live 2026-08-19. A session that had finished everything
+# -- no open items, no background jobs, its VMs torn down -- was still told
+# "NOT LISTENING: 1 live peer session(s) can send you work" on EVERY tool call,
+# and the only way to satisfy it was to hold an hour-long process it had no use
+# for. The waiter is worth its keep while there is something to do with what it
+# hears; past that it is a process plus a nag.
+#
+# EVERY ASSERTION BELOW IS PAIRED WITH ITS OPPOSITE ON THE SAME FIXTURE: the
+# silence is only evidence once the identical call has been shown to speak.
+scratch
+WL="$(HERE="$HERE" python3 -c '
+import os, sys
+sys.path.insert(0, os.environ["HERE"])
+import wl_core as C
+print(C.worklist_for(os.environ["CLAUDE_PROJECT_DIR"]))')"
+printf 'bbbbbbbb %s peer session\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" >"${WL%.md}.sessions"
+unnudge() { rm -f "${WL%.md}.waiternudge-aaaaaaaa"; } # clear the 10-minute throttle
+wl_cli() { python3 "$HERE/worklist.py" "$@"; }
+ITEM="$(wl_cli --add aaaaaaaa 'the one thing this session owes' | grep -oE '#[0-9a-f]+' | tr -d '#')"
+[ -n "$ITEM" ] || bad "25b FIXTURE BROKEN: --add produced no item id"
+assert_has "25b RED: with an open item and a live peer, the nudge fires" "$(nudge)" "NOT LISTENING"
+# THE FIX: tick the only item and the same call goes quiet. Same peer, same
+# absent waiter, same throttle state -- the item is the only thing that moved.
+unnudge
+wl_cli --tick aaaaaaaa "$ITEM" 'drained, exit 0 from this suite' >/dev/null
+assert_eq "25b GREEN: a drained session is left alone" "$(nudge)" ""
+# CONTROL: an IN-FLIGHT item is outstanding work too. A `[>]` lease is how a
+# background worker is tracked in this repo, and a session supervising one is
+# the case that most needs to hear its report -- so "no OPEN items" alone must
+# never buy the silence.
+unnudge
+LEASED="$(wl_cli --add aaaaaaaa 'delegated to a worker' | grep -oE '#[0-9a-f]+' | tr -d '#')"
+wl_cli --lease aaaaaaaa "$LEASED" +30 worker:bg1 'watching it' >/dev/null
+assert_has "25b control: a fresh [>] lease still nudges" "$(nudge)" "NOT LISTENING"
+# CONTROL: a `[?]` is NOT outstanding work for this purpose, and the reason is
+# the mechanism rather than tidiness -- a deferral is parked on the OPERATOR,
+# whose answer arrives in this session's own turn or executes as its DEFAULT.
+# No peer can deliver one, so there is nothing here for a waiter to hear.
+unnudge
+wl_cli --tick aaaaaaaa "$LEASED" 'worker reported, exit 0' >/dev/null
+PARKED="$(wl_cli --add aaaaaaaa 'flip the flag?' | grep -oE '#[0-9a-f]+' | tr -d '#')"
+wl_cli --defer aaaaaaaa "$PARKED" 'flip the flag? DEFAULT: leave it off WHY: flipping it changes billing for live users, an operator-only call HOW: the operator confirms, or the DEFAULT leaves it off' >/dev/null
+assert_eq "25b control: a session holding only a [?] is still drained" "$(nudge)" ""
+# CONTROL: and the probe must not have EATEN the throttle it never wrote. A
+# silent nudge that still stamps the counter would drive the Stop-side backstop
+# (V_NO_WAITER, keyed on nudges_ignored) to accuse a session that was never
+# asked for anything.
+if [ -e "${WL%.md}.waiternudge-aaaaaaaa" ]; then
+    bad "25b control: a silent nudge stamped the ignored-count anyway"
+else
+    ok "25b control: a silent nudge leaves the ignored-count alone"
+fi
+# CONTROL: the probe READS the store and never writes it. wl_wait must not take
+# the events lock (case 16 owns the structural half); folding with sync=True
+# takes a BLOCKING LOCK_EX, which is the one thing this process is forbidden to
+# do -- and the module docstring says why: an hour-long holder would stall every
+# --ask/--add/--tick in the repo and silently no-op the two LOCK_NB paths.
+#
+# THE UNSYNCED MARKDOWN LINE IS THE WHOLE CONTROL. Without it the fixture's
+# markdown hash already matches the fold's, sync=True has nothing to append,
+# and the byte comparison passes under BOTH spellings -- measured, not assumed:
+# a first draft of this control could not tell them apart.
+unnudge
+printf -- '- [ ] (aaaaaaaa) a legacy markdown line the event log has never seen\n' >>"$WL"
+EV_BEFORE="$(wc -c <"${WL%.md}.events.jsonl")"
+assert_has "25b the unsynced markdown item is outstanding work in its own right" "$(nudge)" "NOT LISTENING"
+EV_AFTER="$(wc -c <"${WL%.md}.events.jsonl")"
+assert_eq "25b control: the nudge leaves the event log byte-identical" "$EV_AFTER" "$EV_BEFORE"
 
 echo "== 26. a main-loop turn is NOT captured as a report (the self-wake loop) =="
 # THE LOOP THIS CLOSES, found by running the thing rather than testing it.

@@ -192,6 +192,10 @@ grand-repo changes.
 
 ## Sleep/polling rules
 
-Foreground sleeps >30s are hook-blocked. For long waits use run_in_background on the
-command itself; the harness notifies on completion. For external state (a CI run), use
-`gh run watch <id> --exit-status` in background, never a poll loop.
+Foreground sleeps >20s are hook-blocked (lowered from 30). Separately, the Bash tool caps a
+FOREGROUND command at 10 minutes, and what happens next VARIES: observed both a SIGTERM at
+exit 143 (a recording died mid-flight having run none of its own cleanup) and an automatic
+move to background. Never rely on either. Anything that can outlive 10 minutes goes in
+run_in_background from the start; the harness notifies on completion. For a CI
+run, poll to a terminal state in background -- `gh run watch` has dropped silently on
+terminal runs (4/4), so a process exit on terminal state is the reliable notification.

@@ -109,6 +109,13 @@ of the timeline - before starting the next. A per-language trigger left the CPU 
 pair is stale when its timeline is **newer than its mp4**, or the mp4 is missing - read from
 artifacts, so re-narrating anything makes it eligible again with no bookkeeping to drift.
 
+**It is the wrong instrument for "what did I just change".** `generate` rewrites EVERY
+timeline file, so after any generate all 234 pairs read stale even where the content is
+identical; acting on that re-renders the whole fleet for a two-sentence edit. `git diff` is
+no better after a re-record, which changes every marker timestamp. The honest signal is
+which **mp3 files** were regenerated: that is the set whose audio or captions actually
+moved.
+
     ./run.sh www tutorials media [name] [--langs a,b] [--jobs N] [--subtitle] [--force]
 
 What keeps this safe, none of it scheduling luck:
@@ -286,7 +293,10 @@ silent partial publish that every gate reports as fine.
    blind DROPPED ten locales from 21 slugs to 2-3 each (-5361 lines). Always
    `sync-media-from-r2.sh` first so the tree is complete, then regenerate.
 4. **Purge** - `.ci/scripts/deploy/purge-media-cache.sh` (needs `CLOUDFLARE_API_TOKEN`, or
-   `CF_GLOBAL_API_KEY` + `CF_EMAIL`). Without it the CDN keeps serving pre-publish copies,
+   `CF_GLOBAL_API_KEY` + `CF_EMAIL`). **Verify against the BUCKET, not the exit code**, and
+   export `AWS_DEFAULT_REGION=auto`: the AWS CLI otherwise inherits a real region from
+   ambient config and `list-objects-v2` returns an EMPTY list that reads as an empty bucket.
+   `R2_MEDIA_BUCKET` is not in `private/account/.env`; the name is `rediacc-www-media`. Without it the CDN keeps serving pre-publish copies,
    and `check-tutorial-caption-sync` - which fetches from `media.rediacc.com` - reports a
    large, entirely false failure set. This produced a bogus 53-combo report. **After a
    publish, purge before believing any mass failure.** Prove the cache is fresh by fetching
