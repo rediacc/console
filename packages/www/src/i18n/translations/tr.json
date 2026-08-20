@@ -542,14 +542,14 @@
     "disasterRecovery": {
       "enterpriseCta": {
         "button": "Satışla İletişim",
-        "description": "Yukarıdaki seçenekler durumunuza uymazsa, altyapı ihtiyaçlarınızı detayıyla anlatın. Çözeriz.",
-        "heading": "Sıradışı bir kurulumunuz mu var? Detaylarını bize anlatın."
+        "description": "Hiçbiri uymazsa, altyapınız neye benzediğini anlatın. Hemen çözeriz.",
+        "heading": "Sıradışı bir kurulumunuz var mı? Bize anlatın."
       },
       "faq": {
         "heading": "Sıkça Sorulan Sorular",
         "items": [
           {
-            "answer": "Evet, planınızı istediğiniz zaman değiştirebilirsiniz. Yükseltmeler hemen etkili olur; düşürmeler sonraki faturalandırma döneminin başında uygulanır.",
+            "answer": "Evet. Planı istediğiniz zaman değiştirebilirsiniz. Yükseltmeler hemen etkili oluyor, indirmeler ise sonraki dönemin başında uygulanır.",
             "question": "Planımı yükseltebilir veya düşürebilir miyim?"
           },
           {
@@ -557,7 +557,7 @@
             "question": "Hangi ödeme yöntemlerini kabul ediyorsunuz?"
           },
           {
-            "answer": "Evet. Kurtarma Değerlendirmesi ve Kurtarma Programı 14 gün ücretsiz denemeyle başlar. Kayıt sırasında kart eklersiniz ve yalnızca deneme bittiğinde ücretlendirilirsiniz. Öncesinde iptal ederseniz hiçbir ödeme yapmazsınız.",
+            "answer": "Evet. Hem Değerlendirme hem Program 14 gün ücretsiz denemeyle başlar. Kayıt sırasında kart ekliyorsunuz ama ödeme yalnızca deneme bittiğinde gerçekleşir. Öncesinde iptal ederseniz hiç bir ödeme yapmazsınız.",
             "question": "Ücretsiz deneme mevcut mu?"
           },
           {
@@ -565,15 +565,15 @@
             "question": "Desteğe neler dahildir?"
           },
           {
-            "answer": "Kurtarma süresi sözleşmenize bağlıdır. Kurtarma Değerlendirmesi ile son 24 saatteki herhangi bir ana dönebilirsiniz. Kurtarma Programı 4 saatte kurtarma garantisi verir. Kurtarma Anlaşması sizi kendi takviminize göre 15 ila 60 dakika içinde yeniden çevrimiçi yapar.",
+            "answer": "Kurtarma süresi seçtiğiniz plana bağlı. Değerlendirme son 24 saatteki herhangi bir noktaya dönüş sağlar. Program 4 saatte geri dönmeyi garantiliyor. Retainer ise 15 ila 60 dakika içinde, kendi takviminize göre.",
             "question": "Bir felaketten ne kadar hızlı kurtulabilirim?"
           },
           {
-            "answer": "Evet, ve bu benim için çok önemli. Her yedeklemede örnek bir geri yükleme testi yapıyoruz. Böylece ihtiyaç duyduğunuz zaman onun çalıştığını bilirsiniz.",
+            "answer": "Evet, ve buna çok önem veriyorum. Her yedeklemenin geri yüklemesini test ediyoruz, böylece ihtiyaç duyduğunuzda kesin çalışacağını bilirsiniz.",
             "question": "Yedeklemelerim test ediliyor ve doğrulanıyor mu?"
           },
           {
-            "answer": "Verileriniz tercih ettiğiniz konumda şifrelenmiş kalır. Tam kontrol sizde olur ve hizmet dursa bile yedeklemelere erişebilirsiniz.",
+            "answer": "Verileriniz seçtiğiniz konumda şifrelenmiş kalıyor. Kontrol tamamen sizde, ve yedeklemelerinize hizmet dursa bile erişim devam ediyor.",
             "question": "Hizmet kesilirse verilerime ne olur?"
           }
         ]
@@ -583,7 +583,7 @@
           "startFree": "Ücretsiz Dene",
           "talkToSales": "Satışla Konuşun"
         },
-        "description": "Rediacc'ı kurun ve ilk yedeğinizi 10 min içinde alın.",
+        "description": "Rediacc'yı kurun ve ilk yedeklemeni 10 dakika içinde başlatın.",
         "heading": "Daha Hızlı Kurtarmaya Başlayın"
       },
       "hero": {
@@ -612,15 +612,15 @@
         "viewDetails": "Profesyonel Hizmetler"
       },
       "strategy": {
-        "copy": "Bulunduğunuz yerden başlayın. Çoğu ekip orada beklediklerinden çok daha uzun kalıyor. Yavaş kurtarma işletmeye maliyetli gelmeye başlayınca bir üst seviyeye geçin. Hep aynı ürün. Kubernetes mi çalıştırıyorsunuz? Cluster'ların tamamı da aynı şekilde, kısa ve ölçülmüş bir kesintiyle taşınır.",
+        "copy": "Bulunduğunuz yerden başlayın. Çoğu ekip orada tahmin ettiklerinden çok daha uzun kalıyor. Yavaş kurtarma işletmeye gerçek maliyetler yaratmaya başlayınca yükseltin. Hep aynı ürün. Kubernetes çalıştırıyorsunuz? Bütün clusterlar aynı şekilde, kısa ve ölçülmüş bir kesinti ile geçiyor.",
         "distribution": [
-          "Kurtarma Değerlendirmesi'nden Kurtarma Programı'na: Yedekleriniz ikinci bir konumda tutulur. Her değişiklik olduğu anda kaydedilir. Yeniden çevrimiçi olmak için garantili 4 saatlik bir süre alırsınız. Size özel bir destek sorumlusu dahildir.",
-          "Kurtarma Programı'ndan Kurtarma Anlaşması'na: Ne kadar hızlı çevrimiçi olmanız gerektiğine siz karar verirsiniz. Bu süre 15 ile 60 dakika arasındadır. Kurtarma, canlı sistemlerinizin dokunamayacağı tamamen ayrı bir ortamda yapılır ve en kritik anlarda birebir destek yanınızdadır."
+          "Değerlendirmeden Programa: Yedekler ikinci bir konumda tutulur. Değişiklikler anında kaydediliyor. 4 saat içinde tekrar çevrimiçi olmayı garantiliyor. Özel bir destek iletişim görevlisi dahil.",
+          "Programdan Retainer'a: İşletmenin ne kadar hızlı geri dönmesi gerektiğini siz belirleyin. 15 ila 60 dakika arasında seçim yapabilirsiniz. Kurtarma, canlı sistemlerinize dokunamayacak tamamen izole bir ortamda oluyor; en kritik momentlerde birebir destek yanınızda."
         ],
         "heading": "Her Aşama İçin Tasarlandı"
       },
       "technicalSummary": {
-        "description": "BT ekibinize depolama sınırları ve kurtarma hedefleri hakkında net bilgiler verin.",
+        "description": "BT ekibine depolama sınırları ve kurtarma hedeflerini açık şekilde gösterin.",
         "heading": "Bir bakışta teknik sınırlar",
         "metrics": [
           {
@@ -636,12 +636,12 @@
             "label": "Denetim günlüğü tutma"
           }
         ],
-        "recoveryNote": "RPO (Kurtarma Noktası Hedefi): Ne kadar veriyi kaybetmeyi göze alabileceğiniz, zaman içinde ölçülür. Örneğin, 15 dakikalık RPO, son değişikliklerin 15 dakikaya kadarını kaybedebileceğiniz anlamına gelir.\n\nRTO (Kurtarma Süresi Hedefi): Bir felaketten sonra ne kadar hızlı tekrar çevrimiçi olmanız gerekir. Örneğin 4 saatlik RTO, sistemlerinizin 4 saat içinde geri yükleneceği anlamına gelir.",
+        "recoveryNote": "RPO (Kurtarma Noktası Hedefi): Zaman cinsinden ne kadar veri kaybedebileceğinizi gösterir. Örneğin 15 dakikalık RPO, son 15 dakikada yapılan değişikliklerin kaybedilebileceği anlamına gelir.\n\nRTO (Kurtarma Süresi Hedefi): Bir felaketten sonra sistemlerinizin ne kadar hızlı geri gelmesi gerektiğini gösterir. Örneğin 4 saatlik RTO, sistemlerinizin 4 saat içinde çalışmaya başlayacağı demektir.",
         "values": {
           "assessment": {
             "auditLogs": "30 gün",
             "rpo": "~15 dakika",
-            "rto": "Belirli bir noktaya geri yükleme"
+            "rto": "İstediğiniz noktaya dönüş"
           },
           "program": {
             "auditLogs": "90 gün",
@@ -669,7 +669,7 @@
             "primary": "Ücretsiz Dene"
           },
           "retainer": {
-            "primary": "Demo Planlayın"
+            "primary": "Demo Ayarla"
           }
         }
       }
@@ -1069,7 +1069,7 @@
         "benefits": {
           "items": [
             {
-              "description": "AGENTS.md dosyasını projenize bırakın. Yapay zeka asistanınız tüm komutları, bayrakları ve iş akışlarını hemen biliyor.",
+              "description": "AGENTS.md'yi projeye ekleyin. AI asistanı tüm komutları, bayrakları ve iş akışlarını anında biliyor.",
               "icon": "zap",
               "title": "Sıfır entegrasyon çabası"
             },
@@ -1089,14 +1089,14 @@
         },
         "bottomCta": {
           "command": "curl -fsSL https://www.rediacc.com/install.sh | bash",
-          "description": "CLI kurun. AGENTS.md şablonunu ekleyin. Geri kalanını AI asistanı halleder.",
+          "description": "CLI'yi yükle. AGENTS.md şablonunu ekle. Gerisi AI asistanı hallediyor.",
           "primaryCta": "Ücretsiz Başlayın",
-          "title": "AI ajanın altyapını yönetmesine izin ver"
+          "title": "AI ajan altyapıyı yönetsin"
         },
         "hero": {
           "primaryCta": "Ücretsiz Başlayın",
           "subtitle": "CLI-first. SSH tabanlı. Varsayılan olarak JSON. Her rdc komutu otonom ajanlar için tasarlandı — GUI yok, tarayıcı otomasyonu yok, entegrasyon gerekmiyor.",
-          "title": "Altyapı, AI ajanın zaten nasıl kullanacağını biliyor"
+          "title": "AI ajanın zaten bildiği altyapı"
         },
         "howItWorks": {
           "cloneVisual": {
@@ -1156,12 +1156,12 @@
           "overline": "NASIL ÇALIŞIR",
           "steps": [
             {
-              "description": "Proje kök dizininize bir AGENTS.md şablonu bırakın. Yapay zeka asistanınız başlangıçta bunu okur ve her rdc komutunu bilir.",
+              "description": "Proje köküne AGENTS.md şablonunu koyun. AI asistanı başlangıçta bunu okuyor ve her rdc komutunu biliyor.",
               "icon": "terminal",
               "title": "Yapılandır"
             },
             {
-              "description": "Asistanınızı rdc mcp serve'e bağlayın; her işlem için tip tanımlı araçlara anında kavuşur. Tam komut referansı için rdc --help-all çalıştırın.",
+              "description": "Asistanı rdc mcp serve'e bağlayın; her işlem için tip tanımlı araçlar hazır hale gelir. Tam referans için rdc --help-all komutunu çalıştırın.",
               "icon": "code",
               "title": "Keşfet"
             },
@@ -1179,7 +1179,7 @@
           "title": "AI Ajanlar – CLI Otomasyon | Rediacc"
         },
         "problem": {
-          "description": "Yapay zeka kodlama asistanınız kodu otonom olarak yazabilir, test edebilir ve hata ayıklayabilir. Ama dağıtım yapması, durum kontrol etmesi veya altyapıyı yönetmesi gerektiğinde bir duvara çarpar: sadece GUI panelleri, OAuth tarayıcı akışları, kararsız API'ler ve bağlam penceresini aşan yanıtlar.",
+          "description": "Kodlama asistanınız kodu yazabilir, test edebilir, hata ayıklayabilir. Ama dağıtım, durum kontrolü, altyapı yönetimi gerektiğinde duvarla karşılaşır: GUI-only paneller, OAuth tarayıcı akışları, tutarsız API'ler, bağlamı tıkayan cevaplar.",
           "overline": "SORUN",
           "statCallouts": [
             {
@@ -1281,23 +1281,23 @@
         "benefits": {
           "items": [
             {
-              "description": "Makine başına tek sabit fiyat. Koltuk başı ücret yok, sürpriz yok, çıkış ücreti yok. Büyüdükçe bütçeniz sabit kalır.",
+              "description": "Sunucu başına tek sabit fiyat. Personel sayısına göre ücret yok, sürpriz fatura yok, çıkış ücreti yok. Büyüdükçe bütçeniz öngörülebilir kalır.",
               "icon": "tag",
               "title": "Öngörülebilir maliyetler"
             },
             {
-              "description": "Verileriniz açık formatlarda, sahip olduğunuz donanımda kalır. Hiçbir satıcı verilerinizi rehin tutamaz ya da erişim için ücret talep edemez.",
+              "description": "Verileriniz açık formatlarda kendi donanımda kalır. Hiçbir satıcı verilerinizi tutamaz veya erişim için ücret talep edemez.",
               "icon": "lock",
-              "title": "Verileriniz, kontrolünüz"
+              "title": "Verileriniz Sizin, Tam Kontrol"
             },
             {
-              "description": "5 dakikanın altında tam kurtarma. Fidye yazılımının değiştiremeyeceği kilitli, salt-okunur yedekler. İşletmeniz çalışmaya devam eder. Bir sağlayıcı sizi yüzüstü bırakırsa, Kubernetes dahil tüm sistem taşınabilir.",
+              "description": "5 dakikada tam kurtarma. Fidye yazılımı değiştiremez — kilitli, değişmez yedekler. İşletmeniz hiç durmaz. Bir sağlayıcı sizi bırakırsa, Kubernetes'le birlikte tüm sistem taşınabilir.",
               "icon": "shield",
               "title": "İş sürekliliği"
             }
           ],
           "overline": "İŞ DEĞERİ",
-          "title": "Ne kazanıyorsunuz?"
+          "title": "Pakette neler var?"
         },
         "bottomCta": {
           "description": "Makine başına tek sabit fiyat. Kişi başı ücret yok. Sürpriz yok. 14 günlük ücretsiz denemeyle başlayın.",
@@ -1306,9 +1306,9 @@
         },
         "calculator": {
           "annualLabel": "Toplam yıllık maliyet",
-          "description": "Kaydırıcıları işletmenizle eşleştirin. Buluta karşı kendi barındırmanın gerçek maliyetini görün.",
-          "footnote": "Bunlar ortak maliyet modellerine dayanan tahminlerdir. Tasarruflarınız altyapınıza ve boyutunuza bağlı.",
-          "headerTitle": "Tasarrufunuzu hesaplayın",
+          "description": "Kaydırıcıları işletmenize göre ayarlayın. Bulut maliyeti ve kendi altyapı — gerçek farkı hemen görün.",
+          "footnote": "Sayılar yaygın maliyet modellerine dayanan tahminler. Gerçek tasarruf altyapınıza ve ölçeğinize bağlıdır.",
+          "headerTitle": "Tasarrufu hesapla",
           "overline": "RAKAMLAR",
           "results": {
             "blockedTime": "Yıllık altyapı maliyeti",
@@ -1321,29 +1321,29 @@
             "reqs": "Mevcut aylık bulut harcaması ($)",
             "wait": "Yıllık kesinti saatleri"
           },
-          "title": "Ne kadar tasarruf edebilirsiniz?",
+          "title": "Ne kadar tasarruf edeceğiniz?",
           "withAnnual": "Hesapla →",
           "withoutTag": "Mevcut bulut maliyetleri",
           "withResults": {
             "blockedTime": "60% daha az",
             "contextSwitching": "<5 min",
-            "quarterlySlip": "100% sizin",
+            "quarterlySlip": "Tamamen Sizin",
             "sprintCapacity": "Minimize edildi"
           },
           "withTag": "Rediacc ile"
         },
         "hero": {
           "primaryCta": "Fiyatları Gör",
-          "subtitle": "Kendi sunucularınızda işletme verilerinizi koruyun. Makine başına tek fiyat — koltuk başı ücreti yok, sürpriz bulut faturası yok, verilerinizi rehin tutacak satıcı yok.",
-          "title": "Makine başına tek fiyat. Verileriniz sizin."
+          "subtitle": "İşletme verilerinizi kendi donanımda koruyun. Sunucu başına tek fiyat — personel sayısına göre ücret yok, sürpriz fatura yok, satıcıya bağımlılık yok.",
+          "title": "Sunucu başına tek sabit fiyat. Verileriniz sizde."
         },
         "meta": {
-          "description": "Sahip olduğunuz sunucularda sistem yedekleyin ve kurtarın. Makine başına tek fiyat. Kişi başı ücret yok. Sürpriz bulut faturaları yok. Verileriniz sizin kalır.",
+          "description": "Kendi sunucularda yedek ve kurtarma. Makine başına tek fiyat. Kişi başı ücret yok. Sürpriz bulut faturaları yok. Veriler sizde kalır.",
           "keywords": "CEO, altyapı maliyetleri, kendi barındırma, veri koruma, satıcı bağımlılığı, öngörülebilir fiyatlandırma, iş sürekliliği, KOBİ",
           "title": "CEO'lar İçin - Sabit Fiyat, Satıcı Bağımsızlığı | Rediacc"
         },
         "problem": {
-          "description": "Ekibiniz küçük bir bulut faturasıyla başladı. Şimdi en büyük üçüncü gideriniz — yıllık 20% büyüyor. Koltuk başı fiyatlandırma her işe almada sizi cezalandırıyor. Verileriniz başka birinin veri merkezinde, onların özel formatında duruyor. Çıkmak istersen, kendi verilerine erişmek için çıkış ücreti alıyorlar.",
+          "description": "Küçük bir bulut faturasıyla başlamıştı. Şimdi üçüncü en büyük maliyetiniz — yıllık %20 artıyor. Her işe alma kişi sayısı arttıkça masraflar katlanıyor. Verileriniz başkasının veri merkezinde, onların formatında duruyor. Çıkmak istediğinizde çıkış ücreti ödemeniz gerekiyor.",
           "overline": "SORUN",
           "statCallouts": [
             {
@@ -1364,7 +1364,7 @@
           ],
           "timeline": {
             "newLabel": "Rediacc ile",
-            "newSteps": ["$204/ay", "Sabit", "Sizin"],
+            "newSteps": ["$204/ay", "Sabit", "Kendi Altyapısı"],
             "oldLabel": "Bulut altyapısı",
             "oldSteps": [
               {
@@ -1389,7 +1389,7 @@
               }
             ]
           },
-          "title": "Bulut faturaları artıyor. Verileriniz gerçekten sizin değil."
+          "title": "Bulut faturaları patlamaya devam ediyor. Verileriniz başka birinin elinde."
         },
         "relatedSolutions": {
           "title": "Nasıl çalışır"
@@ -1397,9 +1397,9 @@
         "shareWithTeam": {
           "ctaSlug": "for-ctos",
           "ctaText": "CTO İncelemesini Paylaş",
-          "description": "Teknik ekibiniz nasıl uyacağını görmek isteyecek. CTO derinlemesini gönder — ihtiyaç duydukları detaylar var.",
+          "description": "Teknik ekipiniz nasıl uyacağını kontrol etmek isteyecek. CTO derinlemesini gönderin — sorulacak tüm detaylar var.",
           "overline": "SONRAKİ ADIM",
-          "title": "CTO'nuzla paylaşın"
+          "title": "CTO'nuza Gönder"
         },
         "socialProof": {
           "author": "CEO",
@@ -1435,7 +1435,7 @@
         "benefits": {
           "items": [
             {
-              "description": "Bulut markupı, koltuk başı lisans, çıkış ücretlerini bitirin. Sahip olduğunuz donanımda çalışır.",
+              "description": "Bulut markup'ı, koltuk başı lisans, çıkış ücretlerini ortadan kaldır. Sahip olduğun donanımda çalış.",
               "icon": "trend-up",
               "title": "60% daha düşük TCO"
             },
@@ -1445,24 +1445,24 @@
               "title": "Dakikalar, Saatler Değil"
             },
             {
-              "description": "Verileriniz açık formatlarda kendi altyapınızda kalır. Sağlayıcı değiştirin, kendiniz yönetin ya da yarın taşıyın. Karar sizin. Artık buna Kubernetes cluster'ları da dahil.",
+              "description": "Veriler açık formatlarda kendi altyapında kalır. Sağlayıcı değiştir, kendin yönet, ya da yarın taşı. Karar senin. Artık buna Kubernetes cluster'ları da dahil.",
               "icon": "lock",
               "title": "Satıcı Bağımlılığı Yok"
             }
           ],
           "overline": "STRATEJİK DEĞER",
-          "title": "Rediacc'nin Stack'inizde Sağladıkları"
+          "title": "Rediacc'nin Stack'iniz İçin Anlamı"
         },
         "bottomCta": {
-          "description": "30 dakikalık mimari inceleme için ekibimiz ile randevu al. Altyapına özel TCO tahminlerini gösterelim.",
+          "description": "30 dakikalık mimari inceleme için ekibimizle randevu al. Altyapın için özel TCO tahminlerini gösterelim.",
           "primaryCta": "Demo Al",
           "title": "Uygulamada Görün"
         },
         "calculator": {
           "annualLabel": "Toplam yıllık maliyet",
-          "description": "Kaydırıcıları kurulumunuza göre ayarlayın. Rediacc ile ne kadar tasarruf yapabileceğinizi göreceksiniz.",
+          "description": "Kaydırıcıları kurulumunuza göre ayarla. Rediacc'nin mevcut faturanla nasıl karşılaştığını gör.",
           "footnote": "Hesaplamalar endüstri TCO modellerine dayanmaktadır (kendi barındırmalı altyapı vs. bulut hizmetleri). Tasarruflar iş yükü, yapılandırma ve ölçeğe göre değişir.",
-          "headerTitle": "Altyapı tasarrufunuzu hesaplayın",
+          "headerTitle": "Altyapı tasarrufunu hesapla",
           "overline": "GERÇEK MALİYET",
           "results": {
             "blockedTime": "Yıllık altyapı maliyeti",
@@ -1475,7 +1475,7 @@
             "reqs": "Aylık ortalama bulut harcaması ($)",
             "wait": "Yıllık toplam kesinti saati"
           },
-          "title": "Altyapınız size ne mal oluyor?",
+          "title": "Altyapın sana ne mal oluyor?",
           "withAnnual": "Hesapla →",
           "withoutTag": "Mevcut harcama",
           "withResults": {
@@ -1488,7 +1488,7 @@
         },
         "comparison": {
           "capabilityLabel": "Özellik",
-          "description": "Kurumsal araçlar soket başı, VM başı, TB başı ücret alır. Rediacc? Makine başı. Donanımınızda çalışır.",
+          "description": "Kurumsal araçlar soket başı, VM başı, TB başı ücret alır. Rediacc? Makine başı. Kendi donanımında çalış.",
           "features": [
             {
               "name": "Kendi barındırma / yerinde",
@@ -1525,15 +1525,15 @@
         "hero": {
           "primaryCta": "Demo Al",
           "subtitle": "Kendi barındırmalı altyapı koruması. Bulut artırımı yok, koltuk başı fiyatlandırma yok, saatler değil dakikalar içinde kurtarma.",
-          "title": "Altyapı TCO'sunu 60% azaltın. Kendi donanımınızda ölçekleyin."
+          "title": "Altyapı TCO'nu %60 azalt. Kendi donanımında ölçekle."
         },
         "meta": {
-          "description": "Kendi donanımınızda ölçeklenen altyapı koruması. TCO'yu 60% azaltın, satıcı bağımlılığını kaldırın ve felaketlerden dakikalar içinde kurtulun.",
+          "description": "Kendi donanımında çalışan altyapı koruması. TCO'nu %60 azalt, satıcı bağımlılığını ortadan kaldır, felaketlerden dakikalar içinde kurtar.",
           "keywords": "CTO, altyapı TCO, kendi barındırma, felaket kurtarma, satıcı bağımlılığı, btrfs anlık görüntüler, uyumluluk, ölçeklenebilirlik",
           "title": "CTO'lar İçin Altyapı TCO'sunu 60% Azaltın | Rediacc"
         },
         "problem": {
-          "description": "Bulut faturanız yıllık 15-20% büyüyor. Koltuk başı lisanslama ekip büyümesini cezalandırıyor. Sorun çıktığında, 'anında kurtarma'nız saatler sürüyor, çünkü dakikalık RPO vaat eden yedekleme aracı aslında günlük RPO sunuyor. Bu arada, her yenileme döneminde daha pahalı olan bir satıcı ekosistemine kilitlenmiş durumdasınız.",
+          "description": "Bulut faturalarınız yıllık %15-20 artar. Koltuk başı lisanslama ekip büyümesini cezalandırıyor. Sorun çıktığında 'anında kurtarma' söylemi saatler sürüyor, çünkü dakikalık RPO vaat eden araç aslında günlük RPO veriyor. Her yenileme döneminde satıcı ekosistemi daha pahalı hale geliyor ve sen kilitlenmiş kalırsın.",
           "overline": "SORUN",
           "statCallouts": [
             {
@@ -1587,9 +1587,9 @@
         "shareWithTeam": {
           "ctaSlug": "for-devops",
           "ctaText": "DevOps Deep-Dive'ı Paylaş",
-          "description": "Mühendisleriniz CLI-öncelikli iş akışlarını ve anında ortamları sevecek. Bu teknik detayları onlarla paylaş.",
-          "overline": "EKİBİNİZLE PAYLAŞIN",
-          "title": "DevOps Ekibini Harekete Geç"
+          "description": "Mühendisler CLI-öncelikli akışları ve anında ortamları sever. Onlara teknik detayları göster.",
+          "overline": "EKİBİNLE PAYLAŞ",
+          "title": "DevOps Ekibini Harekete Geçir"
         },
         "socialProof": {
           "author": "CTO",
@@ -1621,7 +1621,7 @@
           }
         ],
         "techDiff": {
-          "description": "Rediacc donanımınızda çalışır ve anında yedekleme ile kurtarma için btrfs copy-on-write anlık görüntülerini kullanır. Her anlık görüntü dosya sistemi düzeyinde değiştirilemezdir. Fidye yazılımı çekirdeğin koruduğunu şifreleyemez. Kurtarma, terabaytları geri yüklemek değil, bir işaretçi değiştirmek demektir.",
+          "description": "Rediacc kendi donanımında çalışır, anında yedekleme ve kurtarma için btrfs copy-on-write snapshot'larını kullanır. Her snapshot dosya sistemi düzeyinde değiştirilmez. Fidye yazılımı çekirdeğin koruduğunu şifreleyemez. Kurtarma, terabayt geri yüklemek değil, bir işaretçiyi değiştirmek demektir.",
           "overline": "MİMARİ",
           "rediaccLabel": "Rediacc (kendi barındırma)",
           "rows": [
@@ -1634,19 +1634,19 @@
               "traditional": "Kurtarma: bulut yedeğinden saatler süren geri yükleme"
             },
             {
-              "rediacc": "Açık format: verileriniz kendi dosya sisteminizde",
+              "rediacc": "Açık format: veriler kendi dosya sisteminde",
               "traditional": "Satıcı bağımlılığı: verileriniz tescilli formatta"
             },
             {
-              "rediacc": "Uyumluluk: kendi altyapınızda doğrulayın",
+              "rediacc": "Uyumluluk: kendi altyapında doğrula",
               "traditional": "Uyumluluk: satıcının beyanına güvenin"
             },
             {
               "rediacc": "Çalışan bir cluster'ı başka bir veri merkezine fork'layın veya taşıyın, kesinti saniyelerle ölçülür",
-              "traditional": "Kubernetes sizi kurduğunuz veri merkezine bağımlı kılar"
+              "traditional": "Kubernetes'i kurduğunuz veri merkezine bağlı tutar"
             }
           ],
-          "title": "Rediacc altyapınızı nasıl koruyor",
+          "title": "Rediacc altyapını nasıl koruyor",
           "traditionalLabel": "Bulut / eski nesil DR"
         }
       },
@@ -1659,12 +1659,12 @@
               "title": "60 saniyelik ortamlar"
             },
             {
-              "description": "Her şey bir komut. CI/CD, Git hook'ları veya kendi otomasyonunuzla entegre edin. GUI gerekmez. Kubernetes dahil: bir namespace de tıpkı bir depo gibi fork'lanır.",
+              "description": "Her şey bir komut. CI/CD, Git hook, ya da kendi otomasyonunla entegre et. GUI gerekmez. Kubernetes dahil: namespace de depo gibi fork'lanır.",
               "icon": "terminal",
               "title": "CLI-öncelikli, betiklenebilir"
             },
             {
-              "description": "Btrfs değiştirilemez snapshot'lar sayesinde herhangi bir ortamı saniyeler içinde geri al. Veri kaybı yok, kesinti yok.",
+              "description": "Btrfs snapshot'ları her ortamı saniyeler içinde geri alır. Veri kaybı yok, downtime yok.",
               "icon": "shield",
               "title": "Anında geri alma"
             }
@@ -1674,13 +1674,13 @@
         },
         "bottomCta": {
           "command": "curl -fsSL https://www.rediacc.com/install.sh | bash",
-          "description": "CLI'yi kur. İlk ortamını klonla. 14 günlük ücretsiz denemeni başlat, satış görüşmesi yok.",
+          "description": "CLI'yi kur, ilk ortamı klonla, 14 günlük denemeye başla. Satış görüşmesi yok.",
           "primaryCta": "Ücretsiz Başlayın",
-          "title": "Kendiniz deneyin"
+          "title": "Hemen deneyin"
         },
         "hero": {
           "primaryCta": "Ücretsiz Başlayın",
-          "subtitle": "Prod 60 saniyede klonla, 5 dakikada geri al, kendi donanımında çalış. Talep yok, bekleme yok, veriler senin.",
+          "subtitle": "CLI-first altyapı: 60 saniyede prod klonlama, 5 dakika içinde geri alma, kendi donanımında çalışma. Talep yok, bekleme yok, veri çıkmaz.",
           "title": "Bir dakikada klonla. Beş dakikada kurtar. Talep yazmayı bitir."
         },
         "howItWorks": {
@@ -1741,7 +1741,7 @@
           "overline": "NASIL ÇALIŞIYOR",
           "steps": [
             {
-              "description": "rdc ceph snapshot create production komutunu çalıştırın. Btrfs CoW anında bir anlık görüntü oluşturur — uygulama, veritabanı, yapılandırma, her şey.",
+              "description": "rdc ceph snapshot create production çalıştır. Btrfs CoW saniyenin altında her şeyin snapshot'ını alır: app, veritabanı, config.",
               "icon": "terminal",
               "title": "Klonla"
             },
@@ -1751,7 +1751,7 @@
               "title": "Çalış"
             },
             {
-              "description": "Bir şey bozuldu mu? Saniyeler içinde geri alın. Değiştirilemez anlık görüntüler sayesinde asla veri kaybetmezsiniz.",
+              "description": "Bir şey ters gitti mi? Saniyeler içinde geri al. Değişmez snapshot'lar = veri kaybı yok.",
               "icon": "shield",
               "title": "Kurtar"
             }
@@ -1759,12 +1759,12 @@
           "title": "Tek komut. Tam üretim klonu."
         },
         "meta": {
-          "description": "Prod 60 saniyede klonla, 5 dakikada geri al, kendi sunucularında çalış. DevOps ekipleri için CLI-first disaster recovery.",
+          "description": "Produ 60 saniyede klonla, 5 dakika içinde geri al, kendi sunucularında çalış. DevOps'çular için CLI-first DR.",
           "keywords": "devops, altyapı otomasyonu, CLI, btrfs anlık görüntüler, kendi barındırma, ortam klonlama, anında geri alma, üretim eşdeğerliği",
           "title": "Rediacc ile DevOps: Klonla Kurtar"
         },
         "problem": {
-          "description": "CI/CD hattınız dakikalar içinde dağıtıyor. IaC'niz saniyeler içinde ortamı kuruyor. Ama test ortamına ihtiyaç duyduğunuzda? Talep açıyorsunuz, üç gün bekliyorsunuz. Bu arada paylaşılan ortam kararsız ve üretime hiç benzemiyor.",
+          "description": "CI/CD dakikalar, IaC saniyeler. Ama test ortamında gerçek veri? Talep aç, üç gün bekle. Arada staging paylaşılı ve kararsız, prod'dan hiç farklı.",
           "overline": "SORUN NE?",
           "statCallouts": [
             {
@@ -1810,7 +1810,7 @@
               }
             ]
           },
-          "title": "Her şeyi otomatikleştiriyorsunuz. Test ortamını alma hariç."
+          "title": "Her şey otomatik. Ama test ortamı?"
         },
         "relatedSolutions": {
           "title": "İlgili Çözümler"
@@ -1880,12 +1880,12 @@
         "allPlansInclude": "Tüm planlara dahil: sınırsız kullanıcı ve ekip, sınırsız depo, anlık görüntüden geri yükleme, sürekli veri koruma, coğrafi yedekli depolama, LUKS şifreleme, denetim kayıtları, rol tabanlı erişim, elle ve otomatik zamanlama ve entegrasyon API'si.",
         "heading": "Planları Detaylı Karşılaştırın",
         "included": "Dahil",
-        "notIncluded": "Dahil değil",
+        "notIncluded": "Dahil Değil",
         "rows": [
           {
             "business": true,
             "enterprise": true,
-            "label": "Özel CSM",
+            "label": "Özel Müşteri Başarısı Yöneticisi",
             "professional": false
           },
           {
@@ -1897,13 +1897,13 @@
           {
             "business": false,
             "enterprise": true,
-            "label": "7/24/365 Destek",
+            "label": "24/7/365 Destek",
             "professional": false
           },
           {
             "business": false,
             "enterprise": true,
-            "label": "Yönetici Kademelendirme",
+            "label": "Yönetici Kademelendirmesi",
             "professional": false
           },
           {
@@ -1929,15 +1929,15 @@
         "heading": "Sıkça Sorulan Sorular",
         "items": [
           {
-            "answer": "Evet. Professional ve Business planlarının ikisi de 14 günlük ücretsiz denemeyle başlar. İlk ücretlendirme yalnızca deneme süresi bittiğinde yapılır; bu yüzden deneme bitmeden iptal ederseniz hiçbir ücret ödemezsiniz. İptal ederseniz hesabınız, depo başına 10 GB ve ayda 100 kuruluma kadar bir makineyi çalışır tutan ücretsiz Community planına döner.",
+            "answer": "Evet. Professional ve Business planları da 14 günlük denemeyle başlıyor. İlk ödeme yalnızca deneme bittiğinde alınır; deneme süresi bitmeden iptal ederseniz ücret ödemezsiniz. İptal ettikten sonra hesabınız depo başına 10 GB'ye ve ayda 100 kuruluma kadar bir makineyi çalıştıran ücretsiz Community planına döner.",
             "question": "Ücretsiz deneme var mı?"
           },
           {
-            "answer": "Evet. Her iki ücretli plan da kayıt sırasında kart bilgisi ister, böylece deneme süresi bitince otomatik olarak aboneliğe döner. 14 günlük deneme bitene kadar ücretlendirilmezsiniz ve bu sürede istediğiniz zaman iptal edebilirsiniz.",
+            "answer": "Evet. Her iki ücretli plan da kayıt sırasında kart bilgisi ister, böylece deneme bitince aboneliğe geçiş yapabilir. 14 günlük deneme süresince ücret alınmaz ve istediğiniz zaman iptal edebilirsiniz.",
             "question": "Başlamak için kredi kartına ihtiyacım var mı?"
           },
           {
-            "answer": "Evet, planınızı istediğiniz zaman değiştirebilirsiniz. Yükseltmeler hemen geçerli olur ve düşürmeler bir sonraki faturalandırma döngünüzün başlangıcında uygulanır. Ceza veya ücret yoktur.",
+            "answer": "Evet, planı istediğiniz zaman değiştirebilirsiniz. Yükseltme hemen uygulanır, düşürme ise bir sonraki faturalandırma döneminde. Ceza yok, ücret yok.",
             "question": "Planımı yükseltebilir veya düşürebilir miyim?"
           },
           {
@@ -1957,11 +1957,11 @@
             "question": "Rediacc kendi sunucularımda çalışabilir mi?"
           },
           {
-            "answer": "Her self-servis plan bir makineyi kapsar (bir Floating license). Rediacc'ı birden fazla makinede çalıştırmanız gerekiyorsa bu, iş ortaklarımız aracılığıyla satılan bir Enterprise kurulumudur. Bizimle iletişime geçin, ihtiyacınıza göre birlikte planlayalım.",
+            "answer": "Her self-servis plan bir makineyi kapsar (bir Floating license). Rediacc'ı birden fazla makinede çalıştırmanız gerekiyorsa Enterprise kurmanlız gerekiyor; bunu ortaklarımız yönetiyor. Bize yazın, çözüm bulalım.",
             "question": "Her plan kaç makineyi kapsar?"
           },
           {
-            "answer": "Enterprise, sizin altyapınız için tasarlanır ve iş ortaklarımız aracılığıyla satılır. Şartları siz belirlersiniz, birden fazla makinede çalıştırırsınız ve kendi özel sunucu alanınızı, özel bir kurtarma taahhüdünü ve 7/24/365 desteği alırsınız. Ayrıca güvenlik incelemeleri ve düzenli tatbikatlar da vardır.",
+            "answer": "Enterprise sizin altyapınız için tasarlanır ve ortaklarımız aracılığıyla satılır. Şartları siz belirlersiniz, birden fazla makinede çalıştırırsınız ve özel sunucu alanı, kurtarma taahhüdü ile 24/7/365 destek alırsınız. Bonus: güvenlik incelemeleri ve düzenli tatbikatlar.",
             "question": "Enterprise neleri içerir?"
           },
           {
@@ -1969,11 +1969,11 @@
             "question": "Eğitim kurumları veya kâr amacı gütmeyen kuruluşlar için indirim sunuyor musunuz?"
           },
           {
-            "answer": "14 günlük deneme süresi içinde iptal ederseniz hiç ücretlendirilmezsiniz. Ücretli bir planı daha sonra iptal ederseniz, faturalandırma döneminin sonuna kadar özelliklerini kullanmaya devam edersiniz, ardından hesabınız ücretsiz Community planına döner. Repolarınız bu süre boyunca çalışmaya devam eder.",
+            "answer": "14 günlük deneme içinde iptal ederseniz ücret almaz. Ücretli plan sonradan iptal ederseniz, faturalandırma döneminin sonuna kadar özellikleri kullanmaya devam edersiniz, sonra Community planına dönersiniz. Depolarınız her zaman çalışır.",
             "question": "İptal edersem ne olur?"
           },
           {
-            "answer": "Bir kümedeki her düğüm bir makinedir ve her biri bir makine olarak sayılır. Küme için paylaşılan bir kota veya sunucuları bir araya getirmek için indirim yoktur. Bir düğüm, üzerine bir depo yerleştirildiğinde bir slot kullanır; yani kümeyi kurmanın kendisi hiçbir maliyete yol açmaz. Kümeleme, bir Enterprise anlaşmasının parçası olarak iş ortaklarımız aracılığıyla satılır ve düğüm sayınız sipariş verirken belirlenir.",
+            "answer": "Kümedeki her düğüm bir makinedir ve biri biri olarak sayılır. Küme havuzu veya sunucu grupları için indirim yok. Düğüm, depo yerleştiğinde slot kullanır; küme kurmak bedava. Kümeleme Enterprise anlaşmasının parçası olarak ortaklarımız tarafından satılır, düğüm sayısı sipariş zamanında belirlenir.",
             "question": "Küme düğümleri nasıl sayılır?"
           }
         ]
@@ -1983,15 +1983,15 @@
           "startFree": "Ücretsiz Başlayın",
           "talkToSales": "Satışla Konuşun"
         },
-        "description": "5 dakikada kurun. 14 günlük ücretsiz denemenizi başlatın.",
-        "heading": "Altyapınızı Koruyun"
+        "description": "5 dakikada kur. 14 günlük denemeyi başlat.",
+        "heading": "Altyapıyı Koruma Zamanı"
       },
       "hero": {
-        "subtitle": "Ekibinize uygun planı seçin. Basit fiyatlandırma, gizli ücret yok, istediğiniz zaman iptal edin.",
+        "subtitle": "Ekibine uygun planı seç. Basit fiyatlandırma, hiç gizli ücret yok, istediğin zaman iptal et.",
         "title": "Gerçek İşletmeler İçin Tasarlanmış"
       },
       "meta": {
-        "description": "Ekibinize uygun planı seçin. Her ücretli plan 14 günlük ücretsiz denemeyle başlar. Gizli ücret yok.",
+        "description": "Ekibine uygun planı seç. Tüm ücretli planlar 14 günlük denemeyle geliyor. Gizli ücret yok.",
         "keywords": "fiyatlandırma, altyapı otomasyonu, DevOps planları, görev yürütme",
         "title": "Fiyatlandırma | Gerçek İşletmeler İçin Tasarlanmış"
       },
@@ -2011,10 +2011,10 @@
       },
       "professionalServices": {
         "benefits": {
-          "description": "Sunucularınız çöktüğünde telefonunuza cevap veren gerçek mühendisler. Destek kuyruğu değil. İnsan. Aynı gün.",
+          "description": "Sunucu sorunu olduğunda telefonunuzu açan gerçek mühendisler. Destek kuyruğu değil. Canlı kişi. Aynı gün.",
           "heading": "Neden Profesyonel Hizmetler?",
           "items": [
-            "Projenize atanan uzmanlar ekibi",
+            "Projeye atanan uzman ekip",
             "Yazılı olarak garantili yanıt süreleri",
             "İhtiyaçlarınız değiştikçe hizmetler arasında geçiş yapın",
             "Kritik olaylar için 7/24 acil destek hattı"
@@ -2027,7 +2027,7 @@
         "categories": {
           "items": [
             {
-              "description": "Takımınıza yönelik uygulamalı eğitimler; rehberli kurulum turundan, ileri düzey iş akışları ve olay müdahale prosedürlerini ele alan çok günlük atölyelere kadar.",
+              "description": "Uygulamalı takım eğitimi: rehberli kurulum turundan ileri düzey iş akışlarına ve olay müdahale prosedürlerine kadar, çok günlük atölyeler dahil.",
               "icon": "team-training",
               "id": "training",
               "name": "Eğitim"
@@ -2039,7 +2039,7 @@
               "name": "Destek"
             },
             {
-              "description": "Uçtan uca göç ve özel entegrasyon çalışmaları; tam doğrulanmış veri göçünden, zaman baskısı altında aynı gün gerçekleştirilen hızlı kesintisiz geçişe kadar.",
+              "description": "Uçtan uca göç ve özel entegrasyon: tam doğrulanmış veri göçünden, acele olsa bile aynı günde yapılan kesintisiz geçişe kadar.",
               "icon": "data-migration",
               "id": "migration",
               "name": "Göç"
@@ -2051,7 +2051,7 @@
               "name": "Kurtarma"
             },
             {
-              "description": "Ortamınıza ve denetim gereksinimlerinize göre uyarlanan güvenlik incelemeleri, sertleştirme kontrol listeleri, uyumluluk runbook'ları ve olay müdahale danışmanlığı.",
+              "description": "Altyapına özel güvenlik incelemeleri, sertleştirme kontrol listeleri, uyumluluk runbook'ları ve olay müdahale danışmanlığı.",
               "icon": "storage-hardening",
               "id": "security",
               "name": "Güvenlik ve Uyumluluk"
@@ -2059,7 +2059,7 @@
           ]
         },
         "cta": {
-          "description": "Her işbirliği kurulumunuza göre şekillenir. Bize ulaşın, doğru planı birlikte belirleyelim.",
+          "description": "Her proje kendine uyarlanır. Bize yazın, en iyi planı birlikte bulalım.",
           "heading": "Profesyonel Yardıma mı İhtiyacınız Var?"
         },
         "header": {
@@ -2067,7 +2067,7 @@
         }
       },
       "roiCta": {
-        "description": "Rediacc ile ne kadar tasarruf edebileceğinizi görmek için interaktif ROI hesaplayıcımızı kullanın.",
+        "description": "Rediacc ile ne kadar tasarruf edeceğini hesapla. Interaktif ROI aracımızı deneyin.",
         "heading": "Hangi planın size uygun olduğundan emin değil misiniz?"
       },
       "technicalSummary": {
@@ -2128,16 +2128,16 @@
         }
       },
       "trustSection": {
-        "corporateGuarantee": "Rediacc sizin için uygun değilse, geri taşınmanıza yardımcı oluruz.",
-        "heading": "Altyapı Sende, Kurallar Sende",
+        "corporateGuarantee": "Rediacc işe yaramadıysa, geri göçüşte yardımcı oluruz.",
+        "heading": "Kilit Yok. Asla.",
         "rows": [
           {
-            "description": "Başlatma, durdurma ve silme, aboneliğin sona ermesinden yıllar sonra bile her zaman çalışır. Verilerine kendi makinelerinde her zaman erişebilirsin.",
-            "title": "Uygulamalarınız Sonsuza Kadar Çalışır"
+            "description": "Başlat, durdur, sil – bunlar aboneliğin sona ermesinden yıllar sonra bile çalışır. Verileriniz kendi makinelerinizde sonsuza kadar erişilebilir.",
+            "title": "Uygulamalar Sonsuza Kadar Çalışır"
           },
           {
-            "description": "İşletim araçların çalışmaya devam eder: SSH erişimi, uzaktan düzenleme ve tüm yönetim komutları. Hiçbir zaman lisans gerekmez.",
-            "title": "Tüm Araçlarına Tam Erişim"
+            "description": "İşletim araçları çalışmaya devam eder: SSH, uzaktan düzenleme, tüm yönetim komutları. Lisans hiç gerekmez.",
+            "title": "Tüm Araçlara Tam Erişim"
           },
           {
             "description": "Yeni sunucu oluşturmak veya mevcutları kopyalamak için aktif bir plana ihtiyacın var. Yeniden boyutlandırma ve genişletme, planın süresi bittikten sonra 60 gün daha çalışmaya devam eder. Sunucularını çalıştırmak ise kalıcıdır.",
@@ -2148,15 +2148,15 @@
             "title": "Ölçekleme İçin 60 Günlük İmtiyaz"
           },
           {
-            "description": "Bir slot yalnızca sunucu oluştururken veya kopyalarken kullanılır. Normal işleriniz asla slot tüketmez. 5 saat hareketsizlik sonrasında slotlar otomatik olarak boşalır, bu yüzden tek bir slot bile zamanla birçok makineyi karşılayabilir. Makine başına asla ücret yoktur.",
+            "description": "Slot yalnızca sunucu oluştururken veya kopyalarken kullanılır. Normal işler slot tüketmez. 5 saat sonra otomatik serbest bırakılır; tek slot bile zamanla birçok makineyi karşılar. Makine başına ücret yoktur. Asla.",
             "title": "Sınırsız Sunucu. Yalnızca Yeni Olanları Öde"
           },
           {
-            "description": "Her sunucu lisansı ayarlandığı makineye bağlı. Hosting sağlayıcın VM'yi farklı donanıma taşırsa makine kimliği değişir, ama lisanslar 40 gün çalışmaya devam eder. Sonraki kontrol otomatik olarak yeni makineye geçer. Kapalı kalma yok, elle yapılacak iş yok.",
-            "title": "Donanım Değişikliğinde 40 Günlük Geçiş Süresi"
+            "description": "Sunucu lisansı ayarlandığı makineye bağlı. Hosting sağlayıcı VM'yi başka donanıma taşırsa, makine kimliği değişir ama lisanslar 40 gün çalışmaya devam eder. Sonraki kontrol otomatik olarak yeni makineye güncellenir. Kapalı kalma yok, elle işlem yok.",
+            "title": "Donanım Değişirse 40 Günlük Buffer"
           }
         ],
-        "subtitle": "Rediacc lisansları seni hiçbir zaman kilitlemesin diye tasarlandı. İşte bunun pratikte ne anlama geldiği:"
+        "subtitle": "Rediacc lisansları seni asla kilitlemesin diye tasarlandı. Pratikte neye benzediğini göster:"
       },
       "ui": {
         "billingToggle": {
