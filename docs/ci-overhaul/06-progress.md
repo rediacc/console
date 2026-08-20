@@ -3975,3 +3975,89 @@ check-workflow-gates and a YAML parse of both workflow files are green.
 **This label MUST be removed once the re-recording session publishes.** It is a
 hold on gates that are being actively repaired, not a decision that the media
 tree may be inconsistent. The announcer says so on every run it fires.
+
+## 2026-08-20: the wave closed, and every root cause was misdiagnosed first
+
+Five gates were added or repaired on branch `0818-1`, and CI reached a state it
+had not held all wave: **78 success, 20 skipped, ZERO failures, ZERO cancelled,
+ZERO neutral**. The zeros matter more than the successes. Earlier runs looked
+comparable while eight to twenty-four jobs had been watchdog-cancelled without
+ever reporting, and a `conclusion==failure` filter reads those as clean.
+
+### New gates
+
+- **`check:ci-script-exec-bit`** -- a script invoked as `./x.sh` without mode
+  100755 fails with exit 126 BEFORE emitting anything, so a driver that prints a
+  header per iteration and counts headers reports a full healthy run that did
+  nothing. That happened here: 36 pipeline combinations "ran" in under a second.
+  Reads the GIT INDEX mode, not the filesystem, because the index is what CI
+  checks out and a locally chmod'ed file committed 100644 is still broken for
+  everyone else.
+- **`check:ci-naturalization-model-policy`** -- the naturalization model is
+  configured in three places that do not reference each other, and they
+  disagreed. CI cannot read the pipeline's registry (`private/growth` is a
+  separate, gitignored repo), so this reads the provenance every applied run
+  stamps into the committed ledger. Matching is on the model FAMILY, so a
+  version bump passes while a vendor change does not.
+- **`check:ci-ceph-image-pin`** -- fails on an overdue review date, a floating
+  tag, or the pin file and the Go constant naming different images. Text-only on
+  purpose: a gate that needs the network fails for reasons unrelated to what it
+  guards.
+
+### Repairs
+
+- **`check-em-dash-surfaces`** now declares its transcript locales with
+  `subset()`. A literal cannot catch a typo; it silently scans a directory that
+  does not exist while the gate still reports green. The `ru` exclusion is
+  unchanged and deliberate: Russian narration keeps its copula dash.
+- **`test-layout-overflow`** mutated by copying the gate to `/tmp`, which broke
+  when the gate gained a relative lib import: the mutant died on "Cannot find
+  module" before a control ran, and the assertion then reported "the mutant must
+  name the failing control", reading as though the controls were dead when the
+  gate had never started. Writing the mutant beside the gate fixed the imports
+  and made the test a real-tree writer, which `check-pool-writer-safety.sh`
+  correctly flagged. Copying `scripts/lib` into the temp dir satisfies both.
+
+### Three root causes, none of them what the error said
+
+**`Concurrent Fork Isolation` reported that console#440 had regressed. It had
+not.** The checkpoint was created every run; only the evidence went missing.
+renet logs `restored from checkpoint` at info level, the CLI withholds quiet
+logrus and replays it only on failure, and the decision keyed on
+`REDIACC_DEBUG` alone -- so the `--debug` FLAG the test passes never reached it,
+the command succeeded, and nothing was replayed. There were TWO such paths, and
+fixing the first changed nothing because `rdc repo up` routes through the
+DAEMON, not `local-executor`. The proof was in the test log rather than the
+code: the spinner and `Checkpoint created` are `renderJobEvent` output, which
+exists only on the daemon path. Two sessions independently reasoned from code to
+the wrong pump first.
+
+**The four Ceph jobs were never renet's logic.** `cephadm bootstrap` ran with no
+`--image`, so it pulled a floating tag, and quay.io rebuilt every Ceph tag in
+place on 2026-08-19. The identical commit passed all seven E2E jobs on the 19th
+and failed four on the 20th. Three explanations were tried and discarded: the
+1800s `resetVMs` cap (real and documented, but the job ran 12m13s against a
+30-minute timeout), apt drift (noble's ceph unchanged since 2026-02-24), and a
+pin on the host's MAJOR line -- which a local six-VM fleet disproved, because a
+19.2.6 cluster against Ubuntu's 19.2.3 client reproduced the identical
+`Malformed input [buffer:3]`. The image must match the host EXACTLY.
+
+**Four failures in one night came from unpinned external dependencies**, none of
+them from the diff: a third-party CRIU repo, the Ceph container tag, three npm
+patch bumps, and an upstream package published before its own dependency. Only
+the Ceph one was worth pinning.
+
+### The label decision, corrected
+
+`no-media-quality` came OFF #569 once the media work published, and all five
+gates it held have since passed unaided. It was then DELETED from the repo and
+`labels.yml`, keeping its wiring on the argument that the wiring is fail-closed
+and therefore harmless. **`test-label-references.sh` refused exactly that**: a
+label referenced by code must be declared, and four sites still named it.
+Referenced and declared move together.
+
+The revert is the right end state. The mechanism is tested infrastructure with
+its own controls, the next media re-record will want it, and an UNAPPLIED label
+is the normal state for a hold -- `no-external-quality` lives here the same way.
+The earlier note above that this label "MUST be removed" means removed from the
+PR, not deleted from the repo.
