@@ -455,6 +455,18 @@ export const GATES: readonly GateSpec[] = [
     },
   },
   {
+    id: 'check:ci-naturalization-model-policy',
+    run: 'npm run check:ci-naturalization-model-policy',
+    gate: true,
+    leaves: ['scripts/check-naturalization-model-policy.ts'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-code',
+      step: 'Naturalization model policy',
+    },
+  },
+  {
     id: 'check:ci-script-exec-bit',
     run: 'npm run check:ci-script-exec-bit',
     gate: true,
