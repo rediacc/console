@@ -239,7 +239,7 @@
       },
       "migrationSafety": {
         "hero": {
-          "title": "Migreeri ilma andmeid riskimata"
+          "title": "Migreeri turvaliselt – andmeid ei paljastuks"
         }
       },
       "instantRecovery": {

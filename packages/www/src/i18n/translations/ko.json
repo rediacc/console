@@ -740,7 +740,7 @@
       "meta": {
         "description": "60초 안에 프로덕션 복제. 5분 이내에 재해 복구. 셀프 호스팅, 자신의 하드웨어에서 실행.",
         "keywords": "인프라 자동화, 개발 환경, 재해 복구, DevOps 자동화, CI/CD 파이프라인, 클라우드 인프라, 개발 운영, Model Context Protocol, AI 안전 인프라",
-        "title": "Rediacc — 프로덕션 클론. 아무것도 깨지지 않음."
+        "title": "Rediacc: 프로덕션을 복제해도, 어떤 손상도 절대 없습니다"
       }
     },
     "install": {
@@ -1183,7 +1183,7 @@
           "title": "AI 에이전트를 위한 CLI 네이티브 자동화 | Rediacc"
         },
         "problem": {
-          "description": "AI 코딩 어시스턴트는 코드를 척척 작성하고, 테스트하고, 디버그합니다. 근데 배포, 상태 확인, 인프라 관리가 되려면? 벽에 막혀요. GUI 대시보드, OAuth 브라우저 플로우, 불안정한 API, 컨텍스트를 터뜨리는 응답들—이게 문제거든요.",
+          "description": "AI 코딩 어시스턴트는 코드를 척척 작성하고, 테스트하고, 디버그합니다. 근데 배포, 상태 확인, 인프라 관리가 되려면? 벽에 막혀요. GUI 대시보드, OAuth 브라우저 플로우, 불안정한 API, 컨텍스트를 터뜨리는 응답들. 이게 문제거든요.",
           "overline": "문제",
           "statCallouts": [
             {
@@ -7743,7 +7743,7 @@
               "url": "https://www.flexera.com/about-us/press-center/new-flexera-report-finds-84-percent-of-organizations-struggle-to-manage-cloud-spend"
             },
             {
-              "text": "AWS, \"Amazon S3 Pricing — Data Transfer,\" 2024. \"Amazon S3에서 인터넷으로의 데이터 전송: 처음 10TB/월에 대해 GB당 $0.09.\"",
+              "text": "AWS, \"Amazon S3 요금: 데이터 전송,\" 2024. \"Amazon S3에서 인터넷으로의 데이터 전송: 월 처음 10TB까지 GB당 $0.09.\"",
               "url": "https://aws.amazon.com/s3/pricing/"
             },
             {
@@ -7870,7 +7870,7 @@
         "calculator": {
           "annualLabel": "연간 마이그레이션 위험",
           "description": "종단 간 암호화 없는 모든 마이그레이션은 컴플라이언스 침해 사건입니다.",
-          "footnote": "재암호화 설정 비용 시간당 $200, IBM 2024 기준 TB당 침해 비용 $4,880, 노출 구간당 침해 확률 1% 가정. Rediacc은 처음부터 끝까지 암호화를 유지합니다. 노출 구간 없음, 재암호화 불필요.",
+          "footnote": "시간당 $200의 재암호화 설정 비용, TB당 $4,880의 침해 비용(IBM 2024), 노출 구간당 1%의 침해 확률을 가정합니다. Rediacc은 처음부터 끝까지 암호화가 유지되므로 노출 구간도 없고, 재암호화도 필요 없습니다.",
           "headerTitle": "마이그레이션 위험 계산기",
           "overline": "실제 비용",
           "results": {
@@ -8091,7 +8091,7 @@
               "url": "https://newsroom.ibm.com/2024-07-30-ibm-report-escalating-data-breach-disruption-pushes-costs-to-new-highs"
             },
             {
-              "text": "AWS, \"Amazon S3 Pricing - Data Transfer,\" 2024. \"Amazon S3에서 인터넷으로의 아웃바운드 전송: 매월 첫 10 TB까지 GB당 $0.09.\"",
+              "text": "AWS, \"Amazon S3 요금: 데이터 전송,\" 2024. \"Amazon S3에서 인터넷으로의 아웃바운드 전송: 매월 첫 10 TB까지 GB당 $0.09.\"",
               "url": "https://aws.amazon.com/s3/pricing/"
             },
             {
@@ -8146,7 +8146,7 @@
             },
             "improvement": "노출 구간 없음 · 10배 빠름"
           },
-          "quote": "주말 사이에 Hetzner에서 OVH로 서버 42대를 마이그레이션했습니다. 350 TB의 암호화된 데이터가 1바이트도 노출되지 않고 전송되었습니다. 이전 마이그레이션은 서버 8대에 3주가 걸렸고, 모든 데이터를 임시 영역에서 복호화해야 했습니다. 그게 마지막 위험 감수였습니다."
+          "quote": "주말 사이에 Hetzner에서 OVH로 서버 42대를 마이그레이션했습니다. 350 TB의 암호화 데이터가 한 바이트도 노출되지 않고 전송됐습니다. 이전 마이그레이션(서버 8대)은 3주가 걸렸고, 모든 데이터를 임시 영역에서 복호화해야 했습니다. 그게 정말 마지막 위험 감수였습니다."
         },
         "stats": [
           {

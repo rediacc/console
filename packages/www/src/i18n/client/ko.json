@@ -239,7 +239,7 @@
       },
       "migrationSafety": {
         "hero": {
-          "title": "데이터를 위험에 빠뜨리지 않고 마이그레이션"
+          "title": "데이터 노출 걱정 없이 마이그레이션하세요"
         }
       },
       "instantRecovery": {

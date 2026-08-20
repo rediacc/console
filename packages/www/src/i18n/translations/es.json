@@ -738,7 +738,7 @@
       "meta": {
         "description": "Clona tu producción en 60 segundos. Recuperación ante desastres en menos de 5 minutos. Tu propia infraestructura, bajo tu control.",
         "keywords": "automatización de infraestructura, entornos de desarrollo, recuperación ante desastres, automatización de DevOps, canalización de CI/CD, infraestructura en la nube, operaciones de desarrollo, protocolo de contexto modelo, infraestructura segura para IA",
-        "title": "Rediacc — Clona tu producción. Sin interrupciones."
+        "title": "Rediacc: Clona producción. Sin romper nada."
       }
     },
     "install": {
@@ -7742,7 +7742,7 @@
               "url": "https://www.flexera.com/about-us/press-center/new-flexera-report-finds-84-percent-of-organizations-struggle-to-manage-cloud-spend"
             },
             {
-              "text": "AWS, «Precios de transferencia de datos de Amazon S3», 2024. «Transferencia de datos FUERA de Amazon S3 a Internet: $0,09 por GB en los primeros 10 TB/mes».",
+              "text": "AWS, «Precios de transferencia de datos de Amazon S3», 2024. «Transferencia de datos desde Amazon S3 a Internet: $0,09 por GB en los primeros 10 TB/mes».",
               "url": "https://aws.amazon.com/s3/pricing/"
             },
             {
@@ -7869,7 +7869,7 @@
         "calculator": {
           "annualLabel": "Riesgo anual de migración",
           "description": "Toda migración sin cifrado de extremo a extremo es un incidente de cumplimiento esperando suceder.",
-          "footnote": "Asume $200/hora de coste laboral para reconfiguración de cifrado, $4.880/TB de prima por brecha (IBM 2024), y 1% de probabilidad de brecha por ventana de exposición. Rediacc mantiene el cifrado en todo momento - cero ventanas de exposición, cero re-cifrado necesario.",
+          "footnote": "Asume mano de obra a $200/hora para reconfiguración de cifrado, prima por brecha de $4.880/TB (IBM 2024), y 1% de probabilidad de brecha por ventana de exposición. Rediacc mantiene el cifrado en todo momento: cero ventanas de exposición, sin reencriptación.",
           "headerTitle": "Calculadora de riesgo de migración",
           "overline": "EL COSTE REAL",
           "results": {
@@ -8090,7 +8090,7 @@
               "url": "https://newsroom.ibm.com/2024-07-30-ibm-report-escalating-data-breach-disruption-pushes-costs-to-new-highs"
             },
             {
-              "text": "AWS, \"Amazon S3 Pricing - Data Transfer,\" 2024. \"Transferencia de datos salientes de Amazon S3 a Internet: $0,09 por GB para los primeros 10 TB/mes.\"",
+              "text": "AWS, \"Precios de Amazon S3: Transferencia de datos,\" 2024. \"Transferencia de datos salientes desde Amazon S3 a Internet: $0,09 por GB para los primeros 10 TB/mes.\"",
               "url": "https://aws.amazon.com/s3/pricing/"
             },
             {
@@ -8145,7 +8145,7 @@
             },
             "improvement": "Cero ventanas de exposición · 10x más rápido"
           },
-          "quote": "Migramos 42 servidores de Hetzner a OVH en un fin de semana. 350 TB de datos cifrados transferidos sin un solo byte expuesto. Nuestra migración anterior - solo 8 servidores - tomó tres semanas y requirió descifrar todo en un área de staging. Esa fue la última vez que aceptamos ese riesgo."
+          "quote": "Migramos 42 servidores de Hetzner a OVH en un fin de semana. Transferimos 350 TB de datos cifrados sin exponer ni un solo byte. Nuestra migración anterior, solo 8 servidores, tardó tres semanas y requirió descifrar todo en un área de staging. Esa fue la última vez que aceptamos ese riesgo."
         },
         "stats": [
           {
