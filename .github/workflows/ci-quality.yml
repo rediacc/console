@@ -548,6 +548,12 @@ jobs:
       - name: Naturalization model policy
         run: npm run check:ci-naturalization-model-policy
 
+      # Text-only on purpose: it reads the pin file and the Go constant, never the
+      # registry. A gate that needs the network fails for reasons unrelated to what
+      # it guards.
+      - name: Ceph image pin freshness
+        run: npm run check:ci-ceph-image-pin
+
       - name: Verify no peer dependency conflicts
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: .ci/scripts/quality/check-peer-deps.sh
