@@ -239,7 +239,7 @@
       },
       "migrationSafety": {
         "hero": {
-          "title": "データを危険にさらさずに移行"
+          "title": "データを守りながら移行しましょう"
         }
       },
       "instantRecovery": {

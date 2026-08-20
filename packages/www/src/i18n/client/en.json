@@ -194,19 +194,19 @@
     "solutionPages": {
       "leadMagnetButton": {
         "title": "Get the technical brief",
-        "description": "A no-fluff PDF written for CISOs, CTOs, and senior engineers. We send the link by email so you can find it again.",
+        "description": "A no-fluff PDF written for CISOs, CTOs, and senior engineers. We send the link by email so it is easy to find again.",
         "buttonLabel": "Download the brief",
         "dismissLabel": "Dismiss"
       },
       "leadMagnetModal": {
         "title": "Get the technical brief",
-        "description": "Enter your work email. We will send you the PDF link and keep a copy in your inbox.",
+        "description": "Enter a work email. We send the PDF link so it is easy to find again.",
         "emailLabel": "Work email",
         "emailPlaceholder": "you@company.com",
         "submitLabel": "Send me the PDF",
         "sendingLabel": "Sending...",
         "successTitle": "PDF on the way",
-        "successBody": "We've opened it in a new tab and emailed you the link. Closing this in a moment.",
+        "successBody": "We've opened it in a new tab and emailed the link. Closing this in a moment.",
         "errorGeneric": "Something went wrong. Please try again or reach out at support@rediacc.com.",
         "captchaRequired": "Please complete the captcha verification.",
         "disclaimer": "One email. No marketing list. Unsubscribe with one click.",
@@ -229,7 +229,7 @@
       },
       "integrations": {
         "hero": {
-          "title": "Plug into your existing workflow"
+          "title": "Plug into the existing workflow"
         }
       },
       "immutableBackups": {
@@ -239,12 +239,12 @@
       },
       "migrationSafety": {
         "hero": {
-          "title": "Migrate without risking your data"
+          "title": "Migrate without risking the data"
         }
       },
       "instantRecovery": {
         "hero": {
-          "title": "Get your whole setup back in minutes"
+          "title": "Get the whole setup back in minutes"
         }
       },
       "safeOsTesting": {
@@ -254,17 +254,17 @@
       },
       "retentionCompliance": {
         "hero": {
-          "title": "Keep your data as long as the law requires"
+          "title": "Keep data as long as the law requires"
         }
       },
       "cloudOutageProtection": {
         "hero": {
-          "title": "When AWS goes down, you don’t"
+          "title": "When AWS goes down, the business stays up"
         }
       },
       "failoverTesting": {
         "hero": {
-          "title": "Test your failover before you need it"
+          "title": "Test failover before it is needed"
         }
       },
       "backupVerification": {
@@ -284,7 +284,7 @@
       },
       "encryption": {
         "hero": {
-          "title": "Your keys. Your encryption. No exceptions."
+          "title": "Own the keys. Own the encryption. No exceptions."
         }
       },
       "continuousSecurityTesting": {
@@ -314,7 +314,7 @@
       },
       "vendorLockIn": {
         "hero": {
-          "title": "Your infrastructure. Your choice. Always."
+          "title": "Run it anywhere. Move it anytime. Always."
         }
       }
     }

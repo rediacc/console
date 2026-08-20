@@ -740,7 +740,7 @@
       "meta": {
         "description": "Cloner votre production en 60 secondes. Récupérer après un sinistre en moins de 5 minutes. Hébergé chez vous, sur votre matériel.",
         "keywords": "automatisation de l'infrastructure, environnements de développement, reprise après sinistre, automatisation DevOps, pipeline CI/CD, infrastructure cloud, opérations de développement, Model Context Protocol, infrastructure sécurisée pour l'IA",
-        "title": "Rediacc — Cloner votre production. Zéro casse."
+        "title": "Rediacc: Dupliquez la prod. Zéro dégât."
       }
     },
     "install": {
@@ -1980,7 +1980,7 @@
             "question": "Que se passe-t-il si j'annule ?"
           },
           {
-            "answer": "Chaque nœud est une machine, chacun compte. Pas d'allocation partagée, pas de remise groupée. Un nœud n'occupe un slot que quand un dépôt s'y déploie — la construction est gratuite. Le clustering se vend via nos partenaires (Enterprise), avec le nombre de nœuds convenu à la commande.",
+            "answer": "Chaque nœud est une machine, chacun compte. Pas d'allocation partagée, pas de remise groupée. Un nœud n'occupe un slot que quand un dépôt s'y déploie, donc la construction est gratuite. Le clustering se vend via nos partenaires (Enterprise), avec le nombre de nœuds convenu à la commande.",
             "question": "Comment les nœuds d'un cluster sont-ils comptés ?"
           }
         ]
@@ -2155,7 +2155,7 @@
             "title": "60 jours de grâce pour la mise à l’échelle."
           },
           {
-            "description": "Une licence flottante s'utilise uniquement pour créer ou copier un serveur. Le travail normal n'en consomme jamais. Après 5 heures inactives, la licence se libère — une seule couvre des tonnes de machines. Aucun frais par machine, jamais.",
+            "description": "Une licence flottante s'utilise uniquement pour créer ou copier un serveur. Le travail normal n'en consomme jamais. Après 5 heures inactives, la licence se libère, si bien qu'une seule couvre des tonnes de machines. Aucun frais par machine, jamais.",
             "title": "Machines illimitées. Payez seulement à la création."
           },
           {
@@ -7746,7 +7746,7 @@
               "url": "https://www.flexera.com/about-us/press-center/new-flexera-report-finds-84-percent-of-organizations-struggle-to-manage-cloud-spend"
             },
             {
-              "text": "AWS, « Amazon S3 Pricing — Data Transfer », 2024. « Transfert de données depuis Amazon S3 vers Internet : 0,09 $ par Go pour les 10 premiers To/mois. »",
+              "text": "AWS, « Tarification Amazon S3 : transfert de données », 2024. « Transfert de données sortantes d'Amazon S3 vers Internet : 0,09 $ par Go pour les 10 premiers To/mois. »",
               "url": "https://aws.amazon.com/s3/pricing/"
             },
             {
@@ -7844,12 +7844,12 @@
         "benefits": {
           "items": [
             {
-              "description": "Les données restent chiffrées en AES-256 à chaque étape de la migration. Aucun déchiffrement temporaire à aucune étape.",
+              "description": "Les données restent chiffrées en AES-256 à chaque étape. Jamais de déchiffrement temporaire, pas même une seconde.",
               "icon": "lock",
               "title": "Chiffrement en transit"
             },
             {
-              "description": "Configuration de chiffrement, clés détenues par le client, paramètres Docker et politiques réseau migrent en une seule unité atomique.",
+              "description": "Configuration de chiffrement, clés, paramètres Docker et politiques réseau migrent en un seul bloc. Tout ensemble.",
               "icon": "package",
               "title": "Les paramètres voyagent avec les données"
             },
@@ -7859,34 +7859,34 @@
               "title": "Transfert zéro-confiance"
             }
           ],
-          "overline": "POURQUOI C’EST IMPORTANT",
+          "overline": "POURQUOI C'EST IMPORTANT",
           "title": "Ce que vous obtenez"
         },
         "blurb": "Migrez sans risquer vos données",
         "bottomCta": {
           "command": "rdc repo push production --to secondary",
-          "description": "Commencez avec l’édition Community gratuite. Migration chiffrée incluse.",
+          "description": "La migration chiffrée est intégrée. Démarrez l'essai gratuit de 14 jours.",
           "primaryCta": "Commencer gratuitement",
-          "tierBadge": "Gratuit jusqu’à 5 dépôts · Pas de carte bancaire requise",
-          "title": "Migrez en toute sécurité, à chaque fois"
+          "tierBadge": "14 jours gratuits · Annulation sans engagement",
+          "title": "Migrez en toute sécurité, toujours"
         },
         "calculator": {
-          "annualLabel": "Risque de migration annuel",
-          "description": "Chaque migration sans chiffrement de bout en bout est un incident de conformité en attente.",
-          "footnote": "Suppose 200 $/h de main-d’œuvre pour la configuration du re-chiffrement, 4 880 $/To de prime de violation (IBM 2024), et 1 % de probabilité de violation par fenêtre d’exposition. Rediacc maintient le chiffrement tout au long — zéro fenêtre d’exposition, zéro re-chiffrement nécessaire.",
+          "annualLabel": "Risque annuel de migration",
+          "description": "Chaque migration sans chiffrement de bout en bout est un incident de conformité qui n'attend que d'arriver.",
+          "footnote": "Suppose 200 $/h de main-d'œuvre pour la configuration du re-chiffrement, 4 880 $/To de coût de fuite (IBM 2024), et 1 % de probabilité de fuite par fenêtre d'exposition. Rediacc maintient le chiffrement du début à la fin : zéro fenêtre d'exposition, zéro re-chiffrement nécessaire.",
           "headerTitle": "Calculateur de risque de migration",
-          "overline": "LE VÉRITABLE COÛT",
+          "overline": "LE VRAI COÛT",
           "results": {
-            "labor": "Main-d’œuvre de re-chiffrement",
+            "labor": "Travail de re-chiffrement",
             "risk": "Données à risque par migration",
-            "windows": "Fenêtres d’exposition / an"
+            "windows": "Fenêtres d'exposition / an"
           },
           "sliders": {
             "data": "Volume de données en To",
-            "hours": "Heures d’exposition par migration",
+            "hours": "Heures d'exposition par migration",
             "migrations": "Migrations par an"
           },
-          "title": "Ce que le risque de migration vous coûte",
+          "title": "Ce que le risque de migration vous coûte réellement",
           "withAnnual": "$0",
           "withoutTag": "Sans Rediacc",
           "withResults": {
@@ -7936,12 +7936,12 @@
               "values": ["cross", "cross", "check", "cross", "rediacc"]
             }
           ],
-          "overline": "L’ÉCART",
+          "overline": "L'ÉCART",
           "title": "Ce que les autres ne peuvent pas faire pendant la migration"
         },
         "hero": {
           "primaryCta": "Commencer gratuitement",
-          "subtitle": "Vous changez de serveurs, de clouds ou de fournisseurs ? Vos sauvegardes chiffrées voyagent en toute sécurité. Aucune exposition. Aucune perte de données.",
+          "subtitle": "Serveurs, clouds, fournisseurs : vos sauvegardes restent chiffrées du début à la fin. Zéro exposition. Zéro perte.",
           "title": "Migrez sans risquer vos données"
         },
         "howItWorks": {
@@ -7974,7 +7974,7 @@
               ],
               "size": "Intégrité confirmée",
               "status": "Vérifié",
-              "title": "Cible"
+              "title": "Destination"
             },
             "production": {
               "containerCount": "4 dépôts",
@@ -7998,62 +7998,62 @@
               ],
               "size": "350 Go au total",
               "status": "Exportation",
-              "title": "Origine"
+              "title": "Source"
             }
           },
           "overline": "COMMENT ÇA MARCHE",
           "steps": [
             {
-              "description": "Vos snapshots btrfs chiffrés incluent clés, configs et politiques intactes. Rien n'est déchiffré.",
+              "description": "Vos snapshots btrfs restent chiffrés. Clés, configurations et politiques voyagent ensemble. Rien n'est déchiffré.",
               "icon": "package",
-              "title": "Pack"
+              "title": "Empaquetage"
             },
             {
-              "description": "Transférez vers n'importe quelle destination via un canal chiffré. L'AES-256 n'est jamais interrompu pendant le transit.",
+              "description": "Envoyez vers n'importe quel serveur, cloud ou fournisseur. Les données restent chiffrées pendant tout le parcours. L'AES-256 ne s'interrompt jamais.",
               "icon": "arrow-right-circle",
-              "title": "Move"
+              "title": "Transfert"
             },
             {
-              "description": "Les vérifications d'intégrité SHA-256 confirment que chaque octet est arrivé intact. Rollback automatique en cas d'échec.",
+              "description": "Les vérifications d'intégrité SHA-256 confirment que chaque fichier est arrivé intact. Annulation automatique en cas d'anomalie.",
               "icon": "check-circle",
-              "title": "Vérifier"
+              "title": "Vérification"
             }
           ],
           "title": "Une commande. Zéro exposition."
         },
-        "label": "Sécurité de migration",
+        "label": "Migrations sécurisées",
         "meta": {
-          "description": "Vous changez de serveurs, de clouds ou de fournisseurs ? Vos sauvegardes chiffrées voyagent en toute sécurité. Aucune exposition. Aucune perte de données.",
+          "description": "Vous migrez entre serveurs, clouds ou fournisseurs ? Vos sauvegardes restent chiffrées. Zéro exposition. Zéro perte.",
           "keywords": "migration chiffrée, transfert sans exposition, sécurité de migration de données, transfert de sauvegarde chiffré, migration btrfs, migration de serveur, chiffrement de migration cloud",
-          "title": "Migration sécurisée - Sans risque de données | Rediacc"
+          "title": "Migrations sécurisées - Zéro risque | Rediacc"
         },
         "problem": {
-          "description": "Déplacer des données entre systèmes crée de l’exposition. Fichiers temporaires, transferts non chiffrés, configurations incompatibles. Chaque migration est une fenêtre de risque. Et la plupart des outils perdent les paramètres de chiffrement lors du déplacement — vous obligeant à tout reconfigurer de zéro de l’autre côté.",
+          "description": "C'est la partie effrayante de toute migration. La plupart des outils déchiffrent d'abord, puis copient. Vos fichiers se retrouvent à découvert pendant le transfert. Une erreur et ils fuient. Quand ça se termine, la configuration de chiffrement disparaît, attendant d'être reconfigurée de zéro de l'autre côté.",
           "overline": "LE PROBLÈME",
           "statCallouts": [
             {
               "number": "89%",
               "ref": 2,
               "source": "Flexera 2024 / Thales 2025",
-              "text": "des entreprises opèrent en multi-cloud, mais seulement 8 % chiffrent plus de 80 % des données cloud"
+              "text": "des entreprises opèrent en multi-cloud, mais seulement 8 % chiffrent plus de 80 % de leurs données cloud"
             },
             {
               "number": "$4.88M",
               "ref": 3,
               "source": "IBM Cost of Data Breach 2024",
-              "text": "coût moyen d'une violation de données à l'échelle mondiale"
+              "text": "coût moyen d'une fuite de données à l'échelle mondiale"
             },
             {
               "number": "$90K–$300K",
               "ref": 4,
-              "source": "Cloud provider pricing",
-              "text": "coût de sortie par pétaoctet lors de la migration de données chiffrées entre clouds"
+              "source": "Tarification des fournisseurs cloud",
+              "text": "en frais de sortie par pétaoctet pour la migration de données chiffrées entre clouds"
             }
           ],
           "timeline": {
             "newLabel": "Avec Rediacc",
-            "newSteps": ["Lancer la migration", "0 exposition", "Vérifié"],
-            "oldLabel": "Migration traditionnelle",
+            "newSteps": ["Une commande", "Zéro exposition", "Vérification intégrée"],
+            "oldLabel": "La méthode traditionnelle",
             "oldSteps": [
               {
                 "day": "Étape 1",
@@ -8061,15 +8061,15 @@
               },
               {
                 "day": "Étape 2",
-                "text": "Exporter vers le staging"
+                "text": "Copier vers la zone intermédiaire"
               },
               {
                 "day": "Étape 3",
-                "text": "Transférer non chiffré"
+                "text": "Transférer sans chiffrement"
               },
               {
                 "day": "Étape 4",
-                "text": "Re-chiffrer sur la cible"
+                "text": "Re-chiffrer à la destination"
               },
               {
                 "day": "Résultat",
@@ -8077,7 +8077,7 @@
               }
             ]
           },
-          "title": "La migration est le moment où les données sont les plus vulnérables"
+          "title": "La migration : quand les données sont les plus exposées"
         },
         "references": {
           "items": [
@@ -8094,7 +8094,7 @@
               "url": "https://newsroom.ibm.com/2024-07-30-ibm-report-escalating-data-breach-disruption-pushes-costs-to-new-highs"
             },
             {
-              "text": "AWS, “Amazon S3 Pricing — Data Transfer,” 2024. “Data Transfer OUT from Amazon S3 to Internet: $0.09 per GB for the first 10 TB/month.”",
+              "text": "AWS, “Amazon S3 Pricing: Data Transfer,” 2024. “Data Transfer OUT from Amazon S3 to Internet: $0.09 per GB for the first 10 TB/month.”",
               "url": "https://aws.amazon.com/s3/pricing/"
             },
             {
@@ -8147,54 +8147,54 @@
               "label": "Avant",
               "value": "3 semaines"
             },
-            "improvement": "Zéro fenêtre d’exposition · 10x plus rapide"
+            "improvement": "Zéro fenêtre d'exposition · 10x plus rapide"
           },
-          "quote": "Nous avons migré 42 serveurs de Hetzner vers OVH en un week-end. 350 To de données chiffrées transférées sans un seul octet exposé. Notre migration précédente — seulement 8 serveurs — avait pris trois semaines et nécessitait de tout déchiffrer vers une zone de staging. C’était la dernière fois que nous avons accepté ce risque."
+          "quote": "Nous avons migré 42 serveurs de Hetzner vers OVH en un week-end. 350 To de données chiffrées transférées sans un seul octet exposé. Notre migration précédente — seulement 8 serveurs — avait pris trois semaines et nécessitait de tout déchiffrer vers une zone intermédiaire. C'était la dernière fois qu'on acceptait ce risque."
         },
         "stats": [
           {
             "icon": "shield",
-            "label": "Data Exposed During Migration",
+            "label": "Données exposées lors de la migration",
             "number": "0"
           },
           {
             "icon": "check-circle",
-            "label": "Encryption Maintained",
+            "label": "Chiffrement préservé",
             "number": "100%"
           },
           {
             "icon": "arrow-right-circle",
-            "label": "Destination Supported",
+            "label": "Destinations supportées",
             "number": "Any"
           }
         ],
         "techDiff": {
-          "description": "Les outils de migration traditionnels déchiffrent les données avant le transfert, créant des fenêtres d’exposition où vos données sont sans protection. Rediacc ne déchiffre jamais pendant la migration — les snapshots btrfs chiffrés sont transférés comme des blocs scellés.",
+          "description": "Les outils traditionnels déchiffrent avant de transférer, laissant une fenêtre où vos données sont à découvert. Nous ne déchiffrons jamais. Les snapshots chiffrés se déplacent comme des blocs scellés.",
           "overline": "SOUS LE CAPOT",
           "rediaccLabel": "Rediacc",
           "rows": [
             {
-              "rediacc": "Envoi/réception btrfs chiffré — jamais déchiffré",
-              "traditional": "Pipeline déchiffrer → transférer → re-chiffrer"
+              "rediacc": "Copies chiffrées du début à la fin — jamais déchiffrées",
+              "traditional": "Déchiffrer → Transférer → Re-chiffrer"
             },
             {
-              "rediacc": "Les clés voyagent séparément, détenues par le client à tout moment",
-              "traditional": "Les clés de chiffrement doivent être partagées avec l'outil de transfert"
+              "rediacc": "Les clés ne quittent jamais la machine source",
+              "traditional": "L'outil de transfert exige les clés"
             },
             {
-              "rediacc": "Configuration de chiffrement, paramètres Docker, routes réseau migrent ensemble",
-              "traditional": "Configuration et politiques reconstruites manuellement sur la cible"
+              "rediacc": "Configuration de chiffrement, paramètres Docker et routes réseau migrent ensemble",
+              "traditional": "Configuration reconstruite manuellement à la destination"
             },
             {
-              "rediacc": "Vérification de somme de contrôle SHA-256 par dépôt après le transfert",
-              "traditional": "Intégrité supposée — aucune vérification automatique"
+              "rediacc": "Vérification d'intégrité SHA-256 de chaque dépôt après transfert",
+              "traditional": "Espère que tout est arrivé — aucune vérification automatique"
             },
             {
-              "rediacc": "Forkez le cluster d'abord. Testez le déplacement avant de basculer",
+              "rediacc": "Forkez d'abord le cluster. Testez avant de basculer en production.",
               "traditional": "Les migrations de cluster demandent une construction parallèle et un acte de foi"
             }
           ],
-          "title": "Déchiffrer-transférer-re-chiffrer vs. migration sans exposition",
+          "title": "Déchiffrer-copier-re-chiffrer vs. migration sans exposition",
           "traditionalLabel": "Migration traditionnelle"
         }
       },
