@@ -546,14 +546,14 @@
     "disasterRecovery": {
       "enterpriseCta": {
         "button": "Räägi müügiga",
-        "description": "Kui ükski ülaltoodud pakett ei sobi, räägi meile, mida kasutad. Me lahendame selle.",
-        "heading": "Ebatavaline seadistus? Räägi meile, mida kasutad."
+        "description": "Kui ükski ülaltoodud tasand ei sobi, räägi meile, kuidas sinu süsteem välja näeb. Me leiame lahenduse.",
+        "heading": "Ebatavaline seadistus? Räägi meile sellest."
       },
       "faq": {
         "heading": "Korduma kippuvad küsimused",
         "items": [
           {
-            "answer": "Jah, saate paketti igal ajal muuta. Uuendused jõustuvad koheselt ja alandamised rakenduvad järgmise arvestusperioodi alguses.",
+            "answer": "Jah, paketti saab igal ajal muuta. Uuendused jõustuvad koheselt, alandamised alates järgmise arveldusperioodi algusest.",
             "question": "Kas saan paketti uuendada või alandada?"
           },
           {
@@ -561,7 +561,7 @@
             "question": "Milliseid makseviise aktsepteerite?"
           },
           {
-            "answer": "Jah. Nii taasteanalüüs kui ka taasteprogramm algavad 14-päevase tasuta prooviperioodiga. Lisad registreerimisel kaardi ja tasu võetakse alles siis, kui proov lõpeb. Kui tühistad enne, ei maksa sa midagi.",
+            "answer": "Jah. Nii taasteanalüüs kui ka taasteprogramm algavad 14-päevase tasuta prooviajaga. Lisad kaardi registreerimisel, makseid võetakse alates katseperioodi lõppemisest. Tühistad enne selle aega – midagi ei maksa.",
             "question": "Kas on saadaval tasuta prooviaeg?"
           },
           {
@@ -569,15 +569,15 @@
             "question": "Mis on toe hulka kaasatud?"
           },
           {
-            "answer": "Taasteaeg sõltub sinu lepingust. Taasteanalüüs võimaldab naasta viimase 24 tunni suvalisse hetke. Taasteprogramm tagab taastamise 4 tunniga. Taasteleping toob su võrku tagasi 15 kuni 60 minutiga, sinu enda ajakava järgi.",
+            "answer": "Taastamiseks kuluv aeg sõltub sinu paketist. Taasteanalüüs võimaldab taastada mis tahes hetke viimase 24 tunni jooksul. Taasteprogramm garanteerib taastamise 4 tunniga. Taastelepingu puhul käib taastumine 15–60 minutiga, sinu ajakava järgi.",
             "question": "Kui kiiresti saan katastroofist taastuda?"
           },
           {
-            "answer": "Jah, ja see on mulle isiklikult oluline. Testame igal varukoopiast taastust. Nii tead, et see toimib, enne kui sul seda vaja läheb.",
+            "answer": "Jah, ja see on mulle isiklikult oluline. Me testame iga varukoopia taastamist. Seega tead sa, et see tegelikult töötab, enne kui sul seda vaja läheb.",
             "question": "Kas minu varukoopiad on tegelikult testitud ja kontrollitud?"
           },
           {
-            "answer": "Teie andmed jäävad krüpteerituna valitud asukohas. Olete kontrollis ja pääsete varukoopiatele ligi, kuigi meie teenus langeks.",
+            "answer": "Sinu andmed jäävad krüpteerituna valitud asukohas. Kontroll on sinu käes ja varukoopiad on kätte saadavad, isegi kui meie teenus langeks.",
             "question": "Mis juhtub minu andmetega, kui teenus läheb maha?"
           }
         ]
@@ -587,7 +587,7 @@
           "startFree": "Alusta tasuta prooviga",
           "talkToSales": "Räägi müügiga"
         },
-        "description": "Paigalda Rediacc ja käivita esimene varukoopia alla 10 minutiga.",
+        "description": "Paigalda Rediacc ja esimene varukoopia jookseb alla 10 minutiga.",
         "heading": "Alusta kiiremast taastumisest"
       },
       "hero": {
@@ -616,15 +616,15 @@
         "viewDetails": "Vaata professionaalseid teenuseid"
       },
       "strategy": {
-        "copy": "Alusta sealt, kus oled. Enamik meeskondi jäävad arvust pikemaks. Tõusta ainult siis, kui aeglane taastumine teeks ärikuluks. Sama toode kogu ulatuses. Kasutad Kubernetest? Terved klastrid liiguvad samamoodi, lühikese ja mõõdetud ülemineku ajal.",
+        "copy": "Alusta tasemest, mis sulle täna sobib. Enamik meeskondi jäävad sinna pidama kauemaks, kui arvasid. Tõuse üles alles siis, kui aeglane taastumine hakkab äri maksma minema. Üks ja sama lahendus kogu teelt. Kasutad Kubernetesi? Terved klastrid liiguvad koos – kiire ja jälgitav üleminek.",
         "distribution": [
-          "Taasteanalüüsist taasteprogrammi: sinu varukoopiaid hoitakse teises asukohas. Iga muudatus salvestatakse hetkel, mil see toimub. Saad garanteeritud 4-tunnise akna, et uuesti võrku naasta. Kaasas on ka kindel tugikontakt.",
-          "Taasteprogrammist taastelepingusse: sina otsustad, kui kiiresti pead uuesti võrgus olema. See aken ulatub 15 kuni 60 minutini. Taastamine toimub täiesti eraldi keskkonnas, kuhu su töösüsteemid ei ulatu, ja inimtugi on olemas siis, kui see kõige rohkem loeb."
+          "Taasteanalüüsist taasteprogrammi: varukoopiaid peetakse teises asukohas. Iga muudatus salvestatakse kohe, kui see juhtub. Sul on garanteeritud 4-tunnine aken taastamiseks. Kaasas on kindel tugikontakt.",
+          "Taasteprogrammist taastelepingusse: sina määrad, kui kiiresti pead uuesti tööle saama. Aken 15–60 minuti vahel. Taastamine käib täiesti eraldi keskkonnas, millele su süsteemid ligi ei pääse, ja tugimeeskond on käepeal parajasti siis, kui sul seda kõige rohkem vaja on."
         ],
         "heading": "Ehitatud igale etapile"
       },
       "technicalSummary": {
-        "description": "Andge oma IT-meeskonnale selge ülevaade salvestuspiiritest ja taaste eesmärkidest.",
+        "description": "IT-meeskond näeb selgelt salvestuspiiride ja taaste sihtväärtuste üksikasju.",
         "heading": "Tehnilised piirid ühel pilgul",
         "metrics": [
           {
@@ -640,7 +640,7 @@
             "label": "Auditi logide säilitamine"
           }
         ],
-        "recoveryNote": "RPO (taaste punkti eesmärk): kui palju andmeid saate endale lubada kaotada - mõõdetuna ajas. Näiteks 15-minutiline RPO tähendab, et võite kaotada kuni 15 minutit hiljutisi muudatusi.\n\nRTO (taaste aja eesmärk): kui kiiresti pead pärast katastroofi uuesti tööle saama. Näiteks 4-tunnine RTO tähendab, et teie süsteemid taastatakse 4 tunni jooksul.",
+        "recoveryNote": "RPO (taastepunkti eesmärk): kui palju andmeid võid sa kaotada – mõõdetuna ajaga. Näiteks 15-minutiline RPO tähendab, et sa võid kaotada kuni 15 minuti jagu uusimaid muudatusi.\n\nRTO (taastamise aja eesmärk): kui kiiresti peavad sinu süsteemid pärast katastroofi jooksma. Näiteks 4-tunnine RTO tähendab, et taastumine võtab 4 tundi.",
         "values": {
           "assessment": {
             "auditLogs": "30 päeva",
@@ -1076,7 +1076,7 @@
         "benefits": {
           "items": [
             {
-              "description": "Lisa AGENTS.md oma projekti. Teie tehisintellekti abistaja teab koheselt kõiki saadaolevaid käske, lippe ja töövoogusid.",
+              "description": "Pane AGENTS.md projekti. AI-abistaja näeb kohe kõiki käske, lippe ja töövoogusid.",
               "icon": "zap",
               "title": "Integratsioon: null kulusid"
             },
@@ -1096,14 +1096,14 @@
         },
         "bottomCta": {
           "command": "curl -fsSL https://www.rediacc.com/install.sh | bash",
-          "description": "Installi CLI. Lisa AGENTS.md mall. Teie AI-abistaja teeb ülejäänu.",
+          "description": "Installi CLI. Lisa AGENTS.md. AI-abistaja teeb ülejäänu.",
           "primaryCta": "Proovi tasuta",
-          "title": "Laske oma AI-agendil hallata teie infrastruktuuri"
+          "title": "Lase AI-agendil hallata infrastruktuuri"
         },
         "hero": {
           "primaryCta": "Proovi tasuta",
           "subtitle": "CLI-esimene. SSH-põhine. JSON vaikimisi. Iga rdc käsk on kavandatud autonoomsetele agentidele: GUI-ta, brauseri automatiseerimiseta, kohandatud integratsioonideta.",
-          "title": "Infrastruktuur, mida teie AI-agent juba teab kuidas kasutada."
+          "title": "Infrastruktuur, mida iga AI-agent juba tunneb"
         },
         "howItWorks": {
           "cloneVisual": {
@@ -1163,7 +1163,7 @@
           "overline": "KUIDAS SEE TOIMIB",
           "steps": [
             {
-              "description": "Lisa AGENTS.md mall oma projekti juurkausta. Teie tehisintellekti abistaja loeb selle käivitamise ajal ja teab kõiki rdc käske.",
+              "description": "Pane AGENTS.md mall projekti juurkausta. AI-abistaja loeb selle käivitamisel ja tunneb kõiki rdc käske.",
               "icon": "terminal",
               "title": "Seadistamine"
             },
@@ -1186,7 +1186,7 @@
           "title": "AI-agentidele - CLI-põhine automatiseerimine | Rediacc"
         },
         "problem": {
-          "description": "Teie tehisintellekti kodeerimisabistaja kirjutab, testib ja silutseb koodi täiesti iseseisvalt. Kuid infrastruktuuri juurutamisel, oleku kontrollil või haldamisel põrkab ta vastu seina: ainult GUI-ga armatuurlauad, OAuth brauserivoolu, ebastabiilsed API-d ja vastused, mis paisutavad kontekstiakna üle.",
+          "description": "Teie AI-abistaja kirjutab, testib ja silutseb koodi täiesti ise. Aga infrastruktuuriga tegelda? Satub ta vastu müüri: GUI-d, brauseri OAuth, viletsad API-d, vastused, mis paisutavad konteksti.",
           "overline": "PROBLEEM",
           "statCallouts": [
             {
@@ -1288,23 +1288,23 @@
         "benefits": {
           "items": [
             {
-              "description": "Üks hind masina kohta. Isikupõhiseid tasusid ei ole, üllatusarveid ei ole, väljunditasusid ei ole. Teie eelarve jääb kasvades stabiilseks.",
+              "description": "Ühtne hind masina kohta. Pole kasutajapõhiseid tasusid, pole üllatusarveid, pole väljumistasusid. Eelarve jääb ennustatavaks isegi kiire kasvuga.",
               "icon": "tag",
               "title": "Kindlad kulud"
             },
             {
-              "description": "Andmed asuvad teile kuuluval riistvaral, avatud vormingutes. Ükski pakkuja ei saa teie andmeid pantvangis hoida ega neid lukustaada.",
+              "description": "Andmed jäävad oma riisvara peal, avatud vormingutes. Ükski pakkuja ei saa neid pantvangis hoida ega juurdepääsu eest tasu võtta.",
               "icon": "lock",
-              "title": "Teie andmed, teie kontroll"
+              "title": "Omad andmed, täielik kontroll"
             },
             {
-              "description": "Täielik taastamine alla 5 minutiga. Muutmatud varukopiad, mida lunavara ei saa muuta. Teie äri jätkab tööd. Kui pakkuja teid alt veab, saab kogu süsteemi üle viia, Kubernetes kaasa arvatud.",
+              "description": "Täielik taastamine viis minutit. Kaitstud varukopiad, mida lunavara ei muuda. Äri jätkab tööd. Kui teenusepakkuja langeb, saab kogu süsteemi teisaldada - Kubernetes kaasa arvatud.",
               "icon": "shield",
               "title": "Äri järjepidevus"
             }
           ],
           "overline": "ÄRIVÄÄRTUS",
-          "title": "Mida te saate."
+          "title": "Mida see tegelikult sisaldab."
         },
         "bottomCta": {
           "description": "Üks hind masina kohta. Istmepõhiseid tasusid pole. Üllatusi pole. Alusta 14-päevasel tasuta katsel.",
@@ -1313,9 +1313,9 @@
         },
         "calculator": {
           "annualLabel": "Aastane kogukulud",
-          "description": "Kohandage liugureid oma äri järgi. Näete, milline on pilve tegelik hind võrreldes omahosting lahendusega.",
-          "footnote": "Hinnangud põhinevad tavalistel TCO mudelitel. Tegeliku säästu määr sõltub teie praegusest infrastruktuurist ja majapidamise suurusest.",
-          "headerTitle": "Arvutage oma säästud",
+          "description": "Koonda liugureid oma äri järgi. Näed pilve tegelikke kulusid võrrelduna ise majutatud lahendusega.",
+          "footnote": "Need numbrid on hinnangud, mis põhinevad tavalistel TCO mudelitel. Tegelikud säästud sõltuvad sinu infrastruktuuri seadistusest ja suurusest.",
+          "headerTitle": "Arvuta säästud",
           "overline": "NUMBRID",
           "results": {
             "blockedTime": "Aastane infrastruktuuri kulu",
@@ -1328,29 +1328,29 @@
             "reqs": "Kuu pilvekulud ($)",
             "wait": "Seisaku tunde aastas"
           },
-          "title": "Kui palju saaksite säästa?",
+          "title": "Kui palju raha saaksite säästa?",
           "withAnnual": "Arvuta →",
           "withoutTag": "Praegused pilvekulud",
           "withResults": {
             "blockedTime": "60% vähem",
             "contextSwitching": "<5 minutit",
-            "quarterlySlip": "100% teie oma",
+            "quarterlySlip": "100% sinu oma",
             "sprintCapacity": "Pidurdatud"
           },
           "withTag": "Rediacciga"
         },
         "hero": {
           "primaryCta": "Vaata hindasid",
-          "subtitle": "Kaitske oma äriandmeid teile kuuluval riistvaral. Üks kindel hind masina kohta. Puuduvad isikupõhised tasud ja üllatuslikud arveid. Teie andmed jäävad teile.",
-          "title": "Fikseeritud hind iga serveri eest. Teie andmed jäävad teile."
+          "subtitle": "Kaitse äriandmeid oma riistvara peal. Ühtne hind masina kohta - pole kasutajakaupa tasusid, pole üllatusarveid, pole teenusepakkujat, kes andmeid lukustaaks.",
+          "title": "Ühtne hind serveri kohta. Andmed jäävad sinu juures."
         },
         "meta": {
-          "description": "Varundage süsteeme oma serverites. Fikseeritud hind masina kohta. Puuduvad isikupõhised tasud. Pole üllatusi. Teie andmed jäävad teile.",
+          "description": "Varundata ja taasta oma serverite süsteemid. Ühtne hind masina kohta. Pole kasutajakaupa tasusid, pole üllatusarveid. Andmed jäävad sinu kontrolli all.",
           "keywords": "CEO, infrastruktuuri kulud, omahosting, andmekaitse, tarnija lukustus, prognoositav hinnakujundus, äritegevuse järjepidevus, VKE",
           "title": "CEO-dele: prognoositavad kulud, ilma sõltuvuseta Rediacc"
         },
         "problem": {
-          "description": "Teie meeskond alustas väikese pilvearvega. Nüüd on see teie kolmas suurim kulutus ja kasvab aastas 20%. Isikupõhine hinnakujundus karistab teid palkade kasvatamise eest. Teie andmed paiknevad kellegi teise andmekeskuses, nende suletud vormingus. Kui tahate lahkuda, küsivad nad andmetele juurdepääsuks tasu.",
+          "description": "Algas väikese pilvearve pealt. Nüüd on see juba suuruselt kolmas kulu ja kasvab 20% aastas. Kasutajakaupa hinnakujundus karistab iga uut palkamist. Andmed seisavad teise andmekeskuses nende proprieetarses vormingus. Lahkumine tähendab väljumistasude maksmist andmete tagasi saamiseks.",
           "overline": "PROBLEEM",
           "statCallouts": [
             {
@@ -1371,7 +1371,7 @@
           ],
           "timeline": {
             "newLabel": "Rediacciga",
-            "newSteps": ["204 $/kuus", "Kindel", "Teie oma"],
+            "newSteps": ["204 $/kuus", "Kindel", "Sinu oma"],
             "oldLabel": "Pilvinfrastruktuur",
             "oldSteps": [
               {
@@ -1396,7 +1396,7 @@
               }
             ]
           },
-          "title": "Pilvekulud kasvavad pidevalt. Teie andmed ei ole tegelikult teie omad."
+          "title": "Pilvearved kasvavad. Andmed on teist käes."
         },
         "relatedSolutions": {
           "title": "Kuidas see toimib"
@@ -1666,12 +1666,12 @@
               "title": "60-sekundilised keskkonnad"
             },
             {
-              "description": "Kõik on käsk. Integreeri CI/CD-ga, Git hookidega või enda automaatikaga. GUI pole vajalik. Kubernetes on kaasas: nimeruum forgitakse nagu iga hoidla.",
+              "description": "Kõik käsk. Integreeri CI/CD-ga, Git hookidega või automaatikaga. GUI pole vajamatu. Kubernetes kaasas: nimeruum forgitakse nagu repo.",
               "icon": "terminal",
               "title": "CLI-esimene, skriptitav"
             },
             {
-              "description": "Btrfsi muutumatute hetktõmmiste abil saate mis tahes keskkonna sekunditega tagasi pöörata. Andmekadu puudub. Seisakut ei ole.",
+              "description": "Btrfsi hetktõmmised tastavad keskkonna sekunditega. Andmekadu pole, seisak pole.",
               "icon": "shield",
               "title": "Kohene tagasipööramine"
             }
@@ -1681,13 +1681,13 @@
         },
         "bottomCta": {
           "command": "curl -fsSL https://www.rediacc.com/install.sh | bash",
-          "description": "Alusta oma 14-päevast tasuta katset",
+          "description": "Installi CLI, kloonida keskkond, alusta 14-päevast tasust. Müügikõnesid pole.",
           "primaryCta": "Alusta tasuta katset",
-          "title": "Proovige ise"
+          "title": "Proovi"
         },
         "hero": {
           "primaryCta": "Alusta tasuta katset",
-          "subtitle": "CLI-esimene infrastruktuur, mis kloonib tootmist 60 sekundiga, taastab alla viie minutiga ja töötab teie riistvaral. Pileteid pole. Ootamist pole. Teie andmed jäävad teile.",
+          "subtitle": "CLI-esimene infrastruktuur, mis kloonib tootmist 60 sekundiga, taastab alla viie minutiga ja töötab oma riistvaral. Pileteid pole, ootamist pole. Andmed jäävad sinulle.",
           "title": "Kloonige prod minutiga. Taastage viies. Ära esitage pileteid."
         },
         "howItWorks": {
@@ -1748,7 +1748,7 @@
           "overline": "KUIDAS SEE TOIMIB",
           "steps": [
             {
-              "description": "Käivita rdc ceph snapshot create production. Btrfs CoW loob hetktõmmise hetkeliselt – rakendus, andmebaas, konfiguratsioon, kõik.",
+              "description": "Käivita rdc ceph snapshot create production. Btrfs CoW loob hetktõmmise hetkeliselt: rakendus, andmebaas, konfiguratsioon, kõik.",
               "icon": "terminal",
               "title": "Klooni"
             },
@@ -1758,7 +1758,7 @@
               "title": "Tööta"
             },
             {
-              "description": "Midagi läks katki? Pöörake tagasi sekunditega. Muutmatud hetktõmmised tähendavad, et te ei kaota kunagi andmeid.",
+              "description": "Midagi katki? Taasta sekunditega. Muutumatute hetktõmmistega ei kaota andmeid kunagi.",
               "icon": "shield",
               "title": "Taasta"
             }
@@ -1766,12 +1766,12 @@
           "title": "Üks käsk. Täielik tootmise kloon."
         },
         "meta": {
-          "description": "Klooni produktsioon 60 sekundiga, taasta alla viie minutiga, käita oma riistvaral. CLI-põhine DR DevOps-tiimidele.",
+          "description": "Kloonid tootmise 60 sekundiga, taastad alla 5 minutiga, käitad oma riistvaral. CLI-esimene DR DevOpsi tiimidele.",
           "keywords": "devops, infrastruktuuri automatiseerimine, CLI, btrfs hetktõmmised, omahosting, keskkonna kloonimine, kohene tagasipööramine, tootmise vastavus",
           "title": "Rediacc DevOpsile: kloooni prod, taasta kiiresti"
         },
         "problem": {
-          "description": "Teie CI/CD konveier juurutab minutitega. IaC ettevalmistab sekunditega. Kuid kui vajate testimiskeskkonda päris andmetega, esitate pileti ja ootate kolm päeva. Samal ajal on etapp jagatud, ebastabiilne ja ei sarnanegi tootmisele.",
+          "description": "CI/CD juurutab minutitega, IaC sekunditega. Aga testimiskeskkond päris andmetega? Pead pileti esitama ja kolm päeva ootama. Etapp on jagatud, ebastabiilne ja täiesti teistsugune kui tootmine.",
           "overline": "PROBLEEM",
           "statCallouts": [
             {
@@ -1817,7 +1817,7 @@
               }
             ]
           },
-          "title": "Automatiseerite kõike. Välja arvatud testimiskeskkonna saamist."
+          "title": "Kõik automatiseeritud. Testimiskeskkond? Käsitöö."
         },
         "relatedSolutions": {
           "title": "Seotud lahendused"
@@ -1936,15 +1936,15 @@
         "heading": "Korduma kippuvad küsimused",
         "items": [
           {
-            "answer": "Jah. Nii Professional kui ka Äri pakett algavad 14-päevase tasuta prooviperioodiga. Esimene makse võetakse alles siis, kui prooviperiood lõpeb, nii et tühistades enne seda ei maksa sa midagi. Kui tühistad, langeb sinu konto tagasi tasuta Kogukonna paketile, mis hoiab ühe masina töös 10 GB-ga hoidla kohta ja 100 seadistusega kuus.",
+            "answer": "Jah. Nii Professional kui ka Business algavad 14-päevase tasuta prooviga. Esimene makse võetakse alles prooviperioodi lõpul, seega tühistades selleks ajaks ei maksa sa midagi. Tühistamise järel langeb sinu konto tagasi tasuta Community versioonile, mis käitab ühte masinat - 10 GB hoidlate kaupa ja 100 seadistust kuus.",
             "question": "Kas on olemas tasuta prooviperiood?"
           },
           {
-            "answer": "Jah. Mõlemad tasulised paketid küsivad registreerumisel kaarti, et prooviperiood saaks sujuvalt tellimuseks muutuda. Sinult ei võeta tasu enne, kui 14-päevane prooviperiood lõpeb, ja võid selle jooksul igal ajal tühistada.",
+            "answer": "Jah. Mõlemad tasulised paketid küsivad registreerimisel kaarti, et prooviperiood saaks otse tellimuseks muutuda. Makset ei võeta enne 14-päevase proovi lõppu, ja võid iga hetk selleks ajaks tühistada.",
             "question": "Kas alustamiseks on vaja krediitkaarti?"
           },
           {
-            "answer": "Jah, saad oma plaani igal ajal muuta. Parendused jõustuvad koheselt, alandamised alates järgmise arveldusperioodi algusest. Trahve ega tasusid pole.",
+            "answer": "Jah. Plaani saad muuta igal ajal. Parendused jõustuvad kohe, alandamised alates järgmise arveldusperioodi algusest. Trahve ega lisakulud ei ole.",
             "question": "Kas saan oma plaani muuta?"
           },
           {
@@ -1964,11 +1964,11 @@
             "question": "Kas Rediacc töötab minu enda serverites?"
           },
           {
-            "answer": "Iga iseteeninduspakett sisaldab ühte masinat (ühte ujuvat litsentsi). Kui pead Rediacci käitama rohkem kui ühes masinas, on see Enterprise seadistus, mida müüakse meie partnerite kaudu. Võta meiega ühendust ja paneme selle koos paika.",
+            "answer": "Iga iseteeninduspakett sisaldab ühte masinat (ühte ujuvat litsentsi). Kui pead Rediacci käitama mitmes masinas, on see Enterprise seadistus - seda müüakse meie partnerite kaudu. Võta meiega ühendust ja leiame koos õige suuruse.",
             "question": "Mitut masinat iga pakett katab?"
           },
           {
-            "answer": "Enterprise on ehitatud sinu seadistuse jaoks ja müüakse meie partnerite kaudu. Sina valid tingimused, käitad mitmes masinas ning saad oma serveriruumi, kohandatud taastamislubaduse ja 24/7/365 toe. Lisaks turbeülevaated ja regulaarsed harjutused.",
+            "answer": "Enterprise on ehitatud vastavalt vajadustele ja müüakse meie partnerite kaudu. Tingimused on läpitavad, töökoormus käitub mitmes masinas ning see sisaldab dedikeeritud serveriruumi, kohandatud taastamislubadust ja 24/7/365 toe. Lisaks turvaülevaated ja regulaarsed harjutused.",
             "question": "Mis on kaasas Enterprise plaaniga?"
           },
           {
@@ -1976,11 +1976,11 @@
             "question": "Kas pakute allahindlusi haridusasutustele või mittetulundusühingutele?"
           },
           {
-            "answer": "Kui tühistad 14-päevase prooviperioodi jooksul, ei võeta sinult kunagi tasu. Kui tühistad tasulise plaani hiljem, säilivad selle funktsioonid kuni arveldusperioodi lõpuni ning seejärel langeb sinu konto tagasi tasuta Community versioonile. Sinu hoidlad töötavad kogu selle aja katkematult.",
+            "answer": "Tühista prooviperioodi ajal - sinult ei võeta kunagi tasu. Tühista hiljem maksavat plaani - funktsioonid kehtivad kuni arveldusperioodi lõpuni, siis langeb konto tagasi tasuta Community versioonile. Hoidlad töötavad kogu aja katkematult.",
             "question": "Mis juhtub, kui tühistan?"
           },
           {
-            "answer": "Igas klastris on iga sõlm eraldi masin ja loetakse masinana. Klastril puudub jagatud kvoot ja serverite kokkupanemise eest soodustust ei ole. Sõlm hõivab koha alles siis, kui sinna paigutatakse repositoorium, seega klastri ülesehitamine iseenesest ei maksa midagi. Klastrite loomist müüakse meie partnerite kaudu Enterprise'i lepingu osana, ja sõlmede arv lepitakse kokku tellimisel.",
+            "answer": "Klastris on iga sõlm eraldi masin. Klastril puudub jagatud kvoot ja serverigruppide kokkupanemise eest soodustust ei ole. Sõlm võtab koha alles, kui sinna paigutatakse hoidla - klastri ülesehitamine ise ei maksa midagi. Klasterit müüakse meie partnerite kaudu Enterprise lepinguna, sõlmede arv lepitakse kokku tellimisel.",
             "question": "Kuidas loetakse klastri sõlmi?"
           }
         ]
@@ -1990,15 +1990,15 @@
           "startFree": "Alusta tasuta prooviperioodi",
           "talkToSales": "Räägi müügitiimiga"
         },
-        "description": "Paigalda 5 minutiga. Alusta oma 14-päevast tasuta prooviaega.",
-        "heading": "Kaitse oma infrastruktuuri"
+        "description": "Paigaldus võtab 5 minutit. Alusta 14-päevast tasuta proovi.",
+        "heading": "Kaitse infrastruktuuri."
       },
       "hero": {
-        "subtitle": "Vali meeskonnale sobiv plaani. Lihtne hinnakujundus, varjatud kulusid pole, tühista igal ajal.",
+        "subtitle": "Vali tiimile sobiv plaan. Lihtne hinnakujundus, peidetud kulusid ei ole, tühista iga hetk.",
         "title": "Tegeliku käituse jaoks ehitatud"
       },
       "meta": {
-        "description": "Vali oma meeskonnale sobiv plaan. Iga tasuline plaan algab 14-päevase tasuta prooviperioodiga. Varjatud tasusid pole.",
+        "description": "Vali oma meeskonnale parim plaan. Tasulised paketid algavad 14-päevase tasuta prooviga. Peidetud kulusid ei ole.",
         "keywords": "hinnad, infrastruktuuri automatiseerimine, CI/CD hinnad, DevOpsi paketid, ülesannete täitmine",
         "title": "Hinnakujundus | Tegeliku käituse jaoks"
       },
@@ -2018,12 +2018,12 @@
       },
       "professionalServices": {
         "benefits": {
-          "description": "Päris insenerid telefonis, kui su serverid kukkuvad. Pole pileti järjekorda. Päris inimene, samal päeval.",
+          "description": "Päris insenerid telefonil, kui su serverid kukkuvad. Ei pileti järjekorda - päris inimene, sama päeval.",
           "heading": "Miks professionaalsed teenused?",
           "items": [
-            "Teie projektile määratud pühendatud ekspertide meeskond",
+            "Pühendatud ekspertide meeskond teie projekti jaoks.",
             "Garanteeritud reageerimisajad SLA-ga",
-            "Vaheta teenuseid vastavalt oma vajadustele",
+            "Liigu teenuste vahel, kui vajadused muutuvad.",
             "24/7 hädaabi telefoniliin kriitiliste intsidentide jaoks"
           ],
           "statistics": [
@@ -2034,7 +2034,7 @@
         "categories": {
           "items": [
             {
-              "description": "Praktiline koolitus sinu meeskonnale, alates juhitud seadistuse ülevaatest kuni mitmepäevaste töötubadeni, mis katavad edasijõudnud töövooge ja intsidentidele reageerimise protseduure.",
+              "description": "Praktiline koolitamine otse sinu meeskonnale: juhatatud seadistusest kuni mitme päeva töötubadeni, mis hõlmavad arenenud töövooge ja intsidentide lahendamist.",
               "icon": "team-training",
               "id": "training",
               "name": "Koolitus"
@@ -2046,7 +2046,7 @@
               "name": "Tugi"
             },
             {
-              "description": "Lõpuni viidud migreerimine ja kohandatud integreerimistöö, alates täielikult valideeritud andmeülekandest kuni kiire sama päeva ümberlülituseni, kui oled ajasurve all.",
+              "description": "Algusest lõpuni migreerimine ja kohandatud integreerimine: täielikult kontrollitud andmete ülekanne kuni kiirete sama-päevaste ümberlülitusteni, kui kiire lahendus on vajalik.",
               "icon": "data-migration",
               "id": "migration",
               "name": "Migreerimine"
@@ -2058,7 +2058,7 @@
               "name": "Taaste"
             },
             {
-              "description": "Turvaaudid, tugevdamise kontrollnimekirjad, vastavuse käsiraamatud ja intsidentidele reageerimise lepingud, kohandatud sinu keskkonna ja auditi nõuete järgi.",
+              "description": "Turvaülevaated, tugevdamise kontrollnimekirjad, vastavuse juhendid ja intsidentidele reageerimise lepingud - kõik kohandatud sinu keskkonna ja auditi nõudmistele.",
               "icon": "storage-hardening",
               "id": "security",
               "name": "Turvalisus ja vastavus"
@@ -2066,7 +2066,7 @@
           ]
         },
         "cta": {
-          "description": "Iga koostöö kohandatakse sinu seadistuse järgi. Võta meiega ühendust ja leiame koos õige plaani.",
+          "description": "Iga koostöö on kohandatud sinu seadistusele. Võta meiega ühendust - leiame koos õige plaani.",
           "heading": "Vajad professionaalset abi?"
         },
         "header": {
@@ -2074,7 +2074,7 @@
         }
       },
       "roiCta": {
-        "description": "Kasuta meie interaktiivset ROI kalkulaatorit, et näha, kui palju saad Rediacc-ga säästa.",
+        "description": "Kasuta interaktiivset ROI kalkulaatorit, et näha, kui palju Rediacc sinule säästa toob.",
         "heading": "Pole kindel, milline plaani sobib?"
       },
       "technicalSummary": {
@@ -2135,16 +2135,16 @@
         }
       },
       "trustSection": {
-        "corporateGuarantee": "Kui Rediacc teile ei sobi, aitame teil tagasi migreerida.",
-        "heading": "Teie infrastruktuur. Teie reeglid.",
+        "corporateGuarantee": "Kui Rediacc ei tööta, aitame migreerida tagasi.",
+        "heading": "Lukustusi pole. Kunagi.",
         "rows": [
           {
-            "description": "Käivitamine, peatamine ja kustutamine töötavad alati, isegi aastaid pärast tellimuse lõppemist. Teie andmed on alati kättesaadavad teie enda masinatel.",
-            "title": "Teie hoidlad töötavad igavesti."
+            "description": "Käivitamine, peatamine, kustutamine - need töötavad alati, isegi aastaid pärast tellimuse lõppu. Andmed jäävad samadele masinatele kättesaadavaks.",
+            "title": "Rakendused töötavad igavesti."
           },
           {
-            "description": "Teie töövahendid töötavad jätkuvalt: SSH juurdepääs, kaugredigeerimine ja kõik haldustoimingud. Litsentsi ei ole kunagi vaja.",
-            "title": "Täielik juurdepääs teie tööriistadele."
+            "description": "Kõik töövahendid töötavad - SSH juurdepääs, kaugredigeerimine, kõik haldustoimingud. Litsentsi pole kunagi vaja.",
+            "title": "Täielik juurdepääs kõigile tööriistadele."
           },
           {
             "description": "Uute serverite loomiseks või olemasolevate kopeerimiseks on vaja aktiivset paketti. Suuruse muutmine ja laiendamine töötavad veel 60 päeva pärast paketi aegumist. Serverite käitamine jääb aga alatiseks.",
@@ -2155,15 +2155,15 @@
             "title": "60-päevane ajapikendus skaleerimiseks."
           },
           {
-            "description": "Ujuvat litsentsi kasutatakse ainult siis, kui loot või kopeerid serverit. Sinu tavapärane töö ei hõiva kunagi litsentsi. Litsentsid vabanevad pärast 5 tundi tegevusetust, mistõttu üksainus ujuv litsents katab aja jooksul ikkagi palju masinaid. Masinapõhiseid tasusid pole kunagi.",
+            "description": "Ujuvat litsentsi kasutatakse ainult serveri loomiseks või kopeerimiseks. Tavaline töö ei hõiva kunagi litsentsi. Litsentsid vabanevad 5 tunni pärast tegevusetust - nii et ühe ujuva litsentsiga katad ajas paljusid masinaid. Masinakaupa makset pole kunagi.",
             "title": "Piiramatu arv masinaid. Tasud ainult uute loomisel."
           },
           {
-            "description": "Iga hoidla litsents on seotud masinaga, millele see paigaldati. Kui hostiteenuse pakkuja migreerib hoidla teisele riistvarale, muutub masina identiteet - kuid litsentsid töötavad veel 40 päeva. Järgmine kontroll uuendab automaatselt. Seisakut ei ole, käsitsi samme ei ole.",
-            "title": "40-päevane ajapikendus riistvara muutumisel."
+            "description": "Iga litsents on seotud masinaga, kuhu see paigaldati. Kui hostiteenuse pakkuja migreerib masinat teisele riistvarale, muutub masina ID - kuid litsentsid töötavad veel 40 päeva. Järgmine kontroll uuendab automaatselt. Seiskust ei ole, käsitsi samme pole.",
+            "title": "40-päevane puhver serveri riistvara muutumisel."
           }
         ],
-        "subtitle": "Rediacc litsentsid on loodud selleks, et te ei jääks kunagi lukusse. Siin, kuidas see praktikas toimib."
+        "subtitle": "Rediacc litsentsid takistavad lukustumist. Siin, kuidas see praktikas toimib."
       },
       "ui": {
         "billingToggle": {

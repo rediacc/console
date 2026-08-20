@@ -1074,7 +1074,7 @@
         "benefits": {
           "items": [
             {
-              "description": "AGENTS.md im Projekt ablegen. Ihr KI-Assistent kennt sofort jeden verfügbaren Befehl, jedes Flag und jeden Workflow.",
+              "description": "AGENTS.md ins Projekt legen. Der KI-Assistent kennt sofort jeden Befehl, jedes Flag und jeden Workflow.",
               "icon": "zap",
               "title": "Null Integrationsaufwand"
             },
@@ -1094,14 +1094,14 @@
         },
         "bottomCta": {
           "command": "curl -fsSL https://www.rediacc.com/install.sh | bash",
-          "description": "Installieren Sie die CLI. Fügen Sie die AGENTS.md-Vorlage hinzu. Ihr KI-Assistent erledigt den Rest.",
+          "description": "Installieren Sie die CLI. Fügen Sie die AGENTS.md-Vorlage hinzu. Der KI-Assistent erledigt den Rest.",
           "primaryCta": "Jetzt kostenlos testen",
-          "title": "Ihr KI-Agent verwaltet Ihre Infrastruktur"
+          "title": "Lassen Sie Ihren KI-Agent Ihre Infrastruktur verwalten."
         },
         "hero": {
           "primaryCta": "Jetzt kostenlos testen",
           "subtitle": "CLI-first. SSH-basiert. JSON standardmäßig. Jeder rdc-Befehl ist für autonome Agenten gebaut: kein GUI, keine Browser-Automatisierung, keine benutzerdefinierten Integrationen.",
-          "title": "Infrastruktur, die Ihr KI-Agent schon versteht"
+          "title": "Infrastruktur, die Ihr KI-Agent sofort versteht."
         },
         "howItWorks": {
           "cloneVisual": {
@@ -1161,7 +1161,7 @@
           "overline": "SO FUNKTIONIERT ES",
           "steps": [
             {
-              "description": "Eine AGENTS.md-Vorlage im Projektstammverzeichnis ablegen. Ihr KI-Assistent liest sie beim Start und kennt jeden rdc-Befehl.",
+              "description": "Eine AGENTS.md-Vorlage ins Projektverzeichnis legen. Der KI-Assistent liest sie beim Start und kennt sofort jeden rdc-Befehl.",
               "icon": "terminal",
               "title": "Konfigurieren"
             },
@@ -1184,7 +1184,7 @@
           "title": "Für KI-Agenten – CLI-native Automation | Rediacc"
         },
         "problem": {
-          "description": "Ihr KI-Coding-Assistent kann autonom Code schreiben, testen und debuggen. Aber wenn er deployen, den Status prüfen oder Infrastruktur verwalten muss, stößt er an eine Wand: reine GUI-Dashboards, OAuth-Browser-Flows, instabile APIs und Antworten, die das Kontextfenster sprengen.",
+          "description": "Ein KI-Coding-Assistent kann autonom Code schreiben, testen und debuggen. Doch sobald es um Deployment, Status-Checks oder Infrastruktur-Management geht, scheitert er: GUI-Dashboards, Browser-OAuth, instabile APIs und Responses, die das Kontextfenster sprengen.",
           "overline": "DAS PROBLEM",
           "statCallouts": [
             {
@@ -1286,23 +1286,23 @@
         "benefits": {
           "items": [
             {
-              "description": "Ein Pauschalpreis pro Maschine. Keine Pro-Benutzer-Gebühren, keine überraschenden Rechnungen, keine Egress-Gebühren. Ihr Budget bleibt planbar, wenn Sie wachsen.",
+              "description": "Ein fester Preis pro Maschine. Keine Gebühren pro Benutzer, keine überraschenden Rechnungen, keine Egress-Kosten. Ihr Budget bleibt planbar, auch wenn Sie wachsen.",
               "icon": "tag",
               "title": "Planbare Kosten"
             },
             {
-              "description": "Daten bleiben auf Hardware, die Ihnen gehört, in offenen Formaten. Kein Anbieter kann Ihre Daten als Geisel halten oder Ihnen den Zugang berechnen.",
+              "description": "Ihre Daten bleiben auf Ihrer Hardware, in offenen Formaten. Kein Anbieter kann Sie damit erpressen oder Ihnen Zugangsgebühren aufzwingen.",
               "icon": "lock",
               "title": "Ihre Daten, Ihre Kontrolle"
             },
             {
-              "description": "Vollständige Wiederherstellung in unter 5 Minuten. Unveränderliche, nur einmal beschreibbare Backups, die Ransomware nicht verändern kann. Ihr Unternehmen läuft weiter. Lässt ein Anbieter Sie im Stich, kann das gesamte System umziehen, Kubernetes eingeschlossen.",
+              "description": "Vollständige Wiederherstellung in unter 5 Minuten. Unveränderliche Backups, die Ransomware nicht knackt. Ihr Geschäft läuft weiter. Falls ein Provider ausfällt, zieht das ganze System um – Kubernetes inklusive.",
               "icon": "shield",
               "title": "Geschäftskontinuität"
             }
           ],
           "overline": "GESCHÄFTSWERT",
-          "title": "Was das für Ihr Unternehmen bedeutet"
+          "title": "Das ist wirklich enthalten"
         },
         "bottomCta": {
           "description": "Ein Festpreis pro Maschine. Keine Pro-Sitz-Gebühren. Keine Überraschungen. Testen Sie 14 Tage kostenlos.",
@@ -1311,9 +1311,9 @@
         },
         "calculator": {
           "annualLabel": "Jährliche Gesamtkosten",
-          "description": "Passen Sie die Schieberegler an Ihr Unternehmen an. Sehen Sie die echten Kosten: Cloud vs. Self-Hosted.",
-          "footnote": "Schätzungen basierend auf branchenüblichen Kostenmodellen. Ihre Einsparungen hängen von Ihrer aktuellen Infrastruktur und Ihrem Umfang ab.",
-          "headerTitle": "Berechnen Sie Ihre Einsparungen",
+          "description": "Passen Sie die Schieberegler an Ihr Unternehmen an. Sehen Sie den echten Kostenvergleich: Cloud gegen Eigenhosting.",
+          "footnote": "Diese Zahlen sind Schätzungen basierend auf branchenüblichen Kostenmodellen. Ihre Einsparungen hängen von Ihrer Infrastruktur und Ihrem Umfang ab.",
+          "headerTitle": "Einsparungen berechnen",
           "overline": "DIE ZAHLEN",
           "results": {
             "blockedTime": "Jährliche Infrastrukturkosten",
@@ -1332,23 +1332,23 @@
           "withResults": {
             "blockedTime": "60% weniger",
             "contextSwitching": "<5 Minuten",
-            "quarterlySlip": "100% Ihres",
+            "quarterlySlip": "100% Ihr Eigentum",
             "sprintCapacity": "Minimiert"
           },
           "withTag": "Mit Rediacc"
         },
         "hero": {
           "primaryCta": "Preise ansehen",
-          "subtitle": "Schützen Sie Ihre Geschäftsdaten auf Hardware, die Ihnen gehört. Ein Pauschalpreis pro Maschine, keine Pro-Sitz-Gebühren, keine überraschenden Cloud-Rechnungen, kein Anbieter, der Ihre Daten als Geisel hält.",
-          "title": "Ein Pauschalpreis pro Server. Ihre Daten gehören Ihnen."
+          "subtitle": "Schützen Sie Ihre Geschäftsdaten auf Hardware, die Ihnen gehört. Ein fester Preis pro Maschine – ohne Gebühren pro Benutzer, ohne überraschende Cloud-Rechnungen, ohne dass der Anbieter Ihre Daten als Geisel hält.",
+          "title": "Ein Pauschalpreis pro Server. Ihre Daten bleiben bei Ihnen."
         },
         "meta": {
-          "description": "Sichern Sie Ihre Systeme auf eigenen Servern. Ein Pauschalpreis. Keine Pro-Sitz-Gebühren, keine Überraschungen. Ihre Daten gehören Ihnen.",
+          "description": "Sichern Sie Ihre Systeme auf Ihren Servern. Ein Preis pro Maschine. Keine Platzgebühren. Keine Cloud-Überraschungen. Die Daten bleiben lokal.",
           "keywords": "CEO, Infrastrukturkosten, Self-Hosted, Datenschutz, Vendor Lock-in, planbare Preise, Geschäftskontinuität, KMU",
           "title": "Für CEOs - Planbare Kosten, kein Lock-in | Rediacc"
         },
         "problem": {
-          "description": "Ihr Team hat mit einer kleinen Cloud-Rechnung angefangen. Heute ist sie Ihre drittgrößte Ausgabe und wächst jedes Jahr um 20%. Pro-Benutzer-Preise bestrafen Sie für Neueinstellungen. Ihre Daten liegen in fremden Rechenzentren im proprietären Format. Wenn Sie wechseln wollen, berechnen Sie Ihnen Egress-Gebühren für den Zugriff auf Ihre eigenen Daten.",
+          "description": "Es fing mit einer kleinen Cloud-Rechnung an. Heute ist sie Ihre drittgrößte Ausgabe und wächst 20% pro Jahr. Benutzer-Lizenzen machen jede Neueinstellung teuer. Ihre Daten liegen in fremden Rechenzentren im Proprietär-Format des Anbieters. Wenn Sie weggehen wollen, zahlen Sie Egress-Gebühren, um Ihre eigenen Daten zu bekommen.",
           "overline": "DAS PROBLEM",
           "statCallouts": [
             {
@@ -1369,7 +1369,7 @@
           ],
           "timeline": {
             "newLabel": "Mit Rediacc",
-            "newSteps": ["$204/Mo", "Pauschal", "Ihres"],
+            "newSteps": ["$204/Mo", "Pauschal", "Ihr Eigentum"],
             "oldLabel": "Cloud-Infrastruktur",
             "oldSteps": [
               {
@@ -1394,7 +1394,7 @@
               }
             ]
           },
-          "title": "Cloud-Rechnungen explodieren. Ihre Daten gehören nicht Ihnen."
+          "title": "Cloud-Rechnungen explodieren. Der Anbieter sitzt auf Ihren Daten."
         },
         "relatedSolutions": {
           "title": "Wie es funktioniert"
@@ -1402,9 +1402,9 @@
         "shareWithTeam": {
           "ctaSlug": "for-ctos",
           "ctaText": "CTO-Vertiefung teilen",
-          "description": "Ihr technisches Team muss überprüfen, wie das in Ihren Stack passt. Teilen Sie ihnen die CTO-Vertiefung - sie enthält alle Antworten, die sie brauchen.",
+          "description": "Das Tech-Team muss überprüfen, wie das in Ihren Stack passt. Teilen Sie ihnen die CTO-Analyse – sie enthält die Antworten, die das Team stellen wird.",
           "overline": "NÄCHSTER SCHRITT",
-          "title": "Mit Ihrem CTO teilen"
+          "title": "Mit dem CTO teilen"
         },
         "socialProof": {
           "author": "CEO",
@@ -1450,7 +1450,7 @@
               "title": "Minuten, nicht Stunden"
             },
             {
-              "description": "Daten bleiben auf Ihrer Infrastruktur, in offenen Formaten. Anbieter wechseln, selbst verwalten, morgen migrieren — alles Ihre Entscheidung. Das gilt jetzt auch für Kubernetes-Cluster.",
+              "description": "Daten bleiben auf Ihrer Infrastruktur, in offenen Formaten. Anbieter wechseln, selbst verwalten, morgen migrieren: alles Ihre Entscheidung. Das gilt jetzt auch für Kubernetes-Cluster.",
               "icon": "lock",
               "title": "Kein Vendor Lock-in"
             }
@@ -1459,7 +1459,7 @@
           "title": "Was Rediacc für Ihren Stack bedeutet"
         },
         "bottomCta": {
-          "description": "Vereinbaren Sie eine 30-minütige Architektur-Überprüfung mit unserem Team — inklusive TCO-Projektionen für Ihr Setup.",
+          "description": "Vereinbaren Sie eine 30-minütige Architektur-Überprüfung mit unserem Team, inklusive TCO-Projektionen für Ihr Setup.",
           "primaryCta": "Demo vereinbaren",
           "title": "In Aktion sehen"
         },
@@ -1664,12 +1664,12 @@
               "title": "60-Sekunden-Umgebungen"
             },
             {
-              "description": "Alles ist ein Befehl. Integration mit CI/CD, Git Hooks oder deiner eigenen Automatisierung. Keine GUI erforderlich. Kubernetes inklusive: Ein Namespace forkt wie jedes Repo.",
+              "description": "Alles ist ein Befehl. Integriere CI/CD, Git Hooks oder deine Automation. Keine GUI nötig. Kubernetes inklusive: Jeder Namespace forkt wie jedes Repo.",
               "icon": "terminal",
               "title": "CLI-first, skriptfähig"
             },
             {
-              "description": "Btrfs unveränderliche Snapshots bedeuten, dass du jede Umgebung in Sekunden zurücksetzen kannst. Kein Datenverlust. Keine Ausfallzeit.",
+              "description": "Btrfs immutable Snapshots: Jede Umgebung in Sekunden zurück. Kein Datenverlust. Kein Downtime.",
               "icon": "shield",
               "title": "Sofortiges Rollback"
             }
@@ -1681,11 +1681,11 @@
           "command": "curl -fsSL https://www.rediacc.com/install.sh | bash",
           "description": "Installiere die CLI. Klone deine erste Umgebung. 14 Tage kostenlos testen – kein Vertriebsanruf.",
           "primaryCta": "Kostenlos testen",
-          "title": "Probier es selbst aus"
+          "title": "Probier's"
         },
         "hero": {
           "primaryCta": "Kostenlos testen",
-          "subtitle": "CLI-first Infrastruktur, die Produktion in 60 Sekunden klont, in unter 5 Minuten zurückrollt und auf deiner Hardware läuft. Keine Tickets. Kein Warten. Deine Daten gehören dir.",
+          "subtitle": "CLI-first Infrastruktur: Produktion in 60 Sekunden geklont, Rollback unter 5 Minuten, auf deiner Hardware. Keine Tickets. Kein Warten. Alles bleibt bei dir.",
           "title": "Klone in einer Minute. Stelle her in fünf. Keine Tickets mehr."
         },
         "howItWorks": {
@@ -1746,7 +1746,7 @@
           "overline": "WIE ES FUNKTIONIERT",
           "steps": [
             {
-              "description": "Führen Sie rdc ceph snapshot create production aus. Btrfs CoW erstellt blitzschnell einen Snapshot von allem: App, Datenbank, Konfiguration.",
+              "description": "Starte rdc ceph snapshot create production. Btrfs CoW snapshottet alles in unter einer Sekunde: App, Datenbank, Konfiguration.",
               "icon": "terminal",
               "title": "Klonen"
             },
@@ -1756,7 +1756,7 @@
               "title": "Arbeiten"
             },
             {
-              "description": "Etwas geht schief? Rollback in Sekunden. Unveränderliche Snapshots — Sie verlieren niemals Daten.",
+              "description": "Etwas geht schief? Rollback in Sekunden. Mit unveränderlichen Snapshots verlierst du niemals Daten.",
               "icon": "shield",
               "title": "Wiederherstellen"
             }
@@ -1764,12 +1764,12 @@
           "title": "Ein Befehl. Vollständiger Produktionsklon."
         },
         "meta": {
-          "description": "Produktion in 60 Sekunden klonen, in unter 5 Minuten wiederherstellen, auf deiner Hardware. CLI-first Disaster Recovery für DevOps-Teams.",
+          "description": "Produktion klonen in 60 Sekunden, Rollback in unter 5 Minuten, auf deiner Hardware. CLI-first DR für DevOps-Teams.",
           "keywords": "devops, Infrastrukturautomatisierung, CLI, btrfs-Snapshots, Self-Hosted, Umgebungsklonen, sofortiges Rollback, Produktionsparität",
           "title": "Rediacc für DevOps: Klone, stelle schnell her"
         },
         "problem": {
-          "description": "Ihre CI/CD-Pipeline deployed in Minuten. Ihre IaC provisioning läuft in Sekunden. Aber wenn Sie eine Testumgebung mit echten Daten brauchen, erstellen Sie ein Ticket und warten drei Tage. Währenddessen ist Staging geteilt, instabil und unterscheidet sich völlig von der Produktion.",
+          "description": "Deine CI/CD deployt in Minuten. Deine IaC in Sekunden. Aber eine Testumgebung mit echten Daten braucht ein Ticket und drei Tage Wartezeit. Dein Staging ist geteilt, instabil und unterscheidet sich völlig von Production.",
           "overline": "DAS PROBLEM",
           "statCallouts": [
             {
@@ -1815,7 +1815,7 @@
               }
             ]
           },
-          "title": "Sie automatisieren alles. Nur nicht die Testumgebung."
+          "title": "Alles ist automatisiert. Nur nicht die Testumgebung."
         },
         "relatedSolutions": {
           "title": "Verwandte Lösungen entdecken"
@@ -1908,7 +1908,7 @@
           {
             "business": false,
             "enterprise": true,
-            "label": "Eskalation auf Führungsebene",
+            "label": "Eskalation an die Geschäftsleitung",
             "professional": false
           },
           {
@@ -1934,15 +1934,15 @@
         "heading": "Häufig gestellte Fragen",
         "items": [
           {
-            "answer": "Ja. Professional und Business starten beide mit einer 14-tägigen kostenlosen Testphase. Die erste Abbuchung erfolgt erst nach Ablauf der Testphase — kündigen Sie vorher, zahlen Sie nichts. Wenn Sie kündigen, wechselt Ihr Konto automatisch zum kostenlosen Community-Plan, der eine Maschine mit 10 GB pro Repository und 100 Server-Setups pro Monat am Laufen hält.",
+            "answer": "Ja. Professional und Business starten beide mit 14 Tagen kostenlos. Die erste Abbuchung erfolgt erst nach Ablauf – kündige vorher, zahle nichts. Nach der Kündigung wechselt dein Konto automatisch zum kostenlosen Community-Plan, der eine Maschine mit 10 GB pro Repository und 100 Setups pro Monat am Laufen hält.",
             "question": "Gibt es eine kostenlose Testphase?"
           },
           {
-            "answer": "Ja. Beide kostenpflichtigen Pläne verlangen bei der Anmeldung eine Karte, damit die Testphase nahtlos in ein Abonnement übergehen kann. Es wird nichts berechnet, bis die 14-tägige Testphase endet, und Sie können jederzeit vorher kündigen.",
+            "answer": "Ja. Beide bezahlten Pläne benötigen eine Karte zur Anmeldung – dann läuft die Testphase nahtlos in ein Abonnement über. Es wird nichts berechnet, bis die 14-tägige Testphase endet, und du kannst jederzeit vorher kündigen.",
             "question": "Benötige ich eine Kreditkarte, um zu starten?"
           },
           {
-            "answer": "Ja, Sie können Ihren Plan jederzeit ändern. Upgrades werden sofort wirksam und Downgrades gelten zu Beginn Ihres nächsten Abrechnungszeitraums. Keine Strafen oder Gebühren.",
+            "answer": "Ja. Ändere deinen Plan jederzeit. Upgrades sind sofort aktiv, Downgrades greifen beim nächsten Abrechnungszeitraum. Keine Strafen, keine Gebühren.",
             "question": "Kann ich meinen Plan upgraden oder downgraden?"
           },
           {
@@ -1962,11 +1962,11 @@
             "question": "Läuft Rediacc auf meinen eigenen Servern?"
           },
           {
-            "answer": "Jeder Self-Service-Plan umfasst eine Maschine (eine Floating-Lizenz). Wenn Sie Rediacc auf mehr als einer Maschine betreiben möchten, handelt es sich um ein Enterprise-Setup, das über unsere Partner vertrieben wird. Kontaktieren Sie uns, und wir passen die Größe gemeinsam mit Ihnen an.",
+            "answer": "Jeder Self-Service-Plan umfasst eine Maschine (eine Floating-Lizenz). Rediacc auf mehreren Maschinen? Das ist ein Enterprise-Setup, das wir über unsere Partner vertreiben. Kontakt aufnehmen und gemeinsam dimensionieren.",
             "question": "Wie viele Maschinen deckt jeder Plan ab?"
           },
           {
-            "answer": "Enterprise wird für Ihr Setup entwickelt und über unsere Partner vertrieben. Sie legen die Konditionen fest, betreiben mehrere Maschinen und erhalten eigenen Server-Speicherplatz, ein individuelles Wiederherstellungsversprechen und 24/7/365-Support. Dazu kommen Sicherheitsüberprüfungen und regelmäßige Übungen.",
+            "answer": "Enterprise wird nach Maß gebaut und über unsere Partner verkauft. Konditionen sind verhandelbar, Workloads laufen auf mehreren Maschinen, dazu kommen dedizierter Server-Speicherplatz, ein individualisiertes Recovery-Versprechen und 24/7/365-Support. Sicherheitsüberprüfungen und regelmäßige Drills inklusive.",
             "question": "Was beinhaltet Enterprise?"
           },
           {
@@ -1974,11 +1974,11 @@
             "question": "Gibt es Rabatte für Schulen oder gemeinnützige Organisationen?"
           },
           {
-            "answer": "Kündigen Sie während der 14-tägigen Testphase, wird Ihnen nichts berechnet. Kündigen Sie einen bezahlten Plan später, behalten Sie dessen Funktionen bis zum Ende des Abrechnungszeitraums, danach wechselt Ihr Konto automatisch zum kostenlosen Community-Plan. Ihre Repositories laufen die ganze Zeit weiter.",
+            "answer": "Kündige während der 14-tägigen Testphase – dir wird nichts berechnet. Kündige später einen bezahlten Plan, nutzt du die Funktionen bis zum Ende des Abrechnungszeitraums, dann wechselt dein Konto zum kostenlosen Community-Plan. Deine Repositories laufen die ganze Zeit weiter.",
             "question": "Was passiert, wenn ich kündige?"
           },
           {
-            "answer": "Jeder Knoten in einem Cluster ist eine Maschine, und jede zählt als Maschine. Es gibt kein gemeinsames Cluster-Kontingent und keinen Rabatt dafür, Server zusammenzufassen. Ein Knoten belegt erst einen Platz, wenn ein Repository darauf landet, sodass der Aufbau des Clusters selbst nichts kostet. Clustering wird über unsere Partner als Teil einer Enterprise-Vereinbarung verkauft, und Ihre Knotenanzahl wird bei der Bestellung vereinbart.",
+            "answer": "Jeder Knoten im Cluster ist eine Maschine und zählt auch als eine. Kein gemeinsames Cluster-Kontingent, kein Rabatt auf gruppierte Server. Ein Knoten belegt einen Platz erst, wenn ein Repository darauf lädt – der Cluster-Aufbau selbst kostet nichts. Clustering verkaufen wir über unsere Partner als Teil einer Enterprise-Vereinbarung, die Knotenanzahl wird bei der Bestellung vereinbart.",
             "question": "Wie werden Cluster-Knoten gezählt?"
           }
         ]
@@ -1988,15 +1988,15 @@
           "startFree": "Kostenlos starten",
           "talkToSales": "Sprechen Sie mit dem Vertrieb"
         },
-        "description": "Installation in 5 Minuten. Starten Sie Ihre 14-tägige kostenlose Testphase.",
-        "heading": "Schützen Sie Ihre Infrastruktur"
+        "description": "Installation in 5 Minuten. Starten Sie die 14-tägige kostenlose Testphase.",
+        "heading": "Infrastruktur schützen."
       },
       "hero": {
-        "subtitle": "Wählen Sie den Plan, der passt. Einfache Preise, keine versteckten Gebühren, jederzeit kündbar.",
+        "subtitle": "Der richtige Plan für dein Team. Transparente Preise, keine versteckten Gebühren, jederzeit kündbar.",
         "title": "Gebaut für echte Anforderungen"
       },
       "meta": {
-        "description": "Wählen Sie den Plan, der zu Ihrem Team passt. Jeder bezahlte Plan startet mit einer 14-tägigen kostenlosen Testphase. Keine versteckten Gebühren.",
+        "description": "Der richtige Plan für dein Team. Alle bezahlten Pläne mit 14 Tagen kostenlos. Keine versteckten Gebühren.",
         "keywords": "Preise, Infrastrukturautomatisierung, DevOps-Pläne, Aufgabenausführung",
         "title": "Preise | Für echte Anforderungen"
       },
@@ -2016,12 +2016,12 @@
       },
       "professionalServices": {
         "benefits": {
-          "description": "Echte Ingenieure am Telefon, wenn Ihre Server ausfallen. Keine Ticketqueue. Ein Mensch, noch am selben Tag.",
+          "description": "Echte Ingenieure am Telefon, wenn deine Server ausfallen. Keine Ticketqueue. Ein Mensch, noch am selben Tag.",
           "heading": "Warum professionelle Dienstleistungen?",
           "items": [
-            "Engagiertes Expertenteam für Ihr Projekt",
+            "Ein engagiertes Expertenteam für dein Projekt.",
             "Garantierte Reaktionszeiten – schriftlich festgehalten",
-            "Wechseln Sie flexibel zwischen Services, je nach Bedarf",
+            "Flexibel zwischen Services wechseln, je nach Bedarf.",
             "24/7-Notfall-Hotline für kritische Vorfälle"
           ],
           "statistics": [
@@ -2032,7 +2032,7 @@
         "categories": {
           "items": [
             {
-              "description": "Praxisnahes Training für Ihr Team – von einer geführten Setup-Einführung bis hin zu mehrtägigen Workshops zu fortgeschrittenen Workflows und Incident-Response-Prozessen.",
+              "description": "Praxisnahes Training für dein Team: von der geführten Setup-Anleitung bis zu mehrtägigen Workshops mit fortgeschrittenen Workflows und Incident-Response-Prozessen.",
               "icon": "team-training",
               "id": "training",
               "name": "Schulungen"
@@ -2044,7 +2044,7 @@
               "name": "Kundensupport"
             },
             {
-              "description": "End-to-End-Migrationen und individuelle Integrationsarbeiten – von einer vollständig validierten Datenmigration bis hin zu einem schnellen Same-Day-Cutover, wenn Sie unter Zeitdruck stehen.",
+              "description": "End-to-End-Migrationen und individuelle Integrationen: von der vollständig validierten Datenmigration bis zum schnellen Same-Day-Cutover – selbst unter Zeitdruck.",
               "icon": "data-migration",
               "id": "migration",
               "name": "Migrationen"
@@ -2056,7 +2056,7 @@
               "name": "Wiederherstellung"
             },
             {
-              "description": "Security-Reviews, Hardening-Checklisten, Compliance-Runbooks und Incident-Response-Retainer – zugeschnitten auf Ihre Umgebung und Audit-Anforderungen.",
+              "description": "Security-Reviews, Hardening-Checklisten, Compliance-Runbooks und Incident-Response-Retainer – maßgeschneidert für deine Umgebung und deine Anforderungen.",
               "icon": "storage-hardening",
               "id": "security",
               "name": "Sicherheit & Compliance"
@@ -2064,7 +2064,7 @@
           ]
         },
         "cta": {
-          "description": "Jedes Projekt wird auf Ihr Setup zugeschnitten. Kontaktieren Sie uns und wir erarbeiten gemeinsam den passenden Plan.",
+          "description": "Jedes Projekt wird auf dein Setup zugeschnitten. Schreib uns und wir erarbeiten gemeinsam den passenden Plan.",
           "heading": "Brauchen Sie professionelle Unterstützung?"
         },
         "header": {
@@ -2072,7 +2072,7 @@
         }
       },
       "roiCta": {
-        "description": "Nutzen Sie unseren interaktiven ROI-Rechner, um zu sehen, wie viel Sie mit Rediacc sparen können.",
+        "description": "Nutze unseren interaktiven ROI-Rechner und sieh, wie viel Rediacc spart.",
         "heading": "Nicht sicher, welcher Plan passt?"
       },
       "technicalSummary": {
@@ -2133,16 +2133,16 @@
         }
       },
       "trustSection": {
-        "corporateGuarantee": "Falls Rediacc nicht für Sie funktioniert, helfen wir Ihnen bei der Rückmigration.",
-        "heading": "Deine Infrastruktur. Deine Regeln.",
+        "corporateGuarantee": "Sollte Rediacc nicht passen – wir helfen bei der Rückmigration.",
+        "heading": "Keine Abhängigkeit. Punkt.",
         "rows": [
           {
-            "description": "Starten, Stoppen und Löschen funktionieren immer, auch Jahre nach dem Ablauf deines Abonnements. Deine Daten sind jederzeit auf deinen eigenen Maschinen verfügbar.",
-            "title": "Deine Apps laufen immer weiter."
+            "description": "Starten, Stoppen, Löschen – das funktioniert immer, auch Jahre nach Abo-Ende. Deine Daten bleiben auf deinen Maschinen zugänglich.",
+            "title": "Apps laufen ewig weiter."
           },
           {
-            "description": "Deine Betriebswerkzeuge funktionieren weiter: SSH-Zugriff, Remote-Bearbeitung, alle Verwaltungsbefehle. Keine Lizenz nötig.",
-            "title": "Voller Zugriff auf deine Tools."
+            "description": "Betriebswerkzeuge funktionieren ewig. SSH-Zugriff. Remote-Bearbeitung. Alle Verwaltungsbefehle. Keine Lizenz nötig.",
+            "title": "Vollständiger Zugriff auf alle Tools."
           },
           {
             "description": "Um neue Server zu erstellen oder bestehende zu kopieren, brauchst du einen aktiven Plan. Größenänderungen und Erweiterungen funktionieren noch 60 Tage nach Ablauf deines Plans. Der Betrieb deiner Server läuft dauerhaft weiter.",
@@ -2153,15 +2153,15 @@
             "title": "60 Tage Nachfrist für Skalierung."
           },
           {
-            "description": "Eine Floating-Lizenz wird nur beim Erstellen oder Kopieren eines Servers verwendet. Die normale Arbeit belegt nie eine Lizenz. Lizenzen werden nach 5 Stunden ohne Aktivität wieder frei, sodass eine einzelne Floating-Lizenz im Laufe der Zeit viele Maschinen abdeckt. Nie Gebühren pro Maschine.",
+            "description": "Eine Floating-Lizenz wird nur zum Erstellen oder Kopieren eines Servers genutzt. Normale Arbeit belegt keine Lizenz. Lizenzen geben sich nach 5 Stunden Inaktivität frei – eine Floating-Lizenz deckt so viele Maschinen im Laufe der Zeit ab. Nie Gebühren pro Maschine.",
             "title": "Unbegrenzte Maschinen. Zahlen nur für Neue."
           },
           {
-            "description": "Jede Server-Lizenz ist an die Maschine gebunden, für die sie ausgegeben wurde. Migriert dein Hoster die VM zu anderer Hardware und ändert sich die Maschinenkennung, funktionieren deine Lizenzen noch 40 Tage. Die nächste Aktualisierung bindet automatisch an die neue Maschine – ohne Ausfallzeit, ohne manuelle Schritte.",
-            "title": "40-Tage Puffer bei Hardwarewechsel."
+            "description": "Jede Server-Lizenz ist an die Maschine gebunden, auf der sie ausgegeben wurde. Zieht dein Hoster die VM auf andere Hardware und die Maschinenkennung ändert sich, funktionieren deine Lizenzen noch 40 Tage. Der nächste Check-in bindet automatisch neu – keine Ausfallzeit, keine manuellen Schritte.",
+            "title": "40 Tage Puffer bei Hardware-Wechsel."
           }
         ],
-        "subtitle": "Rediacc-Lizenzen sind so konzipiert, dass du nicht abhängig bist. Das sieht in der Praxis so aus:"
+        "subtitle": "Rediacc-Lizenzen sind gegen Lock-in gemacht. So sieht das in der Praxis aus:"
       },
       "ui": {
         "billingToggle": {

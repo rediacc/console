@@ -1078,7 +1078,7 @@
         "benefits": {
           "items": [
             {
-              "description": "Aggiungi AGENTS.md al tuo progetto. Il tuo assistente AI conosce subito ogni comando, opzione e flusso di lavoro disponibili.",
+              "description": "Aggiungi AGENTS.md al tuo progetto. L'assistente AI conosce subito ogni comando, flag e flusso di lavoro disponibili.",
               "icon": "zap",
               "title": "Zero sforzo di integrazione"
             },
@@ -1100,7 +1100,7 @@
           "command": "curl -fsSL https://www.rediacc.com/install.sh | bash",
           "description": "Installa la CLI. Aggiungi il template AGENTS.md. L'assistente AI fa il resto.",
           "primaryCta": "Inizia gratis",
-          "title": "Lascia che il tuo agente AI gestisca la tua infrastruttura"
+          "title": "Lascia che l'agente AI gestisca la tua infrastruttura"
         },
         "hero": {
           "primaryCta": "Inizia gratis",
@@ -1165,7 +1165,7 @@
           "overline": "COME FUNZIONA",
           "steps": [
             {
-              "description": "Aggiungi un file AGENTS.md alla root del progetto. Il tuo assistente AI lo legge all'avvio e conosce subito ogni comando rdc.",
+              "description": "Aggiungi il template AGENTS.md nella root del progetto. L'assistente AI lo legge all'avvio e conosce subito ogni comando rdc.",
               "icon": "terminal",
               "title": "Configura"
             },
@@ -1188,7 +1188,7 @@
           "title": "Per agenti AI - Automazione CLI-native | Rediacc"
         },
         "problem": {
-          "description": "Il tuo assistente AI può scrivere, testare e correggere codice in autonomia. Ma quando deve distribuire, verificare lo stato o gestire l'infrastruttura, si scontra con un muro: dashboard con interfaccia grafica, flussi OAuth via browser, API instabili e risposte che saturano il context window.",
+          "description": "Il tuo assistente AI può scrivere, testare e correggere il codice autonomamente. Ma quando deve distribuire, verificare lo stato o gestire l'infrastruttura, si scontra con un muro: dashboard con interfaccia grafica, flussi OAuth dal browser, API instabili e risposte che esauriscono il context window.",
           "overline": "IL PROBLEMA",
           "statCallouts": [
             {
@@ -1912,13 +1912,13 @@
           {
             "business": false,
             "enterprise": true,
-            "label": "Escalation esecutiva",
+            "label": "Escalation ai vertici",
             "professional": false
           },
           {
             "business": false,
             "enterprise": true,
-            "label": "Revisioni di sicurezza",
+            "label": "Audit di sicurezza",
             "professional": false
           },
           {
@@ -1938,15 +1938,15 @@
         "heading": "Domande frequenti",
         "items": [
           {
-            "answer": "Sì. Professional e Business iniziano entrambi con una prova gratuita di 14 giorni. Il primo addebito arriva solo alla fine della prova, quindi disdici prima e non paghi nulla. Se disdici, il tuo account torna al piano gratuito Community, che mantiene attiva una macchina con 10 GB per repository e 100 configurazioni al mese.",
+            "answer": "Sì. Professional e Business partono con 14 giorni gratis. Il primo addebito arriva solo alla fine della prova: disdici prima e non paghi nulla. Se disdici dopo, torni al piano Community gratuito con una macchina, 10 GB per repository e 100 configurazioni al mese.",
             "question": "C'è una prova gratuita?"
           },
           {
-            "answer": "Sì. Entrambi i piani a pagamento richiedono una carta al momento della registrazione, così la prova può trasformarsi in abbonamento. Non ti viene addebitato nulla fino alla fine della prova di 14 giorni, e puoi disdire in qualsiasi momento prima di allora.",
+            "answer": "Sì. Tutti i piani a pagamento chiedono una carta al signup per trasformare la prova in abbonamento. Non paghi nulla fino alla fine dei 14 giorni gratis, e puoi disdire in qualsiasi momento.",
             "question": "Serve una carta di credito per iniziare?"
           },
           {
-            "answer": "Sì, puoi cambiare piano in qualsiasi momento. Gli upgrade sono immediati, i downgrade partono dal ciclo di fatturazione successivo. Zero penali.",
+            "answer": "Sì. Cambia piano quando vuoi. Gli upgrade scattano subito, i downgrade dal prossimo ciclo di fatturazione. Zero penali.",
             "question": "Posso fare l'upgrade o il downgrade del piano?"
           },
           {
@@ -1966,11 +1966,11 @@
             "question": "Rediacc funziona sui miei server?"
           },
           {
-            "answer": "Ogni piano self-service include una macchina (una licenza Floating). Se ti serve eseguire Rediacc su più macchine, si tratta di una configurazione Enterprise venduta tramite i nostri partner. Contattaci e ti aiutiamo a dimensionarla.",
+            "answer": "Ogni piano self-service comprende una macchina (una licenza Floating). Se ti serve Rediacc su più macchine, quello è un setup Enterprise venduto tramite i nostri partner. Contattaci e lo dimensioniamo insieme.",
             "question": "Quante macchine copre ciascun piano?"
           },
           {
-            "answer": "Enterprise è costruito su misura per la tua configurazione e venduto tramite i nostri partner. Scegli tu i termini, esegui su più macchine e ottieni il tuo spazio server dedicato, una promessa di ripristino personalizzata e supporto 24/7/365. Incluse revisioni di sicurezza ed esercitazioni periodiche.",
+            "answer": "Enterprise è costruito su misura e venduto tramite i nostri partner. I termini sono negoziabili, i tuoi carichi di lavoro girano su più macchine, hai spazio server dedicato, una promessa di recovery personalizzata e supporto 24/7/365. Inclusi audit di sicurezza e simulazioni regolari.",
             "question": "Che cosa include il piano Enterprise?"
           },
           {
@@ -1978,11 +1978,11 @@
             "question": "Offrite sconti per il settore educativo o le no-profit?"
           },
           {
-            "answer": "Se disdici durante la prova di 14 giorni non ti viene addebitato nulla. Se disdici un piano a pagamento in seguito, mantieni le sue funzionalità fino alla fine del periodo di fatturazione, poi il tuo account torna al piano gratuito Community. I tuoi repository continuano a funzionare per tutto il tempo.",
+            "answer": "Disdici durante i 14 giorni gratis e non paghi nulla. Disdici dopo: le funzionalità restano fino alla fine del periodo di fatturazione, poi torni a Community gratuito. I tuoi repository continuano a funzionare sempre.",
             "question": "Cosa succede se disdico?"
           },
           {
-            "answer": "Ogni nodo di un cluster è una macchina, e ciascuna conta come una macchina. Non esiste un'allocazione condivisa per il cluster né uno sconto per raggruppare più server insieme. Un nodo occupa uno slot solo quando su di esso viene distribuito un repository, quindi costruire il cluster in sé non costa nulla. Il clustering viene venduto tramite i nostri partner come parte di un contratto Enterprise, e il numero di nodi si concorda al momento dell'ordine.",
+            "answer": "Ogni nodo in un cluster è una macchina, e conta come una macchina. Nessuna allocazione condivisa, nessuno sconto per raggruppare server. Un nodo occupa uno slot solo quando vi finisce un repository, quindi il cluster costa zero. Il clustering si vende tramite i nostri partner come parte di un accordo Enterprise, e il numero di nodi si concorda all'ordine.",
             "question": "Come vengono contati i nodi di un cluster?"
           }
         ]
@@ -1992,15 +1992,15 @@
           "startFree": "Inizia gratis",
           "talkToSales": "Parla con il team sales"
         },
-        "description": "Installazione in 5 minuti. Inizia la tua prova gratuita di 14 giorni.",
-        "heading": "Proteggi la tua infrastruttura"
+        "description": "Installa in 5 minuti. Avvia 14 giorni di prova gratuita.",
+        "heading": "Proteggi l'infrastruttura"
       },
       "hero": {
-        "subtitle": "Scegli il piano su misura per il tuo team. Prezzi trasparenti, zero sorprese, cancella quando vuoi.",
+        "subtitle": "Il piano giusto per il tuo team. Prezzi chiari, zero sorprese, disdici quando vuoi.",
         "title": "Fatto per il vero lavoro"
       },
       "meta": {
-        "description": "Scegli il piano più adatto al tuo team. Ogni piano a pagamento inizia con una prova gratuita di 14 giorni. Zero costi nascosti.",
+        "description": "Scegli il piano giusto per il tuo team. Tutti i piani a pagamento partono con 14 giorni gratis. Nessuna sorpresa.",
         "keywords": "prezzi, automazione infrastruttura, prezzi CI/CD, piani DevOps, esecuzione task",
         "title": "Tariffe | Fatto per il vero lavoro"
       },
@@ -2020,12 +2020,12 @@
       },
       "professionalServices": {
         "benefits": {
-          "description": "Ingegneri veri al telefono quando l'infrastruttura va giù. Non code di ticket. Una persona, in giornata.",
+          "description": "Ingegneri veri al telefono quando l'infrastruttura si ferma. Non ticket. Una persona, lo stesso giorno.",
           "heading": "Perché i servizi professionali?",
           "items": [
-            "Team dedicato di esperti assegnato al tuo progetto",
+            "Un team dedicato di esperti sul tuo progetto",
             "Tempi di risposta garantiti con SLA",
-            "Passa da un servizio all'altro in base alle tue esigenze",
+            "Cambia servizi al cambio delle tue esigenze",
             "Hotline di emergenza 24/7 per incidenti critici"
           ],
           "statistics": [
@@ -2036,7 +2036,7 @@
         "categories": {
           "items": [
             {
-              "description": "Formazione pratica per il tuo team, dalla configurazione guidata passo passo a workshop di più giorni che approfondiscono flussi di lavoro avanzati e procedure di risposta agli incidenti.",
+              "description": "Formazione pratica del tuo team, da una configurazione guidata fino a workshop di più giorni sui workflow avanzati e le procedure di risposta agli incidenti.",
               "icon": "team-training",
               "id": "training",
               "name": "Formazione"
@@ -2048,7 +2048,7 @@
               "name": "Assistenza"
             },
             {
-              "description": "Migrazione end-to-end e integrazioni personalizzate, da una migrazione dati completamente convalidata a un passaggio in produzione rapido nello stesso giorno, quando hai poco tempo.",
+              "description": "Migrazione completa e integrazioni su misura, dalla convalidazione dei dati al passaggio in produzione lo stesso giorno, anche sotto pressione.",
               "icon": "data-migration",
               "id": "migration",
               "name": "Migrazione"
@@ -2060,7 +2060,7 @@
               "name": "Ripristino"
             },
             {
-              "description": "Revisioni di sicurezza, checklist di hardening, runbook di conformità e contratti di risposta agli incidenti, personalizzati in base al tuo ambiente e ai requisiti di audit.",
+              "description": "Audit di sicurezza, checklist di hardening, guide di conformità e servizi di incident response, calibrati sul tuo ambiente e i tuoi requisiti.",
               "icon": "storage-hardening",
               "id": "security",
               "name": "Sicurezza e conformità"
@@ -2068,7 +2068,7 @@
           ]
         },
         "cta": {
-          "description": "Ogni incarico viene definito in base alla tua configurazione. Contattaci e troveremo insieme il piano giusto.",
+          "description": "Ogni incarico parte dalla tua configurazione. Contattaci e troveremo il piano giusto insieme.",
           "heading": "Hai bisogno di assistenza professionale?"
         },
         "header": {
@@ -2076,7 +2076,7 @@
         }
       },
       "roiCta": {
-        "description": "Usa il nostro calcolatore ROI per scoprire quanto risparmi con Rediacc.",
+        "description": "Prova il calcolatore ROI interattivo e scopri quanto risparmi con Rediacc.",
         "heading": "Quale piano scegliere?"
       },
       "technicalSummary": {
@@ -2137,16 +2137,16 @@
         }
       },
       "trustSection": {
-        "corporateGuarantee": "Se Rediacc non fa al caso tuo, ti aiutiamo a tornare indietro.",
-        "heading": "Infrastruttura tua. Regole tue.",
+        "corporateGuarantee": "Se Rediacc non fa per te, ti aiutiamo nella migrazione.",
+        "heading": "Zero lock-in. Mai.",
         "rows": [
           {
-            "description": "Avvio, arresto e cancellazione funzionano sempre, anche anni dopo la scadenza del tuo abbonamento. I tuoi dati restano sempre accessibili sulle tue macchine.",
-            "title": "I tuoi repository non si fermano mai."
+            "description": "Avvia, ferma, cancella: tutto funziona sempre, anche anni dopo la fine dell'abbonamento. I dati restano raggiungibili sulle tue macchine.",
+            "title": "Le tue app girano per sempre."
           },
           {
-            "description": "I tuoi strumenti operativi continuano a funzionare: accesso SSH, editing remoto e tutti i comandi di gestione. Nessuna licenza è mai richiesta.",
-            "title": "Accesso totale ai tuoi strumenti."
+            "description": "I tuoi strumenti continuano a funzionare: SSH, editing remoto, tutti i comandi di gestione. Nessuna licenza richiesta, mai.",
+            "title": "Accesso completo a ogni tool."
           },
           {
             "description": "Per creare nuovi server o clonarne di esistenti ti serve un piano attivo. Ridimensionamento ed espansione restano attivi per 60 giorni dopo la scadenza del piano. Far girare i tuoi server, invece, è per sempre.",
@@ -2157,15 +2157,15 @@
             "title": "60 giorni di tolleranza nello scaling."
           },
           {
-            "description": "Una licenza Floating viene utilizzata solo quando crei o copi un server. Il tuo lavoro quotidiano non occupa mai una licenza. Le licenze si liberano dopo 5 ore di inattività. Un piano con 5 licenze è sufficiente per decine di macchine. Nessun costo per macchina, mai.",
+            "description": "Una licenza Floating si usa solo quando crei o copi un server. Il tuo lavoro non consuma licenze. Si liberano dopo 5 ore, così una singola licenza copre tante macchine nel tempo. Nessun costo per macchina, mai.",
             "title": "Macchine senza limiti. Paghi solo per crearne di nuove."
           },
           {
-            "description": "Ogni licenza è legata alla macchina dove è stata emessa. Se il provider migra la tua VM su hardware diverso, l'identità cambia ma le licenze continuano 40 giorni. L'aggiornamento successivo le riallinea automaticamente. Zero downtime.",
-            "title": "40 giorni di tolleranza se l'hardware migra."
+            "description": "Ogni licenza è legata alla macchina dove è stata emessa. Se il provider sposta la VM su hardware diverso, l'identità cambia ma la licenza continua per 40 giorni. Il prossimo check-in la aggiorna automaticamente. Zero downtime, nessun manuale.",
+            "title": "40 giorni di tolleranza se l'hardware cambia."
           }
         ],
-        "subtitle": "Le licenze Rediacc non ti lasciano mai bloccato. Scopri cosa significa concretamente."
+        "subtitle": "Le licenze Rediacc sono pensate per evitare il lock-in. Ecco cosa significa davvero."
       },
       "ui": {
         "billingToggle": {
@@ -7889,7 +7889,7 @@
         "calculator": {
           "annualLabel": "Rischio di migrazione annuale",
           "description": "Ogni migrazione senza crittografia end-to-end è un incidente di compliance in attesa di succedere.",
-          "footnote": "Assume manodopera a $200/h per la configurazione della ri-cifratura, premio di violazione di $4.880/TB (IBM 2024), e probabilità di violazione dell'1% per finestra di esposizione. Rediacc mantiene la crittografia durante tutto il trasferimento — zero finestre di esposizione, zero ri-cifratura necessaria.",
+          "footnote": "Assume manodopera a $200/h per la configurazione della ri-cifratura, premio di violazione di $4.880/TB (IBM 2024), e probabilità di violazione dell'1% per finestra di esposizione. Rediacc mantiene la crittografia durante tutto il trasferimento: zero finestre di esposizione, zero ri-cifratura necessaria.",
           "headerTitle": "Calcolatore del Rischio di Migrazione",
           "overline": "IL COSTO REALE",
           "results": {
@@ -8044,7 +8044,7 @@
           "title": "Migrazione Sicura - Trasferimenti Protetti | Rediacc"
         },
         "problem": {
-          "description": "Ecco il lato rischioso di qualsiasi spostamento. La maggior parte dei tool decifra i dati prima, poi li copia. Così i file rimangono al'aperto durante il trasferimento. Basta un errore e si espongono. E quando finisce lo spostamento, la vecchia crittografia se ne va—devi riconfigurarla da zero dall'altra parte.",
+          "description": "Ecco il lato rischioso di qualsiasi spostamento. La maggior parte dei tool decifra i dati prima, poi li copia. Così i file rimangono all'aperto durante il trasferimento. Basta un errore e si espongono. E quando finisce lo spostamento, la vecchia crittografia se ne va: devi riconfigurarla da zero dall'altra parte.",
           "overline": "IL PROBLEMA",
           "statCallouts": [
             {
@@ -8110,7 +8110,7 @@
               "url": "https://newsroom.ibm.com/2024-07-30-ibm-report-escalating-data-breach-disruption-pushes-costs-to-new-highs"
             },
             {
-              "text": "AWS, \"Amazon S3 Pricing — Data Transfer\", 2024. \"Trasferimento dati in uscita da Amazon S3 a Internet: $0,09 per GB per i primi 10 TB/mese.\"",
+              "text": "AWS, \"Amazon S3 Pricing: Data Transfer\", 2024. \"Trasferimento dati in uscita da Amazon S3 a Internet: $0,09 per GB per i primi 10 TB/mese.\"",
               "url": "https://aws.amazon.com/s3/pricing/"
             },
             {
@@ -8165,7 +8165,7 @@
             },
             "improvement": "Zero finestre di esposizione · 10x più veloce"
           },
-          "quote": "Abbiamo migrato 42 server da Hetzner a OVH in un weekend. 350 TB di dati cifrati trasferiti senza esporre un singolo byte. La nostra migrazione precedente—solo 8 server—ha richiesto tre settimane e ha costretto a decifrare tutto in un'area di staging. È stata l'ultima volta che abbiamo accettato quel rischio."
+          "quote": "Abbiamo migrato 42 server da Hetzner a OVH in un weekend. 350 TB di dati cifrati trasferiti senza esporre un singolo byte. La nostra migrazione precedente (solo 8 server) ha richiesto tre settimane e ha costretto a decifrare tutto in un'area di staging. È stata l'ultima volta che abbiamo accettato quel rischio."
         },
         "stats": [
           {

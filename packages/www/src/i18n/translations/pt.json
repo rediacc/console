@@ -546,14 +546,14 @@
     "disasterRecovery": {
       "enterpriseCta": {
         "button": "Contactar Vendas",
-        "description": "Se nenhum dos planos encaixa na sua situação, conte-nos o que está a usar. Encontramos a solução certa.",
-        "heading": "Configuração Especial? Vamos Conversar."
+        "description": "Se nenhum dos planos encaixa, descreva a sua configuração. Encontramos o plano ideal para você.",
+        "heading": "Tem algo fora do padrão? Vamos conversar."
       },
       "faq": {
         "heading": "Perguntas Frequentes",
         "items": [
           {
-            "answer": "Sim, pode mudar quando quiser. As mudanças para um plano superior têm efeito imediato. As reduções começam no próximo ciclo de faturação.",
+            "answer": "Sim. Mudanças de upgrade entram em vigor na hora. Downgrades começam no próximo ciclo de faturação.",
             "question": "Posso mudar o meu plano?"
           },
           {
@@ -561,7 +561,7 @@
             "question": "Que métodos de pagamento aceitam?"
           },
           {
-            "answer": "Sim. Avaliação de Recuperação e Programa de Recuperação começam com 14 dias de teste grátis. Você adiciona um cartão no cadastro e só é cobrado quando o teste termina. Cancele antes e não paga nada.",
+            "answer": "Sim. Avaliação e Programa começam com 14 dias grátis. Você adiciona o cartão no cadastro e paga só quando o teste termina. Cancele antes e sem custos.",
             "question": "Têm período de teste gratuito?"
           },
           {
@@ -569,15 +569,15 @@
             "question": "O que está incluído no suporte?"
           },
           {
-            "answer": "O tempo de recuperação depende do seu contrato. Com a Avaliação de Recuperação você volta a qualquer ponto das últimas 24 horas. O Programa de Recuperação garante recuperação em 4 horas. O Contrato de Recuperação coloca você no ar em 15 a 60 minutos, no seu próprio cronograma.",
+            "answer": "Varia conforme o plano. Avaliação: qualquer ponto das últimas 24 horas. Programa: 4 horas garantidas. Contrato: 15 a 60 minutos, sua escolha.",
             "question": "Com que rapidez recupero de um desastre?"
           },
           {
-            "answer": "Sim, e isto é importante para mim. Testamos uma restauração em cada cópia de segurança. Por isso sabe que funciona antes de precisar.",
+            "answer": "Sim, é importante para nós. Testamos cada backup com uma restauração real, então você sabe que funciona quando precisar.",
             "question": "As minhas cópias de segurança são mesmo testadas?"
           },
           {
-            "answer": "Os dados ficam encriptados no local que escolheu. Mantém controlo total e consegue aceder às cópias mesmo que o serviço caia.",
+            "answer": "Os dados ficam encriptados no local que você escolhe. Você mantém controlo total e acessa os backups mesmo se o serviço cair.",
             "question": "O que acontece aos meus dados se o serviço ficar indisponível?"
           }
         ]
@@ -587,7 +587,7 @@
           "startFree": "Comece grátis",
           "talkToSales": "Falar com Vendas"
         },
-        "description": "Instale a Rediacc e execute a sua primeira cópia em menos de 10 minutos.",
+        "description": "Instale Rediacc e crie o seu primeiro backup em menos de 10 minutos.",
         "heading": "Recupere Mais Rápido"
       },
       "hero": {
@@ -616,15 +616,15 @@
         "viewDetails": "Conhecer Serviços Profissionais"
       },
       "strategy": {
-        "copy": "Comece onde você está. A maioria das equipas fica mais tempo do que espera. Suba só quando a recuperação lenta tiver um preço real. Mesmo produto sempre. Usa Kubernetes? Clusters inteiros migram da mesma forma, com uma transição curta e controlada.",
+        "copy": "Comece com o plano que se encaixa hoje. A maioria das equipas fica nele bem mais tempo do que espera. Mude apenas quando uma recuperação lenta realmente custaria ao negócio. Sempre o mesmo produto. Usa Kubernetes? Clusters inteiros migram juntos, com transição curta e controlada.",
         "distribution": [
-          "Da Avaliação de Recuperação para o Programa de Recuperação: seus backups ficam em um segundo local. Cada alteração é salva no momento em que acontece. Você tem uma janela garantida de 4 horas para voltar ao ar. Um contato de suporte dedicado está incluído.",
-          "Do Programa de Recuperação para o Contrato de Recuperação: você escolhe com que rapidez precisa voltar ao ar. Essa janela vai de 15 a 60 minutos. A recuperação acontece em um ambiente totalmente separado que seus sistemas em produção não alcançam, e o suporte direto está lá quando mais importa."
+          "Avaliação até Programa: backups num segundo local. Cada alteração é guardada na hora. Recuperação garantida em 4 horas. Suporte dedicado incluído.",
+          "Programa até Contrato: você define a velocidade de recuperação. Janela de 15 a 60 minutos. Recuperação em ambiente totalmente isolado dos seus sistemas de produção. Suporte direto quando mais importa."
         ],
         "heading": "Para Cada Fase"
       },
       "technicalSummary": {
-        "description": "Ofereça à sua equipa de TI uma visão clara dos limites de armazenamento e objetivos de recuperação.",
+        "description": "Mostre à sua equipa de TI uma visão clara dos limites de armazenamento e objetivos de recuperação.",
         "heading": "Limites Técnicos em Relance",
         "metrics": [
           {
@@ -640,12 +640,12 @@
             "label": "Retenção de Registos de Auditoria"
           }
         ],
-        "recoveryNote": "RPO (Objetivo de Ponto de Recuperação): Quanto dado você pode perder -- medido em tempo. Por exemplo, um RPO de 15 minutos significa que você pode perder até 15 minutos de alterações recentes.\n\nRTO (Objetivo de Tempo de Recuperação): Rapidez com que você precisa voltar online após um desastre. Por exemplo, um RTO de 4 horas significa que seus sistemas estarão restaurados em até 4 horas.",
+        "recoveryNote": "RPO (Objetivo de Ponto de Recuperação): O tempo máximo em dados que você pode permitir perder. Exemplo: um RPO de 15 minutos significa que pode perder até 15 minutos de alterações recentes.\n\nRTO (Objetivo de Tempo de Recuperação): O tempo que você tem para recuperar após uma falha. Exemplo: um RTO de 4 horas quer dizer que precisa estar online em até 4 horas.",
         "values": {
           "assessment": {
             "auditLogs": "30 dias",
             "rpo": "~15 minutos",
-            "rto": "Restauro para um ponto no tempo"
+            "rto": "Recuperação até um ponto no tempo"
           },
           "program": {
             "auditLogs": "90 dias",
@@ -654,7 +654,7 @@
           },
           "retainer": {
             "auditLogs": "1+ ano",
-            "rpo": "Personalizado (próximo de zero)",
+            "rpo": "Personalizado (quase zero)",
             "rto": "15 a 60 minutos (personalizado)"
           }
         }
@@ -673,7 +673,7 @@
             "primary": "Teste grátis"
           },
           "retainer": {
-            "primary": "Agende uma Demo"
+            "primary": "Agendar Demo"
           }
         }
       }
@@ -1082,7 +1082,7 @@
         "benefits": {
           "items": [
             {
-              "description": "Coloca AGENTS.md no teu projeto. O teu assistente de IA fica imediatamente a conhecer todos os comandos, flags e fluxos de trabalho disponíveis.",
+              "description": "Coloca o AGENTS.md no projeto. O teu assistente de IA já sabe de todos os comandos, flags e workflows disponíveis.",
               "icon": "zap",
               "title": "Zero esforço de integração"
             },
@@ -1102,14 +1102,14 @@
         },
         "bottomCta": {
           "command": "curl -fsSL https://www.rediacc.com/install.sh | bash",
-          "description": "Instala a CLI. Adiciona o template AGENTS.md. O teu assistente de IA faz o resto.",
+          "description": "Instala a CLI. Adiciona o AGENTS.md. O assistente de IA faz o resto.",
           "primaryCta": "Comece Grátis",
-          "title": "Deixa o teu agente de IA gerir a infraestrutura"
+          "title": "Deixa o agente de IA tomar conta da infraestrutura"
         },
         "hero": {
           "primaryCta": "Comece Grátis",
           "subtitle": "CLI em primeiro lugar. SSH nativo. JSON estruturado. Cada comando rdc foi pensado para agentes autónomos: sem GUI, sem automação de browsers, sem integrações customizadas.",
-          "title": "Infraestrutura que o teu agente de IA já domina."
+          "title": "Infraestrutura que o teu agente de IA já sabe usar."
         },
         "howItWorks": {
           "cloneVisual": {
@@ -1169,12 +1169,12 @@
           "overline": "COMO FUNCIONA",
           "steps": [
             {
-              "description": "Coloca um modelo AGENTS.md na raiz do teu projeto. O teu assistente de IA lê-o ao arrancar e conhece todos os comandos rdc.",
+              "description": "Coloca o template AGENTS.md na raiz do projeto. O assistente de IA lê-o ao iniciar e já domina todos os comandos rdc.",
               "icon": "terminal",
               "title": "Configurar"
             },
             {
-              "description": "Conecte o assistente ao rdc mcp serve e ele terá ferramentas tipadas para cada operação. Ou execute rdc --help-all para a referência completa de comandos.",
+              "description": "Conecta o assistente ao rdc mcp serve e ele ganha ferramentas tipadas para cada operação. Ou executa rdc --help-all para ver todos os comandos.",
               "icon": "code",
               "title": "Descobrir"
             },
@@ -1192,7 +1192,7 @@
           "title": "Agentes de IA – Automação CLI | Rediacc"
         },
         "problem": {
-          "description": "O teu assistente de programação de IA escreve, testa e depura código autonomamente. Mas quando precisa fazer deploy, verificar status ou gerir infraestrutura, esbarra numa parede: dashboards só em GUI, fluxos OAuth no browser, APIs instáveis e respostas que esgotam a janela de contexto.",
+          "description": "O teu assistente de programação de IA escreve, testa e depura código sozinho. Mas quando chega a hora do deploy, verificar status ou gerir infraestrutura, bate numa parede: painéis só visuais, fluxos OAuth no navegador, APIs instáveis e respostas gigantes que ocupam toda a janela de contexto.",
           "overline": "O PROBLEMA",
           "statCallouts": [
             {
@@ -1294,23 +1294,23 @@
         "benefits": {
           "items": [
             {
-              "description": "Um preço fixo por máquina. Sem taxas por lugar, sem faturas surpresa, sem encargos de saída. O teu orçamento mantém-se previsível à medida que cresces.",
+              "description": "Um preço fixo por máquina. Sem custos por utilizador, sem surpresas nas contas, sem cobranças de saída. O orçamento fica previsível conforme cresce.",
               "icon": "tag",
               "title": "Custos previsíveis"
             },
             {
-              "description": "Os dados ficam em hardware que possuis, em formatos abertos. Nenhum fornecedor pode manter os teus dados como reféns ou cobrar-te para os aceder.",
+              "description": "Os dados ficam em hardware seu, em formatos abertos. Nenhum fornecedor consegue reter seus dados ou cobrar pelo acesso.",
               "icon": "lock",
-              "title": "Os teus dados, o teu controlo"
+              "title": "Seus dados, seu controlo"
             },
             {
-              "description": "Recuperação total em menos de 5 minutos. Backups imutáveis que o ransomware não consegue tocar. O teu negócio mantém-se a funcionar. Se um fornecedor te falhar, todo o sistema pode ser movido, Kubernetes incluído.",
+              "description": "Recuperação total em menos de 5 minutos. Backups bloqueados que o ransomware não consegue alterar. O negócio continua funcionando. Se um fornecedor falhar, você sai com tudo – Kubernetes incluído.",
               "icon": "shield",
               "title": "Continuidade de negócio"
             }
           ],
           "overline": "VALOR PARA O NEGÓCIO",
-          "title": "O que realmente ganhas."
+          "title": "O que você realmente leva."
         },
         "bottomCta": {
           "description": "Um preço fixo por máquina. Sem taxas por utilizador. Sem surpresas. Comece com 14 dias de teste gratuito.",
@@ -1319,9 +1319,9 @@
         },
         "calculator": {
           "annualLabel": "Custo anual total",
-          "description": "Ajusta os controles ao teu negócio. Vê o custo real: nuvem versus self-hosted.",
-          "footnote": "Estimativas baseadas em modelos da indústria. A poupança real depende da tua infraestrutura e escala.",
-          "headerTitle": "Calcula as tuas poupanças",
+          "description": "Ajuste os números ao seu negócio. Veja o custo real: nuvem contra self-hosted.",
+          "footnote": "Estimativas baseadas em modelos comuns. A economia real varia conforme a infraestrutura e escala.",
+          "headerTitle": "Calcule as suas poupanças",
           "overline": "OS NÚMEROS",
           "results": {
             "blockedTime": "Custo anual de infraestrutura",
@@ -1334,29 +1334,29 @@
             "reqs": "Gasto mensal atual na nuvem ($)",
             "wait": "Horas de inatividade por ano"
           },
-          "title": "Quanto podes poupar?",
+          "title": "Quanto há para poupar?",
           "withAnnual": "Calcular →",
           "withoutTag": "Custos atuais na nuvem",
           "withResults": {
             "blockedTime": "60% menos",
             "contextSwitching": "<5 minutos",
-            "quarterlySlip": "100% teu",
+            "quarterlySlip": "100% seu",
             "sprintCapacity": "Minimizado"
           },
           "withTag": "Com Rediacc"
         },
         "hero": {
           "primaryCta": "Ver Preços",
-          "subtitle": "Protege os dados do teu negócio em hardware que possuis. Um preço fixo por máquina – sem taxas por utilizador, sem faturas surpresa, sem fornecedores a reter-te os dados.",
-          "title": "Um preço fixo por servidor. Os teus dados são teus."
+          "subtitle": "Proteja os dados do seu negócio em hardware que você controla. Preço único por máquina. Sem custos por utilizador, sem surpresas nas contas, sem fornecedores como intermediários.",
+          "title": "Preço único por servidor. Os dados ficam com você."
         },
         "meta": {
-          "description": "Guarda os teus dados em servidores teus. Um preço fixo por máquina. Sem taxas por utilizador. Sem faturas surpresa. Os teus dados são teus.",
+          "description": "Proteja seus dados em servidores seus. Preço único por máquina. Sem custos por utilizador. Sem surpresas nas contas. O controlo fica com você.",
           "keywords": "CEO, custos de infraestrutura, self-hosted, proteção de dados, dependência de fornecedor, preços previsíveis, continuidade de negócio, PME",
           "title": "Para CEOs - Custos Previsíveis, Sem Amarras | Rediacc"
         },
         "problem": {
-          "description": "A tua equipa começou com uma pequena conta de nuvem. Agora é a tua terceira maior despesa e cresce 20% ao ano. O preço por lugar penaliza-te a cada contratação. Os teus dados vivem no data center de outra pessoa, num formato que só eles controlam. Se quiseres partir, cobram-te taxas de saída para acederes aos teus próprios dados.",
+          "description": "Começaram com uma pequena conta. Agora é a terceira maior despesa e cresce 20% ao ano. Cobram por utilizador – cada contratação sai cara. Os seus dados vivem no data center de alguém, num formato que só eles controlam. Se quiser sair, cobram-lhe para recuperar seus próprios dados.",
           "overline": "O PROBLEMA",
           "statCallouts": [
             {
@@ -1377,7 +1377,7 @@
           ],
           "timeline": {
             "newLabel": "Com Rediacc",
-            "newSteps": ["$204/mês", "Fixo", "Teu"],
+            "newSteps": ["$204/mês", "Fixo", "Seu"],
             "oldLabel": "Infraestrutura na nuvem",
             "oldSteps": [
               {
@@ -1402,7 +1402,7 @@
               }
             ]
           },
-          "title": "As despesas na nuvem crescem sem parar. Os teus dados não são realmente teus."
+          "title": "Despesas na nuvem só crescem. Os dados estão com outro."
         },
         "relatedSolutions": {
           "title": "Como funciona"
@@ -1410,9 +1410,9 @@
         "shareWithTeam": {
           "ctaSlug": "for-ctos",
           "ctaText": "Partilhar com o CTO",
-          "description": "A tua equipa técnica precisa de avaliar como isto se integra no vosso stack. Envia-lhes o deep-dive para CTOs. Tem todos os detalhes de que vão precisar.",
+          "description": "A equipa técnica vai querer saber como isto se encaixa no stack. Envie o deep-dive para CTO – tem tudo o que vão perguntar.",
           "overline": "PRÓXIMO PASSO",
-          "title": "Partilhar com o teu CTO"
+          "title": "Compartilhe com o CTO"
         },
         "socialProof": {
           "author": "CEO",
@@ -1448,7 +1448,7 @@
         "benefits": {
           "items": [
             {
-              "description": "Elimine sobrecustos de nuvem, licenças por usuário e taxas de egress. Execute no hardware que você já possui.",
+              "description": "Elimina a sobrecarga de nuvem, licenças por utilizador e taxas de egress. Roda no hardware que já tens.",
               "icon": "trend-up",
               "title": "60% menos em TCO"
             },
@@ -1458,24 +1458,24 @@
               "title": "Minutos, não horas"
             },
             {
-              "description": "Seus dados ficam em sua infraestrutura, em formatos abertos. Mude de fornecedor, gerencie sozinho ou migre quando quiser – a escolha é sua. Isso agora inclui clusters Kubernetes.",
+              "description": "Os teus dados ficam na tua infraestrutura, em formatos abertos. Muda de fornecedor, gere sozinho ou migra quando quiseres. Agora inclui clusters Kubernetes.",
               "icon": "lock",
               "title": "Zero dependência de fornecedor"
             }
           ],
           "overline": "VALOR ESTRATÉGICO",
-          "title": "Como Rediacc transforma sua infraestrutura"
+          "title": "O que Rediacc muda na tua stack"
         },
         "bottomCta": {
-          "description": "Agende uma revisão de arquitetura de 30 minutos com nossa equipa. Mostraremos as projeções de TCO para sua infraestrutura.",
+          "description": "Marca uma revisão de arquitetura de 30 minutos com a nossa equipa, incluindo projeções de TCO para a tua infraestrutura.",
           "primaryCta": "Agende uma Demo",
           "title": "Veja em ação"
         },
         "calculator": {
           "annualLabel": "Custo anual total",
-          "description": "Arrasta os controlos deslizantes para corresponder à tua infraestrutura. Vê como Rediacc se compara com o que pagas agora.",
+          "description": "Ajusta os controlos deslizantes para corresponder à tua infraestrutura. Vê como Rediacc se compara com o que estás a pagar agora.",
           "footnote": "Estimativas baseadas em modelos TCO do setor comparando infraestrutura self-hosted com serviços cloud equivalentes. As poupanças reais variam consoante a carga de trabalho, configuração e escala.",
-          "headerTitle": "Simula as poupanças da tua infraestrutura",
+          "headerTitle": "Calcula as tuas poupanças em infraestrutura",
           "overline": "O CUSTO REAL",
           "results": {
             "blockedTime": "Custo anual de infraestrutura",
@@ -1488,7 +1488,7 @@
             "reqs": "Gasto médio mensal em nuvem ($)",
             "wait": "Horas de paragem por ano"
           },
-          "title": "Sabes quanto custa realmente a tua infraestrutura?",
+          "title": "Quanto é que a tua infraestrutura realmente custa?",
           "withAnnual": "Calcular →",
           "withoutTag": "Gasto atual",
           "withResults": {
@@ -1501,7 +1501,7 @@
         },
         "comparison": {
           "capabilityLabel": "Capacidade",
-          "description": "Ferramentas de backup tradicionais cobram por socket, por VM ou por TB. Rediacc cobra por máquina e roda no seu próprio hardware.",
+          "description": "Ferramentas de backup tradicionais cobram por socket, por VM ou por TB. Rediacc cobra por máquina e roda no teu hardware.",
           "features": [
             {
               "name": "Auto-hospedado / on-premises",
@@ -1538,15 +1538,15 @@
         "hero": {
           "primaryCta": "Agende uma Demo",
           "subtitle": "Infraestrutura self-hosted. Sem sobrecustos de nuvem, sem preço por usuário. Recuperação em minutos, não horas.",
-          "title": "Reduza o TCO em 60%. Escale no seu hardware."
+          "title": "Reduz o TCO em 60%. Escala no teu hardware."
         },
         "meta": {
-          "description": "Infraestrutura self-hosted no seu hardware. Sem sobrecustos de nuvem, sem preço por usuário, recuperação rápida em minutos – não horas.",
+          "description": "Infraestrutura protegida no teu hardware. Reduz o TCO em 60%, elimina a dependência de fornecedores e recupera de qualquer desastre em minutos.",
           "keywords": "CTO, TCO de infraestrutura, self-hosted, recuperação de desastres, dependência de fornecedor, btrfs snapshots, conformidade, escalabilidade",
           "title": "Para CTOs: Reduza o TCO em 60% | Rediacc"
         },
         "problem": {
-          "description": "A tua fatura da nuvem cresce 15-20% ao ano. O licenciamento por utilizador penaliza o crescimento da equipa. Quando algo quebra, a 'recuperação instantânea' que compraste demora horas, porque a ferramenta que prometeu RPO de minutos na verdade entrega RPO de dias. E a cada renovação, tudo fica mais caro.",
+          "description": "A tua fatura de nuvem cresce 15-20% ao ano. O licenciamento por utilizador castiga o crescimento da equipa. Quando algo quebra, a 'recuperação instantânea' na fatura demora horas, porque a ferramenta que prometeu RPO de minutos na verdade entrega RPO de dias. E a cada renovação, fica preso a um ecossistema cada vez mais caro.",
           "overline": "O PROBLEMA",
           "statCallouts": [
             {
@@ -1600,9 +1600,9 @@
         "shareWithTeam": {
           "ctaSlug": "for-devops",
           "ctaText": "Compartilhar guia técnico",
-          "description": "Seus engenheiros adoram fluxos CLI-first e ambientes instantâneos. Compartilhe o guia técnico completo.",
-          "overline": "COMPARTILHE COM SUA EQUIPA",
-          "title": "Prepare sua equipa DevOps"
+          "description": "Os teus engenheiros adoram workflows CLI-first e ambientes instantâneos. Envia-lhes o guia técnico completo.",
+          "overline": "PARTILHA COM A TUA EQUIPA",
+          "title": "Arranca com a tua equipa DevOps"
         },
         "socialProof": {
           "author": "CTO",
@@ -1634,7 +1634,7 @@
           }
         ],
         "techDiff": {
-          "description": "O Rediacc funciona no teu hardware, usando snapshots btrfs copy-on-write para backups e recuperação instantânea. Cada snapshot é imutável ao nível do sistema de ficheiros - o ransomware não consegue encriptar o que o kernel protege. Recuperar significa trocar um ponteiro, não restaurar terabytes.",
+          "description": "Rediacc roda no teu hardware, usando snapshots btrfs copy-on-write para backups e recuperação instantânea. Cada snapshot é imutável a nível de sistema de ficheiros. O ransomware não consegue encriptar o que o kernel protege. Recuperar significa trocar um ponteiro, não restaurar terabytes.",
           "overline": "ARQUITETURA",
           "rediaccLabel": "Rediacc (auto-hospedado)",
           "rows": [
@@ -1647,19 +1647,19 @@
               "traditional": "Recuperação: demoras horas para restaurar a partir de backup na nuvem"
             },
             {
-              "rediacc": "Formato aberto: os teus dados no teu sistema de ficheiros",
+              "rediacc": "Formato aberto: dados no teu sistema de ficheiros",
               "traditional": "Dependência de fornecedor: dados em formato proprietário"
             },
             {
-              "rediacc": "Conformidade: verificar na tua própria infraestrutura",
+              "rediacc": "Conformidade: verifica na tua própria infraestrutura",
               "traditional": "Conformidade: confiar na atestação do fornecedor"
             },
             {
               "rediacc": "Fork ou mudança de um cluster em execução para outro datacenter — corte medido em segundos",
-              "traditional": "O Kubernetes prende-te ao datacenter onde foi construído"
+              "traditional": "O Kubernetes fica preso ao datacenter em que foi construído"
             }
           ],
-          "title": "Como o Rediacc protege a tua infraestrutura",
+          "title": "Como Rediacc protege a tua infraestrutura",
           "traditionalLabel": "Nuvem / DR legado"
         }
       },
@@ -1672,12 +1672,12 @@
               "title": "Ambientes em 60 segundos"
             },
             {
-              "description": "Tudo é um comando. Integra com CI/CD, hooks do Git ou a tua própria automação. Sem GUI necessária. Kubernetes incluído: um namespace faz fork como qualquer repositório.",
+              "description": "Tudo é um comando. Funciona com CI/CD, Git hooks, qualquer automação. GUI não é necessário. Kubernetes: namespaces fazem fork como repos.",
               "icon": "terminal",
               "title": "CLI-first, scriptável"
             },
             {
-              "description": "Os snapshots imutáveis btrfs permitem fazer rollback de qualquer ambiente em segundos. Sem perda de dados. Sem downtime.",
+              "description": "Snapshots btrfs imutáveis recuperam qualquer ambiente em segundos. Sem perda. Sem downtime.",
               "icon": "shield",
               "title": "Rollback instantâneo"
             }
@@ -1687,13 +1687,13 @@
         },
         "bottomCta": {
           "command": "curl -fsSL https://www.rediacc.com/install.sh | bash",
-          "description": "Instala o CLI. Clona o teu primeiro ambiente. Testa grátis por 14 dias, sem chamadas de vendas.",
+          "description": "Instale a CLI. Clone seu primeiro ambiente. 14 dias grátis, sem chamadas de vendas.",
           "primaryCta": "Teste Grátis",
-          "title": "Experimenta tu mesmo"
+          "title": "Experimente"
         },
         "hero": {
           "primaryCta": "Teste Grátis",
-          "subtitle": "Infraestrutura CLI-first que clona a produção em 60 segundos, faz rollback em menos de 5 minutos, e roda no seu hardware. Sem tickets. Sem espera. Seus dados continuam sendo seus.",
+          "subtitle": "Infraestrutura CLI-first: clone produção em 60 segundos, recupera em 5 minutos, seu hardware. Sem tickets. Sem espera. Dados seus, sempre.",
           "title": "Clone prod em 1 minuto. Recupere em 5. Pare de abrir tickets."
         },
         "howItWorks": {
@@ -1754,7 +1754,7 @@
           "overline": "COMO FUNCIONA",
           "steps": [
             {
-              "description": "Executa rdc ceph snapshot create production. O btrfs CoW cria um snapshot instantâneo de tudo: aplicação, base de dados, configuração.",
+              "description": "Execute rdc ceph snapshot create production. Btrfs CoW tira um snapshot em milissegundos: app, banco de dados, config.",
               "icon": "terminal",
               "title": "Clonar"
             },
@@ -1764,7 +1764,7 @@
               "title": "Trabalhar"
             },
             {
-              "description": "Algo falhou? Faz rollback em segundos. Os snapshots imutáveis garantem que nunca perdes dados.",
+              "description": "Algo quebrou? Recupera em segundos. Snapshots imutáveis = zero perda de dados.",
               "icon": "shield",
               "title": "Recuperar"
             }
@@ -1772,12 +1772,12 @@
           "title": "Um comando. Clone completo da produção."
         },
         "meta": {
-          "description": "Clone produção em 60 segundos, recupere em menos de 5 minutos, roda no seu hardware. DR CLI-first para times DevOps.",
+          "description": "Clone produção em 60 segundos, recupera em 5 minutos, seu hardware. DR CLI-first para times DevOps.",
           "keywords": "devops, automação de infraestrutura, CLI, btrfs snapshots, self-hosted, clonagem de ambientes, rollback instantâneo, paridade com produção",
           "title": "Rediacc para DevOps: Clone Rápido, Recupere Rápido"
         },
         "problem": {
-          "description": "O teu pipeline CI/CD faz deploy em minutos. O teu IaC provisiona em segundos. Mas quando precisas de um ambiente de teste com dados reais, abres um ticket e esperas três dias. Entretanto, o staging é partilhado, instável e nada parecido com a produção.",
+          "description": "CI/CD faz deploy em minutos. IaC provisiona em segundos. Mas um ambiente de teste com dados reais? Ticket + 3 dias. Enquanto isso, staging é compartilhado, instável e muito diferente da produção.",
           "overline": "O PROBLEMA",
           "statCallouts": [
             {
@@ -1823,7 +1823,7 @@
               }
             ]
           },
-          "title": "Automatiza tudo. Exceto conseguir um ambiente de teste."
+          "title": "Tudo é automático. Exceto ter um ambiente de teste."
         },
         "relatedSolutions": {
           "title": "Soluções Relacionadas"
@@ -1928,7 +1928,7 @@
           {
             "business": false,
             "enterprise": true,
-            "label": "Fluxos de Trabalho Personalizados",
+            "label": "Workflows Personalizados",
             "professional": false
           }
         ]
@@ -1942,15 +1942,15 @@
         "heading": "Perguntas Frequentes",
         "items": [
           {
-            "answer": "Sim. Professional e Business começam com 14 dias grátis. O primeiro pagamento só chega quando termina a experiência - cancela antes e não pagas nada. Se cancelares depois, volta ao plano Community grátis com uma máquina, 10 GB por repositório e 100 configurações mensais.",
+            "answer": "Sim. Os planos Professional e Business começam com 14 dias grátis. Só pagas quando a experiência termina - cancela antes e não te cobramos nada. Se cancelares depois, a tua conta volta ao plano Community grátis com uma máquina, 10 GB por repositório e 100 configurações por mês.",
             "question": "Há período de experiência grátis?"
           },
           {
-            "answer": "Sim. Precisamos de um cartão para os planos pagos começarem com a experiência grátis. Ninguém te cobra enquanto os 14 dias não terminam, e podes cancelar quando quiseres antes disso.",
+            "answer": "Sim. Precisamos do teu cartão para iniciar o período grátis dos planos pagos. Ninguém te cobra enquanto os 14 dias não terminarem, e podes cancelar sempre que quiseres antes disso.",
             "question": "Preciso de cartão de crédito para começar?"
           },
           {
-            "answer": "Sim, podes. Upgrades são imediatos. Downgrades aplicam-se no próximo ciclo de faturação. Nenhuma multa, nenhuma taxa.",
+            "answer": "Sim, podes. Os upgrades entram em vigor logo. Os downgrades aplicam-se no próximo período de faturação. Sem penalizações, sem taxas.",
             "question": "Posso mudar para outro plano?"
           },
           {
@@ -1970,11 +1970,11 @@
             "question": "O Rediacc funciona nos meus próprios servidores?"
           },
           {
-            "answer": "Cada plano self-serve inclui uma máquina (uma licença flutuante). Se precisas correr Rediacc em mais do que uma máquina, é um setup Enterprise vendido através dos nossos parceiros. Entre em contacto e dimensionamos com você.",
+            "answer": "Cada plano self-serve inclui uma máquina (uma licença flutuante). Se precisas correr Rediacc em mais do que uma máquina, é um setup Enterprise vendido através dos nossos parceiros. Contacta-nos e dimensionamos juntos.",
             "question": "Quantas máquinas cobre cada plano?"
           },
           {
-            "answer": "Enterprise é personalizado para ti e vendido pelos nossos parceiros. Escolhes os termos, executas em múltiplas máquinas, tens espaço de servidor dedicado, uma promessa de recuperação personalizada e suporte 24/7/365. Inclui ainda revisões de segurança e exercícios regulares.",
+            "answer": "Enterprise é personalizado para ti e vendido pelos nossos parceiros. Negoceias os termos, executas em múltiplas máquinas, tens espaço dedicado, uma garantia de recuperação personalizada e suporte 24/7/365. Inclui revisões de segurança e exercícios regulares.",
             "question": "O que inclui o plano Enterprise?"
           },
           {
@@ -1982,11 +1982,11 @@
             "question": "Oferecem descontos para educação ou organizações sem fins lucrativos?"
           },
           {
-            "answer": "Cancela durante os 14 dias e nunca te cobram. Cancela um plano pago depois e mantens as funcionalidades até ao fim do período de faturação, depois a tua conta volta ao plano Community grátis. Os teus repositórios continuam a funcionar o tempo todo.",
+            "answer": "Cancela durante os 14 dias e não te cobramos nunca. Cancela um plano pago depois e mantens as funcionalidades até ao fim do período de faturação, depois a tua conta volta ao plano Community grátis. Os teus repositórios continuam a funcionar.",
             "question": "O que acontece se eu cancelar?"
           },
           {
-            "answer": "Cada nó de um cluster é uma máquina, e cada uma conta como uma máquina. Não existe uma cota partilhada para o cluster nem desconto por agrupar servidores. Um nó só ocupa uma vaga quando um repositório é implementado nele, pelo que construir o cluster em si não custa nada. O clustering é vendido através dos nossos parceiros como parte de um acordo Enterprise, e o número de nós é acordado no momento da encomenda.",
+            "answer": "Cada nó é uma máquina e conta como tal. Sem cota partilhada do cluster e sem desconto por agrupar servidores. Um nó só ocupa uma vaga quando um repositório é implementado, portanto construir o cluster não custa nada. O clustering é vendido através dos nossos parceiros como parte de um acordo Enterprise, e o número de nós é acordado na encomenda.",
             "question": "Como são contados os nós de um cluster?"
           }
         ]
@@ -1996,15 +1996,15 @@
           "startFree": "Começar grátis",
           "talkToSales": "Falar com Vendas"
         },
-        "description": "Instala em 5 minutos. Comça o teu período de 14 dias grátis.",
-        "heading": "Protege a Tua Infraestrutura"
+        "description": "Instala em 5 minutos. Começa agora os 14 dias grátis.",
+        "heading": "Protege a tua infraestrutura"
       },
       "hero": {
-        "subtitle": "Escolhe o plano que se adapta à tua equipa. Preços simples, sem taxas ocultas, cancela quando quiseres.",
+        "subtitle": "Escolhe o plano certo para a tua equipa. Preços simples, sem surpresas, cancela quando quiseres.",
         "title": "Feito para Operações Reais"
       },
       "meta": {
-        "description": "Encontra o plano certo para a tua equipa. Todos os planos pagos começam com 14 dias grátis. Sem taxas ocultas.",
+        "description": "Escolhe o plano perfeito para a tua equipa. Todos os planos pagos começam com 14 dias grátis. Sem taxas ocultas.",
         "keywords": "preços, automação de infraestrutura, preços CI/CD, planos DevOps, execução de tarefas",
         "title": "Preços | Pensado para Operações Reais"
       },
@@ -2024,12 +2024,12 @@
       },
       "professionalServices": {
         "benefits": {
-          "description": "Engenheiros reais do teu lado quando a infraestrutura falha. Sem filas de tickets. Gente de verdade, no mesmo dia.",
+          "description": "Engenheiros reais ao telefone quando os servidores caem. Sem filas de tickets. Pessoas de verdade, no mesmo dia.",
           "heading": "Por Que Serviços Profissionais?",
           "items": [
-            "Equipa dedicada de especialistas atribuída ao teu projeto",
+            "Equipa de especialistas dedicada ao teu projeto",
             "Tempos de resposta garantidos em escrito",
-            "Mude entre serviços à medida que as suas necessidades evoluem",
+            "Muda entre serviços conforme as tuas necessidades mudam",
             "Linha de emergência 24/7 para incidentes críticos"
           ],
           "statistics": [
@@ -2040,7 +2040,7 @@
         "categories": {
           "items": [
             {
-              "description": "Formação prática para a sua equipa, desde uma demonstração guiada de configuração até workshops de vários dias sobre fluxos de trabalho avançados e procedimentos de resposta a incidentes.",
+              "description": "Formação prática para a tua equipa, desde um guia de configuração até workshops de vários dias sobre workflows avançados e procedimentos de resposta a incidentes.",
               "icon": "team-training",
               "id": "training",
               "name": "Formação"
@@ -2052,7 +2052,7 @@
               "name": "Apoio"
             },
             {
-              "description": "Migração e integração personalizada de ponta a ponta, desde uma migração de dados totalmente validada até uma transição rápida no mesmo dia quando está com pressão de tempo.",
+              "description": "Migração e integração personalizada, desde a validação completa dos teus dados até uma transição rápida no mesmo dia quando o tempo é curto.",
               "icon": "data-migration",
               "id": "migration",
               "name": "Migração"
@@ -2064,7 +2064,7 @@
               "name": "Recuperação"
             },
             {
-              "description": "Revisões de segurança, listas de verificação de reforço de segurança, manuais de conformidade e contratos de retenção para resposta a incidentes, adaptados ao seu ambiente e requisitos de auditoria.",
+              "description": "Revisões de segurança, checklists de hardening, manuais de conformidade e suporte contínuo para resposta a incidentes, ajustados ao teu ambiente e requisitos de auditoria.",
               "icon": "storage-hardening",
               "id": "security",
               "name": "Segurança e Conformidade"
@@ -2072,7 +2072,7 @@
           ]
         },
         "cta": {
-          "description": "Cada projeto é adaptado à sua infraestrutura. Contacte-nos e encontraremos juntos o plano ideal.",
+          "description": "Cada projeto é ajustado à tua infraestrutura. Fala connosco e criamos juntos o plano perfeito.",
           "heading": "Precisas de Assistência Profissional?"
         },
         "header": {
@@ -2080,7 +2080,7 @@
         }
       },
       "roiCta": {
-        "description": "Usa a nossa calculadora ROI interativa para ver quanto podes poupar com o Rediacc.",
+        "description": "Usa a calculadora ROI interativa para ver quanto podes economizar com Rediacc.",
         "heading": "Não tens a certeza de qual plano é para ti?"
       },
       "technicalSummary": {
@@ -2141,16 +2141,16 @@
         }
       },
       "trustSection": {
-        "corporateGuarantee": "Se Rediacc não funcionar para ti, ajudamos-te a migrar de volta.",
-        "heading": "Sua infraestrutura. Suas regras.",
+        "corporateGuarantee": "Se Rediacc não funcionar para ti, ajudamos a migrar de volta.",
+        "heading": "Sem lock-in. Nunca.",
         "rows": [
           {
-            "description": "Iniciar, parar e excluir funcionam sempre, mesmo anos depois que a assinatura termina. Seus dados ficam sempre acessíveis nas suas próprias máquinas.",
-            "title": "Suas aplicações rodam para sempre."
+            "description": "Iniciar, parar, eliminar - tudo funciona sempre, mesmo anos depois da assinatura acabar. Os teus dados ficam acessíveis nas máquinas que os mantêm.",
+            "title": "As apps continuam a correr para sempre"
           },
           {
-            "description": "Suas ferramentas operacionais continuam funcionando: acesso SSH, edição remota e todos os comandos de gestão. Nunca é preciso licença.",
-            "title": "Acesso total às suas ferramentas."
+            "description": "As ferramentas operacionais continuam a funcionar. Acesso SSH. Edição remota. Todos os comandos de gestão. Sem necessidade de licença.",
+            "title": "Acesso completo a todas as ferramentas"
           },
           {
             "description": "Você precisa de um plano ativo para criar novos servidores ou copiar os já existentes. Redimensionar e expandir continuam funcionando por 60 dias após o plano vencer. Manter seus servidores em execução é permanente.",
@@ -2161,15 +2161,15 @@
             "title": "60 dias para expandir."
           },
           {
-            "description": "Uma licença flutuante só é usada quando crias ou copias um servidor. O teu trabalho normal nunca ocupa uma licença. As licenças libertam-se após 5 horas sem atividade, portanto uma licença flutuante funciona para muitas máquinas ao longo do tempo. Sem taxas por máquina, nunca.",
+            "description": "Uma licença flutuante só é usada para criar ou copiar um servidor. O teu trabalho normal nunca ocupa uma licença. As licenças libertam-se após 5 horas sem atividade, portanto uma licença flutuante funciona para muitas máquinas ao longo do tempo. Sem taxas por máquina. Nunca.",
             "title": "Máquinas ilimitadas. Pague só ao criar."
           },
           {
-            "description": "Cada licença está amarrada à máquina onde foi configurada. Quando seu provedor move a VM para hardware diferente, a identidade muda - mas as licenças funcionam por 40 dias. A próxima sincronização atualiza automaticamente. Sem downtime, sem manual.",
-            "title": "40 dias ao mudar hardware."
+            "description": "Cada licença está vinculada à máquina onde foi configurada. Quando o teu provedor move a VM para hardware diferente, a identidade muda - mas as licenças funcionam por 40 dias. A próxima sincronização atualiza automaticamente. Sem downtime, sem passos manuais.",
+            "title": "40 dias de margem quando o hardware muda"
           }
         ],
-        "subtitle": "As licenças do Rediacc garantem que você nunca fica preso. Veja na prática como funciona."
+        "subtitle": "As licenças do Rediacc são desenhadas para evitar lock-in. Vê aqui o que isso significa na prática."
       },
       "ui": {
         "billingToggle": {
@@ -7710,13 +7710,13 @@
             {
               "number": "27%",
               "ref": 1,
-              "source": "Relatório de Estado da Cloud 2024 — Flexera",
+              "source": "Relatório de Estado da Cloud 2024 da Flexera",
               "text": "da despesa em cloud é desperdiçada todos os anos"
             },
             {
               "number": "17%",
               "ref": 2,
-              "source": "Relatório de Estado da Cloud 2025 — Flexera",
+              "source": "Relatório de Estado da Cloud 2025 da Flexera",
               "text": "valor médio que as empresas ultrapassam o seu orçamento de cloud"
             },
             {
