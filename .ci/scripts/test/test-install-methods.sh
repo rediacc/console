@@ -746,8 +746,14 @@ test_channel_verify() {
 # =============================================================================
 
 test_docker_pull_and_run() {
-    # DOCKER_TAG env var overrides version-based tag (for staging images)
-    local tag="${DOCKER_TAG:-${VERSION}}"
+    # DOCKER_TAG selects the image tag. The `${DOCKER_TAG:-${VERSION}}` this
+    # replaced could NEVER take its fallback: constants.sh:27 runs
+    # `DOCKER_TAG="${DOCKER_TAG:-latest}"` at source time, so DOCKER_TAG is
+    # always non-empty here even when the caller passes it through as ''. The
+    # arm read as protection and was unreachable, which is how a scheduled CI
+    # run ended up pulling the last RELEASED image while asserting the NEXT
+    # version. Behavior is unchanged; only the lie is gone.
+    local tag="${DOCKER_TAG}"
     local image="${DOCKER_IMAGE}:${tag}"
 
     if [[ "$DRY_RUN" == "true" ]]; then
