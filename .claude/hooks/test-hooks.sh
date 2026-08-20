@@ -622,9 +622,20 @@ STOP_SUITE="$DIR/stop/test-worklist-v5.sh"
 if [[ -x "$STOP_SUITE" ]]; then
     echo
     if out="$(bash "$STOP_SUITE" 2>&1)"; then
-        n=$(grep -c "^  PASS:" <<<"$out")
-        PASS=$((PASS + n))
-        echo "ok   [0] stop/test-worklist-v5.sh: $n case(s) passed"
+        n=$(grep -cE "^[[:space:]]*PASS:" <<<"$out")
+        # A SUITE THAT EXITS 0 MUST REPORT CASES. Counting a per-case pattern is
+        # only as good as the pattern: the inbox block below shipped one run
+        # counting `^  PASS:` against a suite that prints `  ok   `, reported
+        # "0 case(s) passed", and still said ok -- a green over zero coverage.
+        # The zero-count refusal catches that whatever the pattern drifts to, so
+        # both blocks carry it rather than only the one that was caught.
+        if [[ "$n" -eq 0 ]]; then
+            FAIL=$((FAIL + 1))
+            echo "FAIL [1] stop/test-worklist-v5.sh: exited 0 but reported 0 cases"
+        else
+            PASS=$((PASS + n))
+            echo "ok   [0] stop/test-worklist-v5.sh: $n case(s) passed"
+        fi
     else
         FAIL=$((FAIL + 1))
         echo "FAIL [1] stop/test-worklist-v5.sh"
