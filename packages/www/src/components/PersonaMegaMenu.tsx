@@ -229,45 +229,45 @@ const PersonaMegaMenu: React.FC<PersonaMegaMenuProps> = ({ isOpen, onToggle, onC
         role="menu"
         aria-label={t('navigation.builtForYou')}
       >
-          <div className="persona-menu-grid">
-            {PERSONA_CARDS.map(({ slug, titleKey, personaKey, Icon }, idx) => {
-              const persona = personas?.[personaKey];
-              return (
-                <a
-                  key={slug}
-                  ref={(el) => {
-                    cardRefs.current[idx] = el;
-                  }}
-                  href={`/${currentLang}/${slug}`}
-                  className="persona-card"
-                  role="menuitem"
-                  tabIndex={0}
-                  onClick={onClose}
-                  data-track="cta_click"
-                  data-track-label="persona-card"
-                  data-track-dest={slug}
-                >
-                  <div className="persona-card-icon">
-                    <Icon />
-                  </div>
-                  <h3 className="persona-card-title">{t(`navigation.${titleKey}`)}</h3>
-                  <p className="persona-card-tagline">{persona?.tagline ?? ''}</p>
-                  <span className="persona-card-cta">
-                    {persona?.cta ?? ''}
-                    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-                      <path
-                        d="M3 8h10m0 0L9 4m4 4L9 12"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
-                    </svg>
-                  </span>
-                </a>
-              );
-            })}
-          </div>
+        <div className="persona-menu-grid">
+          {PERSONA_CARDS.map(({ slug, titleKey, personaKey, Icon }, idx) => {
+            const persona = personas?.[personaKey];
+            return (
+              <a
+                key={slug}
+                ref={(el) => {
+                  cardRefs.current[idx] = el;
+                }}
+                href={`/${currentLang}/${slug}`}
+                className="persona-card"
+                role="menuitem"
+                tabIndex={0}
+                onClick={onClose}
+                data-track="cta_click"
+                data-track-label="persona-card"
+                data-track-dest={slug}
+              >
+                <div className="persona-card-icon">
+                  <Icon />
+                </div>
+                <h3 className="persona-card-title">{t(`navigation.${titleKey}`)}</h3>
+                <p className="persona-card-tagline">{persona?.tagline ?? ''}</p>
+                <span className="persona-card-cta">
+                  {persona?.cta ?? ''}
+                  <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                    <path
+                      d="M3 8h10m0 0L9 4m4 4L9 12"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                </span>
+              </a>
+            );
+          })}
+        </div>
       </div>
     </div>
   );

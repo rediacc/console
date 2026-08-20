@@ -43,7 +43,10 @@ describe('createQuietStderrPump replay width', () => {
     const pump = createQuietStderrPump();
     pump.write(`${LONG}\n`);
     pump.flush(true);
-    const rows = written.join('').split('\n').filter((r) => r !== '');
+    const rows = written
+      .join('')
+      .split('\n')
+      .filter((r) => r !== '');
     expect(rows.length).toBeGreaterThan(1);
     for (const row of rows) expect(row.length).toBeLessThanOrEqual(107);
   });
@@ -52,7 +55,10 @@ describe('createQuietStderrPump replay width', () => {
     const pump = createQuietStderrPump();
     pump.write(`${UNBREAKABLE}\n`);
     pump.flush(true);
-    const rows = written.join('').split('\n').filter((r) => r !== '');
+    const rows = written
+      .join('')
+      .split('\n')
+      .filter((r) => r !== '');
     // DELIBERATE: a 200-character token with no spaces cannot be broken without
     // making it uncopyable, so it stays over-width. Recorded here so a future
     // reader knows this is a decision, not an oversight.
