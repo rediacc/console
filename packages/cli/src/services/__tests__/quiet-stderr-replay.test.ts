@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { routeLogEvent } from '../executor/daemon/client.js';
 import { createQuietStderrPump, shouldEchoRelayLive } from '../executor/output-lines.js';
 
 /**
@@ -110,5 +111,45 @@ describe('shouldEchoRelayLive', () => {
     delete process.env.REDIACC_DEBUG;
     expect(shouldEchoRelayLive({})).toBe(false);
     expect(shouldEchoRelayLive({ debug: false })).toBe(false);
+  });
+});
+
+/**
+ * THE DAEMON PATH, which is the one `repo up` actually uses. The direct path was
+ * fixed first and this one was missed, so `--debug` still withheld renet's
+ * info-level lines and the concurrent-fork-isolation suite still could not find
+ * "restored from checkpoint" in its own --debug log. Fixing the instance instead
+ * of sweeping the class cost a second CI run.
+ */
+describe('routeLogEvent honours echoAll', () => {
+  let out: string[];
+  let held: string[];
+  beforeEach(() => {
+    out = [];
+    held = [];
+    vi.spyOn(process.stderr, 'write').mockImplementation((c: unknown) => {
+      out.push(String(c));
+      return true;
+    });
+  });
+  afterEach(() => vi.restoreAllMocks());
+
+  const info = { type: 'log', level: 'info', msg: 'Container x restored from checkpoint' };
+
+  it('WITHHOLDS an info line when echoAll is false', () => {
+    routeLogEvent(info as never, (l) => held.push(l), false);
+    expect(out.join('')).toBe('');
+    expect(held).toHaveLength(1);
+  });
+
+  it('ECHOES the same info line when echoAll is true, which is what --debug needs', () => {
+    routeLogEvent(info as never, (l) => held.push(l), true);
+    expect(out.join('')).toContain('restored from checkpoint');
+    expect(held).toHaveLength(0);
+  });
+
+  it('always echoes error level, echoAll or not', () => {
+    routeLogEvent({ type: 'log', level: 'error', msg: 'boom' } as never, (l) => held.push(l), false);
+    expect(out.join('')).toContain('boom');
   });
 });
