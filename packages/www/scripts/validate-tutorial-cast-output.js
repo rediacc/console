@@ -542,11 +542,15 @@ function selftest() {
     const file = path.join(tmp, 'tutorial-demo-probe.cast');
     fs.writeFileSync(file, body);
     const errs = [];
-    validateCastFile(file, errs, [new RegExp(`^${demoLabel.replaceAll(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`)]);
+    validateCastFile(file, errs, [
+      new RegExp(`^${demoLabel.replaceAll(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`),
+    ]);
     const fired = errs.length > 0;
     if (fired !== expectError) {
       failed++;
-      console.error(`FAIL  ${name}: expected ${expectError ? 'an error' : 'no error'}, got ${errs.length}`);
+      console.error(
+        `FAIL  ${name}: expected ${expectError ? 'an error' : 'no error'}, got ${errs.length}`
+      );
       for (const e of errs.slice(0, 2)) console.error(`        ${e.message}`);
     } else {
       console.log(`ok    ${name}`);

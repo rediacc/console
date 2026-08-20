@@ -64,14 +64,17 @@ export function makeCategoryLabel(t: (key: string) => string) {
  * Group docs by category in CATEGORY_ORDER, dropping empty groups so a browse page never
  * renders a heading with nothing under it.
  */
-export function groupByCategory<T extends { data: { category: string; order?: number }; slug: string }>(
-  docs: T[]
-): { category: DocCategory; docs: T[] }[] {
+export function groupByCategory<
+  T extends { data: { category: string; order?: number }; slug: string },
+>(docs: T[]): { category: DocCategory; docs: T[] }[] {
   return CATEGORY_ORDER.map((category) => ({
     category,
     docs: docs
       .filter((doc) => doc.data.category === category)
-      .sort((a, b) => (a.data.order ?? Number.MAX_SAFE_INTEGER) - (b.data.order ?? Number.MAX_SAFE_INTEGER)),
+      .sort(
+        (a, b) =>
+          (a.data.order ?? Number.MAX_SAFE_INTEGER) - (b.data.order ?? Number.MAX_SAFE_INTEGER)
+      ),
   })).filter((group) => group.docs.length > 0);
 }
 

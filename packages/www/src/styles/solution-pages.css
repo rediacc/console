@@ -2171,7 +2171,7 @@ button.sp-illustration-trigger:focus-visible {
    the section opens is the cursor, which a keyboard user never sees. Logical borders, so
    the arrow points into the text in RTL as well as LTR. */
 .sp-sources-summary::before {
-  content: "";
+  content: '';
   flex: none;
   width: 0;
   height: 0;

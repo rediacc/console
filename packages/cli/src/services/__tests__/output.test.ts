@@ -60,7 +60,6 @@ describe('outputService stream routing (#490 bug 2)', () => {
   });
 });
 
-
 /**
  * Regression guard: a table that ALREADY FITS must still render.
  *

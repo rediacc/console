@@ -26,7 +26,7 @@ const LINE_RESET_RE = new RegExp(`${CR}(?!\\n)|${ESC}\\[[0-9]*[GK]`);
 
 /** Strip ANSI escape sequences and OSC sequences from text. */
 export function stripAnsi(text) {
-    return text.replaceAll(ANSI_CSI_RE, '').replaceAll(ANSI_OSC_RE, '');
+  return text.replaceAll(ANSI_CSI_RE, '').replaceAll(ANSI_OSC_RE, '');
 }
 
 /**
@@ -45,31 +45,31 @@ export function stripAnsi(text) {
  * line that wrapped when it was drawn is caught, whatever happened afterwards.
  */
 export function drawnSegments(text) {
-    const out = [];
-    for (const physical of text.split('\n')) {
-        for (const segment of physical.split(LINE_RESET_RE)) out.push(stripAnsi(segment));
-    }
-    return out;
+  const out = [];
+  for (const physical of text.split('\n')) {
+    for (const segment of physical.split(LINE_RESET_RE)) out.push(stripAnsi(segment));
+  }
+  return out;
 }
 
 /** Display width, counting a wide CJK glyph as the two cells it occupies. */
 export function displayWidth(line) {
-    let w = 0;
-    for (const ch of line) {
-        const c = ch.codePointAt(0);
-        if (c === undefined) continue;
-        // Combining marks take no cell; CJK/fullwidth take two.
-        if (c >= 0x0300 && c <= 0x036f) continue;
-        w +=
-            (c >= 0x1100 && c <= 0x115f) ||
-            (c >= 0x2e80 && c <= 0xa4cf) ||
-            (c >= 0xac00 && c <= 0xd7a3) ||
-            (c >= 0xf900 && c <= 0xfaff) ||
-            (c >= 0xfe30 && c <= 0xfe6f) ||
-            (c >= 0xff00 && c <= 0xff60) ||
-            (c >= 0xffe0 && c <= 0xffe6)
-                ? 2
-                : 1;
-    }
-    return w;
+  let w = 0;
+  for (const ch of line) {
+    const c = ch.codePointAt(0);
+    if (c === undefined) continue;
+    // Combining marks take no cell; CJK/fullwidth take two.
+    if (c >= 0x0300 && c <= 0x036f) continue;
+    w +=
+      (c >= 0x1100 && c <= 0x115f) ||
+      (c >= 0x2e80 && c <= 0xa4cf) ||
+      (c >= 0xac00 && c <= 0xd7a3) ||
+      (c >= 0xf900 && c <= 0xfaff) ||
+      (c >= 0xfe30 && c <= 0xfe6f) ||
+      (c >= 0xff00 && c <= 0xff60) ||
+      (c >= 0xffe0 && c <= 0xffe6)
+        ? 2
+        : 1;
+  }
+  return w;
 }

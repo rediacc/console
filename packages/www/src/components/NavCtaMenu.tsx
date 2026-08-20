@@ -191,47 +191,47 @@ const NavCtaMenu: React.FC<NavCtaMenuProps> = ({
         role="menu"
         aria-labelledby={TRIGGER_ID}
       >
-          <AccountCta
-            origin={origin}
-            label={loginLabel}
-            className="nav-cta-menu-item nav-account-btn"
-            ariaLabel={loginLabel}
-            role="menuitem"
-            elementRef={(el) => {
-              itemRefs.current[0] = el;
-            }}
-            onClick={onClose}
-            track={{ event: 'cta_click', label: 'nav-login', dest: 'account' }}
-          />
-          <button
-            ref={(el) => {
-              itemRefs.current[1] = el;
-            }}
-            type="button"
-            className="nav-cta-menu-item"
-            role="menuitem"
-            onClick={handleSearchClick}
-            data-track="cta_click"
-            data-track-label="nav-cta-search"
+        <AccountCta
+          origin={origin}
+          label={loginLabel}
+          className="nav-cta-menu-item nav-account-btn"
+          ariaLabel={loginLabel}
+          role="menuitem"
+          elementRef={(el) => {
+            itemRefs.current[0] = el;
+          }}
+          onClick={onClose}
+          track={{ event: 'cta_click', label: 'nav-login', dest: 'account' }}
+        />
+        <button
+          ref={(el) => {
+            itemRefs.current[1] = el;
+          }}
+          type="button"
+          className="nav-cta-menu-item"
+          role="menuitem"
+          onClick={handleSearchClick}
+          data-track="cta_click"
+          data-track-label="nav-cta-search"
+        >
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 20 20"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+            aria-hidden="true"
           >
-            <svg
-              width="16"
-              height="16"
-              viewBox="0 0 20 20"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-              aria-hidden="true"
-            >
-              <circle cx="8" cy="8" r="6" stroke="currentColor" strokeWidth="2" />
-              <path
-                d="M12.5 12.5L17 17"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-              />
-            </svg>
-            {searchLabel}
-          </button>
+            <circle cx="8" cy="8" r="6" stroke="currentColor" strokeWidth="2" />
+            <path
+              d="M12.5 12.5L17 17"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+            />
+          </svg>
+          {searchLabel}
+        </button>
       </div>
     </div>
   );
