@@ -1,7 +1,7 @@
 # PLAN: the nightly asserts an unreleased version against the last released image
-Status: executing
+Status: done
 Owner: e6500e92
-Updated: 2026-08-20
+Updated: 2026-08-21
 
 Worklist item `#481e3bf0`. Verified against `main` at `ba7b175c1` on 2026-08-20.
 
@@ -187,3 +187,47 @@ Wiring verified end to end rather than assumed: `check:ci-parity` reports
 gates (was 265), `check_gate_reachability_coverage.py` agrees with all manifest
 registrations and reports its own control fired, `shellcheck -S error` is clean,
 and `shfmt -i 4 -ci` is clean.
+
+## Closed 2026-08-21: shipped, and where the design actually moved
+
+Status flips to done because every part of this design is implemented and its
+gate is registered and reachable. It ships on console PR #570 (branch 0820-1),
+commit b0184561c.
+
+Two things changed from the plan as written, and both are worth the record
+because a future reader would otherwise repeat the dead end:
+
+**Option A was taken, and Option B was rejected on a reason the plan only
+half-stated.** B (assert the CURRENT released version on a schedule run) would
+have made one step mean different things on different triggers. That is the
+failure shape this repo keeps paying for, so the narrowing is the point.
+
+**The class-level invariant in the "Tests" section was WRONG as first drafted.**
+"A job that passes the channel into a reusable workflow must gate on
+channel != ''" is false: `stage-artifacts` passes the channel and MUST run with
+an empty one, skipping only its two metadata assertions. Had that rule shipped
+it would have broken a correct job, and an allowlist to silence it is the
+suppression shape this repo refuses. The shipped invariant is scoped to
+`docker_tag` specifically, because tag selection is the discriminating detail:
+an empty channel there resolves to a DIFFERENT IMAGE rather than to nothing.
+
+### Not covered by this plan, discovered while landing it
+
+The same `main` run that would have proved the nightly fix went red for an
+unrelated reason: `Validate Promotion` blew its 60-minute ceiling (61m12s, run
+32423301927), which failed CI Complete and meant `Finalize Release Sentinel`
+never rendered its verdict. That is tracked and fixed separately on the same PR
+(commit f1e57ee32, server-side copy plus
+`gate-test:simulate-promotion-serverside`) and is NOT part of this design.
+
+Two external-drift gates were also cleared to get CI moving, neither related to
+this design: the `golang:1.26-bookworm` pin past its soak window (via
+rediacc/renet#105 plus a pointer bump) and `inquirer` 14.0.2 to 14.1.0.
+
+### What is still unproven, deliberately
+
+Nothing here demonstrates the nightly is GREEN. The fix makes
+`Validate Install Methods` skip on a channel-less run, and the proof of that is
+a scheduled run reporting `skipped` with `CI Complete` still passing. Until a
+nightly has run against this change, the evidence is the gate and its planted
+controls, not a live green.
