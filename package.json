@@ -28,6 +28,7 @@
     "check:deps": "tsx scripts/check-deps.ts --selftest && tsx scripts/check-deps.ts",
     "check:ci-compose-env": ".ci/scripts/quality/check-compose-env.sh",
     "check:ci-go-deps": ".ci/scripts/quality/check-go-deps.sh",
+    "check:ci-go-module-sync": ".ci/scripts/quality/check-go-module-sync.sh",
     "check:ci-renet-types": ".ci/scripts/quality/check-renet-types.sh",
     "check:ci-renet-tiers": ".ci/scripts/quality/check-renet-tier-map.sh",
     "check:ci-app-admin-perm": ".ci/scripts/quality/check-no-app-admin-perm.sh",
