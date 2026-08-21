@@ -1329,10 +1329,24 @@ jobs:
     # to over 30m on 2026-08-07. A PR check here goes green while proving
     # nothing about the path that actually breaks.
     #
-    # 60 buys headroom, it does not fix the growth. The real defect is that
-    # promotion validation is O(channel size) and re-copies the whole channel
-    # each run; if this creeps past 60 too, make the copy incremental rather
-    # than raising the number again.
+    # IT DID CREEP PAST 60, and the prescribed fix has now been applied rather
+    # than the number raised again. 57m01s on 2026-08-18 left three minutes of
+    # headroom; 61m12s on 2026-08-20 (run 32423301927) blew the ceiling and took
+    # CI Complete and Pipeline Sentinel with it, exactly the shape the 0804-1
+    # release hit. That job's log has ZERO retry warnings and died mid-transfer,
+    # so it was size, not flakiness.
+    #
+    # simulate-promotion.sh now copies SERVER-SIDE inside R2 instead of syncing
+    # the whole channel down to /tmp and back up, so the cost no longer scales
+    # with the runner's bandwidth. Note the destination channel is recreated
+    # every run, so "incremental" could never mean skipping already-present
+    # objects; not moving the bytes through the runner at all is the lever.
+    #
+    # 60 is KEPT deliberately. The growth is now off the critical path, but this
+    # job also runs apt/dnf/apk/pacman installs after the copy, and a ceiling
+    # that has twice been the thing that broke a release is not the place to
+    # shave minutes. If it ever approaches 60 again, the copy is no longer the
+    # suspect and the install steps are.
     timeout-minutes: 60
     # THIRD INSTANCE OF THE EMPTY-CHANNEL CLASS, and the gate is copied verbatim
     # from how cd-stage.yml already solved it (see its "Build package

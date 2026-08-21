@@ -2554,6 +2554,19 @@ export const GATES: readonly GateSpec[] = [
     },
   },
   {
+    id: 'gate-test:simulate-promotion-serverside',
+    run: '.ci/scripts/test/gates/test-simulate-promotion-serverside.sh',
+    gate: true,
+    qualityGateTest: true,
+    leaves: ['.ci/scripts/test/gates/test-simulate-promotion-serverside.sh'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-security',
+      step: 'Quality-gate unit tests',
+    },
+  },
+  {
     id: 'gate-test:ci-workflow-invariants',
     run: '.ci/scripts/test/gates/test-ci-workflow-invariants.sh',
     gate: true,
