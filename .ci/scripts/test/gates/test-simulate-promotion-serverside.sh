@@ -45,15 +45,20 @@ cp "$REPO_ROOT/.ci/scripts/lib/common.sh" "$FIXTURE/repo/.ci/scripts/lib/"
 TARGET="$FIXTURE/repo/.ci/scripts/deploy/simulate-promotion.sh"
 
 # The purge step shells out to this; keep it inert but present.
-cat >"$FIXTURE/repo/.ci/scripts/deploy/cf-purge-urls.sh" <<'STUB'
+# Records the URLs it is handed, so the purge assertions read what the script
+# actually asked to be purged rather than a proxy for it.
+cat >"$FIXTURE/repo/.ci/scripts/deploy/cf-purge-urls.sh" <<STUB
 #!/bin/bash
-cat >/dev/null
+cat >"$FIXTURE/purged.txt"
 STUB
 chmod +x "$FIXTURE/repo/.ci/scripts/deploy/cf-purge-urls.sh"
 
 # write_fake_aws <version-string>: records every invocation to $FIXTURE/argv.log
 # and answers `s3 ls --recursive` with a listing that includes a key containing
 # a space, which is exactly what a naive field-split would corrupt.
+# write_fake_aws <version-string> [rogue]
+# `rogue` makes the listing return a key OUTSIDE the requested prefix, which is
+# what the doubled-destination guard must catch.
 write_fake_aws() {
     cat >"$FIXTURE/bin/aws" <<STUB
 #!/bin/bash
@@ -62,9 +67,14 @@ case "\$1" in
     --version) echo "$1" ;;
     configure) exit 0 ;;
     s3)
+        # Real \`aws s3 ls <prefix> --recursive\` prints FULL keys under the
+        # prefix asked for. A stub that ignored the prefix would hide the
+        # strip-and-rebuild logic entirely, so derive the keys from argv[3].
         if [[ "\$2" == "ls" ]]; then
-            echo "2026-08-20 12:00:01       1234 apt/edge-promoted/dists/Release"
-            echo "2026-08-20 12:00:02         12 apt/edge-promoted/dists/with space/InRelease"
+            prefix="\${3#s3://rediacc-releases/}"
+            [[ "${2:-}" == "rogue" ]] && prefix="somewhere-else/"
+            echo "2026-08-20 12:00:01       1234 \${prefix}dists/Release"
+            echo "2026-08-20 12:00:02         12 \${prefix}dists/with space/InRelease"
         fi
         # The sed-fix step downloads a config file and then edits it in place.
         # A stub that reports success without materialising the file would fail
@@ -109,11 +119,20 @@ test_the_copy_is_server_side() {
     # A sync whose target is a local path is the regression this exists for.
     write_fake_aws "aws-cli/2.31.0 Python/3.12"
     run_promotion
-    assert_contains "$(argv_log)" "s3://rediacc-releases/apt/edge/ s3://rediacc-releases/apt/edge-promoted/" \
-        "apt is copied bucket-to-bucket in one hop"
+    assert_contains "$(argv_log)" "s3api copy-object --bucket rediacc-releases --key apt/edge-promoted/dists/Release --copy-source rediacc-releases/apt/edge/dists/Release" \
+        "apt objects are copied bucket-to-bucket, and the destination key is rebuilt correctly"
     assert_not_contains "$(argv_log)" "/tmp/promote-" \
         "no transfer stages the channel through a local tmp directory"
-    log_pass "the channel is copied server-side, never through the runner"
+    # THE R2 CONSTRAINT, pinned. `aws s3 sync`/`cp` reach for object tagging on
+    # every s3-to-s3 path and R2 implements neither side of it: --copy-props
+    # default needs GetObjectTagging, and any other value sends
+    # x-amz-tagging-directive: REPLACE, which R2 answered with NotImplemented on
+    # every object of run 32465461193. s3api sends only what is named here.
+    assert_not_contains "$(argv_log)" "--copy-props" \
+        "no --copy-props: it forces a tagging directive R2 does not implement"
+    assert_not_contains "$(argv_log)" "--tagging-directive" \
+        "no --tagging-directive: that is the exact header R2 rejected"
+    log_pass "the channel is copied server-side via s3api, never through the runner and never touching tags"
 }
 
 test_all_four_formats_are_copied() {
@@ -121,24 +140,34 @@ test_all_four_formats_are_copied() {
     run_promotion
     local fmt
     for fmt in apt rpm apk archlinux; do
-        assert_contains "$(argv_log)" "s3://rediacc-releases/${fmt}/edge-promoted/" \
+        # s3api addresses objects by --bucket/--key, not an s3:// URL.
+        assert_contains "$(argv_log)" "--key ${fmt}/edge-promoted/" \
             "${fmt} is promoted"
+        assert_contains "$(argv_log)" "--copy-source rediacc-releases/${fmt}/edge/" \
+            "${fmt} is sourced from the unpromoted channel"
     done
     log_pass "all four repo formats are promoted"
 }
 
-test_copy_props_is_sent_only_to_a_v2_cli() {
-    # --copy-props exists only in CLI v2, and it is what stops v2 calling
-    # GetObjectTagging, which R2 does not implement. Sending it to v1 would be
-    # an unknown-option error, so the version check is load-bearing both ways.
-    write_fake_aws "aws-cli/2.31.0 Python/3.12"
-    run_promotion
-    assert_contains "$(argv_log)" "--copy-props none" "v2 gets --copy-props none"
-
-    write_fake_aws "aws-cli/1.44.45 Python/3.12"
-    run_promotion
-    assert_not_contains "$(argv_log)" "--copy-props" "v1 must NOT be sent --copy-props"
-    log_pass "--copy-props none is sent to a v2 CLI and withheld from v1"
+test_a_key_outside_the_prefix_is_REFUSED() {
+    # A listing key that does not start with the source prefix would make the
+    # strip a silent no-op and write to a DOUBLED destination such as
+    # apk/edge-promoted/apt/edge/... The install tests that follow would then
+    # read a channel nobody wrote, so this must fail loudly instead.
+    write_fake_aws "aws-cli/2.31.0 Python/3.12" rogue
+    local rc=0
+    PATH="$FIXTURE/bin:$PATH" \
+        CHANNEL=edge AWS_ACCESS_KEY_ID=k AWS_SECRET_ACCESS_KEY=s \
+        R2_ENDPOINT=https://example.invalid CLOUDFLARE_ZONE_ID=z \
+        CLOUDFLARE_API_TOKEN=t \
+        bash "$TARGET" >"$FIXTURE/out.txt" 2>&1 || rc=$?
+    [[ $rc -ne 0 ]] || {
+        log_fail "a key outside the source prefix was accepted; the destination would be doubled"
+        return 1
+    }
+    assert_contains "$(cat "$FIXTURE/out.txt")" "not under expected prefix" \
+        "the guard names the reason"
+    log_pass "a key outside the source prefix is refused rather than silently doubled"
 }
 
 test_cache_control_is_still_applied() {
@@ -157,8 +186,14 @@ test_purge_urls_come_from_the_listing_and_survive_spaces() {
     # intact rather than being split into two bogus URLs.
     write_fake_aws "aws-cli/2.31.0 Python/3.12"
     run_promotion
-    assert_contains "$(argv_log)" "s3 ls s3://rediacc-releases/apt/edge-promoted/ --recursive" \
+    # ONE listing of the SOURCE prefix now serves both the copy and the purge
+    # list, rather than a second listing of the destination.
+    assert_contains "$(argv_log)" "s3 ls s3://rediacc-releases/apt/edge/ --recursive" \
         "purge URLs are derived from a listing, not a transfer"
+    assert_contains "$(cat "$FIXTURE/purged.txt")" "https://releases.rediacc.com/apt/edge-promoted/dists/Release" \
+        "a promoted URL is queued for purge"
+    assert_contains "$(cat "$FIXTURE/purged.txt")" "https://releases.rediacc.com/apt/edge-promoted/dists/with space/InRelease" \
+        "a key containing a space survives into its purge URL intact"
     assert_contains "$(cat "$FIXTURE/out.txt")" "Promotion simulated" \
         "the script ran to completion under the stub"
     log_pass "purge URLs are enumerated by listing the promoted channel"
@@ -181,7 +216,7 @@ test_the_stub_is_actually_being_exercised() {
 log_test "test-simulate-promotion-serverside"
 test_the_copy_is_server_side
 test_all_four_formats_are_copied
-test_copy_props_is_sent_only_to_a_v2_cli
+test_a_key_outside_the_prefix_is_REFUSED
 test_cache_control_is_still_applied
 test_purge_urls_come_from_the_listing_and_survive_spaces
 test_the_stub_is_actually_being_exercised

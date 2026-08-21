@@ -127,35 +127,90 @@ PURGE_URLS=()
 # empty. The actual lever is not transferring the bytes through the runner at
 # all.
 #
-# WHY IT WAS NOT ALREADY SERVER-SIDE. The old comment said R2 does not support
-# GetObjectTagging. That is a real constraint, and it is what --copy-props none
-# exists for: it tells the v2 CLI to carry no source properties across, so the
-# tagging call is never made and --cache-control below supplies the one property
-# this flow actually needs. The flag does not exist in CLI v1, which also never
-# makes that call, so it is passed only when the runtime is v2 and the version
-# question stops being load-bearing either way.
+# WHY IT WAS NOT ALREADY SERVER-SIDE, and why `aws s3 sync` cannot do it.
+# R2 does not implement the object-tagging surface, and `aws s3 sync`/`cp` reach
+# for it on EVERY s3-to-s3 path, in both directions:
 #
-# Still a `sync` rather than `cp --recursive`, preserving the resumability the
-# retry helper was built around.
-COPY_PROPS=()
-if aws --version 2>&1 | grep -q 'aws-cli/2'; then
-    COPY_PROPS=(--copy-props none)
-fi
+#   --copy-props default  -> client-side GetObjectTagging, which R2 lacks. This
+#                            is the gap the original comment recorded.
+#   --copy-props none     -> sends `x-amz-tagging-directive: REPLACE`, and R2
+#                            answers CopyObject with
+#                            "NotImplemented: Header 'x-amz-tagging-directive'
+#                            with value 'REPLACE' not implemented"
+#                            (measured on run 32465461193, every object).
+#   --copy-props metadata-directive -> same REPLACE header, because "does not
+#                            copy tags" is implemented by replacing them.
+#
+# So no flag combination makes the high-level command work here. `s3api
+# copy-object` sends ONLY the parameters named, and `--tagging-directive` is
+# omitted below, so neither the tag read nor the tag replace is ever attempted.
+# `--metadata-directive REPLACE` is required because we set a new Cache-Control.
+#
+# Parallelism replaces what `sync` gave for free. The copies are independent and
+# server-side, so they are dispatched through xargs -P; the transfer profile
+# tuned above governs byte streams, which these no longer are.
+SRC_PREFIX=""
+DST_PREFIX=""
+export BUCKET CC_MUTABLE R2_ENDPOINT SRC_PREFIX DST_PREFIX
+
+copy_one_object() {
+    local src_key="$1"
+    # A key that does not start with SRC_PREFIX would make the strip below a
+    # silent no-op and write to a DOUBLED destination
+    # (apk/edge-promoted/apt/edge/...). Refuse instead: a wrong destination is
+    # worse than a failed copy, because the install tests that follow would
+    # then read a channel nobody wrote.
+    if [[ "$src_key" != "$SRC_PREFIX"* ]]; then
+        echo "key '$src_key' is not under expected prefix '$SRC_PREFIX'" >&2
+        return 1
+    fi
+    local dst_key="${DST_PREFIX}${src_key#"$SRC_PREFIX"}"
+    local attempt
+    for attempt in 1 2 3; do
+        if aws s3api copy-object \
+            --bucket "$BUCKET" \
+            --key "$dst_key" \
+            --copy-source "${BUCKET}/${src_key}" \
+            --metadata-directive REPLACE \
+            --cache-control "$CC_MUTABLE" \
+            --endpoint-url "$R2_ENDPOINT" >/dev/null; then
+            return 0
+        fi
+        [[ $attempt -eq 3 ]] && {
+            echo "copy-object failed after 3 attempts: $src_key" >&2
+            return 1
+        }
+        sleep $((attempt * 5))
+    done
+}
+export -f copy_one_object
 
 for dir in apt rpm apk archlinux; do
     log_info "Copying ${dir}/${CHANNEL}/ -> ${dir}/${PROMOTED}/ (server-side)"
-    aws_s3_sync_retry \
-        "s3://${BUCKET}/${dir}/${CHANNEL}/" "s3://${BUCKET}/${dir}/${PROMOTED}/" \
-        "${EP[@]}" "${COPY_PROPS[@]}" --cache-control "$CC_MUTABLE"
-    # Purge every copied URL to flush any previously-cached body under the same
-    # filename. The listing replaces the old walk of the local tmp tree, which
-    # no longer exists; it is a LIST, not a transfer, so it does not reintroduce
-    # the cost this change removes.
+    SRC_PREFIX="${dir}/${CHANNEL}/"
+    DST_PREFIX="${dir}/${PROMOTED}/"
+    export SRC_PREFIX DST_PREFIX
+
+    KEYS="$(mktemp)"
+    aws s3 ls "s3://${BUCKET}/${SRC_PREFIX}" --recursive "${EP[@]}" |
+        awk '{ for (i = 4; i <= NF; i++) printf "%s%s", $i, (i < NF ? OFS : ORS) }' >"$KEYS"
+
+    # An empty listing is a FAILURE, not a fast success: the install tests that
+    # follow would then run against an empty channel and pass while proving
+    # nothing.
+    if [[ ! -s "$KEYS" ]]; then
+        rm -f "$KEYS"
+        log_error "no objects found under ${SRC_PREFIX}; refusing to promote an empty channel"
+        exit 1
+    fi
+
+    xargs -P 8 -I{} bash -c 'copy_one_object "$@"' _ {} <"$KEYS"
+
     while IFS= read -r key; do
         [[ -n "$key" ]] || continue
-        PURGE_URLS+=("https://releases.rediacc.com/${key}")
-    done < <(aws s3 ls "s3://${BUCKET}/${dir}/${PROMOTED}/" --recursive "${EP[@]}" |
-        awk '{ for (i = 4; i <= NF; i++) printf "%s%s", $i, (i < NF ? OFS : ORS) }')
+        PURGE_URLS+=("https://releases.rediacc.com/${DST_PREFIX}${key#"$SRC_PREFIX"}")
+    done <"$KEYS"
+    rm -f "$KEYS"
 done
 
 # Sed-fix config files (replace channel in URLs). Mutable.

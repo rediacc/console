@@ -1342,6 +1342,13 @@ jobs:
     # every run, so "incremental" could never mean skipping already-present
     # objects; not moving the bytes through the runner at all is the lever.
     #
+    # It uses `aws s3api copy-object`, NOT `aws s3 sync`. The high-level command
+    # reaches for object tagging on every s3-to-s3 path and R2 implements
+    # neither side: --copy-props default needs GetObjectTagging, and any other
+    # value sends `x-amz-tagging-directive: REPLACE`, which R2 refused with
+    # NotImplemented on every object of run 32465461193. s3api sends only the
+    # parameters named, so no tagging header is ever produced.
+    #
     # 60 is KEPT deliberately. The growth is now off the critical path, but this
     # job also runs apt/dnf/apk/pacman installs after the copy, and a ceiling
     # that has twice been the thing that broke a release is not the place to
