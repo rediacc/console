@@ -4061,3 +4061,84 @@ its own controls, the next media re-record will want it, and an UNAPPLIED label
 is the normal state for a hold -- `no-external-quality` lives here the same way.
 The earlier note above that this label "MUST be removed" means removed from the
 PR, not deleted from the repo.
+
+## 2026-08-21, the 0820-1 wave: two gates that watched the wrong artifact
+
+PR #570 (branch `0820-1`, unmerged at the time of writing) plus rediacc/renet#105.
+Both defects were found while landing #569, not by looking for them.
+
+### The nightly validated the last RELEASED image against the NEXT version
+
+Two scheduled runs (`32323997586`, `32208001410`) died on
+`Version mismatch: expected '1.2.27', got '1.2.26'`. Deterministic, and two
+independent causes had to be true at once:
+
+`constants.sh:27` runs `DOCKER_TAG="${DOCKER_TAG:-latest}"` at SOURCE time, so an
+EMPTY `DOCKER_TAG` becomes `latest` before the test script starts. That made
+`test-install-methods.sh:750`'s fallback to `VERSION` DEAD CODE -- an arm that
+read as protection and could never be taken. Separately, ci.yml gates its `scope`
+step on `pull_request`, so `run_install_methods` is empty on a schedule run, and
+empty is not the string `false`, so the guard admitted the job.
+
+**The obvious invariant was FALSE, and shipping it would have broken a correct
+job.** "A job that consumes the channel must gate on it" is wrong:
+`stage-artifacts` consumes the channel and MUST run with an empty one, skipping
+only its two metadata assertions. The shipped rule is narrower and
+discriminating: a job passing the channel as a `docker_tag` must refuse an empty
+channel, because there an empty channel resolves to a DIFFERENT IMAGE rather
+than to nothing. `check:ci-workflow-invariants` enforces it and was watched
+rejecting the REAL pre-fix `ci.yml` at `6584a8795`, not merely a synthetic
+mutation.
+
+### Validate Promotion had outgrown its own timeout, exactly as predicted
+
+21m57s (07-27), 30m51s (08-07, cancelled at the then-30-minute ceiling), 57m01s
+(08-18, three minutes of headroom), 61m12s (08-20, cancelled). The failing job's
+log carries ZERO retry warnings and died mid-transfer, so it was size and not
+flakiness. `ci.yml` had called this shot in writing and forbidden the easy fix,
+so the number is unchanged and the copy moved server-side.
+
+**"Incremental" was the wrong frame** and the doc's own wording invited it: the
+promoted channel is created fresh and deleted every run, so its destination
+always starts empty and skipping already-present objects saves nothing. Not
+moving the bytes through the runner at all is the lever.
+
+**`aws s3 sync` cannot do server-side copy on R2 in EITHER direction.** The first
+attempt used `--copy-props none` and R2 answered CopyObject on every object with
+`NotImplemented: Header 'x-amz-tagging-directive' with value 'REPLACE' not
+implemented` (run `32465461193`, failed in 3m23s, far too fast for a timeout).
+`--copy-props default` needs the `GetObjectTagging` R2 lacks; every other value
+sends the REPLACE tagging directive R2 also lacks. No flag combination works,
+which is why the original author round-tripped through `/tmp`. `s3api
+copy-object` sends only the parameters named, so omitting `--tagging-directive`
+avoids both paths.
+
+**A blocked release run is invisible.** #569 carried `bump-none`, so no release
+was wanted -- but `CI Complete` failed on this timeout, `Finalize Release
+Sentinel` was SKIPPED, and the machinery never rendered its verdict. The right
+outcome for the wrong reason, and identical from a run list to a correct skip.
+Had #569 not carried `bump-none`, this timeout would have silently blocked its
+release, as it already did once to 0804-1.
+
+### Some dependencies can only move as a SET
+
+`.ci/scripts/private/license-mint/` is a standalone module that `replace`s the
+renet worktree, so renet's dependency graph is part of its own. Bumping renet's
+`logrus` left license-mint pinning the old version, and the failure surfaced
+~25 minutes into CI, past every quality lane, printing a wall of
+`go: downloading ...` lines that read as a slow proxy. From renet's side there
+was nothing to see. `check:ci-go-module-sync` DISCOVERS the modules rather than
+naming them and fails when it finds ZERO, because a discovery gate that finds
+nothing has verified nothing. Recorded in TRAPS.md.
+
+### Three of the four red rounds were external drift, none from the diff
+
+The `golang:1.26-bookworm` base pin past its soak window, `logrus` and `grpc`
+patch releases, and `inquirer` 14.1.0. A fourth, a `networkidle` timeout in
+Browser smoke, was TRANSIENT by the documented test: the same job passed on two
+earlier runs of the same branch and the round's diff touched zero www files.
+
+One trap worth keeping: `check:deps` reports `npm outdated`, whose `current`
+field comes from the INSTALLED tree, so bumping a range and the lockfile still
+reports stale until `node_modules` is synced. It exits 0 only after a real
+install.

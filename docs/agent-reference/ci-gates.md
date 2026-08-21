@@ -303,6 +303,14 @@ The externally-dependent quality gates (`check:deps`, `check:ci-go-deps`,
 three-state flag, `external_quality`, computed by ci.yml's initialize job and
 passed into ci-quality.yml as a `workflow_call` input:
 
+`check:ci-go-module-sync` is deliberately NOT in that list, and the omission is a
+decision rather than an oversight. It sits next to `check:ci-go-deps` in the
+`quality-go` job and both are about Go dependencies, so the natural assumption is
+that it belongs behind the same flag. It does not: it reads only the local
+worktree, comparing each module that `replace`s renet against renet's own
+`go.mod`, so no registry can make it fail. Putting it behind `external_quality`
+would let the `no-external-quality` label skip a defect we caused ourselves.
+
 - **hard** -- normal PR: a failure blocks, exactly as before.
 - **skip** -- PR carrying the `no-external-quality` label: the steps do not run
   at all (offline branch work; the lookups cannot succeed).
