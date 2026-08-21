@@ -46,7 +46,12 @@ command -v go >/dev/null 2>&1 || {
 # >= 1.25.0 and a machine whose local toolchain is older (1.24.0 was observed)
 # would fail with "go.mod requires go >= 1.25.0" and read as a module-sync
 # defect, which it is not.
-mapfile -t MODULES < <(grep -rln "replace github.com/rediacc/renet" --include=go.mod . 2>/dev/null |
+# A while-read loop rather than `mapfile`: check-commands.sh refuses mapfile
+# because ubuntu-slim and other minimal CI images may not provide bash 4+.
+MODULES=()
+while IFS= read -r mod_path; do
+    [[ -n "$mod_path" ]] && MODULES+=("$mod_path")
+done < <(grep -rln "replace github.com/rediacc/renet" --include=go.mod . 2>/dev/null |
     grep -v node_modules | sort)
 
 if [[ ${#MODULES[@]} -eq 0 ]]; then
