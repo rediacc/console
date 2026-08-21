@@ -19,18 +19,38 @@
     "",
     "A PR cannot catch this class. PR runs promote the tiny per-PR channel and",
     "finish in ~7m; main promotes the full `edge` channel, which grows with every",
-    "release. So the check is not `did it pass` but `how much headroom is left`."
+    "release. So the check is not `did it pass` but `how much headroom is left`.",
+    "",
+    "REFRESHED FROM ONE RUN ON PURPOSE, 2026-08-21. The default --runs 8 window",
+    "straddles an implementation change and is therefore WRONG here: it recorded",
+    "3421s (57m01s) for Validate Promotion, a worst case belonging to the",
+    "download-and-reupload copy that console#570 DELETED. 3421s x 1.50 demands an",
+    "86-minute ceiling, i.e. exactly the raise the validate-promote comment in",
+    "ci.yml forbids, so honouring that number would have undone the fix.",
+    "",
+    "The post-fix copy is server-side (aws s3api copy-object) and ran the FULL",
+    "edge channel in 1026s (17m06s) on run 32491717875, against 61m12s cancelled",
+    "on 2026-08-20 and 57m01s on 2026-08-18. Only that one run exists on the new",
+    "implementation, so samples=1 is the honest maximum rather than a shortcut.",
+    "",
+    "THE WEAKNESS, stated rather than hidden: one sample means one unusually fast",
+    "run could set the bar. Re-refresh with the default window once several main",
+    "runs have accumulated on the server-side copy; the number should stay near",
+    "1000s and the margin near 3.5x. If a later refresh ever pushes the margin",
+    "under 1.50x again, the fix is NOT to raise timeout-minutes, which has already",
+    "been raised once from 30 to 60. Suspect the apt/dnf/apk/pacman install steps",
+    "that run after the copy, since the copy itself is no longer O(channel size)."
   ],
-  "refreshed_at": "2026-08-07T06:20:17Z",
-  "refreshed_from": "last main push runs of Console CI, jobs API per_page=100",
+  "refreshed_at": "2026-08-21T15:16:13Z",
+  "refreshed_from": "run 32491717875 (single post-fix main push run; see _comment)",
   "jobs": {
     "Validate Promotion": {
-      "observed_max_seconds": 1914,
-      "samples": 4
+      "observed_max_seconds": 1026,
+      "samples": 1
     },
     "Stage Artifacts": {
-      "observed_max_seconds": 736,
-      "samples": 4
+      "observed_max_seconds": 578,
+      "samples": 1
     }
   }
 }
