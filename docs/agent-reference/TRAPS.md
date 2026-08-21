@@ -902,3 +902,32 @@ Before attributing an observed effect to scary-looking code, prove the code RAN.
 question, and `git reflog` shows whether a rebase actually happened. Blaming the
 alarming line without that check produces a confident, wrong root cause and
 leaves the real writer unfound.
+
+## Some dependencies can only move as a SET, and the second half looks like a network step
+
+`.ci/scripts/private/license-mint/` is a standalone Go module that pulls renet in
+through `replace github.com/rediacc/renet => ../../../../private/renet`. That
+makes renet's dependency graph part of its own, so bumping a dependency in
+`private/renet/go.mod` and stopping there leaves license-mint pinning the old
+version. `go build` then refuses with:
+
+    go: updates to go.mod needed; to update it:
+            go mod tidy
+
+Two things make this one worth a trap entry rather than a footnote. It surfaces
+LATE -- `Tests + Infra / License Enforcement`, roughly 25 minutes into CI, past
+every quality lane -- and it READS AS INFRASTRUCTURE: the job announces
+"Building license-mint" and then prints a wall of `go: downloading ...` lines,
+one of which is the OLD version. The instinct is to blame a slow or flaky proxy.
+From renet's side there is nothing to see at all; the bump looks complete and
+self-contained, because the coupling lives entirely in the other module.
+
+`check:ci-go-module-sync` now enforces it, and it DISCOVERS the modules rather
+than naming them, so a second module that replaces renet is covered the day it
+is added. It also fails when it finds ZERO, because a discovery gate that finds
+nothing has verified nothing rather than passed.
+
+The general shape, which outlives this one file: when a change is correct in the
+module you edited and the build still fails elsewhere, ask what else declares a
+`replace` onto it. `grep -rl "replace github.com/rediacc/renet" --include=go.mod .`
+answers it in one command, and the fix is `go mod tidy` in each result.
