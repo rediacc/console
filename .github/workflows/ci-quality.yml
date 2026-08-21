@@ -1487,6 +1487,13 @@ jobs:
         env:
           EXTERNAL_QUALITY_MODE: ${{ inputs.external_quality }}
 
+      # NOT behind external_quality: this reads only the local worktree, so
+      # unlike go-deps it cannot be affected by an upstream registry being
+      # unreachable, and skipping it would hide a defect we caused ourselves.
+      - name: Check Go module sync against the renet worktree
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: npm run check:ci-go-module-sync
+
       - name: Check renet types freshness
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: npm run check:ci-renet-types

@@ -2106,6 +2106,18 @@ export const GATES: readonly GateSpec[] = [
     },
   },
   {
+    id: 'check:ci-go-module-sync',
+    run: 'npm run check:ci-go-module-sync',
+    gate: true,
+    leaves: ['.ci/scripts/quality/check-go-module-sync.sh'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-go',
+      step: 'Check Go module sync against the renet worktree',
+    },
+  },
+  {
     id: 'check:ci-workflow-invariants',
     run: 'npm run check:ci-workflow-invariants',
     gate: true,
