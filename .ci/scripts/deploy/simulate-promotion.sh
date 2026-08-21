@@ -65,10 +65,16 @@ aws configure set default.s3.multipart_chunksize 32MB
 
 # Wrap transfers in a retry loop. AWS_MAX_ATTEMPTS=10 + AWS_RETRY_MODE=adaptive
 # layer retries inside the SDK; the outer loop covers SDK budget exhaustion.
-# Recursive transfers use `aws s3 sync`, so every outer retry RESUMES
-# (already-complete files are skipped) instead of restarting the whole tree —
-# with `cp --recursive`, one broken stream anywhere restarted hundreds of MB
-# from scratch and the 5 attempts never converged.
+#
+# An aws_s3_sync_retry sat beside this, and its resume-vs-restart reasoning
+# mattered while the whole channel was synced THROUGH the runner. The channel
+# copy is server-side now (see below), so nothing recursive streams here any
+# more and that helper had no caller left. It is DELETED rather than kept in
+# case: check:ci-dead-bash caught it, and a helper nobody calls is a claim about
+# the code that is no longer true.
+#
+# This one survives because the sed-fix step below still downloads and
+# re-uploads two small config files, which is a genuine byte transfer.
 aws_s3_cp_retry() {
     local attempt
     for attempt in 1 2 3 4 5; do
@@ -80,21 +86,6 @@ aws_s3_cp_retry() {
             return 1
         fi
         log_warn "aws s3 cp attempt $attempt failed, retrying in $((attempt * 15))s..."
-        sleep $((attempt * 15))
-    done
-}
-
-aws_s3_sync_retry() {
-    local attempt
-    for attempt in 1 2 3 4 5; do
-        if aws s3 sync --cli-read-timeout 0 "$@"; then
-            return 0
-        fi
-        if [[ $attempt -eq 5 ]]; then
-            log_error "aws s3 sync $* failed after 5 attempts"
-            return 1
-        fi
-        log_warn "aws s3 sync attempt $attempt failed, retrying in $((attempt * 15))s... (resumes incomplete files)"
         sleep $((attempt * 15))
     done
 }
