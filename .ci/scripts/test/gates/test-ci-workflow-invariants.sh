@@ -62,17 +62,34 @@ test_dropping_the_condition_is_caught() {
     # landing, the sanity assertion below fails loudly instead of the test
     # quietly checking nothing.
     local mut="$FIXTURE/ci-mutated.yml"
-    grep -v "needs.initialize.outputs.channel != ''" "$REAL" >"$mut"
-    assert_not_contains "$(cat "$mut")" "needs.initialize.outputs.channel != ''" \
-        "the mutation actually removed the condition"
-    # Repair the dangling `&&` the removed line left behind so the file still parses.
-    python3 - "$mut" <<'PY'
+    # SCOPED to the validate-install block. A blanket grep -v would also strip
+    # validate-promote's identical condition (two lines match in ci.yml), so the
+    # mutation would be broader than this test's own framing and could pass for
+    # the wrong reason.
+    python3 - "$REAL" "$mut" <<'PY'
 import io, sys
-p = sys.argv[1]
-s = io.open(p, encoding='utf-8').read()
-s = s.replace("run_install_methods != 'false' &&", "run_install_methods != 'false'", 1)
-io.open(p, 'w', encoding='utf-8').write(s)
+src, dst = sys.argv[1], sys.argv[2]
+lines = io.open(src, encoding='utf-8').read().split('\n')
+out, in_job, cut = [], False, 0
+for line in lines:
+    if line.startswith('  validate-install:'):
+        in_job = True
+    elif in_job and line.startswith('  ') and not line.startswith('   ') and line.rstrip().endswith(':'):
+        in_job = False
+    if in_job and line.strip() == "needs.initialize.outputs.channel != ''":
+        cut += 1
+        # The preceding line now dangles an `&&`; trim it so the YAML still parses.
+        if out and out[-1].rstrip().endswith('&&'):
+            out[-1] = out[-1].rstrip()[:-2].rstrip()
+        continue
+    out.append(line)
+assert cut == 1, "expected to cut exactly 1 line inside validate-install, cut %d" % cut
+io.open(dst, 'w', encoding='utf-8').write('\n'.join(out))
 PY
+    # The mutation must have landed, and ONLY on the job under test: the other
+    # occurrence has to survive, or this is the blanket cut again.
+    assert_eq "$(grep -c "needs.initialize.outputs.channel != ''" "$mut")" "1" \
+        "exactly one occurrence removed, the other job's gate left intact"
     assert_eq "$(run_gate "$mut")" "FAIL" "removing the channel condition must be caught"
     assert_contains "$(last_output)" "channel-as-docker-tag" "the right invariant fires"
     log_pass "dropping the channel condition is caught"
