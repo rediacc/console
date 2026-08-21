@@ -36,7 +36,6 @@ REPO_ROOT="$(get_repo_root)"
 cd "$REPO_ROOT"
 
 require_cmd aws
-require_cmd find
 
 : "${CHANNEL:?CHANNEL is required (the source channel, e.g. pr-123)}"
 [[ -n "${AWS_ACCESS_KEY_ID:-}" ]] || {
@@ -108,20 +107,55 @@ CC_MUTABLE="no-cache"
 
 PURGE_URLS=()
 
-# Copy all repo formats from the source channel to the promoted channel.
-# R2 doesn't support GetObjectTagging, so download+reupload via a local tmp.
+# Copy all repo formats from the source channel to the promoted channel,
+# SERVER-SIDE: the bytes never leave R2.
+#
+# WHY THIS CHANGED. The old form synced the whole channel DOWN to /tmp and back
+# UP again, so the job cost two full transfers of a channel that grows with
+# every release. ci.yml's validate-promote comment tracked the trend and called
+# this exact shot: 21m57s on 2026-07-27, 30m51s on 2026-08-07 (cancelled at the
+# then-30-minute ceiling), 57m01s on 2026-08-18 with three minutes to spare,
+# and 61m12s on 2026-08-20, which blew the raised 60-minute ceiling and took
+# CI Complete and Pipeline Sentinel down with it. That comment says plainly that
+# 60 buys headroom and does not fix the growth, and that the copy should become
+# incremental rather than the number being raised again. The log of the failed
+# job carries ZERO retry warnings and was killed mid-transfer, so this is size,
+# not flakiness.
+#
+# "Incremental" cannot mean "skip what is already there": PROMOTED is created
+# fresh and deleted at the end of every run, so its destination always starts
+# empty. The actual lever is not transferring the bytes through the runner at
+# all.
+#
+# WHY IT WAS NOT ALREADY SERVER-SIDE. The old comment said R2 does not support
+# GetObjectTagging. That is a real constraint, and it is what --copy-props none
+# exists for: it tells the v2 CLI to carry no source properties across, so the
+# tagging call is never made and --cache-control below supplies the one property
+# this flow actually needs. The flag does not exist in CLI v1, which also never
+# makes that call, so it is passed only when the runtime is v2 and the version
+# question stops being load-bearing either way.
+#
+# Still a `sync` rather than `cp --recursive`, preserving the resumability the
+# retry helper was built around.
+COPY_PROPS=()
+if aws --version 2>&1 | grep -q 'aws-cli/2'; then
+    COPY_PROPS=(--copy-props none)
+fi
+
 for dir in apt rpm apk archlinux; do
-    log_info "Copying ${dir}/${CHANNEL}/ -> ${dir}/${PROMOTED}/"
-    TMP="/tmp/promote-${dir}"
-    aws_s3_sync_retry "s3://${BUCKET}/${dir}/${CHANNEL}/" "$TMP/" "${EP[@]}"
-    aws_s3_sync_retry "$TMP/" "s3://${BUCKET}/${dir}/${PROMOTED}/" "${EP[@]}" \
-        --cache-control "$CC_MUTABLE"
-    # Purge every uploaded URL to flush any previously-cached body under the
-    # same filename.
-    while IFS= read -r f; do
-        PURGE_URLS+=("https://releases.rediacc.com/${dir}/${PROMOTED}/${f#"$TMP"/}")
-    done < <(find "$TMP" -type f)
-    rm -rf "$TMP"
+    log_info "Copying ${dir}/${CHANNEL}/ -> ${dir}/${PROMOTED}/ (server-side)"
+    aws_s3_sync_retry \
+        "s3://${BUCKET}/${dir}/${CHANNEL}/" "s3://${BUCKET}/${dir}/${PROMOTED}/" \
+        "${EP[@]}" "${COPY_PROPS[@]}" --cache-control "$CC_MUTABLE"
+    # Purge every copied URL to flush any previously-cached body under the same
+    # filename. The listing replaces the old walk of the local tmp tree, which
+    # no longer exists; it is a LIST, not a transfer, so it does not reintroduce
+    # the cost this change removes.
+    while IFS= read -r key; do
+        [[ -n "$key" ]] || continue
+        PURGE_URLS+=("https://releases.rediacc.com/${key}")
+    done < <(aws s3 ls "s3://${BUCKET}/${dir}/${PROMOTED}/" --recursive "${EP[@]}" |
+        awk '{ for (i = 4; i <= NF; i++) printf "%s%s", $i, (i < NF ? OFS : ORS) }')
 done
 
 # Sed-fix config files (replace channel in URLs). Mutable.
