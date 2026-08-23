@@ -401,7 +401,15 @@ test_commit_title_pr_number_is_never_used() {
 
     run_detect "$t"
     assert_eq "$LAST_OUT" "minor" "the API's PR #100 is the answer, not the title's #999"
-    assert_not_contains "$(cat "$t/calls.txt")" "999" "PR #999 is never queried"
+    # SHAs MASKED FIRST. This asserted a bare "999" against a file that records
+    # whole gh command lines -- including 40-hex commit SHAs -- so it went red on
+    # CI run 32659064316 because that run's generated SHA happened to contain the
+    # digits (...c089991d...). Roughly a 1-in-100 flake, latent since the case was
+    # written, and nothing to do with PR numbers. The intent is "no call carries
+    # the TITLE's PR number", so mask the one field that can spell three digits by
+    # coincidence and assert on what is left.
+    assert_not_contains "$(sed -E 's/[0-9a-f]{40}/<sha>/g' "$t/calls.txt")" "999" \
+        "PR #999 is never queried (commit SHAs masked, since hex can spell 999)"
     assert_not_contains "$(cat "$t/calls.txt")" "pr view" "and no per-PR gh pr view call is made at all"
     log_pass "the commit TITLE is not a PR source any more (title says #999, API says #100, answer follows the API)"
 }
