@@ -2678,8 +2678,8 @@ def run_stop(event, event_ok, worklist, hook_file):
     worker_rows, worker_verdicts = [], {}
     try:
         worker_rows, worker_verdicts = wl_liveness.worker_facts(event, session_id)
-        ladder_pings, ladder_inv, ladder_res, ladder_gone, ladder_idle, _lchanged = wl_liveness.ladder(
-            fold, session_id, event, state_doc
+        ladder_pings, ladder_inv, ladder_res, ladder_gone, ladder_idle, _lchanged = (
+            wl_liveness.ladder(fold, session_id, event, state_doc)
         )
     except Exception:  # noqa: BLE001 -- liveness must never break gating
         ladder_pings, ladder_inv, ladder_res, ladder_gone, ladder_idle = [], [], [], [], []
