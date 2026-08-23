@@ -2802,6 +2802,28 @@ a.cf-guarantee-link:hover {
   --color-border: rgb(255 255 255 / 12%);
   --color-interactive-hover: rgb(255 255 255 / 8%);
   --color-interactive-active: rgb(255 255 255 / 14%);
+  /* THE FOOTER IS A DARK BAND IN BOTH THEMES, so every token the components
+     inside it paint from has to be re-pointed here, not just the text ones.
+     Two were missed, and the language switcher paints from exactly those:
+
+       --color-bg-alt   language-switcher.css:15, the trigger's background.
+                        Unre-pointed it resolves to --gray-0 (white) in light
+                        theme, putting #e4e4e7 text on #ffffff at about 1.13:1
+                        -- the control reads as a blank white pill, and its
+                        rgb(255 255 255 / 12%) border is invisible on white too.
+                        Dark theme was always fine at 13.7:1, which is why this
+                        survived: it is invisible in exactly one theme.
+       --color-hover    language-switcher.css:132,136, the option row hover.
+                        NOT the same token as --color-interactive-hover above,
+                        which is re-pointed and misleadingly similar.
+
+     Fixed here rather than in language-switcher.css because the SAME component
+     mounts in the header with different styling; changing the component would
+     move the bug rather than remove it. axe independently flags the light-theme
+     case as a serious color-contrast violation on .language-name, so that node
+     is this fix's control: it must clear. */
+  --color-bg-alt: #1a1a1b;
+  --color-hover: rgb(255 255 255 / 8%);
   color: var(--color-text);
 }
 

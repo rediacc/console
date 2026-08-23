@@ -1,0 +1,130 @@
+# Handoff checklist: www-round5
+
+Status: executing
+Owner: a68f3ab4
+
+Source session `a68f3ab4` (`console-39`), 2026-08-23, planned in `~/monorepo/console`
+before the repo moved to `~/console`. Branch at handoff time: `0823-1`.
+
+## Deliverables
+
+- [x] d1 file:agent/programs/www-round5/README.md
+- [x] d2 file:agent/programs/www-round5/01-verified-context.md
+- [x] d3 file:agent/programs/www-round5/02-marketing-comprehension.md
+- [x] d4 file:agent/programs/www-round5/03-chrome-and-surfaces.md
+- [x] d5 file:agent/programs/www-round5/04-docs-surface.md
+- [x] d6 file:agent/programs/www-round5/05-gates.md
+- [x] d7 file:agent/programs/www-round5/06-execution-guide.md
+- [x] d8 file:agent/programs/www-round5/PROMPT.md
+- [x] d9 file:~/.claude/projects/-home-muhammed-console/programs/www-round5/MANIFEST.md
+- [x] d10 file:agent/PLAN-sentence-aware-wrapping.md
+
+## Waves
+
+- [ ] w1 Wave A: chrome and surfaces (items 3, 5, 6, and the a11y defects in owned files)
+- [ ] w2 Wave B: marketing comprehension (items 1, 2, and the item-4 fixes in marketing copy)
+- [ ] w3 Wave C: docs surface (items 7, 8, 9, 10, including Ask Assistant)
+- [ ] w4 Wave D: gates (sentence wrapping, docs topic coverage, accessibility, section surface)
+
+NOTE (promote when started): a follow-up wave for item 12's optional additions, which are
+listed in the README's Scope but deliberately not waved yet.
+
+## Operator decisions, answered 2026-08-23 (executing session b7baf3ee)
+
+Both open decision points from README.md were asked in one round, before any
+file was read for writing, and both are now closed. The four locked ones are
+untouched and must not be relitigated.
+
+**5. Player cap (item 8): RECOMMENDED, as proposed.**
+
+    width: min(960px, max(80%, var(--docs-prose)));
+
+    1920 -> 960px (ceiling)   1440 -> 688px (= prose)   1280 -> 688px
+
+The invariant to gate on is `player >= paragraph at every width`, which is the
+thing plain `min(960px, 80%)` broke at 1440 (612px, narrower than the 688px
+paragraph above it and narrower than today).
+
+**6. Reference parity (item 9): the recommended set PLUS two additions.**
+
+SHIP: category eyebrow, grouped sidebar, What's next cards, `Ctrl/Cmd+K`,
+inline language picker, **nested collapsible TOC**, **copy-page dropdown**.
+
+OMIT: the persistent question composer, on the README's own reasoning that Ask
+Assistant already covers that job without a floating element -- and a floating
+element cuts against items 3 and 6, whose theme is reducing visual noise.
+
+The operator widened this beyond the README's recommendation: the two additions
+are self-contained and neither competes with Ask Assistant. Wave C is therefore
+wider than the README scoped it, and wave D's docs-surface gate must cover both.
+
+### Amendment to decision 5, same session: fullscreen already exists
+
+The operator corrected the framing: the player already has a fullscreen button
+and users are expected to use it. **Verified rather than taken on trust** -- the
+docs player is a native `<video controls>` emitted by
+`src/plugins/remark-video-embed.ts:66`, and native controls carry a fullscreen
+button in every major browser. It is free and already shipped.
+
+The chosen formula does not change; its JUSTIFICATION gets stronger and the
+alternative gets clearly worse. If fullscreen is the real "watch it properly"
+path, the inline player is an ILLUSTRATION IN THE READING FLOW and should never
+fight the prose for width. `max(80%, var(--docs-prose))` is exactly "never
+narrower than the text it illustrates, and no wider than it needs to be". The
+x1.4 alternative would push the player wider than the prose at mid widths,
+adding visual disruption to partially substitute for something fullscreen
+already does completely -- and this round's theme (items 3 and 6) is reducing
+visual noise.
+
+### Two premises in the README that did NOT survive first contact
+
+Flagged here before wave C starts, because item 8 is scoped against them:
+
+1. **`--docs-prose` is `34rem`** (`DocsLayout.astro:704`), which is **544px** at
+   a 16px root, not the **688px** the decision text quotes. Every width in
+   decision 5's table is therefore wrong in absolute terms. The INVARIANT
+   ("player is never narrower than the prose") is unaffected, because the
+   formula is expressed in the token rather than in pixels -- which is why it
+   was written that way.
+2. **The tutorial container is not capped today.** `DocsLayout.astro:1060-1064`
+   sets `max-inline-size: none` on `.tutorial-video-container` (and `.cs-cards`,
+   `.print-page-header`), so it spans the full article width. The claim that
+   `min(960px, 80%)` would be "narrower than today" needs re-measuring against
+   an UNCAPPED baseline, not against a 960/80% one.
+
+Neither changes the decision. Both change what wave D's gate must assert, and
+both are exactly the drift `01-verified-context.md` warns about: the
+measurements were taken in `~/monorepo/console` before the repo moved.
+
+### Decision 5's arithmetic does not survive `01-verified-context.md` either
+
+The choice stands; the reason given for it was wrong in both directions, and the
+correction is recorded so wave C is not built on it.
+
+`01` measures prose at **544px (34rem) at BOTH 1440 and 1920**, and
+`.docs-content` at 765px / 1245px. So under plain `min(960px, 80%)`:
+
+    1440:  0.80 x 765  = 612px   vs 544px prose  -> WIDER, not narrower
+    1920:  min(960, 996)= 960px  vs 544px prose  -> wider
+
+The decision text's "612px at 1440, **narrower than the 688px paragraph**" is
+false twice: the paragraph is 544px, not 688px, and 612 > 544. The invariant it
+was protecting was never actually violated by the simple formula.
+
+**Keep the chosen formula anyway.** It is a strict superset: it holds the
+invariant by construction rather than by arithmetic coincidence at two specific
+viewport widths, and it keeps holding if `--docs-prose` or the column ever
+changes. A formula that is correct for a stated reason beats one that happens to
+be correct at the two widths somebody measured.
+
+**The real behaviour change is the opposite of the one described.** Today the
+container is UNCAPPED (`max-inline-size: none`, `DocsLayout.astro:1060-1064`),
+so the player renders 1245px at 1920 and 765px at 1440 -- `01` measures exactly
+that, "a 1245px player above 544px-wide text in the same 1245px column". Item 8
+therefore makes the player **substantially narrower than today at every width**
+(1245 -> 960 at 1920, 765 -> 612 at 1440), which is the point: prose uses 43.7%
+of its column while the player uses 100%.
+
+That is also precisely why the operator's fullscreen hint matters, and it is
+consistent with the choice: shrinking the inline player is acceptable because
+watching it properly was never the inline player's job.
