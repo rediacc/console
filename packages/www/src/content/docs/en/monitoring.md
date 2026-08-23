@@ -4,6 +4,7 @@ description: "Monitor machine health, containers, services, repositories, and ru
 category: "Guides"
 tags:
   - operations
+subcategory: operations
 order: 9
 language: en
 ---

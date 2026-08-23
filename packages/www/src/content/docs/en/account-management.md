@@ -4,6 +4,7 @@ description: Organizations, teams, members, and subscriptions in Rediacc.
 category: Guides
 tags:
   - account
+subcategory: account
 order: 12
 language: en
 ---

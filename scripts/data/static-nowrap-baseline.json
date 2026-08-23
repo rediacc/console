@@ -5,7 +5,6 @@
     "packages/www/public/styles/main.css:.chip",
     "packages/www/public/styles/main.css:.footer-founder-name",
     "packages/www/public/styles/main.css:.nav-link",
-    "packages/www/src/layouts/DocsLayout.astro:.docs-copy-page-md",
     "packages/www/src/styles/cheatsheet.css:.cs-cards code",
     "packages/www/src/styles/downloads-page.css:.download-button",
     "packages/www/src/styles/language-switcher.css:.language-trigger",

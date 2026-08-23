@@ -1,6 +1,6 @@
 import { defineCollection, z } from 'astro:content';
 import { LANGUAGES } from '../i18n/types';
-import { DOC_TAGS } from '../utils/docs-categories';
+import { DOC_SUBCATEGORY_VALUES, DOC_TAGS, subcategoriesFor } from '../utils/docs-categories';
 
 const blogCollection = defineCollection({
   type: 'content',
@@ -35,7 +35,12 @@ const docsCollection = defineCollection({
     // source is `utils/docs-categories.ts`; the translated label lives under
     // documentation.tags.* in the locale catalogs.
     tags: z.array(z.enum(DOC_TAGS)).default([]),
-    subcategory: z.enum(['essentials', 'advanced']).optional(),
+    // The per-category SHELF, single-valued on purpose (66 of 79 docs carry two tags,
+    // so grouping the sidebar on tags would file one doc under two headings). The
+    // vocabulary and each category's shelf list live in `utils/docs-categories.ts`;
+    // the superRefine below is what makes an illegal (category, subcategory) pair
+    // fail the content build instead of silently rendering an unknown heading.
+    subcategory: z.enum(DOC_SUBCATEGORY_VALUES).optional(),
     order: z.number().optional(),
     toc: z.boolean().default(true),
     // Render the page as a printable cheat-sheet card grid instead of a
@@ -43,6 +48,14 @@ const docsCollection = defineCollection({
     cardGrid: z.boolean().default(false),
     language: z.enum(LANGUAGES).default('en'),
     sourceHash: z.string().optional(),
+  }).superRefine((doc, ctx) => {
+    if (doc.subcategory && !subcategoriesFor(doc.category).includes(doc.subcategory)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['subcategory'],
+        message: `subcategory '${doc.subcategory}' is not on the '${doc.category}' shelf list; see DOC_SUBCATEGORIES in utils/docs-categories.ts`,
+      });
+    }
   }),
 });
 

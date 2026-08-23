@@ -10732,6 +10732,12 @@
     "copyAsMarkdown": "Copy as Markdown",
     "copyFullPageAriaLabel": "Copy full page as markdown",
     "copied": "Copied!",
+    "tocToggleSection": "Toggle section",
+    "pageActions": {
+      "more": "More actions",
+      "viewMarkdown": "View as Markdown",
+      "ask": "Ask {{provider}}"
+    },
     "copyCode": "Copy code",
     "openInNewTab": "Open in new tab",
     "cliReference": "CLI Reference",
@@ -10747,7 +10753,23 @@
     },
     "subcategories": {
       "essentials": "Essentials",
-      "advanced": "Advanced"
+      "advanced": "Advanced",
+      "setup": "Setup",
+      "cliTools": "CLI & Tools",
+      "workloads": "Apps & Services",
+      "dataProtection": "Backup & Migration",
+      "operations": "Operations",
+      "account": "Account & Licensing",
+      "aiAgents": "AI Agents",
+      "architecture": "Architecture",
+      "platform": "Platform",
+      "commands": "Commands",
+      "resilience": "Resilience & Recovery",
+      "scaling": "Scaling",
+      "development": "Development",
+      "foundations": "Foundations",
+      "regulations": "Regulations",
+      "frameworks": "Standards & Frameworks"
     },
     "browse": {
       "title": "Documentation",

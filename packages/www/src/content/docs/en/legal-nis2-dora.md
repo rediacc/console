@@ -4,6 +4,7 @@ description: "How Rediacc addresses EU NIS2 cybersecurity directive and DORA dig
 category: "Legal"
 tags:
   - compliance
+subcategory: regulations
 order: 8
 language: en
 ---

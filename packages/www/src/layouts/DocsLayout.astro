@@ -4,6 +4,7 @@ import DocsSidebar from '../components/DocsSidebar.astro';
 import DocsTopTabs from '../components/DocsTopTabs.astro';
 import DocsSearchMount from '../components/DocsSearchMount';
 import Breadcrumb from '../components/Breadcrumb.astro';
+import DocsPageActions from '../components/DocsPageActions.astro';
 import LlmsInlineScript from '../components/LlmsInlineScript.astro';
 import StructuredData from '../components/StructuredData.astro';
 import type { Language } from '../i18n/types';
@@ -83,12 +84,19 @@ const hasTOC = showTOC && toc.length > 0;
 // class. The flag reads better anyway.
 const isBrowse = variant === 'index';
 
-// A long TOC is rendered flat and simply scrolls. The grouping that used to be
-// computed here fed a collapsible rail whose only job was to fit a long list
-// into a rail with a fixed height -- and it did that by opening one group and
-// closing another on every scroll-spy transition, so the rail's own height
-// changed under the reader's cursor while they scrolled. The rail is now
-// max-height, so the list needs no help fitting.
+// The TOC nests: h2 entries are top-level, h3/h4 gather under their h2, and a branch
+// collapses on a USER click only. A previous collapsible rail was removed because
+// scroll-spy drove its open/close, so the rail's own height changed under the reader's
+// cursor while they scrolled -- that constraint stands: branches default to open, the
+// spy only ever paints highlights (including `has-active` on a branch the reader chose
+// to collapse), and NOTHING scroll-driven may expand or collapse a branch.
+type TocEntry = { id: string; title: string; level: number };
+const tocTree: { entry: TocEntry; children: TocEntry[] }[] = [];
+for (const entry of toc as TocEntry[]) {
+  const last = tocTree[tocTree.length - 1];
+  if (entry.level <= 2 || !last) tocTree.push({ entry, children: [] });
+  else last.children.push(entry);
+}
 ---
 
 <BaseLayout
@@ -257,21 +265,7 @@ const isBrowse = variant === 'index';
               )}
               <div class="article-header-main">
                 <h1 class="article-title">{frontmatter.title}</h1>
-                {mdUrl && (
-                  <button
-                    type="button"
-                    class="docs-copy-page-md"
-                    data-md-href={mdUrl}
-                    aria-label={t('documentation.copyFullPageAriaLabel')}
-                    title={t('documentation.copyAsMarkdown')}
-                  >
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                      <rect x="9" y="9" width="13" height="13" rx="2" />
-                      <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
-                    </svg>
-                    <span class="copy-md-label">{t('documentation.copyAsMarkdown')}</span>
-                  </button>
-                )}
+                {mdUrl && <DocsPageActions currentLang={currentLang} mdUrl={mdUrl} />}
               </div>
 
               {frontmatter.description && (
@@ -299,11 +293,44 @@ const isBrowse = variant === 'index';
           <nav class="sidebar-nav sidebar-nav-with-accent toc-nav" role="navigation" aria-label={t('common.aria.tableOfContents')}>
             <h3 class="sidebar-title toc-title" id="docs-toc-heading">{t('pages.docs.tableOfContents')}</h3>
             <ul class="sidebar-list toc-list">
-              {toc.map(heading => (
-                <li class={`sidebar-item toc-item toc-level-${heading.level}`}>
-                  <a href={`#${heading.id}`} class="sidebar-link toc-link">{heading.title}</a>
-                </li>
-              ))}
+              {tocTree.map((node, index) => {
+                const hasChildren = node.children.length > 0;
+                const branchId = `toc-branch-${index}`;
+                return (
+                  <li
+                    class={`sidebar-item toc-item toc-level-${node.entry.level}${hasChildren ? ' toc-branch' : ''}`}
+                    data-expanded={hasChildren ? 'true' : undefined}
+                  >
+                    {hasChildren ? (
+                      <>
+                        <div class="toc-row">
+                          <a href={`#${node.entry.id}`} class="sidebar-link toc-link">{node.entry.title}</a>
+                          <button
+                            type="button"
+                            class="toc-toggle"
+                            aria-expanded="true"
+                            aria-controls={branchId}
+                            aria-label={t('documentation.tocToggleSection', 'Toggle section')}
+                          >
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                              <path d="m6 9 6 6 6-6" />
+                            </svg>
+                          </button>
+                        </div>
+                        <ul class="sidebar-list toc-sublist" id={branchId}>
+                          {node.children.map((child) => (
+                            <li class={`sidebar-item toc-item toc-level-${child.level}`}>
+                              <a href={`#${child.id}`} class="sidebar-link toc-link">{child.title}</a>
+                            </li>
+                          ))}
+                        </ul>
+                      </>
+                    ) : (
+                      <a href={`#${node.entry.id}`} class="sidebar-link toc-link">{node.entry.title}</a>
+                    )}
+                  </li>
+                );
+              })}
             </ul>
           </nav>
         </aside>
@@ -343,41 +370,6 @@ const isBrowse = variant === 'index';
   </script>
 
   <script is:inline>
-    // Copy full page as markdown button
-    (function() {
-      function initCopyMd() {
-        document.querySelectorAll('.docs-copy-page-md').forEach(function(btn) {
-          btn.addEventListener('click', function() {
-            var href = btn.getAttribute('data-md-href');
-            if (!href) return;
-            fetch(href)
-              .then(function(r) { return r.text(); })
-              .then(function(text) {
-                return navigator.clipboard.writeText(text);
-              })
-              .then(function() {
-                var label = btn.querySelector('.copy-md-label');
-                var orig = label ? label.textContent : '';
-                var i18nEl = document.getElementById('docs-i18n');
-                var copiedText = i18nEl && i18nEl.dataset.copied || 'Copied!';
-                btn.classList.add('copied');
-                if (label) label.textContent = copiedText;
-                setTimeout(function() {
-                  btn.classList.remove('copied');
-                  if (label) label.textContent = orig;
-                }, 2000);
-              })
-              .catch(function() {});
-          });
-        });
-      }
-      document.addEventListener('astro:page-load', initCopyMd);
-      if (document.readyState !== 'loading') initCopyMd();
-      else document.addEventListener('DOMContentLoaded', initCopyMd);
-    })();
-  </script>
-
-  <script is:inline>
     // TOC scroll-spy.
     //
     // No `window.rediaccTOCInitialized` guard. That guard made init run exactly
@@ -405,6 +397,9 @@ const isBrowse = variant === 'index';
          scrolling it is both pointless and a no-op we should not pay for. */
       function revealInRail(nav, el) {
         if (!nav || !el) return;
+        // A link inside a collapsed branch has no box; its rect is all zeros and the
+        // arithmetic below would scroll the rail to its own top.
+        if (el.offsetParent === null) return;
         if (nav.scrollHeight <= nav.clientHeight) return;
         var navBox = nav.getBoundingClientRect();
         var elBox = el.getBoundingClientRect();
@@ -442,6 +437,17 @@ const isBrowse = variant === 'index';
             a.classList.remove('active');
           });
           link.classList.add('active');
+          // Mark the branch holding the active heading. This is a HIGHLIGHT, never an
+          // expand: a branch the reader collapsed stays collapsed, and the marker is
+          // what keeps their place visible on its top row (see the has-active rule).
+          container.querySelectorAll('.toc-branch.has-active').forEach(function(b) {
+            b.classList.remove('has-active');
+          });
+          var sublist = link.closest('.toc-sublist');
+          if (sublist) {
+            var branch = sublist.closest('.toc-branch');
+            if (branch) branch.classList.add('has-active');
+          }
           revealInRail(nav, link);
         }
 
@@ -481,6 +487,30 @@ const isBrowse = variant === 'index';
       } else {
         init();
       }
+    })();
+  </script>
+
+  <script is:inline>
+    // TOC branch toggles. USER-driven only, by standing constraint (see the tocTree
+    // comment in the frontmatter): nothing here listens to scroll, and the default is
+    // every branch open, so collapse is always a reader's own choice.
+    (function() {
+      function initTocToggles() {
+        document.querySelectorAll('.toc-branch').forEach(function(item) {
+          if (item.dataset.tocToggleBound === 'true') return;
+          item.dataset.tocToggleBound = 'true';
+          var btn = item.querySelector('.toc-toggle');
+          if (!btn) return;
+          btn.addEventListener('click', function() {
+            var expanded = item.getAttribute('data-expanded') === 'true';
+            item.setAttribute('data-expanded', expanded ? 'false' : 'true');
+            btn.setAttribute('aria-expanded', expanded ? 'false' : 'true');
+          });
+        });
+      }
+      document.addEventListener('astro:page-load', initTocToggles);
+      if (document.readyState !== 'loading') initTocToggles();
+      else document.addEventListener('DOMContentLoaded', initTocToggles);
     })();
   </script>
 
@@ -1208,31 +1238,9 @@ const isBrowse = variant === 'index';
       color: var(--color-text);
     }
 
-    .docs-copy-page-md {
-      display: inline-flex;
-      align-items: center;
-      gap: var(--space-2);
-      padding: var(--space-2) var(--space-3);
-      margin-top: var(--space-4);
-      border: 1px solid var(--color-border);
-      border-radius: var(--radius-md);
-      background: var(--color-surface);
-      color: var(--color-text-muted);
-      font-size: var(--font-size-sm);
-      cursor: pointer;
-      white-space: nowrap;
-      transition: color var(--transition-duration-fast) var(--ease-standard), border-color var(--transition-duration-fast) var(--ease-standard);
-    }
-
-    .docs-copy-page-md:hover {
-      color: var(--color-text);
-      border-color: var(--color-text-muted);
-    }
-
-    .docs-copy-page-md.copied {
-      color: var(--color-success, #22c55e);
-      border-color: var(--color-success, #22c55e);
-    }
+    /* The Copy-as-Markdown button and its menu moved to DocsPageActions.astro, and
+       their styles went WITH the markup: this block is component-scoped, so rules left
+       here would match nothing once the element renders in a child component. */
 
     .article-description {
       font-size: var(--font-size-lg);
@@ -1243,6 +1251,55 @@ const isBrowse = variant === 'index';
     .article-content {
       line-height: var(--leading-loose);
       font-size: var(--font-size-base);
+    }
+
+    /* The nested TOC. New names on purpose: .toc-list/.toc-item/.toc-link come from
+       sidebar-shared.css, which the BLOG also loads, so restyling those would reach
+       every blog post. These rules only touch the branch structure this layout adds. */
+    .toc-row {
+      display: flex;
+      align-items: center;
+      gap: var(--space-1);
+    }
+
+    .toc-row .toc-link {
+      flex: 1;
+    }
+
+    .toc-toggle {
+      display: inline-flex;
+      align-items: center;
+      padding: var(--space-1);
+      border: none;
+      background: none;
+      color: var(--color-text-muted);
+      cursor: pointer;
+    }
+
+    .toc-toggle:hover {
+      color: var(--color-text);
+    }
+
+    .toc-toggle svg {
+      transition: transform var(--transition-duration-fast) var(--ease-standard);
+    }
+
+    .toc-toggle[aria-expanded='false'] svg {
+      transform: rotate(-90deg);
+    }
+
+    .toc-sublist {
+      /* list-style/margin/padding come from .sidebar-base .sidebar-list */
+    }
+
+    .toc-branch[data-expanded='false'] > .toc-sublist {
+      display: none;
+    }
+
+    /* A collapsed branch that CONTAINS the active heading keeps the reader's place
+       visible on its top row. Highlight only: the spy never expands anything. */
+    .toc-branch.has-active[data-expanded='false'] > .toc-row > .toc-link {
+      color: var(--color-primary);
     }
 
     /* Right Sidebar - TOC (uses shared styles from sidebar-shared.css) */

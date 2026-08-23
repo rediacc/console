@@ -5,6 +5,7 @@ category: Guides
 tags:
   - getting-started
   - containers
+subcategory: setup
 order: -1
 language: en
 ---

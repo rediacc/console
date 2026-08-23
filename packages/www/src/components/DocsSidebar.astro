@@ -3,7 +3,7 @@ import { getCollection } from 'astro:content';
 import type { Language } from '../i18n/types';
 import { createTranslator } from '../i18n/utils';
 import { getBaseSlug } from '../utils/slug';
-import { makeCategoryLabel } from '../utils/docs-categories';
+import { makeCategoryLabel, makeSubcategoryLabel, subcategoriesFor } from '../utils/docs-categories';
 import '../styles/sidebar-shared.css';
 
 interface Props {
@@ -66,29 +66,59 @@ const { t } = createTranslator(currentLang);
 // The category vocabulary is shared with the docs browse page; see utils/docs-categories.
 const categoryLabel = makeCategoryLabel(t);
 
-const SUBCATEGORY_KEYS: Record<string, string> = {
-  essentials: 'documentation.subcategories.essentials',
-  advanced: 'documentation.subcategories.advanced',
-};
-const SUBCATEGORY_ORDER: Record<string, number> = {
-  essentials: 0,
-  advanced: 1,
-};
-function subcategoryLabel(sub: string): string {
-  const k = SUBCATEGORY_KEYS[sub];
-  return k ? t(k) : sub;
+// The subcategory vocabulary is shared with the browse page and with the schema's
+// per-category legality check; see utils/docs-categories.
+const subcategoryLabel = makeSubcategoryLabel(t);
+
+// A localized doc that carries no `subcategory` resolves through the ENGLISH doc for the
+// same base slug: the field is an identifier, English frontmatter is its source of truth,
+// and the translation pipeline copies frontmatter on its own schedule. A value that is
+// not legal for the doc's category is treated as unset rather than rendered as an
+// unknown heading.
+const englishSubcategoryBySlug = new Map<string, string>();
+for (const doc of allDocs) {
+  if ((doc.data.language ?? 'en') === 'en' && doc.data.subcategory) {
+    englishSubcategoryBySlug.set(getBaseSlug(doc.slug), doc.data.subcategory);
+  }
 }
 
 type DocEntry = (typeof docs)[number];
-function groupBySubcategory(entries: DocEntry[]): Array<{ key: string; entries: DocEntry[] }> {
-  const buckets: Record<string, DocEntry[]> = {};
+
+function resolveSubcategory(category: string, doc: DocEntry): string | undefined {
+  const sub = doc.data.subcategory ?? englishSubcategoryBySlug.get(getBaseSlug(doc.slug));
+  return sub && (subcategoriesFor(category) as readonly string[]).includes(sub)
+    ? sub
+    : undefined;
+}
+
+/**
+ * Group a category's docs onto its shelves, in vocabulary order; docs keep their `order`
+ * sort from above. Docs with no resolvable shelf render FLAT after the shelved ones, so
+ * a locale whose frontmatter lags degrades to a plain list rather than to a wrong
+ * heading. `groups: null` (nothing resolved at all) is the flat-render path.
+ */
+function groupBySubcategory(
+  category: string,
+  entries: DocEntry[]
+): { groups: { key: string; entries: DocEntry[] }[] | null; rest: DocEntry[] } {
+  const shelves = subcategoriesFor(category);
+  if (shelves.length === 0) return { groups: null, rest: entries };
+  const buckets = new Map<string, DocEntry[]>();
+  const rest: DocEntry[] = [];
   for (const doc of entries) {
-    const key = doc.data.subcategory ?? 'essentials';
-    (buckets[key] ??= []).push(doc);
+    const sub = resolveSubcategory(category, doc);
+    if (sub) {
+      if (!buckets.has(sub)) buckets.set(sub, []);
+      buckets.get(sub)!.push(doc);
+    } else {
+      rest.push(doc);
+    }
   }
-  return Object.keys(buckets)
-    .sort((a, b) => (SUBCATEGORY_ORDER[a] ?? 99) - (SUBCATEGORY_ORDER[b] ?? 99))
-    .map((key) => ({ key, entries: buckets[key] }));
+  if (buckets.size === 0) return { groups: null, rest: entries };
+  const groups = shelves
+    .filter((shelf) => buckets.has(shelf))
+    .map((shelf) => ({ key: shelf as string, entries: buckets.get(shelf)! }));
+  return { groups, rest };
 }
 
 // Pre-calculate category states to avoid JSX parsing issues
@@ -103,8 +133,9 @@ const categoryStates = visibleCategories.map(category => {
   const alwaysExpanded = category === 'Guides';
   const initialExpanded = hasActiveDoc || isSmall || alwaysExpanded;
 
-  const subgroups = category === 'Tutorials'
-    ? groupBySubcategory(docsByCategory[category]).map((group) => {
+  const grouped = groupBySubcategory(category, docsByCategory[category]);
+  const subgroups = grouped.groups
+    ? grouped.groups.map((group, index) => {
         const groupId = `${categoryId}-${group.key}`;
         const groupHasActive = group.entries.some((doc) => getBaseSlug(doc.slug) === currentSlug);
         return {
@@ -112,10 +143,13 @@ const categoryStates = visibleCategories.map(category => {
           groupId,
           label: subcategoryLabel(group.key),
           entries: group.entries,
-          expandedAttr: (groupHasActive || group.key === 'essentials' ? 'true' : 'false') as 'true' | 'false',
+          // The first shelf and the one holding the current page open; the rest start
+          // closed, so a seven-shelf category reads as seven headings, not thirty links.
+          expandedAttr: (groupHasActive || index === 0 ? 'true' : 'false') as 'true' | 'false',
         };
       })
     : null;
+  const ungrouped = grouped.groups ? grouped.rest : docsByCategory[category];
 
   return {
     category,
@@ -124,6 +158,7 @@ const categoryStates = visibleCategories.map(category => {
     hasActiveDoc,
     expandedAttr: initialExpanded ? 'true' as const : 'false' as const,
     subgroups,
+    ungrouped,
   };
 });
 ---
@@ -140,7 +175,7 @@ const categoryStates = visibleCategories.map(category => {
         header trigger reuses both. */}
 
     <ul class="sidebar-list category-list">
-      {categoryStates.map(({ category, itemCount, categoryId, hasActiveDoc, expandedAttr, subgroups }) => {
+      {categoryStates.map(({ category, itemCount, categoryId, hasActiveDoc, expandedAttr, subgroups, ungrouped }) => {
 
         return (
           <li
@@ -160,7 +195,7 @@ const categoryStates = visibleCategories.map(category => {
               <span class="category-chevron" aria-hidden="true">▶</span>
             </button>
             <ul class="sidebar-list collapsible-list doc-list" id={categoryId}>
-              {subgroups ? (
+              {subgroups &&
                 subgroups.map((group) => (
                   <li
                     class="sidebar-item subcategory-item"
@@ -179,7 +214,11 @@ const categoryStates = visibleCategories.map(category => {
                       {group.entries.map((doc) => {
                         const docSlug = getBaseSlug(doc.slug);
                         const isActive = docSlug === currentSlug;
-                        const num = doc.data.order;
+                        // The number prefix is a CURRICULUM affordance and Tutorials is
+                        // the only category that is one. Elsewhere `order` is a bare
+                        // sort key: Guides runs -1, 0, 1, 3... and repeats values
+                        // across shelves, so rendering it reads as a defect.
+                        const num = category === 'Tutorials' ? doc.data.order : undefined;
                         return (
                           <li class="sidebar-item">
                             <a
@@ -197,24 +236,24 @@ const categoryStates = visibleCategories.map(category => {
                       })}
                     </ul>
                   </li>
-                ))
-              ) : (
-                docsByCategory[category].map(doc => {
-                  const docSlug = getBaseSlug(doc.slug);
-                  const isActive = docSlug === currentSlug;
-                  return (
-                    <li class="sidebar-item">
-                      <a
-                        href={`/${currentLang}/docs/${docSlug}`}
-                        class={`sidebar-link doc-link ${isActive ? 'active' : ''}`}
-                        aria-current={isActive ? 'page' : undefined}
-                      >
-                        {doc.data.title}
-                      </a>
-                    </li>
-                  );
-                })
-              )}
+                ))}
+              {/* Docs with no resolvable shelf: a flat tail after the shelved groups, so
+                  a lagging locale degrades to a plain list, never to a wrong heading. */}
+              {ungrouped.map(doc => {
+                const docSlug = getBaseSlug(doc.slug);
+                const isActive = docSlug === currentSlug;
+                return (
+                  <li class="sidebar-item">
+                    <a
+                      href={`/${currentLang}/docs/${docSlug}`}
+                      class={`sidebar-link doc-link ${isActive ? 'active' : ''}`}
+                      aria-current={isActive ? 'page' : undefined}
+                    >
+                      {doc.data.title}
+                    </a>
+                  </li>
+                );
+              })}
             </ul>
           </li>
         );
@@ -374,7 +413,7 @@ const categoryStates = visibleCategories.map(category => {
     }
 
     /**
-     * Initialize collapsible subcategory sub-headings (Tutorials → Essentials/Advanced).
+     * Initialize collapsible subcategory sub-headings (the per-category shelves).
      */
     function initCollapsibleSubcategories() {
       const subItems = document.querySelectorAll('[data-subcategory]');
@@ -386,7 +425,10 @@ const categoryStates = visibleCategories.map(category => {
         const sub = item.dataset.subcategory;
         if (!button || !sub) return;
 
-        const storageKey = `rediacc_docs_sub_${sub}`;
+        // Keyed by the group's DOM id (category + shelf), not the bare shelf id:
+        // shelf identifiers repeat across categories (`ai-agents` shelves exist in
+        // three), and one shared key would collapse them in lockstep.
+        const storageKey = `rediacc_docs_sub_${button.getAttribute('aria-controls') || sub}`;
         const savedState = sessionStorage.getItem(storageKey);
         if (savedState !== null) {
           const isExpanded = savedState === 'true';

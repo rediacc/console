@@ -4,6 +4,7 @@ description: "How Rediacc's self-hosted architecture satisfies data residency an
 category: "Legal"
 tags:
   - compliance
+subcategory: foundations
 order: 7
 language: en
 ---
