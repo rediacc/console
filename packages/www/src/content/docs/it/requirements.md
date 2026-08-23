@@ -4,6 +4,7 @@ description: Requisiti di sistema e piattaforme supportate per eseguire Rediacc.
 category: Guides
 tags:
   - getting-started
+subcategory: setup
 order: 0
 language: it
 sourceHash: "a605c6b2fac9bea2"

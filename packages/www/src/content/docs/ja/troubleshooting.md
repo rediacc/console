@@ -4,6 +4,7 @@ description: "SSH、セットアップ、リポジトリ、サービス、Docker
 category: "Guides"
 tags:
   - operations
+subcategory: operations
 order: 10
 language: ja
 sourceHash: "7a4072220b0985f8"

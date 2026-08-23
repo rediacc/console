@@ -5,6 +5,7 @@ category: Use Cases
 tags:
   - backup
   - storage
+subcategory: resilience
 order: 2
 language: zh
 sourceHash: "2fce69fb1631f640"

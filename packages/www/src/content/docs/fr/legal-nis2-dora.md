@@ -4,6 +4,7 @@ description: "Comment Rediacc répond aux exigences de la directive européenne 
 category: "Legal"
 tags:
   - compliance
+subcategory: regulations
 order: 8
 language: fr
 sourceHash: "9179eb8e594f2ed0"

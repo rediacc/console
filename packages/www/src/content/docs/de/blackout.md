@@ -7,6 +7,7 @@ category: Use Cases
 tags:
   - backup
   - migration
+subcategory: resilience
 order: 6
 language: de
 sourceHash: "8817b7a0a9304cd0"

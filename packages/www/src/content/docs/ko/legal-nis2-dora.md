@@ -4,6 +4,7 @@ description: "Rediacc가 EU NIS2 사이버보안 지침 및 DORA 디지털 운�
 category: "Legal"
 tags:
   - compliance
+subcategory: regulations
 order: 8
 language: ko
 sourceHash: "9179eb8e594f2ed0"

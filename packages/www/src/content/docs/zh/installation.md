@@ -5,6 +5,7 @@ category: "Guides"
 tags:
   - getting-started
   - cli
+subcategory: setup
 order: 1
 language: zh
 sourceHash: "4ab3480402e5985a"

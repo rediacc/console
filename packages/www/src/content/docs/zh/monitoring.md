@@ -4,6 +4,7 @@ description: 监控机器健康状况、容器、服务、仓库，并运行诊�
 category: Guides
 tags:
   - operations
+subcategory: operations
 order: 9
 language: zh
 sourceHash: "9c5882697da43a8f"

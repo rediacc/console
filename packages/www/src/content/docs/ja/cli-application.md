@@ -2,6 +2,7 @@
 title: "CLIアプリケーション"
 description: "プラットフォーム管理のためのRediaccコマンドラインインターフェースの完全ガイド"
 category: "Reference"
+subcategory: commands
 order: 2
 language: ja
 generated: true

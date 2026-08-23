@@ -4,6 +4,7 @@ description: "Come il modello self-hosted di Rediacc risponde ai requisiti del C
 category: "Legal"
 tags:
   - compliance
+subcategory: regulations
 order: 4
 language: it
 sourceHash: "0d297fb9552dcfeb"

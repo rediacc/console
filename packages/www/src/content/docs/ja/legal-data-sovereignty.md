@@ -4,6 +4,7 @@ description: "Rediaccのセルフホスト型アーキテクチャがグロー�
 category: "Legal"
 tags:
   - compliance
+subcategory: foundations
 order: 7
 language: ja
 sourceHash: "1e10165626ba3730"

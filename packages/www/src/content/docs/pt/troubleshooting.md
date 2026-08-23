@@ -4,6 +4,7 @@ description: "Correções para problemas comuns com SSH, configuração, reposit
 category: "Guides"
 tags:
   - operations
+subcategory: operations
 order: 10
 language: pt
 sourceHash: "7a4072220b0985f8"

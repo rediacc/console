@@ -4,6 +4,7 @@ description: "Wie Rediacc die Anforderungen der EU NIS2-Cybersicherheitsrichtlin
 category: "Legal"
 tags:
   - compliance
+subcategory: regulations
 order: 8
 language: de
 sourceHash: "9179eb8e594f2ed0"

@@ -4,6 +4,7 @@ description: Rediaccにおける組織、チーム、メンバー、サブスク
 category: Guides
 tags:
   - account
+subcategory: account
 order: 12
 language: ja
 sourceHash: d84a733762750312

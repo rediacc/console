@@ -6,6 +6,7 @@ category: Use Cases
 tags:
   - migration
   - forking
+subcategory: scaling
 order: 3
 language: et
 ---

@@ -4,6 +4,7 @@ description: "Rediacc'ın kendi sunucunuzda barındırma mimarisi küresel yetki
 category: "Legal"
 tags:
   - compliance
+subcategory: foundations
 order: 7
 language: tr
 sourceHash: "1e10165626ba3730"

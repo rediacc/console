@@ -5,6 +5,7 @@ category: Reference
 tags:
   - forking
   - storage
+subcategory: commands
 order: 40
 language: pt
 sourceHash: "6f5ccba93044665a"

@@ -4,6 +4,7 @@ description: 运行 Rediacc 的系统要求和支持的平台。
 category: Guides
 tags:
   - getting-started
+subcategory: setup
 order: 0
 language: zh
 sourceHash: "a605c6b2fac9bea2"

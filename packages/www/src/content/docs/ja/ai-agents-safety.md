@@ -6,6 +6,7 @@ category: Concepts
 tags:
   - ai-agents
   - security
+subcategory: ai-agents
 order: 35
 language: ja
 sourceHash: "e008783008d8e887"

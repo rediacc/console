@@ -4,6 +4,7 @@ description: "Rediacc gira sulla vostra infrastruttura. Controllate i vostri dat
 category: "Legal"
 tags:
   - compliance
+subcategory: foundations
 order: 0
 language: it
 sourceHash: "f3c999aa355997c6"

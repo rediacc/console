@@ -5,6 +5,7 @@ category: Use Cases
 tags:
   - storage
   - operations
+subcategory: scaling
 order: 1
 language: fr
 sourceHash: "3b4e598914ece1c4"

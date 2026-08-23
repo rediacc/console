@@ -4,6 +4,7 @@ description: "مرجع سريع لـ rdc: الإعدادات والمستودع�
 category: Guides
 tags:
   - cli
+subcategory: cli-tools
 order: 3
 cardGrid: true
 language: ar

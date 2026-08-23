@@ -4,6 +4,7 @@ description: "Rediacc 的自托管架构如何满足全球各司法管辖区的�
 category: "Legal"
 tags:
   - compliance
+subcategory: foundations
 order: 7
 language: zh
 sourceHash: "1e10165626ba3730"

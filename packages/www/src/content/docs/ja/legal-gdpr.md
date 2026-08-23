@@ -4,6 +4,7 @@ description: "Rediaccのセルフホスト型アーキテクチャがGDPRのデ�
 category: "Legal"
 tags:
   - compliance
+subcategory: regulations
 order: 1
 language: ja
 sourceHash: "85a342068d855709"

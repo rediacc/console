@@ -4,6 +4,7 @@ description: Rediacc 中的组织、团队、成员和订阅。
 category: Guides
 tags:
   - account
+subcategory: account
 order: 12
 language: zh
 sourceHash: d84a733762750312

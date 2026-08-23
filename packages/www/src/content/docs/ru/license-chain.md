@@ -5,6 +5,7 @@ category: "Guides"
 tags:
   - account
   - security
+subcategory: account
 order: 8
 language: ru
 sourceHash: "d6d980d721be2373"

@@ -4,6 +4,7 @@ description: "SOC 2-ga on asi lihtne: audiitorid tahavad tõendeid, et sinu kont
 category: "Legal"
 tags:
   - compliance
+subcategory: frameworks
 order: 2
 language: et
 sourceHash: "8ccd82a1265e268e"

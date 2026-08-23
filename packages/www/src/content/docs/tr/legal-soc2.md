@@ -4,6 +4,7 @@ description: "SOC 2'nin özü: denetçiler kontrollerinizin çalıştığına da
 category: "Legal"
 tags:
   - compliance
+subcategory: frameworks
 order: 2
 language: tr
 sourceHash: "8ccd82a1265e268e"

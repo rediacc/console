@@ -4,6 +4,7 @@ description: "كيف يلبي نموذج الاستضافة الذاتية في 
 category: "Legal"
 tags:
   - compliance
+subcategory: regulations
 order: 4
 language: ar
 sourceHash: "0d297fb9552dcfeb"

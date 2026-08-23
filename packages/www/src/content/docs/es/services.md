@@ -7,6 +7,7 @@ category: Guides
 tags:
   - containers
   - operations
+subcategory: workloads
 order: 5
 language: es
 sourceHash: "8eef0f7b9e1dcd39"

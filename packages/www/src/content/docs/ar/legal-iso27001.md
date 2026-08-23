@@ -5,6 +5,7 @@ category: "Legal"
 tags:
   - compliance
   - security
+subcategory: frameworks
 order: 5
 language: ar
 sourceHash: "249b81c87ea92b97"

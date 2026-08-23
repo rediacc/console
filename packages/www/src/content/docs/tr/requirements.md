@@ -4,6 +4,7 @@ description: Rediacc'ı çalıştırmak için sistem gereksinimleri ve desteklen
 category: Guides
 tags:
   - getting-started
+subcategory: setup
 order: 0
 language: tr
 sourceHash: "a605c6b2fac9bea2"

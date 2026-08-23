@@ -4,6 +4,7 @@ description: "Come Rediacc risponde alla direttiva UE NIS2 sulla cybersicurezza 
 category: "Legal"
 tags:
   - compliance
+subcategory: regulations
 order: 8
 language: it
 sourceHash: "9179eb8e594f2ed0"

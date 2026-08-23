@@ -289,10 +289,27 @@ export function generate(lang, cliJsonEn, { sourceHash } = {}) {
   // string stays in the catalogs for display use; the frontmatter takes the enum from
   // English.
   const categoryEnum = cliJsonEn.docs.frontmatter.category;
+  // `subcategory` is a CONSTANT here, and deliberately NOT sourced from cli.json.
+  //
+  // It is a schema enum that content/config.ts superRefines per category, so a localized
+  // value fails the collection exactly as a localized `category` does. Putting it in
+  // cli.json would therefore create an obligation to translate a string that must never
+  // be translated: check-translation-hashes requires every new cli.json key to appear in
+  // all 12 non-English locales, and it flagged this immediately when the first attempt
+  // did exactly that.
+  //
+  // `category` can live in cli.json because its localized value has a real display use
+  // elsewhere and the generator simply ignores it. `subcategory` has no such use, so
+  // there is nothing for the other locales to legitimately hold.
+  //
+  // It is emitted at all because www-round5 puts every doc on a shelf: without it this
+  // generated page is the one blank card in the Reference browse list, in all 13 locales.
+  const subcategoryEnum = 'commands';
   lines.push('---');
   lines.push(`title: ${yamlQuote(fm.title)}`);
   lines.push(`description: ${yamlQuote(fm.description)}`);
   lines.push(`category: ${yamlQuote(categoryEnum)}`);
+  if (subcategoryEnum) lines.push(`subcategory: ${subcategoryEnum}`);
   lines.push('order: 2');
   lines.push(`language: ${lang}`);
   lines.push('generated: true');

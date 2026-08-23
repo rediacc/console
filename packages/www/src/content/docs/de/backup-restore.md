@@ -5,6 +5,7 @@ category: "Guides"
 tags:
   - backup
   - storage
+subcategory: data-protection
 order: 7
 language: de
 sourceHash: "c35328105c2f3e8c"

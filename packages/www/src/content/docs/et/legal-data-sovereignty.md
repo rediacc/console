@@ -5,6 +5,7 @@ description: "Kuidas Rediacc'i ise majutatud arhitektuur rahuldab andmete elukoh
 category: "Legal"
 tags:
   - compliance
+subcategory: foundations
 order: 7
 language: et
 ---

@@ -4,6 +4,7 @@ description: "Rediacc'ın kendi sunucunuzda barındırma mimarisi GDPR veri koru
 category: "Legal"
 tags:
   - compliance
+subcategory: regulations
 order: 1
 language: tr
 sourceHash: "85a342068d855709"

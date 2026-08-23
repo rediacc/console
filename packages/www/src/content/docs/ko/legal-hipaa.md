@@ -5,6 +5,7 @@ category: "Legal"
 tags:
   - compliance
   - security
+subcategory: regulations
 order: 3
 language: ko
 sourceHash: "1a0a2df716f6628b"

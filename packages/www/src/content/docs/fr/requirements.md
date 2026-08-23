@@ -4,6 +4,7 @@ description: Configuration requise et plateformes prises en charge pour exécute
 category: Guides
 tags:
   - getting-started
+subcategory: setup
 order: 0
 language: fr
 sourceHash: "a605c6b2fac9bea2"

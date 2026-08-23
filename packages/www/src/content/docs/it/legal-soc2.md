@@ -4,6 +4,7 @@ description: "Dove Rediacc ti fornisce evidenze SOC 2: i log, la traccia di chan
 category: "Legal"
 tags:
   - compliance
+subcategory: frameworks
 order: 2
 language: it
 sourceHash: "8ccd82a1265e268e"

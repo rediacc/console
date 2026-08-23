@@ -4,6 +4,7 @@ description: 'Организации, команды, участники и по
 category: Guides
 tags:
   - account
+subcategory: account
 order: 12
 language: ru
 sourceHash: d84a733762750312

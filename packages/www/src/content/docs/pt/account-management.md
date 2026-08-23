@@ -4,6 +4,7 @@ description: 'Organizações, equipas, membros e subscrições no Rediacc.'
 category: Guides
 tags:
   - account
+subcategory: account
 order: 12
 language: pt
 sourceHash: d84a733762750312

@@ -4,6 +4,7 @@ description: "rdc コマンドのクイックリファレンス：設定、リ�
 category: Guides
 tags:
   - cli
+subcategory: cli-tools
 order: 3
 cardGrid: true
 language: ja

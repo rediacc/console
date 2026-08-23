@@ -4,6 +4,7 @@ description: "RediaccがEU NIS2サイバーセキュリティ指令とDORAデジ
 category: "Legal"
 tags:
   - compliance
+subcategory: regulations
 order: 8
 language: ja
 sourceHash: "9179eb8e594f2ed0"

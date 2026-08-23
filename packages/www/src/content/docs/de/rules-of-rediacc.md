@@ -8,6 +8,7 @@ category: Guides
 tags:
   - containers
   - networking
+subcategory: workloads
 order: 5
 language: de
 sourceHash: "d57f030a95892e39"

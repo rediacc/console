@@ -4,6 +4,7 @@ description: "Суть SOC 2: аудиторы ищут доказательст
 category: "Legal"
 tags:
   - compliance
+subcategory: frameworks
 order: 2
 language: ru
 sourceHash: "8ccd82a1265e268e"

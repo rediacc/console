@@ -5,6 +5,7 @@ description: "Come l'architettura self-hosted di Rediacc soddisfa i requisiti di
 category: "Legal"
 tags:
   - compliance
+subcategory: foundations
 order: 7
 language: it
 ---

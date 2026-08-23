@@ -4,6 +4,7 @@ description: متطلبات النظام والمنصات المدعومة لت�
 category: Guides
 tags:
   - getting-started
+subcategory: setup
 order: 0
 language: ar
 sourceHash: "a605c6b2fac9bea2"

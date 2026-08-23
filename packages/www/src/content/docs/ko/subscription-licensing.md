@@ -4,6 +4,7 @@ description: '계정, rdc, renet이 머신 슬롯, 저장소 라이선스, 요�
 category: Guides
 tags:
   - account
+subcategory: account
 order: 7
 language: ko
 sourceHash: "15886ad7ee04e90c"

@@ -4,6 +4,7 @@ description: "Rediacc 的自托管模型如何满足《加州消费者隐私法�
 category: "Legal"
 tags:
   - compliance
+subcategory: regulations
 order: 4
 language: zh
 sourceHash: "0d297fb9552dcfeb"

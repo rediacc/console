@@ -4,6 +4,7 @@ description: "Cómo el modelo autoalojado de Rediacc cumple con los requisitos d
 category: "Legal"
 tags:
   - compliance
+subcategory: regulations
 order: 4
 language: es
 sourceHash: "0d297fb9552dcfeb"

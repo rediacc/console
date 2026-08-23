@@ -4,6 +4,7 @@ description: 了解 account、rdc 和 renet 如何处理机器槽位、仓库许
 category: Guides
 tags:
   - account
+subcategory: account
 order: 7
 language: zh
 sourceHash: "15886ad7ee04e90c"

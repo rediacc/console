@@ -4,6 +4,7 @@ description: "كيف يعالج Rediacc متطلبات توجيه الأمن ا�
 category: "Legal"
 tags:
   - compliance
+subcategory: regulations
 order: 8
 language: ar
 sourceHash: "9179eb8e594f2ed0"

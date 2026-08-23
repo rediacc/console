@@ -7,6 +7,7 @@ category: Concepts
 tags:
   - repositories
   - containers
+subcategory: architecture
 order: 0
 language: et
 sourceHash: "878b744629cb8b14"

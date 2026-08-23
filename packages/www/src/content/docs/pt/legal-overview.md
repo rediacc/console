@@ -4,6 +4,7 @@ description: "A Rediacc funciona na sua infraestrutura. Os seus dados estão sob
 category: "Legal"
 tags:
   - compliance
+subcategory: foundations
 order: 0
 language: pt
 sourceHash: "f3c999aa355997c6"

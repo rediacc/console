@@ -4,6 +4,7 @@ description: "Rediacc는 귀하의 인프라에서 실행됩니다. 귀하가 �
 category: "Legal"
 tags:
   - compliance
+subcategory: foundations
 order: 0
 language: ko
 sourceHash: "f3c999aa355997c6"

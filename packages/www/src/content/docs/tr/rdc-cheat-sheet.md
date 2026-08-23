@@ -4,6 +4,7 @@ description: "rdc komutları için hızlı referans: yapılandırmalar, depolar,
 category: Guides
 tags:
   - cli
+subcategory: cli-tools
 order: 3
 cardGrid: true
 language: tr

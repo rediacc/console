@@ -4,6 +4,7 @@ description: Rediacc 실행을 위한 시스템 요구 사항 및 지원 플랫�
 category: Guides
 tags:
   - getting-started
+subcategory: setup
 order: 0
 language: ko
 sourceHash: "a605c6b2fac9bea2"

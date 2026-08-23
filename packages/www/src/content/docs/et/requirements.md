@@ -4,6 +4,7 @@ description: Süsteeminõuded ja toetatud platvormid Rediacci käitamiseks.
 category: Guides
 tags:
   - getting-started
+subcategory: setup
 order: 0
 language: et
 sourceHash: "a605c6b2fac9bea2"

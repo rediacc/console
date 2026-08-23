@@ -2,6 +2,7 @@
 title: "CLI 애플리케이션"
 description: "플랫폼 관리를 위한 Rediacc 명령줄 인터페이스 완전 가이드"
 category: "Reference"
+subcategory: commands
 order: 2
 language: ko
 generated: true

@@ -4,6 +4,7 @@ description: "Как Rediacc соответствует требованиям �
 category: "Legal"
 tags:
   - compliance
+subcategory: regulations
 order: 8
 language: ru
 sourceHash: "9179eb8e594f2ed0"

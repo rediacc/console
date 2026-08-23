@@ -4,6 +4,7 @@ description: マシンの健全性、コンテナ、サービス、リポジト�
 category: Guides
 tags:
   - operations
+subcategory: operations
 order: 9
 language: ja
 sourceHash: "9c5882697da43a8f"

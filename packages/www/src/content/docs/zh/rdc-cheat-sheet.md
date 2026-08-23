@@ -4,6 +4,7 @@ description: "rdc 快速参考：配置、仓库、机器、文件同步和容�
 category: Guides
 tags:
   - cli
+subcategory: cli-tools
 order: 3
 cardGrid: true
 language: zh

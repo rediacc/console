@@ -4,6 +4,7 @@ description: "머신 상태, 컨테이너, 서비스, 저장소를 모니터링�
 category: "Guides"
 tags:
   - operations
+subcategory: operations
 order: 9
 language: ko
 sourceHash: "9c5882697da43a8f"

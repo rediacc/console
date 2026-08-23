@@ -4,6 +4,7 @@ description: "Rediacc 在您的基础设施上运行。您控制您的数据。�
 category: "Legal"
 tags:
   - compliance
+subcategory: foundations
 order: 0
 language: zh
 sourceHash: "f3c999aa355997c6"

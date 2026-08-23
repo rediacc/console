@@ -7,6 +7,7 @@ category: Use Cases
 tags:
   - backup
   - migration
+subcategory: resilience
 order: 6
 language: it
 ---

@@ -5,6 +5,7 @@ description: "Rediacc의 자체 호스팅 아키텍처가 글로벌 관할권에
 category: "Legal"
 tags:
   - compliance
+subcategory: foundations
 order: 7
 language: ko
 ---

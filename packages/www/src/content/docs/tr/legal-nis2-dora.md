@@ -4,6 +4,7 @@ description: "Rediacc'ın AB NIS2 siber güvenlik direktifi ve DORA dijital oper
 category: "Legal"
 tags:
   - compliance
+subcategory: regulations
 order: 8
 language: tr
 sourceHash: "9179eb8e594f2ed0"

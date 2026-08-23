@@ -4,6 +4,7 @@ description: "일반적인 SSH, 설정, 저장소, 서비스, Docker 문제에 �
 category: "Guides"
 tags:
   - operations
+subcategory: operations
 order: 10
 language: ko
 sourceHash: "7a4072220b0985f8"

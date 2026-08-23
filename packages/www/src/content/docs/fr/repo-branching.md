@@ -5,6 +5,7 @@ category: Reference
 tags:
   - forking
   - repositories
+subcategory: commands
 order: 41
 language: fr
 sourceHash: "7aaa25bc83dfcf5b"

@@ -4,6 +4,7 @@ description: "SOC 2의 관건은 감사인이 당신의 통제가 실제로 작�
 category: "Legal"
 tags:
   - compliance
+subcategory: frameworks
 order: 2
 language: ko
 sourceHash: "8ccd82a1265e268e"

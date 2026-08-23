@@ -7,6 +7,7 @@ category: Concepts
 tags:
   - operations
   - containers
+subcategory: platform
 order: 2
 language: fr
 sourceHash: 5fad635a61089758

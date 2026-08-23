@@ -5,6 +5,7 @@ category: "Guides"
 tags:
   - operations
   - containers
+subcategory: operations
 order: 5
 language: ru
 sourceHash: "0a87131bd0d87a34"

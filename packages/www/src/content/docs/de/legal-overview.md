@@ -4,6 +4,7 @@ description: "Rediacc läuft auf Ihrer Infrastruktur. Sie kontrollieren Ihre Dat
 category: "Legal"
 tags:
   - compliance
+subcategory: foundations
 order: 0
 language: de
 sourceHash: "f3c999aa355997c6"

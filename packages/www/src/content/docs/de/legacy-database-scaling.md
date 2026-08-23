@@ -5,6 +5,7 @@ category: Use Cases
 tags:
   - migration
   - forking
+subcategory: scaling
 order: 3
 language: de
 sourceHash: "7131eacdf2a43da5"

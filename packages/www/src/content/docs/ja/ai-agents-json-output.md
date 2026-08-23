@@ -5,6 +5,7 @@ category: Reference
 tags:
   - ai-agents
   - cli
+subcategory: ai-agents
 order: 51
 language: ja
 sourceHash: "36ba86893c3817ac"
