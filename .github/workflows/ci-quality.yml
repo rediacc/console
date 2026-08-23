@@ -778,6 +778,11 @@ jobs:
       - name: Sentence wrapping
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: npm run check:ci-sentence-wrapping
+      # Every doc needs a hand-authored browse thumbnail; there is no regenerate
+      # script, so a gap ships a blank card in all 13 locales silently.
+      - name: Docs thumbnail coverage
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: npm run check:ci-docs-thumb-coverage
       # Fourth pin kind to join the shared soak window, after npm deps, embedded assets
       # and GitHub Actions. DOCKERHUB_TOKEN keeps Docker Hub's anonymous rate limit from
       # making this vacuous; without it a limited response is reported as unknown and the
