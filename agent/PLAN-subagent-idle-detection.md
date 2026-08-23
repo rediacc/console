@@ -323,3 +323,51 @@ find. The docs page had no schema; the classifier's 9/9 score was real but every
 one of those nine transcripts happened to end on a clean `end_turn`. A control
 suite built only from fixtures the author imagined would have stayed green
 through both defects.
+
+---
+
+## Addendum 4, 2026-08-23 — the notification channel, measured by accident
+
+The three probes' `idle_notification` messages surfaced in the lead session at
+**19:28Z**. Their own timestamps are 18:48:33Z, 18:50:03Z and 18:51:19Z.
+
+Two things fall out, and the second is the point of this whole item.
+
+### The mechanism is corroborated to within a second
+
+The `TeammateIdle` journal and the notification agree on the instant each
+teammate went idle, across three independent probes:
+
+    probe         hook journal    idle_notification    delta
+    idle-probe    18:48:33Z       18:48:33Z            +0.7s
+    idle-probe2   18:50:03Z       18:50:03Z            +0.0s
+    idle-probe3   18:51:19Z       18:51:19Z            +0.4s
+
+Two mechanisms that share no code, no file and no clock, naming the same moment.
+The transcript classifier is a third: it observed the flip on its next 10-second
+sample. Nothing here is inferred from silence.
+
+### The notification took ~40 minutes to arrive, and that is failure #3, quantified
+
+The "Why" section above lists waiting for the completion notification as one of
+four approaches that failed, on the grounds that one agent's `sends: 0` meant
+the message was never coming. This run shows the milder and far more common
+version of the same trap: the message DOES come, and it comes **37 to 40 minutes
+late**.
+
+Detection latency, same events, three channels:
+
+    hook journal (TeammateIdle)     < 1 second
+    transcript classifier           < 10 seconds (its sampling interval)
+    idle_notification               ~37-40 minutes
+
+A loop waiting on the notification would have held four leases on stopped
+workers for forty minutes — the same shape as the 3.5-hour incident that started
+this, differing only in degree. **The notification is a courtesy, not an
+instrument.** It is fine as a nudge to look; it must never be the thing that
+decides whether a `[>]` item's worker is still working.
+
+This was not a designed experiment. The probes were spawned to trace the idle
+verdict, and the notifications happened to land while the session was still
+running with the journal on disk to compare them against. It is the cleanest
+evidence in this document, and it arrived for free.
