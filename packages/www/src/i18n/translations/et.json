@@ -125,10 +125,31 @@
     "copyCode": "Kopeeri kood",
     "copyFullPageAriaLabel": "Kopeeri kogu lehekülg Markdownina",
     "openInNewTab": "Ava uuel vahekaardil",
+    "pageActions": {
+      "ask": "Küsi {{provider}} käest",
+      "more": "Rohkem toiminguid",
+      "viewMarkdown": "Vaata Markdownina"
+    },
     "searchDocs": "Otsi dokumentatsiooni",
     "subcategories": {
+      "account": "Konto ja litsentsimine",
       "advanced": "Edasijõudnutele",
-      "essentials": "Alused"
+      "aiAgents": "Tehisintellekti agendid",
+      "architecture": "Arhitektuur",
+      "cliTools": "CLI ja tööriistad",
+      "commands": "Käsud",
+      "dataProtection": "Varundus ja migreerimine",
+      "development": "Arendus",
+      "essentials": "Alused",
+      "foundations": "Põhimõtted",
+      "frameworks": "Standardid ja raamistikud",
+      "operations": "Operatsioonid",
+      "platform": "Platvorm",
+      "regulations": "Regulatsioonid",
+      "resilience": "Vastupidavus ja taaste",
+      "scaling": "Skaleerimine",
+      "setup": "Seadistamine",
+      "workloads": "Rakendused ja teenused"
     },
     "tags": {
       "account": "Kontod",
@@ -151,7 +172,8 @@
       "dark": "Tume",
       "label": "Teema",
       "light": "Hele"
-    }
+    },
+    "tocToggleSection": "Lülita jaotis"
   },
   "footer": {
     "columns": {

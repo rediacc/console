@@ -125,10 +125,31 @@
     "copyCode": "Скопировать код",
     "copyFullPageAriaLabel": "Копировать всю страницу как Markdown",
     "openInNewTab": "Открыть в новой вкладке",
+    "pageActions": {
+      "ask": "Спросить {{provider}}",
+      "more": "Ещё действия",
+      "viewMarkdown": "Просмотреть как Markdown"
+    },
     "searchDocs": "Поиск по документации",
     "subcategories": {
+      "account": "Аккаунт и лицензирование",
       "advanced": "Продвинутый уровень",
-      "essentials": "Основы"
+      "aiAgents": "AI-агенты",
+      "architecture": "Архитектура",
+      "cliTools": "CLI и инструменты",
+      "commands": "Команды",
+      "dataProtection": "Резервное копирование и миграция",
+      "development": "Разработка",
+      "essentials": "Основы",
+      "foundations": "Базовые принципы",
+      "frameworks": "Стандарты и фреймворки",
+      "operations": "Операции",
+      "platform": "Платформа",
+      "regulations": "Регламенты",
+      "resilience": "Отказоустойчивость и восстановление",
+      "scaling": "Масштабирование",
+      "setup": "Настройка",
+      "workloads": "Приложения и сервисы"
     },
     "tags": {
       "account": "Аккаунты",
@@ -151,7 +172,8 @@
       "dark": "Тёмная",
       "label": "Тема",
       "light": "Светлая"
-    }
+    },
+    "tocToggleSection": "Переключить раздел"
   },
   "footer": {
     "columns": {

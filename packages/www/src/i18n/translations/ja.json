@@ -125,10 +125,31 @@
     "copyCode": "コードをコピー",
     "copyFullPageAriaLabel": "ページ全体をMarkdownとしてコピー",
     "openInNewTab": "新しいタブで開く",
+    "pageActions": {
+      "ask": "{{provider}}に質問",
+      "more": "その他の操作",
+      "viewMarkdown": "Markdownとして表示"
+    },
     "searchDocs": "ドキュメントを検索",
     "subcategories": {
+      "account": "アカウント・ライセンス",
       "advanced": "応用",
-      "essentials": "基本"
+      "aiAgents": "AIエージェント",
+      "architecture": "アーキテクチャ",
+      "cliTools": "CLI・ツール",
+      "commands": "コマンド",
+      "dataProtection": "バックアップ・移行",
+      "development": "開発",
+      "essentials": "基本",
+      "foundations": "基礎",
+      "frameworks": "標準・フレームワーク",
+      "operations": "オペレーション",
+      "platform": "プラットフォーム",
+      "regulations": "規制",
+      "resilience": "レジリエンス・復旧",
+      "scaling": "スケーリング",
+      "setup": "セットアップ",
+      "workloads": "アプリ・サービス"
     },
     "tags": {
       "account": "アカウント",
@@ -151,7 +172,8 @@
       "dark": "ダーク",
       "label": "テーマ",
       "light": "ライト"
-    }
+    },
+    "tocToggleSection": "セクションを切り替え"
   },
   "footer": {
     "columns": {

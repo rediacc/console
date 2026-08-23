@@ -125,10 +125,31 @@
     "copyCode": "复制代码",
     "copyFullPageAriaLabel": "将整页复制为Markdown",
     "openInNewTab": "在新标签页中打开",
+    "pageActions": {
+      "ask": "向{{provider}}提问",
+      "more": "更多操作",
+      "viewMarkdown": "查看为Markdown"
+    },
     "searchDocs": "搜索文档",
     "subcategories": {
+      "account": "账户与许可",
       "advanced": "进阶",
-      "essentials": "基础"
+      "aiAgents": "AI 代理",
+      "architecture": "架构",
+      "cliTools": "CLI 与工具",
+      "commands": "命令",
+      "dataProtection": "备份与迁移",
+      "development": "开发",
+      "essentials": "基础",
+      "foundations": "基石",
+      "frameworks": "标准与框架",
+      "operations": "操作",
+      "platform": "平台",
+      "regulations": "法规",
+      "resilience": "弹性与恢复",
+      "scaling": "扩展",
+      "setup": "设置",
+      "workloads": "应用与服务"
     },
     "tags": {
       "account": "账户",
@@ -151,7 +172,8 @@
       "dark": "深色",
       "label": "主题",
       "light": "浅色"
-    }
+    },
+    "tocToggleSection": "切换章节"
   },
   "footer": {
     "columns": {

@@ -125,10 +125,31 @@
     "copyCode": "코드 복사",
     "copyFullPageAriaLabel": "전체 페이지를 Markdown으로 복사",
     "openInNewTab": "새 탭에서 열기",
+    "pageActions": {
+      "ask": "{{provider}}에게 질문",
+      "more": "더보기",
+      "viewMarkdown": "Markdown으로 보기"
+    },
     "searchDocs": "문서 검색",
     "subcategories": {
+      "account": "계정 및 라이선스",
       "advanced": "고급",
-      "essentials": "필수"
+      "aiAgents": "AI 에이전트",
+      "architecture": "아키텍처",
+      "cliTools": "CLI 및 도구",
+      "commands": "명령어",
+      "dataProtection": "백업 및 마이그레이션",
+      "development": "개발",
+      "essentials": "필수",
+      "foundations": "기초",
+      "frameworks": "표준 및 프레임워크",
+      "operations": "운영",
+      "platform": "플랫폼",
+      "regulations": "규제",
+      "resilience": "복원력 및 복구",
+      "scaling": "확장",
+      "setup": "설정",
+      "workloads": "앱 및 서비스"
     },
     "tags": {
       "account": "계정",
@@ -151,7 +172,8 @@
       "dark": "다크",
       "label": "테마",
       "light": "라이트"
-    }
+    },
+    "tocToggleSection": "섹션 전환"
   },
   "footer": {
     "columns": {

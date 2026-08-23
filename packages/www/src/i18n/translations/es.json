@@ -125,10 +125,31 @@
     "copyCode": "Copiar código",
     "copyFullPageAriaLabel": "Copiar página completa como Markdown",
     "openInNewTab": "Abrir en nueva pestaña",
+    "pageActions": {
+      "ask": "Preguntar a {{provider}}",
+      "more": "Más acciones",
+      "viewMarkdown": "Ver como Markdown"
+    },
     "searchDocs": "Buscar documentación",
     "subcategories": {
+      "account": "Cuenta y licencias",
       "advanced": "Avanzado",
-      "essentials": "Fundamentos"
+      "aiAgents": "Agentes de IA",
+      "architecture": "Arquitectura",
+      "cliTools": "CLI y herramientas",
+      "commands": "Comandos",
+      "dataProtection": "Copias de seguridad y migración",
+      "development": "Desarrollo",
+      "essentials": "Fundamentos",
+      "foundations": "Bases",
+      "frameworks": "Estándares y marcos",
+      "operations": "Operaciones",
+      "platform": "Plataforma",
+      "regulations": "Normativas",
+      "resilience": "Resiliencia y recuperación",
+      "scaling": "Escalado",
+      "setup": "Configuración",
+      "workloads": "Apps y servicios"
     },
     "tags": {
       "account": "Cuentas",
@@ -151,7 +172,8 @@
       "dark": "Oscuro",
       "label": "Tema",
       "light": "Claro"
-    }
+    },
+    "tocToggleSection": "Alternar sección"
   },
   "footer": {
     "columns": {

@@ -125,10 +125,31 @@
     "copyCode": "Copier le code",
     "copyFullPageAriaLabel": "Copier la page entière en Markdown",
     "openInNewTab": "Ouvrir dans un nouvel onglet",
+    "pageActions": {
+      "ask": "Demander à {{provider}}",
+      "more": "Plus d'actions",
+      "viewMarkdown": "Afficher en Markdown"
+    },
     "searchDocs": "Rechercher dans la documentation",
     "subcategories": {
+      "account": "Compte et licences",
       "advanced": "Avancé",
-      "essentials": "Fondamentaux"
+      "aiAgents": "Agents IA",
+      "architecture": "Architecture système",
+      "cliTools": "CLI et outils",
+      "commands": "Commandes",
+      "dataProtection": "Sauvegarde et migration",
+      "development": "Développement",
+      "essentials": "Fondamentaux",
+      "foundations": "Bases",
+      "frameworks": "Normes et référentiels",
+      "operations": "Opérations",
+      "platform": "Plateforme",
+      "regulations": "Réglementations",
+      "resilience": "Résilience et reprise",
+      "scaling": "Mise à l'échelle",
+      "setup": "Configuration",
+      "workloads": "Applications et services"
     },
     "tags": {
       "account": "Comptes",
@@ -151,7 +172,8 @@
       "dark": "Sombre",
       "label": "Thème",
       "light": "Clair"
-    }
+    },
+    "tocToggleSection": "Basculer la section"
   },
   "footer": {
     "columns": {
