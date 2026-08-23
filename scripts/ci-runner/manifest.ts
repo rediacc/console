@@ -823,6 +823,23 @@ export const GATES: readonly GateSpec[] = [
   // agrees and reports success; gate-reachability can only ask about entries
   // that registered. test-teammate-idle.py was committed with 20 controls and
   // ran nowhere, and this gate then found four more orphans of the same shape.
+  // Gate 1 of the sentence-wrapping pair. Source-level and sub-second, so it runs on
+  // every PR; the browser half (check:ci-sentence-lines) measures real line boxes and
+  // needs a build. Neither subsumes the other. Shrink-only baseline, seeded at 51 because
+  // the <Sentences> mechanism does not exist yet -- that is what lets wave B land it
+  // incrementally without this gate being either useless or blocking.
+  {
+    id: 'check:ci-sentence-wrapping',
+    run: 'npm run check:ci-sentence-wrapping',
+    gate: true,
+    leaves: ['scripts/check-sentence-wrapping.ts'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-content',
+      step: 'Sentence wrapping',
+    },
+  },
   {
     id: 'check:ci-test-file-orphans',
     run: 'npm run check:ci-test-file-orphans',
