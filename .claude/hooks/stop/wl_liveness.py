@@ -57,7 +57,7 @@ LADDER_INVESTIGATE_MIN = int(os.environ.get("WORKLIST_LADDER_INVESTIGATE_MIN", "
 LADDER_RESOLVE_MIN = int(os.environ.get("WORKLIST_LADDER_RESOLVE_MIN", "120"))
 
 
-def blocking_rung_due(state_doc, key, age_min, stampkey, gone=False):
+def blocking_rung_due(state_doc, key, age_min, stampkey, gone=False, idle=False):
     """Would the ladder actually FIRE a blocking rung for this subject?
 
     WHY THIS EXISTS. The ladder is latched: `fire_once` records each rung
@@ -84,6 +84,17 @@ def blocking_rung_due(state_doc, key, age_min, stampkey, gone=False):
     fired = (state_doc.get("ladder") or {}).get(key) or {}
     if gone:
         return fired.get("gone") != stampkey
+    # THE `idle` KEY MUST LIVE HERE, not only at the ladder's call site. This
+    # function IS the poll fast path's oracle, and the docstring above records
+    # what happens when the two disagree: the report goes silent while the
+    # forfeit keeps firing, with no way to discharge it short of abandoning the
+    # item. An `idle` rung latched by the ladder but invisible to this function
+    # would reproduce that deadlock exactly. Checked BEFORE the age rungs
+    # because it is a different subject: `idle` is a proven state, the 90/120
+    # rungs are raw age, and an idle worker quiet for 200 minutes must latch
+    # once as idle rather than re-firing as `resolve`.
+    if idle:
+        return fired.get("idle") != stampkey
     if age_min >= LADDER_RESOLVE_MIN:
         return fired.get("resolve") != stampkey
     if age_min >= LADDER_INVESTIGATE_MIN:
@@ -363,6 +374,240 @@ def live_teammate_transcripts(cwd, fresh_min=None, session_id=""):
         except OSError:
             continue
     return fresh
+
+
+# ---- teammate idle detection ------------------------------------------------
+
+# Stop reasons that mean the model ENDED ITS TURN rather than paused inside one.
+# `tool_use` is deliberately absent: that is the mid-turn reason.
+IDLE_STOP_REASONS = frozenset({"end_turn", "stop_sequence", "max_tokens"})
+
+# How far back to read for the last parseable record. A teammate transcript's
+# final record is small, but a single record can be large (a pasted file, a long
+# tool result), so this is generous rather than tight.
+TEAMMATE_TAIL_BYTES = int(os.environ.get("WORKLIST_TEAMMATE_TAIL_BYTES", "262144"))
+
+# Minutes a PROVEN-idle worker must stay quiet before the ladder escalates from
+# reporting to blocking. Operator-set, 2026-08-23; the plan proposed 15 and the
+# operator confirmed it. The report itself is non-blocking and fires on the
+# FIRST stop the worker is idle, so this only governs the escalation.
+WORKER_IDLE_BLOCK_MIN = int(os.environ.get("WORKER_IDLE_BLOCK_MIN", "15"))
+
+
+def _teammate_meta(cwd, session_id, name):
+    """Resolve a teammate NAME to (jsonl path, agent id), or (None, None).
+
+    THE JOIN THAT `live_teammate_transcripts` SAYS DOES NOT EXIST -- and its
+    docstring is right about the case it describes and wrong as a general claim.
+    There is no join from a BACKGROUND TASK to an agent, because the task's only
+    human-readable field is the prompt truncated to ~50 characters and that
+    prefix provably collides. But a NAMED teammate is a different object: the
+    harness writes `subagents/agent-a<hex>.meta.json` carrying `"name"`
+    verbatim, and that is the same string a `--lease` records as
+    `worker:<name>`. Measured on this machine: 970 of 2260 meta files carry a
+    name, every one of them `taskKind: in_process_teammate`.
+
+    On collision (a name reused across spawns) take the NEWEST sibling .jsonl by
+    mtime. That is the only defensible choice: the lease names a worker that is
+    supposed to be current, and an older transcript would answer about a dead
+    predecessor -- reporting idle for a name whose live agent is working, which
+    is the one direction this design refuses to fail in.
+    """
+    import wl_report as RPT  # noqa: PLC0415 -- stdlib-only sibling, no cycle
+
+    if not name:
+        return None, None
+    proj = RPT._projects_dir() / RPT._munged(C.project_root(C.project_start({"cwd": cwd})))
+    scope = proj / session_id / "subagents" if session_id else None
+    if scope is None or not scope.is_dir():
+        return None, None
+    best, best_mtime, best_id = None, -1.0, None
+    for meta in scope.glob("*.meta.json"):
+        try:
+            info = json.loads(meta.read_text(encoding="utf-8", errors="replace"))
+        except (OSError, ValueError):
+            continue
+        if not isinstance(info, dict) or info.get("name") != name:
+            continue
+        jsonl = meta.with_name(meta.name[: -len(".meta.json")] + ".jsonl")
+        try:
+            mtime = jsonl.stat().st_mtime
+        except OSError:
+            continue
+        if mtime > best_mtime:
+            best, best_mtime, best_id = jsonl, mtime, meta.name[len("agent-") : -len(".meta.json")]
+    return best, best_id
+
+
+def _last_record(jsonl, tail_bytes=None):
+    """The last parseable JSON object in a .jsonl, or None.
+
+    Reads a bounded TAIL rather than the file: a teammate transcript reaches
+    tens of megabytes and the Stop hook runs on every turn. Scans upward from
+    the end because the last line can be a partial write -- the harness appends
+    while this reads, and a half-flushed final line must not be read as "no
+    parseable record" (which would report `unverifiable` for a live agent).
+    """
+    tail_bytes = TEAMMATE_TAIL_BYTES if tail_bytes is None else tail_bytes
+    try:
+        size = jsonl.stat().st_size
+        with jsonl.open("rb") as fh:
+            if size > tail_bytes:
+                fh.seek(size - tail_bytes)
+                fh.readline()  # discard the partial line the seek landed inside
+            blob = fh.read()
+    except OSError:
+        return None
+    for line in reversed(blob.decode("utf-8", errors="replace").splitlines()):
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            rec = json.loads(line)
+        except ValueError:
+            continue
+        if isinstance(rec, dict):
+            return rec
+    return None
+
+
+def _record_is_idle(rec):
+    """Does this record say the agent ENDED ITS TURN?
+
+    THE FAILURE DIRECTION IS THE WHOLE DESIGN. A false `working` is the status
+    quo -- exactly what happens today, and nothing regresses. A false `idle`
+    would be NEW harm: it is the claim that licenses a blocking rung. So every
+    ambiguous shape falls through to not-idle:
+
+      - `type` other than "assistant"          -> a user/tool_result record, mid-turn
+      - `stop_reason: None`                    -> streaming partial. 410 of 701
+                                                  assistant records in the live
+                                                  sample look like this.
+      - a `tool_use` block in the content      -> the turn continues into a tool
+                                                  call regardless of stop_reason
+    """
+    if not isinstance(rec, dict) or rec.get("type") != "assistant":
+        return False
+    msg = rec.get("message")
+    if not isinstance(msg, dict) or msg.get("stop_reason") not in IDLE_STOP_REASONS:
+        return False
+    content = msg.get("content")
+    if isinstance(content, list):
+        for block in content:
+            if isinstance(block, dict) and block.get("type") == "tool_use":
+                return False
+    return True
+
+
+def teammate_state(cwd, session_id, name, now=None):
+    """(verdict, quiet_min, last_ts, agent_id) for a NAME-leased teammate.
+
+    THE BLINDNESS THIS CLOSES. `ladder()` computes
+    `gone = wid and wid not in now_bg and rec.get("worker_verified")`, and
+    `worker_verified` is set only when the worker id appears in the harness's
+    running list. A NAME never appears there, so for a name-leased teammate
+    `gone` is unreachable BY CONSTRUCTION and the item falls through to the raw
+    45/90/120 age ladder. Four items once sat `[>]` on a stopped worker for 3.5
+    hours, their leases running 110 minutes past the point the work was done and
+    the report filed.
+
+    `gone` is NOT loosened here -- it was deliberately tightened after a false
+    death, and loosening it would re-open that. This adds a verdict that is
+    POSITIVELY PROVEN from a record the agent wrote about ITSELF, rather than
+    inferred from absence:
+
+      idle          last record ended the turn. Positively proven not working.
+      working       mid-turn, and quiet for less than BG_STALE_MIN.
+      stalled       mid-turn, and quiet for BG_STALE_MIN or more. SUSPECT --
+                    reported in those words, never as dead or gone.
+      unverifiable  no meta matched, unreadable, or no parseable record.
+                    UNCHANGED, and never reported as death.
+
+    `idle` IS NOT A DEATH CLAIM. It says the worker finished its turn, which is
+    true whether it is resumable or terminated. This reads a LEVEL, not a
+    transition, so a teammate that resumes flips straight back to `working` on
+    the next stop -- which one proved in live use by resuming 11 minutes later.
+
+    THE SIDECAR (see the plan's 2026-08-23 addendum) only sharpens `quiet_min`.
+    A `TeammateIdle` hook records the exact moment a teammate went idle, which
+    an mtime can only lower-bound. It CANNOT manufacture the verdict: there is
+    no un-idle event, so a journal read alone would report idle forever once
+    written, and the transcript is what sees the resume. Where the two disagree
+    the transcript wins toward `working`.
+    """
+    now = time.time() if now is None else now
+    jsonl, agent_id = _teammate_meta(cwd, session_id, name)
+    if jsonl is None:
+        return "unverifiable", None, None, None
+    try:
+        last_ts = jsonl.stat().st_mtime
+    except OSError:
+        return "unverifiable", None, None, agent_id
+    rec = _last_record(jsonl)
+    if rec is None:
+        return "unverifiable", None, last_ts, agent_id
+    quiet_min = max(0.0, (now - last_ts) / 60.0)
+    if _record_is_idle(rec):
+        edge = idle_edge(cwd, session_id, name)
+        if edge is not None:
+            # The hook stamped the edge itself, so prefer it unconditionally.
+            #
+            # AN EARLIER VERSION GUARDED THIS WITH `edge >= last_ts` AND THAT WAS
+            # BACKWARDS -- caught by Control 6c. The edge is normally OLDER than
+            # the mtime (the file gets touched after the turn ends), so that
+            # guard discarded the edge in exactly the case the sidecar exists
+            # for, silently falling back to the mtime it was meant to sharpen.
+            #
+            # No staleness guard is needed and one would be wrong. `idle_edge`
+            # returns the NEWEST edge for this name, so a superseded edge from a
+            # previous idle->resume->idle cycle cannot be returned once the hook
+            # fires again. And if the hook never fires again, the teammate is
+            # either still idle (the old edge is the correct answer) or it
+            # resumed -- in which case the transcript reads mid-turn and this
+            # branch is never reached at all.
+            quiet_min, last_ts = max(0.0, (now - edge) / 60.0), edge
+        return "idle", quiet_min, last_ts, agent_id
+    return ("working" if quiet_min < BG_STALE_MIN else "stalled"), quiet_min, last_ts, agent_id
+
+
+def idle_edge(cwd, session_id, name):
+    """Epoch seconds of the newest recorded TeammateIdle edge for `name`, or None.
+
+    Absence is NOT a signal. It means the hook has not fired for this teammate --
+    which is indistinguishable from a teammate that never went idle, and may
+    simply mean `TeammateIdle` does not fire for this class of agent in this
+    harness at all (unobserved as of 2026-08-23). Reading absence as evidence is
+    the exact `ListAgents` error this whole item exists to replace, so the
+    caller degrades to the transcript rather than changing its verdict.
+    """
+    import wl_store as S  # noqa: PLC0415 -- stdlib-only sibling, no cycle
+
+    start = C.project_start({"cwd": cwd})
+    try:
+        path = S.teammate_idle_path(C.worklist_for(start))
+    except (OSError, AttributeError):
+        return None
+    newest = None
+    try:
+        with path.open("r", encoding="utf-8", errors="replace") as fh:
+            for line in fh:
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    rec = json.loads(line)
+                except ValueError:
+                    continue
+                if not isinstance(rec, dict) or rec.get("name") != name:
+                    continue
+                if session_id and rec.get("session") and rec["session"] != session_id:
+                    continue
+                at = rec.get("at")
+                if isinstance(at, (int, float)) and (newest is None or at > newest):
+                    newest = float(at)
+    except OSError:
+        return None
+    return newest
 
 
 def reaped_path(worklist, session_id):

@@ -849,6 +849,58 @@ def _reassign_cli(argv):
     )
 
 
+def _teammate_idle_cli():
+    """Journal one TeammateIdle edge. Best effort, by design.
+
+    The payload carries the COMMON hook fields (session_id, transcript_path,
+    cwd, hook_event_name) plus agent_id/agent_type in subagent context. It does
+    NOT carry the teammate's name, so the name is recovered from the sibling
+    meta.json the harness wrote next to the transcript -- the same file
+    `wl_liveness._teammate_meta` joins on, read from the other end.
+
+    A record with NO name is still written, keyed by agent id. It costs one line
+    and it is the only evidence available that this hook fires here AT ALL,
+    which as of 2026-08-23 is unobserved for Agent-tool subagents. A feature
+    that silently writes nothing when the event does not fire is
+    indistinguishable from one that is working, which is the whole class of
+    error this item exists to remove.
+    """
+    import wl_store as S  # noqa: PLC0415 -- sibling, probed not assumed
+
+    raw = "" if sys.stdin.isatty() else sys.stdin.read()
+    try:
+        event = json.loads(raw) if raw.strip() else {}
+    except ValueError:
+        event = {}
+    if not isinstance(event, dict):
+        event = {}
+    cwd = event.get("cwd") or os.getcwd()
+    transcript = event.get("transcript_path") or ""
+    name = None
+    if transcript.endswith(".jsonl"):
+        meta = pathlib.Path(transcript)
+        meta = meta.with_name(meta.name[: -len(".jsonl")] + ".meta.json")
+        try:
+            info = json.loads(meta.read_text(encoding="utf-8", errors="replace"))
+            name = info.get("name") if isinstance(info, dict) else None
+        except (OSError, ValueError):
+            name = None
+    rec = {
+        "at": time.time(),
+        "name": name,
+        "agent_id": event.get("agent_id"),
+        "agent_type": event.get("agent_type"),
+        "session": event.get("session_id"),
+    }
+    path = S.teammate_idle_path(C.worklist_for(C.project_start({"cwd": cwd})))
+    path.parent.mkdir(parents=True, exist_ok=True)
+    # One line, one write, O_APPEND. Atomic against concurrent teammates at this
+    # size, which is why this needs no lock -- unlike the event log, nothing
+    # here is read-modify-write.
+    with path.open("a", encoding="utf-8") as fh:
+        fh.write(json.dumps(rec, sort_keys=True) + "\n")
+
+
 def main():
     # FIRST STATEMENT, DELIBERATELY. `claude -p` runs this hook again; the guard
     # is the only thing that works (--settings with empty hooks does not).
@@ -1359,6 +1411,19 @@ def main():
             "session. Nothing was killed -- if one is in fact alive it will "
             "still run; only this session's supervision of it stops." % (len(ids), " ".join(ids))
         )
+        return
+    if sys.argv[1:2] == ["--teammate-idle"]:
+        # Fired by the `TeammateIdle` hook with the harness payload on stdin.
+        #
+        # ALWAYS EXITS 0, and never blocks. `TeammateIdle` supports blocking --
+        # exit 2 prevents the teammate going idle and it keeps working -- and
+        # that power is deliberately unused here. Pinning a teammate the lead
+        # did not ask to keep working is a worse failure than the one this
+        # closes, and a crash in a journal writer must never become one.
+        try:
+            _teammate_idle_cli()
+        except Exception as exc:  # noqa: BLE001 -- see above: never block a teammate
+            sys.stderr.write("teammate-idle journal skipped: %s\n" % exc)
         return
     if sys.argv[1:2] == ["--reassign"]:
         _reassign_cli(sys.argv[1:])
