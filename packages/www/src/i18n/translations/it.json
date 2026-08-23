@@ -577,14 +577,6 @@
         "heading": "Domande Frequenti",
         "items": [
           {
-            "answer": "Certo. Puoi cambiare il tuo piano quando vuoi. Gli upgrade hanno effetto immediato, i downgrade dal ciclo di fatturazione successivo.",
-            "question": "Posso modificare il mio piano?"
-          },
-          {
-            "answer": "Accettiamo Visa, MasterCard e American Express. Per i Contratti di Ripristino annuali offriamo anche la fatturazione.",
-            "question": "Quali metodi di pagamento accettate?"
-          },
-          {
             "answer": "Sì. La Valutazione e il Programma di Ripristino partono con 14 giorni gratis. Carta al signup, paghi dal giorno 15. Annulla entro i 14 giorni e non paghi nulla.",
             "question": "È disponibile una prova gratuita?"
           },
@@ -1960,52 +1952,28 @@
         "heading": "Domande frequenti",
         "items": [
           {
-            "answer": "Sì. Professional e Business partono con 14 giorni gratis. Il primo addebito arriva solo alla fine della prova: disdici prima e non paghi nulla. Se disdici dopo, torni al piano Community gratuito con una macchina, 10 GB per repository e 100 configurazioni al mese.",
-            "question": "C'è una prova gratuita?"
-          },
-          {
-            "answer": "Sì. Tutti i piani a pagamento chiedono una carta al signup per trasformare la prova in abbonamento. Non paghi nulla fino alla fine dei 14 giorni gratis, e puoi disdire in qualsiasi momento.",
-            "question": "Serve una carta di credito per iniziare?"
-          },
-          {
-            "answer": "Sì. Cambia piano quando vuoi. Gli upgrade scattano subito, i downgrade dal prossimo ciclo di fatturazione. Zero penali.",
-            "question": "Posso fare l'upgrade o il downgrade del piano?"
-          },
-          {
-            "answer": "Sì. La fatturazione annuale ti fa risparmiare il 15% rispetto al pagamento mensile. Entrambi i piani a pagamento sono disponibili con fatturazione mensile o annuale.",
-            "question": "Offrite la fatturazione annuale?"
-          },
-          {
-            "answer": "Accettiamo tutte le principali carte di credito (Visa, MasterCard, American Express) e supportiamo la fatturazione su fattura per i piani Enterprise.",
-            "question": "Quali metodi di pagamento accettate?"
-          },
-          {
-            "answer": "Ogni server fisico o virtuale su cui è installato Rediacc conta come una macchina. Le copie istantanee create su quelle macchine non si contano separatamente. Contiamo solo le macchine host.",
-            "question": "Come si conteggiano le macchine?"
-          },
-          {
             "answer": "Sì. Rediacc funziona su qualsiasi server Linux con supporto btrfs (un sistema di storage open-source integrato in Linux). Sono supportati server fisici, macchine virtuali e server cloud (AWS, Azure, GCP, Hetzner, OVH, ecc.).",
             "question": "Rediacc funziona sui miei server?"
           },
           {
-            "answer": "Ogni piano self-service comprende una macchina (una licenza Floating). Se ti serve Rediacc su più macchine, quello è un setup Enterprise venduto tramite i nostri partner. Contattaci e lo dimensioniamo insieme.",
-            "question": "Quante macchine copre ciascun piano?"
+            "answer": "Ogni server fisico o virtuale su cui è installato Rediacc conta come una macchina. Le copie istantanee create su quelle macchine non si contano separatamente. Ogni piano self-service copre una macchina (una licenza Floating). Usare più di una macchina, incluso ogni nodo di un cluster, è una configurazione Enterprise venduta tramite i nostri partner, e il numero di nodi si concorda al momento dell'ordine.",
+            "question": "Come si conteggiano le macchine?"
           },
           {
             "answer": "Enterprise è costruito su misura e venduto tramite i nostri partner. I termini sono negoziabili, i tuoi carichi di lavoro girano su più macchine, hai spazio server dedicato, una promessa di recovery personalizzata e supporto 24/7/365. Inclusi audit di sicurezza e simulazioni regolari.",
             "question": "Che cosa include il piano Enterprise?"
           },
           {
-            "answer": "Sì. Scrivici via email. Scuole e no-profit hanno un prezzo speciale.",
-            "question": "Offrite sconti per il settore educativo o le no-profit?"
+            "answer": "Sì. Professional e Business partono entrambi con 14 giorni di prova gratuita. Entrambi richiedono una carta alla registrazione, così la prova può trasformarsi in abbonamento, e il primo addebito arriva solo alla fine della prova. Disdici prima di allora e non paghi nulla.",
+            "question": "C'è una prova gratuita?"
+          },
+          {
+            "answer": "Entrambi i piani a pagamento vengono fatturati mensilmente o annualmente, e la fatturazione annuale fa risparmiare il 15%. Puoi cambiare piano in qualsiasi momento: gli upgrade hanno effetto immediato, i downgrade si applicano all'inizio del ciclo di fatturazione successivo, e non ci sono penali né costi aggiuntivi. Accettiamo tutte le principali carte di credito (Visa, MasterCard, American Express), e per i piani Enterprise è disponibile la fatturazione diretta.",
+            "question": "Come funziona la fatturazione?"
           },
           {
             "answer": "Disdici durante i 14 giorni gratis e non paghi nulla. Disdici dopo: le funzionalità restano fino alla fine del periodo di fatturazione, poi torni a Community gratuito. I tuoi repository continuano a funzionare sempre.",
             "question": "Cosa succede se disdico?"
-          },
-          {
-            "answer": "Ogni nodo in un cluster è una macchina, e conta come una macchina. Nessuna allocazione condivisa, nessuno sconto per raggruppare server. Un nodo occupa uno slot solo quando vi finisce un repository, quindi il cluster costa zero. Il clustering si vende tramite i nostri partner come parte di un accordo Enterprise, e il numero di nodi si concorda all'ordine.",
-            "question": "Come vengono contati i nodi di un cluster?"
           }
         ]
       },

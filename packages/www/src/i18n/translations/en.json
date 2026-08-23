@@ -686,52 +686,28 @@
         "heading": "Frequently Asked Questions",
         "items": [
           {
-            "question": "Is there a free trial?",
-            "answer": "Yes. Professional and Business both start with a 14-day free trial. The first charge only lands when the trial ends, so cancel before then and nothing is charged. After a cancellation the account falls back to the free Community plan, which keeps one machine running with 10 GB per repository and 100 setups a month."
-          },
-          {
-            "question": "Do I need a credit card to start?",
-            "answer": "Yes. Both paid plans ask for a card at signup so the trial can roll into a subscription. No charge lands until the 14-day trial ends, and cancelling is possible any time before then."
-          },
-          {
-            "question": "Can I upgrade or downgrade my plan?",
-            "answer": "Yes. Plans can change at any time. Upgrades take effect immediately, and downgrades apply at the start of the next billing cycle. No penalties or fees."
-          },
-          {
-            "question": "Do you offer annual billing?",
-            "answer": "Yes. Annual billing saves 15% compared to paying monthly. Both paid plans are available with monthly or annual billing."
-          },
-          {
-            "question": "What payment methods do you accept?",
-            "answer": "We accept all major credit cards (Visa, MasterCard, American Express) and support invoice-based billing for Enterprise plans."
-          },
-          {
-            "question": "How are machines counted?",
-            "answer": "Each physical or virtual server where Rediacc is installed counts as one machine. Instant copies made on those machines don't count separately. Only the host machines are counted."
-          },
-          {
             "question": "Does Rediacc run on my own servers?",
             "answer": "Yes. Rediacc runs on any Linux server with btrfs (an open-source storage system built into Linux) support. Physical servers, virtual machines, and cloud servers (AWS, Azure, GCP, Hetzner, OVH, etc.) are all supported."
           },
           {
-            "question": "How many machines does each plan cover?",
-            "answer": "Every self-serve plan includes one machine (one Floating license). Running Rediacc on more than one machine is an Enterprise setup, sold through our partners. Get in touch and we'll size it together."
+            "question": "How are machines counted?",
+            "answer": "Each physical or virtual server where Rediacc is installed counts as one machine. Instant copies made on those machines don't count separately. Every self-serve plan covers one machine (one Floating license). Running on more than one machine, including every node of a cluster, is an Enterprise setup sold through our partners, and the node count is agreed at order time."
           },
           {
             "question": "What does Enterprise include?",
             "answer": "Enterprise is built to fit and sold through our partners. Terms are negotiable, workloads run across multiple machines, and it includes dedicated server space, a custom recovery promise, and 24/7/365 support. Plus security reviews and regular drills."
           },
           {
-            "question": "Do you offer discounts for education or nonprofits?",
-            "answer": "Yes. Email us. Schools and nonprofits get special pricing."
+            "question": "Is there a free trial?",
+            "answer": "Yes. Professional and Business both start with a 14-day free trial. Both ask for a card at signup so the trial can roll into a subscription, and the first charge only lands when the trial ends. Cancel before then and nothing is charged."
+          },
+          {
+            "question": "How does billing work?",
+            "answer": "Both paid plans bill monthly or annually, and annual billing saves 15%. Plans can change at any time: upgrades take effect immediately, downgrades apply at the start of the next billing cycle, and there are no penalties or fees. We accept all major credit cards (Visa, MasterCard, American Express), and Enterprise plans can be invoiced."
           },
           {
             "question": "What happens if I cancel?",
             "answer": "Cancel during the 14-day trial and no charge ever lands. Cancel a paid plan later and its features stay until the end of the billing period, then the account falls back to the free Community plan. Repositories keep running the whole time."
-          },
-          {
-            "question": "How are cluster nodes counted?",
-            "answer": "Every node in a cluster is a machine, and each one counts as a machine. There is no shared cluster allowance and no discount for grouping servers together. A node only takes a slot when a repository lands on it, so building the cluster itself costs nothing. Clustering is sold through our partners as part of an Enterprise agreement, and the node count is agreed at order time."
           }
         ]
       },
@@ -1965,14 +1941,6 @@
       "faq": {
         "heading": "Frequently Asked Questions",
         "items": [
-          {
-            "question": "Can I upgrade or downgrade my plan?",
-            "answer": "Yes. Plans can change at any time. Upgrades take effect immediately, and downgrades apply at the start of the next billing cycle."
-          },
-          {
-            "question": "What payment methods do you accept?",
-            "answer": "We accept Visa, MasterCard, and American Express. For annual Recovery Retainer agreements, we also offer invoice billing."
-          },
           {
             "question": "Is there a free trial available?",
             "answer": "Yes. Recovery Assessment and Recovery Program both start with a 14-day free trial. A card is added at signup and only charged when the trial ends. Cancel before then and nothing is charged."

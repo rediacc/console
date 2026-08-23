@@ -573,14 +573,6 @@
         "heading": "Häufig gestellte Fragen",
         "items": [
           {
-            "answer": "Ja, jederzeit. Upgrades sofort aktiv. Downgrades greifen mit der nächsten Abrechnung.",
-            "question": "Kann ich meinen Plan upgraden oder downgraden?"
-          },
-          {
-            "answer": "Wir akzeptieren Visa, MasterCard und American Express. Für jährliche Recovery-Retainer-Verträge bieten wir außerdem Rechnungsstellung an.",
-            "question": "Welche Zahlungsmethoden akzeptieren Sie?"
-          },
-          {
             "answer": "Ja. Recovery-Analyse und Recovery-Programm: je 14 Tage kostenlos. Zahlungsmittel bei Anmeldung, abgerechnet wenn die Trial endet. Kündigen Sie vorher – kostenlos.",
             "question": "Gibt es eine kostenlose Testversion?"
           },
@@ -1956,52 +1948,28 @@
         "heading": "Häufig gestellte Fragen",
         "items": [
           {
-            "answer": "Ja. Professional und Business starten beide mit 14 Tagen kostenlos. Die erste Abbuchung erfolgt erst nach Ablauf – kündige vorher, zahle nichts. Nach der Kündigung wechselt dein Konto automatisch zum kostenlosen Community-Plan, der eine Maschine mit 10 GB pro Repository und 100 Setups pro Monat am Laufen hält.",
-            "question": "Gibt es eine kostenlose Testphase?"
-          },
-          {
-            "answer": "Ja. Beide bezahlten Pläne benötigen eine Karte zur Anmeldung – dann läuft die Testphase nahtlos in ein Abonnement über. Es wird nichts berechnet, bis die 14-tägige Testphase endet, und du kannst jederzeit vorher kündigen.",
-            "question": "Benötige ich eine Kreditkarte, um zu starten?"
-          },
-          {
-            "answer": "Ja. Ändere deinen Plan jederzeit. Upgrades sind sofort aktiv, Downgrades greifen beim nächsten Abrechnungszeitraum. Keine Strafen, keine Gebühren.",
-            "question": "Kann ich meinen Plan upgraden oder downgraden?"
-          },
-          {
-            "answer": "Ja. Bei jährlicher Abrechnung sparen Sie 15 % im Vergleich zur monatlichen Zahlung. Beide kostenpflichtigen Pläne sind mit monatlicher oder jährlicher Abrechnung verfügbar.",
-            "question": "Bieten Sie jährliche Abrechnung an?"
-          },
-          {
-            "answer": "Wir akzeptieren alle gängigen Kreditkarten (Visa, MasterCard, American Express) und unterstützen die rechnungsbasierte Abrechnung für Enterprise-Pläne.",
-            "question": "Welche Zahlungsmethoden akzeptieren Sie?"
-          },
-          {
-            "answer": "Jeder physische oder virtuelle Server, auf dem Rediacc installiert ist, zählt als eine Maschine. Auf diesen Maschinen erstellte Kopien werden nicht separat gezählt — nur die Host-Maschinen zählen.",
-            "question": "Wie werden Maschinen gezählt?"
-          },
-          {
             "answer": "Ja. Rediacc läuft auf jedem Linux-Server mit btrfs-Unterstützung (einem quelloffenen Speichersystem, das fest in Linux integriert ist). Physische Server, virtuelle Maschinen und Cloud-Server (AWS, Azure, GCP, Hetzner, OVH usw.) werden alle unterstützt.",
             "question": "Läuft Rediacc auf meinen eigenen Servern?"
           },
           {
-            "answer": "Jeder Self-Service-Plan umfasst eine Maschine (eine Floating-Lizenz). Rediacc auf mehreren Maschinen? Das ist ein Enterprise-Setup, das wir über unsere Partner vertreiben. Kontakt aufnehmen und gemeinsam dimensionieren.",
-            "question": "Wie viele Maschinen deckt jeder Plan ab?"
+            "answer": "Jeder physische oder virtuelle Server, auf dem Rediacc installiert ist, zählt als eine Maschine. Auf diesen Maschinen erstellte Kopien werden nicht separat gezählt. Jeder Self-Service-Tarif deckt eine Maschine ab (eine Floating-Lizenz). Der Betrieb auf mehr als einer Maschine, einschließlich jedes Knotens in einem Cluster, ist ein Enterprise-Setup, das über unsere Partner verkauft wird, wobei die Knotenzahl bei der Bestellung vereinbart wird.",
+            "question": "Wie werden Maschinen gezählt?"
           },
           {
             "answer": "Enterprise wird nach Maß gebaut und über unsere Partner verkauft. Konditionen sind verhandelbar, Workloads laufen auf mehreren Maschinen, dazu kommen dedizierter Server-Speicherplatz, ein individualisiertes Recovery-Versprechen und 24/7/365-Support. Sicherheitsüberprüfungen und regelmäßige Drills inklusive.",
             "question": "Was beinhaltet Enterprise?"
           },
           {
-            "answer": "Ja. Schreiben Sie uns eine E-Mail. Schulen und gemeinnützige Organisationen erhalten Sonderkonditionen.",
-            "question": "Gibt es Rabatte für Schulen oder gemeinnützige Organisationen?"
+            "answer": "Ja. Professional und Business starten beide mit einer 14-tägigen kostenlosen Testphase. Beide verlangen bei der Anmeldung eine Karte, damit die Testphase nahtlos in ein Abo übergehen kann, und die erste Abbuchung erfolgt erst, wenn die Testphase endet. Kündige vorher, und es wird nichts berechnet.",
+            "question": "Gibt es eine kostenlose Testphase?"
+          },
+          {
+            "answer": "Beide kostenpflichtigen Tarife werden monatlich oder jährlich abgerechnet, und die jährliche Abrechnung spart 15 %. Der Tarif lässt sich jederzeit ändern: Upgrades wirken sofort, Downgrades gelten ab dem nächsten Abrechnungszyklus, und es fallen keine Strafgebühren an. Wir akzeptieren alle gängigen Kreditkarten (Visa, MasterCard, American Express), und Enterprise-Tarife können auf Rechnung gestellt werden.",
+            "question": "Wie funktioniert die Abrechnung?"
           },
           {
             "answer": "Kündige während der 14-tägigen Testphase – dir wird nichts berechnet. Kündige später einen bezahlten Plan, nutzt du die Funktionen bis zum Ende des Abrechnungszeitraums, dann wechselt dein Konto zum kostenlosen Community-Plan. Deine Repositories laufen die ganze Zeit weiter.",
             "question": "Was passiert, wenn ich kündige?"
-          },
-          {
-            "answer": "Jeder Knoten im Cluster ist eine Maschine und zählt auch als eine. Kein gemeinsames Cluster-Kontingent, kein Rabatt auf gruppierte Server. Ein Knoten belegt einen Platz erst, wenn ein Repository darauf lädt – der Cluster-Aufbau selbst kostet nichts. Clustering verkaufen wir über unsere Partner als Teil einer Enterprise-Vereinbarung, die Knotenanzahl wird bei der Bestellung vereinbart.",
-            "question": "Wie werden Cluster-Knoten gezählt?"
           }
         ]
       },

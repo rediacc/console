@@ -573,14 +573,6 @@
         "heading": "Preguntas frecuentes",
         "items": [
           {
-            "answer": "Sí, en cualquier momento. Subir es inmediato. Bajar entra en vigor al próximo ciclo de facturación.",
-            "question": "¿Puedo actualizar o degradar mi plan?"
-          },
-          {
-            "answer": "Aceptamos Visa, MasterCard y American Express. Para acuerdos anuales de Contrato de Recuperación también ofrecemos facturación.",
-            "question": "¿Qué métodos de pago aceptan?"
-          },
-          {
             "answer": "Sí. Ambas empiezan con 14 días gratis. Registras una tarjeta pero se cobra solo cuando termina la prueba. Cancela antes y no pagas nada.",
             "question": "¿Hay una prueba gratuita disponible?"
           },
@@ -1956,52 +1948,28 @@
         "heading": "Preguntas frecuentes",
         "items": [
           {
-            "answer": "Sí. Tanto Professional como Business incluyen 14 días gratis. No te cobraremos hasta que termine la prueba, así que si cancelas antes, no pagas nada. Después de cancelar, tu cuenta vuelve al plan Community gratuito, que incluye una máquina con 10 GB por repositorio y 100 configuraciones al mes.",
-            "question": "¿Hay prueba gratuita?"
-          },
-          {
-            "answer": "Sí. Los planes de pago te piden tarjeta al registrarte para que la prueba se convierta en suscripción automáticamente. No te cobraremos hasta que pasen los 14 días, y puedes cancelar cuando quieras antes de eso.",
-            "question": "¿Necesito tarjeta de crédito para empezar?"
-          },
-          {
-            "answer": "Por supuesto. Puedes cambiar de plan cuando quieras. Los cambios a planes superiores son inmediatos, y los cambios a planes inferiores se aplican al siguiente ciclo de facturación. Sin penalizaciones ni cargos.",
-            "question": "¿Puedo mejorar o reducir mi plan?"
-          },
-          {
-            "answer": "Sí. La facturación anual te ahorra 15% comparado con el pago mensual. Ambos planes de pago están disponibles con facturación mensual o anual.",
-            "question": "¿Ofrecen facturación anual?"
-          },
-          {
-            "answer": "Aceptamos todas las tarjetas de crédito principales (Visa, MasterCard, American Express) y ofrecemos facturación por factura para planes Enterprise.",
-            "question": "¿Qué formas de pago aceptan?"
-          },
-          {
-            "answer": "Cada servidor físico o virtual donde se instala Rediacc cuenta como una máquina. Las copias instantáneas creadas en esas máquinas no cuentan por separado. Solo se contabilizan las máquinas anfitrionas.",
-            "question": "¿Cómo se cuentan las máquinas?"
-          },
-          {
             "answer": "Sí. Rediacc se ejecuta en cualquier servidor Linux con soporte para btrfs (un sistema de almacenamiento de código abierto integrado en Linux). Servidores físicos, máquinas virtuales y servidores en la nube (AWS, Azure, GCP, Hetzner, OVH, etc.) están todos soportados.",
             "question": "¿Se ejecuta Rediacc en mis propios servidores?"
           },
           {
-            "answer": "Cada plan incluye una máquina (una licencia flotante). Si quieres ejecutar Rediacc en varias máquinas, es una configuración Enterprise que vendemos a través de nuestros partners. Ponte en contacto y lo diseñaremos juntos.",
-            "question": "¿Cuántas máquinas cubre cada plan?"
+            "answer": "Cada servidor físico o virtual donde se instala Rediacc cuenta como una máquina. Las copias instantáneas creadas en esas máquinas no cuentan por separado. Cada plan de autoservicio cubre una máquina (una licencia flotante). Ejecutar en más de una máquina, incluido cada nodo de un clúster, es una configuración Enterprise que se vende a través de nuestros partners, y el número de nodos se acuerda al hacer el pedido.",
+            "question": "¿Cómo se cuentan las máquinas?"
           },
           {
             "answer": "Enterprise se diseña a medida y se vende a través de nuestros partners. Los términos son negociables, corre en múltiples máquinas e incluye tu propio espacio en servidor, una promesa de recuperación personalizada y soporte 24/7/365. Además, auditorías de seguridad y ejercicios periódicos.",
             "question": "¿Qué incluye Enterprise?"
           },
           {
-            "answer": "Sí. Escríbenos. Las escuelas y organizaciones sin fines de lucro obtienen precios especiales.",
-            "question": "¿Ofrecen descuentos para educación u organizaciones sin fines de lucro?"
+            "answer": "Sí. Tanto Professional como Business empiezan con 14 días de prueba gratis. Ambos piden una tarjeta al registrarte para que la prueba pueda convertirse en suscripción, y el primer cobro solo llega cuando termina la prueba. Cancela antes de eso y no se te cobra nada.",
+            "question": "¿Hay prueba gratuita?"
+          },
+          {
+            "answer": "Ambos planes de pago se facturan mensual o anualmente, y la facturación anual ahorra un 15%. Puedes cambiar de plan cuando quieras: las mejoras de plan se aplican de inmediato, las reducciones entran en vigor al inicio del siguiente ciclo de facturación, y no hay penalizaciones ni cargos ocultos. Aceptamos todas las tarjetas de crédito principales (Visa, MasterCard, American Express), y los planes Enterprise se pueden pagar contra factura.",
+            "question": "¿Cómo funciona la facturación?"
           },
           {
             "answer": "Si cancelas durante la prueba de 14 días, no pagas nada. Si cancelas un plan de pago más tarde, mantienes acceso hasta el final del período de facturación; después, tu cuenta vuelve al plan Community gratuito. Tu infraestructura sigue funcionando siempre.",
             "question": "¿Qué pasa si cancelo?"
-          },
-          {
-            "answer": "Cada nodo es una máquina, y cada máquina cuenta como tal. No hay límite compartido para clústeres ni descuentos por agrupar servidores. Un nodo usa una licencia solo cuando desplegamos un repositorio en él, así que montar el clúster no cuesta nada. El clustering se vende a través de partners como parte de un acuerdo Enterprise, y el número de nodos se acuerda al hacer el pedido.",
-            "question": "¿Cómo se cuentan los nodos de un clúster?"
           }
         ]
       },
