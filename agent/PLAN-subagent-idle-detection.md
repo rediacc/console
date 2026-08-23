@@ -371,3 +371,29 @@ This was not a designed experiment. The probes were spawned to trace the idle
 verdict, and the notifications happened to land while the session was still
 running with the journal on disk to compare them against. It is the cleanest
 evidence in this document, and it arrived for free.
+
+### Addendum 4a, same day — the latency is VARIABLE, which is worse for the notification, not better
+
+A fourth measurement, from real work rather than a probe. `waveC-docs` went idle
+at 20:17:45Z; its `idle_notification` reached the lead at 20:21:34Z.
+
+    hook journal   20:17:45Z   (+0.2s from the notification's own stamp)
+    delivered      20:21:34Z   -> 3m 49s
+
+**Addendum 4 said "~37-40 minutes" and stated it as though it were the figure.
+It is not.** Across four teammates the delivery delay ranges from under four
+minutes to about forty, with no evident relationship to the work done. The
+corroboration finding is unchanged and now rests on four agreements rather than
+three: journal and notification name the same instant to within a second, every
+time.
+
+The design conclusion does not weaken; it hardens, and for a better reason than
+the one first given. A signal that is merely SLOW can be waited for with a long
+enough timeout. A signal whose latency varies by an order of magnitude with no
+observable cause cannot be waited for at all, because no timeout is both safe
+and useful: bound it at four minutes and the forty-minute case looks like a dead
+worker; bound it at forty and every idle worker holds its lease for forty
+minutes. That is the same trap as the 45/90/120 age ladder this item replaces,
+just with a different constant.
+
+The hook journal was under a second in all four cases. That is the instrument.
