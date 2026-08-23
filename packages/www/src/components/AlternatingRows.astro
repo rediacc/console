@@ -1,0 +1,242 @@
+---
+/**
+ * The site's alternating text/visual row band, as one component.
+ *
+ * WHY THIS EXISTS. The pattern shipped exactly once, hard-coded, in
+ * `PricingTrustSection.astro`: six rows where every second one carried a
+ * `trust-row-reverse` class the author had to remember to type, and the flip
+ * itself was `direction: rtl` on the grid with `direction: ltr` put back on
+ * each child. That works in an LTR document and does nothing in an RTL one.
+ * Measured live on 2026-08-23 at 1440x900: on `/en/pricing` the six rows
+ * alternated text at x=113 / x=721, and on `/ar/pricing` ALL SIX rendered text
+ * at x=721 and the visual at x=113. The alternation was simply absent in
+ * Arabic, because the page root is already `dir="rtl"` and re-declaring `rtl`
+ * on the row is a no-op.
+ *
+ * So the flip here is derived from the row INDEX and expressed with `order`,
+ * which follows the writing direction instead of fighting it. Under `/ar` the
+ * same markup alternates in the mirror direction, which is what an RTL reader
+ * expects.
+ *
+ * THE VISUAL IS A NAMED SLOT, `visual-<index>`. Callers hand it whatever they
+ * already have: `PricingTrustSection` passes inline mock-UI SVG markup,
+ * `HomeDifference` passes a house illustration inlined with `set:html` so it
+ * can still read the theme-aware `--illustration-*` custom properties (an
+ * `<img>`-referenced SVG is a separate document and never sees them).
+ *
+ * The slots are read through `Astro.slots.render` rather than `<slot name=...>`
+ * because the compiler rejects a computed slot name outright: `<slot
+ * name={`visual-${index}`} />` fails the build with `slot[name] must be a
+ * static string` (astro 5.17.3, seen as a 500 on `/en/pricing`). The runtime
+ * API takes the same names and does not care that they are derived. Slotted
+ * markup keeps the CALLER's style scope either way.
+ *
+ * TEXT SHAPE. A row carries a heading with a paragraph, or a list of toned
+ * statements, or both. The two consumers use one each: pricing states a claim
+ * and explains it; the homepage contrasts a before line with an after line.
+ */
+export interface AlternatingRowItem {
+  /** Row heading. Rendered as an `<h3>`, so the section owns the `<h2>`. */
+  title?: string;
+  /** Supporting paragraph under the heading. */
+  description?: string;
+  /**
+   * Short labelled claims, rendered as a list with a mark per tone.
+   * `negative` is the muted "life without this" line, `positive` the win.
+   */
+  statements?: Array<{ text: string; tone: 'negative' | 'positive' }>;
+}
+
+interface Props {
+  rows: AlternatingRowItem[];
+  /** Extra class on the wrapper so a page can tune width or rhythm. */
+  class?: string;
+}
+
+const { rows, class: className } = Astro.props;
+
+const visuals = await Promise.all(
+  rows.map((_, index) => {
+    const name = `visual-${index}`;
+    return Astro.slots.has(name) ? Astro.slots.render(name) : Promise.resolve('');
+  })
+);
+---
+
+<div class:list={['alt-rows', className]}>
+  {
+    rows.map((row, index) => {
+      // Derived, not typed out per row: the whole point of the extraction.
+      const flipped = index % 2 === 1;
+      return (
+        <div class:list={['alt-row', { 'alt-row--flipped': flipped }]}>
+          <div class="alt-row__text">
+            {row.title && <h3 class="alt-row__title">{row.title}</h3>}
+            {row.description && <p class="alt-row__description">{row.description}</p>}
+            {row.statements && row.statements.length > 0 && (
+              <ul class="alt-row__statements">
+                {row.statements.map((statement) => (
+                  <li class:list={['alt-row__statement', `alt-row__statement--${statement.tone}`]}>
+                    <svg
+                      class="alt-row__mark"
+                      viewBox="0 0 16 16"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="1.75"
+                      stroke-linecap="round"
+                      aria-hidden="true"
+                    >
+                      {statement.tone === 'positive' ? (
+                        <path d="M3.5 8.5 L6.5 11.5 L12.5 4.5" />
+                      ) : (
+                        <path d="M4.5 4.5 L11.5 11.5 M11.5 4.5 L4.5 11.5" />
+                      )}
+                    </svg>
+                    <span class="alt-row__statement-text">{statement.text}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+          <div class="alt-row__visual">
+            <Fragment set:html={visuals[index]} />
+          </div>
+        </div>
+      );
+    })
+  }
+</div>
+
+<style>
+  .alt-rows {
+    display: flex;
+    flex-direction: column;
+    gap: var(--alt-rows-gap, var(--space-16));
+    max-width: var(--container-xl);
+    margin-inline: auto;
+  }
+
+  .alt-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: var(--space-10);
+    align-items: center;
+  }
+
+  /* `order` follows the writing direction, so an RTL page mirrors the
+     alternation instead of losing it. The `direction: rtl` hack this replaced
+     could not. */
+  .alt-row--flipped .alt-row__visual {
+    order: -1;
+  }
+
+  .alt-row__text {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+    max-width: 32rem;
+  }
+
+  .alt-row__title {
+    margin: 0;
+    font-size: var(--font-size-xl);
+    font-weight: var(--font-weight-semibold);
+    color: var(--color-text-primary);
+  }
+
+  .alt-row__description {
+    margin: 0;
+    font-size: var(--font-size-base);
+    line-height: var(--leading-relaxed);
+    color: var(--color-text-secondary);
+  }
+
+  .alt-row__statements {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .alt-row__statement {
+    display: grid;
+    grid-template-columns: 1rem minmax(0, 1fr);
+    gap: var(--space-3);
+    align-items: start;
+    margin: 0;
+    font-size: var(--font-size-base);
+    line-height: var(--leading-relaxed);
+  }
+
+  .alt-row__statement-text {
+    /* A grid item defaults to min-width:auto, which refuses to shrink below
+       its longest unbreakable word. Locales with long compounds overflow the
+       column without this. */
+    min-width: 0;
+  }
+
+  .alt-row__statement--negative {
+    color: var(--color-text-secondary);
+  }
+
+  .alt-row__statement--positive {
+    color: var(--color-text-primary);
+    font-weight: var(--font-weight-semibold);
+  }
+
+  .alt-row__mark {
+    width: 1rem;
+    height: 1rem;
+    /* Optical alignment with the first line of the statement. */
+    margin-top: 0.3em;
+    flex: none;
+  }
+
+  .alt-row__statement--positive .alt-row__mark {
+    color: var(--color-brand-primary);
+  }
+
+  .alt-row__visual {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+
+  /* Slotted content keeps the CALLER's scope, so it needs :global to be
+     reached from here. */
+  .alt-row__visual :global(svg) {
+    width: 100%;
+    max-width: var(--alt-row-visual-max, 400px);
+    height: auto;
+    color: var(--color-text-primary);
+  }
+
+  @media (max-width: 48rem) {
+    /* No `gap` override here on purpose: a hard value would silently beat the
+       caller's `--alt-rows-gap` at exactly the width where spacing matters
+       most, and the knob would look live while doing nothing. */
+    .alt-row {
+      grid-template-columns: 1fr;
+      gap: var(--space-6);
+    }
+
+    /* One column: the visual leads every row, and the flip has nothing left
+       to flip. */
+    .alt-row__visual,
+    .alt-row--flipped .alt-row__visual {
+      order: -1;
+    }
+
+    .alt-row__text {
+      max-width: none;
+    }
+
+    /* A CEILING rather than an override: a caller that already asked for
+       something smaller keeps it. */
+    .alt-row__visual :global(svg) {
+      max-width: min(var(--alt-row-visual-max, 400px), 320px);
+    }
+  }
+</style>
