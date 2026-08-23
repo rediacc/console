@@ -1,0 +1,149 @@
+# Subagent idle/liveness detection
+
+Status: ready
+Origin: session 0ad063bf, 2026-08-23. Design by a Plan agent, verified against live artifacts.
+Operator: approved to build; asked to be present when it starts.
+
+## Why
+
+A lead spawned two writer subagents. Both finished. The lead did not learn either
+had stopped, and had no way to tell "still working" from "finished" from "died".
+Four things were tried and each failed in a different way:
+
+1. `ListAgents` returned "No reachable agents" while both agents still had recent
+   file writes. `docs/agent-reference/TRAPS.md` already records that its silence
+   is not death, so it cannot be a liveness signal.
+2. **File mtimes.** The lead inferred "both are actively writing" from `stat`.
+   This is the error the operator caught: an mtime says when an agent LAST wrote,
+   never whether it is alive. A live fact asserted from a lagging indicator.
+3. **Waiting for the completion notification.** One agent's `sends: 0` -- it
+   finished and wrote its report as plain assistant text, never calling
+   `SendMessage`. Per that tool's own docs, plain output is not visible to other
+   agents. The lead waited for a message that by design was never coming.
+4. `wl_report.py --list --unread` was run BEFORE the report existed and the stale
+   answer was treated as current. The report had been on disk, unread, correct,
+   from 12:30:50Z.
+
+Cost: four items sat `[>]` on a stopped worker for 3.5 hours, their leases
+running 110 minutes past the point the work was done.
+
+## The signal that already exists
+
+**The last JSONL record of a subagent transcript states whether it is mid-turn or
+finished**, is self-recorded, and cannot be faked by a self-report:
+
+- finished -> `type: assistant`, `stop_reason: end_turn`, content `['text']`
+- working  -> `stop_reason: tool_use`, or `type: user` with `tool_result`, or
+  `stop_reason: None` (streaming)
+
+Scored **9/9** against ground truth over this session's nine real transcripts,
+and re-scored correctly three hours later after two agents resumed. At 12:30:50Z
+it would have said `phase3-release: IDLE`.
+
+## What the hook can and cannot verify today
+
+- `wl_liveness.verify_background()` short-circuits every non-`shell` task to
+  `unverifiable`; teammates have no OS process by design.
+- `live_teammate_transcripts()` returns a COUNT, not a mapping. Its docstring
+  argues no join exists because `background_tasks` descriptions collide -- true
+  for anonymous tasks, but NOT for named teammates, whose
+  `subagents/agent-a<name>-<hex>.meta.json` carries `"name"`.
+- **The structural dead end:** `ladder()` computes
+  `gone = wid and wid not in now_bg and rec.get("worker_verified")`.
+  `worker_verified` is set only when the id is in the harness's running list, and
+  a NAME never is. So for a name-leased teammate `gone` is unreachable BY
+  CONSTRUCTION, leaving only the raw 45/90/120 age ladder. That is the blindness.
+
+Do not loosen `gone`; it was deliberately tightened after a false death. Add a
+verdict that is POSITIVELY proven instead of inferred from absence.
+
+## Design
+
+One new function, one new verdict, four call sites. No new infrastructure, no
+polling, no new files.
+
+**1. `wl_liveness.teammate_state(cwd, session_id, name)` -> (verdict, quiet_min, last_ts, agent_id)**
+
+Resolve by globbing `<proj>/<session_id>/subagents/*.meta.json` and matching
+`info["name"]`; on collision take the newest sibling `.jsonl` by mtime. Read the
+last parseable record from a bounded tail.
+
+| verdict | condition | meaning |
+|---|---|---|
+| `idle` | last record is assistant, `stop_reason` in {end_turn, stop_sequence, max_tokens}, no `tool_use` block | positively proven not working |
+| `working` | mid-turn AND `quiet_min < BG_STALE_MIN` | verified running |
+| `stalled` | mid-turn AND `quiet_min >= BG_STALE_MIN` | SUSPECT, reported in those words, never "dead" |
+| `unverifiable` | no meta matches, unreadable, no parseable record | unchanged |
+
+`idle` is not a death claim. It says the worker FINISHED ITS TURN, which is true
+whether it is resumable or terminated, and it is backed by a record the agent
+wrote about itself. A resumed teammate flips back to `working` on the next stop
+because this reads a LEVEL, not a transition.
+
+**Failure direction is safe on purpose.** `stop_reason: None` (streaming
+partials, 410 of 701 assistant records in the sample) classifies as `working`. A
+false `working` is the status quo; a false `idle` would be new harm. The
+classifier never guesses toward idle.
+
+**2. Correlate with the report the agent already filed.** When `idle`, look up
+the newest `wl_report` index entry with `agent == name` and `at >= lease at`, via
+`wl_report.unread(...)`, already imported in `wl_checks.py`. Carry its id and
+title into the message so the next step is `wl_report.py --show <id>` rather than
+a status-check round trip. **This is the piece that would have saved the 3.5
+hours.**
+
+**3. Wire into `ladder()`.** For each `[>]` item whose `wid` is not in `now_bg`
+and not `worker_verified` -- the case that today falls through to pure age --
+call `teammate_state`. Return a fifth list, `idles`.
+
+- Report immediately, NON-blocking, on the first stop where the worker is `idle`.
+- Block once per stamp when `idle` AND `quiet_min >= WORKER_IDLE_BLOCK_MIN`
+  (new, env-tunable, default 15), gated through `fire_once`.
+- `blocking_rung_due()` must learn the `idle` key or the poll fast path
+  disagrees with the latch -- that exact disagreement is a documented deadlock.
+- `stalled` joins `investigates` with stall-specific wording. `unverifiable`
+  changes nothing.
+
+**4. Surface in the guide row** so the state is visible before any rung fires:
+
+    - [>] #428406bb (quiet 206m, worker:phase3-release [IDLE 206m]) ...
+          it reported: "Phase 3 is complete. Everything is uncommitted."  (report fc3f4a0f5447)
+          NEXT: read it (wl_report.py --show fc3f4a0f5447), then --tick / --lease <id> release / re-lease
+
+## What happens to a lease whose worker verifiably stopped
+
+**Nothing automatic.** It must never become "done" and never become "dead". The
+item stays `[>]`; the check adds information and offers three exits that already
+exist: `--tick` with evidence, `--lease <id> release`, or re-lease to a new
+worker. No auto-tick (that is the silent-completion failure), no auto-unlease (an
+idle teammate is resumable and one proved it by resuming 11 minutes later).
+
+## Controls
+
+0. **Live, runnable now.** The classifier over this session's real `subagents/`
+   dir: six finished Plan/Explore agents must return `idle`, the running ones
+   `working`. Already run: 9/9. A real red/green pair from production data.
+1. **The mutation pair.** Fixture whose last line is
+   `{"type":"assistant","message":{"stop_reason":"end_turn",...}}` -> assert
+   `idle`. **Mutate that one field to `tool_use` -> assert the check STOPS
+   reporting idle.** Without the second pass the assertion is vacuous.
+2. **Stall must not say dead.** Mid-turn last record, `.jsonl` backdated 60 min.
+   Assert `stalled`, and assert the emitted text contains neither `dead` nor
+   `gone`.
+3. **Unverifiable is never accused.** Lease `worker:no-such-agent-name`. Assert
+   `unverifiable`, no idle claim, no death claim.
+4. **Resume clears the verdict.** Idle fixture, assert idle; append a `tool_use`
+   record, assert `working`. Regression guard for the false-death this replaces.
+5. **End-to-end.** `[>]` item on an idle worker: assert the guide row carries the
+   annotation and the ladder fires ONCE across two stops (the `fire_once` latch),
+   then flip to working and assert the annotation disappears.
+
+## Two findings to fix or record while in there
+
+- `wl_report.scan()` decides an agent is finished by **5 minutes of mtime
+  silence** -- the same lagging-indicator error, embedded in the self-heal path.
+  A slow agent thinking for six minutes gets indexed mid-flight with a partial
+  answer. The content check is strictly better and should replace it.
+- The root cause of the original silence was `sends: 0`. A line in the
+  writer-agent brief template requiring a `SendMessage` on completion prevents
+  it. That belongs in the template, not the hooks.
