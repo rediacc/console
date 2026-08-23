@@ -21,6 +21,15 @@ Submodule map (path → GitHub repo): `private/renet` → `rediacc/renet`, `priv
 
 ### 0. Preconditions (stop and report if any fail)
 
+### Console itself has TWO remotes, and only one of them is GitHub
+
+`origin` is GitHub; `gitlab` is `gitlab.rediacc.io/rediacc-org/github/console.git`. This is
+the same lesson as the sibling repos below, one level up: PR and merge tooling that assumes
+GitHub silently does the wrong thing elsewhere, so check `git remote -v` before reasoning
+about "the remote". Nothing pushes to `gitlab` automatically, which is why step 6b exists.
+The remote lives only in local `.git/config`, so a fresh clone does not have it and step 6b
+will report a skip until someone adds it back.
+
 ### Sibling repos under `private/` that are NOT submodules
 
 Some checkouts contain independent git repos under `private/` that are **not** console submodules and are gitignored. They are invisible to `git status`, to `git submodule status`, and to every submodule-shaped instruction here. Agents have repeatedly assumed everything under `private/` is a submodule and walked straight past uncommitted or unmerged work in them.
@@ -248,6 +257,51 @@ git merge-base --is-ancestor origin/main "$rec" && echo "record AHEAD"
 
 Worktree **behind** the record ⇒ the checkout is stale ⇒ `git submodule update`, **commit nothing**. Committing it would roll that submodule back a release. The naive test ("this isn't my work, leave it out") gives the right answer here only by luck, and the opposite instinct ("the pointer is dirty, carry it at its latest") ships the rollback.
 
+### 6b. Mirror `main` to the GitLab remote, so it cannot go stale again
+
+This repo has a **second remote**, `gitlab`
+(`gitlab.rediacc.io/rediacc-org/github/console.git`). It is not a live mirror and nothing
+pushes to it automatically, which is exactly how it drifted: on 2026-08-23 its `main` was
+found sitting at `09b0b7716` while GitHub's was at `b75c44d58`, an ancestor and months
+behind. This step exists so that gap never reopens.
+
+It goes **here**, after step 6 and before step 7, and the position is load-bearing in both
+directions. Earlier than step 6 and you mirror a `main` that is two commits stale, because CD
+pushes the release commits back after the merge, which is the very drift this prevents. Later
+than step 7 and it dilutes step 7's hard boundary, whose whole subject is that the session is
+parked on `main` and must stop touching things.
+
+```bash
+if git remote get-url gitlab >/dev/null 2>&1; then
+    GIT_TERMINAL_PROMPT=0 timeout 120 \
+        git push gitlab refs/heads/main:refs/heads/main --follow-tags
+else
+    echo "no gitlab remote configured in this checkout; skipping (report it)"
+fi
+```
+
+Four things this must respect, in order of how likely they are to bite:
+
+- **The remote may not exist.** `gitlab` lives only in local `.git/config`; it is not tracked,
+  so a fresh clone does not have it. Probe with `git remote get-url gitlab` and, if it is
+  absent, **report and continue**. A missing mirror must never fail a merge that already
+  landed.
+- **Credentials may be absent or expired.** GitLab is self-hosted and answers a redirect to a
+  sign-in page. `GIT_TERMINAL_PROMPT=0` plus a timeout is what stops a non-interactive session
+  hanging on a credential prompt. A skip you report beats a hang you do not.
+- **Push the refspec explicitly. Never `--mirror` from a working checkout.** In a working tree
+  `--mirror` also pushes `refs/remotes/*` and deletes anything on GitLab not present locally.
+  The mirror form is correct only from a bare mirror clone during a deliberate history
+  rewrite, which is an operator-run one-off, not this step.
+- **Never force.** Once both remotes share history this is always a fast-forward. If it is
+  ever rejected as non-fast-forward, GitLab has diverged again: **report and stop**, do not
+  reach for a force flag. A forced push from a stale local `main` would silently overwrite the
+  mirror, and `.claude/hooks/pre-bash/block-git-force-push.sh` will refuse it anyway.
+
+Report the outcome in step 8 either way, including a skip. A mirror that quietly stops being
+written is indistinguishable from one that is up to date, which is how the first drift went
+unnoticed for months.
+
 ### 7. Hand the tree back safely: you are now sitting on `main`
 
 Steps 4 and 6 leave the checkout on `main`, which is correct for verifying the release but is a
@@ -272,4 +326,4 @@ So finish by making the state explicit rather than leaving it implied:
   to skip past.
 
 ### 8. Report
-State each merged commit (renet / account / console → their rebased-tip SHAs on main), confirm local `main` is in sync, and give the release outcome: Console CI green, Release/CD green with the new version tag + edge deployed (or the exact failed step if not). If step 5 required a fix pushed directly to `main`, state that explicitly with its SHA and the failure it repaired. Close with the step-7 hand-back note (on `main`, branch before editing). **Do not** merge anything else or re-cut a release.
+State each merged commit (renet / account / console → their rebased-tip SHAs on main), confirm local `main` is in sync, **state the step-6b GitLab mirror outcome explicitly, including a skip and its reason**, and give the release outcome: Console CI green, Release/CD green with the new version tag + edge deployed (or the exact failed step if not). If step 5 required a fix pushed directly to `main`, state that explicitly with its SHA and the failure it repaired. Close with the step-7 hand-back note (on `main`, branch before editing). **Do not** merge anything else or re-cut a release.

@@ -1554,7 +1554,33 @@ jobs:
             .ci/scripts
       - name: Install jq
         run: command -v jq >/dev/null || sudo apt-get install -y -qq jq
+      # ASK BEFORE SEALING. This step used to come AFTER the sentinel write, so
+      # a bump-none merge sealed cli/v<X>/.released and only then decided that
+      # no release was owed -- leaving R2 holding a sentinel for a version that
+      # never got a tag. Seen live on run 32491717875 (sealed 15:12:12, skipped
+      # 15:12:16), which is why cli/v1.2.27/.released exists with no v1.2.27.
+      #
+      # STEP-level, not job-level, and that is not a style choice: a job-level
+      # `if:` would leave finalize-release-sentinel with result `skipped`, and
+      # pipeline-sentinel feeds that result to assert-job-succeeded.sh, which
+      # treats `skipped` as a hard failure. Skipping the release would fail CI.
+      - name: Decide whether this commit earns a release
+        id: release-decision
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: .ci/scripts/ci/dispatch-release.sh --decide-only
+      # THE GUARD POLARITY IS INVERTED ON PURPOSE. `!= 'true'` means the seal
+      # and the dispatch happen unless the decide step explicitly said to skip.
+      # Every degenerate state -- the decide step cancelled, OOM-killed, or its
+      # output name typo'd -- yields an empty string and therefore RELEASES.
+      # `== 'true'` would invert that: any of those would silently skip both
+      # steps, the job would go green, and the release would simply never
+      # happen. That is precisely the failure dispatch-release.sh's fail-open
+      # doctrine exists to prevent ("a silently withheld release is far worse
+      # than one unnecessary release"), so the guard fails in the same
+      # direction the script does.
       - name: Write release sentinels
+        if: steps.release-decision.outputs.skip_release != 'true'
         env:
           R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
           R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
@@ -1564,19 +1590,28 @@ jobs:
             --version "${{ needs.initialize.outputs.next_version }}" \
             --channel "${{ needs.initialize.outputs.channel }}" \
             --commit-sha "${{ github.sha }}"
-      # Sentinel is sealed at this point. Dispatch cd-v2 immediately so a
-      # later cancellation of THIS run (e.g. auto-cancel-on-push during
-      # housekeeping) cannot strand a sealed version without a tag. cd-v2
-      # runs as its own workflow_dispatch run with an independent lifecycle.
-      # The dispatch moved into a script so the bump-none skip decision has
+      # Sentinel is sealed at this point, and the very next step dispatches.
+      # There is ZERO conditional logic between the two: both carry the SAME
+      # guard, evaluated once by the decide step above, so nothing can decide
+      # differently in between. That property is what the original ordering
+      # only appeared to have -- it put dispatch immediately after the seal to
+      # survive a CANCELLATION, and was then broken by a path it had not
+      # considered: a step that ran, succeeded, and chose not to release.
+      # Cancellation is still covered, because cd-v2 runs as its own
+      # workflow_dispatch run with an independent lifecycle.
+      #
+      # The dispatch lives in a script so the bump-none skip decision has
       # somewhere testable to live: it needs a PR lookup and a fail-open branch,
       # and a `run:` block is capped at 8 logic lines for exactly that reason.
       # The script FAILS OPEN -- any lookup trouble dispatches anyway, because a
       # silently withheld release is far worse than one extra release.
+      # --dispatch-only skips the lookup: the decide step already did it, and
+      # asking twice could get a different answer if a label moved in between.
       - name: Dispatch cd-v2 release
+        if: steps.release-decision.outputs.skip_release != 'true'
         env:
           GH_TOKEN: ${{ github.token }}
-        run: .ci/scripts/ci/dispatch-release.sh
+        run: .ci/scripts/ci/dispatch-release.sh --dispatch-only
 
   # (Removed: assert-finalize-sentinel-ran was a single-purpose sentinel
   # job whose only step asserted that finalize-release-sentinel did not

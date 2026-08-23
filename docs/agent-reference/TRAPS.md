@@ -931,3 +931,161 @@ The general shape, which outlives this one file: when a change is correct in the
 module you edited and the build still fails elsewhere, ask what else declares a
 `replace` onto it. `grep -rl "replace github.com/rediacc/renet" --include=go.mod .`
 answers it in one command, and the fix is `go mod tidy` in each result.
+
+## Widening a deletion prefix by one directory can delete a LIVE file while removing zero bytes
+
+`git filter-repo --path packages/www/public/assets/videos --invert-paths` looks
+like a harmless generalisation of `--path packages/www/public/assets/videos/solutions`.
+It is one directory shorter, it covers the intended subtree, and it reads as
+tidier. It is not a generalisation. A path-selection argument under
+`--invert-paths` is a DELETION LIST, and widening a deletion list is never free.
+
+The parent directory carried **0.00 MB across 0 blobs** of history, so the wider
+prefix removed nothing extra from the pack -- and destroyed
+`packages/www/public/assets/videos/user-guide/.gitkeep`, the ONE tracked file in
+that tree. `git ls-files packages/www/public/assets/videos/` returns exactly one
+path, and that path was it. The command exited 0, the resulting pack size was
+right, and every progress line looked identical to the correct run. Nothing in
+the tool's own output distinguished the two.
+
+What caught it was the tree-identity control, not the reading:
+`git rev-parse main^{tree}` must print `444e9c09092a80bbb7defa6eea122e0de28a89eb`
+on the pristine clone and on the rewritten one. It did not. Naming the casualty
+then took one line: `comm -23` on two `git ls-tree -r main --name-only`
+listings.
+
+The rule that generalises: before adding or widening a prefix in a deletion
+list, run `git ls-files -- <prefix>` and read what is inside it, and re-run the
+tree-identity control after **every** change to the list. "It only adds an empty
+parent" is a claim about history size, and history size is not what a deletion
+list deletes.
+
+## A destructive transform needs a BASELINE run to diff against, not just an invariant to assert
+
+A `--message-callback` for `git filter-repo` ended in an unconditional
+`return message.rstrip() + b'\n'`. The intent was to strip AI-attribution
+trailers from the 73 commit messages that carried them. What it actually did was
+normalize trailing whitespace on **all 6,177** commit messages, because the
+non-matching path fell through to the same return.
+
+Git is content-addressed. Commit messages that had differed only in trailing
+whitespace became byte-identical, and the commits COLLAPSED into single objects.
+**93 commits disappeared, and 96 legitimate co-author trailers went with them.**
+
+What did NOT catch it is the whole point of this entry. Nothing errored; the run
+exited 0. `git count-objects -vH` reported a `size-pack` inside the expected
+range. And the tree-identity control from the entry above -- the one that had
+already proved itself by firing on a real casualty -- **PASSED**, because
+`main^{tree}` is a property of the FINAL tree and says nothing whatever about
+how many commits produced it. A control that has fired once is not thereby a
+control for the next class of damage.
+
+What caught it was a SECOND run to diff against: the media-only variant, with no
+message callback at all. 6,174 commits against 6,081. Then tracing one named
+victim through both: "Add captcha key" appeared twice before the rewrite and
+once after.
+
+Two rules come out of it. First, a callback must return the ORIGINAL BYTES when
+nothing matched -- an unconditional normalisation at the end of a matcher is a
+transform applied to the whole corpus wearing the costume of a filter. Second,
+when a transform can delete, run the narrower variant too and DIFF THE COUNTS,
+because the damage you did not anticipate is by construction the class your
+invariant does not cover.
+
+## A `pgrep -f <pattern>` guard inside a shell whose own command line contains that pattern waits forever
+
+A background waiter written as
+
+    until [ -f .../trial3.git/filter-repo/commit-map ] \
+       && ! pgrep -f 'filter-repo.*trial3' >/dev/null; do sleep 8; done
+
+ran for **317 minutes** after both of its conditions were factually satisfied. The
+file had existed since 13:15 and no `filter-repo` process had run for hours.
+
+`pgrep -f` matches against full command lines, and the *waiting shell's own*
+command line contains the literal string `filter-repo.*trial3`, because the
+pattern is part of the command being run. So `pgrep` always finds at least one
+match -- itself -- the negation is permanently false, and the loop cannot exit.
+Adding a second process (the `pgrep` in a later diagnostic) simply made it two.
+
+Nothing looked wrong from outside. The Stop hook's own liveness check reported it
+as `silent but its OS process is VERIFIED ALIVE (a loop that prints only at the
+end is healthy)`, which is a correct reading of a loop that is genuinely running
+and genuinely printing nothing. A stuck-forever loop and a patiently-waiting loop
+are indistinguishable by liveness alone; only the exit CONDITION distinguishes
+them, and nothing was checking it.
+
+Two rules. First, never put a string in a `pgrep -f` pattern that also appears in
+the command running it -- use `pgrep -f '[f]ilter-repo.*trial3'`, or match on a
+pid file, or check the artifact instead of the process. Second, a waiter whose
+condition has become true and which is still running is not "still working", it
+is WEDGED; when a wait outlives the thing it waits for by an order of magnitude,
+evaluate the condition by hand rather than trusting that it must still be false.
+
+## A `cp -rs` mirror is a live handle on the real tree for every file you did not de-symlink
+
+`cp -rs` populates a mirror with SYMLINKS back to the originals, which is exactly
+what makes it a cheap way to build an isolation harness for mutation testing. It
+is also why writing into that mirror edits the REAL FILE unless you replaced the
+symlink first.
+
+Live case, 2026-08-23: an agent building a mutation harness de-symlinked the
+script under test but not the gate that exercised it, and a scripted edit to the
+runner block followed the symlink and rewrote the real
+`.ci/scripts/test/gates/test-backfill-commit-resolve.sh` in the working tree. It
+surfaced one run later as `line 285: CASE: unbound variable`. The file was
+untracked, so there was nothing to restore from; it had to be repaired forward.
+
+Two things make this worth an entry rather than a shrug. First, the earlier
+mutation sweeps in the same session were safe **by luck of habit, not by design**
+-- the agent happened only to write to the file it had copied. Second, the damage
+was silent at write time and only became visible on the next execution, so a
+sweep that finished without re-running the gate would have shipped a corrupted
+file as a passing one.
+
+The rule: de-symlink EVERY file you intend to write, not just the one under test,
+and verify the mirror with `find <mirror> -type l` before mutating anything. When
+you do repair such a file, assert the repair mechanically -- the same session
+proved its runner whole by checking that the set of declared `test_*` functions
+equals the set invoked, which is a check that cannot be satisfied by eyeballing.
+
+## A sandbox built by symlinking a repo can lose git entirely, and every verifying check then answers "no evidence"
+
+The safe way to prove a control can FAIL is to mutate a copy rather than the
+live tree, so a killed command cannot strand the mutation. Building that copy by
+symlinking the repo and replacing one file is the obvious construction. In this
+checkout it silently destroys git.
+
+`.git` is not always a directory. In a SUBMODULE or worktree checkout it is a
+small regular FILE containing a `gitdir:` line pointing elsewhere, often by a
+RELATIVE path. This was found in a checkout where `.git` was 32 bytes reading
+`gitdir: ../.git/modules/console`, because `console` was a submodule of a
+monorepo. A standalone clone of the same repo has a real `.git` directory and
+does NOT reproduce it, which is what makes this easy to dismiss as fixed.
+Symlink that file into a sandbox and the RELATIVE path no longer resolves:
+
+    $ git -C <sandbox> rev-parse --verify --quiet 444e9c09...^{object}
+    fatal: not a git repository: <sandbox>/../.git/modules/console    # rc=128
+
+Every git-verifying assertion in that sandbox now answers False. Paid for on
+2026-08-23 while proving case `96b`, the control for `completion_evidence`, which
+git-verifies hex candidates: the contaminated run reported `passed=781 failed=1`
+with `96b` failing on `regression-real-sha-at-position-6 (got False)` -- which is
+**byte-for-byte the result the genuine mutation produces**. Same case, same
+count, same assertion. There is nothing in the output to tell the two apart, so
+it would have shipped as proof that a fix worked.
+
+What caught it was the fixture asserting its OWN premise. The case emits
+`fixture-sha-actually-resolves` before anything depends on that SHA, and it
+failed too -- an outcome the code under test cannot possibly cause. A precheck
+that can only fail environmentally is how a contaminated run confesses.
+
+Three rules. Write `.git` as a real file holding the ABSOLUTE gitdir. Run the
+sandbox UNMUTATED first and require it to reproduce the live result exactly
+(782/0 here) before mutating anything, because a sandbox is an instrument and an
+unproven instrument yields unproven verdicts. And have every fixture assert its
+own premises, so a broken world reds differently from a broken subject.
+
+Contamination is SCOPED, so do not discard neighbouring results reflexively: the
+sibling case `153f` ran in the same broken sandbox and its RED stood, because it
+only parses a markdown file and never calls git. Ask what the case depends on.

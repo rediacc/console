@@ -404,12 +404,15 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
-          # 5735 MB of this repo's 5741 MB pack is blobs (the pre-migration
-          # video history, see the git-history-rewrite issue linked from
-          # CLAUDE.md). A plain fetch-depth:0 downloads all of it and took 299s
-          # here to run a 1-second script. blob:none fetches commits and trees
+          # This job needs commit topology, never a historical file's CONTENT.
+          # A plain fetch-depth:0 downloads every blob in history and took 299s
+          # here to run a 1-second script; blob:none fetches commits and trees
           # only -- measured 1.93s bare, 10.37s with a working tree -- and
-          # lazily fetches any blob a command actually opens.
+          # lazily fetches any blob a command actually opens. Keep the flag even
+          # as the pack shrinks: the win is not fetching what is never read, and
+          # that is true at any pack size. (A pack-size figure lived here and
+          # went stale, which is why this reasons from the ACCESS PATTERN
+          # instead.)
           filter: blob:none
           ref: ${{ github.head_ref }}
           token: ${{ steps.app-token.outputs.token }}
@@ -450,7 +453,7 @@ jobs:
   #
   # Alone rather than in a lane: it is the only gate needing full history AND
   # submodules AND a PR-metadata token, and it is 6 seconds of work once the
-  # checkout stops downloading 5.7 GB of blobs.
+  # checkout stops downloading historical blobs it never reads.
   # ==============================================================================
   quality-submodule-branches:
     name: Submodule Branches

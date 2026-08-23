@@ -192,7 +192,35 @@ the local `public/assets/{tutorials/video,videos/solutions,tutorials/audio}`
 copies are removed from git entirely (gitignored) — see root `CLAUDE.md`'s
 "Media Assets" section for current status.
 
+There is a **fourth** media tree that this document historically omitted and
+that no sync script covers: `packages/www/public/media/founder/` (narration
+audio, captions, photos, posters, 138 files). It was untracked in #512 alongside
+the three above, but unlike them it was never mirrored to R2 and never added to
+`packages/www/.gitignore`, so for a while git history was the only copy of it
+that existed anywhere. Nothing in `HEAD` can regenerate it today: its generators
+(`packages/www/scripts/generate-team-video-audio.ts` and three siblings) were
+deleted in `8a537a367`. If the team-video feature is ever restored, restore the
+R2 coverage with it rather than letting it land back in git.
+
 ## 7. Restoring media after a fresh clone
+
+**Clone blobless.** Nothing in this repo tells you how to clone it, so here is
+the one recommendation worth having:
+
+```bash
+git clone --filter=blob:none --recurse-submodules https://github.com/rediacc/console.git
+```
+
+Measured 2026-08-23: a full working tree with a **54 MB** `.git`, in **11.4
+seconds**. An unfiltered clone of the same repo transfers gigabytes of
+historical media blobs that no build, test, or gate ever opens. Git fetches
+individual blobs on demand if some command genuinely needs one, so this is not a
+shallow clone and does not truncate history. CI already does the same thing:
+every `fetch-depth: 0` checkout in `.github/workflows/` passes
+`filter: blob:none` (11 of them, paired one-for-one).
+
+The media itself is not in the working tree either way, which is what the rest
+of this section is for.
 
 `.ci/scripts/deploy/sync-media-from-r2.sh` is the download counterpart —
 restores `packages/www/public/assets/tutorials/video/` and

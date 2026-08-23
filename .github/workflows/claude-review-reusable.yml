@@ -173,7 +173,7 @@ jobs:
           ref: ${{ steps.gate.outputs.head_sha }}
           fetch-depth: 0
           # blob:none: the diff below opens only the changed files, which a partial
-          # clone fetches on demand. Downloading 5.7 GB of historical blobs to
+          # clone fetches on demand. Downloading the whole history's blobs to
           # read a PR diff was pure waste.
           filter: blob:none
           clean: false
