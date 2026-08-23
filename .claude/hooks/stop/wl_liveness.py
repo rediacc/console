@@ -761,7 +761,7 @@ def _age_min(stamp):
 
 
 def ladder(fold, session_id, event, state_doc):
-    """(pings, investigates, resolves, gones, doc_changed).
+    """(pings, investigates, resolves, gones, idles, doc_changed).
 
     `gones` is kept apart from `investigates` because a verifiably dead worker
     needs a different remedy than a merely quiet one; see the gone branch.
@@ -833,7 +833,7 @@ def ladder(fold, session_id, event, state_doc):
             )
 
     _ = blocking_rung_due  # the poll fast path's forfeit must agree with fire_once below
-    pings, investigates, resolves, gones = [], [], [], []
+    pings, investigates, resolves, gones, idles = [], [], [], [], []
     for key, label, age, stampkey, gone, wid in subjects:
         rung_rec = fired.get(key) or {}
 
@@ -869,6 +869,40 @@ def ladder(fold, session_id, event, state_doc):
                     "a new worker id, or reclassify it" % (label, wid)
                 )
             continue
+        # THE CASE THAT USED TO FALL THROUGH TO PURE AGE. `gone` above needs
+        # `worker_verified`, which a NAME-leased teammate never gets, so a
+        # teammate that has verifiably stopped reached here and was treated as
+        # merely quiet -- for up to 120 minutes. Ask the teammate's own
+        # transcript instead of inferring from absence.
+        #
+        # Only for a worker the harness cannot see. A wid still in `now_bg` is
+        # running by the harness's own account, and second-guessing that from a
+        # transcript tail could only ever manufacture a false idle.
+        if wid and wid not in now_bg:
+            verdict, quiet, _ts, _aid = teammate_state(event.get("cwd") or "", session_id, wid)
+            if verdict == "idle":
+                # REPORT ON THE FIRST STOP, block only after
+                # WORKER_IDLE_BLOCK_MIN. The report is the cheap half and it is
+                # what would have saved the 3.5 hours; the block is the
+                # escalation for when nobody read it.
+                if fire_once("idle") if quiet >= WORKER_IDLE_BLOCK_MIN else True:
+                    idles.append(
+                        "%s   <- worker:%s has FINISHED ITS TURN (idle %dm, by its own transcript, "
+                        "not inferred from silence). It may still be resumable. Read what it left, "
+                        "then --tick with evidence, --lease <id> release, or re-lease to a new "
+                        "worker; nothing here ticks or unleases on its own" % (label, wid, quiet)
+                    )
+                continue
+            if verdict == "stalled":
+                # SUSPECT, and said in those words. Never dead, never gone --
+                # `unverifiable` falls through untouched for the same reason.
+                if fire_once("investigate"):
+                    investigates.append(
+                        "%s   <- worker:%s is mid-turn but has written nothing for %dm; it may be "
+                        "on a long tool call or it may be wedged. Check before assuming either"
+                        % (label, wid, quiet)
+                    )
+                continue
         if age >= LADDER_RESOLVE_MIN:
             if fire_once("resolve"):
                 resolves.append("%s   (no update for %dm)" % (label, age))
@@ -877,4 +911,4 @@ def ladder(fold, session_id, event, state_doc):
                 investigates.append("%s   (no update for %dm)" % (label, age))
         elif age >= LADDER_PING_MIN:
             pings.append("%s   (no update for %dm)" % (label, age))
-    return pings, investigates, resolves, gones, changed
+    return pings, investigates, resolves, gones, idles, changed

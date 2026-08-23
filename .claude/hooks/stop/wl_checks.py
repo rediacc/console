@@ -2674,15 +2674,15 @@ def run_stop(event, event_ok, worklist, hook_file):
     # ---- v10: the liveness ladder. Bookkeeping runs on EVERY stop (blocked
     # or allowed: the poll-baseline lesson), and the state doc is saved before
     # any emit below.
-    ladder_pings, ladder_inv, ladder_res, ladder_gone = [], [], [], []
+    ladder_pings, ladder_inv, ladder_res, ladder_gone, ladder_idle = [], [], [], [], []
     worker_rows, worker_verdicts = [], {}
     try:
         worker_rows, worker_verdicts = wl_liveness.worker_facts(event, session_id)
-        ladder_pings, ladder_inv, ladder_res, ladder_gone, _lchanged = wl_liveness.ladder(
+        ladder_pings, ladder_inv, ladder_res, ladder_gone, ladder_idle, _lchanged = wl_liveness.ladder(
             fold, session_id, event, state_doc
         )
     except Exception:  # noqa: BLE001 -- liveness must never break gating
-        ladder_pings, ladder_inv, ladder_res, ladder_gone = [], [], [], []
+        ladder_pings, ladder_inv, ladder_res, ladder_gone, ladder_idle = [], [], [], [], []
     if ladder_pings:
         # STICKY AND CLASS 0. Sticky because ladder() has already recorded the
         # fired rung against the item's stamp, so the text cannot be
@@ -3706,6 +3706,18 @@ def run_stop(event, event_ok, worklist, hook_file):
             True,
             M.V_LADDER_INVESTIGATE_GONE
             % ("\n".join("    " + s for s in ladder_gone), facts, me8, me8),
+        )
+    if ladder_idle:
+        # ITS OWN VERDICT, not folded into `gone`. A gone worker is absent from
+        # the harness list; an idle one FINISHED ITS TURN and said so in its own
+        # transcript, and may still be resumable. Same remedies, different fact,
+        # and conflating them would put "is not in the harness list any more" in
+        # front of a teammate that is merely between turns.
+        vadd(
+            "ladder-idle",
+            True,
+            M.V_LADDER_INVESTIGATE_GONE
+            % ("\n".join("    " + s for s in ladder_idle), facts, me8, me8),
         )
     if ladder_res:
         vadd(
