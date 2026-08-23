@@ -354,7 +354,12 @@
    lightness, so green stays green and rose stays rose; the brightness and saturation trims
    stop the result reading as a lightbox against the surrounding surface. One rule here beats
    the alternative of generating a second dark variant per document, which would double 79
-   artefacts to solve what a single line solves. */
+   artefacts to solve what a single line solves.
+
+   SECOND COPY. The same artwork now also heads the ARTICLE page (.docs-article-thumb, in
+   the scoped block of src/layouts/DocsLayout.astro), and this sheet is loaded only by the
+   browse page, so the filter is written out twice. Change the trims in both or the two
+   surfaces drift apart. */
 :root[data-theme='dark'] .docs-card-thumb {
   filter: invert(1) hue-rotate(180deg) brightness(0.82) saturate(1.15);
 }
