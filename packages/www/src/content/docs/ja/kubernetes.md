@@ -5,6 +5,7 @@ category: "Guides"
 tags:
   - containers
   - migration
+subcategory: workloads
 order: 6
 language: ja
 sourceHash: "22eef465dfd46ccf"

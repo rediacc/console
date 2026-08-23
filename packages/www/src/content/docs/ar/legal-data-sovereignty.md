@@ -4,6 +4,7 @@ description: "كيف تلبي بنية الاستضافة الذاتية في Re
 category: "Legal"
 tags:
   - compliance
+subcategory: foundations
 order: 7
 language: ar
 sourceHash: "1e10165626ba3730"

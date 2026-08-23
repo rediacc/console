@@ -4,6 +4,7 @@ description: "Come l'architettura self-hosted di Rediacc si mappa ai requisiti G
 category: "Legal"
 tags:
   - compliance
+subcategory: regulations
 order: 1
 language: it
 sourceHash: "85a342068d855709"

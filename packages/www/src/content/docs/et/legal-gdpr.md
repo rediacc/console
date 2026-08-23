@@ -4,6 +4,7 @@ description: "Kuidas Rediacc'i ise majutatud arhitektuur vastab GDPR-i nõuetele
 category: "Legal"
 tags:
   - compliance
+subcategory: regulations
 order: 1
 language: et
 sourceHash: "85a342068d855709"

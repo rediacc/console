@@ -4,6 +4,7 @@ description: 'Rediacc''ta organizasyonlar, ekipler, üyeler ve abonelikler.'
 category: Guides
 tags:
   - account
+subcategory: account
 order: 12
 language: tr
 sourceHash: d84a733762750312

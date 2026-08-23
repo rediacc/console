@@ -4,6 +4,7 @@ description: 'Rediacc의 조직, 팀, 구성원 및 구독 관리.'
 category: Guides
 tags:
   - account
+subcategory: account
 order: 12
 language: ko
 sourceHash: d84a733762750312

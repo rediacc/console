@@ -4,6 +4,7 @@ description: "SSH, kurulum, depo, hizmet ve Docker sorunlarının yaygın çöz�
 category: "Guides"
 tags:
   - operations
+subcategory: operations
 order: 10
 language: tr
 sourceHash: "7a4072220b0985f8"

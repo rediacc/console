@@ -7,6 +7,7 @@ category: "Guides"
 tags:
   - getting-started
   - cli
+subcategory: setup
 order: 1
 language: it
 ---

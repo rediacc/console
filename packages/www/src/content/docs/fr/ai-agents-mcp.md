@@ -5,6 +5,7 @@ category: Guides
 tags:
   - ai-agents
   - cli
+subcategory: ai-agents
 order: 33
 language: fr
 sourceHash: "442b5cfa49239dbc"

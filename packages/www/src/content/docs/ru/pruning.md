@@ -5,6 +5,7 @@ category: "Guides"
 tags:
   - storage
   - operations
+subcategory: data-protection
 order: 12
 language: ru
 sourceHash: "7d9a82ee410c420a"

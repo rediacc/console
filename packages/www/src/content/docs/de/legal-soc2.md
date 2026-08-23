@@ -4,6 +4,7 @@ description: "Das ist der Knackpunkt bei SOC 2: Auditoren brauchen Nachweise, da
 category: "Legal"
 tags:
   - compliance
+subcategory: frameworks
 order: 2
 language: de
 sourceHash: "8ccd82a1265e268e"

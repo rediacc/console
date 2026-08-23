@@ -4,6 +4,7 @@ description: "Cómo la arquitectura autoalojada de Rediacc satisface los requisi
 category: "Legal"
 tags:
   - compliance
+subcategory: foundations
 order: 7
 language: es
 sourceHash: "1e10165626ba3730"

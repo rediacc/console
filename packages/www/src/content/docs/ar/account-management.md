@@ -4,6 +4,7 @@ description: المؤسسات والفرق والأعضاء والاشتراكا
 category: Guides
 tags:
   - account
+subcategory: account
 order: 12
 language: ar
 sourceHash: d84a733762750312

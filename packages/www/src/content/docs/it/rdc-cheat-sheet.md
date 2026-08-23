@@ -4,6 +4,7 @@ description: "Riferimento rapido per rdc: configurazioni, repository, macchine, 
 category: Guides
 tags:
   - cli
+subcategory: cli-tools
 order: 3
 cardGrid: true
 language: it

@@ -4,6 +4,7 @@ description: "Rediacc sizin altyapınızda çalışır. Verilerinizi siz kontrol
 category: "Legal"
 tags:
   - compliance
+subcategory: foundations
 order: 0
 language: tr
 sourceHash: "f3c999aa355997c6"

@@ -7,6 +7,7 @@ category: Guides
 tags:
   - containers
   - networking
+subcategory: workloads
 order: 5
 language: ar
 sourceHash: "d57f030a95892e39"

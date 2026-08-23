@@ -2,6 +2,7 @@
 title: "CLI-rakendus"
 description: "Täielik juhend Rediacc käsurea liidese kasutamiseks platvormihalduses"
 category: "Reference"
+subcategory: commands
 order: 2
 language: et
 generated: true

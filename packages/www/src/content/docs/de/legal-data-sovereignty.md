@@ -4,6 +4,7 @@ description: "Wie die Self-Hosted-Architektur von Rediacc die Anforderungen an D
 category: "Legal"
 tags:
   - compliance
+subcategory: foundations
 order: 7
 language: de
 sourceHash: "1e10165626ba3730"

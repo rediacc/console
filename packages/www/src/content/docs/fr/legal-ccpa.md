@@ -4,6 +4,7 @@ description: "Comment le modèle auto-hébergé de Rediacc répond aux exigences
 category: "Legal"
 tags:
   - compliance
+subcategory: regulations
 order: 4
 language: fr
 sourceHash: "0d297fb9552dcfeb"

@@ -4,6 +4,7 @@ description: "SOC 2 的核心问题是：审计人员需要你的控制措施有
 category: "Legal"
 tags:
   - compliance
+subcategory: frameworks
 order: 2
 language: zh
 sourceHash: "8ccd82a1265e268e"

@@ -4,6 +4,7 @@ description: "Comment l'architecture auto-hébergée de Rediacc satisfait les ex
 category: "Legal"
 tags:
   - compliance
+subcategory: foundations
 order: 7
 language: fr
 sourceHash: "1e10165626ba3730"

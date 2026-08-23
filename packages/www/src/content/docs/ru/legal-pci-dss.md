@@ -5,6 +5,7 @@ category: "Legal"
 tags:
   - compliance
   - security
+subcategory: frameworks
 order: 6
 language: ru
 sourceHash: "f0349ad8df33656e"

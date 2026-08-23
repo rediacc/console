@@ -4,6 +4,7 @@ description: "Kurzreferenz für rdc: Konfigurationen, Repos, Maschinen, Dateisyn
 category: Guides
 tags:
   - cli
+subcategory: cli-tools
 order: 3
 cardGrid: true
 language: de

@@ -4,6 +4,7 @@ description: "Rediacc의 자체 호스팅 모델이 소비자 데이터 보호�
 category: "Legal"
 tags:
   - compliance
+subcategory: regulations
 order: 4
 language: ko
 sourceHash: "0d297fb9552dcfeb"

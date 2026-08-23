@@ -4,6 +4,7 @@ description: "Rediacc 如何满足欧盟 NIS2 网络安全指令和 DORA 数字�
 category: "Legal"
 tags:
   - compliance
+subcategory: regulations
 order: 8
 language: zh
 sourceHash: "9179eb8e594f2ed0"

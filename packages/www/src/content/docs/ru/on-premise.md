@@ -5,6 +5,7 @@ category: "Guides"
 tags:
   - account
   - operations
+subcategory: setup
 order: 5
 language: ru
 sourceHash: "2c3ac4a96a028b3f"

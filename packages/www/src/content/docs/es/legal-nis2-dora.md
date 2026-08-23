@@ -4,6 +4,7 @@ description: "Cómo Rediacc aborda la directiva de ciberseguridad NIS2 de la UE 
 category: "Legal"
 tags:
   - compliance
+subcategory: regulations
 order: 8
 language: es
 sourceHash: "9179eb8e594f2ed0"

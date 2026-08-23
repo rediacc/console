@@ -4,6 +4,7 @@ description: Rediaccを実行するためのシステム要件とサポートさ
 category: Guides
 tags:
   - getting-started
+subcategory: setup
 order: 0
 language: ja
 sourceHash: "a605c6b2fac9bea2"

@@ -4,6 +4,7 @@ description: "كيف تتوافق بنية الاستضافة الذاتية ف�
 category: "Legal"
 tags:
   - compliance
+subcategory: regulations
 order: 1
 language: ar
 sourceHash: "85a342068d855709"

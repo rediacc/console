@@ -4,6 +4,7 @@ description: "Rediacc 的自托管架构如何满足 GDPR 数据保护和隐私�
 category: "Legal"
 tags:
   - compliance
+subcategory: regulations
 order: 1
 language: zh
 sourceHash: "85a342068d855709"

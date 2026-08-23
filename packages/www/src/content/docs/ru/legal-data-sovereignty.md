@@ -4,6 +4,7 @@ description: "Как архитектура самостоятельного р�
 category: "Legal"
 tags:
   - compliance
+subcategory: foundations
 order: 7
 language: ru
 sourceHash: "1e10165626ba3730"

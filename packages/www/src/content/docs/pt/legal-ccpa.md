@@ -4,6 +4,7 @@ description: "Como o modelo self-hosted da Rediacc responde aos requisitos da Ca
 category: "Legal"
 tags:
   - compliance
+subcategory: regulations
 order: 4
 language: pt
 sourceHash: "0d297fb9552dcfeb"

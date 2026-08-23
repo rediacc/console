@@ -4,6 +4,7 @@ description: "Référence rapide des commandes rdc : configurations, dépôts, m
 category: Guides
 tags:
   - cli
+subcategory: cli-tools
 order: 3
 cardGrid: true
 language: fr

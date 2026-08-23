@@ -4,6 +4,7 @@ description: "الحقيقة بشأن SOC 2: المدققون يريدون أد�
 category: "Legal"
 tags:
   - compliance
+subcategory: frameworks
 order: 2
 language: ar
 sourceHash: "8ccd82a1265e268e"

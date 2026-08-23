@@ -5,6 +5,7 @@ category: Guides
 tags:
   - cli
   - account
+subcategory: cli-tools
 order: 8
 language: tr
 sourceHash: "972ed654ae294102"

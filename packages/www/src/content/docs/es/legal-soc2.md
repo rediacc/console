@@ -4,6 +4,7 @@ description: "Aquí está el punto sobre SOC 2: los auditores quieren evidencia 
 category: "Legal"
 tags:
   - compliance
+subcategory: frameworks
 order: 2
 language: es
 sourceHash: "8ccd82a1265e268e"

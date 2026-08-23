@@ -4,6 +4,7 @@ description: "Как модель самостоятельного размещ�
 category: "Legal"
 tags:
   - compliance
+subcategory: regulations
 order: 4
 language: ru
 sourceHash: "0d297fb9552dcfeb"

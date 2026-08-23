@@ -4,6 +4,7 @@ description: "Kuidas Rediacc'i ise majutatud mudel rahuldab California tarbijate
 category: "Legal"
 tags:
   - compliance
+subcategory: regulations
 order: 4
 language: et
 sourceHash: "0d297fb9552dcfeb"

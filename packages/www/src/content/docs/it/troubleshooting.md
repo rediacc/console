@@ -4,6 +4,7 @@ description: "Soluzioni per i problemi più comuni con SSH, configurazione, repo
 category: "Guides"
 tags:
   - operations
+subcategory: operations
 order: 10
 language: it
 sourceHash: "7a4072220b0985f8"

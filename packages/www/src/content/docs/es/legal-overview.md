@@ -4,6 +4,7 @@ description: "Rediacc se ejecuta en tu infraestructura. Controlas tus datos. Aqu
 category: "Legal"
 tags:
   - compliance
+subcategory: foundations
 order: 0
 language: es
 sourceHash: "f3c999aa355997c6"

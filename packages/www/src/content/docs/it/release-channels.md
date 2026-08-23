@@ -5,6 +5,7 @@ category: "Concepts"
 tags:
   - cli
   - operations
+subcategory: platform
 order: 2
 language: it
 sourceHash: "0cc32d712c02538f"

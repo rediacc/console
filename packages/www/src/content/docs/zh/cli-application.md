@@ -2,6 +2,7 @@
 title: "CLI 应用程序"
 description: "使用 Rediacc 命令行界面进行平台管理的完整指南"
 category: "Reference"
+subcategory: commands
 order: 2
 language: zh
 generated: true

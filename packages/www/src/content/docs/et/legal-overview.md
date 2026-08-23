@@ -4,6 +4,7 @@ description: "Rediacc töötab teie infrastruktuuril. Te kontrolliite oma andmei
 category: "Legal"
 tags:
   - compliance
+subcategory: foundations
 order: 0
 language: et
 sourceHash: "f3c999aa355997c6"

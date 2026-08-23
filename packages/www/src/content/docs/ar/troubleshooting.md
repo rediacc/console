@@ -4,6 +4,7 @@ description: حلول للمشاكل الشائعة مع SSH والإعداد و
 category: Guides
 tags:
   - operations
+subcategory: operations
 order: 10
 language: ar
 sourceHash: "7a4072220b0985f8"

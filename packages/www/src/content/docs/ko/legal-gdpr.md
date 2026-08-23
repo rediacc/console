@@ -4,6 +4,7 @@ description: "Rediacc의 자체 호스팅 아키텍처가 데이터 보호 및 �
 category: "Legal"
 tags:
   - compliance
+subcategory: regulations
 order: 1
 language: ko
 sourceHash: "85a342068d855709"

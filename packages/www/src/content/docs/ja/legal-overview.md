@@ -4,6 +4,7 @@ description: "Rediaccはお客様のインフラストラクチャ上で動作�
 category: "Legal"
 tags:
   - compliance
+subcategory: foundations
 order: 0
 language: ja
 sourceHash: "f3c999aa355997c6"

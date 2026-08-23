@@ -5,6 +5,7 @@ category: Use Cases
 tags:
   - backup
   - migration
+subcategory: resilience
 order: 5
 language: ar
 sourceHash: "a565990a48aa0593"

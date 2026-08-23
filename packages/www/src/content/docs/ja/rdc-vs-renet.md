@@ -5,6 +5,7 @@ category: "Concepts"
 tags:
   - cli
   - operations
+subcategory: architecture
 order: 1
 language: ja
 sourceHash: "ac6dd16161829495"

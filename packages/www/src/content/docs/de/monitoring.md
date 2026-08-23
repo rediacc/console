@@ -4,6 +4,7 @@ description: 'Maschinengesundheit, Container, Dienste, Repositories und Diagnose
 category: Guides
 tags:
   - operations
+subcategory: operations
 order: 9
 language: de
 sourceHash: "9c5882697da43a8f"

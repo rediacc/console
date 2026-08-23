@@ -4,6 +4,7 @@ description: "SSH、设置、仓库、服务和 Docker 常见问题的修复方�
 category: "Guides"
 tags:
   - operations
+subcategory: operations
 order: 10
 language: zh
 sourceHash: "7a4072220b0985f8"

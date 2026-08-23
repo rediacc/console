@@ -4,6 +4,7 @@ description: "Rediacc'ın kendi sunucunuzda barındırma modeli, tüketici veril
 category: "Legal"
 tags:
   - compliance
+subcategory: regulations
 order: 4
 language: tr
 sourceHash: "0d297fb9552dcfeb"

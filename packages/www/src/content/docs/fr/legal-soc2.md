@@ -4,6 +4,7 @@ description: "Voilà SOC 2 : les auditeurs veulent des preuves que vos contrôle
 category: "Legal"
 tags:
   - compliance
+subcategory: frameworks
 order: 2
 language: fr
 sourceHash: "8ccd82a1265e268e"

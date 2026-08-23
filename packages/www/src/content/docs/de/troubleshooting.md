@@ -4,6 +4,7 @@ description: "Lösungen für häufig auftretende SSH-, Setup-, Repository-, Serv
 category: "Guides"
 tags:
   - operations
+subcategory: operations
 order: 10
 language: de
 sourceHash: "7a4072220b0985f8"

@@ -4,6 +4,7 @@ description: "A verdade sobre SOC 2: os auditores querem evidências de que os s
 category: "Legal"
 tags:
   - compliance
+subcategory: frameworks
 order: 2
 language: pt
 sourceHash: "8ccd82a1265e268e"

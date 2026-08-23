@@ -6,6 +6,7 @@ category: Reference
 tags:
   - storage
   - account
+subcategory: platform
 order: 99
 language: ru
 sourceHash: "2c014598b66bdeb7"

@@ -6,6 +6,7 @@ description: >-
 category: Guides
 tags:
   - account
+subcategory: account
 order: 7
 language: tr
 sourceHash: "15886ad7ee04e90c"

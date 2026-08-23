@@ -4,6 +4,7 @@ description: "Como a Rediacc responde aos requisitos da Diretiva NIS2 de ciberse
 category: "Legal"
 tags:
   - compliance
+subcategory: regulations
 order: 8
 language: pt
 sourceHash: "9179eb8e594f2ed0"

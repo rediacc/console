@@ -4,6 +4,7 @@ description: "Como a arquitetura self-hosted da Rediacc se mapeia com os requisi
 category: "Legal"
 tags:
   - compliance
+subcategory: regulations
 order: 1
 language: pt
 sourceHash: "85a342068d855709"

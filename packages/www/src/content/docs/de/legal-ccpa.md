@@ -4,6 +4,7 @@ description: "Wie das Self-Hosted-Modell von Rediacc die Anforderungen des Calif
 category: "Legal"
 tags:
   - compliance
+subcategory: regulations
 order: 4
 language: de
 sourceHash: "0d297fb9552dcfeb"

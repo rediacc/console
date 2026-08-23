@@ -4,6 +4,7 @@ description: "Monitorize o estado da máquina, contentores, serviços, repositó
 category: "Guides"
 tags:
   - operations
+subcategory: operations
 order: 9
 language: pt
 sourceHash: "9c5882697da43a8f"

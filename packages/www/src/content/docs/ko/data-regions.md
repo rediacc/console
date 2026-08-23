@@ -5,6 +5,7 @@ category: "Concepts"
 tags:
   - compliance
   - account
+subcategory: platform
 order: 3
 language: ko
 sourceHash: "c03afe9324e59b45"

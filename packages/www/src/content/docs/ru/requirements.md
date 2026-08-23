@@ -4,6 +4,7 @@ description: Системные требования и поддерживаем
 category: Guides
 tags:
   - getting-started
+subcategory: setup
 order: 0
 language: ru
 sourceHash: "a605c6b2fac9bea2"

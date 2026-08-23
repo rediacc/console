@@ -7,6 +7,7 @@ category: Concepts
 tags:
   - security
   - networking
+subcategory: architecture
 order: 4
 language: ru
 sourceHash: "39ec44d8efc3f9b5"

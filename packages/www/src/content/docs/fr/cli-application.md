@@ -2,6 +2,7 @@
 title: "Application CLI"
 description: "Guide complet pour utiliser l'interface en ligne de commande Rediacc pour la gestion de la plateforme"
 category: "Reference"
+subcategory: commands
 order: 2
 language: fr
 generated: true

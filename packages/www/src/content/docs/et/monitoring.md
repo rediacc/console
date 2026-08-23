@@ -4,6 +4,7 @@ description: "J√§lgige masina tervist, konteinereid, teenuseid, hoidlaid ning k√
 category: "Guides"
 tags:
   - operations
+subcategory: operations
 order: 9
 language: et
 sourceHash: "9c5882697da43a8f"

@@ -5,6 +5,7 @@ category: "Guides"
 tags:
   - cli
   - operations
+subcategory: cli-tools
 order: 9
 language: it
 sourceHash: "3c5f1e7f8063438b"

@@ -4,6 +4,7 @@ description: "Rediaccのセルフホスト型モデルがカリフォルニア�
 category: "Legal"
 tags:
   - compliance
+subcategory: regulations
 order: 4
 language: ja
 sourceHash: "0d297fb9552dcfeb"

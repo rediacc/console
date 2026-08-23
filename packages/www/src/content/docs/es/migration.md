@@ -5,6 +5,7 @@ category: Guides
 tags:
   - migration
   - repositories
+subcategory: data-protection
 order: 11
 language: es
 sourceHash: "53730ef01c5acb58"

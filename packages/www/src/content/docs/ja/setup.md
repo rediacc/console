@@ -5,6 +5,7 @@ category: "Guides"
 tags:
   - getting-started
   - operations
+subcategory: setup
 order: 3
 language: ja
 sourceHash: "a0f69282724c27ea"

@@ -4,6 +4,7 @@ description: "Wie die Self-Hosted-Architektur von Rediacc den DSGVO-Anforderunge
 category: "Legal"
 tags:
   - compliance
+subcategory: regulations
 order: 1
 language: de
 sourceHash: "85a342068d855709"

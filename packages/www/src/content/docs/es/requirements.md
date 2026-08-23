@@ -4,6 +4,7 @@ description: Requisitos mínimos del sistema y plataformas compatibles para ejec
 category: Guides
 tags:
   - getting-started
+subcategory: setup
 order: 0
 language: es
 sourceHash: "a605c6b2fac9bea2"

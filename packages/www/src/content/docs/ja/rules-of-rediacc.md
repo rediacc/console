@@ -6,6 +6,7 @@ category: Guides
 tags:
   - containers
   - networking
+subcategory: workloads
 order: 5
 language: ja
 sourceHash: "d57f030a95892e39"

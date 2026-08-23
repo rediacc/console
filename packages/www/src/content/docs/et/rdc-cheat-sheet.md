@@ -4,6 +4,7 @@ description: "Kiirviide rdc käskudele: konfiguratsioonid, hoidlad, masinad, sü
 category: Guides
 tags:
   - cli
+subcategory: cli-tools
 order: 3
 cardGrid: true
 language: et
