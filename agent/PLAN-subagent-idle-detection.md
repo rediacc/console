@@ -147,3 +147,74 @@ idle teammate is resumable and one proved it by resuming 11 minutes later).
 - The root cause of the original silence was `sends: 0`. A line in the
   writer-agent brief template requiring a `SendMessage` on completion prevents
   it. That belongs in the template, not the hooks.
+
+---
+
+## Addendum, 2026-08-23 — the `TeammateIdle` hook event (operator, mid-build)
+
+The operator asked whether `TeammateIdle` (code.claude.com/docs/en/hooks#teammateidle)
+could be used instead, and whether the Stop-hook app could be auto-run with parameters
+to record the update. Both are right, and both are ADDITIVE. The design above does not
+change; it gains a precision layer and loses none of its authority.
+
+**What the docs actually say** (fetched, not assumed): `TeammateIdle` is one of 31 hook
+events. It fires "when an agent team teammate is about to go idle", takes **no matcher**
+(always fires), receives the common input fields (`session_id`, `transcript_path`, `cwd`,
+`hook_event_name`, and `agent_id`/`agent_type` in subagent context), and **can block** —
+exit 2 prevents the teammate going idle and it continues working. `SubagentStop` is
+already wired here (`.claude/settings.json:171` → `wl_report.py`), which is the precedent
+that this class of event reaches this repo at all.
+
+### Why the transcript classifier stays load-bearing
+
+Three reasons, in order of how badly each would bite:
+
+1. **There is no un-idle event.** `SubagentStart` fires at start; nothing fires when an
+   idle teammate resumes. A journal of idle edges therefore reports idle FOREVER once
+   written. The plan is emphatic that a resumed teammate must flip back to `working` on
+   the next stop (Control 4 exists for exactly this, and it guards the false-death this
+   whole item replaces). Only a LEVEL read can do that, and the transcript tail is the
+   level.
+2. **A missing event is not evidence of anything.** If `TeammateIdle` does not fire for
+   Agent-tool subagents in this harness — unproven, and "teammate" may well mean the
+   agent-teams feature specifically — then absence of a journal entry is indistinguishable
+   from a worker that never went idle. That is precisely the `ListAgents` error this plan
+   already rejects in its "Why" section: silence read as a signal.
+3. **The classifier is proven and the event is not.** 9/9 against ground truth over nine
+   real transcripts, re-scored correctly three hours later after two agents resumed.
+   Nothing about the event has been observed firing here yet.
+
+### The shape, then
+
+**Journal for the EDGE, transcript for the LEVEL.**
+
+- A new `TeammateIdle` entry in `.claude/settings.json` runs
+  `worklist.py --teammate-idle` with the hook payload on stdin. It appends one record —
+  name (or `agent_id`), timestamp, session — to a sidecar beside the store, and **always
+  exits 0**. It never blocks: exit 2 here would pin a teammate the lead did not ask to
+  keep working, which is a worse failure than the one being fixed, and is explicitly out
+  of scope.
+- `teammate_state()` consults the sidecar FIRST for `quiet_min`, because a self-recorded
+  edge timestamp is exact where an mtime is a lower bound. It still classifies the verdict
+  from the transcript tail.
+- **Where they disagree, the transcript wins toward `working`.** A journal entry saying
+  idle plus a transcript whose last record is mid-turn means the teammate resumed after
+  the event fired. Same failure direction as the rest of the design: never guess toward
+  `idle`.
+- If the sidecar is empty or absent, behaviour is exactly the plan above. That is the
+  control that keeps this honest — the feature must not depend on an event nobody has
+  watched fire.
+
+### Control 6 (new)
+
+Prove the layering, both directions:
+- A sidecar entry for a name whose transcript is mid-turn → verdict `working`, NOT idle.
+  (Journal alone must never manufacture an idle verdict.)
+- An idle transcript with NO sidecar entry → still `idle`, with `quiet_min` from the
+  transcript. (The feature degrades to the proven path rather than going silent.)
+- An idle transcript WITH a sidecar entry → `idle`, and `quiet_min` comes from the
+  sidecar's timestamp, not the mtime.
+
+Whether `TeammateIdle` ever actually fires here is then an observation to make in live
+use, not a load-bearing assumption. If it does, the journal sharpens the numbers; if it
+never does, nothing regresses.
