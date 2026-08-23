@@ -280,3 +280,19 @@ whose direction is intrinsic. The real fix is per-illustration RTL variants --
 `instant-recovery.mobile.svg` already establishes the variant-file convention --
 which means authoring new files under `src/assets/images/illustrations/` and it
 affects the solution pages too.
+
+### Two Astro traps that cost wave B real time
+
+10. **Astro 5.17.3 REJECTS a computed slot name.** `<slot name={`visual-${i}`}/>`
+    is a CompilerError, "slot[name] must be a static string". It surfaced as a
+    500 on `/en/pricing` and was found by CURLING, not by reading the diff --
+    the same way slice 1's JSX-comment 500 was found. Use
+    `Astro.slots.has(...)` / `Astro.slots.render(...)` instead.
+
+11. **A scoped rule cannot style a class you PASS to a child component.** Putting
+    tuning knobs on `class="difference-rows"` and styling them from the parent's
+    scoped block does NOTHING, silently: the child's root element carries only
+    the CHILD's `data-astro-cid-*`, never the parent's. The knobs have to sit on
+    an element the parent owns and reach the child by inheritance. This does not
+    bite `pricing-page.css` because that is a global sheet, which is exactly why
+    the failure looks inconsistent from the outside.
