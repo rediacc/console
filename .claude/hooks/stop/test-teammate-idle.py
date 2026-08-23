@@ -158,6 +158,36 @@ def run():
         check(
             "with NO sidecar it still works, quiet from the transcript", (v, round(q)), ("idle", 7)
         )
+
+        print("== 7. the edge resolves a tail the transcript CANNOT read ==")
+        # Found by live probe, not by reasoning: a finished agent's last record
+        # was `assistant / stop_reason: None / ['text']` -- a streaming partial,
+        # which classifies as working. Without the edge it reads as working
+        # forever, which is this item's own blindness in a safer-looking hat.
+        j = make("e1", STREAM, age_min=5)
+        L.idle_edge = lambda _cwd, _sid, _name: None
+        check(
+            "a streaming tail with NO edge stays working (the safe default)",
+            L.teammate_state("/x", "sess", "e1")[0],
+            "working",
+        )
+        edge_at = j.stat().st_mtime + 0.1
+        L.idle_edge = lambda _cwd, _sid, _name: edge_at
+        check(
+            "the SAME tail plus an edge after it resolves to idle",
+            L.teammate_state("/x", "sess", "e1")[0],
+            "idle",
+        )
+        # THE GUARD THAT MAKES TRUSTING THE EDGE SAFE. A teammate that resumes
+        # writes, so its mtime moves past the edge. Without this arm the two
+        # assertions above would pass just as well for code that ignored the
+        # resume entirely -- which is the false-death this design refuses.
+        L.idle_edge = lambda _cwd, _sid, _name: edge_at - 600
+        check(
+            "an edge OLDER than the last write means it resumed -> working",
+            L.teammate_state("/x", "sess", "e1")[0],
+            "working",
+        )
     finally:
         L._teammate_meta, L.idle_edge = orig_meta, orig_edge
     print("\npassed=%d failed=%d" % (TALLY["ok"], TALLY["fail"]))
