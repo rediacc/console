@@ -309,7 +309,7 @@ export function generate(lang, cliJsonEn, { sourceHash } = {}) {
   lines.push(`title: ${yamlQuote(fm.title)}`);
   lines.push(`description: ${yamlQuote(fm.description)}`);
   lines.push(`category: ${yamlQuote(categoryEnum)}`);
-  if (subcategoryEnum) lines.push(`subcategory: ${subcategoryEnum}`);
+  lines.push(`subcategory: ${subcategoryEnum}`);
   lines.push('order: 2');
   lines.push(`language: ${lang}`);
   lines.push('generated: true');
