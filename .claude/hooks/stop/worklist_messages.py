@@ -552,6 +552,15 @@ N_CL_DOOR_PARKED = (
     "exist to prevent. Carry it into your ## Remaining with the door named."
 )
 
+N_CL_FOREIGN_WAVES = (
+    "handoff '%s' (%s) has wave(s) no worklist item covers, and it is owned by "
+    "session %s:\n%s"
+    "Claiming them from here would be claiming work this session is not doing, and an "
+    "item tagged to this session blocks ITS stops until ticked with evidence. The owner "
+    "creates these items when it starts the wave. Reported, never blocked on.%s\n"
+)
+
+
 N_CL_FOREIGN_DRIFT = (
     "Handoff checklist %s says 'Status: %s' but its artifacts disagree, and it "
     "is owned by session %s:\n%s\n"

@@ -288,9 +288,17 @@ def _closed_through_door(rec):
     return bool(_DOOR_RX.search(blob))
 
 
-def _wave_rows(fold, parsed, session_id):
-    """Problem rows for the unticked waves, each carrying its one-command exit."""
-    me8 = (session_id or "unknown")[:8]
+def _wave_rows(fold, parsed, session_id, actor=None):
+    """Problem rows for the unticked waves, each carrying its one-command exit.
+
+    `actor` is whose prefix the `--add` exit names. It defaults to this session,
+    which is right whenever this session is the one that must act. On a FOREIGN
+    checklist it is the owner's prefix instead: the row is then a description of
+    what that session will do, not an instruction to this one. Naming the reader
+    there would contradict the advisory in the same breath -- "the owner creates
+    these items" directly above a command that claims them for somebody else.
+    """
+    me8 = (actor or session_id or "unknown")[:8]
     slug, rel, rows = parsed["slug"], parsed["rel"], []
     for w in parsed["waves"]:
         if w["ticked"]:
@@ -489,15 +497,56 @@ def _adjudicate(root, path, fold, session_id, projects_dir):
                     2,
                 )
             )
-    wrows = _wave_rows(fold, parsed, session_id)
+    _foreign_owner = bool(owner) and not C.owned_by_me(owner or None, session_id)
+    wrows = _wave_rows(fold, parsed, session_id, actor=owner if _foreign_owner else None)
     if not wrows and not drows and all(w["ticked"] for w in parsed["waves"]):
         wrows = ["    everything is settled; set 'Status: done' in %s" % rel]
     if wrows:
-        # NOT ownership-gated, deliberately: an uncovered wave is UNCLAIMED
-        # work, the same semantics as an untagged worklist item, so it blocks
-        # whoever tries to stop. The moment anyone claims it with --add it
-        # stops blocking everyone else.
-        v.append((_ckey("cl-waves", slug), False, M.V_CL_WAVES % (slug, rel, "\n".join(wrows))))
+        # OWNERSHIP-GATED SINCE 2026-08-23, and the comment it replaces argued
+        # the opposite: "an uncovered wave is UNCLAIMED work, the same semantics
+        # as an untagged worklist item, so it blocks whoever tries to stop."
+        # That analogy is exactly right for a checklist with NO owner and wrong
+        # for one that names a live session. An untagged item has no owner; a
+        # handoff with `Owner: <prefix>` has one that simply has not created the
+        # item yet, which is what an owner does WHEN IT STARTS THE WAVE.
+        #
+        # Measured, not argued: on 2026-08-23 the www-round5 handoff
+        # (`Owner: a68f3ab4`, Status: executing) blocked an unrelated pr-babysit
+        # session in the same worktree. Its four exits all read
+        # `--add <this session> ...`, so the only offered way to stop was to
+        # claim four waves of work this session was not doing -- and a
+        # self-tagged item then blocks ITS stops until ticked with evidence.
+        # The owner was live throughout: its transcript was being written that
+        # minute. This is the same rule CLAUDE.md already states for worklist
+        # items -- other sessions' open items are REPORTED, never blocked on --
+        # applied to the artifact that carries them.
+        #
+        # Blocking is preserved where the analogy holds: no owner at all, the
+        # owner is me, or the owner is provably dead (the adopt hint then says
+        # how to take it over). UNKNOWN counts as alive, deliberately, because
+        # `owner_age_hours` answers None for a session whose transcript lives in
+        # a different project directory -- true for every session predating this
+        # repo's move, which is precisely the population most likely to own an
+        # old handoff. Accusing an unverifiable owner of being dead is the
+        # failure this codebase refuses everywhere else.
+        foreign = _foreign_owner
+        hint = _adopt_hint(owner, projects_dir, rel) if foreign else ""
+        if foreign and not hint:
+            a.append(
+                (
+                    _ckey("cl-foreign-waves", slug),
+                    M.N_CL_FOREIGN_WAVES % (slug, rel, owner, "\n".join(wrows) + "\n", ""),
+                    2,
+                )
+            )
+        else:
+            v.append(
+                (
+                    _ckey("cl-waves", slug),
+                    False,
+                    M.V_CL_WAVES % (slug, rel, "\n".join(wrows)) + hint,
+                )
+            )
     # Door-parked waves: reported, never blocked on. _wave_rows skips them for
     # the right reason and into the wrong silence -- see _door_parked_rows.
     # NOT ownership-gated, for the same reason the wave check is not: whoever is
