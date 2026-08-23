@@ -5,6 +5,7 @@ category: "Legal"
 tags:
   - compliance
   - security
+subcategory: frameworks
 order: 6
 language: en
 ---

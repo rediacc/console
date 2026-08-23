@@ -5,6 +5,7 @@ category: "Guides"
 tags:
   - storage
   - operations
+subcategory: data-protection
 order: 12
 language: en
 ---

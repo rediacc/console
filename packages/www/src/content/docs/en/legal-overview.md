@@ -4,6 +4,7 @@ description: "Rediacc runs on your infrastructure. You control your data. Here's
 category: "Legal"
 tags:
   - compliance
+subcategory: foundations
 order: 0
 language: en
 ---

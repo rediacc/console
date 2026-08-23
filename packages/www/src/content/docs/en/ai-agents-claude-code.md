@@ -5,6 +5,7 @@ category: Guides
 tags:
   - ai-agents
   - cli
+subcategory: ai-agents
 order: 31
 language: en
 ---

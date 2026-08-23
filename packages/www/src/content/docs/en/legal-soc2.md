@@ -4,6 +4,7 @@ description: "Here's the thing about SOC 2: auditors want evidence your controls
 category: "Legal"
 tags:
   - compliance
+subcategory: frameworks
 order: 2
 language: en
 ---

@@ -168,6 +168,120 @@ export function tagCounts<T extends { data: { tags?: readonly string[] } }>(
 }
 
 /**
+ * The docs SUBCATEGORY vocabulary, in ONE place, under the same English-everywhere rule
+ * as CATEGORY_ORDER and DOC_TAGS above.
+ *
+ * `subcategory` is the third axis and it is PER-CATEGORY: where `category` is the format
+ * and `tags` the topic, `subcategory` is the SHELF a document sits on inside its
+ * category's sidebar group. It is single-valued on purpose (66 of 79 docs carry two
+ * tags, so grouping the sidebar on tags would file one doc under two headings), and each
+ * category has its own ordered shelf list because "Setup" means nothing inside Legal and
+ * "Regulations" means nothing inside Guides.
+ *
+ * The values are identifiers, NOT display text, identical in all thirteen locales. An
+ * identifier may appear under several categories when the concept genuinely repeats
+ * (`ai-agents` shelves exist in Guides, Concepts and Reference); it is still ONE label
+ * key. `content/config.ts` builds its `z.enum` from DOC_SUBCATEGORY_VALUES and checks
+ * per-category legality against this table, so an illegal (category, subcategory) pair
+ * fails the content build rather than silently rendering an unknown heading.
+ */
+export const DOC_SUBCATEGORY_VALUES = [
+  'essentials',
+  'advanced',
+  'setup',
+  'cli-tools',
+  'workloads',
+  'data-protection',
+  'operations',
+  'account',
+  'ai-agents',
+  'architecture',
+  'platform',
+  'commands',
+  'resilience',
+  'scaling',
+  'development',
+  'foundations',
+  'regulations',
+  'frameworks',
+] as const;
+
+export type DocSubcategory = (typeof DOC_SUBCATEGORY_VALUES)[number];
+
+/**
+ * Which shelves each category has, in display order. Typed against DocSubcategory so a
+ * shelf added here without a VALUES entry (and therefore without schema legality and a
+ * label) is a compile error, not a runtime fallback.
+ */
+export const DOC_SUBCATEGORIES: Record<DocCategory, readonly DocSubcategory[]> = {
+  Tutorials: ['essentials', 'advanced'],
+  Guides: [
+    'setup',
+    'cli-tools',
+    'workloads',
+    'data-protection',
+    'operations',
+    'account',
+    'ai-agents',
+  ],
+  Concepts: ['architecture', 'platform', 'ai-agents'],
+  Reference: ['commands', 'ai-agents', 'platform'],
+  'Use Cases': ['resilience', 'scaling', 'development'],
+  Legal: ['foundations', 'regulations', 'frameworks'],
+};
+
+/** The ordered shelf list for a category; empty for anything unknown. */
+export function subcategoriesFor(category: string): readonly DocSubcategory[] {
+  // Typed as possibly-undefined on purpose, exactly as makeTagLabel below: `category`
+  // arrives as a plain string, so the cast is a claim rather than a guarantee and an
+  // unknown category really does miss the record.
+  const shelves = (
+    DOC_SUBCATEGORIES as Partial<Record<string, readonly DocSubcategory[]>>
+  )[category];
+  return shelves ?? [];
+}
+
+/**
+ * Subcategory identifier -> translation key, plus the English fallback text, written as
+ * literals for the same reason TAG_KEYS above spells its keys out: the dead-key scanner
+ * counts these strings as references, and the lookup itself is by variable.
+ */
+const SUBCATEGORY_KEYS: Record<DocSubcategory, { key: string; en: string }> = {
+  essentials: { key: 'documentation.subcategories.essentials', en: 'Essentials' },
+  advanced: { key: 'documentation.subcategories.advanced', en: 'Advanced' },
+  setup: { key: 'documentation.subcategories.setup', en: 'Setup' },
+  'cli-tools': { key: 'documentation.subcategories.cliTools', en: 'CLI & Tools' },
+  workloads: { key: 'documentation.subcategories.workloads', en: 'Apps & Services' },
+  'data-protection': { key: 'documentation.subcategories.dataProtection', en: 'Backup & Migration' },
+  operations: { key: 'documentation.subcategories.operations', en: 'Operations' },
+  account: { key: 'documentation.subcategories.account', en: 'Account & Licensing' },
+  'ai-agents': { key: 'documentation.subcategories.aiAgents', en: 'AI Agents' },
+  architecture: { key: 'documentation.subcategories.architecture', en: 'Architecture' },
+  platform: { key: 'documentation.subcategories.platform', en: 'Platform' },
+  commands: { key: 'documentation.subcategories.commands', en: 'Commands' },
+  resilience: { key: 'documentation.subcategories.resilience', en: 'Resilience & Recovery' },
+  scaling: { key: 'documentation.subcategories.scaling', en: 'Scaling' },
+  development: { key: 'documentation.subcategories.development', en: 'Development' },
+  foundations: { key: 'documentation.subcategories.foundations', en: 'Foundations' },
+  regulations: { key: 'documentation.subcategories.regulations', en: 'Regulations' },
+  frameworks: { key: 'documentation.subcategories.frameworks', en: 'Standards & Frameworks' },
+};
+
+/**
+ * Build a subcategory label resolver from a translator, English text as the fallback
+ * argument for the same reason makeTagLabel passes one: a raw key on a sidebar heading
+ * is worse than English while a locale catches up.
+ */
+export function makeSubcategoryLabel(t: (key: string, fallback?: string) => string) {
+  return (subcategory: string): string => {
+    const entry = (
+      SUBCATEGORY_KEYS as Partial<Record<string, (typeof SUBCATEGORY_KEYS)[DocSubcategory]>>
+    )[subcategory];
+    return entry ? t(entry.key, entry.en) : subcategory;
+  };
+}
+
+/**
  * One glyph per category, as a bare SVG path on a 24x24 grid.
  *
  * One consumer today: the browse card renders it inline as the category chip's icon,

@@ -5,6 +5,7 @@ category: Reference
 tags:
   - forking
   - repositories
+subcategory: commands
 order: 41
 language: en
 ---

@@ -4,6 +4,7 @@ description: "How Rediacc's self-hosted model addresses California Consumer Priv
 category: "Legal"
 tags:
   - compliance
+subcategory: regulations
 order: 4
 language: en
 ---

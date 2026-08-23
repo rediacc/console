@@ -4,6 +4,7 @@ description: "Fixes for common SSH, setup, repository, service, and Docker issue
 category: "Guides"
 tags:
   - operations
+subcategory: operations
 order: 10
 language: en
 ---

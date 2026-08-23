@@ -1,0 +1,306 @@
+---
+/**
+ * The article page-action cluster: Copy as Markdown, plus a small disclosure menu
+ * holding View as Markdown and the Ask Assistant providers.
+ *
+ * ZERO API SPEND, locked by the operator: an Ask action deep-links the prompt into the
+ * reader's OWN provider account (`utils/ai-providers.ts` is the provider table) and
+ * talks to nothing of ours. Because prefill parameters are undocumented vendor surface
+ * that can vanish without notice, every Ask action copies the prompt to the clipboard
+ * FIRST and then opens the provider: a dropped `?q=` degrades to paste, not to a broken
+ * button. The prompt is a POINTER (this page's `.md` URL plus `/llms.txt`), never the
+ * page body: a doc page is 5-50KB and a URL survives where a truncated paste does not.
+ *
+ * This component owns the whole cluster - markup, styles and behaviour - including the
+ * Copy-as-Markdown fetch handler that used to live in DocsLayout.astro. Astro styles
+ * are component-scoped, so the `.docs-copy-page-md` rules had to travel with the markup;
+ * leaving them in the layout would have made them dead CSS.
+ *
+ * It is a DISCLOSURE, not an ARIA menu: plain buttons in a toggled container keep the
+ * natural tab order and skip the roving-focus contract role="menu" would impose, which
+ * is the right trade for three items.
+ */
+import type { Language } from '../i18n/types';
+import { createTranslator } from '../i18n/utils';
+import { AI_PROVIDERS, AI_PROVIDER_STORAGE_KEY } from '../utils/ai-providers';
+
+interface Props {
+  currentLang: Language;
+  mdUrl: string;
+}
+
+const { currentLang, mdUrl } = Astro.props as Props;
+const { t } = createTranslator(currentLang);
+
+// Interpolated by hand off the fallback-aware form: `t(key, params)` returns the RAW
+// key while a locale catalog lags, and `t(key, fallback)` cannot carry params. Product
+// names are never translated, so only the surrounding words vary per locale.
+const askTemplate = t('documentation.pageActions.ask', 'Ask {{provider}}');
+const askLabel = (provider: string) => askTemplate.replaceAll('{{provider}}', provider);
+---
+
+<div class="docs-page-actions" data-storage-key={AI_PROVIDER_STORAGE_KEY}>
+  <button
+    type="button"
+    class="docs-copy-page-md"
+    data-md-href={mdUrl}
+    aria-label={t('documentation.copyFullPageAriaLabel')}
+    title={t('documentation.copyAsMarkdown')}
+  >
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <rect x="9" y="9" width="13" height="13" rx="2" />
+      <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+    </svg>
+    <span class="copy-md-label">{t('documentation.copyAsMarkdown')}</span>
+  </button>
+  <button
+    type="button"
+    class="docs-page-actions-toggle"
+    aria-expanded="false"
+    aria-controls="docs-page-actions-menu"
+    aria-label={t('documentation.pageActions.more', 'More actions')}
+    title={t('documentation.pageActions.more', 'More actions')}
+  >
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="m6 9 6 6 6-6" />
+    </svg>
+  </button>
+  <div class="docs-page-actions-menu" id="docs-page-actions-menu" hidden>
+    <a class="docs-page-actions-item" href={mdUrl} target="_blank" rel="noopener">
+      {t('documentation.pageActions.viewMarkdown', 'View as Markdown')}
+    </a>
+    {AI_PROVIDERS.map((provider) => (
+      <button
+        type="button"
+        class="docs-page-actions-item docs-page-actions-ask"
+        data-provider={provider.id}
+        data-url-template={provider.urlTemplate}
+        data-md-href={mdUrl}
+      >
+        {askLabel(provider.label)}
+      </button>
+    ))}
+  </div>
+</div>
+
+<style>
+  .docs-page-actions {
+    position: relative;
+    display: inline-flex;
+    align-items: flex-start;
+    margin-top: var(--space-4);
+  }
+
+  .docs-copy-page-md {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-2) var(--space-3);
+    border: 1px solid var(--color-border);
+    border-start-start-radius: var(--radius-md);
+    border-end-start-radius: var(--radius-md);
+    background: var(--color-surface);
+    color: var(--color-text-muted);
+    font-size: var(--font-size-sm);
+    cursor: pointer;
+    transition: color var(--transition-duration-fast) var(--ease-standard), border-color var(--transition-duration-fast) var(--ease-standard);
+  }
+
+  .docs-copy-page-md:hover {
+    color: var(--color-text);
+    border-color: var(--color-text-muted);
+  }
+
+  .docs-copy-page-md.copied {
+    color: var(--color-success, #22c55e);
+    border-color: var(--color-success, #22c55e);
+  }
+
+  /* The disclosure toggle continues the primary button's outline so the pair reads as
+     ONE split control; the shared edge collapses to a single border. */
+  .docs-page-actions-toggle {
+    display: inline-flex;
+    align-items: center;
+    align-self: stretch;
+    padding: var(--space-2);
+    border: 1px solid var(--color-border);
+    border-inline-start: none;
+    border-start-end-radius: var(--radius-md);
+    border-end-end-radius: var(--radius-md);
+    background: var(--color-surface);
+    color: var(--color-text-muted);
+    cursor: pointer;
+    transition: color var(--transition-duration-fast) var(--ease-standard), border-color var(--transition-duration-fast) var(--ease-standard);
+  }
+
+  .docs-page-actions-toggle:hover,
+  .docs-page-actions-toggle[aria-expanded='true'] {
+    color: var(--color-text);
+  }
+
+  .docs-page-actions-toggle svg {
+    transition: transform var(--transition-duration-fast) var(--ease-standard);
+  }
+
+  .docs-page-actions-toggle[aria-expanded='true'] svg {
+    transform: rotate(180deg);
+  }
+
+  .docs-page-actions-menu {
+    position: absolute;
+    inset-block-start: calc(100% + var(--space-1));
+    inset-inline-end: 0;
+    z-index: 20;
+    display: flex;
+    flex-direction: column;
+    min-inline-size: 100%;
+    padding: var(--space-1);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: var(--color-surface);
+    box-shadow: var(--shadow-md, 0 4px 12px rgb(0 0 0 / 15%));
+  }
+
+  .docs-page-actions-menu[hidden] {
+    display: none;
+  }
+
+  .docs-page-actions-item {
+    display: block;
+    padding: var(--space-2) var(--space-3);
+    border: none;
+    border-radius: var(--radius-sm);
+    background: none;
+    color: var(--color-text-muted);
+    font-size: var(--font-size-sm);
+    font-family: inherit;
+    text-align: start;
+    text-decoration: none;
+    cursor: pointer;
+  }
+
+  .docs-page-actions-item:hover,
+  .docs-page-actions-item:focus-visible {
+    color: var(--color-text);
+    background: var(--color-bg-alt);
+  }
+</style>
+
+<script is:inline>
+  // Copy full page as markdown. Moved verbatim from DocsLayout.astro alongside the
+  // button's markup; the #docs-i18n data island it reads still lives in the layout.
+  (function() {
+    function initCopyMd() {
+      document.querySelectorAll('.docs-copy-page-md').forEach(function(btn) {
+        if (btn.dataset.copyMdBound === 'true') return;
+        btn.dataset.copyMdBound = 'true';
+        btn.addEventListener('click', function() {
+          var href = btn.getAttribute('data-md-href');
+          if (!href) return;
+          fetch(href)
+            .then(function(r) { return r.text(); })
+            .then(function(text) {
+              return navigator.clipboard.writeText(text);
+            })
+            .then(function() {
+              var label = btn.querySelector('.copy-md-label');
+              var orig = label ? label.textContent : '';
+              var i18nEl = document.getElementById('docs-i18n');
+              var copiedText = i18nEl && i18nEl.dataset.copied || 'Copied!';
+              btn.classList.add('copied');
+              if (label) label.textContent = copiedText;
+              setTimeout(function() {
+                btn.classList.remove('copied');
+                if (label) label.textContent = orig;
+              }, 2000);
+            })
+            .catch(function() {});
+        });
+      });
+    }
+    document.addEventListener('astro:page-load', initCopyMd);
+    if (document.readyState !== 'loading') initCopyMd();
+    else document.addEventListener('DOMContentLoaded', initCopyMd);
+  })();
+</script>
+
+<script is:inline>
+  // The page-actions disclosure and the Ask Assistant actions.
+  (function() {
+    function closeMenu(toggle, menu) {
+      menu.hidden = true;
+      toggle.setAttribute('aria-expanded', 'false');
+    }
+
+    function initPageActions() {
+      document.querySelectorAll('.docs-page-actions').forEach(function(root) {
+        if (root.dataset.initialized === 'true') return;
+        root.dataset.initialized = 'true';
+
+        var toggle = root.querySelector('.docs-page-actions-toggle');
+        var menu = root.querySelector('.docs-page-actions-menu');
+        if (!toggle || !menu) return;
+        // Single-sourced from utils/ai-providers.ts through the data attribute: an
+        // inline script cannot import, but it can read what the frontmatter rendered.
+        var STORAGE_KEY = root.dataset.storageKey || 'rediacc_docs_ask_provider';
+
+        // The remembered provider surfaces at the TOP of the provider block, so the
+        // reader's own assistant is always one click after the toggle.
+        try {
+          var last = localStorage.getItem(STORAGE_KEY);
+          if (last) {
+            var preferred = menu.querySelector('.docs-page-actions-ask[data-provider="' + last + '"]');
+            var firstAsk = menu.querySelector('.docs-page-actions-ask');
+            if (preferred && firstAsk && preferred !== firstAsk) {
+              menu.insertBefore(preferred, firstAsk);
+            }
+          }
+        } catch (e) { /* storage denied: keep authored order */ }
+
+        toggle.addEventListener('click', function(e) {
+          e.stopPropagation();
+          var open = menu.hidden;
+          menu.hidden = !open;
+          toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+        });
+
+        document.addEventListener('click', function(e) {
+          if (!menu.hidden && !root.contains(e.target)) closeMenu(toggle, menu);
+        });
+
+        root.addEventListener('keydown', function(e) {
+          if (e.key === 'Escape' && !menu.hidden) {
+            closeMenu(toggle, menu);
+            toggle.focus();
+          }
+        });
+
+        menu.querySelectorAll('.docs-page-actions-ask').forEach(function(btn) {
+          btn.addEventListener('click', function() {
+            var template = btn.getAttribute('data-url-template');
+            var mdHref = btn.getAttribute('data-md-href');
+            if (!template || !mdHref) return;
+            // A POINTER prompt, never the page body: the .md route plus the machine
+            // index, absolute so the provider can actually fetch them.
+            var mdAbs = new URL(mdHref, window.location.origin).toString();
+            var prompt =
+              'Read ' + mdAbs +
+              ' and use it to answer my questions about this documentation page.' +
+              ' Full docs index: ' + window.location.origin + '/llms.txt';
+            var url = template.replace('{q}', encodeURIComponent(prompt));
+            try { localStorage.setItem(STORAGE_KEY, btn.getAttribute('data-provider') || ''); } catch (e) { /* fine */ }
+            // Clipboard FIRST: prefill parameters are undocumented vendor surface, and
+            // a dropped one degrades to paste this way. The copy is best-effort; the
+            // provider opens either way.
+            var open = function() { window.open(url, '_blank', 'noopener'); closeMenu(toggle, menu); };
+            navigator.clipboard.writeText(prompt).then(open, open);
+          });
+        });
+      });
+    }
+
+    document.addEventListener('astro:page-load', initPageActions);
+    if (document.readyState !== 'loading') initPageActions();
+    else document.addEventListener('DOMContentLoaded', initPageActions);
+  })();
+</script>

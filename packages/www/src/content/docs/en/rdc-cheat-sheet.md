@@ -4,6 +4,7 @@ description: "Quick reference for rdc: configs, repos, machines, file sync, and 
 category: Guides
 tags:
   - cli
+subcategory: cli-tools
 order: 3
 cardGrid: true
 language: en

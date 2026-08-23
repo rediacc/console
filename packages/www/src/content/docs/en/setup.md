@@ -5,6 +5,7 @@ category: "Guides"
 tags:
   - getting-started
   - operations
+subcategory: setup
 order: 3
 language: en
 ---

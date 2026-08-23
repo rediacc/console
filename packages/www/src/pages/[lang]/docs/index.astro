@@ -32,7 +32,9 @@ import {
   categoryAnchor,
   groupByCategory,
   makeCategoryLabel,
+  makeSubcategoryLabel,
   makeTagLabel,
+  subcategoriesFor,
   tagCounts,
 } from '../../../utils/docs-categories';
 import type { Language } from '../../../i18n/types';
@@ -45,6 +47,7 @@ const currentLang = lang;
 const { t } = createTranslator(currentLang);
 const categoryLabel = makeCategoryLabel(t);
 const tagLabel = makeTagLabel(t);
+const subcategoryLabel = makeSubcategoryLabel(t);
 
 // Docs for THIS locale, falling back to English for anything not yet translated, so a
 // locale with partial coverage still browses a complete index instead of a short one.
@@ -58,6 +61,18 @@ const english = all.filter(
 );
 
 const shown = [...inLang, ...english];
+
+// Subcategory resolves through the ENGLISH doc for the same base slug when a localized
+// file does not carry one, exactly as the sidebar resolves it: the field is an
+// identifier, English frontmatter is its source of truth, and the translation pipeline
+// copies frontmatter on its own schedule. Without this, a card's shelf chip would appear
+// and disappear per locale with pipeline lag.
+const englishSubcategoryBySlug = new Map<string, string>();
+for (const doc of all) {
+  if ((doc.data.language || DEFAULT_LANGUAGE) === DEFAULT_LANGUAGE && doc.data.subcategory) {
+    englishSubcategoryBySlug.set(getBaseSlug(doc.slug), doc.data.subcategory);
+  }
+}
 const groups = groupByCategory(shown);
 const total = groups.reduce((n, g) => n + g.docs.length, 0);
 const topics = tagCounts(shown);
@@ -127,7 +142,10 @@ const description = t('documentation.browse.description');
 
         {/* Topics are the SUB-GROUPS: the same vocabulary, scoped by whatever categories are
             checked, with counts recomputed live. There is no second authored taxonomy. */}
-        <details class="docs-rail-group">
+        {/* `open`, like the category group above it: collapsed-by-default made the whole
+            facet read as an empty heading, and "Filter by topic is broken" was reported
+            against exactly that. The hierarchy stays order and weight, not collapse. */}
+        <details class="docs-rail-group" open>
           <summary class="docs-rail-summary">{t('documentation.browse.topicLabel')}</summary>
           <ul class="docs-rail-list">
             {
@@ -166,6 +184,11 @@ const description = t('documentation.browse.description');
             {group.docs.map((doc) => {
               const slug = getBaseSlug(doc.slug);
               const tags = doc.data.tags ?? [];
+              const shelfRaw = doc.data.subcategory ?? englishSubcategoryBySlug.get(slug);
+              const shelf =
+                shelfRaw && (subcategoriesFor(group.category) as readonly string[]).includes(shelfRaw)
+                  ? shelfRaw
+                  : undefined;
               // The slug goes into the search haystack twice, hyphenated and spaced, because
               // a reader types what they remember rather than what the title says: `vscode`
               // matched nothing while `tutorial-vscode-browser` sat in the grid, since the
@@ -174,6 +197,7 @@ const description = t('documentation.browse.description');
                 doc.data.title,
                 doc.data.description,
                 categoryLabel(group.category),
+                shelf ? subcategoryLabel(shelf) : '',
                 tags.map(tagLabel).join(' '),
                 slug.replaceAll('-', ' '),
                 slug,
@@ -221,6 +245,23 @@ const description = t('documentation.browse.description');
                       </svg>
                       {categoryLabel(group.category)}
                     </span>
+                    {/* The doc's SHELF (single-valued subcategory) and its topics (tags),
+                        which until now existed in frontmatter and rendered nowhere on the
+                        card. Plain text chips, deliberately quieter than the category
+                        chip: they are scent for scanning, not controls. The rail's topic
+                        checkboxes stay the interactive filter. */}
+                    {(shelf || tags.length > 0) && (
+                      <p class="docs-card-topics">
+                        {shelf && (
+                          <span class="docs-card-topic docs-card-topic-shelf">
+                            {subcategoryLabel(shelf)}
+                          </span>
+                        )}
+                        {tags.map((tag) => (
+                          <span class="docs-card-topic">{tagLabel(tag)}</span>
+                        ))}
+                      </p>
+                    )}
                     {/* Kept in the DOM and only visually clipped: it is what a crawler and a
                         screen reader read, and `opacity` (never `display` or `visibility`)
                         is what keeps it in the accessibility tree while it is out of sight. */}
@@ -254,6 +295,34 @@ const description = t('documentation.browse.description');
     </div>
   </div>
 </DocsLayout>
+
+<style>
+  /* Card topic chips. Scoped here rather than added to docs-browse.css because that file
+     is shared-surface for this wave; the markup these style is inlined above, so the
+     rules belong to the same component. */
+  .docs-card-topics {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-1);
+    margin: 0;
+  }
+
+  .docs-card-topic {
+    font-size: var(--font-size-xs);
+    line-height: 1.6;
+    color: var(--color-text-secondary);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-full);
+    padding: 0 var(--space-2);
+  }
+
+  /* The shelf chip leads the row and carries slightly more weight than the tags: it is
+     the sidebar's grouping made visible on the card, not just another topic. */
+  .docs-card-topic-shelf {
+    font-weight: 600;
+    color: var(--color-text);
+  }
+</style>
 
 <script>
   // Multi-select facets over the server-rendered cards. OR within a facet, AND across

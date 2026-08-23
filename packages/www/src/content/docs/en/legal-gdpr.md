@@ -4,6 +4,7 @@ description: "How Rediacc's self-hosted architecture maps to GDPR requirements f
 category: "Legal"
 tags:
   - compliance
+subcategory: regulations
 order: 1
 language: en
 ---

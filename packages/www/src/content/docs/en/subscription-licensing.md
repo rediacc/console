@@ -4,6 +4,7 @@ description: "Understand how account, rdc, and renet handle machine slots, repo 
 category: "Guides"
 tags:
   - account
+subcategory: account
 order: 7
 language: en
 ---

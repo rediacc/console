@@ -4,6 +4,7 @@ description: System requirements and supported platforms for running Rediacc.
 category: Guides
 tags:
   - getting-started
+subcategory: setup
 order: 0
 language: en
 ---

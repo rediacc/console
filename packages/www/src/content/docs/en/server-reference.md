@@ -5,6 +5,7 @@ category: "Concepts"
 tags:
   - operations
   - cli
+subcategory: architecture
 order: 3
 language: en
 ---

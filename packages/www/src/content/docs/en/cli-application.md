@@ -2,6 +2,7 @@
 title: "CLI Application"
 description: "Complete guide to using the Rediacc command-line interface for platform management"
 category: "Reference"
+subcategory: commands
 order: 2
 language: en
 generated: true

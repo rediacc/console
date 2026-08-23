@@ -7,6 +7,7 @@ category: Reference
 tags:
   - storage
   - account
+subcategory: platform
 order: 99
 language: en
 ---
