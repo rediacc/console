@@ -4142,3 +4142,92 @@ One trap worth keeping: `check:deps` reports `npm outdated`, whose `current`
 field comes from the INSTALLED tree, so bumping a range and the lockfile still
 reports stale until `node_modules` is synced. It exits 0 only after a real
 install.
+
+## 0823-1: the wave the babysit found, plus two gates the surface was missing
+
+Branch `0823-1`, PR #571. Seven CI rounds to the first fully green run (75 jobs,
+0 failed, 0 cancelled). Five distinct reds, none of which came from the diff that
+opened the PR, and two new gates that exist because of what the rounds exposed.
+
+### The reds, and why each one is worth remembering
+
+- **`check:deps`, three packages.** Ordinary tier-1 freshness, but it broke a
+  syncpack PIN on the next round: `check:deps --upgrade` moved every workspace to
+  i18next ^26.4.0 while `.syncpackrc.json` still pinned ^26.3.4, so the two gates
+  demanded opposite things. The pin's label reads "for CLI" and its mechanism is
+  `packages: ["**"]` -- a repo-wide ALIGNMENT pin, not a compatibility hold. It
+  moves WITH the upgrade; reverting would have re-failed `check:deps` next round.
+- **A fixture SHA that only resolves in a full clone.** `test-worklist-v5.sh`
+  pinned `444e9c09`, the rewritten repo's own root tree, in its completion-evidence
+  case. It resolves locally and NOT in the checkout CI builds, so the case was
+  green on every developer machine and red in CI for a reason unrelated to what it
+  tests. Now derived from `HEAD^{tree}`, which resolves in any checkout with a HEAD:
+  full, blobless or shallow. **The suite's own fixture control is what named it**
+  rather than leaving a confusing downstream failure.
+- **A 1-in-100 flake nobody had hit.** `test-detect-bump-type.sh` asserted a bare
+  `999` against a file recording whole gh command lines, including 40-hex commit
+  SHAs. That round's generated SHA contained `c089991d`. Latent since the case was
+  written. Fixed by masking SHAs before the assertion, verified in BOTH directions:
+  the failing line now masks to `/commits/<sha>/pulls`, and a genuine `pulls/999`
+  still trips it.
+- **16 ruff findings**, all in code the branch added, fixed at source rather than
+  suppressed.
+
+### `check:ci-test-file-orphans`: the question the other two wiring gates cannot ask
+
+A control suite was committed with 20 passing controls and **ran nowhere**. Its
+only mention in the tree was inside a comment. Both existing wiring gates stayed
+green throughout, and neither was broken:
+
+- `check-ci-parity` compares the MANIFEST against the CI workflow surface. A file
+  absent from the manifest is absent from BOTH sides, so the two agree and it passes.
+- `check_gate_reachability_coverage` asks whether every manifest registration is
+  reachable. It cannot ask about a file that never registered.
+
+Both answer "is what we declared wired up?". Neither answers "did we forget to
+declare something?". The new gate asks the second question and immediately found
+**four more pre-existing orphans**: `test-context-bands.py` (73 checks),
+`test-block-destructive-git-restore.py`, `test-block-git-amend.py`,
+`test-completion-evidence.py`. All now reached through `test-hooks.sh`, one pass
+each on exit status rather than a parsed count, because they print in four
+different formats and coupling to all four would go quietly to zero the moment one
+reworded a line. Empty output still fails: exit 0 alone is what a stub returns.
+
+Its own first pathspec, `.claude/hooks/**/*.sh`, silently missed
+`.claude/hooks/test-hooks.sh` -- `**/` needs an intermediate directory and that
+file sits at depth 1. It flagged the freshly-wired file as an orphan. **A pathspec
+wrong in the narrowing direction produces false positives and announces itself;
+wrong the other way it would have gone quiet.**
+
+### `check:ci-sentence-wrapping`: a shrink-only precondition gate
+
+Wave D gate 1 of the www-round5 sentence pair. Static, sub-second,
+`quality-content`. Asserts every text-position render of a multi-sentence catalog
+value goes through `<Sentences>`; the browser half measures real line boxes and
+needs a build, so neither subsumes the other. Baseline seeded at **51 unwrapped
+renders** (not the plan's 818, which counted catalog LEAVES -- different
+denominators, not a discrepancy). Ids are `<file>:<key>` with no line number so the
+baseline survives a paragraph moving above it.
+
+Its `--selftest` leg 4 stubs the SENTENCE COUNTER to always return 1 and requires
+the positive fixture's finding to vanish, which is what proves the finding comes
+from detection rather than from a fixture existing.
+
+### The standing lesson from this wave: a control that does not fire proves nothing
+
+Three separate times a first-attempt control stayed green and would have shipped an
+unverified claim: twice on a CSS token fix (once because the DOM override did not
+reach the painted element, once because the browser opens in DARK theme and the bug
+existed only in LIGHT), and once on this gate (the planted key turned out to be
+single-sentence). What worked every time was changing the value IN THE FILE,
+reloading, and watching the pixel or the finding move.
+
+Also from this wave: **a bare `sed -i` matched two lines**, clobbering a dark-theme
+token 2,300 lines from the target. Re-verify the WHOLE file diff after any scripted
+edit, including a deletions count, not just the part you aimed at.
+
+### Watchdog reading, restated because it nearly cost a false green
+
+Runs named `Watchdog: run <id> (gen N)` show `completed/success` and are NOT the CI
+run. On this wave the CI run was still executing its E2E legs while three watchdog
+generations reported success.
