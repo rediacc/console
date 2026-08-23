@@ -3009,10 +3009,17 @@ W.C._git = _counting
 # Two leading tags is the REAL rendered shape, not a worst case: the session tag
 # is mandatory and _render_line emits it on the folded line.
 TAG = "- [x] (0ad063bf) (0ad063bf) "
-# A tree hash that genuinely resolves in this checkout. Verified below rather
-# than trusted, because a case built on a SHA that stopped resolving would go
-# green by turning into the no-evidence case.
-SHA = "444e9c09092a80bbb7defa6eea122e0de28a89eb"
+# A tree hash that genuinely resolves in this checkout. DERIVED, not hardcoded,
+# and that is the whole point: this was pinned to 444e9c09 -- the rewritten
+# repo's root tree -- which resolves in a full local clone and NOT in the
+# checkout CI builds. It went red in CI on run 32657161009 while passing
+# locally, and the fixture control below is what named it rather than leaving a
+# confusing downstream failure. `HEAD^{tree}` resolves in every checkout that
+# has a HEAD at all: full, blobless, or shallow.
+#
+# Verified below rather than trusted, because a case built on a SHA that stopped
+# resolving would go green by turning into the no-evidence case.
+SHA = (C._git(root, "rev-parse", "HEAD^{tree}") or "").strip() or "d" * 40
 IDS = "23d99308 ebe8b570 e263d2cc"
 
 cases = [
@@ -8913,6 +8920,17 @@ NO_ME = {
     "--path", "--compact",    # store-level queries, no identity
     "--requests",             # unfiltered listing of everybody's requests
     "--session-start", "--post-compact",  # harness hooks; identity is in the event
+    "--teammate-idle",        # the same shape: a harness hook (TeammateIdle) whose
+                              # whole input is the event on stdin, carrying
+                              # session_id and agent_id. It takes no argv at all,
+                              # so an L1_TABLE row would substitute @ME@ into a
+                              # slot that does not exist and assert nothing. Its
+                              # risk is not identity handling -- it writes a
+                              # per-worker telemetry sidecar, never an item -- and
+                              # it is covered where that risk lives: the
+                              # never-block/always-exit-0 contract, and the
+                              # 17 controls in test-teammate-idle.py.
+                              # IF IT EVER TAKES A <me>, delete this line.
     "--reports",              # a CONTAINER: its me-taking sub-modes are driven
                               # explicitly as `--reports --read` and
                               # `--reports --list --as`, and it is recorded
