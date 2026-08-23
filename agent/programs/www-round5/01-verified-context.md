@@ -232,3 +232,51 @@ After wave A, the only adjacent-same surface pairs remaining are DELIBERATE dark
 band merges (`/en` closing band into the footer, `/en/for-devops` benefits + cta
 + footer as one band). The gate needs an exemption for a deliberate merge, or it
 will report the fixed state as broken.
+
+### Four more environment facts, measured during execution (wave B and the lead)
+
+These cost real time and are not obvious from any file.
+
+6. **`agent-browser screenshot` with a RELATIVE path reports success and writes
+   the file somewhere else.** `agent-browser screenshot test1.png` prints
+   `✓ Screenshot saved to test1.png` and the file is not in the cwd; five
+   baseline screenshots landed in the repo ROOT. Always pass an absolute path.
+
+7. **The dev server can serve fresh SSR HTML and STALE scoped CSS at the same
+   time.** For several minutes `curl /en` returned a new
+   `.home-difference[data-astro-cid-...]` rule while the browser, on the same URL
+   with a unique cache-busting query, still had the previous rule AND the
+   previous computed values. No service worker, no HTTP cache. `touch`ing the
+   `.astro` file and waiting ~3s cleared it every time. Without knowing this, a
+   measurement looks exactly like a code defect.
+
+8. **The browser is genuinely shared and other waves navigate it mid-probe.**
+   Two probes returned data from a different wave's page. Any measurement here
+   should assert `location.href` before AND after settling and retry on
+   mismatch, or it will publish another wave's page as its own.
+
+9. **A content-schema rejection does not necessarily change the HTTP status.**
+   Planting an illegal `subcategory` produced a 404 for one session and a 200 for
+   another; the dev server serves cached output while logging the error. The
+   oracle is the `InvalidContentEntryDataError` in the dev-server log, not the
+   status code. In a build it is fatal, which is what the gates rely on.
+
+### The `.difference-row*` dependency did not exist
+
+03 gated wave A's deletion of the dead `.difference-row*` / `.difference-zoom*`
+CSS on wave B landing its replacement, and that ordering shaped the whole
+A-then-B sequencing. The block is absent from `main.css` on this branch AND on
+`origin/main`, and `git log -S'difference-row'` finds no commit removing it here.
+It was already gone before the wave began. The body of this file still cites it
+at `main.css:1956-2090`, measured in the pre-move checkout.
+
+### RTL illustrations are a DECISION, not a patch (open)
+
+Under `/ar` the alternating rows mirror but the illustrations keep pointing
+left-to-right, so a before/after arrow runs against the reading direction. The
+obvious `[dir="rtl"] svg { transform: scaleX(-1) }` would fix the arrows and
+BREAK three of the four drawings, which contain a clock face or a circular arrow
+whose direction is intrinsic. The real fix is per-illustration RTL variants --
+`instant-recovery.mobile.svg` already establishes the variant-file convention --
+which means authoring new files under `src/assets/images/illustrations/` and it
+affects the solution pages too.
