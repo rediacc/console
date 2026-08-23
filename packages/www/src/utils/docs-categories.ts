@@ -213,7 +213,7 @@ export type DocSubcategory = (typeof DOC_SUBCATEGORY_VALUES)[number];
  * shelf added here without a VALUES entry (and therefore without schema legality and a
  * label) is a compile error, not a runtime fallback.
  */
-export const DOC_SUBCATEGORIES: Record<DocCategory, readonly DocSubcategory[]> = {
+const DOC_SUBCATEGORIES: Record<DocCategory, readonly DocSubcategory[]> = {
   Tutorials: ['essentials', 'advanced'],
   Guides: [
     'setup',
