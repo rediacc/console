@@ -218,3 +218,33 @@ Prove the layering, both directions:
 Whether `TeammateIdle` ever actually fires here is then an observation to make in live
 use, not a load-bearing assumption. If it does, the journal sharpens the numbers; if it
 never does, nothing regresses.
+
+### Addendum 2 — why NOT a `PreToolUse` heartbeat (operator asked, 2026-08-23)
+
+The operator asked whether a `PreToolUse` hook could supply the missing un-idle
+edge: a small fast command on every tool call, recording that the teammate is
+alive. The instinct is exactly right — an un-idle signal is what a journal of
+idle edges lacks — but the signal it would create **already exists for free.**
+
+`PreToolUse` fires in the teammate's own context and would give
+"teammate X was alive at T". That is precisely what the transcript's **mtime**
+already says: the harness appends a record per tool call and per assistant
+message, so the .jsonl's mtime IS the last-activity timestamp, maintained by the
+harness at zero cost. `teammate_state()` already reads it as `quiet_min`.
+
+What a heartbeat would ADD is nothing; what it would COST is real:
+
+- It fires on **every tool call of every agent**. This repo already runs 27
+  `PreToolUse` hooks, so the marginal cost is another interpreter spawn per tool
+  call, per teammate, forever — on the hot path of every session.
+- It is a **second source of truth for a fact the first source already carries**,
+  and the two can disagree (a heartbeat written while the transcript write fails,
+  or vice versa). The plan's whole discipline is one authority per question.
+- It does not fix the case it appears to fix. A teammate that resumes writes to
+  its transcript *before* it calls a tool (the assistant record comes first), so
+  the transcript sees the resume at least as early as a `PreToolUse` heartbeat
+  would, and sometimes earlier.
+
+**Decision: not built.** The un-idle edge is served by the level read that is
+already load-bearing. Recorded here so the question is not re-opened from
+scratch — it is a good idea whose answer is "we already have it", not "no".
