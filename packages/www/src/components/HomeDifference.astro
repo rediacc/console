@@ -3,26 +3,34 @@
  * The homepage's proof section: what the day looks like without Rediacc, and
  * with it.
  *
- * This used to be the page's centre of gravity and its worst offender: 2,176px
- * of desktop and 4,059px of mobile (4.8 phone screens, 29% of the whole page)
- * for 73 words and 12 pieces of clipart, at 30px per word against 8-10px
- * everywhere else. It was a two-up lead block plus four alternating full-width
- * illustrated rows, plus a <dialog> zoom lightbox for the clipart, plus 22
- * lines of client script to drive it. By the third row a reader is pattern
- * matching rather than reading, and none of the drawings said anything its two
- * lines of text did not.
+ * HISTORY, because this section has swung twice and the next reader should
+ * know why. It was once 2,176px of desktop and 4,059px of mobile for 73 words
+ * and 12 pieces of clipart: a two-up lead block, four alternating full-width
+ * illustrated rows, a `<dialog>` zoom lightbox and 22 lines of script to drive
+ * it. That was cut to two bordered cards of four sentences each, 532px at
+ * 1440x900, with no image, icon or diagram anywhere in it.
  *
- * The claims did not change. All eight `beforeAfter.*.points` survive, as does
- * both labels and the title. What left is the drawing: the illustrations, the
- * lightbox, its script, and the four-row scroll.
+ * Round 5 puts the visual back, deliberately smaller than the version that was
+ * cut. Four rows, one per before/after pair, each with ONE house illustration
+ * capped at 320px rather than a full-width drawing, no lightbox and no script.
+ * The claims are unchanged: all eight `beforeAfter.*.points` still render, and
+ * so do both labels.
  *
- * Note for whoever sweeps `public/styles/main.css`: `.difference-twoup*` is
- * dead with this file, and `.difference-row*` / `.difference-zoom*` at
- * main.css:1956-2090 now have no consumer on any page. Left in place rather
- * than reached into, because that file belongs to another writer.
+ * The alternation is not implemented here. It comes from `AlternatingRows`,
+ * which derives the flip from the row index and so mirrors correctly under
+ * `/ar`. The illustrations are inlined rather than referenced by URL because
+ * they paint from the theme-aware `--illustration-*` custom properties, which
+ * an `<img>`-referenced SVG can never see.
+ *
+ * The `.difference-row*` / `.difference-zoom*` remains of the old
+ * implementation are GONE from `public/styles/main.css`, verified by grep on
+ * 2026-08-23 rather than assumed: the file holds no `difference-` class at all
+ * beyond `.home-difference` and `.home-difference-container`.
  */
 import { createTranslator } from '../i18n/utils';
 import type { Language } from '../i18n/types';
+import { resolveSolutionIllustration } from '../utils/solution-illustration';
+import AlternatingRows from './AlternatingRows.astro';
 
 interface Props {
   lang: Language;
@@ -34,75 +42,127 @@ const { t, ta } = createTranslator(lang);
 const before = (ta('beforeAfter.before.points') as string[]) ?? [];
 const after = (ta('beforeAfter.after.points') as string[]) ?? [];
 
-const columns = [
-  { label: t('beforeAfter.before.label'), points: before, variant: 'before' as const },
-  { label: t('beforeAfter.after.label'), points: after, variant: 'after' as const },
+/**
+ * One illustration per pair, in the order the catalogue lists them: copy in 60
+ * seconds, hourly backups, recovery tested, a fresh copy per developer. Reused
+ * from `src/assets/images/illustrations/`, not newly drawn.
+ */
+const illustrationSlugs = [
+  'environment-cloning',
+  'backup-verification',
+  'instant-recovery',
+  'production-parity',
 ];
+
+// The two arrays are authored as a pair, and there is one drawing per pair, so
+// a catalogue that grew or shrank should shorten the section rather than render
+// a row with an empty visual column.
+const pairCount = Math.min(before.length, after.length, illustrationSlugs.length);
+
+// Shape checked at the call site by `AlternatingRows`'s own Props, so the
+// `as const` on each tone is what keeps it from widening to `string`.
+const rows = Array.from({ length: pairCount }, (_, i) => ({
+  statements: [
+    { text: before[i], tone: 'negative' as const },
+    { text: after[i], tone: 'positive' as const },
+  ],
+}));
+
+const visuals = illustrationSlugs
+  .slice(0, pairCount)
+  .map((slug) => resolveSolutionIllustration(slug));
 ---
 
 <section class="home-difference">
   <div class="home-difference-container">
     <header class="section-header">
       <h2 class="section-title">{t('beforeAfter.title')}</h2>
+      <p class="difference-legend">
+        <span class="difference-legend-item difference-legend-item--before">
+          <svg
+            class="difference-legend-mark"
+            viewBox="0 0 16 16"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.75"
+            stroke-linecap="round"
+            aria-hidden="true"
+          >
+            <path d="M4.5 4.5 L11.5 11.5 M11.5 4.5 L4.5 11.5" />
+          </svg>
+          {t('beforeAfter.before.label')}
+        </span>
+        <span class="difference-legend-item difference-legend-item--after">
+          <svg
+            class="difference-legend-mark"
+            viewBox="0 0 16 16"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.75"
+            stroke-linecap="round"
+            aria-hidden="true"
+          >
+            <path d="M3.5 8.5 L6.5 11.5 L12.5 4.5" />
+          </svg>
+          {t('beforeAfter.after.label')}
+        </span>
+      </p>
     </header>
 
-    <div class="difference-compare">
-      {columns.map((col) => (
-        <article class:list={['card', `difference-col--${col.variant}`, { 'card--raised': col.variant === 'after' }]}>
-          <h3 class="difference-col-label">{col.label}</h3>
-          <ul class="difference-col-list">
-            {col.points.map((point) => <li>{point}</li>)}
-          </ul>
-        </article>
-      ))}
-    </div>
+    <AlternatingRows rows={rows}>
+      {visuals[0] && <Fragment slot="visual-0" set:html={visuals[0]} />}
+      {visuals[1] && <Fragment slot="visual-1" set:html={visuals[1]} />}
+      {visuals[2] && <Fragment slot="visual-2" set:html={visuals[2]} />}
+      {visuals[3] && <Fragment slot="visual-3" set:html={visuals[3]} />}
+    </AlternatingRows>
   </div>
 </section>
 
 <style>
-  .difference-compare {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
+  .difference-legend {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
     gap: var(--space-6);
-    max-width: var(--container-lg);
-    margin: 0 auto;
-  }
-
-  .difference-col-label {
-    margin: 0;
-    font-size: var(--font-size-base);
+    margin: var(--space-4) 0 0;
+    font-size: var(--font-size-sm);
     font-weight: var(--font-weight-semibold);
     letter-spacing: var(--tracking-wide);
+  }
+
+  .difference-legend-item {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+  }
+
+  .difference-legend-item--before {
     color: var(--color-text-secondary);
   }
 
-  .difference-col--after .difference-col-label {
+  .difference-legend-item--after {
     color: var(--color-brand-primary);
   }
 
-  .difference-col-list {
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-3);
-    margin: 0;
-    padding: 0;
-    list-style: none;
+  .difference-legend-mark {
+    width: 1rem;
+    height: 1rem;
   }
 
-  .difference-col-list li {
-    margin: 0;
-    font-size: var(--font-size-base);
-    line-height: var(--leading-relaxed);
-    color: var(--color-text-secondary);
-  }
+  /*
+    Tighter than the component default: this section earns its visuals by
+    staying compact, which is the lesson of the version that was cut.
 
-  .difference-col--after .difference-col-list li {
-    color: var(--color-text);
-  }
-
-  @media (max-width: 768px) {
-    .difference-compare {
-      grid-template-columns: 1fr;
-    }
+    Declared HERE, on an element of this file's own template, rather than on a
+    class handed to `AlternatingRows`. A scoped rule cannot reach the child's
+    root: measured live, that div carried only `data-astro-cid-jn5afeb2`, the
+    CHILD's scope, so `.difference-rows { --alt-rows-gap: ... }` matched
+    nothing and both rows and drawings silently kept the component defaults
+    (64px gap, 400px drawings). Custom properties INHERIT, so declaring them on
+    the section is the mechanism that actually crosses the boundary.
+  */
+  .home-difference {
+    --alt-rows-gap: var(--space-10);
+    --alt-row-visual-max: 320px;
   }
 </style>

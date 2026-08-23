@@ -1,6 +1,17 @@
 ---
+/**
+ * The pricing page's "No Lock-In. Ever." band.
+ *
+ * The alternating layout it used to own now lives in `AlternatingRows.astro`,
+ * which derives the flip from the row index instead of asking the author to
+ * type `trust-row-reverse` on every second row, and expresses it with `order`
+ * instead of the `direction: rtl` hack that left `/ar/pricing` with no
+ * alternation at all. What stays here is what is genuinely local: the heading,
+ * the six mock-UI drawings, and the guarantee that closes the band.
+ */
 import { createTranslator } from '../i18n/utils';
 import type { Language } from '../i18n/types';
+import AlternatingRows from './AlternatingRows.astro';
 import CorporateGuarantee from './CorporateGuarantee.astro';
 
 interface Props {
@@ -20,199 +31,167 @@ const rows = ta(ns + '.rows') as Array<{ title: string; description: string }>;
       <p>{t(`${ns}.subtitle`)}</p>
     </div>
 
-    <!-- Row 1: Your repos run forever (text left, SVG right) -->
-    <div class="trust-row">
-      <div class="trust-row-text">
-        <h3>{rows[0].title}</h3>
-        <p>{rows[0].description}</p>
-      </div>
-      <div class="trust-row-visual">
-        <svg viewBox="0 0 400 280" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-          <!-- Server rack -->
-          <rect x="80" y="40" width="180" height="200" rx="8" stroke="currentColor" stroke-width="2" opacity="0.3"/>
-          <rect x="100" y="70" width="140" height="32" rx="4" stroke="currentColor" stroke-width="1.5" opacity="0.6"/>
-          <rect x="100" y="124" width="140" height="32" rx="4" stroke="currentColor" stroke-width="1.5" opacity="0.6"/>
-          <rect x="100" y="178" width="140" height="32" rx="4" stroke="currentColor" stroke-width="1.5" opacity="0.6"/>
-          <!-- Status lights: still running -->
-          <circle cx="120" cy="86" r="4" fill="var(--illustration-accent,#4a7c3f)"/>
-          <circle cx="120" cy="140" r="4" fill="var(--illustration-accent,#4a7c3f)"/>
-          <circle cx="120" cy="194" r="4" fill="var(--illustration-accent,#4a7c3f)"/>
-          <path d="M204 80 L212 88 L226 72" stroke="var(--illustration-accent,#4a7c3f)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-          <path d="M204 134 L212 142 L226 126" stroke="var(--illustration-accent,#4a7c3f)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-          <path d="M204 188 L212 196 L226 180" stroke="var(--illustration-accent,#4a7c3f)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-          <!-- Lapsed license, inert: faded, crossed out, changing nothing -->
-          <rect x="288" y="56" width="82" height="40" rx="6" stroke="currentColor" stroke-width="1.5" opacity="0.2" stroke-dasharray="4 3"/>
-          <line x1="300" y1="88" x2="358" y2="64" stroke="currentColor" stroke-width="1.5" opacity="0.25" stroke-linecap="round"/>
-        </svg>
-      </div>
-    </div>
+    <AlternatingRows rows={rows} class="pricing-trust-rows">
+      <Fragment slot="visual-0">
+          <svg viewBox="0 0 400 280" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <!-- Server rack -->
+            <rect x="80" y="40" width="180" height="200" rx="8" stroke="currentColor" stroke-width="2" opacity="0.3"/>
+            <rect x="100" y="70" width="140" height="32" rx="4" stroke="currentColor" stroke-width="1.5" opacity="0.6"/>
+            <rect x="100" y="124" width="140" height="32" rx="4" stroke="currentColor" stroke-width="1.5" opacity="0.6"/>
+            <rect x="100" y="178" width="140" height="32" rx="4" stroke="currentColor" stroke-width="1.5" opacity="0.6"/>
+            <!-- Status lights: still running -->
+            <circle cx="120" cy="86" r="4" fill="var(--illustration-accent,#4a7c3f)"/>
+            <circle cx="120" cy="140" r="4" fill="var(--illustration-accent,#4a7c3f)"/>
+            <circle cx="120" cy="194" r="4" fill="var(--illustration-accent,#4a7c3f)"/>
+            <path d="M204 80 L212 88 L226 72" stroke="var(--illustration-accent,#4a7c3f)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M204 134 L212 142 L226 126" stroke="var(--illustration-accent,#4a7c3f)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M204 188 L212 196 L226 180" stroke="var(--illustration-accent,#4a7c3f)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <!--
+              The lapsed license, inert. It used to sit at y=56, above the rack's
+              top row and struck by a short diagonal that stopped inside it, so it
+              read as a stray dashed rectangle floating outside the frame rather
+              than as an expired thing. Now it is centred against the rack it does
+              not affect, carries two faint lines so it reads as a document, and
+              the strike runs corner to corner.
+            -->
+            <rect x="286" y="120" width="84" height="44" rx="6" stroke="currentColor" stroke-width="1.5" opacity="0.25" stroke-dasharray="5 4"/>
+            <line x1="302" y1="134" x2="340" y2="134" stroke="currentColor" stroke-width="3" opacity="0.3" stroke-linecap="round"/>
+            <line x1="302" y1="150" x2="326" y2="150" stroke="currentColor" stroke-width="3" opacity="0.3" stroke-linecap="round"/>
+            <line x1="292" y1="170" x2="364" y2="114" stroke="currentColor" stroke-width="2" opacity="0.5" stroke-linecap="round"/>
+          </svg>
+      </Fragment>
 
-    <!-- Row 2: Back up anytime (SVG left, text right) -->
-    <div class="trust-row trust-row-reverse">
-      <div class="trust-row-text">
-        <h3>{rows[1].title}</h3>
-        <p>{rows[1].description}</p>
-      </div>
-      <div class="trust-row-visual">
-        <svg viewBox="0 0 400 280" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-          <!-- Terminal window -->
-          <rect x="40" y="30" width="320" height="220" rx="8" stroke="currentColor" stroke-width="2" opacity="0.3"/>
-          <rect x="40" y="30" width="320" height="28" rx="8" fill="currentColor" opacity="0.05"/>
-          <circle cx="60" cy="44" r="4" fill="currentColor" opacity="0.2"/>
-          <circle cx="74" cy="44" r="4" fill="currentColor" opacity="0.2"/>
-          <circle cx="88" cy="44" r="4" fill="currentColor" opacity="0.2"/>
-          <!-- Commands keep answering -->
-          <line x1="60" y1="88" x2="220" y2="88" stroke="currentColor" stroke-width="4" opacity="0.35" stroke-linecap="round"/>
-          <path d="M310 82 L316 88 L328 76" stroke="var(--illustration-accent,#4a7c3f)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
-          <line x1="60" y1="120" x2="260" y2="120" stroke="currentColor" stroke-width="4" opacity="0.35" stroke-linecap="round"/>
-          <path d="M310 114 L316 120 L328 108" stroke="var(--illustration-accent,#4a7c3f)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
-          <line x1="60" y1="152" x2="190" y2="152" stroke="currentColor" stroke-width="4" opacity="0.35" stroke-linecap="round"/>
-          <path d="M310 146 L316 152 L328 140" stroke="var(--illustration-accent,#4a7c3f)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
-          <line x1="60" y1="184" x2="240" y2="184" stroke="currentColor" stroke-width="4" opacity="0.35" stroke-linecap="round"/>
-          <path d="M310 178 L316 184 L328 172" stroke="var(--illustration-accent,#4a7c3f)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
-          <line x1="60" y1="216" x2="205" y2="216" stroke="currentColor" stroke-width="4" opacity="0.35" stroke-linecap="round"/>
-          <path d="M310 210 L316 216 L328 204" stroke="var(--illustration-accent,#4a7c3f)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-      </div>
-    </div>
+      <Fragment slot="visual-1">
+          <svg viewBox="0 0 400 280" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <!-- Terminal window -->
+            <rect x="40" y="30" width="320" height="220" rx="8" stroke="currentColor" stroke-width="2" opacity="0.3"/>
+            <rect x="40" y="30" width="320" height="28" rx="8" fill="currentColor" opacity="0.05"/>
+            <circle cx="60" cy="44" r="4" fill="currentColor" opacity="0.2"/>
+            <circle cx="74" cy="44" r="4" fill="currentColor" opacity="0.2"/>
+            <circle cx="88" cy="44" r="4" fill="currentColor" opacity="0.2"/>
+            <!-- Commands keep answering -->
+            <line x1="60" y1="88" x2="220" y2="88" stroke="currentColor" stroke-width="4" opacity="0.35" stroke-linecap="round"/>
+            <path d="M310 82 L316 88 L328 76" stroke="var(--illustration-accent,#4a7c3f)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+            <line x1="60" y1="120" x2="260" y2="120" stroke="currentColor" stroke-width="4" opacity="0.35" stroke-linecap="round"/>
+            <path d="M310 114 L316 120 L328 108" stroke="var(--illustration-accent,#4a7c3f)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+            <line x1="60" y1="152" x2="190" y2="152" stroke="currentColor" stroke-width="4" opacity="0.35" stroke-linecap="round"/>
+            <path d="M310 146 L316 152 L328 140" stroke="var(--illustration-accent,#4a7c3f)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+            <line x1="60" y1="184" x2="240" y2="184" stroke="currentColor" stroke-width="4" opacity="0.35" stroke-linecap="round"/>
+            <path d="M310 178 L316 184 L328 172" stroke="var(--illustration-accent,#4a7c3f)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+            <line x1="60" y1="216" x2="205" y2="216" stroke="currentColor" stroke-width="4" opacity="0.35" stroke-linecap="round"/>
+            <path d="M310 210 L316 216 L328 204" stroke="var(--illustration-accent,#4a7c3f)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+      </Fragment>
 
-    <!-- Row 3: Only new repos need a license (text left, SVG right) -->
-    <div class="trust-row">
-      <div class="trust-row-text">
-        <h3>{rows[2].title}</h3>
-        <p>{rows[2].description}</p>
-      </div>
-      <div class="trust-row-visual">
-        <svg viewBox="0 0 400 280" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-          <!-- Existing repos, running free -->
-          <rect x="40" y="42" width="140" height="36" rx="6" stroke="currentColor" stroke-width="1.5" opacity="0.4"/>
-          <circle cx="60" cy="60" r="4" fill="var(--illustration-accent,#4a7c3f)"/>
-          <line x1="76" y1="60" x2="150" y2="60" stroke="currentColor" stroke-width="3" opacity="0.35" stroke-linecap="round"/>
-          <rect x="40" y="90" width="140" height="36" rx="6" stroke="currentColor" stroke-width="1.5" opacity="0.4"/>
-          <circle cx="60" cy="108" r="4" fill="var(--illustration-accent,#4a7c3f)"/>
-          <line x1="76" y1="108" x2="138" y2="108" stroke="currentColor" stroke-width="3" opacity="0.35" stroke-linecap="round"/>
-          <rect x="40" y="138" width="140" height="36" rx="6" stroke="currentColor" stroke-width="1.5" opacity="0.4"/>
-          <circle cx="60" cy="156" r="4" fill="var(--illustration-accent,#4a7c3f)"/>
-          <line x1="76" y1="156" x2="158" y2="156" stroke="currentColor" stroke-width="3" opacity="0.35" stroke-linecap="round"/>
-          <!-- Divider -->
-          <line x1="210" y1="20" x2="210" y2="260" stroke="currentColor" stroke-width="1" opacity="0.1"/>
-          <!-- The one new repo -->
-          <rect x="240" y="42" width="140" height="36" rx="6" stroke="currentColor" stroke-width="1.5" opacity="0.4" stroke-dasharray="4 2"/>
-          <line x1="310" y1="50" x2="310" y2="70" stroke="currentColor" stroke-width="2" opacity="0.4" stroke-linecap="round"/>
-          <line x1="300" y1="60" x2="320" y2="60" stroke="currentColor" stroke-width="2" opacity="0.4" stroke-linecap="round"/>
-          <!-- The key it needs -->
-          <circle cx="290" cy="150" r="16" stroke="var(--illustration-accent,#4a7c3f)" stroke-width="2"/>
-          <line x1="302" y1="162" x2="334" y2="194" stroke="var(--illustration-accent,#4a7c3f)" stroke-width="2" stroke-linecap="round"/>
-          <line x1="318" y1="178" x2="328" y2="168" stroke="var(--illustration-accent,#4a7c3f)" stroke-width="2" stroke-linecap="round"/>
-          <line x1="328" y1="188" x2="338" y2="178" stroke="var(--illustration-accent,#4a7c3f)" stroke-width="2" stroke-linecap="round"/>
-          <path d="M310 128 L310 90" stroke="var(--illustration-accent,#4a7c3f)" stroke-width="1" marker-end="url(#arrowGreen)"/>
-          <defs>
-            <marker id="arrowGreen" markerWidth="6" markerHeight="6" refX="3" refY="3" orient="auto">
-              <path d="M0 0 L6 3 L0 6 Z" fill="var(--illustration-accent,#4a7c3f)"/>
-            </marker>
-          </defs>
-        </svg>
-      </div>
-    </div>
+      <Fragment slot="visual-2">
+          <svg viewBox="0 0 400 280" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <!-- Existing repos, running free -->
+            <rect x="40" y="42" width="140" height="36" rx="6" stroke="currentColor" stroke-width="1.5" opacity="0.4"/>
+            <circle cx="60" cy="60" r="4" fill="var(--illustration-accent,#4a7c3f)"/>
+            <line x1="76" y1="60" x2="150" y2="60" stroke="currentColor" stroke-width="3" opacity="0.35" stroke-linecap="round"/>
+            <rect x="40" y="90" width="140" height="36" rx="6" stroke="currentColor" stroke-width="1.5" opacity="0.4"/>
+            <circle cx="60" cy="108" r="4" fill="var(--illustration-accent,#4a7c3f)"/>
+            <line x1="76" y1="108" x2="138" y2="108" stroke="currentColor" stroke-width="3" opacity="0.35" stroke-linecap="round"/>
+            <rect x="40" y="138" width="140" height="36" rx="6" stroke="currentColor" stroke-width="1.5" opacity="0.4"/>
+            <circle cx="60" cy="156" r="4" fill="var(--illustration-accent,#4a7c3f)"/>
+            <line x1="76" y1="156" x2="158" y2="156" stroke="currentColor" stroke-width="3" opacity="0.35" stroke-linecap="round"/>
+            <!-- Divider -->
+            <line x1="210" y1="20" x2="210" y2="260" stroke="currentColor" stroke-width="1" opacity="0.1"/>
+            <!-- The one new repo -->
+            <rect x="240" y="42" width="140" height="36" rx="6" stroke="currentColor" stroke-width="1.5" opacity="0.4" stroke-dasharray="4 2"/>
+            <line x1="310" y1="50" x2="310" y2="70" stroke="currentColor" stroke-width="2" opacity="0.4" stroke-linecap="round"/>
+            <line x1="300" y1="60" x2="320" y2="60" stroke="currentColor" stroke-width="2" opacity="0.4" stroke-linecap="round"/>
+            <!-- The key it needs -->
+            <circle cx="290" cy="150" r="16" stroke="var(--illustration-accent,#4a7c3f)" stroke-width="2"/>
+            <line x1="302" y1="162" x2="334" y2="194" stroke="var(--illustration-accent,#4a7c3f)" stroke-width="2" stroke-linecap="round"/>
+            <line x1="318" y1="178" x2="328" y2="168" stroke="var(--illustration-accent,#4a7c3f)" stroke-width="2" stroke-linecap="round"/>
+            <line x1="328" y1="188" x2="338" y2="178" stroke="var(--illustration-accent,#4a7c3f)" stroke-width="2" stroke-linecap="round"/>
+            <path d="M310 128 L310 90" stroke="var(--illustration-accent,#4a7c3f)" stroke-width="1" marker-end="url(#arrowGreen)"/>
+            <defs>
+              <marker id="arrowGreen" markerWidth="6" markerHeight="6" refX="3" refY="3" orient="auto">
+                <path d="M0 0 L6 3 L0 6 Z" fill="var(--illustration-accent,#4a7c3f)"/>
+              </marker>
+            </defs>
+          </svg>
+      </Fragment>
 
-    <!-- Row 4: 60-day grace period (SVG left, text right) -->
-    <div class="trust-row trust-row-reverse">
-      <div class="trust-row-text">
-        <h3>{rows[3].title}</h3>
-        <p>{rows[3].description}</p>
-      </div>
-      <div class="trust-row-visual">
-        <svg viewBox="0 0 400 280" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-          <line x1="40" y1="140" x2="370" y2="140" stroke="currentColor" stroke-width="2" opacity="0.2"/>
-          <!-- Active period -->
-          <rect x="40" y="128" width="120" height="24" rx="4" fill="var(--illustration-accent,#4a7c3f)" opacity="0.15"/>
-          <line x1="40" y1="140" x2="160" y2="140" stroke="var(--illustration-accent,#4a7c3f)" stroke-width="3"/>
-          <path d="M92 104 L100 112 L114 96" stroke="var(--illustration-accent,#4a7c3f)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-          <!-- Expiry marker -->
-          <circle cx="160" cy="140" r="6" fill="currentColor" opacity="0.4"/>
-          <!-- Grace period: still working, on borrowed time -->
-          <rect x="160" y="128" width="140" height="24" rx="4" fill="var(--illustration-accent,#4a7c3f)" opacity="0.08"/>
-          <line x1="160" y1="140" x2="300" y2="140" stroke="var(--illustration-accent,#4a7c3f)" stroke-width="3" stroke-dasharray="6 3"/>
-          <path d="M222 104 L230 112 L244 96" stroke="var(--illustration-accent,#4a7c3f)" stroke-width="2" opacity="0.7" stroke-linecap="round" stroke-linejoin="round"/>
-          <!-- Grace end -->
-          <circle cx="300" cy="140" r="6" fill="currentColor" opacity="0.25"/>
-          <line x1="300" y1="140" x2="370" y2="140" stroke="currentColor" stroke-width="2" opacity="0.1"/>
-          <!-- Clock over the grace window -->
-          <circle cx="230" cy="200" r="22" stroke="currentColor" stroke-width="2" opacity="0.35"/>
-          <line x1="230" y1="200" x2="230" y2="186" stroke="currentColor" stroke-width="2" opacity="0.35" stroke-linecap="round"/>
-          <line x1="230" y1="200" x2="240" y2="206" stroke="currentColor" stroke-width="2" opacity="0.35" stroke-linecap="round"/>
-        </svg>
-      </div>
-    </div>
+      <Fragment slot="visual-3">
+          <svg viewBox="0 0 400 280" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <line x1="40" y1="140" x2="370" y2="140" stroke="currentColor" stroke-width="2" opacity="0.2"/>
+            <!-- Active period -->
+            <rect x="40" y="128" width="120" height="24" rx="4" fill="var(--illustration-accent,#4a7c3f)" opacity="0.15"/>
+            <line x1="40" y1="140" x2="160" y2="140" stroke="var(--illustration-accent,#4a7c3f)" stroke-width="3"/>
+            <path d="M92 104 L100 112 L114 96" stroke="var(--illustration-accent,#4a7c3f)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <!-- Expiry marker -->
+            <circle cx="160" cy="140" r="6" fill="currentColor" opacity="0.4"/>
+            <!-- Grace period: still working, on borrowed time -->
+            <rect x="160" y="128" width="140" height="24" rx="4" fill="var(--illustration-accent,#4a7c3f)" opacity="0.08"/>
+            <line x1="160" y1="140" x2="300" y2="140" stroke="var(--illustration-accent,#4a7c3f)" stroke-width="3" stroke-dasharray="6 3"/>
+            <path d="M222 104 L230 112 L244 96" stroke="var(--illustration-accent,#4a7c3f)" stroke-width="2" opacity="0.7" stroke-linecap="round" stroke-linejoin="round"/>
+            <!-- Grace end -->
+            <circle cx="300" cy="140" r="6" fill="currentColor" opacity="0.25"/>
+            <line x1="300" y1="140" x2="370" y2="140" stroke="currentColor" stroke-width="2" opacity="0.1"/>
+            <!-- Clock over the grace window -->
+            <circle cx="230" cy="200" r="22" stroke="currentColor" stroke-width="2" opacity="0.35"/>
+            <line x1="230" y1="200" x2="230" y2="186" stroke="currentColor" stroke-width="2" opacity="0.35" stroke-linecap="round"/>
+            <line x1="230" y1="200" x2="240" y2="206" stroke="currentColor" stroke-width="2" opacity="0.35" stroke-linecap="round"/>
+          </svg>
+      </Fragment>
 
-    <!-- Row 5: Floating licenses auto-release (text left, SVG right) -->
-    <div class="trust-row">
-      <div class="trust-row-text">
-        <h3>{rows[4].title}</h3>
-        <p>{rows[4].description}</p>
-      </div>
-      <div class="trust-row-visual">
-        <svg viewBox="0 0 400 280" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-          <!-- Slot 1, active -->
-          <rect x="40" y="45" width="320" height="36" rx="6" stroke="currentColor" stroke-width="1.5" opacity="0.4"/>
-          <circle cx="60" cy="63" r="4" fill="var(--illustration-accent,#4a7c3f)"/>
-          <line x1="76" y1="63" x2="170" y2="63" stroke="currentColor" stroke-width="3" opacity="0.35" stroke-linecap="round"/>
-          <path d="M330 57 L336 63 L348 49" stroke="var(--illustration-accent,#4a7c3f)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-          <!-- Slot 2, active -->
-          <rect x="40" y="93" width="320" height="36" rx="6" stroke="currentColor" stroke-width="1.5" opacity="0.4"/>
-          <circle cx="60" cy="111" r="4" fill="var(--illustration-accent,#4a7c3f)"/>
-          <line x1="76" y1="111" x2="150" y2="111" stroke="currentColor" stroke-width="3" opacity="0.35" stroke-linecap="round"/>
-          <path d="M330 105 L336 111 L348 97" stroke="var(--illustration-accent,#4a7c3f)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-          <!-- Slot 3, released back to the pool -->
-          <rect x="40" y="141" width="320" height="36" rx="6" stroke="currentColor" stroke-width="1" opacity="0.2" stroke-dasharray="4 2"/>
-          <circle cx="60" cy="159" r="4" fill="currentColor" opacity="0.2"/>
-          <line x1="76" y1="159" x2="190" y2="159" stroke="currentColor" stroke-width="3" opacity="0.15" stroke-linecap="round"/>
-          <!-- Released on the clock -->
-          <circle cx="80" cy="220" r="16" stroke="var(--illustration-accent,#4a7c3f)" stroke-width="2"/>
-          <line x1="80" y1="211" x2="80" y2="220" stroke="var(--illustration-accent,#4a7c3f)" stroke-width="2" stroke-linecap="round"/>
-          <line x1="80" y1="220" x2="88" y2="224" stroke="var(--illustration-accent,#4a7c3f)" stroke-width="2" stroke-linecap="round"/>
-          <path d="M112 228 A 24 24 0 1 0 108 202" stroke="var(--illustration-accent,#4a7c3f)" stroke-width="2" opacity="0.6" stroke-linecap="round" transform="translate(24,-8)"/>
-        </svg>
-      </div>
-    </div>
+      <Fragment slot="visual-4">
+          <svg viewBox="0 0 400 280" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <!-- Slot 1, active -->
+            <rect x="40" y="45" width="320" height="36" rx="6" stroke="currentColor" stroke-width="1.5" opacity="0.4"/>
+            <circle cx="60" cy="63" r="4" fill="var(--illustration-accent,#4a7c3f)"/>
+            <line x1="76" y1="63" x2="170" y2="63" stroke="currentColor" stroke-width="3" opacity="0.35" stroke-linecap="round"/>
+            <path d="M330 57 L336 63 L348 49" stroke="var(--illustration-accent,#4a7c3f)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <!-- Slot 2, active -->
+            <rect x="40" y="93" width="320" height="36" rx="6" stroke="currentColor" stroke-width="1.5" opacity="0.4"/>
+            <circle cx="60" cy="111" r="4" fill="var(--illustration-accent,#4a7c3f)"/>
+            <line x1="76" y1="111" x2="150" y2="111" stroke="currentColor" stroke-width="3" opacity="0.35" stroke-linecap="round"/>
+            <path d="M330 105 L336 111 L348 97" stroke="var(--illustration-accent,#4a7c3f)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <!-- Slot 3, released back to the pool -->
+            <rect x="40" y="141" width="320" height="36" rx="6" stroke="currentColor" stroke-width="1" opacity="0.2" stroke-dasharray="4 2"/>
+            <circle cx="60" cy="159" r="4" fill="currentColor" opacity="0.2"/>
+            <line x1="76" y1="159" x2="190" y2="159" stroke="currentColor" stroke-width="3" opacity="0.15" stroke-linecap="round"/>
+            <!-- Released on the clock -->
+            <circle cx="80" cy="220" r="16" stroke="var(--illustration-accent,#4a7c3f)" stroke-width="2"/>
+            <line x1="80" y1="211" x2="80" y2="220" stroke="var(--illustration-accent,#4a7c3f)" stroke-width="2" stroke-linecap="round"/>
+            <line x1="80" y1="220" x2="88" y2="224" stroke="var(--illustration-accent,#4a7c3f)" stroke-width="2" stroke-linecap="round"/>
+            <path d="M112 228 A 24 24 0 1 0 108 202" stroke="var(--illustration-accent,#4a7c3f)" stroke-width="2" opacity="0.6" stroke-linecap="round" transform="translate(24,-8)"/>
+          </svg>
+      </Fragment>
 
-    <!-- Row 6: 40-day VM migration grace (SVG left, text right) -->
-    <div class="trust-row trust-row-reverse">
-      <div class="trust-row-text">
-        <h3>{rows[5].title}</h3>
-        <p>{rows[5].description}</p>
-      </div>
-      <div class="trust-row-visual">
-        <svg viewBox="0 0 400 280" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-          <!-- Source machine -->
-          <rect x="30" y="60" width="100" height="70" rx="6" stroke="currentColor" stroke-width="1.5" opacity="0.5"/>
-          <rect x="42" y="72" width="76" height="14" rx="3" stroke="currentColor" stroke-width="1" opacity="0.4"/>
-          <rect x="42" y="92" width="76" height="14" rx="3" stroke="currentColor" stroke-width="1" opacity="0.4"/>
-          <circle cx="52" cy="79" r="3" fill="var(--illustration-accent,#4a7c3f)"/>
-          <circle cx="52" cy="99" r="3" fill="var(--illustration-accent,#4a7c3f)"/>
-          <!-- The move -->
-          <line x1="145" y1="95" x2="215" y2="95" stroke="currentColor" stroke-width="1.5" opacity="0.3" stroke-dasharray="4 3"/>
-          <polygon points="215,90 225,95 215,100" fill="currentColor" opacity="0.3"/>
-          <!-- Destination machine, everything aboard -->
-          <rect x="230" y="60" width="100" height="70" rx="6" stroke="var(--illustration-accent,#4a7c3f)" stroke-width="1.5" opacity="0.6"/>
-          <rect x="242" y="72" width="76" height="14" rx="3" stroke="var(--illustration-accent,#4a7c3f)" stroke-width="1" opacity="0.4"/>
-          <rect x="242" y="92" width="76" height="14" rx="3" stroke="var(--illustration-accent,#4a7c3f)" stroke-width="1" opacity="0.4"/>
-          <circle cx="252" cy="79" r="3" fill="var(--illustration-accent,#4a7c3f)"/>
-          <circle cx="252" cy="99" r="3" fill="var(--illustration-accent,#4a7c3f)"/>
-          <path d="M340 72 L346 78 L356 68" stroke="var(--illustration-accent,#4a7c3f)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-          <!-- Grace runs from the move until the automatic refresh -->
-          <line x1="60" y1="180" x2="340" y2="180" stroke="currentColor" stroke-width="1.5" opacity="0.2"/>
-          <rect x="60" y="170" width="200" height="20" rx="4" fill="var(--illustration-accent,#4a7c3f)" opacity="0.1"/>
-          <line x1="60" y1="180" x2="260" y2="180" stroke="var(--illustration-accent,#4a7c3f)" stroke-width="2.5"/>
-          <circle cx="60" cy="180" r="5" fill="currentColor" opacity="0.4"/>
-          <circle cx="260" cy="180" r="5" fill="var(--illustration-accent,#4a7c3f)"/>
-          <path d="M278 192 A 20 20 0 1 0 274 170" stroke="var(--illustration-accent,#4a7c3f)" stroke-width="2" opacity="0.6" stroke-linecap="round"/>
-          <line x1="260" y1="180" x2="340" y2="180" stroke="var(--illustration-accent,#4a7c3f)" stroke-width="2.5"/>
-        </svg>
-      </div>
-    </div>
+      <Fragment slot="visual-5">
+          <svg viewBox="0 0 400 280" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <!-- Source machine -->
+            <rect x="30" y="60" width="100" height="70" rx="6" stroke="currentColor" stroke-width="1.5" opacity="0.5"/>
+            <rect x="42" y="72" width="76" height="14" rx="3" stroke="currentColor" stroke-width="1" opacity="0.4"/>
+            <rect x="42" y="92" width="76" height="14" rx="3" stroke="currentColor" stroke-width="1" opacity="0.4"/>
+            <circle cx="52" cy="79" r="3" fill="var(--illustration-accent,#4a7c3f)"/>
+            <circle cx="52" cy="99" r="3" fill="var(--illustration-accent,#4a7c3f)"/>
+            <!-- The move -->
+            <line x1="145" y1="95" x2="215" y2="95" stroke="currentColor" stroke-width="1.5" opacity="0.3" stroke-dasharray="4 3"/>
+            <polygon points="215,90 225,95 215,100" fill="currentColor" opacity="0.3"/>
+            <!-- Destination machine, everything aboard -->
+            <rect x="230" y="60" width="100" height="70" rx="6" stroke="var(--illustration-accent,#4a7c3f)" stroke-width="1.5" opacity="0.6"/>
+            <rect x="242" y="72" width="76" height="14" rx="3" stroke="var(--illustration-accent,#4a7c3f)" stroke-width="1" opacity="0.4"/>
+            <rect x="242" y="92" width="76" height="14" rx="3" stroke="var(--illustration-accent,#4a7c3f)" stroke-width="1" opacity="0.4"/>
+            <circle cx="252" cy="79" r="3" fill="var(--illustration-accent,#4a7c3f)"/>
+            <circle cx="252" cy="99" r="3" fill="var(--illustration-accent,#4a7c3f)"/>
+            <path d="M340 72 L346 78 L356 68" stroke="var(--illustration-accent,#4a7c3f)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <!-- Grace runs from the move until the automatic refresh -->
+            <line x1="60" y1="180" x2="340" y2="180" stroke="currentColor" stroke-width="1.5" opacity="0.2"/>
+            <rect x="60" y="170" width="200" height="20" rx="4" fill="var(--illustration-accent,#4a7c3f)" opacity="0.1"/>
+            <line x1="60" y1="180" x2="260" y2="180" stroke="var(--illustration-accent,#4a7c3f)" stroke-width="2.5"/>
+            <circle cx="60" cy="180" r="5" fill="currentColor" opacity="0.4"/>
+            <circle cx="260" cy="180" r="5" fill="var(--illustration-accent,#4a7c3f)"/>
+            <path d="M278 192 A 20 20 0 1 0 274 170" stroke="var(--illustration-accent,#4a7c3f)" stroke-width="2" opacity="0.6" stroke-linecap="round"/>
+            <line x1="260" y1="180" x2="340" y2="180" stroke="var(--illustration-accent,#4a7c3f)" stroke-width="2.5"/>
+          </svg>
+      </Fragment>
+    </AlternatingRows>
 
-    <!-- Corporate guarantee -->
     <CorporateGuarantee lang={lang} />
   </div>
 </section>

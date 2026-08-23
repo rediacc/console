@@ -1238,73 +1238,14 @@
   line-height: var(--leading-relaxed);
 }
 
-.trust-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: var(--space-4);
-  align-items: center;
+.pricing-trust-rows {
+  /* The rows themselves now come from AlternatingRows.astro, which owns the
+     grid, the index-derived flip and the mobile stack. What stays here is this
+     page's rhythm, which is deliberately the one it already had: the deleted
+     `.trust-row` rule spaced rows with `margin-bottom: var(--space-12)` on
+     every row INCLUDING the last, so the same value as a gap plus a trailing
+     margin reproduces the old geometry exactly. Measured after: rows 280px at
+     113/733, identical to the pre-change measurement. */
+  --alt-rows-gap: var(--space-12);
   margin-bottom: var(--space-12);
-  max-width: var(--container-xl);
-  margin-left: auto;
-  margin-right: auto;
-}
-
-.trust-row-reverse {
-  direction: rtl;
-}
-
-.trust-row-reverse > * {
-  direction: ltr;
-}
-
-.trust-row-text h3 {
-  font-size: var(--font-size-xl);
-  font-weight: var(--font-weight-semibold);
-  margin-bottom: var(--space-3);
-  color: var(--color-text-primary);
-}
-
-.trust-row-text p {
-  color: var(--color-text-secondary);
-  line-height: var(--leading-relaxed);
-  font-size: var(--font-size-base);
-  max-width: 480px;
-}
-
-.trust-row-visual {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
-.trust-row-visual svg {
-  width: 100%;
-  max-width: 400px;
-  height: auto;
-  color: var(--color-text-primary);
-}
-
-@media (max-width: 48rem) {
-  .trust-row {
-    grid-template-columns: 1fr;
-    gap: var(--space-6);
-    text-align: center;
-  }
-
-  .trust-row-reverse {
-    direction: ltr;
-  }
-
-  .trust-row-text p {
-    max-width: none;
-    margin: 0 auto;
-  }
-
-  .trust-row-visual svg {
-    max-width: 320px;
-  }
-
-  .trust-row-visual {
-    order: -1;
-  }
 }
