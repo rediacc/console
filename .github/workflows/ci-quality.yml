@@ -1416,6 +1416,14 @@ jobs:
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: .ci/scripts/quality/check_secret_reachability.py
 
+      # Catches a test file that CI reaches through nothing. ci-parity and
+      # gate-reachability both ask "is what we declared wired up?"; an
+      # undeclared file is absent from both sides of parity, so it agrees and
+      # passes. This asks the other question.
+      - name: Test-file orphan check
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: npm run check:ci-test-file-orphans
+
       - name: Quality-gate unit tests
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: npm run check:ci-quality-gates

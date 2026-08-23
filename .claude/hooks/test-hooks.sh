@@ -661,6 +661,70 @@ else
     echo "FAIL [1] stop/wl_planfid.py missing"
 fi
 
+# The teammate idle/liveness classifier's own controls
+# (stop/test-teammate-idle.py). WITHOUT THIS BLOCK THOSE CONTROLS RAN NOWHERE:
+# the file was added, passed 20/20 when invoked by hand, and was referenced only
+# from a comment -- a gate that cannot fail, which is exactly the shape
+# .claude/agents/gate-author.md exists to stop. It reaches CI through this
+# suite, which check:ci-hook-worklist-suite already gates.
+#
+# `n -gt 0` IS THE ANTI-VACUITY GUARD and it is not decoration: the count comes
+# from grepping the child's output, so a renamed label, a crash before the first
+# case, or a changed print format would all yield n=0 -- and without this test
+# that reads as "ok, 0 control(s) passed", a green line for a suite that
+# verified nothing.
+# Python control suites that CI reached through NOTHING until 2026-08-23. Each
+# was committed, each passes, and each ran only when somebody invoked it by
+# hand -- found by .ci/scripts/quality/check_test_file_orphans.py, which exists
+# because this exact thing happened to test-teammate-idle.py below.
+#
+# ONE PASS EACH, on exit status, and that is deliberate rather than lazy. These
+# four print in four different formats ("73 checks, 0 failures", "✓ ... 15
+# blocked, 13 allowed", "FAILURES: 0", "✓ ... 2 pass-cases"), so counting their
+# assertions here would couple this file to four output shapes and go quietly
+# to zero the moment one of them reworded a line. The child owns its assertions;
+# this asserts that the child RAN and SUCCEEDED.
+#
+# Empty output still fails: a suite that prints nothing has not demonstrated it
+# did anything, and exit 0 alone is what a stub returns.
+for mod in context/test-context-bands.py \
+    pre-bash/test-block-destructive-git-restore.py \
+    pre-bash/test-block-git-amend.py \
+    stop/test-completion-evidence.py; do
+    if [[ ! -f "$DIR/$mod" ]]; then
+        FAIL=$((FAIL + 1))
+        echo "FAIL [1] $mod missing"
+    elif out="$(python3 "$DIR/$mod" 2>&1)" && [[ -n "$out" ]]; then
+        PASS=$((PASS + 1))
+        echo "ok   [0] $mod: $(tail -1 <<<"$out" | cut -c1-90)"
+    else
+        FAIL=$((FAIL + 1))
+        echo "FAIL [1] $mod"
+        tail -5 <<<"$out" | sed 's/^/       /'
+    fi
+done
+
+IDLE_MOD="$DIR/stop/test-teammate-idle.py"
+if [[ -f "$IDLE_MOD" ]]; then
+    if out="$(python3 "$IDLE_MOD" 2>&1)"; then
+        n=$(grep -cE "^  PASS: " <<<"$out")
+        if [[ $n -gt 0 ]]; then
+            PASS=$((PASS + n))
+            echo "ok   [0] stop/test-teammate-idle.py: $n control(s) passed"
+        else
+            FAIL=$((FAIL + 1))
+            echo "FAIL [1] stop/test-teammate-idle.py exited 0 but reported NO controls"
+        fi
+    else
+        FAIL=$((FAIL + 1))
+        echo "FAIL [1] stop/test-teammate-idle.py"
+        grep -E "^  FAIL: " <<<"$out" | sed 's/^/       /'
+    fi
+else
+    FAIL=$((FAIL + 1))
+    echo "FAIL [1] stop/test-teammate-idle.py missing"
+fi
+
 STOP_SUITE="$DIR/stop/test-worklist-v5.sh"
 if [[ -x "$STOP_SUITE" ]]; then
     echo
