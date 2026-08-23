@@ -3504,6 +3504,7 @@ ARITY = {
     "V_CL_FLIP": ("d", "executing", "rows", "d"), "V_CL_WAVES": ("s", "d", "rows"),
     "N_CL_FOREIGN": ("s", "o", ""),
     "N_CL_FOREIGN_DRIFT": ("d", "executing", "o", "rows"),
+    "N_CL_FOREIGN_WAVES": ("slug", "d", "o", "rows", "hint"),
     "N_CL_DOOR_PARKED": ("d", 1, "rows"),
     "N_CADENCE_PAUSE": (1, "keys", 1, 3),
     "V_PLAN_DRIFT": (1, "rows"),
