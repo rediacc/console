@@ -125,10 +125,31 @@
     "copyCode": "Kodu kopyala",
     "copyFullPageAriaLabel": "Tüm sayfayı Markdown olarak kopyala",
     "openInNewTab": "Yeni sekmede aç",
+    "pageActions": {
+      "ask": "{{provider}} ile sor",
+      "more": "Diğer işlemler",
+      "viewMarkdown": "Markdown olarak görüntüle"
+    },
     "searchDocs": "Belgelerde ara",
     "subcategories": {
+      "account": "Hesap ve Lisanslama",
       "advanced": "Gelişmiş",
-      "essentials": "Temel Bilgiler"
+      "aiAgents": "Yapay Zeka Ajanları",
+      "architecture": "Mimari",
+      "cliTools": "CLI ve Araçlar",
+      "commands": "Komutlar",
+      "dataProtection": "Yedekleme ve Taşıma",
+      "development": "Geliştirme",
+      "essentials": "Temel Bilgiler",
+      "foundations": "Esaslar",
+      "frameworks": "Standartlar ve Çerçeveler",
+      "operations": "İşlemler",
+      "platform": "Platform",
+      "regulations": "Düzenlemeler",
+      "resilience": "Dayanıklılık ve Kurtarma",
+      "scaling": "Ölçeklendirme",
+      "setup": "Kurulum",
+      "workloads": "Uygulamalar ve Hizmetler"
     },
     "tags": {
       "account": "Hesaplar",
@@ -151,7 +172,8 @@
       "dark": "Koyu",
       "label": "Tema",
       "light": "Açık"
-    }
+    },
+    "tocToggleSection": "Bölümü aç/kapat"
   },
   "footer": {
     "columns": {

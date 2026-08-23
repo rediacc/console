@@ -125,10 +125,31 @@
     "copyCode": "نسخ الكود",
     "copyFullPageAriaLabel": "نسخ الصفحة كاملة بصيغة Markdown",
     "openInNewTab": "فتح في علامة تبويب جديدة",
+    "pageActions": {
+      "ask": "اسأل {{provider}}",
+      "more": "مزيد من الإجراءات",
+      "viewMarkdown": "عرض كـ Markdown"
+    },
     "searchDocs": "البحث في الوثائق",
     "subcategories": {
+      "account": "الحسابات والترخيص",
       "advanced": "متقدم",
-      "essentials": "الأساسيات"
+      "aiAgents": "وكلاء الذكاء الاصطناعي",
+      "architecture": "البنية المعمارية",
+      "cliTools": "CLI والأدوات",
+      "commands": "الأوامر",
+      "dataProtection": "النسخ الاحتياطي والترحيل",
+      "development": "التطوير",
+      "essentials": "الأساسيات",
+      "foundations": "الأسس",
+      "frameworks": "المعايير والأطر",
+      "operations": "العمليات",
+      "platform": "المنصة",
+      "regulations": "اللوائح",
+      "resilience": "المرونة والاستعادة",
+      "scaling": "التوسع",
+      "setup": "الإعداد",
+      "workloads": "التطبيقات والخدمات"
     },
     "tags": {
       "account": "الحسابات",
@@ -151,7 +172,8 @@
       "dark": "داكن",
       "label": "السمة",
       "light": "فاتح"
-    }
+    },
+    "tocToggleSection": "تبديل القسم"
   },
   "footer": {
     "columns": {
