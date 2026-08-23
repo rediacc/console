@@ -817,6 +817,24 @@ export const GATES: readonly GateSpec[] = [
       step: 'Agent hints can actually fire',
     },
   },
+  // Answers the question the other two wiring gates cannot: not "is what we
+  // declared wired up?" but "did we forget to declare something?". A test file
+  // absent from the manifest is absent from BOTH sides of ci-parity, so parity
+  // agrees and reports success; gate-reachability can only ask about entries
+  // that registered. test-teammate-idle.py was committed with 20 controls and
+  // ran nowhere, and this gate then found four more orphans of the same shape.
+  {
+    id: 'check:ci-test-file-orphans',
+    run: 'npm run check:ci-test-file-orphans',
+    gate: true,
+    leaves: ['.ci/scripts/quality/check_test_file_orphans.py'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-security',
+      step: 'Test-file orphan check',
+    },
+  },
   {
     id: 'check:ci-lint-scope-coverage',
     run: 'npm run check:ci-lint-scope-coverage',
