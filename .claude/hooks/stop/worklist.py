@@ -876,8 +876,19 @@ def _teammate_idle_cli():
         event = {}
     cwd = event.get("cwd") or os.getcwd()
     transcript = event.get("transcript_path") or ""
-    name = None
-    if transcript.endswith(".jsonl"):
+    # `teammate_name` FIRST, because that is what the event actually carries.
+    # Measured on a live probe 2026-08-23 rather than read off a doc page: the
+    # published hook reference documents no input schema for TeammateIdle at
+    # all, and the payload turned out to be
+    #   cwd, hook_event_name, permission_mode, prompt_id, session_id,
+    #   team_name, teammate_name, transcript_path
+    # -- no `agent_id`, and no `name`. The first cut of this function looked for
+    # `agent_id` and fell back to the transcript's sibling meta.json, so every
+    # record landed with name=null and `idle_edge`, which joins on name, could
+    # never match one. The journal fired correctly and was unusable, which is
+    # the failure mode that looks exactly like a hook that never fires.
+    name = event.get("teammate_name") or None
+    if name is None and transcript.endswith(".jsonl"):
         meta = pathlib.Path(transcript)
         meta = meta.with_name(meta.name[: -len(".jsonl")] + ".meta.json")
         try:
@@ -892,6 +903,16 @@ def _teammate_idle_cli():
         "agent_type": event.get("agent_type"),
         "session": event.get("session_id"),
     }
+    if name is None:
+        # DIAGNOSTIC, and it earns its place. Measured 2026-08-23 on a live
+        # probe: TeammateIdle fires, but the payload arrived with no agent_id
+        # and no usable transcript_path, so the name could not be recovered and
+        # `idle_edge` -- which joins on name -- can never match the record. A
+        # record that cannot be joined is indistinguishable from a hook that
+        # never fired, which is the exact ambiguity this whole item exists to
+        # remove. Recording the payload's KEYS (never its values) makes the next
+        # occurrence self-diagnosing instead of another round of probing.
+        rec["unjoinable_payload_keys"] = sorted(event)
     path = S.teammate_idle_path(C.worklist_for(C.project_start({"cwd": cwd})))
     path.parent.mkdir(parents=True, exist_ok=True)
     # One line, one write, O_APPEND. Atomic against concurrent teammates at this

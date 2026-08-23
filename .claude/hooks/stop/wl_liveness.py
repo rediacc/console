@@ -393,6 +393,12 @@ TEAMMATE_TAIL_BYTES = int(os.environ.get("WORKLIST_TEAMMATE_TAIL_BYTES", "262144
 # FIRST stop the worker is idle, so this only governs the escalation.
 WORKER_IDLE_BLOCK_MIN = int(os.environ.get("WORKER_IDLE_BLOCK_MIN", "15"))
 
+# How far a transcript's mtime may sit AFTER a recorded idle edge and still count
+# as "nothing was written since". Two different clocks-of-record are being
+# compared (the hook's time.time() against a filesystem mtime); the measured
+# delta on a genuinely idle agent was -0.1s, and a resume writes a whole turn.
+IDLE_EDGE_EPSILON_S = float(os.environ.get("WORKLIST_IDLE_EDGE_EPSILON_S", "2"))
+
 
 def _teammate_meta(cwd, session_id, name):
     """Resolve a teammate NAME to (jsonl path, agent id), or (None, None).
@@ -567,6 +573,27 @@ def teammate_state(cwd, session_id, name, now=None):
             # branch is never reached at all.
             quiet_min, last_ts = max(0.0, (now - edge) / 60.0), edge
         return "idle", quiet_min, last_ts, agent_id
+    # THE TRANSCRIPT CANNOT ALWAYS SEE THE END OF A TURN, and a live probe is
+    # what proved it (2026-08-23, agent `idle-probe3`). Its final record was
+    # `assistant / stop_reason: None / ['text']` -- a streaming partial, which
+    # this classifier deliberately calls `working` because 410 of 701 assistant
+    # records in the sample look like that mid-turn. The agent had FINISHED. Its
+    # transcript would have said `working` forever, which is the very blindness
+    # this whole item exists to remove, wearing a safer-looking hat.
+    #
+    # The journal resolves it, and NOT as a guess: `TeammateIdle` is the harness
+    # stating the teammate went idle, self-recorded, which is strictly stronger
+    # evidence than a tail read. The resume case is what makes it safe to trust
+    # -- a teammate that resumes WRITES, so its transcript mtime moves past the
+    # edge. So the edge decides only while nothing has been written after it.
+    #
+    # EPSILON, not equality: the two stamps come from different clocks-of-record
+    # (the hook's `time.time()` and the filesystem's mtime) and the observed
+    # delta on a genuinely-idle agent was -0.1s. A resume is a whole turn of
+    # writing, orders of magnitude past this.
+    edge = idle_edge(cwd, session_id, name)
+    if edge is not None and last_ts <= edge + IDLE_EDGE_EPSILON_S:
+        return "idle", max(0.0, (now - edge) / 60.0), edge, agent_id
     return ("working" if quiet_min < BG_STALE_MIN else "stalled"), quiet_min, last_ts, agent_id
 
 

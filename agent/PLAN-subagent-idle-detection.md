@@ -248,3 +248,78 @@ What a heartbeat would ADD is nothing; what it would COST is real:
 **Decision: not built.** The un-idle edge is served by the level read that is
 already load-bearing. Recorded here so the question is not re-opened from
 scratch — it is a good idea whose answer is "we already have it", not "no".
+
+---
+
+## Addendum 3, 2026-08-23 — the live probe, and the two things it overturned
+
+The operator asked for a subagent to be spawned and traced. Three probes were run
+(`idle-probe`, `idle-probe2`, `idle-probe3`), each busy ~40-60s then finishing.
+This is the observation Addendum 1 said to make in live use, and it did not
+confirm what was written there — it corrected it twice.
+
+### Finding 1: `TeammateIdle` DOES fire here, and its payload is undocumented
+
+Addendum 1 called it "unproven, and 'teammate' may well mean the agent-teams
+feature specifically". It fires, for an ordinary Agent-tool subagent, within a
+second of the turn ending. Traced live:
+
+    20:48:13  working   last=assistant/tool_use/tool_use   journal=3
+    20:48:23  working   last=assistant/tool_use/tool_use   journal=3
+    20:48:33  idle      last=assistant/end_turn/text       journal=4
+
+But the first two probes journalled `name: null`, and `idle_edge` joins on name,
+so **the hook fired correctly and every record it wrote was unusable** — the
+failure mode that looks exactly like a hook that never fires. The cause is that
+the published hook reference documents **no input schema for TeammateIdle at
+all**, so the first cut guessed `agent_id` plus a transcript-sibling lookup. The
+real payload, captured by recording the KEYS of any record whose name would not
+resolve:
+
+    cwd, hook_event_name, permission_mode, prompt_id, session_id,
+    team_name, teammate_name, transcript_path
+
+No `agent_id`. No `name`. The name is `teammate_name`. Reading it fixed the join
+on the next probe. **The diagnostic stays in the code**, because the next payload
+change will be just as silent as this one.
+
+### Finding 2: the transcript CANNOT always see the end of a turn
+
+This is the one that matters, and no amount of reading would have found it.
+`idle-probe3` finished with a last record of:
+
+    assistant / stop_reason: None / ['text']
+
+A streaming partial. This design classifies that as `working` **on purpose** —
+410 of 701 assistant records in the original sample are `stop_reason: None`
+mid-turn, and the whole failure-direction rule is that a false `idle` is new
+harm. But the agent had finished. Its transcript would have read `working`
+forever: this item's own blindness, wearing a safer-looking hat.
+
+So the sidecar is **not** merely a precision layer, and Addendum 1 was wrong to
+frame it as one. It positively resolves a state the transcript cannot express.
+The rule is now:
+
+> An idle edge decides the verdict **only while nothing has been written after
+> it**. `last_ts <= edge + IDLE_EDGE_EPSILON_S` (default 2s).
+
+That is what keeps it safe rather than making it a guess. `TeammateIdle` is the
+harness stating the teammate went idle — self-recorded, strictly stronger than a
+tail read — and a teammate that RESUMES writes, so its mtime moves past the edge
+and the verdict falls back to `working`. The epsilon exists because two different
+clocks-of-record are being compared (the hook's `time.time()` against a
+filesystem mtime); the measured delta on a genuinely idle agent was **-0.1s**,
+and a resume is a whole turn of writing.
+
+After the fix, all three probes report `idle` correctly. Control 7 covers the new
+path in three arms, including the resume guard — without that arm the other two
+would pass equally well for code that ignored a resume entirely, which is the
+false death this whole design refuses.
+
+### What this says about the method
+
+Both findings were invisible to inspection and cost one spawned agent each to
+find. The docs page had no schema; the classifier's 9/9 score was real but every
+one of those nine transcripts happened to end on a clean `end_turn`. A control
+suite built only from fixtures the author imagined would have stayed green
+through both defects.
