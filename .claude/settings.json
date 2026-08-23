@@ -168,6 +168,16 @@
         ]
       }
     ],
+    "TeammateIdle": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/stop/worklist.py --teammate-idle"
+          }
+        ]
+      }
+    ],
     "SubagentStop": [
       {
         "hooks": [

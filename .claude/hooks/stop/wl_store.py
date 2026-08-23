@@ -238,6 +238,20 @@ def events_path(worklist):
     return worklist.with_suffix(".events.jsonl")
 
 
+def teammate_idle_path(worklist):
+    """Where TeammateIdle edges are journalled.
+
+    A SIDECAR, not an event in the worklist log, and the distinction is
+    deliberate. The event log is the worklist's own history and every record in
+    it is folded into item state on read; a teammate going idle changes no
+    item's state (the plan is emphatic that nothing auto-ticks and nothing
+    auto-unleases), so putting it there would grow the fold's input with
+    records the fold must then learn to ignore. It is telemetry about a WORKER,
+    read only when something asks about one.
+    """
+    return worklist.with_suffix(".teammate-idle.jsonl")
+
+
 def events_lock_path(worklist):
     return worklist.with_suffix(".events.lock")
 
