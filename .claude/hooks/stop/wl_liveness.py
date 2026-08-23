@@ -458,8 +458,8 @@ def _last_record(jsonl, tail_bytes=None):
             blob = fh.read()
     except OSError:
         return None
-    for line in reversed(blob.decode("utf-8", errors="replace").splitlines()):
-        line = line.strip()
+    for raw in reversed(blob.decode("utf-8", errors="replace").splitlines()):
+        line = raw.strip()
         if not line:
             continue
         try:
@@ -590,8 +590,8 @@ def idle_edge(cwd, session_id, name):
     newest = None
     try:
         with path.open("r", encoding="utf-8", errors="replace") as fh:
-            for line in fh:
-                line = line.strip()
+            for raw in fh:
+                line = raw.strip()
                 if not line:
                     continue
                 try:
