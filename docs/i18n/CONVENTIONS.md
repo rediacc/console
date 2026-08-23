@@ -80,3 +80,43 @@ were never naturalized (that backlog shrinks as more languages/surfaces are done
 
 Pipeline + tooling: `private/growth/i18n_pipeline/README.md`,
 `npm run i18n:generate-hashes`, `npm run i18n:sync`, `npm run i18n:naturalize-status`.
+
+## Never glue a case suffix onto a placeholder in an agglutinative language
+
+`{{placeholder}}` values are runtime-unknown, and in Turkish, Estonian, Finnish
+and Hungarian the correct suffix depends on the sounds of the word it attaches
+to. Turkish vowel harmony picks `'a` or `'e` from the last vowel, so
+`{{provider}}'a sor` is right for one provider name and wrong for the next --
+and no gate can catch it, because the string is only assembled at render time
+with a value nobody validated.
+
+Use a POSTPOSITION or a separate word instead, which is invariant:
+
+    tr   {{provider}} ile sor        not  {{provider}}'a sor
+    et   {{provider}} käest          not  a glued case ending
+
+This reads slightly more formal than a native speaker's first instinct, and that
+is the trade being made deliberately: mildly formal everywhere beats
+grammatically wrong for half the values. Do not "improve" these back to a glued
+suffix without first bounding the set of values the placeholder can take.
+
+Recorded 2026-08-23, after the reviewing session flagged `{{provider}} ile sor`
+as possibly unnatural and the translating agent's reason turned out to be the
+stronger one.
+
+## A locale value byte-identical to English is a finding, even when the words are borrowed
+
+`check-translation-completeness` counts an identical string as untranslated, and
+it is right to. German legitimately borrows "CLI", "Backup", "Standards" and
+"Frameworks", but keeping the English `&` too made whole values identical to
+their English source. The fix is not to abandon the loanword; it is to write the
+rest of the string in the target language:
+
+    "CLI & Tools"              ->  "CLI und Tools"
+    "Backup & Migration"       ->  "Backup und Migration"
+    "Standards & Frameworks"   ->  "Standards und Frameworks"
+
+A genuine coincidence can also trip this -- French `Architecture` is spelled
+exactly as the English -- and the answer there is the same: pick the phrasing a
+native technical document would use (`Architecture système`) rather than
+suppressing the check.
