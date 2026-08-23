@@ -2968,6 +2968,80 @@ newturn
 say "Done: #7 verified, exit 0 from the budget run."
 check "evidence on the #id line clears it" allow ""
 
+echo "== 96b. I7: the SHA arm spends its budget on the LONGEST candidates =="
+# THE BUG THIS PINS, found live 2026-08-23. completion_evidence git-verifies at
+# most five hex candidates to bound the git calls, and it took the first five in
+# TEXT order. Every rendered item line opens with the mandatory session tag
+# TWICE, and cited worklist ids are 8 hex as well, so a tick that cross-
+# references its siblings spent the whole budget before reaching its real SHA:
+# the more carefully an item was written, the more certainly it failed. It
+# blocked five consecutive stops on a tick whose tree hash resolves.
+#
+# The controls below matter more than the regression case. A predicate that
+# answers True more often is trivially "fixed" by deleting it, so the no-
+# evidence, fabricated-SHA and fabricated-path arms have to keep FAILING, and
+# the git-call count has to stay bounded or the fix is just "check them all".
+OUT=$(
+    python3 - "$(dirname "$HOOK")" "$(cd "$(dirname "$HOOK")/../../.." && pwd)" <<'PYEOF'
+import sys
+
+sys.path.insert(0, sys.argv[1])
+import wl_checks as W  # noqa: E402
+import wl_core as C  # noqa: E402
+
+root = sys.argv[2]
+
+# Counted, not assumed: the cap is the whole reason this arm orders candidates
+# instead of simply checking all of them, so a fix that quietly unbounded the
+# git calls has to red here rather than read as a pass.
+calls = []
+_orig = C._git
+
+
+def _counting(r, *a):
+    calls.append(a)
+    return _orig(r, *a)
+
+
+C._git = _counting
+W.C._git = _counting
+
+# Two leading tags is the REAL rendered shape, not a worst case: the session tag
+# is mandatory and _render_line emits it on the folded line.
+TAG = "- [x] (0ad063bf) (0ad063bf) "
+# A tree hash that genuinely resolves in this checkout. Verified below rather
+# than trusted, because a case built on a SHA that stopped resolving would go
+# green by turning into the no-evidence case.
+SHA = "444e9c09092a80bbb7defa6eea122e0de28a89eb"
+IDS = "23d99308 ebe8b570 e263d2cc"
+
+cases = [
+    ("regression-real-sha-at-position-6", TAG + "rewrite verified " + IDS + " tree " + SHA, True),
+    # THE CONTROL. Without this arm failing on purpose, the "fix" above is
+    # indistinguishable from deleting the check.
+    ("CONTROL-no-evidence-anywhere", TAG + "did the thing, it works now, all good", False),
+    ("CONTROL-fabricated-40-hex-is-not-an-object", TAG + "verified " + IDS + " at " + "d" * 40, False),
+    ("CONTROL-fabricated-file-line", TAG + "fixed at .claude/hooks/stop/no_such_file.py:617", False),
+    ("resolving-file-line-alone-passes", TAG + "fixed at .claude/hooks/stop/wl_checks.py:617", True),
+]
+
+print(
+    ("PASS " if C._git(root, "rev-parse", "--verify", "--quiet", SHA + "^{object}") else "FAIL ")
+    + "fixture-sha-actually-resolves"
+)
+for name, text, want in cases:
+    calls.clear()
+    got = W.completion_evidence(root, text)
+    print(("PASS " if got == want else "FAIL ") + "%s (got %s)" % (name, got))
+    print(("PASS " if len(calls) <= 5 else "FAIL ") + "%s-git-calls-bounded (%d)" % (name, len(calls)))
+PYEOF
+)
+if grep -qF "FAIL" <<<"$OUT"; then
+    fail "96b: $OUT"
+else
+    pass "96b: a real SHA behind five short hex ids is found, and the fabricated/absent arms still report"
+fi
+
 echo "== 96. I7 CONTROL: completions that predate the marker never nag =="
 setup
 brief_now
@@ -5194,6 +5268,81 @@ if grep -qF "FAIL" <<<"$OUT"; then
     fail "T10/T11: $OUT"
 else
     pass "T10/T11: judge sees ## titles only; bodies, ###, and absent files are safe"
+fi
+
+echo "== 153f. TRAP_HEADING_CAP: the live file is not silently truncated =="
+# WHY A LIVE-FILE CASE AND NOT ONLY FIXTURES. The old cap was the literal 40 and
+# TRAPS.md reached exactly 40 on 2026-08-23, one entry from invisibility, with
+# no warning anywhere -- the list simply ended and the judge saw a corpus that
+# looked complete. A fixture case cannot notice that, because a fixture never
+# grows. This one compares the parser against the REAL file and reds the day the
+# corpus outgrows the cap.
+REPO_ROOT="$(cd "$(dirname "$HOOK")/../../.." && pwd)"
+OUT=$(
+    python3 - "$(dirname "$HOOK")" "$REPO_ROOT" "$BASE" <<'PYEOF'
+import pathlib
+import sys
+
+sys.path.insert(0, sys.argv[1])
+import wl_store as S  # noqa: E402
+
+repo, base = sys.argv[2], sys.argv[3]
+cap = S.TRAP_HEADING_CAP
+live = S.trap_headings(repo)
+on_disk = sum(
+    1
+    for ln in (pathlib.Path(repo) / "docs/agent-reference/TRAPS.md")
+    .read_text(encoding="utf-8", errors="replace")
+    .splitlines()
+    if ln.startswith("## ") and not ln.startswith("### ")
+)
+
+checks = [
+    # THE ALARM. Equality alone would pass VACUOUSLY on a moved or renamed
+    # TRAPS.md (0 == 0), so the floor is asserted separately.
+    (
+        "live-parses-every-heading (%d parsed vs %d on disk)" % (len(live), on_disk),
+        len(live) == on_disk,
+    ),
+    ("live-file-is-not-empty (%d >= 42)" % on_disk, on_disk >= 42),
+    ("live-file-under-cap (%d <= %d)" % (on_disk, cap), on_disk <= cap),
+    ("live-has-no-sentinel", not any("further entries" in h for h in live)),
+]
+
+# ABOVE the cap: exactly one synthetic element, naming the count dropped.
+over = pathlib.Path(base) / "capfix-over" / "docs" / "agent-reference"
+over.mkdir(parents=True, exist_ok=True)
+(over / "TRAPS.md").write_text(
+    "".join("## heading %d\n\nbody\n\n" % i for i in range(cap + 5)), encoding="utf-8"
+)
+got_over = S.trap_headings(str(over.parents[1]))
+checks += [
+    ("over-cap-length-is-cap-plus-one (%d)" % len(got_over), len(got_over) == cap + 1),
+    ("over-cap-sentinel-names-5", bool(got_over) and "+5 further entries" in got_over[-1]),
+]
+
+# THE CONTROL. Exactly AT the cap must be indistinguishable from under it: no
+# sentinel, no truncation, nothing appended. Without this the sentinel arm
+# passes just as happily with an off-by-one that tags every list ever built.
+at = pathlib.Path(base) / "capfix-at" / "docs" / "agent-reference"
+at.mkdir(parents=True, exist_ok=True)
+(at / "TRAPS.md").write_text(
+    "".join("## heading %d\n\nbody\n\n" % i for i in range(cap)), encoding="utf-8"
+)
+got_at = S.trap_headings(str(at.parents[1]))
+checks += [
+    ("CONTROL-at-cap-length-is-cap (%d)" % len(got_at), len(got_at) == cap),
+    ("CONTROL-at-cap-has-no-sentinel", not any("further entries" in h for h in got_at)),
+]
+
+for name, ok in checks:
+    print(("PASS " if ok else "FAIL ") + name)
+PYEOF
+)
+if grep -qF "FAIL" <<<"$OUT"; then
+    fail "153f: $OUT"
+else
+    pass "153f: the live TRAPS.md is fully parsed; the cap sentinel fires above it and stays off at it"
 fi
 
 echo "== 153e. T12: the silent poll survives an old STATE.md on a quiet world =="

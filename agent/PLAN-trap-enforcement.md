@@ -8,6 +8,8 @@ read anything. The corpus stops being the protection and becomes the ledger of w
 instrument protects what, with a gate that reds when a trap has neither an instrument
 nor a stated reason it cannot have one.
 
+**2026-08-23: two TRAPS.md entries and one trapguard rule (`rule_history_rewrite_controls`) landed OUTSIDE this plan -- individual instruments again, NOT this plan starting; it is still `draft` and still unowned.**
+
 Supersedes `agent/PLAN-unify-trap-corpus.md` (§9 says exactly which parts
 are kept and which are replaced). Nothing in this plan is implemented.
 

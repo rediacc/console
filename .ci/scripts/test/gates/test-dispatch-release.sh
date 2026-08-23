@@ -43,6 +43,12 @@ write_fake_gh() {
 # routed: the tests drive the dry-run seam instead, so a bug that reached the
 # real dispatch would fail loudly here rather than being quietly served.
 set -uo pipefail
+# Argv recorder. Asserting that a call was NOT made is only meaningful if the
+# recorder proves calls land in it at all, so the tests check both directions
+# against this file.
+if [ -n "${GH_CALLS:-}" ]; then
+    printf '%s\n' "$*" >>"$GH_CALLS"
+fi
 if [ -n "${GH_FAIL_ALL:-}" ]; then
     echo "fake gh: forced API failure" >&2
     exit 1
@@ -106,6 +112,7 @@ setup() {
     mkdir -p "$t/fixtures"
     write_fake_gh "$t"
     echo '[]' >"$t/fixtures/pulls-default.json"
+    rm -f "$t/github-output" "$t/gh-calls.log"
 }
 
 # pulls_for <TEMP> <sha> <pr-json...>
@@ -115,24 +122,50 @@ pulls_for() {
     printf '%s\n' "$@" | jq -s '.' >"$t/fixtures/pulls-$sha.json"
 }
 
-# run_dispatch <TEMP> [KEY=VALUE ...]
+# run_dispatch <TEMP> [KEY=VALUE ...] [-- <script-arg> ...]
+#
+# Everything before `--` is an environment override; everything after it is
+# passed to the script itself, which is how the mode flags get driven.
 run_dispatch() {
     local t="$1"
     shift
+    local envs=() args=()
+    while [[ $# -gt 0 ]]; do
+        if [[ "$1" == "--" ]]; then
+            shift
+            args=("$@")
+            break
+        fi
+        envs+=("$1")
+        shift
+    done
     local rc=0
     LAST_OUT="$(env \
         PATH="$t/bin:$PATH" \
         GH_FIXTURES="$t/fixtures" \
+        GH_CALLS="$t/gh-calls.log" \
         GH_TOKEN=fake \
         GITHUB_REPOSITORY=rediacc/console \
         GITHUB_SHA="$SHA" \
         GITHUB_RUN_ID=999 \
+        GITHUB_OUTPUT="$t/github-output" \
         DISPATCH_RELEASE_DRY_RUN=1 \
         NO_COLOR=1 \
-        "$@" \
-        bash "$UNDER_TEST" 2>&1)" || rc=$?
+        ${envs[@]+"${envs[@]}"} \
+        bash "$UNDER_TEST" ${args[@]+"${args[@]}"} 2>&1)" || rc=$?
     LAST_RC="$rc"
     return 0
+}
+
+# The $GITHUB_OUTPUT this run produced (empty string when the script wrote none).
+step_output() {
+    local t="$1"
+    [[ -f "$t/github-output" ]] && cat "$t/github-output" || true
+}
+
+gh_calls() {
+    local t="$1"
+    [[ -f "$t/gh-calls.log" ]] && cat "$t/gh-calls.log" || true
 }
 
 assert_dispatched() {
@@ -252,16 +285,231 @@ test_the_label_is_declared_and_managed() {
     log_pass "the skip label is declared in labels.yml and appliable by the review"
 }
 
+# ---------------------------------------------------------------------------
+# MODES
+# ---------------------------------------------------------------------------
+
+test_decide_only_signals_the_skip() {
+    # THE FIX. The CI job has to know the answer BEFORE it seals the version, so
+    # --decide-only answers the question and touches nothing.
+    local t="$1"
+    setup "$t"
+    pulls_for "$t" "$SHA" "$(merged_pr 570 bump-none)"
+    run_dispatch "$t" -- --decide-only
+    assert_exit_code 0 "$LAST_RC" "the decide step must never fail the sentinel job"
+    assert_not_dispatched "--decide-only must not dispatch, ever"
+    assert_contains "$(step_output "$t")" "skip_release=true" \
+        "a bump-none merge must set the output the seal and dispatch steps are guarded on"
+    assert_contains "$LAST_OUT" "decision: skip" "and say so on stdout"
+    assert_contains "$LAST_OUT" "::notice title=Release skipped::" \
+        "the skip is still announced -- this is now the ONLY step that runs the decision"
+    log_pass "FIRE: --decide-only + bump-none => skip_release=true, nothing dispatched"
+}
+
+test_decide_only_stays_silent_for_a_release() {
+    # CONTROL for the case above. If the output file got skip_release=true here
+    # too, the assertion above would prove nothing -- and every release in the
+    # repo would silently stop.
+    local t="$1"
+    setup "$t"
+    pulls_for "$t" "$SHA" "$(merged_pr 570 "")"
+    run_dispatch "$t" -- --decide-only
+    assert_exit_code 0 "$LAST_RC" "the decide step exits clean on the release path too"
+    assert_not_contains "$(step_output "$t")" "skip_release" \
+        "an unlabelled PR must leave the output EMPTY so the != 'true' guards let both steps run"
+    assert_contains "$LAST_OUT" "decision: release" "and say release on stdout"
+    log_pass "CONTROL: --decide-only on an unlabelled PR emits no skip signal at all"
+}
+
+test_decide_only_fail_open_paths_never_signal_skip() {
+    # THE DANGEROUS DIRECTION, three ways. Each of these is a path the script
+    # takes when it could NOT answer the question confidently, and every one of
+    # them must release. If any leaked skip_release=true, the guarded seal and
+    # dispatch steps would both skip and the release would vanish with a green
+    # job -- which is exactly the failure mode the guard polarity is built for.
+    local t="$1"
+
+    setup "$t"
+    run_dispatch "$t" GH_FAIL_ALL=1 -- --decide-only
+    assert_exit_code 0 "$LAST_RC" "a lookup failure must not fail the decide step"
+    assert_not_contains "$(step_output "$t")" "skip_release" "a failed PR lookup must not withhold the release"
+    assert_contains "$LAST_OUT" "decision: release" "it decides to release"
+    assert_contains "$LAST_OUT" "PR lookup failed" "and still says the lookup failed"
+
+    setup "$t"
+    run_dispatch "$t" -- --decide-only
+    assert_not_contains "$(step_output "$t")" "skip_release" "a commit with no merged PR must not withhold the release"
+    assert_contains "$LAST_OUT" "decision: release" "it decides to release"
+
+    setup "$t"
+    pulls_for "$t" "$SHA" "$(merged_pr 570 bump-none)" "$(merged_pr 571 "")"
+    run_dispatch "$t" -- --decide-only
+    assert_not_contains "$(step_output "$t")" "skip_release" "a mixed PR set must not withhold the release"
+    assert_contains "$LAST_OUT" "decision: release" "it decides to release"
+
+    # CONTROL, in this same function: the recorder and the output file DO work.
+    # Without this, all three assertions above would also pass against a script
+    # that never wrote $GITHUB_OUTPUT under any circumstances.
+    setup "$t"
+    pulls_for "$t" "$SHA" "$(merged_pr 570 bump-none)"
+    run_dispatch "$t" -- --decide-only
+    assert_contains "$(step_output "$t")" "skip_release=true" \
+        "CONTROL: the same harness DOES capture a skip signal when one is owed"
+    log_pass "FAIL OPEN: all three unconfident paths emit no skip signal (control: bump-none does)"
+}
+
+test_dispatch_only_asks_nothing_and_dispatches() {
+    # The decision was already made by the decide step. Asking again would
+    # double the API calls and could answer differently if a label moved in
+    # between -- and would re-introduce a second place the decision is made.
+    local t="$1"
+    setup "$t"
+    pulls_for "$t" "$SHA" "$(merged_pr 570 bump-none)"
+    run_dispatch "$t" -- --dispatch-only
+    assert_exit_code 0 "$LAST_RC" "--dispatch-only exits clean"
+    assert_dispatched "--dispatch-only dispatches unconditionally"
+    assert_not_contains "$(gh_calls "$t")" "commits/" \
+        "and makes NO commits/<sha>/pulls lookup, even with a bump-none fixture sitting right there"
+    assert_not_contains "$(step_output "$t")" "skip_release" "it writes no step output"
+
+    # CONTROL: the recorder is not simply always empty. The same fixture under
+    # --decide-only must land a call in it.
+    setup "$t"
+    pulls_for "$t" "$SHA" "$(merged_pr 570 bump-none)"
+    run_dispatch "$t" -- --decide-only
+    assert_contains "$(gh_calls "$t")" "commits/${SHA}/pulls" \
+        "CONTROL: --decide-only DOES record the lookup, so the absence above is real"
+    log_pass "--dispatch-only dispatches with zero API lookups (control: --decide-only records one)"
+}
+
+test_dispatch_only_survives_a_dead_api() {
+    # CONTROL for the fail-open doctrine at the mode boundary: if --dispatch-only
+    # ever grew a lookup, a dead API would show up here as a non-dispatch.
+    local t="$1"
+    setup "$t"
+    run_dispatch "$t" GH_FAIL_ALL=1 -- --dispatch-only
+    assert_exit_code 0 "$LAST_RC" "a dead API cannot fail the dispatch step"
+    assert_dispatched "--dispatch-only dispatches even when every gh call would fail"
+    log_pass "CONTROL: --dispatch-only with GH_FAIL_ALL=1 still dispatches"
+}
+
+test_an_unknown_flag_is_a_wiring_bug() {
+    # A typo'd flag must not be silently treated as "no flag" -- that would
+    # quietly restore the old lookup-and-dispatch behaviour in the seal step.
+    local t="$1"
+    setup "$t"
+    run_dispatch "$t" -- --decide-onlyy
+    assert_exit_code 2 "$LAST_RC" "an unknown mode flag fails loudly rather than defaulting"
+    assert_not_dispatched "and dispatches nothing"
+    log_pass "an unrecognised flag exits 2 instead of falling through to the legacy path"
+}
+
+# ---------------------------------------------------------------------------
+# ci.yml WIRING
+#
+# The two predicates below take JOB TEXT rather than reading ci.yml themselves,
+# which is the whole reason a control is possible: each is run against the real
+# job AND against a synthetic block carrying the exact defect, and the synthetic
+# one must be reported. A predicate that has never been shown to fire is a
+# predicate that proves nothing.
+# ---------------------------------------------------------------------------
+
+# One line per ordering violation; empty output means clean.
+ordering_violations() {
+    local job="$1" decide_line seal_line
+    decide_line="$(printf '%s\n' "$job" | grep -n -- '--decide-only' | cut -d: -f1 | head -1 || true)"
+    seal_line="$(printf '%s\n' "$job" | grep -n 'write-release-sentinel.sh' | cut -d: -f1 | head -1 || true)"
+    if [[ -z "$decide_line" ]]; then
+        echo "no --decide-only step in the job at all"
+        return 0
+    fi
+    if [[ -z "$seal_line" ]]; then
+        echo "no write-release-sentinel.sh step in the job at all"
+        return 0
+    fi
+    if [[ "$decide_line" -ge "$seal_line" ]]; then
+        echo "the release decision (line $decide_line) does not precede the seal (line $seal_line)"
+    fi
+}
+
+# One line per polarity violation; empty output means clean.
+polarity_violations() {
+    local job="$1" inverted wrong
+    inverted="$(printf '%s\n' "$job" | grep -c "skip_release != 'true'" || true)"
+    wrong="$(printf '%s\n' "$job" | grep -c "skip_release == 'true'" || true)"
+    if [[ "$wrong" -ne 0 ]]; then
+        echo "$wrong guard(s) use == 'true'; a cancelled or OOM-killed decide step would then skip BOTH the seal and the dispatch on a green job"
+    fi
+    if [[ "$inverted" -ne 2 ]]; then
+        echo "expected exactly 2 steps guarded with != 'true' (the seal and the dispatch), found $inverted"
+    fi
+}
+
+finalize_job_text() {
+    awk '/^  finalize-release-sentinel:/{f=1} f&&/^  [a-z][a-z0-9-]*:$/&&!/^  finalize-release-sentinel:/{exit} f' "$CI_WORKFLOW"
+}
+
 test_ci_yml_wires_the_script() {
     local wf job
     wf="$(cat "$CI_WORKFLOW")"
     assert_contains "$wf" "dispatch-release.sh" "ci.yml calls the script"
-    job="$(awk '/^  finalize-release-sentinel:/{f=1} f&&/^  [a-z][a-z0-9-]*:$/&&!/^  finalize-release-sentinel:/{exit} f' "$CI_WORKFLOW")"
+    job="$(finalize_job_text)"
     assert_contains "$job" ".ci/scripts/ci/dispatch-release.sh" "from the finalize-release-sentinel job"
     assert_not_contains "$job" "gh workflow run cd-v2.yml" \
         "and the inline dispatch is gone, so there is only ONE place the decision can be made"
     assert_contains "$job" "GH_TOKEN" "the script still gets its token"
+    assert_contains "$job" "id: release-decision" "the decide step has the id both guards reference"
     log_pass "ci.yml dispatches through the script, with no second inline path"
+}
+
+test_ci_yml_decides_before_it_seals() {
+    # THE ROOT CAUSE, asserted structurally. Sealing before deciding is what put
+    # cli/v1.2.27/.released in R2 with no v1.2.27 tag.
+    local job found
+    job="$(finalize_job_text)"
+    found="$(ordering_violations "$job")"
+    [[ -z "$found" ]] || log_fail "finalize-release-sentinel orders its steps wrongly: $found"
+
+    # CONTROL: the same predicate over TODAY'S-BUG order must report it.
+    local broken
+    broken="      - name: Write release sentinels
+        run: .ci/scripts/deploy/write-release-sentinel.sh --version v1.2.27
+      - name: Dispatch cd-v2 release
+        run: .ci/scripts/ci/dispatch-release.sh --decide-only"
+    found="$(ordering_violations "$broken")"
+    [[ -n "$found" ]] || log_fail "CONTROL FAILED: ordering_violations passed a block that seals before it decides, so it cannot detect the bug it exists for"
+    assert_contains "$found" "does not precede the seal" "and the control names the defect"
+    log_pass "ci.yml decides before it seals (control: the pre-fix order IS reported)"
+}
+
+test_ci_yml_guards_fail_toward_releasing() {
+    # POLARITY. != 'true' releases on every degenerate state; == 'true' would
+    # withhold on every degenerate state, green and silent.
+    local job found
+    job="$(finalize_job_text)"
+    found="$(polarity_violations "$job")"
+    [[ -z "$found" ]] || log_fail "finalize-release-sentinel's step guards are wrong: $found"
+
+    # CONTROL 1: the inverted polarity must be rejected.
+    local broken
+    broken="      - name: Write release sentinels
+        if: steps.release-decision.outputs.skip_release == 'true'
+      - name: Dispatch cd-v2 release
+        if: steps.release-decision.outputs.skip_release == 'true'"
+    found="$(polarity_violations "$broken")"
+    [[ -n "$found" ]] || log_fail "CONTROL FAILED: polarity_violations accepted == 'true' on both steps"
+    assert_contains "$found" "== 'true'" "and the control names the inverted comparison"
+
+    # CONTROL 2: guarding only ONE of the two steps must also be rejected -- a
+    # guarded dispatch with an unguarded seal is the original bug exactly.
+    broken="      - name: Write release sentinels
+        run: .ci/scripts/deploy/write-release-sentinel.sh
+      - name: Dispatch cd-v2 release
+        if: steps.release-decision.outputs.skip_release != 'true'"
+    found="$(polarity_violations "$broken")"
+    [[ -n "$found" ]] || log_fail "CONTROL FAILED: polarity_violations accepted a block where only the dispatch is guarded"
+    assert_contains "$found" "found 1" "and the control counts the guards"
+    log_pass "both steps carry != 'true' (controls: == 'true' rejected, single-guard rejected)"
 }
 
 log_test "test-dispatch-release"
@@ -272,7 +520,15 @@ with_temp_dir test_an_unmerged_pr_is_never_consulted
 with_temp_dir test_a_mixed_pr_set_releases
 with_temp_dir test_a_lookup_failure_fails_open
 with_temp_dir test_a_commit_with_no_pr_releases
+with_temp_dir test_decide_only_signals_the_skip
+with_temp_dir test_decide_only_stays_silent_for_a_release
+with_temp_dir test_decide_only_fail_open_paths_never_signal_skip
+with_temp_dir test_dispatch_only_asks_nothing_and_dispatches
+with_temp_dir test_dispatch_only_survives_a_dead_api
+with_temp_dir test_an_unknown_flag_is_a_wiring_bug
 test_the_label_is_declared_and_managed
 test_ci_yml_wires_the_script
+test_ci_yml_decides_before_it_seals
+test_ci_yml_guards_fail_toward_releasing
 echo ""
 log_pass "all tests passed"

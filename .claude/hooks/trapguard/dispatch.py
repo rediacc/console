@@ -308,10 +308,123 @@ def rule_interrupted_cleanup_skipped(cmd, out, _root, resp):
     )
 
 
+HISTORY_REWRITE = re.compile(
+    r"\bgit\s+(?:-[A-Za-z-]+\s+\S+\s+)*filter-(?:repo|branch)\b|\bbfg(?:\.jar)?\b"
+)
+# Modes that read history without writing it. `--analyze` in particular is the
+# RIGHT first move before a rewrite, and warning about it would punish exactly
+# the caution this rule wants.
+REWRITE_READONLY = re.compile(r"--help\b|--version\b|--analyze\b|--dry-run\b")
+# `--path X`, `--path=X`, and the glob forms. Quotes stripped because the value
+# arrives however the session happened to quote it.
+REWRITE_PATH = re.compile(r"--path(?:-glob)?(?:=|\s+)([\"']?)([^\s\"']+)\1")
+
+
+def rule_history_rewrite_controls(cmd, _out, root, _resp):
+    """A history rewrite deletes more than its author read (2026-08-23).
+
+    Corpus entries, cited BY HEADING because line numbers in that file move
+    with every append: docs/agent-reference/TRAPS.md, "Widening a deletion
+    prefix by one directory can delete a LIVE file while removing zero bytes"
+    and "A destructive transform needs a BASELINE run to diff against, not just
+    an invariant to assert".
+
+    TWO INDEPENDENT ARMS, not one nested in the other, because they catch
+    different classes and either can be the only one present. Nesting is the
+    defect review already found twice in the rules above this one.
+
+    ARM 1 -- the deletion list. Under `--invert-paths` a `--path` value is not a
+    filter, it is a DELETION LIST, so widening it by one directory is never
+    free. It cost `packages/www/public/assets/videos/user-guide/.gitkeep`, the
+    single tracked file under a parent that carried 0.00 MB of history: exit 0,
+    pack size right, nothing in the output different from the correct run. The
+    arm answers the one question that would have caught it before the fact --
+    `git ls-files -- <P>`, which names what is alive under each listed path.
+
+    KNOWN FALSE NEGATIVE, accepted deliberately: the console index is the
+    oracle, so a rewrite aimed at renet, account or elite is measured against
+    the wrong repository and the arm goes SILENT rather than wrong. That is the
+    right trade only because trapguard never blocks anything -- a missed warning
+    costs a warning, and a confident warning computed from the wrong index would
+    teach sessions to discount the ones that are right.
+
+    ARM 2 -- the transform with no baseline. `--message-callback` /
+    `--commit-callback` rewrite commit messages, and git is content-addressed:
+    two commits whose messages become byte-identical COLLAPSE into one object.
+    An unconditional `return message.rstrip() + b'\\n'` did exactly that to 93
+    commits and took 96 legitimate co-author trailers with them. This arm
+    detects that the RISK WAS TAKEN, not that damage occurred -- it cannot know
+    the callback's contents, and it is firing on every callback run on purpose,
+    because the damage is invisible to `size-pack` AND invisible to the
+    `main^{tree}` identity control that catches arm 1's class.
+
+    CONSIDERED AND DECLINED, so it is not re-proposed: firing on `--path`
+    WITHOUT `--invert-paths`. That is keep-mode, where the paths named are the
+    survivors and everything else goes; it is a different (and much larger)
+    hazard whose warning would be about what is ABSENT from the list, which
+    `git ls-files` cannot enumerate usefully.
+    """
+    if not HISTORY_REWRITE.search(cmd):
+        return None
+    if REWRITE_READONLY.search(cmd):
+        return None
+
+    notes = []
+
+    if "--invert-paths" in cmd:
+        alive = []
+        for _q, path in REWRITE_PATH.findall(cmd):
+            try:
+                proc = subprocess.run(
+                    ["git", "ls-files", "--", path],
+                    cwd=root,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.DEVNULL,
+                    timeout=5,
+                    check=False,
+                )
+            except (OSError, subprocess.SubprocessError):
+                alive = []
+                break  # cannot tell: say nothing rather than guess
+            if proc.returncode != 0:
+                alive = []
+                break
+            for line in proc.stdout.decode("utf-8", "replace").splitlines():
+                if line.strip():
+                    alive.append(line.strip())
+        if alive:
+            notes.append(
+                "trapguard[history-rewrite-deletion-list]: under --invert-paths the "
+                "--path values are a DELETION LIST, and %d tracked file(s) are still "
+                "alive under them: %s. Widening a prefix by one directory is not a "
+                "generalisation -- a parent carrying 0.00 MB of history still deletes "
+                "every live file beneath it, with exit 0 and the right pack size. Run "
+                "`git ls-files -- <path>` for each entry before the rewrite, and assert "
+                "`git rev-parse main^{tree}` matches the pristine clone afterwards."
+                % (len(alive), ", ".join(sorted(alive)[:3]))
+            )
+
+    if re.search(r"--(?:message|commit)-callback\b", cmd):
+        notes.append(
+            "trapguard[history-rewrite-no-baseline]: this run mutated commit MESSAGES. "
+            "Git is content-addressed, so a message change can make two commits "
+            "byte-identical and COLLAPSE them into one -- silently dropping commits and "
+            "their trailers. That is invisible to `git count-objects -vH` (size-pack "
+            "stays in range) AND invisible to a `main^{tree}` identity control, which is "
+            "a property of the final tree and says nothing about how many commits built "
+            "it. The only thing that finds it is a commit-count diff against a BASELINE: "
+            "re-run the same rewrite with no callback and compare `git rev-list --count`. "
+            "Also check the callback returns the ORIGINAL bytes when nothing matched."
+        )
+
+    return "\n".join(notes) or None
+
+
 RULES = (
     rule_cancelled_run_not_passed,
     rule_phantom_deletion_diff,
     rule_interrupted_cleanup_skipped,
+    rule_history_rewrite_controls,
 )
 
 

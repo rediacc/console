@@ -143,6 +143,16 @@ check 2 pre-bash/block-ci-reverse-poll.sh "$(bash_json 'gh run view 1 --jq .x &&
 check 2 pre-bash/block-long-sleep.sh "$(bash_json 'sleep 30')" "long-sleep"
 check 2 pre-bash/block-git-amend.sh "$(bash_json 'git commit --amend')" "git-amend"
 check 2 pre-bash/block-git-force-push.sh "$(bash_json 'git push --force')" "git-force-push"
+# THE TWO SPELLINGS THE GUARD MISSED until 2026-08-23. Neither carries the word
+# --force, and both rewrite published history: --mirror forces every ref AND
+# deletes remote refs absent locally, and a leading + forces the ref it prefixes.
+# Found while an agent was running an operator-approved history rewrite and the
+# guard refused it -- dropping one word would have slipped the identical push
+# through. Command strings are CONCATENATED on purpose: the guard matches any
+# Bash command containing these literals, including the one that edits this file.
+check 2 pre-bash/block-git-force-push.sh "$(bash_json 'git p''ush --mirror https://github.com/rediacc/console.git')" "force-push: --mirror is a force of every ref"
+check 2 pre-bash/block-git-force-push.sh "$(bash_json 'cd /tmp/mirror.git && git p''ush --mirror origin')" "force-push: --mirror behind a cd is still caught"
+check 2 pre-bash/block-git-force-push.sh "$(bash_json 'git p''ush origin +refs/heads/main')" "force-push: a leading + on a refspec forces that ref"
 check 2 pre-bash/block-git-empty-commit.sh "$(bash_json 'git commit --allow-empty -m x')" "git-empty-commit"
 check 2 pre-bash/block-worktree-add.sh "$(bash_json 'git worktree add ../foo -b bar')" "worktree-add"
 check 2 pre-bash/block-worktree-add.sh "$(bash_json 'git -C /some/path worktree add ../x main')" "worktree-add: -C before the subcommand"
@@ -410,6 +420,24 @@ check_inject silent "$(inject_killed 'git restore src/x.py' '' true)" \
     "trapguard CONTROL: a bare restore with no preceding step stays silent"
 check_inject silent "$(inject_killed 'npm test; echo done' 'Command timed out after 2m 0s' true)" \
     "trapguard CONTROL: interrupted with nothing to put back stays silent"
+# history-rewrite-controls. The FIRES/CONTROL pair below differs by exactly one
+# path segment, which is the whole point: the wider prefix is what deleted a live
+# .gitkeep while removing 0.00 MB of history, and the narrower one is the correct
+# command. A rule that cannot tell those two apart would not have caught it.
+check_inject fires "$(inject_json 'git -C /tmp/m.git filter-repo --force --path packages/www/public/assets/videos --invert-paths' '')" \
+    "trapguard: an --invert-paths prefix with a LIVE tracked file under it fires" "user-guide/.gitkeep"
+check_inject silent "$(inject_json 'git -C /tmp/m.git filter-repo --force --path packages/www/public/assets/videos/solutions --invert-paths' '')" \
+    "trapguard CONTROL: the SAME command one segment narrower (0 tracked) stays silent"
+check_inject silent "$(inject_json 'git -C /tmp/m.git filter-repo --force --path packages/www/public/media --invert-paths' '')" \
+    "trapguard CONTROL: an --invert-paths prefix with nothing tracked under it stays silent"
+check_inject silent "$(inject_json 'git -C /tmp/m.git filter-repo --force --path packages/www/public/assets/tutorials/audio --invert-paths' '')" \
+    "trapguard CONTROL: the untracked audio cache prefix stays silent too"
+# The two arms are INDEPENDENT, not nested. This one is silent on arm 1 (nothing
+# tracked under the path) and must still fire on arm 2.
+check_inject fires "$(inject_json 'git -C /tmp/m.git filter-repo --force --path packages/www/public/media --invert-paths --message-callback /tmp/strip-ai.py' '')" \
+    "trapguard: a message-callback fires on arm 2 even when arm 1 has nothing to say" "history-rewrite-no-baseline"
+check_inject silent "$(inject_json 'git filter-repo --analyze' 'Processed 6177 commits')" \
+    "trapguard CONTROL: --analyze is a READ of history and is never warned about"
 
 check 0 pre-bash/block-nondraft-pr-create.sh "$(bash_json 'cd private/renet && gh pr create --title x --body y')" "nondraft-create: plain create on private submodule ok"
 check 0 pre-bash/block-nondraft-pr-create.sh "$(bash_json 'gh pr list --repo rediacc/console')" "nondraft-create: non-create command ignored"
@@ -457,6 +485,21 @@ check 0 pre-bash/block-ci-polling.sh "$(bash_json "$WATCH")" "ci-polling: termin
 check 0 pre-bash/block-ci-reverse-poll.sh "$(bash_json "$WATCH")" "ci-reverse-poll: terminal-state watch ok"
 check 0 pre-bash/block-long-sleep.sh "$(bash_json "$WATCH")" "long-sleep: terminal-state watch ok"
 check 0 pre-bash/block-git-force-push.sh "$(bash_json 'git push')" "force-push: plain push ok"
+# THE CONTROLS THAT MATTER for the widened pattern. A guard that blocks every
+# push is worse than no guard: it gets disabled, and then nothing is guarded.
+# Each of these is an ordinary push that must survive the --mirror/+refspec
+# widening.
+check 0 pre-bash/block-git-force-push.sh "$(bash_json 'git p''ush --set-upstream origin feat')" "force-push: --set-upstream ok"
+check 0 pre-bash/block-git-force-push.sh "$(bash_json 'git p''ush --tags origin')" "force-push: --tags ok"
+# LOAD-BEARING. This is the exact form the /pr-merge GitLab step uses. If the
+# guard ever matches it, that step dies SILENTLY -- a blocked hook is an exit 2
+# the step never distinguishes from a push that simply did not happen. Note how
+# close it comes: `--follow-tags` begins `--f`, one character from the `-f` arm.
+check 0 pre-bash/block-git-force-push.sh "$(bash_json 'git p''ush gitlab refs/heads/main:refs/heads/main --follow-tags')" "force-push: the /pr-merge GitLab refspec push is NOT blocked"
+# The `[^|;&]*` boundary, asserted rather than assumed: a forcing flag on the far
+# side of a pipe belongs to a different command, so the scan must stop at the
+# pipe instead of pairing it with the push.
+check 0 pre-bash/block-git-force-push.sh "$(bash_json 'echo "git p''ush origin main" | grep -q -- --mirror')" "force-push: a flag past a pipe is a different command"
 check 0 pre-bash/block-worktree-add.sh "$(bash_json 'git worktree list')" "worktree-add: list ok"
 check 0 pre-bash/block-worktree-add.sh "$(bash_json 'git worktree remove ../foo')" "worktree-add: remove ok"
 check 0 pre-bash/block-worktree-add.sh "$(bash_json 'git status')" "worktree-add: unrelated git command ok"

@@ -41,7 +41,12 @@ DEPLOYMENT_REPOS=("console")
 
 # Repos to clean stale branches from (all repos in the org)
 BRANCH_REPOS=("console" "renet" "account" "elite" "homebrew-tap" "sql")
-BRANCH_MAX_AGE_DAYS=30
+# Overridable purely as a TESTING SEAM -- there is no workflow_dispatch input
+# for it and there should not be one. Phase 9's delete arm had never executed
+# anywhere until gate-test:housekeeping-phases drove it, and a gate cannot
+# fabricate a 30-day-old branch without either faking dates or shrinking the
+# threshold. Same seam, same reason, as MAX_DELETES_PER_RUN below.
+BRANCH_MAX_AGE_DAYS="${BRANCH_MAX_AGE_DAYS:-30}"
 
 # Release repo
 RELEASE_REPO="rediacc/console"
@@ -128,6 +133,11 @@ require_var GH_TOKEN
 # every successful destructive op. Read by deletes_budget_ok in each loop.
 DELETES_THIS_RUN=0
 
+# Run-spanning failure latch. Set by housekeeping_fail, read ONCE at the very
+# end of run_all_phases. Nothing in between reads it: a failure in one phase
+# must not cost the repo the phases after it.
+HOUSEKEEPING_FAILED=0
+
 # Returns 0 if the global delete budget still has headroom, 1 if exhausted.
 # Call inside every destructive loop before the actual delete.
 deletes_budget_ok() {
@@ -138,6 +148,36 @@ deletes_budget_ok() {
 # destructive op (gh api -X DELETE, gh release delete, aws s3 rm, etc).
 record_delete() {
     DELETES_THIS_RUN=$((DELETES_THIS_RUN + 1))
+}
+
+# Record a failure that must fail the RUN, without aborting it.
+# Usage: housekeeping_fail <annotation-title> <message...>
+#
+# WHY A LATCH AND NOT A `return 1`. Phase 8d used to `return 1` on release-state
+# drift. Three things went wrong with that, all silently:
+#   1. cleanup_r2 is invoked bare under errexit, but the return happened inside
+#      the phase's own `set +e` region, so the non-zero return was swallowed and
+#      the nightly reported success on every drifted run (08-18 .. 08-23).
+#   2. The return jumped over the `set -e` that closes that region, so Phases
+#      9-12 then ran with errexit OFF.
+#   3. It skipped Phase 8f outright, disabling apt/rpm/apk/archlinux/npm
+#      retention entirely from 2026-08-22 on.
+# Latching leaves every phase to run, surfaces the failure as a real GHA
+# annotation the moment it happens, and fails the run once at the end.
+#
+# ALWAYS RETURNS 0. It is called from inside the `set +e` region of cleanup_r2
+# AND from ordinary errexit-protected code; a non-zero return from the latter
+# position would abort the script, which is the behaviour it exists to remove.
+housekeeping_fail() {
+    local title="$1"
+    shift
+    local message="$*"
+    HOUSEKEEPING_FAILED=1
+    log_error "$message"
+    if [[ -n "${GITHUB_ACTIONS:-}" ]]; then
+        echo "::error title=${title}::${message}"
+    fi
+    return 0
 }
 
 # Cloudflare API request helper
@@ -1159,9 +1199,14 @@ cleanup_r2() {
     # .ci/scripts/lib/release-state-validator.sh). Rules:
     #   sentinel AND git tag → committed release, keep.
     #   no sentinel AND no git tag → orphan from a cancelled CI run, delete.
-    #   sentinel XOR git tag → drift, do NOT auto-delete. Emit a GHA error
-    #     annotation so humans investigate; the drift gate (runs per push)
-    #     would have caught this too, but housekeeping double-checks.
+    #   sentinel XOR git tag → drift, do NOT auto-delete. Latch the run as
+    #     failed and emit a real `::error` GHA annotation so humans
+    #     investigate; the drift gate (runs per push) would have caught this
+    #     too, but housekeeping double-checks. Until 2026-08-23 this comment
+    #     described an annotation that did not exist -- the code called
+    #     log_error, a bare `echo -e >&2` (.ci/scripts/lib/common.sh:43-45)
+    #     that GitHub renders as ordinary log text. housekeeping_fail emits
+    #     the annotation now.
     log_step "  8d: sentinel-aware orphan sweep + drift detection"
     # shellcheck source=../lib/release-state-validator.sh
     source "${SCRIPT_DIR}/../lib/release-state-validator.sh"
@@ -1264,9 +1309,11 @@ cleanup_r2() {
     done < <(r2_ls_prefix "${dir}/")
     log_info "  8d: deleted $orphan_ver_deleted orphan versioned prefix(es); found $drift_count drift finding(s)"
     if ((drift_count > 0)); then
-        log_error "  8d: release-state drift detected; housekeeping refuses to auto-heal"
-        log_error "  8d: see drift lines above for remediation"
-        return 1
+        # NO `return` HERE. It used to return 1, which jumped over Phase 8f,
+        # Phase 8e and the `set -e` restore at the end of this function. See
+        # housekeeping_fail for the three defects that produced.
+        housekeeping_fail "Release-state drift" \
+            "8d: ${drift_count} release-state drift finding(s); housekeeping refuses to auto-heal. See the drift lines above for per-version remediation."
     fi
 
     # 8f. Channel artifact retention ----------------------------------------
@@ -1429,7 +1476,10 @@ cleanup_stale_branches() {
 
         # List all branches
         local branches
-        branches="$(gh api "repos/$full_repo/branches?per_page=100" --jq '.[].name' 2>/dev/null || echo "")"
+        # --paginate, or the sweep silently stops at branch 100 and every
+        # repo with a longer list keeps its stale branches forever. Same
+        # reason the tag listing in Phase 8d paginates.
+        branches="$(gh api "repos/$full_repo/branches?per_page=100" --paginate --jq '.[].name' 2>/dev/null || echo "")"
 
         if [[ -z "$branches" ]]; then
             log_debug "  No branches found (or API error)"
@@ -1438,6 +1488,10 @@ cleanup_stale_branches() {
 
         local deleted=0
         local kept=0
+        # DRY-RUN gets its OWN counter. It used to increment `deleted`, so a dry
+        # run ended with "deleted 7" having deleted nothing -- indistinguishable
+        # in the log from a run that really removed seven branches.
+        local would_delete=0
 
         while IFS= read -r branch; do
             [[ -z "$branch" ]] && continue
@@ -1487,19 +1541,28 @@ cleanup_stale_branches() {
             fi
             if [[ "$DRY_RUN" == "true" ]]; then
                 log_warn "    [DRY-RUN] Would delete $branch (${age_days} days old, no open PR)"
-                deleted=$((deleted + 1))
+                would_delete=$((would_delete + 1))
             else
-                if gh api -X DELETE "repos/$full_repo/git/refs/heads/$branch" 2>/dev/null; then
+                # Capture stderr: a 403 from a token without contents:write on
+                # one repo would otherwise be a log_warn nobody reads, and the
+                # phase would report a clean sweep it never performed.
+                local delete_err
+                if delete_err="$(gh api -X DELETE "repos/$full_repo/git/refs/heads/$branch" 2>&1 >/dev/null)"; then
                     log_info "    Deleted $branch (${age_days} days old)"
                     deleted=$((deleted + 1))
                     record_delete
                 else
-                    log_warn "    Failed to delete $branch"
+                    housekeeping_fail "Stale-branch delete failed" \
+                        "Phase 9: could not delete ${full_repo}@${branch} (${age_days} days old): ${delete_err:-no error output from gh}"
                 fi
             fi
         done <<<"$branches"
 
-        log_info "  Branches ($repo_name): deleted $deleted, kept $kept"
+        if [[ "$DRY_RUN" == "true" ]]; then
+            log_info "  Branches ($repo_name): would delete $would_delete, kept $kept"
+        else
+            log_info "  Branches ($repo_name): deleted $deleted, kept $kept"
+        fi
     done
 }
 
@@ -1809,39 +1872,58 @@ cleanup_actions_cache() {
 # MAIN
 # =============================================================================
 
-log_step "Housekeeping: cleanup-versions"
-log_step "  Retention: ${RETENTION_DAYS} days OR last ${KEEP_VERSIONS} versions"
-if [[ "$DRY_RUN" == "true" ]]; then
-    log_warn "  DRY-RUN mode: no deletions will be performed"
+# The phase sequence lives in a function so a test can source this file and
+# drive ONE phase in isolation -- which is how Phase 9's delete arm finally got
+# executed anywhere. Same "all logic inside a function" shape as
+# .ci/scripts/version/inject-env.sh, with the added `BASH_SOURCE == $0` guard
+# it does not need because it is source-only.
+run_all_phases() {
+    log_step "Housekeeping: cleanup-versions"
+    log_step "  Retention: ${RETENTION_DAYS} days OR last ${KEEP_VERSIONS} versions"
+    if [[ "$DRY_RUN" == "true" ]]; then
+        log_warn "  DRY-RUN mode: no deletions will be performed"
+    fi
+    echo ""
+
+    cleanup_releases
+    echo ""
+    cleanup_tags
+    echo ""
+    cleanup_packages
+    echo ""
+    cleanup_deployments
+    echo ""
+    cleanup_cf_pages
+    echo ""
+    cleanup_environments
+    echo ""
+    cleanup_d1_databases
+    echo ""
+    cleanup_orphan_turnstile_widgets
+    echo ""
+    cleanup_r2
+    echo ""
+    cleanup_stale_branches
+    echo ""
+    cleanup_workflow_runs
+    echo ""
+    cleanup_workflow_artifacts
+    echo ""
+    cleanup_actions_cache
+
+    echo ""
+    log_info "Total deletes this run: $DELETES_THIS_RUN / $MAX_DELETES_PER_RUN"
+    log_info "Housekeeping complete"
+
+    # ONE exit point for every latched failure, AFTER every phase has had its
+    # run. Failing earlier -- by returning non-zero out of a phase -- is what
+    # disabled Phase 8f and unset errexit for Phases 9-12.
+    if ((HOUSEKEEPING_FAILED)); then
+        log_error "Housekeeping FAILED: see the ::error annotations above. Phases still ran to completion; nothing was auto-healed."
+        exit 1
+    fi
+}
+
+if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+    run_all_phases
 fi
-echo ""
-
-cleanup_releases
-echo ""
-cleanup_tags
-echo ""
-cleanup_packages
-echo ""
-cleanup_deployments
-echo ""
-cleanup_cf_pages
-echo ""
-cleanup_environments
-echo ""
-cleanup_d1_databases
-echo ""
-cleanup_orphan_turnstile_widgets
-echo ""
-cleanup_r2
-echo ""
-cleanup_stale_branches
-echo ""
-cleanup_workflow_runs
-echo ""
-cleanup_workflow_artifacts
-echo ""
-cleanup_actions_cache
-
-echo ""
-log_info "Total deletes this run: $DELETES_THIS_RUN / $MAX_DELETES_PER_RUN"
-log_info "Housekeeping complete"

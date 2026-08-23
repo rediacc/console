@@ -601,7 +601,13 @@ def completion_evidence(root, text):
     bound the git calls). Deliberately shape-based: whether the evidence
     SUPPORTS the claim is the reggate judge's question, since every new tick
     already flows into it. This check only guarantees a completion leaves a
-    RECORD, which is exactly what S-2 lacked."""
+    RECORD, which is exactly what S-2 lacked.
+
+    THE FIVE ARE THE LONGEST CANDIDATES, NOT THE FIRST FIVE, and that is not a
+    tidy-up: taking them in text order blocked five consecutive stops on
+    2026-08-23, because the mandatory session tag plus three cited worklist ids
+    ate the budget before the real SHA at position 6. Do not "simplify" the
+    ordering back out -- pinned by case 96b in test-worklist-v5.sh."""
     if RUN_ID_RE.search(text) or EXIT_RE.search(text) or URL_RE.search(text):
         return True
     # EVERY citation, not just the first. citation_state uses CITE_RE.search and
@@ -614,8 +620,28 @@ def completion_evidence(root, text):
     for m in CITE_RE.finditer(text or ""):
         if citation_state(root, m.group(0))[0]:
             return True
-    for m in list(SHA_RE.finditer(text))[:5]:
-        if C._git(root, "rev-parse", "--verify", "--quiet", m.group(0) + "^{object}"):
+    # LONGEST candidates first, then the cap. The cap bounds git calls (above),
+    # but taking the first five in TEXT order spent the entire budget on short
+    # hex tokens that can never be object ids. Every rendered line opens with
+    # the mandatory session tag TWICE (`- [x] (0ad063bf) (0ad063bf) ...`), and
+    # cited worklist item ids are 8 hex as well, so an item that cross-references
+    # its siblings poisons its own evidence check -- the more carefully it is
+    # written, the more certainly it fails. Found live 2026-08-23 on a tick whose
+    # only real SHA sat at position 6, behind
+    # ['0ad063bf', '0ad063bf', '23d99308', 'ebe8b570', 'e263d2cc']; it blocked
+    # five consecutive stops while carrying a tree hash that resolves. This is
+    # the same shape as the CITE_RE fix above, which this arm never received.
+    # Ordering by length is the cheap discriminator: a 40-hex object id outranks
+    # an 8-hex id, and ties keep first-seen order so the choice stays
+    # deterministic.
+    seen, cands = set(), []
+    for i, m in enumerate(SHA_RE.finditer(text)):
+        tok = m.group(0)
+        if tok not in seen:
+            seen.add(tok)
+            cands.append((-len(tok), i, tok))
+    for _, _, tok in sorted(cands)[:5]:
+        if C._git(root, "rev-parse", "--verify", "--quiet", tok + "^{object}"):
             return True
     return False
 
@@ -4188,7 +4214,25 @@ def run_stop(event, event_ok, worklist, hook_file):
                 # Headings only (operator decision 2026-07-30): titles of
                 # hard-won facts let the judge tell a real constraint from an
                 # excuse, without turning a file designed to grow forever into
-                # a per-stop cost multiplier. ~145 tokens today.
+                # a per-stop cost multiplier.
+                #
+                # COST IS STATED PER HEADING, DELIBERATELY, because the total
+                # is a moving target and every attempt to pin it here has
+                # rotted. It read "~145 tokens" and was stale by ~5x. That was
+                # corrected to a measured 43-heading total on 2026-08-23, and
+                # the very next appended entry staled it again -- twice more
+                # the same day, at 44 and 45. Three corrections in one session
+                # is the file telling you the shape of the number is wrong,
+                # not the value.
+                #
+                # Measured 2026-08-23 over 45 real headings: ~70 chars each
+                # once the "  - " prefix is counted, so ~17 tokens per entry.
+                # Multiply by `grep -c '^## ' docs/agent-reference/TRAPS.md`
+                # for today's figure rather than trusting a number written
+                # here. The ceiling is bounded by S.TRAP_HEADING_CAP: at 120
+                # headings that is ~8,400 chars, ~2,100 tokens, which is the
+                # only figure in this comment that cannot rot, because the cap
+                # is enforced in code at wl_store.trap_headings().
                 traps=S.trap_headings(root),
             )
         if err is not None:

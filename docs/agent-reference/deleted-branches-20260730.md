@@ -1,7 +1,20 @@
 # Deleted branch tips, 2026-07-30
 
-Recorded BEFORE deletion so every branch stays recoverable by SHA
-(`git branch <name> <sha>`) until git gc prunes unreachable objects.
+Recorded BEFORE deletion so every branch stayed recoverable by SHA
+(`git branch <name> <sha>`) until git gc pruned unreachable objects.
+
+**That recovery no longer works, as of the 2026-08-23 history rewrite (#532).**
+Every commit SHA in this repository changed, so the 64 SHAs in the table below
+name objects that no published history contains. The table survives as a RECORD
+of what was deleted and why; it is no longer an instrument. Two details worth
+having: the commit map at `~/commit-map-20260823.txt` does NOT rescue these,
+because these tips were already deleted from the remote on 2026-07-30 and so
+were absent from the mirror the rewrite was computed over; and they died at
+re-clone rather than at push, since a pre-rewrite local checkout still resolves
+them until it is replaced.
+
+The reasoning below is untouched by any of that, and is the reason to keep
+reading.
 
 WHY THIS FILE EXISTS. The obvious safety test is wrong here, and it stays
 wrong. At the time of this cleanup the repos SQUASH-merged, so a merged

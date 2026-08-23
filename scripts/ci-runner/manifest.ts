@@ -2657,6 +2657,19 @@ export const GATES: readonly GateSpec[] = [
     },
   },
   {
+    id: 'gate-test:backfill-commit-resolve',
+    run: '.ci/scripts/test/gates/test-backfill-commit-resolve.sh',
+    gate: true,
+    qualityGateTest: true,
+    leaves: ['.ci/scripts/test/gates/test-backfill-commit-resolve.sh'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-security',
+      step: 'Quality-gate unit tests',
+    },
+  },
+  {
     id: 'gate-test:blocker-validator',
     run: '.ci/scripts/test/gates/test-blocker-validator.sh',
     gate: true,
@@ -3208,6 +3221,19 @@ export const GATES: readonly GateSpec[] = [
     gate: true,
     qualityGateTest: true,
     leaves: ['.ci/scripts/test/gates/test-greenlight-closure-trace.sh'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-security',
+      step: 'Quality-gate unit tests',
+    },
+  },
+  {
+    id: 'gate-test:housekeeping-phases',
+    run: '.ci/scripts/test/gates/test-housekeeping-phases.sh',
+    gate: true,
+    qualityGateTest: true,
+    leaves: ['.ci/scripts/test/gates/test-housekeeping-phases.sh'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',

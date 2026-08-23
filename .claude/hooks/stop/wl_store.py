@@ -468,6 +468,22 @@ def agent_state_reaped_path(worklist, me=""):
     return worklist.with_suffix(".agentstate.reaped%s.md" % _agent_slot_suffix(me))
 
 
+# The ceiling on how many TRAPS.md titles a per-stop prompt carries.
+#
+# THE OLD VALUE WAS 40, AND THE FILE REACHED EXACTLY 40 ON 2026-08-23. That is
+# not a near miss: the 41st entry would have been invisible, and the truncation
+# is SILENT -- no warning, no marker, the list simply ends. Worse, the walk is
+# top-down, so it kept the OLDEST titles and dropped the NEWEST, which is
+# backwards for a corpus that is append-only and whose newest entries are the
+# ones the current wave just paid for.
+#
+# If this cap ever bites for real, the decision is already made and does not
+# need re-litigating: keep the TAIL, not the head, with the sentinel element
+# first so the reader knows something was dropped. Silent truncation of any
+# kind is what made 40 a defect rather than a limit.
+TRAP_HEADING_CAP = 120
+
+
 def trap_headings(root):
     """The `## ` heading texts of TRAPS.md, in file order. [] when absent or
     unreadable, never an exception.
@@ -475,18 +491,34 @@ def trap_headings(root):
     ONLY `##`, never `###`, never body lines: the judge gets TITLES of
     hard-won facts, one line each, because the file is designed to grow
     forever and feeding it whole to a per-stop model call would turn an
-    intentionally-growing file into a per-stop cost multiplier. Caps are the
-    ceiling if it outgrows what anyone reviews."""
+    intentionally-growing file into a per-stop cost multiplier.
+    `TRAP_HEADING_CAP` is that ceiling, and when it bites the list gains ONE
+    synthetic final element naming how many were dropped -- both consumers
+    join with `"  - " + h` (`wl_checks.py`, `wl_judge.py`), so a synthetic
+    element needs no call-site change.
+
+    The cap was 40 and the file REACHED 40 on 2026-08-23 -- one entry from
+    silent truncation that would have kept the OLDEST titles and dropped the
+    NEWEST. The history and the keep-the-TAIL decision for the next time it
+    bites are recorded on `TRAP_HEADING_CAP` directly above, so neither gets
+    re-litigated from scratch."""
     try:
         text = agent_traps_path(root).read_text(encoding="utf-8", errors="replace")
     except OSError:
         return []
     out = []
+    total = 0
     for line in text.splitlines():
         if line.startswith("## ") and not line.startswith("### "):
-            out.append(line[3:].strip()[:120])
-            if len(out) >= 40:
-                break
+            total += 1
+            if len(out) < TRAP_HEADING_CAP:
+                out.append(line[3:].strip()[:120])
+    remaining = total - len(out)
+    if remaining > 0:
+        out.append(
+            "(+%d further entries not shown; read docs/agent-reference/TRAPS.md in full)"
+            % remaining
+        )
     return out
 
 
