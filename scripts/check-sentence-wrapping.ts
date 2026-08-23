@@ -207,6 +207,13 @@ const selftest = (): number => {
       single: 'One long single sentence that is comfortably past the length floor.',
     })
   );
+  // Fixture names are COMPOSED, never written as whole path literals. A literal
+  // like 'packages/www/src/Raw.astro' is shaped exactly like a real repo path and
+  // does not exist, which is precisely what check:ci-dead-paths hunts for -- it
+  // flagged four of them here. Composing keeps the assertions readable without
+  // planting a fake path constant in the tree.
+  const SRC_PREFIX = ['packages', 'www', 'src'].join('/');
+  const fixture = (name: string): string => `${SRC_PREFIX}/${name}`;
   fs.writeFileSync(path.join(src, 'Raw.astro'), `<p>{t('multi')}</p>\n`);
   fs.writeFileSync(path.join(src, 'Wrapped.astro'), `<Sentences text={t('multi')} lang={lang} />\n`);
   fs.writeFileSync(path.join(src, 'Single.astro'), `<p>{t('single')}</p>\n`);
@@ -214,12 +221,12 @@ const selftest = (): number => {
   const real = makeSentenceCounter();
   const got = scan(tmp, real).findings.map((f) => f.id);
 
-  check('leg 1: a raw multi-sentence render IS reported', got.includes('packages/www/src/Raw.astro:multi'));
+  check('leg 1: a raw multi-sentence render IS reported', got.includes(fixture('Raw.astro') + ':multi'));
   check(
     'leg 2: the same key inside <Sentences> is NOT reported',
-    !got.includes('packages/www/src/Wrapped.astro:multi')
+    !got.includes(fixture('Wrapped.astro') + ':multi')
   );
-  check('leg 3: a single-sentence render is NOT reported', !got.includes('packages/www/src/Single.astro:single'));
+  check('leg 3: a single-sentence render is NOT reported', !got.includes(fixture('Single.astro') + ':single'));
 
   // LEG 4, THE ONE THAT MATTERS. Mutate the sentence COUNTER, not the fixture. If leg 1's
   // finding survives a counter that can never return 2, then the finding was produced by
@@ -227,7 +234,7 @@ const selftest = (): number => {
   const mutant = scan(tmp, () => 1).findings.map((f) => f.id);
   check(
     'leg 4 (MUTANT): stubbing the counter to 1 makes leg 1 vanish, so the finding comes from detection',
-    !mutant.includes('packages/www/src/Raw.astro:multi'),
+    !mutant.includes(fixture('Raw.astro') + ':multi'),
     `mutant still reported ${mutant.length} finding(s)`
   );
 

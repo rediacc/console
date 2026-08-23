@@ -35,7 +35,7 @@ const Navigation: React.FC<NavigationProps> = ({ lang, origin }) => {
   // purpose: it is invisible until the visitor scrolls, which cannot happen
   // before hydration, so deriving it client-side costs nothing and keeps the
   // SSR HTML free of a second locale-sensitive surface.
-  const [trail, setTrail] = useState<Array<{ href: string; label: string }>>([]);
+  const [trail, setTrail] = useState<{ href: string; label: string }[]>([]);
   const wordmarkRef = useRef<HTMLSpanElement>(null);
   const detectedLang = useLanguage();
   const currentLang = lang ?? detectedLang;
@@ -75,6 +75,26 @@ const Navigation: React.FC<NavigationProps> = ({ lang, origin }) => {
     let measured = 0;
     let lastY = window.scrollY;
     let returned = false; // full nav re-shown by an upward scroll while deep
+    // Lifted out of `update` to keep that function under the cognitive-complexity
+    // limit. It is a self-contained branch, so extracting it changes nothing about
+    // when it runs -- still only on frames that land at scrollY 0.
+    const remeasureWordmark = () => {
+      const el = wordmarkRef.current;
+      if (el === null) return;
+      // Measure with the clamp OFF. `scrollWidth` on the clamped box returns
+      // max(clientWidth, content), so it only ever corrects the stored width
+      // UPWARD: at 390px the wordmark steps down a font size to ~96px of text and
+      // the reading stayed pinned at the 120px fallback, padding a nav that
+      // already overflows that viewport. Clearing the inline size first costs one
+      // synchronous layout, and only on frames where the width is not animating.
+      el.style.inlineSize = 'auto';
+      const width = Math.ceil(el.getBoundingClientRect().width);
+      el.style.inlineSize = '';
+      if (width > 0 && width !== measured) {
+        measured = width;
+        root.style.setProperty('--nav-wordmark-w', `${width}px`);
+      }
+    };
     const update = () => {
       frame = 0;
       const rawY = window.scrollY;
@@ -91,23 +111,7 @@ const Navigation: React.FC<NavigationProps> = ({ lang, origin }) => {
       // few pixels (item center is ~16px from the nav's top edge).
       root.style.setProperty('--nav-scroll-y', `${-(1 - fade) * 40}px`);
       root.style.setProperty('--nav-scroll-fade', `${fade}`);
-      if (rawY === 0 && wordmarkRef.current) {
-        // Measure with the clamp OFF. `scrollWidth` on the clamped box returns
-        // max(clientWidth, content), so it only ever corrects the stored width
-        // UPWARD: at 390px the wordmark steps down a font size to ~96px of text
-        // and the reading stayed pinned at the 120px fallback, padding a nav
-        // that already overflows that viewport. Clearing the inline size first
-        // costs one synchronous layout, and only on frames that land at
-        // scrollY 0, where the width is not being animated anyway.
-        const el = wordmarkRef.current;
-        el.style.inlineSize = 'auto';
-        const width = Math.ceil(el.getBoundingClientRect().width);
-        el.style.inlineSize = '';
-        if (width > 0 && width !== measured) {
-          measured = width;
-          root.style.setProperty('--nav-wordmark-w', `${width}px`);
-        }
-      }
+      if (rawY === 0) remeasureWordmark();
       root.style.setProperty('--nav-wordmark-fade', `${fade}`);
       const collapsed = !returned && y >= 80;
       if (collapsed) {
@@ -208,7 +212,7 @@ const Navigation: React.FC<NavigationProps> = ({ lang, origin }) => {
       'roi-calculator': 'navigation.roiCalculator',
     };
     const deslug = (s: string) => {
-      const words = s.replace(/-/g, ' ');
+      const words = s.replaceAll('-', ' ');
       return words.charAt(0).toUpperCase() + words.slice(1);
     };
     const compute = () => {
@@ -318,7 +322,9 @@ const Navigation: React.FC<NavigationProps> = ({ lang, origin }) => {
                 <li key={crumb.href} className="nav-breadcrumb-item">
                   {i < trail.length - 1 ? (
                     <>
-                      <a href={crumb.href}>{crumb.label}</a>
+                      <a href={crumb.href} data-track="nav_click" data-track-label="breadcrumb">
+                        {crumb.label}
+                      </a>
                       <span className="nav-breadcrumb-sep" aria-hidden="true">
                         /
                       </span>
