@@ -235,9 +235,9 @@ export function subcategoriesFor(category: string): readonly DocSubcategory[] {
   // Typed as possibly-undefined on purpose, exactly as makeTagLabel below: `category`
   // arrives as a plain string, so the cast is a claim rather than a guarantee and an
   // unknown category really does miss the record.
-  const shelves = (
-    DOC_SUBCATEGORIES as Partial<Record<string, readonly DocSubcategory[]>>
-  )[category];
+  const shelves = (DOC_SUBCATEGORIES as Partial<Record<string, readonly DocSubcategory[]>>)[
+    category
+  ];
   return shelves ?? [];
 }
 
@@ -252,7 +252,10 @@ const SUBCATEGORY_KEYS: Record<DocSubcategory, { key: string; en: string }> = {
   setup: { key: 'documentation.subcategories.setup', en: 'Setup' },
   'cli-tools': { key: 'documentation.subcategories.cliTools', en: 'CLI & Tools' },
   workloads: { key: 'documentation.subcategories.workloads', en: 'Apps & Services' },
-  'data-protection': { key: 'documentation.subcategories.dataProtection', en: 'Backup & Migration' },
+  'data-protection': {
+    key: 'documentation.subcategories.dataProtection',
+    en: 'Backup & Migration',
+  },
   operations: { key: 'documentation.subcategories.operations', en: 'Operations' },
   account: { key: 'documentation.subcategories.account', en: 'Account & Licensing' },
   'ai-agents': { key: 'documentation.subcategories.aiAgents', en: 'AI Agents' },
