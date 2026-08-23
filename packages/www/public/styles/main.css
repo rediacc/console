@@ -125,11 +125,29 @@
   --color-brand-bolt: #dc2626;
   --color-brand-bolt-hover: #b91c1c;
 
-  /* ---- 3. Semantic surfaces ---- */
+  /* ---- 3. Semantic surfaces. THE LADDER, all four rungs of it:
+
+       page    --color-bg / --color-bg-light   #f7f7f8  the default sheet
+       raised  --color-bg-alt / --color-surface #ffffff most cards, alternated
+                                                        light sections
+       accent  --color-brand-tint               #eef3ea the sp-stats band, the
+                                                        one tinted surface
+       band    --color-bg-dark                  #111113 EVERY dark band: hero,
+                                                        section-dark, bottom
+                                                        CTA, footer
+
+     ONE dark, deliberately. #1a1a1a (--gray-900) used to be a second dark
+     surface (`section-dark`, `--sp-bg-dark`), and wherever it met the #111113
+     band the 1.08:1 step read as a seam, not a boundary (sp-benefits against
+     sp-bottom-cta on the persona pages, pricing-cta against the footer
+     everywhere). Adjacent dark sections now MERGE into one continuous band,
+     which is the documented design for the bottom CTA + footer already; the
+     boundary inside a band is spacing and content, never a near-identical
+     background step. --gray-900 remains as ink, not as a surface. ---- */
   --color-bg: var(--gray-100);
   --color-bg-alt: var(--gray-0);
   --color-bg-light: var(--gray-100);
-  --color-bg-dark: var(--gray-900);
+  --color-bg-dark: var(--gray-950);
   --color-bg-darker: var(--gray-950);
   --color-bg-secondary: var(--gray-100);
   --color-bg-hover: var(--gray-100);
@@ -406,8 +424,11 @@
   --sp-brand-dark: var(--color-brand-dark);
   --sp-brand-light: var(--color-brand-tint);
   --sp-brand-glow: var(--color-brand-glow);
-  --sp-bg-hero: var(--gray-950);
-  --sp-bg-dark: var(--gray-900);
+  /* Both dark aliases resolve onto the ONE band surface (see the ladder in
+     section 3): hero, benefits and bottom CTA are the same dark, so adjacent
+     dark sections merge instead of meeting at a 1.08:1 seam. */
+  --sp-bg-hero: var(--color-bg-dark);
+  --sp-bg-dark: var(--color-bg-dark);
   --sp-bg-light: var(--color-bg-light);
   --sp-bg-white: var(--color-bg-alt);
   --sp-bg-stats: var(--color-brand-tint);
@@ -470,7 +491,11 @@
   --color-bg: #0f0f10;
   --color-bg-alt: #1a1a1b;
   --color-bg-light: #141416;
-  --color-bg-dark: #0a0a0b;
+  /* The one band surface (see the ladder note in :root). #111113 in BOTH
+     themes: the dark bands are the part of the page the theme does not flip,
+     which is also why the footer never changed colour. Was #0a0a0b, a fourth
+     near-identical dark that only ever met #111113 at 1.05:1. */
+  --color-bg-dark: #111113;
   --color-bg-darker: #111113;
   --color-bg-secondary: #141416;
   --color-bg-hover: #1f1f23;
@@ -528,7 +553,9 @@
 
   --shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
 
-  --gradient-dark: linear-gradient(135deg, #0a0a0b 0%, #111113 100%);
+  /* --gradient-dark is NOT re-declared here any more: the :root declaration is
+     var()-based, so it resolves through this block's surface tokens on its
+     own, and with one band surface it computes flat #111113 in both themes. */
   --gradient-dark-alt: linear-gradient(135deg, #111113 0%, #0f0f11 100%);
   --gradient-dark-green: linear-gradient(135deg, #111113 0%, #131613 100%);
 
@@ -929,8 +956,14 @@ a[target='_blank']::after {
     opacity 80ms linear;
 }
 
+/* `visibility` as well as pointer-events: the faded links used to stay in the
+   TAB ORDER, so a keyboard user on a scrolled page tabbed through five
+   invisible links before reaching the CTA. visibility removes them from both
+   the tab order and the accessibility tree; the attribute flips exactly when
+   the opacity reaches 0, so nothing visible ever vanishes. */
 body[data-nav-collapsed='true'] .nav-translate {
   pointer-events: none;
+  visibility: hidden;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -938,6 +971,15 @@ body[data-nav-collapsed='true'] .nav-translate {
     top: 0;
     opacity: 1;
     transition: none;
+  }
+
+  /* Reduced motion pins the full nav visible at every depth (above), but the
+     body attribute is still stamped at y >= 80, and before this rule its
+     pointer-events: none left those users a nav they could SEE and not CLICK.
+     Same specificity as the collapsed rule; later in the file, so it wins. */
+  body[data-nav-collapsed='true'] .nav-translate {
+    pointer-events: auto;
+    visibility: visible;
   }
 }
 
@@ -978,6 +1020,15 @@ body[data-nav-collapsed='true'] .nav-translate {
   justify-content: flex-start;
   justify-self: start;
   width: auto;
+  /* Explicit, NOT auto-placed: .nav-breadcrumb is explicitly placed into this
+     same cell (they deliberately overlay; the wordmark's inline-size is 0
+     whenever the breadcrumb is visible), and an explicitly placed sibling in
+     column 3 would otherwise push the auto-placed brand into column 4 and the
+     whole .nav-right cluster onto an implicit second grid row -- the same wrap
+     the nav-cta-btn note below records from the last time auto-placement was
+     trusted here. The 64rem band re-places this at column 2. */
+  grid-column: 3;
+  grid-row: 1;
 }
 
 .nav-links {
@@ -1005,6 +1056,90 @@ body[data-nav-collapsed='true'] .nav-translate {
   outline: 2px solid var(--color-brand-primary);
   outline-offset: 2px;
   border-radius: var(--radius-sm);
+}
+
+/* The condensed bar's breadcrumb. Cross-fades IN as the nav links fade out,
+   so the collapsed nav is a slim context bar (mark, where-you-are, search,
+   CTA) rather than an empty strip. Lives in grid column 3, the 1fr gap
+   between the brand and the link cluster, which is empty at every width: on
+   phones it overlays the wordmark's cell, whose inline-size has collapsed to
+   0 by the time this becomes visible. Same markup and aria shape as
+   Breadcrumb.astro, which cannot mount inside a React island; the visual
+   language (sm size, secondary links, / separators) is copied from it.
+   `visibility` keeps the links out of the tab order while hidden, mirroring
+   .nav-translate above. */
+.nav-breadcrumb {
+  grid-column: 3;
+  grid-row: 1;
+  justify-self: start;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+  white-space: nowrap;
+  font-size: var(--font-size-sm);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  /* 80ms linear: the nav's smoothing constant, same as .nav-translate. */
+  transition: opacity 80ms linear;
+}
+
+body[data-nav-collapsed='true'] .nav-breadcrumb {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+}
+
+.nav-breadcrumb-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.nav-breadcrumb-item a {
+  color: var(--color-text-secondary);
+  text-decoration: none;
+  transition: color var(--transition-duration-base) var(--ease-standard);
+}
+
+.nav-breadcrumb-item a:hover {
+  color: var(--color-text);
+}
+
+.nav-breadcrumb-item a:focus-visible {
+  outline: 2px solid var(--color-brand-primary);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
+.nav-breadcrumb-item [aria-current='page'] {
+  color: var(--color-text);
+  font-weight: var(--font-weight-medium);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.nav-breadcrumb-sep {
+  color: var(--color-text-secondary);
+  user-select: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /* Reduced motion never condenses the nav (see .nav-translate above), so the
+     breadcrumb must never appear over the still-visible wordmark. Same
+     specificity as the collapsed rule, later in the file. */
+  body[data-nav-collapsed='true'] .nav-breadcrumb {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+  }
 }
 
 .nav-right {
@@ -1336,6 +1471,32 @@ body[data-nav-collapsed='true'] .nav-translate {
 .section-light {
   background: var(--color-bg-light);
   color: var(--color-text);
+}
+
+/* A run of consecutive light sections used to render as one unbroken #f7f7f8
+   sheet: /en/pricing ran SIX in a row and nothing read as a section boundary.
+   Even-numbered light sections step onto the raised surface instead. `of
+   .section-light` counts only light sections among their siblings, so any two
+   ADJACENT light sections always land on opposite parities and therefore on
+   different surfaces, whatever dark sections sit between them; a lone light
+   section is 1st-of-class and keeps the default sheet. */
+.section-light:nth-child(even of .section-light) {
+  background: var(--color-bg-alt);
+}
+
+/* A hydrated island wraps its section in <astro-island>, which removes it from
+   the sibling parity above (the wrapper carries no class, so the count skips
+   it and the section inside restarts at 1st-of-class). InstallMethods on
+   /en/install is the live case: a light island section directly after a light
+   sibling section rendered the same #f7f7f8 twice. Raise the island's section
+   when a light sibling section precedes the island. `~`, not `+`, because
+   Astro emits a <script> between the section and the island, which defeats the
+   adjacent combinator. KNOWN LIMIT: a page whose island directly follows an
+   even-parity (already-raised) light section would get white-on-white here; no
+   such page exists today, and the section-surface gate in wave D is the
+   backstop if one appears. */
+.section-light ~ astro-island > .section-light {
+  background: var(--color-bg-alt);
 }
 
 .section-dark {
@@ -2209,8 +2370,23 @@ a.cf-guarantee-link:hover {
 }
 
 /* ===== CLOSING CTA SECTION ===== */
+/* The homepage's bottom CTA joins the black closing band, exactly like
+   .sp-bottom-cta does on the 25 solution/persona pages: the final CTA and the
+   footer below it read as ONE continuous #111113 band. It used to be
+   transparent, which resolved to the body's #f7f7f8 and sat invisible against
+   the identical #f7f7f8 pricing section above it. Token values are copied
+   from the .footer block below, whose ratios on this band are measured there
+   (13.71:1 / 6.79:1); the buttons inside consume the same semantic tokens, so
+   re-pointing them here restyles both CTAs without touching the primitive. */
 .closing-cta {
   padding: var(--space-16) 0;
+  background-color: var(--sp-bg-hero);
+  --color-text: #e4e4e7;
+  --color-text-secondary: #a1a1aa;
+  --color-border: rgb(255 255 255 / 12%);
+  --color-interactive-hover: rgb(255 255 255 / 8%);
+  --color-interactive-active: rgb(255 255 255 / 14%);
+  color: var(--color-text);
 }
 
 .closing-cta-inner {
@@ -2993,8 +3169,10 @@ a.cf-guarantee-link:hover {
 
 .footer-version {
   font-size: var(--font-size-xs);
+  /* No opacity dampener: 0.7 blended the #a1a1aa secondary down to ~4.0:1 on
+     the #111113 footer band, under the 4.5:1 AA floor, and axe flagged it.
+     The smaller font size alone carries the de-emphasis. */
   color: var(--color-text-secondary);
-  opacity: 0.7;
   margin-top: 0.25rem;
 }
 
