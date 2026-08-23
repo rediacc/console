@@ -128,3 +128,41 @@ of its column while the player uses 100%.
 That is also precisely why the operator's fullscreen hint matters, and it is
 consistent with the choice: shrinking the inline player is acceptable because
 watching it properly was never the inline player's job.
+
+### Correction to my own amendment, from the wave C writer
+
+My fullscreen note above cited the WRONG element and the writer caught it.
+`remark-video-embed.ts:66` builds `.video-container`, a plain
+`<video controls>` used for blog embeds. The DOCS player is
+`.tutorial-video-container`, produced by `remark-tutorial-embed.ts` and rendered
+by `TutorialVideoPlayer.tsx`, whose `<video>` has **no `controls` attribute at
+all** -- Plyr supplies the chrome.
+
+**The operator's rationale survives intact; only my citation was wrong.**
+`fullscreen` is in Plyr's control list (`TutorialVideoPlayer.tsx:316`) and
+exactly one `[data-plyr="fullscreen"]` button renders live. Verified here, not
+taken from the report.
+
+### Deviation accepted: `max-inline-size`, not `width`
+
+Written literally as `width:`, the operator's formula is a FLOOR as well as a
+cap, and the writer measured what that costs: at 390x844 the column is 359 but
+the player computes 544, giving `scrollWidth` 552 against `clientWidth` 390 --
+**162px of mobile overflow**. As `max-inline-size` the rule simply stops
+applying below the cap. Identical at every width where the column exceeds the
+cap, so the decision is unchanged in substance and the invariant still holds.
+
+Independently re-measured at 1440 rather than taken on trust: column 765, prose
+544, player 612, computed rule `min(960px, max(80%, 544px))`.
+**1280 is where the formula earns its keep**: 80% of 605 is 484, so plain
+`min(960px, 80%)` would have gone narrower than the 544px paragraph there --
+the failure decision 5 was written to prevent, at a width nobody had measured.
+
+### DEFERRED, needs an operator decision: `--docs-prose` 34rem -> 43rem
+
+The other half of item 8 is deliberately NOT in this change, and it should be
+re-decided rather than executed. `DocsLayout.astro:700-704` justifies 34rem by
+measurement: the 765px column is ~101 characters, so 544px is ~72, inside the
+65-75 target. **43rem = 688px is ~91 characters, outside it.** A pure token bump
+therefore contradicts the reason the token has its value; the type scale would
+have to move with it. DEFAULT if unanswered: leave 34rem as it is.

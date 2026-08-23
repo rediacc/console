@@ -230,6 +230,31 @@ const isBrowse = variant === 'index';
 
           {variant === 'article' && (
             <header class="article-header">
+              {/* The per-document illustration, finally on the document.
+
+                  These 79 files under public/img/docs-thumbs/ have existed at 100%
+                  coverage since round 4 and the browse card was their ONLY consumer
+                  anywhere in the codebase, so a reader who arrived from search or from a
+                  link never saw the picture drawn for the page they were on. Resolved by
+                  filename convention from the URL slug, which IS the base slug in every
+                  locale (see [slug].astro's getStaticPaths), so all 13 locales share one
+                  file and none of them needs a lookup table.
+
+                  alt="" because the picture restates the title and the category the page
+                  already gives in words, exactly as on the browse card. Eager, not lazy:
+                  it is the first thing in the article and lazy-loading the top of the
+                  viewport only delays it. The intrinsic width/height reserve the box so
+                  the H1 does not jump when it lands. */}
+              {docSlug && (
+                <img
+                  class="docs-article-thumb"
+                  src={`/img/docs-thumbs/${docSlug}.svg`}
+                  alt=""
+                  width="320"
+                  height="120"
+                  decoding="async"
+                />
+              )}
               <div class="article-header-main">
                 <h1 class="article-title">{frontmatter.title}</h1>
                 {mdUrl && (
@@ -261,10 +286,18 @@ const isBrowse = variant === 'index';
         </article>
       </div>
 
+      {/* aria-labelledby, not a second aria-label: this <aside> and the docs sidebar's
+          <aside> are both `complementary` and both were unnamed, which axe reports as
+          landmark-unique (measured on /en/docs/quick-start, 1 node). Borrowing the
+          visible heading names it without inventing a string, and leaves ONE authored
+          name for the rail instead of two that can drift.
+          The comment sits OUTSIDE the `hasTOC &&` expression on purpose: a JSX comment
+          is a child node, so putting it inside gave that expression two children with
+          no fragment and every docs route answered 500. */}
       {hasTOC && (
-        <aside class="sidebar-base sidebar-toc toc-sidebar" data-track={shouldTrackTOC ? 'true' : 'false'} data-selector={tocTrackingSelector}>
+        <aside class="sidebar-base sidebar-toc toc-sidebar" aria-labelledby="docs-toc-heading" data-track={shouldTrackTOC ? 'true' : 'false'} data-selector={tocTrackingSelector}>
           <nav class="sidebar-nav sidebar-nav-with-accent toc-nav" role="navigation" aria-label={t('common.aria.tableOfContents')}>
-            <h3 class="sidebar-title toc-title">{t('pages.docs.tableOfContents')}</h3>
+            <h3 class="sidebar-title toc-title" id="docs-toc-heading">{t('pages.docs.tableOfContents')}</h3>
             <ul class="sidebar-list toc-list">
               {toc.map(heading => (
                 <li class={`sidebar-item toc-item toc-level-${heading.level}`}>
@@ -761,6 +794,7 @@ const isBrowse = variant === 'index';
     .docs-shell.docs-shell-embed .docs-shell-top,
     .docs-shell.docs-shell-embed :global(.docs-sidebar),
     .docs-shell.docs-shell-embed .toc-sidebar,
+    .docs-shell.docs-shell-embed .docs-article-thumb,
     .docs-shell.docs-shell-embed :global(.breadcrumb) {
       display: none !important;
     }
@@ -1057,10 +1091,39 @@ const isBrowse = variant === 'index';
       margin-inline: auto;
     }
 
-    .docs-shell:not(.docs-shell-browse):not(.docs-shell-embed) .article-content > :global(.tutorial-video-container),
     .docs-shell:not(.docs-shell-browse):not(.docs-shell-embed) .article-content > :global(.cs-cards),
     .docs-shell:not(.docs-shell-browse):not(.docs-shell-embed) .article-content > :global(.print-page-header) {
       max-inline-size: none;
+    }
+
+    /* The tutorial player is an ILLUSTRATION IN THE READING FLOW, so it is capped
+       rather than left at the full column width the two rules above hand to the
+       cheat-sheet grid and the print header.
+
+       Why it needed a cap at all: uncapped it rendered 765px at 1440 and 1245px at
+       1920 above 544px-wide text in the same column, so the prose used 43.7% of its
+       own column while the player used 100%. Watching it properly is what the player's
+       own fullscreen button is for -- `.tutorial-video-container` is emitted by
+       src/plugins/remark-tutorial-embed.ts and hydrated into TutorialVideoPlayer.tsx,
+       whose Plyr control list carries `fullscreen` (the <video> itself has NO `controls`
+       attribute; that is the OTHER embed, remark-video-embed.ts, which builds
+       `.video-container`). So the inline copy has no reason to out-shout the words it
+       illustrates.
+
+       The formula, and the invariant it holds BY CONSTRUCTION rather than by
+       arithmetic coincidence at the two widths somebody measured:
+         960px  ceiling  -- past this a 16:9 render is taller than most viewports.
+         80%             -- the player still reads as the wider element on a wide column.
+         --docs-prose    -- and it is NEVER narrower than the paragraph above it.
+
+       max-inline-size, not `width`. Written as `width` the formula is a floor as well
+       as a ceiling, so on a 359px mobile column it computed 544px (the prose token) and
+       pushed the document 162px wider than the viewport -- measured at 390x844, not
+       assumed. As a max it simply stops applying once the column is narrower than the
+       cap, which is the behaviour every other measure rule in this block already has. */
+    .docs-shell:not(.docs-shell-browse):not(.docs-shell-embed) .article-content > :global(.tutorial-video-container) {
+      max-inline-size: min(960px, max(80%, var(--docs-prose)));
+      margin-inline: auto;
     }
 
     /* Fallback Notice */
@@ -1102,6 +1165,33 @@ const isBrowse = variant === 'index';
 
     .article-header {
       margin-bottom: var(--space-8);
+    }
+
+    /* The per-document illustration. Sized to the reading measure rather than to the
+       column, because .article-header is already capped at --docs-prose by the rule
+       above and the picture belongs to the same column of reading as the title under it.
+
+       aspect-ratio alongside the intrinsic width/height attributes on purpose: the
+       attributes reserve the box before the file lands, the ratio keeps it reserved if a
+       future thumbnail is authored at a different intrinsic size. */
+    .docs-article-thumb {
+      display: block;
+      inline-size: 100%;
+      block-size: auto;
+      aspect-ratio: 320 / 120;
+      border-radius: var(--radius-md);
+    }
+
+    /* Dark theme, and this is the SECOND copy of this filter: docs-browse.css carries the
+       first, for the same artwork on the browse card, and that sheet is loaded ONLY by the
+       browse page. An `<img>`-referenced SVG is an isolated document -- it cannot see
+       --docs-hue, currentColor or :root[data-theme] -- so each of the 79 files carries its
+       category's colours as literal hex, and inverting plus rotating the hue 180deg lands
+       back on the original hue at inverted lightness. Untreated, the light artwork renders
+       as a glaring panel on the #0f0f10 docs page. If the trim values change, change them
+       in BOTH places; there is no third. */
+    :global([data-theme='dark']) .docs-article-thumb {
+      filter: invert(1) hue-rotate(180deg) brightness(0.82) saturate(1.15);
     }
 
     .article-header-main {
