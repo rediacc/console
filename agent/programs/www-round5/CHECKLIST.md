@@ -21,7 +21,7 @@ before the repo moved to `~/console`. Branch at handoff time: `0823-1`.
 
 ## Waves
 
-- [ ] w1 Wave A: chrome and surfaces (items 3, 5, 6, and the a11y defects in owned files)
+- [x] w1 Wave A: chrome and surfaces (items 3, 5, 6, and the a11y defects in owned files)
 - [ ] w2 Wave B: marketing comprehension (items 1, 2, and the item-4 fixes in marketing copy)
 - [ ] w3 Wave C: docs surface (items 7, 8, 9, 10, including Ask Assistant)
 - [ ] w4 Wave D: gates (sentence wrapping, docs topic coverage, accessibility, section surface)
