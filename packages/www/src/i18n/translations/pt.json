@@ -575,14 +575,6 @@
         "heading": "Perguntas Frequentes",
         "items": [
           {
-            "answer": "Sim. Mudanças de upgrade entram em vigor na hora. Downgrades começam no próximo ciclo de faturação.",
-            "question": "Posso mudar o meu plano?"
-          },
-          {
-            "answer": "Aceitamos Visa, MasterCard e American Express. Para Contratos de Recuperação anuais também oferecemos faturamento.",
-            "question": "Que métodos de pagamento aceitam?"
-          },
-          {
             "answer": "Sim. Avaliação e Programa começam com 14 dias grátis. Você adiciona o cartão no cadastro e paga só quando o teste termina. Cancele antes e sem custos.",
             "question": "Têm período de teste gratuito?"
           },
@@ -1964,52 +1956,28 @@
         "heading": "Perguntas Frequentes",
         "items": [
           {
-            "answer": "Sim. Os planos Professional e Business começam com 14 dias grátis. Só pagas quando a experiência termina - cancela antes e não te cobramos nada. Se cancelares depois, a tua conta volta ao plano Community grátis com uma máquina, 10 GB por repositório e 100 configurações por mês.",
-            "question": "Há período de experiência grátis?"
-          },
-          {
-            "answer": "Sim. Precisamos do teu cartão para iniciar o período grátis dos planos pagos. Ninguém te cobra enquanto os 14 dias não terminarem, e podes cancelar sempre que quiseres antes disso.",
-            "question": "Preciso de cartão de crédito para começar?"
-          },
-          {
-            "answer": "Sim, podes. Os upgrades entram em vigor logo. Os downgrades aplicam-se no próximo período de faturação. Sem penalizações, sem taxas.",
-            "question": "Posso mudar para outro plano?"
-          },
-          {
-            "answer": "Sim. Faturação anual economiza 15% face ao mensal. Todos os pagos oferecemos em mensal ou anual.",
-            "question": "Oferecem faturação anual?"
-          },
-          {
-            "answer": "Cartões de crédito (Visa, MasterCard, American Express). Para Enterprise, também oferecemos faturação por fatura.",
-            "question": "Que métodos de pagamento aceitam?"
-          },
-          {
-            "answer": "Cada servidor físico ou virtual onde o Rediacc está instalado conta como uma máquina. As cópias instantâneas feitas nesses servidores não contam separadamente. Só os servidores anfitrião são contados.",
-            "question": "Como são contadas as máquinas?"
-          },
-          {
             "answer": "Sim. Rediacc funciona em qualquer servidor Linux com suporte a btrfs (um sistema de armazenamento open-source integrado em Linux). Servidores físicos, máquinas virtuais e servidores cloud (AWS, Azure, GCP, Hetzner, OVH, etc.) são todos suportados.",
             "question": "O Rediacc funciona nos meus próprios servidores?"
           },
           {
-            "answer": "Cada plano self-serve inclui uma máquina (uma licença flutuante). Se precisas correr Rediacc em mais do que uma máquina, é um setup Enterprise vendido através dos nossos parceiros. Contacta-nos e dimensionamos juntos.",
-            "question": "Quantas máquinas cobre cada plano?"
+            "answer": "Cada servidor físico ou virtual onde o Rediacc está instalado conta como uma máquina. As cópias instantâneas feitas nesses servidores não contam separadamente. Cada plano de autosserviço cobre uma máquina (uma licença flutuante). Utilizar mais do que uma máquina, incluindo cada nó de um cluster, é uma configuração Enterprise vendida pelos nossos parceiros, e o número de nós é acordado no momento da encomenda.",
+            "question": "Como são contadas as máquinas?"
           },
           {
             "answer": "Enterprise é personalizado para ti e vendido pelos nossos parceiros. Negoceias os termos, executas em múltiplas máquinas, tens espaço dedicado, uma garantia de recuperação personalizada e suporte 24/7/365. Inclui revisões de segurança e exercícios regulares.",
             "question": "O que inclui o plano Enterprise?"
           },
           {
-            "answer": "Sim. Escreve-nos. Escolas e organizações sem fins lucrativos recebem preços especiais.",
-            "question": "Oferecem descontos para educação ou organizações sem fins lucrativos?"
+            "answer": "Sim. O Professional e o Business começam ambos com 14 dias de teste grátis. Ambos pedem um cartão no registo para que o teste possa transitar automaticamente para uma subscrição, e a primeira cobrança só acontece quando o teste termina. Cancela antes disso e não pagas nada.",
+            "question": "Há período de experiência grátis?"
+          },
+          {
+            "answer": "Ambos os planos pagos são faturados mensalmente ou anualmente, e a faturação anual poupa 15%. Podes mudar de plano a qualquer momento: os upgrades têm efeito imediato, os downgrades aplicam-se no início do ciclo de faturação seguinte, e não há penalizações nem taxas. Aceitamos todos os principais cartões de crédito (Visa, MasterCard, American Express), e os planos Enterprise podem ser pagos mediante fatura.",
+            "question": "Como funciona a faturação?"
           },
           {
             "answer": "Cancela durante os 14 dias e não te cobramos nunca. Cancela um plano pago depois e mantens as funcionalidades até ao fim do período de faturação, depois a tua conta volta ao plano Community grátis. Os teus repositórios continuam a funcionar.",
             "question": "O que acontece se eu cancelar?"
-          },
-          {
-            "answer": "Cada nó é uma máquina e conta como tal. Sem cota partilhada do cluster e sem desconto por agrupar servidores. Um nó só ocupa uma vaga quando um repositório é implementado, portanto construir o cluster não custa nada. O clustering é vendido através dos nossos parceiros como parte de um acordo Enterprise, e o número de nós é acordado na encomenda.",
-            "question": "Como são contados os nós de um cluster?"
           }
         ]
       },

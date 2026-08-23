@@ -575,14 +575,6 @@
         "heading": "Korduma kippuvad küsimused",
         "items": [
           {
-            "answer": "Jah, paketti saab igal ajal muuta. Uuendused jõustuvad koheselt, alandamised alates järgmise arveldusperioodi algusest.",
-            "question": "Kas saan paketti uuendada või alandada?"
-          },
-          {
-            "answer": "Aktsepteerime Visat, MasterCardi ja American Expressi. Aastaste taastelepingute puhul pakume ka arvepõhist tasumist.",
-            "question": "Milliseid makseviise aktsepteerite?"
-          },
-          {
             "answer": "Jah. Nii taasteanalüüs kui ka taasteprogramm algavad 14-päevase tasuta prooviajaga. Lisad kaardi registreerimisel, makseid võetakse alates katseperioodi lõppemisest. Tühistad enne selle aega – midagi ei maksa.",
             "question": "Kas on saadaval tasuta prooviaeg?"
           },
@@ -1958,52 +1950,28 @@
         "heading": "Korduma kippuvad küsimused",
         "items": [
           {
-            "answer": "Jah. Nii Professional kui ka Business algavad 14-päevase tasuta prooviga. Esimene makse võetakse alles prooviperioodi lõpul, seega tühistades selleks ajaks ei maksa sa midagi. Tühistamise järel langeb sinu konto tagasi tasuta Community versioonile, mis käitab ühte masinat - 10 GB hoidlate kaupa ja 100 seadistust kuus.",
-            "question": "Kas on olemas tasuta prooviperiood?"
-          },
-          {
-            "answer": "Jah. Mõlemad tasulised paketid küsivad registreerimisel kaarti, et prooviperiood saaks otse tellimuseks muutuda. Makset ei võeta enne 14-päevase proovi lõppu, ja võid iga hetk selleks ajaks tühistada.",
-            "question": "Kas alustamiseks on vaja krediitkaarti?"
-          },
-          {
-            "answer": "Jah. Plaani saad muuta igal ajal. Parendused jõustuvad kohe, alandamised alates järgmise arveldusperioodi algusest. Trahve ega lisakulud ei ole.",
-            "question": "Kas saan oma plaani muuta?"
-          },
-          {
-            "answer": "Jah. Aastane arveldus säästab 15% võrreldes igakuise maksmisega. Kõik tasulised plaanid on saadaval kuu- või aastaarveldusega.",
-            "question": "Kas on saadaval aastane arveldus?"
-          },
-          {
-            "answer": "Aktsepteerime kõiki peamisi krediitkaarte (Visa, MasterCard, American Express) ja toetame arvepõhist arveldamist Enterprise plaanide jaoks.",
-            "question": "Milliseid makseviise aktsepteerite?"
-          },
-          {
-            "answer": "Iga füüsiline või virtuaalne server, kuhu Rediacc on paigaldatud, loendatakse ühe masinana. Nendel masinatel loodud kloonid ei loeta eraldi – ainult peamasinaid arvestatakse.",
-            "question": "Kuidas masinaid loendatakse?"
-          },
-          {
             "answer": "Jah. Rediacc töötab kõigil Linux-serveritel, millel on btrfs (avatud lähtekoodiga salvestussüsteem, mis on sisse ehitatud Linuxisse) tugi. Toetatud on füüsilised serverid, virtuaalmasinad ja pilveserverid (AWS, Azure, GCP, Hetzner, OVH jne).",
             "question": "Kas Rediacc töötab minu enda serverites?"
           },
           {
-            "answer": "Iga iseteeninduspakett sisaldab ühte masinat (ühte ujuvat litsentsi). Kui pead Rediacci käitama mitmes masinas, on see Enterprise seadistus - seda müüakse meie partnerite kaudu. Võta meiega ühendust ja leiame koos õige suuruse.",
-            "question": "Mitut masinat iga pakett katab?"
+            "answer": "Iga füüsiline või virtuaalne server, kuhu Rediacc on paigaldatud, loetakse üheks masinaks. Nendel masinatel loodud koopiaid eraldi ei arvestata. Iga iseteenindusplaan katab ühe masina (ühe ujuva litsentsi). Töötamine rohkem kui ühel masinal, sealhulgas igal klastri sõlmel, on Enterprise'i lahendus, mida müüakse meie partnerite kaudu, ja sõlmede arv lepitakse kokku tellimuse ajal.",
+            "question": "Kuidas masinaid loendatakse?"
           },
           {
             "answer": "Enterprise on ehitatud vastavalt vajadustele ja müüakse meie partnerite kaudu. Tingimused on läpitavad, töökoormus käitub mitmes masinas ning see sisaldab dedikeeritud serveriruumi, kohandatud taastamislubadust ja 24/7/365 toe. Lisaks turvaülevaated ja regulaarsed harjutused.",
             "question": "Mis on kaasas Enterprise plaaniga?"
           },
           {
-            "answer": "Jah. Võtke meiega ühendust. Koolidele ja mittetulundusühingutele kehtivad erihinnad.",
-            "question": "Kas pakute allahindlusi haridusasutustele või mittetulundusühingutele?"
+            "answer": "Jah. Nii Professional kui ka Business algavad 14-päevase tasuta prooviperioodiga. Mõlemad küsivad registreerumisel kaardiandmed, et proov saaks sujuvalt üle minna tellimuseks, ja esimene makse toimub alles siis, kui proov lõpeb. Tühista enne seda ja sinult midagi ei võeta.",
+            "question": "Kas on olemas tasuta prooviperiood?"
+          },
+          {
+            "answer": "Mõlemad tasulised plaanid arveldatakse kuupõhiselt või aastapõhiselt, ja aastaarveldus säästab 15%. Plaani saab igal ajal muuta: uuendused jõustuvad kohe, alandused rakenduvad järgmise arveldustsükli algusest, ning trahve ega lisatasusid ei ole. Aktsepteerime kõiki suuremaid krediitkaarte (Visa, MasterCard, American Express), ning Enterprise'i plaane saab arveldada arve alusel.",
+            "question": "Kuidas arveldamine toimib?"
           },
           {
             "answer": "Tühista prooviperioodi ajal - sinult ei võeta kunagi tasu. Tühista hiljem maksavat plaani - funktsioonid kehtivad kuni arveldusperioodi lõpuni, siis langeb konto tagasi tasuta Community versioonile. Hoidlad töötavad kogu aja katkematult.",
             "question": "Mis juhtub, kui tühistan?"
-          },
-          {
-            "answer": "Klastris on iga sõlm eraldi masin. Klastril puudub jagatud kvoot ja serverigruppide kokkupanemise eest soodustust ei ole. Sõlm võtab koha alles, kui sinna paigutatakse hoidla - klastri ülesehitamine ise ei maksa midagi. Klasterit müüakse meie partnerite kaudu Enterprise lepinguna, sõlmede arv lepitakse kokku tellimisel.",
-            "question": "Kuidas loetakse klastri sõlmi?"
           }
         ]
       },

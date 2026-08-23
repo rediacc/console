@@ -575,14 +575,6 @@
         "heading": "Foire aux questions",
         "items": [
           {
-            "answer": "Oui. Les changements s'appliquent immédiatement pour une montée, au cycle suivant pour une réduction.",
-            "question": "Puis-je changer mon plan ?"
-          },
-          {
-            "answer": "Nous acceptons Visa, MasterCard et American Express. Pour les Contrats de reprise annuels, nous proposons aussi la facturation.",
-            "question": "Quels modes de paiement acceptez-vous ?"
-          },
-          {
             "answer": "Oui. L'Évaluation et le Programme commencent par 14 jours gratuits. Vous ajoutez une carte à l'inscription, mais rien n'est débité avant la fin de l'essai. Annulez avant et vous ne payez rien.",
             "question": "Y a-t-il une période d'essai gratuite ?"
           },
@@ -1958,52 +1950,28 @@
         "heading": "Foire aux questions",
         "items": [
           {
-            "answer": "Oui. Professional et Business offrent 14 jours d'essai gratuit. Aucun prélèvement jusqu'à la fin de l'essai ; annulez avant et c'est gratuit. En cas d'annulation, vous repassez au plan Community gratuit : une machine, 10 Go par dépôt, 100 configurations par mois.",
-            "question": "Y a-t-il un essai gratuit ?"
-          },
-          {
-            "answer": "Oui. Les deux forfaits payants demandent une carte pour que l'essai puisse se convertir en abonnement. Aucun prélèvement avant la fin des 14 jours, et vous pouvez annuler n'importe quand avant.",
-            "question": "Ai-je besoin d'une carte bancaire pour commencer ?"
-          },
-          {
-            "answer": "Oui. Les mises à niveau prennent effet immédiatement ; les réductions au prochain cycle de facturation. Aucune pénalité, aucun frais.",
-            "question": "Puis-je mettre à niveau ou rétrograder mon forfait ?"
-          },
-          {
-            "answer": "Oui. La facturation annuelle fait économiser 15 % par rapport au paiement mensuel. Les deux forfaits payants sont disponibles en facturation mensuelle ou annuelle.",
-            "question": "Proposez-vous la facturation annuelle ?"
-          },
-          {
-            "answer": "Nous acceptons toutes les grandes cartes bancaires (Visa, MasterCard, American Express) et proposons la facturation sur devis pour les forfaits Enterprise.",
-            "question": "Quels modes de paiement acceptez-vous ?"
-          },
-          {
-            "answer": "Chaque serveur physique ou virtuel sur lequel Rediacc est installé compte pour une machine. Les copies instantanées créées sur ces machines ne sont pas comptées séparément. Seules les machines hôtes sont comptabilisées.",
-            "question": "Comment les machines sont-elles comptées ?"
-          },
-          {
             "answer": "Oui. Rediacc fonctionne sur tout serveur Linux compatible btrfs (un système de stockage open source intégré à Linux). Serveurs physiques, machines virtuelles et instances cloud (AWS, Azure, GCP, Hetzner, OVH, etc.) sont tous pris en charge.",
             "question": "Rediacc fonctionne-t-il sur mes propres serveurs ?"
           },
           {
-            "answer": "Chaque forfait en libre-service inclut une machine (une licence flottante). Déployer Rediacc sur plusieurs machines, c'est une configuration Enterprise vendue via nos partenaires. Contactez-nous pour dimensionner ensemble.",
-            "question": "Combien de machines chaque forfait couvre-t-il ?"
+            "answer": "Chaque serveur physique ou virtuel sur lequel Rediacc est installé compte pour une machine. Les copies instantanées créées sur ces machines ne sont pas comptées séparément. Chaque offre en libre-service couvre une machine (une licence flottante). Utiliser plus d'une machine, y compris chaque nœud d'un cluster, relève d'une configuration Enterprise vendue via nos partenaires, et le nombre de nœuds est fixé à la commande.",
+            "question": "Comment les machines sont-elles comptées ?"
           },
           {
             "answer": "Enterprise s'adapte à votre besoin et se vend via nos partenaires. Conditions négociables, déploiement multi-machines, espace serveur dédié, reprise sur mesure, support 24h/24. Plus audits de sécurité et exercices réguliers.",
             "question": "Que comprend la tarification Enterprise ?"
           },
           {
-            "answer": "Oui. Écrivez-nous. Écoles et organismes à but non lucratif bénéficient de tarifs préférentiels.",
-            "question": "Proposez-vous des tarifs réduits pour l'éducation ou les associations ?"
+            "answer": "Oui. Professional et Business démarrent tous deux avec 14 jours d'essai gratuit. Les deux demandent une carte à l'inscription pour que l'essai puisse basculer vers un abonnement, et le premier prélèvement n'intervient qu'à la fin de l'essai. Annulez avant cette date et rien ne vous sera facturé.",
+            "question": "Y a-t-il un essai gratuit ?"
+          },
+          {
+            "answer": "Les deux forfaits payants sont facturés mensuellement ou annuellement, et la facturation annuelle fait économiser 15 %. Vous pouvez changer de forfait à tout moment : les mises à niveau prennent effet immédiatement, les rétrogradations s'appliquent au début du cycle de facturation suivant, et il n'y a ni pénalité ni frais. Nous acceptons toutes les grandes cartes de crédit (Visa, MasterCard, American Express), et les forfaits Enterprise peuvent être réglés par facture.",
+            "question": "Comment fonctionne la facturation ?"
           },
           {
             "answer": "Annulez durant les 14 jours et rien n'est débité. Annulez plus tard, et les fonctionnalités restent jusqu'à la fin du cycle. Ensuite, vous repassez au plan Community gratuit. Vos dépôts tournent le temps entier.",
             "question": "Que se passe-t-il si j'annule ?"
-          },
-          {
-            "answer": "Chaque nœud est une machine, chacun compte. Pas d'allocation partagée, pas de remise groupée. Un nœud n'occupe un slot que quand un dépôt s'y déploie, donc la construction est gratuite. Le clustering se vend via nos partenaires (Enterprise), avec le nombre de nœuds convenu à la commande.",
-            "question": "Comment les nœuds d'un cluster sont-ils comptés ?"
           }
         ]
       },

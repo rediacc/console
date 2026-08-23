@@ -571,14 +571,6 @@
         "heading": "Sıkça Sorulan Sorular",
         "items": [
           {
-            "answer": "Evet. Planı istediğiniz zaman değiştirebilirsiniz. Yükseltmeler hemen etkili oluyor, indirmeler ise sonraki dönemin başında uygulanır.",
-            "question": "Planımı yükseltebilir veya düşürebilir miyim?"
-          },
-          {
-            "answer": "Visa, MasterCard ve American Express kabul ediyoruz. Yıllık Kurtarma Anlaşması sözleşmelerinde faturalı ödeme de sunuyoruz.",
-            "question": "Hangi ödeme yöntemlerini kabul ediyorsunuz?"
-          },
-          {
             "answer": "Evet. Hem Değerlendirme hem Program 14 gün ücretsiz denemeyle başlar. Kayıt sırasında kart ekliyorsunuz ama ödeme yalnızca deneme bittiğinde gerçekleşir. Öncesinde iptal ederseniz hiç bir ödeme yapmazsınız.",
             "question": "Ücretsiz deneme mevcut mu?"
           },
@@ -1951,52 +1943,28 @@
         "heading": "Sıkça Sorulan Sorular",
         "items": [
           {
-            "answer": "Evet. Professional ve Business planları da 14 günlük denemeyle başlıyor. İlk ödeme yalnızca deneme bittiğinde alınır; deneme süresi bitmeden iptal ederseniz ücret ödemezsiniz. İptal ettikten sonra hesabınız depo başına 10 GB'ye ve ayda 100 kuruluma kadar bir makineyi çalıştıran ücretsiz Community planına döner.",
-            "question": "Ücretsiz deneme var mı?"
-          },
-          {
-            "answer": "Evet. Her iki ücretli plan da kayıt sırasında kart bilgisi ister, böylece deneme bitince aboneliğe geçiş yapabilir. 14 günlük deneme süresince ücret alınmaz ve istediğiniz zaman iptal edebilirsiniz.",
-            "question": "Başlamak için kredi kartına ihtiyacım var mı?"
-          },
-          {
-            "answer": "Evet, planı istediğiniz zaman değiştirebilirsiniz. Yükseltme hemen uygulanır, düşürme ise bir sonraki faturalandırma döneminde. Ceza yok, ücret yok.",
-            "question": "Planımı yükseltebilir veya düşürebilir miyim?"
-          },
-          {
-            "answer": "Evet. Yıllık faturalandırma, aylık ödemeye kıyasla %15 tasarruf sağlar. Her iki ücretli plan da aylık veya yıllık faturalandırmayla kullanılabilir.",
-            "question": "Yıllık faturalandırma sunuyor musunuz?"
-          },
-          {
-            "answer": "Tüm büyük kredi kartlarını (Visa, MasterCard, American Express) kabul ediyoruz ve Enterprise planları için faturaya dayalı ödemeyi destekliyoruz.",
-            "question": "Hangi ödeme yöntemlerini kabul ediyorsunuz?"
-          },
-          {
-            "answer": "Rediacc'ın kurulu olduğu her fiziksel veya sanal sunucu bir makine olarak sayılır. Bu makinelerde oluşturulan klonlar ayrı sayılmaz — yalnızca ana makineler sayılır.",
-            "question": "Makineler nasıl sayılır?"
-          },
-          {
             "answer": "Evet. Rediacc, btrfs (Linux'a yerleşik açık kaynaklı bir depolama sistemi) desteği olan herhangi bir Linux sunucusunda çalışır. Fiziksel sunucular, sanal makineler ve bulut sunucuları (AWS, Azure, GCP, Hetzner, OVH vb.) desteklenir.",
             "question": "Rediacc kendi sunucularımda çalışabilir mi?"
           },
           {
-            "answer": "Her self-servis plan bir makineyi kapsar (bir Floating license). Rediacc'ı birden fazla makinede çalıştırmanız gerekiyorsa Enterprise kurmanlız gerekiyor; bunu ortaklarımız yönetiyor. Bize yazın, çözüm bulalım.",
-            "question": "Her plan kaç makineyi kapsar?"
+            "answer": "Rediacc'ın kurulu olduğu her fiziksel veya sanal sunucu bir makine olarak sayılır. Bu makinelerde oluşturulan anlık kopyalar ayrı sayılmaz. Kendi başına satın alınan her plan bir makineyi (bir slot) kapsar. Bir kümenin her düğümü dahil olmak üzere birden fazla makinede çalıştırmak, ortaklarımız aracılığıyla satılan bir Enterprise kurulumudur ve düğüm sayısı sipariş sırasında belirlenir.",
+            "question": "Makineler nasıl sayılır?"
           },
           {
             "answer": "Enterprise sizin altyapınız için tasarlanır ve ortaklarımız aracılığıyla satılır. Şartları siz belirlersiniz, birden fazla makinede çalıştırırsınız ve özel sunucu alanı, kurtarma taahhüdü ile 24/7/365 destek alırsınız. Bonus: güvenlik incelemeleri ve düzenli tatbikatlar.",
             "question": "Enterprise neleri içerir?"
           },
           {
-            "answer": "Evet. Bize e-posta gönderin. Okullar ve kâr amacı gütmeyen kuruluşlar özel fiyatlandırmadan yararlanır.",
-            "question": "Eğitim kurumları veya kâr amacı gütmeyen kuruluşlar için indirim sunuyor musunuz?"
+            "answer": "Evet. Professional ve Business, ikisi de 14 günlük ücretsiz denemeyle başlar. Deneme aboneliğe sorunsuzca geçebilsin diye ikisi de kayıt sırasında kart bilgisi ister; ilk ödeme yalnızca deneme bittiğinde alınır. Bundan önce iptal ederseniz hiçbir ücret alınmaz.",
+            "question": "Ücretsiz deneme var mı?"
+          },
+          {
+            "answer": "Her iki ücretli plan da aylık veya yıllık faturalandırılır ve yıllık faturalandırma %15 tasarruf sağlar. Planınızı istediğiniz zaman değiştirebilirsiniz: yükseltmeler hemen devreye girer, düşürmeler bir sonraki faturalandırma döngüsünün başında uygulanır ve hiçbir ceza veya ek ücret yoktur. Başlıca tüm kredi kartlarını kabul ediyoruz (Visa, MasterCard, American Express) ve Enterprise planları fatura ile ödenebilir.",
+            "question": "Faturalandırma nasıl işliyor?"
           },
           {
             "answer": "14 günlük deneme içinde iptal ederseniz ücret almaz. Ücretli plan sonradan iptal ederseniz, faturalandırma döneminin sonuna kadar özellikleri kullanmaya devam edersiniz, sonra Community planına dönersiniz. Depolarınız her zaman çalışır.",
             "question": "İptal edersem ne olur?"
-          },
-          {
-            "answer": "Kümedeki her düğüm bir makinedir ve biri biri olarak sayılır. Küme havuzu veya sunucu grupları için indirim yok. Düğüm, depo yerleştiğinde slot kullanır; küme kurmak bedava. Kümeleme Enterprise anlaşmasının parçası olarak ortaklarımız tarafından satılır, düğüm sayısı sipariş zamanında belirlenir.",
-            "question": "Küme düğümleri nasıl sayılır?"
           }
         ]
       },
