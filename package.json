@@ -116,6 +116,7 @@
     "check:ci-lint-scope-coverage": ".ci/scripts/quality/check_lint_scope_coverage.py",
     "check:ci-test-file-orphans": ".ci/scripts/quality/check_test_file_orphans.py",
     "check:ci-sentence-wrapping": "tsx scripts/check-sentence-wrapping.ts --selftest && tsx scripts/check-sentence-wrapping.ts",
+    "check:ci-docs-thumb-coverage": "tsx scripts/check-docs-thumb-coverage.ts --selftest && tsx scripts/check-docs-thumb-coverage.ts",
     "check:ci-actionlint": ".ci/scripts/security/actionlint.sh",
     "check:ci-scope-scripts-reachability": ".ci/scripts/quality/check-scope-scripts-reachability.sh",
     "check:ci-shell-lint": ".ci/scripts/security/shellcheck.sh",

@@ -828,6 +828,24 @@ export const GATES: readonly GateSpec[] = [
   // needs a build. Neither subsumes the other. Shrink-only baseline, seeded at 51 because
   // the <Sentences> mechanism does not exist yet -- that is what lets wave B land it
   // incrementally without this gate being either useless or blocking.
+  // The half of www-round5's gate 3 the content schema does NOT cover. Per-doc
+  // subcategory legality moved into content/config.ts (z.enum + superRefine), where it
+  // cannot be bypassed; what is left is thumbnail coverage. The thumbnails are
+  // hand-authored and their generator was deleted, so a new doc without one ships a
+  // blank browse card in all 13 locales silently -- one file serves every translation,
+  // resolved by base slug.
+  {
+    id: 'check:ci-docs-thumb-coverage',
+    run: 'npm run check:ci-docs-thumb-coverage',
+    gate: true,
+    leaves: ['scripts/check-docs-thumb-coverage.ts'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-content',
+      step: 'Docs thumbnail coverage',
+    },
+  },
   {
     id: 'check:ci-sentence-wrapping',
     run: 'npm run check:ci-sentence-wrapping',
