@@ -1,0 +1,40 @@
+---
+/**
+ * Render a catalog value with each sentence as its own line-breaking unit.
+ *
+ * `.sentence` is `display: inline-block`, which makes a sentence atomic: it moves to the
+ * next line whole rather than breaking across one, so a line can no longer carry the tail
+ * of one sentence plus the head of another. Two whole sentences on one line stay fine, and
+ * a sentence wider than the container still wraps internally, which the rule tolerates by
+ * construction because its neighbours start on fresh lines.
+ *
+ * SINGLE-SENTENCE VALUES EMIT NO MARKUP. Most of the catalog is one sentence, and wrapping
+ * those would add 6,000 spans to buy nothing.
+ *
+ * `lang` is a required prop, never `document.documentElement.lang`: the split happens at
+ * build time and the sentence boundaries are language-specific, so reading it from the DOM
+ * would give SSR and hydration different answers.
+ */
+import type { Language } from '../i18n/types';
+import { splitSentences } from '../utils/sentences';
+
+interface Props {
+  text: string;
+  lang: Language;
+}
+
+const { text, lang } = Astro.props;
+const parts = splitSentences(text, lang);
+---
+{
+  parts.length < 2 ? (
+    text
+  ) : (
+    parts.map((sentence, i) => (
+      <>
+        {i > 0 && ' '}
+        <span class="sentence">{sentence}</span>
+      </>
+    ))
+  )
+}
