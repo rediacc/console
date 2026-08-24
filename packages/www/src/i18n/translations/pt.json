@@ -3104,7 +3104,6 @@
           "withTag": "COM A REDIACC"
         },
         "hero": {
-          "primaryCta": "Começar Gratuitamente",
           "subtitle": "Crie cópias idênticas da sua infraestrutura e execute testes de intrusão com IA, sem colocar a produção em risco.",
           "title": "Clone a produção. Deixe a IA atacá-la."
         },
@@ -3412,7 +3411,6 @@
           "title": "Registo de auditoria comparado"
         },
         "hero": {
-          "primaryCta": "Começar Gratuitamente com Community",
           "subtitle": "Visibilidade total sobre quem fez o quê, quando e porquê. Registos de auditoria invioláveis para cada operação.",
           "title": "Cada ação registada. Nada escondido."
         },
@@ -3766,7 +3764,6 @@
           "title": "Verificação de backups comparada"
         },
         "hero": {
-          "primaryCta": "Começar Gratuitamente com Community",
           "subtitle": "Não espere por um desastre para descobrir que o seu backup está corrompido. A Rediacc verifica cada backup no momento em que é criado.",
           "title": "Cada backup verificado. Automaticamente."
         },
@@ -4130,7 +4127,6 @@
           "title": "Nenhuma outra ferramenta faz failover entre clouds em segundos"
         },
         "hero": {
-          "primaryCta": "Começar Gratuitamente com Community",
           "subtitle": "A sua infraestrutura corre em múltiplas clouds. Quando uma falha, as outras assumem. Automaticamente.",
           "title": "Quando a AWS cai, você não cai"
         },
@@ -4445,7 +4441,6 @@
           "withTag": "CONTÍNUO (REDIACC)"
         },
         "hero": {
-          "primaryCta": "Começar Gratuitamente",
           "subtitle": "Execute testes de segurança todos os dias em clones frescos de produção. Encontre vulnerabilidades quando surgem, não meses depois.",
           "title": "Teste a segurança de forma contínua. Não anual."
         },
@@ -4746,7 +4741,6 @@
           "title": "Soberania comparada"
         },
         "hero": {
-          "primaryCta": "Começar Gratuitamente com Community",
           "subtitle": "Você hospeda. Você guarda as chaves. Nenhum fornecedor sujeito à jurisdição dos EUA pode ser obrigado a entregar o que não possui.",
           "title": "Soberano por arquitetura, não por certificado."
         },
@@ -5122,7 +5116,6 @@
           "title": "Controlo de encriptação comparado"
         },
         "hero": {
-          "primaryCta": "Começar Gratuitamente com a Community",
           "subtitle": "Cada cópia de segurança é encriptada com chaves que lhe pertencem. Não as chaves do seu fornecedor. Não chaves partilhadas. Só suas.",
           "title": "As suas chaves. A sua encriptação. Sem exceções."
         },
@@ -5503,7 +5496,6 @@
           "title": "Nenhuma outra ferramenta clona a sua stack completa"
         },
         "hero": {
-          "primaryCta": "Começar Gratuitamente com a Community",
           "subtitle": "Crie cópias exatas da produção — aplicação, base de dados e configuração — para desenvolvimento e testes. Sem tickets. Sem esperas.",
           "title": "Clone a produção em 60 segundos"
         },
@@ -5873,7 +5865,6 @@
           "title": "Ferramentas de teste de DR comparadas"
         },
         "hero": {
-          "primaryCta": "Começar Gratuitamente com a Community",
           "subtitle": "Execute simulações de desastre em segurança. Saiba que a sua recuperação funciona mesmo. Sem surpresas quando mais importa.",
           "title": "Teste o seu failover antes de precisar dele"
         },
@@ -6225,7 +6216,6 @@
           "title": "O único backup com imutabilidade ao nível do sistema de ficheiros"
         },
         "hero": {
-          "primaryCta": "Começar Gratuitamente com a Community",
           "subtitle": "Os seus backups são imutáveis desde o momento em que são criados. Ninguém os pode alterar. Nem hackers. Nem sequer você.",
           "title": "Backups que o ransomware não consegue tocar"
         },
@@ -6614,7 +6604,6 @@
           "title": "O que os outros cobram por capacidade inativa"
         },
         "hero": {
-          "primaryCta": "Começar Gratuitamente",
           "subtitle": "Crie ambientes a pedido. Destrua-os quando terminar. Pague apenas pelo que realmente usa.",
           "title": "Pare de pagar por ambientes inativos"
         },
@@ -6954,7 +6943,6 @@
           "title": "Capacidade de recuperação comparada"
         },
         "hero": {
-          "primaryCta": "Começar Gratuitamente com a Community",
           "subtitle": "Não apenas ficheiros. Ambientes inteiros — servidores, configurações, bases de dados — restaurados e em funcionamento em minutos.",
           "title": "Recuperação completa do ambiente em minutos"
         },
@@ -7307,7 +7295,6 @@
           "title": "Fixtures de teste vs. clones de produção"
         },
         "hero": {
-          "primaryCta": "Começar Gratuitamente",
           "subtitle": "Um git push desencadeia um ambiente novo. Os testes correm em clones de produção. O CI/CD simplesmente funciona — sem scripts personalizados.",
           "title": "Integre-se no seu fluxo de trabalho existente"
         },
@@ -7603,7 +7590,6 @@
           "title": "Mais ninguém move um cluster em execução com os seus dados"
         },
         "hero": {
-          "primaryCta": "Começar Gratuitamente",
           "subtitle": "O cluster move-se como um único conjunto: nós, configuração e dados. Para outra máquina ou outro datacenter. A transição demora segundos, não um fim de semana.",
           "title": "Faz fork ou move um cluster Kubernetes em execução"
         },
@@ -7947,7 +7933,6 @@
           "title": "O que os outros não conseguem fazer durante a migração"
         },
         "hero": {
-          "primaryCta": "Começar Gratuitamente",
           "subtitle": "Muda de servidor, cloud ou fornecedor? Os dados permanecem encriptados o tempo todo. Sem exposição. Sem perdas.",
           "title": "Migre protegendo os seus dados"
         },
@@ -8305,7 +8290,6 @@
           "title": "Clonagem de código vs. clonagem de ambiente"
         },
         "hero": {
-          "primaryCta": "Começar Gratuitamente",
           "subtitle": "Chega de \"funciona na minha máquina\". Cada ambiente de desenvolvimento é um clone idêntico da produção.",
           "title": "Ambientes de desenvolvimento que correspondem à produção. Exatamente."
         },
@@ -8633,7 +8617,6 @@
           "title": "Nenhuma outra ferramenta recupera tão rapidamente"
         },
         "hero": {
-          "primaryCta": "Começar Gratuitamente com a Community",
           "subtitle": "Quando o ransomware ataca, cada minuto custa dinheiro. A Rediacc repõe o seu sistema online antes de o dano se propagar.",
           "title": "Recupere em minutos. Não em dias."
         },
@@ -9008,7 +8991,6 @@
           "title": "Conformidade de retenção comparada"
         },
         "hero": {
-          "primaryCta": "Começar Grátis com a Community",
           "subtitle": "Políticas de retenção configuráveis que cumprem os requisitos de conformidade. HIPAA, SOC2, GDPR -- cobertas por predefinição.",
           "title": "Conserve os seus dados durante o tempo que a lei exige"
         },
@@ -9401,7 +9383,6 @@
           "title": "Nenhuma outra ferramenta testa patches com dados reais de produção"
         },
         "hero": {
-          "primaryCta": "Começar Grátis com a Community",
           "subtitle": "Clone o seu ambiente de produção. Aplique o patch. Veja o que falha. Faça rollback se necessário. Sem tocar na produção.",
           "title": "Teste atualizações de SO sem o risco"
         },
@@ -9760,7 +9741,6 @@
           "title": "Nenhuma outra ferramenta migra toda a sua pilha em minutos"
         },
         "hero": {
-          "primaryCta": "Começar Grátis com a Community",
           "subtitle": "Implemente onde quiser. Migre quando quiser. Sem contratos de dependência. Sem formatos proprietários. Os seus dados ficam seus.",
           "title": "A sua infraestrutura. A sua escolha. Sempre."
         },
@@ -10061,7 +10041,6 @@
           "withTag": "Com a Rediacc"
         },
         "hero": {
-          "primaryCta": "Começar Grátis",
           "subtitle": "Encontre, teste e corrija falhas de segurança em clones seguros. Implemente correções em produção com confiança.",
           "title": "Corrija vulnerabilidades antes dos atacantes chegarem"
         },

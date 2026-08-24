@@ -3073,7 +3073,6 @@
           "withTag": "REDİACC İLE"
         },
         "hero": {
-          "primaryCta": "Ücretsiz Başlayın",
           "subtitle": "Altyapınızın birebir kopyalarını oluşturun ve AI destekli sızma testleri çalıştırın — üretim ortamını riske atmadan.",
           "title": "Üretim ortamını klonlayın. AI'nın saldırmasına izin verin."
         },
@@ -3381,7 +3380,6 @@
           "title": "Denetim izi karşılaştırması"
         },
         "hero": {
-          "primaryCta": "Community ile Ücretsiz Başlayın",
           "subtitle": "Kimin ne yaptığına, ne zaman ve neden yaptığına tam görünürlük. Her işlem için kurcalamaya dayanıklı denetim günlükleri.",
           "title": "Her eylem kaydedilir. Hiçbir şey gizlenmez."
         },
@@ -3735,7 +3733,6 @@
           "title": "Yedekleme doğrulaması karşılaştırması"
         },
         "hero": {
-          "primaryCta": "Community ile Ücretsiz Başlayın",
           "subtitle": "Yedeklemenizin bozuk olduğunu öğrenmek için felaket beklemeyin. Rediacc her yedeklemeyi oluşturulduğu anda kontrol eder.",
           "title": "Her yedekleme doğrulanır. Otomatik olarak."
         },
@@ -4099,7 +4096,6 @@
           "title": "Başka hiçbir araç bulutlar arası saniyeler içinde yük devretmez"
         },
         "hero": {
-          "primaryCta": "Community ile Ücretsiz Başlayın",
           "subtitle": "Altyapınız birden fazla bulutta çalışır. Biri çökünce, diğerleri devralır. Otomatik olarak.",
           "title": "AWS çökünce siz çökmezsiniz"
         },
@@ -4414,7 +4410,6 @@
           "withTag": "SÜREKLİ (REDİACC)"
         },
         "hero": {
-          "primaryCta": "Ücretsiz Başlayın",
           "subtitle": "Her gün taze üretim klonlarında güvenlik testleri çalıştırın. Güvenlik açıklarını ortaya çıktıklarında bulun — aylar sonra değil.",
           "title": "Güvenliği sürekli test edin. Yılda bir değil."
         },
@@ -4715,7 +4710,6 @@
           "title": "Egemenlik karşılaştırması"
         },
         "hero": {
-          "primaryCta": "Community ile Ücretsiz Başlayın",
           "subtitle": "Siz barındırırsınız. Anahtarlar sizdedir. ABD yargı yetkisindeki hiçbir sağlayıcı, elinde olmayan şeyi teslim etmeye zorlanamaz.",
           "title": "Sertifikayla değil, mimariyle egemen."
         },
@@ -5091,7 +5085,6 @@
           "title": "Şifreleme kontrolü karşılaştırması"
         },
         "hero": {
-          "primaryCta": "Community ile Ücretsiz Başlayın",
           "subtitle": "Her yedekleme sizin sahip olduğunuz anahtarlarla şifrelenir. Sağlayıcınızın anahtarları değil. Paylaşılan anahtarlar değil. Yalnızca sizin.",
           "title": "Sizin anahtarlarınız. Sizin şifrelemeniz. İstisnasız."
         },
@@ -5472,7 +5465,6 @@
           "title": "Başka hiçbir araç tam yığınınızı klonlamaz"
         },
         "hero": {
-          "primaryCta": "Community ile Ücretsiz Başlayın",
           "subtitle": "Üretim ortamının birebir kopyalarını oluşturun — uygulama, veritabanı ve yapılandırma — geliştirme ve test için. Talep açmadan. Beklemeden.",
           "title": "Üretim ortamını 60 saniyede klonlayın"
         },
@@ -5842,7 +5834,6 @@
           "title": "Felaket kurtarma test araçları karşılaştırması"
         },
         "hero": {
-          "primaryCta": "Community ile Ücretsiz Başlayın",
           "subtitle": "Felaket simülasyonlarını güvenle çalıştırın. Kurtarmanızın gerçekten çalıştığını bilin. En çok ihtiyaç duyduğunuz anda sürpriz yok.",
           "title": "Yük devretmenizi ihtiyacınız olmadan önce test edin"
         },
@@ -6194,7 +6185,6 @@
           "title": "Dosya sistemi seviyesinde değiştirilemezliğe sahip tek yedekleme"
         },
         "hero": {
-          "primaryCta": "Community ile Ücretsiz Başlayın",
           "subtitle": "Yedeklemeleriniz oluşturuldukları andan itibaren değiştirilemez. Kimse onları değiştiremez. Bilgisayar korsanları da. Siz bile.",
           "title": "Fidye yazılımının dokunamayacağı yedeklemeler"
         },
@@ -6583,7 +6573,6 @@
           "title": "Başkalarının boşta kapasite için ne aldığı"
         },
         "hero": {
-          "primaryCta": "Ücretsiz Başlayın",
           "subtitle": "İhtiyaç duyduğunuzda ortam oluşturun. İşiniz bitince yok edin. Yalnızca gerçekten kullandığınız için ödeme yapın.",
           "title": "Boşta kalan ortamlar için ödeme yapmayı durdurun"
         },
@@ -6923,7 +6912,6 @@
           "title": "Kurtarma yeteneği karşılaştırması"
         },
         "hero": {
-          "primaryCta": "Community ile Ücretsiz Başlayın",
           "subtitle": "Sadece dosyalar değil. Tüm ortamlar — sunucular, yapılandırmalar, veritabanları — dakikalar içinde geri yüklenir ve çalışır.",
           "title": "Dakikalar içinde tam ortam kurtarma"
         },
@@ -7276,7 +7264,6 @@
           "title": "Test fikstürleri vs. üretim klonları"
         },
         "hero": {
-          "primaryCta": "Ücretsiz Başlayın",
           "subtitle": "Git push yeni bir ortam tetikler. Testler üretim klonlarında çalışır. CI/CD özel betik gerektirmeden çalışır.",
           "title": "Mevcut iş akışınıza bağlanın"
         },
@@ -7572,7 +7559,6 @@
           "title": "Başka hiç kimse çalışan bir cluster'ı verisiyle birlikte taşımaz"
         },
         "hero": {
-          "primaryCta": "Ücretsiz başlayın",
           "subtitle": "Kümeniz bir bütün olarak hareket eder: node'lar, ayarlar ve veriler hepsi beraber. Başka bir sunucuya ya da veri merkezine. Geçiş saniyelerle ölçülür, hafta sonlarıyla değil.",
           "title": "Çalışan bir Kubernetes cluster'ını fork'layın veya taşıyın"
         },
@@ -7916,7 +7902,6 @@
           "title": "Başkalarının göç sırasında yapamadığı şey"
         },
         "hero": {
-          "primaryCta": "Ücretsiz Başlayın",
           "subtitle": "Sunucu, bulut veya sağlayıcılar arasında geçiş yapıyor musunuz? Yedeklemeler baştan sona şifreli kalır. Maruziyet yok. Veri kaybı yok.",
           "title": "Veri kaybı riskine girmeden göç yapın"
         },
@@ -8274,7 +8259,6 @@
           "title": "Kod klonlama vs. ortam klonlama"
         },
         "hero": {
-          "primaryCta": "Ücretsiz Başlayın",
           "subtitle": "Artık \"benim makinemde çalışıyor\" yok. Her geliştirme ortamı üretim ortamının birebir klonudur.",
           "title": "Üretim ortamıyla birebir eşleşen geliştirme ortamları."
         },
@@ -8602,7 +8586,6 @@
           "title": "Başka hiçbir araç bu kadar hızlı kurtarmaz"
         },
         "hero": {
-          "primaryCta": "Community ile Ücretsiz Başlayın",
           "subtitle": "Fidye yazılımı saldırdığında her dakika para kaybettirir. Rediacc hasar yayılmadan sizi tekrar çevrimiçi getirir.",
           "title": "Günler değil dakikalar içinde kurtarın."
         },
@@ -8977,7 +8960,6 @@
           "title": "Saklama uyumluluğu karşılaştırması"
         },
         "hero": {
-          "primaryCta": "Community ile Ücretsiz Başlayın",
           "subtitle": "Uyumluluk gereksinimlerini karşılayan yapılandırılabilir saklama politikaları. HIPAA, SOC2, GDPR — varsayılan olarak kapsanır.",
           "title": "Verilerinizi yasanın gerektirdiği sürece saklayın"
         },
@@ -9370,7 +9352,6 @@
           "title": "Başka hiçbir araç yamaları gerçek üretim verisi üzerinde test etmez"
         },
         "hero": {
-          "primaryCta": "Community ile Ücretsiz Başlayın",
           "subtitle": "Üretim ortamınızı klonlayın. Yamayı uygulayın. Neyin bozulduğunu görün. Gerekirse geri alın. Üretim ortamına dokunmadan.",
           "title": "İşletim sistemi güncellemelerini risksiz test edin"
         },
@@ -9729,7 +9710,6 @@
           "title": "Başka hiçbir araç tam yığınınızı dakikalar içinde göç ettirmez"
         },
         "hero": {
-          "primaryCta": "Community ile Ücretsiz Başlayın",
           "subtitle": "İstediğiniz yere dağıtın. İstediğiniz zaman göç edin. Bağlayıcı sözleşme yok. Tescilli format yok. Verileriniz sizin kalır.",
           "title": "Sizin altyapınız. Sizin seçiminiz. Her zaman."
         },
@@ -10030,7 +10010,6 @@
           "withTag": "Rediacc ile"
         },
         "hero": {
-          "primaryCta": "Ücretsiz Başlayın",
           "subtitle": "Güvenli klonlarda güvenlik açıklarını bulun, test edin ve yamalayın. Yamaları güvenle üretime dağıtın.",
           "title": "Saldırganlar gelmeden güvenlik açıklarını düzeltin"
         },

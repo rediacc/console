@@ -3096,7 +3096,6 @@
           "withTag": "REDIACCIGA"
         },
         "hero": {
-          "primaryCta": "Alusta tasuta",
           "subtitle": "Looge identne koopia oma infrastruktuurist ja käivitage tehisintellektipõhised läbitungimistestid - ilma tootmiskeskkonda ohustamata.",
           "title": "Klooni tootmiskeskkond. Lase tehisintellektil seda rünnata."
         },
@@ -3404,7 +3403,6 @@
           "title": "Auditirada võrdlus"
         },
         "hero": {
-          "primaryCta": "Alusta tasuta Community väljaandega",
           "subtitle": "Täielik ülevaade sellest, kes mida tegi, millal ja miks. Rikkumiskindlad auditirajalogid iga operatsiooni kohta.",
           "title": "Iga tegevus logitud. Mitte midagi peidetud."
         },
@@ -3758,7 +3756,6 @@
           "title": "Varukoopiate kontrollimine võrdluses"
         },
         "hero": {
-          "primaryCta": "Alusta tasuta Community väljaandega",
           "subtitle": "Ärge oodake katastroofi, et avastada varukoopia rikutus. Rediacc kontrollib iga varukoopiat selle loomise hetkel.",
           "title": "Iga varukoopia kontrollitud. Automaatselt."
         },
@@ -4122,7 +4119,6 @@
           "title": "Ükski muu tööriist ei tee tõrkesiiret pilvede vahel sekunditega"
         },
         "hero": {
-          "primaryCta": "Alusta tasuta Community väljaandega",
           "subtitle": "Teie infrastruktuur töötab mitmes pilves. Kui üks ebaõnnestub, võtavad teised üle. Automaatselt.",
           "title": "Kui AWS läheb alla, teie ei lähe"
         },
@@ -4437,7 +4433,6 @@
           "withTag": "PIDEV (REDIACC)"
         },
         "hero": {
-          "primaryCta": "Alusta tasuta",
           "subtitle": "Käivitage turvateste iga päev värsketel tootmiskloonidel. Leidke haavatavused nende ilmnemisel - mitte kuude pärast.",
           "title": "Testa turvalisust pidevalt. Mitte aastase intervalliga."
         },
@@ -4738,7 +4733,6 @@
           "title": "Suveräänsuse võrdlus"
         },
         "hero": {
-          "primaryCta": "Alusta tasuta Community väljaandega",
           "subtitle": "Teie hostib. Teie hoiab võtmeid. Ühtegi USA jurisdiktsiooni all olevat teenusepakkujat ei saa kohustada üle andma seda, mida tal pole.",
           "title": "Suveräänne arhitektuuri järgi, mitte sertifikaadi järgi."
         },
@@ -5114,7 +5108,6 @@
           "title": "Krüpteerimiskontrolli võrdlus"
         },
         "hero": {
-          "primaryCta": "Alusta tasuta Community versiooniga",
           "subtitle": "Iga varukoopia on krüpteeritud võtmetega, mis kuuluvad teile. Mitte teie tarnija võtmetega. Mitte jagatud võtmetega. Ainult teile.",
           "title": "Teie võtmed. Teie krüpteerimine. Ilma eranditeta."
         },
@@ -5495,7 +5488,6 @@
           "title": "Ükski teine tööriist ei klooni teie kogu virna"
         },
         "hero": {
-          "primaryCta": "Alusta tasuta Community versiooniga",
           "subtitle": "Loo täpseid koopiaid tootmisest — rakendus, andmebaas ja konfiguratsioon — arenduseks ja testimiseks. Ilma piletiteta. Ilma ootamiseta.",
           "title": "Klooni tootmiskeskkond 60 sekundiga"
         },
@@ -5865,7 +5857,6 @@
           "title": "KT-testimistööriistad võrdluses"
         },
         "hero": {
-          "primaryCta": "Alusta tasuta Community versiooniga",
           "subtitle": "Käivita katastroofisimulatsioone turvaliselt. Tea, et taastamine tegelikult toimib. Üllatusi pole, kui see kõige rohkem loeb.",
           "title": "Testi oma tõrkeüleminek enne, kui seda vajad"
         },
@@ -6217,7 +6208,6 @@
           "title": "Ainus varukoopia failisüsteemi tasandi muutumatusega"
         },
         "hero": {
-          "primaryCta": "Alusta tasuta Community versiooniga",
           "subtitle": "Teie varukoopiad on muutumatud hetkest, mil need luuakse. Keegi ei saa neid muuta. Ei häkkerid. Isegi mitte teie.",
           "title": "Varukoopiad, mida lunavara ei puutu"
         },
@@ -6606,7 +6596,6 @@
           "title": "Mida teised küsivad jõudeolekus mahu eest"
         },
         "hero": {
-          "primaryCta": "Alusta tasuta",
           "subtitle": "Loo keskkonnad nõudmisel. Hävita need, kui oled lõpetanud. Maksa ainult selle eest, mida tegelikult kasutad.",
           "title": "Lõpeta maksmast jõudeolekus keskkondade eest"
         },
@@ -6946,7 +6935,6 @@
           "title": "Taastamisvõimekuse võrdlus"
         },
         "hero": {
-          "primaryCta": "Alusta tasuta Community-ga",
           "subtitle": "Mitte ainult failid. Terved keskkonnad - serverid, konfiguratsioonid, andmebaasid - taastatakse ja töötavad minutitega.",
           "title": "Täieliku keskkonna taastamine minutitega"
         },
@@ -7299,7 +7287,6 @@
           "title": "Testkomplektid vs. tootmiskloonid"
         },
         "hero": {
-          "primaryCta": "Alusta tasuta",
           "subtitle": "Git push käivitab värske keskkonna. Testid töötavad tootmiskloonidel. CI/CD lihtsalt toimib - ilma kohandatud skriptideta.",
           "title": "Ühenda oma olemasoleva töövooguga"
         },
@@ -7595,7 +7582,6 @@
           "title": "Keegi teine ei vii töötavat klastrit üle koos selle andmetega"
         },
         "hero": {
-          "primaryCta": "Alusta tasuta prooviga",
           "subtitle": "Klaster liigub tervelt – sõlmed, seaded, andmed koos. Teise masinasse või andmekeskusesse. Ümberlülitus toimub sekundites, mitte nädalapikkusel üleminekul.",
           "title": "Forki või vii üle töötav Kubernetese klaster"
         },
@@ -7939,7 +7925,6 @@
           "title": "Mida teised migreerimise ajal ei suuda"
         },
         "hero": {
-          "primaryCta": "Alusta tasuta",
           "subtitle": "Vahetad servereid, pilvi või pakkujat? Krüpteerimine jääb paigale kogu tee. Andmed jäävad suletuks.",
           "title": "Migreeri turvaliselt – andmeid ei paljastuks"
         },
@@ -8297,7 +8282,6 @@
           "title": "Koodi kloonimine vs. keskkonna kloonimine"
         },
         "hero": {
-          "primaryCta": "Alusta tasuta",
           "subtitle": "Ei rohkem \"töötab minu masinal\". Iga arenduskeskkond on tootmise identne kloon.",
           "title": "Arenduskeskkonnad, mis vastavad tootmisele. Täpselt."
         },
@@ -8625,7 +8609,6 @@
           "title": "Ükski teine tööriist ei taastu nii kiiresti"
         },
         "hero": {
-          "primaryCta": "Alusta tasuta Community-ga",
           "subtitle": "Kui lunavara tabab, maksab iga minut. Rediacc viib teid tagasi võrku enne kahju levimist.",
           "title": "Taasta minutitega. Mitte päevadega."
         },
@@ -9000,7 +8983,6 @@
           "title": "Säilitusvastavuse võrdlus"
         },
         "hero": {
-          "primaryCta": "Alusta tasuta Community-ga",
           "subtitle": "Seadistatavad säilituspoliitikad, mis vastavad nõuetele. HIPAA, SOC2, GDPR - vaikimisi kaetud.",
           "title": "Hoidke andmeid nii kaua, kui seadus nõuab"
         },
@@ -9393,7 +9375,6 @@
           "title": "Ükski muu tööriist ei testi paikasid reaalsetel tootmisandmetel"
         },
         "hero": {
-          "primaryCta": "Alusta tasuta Community-ga",
           "subtitle": "Kloonige tootmiskeskkond. Rakendage paik. Vaadake, mis puruneb. Vajadusel tehke tagasipööramine. Kõik ilma tootmist puutumata.",
           "title": "Testige OS-i uuendusi riskivabalt"
         },
@@ -9752,7 +9733,6 @@
           "title": "Ükski muu tööriist ei migreeri teie täispinu minutitega"
         },
         "hero": {
-          "primaryCta": "Alusta tasuta Community-ga",
           "subtitle": "Paigaldage kuhu tahes. Migreerige millal tahes. Lukustusleppeid pole. Esialgseid vorminguid pole. Teie andmed jäävad teie omaks.",
           "title": "Teie taristu. Teie valik. Alati."
         },
@@ -10053,7 +10033,6 @@
           "withTag": "Rediacciga"
         },
         "hero": {
-          "primaryCta": "Alusta tasuta",
           "subtitle": "Leidke, testige ja paigake turvalüngad ohututes kloonides. Paigaldage parandused tootmises kindlalt.",
           "title": "Paigake haavatavused enne ründajate saabumist"
         },
