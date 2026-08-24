@@ -202,6 +202,19 @@ def fix_signals(root, lines, session_id, state):
     #
     # Commits are ONE unit, not one each: they already passed the docs-only
     # filter above and they landed together.
+    # THE FLOOD GUARD RUNS BEFORE UNIT SELECTION, and it has to. The caller
+    # absorbs a burst of "new" ticks as store-format drift rather than as
+    # fixes, and it decides that from `len(new_ticks)`. Handing it one unit
+    # first hid the burst from it, so the flood was never absorbed and the very
+    # first historical tick blocked instead. Caught by the suite's own
+    # tick-flood case, not by review.
+    if len(new_ticks) > TICK_FLOOD:
+        return (
+            ["tick: " + t[:120] for _, t in new_ticks],
+            sorted([t for t, _ in new_ticks]),
+            new_ticks,
+            head,
+        )
     units = []
     if commits:
         units.append(([s for s, _ in commits], [d for _, d in commits], []))
