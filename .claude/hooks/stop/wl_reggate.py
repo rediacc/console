@@ -246,6 +246,39 @@ def gate_reachable(scripts, target, root=None):
     return runner and target in _manifest_gate_ids(root)
 
 
+def prove_named_artifact(root, artifact):
+    """(proven, note) for a case on ANY surface, by the path the judge named.
+
+    THE GLOB PROBE BELOW CAN ONLY SEE ONE SURFACE. It matches check-*.ts,
+    check-*.sh and the two test suites, so a fix whose regression home is an
+    E2E case, an ops step, an install script or a unit test had no acceptable
+    answer at all: the only thing it could prove was a static gate, which for a
+    behavioural defect asserts that the source still looks right. Enumerating
+    the other five here would rot the moment a sixth appears, so this asks a
+    different question -- the judge names the path, and this checks whether that
+    path CHANGED in this session's tree.
+
+    Deliberately weaker than the glob probe, and it says so: this proves the
+    case was written, not that it runs or that it fails on the defect. The
+    surface's own file in `.claude/skills/testing/` names the run that would.
+    A path that does not exist, or exists unchanged, proves nothing.
+    """
+    # `.lstrip("./")` was the first spelling and it is wrong: lstrip takes a
+    # CHARACTER SET, so `.claude/hooks/...` came back as `claude/hooks/...` and
+    # every hook-surface artifact was reported as nonexistent. Strip the prefix.
+    rel = str(artifact or "").strip()
+    while rel.startswith("./"):
+        rel = rel[2:]
+    if not rel or ".." in rel or rel.startswith("/"):
+        return False, ""
+    full = pathlib.Path(root) / rel
+    if not full.exists():
+        return False, "named artifact %s does not exist" % rel
+    if not _is_dirty(rel, root):
+        return False, "named artifact %s exists but this session did not touch it" % rel
+    return True, "named artifact %s was written or changed this session" % rel
+
+
 def prove_new_gate(root, scripts, state):
     """(proven, notes). A claimed gate must leave ARTIFACTS, each verified:
     a NEW or CHANGED check script (content hash vs the marker), a check:* key
@@ -419,9 +452,27 @@ def apply_regression_verdict(rg, scripts, root, state, sig, lines, me8):
     proven, notes = prove_new_gate(root, scripts, state)
     if proven:
         return "settle", "proven", notes[:300]
+    # The other five surfaces. Only consulted when the judge routed AWAY from
+    # `gates`, so a static gate still has to clear the stricter probe above --
+    # wired, reachable and green -- rather than being waved through by touching
+    # a file.
+    surface = str(rg.get("surface") or "").strip()
+    if surface and surface not in ("gates", "none"):
+        ok, note = prove_named_artifact(root, rg.get("artifact"))
+        if ok:
+            return "settle", "proven", ("%s (%s)" % (note, surface))[:300]
+        if note:
+            notes = (notes + "; " if notes else "") + note
+    surface_line = ""
+    if surface and surface not in ("", "none"):
+        surface_line = "  surface: %s -- read .claude/skills/testing/%s.md; artifact: %s\n" % (
+            surface,
+            surface if surface != "gates" else "gates",
+            str(rg.get("artifact") or "(unnamed)")[:120],
+        )
     reason = M.R_REGGATE_BLOCK % (
         str(rg["blind_spot"])[:300],
-        str(rg["instruction"])[:300],
+        (surface_line + str(rg["instruction"]))[:600],
         "" if not hall else M.R_REGGATE_HALLUCINATED % hall,
         "" if not notes else "  gate probe: %s\n" % notes[:400],
         me8,

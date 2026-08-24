@@ -11509,6 +11509,63 @@ else
     fail "219b: dirty-detection does not discriminate ($(cat "$BASE/reggate-dirty.err"))"
 fi
 
+echo "== 219c. the reggate accepts a case on a surface that is NOT a check script =="
+# ci.yml has six regression surfaces; the globs above see one. A fix whose home
+# is an E2E case, an ops step, an install script or a unit test had NO
+# acceptable answer -- the only provable artifact was a static gate, which for a
+# behavioural defect asserts that the source still looks right. The judge now
+# names the surface and the path, and the probe checks THAT path, so a surface
+# this machinery has never heard of still has a checkable answer.
+if python3 -c "
+import sys, subprocess
+sys.path.insert(0, '\$(dirname "\$HOOK")')
+import wl_reggate as R
+root = subprocess.run(['git','rev-parse','--show-toplevel'], capture_output=True,
+                      text=True, check=True).stdout.strip()
+# A tracked, UNTOUCHED file proves nothing: the case has to have been written.
+clean = 'packages/www/scripts/check-tutorial-parity.ts'
+ok, note = R.prove_named_artifact(root, clean)
+assert ok is False, 'an untouched artifact was accepted as proof: %r' % (note,)
+assert 'did not touch' in note, note
+# A path that does not exist proves nothing either.
+ok, note = R.prove_named_artifact(root, 'packages/e2e-tests/tests/99-no-such.test.ts')
+assert ok is False and 'does not exist' in note, note
+# CONTROL: the escape hatches must not be reachable.
+for bad in ('', '   ', '../etc/passwd', '/etc/passwd'):
+    ok, note = R.prove_named_artifact(root, bad)
+    assert ok is False, 'traversal or empty path accepted: %r' % (bad,)
+# A DOTFILE PATH must resolve. The first spelling used lstrip('./'), which takes
+# a character SET, so '.claude/hooks/...' arrived as 'claude/hooks/...' and every
+# hook-surface artifact was reported as nonexistent. This control is why that was
+# caught before it shipped.
+ok, note = R.prove_named_artifact(root, '.claude/hooks/stop/wl_reggate.py')
+assert ok is True, 'a dotfile artifact was not resolved: %r' % (note,)
+ok, note = R.prove_named_artifact(root, './.claude/hooks/stop/wl_reggate.py')
+assert ok is True, 'a ./-prefixed artifact was not resolved: %r' % (note,)
+" 2>"$BASE/reggate-artifact.err"; then
+    pass "219c: the named-artifact probe rejects untouched, absent and traversal paths"
+else
+    fail "219c: named-artifact proof is not discriminating ($(cat "$BASE/reggate-artifact.err"))"
+fi
+
+echo "== 219d. CONTROL: a static gate still faces the STRICTER probe =="
+# 219c alone would pass on a machinery that let ANY touched file settle a
+# finding, which would gut the wired-and-green requirement for check:ci-* keys.
+# The named-artifact path is consulted only when the judge routed AWAY from
+# `gates`; `gates` and `none` must still go through prove_new_gate.
+if python3 -c "
+import sys, subprocess
+sys.path.insert(0, '\$(dirname "\$HOOK")')
+import wl_reggate as R
+src = open(R.__file__, encoding='utf-8').read()
+assert 'surface not in (\'gates\', \'none\')' in src, \
+    'the named-artifact shortcut is no longer fenced away from static gates'
+" 2>"$BASE/reggate-fence.err"; then
+    pass "219d CONTROL: the shortcut is fenced away from static gates"
+else
+    fail "219d: a static gate could be settled by touching any file ($(cat "$BASE/reggate-fence.err"))"
+fi
+
 # ============================================================================
 # 220. PLAN FIDELITY (stop/wl_planfid.py, wired in wl_checks.planfid_check).
 #

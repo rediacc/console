@@ -101,6 +101,20 @@ JUDGE_SCHEMA = {
                 "gate_needed": {"type": "boolean"},
                 "gate_proven": {"type": "boolean"},
                 "instruction": {"type": "string", "maxLength": 300},
+                # v13: WHERE the regression test belongs. Before this, the only
+                # answer the machinery could accept was a check-*.ts, so a
+                # behavioural fix in the CLI or renet was told to assert that its
+                # SOURCE still looks right -- a different claim from the one the
+                # defect needs. The six surfaces are the ones ci.yml actually has;
+                # `.claude/skills/testing/` routes between them.
+                "surface": {
+                    "type": "string",
+                    "enum": ["gates", "e2e", "ops", "install", "unit", "hooks", "none"],
+                },
+                # The repo-relative path the case belongs in. Named by the judge
+                # rather than matched against a list of globs, so a surface this
+                # machinery has never heard of still has a checkable answer.
+                "artifact": {"type": "string", "maxLength": 200},
             },
             "required": [
                 "applicable",
@@ -110,6 +124,8 @@ JUDGE_SCHEMA = {
                 "gate_needed",
                 "gate_proven",
                 "instruction",
+                "surface",
+                "artifact",
             ],
             "additionalProperties": False,
         },
