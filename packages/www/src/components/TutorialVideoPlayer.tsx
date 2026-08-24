@@ -525,7 +525,14 @@ const TutorialVideoPlayer: FC<TutorialVideoPlayerProps> = ({
       }
       playerRef.current = null;
     };
-  }, [activeSrc, activeLang]);
+    // Every added dep is STABLE, so this still rebuilds Plyr only on a real source or
+    // language change: `pickerLangs` is a useMemo over `sources`, `t` is memoised on the
+    // page locale, `handleLanguageChange` is a useCallback with no deps, and `activeBase`
+    // and `activeSubtitles` are primitives derived from `activeLang`, which is already
+    // here. They arrived with the in-menu picker and were left out; CI lints with
+    // `--max-warnings 0`, so an exhaustive-deps warning is a failing build, and calling it
+    // pre-existing was wrong -- it is on lines written this session.
+  }, [activeSrc, activeLang, activeBase, activeSubtitles, handleLanguageChange, pickerLangs, t]);
 
   // Word-by-word caption overlay driven by RAF + Plyr CC events.
   useEffect(() => {
