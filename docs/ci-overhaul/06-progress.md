@@ -4231,3 +4231,103 @@ edit, including a deletions count, not just the part you aimed at.
 Runs named `Watchdog: run <id> (gen N)` show `completed/success` and are NOT the CI
 run. On this wave the CI run was still executing its E2E legs while three watchdog
 generations reported success.
+
+---
+
+## 2026-08-24: the reggate learns that `ci.yml` has six surfaces, not one
+
+Everything below shipped on branch `0823-1` (PR #571).
+
+### The defect
+
+`wl_reggate.CHECK_SCRIPT_GLOBS` decided what counts as a gate: `scripts/check-*.ts`,
+`packages/*/scripts/check-*.ts`, `.ci/scripts/quality/check-*.sh`,
+`.ci/scripts/test/gates/test-*.sh`, plus the hook and gate suites. `ci.yml` has SIX
+regression surfaces and those globs see one:
+
+| surface | entry | coverage enforced by |
+|---|---|---|
+| static gates | `ci-quality.yml` | `check:ci-parity`, gate-reachability |
+| E2E on real VMs | `ct-tests.yml` -> `run-e2e.sh` | `check-e2e-coverage.sh`, both directions |
+| ops / KVM | `ci-ops-test.yml` | no gate of its own; the machines it provisions are exercised by the E2E suites |
+| install + update | `ct-install-methods.yml`, `.ci/scripts/test/test-install-*.sh` | six-platform, pre-publish |
+| unit | `ct-tests.yml` `test-unit` | -- |
+| hooks | `.claude/hooks/test-hooks.sh` | `check_test_file_orphans.py` |
+
+**`ci.yml:479` already calls `ci-quality.yml`**, so "bind the reggate to ci.yml" was
+never a wiring problem. The gap was that a behavioural fix in the CLI, renet or
+provisioning had NO acceptable answer: the only provable artifact was a static gate,
+which for a runtime defect asserts that the source still looks right. A different
+claim from the one the defect needs.
+
+### The fix, and the shape it deliberately avoids
+
+Adding five more globs rots the moment a seventh surface appears. The judge now
+answers a fifth question, WHERE, and names the artifact path;
+`prove_named_artifact` checks whether THAT path changed in this session's tree. Any
+surface, no list. It is weaker than the glob probe and says so in its own docstring:
+it proves the case was written, not that it runs. It is fenced away from `gates`, so
+a `check:ci-*` still faces the wired-reachable-green probe. Controls 219c/219d.
+
+The knowledge lives in `.claude/skills/testing/` (a `SKILL.md` routing table plus one
+file per surface, none over 45 lines) and `.claude/agents/test-advisor.md`.
+`check:ci-skill-size` caps a self-improving skill at 60 lines, opted into by
+`self-improving: true` in the skill's OWN frontmatter rather than a list in the gate:
+the same rot, avoided twice. The cap is the mechanism, not a style note -- at the cap
+an addition requires tightening something else.
+
+### One fix per stop
+
+Every commit and every new tick of a stop used to be hashed into a single fix-set, so
+one verdict covered unrelated fixes. Each unit is now asked alone, oldest first;
+commits stay ONE unit, and the rest stay UNBANKED for later stops.
+`tick_touches_code` mirrors the docs-only filter commits already face and FAILS
+TOWARD ASKING: a tick whose evidence names no path is still asked, because "no path"
+is not evidence that nothing shipped.
+
+### Four things the suites caught that review did not
+
+1. **The flood guard ran too late.** One-unit-per-stop hid a tick burst from the
+   caller's absorb path, so the first historical tick blocked instead. The guard now
+   runs before unit selection.
+2. **Three new controls could not execute.** Their `sys.path.insert` carried an
+   escaped `\$(dirname ...)`, so every one died on `ModuleNotFoundError`. A control
+   that cannot run looks identical to one that ran and failed; only the traceback
+   separates them.
+3. **A tautological gate assertion.** `check:ci-docs-copy-units` first asked
+   `units.length && SHELL_LANGS[lang] !== 1`, but the function already returned `[]`
+   for a non-shell language: the two halves were the same question and the planted
+   defect came back GREEN. A gate must judge the code against something the code does
+   not own.
+4. **`lstrip("./")` takes a CHARACTER SET**, so `.claude/hooks/...` became
+   `claude/hooks/...` and every hook-surface artifact read as nonexistent.
+
+### The agent-hint matcher, and a fix that was worse than the bug
+
+Adding one agent turned a neutral control red: "no local way to check the changelog
+**wording**" was pushed back to the narration agent, because `wording` folds to
+`word`, which `discriminative()` admits since exactly one description contains it.
+Uniqueness across thirteen documents is a weak proxy for specificity.
+
+Raising the `-ing` fold floor was tried FIRST and is worse: the fold is load-bearing,
+`failing` folds to `fail` which is a stopword and dies there, and blocking it let
+`failing` through as a term for e2e-local. That was caught by the gate's own negative
+controls, not by review. `word words` joined the stopword list instead.
+
+### The context-budget hooks were crying wolf
+
+`band-notice` reported "1.9% until auto-compact" at 181,419 tokens on a session that
+`/context` showed as 21% full, every turn, for hours. Two constants were wrong:
+
+- **The window.** `.claude/settings.json` pins 1,000,000 and Claude Code honours it,
+  but the hook clipped it to the 200K boundary inferred from the transcript's model
+  id -- and the transcript records `claude-opus-5` with NO `[1m]` marker even on a 1M
+  session. An ASSUMED cap must not overrule a written pin. It no longer does, and
+  `confident` goes false so the bet is declared.
+- **The margin.** `/context` prints "Autocompact buffer: 33k tokens", exactly
+  `min(maxOutputTokens, 20_000) + 13_000`. The module had dismissed that formula as
+  measured against the wrong unit and substituted 15,000, under-reserving by 18,000.
+
+The cap-disproof mechanism became unreachable under the new rule and was deleted,
+along with three mutants that could no longer distinguish a working disproof from a
+missing one.
