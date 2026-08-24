@@ -1,6 +1,6 @@
-# EXPLORE-docs — docs surface taxonomy + layout
+# EXPLORE-docs - docs surface taxonomy + layout
 
-Read-only investigation, 2026-08-23. Repo root `/home/muhammed/monorepo/console`, site
+Read-only investigation, 2026-08-23. Repo root `/home/muhammed/console`, site
 `packages/www`. All paths below are relative to `packages/www/` unless absolute.
 
 Measurements are live: dev server on `http://localhost:4321`, driven with `agent-browser`
@@ -13,14 +13,14 @@ experiments in section 4.5 were applied in the browser only and discarded with t
 
 ### 1.1 Where the content lives
 
-`src/content/docs/<lang>/<slug>.{md,mdx}` — **13 locale directories, not one flat dir.**
+`src/content/docs/<lang>/<slug>.{md,mdx}` - **13 locale directories, not one flat dir.**
 
 | locale | files |
 |---|---|
 | en | **79** (61 `.md`, 18 `.mdx`) |
 | ar de es et fr it ja ko pt ru tr zh | 78 each |
 
-`79 + 78x12 = 1,015` — that is where the "~1,015 flat markdown files" number comes from. It
+`79 + 78x12 = 1,015` - that is where the "~1,015 flat markdown files" number comes from. It
 is 79 *documents* rendered in 13 locales, not 1,015 distinct documents. The only doc missing
 a translation is `siem-integration` (present in `en` only).
 
@@ -45,7 +45,7 @@ language:    z.enum(LANGUAGES).default('en')
 sourceHash:  z.string().optional()
 ```
 
-`category` and `tags` are **English identifiers in every locale** — routing/filter keys, not
+`category` and `tags` are **English identifiers in every locale** - routing/filter keys, not
 display text. Translated labels live under `documentation.categories.*` and
 `documentation.tags.*`. The single source for both vocabularies plus their label maps is
 `src/utils/docs-categories.ts` (`CATEGORY_ORDER:17-24`, `CATEGORY_KEYS:44-51`,
@@ -61,8 +61,8 @@ The brief assumed "Essentials"/"Advanced" is what `/en/docs?category=Tutorials` 
 
 | what the operator sees | field | vocabulary | where it renders |
 |---|---|---|---|
-| "Filter by topic" on `/en/docs` | **`tags`** | 14 values | browse rail ONLY — `src/pages/[lang]/docs/index.astro:130-145` |
-| "Essentials" / "Advanced" | **`subcategory`** | 2 values | **left sidebar ONLY, Tutorials ONLY** — `src/components/DocsSidebar.astro:106` |
+| "Filter by topic" on `/en/docs` | **`tags`** | 14 values | browse rail ONLY - `src/pages/[lang]/docs/index.astro:130-145` |
+| "Essentials" / "Advanced" | **`subcategory`** | 2 values | **left sidebar ONLY, Tutorials ONLY** - `src/components/DocsSidebar.astro:106` |
 
 Verified live on `/en/docs?category=Tutorials`: the two `.docs-rail-summary` elements read
 exactly `"Filter by category"` and `"Filter by topic"`, and the topic list renders **11 tag
@@ -74,7 +74,7 @@ containers:6  networking:1  migration:2  security:2  operations:4
 ```
 
 Essentials/Advanced do not appear on the browse page at all. (The topic `<details>` group is
-collapsed by default — `index.astro:130` has no `open` attribute, unlike the category group
+collapsed by default - `index.astro:130` has no `open` attribute, unlike the category group
 at `:107`. The labels themselves render correctly.)
 
 English strings (`src/i18n/translations/en.json`):
@@ -111,7 +111,7 @@ DOCS                     18      30         8          6          8      9      
 ```
 
 - **Docs with >= 1 tag: 78 / 79.**
-- **Docs with no tag: 1** — `cli-application` (Reference).
+- **Docs with no tag: 1** - `cli-application` (Reference).
 - **Every category has tags.** No category is tag-free.
 - Category totals match the browse page's own counts, verified live:
   Tutorials 18 / Guides 30 / Concepts 8 / Reference 6 / Use Cases 8 / Legal 9 = 79.
@@ -132,12 +132,12 @@ Legal                  0          0         9       9
 
 **Only Tutorials uses `subcategory`. All 61 non-tutorial docs have it unset**, and the
 sidebar's `groupBySubcategory` defaults a missing value to `'essentials'`
-(`DocsSidebar.astro:86`) — harmless today only because the grouping is gated on
+(`DocsSidebar.astro:86`) - harmless today only because the grouping is gated on
 `category === 'Tutorials'` at `:106`.
 
 ### 1.6 Per-doc listing (English)
 
-**Tutorials (18)** — `order`, slug, subcategory, tags:
+**Tutorials (18)** - `order`, slug, subcategory, tags:
 
 ```
  1 tutorial-installation        essentials  getting-started, cli
@@ -161,7 +161,7 @@ sidebar's `groupBySubcategory` defaults a missing value to `'essentials'`
 ```
 
 **Guides (30):** quick-start(-1), requirements(0), installation(1), rdc-cheat-sheet(3,
-`cardGrid: true` — the only one), setup(3), repositories(4), autostart-recovery(5),
+`cardGrid: true` - the only one), setup(3), repositories(4), autostart-recovery(5),
 on-premise(5), rules-of-rediacc(5), services(5), kubernetes(6), networking(6),
 backup-restore(7), subscription-licensing(7), config-storage(8), license-chain(8),
 web-console(8), monitoring(9), tools(9), troubleshooting(10), migration(11),
@@ -188,7 +188,7 @@ legal-nis2-dora(8)
 - Browse + Learn menu + top tabs: `CATEGORY_ORDER` = Tutorials, Guides, Concepts,
   Reference, Use Cases, Legal (`docs-categories.ts:17-24`)
 - Sidebar: Guides(0), Concepts(1), Reference(2), Tutorials(3), Use Cases(4), Legal(5)
-  (`DocsSidebar.astro:42-49`) — documented at `:37-41` as deliberate ("the sidebar opens on
+  (`DocsSidebar.astro:42-49`) - documented at `:37-41` as deliberate ("the sidebar opens on
   Guides because that is where a reader already inside the docs continues").
 
 ---
@@ -197,7 +197,7 @@ legal-nis2-dora(8)
 
 ### 2.1 It is NOT a redirect any more
 
-`src/pages/[lang]/docs/index.astro` — **381 lines.** The `Astro.redirect('/<lang>/docs/quick-start', 301)`
+`src/pages/[lang]/docs/index.astro` - **381 lines.** The `Astro.redirect('/<lang>/docs/quick-start', 301)`
 is history, documented in the file's own header at `:5-7`. Verified: `GET /en/docs` -> 200,
 435,283 bytes.
 
@@ -235,14 +235,14 @@ site is `index.astro`, not a component file.
 
 Verified against the served HTML for `tutorial-installation`:
 
-1. `<img class="docs-card-thumb" src="/img/docs-thumbs/tutorial-installation.svg" alt="" width="320" height="120" loading="lazy">` — `index.astro:199-207`
-2. `<h3 class="docs-card-title"><a class="docs-card-link" href="/en/docs/tutorial-installation">Installation</a></h3>` — `:208-217`
-3. `<span class="docs-card-chip"><svg class="docs-chip-glyph"><path d="M9 6.5 17.5 12 9 17.5Z"/></svg> Tutorials</span>` — `:218-223`
+1. `<img class="docs-card-thumb" src="/img/docs-thumbs/tutorial-installation.svg" alt="" width="320" height="120" loading="lazy">` - `index.astro:199-207`
+2. `<h3 class="docs-card-title"><a class="docs-card-link" href="/en/docs/tutorial-installation">Installation</a></h3>` - `:208-217`
+3. `<span class="docs-card-chip"><svg class="docs-chip-glyph"><path d="M9 6.5 17.5 12 9 17.5Z"/></svg> Tutorials</span>` - `:218-223`
    **This is the only metadata chip. Category and nothing else.**
-4. `<p class="docs-card-description" id="docdesc-...">` — absolutely positioned overlay at
+4. `<p class="docs-card-description" id="docdesc-...">` - absolutely positioned overlay at
    `opacity:0`, revealed on hover / focus-within / `.is-revealed`
    (`docs-browse.css:387-408`), kept in the a11y tree deliberately.
-5. `<button class="docs-card-info">` — the touch path to (4), a SIBLING of the stretched
+5. `<button class="docs-card-info">` - the touch path to (4), a SIBLING of the stretched
    link so it is valid HTML (`:230-242`).
 
 The tags **are already in the DOM**, as `data-tags="getting-started cli"` on the `<li>`
@@ -259,7 +259,7 @@ bound at `index.astro:168`, and `tagLabel` at `:47`.
 - URL state `?category=a,b&tag=c,d&q=...` written with `history.replaceState` (`:329-340`)
 - Facet counts recomputed with that facet's own selection removed, so a count means "how
   many would I get if I ticked this" (`:308-322`)
-- A topic row whose count is 0 and which is unchecked is `hidden` (`:321`) — this is what
+- A topic row whose count is 0 and which is unchecked is `hidden` (`:321`) - this is what
   makes the topic list behave as a sub-group of the chosen category
 - Deep links resolve on load; unknown values are dropped rather than hiding everything (`:366-380`)
 - Progressive enhancement: with JS off every card is server-rendered and visible
@@ -274,7 +274,7 @@ Use Cases 35, Legal 345. It drives `.docs-chip-glyph`'s stroke only
 ### 2.7 Measured (1920x1080, `?category=Tutorials`)
 
 ```
-.docs-content        1873px   (one grid track — see 4.2)
+.docs-content        1873px   (one grid track - see 4.2)
 .docs-browse         1344px   (84rem cap, centred)
 .docs-rail            240px
 .docs-browse-results 1064px
@@ -283,14 +283,14 @@ visible cards        18   tally "18 / 79"
 .docs-sidebar        absent   .docs-top-tabs absent   .toc-sidebar absent
 ```
 
-Breakpoint: `docs-browse.css:145` — below 60rem the rail stacks above the grid and loses
+Breakpoint: `docs-browse.css:145` - below 60rem the rail stacks above the grid and loses
 `position: sticky`.
 
 ---
 
 ## 3. The left sidebar
 
-`src/components/DocsSidebar.astro` — 457 lines.
+`src/components/DocsSidebar.astro` - 457 lines.
 
 ### 3.1 How it groups today
 
@@ -319,13 +319,13 @@ All of it, in one component:
 | `:69-72` | `SUBCATEGORY_KEYS` -> `documentation.subcategories.{essentials,advanced}` |
 | `:73-76` | `SUBCATEGORY_ORDER` = essentials 0, advanced 1 |
 | `:77-80` | `subcategoryLabel(sub)` |
-| `:83-92` | `groupBySubcategory(entries)` — buckets on `doc.data.subcategory ?? 'essentials'` |
-| **`:106`** | **`const subgroups = category === 'Tutorials' ? groupBySubcategory(...) : null`** — the hardcoded gate |
+| `:83-92` | `groupBySubcategory(entries)` - buckets on `doc.data.subcategory ?? 'essentials'` |
+| **`:106`** | **`const subgroups = category === 'Tutorials' ? groupBySubcategory(...) : null`** - the hardcoded gate |
 | `:107-117` | builds `{key, groupId, label, entries, expandedAttr}`; essentials open by default |
 | `:163-200` | renders `li.subcategory-item > button.subcategory-header + ul.doc-list` |
 | `:201-217` | the flat fallback for every other category |
 | `:241-279` | subcategory CSS (uppercase 600-weight `--font-size-xs` header, chevron, collapse) |
-| `:281-288` | `.doc-link-num` — the `order` prefix, tutorials only in practice |
+| `:281-288` | `.doc-link-num` - the `order` prefix, tutorials only in practice |
 | `:379-413` | `initCollapsibleSubcategories()`; `sessionStorage` key `rediacc_docs_sub_<sub>` (`:389`) |
 
 ### 3.3 What grouping by topic would take
@@ -339,18 +339,18 @@ Two real snags:
 
 1. **66 of 79 docs carry two tags.** A doc would appear under two headings unless a primary
    tag is chosen (first tag wins, or a new `primaryTag` field, or reuse `order`).
-2. **The `sessionStorage` key at `:389` is `rediacc_docs_sub_<sub>` — global, not
+2. **The `sessionStorage` key at `:389` is `rediacc_docs_sub_<sub>` - global, not
    per-category.** Two categories sharing a tag would share collapse state. Prefix it with
    the category if the vocabulary widens from 2 values to 14.
 
 ---
 
-## 4. Tutorial doc page layout — exact CSS and measurements
+## 4. Tutorial doc page layout - exact CSS and measurements
 
 ### 4.1 Where the width control actually lives
 
 **Two files, and only two.** `src/styles/article-content.css` (116 lines) has **no** width
-constraints at all — its only `width` hits are two `scrollbar-width: thin` at `:53` and
+constraints at all - its only `width` hits are two `scrollbar-width: thin` at `:53` and
 `:86`. It is not a factor.
 
 `--docs-prose`, `--docs-measure`, `--docs-tracks` are grepped across the whole of `src/`:
@@ -368,9 +368,9 @@ constraints at all — its only `width` hits are two `scrollbar-width: thin` at 
 | `:683` | `--docs-slack` | **`1fr`** |
 | `:692-696` | `--docs-tracks-body` | `var(--docs-rail-nav) minmax(0,var(--docs-slack)) minmax(0,var(--docs-measure)) minmax(0,var(--docs-slack))` |
 | `:697` | `--docs-tracks` | `var(--docs-tracks-body) var(--docs-rail-toc)` |
-| **`:704`** | **`--docs-prose`** | **`34rem`** — the PROSE cap |
+| **`:704`** | **`--docs-prose`** | **`34rem`** - the PROSE cap |
 | `:716-719` | `.docs-shell:has(.cs-cards)` | `--docs-measure: 1fr; --docs-slack: 0px` |
-| **`:729-732`** | **`.docs-shell:has(.tutorial-video-container)`** | **`--docs-measure: 1fr; --docs-slack: 0px`** — tutorial pages already go full width |
+| **`:729-732`** | **`.docs-shell:has(.tutorial-video-container)`** | **`--docs-measure: 1fr; --docs-slack: 0px`** - tutorial pages already go full width |
 | `:739-741` | `.docs-shell-browse` | `--docs-tracks: minmax(0,1fr)` (one track) |
 | `:771-774` | `.docs-shell-embed .docs-layout` | `grid-template-columns: minmax(0,1fr); gap: 0` |
 | `:976-981` | `.docs-layout` | `display:grid; grid-template-columns: var(--docs-tracks); gap: var(--space-8)` |
@@ -384,7 +384,7 @@ constraints at all — its only `width` hits are two `scrollbar-width: thin` at 
 The two rules that matter for the ask, verbatim:
 
 ```css
-/* DocsLayout.astro:1051-1056 — the PROSE cap */
+/* DocsLayout.astro:1051-1056 - the PROSE cap */
 .docs-shell:not(.docs-shell-browse):not(.docs-shell-embed) .article-content > :global(*),
 .docs-shell:not(.docs-shell-browse):not(.docs-shell-embed) .docs-article > :global(.breadcrumb),
 .docs-shell:not(.docs-shell-browse):not(.docs-shell-embed) .docs-article > .fallback-notice,
@@ -393,7 +393,7 @@ The two rules that matter for the ask, verbatim:
   margin-inline: auto;
 }
 
-/* DocsLayout.astro:1059-1063 — the VIDEO PLAYER opt-out */
+/* DocsLayout.astro:1059-1063 - the VIDEO PLAYER opt-out */
 .docs-shell:not(.docs-shell-browse):not(.docs-shell-embed) .article-content > :global(.tutorial-video-container),
 .docs-shell:not(.docs-shell-browse):not(.docs-shell-embed) .article-content > :global(.cs-cards),
 .docs-shell:not(.docs-shell-browse):not(.docs-shell-embed) .article-content > :global(.print-page-header) {
@@ -402,14 +402,14 @@ The two rules that matter for the ask, verbatim:
 ```
 
 The cap deliberately sits on the article's flow CHILDREN, not on `.article-content` itself
-— documented at `:1035-1050`. That is what lets the player opt out while the words stay
+- documented at `:1035-1050`. That is what lets the player opt out while the words stay
 capped.
 
 Tokens (`public/styles/main.css`): `--space-4: 1rem` (`:236`), `--space-8: 2rem` (`:241`),
 `--docs-chrome-height: 3rem` (`:254`),
 `--nav-top-offset: calc(var(--nav-height) + var(--announcement-bar-height,0px))` (`:251`),
 `--font-size-base: 1rem` (`:199`). `main.css` is served from `public/styles/`, **not**
-`src/styles/` — the site's token layer is not where you would look.
+`src/styles/` - the site's token layer is not where you would look.
 
 ### 4.3 The player component and its CSS
 
@@ -438,7 +438,7 @@ Component: `src/components/TutorialVideoPlayer.tsx` (Plyr-based; `.tvp-shell` at
   overflow: hidden;
 }
 
-.tvp-shell { margin: 1.5rem 0; }   /* ~line 207 — no cap either */
+.tvp-shell { margin: 1.5rem 0; }   /* ~line 207 - no cap either */
 .tvp-shell .tvp-root { margin: 0; }
 ```
 
@@ -449,8 +449,8 @@ So the player's rendered width is whatever `.docs-content` gives it, full stop.
 | | 1440x900 | 1920x1080 |
 |---|---|---|
 | scrollbar | 15px | 15px |
-| `.docs-shell` | 1425 | — |
-| `.docs-layout` | 1393 | — |
+| `.docs-shell` | 1425 | - |
+| `.docs-layout` | 1393 | - |
 | computed `grid-template-columns` | `250px 0px 765px 0px 250px` | `250px 0px 1245px 0px 250px` |
 | `.docs-sidebar` | 250 | 250 |
 | **`.docs-content` / `.docs-article` / `.article-content`** | **765** | **1245** |
@@ -465,7 +465,7 @@ Arithmetic that reproduces it: `content = viewport - scrollbar - 2*16 (shell pad
 **The defect in one line: at 1920 the page shows a 1245px video sitting above 544px-wide
 text in the same 1245px column.** Prose uses 43.7% of its own column; the player uses 100%.
 
-Note the `:723-728` comment already anticipated half of this — it released
+Note the `:723-728` comment already anticipated half of this - it released
 `--docs-measure` for tutorial pages precisely so the recorded 107-column terminal would not
 be crushed. What it did not do is give the *prose* any of that width back, or stop the
 player from growing without bound.
@@ -488,7 +488,7 @@ Prefer `DocsLayout.astro:1059-1063` over `tutorial-video.css` for the player cap
 IS the tutorial-specific opt-out, it already carries the
 `:not(.docs-shell-browse):not(.docs-shell-embed)` guards, and `tutorial-video.css` is also
 loaded by the component in contexts the layout does not own. **Note the `.cs-cards` and
-`.print-page-header` selectors share that rule** — split the `.tutorial-video-container`
+`.print-page-header` selectors share that rule** - split the `.tutorial-video-container`
 selector out before changing its value, or cheat sheets and print headers get capped too.
 
 Measured with those two applied in-browser:
@@ -500,29 +500,29 @@ Measured with those two applied in-browser:
 | `.tvp-root` | **612 x 344** | **960 x 540** |
 | `documentElement.scrollWidth` | 1425 (no overflow) | 1905 (no overflow) |
 
-### 4.6 HAZARD — decide this before implementing
+### 4.6 HAZARD - decide this before implementing
 
 At 1920, `80%` of 1245 = 996, so the 960px ideal wins: player 960, prose 688. Good.
 
 **At 1440, `80%` of 765 = 612, and 612 < 688.** The player ends up *narrower than the
-paragraph above it*, and narrower than today's 765px — a visible regression at the most
+paragraph above it*, and narrower than today's 765px - a visible regression at the most
 common desktop width. "80% of the column" only reads well while the column is much wider
 than the prose, which is true at 1920 and false at 1440.
 
 Options:
-- `max-inline-size: min(960px, max(80%, var(--docs-prose)))` — never narrower than the text
-- `max-inline-size: min(960px, calc(var(--docs-prose) * 1.4))` — tie the player to the prose
+- `max-inline-size: min(960px, max(80%, var(--docs-prose)))` - never narrower than the text
+- `max-inline-size: min(960px, calc(var(--docs-prose) * 1.4))` - tie the player to the prose
   rather than to the column, so the two scale together
 - keep `80%` and accept 612px at 1440
 
 ### 4.7 Local rendering caveat (not a bug anyone introduced)
 
-`packages/www/public/assets/tutorials/` **does not exist** in this checkout — it is
+`packages/www/public/assets/tutorials/` **does not exist** in this checkout - it is
 gitignored and R2-hosted (`packages/www/.gitignore`, CLAUDE.md "Media Assets"). With
 `PUBLIC_VIDEO_CDN_BASE_URL` unset in dev, `remark-tutorial-embed.ts` emits the relative
 `/assets/tutorials/video/en/tutorial-installation.mp4`, which 404s. The player still mounts
 and still sizes correctly (`.tvp-root` is `aspect-ratio`-driven), so every measurement above
-holds — but the box is black. Restore with `.ci/scripts/deploy/sync-media-from-r2.sh` if a
+holds - but the box is black. Restore with `.ci/scripts/deploy/sync-media-from-r2.sh` if a
 visual check is wanted.
 
 ---
@@ -531,13 +531,13 @@ visual check is wanted.
 
 Three separate SVG families. Only the first is per-doc.
 
-### 5.1 `public/img/docs-thumbs/<slug>.svg` — the per-doc thumbnails
+### 5.1 `public/img/docs-thumbs/<slug>.svg` - the per-doc thumbnails
 
 - **79 files, all git-tracked** (`git ls-files packages/www/public/img/docs-thumbs | wc -l`
   = 79), 320 KB total, ~800 bytes each, `viewBox="0 0 320 120"`.
 - **Coverage: 79 / 79 English docs = 100%.** Zero missing, zero orphaned.
 - Because the browse page resolves them through `getBaseSlug(doc.slug)`
-  (`index.astro:167`, `:201`), **all 13 locales share the same 79 files** — so
+  (`index.astro:167`, `:201`), **all 13 locales share the same 79 files** - so
   **1,015 / 1,015 rendered docs have one, also 100%.**
 - **Referenced by filename convention only.** No frontmatter field, no map file, no
   manifest. The path is built inline: `` src={`/img/docs-thumbs/${slug}.svg`} `` at
@@ -547,7 +547,7 @@ Three separate SVG families. Only the first is per-doc.
   `styles/docs-browse.css:301`, `:305` (comments), `utils/docs-categories.ts:176` (comment).
   **They appear nowhere on `/en/docs/<slug>`.** The `docs-categories.ts:176` mention is
   prose inside the `CATEGORY_GLYPHS` doc comment, not a code path.
-- Hand-authored, each carrying its category's hue as **literal hex** — an `<img>`-referenced
+- Hand-authored, each carrying its category's hue as **literal hex** - an `<img>`-referenced
   SVG is an isolated document and cannot see `--docs-hue`, `currentColor`, or
   `:root[data-theme]`. Documented at `docs-browse.css:301-306`, which also warns that
   changing a category hue means editing the affected files by hand.
@@ -555,11 +555,11 @@ Three separate SVG families. Only the first is per-doc.
   hue-rotate(180deg) brightness(0.82) saturate(1.15) }` (`docs-browse.css:337-339`).
 - They **replaced** a build-time generator that drew abstract geometry from (category,
   tags); that generator is gone (`docs-categories.ts:170-178`, `index.astro:191-198`). There
-  is no regenerate script — new docs need a hand-authored file.
+  is no regenerate script - new docs need a hand-authored file.
 - If reused on doc pages: the inversion filter must travel with them, or dark-mode article
   pages get glaring light panels.
 
-### 5.2 `public/img/*.svg` — 23 architecture / flow diagrams
+### 5.2 `public/img/*.svg` - 23 architecture / flow diagrams
 
 `arch-*` (4), `account-*` (8), `backup-*` (2), plus `blackout-continuity`, `cross-backup`,
 `dev-environments`, `hub-architecture`, `hybrid-cloud-scaling`, `legacy-scaling`,
@@ -569,7 +569,7 @@ Embedded inline in doc bodies as markdown images. **20 of 23 are referenced by a
 doc; 3 are orphaned:** `arch-operating-modes.svg`, `backup-strategy-flow.svg`,
 `hub-architecture.svg`.
 
-### 5.3 `public/img/tutorials/<slug>/slide-N.svg` — 28 tutorial slides
+### 5.3 `public/img/tutorials/<slug>/slide-N.svg` - 28 tutorial slides
 
 19 directories (18 tutorials + `_template`):
 
@@ -583,7 +583,7 @@ the other 15 tutorials      slide-1         (1 each)
 
 Embedded in the `.mdx` body, e.g. `src/content/docs/en/tutorial-installation.mdx:23`
 (`![Three steps overview](/img/tutorials/tutorial-installation/slide-1.svg)`). Rendered at
-the prose width — measured 544px today, 688px under the 4.5 change.
+the prose width - measured 544px today, 688px under the 4.5 change.
 
 Each tutorial `.mdx` also opens with an asciinema cast reference, e.g.
 `![Tutorial: Installation](/assets/tutorials/tutorial-installation.cast)` at
@@ -594,7 +594,7 @@ Each tutorial `.mdx` also opens with an asciinema cast reference, e.g.
 
 ## 6. The "Learn" nav submenu
 
-### 6.1 There is no separate Learn landing page — it is the browse page
+### 6.1 There is no separate Learn landing page - it is the browse page
 
 `src/components/LearnMenu.tsx:44-55` builds exactly seven entries:
 
@@ -618,7 +618,7 @@ viewport.
 Learn menu.
 
 So the contrast the operator is drawing is **`/en/docs?category=X` (browse,
-`variant="index"`) versus `/en/docs/<slug>` (article, `variant="article"`) — the SAME
+`variant="index"`) versus `/en/docs/<slug>` (article, `variant="article"`) - the SAME
 `DocsLayout` taking two very different branches**, switched on
 `const isBrowse = variant === 'index'` (`DocsLayout.astro:84`).
 
@@ -626,10 +626,10 @@ So the contrast the operator is drawing is **`/en/docs?category=X` (browse,
 
 | | browse (`variant="index"`) | article (`variant="article"`) |
 |---|---|---|
-| grid | `--docs-tracks: minmax(0,1fr)` — ONE track, measured **1873px** at 1920 (`:739-741`) | 5 tracks; content 1245px, prose capped 544px |
-| left sidebar | **omitted** — `:183-199` gated on `!isBrowse` | `DocsSidebar`, scoped to one category |
-| TOC rail | **omitted** — `showTOC={false}` (`index.astro:74`), `hasTOC` false (`:79`) | 250px rail (`:264-277`) |
-| top tabs | **omitted** — `:112-118` | `DocsTopTabs`, 6 links |
+| grid | `--docs-tracks: minmax(0,1fr)` - ONE track, measured **1873px** at 1920 (`:739-741`) | 5 tracks; content 1245px, prose capped 544px |
+| left sidebar | **omitted** - `:183-199` gated on `!isBrowse` | `DocsSidebar`, scoped to one category |
+| TOC rail | **omitted** - `showTOC={false}` (`index.astro:74`), `hasTOC` false (`:79`) | 250px rail (`:264-277`) |
+| top tabs | **omitted** - `:112-118` | `DocsTopTabs`, 6 links |
 | **faceted filtering** | **category + topic checkboxes, live recomputed counts, URL-linkable** | none |
 | **visual index** | **79 thumbnail cards, category-hued glyph chips, hover description overlay, info button** | none |
 | hero | glyph + H1 + lede (`index.astro:79-85`) | breadcrumb + H1 + description + "Copy as Markdown" (`:207-256`) |
@@ -645,7 +645,7 @@ and any surfacing of `tags` whatsoever.**
 
 One blocker for reusing them: `DocsLayout`'s `Props.frontmatter` interface declares only
 `{ title, description, category? }` (`DocsLayout.astro:15-19`). `[slug].astro:52` passes
-`doc.data` whole, so the values are present at runtime — but `tags` and `subcategory` must
+`doc.data` whole, so the values are present at runtime - but `tags` and `subcategory` must
 be added to that interface before they can be read type-safely.
 
 ### 6.3 Related: `DocsTopTabs.astro` (170 lines)
@@ -659,7 +659,7 @@ Concepts -> `/en/docs/architecture`, Reference -> `/en/docs/cli-application`, Us
 component at all (`DocsLayout.astro:112`), so that branch is currently dead. The anchors it
 would target DO exist (`index.astro:161`).
 
-`categoryLabel` here **throws** on an unknown category (`:34`) rather than falling back —
+`categoryLabel` here **throws** on an unknown category (`:34`) rather than falling back -
 deliberate, because navigation chrome ships on 1,015 pages.
 
 ---
@@ -677,7 +677,7 @@ deliberate, because navigation chrome ships on 1,015 pages.
 4. **`DocsTopTabs`' `variant="index"` branch is dead code** (6.3).
 5. **`docs-browse.css:207-211`'s comment is now stale.** It reasons about a 765px column
    ("its grid reserves a 250px table-of-contents track even on this page"), but
-   `.docs-shell-browse` (`DocsLayout.astro:739-741`) since removed that track — the measured
+   `.docs-shell-browse` (`DocsLayout.astro:739-741`) since removed that track - the measured
    results column is 1064px at 1920, fitting 4 cards, not the 3 the comment describes.
 6. **`subcategory` defaults to `'essentials'` in `groupBySubcategory`**
    (`DocsSidebar.astro:86`). Safe only because of the `=== 'Tutorials'` gate at `:106`;
@@ -689,25 +689,25 @@ deliberate, because navigation chrome ships on 1,015 pages.
 ## 8. File index (all absolute)
 
 ```
-/home/muhammed/monorepo/console/packages/www/src/content/config.ts
-/home/muhammed/monorepo/console/packages/www/src/content/docs/<lang>/*.{md,mdx}
-/home/muhammed/monorepo/console/packages/www/src/utils/docs-categories.ts
-/home/muhammed/monorepo/console/packages/www/src/pages/[lang]/docs/index.astro     (browse; card inlined :190-243)
-/home/muhammed/monorepo/console/packages/www/src/pages/[lang]/docs/[slug].astro
-/home/muhammed/monorepo/console/packages/www/src/layouts/DocsLayout.astro          (1470 lines)
-/home/muhammed/monorepo/console/packages/www/src/components/DocsSidebar.astro      (457 lines)
-/home/muhammed/monorepo/console/packages/www/src/components/DocsTopTabs.astro      (170 lines)
-/home/muhammed/monorepo/console/packages/www/src/components/LearnMenu.tsx
-/home/muhammed/monorepo/console/packages/www/src/components/Navigation.tsx
-/home/muhammed/monorepo/console/packages/www/src/components/TutorialVideoPlayer.tsx
-/home/muhammed/monorepo/console/packages/www/src/plugins/remark-tutorial-embed.ts
-/home/muhammed/monorepo/console/packages/www/src/scripts/tutorial-video-hydrate.ts
-/home/muhammed/monorepo/console/packages/www/src/styles/docs-browse.css
-/home/muhammed/monorepo/console/packages/www/src/styles/tutorial-video.css
-/home/muhammed/monorepo/console/packages/www/src/styles/article-content.css        (no width rules)
-/home/muhammed/monorepo/console/packages/www/src/styles/sidebar-shared.css
-/home/muhammed/monorepo/console/packages/www/public/styles/main.css                (design tokens)
-/home/muhammed/monorepo/console/packages/www/public/img/docs-thumbs/               (79 svg)
-/home/muhammed/monorepo/console/packages/www/public/img/*.svg                      (23 diagrams)
-/home/muhammed/monorepo/console/packages/www/public/img/tutorials/<slug>/slide-N.svg (28)
+/home/muhammed/console/packages/www/src/content/config.ts
+/home/muhammed/console/packages/www/src/content/docs/<lang>/*.{md,mdx}
+/home/muhammed/console/packages/www/src/utils/docs-categories.ts
+/home/muhammed/console/packages/www/src/pages/[lang]/docs/index.astro     (browse; card inlined :190-243)
+/home/muhammed/console/packages/www/src/pages/[lang]/docs/[slug].astro
+/home/muhammed/console/packages/www/src/layouts/DocsLayout.astro          (1470 lines)
+/home/muhammed/console/packages/www/src/components/DocsSidebar.astro      (457 lines)
+/home/muhammed/console/packages/www/src/components/DocsTopTabs.astro      (170 lines)
+/home/muhammed/console/packages/www/src/components/LearnMenu.tsx
+/home/muhammed/console/packages/www/src/components/Navigation.tsx
+/home/muhammed/console/packages/www/src/components/TutorialVideoPlayer.tsx
+/home/muhammed/console/packages/www/src/plugins/remark-tutorial-embed.ts
+/home/muhammed/console/packages/www/src/scripts/tutorial-video-hydrate.ts
+/home/muhammed/console/packages/www/src/styles/docs-browse.css
+/home/muhammed/console/packages/www/src/styles/tutorial-video.css
+/home/muhammed/console/packages/www/src/styles/article-content.css        (no width rules)
+/home/muhammed/console/packages/www/src/styles/sidebar-shared.css
+/home/muhammed/console/packages/www/public/styles/main.css                (design tokens)
+/home/muhammed/console/packages/www/public/img/docs-thumbs/               (79 svg)
+/home/muhammed/console/packages/www/public/img/*.svg                      (23 diagrams)
+/home/muhammed/console/packages/www/public/img/tutorials/<slug>/slide-N.svg (28)
 ```
