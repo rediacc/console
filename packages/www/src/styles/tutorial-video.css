@@ -304,3 +304,27 @@
   overflow-y: auto;
   overscroll-behavior: contain;
 }
+
+/* THE LANGUAGE PANE INSIDE PLYR'S SETTINGS MENU.
+ *
+ * The clamp is not cosmetic. `.tvp-root` is `overflow: hidden`, so 13 entries do not merely
+ * overflow, they are CLIPPED: measured on a 720px 16:9 player, the unclamped popup is 488px
+ * tall and starts 127px ABOVE the container, hiding the first four languages with no
+ * scrollbar and no way to reach them. Plyr ships no max-height on its menu container, and
+ * its size measurement clones the pane, so a clamped pane animates to the clamped height.
+ * Its only `wheel` binding is scoped to the volume input, so scrolling here is safe.
+ */
+.tvp-root [id$='-language'] [role='menu'] {
+  max-height: min(40vh, 220px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.tvp-root .tvp-lang-item {
+  width: 100%;
+  justify-content: flex-start;
+}
+
+.tvp-root .tvp-lang-item[aria-checked='true'] {
+  font-weight: 600;
+}
