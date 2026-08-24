@@ -2,8 +2,8 @@
   "$meta": {
     "algorithm": "crc32",
     "sourceLanguage": "en",
-    "keyCount": 6234,
-    "sourceCommit": "30bb60bd6f6e0cc7a7d8f5e16562931ab9ffb752"
+    "keyCount": 6233,
+    "sourceCommit": "f793dc99ce7a671c2c60ab8fac3b46561c2cbd09"
   },
   "hashes": {
     "announcement.link": "767605c6",
@@ -161,7 +161,6 @@
     "getStarted.cta.secondary": "baa24cd4",
     "getStarted.subtitle": "32e73015",
     "getStarted.title": "e99e0a37",
-    "hero.cta.getStarted": "1da5e42d",
     "hero.install.tabs.linux": "53d0684b",
     "hero.install.tabs.macos": "eb08f27a",
     "hero.install.tabs.windows": "2c5abc07",

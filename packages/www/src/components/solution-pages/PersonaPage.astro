@@ -87,7 +87,7 @@ const breadcrumbItems = [
   <div class="sp-page" data-persona={config.personaType}>
     <Breadcrumb items={breadcrumbItems} class="sp-breadcrumb" />
     {has('hero') && (
-      <SPHero hero={(content as any).hero} ctaHref={ctaHref} />
+      <SPHero hero={(content as any).hero} />
     )}
 
     {has('stats') && (

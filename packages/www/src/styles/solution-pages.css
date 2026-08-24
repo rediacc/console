@@ -107,7 +107,53 @@
   color: var(--sp-text-muted-dark);
   line-height: 1.5;
   max-width: 600px;
-  margin: 0 auto 32px;
+  /* No trailing 32px any more: the hero CTA it used to clear is gone (n6). */
+  margin: 0 auto;
+}
+
+/* ========== HERO SPLIT (video beside the text, operator item n7) ==========
+   Two capped tracks centered as a group. DOM order is text-then-video, and grid
+   places the first child on the inline-start edge, so the text holds the
+   reading start in LTR (text left, video right) and /ar mirrors to text-right /
+   video-left with no extra rules. The single-column collapse below 900px keeps
+   that DOM order: title first, video under it. */
+.sp-hero-split {
+  display: grid;
+  grid-template-columns: minmax(0, 32rem) minmax(0, 36rem);
+  justify-content: center;
+  align-items: center;
+  column-gap: 48px;
+  text-align: start;
+  /* The base hero clips so its 600px-wide glow cannot overflow the page, but here the
+     clip also cut the video's language menu (measured: menu bottom 661 vs hero bottom
+     575 at 390px). The glow is capped to the hero's own width instead. */
+  overflow: visible;
+}
+.sp-hero-split::after {
+  width: min(600px, 100%);
+}
+.sp-hero-split .sp-hero-content {
+  margin: 0;
+}
+.sp-hero-split .sp-hero-sub {
+  margin: 0;
+}
+.sp-hero-media {
+  position: relative;
+  z-index: 1;
+  min-width: 0;
+}
+@media (max-width: 900px) {
+  .sp-hero-split {
+    grid-template-columns: minmax(0, 1fr);
+    justify-items: center;
+    row-gap: 32px;
+    text-align: center;
+  }
+  .sp-hero-media {
+    width: 100%;
+    max-width: 36rem;
+  }
 }
 
 /* ========== SHARED BUTTONS ========== */

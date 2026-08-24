@@ -216,9 +216,6 @@
     "title": "첫 번째 스택을 복제할 준비가 되셨나요?"
   },
   "hero": {
-    "cta": {
-      "getStarted": "무료로 시작하기"
-    },
     "install": {
       "tabs": {
         "linux": "Linux",

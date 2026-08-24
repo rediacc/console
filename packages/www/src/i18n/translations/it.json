@@ -216,9 +216,6 @@
     "title": "Sei pronto a clonare il tuo primo stack?"
   },
   "hero": {
-    "cta": {
-      "getStarted": "Inizia gratis"
-    },
     "install": {
       "tabs": {
         "linux": "Linux",

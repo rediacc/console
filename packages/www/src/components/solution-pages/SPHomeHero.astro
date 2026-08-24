@@ -17,15 +17,13 @@
  *     simulated artifact in its hero;
  *   - the eyebrow pill, whose top 7px sat UNDER the fixed header at 1440 and
  *     which showed only the word "SERVERS" at 390;
- *   - the secondary CTA, so one action reads as the action.
- *
- * The CTA is the site primitive (`.btn.btn--primary`), not `.sp-btn-primary`.
- * The primary CTA was built nine times across this site in two different
- * greens; the homepage is not going to be the tenth.
+ *   - the secondary CTA, so one action reads as the action;
+ *   - then, in round 6, the primary CTA too (operator decision n6: no CTA
+ *     buttons in any hero). The hero states the claim; the actions live in
+ *     the sections below.
  */
 import type { Language } from '../../i18n/types';
 import { createTranslator } from '../../i18n/utils';
-import AccountLink from '../AccountLink.astro';
 
 interface Props {
   lang: Language;
@@ -39,13 +37,6 @@ const { t } = createTranslator(lang);
   <div class="sp-home-hero-inner">
     <h1>{t('hero.title')}{t('hero.titleHighlight')}</h1>
     <p class="sp-home-hero-sub">{t('hero.subtitle')}</p>
-    <AccountLink
-      label={t('hero.cta.getStarted')}
-      className="btn btn--primary"
-      trackEvent="cta_click"
-      trackLabel="home-hero-get-started"
-      trackDest="account"
-    />
   </div>
 </section>
 

@@ -216,9 +216,6 @@
     "title": "最初のスタックをクローンする準備はできましたか？"
   },
   "hero": {
-    "cta": {
-      "getStarted": "無料で始める"
-    },
     "install": {
       "tabs": {
         "linux": "Linux",

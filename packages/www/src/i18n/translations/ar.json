@@ -216,9 +216,6 @@
     "title": "جاهز لنسخ أول بيئة لك؟"
   },
   "hero": {
-    "cta": {
-      "getStarted": "ابدأ مجانًا"
-    },
     "install": {
       "tabs": {
         "linux": "Linux",

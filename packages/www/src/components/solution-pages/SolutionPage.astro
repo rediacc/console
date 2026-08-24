@@ -98,20 +98,26 @@ const breadcrumbItems = [
 >
   <div class="sp-page">
     <Breadcrumb items={breadcrumbItems} class="sp-breadcrumb" />
-    {has('hero') && (
-      <SPHero hero={(content as any).hero} ctaHref={ctaHref} />
-    )}
-
-    {has('stats') && (
-      <SPStatsBar stats={(content as any).stats} />
-    )}
+    {/* The video rides INSIDE the hero as its media column (operator item n7).
+        A ternary, not a falsy expression child: an expression child would count
+        as passed slot content in SPHero's `Astro.slots.has('default')` even
+        when it renders nothing. */}
+    {has('hero') && (has('video') ? (
+      <SPHero hero={(content as any).hero}>
+        <SPSolutionVideo lang={lang} slug={slug} />
+      </SPHero>
+    ) : (
+      <SPHero hero={(content as any).hero} />
+    ))}
 
     {has('problem') && (
       <SPProblem problem={(content as any).problem} referenceItems={(content as any).references?.items} slug={slug} />
     )}
 
-    {has('video') && (
-      <SPSolutionVideo lang={lang} slug={slug} />
+    {/* Operator item n5: the three-stat panel reads as the ANSWER to the problem
+        section, so it renders directly after it, not between hero and problem. */}
+    {has('stats') && (
+      <SPStatsBar stats={(content as any).stats} />
     )}
 
     {has('costCalculator') && config.calculatorPreset && (

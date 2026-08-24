@@ -216,9 +216,6 @@
     "title": "Valmis kloonima oma esimest stacki?"
   },
   "hero": {
-    "cta": {
-      "getStarted": "Alusta tasuta prooviperioodi"
-    },
     "install": {
       "tabs": {
         "linux": "Linux",

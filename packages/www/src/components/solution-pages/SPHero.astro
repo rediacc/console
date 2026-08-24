@@ -6,7 +6,7 @@
  * h1, a subtitle, a differentiator line, two CTAs, and a full simulated
  * terminal with a disclaimer apologising for being simulated. This is the same
  * cut `SPHomeHero.astro` already made for the homepage, applied to the other 25
- * pages: title, one sentence, one action.
+ * pages: title and one sentence.
  *
  * What left, and why:
  *   - the eyebrow pill, which repeated the category in shouted caps and, at
@@ -14,11 +14,16 @@
  *   - the simulated terminal, the largest object above the fold on every one of
  *     these pages, which shipped its own disclaimer;
  *   - the differentiator line, a second subtitle;
- *   - the secondary CTA, so one action reads as the action;
- *   - the `youtubeVideoId` / `.sp-hero--split` branch, which no caller ever
- *     passed.
+ *   - both CTAs (operator decision, round 6): the hero states the claim, the
+ *     black bottom CTA carries the action.
  *
- * The height now comes from the content. `min-height: 100dvh` with
+ * Round 6 also brought the solution video INTO the hero: when a caller passes
+ * children (SolutionPage does, PersonaPage does not), the hero becomes a
+ * two-column grid: text on the reading start edge, video on the end edge.
+ * DOM order is text-then-video, so the grid mirrors itself under RTL and the
+ * single-column collapse leads with the title, not a dark rectangle.
+ *
+ * The height comes from the content. `min-height: 100dvh` with
  * `justify-content: center` is gone from `.sp-hero`: on a page whose hero is
  * three short elements it reserved a whole viewport to centre them in, which is
  * exactly the measurement that took the homepage hero apart.
@@ -27,21 +32,21 @@ interface Props {
   hero: {
     title: string;
     subtitle: string;
-    primaryCta: string;
   };
-  ctaHref: string;
 }
 
-const { hero, ctaHref } = Astro.props;
+const { hero } = Astro.props;
+const hasMedia = Astro.slots.has('default');
 ---
 
-<section class="sp-hero">
+<section class:list={['sp-hero', hasMedia && 'sp-hero-split']}>
   <div class="sp-hero-content">
     <h1>{hero.title}</h1>
     <p class="sp-hero-sub">{hero.subtitle}</p>
-    <a href={ctaHref} class="sp-btn-primary">
-      {hero.primaryCta}
-      <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8h10m0 0L9 4m4 4L9 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-    </a>
   </div>
+  {hasMedia && (
+    <div class="sp-hero-media" id="video">
+      <slot />
+    </div>
+  )}
 </section>
