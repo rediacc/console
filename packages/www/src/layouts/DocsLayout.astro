@@ -853,10 +853,21 @@ for (const entry of toc as TocEntry[]) {
 
       /* The PROSE measure, which is not the same thing as the measure TRACK. The
          track decides how much room the article gets; this decides how much of it
-         the running text is allowed to use. 34rem is not a round number picked for
-         looks: at the 16px body size the article column rendered 101 characters per
-         line, and 544/765 of that is ~72, inside the 65-75 that reads comfortably. */
-      --docs-prose: 34rem;
+         the running text is allowed to use.
+
+         RAISED 34rem -> 44rem ON OPERATOR INSTRUCTION ("make the middle column content
+         wider. Do not resize the column"), which is the column staying at its 800px
+         measure while the text inside stops stopping short of it. 544px left 256px of
+         an 800px column unused.
+
+         The trade, stated rather than hidden: 34rem was chosen because at the 16px body
+         size the article column renders 101 characters per line, so 544/765 of that is
+         ~72, inside the 65-75 that reads comfortably. 704px is ~93 characters, above
+         that band. This is a deliberate override of a measured default, not an
+         oversight, and the earlier answer to "bump it to 43rem?" was leave-it -- the
+         instruction here supersedes that. 44rem stops 96px short of the 800px track so
+         the text still sits in a column rather than becoming the column. */
+      --docs-prose: 44rem;
     }
 
     /* A cheat sheet is a reference table, not prose: it wants every pixel, so

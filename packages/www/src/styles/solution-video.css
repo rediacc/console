@@ -26,7 +26,19 @@
 /* The shared trigger reads `--color-text`, which is near-black in the light theme and
    would vanish on the hero's dark band. Scoped here, not edited in
    language-switcher.css: the nav and footer instances keep their theme colors. */
+/* BACKGROUND AND BORDER, NOT JUST COLOUR, and that is the whole bug this replaces.
+   The shared `.language-trigger` paints `background: var(--color-bg-alt)` and
+   `border-color: var(--color-border)` (language-switcher.css:15-16). Setting only
+   `color: white` here left the background resolving to white on this hero, so the
+   control rendered white-on-white at contrast 1.00 -- in BOTH themes, measured.
+   Exactly the failure the FOOTER switcher had earlier in this same wave: a dark band
+   must re-point every token the component paints from, not only the text one.
+   Translucent white rather than a fixed hex so the hero's own gradient shows through
+   and one rule serves both themes; it matches the :hover treatment below, which was
+   already correct because it set a background. */
 .sp-video-toolbar .language-trigger {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.24);
   color: var(--sp-text-white);
 }
 

@@ -89,15 +89,13 @@ const description = t('documentation.browse.description');
   showTOC={false}
 >
   <div class="docs-browse">
-    {/* Full-bleed hero ABOVE the two-column body, so the page introduces itself once and
-        the rail beside the grid is purely controls. */}
-    <header class="docs-browse-hero">
-      <svg class="docs-browse-hero-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-        <path d={CATEGORY_GLYPHS.Guides} />
-      </svg>
-      <h1>{title}</h1>
-      <p class="docs-browse-lede">{description}</p>
-    </header>
+    {/* NO PAGE HERO. The heading and lede ("Documentation" / "Every guide, tutorial, and
+        reference in one place.") were removed at the operator's request: the category tab
+        strip directly above already says what this page is, and the cards say it again.
+        The <h1> is kept for the document outline and for screen readers, visually hidden --
+        removing it outright would leave the page with no h1 at all and start the heading
+        order at the rail's h2. */}
+    <h1 class="sr-only">{title}</h1>
 
     <div class="docs-browse-body">
       {/* The filter RAIL. `<details>` for the collapsible groups because it is keyboard
