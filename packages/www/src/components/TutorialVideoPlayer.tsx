@@ -400,13 +400,30 @@ const TutorialVideoPlayer: FC<TutorialVideoPlayerProps> = ({
               // No `selected` here: Plyr's own types do not declare it even though the
               // runtime reads `config.selected`, and the explicit `player.quality`
               // assignment below is the stronger override anyway.
-              default: langIndex,
-              options: pickerLangs.map((_l, i) => i),
+              default: langIndex + 1,
+              options: pickerLangs.map((_l, i) => i + 1),
               // DEFERRED PAST THE CLICK. This fires from inside Plyr's own open menu,
               // and the language change unmounts that menu with it (the subtree is keyed
               // on the language). Letting the click handler unwind first is what keeps
               // Plyr from operating on nodes React has already discarded.
+              // READ THE ITEM PLYR CHECKED, NOT THE ARGUMENT IT PASSES.
+              //
+              // Measured, twice, with the handler instrumented: clicking the radio whose
+              // DOM value is "4" delivered 0, and after moving to 1-based options,
+              // clicking "5" delivered 1. Whatever is clicked, the argument arrives as
+              // min(options) -- `setQuality` is snapping through `closest()`, so its
+              // `options.includes()` test is failing on values the menu itself rendered
+              // from the same list.
+              //
+              // The click handler sets `menuItem.checked = true` BEFORE dispatching
+              // (plyr.mjs:1817), so the checked radio in the quality pane is the truth
+              // and it is right there in the DOM. Reading it sidesteps the snap entirely.
               onChange: (value: number) => {
+                const pane = videoRef.current
+                  ?.closest('.plyr')
+                  ?.querySelector('[id$="-quality"] [role="menuitemradio"][aria-checked="true"]');
+                const clicked = Number((pane as HTMLInputElement | null)?.value);
+                if (Number.isFinite(clicked) && clicked > 0) value = clicked;
                 // IGNORE PLYR'S OWN INIT-TIME RESTORE. Measured live: after switching one
                 // solution video to German, the NEXT solution page loaded
                 // `de/backup-verification.mp4` instead of English, because Plyr reads a
@@ -415,14 +432,14 @@ const TutorialVideoPlayer: FC<TutorialVideoPlayerProps> = ({
                 // a viewer had clicked. The explicit assignment below arrives too late to
                 // undo it, so the restore is refused rather than corrected.
                 if (settlingRef.current) return;
-                const next = pickerLangs[value];
+                const next = pickerLangs[value - 1];
                 if (!next || next === activeBase) return;
                 window.setTimeout(() => handleLanguageChange(next), 0);
               },
             },
             i18n: {
               quality: t('navigation.selectLanguage'),
-              qualityLabel: Object.fromEntries(pickerLangs.map((l, i) => [i, getLanguageName(l)])),
+              qualityLabel: Object.fromEntries(pickerLangs.map((l, i) => [i + 1, getLanguageName(l)])),
             },
           }
         : {}),
@@ -439,7 +456,7 @@ const TutorialVideoPlayer: FC<TutorialVideoPlayerProps> = ({
     // a DIFFERENT language, silently. The explicit assignment is `input` in that
     // `.find(is.number)` chain, which outranks the stored value.
     if (inPlayerPicker) {
-      player.quality = langIndex;
+      player.quality = langIndex + 1;
       // AND OVERWRITE WHAT IS STORED, not just what is selected. Refusing the init-time
       // restore was not enough on its own: measured live, a page opened in English, and
       // the first click on `Français` still produced `de/...`, because the stale German
@@ -449,7 +466,7 @@ const TutorialVideoPlayer: FC<TutorialVideoPlayerProps> = ({
       // back makes every later restore a no-op instead.
       const store = (player as unknown as { storage?: { set(o: Record<string, unknown>): void } })
         .storage;
-      store?.set({ quality: langIndex });
+      store?.set({ quality: langIndex + 1 });
     }
     settlingRef.current = false;
 
