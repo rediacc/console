@@ -4331,3 +4331,78 @@ controls, not by review. `word words` joined the stopword list instead.
 The cap-disproof mechanism became unreachable under the new rule and was deleted,
 along with three mutants that could no longer distinguish a working disproof from a
 missing one.
+
+## 0824-1: two control-first gates, and the gate that had a blind spot in its own oracle (2026-08-24)
+
+Everything below shipped on branch `0824-1` (PR #573), alongside the devbox work that
+turned `./run.sh setup` into one idempotent machine-prep command.
+
+### Two gates added to the `.ci/scripts/quality/` surface
+
+| gate | key | guards |
+|---|---|---|
+| `check-devcontainer-scripts.sh` | `check:ci-devcontainer-scripts` | stderr visibility on primary operations; process-group lifecycle in `start-vscode.sh` |
+| `check-setup-idempotency.sh` | `check:ci-setup-idempotency` | six assertions: mutating steps guarded, `setup --check` report-only, deterministic ports, exit-code honesty, label-vs-HTTP-code, method-scoped redirects |
+
+Both are control-first in the strict sense: every assertion is re-run against a copy of
+the source mutated to carry the original defect, and each control is preceded by a
+**vacuity check that the mutation actually applied**. Two of those controls earned their
+keep the same day:
+
+- The devcontainer gate's A-control stopped applying when the line it targeted was
+  reworded, and the gate **failed itself** ("CONTROL IS VACUOUS") rather than reporting
+  green. That is the designed behaviour and it is the first time it fired for real.
+- The setup gate's C-control planted `$RANDOM`, and `$RANDOM % 100` self-collides about
+  **1% of runs**, so the planted defect occasionally survived and the gate printed
+  "CONTROL DID NOT FIRE" at random. A flaky control is worse than no control: it teaches
+  the reader to re-run until green. `check_c` now requires five agreeing samples (~1e-8);
+  12 consecutive runs came back clean.
+
+### `check-editorconfig.sh`: 573s -> 14.7s, and a blind spot in its own oracle
+
+The gate spawned `file`, `tail`, `head|od|grep` and `grep -P` **per file**. Measured:
+6,595 tracked files x ~87ms of fork/exec = ~573s, which is why it could not finish inside
+a 10-minute local run. `file --mime-encoding` is still the only binary oracle and is
+still called with identical flags -- just batched through `xargs` so its heuristics cannot
+drift -- while the four byte-exact checks (final newline, BOM, CRLF, NUL) collapse into a
+single pass.
+
+The interesting part was found by diffing old-vs-new classification across a 400-file
+sample, not by reading: the old code ran `file --mime-encoding "$f" | grep -q "binary"`
+over the WHOLE line, **path included**. Any path containing the substring `binary` was
+treated as a binary asset and silently exempted from the newline/BOM/CRLF checks. Five
+tracked text files matched, including
+`.ci/scripts/test/gates/test-watchdog-binary-exec-guard.sh` (us-ascii). None hid a real
+violation, but a gate whose coverage depends on filenames is exactly the kind that goes
+quiet, so a control now asserts both directions: a us-ascii path containing `binary` must
+NOT classify as binary, and a real binary must.
+
+**A too-small fixture looks exactly like a broken check.** While re-verifying, a 1-byte
+probe file failed to trip the gate. That is not a regression: `file --mime-encoding`
+calls a 1-byte file `binary`, which correctly exempts it. The probe was the flaw.
+
+### `.claude/hooks/pre-bash/warn-submodule-deletions.sh` (new, warning-only)
+
+The parent repo reports only `m private/<sub>` for a dirty submodule, with no per-file
+detail, and `git status` in the parent never shows what is STAGED inside one. A submodule
+checkout carried a staged `rm` of both its files -- the entire content of
+`rediacc/homebrew-tap` -- from before the session that found it, and it sat unnoticed for
+hours. Committing it would have deleted the published Homebrew formula.
+
+It warns and never blocks (exit 0 in every path), deliberately: removing a file from a
+submodule is ordinary work, so a blocking guard would be wrong most times it fires and
+would teach people to route around it. It escalates its wording when the staged deletions
+cover every tracked file in the submodule.
+
+A CI gate for this was proposed and **rejected**: CI checks out submodules fresh, so
+`git status --porcelain` inside them is empty by construction and such a gate would be
+dark. The merge-time invariant that does matter is already `check:ci-submodule-branches`.
+
+### `wl_agents.py`: `touch` joins the stopword list
+
+The agent-hint matcher pushed a session at `media-pipeline` because its description says
+"anything **touching** TTS...", which folds to `touch`, matching a message that merely
+said a file was "not touched". That token appears in SEVEN of the twelve agent
+descriptions, so it discriminates nothing -- the same class as `run`/`work`/`use`/`fix`
+already in the list. `check_agent_hint_liveness.py` stayed green (all agents reachable,
+controls fired) after the addition.
