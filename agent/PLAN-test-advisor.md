@@ -1,6 +1,6 @@
 # PLAN: a test advisor, not a longer reggate
 
-Owner: b7baf3ee · 2026-08-24 · status: DESIGNED, not built
+Owner: b7baf3ee · 2026-08-24 · status: BUILT
 
 ## The ask
 
@@ -94,3 +94,28 @@ reader who did not write them. The 60-line cap stays as the forcing function.
 
 Enumerating surfaces in reggate. Adding a seventh glob. Making the agent file
 long enough to hold the routing table itself.
+
+
+## Built, and the two design conclusions reached while building
+
+Shipped: `a1ec17d9` (the judge names a surface and an artifact path;
+`prove_named_artifact` accepts a case on any surface with no glob list, fenced
+away from static gates), `43b527ca` (one fix per stop, oldest first,
+code-touching ticks only), `3771a92f` (flood guard restored, three controls
+repaired), `ccb19e99` (the skill, the agent, `check:ci-skill-size`), `62d69e1d`
+(install.md and e2e.md corrected by a real doc test).
+
+**Queued fixes are REPORTED, not turned into worklist items.** The option text
+the operator chose said "queue the rest as open worklist items", and building
+that would have broken the gate: `apply_regression_verdict` settles any `- [?]`
+carrying a `reggate:` token as 'deferred', so auto-creating those lines would
+settle the whole queue unasked and turn the mechanism into a no-op. The queue
+depth goes out through `outq_add` instead, which is the existing channel for
+telling the operator something once.
+
+**The routing stays inline in the judge prompt.** Calling the `test-advisor`
+agent from the hook would be a SECOND model call per stop for an answer the one
+existing call already produces, and both read the same skill. The agent earns
+its place interactively, where a session can ask it and argue back. If the
+inline routing starts drifting from `.claude/skills/testing/`, that is the
+signal to make the hook call the agent instead.
