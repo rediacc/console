@@ -179,10 +179,32 @@ async function main(): Promise<void> {
       try {
         resp = await page.goto(base + route, { waitUntil: 'networkidle', timeout: 30_000 });
       } catch {
+        // `load` WAS THE FIRST FALLBACK AND IT HANGS THE SAME WAY, which the run on
+        // 4dcd676b proved: `page.goto: Timeout 30000ms exceeded ... waiting until "load"`.
+        // `load` waits for subresources too, and the request that never finishes is a
+        // subresource. `domcontentloaded` fires when the HTML is parsed and is the only
+        // one of the three that a hanging media request cannot hold up.
         degraded.push(route);
-        resp = await page.goto(base + route, { waitUntil: 'load', timeout: 30_000 });
-        // Give islands the beat they would have had under networkidle.
-        await page.waitForTimeout(2_000);
+        try {
+          resp = await page.goto(base + route, {
+            waitUntil: 'domcontentloaded',
+            timeout: 30_000,
+          });
+          // The beat islands would have had under networkidle. They hydrate from module
+          // scripts, so this is what stands in for the quiet that never came.
+          await page.waitForTimeout(3_000);
+        } catch (e) {
+          // THIRD FAILURE IS A FINDING, NOT A CRASH. A gate that dies reports nothing
+          // about the other five routes; a gate that records "this route would not load"
+          // still checks them and still fails. That distinction cost two CI rounds.
+          findings.push({
+            route,
+            kind: 'nav-timeout',
+            detail: `could not load under networkidle, then domcontentloaded: ${(e as Error).message.split('\n')[0]}`,
+          });
+          await page.close();
+          continue;
+        }
       }
       if (!resp || resp.status() !== 200) {
         findings.push({
