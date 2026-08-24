@@ -237,9 +237,6 @@ const TutorialVideoPlayer: FC<TutorialVideoPlayerProps> = ({
   const captionRef = useRef<HTMLDivElement>(null);
   const playerRef = useRef<Plyr | null>(null);
   const restoreRef = useRef<PlaybackSnapshot | null>(null);
-  // True only while Plyr is constructing. See the quality config below: Plyr restores a
-  // STORED quality during init and that restore is not a user action.
-  const settlingRef = useRef(true);
   // Did the in-menu language pane build? False means the in-frame overlay stays up.
   const [menuMounted, setMenuMounted] = useState(false);
   // The fetched sidecar is stored WITH the URL it came from. Clearing it on a language
@@ -345,7 +342,6 @@ const TutorialVideoPlayer: FC<TutorialVideoPlayerProps> = ({
   // Plyr lifecycle + chapter overlay.
   useEffect(() => {
     const video = videoRef.current;
-    settlingRef.current = true;
     // THE OVERLAY IS OPTIONAL, THE PLAYER IS NOT. This guard used to demand the chapter
     // overlay node as well, so a video with no chapters -- every solution video -- would
     // return before constructing Plyr and render as a bare <video> with no controls at
@@ -405,13 +401,6 @@ const TutorialVideoPlayer: FC<TutorialVideoPlayerProps> = ({
       iconUrl: '/assets/plyr.svg',
     });
     playerRef.current = player;
-    // OVERRIDE THE STORED QUALITY. Plyr persists `quality` (plyr.mjs:8479) and reads it
-    // back at init from a storage key EVERY player on the site shares, then snaps an
-    // unknown value to the nearest option with `closest()` and only a debug warning
-    // (plyr.mjs:8460-8468). A stored index 9 on a three-language video therefore selects
-    // a DIFFERENT language, silently. The explicit assignment is `input` in that
-    // `.find(is.number)` chain, which outranks the stored value.
-    settlingRef.current = false;
 
     const onSeek = (sec: number) => {
       player.currentTime = sec;
