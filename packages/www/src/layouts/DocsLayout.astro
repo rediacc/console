@@ -887,18 +887,22 @@ for (const entry of toc as TocEntry[]) {
       --docs-cluster: 100%;
     }
 
-    /* Tutorial pages release the measure for the same reason cheat sheets do:
-       the payload is not prose. The player has no intrinsic max-width
-       (tutorial-video.css), so at the 800px measure a 1920x1080 render is drawn
-       at 800x450 and the recorded 107-column terminal gets ~7px per character --
-       about an 11.7px effective font, at the legibility floor before anything
-       else goes wrong. Widening the page buys back roughly a third of that and,
-       unlike re-recording, it improves every video already published.
-       Same specificity note as above: it must live here, not in the component. */
-    .docs-shell:has(.tutorial-video-container) {
-      --docs-measure: 1fr;
-      --docs-cluster: 100%;
-    }
+    /* TUTORIAL PAGES USE THE STANDARD MEASURE. They used to release it, and the
+       reason was sound WHEN WRITTEN: the player had no intrinsic max-width, so an
+       800px measure drew a 1920x1080 render at 800x450 and gave the recorded
+       107-column terminal ~7px per character, an ~11.7px effective font at the
+       legibility floor.
+
+       THAT PREMISE IS NOW FALSE. The player carries
+       `max-inline-size: min(960px, max(80%, var(--docs-prose)))`, so it caps at
+       704px and does not use the extra width the override bought. Measured on
+       /en/docs/tutorial-installation before this change: column 829, player 704.
+       At the standard 800px measure the cap resolves to max(640, 704) = 704 --
+       the SAME player, from a column that now lines up with every other docs
+       page. The override was costing alignment and buying nothing.
+
+       Cheat sheets keep their override above: `.cs-cards` is a real card grid
+       with no such cap, so for them the widening still does what it says. */
 
     /* The browse page is ONE track: no article rail, no TOC, no measure cap. It is
        not prose, it is an index, and it owns its own rail and its own cap
