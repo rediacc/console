@@ -2320,7 +2320,7 @@ def run_stop(event, event_ok, worklist, hook_file):
 
     # ---- v7: regression-gate detection (see wl_reggate). Never breaks gating.
     reg_marker = wl_reggate.reggate_path(worklist, session_id)
-    reg_signals, reg_ids, reg_new_ticks, reg_sig, reg_head = [], [], [], "", ""
+    reg_signals, reg_ids, reg_new_ticks, reg_sig, reg_head, reg_banked = [], [], [], "", "", []
     reg_state, reg_forgot, reg_settled = None, False, None
     reg_done_tasks, reg_flood = [], 0
     try:
@@ -2360,7 +2360,7 @@ def run_stop(event, event_ok, worklist, hook_file):
                 for i, (st, sub) in sorted(reg_cur_tasks.items())
                 if st == "completed" and prev_ts.get(i) in ("pending", "in_progress")
             ]
-            reg_signals, reg_ids, reg_new_ticks, reg_head = wl_reggate.fix_signals(
+            reg_signals, reg_ids, reg_new_ticks, reg_head, reg_banked = wl_reggate.fix_signals(
                 root, lines, session_id, reg_state
             )
             if len(reg_new_ticks) > wl_reggate.TICK_FLOOD:
@@ -2411,7 +2411,7 @@ def run_stop(event, event_ok, worklist, hook_file):
                 # Already settled: absorb and never re-ask. The whole cost story.
                 reg_state["head"] = reg_head or reg_state["head"]
                 reg_state["seen_ticks"] = sorted(
-                    set(reg_state["seen_ticks"]) | {t for t, _ln in reg_new_ticks}
+                    set(reg_state["seen_ticks"]) | {t for t, _ln in reg_new_ticks} | set(reg_banked)
                 )
                 wl_reggate.save_reggate(reg_marker, reg_state)
                 reg_signals, reg_ids = [], []
@@ -2419,9 +2419,19 @@ def run_stop(event, event_ok, worklist, hook_file):
                 # Only non-fix or doc-only-fix commits landed: nothing to ask,
                 # ever, so the marker just advances.
                 reg_state["head"] = reg_head
+                reg_state["seen_ticks"] = sorted(set(reg_state["seen_ticks"]) | set(reg_banked))
+                wl_reggate.save_reggate(reg_marker, reg_state)
+            elif reg_banked and not reg_ids:
+                # BANKED, NOT ASKED, HEAD UNCHANGED. A stop with only docs-only ticks and
+                # no new commit fell through both branches above and saved nothing, so
+                # the same ticks were rediscovered and re-filtered on every later stop
+                # forever -- caught in review, not by a control. This is the missing
+                # third case: nothing to ask, nothing to advance the head for, but real
+                # ids to mark seen.
+                reg_state["seen_ticks"] = sorted(set(reg_state["seen_ticks"]) | set(reg_banked))
                 wl_reggate.save_reggate(reg_marker, reg_state)
     except Exception:  # noqa: BLE001 -- detection must never break gating
-        reg_signals, reg_ids, reg_sig, reg_done_tasks = [], [], "", []
+        reg_signals, reg_ids, reg_sig, reg_done_tasks, reg_banked = [], [], "", [], []
         if reg_state is None:
             reg_state = {"head": "", "seen_ticks": [], "fixsets": {}, "gate_runs": {}}
 
@@ -4341,7 +4351,7 @@ def run_stop(event, event_ok, worklist, hook_file):
                 }
                 reg_state["head"] = reg_head or reg_state["head"]
                 reg_state["seen_ticks"] = sorted(
-                    set(reg_state["seen_ticks"]) | {t for t, _ln in reg_new_ticks}
+                    set(reg_state["seen_ticks"]) | {t for t, _ln in reg_new_ticks} | set(reg_banked)
                 )
                 wl_reggate.save_reggate(reg_marker, reg_state)
                 reg_settled = (payload, detail)

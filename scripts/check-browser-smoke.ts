@@ -141,7 +141,13 @@ async function main(): Promise<void> {
   const base = `http://127.0.0.1:${port}`;
   const browser = await chromium.launch();
   const findings: Finding[] = [];
-  // Routes that could not reach network quiet and were checked after `load` instead.
+  // Routes that could not reach network quiet and were checked after `domcontentloaded`
+  // instead. NAME THE REAL FALLBACK: this comment and the message below both said `load`
+  // until a review caught it -- `load` was the FIRST fallback tried and it hangs the same
+  // way networkidle does (see the comment on the goto call), so the chain moved to
+  // `domcontentloaded` without this line being updated. A message that names the wrong
+  // wait is worse than a vague one: it sends the next reader to the wrong place in the
+  // fallback chain when this ever needs touching again.
   const degraded: string[] = [];
   let checked = 0;
 
@@ -311,7 +317,7 @@ async function main(): Promise<void> {
   console.log(
     `\x1b[32m✓\x1b[0m ${checked} route(s): no console errors, nav renders, language switching works.` +
       (degraded.length
-        ? `\n  ${degraded.length} route(s) never reached network quiet and were checked after \`load\` instead: ${degraded.join(', ')}. A request that never finishes (a CDN video in a sandboxed container) does that; the assertions still ran.`
+        ? `\n  ${degraded.length} route(s) never reached network quiet and were checked after \`domcontentloaded\` instead: ${degraded.join(', ')}. A request that never finishes (a CDN video in a sandboxed container) does that; the assertions still ran.`
         : '')
   );
 }

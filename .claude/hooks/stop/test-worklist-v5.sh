@@ -11552,6 +11552,38 @@ else
     fail "219c: named-artifact proof is not discriminating ($(cat "$BASE/reggate-artifact.err"))"
 fi
 
+echo "== 219g. a docs-only tick is BANKED, not re-discovered every stop =="
+# Real bug, found in review, not by a control. `tick_touches_code` correctly kept a
+# docs-only tick out of `ids`/`ticks` (so it is never asked about), but the id was then
+# dropped ENTIRELY -- never returned at all -- so the caller's only bank site
+# (`reg_new_ticks`) never saw it. A stop with only a docs-only tick and no new commit hit
+# neither of the caller's two save branches, so nothing was written to disk, and the same
+# tick was rediscovered and re-filtered on every future stop, forever.
+if python3 -c "
+import sys, subprocess
+sys.path.insert(0, '$(dirname "$HOOK")')
+import wl_reggate as R
+root = subprocess.run(['git','rev-parse','--show-toplevel'], capture_output=True,
+                      text=True, check=True).stdout.strip()
+head = subprocess.run(['git','rev-parse','HEAD'], cwd=root, capture_output=True,
+                      text=True, check=True).stdout.strip()
+line = '- [x] fixed a typo in docs/agent-reference/TRAPS.md'
+lines = [line]
+state = {'head': head, 'seen_ticks': [], 'fixsets': {}, 'gate_runs': {}}
+descriptions, ids, ticks, new_head, banked = R.fix_signals(root, lines, 'sess', state)
+assert ids == [] and ticks == [], 'a docs-only tick was asked about: %r %r' % (ids, ticks)
+tid = R._tick_id(line)
+assert banked == [tid], 'the docs-only tick id was not banked: got %r, want [%r]' % (banked, tid)
+# CONVERGENCE: once banked, the SAME tick must not reappear as new_ticks on the next pass.
+state['seen_ticks'] = banked
+descriptions2, ids2, ticks2, _, banked2 = R.fix_signals(root, lines, 'sess', state)
+assert banked2 == [], 'a banked docs-only tick was rediscovered: %r' % (banked2,)
+" 2>"$BASE/reggate-bank.err"; then
+    pass "219g: a docs-only tick is banked once and never rediscovered"
+else
+    fail "219g: docs-only ticks are not converging ($(cat "$BASE/reggate-bank.err"))"
+fi
+
 echo "== 219f. a settled fixset RECORDS the surface it was routed to =="
 # Found by dogfooding, not review: sixteen settled fixsets carried no surface at all,
 # because the judge produced one, the router used it, and the settle path dropped it. The
