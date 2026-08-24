@@ -40,7 +40,8 @@ passes without covering anything. Route first, then open that surface's file.
 
 ## Coverage of the surfaces themselves
 
-Only two surfaces have a gate that notices a MISSING test: E2E
+Two surfaces have a gate that notices a MISSING test: E2E
 (`check-e2e-coverage.sh`, both directions) and hooks
-(`check_test_file_orphans.py`). Ops has none. Treat an ops fix as the least
-protected thing you can touch.
+(`check_test_file_orphans.py`). The ops workflow has no such gate of its own,
+but the machines it provisions are exercised by the E2E suites, so most ops
+regressions surface there rather than going unwatched.

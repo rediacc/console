@@ -169,7 +169,16 @@ _STOPWORD_TEXT = (
     "run runs running work works working make makes making "
     "use used uses using new old need needs needed "
     "get gets getting set sets setting put puts "
-    "add adds adding fix fixes fixing"
+    "add adds adding fix fixes fixing "
+    # `word` is ordinary English that happens to be unique to ONE description
+    # ("per-word timings", media-pipeline), which is all `discriminative()` asks.
+    # Uniqueness in a 13-document corpus is a weak proxy for specificity, and
+    # this is where the two came apart: `wording` folds to `word`, so "there is
+    # no local way to check the changelog wording" was pushed back to the
+    # narration agent. Raising the -ing fold floor instead was tried and is
+    # WORSE -- the fold is load-bearing, `failing` -> `fail` -> stopword, and
+    # blocking it let `failing` through as a term for e2e-local.
+    "word words"
 )
 STOPWORDS = frozenset(_STOPWORD_TEXT.split())
 

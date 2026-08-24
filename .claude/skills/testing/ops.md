@@ -1,27 +1,23 @@
-# Ops — VM provisioning, `ci-ops-test.yml`
+# Ops — VM provisioning
 
 For `rdc ops`, KVM/qemu provisioning, the base-image cache, eBPF socket
 isolation, platform checks.
 
-## THE LEAST PROTECTED SURFACE
+## Two places, and they are not interchangeable
 
-Nothing enforces that an ops behaviour has a test. E2E has
-`check-e2e-coverage.sh` in both directions; hooks have the orphan gate; ops has
-neither. A regression here returns silently, so an ops fix deserves a case more
-than any other surface, not less.
+- **`.github/workflows/ci-ops-test.yml`** — `ops-vm-provision` (matrix, real
+  KVM), `ops-qemu-provision`, `ops-platform-check`. Steps named `"Test: <what>"`,
+  invoking the built CLI bundle directly because the job has already built it.
+  This is where a PROVISIONING behaviour is asserted: does the fleet come up,
+  is the image cache honoured, does eBPF isolation hold.
+- **The E2E suites (Tests + Infra)** — the same VMs, exercised by
+  `packages/e2e-tests/tests/`. Anything that happens ON a provisioned machine is
+  covered here, not in the ops workflow, and `check-e2e-coverage.sh` enforces it
+  in both directions. See [e2e.md](e2e.md).
 
-## Where the case goes
-
-A step in `.github/workflows/ci-ops-test.yml`, inside one of:
-
-- `ops-vm-provision` — the matrix job, real KVM, builds renet and the CLI first
-- `ops-qemu-provision` — qemu path
-- `ops-platform-check` — platform preconditions
-
-Steps are named `"Test: <what>"`. They invoke the built CLI bundle with `node`
-directly, because the job has already built it and `./rdc.sh` would rebuild.
-That form is blocked in an interactive shell by a pre-bash hook; inside the
-workflow it is correct. Locally, use `./rdc.sh` instead.
+So the routing question is narrow: **did provisioning break, or did something on
+the machine break?** The first is an ops step; the second is an E2E case, and
+the E2E surface is the one with a coverage gate behind it.
 
 ## Running it locally
 
@@ -33,5 +29,6 @@ agent-blocked.
 ## Proof
 
 - the step exists in the job that runs on this event, not in a job gated off
-- the `ops-tests` job green on the PR head
+- the `ops-tests` job green on the PR head, or the E2E job if the case landed
+  there instead
 - **plant it**: break the thing locally and watch the step fail before fixing

@@ -81,6 +81,7 @@ SPECIMENS = {
     "browser-probe": "drive the page in a real browser with agent-browser and measure the rendered layout",
     "gate-author": "write a regression gate, drain its baseline, and verify the three-point wiring in the ci-runner manifest",
     "www-site": "restyle the solution page hero and the docs layout in the Astro marketing site",
+    "test-advisor": "this fix landed and nothing stops it coming back, decide which regression surface owns it",
 }
 
 # Neutral haystacks. Every one of them is ordinary work that no specialist owns.
