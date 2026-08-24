@@ -834,6 +834,22 @@ export const GATES: readonly GateSpec[] = [
   // hand-authored and their generator was deleted, so a new doc without one ships a
   // blank browse card in all 13 locales silently -- one file serves every translation,
   // resolved by base slug.
+  // A copy button on a bare `}` or on a YAML key is a control that hands the reader
+  // something they cannot paste anywhere. The classifier is lifted out of DocsLayout.astro
+  // and run over the real corpus, so this gate exercises the shipped script rather than a
+  // second copy of its rules.
+  {
+    id: 'check:ci-docs-copy-units',
+    run: 'npm run check:ci-docs-copy-units',
+    gate: true,
+    leaves: ['scripts/check-docs-copy-units.ts'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-content',
+      step: 'Docs code-block copy units',
+    },
+  },
   {
     id: 'check:ci-docs-thumb-coverage',
     run: 'npm run check:ci-docs-thumb-coverage',
