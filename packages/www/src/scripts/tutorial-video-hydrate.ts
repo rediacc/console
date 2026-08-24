@@ -4,6 +4,7 @@
  * Finds placeholder divs and mounts the player on them: `.tutorial-video-container`
  * emitted by remark-tutorial-embed.ts when a page sets `useVideoPlayer: true`, and
  * `.video-player-mount` emitted by SPSolutionVideo.astro for the solution-page hero.
+ * Both get the same player, including its in-frame language picker.
  *
  * WHY A PLACEHOLDER AND NOT `client:visible`. `plyr` reads `document` at module scope --
  * importing it under Node throws `ReferenceError: document is not defined` -- so the
@@ -40,10 +41,6 @@ async function hydrateTutorialVideos() {
     // The portrait cut, which only the solution videos ship. Empty means "no portrait
     // cut", and the player then uses the landscape one at every width.
     const verticalSrc = el.dataset.verticalSrc ?? '';
-    // Opt-in, per mount: the language picker moves INSIDE Plyr's settings menu. Only the
-    // solution hero asks for it so far; tutorial embeds keep the toolbar dropdown while
-    // the caption-menu interaction is unproven.
-    const inPlayerLanguage = el.dataset.inPlayerLanguage === 'true';
     const title = el.dataset.title ?? '';
     const lang = (el.dataset.lang ?? document.documentElement.lang) || 'en';
     // One JSON attribute holding <locale> -> {mp4, poster, vtt, chapters, words}, written
@@ -68,7 +65,6 @@ async function hydrateTutorialVideos() {
         chaptersSrc,
         wordsSrc,
         verticalSrc,
-        inPlayerLanguage,
         title,
         lang,
         sources,

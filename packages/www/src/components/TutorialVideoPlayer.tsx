@@ -50,12 +50,6 @@ interface TutorialVideoPlayerProps {
   wordsSrc?: string;
   /** The portrait cut, shown below 768px. Absent means the landscape one is used at every width. */
   verticalSrc?: string;
-  /**
-   * Put the language picker INSIDE Plyr's settings menu, beside Captions and Speed,
-   * instead of in the toolbar above the player. Opt-in per caller: solution videos have
-   * no caption track, so their settings pane has room and nothing to conflict with.
-   */
-  inPlayerLanguage?: boolean;
   title: string;
   lang: string;
   /**
@@ -233,7 +227,6 @@ const TutorialVideoPlayer: FC<TutorialVideoPlayerProps> = ({
   chaptersSrc,
   wordsSrc,
   verticalSrc,
-  inPlayerLanguage,
   title,
   lang,
   sources,
@@ -313,7 +306,9 @@ const TutorialVideoPlayer: FC<TutorialVideoPlayerProps> = ({
     return ((SUPPORTED_LANGUAGES as readonly string[]).includes(r) ? r : 'en') as Language;
   })();
   const langIndex = Math.max(0, pickerLangs.indexOf(activeBase));
-  const inPlayerPicker = Boolean(inPlayerLanguage) && pickerLangs.length > 1;
+  // THE PICKER LIVES INSIDE THE FRAME, EVERYWHERE. It was briefly opt-in per surface;
+  // the operator's answer was that every player that can offer a language should offer it
+  // the same way, so there is no flag and no second position to keep in sync.
 
   const handleLanguageChange = useCallback((next: Language) => {
     const video = videoRef.current;
@@ -657,7 +652,6 @@ const TutorialVideoPlayer: FC<TutorialVideoPlayerProps> = ({
 
   return (
     <div className="tvp-shell">
-      {!inPlayerPicker && toolbar}
       {/*
         `key` forces React to build a FRESH subtree on every language change, and it is
         load-bearing rather than a re-render hint.
@@ -709,7 +703,7 @@ const TutorialVideoPlayer: FC<TutorialVideoPlayerProps> = ({
             "integrated to the player" means here: Plyr's own settings menu cannot host a
             language list correctly (see the comment on the Plyr config above), so the
             control that works is placed within the player's own box. */}
-        {inPlayerPicker && <div className="tvp-toolbar-overlay">{toolbar}</div>}
+        {toolbar && <div className="tvp-toolbar-overlay">{toolbar}</div>}
       </div>
     </div>
   );
