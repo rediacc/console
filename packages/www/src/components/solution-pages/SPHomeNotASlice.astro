@@ -1,6 +1,7 @@
 ---
 import type { Language } from '../../i18n/types';
 import { createTranslator } from '../../i18n/utils';
+import Sentences from '../Sentences.astro';
 
 interface Props {
   lang: Language;
@@ -18,8 +19,8 @@ const slices = (to('notASlice.slices') as Slice[] | undefined) ?? [];
 
 <section class="sp-not-a-slice" id="not-a-slice">
   <div class="sp-not-a-slice-inner">
-    <p class="sp-overline">{t('notASlice.overline')}</p>
-    <h2>{t('notASlice.title')}</h2>
+    <p class="sp-overline"><Sentences text={t('notASlice.overline')} lang={lang} /></p>
+    <h2><Sentences text={t('notASlice.title')} lang={lang} /></h2>
 
     <div class="sp-slice-grid">
       {slices.map((slice, i) => (
@@ -101,7 +102,7 @@ const slices = (to('notASlice.slices') as Slice[] | undefined) ?? [];
       </div>
       <div class="sp-slice-winner-content">
         <p class="sp-slice-winner-label"><span class="sp-slice-winner-dot" aria-hidden="true"></span>{t('notASlice.winner.label')}</p>
-        <p class="sp-slice-winner-description">{t('notASlice.winner.description')}</p>
+        <p class="sp-slice-winner-description"><Sentences text={t('notASlice.winner.description')} lang={lang} /></p>
       </div>
     </article>
   </div>

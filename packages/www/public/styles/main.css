@@ -620,6 +620,25 @@ p {
   text-wrap: pretty;
 }
 
+/* A SENTENCE IS AN ATOMIC LINE-BREAKING UNIT.
+ *
+ * The rule, which is not the literal one: a sentence broken across a line boundary must
+ * not SHARE either of those lines with a neighbour. Two whole sentences on one line are
+ * fine. What is wrong is
+ *
+ *     Most tools copy one          <- ends mid-sentence
+ *     piece. We copy all of it.    <- tail of A plus the whole of B
+ *
+ * `inline-block` gives exactly that: the box moves to the next line whole rather than
+ * breaking across one. A sentence wider than the container still wraps internally, which
+ * the rule tolerates, because its neighbours start on fresh lines either way.
+ *
+ * Emitted only for multi-sentence values, by Sentences.astro. `text-wrap: pretty` above
+ * still applies, per inline-block. */
+.sentence {
+  display: inline-block;
+}
+
 /* High Contrast Mode - Windows High Contrast, macOS Increase Contrast */
 @media (forced-colors: active) {
   /* Buttons: ensure visible borders when color-only styling is stripped */
