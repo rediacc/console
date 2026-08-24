@@ -8,9 +8,25 @@
  * gate 2 (agent/programs/www-round5/05-gates.md) and it is not this. But each of the
  * three fixes landed on 2026-08-24 rests on a STRUCTURAL property that is checkable from
  * source, and a structural gate that fires on the real cause beats no gate at all while
- * the visual one is unowned. What this cannot see: a regression that keeps the mechanism
- * and breaks the pixels anyway. Say so rather than let a green here read as "the layout
- * is verified".
+ * the visual one is unowned.
+ *
+ * WHAT A GREEN HERE DOES NOT MEAN, stated plainly because this gate's whole risk is
+ * being over-read. It never renders the page, never measures a box and never compares a
+ * pixel. Every one of these would pass it while looking wrong to a reader:
+ *
+ *   * the two headings sitting at different heights because something ABOVE them in the
+ *     results column gained margin -- the gate checks that neither heading carries a
+ *     competing rule, not that they end up level;
+ *   * `.sr-only` itself being redefined so the tally is visible again, since the gate
+ *     reads the class NAME and not its computed clip;
+ *   * the category group being hidden before paint and then revealed by some other
+ *     script, or hidden with `visibility` while still occupying its space;
+ *   * any of it breaking at a viewport this gate cannot have an opinion about, since
+ *     it has no viewport at all.
+ *
+ * Those are the interactive gate's to catch. This one is a tripwire on the three
+ * mechanisms, and the failure text and the success line both say so, so a green in a CI
+ * log cannot be read as "the layout is verified".
  *
  * THE THREE PROPERTIES:
  *
@@ -125,6 +141,9 @@ const main = (): number => {
     return 1;
   }
   console.log('✓ docs browse invariants hold: the tally is sr-only, neither heading carries a competing size or margin, and the category group is decided before first paint.');
+  // The caveat rides the SUCCESS line, not just the failure path: a green is the only
+  // output most readers of a CI log will ever see, and this one is structural.
+  console.log('  STRUCTURAL ONLY -- nothing was rendered, measured or compared. Pixel-level regressions with correct selectors and valid CSS pass this gate; that is wave D gate 2.');
   return 0;
 };
 
