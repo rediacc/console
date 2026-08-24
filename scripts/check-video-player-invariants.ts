@@ -42,7 +42,13 @@ export const qualityPaneFaults = (player: string): string[] => {
   return out;
 };
 
-/** The picker must render INSIDE the player frame, and only one of the two positions. */
+/**
+ * The picker renders INSIDE the player frame, on every mount, with no opt-in.
+ *
+ * It was briefly a per-surface flag and the operator's answer was that every player able
+ * to offer a language should offer it the same way. A flag is what lets one surface drift
+ * back to a floating dropdown, so its absence is the invariant.
+ */
 export const placementFaults = (player: string, hero: string): string[] => {
   const out: string[] = [];
   if (!/tvp-toolbar-overlay/.test(player))
@@ -52,10 +58,17 @@ export const placementFaults = (player: string, hero: string): string[] => {
   const overlayAt = player.indexOf('tvp-toolbar-overlay');
   if (rootAt >= 0 && overlayAt >= 0 && overlayAt < rootAt)
     out.push('the overlay is emitted before the player root, so it is not inside the frame');
-  if (!/\{!inPlayerPicker && toolbar\}/.test(player))
-    out.push('the above-player toolbar is no longer mutually exclusive with the overlay');
-  if (!/data-in-player-language="true"/.test(hero))
-    out.push('the solution hero no longer opts into the in-frame picker');
+  if (/inPlayerLanguage|inPlayerPicker/.test(player) || /in-player-language/.test(hero))
+    out.push('an opt-in flag is back; the in-frame picker is meant to be unconditional on every mount');
+  // Strip the ONE sanctioned use, then any remaining `{toolbar}` is a second render site.
+  // The negative-lookahead spelling this replaces could not fire: the planted defect ends
+  // in `</div>`, which is exactly what the lookahead excluded.
+  const withoutOverlay = player.replace(
+    '{toolbar && <div className="tvp-toolbar-overlay">{toolbar}</div>}',
+    ''
+  );
+  if (/\{toolbar\}/.test(withoutOverlay))
+    out.push('the toolbar is rendered somewhere other than inside the in-frame overlay');
   return out;
 };
 
@@ -100,12 +113,16 @@ const selftest = (player: string, hero: string, css: string): number => {
     placementFaults(player.replaceAll('tvp-toolbar-overlay', 'tvp-gone'), hero).length > 0
   );
   check(
-    'showing BOTH pickers at once is caught',
-    placementFaults(player.replace('{!inPlayerPicker && toolbar}', '{toolbar}'), hero).length > 0
+    'a per-surface opt-in flag coming back is caught',
+    placementFaults(`${player}\nconst inPlayerPicker = false;`, hero).length > 0
   );
   check(
-    'the hero opting out is caught',
-    placementFaults(player, hero.replace('data-in-player-language="true"', 'data-in-player-language="false"')).length > 0
+    'a mount re-introducing the data attribute is caught',
+    placementFaults(player, `${hero}\n<div data-in-player-language="false" />`).length > 0
+  );
+  check(
+    'rendering the toolbar outside the overlay is caught',
+    placementFaults(`${player}\n<div className="tvp-shell">{toolbar}</div>`, hero).length > 0
   );
   check(
     'losing the dark scrim is caught',
