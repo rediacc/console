@@ -8,22 +8,6 @@
   margin-inline: auto;
 }
 
-/* Hero: full width above the two-column body, so the page introduces itself once. */
-.docs-browse-hero {
-  margin-block-end: var(--space-10);
-}
-
-.docs-browse-hero-icon {
-  width: 2.5rem;
-  height: 2.5rem;
-  margin-block-end: var(--space-3);
-  fill: none;
-  stroke: var(--color-primary);
-  stroke-width: 1.5;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-}
-
 /* Rail beside grid. `minmax(0, 1fr)` on the results column, never plain `1fr`: a grid item's
    automatic minimum size is its content, so a long card title would push the column wider
    than the track and take the rail's width with it. */
@@ -151,11 +135,6 @@
   .docs-rail {
     position: static;
   }
-}
-
-.docs-browse-lede {
-  color: var(--color-text-secondary);
-  max-width: 60ch;
 }
 
 .docs-browse-search-input {

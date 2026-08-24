@@ -90,10 +90,6 @@ const breadcrumbItems = [
       <SPHero hero={(content as any).hero} />
     )}
 
-    {has('stats') && (
-      <SPStatsBar stats={(content as any).stats} />
-    )}
-
     {/*
       No `referenceItems`: `pages.personaPages.*` has never carried a `references`
       branch in any locale, so this prop was always `undefined` and the three stat
@@ -102,6 +98,10 @@ const breadcrumbItems = [
     */}
     {has('problem') && (
       <SPProblem problem={(content as any).problem} slug={config.illustrationSlug} />
+    )}
+
+    {has('stats') && (
+      <SPStatsBar stats={(content as any).stats} />
     )}
 
     {has('costCalculator') && config.calculatorPreset && (
