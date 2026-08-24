@@ -245,3 +245,19 @@
 .tvp-toolbar-icon {
   flex: none;
 }
+
+/* THE LANGUAGE PANE HOLDS THIRTEEN ENTRIES, and Plyr's settings menu was built for three
+ * or four numeric quality steps. At ~30px a row that pane is taller than the player it
+ * lives inside, and Plyr's container is `overflow: hidden` with an animated height, so
+ * the tail was simply unreachable: no scrollbar, no way to get to it. Reported by the
+ * operator on 2026-08-24 and reproduced at 1440x900, where the pane wanted about 390px
+ * inside a 324px player.
+ *
+ * Capping the PANE rather than the container is what works: Plyr measures the pane to
+ * animate the container to its height, so a capped pane yields a capped container.
+ */
+.tvp-root .plyr__menu__container [id$='-quality'] {
+  max-height: min(14rem, 60vh);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}

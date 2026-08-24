@@ -52,6 +52,14 @@ const here = localized[lang] ?? localized.en;
       data-video-src={here.mp4}
       data-poster-src={here.poster}
       data-vertical-src={here.vertical}
+      {/* OFF until the index binding is understood. The pane renders correctly and the
+          switch fires, but it switches to the WRONG language: measured at 1440x900 on
+          /en/solutions/backup-verification, the menu opened with `Deutsch` checked on an
+          English page and clicking `Français` loaded `de/backup-verification.mp4`. The
+          value Plyr hands back does not agree with the index the label was built from,
+          and shipping a control that plays a different language than the one clicked is
+          worse than the toolbar dropdown it replaces. Flip this to "true" to re-enable. */}
+      data-in-player-language="false"
       data-title={t('video.playVideo')}
       data-lang={lang}
       data-sources={JSON.stringify(localized)}

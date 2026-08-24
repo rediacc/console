@@ -50,6 +50,12 @@ interface TutorialVideoPlayerProps {
   wordsSrc?: string;
   /** The portrait cut, shown below 768px. Absent means the landscape one is used at every width. */
   verticalSrc?: string;
+  /**
+   * Put the language picker INSIDE Plyr's settings menu, beside Captions and Speed,
+   * instead of in the toolbar above the player. Opt-in per caller: solution videos have
+   * no caption track, so their settings pane has room and nothing to conflict with.
+   */
+  inPlayerLanguage?: boolean;
   title: string;
   lang: string;
   /**
@@ -227,6 +233,7 @@ const TutorialVideoPlayer: FC<TutorialVideoPlayerProps> = ({
   chaptersSrc,
   wordsSrc,
   verticalSrc,
+  inPlayerLanguage,
   title,
   lang,
   sources,
@@ -236,6 +243,9 @@ const TutorialVideoPlayer: FC<TutorialVideoPlayerProps> = ({
   const captionRef = useRef<HTMLDivElement>(null);
   const playerRef = useRef<Plyr | null>(null);
   const restoreRef = useRef<PlaybackSnapshot | null>(null);
+  // True only while Plyr is constructing. See the quality config below: Plyr restores a
+  // STORED quality during init and that restore is not a user action.
+  const settlingRef = useRef(true);
   // The fetched sidecar is stored WITH the URL it came from. Clearing it on a language
   // change would mean calling setState from an effect body (react-hooks/set-state-in-effect,
   // and a cascading render); carrying the source instead lets the consumer below simply
@@ -285,6 +295,26 @@ const TutorialVideoPlayer: FC<TutorialVideoPlayerProps> = ({
    * element load algorithm has already reset the clock to 0. Capturing here is what makes
    * "switch language, keep your place" work at all.
    */
+  // THE IN-PLAYER PICKER, built on Plyr's FORCED-QUALITY path rather than on a custom
+  // menu. `config.quality.forced` makes `getQualityOptions()` return our own list verbatim
+  // (plyr.mjs:980) and `quality.onChange` takes the switch over entirely, without touching
+  // any <source> (plyr.mjs:1016). Both are supported config, not a repurposing hack.
+  //
+  // The option VALUES have to be numbers: Plyr labels each one through
+  // `i18n.get('qualityLabel.' + value)` (plyr.mjs:2130). So the options are indices into
+  // pickerLangs and the labels come from a per-instance i18n map.
+  // NORMALISE BEFORE INDEXING. `activeLang` is whatever the mount was given, which can be
+  // a full tag like `en-GB`, and `pickerLangs` holds bare site locales. An unmatched tag
+  // fell through `Math.max(0, -1)` to index 0, so an English page opened with the FIRST
+  // locale checked (Deutsch, since the list is ordered by native name) and every later
+  // comparison was against the wrong language. Same normalisation the render below uses.
+  const activeBase = (() => {
+    const r = activeLang.split('-')[0].toLowerCase();
+    return ((SUPPORTED_LANGUAGES as readonly string[]).includes(r) ? r : 'en') as Language;
+  })();
+  const langIndex = Math.max(0, pickerLangs.indexOf(activeBase));
+  const inPlayerPicker = Boolean(inPlayerLanguage) && pickerLangs.length > 1;
+
   const handleLanguageChange = useCallback((next: Language) => {
     const video = videoRef.current;
     if (video) {
@@ -326,6 +356,7 @@ const TutorialVideoPlayer: FC<TutorialVideoPlayerProps> = ({
   // Plyr lifecycle + chapter overlay.
   useEffect(() => {
     const video = videoRef.current;
+    settlingRef.current = true;
     // THE OVERLAY IS OPTIONAL, THE PLAYER IS NOT. This guard used to demand the chapter
     // overlay node as well, so a video with no chapters -- every solution video -- would
     // return before constructing Plyr and render as a bare <video> with no controls at
@@ -356,14 +387,71 @@ const TutorialVideoPlayer: FC<TutorialVideoPlayerProps> = ({
         'pip',
         'fullscreen',
       ],
-      settings: activeSubtitles ? ['captions', 'speed'] : ['speed'],
+      settings: [
+        ...(activeSubtitles ? ['captions'] : []),
+        'speed',
+        ...(inPlayerPicker ? ['quality'] : []),
+      ],
       captions: { active: Boolean(activeSubtitles), language: activeLang, update: true },
+      ...(inPlayerPicker
+        ? {
+            quality: {
+              forced: true,
+              // No `selected` here: Plyr's own types do not declare it even though the
+              // runtime reads `config.selected`, and the explicit `player.quality`
+              // assignment below is the stronger override anyway.
+              default: langIndex,
+              options: pickerLangs.map((_l, i) => i),
+              // DEFERRED PAST THE CLICK. This fires from inside Plyr's own open menu,
+              // and the language change unmounts that menu with it (the subtree is keyed
+              // on the language). Letting the click handler unwind first is what keeps
+              // Plyr from operating on nodes React has already discarded.
+              onChange: (value: number) => {
+                // IGNORE PLYR'S OWN INIT-TIME RESTORE. Measured live: after switching one
+                // solution video to German, the NEXT solution page loaded
+                // `de/backup-verification.mp4` instead of English, because Plyr reads a
+                // stored `quality` during construction (plyr.mjs:8460) from a key every
+                // player on the site shares, and that read reaches this handler as though
+                // a viewer had clicked. The explicit assignment below arrives too late to
+                // undo it, so the restore is refused rather than corrected.
+                if (settlingRef.current) return;
+                const next = pickerLangs[value];
+                if (!next || next === activeBase) return;
+                window.setTimeout(() => handleLanguageChange(next), 0);
+              },
+            },
+            i18n: {
+              quality: t('navigation.selectLanguage'),
+              qualityLabel: Object.fromEntries(pickerLangs.map((l, i) => [i, getLanguageName(l)])),
+            },
+          }
+        : {}),
       keyboard: { focused: true, global: false },
       tooltips: { controls: true, seek: true },
       storage: { enabled: true, key: PLYR_STORAGE_KEY },
       iconUrl: '/assets/plyr.svg',
     });
     playerRef.current = player;
+    // OVERRIDE THE STORED QUALITY. Plyr persists `quality` (plyr.mjs:8479) and reads it
+    // back at init from a storage key EVERY player on the site shares, then snaps an
+    // unknown value to the nearest option with `closest()` and only a debug warning
+    // (plyr.mjs:8460-8468). A stored index 9 on a three-language video therefore selects
+    // a DIFFERENT language, silently. The explicit assignment is `input` in that
+    // `.find(is.number)` chain, which outranks the stored value.
+    if (inPlayerPicker) {
+      player.quality = langIndex;
+      // AND OVERWRITE WHAT IS STORED, not just what is selected. Refusing the init-time
+      // restore was not enough on its own: measured live, a page opened in English, and
+      // the first click on `Français` still produced `de/...`, because the stale German
+      // index was re-applied from storage after the guard had lifted. Storage is per
+      // PLAYER, not per setting, so it cannot be disabled for this axis alone without
+      // losing volume, speed and captions with it. Writing the current language's index
+      // back makes every later restore a no-op instead.
+      const store = (player as unknown as { storage?: { set(o: Record<string, unknown>): void } })
+        .storage;
+      store?.set({ quality: langIndex });
+    }
+    settlingRef.current = false;
 
     const onSeek = (sec: number) => {
       player.currentTime = sec;
@@ -580,7 +668,7 @@ const TutorialVideoPlayer: FC<TutorialVideoPlayerProps> = ({
 
   return (
     <div className="tvp-shell">
-      {pickerLangs.length > 1 && (
+      {pickerLangs.length > 1 && !inPlayerPicker && (
         <div className="tvp-toolbar">
           <svg
             className="tvp-toolbar-icon"
