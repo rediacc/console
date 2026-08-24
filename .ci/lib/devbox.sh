@@ -480,15 +480,11 @@ devbox_status() {
         # that page names neither the service nor the reason -- so an operator
         # reads "Bad Gateway" for a backend that was simply never started, or was
         # started on the HOST instead of inside the devbox.
-        # The 5th field is the PROBE PATH. It exists for the db route: a
-        # higher-priority router redirects its bare "/" to the hosted Studio UI,
-        # so probing "/" would report 302 whether or not Studio is running.
-        # Probing any other path bypasses the redirect and reaches the backend.
-        local _svc _label _code _probe
+        local _svc _label _code
         for _svc in "code:VS Code::" \
             "account:Account:account:./run.sh account dev (INSIDE the devbox)" \
             "db:Database:db:./run.sh account db (INSIDE the devbox)"; do
-            IFS=: read -r _ _label _suffix _hint _probe <<<"$_svc"
+            IFS=: read -r _ _label _suffix _hint <<<"$_svc"
             # `|| true` is load-bearing under `set -e`: curl exits non-zero on a
             # timeout (28) or refused connection (7), and a failing command
             # substitution makes the ASSIGNMENT fail, which kills the whole
@@ -497,7 +493,7 @@ devbox_status() {
             # when the box was loaded enough for one probe to time out.
             _code="$(curl -s -o /dev/null -w '%{http_code}' --max-time 3 \
                 -H "Host: $(devbox_slug)${_suffix:+-$_suffix}.${DEVBOX_DOMAIN}" \
-                "http://127.0.0.1:${DEVBOX_PROXY_PORT}${_probe:-/}" 2>/dev/null || true)"
+                "http://127.0.0.1:${DEVBOX_PROXY_PORT}/" 2>/dev/null || true)"
             [[ -z "$_code" ]] && _code=000
             printf '  %-9s %-46s %s\n' "$_label:" "$(devbox_url "$_suffix")" \
                 "$(devbox_route_label "$_code" "$_hint")"

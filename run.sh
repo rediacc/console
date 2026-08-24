@@ -1738,6 +1738,17 @@ EOF
     check_node_version "$NODE_VERSION_MIN"
     ensure_host_tools || return 1
 
+    # Submodules BEFORE the docker phase, because that phase reads
+    # private/renet/go.mod to decide the Go version. On a fresh clone the file
+    # does not exist yet and setup died with "Cannot determine the required Go
+    # version" -- a message that never mentions submodules. Best-effort (`|| true`)
+    # for the same reason devcontainer.json is: a developer without access to
+    # every private submodule should still get a working devbox.
+    if [[ -f "$ROOT_DIR/.gitmodules" ]]; then
+        log_step "Initializing submodules"
+        bash "$ROOT_DIR/.devcontainer/init-submodules.sh" --quiet || true
+    fi
+
     if ! ensure_docker_installed; then
         log_error "Docker could not be prepared; cannot continue"
         return 1
