@@ -256,6 +256,23 @@ function selftest(): number {
   // THE SHRINK-ONLY COMPOSITION RULE, shared with every other baselined gate here.
   for (const c of sharedSelftestCases()) check(c.name, c.ok);
 
+  // THE SEED PATH, and its control. A grow path that admits anything is not a grow path,
+  // it is the absence of a gate.
+  const seedFilter = (additions: string[], seed?: string): string[] =>
+    additions.filter((a) => a !== seed);
+  check(
+    'a seeded entry is admitted',
+    seedFilter(['a:1  img'], 'a:1  img').length === 0
+  );
+  check(
+    'CONTROL: a second addition alongside the seed is STILL refused',
+    seedFilter(['a:1  img', 'b:2  other'], 'a:1  img').join(',') === 'b:2  other'
+  );
+  check(
+    'CONTROL: no seed admits nothing',
+    seedFilter(['a:1  img'], undefined).length === 1
+  );
+
   return bad;
 }
 
@@ -264,7 +281,7 @@ async function main(): Promise<void> {
     console.log('docker image freshness selftest');
     const bad = selftest();
     console.log(
-      bad === 0 ? '\n\x1b[32m✓\x1b[0m 10/10 controls pass' : `\n\x1b[31m✗\x1b[0m ${bad} failed`
+      bad === 0 ? `\n\x1b[32m✓\x1b[0m 13/13 controls pass` : `\n\x1b[31m✗\x1b[0m ${bad} failed`
     );
     process.exit(bad === 0 ? 0 : 1);
   }
@@ -341,11 +358,34 @@ async function main(): Promise<void> {
     const sorted = keyed.slice().sort();
     const had = existsSync(BASELINE);
     const previous: string[] = had ? JSON.parse(readFileSync(BASELINE, 'utf8')) : [];
+    // THE ONE LEGITIMATE GROW PATH: a pin deliberately held BACK.
+    //
+    // Shrink-only is right for debt that should be paid down, and wrong for a pin that
+    // must not move. Measured on 2026-08-24: renet's CSI sidecar stage tracked upstream Go
+    // to 1.27, and under 1.27 the upstream sidecars' own VENDORED grpc stops compiling
+    // (`undefined: http2.TrailerPrefix`). The only fix available to us is to stay on 1.26,
+    // and with no grow path that decision could not be recorded at all -- so the gate would
+    // demand a bump that breaks the build, every run, forever.
+    //
+    // `--seed-image <entry>` names the exact entry being admitted, so admitting one cannot
+    // smuggle in a second: anything else that went stale in the same run is still refused.
+    const seedIdx = process.argv.indexOf('--seed-image');
+    const seedImage = seedIdx > -1 ? process.argv[seedIdx + 1] : undefined;
+    const additions = had ? baselineAdditions(previous, sorted) : [];
+    const unsanctioned = additions.filter((a) => a !== seedImage);
     const verdict = writeBaselineVerdict({
       baselineExists: had,
       firstSeedFlag: process.argv.includes('--first-seed'),
-      additions: had ? baselineAdditions(previous, sorted) : [],
+      additions: unsanctioned,
     });
+    if (seedImage !== undefined && !additions.includes(seedImage)) {
+      console.error(
+        `\n\x1b[31m✗\x1b[0m --seed-image named ${JSON.stringify(seedImage)}, which is not ` +
+          'among this run\'s additions. A seed that matches nothing is a typo, and accepting ' +
+          'it would let the next real addition through unnoticed.'
+      );
+      process.exit(1);
+    }
     if (verdict !== null) {
       console.error(
         `\n\x1b[31m✗\x1b[0m ${renderRefusal(verdict, {
@@ -353,6 +393,13 @@ async function main(): Promise<void> {
           noun: 'known-stale pin',
           previousCount: previous.length,
           newCount: sorted.length,
+          // Without this the refusal says "do not add it to the baseline" and stops,
+          // which is now only HALF true: a pin deliberately held back has a sanctioned
+          // path, and a message that hides it sends the reader either to a bump that
+          // breaks the build or to editing the JSON by hand.
+          seedHelp:
+            '--write-baseline --seed-image "<file>:<line>  <image>"  (ONE deliberately ' +
+            'held-back pin, named exactly; anything else stale in the same run is still refused)',
         })}`
       );
       process.exit(1);
