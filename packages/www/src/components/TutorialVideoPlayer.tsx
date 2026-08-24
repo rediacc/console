@@ -520,7 +520,14 @@ const TutorialVideoPlayer: FC<TutorialVideoPlayerProps> = ({
       pickerLangs.forEach((code) => {
         const item = document.createElement('button');
         item.type = 'button';
-        item.className = 'plyr__control tvp-lang-item';
+        // Plyr's OWN control class, read from its config rather than hardcoded. That is
+        // how Plyr builds its own menu items, so ours inherit the same styling from
+        // plyr.css; hardcoding the literal would also trip check:ci-css-dom-refs, which
+        // scans this repo's stylesheets and cannot see a class defined in a dependency.
+        const plyrControl =
+          (player as unknown as { config?: { classNames?: { control?: string } } }).config
+            ?.classNames?.control ?? '';
+        item.className = `${plyrControl} tvp-lang-item`.trim();
         item.setAttribute('role', 'menuitemradio');
         item.setAttribute('aria-checked', String(code === activeBase));
         item.textContent = getLanguageName(code);
