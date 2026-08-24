@@ -4406,3 +4406,42 @@ said a file was "not touched". That token appears in SEVEN of the twelve agent
 descriptions, so it discriminates nothing -- the same class as `run`/`work`/`use`/`fix`
 already in the list. `check_agent_hint_liveness.py` stayed green (all agents reachable,
 controls fired) after the addition.
+
+### Three more gates landed in the same wave (2026-08-24, later commits)
+
+The section above was written at `6414eb32`; three commits followed it and the
+automated review flagged their absence here, correctly, against this repo's own
+"update the document describing it in the SAME turn" rule.
+
+**`check:ci-control-vacuity`** (`57c81778`). A control-first gate that plants its
+defect by PATTERN SUBSTITUTION -- `${SRC//needle/repl}` or `sed 's/needle/'` --
+must prove the plant landed. Reword the targeted line and the substitution
+silently yields an identical copy, so the control passes against unmutated source
+and the gate reports a green that proves nothing. Corpus: 4 gates plant by
+substitution and all 4 comply; `check-gate-id-convention` builds its control by
+CONSTRUCTION (concatenation plus a python injection), which cannot fail to apply,
+so it is exempt. The rule keys on HOW the mutant is built, not on whether a
+control exists. Zero discovered inputs FAILS.
+
+Getting the classifier right took two passes, and the first was wrong in the
+dangerous direction: it missed `sed -i "$expr"` (expression held in a variable, so
+no literal `s///` on the line) and mis-exempted the two gates that motivated the
+check.
+
+**`check_g` in `check:ci-setup-idempotency`** (`48cc833b`). `setup()` must
+initialise submodules BEFORE any phase that reads one. Order is the invariant, not
+presence: an init placed after the reader fixes nothing and reads as correct in a
+diff, so there are two control plants (absent, and present-but-late). The first
+version of this assertion FAILED ON CORRECT CODE -- its reader pattern matched
+`private/renet/go.mod` inside the comment explaining the ordering. Comments are
+stripped now. Same family as the editorconfig gate matching `binary` against a
+PATH: judge the code, not the prose describing it.
+
+**`check-gate-id-convention.sh` outgrew argv** (`5ac65968`). It passed the entire
+`manifest.ts` and `package.json` to python3 as ARGV. Linux caps a single argument
+at MAX_ARG_STRLEN (32 pages = 131072 bytes); `manifest.ts` hit 131359 bytes and one
+commit earlier had been 130976 -- 96 bytes under. The symptom is the interpreter
+refusing to START (`/usr/bin/python3: Argument list too long`, exit 126), which
+reads like a broken runner rather than a gate that outgrew its plumbing. It now
+passes temp-file PATHS; verified against a synthetic 331KB manifest. This was a
+latent bomb: the next manifest entry would have tripped it regardless of content.

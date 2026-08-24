@@ -284,7 +284,7 @@ check_g() { # check_g <run.sh path>
     # concluded the real, correctly-ordered code was broken. Same family as the
     # gate that matched "binary" against a PATH: judge the code, not the prose
     # describing it.
-    body="$(awk '/^setup\(\) \{/{inside=1} inside{print NR": "$0} inside&&/^}/{exit}' "$runsh" |
+    body="$(awk '/^setup\(\) \{/{inside=1} inside{print} inside&&/^}/{exit}' "$runsh" |
         sed 's/[[:space:]]*#.*$//')"
     if [ -z "$body" ]; then
         fail "G: no setup() function in $(basename "$runsh")"
