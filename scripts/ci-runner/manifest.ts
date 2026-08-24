@@ -834,6 +834,21 @@ export const GATES: readonly GateSpec[] = [
   // hand-authored and their generator was deleted, so a new doc without one ships a
   // blank browse card in all 13 locales silently -- one file serves every translation,
   // resolved by base slug.
+  // Plyr's quality pane cannot host the language picker: it snaps every click to
+  // min(options), so the video plays a language nobody chose. Re-adding it is the
+  // regression that looks like it works.
+  {
+    id: 'check:ci-video-player-invariants',
+    run: 'npm run check:ci-video-player-invariants',
+    gate: true,
+    leaves: ['scripts/check-video-player-invariants.ts'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-content',
+      step: 'Video player invariants',
+    },
+  },
   // A skill an agent may edit gets longer every pass, because appending beats
   // rewriting. The cap is what forces the editing pass; skills opt in through
   // `self-improving: true` in their own frontmatter rather than a list here.

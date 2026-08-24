@@ -120,6 +120,7 @@
     "check:ci-docs-copy-units": "tsx scripts/check-docs-copy-units.ts --selftest && tsx scripts/check-docs-copy-units.ts",
     "check:ci-docs-browse-invariants": "tsx scripts/check-docs-browse-invariants.ts --selftest && tsx scripts/check-docs-browse-invariants.ts",
     "check:ci-skill-size": "tsx scripts/check-skill-size.ts --selftest && tsx scripts/check-skill-size.ts",
+    "check:ci-video-player-invariants": "tsx scripts/check-video-player-invariants.ts --selftest && tsx scripts/check-video-player-invariants.ts",
     "check:ci-actionlint": ".ci/scripts/security/actionlint.sh",
     "check:ci-scope-scripts-reachability": ".ci/scripts/quality/check-scope-scripts-reachability.sh",
     "check:ci-shell-lint": ".ci/scripts/security/shellcheck.sh",
