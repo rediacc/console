@@ -142,6 +142,26 @@ def seed_gate_hashes(root):
     return out
 
 
+# A path-shaped token with an extension. Used only to decide whether a tick's
+# EVIDENCE names code; the tick text itself is prose and is never parsed further.
+_EVIDENCE_PATH = re.compile(r"(?<![\w/])((?:[\w.@-]+/)+[\w.@-]+\.[A-Za-z0-9]+)")
+
+
+def tick_touches_code(line):
+    """Does this tick's evidence name a file that is not documentation?
+
+    The operator's rule: only code-touching ticks are asked. This mirrors the
+    docs-only filter already applied to commits, and it FAILS TOWARD ASKING --
+    a tick whose evidence names no path at all is asked, because "no path" is
+    not evidence that nothing shipped, and silently dropping a fix is the
+    failure this whole mechanism exists to prevent.
+    """
+    paths = _EVIDENCE_PATH.findall(line or "")
+    if not paths:
+        return True
+    return not all(p.startswith("docs/") or p.endswith(".md") for p in paths)
+
+
 def fix_signals(root, lines, session_id, state):
     """(descriptions, ids, new_tick_pairs, current_head).
 
@@ -173,12 +193,34 @@ def fix_signals(root, lines, session_id, state):
             tid = _tick_id(line)
             if tid not in state["seen_ticks"]:
                 new_ticks.append((tid, line.strip()))
-    descriptions = [d for _, d in commits] + ["tick: " + t[:120] for _, t in new_ticks]
-    ids = sorted([s for s, _ in commits] + [t for t, _ in new_ticks])
-    # new_ticks stays (id, line) pairs: I7 needs the LINE to check evidence,
-    # the absorb/settle sites need the id. Returning ids only here once made
-    # the I7 unpack crash, and a crashed hook reads as ALLOW -- fail-open.
-    return descriptions, ids, new_ticks, head
+    # ONE UNIT PER STOP, oldest first. Until now every commit and every new tick
+    # of a stop were hashed into a SINGLE fix-set, so one verdict had to cover
+    # unrelated fixes and the judge's answers wandered across the bundle. Asking
+    # per item is what the operator asked for; asking about ALL of them at once
+    # would wall a busy stop in behind eight simultaneous demands, so the rest
+    # stay unbanked and the next stop picks up the next one.
+    #
+    # Commits are ONE unit, not one each: they already passed the docs-only
+    # filter above and they landed together.
+    units = []
+    if commits:
+        units.append(([s for s, _ in commits], [d for _, d in commits], []))
+    for tid, line in new_ticks:
+        if not tick_touches_code(line):
+            continue
+        units.append(([tid], ["tick: " + line[:120]], [(tid, line)]))
+    if not units:
+        return [], [], [], head
+    ids, descriptions, ticks = units[0]
+    if len(units) > 1:
+        descriptions = [
+            *descriptions,
+            "(%d more fix(es) queued for later stops; this one is asked alone)" % (len(units) - 1),
+        ]
+    # ticks stays (id, line) pairs: I7 needs the LINE to check evidence, the
+    # absorb/settle sites need the id. Returning ids only here once made the I7
+    # unpack crash, and a crashed hook reads as ALLOW -- fail-open.
+    return descriptions, sorted(ids), ticks, head
 
 
 def package_scripts(root):

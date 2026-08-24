@@ -11548,6 +11548,29 @@ else
     fail "219c: named-artifact proof is not discriminating ($(cat "$BASE/reggate-artifact.err"))"
 fi
 
+echo "== 219e. ONE fix asked per stop, and only code-touching ticks =="
+# Every commit and every new tick of a stop used to be hashed into ONE fix-set,
+# so a single verdict had to cover unrelated fixes. Asking per item is the
+# operator's rule; asking about all of them at once would wall a busy stop in
+# behind eight simultaneous demands, so the rest stay unbanked for later stops.
+if python3 -c "
+import sys
+sys.path.insert(0, '\$(dirname "\$HOOK")')
+import wl_reggate as R
+# The docs-only filter mirrors the one commits already face, and it FAILS TOWARD
+# ASKING: no path is not evidence that nothing shipped.
+assert R.tick_touches_code('- [x] #a (me) packages/cli/src/foo.ts:12 exit 0') is True
+assert R.tick_touches_code('- [x] #a (me) docs/agent-reference/TRAPS.md and README.md') is False
+assert R.tick_touches_code('- [x] #a (me) no paths at all, exit 0') is True, \
+    'a tick with no path was silently dropped'
+assert R.tick_touches_code('- [x] #a (me) docs/x.md plus packages/www/src/a.css') is True, \
+    'a mixed tick was treated as docs-only'
+" 2>"$BASE/reggate-onetick.err"; then
+    pass "219e: code-touching filter fails toward asking"
+else
+    fail "219e: the per-tick filter is wrong ($(cat "$BASE/reggate-onetick.err"))"
+fi
+
 echo "== 219d. CONTROL: a static gate still faces the STRICTER probe =="
 # 219c alone would pass on a machinery that let ANY touched file settle a
 # finding, which would gut the wired-and-green requirement for check:ci-* keys.
