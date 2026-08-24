@@ -335,6 +335,7 @@ const description = t('documentation.browse.description');
   const tally = document.querySelector<HTMLElement>('.docs-browse-tally');
   const clear = document.querySelector<HTMLButtonElement>('.docs-browse-clear');
   const search = document.querySelector<HTMLInputElement>('.docs-browse-search-input');
+  const categoryGroup = document.querySelector<HTMLElement>('.docs-rail-group--primary');
   const totalCount = items.length;
 
   type Facet = 'category' | 'tag';
@@ -418,6 +419,10 @@ const description = t('documentation.browse.description');
   clear?.addEventListener('click', () => {
     for (const facet of facets) facet.checked = false;
     if (search) search.value = '';
+    // Clearing dissolves the tab's choice too, so the category group comes back:
+    // leaving it hidden would strand the reader with no category control at all
+    // until the next full navigation.
+    if (categoryGroup) categoryGroup.hidden = false;
     update();
   });
 
@@ -446,5 +451,11 @@ const description = t('documentation.browse.description');
       (axis === 'tag' && wantedTags.has(facet.value));
   }
   if (search) search.value = (params.get('q') || '').trim();
+
+  // Arriving with `?category=` means a category tab expressed the choice, so the rail's
+  // own category group would be a second control saying the same thing: hide it. Only
+  // the deep-link path hides it -- a reader on the bare index keeps the checkboxes,
+  // which can multi-select in a way the tabs cannot.
+  if (categoryGroup && wantedCats.size > 0) categoryGroup.hidden = true;
   paint();
 </script>
