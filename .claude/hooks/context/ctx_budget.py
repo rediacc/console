@@ -51,27 +51,25 @@ import time
 from pathlib import Path
 
 # --- Where the trigger actually is -----------------------------------------
-# MEASURED, NOT DERIVED, and the difference cost a live false alarm.
+# DERIVED, and the derivation was right the first time. This constant was 15_000
+# for one reason: reading the bundle gives trigger = window - min(maxOutputTokens,
+# 20_000) - 13_000, and 53 observed compactions appeared to contradict it, so the
+# formula was declared "checked against the wrong unit" and replaced by a
+# measurement.
 #
-# Reading the bundle gives an exact-looking formula: the trigger sits at
-# window - min(maxOutputTokens, 20_000) - 13_000, so 967_000 on a 1M window.
-# That formula is a correct description of the code and a wrong prediction of
-# the number, because it is evaluated against Claude Code's INTERNAL token
-# estimate over the message list, while everything this module can see is the
-# API's reported prompt size. The reported figure additionally carries the
-# system prompt, the tool schemas and the memory files, which in this repo run
-# to roughly the same 33_000 the formula subtracts.
+# `/context` settles it by printing the number outright:
 #
-# So the formula was checked against the wrong unit. 53 real compactions in
-# this project's transcripts say where the line is in the unit we can actually
-# observe: 43 of them cluster between 985_029 and 999_869 on a 1M window, and
-# the remaining 10 (117_562 to 936_593) are manual `/compact` calls, which fire
-# wherever they were typed. No observed AUTO compaction fired earlier than
-# window - 14_971.
+#     Auto-compact window: 1m tokens
+#     ⛝ Autocompact buffer: 33k tokens (3.3%)
 #
-# 15_000 is that measurement rounded to the safe side. It is a floor on where
-# compaction can happen, not a prediction of where it will.
-COMPACT_MARGIN = 15_000
+# 33_000 is exactly min(20_000, 20_000) + 13_000. The formula describes the
+# shipped behaviour; what was wrong was the inference drawn from compaction
+# timings, which cluster where they do because a 1M window is reached in
+# REPORTED prompt tokens long before the message list alone reaches 967_000.
+#
+# The old value was wrong in the dangerous direction: it under-reserved by
+# 18_000 tokens, so every notice promised more headroom than existed.
+COMPACT_MARGIN = 33_000
 # Kept because the disproof logic below reasons about the hard blocking limit,
 # which IS in the reported-token unit.
 OUTPUT_RESERVE = 20_000
@@ -162,37 +160,22 @@ def configured_window(project_dir):
     return None, "unset"
 
 
-# Claude Code refuses the request outright this far below the model's real
-# max (the "blocked" level). A session that is still running past it has
-# PROVEN its window is bigger than we assumed.
-HARD_LIMIT_MARGIN = 3_000
+# THE CAP-DISPROOF MECHANISM WAS DELETED ON 2026-08-24, because the pin rule
+# below made it unreachable rather than merely redundant. It watched for a
+# session carrying more tokens than its inferred model cap allows and, on that
+# proof, kept the configured window. But with a pin present the pin now wins
+# outright, so there is nothing left to prove; and with no pin `configured` is
+# None, which its own guard rejected. Neither branch could ever fire again.
+#
+# Three mutation controls died with it, and that is the correct reading: they
+# could no longer distinguish a working disproof from a missing one, because
+# the outcome no longer depended on it. What survives is `window_floor`, which
+# is a different and still-live claim -- evidence that the window is bigger than
+# ANY configured value, which is the case where a pin was added after a session
+# had already started.
 
 
-def cap_is_disproven(mmax, configured, observed_usage):
-    """Has the session itself refuted the model-max we inferred?
-
-    THIS EXISTS BECAUSE THE INFERENCE IS WRONG IN PRACTICE. The transcript
-    records the model as `claude-opus-5`, with no `[1m]` suffix, even in a
-    session running on the 1M variant -- caught live, not in review, on a
-    session at 395,590 tokens whose threshold this module had computed as
-    167,000. The band hook had already fired its late band, 228,000 tokens of
-    false alarm, and every number in the notice was wrong.
-
-    Usage above the model's HARD limit is proof and not merely a hint: past
-    that point Claude Code stops sending and the API rejects the request. A
-    conversation that is still going has a bigger window than we assumed. The
-    soft threshold is deliberately NOT the test -- a genuine 200K session
-    reaches that every time, and treating it as disproof would silence the
-    hook on exactly the sessions that need it.
-    """
-    if not mmax or not configured or not observed_usage:
-        return False
-    return observed_usage > (mmax - HARD_LIMIT_MARGIN) and configured > mmax
-
-
-def resolve_threshold(
-    model, project_dir, observed_usage=None, cap_disproven=False, window_floor=None
-):
+def resolve_threshold(model, project_dir, window_floor=None):
     """Return the dict of everything the caller needs to explain itself.
 
     `window_floor` is the caller's accumulated EVIDENCE about this session,
@@ -207,18 +190,15 @@ def resolve_threshold(
     configured, source = configured_window(project_dir)
     mmax = model_max_context(model)
     if window_floor and (not configured or window_floor > configured):
-        return _finish(model, None, window_floor, "observed", disproven=True)
-    if cap_disproven or cap_is_disproven(mmax, configured, observed_usage):
-        # Keep the configured window, drop the model cap, and say so.
-        return _finish(model, None, configured, source, disproven=True)
+        return _finish(model, None, window_floor, "observed", from_evidence=True)
     if configured is None:
         # No pin. Claude Code would fall back to a model-tuned window; the
         # honest answer here is the model's own max, flagged as derived.
         configured = mmax
-    return _finish(model, mmax, configured, source, disproven=False)
+    return _finish(model, mmax, configured, source)
 
 
-def _finish(model, mmax, configured, source, disproven):
+def _finish(model, mmax, configured, source, from_evidence=False):
     if configured is None:
         return {
             "model": model,
@@ -228,9 +208,24 @@ def _finish(model, mmax, configured, source, disproven):
             "threshold": None,
             "source": source,
             "confident": False,
-            "cap_disproven": disproven,
+            "window_from_evidence": from_evidence,
+            "assumed_cap_overruled": False,
         }
-    window = min(configured, mmax) if mmax else configured
+    # THE PIN IS THE WINDOW. A cap inferred from the model id may not clip it:
+    # `claude-opus-5` is exactly what a 1M session reports (verified again on
+    # 2026-08-24 against a transcript entry carrying 228,201 prompt tokens), so
+    # clipping a pinned 1,000,000 down to the 200K boundary produced "1.9% until
+    # auto-compact" on a session that was 21% full -- every turn, for hours.
+    # Crying wolf changes behaviour on every turn; going quiet is survivable,
+    # because PreCompact writes its facts snapshot either way.
+    #
+    # AND AN EXPLICIT CAP CANNOT CLIP EITHER, which is why there is no `min()`
+    # here at all: an explicit cap (a `[1m]` marker) is only ever 1,000,000, and
+    # `configured_window` clamps every pin to WINDOW_MAX, which is 1,000,000. A
+    # branch for it would be unreachable, and unreachable code in a module that
+    # decides when to warn is how the next reader is misled about what runs.
+    window = configured
+    assumed_cap_overruled = bool(mmax) and configured > mmax
     return {
         "model": model,
         "model_max": mmax,
@@ -238,11 +233,13 @@ def _finish(model, mmax, configured, source, disproven):
         "window": window,
         "threshold": window - COMPACT_MARGIN,
         "source": source,
-        # A window taken on trust from a model id is not a measurement, and a
-        # window whose model cap has been disproven is a fallback. Neither is
-        # "confident"; the notice says so out loud in both cases.
-        "confident": mmax is not None and not disproven,
-        "cap_disproven": disproven,
+        # A window taken on trust from a model id is not a measurement, a window
+        # derived from a session's own high-water mark is a fallback, and a pin
+        # allowed to overrule an assumed cap is a bet on the pin. None of the three is
+        # "confident"; the notice says so out loud in every case.
+        "confident": mmax is not None and not from_evidence and not assumed_cap_overruled,
+        "window_from_evidence": from_evidence,
+        "assumed_cap_overruled": assumed_cap_overruled,
     }
 
 

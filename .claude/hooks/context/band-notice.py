@@ -126,12 +126,27 @@ def build_text(band_name, usage, res, st, state_md):
             "percentile, and 17,800 in the worst case observed."
         ),
     ]
-    if res.get("cap_disproven"):
+    if res.get("window_from_evidence"):
         lines.append(
-            "The transcript reports the model as %r, whose default window would "
-            "put the threshold far below the context this session is already "
-            "carrying. That cap is disproven, so the configured window is used "
-            "instead and the threshold above is a floor, not a measurement." % (res["model"],)
+            "This session has itself carried more context than any configured "
+            "window allows, so the window above comes from that high-water mark "
+            "rather than from settings: a pin written after a session starts does "
+            "not apply to it. The threshold is a floor, not a measurement."
+        )
+    elif res.get("assumed_cap_overruled"):
+        lines.append(
+            "The transcript reports the model as %r, which is also what a 1M session "
+            "reports -- the id drops its [1m] marker. The pinned window of %s is "
+            "therefore used in preference to the %s this hook would otherwise assume, "
+            "and the threshold above is a BET on the pin. If this session is really a "
+            "%s one, compaction will arrive without a late band; the PreCompact "
+            "snapshot is what covers that case."
+            % (
+                res["model"],
+                B.fmt(res["configured"]),
+                B.fmt(res["model_max"]),
+                B.fmt(res["model_max"]),
+            )
         )
     elif not res["confident"]:
         lines.append(
@@ -190,24 +205,14 @@ def main():
         st = B.load_state(session_id)
         state_md = B.state_md_path(project, session_id)
 
-        # The model cap is an inference off a transcript field that has
-        # already been observed to lie (see cap_is_disproven). Once this
-        # session has proven its window is bigger, that verdict is STICKY:
-        # after a compaction usage drops back under the fake hard limit, and
-        # without the sticky flag the wrong cap would quietly re-arm.
-        sticky = bool(st.get("cap_disproven")) and st.get("cap_disproven_model") == model
+        # `window_floor` is this session's own evidence: it has carried more
+        # than any configured window allows, which no pin can argue with. The
+        # cap-disproof mechanism that used to sit beside it was deleted once the
+        # pin rule made it unreachable; see ctx_budget.resolve_threshold.
         floor = st.get("window_floor")
-        res = B.resolve_threshold(
-            model, project, observed_usage=usage, cap_disproven=sticky, window_floor=floor
-        )
+        res = B.resolve_threshold(model, project, window_floor=floor)
         if not res["threshold"] or res["threshold"] <= 0:
             return
-        if res["cap_disproven"] and not sticky and not floor:
-            st["cap_disproven"] = True
-            st["cap_disproven_model"] = model
-            # The band recorded under the wrong threshold is meaningless.
-            st["band"] = -1
-
         # EVIDENCE BEATS CONFIGURATION. A session that has carried more tokens
         # than the derived threshold allows, without compacting, has proven the
         # threshold wrong. This is the generalisation of the model-cap
@@ -220,13 +225,7 @@ def main():
             ceiling = max(int(res.get("model_max") or 0), B.WINDOW_MAX)
             if ceiling > (res["window"] or 0):
                 st["window_floor"] = ceiling
-                res = B.resolve_threshold(
-                    model,
-                    project,
-                    observed_usage=usage,
-                    cap_disproven=sticky,
-                    window_floor=ceiling,
-                )
+                res = B.resolve_threshold(model, project, window_floor=ceiling)
                 # Re-seat the ladder under the corrected threshold rather than
                 # clearing it. Clearing would replay every band the session has
                 # already passed; leaving it would suppress the bands it has
@@ -247,8 +246,6 @@ def main():
                 # change because the conversation was summarised. high_water
                 # deliberately does NOT survive -- it is a fact about the
                 # epoch that just ended.
-                "cap_disproven": st.get("cap_disproven"),
-                "cap_disproven_model": st.get("cap_disproven_model"),
                 "window_floor": st.get("window_floor"),
                 "threshold_corrected": st.get("threshold_corrected"),
             }
