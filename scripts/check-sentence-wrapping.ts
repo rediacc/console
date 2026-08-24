@@ -241,6 +241,19 @@ const selftest = (): number => {
   // The floor must be a real failure, not a warning that reads as one.
   check('surface floor is above zero', MIN_FILES > 0);
 
+  // THE DRAIN ARM, both directions. Without the first of these the ratchet only turns one
+  // way and a stalled migration is indistinguishable from a finished one.
+  const ids = scan(tmp, real).findings.map((f) => f.id);
+  const stale = [...ids, `${SRC_PREFIX}/Gone.astro:multi`];
+  check(
+    'a baselined entry that no longer appears is REPORTED as already fixed',
+    stale.filter((id) => !new Set(ids).has(id)).length === 1
+  );
+  check(
+    'CONTROL: an unchanged baseline reports nothing to drain',
+    ids.filter((id) => !new Set(ids).has(id)).length === 0
+  );
+
   fs.rmSync(tmp, { recursive: true, force: true });
   console.log(`\nselftest: ${pass} passed, ${fail} failed`);
   return fail === 0 ? 0 : 1;
@@ -285,6 +298,27 @@ const main = (): number => {
     fs.writeFileSync(BASELINE, `${JSON.stringify({ entries: ids }, null, 2)}\n`);
     console.log(`wrote ${ids.length} entr(ies) to ${path.relative(REPO, BASELINE)}`);
     return 0;
+  }
+
+  // THE RATCHET MUST TURN BOTH WAYS, and until now this gate only checked one.
+  //
+  // Growth was refused; a baselined entry that is ALREADY FIXED was not. That makes the
+  // file a rubber stamp exactly when it matters most: the moment the <Sentences> mechanism
+  // lands and renders start getting wrapped, a stalled migration and a completed one look
+  // identical from here, because the count never has to move. This gate's own header warns
+  // that a baseline nobody drains "quietly becomes a rubber stamp", and it was doing that.
+  //
+  // It is also the only thing that can notice the mechanism DISAPPEARING mid-adoption in
+  // the direction growth cannot see. `check-css-dom-refs.ts:232` has carried this arm all
+  // along; this gate was strictly weaker than its own sibling.
+  const present = new Set(ids);
+  const fixed = baseline.filter((id) => !present.has(id));
+  if (fixed.length > 0) {
+    console.error(`✗ ${fixed.length} baselined entr(ies) are already fixed. The baseline only shrinks:\n`);
+    for (const id of fixed) console.error(`  ${id}`);
+    console.error('\n  Drain them, in the same change that fixed them:');
+    console.error('    npx tsx scripts/check-sentence-wrapping.ts --write-baseline');
+    return 1;
   }
 
   const added = baselineAdditions(baseline, ids);
