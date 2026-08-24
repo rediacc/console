@@ -2,28 +2,25 @@
 import { getCollection } from 'astro:content';
 import type { Language } from '../i18n/types';
 import { createTranslator } from '../i18n/utils';
-import { getBaseSlug } from '../utils/slug';
-import { CATEGORY_KEYS, categoryAnchor, groupByCategory, type DocCategory } from '../utils/docs-categories';
+import { CATEGORY_KEYS, groupByCategory, type DocCategory } from '../utils/docs-categories';
 
 interface Props {
   currentLang: Language;
   currentCategory?: string;
-  variant?: 'article' | 'index';
 }
 
 const {
   currentLang,
   currentCategory,
-  variant = 'article',
 } = Astro.props as Props;
 
 const { t } = createTranslator(currentLang);
 
-// The category vocabulary, its display order and the browse page's anchor transform all
-// come from utils/docs-categories. This component used to carry a second copy of all
-// three, which is the exact drift that module's header comment exists to prevent: the
-// tabs and the browse page agreed on six categories and on `#use-cases` by coincidence,
-// not by contract.
+// The category vocabulary and its display order come from utils/docs-categories. This
+// component used to carry a second copy of both, which is the exact drift that module's
+// header comment exists to prevent: the tabs and the browse page agreed on six
+// categories by coincidence, not by contract. The `?category=` values in the hrefs are
+// the raw vocabulary strings the browse page's cards carry in `data-category`.
 function categoryLabel(cat: string): string {
   const k = CATEGORY_KEYS[cat as DocCategory];
   // The schema (src/content/config.ts) restricts category to this vocabulary.
@@ -43,19 +40,21 @@ const groups = groupByCategory(allDocs.filter((doc) => doc.data.language === cur
 
 <nav class="docs-top-tabs" aria-label={t('common.aria.docsSections')}>
   <ul class="docs-top-tabs-list">
-    {groups.map(({ category, docs }) => {
-      const anchor = categoryAnchor(category);
-      const href = variant === 'index'
-        ? `#${anchor}`
-        : `/${currentLang}/docs/${getBaseSlug(docs[0].slug)}`;
-      const isActive = variant === 'article' && currentCategory === category;
+    {/* Every tab lands on the browse page filtered to its category, where the reader
+        sees the CARDS for that category. It used to deep-link the category's FIRST
+        DOCUMENT, which silently decided for the reader which page they wanted; and on
+        the browse page itself it jumped to an in-page anchor, a second control for an
+        axis the filter rail already owned. One href for both surfaces now, and the
+        browse page hides its own category filter group when this param is present. */}
+    {groups.map(({ category }) => {
+      const isActive = currentCategory === category;
 
       return (
         <li class="docs-top-tabs-item">
           <a
-            href={href}
+            href={`/${currentLang}/docs?category=${encodeURIComponent(category)}`}
             class={`docs-top-tab-link ${isActive ? 'active' : ''}`}
-            data-docs-tab={anchor}
+            data-docs-category={category}
           >
             {categoryLabel(category)}
           </a>
@@ -67,46 +66,25 @@ const groups = groupByCategory(allDocs.filter((doc) => doc.data.language === cur
 
 <script is:inline>
   (function () {
-    function initIndexTabActiveState() {
-      const tabs = document.querySelectorAll('.docs-top-tab-link[data-docs-tab]');
-      if (tabs.length === 0) return;
-
-      const setActiveFromHash = () => {
-        const hash = window.location.hash.replace('#', '');
-        if (!hash) return;
-
-        tabs.forEach((tab) => {
-          const match = tab.getAttribute('data-docs-tab') === hash;
-          tab.classList.toggle('active', match);
-        });
-      };
-
-      setActiveFromHash();
-
-      // `hashchange` alone was NEVER enough, and the tab highlight has therefore never
-      // worked for a real click. Astro's client router intercepts same-origin link clicks
-      // and updates the URL through the History API, which does not emit `hashchange`;
-      // only a programmatic `location.hash = ...` did, which is why this read correct in
-      // every console test. Measured on the built browse page: after clicking the
-      // `Use Cases` tab the hash was `#use-cases` and NO tab carried `.active`.
-      // The click path therefore sets the state from the link itself rather than waiting
-      // for an event that will not arrive, and `hashchange` stays for back/forward.
-      tabs.forEach((tab) => {
-        tab.addEventListener('click', () => {
-          const wanted = tab.getAttribute('data-docs-tab');
-          tabs.forEach((other) => {
-            other.classList.toggle('active', other.getAttribute('data-docs-tab') === wanted);
-          });
-        });
+    // The browse page is one static HTML for every `?category=` value, so the active
+    // tab there can only be painted client-side from the URL. Article pages carry no
+    // category param and their active tab is server-rendered from frontmatter, so the
+    // early return leaves it alone. Tab clicks are full navigations (no page renders
+    // <ClientRouter/>, see BaseLayout), so this runs fresh on every landing.
+    function initDocsTabActiveState() {
+      var wanted = new URLSearchParams(window.location.search).get('category');
+      if (!wanted) return;
+      var chosen = wanted.split(',');
+      var tabs = document.querySelectorAll('.docs-top-tab-link[data-docs-category]');
+      tabs.forEach(function (tab) {
+        tab.classList.toggle('active', chosen.indexOf(tab.getAttribute('data-docs-category')) !== -1);
       });
-      window.addEventListener('hashchange', setActiveFromHash);
     }
 
-    document.addEventListener('astro:page-load', initIndexTabActiveState);
     if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', initIndexTabActiveState);
+      document.addEventListener('DOMContentLoaded', initDocsTabActiveState);
     } else {
-      initIndexTabActiveState();
+      initDocsTabActiveState();
     }
   })();
 </script>

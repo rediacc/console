@@ -113,17 +113,17 @@ for (const entry of toc as TocEntry[]) {
   <div class:list={['docs-shell', !hasTOC && !isBrowse && 'docs-shell-no-toc', isBrowse && 'docs-shell-browse']}>
     <div class="docs-shell-top">
       <div class="docs-header-row">
-        {/* Article pages only. On the browse page the same six categories render
-            immediately below as filter pills that actually DRIVE the filter, so a tab
-            row there is a second control for one axis whose only power is to jump to
-            an anchor. On an article page it is the real between-section navigation. */}
-        {!isBrowse && (
-          <DocsTopTabs
-            currentLang={currentLang}
-            currentCategory={frontmatter.category}
-            variant={variant}
-          />
-        )}
+        {/* Both surfaces. The tabs are the category navigation: every tab lands on the
+            browse page filtered to its category (`?category=`), where the cards for that
+            category are what the reader sees. They render on the browse page too so the
+            reader can move between categories from there -- the browse script hides its
+            own category filter group when a tab expressed the choice, so the axis has
+            one control, not two. */}
+        <DocsTopTabs
+          currentLang={currentLang}
+          currentCategory={frontmatter.category}
+        />
+
         <div class="docs-header-tools">
           {/* Server-rendered trigger, not part of the React island. The island
               below is headless: it carries the modal and nothing else, so the
@@ -743,20 +743,27 @@ for (const entry of toc as TocEntry[]) {
       --docs-rail-nav: 250px;
       --docs-rail-toc: 250px;
       --docs-measure: 800px;
-      --docs-slack: 1fr;
 
       /* The track list, composed rather than written out at the grid, so the
          no-TOC variant drops the last track by leaving the toc rail off the
-         end instead of restating the other four. It is a custom property and
+         end instead of restating the other two. It is a custom property and
          NOT a second `grid-template-columns` rule on purpose: a modifier class
          would outrank the two responsive rules below, which set the property
          literally and have no business being beaten by a page that happens to
-         lack a TOC. */
+         lack a TOC.
+
+         There used to be two 1fr slack tracks flanking the measure, which
+         pinned both rails to the viewport edges and put the void BETWEEN the
+         rails and the article: at 1920 the reader's eye crossed 287px of
+         nothing from the sidebar to the first word. The rails now sit one
+         gutter from the content and the cluster centres as a unit
+         (justify-content on .docs-layout below), so free space lands OUTSIDE
+         the columns -- the layout the operator pointed at. Pages that want
+         every pixel still get it: their `--docs-measure: 1fr` override makes
+         the middle track absorb what the slack tracks used to. */
       --docs-tracks-body:
         var(--docs-rail-nav)
-        minmax(0, var(--docs-slack))
-        minmax(0, var(--docs-measure))
-        minmax(0, var(--docs-slack));
+        minmax(0, var(--docs-measure));
       --docs-tracks: var(--docs-tracks-body) var(--docs-rail-toc);
 
       /* The PROSE measure, which is not the same thing as the measure TRACK. The
@@ -768,7 +775,7 @@ for (const entry of toc as TocEntry[]) {
     }
 
     /* A cheat sheet is a reference table, not prose: it wants every pixel, so
-       the measure takes the free space and the slack track gets none.
+       the measure track takes all the free space instead of capping at 800px.
        Declared HERE rather than in CheatSheetGrid because Astro's scoping adds
        an attribute to every selector in this block, so `.docs-shell` here is
        (0,2,0) and the same selector written in the component's unscoped
@@ -778,7 +785,6 @@ for (const entry of toc as TocEntry[]) {
        CheatSheetGrid and --docs-measure still computed to 800px. */
     .docs-shell:has(.cs-cards) {
       --docs-measure: 1fr;
-      --docs-slack: 0px;
     }
 
     /* Tutorial pages release the measure for the same reason cheat sheets do:
@@ -791,7 +797,6 @@ for (const entry of toc as TocEntry[]) {
        Same specificity note as above: it must live here, not in the component. */
     .docs-shell:has(.tutorial-video-container) {
       --docs-measure: 1fr;
-      --docs-slack: 0px;
     }
 
     /* The browse page is ONE track: no article rail, no TOC, no measure cap. It is
@@ -803,18 +808,10 @@ for (const entry of toc as TocEntry[]) {
       --docs-tracks: minmax(0, 1fr);
     }
 
-    /* One track, so the base rule's `grid-column: 3` would conjure two implicit
-       tracks before it. Same hand-back the embed override and both breakpoints do. */
+    /* One track, so the base rule's `grid-column: 2` would conjure an implicit
+       track before it. Same hand-back the embed override and both breakpoints do. */
     .docs-shell-browse .docs-layout > .docs-content {
       grid-column: auto;
-    }
-
-    /* With the tab strip gone the row has no flexible child left to push the tools
-       to the end, so the auto margin does it. Scoped to the browse page: on an
-       article page .docs-top-tabs still grows and this would compute to zero
-       anyway, and a rule that can only be a no-op is a rule nobody can verify. */
-    .docs-shell-browse .docs-header-tools {
-      margin-inline-start: auto;
     }
 
     .docs-shell.docs-shell-embed {
@@ -837,8 +834,8 @@ for (const entry of toc as TocEntry[]) {
       gap: 0;
     }
 
-    /* One track, so the base rule's `grid-column: 3` would invent tracks 2 and
-       3 and push the article off the right of an embed that has no rails. */
+    /* One track, so the base rule's `grid-column: 2` would invent track 2 and
+       push the article off the right of an embed that has no rails. */
     .docs-shell.docs-shell-embed .docs-layout > :global(.docs-sidebar),
     .docs-shell.docs-shell-embed .docs-layout > .docs-content,
     .docs-shell.docs-shell-embed .docs-layout > .toc-sidebar {
@@ -1023,23 +1020,27 @@ for (const entry of toc as TocEntry[]) {
       display: none;
     }
 
-    /* Five tracks, the second and fourth deliberately empty. An equal slack
-       track on EACH side of the measure is what centres the article; the
-       earlier four-track version put the single slack at the END, which parked
-       340px of dead space to the right of the TOC at 1920 and left the article
-       hard against the nav rail. With the slack split, the TOC is the LAST
-       track and lands against the inline end, one gutter from the viewport.
-       Docking content is usually written as `margin-inline-end: auto` or a
-       physical `padding-right`, and this layout's comment history records RTL
-       regressions from exactly that. Making the void a real grid TRACK means
-       the browser lays it out in the inline direction, so under dir=rtl the
-       whole thing mirrors with no second rule and no physical property.
+    /* Three tracks: nav rail, measure, TOC rail, one gutter apart, and the
+       whole cluster centred by `justify-content` when the tracks add up to
+       less than the row. Two earlier shapes both parked the void in the wrong
+       place: a single slack track at the END left 340px of dead space to the
+       right of the TOC at 1920, and the slack-on-each-side-of-the-measure
+       version that replaced it pinned both rails to the viewport edges, so the
+       reader's eye crossed 287px of nothing between the sidebar and the first
+       word. Centring the CLUSTER puts the void outside the columns instead.
+       `justify-content: center`, never `margin` on a child or a physical
+       `padding-right`: this layout's comment history records RTL regressions
+       from physical properties, and content-distribution on the grid container
+       is laid out in the inline direction, so dir=rtl mirrors with no second
+       rule. On pages whose measure is 1fr (cheat sheets, tutorials, browse)
+       the tracks fill the row and the centring is inert by construction.
        The article cap lives on the measure track rather than on .docs-article,
        so a page that wants the full width (a cheat sheet) redefines one custom
        property instead of fighting a max-width with !important. */
     .docs-layout {
       display: grid;
       grid-template-columns: var(--docs-tracks);
+      justify-content: center;
       gap: var(--space-8);
       padding: 0;
     }
@@ -1055,22 +1056,22 @@ for (const entry of toc as TocEntry[]) {
       --docs-tracks: var(--docs-tracks-body);
     }
 
-    /* Explicit placement, because auto-placement fills tracks in DOM order and
-       would drop the article into the first slack track and the TOC into the
-       measure. Every rule that changes the track COUNT (the embed override and
-       the two max-width breakpoints below) has to hand these back to `auto`,
-       or a definite column 3 or 5 conjures implicit tracks in a grid that only
-       has one or two. */
+    /* Explicit placement: with the slack tracks gone the DOM order happens to
+       match the track order, but leaving it to auto-placement makes the layout
+       hostage to a DOM reorder. Every rule that changes the track COUNT (the
+       embed override and the two max-width breakpoints below) has to hand
+       these back to `auto`, or a definite column 2 or 3 conjures implicit
+       tracks in a grid that only has one. */
     .docs-layout > :global(.docs-sidebar) {
       grid-column: 1;
     }
 
     .docs-layout > .docs-content {
-      grid-column: 3;
+      grid-column: 2;
     }
 
     .docs-layout > .toc-sidebar {
-      grid-column: 5;
+      grid-column: 3;
     }
 
 
