@@ -11518,7 +11518,7 @@ echo "== 219c. the reggate accepts a case on a surface that is NOT a check scrip
 # this machinery has never heard of still has a checkable answer.
 if python3 -c "
 import sys, subprocess
-sys.path.insert(0, '\$(dirname "\$HOOK")')
+sys.path.insert(0, '$(dirname "$HOOK")')
 import wl_reggate as R
 root = subprocess.run(['git','rev-parse','--show-toplevel'], capture_output=True,
                       text=True, check=True).stdout.strip()
@@ -11555,7 +11555,7 @@ echo "== 219e. ONE fix asked per stop, and only code-touching ticks =="
 # behind eight simultaneous demands, so the rest stay unbanked for later stops.
 if python3 -c "
 import sys
-sys.path.insert(0, '\$(dirname "\$HOOK")')
+sys.path.insert(0, '$(dirname "$HOOK")')
 import wl_reggate as R
 # The docs-only filter mirrors the one commits already face, and it FAILS TOWARD
 # ASKING: no path is not evidence that nothing shipped.
@@ -11578,10 +11578,12 @@ echo "== 219d. CONTROL: a static gate still faces the STRICTER probe =="
 # `gates`; `gates` and `none` must still go through prove_new_gate.
 if python3 -c "
 import sys, subprocess
-sys.path.insert(0, '\$(dirname "\$HOOK")')
+sys.path.insert(0, '$(dirname "$HOOK")')
 import wl_reggate as R
 src = open(R.__file__, encoding='utf-8').read()
-assert 'surface not in (\'gates\', \'none\')' in src, \
+assert 'surface not in (' in src and 'gates' in src and 'none' in src, 'fence gone'
+# The fence as ruff formats it, double quotes and all.
+assert 'if surface and surface not in (' in src, \
     'the named-artifact shortcut is no longer fenced away from static gates'
 " 2>"$BASE/reggate-fence.err"; then
     pass "219d CONTROL: the shortcut is fenced away from static gates"
