@@ -468,6 +468,19 @@ export const GATES: readonly GateSpec[] = [
     },
   },
   {
+    id: 'check:ci-control-vacuity',
+    run: 'npm run check:ci-control-vacuity',
+    gate: true,
+    paths: ['.ci/scripts/quality/**'],
+    leaves: ['.ci/scripts/quality/check-control-vacuity.sh'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-code',
+      step: 'Control-first gates prove their plant landed',
+    },
+  },
+  {
     id: 'check:ci-devcontainer-scripts',
     run: 'npm run check:ci-devcontainer-scripts',
     gate: true,

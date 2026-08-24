@@ -521,6 +521,12 @@ jobs:
       - name: Setup path idempotency
         run: .ci/scripts/quality/check-setup-idempotency.sh
 
+      # Meta-gate: a control built by pattern substitution must prove the plant
+      # landed, or a reworded target line turns the control green against
+      # unmutated source.
+      - name: Control-first gates prove their plant landed
+        run: .ci/scripts/quality/check-control-vacuity.sh
+
       # Also text-only and also before node: a script that cannot execute
       # fails with exit 126 before emitting anything, which is invisible to
       # any caller that counts output rather than exit codes.
