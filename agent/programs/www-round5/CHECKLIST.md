@@ -192,3 +192,37 @@ Two pieces are NOT done and have no owner. Both have ready-to-run briefs.
 
 Six decisions are parked for the operator in the sections above; none block
 anything, and every one has a stated default.
+
+## Operator answers, 2026-08-24. All four CONFIRM the shipped state.
+
+Asked after the wave closed. No code changed as a result; each answer ratifies a
+choice already made, which is why they are recorded here rather than acted on.
+
+1. **Difference section height: KEEP AS SHIPPED.** Four illustrated rows,
+   532 -> 1139px desktop, 810 -> 1565px mobile. The `--alt-row-visual-max` and
+   `--alt-rows-gap` knobs stay available but are NOT to be turned down on
+   somebody's later instinct that the section looks tall: the height is the
+   accepted price of every row having a visual, and the section it replaced was
+   532px of H2 plus two bordered text cards with no image, icon or diagram.
+
+2. **The education/nonprofit FAQ item: LEAVE CUT.** The operator applied their
+   own locked criterion against their own content: routing is not a price, so
+   "Yes. Email us." cannot carry a buying decision. **Accepted consequence: the
+   site now says nothing about education or nonprofit pricing anywhere.** The
+   English and all 12 translations remain at `scratchpad/waveB2/` if that is ever
+   revisited. Do not restore it without a new decision.
+
+3. **RTL illustrations: SHIP AS-IS, follow-up.** The rows mirror correctly on
+   `/ar` (measured 801/181); the drawings still point left-to-right. The blanket
+   `[dir="rtl"] svg { transform: scaleX(-1) }` remains WRONG and must not be
+   applied: three of the four drawings carry a clock face or circular arrow whose
+   direction is intrinsic. The real fix is per-illustration variants following the
+   `instant-recovery.mobile.svg` convention, and it touches the solution pages
+   too, so it is an asset project rather than a patch.
+
+4. **`--docs-prose`: LEAVE AT 34rem.** The 43rem half of item 8 is dropped, not
+   deferred. 544px is ~72 characters, inside the 65-75 band the token's own
+   comment at `DocsLayout.astro:700-704` justifies it by; 688px would be ~91,
+   outside it. The player cap is expressed in the TOKEN
+   (`min(960px, max(80%, var(--docs-prose)))`), so it follows automatically if
+   this value ever moves for a properly reasoned cause.
