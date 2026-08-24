@@ -19,6 +19,7 @@ import { getLanguageName, SUPPORTED_LANGUAGES } from '../i18n/language-utils';
 import { useTranslation } from '../i18n/react';
 import type { Language } from '../i18n/types';
 import LanguageMenu from './LanguageMenu';
+import { baseLocale, mountLanguagePane } from './tutorial-video/language-pane';
 import 'plyr/dist/plyr.css';
 import '../styles/tutorial-video.css';
 
@@ -276,7 +277,10 @@ const TutorialVideoPlayer: FC<TutorialVideoPlayerProps> = ({
   const active = sources?.[activeLang];
   const activeLandscape = active?.mp4 ?? src;
   const activeVertical = active?.vertical ?? verticalSrc;
-  const activeSrc = isNarrow && activeVertical ? activeVertical : activeLandscape;
+  // ONE named condition, used by the src, the remount key and the class. It was spelled
+  // out three times and each repeat is a branch the complexity limit counts.
+  const usePortrait = isNarrow && Boolean(activeVertical);
+  const activeSrc = usePortrait && activeVertical ? activeVertical : activeLandscape;
   const activePoster = active?.poster ?? posterSrc;
   const activeSubtitles = active?.vtt ?? subtitlesSrc;
   const activeChapters = active?.chapters ?? chaptersSrc;
@@ -295,22 +299,10 @@ const TutorialVideoPlayer: FC<TutorialVideoPlayerProps> = ({
   // (plyr.mjs:980) and `quality.onChange` takes the switch over entirely, without touching
   // any <source> (plyr.mjs:1016). Both are supported config, not a repurposing hack.
   //
-  // The option VALUES have to be numbers: Plyr labels each one through
-  // `i18n.get('qualityLabel.' + value)` (plyr.mjs:2130). So the options are indices into
-  // pickerLangs and the labels come from a per-instance i18n map.
-  // NORMALISE BEFORE INDEXING. `activeLang` is whatever the mount was given, which can be
-  // a full tag like `en-GB`, and `pickerLangs` holds bare site locales. An unmatched tag
-  // fell through `Math.max(0, -1)` to index 0, so an English page opened with the FIRST
-  // locale checked (Deutsch, since the list is ordered by native name) and every later
-  // comparison was against the wrong language. Same normalisation the render below uses.
-  const activeBase = (() => {
-    const r = activeLang.split('-')[0].toLowerCase();
-    return ((SUPPORTED_LANGUAGES as readonly string[]).includes(r) ? r : 'en') as Language;
-  })();
-  const langIndex = Math.max(0, pickerLangs.indexOf(activeBase));
-  // THE PICKER LIVES INSIDE THE FRAME, EVERYWHERE. It was briefly opt-in per surface;
-  // the operator's answer was that every player that can offer a language should offer it
-  // the same way, so there is no flag and no second position to keep in sync.
+  // NORMALISE BEFORE COMPARING. `activeLang` is whatever the mount was given, which can be
+  // a full tag like `en-GB`, while `pickerLangs` holds bare site locales. Comparing the raw
+  // value marked the wrong entry as current and made every later comparison wrong.
+  const activeBase = baseLocale(activeLang);
 
   const handleLanguageChange = useCallback((next: Language) => {
     const video = videoRef.current;
@@ -497,66 +489,23 @@ const TutorialVideoPlayer: FC<TutorialVideoPlayerProps> = ({
     // types do not declare. Every lookup is guarded and a miss is a no-op: if a Plyr
     // upgrade changes the id convention, the row simply never appears and the in-frame
     // overlay below stays visible, so a viewer is never left with no picker at all.
-    const mountLanguageMenu = () => {
-      const root = video.closest('.plyr');
-      const pane = root?.querySelector('[id^="plyr-settings-"][id$="-language"]');
-      const list = pane?.querySelector('[role="menu"]');
-      if (!root || !pane || !list) return false;
-      const homeRows = root.querySelectorAll(
-        '[id^="plyr-settings-"][id$="-home"] [role="menu"] > [role="menuitem"]'
-      );
-      const row = homeRows[
-        (activeSubtitles ? ['captions'] : []).length + 1
-      ] as HTMLElement | undefined;
-      if (row) {
-        row.removeAttribute('hidden');
-        const valueSpan = row.querySelector('.plyr__menu__value');
-        // Plyr writes `data[type]` here and has no entry for ours, so without this the
-        // row reads "Language undefined" (plyr.mjs builds `data` from id/seektime/speed/
-        // quality/captions only).
-        if (valueSpan) valueSpan.textContent = getLanguageName(activeBase);
-      }
-      const items: HTMLButtonElement[] = [];
-      pickerLangs.forEach((code) => {
-        const item = document.createElement('button');
-        item.type = 'button';
-        // Plyr's OWN control class, read from its config rather than hardcoded. That is
-        // how Plyr builds its own menu items, so ours inherit the same styling from
-        // plyr.css; hardcoding the literal would also trip check:ci-css-dom-refs, which
-        // scans this repo's stylesheets and cannot see a class defined in a dependency.
-        const plyrControl =
-          (player as unknown as { config?: { classNames?: { control?: string } } }).config
-            ?.classNames?.control ?? '';
-        item.className = `${plyrControl} tvp-lang-item`.trim();
-        item.setAttribute('role', 'menuitemradio');
-        item.setAttribute('aria-checked', String(code === activeBase));
-        item.textContent = getLanguageName(code);
-        item.addEventListener('click', (ev) => {
-          ev.preventDefault();
-          ev.stopPropagation();
-          if (code !== activeBase) handleLanguageChange(code);
-        });
-        list.appendChild(item);
-        items.push(item);
-      });
-      // ArrowUp/Down roving focus, which Plyr writes for its own panes and not for ours.
-      list.addEventListener('keydown', (ev) => {
-        const e = ev as KeyboardEvent;
-        if (e.key !== 'ArrowUp' && e.key !== 'ArrowDown') return;
-        e.preventDefault();
-        const at = items.indexOf(document.activeElement as HTMLButtonElement);
-        const next = e.key === 'ArrowDown' ? at + 1 : at - 1;
-        items[(next + items.length) % items.length]?.focus();
-      });
-      return true;
-    };
-
     player.on('ready', () => {
       detachChapterOverlay = mountChapterOverlay();
       mountCaptionOverlay();
       // The overlay is the FALLBACK, not the default: it shows only when the pane could
       // not be built, so there is exactly one picker on screen either way.
-      setMenuMounted(mountLanguageMenu());
+      setMenuMounted(
+        mountLanguagePane({
+          video,
+          controlClass:
+            (player as unknown as { config?: { classNames?: { control?: string } } }).config
+              ?.classNames?.control ?? '',
+          langs: pickerLangs,
+          active: activeBase,
+          hasCaptions: Boolean(activeSubtitles),
+          onPick: handleLanguageChange,
+        })
+      );
     });
 
     return () => {
@@ -697,34 +646,35 @@ const TutorialVideoPlayer: FC<TutorialVideoPlayerProps> = ({
   const langLabel = isSiteLocale ? getLanguageName(base) : raw.toUpperCase();
   const selectLabel = t('navigation.selectLanguage');
 
-  const toolbar = pickerLangs.length > 1 ? (
-        <div className="tvp-toolbar">
-          <svg
-            className="tvp-toolbar-icon"
-            width="16"
-            height="16"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            aria-hidden="true"
-          >
-            <circle cx="12" cy="12" r="9" />
-            <path d="M12 3c-2.5 3-2.5 15 0 18M12 3c2.5 3 2.5 15 0 18" />
-            <path d="M3 12h18" />
-          </svg>
-          <LanguageMenu
-            variant="flag-name"
-            currentLang={base}
-            languages={pickerLangs}
-            position="top"
-            navigationMode="button"
-            onLanguageChange={handleLanguageChange}
-            persistPreference={false}
-            ariaLabel={selectLabel}
-          />
-        </div>
-  ) : null;
+  const toolbar =
+    pickerLangs.length > 1 ? (
+      <div className="tvp-toolbar">
+        <svg
+          className="tvp-toolbar-icon"
+          width="16"
+          height="16"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          aria-hidden="true"
+        >
+          <circle cx="12" cy="12" r="9" />
+          <path d="M12 3c-2.5 3-2.5 15 0 18M12 3c2.5 3 2.5 15 0 18" />
+          <path d="M3 12h18" />
+        </svg>
+        <LanguageMenu
+          variant="flag-name"
+          currentLang={base}
+          languages={pickerLangs}
+          position="top"
+          navigationMode="button"
+          onLanguageChange={handleLanguageChange}
+          persistPreference={false}
+          ariaLabel={selectLabel}
+        />
+      </div>
+    ) : null;
 
   return (
     <div className="tvp-shell">
@@ -741,8 +691,8 @@ const TutorialVideoPlayer: FC<TutorialVideoPlayerProps> = ({
         Discarding the whole subtree is what keeps the two in step.
       */}
       <div
-        key={`${activeLang}:${isNarrow && activeVertical ? 'v' : 'h'}`}
-        className={`tvp-root${isNarrow && activeVertical ? ' tvp-root--portrait' : ''}`}
+        key={`${activeLang}:${usePortrait ? 'v' : 'h'}`}
+        className={`tvp-root${usePortrait ? ' tvp-root--portrait' : ''}`}
         aria-label={title}
       >
         <video

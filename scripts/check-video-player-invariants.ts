@@ -60,7 +60,9 @@ export const placementFaults = (player: string, hero: string): string[] => {
     out.push("the `language` entry is gone from config.settings; the picker has no row in the settings menu");
   if (!/i18n:\s*\{\s*language:/.test(player))
     out.push('the `language` i18n label is gone, so the settings row would render blank');
-  if (!/mountLanguageMenu/.test(player))
+  // The populator moved to its own module when the component hit eslint's max-lines; what
+  // matters is that the player still CALLS it, not where it lives.
+  if (!/mountLanguagePane\(/.test(player))
     out.push('nothing populates the language pane, so the row opens onto an empty menu');
   if (!/tvp-toolbar-overlay/.test(player))
     out.push('the in-frame overlay fallback is gone; a Plyr upgrade would leave no picker at all');
@@ -132,7 +134,7 @@ const selftest = (player: string, hero: string, css: string): number => {
   );
   check(
     'losing the pane populator is caught',
-    placementFaults(player.replaceAll('mountLanguageMenu', 'gone'), hero).length > 0
+    placementFaults(player.replaceAll('mountLanguagePane(', 'gone('), hero).length > 0
   );
   check(
     'losing the overlay FALLBACK is caught, not just the row',
