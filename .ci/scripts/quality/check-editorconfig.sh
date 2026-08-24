@@ -117,13 +117,18 @@ with open(os.environ["BINARY_LIST"], "r", errors="replace") as fh:
         if line:
             binary.add(line)
 
-# The bash regex is ERE with escaped dots; Python needs the same meaning.
-text_ext = re.compile(os.environ["TEXT_EXTENSIONS_RE"].replace("\\.", "\\."))
+# The bash ERE and Python's syntax agree for this pattern (escaped dots and an
+# alternation), so it is compiled as-is.
+text_ext = re.compile(os.environ["TEXT_EXTENSIONS_RE"])
 
 with open(file_list, "rb") as fh:
     paths = [p.decode("utf-8", "surrogateescape") for p in fh.read().split(b"\0") if p]
 
 for path in paths:
+    # Symlinks are SKIPPED, deliberately and unlike the old `[[ -f ]]` test which
+    # followed them: checking a symlink's dereferenced target for a final newline
+    # or CRLF reports on a file that is checked in its own right anyway, and a
+    # symlink pointing outside the repo is not ours to police.
     if not os.path.isfile(path) or os.path.islink(path):
         continue
 

@@ -364,8 +364,7 @@ and `./run.sh setup --check` reports what is missing without changing anything.
 **One published port for the whole machine.** A shared `traefik:v3.6` container
 (`rediacc-devbox-proxy`, `.ci/lib/devbox.sh`) publishes `DEVBOX_PROXY_PORT` and routes
 by **Host header** to `<worktree>.localhost` (VS Code), `-account` (the whole app)
-and `-db`. The `-db` root redirects to the hosted Drizzle Studio UI, since
-Studio's local server is an API that answers 404 at `/`. Host routing rather than path routing is deliberate: every app keeps
+and `-db`. Host routing rather than path routing is deliberate: every app keeps
 its own root path, so nothing needs `--server-base-path`/`base` configuration. Routes
 come from labels on the devbox container itself, so adding a worktree changes no proxy
 config. This exists because each published port needs its own manual forward on
