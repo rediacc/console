@@ -511,6 +511,16 @@ jobs:
       - name: Block legacy-peer-deps workarounds
         run: .ci/scripts/quality/check-npmrc.sh
 
+      # Text + a hermetic scratch git repo; no network, no submodule access.
+      # Guards the bootstrap scripts against silently swallowing failures again.
+      - name: Devcontainer script stderr visibility
+        run: .ci/scripts/quality/check-devcontainer-scripts.sh
+
+      # Hermetic: greps the setup helpers and runs `setup --check`, which is
+      # report-only. Installs nothing and needs no docker.
+      - name: Setup path idempotency
+        run: .ci/scripts/quality/check-setup-idempotency.sh
+
       # Also text-only and also before node: a script that cannot execute
       # fails with exit 126 before emitting anything, which is invisible to
       # any caller that counts output rather than exit codes.

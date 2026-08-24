@@ -29,7 +29,7 @@ _service_compose() {
 service_start() {
     check_docker
 
-    local port="8080"
+    local port=""
     local skip_build=false
 
     # Parse arguments
@@ -39,6 +39,19 @@ service_start() {
             *) port="$arg" ;;
         esac
     done
+
+    # No explicit port: prefer 8080 but step aside if it is taken. A hardcoded
+    # 8080 collided with a second worktree's service and with anything else on
+    # the conventional port, and the failure surfaced as a docker bind error
+    # rather than as "that port is busy".
+    if [[ -z "$port" ]]; then
+        # shellcheck source=/dev/null
+        source "$CONSOLE_ROOT_DIR/.ci/lib/find-port.sh"
+        port="$(find_preferred_port 8080 8081 8199)" || {
+            log_error "No free port in 8080-8199 for the service"
+            return 1
+        }
+    fi
 
     export SERVICE_HTTP_PORT="$port"
 

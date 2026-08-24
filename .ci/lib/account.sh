@@ -32,6 +32,31 @@ account_cleanup() {
 # Find 3 consecutive free ports starting from preferred base
 account_allocate_ports() {
     local base
+
+    # PINNED inside the devbox. The reverse proxy routes to these ports through
+    # STATIC container labels, so an allocator that quietly drifts to the next
+    # free triple breaks the -portal and -www routes with a 502 that blames the
+    # backend. A container is an isolated network namespace, so there is nothing
+    # to collide with; a port that IS busy in there means a leftover process,
+    # which must be surfaced rather than routed around.
+    if [[ -n "${REDIACC_DEV_PORT_BASE:-}" ]]; then
+        base="$REDIACC_DEV_PORT_BASE"
+        local offset
+        for offset in 0 1 2; do
+            if is_port_in_use $((base + offset)); then
+                log_error "Port $((base + offset)) is already in use inside this environment"
+                log_info "REDIACC_DEV_PORT_BASE pins the ports so the proxy labels stay valid; free it rather than drifting"
+                log_info "Leftovers: pkill -f 'astro dev'; pkill -f 'vite --port'; pkill -f dev-gateway.ts"
+                exit 1
+            fi
+        done
+        GATEWAY_PORT=$base
+        VITE_PORT=$((base + 1))
+        ASTRO_PORT=$((base + 2))
+        export GATEWAY_PORT VITE_PORT ASTRO_PORT
+        return 0
+    fi
+
     base=$(find_preferred_port "$ACCOUNT_DEV_PORT_PREFERRED" \
         "$ACCOUNT_DEV_PORT_PREFERRED" "$ACCOUNT_DEV_PORT_RANGE_END")
 
@@ -59,24 +84,51 @@ account_allocate_ports() {
     export GATEWAY_PORT VITE_PORT ASTRO_PORT
 }
 
-# Wait for a port to become active (max timeout seconds)
+# Wait for a port to become active (max timeout seconds).
+#
+# The timeout is a floor, not a verdict: as long as the process is still ALIVE
+# it keeps waiting, and only a dead process (or REDIACC_STARTUP_TIMEOUT being
+# exceeded with no process to watch) is reported as a failure. A fixed ceiling
+# is wrong on slow hardware, and the failure it produces is a lie -- on an arm64
+# Crostini box Astro's content sync took 114.8s against a 90s wait, so
+# `account dev` aborted and printed "Astro failed to start" about a server that
+# was starting normally and came up seconds later.
+#
+# Pass the watched pid as $4 to get the alive-check; without it the timeout is
+# absolute. REDIACC_STARTUP_TIMEOUT overrides the default everywhere.
 account_wait_port() {
     local port="$1"
     local name="$2"
-    local timeout="${3:-30}"
+    local timeout="${3:-${REDIACC_STARTUP_TIMEOUT:-30}}"
+    local watch_pid="${4:-}"
     local elapsed=0
+    local announced=false
 
-    while [[ $elapsed -lt $timeout ]]; do
+    while true; do
         if is_port_in_use "$port"; then
             return 0
         fi
+
+        if [[ $elapsed -ge $timeout ]]; then
+            # Past the nominal budget. Keep going while the process lives,
+            # saying so once so a slow start does not look like a hang.
+            if [[ -n "$watch_pid" ]] && kill -0 "$watch_pid" 2>/dev/null; then
+                if [[ "$announced" == false ]]; then
+                    log_warn "$name is slower than ${timeout}s on this machine; still starting (pid $watch_pid)"
+                    log_info "Set REDIACC_STARTUP_TIMEOUT to raise the initial budget"
+                    announced=true
+                fi
+            else
+                log_error "$name failed to start on port $port within ${timeout}s"
+                [[ -n "$watch_pid" ]] && log_error "its process (pid $watch_pid) is no longer running"
+                log_info "Check logs: $ACCOUNT_LOG_DIR/"
+                return 1
+            fi
+        fi
+
         sleep 1
         elapsed=$((elapsed + 1))
     done
-
-    log_error "$name failed to start on port $port within ${timeout}s"
-    log_info "Check logs: $ACCOUNT_LOG_DIR/"
-    return 1
 }
 
 # True when a RustFS (S3) endpoint is answering on the port. RustFS returns 403
@@ -467,20 +519,27 @@ account_dev() {
 
     # Start Astro dev server (marketing site)
     log_step "Starting Astro dev server on :${ASTRO_PORT}..."
-    (cd "$CONSOLE_ROOT_DIR/packages/www" && npx astro dev --port "$ASTRO_PORT" --host 127.0.0.1) \
+    # Bind address: loopback on a host, 0.0.0.0 inside the devbox. The devbox
+    # sets REDIACC_DEV_BIND because the reverse proxy reaches these servers over
+    # the container network -- a 127.0.0.1 bind is invisible to it, and the
+    # symptom is a 502 from Traefik rather than anything pointing at the bind.
+    local dev_bind="${REDIACC_DEV_BIND:-127.0.0.1}"
+    (cd "$CONSOLE_ROOT_DIR/packages/www" && npx astro dev --port "$ASTRO_PORT" --host "$dev_bind") \
         >"$ACCOUNT_LOG_DIR/astro.log" 2>&1 &
-    ACCOUNT_PIDS+=($!)
+    local astro_pid=$!
+    ACCOUNT_PIDS+=("$astro_pid")
 
     # Start Vite dev server (account portal SPA)
     log_step "Starting Vite dev server on :${VITE_PORT}..."
-    (cd "$ACCOUNT_DIR/web" && npx vite --port "$VITE_PORT" --host 127.0.0.1) \
+    (cd "$ACCOUNT_DIR/web" && npx vite --port "$VITE_PORT" --host "$dev_bind") \
         >"$ACCOUNT_LOG_DIR/vite.log" 2>&1 &
-    ACCOUNT_PIDS+=($!)
+    local vite_pid=$!
+    ACCOUNT_PIDS+=("$vite_pid")
 
     # Wait for both to be ready
     # Cold caches are slow: Astro's first content sync alone can take ~30s.
-    account_wait_port "$ASTRO_PORT" "Astro" 90 || exit 1
-    account_wait_port "$VITE_PORT" "Vite" 60 || exit 1
+    account_wait_port "$ASTRO_PORT" "Astro" 90 "$astro_pid" || exit 1
+    account_wait_port "$VITE_PORT" "Vite" 60 "$vite_pid" || exit 1
 
     # Auto-setup Stripe if key is configured
     account_stripe_auto
@@ -925,4 +984,102 @@ account_rotation() {
     check_node_version
     cd "$ACCOUNT_DIR" || exit 1
     npx tsx scripts/rotation/index.ts "$@"
+}
+
+# =============================================================================
+# ACCOUNT DEV DATABASE BROWSER
+# =============================================================================
+
+# Browse the dev database in the browser.
+#
+# The dev database is NOT wrangler/D1, despite wrangler.toml declaring one:
+# `account dev` runs src/entry/dev-gateway.ts, which opens better-sqlite3 on
+# DATABASE_PATH (default account.db) with cwd=private/account. So the file that
+# actually holds dev data is private/account/account.db.
+#
+# DEFAULT IS A SELF-HOSTED UI, and that is a deliberate reversal. Drizzle Studio
+# was the first choice, but its local process serves only an API -- the UI is
+# hosted at local.drizzle.studio, and a real browser proved that Chrome's Local
+# Network Access restriction blocks that public page from reaching a local
+# server. Drizzle's own page says so: "Recent Chrome/Chromium updates may block
+# local network access by default. This prevents Drizzle Studio from accessing
+# Drizzle Kit on local host." No proxy change can fix that; it needs a per-site
+# browser permission. sqlite_web serves its UI from the SAME origin as the data,
+# so there is no third-party page and nothing to grant.
+#
+# `--studio` keeps the Drizzle Studio behaviour for anyone who wants its
+# schema-aware view and is willing to grant that permission.
+account_db() {
+    check_node_version
+
+    local use_studio=false
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            --studio) use_studio=true; shift ;;
+            *) log_error "Unknown option for account db: $1"; return 2 ;;
+        esac
+    done
+
+    local db_path="${DATABASE_PATH:-$ACCOUNT_DIR/account.db}"
+    if [[ ! -f "$db_path" ]]; then
+        log_error "No dev database at $db_path"
+        log_info "Start the stack once so it gets created and migrated: ./run.sh account dev"
+        return 1
+    fi
+
+    # shellcheck source=/dev/null
+    source "$CONSOLE_ROOT_DIR/.ci/lib/find-port.sh"
+
+    # Prefer this worktree's devbox slot so the URL is stable and two worktrees
+    # can browse at once. Then STEP ASIDE if it is taken: when the browser runs
+    # on the host while the devbox is up, docker-proxy already holds that port.
+    local preferred=4983
+    if [[ -f "$DEVBOX_STATE_FILE" ]]; then
+        local base
+        base="$(sed -n 's/^base_port=//p' "$DEVBOX_STATE_FILE" | head -1)"
+        [[ -n "$base" ]] && preferred=$((base + ${DEVBOX_OFFSET_STUDIO:-3}))
+    fi
+    local port
+    port="$(find_preferred_port "$preferred" "$((preferred + 1))" "$((preferred + 40))")" || {
+        log_error "No free port near $preferred for the database browser"
+        return 1
+    }
+
+    log_warn "Note: ./run.sh account reset DELETES this database."
+
+    if [[ "$use_studio" == true ]]; then
+        if [[ ! -d "$ACCOUNT_DIR/node_modules" ]]; then
+            log_step "Installing account dependencies (drizzle-kit)..."
+            (cd "$ACCOUNT_DIR" && npm install --prefer-offline --no-audit --no-fund 2>&1 | tail -1)
+        fi
+        log_step "Drizzle Studio (API only) on $db_path"
+        log_info "UI: https://local.drizzle.studio/?port=${port}&host=<the host you reach this on>"
+        log_warn "Chrome blocks that hosted page from reaching a local server unless you enable"
+        log_warn "\"Local network access\" for local.drizzle.studio in Site information."
+        cd "$ACCOUNT_DIR" || return 1
+        DATABASE_PATH="$db_path" npx drizzle-kit studio --port "$port" --host 0.0.0.0
+        return $?
+    fi
+
+    local sqlite_web="${HOME}/.local/bin/sqlite_web"
+    if [[ ! -x "$sqlite_web" ]]; then
+        if command -v sqlite_web &>/dev/null; then
+            sqlite_web="$(command -v sqlite_web)"
+        elif command -v uv &>/dev/null; then
+            log_step "Installing sqlite-web (one-time)"
+            uv tool install sqlite-web >/dev/null 2>&1 || {
+                log_error "Could not install sqlite-web; retry with: ./run.sh account db --studio"
+                return 1
+            }
+        else
+            log_error "sqlite-web is not installed and uv is unavailable"
+            log_info "Use ./run.sh account db --studio instead"
+            return 1
+        fi
+    fi
+
+    log_step "Database browser on $db_path"
+    log_info "Port: $port"
+    echo ""
+    exec "$sqlite_web" --host 0.0.0.0 --port "$port" --no-browser "$db_path"
 }

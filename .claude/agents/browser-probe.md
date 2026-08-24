@@ -18,6 +18,14 @@ no error:
 
     cd "$HOME" && npm install -g agent-browser@latest --ignore-scripts=false
 
+**On arm64 (this Chromebook), `agent-browser install` FAILS by design:** "Chrome for
+Testing does not provide Linux ARM64 builds." Install the distro browser and point at
+it on every call -- `sudo apt install chromium`, then
+`agent-browser --executable-path /usr/bin/chromium <cmd>`. Proven 2026-08-24 driving
+the devbox database UI. Symptom if you forget the flag: the launch step hangs and
+then `CDP command timed out: Page.navigate`. A CDP timeout mid-session is recoverable
+with `agent-browser close` (yours only, never `--all`) and re-opening.
+
 The `EBADENGINE` warning (it declares `node >=24`) is cosmetic: the package ships
 self-contained native binaries and the PATH symlink points straight at one, bypassing the
 JS wrapper.

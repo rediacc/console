@@ -455,6 +455,32 @@ export const GATES: readonly GateSpec[] = [
     },
   },
   {
+    id: 'check:ci-setup-idempotency',
+    run: 'npm run check:ci-setup-idempotency',
+    gate: true,
+    paths: ['.ci/lib/**', 'run.sh'],
+    leaves: ['.ci/scripts/quality/check-setup-idempotency.sh'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-code',
+      step: 'Setup path idempotency',
+    },
+  },
+  {
+    id: 'check:ci-devcontainer-scripts',
+    run: 'npm run check:ci-devcontainer-scripts',
+    gate: true,
+    paths: ['.devcontainer/**'],
+    leaves: ['.ci/scripts/quality/check-devcontainer-scripts.sh'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-code',
+      step: 'Devcontainer script stderr visibility',
+    },
+  },
+  {
     id: 'check:ci-ceph-image-pin',
     run: 'npm run check:ci-ceph-image-pin',
     gate: true,

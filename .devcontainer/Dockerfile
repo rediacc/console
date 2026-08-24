@@ -304,7 +304,7 @@ RUN chmod +x /tmp/download-extensions.sh \
 # OpenVSCode Server (for self-hosted HTTP browser access)
 # https://github.com/gitpod-io/openvscode-server - MIT License
 # =============================================================================
-ARG OPENVSCODE_VERSION=1.106.3
+ARG OPENVSCODE_VERSION=1.109.5
 
 RUN ARCH=$(dpkg --print-architecture) \
     && case "$ARCH" in amd64) OVSX_ARCH="x64" ;; arm64) OVSX_ARCH="arm64" ;; esac \

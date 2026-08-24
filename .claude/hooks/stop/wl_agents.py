@@ -178,7 +178,12 @@ _STOPWORD_TEXT = (
     # narration agent. Raising the -ing fold floor instead was tried and is
     # WORSE -- the fold is load-bearing, `failing` -> `fail` -> stopword, and
     # blocking it let `failing` through as a term for e2e-local.
-    "word words"
+    "word words "
+    # `touch` is in SEVEN of the twelve agent descriptions ("anything touching
+    # TTS...", "before touching any translation", ...), so it discriminates
+    # nothing -- and it fired a media-pipeline hint at a session whose message
+    # merely said a file was "not touched". Same class as run/work/use/fix above.
+    "touch touches touching touched"
 )
 STOPWORDS = frozenset(_STOPWORD_TEXT.split())
 

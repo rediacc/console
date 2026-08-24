@@ -342,6 +342,84 @@ translation.** Key rules:
 - `check-i18n-naturalization` is a blocking gate in `check:i18n`: it fails when an
   already-naturalized key goes stale (English changed without re-naturalizing).
 
+## `./run.sh setup` — one command per machine
+
+`./run.sh setup` prepares a machine and hands back a URL. It is idempotent: a
+second run installs nothing, pulls nothing and recreates nothing.
+
+    1. host tools   node >= 22, plus jq/zstd/curl/git (jq's absence used to make
+                    the renet build silently ship without embedded assets)
+    2. docker       Go (go.dev tarball, version parsed from private/renet/go.mod)
+                    -> build renet -> `sudo renet install-docker --source=docker-repo`.
+                    The official docker.com repo, NOT docker.io. Skipped entirely
+                    when docker already works.
+    3. image        ghcr.io/rediacc/devcontainer:latest, with a local build from
+                    .devcontainer/Dockerfile as the fallback (that registry is
+                    private; pulling it needs a token with `read:packages`)
+    4. devbox       ONE container per worktree
+
+`./run.sh devbox up|status|stop|remove|shell|logs` drives the container directly,
+and `./run.sh setup --check` reports what is missing without changing anything.
+
+**One published port for the whole machine.** A shared `traefik:v3.6` container
+(`rediacc-devbox-proxy`, `.ci/lib/devbox.sh`) publishes `DEVBOX_PROXY_PORT` and routes
+by **Host header** to `<worktree>.localhost` (VS Code), `-account` (the whole app)
+and `-db`. The `-db` root redirects to the hosted Drizzle Studio UI, since
+Studio's local server is an API that answers 404 at `/`. Host routing rather than path routing is deliberate: every app keeps
+its own root path, so nothing needs `--server-base-path`/`base` configuration. Routes
+come from labels on the devbox container itself, so adding a worktree changes no proxy
+config. This exists because each published port needs its own manual forward on
+ChromeOS; now there is one -- and it is the ONLY one: devbox containers publish no
+ports at all, so the proxy is the sole ingress. `devbox status` PROBES each route
+and reports OK / "no backend yet", because Traefik's bare 502 names neither the
+service nor the reason. Servers started inside the devbox must bind `0.0.0.0`
+(`REDIACC_DEV_BIND`) or the proxy cannot reach them and Traefik answers 502.
+
+**The docker-group gap closes itself.** `usermod -aG docker` does not affect the
+shell that ran it, so the classic advice is "log out and back in". `run.sh`
+instead calls `reexec_with_docker_group` (`.ci/lib/local-common.sh`), which checks
+membership in `/etc/group` (NOT `id -nG`, which reports the stale groups of the
+current process — the very thing being worked around), proves `sg docker -c
+"docker version"` succeeds, then re-execs itself under `sg`. One hop, guarded by
+`REDIACC_DOCKER_GROUP_REEXEC`, after which every docker call in the run is plain
+`docker` rather than `sudo docker`.
+
+**`account db` serves sqlite-web, not Drizzle Studio, and that reversal was paid
+for.** Studio's local process serves only an API; its UI is hosted at
+local.drizzle.studio. A real browser (agent-browser) showed Chrome's Local Network
+Access restriction blocking that hosted page from reaching the local server -- the
+page says so itself -- which no proxy change can fix. sqlite-web serves its UI from
+the same origin as the data, so there is no third-party page and no permission to
+grant. `./run.sh account db --studio` keeps the old behaviour. Related trap: Studio's
+API endpoint IS `POST /`, so a redirect on `Path(/)` 307s the API; if you ever add
+one, scope it with `Method(\`GET\`)`.
+
+**One container per worktree, on a stable port.** The port block is derived from
+the worktree's absolute path (`derive_slot`/`find_port_block` in
+`.ci/lib/find-port.sh`), so a bookmarked URL survives a reboot and two worktrees
+never collide. A running container is authoritative for its own ports; the
+`.devbox-state` file is only a cache, and the container is found by the
+`com.rediacc.devbox.worktree` label rather than by name.
+
+**The container runs as YOU.** The image bakes its `vscode` user at UID 7111 and
+chowns `/home/vscode`, `/opt/openvscode-server` (extensions included) and `/go` to
+it. `docker run --user $(id -u)` therefore does NOT work — it leaves that
+ownership untouched, and every extension install fails with EACCES. Instead
+`.devcontainer/devbox-entrypoint.sh` starts as root, renumbers `vscode` to the
+host uid/gid, chowns exactly those three trees, and drops privileges with
+`setpriv`. It also sets `HOME` explicitly, because setpriv changes credentials
+and not the environment.
+
+The repo is bind-mounted at its IDENTICAL host path (never `/workspace`): a git
+worktree's gitdir link is absolute, and a nested `docker -v $(pwd)` is resolved by
+the host daemon. `~/.gitconfig`, `~/.git-credentials`, `~/.config/gh`,
+`~/.claude`, `~/.claude.json` and `~/.config/rediacc` are bound in by name.
+
+**`node_modules` is not shared between host and container** — the host and the
+image have different glibc versions, and `install:natives` builds against
+whichever one it runs on. `REDIACC_NPM_RUNTIME` is part of the `ensure_deps`
+stamp so switching sides forces one honest reinstall instead of a loader error.
+
 ## Build & Test
 
 **This monorepo uses npm, not pnpm.**

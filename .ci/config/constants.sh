@@ -62,6 +62,34 @@ readonly ACCOUNT_STATE_FILE="$CONSOLE_ROOT_DIR/.account-state"
 readonly ACCOUNT_LOG_DIR="$CONSOLE_ROOT_DIR/.account-logs"
 
 # =============================================================================
+# DEVBOX (browser dev environment) CONFIGURATION
+# =============================================================================
+# One container per worktree. The port BLOCK is derived from the worktree's
+# absolute path so it is stable across restarts and reboots -- a bookmarked URL
+# keeps working -- while two worktrees can never land on the same block.
+readonly DEVBOX_IMAGE="ghcr.io/rediacc/devcontainer:latest"
+readonly DEVBOX_PORT_RANGE_START=17000
+readonly DEVBOX_PORT_RANGE_END=17999
+readonly DEVBOX_PORT_BLOCK=10
+readonly DEVBOX_STATE_FILE="$CONSOLE_ROOT_DIR/.devbox-state"
+# Offsets inside a block. Only two survive: the container publishes nothing and
+# everything is reached through the proxy, so these are the ports processes bind
+# INSIDE the container. (novnc/www offsets existed while ports were published.)
+readonly DEVBOX_OFFSET_VSCODE=0
+readonly DEVBOX_OFFSET_STUDIO=3
+
+# Reverse proxy: ONE published port for every worktree and every service.
+# Routing is by Host header, so each app still believes it is at "/" and needs no
+# base-path configuration. Chrome resolves *.localhost to 127.0.0.1 itself, so a
+# single forwarded port covers every worktree -- which is the whole point on
+# ChromeOS, where each published port otherwise needs its own manual forward.
+readonly DEVBOX_PROXY_IMAGE="traefik:v3.6"   # same major the product proxy pins
+readonly DEVBOX_PROXY_NAME="rediacc-devbox-proxy"
+readonly DEVBOX_PROXY_PORT=8090
+readonly DEVBOX_NETWORK="rediacc-devbox"
+readonly DEVBOX_DOMAIN="localhost"
+
+# =============================================================================
 # PUBLISHING CONFIGURATION
 # =============================================================================
 PUBLISH_DOCKER_REGISTRY="${PUBLISH_DOCKER_REGISTRY:-ghcr.io/rediacc}"
