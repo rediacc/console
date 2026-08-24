@@ -114,7 +114,14 @@ const prose = authored(event?.prose)
   .tutorial-step {
     margin: 1.5rem 0;
   }
+  /* `overflow-x: auto` is load-bearing, not cosmetic. This is `white-space: pre`
+     on a 420px command inside a 359px column at 390, and it was the ENTIRE 54px
+     of document overflow on /en/docs/tutorial-create-repo. Proven by injecting
+     `max-inline-size: none` at runtime and watching scrollWidth stay at 444,
+     which cleared the container. The docs tab strip was the other suspect and
+     is innocent: it carries its own overflow-x and contributes zero. */
   .tutorial-step-command {
+    overflow-x: auto;
     margin: 0.5rem 0;
   }
   .tutorial-step-prose {
