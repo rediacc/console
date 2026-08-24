@@ -71,27 +71,45 @@ def describe_state_md(path, st, usage, threshold):
 
 
 def build_text(band_name, usage, res, st, state_md):
+    """THE PERCENTAGE COUNTS DOWN, because the status line counts down.
+
+    This used to report `usage / threshold` -- 98% meaning "nearly full". Claude
+    Code's own display says "N% until auto-compact", which reads 2% at that same
+    moment. Two numbers for one quantity, pointing opposite ways, in a notice
+    whose entire job is to be believed at a glance: the operator saw 100% and 0%
+    describing the same instant and asked for them aligned. So the only
+    percentage this hook prints is REMAINING, in the status line's direction.
+
+    It will still not match the status line DIGIT for digit, and that is
+    expected rather than a bug to chase: Claude Code divides by its internal
+    token estimate over the message list, this divides by the measured threshold
+    in reported-prompt tokens (see COMPACT_MARGIN in ctx_budget). The direction
+    and the unit are what were misleading; the residual gap is a few points.
+    """
     threshold = res["threshold"]
-    pct = 100.0 * usage / threshold
     headroom = threshold - usage
     # A NEGATIVE HEADROOM IS NEVER A FACT ABOUT THE SESSION, only ever a fact
     # about this hook's denominator: a session past its compaction threshold
     # has compacted, by definition. Printing "-226,179 tokens" once is enough
-    # to make every later notice ignorable, so the number is not printed.
+    # to make every later notice ignorable, so the number is not printed -- and
+    # the percentage now shares that guard rather than sitting outside it,
+    # since a negative headroom is exactly the case that produces "-2.4%".
     if headroom >= 0:
-        head = "Headroom before compaction: %s tokens." % B.fmt(headroom)
+        head = "%.1f%% until auto-compact, a headroom of %s tokens." % (
+            100.0 * headroom / threshold,
+            B.fmt(headroom),
+        )
     else:
         head = (
             "This reading is ABOVE the derived threshold, which means the "
-            "threshold is too low rather than that compaction is overdue; "
-            "treat the percentage as unreliable."
+            "threshold is too low rather than that compaction is overdue; no "
+            "percentage is quoted because it would be a negative one."
         )
     lines = [
-        "Context budget: %s tokens in use, %.1f%% of this session's auto-compact "
+        "Context budget: %s tokens in use against this session's auto-compact "
         "threshold of %s (window %s, source %s). %s"
         % (
             B.fmt(usage),
-            pct,
             B.fmt(threshold),
             B.fmt(res["window"]),
             res["source"],

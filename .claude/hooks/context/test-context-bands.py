@@ -34,6 +34,7 @@ SLUG = "abcd1234"
 # bare "-" caught the hyphen in a temp directory name and made this control
 # fail on the hooks it was meant to clear.
 NEG_TOKENS = re.compile(r"-\d[\d,]*\s*tokens")
+NEG_PCT = re.compile(r"-\d[\d,]*(?:\.\d+)?%")
 
 FAILURES = []
 CHECKS = [0]
@@ -277,6 +278,20 @@ def test_bands(hooks_dir):
             "early text names STATE.md",
             bool(ctx) and ("agent/%s/STATE.md" % SLUG) in ctx,
         )
+        # DIRECTION, not just presence. 670,000 of 885,000 is 75.7% used and
+        # 24.3% remaining; both are one decimal place, so a check that merely
+        # looked for "%" would pass either way. The status line counts DOWN, so
+        # the notice must quote 24.3 and must not quote 75.7 anywhere.
+        check(
+            "early text quotes the REMAINING percentage",
+            bool(ctx) and "24.3% until auto-compact" in ctx,
+            repr(ctx)[:300] if ctx else "",
+        )
+        check(
+            "early text never quotes the used percentage",
+            bool(ctx) and "75.7%" not in ctx,
+            repr(ctx)[:300] if ctx else "",
+        )
         check(
             "text is factual, not an imperative",
             bool(ctx)
@@ -300,6 +315,11 @@ def test_bands(hooks_dir):
         check(
             "late text reports headroom",
             bool(ctx) and "15,000" in ctx,
+            repr(ctx)[:300] if ctx else "",
+        )
+        check(
+            "late text counts down to a small remainder",
+            bool(ctx) and "1.7% until auto-compact" in ctx,
             repr(ctx)[:300] if ctx else "",
         )
         p = sb.post_tool()
@@ -456,6 +476,14 @@ def test_bands(hooks_dir):
         check(
             "no negative headroom is ever printed",
             NEG_TOKENS.search(ctx) is None,
+            repr(ctx)[:300],
+        )
+        # The percentage is derived from that same headroom, so it fails the
+        # same way and needs its own control: "-2.4% until auto-compact" would
+        # slip straight past NEG_TOKENS, which only matches a token count.
+        check(
+            "no negative percentage is ever printed",
+            NEG_PCT.search(ctx) is None,
             repr(ctx)[:300],
         )
         sb8b.cleanup()
@@ -683,7 +711,20 @@ MUTANTS = [
         "band-notice.py",
         ("    if headroom >= 0:", "    if True:"),
         None,
-        ["no negative headroom is ever printed"],
+        ["no negative headroom is ever printed", "no negative percentage is ever printed"],
+    ),
+    (
+        "percentage counts up again",
+        "band-notice.py",
+        ("            100.0 * headroom / threshold,", "            100.0 * usage / threshold,"),
+        None,
+        # Both legs, because either alone is satisfiable by an accident: the
+        # first would pass if the notice printed nothing at all, the second if
+        # it printed both numbers.
+        [
+            "early text quotes the REMAINING percentage",
+            "early text never quotes the used percentage",
+        ],
     ),
     (
         "cap disproof not sticky",
