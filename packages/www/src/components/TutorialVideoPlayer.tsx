@@ -387,62 +387,18 @@ const TutorialVideoPlayer: FC<TutorialVideoPlayerProps> = ({
         'pip',
         'fullscreen',
       ],
-      settings: [
-        ...(activeSubtitles ? ['captions'] : []),
-        'speed',
-        ...(inPlayerPicker ? ['quality'] : []),
-      ],
+      // THE LANGUAGE PICKER IS NOT IN THIS MENU, and that was measured, not assumed.
+      // Plyr's `quality` pane is the only extension point its settings menu offers and it
+      // is numeric by nature: with `forced` options plus an `onChange`, every click came
+      // back as min(options). Clicking the radio whose DOM value was "4" delivered 0, and
+      // after moving to 1-based values, clicking "5" delivered 1. `setQuality` snaps
+      // through `closest()` (plyr.mjs:8460) because its `options.includes()` disagrees
+      // with the very list `setQualityMenu` rendered the rows from (plyr.mjs:2154). A
+      // control that plays a different language than the one clicked is worse than none,
+      // so the picker is rendered INSIDE the player frame instead, over the video, using
+      // the switch that already works.
+      settings: activeSubtitles ? ['captions', 'speed'] : ['speed'],
       captions: { active: Boolean(activeSubtitles), language: activeLang, update: true },
-      ...(inPlayerPicker
-        ? {
-            quality: {
-              forced: true,
-              // No `selected` here: Plyr's own types do not declare it even though the
-              // runtime reads `config.selected`, and the explicit `player.quality`
-              // assignment below is the stronger override anyway.
-              default: langIndex + 1,
-              options: pickerLangs.map((_l, i) => i + 1),
-              // DEFERRED PAST THE CLICK. This fires from inside Plyr's own open menu,
-              // and the language change unmounts that menu with it (the subtree is keyed
-              // on the language). Letting the click handler unwind first is what keeps
-              // Plyr from operating on nodes React has already discarded.
-              // READ THE ITEM PLYR CHECKED, NOT THE ARGUMENT IT PASSES.
-              //
-              // Measured, twice, with the handler instrumented: clicking the radio whose
-              // DOM value is "4" delivered 0, and after moving to 1-based options,
-              // clicking "5" delivered 1. Whatever is clicked, the argument arrives as
-              // min(options) -- `setQuality` is snapping through `closest()`, so its
-              // `options.includes()` test is failing on values the menu itself rendered
-              // from the same list.
-              //
-              // The click handler sets `menuItem.checked = true` BEFORE dispatching
-              // (plyr.mjs:1817), so the checked radio in the quality pane is the truth
-              // and it is right there in the DOM. Reading it sidesteps the snap entirely.
-              onChange: (value: number) => {
-                const pane = videoRef.current
-                  ?.closest('.plyr')
-                  ?.querySelector('[id$="-quality"] [role="menuitemradio"][aria-checked="true"]');
-                const clicked = Number((pane as HTMLInputElement | null)?.value);
-                if (Number.isFinite(clicked) && clicked > 0) value = clicked;
-                // IGNORE PLYR'S OWN INIT-TIME RESTORE. Measured live: after switching one
-                // solution video to German, the NEXT solution page loaded
-                // `de/backup-verification.mp4` instead of English, because Plyr reads a
-                // stored `quality` during construction (plyr.mjs:8460) from a key every
-                // player on the site shares, and that read reaches this handler as though
-                // a viewer had clicked. The explicit assignment below arrives too late to
-                // undo it, so the restore is refused rather than corrected.
-                if (settlingRef.current) return;
-                const next = pickerLangs[value - 1];
-                if (!next || next === activeBase) return;
-                window.setTimeout(() => handleLanguageChange(next), 0);
-              },
-            },
-            i18n: {
-              quality: t('navigation.selectLanguage'),
-              qualityLabel: Object.fromEntries(pickerLangs.map((l, i) => [i + 1, getLanguageName(l)])),
-            },
-          }
-        : {}),
       keyboard: { focused: true, global: false },
       tooltips: { controls: true, seek: true },
       storage: { enabled: true, key: PLYR_STORAGE_KEY },
@@ -455,19 +411,6 @@ const TutorialVideoPlayer: FC<TutorialVideoPlayerProps> = ({
     // (plyr.mjs:8460-8468). A stored index 9 on a three-language video therefore selects
     // a DIFFERENT language, silently. The explicit assignment is `input` in that
     // `.find(is.number)` chain, which outranks the stored value.
-    if (inPlayerPicker) {
-      player.quality = langIndex + 1;
-      // AND OVERWRITE WHAT IS STORED, not just what is selected. Refusing the init-time
-      // restore was not enough on its own: measured live, a page opened in English, and
-      // the first click on `Français` still produced `de/...`, because the stale German
-      // index was re-applied from storage after the guard had lifted. Storage is per
-      // PLAYER, not per setting, so it cannot be disabled for this axis alone without
-      // losing volume, speed and captions with it. Writing the current language's index
-      // back makes every later restore a no-op instead.
-      const store = (player as unknown as { storage?: { set(o: Record<string, unknown>): void } })
-        .storage;
-      store?.set({ quality: langIndex + 1 });
-    }
     settlingRef.current = false;
 
     const onSeek = (sec: number) => {
@@ -683,9 +626,7 @@ const TutorialVideoPlayer: FC<TutorialVideoPlayerProps> = ({
   const langLabel = isSiteLocale ? getLanguageName(base) : raw.toUpperCase();
   const selectLabel = t('navigation.selectLanguage');
 
-  return (
-    <div className="tvp-shell">
-      {pickerLangs.length > 1 && !inPlayerPicker && (
+  const toolbar = pickerLangs.length > 1 ? (
         <div className="tvp-toolbar">
           <svg
             className="tvp-toolbar-icon"
@@ -712,7 +653,11 @@ const TutorialVideoPlayer: FC<TutorialVideoPlayerProps> = ({
             ariaLabel={selectLabel}
           />
         </div>
-      )}
+  ) : null;
+
+  return (
+    <div className="tvp-shell">
+      {!inPlayerPicker && toolbar}
       {/*
         `key` forces React to build a FRESH subtree on every language change, and it is
         load-bearing rather than a re-render hint.
@@ -760,6 +705,11 @@ const TutorialVideoPlayer: FC<TutorialVideoPlayerProps> = ({
         {activeWords && (
           <div ref={captionRef} className="tvp-caption" aria-live="polite" aria-atomic="true" />
         )}
+        {/* INSIDE the frame, over the video, rather than floating above it. This is what
+            "integrated to the player" means here: Plyr's own settings menu cannot host a
+            language list correctly (see the comment on the Plyr config above), so the
+            control that works is placed within the player's own box. */}
+        {inPlayerPicker && <div className="tvp-toolbar-overlay">{toolbar}</div>}
       </div>
     </div>
   );

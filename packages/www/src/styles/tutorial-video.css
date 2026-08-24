@@ -261,3 +261,46 @@
   overflow-y: auto;
   overscroll-behavior: contain;
 }
+
+/* The language picker INSIDE the player frame, top-right, over the video.
+ *
+ * Plyr's settings menu cannot host it (see TutorialVideoPlayer's Plyr config comment), so
+ * "integrated to the player" is delivered by position rather than by living in that menu.
+ * z-index sits above the poster and below Plyr's own controls, which own the bottom edge.
+ *
+ * The colour rules outrank `.sp-hero-media .tvp-toolbar .language-trigger` on purpose. That
+ * one paints translucent WHITE, which is right on the hero's dark band and wrong over a
+ * video: a bright frame washes it out, and the frame is not ours to predict. A dark scrim
+ * is legible over anything.
+ */
+.tvp-toolbar-overlay {
+  position: absolute;
+  inset-block-start: var(--space-2);
+  inset-inline-end: var(--space-2);
+  z-index: 3;
+}
+
+.tvp-toolbar-overlay .tvp-toolbar {
+  margin: 0;
+}
+
+/* The frame is dark whatever the page theme, so the trigger has to re-point every token
+ * it paints from, not just the text one: the shared `.language-trigger` takes its
+ * background from `--color-bg-alt`, which is near-white in the light theme. */
+.tvp-root .tvp-toolbar-overlay .tvp-toolbar .language-trigger {
+  background: rgba(0, 0, 0, 0.55);
+  border-color: rgba(255, 255, 255, 0.28);
+  color: #fff;
+}
+
+.tvp-root .tvp-toolbar-overlay .tvp-toolbar .language-trigger:hover {
+  background-color: rgba(0, 0, 0, 0.72);
+  color: #fff;
+}
+
+/* Thirteen locales are taller than the player, and the frame clips. */
+.tvp-toolbar-overlay .language-menu {
+  max-height: min(12rem, 45vh);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
