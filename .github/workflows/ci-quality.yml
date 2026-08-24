@@ -783,6 +783,12 @@ jobs:
       - name: Docs thumbnail coverage
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: npm run check:ci-docs-thumb-coverage
+      # A copy button on a bare `}` or a YAML key hands the reader something they
+      # cannot paste; the classifier is lifted out of DocsLayout.astro and judged
+      # against the real corpus.
+      - name: Docs code-block copy units
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: npm run check:ci-docs-copy-units
       # Fourth pin kind to join the shared soak window, after npm deps, embedded assets
       # and GitHub Actions. DOCKERHUB_TOKEN keeps Docker Hub's anonymous rate limit from
       # making this vacuous; without it a limited response is reported as unknown and the
