@@ -153,6 +153,13 @@ check 2 pre-bash/block-git-force-push.sh "$(bash_json 'git push --force')" "git-
 check 2 pre-bash/block-git-force-push.sh "$(bash_json 'git p''ush --mirror https://github.com/rediacc/console.git')" "force-push: --mirror is a force of every ref"
 check 2 pre-bash/block-git-force-push.sh "$(bash_json 'cd /tmp/mirror.git && git p''ush --mirror origin')" "force-push: --mirror behind a cd is still caught"
 check 2 pre-bash/block-git-force-push.sh "$(bash_json 'git p''ush origin +refs/heads/main')" "force-push: a leading + on a refspec forces that ref"
+# THE SHORTHAND FORMS, which the +refs/ case above did NOT cover. A refspec does
+# not have to be refs-qualified to force, and the first fix for this guard matched
+# only the long form: `+main:main` and `+HEAD:main` both slipped past a guard whose
+# commit message said the hole was closed. Caught in review on PR #571. The case
+# above tested the REGEX; these test the THREAT.
+check 2 pre-bash/block-git-force-push.sh "$(bash_json 'git p''ush origin +main:main')" "force-push: a plus-prefixed branch shorthand forces too"
+check 2 pre-bash/block-git-force-push.sh "$(bash_json 'git p''ush origin +HEAD:main')" "force-push: +HEAD:<branch> is the same force in shorthand"
 check 2 pre-bash/block-git-empty-commit.sh "$(bash_json 'git commit --allow-empty -m x')" "git-empty-commit"
 check 2 pre-bash/block-worktree-add.sh "$(bash_json 'git worktree add ../foo -b bar')" "worktree-add"
 check 2 pre-bash/block-worktree-add.sh "$(bash_json 'git -C /some/path worktree add ../x main')" "worktree-add: -C before the subcommand"
@@ -490,6 +497,11 @@ check 0 pre-bash/block-git-force-push.sh "$(bash_json 'git push')" "force-push: 
 # Each of these is an ordinary push that must survive the --mirror/+refspec
 # widening.
 check 0 pre-bash/block-git-force-push.sh "$(bash_json 'git p''ush --set-upstream origin feat')" "force-push: --set-upstream ok"
+# THE CONTROL FOR THE WIDENING ABOVE. The guard now matches any WHITESPACE-preceded
+# plus, so this pins the boundary: a plus INSIDE a token is a legal branch name and
+# must stay allowed. Without this arm, widening the pattern further would silently
+# start refusing legitimate pushes.
+check 0 pre-bash/block-git-force-push.sh "$(bash_json 'git p''ush origin HEAD:refs/heads/feature+x')" "force-push: a plus inside a branch name is not a force refspec"
 check 0 pre-bash/block-git-force-push.sh "$(bash_json 'git p''ush --tags origin')" "force-push: --tags ok"
 # LOAD-BEARING. This is the exact form the /pr-merge GitLab step uses. If the
 # guard ever matches it, that step dies SILENTLY -- a blocked hook is an exit 2

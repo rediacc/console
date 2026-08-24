@@ -10,12 +10,25 @@
 # rewrite published history, which is exactly what this guard reserves for the
 # operator, and neither was matched.
 #
+# THE + REFSPEC MATCH IS DELIBERATELY UNQUALIFIED, and the first attempt at this
+# fix was not. It matched only `+refs/...`, which is the long form. A refspec does
+# NOT need to be refs-qualified to force: `+main:main` and `+HEAD:main` are the
+# common shorthand and force the remote ref exactly the same way. Both slipped
+# straight past the widened guard that this file's own commit message said had
+# closed the hole. Caught in review on PR #571, and reproduced before fixing:
+# rc 0 for `+main:main` and `+HEAD:main`, rc 2 for `+refs/heads/main`.
+#
+# The pattern requires WHITESPACE before the plus, so a plus INSIDE a token is
+# untouched: `HEAD:refs/heads/feature+x` is a legal branch name and stays allowed.
+# That arm is pinned by a control in test-hooks.sh, because a guard widened
+# without one is how the next false positive gets shipped.
+#
 # Nothing in this repo pushes with --mirror or a + refspec (verified by grep
 # over *.sh, *.yml, *.md, *.ts), so widening the pattern costs no legitimate
 # caller. The mirror git push for a history rewrite is run by the operator
 # directly, with the ! prefix, which is the intended path.
 CMD=$(jq -r '.tool_input.command' 2>/dev/null)
-if echo "$CMD" | grep -qE 'git push[^|;&]*(--force-with-lease|--force([[:space:]]|=|$)|[[:space:]]-f([[:space:]]|$)|--mirror([[:space:]]|=|$)|[[:space:]]\+refs/)'; then
+if echo "$CMD" | grep -qE 'git push[^|;&]*(--force-with-lease|--force([[:space:]]|=|$)|[[:space:]]-f([[:space:]]|$)|--mirror([[:space:]]|=|$)|[[:space:]]\+[^[:space:]])'; then
     echo "BLOCKED: Do not force-push (--force / -f / --force-with-lease / --mirror / +refspec). Force-push overwrites remote history and erases the trace of individual PR changes, which is exactly what broke traceability before. Use a plain git push so each CI fix lands as its own reviewable commit. Rewriting already-pushed history is the user's decision, not an agent's: the operator runs it directly with the ! prefix." >&2
     exit 2
 fi
