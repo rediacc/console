@@ -40,8 +40,6 @@ def main():
                 "compact_summary_chars": len(summary),
                 # Survives the epoch: a disproven model cap is a fact about
                 # the session's window, and compaction does not change it.
-                "cap_disproven": st.get("cap_disproven"),
-                "cap_disproven_model": st.get("cap_disproven_model"),
                 "window_floor": st.get("window_floor"),
                 "threshold_corrected": st.get("threshold_corrected"),
                 # Deliberately NOT carried forward: usage, threshold, model.

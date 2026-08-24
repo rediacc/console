@@ -58,8 +58,10 @@ class Sandbox:
         self.hooks = hooks_dir
         self.project = self.root / "project"
         (self.project / ".claude").mkdir(parents=True)
+        # `window=None` writes no pin at all, which is the ONLY way to exercise
+        # the conservative default now that a pin overrules an assumed model cap.
         (self.project / ".claude" / "settings.json").write_text(
-            json.dumps({"autoCompactWindow": window}), encoding="utf-8"
+            json.dumps({} if window is None else {"autoCompactWindow": window}), encoding="utf-8"
         )
         self.state = self.root / "state"
         self.state.mkdir()
@@ -198,8 +200,8 @@ def test_arithmetic():
     r = B.resolve_threshold("claude-opus-5[1m]", None)
     # No project dir and no env: falls back to the model's own max.
     check(
-        "1M model with no pin resolves to 985,000",
-        r["threshold"] == 985_000,
+        "1M model with no pin resolves to 967,000",
+        r["threshold"] == 967_000,
         "got %s" % r["threshold"],
     )
 
@@ -208,8 +210,8 @@ def test_arithmetic():
         os.environ.pop("CLAUDE_CODE_AUTO_COMPACT_WINDOW", None)
         r = B.resolve_threshold("claude-opus-5[1m]", str(sb.project))
         check(
-            "900k pin resolves to 885,000",
-            r["threshold"] == 885_000,
+            "900k pin resolves to 867,000",
+            r["threshold"] == 867_000,
             "got %s from %s" % (r["threshold"], r["source"]),
         )
         check(
@@ -217,27 +219,55 @@ def test_arithmetic():
             "settings.json" in str(r["source"]),
             r["source"],
         )
-        # The trap this guards: a 200K model with a 900K pin must NOT inherit
-        # the 900K threshold, or the hook would sit silent through a
-        # compaction that fired at 167,000.
+        # POLICY REVERSED ON 2026-08-24, and the reversal is the point. This used
+        # to assert that a 200K model with a 900K pin inherits the 200K cap, so
+        # the hook could not sit silent through a compaction at 167,000. It was
+        # the wrong trade: the transcript reports `claude-opus-5` for a 1M
+        # session too, so that rule fired the LATE band at 181,419 tokens on a
+        # session that was 21% full, and went on doing it every turn for hours.
+        # A hook that cries wolf changes behaviour on every turn; a hook that
+        # goes quiet is covered by the PreCompact snapshot. So the pin wins, and
+        # the bet is DECLARED rather than hidden.
         r200 = B.resolve_threshold("claude-opus-5", str(sb.project))
         check(
-            "200K model caps the pinned window",
-            r200["threshold"] == 185_000,
-            "got %s" % r200["threshold"],
+            "a pin overrules a model cap that was only ASSUMED",
+            r200["threshold"] == 867_000 and r200["assumed_cap_overruled"] is True,
+            "got %s" % r200,
+        )
+        check(
+            "and overruling an assumed cap is not reported as confident",
+            r200["confident"] is False,
+            str(r200),
+        )
+        # The same id WITH its marker is the id stating the number, so there is
+        # nothing to overrule and the answer is confident.
+        r1m = B.resolve_threshold("claude-opus-5[1m]", str(sb.project))
+        check(
+            "an explicit [1m] marker needs no bet",
+            r1m["confident"] is True and r1m["assumed_cap_overruled"] is False,
+            str(r1m),
+        )
+        # No pin at all stays the conservative default. This is the check that
+        # keeps a genuine 200K session warned, and it is what the reversal above
+        # is allowed to cost nothing.
+        rbare = B.resolve_threshold("claude-opus-5", None)
+        check(
+            "no pin falls back to the model cap",
+            rbare["threshold"] == 167_000,
+            "got %s" % rbare["threshold"],
         )
         runknown = B.resolve_threshold("some-gateway/mystery", str(sb.project))
         check(
             "unknown model is flagged as not confident",
-            runknown["confident"] is False and runknown["threshold"] == 885_000,
+            runknown["confident"] is False and runknown["threshold"] == 867_000,
             "%s" % runknown,
         )
         check(
             "band_for picks the highest crossed band",
             (
                 B.band_for(100, 867_000) == -1
-                and B.band_for(int(885_000 * 0.80), 885_000) == 0
-                and B.band_for(int(885_000 * 0.99), 885_000) == 1
+                and B.band_for(int(867_000 * 0.80), 867_000) == 0
+                and B.band_for(int(867_000 * 0.99), 867_000) == 1
             ),
         )
     finally:
@@ -271,25 +301,25 @@ def test_bands(hooks_dir):
         check("fires on the early band", ctx is not None)
         check(
             "early text carries the real numbers",
-            bool(ctx) and "885,000" in ctx and "670,000" in ctx,
+            bool(ctx) and "867,000" in ctx and "670,000" in ctx,
             repr(ctx)[:300] if ctx else "",
         )
         check(
             "early text names STATE.md",
             bool(ctx) and ("agent/%s/STATE.md" % SLUG) in ctx,
         )
-        # DIRECTION, not just presence. 670,000 of 885,000 is 75.7% used and
-        # 24.3% remaining; both are one decimal place, so a check that merely
+        # DIRECTION, not just presence. 670,000 of 867,000 is 77.3% used and
+        # 22.7% remaining; both are one decimal place, so a check that merely
         # looked for "%" would pass either way. The status line counts DOWN, so
-        # the notice must quote 24.3 and must not quote 75.7 anywhere.
+        # the notice must quote 22.7 and must not quote 77.3 anywhere.
         check(
             "early text quotes the REMAINING percentage",
-            bool(ctx) and "24.3% until auto-compact" in ctx,
+            bool(ctx) and "22.7% until auto-compact" in ctx,
             repr(ctx)[:300] if ctx else "",
         )
         check(
             "early text never quotes the used percentage",
-            bool(ctx) and "75.7%" not in ctx,
+            bool(ctx) and "77.3%" not in ctx,
             repr(ctx)[:300] if ctx else "",
         )
         check(
@@ -307,8 +337,9 @@ def test_bands(hooks_dir):
         p = sb.post_tool()
         check("silent as usage grows inside the same band", fired(p) is None)
 
-        # Late band (98% of 867,000 = 849,660).
-        sb.write_transcript(870_000)
+        # Late band (98% of 867,000 = 849,660). 852,000 leaves exactly the
+        # 15,000 headroom the checks below name, and 1.7% remaining.
+        sb.write_transcript(852_000)
         p = sb.post_tool()
         ctx = fired(p)
         check("fires on the late band", ctx is not None)
@@ -369,64 +400,40 @@ def test_bands(hooks_dir):
         check("bands fire again after the backstop reset", fired(p) is not None)
         sb2.cleanup()
 
-        # The model cap must yield to evidence. A session reporting
-        # `claude-opus-5` while carrying 395,590 tokens is running on the 1M
-        # variant whatever the transcript says; the 167,000 threshold that id
-        # implies is not merely imprecise, it is already behind us. This is a
-        # live bug caught on a real session, not a hypothetical.
+        # THE MODEL CAP YIELDS TO THE PIN, which is what the deleted cap-disproof
+        # mechanism used to achieve the long way round. A session reporting
+        # `claude-opus-5` while carrying 395,590 tokens is on the 1M variant
+        # whatever the transcript says, and the 167,000 threshold that id implies
+        # is not merely imprecise, it is already behind us. This was a live bug
+        # caught on a real session; it is now prevented by resolution order
+        # rather than detected after the fact.
         sb6 = Sandbox(hooks_dir)
         sb6.write_state_md()
         sb6.write_transcript(395_590, model="claude-opus-5")
         p = sb6.post_tool()
         ctx = fired(p)
         check(
-            "disproven cap does not fire a false late band",
+            "an ambiguous model id does not fire a false late band",
             ctx is None,
             repr(ctx)[:200] if ctx else "",
         )
         check(
-            "disproven cap is recorded",
-            sb6.band_state().get("cap_disproven") is True,
-            str(sb6.band_state()),
-        )
-        check(
-            "disproven cap uses the configured window",
-            sb6.band_state().get("threshold") == 885_000,
+            "the pinned window is what gets recorded",
+            sb6.band_state().get("threshold") == 867_000,
             str(sb6.band_state().get("threshold")),
         )
-        # ...and it must stay disproven after a compaction drops usage back
-        # under the fake hard limit, or the wrong cap re-arms silently.
+        # ...and it stays that way after a compaction, with no sticky flag to
+        # maintain: resolution order gives the same answer every time.
         sb6.post_compact()
         sb6.write_transcript(150_000, model="claude-opus-5")
         p = sb6.post_tool()
-        check("disproven cap survives a compaction", fired(p) is None, repr(fired(p))[:200])
+        check("the pinned window survives a compaction", fired(p) is None, repr(fired(p))[:200])
         check(
-            "disproven cap still recorded after compaction",
-            sb6.band_state().get("cap_disproven") is True
-            and sb6.band_state().get("threshold") == 885_000,
+            "and is still the pinned one afterwards",
+            sb6.band_state().get("threshold") == 867_000,
             str(sb6.band_state()),
         )
         sb6.cleanup()
-
-        # The other direction: a genuine 200K session must keep its cap, or
-        # the hook goes silent through the compaction it exists to predict.
-        sb7 = Sandbox(hooks_dir)
-        sb7.write_state_md()
-        sb7.write_transcript(145_000, model="claude-opus-5")  # 78% of 185,000
-        p = sb7.post_tool()
-        ctx = fired(p)
-        check("genuine 200K session keeps its cap and fires", ctx is not None)
-        check(
-            "200K notice quotes the 185,000 threshold",
-            bool(ctx) and "185,000" in ctx,
-            repr(ctx)[:250] if ctx else "",
-        )
-        check(
-            "200K session is not marked disproven",
-            not sb7.band_state().get("cap_disproven"),
-            str(sb7.band_state()),
-        )
-        sb7.cleanup()
 
         # EVIDENCE BEATS CONFIGURATION. This is the second live bug: the pin
         # went into settings.json while sessions were already running, and
@@ -666,37 +673,6 @@ MUTANTS = [
         ["PostCompact clears the band ladder", "early band fires again in the new epoch"],
     ),
     (
-        "cap disproof removed",
-        "band-notice.py",
-        None,
-        (
-            "ctx_budget.py",
-            "    return observed_usage > (mmax - HARD_LIMIT_MARGIN) and configured > mmax",
-            "    return False",
-        ),
-        # NOT "does it fire": the window-floor correction added later catches
-        # this case as well, so removing the cap disproof no longer produces a
-        # false band. What it does produce is a threshold reached by the wrong
-        # route and an unset flag, and those still tell them apart. Two
-        # mechanisms covering one failure is the point; a mutant that cannot
-        # distinguish them is not.
-        ["disproven cap is recorded", "disproven cap uses the configured window"],
-    ),
-    (
-        "cap disproof made unconditional",
-        "band-notice.py",
-        None,
-        (
-            "ctx_budget.py",
-            "    return observed_usage > (mmax - HARD_LIMIT_MARGIN) and configured > mmax",
-            "    return True",
-        ),
-        [
-            "genuine 200K session keeps its cap and fires",
-            "200K notice quotes the 185,000 threshold",
-        ],
-    ),
-    (
         "window-floor correction removed",
         "band-notice.py",
         ('        if high > res["threshold"]:', "        if False:"),
@@ -727,25 +703,29 @@ MUTANTS = [
         ],
     ),
     (
-        "cap disproof not sticky",
-        "band-notice.py",
-        (
-            'sticky = bool(st.get("cap_disproven")) and st.get("cap_disproven_model") == model',
-            "sticky = False",
-        ),
-        None,
-        ["disproven cap still recorded after compaction"],
-    ),
-    (
-        "model cap ignored",
+        # The reverse of the old "model cap ignored" mutant, which anchored on a
+        # `min()` that no longer exists. Re-clipping the pin to the assumed cap
+        # is the regression now, and it is the exact shape of the false alarm
+        # that ran for hours on 2026-08-24.
+        "assumed cap clips the pin again",
         "band-notice.py",
         None,
         (
             "ctx_budget.py",
-            "window = min(configured, mmax) if mmax else configured",
-            "window = configured",
+            "    window = configured\n",
+            "    window = min(configured, mmax) if mmax else configured\n",
         ),
-        ["200K model caps the pinned window"],
+        ["a pin overrules a model cap that was only ASSUMED"],
+    ),
+    (
+        # The margin is the other half of the alignment with `/context`, which
+        # prints the buffer outright. Shrinking it back promises headroom that
+        # does not exist.
+        "compaction margin shrunk back to 15,000",
+        "band-notice.py",
+        None,
+        ("ctx_budget.py", "COMPACT_MARGIN = 33_000", "COMPACT_MARGIN = 15_000"),
+        ["a pin overrules a model cap that was only ASSUMED"],
     ),
 ]
 
@@ -808,7 +788,12 @@ def test_mutations():
             tgt, old, new = indirect
             d = mutate(tgt, (old, new))
         try:
-            if "200K model caps the pinned window" in must_fail:
+            # Which behavioural pass a mutant is judged against. The name is the
+            # dispatch key, so renaming a check without renaming it HERE silently
+            # sends the mutant to the wrong pass -- which is what happened when
+            # this check was renamed on 2026-08-24, and both new mutants reported
+            # green because they were being run against test_bands instead.
+            if "a pin overrules a model cap that was only ASSUMED" in must_fail:
                 failed = run_isolated(test_arithmetic_in, d)
             else:
                 failed = run_isolated(test_bands, d)
@@ -857,8 +842,8 @@ def test_arithmetic_in(hooks_dir):
         except Exception:  # noqa: BLE001
             r = {}
         check(
-            "200K model caps the pinned window",
-            r.get("threshold") == 185_000,
+            "a pin overrules a model cap that was only ASSUMED",
+            r.get("threshold") == 867_000,
             "got %s" % r.get("threshold"),
         )
     finally:
