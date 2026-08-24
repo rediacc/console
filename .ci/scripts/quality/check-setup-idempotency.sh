@@ -26,11 +26,20 @@ set -uo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
 LIB="$ROOT/.ci/lib"
 
-RED=''; GREEN=''; NC=''
-if [ -t 1 ] && [ -z "${NO_COLOR:-}" ]; then RED=$'\033[0;31m'; GREEN=$'\033[0;32m'; NC=$'\033[0m'; fi
+RED=''
+GREEN=''
+NC=''
+if [ -t 1 ] && [ -z "${NO_COLOR:-}" ]; then
+    RED=$'\033[0;31m'
+    GREEN=$'\033[0;32m'
+    NC=$'\033[0m'
+fi
 
 fails=0
-fail() { echo "${RED}FAIL${NC} $*" >&2; fails=$((fails + 1)); }
+fail() {
+    echo "${RED}FAIL${NC} $*" >&2
+    fails=$((fails + 1))
+}
 pass() { echo "${GREEN}ok${NC}   $*"; }
 
 TMP="$(mktemp -d)"
@@ -260,11 +269,15 @@ check_f() { # check_f <devbox.sh path>
 control_fails=0
 control() { # control <label> <fn> <arg> ; the fn MUST fail on the mutated input
     local label="$1" fn="$2" arg="$3" out
-    out="$( { "$fn" "$arg"; echo "rc=$?"; } 2>&1 )"
+    out="$({
+        "$fn" "$arg"
+        echo "rc=$?"
+    } 2>&1)"
     case "$out" in
         *"rc=0"*)
             echo "${RED}CONTROL DID NOT FIRE${NC}: $label -- the planted defect passed." >&2
-            control_fails=1 ;;
+            control_fails=1
+            ;;
     esac
 }
 

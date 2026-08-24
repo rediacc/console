@@ -1634,7 +1634,11 @@ fix_shell() {
     if [[ -d "scripts/dev" ]]; then
         find scripts/dev -name "*.sh" -type f -exec shfmt -i 4 -ci -w {} +
     fi
-    log_success "Shell scripts formatted"
+    # log_info, not log_success: the latter is defined locally inside
+    # .ci/scripts/security/shellcheck.sh and is NOT in the shared common.sh this
+    # script sources, so the call died with "log_success: command not found"
+    # after the formatting had already succeeded.
+    log_info "Shell scripts formatted"
 }
 
 # =============================================================================
@@ -1688,9 +1692,18 @@ setup() {
 
     while [[ $# -gt 0 ]]; do
         case "$1" in
-            --check) do_check=true; shift ;;
-            --pull) force_pull=true; shift ;;
-            --no-start) do_start=false; shift ;;
+            --check)
+                do_check=true
+                shift
+                ;;
+            --pull)
+                force_pull=true
+                shift
+                ;;
+            --no-start)
+                do_start=false
+                shift
+                ;;
             --help | -h)
                 cat <<'EOF'
 Usage: ./run.sh setup [OPTIONS]

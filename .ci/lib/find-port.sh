@@ -86,7 +86,7 @@ derive_slot() {
 
     # sha256 of the key; first 8 hex digits are plenty of entropy for <1k slots.
     digest="$(printf '%s' "$key" | _sha256sum_portable | cut -c1-8)"
-    echo $(( 0x$digest % slots ))
+    echo $((0x$digest % slots))
 }
 
 # Portable sha256 (mirrors _sha256sum in local-common.sh, which this file must
@@ -108,7 +108,7 @@ find_port_block() {
     local range_end="${3:-17999}"
     local block="${4:-10}"
 
-    local slots=$(( (range_end - range_start + 1) / block ))
+    local slots=$(((range_end - range_start + 1) / block))
     [[ "$slots" -lt 1 ]] && return 1
 
     local preferred_slot
@@ -117,14 +117,14 @@ find_port_block() {
     # Try the derived slot first, then every other slot in order. Walking all
     # slots (rather than giving up) means a busy machine still gets a devbox.
     local i slot base port_in_use
-    for (( i = 0; i < slots; i++ )); do
-        slot=$(( (preferred_slot + i) % slots ))
-        base=$(( range_start + slot * block ))
+    for ((i = 0; i < slots; i++)); do
+        slot=$(((preferred_slot + i) % slots))
+        base=$((range_start + slot * block))
 
         port_in_use=false
         local offset
-        for (( offset = 0; offset < block; offset++ )); do
-            if is_port_in_use $(( base + offset )); then
+        for ((offset = 0; offset < block; offset++)); do
+            if is_port_in_use $((base + offset)); then
                 port_in_use=true
                 break
             fi

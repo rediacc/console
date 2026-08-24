@@ -91,7 +91,20 @@ xargs -0 -a "$FILE_LIST" -r file --mime-encoding -- 2>/dev/null |
     awk -F': ' '$NF ~ /binary/ { sub(/: [^:]*$/, "", $0); print }' >"$BINARY_LIST" || true
 
 # Single pass for every byte-exact check.
-mapfile -t _findings < <(
+# `while read` rather than `mapfile`: mapfile is a bash-4 builtin and the CI
+# image is minimal (check-commands.sh rejects it). Reading directly also drops
+# the intermediate array.
+while IFS= read -r _finding; do
+    [[ -z "$_finding" ]] && continue
+    _kind="${_finding%%$'\t'*}"
+    _path="${_finding#*$'\t'}"
+    case "$_kind" in
+        NEWLINE) MISSING_NEWLINE+=("$_path") ;;
+        BOM) HAS_BOM+=("$_path") ;;
+        CRLF) HAS_CRLF+=("$_path") ;;
+        NUL) HAS_NUL_BYTE+=("$_path") ;;
+    esac
+done < <(
     BINARY_LIST="$BINARY_LIST" TEXT_EXTENSIONS_RE="$TEXT_EXTENSIONS_RE" \
         python3 - "$FILE_LIST" <<'PYEOF'
 import os, re, sys
@@ -146,18 +159,6 @@ for path in paths:
         print("CRLF\t" + path)
 PYEOF
 )
-
-for _finding in "${_findings[@]}"; do
-    [[ -z "$_finding" ]] && continue
-    _kind="${_finding%%$'\t'*}"
-    _path="${_finding#*$'\t'}"
-    case "$_kind" in
-        NEWLINE) MISSING_NEWLINE+=("$_path") ;;
-        BOM) HAS_BOM+=("$_path") ;;
-        CRLF) HAS_CRLF+=("$_path") ;;
-        NUL) HAS_NUL_BYTE+=("$_path") ;;
-    esac
-done
 
 # Report results
 if [[ ${#MISSING_NEWLINE[@]} -gt 0 ]]; then

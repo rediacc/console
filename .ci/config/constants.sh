@@ -83,7 +83,7 @@ readonly DEVBOX_OFFSET_STUDIO=3
 # base-path configuration. Chrome resolves *.localhost to 127.0.0.1 itself, so a
 # single forwarded port covers every worktree -- which is the whole point on
 # ChromeOS, where each published port otherwise needs its own manual forward.
-readonly DEVBOX_PROXY_IMAGE="traefik:v3.6"   # same major the product proxy pins
+readonly DEVBOX_PROXY_IMAGE="traefik:v3.6" # same major the product proxy pins
 readonly DEVBOX_PROXY_NAME="rediacc-devbox-proxy"
 readonly DEVBOX_PROXY_PORT=8090
 readonly DEVBOX_NETWORK="rediacc-devbox"
