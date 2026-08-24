@@ -1515,14 +1515,34 @@ not count. These are the real check:* keys; do not invent others:
 stays green, and is that edit one a reasonable change could make? A one-off
 mistake with no invariant behind it does not warrant a gate.
 
-(4) If a gate IS warranted, name the invariant and the cheapest artifact it
-can be asserted on.
+(4) SURFACE: if a test IS warranted, WHERE does it belong? `ci.yml` has six
+regression surfaces and only the first is a check-*.ts:
+
+  gates    a source-level invariant, wiring, or content shape. check:ci-* in
+           ci-quality.yml, wired at package.json + ci-runner manifest + step.
+  e2e      CLI or renet behaviour that only appears against a live machine.
+           packages/e2e-tests/tests/NN-<name>.test.ts, run by run-e2e.sh.
+  ops      rdc ops, KVM/qemu provisioning, platform checks. A step in
+           .github/workflows/ci-ops-test.yml. NOTHING enforces coverage here.
+  install  install.sh, packaging, the updater, rdc.sh env. A case in the
+           .ci/scripts/test/test-install-*.sh or test-rdc-*.sh that owns it.
+  unit     a pure function. That package's __tests__ directory.
+  hooks    a .claude/hooks script. A case in its test-*.py/sh, CALLED FROM
+           .claude/hooks/test-hooks.sh.
+
+Answering `gates` for a BEHAVIOURAL defect is the failure to avoid: a source
+assertion about a runtime bug proves the source still looks right, which is
+not the claim. If the defect only reproduces against a running product, the
+surface is e2e, ops or install -- never gates.
+
+Then name the ARTIFACT: the repo-relative path the case belongs in.
 
 Fill regression_gate accordingly: applicable (false only if this fix-set
 contains no defect fix at all), blind_spot, existing_gate (the EXACT key that
 already covers it, or empty string), recurring, gate_needed, gate_proven
 (true only if a new gate is already written and wired), instruction (the
-concrete next step for the session).
+concrete next step for the session), surface (one of the seven values, `none`
+only when no test is warranted), artifact (the path, or empty string).
 """
 
 TRIAGE_PROMPT = """\
