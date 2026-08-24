@@ -141,6 +141,8 @@ async function main(): Promise<void> {
   const base = `http://127.0.0.1:${port}`;
   const browser = await chromium.launch();
   const findings: Finding[] = [];
+  // Routes that could not reach network quiet and were checked after `load` instead.
+  const degraded: string[] = [];
   let checked = 0;
 
   try {
@@ -161,7 +163,27 @@ async function main(): Promise<void> {
       });
       page.on('pageerror', (e: Error) => errs.push(`${e.name}: ${e.message}`));
 
-      const resp = await page.goto(base + route, { waitUntil: 'networkidle', timeout: 45_000 });
+      // `networkidle` IS THE RIGHT WAIT AND THE WRONG FAILURE. Islands have to hydrate
+      // before the assertions below mean anything, so waiting for quiet is correct. But a
+      // page carrying `<video preload="metadata">` pointed at media.rediacc.com issues a
+      // request that never completes in a sandboxed container, and then the gate reports
+      // `page.goto: Timeout 45000ms exceeded` -- a crash, on the FIRST route, with none of
+      // its three real assertions ever run. That happened on 2026-08-24 while the same job
+      // had passed on the previous commit with identical page code.
+      //
+      // So: try for quiet, and on timeout fall back to `load` and keep going. A hanging
+      // third-party request can no longer mask the checks; a broken island still fails
+      // them. The fallback is COUNTED and printed, because a gate that silently lowers its
+      // own bar is worse than one that fails.
+      let resp = null;
+      try {
+        resp = await page.goto(base + route, { waitUntil: 'networkidle', timeout: 30_000 });
+      } catch {
+        degraded.push(route);
+        resp = await page.goto(base + route, { waitUntil: 'load', timeout: 30_000 });
+        // Give islands the beat they would have had under networkidle.
+        await page.waitForTimeout(2_000);
+      }
       if (!resp || resp.status() !== 200) {
         findings.push({
           route,
@@ -265,7 +287,10 @@ async function main(): Promise<void> {
     process.exit(1);
   }
   console.log(
-    `\x1b[32m✓\x1b[0m ${checked} route(s): no console errors, nav renders, language switching works.`
+    `\x1b[32m✓\x1b[0m ${checked} route(s): no console errors, nav renders, language switching works.` +
+      (degraded.length
+        ? `\n  ${degraded.length} route(s) never reached network quiet and were checked after \`load\` instead: ${degraded.join(', ')}. A request that never finishes (a CDN video in a sandboxed container) does that; the assertions still ran.`
+        : '')
   );
 }
 
