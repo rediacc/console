@@ -199,4 +199,9 @@ const breadcrumbItems = [
       url: `${SITE_URL}/${lang}/solutions/${slug}`,
     }}
   />
+
+  {/* The hero video mounts through the shared hydrator rather than as an island, because
+      `plyr` reads `document` at module scope and cannot be server-rendered. Same script
+      DocsLayout loads for the tutorial embeds; it now matches both placeholders. */}
+  <script src="../../scripts/tutorial-video-hydrate.ts"></script>
 </BaseLayout>

@@ -2,7 +2,11 @@
 import { createTranslator } from '../../i18n/utils';
 import type { Language } from '../../i18n/types';
 import { resolveSolutionVideoSources } from '../../utils/solution-video';
-import SolutionVideoPlayer from './SolutionVideoPlayer';
+// The dark-band overrides used to ride into the bundle on SolutionVideoPlayer.tsx's own
+// `import '../../styles/solution-video.css'`. Deleting that component orphaned the
+// stylesheet, and the language trigger went straight back to a white pill on the dark
+// hero -- measured at rgb(26,26,26) on rgb(255,255,255) before this import was added.
+import '../../styles/solution-video.css';
 
 interface Props {
   lang: Language;
@@ -13,23 +17,44 @@ const { lang, slug } = Astro.props;
 const { t } = createTranslator(lang);
 const sources = resolveSolutionVideoSources(slug);
 
-// No section wrapper any more: since round 6 this renders INSIDE the hero's media
-// column (`.sp-hero-media` in SPHero.astro), which owns the layout box. The old
-// `.sp-video` / `.sp-video-inner` standalone section is gone with the move.
+// ONE PLAYER, NOT TWO. This used to mount `SolutionVideoPlayer`, a second React island
+// with native controls, its own language picker and two <video> elements toggled by CSS.
+// Two players is two of everything to maintain and two places for a bug to live, and the
+// tutorial one is the better of the pair: Plyr controls, a speed menu, fullscreen,
+// keyboard handling, and a picker that keeps your place across a language switch.
 //
-// Both cuts are emitted with preload="none" + poster, so only the visible one
-// (toggled by viewport via CSS) fetches its media when the viewer hits play.
-// Captions are burned into the localized video, so no <track> is needed.
+// What the solution videos DON'T have, and why the player no longer demands it: no VTT
+// (captions are burned into each localized file), no chapters, no per-word timings. Those
+// props are optional now, and Plyr drops its CC button when there is no track behind it.
 //
-// The labels are translated HERE, on the server, and passed down as props. The island must
-// not reach the i18n catalogs itself: src/i18n/utils.ts statically imports all thirteen,
-// and anything that pulls it into a client bundle puts 9.28 MB of catalogs on the route.
+// A PLACEHOLDER, NOT `client:visible`. `plyr` reads `document` at module scope, so
+// importing it under Node throws before any component code runs -- an Astro island would
+// have to server-render it and cannot. The shared hydrator mounts it from a dynamic
+// import instead; this div is the same contract the tutorial embeds use.
+//
+// The portrait cut is picked by `matchMedia` inside the player rather than by rendering
+// both and hiding one, because with Plyr two elements would mean two player instances.
+const localized = Object.fromEntries(
+  Object.entries(sources)
+    .filter(([, urls]) => Boolean(urls))
+    .map(([code, urls]) => [
+      code,
+      { mp4: urls!.landscape, poster: urls!.poster, vertical: urls!.vertical },
+    ])
+);
+const here = localized[lang] ?? localized.en;
 ---
 
-<SolutionVideoPlayer
-  client:visible
-  lang={lang}
-  sources={sources}
-  playLabel={t('video.playVideo')}
-  selectLanguageLabel={t('navigation.selectLanguage')}
-/>
+{
+  here && (
+    <div
+      class="video-player-mount"
+      data-video-src={here.mp4}
+      data-poster-src={here.poster}
+      data-vertical-src={here.vertical}
+      data-title={t('video.playVideo')}
+      data-lang={lang}
+      data-sources={JSON.stringify(localized)}
+    />
+  )
+}

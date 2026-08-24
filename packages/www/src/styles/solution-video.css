@@ -1,42 +1,28 @@
-/* Solution-page video player.
+/* The solution video ON THE HERO'S DARK BAND.
  *
- * These rules used to live in a scoped <style> block inside SPSolutionVideo.astro. They
- * moved here when the players became a React island: Astro's scoping rewrites selectors
- * against the elements IT renders, and an island's elements are not among them, so a scoped
- * rule would have silently stopped matching.
+ * Everything that used to be here describing a player is gone: the solution pages mount
+ * the tutorial player now (see SPSolutionVideo.astro), so `.sp-video-player`, the
+ * landscape/vertical pair and the standalone `.sp-video` section went with the second
+ * island. What remains is the one thing the shared player cannot know: it is sitting on
+ * `--sp-bg-hero`, which is dark in BOTH themes, and its chrome paints from light-theme
+ * tokens.
  *
- * Since round 6 the player renders INSIDE the hero (`.sp-hero-media`, always the dark
- * `--sp-bg-hero` band in both themes), so the old standalone `.sp-video` /
- * `.sp-video-inner` section boxes are gone and the toolbar colors are pinned to the
- * dark-surface tokens rather than the theme-flipping ones. */
+ * These rules moved from a scoped <style> block in SPSolutionVideo.astro when the player
+ * became a React island: Astro's scoping rewrites selectors against the elements IT
+ * renders, and an island's elements are not among them, so a scoped rule would have
+ * silently stopped matching.
+ */
 
-.sp-video-toolbar {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: var(--space-2);
-  margin-bottom: var(--space-2);
-  color: var(--sp-text-muted-dark);
-}
-
-.sp-video-toolbar-icon {
-  flex: none;
-}
-
-/* The shared trigger reads `--color-text`, which is near-black in the light theme and
-   would vanish on the hero's dark band. Scoped here, not edited in
-   language-switcher.css: the nav and footer instances keep their theme colors. */
 /* BACKGROUND AND BORDER, NOT JUST COLOUR, and that is the whole bug this replaces.
    The shared `.language-trigger` paints `background: var(--color-bg-alt)` and
    `border-color: var(--color-border)` (language-switcher.css:15-16). Setting only
    `color: white` here left the background resolving to white on this hero, so the
    control rendered white-on-white at contrast 1.00 -- in BOTH themes, measured.
-   Exactly the failure the FOOTER switcher had earlier in this same wave: a dark band
+   Exactly the failure the FOOTER switcher had earlier in the same wave: a dark band
    must re-point every token the component paints from, not only the text one.
    Translucent white rather than a fixed hex so the hero's own gradient shows through
-   and one rule serves both themes; it matches the :hover treatment below, which was
-   already correct because it set a background. */
-.sp-video-toolbar .language-trigger {
+   and one rule serves both themes. */
+.sp-hero-media .tvp-toolbar .language-trigger {
   background: rgba(255, 255, 255, 0.12);
   border-color: rgba(255, 255, 255, 0.24);
   color: var(--sp-text-white);
@@ -45,41 +31,52 @@
 /* Higher specificity than `.language-trigger:hover` on purpose, so the outcome does not
    depend on which stylesheet the bundler emits first. `--color-hover` is a light-theme
    surface; on the dark band a translucent white is the readable hover. */
-.sp-video-toolbar .language-trigger:hover {
+.sp-hero-media .tvp-toolbar .language-trigger:hover {
   background-color: rgba(255, 255, 255, 0.08);
   color: var(--sp-text-white);
+}
+
+.sp-hero-media .tvp-toolbar {
+  color: var(--sp-text-muted-dark);
 }
 
 /* The hero clips at its bounds (`.sp-hero` is overflow: hidden so its decorative glow
    cannot cause page overflow), and thirteen locales make an unclamped list taller than
    the hero below the toolbar. Clamp and scroll instead of losing the tail. Higher
    specificity than the base `.language-menu`, whose `overflow: hidden` this overrides. */
-.sp-video-toolbar .language-menu {
+.sp-hero-media .tvp-toolbar .language-menu {
   max-height: min(50vh, 300px);
   overflow-y: auto;
 }
 
-.sp-video-player {
-  width: 100%;
-  height: auto;
+/* The player's own default is a docs-article margin, which on the hero pushes the video
+   off the text column's optical centre. */
+.sp-hero-media .tvp-root {
+  margin-block: 0;
+}
+
+/* The placeholder the hydrator replaces, styled ONLY until it is replaced.
+ *
+ * The player is mounted from a dynamic import (plyr cannot be server-rendered), so between
+ * first paint and hydration this div is empty. Without a reserved box the hero's media
+ * column has zero height and the whole hero reflows when the player lands. The attribute
+ * is the one the hydrator sets on mount, so the reservation releases exactly when the real
+ * box takes over -- keeping it afterwards would constrain the toolbar and the player
+ * together in one 16:9 box.
+ *
+ * The breakpoint matches the player's own `matchMedia('(max-width: 768px)')`; if one moves
+ * the other must, or the reserved box is the wrong shape for the cut that loads.
+ */
+.video-player-mount:not([data-hydrated]) {
+  display: block;
+  aspect-ratio: 16 / 9;
   border-radius: var(--radius-md);
   background: #0b0e14;
-  display: block;
 }
 
-/* Desktop: landscape only. */
-.sp-video-vertical {
-  display: none;
-}
-
-/* Mobile: swap to the native portrait cut. */
 @media (max-width: 768px) {
-  .sp-video-landscape {
-    display: none;
-  }
-
-  .sp-video-vertical {
-    display: block;
+  .video-player-mount:not([data-hydrated]) {
+    aspect-ratio: 9 / 16;
     max-width: 420px;
     margin-inline: auto;
   }
