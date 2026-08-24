@@ -22,25 +22,38 @@ import LanguageMenu from './LanguageMenu';
 import 'plyr/dist/plyr.css';
 import '../styles/tutorial-video.css';
 
-/** One locale's five assets, as emitted in the `data-sources` attribute. */
+/**
+ * One locale's assets.
+ *
+ * Only `mp4` and `poster` are required, because the SOLUTION-page videos reuse this
+ * player and have neither sidecars nor a separate caption track: their captions are
+ * burned into each localized file. `vertical` is the portrait cut those videos ship, and
+ * it is what a phone gets instead of a letterboxed landscape one.
+ */
 export interface TutorialSourceSet {
   mp4: string;
   poster: string;
-  vtt: string;
-  chapters: string;
-  words: string;
+  vtt?: string;
+  chapters?: string;
+  words?: string;
+  vertical?: string;
 }
 
 interface TutorialVideoPlayerProps {
   src: string;
   posterSrc: string;
-  subtitlesSrc: string;
-  chaptersSrc: string;
-  wordsSrc: string;
+  /** Absent for burned-in captions: no <track>, and Plyr drops its CC button. */
+  subtitlesSrc?: string;
+  /** Absent when the video has no chapter marks. */
+  chaptersSrc?: string;
+  /** Absent when there is no per-word timing sidecar, which disables the caption overlay. */
+  wordsSrc?: string;
+  /** The portrait cut, shown below 768px. Absent means the landscape one is used at every width. */
+  verticalSrc?: string;
   title: string;
   lang: string;
   /**
-   * Every locale this tutorial is published in. Absent (or a single entry) hides the
+   * Every locale this video is published in. Absent (or a single entry) hides the
    * language picker and the player behaves exactly as it did before it existed.
    */
   sources?: Record<string, TutorialSourceSet | undefined>;
@@ -213,6 +226,7 @@ const TutorialVideoPlayer: FC<TutorialVideoPlayerProps> = ({
   subtitlesSrc,
   chaptersSrc,
   wordsSrc,
+  verticalSrc,
   title,
   lang,
   sources,
@@ -239,10 +253,25 @@ const TutorialVideoPlayer: FC<TutorialVideoPlayerProps> = ({
     [sources]
   );
 
-  // The five URLs in play. `sources` is the whole truth once present; the individual props
+  // PORTRAIT BELOW 768px, and chosen in JS rather than by rendering both cuts and hiding
+  // one in CSS. Two <video> elements was how the solution player did it; with Plyr that
+  // would mean two player instances, two sets of listeners and two caption overlays, only
+  // one of them reachable. `matchMedia` gives the same breakpoint with one element.
+  const [isNarrow, setIsNarrow] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 768px)');
+    const apply = () => setIsNarrow(mq.matches);
+    apply();
+    mq.addEventListener('change', apply);
+    return () => mq.removeEventListener('change', apply);
+  }, []);
+
+  // The URLs in play. `sources` is the whole truth once present; the individual props
   // stay the fallback so a page built before the attribute existed still plays.
   const active = sources?.[activeLang];
-  const activeSrc = active?.mp4 ?? src;
+  const activeLandscape = active?.mp4 ?? src;
+  const activeVertical = active?.vertical ?? verticalSrc;
+  const activeSrc = isNarrow && activeVertical ? activeVertical : activeLandscape;
   const activePoster = active?.poster ?? posterSrc;
   const activeSubtitles = active?.vtt ?? subtitlesSrc;
   const activeChapters = active?.chapters ?? chaptersSrc;
@@ -287,13 +316,22 @@ const TutorialVideoPlayer: FC<TutorialVideoPlayerProps> = ({
   }, [activeWords]);
 
   // Null until the sidecar for the CURRENT video has landed.
-  const wordsDoc = words?.src === activeWords ? words.doc : null;
+  //
+  // `words &&` FIRST, not optional chaining. With no sidecar at all -- a solution video --
+  // `activeWords` is undefined and so is `words?.src`, so `words?.src === activeWords` is
+  // `undefined === undefined`, i.e. TRUE, and the branch then reads `.doc` off null. tsc
+  // caught it; at runtime it would have been a crash on every solution page.
+  const wordsDoc = words && words.src === activeWords ? words.doc : null;
 
   // Plyr lifecycle + chapter overlay.
   useEffect(() => {
     const video = videoRef.current;
+    // THE OVERLAY IS OPTIONAL, THE PLAYER IS NOT. This guard used to demand the chapter
+    // overlay node as well, so a video with no chapters -- every solution video -- would
+    // return before constructing Plyr and render as a bare <video> with no controls at
+    // all. The overlay's own mount below already handles its absence.
     const chapterOverlay = chapterOverlayRef.current;
-    if (!video || !chapterOverlay) return;
+    if (!video) return;
     // Capture the caption node at mount so the cleanup closure does not read
     // captionRef.current after render (react-hooks/exhaustive-deps); the node
     // is rendered once and stable for the life of this effect.
@@ -301,6 +339,9 @@ const TutorialVideoPlayer: FC<TutorialVideoPlayerProps> = ({
 
     alignPlyrCaptionLanguage(activeLang);
 
+    // A CC BUTTON WITH NO TRACK IS DEAD UI, so the captions control and the captions
+    // settings pane are dropped when there is no subtitles file. The solution videos burn
+    // their captions into the media, so this is their normal state, not a degraded one.
     const player = new Plyr(video, {
       controls: [
         'play-large',
@@ -310,13 +351,13 @@ const TutorialVideoPlayer: FC<TutorialVideoPlayerProps> = ({
         'duration',
         'mute',
         'volume',
-        'captions',
+        ...(activeSubtitles ? ['captions'] : []),
         'settings',
         'pip',
         'fullscreen',
       ],
-      settings: ['captions', 'speed'],
-      captions: { active: true, language: activeLang, update: true },
+      settings: activeSubtitles ? ['captions', 'speed'] : ['speed'],
+      captions: { active: Boolean(activeSubtitles), language: activeLang, update: true },
       keyboard: { focused: true, global: false },
       tooltips: { controls: true, seek: true },
       storage: { enabled: true, key: PLYR_STORAGE_KEY },
@@ -329,6 +370,7 @@ const TutorialVideoPlayer: FC<TutorialVideoPlayerProps> = ({
     };
 
     const mountChapterOverlay = () => {
+      if (!chapterOverlay) return;
       const tracks = Array.from(video.textTracks);
       const chaptersTrack = tracks.find((t) => t.kind === 'chapters');
       if (!chaptersTrack) return;
@@ -578,7 +620,11 @@ const TutorialVideoPlayer: FC<TutorialVideoPlayerProps> = ({
         and the src/poster/track attributes React wrote landed on a node nobody could see.
         Discarding the whole subtree is what keeps the two in step.
       */}
-      <div key={activeLang} className="tvp-root" aria-label={title}>
+      <div
+        key={`${activeLang}:${isNarrow && activeVertical ? 'v' : 'h'}`}
+        className={`tvp-root${isNarrow && activeVertical ? ' tvp-root--portrait' : ''}`}
+        aria-label={title}
+      >
         <video
           ref={videoRef}
           src={activeSrc}
@@ -588,11 +634,27 @@ const TutorialVideoPlayer: FC<TutorialVideoPlayerProps> = ({
           crossOrigin="anonymous"
           data-poster={activePoster}
         >
-          <track kind="subtitles" src={activeSubtitles} srcLang={base} label={langLabel} default />
-          <track kind="chapters" src={activeChapters} srcLang={base} label="Chapters" />
+          {activeSubtitles && (
+            <track
+              kind="subtitles"
+              src={activeSubtitles}
+              srcLang={base}
+              label={langLabel}
+              default
+            />
+          )}
+          {activeChapters && (
+            <track kind="chapters" src={activeChapters} srcLang={base} label="Chapters" />
+          )}
         </video>
-        <div ref={chapterOverlayRef} className="tvp-chapter-overlay" aria-hidden="true" />
-        <div ref={captionRef} className="tvp-caption" aria-live="polite" aria-atomic="true" />
+        {/* Both overlays are refs the effects above guard on, so omitting them when there
+            is nothing to paint costs those effects nothing and leaves the DOM clean. */}
+        {activeChapters && (
+          <div ref={chapterOverlayRef} className="tvp-chapter-overlay" aria-hidden="true" />
+        )}
+        {activeWords && (
+          <div ref={captionRef} className="tvp-caption" aria-live="polite" aria-atomic="true" />
+        )}
       </div>
     </div>
   );

@@ -34,9 +34,10 @@
  *    arrives with and pushed the results heading 41px below the rail's. It stays as an
  *    sr-only live region, because a screen reader gets no other signal that filtering
  *    changed the result set.
- * 2. THE TWO HEADINGS ARE STYLED BY ONE RULE. They align because both are `h2` inside
- *    `.article-content`. Four class-level declarations tried to size them and never won;
- *    re-adding one that DOES win is how they drift apart again.
+ * 2. THE TWO HEADINGS ARE STYLED BY ONE RULE, together, by name. Their alignment used to
+ *    hold only because both are `h2` inside `.article-content` -- a docs-prose selector
+ *    nobody would check before changing. A second rule touching either one alone is how
+ *    they drift apart again.
  * 3. THE CATEGORY GROUP IS DECIDED BEFORE FIRST PAINT. Hiding it from the deferred
  *    module script is what made it flash on every ?category= navigation: a module script
  *    runs after paint by definition. The decision belongs to an inline script that sets
@@ -66,15 +67,45 @@ export const tallyFaults = (astro: string): string[] => {
   return out;
 };
 
-/** Neither heading may carry a class-level size or margin; `.article-content h2` owns both. */
+const RAIL = '.docs-rail-heading';
+const RESULTS = '.docs-browse-group-title';
+
+/**
+ * The two headings must be styled by ONE shared rule, and by no other.
+ *
+ * Their alignment used to hold by accident -- both are `h2` inside `.article-content`, so
+ * a docs-prose selector one specificity point heavier than either class decided their
+ * size, margins and rule. Anyone changing that selector would have had no way to know two
+ * headings in another column depended on it. A shared rule states the pairing; a SECOND
+ * rule touching either one is how they drift apart again.
+ */
 export const headingFaults = (css: string): string[] => {
   const out: string[] = [];
-  for (const sel of ['.docs-rail-heading', '.docs-browse-group-title']) {
-    const re = new RegExp(`\\${sel}\\s*\\{([^}]*)\\}`);
-    const m = re.exec(css);
-    if (!m) continue;
-    const bad = m[1].split(';').map((d) => d.trim()).filter((d) => /^(font-size|margin)/.test(d));
-    for (const d of bad) out.push(`${sel} declares \`${d}\`, which competes with .article-content h2 for the pair's size and spacing`);
+  const rules = [...css.matchAll(/([^{}]+)\{([^}]*)\}/g)].map((m) => ({
+    selector: m[1].trim(),
+    body: m[2],
+  }));
+  const mentions = (sel: string) =>
+    rules.filter((r) => new RegExp(`\\${sel}(?![\\w-])`).test(r.selector));
+
+  const shared = rules.filter(
+    (r) =>
+      new RegExp(`\\${RAIL}(?![\\w-])`).test(r.selector) &&
+      new RegExp(`\\${RESULTS}(?![\\w-])`).test(r.selector)
+  );
+  if (shared.length === 0) {
+    out.push(`${RAIL} and ${RESULTS} are no longer styled by one shared rule, so nothing states that they must match`);
+  }
+  for (const sel of [RAIL, RESULTS]) {
+    for (const r of mentions(sel)) {
+      if (shared.includes(r)) continue;
+      const bad = r.body
+        .split(';')
+        .map((d) => d.trim())
+        .filter((d) => /^(font-size|margin|padding|border)/.test(d));
+      for (const d of bad)
+        out.push(`${sel} carries a second rule declaring \`${d}\`, which can pull it away from its pair`);
+    }
   }
   return out;
 };
@@ -109,10 +140,14 @@ const selftest = (astro: string, css: string): number => {
     tallyFaults(astro.replace(/<output[^>]*docs-browse-tally[\s\S]*?<\/output>/, '')).length > 0);
   check('the old visible status wrapper coming back is caught',
     tallyFaults(`${astro}\n<p class="docs-browse-status"></p>`).length > 0);
-  check('a font-size put back on the rail heading is caught',
+  check('a SECOND rule sizing the rail heading alone is caught',
     headingFaults(`${css}\n.docs-rail-heading { font-size: 1rem; }`).length > 0);
-  check('a margin put back on the results heading is caught',
+  check('a SECOND rule spacing the results heading alone is caught',
     headingFaults(`${css}\n.docs-browse-group-title { margin-block-end: 1rem; }`).length > 0);
+  // THE CONTROL FOR THE NEW HALF: losing the shared rule is the drift this prevents, and
+  // a check that only looked for extra rules would call that state clean.
+  check('losing the shared rule is caught',
+    headingFaults(css.replace(`${RAIL},`, '.never-matches,')).length > 0);
   check('losing the inline flag script is caught',
     flashFaults(astro.replace('docsCategory', 'somethingElse'), css).length > 0);
   check('losing the CSS that hides the group is caught',
@@ -140,7 +175,7 @@ const main = (): number => {
     console.error('  pixels; the interactive gate that can is wave D gate 2, still unowned.');
     return 1;
   }
-  console.log('✓ docs browse invariants hold: the tally is sr-only, neither heading carries a competing size or margin, and the category group is decided before first paint.');
+  console.log('✓ docs browse invariants hold: the tally is sr-only, the two headings are styled by one shared rule, and the category group is decided before first paint.');
   // The caveat rides the SUCCESS line, not just the failure path: a green is the only
   // output most readers of a CI log will ever see, and this one is structural.
   console.log('  STRUCTURAL ONLY -- nothing was rendered, measured or compared. Pixel-level regressions with correct selectors and valid CSS pass this gate; that is wave D gate 2.');

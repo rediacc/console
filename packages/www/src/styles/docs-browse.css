@@ -33,13 +33,22 @@
   gap: var(--space-4);
 }
 
-/* NOT STYLED HERE, and the alignment depends on that. Both this heading and the results
-   heading below are `h2` inside `.article-content`, so `.article-content h2` -- one
-   specificity point heavier than either class -- gives them the same 32px size, the same
-   32/16 margins and the same 2px rule. Four declarations that tried to set a smaller size
-   and a zero margin were overridden and have been removed rather than left describing an
-   intent the page does not have. Style the pair through that shared rule, or they drift
-   apart again. */
+/* THE TWO COLUMN HEADINGS ARE STYLED AS A PAIR, in one rule, by name.
+   `Filter` in the rail and the results heading beside it must sit at the same height with
+   their rules aligned. That held by accident: both are `h2` inside `.article-content`, so
+   `.article-content h2` -- one specificity point heavier than either class alone -- won
+   over the four separate declarations these classes used to carry, which meant the
+   alignment depended on a docs-prose selector nobody would think to check before changing.
+   Stating it here makes the pairing explicit and gives the CSS/DOM gate a rule to see.
+   Values come from the same tokens the prose rule uses, so there is nothing to drift. */
+.docs-rail-heading,
+.docs-browse-group-title {
+  font-size: var(--font-size-2xl);
+  margin: var(--space-8) 0 var(--space-4);
+  padding-block-end: var(--space-2);
+  border-block-end: 2px solid var(--color-border);
+}
+
 
 .docs-rail-search {
   display: block;

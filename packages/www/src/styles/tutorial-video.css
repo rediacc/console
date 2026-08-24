@@ -12,6 +12,16 @@
   overflow: hidden;
 }
 
+/* The portrait cut, which the solution videos ship and the player picks below 768px.
+   Without the matching aspect-ratio the 9:16 file would letterbox inside a 16:9 box and
+   waste the whole reason a portrait cut exists. Capped so it cannot grow taller than the
+   phone it is meant to fit. */
+.tvp-root--portrait {
+  aspect-ratio: 9 / 16;
+  max-width: 420px;
+  margin-inline: auto;
+}
+
 .tvp-root .plyr {
   border-radius: var(--radius-md);
   --plyr-color-main: #e94e2b;
