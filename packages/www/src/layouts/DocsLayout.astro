@@ -12,6 +12,7 @@ import { createTranslator } from '../i18n/utils';
 import { generateTOCFromHtml } from '../utils/sidebar-behavior';
 import '../styles/sidebar-shared.css';
 import '../styles/article-content.css';
+import Sentences from '../components/Sentences.astro';
 
 interface Props {
   frontmatter: {
@@ -231,7 +232,7 @@ for (const entry of toc as TocEntry[]) {
               <div class="fallback-notice-icon">ℹ️</div>
               <div class="fallback-notice-content">
                 <strong class="fallback-notice-title">{t('pages.docs.fallbackNotice.title')}</strong>
-                <p class="fallback-notice-message">{t('pages.docs.fallbackNotice.message')}</p>
+                <p class="fallback-notice-message"><Sentences text={t('pages.docs.fallbackNotice.message')} lang={lang} /></p>
               </div>
             </div>
           )}

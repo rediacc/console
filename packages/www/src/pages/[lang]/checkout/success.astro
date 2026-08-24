@@ -3,6 +3,7 @@ import BaseLayout from '../../../layouts/BaseLayout.astro';
 import { createTranslator } from '../../../i18n/utils';
 import { getLanguagePaths } from '../../../i18n/language-utils';
 import type { Language } from '../../../i18n/types';
+import Sentences from '../../../components/Sentences.astro';
 
 export const getStaticPaths = getLanguagePaths;
 
@@ -25,7 +26,7 @@ const { t } = createTranslator(lang);
         </svg>
       </div>
       <h1>{t('pages.checkout.success.heading')}</h1>
-      <p>{t('pages.checkout.success.message')}</p>
+      <p><Sentences text={t('pages.checkout.success.message')} lang={lang} /></p>
       <div class="success-actions">
         <a href={`/${lang}/install`} class="btn btn-primary">{t('pages.checkout.success.getStarted')}</a>
         <a href={`/${lang}`} class="btn btn-secondary">{t('pages.checkout.success.backToHome')}</a>

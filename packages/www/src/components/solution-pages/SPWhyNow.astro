@@ -16,6 +16,7 @@
  */
 import type { Language } from '../../i18n/types';
 import { createTranslator } from '../../i18n/utils';
+import Sentences from '../Sentences.astro';
 
 interface Props {
   lang: Language;
@@ -34,7 +35,7 @@ const cards = (to('whyNow.cards') as Card[] | undefined) ?? [];
 <section class="sp-why-now" id="why-now">
   <div class="sp-why-now-inner">
     <p class="sp-overline">{t('whyNow.overline')}</p>
-    <h1 class="sp-why-now-title">{t('whyNow.title')}</h1>
+    <h1 class="sp-why-now-title"><Sentences text={t('whyNow.title')} lang={lang} /></h1>
 
     <div class="sp-why-now-grid">
       {cards.map((card, i) => (
@@ -77,7 +78,7 @@ const cards = (to('whyNow.cards') as Card[] | undefined) ?? [];
     </div>
 
     <div class="sp-why-now-footer">
-      <p>{t('whyNow.footer')}</p>
+      <p><Sentences text={t('whyNow.footer')} lang={lang} /></p>
     </div>
   </div>
 </section>

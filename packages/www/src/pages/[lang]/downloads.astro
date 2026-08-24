@@ -8,6 +8,7 @@ import { parseGitHubRelease, type ReleaseData } from '../../utils/release-parser
 import { fetchLatestRelease } from '../../utils/latest-release';
 import DownloadsList from '../../components/DownloadsList';
 import '../../styles/downloads-page.css';
+import Sentences from '../../components/Sentences.astro';
 
 export const getStaticPaths = getLanguagePaths;
 
@@ -71,7 +72,7 @@ if (releaseData === null && !import.meta.env.DEV) {
     <section class="auto-update-section section-dark">
       <div class="container">
         <h2>{t('pages.downloads.autoUpdate.title')}</h2>
-        <p class="auto-update-description">{t('pages.downloads.autoUpdate.description')}</p>
+        <p class="auto-update-description"><Sentences text={t('pages.downloads.autoUpdate.description')} lang={lang} /></p>
       </div>
     </section>
 
@@ -82,7 +83,7 @@ if (releaseData === null && !import.meta.env.DEV) {
 
         <details class="installation-details">
           <summary>{t('pages.downloads.sections.cli')}</summary>
-          <p>{t('pages.downloads.installation.cli')}</p>
+          <p><Sentences text={t('pages.downloads.installation.cli')} lang={lang} /></p>
         </details>
       </div>
     </section>

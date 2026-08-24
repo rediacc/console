@@ -8,6 +8,7 @@ import type { Language } from '../../i18n/types';
 import type { SolutionCategory } from '../../config/solution-pages';
 import { categoryToPdfPair } from './category-pdf-map';
 import { createTranslator } from '../../i18n/utils';
+import Sentences from '../Sentences.astro';
 
 interface Props {
   lang: Language;
@@ -27,7 +28,7 @@ const { t } = createTranslator(lang);
       {t('pages.solutionPages.downloadShort.title')}
     </h2>
     <p class="sp-download-short__description">
-      {t('pages.solutionPages.downloadShort.description')}
+      <Sentences text={t('pages.solutionPages.downloadShort.description')} lang={lang} />
     </p>
     <a
       class="sp-download-short__button"

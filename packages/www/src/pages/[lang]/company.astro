@@ -4,6 +4,7 @@ import { createTranslator } from '../../i18n/utils';
 import { getLanguagePaths } from '../../i18n/language-utils';
 import type { Language } from '../../i18n/types';
 import { EXTERNAL_LINKS } from '../../config/constants';
+import Sentences from '../../components/Sentences.astro';
 
 export const getStaticPaths = getLanguagePaths;
 
@@ -49,7 +50,7 @@ const values = [
       <div class="container">
         <div class="overview-content">
           <h2>{t('pages.company.overview.title')}</h2>
-          <p class="overview-text">{t('pages.company.overview.description')}</p>
+          <p class="overview-text"><Sentences text={t('pages.company.overview.description')} lang={lang} /></p>
         </div>
       </div>
     </section>
@@ -59,8 +60,8 @@ const values = [
       <div class="container">
         <div class="mission-content">
           <h2>{t('pages.company.mission.title')}</h2>
-          <p class="mission-text">{t('pages.company.mission.description')}</p>
-          <p class="mission-belief">{t('pages.company.mission.belief')}</p>
+          <p class="mission-text"><Sentences text={t('pages.company.mission.description')} lang={lang} /></p>
+          <p class="mission-belief"><Sentences text={t('pages.company.mission.belief')} lang={lang} /></p>
         </div>
       </div>
     </section>
@@ -85,7 +86,7 @@ const values = [
     <section id="contact-us" class="company-cta">
       <div class="container">
         <h2>{t('pages.company.cta.title')}</h2>
-        <p>{t('pages.company.cta.subtitle')}</p>
+        <p><Sentences text={t('pages.company.cta.subtitle')} lang={lang} /></p>
         <div class="cta-actions">
           <a href={EXTERNAL_LINKS.SCHEDULE_CONSULTATION} target="_blank" rel="noopener noreferrer" class="btn btn-primary" aria-label={`${t('pages.company.cta.buttons.contact')} (${t('common.aria.opensInNewTab')})`}>
             {t('pages.company.cta.buttons.contact')}
