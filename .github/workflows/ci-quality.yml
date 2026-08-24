@@ -789,6 +789,11 @@ jobs:
       - name: Docs code-block copy units
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: npm run check:ci-docs-copy-units
+      # Structural cover for three fixes a browser would otherwise have to catch: the
+      # sr-only tally, one shared heading rule, and the pre-paint category decision.
+      - name: Docs browse invariants
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: npm run check:ci-docs-browse-invariants
       # Fourth pin kind to join the shared soak window, after npm deps, embedded assets
       # and GitHub Actions. DOCKERHUB_TOKEN keeps Docker Hub's anonymous rate limit from
       # making this vacuous; without it a limited response is reported as unknown and the

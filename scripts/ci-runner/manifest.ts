@@ -834,6 +834,21 @@ export const GATES: readonly GateSpec[] = [
   // hand-authored and their generator was deleted, so a new doc without one ships a
   // blank browse card in all 13 locales silently -- one file serves every translation,
   // resolved by base slug.
+  // The mechanisms three /en/docs fixes rest on: the tally is announced not shown, the
+  // two headings are styled by one shared rule, and the category group is decided before
+  // first paint. Structural, not visual -- the interactive gate is wave D gate 2.
+  {
+    id: 'check:ci-docs-browse-invariants',
+    run: 'npm run check:ci-docs-browse-invariants',
+    gate: true,
+    leaves: ['scripts/check-docs-browse-invariants.ts'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-content',
+      step: 'Docs browse invariants',
+    },
+  },
   // A copy button on a bare `}` or on a YAML key is a control that hands the reader
   // something they cannot paste anywhere. The classifier is lifted out of DocsLayout.astro
   // and run over the real corpus, so this gate exercises the shipped script rather than a
