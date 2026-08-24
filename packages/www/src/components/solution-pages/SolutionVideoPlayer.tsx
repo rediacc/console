@@ -116,8 +116,8 @@ const SolutionVideoPlayer: FC<SolutionVideoPlayerProps> = ({
   if (!active) return null;
 
   return (
-    // A fragment, not a wrapper div: the section's layout box is `.sp-video-inner` in
-    // SPSolutionVideo.astro, and an extra styled-by-nothing element here is exactly what
+    // A fragment, not a wrapper div: the layout box is `.sp-hero-media` in SPHero.astro,
+    // and an extra styled-by-nothing element here is exactly what
     // check:ci-css-dom-refs reports.
     <>
       {pickerLangs.length > 1 && (

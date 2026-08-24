@@ -129,9 +129,6 @@
     "title": "Clone Production.",
     "titleHighlight": " Break Nothing.",
     "subtitle": "Rediacc is software you install on your own servers. It copies your whole live system in seconds: apps, databases, and settings.",
-    "cta": {
-      "getStarted": "Start free trial"
-    },
     "install": {
       "tabs": {
         "linux": "Linux",

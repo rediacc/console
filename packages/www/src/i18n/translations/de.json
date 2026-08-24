@@ -216,9 +216,6 @@
     "title": "Bereit, deinen ersten Stack zu klonen?"
   },
   "hero": {
-    "cta": {
-      "getStarted": "Kostenlos starten"
-    },
     "install": {
       "tabs": {
         "linux": "Linux",

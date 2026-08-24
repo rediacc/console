@@ -1,18 +1,14 @@
-/* Solution-page video section.
+/* Solution-page video player.
  *
  * These rules used to live in a scoped <style> block inside SPSolutionVideo.astro. They
  * moved here when the players became a React island: Astro's scoping rewrites selectors
  * against the elements IT renders, and an island's elements are not among them, so a scoped
- * rule would have silently stopped matching. */
-
-.sp-video {
-  padding: 2rem 1rem 1rem;
-}
-
-.sp-video-inner {
-  max-width: 960px;
-  margin: 0 auto;
-}
+ * rule would have silently stopped matching.
+ *
+ * Since round 6 the player renders INSIDE the hero (`.sp-hero-media`, always the dark
+ * `--sp-bg-hero` band in both themes), so the old standalone `.sp-video` /
+ * `.sp-video-inner` section boxes are gone and the toolbar colors are pinned to the
+ * dark-surface tokens rather than the theme-flipping ones. */
 
 .sp-video-toolbar {
   display: flex;
@@ -20,11 +16,35 @@
   justify-content: flex-end;
   gap: var(--space-2);
   margin-bottom: var(--space-2);
-  color: var(--color-text-muted);
+  color: var(--sp-text-muted-dark);
 }
 
 .sp-video-toolbar-icon {
   flex: none;
+}
+
+/* The shared trigger reads `--color-text`, which is near-black in the light theme and
+   would vanish on the hero's dark band. Scoped here, not edited in
+   language-switcher.css: the nav and footer instances keep their theme colors. */
+.sp-video-toolbar .language-trigger {
+  color: var(--sp-text-white);
+}
+
+/* Higher specificity than `.language-trigger:hover` on purpose, so the outcome does not
+   depend on which stylesheet the bundler emits first. `--color-hover` is a light-theme
+   surface; on the dark band a translucent white is the readable hover. */
+.sp-video-toolbar .language-trigger:hover {
+  background-color: rgba(255, 255, 255, 0.08);
+  color: var(--sp-text-white);
+}
+
+/* The hero clips at its bounds (`.sp-hero` is overflow: hidden so its decorative glow
+   cannot cause page overflow), and thirteen locales make an unclamped list taller than
+   the hero below the toolbar. Clamp and scroll instead of losing the tail. Higher
+   specificity than the base `.language-menu`, whose `overflow: hidden` this overrides. */
+.sp-video-toolbar .language-menu {
+  max-height: min(50vh, 300px);
+  overflow-y: auto;
 }
 
 .sp-video-player {

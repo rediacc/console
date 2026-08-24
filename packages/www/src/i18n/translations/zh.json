@@ -216,9 +216,6 @@
     "title": "准备克隆你的首个应用栈了吗？"
   },
   "hero": {
-    "cta": {
-      "getStarted": "开始免费试用"
-    },
     "install": {
       "tabs": {
         "linux": "Linux",

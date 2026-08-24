@@ -13,6 +13,10 @@ const { lang, slug } = Astro.props;
 const { t } = createTranslator(lang);
 const sources = resolveSolutionVideoSources(slug);
 
+// No section wrapper any more: since round 6 this renders INSIDE the hero's media
+// column (`.sp-hero-media` in SPHero.astro), which owns the layout box. The old
+// `.sp-video` / `.sp-video-inner` standalone section is gone with the move.
+//
 // Both cuts are emitted with preload="none" + poster, so only the visible one
 // (toggled by viewport via CSS) fetches its media when the viewer hits play.
 // Captions are burned into the localized video, so no <track> is needed.
@@ -22,14 +26,10 @@ const sources = resolveSolutionVideoSources(slug);
 // and anything that pulls it into a client bundle puts 9.28 MB of catalogs on the route.
 ---
 
-<section class="sp-video" id="video">
-  <div class="sp-video-inner">
-    <SolutionVideoPlayer
-      client:visible
-      lang={lang}
-      sources={sources}
-      playLabel={t('video.playVideo')}
-      selectLanguageLabel={t('navigation.selectLanguage')}
-    />
-  </div>
-</section>
+<SolutionVideoPlayer
+  client:visible
+  lang={lang}
+  sources={sources}
+  playLabel={t('video.playVideo')}
+  selectLanguageLabel={t('navigation.selectLanguage')}
+/>

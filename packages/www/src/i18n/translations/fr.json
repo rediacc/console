@@ -216,9 +216,6 @@
     "title": "Êtes-vous prêt à cloner votre première infrastructure ?"
   },
   "hero": {
-    "cta": {
-      "getStarted": "Commencez gratuitement"
-    },
     "install": {
       "tabs": {
         "linux": "Linux",
