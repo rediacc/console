@@ -136,6 +136,11 @@ function buildVideoContainerHtml(castUrl: string, lang: string, title: string): 
     ` data-sources="${escapeHtml(JSON.stringify(buildSources(castKey)))}"`,
     ` data-title="${escapeHtml(title)}"`,
     ` data-lang="${escapeHtml(lang)}"`,
+    // The language picker renders INSIDE the player frame, the same as on the solution
+    // heroes. It does not touch Plyr's settings menu at all (that pane plays a language
+    // nobody chose; see the Plyr config comment in TutorialVideoPlayer), so it does not
+    // interact with the captions menu these embeds do have.
+    ' data-in-player-language="true"',
     '></div>',
   ].join('');
 }
