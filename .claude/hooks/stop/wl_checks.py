@@ -4328,6 +4328,15 @@ def run_stop(event, event_ok, worklist, hook_file):
                     "verdict": payload,
                     "existing_gate": str(rg.get("existing_gate", ""))[:100],
                     "blind_spot": str(rg.get("blind_spot", ""))[:300],
+                    # THE ROUTING IS EVIDENCE, so it is kept. Found by dogfooding on
+                    # 2026-08-24: sixteen settled fixsets, not one carrying a surface,
+                    # because the judge produced it, apply_regression_verdict routed the
+                    # proof with it, and the settle path dropped it. That makes the one
+                    # question worth asking of this machinery -- "is the routing any
+                    # good?" -- unanswerable from the record. It had already misrouted a
+                    # www DOM change to packages/e2e-tests, and nothing recorded that.
+                    "surface": str(rg.get("surface", ""))[:20],
+                    "artifact": str(rg.get("artifact", ""))[:200],
                     "at": C.stamp_now(),
                 }
                 reg_state["head"] = reg_head or reg_state["head"]

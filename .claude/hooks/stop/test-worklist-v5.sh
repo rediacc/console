@@ -11552,6 +11552,18 @@ else
     fail "219c: named-artifact proof is not discriminating ($(cat "$BASE/reggate-artifact.err"))"
 fi
 
+echo "== 219f. a settled fixset RECORDS the surface it was routed to =="
+# Found by dogfooding, not review: sixteen settled fixsets carried no surface at all,
+# because the judge produced one, the router used it, and the settle path dropped it. The
+# only question worth asking of the routing -- is it any good? -- was unanswerable from
+# the record, and it had already misrouted a www DOM change to packages/e2e-tests.
+if grep -q '"surface": str(rg.get("surface", ""))' "$(dirname "$HOOK")/wl_checks.py" &&
+    grep -q '"artifact": str(rg.get("artifact", ""))' "$(dirname "$HOOK")/wl_checks.py"; then
+    pass "219f: the settle path persists surface and artifact"
+else
+    fail "219f: a settled fixset drops the routing, so the record cannot be audited"
+fi
+
 echo "== 219e. ONE fix asked per stop, and only code-touching ticks =="
 # Every commit and every new tick of a stop used to be hashed into ONE fix-set,
 # so a single verdict had to cover unrelated fixes. Asking per item is the
