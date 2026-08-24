@@ -1,6 +1,6 @@
 # EXPLORE: www chrome, theming, CI gates
 
-Read-only investigation. Repo root `/home/muhammed/monorepo/console`, all paths below
+Read-only investigation. Repo root `/home/muhammed/console`, all paths below
 relative to `packages/www` unless prefixed. Nothing was modified.
 
 Live-browser readings quoted below were taken by the team lead, not by this session, and
@@ -30,11 +30,11 @@ The handler (`Navigation.tsx:63-98`) clamps `y = min(max(scrollY,0), 80)` (`:65`
 
 | Written | Value | Set at | Consumed at |
 |---|---|---|---|
-| `--nav-scroll-y` | `-y * 0.5` px | `Navigation.tsx:69` | `main.css:925` — `.nav-translate { top }` |
-| `--nav-scroll-fade` | `1 - y/80` | `Navigation.tsx:70` | `main.css:926` — `.nav-translate { opacity }` |
-| `--nav-wordmark-fade` | `1 - y/80` | `Navigation.tsx:88` | `main.css:1092-1093` — `inline-size` + `opacity` |
+| `--nav-scroll-y` | `-y * 0.5` px | `Navigation.tsx:69` | `main.css:925` - `.nav-translate { top }` |
+| `--nav-scroll-fade` | `1 - y/80` | `Navigation.tsx:70` | `main.css:926` - `.nav-translate { opacity }` |
+| `--nav-wordmark-fade` | `1 - y/80` | `Navigation.tsx:88` | `main.css:1092-1093` - `inline-size` + `opacity` |
 | `--nav-wordmark-w` | measured `getBoundingClientRect().width` | `Navigation.tsx:85` | `main.css:1092` |
-| `body[data-nav-collapsed="true"]` | attribute, set at `y >= 80` | `Navigation.tsx:89-97` | `main.css:932` — `pointer-events: none` |
+| `body[data-nav-collapsed="true"]` | attribute, set at `y >= 80` | `Navigation.tsx:89-97` | `main.css:932` - `pointer-events: none` |
 
 **The class toggled is not a class.** It is the body ATTRIBUTE `data-nav-collapsed`
 (`Navigation.tsx:91` sets, `:96` removes), selected by `body[data-nav-collapsed='true']
@@ -69,12 +69,12 @@ progressively clip against the nav's top edge instead of jumping out in the firs
   `--nav-scroll-y` and `--nav-scroll-fade` are NOT removed on unmount; they fall back to the
   `:root` defaults at `main.css:355-356`.
 
-### 1.4 The menu DATA — where every item lives
+### 1.4 The menu DATA - where every item lives
 
 There is **no menu config file**. Items are hardcoded JSX or module-level consts; only the
 LABELS come from i18n (`src/i18n/translations/en.json`, `navigation.*`).
 
-**Desktop bar** — `src/components/Navigation.tsx:189-308`, grid `auto auto 1fr auto auto`
+**Desktop bar** - `src/components/Navigation.tsx:189-308`, grid `auto auto 1fr auto auto`
 (`main.css:966`), left to right:
 
 | Slot | Element | Source |
@@ -86,17 +86,17 @@ LABELS come from i18n (`src/i18n/translations/en.json`, `navigation.*`).
 | 5 | `.nav-right` | `Navigation.tsx:280-306` |
 
 `.nav-links` contents, in order (`Navigation.tsx:237-278`):
-1. `Solutions` — plain anchor to `/{lang}#solutions`, label `navigation.solutions`
-2. `<PersonaMegaMenu>` — `:246-251`
-3. `Pricing` — plain anchor to `/{lang}/pricing`, label `navigation.pricing`
-4. `<LearnMenu>` — `:264-269`
-5. `Blog` — plain anchor to `/{lang}/blog`, label `navigation.blog`
+1. `Solutions` - plain anchor to `/{lang}#solutions`, label `navigation.solutions`
+2. `<PersonaMegaMenu>` - `:246-251`
+3. `Pricing` - plain anchor to `/{lang}/pricing`, label `navigation.pricing`
+4. `<LearnMenu>` - `:264-269`
+5. `Blog` - plain anchor to `/{lang}/blog`, label `navigation.blog`
 
 `.nav-right` contents (`Navigation.tsx:280-306`):
 - `.nav-utilities.nav-translate` > `<LanguageMenu variant="icon-only" position="top">` (`:282-289`)
-- `<NavCtaMenu>` (`:291-305`) — NOT inside `.nav-translate`, so it stays put on scroll
+- `<NavCtaMenu>` (`:291-305`) - NOT inside `.nav-translate`, so it stays put on scroll
 
-**PersonaMegaMenu data** — `src/components/PersonaMegaMenu.tsx:85-90`, a module const:
+**PersonaMegaMenu data** - `src/components/PersonaMegaMenu.tsx:85-90`, a module const:
 
 ```ts
 const PERSONA_CARDS = [
@@ -110,7 +110,7 @@ const PERSONA_CARDS = [
 Icons are inline SVG components defined immediately above (`:16-83`). Taglines and CTAs come
 from `navigation.personas.<personaKey>.{tagline,cta}` in `en.json`.
 
-**LearnMenu data** — DERIVED, not hardcoded. `src/components/LearnMenu.tsx:44-55` maps
+**LearnMenu data** - DERIVED, not hardcoded. `src/components/LearnMenu.tsx:44-55` maps
 `CATEGORY_ORDER` from `src/utils/docs-categories.ts:18-25`:
 
 ```
@@ -120,16 +120,16 @@ Tutorials, Guides, Concepts, Reference, Use Cases, Legal
 then appends a `Browse all docs` row (`LearnMenu.tsx:50-54`). Each entry deep-links to
 `/{lang}/docs?category=<encoded>` (`:48`). Labels resolve through `CATEGORY_KEYS`
 (`docs-categories.ts:43-50`) to `documentation.categories.*`. The category identifiers are
-English in every locale on purpose (`LearnMenu.tsx:25-26`, `docs-categories.ts:1-14`) — a
+English in every locale on purpose (`LearnMenu.tsx:25-26`, `docs-categories.ts:1-14`) - a
 translated identifier in a query string would filter nothing.
 
-**NavCtaMenu data** — `src/components/NavCtaMenu.tsx`. Split button: wide `Get Started`
+**NavCtaMenu data** - `src/components/NavCtaMenu.tsx`. Split button: wide `Get Started`
 segment plus an attached caret segment opening a 2-item panel, `Log in` and `Search`
 (`MENU_ITEM_COUNT = 2` at `:50`). `Log in` stays an `AccountCta` so the region-picker
 interception (`window.openRegionPicker`) is preserved (`:26-29`). The panel takes its
 accessible name from the trigger via `aria-labelledby` (`:31-34`, `TRIGGER_ID` at `:53`).
 
-**Mobile drawer** — `src/components/Sidebar.tsx:151-171`, THREE separate arrays:
+**Mobile drawer** - `src/components/Sidebar.tsx:151-171`, THREE separate arrays:
 
 ```ts
 topNavItems    = [ Home /{lang}, Solutions /{lang}#solutions ]                  // :151-154
@@ -140,7 +140,7 @@ bottomNavItems = [ pricing, roi-calculator, disaster-recovery, partners,
 
 ### 1.5 Desktop and mobile menus have DRIFTED (finding)
 
-- `Sidebar.tsx:169` points `Docs` at `/{lang}/docs/quick-start` — the exact deep-link-past-
+- `Sidebar.tsx:169` points `Docs` at `/{lang}/docs/quick-start` - the exact deep-link-past-
   the-index that `LearnMenu` was built to replace (`LearnMenu.tsx:10-13`).
 - The drawer carries four routes the desktop bar does not: `roi-calculator`,
   `disaster-recovery`, `partners`, `contact` (`Sidebar.tsx:165-170`), plus `Downloads` and
@@ -153,7 +153,7 @@ bottomNavItems = [ pricing, roi-calculator, disaster-recovery, partners,
 
 All three are native `popover="auto"` panels, so the UA supplies light-dismiss, Escape,
 top-layer stacking (no z-index race), the dimming `::backdrop`, and mutual exclusion.
-`main.css:944-958` styles `[popover]::backdrop` globally at `rgb(0 0 0 / 45%)` — attached to
+`main.css:944-958` styles `[popover]::backdrop` globally at `rgb(0 0 0 / 45%)` - attached to
 the attribute rather than to a component class so nav dropdowns and page dialogs dim
 identically.
 
@@ -171,12 +171,12 @@ records that this mistake was already made twice in this header.
 ### 1.7 Per-page / contextual menus
 
 Three, none of which interact with the header collapse:
-- `src/components/DocsTopTabs.astro` — docs category tabs, rendered by
+- `src/components/DocsTopTabs.astro` - docs category tabs, rendered by
   `src/layouts/DocsLayout.astro:113`, `variant: 'article' | 'index'`. Its own inline script
   (`DocsTopTabs.astro:66+`) syncs the active tab; the header comment records that `hashchange`
   alone never worked because Astro's client router uses the History API.
-- `src/components/DocsSidebar.astro` — rendered by `DocsLayout.astro:194`.
-- `src/components/BlogStickyBar.tsx` — rendered by `src/layouts/ContentLayout.astro:170`.
+- `src/components/DocsSidebar.astro` - rendered by `DocsLayout.astro:194`.
+- `src/components/BlogStickyBar.tsx` - rendered by `src/layouts/ContentLayout.astro:170`.
 
 ### 1.8 AnnouncementBar interaction
 
@@ -185,12 +185,12 @@ Three, none of which interact with the header collapse:
 it, so the bar never disagrees across locales.
 
 - When OFF: `--announcement-bar-height` keeps its `0px` default (`main.css:250`) and `.nav`
-  falls back to `top: 0` (`main.css:901` — `top: var(--announcement-bar-height, 0)`).
+  falls back to `top: 0` (`main.css:901` - `top: var(--announcement-bar-height, 0)`).
 - When ON: the component ships a `:root { --announcement-bar-height: 2.625rem }` style block
   (`AnnouncementBar.astro:32`), then an inline script overwrites it with the MEASURED height
   via `ResizeObserver` (`:39-56`), because the text wraps to two lines on mobile.
 - `.announcement-bar` is itself `position: fixed; top: 0` at `z-index: calc(var(--z-fixed) + 1)`
-  (`main.css:2186-2194`), i.e. ABOVE the nav — which is why faded `.nav-translate` items are
+  (`main.css:2186-2194`), i.e. ABOVE the nav - which is why faded `.nav-translate` items are
   given `pointer-events: none` (`main.css:932`), so invisible items cannot swallow clicks.
 - `--nav-top-offset` = `calc(var(--nav-height) + var(--announcement-bar-height, 0px))`
   (`main.css:251`). Consumed by `html { scroll-padding-top }` (`main.css:674`), by the two
@@ -209,7 +209,7 @@ files hardcode a fallback (`src/pages/[lang]/partners.astro:165,503` use
 
 ### 2.1 Root cause
 
-`public/styles/main.css:2797-2806` — the `.footer` rule re-points FIVE custom properties to
+`public/styles/main.css:2797-2806` - the `.footer` rule re-points FIVE custom properties to
 dark-theme values so its descendants read on the black band:
 
 ```css
@@ -241,11 +241,11 @@ Token resolution:
 - `--color-bg-alt` dark  = `#1a1a1b` (`main.css:471`)
 - inherited `--color-text` inside `.footer` = `#e4e4e7` in BOTH themes (`main.css:2800`)
 
-**LIGHT theme: `#e4e4e7` on `#ffffff` ≈ 1.13:1** — the trigger label and every row of the open
+**LIGHT theme: `#e4e4e7` on `#ffffff` ≈ 1.13:1** - the trigger label and every row of the open
 panel. The border is `rgb(255 255 255 / 12%)` on white, so the control has no visible edge
 either: it reads as a blank white pill.
 
-**DARK theme: `#e4e4e7` on `#1a1a1b` ≈ 13.7:1** — correct. **The bug is light-theme-only.**
+**DARK theme: `#e4e4e7` on `#1a1a1b` ≈ 13.7:1** - correct. **The bug is light-theme-only.**
 
 LIVE CONFIRMATION (team lead): footer `.language-trigger` computes
 `background rgb(255,255,255)` with `color rgb(228,228,231)`. `rgb(228,228,231)` is `#e4e4e7`
@@ -270,16 +270,16 @@ at `main.css:2797-2806`, pointing at the dark-theme values `#1a1a1b` / `#1f1f23`
 measured in `main.css:471,477`. This is consistent with the block's own stated design
 (`main.css:2787-2792`): re-point tokens on the container rather than editing the thirty
 `.footer-*` rules. It fixes the trigger, the panel and every row in one edit, and it stays
-reversible. Do NOT patch `language-switcher.css` — that would break the header mount.
+reversible. Do NOT patch `language-switcher.css` - that would break the header mount.
 
-### 2.4 The same component elsewhere — YES, styled differently in the header
+### 2.4 The same component elsewhere - YES, styled differently in the header
 
 `LanguageMenu` mounts at four sites:
 
 | Mount | file:line | variant | Affected? |
 |---|---|---|---|
 | Header nav | `src/components/Navigation.tsx:282-289` | `icon-only`, `position="top"` | **No** |
-| Footer | `src/components/Footer.tsx:354-361` | `flag-name`, `position="bottom"` | **YES — the bug** |
+| Footer | `src/components/Footer.tsx:354-361` | `flag-name`, `position="bottom"` | **YES - the bug** |
 | Tutorial player | `src/components/TutorialVideoPlayer.tsx:557` | `flag-name`, `position="top"`, `persistPreference={false}` | No |
 | Solution video player | `src/components/solution-pages/SolutionVideoPlayer.tsx:139` | `flag-name`, `position="top"`, `persistPreference={false}` | No |
 
@@ -305,7 +305,7 @@ must account for both blocks.
 `.language-menu.{top|bottom}` > N × `.language-option` (`:340-349`). `position` only selects
 `top: 100%` (`language-switcher.css:99-103`) vs `bottom: 100%`
 (`language-switcher.css:106-110`); it has no colour effect. The panel is conditionally
-mounted (`:344`), i.e. NOT a native popover — unlike the three header dropdowns it uses a
+mounted (`:344`), i.e. NOT a native popover - unlike the three header dropdowns it uses a
 `mousedown` outside-click handler (`:86-101`) and its own keydown handler (`:110-154`).
 
 ---
@@ -346,18 +346,18 @@ DEAD for the same reason and has been deleted. **Plan against the single-`:root`
 
 `main.css:79-442` is an explicit three-layer design system, numbered in 19 commented sections:
 
-1. **RAMP** (`:82-94`) — the closed greyscale, 8 steps, deliberately sparse:
+1. **RAMP** (`:82-94`) - the closed greyscale, 8 steps, deliberately sparse:
    `--gray-0 #ffffff`, `--gray-100 #f7f7f8`, `--gray-400 #d2d2d7`, `--gray-500 #a1a1aa`,
    `--gray-600 #6e6e73`, `--gray-700 #5e5e63`, `--gray-900 #1a1a1a`, `--gray-950 #111113`.
-2. **BRAND** (`:96-126`) — one green, split into `--color-brand-fill` (carries white text) and
+2. **BRAND** (`:96-126`) - one green, split into `--color-brand-fill` (carries white text) and
    `--color-brand-primary` (text/icon on a surface), because no single value satisfies both
    contrast constraints. Plus `--color-brand-bolt #dc2626`, reserved for THE single
    highest-intent CTA per page and gated by `check:ci-cta-bolt`.
-3. **SEMANTIC** (`:128-152`) — surfaces, foregrounds, borders, which alias the ramp.
+3. **SEMANTIC** (`:128-152`) - surfaces, foregrounds, borders, which alias the ramp.
 
 The stated rule (`main.css:464-465`): *"Rules must reference the SEMANTIC names, never
 `--gray-*` directly: the ramp is authoring input for the light theme and does not flip."*
-Dark mode (`:466-538`) redefines the semantic layer ONLY — accents included, which is what
+Dark mode (`:466-538`) redefines the semantic layer ONLY - accents included, which is what
 finally made the accents flip.
 
 The ladder is real and mostly honoured. The defects below are all cases where a consumer
@@ -414,7 +414,7 @@ Mechanism 1 consumers (all `.astro`): `pages/[lang]/pricing.astro`, `downloads.a
 
 LIVE (team lead): six surface colours actually in use are `#111113`, `#1a1a1a`, `#ffffff`,
 `#f7f7f8`, `#eef3ea`, and `transparent`. That matches this table's LIGHT column exactly, plus
-`transparent` — see 3.5(f) for where `transparent` comes from.
+`transparent` - see 3.5(f) for where `transparent` comes from.
 
 ### 3.5 Concrete inconsistencies
 
@@ -429,13 +429,13 @@ different bands in dark. Live on the homepage: `.sp-not-a-slice` uses `--sp-bg-l
 **(b) `--sp-bg-hero` and `--sp-bg-dark` bypass the semantic layer and therefore do not flip.**
 `main.css:409-410` declares them as `var(--gray-950)` / `var(--gray-900)`, breaking the rule
 stated 55 lines later at `main.css:464-465`. Worse, `main.css:535-537` claims *"Every `--sp-*`
-alias follows from the semantic tokens above"* — which is FALSE for exactly these two.
+alias follows from the semantic tokens above"* - which is FALSE for exactly these two.
 
 Consequence in dark mode: `.sp-benefits` = `#1a1a1a` (`src/styles/solution-pages.css:1176`)
 while the sections above and below it use `--sp-bg-white` = `#1a1a1b`. **One unit of blue
 channel.** The dark "Benefits" band on every solution page is effectively INVISIBLE in dark
 mode, while its heading is still `--sp-text-white` = `#ffffff`
-(`solution-pages.css:1188`) — styled for a contrast that is no longer there.
+(`solution-pages.css:1188`) - styled for a contrast that is no longer there.
 
 This is the single sharpest defect in area 3.
 
@@ -447,7 +447,7 @@ The footer's own comment (`main.css:2783-2785`) says it shares its token with `.
 honour that (`solution-pages.css:1453`); **pricing does not**, producing a visible seam
 between two near-identical blacks.
 
-**(d) Six consecutive `.section-light` sections on `/en/pricing`** — no alternation at all,
+**(d) Six consecutive `.section-light` sections on `/en/pricing`** - no alternation at all,
 one continuous `#f7f7f8` slab. LIVE-confirmed by the team lead; the six are three inline plus
 three from embedded components:
 
@@ -469,16 +469,16 @@ The same shape recurs on solution pages: `.sp-cost-section` and `.sp-how-it-work
 `--sp-bg-white` (`solution-pages.css:435,633`), and `.sp-social-proof` and `.sp-sources` are
 both `--sp-bg-light` (`solution-pages.css:1340,2149`).
 
-**(e) `.section-dark` hardcodes `color: white`** (`main.css:1343`) where the footer — the same
-visual treatment — uses `#e4e4e7` (`main.css:2800`). Two answers to one question.
+**(e) `.section-dark` hardcodes `color: white`** (`main.css:1343`) where the footer - the same
+visual treatment - uses `#e4e4e7` (`main.css:2800`). Two answers to one question.
 
-**(f) `.pricing-hero.section-dark` computes `transparent`** — LIVE on `/en/disaster-recovery`.
+**(f) `.pricing-hero.section-dark` computes `transparent`** - LIVE on `/en/disaster-recovery`.
 Mechanism confirmed from source: `.pricing-hero` sets `background: var(--gradient-dark)`
 (`pricing-page.css:40`), and `--gradient-dark` (`main.css:397`) is a `linear-gradient`, i.e. a
 background-IMAGE. The `background` shorthand resets `background-color` to `transparent`, so
 the element paints its gradient while `background-color` reads `transparent` and
 `.section-dark`'s `background: var(--color-bg-dark)` is fully overridden. `disaster-recovery.astro:71`
-carries BOTH classes, so the `.section-dark` on that element is decorative — it contributes
+carries BOTH classes, so the `.section-dark` on that element is decorative - it contributes
 only `color: white`. This is the clearest live proof that mechanism 1 loses to page CSS.
 
 **(g) Minor:** `.sp-tech-detail-col-header.traditional` uses `--color-bg-light`
@@ -509,13 +509,13 @@ Also `.sp-page > .sp-page-header` `--sp-bg-hero` (`:36`) on pages that use it, a
 `.sp-roi-section` `--sp-bg-white` (`:1658`), `.sp-download-short` / `.sp-downloads-row`
 `--sp-bg-light` (`:2059`, `:2071`).
 
-**Homepage `/en/`** — composed by `src/pages/[lang]/index.astro:23` →
+**Homepage `/en/`** - composed by `src/pages/[lang]/index.astro:23` →
 `src/components/solution-pages/SPHomePage.astro:55-63`:
 
 | Order | Component | Selector | file:line | Token |
 |---|---|---|---|---|
 | 1 | `SPHomeHero` | `.sp-home-hero` | `SPHomeHero.astro:59` | `--sp-bg-hero` `#111113` |
-| 2 | `SolutionConstellation` | `.cx-*` | — | none (inherits body `#ffffff`) |
+| 2 | `SolutionConstellation` | `.cx-*` | - | none (inherits body `#ffffff`) |
 | 3 | `SPHomeNotASlice` | `.sp-not-a-slice` | `SPHomeNotASlice.astro:112` | `--sp-bg-light` `#f7f7f8` |
 | 4 | `HomeDifference` | `.home-difference` | `main.css:2121` | `--color-bg-alt` `#ffffff` |
 | 5 | `PricingPreview` | `.cf-pricing-section` | `pricing-page.css:842` | `--color-bg` `#f7f7f8` |
@@ -523,15 +523,15 @@ Also `.sp-page > .sp-page-header` `--sp-bg-hero` (`:36`) on pages that use it, a
 | 7 | `Footer` | `.footer` | `main.css:2798` | `--sp-bg-hero` `#111113` |
 
 Light reads as a clean alternation. Dark does not: bands 3 and 5 are `#141416` and `#0f0f10`
-for what light renders as one identical value — defect (a).
+for what light renders as one identical value - defect (a).
 
 `.closing-cta` is declared twice (`main.css:2038-2042` sets `content-visibility`,
 `:2212-2214` sets padding). Complementary, not conflicting; noted so a future reader does not
 "fix" it.
 
-**Pricing `/en/pricing`** — six `.section-light`, then two `.section-dark`, then footer. See 3.5(d).
+**Pricing `/en/pricing`** - six `.section-light`, then two `.section-dark`, then footer. See 3.5(d).
 
-**Docs `/en/docs`** — `src/layouts/DocsLayout.astro` has NO alternating section bands. It is
+**Docs `/en/docs`** - `src/layouts/DocsLayout.astro` has NO alternating section bands. It is
 `--color-bg-alt` chrome throughout (`:799`, `:828`, `:922`), with `--color-hover` for row
 states (`:945`, `:950`) and `--color-surface` for cards (`:1129`). Area 3 does not apply here.
 
@@ -544,7 +544,7 @@ states (`:945`, `:950`) and `--color-surface` for cards (`:1129`). Area 3 does n
 Adding a blocking gate requires exactly THREE edits, and `check:ci-parity` enforces all three
 bidirectionally. Miss any one and that gate fails.
 
-#### Edit 1 — root `package.json`
+#### Edit 1 - root `package.json`
 
 Add a `check:ci-<name>` key. 175 `check:*` keys exist today. Convention:
 
@@ -552,7 +552,7 @@ Add a `check:ci-<name>` key. 175 `check:*` keys exist today. Convention:
 "check:ci-foo": "tsx scripts/check-foo.ts"
 ```
 
-CONTROL-FIRST variant, used by every gate that has a self-test — strongly preferred:
+CONTROL-FIRST variant, used by every gate that has a self-test - strongly preferred:
 
 ```json
 "check:ci-foo": "tsx scripts/check-foo.ts --selftest && tsx scripts/check-foo.ts"
@@ -567,7 +567,7 @@ a single `check:cta-bolt`. Root reaches into the workspace two ways:
 - delegate: `"check:ci-cta-bolt": "npm run check:cta-bolt -w @rediacc/www"`
 - direct path: `"check:ci-tutorial-parity": "tsx packages/www/scripts/check-tutorial-parity.ts"`
 
-#### Edit 2 — `scripts/ci-runner/manifest.ts`
+#### Edit 2 - `scripts/ci-runner/manifest.ts`
 
 Add a `GateSpec`. Interface at `scripts/ci-runner/manifest.ts:27-58`:
 
@@ -604,7 +604,7 @@ states why it is not an optimisation: without `dist` these gates REFUSE rather t
 self-skipping. The `build:www` node itself is at `manifest.ts:2364-2377`
 (`gate: false`, `mutex: ['www-dist']`, `heavy: true`).
 
-#### Edit 3 — `.github/workflows/ci-quality.yml`
+#### Edit 3 - `.github/workflows/ci-quality.yml`
 
 Add a step whose `name:` matches the manifest `step` EXACTLY, inside the job named in the
 manifest. Standard guard:
@@ -620,37 +620,37 @@ The ten quality jobs:
 | Job id | `name:` | file:line | Runner | Purpose |
 |---|---|---|---|---|
 | `quality-static` | Static | `:123` | ubuntu-slim | 12 min |
-| `quality-branch` | — | `:390` | | branch/history checks |
-| `quality-submodule-branches` | — | `:458` | | |
-| `quality-code` | — | `:501` | | |
+| `quality-branch` | - | `:390` | | branch/history checks |
+| `quality-submodule-branches` | - | `:458` | | |
+| `quality-code` | - | `:501` | | |
 | **`quality-content`** | **Content** | **`:734`** | ubuntu-latest, 15 min | **source-level www/content gates** |
-| `quality-packages` | — | `:968` | | |
+| `quality-packages` | - | `:968` | | |
 | `quality-i18n` | i18n | `:1070` | ubuntu-latest, 15 min | needs `fetch-depth: 0`, account submodule, built packages, ~100s R2 audio restore |
 | **`quality-www-build`** | **Built-www Gates** | **`:1208`** | ubuntu-latest | runs `build:www`, then gates reading `dist/` |
 | `quality-security` | Security | `:1323` | | hosts `run-all.sh`'s 57 gate tests |
-| `quality-go` | — | `:1434` | | |
+| `quality-go` | - | `:1434` | | |
 
 `.github/workflows/ci.yml:479` calls the whole workflow via
 `uses: ./.github/workflows/ci-quality.yml`.
 
 **For a CSS / theming / section-colour gate, use `quality-content`.** Its existing neighbours
-are exactly the right company — steps "CSS DOM references", "SVG theme reach", "Dead CSS"
+are exactly the right company - steps "CSS DOM references", "SVG theme reach", "Dead CSS"
 (`ci-quality.yml` job `quality-content`) running `check:ci-css-dom-refs`,
 `check:ci-svg-theme-reach`, `check:ci-dead-css`. Only use `quality-www-build` if the gate
 needs built HTML.
 
-### 4.2 Worked example — copy `check:ci-layout-overflow` VERBATIM
+### 4.2 Worked example - copy `check:ci-layout-overflow` VERBATIM
 
 This is the gate to clone for anything that scans stylesheets. It is a source-level CSS scan
 with a shrink-only baseline, a self-test, and a `--root` seam.
 
-**Edit 1** — `package.json:229`:
+**Edit 1** - `package.json:229`:
 
 ```json
 "check:ci-layout-overflow": "tsx scripts/check-layout-overflow.ts",
 ```
 
-**Edit 2** — `scripts/ci-runner/manifest.ts:2261-2272`:
+**Edit 2** - `scripts/ci-runner/manifest.ts:2261-2272`:
 
 ```ts
   {
@@ -667,12 +667,12 @@ with a shrink-only baseline, a self-test, and a `--root` seam.
   },
 ```
 
-**Edit 3** — none, because this one uses `kind: 'test'`: its CI coverage comes from
+**Edit 3** - none, because this one uses `kind: 'test'`: its CI coverage comes from
 `.ci/scripts/test/gates/test-layout-overflow.sh` running inside `run-all.sh` in the
 `quality-security` job. Note the `blocker` string NAMES THE LINE (`test-layout-overflow.sh:66`)
-that proves the real scan executes. That is mandatory and is never inferred — see 4.4.
+that proves the real scan executes. That is mandatory and is never inferred - see 4.4.
 
-**Simpler alternative if you want a plain workflow step** — copy
+**Simpler alternative if you want a plain workflow step** - copy
 `check:ci-landmarks` instead (`manifest.ts:1741-1752`):
 
 ```ts
@@ -710,7 +710,7 @@ paired with `ci-quality.yml` job `quality-www-build` step:
 Page/component CSS always follows `main.css`. Any gate reasoning about which rule wins must
 model this.
 
-### 4.3 Shrink-only baseline — the pattern precisely
+### 4.3 Shrink-only baseline - the pattern precisely
 
 Composition logic is SHARED, not copied: `scripts/lib/shrink-only-baseline.ts`.
 
@@ -725,8 +725,8 @@ Baselines live in `scripts/data/<name>-baseline.json`. Two shapes:
 
 | Shape | Files | Growth check |
 |---|---|---|
-| list of finding ids | `em-dash-surfaces-baseline.json` (2718), `dead-css-baseline.json` (62), `docker-image-freshness-baseline.json` (3), `locale-de-contamination-baseline.json` (0) | `baselineAdditions()` — `shrink-only-baseline.ts:36-54` |
-| per-file count map | `css-dom-refs-baseline.json`, `static-nowrap-baseline.json` | `countAdditions()` — `shrink-only-baseline.ts:65-74` |
+| list of finding ids | `em-dash-surfaces-baseline.json` (2718), `dead-css-baseline.json` (62), `docker-image-freshness-baseline.json` (3), `locale-de-contamination-baseline.json` (0) | `baselineAdditions()` - `shrink-only-baseline.ts:36-54` |
+| per-file count map | `css-dom-refs-baseline.json`, `static-nowrap-baseline.json` | `countAdditions()` - `shrink-only-baseline.ts:65-74` |
 
 **Read path:** any finding NOT in the baseline fails; a baselined finding that no longer
 reproduces ALSO fails, forcing a drain. Both directions, or it stops shrinking.
@@ -751,7 +751,7 @@ colon-bearing location cannot silently widen the exemption
 Two more rules a new baseline gate must follow:
 
 - **Finding ids must survive a line move** (`check-em-dash-surfaces.ts:434-435`), or the
-  baseline churns on unrelated edits and gets regenerated wholesale — which is how a
+  baseline churns on unrelated edits and gets regenerated wholesale - which is how a
   shrink-only baseline quietly stops shrinking.
 - **Surfaces declare a `minFiles` floor** so a collapsed glob FAILS instead of passing
   (`check-em-dash-surfaces.ts:89-104`). Nested surfaces disjoint only by extension are
@@ -762,50 +762,50 @@ Two more rules a new baseline gate must follow:
 
 ### 4.4 The parity gates
 
-**`check:ci-parity`** — `scripts/check-ci-parity.ts` (878 lines). Wired at `package.json`,
+**`check:ci-parity`** - `scripts/check-ci-parity.ts` (878 lines). Wired at `package.json`,
 manifest, and `ci-quality.yml` job `quality-content` step *"Validate parity between the local
 gate set and the CI quality surface"*.
 
-Three relations across three sets — K (`check:ci-*` keys in package.json), C (what a local run
-executes), W (what the CI quality surface executes) — `check-ci-parity.ts:5-11`:
+Three relations across three sets - K (`check:ci-*` keys in package.json), C (what a local run
+executes), W (what the CI quality surface executes) - `check-ci-parity.ts:5-11`:
 
 | Rel | Direction | Claim | Predecessor |
 |---|---|---|---|
 | R1 | K → C | a defined gate must actually run | `check-gate-reachability.ts` |
 | R2 | W → C | a CI-run gate must run locally too | `check-ci-chain-parity.ts` |
-| R3 | C → W | a locally-run gate must run in CI | **NOBODY — this is #549** |
+| R3 | C → W | a locally-run gate must run in CI | **NOBODY - this is #549** |
 
 **C is the MANIFEST, not a string** (`check-ci-parity.ts:18-21`). Both predecessors parsed the
 `&&` chain at `package.json scripts.ci`. Once that key became a runner invocation the chain is
-empty and both would have passed over everything — manufacturing #549 at scale.
+empty and both would have passed over everything - manufacturing #549 at scale.
 
 Seven assertions, all evaluated before exit so one run reports everything:
 
-1. Preflight anti-vacuity — `:794-802`; refuses if the manifest declares zero gates
-2. Tautology guard — `:394-405`; `npm run ci` / `npm run quality` inside the surface is an
+1. Preflight anti-vacuity - `:794-802`; refuses if the manifest declares zero gates
+2. Tautology guard - `:394-405`; `npm run ci` / `npm run quality` inside the surface is an
    ERROR, never coverage, because it would make every other assertion vacuous
-3. R1 — `:406`
-4. R2 — `:416`
-5. R3, re-verifying every declared step against the parsed workflow — `:432-481`
-6. Manifest hygiene incl. cycle detection — `:482-536`
-7. Flattened-battery equality against the on-disk `run-all.sh` glob — `:537-540`
+3. R1 - `:406`
+4. R2 - `:416`
+5. R3, re-verifying every declared step against the parsed workflow - `:432-481`
+6. Manifest hygiene incl. cycle detection - `:482-536`
+7. Flattened-battery equality against the on-disk `run-all.sh` glob - `:537-540`
 
 **The measurement trap it exists to avoid** (`:23-33`): the first version regexed whole
 workflow FILE TEXT for `npm run <key>`, and `ci-quality.yml` carried a step whose NAME
-contained the literal `npm run ci`. So it parses `run:` blocks only, never whole-file text — a
+contained the literal `npm run ci`. So it parses `run:` blocks only, never whole-file text - a
 step `name:`, an `env:` value, an `if:` expression and a YAML comment are not invocations.
 
 **Coverage via a test is DECLARED, never INFERRED** (`:35-41`): `run-all.sh` runs 57 gate
-tests, and grepping them for a script name is precisely how #549 would have been greenwashed —
+tests, and grepping them for a script name is precisely how #549 would have been greenwashed -
 `check-jq-boolean-default.ts` is NAMED by `test-gate-anti-vacuity.sh:104` and that test ran
 green in CI for weeks while the real scan never executed once. Mentioning a script is not
 executing it. Hence the mandatory `blocker` on `ci.kind: 'test'`.
 
 A five-leg control runs BEFORE the real check on every invocation (`:651-696`), including a
-leg that exercises the escape hatch itself — an exemption that does not silence a finding
+leg that exercises the escape hatch itself - an exemption that does not silence a finding
 means the file is decorative.
 
-**Escape hatch:** `/home/muhammed/monorepo/console/.ci-parity-exempt`, direction-tagged
+**Escape hatch:** `/home/muhammed/console/.ci-parity-exempt`, direction-tagged
 (`ci-only` / `local-only`) and BLOCKER-gated via `scripts/lib/blocker-validator.ts`. Bar for
 `ci-only` is *"this cannot run on a developer machine at all"*, not *"it is slow"*. Prefer
 `ci: { kind: 'local-only' }` in the manifest over an entry here.
@@ -813,24 +813,24 @@ means the file is decorative.
 **Test seams:** `CI_PARITY_ROOT` overrides the repo root; `CI_PARITY_MANIFEST` reads the gate
 list from JSON, so a fixture drives both inputs without touching a tracked file (`:43-45`).
 
-**`check:ci-gate-reachability-coverage`** — a DIFFERENT thing. `package.json:96` →
+**`check:ci-gate-reachability-coverage`** - a DIFFERENT thing. `package.json:96` →
 `.ci/scripts/quality/check_gate_reachability_coverage.py`, run at `ci-quality.yml:305`,
 manifest entry `manifest.ts:906-907`. It holds the STOP HOOK's
 `.claude/hooks/stop/wl_reggate.py::gate_reachable()` probe honest against actual registrations.
 
 Three assertions:
-1. **FLOOR** — the probe discovers ≥ 40 manifest gates (`MIN_MANIFEST_GATES`), so assertion 2
+1. **FLOOR** - the probe discovers ≥ 40 manifest gates (`MIN_MANIFEST_GATES`), so assertion 2
    is not vacuously true. Without this the gate reproduces inside itself the failure shape it
    exists to prevent.
-2. **AGREEMENT** — every manifest gate with a `check:*` npm key is reported reachable.
-3. **CONTROL** — a fabricated key is reported UNREACHABLE, so "reachable" has not widened
+2. **AGREEMENT** - every manifest gate with a `check:*` npm key is reported reachable.
+3. **CONTROL** - a fabricated key is reported UNREACHABLE, so "reachable" has not widened
    into "always true".
 
 Control-first: it simulates the pre-fix probe (manifest awareness removed) and requires
 assertion 2 to FAIL against it; if the planted defect passes, the gate declares itself broken.
 
 Origin (`check_gate_reachability_coverage.py:4-17`): on 2026-08-07 the probe returned False
-for EVERY gate — all 191 registrations — because it walked `npm run X` edges from `ci`, and
+for EVERY gate - all 191 registrations - because it walked `npm run X` edges from `ci`, and
 `ci` is `tsx scripts/ci-runner/run.ts`, whose body contains no `npm run` references. The cost
 was not a missed defect but a MANUFACTURED one: it told two consecutive sessions that
 correctly-wired gates were "defined but never run". *"A probe that cannot pass is the same
@@ -839,7 +839,7 @@ denying something true."*
 
 ### 4.5 Existing www content / i18n gates
 
-**Typography — the em-dash gate exists.** `check:ci-em-dash-surfaces`, `package.json:224` →
+**Typography - the em-dash gate exists.** `check:ci-em-dash-surfaces`, `package.json:224` →
 `scripts/check-em-dash-surfaces.ts`, manifest `:2197-2207`, `ci-quality.yml` job `quality-i18n`
 step `i18n`. Reached through the `check:i18n` `&&` chain (`package.json:170`) as well as
 directly. Baseline 2,718.
@@ -849,11 +849,11 @@ Three surfaces (`check-em-dash-surfaces.ts:89-104`):
 ```ts
 { dir: 'packages/www/src/i18n/translations', kind: 'catalog', exts: ['.json'],           minFiles: 10 }
 { dir: 'packages/www/src',                    kind: 'source',  exts: ['.astro','.tsx'],  minFiles: 50 }
-{ tutorial narration JSON — scoped to only the locales where the rule applies }
+{ tutorial narration JSON - scoped to only the locales where the rule applies }
 ```
 
 The third is scoped deliberately: the rule removes an English AI tell, and Russian narration
-keeps 36 dashes ON PURPOSE — `Репозиторий — это ...` is the copula dash, grammatically
+keeps 36 dashes ON PURPOSE - `Репозиторий - это ...` is the copula dash, grammatically
 required where English uses "is" (`:105-111`). Applying an English style rule across locales
 is a failure class this pipeline has been bitten by before, so the exemption is expressed as a
 NARROWER SURFACE rather than baseline entries.
@@ -863,7 +863,7 @@ NARROWER SURFACE rather than baseline entries.
 | Gate | Script | Purpose |
 |---|---|---|
 | `check:ci-dead-css` | `check-dead-css.ts` | a CSS rule whose class nothing renders is dead weight |
-| `check:ci-css-dom-refs` | `check-css-dom-refs.ts` | every class a component RENDERS must still have a rule — the inverse question |
+| `check:ci-css-dom-refs` | `check-css-dom-refs.ts` | every class a component RENDERS must still have a rule - the inverse question |
 | `check:ci-svg-theme-reach` | `check-svg-theme-reach.ts` | an SVG expecting theme tokens must be INLINE; an external `<img>` can never see them |
 | `check:ci-layout-overflow` | `check-layout-overflow.ts` | the two CSS shapes that make the site scroll sideways |
 | `check:ci-design-tree` | `check-design-tree.ts` | design doc §1 must be a transcript of the shipped CLI |
@@ -876,7 +876,7 @@ NARROWER SURFACE rather than baseline entries.
 | `check:ci-docs-render-parity` | `check-docs-render-parity.ts` | docs render identically across locales |
 | `check:ci-cta-bolt` | `check-cta-bolt-uniqueness.js` (www) | the bolt-red accent is used on at most one CTA per page |
 | `check:i18n:components` | `check-component-hardcoded-strings.ts` | no hardcoded user-facing strings in components |
-| `check:ci-em-dash-surfaces` | `check-em-dash-surfaces.ts` | **typography** — em dashes in www surfaces |
+| `check:ci-em-dash-surfaces` | `check-em-dash-surfaces.ts` | **typography** - em dashes in www surfaces |
 | `check:ci-dead-translation-keys` | `check-dead-translation-keys.ts` | English keys nothing references |
 | `check:ci-i18n-placeholders` | `check-i18n-placeholders.ts` | `{{placeholder}}` parity across locales |
 | `check:ci-i18n-untranslated` | `check-i18n-untranslated.ts` | untranslated values |
@@ -908,7 +908,7 @@ reason `check-layout-overflow.ts:19-25` gives: two independent browser-driven hu
 spot is that a computed `background-color` of `transparent` (defect 3.5(f)) tells you nothing
 about which rule won.
 
-Copy `scripts/check-layout-overflow.ts` for its skeleton — it already has the right file set:
+Copy `scripts/check-layout-overflow.ts` for its skeleton - it already has the right file set:
 
 ```ts
 const STYLE_DIRS = ['src/styles', 'public/styles'];   // :53-54  (main.css is NOT under src/)
@@ -939,7 +939,7 @@ it before `build:www` and produce a **false RED**, not a false green. Severity l
 one line each.
 
 **5.2 `main.css:535-537` makes a false claim.** *"Every `--sp-*` alias follows from the
-semantic tokens above"* — `--sp-bg-hero` (`:409`) and `--sp-bg-dark` (`:410`) reference
+semantic tokens above"* - `--sp-bg-hero` (`:409`) and `--sp-bg-dark` (`:410`) reference
 `--gray-950` / `--gray-900` directly. A future reader trusting that comment will assume the
 solution-page palette flips with the theme. It does not. See defect 3.5(b).
 

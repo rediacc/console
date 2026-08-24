@@ -1,11 +1,11 @@
 # Explore report: homepage Difference, pricing No-Lock-In, FAQ surfaces, illustration assets
 
 Read-only investigation. Nothing was modified. All paths relative to
-`/home/muhammed/monorepo/console/packages/www/` unless stated otherwise.
+`/home/muhammed/console/packages/www/` unless stated otherwise.
 
 ---
 
-## (A) The homepage "Difference" section — there are TWO sections
+## (A) The homepage "Difference" section - there are TWO sections
 
 `/en/` renders via `src/pages/[lang]/index.astro:23` -> `src/components/solution-pages/SPHomePage.astro:55-65`,
 which composes exactly five body sections:
@@ -19,13 +19,13 @@ and "They save everything. Recovery takes hours, not a minute." are `notASlice`,
 `SPHomeNotASlice.astro`. The section literally TITLED "The Difference" is a different
 component, `HomeDifference.astro`, rendering the `beforeAfter` branch.
 
-### A1. `SPHomeNotASlice` — source of the operator's quotes
+### A1. `SPHomeNotASlice` - source of the operator's quotes
 
 - Component: `src/components/solution-pages/SPHomeNotASlice.astro` (258 lines)
 - CSS: entirely in its own scoped `<style>` block, `SPHomeNotASlice.astro:110-257`. No
   external stylesheet contributes to it.
 - Section id: `not-a-slice` (`:19`)
-- i18n root: `notASlice` — **top-level in `en.json`**, not under `pages.home`
+- i18n root: `notASlice` - **top-level in `en.json`**, not under `pages.home`
 
 Markup structure:
 
@@ -49,13 +49,13 @@ the grid goes 1-up, padding drops to `64px 24px`, h2 to 28px, and `.sp-slice-win
 collapses to one column with `text-align: center` (`:236-256`).
 
 Design notes already in the file: the winner card's emphasis is "by border and surface,
-not by a second shadow value" (`:184-189`) — the site paints exactly one box-shadow, and
+not by a second shadow value" (`:184-189`) - the site paints exactly one box-shadow, and
 the previous `0 4px 24px var(--sp-brand-glow)` was removed. The dot's 4px ring was a
 zero-blur non-zero-spread shadow (an outline, not an elevation) and was deleted rather
 than reproduced (`:220-223`). Preserve that discipline in any rework.
 
 **Data flow:** `const slices = (to('notASlice.slices') as Slice[] | undefined) ?? []`
-(`:16`). The array is data-driven but **the SVGs are not** — they are index-switched
+(`:16`). The array is data-driven but **the SVGs are not** - they are index-switched
 literals, so a 5th slice would render with no icon.
 
 Exact English strings (`src/i18n/translations/en.json:186-211`):
@@ -77,11 +77,11 @@ Exact English strings (`src/i18n/translations/en.json:186-211`):
 
 Item count: **4 slice cards + 1 winner card**.
 
-### A2. `HomeDifference` — the section titled "The Difference"
+### A2. `HomeDifference` - the section titled "The Difference"
 
 - Component: `src/components/HomeDifference.astro` (108 lines)
 - CSS: scoped `<style>` at `HomeDifference.astro:62-108`
-- i18n root: `beforeAfter` — **top-level**, `en.json:212-232`
+- i18n root: `beforeAfter` - **top-level**, `en.json:212-232`
 - Title: `beforeAfter.title` = **"The Difference"** (`en.json:213`, rendered `:46`)
 
 Markup:
@@ -102,7 +102,7 @@ max-width: var(--container-lg) }` (`:63-69`); collapses to `1fr` at `max-width: 
 (`:103-107`). **No illustrations, no images, no SVG anywhere in this component.**
 
 **Critical history, from the file's own header comment (`HomeDifference.astro:2-23`):**
-this section *used to be* exactly the layout the operator now wants to rebuild — "a two-up
+this section *used to be* exactly the layout the operator now wants to rebuild - "a two-up
 lead block plus four alternating full-width illustrated rows, plus a `<dialog>` zoom
 lightbox for the clipart, plus 22 lines of client script to drive it." It was deleted for
 being **2,176px desktop / 4,059px mobile (4.8 phone screens, 29% of the whole page) for
@@ -198,7 +198,7 @@ reusable component.
 All six are `viewBox="0 0 400 280" fill="none" aria-hidden="true"`, drawn with
 `stroke="currentColor"` for neutral geometry and `var(--illustration-accent,#4a7c3f)` for
 the "good" accent (checkmarks, active states, green rails). Row 3 defines a `<marker
-id="arrowGreen">` inline (`:109-113`) — note that id is global to the document, so cloning
+id="arrowGreen">` inline (`:109-113`) - note that id is global to the document, so cloning
 this pattern onto another page that also renders this section would duplicate the id.
 
 Subjects, in order: server rack with a crossed-out lapsed license (`:30-46`); terminal
@@ -260,7 +260,7 @@ existed the day it was written." Do not add a local `prefers-reduced-motion` blo
 applied to `<html lang dir>` at `:73`.
 
 `.trust-row` declares no `direction`, so on `/ar/` it inherits `rtl` from `<html>`.
-`.trust-row-reverse` explicitly sets `direction: rtl` — **the same value**. So on
+`.trust-row-reverse` explicitly sets `direction: rtl` - **the same value**. So on
 `/ar/pricing` all six rows lay out identically and the alternation disappears entirely.
 
 Worse: `.trust-row-reverse > * { direction: ltr }` (`pricing-page.css:1256-1258`) forces the
@@ -279,7 +279,7 @@ pattern for the Difference section should adopt the fixed form, not clone the bu
 ### The homepage has NO FAQ section
 
 `SPHomePage.astro:40-45` imports six components, none of them `FAQSection`. Solution pages
-do not render one either — a repo-wide grep for `faq` across `src/` returns no hit in
+do not render one either - a repo-wide grep for `faq` across `src/` returns no hit in
 `src/components/solution-pages/`.
 
 ### Shared component
@@ -316,7 +316,7 @@ CSS lives in `src/styles/pricing-page.css:511-585` (`.faq-section` `:511`, `h2` 
 `.faq-item` rules in `public/styles/main.css:640` and `:668`.
 
 `src/pages/[lang]/disaster-recovery.astro:10-11` imports **both**
-`disaster-recovery-page.css` and `pricing-page.css` — the latter purely to pick up the FAQ
+`disaster-recovery-page.css` and `pricing-page.css` - the latter purely to pick up the FAQ
 styles. `disaster-recovery-page.css` contains no `faq` selectors. That coupling is fragile
 but currently correct.
 
@@ -333,8 +333,8 @@ Note the **two incompatible item shapes**: `{question, answer}` for the `FAQSect
 consumers, `{q, a}` for the two inline renderers (`nis2-directive-summary.astro:31`,
 `ResourceBriefPage.astro:60`). Any consolidation must reconcile these.
 
-`ResourceBriefPage.astro` uses a TEMPLATE namespace — `const ns = \`pages.resourcesBrief.${deckKey}\``
-— which the dead-key gate resolves to `pages.resourcesBrief.*` (see (C) gates below).
+`ResourceBriefPage.astro` uses a TEMPLATE namespace - `const ns = \`pages.resourcesBrief.${deckKey}\``
+- which the dead-key gate resolves to `pages.resourcesBrief.*` (see (C) gates below).
 
 ### Structured data
 
@@ -346,7 +346,7 @@ emits FAQPage JSON-LD (`StructuredData.astro:177` has a `'faq'` case but no FAQ 
 
 ### FULL question list with key paths
 
-#### `pages.pricing.faq` — heading "Frequently Asked Questions", 12 items
+#### `pages.pricing.faq` - heading "Frequently Asked Questions", 12 items
 
 Key path pattern: `pages.pricing.faq.items[N].question`
 
@@ -368,7 +368,7 @@ Key path pattern: `pages.pricing.faq.items[N].question`
 Observation for scoring: 5 and 7 and 11 are three separate answers to "how does counting
 work"; 0 and 1 are two halves of one trial question.
 
-#### `pages.disasterRecovery.faq` — heading "Frequently Asked Questions", 7 items
+#### `pages.disasterRecovery.faq` - heading "Frequently Asked Questions", 7 items
 
 Key path pattern: `pages.disasterRecovery.faq.items[N].question`
 
@@ -386,7 +386,7 @@ Observation for scoring: **items 0, 1, 2 are near-verbatim duplicates of pricing
 2, 4, 0**. Three of seven slots on a disaster-recovery page are recycled billing questions.
 Only 4, 5, 6 are on-topic.
 
-#### `pages.resourcesNis2Directive.faq` — heading "Frequently asked", 6 items
+#### `pages.resourcesNis2Directive.faq` - heading "Frequently asked", 6 items
 
 Key path pattern: `pages.resourcesNis2Directive.faq.items[N].q`
 
@@ -401,7 +401,7 @@ Key path pattern: `pages.resourcesNis2Directive.faq.items[N].q`
 
 This is the only FAQ set on the site with no duplication and no billing content.
 
-#### `pages.resourcesBrief.<deck>.faq` — heading "Questions readers asked", 5 items x 6 decks = 30
+#### `pages.resourcesBrief.<deck>.faq` - heading "Questions readers asked", 5 items x 6 decks = 30
 
 Decks: `ransomwareSurvival`, `multiCloudAlways`, `verifiedBackups`, `encryptionControl`,
 `devEnvironments`, `preemptiveDefense`.
@@ -429,7 +429,7 @@ referenced by all six decks.
 
 An item is an **array element** under `<ns>.faq.items` in **13 catalog files**:
 `src/i18n/translations/{en,ar,de,es,et,fr,it,ja,ko,pt,ru,tr,zh}.json`. Deletion is a JSON
-array splice in each — **not** a component edit — except the resource-brief decks, where the
+array splice in each - **not** a component edit - except the resource-brief decks, where the
 array is per-deck, so one logical question is 6 splices per locale = 78 splices.
 
 Because these are ARRAYS and not named keys, deleting item 3 of 12 **renumbers items 4-11**
@@ -439,7 +439,7 @@ renumbers nothing.
 
 Gates that fire:
 
-1. **`scripts/check-translation-completeness.ts:739-766`** (repo root) — hard-fails on
+1. **`scripts/check-translation-completeness.ts:739-766`** (repo root) - hard-fails on
    ORPHAN KEYS, "present in this locale, absent from English". `orphanKeys` is computed at
    `:739` and pushed to `errors` at `:760-766` with the message "remove them; English is the
    source of truth and these are unreachable". So an English-only deletion is a CI failure;
@@ -448,7 +448,7 @@ Gates that fire:
    were corrupted key NAMES (`bridge.create_failed` -> `bridge.create_<ar>`).
    Wired as `check:i18n:completeness` (`package.json:172`) and inside `check:i18n` (`:170`).
 
-2. **`scripts/check-translation-hashes.ts:158`** — reads
+2. **`scripts/check-translation-hashes.ts:158`** - reads
    `src/i18n/translations/.translation-hashes.json`, which holds **6,230 per-key entries**
    with flat dotted paths including `pages.disasterRecovery.faq.items.0.question`,
    `...items.0.answer`, `...faq.heading`, and so on. Renumbering invalidates the hashes of
@@ -456,7 +456,7 @@ Gates that fire:
    (`package.json:206` -> `scripts/generate-translation-hashes.ts`; also aliased
    `fix:i18n` `:195` and `i18n:update-hashes` `:208`).
 
-3. **`scripts/check-i18n-naturalization.ts:36`** — reads
+3. **`scripts/check-i18n-naturalization.ts:36`** - reads
    `src/i18n/translations/.naturalized-hashes.json`, shaped
    `{ $meta, languages: { tr: { "<flat.key.path>": hash, ... }, de: {...}, ... } }` for the
    12 non-English locales. Same flat paths (`beforeAfter.after.points.0` etc.). Renumbering
@@ -464,7 +464,7 @@ Gates that fire:
    BLOCKING gate in `check:i18n` (`package.json:170`) that fails when an already-naturalized
    key goes stale. A `.naturalized-hashes.json.lock` sits beside it.
 
-4. **`scripts/check-dead-translation-keys.ts`** — wired as `check:ci-dead-translation-keys`
+4. **`scripts/check-dead-translation-keys.ts`** - wired as `check:ci-dead-translation-keys`
    (`package.json:226`) and included in `check:i18n` (`:170`). This is the gate that REWARDS
    deletion: it walks catalog -> source and reports keys nothing can reach. Its header
    (`:13-18`) records the current state: **300 dead English leaves across 110 branches**,
@@ -493,7 +493,7 @@ translation.
 
 ## (D) Illustration assets available
 
-### `src/assets/images/illustrations/` — 22 SVGs, the primary inventory
+### `src/assets/images/illustrations/` - 22 SVGs, the primary inventory
 
 Naming: kebab-case, one file per solution slug, with one `.mobile.svg` viewport variant.
 
@@ -513,18 +513,18 @@ failover-testing.svg               rapid-recovery.svg
                                    vulnerability-management.svg
 ```
 
-### How they are embedded — two mechanisms, both INLINING the source
+### How they are embedded - two mechanisms, both INLINING the source
 
 The rationale is recorded at `src/components/solution-pages/SPProblem.astro:40-43`: "The
 drawings are textless and decorative (the meaning lives in the copy around them), so one
 file serves every locale and viewport, inlined so it can paint from the theme-aware
 `--illustration-*` tokens." That is why they are inlined rather than `<img src>`.
 
-1. **Static named imports** — `src/config/solution-pages.ts:8-29`, 22 lines of
+1. **Static named imports** - `src/config/solution-pages.ts:8-29`, 22 lines of
    `import illustrationAiPentesting from '../assets/images/illustrations/ai-pentesting.svg'`
    style imports (camelCase `illustration<PascalSlug>` naming).
 
-2. **Dynamic by slug** — `src/utils/solution-illustration.ts:10` uses
+2. **Dynamic by slug** - `src/utils/solution-illustration.ts:10` uses
    `import.meta.glob<string>('../assets/images/illustrations/*.svg', {...})`, and
    `:19` returns `illustrationModules[\`../assets/images/illustrations/${slug}.svg\`] ?? null`.
    Consumed at `SPProblem.astro:2,43,52-54`:
@@ -543,7 +543,7 @@ file serves every locale and viewport, inlined so it can paint from the theme-aw
 `src/assets/images/`: `archtitecture.png` (typo is in the real filename), `problem.png`,
 `solution.png`, `rediacc_resources_repos.png`.
 
-### `public/img/` — 24 SVG diagrams, referenced by URL (not inlined)
+### `public/img/` - 24 SVG diagrams, referenced by URL (not inlined)
 
 `account-api-token-lifecycle.svg`, `account-auth-flow.svg`, `account-device-code-flow.svg`,
 `account-permission-flow.svg`, `account-registration-flow.svg`, `account-role-hierarchy.svg`,
@@ -590,17 +590,17 @@ Sweep performed across all of `src/components/` (including the 34 files in
 `solution-pages/`), `src/styles/*.css`, and `public/styles/main.css`, searching for
 `reverse`, `row-reverse`, `:nth-child(even)`, and `direction: rtl`. Complete result set:
 
-- `src/styles/pricing-page.css:1252-1258` + `PricingTrustSection.astro:51,119,180` — the
+- `src/styles/pricing-page.css:1252-1258` + `PricingTrustSection.astro:51,119,180` - the
   only alternating text/visual construct on the site
-- `src/styles/cheatsheet.css:262,382` — table row striping, unrelated
-- `src/styles/solution-pages.css:1164` — `.sp-tech-detail-cell:nth-child(even)`, a cell
+- `src/styles/cheatsheet.css:262,382` - table row striping, unrelated
+- `src/styles/solution-pages.css:1164` - `.sp-tech-detail-cell:nth-child(even)`, a cell
   background rule, unrelated
 
 Closest existing two-up-with-visual constructs, neither alternating nor reusable:
 
-- `SPHomeNotASlice.astro:190-199` — `.sp-slice-winner`, a single `220px 1fr` grid with the
+- `SPHomeNotASlice.astro:190-199` - `.sp-slice-winner`, a single `220px 1fr` grid with the
   SVG left and text right. One instance, no alternation, SVG inlined literally.
-- `SPProblem.astro:52-54` — stacks its illustration below the copy, not beside it.
+- `SPProblem.astro:52-54` - stacks its illustration below the copy, not beside it.
 
 Reusing the pricing pattern for the Difference section therefore means **extracting it into
 a component first** (ideally parameterized over `{title, description, visual}` with the
