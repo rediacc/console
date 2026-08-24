@@ -16,9 +16,9 @@ account portal (vite) and www (astro dev), plus a Docker RustFS for config-blob 
 configured). State lands in an .account-state file (gateway_port, pids, worktree); a
 new `account dev` auto-kills the previous one via that file.
 
-Port mechanics: it scans for consecutive FREE ports starting at 4808. ORPHANED
-gateways (from killed shells, crashed drills) keep 4808 bound and push the next start
-to 4811+. Consequences: never hardcode 4808; read the port from the startup output or
+Port mechanics: it scans for consecutive FREE ports starting at 4800. ORPHANED
+gateways (from killed shells, crashed drills) keep 4800 bound and push the next start
+to 4803+. Consequences: never hardcode 4800; read the port from the startup output or
 .account-state; a config that recorded the old port strands its writes. Kill orphans
 by pattern (`pkill -f dev-gateway.ts`) only when you know no other session owns one;
 the drills instead re-read the port per connection through a TCP shim.
@@ -83,3 +83,10 @@ TEST_MODE, register/login/device-code mint); the drills' lib
   changes: account servers BEFORE renet BEFORE CLI.
 - `./run.sh account reset` regenerates .env; the gateway must be restarted to pick
   env changes up (same tsx rule).
+
+Database: the dev data lives in `private/account/account.db` (better-sqlite3, opened
+by `src/entry/dev-gateway.ts` with cwd `private/account`), NOT in wrangler/D1 --
+`wrangler.toml` declares a D1 binding that the dev path never touches. Browse it with
+`./run.sh account db`, which runs Drizzle Studio against that file; `drizzle.config.ts`
+already points at it. **`./run.sh account reset` DELETES account.db** (plus -wal/-shm),
+so anything you were reading in Studio is gone after a reset.

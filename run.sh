@@ -1670,20 +1670,146 @@ check_full() {
 # SETUP
 # =============================================================================
 
+# Prepare this machine for development and hand back a URL.
+#
+# Idempotent by construction: every phase is guarded, so a second run installs
+# nothing, pulls nothing and recreates nothing -- it just prints the URL again.
+#
+#   1. prereqs   node/git/curl               (checked, never installed)
+#   2. docker    Go -> renet -> install-docker (skipped entirely if docker works)
+#   3. image     pull the devcontainer image  (skipped if present)
+#   4. devbox    one container per worktree, on a port derived from its path
+#   5. report    the URL to open
 setup() {
-    check_node_version
+    local do_check=false force_pull=false do_start=true
 
-    log_step "Console development setup"
+    # Make docker usable in THIS run if the group was added but not activated.
+    SCRIPT_ENTRYPOINT="$ROOT_DIR/run.sh" reexec_with_docker_group setup "$@"
+
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            --check) do_check=true; shift ;;
+            --pull) force_pull=true; shift ;;
+            --no-start) do_start=false; shift ;;
+            --help | -h)
+                cat <<'EOF'
+Usage: ./run.sh setup [OPTIONS]
+
+  --check      Report what is missing and change nothing
+  --pull       Re-pull the devcontainer image even if present
+  --no-start   Prepare the host and image, but do not create the container
+  --help       Show this help
+
+Related: ./run.sh devbox [up|status|stop|remove|shell|logs]
+EOF
+                return 0
+                ;;
+            *)
+                log_error "Unknown option for setup: $1"
+                return 2
+                ;;
+        esac
+    done
+
+    # shellcheck source=/dev/null
+    source "$ROOT_DIR/.ci/lib/devbox.sh"
+
+    if [[ "$do_check" == true ]]; then
+        setup_check
+        return $?
+    fi
+
+    log_step "Rediacc console setup"
     echo ""
 
-    # Install dependencies
-    log_info "Installing npm dependencies"
-    npm install
+    check_node_version "$NODE_VERSION_MIN"
+    ensure_host_tools || return 1
 
-    log_info ""
-    log_info "Setup complete!"
-    log_info ""
-    log_info "Start development with: ./run.sh dev"
+    if ! ensure_docker_installed; then
+        log_error "Docker could not be prepared; cannot continue"
+        return 1
+    fi
+
+    if ! devbox_ensure_image "$force_pull"; then
+        log_error "Could not obtain $DEVBOX_IMAGE"
+        return 1
+    fi
+
+    if [[ "$do_start" != true ]]; then
+        log_info "Host prepared. Create the container with: ./run.sh devbox up"
+        return 0
+    fi
+
+    devbox_up || return 1
+
+    echo ""
+    log_info "Setup complete. Everything below runs INSIDE the devbox:"
+    log_info "  ./run.sh account dev    start the account dev stack"
+    log_info "  ./run.sh account db     browse the dev database"
+    log_info "  ./run.sh devbox shell   a shell in the container"
+    return 0
+}
+
+# Report-only counterpart of setup(). Must never mutate anything: it is what an
+# operator runs to find out why setup would do work, and what the CI gate drives.
+setup_check() {
+    local pending=0
+
+    log_step "Setup status for $(devbox_worktree)"
+    echo ""
+
+    if command -v node &>/dev/null; then
+        printf '  node        %s\n' "$(node --version)"
+    else
+        printf '  node        MISSING (install Node >= %s)\n' "$NODE_VERSION_MIN"
+        pending=$((pending + 1))
+    fi
+
+    if command -v go &>/dev/null; then
+        printf '  go          %s\n' "$(go version | awk '{print $3}')"
+    else
+        printf '  go          absent (setup installs it only if docker is missing)\n'
+    fi
+
+    if docker version &>/dev/null; then
+        printf '  docker      %s\n' "$(docker --version | sed 's/,.*//')"
+    elif command -v docker &>/dev/null; then
+        printf '  docker      installed but NOT usable as %s (log out/in, or newgrp docker)\n' "$USER"
+        pending=$((pending + 1))
+    else
+        printf '  docker      MISSING (setup installs it via renet install-docker --source=docker-repo)\n'
+        pending=$((pending + 1))
+    fi
+
+    if devbox_image_present; then
+        printf '  image       present (%s)\n' "$DEVBOX_IMAGE"
+    else
+        printf '  image       MISSING (%s)\n' "$DEVBOX_IMAGE"
+        pending=$((pending + 1))
+    fi
+
+    local base_port
+    base_port="$(devbox_base_port 2>/dev/null || echo '?')"
+    printf '  port block  %s-%s\n' "$base_port" "$((base_port + DEVBOX_PORT_BLOCK - 1))"
+
+    if devbox_container_running; then
+        printf '  devbox      running (%s)\n' "$(devbox_container_name)"
+    elif [[ -n "$(devbox_container_id 2>/dev/null)" ]]; then
+        printf '  devbox      stopped (%s)\n' "$(devbox_container_name)"
+        pending=$((pending + 1))
+    else
+        printf '  devbox      not created\n'
+        pending=$((pending + 1))
+    fi
+
+    echo ""
+    if [[ "$pending" -eq 0 ]]; then
+        log_info "Nothing to do; ./run.sh setup would be a no-op"
+        devbox_status
+        return 0
+    fi
+    log_warn "$pending item(s) would be acted on by ./run.sh setup"
+    return 1
 }
 
 # =============================================================================
@@ -1714,6 +1840,7 @@ SERVICE COMMANDS:
 
 ACCOUNT COMMANDS:
   account dev              Start account dev gateway (API + portal + www on one port)
+  account db               Browse the dev database (Drizzle Studio on account.db)
   account test             Run account integration tests (vitest)
   account test e2e [opts]  Run account E2E tests (playwright, with Stripe wiring)
   account stop             Stop account Docker containers
@@ -1739,7 +1866,9 @@ DEVELOPMENT COMMANDS:
   dev                 Start the www (marketing site) development server
   (rdc)               Use ./rdc.sh instead (standalone CLI runner)
   worktree <cmd>      Manage git worktrees (create, switch, prune, list)
-  setup               Interactive setup wizard
+  setup [--check]     Prepare this machine: docker, devcontainer image, and a
+                      browser VS Code for THIS worktree. Idempotent.
+  devbox <cmd>        up | status | stop | remove | shell | logs | proxy
 
 WWW COMMANDS:
   www all [opts]                    Full pipeline for tutorials + team videos
@@ -1894,6 +2023,7 @@ main() {
             source "$ROOT_DIR/.ci/lib/account.sh"
             case "${1:-}" in
                 dev) account_dev ;;
+                db) account_db ;;
                 test)
                     shift
                     case "${1:-}" in
@@ -1938,7 +2068,51 @@ main() {
             shift
             "$ROOT_DIR/scripts/dev/worktree.sh" "$@"
             ;;
-        setup) setup ;;
+        setup)
+            shift
+            setup "$@"
+            ;;
+        devbox)
+            shift
+            # shellcheck source=/dev/null
+            source "$ROOT_DIR/.ci/lib/devbox.sh"
+            SCRIPT_ENTRYPOINT="$ROOT_DIR/run.sh" reexec_with_docker_group devbox "$@"
+            case "${1:-status}" in
+                up) devbox_up ;;
+                status) devbox_status ;;
+                stop) devbox_stop ;;
+                proxy)
+                    shift
+                    case "${1:-status}" in
+                        up) devbox_proxy_ensure ;;
+                        stop) devbox_proxy_stop ;;
+                        status)
+                            if devbox_proxy_running; then
+                                log_info "Proxy running on :$DEVBOX_PROXY_PORT"
+                            else
+                                log_warn "Proxy is not running"
+                                exit 1
+                            fi
+                            ;;
+                        *)
+                            log_error "Unknown devbox proxy command: $1"
+                            exit 1
+                            ;;
+                    esac
+                    ;;
+                remove) devbox_remove ;;
+                shell) devbox_shell ;;
+                logs)
+                    shift
+                    devbox_logs "$@"
+                    ;;
+                *)
+                    log_error "Unknown devbox command: $1"
+                    log_info "Usage: ./run.sh devbox [up|status|stop|remove|shell|logs]"
+                    exit 1
+                    ;;
+            esac
+            ;;
         www)
             shift
             case "${1:-}" in

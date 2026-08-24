@@ -66,3 +66,75 @@ find_preferred_port() {
 
     find_available_port "$fallback_start" "$fallback_end"
 }
+
+# =============================================================================
+# DETERMINISTIC BLOCK ALLOCATION (per-worktree)
+# =============================================================================
+#
+# A scan-from-a-base allocator gives a worktree a different port after every
+# reboot, which breaks bookmarks and makes "which checkout am I looking at?"
+# unanswerable. These two helpers derive a STABLE slot from a key (the
+# worktree's absolute path), then fall back through slot-aligned candidates so
+# the fallback stays block-aligned instead of colliding with a neighbour's block.
+
+# Derive a stable slot index from an arbitrary key.
+# Usage: derive_slot <key> <slot_count>
+derive_slot() {
+    local key="$1"
+    local slots="${2:-100}"
+    local digest
+
+    # sha256 of the key; first 8 hex digits are plenty of entropy for <1k slots.
+    digest="$(printf '%s' "$key" | _sha256sum_portable | cut -c1-8)"
+    echo $(( 0x$digest % slots ))
+}
+
+# Portable sha256 (mirrors _sha256sum in local-common.sh, which this file must
+# not depend on -- find-port.sh is sourced standalone by check-account-probes.sh).
+_sha256sum_portable() {
+    if command -v sha256sum >/dev/null 2>&1; then
+        sha256sum
+    else
+        shasum -a 256
+    fi
+}
+
+# Find a free, slot-aligned block of consecutive ports.
+# Usage: find_port_block <key> <range_start> <range_end> <block_size>
+# Returns: the base port of a free block on stdout, or exit 1.
+find_port_block() {
+    local key="$1"
+    local range_start="${2:-17000}"
+    local range_end="${3:-17999}"
+    local block="${4:-10}"
+
+    local slots=$(( (range_end - range_start + 1) / block ))
+    [[ "$slots" -lt 1 ]] && return 1
+
+    local preferred_slot
+    preferred_slot="$(derive_slot "$key" "$slots")"
+
+    # Try the derived slot first, then every other slot in order. Walking all
+    # slots (rather than giving up) means a busy machine still gets a devbox.
+    local i slot base port_in_use
+    for (( i = 0; i < slots; i++ )); do
+        slot=$(( (preferred_slot + i) % slots ))
+        base=$(( range_start + slot * block ))
+
+        port_in_use=false
+        local offset
+        for (( offset = 0; offset < block; offset++ )); do
+            if is_port_in_use $(( base + offset )); then
+                port_in_use=true
+                break
+            fi
+        done
+
+        if [[ "$port_in_use" == false ]]; then
+            echo "$base"
+            return 0
+        fi
+    done
+
+    return 1
+}

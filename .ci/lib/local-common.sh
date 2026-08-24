@@ -176,6 +176,15 @@ ensure_deps() {
             if [[ -f "$LOCAL_ROOT_DIR/.npmrc" ]]; then
                 _sha256sum "$LOCAL_ROOT_DIR/.npmrc"
             fi
+            # The RUNTIME is part of the identity of node_modules, not just the
+            # manifests. install:natives rebuilds ssh2/cpu-features/esbuild
+            # against the local glibc, and the devbox image (Ubuntu 24.04,
+            # glibc 2.39) is not the same libc as a Debian 12 host (2.36). A
+            # .node built on one side fails to load on the other with a
+            # GLIBC_2.38-not-found error that looks like a corrupt install.
+            # Without this line the stamp matches across the flip and both
+            # sides believe the tree is fresh.
+            printf 'runtime=%s\n' "${REDIACC_NPM_RUNTIME:-host}"
         } | _sha256sum | awk '{print $1}'
     )"
 
@@ -193,12 +202,45 @@ ensure_deps() {
     # install script. With ignore-scripts=true that script never runs, so
     # generate the gypi here before install:natives rebuilds cpu-features.
     local cpu_features_dir="$node_modules_dir/cpu-features"
+    # A ZERO-BYTE gypi is worse than a missing one: the guard below is a plain
+    # existence test, so a crashed run (e.g. no C compiler -> "Unable to detect
+    # compiler type") leaves an empty file that every later run then SKIPS.
+    # Observed on a host with no build-essential.
+    if [[ -f "$cpu_features_dir/buildcheck.gypi" ]] && [[ ! -s "$cpu_features_dir/buildcheck.gypi" ]]; then
+        log_debug "Removing empty buildcheck.gypi left by a failed run"
+        rm -f "$cpu_features_dir/buildcheck.gypi"
+    fi
     if [[ -f "$cpu_features_dir/buildcheck.js" ]] && [[ ! -f "$cpu_features_dir/buildcheck.gypi" ]]; then
-        (cd "$cpu_features_dir" && node buildcheck.js >buildcheck.gypi)
+        # Write to a temp file and only publish on success, so a failure cannot
+        # poison the guard above.
+        if ! (cd "$cpu_features_dir" && node buildcheck.js >buildcheck.gypi.tmp); then
+            rm -f "$cpu_features_dir/buildcheck.gypi.tmp"
+            log_error "cpu-features buildcheck failed (is a C compiler installed?)"
+            return 1
+        fi
+        mv "$cpu_features_dir/buildcheck.gypi.tmp" "$cpu_features_dir/buildcheck.gypi"
+    fi
+
+    # Install with npm 10, which is what CI pins (.ci/scripts/quality/check-lockfile.sh)
+    # and what the lockfile's nested layout describes.
+    #
+    # This is not cosmetic like the 27-line "dev": true flip. npm 11 HOISTS
+    # differently: it flattens zod to the 3.25.76 copy that transitives drag in,
+    # ignoring the workspace-local zod@4.4.3 the lockfile pins, and then
+    # `npm ls zod` reports `invalid: "^4.3.6" from packages/shared`. The visible
+    # symptom is packages/shared failing to compile with "Property 'uuid' does
+    # not exist" (v4 API against a v3 copy), which takes `./run.sh account dev`
+    # down with it. Reproduced on npm 11.9.0; npm@10 fixes it in one run.
+    local npm_cmd=(npm)
+    local npm_major
+    npm_major="$(npm --version 2>/dev/null | cut -d. -f1)"
+    if [[ -n "$npm_major" ]] && [[ "$npm_major" != "10" ]]; then
+        log_warn "npm $npm_major detected; installing with npm@10 to match the lockfile layout"
+        npm_cmd=(npx -y npm@10)
     fi
 
     log_step "Installing dependencies..."
-    (cd "$LOCAL_ROOT_DIR" && npm install)
+    (cd "$LOCAL_ROOT_DIR" && "${npm_cmd[@]}" install)
     write_stamp_hash "$stamp_file" "$current_hash"
 }
 
@@ -344,6 +386,275 @@ check_go_installed() {
     log_debug "Go present: $(command -v go)"
 }
 
+# Install the Go toolchain if it is missing or too old.
+#
+# Exists because nothing in this repo installed Go: check_go_installed above
+# only prints a go.dev link and exits, which meant `./run.sh setup` could not
+# satisfy its own goal on a fresh machine. The version is READ FROM go.mod so it
+# cannot drift from what renet actually needs, and the distro package is
+# deliberately not used -- Debian 12 ships Go 1.19, which predates the
+# `toolchain` directive in private/renet/go.mod and hard-errors on it.
+#
+# Idempotent: returns immediately when the installed Go is new enough.
+ensure_go_installed() {
+    local renet_gomod="$LOCAL_ROOT_DIR/private/renet/go.mod"
+    local want_version=""
+
+    if [[ -f "$renet_gomod" ]]; then
+        # Prefer the toolchain line (go1.25.13); fall back to the go line (1.25.0).
+        want_version="$(sed -n 's/^toolchain go\([0-9.]*\).*/\1/p' "$renet_gomod" | head -1)"
+        [[ -z "$want_version" ]] && want_version="$(sed -n 's/^go \([0-9.]*\).*/\1/p' "$renet_gomod" | head -1)"
+    fi
+    if [[ -z "$want_version" ]]; then
+        log_error "Cannot determine the required Go version (no readable $renet_gomod)"
+        return 1
+    fi
+
+    if command -v go &>/dev/null; then
+        local have_version
+        have_version="$(go version | sed -n 's/.*go\([0-9][0-9.]*\).*/\1/p' | head -1)"
+        if _version_gte "$have_version" "$want_version"; then
+            log_debug "Go $have_version present (>= $want_version)"
+            return 0
+        fi
+        log_info "Go $have_version is older than the required $want_version"
+    fi
+
+    if [[ "$(uname -s)" != "Linux" ]]; then
+        log_error "Go $want_version is required and this helper only installs it on Linux"
+        log_info "Install it from https://go.dev/dl/ and re-run"
+        return 1
+    fi
+
+    local arch
+    case "$(uname -m)" in
+        x86_64 | amd64) arch=amd64 ;;
+        aarch64 | arm64) arch=arm64 ;;
+        *)
+            log_error "Unsupported architecture for the Go tarball: $(uname -m)"
+            return 1
+            ;;
+    esac
+
+    local tarball="go${want_version}.linux-${arch}.tar.gz"
+    local url="https://go.dev/dl/${tarball}"
+    local tmp
+    tmp="$(mktemp -d)"
+
+    log_step "Installing Go ${want_version} (${arch}) into /usr/local/go"
+    log_info "$url"
+    # Download to a file rather than piping into tar: a 404 page piped to tar
+    # fails unreadably, and a truncated download must not half-populate
+    # /usr/local/go.
+    if ! curl -fL --progress-bar -o "$tmp/$tarball" "$url"; then
+        rm -rf "$tmp"
+        log_error "Download failed: $url"
+        return 1
+    fi
+    if ! tar -tzf "$tmp/$tarball" >/dev/null 2>&1; then
+        rm -rf "$tmp"
+        log_error "Downloaded file is not a valid tarball: $tarball"
+        return 1
+    fi
+
+    sudo rm -rf /usr/local/go
+    sudo tar -C /usr/local -xzf "$tmp/$tarball" || {
+        rm -rf "$tmp"
+        log_error "Failed to unpack $tarball into /usr/local"
+        return 1
+    }
+    rm -rf "$tmp"
+
+    export PATH="/usr/local/go/bin:$PATH"
+    if ! command -v go &>/dev/null; then
+        log_error "Go was unpacked but /usr/local/go/bin/go is not on PATH"
+        return 1
+    fi
+    log_info "Go installed: $(go version)"
+
+    # Make it durable for future login shells without editing the operator's
+    # rc files: /etc/profile.d is the conventional place for a PATH addition.
+    if [[ ! -f /etc/profile.d/golang.sh ]]; then
+        echo 'export PATH="/usr/local/go/bin:$PATH"' | sudo tee /etc/profile.d/golang.sh >/dev/null
+        sudo chmod 0644 /etc/profile.d/golang.sh
+        log_info "Added /etc/profile.d/golang.sh (new shells get go on PATH)"
+    fi
+    return 0
+}
+
+# Numeric version compare: is $1 >= $2 ?
+_version_gte() {
+    [[ "$1" == "$2" ]] && return 0
+    local lower
+    lower="$(printf '%s\n%s\n' "$1" "$2" | sort -V | head -1)"
+    [[ "$lower" == "$2" ]]
+}
+
+# Ensure the small host tools the build chain shells out to.
+#
+# Added because their absence is SILENT: private/renet/build.sh's embed_assets
+# returns 1 when jq or zstd is missing (build.sh:166-171), but dev() ignores
+# that return (build.sh:731), so the build prints "Renet built successfully",
+# writes its stamp, and ships a binary with no embedded CRIU/rsync assets. The
+# stamp then matches forever. Installing them up front stops that from being
+# reachable in the first place.
+ensure_host_tools() {
+    local missing=()
+    local tool
+    for tool in jq zstd curl git; do
+        command -v "$tool" &>/dev/null || missing+=("$tool")
+    done
+    # A C compiler is not optional here: .npmrc sets ignore-scripts, so
+    # cpu-features' buildcheck and `npm run install:natives` both compile at
+    # install time. Without one, `./run.sh account dev` dies inside npm with
+    # "Unable to detect compiler type" -- an error that names neither the
+    # missing package nor the command that needed it.
+    if ! command -v cc &>/dev/null && ! command -v gcc &>/dev/null; then
+        missing+=(build-essential)
+    fi
+    [[ ${#missing[@]} -eq 0 ]] && return 0
+
+    if [[ "$(uname -s)" != "Linux" ]] || ! command -v apt-get &>/dev/null; then
+        log_error "Missing required tools: ${missing[*]}"
+        log_info "Install them with your package manager and re-run"
+        return 1
+    fi
+
+    log_step "Installing host tools: ${missing[*]}"
+    sudo apt-get update -qq &&
+        sudo apt-get install -y -qq "${missing[@]}" || {
+        log_error "Failed to install: ${missing[*]}"
+        return 1
+    }
+    return 0
+}
+
+# Re-exec this script with the docker group applied.
+#
+# After `usermod -aG docker`, the CURRENT shell keeps the group set it was
+# created with, so `docker ps` keeps failing until the operator logs out and
+# back in -- advice that is both annoying and easy to ignore. `sg` runs a
+# command with a group the user is entitled to but has not yet activated, so
+# re-executing ourselves under it fixes the problem in place, once, and every
+# later docker call in the run is plain `docker`.
+#
+# Deliberately checks membership in /etc/group rather than `id -nG`: id reports
+# the CURRENT process's groups, which is exactly the stale information we are
+# working around, so it would answer "no" in the one case that matters.
+reexec_with_docker_group() {
+    # Already re-executed, or docker already works: nothing to do.
+    [[ -n "${REDIACC_DOCKER_GROUP_REEXEC:-}" ]] && return 0
+    docker version &>/dev/null && return 0
+
+    command -v docker &>/dev/null || return 0
+    command -v sg &>/dev/null || return 0
+    getent group docker >/dev/null 2>&1 || return 0
+
+    # Entitled but not active? (members field of the docker group)
+    local members
+    members="$(getent group docker | cut -d: -f4)"
+    [[ ",$members," == *",$USER,"* ]] || return 0
+
+    # Prove it actually helps before re-executing, so a broken daemon does not
+    # send us round a pointless loop.
+    sg docker -c "docker version" &>/dev/null || return 0
+
+    log_info "Applying your docker group membership to this run (no logout needed)"
+    export REDIACC_DOCKER_GROUP_REEXEC=1
+    local cmd
+    cmd="$(printf '%q ' "$SCRIPT_ENTRYPOINT" "$@")"
+    exec sg docker -c "$cmd"
+}
+
+# Ensure a working Docker engine, installed the way the rest of the product
+# installs Docker.
+#
+# DRY, deliberately: the only Docker installer in this codebase lives in the
+# renet Go binary, and `renet install-docker` documents itself as the single
+# source of truth (private/renet/cmd/renet/setup_command.go:80-95). It uses the
+# official docker.com apt repository -- keyring, DEB822 source, and the pinned
+# set docker-ce/docker-ce-cli/containerd.io/docker-buildx-plugin/
+# docker-compose-plugin. It is NOT docker.io; that only appears under
+# --source=package-manager, which is never used here.
+#
+# Reaching that installer needs Go, and building renet does NOT need Docker:
+# build.sh's embed_assets skips with a warning when docker is absent
+# (private/renet/build.sh:143-149). So the bootstrap order is not circular.
+ensure_docker_installed() {
+    if docker version &>/dev/null; then
+        log_debug "Docker present and usable: $(docker --version 2>/dev/null)"
+        return 0
+    fi
+
+    # Distinguish "no docker" from "docker installed, user not in the group".
+    if command -v docker &>/dev/null && sudo docker version &>/dev/null; then
+        log_warn "Docker is installed but not usable as $USER (group membership not active in this shell)"
+        _ensure_docker_group
+        return 0
+    fi
+
+    if [[ "$(uname -s)" != "Linux" ]]; then
+        log_error "Automatic Docker installation is Linux-only"
+        log_info "Install Docker Desktop, then re-run"
+        return 1
+    fi
+
+    log_step "Installing Docker via renet's installer (official docker.com repository)"
+
+    ensure_host_tools || return 1
+    ensure_go_installed || return 1
+    ensure_renet_built || return 1
+
+    local renet_bin="$LOCAL_ROOT_DIR/private/renet/bin/renet"
+    [[ -x "$renet_bin" ]] || {
+        log_error "renet was built but $renet_bin is not executable"
+        return 1
+    }
+
+    if ! sudo "$renet_bin" install-docker --source=docker-repo; then
+        log_error "renet install-docker failed"
+        return 1
+    fi
+
+    _ensure_docker_group
+
+    # The first renet build ran without Docker, so its embedded CRIU/rsync
+    # assets were skipped -- and _renet_source_hash PRUNES pkg/embed/assets
+    # (see above), so the stamp it wrote still matches and ensure_renet_built
+    # would return early forever, leaving the binary permanently asset-less.
+    # Drop the stamp so the next build re-embeds now that Docker exists.
+    rm -f "$LOCAL_ROOT_DIR/.ci/cache/build-renet.stamp"
+    log_info "Cleared the renet build stamp so assets get embedded on the next build"
+    return 0
+}
+
+# Add the invoking user to the docker group and explain the login caveat.
+# `renet install-docker` deliberately does not do this: group management lives
+# in `renet setup`, which also creates a rediacc system user we do not want on a
+# developer machine.
+_ensure_docker_group() {
+    if ! getent group docker >/dev/null 2>&1; then
+        log_warn "No docker group exists; skipping group membership"
+        return 0
+    fi
+    local members
+    members="$(getent group docker | cut -d: -f4)"
+    if [[ ",$members," == *",$USER,"* ]]; then
+        if ! docker version &>/dev/null; then
+            log_info "Group membership is not active in this shell; ./run.sh re-execs itself under it automatically."
+            log_info "New login shells get it without help."
+        fi
+        return 0
+    fi
+    log_step "Adding $USER to the docker group"
+    sudo usermod -aG docker "$USER" || {
+        log_warn "usermod failed; you will need sudo for docker commands"
+        return 0
+    }
+    log_info "Added. ./run.sh applies it to this run automatically (via sg); new shells get it on login."
+    return 0
+}
+
 # Compute a content hash of every input that determines the renet binary's
 # bytes: all Go/C/H sources, go.mod/go.sum, the build script, and embedded
 # proxy/asset inputs. Excludes bin/ (build output) and pkg/embed/assets/*.gz
@@ -456,7 +767,17 @@ ensure_renet_built() {
         log_step "Building renet (first time, requires Docker for asset extraction)..."
     fi
 
-    (cd "$renet_dir" && ./build.sh dev)
+    # Check the build's EXIT CODE, not just whether a binary is on disk.
+    # The file-existence test below cannot tell a fresh build from a stale one:
+    # when a rebuild failed (e.g. asset staging aborted), the PREVIOUS binary was
+    # still present, so this function reported success and wrote a content stamp
+    # for sources it had not actually built. The stamp then matched forever and
+    # the failure was unrepeatable. Observed live: a Docker-permission failure
+    # during asset extraction produced "EXIT=0" and a stamped, asset-less binary.
+    if ! (cd "$renet_dir" && ./build.sh dev); then
+        log_error "renet build failed (see the output above)"
+        return 1
+    fi
 
     if [[ ! -f "$renet_bin" ]]; then
         log_error "Renet build failed: binary not found at $renet_bin"

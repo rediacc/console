@@ -33,7 +33,6 @@ TEXT_EXTENSIONS_RE='\.(sh|ts|tsx|js|jsx|cjs|mjs|json|jsonc|yml|yaml|md|mdx|go|py
 # branch does, on purpose, for real binary assets) is exactly the shape of
 # gate that can silently stop firing if the corruption detection regresses.
 _selftest_dir="$(mktemp -d)"
-trap 'rm -rf "$_selftest_dir"' EXIT
 _selftest_file="$_selftest_dir/control.ts"
 printf 'const x = 1;\x00\nconst y = 2;\n' >"$_selftest_file"
 if ! (file --mime-encoding "$_selftest_file" 2>/dev/null | grep -q "binary" &&
@@ -43,6 +42,26 @@ if ! (file --mime-encoding "$_selftest_file" 2>/dev/null | grep -q "binary" &&
 fi
 log_info "Control: planted NUL byte in a synthetic .ts file fires as binary+NUL -- OK"
 
+# ── Control: the binary classifier must key on the ENCODING `file` reports, not
+# on the path. The previous implementation ran `file --mime-encoding "$f" | grep
+# -q binary` over the WHOLE line, so any path containing the substring "binary"
+# was treated as a binary asset and silently exempted from the final-newline,
+# BOM and CRLF checks. Five tracked text files matched, including
+# .ci/scripts/test/gates/test-watchdog-binary-exec-guard.sh (us-ascii). A gate
+# whose coverage depends on filenames is exactly the kind that goes quiet.
+_classify() {
+    awk -F': ' '$NF ~ /binary/ { sub(/: [^:]*$/, "", $0); print }'
+}
+if printf '%s\n' 'some-binary-name.sh: us-ascii' | _classify | grep -q .; then
+    log_error "Binary-classifier control failed: a us-ascii file whose PATH contains 'binary' was classified as binary. Checks 1-3 would silently skip it."
+    exit 1
+fi
+if ! printf '%s\n' 'assets/logo.png: binary' | _classify | grep -q .; then
+    log_error "Binary-classifier control failed: a genuinely binary file was NOT classified as binary. The NUL-corruption path would never run."
+    exit 1
+fi
+log_info "Control: classifier keys on encoding, not path -- OK"
+
 log_step "Checking editorconfig compliance across repository (including submodules)..."
 
 ERRORS=0
@@ -51,46 +70,94 @@ HAS_BOM=()
 HAS_CRLF=()
 HAS_NUL_BYTE=()
 
-# Get tracked text files from repo and all submodules
-while IFS= read -r file; do
-    [[ -z "$file" ]] && continue
-    [[ ! -f "$file" ]] && continue
+# BATCHED ON PURPOSE. The previous shape was a while-read loop that spawned
+# `file`, `tail`, `head|od|grep` and `grep -P` PER FILE. Measured on this repo:
+# 6,595 tracked files at ~87ms of process spawns each = ~573s, i.e. the gate
+# looked hung and could not finish inside a 10-minute local run. Nothing was
+# wrong with the checks; the cost was fork/exec.
+#
+# `file` is still the ONLY binary oracle, called with the same flags, so its
+# heuristics cannot drift -- it is just invoked in batches via xargs instead of
+# once per path. The other three checks are byte-exact (final newline, BOM,
+# CRLF, NUL) and move into a single pass that reads each file once.
+FILE_LIST="$(mktemp)"
+BINARY_LIST="$(mktemp)"
+trap 'rm -rf "$_selftest_dir" "$FILE_LIST" "$BINARY_LIST"' EXIT
 
-    # Skip binary files (check via file command), except check 4: a file
-    # flagged binary whose extension says it must be text is corruption, not
-    # a legitimate asset, and gets checked for the NUL byte that likely
-    # caused `file` to call it binary in the first place.
-    if file --mime-encoding "$file" 2>/dev/null | grep -q "binary"; then
-        if [[ "$file" =~ $TEXT_EXTENSIONS_RE ]] && LC_ALL=C grep -qaP '\x00' "$file" 2>/dev/null; then
-            HAS_NUL_BYTE+=("$file")
-        fi
+git ls-files -z --recurse-submodules >"$FILE_LIST"
+
+# One `file --mime-encoding` per batch of paths, not per path.
+xargs -0 -a "$FILE_LIST" -r file --mime-encoding -- 2>/dev/null |
+    awk -F': ' '$NF ~ /binary/ { sub(/: [^:]*$/, "", $0); print }' >"$BINARY_LIST" || true
+
+# Single pass for every byte-exact check.
+mapfile -t _findings < <(
+    BINARY_LIST="$BINARY_LIST" TEXT_EXTENSIONS_RE="$TEXT_EXTENSIONS_RE" \
+        python3 - "$FILE_LIST" <<'PYEOF'
+import os, re, sys
+
+file_list = sys.argv[1]
+binary = set()
+with open(os.environ["BINARY_LIST"], "r", errors="replace") as fh:
+    for line in fh:
+        line = line.rstrip("\n")
+        if line:
+            binary.add(line)
+
+# The bash regex is ERE with escaped dots; Python needs the same meaning.
+text_ext = re.compile(os.environ["TEXT_EXTENSIONS_RE"].replace("\\.", "\\."))
+
+with open(file_list, "rb") as fh:
+    paths = [p.decode("utf-8", "surrogateescape") for p in fh.read().split(b"\0") if p]
+
+for path in paths:
+    if not os.path.isfile(path) or os.path.islink(path):
         continue
-    fi
 
-    # Skip machine-generated checksum files (.hash) — no final newline by design
-    if [[ "$file" == *.hash ]]; then
+    if path in binary:
+        # Only corruption matters here: a file `file` calls binary whose
+        # extension says it must be text.
+        if text_ext.search(path):
+            try:
+                with open(path, "rb") as fh:
+                    if b"\0" in fh.read():
+                        print("NUL\t" + path)
+            except OSError:
+                pass
         continue
-    fi
 
-    # Skip empty files
-    [[ ! -s "$file" ]] && continue
+    if path.endswith(".hash"):
+        continue
 
-    # Check 1: Missing final newline
-    if [[ -n "$(tail -c 1 "$file")" ]]; then
-        MISSING_NEWLINE+=("$file")
-    fi
+    try:
+        with open(path, "rb") as fh:
+            data = fh.read()
+    except OSError:
+        continue
 
-    # Check 2: UTF-8 BOM (ef bb bf)
-    if head -c 3 "$file" | od -An -tx1 2>/dev/null | grep -q "ef bb bf"; then
-        HAS_BOM+=("$file")
-    fi
+    if not data:
+        continue
 
-    # Check 3: CRLF line endings
-    if grep -Plc '\r\n' "$file" >/dev/null 2>&1; then
-        HAS_CRLF+=("$file")
-    fi
+    if not data.endswith(b"\n"):
+        print("NEWLINE\t" + path)
+    if data.startswith(b"\xef\xbb\xbf"):
+        print("BOM\t" + path)
+    if b"\r\n" in data:
+        print("CRLF\t" + path)
+PYEOF
+)
 
-done < <(git ls-files --recurse-submodules)
+for _finding in "${_findings[@]}"; do
+    [[ -z "$_finding" ]] && continue
+    _kind="${_finding%%$'\t'*}"
+    _path="${_finding#*$'\t'}"
+    case "$_kind" in
+        NEWLINE) MISSING_NEWLINE+=("$_path") ;;
+        BOM) HAS_BOM+=("$_path") ;;
+        CRLF) HAS_CRLF+=("$_path") ;;
+        NUL) HAS_NUL_BYTE+=("$_path") ;;
+    esac
+done
 
 # Report results
 if [[ ${#MISSING_NEWLINE[@]} -gt 0 ]]; then

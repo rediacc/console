@@ -76,6 +76,7 @@ private/generative/
 .provision-state
 .service-state
 .account-state
+.devbox-state
 .account-logs/
 .vm-info
 
