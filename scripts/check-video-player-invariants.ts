@@ -51,8 +51,21 @@ export const qualityPaneFaults = (player: string): string[] => {
  */
 export const placementFaults = (player: string, hero: string): string[] => {
   const out: string[] = [];
+  // The picker's HOME is a `language` row in Plyr's own settings menu, beside Captions
+  // and Speed. `config.settings` is iterated with no allowlist (plyr.mjs:2645), so an
+  // entry Plyr does not know still gets its row, pane, shortcuts and animation; only
+  // populating the pane is ours. The `i18n` label is required: `i18n.get` returns '' for
+  // an unknown key and the row would render blank.
+  if (!/'language'/.test(player))
+    out.push("the `language` entry is gone from config.settings; the picker has no row in the settings menu");
+  if (!/i18n:\s*\{\s*language:/.test(player))
+    out.push('the `language` i18n label is gone, so the settings row would render blank');
+  if (!/mountLanguageMenu/.test(player))
+    out.push('nothing populates the language pane, so the row opens onto an empty menu');
   if (!/tvp-toolbar-overlay/.test(player))
-    out.push('the in-frame overlay is gone from the player; the picker floats above it again');
+    out.push('the in-frame overlay fallback is gone; a Plyr upgrade would leave no picker at all');
+  if (!/!menuMounted/.test(player))
+    out.push('the overlay is no longer conditional on the menu failing, so both pickers can show at once');
   // The overlay belongs to the keyed root subtree, not the shell above it.
   const rootAt = player.indexOf('className={`tvp-root');
   const overlayAt = player.indexOf('tvp-toolbar-overlay');
@@ -64,7 +77,7 @@ export const placementFaults = (player: string, hero: string): string[] => {
   // The negative-lookahead spelling this replaces could not fire: the planted defect ends
   // in `</div>`, which is exactly what the lookahead excluded.
   const withoutOverlay = player.replace(
-    '{toolbar && <div className="tvp-toolbar-overlay">{toolbar}</div>}',
+    '{toolbar && !menuMounted && <div className="tvp-toolbar-overlay">{toolbar}</div>}',
     ''
   );
   if (/\{toolbar\}/.test(withoutOverlay))
@@ -83,6 +96,11 @@ export const chromeFaults = (css: string): string[] => {
   }
   if (!/\.tvp-toolbar-overlay \.language-menu\s*\{[^}]*max-height/.test(css))
     out.push('the 13-locale menu is uncapped inside the frame, which clips its tail with no scrollbar');
+  // MEASURED, not stylistic: `.tvp-root` is overflow:hidden, so an unclamped 13-entry pane
+  // is 488px tall starting 127px ABOVE the container. The first four languages are not
+  // scrolled off, they are invisible and unreachable.
+  if (!/\[id\$='-language'\] \[role='menu'\]\s*\{[^}]*max-height/.test(css))
+    out.push("the settings-menu language pane is uncapped; at 13 entries the top of the list is CLIPPED by .tvp-root's overflow, not scrollable");
   return out;
 };
 
@@ -102,15 +120,27 @@ const selftest = (player: string, hero: string, css: string): number => {
   // THE CONTROL THAT MATTERS: the pane that plays the wrong language must be caught.
   check(
     "re-adding 'quality' to the settings array is caught",
-    qualityPaneFaults(player.replace("settings: activeSubtitles ? ['captions', 'speed'] : ['speed'],", "settings: ['captions', 'speed', 'quality'],")).length > 0
+    qualityPaneFaults(`${player}\n      settings: ['captions', 'speed', 'quality'],`).length > 0
   );
   check(
     're-adding a forced-quality config is caught',
     qualityPaneFaults(`${player}\nconst x = { quality: { forced: true, options: [] } };`).length > 0
   );
   check(
-    'losing the in-frame overlay is caught',
+    'dropping the settings-menu row is caught',
+    placementFaults(player.replace("'language',", "'nope',").replaceAll("'language'", "'nope'"), hero).length > 0
+  );
+  check(
+    'losing the pane populator is caught',
+    placementFaults(player.replaceAll('mountLanguageMenu', 'gone'), hero).length > 0
+  );
+  check(
+    'losing the overlay FALLBACK is caught, not just the row',
     placementFaults(player.replaceAll('tvp-toolbar-overlay', 'tvp-gone'), hero).length > 0
+  );
+  check(
+    'showing overlay and menu at once is caught',
+    placementFaults(player.replace('!menuMounted && ', ''), hero).length > 0
   );
   check(
     'a per-surface opt-in flag coming back is caught',
@@ -133,7 +163,11 @@ const selftest = (player: string, hero: string, css: string): number => {
     chromeFaults(css.replace('.tvp-root .tvp-toolbar-overlay .tvp-toolbar .language-trigger', '.never-matches')).length > 0
   );
   check(
-    'uncapping the 13-locale menu is caught',
+    'uncapping the settings-menu language pane is caught',
+    chromeFaults(css.replace(/(\[id\$='-language'\] \[role='menu'\]\s*\{)[^}]*max-height[^;]*;/, '$1')).length > 0
+  );
+  check(
+    'uncapping the 13-locale overlay menu is caught',
     chromeFaults(css.replace(/(\.tvp-toolbar-overlay \.language-menu\s*\{)[^}]*max-height[^;]*;/, '$1')).length > 0
   );
   return fail === 0 ? 0 : 1;

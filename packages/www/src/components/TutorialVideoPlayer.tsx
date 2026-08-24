@@ -239,6 +239,8 @@ const TutorialVideoPlayer: FC<TutorialVideoPlayerProps> = ({
   // True only while Plyr is constructing. See the quality config below: Plyr restores a
   // STORED quality during init and that restore is not a user action.
   const settlingRef = useRef(true);
+  // Did the in-menu language pane build? False means the in-frame overlay stays up.
+  const [menuMounted, setMenuMounted] = useState(false);
   // The fetched sidecar is stored WITH the URL it came from. Clearing it on a language
   // change would mean calling setState from an effect body (react-hooks/set-state-in-effect,
   // and a cascading render); carrying the source instead lets the consumer below simply
@@ -392,8 +394,19 @@ const TutorialVideoPlayer: FC<TutorialVideoPlayerProps> = ({
       // control that plays a different language than the one clicked is worse than none,
       // so the picker is rendered INSIDE the player frame instead, over the video, using
       // the switch that already works.
-      settings: activeSubtitles ? ['captions', 'speed'] : ['speed'],
+      // `language` IS NOT A PLYR TYPE, and it does not have to be. `config.settings` is
+      // iterated verbatim with no allowlist (plyr.mjs:2645): every entry gets a home row,
+      // a back-buttoned pane, keyboard shortcuts and the height animation for free. Only
+      // POPULATING the pane is Plyr's job for its own three types, so that is the part we
+      // do, in `ready` below. The label must come from `i18n`, because `i18n.get` returns
+      // '' for an unknown key and the row would render blank.
+      settings: [
+        ...(activeSubtitles ? ['captions'] : []),
+        'speed',
+        ...(pickerLangs.length > 1 ? ['language'] : []),
+      ],
       captions: { active: Boolean(activeSubtitles), language: activeLang, update: true },
+      i18n: { language: t('navigation.selectLanguage') },
       keyboard: { focused: true, global: false },
       tooltips: { controls: true, seek: true },
       storage: { enabled: true, key: PLYR_STORAGE_KEY },
@@ -478,9 +491,65 @@ const TutorialVideoPlayer: FC<TutorialVideoPlayerProps> = ({
     }
 
     let detachChapterOverlay: (() => void) | undefined;
+    // POPULATE THE LANGUAGE PANE Plyr built but does not fill.
+    //
+    // Located by DOM id rather than through `player.elements.settings`, which Plyr's own
+    // types do not declare. Every lookup is guarded and a miss is a no-op: if a Plyr
+    // upgrade changes the id convention, the row simply never appears and the in-frame
+    // overlay below stays visible, so a viewer is never left with no picker at all.
+    const mountLanguageMenu = () => {
+      const root = video.closest('.plyr');
+      const pane = root?.querySelector('[id^="plyr-settings-"][id$="-language"]');
+      const list = pane?.querySelector('[role="menu"]');
+      if (!root || !pane || !list) return false;
+      const homeRows = root.querySelectorAll(
+        '[id^="plyr-settings-"][id$="-home"] [role="menu"] > [role="menuitem"]'
+      );
+      const row = homeRows[
+        (activeSubtitles ? ['captions'] : []).length + 1
+      ] as HTMLElement | undefined;
+      if (row) {
+        row.removeAttribute('hidden');
+        const valueSpan = row.querySelector('.plyr__menu__value');
+        // Plyr writes `data[type]` here and has no entry for ours, so without this the
+        // row reads "Language undefined" (plyr.mjs builds `data` from id/seektime/speed/
+        // quality/captions only).
+        if (valueSpan) valueSpan.textContent = getLanguageName(activeBase);
+      }
+      const items: HTMLButtonElement[] = [];
+      pickerLangs.forEach((code) => {
+        const item = document.createElement('button');
+        item.type = 'button';
+        item.className = 'plyr__control tvp-lang-item';
+        item.setAttribute('role', 'menuitemradio');
+        item.setAttribute('aria-checked', String(code === activeBase));
+        item.textContent = getLanguageName(code);
+        item.addEventListener('click', (ev) => {
+          ev.preventDefault();
+          ev.stopPropagation();
+          if (code !== activeBase) handleLanguageChange(code);
+        });
+        list.appendChild(item);
+        items.push(item);
+      });
+      // ArrowUp/Down roving focus, which Plyr writes for its own panes and not for ours.
+      list.addEventListener('keydown', (ev) => {
+        const e = ev as KeyboardEvent;
+        if (e.key !== 'ArrowUp' && e.key !== 'ArrowDown') return;
+        e.preventDefault();
+        const at = items.indexOf(document.activeElement as HTMLButtonElement);
+        const next = e.key === 'ArrowDown' ? at + 1 : at - 1;
+        items[(next + items.length) % items.length]?.focus();
+      });
+      return true;
+    };
+
     player.on('ready', () => {
       detachChapterOverlay = mountChapterOverlay();
       mountCaptionOverlay();
+      // The overlay is the FALLBACK, not the default: it shows only when the pane could
+      // not be built, so there is exactly one picker on screen either way.
+      setMenuMounted(mountLanguageMenu());
     });
 
     return () => {
@@ -703,7 +772,7 @@ const TutorialVideoPlayer: FC<TutorialVideoPlayerProps> = ({
             "integrated to the player" means here: Plyr's own settings menu cannot host a
             language list correctly (see the comment on the Plyr config above), so the
             control that works is placed within the player's own box. */}
-        {toolbar && <div className="tvp-toolbar-overlay">{toolbar}</div>}
+        {toolbar && !menuMounted && <div className="tvp-toolbar-overlay">{toolbar}</div>}
       </div>
     </div>
   );
