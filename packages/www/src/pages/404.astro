@@ -3,8 +3,13 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 import Breadcrumb from '../components/Breadcrumb.astro';
 import { createTranslator } from '../i18n/utils';
 import { SITE_URL } from '../config/constants';
+import Sentences from '../components/Sentences.astro';
 
-const { t } = createTranslator();
+// The 404 page is served outside the `[lang]` routes and has no locale segment, so
+// `createTranslator()` takes its default. `Sentences` needs that same locale explicitly:
+// sentence boundaries are language-specific and it must not guess.
+const lang = 'en' as const;
+const { t } = createTranslator(lang);
 
 const breadcrumbItems = [
   { name: t('pages.notFound.breadcrumb.home'), url: '/' },
@@ -56,7 +61,7 @@ const structuredData = {
         <div class="error-text">
           <h1 class="error-title">{t('pages.notFound.title')}</h1>
           <p class="error-description">
-            {t('pages.notFound.description')}
+            <Sentences text={t('pages.notFound.description')} lang={lang} />
           </p>
 
           <div class="error-suggestions">
@@ -79,7 +84,7 @@ const structuredData = {
       <div class="error-help">
         <h3>{t('pages.notFound.help.title')}</h3>
         <p>
-          {t('pages.notFound.help.description')}
+          <Sentences text={t('pages.notFound.help.description')} lang={lang} />
         </p>
       </div>
     </div>

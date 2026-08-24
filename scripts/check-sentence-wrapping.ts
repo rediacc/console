@@ -68,7 +68,16 @@ const MIN_LENGTH = 25;
  */
 const MIN_FILES = 50;
 
-const TEXT_CALL = /\{\s*(t|ta|to)\(\s*['"`]([^'"`]+)['"`]/g;
+/**
+ * A `{t('key')}` in TEXT position, which is what this gate is about.
+ *
+ * THE LEADING `[^=]` IS THE WHOLE POINT and it was missing. `description={t('key')}` is a
+ * PROP, not text: `BaseLayout` puts it inside a `<meta>` tag. Without the guard this gate
+ * reported eight such keys as unwrapped renders, and "fixing" them would have injected
+ * `<span>` markup into the page metadata -- the gate would have driven a real defect.
+ * Caught on 2026-08-24 by trying to act on its own output, not by reading it.
+ */
+const TEXT_CALL = /(^|[^=])\{\s*(t|ta|to)\(\s*['"`]([^'"`]+)['"`]/g;
 
 /** Sentence counting, isolated so the selftest's mutant leg can replace exactly this. */
 export const makeSentenceCounter = (): ((s: string) => number) => {
@@ -156,7 +165,7 @@ export const scan = (
     TEXT_CALL.lastIndex = 0;
     let m: RegExpExecArray | null;
     while ((m = TEXT_CALL.exec(text)) !== null) {
-      const key = m[2];
+      const key = m[3];
       const value = catalog[key];
       if (value === undefined || value.length < MIN_LENGTH) continue;
       if (countSentences(value) < 2) continue;
@@ -233,6 +242,13 @@ const selftest = (): number => {
   fs.writeFileSync(path.join(src, 'Raw.astro'), `<p>{t('multi')}</p>\n`);
   fs.writeFileSync(path.join(src, 'Wrapped.astro'), `<Sentences text={t('multi')} lang={lang} />\n`);
   fs.writeFileSync(path.join(src, 'Single.astro'), `<p>{t('single')}</p>\n`);
+  // A PROP, not text. `description={t('multi')}` reaches a `<meta>` tag; wrapping it
+  // would inject spans into page metadata. The gate reported eight of these as findings
+  // until 2026-08-24, so this fixture is the one that keeps it honest.
+  fs.writeFileSync(
+    path.join(src, 'Prop.astro'),
+    `<BaseLayout description={t('multi')} title={t('multi')} />\n`
+  );
 
   const real = makeSentenceCounter();
   const got = scan(tmp, real).findings.map((f) => f.id);
@@ -243,6 +259,21 @@ const selftest = (): number => {
     !got.includes(fixture('Wrapped.astro') + ':multi')
   );
   check('leg 3: a single-sentence render is NOT reported', !got.includes(fixture('Single.astro') + ':single'));
+  check(
+    'leg 3b: a PROP is not a text-position render',
+    !got.includes(fixture('Prop.astro') + ':multi')
+  );
+  // CONTROL ON 3b: the fixture must still be scanned, or 3b passes because the file was
+  // never read. Text in the SAME file is reported, so the exclusion is about position.
+  fs.writeFileSync(
+    path.join(src, 'PropAndText.astro'),
+    `<BaseLayout description={t('multi')} />\n<p>{t('multi')}</p>\n`
+  );
+  const got2 = scan(tmp, real).findings.map((f) => f.id);
+  check(
+    'leg 3c CONTROL: text in a file that also has a prop IS reported',
+    got2.includes(fixture('PropAndText.astro') + ':multi')
+  );
 
   // LEG 4, THE ONE THAT MATTERS. Mutate the sentence COUNTER, not the fixture. If leg 1's
   // finding survives a counter that can never return 2, then the finding was produced by

@@ -5,6 +5,7 @@ import { createTranslator } from '../../i18n/utils';
 import { getLanguagePaths } from '../../i18n/language-utils';
 import { CONTACT_EMAIL, SITE_URL } from '../../config/constants';
 import type { Language } from '../../i18n/types';
+import Sentences from '../../components/Sentences.astro';
 
 export const getStaticPaths = getLanguagePaths;
 
@@ -35,7 +36,7 @@ const interest = Astro.url.searchParams.get('interest') || '';
       <div class="contact-grid">
         <div class="contact-info">
           <h1>{t('pages.contact.info.title')}</h1>
-          <p>{t('pages.contact.info.description')}</p>
+          <p><Sentences text={t('pages.contact.info.description')} lang={lang} /></p>
 
           <div class="contact-methods">
             <div class="contact-method">

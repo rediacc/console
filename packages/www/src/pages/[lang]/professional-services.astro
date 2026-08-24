@@ -6,6 +6,7 @@ import { getLanguagePaths } from '../../i18n/language-utils';
 import type { Language } from '../../i18n/types';
 import { EXTERNAL_LINKS } from '../../config/constants';
 import '../../styles/professional-services-page.css';
+import Sentences from '../../components/Sentences.astro';
 
 export const getStaticPaths = getLanguagePaths;
 
@@ -47,7 +48,7 @@ function getIconForCategory(id: string): string {
     <section class="ps-hero section-dark">
       <div class="ps-hero-content">
         <h1>{t('pages.professionalServices.hero.title')}</h1>
-        <p class="hero-subtitle">{t('pages.professionalServices.hero.subtitle')}</p>
+        <p class="hero-subtitle"><Sentences text={t('pages.professionalServices.hero.subtitle')} lang={lang} /></p>
         <div class="hero-badge">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
             <path d="M13 10V3L4 14h7v7l9-11h-7z"/>
@@ -62,7 +63,7 @@ function getIconForCategory(id: string): string {
       <div class="container">
         <div class="value-content">
           <h2>{t('pages.professionalServices.value.heading')}</h2>
-          <p class="value-description">{t('pages.professionalServices.value.description')}</p>
+          <p class="value-description"><Sentences text={t('pages.professionalServices.value.description')} lang={lang} /></p>
           <div class="value-stats">
             {ta('pages.professionalServices.value.statistics').map((stat: string) => (
               <div class="value-stat">
@@ -101,7 +102,7 @@ function getIconForCategory(id: string): string {
           {ta('pages.pricing.professionalServices.benefits.statistics').map((stat: string) => (
             <p class="benefit-stat"><strong>{stat}</strong></p>
           ))}
-          <p>{t('pages.pricing.professionalServices.benefits.description')}</p>
+          <p><Sentences text={t('pages.pricing.professionalServices.benefits.description')} lang={lang} /></p>
           <ul>
             {ta('pages.pricing.professionalServices.benefits.items').map((item: string) => (
               <li>{item}</li>
@@ -116,7 +117,7 @@ function getIconForCategory(id: string): string {
       <div class="container">
         <div class="cta-content">
           <h2>{t('pages.professionalServices.cta.heading')}</h2>
-          <p>{t('pages.professionalServices.cta.description')}</p>
+          <p><Sentences text={t('pages.professionalServices.cta.description')} lang={lang} /></p>
           <a href={EXTERNAL_LINKS.SCHEDULE_CONSULTATION}
              target="_blank"
              rel="noopener noreferrer"

@@ -2,6 +2,7 @@
 import type { Language } from '../../i18n/types';
 import { createTranslator } from '../../i18n/utils';
 import AccountLink from '../AccountLink.astro';
+import Sentences from '../Sentences.astro';
 
 interface Props {
   lang: Language;
@@ -15,7 +16,7 @@ const { t } = createTranslator(lang);
   <div class="container">
     <div class="closing-cta-inner reveal">
       <h2 class="closing-cta-title">{t('getStarted.title')}</h2>
-      <p class="closing-cta-subtitle">{t('getStarted.subtitle')}</p>
+      <p class="closing-cta-subtitle"><Sentences text={t('getStarted.subtitle')} lang={lang} /></p>
       <div class="closing-cta-actions">
         <AccountLink
           label={t('getStarted.cta.primary')}

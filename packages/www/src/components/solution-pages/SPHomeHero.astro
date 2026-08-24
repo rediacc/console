@@ -24,6 +24,7 @@
  */
 import type { Language } from '../../i18n/types';
 import { createTranslator } from '../../i18n/utils';
+import Sentences from '../Sentences.astro';
 
 interface Props {
   lang: Language;
@@ -36,7 +37,7 @@ const { t } = createTranslator(lang);
 <section class="sp-home-hero">
   <div class="sp-home-hero-inner">
     <h1>{t('hero.title')}{t('hero.titleHighlight')}</h1>
-    <p class="sp-home-hero-sub">{t('hero.subtitle')}</p>
+    <p class="sp-home-hero-sub"><Sentences text={t('hero.subtitle')} lang={lang} /></p>
   </div>
 </section>
 
