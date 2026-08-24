@@ -11538,10 +11538,14 @@ for bad in ('', '   ', '../etc/passwd', '/etc/passwd'):
 # a character SET, so '.claude/hooks/...' arrived as 'claude/hooks/...' and every
 # hook-surface artifact was reported as nonexistent. This control is why that was
 # caught before it shipped.
-ok, note = R.prove_named_artifact(root, '.claude/hooks/stop/wl_reggate.py')
-assert ok is True, 'a dotfile artifact was not resolved: %r' % (note,)
-ok, note = R.prove_named_artifact(root, './.claude/hooks/stop/wl_reggate.py')
-assert ok is True, 'a ./-prefixed artifact was not resolved: %r' % (note,)
+# ASSERT RESOLUTION, NOT DIRTINESS. The first spelling of this control required
+# the file to be dirty, which was true while it was being written and false the
+# moment it was committed: a fixture that depends on the working tree passes
+# today and fails tomorrow. What the lstrip bug produced was 'does not exist';
+# that is the thing to pin.
+for spelling in ('.claude/hooks/stop/wl_reggate.py', './.claude/hooks/stop/wl_reggate.py'):
+    ok, note = R.prove_named_artifact(root, spelling)
+    assert 'does not exist' not in note, 'a dotfile path did not resolve: %r' % (note,)
 " 2>"$BASE/reggate-artifact.err"; then
     pass "219c: the named-artifact probe rejects untouched, absent and traversal paths"
 else

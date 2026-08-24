@@ -2387,6 +2387,24 @@ def run_stop(event, event_ok, worklist, hook_file):
                     1,
                     sticky=True,
                 )
+            # QUEUE DEPTH IS REPORTED, not hidden in the marker. The reggate asks
+            # about ONE fix per stop; without this the operator sees a single
+            # question and has no way to know eight more are behind it. Not a
+            # worklist item per queued fix, deliberately: a `- [?]` carrying a
+            # `reggate:` token is exactly what apply_regression_verdict settles as
+            # 'deferred', so auto-creating those lines would settle the whole
+            # queue unasked and turn the gate into a no-op.
+            reg_queued = sum(1 for d in reg_signals if d.startswith("(") and "queued" in d)
+            if reg_queued:
+                outq_add(
+                    worklist,
+                    session_id,
+                    state_doc,
+                    "reg-queue",
+                    "Regression gate: more fixes are queued behind this one and will be "
+                    "asked on later stops, one per stop.",
+                    1,
+                )
             if reg_ids:
                 reg_sig = hashlib.sha1("|".join(reg_ids).encode("utf-8")).hexdigest()[:12]
             if reg_ids and reg_sig in reg_state["fixsets"]:
