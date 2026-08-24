@@ -709,6 +709,81 @@ for (const entry of toc as TocEntry[]) {
           });
 
           pre.appendChild(btn);
+          addPerLineCopy(pre, copyLabel, copiedLabel);
+        });
+      }
+
+      // PER-LINE COPY, for blocks that hold more than one runnable command.
+      //
+      // THE DEFECT: a reader looking at
+      //     curl -fsSL https://www.rediacc.com/install.sh | bash
+      //     rdc doctor     # Verify: Node, SSH key, renet, Docker
+      // wants ONE of those lines, and the block-level button gives them both,
+      // so the second command is pasted into a shell that is still running the
+      // first. The block button stays -- copying the whole recipe is a real
+      // want too -- and this adds a control per command line beside it.
+      //
+      // A LINE IS NOT A COMMAND. Shiki emits one `.line` span per source line,
+      // including blank lines and comment-only lines. Offering "copy" on
+      // `# Generate a key (skip if you already have one)` is noise, and offering
+      // it on a blank line is worse, so both are skipped. A line that ENDS in a
+      // trailing comment still copies whole: stripping it would hand the reader
+      // something they cannot paste back to check against the page, and the
+      // comment is harmless in a shell.
+      //
+      // Single-command blocks get NOTHING. There the block button already IS the
+      // per-line button, and a second identical control next to it is pure noise.
+      function isRunnableLine(text) {
+        var t = (text || '').trim();
+        if (t === '') return false;
+        if (t.charAt(0) === '#') return false;
+        return true;
+      }
+
+      function addPerLineCopy(pre, copyLabel, copiedLabel) {
+        var code = pre.querySelector('code');
+        if (!code) return;
+        var lines = code.querySelectorAll('.line');
+        if (!lines.length) return;
+
+        var runnable = [];
+        lines.forEach(function(line) {
+          if (isRunnableLine(line.textContent)) runnable.push(line);
+        });
+        // One runnable line means the block button already covers it exactly.
+        if (runnable.length < 2) return;
+
+        pre.classList.add('has-line-copy');
+        runnable.forEach(function(line, idx) {
+          if (line.dataset.lineCopyBound === 'true') return;
+          line.dataset.lineCopyBound = 'true';
+          line.classList.add('line-copyable');
+
+          var lbtn = document.createElement('button');
+          lbtn.type = 'button';
+          lbtn.className = 'line-copy';
+          var label = copyLabel + ' (' + (idx + 1) + '/' + runnable.length + ')';
+          lbtn.setAttribute('aria-label', label);
+          lbtn.title = label;
+          lbtn.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>';
+
+          lbtn.addEventListener('click', function(ev) {
+            ev.stopPropagation();
+            // textContent of the line, minus the button's own (empty) text.
+            var text = (line.textContent || '').replace(/\s+$/, '');
+            navigator.clipboard.writeText(text).then(function() {
+              lbtn.classList.add('copied');
+              lbtn.setAttribute('aria-label', copiedLabel);
+              lbtn.title = copiedLabel;
+              setTimeout(function() {
+                lbtn.classList.remove('copied');
+                lbtn.setAttribute('aria-label', label);
+                lbtn.title = label;
+              }, 2000);
+            }).catch(function() {});
+          });
+
+          line.appendChild(lbtn);
         });
       }
 
@@ -743,6 +818,16 @@ for (const entry of toc as TocEntry[]) {
       --docs-rail-nav: 250px;
       --docs-rail-toc: 250px;
       --docs-measure: 800px;
+
+      /* The column cluster's total width: three tracks plus the two gutters between
+         them. The header row reads it to indent its content to the cluster's edges
+         (the reference layout's tab strip starts above the sidebar, not at the
+         viewport edge), so it must be restated by every modifier that changes the
+         track list: the no-TOC variant below drops a rail and a gutter, and the
+         full-width pages set it to 100% so the chrome spans with them. */
+      --docs-cluster: calc(
+        var(--docs-rail-nav) + var(--docs-measure) + var(--docs-rail-toc) + 2 * var(--space-8)
+      );
 
       /* The track list, composed rather than written out at the grid, so the
          no-TOC variant drops the last track by leaving the toc rail off the
@@ -785,6 +870,10 @@ for (const entry of toc as TocEntry[]) {
        CheatSheetGrid and --docs-measure still computed to 800px. */
     .docs-shell:has(.cs-cards) {
       --docs-measure: 1fr;
+      /* 1fr poisons the cluster calc (invalid at computed-value time would zero the
+         chrome padding anyway, but silently); say what is meant: the columns span
+         the shell, so the chrome does too. */
+      --docs-cluster: 100%;
     }
 
     /* Tutorial pages release the measure for the same reason cheat sheets do:
@@ -797,6 +886,7 @@ for (const entry of toc as TocEntry[]) {
        Same specificity note as above: it must live here, not in the component. */
     .docs-shell:has(.tutorial-video-container) {
       --docs-measure: 1fr;
+      --docs-cluster: 100%;
     }
 
     /* The browse page is ONE track: no article rail, no TOC, no measure cap. It is
@@ -806,6 +896,10 @@ for (const entry of toc as TocEntry[]) {
        subtracting from a page whose job is to show many cards at once. */
     .docs-shell-browse {
       --docs-tracks: minmax(0, 1fr);
+      /* The browse page's own content cap, so the chrome indents to the card grid's
+         edges the way it indents to the rails on an article page. The literal is
+         .docs-browse's max-width (styles/docs-browse.css); keep them in step. */
+      --docs-cluster: 84rem;
     }
 
     /* One track, so the base rule's `grid-column: 2` would conjure an implicit
@@ -869,6 +963,14 @@ for (const entry of toc as TocEntry[]) {
       gap: var(--space-4);
       border-bottom: 1px solid var(--color-border);
       min-height: var(--docs-chrome-height, 3rem);
+      /* Indent the chrome CONTENT to the column cluster's edges while the row itself
+         stays full width: the hairline must keep spanning the shell (the reference
+         does this), and the active tab's 2px underline sits ON that hairline, which
+         a capped-and-centred row would have dragged inward with it. Padding, not
+         margin, is what keeps both true at once. The max() clamp makes it vanish
+         wherever the cluster fills the row -- narrow viewports and the 100% override
+         on full-width pages -- and padding-inline is logical, so RTL mirrors free. */
+      padding-inline: max(0px, calc((100% - var(--docs-cluster)) / 2));
     }
 
     .docs-header-tools {
@@ -1054,6 +1156,8 @@ for (const entry of toc as TocEntry[]) {
        list it inherits. */
     .docs-shell-no-toc {
       --docs-tracks: var(--docs-tracks-body);
+      /* One rail and one gutter fewer, so the chrome indents to the narrower cluster. */
+      --docs-cluster: calc(var(--docs-rail-nav) + var(--docs-measure) + var(--space-8));
     }
 
     /* Explicit placement: with the slack tracks gone the DOM order happens to
@@ -1421,6 +1525,49 @@ for (const entry of toc as TocEntry[]) {
        on top of the text it was meant to sit beside. */
     .article-content :global(pre) {
       position: relative;
+    }
+
+    /* PER-LINE COPY. The line span becomes a block and a positioning context so
+       the control can sit at its inline-end: Shiki emits `.line` as an inline
+       span, which cannot host an absolutely-positioned child. Logical
+       properties throughout, so /ar mirrors with no extra rules. */
+    .article-content :global(pre.has-line-copy .line-copyable) {
+      display: block;
+      position: relative;
+      padding-inline-end: 2rem;
+    }
+
+    .article-content :global(pre .line-copy) {
+      position: absolute;
+      inset-block-start: 50%;
+      inset-inline-end: 0;
+      transform: translateY(-50%);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      inline-size: 1.5rem;
+      block-size: 1.5rem;
+      padding: 0;
+      border: 0;
+      border-radius: var(--radius-sm);
+      background: transparent;
+      color: inherit;
+      opacity: 0;
+      cursor: pointer;
+      transition: opacity var(--transition-duration-fast) var(--ease-standard);
+    }
+
+    /* Revealed on hover of the LINE, and permanently once the control takes
+       focus. Hiding by opacity keeps it in the tab order deliberately: a copy
+       affordance a keyboard user cannot reach is not an affordance. */
+    .article-content :global(pre.has-line-copy .line-copyable:hover .line-copy),
+    .article-content :global(pre .line-copy:focus-visible) {
+      opacity: 0.75;
+    }
+
+    .article-content :global(pre .line-copy:hover),
+    .article-content :global(pre .line-copy.copied) {
+      opacity: 1;
     }
 
     .article-content :global(pre .code-copy) {
