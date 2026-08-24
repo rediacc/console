@@ -51,11 +51,25 @@ fail() {
 [[ -f "$PKG" ]] || fail "check-gate-id-convention: $PKG not found"
 
 # evaluate <manifest-text> <package-json-text> -- one line per violation, empty when clean.
+#
+# The texts go through TEMP FILES, not argv. Linux caps a single argument at
+# MAX_ARG_STRLEN (32 pages = 131072 bytes), and manifest.ts crossed it on
+# 2026-08-24 at 131359 bytes -- it had been 96 bytes under the limit one commit
+# earlier. The symptom is not a gate finding but the interpreter refusing to
+# start: "/usr/bin/python3: Argument list too long", exit 126, which reads like
+# a broken runner rather than a gate that outgrew its own plumbing. Every
+# manifest entry added from now on would have hit it.
 evaluate() {
-    python3 - "$1" "$2" <<'PY'
+    local _mf _pf
+    _mf="$(mktemp)"
+    _pf="$(mktemp)"
+    printf '%s' "$1" >"$_mf"
+    printf '%s' "$2" >"$_pf"
+    python3 - "$_mf" "$_pf" <<'PY'
 import json, re, sys
 
-manifest, pkg_text = sys.argv[1], sys.argv[2]
+manifest = open(sys.argv[1], encoding="utf-8").read()
+pkg_text = open(sys.argv[2], encoding="utf-8").read()
 try:
     scripts = json.loads(pkg_text).get("scripts", {})
 except ValueError:
@@ -92,6 +106,9 @@ for gid, run in entries:
               f"'{m.group(1)}'; siblings invoke the script directly, so the alias is "
               f"a second name for one thing and drifts")
 PY
+    local _rc=$?
+    rm -f "$_mf" "$_pf"
+    return $_rc
 }
 
 MANIFEST_TEXT="$(cat "$MANIFEST")"
