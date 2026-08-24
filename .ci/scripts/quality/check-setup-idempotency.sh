@@ -264,6 +264,49 @@ check_f() { # check_f <devbox.sh path>
 }
 
 # ---------------------------------------------------------------------------
+# G. setup() must initialise submodules BEFORE any phase that reads one.
+#
+# Paid for on 2026-08-24: setup() never initialised submodules at all, while
+# CONTRIBUTING.md's quickstart is `git clone && ./run.sh setup` and its table
+# claimed setup did it. The docker phase reads private/renet/go.mod to choose the
+# Go version, so on a genuinely fresh clone setup died with "Cannot determine the
+# required Go version" -- a message that names neither submodules nor the file.
+#
+# ORDER is the invariant, not mere presence: an init call placed after the phase
+# that reads a submodule path fixes nothing, and reads as correct in a diff.
+# ---------------------------------------------------------------------------
+# shellcheck disable=SC2120  # called with an argument by the control below
+check_g() { # check_g <run.sh path>
+    local runsh="${1:-$ROOT/run.sh}" body init_line reader_line
+
+    # COMMENTS STRIPPED, and that is load-bearing. The first version matched
+    # "private/renet/go.mod" inside the comment that explains the ordering and
+    # concluded the real, correctly-ordered code was broken. Same family as the
+    # gate that matched "binary" against a PATH: judge the code, not the prose
+    # describing it.
+    body="$(awk '/^setup\(\) \{/{inside=1} inside{print NR": "$0} inside&&/^}/{exit}' "$runsh" |
+        sed 's/[[:space:]]*#.*$//')"
+    if [ -z "$body" ]; then
+        fail "G: no setup() function in $(basename "$runsh")"
+        return 1
+    fi
+
+    init_line="$(printf '%s\n' "$body" | grep -nE 'init-submodules\.sh|git submodule (update|init)' | head -1 | cut -d: -f1)"
+    if [ -z "$init_line" ]; then
+        fail "G: setup() never initialises submodules. A fresh clone then fails in the docker phase, which reads private/renet/go.mod, with a message that never mentions submodules."
+        return 1
+    fi
+
+    # The first phase that depends on a submodule path being present.
+    reader_line="$(printf '%s\n' "$body" | grep -nE 'ensure_docker_installed|private/renet|private/account' | head -1 | cut -d: -f1)"
+    if [ -n "$reader_line" ] && [ "$init_line" -gt "$reader_line" ]; then
+        fail "G: setup() initialises submodules AFTER the first phase that reads one (init at body line $init_line, reader at $reader_line). Order is the invariant; a late init reads as correct in a diff and fixes nothing."
+        return 1
+    fi
+    return 0
+}
+
+# ---------------------------------------------------------------------------
 # Controls
 # ---------------------------------------------------------------------------
 control_fails=0
@@ -289,6 +332,7 @@ check_c && pass "port derivation is deterministic and per-worktree distinct"
 check_d && pass "ensure_renet_built checks the build's exit code"
 check_e && pass "no status label contradicts its HTTP code"
 check_f && pass "no path-scoped redirect leaves its method unscoped"
+check_g && pass "setup initialises submodules before any phase that reads one"
 
 # C-control: a random slot must be rejected.
 sed 's/digest="$(printf .*$/digest=$RANDOM/' "$LIB/find-port.sh" >"$TMP/fp-broken.sh"
@@ -336,6 +380,29 @@ if ! grep -q 'dbui.redirectregex' "$TMP/devbox-redirect.sh"; then
     control_fails=1
 else
     control "F (path redirect without method)" check_f "$TMP/devbox-redirect.sh"
+fi
+
+# G-control: two plants, because presence and ORDER are different defects and a
+# check that only notices absence would pass the one that actually shipped later.
+sed '/init-submodules\.sh/d' "$ROOT/run.sh" >"$TMP/run-noinit.sh"
+if grep -q 'init-submodules' "$TMP/run-noinit.sh"; then
+    echo "${RED}CONTROL IS VACUOUS${NC}: G(absent) -- the init call was not removed." >&2
+    control_fails=1
+else
+    control "G (submodule init absent)" check_g "$TMP/run-noinit.sh"
+fi
+
+# Move the init AFTER the docker phase: present, but useless.
+awk '
+    /init-submodules\.sh/ { next }
+    { print }
+    /if ! ensure_docker_installed; then/ { print "        bash \"$ROOT_DIR/.devcontainer/init-submodules.sh\" --quiet || true" }
+' "$ROOT/run.sh" >"$TMP/run-lateinit.sh"
+if ! grep -q 'init-submodules' "$TMP/run-lateinit.sh"; then
+    echo "${RED}CONTROL IS VACUOUS${NC}: G(order) -- the moved init did not land." >&2
+    control_fails=1
+else
+    control "G (submodule init after the reader)" check_g "$TMP/run-lateinit.sh"
 fi
 
 [ "$control_fails" -eq 0 ] && pass "controls fired: each assertion rejects the original defect"
