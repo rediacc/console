@@ -195,7 +195,10 @@ devbox_proxy_ensure() {
 devbox_proxy_stop() {
     local d
     d="$(devbox_docker)"
-    devbox_proxy_running || { log_warn "Proxy is not running"; return 0; }
+    devbox_proxy_running || {
+        log_warn "Proxy is not running"
+        return 0
+    }
     $d stop "$DEVBOX_PROXY_NAME" >/dev/null && log_info "Proxy stopped"
 }
 
@@ -486,9 +489,16 @@ devbox_status() {
             "account:Account:account:./run.sh account dev (INSIDE the devbox)" \
             "db:Database:db:./run.sh account db (INSIDE the devbox)"; do
             IFS=: read -r _ _label _suffix _hint _probe <<<"$_svc"
+            # `|| true` is load-bearing under `set -e`: curl exits non-zero on a
+            # timeout (28) or refused connection (7), and a failing command
+            # substitution makes the ASSIGNMENT fail, which kills the whole
+            # script. A probe that cannot reach a route must report "000", not
+            # abort the status command. Observed as `setup --check` exiting 28
+            # when the box was loaded enough for one probe to time out.
             _code="$(curl -s -o /dev/null -w '%{http_code}' --max-time 3 \
                 -H "Host: $(devbox_slug)${_suffix:+-$_suffix}.${DEVBOX_DOMAIN}" \
-                "http://127.0.0.1:${DEVBOX_PROXY_PORT}${_probe:-/}" 2>/dev/null)"
+                "http://127.0.0.1:${DEVBOX_PROXY_PORT}${_probe:-/}" 2>/dev/null || true)"
+            [[ -z "$_code" ]] && _code=000
             printf '  %-9s %-46s %s\n' "$_label:" "$(devbox_url "$_suffix")" \
                 "$(devbox_route_label "$_code" "$_hint")"
         done

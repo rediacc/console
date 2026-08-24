@@ -1015,8 +1015,14 @@ account_db() {
     local use_studio=false
     while [[ $# -gt 0 ]]; do
         case "$1" in
-            --studio) use_studio=true; shift ;;
-            *) log_error "Unknown option for account db: $1"; return 2 ;;
+            --studio)
+                use_studio=true
+                shift
+                ;;
+            *)
+                log_error "Unknown option for account db: $1"
+                return 2
+                ;;
         esac
     done
 
