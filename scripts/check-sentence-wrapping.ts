@@ -172,6 +172,22 @@ export const scan = (
   return { findings, files: files.length };
 };
 
+/**
+ * Baselined ids that no longer appear in the scan, i.e. FIXED and awaiting a drain.
+ *
+ * EXPORTED AND PARAMETERIZED FOR ONE REASON: so the selftest can call the SAME code the
+ * gate runs. The first version of this arm inlined the set difference in `main()` and the
+ * selftest re-derived that expression from its own inputs -- which made both assertions
+ * true by Array/Set construction for ANY input, so deleting or inverting the production
+ * block would not have failed a single one. That is the "a check that cannot fail is not
+ * evidence" shape this file's own leg 4 exists to prevent, and it was caught in review on
+ * PR #571 rather than by the suite. A test may only assert against this function.
+ */
+export const alreadyFixed = (baseline: readonly string[], present: readonly string[]): string[] => {
+  const have = new Set(present);
+  return baseline.filter((id) => !have.has(id));
+};
+
 const readBaseline = (): string[] => {
   try {
     const j = JSON.parse(fs.readFileSync(BASELINE, 'utf8')) as { entries?: string[] };
@@ -244,14 +260,18 @@ const selftest = (): number => {
   // THE DRAIN ARM, both directions. Without the first of these the ratchet only turns one
   // way and a stalled migration is indistinguishable from a finished one.
   const ids = scan(tmp, real).findings.map((f) => f.id);
-  const stale = [...ids, `${SRC_PREFIX}/Gone.astro:multi`];
+  const gone = `${SRC_PREFIX}/Gone.astro:multi`;
   check(
     'a baselined entry that no longer appears is REPORTED as already fixed',
-    stale.filter((id) => !new Set(ids).has(id)).length === 1
+    alreadyFixed([...ids, gone], ids).join(',') === gone
   );
   check(
     'CONTROL: an unchanged baseline reports nothing to drain',
-    ids.filter((id) => !new Set(ids).has(id)).length === 0
+    alreadyFixed(ids, ids).length === 0
+  );
+  check(
+    'CONTROL: an EMPTY scan reports every baselined entry, not zero',
+    alreadyFixed([...ids, gone], []).length === ids.length + 1
   );
 
   fs.rmSync(tmp, { recursive: true, force: true });
@@ -311,8 +331,7 @@ const main = (): number => {
   // It is also the only thing that can notice the mechanism DISAPPEARING mid-adoption in
   // the direction growth cannot see. `check-css-dom-refs.ts:232` has carried this arm all
   // along; this gate was strictly weaker than its own sibling.
-  const present = new Set(ids);
-  const fixed = baseline.filter((id) => !present.has(id));
+  const fixed = alreadyFixed(baseline, ids);
   if (fixed.length > 0) {
     console.error(`✗ ${fixed.length} baselined entr(ies) are already fixed. The baseline only shrinks:\n`);
     for (const id of fixed) console.error(`  ${id}`);
