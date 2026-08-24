@@ -2080,8 +2080,7 @@
         },
         "hero": {
           "title": "Clone production in 60 seconds",
-          "subtitle": "Make an exact copy of production in seconds. The app, the database, and the settings. No tickets. No waiting.",
-          "primaryCta": "Start free trial"
+          "subtitle": "Make an exact copy of production in seconds. The app, the database, and the settings. No tickets. No waiting."
         },
         "stats": [
           {
@@ -2445,8 +2444,7 @@
         },
         "hero": {
           "title": "Stop paying for idle environments",
-          "subtitle": "Spin up a test server on demand. Kill it when the work is done. Pay for what runs, not for servers sitting idle.",
-          "primaryCta": "Start free trial"
+          "subtitle": "Spin up a test server on demand. Kill it when the work is done. Pay for what runs, not for servers sitting idle."
         },
         "stats": [
           {
@@ -2780,8 +2778,7 @@
         },
         "hero": {
           "title": "Dev environments that match production. Exactly.",
-          "subtitle": "Everyone knows the line: it works on my machine. Here, every dev setup is an exact copy of production.",
-          "primaryCta": "Start free trial"
+          "subtitle": "Everyone knows the line: it works on my machine. Here, every dev setup is an exact copy of production."
         },
         "stats": [
           {
@@ -3112,8 +3109,7 @@
         },
         "hero": {
           "title": "Plug into the existing workflow",
-          "subtitle": "Push the code. Rediacc spins up a fresh copy of production. Tests run on real data, not fake data. No custom scripts to write.",
-          "primaryCta": "Start free trial"
+          "subtitle": "Push the code. Rediacc spins up a fresh copy of production. Tests run on real data, not fake data. No custom scripts to write."
         },
         "stats": [
           {
@@ -3429,8 +3425,7 @@
         },
         "hero": {
           "title": "Backups that ransomware can’t touch",
-          "subtitle": "Backups lock the moment they're made. No one can change them. Not hackers. Not even the owner.",
-          "primaryCta": "Start free trial"
+          "subtitle": "Backups lock the moment they're made. No one can change them. Not hackers. Not even the owner."
         },
         "stats": [
           {
@@ -3821,8 +3816,7 @@
         },
         "hero": {
           "title": "Migrate without risking the data",
-          "subtitle": "Switching servers, clouds, or providers? Backups stay locked the whole way. No data exposed. None lost.",
-          "primaryCta": "Start free trial"
+          "subtitle": "Switching servers, clouds, or providers? Backups stay locked the whole way. No data exposed. None lost."
         },
         "stats": [
           {
@@ -4179,8 +4173,7 @@
         },
         "hero": {
           "title": "Get the whole setup back in minutes",
-          "subtitle": "Not just files. Whole setups: servers, configs, and databases. Back up and running in minutes.",
-          "primaryCta": "Start free trial"
+          "subtitle": "Not just files. Whole setups: servers, configs, and databases. Back up and running in minutes."
         },
         "stats": [
           {
@@ -4541,8 +4534,7 @@
         },
         "hero": {
           "title": "Test OS updates without the risk",
-          "subtitle": "Make a copy of the live servers. Install the update on the copy. See what breaks. If it goes wrong, throw the copy away. The real servers never get touched.",
-          "primaryCta": "Start free trial"
+          "subtitle": "Make a copy of the live servers. Install the update on the copy. See what breaks. If it goes wrong, throw the copy away. The real servers never get touched."
         },
         "stats": [
           {
@@ -4901,8 +4893,7 @@
         },
         "hero": {
           "title": "Keep data as long as the law requires",
-          "subtitle": "Set how long to keep backups. Rediacc keeps them that long, then cleans up. HIPAA, SOC2, and GDPR rules are covered from day one.",
-          "primaryCta": "Start free trial"
+          "subtitle": "Set how long to keep backups. Rediacc keeps them that long, then cleans up. HIPAA, SOC2, and GDPR rules are covered from day one."
         },
         "stats": [
           {
@@ -5294,8 +5285,7 @@
         },
         "hero": {
           "title": "When AWS goes down, the business stays up",
-          "subtitle": "Apps run across more than one cloud. When one cloud goes down, the others take over on their own. Nobody gets paged.",
-          "primaryCta": "Start free trial"
+          "subtitle": "Apps run across more than one cloud. When one cloud goes down, the others take over on their own. Nobody gets paged."
         },
         "stats": [
           {
@@ -5655,8 +5645,7 @@
         },
         "hero": {
           "title": "Test failover before it is needed",
-          "subtitle": "Run a fake disaster on a safe copy of the systems. See if recovery really works. Find the gaps before a real outage does.",
-          "primaryCta": "Start free trial"
+          "subtitle": "Run a fake disaster on a safe copy of the systems. See if recovery really works. Find the gaps before a real outage does."
         },
         "stats": [
           {
@@ -6007,8 +5996,7 @@
         },
         "hero": {
           "title": "Every backup verified. Automatically.",
-          "subtitle": "Don’t wait for a disaster to find out a backup is corrupted. Rediacc checks every backup the moment it’s created.",
-          "primaryCta": "Start free trial"
+          "subtitle": "Don’t wait for a disaster to find out a backup is corrupted. Rediacc checks every backup the moment it’s created."
         },
         "stats": [
           {
@@ -6371,8 +6359,7 @@
         },
         "hero": {
           "title": "Fix vulnerabilities before attackers arrive",
-          "subtitle": "Test the patch on an exact copy of production first. Then deploy the fix for real, knowing it works.",
-          "primaryCta": "Start free trial"
+          "subtitle": "Test the patch on an exact copy of production first. Then deploy the fix for real, knowing it works."
         },
         "stats": [
           {
@@ -6628,8 +6615,7 @@
         },
         "hero": {
           "title": "Clone production. Let AI attack it.",
-          "subtitle": "Make an exact copy of the servers. Let AI attack the copy. The real systems never get touched.",
-          "primaryCta": "Start free trial"
+          "subtitle": "Make an exact copy of the servers. Let AI attack the copy. The real systems never get touched."
         },
         "stats": [
           {
@@ -6891,8 +6877,7 @@
         },
         "hero": {
           "title": "Own the keys. Own the encryption. No exceptions.",
-          "subtitle": "Every backup is encrypted with locally owned keys. Not the vendor's keys. Not shared keys. One owner only.",
-          "primaryCta": "Start free trial"
+          "subtitle": "Every backup is encrypted with locally owned keys. Not the vendor's keys. Not shared keys. One owner only."
         },
         "stats": [
           {
@@ -7276,8 +7261,7 @@
         },
         "hero": {
           "title": "Test security continuously. Not annually.",
-          "subtitle": "We test security every day on a fresh copy of the live systems. Holes surface the day they show up, not months later.",
-          "primaryCta": "Start free trial"
+          "subtitle": "We test security every day on a fresh copy of the live systems. Holes surface the day they show up, not months later."
         },
         "stats": [
           {
@@ -7534,8 +7518,7 @@
         },
         "hero": {
           "title": "Every action logged. Nothing hidden.",
-          "subtitle": "See who did what, when, and why. Every action lands in a record nobody can fake.",
-          "primaryCta": "Start free trial"
+          "subtitle": "See who did what, when, and why. Every action lands in a record nobody can fake."
         },
         "stats": [
           {
@@ -7887,8 +7870,7 @@
         },
         "hero": {
           "title": "Sovereign by design, not by certificate.",
-          "subtitle": "It runs on local servers. The only keys stay local. A US-owned provider can't hand over data it never had.",
-          "primaryCta": "Start free trial"
+          "subtitle": "It runs on local servers. The only keys stay local. A US-owned provider can't hand over data it never had."
         },
         "stats": [
           {
@@ -8246,8 +8228,7 @@
         },
         "hero": {
           "title": "Recover in minutes. Not days.",
-          "subtitle": "When ransomware hits, every minute costs money. Rediacc restores service fast, before the damage spreads.",
-          "primaryCta": "Start free trial"
+          "subtitle": "When ransomware hits, every minute costs money. Rediacc restores service fast, before the damage spreads."
         },
         "stats": [
           {
@@ -8615,8 +8596,7 @@
         },
         "hero": {
           "title": "Fork or move a running Kubernetes cluster",
-          "subtitle": "The cluster moves as one set: nodes, config, and data. To another machine or another datacenter. The cutover is measured in seconds, not a weekend.",
-          "primaryCta": "Start free trial"
+          "subtitle": "The cluster moves as one set: nodes, config, and data. To another machine or another datacenter. The cutover is measured in seconds, not a weekend."
         },
         "stats": [
           {
@@ -8907,8 +8887,7 @@
         },
         "hero": {
           "title": "Run it anywhere. Move it anytime. Always.",
-          "subtitle": "Run it on any cloud. Move it anytime. No long contracts. No locked-in data formats. The data stays under local control.",
-          "primaryCta": "Start free trial"
+          "subtitle": "Run it on any cloud. Move it anytime. No long contracts. No locked-in data formats. The data stays under local control."
         },
         "stats": [
           {
