@@ -834,6 +834,21 @@ export const GATES: readonly GateSpec[] = [
   // hand-authored and their generator was deleted, so a new doc without one ships a
   // blank browse card in all 13 locales silently -- one file serves every translation,
   // resolved by base slug.
+  // A skill an agent may edit gets longer every pass, because appending beats
+  // rewriting. The cap is what forces the editing pass; skills opt in through
+  // `self-improving: true` in their own frontmatter rather than a list here.
+  {
+    id: 'check:ci-skill-size',
+    run: 'npm run check:ci-skill-size',
+    gate: true,
+    leaves: ['scripts/check-skill-size.ts'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-content',
+      step: 'Self-improving skill size',
+    },
+  },
   // The mechanisms three /en/docs fixes rest on: the tally is announced not shown, the
   // two headings are styled by one shared rule, and the category group is decided before
   // first paint. Structural, not visual -- the interactive gate is wave D gate 2.

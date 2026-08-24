@@ -794,6 +794,11 @@ jobs:
       - name: Docs browse invariants
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: npm run check:ci-docs-browse-invariants
+      # Skills an agent edits itself are capped, so improving one means sharpening
+      # it rather than appending to it.
+      - name: Self-improving skill size
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: npm run check:ci-skill-size
       # Fourth pin kind to join the shared soak window, after npm deps, embedded assets
       # and GitHub Actions. DOCKERHUB_TOKEN keeps Docker Hub's anonymous rate limit from
       # making this vacuous; without it a limited response is reported as unknown and the
