@@ -799,6 +799,11 @@ jobs:
       - name: Self-improving skill size
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: npm run check:ci-skill-size
+      # The language picker must stay out of Plyr's quality pane, which plays a
+      # language nobody chose, and inside the player frame.
+      - name: Video player invariants
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: npm run check:ci-video-player-invariants
       # Fourth pin kind to join the shared soak window, after npm deps, embedded assets
       # and GitHub Actions. DOCKERHUB_TOKEN keeps Docker Hub's anonymous rate limit from
       # making this vacuous; without it a limited response is reported as unknown and the
