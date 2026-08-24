@@ -33,10 +33,13 @@
   gap: var(--space-4);
 }
 
-.docs-rail-heading {
-  margin: 0;
-  font-size: var(--font-size-base);
-}
+/* NOT STYLED HERE, and the alignment depends on that. Both this heading and the results
+   heading below are `h2` inside `.article-content`, so `.article-content h2` -- one
+   specificity point heavier than either class -- gives them the same 32px size, the same
+   32/16 margins and the same 2px rule. Four declarations that tried to set a smaller size
+   and a zero margin were overridden and have been removed rather than left describing an
+   intent the page does not have. Style the pair through that shared rule, or they drift
+   apart again. */
 
 .docs-rail-search {
   display: block;
@@ -171,11 +174,6 @@
 /* Groups and cards */
 .docs-browse-group {
   margin-block-end: var(--space-10);
-}
-
-.docs-browse-group-title {
-  font-size: var(--font-size-lg);
-  margin-block-end: var(--space-4);
 }
 
 .docs-browse-grid {
