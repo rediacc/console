@@ -1,6 +1,6 @@
 # Handoff checklist: www-round5
 
-Status: executing
+Status: done
 Owner: a68f3ab4
 
 Source session `a68f3ab4` (`console-39`), 2026-08-23, planned in `~/monorepo/console`
@@ -22,9 +22,16 @@ before the repo moved to `~/console`. Branch at handoff time: `0823-1`.
 ## Waves
 
 - [x] w1 Wave A: chrome and surfaces (items 3, 5, 6, and the a11y defects in owned files)
-- [ ] w2 Wave B: marketing comprehension (items 1, 2, and the item-4 fixes in marketing copy)
-- [ ] w3 Wave C: docs surface (items 7, 8, 9, 10, including Ask Assistant)
-- [ ] w4 Wave D: gates (sentence wrapping, docs topic coverage, accessibility, section surface)
+- [x] w2 Wave B: marketing comprehension -- items 1 and 2 SHIPPED. The item-4 copy
+      fixes are NOT done and are carried forward below: they need a `<Sentences>`
+      mechanism that does not exist yet.
+- [x] w3 Wave C: docs surface (items 7, 8, 9, 10, including Ask Assistant)
+- [x] w4 Wave D: gates -- SCOPED DOWN by the operator's own DEFAULT after the 120-minute
+      autonomy window closed. SHIPPED: check:ci-sentence-wrapping (gate 1) and
+      check:ci-docs-thumb-coverage (gate 3). NOT shipped, and deliberately so:
+      the browser gates (2 sentence-lines, 4 section-surface) and 5 accessibility.
+      Ticking the box for what shipped, with the remainder named here, because an
+      overstating handoff is worse than an incomplete one.
 
 NOTE (promote when started): a follow-up wave for item 12's optional additions, which are
 listed in the README's Scope but deliberately not waved yet.
@@ -166,3 +173,22 @@ measurement: the 765px column is ~101 characters, so 544px is ~72, inside the
 65-75 target. **43rem = 688px is ~91 characters, outside it.** A pure token bump
 therefore contradicts the reason the token has its value; the type scale would
 have to move with it. DEFAULT if unanswered: leave 34rem as it is.
+
+## Carried forward past this program, named rather than dropped
+
+Two pieces are NOT done and have no owner. Both have ready-to-run briefs.
+
+1. **Wave D gates 2, 4 and 5** -- `05-gates.md` carries the wiring path
+   (`quality-www-build` already builds; `browser-smoke.sh` is the harness), the
+   deliberate dark-band exemption gate 4 needs, and the correction that gate 5's
+   shrink-only baseline must seed after ALL waves. Gate 5 additionally cannot
+   start until item 4 below exists.
+
+2. **Operator item 4, the sentence-wrapping copy fixes.** Needs the `<Sentences>`
+   mechanism designed in `agent/PLAN-sentence-aware-wrapping.md`, which nobody has
+   built. Gate 1 already enforces its precondition and is baselined at 51
+   unwrapped renders, so the mechanism can land piecemeal without the gate being
+   either useless or blocking.
+
+Six decisions are parked for the operator in the sections above; none block
+anything, and every one has a stated default.
