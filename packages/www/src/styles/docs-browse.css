@@ -73,6 +73,16 @@
   transform: rotate(-135deg);
 }
 
+/* ...unless a category tab already made the choice. The flag is set on <html> by an
+   inline script that runs before this element is parsed, so the group is never painted
+   and then removed -- see the comment on that script in pages/[lang]/docs/index.astro.
+   `display: none` rather than the `hidden` attribute because the attribute cannot be set
+   on an element that does not exist yet, and one mechanism is what keeps the clear
+   button (which deletes the flag) able to bring the group back. */
+[data-docs-category] .docs-rail-group--primary {
+  display: none;
+}
+
 /* Category is the primary axis: larger and bolder than the groups beneath it, which is the
    whole hierarchy. No second widget, just weight and order. */
 .docs-rail-group--primary {
@@ -146,19 +156,6 @@
   background-color: var(--color-bg);
   color: var(--color-text);
   font-size: var(--font-size-sm);
-}
-
-.docs-browse-status {
-  display: flex;
-  align-items: center;
-  gap: var(--space-4);
-  margin: 0 0 var(--space-6);
-  color: var(--color-text-secondary);
-  font-size: var(--font-size-sm);
-}
-
-.docs-browse-tally {
-  font-variant-numeric: tabular-nums;
 }
 
 .docs-browse-clear {

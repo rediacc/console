@@ -97,6 +97,23 @@ const description = t('documentation.browse.description');
         order at the rail's h2. */}
     <h1 class="sr-only">{title}</h1>
 
+    {/* WHY THIS RUNS HERE AND NOT IN THE MODULE SCRIPT BELOW. Arriving with
+        `?category=` hides the rail's category group, because the tab that brought the
+        reader here already says the same thing. That decision used to be made in the
+        deferred module script, which by definition runs after first paint: switching
+        between ?category=Reference and ?category=Concepts made the group appear and
+        then vanish on every navigation. Flipping the default would only move the flash
+        onto the bare index. An inline script placed BEFORE the rail is parsed makes the
+        decision in time, so neither case flashes -- and no page renders <ClientRouter />
+        (BaseLayout.astro:19), so every navigation is a full load and this runs fresh.
+        The flag lives on <html> for the same reason: it must be settable before the
+        element it governs exists. */}
+    <script is:inline>
+      if (new URL(window.location.href).searchParams.get('category')) {
+        document.documentElement.dataset.docsCategory = '';
+      }
+    </script>
+
     <div class="docs-browse-body">
       {/* The filter RAIL. `<details>` for the collapsible groups because it is keyboard
           accessible and screen-reader announced with no JavaScript at all, and real
@@ -166,9 +183,15 @@ const description = t('documentation.browse.description');
       </aside>
 
       <div class="docs-browse-results">
-        <p class="docs-browse-status">
-          <output class="docs-browse-tally" aria-live="polite">{total} / {total}</output>
-        </p>
+        {/* The tally is ANNOUNCED, not shown. As a visible "79 / 79" it was a number
+            with no question behind it -- nobody arrives at this page wondering how many
+            documents exist -- and it pushed the results heading 41px below the rail's
+            heading, so the two columns started at different heights. Removing the element
+            outright would have cost the one thing it was good for: a screen reader gets no
+            other signal that filtering changed the result set, because the cards simply
+            stop being rendered. So it stays in the accessibility tree and leaves the
+            layout. */}
+        <output class="docs-browse-tally sr-only" aria-live="polite">{total} / {total}</output>
 
     {
       groups.map((group) => (
@@ -333,7 +356,6 @@ const description = t('documentation.browse.description');
   const tally = document.querySelector<HTMLElement>('.docs-browse-tally');
   const clear = document.querySelector<HTMLButtonElement>('.docs-browse-clear');
   const search = document.querySelector<HTMLInputElement>('.docs-browse-search-input');
-  const categoryGroup = document.querySelector<HTMLElement>('.docs-rail-group--primary');
   const totalCount = items.length;
 
   type Facet = 'category' | 'tag';
@@ -420,7 +442,7 @@ const description = t('documentation.browse.description');
     // Clearing dissolves the tab's choice too, so the category group comes back:
     // leaving it hidden would strand the reader with no category control at all
     // until the next full navigation.
-    if (categoryGroup) categoryGroup.hidden = false;
+    delete document.documentElement.dataset.docsCategory;
     update();
   });
 
@@ -450,10 +472,5 @@ const description = t('documentation.browse.description');
   }
   if (search) search.value = (params.get('q') || '').trim();
 
-  // Arriving with `?category=` means a category tab expressed the choice, so the rail's
-  // own category group would be a second control saying the same thing: hide it. Only
-  // the deep-link path hides it -- a reader on the bare index keeps the checkboxes,
-  // which can multi-select in a way the tabs cannot.
-  if (categoryGroup && wantedCats.size > 0) categoryGroup.hidden = true;
   paint();
 </script>

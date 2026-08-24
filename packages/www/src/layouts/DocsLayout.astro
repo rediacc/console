@@ -709,52 +709,144 @@ for (const entry of toc as TocEntry[]) {
           });
 
           pre.appendChild(btn);
-          addPerLineCopy(pre, copyLabel, copiedLabel);
+          addUnitCopy(pre, copyLabel, copiedLabel);
         });
       }
 
-      // PER-LINE COPY, for blocks that hold more than one runnable command.
+      // PER-UNIT COPY. The unit is a COMMAND, not a line, and a block only gets
+      // per-unit buttons when its contents are commands at all.
       //
-      // THE DEFECT: a reader looking at
+      // THE ORIGINAL DEFECT: a reader looking at
       //     curl -fsSL https://www.rediacc.com/install.sh | bash
       //     rdc doctor     # Verify: Node, SSH key, renet, Docker
       // wants ONE of those lines, and the block-level button gives them both,
       // so the second command is pasted into a shell that is still running the
       // first. The block button stays -- copying the whole recipe is a real
-      // want too -- and this adds a control per command line beside it.
+      // want too -- and this adds a control per command beside it.
       //
-      // A LINE IS NOT A COMMAND. Shiki emits one `.line` span per source line,
-      // including blank lines and comment-only lines. Offering "copy" on
-      // `# Generate a key (skip if you already have one)` is noise, and offering
-      // it on a blank line is worse, so both are skipped. A line that ENDS in a
-      // trailing comment still copies whole: stripping it would hand the reader
-      // something they cannot paste back to check against the page, and the
-      // comment is harmless in a shell.
+      // THE DEFECT THAT REPLACED IT, and the reason for the rewrite: "a
+      // runnable line" was defined as "not blank, not a comment", which is true
+      // of almost every line of almost every code block. Measured across the 548
+      // fenced blocks in the English docs on 2026-08-24, that put a copy button
+      // on 9 of the 13 lines of the Rediaccfile on /en/docs/rules-of-rediacc --
+      // including three bare `}` -- and on all 3 lines of each YAML fragment
+      // beneath it. 61 non-shell blocks (yaml, json, ini, text, markdown,
+      // python, javascript) and 15 shell blocks that are FILES rather than
+      // recipes were all being offered line-by-line copy of things nobody can
+      // paste anywhere. So the question is now asked in three parts.
       //
-      // Single-command blocks get NOTHING. There the block button already IS the
-      // per-line button, and a second identical control next to it is pure noise.
-      function isRunnableLine(text) {
-        var t = (text || '').trim();
-        if (t === '') return false;
-        if (t.charAt(0) === '#') return false;
-        return true;
+      // 1. IS THIS SHELL AT ALL? Shiki puts the fence's language on the <pre> as
+      //    `data-language`. A YAML key or a JSON line is never independently
+      //    pasteable, so anything outside the shell family gets the block button
+      //    and nothing else.
+      // 2. IS THIS A FILE OR A RECIPE? A shebang, a `name() {` header, or a bare
+      //    `}` / `fi` / `done` / `esac` means the block is a script being shown,
+      //    not a sequence to run. There the useful unit is the FUNCTION, so the
+      //    buttons go on the function headers and copy the whole definition, and
+      //    the block button is what copies the file.
+      // 3. WHERE DOES ONE COMMAND END? A trailing backslash continues onto the
+      //    next line, and a heredoc runs to its terminator. Both are one command
+      //    spread over several lines, so they get one button, on the first line,
+      //    copying the whole thing.
+      //
+      // A line that ENDS in a trailing comment still copies whole: stripping it
+      // would hand the reader something they cannot paste back to check against
+      // the page, and the comment is harmless in a shell.
+      //
+      // Single-unit blocks get NOTHING. There the block button already IS the
+      // per-unit button, and a second identical control beside it is pure noise.
+      var SHELL_LANGS = {
+        bash: 1, sh: 1, shell: 1, shellscript: 1, zsh: 1,
+        console: 1, shellsession: 1, powershell: 1, ps1: 1
+      };
+
+      var FUNC_HEAD = /^\s*(?:function\s+)?([A-Za-z_][A-Za-z0-9_-]*)\s*\(\)\s*\{/;
+      var BLOCK_END = { '}': 1, 'fi': 1, 'done': 1, 'esac': 1 };
+
+      function looksLikeScript(texts) {
+        for (var i = 0; i < texts.length; i++) {
+          var t = texts[i].trim();
+          if (t === '') continue;
+          if (t.slice(0, 2) === '#!') return true;
+          if (FUNC_HEAD.test(t)) return true;
+          if (BLOCK_END[t] === 1) return true;
+        }
+        return false;
       }
 
-      function addPerLineCopy(pre, copyLabel, copiedLabel) {
+      // Top-level function definitions, by brace depth. `${VAR}` is balanced so
+      // it cancels out; a definition whose braces never close is skipped rather
+      // than guessed at, which is the safe direction to be wrong in.
+      function functionUnits(texts) {
+        var units = [], depth = 0, start = -1, name = '';
+        for (var i = 0; i < texts.length; i++) {
+          var t = texts[i];
+          if (start < 0) {
+            var m = FUNC_HEAD.exec(t);
+            if (!m) continue;
+            start = i;
+            name = m[1];
+            depth = 0;
+          }
+          depth += (t.match(/\{/g) || []).length - (t.match(/\}/g) || []).length;
+          if (depth <= 0) {
+            units.push({ start: start, end: i, name: name });
+            start = -1;
+          }
+        }
+        return units;
+      }
+
+      // One entry per COMMAND: blanks and comment-only lines are skipped, a
+      // trailing backslash swallows the next line, and a heredoc swallows
+      // everything through its terminator.
+      function commandUnits(texts) {
+        var units = [], i = 0;
+        while (i < texts.length) {
+          var s = texts[i].trim();
+          if (s === '' || s.charAt(0) === '#') { i++; continue; }
+          var startAt = i;
+          while (i < texts.length - 1 && /\\\s*$/.test(texts[i])) i++;
+          var head = texts.slice(startAt, i + 1).join('\n');
+          var h = /<<-?\s*['"]?([A-Za-z_][A-Za-z0-9_]*)['"]?/.exec(head);
+          if (h) {
+            var j = i + 1;
+            while (j < texts.length && texts[j].trim() !== h[1]) j++;
+            if (j < texts.length) i = j;
+          }
+          units.push({ start: startAt, end: i, name: '' });
+          i++;
+        }
+        return units;
+      }
+
+      function addUnitCopy(pre, copyLabel, copiedLabel) {
         var code = pre.querySelector('code');
         if (!code) return;
         var lines = code.querySelectorAll('.line');
         if (!lines.length) return;
+        if (SHELL_LANGS[pre.dataset.language] !== 1) return;
 
-        var runnable = [];
-        lines.forEach(function(line) {
-          if (isRunnableLine(line.textContent)) runnable.push(line);
-        });
-        // One runnable line means the block button already covers it exactly.
-        if (runnable.length < 2) return;
+        var texts = [];
+        for (var i = 0; i < lines.length; i++) texts.push(lines[i].textContent || '');
+
+        var units, script = looksLikeScript(texts);
+        if (script) {
+          units = functionUnits(texts);
+          // A block whose single function IS the whole block is covered by the
+          // block button already.
+          var body = 0;
+          for (var k = 0; k < texts.length; k++) if (texts[k].trim() !== '') body++;
+          if (units.length === 1 && units[0].end - units[0].start + 1 >= body) units = [];
+        } else {
+          units = commandUnits(texts);
+          if (units.length < 2) units = [];
+        }
+        if (!units.length) return;
 
         pre.classList.add('has-line-copy');
-        runnable.forEach(function(line, idx) {
+        units.forEach(function(unit, idx) {
+          var line = lines[unit.start];
           if (line.dataset.lineCopyBound === 'true') return;
           line.dataset.lineCopyBound = 'true';
           line.classList.add('line-copyable');
@@ -762,15 +854,17 @@ for (const entry of toc as TocEntry[]) {
           var lbtn = document.createElement('button');
           lbtn.type = 'button';
           lbtn.className = 'line-copy';
-          var label = copyLabel + ' (' + (idx + 1) + '/' + runnable.length + ')';
+          // The name when there is one, the position when there is not. Both
+          // reuse the existing label rather than adding a translation key, so
+          // this needs no locale delta across the 13 languages.
+          var label = copyLabel + ' (' + (unit.name || ((idx + 1) + '/' + units.length)) + ')';
           lbtn.setAttribute('aria-label', label);
           lbtn.title = label;
           lbtn.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>';
 
           lbtn.addEventListener('click', function(ev) {
             ev.stopPropagation();
-            // textContent of the line, minus the button's own (empty) text.
-            var text = (line.textContent || '').replace(/\s+$/, '');
+            var text = texts.slice(unit.start, unit.end + 1).join('\n').replace(/\s+$/, '');
             navigator.clipboard.writeText(text).then(function() {
               lbtn.classList.add('copied');
               lbtn.setAttribute('aria-label', copiedLabel);
