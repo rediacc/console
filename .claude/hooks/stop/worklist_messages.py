@@ -189,6 +189,24 @@ push the fix, or name the failing job in your stop message, or -- if it is not
 yours to fix -- file
     - [?] (%s) CI: <job> red, <one-line reason>  DEFAULT: <what happens if nobody acts>  WHY: <why it is not yours>  HOW: <who or what resolves it>"""
 
+V_ADHOC_WATCH = (
+    "A background task is watching CI BY HAND: %s\n"
+    "    %s\n"
+    "Stop it and use the one sanctioned reader instead:\n"
+    "    .ci/scripts/ci/ci-trace.py --wait\n"
+    "Hand-rolled watches failed four ways in a single afternoon (2026-08-25, "
+    "console#574): the recipe was stale in NINE places; one reported a "
+    "SUPERSEDED attempt's verdict as final after a watchdog rerun; one reported "
+    "on a run a later push had already cancelled; one ate a network blip. "
+    "ci-trace keys on the PR HEAD and reads statusCheckRollup, so a rerun "
+    "replaces the old attempt and an old head is not in the rollup at all -- "
+    "none of those four is expressible. It also names the failing STEP and the "
+    "exact log command, which a bare status loop cannot.\n"
+    "This block has no ceiling and no acknowledgement escape, deliberately: "
+    "unlike a red CI leg, the remedy is entirely yours -- stop the task, run the "
+    "script."
+)
+
 V_CI_UNREADABLE = (
     "THIS IS A HOOK BUG: the PR CI-status lookup failed (%s), so that check is "
     "blind. It blocks rather than passing quietly, per no-escape-hatch. If `gh` "

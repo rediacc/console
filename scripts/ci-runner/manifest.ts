@@ -494,6 +494,26 @@ export const GATES: readonly GateSpec[] = [
     },
   },
   {
+    id: 'check:ci-hook-integrity',
+    run: 'npm run check:ci-hook-integrity',
+    gate: true,
+    // Triggers on the enforcement layer itself and on the coverage it is
+    // judged by, so weakening a guard and dropping its cases in one commit
+    // cannot slip through on an unrelated path filter.
+    paths: [
+      '.claude/hooks/**',
+      'scripts/data/hook-inventory-baseline.json',
+      'scripts/data/hook-coverage-baseline.json',
+    ],
+    leaves: ['.ci/scripts/quality/check-hook-integrity.sh'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-code',
+      step: 'Hook integrity',
+    },
+  },
+  {
     id: 'check:ci-watch-recipe',
     run: 'npm run check:ci-watch-recipe',
     gate: true,

@@ -3439,6 +3439,8 @@ ARITY = {
     "V_STALE_LOCAL": ("r", 2), "V_DIVERGED": ("r", 2, "r"),
     "V_PR_STALE": ("d",), "V_PR_UNREADABLE": ("d",), "V_LOOP_DIED": (1,),
     "V_CI_RED": ("9", 1, "q", "rows", 2, 1, "m"), "V_CI_UNREADABLE": ("d",),
+    # (task-id, the offending command blob) -- see wl_ci.adhoc_watch
+    "V_ADHOC_WATCH": ("b1", "blob"),
     "CI_NOTE_RETRYABLE": ("9", 1, "pats", "rows"),
     "CI_NOTE_DOWNGRADED": ("9", 1, 2, "", "rows"),
     "V_NO_POLL_CRON": ("m", "m"), "V_NO_WAITER": (2, "p", "m"),
@@ -3852,7 +3854,7 @@ cichk "a retryable leg still red on a finished run becomes actionable" yes "CI I
 echo "== 126. a RUNNING background watch naming this run silences the check =="
 ci_setup
 ci_rollup FAILURE "[$(ci_job "Quality / Static" FAILURE)]"
-BG='[{"id":"w1","status":"running","description":"watch CI","command":"gh run watch 30514648812"}]'
+BG='[{"id":"w1","status":"running","description":"watch CI","command":".ci/scripts/ci/ci-trace.py --wait"}]'
 cichk "an armed watch on the current run is the wake-up; the hook stays quiet" no "CI IS RED"
 
 echo "== 127. a COMPLETED watch, or one on a SUPERSEDED run, does NOT count as armed =="
@@ -3861,8 +3863,8 @@ echo "== 127. a COMPLETED watch, or one on a SUPERSEDED run, does NOT count as a
 # watchdog rerun flipped a terminal run back to in_progress.
 ci_setup
 ci_rollup FAILURE "[$(ci_job "Quality / Static" FAILURE)]"
-BG='[{"id":"w1","status":"completed","description":"watch","command":"gh run watch 30514648812"},
-     {"id":"w2","status":"running","description":"watch","command":"gh run watch 30513152662"}]'
+BG='[{"id":"w1","status":"completed","description":"watch","command":".ci/scripts/ci/ci-trace.py --wait"},
+     {"id":"w2","status":"running","description":"watch","command":".ci/scripts/ci/ci-trace.py --wait --ref other"}]'
 cichk "a dead watch and a watch on another run leave the check armed" yes "CI IS RED"
 BG='[]'
 
@@ -4794,7 +4796,7 @@ hand_now
 OLD=$(date -u -d '-60 minutes' +%Y-%m-%dT%H:%M:%SZ)
 printf '{"ev":"add","id":"eeee1111","at":"%s","by":"deadbeef","s":"?","o":"deadbeef","t":"backfill the audit log? DEFAULT: backfill last 30 days WHY: only the operator can accept the storage cost HOW: operator confirms the budget"}\n' \
     "$OLD" >>"${WL%.md}.events.jsonl"
-BG='[{"id":"cw1","type":"shell","status":"running","command":"gh run watch 30514648812 --exit-status","description":"watch CI run"}]'
+BG='[{"id":"cw1","type":"shell","status":"running","command":".ci/scripts/ci/ci-trace.py --wait","description":"watch CI run"}]'
 say "the run is healthy, nothing to do
 
 ## Remaining
@@ -4821,7 +4823,7 @@ brief_now
 hand_now
 printf '{"ev":"add","id":"eeee2221","at":"%s","by":"deadbeef","s":"?","o":"deadbeef","t":"backfill the audit log? DEFAULT: backfill last 30 days WHY: only the operator can accept the storage cost HOW: operator confirms the budget"}\n' \
     "$OLD" >>"${WL%.md}.events.jsonl"
-BG='[{"id":"cw1","type":"shell","status":"running","command":"gh run watch 30514648812 --exit-status","description":"watch CI run"},{"id":"bw2","type":"shell","status":"running","command":"bash scripts/build-embed.sh","description":"rebuild embed assets"}]'
+BG='[{"id":"cw1","type":"shell","status":"running","command":".ci/scripts/ci/ci-trace.py --wait","description":"watch CI run"},{"id":"bw2","type":"shell","status":"running","command":"bash scripts/build-embed.sh","description":"rebuild embed assets"}]'
 say "watching the run while the embed rebuild runs
 
 ## Remaining
@@ -4839,7 +4841,7 @@ hand_now
 NOW=$(date -u +%Y-%m-%dT%H:%M:%SZ)
 printf '{"ev":"add","id":"eeee3331","at":"%s","by":"deadbeef","s":"?","o":"deadbeef","t":"backfill the audit log? DEFAULT: backfill last 30 days WHY: only the operator can accept the storage cost HOW: operator confirms the budget"}\n' \
     "$NOW" >>"${WL%.md}.events.jsonl"
-BG='[{"id":"cw1","type":"shell","status":"running","command":"gh run watch 30514648812 --exit-status","description":"watch CI run"}]'
+BG='[{"id":"cw1","type":"shell","status":"running","command":".ci/scripts/ci/ci-trace.py --wait","description":"watch CI run"}]'
 say "watching the run
 
 ## Remaining

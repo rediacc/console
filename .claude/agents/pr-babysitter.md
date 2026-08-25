@@ -69,11 +69,12 @@ Consequently, **your reports are the principal's only window.** In delegated mod
 
 **A background task that exits on the run's terminal state IS your loop.** Nothing else wakes you. After every push - and before you send any report - arm it:
 
-Use the canonical form from the `ci-watch` skill verbatim, with
-**`run_in_background: true`**. Do not write one from memory: it has to survive a
-watchdog re-run (`completed` alone is not terminal), and it must report every job
-that is neither `success` nor `skipped` rather than only those concluded
-`failure`. The process exit re-invokes you with that list already in hand.
+Run `.ci/scripts/ci/ci-trace.py --wait` with **`run_in_background: true`**.
+Do not write a loop: ad-hoc watch commands are refused by the pre-bash guard,
+and a hand-rolled watch left running blocks the Stop hook. The script survives a
+watchdog re-run by construction and reports every job that is neither `success`
+nor `skipped`, plus the failing STEP and its log command. The process exit
+re-invokes you with that already in hand.
 
 **The mechanics of arming a watch live in the `ci-watch` skill
 (`.claude/skills/ci-watch/SKILL.md`). Read it before arming your first one.** It

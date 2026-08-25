@@ -150,7 +150,7 @@ supervision. It is the existing house flow; do not invent a new one.
    `lastEditedAt`, not `updatedAt`, so a push alone does not satisfy it.
 5. **Run `/pr-babysit`** and follow `.claude/agents/pr-babysitter.md` as written: it is the
    single source of truth for the loop, the tier system, the round log and the gotchas. Key
-   points that bite: `gh run watch` is banned in favour of a terminal-state poll; every turn
+   points that bite: ad-hoc `gh` watch commands are refused by `block-adhoc-sanctioned.sh` in favour of `.ci/scripts/ci/ci-trace.py`; every turn
    that leaves a run in flight must end with an armed wake-up; after the first snapshot
    commit, `git add -A` is banned.
 6. **Flip ready only at green.** `gh pr ready` is hook-gated on `CI Complete` being green on

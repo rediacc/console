@@ -3231,6 +3231,18 @@ def run_stop(event, event_ok, worklist, hook_file):
     # ci_report is a non-blocking note; it rides the allow path AND is appended
     # to the block body, so a downgraded CI failure cannot vanish behind an
     # unrelated violation.
+    # A hand-rolled CI watch blocks the turn. Structurally ABOVE ci_trouble
+    # because it needs no network at all: it reads the live background roster
+    # the caller already has. Unconditional by design -- see V_ADHOC_WATCH.
+    try:
+        _adhoc_id, _adhoc_blob = wl_ci.adhoc_watch(live_bg)
+    except Exception as exc:  # noqa: BLE001 -- a broken check must SAY SO
+        _adhoc_id, _adhoc_blob = "", ""
+        vadd("adhoc-watch-broken", True, "THIS IS A HOOK BUG: adhoc_watch failed: %s: %s"
+             % (type(exc).__name__, str(exc)[:120]))
+    if _adhoc_id:
+        vadd("adhoc-watch", True, M.V_ADHOC_WATCH % (_adhoc_id, _adhoc_blob))
+
     ci_report = ""
     try:
         cistate, cidetail = wl_ci.ci_trouble(

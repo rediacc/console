@@ -50,7 +50,7 @@ while IFS= read -r SEG; do
         --json statusCheckRollup \
         --jq '[.statusCheckRollup[] | select(.name == "CI Complete")] | first | .conclusion // "ABSENT"' 2>/dev/null)
     if [[ "$CONCLUSION" != "SUCCESS" ]]; then
-        echo "❌ BLOCKED: 'gh pr ready' requires CI Complete = SUCCESS on the PR's current head (got: ${CONCLUSION:-verification failed}). A draft flips to ready only when CI is green -- that flip triggers the automated Claude review, whose invariant is non-draft AND green. Wait out the running CI (armed terminal-state watch), fix the red, or if this was a gh/network hiccup, re-run the exact same command." >&2
+        echo "❌ BLOCKED: 'gh pr ready' requires CI Complete = SUCCESS on the PR's current head (got: ${CONCLUSION:-verification failed}). Read the current state with .ci/scripts/ci/ci-trace.py (exit 0 green, 1 red, 2 no verdict, 3 head moved); it names the failing job and step. A draft flips to ready only when CI is green -- that flip triggers the automated Claude review, whose invariant is non-draft AND green. Wait out the running CI (armed terminal-state watch), fix the red, or if this was a gh/network hiccup, re-run the exact same command." >&2
         exit 2
     fi
 done <<<"$(hook_gh_pr_segment "$SCAN" ready)"

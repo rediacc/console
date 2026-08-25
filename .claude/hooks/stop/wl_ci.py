@@ -388,6 +388,61 @@ def ci_watch_only(live_bg):
     return bool(names), "; ".join(names)
 
 
+# The sanctioned CI reader. A watch that is not this is a hand-rolled loop, and
+# hand-rolled loops failed four ways on 2026-08-25 while landing console#574:
+# a stale recipe in nine places, a verdict from a SUPERSEDED attempt, a verdict
+# from a run a later push had cancelled, and a network blip that only a
+# correctly-written retry arm survived. See .ci/scripts/ci/ci-trace.py.
+def _sanctioned_match(blob):
+    """True when the blob carries a shape the sanctioned registry replaces.
+
+    Imported lazily and defensively: this module runs on every stop, and a
+    missing or broken registry must not take the whole hook down with it.
+    """
+    try:
+        import importlib.util
+
+        lib = pathlib.Path(__file__).resolve().parent.parent / "lib" / "sanctioned.py"
+        spec = importlib.util.spec_from_file_location("sanctioned", lib)
+        if spec is None or spec.loader is None:
+            return False
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        return mod.match(blob) is not None
+    except Exception:  # noqa: BLE001 -- a broken registry is not a verdict
+        return False
+
+
+CI_TRACE_RE = re.compile(r"ci-trace(?:\.py)?\b", re.IGNORECASE)
+
+
+def adhoc_watch(live_bg):
+    """(task_id, blob) for a RUNNING background task watching CI by hand, or ("","").
+
+    "By hand" means: it looks like a CI watch (CI_WATCH_RE, the same shape the
+    idle checks already use) and it is NOT ci-trace.py. The caller blocks the
+    turn on this, which is safe to make unconditional -- unlike ci_trouble, the
+    remedy is entirely within the session's reach: stop the task and run the
+    script. Nothing another session's push or an infrastructure flake can do
+    makes this unfixable, so there is no ceiling and no escape hatch.
+    """
+    for b in live_bg or []:
+        blob = "%s %s" % (b.get("command") or "", b.get("description") or "")
+        if CI_TRACE_RE.search(blob):
+            continue
+        # TWO detectors, because each alone has a hole. CI_WATCH_RE is
+        # deliberately conservative (it also drives the idle checks, where a
+        # false positive turns a working session's stop into an accusation) and
+        # misses a bare `gh run view` poll with no "watch" word in it. The
+        # sanctioned registry catches exactly that shape -- and sharing it is
+        # the point: the pre-bash guard and this check then cannot disagree
+        # about what counts as hand-rolled, which is the class of drift this
+        # whole change exists to end.
+        if CI_WATCH_RE.search(blob) or _sanctioned_match(blob):
+            return str(b.get("id") or "?"), blob.strip()[:160]
+    return "", ""
+
+
 def ci_watch_armed(live_bg, rows, sha):
     """The id of a RUNNING background task watching THIS head, or "".
 

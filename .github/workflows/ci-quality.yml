@@ -521,6 +521,13 @@ jobs:
       - name: Setup path idempotency
         run: .ci/scripts/quality/check-setup-idempotency.sh
 
+      # The enforcement layer cannot quietly disarm itself: guards are
+      # inventoried shrink-only, and each must keep a case proving it blocks
+      # AND one proving it allows. Block-only coverage cannot see
+      # over-blocking, and an over-blocking guard is one that gets deleted.
+      - name: Hook integrity
+        run: .ci/scripts/quality/check-hook-integrity.sh
+
       # Hermetic text check: the canonical CI-watch loop must live in one
       # place and be attempt-stable. Nine divergent copies existed before this,
       # several handing out a form that exits on the first `completed` -- which

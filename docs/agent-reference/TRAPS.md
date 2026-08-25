@@ -741,7 +741,12 @@ Only visible because stderr was read separately. Define helpers at the top.
 
 ## A watch verdict is not evidence
 
-Terminal-state watches have understated failures (reporting one failed job when
+This whole class is why `.ci/scripts/ci/ci-trace.py` exists and why ad-hoc watch
+commands are now refused by `block-adhoc-sanctioned.sh`: the script keys on the
+PR head and reads `statusCheckRollup`, so a superseded run and a watchdog rerun
+are not mishandled, they are unrepresentable.
+
+Hand-rolled terminal-state watches have understated failures (reporting one failed job when
 the API showed the run cancelled with more), and `gh run watch` has dropped
 silently on terminal runs 4 times out of 4. Always re-read the Jobs API before
 acting on a verdict, and never treat a still-growing run as final -- one went
