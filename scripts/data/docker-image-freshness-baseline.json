@@ -1,5 +1,4 @@
 [
   "packages/json/templates/networking/cloud-switch/web/Dockerfile:2  python:3.9-slim",
-  "private/renet/Dockerfile:133  ubuntu:24.04",
-  "private/renet/Dockerfile:384  golang:1.26-bookworm"
+  "private/renet/Dockerfile:133  ubuntu:24.04"
 ]
