@@ -88,15 +88,19 @@ FIXTURE_DIR="$REPO_ROOT/.ci/scripts"
 FIXTURE_PID_SUFFIX="$$"
 FIXTURE_NAME_PREFIX='.gate-paths-exist-'
 
+# Where the parallel extraction workers drop their per-batch output. Pid-scoped
+# for the same reason the fixtures are, and torn down by the same trap.
+PARTS_DIR="${TMPDIR:-/tmp}/gate-paths-exist-parts.$FIXTURE_PID_SUFFIX"
+
 # Belt to the per-test RETURN traps' braces. A RETURN trap does not fire when
-# the shell is killed or interrupted, and this test runs for ~3 minutes, which
-# is long enough for a Ctrl-C or a `pkill` to be routine. With fixed filenames
-# an orphan was invisible (the next run overwrote it); pid-named ones ACCUMULATE
-# in a tracked directory instead, so they get cleaned here too. Scoped to this
-# pid: a concurrent run's fixtures are not ours to delete, which is the whole
-# point of the suffix.
+# the shell is killed or interrupted, and a Ctrl-C or a `pkill` on this test is
+# routine (it used to run for MINUTES; see extract_all_literals). With fixed
+# filenames an orphan was invisible (the next run overwrote it); pid-named ones
+# ACCUMULATE in a tracked directory instead, so they get cleaned here too.
+# Scoped to this pid: a concurrent run's fixtures are not ours to delete, which
+# is the whole point of the suffix.
 # BLOCKER: pid-scoped so a concurrent invocation's fixtures survive; a wildcard here would recreate the cross-process deletion this suffix exists to fix
-trap 'rm -f "$FIXTURE_DIR/${FIXTURE_NAME_PREFIX}fixture.$FIXTURE_PID_SUFFIX.ts" "$FIXTURE_DIR/${FIXTURE_NAME_PREFIX}noise-fixture.$FIXTURE_PID_SUFFIX.ts"' EXIT INT TERM
+trap 'rm -rf "$PARTS_DIR"; rm -f "$FIXTURE_DIR/${FIXTURE_NAME_PREFIX}fixture.$FIXTURE_PID_SUFFIX.ts" "$FIXTURE_DIR/${FIXTURE_NAME_PREFIX}noise-fixture.$FIXTURE_PID_SUFFIX.ts"' EXIT INT TERM
 
 # Directory prefixes that are generated, vendored, or gitignored. A literal
 # whose path traverses one of these is skipped in Tier B.
@@ -119,33 +123,85 @@ scan_targets() {
         ! -path '*/node_modules/*' ! -path '.ci/scripts/test/*'
 }
 
-# extract_literals <file> -- emit "<line>:<path>" for each quoted path literal.
+# extract_all_literals -- emit "<file>\t<line>\t<path>" for every quoted path
+# literal in every scan target, skipping lines that are pure comment prose.
+#
+# ONE awk pass per BATCH of files, deliberately. The previous shape ran a
+# `grep -noE` per file and then, per QUOTED STRING, a `printf | grep -oE |
+# sed -E | while read` pipeline, plus a `sed -n <N>p` per hit for the comment
+# check. Counted on this tree: 59,443 quoted strings x a four-process pipeline
+# = ~238,000 processes per scan, and the gate scans three times -- about
+# 715,000 processes, strictly serial, on an 8-core box that sat half idle
+# throughout. It is spawn-bound, not CPU-bound. That cost 51 MINUTES of wall
+# clock, which is why the quality-gate battery stopped being something anyone
+# ran before pushing. The work is unchanged; only the process count is.
+# Measured 2026-08-25: 51m02s -> 8s for the whole gate (~6s of which is the
+# `npx tsc --listFilesOnly` in the last test), with byte-identical findings --
+# 367 extracted literals, diffed line for line against the old pipeline.
+#
+# The old shape also had a latent vacuity trap that this one cannot have. Its
+# inner pipeline exits 1 whenever a quoted string holds no path, and under
+# `set -euo pipefail` that killed the whole extraction subshell at the FIRST
+# such string. It only ever scanned anything because every caller happened to
+# wrap it in `$(...)`, and errexit is not inherited by a command-substitution
+# subshell without `shopt -s inherit_errexit`. One caller written without the
+# `$(...)` and this gate would have gone quietly, permanently blind -- exactly
+# the failure it exists to catch. awk has no such dependency.
 #
 # Only text inside a quote pair is considered, which is what keeps prose out.
+# Splitting each line on the three quote characters and dropping field 1
+# reproduces the old grep for a leading quote plus a run of non-quote
+# characters exactly: field N+1 is the run that followed the Nth quote.
 # Candidates carrying shell/glob metacharacters are dropped wholesale rather
-# than partially matched.
-extract_literals() {
-    local file="$1"
-    grep -noE "['\"\`][^'\"\`]*" "$file" 2>/dev/null | while IFS=: read -r line rest; do
-        local seg="${rest:1}"
-        # Comment prose names deleted paths on purpose; skip those lines.
-        case "$seg" in
-            *'*'* | *'?'* | *'{'* | *'}'* | *'['* | *']'* | *'$'*) continue ;;
-        esac
-        printf '%s\n' "$seg" |
-            grep -oE '(packages|private)/[A-Za-z0-9._+-]+(/[A-Za-z0-9._+-]+)*/?' |
-            sed -E 's/\.+$//' |
-            while read -r path; do
-                [[ -n "$path" ]] && printf '%s:%s\n' "$line" "$path"
-            done
-    done
-}
+# than partially matched, and the comment-prose skip is the same regex the
+# per-hit `sed` used to re-read the line for.
+EXTRACT_AWK='
+/^[[:space:]]*(\/\/|#|\*|\/\*)/ { next }
+{
+    n = split($0, seg, "[\"\047\140]")
+    for (i = 2; i <= n; i++) {
+        s = seg[i]
+        if (s ~ /[]*?{}$[]/) continue
+        while (match(s, /(packages|private)\/[A-Za-z0-9._+-]+(\/[A-Za-z0-9._+-]+)*\/?/)) {
+            p = substr(s, RSTART, RLENGTH)
+            s = substr(s, RSTART + RLENGTH)
+            sub(/\.+$/, "", p)
+            if (p != "") print FILENAME "\t" FNR "\t" p
+        }
+    }
+}'
 
-# is_comment_line <file> <lineno> -- true when the line is pure comment prose.
-is_comment_line() {
-    local file="$1" lineno="$2" text
-    text="$(sed -n "${lineno}p" "$file")"
-    [[ "$text" =~ ^[[:space:]]*(//|#|\*|/\*) ]]
+extract_all_literals() {
+    cd "$REPO_ROOT"
+    local jobs
+    jobs="$(nproc 2>/dev/null || echo 4)"
+    rm -rf "$PARTS_DIR"
+    mkdir -p "$PARTS_DIR"
+    # Each worker writes its OWN part file instead of sharing stdout: awk
+    # flushes in block-sized writes, a write larger than PIPE_BUF is not
+    # atomic, and interleaved halves of two lines would be a corrupt finding
+    # rather than a loud failure. Order does not matter -- collect_dead_paths
+    # ends in `sort -u`.
+    GATE_EXTRACT_AWK="$EXTRACT_AWK" GATE_PART_DIR="$PARTS_DIR" \
+        xargs -r -d '\n' -P "$jobs" -n 48 bash -c '
+            if ! awk "$GATE_EXTRACT_AWK" "$@" >"$GATE_PART_DIR/part.$$" 2>/dev/null; then
+                # A scan target can VANISH mid-run: a concurrent invocation of
+                # this same test plants and removes fixtures inside the scanned
+                # tree, and awk abandons the rest of its argument list when one
+                # file will not open. The old per-file grep swallowed that with
+                # 2>/dev/null, so retry file by file rather than failing the
+                # gate on a neighbour cleaning up after itself.
+                : >"$GATE_PART_DIR/part.$$"
+                for f in "$@"; do
+                    [ -r "$f" ] || continue
+                    awk "$GATE_EXTRACT_AWK" "$f" >>"$GATE_PART_DIR/part.$$" 2>/dev/null || true
+                done
+            fi
+        ' _ < <(scan_targets)
+    if compgen -G "$PARTS_DIR/part.*" >/dev/null; then
+        cat "$PARTS_DIR"/part.*
+    fi
+    rm -rf "$PARTS_DIR"
 }
 
 # path_resolves <path> -- existence check with NodeNext .js -> .ts fallback.
@@ -183,33 +239,44 @@ declared_submodule() {
 
 collect_dead_paths() {
     cd "$REPO_ROOT"
-    local file line path root
-    while read -r file; do
-        while IFS= read -r hit; do
-            line="${hit%%:*}"
-            path="${hit#*:}"
-            is_comment_line "$file" "$line" && continue
-
-            root="$(printf '%s' "$path" | cut -d/ -f1-2)"
-            if [[ ! -d "$root" ]]; then
-                # An undeclared private/<name> is an external repo, not a dead path.
-                [[ "$root" == private/* ]] && ! declared_submodule "$root" && continue
-                printf 'TIER-A %s:%s: %s (workspace root %s does not exist)\n' \
-                    "$file" "$line" "$path" "$root"
-                continue
+    local file line path root rest
+    # The two submodule probes below spawn a process each and their answer is
+    # per-ROOT, not per-hit; memoise them so a tree full of private/* literals
+    # costs one probe per submodule rather than one per literal.
+    local -A declared_cache=() checkout_cache=()
+    while IFS=$'\t' read -r file line path; do
+        rest="${path#*/}"
+        root="${path%%/*}/${rest%%/*}"
+        if [[ ! -d "$root" ]]; then
+            # An undeclared private/<name> is an external repo, not a dead path.
+            if [[ "$root" == private/* ]]; then
+                if [[ -z "${declared_cache[$root]+x}" ]]; then
+                    declared_cache[$root]=0
+                    declared_submodule "$root" && declared_cache[$root]=1
+                fi
+                [[ "${declared_cache[$root]}" == 0 ]] && continue
             fi
-            # Tier B only: an uninitialised submodule is not a dead path.
-            [[ "$root" == private/* ]] && ! submodule_checked_out "$root" && continue
-
-            [[ "$path" == "$root" ]] && continue
-            [[ "$path" =~ $EPHEMERAL_SEGMENTS ]] && continue
-            if [[ ! "$path" =~ $SOURCE_EXTENSIONS ]] && [[ "$path" != */ ]]; then
-                continue
+            printf 'TIER-A %s:%s: %s (workspace root %s does not exist)\n' \
+                "$file" "$line" "$path" "$root"
+            continue
+        fi
+        # Tier B only: an uninitialised submodule is not a dead path.
+        if [[ "$root" == private/* ]]; then
+            if [[ -z "${checkout_cache[$root]+x}" ]]; then
+                checkout_cache[$root]=0
+                submodule_checked_out "$root" && checkout_cache[$root]=1
             fi
-            path_resolves "$path" && continue
-            printf 'TIER-B %s:%s: %s\n' "$file" "$line" "$path"
-        done < <(extract_literals "$file")
-    done < <(scan_targets) | sort -u
+            [[ "${checkout_cache[$root]}" == 0 ]] && continue
+        fi
+
+        [[ "$path" == "$root" ]] && continue
+        [[ "$path" =~ $EPHEMERAL_SEGMENTS ]] && continue
+        if [[ ! "$path" =~ $SOURCE_EXTENSIONS ]] && [[ "$path" != */ ]]; then
+            continue
+        fi
+        path_resolves "$path" && continue
+        printf 'TIER-B %s:%s: %s\n' "$file" "$line" "$path"
+    done < <(extract_all_literals) | sort -u
 }
 
 # The scan must be WHOLE before an empty result means anything. Every
@@ -227,7 +294,7 @@ collect_dead_paths() {
 # the way through under whatever pressure a full fleet applies.
 #
 # The floor converts that silent truncation into a loud refusal. It is set
-# well under the ~283 files the three legs yield today (86 + 24 + 173) so
+# well under the ~363 files the three legs yield today (132 + 24 + 207) so
 # ordinary churn never trips it, and far above the handful a truncated walk
 # would return.
 SCAN_FLOOR="${GATE_PATHS_SCAN_FLOOR:-150}"
