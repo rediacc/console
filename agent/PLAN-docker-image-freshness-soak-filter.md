@@ -1,5 +1,5 @@
 # PLAN: docker image freshness must soak on release age, not rebuild age
-Status: executing
+Status: done
 Owner: 854ac1c6
 Updated: 2026-08-25
 
@@ -73,23 +73,45 @@ Behaviour in the two cases that matter:
 
 No state, no first-seen tracking, no new network calls.
 
-## Tests
+## Tests — AS BUILT
 
-Added to the existing `--selftest` battery in the same file, which already runs
-as part of `check:ci-docker-image-freshness`:
+Six cases, not the three first sketched, in the `--selftest` battery of the same
+file (so they run inside `check:ci-docker-image-freshness`, which is reachable
+from `npm run ci` via `manifest.ts:1940`). Three FAIL against the planted
+original filter, verified by planting it in a copy and running it in-tree:
 
-1. **Fires on the defect**: pin `3.9-slim`, candidates `3.10-slim`/`3.14-slim`
-   both pushed 1h ago, no unsoaked candidate. Must report STALE. Under the old
-   filter this returns not-stale, so it fails before the fix and passes after.
-2. **Soak still holds**: pin `3.13-slim`, single candidate `3.14-slim` pushed
-   1h ago. Must report NOT stale. Guards against "fixed it by deleting the
-   soak", which would make every upstream release redden CI instantly.
-3. **Unsoaked candidate still counts**: pin `3.9-slim`, candidate `3.10-slim`
-   pushed 40 days ago. Must report STALE, both before and after.
+1. a rebuild wave does NOT hide an established newer series  *(fails pre-fix)*
+2. the newest is the only soakable one, so the next one down is the evidence  *(fails pre-fix)*
+3. with a third candidate, only ONE is dropped  *(fails pre-fix)*
+4. CONTROL: a genuinely NEW release still soaks (sole candidate is the newest)
+5. CONTROL: a newer tag past the soak counts, as it always did
+6. CONTROL: an unknown push date is not silently treated as soaked
 
-## Rollout
+Case 2 corrects an expectation the design got wrong: with candidates `3.10` and
+`3.14` both rebuilt, the evidence is **`3.10`**, not `3.14` — `3.14` is the
+newest and therefore the soakable one. The rule drops exactly one candidate, so
+the sketch's "must report STALE via 3.14" was wrong about which tag gets named.
+Case 6 was added because `pushedMs === null` must not read as soaked.
 
-Rides console#574 (docs/CI-only, no product code). After it lands, the two
-spurious drains stay drained; the corrected gate will re-flag them as newly
-stale on the next run, which is the correct signal and the point at which those
-pins get bumped or re-baselined deliberately.
+## Rollout — AS BUILT
+
+Landed in `3b05a20f` on branch `0825-1` (console#574), CI-only, no product code.
+
+The rollout paragraph above was written before the fix ran against the real
+tree, and it was wrong. It assumed the two spurious drains would stay drained.
+They could not: with the clock corrected, both pins read stale again
+immediately, so the gate failed with "newly stale past the soak window" — the
+exact reversal this defect causes. The correct repair was to **restore the
+baseline**, not to bump `node:22-slim` to 26 and `golang:1.26-bookworm` to 1.27
+(a real dependency change, one of them inside a submodule, outside this PR).
+
+`scripts/data/docker-image-freshness-baseline.json` is therefore now
+byte-identical to `main`, verified with `diff`, and the gate passes with **no
+drain at all** — which is what it should have done from the start. All four
+entries remain known-stale and baselined; none of the three drains this session
+was real.
+
+An automated reviewer separately claimed `tag_last_pushed` "does not exist for
+Docker official images". It does: 5/5 tags of `library/python` carry it (e.g.
+`slim` → `2026-08-25T05:16:11.741565Z`). The defect was never an absent field,
+only a misread one.

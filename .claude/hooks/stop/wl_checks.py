@@ -823,7 +823,21 @@ def docs_drift(root):
 # a FORMAT mismatch reported as a content problem, which would have sent someone
 # rewriting perfectly good plans to satisfy a regex. Optional markdown emphasis,
 # and the first word wins with any trailing prose ignored.
+#
+# SECOND ROUND OF THE SAME BUG, 2026-08-25. The anchored form still required
+# `Status:` to START a line, and two more real plans state it mid-line:
+#     agent/PLAN-test-advisor.md          Owner: b7baf3ee · 2026-08-24 · status: BUILT
+#     agent/PLAN-chunk-store-browse-server.md   Branch: `0815-1`. Status: design only, ...
+# Both parsed UNKNOWN, and UNKNOWN is loud by design, so the stop hook told a
+# session to go fix two plans that were already accurate and were not even its
+# own. Exactly the failure the paragraph above describes, in a new format.
+#
+# So: try the anchored form first (unchanged precedence, so a real leading
+# `Status:` line always wins), then fall back to `Status:` anywhere in the
+# header block. The fallback is case-insensitive because `status: BUILT` is
+# what the deviating plans write.
 PLAN_STATUS_RE = re.compile(r"^\*{0,2}Status\*{0,2}:\s*([A-Za-z-]+)", re.MULTILINE)
+PLAN_STATUS_INLINE_RE = re.compile(r"\bStatus\*{0,2}:\s*([A-Za-z-]+)", re.IGNORECASE)
 PLAN_HEADER_LINES = 10
 PLAN_DONE_STATES = ("done", "superseded")
 PLAN_EXCERPT_CHARS = 1500
@@ -855,7 +869,8 @@ def plan_records(root):
         except OSError:
             continue
         lines = text.splitlines()
-        m = PLAN_STATUS_RE.search("\n".join(lines[:PLAN_HEADER_LINES]))
+        head = "\n".join(lines[:PLAN_HEADER_LINES])
+        m = PLAN_STATUS_RE.search(head) or PLAN_STATUS_INLINE_RE.search(head)
         status = m.group(1).lower() if m else "UNKNOWN"
         try:
             rel = str(f.relative_to(root))
