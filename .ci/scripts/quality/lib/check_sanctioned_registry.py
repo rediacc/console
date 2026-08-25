@@ -48,9 +48,8 @@ def main(argv):
                 "%s: its counter-example matches, so the pattern is over-broad" % name
             )
         for tok in row["use"].split():
-            if tok.endswith(".py") or tok.endswith(".sh"):
-                if not (root / tok).exists():
-                    bad.append("%s: names a replacement that does not exist: %s" % (name, tok))
+            if tok.endswith((".py", ".sh")) and not (root / tok).exists():
+                bad.append("%s: names a replacement that does not exist: %s" % (name, tok))
     if bad:
         print("\n".join(bad))
         return 1

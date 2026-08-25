@@ -27,15 +27,18 @@ import tempfile
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 import wl_checks as C
 
-FAILS = 0
-COUNT = 0
+
+class Tally:
+    """Counters as attributes, so `control` mutates state without `global`."""
+
+    fails = 0
+    count = 0
 
 
 def control(label, got, want):
-    global FAILS, COUNT
-    COUNT += 1
+    Tally.count += 1
     if got != want:
-        FAILS += 1
+        Tally.fails += 1
         print(f"FAIL  {label}: got {got!r}, wanted {want!r}", file=sys.stderr)
 
 
@@ -95,7 +98,7 @@ control("markdown-emphasised", status_of("# P\n**Status: DESIGNED, not started.*
 below = "# P\n" + "\n".join(f"line {i}" for i in range(C.PLAN_HEADER_LINES + 3)) + "\nStatus: done\n"
 control("CONTROL: a status past the header window does not count", status_of(below), "UNKNOWN")
 
-if FAILS:
-    print(f"FAIL: {FAILS} of {COUNT} control(s) failed", file=sys.stderr)
+if Tally.fails:
+    print(f"FAIL: {Tally.fails} of {Tally.count} control(s) failed", file=sys.stderr)
     sys.exit(1)
-print(f"{COUNT} control(s) passed")
+print(f"{Tally.count} control(s) passed")

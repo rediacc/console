@@ -61,7 +61,10 @@ def _branch(root):
     try:
         out = subprocess.run(
             ["git", "-C", str(root), "rev-parse", "--abbrev-ref", "HEAD"],
-            capture_output=True, text=True, timeout=10,
+            capture_output=True,
+            text=True,
+            timeout=10,
+            check=False,
         )
         return out.stdout.strip()
     except (OSError, subprocess.SubprocessError):
@@ -127,8 +130,10 @@ def _snapshot(root, ref, cache):
     if hard:
         verdict, detail = "red", "%d job(s) failed" % len(hard)
         if cancelled:
-            detail += "; %d cancelled alongside (watchdog killed the run for the" \
-                      " failure above, not an independent problem)" % len(cancelled)
+            detail += (
+                "; %d cancelled alongside (watchdog killed the run for the failure"
+                " above, not an independent problem)" % len(cancelled)
+            )
     elif live:
         verdict, detail = "running", "%d context(s) still in flight" % waiting
         if soft:
