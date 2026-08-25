@@ -142,7 +142,11 @@ while IFS= read -r g; do
     is_exempt "$g" && continue
     grep -vE '^[[:space:]]*#' "$ROOT/$g" |
         grep -qE "(^|[;&|(]|[[:space:]])(${GATED_TOOLS})[[:space:]]" || continue
-    grep -qE 'toolchain_acquire|toolchain_check|[A-Z]+_VERSION' "$ROOT/$g" ||
+    # RESOLVING at a pin, not merely NAMING one. The first version accepted any
+    # `*_VERSION` mention, and check-python-lint.sh passed it while still taking
+    # an unversioned `command -v ruff` from PATH -- the assertion was satisfied
+    # by a variable that the acquisition path never consulted.
+    grep -qE 'toolchain_acquire|toolchain_check|ensure_actionlint' "$ROOT/$g" ||
         missing_acq+=("$g")
 done < <(
     git -C "$ROOT" ls-files '.ci/scripts/quality/*.sh' '.ci/scripts/security/*.sh' 2>/dev/null
