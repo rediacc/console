@@ -494,6 +494,22 @@ export const GATES: readonly GateSpec[] = [
     },
   },
   {
+    id: 'check:ci-devbox-exec',
+    run: 'npm run check:ci-devbox-exec',
+    gate: true,
+    // The lane library and anything that could add a call site to it. Narrow on
+    // purpose: this gate reasons about devbox.sh's own invocations, and a wider
+    // path filter would imply a coverage it does not have.
+    paths: ['.ci/lib/devbox.sh', '.ci/scripts/quality/check-devbox-exec.sh'],
+    leaves: ['.ci/scripts/quality/check-devbox-exec.sh'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-code',
+      step: 'Devbox exec invocation',
+    },
+  },
+  {
     id: 'check:ci-toolchain-pins',
     run: 'npm run check:ci-toolchain-pins',
     gate: true,
