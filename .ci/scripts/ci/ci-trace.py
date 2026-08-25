@@ -185,6 +185,17 @@ def main(argv=None):
     ap.add_argument(
         "--wait", action="store_true", help="block until THIS head reaches a real terminal state"
     )
+    ap.add_argument(
+        "--until-final",
+        action="store_true",
+        help=(
+            "with --wait: keep waiting even after a job fails, until nothing is "
+            "in flight. --wait alone exits on the FIRST hard failure, which is "
+            "right for 'is it red' and wrong for babysitting: you cannot rerun a "
+            "run that has not finished, and a red reported while 20 jobs are "
+            "still running is not the whole picture."
+        ),
+    )
     ap.add_argument("--json", action="store_true", help="machine-readable output")
     ap.add_argument("--ref", default="", help="branch to trace (default: current)")
     ap.add_argument(
@@ -233,7 +244,7 @@ def main(argv=None):
             )
             return EXIT_HEAD_MOVED
 
-        if payload["verdict"] == "red":
+        if payload["verdict"] == "red" and not (args.wait and args.until_final and payload["live"]):
             _emit(payload, args.json)
             return EXIT_RED
         if payload["verdict"] == "green":
