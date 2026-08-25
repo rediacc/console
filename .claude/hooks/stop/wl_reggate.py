@@ -374,7 +374,11 @@ def prove_new_gate(root, scripts, state):
             if not digest:
                 continue
             prev = state["gate_runs"].get(rel)
-            if prev is None and not _is_dirty(rel, root):
+            if (
+                prev is None
+                and not _is_dirty(rel, root)
+                and not _new_since_head(rel, root, state.get("head", ""))
+            ):
                 # First sight of a gate the working tree has NOT touched. That is
                 # a glob widening or a fresh marker, not evidence about this fix,
                 # so record it and move on. Without this, widening the globs to
@@ -455,6 +459,41 @@ def prove_new_gate(root, scripts, state):
         else:
             notes.append("no new or changed check script found; a claimed gate must leave one")
     return proven, "; ".join(notes)
+
+
+def _new_since_head(rel, root, head):
+    """True when `rel` did not exist at the marker's last-seen head.
+
+    _is_dirty used to be the ENTIRE freshness test, which silently assumed a
+    session leaves its work UNCOMMITTED. That holds under this repo's default,
+    but the moment a session COMMITS its gate -- which the findings rule pushes
+    toward as soon as the fix is headed for a PR -- the path is clean, `prev is
+    None`, and prove_new_gate files it at exit -3 as a glob widening.
+
+    Measured 2026-08-26: check-devbox-exec.sh was written, wired three-point,
+    proven against pre-fix source AND committed inside one stop. The very next
+    stop reported "no NEW or CHANGED check script this stop" while the marker
+    held that exact gate at exit -3, never run. The finding then re-fired every
+    stop with NO REACHABLE EXIT: writing the gate again could not change the
+    outcome, and the judge itself was answering "no further work needed".
+
+    Errs toward True on any git failure, matching _is_dirty: run the gate
+    rather than silently skip it.
+    """
+    if not head:
+        return False
+    try:
+        pr = subprocess.run(
+            ["git", "cat-file", "-e", "%s:%s" % (head, rel)],
+            cwd=str(root),
+            capture_output=True,
+            text=True,
+            timeout=10,
+            check=False,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return True
+    return pr.returncode != 0
 
 
 def _is_dirty(rel, root):
