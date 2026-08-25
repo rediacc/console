@@ -95,7 +95,9 @@ control("markdown-emphasised", status_of("# P\n**Status: DESIGNED, not started.*
 
 # 4. A status below the header window is NOT the file's status. The window is
 #    what keeps a mention deep in a plan's prose from being read as its state.
-below = "# P\n" + "\n".join(f"line {i}" for i in range(C.PLAN_HEADER_LINES + 3)) + "\nStatus: done\n"
+below = (
+    "# P\n" + "\n".join(f"line {i}" for i in range(C.PLAN_HEADER_LINES + 3)) + "\nStatus: done\n"
+)
 control("CONTROL: a status past the header window does not count", status_of(below), "UNKNOWN")
 
 if Tally.fails:

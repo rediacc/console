@@ -34,7 +34,6 @@ import tempfile
 import yaml
 
 
-
 def _pyyaml_pin():
     """The PyYAML version, read from the ONE place it is defined.
 
@@ -50,6 +49,8 @@ def _pyyaml_pin():
     except OSError:
         pass
     return "<see .devcontainer/toolchain.env>"
+
+
 REPO = pathlib.Path(__file__).resolve().parents[3]
 WORKFLOWS = REPO / ".github" / "workflows"
 
@@ -240,7 +241,10 @@ def main() -> int:
         print("  It will die with ModuleNotFoundError on a clean runner while passing on any")
         print("  machine that happens to have the module. Install it in the job, pinned, and")
         print("  assert the version right after so a failed install surfaces as itself:")
-        print('      python3 -m pip install --user --disable-pip-version-check "PyYAML==%s"' % _pyyaml_pin())
+        print(
+            '      python3 -m pip install --user --disable-pip-version-check "PyYAML==%s"'
+            % _pyyaml_pin()
+        )
         print("      python3 -c \"import yaml; print('PyYAML', yaml.__version__)\"")
         return 1
 
