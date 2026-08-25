@@ -1,60 +1,60 @@
 ---
 name: ci-watch
-description: How to watch a GitHub Actions run from an agent session without losing the verdict. The wake-up contract, why cancelled is not passed, why completed is not terminal, and the compound-watch bug that swallowed a real failure for 90 minutes. Use whenever arming a background watch on CI, a review marker, or any other terminal state.
+description: How to read this repo's CI from an agent session without losing the verdict. One script does it; hand-rolled gh polling loops are blocked at the pre-bash guard and at the Stop hook. Use whenever checking CI, waiting on a run, or diagnosing a red.
 user-invocable: false
 self-improving: true
 ---
 
-# ci-watch: arming a watch that actually wakes you
+# ci-watch: one script, because the recipe kept rotting
 
-## The contract
-
-**A watch notifies on process EXIT, not on output.** So it must EXIT at the
-terminal state and wait for exactly ONE thing. **One wait per background
-command**; arm a second watch after the first fires. *Tell:* a non-empty output
-file on a still-running watch means it already answered and is now stuck.
-
-## `completed` is not terminal: the watchdog re-runs
-
-A `completed` run returns to `in_progress` when the watchdog auto-retries a
-transient failure, bumping `run_attempt`; exiting on the first `completed` hands
-you attempt 1's verdict as final. Require the SAME attempt twice.
-
-## The canonical form
+## Use this. There is no second way.
 
 ```bash
-R=<run-id>; REPO=<owner>/<repo>; P=""
-while :; do
-  S=$(gh api "repos/$REPO/actions/runs/$R" --jq '"\(.status) \(.run_attempt)"') || { sleep 20; continue; }
-  case "$S" in
-    completed*) [ "$P" = "$S" ] && break; P="$S"; sleep 90 ;;
-    *)          P=""; sleep 20 ;;
-  esac
-done
-gh api "repos/$REPO/actions/runs/$R/jobs?per_page=100" --paginate \
-  --jq '.jobs[]|select(.conclusion!="success" and .conclusion!="skipped")|"\(.conclusion)\t\(.name)"'
+.ci/scripts/ci/ci-trace.py            # one-shot: what is CI doing right now
+.ci/scripts/ci/ci-trace.py --wait     # block until THIS head is final
+.ci/scripts/ci/ci-trace.py --json     # machine-readable
 ```
 
-`run_in_background: true`. `sleep 20`, because a pre-bash hook blocks anything
-longer. An EMPTY final list is the pass; never filter for `=="failure"`.
+`--wait` goes in a background task (`run_in_background: true`). It owns its
+polling interval, so you never write a loop; the process exit is the wake-up.
 
-## Read the JOBS, not the run
+| exit | meaning |
+|---|---|
+| 0 | green: head final, nothing failed |
+| 1 | red: a job failed, **or** the run was superseded |
+| 2 | no verdict: still in flight, no open PR, or unreadable |
+| 3 | head moved: a push replaced the head being watched |
 
-`cancelled` is not a pass, and these look identical while meaning opposites:
+## Why you cannot hand-roll it
+
+Ad-hoc `gh` watch commands are **refused** by `block-adhoc-sanctioned.sh`, and a
+hand-rolled watch left running **blocks the Stop hook**. Four failures in one
+afternoon bought that ([incidents.md](incidents.md)): a stale recipe in nine
+places, a verdict from a superseded attempt, a verdict from an already-cancelled
+run, and a swallowed network blip.
+
+The script keys on the **PR head commit** and reads `statusCheckRollup`, which
+exposes the latest check run per context. A watchdog rerun therefore *replaces*
+the old attempt, and an old head is not in the rollup at all — so those failures
+are not handled, they are inexpressible.
+
+## Reading the answer
+
+**`cancelled` is never a pass**, and two shapes mean opposites — the script says
+which, so do not re-derive it:
 
 | shape | meaning |
 |---|---|
-| cancelled siblings **with** a failed job | watchdog killed the run for that failure |
-| cancelled, **zero** failures, newer head | superseded by a push; watch the newer run |
-| one job cancelled at its `timeout-minutes` | it hung; classify it (below) |
+| cancelled **with** a failed job | the watchdog killed the run for that failure |
+| cancelled, **zero** failures | a newer push superseded it; trace the new head |
 
-**Classify before touching anything:** a job that passed on an earlier run of this
-branch is transient, already being retried, and "fixing" it edits working code.
+**Classify before fixing.** A job that passed on an earlier run of this branch is
+transient, already being retried, and "fixing" it edits working code. The script
+marks retryable failures as not-yet-actionable while the head is live.
 
 ## Re-check on every wake
 
-**A watch that never fires is indistinguishable from a run that never
-finished.** Re-read the run on any re-invocation and re-arm freely; a
-`killed`/`failed` notification is a re-arm trigger, not a no-op. Each push
-restarts the pipeline, so batch fixes into one push. **`gh run watch` stays
-rejected**; see [incidents.md](incidents.md).
+**A watch that never fires is indistinguishable from a run that never finished.**
+Re-read on any re-invocation; a `killed`/`failed` notification is a re-arm
+trigger, not a no-op. Each push restarts the pipeline, so batch fixes into one
+push.

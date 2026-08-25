@@ -59,7 +59,7 @@ for BRANCH in $BRANCHES; do
     done
 done
 if [[ $COUNT -gt 0 ]]; then
-    echo "⚡ Auto-cancelled $COUNT old CI run(s) across: $BRANCHES. The new push triggers a fresh CI run. Watch it with the canonical form from .claude/skills/ci-watch/SKILL.md (run_in_background: true). Do NOT use gh run watch -- it has dropped silently on terminal runs (observed 4/4). Remember: watch the Console CI run, not the Watchdog Monitor chain runs; auto-retries land as attempt 2 of the SAME Console CI run, which is why the canonical watch requires the same run_attempt to be complete twice before it believes the verdict."
+    echo "⚡ Auto-cancelled $COUNT old CI run(s) across: $BRANCHES. The new push triggers a fresh CI run. Trace it with .ci/scripts/ci/ci-trace.py --wait (run_in_background: true); ad-hoc watch commands are refused by the pre-bash guard. Auto-retries land as attempt 2 of the SAME Console CI run, and the script reads the head's check rollup, so that rerun replaces the old attempt rather than producing a stale verdict."
 fi
-echo "📝 If a PR is open for any of: $BRANCHES, refresh its description NOW (gh pr edit <N> --body-file ...). The PR-Description gate fails when the body is older than the newest commit. Stale-only failure? Refresh + 'gh run rerun <id> --failed' (no commit needed)."
+echo "📝 If a PR is open for any of: $BRANCHES, refresh its description NOW (gh api repos/rediacc/console/pulls/<N> -X PATCH -F body=@<file>, then re-read it to verify -- gh pr edit --body fails SILENTLY here and is refused by the pre-bash guard). The PR-Description gate fails when the body is older than the newest commit. Stale-only failure? Refresh + 'gh run rerun <id> --failed' (no commit needed)."
 exit 0

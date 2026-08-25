@@ -47,9 +47,15 @@ done
 BEGIN='<!-- pushed-head:begin -->'
 END='<!-- pushed-head:end -->'
 
+# Derived ONCE. It used to be computed inline inside the loop for `gh pr list`
+# only, so the REST call added below had no repo to name -- a break this script
+# would have shipped had its own reference not been checked.
+GH_REPO=$(gh repo view --json nameWithOwner --jq .nameWithOwner 2>/dev/null)
+[[ -z "$GH_REPO" ]] && exit 0
+
 for br in $(echo "$BRANCHES" | tr ' ' '\n' | sort -u); do
     [[ -z "$br" || "$br" == "main" ]] && continue
-    pr=$(gh pr list --repo "$(gh repo view --json nameWithOwner --jq .nameWithOwner 2>/dev/null)" \
+    pr=$(gh pr list --repo "$GH_REPO" \
         --head "$br" --state open --json number --jq '.[0].number' 2>/dev/null) || continue
     [[ -z "$pr" || "$pr" == "null" ]] && continue
 
@@ -70,7 +76,15 @@ for br in $(echo "$BRANCHES" | tr ' ' '\n' | sort -u); do
     tmp=$(mktemp) || continue
     printf '%s\n\n%s\n**Last pushed:** `%s`\n\n%s\n%s\n' \
         "$stripped" "$BEGIN" "$sha" "$log" "$END" >"$tmp"
-    if gh pr edit "$pr" --body-file "$tmp" >/dev/null 2>&1; then
+    # `gh pr edit --body-file` CANNOT WORK HERE and never could: measured
+    # 2026-08-25 it exits 1 with "GraphQL: Projects (classic) is being
+    # deprecated ... (repository.pullRequest.projectCards)" and leaves the body
+    # untouched. This hook exists to keep the PR-description freshness gate
+    # green automatically, and it had been failing on every single push --
+    # loudly, into a stderr nobody was reading -- which is why that gate kept
+    # going red on a branch whose body someone had just refreshed by hand.
+    # The REST PATCH form is unaffected by the Projects-classic deprecation.
+    if gh api "repos/$GH_REPO/pulls/$pr" -X PATCH -F body=@"$tmp" >/dev/null 2>&1; then
         echo "refresh-pr-body: PR #$pr description updated for $sha (freshness gate satisfied)" >&2
     else
         echo "refresh-pr-body: PR #$pr edit FAILED for $sha" >&2

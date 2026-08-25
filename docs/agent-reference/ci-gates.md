@@ -91,7 +91,7 @@ Do NOT classify a CI failure from a handful of grepped lines. The cost of a wron
 When fixing CI failures, follow this loop:
 
 1. **Run locally first**: Run `npm run ci` sub-commands locally before pushing to avoid costly CI round-trips. Use parallel sub-agents for independent checks.
-2. **Push and watch**: After pushing, arm the canonical watch from `.claude/skills/ci-watch/SKILL.md` with run_in_background: true — the process exit notifies on completion. Do NOT use `gh run watch` as the wake-up; it has dropped silently on terminal runs (observed 4/4). `completed` is not by itself terminal: the watchdog re-runs, so the watch must see the same `run_attempt` complete twice.
+2. **Push and watch**: After pushing, run `.ci/scripts/ci/ci-trace.py --wait` with run_in_background: true — the process exit notifies on completion. Ad-hoc watch commands are refused by `block-adhoc-sanctioned.sh` and a hand-rolled watch blocks the Stop hook, because the recipe rotted in nine places and reported superseded verdicts twice.
 3. **Fix on notification**: When the background watch completes, list every job that is neither `success` nor `skipped` (filtering for `== "failure"` alone hides a cancelled gate, which did not report). A run that ends `cancelled` with a failed job means the watchdog killed it for that failure; `cancelled` with zero failed jobs means your own push superseded it. Cancelled NEVER means green — the run is only done when every job passes (deploy preview is among the last).
 
    Two ways this step lies to you, both observed on 0804-1:

@@ -197,5 +197,5 @@ FOREGROUND command at 10 minutes, and what happens next VARIES: observed both a 
 exit 143 (a recording died mid-flight having run none of its own cleanup) and an automatic
 move to background. Never rely on either. Anything that can outlive 10 minutes goes in
 run_in_background from the start; the harness notifies on completion. For a CI
-run, poll to a terminal state in background -- `gh run watch` has dropped silently on
+run, poll to a terminal state in background -- ad-hoc watch commands are blocked (use `.ci/scripts/ci/ci-trace.py --wait`); the banned one dropped silently on
 terminal runs (4/4), so a process exit on terminal state is the reliable notification.

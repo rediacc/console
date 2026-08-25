@@ -512,6 +512,30 @@ check 2 pre-bash/block-long-sleep.sh "$(bash_json "$WATCH")" "long-sleep: the sa
 check 2 pre-bash/block-long-sleep.sh "$(bash_bg_json 'sleep 900')" "long-sleep: background is not unlimited"
 check 0 pre-bash/block-long-sleep.sh "$(bash_bg_json 'sleep 20')" "long-sleep: short background sleep ok"
 
+# --- block-adhoc-sanctioned.sh: the registry-driven guard --------------------
+# It refuses an ad-hoc command when a sanctioned tool exists, reading the table
+# in .claude/hooks/lib/sanctioned.py. Both directions matter more than usual
+# here: this guard sits in front of every Bash call in the session, so an
+# over-broad row would be felt immediately and then removed.
+check 2 pre-bash/block-adhoc-sanctioned.sh "$(bash_json 'gh run watch 123 --exit-status')" "adhoc: the banned watch command is refused"
+check 2 pre-bash/block-adhoc-sanctioned.sh "$(bash_json 'gh pr edit 574 --body \"x\"')" "adhoc: gh pr edit --body is refused (it exits 1 and does not write)"
+check 2 pre-bash/block-adhoc-sanctioned.sh "$(bash_json 'until [ \"$(gh run view $R --json status --jq .status)\" = \"completed\" ]; do :; done')" "adhoc: a hand-rolled status loop is refused"
+check 0 pre-bash/block-adhoc-sanctioned.sh "$(bash_json '.ci/scripts/ci/ci-trace.py --wait')" "adhoc: the sanctioned tracer passes"
+check 0 pre-bash/block-adhoc-sanctioned.sh "$(bash_json 'gh run view 123 --json conclusion,jobs')" "adhoc: a one-shot read is not a watch"
+check 0 pre-bash/block-adhoc-sanctioned.sh "$(bash_json 'gh api repos/o/r/pulls/574 -X PATCH -F body=@b.md')" "adhoc: the sanctioned body update passes"
+check 0 pre-bash/block-adhoc-sanctioned.sh "$(bash_json 'git status')" "adhoc: an unrelated command passes"
+# THE CONTROL THAT MATTERS: it must FAIL OPEN on its own breakage. A guard that
+# bricks every command when its registry is missing gets deleted, and then
+# nothing is guarded at all.
+check 0 pre-bash/block-adhoc-sanctioned.sh "$(printf '{"tool_input":{}}')" "adhoc: no command in the payload is not a violation"
+
+# --- warn-hook-change.sh: warning only, ALWAYS exit 0 ------------------------
+# The operator chose warn over block for hook edits (2026-08-25) because a hard
+# block would have fired six times that day on legitimate work. These pin that
+# it can never block: a warn hook that can block is a block hook nobody reviewed.
+check 0 pre-bash/warn-hook-change.sh "$(bash_json 'git commit -m x')" "warn-hook-change: a commit never blocks"
+check 0 pre-bash/warn-hook-change.sh "$(bash_json 'git status')" "warn-hook-change: an unrelated command never blocks"
+
 # --- block-ci-polling.sh boundaries, both directions ------------------------
 # These pin the pattern itself. A guard nobody tests either rots into blocking
 # everything (and gets disabled) or stops matching (and guards nothing).
