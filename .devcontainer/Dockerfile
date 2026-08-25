@@ -241,6 +241,20 @@ USER root
 # =============================================================================
 # Python packages + uv + kimi-cli
 # =============================================================================
+# PyYAML NEEDS ITS OWN INSTALL WITH --ignore-installed, and that is not
+# carelessness. The base image already carries PyYAML 6.0.1 installed by DEBIAN
+# (the python3-yaml apt package), which pip cannot uninstall -- a distro package
+# has no RECORD file, so pinning it in the same command as everything else fails
+# the whole layer with:
+#
+#     ERROR: Cannot uninstall PyYAML 6.0.1, RECORD file not found.
+#            Hint: The package was installed by debian.
+#
+# Verified inside the running image before committing: --ignore-installed takes
+# it 6.0.1 -> 6.0.2 and `import yaml` still works. It is a SEPARATE command so
+# that flag applies to PyYAML alone; ruff and uv have no distro copy to shadow
+# and must keep failing loudly if they collide with one.
+#
 # ruff and PyYAML at the PINNED versions, so check-python-lint.sh finds a real
 # binary on PATH instead of falling through to `uvx ruff@X`, which needs the
 # network on first use. PyYAML is pinned here for the same reason it is pinned
@@ -249,7 +263,9 @@ RUN . /etc/rediacc/toolchain.env \
     && : "${RUFF_VERSION:?toolchain.env did not define RUFF_VERSION}" \
     && : "${PYYAML_VERSION:?toolchain.env did not define PYYAML_VERSION}" \
     && pip install --no-cache-dir --break-system-packages \
-        "pyyaml==${PYYAML_VERSION}" uv "ruff==${RUFF_VERSION}"
+        uv "ruff==${RUFF_VERSION}" \
+    && pip install --no-cache-dir --break-system-packages --ignore-installed \
+        "pyyaml==${PYYAML_VERSION}"
 
 USER vscode
 RUN uv tool install kimi-cli
