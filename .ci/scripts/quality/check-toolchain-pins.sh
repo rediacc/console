@@ -205,6 +205,46 @@ else
     fail "A6. these trust PATH instead of acquiring at the pin: ${missing_acq[*]}"
 fi
 
+# --- A9. a pin must RESOLVE, not merely exist --------------------------------
+# A1-A8 are source scans, and every one of them was green while this was broken:
+# toolchain_pin_for printed "" AND RETURNED 0 whenever the pins had not been
+# loaded, because sourcing toolchain.sh does not populate them. The empty value
+# then travelled into a download URL. Measured 2026-08-26 in a fresh shell:
+#
+#   .../releases/download/v/shellcheck-v.linux.aarch64.tar.xz  -> curl 404
+#
+# The 404 names GitHub, so the symptom points away from the cause. No textual
+# assertion could have caught this: the source looked correct and the defect
+# lived in what the function RETURNED. So A9 executes it, in a subshell that
+# sources nothing but the library -- which is exactly the caller that broke.
+a9_bad=()
+for t in shfmt shellcheck ruff actionlint go node; do
+    v="$(bash -c "source '$ROOT/.ci/scripts/lib/toolchain.sh'; toolchain_pin_for $t" 2>/dev/null || true)"
+    [[ -n "$v" ]] || a9_bad+=("$t")
+done
+if [[ ${#a9_bad[@]} -eq 0 ]]; then
+    pass "A9. every pin resolves to a non-empty value from a bare source"
+else
+    fail "A9. these pins resolve EMPTY (did toolchain_load run?): ${a9_bad[*]}"
+fi
+
+# A9 control, BY CONSTRUCTION: a copy of the library plus an APPENDED no-op
+# override of toolchain_load. Appending cannot silently fail to apply the way a
+# pattern substitution can when the targeted line is later reworded.
+mkdir -p "$TMP/a9"
+cp "$ROOT/.ci/scripts/lib/toolchain.sh" "$TMP/a9/toolchain.sh"
+printf '\ntoolchain_load() { return 0; }\n' >>"$TMP/a9/toolchain.sh"
+if grep -q 'toolchain_load() { return 0; }' "$TMP/a9/toolchain.sh"; then
+    ctl="$(bash -c "source '$TMP/a9/toolchain.sh'; toolchain_pin_for shellcheck" 2>/dev/null || true)"
+    if [[ -z "$ctl" ]]; then
+        pass "A9 control: a library that skips the load is detectable"
+    else
+        fail "A9 CONTROL DID NOT FIRE: the mutant still resolved a pin ('$ctl')"
+    fi
+else
+    fail "A9 CONTROL WAS NOT PLANTED: the mutant library is unmodified"
+fi
+
 # --- controls, by construction ------------------------------------------------
 mkdir -p "$TMP/c"
 printf 'RUFF_VERSION=9.9.9\n' >"$TMP/c/pins.env"
