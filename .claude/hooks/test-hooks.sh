@@ -511,6 +511,54 @@ check 2 pre-bash/block-long-sleep.sh "$(bash_json 'sleep 90')" "long-sleep: 90s 
 check 2 pre-bash/block-long-sleep.sh "$(bash_json "$WATCH")" "long-sleep: the same watch unbackgrounded is blocked"
 check 2 pre-bash/block-long-sleep.sh "$(bash_bg_json 'sleep 900')" "long-sleep: background is not unlimited"
 check 0 pre-bash/block-long-sleep.sh "$(bash_bg_json 'sleep 20')" "long-sleep: short background sleep ok"
+
+# --- block-ci-polling.sh boundaries, both directions ------------------------
+# These pin the pattern itself. A guard nobody tests either rots into blocking
+# everything (and gets disabled) or stops matching (and guards nothing).
+check 2 pre-bash/block-ci-polling.sh "$(bash_json 'sleep 30 && gh run list --repo rediacc/console')" "ci-polling: classic poll with && blocks"
+check 2 pre-bash/block-ci-polling.sh "$(bash_json 'sleep 20; gh run view 123 --json status')" "ci-polling: classic poll with ; blocks"
+check 0 pre-bash/block-ci-polling.sh "$(bash_json 'gh run view 123 --json status')" "ci-polling: a bare gh run view is not a poll"
+check 0 pre-bash/block-ci-polling.sh "$(bash_json 'sleep 30')" "ci-polling: a bare sleep is not a poll"
+check 0 pre-bash/block-ci-polling.sh "$(bash_json 'while :; do S=$(gh api "repos/o/r/actions/runs/1" --jq .status); sleep 20; done')" "ci-polling: the gh api watch loop is not a gh-run-view poll"
+
+# THE ACCEPTED FALSE POSITIVE, PINNED ON PURPOSE.
+#
+# Both guards read the command TEXT, so a command that merely DESCRIBES the
+# pattern -- editing this repo's own watch documentation, or a commit message
+# quoting the recipe -- is blocked exactly as if it were polling. That is not a
+# bug to be fixed later: it was put to the operator on 2026-08-25 with four
+# scored options and the ruling was to keep both guards as they are, because
+# this failure is LOUD (a blocked command naming its workaround) while every
+# narrowing that would admit the doc edit fails SILENTLY -- a real long poll
+# runs and nobody is told. Exempting heredoc bodies is the most tempting of
+# those, and the worst: a heredoc is where a genuine long sleep would hide.
+#
+# So these two assert exit 2. If someone later "fixes" the false positive,
+# these turn red and force the decision to be re-made deliberately rather than
+# drifting. The workaround stays: write the file with the Write tool and pass
+# it by path.
+# The shapes below were probed, not assumed. A first draft of these cases
+# asserted exit 2 on payloads that do not actually match either pattern
+# ("sleeps 90s" is not `sleep +[0-9]+`; a `done;` sits between the sleep and the
+# gh in the until-loop form), so they failed on correct code -- a test pinning a
+# false positive that could not occur. These two are the real triggers.
+check 2 pre-bash/block-ci-polling.sh "$(bash_json "cat > doc.md <<'EOF'
+Poll with sleep 20; gh run view \$R --json status
+EOF")" "ci-polling: prose showing an INLINE poll is blocked on purpose (operator ruling 2026-08-25)"
+check 2 pre-bash/block-long-sleep.sh "$(bash_json "git commit -F - <<'MSG'
+its sleep 20 arm precedes its sleep 90 arm
+MSG")" "long-sleep: a commit message quoting a literal long sleep is blocked on purpose (operator ruling 2026-08-25)"
+# The BOUNDARY, and the reason the false positive is narrower than it sounds:
+# prose showing the SANCTIONED until-loop is NOT blocked, because a `done;` sits
+# between its sleep and its gh. Only an inline `sleep N; gh run view` trips it.
+check 0 pre-bash/block-ci-polling.sh "$(bash_json "cat > doc.md <<'EOF'
+R=1; until [ \"\$(gh run view \$R --json status)\" = c ]; do sleep 20; done; gh run view \$R
+EOF")" "ci-polling: prose showing the sanctioned until-loop is NOT blocked"
+
+# ...and the sanctioned escape hatch must keep working, or the ruling above is
+# a trap rather than a trade-off: the same content passed by PATH is fine.
+check 0 pre-bash/block-ci-polling.sh "$(bash_json 'python3 /tmp/patch_the_docs.py')" "ci-polling: the documented workaround (file by path) passes"
+check 0 pre-bash/block-long-sleep.sh "$(bash_json 'git commit -F /tmp/commit-msg.txt')" "long-sleep: the documented workaround (message by path) passes"
 check 0 pre-bash/block-git-force-push.sh "$(bash_json 'git push')" "force-push: plain push ok"
 # THE CONTROLS THAT MATTER for the widened pattern. A guard that blocks every
 # push is worse than no guard: it gets disabled, and then nothing is guarded.
