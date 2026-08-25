@@ -78,7 +78,15 @@ def _emit(payload, as_json):
     v = payload["verdict"]
     head = (payload.get("head") or "")[:8]
     pr = payload.get("pr")
-    where = "PR #%s @ %s" % (pr, head) if pr else payload.get("ref", "?")
+    # Two SOURCES, never one undifferentiated channel. A branch read and a PR
+    # read answer different questions, and a reader who cannot tell which one
+    # arrived will draw the wrong conclusion from an identical-looking line.
+    if pr:
+        where = "PR #%s @ %s" % (pr, head)
+    elif payload.get("source") == "branch":
+        where = "branch %s @ %s (no PR)" % (payload.get("ref", "?"), head)
+    else:
+        where = payload.get("ref", "?")
     print("%s  %s" % (v.upper(), where))
     if payload.get("detail"):
         print("  %s" % payload["detail"])
@@ -102,11 +110,15 @@ def _emit(payload, as_json):
         )
 
 
-def _snapshot(root, ref, cache):
+def _snapshot(root, ref, cache, allow_branch=False):
     """One read -> a payload dict, or None with a reason when unreadable."""
-    state, info = wl_ci.ci_rollup(root, ref)
+    state, info = wl_ci.ci_rollup(root, ref, allow_branch=allow_branch)
     if state == "no-pr":
         return None, "no open PR for ref %r" % ref
+    if state == "no-ref":
+        # Distinct from no-pr on purpose: a ref that does not exist is a typo or
+        # a deleted branch, not a branch that merely lacks a PR.
+        return None, "no branch %r on the remote" % ref
     if state == "unreadable":
         return None, str(info)
 
@@ -155,6 +167,7 @@ def _snapshot(root, ref, cache):
         "verdict": verdict,
         "detail": detail,
         "ref": ref,
+        "source": info.get("source") or "pr",
         "pr": info.get("pr"),
         "url": info.get("url"),
         "owner": info.get("owner"),
@@ -197,7 +210,14 @@ def main(argv=None):
         ),
     )
     ap.add_argument("--json", action="store_true", help="machine-readable output")
-    ap.add_argument("--ref", default="", help="branch to trace (default: current)")
+    ap.add_argument(
+        "--ref",
+        default="",
+        help=(
+            "branch to trace (default: current). An explicit --ref also reads a"
+            " branch that has no open PR, which is what post-merge `main` is."
+        ),
+    )
     ap.add_argument(
         "--timeout",
         type=int,
@@ -207,6 +227,10 @@ def main(argv=None):
     args = ap.parse_args(argv)
 
     root = REPO_ROOT
+    # Only an EXPLICIT --ref opts into the branch fallback. On the implicit
+    # current-branch default, "no open PR yet" is a useful answer and must not be
+    # silently replaced by a branch read that looks like a verdict.
+    allow_branch = bool(args.ref)
     ref = args.ref or _branch(root)
     if not ref or ref == "HEAD":
         print("no-verdict: could not determine the current branch", file=sys.stderr)
@@ -216,7 +240,7 @@ def main(argv=None):
     deadline = time.time() + args.timeout
 
     while True:
-        payload, err = _snapshot(root, ref, cache)
+        payload, err = _snapshot(root, ref, cache, allow_branch=allow_branch)
 
         if payload is None:
             # A read that cannot complete is NEVER green. Failure 4 was a

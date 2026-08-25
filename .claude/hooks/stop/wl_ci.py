@@ -243,35 +243,65 @@ def ci_query(owner, name, ref, cursor):
     ) % (owner, name, ref, after)
 
 
-def ci_rollup(root, ref):
-    """(state, info) -- one paged read of the open PR's check rollup.
+def ci_branch_query(owner, name, ref, cursor):
+    """The SAME rollup, read from the branch instead of from a PR.
 
-    state is ok | no-pr | unreadable. `unreadable` is a real verdict, in the
-    V_PR_UNREADABLE style: a check that cannot see must SAY SO.
+    `main` after a merge has no open PR, so ci_query's pullRequests(...) selector
+    returns zero nodes and the reader goes blind at exactly the point /pr-merge
+    step 5 needs it. The context selection set below is deliberately identical to
+    ci_query's: this is a second SOURCE for one payload, never a second
+    implementation of the reader.
+    """
+    after = ',after:"%s"' % cursor if cursor else ""
+    return (
+        '{repository(owner:"%s",name:"%s"){ref(qualifiedName:"refs/heads/%s")'
+        "{target{... on Commit{oid statusCheckRollup{state "
+        "contexts(first:100%s){totalCount pageInfo{hasNextPage endCursor} nodes{__typename ... on CheckRun{name status conclusion databaseId detailsUrl checkSuite{workflowRun{databaseId}}} ... on StatusContext{context state targetUrl}}}}}}}}}"
+    ) % (owner, name, ref, after)
+
+
+def ci_rollup(root, ref, allow_branch=False):
+    """(state, info) -- one paged read of the check rollup for `ref`.
+
+    state is ok | no-pr | no-ref | unreadable. `unreadable` is a real verdict, in
+    the V_PR_UNREADABLE style: a check that cannot see must SAY SO.
+
+    allow_branch DEFAULTS TO FALSE AND MUST STAY THAT WAY. The Stop hook reads
+    `no-pr` as a meaningful answer -- "this branch has no PR to be current with"
+    -- so silently substituting a branch read would CHANGE that check's meaning
+    rather than extend it. Only a caller that explicitly named a ref opts in.
     """
     owner, name = repo_slug(root)
     if not owner:
         return "unreadable", "could not derive owner/name from remote.origin.url"
-    contexts, cursor, pr, commit, roll = [], None, None, None, None
+    state, info = _rollup_pr(root, owner, name, ref)
+    if state == "no-pr" and allow_branch:
+        return _rollup_branch(root, owner, name, ref)
+    return state, info
+
+
+def _rollup_pages(root, owner, name, ref, build_query, extract, source):
+    """Page ONE rollup source into the common payload.
+
+    Both sources share this loop so CI_MAX_PAGES and the `truncated` flag cannot
+    drift apart between them -- a partial read that forgot to say it was partial
+    is the vacuity failure this reader exists to avoid.
+
+    `extract(data)` returns (terminal_state, commit, pr) -- terminal_state is
+    None to continue paging.
+    """
+    contexts, cursor, commit, pr, roll = [], None, None, None, None
     truncated = True
     for _ in range(CI_MAX_PAGES):
         data, err = _gh_json(
-            root, ["api", "graphql", "-f", "query=" + ci_query(owner, name, ref, cursor)]
+            root, ["api", "graphql", "-f", "query=" + build_query(cursor)]
         )
         if data is None:
             return "unreadable", err
-        try:
-            nodes = data["data"]["repository"]["pullRequests"]["nodes"]
-        except (KeyError, TypeError):
-            return "unreadable", "graphql response had no pullRequests.nodes"
-        if not nodes:
-            return "no-pr", ref
-        pr = nodes[0]
-        try:
-            commit = pr["commits"]["nodes"][0]["commit"]
-        except (KeyError, IndexError, TypeError):
-            return "unreadable", "PR #%s carries no head commit" % pr.get("number", "?")
-        roll = commit.get("statusCheckRollup")
+        terminal, commit, pr = extract(data)
+        if terminal:
+            return terminal, ref if terminal in ("no-pr", "no-ref") else commit
+        roll = (commit or {}).get("statusCheckRollup")
         if not roll:
             # No checks registered on this head yet. Not a verdict and not
             # blindness: an empty context list simply produces silence below.
@@ -287,6 +317,7 @@ def ci_rollup(root, ref):
     return "ok", {
         "owner": owner,
         "name": name,
+        "source": source,
         "pr": (pr or {}).get("number"),
         "url": (pr or {}).get("url") or "",
         "sha": (commit or {}).get("oid") or "",
@@ -295,6 +326,58 @@ def ci_rollup(root, ref):
         "contexts": contexts,
         "truncated": truncated,
     }
+
+
+def _rollup_pr(root, owner, name, ref):
+    def extract(data):
+        try:
+            nodes = data["data"]["repository"]["pullRequests"]["nodes"]
+        except (KeyError, TypeError):
+            return "unreadable", "graphql response had no pullRequests.nodes", None
+        if not nodes:
+            return "no-pr", None, None
+        pr = nodes[0]
+        try:
+            return None, pr["commits"]["nodes"][0]["commit"], pr
+        except (KeyError, IndexError, TypeError):
+            return (
+                "unreadable",
+                "PR #%s carries no head commit" % pr.get("number", "?"),
+                None,
+            )
+
+    # `extract` returns its unreadable reason in the commit slot, which
+    # _rollup_pages passes straight through as `info`.
+    return _rollup_pages(
+        root, owner, name, ref, lambda c: ci_query(owner, name, ref, c), extract, "pr"
+    )
+
+
+def _rollup_branch(root, owner, name, ref):
+    def extract(data):
+        try:
+            node = data["data"]["repository"]["ref"]
+        except (KeyError, TypeError):
+            return "unreadable", "graphql response had no repository.ref", None
+        if not node:
+            # A ref that does not exist is NOT the same answer as a ref with no
+            # checks, and conflating them is how a typo reads as a clean run.
+            return "no-ref", None, None
+        target = node.get("target") or {}
+        if not target.get("oid"):
+            return "unreadable", "ref %r resolved to a non-commit target" % ref, None
+        return None, target, None
+
+    return _rollup_pages(
+        root,
+        owner,
+        name,
+        ref,
+        lambda c: ci_branch_query(owner, name, ref, c),
+        extract,
+        "branch",
+    )
+
 
 
 def ci_classify(info):

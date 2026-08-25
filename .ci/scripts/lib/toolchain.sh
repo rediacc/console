@@ -87,6 +87,15 @@ toolchain_probe_version() {
 
 toolchain_pin_for() {
     local tool="$1" key
+    # LOAD FIRST. Sourcing this library does not populate the pins, so a caller
+    # that reached straight for a pin used to get "" back WITH RETURN CODE 0 --
+    # and an empty version then travelled into a download URL. Measured
+    # 2026-08-26 on a fresh shell:
+    #   .../releases/download/v/shellcheck-v.linux.aarch64.tar.xz  -> curl 404
+    # The 404 names GitHub, not the missing pin, which is the wrong problem to
+    # go debugging. toolchain_load is idempotent, so this is free after the
+    # first call.
+    toolchain_load || return 2
     case "$tool" in
         shfmt) key=SHFMT_VERSION ;;
         shellcheck) key=SHELLCHECK_VERSION ;;
@@ -364,6 +373,13 @@ toolchain_acquire() {
         return 0
     fi
     pin="$(toolchain_pin_for "$tool")" || return 2
+    # The same guard toolchain_check already carries. Its absence here was the
+    # asymmetry that let an empty pin reach a URL: one entry point refused, the
+    # other interpolated.
+    [[ -n "$pin" ]] || {
+        echo "toolchain: pin for '$tool' is empty -- the pins file did not load" >&2
+        return 2
+    }
     case "$tool" in
         shfmt) _toolchain_acquire_shfmt "$pin" ;;
         shellcheck) _toolchain_acquire_shellcheck "$pin" ;;
