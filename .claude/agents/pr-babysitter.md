@@ -69,12 +69,11 @@ Consequently, **your reports are the principal's only window.** In delegated mod
 
 **A background task that exits on the run's terminal state IS your loop.** Nothing else wakes you. After every push - and before you send any report - arm it:
 
-```bash
-R=<run-id>
-until [ "$(gh run view $R --repo rediacc/console --json status --jq .status)" = "completed" ]; do sleep 20; done
-gh run view $R --repo rediacc/console --json conclusion,jobs --jq '{conclusion, failed:[.jobs[]|select(.conclusion=="failure")|.name]}'
-```
-with **`run_in_background: true`**. It exits ONLY when the run is genuinely `completed`, and the process exit re-invokes you with the failure list already in hand. (`sleep 20` - the hook blocks anything longer.)
+Use the canonical form from the `ci-watch` skill verbatim, with
+**`run_in_background: true`**. Do not write one from memory: it has to survive a
+watchdog re-run (`completed` alone is not terminal), and it must report every job
+that is neither `success` nor `skipped` rather than only those concluded
+`failure`. The process exit re-invokes you with that list already in hand.
 
 **The mechanics of arming a watch live in the `ci-watch` skill
 (`.claude/skills/ci-watch/SKILL.md`). Read it before arming your first one.** It
