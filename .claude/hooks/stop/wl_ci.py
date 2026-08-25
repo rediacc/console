@@ -412,6 +412,10 @@ def _sanctioned_match(blob):
         return False
 
 
+# Does this blob touch GitHub at all? Something that cannot be a CI watch is not
+# one, however much it says "watch".
+GH_EVIDENCE_RE = re.compile(r"\bgh\b|actions/runs/\d+|ci-trace", re.IGNORECASE)
+
 CI_TRACE_RE = re.compile(r"ci-trace(?:\.py)?\b", re.IGNORECASE)
 
 
@@ -437,6 +441,13 @@ def adhoc_watch(live_bg):
         # the point: the pre-bash guard and this check then cannot disagree
         # about what counts as hand-rolled, which is the class of drift this
         # whole change exists to end.
+        # EVIDENCE OF GITHUB, not merely the word "watch". CI_WATCH_RE also
+        # matches "watch" sitting near any 9+ digit number, and a worklist
+        # fixture named `sleep 3717171718 silent watch` -- a generic background
+        # worker with no gh call anywhere in it -- was blocking the turn. A
+        # guard that stops unrelated work is a guard that gets removed.
+        if not GH_EVIDENCE_RE.search(blob):
+            continue
         if CI_WATCH_RE.search(blob) or _sanctioned_match(blob):
             return str(b.get("id") or "?"), blob.strip()[:160]
     return "", ""
@@ -457,6 +468,14 @@ def ci_watch_armed(live_bg, rows, sha):
         needles.append(sha[:12])
     for b in live_bg or []:
         blob = "%s %s" % (b.get("command") or "", b.get("description") or "")
+        # THE SANCTIONED READER IS ALWAYS ABOUT THIS HEAD, so it needs no
+        # needle. ci-trace.py resolves the PR from the current branch and pins
+        # the head it starts on, exiting 3 if a push moves it -- it cannot be
+        # watching a stale run, which is the only thing the needle test ever
+        # guarded against. An explicit --ref points it elsewhere, so that form
+        # still has to prove itself the ordinary way.
+        if CI_TRACE_RE.search(blob) and "--ref" not in blob:
+            return str(b.get("id") or (b.get("description") or "")[:60])
         if any(n and n in blob for n in needles):
             return str(b.get("id") or (b.get("description") or "")[:60])
     return ""

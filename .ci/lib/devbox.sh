@@ -82,6 +82,7 @@ image_digest=$digest
 docker_gid=$docker_gid
 uid=$(id -u)
 gid=$(id -g)
+gate_lane=${REDIACC_GATE_LANE:-devbox}
 EOF
 }
 
@@ -562,4 +563,94 @@ devbox_shell() {
         return 1
     }
     $d exec -it -u "$(id -u):$(id -g)" -w "$(devbox_worktree)" "$cid" bash
+}
+
+# -----------------------------------------------------------------------------
+# NON-INTERACTIVE EXEC, and the three probes that must pass before it is trusted
+# -----------------------------------------------------------------------------
+#
+# devbox_shell() above is `-it ... bash` and cannot run a command. This is its
+# missing sibling, and it is what a gate lane routes through.
+#
+# -u vscode BY NAME, not `$(id -u):$(id -g)`. devbox-entrypoint.sh has already
+# renumbered `vscode` to the host identity, so the name is correct on Linux,
+# macOS (where id is 501:20 and gid 20 collides with dialout) and WSL2 alike,
+# while a numeric id is correct only where the host's numbering means anything.
+# Exec as root instead and git refuses the worktree with "dubious ownership",
+# `git ls-files` returns empty, and a gate reports a green over zero files --
+# measured live on 2026-08-25 while proving this lane works at all.
+devbox_exec() {
+    local d cid workdir
+    d="$(devbox_docker)"
+    cid="$(devbox_container_id)"
+    devbox_container_running || {
+        log_error "Devbox is not running. Start it with: ./run.sh devbox up"
+        return 1
+    }
+    workdir="$(devbox_worktree)"
+
+    # -t ONLY when both stdin and stdout are TTYs. `docker exec -t` allocates a
+    # pty, which injects carriage returns; a piped `--json` gate then receives
+    # CRs inside its payload and fails to parse for reasons that name nothing.
+    local -a flags=(exec -u vscode -w "$workdir")
+    [[ -t 0 ]] && flags+=(-i)
+    [[ -t 0 && -t 1 ]] && flags+=(-t)
+    flags+=(-e REDIACC_IN_DEVBOX=1)
+    local v
+    for v in CI NO_COLOR TERM GH_TOKEN GITHUB_TOKEN; do
+        [[ -n "${!v:-}" ]] && flags+=(-e "$v")
+    done
+
+    # bash -lc, not bash -c: PATH for go and node comes from /etc/environment,
+    # which only a login shell reads.
+    "$d" "${flags[@]}" "$cid" bash -lc "$*"
+}
+
+# THE THREE PROBES. Each catches a different way the container can look healthy
+# while producing a green over nothing -- and all three present identically, as
+# a gate that passes without reading a file.
+
+# 1. Is the repo actually THERE? Verified by CONTENT, never by existence.
+#    macOS Docker Desktop (a path outside its file-sharing list) and WSL2 with
+#    Docker Desktop integration both AUTO-CREATE an empty directory for a bind
+#    mount whose source they cannot see. The container then has the path, and
+#    every gate reads an empty tree.
+devbox_mount_ok() {
+    local root
+    root="$(devbox_mount_root)"
+    devbox_exec "test -f '$root/run.sh' && git -C '$(devbox_worktree)' rev-parse --git-dir" >/dev/null 2>&1 || {
+        log_error "devbox mount is not usable: $root does not contain this repo inside the container"
+        log_info "On macOS the path must be inside Docker Desktop's file sharing list; on WSL2 use docker-ce inside the distro, not Desktop integration."
+        return 1
+    }
+}
+
+# 2. Is the exec identity one git will accept? This is the root-exec trap.
+devbox_identity_ok() {
+    local out
+    out="$(devbox_exec "git -C '$(devbox_worktree)' status --porcelain" 2>&1)" || true
+    if printf '%s' "$out" | grep -q 'dubious ownership'; then
+        log_error "devbox exec identity is wrong: git refuses the worktree as another user's"
+        log_info "Exec as 'vscode' (the entrypoint renumbers it to your uid), never as root."
+        return 1
+    fi
+}
+
+# 3. Is it writable? colima mounts \$HOME read-only unless started with
+#    --mount \$HOME:w, and every stamp write and formatter then fails EROFS.
+devbox_writable_ok() {
+    devbox_exec "touch '$(devbox_worktree)/.ci/cache/.devbox-write-probe' && rm -f '$(devbox_worktree)/.ci/cache/.devbox-write-probe'" >/dev/null 2>&1 || {
+        log_error "devbox cannot write into the repo (read-only mount?)"
+        log_info "colima needs: colima start --mount \$HOME:w"
+        return 1
+    }
+}
+
+devbox_doctor() {
+    local rc=0
+    devbox_mount_ok || rc=1
+    devbox_identity_ok || rc=1
+    devbox_writable_ok || rc=1
+    [[ "$rc" -eq 0 ]] && log_info "devbox is usable: mount, identity and writability all verified"
+    return "$rc"
 }

@@ -13,6 +13,10 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # Source configuration and utilities
 source "$ROOT_DIR/.ci/config/constants.sh"
+# The gate toolchain resolver. Sourced HERE rather than lazily, so a gate that
+# needs a pinned tool fails with the version mismatch as its reason rather than
+# "toolchain_check: command not found", which names the wrong problem.
+source "$ROOT_DIR/.ci/scripts/lib/toolchain.sh"
 source "$ROOT_DIR/.ci/lib/local-common.sh"
 source "$ROOT_DIR/.ci/lib/service.sh"
 
@@ -1554,11 +1558,25 @@ quality_all() {
     log_step "Running all quality checks"
     npm run quality
 
-    # Shell formatting/linting (requires shfmt + shellcheck)
-    if command -v shfmt &>/dev/null; then
+    # Shell formatting/linting. THIS USED TO SKIP AND RETURN SUCCESS.
+    #
+    # `command -v shfmt` + log_warn + fall through meant that on any machine
+    # without shfmt -- which is every non-Debian host, and was this very box
+    # until someone hand-installed it -- `./run.sh quality all` reported GREEN
+    # having never run a shell gate. A gate that cannot run must not be
+    # indistinguishable from a gate that passed.
+    #
+    # It is also not enough for shfmt to merely EXIST: a different version
+    # formats differently, so an unpinned binary on PATH silently decides the
+    # verdict. toolchain_check accepts it only AT the pin.
+    if toolchain_check shfmt >/dev/null 2>&1; then
         quality_shell
     else
-        log_warn "shfmt not found — skipping shell checks (install: go install mvdan.cc/sh/v3/cmd/shfmt@latest)"
+        log_error "shell gates cannot run here:"
+        toolchain_check shfmt 2>&1 | sed 's/^/    /' >&2
+        log_info "Run them in the devbox instead: ./run.sh devbox exec -- ./run.sh quality shell"
+        log_info "Or see what every lane has: .ci/scripts/lib/toolchain.sh --report"
+        return 1
     fi
 }
 
@@ -1624,15 +1642,21 @@ fix_all() {
 
 fix_shell() {
     log_step "Auto-fixing shell script formatting"
-    if ! command -v shfmt &>/dev/null; then
-        log_error "shfmt is not installed"
-        log_info "Install with: go install mvdan.cc/sh/v3/cmd/shfmt@latest"
+    # THE SAME BINARY THE GATE VERIFIES WITH. This used to take whatever `shfmt`
+    # was on PATH while .ci/scripts/security/shfmt.sh checked with the pinned
+    # one, so `./run.sh fix shell` could reformat a file into a state the gate
+    # then rejected -- the nastiest shape of a version split, because the tool
+    # that is supposed to fix the problem creates it.
+    local shfmt_bin
+    if ! shfmt_bin="$(toolchain_acquire shfmt)"; then
+        log_error "shfmt is unusable, so formatting would not match the gate"
+        log_info "Every lane's toolchain: .ci/scripts/lib/toolchain.sh --report"
         exit 1
     fi
-    find .ci -name "*.sh" -type f -exec shfmt -i 4 -ci -w {} +
-    shfmt -i 4 -ci -w ./run.sh
+    find .ci -name "*.sh" -type f -exec "$shfmt_bin" -i 4 -ci -w {} +
+    "$shfmt_bin" -i 4 -ci -w ./run.sh
     if [[ -d "scripts/dev" ]]; then
-        find scripts/dev -name "*.sh" -type f -exec shfmt -i 4 -ci -w {} +
+        find scripts/dev -name "*.sh" -type f -exec "$shfmt_bin" -i 4 -ci -w {} +
     fi
     # log_info, not log_success: the latter is defined locally inside
     # .ci/scripts/security/shellcheck.sh and is NOT in the shared common.sh this
@@ -2126,6 +2150,16 @@ main() {
                     ;;
                 remove) devbox_remove ;;
                 shell) devbox_shell ;;
+                exec)
+                    shift
+                    [[ "${1:-}" == "--" ]] && shift
+                    [[ $# -gt 0 ]] || {
+                        log_error "devbox exec needs a command: ./run.sh devbox exec -- <cmd>"
+                        exit 1
+                    }
+                    devbox_exec "$@"
+                    ;;
+                doctor) devbox_doctor ;;
                 logs)
                     shift
                     devbox_logs "$@"
@@ -2264,6 +2298,19 @@ main() {
 
         # Quality
         quality)
+            # ROUTED. The container's toolchain matches CI's and the host's
+            # generally does not, so a quality run belongs in the lane that can
+            # reach the same verdict CI will. Only GATE verbs route: setup,
+            # devbox, provision, www and drill are host runtimes with host-
+            # specific dependencies (KVM, GPU, ffmpeg, SSH keys that are
+            # deliberately not bound into the container).
+            # The lane probe talks to docker, so apply the group first -- without
+            # it `devbox_container_running` reports "not running" for a container
+            # that is running, and the routed lane silently degrades to the host.
+            SCRIPT_ENTRYPOINT="$ROOT_DIR/run.sh" reexec_with_docker_group "$@"
+            gate_lane_reexec "$@" && exit $?
+            rc=$?
+            [[ "$rc" -eq 2 ]] && exit 2 # unusable devbox: refuse, do not degrade
             shift
             case "${1:-}" in
                 lint) quality_lint ;;

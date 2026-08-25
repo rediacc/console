@@ -21,7 +21,13 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/../lib/common.sh"
 
-HARD_REQUIRED=(INITIALIZE BUILD_DOCKER BUILD_DOCKER_FAST BUILD_CLI)
+HARD_REQUIRED=(INITIALIZE BUILD_DOCKER BUILD_DOCKER_FAST BUILD_CLI RUN_SH_TESTS)
+# RUN_SH_TESTS is HARD, not soft. It is hermetic -- a bare checkout, no node, no
+# submodules, no docker, no network -- so it has no legitimate reason to skip or
+# flake on any event, and its subject is the entry point every other command
+# goes through. It also guards a defect class that reports SUCCESS when it
+# fires: `quality all` once warned and returned 0 with the shell gates skipped
+# entirely, which is invisible in a run summary.
 # MIGRATION_TEST is deliberately absent: it moved from a top-level ci.yml job
 # into ct-tests.yml, so its result now rolls up through TESTS. A failing
 # migration fails the `tests` reusable workflow, which fails RESULT_TESTS here.

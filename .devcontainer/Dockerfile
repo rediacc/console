@@ -84,6 +84,7 @@ RUN find /etc/apt -name 'ubuntu.sources' -o -name 'sources.list' 2>/dev/null \
                 python3 \
                 python3-pip \
                 python3-venv \
+                shellcheck \
                 gh \
                 jq \
                 curl \
@@ -203,14 +204,36 @@ ENV PATH="$GOROOT/bin:$GOPATH/bin:$PATH"
 # Install Go tools as vscode user (writes to $GOPATH/bin).
 # `go telemetry off` writes $HOME/.config/go/telemetry/mode so both local
 # collection and uploading are disabled for the vscode user.
+# THE GATE TOOLCHAIN PINS, as the image's own copy.
+#
+# This is the third reader of .devcontainer/toolchain.env (bash and GitHub
+# Actions are the other two), and the reason that file lives in this directory:
+# the build context IS .devcontainer/ (.github/workflows/ci-build-docker.yml:558),
+# so COPY cannot reach outside it.
+COPY toolchain.env /etc/rediacc/toolchain.env
+
 USER vscode
-RUN go telemetry off \
+# shfmt is PINNED, the rest stay @latest deliberately.
+#
+# shfmt decides a CI verdict, so an image that ships a different one than the
+# host or the runner makes the same gate disagree with itself -- which is what
+# `go install ...@latest` here plus an unpinned `curl webi.sh/shfmt | sh` in the
+# workflow actually produced. The others (gopls, dlv, staticcheck,
+# golangci-lint, goimports) are EDITOR tooling: nothing gates on their output,
+# so pinning them would buy churn rather than consistency.
+#
+# The `: "${SHFMT_VERSION:?...}"` guard is not decoration: without it an empty
+# build arg silently resolves to `@v`, which Go treats as a floating reference,
+# and the image would quietly ship an unpinned shfmt again while looking pinned.
+RUN . /etc/rediacc/toolchain.env \
+    && : "${SHFMT_VERSION:?toolchain.env did not define SHFMT_VERSION}" \
+    && go telemetry off \
     && go install golang.org/x/tools/gopls@latest \
     && go install github.com/go-delve/delve/cmd/dlv@latest \
     && go install honnef.co/go/tools/cmd/staticcheck@latest \
     && go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest \
     && go install golang.org/x/tools/cmd/goimports@latest \
-    && go install mvdan.cc/sh/v3/cmd/shfmt@latest \
+    && go install "mvdan.cc/sh/v3/cmd/shfmt@v${SHFMT_VERSION}" \
     && rm -rf /home/vscode/.cache/go-build \
     && rm -rf "$GOPATH/pkg/mod/cache"
 USER root
@@ -218,7 +241,15 @@ USER root
 # =============================================================================
 # Python packages + uv + kimi-cli
 # =============================================================================
-RUN pip install --no-cache-dir --break-system-packages pyyaml uv
+# ruff and PyYAML at the PINNED versions, so check-python-lint.sh finds a real
+# binary on PATH instead of falling through to `uvx ruff@X`, which needs the
+# network on first use. PyYAML is pinned here for the same reason it is pinned
+# in the workflow: two python gates import it.
+RUN . /etc/rediacc/toolchain.env \
+    && : "${RUFF_VERSION:?toolchain.env did not define RUFF_VERSION}" \
+    && : "${PYYAML_VERSION:?toolchain.env did not define PYYAML_VERSION}" \
+    && pip install --no-cache-dir --break-system-packages \
+        "pyyaml==${PYYAML_VERSION}" uv "ruff==${RUFF_VERSION}"
 
 USER vscode
 RUN uv tool install kimi-cli

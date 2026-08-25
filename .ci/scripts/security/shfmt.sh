@@ -8,6 +8,10 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(cd "$SCRIPT_DIR/../../.." && pwd)"
+# The gate acquires its own tool AT the pin; see the block in main().
+# shellcheck source=/dev/null
+. "$ROOT_DIR/.ci/scripts/lib/toolchain.sh"
+toolchain_load || exit 1
 
 # Colors (disabled in CI)
 if [[ "${CI:-}" == "true" ]]; then
@@ -31,21 +35,24 @@ main() {
 
     log_info "Checking shell script formatting"
 
-    # Verify shfmt is installed
-    if ! command -v shfmt &>/dev/null; then
-        log_error "shfmt is not installed"
-        log_info "Install with: go install mvdan.cc/sh/v3/cmd/shfmt@latest"
-        log_info "Or: brew install shfmt (macOS) / apt install shfmt (Ubuntu)"
+    # ACQUIRE AT THE PIN, not merely "present". A bare `command -v` accepts any
+    # version, so a stale binary on a developer's PATH silently decided this
+    # gate's verdict -- measured 2026-08-25: host shellcheck 0.9.0 against CI's
+    # 0.10.0, and two unpinned shfmt installs that agreed only by luck.
+    if ! SHFMT_BIN="$(toolchain_acquire shfmt)"; then
+        log_error "shfmt is unusable for this gate"
+        log_info "Every lane's toolchain: .ci/scripts/lib/toolchain.sh --report"
+        log_info "Or run the gate where it is pinned: ./run.sh devbox exec -- .ci/scripts/security/shfmt.sh"
         exit 1
     fi
 
-    shfmt --version
+    "$SHFMT_BIN" --version
 
     # Check all shell scripts in .ci directory
     log_info "Checking .ci/**/*.sh"
     # BLOCKER: SHFMT_OPTS is a space-separated set of CLI flags; word-splitting is intentional so shfmt receives each flag as its own argv entry
     # shellcheck disable=SC2086
-    find .ci -name "*.sh" -type f -exec shfmt $SHFMT_OPTS {} +
+    find .ci -name "*.sh" -type f -exec "$SHFMT_BIN" $SHFMT_OPTS {} +
 
     # Claude hooks carry live PR policy (draft enforcement, --admin ban,
     # merge-time review hygiene) — policy-critical shell gets formatted too.
@@ -66,13 +73,13 @@ main() {
     log_info "Checking .claude/**/*.sh"
     # BLOCKER: SHFMT_OPTS is a space-separated set of CLI flags; word-splitting is intentional so shfmt receives each flag as its own argv entry
     # shellcheck disable=SC2086
-    find .claude -name "*.sh" -type f -exec shfmt $SHFMT_OPTS {} +
+    find .claude -name "*.sh" -type f -exec "$SHFMT_BIN" $SHFMT_OPTS {} +
 
     # Check the main run.sh script
     log_info "Checking ./run.sh"
     # BLOCKER: SHFMT_OPTS is a space-separated set of CLI flags; word-splitting is intentional so shfmt receives each flag as its own argv entry
     # shellcheck disable=SC2086
-    shfmt $SHFMT_OPTS ./run.sh
+    "$SHFMT_BIN" $SHFMT_OPTS ./run.sh
 
     # Check shell scripts under scripts/dev and scripts/docker subdirectories.
     # The top-level scripts/*.sh files are intentionally excluded — they
@@ -83,7 +90,7 @@ main() {
             log_info "Checking $dir/**/*.sh"
             # BLOCKER: SHFMT_OPTS is a space-separated set of CLI flags; word-splitting is intentional so shfmt receives each flag as its own argv entry
             # shellcheck disable=SC2086
-            find "$dir" -name "*.sh" -type f -exec shfmt $SHFMT_OPTS {} +
+            find "$dir" -name "*.sh" -type f -exec "$SHFMT_BIN" $SHFMT_OPTS {} +
         fi
     done
 

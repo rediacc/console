@@ -33,6 +33,23 @@ import tempfile
 
 import yaml
 
+
+
+def _pyyaml_pin():
+    """The PyYAML version, read from the ONE place it is defined.
+
+    These strings are advice printed to a human, but a hardcoded version in
+    advice is still a second definition: it drifts silently, and the person
+    following it installs the wrong thing while believing the gate told them to.
+    """
+    pins = pathlib.Path(__file__).resolve().parents[3] / ".devcontainer" / "toolchain.env"
+    try:
+        for line in pins.read_text().splitlines():
+            if line.startswith("PYYAML_VERSION="):
+                return line.split("=", 1)[1].strip()
+    except OSError:
+        pass
+    return "<see .devcontainer/toolchain.env>"
 REPO = pathlib.Path(__file__).resolve().parents[3]
 WORKFLOWS = REPO / ".github" / "workflows"
 
@@ -170,7 +187,7 @@ def run_controls() -> list[str]:
 
         planted.write_text(
             "jobs:\n  good:\n    steps:\n"
-            '      - run: python3 -m pip install --user "PyYAML==6.0.2"\n'
+            f'      - run: python3 -m pip install --user "PyYAML=={_pyyaml_pin()}"\n'
             f"      - run: {rel}\n"
         )
         found, _ = scan([planted])
@@ -223,7 +240,7 @@ def main() -> int:
         print("  It will die with ModuleNotFoundError on a clean runner while passing on any")
         print("  machine that happens to have the module. Install it in the job, pinned, and")
         print("  assert the version right after so a failed install surfaces as itself:")
-        print('      python3 -m pip install --user --disable-pip-version-check "PyYAML==6.0.2"')
+        print('      python3 -m pip install --user --disable-pip-version-check "PyYAML==%s"' % _pyyaml_pin())
         print("      python3 -c \"import yaml; print('PyYAML', yaml.__version__)\"")
         return 1
 
