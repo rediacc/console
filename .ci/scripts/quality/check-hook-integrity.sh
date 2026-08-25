@@ -34,13 +34,23 @@ SUITE="$ROOT/.claude/hooks/test-hooks.sh"
 INV="$ROOT/scripts/data/hook-inventory-baseline.json"
 COV="$ROOT/scripts/data/hook-coverage-baseline.json"
 
-RED=''; GREEN=''; NC=''
-if [ -t 1 ] && [ -z "${NO_COLOR:-}" ]; then RED=$'\033[0;31m'; GREEN=$'\033[0;32m'; NC=$'\033[0m'; fi
+RED=''
+GREEN=''
+NC=''
+if [ -t 1 ] && [ -z "${NO_COLOR:-}" ]; then
+    RED=$'\033[0;31m'
+    GREEN=$'\033[0;32m'
+    NC=$'\033[0m'
+fi
 fails=0
-fail() { echo "${RED}✗${NC} $*" >&2; fails=$((fails + 1)); }
+fail() {
+    echo "${RED}✗${NC} $*" >&2
+    fails=$((fails + 1))
+}
 pass() { echo "${GREEN}ok${NC}   $*"; }
 
-TMP="$(mktemp -d)"; trap 'rm -rf "$TMP"' EXIT
+TMP="$(mktemp -d)"
+trap 'rm -rf "$TMP"' EXIT
 
 # Directions covered for one guard, counting the inline suite AND any dedicated
 # test file beside the guard. A guard with its own test-<name>.py is covered in
@@ -49,12 +59,19 @@ directions() { # directions <guard-basename> <suite-file> <guard-dir> -> "block 
     local n="$1" suite="$2" gdir="$3" b=0 a=0 stem="${1%.sh}"
     b=$(grep -c "check 2 pre-bash/$n" "$suite" 2>/dev/null || true)
     a=$(grep -c "check 0 pre-bash/$n" "$suite" 2>/dev/null || true)
-    if [ -f "$gdir/test-$stem.py" ] || [ -f "$gdir/test-$stem.sh" ]; then b=$((b + 1)); a=$((a + 1)); fi
+    if [ -f "$gdir/test-$stem.py" ] || [ -f "$gdir/test-$stem.sh" ]; then
+        b=$((b + 1))
+        a=$((a + 1))
+    fi
     echo "$b $a"
 }
 
 # ---- A. inventory is shrink-only -------------------------------------------
-mapfile -t on_disk < <(cd "$GUARD_DIR" && ls block-*.sh 2>/dev/null | sort)
+# A glob, not `ls`: nothing to parse, and it cannot misread an odd filename.
+on_disk=()
+for _f in "$GUARD_DIR"/block-*.sh; do
+    [ -e "$_f" ] && on_disk+=("$(basename "$_f")")
+done
 if [ ${#on_disk[@]} -eq 0 ]; then
     fail "A. found ZERO guards on disk -- this gate is not seeing the tree."
 elif [ ! -f "$INV" ]; then
@@ -109,13 +126,13 @@ fi
 
 # ---- controls, by construction ----------------------------------------------
 mkdir -p "$TMP/guards"
-printf '#!/usr/bin/env bash\nexit 0\n' > "$TMP/guards/block-fixture-both.sh"
-printf '#!/usr/bin/env bash\nexit 0\n' > "$TMP/guards/block-fixture-blockonly.sh"
+printf '#!/usr/bin/env bash\nexit 0\n' >"$TMP/guards/block-fixture-both.sh"
+printf '#!/usr/bin/env bash\nexit 0\n' >"$TMP/guards/block-fixture-blockonly.sh"
 {
     echo 'check 2 pre-bash/block-fixture-both.sh "x" "blocks"'
     echo 'check 0 pre-bash/block-fixture-both.sh "y" "allows"'
     echo 'check 2 pre-bash/block-fixture-blockonly.sh "x" "blocks"'
-} > "$TMP/suite.sh"
+} >"$TMP/suite.sh"
 
 read -r b a <<<"$(directions block-fixture-both.sh "$TMP/suite.sh" "$TMP/guards")"
 if [ "$b" -gt 0 ] && [ "$a" -gt 0 ]; then
@@ -129,7 +146,7 @@ if [ "$a" -eq 0 ]; then
 else
     fail "CONTROL DID NOT FIRE: a block-only fixture read as covered, so B proves nothing"
 fi
-printf '' > "$TMP/guards/test-block-fixture-blockonly.py"
+printf '' >"$TMP/guards/test-block-fixture-blockonly.py"
 read -r b a <<<"$(directions block-fixture-blockonly.sh "$TMP/suite.sh" "$TMP/guards")"
 if [ "$a" -gt 0 ]; then
     pass "control: a dedicated test file counts as covering both directions"
