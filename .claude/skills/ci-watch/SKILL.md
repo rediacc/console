@@ -5,7 +5,7 @@ user-invocable: false
 self-improving: true
 ---
 
-# ci-watch — arming a watch that actually wakes you
+# ci-watch: arming a watch that actually wakes you
 
 The loop is only as alive as its wake-up. Every rule here was paid for by a wave
 that stopped without noticing. Incidents: [incidents.md](incidents.md).
@@ -19,7 +19,7 @@ terminal state, and wait for exactly ONE thing.
 after the first fires. Two cheap watches beat one clever one.
 
 *Audit tell:* a NON-EMPTY output file on a still-running watch means it already
-answered and is waiting on something else — the compound-watch bug.
+answered and is waiting on something else. That is the compound-watch bug.
 
 ## The canonical form
 
@@ -30,7 +30,7 @@ gh run view $R --repo <owner>/<repo> --json conclusion,jobs \
   --jq '{conclusion, failed:[.jobs[]|select(.conclusion=="failure")|.name], cancelled:[.jobs[]|select(.conclusion=="cancelled")|.name]|length}'
 ```
 
-`run_in_background: true`. `sleep 20` — a pre-bash hook blocks longer.
+`run_in_background: true`. `sleep 20`, because a pre-bash hook blocks anything longer.
 
 ## Read the JOBS, not the run
 
@@ -38,8 +38,8 @@ gh run view $R --repo <owner>/<repo> --json conclusion,jobs \
 
 | shape | meaning |
 |---|---|
-| cancelled siblings **with** a failed job | watchdog killed the run for that failure — fix it |
-| cancelled, **zero** failures, newer head | superseded by a later push — watch the newer run |
+| cancelled siblings **with** a failed job | watchdog killed the run for that failure; fix it |
+| cancelled, **zero** failures, newer head | superseded by a later push; watch the newer run |
 
 A `conclusion=="failure"` filter returning empty has NOT proved a run clean.
 
@@ -47,8 +47,8 @@ A `conclusion=="failure"` filter returning empty has NOT proved a run clean.
 
 A watch can be killed, dropped or superseded, and **a watch that never fires is
 indistinguishable from a run that never finished**. So on any re-invocation,
-re-read the run rather than trusting the watch, and re-arm freely — an extra
-watch costs nothing, a dropped one costs the night.
+re-read the run rather than trusting the watch, and re-arm freely. An extra
+watch costs nothing; a dropped one costs the night.
 
 A `killed`/`failed` notification is a **re-arm trigger, not a no-op**.
 
@@ -56,4 +56,4 @@ A `killed`/`failed` notification is a **re-arm trigger, not a no-op**.
 
 Each push restarts the pipeline. Re-arm on the new run id, and batch fixes into
 one push: three pushes is three full pipelines. **`gh run watch` stays rejected
-here** — see [incidents.md](incidents.md).
+here**; see [incidents.md](incidents.md).
