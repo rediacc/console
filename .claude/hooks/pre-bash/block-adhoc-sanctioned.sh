@@ -14,7 +14,12 @@ INPUT=$(cat)
 CMD=$(printf '%s' "$INPUT" | jq -r '.tool_input.command' 2>/dev/null) || exit 0
 [ -n "$CMD" ] || exit 0
 
-LIB="${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/lib"
+# DERIVED FROM THIS SCRIPT'S OWN LOCATION, not from CLAUDE_PROJECT_DIR.
+# That variable is set by the agent harness and is ABSENT in CI and in a bare
+# shell, where the fallback `.` made the registry unfindable -- and this guard
+# fails open by design, so it silently allowed every banned command. Its own
+# controls caught it, but only once they ran somewhere without the variable.
+LIB="$(cd "$(dirname "${BASH_SOURCE[0]}")/../lib" && pwd)"
 [ -f "$LIB/sanctioned.py" ] || exit 0
 command -v python3 >/dev/null 2>&1 || exit 0
 
