@@ -155,6 +155,22 @@ const KNOWN_BROKEN = new Map<string, string>([
     'https://www.electron.build/hooks.html',
     'electron-builder docs rewrite; no live equivalent, drop the link in docs/code-signing-guide.md:601',
   ],
+  // A third-party blog that ACCEPTS TCP and then never answers, which is why it
+  // reads as `fetch failed` rather than as any status code. Measured 2026-08-25
+  // from two independent networks (a CI runner and a developer box), so it is
+  // not the IP-dependent block the ALLOWLIST above is for:
+  //   DNS          billauer.co.il -> 193.29.56.92        (resolves)
+  //   TCP  443     connect succeeds                      (port open)
+  //   HTTPS GET    curl: (28) Connection timed out       (no response, 12s)
+  // It answered as recently as run 32805254228 on the same branch, so this is a
+  // site that went down mid-landing rather than a link that was always wrong.
+  // The reference is a "users reported unexpected charges" aside, not load-
+  // bearing: if it is still dead when someone next touches that guide, drop the
+  // link and keep the sentence, and delete this entry in the same change.
+  [
+    'https://billauer.co.il/blog/2021/11/esigner-cloud-signing-ssl-com-certificate/',
+    'host accepts TCP then times out (measured 2026-08-25 from two networks); drop the link and keep the sentence in docs/code-signing-guide.md:309',
+  ],
   // A DEAD COMMAND, not just a dead link, and the widened scan is what found
   // it. Both docs used to tell the operator to run:
   //   ACCOUNT_ED25519_PUBLIC_KEY="$(curl -fsS https://www.rediacc.com/api/public/account-key)"
