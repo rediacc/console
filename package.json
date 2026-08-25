@@ -83,6 +83,7 @@
     "check:ci-devcontainer-scripts": ".ci/scripts/quality/check-devcontainer-scripts.sh",
     "check:ci-watch-recipe": ".ci/scripts/quality/check-ci-watch-recipe.sh",
     "check:ci-hook-integrity": ".ci/scripts/quality/check-hook-integrity.sh",
+    "check:ci-devbox-exec": ".ci/scripts/quality/check-devbox-exec.sh",
     "check:ci-toolchain-pins": ".ci/scripts/quality/check-toolchain-pins.sh",
     "check:ci-control-vacuity": ".ci/scripts/quality/check-control-vacuity.sh",
     "check:ci-setup-idempotency": ".ci/scripts/quality/check-setup-idempotency.sh",
