@@ -130,10 +130,24 @@ fi
 # The host is where this matters: nobody controls PATH there, so a bare
 # `command -v` as the last word lets a stale binary decide the verdict.
 missing_acq=()
-for g in .ci/scripts/security/shfmt.sh .ci/scripts/security/shellcheck.sh; do
+# DISCOVERED, not hardcoded. This named shfmt.sh and shellcheck.sh literally,
+# so a THIRD gate invoking a pinned tool escaped the rule entirely -- the
+# assertion kept passing while the invariant rotted. Tracked AND untracked,
+# because `git ls-files` alone is blind to a gate not yet committed: proven by
+# planting one, which A6 then said nothing about. Same blind spot
+# .ci/scripts/security/shellcheck.sh:68 documents for its own enumerator.
+while IFS= read -r g; do
+    [[ -n "$g" ]] || continue
     [[ -f "$ROOT/$g" ]] || continue
-    grep -q 'toolchain_acquire' "$ROOT/$g" || missing_acq+=("$g")
-done
+    is_exempt "$g" && continue
+    grep -vE '^[[:space:]]*#' "$ROOT/$g" |
+        grep -qE "(^|[;&|(]|[[:space:]])(${GATED_TOOLS})[[:space:]]" || continue
+    grep -qE 'toolchain_acquire|toolchain_check|[A-Z]+_VERSION' "$ROOT/$g" ||
+        missing_acq+=("$g")
+done < <(
+    git -C "$ROOT" ls-files '.ci/scripts/quality/*.sh' '.ci/scripts/security/*.sh' 2>/dev/null
+    git -C "$ROOT" ls-files --others --exclude-standard '.ci/scripts/quality/*.sh' '.ci/scripts/security/*.sh' 2>/dev/null
+)
 if [[ ${#missing_acq[@]} -eq 0 ]]; then
     pass "A6. each pinned-tool gate acquires its tool at the pin"
 else
@@ -161,6 +175,22 @@ if grep -qE "(${GATED_TOOLS})[^ ]*@latest" "$TMP/c/unpinned.sh"; then
 else
     fail "A2 CONTROL DID NOT FIRE: @latest went undetected"
 fi
+# A6 control, by construction: an unpinned invoker is caught, a pinned one is not.
+printf '#!/usr/bin/env bash\nshellcheck -S warning foo.sh\n' >"$TMP/c/unpinned-gate.sh"
+if grep -vE '^[[:space:]]*#' "$TMP/c/unpinned-gate.sh" |
+    grep -qE "(^|[;&|(]|[[:space:]])(${GATED_TOOLS})[[:space:]]" &&
+    ! grep -qE 'toolchain_acquire|toolchain_check|[A-Z]+_VERSION' "$TMP/c/unpinned-gate.sh"; then
+    pass "A6 control: a gate invoking a tool with no pin is detected"
+else
+    fail "A6 CONTROL DID NOT FIRE: an unpinned tool invocation went undetected"
+fi
+printf '#!/usr/bin/env bash\nBIN="$(toolchain_acquire shellcheck)"\n' >"$TMP/c/pinned-gate.sh"
+if grep -qE 'toolchain_acquire|toolchain_check|[A-Z]+_VERSION' "$TMP/c/pinned-gate.sh"; then
+    pass "A6 control: a gate that resolves at the pin is not flagged"
+else
+    fail "A6 IS OVER-BROAD: a correctly pinned gate was flagged"
+fi
+
 printf 'go install golang.org/x/tools/gopls@latest\n' >"$TMP/c/editor.sh"
 if grep -qE "(${GATED_TOOLS})[^ ]*@latest" "$TMP/c/editor.sh"; then
     fail "A2 IS OVER-BROAD: editor tooling was flagged as a gate tool"
