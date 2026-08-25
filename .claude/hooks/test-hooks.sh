@@ -805,6 +805,31 @@ else
     echo "FAIL [1] stop/test-teammate-idle.py missing"
 fi
 
+# Same shape as the idle block above, and here for the same reason: without
+# this call the controls are an orphan reporting their own green to whoever runs
+# them by hand. It counts the "N control(s) passed" line rather than trusting
+# exit 0, so a test that silently asserts nothing fails instead of passing.
+PLANSTATUS_MOD="$DIR/stop/test-plan-status-parse.py"
+if [[ -f "$PLANSTATUS_MOD" ]]; then
+    if out="$(python3 "$PLANSTATUS_MOD" 2>&1)"; then
+        n=$(sed -n 's/^\([0-9][0-9]*\) control(s) passed$/\1/p' <<<"$out")
+        if [[ -n "$n" && $n -gt 0 ]]; then
+            PASS=$((PASS + n))
+            echo "ok   [0] stop/test-plan-status-parse.py: $n control(s) passed"
+        else
+            FAIL=$((FAIL + 1))
+            echo "FAIL [1] stop/test-plan-status-parse.py exited 0 but reported NO controls"
+        fi
+    else
+        FAIL=$((FAIL + 1))
+        echo "FAIL [1] stop/test-plan-status-parse.py"
+        grep -E "^FAIL " <<<"$out" | sed 's/^/       /'
+    fi
+else
+    FAIL=$((FAIL + 1))
+    echo "FAIL [1] stop/test-plan-status-parse.py missing"
+fi
+
 STOP_SUITE="$DIR/stop/test-worklist-v5.sh"
 if [[ -x "$STOP_SUITE" ]]; then
     echo
