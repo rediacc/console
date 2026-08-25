@@ -494,6 +494,27 @@ export const GATES: readonly GateSpec[] = [
     },
   },
   {
+    id: 'check:ci-watch-recipe',
+    run: 'npm run check:ci-watch-recipe',
+    gate: true,
+    // The defect lives in PROSE agents copy, so the trigger set is the prose,
+    // not the code: every instruction surface that has ever carried the loop.
+    paths: [
+      '.claude/skills/ci-watch/**',
+      '.claude/commands/**',
+      '.claude/agents/**',
+      '.claude/hooks/**',
+      'docs/agent-reference/**',
+    ],
+    leaves: ['.ci/scripts/quality/check-ci-watch-recipe.sh'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-code',
+      step: 'CI-watch recipe has one source',
+    },
+  },
+  {
     id: 'check:ci-ceph-image-pin',
     run: 'npm run check:ci-ceph-image-pin',
     gate: true,

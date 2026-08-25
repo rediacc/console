@@ -150,6 +150,48 @@ export function isNewer(current: string, candidate: string): boolean {
   return b[1] > a[1];
 }
 
+interface TagInfo {
+  name: string;
+  pushedMs: number | null;
+}
+
+/**
+ * Which newer tags count as evidence that `tag` is stale?
+ *
+ * THE SOAK APPLIES TO THE NEWEST VERSION ONLY, and that is the whole subtlety.
+ *
+ * `pushedMs` is Docker Hub's `tag_last_pushed`, which for Official Images is a
+ * REBUILD timestamp, not a release date. Python rebuilds every supported minor
+ * on a schedule, so one wave re-stamps 3.10-slim through 3.15-rc-slim within
+ * the same minute. Soaking on that clock made every candidate newer than a
+ * 3.9-slim pin invisible for 24 hours, so the gate declared a years-stale pin
+ * current, and the shrink-only baseline then demanded a drain -- which reverses
+ * itself a day later when the same tags age out. Measured 2026-08-25: three
+ * such drains were demanded in a single session.
+ *
+ * A rebuild of an established series is not a release. What the soak legitimately
+ * protects against is a version that appeared minutes ago, and that can only be
+ * the newest one available. So the newest candidate is soakable and everything
+ * below it is established fact.
+ *
+ * Returned newest-first, so callers can take [0] as the best evidence.
+ */
+export function staleEvidence(
+  tag: string,
+  tags: TagInfo[],
+  now: number,
+  win: number
+): TagInfo[] {
+  const newer = tags
+    .filter((t) => isNewer(tag, t.name))
+    .sort((a, b) => (isNewer(a.name, b.name) ? 1 : -1));
+  if (newer.length === 0) return [];
+  const newest = newer[0];
+  const soaked =
+    newest.pushedMs !== null && isWithinFreshnessWindow(newest.pushedMs, now, win);
+  return soaked ? newer.slice(1) : newer;
+}
+
 function dockerHubRepo(image: string): string | null {
   if (image.includes('.') && !image.startsWith('docker.io/')) return null; // another registry
   const bare = image.replace(/^docker\.io\//, '');
@@ -172,11 +214,6 @@ async function hubToken(): Promise<string | null> {
   });
   if (!r.ok) return null;
   return ((await r.json()) as { token?: string }).token ?? null;
-}
-
-interface TagInfo {
-  name: string;
-  pushedMs: number | null;
 }
 
 /** Why a listing failed, so "unknown" can name its own cause instead of guessing. */
@@ -243,6 +280,56 @@ function selftest(): number {
   check('CONTROL: a newer major is newer', isNewer('22-slim', '24-slim'));
   check('a DIFFERENT shape is not comparable', !isNewer('3.9-slim', '3.13-alpine'));
   check('an older version is not newer', !isNewer('24.04', '22.04'));
+
+  // --- the soak clock: rebuild age is not release age -----------------------
+  // Measured against library/python on 2026-08-25: a rebuild wave re-stamped
+  // every supported minor within the same minute, which under the old filter
+  // hid all of them and made a 3.9-slim pin read as current.
+  const HOUR = 3600_000;
+  const DAY = 24 * HOUR;
+  const NOW = 1_000 * DAY;
+  const SOAK = DAY;
+  const tag = (name: string, ageMs: number): TagInfo => ({ name, pushedMs: NOW - ageMs });
+
+  check(
+    'a rebuild wave does NOT make an established newer series invisible',
+    staleEvidence(
+      '3.9-slim',
+      [tag('3.14-slim', HOUR), tag('3.10-slim', HOUR)],
+      NOW,
+      SOAK
+    ).length > 0
+  );
+  check(
+    'the newest is the only soakable one, so the next one down is the evidence',
+    staleEvidence('3.9-slim', [tag('3.10-slim', HOUR), tag('3.14-slim', HOUR)], NOW, SOAK)[0]
+      ?.name === '3.10-slim'
+  );
+  check(
+    'with a third candidate, only ONE is dropped',
+    staleEvidence(
+      '3.9-slim',
+      [tag('3.10-slim', HOUR), tag('3.14-slim', HOUR), tag('3.15-slim', HOUR)],
+      NOW,
+      SOAK
+    )[0]?.name === '3.14-slim'
+  );
+  check(
+    'CONTROL: a genuinely NEW release still soaks (the sole candidate is the newest)',
+    staleEvidence('3.13-slim', [tag('3.14-slim', HOUR)], NOW, SOAK).length === 0
+  );
+  check(
+    'CONTROL: a newer tag past the soak counts, as it always did',
+    staleEvidence('3.9-slim', [tag('3.10-slim', 40 * DAY)], NOW, SOAK).length > 0
+  );
+  check(
+    'CONTROL: nothing newer means nothing stale',
+    staleEvidence('3.14-slim', [tag('3.9-slim', 40 * DAY)], NOW, SOAK).length === 0
+  );
+  check(
+    'CONTROL: an unknown push date is not silently treated as soaked',
+    staleEvidence('3.9-slim', [{ name: '3.14-slim', pushedMs: null }], NOW, SOAK).length > 0
+  );
   check('a non-numeric tag yields no series', series('bookworm') === null);
   check('the same version is not newer', !isNewer('24.04', '24.04'));
   // The window is the SHARED one; a release published now must be deferred.
@@ -325,12 +412,9 @@ async function main(): Promise<void> {
       continue;
     }
     checked++;
-    const newer = tags
-      .filter((t) => isNewer(p.tag, t.name))
-      .filter((t) => !(t.pushedMs !== null && isWithinFreshnessWindow(t.pushedMs, now, win)));
+    const newer = staleEvidence(p.tag, tags, now, win);
     if (newer.length > 0) {
-      const best = newer.sort((a, b) => (isNewer(a.name, b.name) ? 1 : -1))[0];
-      stale.push(`${p.file}:${p.line}  ${p.image}:${p.tag}  ->  ${best.name}`);
+      stale.push(`${p.file}:${p.line}  ${p.image}:${p.tag}  ->  ${newer[0].name}`);
     }
   }
 

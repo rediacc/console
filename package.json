@@ -81,6 +81,7 @@
     "check:ci-script-exec-bit": ".ci/scripts/quality/check-script-exec-bit.sh",
     "check:ci-npmrc": ".ci/scripts/quality/check-npmrc.sh",
     "check:ci-devcontainer-scripts": ".ci/scripts/quality/check-devcontainer-scripts.sh",
+    "check:ci-watch-recipe": ".ci/scripts/quality/check-ci-watch-recipe.sh",
     "check:ci-control-vacuity": ".ci/scripts/quality/check-control-vacuity.sh",
     "check:ci-setup-idempotency": ".ci/scripts/quality/check-setup-idempotency.sh",
     "check:ci-lockfile": ".ci/scripts/quality/check-lockfile.sh",
