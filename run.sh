@@ -2308,9 +2308,23 @@ main() {
             # it `devbox_container_running` reports "not running" for a container
             # that is running, and the routed lane silently degrades to the host.
             SCRIPT_ENTRYPOINT="$ROOT_DIR/run.sh" reexec_with_docker_group "$@"
-            gate_lane_reexec "$@" && exit $?
-            rc=$?
-            [[ "$rc" -eq 2 ]] && exit 2 # unusable devbox: refuse, do not degrade
+            # Ask FIRST, then run. Collapsing these into one call is what let a
+            # gate that failed in the devbox fall through and re-run on the
+            # host, where a different toolchain could pass and hide it.
+            # `|| _route=$?` is not style: run.sh runs under `set -euo pipefail`
+            # (line 9), so a BARE call returning non-zero aborts the whole
+            # script. The predicate returns 1 for the ordinary "stay on host"
+            # case, so unguarded it killed every host-lane run silently -- the
+            # trace ended at `return 1` with no output at all.
+            _route=0
+            gate_lane_should_route || _route=$?
+            case "$_route" in
+                0)
+                    gate_lane_run "$@"
+                    exit $?
+                    ;;
+                2) exit 2 ;; # unusable devbox: refuse, never degrade
+            esac
             shift
             case "${1:-}" in
                 lint) quality_lint ;;

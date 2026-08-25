@@ -101,7 +101,7 @@ lane() { (cd "$ROOT" && env "$@" bash -c '. .ci/config/constants.sh; . .ci/scrip
     no "an explicit devbox lane is not honoured"
 
 # A routed verb must not silently degrade: if it cannot route, it says so.
-if body "$ROOT/.ci/lib/local-common.sh" gate_lane_reexec | grep -qE 'log_warn|log_error'; then
+if body "$ROOT/.ci/lib/local-common.sh" gate_lane_should_route | grep -qE 'log_warn|log_error'; then
     ok "a lane that cannot route reports it rather than degrading silently"
 else
     no "CONTROL: routing can fail silently, which is the failure this design exists to prevent"

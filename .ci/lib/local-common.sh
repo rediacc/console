@@ -869,23 +869,29 @@ gate_lane_decide() {
     fi
 }
 
-# Re-exec the current command inside the devbox when the lane says so.
+# TWO FUNCTIONS, NOT ONE, AND THE SPLIT IS THE WHOLE POINT.
 #
-# Returns 1 (meaning "carry on here") for every case that is NOT a routed run,
-# so the caller reads as: `gate_lane_reexec "$@" && exit $?`.
-gate_lane_reexec() {
-    # SELF-CONTAINED. devbox.sh is sourced LAZILY by run.sh (only the setup and
-    # devbox arms do it), so a caller that forgot would find every devbox_*
-    # helper undefined -- and an undefined function returns non-zero, which this
-    # code reads as "no container", degrades to the host, and reports a lane it
-    # never used. Load it here rather than trust the call site.
-    if ! declare -F devbox_container_running >/dev/null 2>&1; then
+# This was a single `gate_lane_reexec` whose return code carried two unrelated
+# meanings on one channel: 1 meant BOTH "not routed, stay on host" AND "routed,
+# and the gate itself exited 1"; 2 meant BOTH "unusable devbox, refuse" AND "the
+# routed gate exited 2". The call site could not tell them apart, so a gate that
+# FAILED inside the devbox fell through and was re-run on the HOST -- where a
+# different toolchain might pass, masking the very failure the lane exists to
+# surface. Found in review of 927256e7.
+#
+# So: a PREDICATE that only ever answers the routing question, and a RUNNER
+# whose exit status is only ever the routed command's. Neither can be mistaken
+# for the other.
+
+# 0 = route to devbox, 1 = stay on the host, 2 = devbox is unusable, refuse.
+gate_lane_should_route() {
+    declare -F devbox_container_running >/dev/null 2>&1 || {
         # shellcheck source=/dev/null
         . "${CONSOLE_ROOT_DIR:-$PWD}/.ci/lib/devbox.sh" 2>/dev/null || {
             log_warn "cannot load devbox.sh; staying on the host"
             return 1
         }
-    fi
+    }
     [[ "$(gate_lane_decide)" == devbox ]] || return 1
     devbox_container_running 2>/dev/null || {
         log_warn "gate lane is 'devbox' but no container is running; staying on the host"
@@ -893,11 +899,17 @@ gate_lane_reexec() {
         return 1
     }
     # A broken mount or a wrong exec identity produces a gate that passes having
-    # read nothing, so refuse to route until the container is demonstrably usable.
+    # read nothing, so refuse to route rather than degrade to a lane that lies.
     devbox_mount_ok && devbox_identity_ok || {
         log_error "refusing to route gates into an unusable devbox (see ./run.sh devbox doctor)"
         return 2
     }
+    return 0
+}
+
+# Runs the command in the devbox. Its exit status is the ROUTED COMMAND'S, with
+# no other meaning layered on top -- callers must already have decided to route.
+gate_lane_run() {
     log_info "lane: devbox (matches CI; REDIACC_LANE=host to opt out)"
     devbox_exec "./run.sh $*"
 }
