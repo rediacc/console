@@ -7,44 +7,19 @@ self-improving: true
 
 # ci-watch — arming a watch that actually wakes you
 
-The loop is only as alive as its wake-up. Everything here was paid for by a wave
-that stopped without noticing.
+The loop is only as alive as its wake-up. Every rule here was paid for by a wave
+that stopped without noticing. Incidents: [incidents.md](incidents.md).
 
-## The contract, in one line
+## The contract
 
-**A background watch notifies on process EXIT, not on output.** So a watch must
-EXIT the moment the thing you are waiting for reaches a terminal state — and
-must wait for exactly ONE thing.
+**A watch notifies on process EXIT, not on output.** So it must EXIT at the
+terminal state, and wait for exactly ONE thing.
 
-## The bug this file exists for: the compound watch
+**One wait per background command.** Need a second condition? Arm a second watch
+after the first fires. Two cheap watches beat one clever one.
 
-Observed 2026-08-24, on a landing that had already run nine rounds. The watch was:
-
-```bash
-# BROKEN — do not copy
-R=<run-id>
-until [ "$(gh run view $R --json status --jq .status)" = "completed" ]; do sleep 20; done
-gh run view $R --json conclusion,jobs --jq '...'          # verdict printed here
-SHA=$(git rev-parse HEAD)
-until <review marker for $SHA appears>; do sleep 20; done  # ...then it kept waiting
-echo REVIEWED
-```
-
-CI failed at 23:55:13. The verdict — `failed: ["Quality / Static"]` — was written
-into the output file **and nothing woke the session**, because the process had not
-exited: it had moved straight into the second `until`, waiting for a review marker
-that would never appear, because a red run posts no review.
-
-The failure sat unread for about ninety minutes. It was found only when the
-operator pasted the failing job's URL into the chat. The session was, from its own
-point of view, healthily waiting.
-
-**Rule: one wait per background command.** Want a second condition? Arm a SECOND
-watch after the first one fires. Two cheap watches beat one clever one.
-
-The tell, if you are auditing a live wait: a watch whose output file is
-NON-EMPTY while the task is still running has already answered and is now waiting
-for something else. That is the signature of this bug.
+*Audit tell:* a NON-EMPTY output file on a still-running watch means it already
+answered and is waiting on something else — the compound-watch bug.
 
 ## The canonical form
 
@@ -55,47 +30,30 @@ gh run view $R --repo <owner>/<repo> --json conclusion,jobs \
   --jq '{conclusion, failed:[.jobs[]|select(.conclusion=="failure")|.name], cancelled:[.jobs[]|select(.conclusion=="cancelled")|.name]|length}'
 ```
 
-with `run_in_background: true`. `sleep 20` is deliberate — a pre-bash hook blocks
-anything longer.
+`run_in_background: true`. `sleep 20` — a pre-bash hook blocks longer.
 
-## Read the JOBS, never just the run
+## Read the JOBS, not the run
 
-`conclusion: cancelled` is NOT a pass and NOT always a failure. Two shapes look
-identical in a run list and mean opposite things:
+`cancelled` is not a pass. Two shapes look identical and mean opposites:
 
-| shape | meaning | what to do |
-|---|---|---|
-| cancelled siblings **with** a failed job | the watchdog killed the run for that failure | fix the failure |
-| cancelled with **zero** failures and a newer head | superseded by a later push | ignore; watch the newer run |
+| shape | meaning |
+|---|---|
+| cancelled siblings **with** a failed job | watchdog killed the run for that failure — fix it |
+| cancelled, **zero** failures, newer head | superseded by a later push — watch the newer run |
 
-So the jq above counts cancelled jobs as well as failures. A filter for
-`conclusion=="failure"` that comes back empty has NOT proved the run was clean.
+A `conclusion=="failure"` filter returning empty has NOT proved a run clean.
 
-## `gh run watch` is a convenience, not a contract
+## Re-check on every wake
 
-`gh run watch --exit-status` exists and returns non-zero when the run fails
-(<https://cli.github.com/manual/gh_run_watch>). Do not use it here: it dropped
-**four times out of four** in one campaign — the run went terminal, nothing fired,
-and the loop simply stopped for over an hour each time. It has also been seen
-exiting 1 while the run was still `in_progress`. The `until` poll above exits on a
-state you read yourself, which is the property that matters.
+A watch can be killed, dropped or superseded, and **a watch that never fires is
+indistinguishable from a run that never finished**. So on any re-invocation,
+re-read the run rather than trusting the watch, and re-arm freely — an extra
+watch costs nothing, a dropped one costs the night.
 
-## Every re-invocation re-checks the run
-
-A watch can be killed, dropped, or superseded, and **a watch that never fires is
-indistinguishable from a run that never finished**. So whenever you are woken for
-any reason:
-
-1. Re-read the run (`gh run view <id> --json status,conclusion`) rather than
-   assuming the watch still holds it.
-2. Re-arm freely. An extra watch costs nothing; a dropped one costs the night.
-
-A task notification whose `status` is `killed` or `failed` is a **re-arm trigger,
-not a no-op**. Answering one with "no response requested" is how a green run sat
-unnoticed in draft on 2026-08-24 until the operator asked "don't you watch?".
+A `killed`/`failed` notification is a **re-arm trigger, not a no-op**.
 
 ## A push supersedes the run you are watching
 
-Each push restarts the pipeline, so the watch you armed is now pointed at a run
-that will be cancelled. Re-arm on the new run id after every push — and batch
-fixes into one push, because three pushes is three full pipelines.
+Each push restarts the pipeline. Re-arm on the new run id, and batch fixes into
+one push: three pushes is three full pipelines. **`gh run watch` stays rejected
+here** — see [incidents.md](incidents.md).
