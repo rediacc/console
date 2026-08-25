@@ -519,6 +519,14 @@ jobs:
         with:
           persist-credentials: false
 
+      # Every Linux job carries this or is allowlisted with a BLOCKER reason;
+      # check_runner_advice.py enforces it. This job has no reason to be
+      # exempt -- it is short and bare, which makes it a useful datapoint for
+      # what a minimal lane actually costs.
+      - uses: ./.github/actions/profiler
+        with:
+          runner-label: ubuntu-slim
+
       - name: run.sh entry-point controls
         run: .ci/scripts/test/gates/test-run-sh.sh
 
