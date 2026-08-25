@@ -76,6 +76,21 @@ gh run view $R --repo rediacc/console --json conclusion,jobs --jq '{conclusion, 
 ```
 with **`run_in_background: true`**. It exits ONLY when the run is genuinely `completed`, and the process exit re-invokes you with the failure list already in hand. (`sleep 20` - the hook blocks anything longer.)
 
+**The mechanics of arming a watch live in the `ci-watch` skill
+(`.claude/skills/ci-watch/SKILL.md`) — read it before arming your first one.** It
+carries the wake-up contract, the cancelled-vs-superseded distinction, and the
+compound-watch bug below. What follows here is the part specific to this loop.
+
+**ONE WAIT PER BACKGROUND COMMAND.** A watch notifies on process EXIT, not on
+output, so a command that answers one question and then waits for a second never
+wakes you for the first. Observed 2026-08-24: a watch polled CI, printed
+`failed: ["Quality / Static"]` into its output file at 23:55:13, then moved
+straight into a second loop waiting for a review marker that a red run never
+posts. The failure sat unread for ninety minutes and surfaced only when the
+operator pasted the failing job URL into the chat. Want a second condition? Arm a
+SECOND watch after the first fires. The tell while auditing: a watch whose output
+file is non-empty while it is still running has already answered.
+
 **Do NOT use `gh run watch` for this.** It dropped **four times out of four** in one campaign: the run went terminal, nothing fired, and the loop simply stopped for over an hour each time. **`gh run watch` is a convenience, not a contract.** It also sometimes exits 1 while the run is still `in_progress`: confirm with `gh api .../actions/runs/<id>` and **re-arm**, do not conclude.
 
 If you end your turn without one, you simply stop - and the run is now watched by **nobody**. This matters MORE in-context: a CI round is 15–30 minutes, the session must end turns across it, and the user will not notice a dead loop for an hour. (Real case: a babysitter reported in, ended its turn with the run barely started, and idled twice. The work was correct; it was just not armed to wake up.)
