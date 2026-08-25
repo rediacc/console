@@ -7,6 +7,7 @@ in the extraction.
 import contextlib
 import datetime
 import hashlib
+import importlib.util
 import json
 import os
 import pathlib
@@ -400,8 +401,6 @@ def _sanctioned_match(blob):
     missing or broken registry must not take the whole hook down with it.
     """
     try:
-        import importlib.util
-
         lib = pathlib.Path(__file__).resolve().parent.parent / "lib" / "sanctioned.py"
         spec = importlib.util.spec_from_file_location("sanctioned", lib)
         if spec is None or spec.loader is None:
