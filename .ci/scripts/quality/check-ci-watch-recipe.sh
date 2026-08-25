@@ -108,8 +108,8 @@ recommends_gh_run_watch() {
     # some other session started, and whether the command is good advice is not
     # what such a test is about. Prose that hands the reader an invocation is
     # what this looks for, so JSON-valued occurrences are dropped first.
-    grep -vE '"(command|cmd)"[[:space:]]*:' "$1" \
-        | grep -qE 'gh run watch[^|;&]*--(exit-status|interval)'
+    grep -vE '"(command|cmd)"[[:space:]]*:' "$1" |
+        grep -qE 'gh run watch[^|;&]*--(exit-status|interval)'
 }
 
 # ---------------------------------------------------------------------------
@@ -144,7 +144,7 @@ else
 fi
 
 # A-control, by construction: a canonical block with the pre-2026-08-25 form.
-cat > "$TMP/stale-skill.md" <<'FIXTURE'
+cat >"$TMP/stale-skill.md" <<'FIXTURE'
 # fixture
 
 ```bash
@@ -163,8 +163,8 @@ fi
 # B. The canonical block is valid bash. A recipe that does not parse is worse
 #    than no recipe: it fails at 3am, in the background, with nobody reading.
 # ---------------------------------------------------------------------------
-bash_block "$SKILL" \
-    | sed 's/<run-id>/1/; s|<owner>/<repo>|o/r|' > "$TMP/canonical.sh"
+bash_block "$SKILL" |
+    sed 's/<run-id>/1/; s|<owner>/<repo>|o/r|' >"$TMP/canonical.sh"
 
 # Prove the placeholder substitution LANDED before trusting what bash -n says
 # about the result. This normalisation is a pattern substitution, so renaming a
@@ -177,11 +177,11 @@ if grep -q '<[a-z][a-z-]*>' "$TMP/canonical.sh"; then
 elif bash -n "$TMP/canonical.sh" 2>"$TMP/bash-n.err"; then
     pass "B. canonical block parses as bash"
 else
-    fail "B. canonical block is not valid bash: $(tr '\n' ' ' < "$TMP/bash-n.err")"
+    fail "B. canonical block is not valid bash: $(tr '\n' ' ' <"$TMP/bash-n.err")"
 fi
 
 # B-control, by construction.
-printf 'while :; do\n  case "$S" in\n' > "$TMP/broken.sh"
+printf 'while :; do\n  case "$S" in\n' >"$TMP/broken.sh"
 if bash -n "$TMP/broken.sh" 2>/dev/null; then
     fail "B CONTROL DID NOT FIRE: an unterminated block parsed clean, so B proves nothing"
 else
@@ -193,8 +193,8 @@ fi
 # ---------------------------------------------------------------------------
 scan_files() {
     git -C "$ROOT" ls-files \
-        '.claude/**/*.md' '.claude/**/*.sh' 'docs/agent-reference/*.md' 2>/dev/null \
-        | grep -v "^${EVIDENCE_FILE}$"
+        '.claude/**/*.md' '.claude/**/*.sh' 'docs/agent-reference/*.md' 2>/dev/null |
+        grep -v "^${EVIDENCE_FILE}$"
 }
 
 offenders=()
@@ -220,7 +220,7 @@ else
 fi
 
 # C-control, by construction: the detector must fire on the stale form...
-cat > "$TMP/caller-stale.md" <<'FIXTURE'
+cat >"$TMP/caller-stale.md" <<'FIXTURE'
 Arm the watch:
 `R=1; until [ "$(gh run view $R --json status --jq .status)" = "completed" ]; do sleep 20; done`
 FIXTURE
@@ -231,7 +231,7 @@ else
 fi
 
 # ...and must NOT fire on the corrected form, or C is a gate that flags everything.
-cat > "$TMP/caller-good.md" <<'FIXTURE'
+cat >"$TMP/caller-good.md" <<'FIXTURE'
 Arm the watch:
 `S=$(gh api "repos/$REPO/actions/runs/$R" --jq '"\(.status) \(.run_attempt)"')`
 `case "$S" in completed*) [ "$P" = "$S" ] && break;; esac`
@@ -243,7 +243,7 @@ else
 fi
 
 # C-control for the second detector: an INVOCATION is caught...
-printf 'Watch it with: gh run watch <id> --exit-status --interval 100\n' > "$TMP/rec-bad.md"
+printf 'Watch it with: gh run watch <id> --exit-status --interval 100\n' >"$TMP/rec-bad.md"
 if recommends_gh_run_watch "$TMP/rec-bad.md"; then
     pass "C control: a gh run watch invocation is detected"
 else
@@ -259,7 +259,7 @@ fi
     printf 'poll to a terminal state -- `gh run watch` has dropped silently on\n'
     printf 'you do not run `gh run watch/view/list` or fetch a job log\n'
     printf 'BG=[{"command":"gh run watch 30514648812 --exit-status"}]\n'
-} > "$TMP/rec-ok.md"
+} >"$TMP/rec-ok.md"
 if recommends_gh_run_watch "$TMP/rec-ok.md"; then
     fail "C IS OVER-BROAD: naming gh run watch without flags was read as recommending it"
 else
