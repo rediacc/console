@@ -30,6 +30,10 @@ declare -A BASELINE_RESULTS=(
     [RESULT_BUILD_DOCKER]=success
     [RESULT_BUILD_DOCKER_FAST]=success
     [RESULT_BUILD_CLI]=success
+    # Added with the run-sh-tests job. It is HARD_REQUIRED, so an absent
+    # RESULT_ reads as `<unset>` and fails -- which is the correct direction,
+    # and is exactly how this fixture caught the omission when the job landed.
+    [RESULT_RUN_SH_TESTS]=success
     [RESULT_QUALITY]=success
     [RESULT_REVIEW_GATE]=success
     [RESULT_STRIPE_SANDBOX]=success

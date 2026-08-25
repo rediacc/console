@@ -20,12 +20,12 @@ fails=0
 count=0
 ok() {
     count=$((count + 1))
-    echo "  PASS  $1"
+    echo "PASS: $1"
 }
 no() {
     count=$((count + 1))
     fails=$((fails + 1))
-    echo "  FAIL  $1" >&2
+    echo "FAIL: $1" >&2
 }
 
 TMP="$(mktemp -d)"
