@@ -52,3 +52,31 @@ Confirmed against the docs rather than assumed: background output is written to 
 file and read on demand, and the wake-up is the process exiting
 (<https://code.claude.com/docs/en/interactive-mode>,
 <https://code.claude.com/docs/en/tools-reference>).
+
+## A watch fired on attempt 1 of a run that was not over (2026-08-25)
+
+Landing console#574 — this skill's own PR. The watch was the form this file
+recommended at the time:
+
+```bash
+# INCOMPLETE: exits on the first `completed`
+until [ "$(gh run view $R --json status --jq .status)" = "completed" ]; do sleep 20; done
+```
+
+It fired and reported `conclusion: cancelled, failed: ["CI Complete"]`. A
+re-query moments later returned an EMPTY job list and a null run conclusion,
+which reads like a `gh` glitch and is not one: `run_attempt` had gone to **2**.
+The watchdog had classified the failure as transient and re-dispatched the run,
+so a run that had genuinely reached `completed` was `in_progress` again, and the
+verdict the watch delivered belonged to a superseded attempt.
+
+The underlying failure was `OPS Tests / OPS Provision (macos-intel)` hanging 55
+minutes on `Verify: SSH connectivity` until its `timeout-minutes: 45` cancelled
+it; `CI Complete` then failed the run with `OPS_TESTS: cancelled (soft-required,
+must be 'success' or 'skipped')`. The QEMU/HVF VM never came up for SSH.
+
+Two rules came out of it. **`completed` is not terminal** — require the same
+`run_attempt` to still be complete on a second look. And **classify before
+fixing**: the same job had passed on run `32805254228` on the same branch, which
+makes it transient by the pr-merge skill's own test, so the correct action was to
+let the watchdog's retry run rather than to "fix" working workflow code.
