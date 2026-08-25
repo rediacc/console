@@ -562,7 +562,12 @@ devbox_shell() {
         log_error "Devbox is not running. Start it with: ./run.sh devbox up"
         return 1
     }
-    $d exec -it -u "$(id -u):$(id -g)" -w "$(devbox_worktree)" "$cid" bash
+    # -u vscode BY NAME, for the reason spelled out above devbox_exec: the
+    # entrypoint has already renumbered `vscode` to the host identity, so the
+    # name is right on Linux, macOS (501:20, where gid 20 is dialout) and WSL2,
+    # while a numeric id is right only where the host's numbering means
+    # something inside the container. This was the one site still using it.
+    $d exec -it -u vscode -w "$(devbox_worktree)" "$cid" bash
 }
 
 # -----------------------------------------------------------------------------
@@ -603,7 +608,15 @@ devbox_exec() {
 
     # bash -lc, not bash -c: PATH for go and node comes from /etc/environment,
     # which only a login shell reads.
-    "$d" "${flags[@]}" "$cid" bash -lc "$*"
+    # devbox_docker answers TWO WORDS when the docker group is not active in
+    # this shell yet ("sudo docker", line 63). Quoting that as one command name
+    # produces `sudo docker: command not found` -- measured 2026-08-26 running
+    # this very function from a plain shell. Every other caller in this file
+    # relies on word-splitting an unquoted $d; do it explicitly with an array so
+    # the intent survives the next person who "fixes the quoting".
+    local -a dk
+    read -r -a dk <<<"$d"
+    "${dk[@]}" "${flags[@]}" "$cid" bash -lc "$*"
 }
 
 # THE THREE PROBES. Each catches a different way the container can look healthy
