@@ -77,7 +77,7 @@ gh run view $R --repo rediacc/console --json conclusion,jobs --jq '{conclusion, 
 with **`run_in_background: true`**. It exits ONLY when the run is genuinely `completed`, and the process exit re-invokes you with the failure list already in hand. (`sleep 20` - the hook blocks anything longer.)
 
 **The mechanics of arming a watch live in the `ci-watch` skill
-(`.claude/skills/ci-watch/SKILL.md`) — read it before arming your first one.** It
+(`.claude/skills/ci-watch/SKILL.md`). Read it before arming your first one.** It
 carries the wake-up contract, the cancelled-vs-superseded distinction, and the
 compound-watch bug below. What follows here is the part specific to this loop.
 

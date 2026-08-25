@@ -1,4 +1,4 @@
-# ci-watch — the incidents behind the rules
+# ci-watch: the incidents behind the rules
 
 Kept out of `SKILL.md` because that file is capped at 60 lines so it sharpens
 instead of growing. This one is the evidence; append, never prune.
@@ -8,7 +8,7 @@ instead of growing. This one is the evidence; append, never prune.
 On a landing already nine rounds deep, the watch was:
 
 ```bash
-# BROKEN — do not copy
+# BROKEN: do not copy
 R=<run-id>
 until [ "$(gh run view $R --json status --jq .status)" = "completed" ]; do sleep 20; done
 gh run view $R --json conclusion,jobs --jq '...'           # verdict printed HERE
@@ -17,7 +17,7 @@ until <review marker for $SHA appears>; do sleep 20; done  # ...then it kept wai
 echo REVIEWED
 ```
 
-CI failed at **23:55:13**. The verdict — `failed: ["Quality / Static"]` — was
+CI failed at **23:55:13**. The verdict, `failed: ["Quality / Static"]`, was
 written into the output file and **nothing woke the session**, because the
 process had not exited: it had moved straight into the second `until`, waiting
 for a review marker that a red run never posts.
@@ -34,7 +34,7 @@ it was killed by hand (exit 144, SIGTERM).
 
 `--exit-status` exists and returns non-zero when the run fails
 (<https://cli.github.com/manual/gh_run_watch>). It is still rejected here: it
-dropped **four times out of four** in one campaign — the run went terminal,
+dropped **four times out of four** in one campaign. The run went terminal,
 nothing fired, and the loop stopped for over an hour each time. It has also been
 seen exiting 1 while the run was still `in_progress`. The `until` poll exits on a
 state you read yourself, which is the property that matters.
