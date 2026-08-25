@@ -245,6 +245,51 @@ else
     fail "A9 CONTROL WAS NOT PLANTED: the mutant library is unmodified"
 fi
 
+# --- A10. all THREE readers must still READ the pins -------------------------
+# A3 proves the file is PARSEABLE by three readers. Nothing proved they still
+# read it. Delete the `. toolchain.env` from constants.sh, or the COPY from the
+# Dockerfile, or the --env step from the workflow, and every assertion above
+# stays green while the pins go back to being decorative -- which is the exact
+# state this whole file exists to end. The three-point wiring is the invariant;
+# asserting the parts individually never asserted the unit.
+#
+# Each reader is checked for the mechanism it actually uses, not for the string
+# "toolchain.env": a COMMENT mentioning the file would otherwise satisfy the
+# rule, and every one of these three files has several such comments.
+a10_bad=()
+CONSTS="$ROOT/.ci/config/constants.sh"
+DOCKERFILE="$ROOT/.devcontainer/Dockerfile"
+
+# bash: constants.sh must SOURCE it, not merely name it.
+[[ -f "$CONSTS" ]] || a10_bad+=("constants.sh is missing entirely")
+if [[ -f "$CONSTS" ]]; then
+    grep -vE '^[[:space:]]*#' "$CONSTS" |
+        grep -qE '(\.|source)[[:space:]]+"?\$\{?_REDIACC_TOOLCHAIN_ENV' ||
+        a10_bad+=("constants.sh no longer sources the pins file")
+fi
+
+# Docker: the image must COPY it in, or the container's tools are unpinned.
+[[ -f "$DOCKERFILE" ]] || a10_bad+=("Dockerfile is missing entirely")
+if [[ -f "$DOCKERFILE" ]]; then
+    grep -vE '^[[:space:]]*#' "$DOCKERFILE" |
+        grep -qE '^[[:space:]]*COPY[[:space:]]+toolchain\.env' ||
+        a10_bad+=("Dockerfile no longer COPYs toolchain.env into the image")
+fi
+
+# Actions: some workflow must feed the pins into $GITHUB_ENV. Via --env, never
+# a bare `cat`: $GITHUB_ENV accepts only KEY=value and would choke on the
+# comments, which is why the emitter exists at all.
+grep -rlE 'toolchain\.sh[[:space:]]+--env[[:space:]]*>>[[:space:]]*"?\$\{?GITHUB_ENV' \
+    "$ROOT/.github/workflows" >/dev/null 2>&1 ||
+    a10_bad+=("no workflow feeds the pins into \$GITHUB_ENV via toolchain.sh --env")
+
+if [[ ${#a10_bad[@]} -eq 0 ]]; then
+    pass "A10. all three readers (bash, Docker, Actions) still read the pins"
+else
+    fail "A10. a pin reader went dark, so the pins are decorative for that lane:"
+    printf '         %s\n' "${a10_bad[@]}"
+fi
+
 # --- controls, by construction ------------------------------------------------
 mkdir -p "$TMP/c"
 printf 'RUFF_VERSION=9.9.9\n' >"$TMP/c/pins.env"
@@ -280,6 +325,30 @@ if grep -qE 'toolchain_acquire|toolchain_check|[A-Z]+_VERSION' "$TMP/c/pinned-ga
     pass "A6 control: a gate that resolves at the pin is not flagged"
 else
     fail "A6 IS OVER-BROAD: a correctly pinned gate was flagged"
+fi
+
+# A10 controls, by construction: a reader that only MENTIONS the pins file in a
+# comment must not satisfy the rule, and a real one must not be flagged.
+mkdir -p "$TMP/a10"
+printf '# we load .devcontainer/toolchain.env somewhere else\necho hi\n' >"$TMP/a10/fake-consts.sh"
+if grep -vE '^[[:space:]]*#' "$TMP/a10/fake-consts.sh" |
+    grep -qE '(\.|source)[[:space:]]+"?\$\{?_REDIACC_TOOLCHAIN_ENV'; then
+    fail "A10 CONTROL DID NOT FIRE: a comment mentioning the pins file counted as reading it"
+else
+    pass "A10 control: a comment mentioning the pins file does not count as reading it"
+fi
+printf '# real\n. "${_REDIACC_TOOLCHAIN_ENV}"\n' >"$TMP/a10/real-consts.sh"
+if grep -vE '^[[:space:]]*#' "$TMP/a10/real-consts.sh" |
+    grep -qE '(\.|source)[[:space:]]+"?\$\{?_REDIACC_TOOLCHAIN_ENV'; then
+    pass "A10 control: a genuine source line is recognised"
+else
+    fail "A10 IS OVER-BROAD: a real source of the pins file was not recognised"
+fi
+printf '# COPY toolchain.env -- described, not done\nRUN true\n' >"$TMP/a10/Dockerfile"
+if grep -vE '^[[:space:]]*#' "$TMP/a10/Dockerfile" | grep -qE '^[[:space:]]*COPY[[:space:]]+toolchain\.env'; then
+    fail "A10 CONTROL DID NOT FIRE: a commented-out COPY counted as copying"
+else
+    pass "A10 control: a commented-out COPY does not count"
 fi
 
 printf 'go install golang.org/x/tools/gopls@latest\n' >"$TMP/c/editor.sh"
