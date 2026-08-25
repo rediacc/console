@@ -4445,3 +4445,109 @@ refusing to START (`/usr/bin/python3: Argument list too long`, exit 126), which
 reads like a broken runner rather than a gate that outgrew its plumbing. It now
 passes temp-file PATHS; verified against a synthetic 331KB manifest. This was a
 latent bomb: the next manifest entry would have tripped it regardless of content.
+
+## One pinned toolchain, one lane (2026-08-24/25, PR #574)
+
+Twelve commits between `b04809f6` and `2e2179aa` touched `.ci`, `.github` and
+`.claude`. What they establish, and what each one cost to get right.
+
+### The problem was a rubber stamp, not an inconvenience
+
+Measured on the operator's box: host node **v24.14.0** / go1.25.13 / shellcheck
+**0.9.0**, devbox node v22.23.2 / go1.26.4 / shellcheck **absent**, CI node 22 /
+shellcheck **0.10.0**. Four pins were duplicated (ruff, twice) or absent entirely
+(shfmt, shellcheck, PyYAML written four times). And `quality_all()` **warned and
+returned success** when shfmt was missing -- so on every non-Debian host
+`./run.sh quality all` reported green having skipped the shell gates outright.
+That vacuous green, not the version drift, is the reason this wave exists.
+
+### `.devcontainer/toolchain.env` -- one file, three readers
+
+Plain `KEY=value`, no quotes and no `$`, because three consumers must accept the
+same bytes: bash (`set -a; . ...`), the Dockerfile (`COPY` + `ARG`), and Actions
+(`cat ... >> "$GITHUB_ENV"`, which accepts **only** `KEY=value` lines -- hence
+`toolchain.sh --env`, which strips the comments `$GITHUB_ENV` would reject). It
+lives in `.devcontainer/` because that directory **is** the image build context
+(`ci-build-docker.yml:558`); `COPY` cannot reach outside it.
+
+`.ci/scripts/lib/toolchain.sh` adds load/probe/check/**acquire**. `toolchain_check`
+accepts a PATH binary **only at the pin** -- proven with a fake `ruff 0.5.0` first
+on PATH, which the old `resolve_ruff` happily used (`15df80bc`); the gate now
+reports `linting 56 Python file(s) with ruff 0.16.1`. `_toolchain_acquire_shfmt`
+prefers `go install ...@v$SHFMT_VERSION` (sumdb-verified) and falls back to a
+checksummed binary, because CI's Static lane is a bare checkout with **no Go**.
+
+### The lane, and the two defects the split exposed
+
+`gate_lane_decide` routes `./run.sh quality` into the devbox by default, with three
+usability probes (`devbox_mount_ok` by CONTENT, `devbox_identity_ok`,
+`devbox_writable_ok`) that refuse rather than degrade -- an empty auto-created mount
+or a root exec presents as the same vacuous green this wave exists to kill.
+
+Review of `927256e7` caught a **HIGH** defect: one return code carried two
+meanings, so a gate that FAILED inside the devbox fell through and **re-ran on the
+host**, where the drifted toolchain could pass and mask it. The mechanism built to
+prevent drift was reintroducing it. Split into `gate_lane_should_route` (routing
+only) and `gate_lane_run` (exit status is the routed command's) in `2e2179aa`.
+
+**The fix introduced a second defect, found by tracing rather than reading.**
+`run.sh` runs under `set -euo pipefail`; the old `... && exit $?` had been suppressing
+errexit through the `&&`. A bare predicate therefore aborted the whole script on its
+ordinary "stay on host" return of `1` -- every host-lane run died silently with no
+output at all, `bash -x` ending at `return 1`. Now `gate_lane_should_route || _route=$?`.
+
+### New gates
+
+- **`check-toolchain-pins.sh`** -- A1 one definition per pin, A2 nothing acquired
+  unpinned, A3 pins file well-formed, A6 every gate resolves at the pin, A8 no
+  workflow invokes a pinned tool directly. A6 first hardcoded two files while its
+  own control passed: **a control on the detection REGEX is not a control on the
+  ENUMERATION** (`a0c13e40`). A8 exists because A2 caught unpinned *acquisition*
+  and nothing caught unpinned *use* (`8d381ad6`).
+- **`check-hook-integrity.sh`** -- shrink-only inventory of 22 guards, 8 gaps baselined.
+- **`check-ci-watch-recipe.sh`** -- rewritten to A-E: the skill hands out the
+  script, every surface names it, nobody hands out a loop.
+
+### `ci-trace.py` -- the only sanctioned CI reader
+
+Keys on the **PR HEAD**, never a run id, because `statusCheckRollup` exposes the
+latest check run per context: a watchdog rerun *replaces* the failed attempt, so
+"completed" is not terminal and a watch latched onto attempt 1 reads a stale
+verdict. Exit 0/1/2/3 = green/red/no-verdict/head-moved. `--until-final`
+(`2a3bb808`) keeps a babysit from exiting on a red while the run is still live.
+It imports `wl_ci` rather than reimplementing it, and `block-adhoc-sanctioned.sh`
+refuses hand-rolled watch loops so there is no second path.
+
+### `run-sh-tests`, and a 390x speedup
+
+A new bare-checkout CI job wires `run.sh`'s own tests into `ci.yml`, in
+`ci-complete`'s needs and tiered HARD_REQUIRED in `assert-ci-complete.sh:24`.
+Separately, the path-scan gate went **51m02s to 7.9s** (`2b8bc012`) by splitting
+`test-worklist-v5.sh` into a 135-line runner plus 22 topic files -- 787 cases
+before and after.
+
+### Traps paid for in this wave
+
+- **shellcheck 0.10.0 OOM-killed a 453-file run.** Cause was ONE 11,955-line file
+  (2714 MB vs 199 MB with `--extended-analysis=false`). Batching does **not** fix it.
+- **A comment whose FIRST word is the linter's name is parsed as a directive**
+  (SC1073). Hit three separate times.
+- **The `gh pr edit` body path does NOT fail silently.** This repo's docs said
+  "SILENTLY" for months; measured, it exits **1** with a Projects-classic GraphQL
+  error, and `refresh-pr-body.sh` had been failing on EVERY push. Now a REST PATCH.
+  The sanctioned form is registered in `.claude/hooks/lib/sanctioned.py`; note that
+  its matcher is textual, so *documenting* the bad shape trips it too -- write such
+  prose with the Write tool and append by path.
+- **`block-adhoc-sanctioned.sh` FAILED OPEN in CI** -- it derived its lib path from
+  `CLAUDE_PROJECT_DIR`, which exists only in the agent harness, fell back to `.`,
+  and allowed every banned command. Now from `BASH_SOURCE`.
+- **A patch script that asserts before writing leaves the file UNCHANGED** on a
+  failed assert. Happened twice; both times a fix was reported that never applied.
+- **Editing a script while it is running corrupts the run** (bash reads by byte
+  offset). Also twice.
+- **The Drills job is NOT in the watchdog retry allowlist**
+  (`E2E,OPS,Fork Isolation,Migration Test`, `watchdog-monitor.yml:128`), contrary
+  to a claim made mid-wave.
+- **Docker freshness soak used a REBUILD timestamp**, making all three drains
+  spurious. The independent check offered at the time -- the pin's own push date --
+  has no bearing on staleness. Baseline restored byte-identical.

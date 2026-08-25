@@ -38,3 +38,20 @@ Branch `0825-1`, PR console#574. **Everything committed and pushed; tree clean.*
 1. When `bk5sig264` fires it reports EVERY failing job. Classify before fixing.
 2. If green: report it. Do NOT merge — the operator asked for babysitting, and `BLOCKED` needs their call.
 3. If the operator wants the merge pursued, start by diagnosing `mergeStateStatus: BLOCKED` — most likely a stale `claude-reviewed` marker needing a fresh review on the current head, plus a substantive reply to that review's summary comment.
+
+## 2026-08-25 — /pr-merge, waiting on review marker
+
+HEAD `2e2179aa` on `0825-1`, PR #574. Only red is **Review Complete**: the newest
+marker names `a0c13e40`, not the head. Both review gates PASS locally
+(check-review-comments.sh, check-resolved-threads.sh). A Claude Review run started
+21:36 was still `in_progress`.
+
+**Do not push more commits** — each one invalidates the marker and restarts this.
+
+Next: `.ci/scripts/ci/ci-trace.py` (sanctioned reader; ad-hoc `gh` loops are hook-refused).
+If the marker still lags after the review run completes, nudge with
+`gh pr comment 574 --body "..."` (fires `issue_comment` → review-status.yml).
+Then `gh pr merge 574 --repo rediacc/console --rebase --auto`, then steps 4-8:
+fetch --prune, checkout main, merge --ff-only, `git submodule update --init --recursive`
+(ALL FOUR), confirm the `bump-none` skip from the **Finalize Release Sentinel** job log,
+report GitLab mirror as a **SKIP** (only `origin` in this checkout), end on `main`.
