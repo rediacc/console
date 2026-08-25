@@ -521,6 +521,13 @@ jobs:
       - name: Setup path idempotency
         run: .ci/scripts/quality/check-setup-idempotency.sh
 
+      # Hermetic text check: the canonical CI-watch loop must live in one
+      # place and be attempt-stable. Nine divergent copies existed before this,
+      # several handing out a form that exits on the first `completed` -- which
+      # a watchdog re-run makes a superseded attempt's verdict.
+      - name: CI-watch recipe has one source
+        run: .ci/scripts/quality/check-ci-watch-recipe.sh
+
       # Meta-gate: a control built by pattern substitution must prove the plant
       # landed, or a reworded target line turns the control green against
       # unmutated source.

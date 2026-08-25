@@ -42,6 +42,9 @@ check_out() {
 }
 
 bash_json() { printf '{"tool_input":{"command":%s}}' "$(jq -Rn --arg c "$1" '$c')"; }
+# Same, but flagged as a harness background task. block-long-sleep.sh raises its
+# sleep cap for these: a long sleep only costs anything in the foreground.
+bash_bg_json() { printf '{"tool_input":{"command":%s,"run_in_background":true}}' "$(jq -Rn --arg c "$1" '$c')"; }
 edit_json() { printf '{"tool_input":{"new_string":%s}}' "$(jq -Rn --arg c "$1" '$c')"; }
 multiedit_json() { printf '{"tool_input":{"edits":[{"new_string":%s}]}}' "$(jq -Rn --arg c "$1" '$c')"; }
 # wf_edit_json <file_path> <new_string>: Edit payload carrying a target file path.
@@ -486,11 +489,28 @@ check 0 pre-bash/block-ssh-docker.sh "$(bash_json 'ssh 192.168.111.1 docker ps')
 check 0 pre-bash/block-ssh-file-write.sh "$(bash_json 'ssh host "cat /etc/criu/runc.conf 2>&1; ls"')" "ssh-file-write: stderr redirect is a read"
 check 0 pre-bash/block-ssh-file-write.sh "$(bash_json 'ssh host "cat /var/log/x >/dev/null 2>&1"')" "ssh-file-write: dev-null read ok"
 check 0 pre-bash/block-long-sleep.sh "$(bash_json 'sleep 10')" "long-sleep: 10s ok"
-# The sanctioned terminal-state CI watch (see .claude/agents/pr-babysitter.md) must pass all three CI-poll guards.
-WATCH='R=123; until [ "$(gh run view $R --repo rediacc/console --json status --jq .status)" = "completed" ]; do sleep 20; done; gh run view $R --repo rediacc/console --json conclusion,jobs'
-check 0 pre-bash/block-ci-polling.sh "$(bash_json "$WATCH")" "ci-polling: terminal-state watch ok"
-check 0 pre-bash/block-ci-reverse-poll.sh "$(bash_json "$WATCH")" "ci-reverse-poll: terminal-state watch ok"
-check 0 pre-bash/block-long-sleep.sh "$(bash_json "$WATCH")" "long-sleep: terminal-state watch ok"
+# The sanctioned terminal-state CI watch (see .claude/skills/ci-watch/SKILL.md)
+# must pass all three CI-poll guards. This is the ATTEMPT-STABLE form: it waits
+# for the same run_attempt to be complete twice, because the watchdog re-runs a
+# transient failure and attempt 2 lands on the same run. The old form, which
+# exited on the first `completed`, reported a superseded attempt's verdict as
+# final on 2026-08-25 (console#574).
+WATCH='R=123; P=""; while :; do S=$(gh api "repos/o/r/actions/runs/$R" --jq ".status") || { sleep 20; continue; }; case "$S" in completed*) [ "$P" = "$S" ] && break; P="$S"; sleep 90 ;; *) P=""; sleep 20 ;; esac; done'
+check 0 pre-bash/block-ci-polling.sh "$(bash_bg_json "$WATCH")" "ci-polling: attempt-stable watch ok"
+check 0 pre-bash/block-ci-reverse-poll.sh "$(bash_bg_json "$WATCH")" "ci-reverse-poll: attempt-stable watch ok"
+check 0 pre-bash/block-long-sleep.sh "$(bash_bg_json "$WATCH")" "long-sleep: attempt-stable watch ok in background"
+# THE CONTROL THAT MATTERS for the max-sleep fix. block-long-sleep.sh used to
+# read the FIRST sleep in the command, so the watch above passed only because
+# its `sleep 20` arm happens to precede its `sleep 90` arm. Reordered, the
+# repo's own recommended recipe was blocked by the repo's own guard. The guard
+# now takes the MAXIMUM, so both orderings behave identically.
+WATCH_REORDERED='R=123; P=""; while :; do S=$(gh api "repos/o/r/actions/runs/$R" --jq ".status"); case "$S" in completed*) P="$S"; sleep 90 ;; *) sleep 20 ;; esac; done'
+check 0 pre-bash/block-long-sleep.sh "$(bash_bg_json "$WATCH_REORDERED")" "long-sleep: arm order does not decide the verdict"
+# ...and the foreground cap must still bite, or the exemption above is a hole.
+check 2 pre-bash/block-long-sleep.sh "$(bash_json 'sleep 90')" "long-sleep: 90s in the FOREGROUND still blocked"
+check 2 pre-bash/block-long-sleep.sh "$(bash_json "$WATCH")" "long-sleep: the same watch unbackgrounded is blocked"
+check 2 pre-bash/block-long-sleep.sh "$(bash_bg_json 'sleep 900')" "long-sleep: background is not unlimited"
+check 0 pre-bash/block-long-sleep.sh "$(bash_bg_json 'sleep 20')" "long-sleep: short background sleep ok"
 check 0 pre-bash/block-git-force-push.sh "$(bash_json 'git push')" "force-push: plain push ok"
 # THE CONTROLS THAT MATTER for the widened pattern. A guard that blocks every
 # push is worse than no guard: it gets disabled, and then nothing is guarded.
