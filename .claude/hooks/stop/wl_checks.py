@@ -3238,8 +3238,11 @@ def run_stop(event, event_ok, worklist, hook_file):
         _adhoc_id, _adhoc_blob = wl_ci.adhoc_watch(live_bg)
     except Exception as exc:  # noqa: BLE001 -- a broken check must SAY SO
         _adhoc_id, _adhoc_blob = "", ""
-        vadd("adhoc-watch-broken", True, "THIS IS A HOOK BUG: adhoc_watch failed: %s: %s"
-             % (type(exc).__name__, str(exc)[:120]))
+        vadd(
+            "adhoc-watch-broken",
+            True,
+            "THIS IS A HOOK BUG: adhoc_watch failed: %s: %s" % (type(exc).__name__, str(exc)[:120]),
+        )
     if _adhoc_id:
         vadd("adhoc-watch", True, M.V_ADHOC_WATCH % (_adhoc_id, _adhoc_blob))
 

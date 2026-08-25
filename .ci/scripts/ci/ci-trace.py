@@ -87,15 +87,19 @@ def _emit(payload, as_json):
         att = (" (attempt %s)" % row["attempt"]) if row.get("attempt") else ""
         print("  %-9s %s%s%s" % (row["conclusion"], row["name"], step, att))
         if row.get("job"):
-            print("      log: gh api repos/%s/%s/actions/jobs/%s/logs"
-                  % (payload["owner"], payload["name"], row["job"]))
+            print(
+                "      log: gh api repos/%s/%s/actions/jobs/%s/logs"
+                % (payload["owner"], payload["name"], row["job"])
+            )
         elif row.get("url"):
             print("      %s" % row["url"])
     if payload.get("waiting"):
         print("  %d context(s) still running." % payload["waiting"])
     if payload.get("soft"):
-        print("  %d failing job(s) are on the watchdog retry allowlist and may be"
-              " retried; not actionable yet." % len(payload["soft"]))
+        print(
+            "  %d failing job(s) are on the watchdog retry allowlist and may be"
+            " retried; not actionable yet." % len(payload["soft"])
+        )
 
 
 def _snapshot(root, ref, cache):
@@ -140,8 +144,10 @@ def _snapshot(root, ref, cache):
             detail += "; %d retryable failure(s) pending a watchdog rerun" % len(soft)
     elif cancelled:
         verdict = "red"
-        detail = ("%d context(s) CANCELLED with nothing failing -- a newer push"
-                  " superseded this run. Trace the newer head." % len(cancelled))
+        detail = (
+            "%d context(s) CANCELLED with nothing failing -- a newer push"
+            " superseded this run. Trace the newer head." % len(cancelled)
+        )
     else:
         verdict, detail = "green", "every context succeeded or was skipped"
 
@@ -176,12 +182,17 @@ def main(argv=None):
         ),
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
-    ap.add_argument("--wait", action="store_true",
-                    help="block until THIS head reaches a real terminal state")
+    ap.add_argument(
+        "--wait", action="store_true", help="block until THIS head reaches a real terminal state"
+    )
     ap.add_argument("--json", action="store_true", help="machine-readable output")
     ap.add_argument("--ref", default="", help="branch to trace (default: current)")
-    ap.add_argument("--timeout", type=int, default=int(os.environ.get("CI_TRACE_TIMEOUT_S", "5400")),
-                    help="--wait only: give up after N seconds (default 5400)")
+    ap.add_argument(
+        "--timeout",
+        type=int,
+        default=int(os.environ.get("CI_TRACE_TIMEOUT_S", "5400")),
+        help="--wait only: give up after N seconds (default 5400)",
+    )
     args = ap.parse_args(argv)
 
     root = REPO_ROOT
@@ -214,9 +225,12 @@ def main(argv=None):
         if pinned_head is None:
             pinned_head = payload["head"]
         elif payload["head"] and payload["head"] != pinned_head:
-            print("head-moved: was %s, now %s -- a push superseded the run being"
-                  " watched. Re-run ci-trace against the new head."
-                  % (pinned_head[:8], payload["head"][:8]), file=sys.stderr)
+            print(
+                "head-moved: was %s, now %s -- a push superseded the run being"
+                " watched. Re-run ci-trace against the new head."
+                % (pinned_head[:8], payload["head"][:8]),
+                file=sys.stderr,
+            )
             return EXIT_HEAD_MOVED
 
         if payload["verdict"] == "red":

@@ -44,12 +44,12 @@ def main(argv):
                 "reading as a live one" % name
             )
         if rx.search(row["counter"]):
-            bad.append(
-                "%s: its counter-example matches, so the pattern is over-broad" % name
-            )
-        for tok in row["use"].split():
-            if tok.endswith((".py", ".sh")) and not (root / tok).exists():
-                bad.append("%s: names a replacement that does not exist: %s" % (name, tok))
+            bad.append("%s: its counter-example matches, so the pattern is over-broad" % name)
+        bad.extend(
+            "%s: names a replacement that does not exist: %s" % (name, tok)
+            for tok in row["use"].split()
+            if tok.endswith((".py", ".sh")) and not (root / tok).exists()
+        )
     if bad:
         print("\n".join(bad))
         return 1
