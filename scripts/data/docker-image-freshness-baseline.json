@@ -1,6 +1,5 @@
 [
   "packages/json/templates/networking/cloud-switch/web/Dockerfile:2  python:3.9-slim",
   "private/renet/Dockerfile:133  ubuntu:24.04",
-  "private/renet/Dockerfile:384  golang:1.26-bookworm",
-  "workers/proxy/Dockerfile:12  node:22-slim"
+  "private/renet/Dockerfile:384  golang:1.26-bookworm"
 ]
