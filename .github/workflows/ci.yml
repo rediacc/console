@@ -492,6 +492,45 @@ jobs:
       DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
 
   # ============================================================================
+  # ENTRY-POINT TESTS: ./run.sh itself
+  # Dependencies: [initialize]
+  #
+  # run.sh is the door every other command goes through, and until now nothing
+  # tested it. Two defects lived in it because of that: `quality all` warned and
+  # returned SUCCESS when shfmt was absent (so on any machine without shfmt it
+  # reported green having run no shell gate), and `fix shell` formatted with a
+  # different shfmt than the gate verified with.
+  #
+  # Deliberately its own job rather than a step in ci-quality.yml: this needs a
+  # BARE CHECKOUT and nothing else -- no node, no submodules, no docker -- so it
+  # gives a verdict in under a minute instead of waiting on a lane that installs
+  # a toolchain first. The suite is hermetic for the same reason.
+  # ============================================================================
+  run-sh-tests:
+    name: Entry Point (run.sh)
+    needs: [initialize]
+    if: needs.initialize.outputs.is_bot != 'true'
+    runs-on: ubuntu-slim
+    # ubuntu-slim is killed at 15 minutes with no failed step, which reads as
+    # neither pass nor fail; check-workflow-gates.sh enforces <= 14 here.
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: run.sh entry-point controls
+        run: .ci/scripts/test/gates/test-run-sh.sh
+
+      - name: devbox probe controls
+        # Hermetic: fake docker binaries on a temp PATH, never the real daemon,
+        # so these run on a bare runner with no container available.
+        run: .ci/scripts/test/gates/test-devbox-probes.sh
+
+      - name: gate toolchain resolver controls
+        run: .ci/scripts/test/gates/test-toolchain.sh
+
+  # ============================================================================
   # REVIEW GATE: enforce review-thread hygiene (bot-agnostic)
   # Dependencies: [initialize, quality]
   # Must pass before Build jobs can start
@@ -1451,7 +1490,7 @@ jobs:
     # `CI Complete` reports success while a release-state assertion failed on
     # main. It is soft-required, because it legitimately skips on every PR
     # (it is gated on push-to-main plus a release channel).
-    needs: [initialize, label-guide, quality, review-gate, stripe-sandbox, build-docker, build-docker-fast, build-cli, package-tests, check-release-state, stage-artifacts, validate-install, validate-promote, tests, elite-run-test, ops-tests, update-flow-test, deploy-preview, smoke-test-preview, breakpoint-lifecycle]
+    needs: [initialize, label-guide, run-sh-tests, quality, review-gate, stripe-sandbox, build-docker, build-docker-fast, build-cli, package-tests, check-release-state, stage-artifacts, validate-install, validate-promote, tests, elite-run-test, ops-tests, update-flow-test, deploy-preview, smoke-test-preview, breakpoint-lifecycle]
     timeout-minutes: 5
     # Job-level permissions REPLACE the workflow defaults, so contents and
     # packages are restated. actions: read is for the shadow reconciliation
@@ -1475,6 +1514,7 @@ jobs:
           POINTER_BUMP_ONLY: ${{ needs.initialize.outputs.pointer_bump_only }}
           RESULT_INITIALIZE: ${{ needs.initialize.result }}
           RESULT_LABEL_GUIDE: ${{ needs.label-guide.result }}
+          RESULT_RUN_SH_TESTS: ${{ needs.run-sh-tests.result }}
           RESULT_BUILD_DOCKER: ${{ needs.build-docker.result }}
           RESULT_BUILD_DOCKER_FAST: ${{ needs.build-docker-fast.result }}
           RESULT_BUILD_CLI: ${{ needs.build-cli.result }}

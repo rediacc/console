@@ -12,6 +12,10 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(cd "$SCRIPT_DIR/../../.." && pwd)"
+# The gate acquires its own tool AT the pin; see the block in main().
+# shellcheck source=/dev/null
+. "$ROOT_DIR/.ci/scripts/lib/toolchain.sh"
+toolchain_load || exit 1
 
 # Colors (disabled in CI)
 if [[ "${CI:-}" == "true" ]]; then
@@ -36,14 +40,18 @@ main() {
 
     log_info "Checking shell script compatibility"
 
-    # Verify shellcheck is installed
-    if ! command -v shellcheck &>/dev/null; then
-        log_error "shellcheck is not installed"
-        log_info "Install with: apt install shellcheck (Ubuntu) or brew install shellcheck (macOS)"
+    # ACQUIRE AT THE PIN, not merely "present". A bare `command -v` accepts any
+    # version, so a stale binary on a developer's PATH silently decided this
+    # gate's verdict -- measured 2026-08-25: host shellcheck 0.9.0 against CI's
+    # 0.10.0, and two unpinned shfmt installs that agreed only by luck.
+    if ! SHELLCHECK_BIN="$(toolchain_acquire shellcheck)"; then
+        log_error "shellcheck is unusable for this gate"
+        log_info "Every lane's toolchain: .ci/scripts/lib/toolchain.sh --report"
+        log_info "Or run the gate where it is pinned: ./run.sh devbox exec -- .ci/scripts/security/shellcheck.sh"
         exit 1
     fi
 
-    shellcheck --version
+    "$SHELLCHECK_BIN" --version
 
     # EVERY TRACKED .sh FILE, enumerated from git rather than from a list of
     # roots. It used to be four hardcoded roots (.ci, .claude/hooks, run.sh,
@@ -80,7 +88,27 @@ main() {
 
     # BLOCKER: SHELLCHECK_OPTS is a space-separated set of CLI flags, and SH_FILES is a newline-separated file list; word-splitting is intentional for both
     # shellcheck disable=SC2086
-    shellcheck $SHELLCHECK_OPTS $SH_FILES
+    # BATCHED -- but batching is NOT what fixed the OOM, and saying so matters
+    # because the wrong lesson here is expensive.
+    #
+    # Measured 2026-08-25 with the pinned 0.10.0, peak RSS in isolated processes:
+    #     451 files, dataflow on ............ 3074 MB   (OOM-killed on a 6.6 GB box)
+    #      40 files, dataflow on .............. 98 MB
+    #   ONE file (test-worklist-v5.sh, 11,955 lines) .. 2714 MB
+    #
+    # Almost the entire cost is ONE FILE, so a batch of 40 that happens to
+    # contain it still pays 2714 MB and still dies. The actual fix is the
+    # `# shellcheck extended-analysis=false` directive in that file, which takes
+    # it to 199 MB. Batching only caps the much smaller many-files component
+    # (~360 MB -> ~98 MB), which is worth keeping as a floor for the next large
+    # file nobody has noticed yet.
+    #
+    # -P1 deliberately: npm run ci already parallelises across gates, and a
+    # second layer of parallelism is how the box ran out of memory to begin with.
+    if ! printf '%s\n' "$SH_FILES" | xargs -r -n 40 -P1 "$SHELLCHECK_BIN" $SHELLCHECK_OPTS; then
+        log_error "shellcheck reported findings"
+        exit 1
+    fi
 
     # Check for bash 4+ features in build scripts (which run on macOS with bash 3.2)
     # ShellCheck doesn't warn about these since they're valid bash, but macOS

@@ -494,6 +494,28 @@ export const GATES: readonly GateSpec[] = [
     },
   },
   {
+    id: 'check:ci-toolchain-pins',
+    run: 'npm run check:ci-toolchain-pins',
+    gate: true,
+    // Triggers on every surface that could restate a pin or acquire a tool
+    // unpinned, so a version added back into a workflow or the Dockerfile
+    // cannot slip past on an unrelated path filter.
+    paths: [
+      '.devcontainer/**',
+      '.github/workflows/**',
+      '.ci/scripts/**',
+      '.ci/config/constants.sh',
+      'run.sh',
+    ],
+    leaves: ['.ci/scripts/quality/check-toolchain-pins.sh'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-code',
+      step: 'Toolchain pins',
+    },
+  },
+  {
     id: 'check:ci-hook-integrity',
     run: 'npm run check:ci-hook-integrity',
     gate: true,
@@ -2908,6 +2930,45 @@ export const GATES: readonly GateSpec[] = [
     gate: true,
     qualityGateTest: true,
     leaves: ['.ci/scripts/test/gates/test-breakpoint-naming.sh'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-security',
+      step: 'Quality-gate unit tests',
+    },
+  },
+  {
+    id: 'gate-test:run-sh',
+    run: '.ci/scripts/test/gates/test-run-sh.sh',
+    gate: true,
+    qualityGateTest: true,
+    leaves: ['.ci/scripts/test/gates/test-run-sh.sh'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-security',
+      step: 'Quality-gate unit tests',
+    },
+  },
+  {
+    id: 'gate-test:devbox-probes',
+    run: '.ci/scripts/test/gates/test-devbox-probes.sh',
+    gate: true,
+    qualityGateTest: true,
+    leaves: ['.ci/scripts/test/gates/test-devbox-probes.sh'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-security',
+      step: 'Quality-gate unit tests',
+    },
+  },
+  {
+    id: 'gate-test:toolchain',
+    run: '.ci/scripts/test/gates/test-toolchain.sh',
+    gate: true,
+    qualityGateTest: true,
+    leaves: ['.ci/scripts/test/gates/test-toolchain.sh'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',

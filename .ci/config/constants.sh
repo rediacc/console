@@ -7,6 +7,33 @@
 readonly REDIACC_CONSTANTS_LOADED=1
 
 # =============================================================================
+# GATE TOOLCHAIN PINS
+# =============================================================================
+# Sourced, not restated. .devcontainer/toolchain.env is the ONLY place a gate
+# tool's version is written, because it is the one file all three lanes can read:
+# bash here, the Dockerfile via COPY+ARG, and Actions via $GITHUB_ENV. It lives
+# under .devcontainer/ because that is the image build context
+# (.github/workflows/ci-build-docker.yml:558) and COPY cannot reach outside it.
+#
+# Anything sourced here is a plain shell variable; the `readonly` re-exports
+# below are what existing consumers already expect.
+_REDIACC_TOOLCHAIN_ENV="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)/.devcontainer/toolchain.env"
+if [[ -r "$_REDIACC_TOOLCHAIN_ENV" ]]; then
+    set -a
+    # shellcheck source=/dev/null
+    . "$_REDIACC_TOOLCHAIN_ENV"
+    set +a
+    # Tell .ci/scripts/lib/toolchain.sh the pins are already in the environment.
+    # Without this it re-sources them AFTER the readonly re-exports below, and
+    # every re-exported key errors with "readonly variable".
+    REDIACC_TOOLCHAIN_LOADED=1
+else
+    echo "constants.sh: gate toolchain pins missing: $_REDIACC_TOOLCHAIN_ENV" >&2
+    return 1 2>/dev/null || exit 1
+fi
+unset _REDIACC_TOOLCHAIN_ENV
+
+# =============================================================================
 # VERSION REQUIREMENTS
 # =============================================================================
 readonly NODE_VERSION_REQUIRED="22"
@@ -160,9 +187,43 @@ readonly NFPM_SHA256_LINUX_X86_64="940f0c3ba8e2c9cc5669026a1c0c20453403b9c32ea4c
 # Verified against
 # https://github.com/rhysd/actionlint/releases/download/v1.7.12/actionlint_1.7.12_checksums.txt
 # Update the version and BOTH checksums together.
-readonly ACTIONLINT_VERSION="1.7.12"
+# ACTIONLINT_VERSION now comes from .devcontainer/toolchain.env (sourced above)
+# so the image build can read the same number. The checksums stay here: the
+# Dockerfile has no use for them, and splitting by WHO READS IT beats splitting
+# by what it is.
+readonly ACTIONLINT_VERSION="${ACTIONLINT_VERSION:?ACTIONLINT_VERSION missing from toolchain.env}"
 readonly ACTIONLINT_SHA256_LINUX_AMD64="8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8"
 readonly ACTIONLINT_SHA256_LINUX_ARM64="325e971b6ba9bfa504672e29be93c24981eeb1c07576d730e9f7c8805afff0c6"
+
+# The shellcheck project ships a prebuilt Haskell binary with NO published
+# checksums file, so
+# these were recorded by downloading the pinned release and hashing it here on
+# 2026-08-25. That is trust-on-first-use, and weaker than actionlint's published
+# list above -- said plainly rather than dressed up. It is still far stronger
+# than what it replaces, which was "whatever version happened to be on PATH".
+#
+# (Note the wording above: a comment whose FIRST word is the name of a linter is
+# parsed by that linter as a directive, and an earlier draft of this very block
+# failed the shellcheck gate with SC1073.)
+#
+# shfmt deliberately has NO checksum here: it is acquired with
+# `go install mvdan.cc/sh/v3/cmd/shfmt@v$SHFMT_VERSION`, which Go verifies
+# against its own checksum database -- a better guarantee than a hash we wrote
+# down ourselves.
+readonly SHELLCHECK_SHA256_LINUX_AARCH64="324a7e89de8fa2aed0d0c28f3dab59cf84c6d74264022c00c22af665ed1a09bb"
+readonly SHELLCHECK_SHA256_LINUX_X86_64="6c881ab0698e4e6ea235245f22832860544f17ba386442fe7e9d629f8cbedf87"
+
+# shfmt release BINARIES, for the lanes that have no Go.
+#
+# `go install ...@vX` is preferred where Go exists, because Go verifies the
+# module against its checksum database -- a better guarantee than a hash we
+# wrote down. But the CI Static lane is a BARE CHECKOUT (docs/agent-reference/
+# ci-gates.md:108-110 groups lanes by what they need on disk) and has no Go at
+# all, so an acquisition that requires it cannot run there. Recorded by
+# downloading the pinned release on 2026-08-25; mvdan/sh publishes no checksums
+# file, so this is trust-on-first-use, said plainly.
+readonly SHFMT_SHA256_LINUX_AMD64="fb096c5d1ac6beabbdbaa2874d025badb03ee07929f0c9ff67563ce8c75398b1"
+readonly SHFMT_SHA256_LINUX_ARM64="32d92acaa5cd8abb29fc49dac123dc412442d5713967819d8af2c29f1b3857c7"
 
 # wrangler is installed globally in jobs that carry the production Cloudflare
 # API token, so it is pinned rather than floating on @latest.

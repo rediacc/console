@@ -821,3 +821,83 @@ bin=$(_renet_artifact_fp "$renet_bin")"
 export LOCAL_ROOT_DIR
 export LOCAL_CI_DIR
 export LOCAL_LIB_DIR
+
+# -----------------------------------------------------------------------------
+# GATE LANE: host or devbox, decided ONCE per machine
+# -----------------------------------------------------------------------------
+#
+# WHY A LANE AT ALL. Measured 2026-08-25 on one machine: the host had node
+# v24.14.0 / go1.25.13 / shellcheck 0.9.0 while the devbox had node v22.23.2 /
+# go1.26.4, and CI installs node 22. The container already matches CI; the host
+# is the outlier. A gate that runs in the drifted lane can pass locally and fail
+# in CI with no signal that the two ran different code.
+#
+# WHY STICKY, AND NOT DECIDED PER COMMAND. ensure_deps folds REDIACC_NPM_RUNTIME
+# into the node_modules stamp (see its comment above) because the host and the
+# image have different glibc, so a native .node built on one side fails to load
+# on the other. Every host<->devbox flip therefore costs a full reinstall plus
+# native rebuild. An "auto" decision re-taken per invocation would thrash that on
+# every command; the honest granularity is per machine, chosen once at setup.
+gate_lane_decide() {
+    declare -F devbox_state_get >/dev/null 2>&1 || {
+        # shellcheck source=/dev/null
+        . "${CONSOLE_ROOT_DIR:-$PWD}/.ci/lib/devbox.sh" 2>/dev/null || true
+    }
+    # 1. We ARE the container. Without this the re-exec recurses forever.
+    [[ -n "${REDIACC_IN_DEVBOX:-}" ]] && {
+        printf 'host'
+        return 0
+    }
+    # 2. An explicit choice always wins, and is the documented escape hatch.
+    case "${REDIACC_LANE:-}" in
+        host | devbox)
+            printf '%s' "$REDIACC_LANE"
+            return 0
+            ;;
+    esac
+    # 3. The sticky choice recorded by setup.
+    local sticky
+    if sticky="$(devbox_state_get gate_lane 2>/dev/null)" && [[ -n "$sticky" ]]; then
+        printf '%s' "$sticky"
+        return 0
+    fi
+    # 4. Otherwise prefer the lane that matches CI, when one is actually running.
+    if devbox_container_running 2>/dev/null; then
+        printf 'devbox'
+    else
+        printf 'host'
+    fi
+}
+
+# Re-exec the current command inside the devbox when the lane says so.
+#
+# Returns 1 (meaning "carry on here") for every case that is NOT a routed run,
+# so the caller reads as: `gate_lane_reexec "$@" && exit $?`.
+gate_lane_reexec() {
+    # SELF-CONTAINED. devbox.sh is sourced LAZILY by run.sh (only the setup and
+    # devbox arms do it), so a caller that forgot would find every devbox_*
+    # helper undefined -- and an undefined function returns non-zero, which this
+    # code reads as "no container", degrades to the host, and reports a lane it
+    # never used. Load it here rather than trust the call site.
+    if ! declare -F devbox_container_running >/dev/null 2>&1; then
+        # shellcheck source=/dev/null
+        . "${CONSOLE_ROOT_DIR:-$PWD}/.ci/lib/devbox.sh" 2>/dev/null || {
+            log_warn "cannot load devbox.sh; staying on the host"
+            return 1
+        }
+    fi
+    [[ "$(gate_lane_decide)" == devbox ]] || return 1
+    devbox_container_running 2>/dev/null || {
+        log_warn "gate lane is 'devbox' but no container is running; staying on the host"
+        log_info "Start it with ./run.sh devbox up, or pin the lane with REDIACC_LANE=host"
+        return 1
+    }
+    # A broken mount or a wrong exec identity produces a gate that passes having
+    # read nothing, so refuse to route until the container is demonstrably usable.
+    devbox_mount_ok && devbox_identity_ok || {
+        log_error "refusing to route gates into an unusable devbox (see ./run.sh devbox doctor)"
+        return 2
+    }
+    log_info "lane: devbox (matches CI; REDIACC_LANE=host to opt out)"
+    devbox_exec "./run.sh $*"
+}

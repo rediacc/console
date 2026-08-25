@@ -140,16 +140,22 @@ jobs:
           preset: pr-read   # gh api reads in check-pr-description.sh
           repositories: console
 
-      - name: Install shfmt
+      - name: Load gate toolchain pins
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        # `curl | sh` exits 0 on an empty body (webi.sh outage), so the miss
-        # only surfaced later as a bare "shfmt is not installed" the watchdog
-        # cannot classify as network. Verify the binary here so an install
-        # failure is loud in the step that owns it.
+        # ONE definition of every gate tool's version, shared with the host and
+        # the devbox image. --env emits only KEY=value lines: $GITHUB_ENV rejects
+        # anything else, so `cat toolchain.env >> "$GITHUB_ENV"` would fail the
+        # job on this file's comments.
+        #
+        # The shfmt install that used to live here is GONE. It was
+        # `curl -sS https://webi.sh/shfmt | sh` -- unpinned, so CI silently
+        # tracked whatever was latest while the image built its own copy from
+        # `go install ...@latest`. The gate now acquires shfmt at the pin itself
+        # (.ci/scripts/lib/toolchain.sh), which is the only way host, container
+        # and CI can be shown to agree.
         run: |
-          curl -sS https://webi.sh/shfmt | sh
-          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
-          "$HOME/.local/bin/shfmt" --version
+          .ci/scripts/lib/toolchain.sh --env >> "$GITHUB_ENV"
+          .ci/scripts/lib/toolchain.sh --report
 
       - name: Install ruff
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
@@ -158,7 +164,7 @@ jobs:
         # into a bare "ruff is not available" in a later step, which the
         # watchdog cannot classify as a network fault.
         run: |
-          python3 -m pip install --user --disable-pip-version-check "ruff==0.16.1"
+          python3 -m pip install --user --disable-pip-version-check "ruff==${RUFF_VERSION}"
           echo "$HOME/.local/bin" >> "$GITHUB_PATH"
           "$HOME/.local/bin/ruff" --version
 
@@ -239,7 +245,7 @@ jobs:
       - name: Python gate deps
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: |
-          python3 -m pip install --user --disable-pip-version-check "PyYAML==6.0.2"
+          python3 -m pip install --user --disable-pip-version-check "PyYAML==${PYYAML_VERSION}"
           python3 -c "import yaml; print('PyYAML', yaml.__version__)"
           .ci/scripts/quality/check_python_gate_deps.py
 
@@ -257,7 +263,7 @@ jobs:
         # two parsers means the gate means different things in CI and locally,
         # which is the exact bug shape this wave already paid for twice.
         run: |
-          python3 -m pip install --user --disable-pip-version-check "PyYAML==6.0.2"
+          python3 -m pip install --user --disable-pip-version-check "PyYAML==${PYYAML_VERSION}"
           python3 -c "import yaml; print('PyYAML', yaml.__version__)"
           .ci/scripts/quality/check_workflow_submodule_deps.py
 
@@ -520,6 +526,13 @@ jobs:
       # report-only. Installs nothing and needs no docker.
       - name: Setup path idempotency
         run: .ci/scripts/quality/check-setup-idempotency.sh
+
+      # One definition per gate-tool version, and nothing acquired unpinned.
+      # Before this, ruff was pinned twice, PyYAML four times, and shfmt and
+      # shellcheck not at all -- so the same gate reached different verdicts on
+      # a host, in the devbox and here.
+      - name: Toolchain pins
+        run: .ci/scripts/quality/check-toolchain-pins.sh
 
       # The enforcement layer cannot quietly disarm itself: guards are
       # inventoried shrink-only, and each must keep a case proving it blocks
