@@ -110,6 +110,10 @@ fi
 # Pinned. An unpinned linter is a gate whose verdict changes without a commit,
 # and this repo's .npmrc posture (minimum-release-age, no git deps) exists for
 # the same reason. Bump deliberately, and re-run the whole suite when you do.
+# The pin AND the resolver come from one place; see .devcontainer/toolchain.env.
+# shellcheck source=/dev/null
+. "$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)/scripts/lib/toolchain.sh"
+toolchain_load || exit 1
 RUFF_VERSION="0.16.1"
 
 # Resolution order: an explicitly provided binary, then one on PATH, then uvx,
@@ -120,8 +124,13 @@ resolve_ruff() {
         printf '%s' "$RUFF_BIN"
         return 0
     fi
-    if command -v ruff >/dev/null 2>&1; then
-        printf 'ruff'
+    # AT THE PIN, not merely present. This branch used to accept whatever `ruff`
+    # was on PATH, so a host carrying 0.5.0 linted with it while CI used the
+    # pinned version and the two disagreed silently -- the same defect already
+    # fixed for shfmt and shellcheck, left behind here because the class was
+    # swept incompletely.
+    if bin_at_pin="$(toolchain_check ruff 2>/dev/null)"; then
+        printf '%s' "$bin_at_pin"
         return 0
     fi
     if command -v uvx >/dev/null 2>&1; then
