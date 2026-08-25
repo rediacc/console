@@ -126,6 +126,53 @@ else
     printf '     %s\n' "${unpinned[@]}" >&2
 fi
 
+# --- A8. a WORKFLOW must not invoke a pinned tool directly -------------------
+#
+# A2 catches unpinned ACQUISITION (`@latest`). This catches unpinned USE: a
+# workflow step that runs `shfmt -d .` itself, instead of running the gate
+# script that resolves the tool at the pin, would silently lint with whatever
+# the runner image happens to ship. Nothing does that today; this exists so
+# nothing starts.
+#
+# NOTE ON SHAPE, because it is the opposite of what it may look like: a workflow
+# invoking a gate SCRIPT directly (`run: .ci/scripts/security/shfmt.sh`) is the
+# REQUIRED pattern here -- scripts/check-ci-parity.ts enforces three-point wiring
+# in which the workflow step names the script. It is invoking the TOOL that is
+# forbidden, not invoking the script.
+wf_direct=()
+while IFS= read -r hit; do
+    [[ -n "$hit" ]] && wf_direct+=("$hit")
+done < <(
+    grep -nE "^[[:space:]]*(run:|-)?[[:space:]]*[^#]*(^|[;&|[:space:]])(${GATED_TOOLS})[[:space:]]+-" \
+        "$ROOT"/.github/workflows/*.yml 2>/dev/null |
+        grep -vE "\.sh|install|--version|uvx|name:|#" || true
+)
+if [[ ${#wf_direct[@]} -eq 0 ]]; then
+    pass "A8. no workflow invokes a pinned tool directly"
+else
+    fail "A8. a workflow runs a pinned tool itself instead of via its gate script:"
+    printf '     %s\n' "${wf_direct[@]}" >&2
+fi
+
+# A8 controls, by construction. mkdir first: the shared fixture dir is created
+# in the controls section further down, and writing before it exists made these
+# silently write nothing -- the control then reported DID NOT FIRE, which is the
+# correct direction for that mistake to fail in.
+mkdir -p "$TMP/c"
+printf '        run: shfmt -d .\n' >"$TMP/c/wf-direct.yml"
+if grep -qE "(^|[;&|[:space:]])(${GATED_TOOLS})[[:space:]]+-" "$TMP/c/wf-direct.yml"; then
+    pass "A8 control: a workflow running the tool directly is detected"
+else
+    fail "A8 CONTROL DID NOT FIRE: a direct tool invocation went undetected"
+fi
+printf '        run: .ci/scripts/security/shfmt.sh\n' >"$TMP/c/wf-script.yml"
+if grep -E "(^|[;&|[:space:]])(${GATED_TOOLS})[[:space:]]+-" "$TMP/c/wf-script.yml" |
+    grep -qvE "\.sh|install|--version|uvx"; then
+    fail "A8 IS OVER-BROAD: running the gate SCRIPT was flagged, and that is the required pattern"
+else
+    pass "A8 control: invoking the gate script is not flagged"
+fi
+
 # --- A6. a gate that runs a pinned tool acquires it --------------------------
 # The host is where this matters: nobody controls PATH there, so a bare
 # `command -v` as the last word lets a stale binary decide the verdict.
