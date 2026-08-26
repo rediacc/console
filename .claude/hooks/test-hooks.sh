@@ -183,6 +183,67 @@ check 0 pre-bash/block-worktree-add.sh "$(bash_json './run.sh worktree list')" "
 check 0 pre-bash/block-worktree-add.sh "$(bash_json './run.sh worktree remove 0826-1')" "worktree-add: remove is not create"
 check 0 pre-bash/block-worktree-add.sh "$(bash_json './run.sh worktree prune')" "worktree-add: prune is not create"
 check 0 pre-bash/block-worktree-add.sh "$(bash_json 'echo "run.sh worktree create is blocked"')" "worktree-add: prose is not an invocation"
+
+# ---- block-git-empty-commit: the advice must not name a run that does not exist
+#
+# THE FINDING THIS CLOSES. The hook blocked unconditionally while its ONLY advice
+# was "rerun the run" -- unreachable when no run exists, which is exactly what a
+# GitHub Actions outage produces (observed 2026-08-26: three pushes to PR #577,
+# zero runs, Actions in major_outage). The fix added a VERIFIED escape, and the
+# fix itself was hand-tested with a throwaway probe -- i.e. nothing prevented its
+# return. That is the gap these cases close.
+#
+# The escape must not become a bypass, so all four directions are pinned, with
+# `gh` shimmed so none of them touch the network.
+_gc_shim() { # _gc_shim <total_count|FAIL> -- prints a PATH dir holding a fake gh
+    local mode="$1" d
+    d="$(mktemp -d)"
+    if [ "$mode" = "FAIL" ]; then
+        printf '#!/bin/bash\nexit 1\n' >"$d/gh"
+    else
+        printf '#!/bin/bash\necho %s\n' "$mode" >"$d/gh"
+    fi
+    chmod +x "$d/gh"
+    printf '%s' "$d"
+}
+
+_gc_run() { # _gc_run <expected-rc> <shim-mode> <claim> <label> [needle] [not-needle]
+    local exp="$1" mode="$2" claim="$3" label="$4" needle="${5:-}" notneedle="${6:-}"
+    local d out rc bad=""
+    d="$(_gc_shim "$mode")"
+    out="$(printf '%s' "{\"tool_input\":{\"command\":\"git commit --allow-empty -m x\"}}" |
+        PATH="$d:$PATH" CI_RETRIGGER_NO_RUN_FOR="$claim" \
+        bash "$DIR/pre-bash/block-git-empty-commit.sh" 2>&1 >/dev/null)"
+    rc=$?
+    rm -rf "$d"
+    [ "$rc" = "$exp" ] || bad="exit $rc, wanted $exp"
+    if [ -z "$bad" ] && [ -n "$needle" ] && ! printf '%s' "$out" | grep -qF "$needle"; then
+        bad="message lacked: $needle"
+    fi
+    if [ -z "$bad" ] && [ -n "$notneedle" ] && printf '%s' "$out" | grep -qF "$notneedle"; then
+        bad="message WRONGLY advised: $notneedle"
+    fi
+    if [ -z "$bad" ]; then
+        PASS=$((PASS + 1))
+        printf 'ok   [%s] %s\n' "$exp" "$label"
+    else
+        FAIL=$((FAIL + 1))
+        printf 'FAIL [%s] %s (%s)\n' "$exp" "$label" "$bad"
+    fi
+}
+
+_gc_head="$(git -C "$DIR/../.." rev-parse HEAD 2>/dev/null || echo unknown)"
+
+# The property the finding names: with genuinely no run, the hook must NOT tell
+# the session to rerun one.
+_gc_run 0 0 "$_gc_head" "empty-commit: 0 check-runs -> allowed, advises no rerun" "" "gh run rerun"
+# ...and where there IS something to rerun, that advice is correct and must appear.
+_gc_run 2 3 "$_gc_head" "empty-commit: 3 check-runs -> blocked, DOES advise the rerun" "gh run rerun"
+# Anti-vacuity: an unreadable API fails CLOSED. "I could not check" must never be
+# recorded as "there is no run".
+_gc_run 2 FAIL "$_gc_head" "empty-commit: unreadable check-runs API fails closed" "could not be read"
+# The claim is a CHECK, not a flag: a sha that is not HEAD proves nothing.
+_gc_run 2 0 "deadbeefcafe" "empty-commit: a claim that is not HEAD is refused"
 check 2 pre-bash/block-blanket-git-add.sh "$(bash_json 'git add -A')" "blanket-git-add: -A with no pathspec"
 check 2 pre-bash/block-blanket-git-add.sh "$(bash_json 'git add --all')" "blanket-git-add: --all with no pathspec"
 check 2 pre-bash/block-blanket-git-add.sh "$(bash_json 'git add .')" "blanket-git-add: a lone dot"
