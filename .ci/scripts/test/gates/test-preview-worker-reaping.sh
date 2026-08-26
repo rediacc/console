@@ -47,15 +47,28 @@ selects() { [[ "$1" =~ $PR_WORKER_RE ]]; }
 test_selector_matches_only_pr_numbers() {
     log_test "the selector must match pr-<number> and nothing else"
     local must_match=(pr-1 pr-574 pr-99999)
+    # EVERY Worker name this repo actually defines, swept 2026-08-26 from all
+    # wrangler.*.toml plus the one `wrangler delete`. Invented names prove less
+    # than real ones: these are the Workers a bad selector would destroy.
     local must_not=(
-        rediacc-console       # production Worker
-        rediacc-console-bench # bench Worker
-        pr-main               # pr- prefix, not a number
-        pr-574-old            # trailing junk
-        prefix-pr-574         # not anchored at the start
-        PR-574                # case
-        pr-                   # empty number
-        pr-57a                # not all digits
+        account-server            # private/account/wrangler.toml:22
+        rediacc-account-eu        # workers/account/wrangler.eu.toml:1
+        rediacc-account-us        # workers/account/wrangler.us.toml:1
+        rediacc-account-asia      # workers/account/wrangler.asia.toml:1
+        rediacc-account-bench     # workers/account/wrangler.bench.toml:13
+        edge-rediacc-account-eu   # workers/account/wrangler.edge-eu.toml:1
+        edge-rediacc-account-us   # workers/account/wrangler.edge-us.toml:1
+        edge-rediacc-account-asia # workers/account/wrangler.edge-asia.toml:1
+        rediacc-www               # workers/www/wrangler.toml:1
+        edge-rediacc-www          # workers/www/wrangler.edge.toml:1
+        rediacc-proxy-eu          # workers/proxy/wrangler.toml:1
+        mta-sts-policy            # workers/mta-sts/wrangler.toml:1
+        pr-main                   # pr- prefix, not a number
+        pr-574-old                # trailing junk
+        prefix-pr-574             # not anchored at the start
+        PR-574                    # case
+        pr-                       # empty number
+        pr-57a                    # not all digits
     )
     local n
     for n in "${must_match[@]}"; do
