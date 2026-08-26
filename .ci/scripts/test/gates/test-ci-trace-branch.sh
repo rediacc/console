@@ -165,6 +165,66 @@ test_trace_names_its_source() {
     log_pass "output distinguishes source; fallback stays opt-in"
 }
 
+test_every_caller_handles_the_no_pr_state() {
+    log_test "EVERY ci_rollup caller must handle no-pr, not let it propagate"
+    # The other assertions here test the two callers that exist TODAY. This one
+    # is about the caller nobody has written yet: ci_rollup returns a STATE, and
+    # a caller that ignores it hands `info` -- which is a plain string, not the
+    # payload dict -- to code expecting a rollup. That is the defect this whole
+    # gate exists for, one level up.
+    #
+    # Enumerated, never hardcoded, and from BOTH tracked and untracked files: a
+    # caller added but not yet committed is exactly when this slips in.
+    local callers=() f
+    while IFS= read -r f; do
+        [[ -n "$f" && -f "$REPO_ROOT/$f" ]] || continue
+        grep -q "ci_rollup(" "$REPO_ROOT/$f" || continue
+        # A DEFINITION IS NOT A CALLER. Skipping by filename would need a new
+        # hardcoded entry per stub; skipping by shape is self-maintaining and
+        # correct. Caught live: worklist-cases/09-ci-status.sh defines a test
+        # STUB named ci_rollup and calls nothing -- demanding it handle a state
+        # it invents would be the same shape-vs-substance error this branch
+        # already hit twice in its detectors.
+        grep -qE '\bdef ci_rollup|^[[:space:]]*ci_rollup\(\)[[:space:]]*\{' "$REPO_ROOT/$f" && continue
+        # This gate's own fixtures call it deliberately without the state.
+        [[ "$f" == ".ci/scripts/test/gates/test-ci-trace-branch.sh" ]] && continue
+        callers+=("$f")
+    done < <(
+        {
+            git -C "$REPO_ROOT" ls-files '*.py' '*.sh' 2>/dev/null
+            git -C "$REPO_ROOT" ls-files --others --exclude-standard '*.py' '*.sh' 2>/dev/null
+        } | sort -u
+    )
+
+    # Anti-vacuity: a scan that found no callers proves nothing. ci-trace.py is
+    # a caller by construction, so zero means the enumeration broke.
+    [[ ${#callers[@]} -ge 1 ]] ||
+        log_fail "found ZERO ci_rollup callers -- the enumeration broke, not the code"
+
+    local bad=()
+    for f in "${callers[@]}"; do
+        grep -q "no-pr" "$REPO_ROOT/$f" || bad+=("$f")
+    done
+    [[ ${#bad[@]} -eq 0 ]] ||
+        log_fail "these call ci_rollup but never handle its no-pr state: ${bad[*]}"
+    log_pass "all ${#callers[@]} external caller(s) handle no-pr"
+}
+
+test_control_a_blind_caller_is_detected() {
+    log_test "CONTROL: a caller that ignores the state must be caught"
+    # By construction: a fresh file that calls ci_rollup and never mentions
+    # no-pr. Written into the repo tree so the untracked half of the
+    # enumeration above is exercised too, then removed.
+    local victim="$REPO_ROOT/.ci/scripts/quality/_vacuity_probe_caller.py"
+    printf 'state, info = wl_ci.ci_rollup(root, ref)\nprint(info["verdict"])\n' >"$victim"
+    local hit=0
+    grep -q "ci_rollup(" "$victim" && ! grep -q "no-pr" "$victim" && hit=1
+    rm -f "$victim"
+    [[ "$hit" -eq 1 ]] ||
+        log_fail "CONTROL DID NOT FIRE: a blind caller read as compliant"
+    log_pass "control: a caller ignoring the state is detectable"
+}
+
 test_default_signature_is_false() {
     log_test "the signature default itself must remain False"
     grep -q 'def ci_rollup(root, ref, allow_branch=False):' "$WL_CI" ||
@@ -178,7 +238,9 @@ test_missing_ref_is_no_ref_not_silence
 test_control_default_flipped_is_caught
 test_trace_names_its_source
 test_default_signature_is_false
+test_every_caller_handles_the_no_pr_state
+test_control_a_blind_caller_is_detected
 
 echo
-log_pass "ci-trace branch-read gate: 6/6"
+log_pass "ci-trace branch-read gate: 8/8"
 echo "  Blind spot: does not validate the GraphQL selection against the live schema."

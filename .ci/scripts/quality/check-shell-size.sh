@@ -55,7 +55,17 @@ trap 'rm -rf "$TMP"' EXIT
 # (too big AND no directive), nothing otherwise.
 over_limit() {
     local f="$1" n
-    n="$(wc -l <"$f" 2>/dev/null || echo 0)"
+    # A FILE THE GATE CANNOT READ MUST NOT READ AS COMPLIANT. This was
+    # `|| echo 0`, which gave an unreadable file the same value as an empty one
+    # -- so a permission error or a broken symlink passed the size check
+    # silently. That is the exact vacuity this gate exists to prevent, sitting
+    # inside the gate itself. Caught by check-swallowed-failures.
+    n="$(wc -l <"$f" 2>/dev/null)" || n=""
+    n="${n//[[:space:]]/}"
+    if [[ -z "$n" ]]; then
+        echo "UNREADABLE"
+        return 0
+    fi
     [[ "$n" -le "$MAX_LINES" ]] && return 0
     # The escape must be a real directive line, not prose mentioning it: this
     # gate's own header names the flag several times.
@@ -88,7 +98,11 @@ for rel in "${FILES[@]}"; do
     [[ -n "$rel" && -f "$ROOT/$rel" ]] || continue
     scanned=$((scanned + 1))
     n="$(over_limit "$ROOT/$rel")"
-    [[ -n "$n" ]] && offenders+=("$rel ($n lines)")
+    if [[ "$n" == "UNREADABLE" ]]; then
+        offenders+=("$rel (could not be read -- reporting rather than assuming compliant)")
+    elif [[ -n "$n" ]]; then
+        offenders+=("$rel ($n lines)")
+    fi
 done
 
 # --- S1. no shell file is both oversized and asking for the expensive pass ----
