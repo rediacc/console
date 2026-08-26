@@ -4663,3 +4663,105 @@ the old name.
 - **`gh run rerun --failed` refuses while the RUN object is still winding down**,
   minutes after the head rollup went terminal ("cannot be rerun; its workflow
   file may be broken", then HTTP 403). The message names the wrong cause.
+
+## Six gates in one wave, and the six rounds they cost (2026-08-26, PR #576)
+
+Branch `0826-1`. This section is the babysit record: what CI actually rejected,
+and why five of six reds were in the GATES rather than in what they guard.
+
+### The shape nobody predicts: new gates fail on each other
+
+Six rounds, six reds, **one real failure per run** (the serial gate chain). Every
+red was in code this branch added. Five of six were in the gates themselves.
+
+| round | red | verdict |
+|---|---|---|
+| 1 | `Toolchain pins` A6 flagged `check-shell-size.sh` | detector FALSE POSITIVE |
+| 1 | `External dependency freshness` | real, unrelated to the branch |
+| 2 | `check-control-vacuity` flagged two new gates | detector FALSE POSITIVE |
+| 3 | `check:ci-silent-failures` on `test-preview-worker-reaping.sh` | REAL |
+| 4 | `check-commands.sh`: `seq`/`mapfile` | REAL |
+| 5 | ruff format on `wl_ci.py` | REAL |
+| 6 | 5 new em dashes in `.claude/commands/ask.md` | REAL |
+
+### Two detector false positives of one family
+
+**A gate that greps for a dangerous construct matches text that merely LOOKS like
+it.** A6 read an `echo` line printing `# shellcheck extended-analysis=false` as an
+INVOCATION of shellcheck. `check-control-vacuity` read `sed 's/^/   /'`, which
+indents a message for display, as a control built by pattern substitution.
+
+Both were narrowed rather than suppressed, and the operator upheld both when
+asked:
+
+- **A6** now also drops lines whose FIRST word is `echo`/`printf` AND that carry
+  no command separator, so `echo x; shfmt y` is still caught.
+- **`builds_by_substitution`** no longer counts `s/^/.../`. A prefix substitution
+  has an EMPTY needle anchored at line start: it ALWAYS matches, so it can never
+  silently yield an identical copy, which is the only failure that gate exists to
+  catch. Verified three ways -- real needle substitutions and `sed -i` with the
+  expression in a variable are both still detected.
+
+The rejected fixes are worth recording because each would have gone green while
+making a gate say something false: exempting the flagged file, rewording the echo
+strings to dodge the regex, or cargo-culting a proof-of-plant assertion into a
+display pipe. Full write-up in `docs/agent-reference/TRAPS.md`.
+
+**Operator ruling:** two instances is a pattern, not yet a class worth its own
+meta-gate. Revisit if a third appears. (Round 4 was NOT a third: the comment in
+`check-control-vacuity.sh` mentioning `seq 1 N` was correctly not flagged,
+because that gate strips comments.)
+
+### Three real defects, two of the same deadly shape
+
+**A gate that ABORTS reports nothing, which is worse than a red.**
+
+- **`pipefail` made assertions unreachable.** `test-preview-worker-reaping.sh`
+  had five `grep -n ... | head -1 | cut -d: -f1` pipelines. Under
+  `set -eo pipefail`, grep exits 1 on no match and the script dies -- so the very
+  next line, `[[ -n "$guard_line" ]] || log_fail "the fail-closed guard is
+  GONE"`, could NEVER run. On exactly the input it existed to catch, the gate
+  died before reaching it. Fixed with `|| true`; proven by constructing a subject
+  that has the function but lacks the guard and watching it now REPORT.
+- **`seq` and `mapfile` are absent on ubuntu-slim.** `check-shell-size.sh` used
+  both, so it would have died on the minimal image rather than reporting. The
+  gate that caught it named the fix itself.
+
+### `Quality / Static` names the wrong step, three rounds running
+
+The trace reported `Python lint + format (ruff)` for rounds 3, 4 and 5, while the
+actual failures were `check:ci-silent-failures`, `check-commands.sh`, and only
+then ruff. Grepping the log for the named step returns `RUFF_VERSION` banner
+noise. **Read the complete log around the exit code; the step name is not
+evidence in either direction.**
+
+### The em-dash gate is precise about the wrong fixes
+
+Round 6 flagged `.claude/commands/ask.md` and stated both non-fixes up front: do
+not swap for a spaced hyphen, and do not add the file to
+`scripts/data/em-dash-surfaces-baseline.json`, which records the 2026-08-18
+backlog rather than new breakage. Only `.claude/commands/` is a policed shipping
+surface among this branch's paths, which is why `docs/ci-overhaul/06-progress.md`
+(48 em dashes) was not flagged. Do not "fix" the unpoliced ones.
+
+### `/ask`, and why it has an anti-over-asking rule
+
+`.claude/commands/ask.md` exists so the operator never has to compose a prompt to
+be consulted. It gathers the three places a pending decision hides -- `[?]`
+worklist deferrals with their DEFAULT/WHY/HOW, DECISIONS logged for post-hoc
+veto, and choices a session made silently -- and asks with the recommended option
+first and the REJECTED ALTERNATIVE on the ballot, because a veto is meaningless
+when the thing being vetoed is not choosable.
+
+Two rules keep it from becoming the problem it solves: it asks only where the
+answer changes what happens next AND the call is not the session's (a question
+answerable by running something is a task, not a decision), and "nothing survives
+the filter" is an explicit, valid, common outcome. This repo already accumulated
+thirty deferrals from over-asking.
+
+### The lane got its first real use
+
+Round 5 needed ruff at the pin. The host has neither ruff nor uvx, so the fix ran
+through `devbox_exec` + `uvx ruff@0.16.1` -- the first genuine use of the gate
+lane repaired in `9064fb7c`, and an independent confirmation that the
+`sudo docker` quoting fix works.
