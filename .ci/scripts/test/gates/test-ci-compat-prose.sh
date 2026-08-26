@@ -78,18 +78,76 @@ test_a_banned_command_in_code_is_caught() {
 
 test_the_same_command_in_a_comment_is_ignored() {
     log_test "the same command in a COMMENT must NOT fail"
-    if ! run_against "$(printf '#!/bin/bash\n# we deliberately avoid %s 1 10 here; use a for loop\necho ok\n' "$BANNED_SEQ")"; then
+    # THE PROBE MUST REACH THE SKIP BRANCH, and the obvious probe does not.
+    #
+    # check-commands.sh's outer scan requires the banned word to be immediately
+    # preceded by line-start whitespace, `|`, `&`, `;`, `$(` or `if `. In plain
+    # prose ("we deliberately avoid seq 1 10 here") the word follows an ordinary
+    # letter, so the outer regex never matches and the comment-skip branch three
+    # lines below is never consulted. A probe like that passes identically with
+    # the skip branch DELETED -- measured: exit 0 both ways.
+    #
+    # Putting the word directly after a trigger character makes the outer scan
+    # match, so the only thing that can suppress it is the skip branch itself:
+    # exit 0 with the branch, exit 1 without. Caught in review of b15995c1; the
+    # first version of this test was vacuous in exactly the way it was written
+    # to prevent.
+    if ! run_against "$(printf '#!/bin/bash\n# equivalent to: cmd | %s 1 10\necho ok\n' "$BANNED_SEQ")"; then
         log_fail "a banned command inside a COMMENT was flagged -- the gate now reads prose as code"
     fi
-    log_pass "prose naming a banned command is not an invocation"
+    log_pass "a comment whose banned word FOLLOWS a trigger char is not an invocation"
+}
+
+test_control_the_probe_actually_reaches_the_skip_branch() {
+    log_test "CONTROL: delete the skip branch and the probe MUST flip"
+    # The definitive control, and the one whose absence let the vacuous version
+    # ship: copy the real gate, delete ONLY the comment-skip branch, and require
+    # the same probe to change its verdict. If it does not, the probe is not
+    # exercising the branch and every assertion above is decoration.
+    local root probe rc_intact rc_cut
+    root="$(mktemp -d -p "$WORK")"
+    mkdir -p "$root/.ci/scripts/security"
+    cp "$SUT" "$root/.ci/scripts/security/check-commands.sh"
+    probe="$root/.ci/probe.sh"
+    printf '#!/bin/bash\n# equivalent to: cmd | %s 1 10\necho ok\n' "$BANNED_SEQ" >"$probe"
+
+    (cd "$root" && ./.ci/scripts/security/check-commands.sh >/dev/null 2>&1) && rc_intact=0 || rc_intact=$?
+
+    python3 - "$root/.ci/scripts/security/check-commands.sh" <<'CUTPY' || log_fail "could not plant the control: the skip branch was not found"
+import pathlib
+import sys
+
+p = pathlib.Path(sys.argv[1])
+s = p.read_text()
+needle = "# Skip if it's in a comment"
+i = s.find(needle)
+if i < 0:
+    sys.exit(1)
+end = s.index("fi\n", i) + 3
+p.write_text(s[:i] + s[end:])
+CUTPY
+
+    (cd "$root" && ./.ci/scripts/security/check-commands.sh >/dev/null 2>&1) && rc_cut=0 || rc_cut=$?
+
+    [[ "$rc_intact" -eq 0 ]] ||
+        log_fail "the probe already fails WITH the skip branch present (rc=$rc_intact)"
+    [[ "$rc_cut" -ne 0 ]] ||
+        log_fail "CONTROL DID NOT FIRE: deleting the comment-skip branch changed nothing, so the probe never reaches it"
+    log_pass "probe reaches the branch: intact=$rc_intact, branch-deleted=$rc_cut"
 }
 
 test_this_repos_own_explanations_survive() {
     log_test "the real tree's own comments about banned commands stay clean"
-    # Not a synthetic probe: this repo genuinely documents `seq` and `mapfile`
-    # in comments explaining why they are avoided. If the skip regressed, those
-    # explanations would start failing CI, and the tempting fix would be to
-    # delete them.
+    # WHAT THIS DOES AND DOES NOT PROVE, corrected in review of b15995c1.
+    #
+    # It guards against OVER-firing: the live tree must stay green while it
+    # genuinely documents banned commands in prose. That is worth holding.
+    #
+    # It does NOT exercise the comment-skip branch. None of those files mentions
+    # a banned command directly after `|`/`&`/`;`/`$(`, so the outer scan never
+    # matches their comment lines and the skip branch is never consulted for
+    # them. The control above is the only assertion here that reaches it. Do not
+    # read this one as coverage of the skip.
     local documented pattern
     pattern="^[[:space:]]*#.*\\b(${BANNED_SEQ}|${BANNED_MAPFILE})\\b"
     documented="$(grep -rlE "$pattern" \
@@ -98,14 +156,17 @@ test_this_repos_own_explanations_survive() {
         log_fail "anti-vacuity: found no file documenting a banned command, so this proves nothing"
     "$SUT" >/dev/null 2>&1 ||
         log_fail "the live tree fails the gate; its own explanations are being read as code"
-    log_pass "$documented file(s) document a banned command in prose, and the tree stays green"
+    log_pass "$documented file(s) document a banned command in prose; tree green (over-fire guard, NOT skip-branch coverage)"
 }
 
 test_a_banned_command_in_code_is_caught
 test_the_same_command_in_a_comment_is_ignored
+test_control_the_probe_actually_reaches_the_skip_branch
 test_this_repos_own_explanations_survive
 
 echo
-log_pass "ci-compat prose control: 3/3"
+log_pass "ci-compat prose control: 4/4"
 echo "  Blind spot: covers the comment/code distinction for representative"
-echo "  commands only; it does not enumerate every DISALLOWED entry."
+echo "  commands only; it does not enumerate every DISALLOWED entry. Only the"
+echo "  branch-deletion control reaches the comment-skip branch; the live-tree"
+echo "  assertion guards against over-firing and proves nothing about the skip."
