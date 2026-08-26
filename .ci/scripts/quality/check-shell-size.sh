@@ -60,8 +60,15 @@ over_limit() {
     # -- so a permission error or a broken symlink passed the size check
     # silently. That is the exact vacuity this gate exists to prevent, sitting
     # inside the gate itself. Caught by check-swallowed-failures.
-    n="$(wc -l <"$f" 2>/dev/null)" || n=""
-    n="${n//[[:space:]]/}"
+    # `read` rather than `${n//[[:space:]]/}`: it takes the first field, which
+    # strips any padding BSD wc adds, and it keeps this file free of bash
+    # pattern substitution. check-control-vacuity counts ANY `${VAR//x/y}` in a
+    # gate as control-building, so a substitution used for data cleaning reads
+    # as a control that never proves its plant landed. Avoiding the construct is
+    # smaller than teaching that detector to tell the two apart, which is not
+    # statically tractable.
+    n=""
+    read -r n < <(wc -l <"$f" 2>/dev/null) || true
     if [[ -z "$n" ]]; then
         echo "UNREADABLE"
         return 0

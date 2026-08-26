@@ -63,7 +63,14 @@ builds_by_substitution() {
     # and check-shell-size.sh) demanded a proof-of-plant for a plant that does
     # not exist -- the same false-positive family as A6 reading an echoed string
     # as an invocation.
-    grep -vE "sed [^&]*[[:punct:]]s[/@|#]\^[/@|#]" "$1" |
+    # COMMENTS ARE STRIPPED FIRST, the same rule check-toolchain-pins.sh's A6
+    # already applies: judge the code, not the words describing it. Measured
+    # 2026-08-26 -- this gate flagged check-shell-size.sh for a `${n//...}` that
+    # existed ONLY inside a comment explaining why that construct was avoided
+    # here. A gate that reads its own documentation as the thing it forbids
+    # cannot be satisfied except by deleting the explanation.
+    grep -vE '^[[:space:]]*#' "$1" |
+        grep -vE "sed [^&]*[[:punct:]]s[/@|#]\^[/@|#]" |
         grep -qE '\$\{[A-Za-z_][A-Za-z0-9_]*//|sed [^&]*[[:punct:]]s[/@|#]|sed -i'
 }
 
