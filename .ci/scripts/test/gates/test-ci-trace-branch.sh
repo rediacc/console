@@ -213,16 +213,31 @@ test_every_caller_handles_the_no_pr_state() {
 test_control_a_blind_caller_is_detected() {
     log_test "CONTROL: a caller that ignores the state must be caught"
     # By construction: a fresh file that calls ci_rollup and never mentions
-    # no-pr. Written into the repo tree so the untracked half of the
-    # enumeration above is exercised too, then removed.
-    local victim="$REPO_ROOT/.ci/scripts/quality/_vacuity_probe_caller.py"
+    # no-pr.
+    #
+    # WRITTEN TO $WORK, NOT THE REAL TREE. The first version put it under
+    # .ci/scripts/quality/ so the untracked half of the enumeration would be
+    # exercised for real; check-pool-writer-safety correctly rejected that. A
+    # test that writes into the tree while run-all.sh schedules it in the
+    # PARALLEL pool corrupts a concurrent reader, and it does not fail cleanly:
+    # it surfaces as an unrelated gate going red in a file that parses fine on
+    # the serial re-run. Registering it in WRITER_TESTS would also have worked,
+    # but the write buys nothing here -- what this control proves is the
+    # PREDICATE, and the untracked path is asserted separately below.
+    local victim="$WORK/_probe_caller.py"
     printf 'state, info = wl_ci.ci_rollup(root, ref)\nprint(info["verdict"])\n' >"$victim"
     local hit=0
     grep -q "ci_rollup(" "$victim" && ! grep -q "no-pr" "$victim" && hit=1
     rm -f "$victim"
     [[ "$hit" -eq 1 ]] ||
         log_fail "CONTROL DID NOT FIRE: a blind caller read as compliant"
-    log_pass "control: a caller ignoring the state is detectable"
+
+    # The untracked half of the enumeration, asserted at the source rather than
+    # by writing into the tree. Stated as a limitation, not hidden: this proves
+    # the enumeration ASKS for untracked files, not that it received any.
+    grep -q 'ls-files --others --exclude-standard' "$0" ||
+        log_fail "the caller enumeration no longer covers UNTRACKED files, which is when a new caller slips in"
+    log_pass "control: a blind caller is detectable; untracked coverage asserted at source"
 }
 
 test_default_signature_is_false() {
