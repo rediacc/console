@@ -721,6 +721,33 @@ EOF")" "ci-polling: prose showing the sanctioned until-loop is NOT blocked"
 # a trap rather than a trade-off: the same content passed by PATH is fine.
 check 0 pre-bash/block-ci-polling.sh "$(bash_json 'python3 /tmp/patch_the_docs.py')" "ci-polling: the documented workaround (file by path) passes"
 check 0 pre-bash/block-long-sleep.sh "$(bash_json 'git commit -F /tmp/commit-msg.txt')" "long-sleep: the documented workaround (message by path) passes"
+
+# The self-matching pgrep waiter. The FIRE case is the literal shape that ran
+# 70 minutes past its condition on 2026-08-26; the first control is the
+# documented remedy, and it must pass BY CONSTRUCTION -- a bracket class does
+# not match its own literal text, which is the same property the hook tests
+# with. The last two keep the scope honest: a one-shot diagnostic and an
+# artifact waiter are not this bug and must not be refused.
+check 2 pre-bash/block-self-matching-pgrep.sh \
+    "$(bash_json "until ! pgrep -f 'some-suite.sh' >/dev/null 2>&1; do sleep 5; done")" \
+    "self-pgrep: a loop whose pattern matches its own command line"
+check 2 pre-bash/block-self-matching-pgrep.sh \
+    "$(bash_json 'until ! pgrep -f "some-suite.sh" >/dev/null; do sleep 2; done')" \
+    "self-pgrep: the double-quoted form too"
+check 0 pre-bash/block-self-matching-pgrep.sh \
+    "$(bash_json "until ! pgrep -f '[s]ome-suite.sh' >/dev/null 2>&1; do sleep 5; done")" \
+    "self-pgrep CONTROL: the bracket-class remedy is allowed"
+check 0 pre-bash/block-self-matching-pgrep.sh \
+    "$(bash_json 'pgrep -cf some-suite.sh')" \
+    "self-pgrep CONTROL: a one-shot count is not a wait loop"
+check 0 pre-bash/block-self-matching-pgrep.sh \
+    "$(bash_json 'until [ -s out.txt ]; do sleep 5; done')" \
+    "self-pgrep CONTROL: an artifact waiter names no process at all"
+# The sanctioned terminal-state CI watch (see .claude/agents/pr-babysitter.md) must pass all three CI-poll guards.
+WATCH='R=123; until [ "$(gh run view $R --repo rediacc/console --json status --jq .status)" = "completed" ]; do sleep 20; done; gh run view $R --repo rediacc/console --json conclusion,jobs'
+check 0 pre-bash/block-ci-polling.sh "$(bash_json "$WATCH")" "ci-polling: terminal-state watch ok"
+check 0 pre-bash/block-ci-reverse-poll.sh "$(bash_json "$WATCH")" "ci-reverse-poll: terminal-state watch ok"
+check 0 pre-bash/block-long-sleep.sh "$(bash_json "$WATCH")" "long-sleep: terminal-state watch ok"
 check 0 pre-bash/block-git-force-push.sh "$(bash_json 'git push')" "force-push: plain push ok"
 # THE CONTROLS THAT MATTER for the widened pattern. A guard that blocks every
 # push is worse than no guard: it gets disabled, and then nothing is guarded.

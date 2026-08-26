@@ -1803,7 +1803,14 @@ EOF
     # Setup ships nothing, and blocking a developer's bootstrap on a credential
     # only an ops owner can rotate strands the one person who cannot fix it.
     # Reported at all because nothing else reports it: a rotated-out SES key sat
-    # in private/account/.env until an unrelated 403 surfaced days later.
+    # in private/account/.env until the stop hook's operator email began 403ing
+    # days later, with the symptom several steps removed from the cause. That
+    # consumer has since been removed; the exposure has not, because run.sh
+    # itself pushes the same quartet into the account worker's secrets.
+    #
+    # It compares IDENTIFIERS against rotation-manifest.json, never secrets, and
+    # never contacts a provider: liveness is `rotation check`'s job and needs
+    # admin credentials. Skips loudly when the private submodule is absent.
     if [[ "${SKIP_ENV_DRIFT_CHECK:-}" != "1" ]] && [[ -f "$ROOT_DIR/private/account/.env" ]]; then
         echo ""
         log_step "Credential drift check"

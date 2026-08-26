@@ -20,7 +20,6 @@ import wl_agents as A
 import wl_checklist
 import wl_ci
 import wl_core as C
-import wl_email
 import wl_judge
 import wl_liveness
 import wl_planfid
@@ -2444,22 +2443,6 @@ def run_stop(event, event_ok, worklist, hook_file):
         all_reqs = {}
         req_to_me, req_bcast, req_answered, req_open_mine = [], [], [], []
 
-    # v13 F2: push operator-only questions OUT over email. Placed beside the
-    # escalation pass because it answers the same question ("who can settle
-    # this?") for the one recipient escalation cannot reach, and BELOW the
-    # poll fast path (which exits the process above), so a 5-minute no-op poll
-    # never pays for it. Wrapped, because a mail transport that can wedge the
-    # gate would be a worse bug than the silence it fixes.
-    email_note = ""
-    try:
-        email_note = wl_email.pump(root, worklist, session_id, fold)
-    except Exception:  # noqa: BLE001 -- the mail channel must never break gating
-        email_note = ""
-    if email_note:
-        # STICKY: pump() has already appended the ledger and SENT, or latched
-        # its unconfigured/failed warning on a marker file.
-        outq_add(worklist, session_id, state_doc, "email", email_note, 1, sticky=True)
-
     lines = fold.lines()
     # v14 gap 4: computed HERE (it used to sit below) so classification can
     # tolerate an expired lease whose worker the OS still shows RUNNING: a
@@ -4281,7 +4264,6 @@ def run_stop(event, event_ok, worklist, hook_file):
         extras = (
             ("\n\n" + ci_report if ci_report else "")
             + ("\n\n" + queue_note if queue_note else "")
-            + ("\n\n" + email_note if email_note else "")
         )
         if os.environ.get("WORKLIST_FOCUS", "on").lower() in ("off", "0", "no"):
             C.emit(
@@ -4847,13 +4829,27 @@ def run_stop(event, event_ok, worklist, hook_file):
                     "never briefed" if seen is None else "last seen %dm ago" % seen,
                 )
             rows.append("  #%s (%s; asked %s) %s" % (r["id"], who, r["at"], r["body"][:120]))
+        # THE RELAY COMMAND FOR AN OPERATOR REQUEST HAS TO LIVE HERE. Every
+        # other recipient is a session, and V_REQUESTS_WAITING prints the
+        # command in THEIR report. "operator" is a human who has no report, so
+        # the only surface they read is this one, in the asker's stop. It used
+        # to be carried by the email digest; that channel is gone, and without
+        # this line `--ask operator` would post a question nobody is ever told
+        # how to answer.
+        relay = ""
+        if any(r["to"] == "operator" for r in req_open_mine):
+            relay = (
+                "\n  The operator answers one of these by running, in any shell:\n"
+                "    .claude/hooks/stop/worklist.py --answer operator <id> '<their words>'"
+            )
         outq_add(
             worklist,
             session_id,
             state_doc,
             "req-open",
             "Requests you posted, still OPEN (they block their recipients, never you):\n"
-            + "\n".join(rows),
+            + "\n".join(rows)
+            + relay,
             2,
         )
     if others:

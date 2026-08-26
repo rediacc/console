@@ -63,7 +63,8 @@ source "$SCRIPT_DIR/../lib/common.sh"
 
 require_cmd gh
 require_cmd jq
-# Declared because the artifact lookup below reads a zip member with it.
+# python3 is declared because the artifact lookup below reads a zip member
+# with it, and because of what an undeclared binary costs:
 # An UNDECLARED binary here is not a missing feature, it is a mute death:
 # under `set -euo pipefail` a command-not-found inside a command
 # substitution exits 127 immediately, before any log_error and before

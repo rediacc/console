@@ -152,7 +152,16 @@ ci_running() { # a check run still in flight
 }
 
 ci_run() { # a Stop event with the CI check armed
-    printf '{"session_id":"%s","cwd":"%s","last_assistant_message":"%s","session_crons":[],"background_tasks":%s}' \
+    # JSON-ENCODED, not printf-interpolated. A CIMSG carrying a newline (a
+    # message with its own `## Remaining` section, which any case whose fixture
+    # opens a real item needs) produced INVALID JSON, and the hook's answer to
+    # that is to report "the Stop event on stdin was not parseable" and block --
+    # so the case measured the parse error rather than the behaviour under test.
+    python3 -c '
+import json, sys
+print(json.dumps({"session_id": sys.argv[1], "cwd": sys.argv[2],
+                  "last_assistant_message": sys.argv[3], "session_crons": [],
+                  "background_tasks": json.loads(sys.argv[4])}))' \
         "$SID" "$BASE/proj" "${CIMSG:-work done}" "${BG:-[]}" |
         PATH="$BASE/binonly:$PATH" TMPDIR="$BASE/tmp" CLAUDE_PROJECT_DIR="$BASE/proj" \
             WORKLIST_TASKS_DIR="$BASE/tasks" WORKLIST_PUBLISH_REF="${CIREF-pub}" \

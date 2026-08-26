@@ -152,11 +152,11 @@ def same_session(a, b):
 
 
 # The identity a `<me>` argument may name without being checked against the
-# environment. "operator" is the HUMAN's reply handle: wl_email mails
-# `worklist.py --answer operator <id> '<words>'` to a person who runs it in
-# whatever shell they have open, and if that shell happens to be a Claude
-# session's Bash the env check would refuse the one command the mail exists to
-# get run. It is a name, not a session prefix, and it was never verifiable.
+# environment. "operator" is the HUMAN's reply handle: the Stop report prints
+# `worklist.py --answer operator <id> '<words>'` for a person to run in whatever
+# shell they have open, and if that shell happens to be a Claude session's Bash
+# the env check would refuse the one command that line exists to get run. It is
+# a name, not a session prefix, and it was never verifiable.
 #
 # THE HOLE THIS LEAVES, ACCEPTED AND UNDECIDABLE. Because "operator" is exempt,
 # a session can run `--answer operator <its-own-request-id>` and answer its own
@@ -182,8 +182,8 @@ def same_session(a, b):
 # exists to prevent.
 #
 # If this is ever worth closing, the honest mechanism is a SHARED SECRET carried
-# in the mail (a per-request token wl_email generates and --answer requires),
-# not an inference. That makes the operator's answer provable instead of
+# alongside the request (a per-request token the report prints and --answer
+# requires), not an inference. That makes the operator's answer provable instead of
 # assumed. Until someone wants that, an operator answer is trusted by
 # construction, and this comment is why.
 UNCHECKED_ME = ("operator",)

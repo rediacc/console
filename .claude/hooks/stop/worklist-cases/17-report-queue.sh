@@ -151,42 +151,48 @@ fi
 unset WORKLIST_REPORT_PER_STOP
 
 echo "== 176. a ONE-SHOT is never dropped, only delayed =="
-# The property that decides the whole design, so the fixture is built to make
-# the one-shot LOSE its first stop. wl_email.pump spends its budget at compute
-# time: it appends the ledger and sends. Nothing can regenerate that note, so
-# a report with no room for it has to keep it.
+# The property that decides the whole design, so the fixture makes the one-shot
+# LOSE its first stop. escalate_requests() spends its budget at COMPUTE time: it
+# appends the escalate event and the [?] exactly once, so nothing can regenerate
+# that note and a report with no room for it has to keep it. The original
+# vehicle was the operator email digest; that channel was removed, and this is
+# the same property on a producer that remains -- the escalation count is the
+# proof, exactly as the mail count used to be.
 #
 # PLANTED DEFECT, run 2026-07-31: outq_drain's per-entry removal was replaced
-# with `q["items"][:] = []` (a plausible "reset the queue after draining"
-# bug). Leg 2 failed with
-#   FAIL: 176: the one-shot was DROPPED, not delayed (mail=1):
-#   {"systemMessage": "WORKLIST GUIDE: ... \n\nRequests you posted, still
-#   OPEN (they block their recipients, never you): ...
-# The digest note was gone for good and a class-2 advisory took its place,
-# while the mail count proves no second send could ever bring it back. 173
-# also went red on that run (its queued count read 0 instead of 3), but only
-# this case says what was LOST rather than that a number was wrong.
+# with `q["items"][:] = []`. Leg 2 failed: the one-shot note was gone for good
+# and a class-2 advisory took its place, while the producer's own count proved
+# no second compute could bring it back.
+escalations() { grep -c '"ev":"escalate"' "${WL%.md}.requests" 2>/dev/null || echo 0; }
+plant_dead_request() {
+    printf '{"ev":"ask","id":"%s","from":"deadbeef","to":"zzzzzzzz","at":"%s","body":"restart the leg? DEFAULT: restart it"}\n' \
+        "$1" "$(date -u -d '-300 minutes' +%Y-%m-%dT%H:%M:%SZ)" >>"${WL%.md}.requests"
+}
 ci_setup
-mail_fixture
+hand_now
+# The escalation opens a real `- [?]`, unlike the digest this case used to ride,
+# so the stop message must carry a Remaining section and STATE.md must exist.
+# Without both, higher-ranked checks outrank the very note under test.
+CIMSG="work done
+
+## Remaining
+- the escalated operator question"
 export WORKLIST_REPORT_PER_STOP=1
-askid deadbeef operator 'which tier map? DEFAULT: ship the draft map' >/dev/null
+plant_dead_request cccc3333
 ci_rollup PENDING "[$(ci_job "E2E / opensuse" FAILURE), $(ci_running "E2E / ubuntu")]"
 out="$(ci_run)"
-if grep -qF "retry allowlist" <<<"$out" && ! grep -qF "OPERATOR EMAILED" <<<"$out" &&
-    [[ "$(mailcount)" == "1" ]]; then
-    pass "176: the class-0 CI note takes stop 1 although the digest has already gone"
+if grep -qF "retry allowlist" <<<"$out" && ! grep -qF "ESCALATED" <<<"$out" &&
+    [[ "$(escalations)" == "1" ]]; then
+    pass "176: the class-0 CI note takes stop 1 although the escalation already happened"
 else
-    fail "176: leg 1 shape wrong (mail=$(mailcount)): ${out:0:400}"
+    fail "176: leg 1 shape wrong (escalations=$(escalations)): ${out:0:400}"
 fi
 ci_rollup SUCCESS "[$(ci_job "Quality / Static" SUCCESS)]"
 out="$(ci_run)"
-# The mail count is the proof: pump() sends nothing on this stop, because its
-# ledger already holds the digest, so the text can only have come from the
-# queue.
-if grep -qF "OPERATOR EMAILED" <<<"$out" && [[ "$(mailcount)" == "1" ]]; then
-    pass "176: the send note arrives on stop 2 from the queue, with no second send"
+if grep -qF "ESCALATED" <<<"$out" && [[ "$(escalations)" == "1" ]]; then
+    pass "176: the escalation note arrives on stop 2 from the queue, with no second escalation"
 else
-    fail "176: the one-shot was DROPPED, not delayed (mail=$(mailcount)): ${out:0:400}"
+    fail "176: the one-shot was DROPPED, not delayed (escalations=$(escalations)): ${out:0:400}"
 fi
 out="$(ci_run)"
 out="$(ci_run)"
@@ -195,20 +201,19 @@ if ! grep -qF "more report section(s) queued" <<<"$out"; then
 else
     fail "176: entries still queued after every section was released: ${out:0:400}"
 fi
-# CONTROL: the same fixture with no CI trouble at all. The digest note lands
-# on stop 1, which is what makes stop 2 above a DELAY rather than the normal
-# path.
+# CONTROL: the same fixture with no CI trouble at all.
 ci_setup
-mail_fixture
-askid deadbeef operator 'which tier map? DEFAULT: ship the draft map' >/dev/null
+hand_now
+plant_dead_request dddd4444
 ci_rollup SUCCESS "[$(ci_job "Quality / Static" SUCCESS)]"
 out="$(ci_run)"
-if grep -qF "OPERATOR EMAILED" <<<"$out"; then
-    pass "176 CONTROL: with nothing outranking it the digest note lands on stop 1"
+if grep -qF "ESCALATED" <<<"$out"; then
+    pass "176 CONTROL: with nothing outranking it the escalation note lands on stop 1"
 else
     fail "176 CONTROL: the note did not land unopposed either: ${out:0:400}"
 fi
-unset WORKLIST_REPORT_PER_STOP
+unset WORKLIST_REPORT_PER_STOP CIMSG
+
 
 echo "== 177. the judge line is a STAMP unless the context is fresh or the reason changed =="
 # Operator, 2026-07-31: the approval reason was reprinted on every stop. It

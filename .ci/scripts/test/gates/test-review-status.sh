@@ -1176,6 +1176,7 @@ run_report_gate() {
     LAST_OUT="$(env PATH="$t/bin:$PATH" GH_FIXTURES="$t/fixtures" GH_TOKEN=fake \
         GITHUB_REPOSITORY=rediacc/console PR_NUMBER=42 NO_COLOR=1 \
         PR_HEAD_REF="${PR_HEAD_REF_OVERRIDE:-rs-fixture-branch-with-no-snapshot}" \
+        WORKLIST_PUBLISH_ROOT="${WORKLIST_PUBLISH_ROOT:-}" \
         "$@" bash "$REPORT_REPLIES_GATE" 2>&1)" || rc=$?
     LAST_RC="$rc"
     return 0
@@ -1197,9 +1198,10 @@ test_report_prefix_is_shared_with_the_pipeline() {
 # takes the flat path, which is exactly what those tests assert. So drive the
 # OTHER side here, with a snapshot the test plants itself.
 #
-# CWD MATTERS: review_epic_ids() builds a RELATIVE path (agent/pr/<branch>.md),
-# so the gate must run from the fixture root, or it would read -- or worse,
-# require -- a snapshot in the real tree.
+# WORKLIST_PUBLISH_ROOT points review_epic_ids() at the fixture, so this reads
+# the planted snapshot and never the real tree's. It is the same override
+# --publish honours, for the same reason: a test must not write into, or read
+# its answer out of, the working tree another session is using.
 test_per_epic_fanout_gates_every_epic_not_just_the_newest() {
     local t="$1"
     setup_comments "$t"
@@ -1218,14 +1220,7 @@ SNAP
     comments_fixture "$t" "$(epic_report_comment 801 aaa111 2026-08-26T10:00:00Z)
 $(human_reply_comment 802 801 2026-08-26T10:05:00Z)
 $(epic_report_comment 803 bbb222 2026-08-26T10:10:00Z)"
-    (
-        cd "$t" || exit 1
-        PR_HEAD_REF_OVERRIDE=epicfix run_report_gate "$t"
-        echo "$LAST_RC" >"$t/rc"
-        printf '%s' "$LAST_OUT" >"$t/out"
-    )
-    LAST_RC="$(cat "$t/rc")"
-    LAST_OUT="$(cat "$t/out")"
+    PR_HEAD_REF_OVERRIDE=epicfix WORKLIST_PUBLISH_ROOT="$t" run_report_gate "$t"
     assert_exit_code 1 "$LAST_RC" "an unanswered epic report must block even when another epic's report was answered"
     assert_contains "$LAST_OUT" "bbb222" "the failure names the epic that is unanswered"
     log_pass "per-epic fan-out gates EVERY epic, not just the newest report"

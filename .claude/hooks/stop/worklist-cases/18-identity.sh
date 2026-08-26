@@ -608,7 +608,8 @@ else
 fi
 
 echo "== 188. 'operator' is exempt, and the exemption is narrow =="
-# wl_email mails the HUMAN `worklist.py --answer operator <id> '<words>'`. They
+# The stop report prints `worklist.py --answer operator <id> '<words>'` for the
+# HUMAN. They
 # run it in whatever shell is open, and if that is a Claude session's Bash the
 # identity check would refuse the one command the mail exists to get run.
 # "operator" is a name, not a session prefix, and was never verifiable.

@@ -568,9 +568,16 @@ review_report_count() {
 # store is in TMPDIR and unreadable from CI. No snapshot means no epics, which
 # the caller treats as the flat, pre-epic review rather than as an error.
 review_epic_ids() {
-    local branch="${1:-}" snap
+    local branch="${1:-}" snap root
     [[ -z "$branch" ]] && return 0
-    snap="agent/pr/${branch//\//-}.md"
+    # ANCHORED TO THE REPO ROOT, like its two siblings sync-epic-block.sh and
+    # epic-context.sh. It used to be a bare relative path, so the answer
+    # depended on the caller's CWD: a gate invoked from a subdirectory saw no
+    # epics and silently took the flat path, which looks exactly like a PR that
+    # declares none. WORKLIST_PUBLISH_ROOT lets a test point this at a fixture
+    # without writing into the real tree, the same override --publish honours.
+    root="${WORKLIST_PUBLISH_ROOT:-$(git rev-parse --show-toplevel 2>/dev/null || echo .)}"
+    snap="$root/agent/pr/${branch//\//-}.md"
     [[ -f "$snap" ]] || return 0
     grep -oE '^`?PR-TASK:[[:space:]]*[0-9a-f]{6,32}`?$' "$snap" \
         | grep -oE '[0-9a-f]{6,32}' || true

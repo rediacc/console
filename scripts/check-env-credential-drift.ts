@@ -12,11 +12,18 @@
  *
  * THE DEFECT THIS CLOSES, found 2026-08-26. The stop hook's operator email had
  * been failing with `SES HTTP 403: The security token included in the request is
- * invalid`. `wl_email.py` reads `private/account/.env` directly, so credentials
- * WERE being sent; AWS was rejecting them. The AWS_SES_ACCESS_KEY_ID in that
- * file appears in no version of any `ses-*` slug in `rotation-manifest.json`,
- * while `./run.sh rotation check` passes every `ses-*` slug. Manifest-vs-AWS was
- * healthy; only `.env` was stale, left behind by a rotation.
+ * invalid`. That consumer (`wl_email.py`) has since been REMOVED, but the stale
+ * credential it exposed is still live and still shipped: the
+ * AWS_SES_ACCESS_KEY_ID in `private/account/.env` appears in no version of any
+ * `ses-*` slug in `rotation-manifest.json`, while `./run.sh rotation check`
+ * passes every `ses-*` slug. Manifest-vs-AWS was healthy; only `.env` was
+ * stale, left behind by a rotation.
+ *
+ * SO THE GATE OUTLIVES ITS FIRST SYMPTOM, deliberately. run.sh pushes this exact
+ * quartet into the Cloudflare account worker's secrets, and
+ * .ci/scripts/deploy/set-account-worker-secrets.sh reads the same file, so a
+ * stale value here still ships to production email. Losing the hook that
+ * happened to notice first is a reason to keep the check, not to drop it.
  *
  * WHY NOTHING CAUGHT IT. There is exactly one rotation preflight in the repo:
  * `rotation check --for=bench` at scripts/dev/deploy-bench.sh:131, which covers

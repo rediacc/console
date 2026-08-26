@@ -7,6 +7,11 @@ Updated: 2026-07-31
 
 Implemented in full; header flipped 2026-08-05 after verification (see git log b389ac305 / b685cd590). Everything below is the plan as written at design time and is superseded by this line.
 
+HISTORICAL NOTE, 2026-08-26: the `wl_email` module cited throughout as the
+one-shot exemplar has been REMOVED (the operator email channel is gone). The
+queue design it motivated is unchanged, and case 176 now proves the same
+one-shot property on request escalation. Do not go looking for `wl_email.py`.
+
 Design complete, nothing implemented. Every line number below was read on
 2026-07-31 against the working tree at `.claude/hooks/stop/`. The suite stands
 at 382 cases green; this plan adds 5 case groups (173 to 177) and migrates 0

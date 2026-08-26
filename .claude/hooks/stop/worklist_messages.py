@@ -1193,27 +1193,6 @@ N_CI_QUEUE = (
 
 N_CI_QUEUE_PR_STALE_LINE = " (Also: the PR body is stale; fold the refresh into that next push.)"
 
-# ---- the operator email channel (wl_email) ---------------------------------
-
-N_EMAIL_SENT = (
-    "OPERATOR EMAILED: %d question(s) went out to %s in one digest. Nothing "
-    "further is owed on them this turn -- keep working, and act on the answer "
-    "when it arrives (a reply comes back as `--answer operator <id> '<words>'` "
-    "and lands in your next stop). No second mail goes out for %d min, and "
-    "each question is mailed only once, so re-sending is not something you "
-    "need to arrange."
-)
-
-N_EMAIL_FAIL = (
-    "OPERATOR EMAIL FAILED for %d question(s): %s\n"
-    "The questions are NOT lost -- nothing was recorded as sent, so the next "
-    "stop after %d min retries the same digest. This is loud rather than "
-    "silent on purpose: a mail channel that fails quietly is worse than "
-    "having none, because the operator believes they were asked. If it keeps "
-    "failing, check the AWS_SES_* credentials and say so out loud in your "
-    "summary."
-)
-
 V_BG_REPORT = (
     "PURE BACKGROUND WAIT check-in. Last delivered: %s. Next one no earlier "
     "than %s (a %d-minute latch, and the two stamps are here so you can check "
@@ -1242,24 +1221,6 @@ V_BG_REPORT_TASKS = (
     "turn. Do not reply with only a status report: the operator ordered this "
     "check to exist because a session once idled for hours beside a fully "
     "planned, unblocked task (2026-08-08)."
-)
-
-N_EMAIL_SKIPPED = (
-    "WARNING: the operator email channel is SKIPPED (mail is optional and its "
-    "last send with the current credentials failed: %s question(s) wait in the "
-    "stop reports instead; last error: %s). Said once per session; fresh "
-    "AWS_SES_* credentials or one successful send re-arm the channel by "
-    "themselves."
-)
-
-N_EMAIL_UNCONFIGURED = (
-    "NOTE: the operator email channel is unconfigured at %s, so %d question(s) "
-    "that would have been mailed are waiting on the operator reading this "
-    "report instead. Report-only, never a block: this is a setup gap, not "
-    "your unfinished work. It is said ONCE per session. Configure it by "
-    "putting AWS_SES_ACCESS_KEY_ID, AWS_SES_SECRET_ACCESS_KEY, AWS_SES_REGION "
-    "and AWS_SES_FROM in that file, or set WORKLIST_EMAIL=off to silence the "
-    "channel deliberately."
 )
 
 R_JUDGE_UNAVAILABLE = (

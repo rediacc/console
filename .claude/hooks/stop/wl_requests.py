@@ -164,12 +164,14 @@ def escalate_requests(worklist, session_id, dry_run=False):
         if r["escalated"] or r["acked"] or request_resolved(r):
             return ""
         if r["to"] == "operator":
-            # THE EMAIL IS THE ESCALATION (v13 F2). An operator request has
-            # already left the machine over SES, so cloning it into a `- [?]`
-            # would report the same question twice: once as a live request and
-            # once as a deferral carrying its text, each with its own DEFAULT
-            # window. Escalation exists for a question with nobody left to
-            # answer it; this one is addressed to the one party who always can.
+            # THE REPORT IS THE ESCALATION. An operator request is already in
+            # front of the one party who can settle it, so cloning it into a
+            # `- [?]` would report the same question twice: once as a live
+            # request and once as a deferral carrying its text, each with its
+            # own DEFAULT window. Escalation exists for a question with nobody
+            # left to answer it; this one is addressed to the one party who
+            # always can. (It used to leave the machine over SES as well; that
+            # channel is gone, and the reasoning never depended on it.)
             return ""
         age = C.stamp_age_min(r["at"])
         if age is None:

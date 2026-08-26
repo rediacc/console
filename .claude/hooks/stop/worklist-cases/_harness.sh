@@ -20,11 +20,6 @@ setup() {
     CRONS='[{"id":"w","schedule":"17 * * * *"},{"id":"p","schedule":"*/5 * * * *"}]'
     JUDGE_MODE=off
     CADENCE=off
-    # The v13 F2 email knobs. Reset here for the same reason every other knob
-    # is: a stray WORKLIST_EMAIL_TRANSPORT leaking out of one case would make a
-    # later case write mail into a stale directory, and a stray WORKLIST_SES_ENV
-    # pointing at a deleted fixture would silently turn the channel off.
-    unset WORKLIST_SES_ENV WORKLIST_EMAIL_TRANSPORT WORKLIST_EMAIL
     # The output-queue knobs, reset for the same reason: a leaked
     # WORKLIST_REPORT_PER_STOP would change how many report sections a later
     # case sees and turn a real regression into a green run. Cases that need a

@@ -70,7 +70,6 @@ MODULE MAP:
     wl_liveness   worker verification against /proc|ps, the 45/90/120 ladder
     wl_ci         publish divergence, PR freshness, submodule pointers, CI
     wl_reggate    v7/v8 regression-gate machinery
-    wl_email      the operator email channel (SES digests of open questions)
     wl_judge      the stop-legitimacy judge and its verdict cache
     wl_checklist  the /handoff checklist gate over agent/programs/<slug>/CHECKLIST.md
     wl_checks     the static battery and the Stop orchestration (run_stop)
@@ -154,7 +153,6 @@ for _name in (
     "wl_ci",
     "wl_reggate",
     "wl_judge",
-    "wl_email",
     "wl_checks",
     "wl_roundlog",
     "worklist_messages",

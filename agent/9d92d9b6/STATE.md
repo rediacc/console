@@ -1,66 +1,66 @@
-## SESSION 9d92d9b6 2026-08-26T15:17:43Z
+## SESSION 9d92d9b6 2026-08-26T15:52:31Z
 
 Branch `0826-1`, console + `private/account` (its own `0826-1` at `3e79b39`).
-NOTHING PUSHED, no PR open. The operator said "we don't stop for a new PR yet",
-so do not push or open one unasked.
+NOTHING PUSHED, no PR open. The operator said "we don't stop for a new PR yet".
 
-## The branch
+## Committed this branch (8)
 
-Six commits, all tagged `PR-TASK: f2757830`, building an epic-structured PR
-pipeline: worklist epics in a `.epics` sidecar (an event kind would be destroyed
-by `compact()`), a snapshot published to `agent/pr/<branch>.md` (the store is in
-TMPDIR, unreadable from CI), a managed PR-body block, `PR-TASK` trailers enforced
-locally and in CI, and a Claude review running once per epic. Plus a bare-machine
-`./run.sh setup`, fail-closed jq guarding for all 27 PreToolUse hooks, and a
-mediated git tool. Newest: `89c1071f0 docs(skills): add the pr-epics skill`.
+All tagged `PR-TASK: f2757830`. The epic-structured PR pipeline (epics in a
+`.epics` sidecar, a snapshot at `agent/pr/<branch>.md`, a managed body block,
+`PR-TASK` trailers, per-epic review), a bare-machine `./run.sh setup`,
+fail-closed jq guarding, a mediated git tool, and the `pr-epics` skill.
+Newest two:
 
-## Uncommitted, and why
+- `d5e28422a` trapguard read a heredoc body as a command; and
+  test-worklist-v5.sh's `--publish` L1_TABLE row carried `env VAR=...` as ARGV,
+  so the verb never dispatched and 3 assertions had been passing VACUOUSLY.
+- `95372c709` review-status.sh died mute on any host without `unzip` (undeclared
+  dep; `set -euo pipefail` makes command-not-found exit 127 inside a command
+  substitution, before any log_error and before post_check). Now python3. The
+  cancelled-run branch and its test were CORRECT all along and are untouched.
+  Running past that halt exposed two more, both fixed and controlled: the
+  coherence assertion could not see `review_report_count`'s now-variable needle,
+  and the reply gate's per-epic fan-out read `agent/pr/<branch>.md` from the
+  CHECKOUT, so it used whatever branch the developer was on and inverted every
+  flat-path test. Suite 60 PASS / 0 FAIL, from 7 and a halt.
 
-`trapguard/dispatch.py`, `test-hooks.sh`, `stop/test-worklist-v5.sh`,
-`docs/ci-overhaul/06-progress.md`.
+## Uncommitted: the wl_email removal
 
-1. **trapguard false positive.** Its `history-rewrite-no-baseline` arm fired on
-   `filter-repo --message-callback` sitting in a HEREDOC BODY. `strip_heredocs()`
-   now runs at the rule's entry, plus two controls. A comment states the scope:
-   an interpreter payload (`python3 -c '...'`) naming the same words still fires,
-   on purpose, since it can reach a rewrite through os.system.
-2. **A VACUOUS test, found by that run.** `test-worklist-v5.sh`'s L1_TABLE row
-   for `--publish` carried `env WORKLIST_PUBLISH_ROOT=$BASE` as ARGV, so
-   `argv[1]` was `env`, the verb never dispatched, and it fell through to the
-   Stop battery. FIRE and CONTROL C had been passing for a command that could not
-   accept anything. The env var moved into `l1run` and into CONTROL B's
-   invocation; CONTROL B needed it too or the repaired row would publish into the
-   REAL repo root. Suite now 795 PASS / 0 FAIL, up from 792/3.
-3. `06-progress.md` gained a Wave 0826 section, closing 11-commit doc drift.
+Operator: "let's remove that feature. It's not in use anymore." It was DORMANT,
+not disabled: `WORKLIST_EMAIL` defaults to "on" and is unset everywhere; only a
+failed-send backoff from the SES 403 was silencing it, so a rotation would have
+re-armed it. Removed: `wl_email.py`, the pump call site in wl_checks.py, the
+`_MODS` entry + MODULE MAP line, four `N_EMAIL_*` constants together with their
+ARITY rows (that gate fails BOTH directions, so they cannot be split across
+commits), three sidecars in wl_store.py's load-bearing list, and the email test
+cases. PRESERVED, because they were never about email: 159c's answer/ack loop
+and self-answer guard, 159d's no-duplicate-escalation rule, 159g's `--ask
+operator` DEFAULT requirement. Case 176 (the one-shot property) lost its vehicle
+and is re-fixtured on request escalation, which has the same
+spends-its-budget-at-compute-time shape.
+
+A dangling `email_note` at wl_checks.py:3986 crashed the Stop hook, which
+BLOCKED rather than allowed. Fixed, then swept the class: 3 more prose sites
+described the channel as live.
+
+Answer to "no need then for account, right?": HOOKS lose the dependency
+entirely (wl_email was the only thing under .claude/hooks reading
+private/account/.env). The REPO does not -- run.sh:1495-1515 and
+.ci/scripts/deploy/set-account-worker-secrets.sh push the same AWS_SES_*
+quartet to the Cloudflare worker, so the stale key still ships. The drift gate
+stays; its prose and run.sh's now say exactly that.
 
 ## Next action
 
-COMMIT those four files in ONE commit with a `PR-TASK: f2757830` trailer and tick
-`#056d65de` and `#6416760f`, as soon as the hook suite reports. It is running as
-background task `b2geyqghq`; expect 441 PASS / 0 FAIL (440/1 with the case-184
-failure, 438 before the two new controls). Any failure is in these four files,
-not pre-existing. If the run is already gone, re-run
-`bash .claude/hooks/test-hooks.sh`.
+READ /tmp/.../tasks/bwhobxbpj.output (worklist suite on the repaired tree; item
+`#61d82e90` is leased to it). Ignore bbju2iy6l: it ran while email_note was
+still dangling. When green, COMMIT the removal with a `PR-TASK: f2757830`
+trailer and tick `#61d82e90`. If the run is gone, re-run
+`bash .claude/hooks/stop/test-worklist-v5.sh`. Then run the full
+`bash .claude/hooks/test-hooks.sh` (was 1235 PASS / 0 FAIL before the removal).
 
-## Closed since the last write
+## Operator answers already acted on
 
-`#54f9fcb0` SES 403, ticked `door:operator-only`. Default executed: credential
-left alone, and the half that was never operator-only is gated.
-`scripts/check-env-credential-drift.ts` (in `7c383d373`, run ADVISORY from
-`run.sh:1734`) compares `private/account/.env` to the rotation manifest. Verified
-live: exit 1, 5 controls PASS, naming TWO stale entries,
-`AWS_SES_ACCESS_KEY_ID` and `SES_AK_ID`, both `AKIAWXE5...`, in no version of
-ses-eu/us/asia. Prefix only, never a secret. Until the operator rotates,
-`wl_email.py:155` keeps 403ing and the operator email stays down.
-
-## Open, operator decision
-
-`[?] #b73b776c` Pre-existing, DIAGNOSED: `test-review-status.sh` 7/8. The harness
-sets `GH_CAPTURE` to a capture.txt that is ABSENT, so `review-status.sh` posts NO
-check-run for a cancelled review run, leaving `Review Complete` (required) never
-updated. Proved pre-existing against the pristine script from HEAD;
-`review-status.sh` unmodified here. Its deadlock guards were written after a real
-unmergeable PR, so do not change its conclusion mapping on a hunch. DEFAULT:
-leave it, diagnosis attached.
-
-NOT verifiable here: the per-epic matrix actually dispatching in GitHub Actions.
+Per-epic review cost: INTENDED, leave it (no divisor, no epic cap). SES 403:
+ticked door:operator-only; the credential is the operator's to rotate and the
+advisory gate reports the drift on every setup.

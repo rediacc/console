@@ -137,46 +137,14 @@ else
     fail "157f: expected exactly 1 runs-endpoint hit, got $HITS"
 fi
 
-echo "== 159. operator email: an operator request is mailed once, with its relay command =="
-# v13 F2. NOTHING here touches the network: WORKLIST_EMAIL_TRANSPORT=file:<dir>
-# makes send() write the SES payload it would have POSTed into <dir>, so the
-# assertions read the exact JSON body that would have gone to AWS.
-mail_fixture() { # a configured channel writing into $BASE/mail (call AFTER setup)
-    mkdir -p "$BASE/mail"
-    cat >"$BASE/ses.env" <<'ENVEOF'
-AWS_SES_ACCESS_KEY_ID=AKIAFIXTURENOTREAL
-AWS_SES_SECRET_ACCESS_KEY=secretfixturenotreal
-AWS_SES_REGION=eu-central-1
-AWS_SES_FROM=notify@example.invalid
-ENVEOF
-    export WORKLIST_SES_ENV="$BASE/ses.env"
-    export WORKLIST_EMAIL_TRANSPORT="file:$BASE/mail"
-}
-mailcount() { ls "$BASE/mail" 2>/dev/null | wc -l; }
-mailbody() { cat "$BASE/mail"/* 2>/dev/null; }
-newest_mail() { ls -t "$BASE/mail" 2>/dev/null | head -n1; }
-age_ledger() { # age_ledger <minutes> -- backdate every stamp in the email ledger
-    # The suite's usual aging trick for a sidecar it cannot wait out. Rewriting
-    # a fixture ledger is fine; the append-only discipline is the PRODUCT's, and
-    # cases 159b/159e/159f exist precisely to prove the windows it keys on.
-    python3 - "${WL%.md}.emails" "$1" <<'PYEOF'
-import datetime, json, sys
-p, mins = sys.argv[1], float(sys.argv[2])
-old = (datetime.datetime.now(datetime.timezone.utc)
-       - datetime.timedelta(minutes=mins)).strftime("%Y-%m-%dT%H:%M:%SZ")
-rows = []
-for line in open(p, encoding="utf-8"):
-    line = line.strip()
-    if line:
-        o = json.loads(line)
-        o["at"] = old
-        rows.append(o)
-open(p, "w", encoding="utf-8").write(
-    "".join(json.dumps(r, separators=(",", ":")) + "\n" for r in rows))
-PYEOF
-}
+echo "== 159. operator requests: asked once, relayed by the stop report =="
+# The operator EMAIL channel that used to carry these was removed: it was
+# dormant rather than disabled (WORKLIST_EMAIL defaulted to "on", and only a
+# failed-send backoff was silencing it, so a credential rotation would have
+# re-armed it without anyone asking). The REQUEST layer it fed is not
+# email-specific and is what actually holds these questions, so everything it
+# proved that was not about SES is still proved here.
 setup
-mail_fixture
 brief_now
 hand_now
 RID=$(askid deadbeef operator 'which tier map? DEFAULT: ship the draft map')
@@ -184,32 +152,26 @@ say "answer
 
 ## Remaining
 - the tier map question, now with the operator"
-run >/dev/null
-BODY="$(mailbody)"
-if [[ "$(mailcount)" == "1" ]] && grep -qF "which tier map?" <<<"$BODY" &&
-    grep -qF "$RID" <<<"$BODY" && grep -qF -- "--answer operator" <<<"$BODY"; then
-    pass "159: one digest carries the question, its request id and the relay command"
+out="$(run)"
+if grep -qF "which tier map?" <<<"$out" && grep -qF "$RID" <<<"$out" &&
+    grep -qF -- "--answer operator <id>" <<<"$out"; then
+    pass "159: the stop report carries the question, its id, and the relay command"
 else
-    fail "159: count=$(mailcount) rid=$RID body=${BODY:0:400}"
+    fail "159: report=${out:0:400}"
 fi
-# CONTROL: same world, cooldown REMOVED, and still nothing goes out. Aging the
-# ledger past the cooldown is what makes this a dedup proof rather than a
-# restatement of the rate limit.
-age_ledger 500
+# CONTROL: the relay line is for the OPERATOR, not decoration on every request.
+RIDS=$(askid deadbeef cafe1234 'restart the ceph leg? DEFAULT: restart it')
 newturn
 say "answer
 
 ## Remaining
-- still waiting on the operator"
-run >/dev/null
-if [[ "$(mailcount)" == "1" ]]; then
-    pass "159 CONTROL: an already-mailed question is never mailed twice (ledger dedup)"
+- the tier map question and a session request"
+out="$(run)"
+if grep -qF "$RIDS" <<<"$out"; then
+    pass "159 CONTROL: an ordinary session request is still reported"
 else
-    fail "159 CONTROL: a second digest went out for the same question ($(mailcount) files)"
+    fail "159 CONTROL: the session request vanished: ${out:0:400}"
 fi
-
-echo "== 159b. COOLDOWN: a new question waits out the window, then goes =="
-age_ledger 0 # re-arm: the last send is "now" again
 RID2=$(askid deadbeef operator 'ship the ceph leg? DEFAULT: hold it for the next wave')
 newturn
 say "answer
@@ -217,24 +179,6 @@ say "answer
 ## Remaining
 - two operator questions outstanding"
 run >/dev/null
-if [[ "$(mailcount)" == "1" ]]; then
-    pass "159b: inside the cooldown a fresh question is delayed, not mailed"
-else
-    fail "159b: the cooldown did not hold ($(mailcount) files)"
-fi
-age_ledger 500
-newturn
-say "answer
-
-## Remaining
-- two operator questions outstanding"
-run >/dev/null
-BODY2="$(cat "$BASE/mail/$(newest_mail)")"
-if [[ "$(mailcount)" == "2" ]] && grep -qF "$RID2" <<<"$BODY2" && ! grep -qF "$RID" <<<"$BODY2"; then
-    pass "159b: past the cooldown the delayed question goes out, alone (nothing lost, nothing repeated)"
-else
-    fail "159b: count=$(mailcount) second digest=${BODY2:0:400}"
-fi
 
 echo "== 159c. ANSWER LOOP: --answer operator reaches the asker, --ack clears it =="
 reqcli --answer operator "$RID" 'use tier map B, the draft undercounts seats' >/dev/null
@@ -269,11 +213,9 @@ else
 fi
 
 echo "== 159d. an operator request does NOT escalate into a duplicate [?] =="
-# Without the exemption every emailed question would ALSO clone itself into a
-# deferral carrying the same text and its own DEFAULT window: asked once,
-# reported twice, defaulted twice.
+# Without the exemption every operator question would ALSO clone itself into a
+# deferral carrying the same text and its own DEFAULT window.
 setup
-mail_fixture
 brief_now
 hand_now
 OLDREQ=$(date -u -d '-300 minutes' +%Y-%m-%dT%H:%M:%SZ)
@@ -305,162 +247,10 @@ else
     fail "159d CONTROL: dead-recipient escalation stopped working"
 fi
 
-echo "== 159e. DEFERRAL DIGEST: aged [?] items fold into one mail, once per generation =="
+echo "== 159g. --ask operator needs a DEFAULT: =="
 setup
-mail_fixture
 brief_now
 hand_now
-OLDD=$(date -u -d '-90 minutes' +%Y-%m-%dT%H:%M:%SZ)
-printf '{"ev":"add","id":"eeee1111","at":"%s","by":"deadbeef","s":"?","o":"deadbeef","t":"flip the billing tier? DEFAULT: keep it WHY: only the operator owns revenue calls HOW: operator picks"}\n' \
-    "$OLDD" >>"${WL%.md}.events.jsonl"
-printf '{"ev":"add","id":"eeee2222","at":"%s","by":"deadbeef","s":"?","o":"deadbeef","t":"drop the asia region? DEFAULT: keep it WHY: only the operator owns the cost tradeoff HOW: operator decides"}\n' \
-    "$OLDD" >>"${WL%.md}.events.jsonl"
-say "answer
-
-## Remaining
-- two deferred decisions waiting on the operator"
-run >/dev/null
-BODY="$(mailbody)"
-if [[ "$(mailcount)" == "1" ]] && grep -qF "eeee1111" <<<"$BODY" && grep -qF "eeee2222" <<<"$BODY" &&
-    grep -qF "flip the billing tier?" <<<"$BODY"; then
-    pass "159e: two aged deferrals fold into ONE digest listing both"
-else
-    fail "159e: count=$(mailcount) body=${BODY:0:400}"
-fi
-age_ledger 500
-newturn
-say "answer
-
-## Remaining
-- two deferred decisions waiting on the operator"
-run >/dev/null
-if [[ "$(mailcount)" == "1" ]]; then
-    pass "159e: an untouched deferral is never re-mailed, cooldown or no cooldown"
-else
-    fail "159e: an untouched deferral was mailed again ($(mailcount) files)"
-fi
-# A re-deferral is a NEW generation, so it re-arms. Planted with an aged stamp
-# because a `--defer` issued now is one minute old and correctly not yet due;
-# the event below is exactly what that CLI writes, 80 minutes ago.
-OLDD2=$(date -u -d '-80 minutes' +%Y-%m-%dT%H:%M:%SZ)
-printf '{"ev":"state","id":"eeee1111","at":"%s","by":"deadbeef","s":"?","note":"re-deferred after the pricing call slipped"}\n' \
-    "$OLDD2" >>"${WL%.md}.events.jsonl"
-newturn
-say "answer
-
-## Remaining
-- the re-deferred billing decision"
-run >/dev/null
-BODY2="$(cat "$BASE/mail/$(newest_mail)")"
-if [[ "$(mailcount)" == "2" ]] && grep -qF "eeee1111" <<<"$BODY2" && ! grep -qF "eeee2222" <<<"$BODY2"; then
-    pass "159e: a re-deferral re-arms that item alone, keyed by its update stamp"
-else
-    fail "159e: re-arm wrong: count=$(mailcount) body=${BODY2:0:400}"
-fi
-
-echo "== 159f. FAILURE: a broken transport is loud, changes no verdict, and retries =="
-setup
-mail_fixture
-export WORKLIST_EMAIL_TRANSPORT="file:$BASE/no-such-mail-dir"
-brief_now
-hand_now
-askid deadbeef operator 'rotate the SES key now? DEFAULT: rotate it next window' >/dev/null
-say "answer
-
-## Remaining
-- the SES rotation question"
-out="$(run)"
-got="$(python3 -c 'import json,sys
-raw=sys.stdin.read().strip()
-print(json.loads(raw).get("decision","allow") if raw else "allow")' <<<"$out" 2>/dev/null)"
-export WORKLIST_EMAIL=off
-newturn
-say "answer
-
-## Remaining
-- the SES rotation question"
-out_off="$(run)"
-got_off="$(python3 -c 'import json,sys
-raw=sys.stdin.read().strip()
-print(json.loads(raw).get("decision","allow") if raw else "allow")' <<<"$out_off" 2>/dev/null)"
-unset WORKLIST_EMAIL
-if grep -qF "OPERATOR EMAIL FAILED" <<<"$out" && [[ "$got" == "$got_off" ]] &&
-    grep -q '"ev":"fail"' "${WL%.md}.emails" && ! grep -q '"ev":"sent"' "${WL%.md}.emails"; then
-    pass "159f: a failed send is loud, records no false 'sent', and leaves the verdict at '$got_off'"
-else
-    fail "159f: got=$got got_off=$got_off out=${out:0:300}"
-fi
-# MAIL IS OPTIONAL (operator, 2026-07-31): after a failure with the current
-# credentials the channel is SKIPPED with one warning, not retried loudly.
-newturn
-say "answer
-
-## Remaining
-- the SES rotation question"
-out="$(run)"
-if grep -qF "email channel is SKIPPED" <<<"$out" && ! grep -qF "OPERATOR EMAIL FAILED" <<<"$out"; then
-    pass "159f: the second stop warns ONCE that the optional channel is skipped"
-else
-    fail "159f: skip warning wrong: ${out:0:300}"
-fi
-newturn
-say "answer
-
-## Remaining
-- the SES rotation question"
-out="$(run)"
-if ! grep -qF "email channel is SKIPPED" <<<"$out" && ! grep -qF "OPERATOR EMAIL FAILED" <<<"$out"; then
-    pass "159f: after the one warning the skipped channel is silent"
-else
-    fail "159f: the skip warning repeated: ${out:0:300}"
-fi
-# FRESH CREDENTIALS RE-ARM the channel by themselves: new key id, transport
-# restored, the same question finally goes out. Nothing was lost.
-age_ledger 60
-cat >"$BASE/ses.env" <<'ENVEOF'
-AWS_SES_ACCESS_KEY_ID=AKIAROTATEDFRESHKEY
-AWS_SES_SECRET_ACCESS_KEY=secretrotatedfresh
-AWS_SES_REGION=eu-central-1
-AWS_SES_FROM=notify@example.invalid
-ENVEOF
-export WORKLIST_EMAIL_TRANSPORT="file:$BASE/mail"
-newturn
-say "answer
-
-## Remaining
-- the SES rotation question"
-run >/dev/null
-if [[ "$(mailcount)" == "1" ]] && grep -qF "rotate the SES key now?" "$(ls -d "$BASE/mail"/*)"; then
-    pass "159f: fresh credentials re-arm the channel and the question is sent, nothing lost"
-else
-    fail "159f: re-arm did not resend ($(mailcount) files)"
-fi
-
-echo "== 159g. UNCONFIGURED: one note, no crash, no block; and --ask operator needs a DEFAULT =="
-setup
-export WORKLIST_SES_ENV="$BASE/there-is-no-env-file"
-export WORKLIST_EMAIL_TRANSPORT="file:$BASE/mail"
-mkdir -p "$BASE/mail"
-brief_now
-hand_now
-askid deadbeef operator 'approve the pricing page? DEFAULT: leave it as drafted' >/dev/null
-say "answer
-
-## Remaining
-- the pricing page question"
-check "an unconfigured channel notes itself and never blocks" allow \
-    "operator email channel is unconfigured"
-newturn
-say "answer
-
-## Remaining
-- the pricing page question"
-out="$(run)"
-if ! grep -qF "operator email channel is unconfigured" <<<"$out" && [[ "$(mailcount)" == "0" ]]; then
-    pass "159g: the unconfigured note is latched to once per session, and nothing was sent"
-else
-    fail "159g: the note repeated or mail escaped: ${out:0:300}"
-fi
 reqcli --ask deadbeef operator 'just tell me what you think' >"$BASE/ask.out" 2>&1
 RC=$?
 if [[ "$RC" -ne 0 ]] && grep -qF "must carry a DEFAULT:" "$BASE/ask.out"; then
@@ -468,7 +258,6 @@ if [[ "$RC" -ne 0 ]] && grep -qF "must carry a DEFAULT:" "$BASE/ask.out"; then
 else
     fail "159g: DEFAULT-less operator ask rc=$RC out=$(head -c 200 "$BASE/ask.out")"
 fi
-unset WORKLIST_SES_ENV WORKLIST_EMAIL_TRANSPORT WORKLIST_EMAIL
 
 echo "== 160. v14 gap 1: displays show basetext + LATEST note, never the whole history =="
 # One live item reached ~20 concatenated notes and every block printed them
