@@ -175,6 +175,59 @@ TRIAGE_SCHEMA = {
 TRIAGE_VERDICTS = ("inline", "plan-subagent", "operator-only")
 
 
+def _explain_no_output(label, env_out, out):
+    """Exit 0, is_error false, and no usable structured_output: say WHY.
+
+    This is the shape a budget-capped schema-constrained call takes when it
+    wanders: the transport worked, so none of the failure branches above fire,
+    and the bare repr of `None` tells the reading session nothing. The envelope
+    still carries the cost, the stop_reason and the turn count.
+    """
+    bits = ["%s produced no usable structured_output: %s" % (label, repr(out)[:200])]
+    if isinstance(env_out, dict):
+        bits.extend(_envelope_bits(env_out))
+    return "; ".join(bits)
+
+
+def _envelope_bits(env_out):
+    """The actionable fields of a `claude -p` result envelope, as report bits.
+
+    EXTRACTED 2026-08-26 because these lived only on the non-zero-exit path,
+    and the failure that actually happened exits ZERO. A budget-capped,
+    schema-constrained call that wanders can return exit 0, is_error false, and
+    `structured_output: null` -- and the gate reported exactly that, "produced
+    no usable structured_output: None", while the same envelope was holding the
+    cost, the stop_reason and the turn count that name the cause. The next
+    session then reads a line whose following sentence offers to DISABLE the
+    gate, with no evidence either way. Measured the same day: a trivial
+    schema-constrained haiku call costs $0.0566 of the $0.25 default, so a long
+    prompt exhausting it is the expected failure, not an exotic one.
+    """
+    bits = []
+    if env_out.get("subtype"):
+        bits.append("subtype=%s" % env_out["subtype"])
+    if env_out.get("api_error_status"):
+        bits.append("api=%s" % env_out["api_error_status"])
+    if env_out.get("stop_reason"):
+        bits.append("stop_reason=%s" % env_out["stop_reason"])
+    turns = env_out.get("num_turns")
+    if isinstance(turns, int):
+        bits.append("turns=%d" % turns)
+    cost = env_out.get("total_cost_usd")
+    if isinstance(cost, (int, float)):
+        bits.append("cost=$%.4f of budget $%s" % (cost, JUDGE_BUDGET_USD))
+        try:
+            if cost >= float(JUDGE_BUDGET_USD) * 0.9:
+                bits.append(
+                    "BUDGET EXHAUSTED (or within 10%% of it) -- raise "
+                    "WORKLIST_JUDGE_BUDGET_USD (currently %s) or shorten the "
+                    "prompt" % JUDGE_BUDGET_USD
+                )
+        except (TypeError, ValueError):
+            pass
+    return bits
+
+
 def _explain_failed_exit(label, proc):
     """Why a `claude -p` child exited non-zero, in a line an operator can act on.
 
@@ -194,23 +247,7 @@ def _explain_failed_exit(label, proc):
     except ValueError:
         env_out = None
     if isinstance(env_out, dict):
-        if env_out.get("subtype"):
-            bits.append("subtype=%s" % env_out["subtype"])
-        if env_out.get("api_error_status"):
-            bits.append("api=%s" % env_out["api_error_status"])
-        if env_out.get("stop_reason"):
-            bits.append("stop_reason=%s" % env_out["stop_reason"])
-        cost = env_out.get("total_cost_usd")
-        if isinstance(cost, (int, float)):
-            bits.append("cost=$%.4f of budget $%s" % (cost, JUDGE_BUDGET_USD))
-            try:
-                if cost >= float(JUDGE_BUDGET_USD):
-                    bits.append(
-                        "BUDGET EXHAUSTED -- raise WORKLIST_JUDGE_BUDGET_USD "
-                        "(currently %s) or shorten the prompt" % JUDGE_BUDGET_USD
-                    )
-            except (TypeError, ValueError):
-                pass
+        bits.extend(_envelope_bits(env_out))
     stderr_tail = (proc.stderr or "").strip()
     if stderr_tail:
         bits.append("stderr=%s" % stderr_tail[-200:])
@@ -279,7 +316,7 @@ def run_triage(finding, context):
         )
     out = env_out.get("structured_output")
     if not isinstance(out, dict) or out.get("verdict") not in TRIAGE_VERDICTS:
-        return None, "triage produced no usable structured_output: %s" % repr(out)[:300]
+        return None, _explain_no_output("triage", env_out, out)
     return out, None
 
 
@@ -371,7 +408,7 @@ def _run_structured(label, prompt, schema, extract):
     out = env_out.get("structured_output")
     payload = extract(out) if isinstance(out, dict) else None
     if payload is None:
-        return None, "%s produced no usable structured_output: %s" % (label, repr(out)[:300])
+        return None, _explain_no_output(label, env_out, out)
     return payload, None
 
 
@@ -466,7 +503,7 @@ def run_admission(message):
         return None, "admission reported is_error (subtype=%s)" % env_out.get("subtype")
     out = env_out.get("structured_output")
     if not isinstance(out, dict) or not isinstance(out.get("admission"), dict):
-        return None, "admission produced no usable structured_output: %s" % repr(out)[:300]
+        return None, _explain_no_output("admission", env_out, out)
     return out["admission"], None
 
 
@@ -600,7 +637,7 @@ def run_judge(
         )
     out = env_out.get("structured_output")
     if not isinstance(out, dict) or out.get("verdict") not in ("stop", "continue"):
-        return None, "judge produced no usable structured_output: %s" % repr(out)[:300]
+        return None, _explain_no_output("judge", env_out, out)
     return sanitize_next_action(out), None
 
 

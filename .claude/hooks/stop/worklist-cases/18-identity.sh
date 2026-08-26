@@ -184,6 +184,46 @@ assert "exited %d: %s" not in code, (
     "2026-08-05 defect, which reports an EMPTY stderr because the CLI writes "
     "its error envelope to stdout"
 )
+
+# THE EXIT-ZERO TWIN, 2026-08-26. Everything above is the non-zero path. The
+# failure that actually stopped a session exits ZERO: transport fine, is_error
+# false, structured_output null. The gate said "produced no usable
+# structured_output: None" and nothing else, while the same envelope held the
+# cost and the turn count -- and the very next sentence of that block offers to
+# DISABLE the gate, so the unhelpful line is the worst place to be uninformative.
+spent = json.dumps({"subtype": "success", "is_error": False,
+                    "stop_reason": "tool_use", "num_turns": 29,
+                    "total_cost_usd": budget})
+e_spent = wl_judge._explain_no_output("judge", json.loads(spent), None)
+assert "BUDGET EXHAUSTED" in e_spent, e_spent
+assert "turns=29" in e_spent, e_spent
+assert "cost=" in e_spent, e_spent
+
+# CONTROL 5: a CHEAP exit-zero failure must not cry budget either. This is the
+# same control as CONTROL 0, on the twin path, and it is what makes the
+# assertion above evidence rather than a slogan.
+cheap = {"subtype": "success", "is_error": False, "stop_reason": "end_turn",
+         "num_turns": 2, "total_cost_usd": budget / 10}
+e_cheap = wl_judge._explain_no_output("judge", cheap, None)
+assert "BUDGET EXHAUSTED" not in e_cheap, e_cheap
+assert "turns=2" in e_cheap, e_cheap
+
+# CONTROL 6: no envelope at all must still name the label and the payload
+# rather than raising, because an unparseable stdout reaches here too.
+e_none = wl_judge._explain_no_output("triage", None, None)
+assert e_none.startswith("triage produced no usable"), e_none
+
+# CONTROL 7 -- THE WIRING, for the same reason CONTROL 4 exists. The helper can
+# be perfect while a call site still formats its own bare message, which is
+# precisely how the exit-zero path stayed uninformative while the exit-non-zero
+# path was fixed. All FOUR unusable-output sites must route through it.
+assert code.count("_explain_no_output(") >= 5, (
+    "every unusable-output call site must route through the helper "
+    "(definition + 4 uses); found %d" % code.count("_explain_no_output(")
+)
+assert "produced no usable structured_output: %s" not in code.replace(
+    'bits = ["%s produced no usable structured_output: %s"', ""
+), "a call site is formatting its own no-output message again"
 JUDGEDIAG
     pass "183: a failed judge child names its own cause (budget, stdout, stderr, label)"
 else
