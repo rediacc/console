@@ -4551,3 +4551,115 @@ before and after.
 - **Docker freshness soak used a REBUILD timestamp**, making all three drains
   spurious. The independent check offered at the time -- the pin's own push date --
   has no bearing on staleness. Baseline restored byte-identical.
+
+## The post-merge wave: reading CI, and the machinery that judges it (2026-08-26, PR #576)
+
+Everything below was found by *using* what the previous wave shipped, on branch
+`0826-1` (renamed from `0825-2`; see the branch-date guard below).
+
+### The sanctioned CI reader could not do what the sanctioned recipe said
+
+`/pr-merge` step 5 instructs a session to watch Console CI on `main` with
+`ci-trace.py --ref main --wait`. It answered `no-verdict: no open PR for ref
+'main'` and watched nothing: `wl_ci.ci_rollup` only ever asked
+`pullRequests(headRefName:)`, and `main` after a merge has no PR.
+
+That mattered because ci-trace is the ONLY sanctioned reader --
+`block-adhoc-sanctioned.sh` refuses hand-rolled `gh` loops, `block-ci-polling.sh`
+refuses `sleep`+`gh run view` -- so the post-merge step had no instrument at all,
+which pushes a session toward skipping verification or evading a guard.
+
+Fixed by falling back to the identical `statusCheckRollup` under
+`ref(qualifiedName:)`: a second SOURCE, not a second reader, so every downstream
+classifier is untouched. `allow_branch` defaults to **False** so the Stop hook's
+meaningful `no-pr` answer cannot silently change meaning; only an explicit
+`--ref` opts in; a missing ref answers `no-ref`, distinct from `no-pr`, because a
+typo must not read as a branch that merely lacks a PR.
+
+**Still not covered, deliberately:** a run on a DELETED branch (a closed PR's
+head). ci-trace keys on a head; there is none. Run-id keying was rejected -- run
+ids are per-attempt, which is the stale-attempt bug ci-trace exists to prevent.
+
+### Three defects the fix exposed
+
+- **`toolchain_pin_for` returned `""` with RETURN CODE 0** when the pins had not
+  loaded, so `pin=$(...) || return 2` never fired and an empty version reached a
+  URL: `.../download/v/shellcheck-v.linux.aarch64.tar.xz` -> curl 404. The 404
+  names GitHub, not the missing pin. `toolchain_check` already guarded this;
+  `toolchain_acquire` did not.
+- **`devbox_exec` died wherever docker needs sudo.** `devbox_docker` answers TWO
+  WORDS (`sudo docker`); `devbox_exec` was the only caller quoting it as one
+  command name. Swept the class: `devbox_shell` was the last site still passing
+  the numeric `-u $(id -u):$(id -g)`.
+- **The Stop hook could not see a gate that was committed in the stop that
+  created it.** `prove_new_gate` used working-tree dirtiness as its ENTIRE
+  freshness test, so a committed gate was filed at `exit=-3` -- never run, never
+  evidence -- and the finding re-fired with NO REACHABLE EXIT while the judge
+  itself answered "no further work needed". `_new_since_head` asks whether the
+  path existed at the marker's last-seen head instead.
+
+### Four new gates, each proven against REAL pre-fix source
+
+| gate | holds |
+|---|---|
+| `check:ci-toolchain-pins` **A9** | a pin must RESOLVE, not merely exist. A1-A8 are source scans and all were green while the defect lived in a RETURN VALUE. |
+| `check:ci-toolchain-pins` **A10** | all three pin readers must still READ the pins. A3 proved the file was PARSEABLE; nothing proved bash/Docker/Actions still consume it. |
+| `check:ci-devbox-exec` | `devbox_docker`'s two-word answer is never quoted as one command; no numeric `-u` into the container. |
+| `check:ci-shell-size` | a shell file must not grow until it kills the linter. Fires on the real 11,955-line file at `accd38ec`. |
+
+Each carries over-broadness controls, not just positive ones, and an
+anti-vacuity floor where the assertion is a scan.
+
+### Housekeeping: two reaping defects, opposite shapes
+
+- **Phase 5b (new): orphaned per-PR preview Workers.** `cleanup-preview.yml`
+  deletes Pages previews AND the `pr-<n>` Worker; Phase 5 backstopped only the
+  first, so a failed cleanup leaked a Worker forever. It **fails closed**,
+  deliberately unlike Phase 4: Phase 4 falls back to keep-N because its worst
+  case is retaining too much, while Phase 5b's worst case is deleting a LIVE
+  preview. **These two must not be "made consistent".**
+- **Phase 10 could never reach the watchdog.** It already iterated every
+  workflow, so the watchdog was nominally covered -- and structurally
+  unreachable: the newest-1,000 scan window spans **18 days** against a 30-day
+  retention, so it deleted ZERO every night while reporting success. Fixed with
+  per-workflow retention keyed by PATH (the watchdog's display name is generated
+  per run), plus a warning when a window cannot reach its own threshold. The
+  page-cap term in that warning is load-bearing: without it every young
+  low-volume workflow warns nightly and the alarm gets filtered out.
+
+### The measured failure landscape, so nobody re-derives it
+
+Three days: 589 success, 230 skipped, 117 cancelled, **64 failure** -- and **63
+of the 64 are the watchdog failing BY DESIGN** (`##[error]PIPELINE CANCELLED`,
+its way of signalling it killed a pipeline). Exactly one genuine failure. The
+117 cancelled are superseded pushes.
+
+This is why "retry all failed runs nightly" is the wrong shape, and why the
+design in `agent/PLAN-nightly-retry-and-watchdog-noise.md` is filters-first.
+Also verified: **a rerun updates a run's conclusion IN PLACE**, so a sweeper
+keyed on `conclusion=failure` self-heals.
+
+### A PR must not be opened from a stale-dated branch
+
+PR #575 was filed on 08-26 from branch `0825-2`. No existing guard looked at the
+branch NAME: `block-nondraft-pr-create.sh` asks "is it a draft",
+`block-second-open-pr.sh` asks "is one already open".
+`block-stale-pr-branch-date.sh` now blocks it and hands back the exact rename,
+picking the next free `N` against local AND remote. It does not rename for you --
+mutating git state mid-command would move the local branch while the remote kept
+the old name.
+
+### Traps this wave paid for
+
+- **SC1073, twice more.** A comment whose FIRST word is the linter's name is
+  parsed as a directive and breaks the whole file. It landed in a commit because
+  an `&&` chain let the commit run after the linter failed.
+- **errexit leaking out of a test function.** `selects X && log_fail` returns
+  X's non-zero status as the function's, tripping `set -e` at the call site: an
+  all-green run exiting 1. Same class as the `run.sh` lane defect.
+- **A filtered background run destroys its own verdict.** `... | grep ... | tail
+  -8` left a suite's result unreadable, and the tempting move is to report the
+  visible PASS lines as the outcome.
+- **`gh run rerun --failed` refuses while the RUN object is still winding down**,
+  minutes after the head rollup went terminal ("cannot be rerun; its workflow
+  file may be broken", then HTTP 403). The message names the wrong cause.
