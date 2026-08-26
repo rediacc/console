@@ -185,7 +185,18 @@ async function readRemoteMachineId(sftp: SFTPClient, remoteRenetPath?: string): 
   return machineId;
 }
 
-export async function fetchSubscriptionLicenseReport(): Promise<SubscriptionLicenseReport | null> {
+/**
+ * Fetch the account license report, propagating the server's own failure.
+ *
+ * The account view of `subscription status` renders nothing BUT this report, so
+ * a swallowed error there is indistinguishable from success: the verb exits 0
+ * having printed nothing, and a real, actionable reason ("Token is bound to a
+ * different IP address" on a token minted on another machine) is lost. Callers
+ * whose output depends on the report use this variant so the reason reaches the
+ * user; `fetchSubscriptionLicenseReport` below keeps the tolerant contract for
+ * the one caller that degrades gracefully instead (`doctor`).
+ */
+export async function fetchSubscriptionLicenseReportOrThrow(): Promise<SubscriptionLicenseReport | null> {
   const tokenState = getSubscriptionTokenState();
   if (tokenState.kind !== 'ready') {
     return null;
@@ -204,6 +215,20 @@ export async function fetchSubscriptionLicenseReport(): Promise<SubscriptionLice
     return report;
   } catch (error) {
     telemetryService.trackError(error, { operation: 'license.fetch_report' });
+    throw error;
+  }
+}
+
+/**
+ * Null-on-error view of the license report, for callers that render a degraded
+ * result rather than an error (`doctor` races this against a timeout and shows
+ * a warn row). Anything whose output IS the report must use the throwing
+ * variant above instead.
+ */
+export async function fetchSubscriptionLicenseReport(): Promise<SubscriptionLicenseReport | null> {
+  try {
+    return await fetchSubscriptionLicenseReportOrThrow();
+  } catch {
     return null;
   }
 }

@@ -1,6 +1,17 @@
 # PLAN: a test advisor, not a longer reggate
 
-Owner: b7baf3ee · 2026-08-24 · status: BUILT
+Status: done
+Owner: b7baf3ee
+Updated: 2026-08-26
+
+Header only, by session 9d92d9b6 on 2026-08-26: this plan carried its state as an
+inline `· status: BUILT`, which no tool reads, so it listed as `[UNKNOWN]` and was
+re-flagged every stop. The design below is UNCHANGED and was not re-litigated. The
+`done` is verified, not assumed -- each artifact this plan claims to have shipped
+was checked to exist and be wired: `.claude/agents/test-advisor.md`,
+`.claude/skills/testing/SKILL.md`, `prove_named_artifact` in
+`.claude/hooks/stop/wl_reggate.py`, `outq_add` in `wl_checks.py`, and
+`check:ci-skill-size` at `package.json:122`.
 
 ## The ask
 

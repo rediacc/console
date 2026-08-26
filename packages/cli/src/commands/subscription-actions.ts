@@ -9,13 +9,13 @@
 
 import { t } from '../i18n/index.js';
 import {
-  fetchSubscriptionLicenseReport,
+  fetchSubscriptionLicenseReportOrThrow,
   type RepoBatchRefreshResult,
+  type RuntimeRepoLicenseStatus,
   readMachineActivationStatus,
   readRuntimeRepoLicenseStatuses,
   refreshRepoLicenseIdentity,
   refreshRepoLicensesBatch,
-  type RuntimeRepoLicenseStatus,
 } from '../services/account/license.js';
 import {
   getSubscriptionScopeMismatch,
@@ -107,16 +107,18 @@ export async function executeSubscriptionStatus(): Promise<void> {
   }
   await assertSubscriptionScopeMatchesConfig(tokenState.token);
 
-  try {
-    const status = await fetchSubscriptionLicenseReport();
-    if (!status) return;
-    outputRemoteStatus(status);
-  } catch {
-    // Remote status is optional
+  // No local-only view exists: outputRemoteStatus IS this verb's entire output,
+  // so a failed report must surface the server's reason, not exit 0 in silence.
+  const status = await fetchSubscriptionLicenseReportOrThrow();
+  if (!status) {
+    throw new ValidationError(t('errors.subscription.notLoggedIn'));
   }
+  outputRemoteStatus(status);
 }
 
-function outputRemoteStatus(status: Awaited<ReturnType<typeof fetchSubscriptionLicenseReport>>) {
+function outputRemoteStatus(
+  status: Awaited<ReturnType<typeof fetchSubscriptionLicenseReportOrThrow>>
+) {
   if (!status) return;
   outputService.info(t('commands.subscription.status.remote'));
   outputSubscriptionScope({
@@ -353,7 +355,7 @@ export async function executeAccountRefresh(): Promise<void> {
 
   const status = await withSpinner(
     t('commands.subscription.refresh.account.refreshing'),
-    () => fetchSubscriptionLicenseReport(),
+    () => fetchSubscriptionLicenseReportOrThrow(),
     t('commands.subscription.refresh.account.refreshed')
   );
   if (!status) {

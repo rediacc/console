@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const {
   mockGetSubscriptionTokenState,
-  mockFetchSubscriptionLicenseReport,
+  mockFetchLicenseReportOrThrow,
   mockReadMachineActivationStatus,
   mockReadRuntimeRepoLicenseStatuses,
   mockRefreshRepoLicensesBatch,
@@ -29,7 +29,7 @@ const {
   mockPromptRegionSelection,
 } = vi.hoisted(() => ({
   mockGetSubscriptionTokenState: vi.fn(),
-  mockFetchSubscriptionLicenseReport: vi.fn(),
+  mockFetchLicenseReportOrThrow: vi.fn(),
   mockReadMachineActivationStatus: vi.fn(),
   mockReadRuntimeRepoLicenseStatuses: vi.fn(),
   mockRefreshRepoLicensesBatch: vi.fn(),
@@ -87,7 +87,7 @@ vi.mock('../../utils/region-prompt.js', () => ({
 }));
 
 vi.mock('../../services/account/license.js', () => ({
-  fetchSubscriptionLicenseReport: mockFetchSubscriptionLicenseReport,
+  fetchSubscriptionLicenseReportOrThrow: mockFetchLicenseReportOrThrow,
   readMachineActivationStatus: mockReadMachineActivationStatus,
   readRuntimeRepoLicenseStatuses: mockReadRuntimeRepoLicenseStatuses,
   refreshRepoLicensesBatch: mockRefreshRepoLicensesBatch,
@@ -208,7 +208,7 @@ describe('subscription command helpers', () => {
   });
 
   it('status prints only account report information and quota warnings', async () => {
-    mockFetchSubscriptionLicenseReport.mockResolvedValue({
+    mockFetchLicenseReportOrThrow.mockResolvedValue({
       subscriptionId: 'sub_1',
       orgName: 'Acme',
       teamName: 'Platform',
@@ -235,12 +235,39 @@ describe('subscription command helpers', () => {
 
     await executeSubscriptionStatus();
 
-    expect(mockFetchSubscriptionLicenseReport).toHaveBeenCalledTimes(1);
+    expect(mockFetchLicenseReportOrThrow).toHaveBeenCalledTimes(1);
     expect(mockOutputInfo).toHaveBeenCalledWith('commands.subscription.status.remote');
     expect(mockOutputInfo).toHaveBeenCalledWith('Organization: Acme');
     expect(mockOutputInfo).toHaveBeenCalledWith('Team: Platform');
     expect(mockOutputWarn).toHaveBeenCalledWith('commands.subscription.status.issuanceUsageHigh80');
     expect(mockReadMachineActivationStatus).not.toHaveBeenCalled();
+  });
+
+  // Regression (2026-08-26): the account view's entire output IS the remote
+  // report, so a swallowed fetch error made `subscription status` exit 0 having
+  // printed nothing at all -- hiding a real, actionable server reason such as
+  // "Token is bound to a different IP address" on a token minted elsewhere.
+  it('status surfaces the account server error instead of exiting silently', async () => {
+    mockFetchLicenseReportOrThrow.mockRejectedValue(
+      new Error('Token is bound to a different IP address')
+    );
+
+    await expect(executeSubscriptionStatus()).rejects.toThrow(
+      'Token is bound to a different IP address'
+    );
+    expect(mockOutputInfo).not.toHaveBeenCalledWith('commands.subscription.status.remote');
+  });
+
+  // Same swallow, same class: refresh reported a generic "could not read"
+  // string and dropped the server's own reason on the floor.
+  it('refresh surfaces the account server error rather than a generic failure', async () => {
+    mockFetchLicenseReportOrThrow.mockRejectedValue(
+      new Error('Token is bound to a different IP address')
+    );
+
+    await expect(executeAccountRefresh()).rejects.toThrow(
+      'Token is bound to a different IP address'
+    );
   });
 
   it('status handles missing token state without fetching report, and prints would-use server', async () => {
@@ -252,7 +279,7 @@ describe('subscription command helpers', () => {
     expect(mockOutputInfo).toHaveBeenCalledWith(
       'commands.subscription.status.serverWouldUse:http://localhost:4800'
     );
-    expect(mockFetchSubscriptionLicenseReport).not.toHaveBeenCalled();
+    expect(mockFetchLicenseReportOrThrow).not.toHaveBeenCalled();
   });
 
   it('status fails hard when token team and current config team differ', async () => {
@@ -264,7 +291,7 @@ describe('subscription command helpers', () => {
     mockGetTeam.mockResolvedValue('Infra');
 
     await expect(executeSubscriptionStatus()).rejects.toThrow('Platform');
-    expect(mockFetchSubscriptionLicenseReport).not.toHaveBeenCalled();
+    expect(mockFetchLicenseReportOrThrow).not.toHaveBeenCalled();
   });
 
   it('status -m renders activation and the repo license table from one renet provisioning', async () => {
@@ -330,7 +357,7 @@ describe('subscription command helpers', () => {
       'commands.subscription.repo.status.entry:repo-machine:machine mismatch:'
     );
     // The account view is a different scope: no -m means no machine report.
-    expect(mockFetchSubscriptionLicenseReport).not.toHaveBeenCalled();
+    expect(mockFetchLicenseReportOrThrow).not.toHaveBeenCalled();
   });
 
   it('status -m shouts about a blocked backup instead of listing it as another row', async () => {
@@ -434,7 +461,7 @@ describe('subscription command helpers', () => {
   });
 
   it('refresh with no flags re-reads account state and never touches a machine', async () => {
-    mockFetchSubscriptionLicenseReport.mockResolvedValue({
+    mockFetchLicenseReportOrThrow.mockResolvedValue({
       subscriptionId: 'sub_1',
       orgName: 'Acme',
       teamName: 'Platform',
@@ -457,14 +484,14 @@ describe('subscription command helpers', () => {
 
     await executeAccountRefresh();
 
-    expect(mockFetchSubscriptionLicenseReport).toHaveBeenCalledTimes(1);
+    expect(mockFetchLicenseReportOrThrow).toHaveBeenCalledTimes(1);
     expect(mockOutputInfo).toHaveBeenCalledWith('commands.subscription.status.remote');
     expect(mockProvisionRenetToRemote).not.toHaveBeenCalled();
     expect(mockRefreshRepoLicensesBatch).not.toHaveBeenCalled();
   });
 
   it('refresh with no flags fails when the account report cannot be read', async () => {
-    mockFetchSubscriptionLicenseReport.mockResolvedValue(null);
+    mockFetchLicenseReportOrThrow.mockResolvedValue(null);
 
     await expect(executeAccountRefresh()).rejects.toThrow(
       'commands.subscription.refresh.account.failed'
