@@ -531,6 +531,9 @@ jobs:
       # Before this, ruff was pinned twice, PyYAML four times, and shfmt and
       # shellcheck not at all -- so the same gate reached different verdicts on
       # a host, in the devbox and here.
+      - name: Shell file size
+        run: .ci/scripts/quality/check-shell-size.sh
+
       - name: Devbox exec invocation
         run: .ci/scripts/quality/check-devbox-exec.sh
 
