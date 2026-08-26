@@ -9,7 +9,7 @@
 # files, which also took the path-scan gate from 51m02s to 7.9s.
 #
 # NOTHING PREVENTS IT COMING BACK. Every content-based linter passed that file:
-# shellcheck's own findings were clean, shfmt was clean, and the size was
+# its own shellcheck findings were clean, shfmt was clean, and the size was
 # invisible to all of them by construction -- a linter cannot report a file it
 # died on. That is the i18n lesson exactly: fixed by hand, ungated.
 #
