@@ -1,74 +1,71 @@
-## SESSION 9d92d9b6 2026-08-26T18:03:47Z
+## SESSION 9d92d9b6 2026-08-26T19:22:00Z
 
-Console branch `0826-3` @ `092f9a0fc` (14 commits, all `PR-TASK: f2757830`),
-submodule `private/account` on its own `0826-3` @ `3e79b39`. Safety copies of
-both, taken before any rebase, are `0826-4` (console `9f3cb9f8c`, account
-`3e79b39`). NOTHING PUSHED; there is no `origin/0826-3`.
+Console branch `0826-3` @ `8b355067e`+ (15 commits, all `PR-TASK: f2757830`),
+submodule `private/account` on its own `0826-3` @ `3e79b39`. NOTHING PUSHED.
+`origin/0826-2` is PR #577 (draft, operator's, 8 commits).
 
-## The rename, and why the name matters
+## Refs, and why there is no 0826-4/5 any more
 
-`0826-1` was WRONG: PR #576 had already merged that name at 11:01 today. The
-convention is `MMDD-N`, MAX+1, and **no suffix**. The first safety copies were
-`0826-1-prerebase`; the operator rejected the suffix and it is not cosmetic --
-`/pr-merge` and `branch-rebase.md:116` find a submodule's coordinated PR by
-matching the console branch name EXACTLY, so a suffixed console branch matches
-nothing and a submodule PR is silently dropped from a merge.
+A backup is not a wave, so it must not consume a wave slot. Two safety branches
+were converted to TAGS and deleted (verified the tags held every commit BEFORE
+forcing `-d`, which git had refused because the redo made them unreachable):
 
-The snapshot is KEYED BY BRANCH NAME (`review_epic_ids`, `check:ci-pr-epic-block`
-both resolve `agent/pr/<branch>.md`), so the rename required republishing to
-`agent/pr/0826-3.md` and deleting the old file. Done in `092f9a0fc`.
+- `prerebase-0826` = `9f3cb9f8c` (13 commits, before the rebase work)
+- `preredo-0826`  = `8b355067e` (15 commits, before the commit redo)
+- `private/account` tag `prerebase-0826` = `3e79b39`
 
-## Uncommitted right now
+Next wave takes **0826-4**. MAX+1 is computed over CONSUMED names
+(`gh pr list --state all --json headRefName`), never `git branch -r`: a merged
+PR's branch is deleted, which is how `0826-1` was taken twice today.
 
-`.claude/hooks/pre-bash/block-nonstandard-branch-name.sh` (new, registered in
-settings.json), 9 controls in `test-hooks.sh`, and corrections to
-`.claude/commands/{pr-babysit,pr-merge,branch-rebase}.md`.
+## The history redo (operator asked for it explicitly)
 
-ROOT CAUSE FIXED, not just the instance: `pr-babysit.md:17` computed the next N
-from `git branch -r`, and a rebase-merge DELETES the head branch, so a merged
-name is invisible there. All three commands now compute from PR heads:
-`gh pr list --state all --limit 100 --json headRefName --jq '.[].headRefName' |
-grep "^$(date +%m%d)-"`. Verified live: returns `0826-1 0826-2`.
+`wl_email.py`'s 570-line deletion had been swept into the review-status commit
+by a bare `git commit` after a staged `git rm`. Both commits were rebuilt so
+each carries only its own diff. **Proof it was lossless: `0826-3^{tree}` ==
+`preredo-0826^{tree}` == `0c3e02e05d`, and both hold 15 commits.** Tree identity
+plus a commit count is the required control for a message rewrite; git is
+content-addressed, so identical messages can silently collapse two commits.
+
+## Landed this session (highlights)
+
+`8b2a6d66b` the alignment wave. Root cause across most defects: prose asserting
+a fact the platform could be ASKED. All five repos report
+`delete_branch_on_merge=true`, `allow_squash_merge=false`.
+- `--git` could not write and said it had; `Plan.run` now executes and halts on
+  first failure. Only `force-push` executes -- a rebase executor is deliberately
+  NOT built (conflict is the normal case, and Plan has no resume or rollback).
+- `check-git-tool-safety.ts` was all denials; it now asserts the executor is
+  REACHED. Making it unreachable turns it red.
+- `wl_git` (24 controls) and `wl_admit` (18) selftests now actually run.
+- `/standing-orders` un-blinded: was 0 plans + STATE.md MISSING for 8 days,
+  now 42 plans / 11 peers / live timestamp.
+- New gate `check:ci-merge-method-prose` (283 registrations, ci-parity agrees).
+
+Hook suite **1283 PASS / 0 FAIL**. Worklist 784/0. review-status 60/0.
 
 ## Next action
 
-Read `/tmp/.../tasks/b0wpupic0.output` (hook suite, 9 new branch-name cases;
-item `#722f3eb1` is leased to it). Expect 1238 PASS / 0 FAIL (1229 + 9). On
-green, COMMIT with a `PR-TASK: f2757830` trailer. If the run is gone, re-run
-`bash .claude/hooks/test-hooks.sh`.
+Build `--git snapshot` + `verify-rebase` (item `#e80415f5`), the last piece of
+the approved plan at `~/.claude/plans/good-now-we-still-expressive-curry.md`.
+It must distinguish a commit legitimately absorbed as patch-identical (use
+`git cherry`) from one a `--skip` ate -- a COUNT cannot, which is why
+branch-rebase.md's count heuristic was removed.
 
-THEN THE REBASE, which the operator has asked for and which is the real
-outstanding work:
-1. `git -C private/account rebase origin/main` on `0826-3` -- ONE commit
-   (`3e79b39` rotation drift) replayed. Submodules always base on their OWN
-   main (`branch-rebase.md:121`); the account repo has no `0826-*` branch and
-   `218776b3` IS its `origin/main` tip.
-2. Console `0826-3` rebase onto `origin/0826-2` (PR #577, draft, 8 commits).
-   Take THEIRS for the `private/renet` and `private/homebrew-tap` gitlinks (I
-   never moved them); use the newly rebased account SHA for the third.
-3. Re-run worklist, hooks and review-status suites: replaying my commits across
-   their gate changes can break mine silently.
-
-GITLINK WARNING: `private/account` DIVERGED. Base `f2ce5a92`; theirs adds
-`4505f95` + `218776b`, mine adds `3e79b39`; neither is an ancestor of the other,
-checked both directions. It cannot be resolved by picking a side.
+THEN the operator's rebase: `private/account` onto its own `origin/main`
+(`218776b3` is that repo's main tip; it has no `0826-*` branch), then console
+`0826-3` onto `origin/0826-2`, taking theirs for the `renet`/`homebrew-tap`
+gitlinks. `private/account` gitlinks are DIVERGED (checked both directions), so
+that one cannot be resolved by picking a side.
 
 ## Open, operator-gated
 
-- `[?] #f6e059ec` CI confirmation that the trapguard heredoc controls run on a
-  real PR. They ARE gated (`test-hooks.sh:495,500` via `gate-test:claude-hooks`,
-  `manifest.ts:3043`) and the CI wrapper ran locally at exit 0, 1229/0. Only a
-  PR closes it. DEFAULT: do not push; report as locally proven.
-- SES: `private/account/.env`'s `AWS_SES_ACCESS_KEY_ID` and `SES_AK_ID` (both
-  `AKIAWXE5...`) are in no `ses-*` slug. Ticked `door:operator-only`; do not
-  reopen.
-- `95372c709` silently carries `wl_email.py`'s 570-line deletion (a bare
-  `git commit` swept in a staged `git rm`). Nothing pushed, so a clean redo is
-  still cheap; the operator has been offered it twice and not answered.
-- `git fetch --all` exits non-zero: the `gitlab` remote asks for a username.
+- `[?] #f6e059ec` CI confirmation of the trapguard heredoc controls on a real
+  PR. Locally proven via the CI wrapper at exit 0. DEFAULT: do not push.
+- SES: `private/account/.env`'s `AWS_SES_ACCESS_KEY_ID` and `SES_AK_ID` are in
+  no `ses-*` slug. Ticked `door:operator-only`; do not reopen.
 
-## Habit to avoid
+## Settled today, do not re-ask
 
-FOUR id-capture slips this session, all from grepping an id out of a list
-instead of taking it from the `--add` output. The last one leased the operator's
-`[?]` by mistake and dropped its DEFAULT timer; it was restored with `--defer`.
+Guard density: KEEP adding hooks, fix false positives as they fire. gitlab
+remote: credential stored, `git fetch --all` exits 0. Commit redo: done.
