@@ -774,7 +774,18 @@ test_candidate_window_is_widened() {
         rm -f "$probe"
         log_fail "CONTROL DID NOT FIRE: an invocation with no --limit read as compliant"
     fi
+
+    # CONTROL: the comment filter must actually EXCLUDE a comment. Without this
+    # it can rot back to dead code unnoticed -- the trailing GREENLIGHT match
+    # hides the rot until someone writes that literal in a comment near --limit,
+    # which is exactly how the first version shipped.
+    printf '%s\n' '    # note: pass --limit to GREENLIGHT here' \
+        '    bounded node "$GREENLIGHT" --limit 60 --budget 90' >"$probe"
+    local kept
+    kept="$(grep -n -- '--limit' "$probe" | grep -vE '^[0-9]+:[[:space:]]*#' | grep -c 'GREENLIGHT' || true)"
     rm -f "$probe"
+    [[ "$kept" -eq 1 ]] ||
+        log_fail "the comment filter is dead: expected 1 code line, kept $kept (a comment slipped through)"
 
     log_pass "candidate window widened to $limit (default 25 would close silently)"
 }
