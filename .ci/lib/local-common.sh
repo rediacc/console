@@ -198,9 +198,19 @@ ensure_deps() {
         return 0
     fi
 
+    log_step "Installing dependencies..."
+    (cd "$LOCAL_ROOT_DIR" && npm install)
+
     # cpu-features (ssh2 optional dep) generates buildcheck.gypi via its npm
     # install script. With ignore-scripts=true that script never runs, so
     # generate the gypi here before install:natives rebuilds cpu-features.
+    #
+    # THIS RUNS AFTER `npm install`, NOT BEFORE, and the order is the bug that
+    # was here: on a fresh clone node_modules/cpu-features does not exist yet
+    # when ensure_deps starts, so the pre-install placement generated nothing,
+    # and install:natives was never called at all -- the stamp below was then
+    # written anyway, so every later run reported "up-to-date" over a tree whose
+    # natives had never been compiled. Found 2026-08-26 by check:ci-native-rebuild.
     local cpu_features_dir="$node_modules_dir/cpu-features"
     # A ZERO-BYTE gypi is worse than a missing one: the guard below is a plain
     # existence test, so a crashed run (e.g. no C compiler -> "Unable to detect
@@ -241,6 +251,14 @@ ensure_deps() {
 
     log_step "Installing dependencies..."
     (cd "$LOCAL_ROOT_DIR" && "${npm_cmd[@]}" install)
+    # BOTH STEPS, IN THIS ORDER -- not one or the other. `.npmrc` sets
+    # ignore-scripts=true, so `npm install` deliberately does NOT build ssh2,
+    # cpu-features or esbuild. Dropping this line leaves a tree that installed
+    # cleanly and fails later inside node-gyp; dropping the line above leaves
+    # nothing to compile. The rebase offered them as alternatives because two
+    # waves edited the same spot, which they are not.
+    log_step "Compiling native modules (blocked at install by ignore-scripts)..."
+    (cd "$LOCAL_ROOT_DIR" && npm run install:natives)
     write_stamp_hash "$stamp_file" "$current_hash"
 }
 

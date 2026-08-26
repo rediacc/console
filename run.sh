@@ -19,6 +19,7 @@ source "$ROOT_DIR/.ci/config/constants.sh"
 source "$ROOT_DIR/.ci/scripts/lib/toolchain.sh"
 source "$ROOT_DIR/.ci/lib/local-common.sh"
 source "$ROOT_DIR/.ci/lib/service.sh"
+source "$ROOT_DIR/.ci/lib/setup.sh"
 
 # =============================================================================
 # HELPER FUNCTIONS
@@ -1310,11 +1311,9 @@ dev() {
 
     log_step "Starting www development server"
 
-    # Install dependencies if needed
-    if [[ ! -d "$ROOT_DIR/node_modules" ]] || [[ "$ROOT_DIR/package-lock.json" -nt "$ROOT_DIR/node_modules" ]]; then
-        log_info "Installing dependencies"
-        npm install
-    fi
+    # Same reasoning as setup(): ensure_deps carries the hash stamp, and its
+    # mtime test here was a weaker duplicate of it.
+    ensure_deps
 
     # Start dev server (marketing site)
     npm run dev -w @rediacc/www
@@ -1703,11 +1702,12 @@ check_full() {
 # Idempotent by construction: every phase is guarded, so a second run installs
 # nothing, pulls nothing and recreates nothing -- it just prints the URL again.
 #
-#   1. prereqs   node/git/curl               (checked, never installed)
-#   2. docker    Go -> renet -> install-docker (skipped entirely if docker works)
-#   3. image     pull the devcontainer image  (skipped if present)
-#   4. devbox    one container per worktree; port from its path, hostname from its branch
-#   5. report    the URL to open
+#   1. toolchain node/gcc/Go/gh/jq          (INSTALLED, not just checked)
+#   2. account   git identity + credentials (asked once, then remembered)
+#   3. docker    Go -> renet -> install-docker (skipped entirely if docker works)
+#   4. image     pull the devcontainer image  (skipped if present)
+#   5. devbox    one container per worktree; port from its path, hostname from its branch
+#   6. report    the URL to open
 setup() {
     local do_check=false force_pull=false do_start=true
 
@@ -1759,8 +1759,62 @@ EOF
     log_step "Rediacc console setup"
     echo ""
 
-    check_node_version "$NODE_VERSION_MIN"
+    # TOOLCHAIN, AND IT IS ALLOWED TO INSTALL. Two waves wrote this function on
+    # the same day and the rebase offered them as either/or, which they are not:
+    # 0826-2 built the devcontainer flow whose step 1 CHECKED for tooling and
+    # never installed it, and 0826-3 built the installers because a bare machine
+    # stopped at that check with a bare report. The check was the gap; these are
+    # what fills it.
+    setup_node_toolchain || return 1
+    check_node_version "${NODE_VERSION_MIN:-22.0.0}" || return 1
+    echo ""
+
+    # Before npm install: install:natives hard-requires a compiler.
+    setup_system_tools || return 1
+    echo ""
+
+    # Mandatory: ./rdc.sh rebuilds renet from source and stops dead without Go.
+    setup_go_toolchain || return 1
+    echo ""
+
+    # Mandatory: the PR guards fail closed without gh.
+    setup_gh_cli || return 1
+    echo ""
+
+    # KEPT, not replaced. ensure_host_tools also checks zstd, curl and git,
+    # which none of the installers above cover, so deleting it would quietly
+    # narrow the preflight while looking like a simplification. After the
+    # installers it should pass; if it does not, it names what is still missing.
     ensure_host_tools || return 1
+    echo ""
+
+    log_step "Git and GitHub account"
+    setup_git_identity
+    setup_git_credentials || return 1
+    echo ""
+
+    # Dependencies THROUGH ensure_deps, never a raw npm install: it hashes
+    # package.json, package-lock.json and .npmrc and skips on a match, so a
+    # second setup does not recompile cpu-features through node-gyp for nothing.
+    ensure_deps
+
+    # Credential-drift REPORT, advisory and never fatal. The bench equivalent in
+    # scripts/dev/deploy-bench.sh blocks and is right to -- it guards a DEPLOY.
+    # Setup ships nothing, and blocking a developer's bootstrap on a credential
+    # only an ops owner can rotate strands the one person who cannot fix it.
+    # Reported at all because nothing else reports it: a rotated-out SES key sat
+    # in private/account/.env until an unrelated 403 surfaced days later.
+    if [[ "${SKIP_ENV_DRIFT_CHECK:-}" != "1" ]] && [[ -f "$ROOT_DIR/private/account/.env" ]]; then
+        echo ""
+        log_step "Credential drift check"
+        if ! npm run --silent check:env-credential-drift; then
+            log_warn "A credential in private/account/.env is not in the rotation manifest."
+            log_warn "ROTATION IS AN OPS TASK, NOT A DEVELOPER ONE, so this does not stop setup."
+            log_warn "It surfaces later as an unrelated failure (a 403 from an API days on),"
+            log_warn "and the developer who hits that is not the person who can fix it."
+            log_warn "Whoever owns rotation: ./run.sh rotation rotate <slug>"
+        fi
+    fi
 
     # Submodules BEFORE the docker phase, because that phase reads
     # private/renet/go.mod to decide the Go version. On a fresh clone the file
@@ -1926,8 +1980,10 @@ DEVELOPMENT COMMANDS:
   dev                 Start the www (marketing site) development server
   (rdc)               Use ./rdc.sh instead (standalone CLI runner)
   worktree <cmd>      Manage git worktrees (create, switch, prune, list)
-  setup [--check]     Prepare this machine: docker, devcontainer image, and a
-                      browser VS Code for THIS worktree. Idempotent.
+  setup [--check]     Prepare this machine: INSTALL the toolchain (node, gcc, Go,
+                      gh, jq), set the git identity and credentials, then docker,
+                      the devcontainer image, and a browser VS Code for THIS
+                      worktree. Idempotent -- a second run installs nothing.
   devbox <cmd>        up | status | stop | remove | shell | logs | proxy
 
 WWW COMMANDS:
@@ -2011,7 +2067,7 @@ CHECK COMMANDS (PRE-PUSH):
 
 MAINTENANCE:
   clean               Clean build artifacts
-  setup               Interactive setup wizard
+  setup               Interactive setup: npm deps + native modules + git identity
   help                Show this help message
 
 QUICK START:
