@@ -120,7 +120,11 @@ export const GATES: readonly GateSpec[] = [
     gate: true,
     weight: 2,
     heavy: true,
-    leaves: ['eslint', 'biome'],
+    // eslint no longer runs directly: check:lint calls scripts/eslint-heap.sh,
+    // which clamps the heap downward only when the host cannot honour the
+    // requested size (never raises -- CI keeps its full request) and then
+    // execs eslint itself. The leaf is the wrapper, not the tool it wraps.
+    leaves: ['scripts/eslint-heap.sh', 'biome'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',

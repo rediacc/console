@@ -184,13 +184,20 @@ SHIM
 
     # The seventeen keys a correct reduced plan must mark false, derived from the
     # real surface table rather than listed by hand.
+    #
+    # Sorted AFTER the `run_<k>=false` suffix is applied, so this side and the
+    # `LC_ALL=C sort` below are byte-order sorts over the SAME strings rather
+    # than two sorts that merely agree today. Sorting the bare keys first is
+    # not equivalent in general: `=` is 0x3D, below `_` (0x5F) and letters but
+    # ABOVE the digits, so a future key pair like `foo` / `foo0bar` would
+    # transpose between the two forms.
     EXPECTED_FALSE="$(node -e '
 const { JOB_SURFACES } = require(process.argv[1]);
 process.stdout.write(
   Object.keys(JOB_SURFACES)
     .filter((k) => !JOB_SURFACES[k].includes("www"))
-    .sort()
     .map((k) => `run_${k}=false`)
+    .sort()
     .join("\n"),
 );
 ' "$CI_DIR/scope-map.cjs")"
@@ -250,8 +257,21 @@ test_reduced_plan_emits_exactly_the_out_of_scope_keys() {
         log_fail "a reduced plan emitted ZERO run_*=false lines -- the emitter is dead, and every other case here would still pass"
     fi
 
+    # LC_ALL=C IS LOAD-BEARING, not tidiness. EXPECTED_FALSE is ordered by
+    # node's Array.prototype.sort(), which is UTF-16 CODE UNIT order. A bare
+    # `sort` uses the ambient locale, and glibc's en_US.UTF-8 collation ignores
+    # `=` and `_` at the primary level: `run_e2e_k8s_ceph=false` then collates
+    # as "rune2ek8scephfalse" and lands BEFORE `run_e2e_k8s=false`, while node
+    # puts the shorter prefix first. Same 17 keys, different order, and the
+    # assertion reds with a diff that reads like a missing key.
+    #
+    # It was green in CI and red on every developer machine with a UTF-8
+    # collating locale, for 26 days: ubuntu-latest runs under a codepoint
+    # locale, so CI never saw it. e2e_ceph/e2e_ceph_workers has the identical
+    # prefix shape and does NOT diverge (there "false" < "workers" under both
+    # orderings), which is why exactly one pair in eighteen exposes this.
     local actual
-    actual="$(grep '^run_[a-z0-9_]*=false$' "$OUTFILE" | sort || true)"
+    actual="$(grep '^run_[a-z0-9_]*=false$' "$OUTFILE" | LC_ALL=C sort || true)"
     assert_eq "$actual" "$EXPECTED_FALSE" \
         "a reduced plan must mark exactly the out-of-scope keys false"
     assert_not_contains "$(cat "$OUTFILE")" "run_unit=false" \

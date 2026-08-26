@@ -1131,3 +1131,36 @@ output strings.
 
 Operator ruling 2026-08-26: two instances is a pattern, not yet a class worth its
 own meta-gate. Revisit if a third appears.
+
+## A gate green in CI can be red on every developer machine, because glibc collates by locale and codepoint order does not
+
+`test-scope-gate-outputs.sh` compares a shell `sort` of the real scope engine's
+output against a list ordered by node's `Array.prototype.sort()` (UTF-16 code
+unit order). It was green on `ubuntu-latest` for 26 days and red on this session's
+very first local run of it.
+
+`en_US.UTF-8` glibc collation ignores `=` and `_` at the primary level, so
+`run_e2e_k8s_ceph=false` collates as `rune2ek8scephfalse` and sorts BEFORE
+`run_e2e_k8s=false` — while node's code-unit order puts the shorter prefix
+first. Same 17 keys on both sides, transposed order, and the diff read like a
+missing key (`run_e2e_k8s_multinode`) rather than what it actually was. CI never
+saw it because `ubuntu-latest`'s runner environment collates by codepoint, so
+the two orderings happen to agree there.
+
+**Why it fools you rather than blocking you:** the failure output names a
+specific key and looks exactly like "the scope engine forgot this job" — a
+production-code bug in `scope-map.cjs`, the file that decides which CI jobs run.
+Reading the diff, not the mechanism, sends you straight at the wrong file.
+Confirmed: `scope-map.cjs` and `scope-shadow.sh` were both correct and
+untouched; the entire defect was one bare `sort` in the test.
+
+**The check to run:** when two lists built by DIFFERENT sorters (shell `sort`
+vs. node/jq/python `.sort()`/a hand-written literal) are compared, and only ONE
+locale reproduces a failure, suspect collation before suspecting either list's
+content. `LC_ALL=C sort` fixes it: `locale -a` on this host confirms both
+`C.utf8` and `en_US.utf8` exist, so the comparison is trivial —
+`LC_ALL=en_US.UTF-8 bash <test>` vs `LC_ALL=C bash <test>` on the SAME
+unmodified file. If only the first fails, the bug is collation, not content.
+
+See `.ci/scripts/test/gates/test-scope-gate-outputs.sh:254` for the fixed
+instance and `agent/PLAN-scope-gate-sort-collation.md` for the full trace.
