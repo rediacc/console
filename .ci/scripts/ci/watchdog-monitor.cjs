@@ -434,6 +434,52 @@ function formatFailureRoster(failedJobs, { owner, repo, runId }) {
   return { lines, summary };
 }
 
+/**
+ * Signal an outcome the watchdog produced BY DESIGN, without failing the step.
+ *
+ * Phase 3b (operator-approved 2026-08-26). The watchdog used to core.setFailed()
+ * on three paths where it had worked perfectly: it cancelled the monitored run,
+ * it deliberately did NOT cancel an exempt run, or it is holding a pending
+ * rerun. Measured over three days, 63 of the 64 repo-wide `failure` conclusions
+ * were these -- so `conclusion=failure` carried almost no information, a human
+ * scanning the Actions tab could not spot a real watchdog defect, and every
+ * consumer had to special-case this workflow.
+ *
+ * Exiting 0 gives `conclusion=failure` its plain meaning back. The outcome is
+ * still fully recorded: a notice annotation, step outputs, and a step summary.
+ *
+ * A REAL error -- e.g. a rerun that could not be triggered -- still setFailed()s.
+ * That distinction is the entire point; do not "simplify" it away.
+ */
+async function signalByDesign(core, kind, headline, detail, targetRunId) {
+  core.setOutput('by_design', 'true');
+  core.setOutput('by_design_kind', kind);
+  core.setOutput('by_design_reason', detail);
+  const body =
+    '## ' + headline + '\n\n' +
+    'The watchdog produced this outcome **by design**; it is not a defect here.\n\n' +
+    '- Monitored run: `' + targetRunId + '`\n' +
+    '- Kind: `' + kind + '`\n' +
+    '- Detail: ' + detail + '\n\n' +
+    'Read the monitored run for the real verdict. This generation needs no rerun.';
+  try {
+    await core.summary.addRaw(body).write();
+  } catch (e) {
+    // Diagnostics only. The notice below is the durable signal.
+    console.log(`Could not write step summary (${e.message}).`);
+  }
+  // core.notice is optional surface: older @actions/core lacks it, and the gate
+  // harnesses stub `core` with only what they exercise. The OUTPUTS above are
+  // the durable signal, so an absent annotation API must degrade to a log line
+  // rather than throw -- a throw here would abort the monitor on a path where
+  // it had just worked correctly.
+  if (typeof core.notice === 'function') {
+    core.notice(headline + ': ' + detail, { title: 'Watchdog: ' + kind });
+  } else {
+    console.log(`::notice::${headline}: ${detail}`);
+  }
+}
+
 // Returns null when the guard does not apply (not an install-validation job, or
 // no binary-exec signature in the log tail). Otherwise returns the decision:
 //   { override: true }  -> the whole matrix failed to execute the binary: corrupt build
@@ -1101,8 +1147,12 @@ const monitor = async ({ github, context, core }) => {
       console.log(`NOT cancelling run ${targetRunId}: ${exemption.reason}`);
       console.log('Leaving the run to finish so GitHub reports its true conclusion.');
       console.log('#'.repeat(70));
-      core.setFailed(
-        'PIPELINE FAILED (run left uncancelled so it concludes as "failure"): ' + failureMsg
+      await signalByDesign(
+        core,
+        'left-uncancelled',
+        'Run left uncancelled so it reports its own conclusion',
+        failureMsg,
+        targetRunId
       );
       return false;
     }
@@ -1174,21 +1224,13 @@ const monitor = async ({ github, context, core }) => {
     // run-name cannot carry the distinction: GitHub evaluates it at run
     // CREATION from inputs, before this outcome exists. The step summary is
     // the earliest surface that can, so write one.
-    const designedNote =
-      '## Pipeline cancelled — this is the watchdog working as designed\n\n' +
-      'The monitored run had a failing job, so this watchdog generation cancelled it ' +
-      'and marked itself failed to signal that. **This is not a defect in the watchdog.**\n\n' +
-      '- Monitored run: `' + targetRunId + '`\n' +
-      '- Reason: ' + failureMsg + '\n\n' +
-      'Read the monitored run for the real failure; nothing here needs fixing or rerunning.';
-    try {
-      await core.summary.addRaw(designedNote).write();
-    } catch (e) {
-      // A summary is diagnostics, never the signal. If it cannot be written the
-      // setFailed below must still happen, so swallow and say so.
-      console.log(`Could not write step summary (${e.message}); the annotation below still carries the verdict.`);
-    }
-    core.setFailed('PIPELINE CANCELLED (watchdog working as designed): ' + failureMsg);
+    await signalByDesign(
+      core,
+      'pipeline-cancelled',
+      'Pipeline cancelled by the watchdog',
+      failureMsg,
+      targetRunId
+    );
     return true;
   }
 
@@ -1638,7 +1680,13 @@ const monitor = async ({ github, context, core }) => {
             'Holding a pending rerun; the chain reruns the failed jobs once the run completes.'
           );
           pendingRerun = true;
-          core.setFailed(failureMsg);
+          await signalByDesign(
+            core,
+            'rerun-pending',
+            'Holding a pending rerun for a transient failure',
+            failureMsg,
+            targetRunId
+          );
           // DON'T return -- keep monitoring until completion, then rerun below.
         }
       }

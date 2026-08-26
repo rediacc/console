@@ -165,10 +165,12 @@ jobs:
           if-no-files-found: ignore
           retention-days: 14
 
-      # !cancelled(), not the implicit success(): the transient-classification
-      # generation and the cancel-exempt (nightly) path both core.setFailed()
-      # while the run must STAY monitored, so the chain has to continue from a
-      # red monitor step. A rerun resets the generation counter: the new
+      # !cancelled(), not the implicit success(). Phase 3b (2026-08-26) made the
+      # three by-design paths -- cancelled, left-uncancelled, rerun-pending --
+      # exit 0 instead of core.setFailed(), so a red monitor step now means a
+      # REAL watchdog error. !cancelled() is kept anyway: it is strictly wider
+      # than success(), the chain must continue regardless, and narrowing it
+      # would silently drop the chain the first time a genuine error appears. A rerun resets the generation counter: the new
       # attempt earns the full chain budget, like the old attempt-2 watchdog
       # job got a fresh 3-hour clock.
       - name: Dispatch next generation
