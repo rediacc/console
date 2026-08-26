@@ -63,9 +63,19 @@ over_limit() {
     echo "$n"
 }
 
+# gen_lines <count> -- N trivial shell lines. NOT `seq`: ubuntu-slim does not
+# ship it, and check-ci-compat flags it. Same reason mapfile is avoided below.
+gen_lines() {
+    local i
+    for ((i = 1; i <= $1; i++)); do echo "echo $i"; done
+}
+
 # DISCOVERED, tracked AND untracked. `git ls-files` alone is blind to a script
 # not yet committed, which is exactly when a file is being grown.
-mapfile -t FILES < <(
+FILES=()
+while IFS= read -r _rel; do
+    [[ -n "$_rel" ]] && FILES+=("$_rel")
+done < <(
     {
         git -C "$ROOT" ls-files '*.sh' 2>/dev/null
         git -C "$ROOT" ls-files --others --exclude-standard '*.sh' 2>/dev/null
@@ -101,7 +111,7 @@ fi
 # --- controls, by CONSTRUCTION -----------------------------------------------
 # Generated with seq, never by copying and mutating a real file: a substitution
 # can silently no-op, and the control then passes against unmutated input.
-seq 1 $((MAX_LINES + 10)) | sed 's/^/echo /' >"$TMP/big.sh"
+gen_lines $((MAX_LINES + 10)) >"$TMP/big.sh"
 if [[ -n "$(over_limit "$TMP/big.sh")" ]]; then
     pass "control: an oversized file with no directive is detected"
 else
@@ -111,7 +121,7 @@ fi
 {
     echo '#!/bin/bash'
     echo '# shellcheck extended-analysis=false'
-    seq 1 $((MAX_LINES + 10)) | sed 's/^/echo /'
+    gen_lines $((MAX_LINES + 10))
 } >"$TMP/big-ok.sh"
 if [[ -n "$(over_limit "$TMP/big-ok.sh")" ]]; then
     fail "IS OVER-BROAD: a file that declared the directive was still flagged"
@@ -119,7 +129,7 @@ else
     pass "control: an oversized file carrying the directive is allowed"
 fi
 
-seq 1 10 | sed 's/^/echo /' >"$TMP/small.sh"
+gen_lines 10 >"$TMP/small.sh"
 if [[ -n "$(over_limit "$TMP/small.sh")" ]]; then
     fail "IS OVER-BROAD: a small file was flagged"
 else
@@ -129,7 +139,7 @@ fi
 {
     echo '#!/bin/bash'
     echo '# we could add extended-analysis=false here, but we have not'
-    seq 1 $((MAX_LINES + 10)) | sed 's/^/echo /'
+    gen_lines $((MAX_LINES + 10))
 } >"$TMP/prose.sh"
 if [[ -n "$(over_limit "$TMP/prose.sh")" ]]; then
     pass "control: prose mentioning the directive does not count as declaring it"
