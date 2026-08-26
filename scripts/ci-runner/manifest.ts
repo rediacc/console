@@ -30,7 +30,7 @@ export interface GateSpec {
   run: string;
   /**
    * false for prerequisite nodes (build:*) that validate nothing, and for the
-   * CI-side aggregate check:ci-quality-gates whose 60 constituents are
+   * CI-side aggregate check:ci-quality-gates whose 61 constituents are
    * scheduled individually. A false entry runs only when something that
    * `needs` it is in the selected set, so an aggregate with no dependents
    * never runs locally.
@@ -46,7 +46,7 @@ export interface GateSpec {
   heavy?: boolean;
   /** Repo-relative globs this gate validates; powers --changed. */
   paths?: string[];
-  /** Set on the 60 entries flattened out of .ci/scripts/test/gates/. Their set
+  /** Set on the 61 entries flattened out of .ci/scripts/test/gates/. Their set
    *  must equal the on-disk glob; see assertion 7 in section 6.3. */
   qualityGateTest?: boolean;
   /** Leaf commands this gate ultimately executes. The parity oracle compares
@@ -2623,7 +2623,7 @@ export const GATES: readonly GateSpec[] = [
     },
   },
 
-  // The CI-side aggregate. gate:false because its 60 constituents are scheduled
+  // The CI-side aggregate. gate:false because its 61 constituents are scheduled
   // individually below: scheduling this as one unit too would run the whole
   // 443s battery twice, and 443s is 43% of the measured serial total (plan
   // section 2). The npm key stays because CI wants one step for it.
@@ -2961,6 +2961,19 @@ export const GATES: readonly GateSpec[] = [
     gate: true,
     qualityGateTest: true,
     leaves: ['.ci/scripts/test/gates/test-breakpoint-naming.sh'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-security',
+      step: 'Quality-gate unit tests',
+    },
+  },
+  {
+    id: 'gate-test:watchdog-designed-failure',
+    run: '.ci/scripts/test/gates/test-watchdog-designed-failure.sh',
+    gate: true,
+    qualityGateTest: true,
+    leaves: ['.ci/scripts/test/gates/test-watchdog-designed-failure.sh'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
