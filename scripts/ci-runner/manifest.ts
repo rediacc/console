@@ -530,6 +530,21 @@ export const GATES: readonly GateSpec[] = [
     },
   },
   {
+    // A .ci script must declare the non-baseline binaries it runs. An
+    // undeclared one exits 127 with no message under `set -euo pipefail`, and
+    // reads as working code on any host that happens to have it.
+    id: 'check:ci-shell-declared-commands',
+    run: 'npm run check:ci-shell-declared-commands',
+    gate: true,
+    leaves: ['scripts/check-shell-declared-commands.ts'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-code',
+      step: 'CI scripts declare the binaries they execute',
+    },
+  },
+  {
     // The PR body carries a generated epic block; this asserts it matches the
     // published snapshot, since a generated section nobody checks drifts while
     // still looking authoritative.

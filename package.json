@@ -82,6 +82,7 @@
     "check:env-credential-drift": "tsx scripts/check-env-credential-drift.ts --selftest && tsx scripts/check-env-credential-drift.ts",
     "check:ci-pr-task-trailers": "tsx scripts/check-pr-task-trailers.ts --selftest && tsx scripts/check-pr-task-trailers.ts",
     "check:ci-pr-epic-block": "tsx scripts/check-pr-epic-block.ts --selftest && tsx scripts/check-pr-epic-block.ts",
+    "check:ci-shell-declared-commands": "tsx scripts/check-shell-declared-commands.ts --selftest && tsx scripts/check-shell-declared-commands.ts",
     "check:ci-bootstrap-idempotency": "tsx scripts/check-bootstrap-idempotency.ts --selftest && tsx scripts/check-bootstrap-idempotency.ts",
     "check:ci-git-tool-safety": "tsx scripts/check-git-tool-safety.ts --selftest && tsx scripts/check-git-tool-safety.ts",
     "check:ci-native-rebuild": "tsx scripts/check-native-rebuild.ts --selftest && tsx scripts/check-native-rebuild.ts",

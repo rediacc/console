@@ -628,6 +628,12 @@ jobs:
       - name: Bootstrap paths install through the dependency stamp
         run: npm run check:ci-bootstrap-idempotency
 
+      # An undeclared binary is a mute exit 127, not a missing feature: it kills
+      # the script before its own error paths can speak. Cost one live incident
+      # in review-status.sh on a host without unzip.
+      - name: CI scripts declare the binaries they execute
+        run: npm run check:ci-shell-declared-commands
+
       # The description's epic block drives the per-epic review, so it must
       # agree with agent/pr/<branch>.md. PR_NUMBER lets it check the live body;
       # without it the gate still validates the snapshot and says so.
