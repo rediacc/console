@@ -1,5 +1,5 @@
 # PLAN: ci-trace must be able to read a branch that has no open PR
-Status: executing
+Status: done — shipped in fb3c09a2; test 2 (check-ci-watch-recipe extension) NOT done, see Outcome
 Owner: 854ac1c6
 Updated: 2026-08-25
 
@@ -135,3 +135,37 @@ Not fixed here, deliberately: teaching the head-reader about run objects would
 reintroduce run-id coupling, which the NOT-IN-SCOPE section above rules out for
 good reasons. The correct handling is on the caller's side — wait for the run
 object before rerunning.
+
+## Outcome (2026-08-26) — what actually shipped, and what did not
+
+**Landed in `fb3c09a2`** on `0826-1` / PR #576, as designed: `ci_branch_query`,
+the shared `_rollup_pages`, `allow_branch=False` by default, `no-ref` distinct
+from `no-pr`, and the source named in the emitted line. Live behaviour matches
+the spec exactly: default `exit=2 no-pr`, `--ref main` `exit=1` with a real
+verdict and `branch main @ b4b5797e (no PR)`, a bad ref `exit=2 no-ref`.
+
+**Test 1 shipped and is wired.** `.ci/scripts/test/gates/test-ci-trace-branch.sh`,
+hermetic with a dispatching fake `gh`, 6/6, control built by construction, fires
+on the real pre-fix source (`TypeError: ci_rollup() got an unexpected keyword
+argument 'allow_branch'`). Wired as `gate-test:ci-trace-branch`.
+
+**Test 2 was NOT done, and that is a gap, not a change of mind.** The plan called
+for extending `check-ci-watch-recipe.sh` so that "every ref-taking invocation
+named in a skill resolves through a code path that exists" -- i.e. the skill's
+step-5 command and the tool's actual capability must agree. That gate still
+proves only that the skill hands out THE SCRIPT, not that the script can answer
+THE QUESTION the skill asks it. That exact gap is what let this defect ship, and
+it is still open.
+
+**A THIRD gap, found by using the fix (2026-08-26).** `ci-trace` still cannot
+watch a run belonging to a CLOSED PR on a DELETED branch. Measured: after #574
+merged, `Cleanup PR Preview` run 32903006150 failed on branch `0825-1`, which
+merging had deleted, and `ci-trace.py --ref 0825-1` correctly answered
+`no branch '0825-1' on the remote` -- the new `no-ref` state working, and also a
+dead end. There is no head to key on.
+
+Deliberately NOT fixed by run-id keying: run ids are per-attempt, which is the
+stale-attempt bug this reader exists to prevent (see NOT-IN-SCOPE above). If it
+is ever worth closing, the honest shape is a separate reader for archived runs,
+not a flag on this one -- and the caller-side answer (read the run object once,
+do not watch) was sufficient in practice.
