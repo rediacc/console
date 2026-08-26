@@ -494,6 +494,21 @@ export const GATES: readonly GateSpec[] = [
     },
   },
   {
+    id: 'check:ci-shell-size',
+    run: 'npm run check:ci-shell-size',
+    gate: true,
+    // Any shell file anywhere can grow into the linter-killing range, so this
+    // one is deliberately not path-narrowed.
+    paths: ['**/*.sh'],
+    leaves: ['.ci/scripts/quality/check-shell-size.sh'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-code',
+      step: 'Shell file size',
+    },
+  },
+  {
     id: 'check:ci-devbox-exec',
     run: 'npm run check:ci-devbox-exec',
     gate: true,
