@@ -83,6 +83,29 @@ proves_plant_landed() {
     return 1
 }
 
+# SELF-PROSE CONTROL. This gate flagged check-shell-size.sh for a `${n//...}`
+# that existed ONLY in a comment explaining why the construct was avoided there.
+# A detector that reads its own documentation as the thing it forbids can be
+# satisfied only by deleting the explanation, so prove it does not.
+_vac_selftest="$(mktemp)"
+{
+    printf '#!/usr/bin/env bash\n'
+    printf '# we deliberately avoid ${SRC//needle/repl} in this file\n'
+    printf 'echo hi\n'
+} >"$_vac_selftest"
+if builds_by_substitution "$_vac_selftest"; then
+    rm -f "$_vac_selftest"
+    echo "SELF-PROSE CONTROL FAILED: a comment about a substitution read as one" >&2
+    exit 1
+fi
+printf '#!/usr/bin/env bash\nMUTANT="${SRC//needle/repl}"\n' >"$_vac_selftest"
+if ! builds_by_substitution "$_vac_selftest"; then
+    rm -f "$_vac_selftest"
+    echo "SELF-PROSE CONTROL FAILED: a REAL substitution in code went undetected" >&2
+    exit 1
+fi
+rm -f "$_vac_selftest"
+
 echo "check-control-vacuity: every pattern-substitution control proves its plant landed"
 
 checked=0
