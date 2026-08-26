@@ -333,8 +333,14 @@ elif [ "$LIVE_SOURCE" = "GitHub API" ]; then
 fi
 
 if [ -n "$LIVE_JSON" ] && [ "$LABELS_FILE" = ".github/labels.yml" ]; then
+    # `|| true` here would make a CRASHED comparator indistinguishable from
+    # "the labels agree" -- empty output either way, and the gate would report a
+    # clean tree over a probe that never ran. check-swallowed-failures.sh caught
+    # exactly that. The exit code is captured separately and a non-zero one is a
+    # hard failure, because a comparison that could not run is not a match.
+    drift_rc=0
     DRIFT="$(
-        LIVE_JSON="$LIVE_JSON" LABELS_FILE="$LABELS_FILE" python3 - <<'PY' || true
+        LIVE_JSON="$LIVE_JSON" LABELS_FILE="$LABELS_FILE" python3 - <<'PY'
 import json, os, re, sys
 
 try:
@@ -363,7 +369,11 @@ for name, w in sorted(want.items()):
     if "color" in w and (l.get("color") or "").lower() != w["color"].lower().lstrip("#"):
         print("%s\tcolor\t%s" % (name, l.get("color")))
 PY
-    )"
+    )" || drift_rc=$?
+    if [ "$drift_rc" -ne 0 ]; then
+        log_error "regions/labels drift comparison FAILED to run (exit $drift_rc). An unreadable comparison is never a clean tree."
+        exit 1
+    fi
     while IFS=$'\t' read -r dname dfield dlive; do
         [ -n "$dname" ] || continue
         log_error "label '$dname' has a drifted $dfield: the repo says '$dlive', $LABELS_FILE says something else. The description is what every human reads in the label picker, so a drifted one is documentation that lies. Push the declared values: gh api --method PATCH repos/{owner}/{repo}/labels/$dname -f $dfield='<value from $LABELS_FILE>'"

@@ -33,30 +33,6 @@ vi.mock('@rediacc/shared/regions', () => ({
 
 import { detectLikelyRegion, discoverRegions } from '../provision/region-discovery.js';
 
-const FETCHED_REGIONS = [
-  {
-    id: 'eu',
-    label: 'Europe',
-    domain: 'eu.rediacc.com',
-    edgeDomain: 'edge-eu.rediacc.com',
-    default: true,
-  },
-  {
-    id: 'us',
-    label: 'United States',
-    domain: 'us.rediacc.com',
-    edgeDomain: 'edge-us.rediacc.com',
-    default: false,
-  },
-  {
-    id: 'asia',
-    label: 'Asia Pacific',
-    domain: 'asia.rediacc.com',
-    edgeDomain: 'edge-asia.rediacc.com',
-    default: false,
-  },
-];
-
 describe('discoverRegions', () => {
   // THESE CASES CHANGED SHAPE ON PURPOSE (2026-08-26).
   //
