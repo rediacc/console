@@ -1687,7 +1687,6 @@ cleanup_workflow_runs() {
 
     local now_epoch
     now_epoch="$(date -u +%s)"
-    local retention_seconds=$((GH_RUNS_RETENTION_DAYS * 86400))
 
     local total_seen=0
     local total_deleted=0
