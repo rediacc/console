@@ -919,6 +919,95 @@ cleanup_d1_databases() {
 }
 
 # =============================================================================
+# Phase 5b: orphaned per-PR preview WORKERS.
+#
+# WHY THIS EXISTS. `cleanup-preview.yml` deletes two things when a PR closes:
+# the Cloudflare Pages preview deployments AND the preview Worker
+# (`npx wrangler delete --name pr-<n>`, cleanup-preview.yml:60). Phase 5 above
+# backstops the first. NOTHING backstopped the second, so any failure of that
+# workflow orphaned a Worker permanently.
+#
+# Measured 2026-08-26: `Cleanup PR Preview` run 32903006150 died at the
+# app-token step on GitHub's own internal DNS
+# (`internal-api.service.iad.github.net`, "Name or service not known"), before
+# checkout. Both cleanups were skipped. The Pages side would have been reaped
+# here on the next nightly; the Worker would have leaked forever, one per
+# failure, with nothing that ever noticed.
+#
+# THE NAME PATTERN IS `^pr-[0-9]+$`, confirmed across all three sites that
+# define it -- cleanup-preview.yml:60, deploy-www.sh:8, seed-smoke-test.sh:69 --
+# each interpolating a PR NUMBER. Nothing else may be matched: this deletes
+# production code paths if it is wrong.
+#
+# FAILS CLOSED, unlike Phase 4. When the open-PR lookup fails, Phase 4 falls
+# back to keep-N because its worst case is retaining too much history. Here the
+# worst case is DELETING A LIVE PREVIEW, so an unreadable PR list means skip the
+# phase entirely. Deleting on incomplete information is the one outcome that
+# cannot be undone by the next run.
+# =============================================================================
+
+cleanup_preview_workers() {
+    log_step "Phase 5b: Cleaning up orphaned per-PR preview Workers"
+
+    if [[ -z "${CLOUDFLARE_API_TOKEN:-}" ]] || [[ -z "${CLOUDFLARE_ACCOUNT_ID:-}" ]]; then
+        log_warn "  CLOUDFLARE_API_TOKEN or CLOUDFLARE_ACCOUNT_ID not set, skipping Worker cleanup"
+        return 0
+    fi
+
+    # Open PRs decide what is orphaned. NO FALLBACK: see the banner above.
+    local open_prs
+    if ! open_prs="$(gh pr list --repo "$RELEASE_REPO" --state open --limit 200 --json number --jq '.[].number' 2>/dev/null)"; then
+        log_warn "  Could not list open PRs; SKIPPING Worker cleanup rather than deleting on incomplete data"
+        return 0
+    fi
+
+    local response
+    response="$(cf_api GET "/accounts/$CLOUDFLARE_ACCOUNT_ID/workers/scripts" 2>/dev/null || echo '{"success":false}')"
+
+    local success
+    success="$(echo "$response" | jq -r '.success // false')"
+    if [[ "$success" != "true" ]]; then
+        log_warn "  Worker list API request failed, skipping Worker cleanup"
+        return 0
+    fi
+
+    local names
+    names="$(echo "$response" | jq -r '.result[]?.id // empty')"
+
+    local seen=0 deleted=0
+    while IFS= read -r name; do
+        [[ -z "$name" ]] && continue
+        seen=$((seen + 1))
+        [[ "$name" =~ ^pr-([0-9]+)$ ]] || continue
+        local pr_number="${BASH_REMATCH[1]}"
+        # Still open -> leave it alone.
+        grep -qx "$pr_number" <<<"$open_prs" && continue
+
+        if ! deletes_budget_ok; then
+            log_warn "  Phase 5b: hit MAX_DELETES_PER_RUN=$MAX_DELETES_PER_RUN; remaining Workers deferred to next run"
+            break
+        fi
+
+        if [[ "$DRY_RUN" == "true" ]]; then
+            log_warn "  [DRY-RUN] Would delete Worker: $name (PR #$pr_number closed)"
+            deleted=$((deleted + 1))
+            continue
+        fi
+
+        local del
+        del="$(cf_api DELETE "/accounts/$CLOUDFLARE_ACCOUNT_ID/workers/scripts/$name?force=true" 2>/dev/null || echo '{"success":false}')"
+        if [[ "$(echo "$del" | jq -r '.success // false')" == "true" ]]; then
+            log_info "  Deleted Worker: $name (PR #$pr_number closed)"
+            deleted=$((deleted + 1))
+        else
+            log_warn "  Failed to delete Worker: $name"
+        fi
+    done <<<"$names"
+
+    log_info "  Workers: $seen script(s) seen, $deleted orphan(s) $([[ "$DRY_RUN" == "true" ]] && echo "would be " || echo "")deleted"
+}
+
+# =============================================================================
 # PHASE 7b: ORPHAN PER-PR TURNSTILE WIDGETS
 # Delete Cloudflare Turnstile widgets named `rediacc-console-pr-N` whose PR
 # is no longer open. Widget names that don't match the per-PR pattern (e.g.
@@ -1894,6 +1983,8 @@ run_all_phases() {
     cleanup_deployments
     echo ""
     cleanup_cf_pages
+    echo ""
+    cleanup_preview_workers
     echo ""
     cleanup_environments
     echo ""
