@@ -12,6 +12,15 @@
 # `workflow_dispatch` is guarded to `main` and cannot satisfy PR checks, so the
 # only remaining lever was a commit -- which this hook refused.
 #
+# THE CAUSE, established after the fact: githubstatus.com reported Actions in
+# `major_outage` with a critical open incident. So the trigger was an outage, not
+# a repo misconfiguration -- but that is exactly the point rather than a reason
+# to revert this. An outage is the most likely way a head ends up with no run at
+# all, it is invisible from inside the repo (every local signal said "should have
+# run"), and it is precisely when a session needs the one lever this hook was
+# refusing. Check githubstatus.com BEFORE spending rounds on config archaeology;
+# it cost several here.
+#
 # A guard whose advice is unreachable in the case it fires on stops being a
 # guard. So the escape is a CHECK, not a flag: name the head sha you believe has
 # no run, and the hook VERIFIES that against GitHub. If a run exists the block
