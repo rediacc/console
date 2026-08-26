@@ -472,6 +472,79 @@ export const GATES: readonly GateSpec[] = [
     },
   },
   {
+    // The other half of check:ci-npmrc: that gate keeps ignore-scripts=true set,
+    // this one keeps every root-workspace installer pairing it with a rebuild.
+    id: 'check:ci-native-rebuild',
+    run: 'npm run check:ci-native-rebuild',
+    gate: true,
+    leaves: ['scripts/check-native-rebuild.ts'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-code',
+      step: 'Native modules rebuilt after every root install',
+    },
+  },
+  {
+    // Guards the ONE module allowed to drive a force push. It reaches git via
+    // subprocess, which the pre-bash guards structurally cannot see, so this
+    // static check is the only thing watching it.
+    id: 'check:ci-git-tool-safety',
+    run: 'npm run check:ci-git-tool-safety',
+    gate: true,
+    leaves: ['scripts/check-git-tool-safety.ts'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-code',
+      step: 'Mediated git tool stays lease-only and dry-run by default',
+    },
+  },
+  {
+    // ./run.sh setup is run repeatedly, so a second run must do no work. This
+    // asserts every bootstrap entry point installs through ensure_deps' hash
+    // stamp rather than shelling out to npm itself.
+    id: 'check:ci-bootstrap-idempotency',
+    run: 'npm run check:ci-bootstrap-idempotency',
+    gate: true,
+    leaves: ['scripts/check-bootstrap-idempotency.ts'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-code',
+      step: 'Bootstrap paths install through the dependency stamp',
+    },
+  },
+  {
+    // Every commit must name the epic it belongs to, because the review selects
+    // an epic's commits by trailer. An untagged commit is reviewed by nobody.
+    id: 'check:ci-pr-task-trailers',
+    run: 'npm run check:ci-pr-task-trailers',
+    gate: true,
+    leaves: ['scripts/check-pr-task-trailers.ts'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-code',
+      step: 'Every commit names its epic',
+    },
+  },
+  {
+    // The PR body carries a generated epic block; this asserts it matches the
+    // published snapshot, since a generated section nobody checks drifts while
+    // still looking authoritative.
+    id: 'check:ci-pr-epic-block',
+    run: 'npm run check:ci-pr-epic-block',
+    gate: true,
+    leaves: ['scripts/check-pr-epic-block.ts'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-code',
+      step: 'PR epic block matches the published worklist',
+    },
+  },
+  {
     id: 'check:ci-control-vacuity',
     run: 'npm run check:ci-control-vacuity',
     gate: true,

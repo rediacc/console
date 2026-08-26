@@ -58,6 +58,59 @@ source "$SCRIPT_DIR/../lib/common.sh"
 # is "finished".
 REPORT_PREFIX='**Claude finished'
 
+# ---------------------------------------------------------------------------
+# PER-EPIC FAN-OUT.
+#
+# The review runs once per epic, so a PR posts one report per epic per round.
+# Gating only the newest report across all of them would enforce the LAST epic's
+# reply and silently excuse every other, which is worse than not gating: the
+# unanswered ones look cleared.
+#
+# The rule that already governs this file is kept exactly: NEWEST WINS, so a
+# superseded report is never re-litigated and a re-reviewed PR cannot become
+# permanently unmergeable. It is now newest-PER-EPIC rather than newest overall.
+#
+# IMPLEMENTED AS A BOUNDED SELF-INVOCATION, deliberately, rather than by wrapping
+# the 110 lines below in a loop. Those lines are the failure message and the
+# reply rule, they are load-bearing and have been corrected twice after live
+# misses (#551 among them), and re-indenting them to add a loop is a large
+# diff over delicate code for no behavioural gain. Setting the prefix and
+# re-entering runs the SAME code path per epic, so nothing below can drift
+# between the flat and per-epic cases. REVIEW_EPIC_PREFIX being set is what
+# terminates the recursion; it can only ever be one level deep.
+#
+# A PR with no epics (no snapshot, or a snapshot declaring none) takes the flat
+# path unchanged, which is every PR that predates this feature.
+if [[ -z "${REVIEW_EPIC_PREFIX:-}" ]]; then
+    _branch="${PR_HEAD_REF:-${GITHUB_HEAD_REF:-$(git branch --show-current 2>/dev/null || true)}}"
+    _epics=()
+    while IFS= read -r _e; do [[ -n "$_e" ]] && _epics+=("$_e"); done < <(review_epic_ids "$_branch")
+    if [[ ${#_epics[@]} -gt 0 ]]; then
+        echo "Per-epic review reports: ${#_epics[@]} epic(s) declared for ${_branch}"
+        _rc=0
+        _unanswered=()
+        for _e in "${_epics[@]}"; do
+            echo ""
+            echo "--- epic ${_e} ---"
+            if ! REVIEW_EPIC_PREFIX="**Claude finished (epic ${_e})" "$0" "$@"; then
+                _rc=1
+                _unanswered+=("$_e")
+            fi
+        done
+        if [[ ${#_unanswered[@]} -gt 0 ]]; then
+            echo ""
+            echo "============================================================"
+            echo "  ${#_unanswered[@]} of ${#_epics[@]} epic report(s) unanswered:"
+            for _e in "${_unanswered[@]}"; do echo "    ${_e}"; done
+            echo "============================================================"
+        fi
+        exit "$_rc"
+    fi
+fi
+
+# One epic's header when fanned out above; the flat header otherwise.
+REPORT_PREFIX="${REVIEW_EPIC_PREFIX:-$REPORT_PREFIX}"
+
 # Low-effort filter, same philosophy as check-review-comments.sh: a reply must
 # say what was done (or why not), not just acknowledge.
 LOW_EFFORT_PATTERNS=(

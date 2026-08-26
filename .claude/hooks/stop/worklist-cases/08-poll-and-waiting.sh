@@ -401,6 +401,14 @@ ARITY = {
     "N_CADENCE_PAUSE": (1, "keys", 1, 3),
     "V_PLAN_DRIFT": (1, "rows"),
     "V_INTENT_EXPIRED": ("t", 1, 1, "cov"),
+    # Epics and the published snapshot. USAGE constants carry no placeholder;
+    # the rest are single-substitution except CLI_EPIC_MADE/ATTACHED/WROTE.
+    "CLI_EPIC_USAGE": None,
+    "CLI_EPIC_REFUSED": ("reason",),
+    "CLI_EPIC_MADE": ("f2757830", "a title"),
+    "CLI_EPIC_ATTACHED": ("f2757830", 3),
+    "CLI_PUBLISH_USAGE": None,
+    "CLI_PUBLISH_WROTE": ("agent/pr/x.md", 1312, 1),
     "CLI_INTENT_USAGE": None,
     "CTX_CHECKLISTS": ("listing",),
     "CTX_PLANS": ("l",), "CTX_PLANS_EXCERPT": ("p", "b"),

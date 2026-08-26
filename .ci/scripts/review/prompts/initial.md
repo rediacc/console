@@ -4,6 +4,8 @@ REPO: {{REPO}}
 PR NUMBER: {{PR_NUMBER}}
 HEAD SHA: {{HEAD_SHA}}
 
+{{EPIC_SCOPE}}
+
 Budget rule for LARGE diffs (dozens of files or more): work breadth-first so a
 turn cap still yields a review. First pass the diff stat and description to
 rank areas by risk; deep-read only the riskiest hunks; post inline comments AS

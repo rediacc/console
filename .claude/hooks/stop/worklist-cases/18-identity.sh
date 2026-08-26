@@ -271,6 +271,9 @@ L1_TABLE=(
     "--poll|--poll @ME@|"
     "--reports|--reports --read @ME@ l1report0001|marked 1 report"
     "--reports|--reports --list --as @ME@|L1 FIXTURE REPORT"
+    # Both take a <me> and both must prove their effect, not merely exit 0.
+    "--epic|--epic @ME@ new L1 probe epic|epic #"
+    "--publish|--publish @ME@ l1probe|wrote agent/pr/"
     "--reassign|--reassign @ME@ phantom1|reassigned phantom1 -> deadbeef"
 )
 COVERED="$BASE/l1covered"
@@ -387,6 +390,17 @@ for tup in re.findall(r'sys\.argv\[1\] in \(([^)]*)\)', src):
 # deliberate act; forgetting to add a NEW me-taking verb is not, which is the
 # asymmetry that makes this check work.
 NO_ME = {
+    "--git",                  # the mediated git capability. Its argv is
+                              # <subcommand> [args] [--execute], never a <me>:
+                              # it does not read, write or tick a worklist item,
+                              # so there is no identity for an L1_TABLE row to
+                              # substitute @ME@ into. Its risk is git writes, not
+                              # identity handling, and that is covered where the
+                              # risk lives: wl_git.py --selftest, which
+                              # test-hooks.sh now RUNS (it did not when this
+                              # exemption was written, so the citation was
+                              # coverage claimed from a suite nothing executed).
+                              # IF IT EVER TAKES A <me>, delete this line.
     "--help", "-h", "help",   # prints the catalogue
     "--path", "--compact",    # store-level queries, no identity
     "--requests",             # unfiltered listing of everybody's requests

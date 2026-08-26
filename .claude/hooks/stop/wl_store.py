@@ -36,7 +36,8 @@ after fold, before append = nothing written, next invocation re-syncs.
 The sidecars (.requests, .sessions, .loop, .reggate-*,
 .pollbase-*, .pollmark-*, .cistate-*, .cimark-*, .ciqueue-*, .stuck-*,
 .croncount-*, .blocks-*, .waiter-*, .waiternudge-*, .state-*, .events.*,
-.lastevent-*, .emails, .emailunconf-*, .failwarned, .reaped-*, .agentstate.*)
+.lastevent-*, .emails, .emailunconf-*, .failwarned, .reaped-*, .agentstate.*,
+.epics)
 keep their v5-v9 formats and names: their shapes
 are pinned by the suite and by living sessions, and consolidating them buys
 nothing. New v10 state (liveness ladder, task ages, judge cache, autonomy
@@ -823,12 +824,19 @@ def _fold_events(events):
                 # whole accumulation in blocks was the single largest noise
                 # source of the v13 night, so displays show basetext + the
                 # LATEST note only, via brief_line().
-                "basetext": str(ev.get("t", "")),
-                "lastnote": "",
+                # COMPACT CARRY-OVER. A normal `add` has no bt/ln/tr/ju and
+                # falls back exactly as before; a compact-written `add` carries
+                # them so the rewrite is not lossy. See compact() for why.
+                "basetext": str(ev.get("bt", ev.get("t", ""))),
+                "lastnote": str(ev.get("ln", "")),
                 "first": at,
-                "upd": at,
+                "upd": str(ev.get("upd") or at),
                 "origin": "cli",
             }
+            if ev.get("tr"):
+                records[rid]["triage"] = ev["tr"]
+            if ev.get("ju"):
+                records[rid]["just"] = ev["ju"]
             cli_ids.add(rid)
         elif kind == "reassign":
             # v19: an item's OWNER moves to a live session. Appended, never
@@ -1294,7 +1302,12 @@ def compact(worklist):
     exclusive blocking lock, size re-check, atomic replace), then rewrites
     the event log to the minimal set reproducing the current fold, under the
     events lock so appenders serialize against it. The .requests sidecar is
-    never touched."""
+    never touched.
+
+    "Minimal" means minimal EVENTS, not minimal information: the retained `add`
+    carries the derived display identity, triage verdict and deferral
+    justification forward, because those are folded state that no surviving
+    event would otherwise reproduce."""
     tomb = re.compile(r"^\s*-\s*\[~\]")
     if worklist.exists():
         lock_path = str(worklist) + ".lock"
@@ -1349,17 +1362,44 @@ def compact(worklist):
         for r in fold.items:
             if r["origin"] != "cli":
                 continue
-            out.append(
-                {
-                    "ev": "add",
-                    "id": r["id"],
-                    "at": r["first"],
-                    "by": "compact",
-                    "s": r["state"],
-                    "o": r["owner"],
-                    "t": r["text"],
-                }
-            )
+            # CARRY THE DERIVED STATE; do not let the rewrite destroy it.
+            #
+            # This used to emit only {id, at, by, s, o, t}, losing four things
+            # on every compact. Measured on this repo 2026-08-26: item #6e9c94eb
+            # went from basetext=103 chars with a LATEST note, to basetext=1152
+            # chars with none, i.e. brief_text() refolded to the WHOLE
+            # accumulation and every display (now including the PR body) became
+            # a wall of concatenated notes.
+            #   bt/ln  the v14 display identity
+            #   tr     triage verdict and its plan file
+            #   ju     a deferral's WHY/HOW, which the machinery AUDITS at 45
+            #          minutes, so losing it turns a justified [?] into an
+            #          unjustified one purely by having been compacted
+            #   upd    last-touch, whose loss collapses every liveness age onto
+            #          creation time
+            # Short keys: this log is append-only and read hot. The fold falls
+            # back to the old behaviour when they are absent, so logs written
+            # before this change still load.
+            add_ev = {
+                "ev": "add",
+                "id": r["id"],
+                "at": r["first"],
+                "by": "compact",
+                "s": r["state"],
+                "o": r["owner"],
+                "t": r["text"],
+            }
+            if r.get("basetext") and r["basetext"] != r["text"]:
+                add_ev["bt"] = r["basetext"]
+            if r.get("lastnote"):
+                add_ev["ln"] = r["lastnote"]
+            if r.get("upd") and r["upd"] != r["first"]:
+                add_ev["upd"] = r["upd"]
+            if r.get("triage"):
+                add_ev["tr"] = r["triage"]
+            if r.get("just"):
+                add_ev["ju"] = r["just"]
+            out.append(add_ev)
             if r.get("until") or r.get("worker"):
                 out.append(
                     {

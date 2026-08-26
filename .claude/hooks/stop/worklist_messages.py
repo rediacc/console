@@ -386,6 +386,35 @@ CLI_BRIEF_LOOKS_LIKE_ID = (
     "To PUBLISH a brief:   worklist.py --brief <me> <what you are changing>\n"
 )
 
+CLI_PUBLISH_USAGE = """usage: worklist.py --publish <me> <branch>
+
+Renders this repo's epics and their items to agent/pr/<branch>.md.
+
+The store lives in TMPDIR, so CI can never read it. This snapshot is the
+rendered view that CI CAN read, which is what lets a gate diff the PR body
+against the real work instead of trusting whatever the body happens to say.
+It is the rendered view only: no event log, no secrets.
+"""
+
+CLI_PUBLISH_WROTE = "wrote %s (%d byte(s), %d epic(s))\n"
+
+CLI_EPIC_USAGE = """usage: worklist.py --epic <me> <subcommand>
+
+  new <title...>              mint an epic, prints its id
+  add <epic-id> <item-id>...  attach worklist items to an epic
+  list                        show every epic and what it covers
+
+An epic is a LABEL OVER items, never an item itself: the items stay
+individually tracked and evidenced. It exists so a PR body can carry one
+section per epic and the review can run once per epic.
+"""
+
+CLI_EPIC_REFUSED = "REFUSED: %s\n"
+
+CLI_EPIC_MADE = "epic #%s: %s\n"
+
+CLI_EPIC_ATTACHED = "epic #%s now covers %d item(s)\n"
+
 CLI_UNKNOWN_VERB = (
     "worklist.py: unknown verb %r.\n"
     "REFUSED rather than run as a Stop event. Every unrecognised flag used to\n"
@@ -566,7 +595,7 @@ V_PLAN_DRIFT = (
 )
 
 CLI_INTENT_USAGE = (
-    "usage: worklist.py --intent <me> '<=240 chars: what you are doing and the next verb'\n"
+    "usage: worklist.py --epic --publish --intent <me> '<=240 chars: what you are doing and the next verb'\n"
     "                   [--covers <check-key|#item-id> ...] [--for <minutes, default 45, max 120>]\n"
     "\n"
     "An intent says what you are DOING. It reprioritises the rotation so what you\n"

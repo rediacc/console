@@ -538,11 +538,42 @@ review_cap_for() {
 #
 # Never re-add a content qualifier here. If a future report must be excluded,
 # exclude it on something its producer emits on purpose.
+# THE EPIC DIMENSION, added when the review became per-epic.
+#
+# A PR with five epics posts five reports per round. Counted flat, that spends a
+# 3-pass cap on the first round and every later round is refused, so the epics
+# reviewed last would never be reviewed at all. The budget therefore has to be
+# per (PR, epic), which means the count has to be able to name an epic.
+#
+# It keys on the PRODUCER CONSTANT, exactly as the header does and for the same
+# reason recorded above: claude-review-gate.sh writes "(epic <id>)" into the
+# header verbatim, so a rename breaks posting in the same commit rather than
+# silently zeroing a counter. It is NOT a content qualifier and must never
+# become one.
+#
+# An empty epic argument counts every report, which is the pre-epic behaviour
+# and what a PR with no epics still gets.
 review_report_count() {
-    gh api "repos/${GITHUB_REPOSITORY}/issues/${1}/comments" --paginate \
+    local pr="$1" epic="${2:-}" needle="**Claude finished"
+    [[ -n "$epic" ]] && needle="**Claude finished (epic ${epic})"
+    gh api "repos/${GITHUB_REPOSITORY}/issues/${pr}/comments" --paginate \
         --jq ".[] | select(.user.login | contains(\"github-actions\"))
-                  | select(.body | startswith(\"**Claude finished\"))
+                  | select(.body | startswith(\"${needle}\"))
                   | .id" 2>/dev/null | wc -l || true
+}
+
+# review_epic_ids <branch> -> every epic id the published snapshot declares.
+#
+# The snapshot is the contract: agent/pr/<branch>.md is in the repo, the worklist
+# store is in TMPDIR and unreadable from CI. No snapshot means no epics, which
+# the caller treats as the flat, pre-epic review rather than as an error.
+review_epic_ids() {
+    local branch="${1:-}" snap
+    [[ -z "$branch" ]] && return 0
+    snap="agent/pr/${branch//\//-}.md"
+    [[ -f "$snap" ]] || return 0
+    grep -oE '^`?PR-TASK:[[:space:]]*[0-9a-f]{6,32}`?$' "$snap" \
+        | grep -oE '[0-9a-f]{6,32}' || true
 }
 
 # review_spent_attempt_count <pr> <attempt-prefix> -> passes that produced no report.

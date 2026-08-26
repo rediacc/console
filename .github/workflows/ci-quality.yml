@@ -605,6 +605,46 @@ jobs:
       - name: Naturalization model policy
         run: npm run check:ci-naturalization-model-policy
 
+      # TypeScript, so it belongs AFTER setup-workspace for the same reason the
+      # step above says so. Pairs with "Block legacy-peer-deps workarounds"
+      # earlier in this job: that one keeps ignore-scripts=true in .npmrc, this
+      # one keeps every root-workspace installer rebuilding the natives that
+      # flag blocks. The developer path was the blind spot -- `./run.sh setup`
+      # and `ensure_deps` both shipped a bare `npm install`.
+      - name: Native modules rebuilt after every root install
+        run: npm run check:ci-native-rebuild
+
+      # TypeScript, so it sits after setup-workspace for the same reason the
+      # steps above do. Guards .claude/hooks/stop/wl_git.py, which is the only
+      # module permitted to drive a force push: it assembles an argv inside
+      # Python and hands it to git via subprocess, so every pre-bash guard is
+      # structurally blind to it and this static check is the only watcher.
+      - name: Mediated git tool stays lease-only and dry-run by default
+        run: npm run check:ci-git-tool-safety
+
+      # ./run.sh setup is meant to be re-run freely. When setup() shelled out to
+      # npm directly instead of going through ensure_deps, every invocation
+      # recompiled cpu-features through node-gyp on an unchanged machine.
+      - name: Bootstrap paths install through the dependency stamp
+        run: npm run check:ci-bootstrap-idempotency
+
+      # The description's epic block drives the per-epic review, so it must
+      # agree with agent/pr/<branch>.md. PR_NUMBER lets it check the live body;
+      # without it the gate still validates the snapshot and says so.
+      - name: PR epic block matches the published worklist
+        run: npm run check:ci-pr-epic-block
+        env:
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # The local hook cannot read a -F message, so this is where the trailer
+      # rule is actually enforced, against the commits that really landed.
+      - name: Every commit names its epic
+        run: npm run check:ci-pr-task-trailers
+        env:
+          PR_HEAD_REF: ${{ github.event.pull_request.head.ref }}
+          PR_BASE_REF: origin/${{ github.event.pull_request.base.ref }}
+
       # Text-only on purpose: it reads the pin file and the Go constant, never the
       # registry. A gate that needs the network fails for reasons unrelated to what
       # it guards.

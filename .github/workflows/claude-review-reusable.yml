@@ -40,7 +40,62 @@ permissions:
   contents: read
 
 jobs:
+  # Which epics does this PR declare? One review pass runs per epic, so that a
+  # big-bang PR cannot starve one task's review by crowding it out of a single
+  # shared turn budget.
+  #
+  # THE EMPTY CASE IS THE ONE TO GET RIGHT. A matrix over an empty array does not
+  # run the job at all, so a PR with no epics would get NO review whatsoever,
+  # which is a far worse regression than the crowding this feature exists to fix.
+  # This therefore emits [""] when there are no epics, producing exactly one pass
+  # with REVIEW_EPIC empty, which is byte-for-byte the flat review that existed
+  # before epics.
+  discover-epics:
+    name: Discover epics
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      epics: ${{ steps.find.outputs.epics }}
+    steps:
+      - name: Check out the PR head
+        uses: actions/checkout@v5
+        with:
+          repository: ${{ github.event.pull_request.head.repo.full_name || github.repository }}
+          ref: ${{ github.event.pull_request.head.ref || github.event.workflow_run.head_branch }}
+          persist-credentials: false
+          filter: blob:none
+
+      - name: Read the published snapshot
+        id: find
+        env:
+          PR_HEAD_REF: ${{ github.event.pull_request.head.ref || github.event.workflow_run.head_branch }}
+        run: |
+          set -euo pipefail
+          snap="agent/pr/${PR_HEAD_REF//\//-}.md"
+          ids=()
+          if [[ -f "$snap" ]]; then
+            while IFS= read -r id; do
+              [[ -n "$id" ]] && ids+=("$id")
+            done < <(grep -oE '^`?PR-TASK:[[:space:]]*[0-9a-f]{6,32}`?$' "$snap" \
+                     | grep -oE '[0-9a-f]{6,32}' || true)
+          fi
+          if [[ ${#ids[@]} -eq 0 ]]; then
+            echo 'no epics declared; one flat review pass will run'
+            echo 'epics=[""]' >>"$GITHUB_OUTPUT"
+          else
+            printf 'epics: %s\n' "${ids[*]}"
+            json="$(printf '%s\n' "${ids[@]}" | jq -R . | jq -sc .)"
+            echo "epics=$json" >>"$GITHUB_OUTPUT"
+          fi
+
   review:
+    needs: discover-epics
+    strategy:
+      # fail-fast off: one epic's review failing must not cancel the others,
+      # or a single flaky pass would silently leave the rest unreviewed.
+      fail-fast: false
+      matrix:
+        epic: ${{ fromJson(needs.discover-epics.outputs.epics) }}
     name: Claude Review
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -147,6 +202,8 @@ jobs:
           WR_HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
           PR_NUMBER: ${{ github.event.pull_request.number || inputs.pr_number }}
           PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          # Empty for a PR with no epics, which is the flat review unchanged.
+          REVIEW_EPIC: ${{ matrix.epic }}
         run: .review-scripts/.ci/scripts/review/claude-review-gate.sh
 
       # The anthropics action resets the workspace's UNTRACKED files while it
@@ -246,7 +303,8 @@ jobs:
                   "Bash(gh pr comment:*)",
                   "Bash(gh api:*)",
                   "Bash(git diff:*)",
-                  "Bash(git log:*)"
+                  "Bash(git log:*)",
+                  "Bash(.review-scripts/.ci/scripts/review/epic-context.sh:*)"
                 ]
               }
             }

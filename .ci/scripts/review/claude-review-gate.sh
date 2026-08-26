@@ -46,6 +46,11 @@ source "$SCRIPT_DIR/../lib/common.sh"
 require_cmd gh
 require_cmd jq
 
+# The epic this pass is reviewing, empty for a flat (pre-epic) review. It is
+# threaded into the report header so review_report_count can scope the budget to
+# one epic, and into the prompt so the model knows its scope.
+REVIEW_EPIC="${REVIEW_EPIC:-}"
+
 MARKER_PREFIX='<!-- claude-reviewed:'
 # Deliberately a DIFFERENT prefix from MARKER_PREFIX. A spent attempt consumes
 # review budget but must never satisfy `last_marker_sha`, or a review that read
@@ -173,13 +178,34 @@ emit_review_turns() {
 }
 
 # emit_prompt <template>  -- substitutes the {{...}} placeholders.
+#
+# THE ONLY SUBSTITUTION POINT. Everything the review knows about its own scope
+# arrives through here, so a per-epic pass has to say so here or the model will
+# review the whole PR while its budget and its report are scoped to one epic,
+# which is worse than the flat review it replaced.
+#
+# {{EPIC_SCOPE}} renders to a real instruction when an epic is in scope and to
+# nothing at all otherwise, so the flat prompt is byte-identical to what it was
+# before epics existed.
 emit_prompt() {
+    local epic_scope=""
+    if [[ -n "$REVIEW_EPIC" ]]; then
+        epic_scope="SCOPE: this pass reviews ONLY epic ${REVIEW_EPIC}. Its commits are
+\`git log --grep='^PR-TASK: ${REVIEW_EPIC}'\`, and its intent, its worklist items and
+their evidence are printed by
+\`.review-scripts/.ci/scripts/review/epic-context.sh ${REVIEW_EPIC}\` -- read that
+FIRST, because it is the context you would otherwise spend turns rediscovering.
+Changes belonging to other epics are reviewed by their own pass; do not review
+them here, and do not report them as gaps."
+    fi
     {
         echo "prompt<<CLAUDE_REVIEW_PROMPT_EOF"
         sed -e "s|{{REPO}}|${GITHUB_REPOSITORY}|g" \
             -e "s|{{PR_NUMBER}}|${pr}|g" \
             -e "s|{{HEAD_SHA}}|${head_sha}|g" \
             -e "s|{{LAST_REVIEWED_SHA}}|${last_sha}|g" \
+            -e "s|{{EPIC_ID}}|${REVIEW_EPIC}|g" \
+            -e "s|{{EPIC_SCOPE}}|${epic_scope}|g" \
             "$1"
         echo "CLAUDE_REVIEW_PROMPT_EOF"
     } >>"$GITHUB_OUTPUT"
@@ -229,7 +255,7 @@ _[report truncated: middle omitted to fit GitHub's comment size limit]_
 ${report: -25000}"
     fi
     gh api -X POST "repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/comments" \
-        -f body="**Claude finished the automated review of ${HEAD_SHA:0:7}**
+        -f body="**Claude finished${REVIEW_EPIC:+ (epic ${REVIEW_EPIC})} the automated review of ${HEAD_SHA:0:7}**
 
 ---
 
@@ -758,7 +784,7 @@ case "${EVENT_NAME:-}" in
         ;;
 esac
 
-reports_posted=$(review_report_count "$pr")
+reports_posted=$(review_report_count "$pr" "$REVIEW_EPIC")
 # Fetched ONCE: the cap needs the chargeable total, the per-head ceiling needs
 # this head's own row, and paying for the same paginated listing twice on every
 # invocation is how a cheap guard becomes an expensive one.
@@ -782,6 +808,9 @@ fi
 # and when it summed differently (posted only) it read 0/3 while this script read
 # 3/3 on PR #553 -- so its deadlock guard could not fire and the PR went
 # permanently unmergeable. One numerator, in ../lib/common.sh.
+# PER-EPIC BUDGET. With a per-epic review, a flat count spends the whole cap on
+# the first round and every epic reviewed later is refused forever. REVIEW_EPIC
+# is empty for a PR with no epics, and then this is exactly the old behaviour.
 review_count=$(review_spend_total "$pr" "$ATTEMPT_PREFIX" "$reports_posted" "$attempts_spent")
 pr_loc=$(pr_diff_loc "$pr")
 MAX_REVIEWS_PER_PR=$(review_cap_for "$pr_loc")
