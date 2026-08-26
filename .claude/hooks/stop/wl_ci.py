@@ -235,7 +235,7 @@ def ci_query(owner, name, ref, cursor):
     after = ',after:"%s"' % cursor if cursor else ""
     return (
         '{repository(owner:"%s",name:"%s"){pullRequests(headRefName:"%s",states:OPEN,first:1)'
-        "{nodes{number url commits(last:1){nodes{commit{oid statusCheckRollup{state "
+        "{nodes{number url isDraft commits(last:1){nodes{commit{oid statusCheckRollup{state "
         "contexts(first:100%s){totalCount pageInfo{hasNextPage endCursor} nodes{__typename "
         "... on CheckRun{name status conclusion databaseId detailsUrl "
         "checkSuite{workflowRun{databaseId}}} "
@@ -318,6 +318,11 @@ def _rollup_pages(root, owner, name, ref, build_query, extract, source):
         "source": source,
         "pr": (pr or {}).get("number"),
         "url": (pr or {}).get("url") or "",
+        # Carried so a GREEN verdict can name the next action. A reader must not
+        # flip the PR itself -- several watches can be armed at once and the
+        # ready-flip spends real review budget -- but it CAN stop the finish
+        # sequence depending on the agent remembering it exists.
+        "draft": bool((pr or {}).get("isDraft")),
         "sha": (commit or {}).get("oid") or "",
         "rollup": ((roll or {}).get("state") or "EXPECTED"),
         "total": (((roll or {}).get("contexts") or {}).get("totalCount") or len(contexts)),

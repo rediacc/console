@@ -240,6 +240,53 @@ test_control_a_blind_caller_is_detected() {
     log_pass "control: a blind caller is detectable; untracked coverage asserted at source"
 }
 
+test_green_draft_names_the_finish_sequence() {
+    log_test "GREEN on a still-draft PR must name the finish sequence"
+    # Green is not the finish line: the PR still has to be flipped ready,
+    # reviewed, and its threads resolved. That step depended on the agent
+    # REMEMBERING it, and agents forget -- the loop reports green, the turn
+    # ends, and the PR sits in draft with every check passing. This watch exits
+    # exactly when green lands and re-invokes the agent with its output in hand,
+    # so it is the one place the reminder cannot be missed.
+    #
+    # Driven through the REAL _emit in four directions rather than grepping the
+    # source for the string: a nudge that never renders is the failure here.
+    python3 - "$TRACE" <<'NUDGEPY' || log_fail "the green+draft nudge did not behave in all four directions"
+import contextlib
+import importlib.util
+import io
+import sys
+
+spec = importlib.util.spec_from_file_location("t", sys.argv[1])
+m = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(m)
+base = {
+    "verdict": "green", "detail": "d", "ref": "b", "source": "pr", "owner": "o",
+    "name": "n", "head": "abc", "live": False, "waiting": 0, "failing": [],
+    "soft": [], "cancelled": [], "truncated": False,
+}
+
+
+def emit(**kw):
+    p = dict(base)
+    p.update(kw)
+    buf = io.StringIO()
+    with contextlib.redirect_stdout(buf):
+        m._emit(p, False)
+    return "still a DRAFT" in buf.getvalue()
+
+
+cases = [
+    (dict(pr=1, draft=True), True),                        # the case it exists for
+    (dict(pr=1, draft=False), False),                      # already flipped ready
+    (dict(pr=None, draft=False, source="branch"), False),  # branch read, no PR at all
+    (dict(pr=1, draft=True, verdict="red"), False),        # red is not the finish line
+]
+sys.exit(0 if all(emit(**k) == w for k, w in cases) else 1)
+NUDGEPY
+    log_pass "green+draft names the next command; ready, branch and red stay quiet"
+}
+
 test_default_signature_is_false() {
     log_test "the signature default itself must remain False"
     grep -q 'def ci_rollup(root, ref, allow_branch=False):' "$WL_CI" ||
@@ -253,9 +300,10 @@ test_missing_ref_is_no_ref_not_silence
 test_control_default_flipped_is_caught
 test_trace_names_its_source
 test_default_signature_is_false
+test_green_draft_names_the_finish_sequence
 test_every_caller_handles_the_no_pr_state
 test_control_a_blind_caller_is_detected
 
 echo
-log_pass "ci-trace branch-read gate: 8/8"
+log_pass "ci-trace branch-read gate: 9/9"
 echo "  Blind spot: does not validate the GraphQL selection against the live schema."

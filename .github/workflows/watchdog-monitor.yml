@@ -170,7 +170,9 @@ jobs:
       # exit 0 instead of core.setFailed(), so a red monitor step now means a
       # REAL watchdog error. !cancelled() is kept anyway: it is strictly wider
       # than success(), the chain must continue regardless, and narrowing it
-      # would silently drop the chain the first time a genuine error appears. A rerun resets the generation counter: the new
+      # would silently drop the chain the first time a genuine error appears.
+      #
+      # A rerun resets the generation counter: the new
       # attempt earns the full chain budget, like the old attempt-2 watchdog
       # job got a fresh 3-hour clock.
       - name: Dispatch next generation

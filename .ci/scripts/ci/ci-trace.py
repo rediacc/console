@@ -103,6 +103,29 @@ def _emit(payload, as_json):
             print("      %s" % row["url"])
     if payload.get("waiting"):
         print("  %d context(s) still running." % payload["waiting"])
+
+    # THE FINISH SEQUENCE, NAMED AT THE MOMENT IT BECOMES POSSIBLE.
+    #
+    # Green is not the finish line -- the PR still has to be flipped ready,
+    # reviewed, and its threads resolved. That step depends on the agent
+    # REMEMBERING it, and agents forget: the loop reports "CI is green", the
+    # turn ends, and the PR sits in draft with every check passing. This watch
+    # exits exactly when green lands and re-invokes the agent with its output in
+    # hand, so this is the one place the reminder cannot be missed.
+    #
+    # It PRINTS, it does not act. Flipping ready triggers a real Claude review
+    # that spends budget, several watches can be armed at once and would race
+    # each other, and a PR is sometimes held in draft deliberately. An observer
+    # that silently mutates PR state is a different tool with different risks.
+    if v == "green" and payload.get("pr") and payload.get("draft"):
+        print()
+        print("  NEXT: this PR is still a DRAFT. Green is not the finish line.")
+        print(
+            "    gh pr ready %s --repo %s/%s" % (payload["pr"], payload["owner"], payload["name"])
+        )
+        print("  Then watch for the review, address its threads, and resolve them.")
+        print("  (block-premature-ready allows the flip only while CI Complete is")
+        print("   green on this head, so it will refuse if this verdict goes stale.)")
     if payload.get("soft"):
         print(
             "  %d failing job(s) are on the watchdog retry allowlist and may be"
@@ -169,6 +192,7 @@ def _snapshot(root, ref, cache, allow_branch=False):
         "ref": ref,
         "source": info.get("source") or "pr",
         "pr": info.get("pr"),
+        "draft": bool(info.get("draft")),
         "url": info.get("url"),
         "owner": info.get("owner"),
         "name": info.get("name"),
