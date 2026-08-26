@@ -199,7 +199,13 @@ test_a_scheduled_run_records_the_failure_and_keeps_monitoring() {
     trace="$(run_monitor 'Stage Artifacts / Stage Artifacts' 'in_progress' 'sched' 'schedule' '1')"
     assert_not_contains "$trace" "force-cancel" "a scheduled run must NOT be force-cancelled"
     assert_not_contains "$trace" "request:cancel" "nor cancelled by the fallback path"
-    assert_contains "$trace" "setFailed" "the failure is still recorded"
+    # Phase 3b (2026-08-26): the cancel-exempt path no longer core.setFailed()s,
+    # because 63 of 64 repo-wide `failure` conclusions were the watchdog working
+    # correctly. The INTENT of this assertion is unchanged -- the outcome must
+    # still be recorded -- so it now checks the recording that replaced it. A
+    # bare deletion here would have quietly dropped the coverage.
+    assert_contains "$trace" "output:by_design=true" "the outcome is still recorded"
+    assert_contains "$trace" "output:by_design_kind=left-uncancelled" "and names which by-design path it was"
     assert_contains "$trace" "output:continue=true" "and the chain keeps monitoring rather than ending"
     assert_eq "$(captured_files sched)" "1" "the log is still captured on the nightly path"
     log_pass "a scheduled run records the failure, captures the log, and keeps monitoring ($trace)"
@@ -245,7 +251,7 @@ test_a_stuck_job_on_a_scheduled_run_is_never_retried() {
     assert_not_contains "$trace" "request:rerun" \
         "a STUCK job must never be retried, even on a run where cancelling is suppressed"
     assert_not_contains "$trace" "force-cancel" "and an exempt run is still never cancelled"
-    assert_contains "$trace" "setFailed" "the stuck job is still recorded"
+    assert_contains "$trace" "output:by_design=true" "the stuck job is still recorded"
     log_pass "a stuck job on a scheduled run is recorded, not retried ($trace)"
 }
 
