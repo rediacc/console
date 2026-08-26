@@ -308,6 +308,38 @@ def rule_interrupted_cleanup_skipped(cmd, out, _root, resp):
     )
 
 
+# A heredoc BODY is data the command writes, not a command it runs. Documenting
+# a rewrite hazard (this repo's skills and agent notes do exactly that) fed the
+# words `filter-repo --message-callback` straight into the matcher below and
+# produced a confident warning about a rewrite that never happened. The rule's
+# own docstring is the argument for fixing it: a warning computed from the wrong
+# thing teaches sessions to discount the ones that are right.
+#
+# SCOPE, stated rather than overclaimed: this strips heredoc BODIES only. An
+# interpreter payload (`python3 -c '...'`) naming the same words still fires,
+# and that is left alone on purpose, because such a payload CAN genuinely reach
+# a rewrite through os.system and a silent arm there would be the wrong error.
+HEREDOC = re.compile(r"<<-?\s*(['\"]?)([A-Za-z_][A-Za-z0-9_]*)\1")
+
+
+def strip_heredocs(cmd):
+    """Drop heredoc bodies, keeping the command lines that surround them."""
+    lines = cmd.split("\n")
+    out = []
+    i = 0
+    while i < len(lines):
+        line = lines[i]
+        out.append(line)
+        delims = [m.group(2) for m in HEREDOC.finditer(line)]
+        i += 1
+        for delim in delims:
+            while i < len(lines) and lines[i].strip() != delim:
+                i += 1
+            if i < len(lines):
+                i += 1  # consume the terminator itself
+    return "\n".join(out)
+
+
 HISTORY_REWRITE = re.compile(
     r"\bgit\s+(?:-[A-Za-z-]+\s+\S+\s+)*filter-(?:repo|branch)\b|\bbfg(?:\.jar)?\b"
 )
@@ -364,6 +396,7 @@ def rule_history_rewrite_controls(cmd, _out, root, _resp):
     hazard whose warning would be about what is ABSENT from the list, which
     `git ls-files` cannot enumerate usefully.
     """
+    cmd = strip_heredocs(cmd)
     if not HISTORY_REWRITE.search(cmd):
         return None
     if REWRITE_READONLY.search(cmd):

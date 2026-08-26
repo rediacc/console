@@ -571,6 +571,19 @@ check_inject silent "$(inject_json 'git -C /tmp/m.git filter-repo --force --path
 # tracked under the path) and must still fire on arm 2.
 check_inject fires "$(inject_json 'git -C /tmp/m.git filter-repo --force --path packages/www/public/media --invert-paths --message-callback /tmp/strip-ai.py' '')" \
     "trapguard: a message-callback fires on arm 2 even when arm 1 has nothing to say" "history-rewrite-no-baseline"
+# A heredoc BODY is written, not run. Prose describing the rewrite hazard fed the
+# matcher its own trigger words and produced a warning about a rewrite that never
+# happened; the second control proves the stripper eats the body ONLY, so a real
+# command sharing the line-set with a heredoc still fires.
+check_inject silent "$(inject_json "cat > notes.md <<'MD'
+never run git filter-repo --message-callback here
+MD" '')" \
+    "trapguard CONTROL: a rewrite named inside a heredoc BODY is prose, not a run"
+check_inject fires "$(inject_json "cat > notes.md <<'MD'
+prose
+MD
+git filter-repo --force --message-callback /tmp/strip.py" '')" \
+    "trapguard: a real rewrite AFTER a heredoc still fires" "history-rewrite-no-baseline"
 check_inject silent "$(inject_json 'git filter-repo --analyze' 'Processed 6177 commits')" \
     "trapguard CONTROL: --analyze is a READ of history and is never warned about"
 

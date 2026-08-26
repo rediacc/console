@@ -5024,3 +5024,116 @@ early exit that was still there. Fixed with `sys.exit(1)`; the existing
 actually triggered it. New regression case, control-first: a construction-built
 mutant restoring the literal old `sys.exit(0)` line proves the pre-fix
 behaviour would have swallowed it.
+
+---
+
+## Wave 0826: epic-structured PRs, and a bare machine that boots
+
+Branch `0826-3` (started as `0826-1`, renamed after PR #576 consumed that
+name), all commits tagged `PR-TASK: f2757830`. **Not pushed, no PR
+open** at the time of writing; the operator's instruction was "we don't stop for
+a new PR yet".
+
+### The problem this wave attacks
+
+A big-bang PR is the operator's deliberate preference, and nothing carried the
+STRUCTURE of the work into it. Three systems existed and none talked to each
+other: the worklist held the real record but was invisible to a reader; the PR
+body was free text that `validate-pr.cjs` checked for 20 characters; and the
+Claude review was one flat pass whose own prompt instructs it to name "areas not
+reviewed and why", with a turn budget flat at 140 above roughly 5,600 changed
+lines. On a big-bang PR that is a licence to skip.
+
+### What landed
+
+**Epics** (`b72a438ae`). An epic is a label OVER worklist items, never an item,
+because `wl_planfid.is_umbrella()` actively blocks one item standing for several
+tasks. It lives in a `.epics` sidecar beside the event log, modelled on
+`record_intent`, for the reason that helper states at its own definition:
+`compact()` rewrites the log to `md`/`add`/`lease`, so a novel event kind is
+DESTROYED on the next compaction. The suffix is registered in `wl_store.py`'s
+sidecar docstring, which `check-tracked-sidecars.sh` parses (now 23 patterns).
+
+`compact()` itself was made non-lossy in the same commit, carrying `bt`/`ln`/
+`upd`/`tr`/`ju` on the retained `add` event.
+
+**The published snapshot.** The store lives in TMPDIR, so CI can never read it.
+`worklist.py --publish <me> <branch>` renders to `agent/pr/<branch>.md`, which is
+tracked and is therefore the contract every downstream gate diffs against. A
+stale snapshot is a red gate by design. `WORKLIST_PUBLISH_ROOT` exists because
+the first test run left a snapshot in a TRACKED directory of a shared tree.
+
+**The body block.** `.ci/scripts/pr/sync-epic-block.sh` rebuilds a block between
+`<!-- worklist-epics:begin -->` / `:end` using `submodule-prs.sh`'s exact-line
+awk idiom. Markers are distinct from the three writers that already append at the
+end of a body, because `submodule-prs.sh` warns in its own header that sharing
+markers with `refresh-pr-body.sh` is fatal: that hook rewrites the WHOLE body on
+every push. `wl_epic.neutralize()` defangs `<!--`/`-->` in item text with a
+zero-width space; this is not hypothetical, the worklist item for this feature
+contains both delimiters because it describes them.
+
+**`PR-TASK` trailers.** First commit-message format rule in this repo; there was
+no commitlint, no husky, no `commit-msg` hook. Local: `block-untagged-commit.sh`,
+line-anchored per the rule `block-commit-meta.sh` states, and it ALLOWS what it
+cannot read (`-F file`, command substitution) rather than refusing a commit it
+cannot judge. CI: `scripts/check-pr-task-trailers.ts`, failing CLOSED on an
+unreadable API and validating ids against the snapshot rather than their shape,
+because a typo'd id looks tagged and routes to an epic nobody reviews.
+
+**Per-epic review.** `claude-review-reusable.yml` gains a `discover-epics` job
+and a matrix over its ids. The empty case is the one that mattered: a matrix over
+an empty array does not run the job AT ALL, so discovery emits `[""]` and a PR
+with no epics gets exactly one flat pass, byte for byte what existed before.
+`fail-fast: false`, so one epic's failure cannot cancel the rest.
+`review_report_count` is keyed per epic on the producer constant
+`**Claude finished (epic <id>)`, and `check-review-report-replies.sh` fans out by
+bounded self-invocation with `REVIEW_EPIC_PREFIX` set, preserving newest-wins as
+newest-PER-EPIC. Gating only the newest report overall would enforce the last
+epic's reply and silently excuse the rest, which is worse than not gating.
+`.ci/scripts/review/epic-context.sh` is a Bash script and not an agent, because
+the action sets `--disallowed-tools Task,Agent` after PR #543's reviewer spawned
+three background agents, ran out of turns and posted a placeholder.
+
+### The hooks failed open, silently
+
+`897b6fe46`. All 27 PreToolUse hooks read their input with `jq`, and on a machine
+without jq every one of them **allowed everything**. `.claude/hooks/require-jq.sh`
+now fails closed, with a carve-out for `./run.sh setup` and for a jq install,
+parsed WITHOUT jq. The bootstrap deadlock this creates is real and was hit: the
+guard blocked its own cure, and the operator ran the install themselves.
+
+### Bootstrap (`7c383d373`)
+
+`run.sh` 2919 to 2197 lines, with `.ci/lib/setup.sh` (747) carrying
+`setup_node_toolchain`, `setup_system_tools`, `setup_go_toolchain`,
+`setup_gh_cli`, `setup_docker_probe`, `setup_git_identity`,
+`setup_git_credentials`. Idempotency was claimed once and was wrong: the first
+verification filtered out `npm|audit|funding`, which was exactly the
+non-idempotent part. Routing `setup()`/`dev()` through `ensure_deps` fixed it,
+and the honest re-test showed 24 lines byte-identical with a stamp-invalidation
+control. Rotation drift is ADVISORY here, not blocking: rotation is not a
+developer's job.
+
+### Two false-positive classes, same root
+
+Four gates were caught firing on a MENTION rather than an execution:
+git-tool-safety on its own deny-list, bootstrap-idempotency on a `log_warn`
+string, block-raw-pr-body-edit on prose about its own rule, and trapguard's
+`history-rewrite-no-baseline` arm on `filter-repo --message-callback` sitting
+inside a heredoc BODY while this folder's sibling skill was being written. Each
+was fixed by anchoring to execution. The trapguard fix (`strip_heredocs()`)
+states its remaining scope rather than overclaiming: an interpreter payload
+(`python3 -c '...'`) naming the same words still fires, on purpose, because such
+a payload can genuinely reach a rewrite through `os.system`.
+
+### The entry point (`89c1071f0`)
+
+`.claude/skills/pr-epics/` is SKILL.md plus `epics.md`, `trailers.md`, `body.md`,
+`review.md`, each under the 60-line `self-improving` cap. Without it a session
+hitting a red `check:ci-pr-epic-block` had to rediscover this design from gate
+sources, which is the same drift this document exists to prevent.
+
+### Not verified here
+
+The per-epic matrix actually dispatching in GitHub Actions. That needs a real PR,
+and none is open.

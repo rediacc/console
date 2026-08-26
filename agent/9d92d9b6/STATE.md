@@ -1,74 +1,66 @@
-## SESSION 9d92d9b6 2026-08-26T14:12:44Z
+## SESSION 9d92d9b6 2026-08-26T15:17:43Z
 
-2026-08-26. Branch `main`, **41 uncommitted paths** including a `private/account`
-submodule change. Nothing committed all session, per the operator's standing
-big-bang preference ("we don't stop for a new PR yet").
+Branch `0826-1`, console + `private/account` (its own `0826-1` at `3e79b39`).
+NOTHING PUSHED, no PR open. The operator said "we don't stop for a new PR yet",
+so do not push or open one unasked.
 
-## Machine (was bare at session start)
+## The branch
 
-node v22.23.2 + npm 10.9.8, gcc 15.2.0, Go 1.26.4, jq 1.8.1, gh 2.98.0.
-**gh IS authenticated** (mfbayraktar) and `git credential fill` exits 0, so PR
-commands work. Docker CLI present, NO engine (WSL integration off); advisory
-only. `./run.sh setup` is idempotent, proven byte-identical across two runs with
-a stamp-invalidation control.
+Six commits, all tagged `PR-TASK: f2757830`, building an epic-structured PR
+pipeline: worklist epics in a `.epics` sidecar (an event kind would be destroyed
+by `compact()`), a snapshot published to `agent/pr/<branch>.md` (the store is in
+TMPDIR, unreadable from CI), a managed PR-body block, `PR-TASK` trailers enforced
+locally and in CI, and a Claude review running once per epic. Plus a bare-machine
+`./run.sh setup`, fail-closed jq guarding for all 27 PreToolUse hooks, and a
+mediated git tool. Newest: `89c1071f0 docs(skills): add the pr-epics skill`.
 
-## Current work: epic-structured PRs (plan approved)
+## Uncommitted, and why
 
-Plan at `/home/developer/.claude/plans/good-now-we-still-expressive-curry.md`.
-Goal: one big-bang PR whose body is generated from the worklist with a section
-per epic, whose commits carry `PR-TASK: <epic-id>`, and whose review runs once
-per epic so nothing is skipped for being crowded out.
+`trapguard/dispatch.py`, `test-hooks.sh`, `stop/test-worklist-v5.sh`,
+`docs/ci-overhaul/06-progress.md`.
 
-**E1-E5 DONE.** `.claude/hooks/stop/wl_epic.py` (epic sidecar; survives
-`compact()`, which is the whole reason it is a sidecar), `worklist.py --epic` and
-`--publish`, `agent/pr/<branch>.md` snapshot, `.ci/scripts/pr/sync-epic-block.sh`,
-`scripts/check-pr-epic-block.ts`, `.claude/hooks/pre-bash/block-untagged-commit.sh`,
-`scripts/check-pr-task-trailers.ts`, `.ci/scripts/review/epic-context.sh`
-(allow-listed at `claude-review-reusable.yml:250`).
-
-**E6 PARTIAL** (`#2c862d9e`, the item carries the full design). Landed:
-`common.sh` `review_report_count` takes an optional epic and keys on the producer
-constant `**Claude finished (epic <id>)`; `review_epic_ids <branch>`;
-`claude-review-gate.sh` declares `REVIEW_EPIC`, writes it into the report header
-and scopes `reports_posted` to it. Both coherence gates pass WITH their control
-mutants firing.
-
-**STILL TO DO on E6, and none of it is blocked:**
-1. `check-review-report-replies.sh` selects the NEWEST report only (its jq at
-   ~line 153) and 110 lines downstream key on that single `REPORT`. Per-epic it
-   must be newest-PER-EPIC: a loop around the whole body, not a selection tweak.
-   It is merge-blocking, so a half-restructure risks making a PR permanently
-   unmergeable, which is what that gate exists to prevent.
-2. A matrix over `review_epic_ids` in `.github/workflows/claude-review-reusable.yml`.
-3. An `{{EPIC_ID}}` placeholder in `emit_prompt` (`claude-review-gate.sh:176`),
-   the ONLY substitution point.
-
-## Also landed this session, outside the plan
-
-`.claude/hooks/require-jq.sh` (jq absent had silently made ALL 27 PreToolUse
-hooks exit 0 = allow); `wl_git.py` + `--git`; `block-settled-questions.sh` +
-`standing-orders` output style; `run.sh` split to `.ci/lib/setup.sh` with node/
-compiler/Go/jq/gh bootstrap; `compact()` made non-lossy (it was dropping
-basetext/lastnote/triage/deferral-WHY every run); `block-raw-pr-body-edit.sh`;
-two false-positive fixes in `rotation check`.
-
-## Verified now
-
-Worklist suite 351 PASS / 0 FAIL. All 13 gates exit 0: pr-epic-block,
-pr-task-trailers, bootstrap-idempotency, git-tool-safety, native-rebuild,
-em-dash-surfaces, ci-parity, agent-hint-liveness, gate-reachability,
-hooks-resolvable, tracked-sidecars, review-cap-coherence, review-turn-capacity.
-
-## Open
-
-`[?] #54f9fcb0` SES 403, operator-only: `private/account/.env`'s
-AWS_SES_ACCESS_KEY_ID is in no `ses-*` slug while `rotation check` passes every
-slug, so only `.env` is stale. Needs a rotate or the secret AWS never shows
-twice. Reported at `./run.sh setup`, never blocking (rotation is an ops task).
+1. **trapguard false positive.** Its `history-rewrite-no-baseline` arm fired on
+   `filter-repo --message-callback` sitting in a HEREDOC BODY. `strip_heredocs()`
+   now runs at the rule's entry, plus two controls. A comment states the scope:
+   an interpreter payload (`python3 -c '...'`) naming the same words still fires,
+   on purpose, since it can reach a rewrite through os.system.
+2. **A VACUOUS test, found by that run.** `test-worklist-v5.sh`'s L1_TABLE row
+   for `--publish` carried `env WORKLIST_PUBLISH_ROOT=$BASE` as ARGV, so
+   `argv[1]` was `env`, the verb never dispatched, and it fell through to the
+   Stop battery. FIRE and CONTROL C had been passing for a command that could not
+   accept anything. The env var moved into `l1run` and into CONTROL B's
+   invocation; CONTROL B needed it too or the repaired row would publish into the
+   REAL repo root. Suite now 795 PASS / 0 FAIL, up from 792/3.
+3. `06-progress.md` gained a Wave 0826 section, closing 11-commit doc drift.
 
 ## Next action
 
-Continue E6 item 1: wrap `check-review-report-replies.sh`'s body in a function
-and drive it once per epic id from `review_epic_ids`, keeping the
-newest-wins-per-epic rule so superseded reports are never re-litigated. Then
-items 2 and 3. Do NOT stop between steps; the operator has said so explicitly.
+COMMIT those four files in ONE commit with a `PR-TASK: f2757830` trailer and tick
+`#056d65de` and `#6416760f`, as soon as the hook suite reports. It is running as
+background task `b2geyqghq`; expect 441 PASS / 0 FAIL (440/1 with the case-184
+failure, 438 before the two new controls). Any failure is in these four files,
+not pre-existing. If the run is already gone, re-run
+`bash .claude/hooks/test-hooks.sh`.
+
+## Closed since the last write
+
+`#54f9fcb0` SES 403, ticked `door:operator-only`. Default executed: credential
+left alone, and the half that was never operator-only is gated.
+`scripts/check-env-credential-drift.ts` (in `7c383d373`, run ADVISORY from
+`run.sh:1734`) compares `private/account/.env` to the rotation manifest. Verified
+live: exit 1, 5 controls PASS, naming TWO stale entries,
+`AWS_SES_ACCESS_KEY_ID` and `SES_AK_ID`, both `AKIAWXE5...`, in no version of
+ses-eu/us/asia. Prefix only, never a secret. Until the operator rotates,
+`wl_email.py:155` keeps 403ing and the operator email stays down.
+
+## Open, operator decision
+
+`[?] #b73b776c` Pre-existing, DIAGNOSED: `test-review-status.sh` 7/8. The harness
+sets `GH_CAPTURE` to a capture.txt that is ABSENT, so `review-status.sh` posts NO
+check-run for a cancelled review run, leaving `Review Complete` (required) never
+updated. Proved pre-existing against the pristine script from HEAD;
+`review-status.sh` unmodified here. Its deadlock guards were written after a real
+unmergeable PR, so do not change its conclusion mapping on a hunch. DEFAULT:
+leave it, diagnosis attached.
+
+NOT verifiable here: the per-epic matrix actually dispatching in GitHub Actions.

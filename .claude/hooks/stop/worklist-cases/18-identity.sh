@@ -230,6 +230,7 @@ PYEOF
 l1run() { # the CLI under the fixture; STATE body on stdin so --state is drivable
     printf '%s' "$STATE_BODY" |
         TMPDIR="$BASE/tmp" CLAUDE_PROJECT_DIR="$BASE/proj" WORKLIST_JUDGE=off \
+            WORKLIST_PUBLISH_ROOT="$BASE" \
             python3 "$HOOK" "$@" 2>&1
 }
 
@@ -313,6 +314,7 @@ for row in "${L1_TABLE[@]}"; do
     OUT=$(env -u CLAUDE_CODE_SESSION_ID -u WORKLIST_SESSION_ID bash -c '
         printf "%s" "$1"; shift
         TMPDIR="$2/tmp" CLAUDE_PROJECT_DIR="$2/proj" WORKLIST_JUDGE=off \
+            WORKLIST_PUBLISH_ROOT="$2" \
             python3 "$3" "${@:4}" 2>&1' _ "" "$STATE_BODY" "$BASE" "$HOOK" "${FIREARGS[@]}" </dev/null)
     if ! grep -qF "identity mismatch" <<<"$OUT"; then
         pass "184 CONTROL B $verb: an unresolvable environment accuses nobody"
