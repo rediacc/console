@@ -213,7 +213,7 @@ _gc_run() { # _gc_run <expected-rc> <shim-mode> <claim> <label> [needle] [not-ne
     d="$(_gc_shim "$mode")"
     out="$(printf '%s' "{\"tool_input\":{\"command\":\"git commit --allow-empty -m x\"}}" |
         PATH="$d:$PATH" CI_RETRIGGER_NO_RUN_FOR="$claim" \
-        bash "$DIR/pre-bash/block-git-empty-commit.sh" 2>&1 >/dev/null)"
+            bash "$DIR/pre-bash/block-git-empty-commit.sh" 2>&1 >/dev/null)"
     rc=$?
     rm -rf "$d"
     [ "$rc" = "$exp" ] || bad="exit $rc, wanted $exp"
