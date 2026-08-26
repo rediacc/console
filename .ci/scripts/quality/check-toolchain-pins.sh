@@ -337,6 +337,23 @@ if grep -vE '^[[:space:]]*#' "$TMP/c/unpinned-gate.sh" |
 else
     fail "A6 CONTROL DID NOT FIRE: an unpinned tool invocation went undetected"
 fi
+# A6 SELF-PROSE CONTROL. A6 flagged check-shell-size.sh for two `echo` lines
+# PRINTING the shellcheck directive it tells you to add; the gate invoked
+# nothing. A detector that matches its own documentation cannot be satisfied
+# except by deleting the explanation, so prove it does not.
+{
+    printf '#!/usr/bin/env bash\n'
+    printf '# this gate never runs shellcheck itself, it only greps for it\n'
+    printf 'echo "  # shellcheck extended-analysis=false"\n'
+} >"$TMP/c/prose-gate.sh"
+if grep -vE '^[[:space:]]*#' "$TMP/c/prose-gate.sh" |
+    grep -vE '^[[:space:]]*(echo|printf)[[:space:]][^;&|]*$' |
+    grep -qE "(^|[;&|(]|[[:space:]])(${GATED_TOOLS})[[:space:]]"; then
+    fail "A6 IS OVER-BROAD: a comment and an echoed string read as an invocation"
+else
+    pass "A6 control: naming a tool in prose or an echo is not invoking it"
+fi
+
 printf '#!/usr/bin/env bash\nBIN="$(toolchain_acquire shellcheck)"\n' >"$TMP/c/pinned-gate.sh"
 if grep -qE 'toolchain_acquire|toolchain_check|[A-Z]+_VERSION' "$TMP/c/pinned-gate.sh"; then
     pass "A6 control: a gate that resolves at the pin is not flagged"
