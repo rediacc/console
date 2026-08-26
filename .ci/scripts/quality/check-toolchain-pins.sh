@@ -187,7 +187,24 @@ while IFS= read -r g; do
     [[ -n "$g" ]] || continue
     [[ -f "$ROOT/$g" ]] || continue
     is_exempt "$g" && continue
+    # PROSE IS NOT AN INVOCATION, and an echoed string is prose too. Comments
+    # were already stripped for exactly this reason ("judge the code, not the
+    # words describing it"); a line whose command is `echo`/`printf` only PRINTS
+    # the tool's name -- as advice in a failure message, or into a control
+    # fixture -- and running it invokes nothing.
+    #
+    # Measured 2026-08-26 (run 32907xxx, Quality / Code): A6 flagged
+    # check-shell-size.sh, whose only two matches were
+    #   echo "         # shellcheck extended-analysis=false"
+    #   echo '# shellcheck extended-analysis=false'
+    # i.e. the directive it TELLS you to add. It never runs shellcheck at all,
+    # so demanding it acquire shellcheck at the pin was incoherent.
+    #
+    # Only a line whose FIRST word is echo/printf and that carries no command
+    # separator is dropped: `echo x; shfmt y` still gets scrutinised, so this
+    # narrows the false-positive without opening a bypass.
     grep -vE '^[[:space:]]*#' "$ROOT/$g" |
+        grep -vE '^[[:space:]]*(echo|printf)[[:space:]][^;&|]*$' |
         grep -qE "(^|[;&|(]|[[:space:]])(${GATED_TOOLS})[[:space:]]" || continue
     # RESOLVING at a pin, not merely NAMING one. The first version accepted any
     # `*_VERSION` mention, and check-python-lint.sh passed it while still taking
