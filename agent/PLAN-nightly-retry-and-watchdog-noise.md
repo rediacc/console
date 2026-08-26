@@ -1,5 +1,5 @@
 # PLAN: nightly retry for failed runs, and the watchdog noise underneath it
-Status: draft
+Status: done — Phases 1, 2, 3a and 5b landed on 0826-1 (PR #576); 3b deliberately not done
 Owner: 854ac1c6
 Updated: 2026-08-26
 
