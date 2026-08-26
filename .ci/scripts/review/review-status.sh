@@ -63,6 +63,12 @@ source "$SCRIPT_DIR/../lib/common.sh"
 
 require_cmd gh
 require_cmd jq
+# Declared because the artifact lookup below reads a zip member with it.
+# An UNDECLARED binary here is not a missing feature, it is a mute death:
+# under `set -euo pipefail` a command-not-found inside a command
+# substitution exits 127 immediately, before any log_error and before
+# post_check, leaving the head with no check-run and no annotation.
+require_cmd python3
 
 require_var GITHUB_REPOSITORY
 
@@ -162,12 +168,27 @@ case "${EVENT_NAME:-}" in
             --jq '.artifacts[] | select(.name == "review-target") | .id' 2>/dev/null | grep -q .; then
             art_id="$(gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${WR_RUN_ID}/artifacts" \
                 --jq '[.artifacts[] | select(.name == "review-target")] | first | .id')"
-            tmp_zip="$(mktemp -d)/review-target.zip"
+            tmp_dir="$(mktemp -d)"
+            tmp_zip="$tmp_dir/review-target.zip"
             if ! gh api "repos/${GITHUB_REPOSITORY}/actions/artifacts/${art_id}/zip" >"$tmp_zip" 2>/dev/null; then
                 log_error "review-target artifact ${art_id} exists on run ${WR_RUN_ID} but could not be downloaded"
+                rm -rf "$tmp_dir"
                 exit 1
             fi
-            artifact_pr="$(unzip -p "$tmp_zip" review-target.txt 2>/dev/null | tr -dc '0-9')"
+            # Read the member with python3, not `unzip`. unzip was undeclared, and
+            # on any host without it this line killed the script at exit 127 before
+            # either log_error below could speak -- the mute no-op that adding this
+            # artifact lookup was meant to END. python3 is declared above, and is
+            # already what the test harness uses to build this very fixture.
+            artifact_pr="$(python3 -c '
+import sys, zipfile
+try:
+    with zipfile.ZipFile(sys.argv[1]) as z:
+        sys.stdout.write(z.read("review-target.txt").decode("utf-8", "replace"))
+except Exception:
+    pass
+' "$tmp_zip" | tr -dc '0-9')"
+            rm -rf "$tmp_dir"
             if [[ -z "$artifact_pr" ]]; then
                 log_error "review-target artifact on run ${WR_RUN_ID} is present but carries no PR number"
                 exit 1

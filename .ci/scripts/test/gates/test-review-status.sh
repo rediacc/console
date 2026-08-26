@@ -1138,6 +1138,25 @@ report_comment() {
         '{id: $id, created_at: $created, user: {login: "github-actions[bot]"}, body: $body}'
 }
 
+# epic_report_comment <id> <epic> <created_at>
+# The per-epic producer header. It is the SAME constant with the epic appended,
+# which is what makes the fan-out an extension by dimension rather than a
+# second, drifting key.
+epic_report_comment() {
+    local id="$1" epic="$2" created="$3"
+    report_comment "$id" "$created" "$(printf '%s\n' \
+        "${REPORT_PREFIX_KEY} (epic ${epic}) the automated review of 208c8a2**" \
+        '' \
+        '---' \
+        '' \
+        'Verdict: approve with one finding in this task.')"
+}
+
+# human_reply_comment <id> <report-id> <created_at>
+human_reply_comment() {
+    chatter_comment "$1" "$3" mfbayraktar "Re: review report $2 -- $(human_answer_body)"
+}
+
 marker_issue_comment() {
     chatter_comment "$1" "$2" 'github-actions[bot]' "<!-- claude-reviewed: 2222222222222222222222222222222222222222 -->
 Automated Claude review completed for commit 208c8a2. Cost: \$4.6617 (claude-sonnet-5 35771out) | 84 turns | 21m3s"
@@ -1147,8 +1166,16 @@ run_report_gate() {
     local t="$1"
     shift
     local rc=0
+    # PIN THE BRANCH. The reply gate fans out per epic by reading
+    # agent/pr/<branch>.md from the CHECKOUT, so with no pin it read whatever
+    # branch the developer happened to be on: on a branch that declares epics,
+    # every flat-path assertion below silently inverted, because the planted
+    # bare "**Claude finished" fixture does not match a per-epic header. A test
+    # must not depend on the tree it is running in. Callers that want the
+    # fan-out set PR_HEAD_REF_OVERRIDE to a branch whose snapshot they planted.
     LAST_OUT="$(env PATH="$t/bin:$PATH" GH_FIXTURES="$t/fixtures" GH_TOKEN=fake \
         GITHUB_REPOSITORY=rediacc/console PR_NUMBER=42 NO_COLOR=1 \
+        PR_HEAD_REF="${PR_HEAD_REF_OVERRIDE:-rs-fixture-branch-with-no-snapshot}" \
         "$@" bash "$REPORT_REPLIES_GATE" 2>&1)" || rc=$?
     LAST_RC="$rc"
     return 0
@@ -1162,6 +1189,46 @@ test_report_prefix_is_shared_with_the_pipeline() {
     grep -qF -- "$REPORT_PREFIX_KEY" "$REPORT_REPLIES_GATE" ||
         log_fail "check-review-report-replies.sh no longer keys off '$REPORT_PREFIX_KEY'; it cannot recognise a report"
     log_pass "the report header is a constant the pipeline writes and the report gate reads"
+}
+
+# THE PIN ABOVE HAS A COST, AND THIS PAYS IT. Pinning PR_HEAD_REF to a branch
+# with no snapshot makes every flat-path test deterministic, but it would also
+# hide a fan-out that had stopped working entirely: with zero epics the gate
+# takes the flat path, which is exactly what those tests assert. So drive the
+# OTHER side here, with a snapshot the test plants itself.
+#
+# CWD MATTERS: review_epic_ids() builds a RELATIVE path (agent/pr/<branch>.md),
+# so the gate must run from the fixture root, or it would read -- or worse,
+# require -- a snapshot in the real tree.
+test_per_epic_fanout_gates_every_epic_not_just_the_newest() {
+    local t="$1"
+    setup_comments "$t"
+    mkdir -p "$t/agent/pr"
+    cat >"$t/agent/pr/epicfix.md" <<'SNAP'
+### first task
+PR-TASK: aaa111
+
+### second task
+PR-TASK: bbb222
+SNAP
+    # aaa111's report is answered; bbb222's is not. Newest-overall would look at
+    # bbb222 alone and, if it were answered, excuse aaa111 silently. Here the
+    # UNANSWERED one is newest, so the assertion that matters is that the output
+    # names the per-epic accounting rather than a single global report.
+    comments_fixture "$t" "$(epic_report_comment 801 aaa111 2026-08-26T10:00:00Z)
+$(human_reply_comment 802 801 2026-08-26T10:05:00Z)
+$(epic_report_comment 803 bbb222 2026-08-26T10:10:00Z)"
+    (
+        cd "$t" || exit 1
+        PR_HEAD_REF_OVERRIDE=epicfix run_report_gate "$t"
+        echo "$LAST_RC" >"$t/rc"
+        printf '%s' "$LAST_OUT" >"$t/out"
+    )
+    LAST_RC="$(cat "$t/rc")"
+    LAST_OUT="$(cat "$t/out")"
+    assert_exit_code 1 "$LAST_RC" "an unanswered epic report must block even when another epic's report was answered"
+    assert_contains "$LAST_OUT" "bbb222" "the failure names the epic that is unanswered"
+    log_pass "per-epic fan-out gates EVERY epic, not just the newest report"
 }
 
 # THE REGRESSION PIN. This is the exact live shape that slipped through: a real
@@ -1384,12 +1451,22 @@ test_review_report_count_is_shared_and_unqualified() {
     local body
     body="$(sed -n '/^review_report_count()/,/^}/p' "$lib")"
     [[ -n "$body" ]] || log_fail "could not extract review_report_count() from common.sh"
-    grep -q 'startswith(\\"\*\*Claude finished' <<<"$body" ||
-        log_fail "review_report_count() no longer keys on the **Claude finished header, which is the producer constant claude-review-gate.sh writes verbatim"
+    # The per-epic review PARAMETERISES the header, so the constant no longer
+    # sits literally inside startswith(). What must still hold is that the key
+    # IS the producer constant: the base needle is the bare header, the epic
+    # form EXTENDS that same header with its id, and startswith() keys on that
+    # variable and nothing else. Extending by DIMENSION is allowed here;
+    # ANDing a guess about the body's prose is what the next check forbids.
+    grep -qF 'needle="**Claude finished"' <<<"$body" ||
+        log_fail "review_report_count()'s base needle is no longer the bare **Claude finished header, which is the producer constant claude-review-gate.sh writes verbatim"
+    grep -qF 'needle="**Claude finished (epic ' <<<"$body" ||
+        log_fail "review_report_count() lost its per-epic form; with one report per epic a global count blows the cap on round one"
+    grep -q 'startswith(\\"${needle}\\")' <<<"$body" ||
+        log_fail "review_report_count() no longer keys startswith() on the needle, so the header it counts is not the one the producer writes"
     if grep -qE 'json:review-findings|### Review' <<<"$body"; then
         log_fail "review_report_count() has regained a content qualifier; that undercounts real reviews and makes the cap unreachable -- exclude on something the producer emits on purpose, not on its prose"
     fi
-    log_pass "review_report_count() is defined once, in common.sh, and keys on the header alone"
+    log_pass "review_report_count() is defined once, in common.sh, and keys on the producer header alone, per epic"
 }
 
 test_review_status_has_workflow_dispatch_with_pr_number() {
@@ -1452,6 +1529,7 @@ test_report_prefix_is_shared_with_the_pipeline
 test_reply_thresholds_match_across_both_gates
 test_review_report_count_is_shared_and_unqualified
 with_temp_dir test_report_without_fence_or_heading_blocks
+with_temp_dir test_per_epic_fanout_gates_every_epic_not_just_the_newest
 with_temp_dir test_report_answered_passes
 with_temp_dir test_report_bot_self_reply_does_not_count
 with_temp_dir test_report_ordinary_chatter_is_ignored
