@@ -50,6 +50,14 @@ jobs:
           preset: housekeeping
           repositories: console,renet,elite,account
 
+      # Retry BEFORE the cleanups: a run this reruns may itself be a cleanup
+      # (that is the measured case -- Cleanup PR Preview), so giving it the
+      # night's own window to succeed is better than reaping around it.
+      - name: Retry retryable failed runs
+        run: .ci/scripts/housekeeping/retry-failed-runs.sh ${{ (github.event_name == 'workflow_dispatch' && inputs.dry_run) && '--dry-run' || '' }}
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+
       - name: Cleanup old releases, tags, packages, previews, R2 orphans, branches
         run: .ci/scripts/housekeeping/cleanup-versions.sh ${{ (github.event_name == 'workflow_dispatch' && inputs.dry_run) && '--dry-run' || '' }}
         env:
