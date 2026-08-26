@@ -208,6 +208,13 @@ check 2 pre-bash/block-blanket-git-add.sh "$(bash_json 'git add -A 2>&1')" "blan
 check 2 pre-bash/block-blanket-git-add.sh "$(bash_json 'git add -A --')" "blanket-git-add: a bare -- with no pathspec is still blanket"
 check 2 pre-bash/block-blanket-git-add.sh "$(bash_json 'git add . > /dev/null')" "blanket-git-add: dot plus redirection"
 check 2 pre-bash/block-nondraft-pr-create.sh "$(bash_json 'gh pr create --title x --body y')" "nondraft-create: console without --draft"
+# Stale-dated PR branch (PR #575 was filed from 0825-2 on 08-26). Both
+# directions: the stale name blocks, today's name and a non-wave name pass.
+check 2 pre-bash/block-stale-pr-branch-date.sh "$(bash_json 'gh pr create --draft --head 0825-2 -t x -b y')" "stale-pr-branch: yesterday's MMDD blocked"
+check 0 pre-bash/block-stale-pr-branch-date.sh "$(bash_json "gh pr create --draft --head $(date +%m%d)-9 -t x -b y")" "stale-pr-branch: today's MMDD allowed"
+check 0 pre-bash/block-stale-pr-branch-date.sh "$(bash_json 'gh pr create --draft --head feature/not-a-wave -t x')" "stale-pr-branch: non-MMDD name is out of scope"
+check 0 pre-bash/block-stale-pr-branch-date.sh "$(bash_json 'gh pr list --head 0825-2')" "stale-pr-branch: not a create, ignored"
+check 2 pre-bash/block-stale-pr-branch-date.sh "$(bash_json "sh -c 'gh pr create --draft --head 0825-2 -t x'")" "stale-pr-branch: sh -c wrapper bypass blocked"
 check 2 pre-bash/block-nondraft-pr-create.sh "$(bash_json 'cd private/renet && gh pr create --draft --title x')" "nondraft-create: draft on private submodule"
 check 2 pre-bash/block-admin-merge.sh "$(bash_json 'gh pr merge 531 --squash --admin')" "admin-merge: --admin banned"
 # Adversarial bypass cases (review finding F1): the quote-strip used to let

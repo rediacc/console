@@ -71,6 +71,10 @@
           },
           {
             "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/pre-bash/block-stale-pr-branch-date.sh\""
+          },
+          {
+            "type": "command",
             "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/pre-bash/block-second-open-pr.sh\""
           },
           {
