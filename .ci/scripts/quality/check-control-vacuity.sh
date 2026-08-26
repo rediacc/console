@@ -52,7 +52,19 @@ builds_by_substitution() {
     # literal s/// appears on the line). Missing the third mis-exempted the two
     # gates that motivated this check, which is the failure this comment exists
     # to stop repeating.
-    grep -qE '\$\{[A-Za-z_][A-Za-z0-9_]*//|sed [^&]*[[:punct:]]s[/@|#]|sed -i' "$1"
+    # A PREFIX substitution CANNOT go vacuous, so it is not the fragile kind.
+    # `s/^/.../` has an EMPTY needle anchored at line start: it always matches,
+    # so it can never silently produce an identical copy -- which is the entire
+    # failure this gate exists to catch. Two shapes in real use here:
+    #   echo "$hits" | sed 's/^/         /'      indenting a message for display
+    #   seq 1 N      | sed 's/^/echo /'          GENERATING a fixture from nothing
+    # Neither mutates a copy of the subject, so neither has a plant that could
+    # fail to land. Flagging them (measured 2026-08-26 on check-devbox-exec.sh
+    # and check-shell-size.sh) demanded a proof-of-plant for a plant that does
+    # not exist -- the same false-positive family as A6 reading an echoed string
+    # as an invocation.
+    grep -vE "sed [^&]*[[:punct:]]s[/@|#]\^[/@|#]" "$1" |
+        grep -qE '\$\{[A-Za-z_][A-Za-z0-9_]*//|sed [^&]*[[:punct:]]s[/@|#]|sed -i'
 }
 
 # Does it prove the plant landed? Either shape counts:
