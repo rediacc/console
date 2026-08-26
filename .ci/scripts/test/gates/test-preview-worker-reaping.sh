@@ -127,14 +127,14 @@ test_fails_closed_when_pr_list_unreadable() {
     [[ -n "$body" ]] || log_fail "could not extract cleanup_preview_workers from the subject"
 
     local guard_line del_line
-    guard_line="$(grep -n 'SKIPPING Worker cleanup' <<<"$body" | head -1 | cut -d: -f1)"
-    del_line="$(grep -n 'cf_api DELETE' <<<"$body" | head -1 | cut -d: -f1)"
+    guard_line="$(grep -n 'SKIPPING Worker cleanup' <<<"$body" | head -1 | cut -d: -f1 || true)"
+    del_line="$(grep -n 'cf_api DELETE' <<<"$body" | head -1 | cut -d: -f1 || true)"
     [[ -n "$guard_line" ]] || log_fail "the fail-closed guard is GONE from cleanup_preview_workers"
     [[ -n "$del_line" ]] || log_fail "no delete call found; the phase does nothing"
     [[ "$guard_line" -lt "$del_line" ]] ||
         log_fail "the fail-closed guard sits AFTER the delete, so it guards nothing"
 
-    grep -q 'return 0' <<<"$(sed -n "${guard_line},\$p" <<<"$body" | head -3)" ||
+    grep -q 'return 0' <<<"$(sed -n "${guard_line},\$p" <<<"$body" | head -3 || true)" ||
         log_fail "the unreadable-PR-list branch warns but does not return"
     log_pass "unreadable PR list returns before any delete"
 }
@@ -146,8 +146,8 @@ test_dry_run_and_budget_are_honoured() {
     grep -q 'DRY_RUN' <<<"$body" || log_fail "phase ignores DRY_RUN -- a dry run would DELETE"
     grep -q 'deletes_budget_ok' <<<"$body" || log_fail "phase ignores MAX_DELETES_PER_RUN"
     local dry_line del_line
-    dry_line="$(grep -n 'DRY_RUN' <<<"$body" | head -1 | cut -d: -f1)"
-    del_line="$(grep -n 'cf_api DELETE' <<<"$body" | head -1 | cut -d: -f1)"
+    dry_line="$(grep -n 'DRY_RUN' <<<"$body" | head -1 | cut -d: -f1 || true)"
+    del_line="$(grep -n 'cf_api DELETE' <<<"$body" | head -1 | cut -d: -f1 || true)"
     [[ "$dry_line" -lt "$del_line" ]] || log_fail "the DRY_RUN check sits AFTER the delete"
     log_pass "DRY_RUN and budget both precede the delete"
 }
