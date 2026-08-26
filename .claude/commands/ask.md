@@ -21,13 +21,13 @@ Its entire output is questions, then whatever the answers set in motion.
 
 ### 1. Collect, from all three places a decision hides
 
-1. **`[?]` worklist deferrals** — already parked for the operator, each carrying
+1. **`[?]` worklist deferrals.** Already parked for the operator, each carrying
    `DEFAULT:`/`WHY:`/`HOW:`. Their DEFAULT executes on a timer, so an unanswered
    one is a decision made by the clock. Those are the highest-value asks.
-2. **DECISIONS in the active round log** — choices made autonomously under the
+2. **DECISIONS in the active round log.** Choices made autonomously under the
    in-context tier-3 rule, recorded for **post-hoc veto**. The operator has never
    seen them; that is the point of asking.
-3. **Choices this session made silently** — a default taken, a scope narrowed, an
+3. **Choices this session made silently.** A default taken, a scope narrowed, an
    alternative rejected. If answering differently would change what ships, it
    belongs here even when nothing tracked it.
 
@@ -41,8 +41,8 @@ product intent, risk acceptance, packaging, anything outward-facing or
 irreversible, and any veto of an autonomous gate/suppression decision.
 
 **Do not ask** what the code, the request, or a sensible default already settles.
-A question you could answer by running something is not a decision, it is a task —
-go run it. Over-asking is the failure mode this repo already has thirty deferrals
+A question you could answer by running something is not a decision. It is a task,
+so go run it. Over-asking is the failure mode this repo already has thirty deferrals
 of; this command must not manufacture more.
 
 If nothing survives the filter, say so in one line and stop. That is a valid,
@@ -75,5 +75,5 @@ common outcome and it is much better than inventing a question.
 
 ### 5. Report in one screen
 
-Answers received, what each changed, what is now unblocked. No essay — the
+Answers received, what each changed, what is now unblocked. No essay: the
 operator just answered questions and does not need them narrated back.
