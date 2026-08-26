@@ -1094,3 +1094,40 @@ own premises, so a broken world reds differently from a broken subject.
 Contamination is SCOPED, so do not discard neighbouring results reflexively: the
 sibling case `153f` ran in the same broken sandbox and its RED stood, because it
 only parses a markdown file and never calls git. Ask what the case depends on.
+
+## A detector can match its own prose
+
+**A gate that greps for a dangerous construct will eventually match text that
+merely LOOKS like that construct** — and it will name a file that is doing
+nothing wrong. Two instances in one afternoon, 2026-08-26, both on this repo's
+own new gates:
+
+- **`check-toolchain-pins.sh` A6** ("does this gate invoke a pinned tool?")
+  flagged `check-shell-size.sh`. Its only matches were two `echo` lines
+  *printing* the `# shellcheck extended-analysis=false` directive the gate tells
+  you to add. It never invokes shellcheck.
+- **`check-control-vacuity.sh`** ("does this control prove its plant landed?")
+  flagged `check-devbox-exec.sh` and `check-shell-size.sh`. Their `sed` calls
+  were `s/^/.../` — one indenting a message for display, one generating a fixture
+  from `seq`. Neither mutates a copy of the subject, so neither has a plant that
+  could fail to land.
+
+A6 already stripped comments for exactly this reason ("judge the code, not the
+words describing it"). **The lesson is that comments are not the only place prose
+hides**: an echoed string is prose, a formatting pipe is not a mutation, and a
+generated fixture is not a copy of the source.
+
+**Why it fools you rather than blocking you:** the gate is red, the finding names
+a real file and a real line, and the fastest way to green is to do what it says.
+Both of these could have been "satisfied" — by exempting the file, or by
+cargo-culting a proof-of-plant assertion into a display pipe. Either would have
+gone green while making the gate say something false, and left the detector wrong
+for the next author.
+
+**The check to run:** before satisfying a detector, ask whether the matched line
+actually DOES the dangerous thing, or merely contains its shape. If a gate you
+write greps for a construct, test it against its own documentation and its own
+output strings.
+
+Operator ruling 2026-08-26: two instances is a pattern, not yet a class worth its
+own meta-gate. Revisit if a third appears.
