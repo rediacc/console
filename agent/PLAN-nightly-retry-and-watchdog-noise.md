@@ -117,8 +117,14 @@ night must be distinguishable from one that is broken.
 root of both problems, and it also misleads every human scanning the Actions tab.
 Options, in increasing order of change:
 
-- **3a:** keep `setFailed()` but make the run NAME say so, e.g.
-  `Watchdog: run <id> (gen N) -- pipeline cancelled as designed`.
+- **3a (DONE, but NOT as specced -- correction):** the run NAME cannot carry
+  this. GitHub evaluates `run-name` at run CREATION from the dispatch inputs,
+  before the monitored run's outcome exists, so it cannot express a verdict
+  decided mid-run. Verified against `watchdog-monitor.yml:2`, whose run-name is
+  built purely from `inputs.*`. The step summary is the earliest surface that
+  can, so the explanation lives there plus a self-describing annotation
+  (`PIPELINE CANCELLED (watchdog working as designed)`). Landed with
+  `test-watchdog-designed-failure.sh`.
 - **3b:** exit 0 and record the cancellation in the job summary + an output,
   so `conclusion=failure` regains its plain meaning repo-wide.
 

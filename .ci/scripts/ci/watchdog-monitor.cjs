@@ -1162,7 +1162,33 @@ const monitor = async ({ github, context, core }) => {
         run_id: targetRunId,
       });
     }
-    core.setFailed('PIPELINE CANCELLED: ' + failureMsg);
+    // THIS FAILURE IS THE WATCHDOG WORKING, and for months nothing said so.
+    //
+    // The watchdog cancels the CI run it monitors, then setFailed()s to signal
+    // that it did. Measured 2026-08-26 over three days of runs: 63 of the 64
+    // repo-wide `failure` conclusions are THIS line. A human scanning the
+    // Actions tab, a dashboard, and any sweeper that keys on `conclusion`
+    // cannot tell it apart from a real failure -- which is exactly why the
+    // nightly retry has to exclude this workflow by path.
+    //
+    // run-name cannot carry the distinction: GitHub evaluates it at run
+    // CREATION from inputs, before this outcome exists. The step summary is
+    // the earliest surface that can, so write one.
+    const designedNote =
+      '## Pipeline cancelled — this is the watchdog working as designed\n\n' +
+      'The monitored run had a failing job, so this watchdog generation cancelled it ' +
+      'and marked itself failed to signal that. **This is not a defect in the watchdog.**\n\n' +
+      '- Monitored run: `' + targetRunId + '`\n' +
+      '- Reason: ' + failureMsg + '\n\n' +
+      'Read the monitored run for the real failure; nothing here needs fixing or rerunning.';
+    try {
+      await core.summary.addRaw(designedNote).write();
+    } catch (e) {
+      // A summary is diagnostics, never the signal. If it cannot be written the
+      // setFailed below must still happen, so swallow and say so.
+      console.log(`Could not write step summary (${e.message}); the annotation below still carries the verdict.`);
+    }
+    core.setFailed('PIPELINE CANCELLED (watchdog working as designed): ' + failureMsg);
     return true;
   }
 
