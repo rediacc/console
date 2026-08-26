@@ -76,7 +76,13 @@ for line in lines:
         in_job = True
     elif in_job and line.startswith('  ') and not line.startswith('   ') and line.rstrip().endswith(':'):
         in_job = False
-    if in_job and line.strip() == "needs.initialize.outputs.channel != ''":
+    # Tolerate a trailing `&&`: the condition stopped being the LAST clause when
+    # the skip_release gate was added after it (2026-08-26), and an exact-match
+    # matcher silently cut nothing. The `assert cut == 1` below caught that
+    # rather than letting the test pass over an unmutated file -- which is the
+    # whole reason that assertion exists. Keep both: the matcher tolerant, the
+    # assertion strict.
+    if in_job and line.strip().rstrip('&').strip() == "needs.initialize.outputs.channel != ''":
         cut += 1
         # The preceding line now dangles an `&&`; trim it so the YAML still parses.
         if out and out[-1].rstrip().endswith('&&'):

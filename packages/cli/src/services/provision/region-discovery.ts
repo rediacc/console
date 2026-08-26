@@ -1,34 +1,39 @@
 /**
  * Region Discovery
  *
- * Fetches the signed regions manifest from the marketing site, verifies the
- * Ed25519 signature, and falls back to baked-in regions on failure.
+ * Returns the regions this CLI was built with.
+ *
+ * IT USED TO CLAIM MORE THAN IT DID. This module fetched a signed manifest from
+ * `${SITE_URL}/regions.json`, verified an Ed25519 signature, and "fell back" to
+ * the baked-in list. That endpoint returns 404 (measured 2026-08-26) and always
+ * has: nothing publishes it, and `scripts/sign-regions.ts` -- the tool that
+ * would have produced the signed blob -- had no caller anywhere in the repo.
+ *
+ * So every call took the fallback, on a five-second-timeout HTTP round trip
+ * whose failure was swallowed silently. The docstring said "falls back on
+ * failure" while failure was the only path, which is the kind of comment that
+ * makes a reader trust a capability that does not exist.
+ *
+ * Removed rather than finished, deliberately (operator decision 2026-08-26).
+ * Publishing a signed manifest is a deploy-surface change and a signing-key
+ * question; until someone wants that, the honest shape is a function that
+ * returns the built-in list and says so. Adding a region means a CLI release --
+ * which is exactly what it meant before, just without the pretence.
+ *
+ * `verifySignedRegions` is kept in @rediacc/shared: it is the piece worth
+ * reviving if runtime discovery is ever built, and it costs nothing unused.
  */
 
-import { PROTOCOL_DEFAULTS } from '@rediacc/shared/config/defaults';
-import { BAKED_IN_REGIONS, type RegionInfo, verifySignedRegions } from '@rediacc/shared/regions';
-
-const REGIONS_URL = `${PROTOCOL_DEFAULTS.SITE_URL}/regions.json`;
-const FETCH_TIMEOUT_MS = 5000;
+import { BAKED_IN_REGIONS, type RegionInfo } from '@rediacc/shared/regions';
 
 /**
- * Discover available regions.
- * Tries to fetch the signed manifest from the marketing site.
- * Falls back to baked-in regions on any failure (network, timeout, invalid signature).
+ * The regions this build knows about.
+ *
+ * Async purely to preserve the call signature: every caller already awaits it,
+ * and changing that would ripple through subscription.ts and region-prompt.ts
+ * for no behavioural gain.
  */
 export async function discoverRegions(): Promise<RegionInfo[]> {
-  try {
-    const resp = await fetch(REGIONS_URL, {
-      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
-    });
-    if (!resp.ok) return BAKED_IN_REGIONS;
-
-    const blob = (await resp.json()) as { payload: string; signature: string; publicKeyId: string };
-    const regions = await verifySignedRegions(blob);
-    if (regions && regions.length > 0) return regions;
-  } catch {
-    // Network error, timeout, or invalid JSON -- fall back silently
-  }
   return BAKED_IN_REGIONS;
 }
 

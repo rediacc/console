@@ -136,6 +136,14 @@ echo "== 214. THE CADENCE: the hook stands down for ONE turn after being answere
 # it. These are the ONLY cases that exercise the cadence: run() defaults it off.
 setup
 CADENCE=on
+# A LIVE WORKER, added with the v21 idle-stall gate (case 222). That gate is in
+# the ALWAYS tier, so an open item with nobody carrying it now defeats the pause
+# by design -- which would turn this case into a test of the new gate instead of
+# a test of the cadence. A running worker is the shape where a pause is still
+# legitimate (someone IS moving the work), so this case keeps pinning the thing
+# it was written to pin. Case 222f asserts the other half: strip the worker from
+# this exact fixture and the pause is refused.
+BG='[{"status":"running","description":"agent"}]'
 say "answer
 
 ## Remaining
@@ -261,3 +269,233 @@ say "answered
 ## Remaining
 - stuff"
 check "214e: with cadence OFF it demands again immediately" block "OPEN worklist item"
+
+echo "== 222. THE IDLE-STALL GATE: an open item, nobody carrying it, nothing moved =="
+# WHY (operator, 2026-08-26): "it's very annoying that neither you have
+# background agent nor running monitor/shell but you do stop even with remaining
+# items! I see they're not blocked because of dependencies/questioning to me."
+#
+# `open-items` already existed and was already a violation -- it is in the
+# ROTATING tier, which is what the cadence above is allowed to pause (case 214
+# pins exactly that). So the observed loop was legal: block, say something new,
+# get a pause, repeat. The v21 gate is the ALWAYS-tier backstop for the one
+# shape where a pause is never right, and the controls below are the whole
+# point: a gate that fires on every stop with an open item would be worse than
+# none, because a session cannot tell an accusation from background noise.
+setup
+say "answer
+
+## Remaining
+- the thing"
+brief_now
+hand_now
+echo '- [ ] (deadbeef) do the thing' >>"$WL"
+# FIRST SIGHT NEVER FIRES: with no baseline there is no evidence about the turn.
+check_quiet "222: the first stop takes a baseline and does not accuse" "ACTIONABLE WORK IN HAND"
+newturn
+say "still thinking about it
+
+## Remaining
+- the thing"
+check "222: the SECOND idle stop is refused" block "YOU ARE STOPPING WITH ACTIONABLE WORK IN HAND"
+check "222: and it states the rule positively" block "DONE, LEASED to a live worker, or [?] parked"
+
+echo "== 222b. CONTROL: an item TICKED between the two stops is silent =="
+# The single most important control. If this ever starts firing, the gate has
+# stopped measuring progress and is just counting open items.
+setup
+say "answer
+
+## Remaining
+- two things"
+brief_now
+hand_now
+reg_repo
+echo '- [ ] (deadbeef) first thing' >>"$WL"
+echo '- [ ] (deadbeef) second thing' >>"$WL"
+run >/dev/null # baseline
+sed -i "s|^- \[ \] (deadbeef) first thing|- [x] (deadbeef) first thing proof $(git -C "$BASE/proj" rev-parse --short HEAD)|" "$WL"
+newturn
+say "closed the first one
+
+## Remaining
+- second thing"
+check_quiet "222b CONTROL: real progress leaves the gate silent" "ACTIONABLE WORK IN HAND"
+
+echo "== 222c. CONTROL: an item moved to [?] with a DEFAULT is silent =="
+setup
+say "answer
+
+## Remaining
+- the decision"
+brief_now
+hand_now
+echo '- [ ] (deadbeef) do the thing' >>"$WL"
+run >/dev/null # baseline
+sed -i 's|^- \[ \] (deadbeef) do the thing|- [?] (deadbeef) do the thing DEFAULT: do it on Monday|' "$WL"
+newturn
+say "parked it on you
+
+## Remaining
+- the decision"
+check_quiet "222c CONTROL: parking on the operator is a legitimate stop" "ACTIONABLE WORK IN HAND"
+
+echo "== 222d. CONTROL: every item LEASED to a live worker is silent =="
+setup
+say "answer
+
+## Remaining
+- delegated"
+brief_now
+hand_now
+echo "- [>] (deadbeef) until:$(date -u -d '+30 minutes' +%Y-%m-%dT%H:%MZ) worker:w1 delegated to agent" >>"$WL"
+BG='[{"id":"w1","status":"running","description":"agent"}]'
+run >/dev/null
+newturn
+say "still running
+
+## Remaining
+- delegated"
+check_quiet "222d CONTROL: a live lease is not a stall" "ACTIONABLE WORK IN HAND"
+
+echo "== 222e. CONTROL: an open item WITH a running worker is silent =="
+# Narrower than 222d on purpose: the operator's complaint names the absence of a
+# background agent, so a session that HAS one is supervising, not stalling.
+setup
+say "answer
+
+## Remaining
+- the thing"
+brief_now
+hand_now
+echo '- [ ] (deadbeef) do the thing' >>"$WL"
+BG='[{"status":"running","description":"agent"}]'
+run >/dev/null
+newturn
+say "the worker is on it
+
+## Remaining
+- the thing"
+check_quiet "222e CONTROL: a running background worker suppresses the gate" "ACTIONABLE WORK IN HAND"
+
+echo "== 222f. THE CADENCE CANNOT PAUSE IT (case 214's fixture, minus the worker) =="
+# The regression this whole gate exists for. Byte-for-byte case 214, except no
+# background worker: 214 gets its pause, this must not.
+setup
+CADENCE=on
+say "answer
+
+## Remaining
+- stuff"
+brief_now
+hand_now
+echo '- [ ] (deadbeef) open thing' >>"$WL"
+check "222f: the first stop demands" block "OPEN worklist item"
+newturn
+say "I have now answered the demand
+
+## Remaining
+- stuff"
+check "222f: saying something new no longer buys the pause" block "YOU ARE STOPPING WITH ACTIONABLE WORK IN HAND"
+
+echo "== 222g. THE TELL: a Remaining line CLAIMING the item is unblocked =="
+# The specific admission the operator caught: "Blocked on: nothing", written
+# into the very section that is supposed to explain why the work has stopped.
+setup
+say "answer
+
+## Remaining
+- #a1 finish the migration -- blocked on: nothing, next up"
+brief_now
+hand_now
+echo '- [ ] (deadbeef) finish the migration' >>"$WL"
+BG='[{"status":"running","description":"agent"}]'
+check "222g: the unblocked claim is refused even while a worker runs" block "CLAIMS an item has no blocker"
+
+echo "== 222h. CONTROL: writing ABOUT the phrase does not trip it =="
+# The V_FOUND_NOT_FIXED precedent: a gate that cannot survive being described is
+# too broad, and every message discussing this check quotes its own trigger.
+setup
+say "answer
+
+## Remaining
+- the gate now refuses a line reading \`blocked on: nothing\` -- see the new case"
+brief_now
+hand_now
+echo '- [ ] (deadbeef) finish the migration' >>"$WL"
+BG='[{"status":"running","description":"agent"}]'
+check_quiet "222h CONTROL: a backticked mention is not a claim" "CLAIMS an item has no blocker"
+
+echo "== 222i. CONTROL: a bare '- nothing' Remaining is not a claim =="
+# "## Remaining / - nothing" means the LIST is empty, which is the opposite of
+# asserting that a listed item has no blocker. Matching it would fire the gate
+# on the cleanest report shape in the suite.
+setup
+say "answer
+
+## Remaining
+- nothing"
+brief_now
+hand_now
+echo '- [ ] (deadbeef) finish the migration' >>"$WL"
+BG='[{"status":"running","description":"agent"}]'
+check_quiet "222i CONTROL: an empty Remaining list is not an unblocked claim" "CLAIMS an item has no blocker"
+
+echo "== 222j. THE FAILURE PATH: a raising gate must not wedge or wave through =="
+# A check that throws is worse than one that is absent (case 99 makes the same
+# point for the hook as a whole). Both guards are exercised: the wrapper at the
+# call site, and closed_sig's own swallow.
+setup
+say "answer
+
+## Remaining
+- the thing"
+brief_now
+hand_now
+echo '- [ ] (deadbeef) do the thing' >>"$WL"
+CRASHDIR="$BASE/hookcrash"
+mkdir -p "$CRASHDIR"
+cp "$(dirname "$HOOK")"/*.py "$CRASHDIR/"
+sed -i 's|^def idle_stall(|def idle_stall(*_a, **_k):\n    raise RuntimeError("planted idle_stall crash")\n\n\ndef _idle_stall_unused(|' "$CRASHDIR/wl_checks.py"
+OUT="$(printf '{"session_id":"%s","cwd":"%s","transcript_path":"%s","session_crons":%s,"background_tasks":[]}' \
+    "$SID" "$BASE/proj" "$BASE/t.jsonl" "$CRONS" |
+    TMPDIR="$BASE/tmp" CLAUDE_PROJECT_DIR="$BASE/proj" WORKLIST_TASKS_DIR="$BASE/tasks" \
+        WORKLIST_AGENT_BRANCH=agenttest WORKLIST_JUDGE=off WORKLIST_CADENCE=off \
+        GITHUB_ACTIONS="${GHA:-}" python3 "$CRASHDIR/worklist.py" 2>"$BASE/222j.err")"
+if grep -qF '"decision": "block"' <<<"$OUT" && grep -qF "OPEN worklist item" <<<"$OUT" &&
+    ! grep -qF "planted idle_stall crash" <<<"$OUT"; then
+    pass "222j: a raising gate is swallowed; open-items still blocks the stop"
+else
+    fail "222j: out=[${OUT:0:220}] err=[$(tail -c 200 "$BASE/222j.err" 2>/dev/null | tr '\n' ' ')]"
+fi
+# ...and the meta-control: the planted raise really was reachable. Without this,
+# 222j passes on a sed that matched nothing.
+if grep -qF 'planted idle_stall crash' "$CRASHDIR/wl_checks.py"; then
+    pass "222j META: the planted crash was actually written into the copy"
+else
+    fail "222j META: the sed matched nothing, so 222j proved nothing"
+fi
+# closed_sig's own swallow, driven directly: an unreadable store must produce
+# "unknown", never an exception and never an accusation.
+if python3 - "$(dirname "$HOOK")" <<'PYEOF'; then
+import sys
+
+sys.path.insert(0, sys.argv[1])
+import wl_checks
+
+
+class Boom:
+    @property
+    def items(self):
+        raise RuntimeError("unreadable store")
+
+
+assert wl_checks.closed_sig(Boom(), "deadbeef") == ""
+assert wl_checks.idle_stall({}, Boom(), "deadbeef", ["x"], [], []) == (False, "no baseline yet")
+assert wl_checks.unblocked_claims(None) == []
+assert wl_checks.unblocked_claims("## Remaining\n- blocked on: nothing") != []
+PYEOF
+    pass "222j: closed_sig/idle_stall/unblocked_claims survive an unreadable store"
+else
+    fail "222j: a helper raised on an unreadable store"
+fi

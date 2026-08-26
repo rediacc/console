@@ -58,6 +58,19 @@ const FETCHED_REGIONS = [
 ];
 
 describe('discoverRegions', () => {
+  // THESE CASES CHANGED SHAPE ON PURPOSE (2026-08-26).
+  //
+  // They used to pin a runtime-fetch path: fetch the signed manifest, verify it,
+  // and "fall back" to the baked-in list on failure. Five of the six cases were
+  // already asserting the fallback, because the fallback was the only path that
+  // ever ran -- `${SITE_URL}/regions.json` returns 404 and nothing publishes it,
+  // and `scripts/sign-regions.ts` had no caller. The one case that asserted the
+  // happy path was the only one describing behaviour users never got.
+  //
+  // The fetch was removed rather than finished (operator decision), so what is
+  // worth pinning now is the opposite claim: this function makes NO network call
+  // at all. That is a stronger assertion than the old suite had -- nothing
+  // previously would have caught a stray request on a 5s timeout.
   const originalFetch = globalThis.fetch;
 
   beforeEach(() => {
@@ -68,60 +81,39 @@ describe('discoverRegions', () => {
     globalThis.fetch = originalFetch;
   });
 
-  it('should return fetched regions when signature is valid', async () => {
-    globalThis.fetch = vi.fn().mockResolvedValue({
-      ok: true,
-      json: () => Promise.resolve({ payload: '...', signature: '...', publicKeyId: 'v1' }),
-    });
-    mockVerifySignedRegions.mockResolvedValue(FETCHED_REGIONS);
-
-    const result = await discoverRegions();
-
-    expect(result).toEqual(FETCHED_REGIONS);
-    expect(mockVerifySignedRegions).toHaveBeenCalledOnce();
-  });
-
-  it('should return baked-in regions on network error', async () => {
-    globalThis.fetch = vi.fn().mockRejectedValue(new Error('Network error'));
-
+  it('returns the baked-in regions', async () => {
     const result = await discoverRegions();
 
     expect(result).toHaveLength(2);
     expect(result[0].id).toBe('eu');
+    expect(result[1].id).toBe('us');
+  });
+
+  it('makes NO network request', async () => {
+    // The point of the removal. A fetch here would mean the dead path came back,
+    // costing every caller a timeout on a URL that 404s.
+    const spy = vi.fn();
+    globalThis.fetch = spy;
+
+    await discoverRegions();
+
+    expect(spy).not.toHaveBeenCalled();
+  });
+
+  it('does not attempt signature verification', async () => {
+    // verifySignedRegions is still exported from @rediacc/shared, deliberately,
+    // so it is available if runtime discovery is ever built. Nothing should be
+    // calling it today.
+    await discoverRegions();
+
     expect(mockVerifySignedRegions).not.toHaveBeenCalled();
   });
 
-  it('should return baked-in regions on non-200 response', async () => {
-    globalThis.fetch = vi.fn().mockResolvedValue({ ok: false, status: 404 });
+  it('is stable across calls', async () => {
+    const a = await discoverRegions();
+    const b = await discoverRegions();
 
-    const result = await discoverRegions();
-
-    expect(result).toHaveLength(2);
-    expect(mockVerifySignedRegions).not.toHaveBeenCalled();
-  });
-
-  it('should return baked-in regions when signature verification fails', async () => {
-    globalThis.fetch = vi.fn().mockResolvedValue({
-      ok: true,
-      json: () => Promise.resolve({ payload: '...', signature: 'bad', publicKeyId: 'v1' }),
-    });
-    mockVerifySignedRegions.mockResolvedValue(null);
-
-    const result = await discoverRegions();
-
-    expect(result).toHaveLength(2);
-    expect(result[0].id).toBe('eu');
-  });
-
-  it('should return baked-in regions when response JSON parsing fails', async () => {
-    globalThis.fetch = vi.fn().mockResolvedValue({
-      ok: true,
-      json: () => Promise.reject(new SyntaxError('Unexpected token')),
-    });
-
-    const result = await discoverRegions();
-
-    expect(result).toHaveLength(2);
+    expect(a).toEqual(b);
   });
 });
 

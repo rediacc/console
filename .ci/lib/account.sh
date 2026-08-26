@@ -1041,8 +1041,26 @@ account_db() {
     # on the host while the devbox is up, docker-proxy already holds that port.
     local preferred=4983
     if [[ -f "$DEVBOX_STATE_FILE" ]]; then
-        local base
-        base="$(sed -n 's/^base_port=//p' "$DEVBOX_STATE_FILE" | head -1)"
+        # ONE PARSER FOR .devbox-state, not two. This used to hand-roll
+        # `sed -n 's/^base_port=//p'` -- a byte-for-byte reimplementation of
+        # devbox_state_get (.ci/lib/devbox.sh) -- which was tolerable only while
+        # the format never changed. It changed: a `slug=` key was added, and a
+        # format with two independent readers is one edit away from them
+        # disagreeing.
+        #
+        # devbox.sh sources only find-port.sh, which this file already sources,
+        # so pulling it in adds no constants.sh readonly hazard. Guarded so a
+        # second source is a no-op, because check-account-probes.sh sources this
+        # file standalone under `set +eu` and that path is documented as fragile.
+        if ! declare -F devbox_state_get >/dev/null 2>&1; then
+            # shellcheck source=./devbox.sh
+            # BLOCKER: devbox_state_get is the single reader for .devbox-state
+            source "$CONSOLE_ROOT_DIR/.ci/lib/devbox.sh" 2>/dev/null || true
+        fi
+        local base=""
+        if declare -F devbox_state_get >/dev/null 2>&1; then
+            base="$(devbox_state_get base_port || true)"
+        fi
         [[ -n "$base" ]] && preferred=$((base + ${DEVBOX_OFFSET_STUDIO:-3}))
     fi
     local port

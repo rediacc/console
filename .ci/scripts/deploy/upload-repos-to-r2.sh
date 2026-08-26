@@ -26,6 +26,8 @@
 #   R2_ENDPOINT            S3 endpoint of the R2 bucket
 #   CLOUDFLARE_API_TOKEN   read by cf-purge-urls.sh
 #   CLOUDFLARE_ZONE_ID     zone whose cache is purged
+#   SKIP_RELEASE           truthy (1/true/yes/y/on) when the merge carried
+#                          'bump-none'. On a release channel NOTHING is written.
 #
 # Reads dist/repos/{apt,rpm,apk,archlinux}/ and dist/pages/install.{sh,ps1}.
 #
@@ -49,6 +51,54 @@ require_cmd aws
 : "${R2_SECRET_ACCESS_KEY:?upload-repos-to-r2.sh: R2_SECRET_ACCESS_KEY must be set}"
 : "${R2_ENDPOINT:?upload-repos-to-r2.sh: R2_ENDPOINT must be set}"
 : "${CLOUDFLARE_ZONE_ID:?upload-repos-to-r2.sh: CLOUDFLARE_ZONE_ID must be set}"
+
+# =============================================================================
+# bump-none: the release was skipped, so NOTHING may be written
+# =============================================================================
+# This script is channel-pointer-only end to end: every path it writes is
+# <repo>/${CHANNEL}/ or cli/${CHANNEL}/install.{sh,ps1}. On a bump-none merge
+# there is no tag and no GitHub Release, so advancing those pointers publishes a
+# version that does not exist. Same contract as upload-to-r2.sh's guard; this
+# script takes no argv, so the signal arrives only as SKIP_RELEASE.
+#
+# Scoped to the release channels: a pr-N channel has no tag contract.
+#
+# SKIP_RELEASE_GUARD_BEGIN (anchor for the gate test's planted defects --
+# .ci/scripts/test/gates/test-skip-release-channel-pointer.sh assembles its
+# mutants by splitting this file on these two markers; do not remove them)
+skip_release_requested() {
+    case "${SKIP_RELEASE:-}" in
+        true | TRUE | True | 1 | yes | YES | y | on | ON) return 0 ;;
+        *) return 1 ;;
+    esac
+}
+
+if skip_release_requested; then
+    if [[ "$CHANNEL" == "stable" || "$CHANNEL" == "edge" ]]; then
+        echo ""
+        echo "================================================================"
+        echo "  RELEASE SKIPPED (bump-none) -- NOTHING WAS WRITTEN TO R2"
+        echo "================================================================"
+        echo "  channel:  ${CHANNEL}"
+        echo ""
+        echo "  The merged PR carried the 'bump-none' label, so no tag and no"
+        echo "  GitHub Release exist for this build. The package repositories"
+        echo "  and install scripts are channel pointers, so publishing them"
+        echo "  would advertise a version nobody can install."
+        echo ""
+        echo "  NOT written:"
+        echo "    - apt/${CHANNEL}/  rpm/${CHANNEL}/  apk/${CHANNEL}/  archlinux/${CHANNEL}/"
+        echo "    - cli/${CHANNEL}/install.sh  cli/${CHANNEL}/install.ps1"
+        echo "    - no Cloudflare cache purge (nothing changed)"
+        echo ""
+        echo "  This is the intended outcome of a bump-none merge, not an error."
+        echo "================================================================"
+        echo ""
+        exit 0
+    fi
+    echo "upload-repos-to-r2.sh: SKIP_RELEASE ignored on channel '${CHANNEL}': not a release channel, uploading as usual"
+fi
+# SKIP_RELEASE_GUARD_END
 
 # The dist/ paths and the cf-purge-urls.sh call below are repo-relative,
 # exactly as they were in the workflow step.

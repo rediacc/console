@@ -176,6 +176,43 @@ BUMP_TYPE=$(.ci/scripts/version/detect-bump-type.sh --verbose)
 log_info "Bump type: $BUMP_TYPE"
 write_output "bump_type" "$BUMP_TYPE"
 
+# =============================================================================
+# Step 6b: Decide whether this commit earns a release
+# =============================================================================
+# WHY THE DECISION MOVED HERE. It used to live in finalize-release-sentinel,
+# which `needs: ci-complete` -- structurally DOWNSTREAM of stage-artifacts, the
+# job that writes R2. So the answer arrived long after the uploader had already
+# advanced the edge channel pointer. That is how cli/edge/manifest.json came to
+# advertise 1.3.1 with no v1.3.1 tag and a 404 release-notes URL, twice (PR #573
+# and PR #574, both bump-none, both resolving to the same version and
+# overwriting each other's supposedly immutable bytes).
+#
+# This is still ONE evaluation, not two. finalize-release-sentinel now READS
+# this output instead of asking again; dispatch-release.sh's --dispatch-only
+# mode exists for precisely that shape, and its header says why asking twice is
+# wrong (a label could move between the two answers).
+#
+# GITHUB_OUTPUT is deliberately cleared for the call. --decide-only would
+# otherwise append skip_release=true to the file itself, making two writers for
+# one fact; parsing its guaranteed single `decision:` stdout line -- a contract
+# its header states explicitly -- keeps write_output the only writer here.
+#
+# FAIL-OPEN POLARITY IS PRESERVED. Nothing is written unless the answer is
+# explicitly "skip", so a crashed, cancelled or token-starved decision yields an
+# absent output, and every consumer's `!= 'true'` guard then RELEASES. A
+# silently withheld release is far worse than one unnecessary release.
+#
+# Push-to-main only: no other event has a release to skip, and the PR lookup
+# would be a wasted API call on every PR run.
+if [[ "${GITHUB_EVENT_NAME:-}" == 'push' && "${GITHUB_REF:-}" == 'refs/heads/main' ]]; then
+    log_step "Deciding whether this commit earns a release..."
+    RELEASE_DECISION="$(GITHUB_OUTPUT='' .ci/scripts/ci/dispatch-release.sh --decide-only 2>&1 | grep '^decision:' || true)"
+    log_info "Release decision: ${RELEASE_DECISION:-<undecided, will release>}"
+    if [[ "$RELEASE_DECISION" == 'decision: skip' ]]; then
+        write_output "skip_release" "true"
+    fi
+fi
+
 log_step "Calculating next version from git tags..."
 # Shallow CI checkout has no tags. Fetch ALL tags (not just reachable from HEAD)
 # using the app token. The --no-recurse-submodules prevents submodule ref errors.

@@ -188,11 +188,58 @@ is_pr_merged() {
     [[ "$state" == "MERGED" ]]
 }
 
+# Is devbox teardown even possible here?
+#
+# Guarded so a docker-less machine keeps today's behaviour EXACTLY: no docker,
+# no daemon, or no devbox wiring means there is no container to orphan, and
+# `worktree remove` must not start refusing on machines where it always worked.
+# The failure this guards against is the narrow one that matters -- daemon up,
+# container present, `rm` failed -- which is precisely the case that would
+# otherwise leak.
+devbox_teardown_available() {
+    [ -x "$ROOT_DIR/run.sh" ] || return 1
+    command -v docker >/dev/null 2>&1 || return 1
+    docker info >/dev/null 2>&1 || return 1
+    return 0
+}
+
 # Remove a worktree and optionally its branch and tmux session
 remove_worktree() {
     local wt_path="$1"
     local session_name="$2"
     local branch_name="$3"
+
+    # TEAR THE DEVBOX DOWN FIRST, and the ordering is the whole point.
+    #
+    # The container is found by a label whose VALUE is this directory
+    # (com.rediacc.devbox.worktree, .ci/lib/devbox.sh). Delete the directory
+    # first and devbox_worktree() -- which does `cd "$path" && pwd -P` -- yields
+    # nothing, the label filter becomes `label=...worktree=`, `docker ps -aq`
+    # matches nothing, and teardown reports "no devbox container for this
+    # worktree" and returns 0. The container is then orphaned with nothing able
+    # to name it again: right message, wrong conclusion, permanent leak.
+    #
+    # A SUBPROCESS, not a source. DEVBOX_STATE_FILE is `readonly` and bound to
+    # CONSOLE_ROOT_DIR at source time (.ci/config/constants.sh), so re-sourcing
+    # in-process either errors on the readonly or silently operates on THIS
+    # checkout -- i.e. `worktree remove <other>` would delete the current
+    # checkout's .devbox-state. And $ROOT_DIR/run.sh, never $wt_path/run.sh: the
+    # latter runs whatever tooling that branch happened to have, which is
+    # unusable for teardown and is about to be deleted anyway.
+    #
+    # REFUSING IS RECOVERABLE, ORPHANING IS NOT, so a failed teardown aborts the
+    # removal instead of pressing on.
+    if devbox_teardown_available; then
+        log_info "Stopping devbox for $wt_path"
+        if ! CONSOLE_ROOT_DIR="$wt_path" "$ROOT_DIR/run.sh" devbox remove >/dev/null 2>&1; then
+            log_error "devbox teardown FAILED for $wt_path; refusing to delete the worktree."
+            log_error "  The directory is the container's only lookup key, so deleting it now"
+            log_error "  would orphan the container permanently. Investigate, then retry:"
+            log_error "    CONSOLE_ROOT_DIR='$wt_path' '$ROOT_DIR/run.sh' devbox remove"
+            return 1
+        fi
+        log_info "Devbox stopped"
+    fi
 
     # Kill tmux session if exists
     if command -v tmux &>/dev/null && tmux_session_exists "$session_name"; then
@@ -270,6 +317,8 @@ setup_submodule_branches() {
 # Create a new worktree with MMDD-X naming
 worktree_create() {
     local teams_mode=false
+    local no_devbox=false
+    local devbox_url=""
 
     # Parse arguments
     while [[ $# -gt 0 ]]; do
@@ -278,10 +327,15 @@ worktree_create() {
                 teams_mode=true
                 shift
                 ;;
+            --no-devbox)
+                no_devbox=true
+                shift
+                ;;
             --help | -h)
-                echo "Usage: ./run.sh worktree create [--teams]"
+                echo "Usage: ./run.sh worktree create [--teams] [--no-devbox]"
                 echo ""
                 echo "Options:"
+                echo "  --no-devbox  Skip starting the devbox container"
                 echo "  --teams, -t  Enable Claude agent teams (experimental)"
                 echo "               Spawns lead with --teammate-mode tmux so"
                 echo "               teammates get their own tmux panes"
@@ -331,6 +385,26 @@ worktree_create() {
     # Setup matching branches in all submodules
     setup_submodule_branches "$branch_name" "$wt_path"
 
+    # BRING THE DEVBOX UP, so a new worktree is usable from the URL rather than
+    # after a second manual command. Placed BEFORE the tmux session so the URL
+    # is known by the time the summary prints it.
+    #
+    # A FAILURE HERE DOES NOT ROLL THE WORKTREE BACK, deliberately. devbox_up
+    # can fail with the container still RUNNING, and by this point the tree
+    # already holds a branch plus per-submodule branches -- unwinding all of
+    # that because an image pull timed out would destroy more than it saves.
+    # Warn, print the retry, and let the caller decide.
+    if [[ "$no_devbox" != "true" ]] && devbox_teardown_available; then
+        log_step "Starting devbox for $wt_path"
+        if CONSOLE_ROOT_DIR="$wt_path" "$ROOT_DIR/run.sh" devbox up >/dev/null 2>&1; then
+            devbox_url="$(CONSOLE_ROOT_DIR="$wt_path" "$ROOT_DIR/run.sh" devbox url 2>/dev/null || true)"
+            log_info "Devbox started"
+        else
+            log_warn "devbox did not start for $wt_path (the worktree itself is fine)"
+            log_warn "  retry with: CONSOLE_ROOT_DIR='$wt_path' '$ROOT_DIR/run.sh' devbox up"
+        fi
+    fi
+
     # Create tmux session
     create_tmux_session "$session_name" "$wt_path" "$teams_mode"
 
@@ -372,6 +446,11 @@ worktree_create() {
     echo ""
     echo "  Path:    $wt_path"
     echo "  Branch:  $branch_name"
+    if [[ -n "$devbox_url" ]]; then
+        echo "  Devbox:  $devbox_url"
+    elif [[ "$no_devbox" == "true" ]]; then
+        echo "  Devbox:  skipped (--no-devbox)"
+    fi
     if [[ "$teams_mode" == "true" ]]; then
         echo "  Teams:   enabled (lead + teammate tmux panes)"
     fi
@@ -472,6 +551,7 @@ worktree_prune() {
     fi
 
     local found_cleanup=false
+    local -a prune_failed=()
 
     # Get list of worktrees
     while IFS= read -r line; do
@@ -495,7 +575,13 @@ worktree_prune() {
             if is_pr_merged "$branch"; then
                 found_cleanup=true
                 echo "  $wt_name (branch: $branch) - PR MERGED"
-                remove_worktree "$wt_path" "$session_name" "$branch"
+                # COLLECT, do not abort. remove_worktree now RETURNS non-zero
+                # when devbox teardown fails, and `set -e` would end the whole
+                # sweep on the first such worktree -- so one wedged container
+                # would silently stop every later worktree from being cleaned,
+                # and the summary would still read as a completed prune.
+                remove_worktree "$wt_path" "$session_name" "$branch" ||
+                    prune_failed+=("$wt_name")
                 echo ""
                 continue
             fi
@@ -510,12 +596,24 @@ worktree_prune() {
                     git -C "$wt_path" diff --cached --quiet 2>/dev/null; then
                     found_cleanup=true
                     echo "  $wt_name (branch: $branch) - NO COMMITS, NO CHANGES"
-                    remove_worktree "$wt_path" "$session_name" "$branch"
+                    remove_worktree "$wt_path" "$session_name" "$branch" ||
+                        prune_failed+=("$wt_name")
                     echo ""
                 fi
             fi
         fi
     done < <(git -C "$ROOT_DIR" worktree list --porcelain | grep "^worktree " | cut -d' ' -f2-)
+
+    if ((${#prune_failed[@]} > 0)); then
+        log_error "${#prune_failed[@]} worktree(s) could NOT be removed:"
+        local f
+        for f in "${prune_failed[@]}"; do
+            log_error "  $f"
+        done
+        log_error "Their devbox containers are still running and their directories are intact."
+        log_error "A partial sweep must not exit 0, or a caller reads it as a completed prune."
+        return 1
+    fi
 
     if [[ "$found_cleanup" == "false" ]]; then
         log_info "No worktrees to clean up"

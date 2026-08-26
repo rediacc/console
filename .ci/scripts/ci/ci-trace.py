@@ -71,6 +71,110 @@ def _branch(root):
         return ""
 
 
+def _run_snapshot(root, run_id):
+    """(status, conclusion, jobs) for ONE run id, or (None, None, err).
+
+    Reads per-JOB conclusions, not the run-level conclusion alone: a run whose
+    status is `completed` can still carry a failed job, and the run-level field
+    is the same coarse signal ci_classify refuses to treat as a verdict.
+    """
+    try:
+        out = subprocess.run(
+            [
+                "gh",
+                "run",
+                "view",
+                str(run_id),
+                "--repo",
+                "rediacc/console",
+                "--json",
+                "status,conclusion,jobs",
+            ],
+            capture_output=True,
+            text=True,
+            timeout=60,
+            check=False,
+            cwd=str(root),
+        )
+    except (OSError, subprocess.SubprocessError) as exc:
+        return None, None, "could not read run %s: %s" % (run_id, exc)
+    if out.returncode != 0:
+        return (
+            None,
+            None,
+            "gh exited %d for run %s: %s"
+            % (
+                out.returncode,
+                run_id,
+                (out.stderr or "").strip()[:200],
+            ),
+        )
+    try:
+        d = json.loads(out.stdout)
+    except Exception:  # noqa: BLE001
+        return None, None, "unparseable run payload for %s" % run_id
+    return d.get("status"), d.get("conclusion"), d.get("jobs") or []
+
+
+def _trace_run(root, run_id, wait, timeout, as_json):
+    """Trace one run id to a terminal state. Mirrors the branch reader's codes."""
+    deadline = time.time() + timeout
+    read_failures = 0
+    while True:
+        status, conclusion, jobs = _run_snapshot(root, run_id)
+        if status is None:
+            # A read that cannot complete is NEVER green -- the same rule the
+            # branch reader applies. Absorb a blip, then say so out loud.
+            read_failures += 1
+            err = jobs if isinstance(jobs, str) else "unreadable"
+            if not wait or read_failures >= MAX_READ_FAILURES:
+                print("no-verdict: %s" % err, file=sys.stderr)
+                return EXIT_NO_VERDICT
+            time.sleep(POLL_SECONDS)
+            continue
+        read_failures = 0
+
+        failed = [j["name"] for j in jobs if j.get("conclusion") == "failure"]
+        live = [j["name"] for j in jobs if not j.get("conclusion")]
+
+        if as_json:
+            print(
+                json.dumps(
+                    {
+                        "run": run_id,
+                        "status": status,
+                        "conclusion": conclusion,
+                        "failing": failed,
+                        "waiting": live,
+                    },
+                    indent=2,
+                    sort_keys=True,
+                )
+            )
+        if status == "completed":
+            if failed or conclusion not in ("success", "skipped"):
+                print("RED  run %s -> %s" % (run_id, conclusion or "?"), file=sys.stderr)
+                for n in failed:
+                    print("  failed: %s" % n, file=sys.stderr)
+                return EXIT_RED
+            print("GREEN  run %s -> %s" % (run_id, conclusion))
+            return EXIT_GREEN
+        if not wait:
+            print("no-verdict: run %s still %s" % (run_id, status), file=sys.stderr)
+            return EXIT_NO_VERDICT
+        if time.time() > deadline:
+            print(
+                "no-verdict: run %s still %s after %ds" % (run_id, status, timeout), file=sys.stderr
+            )
+            return EXIT_NO_VERDICT
+        if not as_json:
+            print(
+                "  run %s %s; %d job(s) in flight%s"
+                % (run_id, status, len(live), (": " + ", ".join(live[:3])) if live else "")
+            )
+        time.sleep(POLL_SECONDS)
+
+
 def _emit(payload, as_json):
     if as_json:
         print(json.dumps(payload, indent=2, sort_keys=True))
@@ -243,6 +347,16 @@ def main(argv=None):
         ),
     )
     ap.add_argument(
+        "--run",
+        metavar="RUN_ID",
+        help=(
+            "trace ONE run by id instead of a branch. Required for a"
+            " workflow_dispatch run (the Release workflow): a branch's"
+            " statusCheckRollup does not contain it, so a --ref read reports"
+            " GREEN while it is still in flight."
+        ),
+    )
+    ap.add_argument(
         "--timeout",
         type=int,
         default=int(os.environ.get("CI_TRACE_TIMEOUT_S", "5400")),
@@ -251,6 +365,24 @@ def main(argv=None):
     args = ap.parse_args(argv)
 
     root = REPO_ROOT
+
+    # A DISPATCHED RUN IS NOT IN THE BRANCH ROLLUP, and that is why this branch
+    # exists. Measured 2026-08-26 on Release run 32968110599 (v1.3.1, head
+    # 1c006e53): the REST check-runs API for that exact commit showed
+    # `in_progress  Tag & Release`, while the GraphQL statusCheckRollup for
+    # refs/heads/main returned 81 contexts, state SUCCESS, NONE in flight, and
+    # no Tag & Release among them. So `--wait --ref main` printed
+    # "GREEN ... every context succeeded or was skipped" and exited 0 while the
+    # release was mid-flight -- twice, including with --until-final.
+    #
+    # That is the worst shape of wrong: /pr-merge step 5 tells the operator to
+    # watch the release land exactly that way, so the documented procedure could
+    # certify a release that had not run. The obvious CLI alternative is banned
+    # by block-adhoc-sanctioned.sh (it dropped 4/4 in one campaign and has
+    # exited 1 mid-run), which left NO working instrument for that step at all.
+    if args.run:
+        return _trace_run(root, args.run, args.wait, args.timeout, args.json)
+
     # Only an EXPLICIT --ref opts into the branch fallback. On the implicit
     # current-branch default, "no open PR yet" is a useful answer and must not be
     # silently replaced by a branch read that looks like a verdict.

@@ -450,6 +450,16 @@ ARITY = {
     # of the deferral line) before the planfid: token.
     "V_PLANFID": ("p", "u", "m", "i", "me", "me", "t"),
     "V_PLANFID_DEGRADED": ("e",),
+    # v21 idle-stall gate. V_IDLE_STALL takes the open-item count, the rendered
+    # rows, then the session prefix THREE times (one per exit: --tick, --lease,
+    # --defer). V_UNBLOCKED_CLAIM takes the count and the claimed lines.
+    "V_IDLE_STALL": (1, "rows", "me", "me", "me"),
+    "V_UNBLOCKED_CLAIM": (1, "rows"),
+    # v22. V_DEFERRED_FINDING takes the rendered finding lines; V_SWEEP_MOMENT
+    # takes what just closed. Both are single-substitution, and case 117 is
+    # what caught them being unregistered -- the registry works.
+    "V_DEFERRED_FINDING": ("rows",),
+    "V_SWEEP_MOMENT": ("an item this turn",),
     "PLANFID_PROMPT": {"plan": "p", "items": "i", "message": "m"},
 }
 fail = 0

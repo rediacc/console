@@ -294,8 +294,87 @@ test_default_signature_is_false() {
     log_pass "signature default is False"
 }
 
+test_dispatched_run_is_traced_by_id() {
+    log_test "--run reads a dispatched run, which a branch rollup CANNOT see"
+    # WHY THIS EXISTS, measured 2026-08-26 on Release run 32968110599 (head
+    # 1c006e53). A branch's statusCheckRollup does NOT contain a
+    # workflow_dispatch run's check runs: the REST check-runs API for that exact
+    # commit showed `in_progress  Tag & Release`, while the GraphQL rollup for
+    # refs/heads/main returned 81 contexts, state SUCCESS, NONE in flight. So
+    # `--wait --ref main` printed GREEN and exited 0 while the release was
+    # mid-flight -- twice, including with --until-final -- and /pr-merge step 5
+    # instructed exactly that. A release could be certified without having run.
+    #
+    # The three exit codes below are the whole contract. `in_progress -> 2` is
+    # the one that was broken; `unreadable -> 2` matters just as much, because a
+    # run nobody could read must never read as a pass.
+    local shim="$WORK/runshim"
+    mkdir -p "$shim"
+    cat >"$shim/gh" <<'FAKE'
+#!/bin/bash
+case "$*" in
+  *999999*) echo "failed to get run: HTTP 404: Not Found" >&2; exit 1 ;;
+  *inflight*) echo '{"status":"in_progress","conclusion":null,"jobs":[{"name":"Tag & Release","conclusion":null}]}' ;;
+  *redrun*)  echo '{"status":"completed","conclusion":"failure","jobs":[{"name":"Publish","conclusion":"failure"}]}' ;;
+  *)         echo '{"status":"completed","conclusion":"success","jobs":[{"name":"Tag & Release","conclusion":"success"}]}' ;;
+esac
+FAKE
+    chmod +x "$shim/gh"
+
+    local rc
+    PATH="$shim:$PATH" "$TRACE" --run inflight >/dev/null 2>&1 && rc=0 || rc=$?
+    [[ "$rc" -eq 2 ]] ||
+        log_fail "an IN-FLIGHT dispatched run must exit 2, got $rc (this is the false-green that shipped a release watch)"
+
+    PATH="$shim:$PATH" "$TRACE" --run okrun >/dev/null 2>&1 && rc=0 || rc=$?
+    [[ "$rc" -eq 0 ]] ||
+        log_fail "a completed/success run must exit 0, got $rc"
+
+    PATH="$shim:$PATH" "$TRACE" --run redrun >/dev/null 2>&1 && rc=0 || rc=$?
+    [[ "$rc" -eq 1 ]] ||
+        log_fail "a run with a failed job must exit 1, got $rc"
+
+    PATH="$shim:$PATH" "$TRACE" --run 999999 >/dev/null 2>&1 && rc=0 || rc=$?
+    [[ "$rc" -eq 2 ]] ||
+        log_fail "an UNREADABLE run must exit 2, never 0, got $rc"
+
+    log_pass "--run: in-flight=2, success=0, failed-job=1, unreadable=2"
+}
+
+test_control_run_reader_can_fail() {
+    log_test "CONTROL: a --run reader that ignores status must be detectable"
+    # Built BY CONSTRUCTION, not by sed over the live source: copy ci-trace,
+    # replace the status test so `in_progress` falls through to the green path,
+    # and require the in-flight case to flip to 0. If it does not flip, the
+    # assertion above is decoration.
+    local mut="$WORK/ci-trace-mut.py"
+    python3 - "$TRACE" "$mut" <<'PY'
+import io, sys
+src, dst = sys.argv[1], sys.argv[2]
+s = io.open(src, encoding="utf-8").read()
+needle = 'if status == "completed":'
+assert s.count(needle) == 1, "mutation anchor missing or ambiguous"
+io.open(dst, "w", encoding="utf-8").write(s.replace(needle, "if True:", 1))
+PY
+    chmod +x "$mut"
+    local rc
+    PATH="$WORK/runshim:$PATH" python3 "$mut" --run inflight >/dev/null 2>&1 && rc=0 || rc=$?
+    # The assertion is `!= 2`, not `== 0`, and the difference is the control
+    # being honest. Deleting the status test does NOT make the in-flight run
+    # green: it falls through to the terminal branch, where conclusion is null,
+    # which is not in (success, skipped), so it reports RED (1). Either way the
+    # run has stopped being reported as in-flight, which is the property under
+    # test. An `== 0` control failed here for exactly this reason -- it was
+    # asserting a specific wrong answer instead of the absence of the right one.
+    [[ "$rc" -ne 2 ]] ||
+        log_fail "CONTROL DID NOT FIRE: the mutated reader still reported the in-flight run as in-flight (rc=$rc), so the real assertion proves nothing"
+    log_pass "control fires: without the status test, in-flight stops being reported (rc=$rc, not 2)"
+}
+
 test_default_still_answers_no_pr
 test_opt_in_reads_the_branch
+test_dispatched_run_is_traced_by_id
+test_control_run_reader_can_fail
 test_missing_ref_is_no_ref_not_silence
 test_control_default_flipped_is_caught
 test_trace_names_its_source
@@ -305,5 +384,7 @@ test_every_caller_handles_the_no_pr_state
 test_control_a_blind_caller_is_detected
 
 echo
-log_pass "ci-trace branch-read gate: 9/9"
-echo "  Blind spot: does not validate the GraphQL selection against the live schema."
+log_pass "ci-trace branch-read gate: 11/11"
+echo "  Blind spot: does not validate the GraphQL selection against the live schema,"
+echo "  and the --run cases are shimmed, so they do not prove the gh JSON field"
+echo "  names are still current -- a rename surfaces as exit 2, which at least says so."

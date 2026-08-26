@@ -105,6 +105,10 @@ jobs:
       is_bot: ${{ steps.init.outputs.is_bot }}
       next_version: ${{ steps.init.outputs.next_version }}
       bump_type: ${{ steps.init.outputs.bump_type }}
+      # Empty unless this commit explicitly earns NO release. Consumers must
+      # test `!= 'true'`, never `== 'false'`: an absent value means the
+      # decision did not complete, and that must RELEASE, not skip.
+      skip_release: ${{ steps.init.outputs.skip_release }}
       channel: ${{ steps.staging.outputs.channel }}
       renet_tag: ${{ steps.init.outputs.renet_tag }}
       renet_exists: ${{ steps.init.outputs.renet_exists }}
@@ -535,6 +539,11 @@ jobs:
         # so these run on a bare runner with no container available.
         run: .ci/scripts/test/gates/test-devbox-probes.sh
 
+      - name: devbox hostname controls
+        # Hermetic: pure string/slug functions plus a real git fixture for the
+        # detached-HEAD case. No docker daemon, no network.
+        run: .ci/scripts/test/gates/test-devbox-slug.sh
+
       - name: gate toolchain resolver controls
         run: .ci/scripts/test/gates/test-toolchain.sh
 
@@ -860,6 +869,12 @@ jobs:
       upload_pages: ${{ github.event_name == 'pull_request' }}
       channel: ${{ needs.initialize.outputs.channel }}
       next_version: ${{ needs.initialize.outputs.next_version }}
+      # A bump-none commit earns no tag and no GitHub release, so it must not
+      # advance the R2 channel pointer either -- an edge manifest naming an
+      # untagged version breaks `rdc` auto-update and, worse, feeds
+      # promote-stable a `ref: v<version>` that does not exist. See
+      # agent/PLAN-skip-release-gates-r2-manifest.md.
+      skip_release: ${{ needs.initialize.outputs.skip_release }}
       renet_tag: ${{ needs.initialize.outputs.renet_tag }}
       web_tag: ${{ needs.initialize.outputs.web_tag }}
       rdc_tag: ${{ needs.initialize.outputs.rdc_tag }}
@@ -1342,7 +1357,8 @@ jobs:
       always() &&
       needs.stage-artifacts.result == 'success' &&
       needs.initialize.outputs.run_install_methods != 'false' &&
-      needs.initialize.outputs.channel != ''
+      needs.initialize.outputs.channel != '' &&
+      needs.initialize.outputs.skip_release != 'true'
     uses: ./.github/workflows/ct-install-methods.yml
     with:
       version: ${{ needs.initialize.outputs.next_version }}
@@ -1421,7 +1437,8 @@ jobs:
     if: >-
       always() &&
       needs.stage-artifacts.result == 'success' &&
-      needs.initialize.outputs.channel != ''
+      needs.initialize.outputs.channel != '' &&
+      needs.initialize.outputs.skip_release != 'true'
     env:
       CHANNEL: ${{ needs.initialize.outputs.channel }}
     steps:
@@ -1612,14 +1629,17 @@ jobs:
       # `if:` would leave finalize-release-sentinel with result `skipped`, and
       # pipeline-sentinel feeds that result to assert-job-succeeded.sh, which
       # treats `skipped` as a hard failure. Skipping the release would fail CI.
-      - name: Decide whether this commit earns a release
-        id: release-decision
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: .ci/scripts/ci/dispatch-release.sh --decide-only
+      # THE DECISION IS MADE IN `initialize`, NOT HERE. It used to be a step in
+      # this job, which `needs: ci-complete` and is therefore DOWNSTREAM of
+      # stage-artifacts -- the job that writes R2. The answer arrived after the
+      # uploader had already advanced the edge channel pointer, which is how
+      # cli/edge/manifest.json came to advertise a version with no tag. Moving
+      # it does not add a second evaluation: there is still exactly one, and
+      # this job now READS it. See .ci/scripts/ci/initialize.sh step 6b.
+      #
       # THE GUARD POLARITY IS INVERTED ON PURPOSE. `!= 'true'` means the seal
-      # and the dispatch happen unless the decide step explicitly said to skip.
-      # Every degenerate state -- the decide step cancelled, OOM-killed, or its
+      # and the dispatch happen unless the decision explicitly said to skip.
+      # Every degenerate state -- initialize cancelled, OOM-killed, or the
       # output name typo'd -- yields an empty string and therefore RELEASES.
       # `== 'true'` would invert that: any of those would silently skip both
       # steps, the job would go green, and the release would simply never
@@ -1628,7 +1648,7 @@ jobs:
       # than one unnecessary release"), so the guard fails in the same
       # direction the script does.
       - name: Write release sentinels
-        if: steps.release-decision.outputs.skip_release != 'true'
+        if: needs.initialize.outputs.skip_release != 'true'
         env:
           R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
           R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
@@ -1640,8 +1660,8 @@ jobs:
             --commit-sha "${{ github.sha }}"
       # Sentinel is sealed at this point, and the very next step dispatches.
       # There is ZERO conditional logic between the two: both carry the SAME
-      # guard, evaluated once by the decide step above, so nothing can decide
-      # differently in between. That property is what the original ordering
+      # guard, evaluated once in `initialize` and merely read here, so nothing
+      # can decide differently in between. That property is what the original ordering
       # only appeared to have -- it put dispatch immediately after the seal to
       # survive a CANCELLATION, and was then broken by a path it had not
       # considered: a step that ran, succeeded, and chose not to release.
@@ -1653,10 +1673,10 @@ jobs:
       # and a `run:` block is capped at 8 logic lines for exactly that reason.
       # The script FAILS OPEN -- any lookup trouble dispatches anyway, because a
       # silently withheld release is far worse than one extra release.
-      # --dispatch-only skips the lookup: the decide step already did it, and
+      # --dispatch-only skips the lookup: `initialize` already did it, and
       # asking twice could get a different answer if a label moved in between.
       - name: Dispatch cd-v2 release
-        if: steps.release-decision.outputs.skip_release != 'true'
+        if: needs.initialize.outputs.skip_release != 'true'
         env:
           GH_TOKEN: ${{ github.token }}
         run: .ci/scripts/ci/dispatch-release.sh --dispatch-only

@@ -1,6 +1,16 @@
 # Multi-Region Data Residency Plan
 
-Status: **Draft** | Created: 2026-04-04 | Updated: 2026-04-04
+Status: **SUPERSEDED / HISTORICAL** | Created: 2026-04-04 | Superseded: 2026-08-26
+
+> **The unchecked boxes below are stale, not pending.** This plan was written for a
+> two-region (eu/us) future; that future SHIPPED, and a third region (asia) was added
+> on top of it. Do not treat any `[ ]` in Phases 0-7 as outstanding work. Ground truth
+> today lives in `regions.json` (three regions: eu/us/asia), `workers/account/wrangler.<region>.toml`
+> and `wrangler.edge-<region>.toml`, `.ci/scripts/deploy/deploy-account.sh`, and the
+> `.github/workflows/cd-deploy-account.yml` region matrix, which both `cd-v2.yml`
+> (edge) and `promote-stable.yml` (production) fan out over. Names in this plan also
+> differ from what was built: it proposed `.ci/regions.json` and worker `rediacc-eu`;
+> reality is root `regions.json` and `rediacc-account-eu`.
 
 ## Completed Pre-work
 

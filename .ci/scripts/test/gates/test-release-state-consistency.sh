@@ -272,4 +272,87 @@ test_explicit_override_still_works
 test_ratchet_lifts_floor_above_observed
 test_ratchet_protects_against_all_sentinels_scrubbed
 
+# =============================================================================
+# rsv_assert_channel_pointer_tagged -- the relation the bijection does NOT cover
+# =============================================================================
+# The bijection reconciles sentinels against tags, and a bump-none merge
+# correctly skips BOTH. The channel pointer was advanced anyway, so it could
+# name a version with no tag and a 404 notes URL. Measured live: cli/edge
+# advertised 1.3.1 across three bump-none merges (#573, #574, #576) with no
+# v1.3.1 tag, and promote-stable would have checked out `ref: v1.3.1` on
+# 2026-09-01 AFTER the R2 and Docker halves succeeded.
+
+run_pointer() { # <channel> <latest> <manifest> <tags> [in_flight]
+    local rc=0
+    POUT="$(rsv_assert_channel_pointer_tagged "$1" "$2" "$3" "$4" "${5:-}" 2>&1)" || rc=$?
+    PRC="$rc"
+}
+
+POINTER_TAGS=$'v1.2.9\nv1.3.0\nv1.3.1'
+
+test_pointer_naming_a_tagged_version_passes() {
+    run_pointer edge v1.3.1 v1.3.1 "$POINTER_TAGS"
+    assert_exit_code 0 "$PRC" "a tagged pointer must pass"
+    assert_contains "$POUT" "OK:" "positive confirmation emitted"
+    log_pass "a pointer naming a tagged version passes"
+}
+
+test_pointer_naming_an_untagged_version_is_caught() {
+    # THE BUG, reproduced exactly.
+    run_pointer edge v9.9.9 v9.9.9 "$POINTER_TAGS"
+    assert_exit_code 1 "$PRC" "an untagged pointer MUST fail"
+    assert_contains "$POUT" "NO git tag" "the finding names the cause"
+    log_pass "a pointer naming an untagged version is caught"
+}
+
+test_torn_pointer_write_is_caught() {
+    # latest.json and manifest.json are written seconds apart; disagreement
+    # means install.sh and the auto-updater resolve to different versions.
+    run_pointer edge v1.3.1 v1.3.0 "$POINTER_TAGS"
+    assert_exit_code 1 "$PRC" "a torn write MUST fail"
+    assert_contains "$POUT" "torn write" "the finding names the cause"
+    log_pass "a torn pointer write is caught"
+}
+
+test_unreadable_pointer_is_not_a_pass() {
+    # A pointer nobody could read is never a clean channel.
+    run_pointer edge "" v1.3.1 "$POINTER_TAGS"
+    assert_exit_code 1 "$PRC" "an unreadable pointer must NOT pass"
+    assert_contains "$POUT" "never a pass" "refuses to certify a read it could not make"
+    log_pass "an unreadable pointer fails rather than passing blind"
+}
+
+test_in_flight_version_is_excluded() {
+    # The pointer for release X is written BEFORE X's tag is pushed. Without
+    # this exclusion the relation would redden every release that uses it.
+    run_pointer edge v9.9.9 v9.9.9 "$POINTER_TAGS" v9.9.9
+    assert_exit_code 0 "$PRC" "the in-flight version must be excluded"
+    assert_contains "$POUT" "in-flight" "says why it was excluded"
+    log_pass "the in-flight version is excluded, so the gate is safe on the release path"
+}
+
+test_control_the_tag_lookup_can_fail() {
+    # CONTROL, by construction: a version present in the tag list must pass and
+    # one absent must fail, using the SAME inputs. If both answered the same the
+    # assertions above would be decoration.
+    run_pointer edge v1.3.0 v1.3.0 "$POINTER_TAGS"
+    local tagged="$PRC"
+    run_pointer edge v0.0.1 v0.0.1 "$POINTER_TAGS"
+    local untagged="$PRC"
+    [[ "$tagged" -eq 0 && "$untagged" -eq 1 ]] ||
+        log_fail "CONTROL DID NOT FIRE: tagged=$tagged untagged=$untagged; the tag lookup does not discriminate"
+    log_pass "control fires: the tag lookup distinguishes tagged from untagged"
+}
+
+test_pointer_naming_a_tagged_version_passes
+test_pointer_naming_an_untagged_version_is_caught
+test_torn_pointer_write_is_caught
+test_unreadable_pointer_is_not_a_pass
+test_in_flight_version_is_excluded
+test_control_the_tag_lookup_can_fail
+
 log_pass "all release-state-consistency cases"
+echo "  Blind spot: rsv_assert_channel_pointer_tagged is PURE. These cases prove"
+echo "  the judgement, not the READS -- whether check-release-state.sh actually"
+echo "  fetches latest.json/manifest.json and the git tags is not covered here,"
+echo "  and cannot be locally (aws is unavailable on host and in the devbox)."

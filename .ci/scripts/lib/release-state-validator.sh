@@ -149,15 +149,44 @@ rsv_binary_count() {
     echo "$count"
 }
 
-# `0` if `${product}/${version}/.released` exists on R2.
+# `0` sealed, `1` genuinely absent, `2` COULD NOT TELL.
+#
+# The third code is the point. This used to be a bare `>/dev/null 2>&1`, so
+# expired credentials, a 5xx, and a DNS failure all returned the same "1" as a
+# genuinely missing sentinel -- a confident "this release is not sealed" from a
+# probe that never ran. Its two siblings above (rsv_prefix_nonempty:92,
+# rsv_binary_count) already return 2 with a logged reason on a probe failure;
+# this one was the odd one out.
+#
+# Bounded consequences TODAY, which is why it survived: write_once_guard fails
+# open toward "proceed with the upload", the safe direction. But any caller
+# asking "is this sealed?" for a DIFFERENT purpose gets a wrong answer with no
+# hint that anything failed, and a `if rsv_sentinel_exists ...` caller is
+# unaffected by this change because 2 is falsy just as 1 was.
 rsv_sentinel_exists() {
     local product="${1:?product required}"
     local version="${2:?version required}"
+    local err rc=0
+    err="$(mktemp)"
     aws s3api head-object \
         --bucket "$RSV_BUCKET" \
         --key "${product}/${version}/${RSV_SENTINEL_KEY}" \
         --endpoint-url "$R2_ENDPOINT" \
-        >/dev/null 2>&1
+        >/dev/null 2>"$err" || rc=$?
+    if ((rc == 0)); then
+        rm -f "$err"
+        return 0
+    fi
+    # A 404 is the only failure that means "absent". Anything else means the
+    # question was not answered, and an unanswered question is not a `no`.
+    if grep -qiE '404|Not Found|NoSuchKey' "$err"; then
+        rm -f "$err"
+        return 1
+    fi
+    log_error "rsv_sentinel_exists: could not determine whether ${product}/${version}/${RSV_SENTINEL_KEY} exists (exit $rc); this is NOT evidence that it is missing"
+    [[ -s "$err" ]] && sed 's/^/    /' "$err" >&2
+    rm -f "$err"
+    return 2
 }
 
 # Fetch and emit the JSON payload of `${product}/${version}/.released`.
@@ -352,4 +381,75 @@ rsv_assert_bijection() {
         return 0
     fi
     return 1
+}
+
+# Assert that a CHANNEL POINTER names a version that actually got a git tag.
+#
+# THE RELATION THE BIJECTION DOES NOT COVER. rsv_assert_bijection reconciles
+# sentinels against tags -- both of which a `bump-none` merge correctly skips.
+# The channel pointer (`cli/<ch>/latest.json` and `cli/<ch>/manifest.json`) was
+# advanced ANYWAY, so it could name a version with no tag, no GitHub Release,
+# and a 404 release-notes URL, and nothing in this library would notice.
+#
+# It happened three times (PRs #573, #574, #576, all bump-none, all resolving to
+# 1.3.1) and would have half-applied a production release across eu/us/asia on
+# 2026-09-01, because promote-stable reads the manifest and then checks out
+# `ref: v<version>`.
+#
+# PURE, deliberately: the caller does the R2 and git reads, this only judges
+# them. `aws` is not installable on the maintainer's host or in the devbox, so
+# an I/O-coupled assertion here would be untestable locally -- which is how a
+# release gate ends up unverified.
+#
+# Usage:
+#   rsv_assert_channel_pointer_tagged <channel> <latest_ver> <manifest_ver> <tag_versions> [in_flight]
+#
+# Exit: 0 when the pointer is consistent and tagged, 1 on any finding.
+rsv_assert_channel_pointer_tagged() {
+    local channel="${1:?channel required}"
+    local latest_ver="${2-}"
+    local manifest_ver="${3-}"
+    local tag_versions="${4-}"
+    local in_flight="${5-}"
+    local drift=0
+
+    # An unreadable pointer is NOT a clean channel. Both files are written
+    # seconds apart by the same uploader, so a missing one means the read
+    # failed or the write tore -- either way the question was not answered.
+    if [[ -z "$latest_ver" || -z "$manifest_ver" ]]; then
+        echo "DRIFT ${channel}: could not read the channel pointer (latest='${latest_ver:-<empty>}' manifest='${manifest_ver:-<empty>}'); an unreadable pointer is never a pass"
+        return 1
+    fi
+
+    # They are written back to back. Disagreement means a torn write, and
+    # different consumers then resolve to different versions: install.sh reads
+    # latest.json, the updater reads manifest.json.
+    if [[ "$latest_ver" != "$manifest_ver" ]]; then
+        echo "DRIFT ${channel}: latest.json says '${latest_ver}' but manifest.json says '${manifest_ver}'. They are written seconds apart, so this is a torn write, and install.sh (latest.json) and the auto-updater (manifest.json) will disagree."
+        drift=1
+    fi
+
+    # The in-flight version legitimately has no tag yet: the pointer for release
+    # X is written before X's tag is pushed. Excluding it is what makes this
+    # relation safe to run on the release path at all.
+    if [[ -n "$in_flight" && "$latest_ver" == "$in_flight" ]]; then
+        ((drift == 0)) && echo "OK: ${channel} pointer names the in-flight version ${latest_ver} (tag not expected yet)"
+        return "$drift"
+    fi
+
+    local v found=0
+    while IFS= read -r v; do
+        [[ "$v" == "$latest_ver" ]] && {
+            found=1
+            break
+        }
+    done <<<"$tag_versions"
+
+    if ((found == 0)); then
+        echo "DRIFT ${channel}: the channel pointer names '${latest_ver}', which has NO git tag. Every rdc on this channel auto-updates to a build whose releaseNotesUrl 404s, and promote-stable will later check out 'ref: ${latest_ver}' and fail AFTER the R2 and Docker halves have already succeeded."
+        drift=1
+    fi
+
+    ((drift == 0)) && echo "OK: ${channel} pointer names ${latest_ver}, which is tagged"
+    return "$drift"
 }

@@ -23,6 +23,13 @@ on:
         description: 'Release channel (e.g., pr-123, edge, stable)'
         type: string
         required: false
+      skip_release:
+        # 'true' only when the commit explicitly earns no release (bump-none).
+        # Consumers test `!= 'true'`, never `== 'false'`: an absent value means
+        # the decision did not complete, and that must RELEASE, not skip.
+        description: 'true when this commit earns no release; withholds the R2 channel pointer'
+        type: string
+        required: false
       renet_tag:
         type: string
         required: false
@@ -195,7 +202,12 @@ jobs:
         # uses `set -euo pipefail` and would fail loudly on an empty target
         # tag; gating here is cheaper than erroring the job for validation-
         # only runs that deliberately don't publish.
-        if: inputs.channel != ''
+        #
+        # Also skipped for a bump-none commit: the `:edge` moving tag is a
+        # channel pointer of the same family as cli/edge/manifest.json, and it
+        # is what promote-stable retags into `:stable`. Unlike the R2 uploads
+        # above, no script owns this policy, so the `if:` is the right home.
+        if: inputs.channel != '' && inputs.skip_release != 'true'
         run: |
           CHANNEL="${{ inputs.channel }}"
 
@@ -271,6 +283,12 @@ jobs:
       # -----------------------------------------------------------------------
       # Upload to R2 staging (pre-publish validation needs ALL artifacts on R2)
       # -----------------------------------------------------------------------
+      # THE SIGNAL IS PASSED DOWN, NOT TURNED INTO AN `if:`, and that is
+      # deliberate. An `if:` here would mean the script's own guard never runs
+      # on a real bump-none merge, so nothing would ever exercise it and it
+      # would rot into a vacuous branch. Letting the script decide keeps the
+      # thing under test on the live path. See
+      # agent/PLAN-skip-release-gates-r2-manifest.md section 3.
       - name: Upload artifacts to R2 channel
         if: inputs.channel != ''
         run: |
@@ -278,6 +296,7 @@ jobs:
             --version "${{ inputs.next_version }}" \
             --channel "${{ inputs.channel }}"
         env:
+          SKIP_RELEASE: ${{ inputs.skip_release }}
           R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
           R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
           R2_ENDPOINT: ${{ secrets.R2_ENDPOINT }}
@@ -285,6 +304,7 @@ jobs:
       - name: Upload repos to R2 channel
         if: inputs.channel != ''
         env:
+          SKIP_RELEASE: ${{ inputs.skip_release }}
           R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
           R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
           R2_ENDPOINT: ${{ secrets.R2_ENDPOINT }}
@@ -301,7 +321,10 @@ jobs:
       # changed and the sentinel is silently absent again.
       # -----------------------------------------------------------------------
       - name: Assert R2 versioned sentinel exists
-        if: inputs.channel == 'stable' || inputs.channel == 'edge'
+        # A bump-none commit deliberately writes no versioned path and seals no
+        # sentinel, so asserting one exists would fail on exactly the commits
+        # that are behaving correctly.
+        if: (inputs.channel == 'stable' || inputs.channel == 'edge') && inputs.skip_release != 'true'
         env:
           R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
           R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}

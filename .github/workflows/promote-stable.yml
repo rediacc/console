@@ -1,4 +1,4 @@
-name: Promote Edge to Stable
+name: Release to Production
 
 on:
   schedule:
@@ -11,7 +11,10 @@ on:
         default: false
 
 permissions:
-  contents: read
+  # contents: WRITE, not read -- verify-stable now moves the `production`
+  # tag and flips the GitHub Release's `latest` badge, which is the only
+  # record of what is actually in production. Nothing else here writes.
+  contents: write
   packages: write
   pull-requests: read
 
@@ -20,7 +23,7 @@ env:
 
 jobs:
   promote:
-    name: Promote Edge to Stable
+    name: Release to Production
     runs-on: ubuntu-latest
     outputs:
       promoted: ${{ steps.result.outputs.promoted }}
@@ -31,6 +34,25 @@ jobs:
       - name: Check edge manifest
         id: edge
         run: .ci/scripts/release/check-edge-manifest.sh
+
+      # BEFORE ANY PROMOTION WRITE, and the position is the whole point.
+      # Today the R2 and Docker promotions succeed first and only then does the
+      # worker/account deploy check out `ref: v<version>` -- so an untagged
+      # version leaves stable CLI artifacts and Docker tags advanced while
+      # eu/us/asia workers still run the previous code. A half-applied
+      # three-region production release. Failing here turns that into a loud
+      # no-op. Defence in depth: the upstream skip_release fix stops the pointer
+      # advancing in the first place, but this catches any OTHER cause (a manual
+      # aws cp, a partially-failed release) because its oracle -- git tags and
+      # the Releases API -- is independent of the manifest it judges.
+      - name: Assert the edge version is actually released
+        if: steps.edge.outputs.skip != 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          R2_ENDPOINT: ${{ secrets.R2_ENDPOINT }}
+        run: .ci/scripts/release/assert-edge-tag-exists.sh "${{ steps.edge.outputs.version }}"
 
       - name: Check stable manifest
         if: steps.edge.outputs.skip != 'true'
@@ -207,3 +229,11 @@ jobs:
 
       - name: Verify stable endpoints
         run: .ci/scripts/deploy/verify-stable-endpoints.sh
+
+      # AFTER verification, never before: the markers are a claim that this
+      # version is live and serving, so they must not be written by a promotion
+      # whose endpoints failed to answer.
+      - name: Mark this version as production
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: .ci/scripts/release/mark-production.sh "${{ needs.promote.outputs.version }}"

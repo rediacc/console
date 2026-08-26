@@ -648,6 +648,20 @@ def test_precompact(hooks_dir):
 
 MUTANTS = [
     (
+        "compaction boundary ignored (the walk-back returns)",
+        "ctx_budget.py",
+        None,
+        (
+            "ctx_budget.py",
+            "            if not hit_boundary and _is_compact_boundary(d):",
+            "            if False:",
+        ),
+        [
+            "a boundary with no assistant entry after it does NOT report the pre-compaction peak",
+            "that window reports the boundary's own postTokens",
+        ],
+    ),
+    (
         "bands fire always",
         "band-notice.py",
         None,
@@ -795,6 +809,8 @@ def test_mutations():
             # green because they were being run against test_bands instead.
             if "a pin overrules a model cap that was only ASSUMED" in must_fail:
                 failed = run_isolated(test_arithmetic_in, d)
+            elif "that window reports the boundary's own postTokens" in must_fail:
+                failed = run_isolated(test_compact_boundary, d)
             else:
                 failed = run_isolated(test_bands, d)
             missing = [m for m in must_fail if m not in failed]
@@ -850,11 +866,110 @@ def test_arithmetic_in(hooks_dir):
         sb.cleanup()
 
 
+def test_compact_boundary(hooks_dir):
+    """last_usage must never walk back PAST a compaction boundary.
+
+    THE BUG THIS PINS, measured on this project's own transcript 2026-08-26.
+    A PostToolUse hook fired in the gap between the `compact_boundary` entry
+    and the first assistant entry after it. The backward scan sailed past the
+    summary and returned the PRE-compaction peak: 958,036 against a 967,000
+    threshold, printed as "0.9% until auto-compact, a headroom of 8,964
+    tokens", while the real post-compaction size was 30,359.
+
+    Wrong in the worst direction: the stale value is by construction the
+    session's MAXIMUM, so the notice screams "nearly full" exactly when the
+    context has just been emptied -- and the session then makes real decisions
+    on it.
+    """
+    code = (
+        "import sys, json; sys.path.insert(0, %r); import ctx_budget as B; "
+        "print(json.dumps(B.last_usage(sys.argv[1])))" % str(hooks_dir)
+    )
+
+    def read(entries):
+        d = Path(tempfile.mkdtemp(prefix="ctxboundary-"))
+        try:
+            t = d / "t.jsonl"
+            t.write_text("\n".join(json.dumps(e) for e in entries) + "\n", encoding="utf-8")
+            r = subprocess.run(
+                [sys.executable, "-c", code, str(t)],
+                capture_output=True,
+                text=True,
+                timeout=60,
+                check=False,
+            )
+            try:
+                return json.loads(r.stdout)
+            except Exception:  # noqa: BLE001
+                return None
+        finally:
+            shutil.rmtree(d, ignore_errors=True)
+
+    def asst(total, model="claude-opus-5"):
+        return {
+            "type": "assistant",
+            "message": {"model": model, "usage": {"input_tokens": total}},
+        }
+
+    boundary = {
+        "type": "system",
+        "subtype": "compact_boundary",
+        "compactMetadata": {"trigger": "auto", "preTokens": 966912, "postTokens": 30359},
+    }
+
+    # The exact shape that produced the false reading.
+    got = read([asst(958036), boundary])
+    check(
+        "a boundary with no assistant entry after it does NOT report the pre-compaction peak",
+        got is not None and got[0] != 958036,
+        "got %s" % (got,),
+    )
+    check(
+        "that window reports the boundary's own postTokens",
+        got is not None and got[0] == 30359,
+        "got %s" % (got,),
+    )
+    check(
+        "the model survives the boundary (compaction does not change it)",
+        got is not None and got[1] == "claude-opus-5",
+        "got %s" % (got,),
+    )
+
+    # Once a real entry lands after the boundary, IT wins -- the boundary is a
+    # floor for one window only, not a permanent override.
+    got = read([asst(958036), boundary, asst(98043)])
+    check(
+        "an assistant entry after the boundary takes precedence over postTokens",
+        got is not None and got[0] == 98043,
+        "got %s" % (got,),
+    )
+
+    # ANTI-VACUITY: the ordinary path must be untouched. Without this, deleting
+    # the whole function body and returning a constant would satisfy the checks
+    # above.
+    got = read([asst(111), asst(222)])
+    check(
+        "with no boundary at all, the newest assistant entry still wins",
+        got is not None and got[0] == 222,
+        "got %s" % (got,),
+    )
+
+    # A malformed boundary (no postTokens) must not be trusted as a reading,
+    # but must still block the walk-back -- silence beats the peak.
+    got = read([asst(958036), {"type": "system", "subtype": "compact_boundary"}])
+    check(
+        "a boundary with no postTokens still never yields the pre-compaction peak",
+        got is None or got[0] != 958036,
+        "got %s" % (got,),
+    )
+
+
 def main():
     test_arithmetic()
     test_arithmetic_in(HERE)
     test_bands(HERE)
     test_precompact(HERE)
+    test_compact_boundary(HERE)
     test_mutations()
     print("\n%d checks, %d failures" % (CHECKS[0], len(FAILURES)))
     if FAILURES:
