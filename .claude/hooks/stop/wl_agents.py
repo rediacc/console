@@ -160,6 +160,14 @@ PATH_MIN_LEN = 6
 _STOPWORD_TEXT = (
     "the and for with from that this than then they them their there these those "
     "into onto over under about above after before between during without within "
+    # SUBORDINATING CONJUNCTIONS, the same closed class as `when`/`where`/`while`'s
+    # neighbours two lines up, which were listed and these were not. `while` is the
+    # one that fired: media-pipeline's description says "render finished pairs WHILE
+    # the GPU narrates", so an ordinary "fixed a bug while I was there" scored as a
+    # narration-domain claim -- the identical ordinary-English-unique-to-one-doc
+    # failure the `word words` note below already paid for. Half a closed class is
+    # not a closed class.
+    "while because though although whether unless "
     "not but its are was were been being have has had having does did doing "
     "can could should would will shall may might must "
     "you your yours our ours mine his her hers theirs "
@@ -183,7 +191,57 @@ _STOPWORD_TEXT = (
     # TTS...", "before touching any translation", ...), so it discriminates
     # nothing -- and it fired a media-pipeline hint at a session whose message
     # merely said a file was "not touched". Same class as run/work/use/fix above.
-    "touch touches touching touched"
+    # TRAILING SPACE IS LOAD-BEARING. Adjacent Python literals concatenate with
+    # nothing between them, so a missing space here GLUES the last word of this
+    # line to the first word of the next and silently loses both tokens. That
+    # happened at this exact seam when 0826-2 and 0826-3 were rebased together:
+    # `touched` + `see` became `touchedsee`, and `see` stopped being a stopword
+    # while nothing failed.
+    "touch touches touching touched "
+    # BOTH WAVES HIT THE SAME CLASS INDEPENDENTLY, which is itself the finding:
+    # 0826-2 added `touch` after a media-pipeline false positive, and 0826-3
+    # added the four below after four more. Neither wave knew about the other.
+    # THIRD instance of the `word words` class above, found the same way: the
+    # push-back fired on e2e-local for a claim about a BASH hook test suite,
+    # matching `miss`, `see`, `suite`. All three are ordinary English that this
+    # repo types constantly, and all three are "discriminative" only because
+    # e2e-local's description happens to be the one doc containing them:
+    # "MISSING bin/renet", "just push and SEE what CI says", "E2E SUITES".
+    # `missing` folds to `miss`, so both forms are listed -- _stem() kills a word
+    # when ANY intermediate form is a stopword, but only if the form is present.
+    # e2e-local keeps playwright/bridge/kvm/distro/run-e2e.sh as real terms, and
+    # check_agent_hint_liveness.py is the control that it stays reachable.
+    "see seen miss missing suite suites "
+    # FOURTH instance, and the one that proves the pattern is structural rather
+    # than a run of bad luck: `step` and `stop` matched gate-author for a claim
+    # about a hook test, because its description says "three places" with a
+    # `ci: {kind: 'step'}` and this repo says "stop hook" in every other
+    # sentence. Both are ordinary English AND repo jargon, which is exactly the
+    # combination `discriminative()` cannot tell from a domain term.
+    "step steps stop stops "
+    # ONE SYSTEMATIC PASS instead of a fifth incident. Dumping the live term set
+    # showed the generic-English leak is not a few unlucky words: `already`,
+    # `exist`, `instead`, `says`, `once`, `several`, `number`, `true`, `paid`,
+    # `next`, `ways` were all carrying a full 1.0 as "discriminative".
+    #
+    # RAISING PUSHBACK_MIN_SCORE WAS THE OTHER CANDIDATE AND IS WRONG: its floor
+    # is deliberately below the hint's so a THIN but true claim still gets
+    # challenged, and the case it was built for -- "neither local worker has
+    # /etc/ceph" -- scores exactly 1.0 on `ceph`. Lifting the floor to 2 would
+    # silence precisely the incident that motivated the check. So the fix has to
+    # come from the term set, leaving 1.0 to mean one REAL domain term.
+    #
+    # Deliberately NOT added: `locally`, `red`, `distro`, `cache`, `schema`.
+    # Ordinary-looking, but each is load-bearing vocabulary for the agent that
+    # owns it, and check_agent_hint_liveness.py is the control that says so.
+    # `instead` is NOT here, and the liveness gate is why. Removing it dropped
+    # e2e-local to 1 on its own specimen ("run the bridge suite locally ...
+    # INSTEAD of pushing to CI"), because stopwording `suite` had already taken
+    # one of its three terms. Measured: restoring `instead` alone puts the
+    # specimen back to 2.0 while the false positive stays silent; restoring
+    # `suite` instead brings the false positive back. So `instead` stays a term.
+    "already exist exists genuinely says said ways once several "
+    "number numbers true paid next produce comparable"
 )
 STOPWORDS = frozenset(_STOPWORD_TEXT.split())
 

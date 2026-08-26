@@ -68,18 +68,32 @@ WF_THIN=$'      - name: Thin\n        run: |\n          echo hi\n          bash 
 # settings.json is READ here, never written.
 
 # hook_files <hooks-root> -- relative path of every hook script, lib/ excluded
+#
+# WIDENED 2026-08-26 to cover two surfaces this was structurally blind to:
+# `pre-ask/` (the AskUserQuestion chain) and a hook at the hooks ROOT such as
+# require-jq.sh, which belongs to no single chain because it is registered first
+# in several. Before this, a hook in either place could be added, left
+# unregistered, and reported as neither UNWIRED nor DANGLING -- the set
+# comparison simply never saw it, which is the same can't-fail shape the guards
+# themselves exist to prevent.
+#
+# `test-*.sh` is excluded at the root because widening this caught test-hooks.sh
+# ITSELF as UNWIRED on the first run: the harness is not a hook, and the test-
+# prefix is already this tree's convention for a test file.
 hook_files() {
     local root="$1"
     find "$root" -type f -name '*.sh' -not -path '*/lib/*' 2>/dev/null |
         sed "s|^$root/||" |
-        grep -E '^(pre-bash|pre-edit|post-bash)/' | sort -u
+        grep -E '^(pre-bash|pre-edit|post-bash|pre-ask)/|^[A-Za-z0-9._-]+\.sh$' |
+        grep -vE '^test-' | sort -u
 }
 
 # hook_registrations <settings-file> -- the same relative paths, as named by
 # the hook command strings in settings.json
 hook_registrations() {
     jq -r '.hooks // {} | to_entries[] | .value[]? | .hooks[]? | .command // empty' "$1" 2>/dev/null |
-        grep -oE '(pre-bash|pre-edit|post-bash)/[A-Za-z0-9._-]+\.sh' | sort -u
+        sed 's|.*/\.claude/hooks/||; s|".*||' |
+        grep -E '^(pre-bash|pre-edit|post-bash|pre-ask)/[A-Za-z0-9._-]+\.sh$|^[A-Za-z0-9._-]+\.sh$' | sort -u
 }
 
 # check_wiring <settings-file> <hooks-root> -- 0 when the two sets agree, 1
@@ -135,6 +149,15 @@ wiring_case 1 "$WIRE_TMP/dangling.json" "$DIR" "wiring CONTROL: a registration w
 rm -rf "$WIRE_TMP"
 
 # --- should BLOCK (exit 2) ---
+# The PR body is generated, so a hand-written whole-body write silently drops
+# the worklist-epics block and CI fails minutes later naming nothing useful.
+check 2 pre-bash/block-raw-pr-body-edit.sh "$(bash_json 'gh pr edit 42 --body-file b.md')" "raw-pr-body(blocked)"
+check 0 pre-bash/block-raw-pr-body-edit.sh "$(bash_json '.ci/scripts/pr/sync-epic-block.sh 42 0826-1')" "raw-pr-body(tool passes)"
+check 0 pre-bash/block-raw-pr-body-edit.sh "$(bash_json 'gh pr edit 42 --add-label ci')" "raw-pr-body(non-body passes)"
+# CONTROL: prose ABOUT the rule is not a violation of it. The first version
+# blocked this, which is the false-positive class block-commit-meta.sh warns of.
+check 0 pre-bash/block-raw-pr-body-edit.sh "$(bash_json 'echo "never use gh pr edit --body by hand"')" "raw-pr-body(prose passes)"
+
 check 2 pre-bash/block-protected-files.sh "$(bash_json 'git checkout .claude/settings.json')" "protected-files"
 check 2 pre-bash/block-commit-meta.sh "$(bash_json 'git commit -m msg Co-Authored-By: bot')" "commit-meta"
 check 2 pre-bash/block-binary-deploy.sh "$(bash_json 'scp renet host:/tmp')" "binary-deploy"
@@ -326,6 +349,25 @@ check 2 pre-bash/block-nondraft-pr-create.sh "$(bash_json "sh -c 'gh pr create -
 # invocation with a violating one; both must be judged on their own segment.
 check 2 pre-bash/block-nondraft-pr-create.sh "$(bash_json 'gh pr create --draft --repo rediacc/console -t x; gh pr create --repo rediacc/console -t y')" "nondraft-create: second create on the line is judged too (no --draft donation)"
 check 2 pre-bash/block-nondraft-pr-create.sh "$(bash_json 'gh pr create --draft --repo rediacc/console -t x; gh pr create --draft --repo rediacc/renet -t y')" "nondraft-create: draft-on-private caught in the second segment (no --repo donation)"
+# ---------------------------------------------------------------------------
+# pre-ask: the AskUserQuestion chain.
+#
+# BOTH DIRECTIONS MATTER MORE HERE THAN ANYWHERE ELSE. This hook suppresses a
+# QUESTION, so a false positive is invisible by construction: the operator never
+# learns what was not asked. The must-pass cases below are therefore the real
+# subject of this block, and the must-block cases are the easy half.
+ask_json() { printf '{"tool_input":{"questions":[{"question":%s,"header":"x"}]}}' "$(jq -Rn --arg c "$1" '$c')"; }
+
+check 2 pre-ask/block-settled-questions.sh "$(ask_json "Should I commit this change?")" "settled(commit)"
+check 2 pre-ask/block-settled-questions.sh "$(ask_json "Shall I open a PR for this?")" "settled(pr)"
+check 2 pre-ask/block-settled-questions.sh "$(ask_json "Do you want me to create a branch first?")" "settled(branch)"
+# CONTROLS: a design question and a factual question that merely MENTION the
+# vocabulary must pass. Anchoring on words rather than on intent is the
+# over-matching mistake wl_agents.py paid for four times in one session.
+check 0 pre-ask/block-settled-questions.sh "$(ask_json "Which branching strategy should this repo use, trunk or release branches?")" "settled(design passes)"
+check 0 pre-ask/block-settled-questions.sh "$(ask_json "Did the rebase drop a commit, or is the count right?")" "settled(fact passes)"
+check 0 pre-ask/block-settled-questions.sh "$(ask_json "Should I install node from a tarball or a package manager?")" "settled(unrelated permission passes)"
+
 check 2 pre-edit/block-suppressions.sh "$(edit_json "a // @ts-""ignore")" "suppressions(new_string)"
 check 2 pre-edit/block-suppressions.sh "$(multiedit_json "b // eslint-""disable")" "suppressions(MultiEdit)"
 check 2 pre-edit/block-inline-workflow-run.sh "$(wf_edit_json '.github/workflows/x.yml' "$WF_FAT")" "inline-workflow-run: 9-line block blocked"

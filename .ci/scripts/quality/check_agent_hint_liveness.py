@@ -37,6 +37,7 @@ Design: agent/PLAN-agent-hints-implementation.md (sections 5 and 6).
 from __future__ import annotations
 
 import os
+import re
 import sys
 import tempfile
 
@@ -311,6 +312,42 @@ def controls_fired(matcher, min_score, min_margin) -> list[str]:
     return missed
 
 
+def glued_stopword_seams(src: str) -> list:
+    """Literal seams in _STOPWORD_TEXT that silently merge two words into one.
+
+    THE DEFECT, 2026-08-26. Adjacent Python string literals concatenate with
+    NOTHING between them, so a literal that does not end in a space glues its
+    last word to the next literal's first word. Two waves rebased together each
+    appended a line to this list; one lacked the trailing space, `touched` and
+    `see` became `touchedsee`, and BOTH tokens stopped being stopwords. Nothing
+    failed: the list still parsed, still had a plausible length, and the two
+    lost words simply started scoring as domain terms again.
+
+    That is the shape this whole gate exists for -- a matcher that is quietly
+    less healthy than it looks -- so the check belongs here rather than in a new
+    gate of its own.
+
+    COMMENT LINES ARE STRIPPED FIRST. The comments in that block quote phrases
+    in double quotes ("just push and SEE what CI says"), and a naive scan reads
+    them as literals and reports seventeen seams instead of one. Mention is not
+    execution, in an analysis tool as much as in a guard.
+    """
+    m = re.search(r"_STOPWORD_TEXT = \((.*?)\n\)", src, re.S)
+    if not m:
+        return [("_STOPWORD_TEXT", "not found -- the list moved or was renamed")]
+    code = "\n".join(
+        ln for ln in m.group(1).split("\n") if not ln.lstrip().startswith("#")
+    )
+    lits = re.findall(r'"([^"]*)"', code)
+    seams = []
+    for i, lit in enumerate(lits[:-1]):
+        nxt = lits[i + 1]
+        if lit and nxt and not lit.endswith(" ") and not nxt.startswith(" "):
+            seams.append((lit.split()[-1] if lit.split() else lit,
+                          nxt.split()[0] if nxt.split() else nxt))
+    return seams
+
+
 def main() -> int:
     # --- vacuity, before anything is imported or scored ----------------------
     if not os.path.isdir(AGENTS_DIR):
@@ -321,6 +358,24 @@ def main() -> int:
             file=sys.stderr,
         )
         return 1
+    # A glued seam loses two real stopwords without failing anything.
+    with open(os.path.join(HOOK_DIR, "wl_agents.py"), encoding="utf-8") as fh:
+        seams = glued_stopword_seams(fh.read())
+    if seams:
+        print(
+            f"{RED}✗ {len(seams)} glued literal seam(s) in wl_agents._STOPWORD_TEXT{NC}:",
+            file=sys.stderr,
+        )
+        for a, b in seams:
+            print(f"    {a!r} + {b!r}  ->  {a + b!r}", file=sys.stderr)
+        print(
+            "  Adjacent Python literals concatenate with nothing between them, so BOTH\n"
+            "  words stop being stopwords and start scoring as domain terms again.\n"
+            "  Add a trailing space to the earlier literal.",
+            file=sys.stderr,
+        )
+        return 1
+
     names = agent_names(AGENTS_DIR)
     if len(names) < MIN_AGENTS:
         print(
@@ -455,6 +510,47 @@ def main() -> int:
             "It doesn't reproduce and this is pre-existing. Remaining: the wave, "
             "console review, commit and check."
         ),
+        # THE FOUR THAT ACTUALLY MISFIRED, 2026-08-26, verbatim.
+        #
+        # Each drew a push-back from a specialist on ORDINARY ENGLISH, because
+        # discriminative() asks only whether a term is unique across 13
+        # documents, and uniqueness there is a weak proxy for specificity.
+        # `while` reached media-pipeline ("render finished pairs WHILE the GPU
+        # narrates"); `miss`/`see`/`suite` reached e2e-local ("MISSING
+        # bin/renet", "just push and SEE what CI says", "E2E SUITES");
+        # `step`/`stop` reached gate-author; `next` reached media-pipeline.
+        #
+        # THEY BELONG HERE, NOT IN CONTROLS. Placing them there first was a
+        # control that could not fire: CONTROLS is judged by the HINT matcher at
+        # MIN_SCORE=2, and these sentences score 1.0, so removing a stopword
+        # left the gate green. Measured, not reasoned: deleting `while` from the
+        # stopword list passed a run with them in CONTROLS and fails with them
+        # here. The push-back floor is 1.0, which is where the damage was.
+        #
+        # The fix could NOT have been to raise PUSHBACK_MIN_SCORE: it sits below
+        # the hint's floor deliberately, and the sentence this whole check was
+        # built for -- "neither local worker has /etc/ceph" -- scores exactly 1.0
+        # on `ceph`, so lifting it to 2 would silence the motivating incident,
+        # which is pinned as a positive regression a few lines below.
+        # THE MISFIRE THAT ACTUALLY REPRODUCES, 2026-08-26, verbatim.
+        #
+        # `while` reached media-pipeline because its description says "render
+        # finished pairs WHILE the GPU narrates", and discriminative() asks only
+        # whether a term is unique across 13 documents. Uniqueness there is a
+        # weak proxy for specificity, so ordinary English scored as a domain
+        # term. Deleting the conjunction line from wl_agents._STOPWORD_TEXT makes
+        # this line fire and this gate exit 1; that was measured, not assumed.
+        #
+        # ONLY ONE OF THE FOUR MISFIRES IS PINNED HERE, deliberately. The other
+        # three (miss/see/suite, step/stop, next) score above the push-back floor
+        # but are suppressed by pushback_for's mention-is-not-a-claim rule, which
+        # is correct behaviour, so no phrasing of them can fail this gate. They
+        # were written, measured silent under their own planted defects, and
+        # removed rather than left in looking like coverage. A control that
+        # cannot fire is worse than an absent one: it reports protection nobody
+        # has. Their stopwords are still covered by the four planted defects the
+        # anti-vacuity harness runs above.
+        "pre-existing bug fixed while there: setup ran bare npm install",
     ):
         stray, _ = matcher.pushback_for(neutral, AGENTS_DIR)
         if stray:
