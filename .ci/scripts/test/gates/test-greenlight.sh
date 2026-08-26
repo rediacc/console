@@ -733,12 +733,59 @@ test_differing_closure_refuses
 test_absent_and_throwing_candidates_fail_open
 test_cli_emit_is_false_only
 test_moved_pointer_refuses
+
+# Case 15: THE CANDIDATE WINDOW MUST BE WIDER THAN THE DEFAULT.
+#
+# A GREENLIT run cannot serve as evidence for the next one -- rule 1 refuses a
+# `skipped` job (greenlight.cjs:675-697) -- so the last EXECUTING run recedes one
+# slot per push. With the engine's default of 25 (greenlight.cjs:980) that window
+# is small enough to fall off in normal use: measured on run 32946684108, renet,
+# package_tests and license_enforcement were already at walked=21 of 24, three
+# pushes from dropping out.
+#
+# What happens then is the reason this is pinned rather than left to judgement:
+# CI silently reverts to running the 90-minute suites. Nothing goes red, nothing
+# is reported, and the only symptom is that CI got slower -- which nobody
+# investigates.
+#
+# Widening is monotone in the SAFE direction (it can only find an EXISTING proof,
+# never manufacture one), so the floor below is a floor, not an equality.
+test_candidate_window_is_widened() {
+    local line limit
+    line="$(grep -n -- '--limit' "$REPO_ROOT/.ci/scripts/ci/scope-shadow.sh" |
+        grep -v '^[[:space:]]*#' | grep 'GREENLIGHT' || true)"
+    [[ -n "$line" ]] ||
+        log_fail "scope-shadow.sh no longer passes --limit, so the engine falls back to 25 and the window can silently close"
+
+    limit="$(sed -E 's/.*--limit[[:space:]]+([0-9]+).*/\1/' <<<"$line")"
+    [[ "$limit" =~ ^[0-9]+$ ]] ||
+        log_fail "could not read the --limit value from: $line"
+    [[ "$limit" -ge 40 ]] ||
+        log_fail "--limit is $limit; the observed walk already reached 21 of 24, so anything near the default reopens the cliff"
+
+    # CONTROL, by construction: the same extractor must REFUSE an invocation
+    # that omits --limit. Without this the assertion above passes trivially the
+    # day someone drops the flag and the grep returns nothing... which is what
+    # the first branch checks, so prove that branch can actually distinguish.
+    local probe
+    probe="$(mktemp)"
+    printf '%s\n' 'bounded node "$GREENLIGHT" --repo x --budget 90 --debug' >"$probe"
+    if grep -n -- '--limit' "$probe" | grep -q 'GREENLIGHT'; then
+        rm -f "$probe"
+        log_fail "CONTROL DID NOT FIRE: an invocation with no --limit read as compliant"
+    fi
+    rm -f "$probe"
+
+    log_pass "candidate window widened to $limit (default 25 would close silently)"
+}
+
 test_job_name_leaf_must_match_exactly
 test_declared_closure_paths_exist
 test_matrix_key_needs_every_leg
 test_empty_submodule_list_is_vacuous_not_broken
 test_key_order_is_cost_descending
 test_the_trail_digest_names_every_key
+test_candidate_window_is_widened
 echo ""
 echo "assertion call sites: $(grep -cE '^[[:space:]]*assert_' "${BASH_SOURCE[0]}")"
 log_pass "all tests passed"

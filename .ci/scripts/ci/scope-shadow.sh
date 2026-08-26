@@ -408,7 +408,21 @@ process.stdout.write(pending.join(" "));
     # death of a two-key walk on a candidate list that was mostly jobs reads.
     # 90 stays inside `bounded`'s 120s ceiling, so `initialize` gets at most
     # ~30s slower in the worst case, against skipping up to nine VM-hours.
-    if ! bounded node "$GREENLIGHT" --repo "${GITHUB_REPOSITORY:-}" --budget 90 --debug "${args[@]}" \
+    # --limit 60, not the default 25. A GREENLIT run cannot serve as evidence
+    # for the next one (rule 1 refuses `skipped`, greenlight.cjs:675-697), so the
+    # last EXECUTING run recedes one slot per push. Measured on run 32946684108:
+    # renet, package_tests and license_enforcement were already at walked=21 of
+    # 24 -- three pushes from falling off the window, at which point CI silently
+    # reverts to running the 90-minute suites. Nobody would see that happen.
+    #
+    # Widening is monotone in the SAFE direction: it only ever extends the search
+    # for an EXISTING proof and cannot manufacture one, because rules 1-3 are
+    # unchanged. The cost is bounded by --budget 90 inside bounded's 120s
+    # ceiling, and if the budget runs out the candidate reader THROWS
+    # (greenlight.cjs:875-877) rather than returning a benign empty value. Key
+    # order is cost-descending (greenlight.cjs:81-85), so the keys that go
+    # unasked are the cheap ones -- and unasked means RUN.
+    if ! bounded node "$GREENLIGHT" --repo "${GITHUB_REPOSITORY:-}" --limit 60 --budget 90 --debug "${args[@]}" \
         >"$OUT_DIR/greenlight.out" 2>"$OUT_DIR/greenlight.err"; then
         emit "_greenlight: the engine did not complete (timeout or crash), so no key was" \
             "greenlit and the scope verdict stands unchanged._" ""
