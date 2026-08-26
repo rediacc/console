@@ -4765,3 +4765,165 @@ Round 5 needed ruff at the pin. The host has neither ruff nor uvx, so the fix ra
 through `devbox_exec` + `uvx ruff@0.16.1` -- the first genuine use of the gate
 lane repaired in `9064fb7c`, and an independent confirmation that the
 `sudo docker` quoting fix works.
+
+## Wave 0826-2 — the release gate that gated the wrong half
+
+### `bump-none` withheld the tag and let the channel pointer walk
+
+The label gated the git tag and the release sentinel, and the code had always
+*said* it gated more: `dispatch-release.sh:13-15` promises "no tag, no GitHub
+release, **no R2 upload**, no edge deploy". The R2 clause was never implemented.
+So a release-free merge still advanced `cli/edge/manifest.json`, and the channel
+came to advertise a version with no tag and a 404 release-notes URL — three
+times (#573, #574, #576), the third *during* the session that wrote the fix plan,
+from a merge that plan's own author performed.
+
+The cause is ordering, not a missing condition. The decision lived in
+`finalize-release-sentinel`, which `needs: ci-complete` and is therefore
+DOWNSTREAM of `stage-artifacts`, the job that writes R2. The answer arrived after
+the uploader had already moved the pointer. It now happens once in
+`initialize.sh` (step 6b) and is threaded to every consumer; the sentinel job
+READS that output instead of re-deciding, so there is still exactly one
+evaluation — now with five readers rather than two.
+
+Deadlines this closed: promote-stable would have checked out `ref: v1.3.1` on
+2026-09-01 **after** its R2 and Docker halves succeeded, leaving stable artifacts
+advanced and eu/us/asia workers on old code; and `cleanup-versions.sh` Phase 8d
+would have reaped `cli/v1.3.1/` around 2026-09-08 while the pointer still named
+it, 404-ing every edge install.
+
+### The relation a bijection cannot see
+
+`rsv_assert_bijection` reconciles R2 sentinels against git tags. A `bump-none`
+merge correctly skips BOTH, so the two sides stay in step while the channel
+pointer walks off alone. That is why three occurrences produced no red anywhere.
+`rsv_assert_channel_pointer_tagged` covers the third relation, and its proof is
+not a fixture: replayed against the pre-remediation tag list it emits
+`DRIFT edge: the channel pointer names 'v1.3.1', which has NO git tag`, and with
+`IN_FLIGHT` set it correctly stays silent — so it is safe to run on the release
+path it guards.
+
+### A guard nothing invokes is a branch that never executes
+
+`upload-to-r2.sh` grew a `--skip-release` guard whose own gate test declares, in
+its header, that it CANNOT see whether any workflow passes the flag. That blind
+spot became `check-ci-workflow-invariants.sh`'s subject. The first cut keyed on
+job NAMES and hard-failed every synthetic fixture the gate test drives; its own
+test caught that ("a correctly gated job must pass: expected PASS, got FAIL"),
+and it was rescoped to trigger on the job that USES `cd-stage.yml` — the actual
+uploader path — with a `finalize-release-sentinel` fallback so a renamed stager
+fails rather than passing vacuously.
+
+Related: `cd-v2.yml` carried a `skip_release` output that
+`decide-release-mode.sh` wrote `false` on all three paths, so ~9 guards were
+permanently true and one of that workflow's comments credited it with a skip
+`workers_only` was performing. A condition that cannot be false is a claim, not
+a guard, and this one had already misled a reader. Removed; 9 jobs before and
+after, none lost.
+
+### The instrument that certified a release it never saw
+
+`ci-trace.py --wait --ref main` printed `GREEN ... every context succeeded or was
+skipped` and exited 0 **twice** — including with `--until-final` — while Release
+run 32968110599 was mid-flight. Not a race: a branch's GraphQL
+`statusCheckRollup` does not contain a `workflow_dispatch` run's check runs at
+all. The REST check-runs API for that exact commit showed `in_progress
+Tag & Release` while the rollup returned 81 contexts, state SUCCESS, none in
+flight. `/pr-merge` step 5 instructed exactly that command, so the documented
+procedure could certify a release that had not run, and the obvious CLI
+alternative is hook-blocked as unreliable — leaving no working instrument at all.
+`--run RUN_ID` reads per-JOB conclusions: in-flight → 2, success → 0,
+unreadable → 2.
+
+### Reading the context budget past its own boundary
+
+`ctx_budget.last_usage` scanned the transcript tail backwards for the newest
+assistant entry with no notion of a compaction boundary, so a hook firing in the
+gap between the `compact_boundary` entry and the first entry after it returned
+the PRE-compaction peak: 958,036 against a 967,000 threshold, reported as "0.9%
+until auto-compact", when the boundary's own `compactMetadata.postTokens` said
+30,359. Wrong by 32x and in the worst direction — the stale value is by
+construction the session's MAXIMUM, so the notice screams "nearly full" at
+precisely the moment the context has just been emptied. A session acted on it.
+
+The fix stops at the boundary and returns `postTokens`. A first attempt
+conflated "is a boundary" with "has a usable size", so a malformed boundary still
+let the walk-back through; split into `_is_compact_boundary` / `_compact_post_tokens`,
+because silence beats the peak.
+
+### The stop hook could be paused by talking
+
+The operator's complaint — "you do stop even with remaining items … you misuse
+the intention of the stop hook" — turned out to have three mechanisms, all worse
+than guessed:
+
+1. Nothing validated a blocker CLAIM. The state scan iterates over harness
+   tasks, not worklist items, so a `- [ ]` item's Remaining line was never
+   checked and "blocked on: nothing" matched no vocabulary at all.
+2. `open-items` sits in the ROTATING tier, and the cadence gate ALLOWS a stop
+   whenever the assistant merely said something new, up to 3 pauses. The
+   observed loop verbatim: block → say something → allow → block → allow.
+3. Clearing any one rotating check — a STATE.md rewrite, a brief refresh, a plan
+   touch-up — shrinks the outstanding set and REFILLS the pause budget. The
+   maintenance chores did not merely resemble work; they bought real allows.
+
+`idle_stall` now sits in the ALWAYS tier, which cadence cannot pause, with a
+planted-defect reproduction of that exact loop. `CLAUDE.md` gained the positive
+rule: `## Remaining` is a list of things you CANNOT do — `[?]` awaiting the
+operator, `[>]` leased to a live worker, a specific external run, or a
+door-named issue — and nothing else. Within hours the gate refused its own
+author's stop.
+
+Separately, the pre-existing `found, not fixed` detector matched ONE phrase at
+line-lead, so "Reported, not fixed", "I didn't fix" and "Findings in code I do
+not own" all walked past it; `deferred_findings()` covers the family, and
+`V_SWEEP_MOMENT` fires only when the queue is empty, nothing is in flight, and
+an item just closed — the cheapest moment to sweep what was noticed in passing.
+
+### Devbox: the argument that was accepted and ignored
+
+VS Code opened `/home/vscode` instead of the repo because the workspace was
+passed as a POSITIONAL argument and `openvscode-server` has none —
+`--help` (1.109.5) prints `Usage: openvscode-server [options]`, with no
+`[paths]`. VS Code's parser does not warn about arguments it does not
+understand, which is exactly why it looked like it worked. `--default-folder` is
+the supported form and is MISSING from `--help` in this build, so it was verified
+against the running binary rather than the docs: the served page comes back
+carrying `"folderUri":{"path":"/home/muhammed/console"}`.
+
+Telemetry is now explicitly `--telemetry-level off`; the documented default is
+"send telemetry until a client connects", i.e. on until something says otherwise,
+which a devbox serving automation may never do.
+
+`worktree remove` now tears the devbox down FIRST. The directory it deletes IS
+the container's label key, so the old order left `devbox_worktree()` yielding
+empty, the filter matching nothing, and teardown reporting "no devbox container
+for this worktree" and returning 0 — right message, wrong conclusion, permanent
+orphan. Its gate test asserts ORDER, not presence, because a teardown running
+after the delete looks identical in a call log that only checks "was it called".
+
+### Regions: approved, then investigated, then kept deleted
+
+The operator approved deleting the orphaned signed-region-discovery path, then
+said "I don't remember that region feature" — a stop signal worth honouring. The
+investigation confirmed the deletion is safe and, more usefully, that the path
+was BROKEN rather than merely unused: `scripts/sign-regions.ts` (PR #427, commit
+`7f2725bd`, added with no caller and never wired) signed a payload of only
+`{id,label,domain,default}`, predating `edgeDomain` (#429), and
+`verifySignedRegions` does no shape validation. Had that manifest ever been
+served, the picker would have rendered `Europe - Edge (undefined)` and written
+`accountServer = https://undefined`. It escaped every dead-code check because
+`knip.jsonc:12` treats `scripts/*.ts` as entry points.
+
+Root `regions.json` is NOT the dead half: it is the live infra registry for six
+workflows and five deploy scripts. `packages/shared/src/regions/data.json` is a
+hand-copy that `index.ts` claimed "the build process" kept in sync — no such
+process existed. `check:ci-regions-sync` makes that promise enforceable.
+
+### Where gates actually run
+
+Two release-critical gates were reported as unrunnable and were not: the host has
+no pyyaml, no pip, no aws and no ruff, but the devbox has pyyaml 6.0.2 and `uvx`.
+`./run.sh devbox exec -- <gate>` runs them. The lesson generalises — a gate that
+exits 2 on the host is a gate run in the wrong PLACE, not an environmental
+excuse — and `aws` (missing on both) is now in the devcontainer image.
