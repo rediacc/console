@@ -1,57 +1,55 @@
-## SESSION 854ac1c6 2026-08-25T20:41:02Z
+## SESSION 854ac1c6 2026-08-26T04:50:35Z
 
-Branch `0825-1`, PR console#574. **Everything committed and pushed; tree clean.** Sole task: babysit CI to green.
+## Where things stand
 
-## THE PREVIOUS HEAD WAS FULLY GREEN
+Branch **`0826-1`**, open draft **PR #576**, 17 commits, all pushed. PR #575 was
+closed as superseded (filed on 08-26 from a branch dated 0825). #574 merged
+earlier as `b4b5797e`; `main` green, its `bump-none` release SKIP confirmed from
+the Finalize Release Sentinel log. GitLab mirror: operator pushed it, DONE.
 
-`a0c13e40` ran **completed/success, attempt 1, 51 success / 37 skipped / 0 failures, CI Complete success**. Every surface this wave risked passed:
-- `Entry Point (run.sh)` — the new job
-- `Quality / Static` — now self-acquires shfmt+shellcheck at the pins (the deleted webi step)
-- `Quality / Security` — the gate-test lane
-- `Devcontainer (amd64)` AND `(arm64)` — which PROVES the PyYAML `--ignore-installed` fix in `63b50629`. That gap is closed; do not re-flag it.
+The operator said **"implement everything go ahead. no blockers now."** Most of
+it is now done.
 
-`15df80bc` (the ruff pin fix) is now on top and being watched.
+## Landed on this branch
 
-## Commits (newest first)
+- ci-trace reads a PR-less branch (`--ref main` used to answer `no-verdict`).
+- Gates: **A9** + **A10** on `check-toolchain-pins`, **`check:ci-devbox-exec`**,
+  **`check:ci-shell-size`**, plus gate tests for the two housekeeping phases.
+- `toolchain_pin_for` returning `""` with rc 0; `devbox_exec` dying wherever
+  docker needs sudo; the Stop hook not seeing a gate committed in the same stop.
+- **`block-stale-pr-branch-date.sh`** -- a PR must not be filed from a
+  stale-dated branch. 5 cases in `test-hooks.sh`; suite **PASS=1268 FAIL=0**.
+- **Phase 5b**: reaps orphaned `pr-N` preview Workers. FAILS CLOSED (unlike
+  Phase 4, deliberately -- its worst case is deleting a LIVE preview).
+- **Phase 1**: Phase 10 could never reach the watchdog (newest-1,000 window
+  spans 18d vs 30d retention -> deleted ZERO nightly while reporting success).
+  Per-workflow retention keyed by PATH + a warning when a window cannot reach
+  its own threshold.
+- **Phase 2**: `retry-failed-runs.sh` + a job in `housekeeping.yml`, running
+  BEFORE the cleanups. Live dry-run: `considered=100 excluded=96 too-old=4
+  retried=0`.
 
-`15df80bc` ruff must be AT the pin · `a0c13e40` A6 discovers its subjects · `2a3bb808` `--until-final` · `63b50629` PyYAML fix · `2b8bc012` path-scan 51m->7.9s · `e005192d` profiler step · `dc610a86` guard fail-open + PASS: shape + tier fixture · `db402e79` ruff lint/format · `927256e7` the wave
-
-## Live state
-
-- Worker `bk5sig264` = `ci-trace.py --wait --until-final` on `15df80bc`. Item `#cee54b07` leased to 22:10Z.
-- 8 rounds: six reds were my own new code (all fixed), two were infrastructure flakes correctly left alone.
-- PR is `OPEN` but `mergeStateStatus: BLOCKED` — NOT diagnosed. The head has moved ~9 times since the last Claude review, so the review marker is almost certainly stale. The operator asked for babysit-to-green, not merge, so I stopped there.
-
-## Hard-won facts (do not relearn these)
-
-- Run `npm run check:ci-quality-gates` before pushing. That is what `ci-quality.yml:1505` runs. Do NOT guess `run-all.sh` — that path does not exist and guessing cost a round. It is affordable now: `test-gate-paths-exist.sh` went 51m -> 7.9s.
-- Trace ONLY with `ci-trace.py`. `--wait` exits on the first red; `--until-final` waits for the whole run (you cannot `gh run rerun --failed` a run still in flight). Exit 3 = head moved, the tool refusing to report a superseded run.
-- Watchdog auto-retries ONLY `E2E,OPS,Fork Isolation,Migration Test` (`watchdog-monitor.yml:128`). Drills is NOT in it. Check before waiting on a retry that will never come.
-- The pre-bash guard reads command TEXT: a commit message quoting a banned pattern is itself blocked. Write it to a file and `git commit -F`.
-- **A control on a detection REGEX is not a control on the ENUMERATION that feeds it.** My A6 controls passed green while A6 hardcoded two files.
-- **Naming a pin is not resolving at one.** A6 accepted any `*_VERSION` mention; check-python-lint.sh satisfied it while still taking an unversioned `command -v ruff`.
-- A python patch script that asserts BEFORE writing leaves the file unchanged when the assert trips. Check the file, not the script's output — I twice reported a fix that had not been applied.
-- I upgraded PyYAML 6.0.1 -> 6.0.2 inside the LIVE devbox container while testing. Harmless, matches the pin, but a real mutation outside the repo.
+Design record is current: `docs/ci-overhaul/06-progress.md` and
+`agent/PLAN-nightly-retry-and-watchdog-noise.md`.
 
 ## Next action
 
-1. When `bk5sig264` fires it reports EVERY failing job. Classify before fixing.
-2. If green: report it. Do NOT merge — the operator asked for babysitting, and `BLOCKED` needs their call.
-3. If the operator wants the merge pursued, start by diagnosing `mergeStateStatus: BLOCKED` — most likely a stale `claude-reviewed` marker needing a fresh review on the current head, plus a substantive reply to that review's summary comment.
+1. **Phase 3a** -- the only unstarted piece. `watchdog-monitor.yml` calls
+   `core.setFailed()` when it has worked correctly (it cancels the CI run it
+   monitors, then signals that), which is why 63 of 64 failures repo-wide are
+   noise. Change the RUN NAME so a by-design failure reads as one, e.g.
+   `Watchdog: run <id> (gen N) -- pipeline cancelled as designed`.
+   **Consumer grep already done and clean**: `autopilot.yml:261` reads watchdog
+   runs by status but only uses `display_title`; `ci-trace.py` and
+   `nightly-status.yml` read the CI run, not the watchdog run. The exit-0
+   variant (3b) is a SEPARATE landing -- do not bundle it.
+2. Watch PR #576's CI with `.ci/scripts/ci/ci-trace.py --wait` (background).
+3. Everything rides #576. Do NOT open a second PR.
 
-## 2026-08-25 — /pr-merge, waiting on review marker
+## Open, needs the operator
 
-HEAD `2e2179aa` on `0825-1`, PR #574. Only red is **Review Complete**: the newest
-marker names `a0c13e40`, not the head. Both review gates PASS locally
-(check-review-comments.sh, check-resolved-threads.sh). A Claude Review run started
-21:36 was still `in_progress`.
+Nothing can prove no long-lived Worker matches `^pr-[0-9]+$` without a live
+Cloudflare listing; this session has no CF credentials. Stated in the gate's own
+output, so it is not silently assumed.
 
-**Do not push more commits** — each one invalidates the marker and restarts this.
-
-Next: `.ci/scripts/ci/ci-trace.py` (sanctioned reader; ad-hoc `gh` loops are hook-refused).
-If the marker still lags after the review run completes, nudge with
-`gh pr comment 574 --body "..."` (fires `issue_comment` → review-status.yml).
-Then `gh pr merge 574 --repo rediacc/console --rebase --auto`, then steps 4-8:
-fetch --prune, checkout main, merge --ff-only, `git submodule update --init --recursive`
-(ALL FOUR), confirm the `bump-none` skip from the **Finalize Release Sentinel** job log,
-report GitLab mirror as a **SKIP** (only `origin` in this checkout), end on `main`.
+**Do not push to `main`. Do not dispatch a release.**
