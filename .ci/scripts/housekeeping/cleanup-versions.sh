@@ -82,6 +82,14 @@ R2_PACKAGE_KEEP_VERSIONS=20
 # ones (Console CI fires on every push and PR synchronize) eat the quota.
 GH_RUNS_KEEP_PER_WORKFLOW=100
 GH_RUNS_RETENTION_DAYS=30
+# HIGH-VOLUME WORKFLOWS NEED THEIR OWN RETENTION, or they outrun the scan.
+# watchdog-monitor.yml emits ~77 runs/day (2,011 total, 230 of the last 1,000
+# runs repo-wide). With the shared 30-day window, run #1,000 -- the oldest this
+# phase can SEE -- was 18 days old, so nothing inside the reachable window was
+# ever eligible and Phase 10 deleted ZERO watchdog runs every night while
+# reporting success. A watchdog generation is pure telemetry: once the CI run it
+# monitored is settled, the generation has no audit value.
+GH_RUNS_RETENTION_DAYS_WATCHDOG=7
 # Bound cost per invocation: ~20 workflows * 10 pages * 100 runs = 20k candidates
 # max. At the 5000 req/h REST bucket, DELETEs for ~2500 eligible runs eat half
 # the budget; everything else in the housekeeping job is order-of-magnitude
@@ -1667,7 +1675,7 @@ cleanup_workflow_runs() {
 
     local workflows
     workflows="$(gh api "repos/$RELEASE_REPO/actions/workflows?per_page=100" \
-        --jq '[.workflows[] | select(.state == "active") | {id: .id, name: .name}]' 2>/dev/null || echo "[]")"
+        --jq '[.workflows[] | select(.state == "active") | {id: .id, name: .name, path: .path}]' 2>/dev/null || echo "[]")"
 
     local wf_count
     wf_count="$(echo "$workflows" | jq 'length')"
@@ -1689,6 +1697,14 @@ cleanup_workflow_runs() {
         local wf_id wf_name
         wf_id="$(echo "$wf" | jq -r '.id')"
         wf_name="$(echo "$wf" | jq -r '.name')"
+        # Keyed by PATH, never by name: the watchdog's display name is generated
+        # per run ("Watchdog: run <id> (gen N)"), so a name match is unwritable.
+        local wf_path wf_retention_days wf_retention_seconds
+        wf_path="$(echo "$wf" | jq -r '.path // empty')"
+        wf_retention_days="$GH_RUNS_RETENTION_DAYS"
+        [[ "$wf_path" == ".github/workflows/watchdog-monitor.yml" ]] &&
+            wf_retention_days="$GH_RUNS_RETENTION_DAYS_WATCHDOG"
+        wf_retention_seconds=$((wf_retention_days * 86400))
 
         log_step "  Workflow: $wf_name (id=$wf_id)"
 
@@ -1696,6 +1712,7 @@ cleanup_workflow_runs() {
         local wf_index=0
         local wf_deleted=0
         local wf_seen=0
+        local oldest_seen_epoch=0
         local consecutive_failures=0
 
         while [[ "$page" -le "$GH_RUNS_MAX_PAGES_PER_WORKFLOW" ]]; do
@@ -1730,7 +1747,8 @@ cleanup_workflow_runs() {
                 # Keep if within retention window. Unparseable date -> keep.
                 local created_epoch
                 created_epoch="$(date -u -d "$created_at" +%s 2>/dev/null || date -jf "%Y-%m-%dT%H:%M:%SZ" "$created_at" +%s 2>/dev/null || echo 0)"
-                if [[ "$created_epoch" -eq 0 ]] || ((now_epoch - created_epoch < retention_seconds)); then
+                oldest_seen_epoch="$created_epoch"
+                if [[ "$created_epoch" -eq 0 ]] || ((now_epoch - created_epoch < wf_retention_seconds)); then
                     wf_index=$((wf_index + 1))
                     continue
                 fi
@@ -1760,6 +1778,24 @@ cleanup_workflow_runs() {
             page=$((page + 1))
         done
 
+        # THE VACUOUS-GREEN CHECK. This phase deleted nothing for the watchdog
+        # for months and reported success, because its scan window (MAX_PAGES x
+        # 100 runs) never reached back as far as the retention threshold. A
+        # cleanup that CANNOT delete must never look like one with nothing to
+        # delete, so say it out loud with the numbers that prove it.
+        # `page` exceeding the cap is what distinguishes a TRUNCATED window from
+        # a workflow that simply has few runs. Without this a young, low-volume
+        # workflow -- every run inside retention, nothing to reap, working
+        # perfectly -- would warn on every nightly, and a warning that cries wolf
+        # is one that gets filtered out before the real case arrives.
+        if [[ "$wf_deleted" -eq 0 && "$oldest_seen_epoch" -gt 0 &&
+            "$page" -gt "$GH_RUNS_MAX_PAGES_PER_WORKFLOW" ]] &&
+            ((now_epoch - oldest_seen_epoch < wf_retention_seconds)); then
+            local span_days=$(((now_epoch - oldest_seen_epoch) / 86400))
+            log_warn "  $wf_name: scan window reaches only ${span_days}d but retention is ${wf_retention_days}d --"
+            log_warn "    nothing here can EVER be reaped. Raise GH_RUNS_MAX_PAGES_PER_WORKFLOW"
+            log_warn "    (currently $GH_RUNS_MAX_PAGES_PER_WORKFLOW) or give this workflow its own retention."
+        fi
         total_seen=$((total_seen + wf_seen))
         total_deleted=$((total_deleted + wf_deleted))
 
