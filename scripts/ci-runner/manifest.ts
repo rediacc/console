@@ -3060,6 +3060,18 @@ export const GATES: readonly GateSpec[] = [
     },
   },
   {
+    id: 'check:ci-release-bump-skip',
+    run: 'npm run check:ci-release-bump-skip',
+    gate: true,
+    leaves: ['.ci/scripts/quality/check-release-bump-skip.sh'],
+    ci: {
+      kind: 'test',
+      test: '.ci/scripts/quality/check-release-bump-skip.sh',
+      blocker:
+        'BLOCKER: the gate IS the test -- it drives the real dispatch-release.sh decide branch with a shimmed gh through all five paths, so ci-quality.yml quality-security runs the real decision every CI run; it exists because a bump-none merge and a broken decision both produce "no release" and only the emitted signal distinguishes them, which no release gate could see',
+    },
+  },
+  {
     id: 'check:ci-regions-sync',
     run: 'npm run check:ci-regions-sync',
     gate: true,

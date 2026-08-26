@@ -168,6 +168,7 @@
     "check:ci-jq-boolean-default": "tsx scripts/check-jq-boolean-default.ts",
     "check:ci-label-refs": ".ci/scripts/quality/check-label-references.sh",
     "check:ci-dead-case-arms": ".ci/scripts/quality/check-dead-case-arms.sh",
+    "check:ci-release-bump-skip": ".ci/scripts/quality/check-release-bump-skip.sh",
     "check:ci-regions-sync": ".ci/scripts/quality/check-regions-sync.sh",
     "check:ci-label-inventory": ".ci/scripts/quality/check-label-inventory.sh",
     "check:ci-profiler-coverage": ".ci/scripts/quality/check-profiler-coverage.sh",
