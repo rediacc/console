@@ -62,7 +62,23 @@ test_workers_only_still_skips_it() {
     local block
     block="$(step_block "$WORKFLOW")"
     assert_contains "$block" "workers_only != 'true'" "workers-only promotes no artifacts, so it stays excluded"
-    assert_contains "$block" "skip_release != 'true'" "a skipped release stays excluded"
+    # `skip_release` WAS REMOVED FROM cd-v2 (2026-08-26) and asserting it here
+    # would now pin a condition that cannot exist. decide-release-mode.sh wrote
+    # that output `false` on all three of its paths, so every guard reading it was
+    # permanently true -- a condition that cannot be false is a claim, not a guard,
+    # and one of cd-v2's own comments credited it with a skip `workers_only` was
+    # actually performing. The operator was offered the revert and declined.
+    #
+    # What genuinely keeps a skipped release excluded is upstream: cd-v2 is only
+    # DISPATCHED when the release is not skipped (initialize decides, ci.yml
+    # guards the dispatch). So the assertion that belongs here is that the stale
+    # condition is GONE, not that it is present.
+    # Match the CONDITION (`outputs.skip_release`), not the bare word: cd-v2 now
+    # carries a comment explaining why the clause was removed, and asserting on
+    # the word alone flagged that prose. A gate that cannot survive being written
+    # about is too broad.
+    assert_not_contains "$block" "outputs.skip_release" \
+        "the permanently-true skip_release guard is gone; exclusion is upstream, at dispatch"
     log_pass "workers-only remains excluded"
 }
 
@@ -86,7 +102,12 @@ test_planted_old_condition_is_caught() {
     log_test "control: the pre-fix condition is detected"
     local fixture
     fixture="$(mktemp -d)"
-    sed "s|^          steps.skip-check.outputs.skip_release != 'true' \&\&$|          steps.skip-check.outputs.skip_release != 'true' \&\&\n          steps.skip-check.outputs.retry_mode != 'true' \&\&|" \
+    # THE PLANT ANCHOR MOVED (2026-08-26). It used to substitute on the
+    # `skip_release != 'true' &&` line, which no longer exists -- that guard was
+    # permanently true and was removed. The control caught its own plant failing
+    # to land rather than passing over an unmutated fixture, which is exactly
+    # what it is for. Re-anchored on the condition that IS still there.
+    sed "s|^        if: steps.skip-check.outputs.workers_only != 'true'$|        if: >-\n          steps.skip-check.outputs.workers_only != 'true' \&\&\n          steps.skip-check.outputs.retry_mode != 'true'|" \
         "$WORKFLOW" >"$fixture/cd-v2.yml"
 
     local block
