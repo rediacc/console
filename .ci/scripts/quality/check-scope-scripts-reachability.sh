@@ -77,6 +77,33 @@ extract_refs() {
         sort -u || true
 }
 
+# The same rule, one tree over. `.ci/scripts/**` is currently ALL harness
+# (scope-map.cjs's `ci-harness`), so every reference below classifies `full`
+# today and this scan is green. It exists for the day someone narrows part of
+# `.ci/` -- the refinement scope-map.cjs's own comment anticipates -- because
+# nothing else would notice a referenced path becoming narrowable.
+#
+# WHY THE OLD PREMISE WAS WRONG. This gate's header says paths referenced only
+# from `.ci/scripts/quality/` or `.ci/scripts/test/` are "quality-lane consumers"
+# and therefore unscopeable. That is false in the other direction: several
+# `.ci/scripts/quality/` files are executed from NON-quality jobs --
+# `.github/workflows/ci-build-renet.yml:131` runs check-no-otlp-creds.sh against
+# the real release binaries, `ci.yml:834` runs check-release-state.sh, and
+# `ci.yml:531,536,539` run three `.ci/scripts/test/gates/` tests in `run-sh-tests`.
+# Those jobs happen to carry no `run_*` gate TODAY, which is luck rather than
+# architecture. Scanning workflow-wide (not per-job) keeps that luck from being
+# load-bearing, and matches how GATED_DIRS already treats `.github/workflows`.
+extract_ci_refs() {
+    local target="$1"
+    grep -rhE '(^|[^A-Za-z0-9_./-])(\./)?\.ci/scripts/' "$target" 2>/dev/null |
+        grep -vE '\b(log_error|log_warn|log_info|log_debug|echo|printf)\b' |
+        grep -oE '(^|[[:space:]]|"|\x27|\$\(|`|&&|\|\||;)[[:space:]]*((bash|sh|source|node|python3)[[:space:]]+|npx[[:space:]]+tsx[[:space:]]+|\./)?\.ci/scripts/[A-Za-z0-9_./-]+' |
+        grep -oE '\.ci/scripts/[A-Za-z0-9_./-]+' |
+        sed -E 's#[^A-Za-z0-9_./-]+$##' |
+        grep -vE '\.(md|txt)$' |
+        sort -u || true
+}
+
 # run.sh dispatches many subcommands; only the ones a WORKFLOW actually invokes
 # are reachable from a gated job. `./run.sh drill ...` appears in ct-tests.yml,
 # `./run.sh worktree` does not, so scripts/dev/worktree.sh is legitimately
@@ -104,6 +131,44 @@ check_path() {
         violations+=("$p (referenced from $src) classifies '$mode', expected 'full'")
     fi
 }
+
+# ---- CONTROL A: the EXTRACTOR must actually fire -----------------------------
+#
+# The controls below this used to be the whole control section, and they only
+# ever called classify_mode on two real paths. Neither touched extract_refs. A
+# regression that made the extractor return NOTHING would leave this gate
+# printing its success line over an empty scan -- "I flagged nothing today"
+# reported as "nothing is reachable". Found by review 2026-08-26, one round
+# after the identical defect shipped in test-ci-compat-prose.sh.
+#
+# So: plant a synthetic file containing one command-position reference and one
+# log_error mention, and require the extractor to return EXACTLY the first.
+_ctl_dir="$(mktemp -d)"
+trap 'rm -rf "$_ctl_dir"' EXIT
+{
+    printf 'bash scripts/synthetic-control-probe.sh\n'
+    printf 'log_error "see scripts/not-a-dependency.sh for details"\n'
+} >"$_ctl_dir/probe.sh"
+
+_ctl_got="$(extract_refs "$_ctl_dir" | tr '\n' ' ' | sed 's/ $//')"
+if [[ "$_ctl_got" != "scripts/synthetic-control-probe.sh" ]]; then
+    echo "${RED}✗ CONTROL FAILED${NC}: the reference extractor did not return the planted path." >&2
+    echo "  expected exactly 'scripts/synthetic-control-probe.sh', got: '${_ctl_got:-<nothing>}'" >&2
+    echo "  A scanner that matches nothing reports every tree as clean, so this" >&2
+    echo "  gate refuses to report a result." >&2
+    exit 1
+fi
+
+{
+    printf 'bash .ci/scripts/synthetic-ci-probe.sh\n'
+    printf 'log_error "see .ci/scripts/not-a-dependency.sh for details"\n'
+} >"$_ctl_dir/probe.sh"
+_ctl_ci="$(extract_ci_refs "$_ctl_dir" | tr '\n' ' ' | sed 's/ $//')"
+if [[ "$_ctl_ci" != ".ci/scripts/synthetic-ci-probe.sh" ]]; then
+    echo "${RED}✗ CONTROL FAILED${NC}: the .ci extractor did not return the planted path." >&2
+    echo "  expected exactly '.ci/scripts/synthetic-ci-probe.sh', got: '${_ctl_ci:-<nothing>}'" >&2
+    exit 1
+fi
 
 # ---- CONTROL: a synthetic reachable path MUST be judged a violation ----------
 control_mode="$(classify_mode "scripts/check-embed-credits.ts")"
@@ -167,8 +232,29 @@ for f in "${GATED_FILES[@]}"; do
     done < <(ci_invoked_runsh_subcommands)
 done
 
+# ---- the .ci/scripts scan ----------------------------------------------------
+ci_scanned=0
+for d in "${GATED_DIRS[@]}"; do
+    [[ -d "$d" ]] || continue
+    while IFS= read -r ref; do
+        [[ -n "$ref" ]] || continue
+        ci_scanned=$((ci_scanned + 1))
+        check_path "$ref" "$d"
+    done < <(extract_ci_refs "$d")
+done
+
+# ANTI-VACUITY. The workflows genuinely invoke dozens of .ci/scripts paths; a
+# scan that found almost none means the extractor broke, not that the tree got
+# clean. The controls above prove it CAN fire on a planted file; this proves it
+# fired on the REAL tree.
+if [[ "$ci_scanned" -lt 20 ]]; then
+    echo "${RED}✗ VACUOUS SCAN${NC}: only $ci_scanned .ci/scripts reference(s) found across ${#GATED_DIRS[@]} dirs." >&2
+    echo "  The real tree invokes far more than that, so the enumeration broke." >&2
+    exit 1
+fi
+
 if ((${#violations[@]} > 0)); then
-    echo "${RED}✗ ${#violations[@]} root scripts/ path(s) reachable from a gated job do not force full CI:${NC}" >&2
+    echo "${RED}✗ ${#violations[@]} path(s) reachable from a gated job do not force full CI:${NC}" >&2
     printf '  %s\n' "${violations[@]}" >&2
     echo "" >&2
     echo "Each of these is executed by (or dispatched from) code that runs in a gated" >&2
@@ -178,4 +264,8 @@ if ((${#violations[@]} > 0)); then
     exit 1
 fi
 
-echo "${GREEN}✓${NC} every root scripts/ path reachable from a gated job forces full CI"
+echo "${GREEN}✓${NC} every root scripts/ and .ci/scripts/ path reachable from a gated job forces full CI"
+echo "  ($ci_scanned .ci/scripts reference(s) scanned; extractor controls fired, so this is not an empty pass)"
+echo "  Blind spot: scanning is workflow-WIDE, not per-job. A path referenced from"
+echo "  an ungated job is held to the same rule, which is conservative, and a"
+echo "  second-level dependency (a script a scanned script calls) is not followed."
