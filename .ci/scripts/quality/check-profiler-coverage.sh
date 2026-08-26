@@ -347,7 +347,12 @@ got="$(covering_uses "$SELFTEST_DIR/block.txt" "./.github/actions/profiler")"
 got="$(covering_uses "$SELFTEST_DIR/caller.txt" "./.github/actions/profiler")"
 [ "$got" = "0" ] || selftest_fail "covering_uses(negative)" "$got" "0"
 
-got="$(step_inputs "$SELFTEST_DIR/block.txt" "./.github/actions/profiler" | sort | tr '\n' ',')"
+# LC_ALL=C: same sibling risk as test-scope-gate-outputs.sh (see
+# docs/agent-reference/TRAPS.md) -- a shell `sort` compared against a
+# hand-written literal is locale-dependent by construction. Currently correct
+# under en_US.UTF-8 only because 'i' < 'r' in both orderings; pinned so it stays
+# correct everywhere rather than by luck.
+got="$(step_inputs "$SELFTEST_DIR/block.txt" "./.github/actions/profiler" | LC_ALL=C sort | tr '\n' ',')"
 [ "$got" = "interval=7,runner-label=ubuntu-slim," ] || selftest_fail step_inputs "$got" "interval=7,runner-label=ubuntu-slim,"
 
 printf '%s\n' "      - uses: .github/actions/profiler" >"$SELFTEST_DIR/bad.txt"
