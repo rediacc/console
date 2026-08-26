@@ -293,9 +293,7 @@ def _rollup_pages(root, owner, name, ref, build_query, extract, source):
     contexts, cursor, commit, pr, roll = [], None, None, None, None
     truncated = True
     for _ in range(CI_MAX_PAGES):
-        data, err = _gh_json(
-            root, ["api", "graphql", "-f", "query=" + build_query(cursor)]
-        )
+        data, err = _gh_json(root, ["api", "graphql", "-f", "query=" + build_query(cursor)])
         if data is None:
             return "unreadable", err
         terminal, commit, pr = extract(data)
@@ -377,7 +375,6 @@ def _rollup_branch(root, owner, name, ref):
         extract,
         "branch",
     )
-
 
 
 def ci_classify(info):
