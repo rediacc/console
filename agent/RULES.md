@@ -51,9 +51,12 @@ below it.
 - Never push `main`, never merge, never force-push, never suppress a gate.
 - Never `git checkout/restore/stash/clean` to undo. Repair forward. The tree is
   shared and other sessions write into it continuously.
-- Sweep and push the whole tree every round; `git add -A` is correct here. Check
-  `git diff --cached --name-only | grep -cE '\.(mp4|mp3|webm|jpg|png)$'` is 0
-  first: `packages/www/public/assets/videos` is 5.0 GB and belongs in R2.
+- Before staging, check `git diff --cached --name-only | grep -cE
+  '\.(mp4|mp3|webm|jpg|png)$'` is 0: `packages/www/public/assets/videos` is 5.0 GB
+  and belongs in R2. (This line used to open with "`git add -A` is correct here",
+  which contradicted both `block-blanket-git-add.sh` and this file's own rule
+  below. A rules file that answers one question twice, differently, is worse than
+  one that stays quiet: the reader stops at whichever comes first.)
 - Never stage the `private/renet` gitlink when it points off main.
 - `docs/ci-overhaul/06-progress.md` is the program's running record and must be
   updated in the same turn behaviour changes.

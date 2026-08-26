@@ -628,6 +628,12 @@ jobs:
       - name: Bootstrap paths install through the dependency stamp
         run: npm run check:ci-bootstrap-idempotency
 
+      # allow_squash_merge is false on all five repos, so a prescribed --squash
+      # is a command that cannot succeed -- and two of the five sites were hook
+      # refusal messages, which carry the most authority and the least checking.
+      - name: Instruction files do not prescribe a rejected merge method
+        run: npm run check:ci-merge-method-prose
+
       # An undeclared binary is a mute exit 127, not a missing feature: it kills
       # the script before its own error paths can speak. Cost one live incident
       # in review-status.sh on a host without unzip.

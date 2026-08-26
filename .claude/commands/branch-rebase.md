@@ -1,6 +1,5 @@
 ---
 description: Rebase the current branch (console + every submodule that has a matching branch) onto its base branch, submodule-first, resolving the gitlink conflicts that plain `git rebase` gets wrong. Rebase and verify ONLY - merges nothing, lands nothing, and never force-pushes. Use to refresh a long-running branch onto a moved main before or during a PR.
-argument-hint: "[base]  (optional; defaults to main)"
 disable-model-invocation: true
 allowed-tools: Bash(git branch:*), Bash(git status:*), Bash(git submodule status:*), Bash(git log:*), Bash(git rev-parse:*), Bash(git rev-list:*), Bash(git ls-tree:*), Bash(git remote:*), Bash(gh pr list:*)
 ---
@@ -8,17 +7,31 @@ allowed-tools: Bash(git branch:*), Bash(git status:*), Bash(git submodule status
 ## Current state
 
 - Branch: !`git branch --show-current`
-- Base candidates: !`git rev-parse --abbrev-ref origin/HEAD 2>/dev/null || echo 'origin/HEAD unset; assume main'`
 - Working tree: !`git status --short | grep -v '.claude/settings.local.json' || echo '(clean aside from settings.local.json)'`
 - Submodule pointers: !`git submodule status private/renet private/account private/elite private/homebrew-tap 2>/dev/null || echo '(unavailable)'`
 - Branch vs base (left=base-only, right=branch-only): !`cb="$(git branch --show-current)"; git rev-list --left-right --count origin/main...HEAD 2>/dev/null || echo '(unavailable)'`
 - Matching branches in submodules: !`cb="$(git branch --show-current)"; for d in private/renet private/account private/elite private/homebrew-tap; do [ -e "$d/.git" ] || continue; if git -C "$d" show-ref --verify --quiet "refs/heads/$cb" || git -C "$d" ls-remote --exit-code --heads origin "$cb" >/dev/null 2>&1; then echo "  $d: HAS $cb"; else echo "  $d: none"; fi; done; true`
 
-## Task: rebase branch `$ARGUMENTS`
+## Task: rebase the current branch onto `origin/main`
 
-Rebase the current branch onto its base (default `main`, or the first token of
-`$ARGUMENTS`) across the console repo **and** every submodule carrying a branch of the
-same name. If `$ARGUMENTS` is empty, base is `main`.
+Rebase the current branch onto `origin/main` across the console repo **and** every
+submodule carrying a branch of the same name.
+
+**The base is not configurable, and the `[base]` argument was DELETED rather than
+implemented.** It was advertised for weeks and never used: the executable rebase below
+is `origin/main`, submodules always base on their own `main`, and step 4 verifies
+containment against `origin/main`. Passing a feature branch rebased the console onto it
+while the verification checked main -- a false pass, on the one case worth checking.
+Making the knob real would mean threading a per-repo base through the submodule loop,
+the classifier and the containment check, and the code is right that submodules base on
+their own main. There is one operator and no external consumer, so the knob is gone.
+
+If you genuinely need to stack on another feature branch, do it by hand and know what
+you are buying: all five repos are rebase-merge only, so merging the parent PR REWRITES
+its SHAs. Your branch then carries the pre-merge ones and must be rebased again onto
+`origin/main`, where git drops the patch-identical duplicates. A commit count that
+falls across that second rebase is CORRECT, which is why step 4 no longer compares
+counts.
 
 **This command lands nothing.** It does not merge, does not touch a PR, does not tag,
 does not deploy. It ends with a rebased local branch and an explicit verification
@@ -68,6 +81,14 @@ git ls-files -u <submodule>   # stage 1 = base(ancestor), 2 = upstream, 3 = repl
     echo "$d = $(git -C "$d" rev-parse HEAD)"; done
   ```
 
+  Recorded SHAs are enough, and they are the DEFAULT here: `git reflog` keeps them
+  reachable and nothing pollutes the branch namespace. If you want a durable ref
+  instead, use a **tag** (`git tag prerebase-$(date +%m%d) <branch>`) or take the next
+  free `MMDD-N`. Do **not** decorate the branch name: `0826-1-prerebase` is refused by
+  `block-nonstandard-branch-name.sh`, because step 3 below matches a submodule branch
+  against the console branch name EXACTLY, and a suffixed name matches nothing while
+  looking like it belongs to the wave.
+
   These SHAs are the recovery path (`git reset --hard <sha>` by the operator, or
   `git reflog`). A rebase that goes wrong is recoverable ONLY while they are known.
 - **Working tree clean except `.claude/settings.local.json`.** Rebase refuses to start
@@ -107,7 +128,7 @@ for d in private/renet private/account private/elite private/homebrew-tap; do
 done
 ```
 
-Rebase onto `origin/<base>`, never the possibly-stale local `<base>` ref.
+Rebase onto `origin/main`, never the possibly-stale local `main` ref.
 
 ### 2. Rebase the submodules FIRST (only those with a matching branch)
 
@@ -159,7 +180,20 @@ rec=$(git ls-files -u <sm> | awk '$3==2{print $2}')   # upstream/base side
 mine=$(git ls-files -u <sm> | awk '$3==3{print $2}')  # replayed side
 git -C <sm> merge-base --is-ancestor "$rec" "$mine" && echo "mine is NEWER (take mine)"
 git -C <sm> merge-base --is-ancestor "$mine" "$rec" && echo "base is NEWER (take base)"
-# neither printed => genuinely diverged; the submodule needs its own branch + rebase (step 2)
+# neither printed => genuinely DIVERGED. STOP HERE.
+#
+# This is terminal, not a step. The old text sent you back to step 2, which you
+# only reach from the "no matching branch" rows -- so it pointed at a step that by
+# construction does not apply, and the next thing a session reaches for is
+# --ours/--theirs, which the table above proves is silently wrong.
+#
+# No correct resolution for this case has ever been executed in this repo, so
+# there is no procedure to follow and inventing one here would be worse than
+# stopping. `git rebase --abort`, restore the step-0 SHAs, and hand it to the
+# operator with both candidate SHAs and what each contains.
+#
+# wl_git.py's resolve_gitlink_target refuses this same case rather than guessing.
+# Agreeing with the tool is the point.
 ```
 
 Then stage the **path**, which is how a gitlink is marked resolved, and continue:
@@ -188,10 +222,23 @@ rebase**, so the tree state alone proves nothing. Check the content:
   ```
 
   This is the check that catches an `--ours`/`--theirs` mistake, and nothing else does.
-- **Your commits survived.** `git rev-list --count origin/main..HEAD` should equal the
-  branch-only count from *Current state* (minus any that the base genuinely absorbed).
-  A number that dropped unexpectedly means a commit was skipped. Investigate before
-  going further.
+- **Your commits survived**, and a COUNT cannot tell you that. Rebase-merge rewrites
+  SHAs, so when a stacked branch re-rebases after its parent PR merges, git correctly
+  drops the patch-identical duplicates and the count legitimately falls. The old
+  instruction ("should equal the branch-only count, minus any the base absorbed") asked
+  you to eyeball the difference between a correct drop and a `--skip` that ate a commit,
+  which is exactly the judgement it should have been making for you.
+
+  Ask by PATCH IDENTITY instead. `git cherry` marks each commit `+` (not upstream) or
+  `-` (an equivalent is already upstream):
+
+  ```bash
+  git cherry origin/main HEAD | awk '$1=="-"{print "absorbed: " $2}'
+  git rev-list <pre-rebase-tip-from-step-0>..HEAD --format=%s   # what you still carry
+  ```
+
+  A commit that is neither carried nor marked absorbed is MISSING, and that is the
+  `--skip` case. Nothing else distinguishes the two.
 - **Build/test the result**, because a textually clean rebase can still be semantically
   broken (your branch and the base each edited around the other). At minimum
   `npx tsc --noEmit --project packages/cli/tsconfig.json` plus the suites covering the

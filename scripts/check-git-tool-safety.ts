@@ -183,11 +183,34 @@ const main = (): number => {
   const lease = code.some((l) => l.includes('--force-with-lease'));
   const refusesMain = source.includes('def refuse_main');
   const dryDefault = source.includes('execute = "--execute" in argv');
+
+  // AFFIRMATIVE ARM, added 2026-08-26 after this gate reported green on a
+  // module that could not write at all.
+  //
+  // Every arm above is a DENIAL: no --force, no --mirror, no --ours. A
+  // deny-scanner can prove nothing bad reaches git and is structurally unable
+  // to prove that anything reaches git. For months `--execute` flipped one word
+  // in render() and wrote nothing, while `dryDefault` -- a grep for the literal
+  // `execute = "--execute" in argv` -- kept reporting the dry-run default
+  // verified. The failure message even warned that "writes would happen without
+  // --execute", a risk that could not exist.
+  //
+  // So: the executor must EXIST and be REACHED. This is still a source check
+  // (the behavioural proof lives in wl_git.py --selftest, which test-hooks.sh
+  // now runs), but it keys on a call reaching a writer rather than on a string
+  // that happens to be present.
+  const hasExecutor = /def run\(self, runner=None\)/.test(source);
+  const reachesExecutor = code.some((l) => l.includes('plan.run('));
+
   const problems: string[] = [];
   if (!lease) problems.push('no --force-with-lease call: the push path may have been removed');
   if (!refusesMain) problems.push('refuse_main is gone: main could be force-pushed');
   if (!dryDefault)
     problems.push('the dry-run default is gone: writes would happen without --execute');
+  if (!hasExecutor)
+    problems.push('Plan.run is gone: --execute would print a plan and write nothing, while still saying EXECUTE');
+  if (!reachesExecutor)
+    problems.push('nothing calls plan.run(): the executor exists but no path reaches it, which is the 2026-08-26 defect exactly');
   if (problems.length > 0) {
     console.error(`✗ ${TARGET} lost a safety property:`);
     for (const p of problems) console.error(`    ${p}`);

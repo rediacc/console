@@ -530,6 +530,21 @@ export const GATES: readonly GateSpec[] = [
     },
   },
   {
+    // A guard's refusal message is the last thing a session reads before
+    // changing course. It must not prescribe a merge method the platform
+    // rejects: allow_squash_merge is false on all five repos.
+    id: 'check:ci-merge-method-prose',
+    run: 'npm run check:ci-merge-method-prose',
+    gate: true,
+    leaves: ['scripts/check-merge-method-prose.ts'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-code',
+      step: 'Instruction files do not prescribe a rejected merge method',
+    },
+  },
+  {
     // A .ci script must declare the non-baseline binaries it runs. An
     // undeclared one exits 127 with no message under `set -euo pipefail`, and
     // reads as working code on any host that happens to have it.

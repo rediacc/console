@@ -743,6 +743,54 @@ check 0 pre-bash/block-self-matching-pgrep.sh \
 check 0 pre-bash/block-self-matching-pgrep.sh \
     "$(bash_json 'until [ -s out.txt ]; do sleep 5; done')" \
     "self-pgrep CONTROL: an artifact waiter names no process at all"
+# Branch names are MMDD-N with no suffix. The FIRE cases are the two shapes
+# that actually happened: a `-prerebase` safety copy (2026-08-26, in the console
+# AND a submodule) and a slashed feature name. The slashed one is here because
+# the first draft of the hook let it through -- its escape hatch for start-point
+# refs skipped any candidate containing a slash -- and only the control caught
+# it. The SILENT cases keep reads, deletes and start points out of scope.
+check 2 pre-bash/block-nonstandard-branch-name.sh \
+    "$(bash_json 'git branch 0826-1-prerebase 0826-1')" \
+    "branch-name: a suffixed safety copy is refused"
+check 2 pre-bash/block-nonstandard-branch-name.sh \
+    "$(bash_json 'git checkout -b feature/my-thing')" \
+    "branch-name: a slashed feature name is refused"
+check 2 pre-bash/block-nonstandard-branch-name.sh \
+    "$(bash_json 'git switch -c wip')" \
+    "branch-name: a bare word is refused"
+check 2 pre-bash/block-nonstandard-branch-name.sh \
+    "$(bash_json 'git branch -m 0826-3 0826-3-backup')" \
+    "branch-name: renaming INTO a suffix is refused"
+check 0 pre-bash/block-nonstandard-branch-name.sh \
+    "$(bash_json 'git branch -m 0826-3-prerebase 0826-4')" \
+    "branch-name CONTROL: renaming OUT of a suffix is how you FIX it"
+check 0 pre-bash/block-nonstandard-branch-name.sh \
+    "$(bash_json 'git checkout -b 0826-5 origin/main')" \
+    "branch-name CONTROL: a legal name with a remote start point"
+check 0 pre-bash/block-nonstandard-branch-name.sh \
+    "$(bash_json 'git branch --show-current')" \
+    "branch-name CONTROL: a read is not a creation"
+check 0 pre-bash/block-nonstandard-branch-name.sh \
+    "$(bash_json 'git branch -d 0826-2')" \
+    "branch-name CONTROL: a delete is not a creation"
+check 0 pre-bash/block-nonstandard-branch-name.sh \
+    "$(bash_json 'git checkout 0826-3')" \
+    "branch-name CONTROL: checking out an existing branch is not a creation"
+# THE TWO FALSE POSITIVES THIS HOOK SHIPPED WITH, both found by the hook
+# refusing work it had no business refusing. It blocked its OWN commit message
+# for describing the shape it refuses, and then blocked the edit that would have
+# fixed that, so the repair had to come through the Edit tool. The third case
+# proves the stripping and anchoring did not buy silence: a real creation after
+# a heredoc still fires.
+BN_ASSIGN=$(printf 'SLASH=%sgit checkout -b some/name%s; echo hi' "'" "'")
+BN_HEREDOC=$(printf 'git commit -F - <<%sMSG%s\nprose naming git checkout -b some/name here\nMSG' "'" "'")
+BN_AFTER=$(printf 'git commit -F - <<%sMSG%s\nprose about a name\nMSG\ngit switch -c nope' "'" "'")
+check 0 pre-bash/block-nonstandard-branch-name.sh "$(bash_json "$BN_ASSIGN")" \
+    "branch-name CONTROL: a variable assignment holding the words runs nothing"
+check 0 pre-bash/block-nonstandard-branch-name.sh "$(bash_json "$BN_HEREDOC")" \
+    "branch-name CONTROL: the shape named inside a heredoc BODY is prose"
+check 2 pre-bash/block-nonstandard-branch-name.sh "$(bash_json "$BN_AFTER")" \
+    "branch-name: a real creation AFTER a heredoc still fires"
 # The sanctioned terminal-state CI watch (see .claude/agents/pr-babysitter.md) must pass all three CI-poll guards.
 WATCH='R=123; until [ "$(gh run view $R --repo rediacc/console --json status --jq .status)" = "completed" ]; do sleep 20; done; gh run view $R --repo rediacc/console --json conclusion,jobs'
 check 0 pre-bash/block-ci-polling.sh "$(bash_json "$WATCH")" "ci-polling: terminal-state watch ok"
@@ -892,6 +940,43 @@ rm -rf "$DRIFT_TMP"
 # those prove the WRONG way is blocked, this proves the RIGHT way preserves the
 # appendix, and it carries a control asserting the naive splice still destroys
 # it, so the suite cannot quietly stop reproducing the bug it was written for.
+# TWO MODULES CARRIED SELFTESTS THAT NOTHING RAN, found 2026-08-26: wl_git.py
+# and wl_admit.py, 18 controls each, invoked by no suite and no gate.
+#
+# The loop asserts a MINIMUM COUNT, not merely a zero exit, and that floor is
+# the point. `python3 wl_reggate.py --selftest` also exits 0 -- not because it
+# has a vacuous selftest, but because it has NO selftest and no __main__ at all,
+# so running a library module as a script does nothing and succeeds. A wiring
+# that trusted the exit code would have reported that as a passing suite. An
+# unrun suite, a vacuous one, and a module that ignores its argv are
+# indistinguishable from outside unless you count what came back.
+#
+# Sharpest detail: test-worklist-v5.sh exempts `--git` from its verb-coverage
+# table and CITES "18 controls in wl_git.py --selftest" as the justification.
+# Coverage was being claimed from a suite that never executed.
+for orphan in wl_git:18 wl_admit:18; do
+    mod="${orphan%%:*}"; floor="${orphan##*:}"
+    OMOD="$DIR/stop/${mod}.py"
+    if [[ ! -f "$OMOD" ]]; then
+        FAIL=$((FAIL + 1)); echo "FAIL [1] stop/${mod}.py missing"; continue
+    fi
+    if out="$(python3 "$OMOD" --selftest 2>&1)"; then
+        n=$(grep -c "^  PASS " <<<"$out")
+        if [[ "$n" -lt "$floor" ]]; then
+            FAIL=$((FAIL + 1))
+            echo "FAIL [1] stop/${mod}.py --selftest: $n control(s), expected >= $floor"
+            echo "       a selftest that prints nothing and exits 0 is a vacuous green"
+        else
+            PASS=$((PASS + n))
+            echo "ok   [0] stop/${mod}.py --selftest: $n control(s) passed"
+        fi
+    else
+        FAIL=$((FAIL + 1))
+        echo "FAIL [1] stop/${mod}.py --selftest"
+        grep -E "^  FAIL " <<<"$out" | sed 's/^/       /'
+    fi
+done
+
 RLOG_MOD="$DIR/stop/wl_roundlog.py"
 if [[ -f "$RLOG_MOD" ]]; then
     if out="$(python3 "$RLOG_MOD" --selftest 2>&1)"; then

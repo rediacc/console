@@ -10,11 +10,18 @@ allowed-tools: Bash(git branch:*), Bash(git status:*), Bash(git submodule status
 
 ## Current state
 
-- Today (branch base): !`date +%m%d`  (feature branches are `MMDD-N`)
+- Today (branch base): !`date +%m%d`  (feature branches are `MMDD-N`, NO suffix)
+
+**Take MAX+1 over the CONSUMED list, not over the remote branch list.** A merged
+PR's branch is DELETED, so `git branch -r` cannot see the name it used. That is
+how `0826-1` was picked twice on 2026-08-26: the remote showed only `0826-2`,
+while PR #576 had merged `0826-1` at 11:01 that morning. Both lines are printed
+below so the difference is visible rather than assumed.
 - Current branch: !`git branch --show-current`
 - Console tree (excl. settings.local.json): !`git status --short | grep -v '.claude/settings.local.json' | wc -l | tr -d ' '` changed path(s)
 - Submodules with changes: !`git status --short private/renet private/account private/elite private/homebrew-tap 2>/dev/null || echo '(none)'`
 - Existing date branches (console remote): !`git branch -r | grep "$(date +%m%d)-" || echo '(none yet)'`
+- Date names ALREADY CONSUMED (PR heads, merged included): !`gh pr list --state all --limit 100 --json headRefName --jq '.[].headRefName' 2>/dev/null | grep "^$(date +%m%d)-" | sort -u | tr '\n' ' ' || echo '(none yet)'`
 - Open PRs on the current branch: !`cb="$(git branch --show-current)"; for r in console renet account; do p=$(gh pr list --repo rediacc/$r --head "$cb" --state open --json number,title --jq '.[] | "  rediacc/'$r' #\(.number) \(.title)"' 2>/dev/null); [ -n "$p" ] && echo "$p"; done; true`
 
 ## Mode

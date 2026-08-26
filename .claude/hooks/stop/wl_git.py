@@ -320,6 +320,36 @@ class Plan:
                 lines.append("  [%s] git -C %s %s" % (prefix, b, " ".join(a)))
         return "\n".join(lines)
 
+    def run(self, runner=None):
+        """Execute the cmd steps in order, HALTING on the first failure.
+
+        THIS DID NOT EXIST UNTIL 2026-08-26, and its absence was the module's
+        worst defect. `--execute` flipped one word in render() and nothing else:
+        the tool printed `force-push (EXECUTE)`, five `[run] git ... push` lines
+        and NO "Nothing was written" footer, then wrote nothing. A session
+        reading that transcript reports a completed five-repo force-push.
+        Demonstrated before the fix: origin/0826-2 byte-identical across the run.
+
+        HALT ON FIRST FAILURE IS LOAD-BEARING, not tidiness. The steps are
+        ordered submodules-then-console precisely because a console push naming
+        an unpushed submodule commit is how PR #541 broke; continuing past a
+        failed submodule push would publish exactly that.
+
+        `runner` is injectable so the controls can prove ordering and halting
+        without a remote.
+        """
+        run = runner or run_git
+        done, failed = [], None
+        for kind, a, b, _c in self.steps:
+            if kind != "cmd":
+                continue
+            rc, out, err = run(a, cwd=b)
+            done.append((a, b, rc))
+            if rc != 0:
+                failed = (a, b, (err or out or "").strip()[:200])
+                break
+        return done, failed
+
 
 def repo_root():
     rc, out, _ = run_git(["rev-parse", "--show-toplevel"], cwd=os.getcwd())
@@ -400,6 +430,13 @@ def main(argv):
                     continue
                 any_found = True
                 dels = staged_deletions(repo)
+                # `is None` FIRST: the probe failed, and None is falsy, so a
+                # bare `if dels:` let an UNREADABLE probe pass as "no deletions".
+                # force-push got this right and these two did not, which is the
+                # module's own rule ("an unreadable probe is never a pass")
+                # holding on one path out of three.
+                if dels is None:
+                    raise Refusal("could not read staged deletions for %s" % path)
                 if dels:
                     raise Refusal("%s has staged deletion(s); refusing" % path)
                 plan.check("%s has a %s branch" % (path, branch), True)
@@ -459,6 +496,8 @@ def main(argv):
             if rc != 0:
                 raise Refusal("could not read the current pointer for %s" % path)
             dels = staged_deletions(repo)
+            if dels is None:
+                raise Refusal("could not read staged deletions for %s" % path)
             if dels:
                 raise Refusal("%s has staged deletion(s); refusing" % path)
             plan.cmd(["fetch", "origin"], repo)
@@ -514,10 +553,58 @@ def main(argv):
         sys.stderr.write("REFUSED: %s\n" % exc)
         return 2
 
-    sys.stdout.write("%s (%s)\n" % (sub, "EXECUTE" if execute else "dry run"))
+    # `[run]` must mean "this will run". Only force-push executes, so a plan
+    # that is about to be refused renders as "would run" -- otherwise the output
+    # tells the same lie in miniature that this whole change removes.
+    will_execute = execute and sub == "force-push"
+    plan.execute = will_execute
+    sys.stdout.write(
+        "%s (%s)\n" % (sub, "EXECUTE" if will_execute else ("plan only" if execute else "dry run"))
+    )
     sys.stdout.write(plan.render() + "\n")
     if not execute:
         sys.stdout.write("\nNothing was written. Re-run with --execute to perform it.\n")
+        return 0
+
+    # ONLY force-push EXECUTES, and the restriction is a design decision, not an
+    # unfinished corner. Everything else this module plans -- rebase, checkout,
+    # add, fetch -- the caller can already run from Bash, where the pre-bash
+    # guards see it and the transcript records it. force-push is the single
+    # command Bash cannot run (block-git-force-push.sh refuses it
+    # unconditionally), which is the whole reason this module exists.
+    #
+    # A REBASE EXECUTOR IS DELIBERATELY NOT BUILT. A conflicting rebase halts
+    # mid-list and needs a human before --continue, and Plan is a flat list with
+    # no resume, no rollback and no way to say "step 3 of 7 stopped, the tree is
+    # mid-rebase". Conflict is the NORMAL case here, so executing that flow
+    # would be a re-implementation of git's own state machine in a tree where
+    # stash and restore are banned, i.e. where its worst failure has no
+    # recovery. Refusing is honest; half-executing is not.
+    if sub != "force-push":
+        sys.stderr.write(
+            "\nREFUSED: --execute is only implemented for force-push.\n"
+            "The steps above are safe to run yourself, and running them from Bash\n"
+            "keeps them in the transcript and under the pre-bash guards.\n"
+        )
+        return 2
+
+    sys.stdout.write("\nUNDO -- the pre-push remote tips, the only recovery a force-push has:\n")
+    for path, _b in [(p_, b_) for p_, b_ in submodules(root)] + [(".", None)]:
+        repo = root if path == "." else os.path.join(root, path)
+        rc, tip, _ = run_git(["rev-parse", "origin/%s" % args[1]], cwd=repo)
+        sys.stdout.write("  %s = %s\n" % (path, tip if rc == 0 else "(no remote branch yet)"))
+
+    done, failed = plan.run()
+    sys.stdout.write("\n%d command(s) ran.\n" % len(done))
+    if failed:
+        argv_, cwd_, err_ = failed
+        sys.stderr.write(
+            "\nHALTED: `git -C %s %s` failed.\n%s\n"
+            "Steps after it did NOT run, deliberately: the console push is last so\n"
+            "it can never name a submodule commit that failed to publish.\n"
+            % (cwd_, " ".join(argv_), err_)
+        )
+        return 1
     return 0
 
 
@@ -564,6 +651,55 @@ def selftest():
         "dry and execute render the SAME command",
         p.render().split("git -C")[1] == q.render().split("git -C")[1],
     )
+
+    # THE EXECUTOR CONTROLS. Until 2026-08-26 this module planned and never
+    # wrote, while printing "(EXECUTE)" and "[run]" -- and its CI gate asserted
+    # the dry-run default by grepping for the literal string
+    # `execute = "--execute" in argv`, so a capability that could NOT execute
+    # passed its execution-safety gate perfectly. The three assertions above are
+    # exactly the kind that stayed green through all of it: they check what the
+    # renderer SAYS. These check what the plan DOES, and no string satisfies
+    # them.
+    calls = []
+
+    def fake(argv, cwd, timeout=None):
+        calls.append((argv, cwd))
+        return 0, "", ""
+
+    pr = Plan(execute=True)
+    pr.cmd(["push", "--force-with-lease", "origin", "x"], "/sub")
+    pr.cmd(["push", "--force-with-lease", "origin", "x"], "/root")
+    done, failed = pr.run(runner=fake)
+    check("execute RUNS every cmd step, in order", [c[1] for c in calls] == ["/sub", "/root"])
+    check("and reports them all, with no failure", len(done) == 2 and failed is None)
+
+    calls.clear()
+    pd = Plan(execute=False)
+    pd.cmd(["push", "origin", "x"], "/sub")
+    pd.render()
+    check("CONTROL: rendering a dry plan never reaches the runner", not calls)
+
+    # HALT ON FIRST FAILURE, and the ordering it protects: the console push must
+    # never follow a FAILED submodule push, which is incident #541's shape.
+    calls.clear()
+
+    def fake_fail(argv, cwd, timeout=None):
+        calls.append((argv, cwd))
+        return (1, "", "boom") if cwd == "/sub" else (0, "", "")
+
+    ph = Plan(execute=True)
+    ph.cmd(["push", "--force-with-lease", "origin", "x"], "/sub")
+    ph.cmd(["push", "--force-with-lease", "origin", "x"], "/root")
+    done, failed = ph.run(runner=fake_fail)
+    check("a failed step HALTS the plan", failed is not None and len(done) == 1)
+    check("and the console push never ran", [c[1] for c in calls] == ["/sub"])
+
+    calls.clear()
+    pn = Plan(execute=True)
+    pn.note("just a note")
+    pn.check("just a check", True)
+    pn.run(runner=fake)
+    check("CONTROL: notes and checks are never executed", not calls)
     return 0 if fail == 0 else 1
 
 

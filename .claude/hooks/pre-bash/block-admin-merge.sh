@@ -36,7 +36,7 @@ hook_gh_pr_at_command_pos "$SCAN" merge || exit 0
 # --admin ban: match the flag in ANY form on the raw command (=value,
 # assignment, inside a wrapper payload). Over-blocking is the safe direction.
 if hook_flag_present "$CMD" admin; then
-    echo "❌ BLOCKED: 'gh pr merge --admin' is banned. It bypasses the required CI Complete check and is how merged PRs ended up permanently red (pointer-bump commits merged mid-run). The sanctioned path: wait for the fast-path CI run to go green (minutes for pointer-only pushes), then 'gh pr ready' and 'gh pr merge --squash --auto'. If GitHub refuses a plain merge, the PR is not actually green -- fix that instead." >&2
+    echo "❌ BLOCKED: 'gh pr merge --admin' is banned. It bypasses the required CI Complete check and is how merged PRs ended up permanently red (pointer-bump commits merged mid-run). The sanctioned path: wait for the fast-path CI run to go green (minutes for pointer-only pushes), then 'gh pr ready' and 'gh pr merge --rebase --auto'. If GitHub refuses a plain merge, the PR is not actually green -- fix that instead." >&2
     exit 2
 fi
 
@@ -71,7 +71,7 @@ while IFS= read -r SEG; do
     if [[ "$AUTO" == "0" && "$REPO" == "rediacc/console" ]]; then
         CONCLUSION=$(printf '%s' "$PRDATA" | jq -r '[.statusCheckRollup[] | select(.name == "CI Complete")] | first | .conclusion // "ABSENT"' 2>/dev/null)
         if [[ "$CONCLUSION" != "SUCCESS" ]]; then
-            echo "❌ BLOCKED: immediate merge of console PR #$NUM requires CI Complete = SUCCESS on the current head (got: ${CONCLUSION:-verification failed}). Use 'gh pr merge --squash --auto' to let GitHub merge at green, or wait for the run." >&2
+            echo "❌ BLOCKED: immediate merge of console PR #$NUM requires CI Complete = SUCCESS on the current head (got: ${CONCLUSION:-verification failed}). Use 'gh pr merge --rebase --auto' to let GitHub merge at green, or wait for the run." >&2
             exit 2
         fi
     fi

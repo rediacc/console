@@ -99,12 +99,22 @@ echo "WAITING FOR ME FROM PEER SESSIONS (silence means nothing is waiting):"
 python3 "$WL" --poll "$ME" 2>&1 | head -30
 echo
 
-branch=$(git branch --show-current 2>/dev/null || echo '')
-if [ -n "$branch" ]; then
-    plans=$(ls -1 "agent/${branch}"/PLAN-*.md 2>/dev/null | wc -l | tr -d ' ')
-    state_age=$(stat -c %y "agent/${branch}/${ME}/STATE.md" 2>/dev/null | cut -d. -f1 || echo 'MISSING')
-    peers=$(find "agent/${branch}" -mindepth 1 -maxdepth 1 -type d ! -name "${ME}" 2>/dev/null | wc -l | tr -d ' ')
-    echo "DURABLE CONTEXT: my STATE.md ${state_age}; ${plans} plan file(s) under agent/${branch}/"
-    echo "  ${peers} peer session folder(s) beside mine under agent/${branch}/. Theirs to write, mine to read."
-    echo "  These survive a reboot. The worklist store lives under \$TMPDIR and does not."
+# NO BRANCH IN THE PATH. The operator removed it on 2026-08-18 (agent/README.md),
+# and this block was never updated, so the command whose entire job is
+# re-orientation after compaction reported `0 plan file(s)` and `STATE.md
+# MISSING` on every single run while 42 plans and a live STATE.md sat one
+# directory up. Eight days of a brief that was reassuringly, uselessly empty.
+state_age=$(stat -c %y "agent/${ME}/STATE.md" 2>/dev/null | cut -d. -f1 || echo 'MISSING')
+plans=$(ls -1 agent/PLAN-*.md 2>/dev/null | wc -l | tr -d ' ')
+peers=$(find agent -mindepth 1 -maxdepth 1 -type d ! -name "${ME}" 2>/dev/null | wc -l | tr -d ' ')
+echo "DURABLE CONTEXT: my STATE.md ${state_age}; ${plans} plan file(s) under agent/"
+echo "  ${peers} peer session folder(s) beside mine under agent/. Theirs to write, mine to read."
+echo "  These survive a reboot. The worklist store lives under \$TMPDIR and does not."
+# ZERO IS A FAILURE, NOT A REPORT. A brief that finds nothing when the tree is
+# full is indistinguishable from a brief on an empty tree, which is what let the
+# path bug live for eight days.
+if [ "$plans" = "0" ] || [ "$state_age" = "MISSING" ]; then
+    echo "  ^ SUSPECT: agent/ holds $(ls -1d agent/*/ 2>/dev/null | wc -l | tr -d ' ') session dir(s) and"
+    echo "    $(ls -1 agent/PLAN-*.md 2>/dev/null | wc -l | tr -d ' ') PLAN file(s). A zero here usually means this"
+    echo "    brief is looking in the wrong place, not that the context is empty."
 fi

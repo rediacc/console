@@ -142,7 +142,15 @@ never literally on the base branch under the old SHAs), so judge "is this landed
 For each submodule that has an **open PR on this branch** (check the list above):
 - Confirm `mergeStateStatus` is `CLEAN` and there are **no unresolved bot review threads** (`gh api graphql` reviewThreads → all `isResolved:true`). If unresolved threads remain, resolve them first (substantive reply + `resolveReviewThread`), because they block the console `Submodule Branches` gate while the console PR is still open.
   - A **failing but non-required** check (e.g. a broken submodule Claude Review job) shows as `mergeStateStatus: UNSTABLE`, not `CLEAN`, and that alone does not mean stop. Confirm with GraphQL whether it's actually required before treating it as a blocker: `pullRequest.commits.nodes[].commit.statusCheckRollup.contexts.nodes[].isRequired(pullRequestNumber: <n>)`. `isRequired:false` on the only failing context means the PR is safely mergeable despite UNSTABLE.
-- Rebase-merge: `gh pr merge <n> --repo rediacc/<r> --rebase`. **Do not delete the branch** (`delete_branch_on_merge` is false on submodules; keeping it preserves the gate's fallback path).
+- Rebase-merge: `gh pr merge <n> --repo rediacc/<r> --rebase`. **GitHub deletes the head
+  branch for you** -- `delete_branch_on_merge` is `true` on all five repos, so this is not a
+  choice you make. Ask rather than assume:
+  `gh api repos/rediacc/<r> --jq '.delete_branch_on_merge, .allow_squash_merge, .allow_rebase_merge'`.
+  This line used to claim the setting was FALSE on submodules and that keeping the branch
+  preserved a gate fallback. Both were invented, and the cost was real: believing merged
+  branch names stay visible is what let `0826-1` be picked twice on 2026-08-26, hours after
+  PR #576 merged it. The gate does not need the ref -- `check-submodule-branches.sh` finds
+  merged work with `gh pr list --head <branch> --state merged`, which never touches it.
 - Capture the new submodule `main` HEAD: `gh api repos/rediacc/<r>/commits/main --jq .sha`. This is the **rebased tip commit**, a new SHA even for a single-commit PR (rebase always creates new commit objects), tree-identical to the branch tip but not the same object.
 
 ### 2. Update console submodule pointers to the merged commits
@@ -326,6 +334,18 @@ So finish by making the state explicit rather than leaving it implied:
 - Do **not** pre-create the next branch yourself. The branch name encodes the next wave's date
   and number, and guessing it produces stray `MMDD-N` refs that the next `/pr-babysit` then has
   to skip past.
+- **The name this command just merged is now CONSUMED, and its branch is gone.** A rebase-merge
+  deletes the head branch, so `git branch -r` no longer shows it and the next session can pick
+  it again. Seen live on 2026-08-26: `0826-1` merged as PR #576 at 11:01, and a session working
+  from the remote branch list took `0826-1` a second time. Compute the next N from PR HEADS:
+
+      d=$(date +%m%d)
+      gh pr list --state all --limit 100 --json headRefName --jq '.[].headRefName' \
+        | grep "^${d}-" | sed "s/^${d}-//" | sort -n | tail -1
+
+  Then add one. `MMDD-N` takes **no suffix**; `block-nonstandard-branch-name.sh` refuses one,
+  because /pr-merge matches a submodule's coordinated PR on the console branch name EXACTLY and
+  a suffixed name silently matches nothing.
 
 ### 8. Report
 State each merged commit (renet / account / console → their rebased-tip SHAs on main), confirm local `main` is in sync, **state the step-6b GitLab mirror outcome explicitly, including a skip and its reason**, and give the release outcome: Console CI green, Release/CD green with the new version tag + edge deployed (or the exact failed step if not). If step 5 required a fix pushed directly to `main`, state that explicitly with its SHA and the failure it repaired. Close with the step-7 hand-back note (on `main`, branch before editing). **Do not** merge anything else or re-cut a release.
