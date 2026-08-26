@@ -420,7 +420,20 @@ ordering_violations() {
     decide_line="$(printf '%s\n' "$job" | grep -n -- '--decide-only' | cut -d: -f1 | head -1 || true)"
     seal_line="$(printf '%s\n' "$job" | grep -n 'write-release-sentinel.sh' | cut -d: -f1 | head -1 || true)"
     if [[ -z "$decide_line" ]]; then
-        echo "no --decide-only step in the job at all"
+        # NO DECIDE STEP HERE IS NOW CORRECT, and that is the 2026-08-26 fix
+        # rather than a regression. The decision moved to initialize.sh (step 6b)
+        # because this job `needs: ci-complete` and is therefore DOWNSTREAM of
+        # stage-artifacts, the job that writes R2 -- so deciding here arrived
+        # after the uploader had already advanced the channel pointer.
+        #
+        # The ordering invariant still holds, more strongly: a decision made in
+        # an upstream job cannot follow this job's seal. But "absent" must not be
+        # confused with "unguarded", so absence is only acceptable when the job
+        # demonstrably READS the upstream decision.
+        if printf '%s\n' "$job" | grep -q 'needs.initialize.outputs.skip_release'; then
+            return 0
+        fi
+        echo "no --decide-only step AND no read of needs.initialize.outputs.skip_release: nothing decides"
         return 0
     fi
     if [[ -z "$seal_line" ]]; then
@@ -458,7 +471,20 @@ test_ci_yml_wires_the_script() {
     assert_not_contains "$job" "gh workflow run cd-v2.yml" \
         "and the inline dispatch is gone, so there is only ONE place the decision can be made"
     assert_contains "$job" "GH_TOKEN" "the script still gets its token"
-    assert_contains "$job" "id: release-decision" "the decide step has the id both guards reference"
+    # THE DECISION MOVED OUT OF THIS JOB (2026-08-26), and that is the fix, not a
+    # regression. It used to live here as a step with `id: release-decision`, but
+    # this job `needs: ci-complete` and is therefore DOWNSTREAM of stage-artifacts
+    # -- the job that writes R2 -- so the answer arrived after the uploader had
+    # already advanced the channel pointer. It is now decided once in
+    # initialize.sh (step 6b) and merely READ here.
+    #
+    # The invariant this replaces is strictly stronger: instead of "the decide
+    # step exists", assert that this job does NOT decide and DOES read the single
+    # shared output. One evaluation, five readers.
+    assert_not_contains "$job" "--decide-only" \
+        "finalize no longer re-decides; asking twice can answer differently if a label moves"
+    assert_contains "$job" "needs.initialize.outputs.skip_release" \
+        "and it reads the ONE decision made in initialize"
     log_pass "ci.yml dispatches through the script, with no second inline path"
 }
 
