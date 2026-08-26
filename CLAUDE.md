@@ -143,6 +143,40 @@ them silently is the failure this rule exists to prevent.
   `[?]` items and last-resort issues with their doors named. A "found, not
   fixed" entry that fits neither category means the fix-in-session rule was
   not followed; go back and fix it.
+- **`## Remaining` is a list of things you CANNOT do right now, not a to-do
+  list.** An item belongs there only if it is (a) `[?]` awaiting an operator
+  answer, (b) `[>]` leased to a verifiably live worker, (c) waiting on a
+  specific external run, or (d) a last-resort issue with its door named.
+  **Nothing else may appear.** If you catch yourself writing "blocked on:
+  nothing" — or "next up", or "ready to start" — that is not a status, it is a
+  confession that you are stopping with work in hand. Delete the line and do
+  the work.
+
+  **This is the failure this section exists to prevent, and it has happened.**
+  Over roughly ten consecutive stops in one session, the loop was: hook pushes
+  back -> do exactly ONE item, or only a maintenance chore (rewrite STATE.md,
+  refresh the brief, update a plan) -> stop again -> hook pushes back. The
+  session reported several items as "Blocked on: nothing" and stopped anyway,
+  with no background agent and no monitor running. The hook itself eventually
+  fired `NOTHING HAS MOVED IN 3 CONSECUTIVE STOPS`. The operator had to
+  intervene.
+
+  Two mechanisms make this easy to fall into, so name them:
+  1. **The hook's checks become a substitute for progress.** STATE.md
+     staleness, the session brief and plan freshness are each individually
+     correct, and together they supply an endless stream of hook-satisfying
+     NON-work. Satisfying a check is not shipping anything.
+  2. **A push-back is not a work order for one item.** The hook naming the next
+     item does not mean "do that one and stop". It means the queue is not
+     empty. Drain it: keep going until every remaining item is genuinely (a)-(d)
+     above.
+
+  The operator's asks decide PACKAGING, never WHETHER (rule 2). "Waiting for
+  the operator to pick a branch" does not block the code that would go on
+  either branch — write it under the default and let the answer choose where it
+  lands. And a turn that ends is a turn that costs a round trip: the bar for
+  stopping is "there is genuinely nothing I can advance", not "I have produced
+  a defensible report".
 
 ### 3. Verify before you claim
 
@@ -644,8 +678,10 @@ CD (auto on CI success): promote Docker -> git tag -> GitHub Release -> R2 uploa
 
 Install validation runs pre-publish against R2 staging artifacts. Docker validated on push-to-main only (PR images are dry-run). If CI fails, CD never triggers.
 
-Release dispatch: `gh workflow run "Release" -f ci_run_id=<id> -f release_mode=patch|minor|major|retry`
-Hotfix (edge + stable): `gh workflow run "Release" -f ci_run_id=<id> -f release_mode=patch -f publish_stable=true`
+Release dispatch (EDGE): `gh workflow run "Release to Edge" -f ci_run_id=<id> -f release_mode=patch|retry`
+(the workflow declares only `patch` and `retry`; `minor`/`major` are rejected by GitHub)
+Hotfix (edge + stable): `gh workflow run "Release to Edge" -f ci_run_id=<id> -f release_mode=patch -f publish_stable=true`
+Production (eu/us/asia): `Release to Production` — daily cron after the 7-day soak, or dispatch with `-f force=true`.
 
 ## Dev Scripts (`scripts/dev/`)
 

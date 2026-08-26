@@ -90,7 +90,10 @@ derive_slot() {
 }
 
 # Portable sha256 (mirrors _sha256sum in local-common.sh, which this file must
-# not depend on -- find-port.sh is sourced standalone by check-account-probes.sh).
+# not depend on -- find-port.sh is sourced standalone by
+# check-setup-idempotency.sh:129-130, which runs `bash -c "source '$fp'; derive_slot ..."`.
+# It is NOT check-account-probes.sh, which this comment used to name: that gate
+# sources .ci/lib/account.sh, and account.sh is what pulls find-port.sh in.)
 _sha256sum_portable() {
     if command -v sha256sum >/dev/null 2>&1; then
         sha256sum

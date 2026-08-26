@@ -79,6 +79,42 @@ V_OPEN_ITEMS = (
     "state that actually applies:\n%s"
 )
 
+# ---- v21: the idle-stall gate (see wl_checks.idle_stall) --------------------
+# Stated POSITIVELY on purpose. A refusal that only says "no" teaches the next
+# session to hunt for a wording that gets past it; the rule it is enforcing --
+# what a turn may legitimately end on -- is the thing worth carrying forward.
+
+V_IDLE_STALL = (
+    "YOU ARE STOPPING WITH ACTIONABLE WORK IN HAND. %d open item(s) are yours, "
+    "no background worker is running, no [>] lease is outstanding, and nothing "
+    "left the open state this turn. So this stop is not a pause in the work, it "
+    "IS the work not happening.\n"
+    "THE RULE, POSITIVELY: a turn may end when every remaining item is DONE, "
+    "LEASED to a live worker, or [?] parked on the operator with a DEFAULT. "
+    "Those are the three stopping states, and there is no fourth. An item you "
+    "can act on alone gets acted on -- reporting it is not one of the exits, and "
+    "'blocked on: nothing' is not a blocker, it is a statement that the next "
+    "move is yours.\n%s\n"
+    "Pick one per item and finish it THIS turn:\n"
+    "    do it:     .claude/hooks/stop/worklist.py --tick %s <id> '<evidence>'\n"
+    "    delegate:  .claude/hooks/stop/worklist.py --lease %s <id> +60 "
+    "worker:<bg-id> '<what it is doing>'\n"
+    "    ask:       .claude/hooks/stop/worklist.py --defer %s <id> '<question> "
+    "DEFAULT: <what you do if unanswered> WHY: <why this session cannot settle "
+    "it> HOW: <what concretely resolves it>'"
+)
+
+V_UNBLOCKED_CLAIM = (
+    "your '## Remaining' section CLAIMS an item has no blocker while %d open "
+    "item(s) of yours sit in the store:\n%s\n"
+    "An item nobody is blocking is not a remainder, it is the next thing you do. "
+    "Remaining exists to name what is DONE (so drop it), LEASED to a live "
+    "worker, or [?] parked on the operator with a DEFAULT -- an unblocked item "
+    "belongs in none of those, so it must not be on the list at all. Do it and "
+    "--tick it, --lease it to a worker, or --defer it with a DEFAULT, then "
+    "re-state Remaining without the unblocked line."
+)
+
 V_UNDEFAULTED = (
     "%d deferred item(s) carry no DEFAULT:. A '- [?]' without a default is a "
     "note, not a decision. Append 'DEFAULT: <what you will do if the operator "
@@ -784,6 +820,29 @@ V_FOUND_NOT_FIXED = (
     "either fix it now and say you did, or record it as '- [?] ... DEFAULT: <what "
     "you will do if unanswered>' so it is tracked and time-boxed rather than "
     "restated every turn. Then drop the phrase."
+)
+
+V_DEFERRED_FINDING = (
+    "your message reports finding(s) you did not fix:\n%s\n"
+    "CLAUDE.md's rule is that a finding is FIXED in the session that finds it -- "
+    "reporting it is the fallback, not the default, and 'not my file' is not one "
+    "of the three doors (operator-only powers, an explicit operator deferral, or "
+    "no write access). You are already in the context that found it, which is the "
+    "cheapest this fix will ever be; a later session pays rediscovery first.\n"
+    "For each one: fix it now and say you did, or `--add` it so it is tracked, or "
+    "`--defer` it with a DEFAULT and the door named. Then drop the phrase."
+)
+
+V_SWEEP_MOMENT = (
+    "GOOD MOMENT TO SWEEP. Nothing of yours is open, nothing is in flight, and you "
+    "just closed %s -- which makes this the cheapest point in the whole session to "
+    "clear what you noticed on the way but never wrote down.\n"
+    "Think back over this turn's work: a comment that turned out stale, a gate you "
+    "worked around, an error message that named the wrong cause, a sibling of the "
+    "bug you just fixed. CLAUDE.md asks you to sweep the CLASS, not the instance.\n"
+    "If there is nothing, say so in one line and stop -- that is a complete answer. "
+    "If there is something, `--add` it now while you still have the context loaded; "
+    "rediscovering it later costs a session."
 )
 
 V_UNSTATED = (

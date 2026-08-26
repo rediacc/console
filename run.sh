@@ -1706,7 +1706,7 @@ check_full() {
 #   1. prereqs   node/git/curl               (checked, never installed)
 #   2. docker    Go -> renet -> install-docker (skipped entirely if docker works)
 #   3. image     pull the devcontainer image  (skipped if present)
-#   4. devbox    one container per worktree, on a port derived from its path
+#   4. devbox    one container per worktree; port from its path, hostname from its branch
 #   5. report    the URL to open
 setup() {
     local do_check=false force_pull=false do_start=true
@@ -1836,9 +1836,21 @@ setup_check() {
         pending=$((pending + 1))
     fi
 
+    # THE '?' FALLBACK WAS A LANDMINE. run.sh is `set -euo pipefail`, and
+    # $(('?' + N)) is an arithmetic syntax error ("operand expected"), so the
+    # printf never ran and setup_check ABORTED. The visible symptom would have
+    # been check-setup-idempotency failing with "setup --check never mentioned
+    # 'port block'" -- a gate failure naming the wrong cause entirely. It is
+    # unreachable today only because find_port_block walks all 100 slots before
+    # giving up, which is luck, not design.
     local base_port
-    base_port="$(devbox_base_port 2>/dev/null || echo '?')"
-    printf '  port block  %s-%s\n' "$base_port" "$((base_port + DEVBOX_PORT_BLOCK - 1))"
+    base_port="$(devbox_base_port 2>/dev/null || echo '')"
+    if [[ "$base_port" =~ ^[0-9]+$ ]]; then
+        printf '  port block  %s-%s\n' "$base_port" "$((base_port + DEVBOX_PORT_BLOCK - 1))"
+    else
+        printf '  port block  unavailable (no free block in %s-%s)\n' \
+            "$DEVBOX_PORT_RANGE_START" "$DEVBOX_PORT_RANGE_END"
+    fi
 
     if devbox_container_running; then
         printf '  devbox      running (%s)\n' "$(devbox_container_name)"
@@ -2126,8 +2138,20 @@ main() {
             source "$ROOT_DIR/.ci/lib/devbox.sh"
             SCRIPT_ENTRYPOINT="$ROOT_DIR/run.sh" reexec_with_docker_group devbox "$@"
             case "${1:-status}" in
-                up) devbox_up ;;
+                # `up` forwards its remaining args so --no-rehost reaches devbox_up.
+                # Without this the flag existed in the library and NOTHING could
+                # pass it -- the drift banner advised DEVBOX_NO_REHOST=1 precisely
+                # because the CLI form was unreachable.
+                up)
+                    shift
+                    devbox_up false "${1:-}"
+                    ;;
                 status) devbox_status ;;
+                # `url` prints the hostname URL and nothing else, so callers can
+                # capture it. `worktree create` needs exactly this to show the URL
+                # in its summary; parsing it back out of `status` would couple a
+                # script to a human-facing layout.
+                url) devbox_url ;;
                 stop) devbox_stop ;;
                 proxy)
                     shift

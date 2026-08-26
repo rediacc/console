@@ -92,8 +92,11 @@ readonly ACCOUNT_LOG_DIR="$CONSOLE_ROOT_DIR/.account-logs"
 # DEVBOX (browser dev environment) CONFIGURATION
 # =============================================================================
 # One container per worktree. The port BLOCK is derived from the worktree's
-# absolute path so it is stable across restarts and reboots -- a bookmarked URL
-# keeps working -- while two worktrees can never land on the same block.
+# absolute path so it is stable across restarts and reboots, and two worktrees
+# can never land on the same block.
+#
+# The URL is a different matter: its hostname follows the BRANCH, so it changes
+# when the branch does. A bookmark survives a reboot, not a checkout.
 readonly DEVBOX_IMAGE="ghcr.io/rediacc/devcontainer:latest"
 readonly DEVBOX_PORT_RANGE_START=17000
 readonly DEVBOX_PORT_RANGE_END=17999

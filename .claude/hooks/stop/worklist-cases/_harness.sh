@@ -481,6 +481,27 @@ print(json.loads(raw).get("decision","allow") if raw else "allow")' <<<"$out" 2>
     fi
 }
 
+# check_quiet <label> <must-NOT-contain> -- DECISION-AGNOSTIC absence.
+#
+# For a control whose subject is "this one check said nothing", where the rest
+# of the battery's verdict is not the point and pinning it would make the case
+# fail whenever an unrelated check changed. It still refuses to pass on SILENCE:
+# an empty stdout means the hook died before deciding, and a needle is trivially
+# absent from nothing -- the vacuity this suite exists to catch.
+check_quiet() {
+    local label="$1" needle="$2" out
+    out="$(run)"
+    if [[ -n "${out//[[:space:]]/}" ]] && ! grep -qF "$needle" <<<"$out"; then
+        echo "  PASS: $label"
+        PASS=$((PASS + 1))
+    else
+        echo "  FAIL: $label (needle '$needle' $(grep -qF "$needle" <<<"$out" && echo PRESENT || echo "absent, but the hook produced NO output"))"
+        echo "        out: ${out:0:220}"
+        [[ -s "$BASE/err.txt" ]] && echo "        err: $(head -c 200 "$BASE/err.txt")"
+        FAIL=$((FAIL + 1))
+    fi
+}
+
 check_absent() { # check_absent <label> <expect-decision> <must-NOT-contain>
     local label="$1" want="$2" needle="$3" out
     out="$(run)"

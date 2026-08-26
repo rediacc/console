@@ -296,6 +296,31 @@ RUN apt-get update && \
 RUN npm install -g @openai/codex @google/gemini-cli \
     && npm cache clean --force
 
+# awscli — required by the R2 gates, and its absence made them unrunnable.
+#
+# WHY IT IS HERE. `npm run check:ci-release-state` exits 1 with "Required
+# command 'aws' is not available" on the host AND, until this, inside the
+# devbox. That gate guards the tag<->sentinel bijection and (since 2026-08-26)
+# the channel-pointer relation -- i.e. exactly the release-correctness property
+# whose failure let cli/edge/manifest.json advertise 1.3.1 with no v1.3.1 tag
+# three times over. A release gate that cannot be run locally is a release gate
+# that gets verified only in CI, which is where this one's blind spot lived.
+#
+# The bundled installer, not pip: the host has no pip at all (python3 carries no
+# pip module), so a pip-based install would reproduce the same "works in CI,
+# not here" gap one layer down.
+RUN ARCH=$(dpkg --print-architecture) \
+    && case "$ARCH" in \
+    amd64) AWS_ARCH=x86_64 ;; \
+    arm64) AWS_ARCH=aarch64 ;; \
+    *) echo "unsupported arch for awscli: $ARCH" >&2; exit 1 ;; \
+    esac \
+    && curl -fsSL -o /tmp/awscliv2.zip "https://awscli.amazonaws.com/awscli-exe-linux-${AWS_ARCH}.zip" \
+    && unzip -q /tmp/awscliv2.zip -d /tmp \
+    && /tmp/aws/install \
+    && rm -rf /tmp/aws /tmp/awscliv2.zip \
+    && aws --version
+
 # glab — GitLab CLI (https://gitlab.com/gitlab-org/cli)
 ARG GLAB_VERSION=1.90.0
 RUN ARCH=$(dpkg --print-architecture) \

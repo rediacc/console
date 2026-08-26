@@ -46,9 +46,52 @@ tag_versions="$(rsv_list_git_tags)"
 log_info "  $(wc -l <<<"$tag_versions") git tags"
 
 log_step "asserting release-state bijection"
-if rsv_assert_bijection "$cli_versions" "$tag_versions" "$IN_FLIGHT"; then
+bijection_rc=0
+rsv_assert_bijection "$cli_versions" "$tag_versions" "$IN_FLIGHT" || bijection_rc=$?
+
+# ---------------------------------------------------------------------------
+# The channel pointer must name a TAGGED version.
+#
+# The bijection above cannot see this class at all: a bump-none merge correctly
+# skips both the sentinel and the tag, so the two sides stay in step -- while
+# the R2 channel pointer was advanced anyway. That is how cli/edge/manifest.json
+# came to advertise 1.3.1 with no v1.3.1 tag and a 404 notes URL, three times
+# over (#573, #574, #576), and it would have half-applied a production release
+# across eu/us/asia on 2026-09-01.
+#
+# ORDERING IS WHAT MAKES THIS SAFE ON THE RELEASE PATH: this gate runs BEFORE
+# stage-artifacts (ci.yml says so), so the pointer it reads is the PREVIOUS
+# release's. And the back-to-back case resolves itself -- if release X's tag is
+# not pushed yet, IN_FLIGHT is vX and the pointer's X is excluded; if it is
+# pushed, IN_FLIGHT is vX+1 and X has its tag.
+# ---------------------------------------------------------------------------
+pointer_rc=0
+for channel in edge stable; do
+    latest_ver=""
+    manifest_ver=""
+    if lj="$(aws s3 cp "s3://${RSV_BUCKET}/cli/${channel}/latest.json" - --endpoint-url "$R2_ENDPOINT" 2>/dev/null)"; then
+        latest_ver="v$(printf '%s' "$lj" | sed -n 's/.*"version"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -1 | sed 's/^v//')"
+        [[ "$latest_ver" == "v" ]] && latest_ver=""
+    fi
+    if mj="$(aws s3 cp "s3://${RSV_BUCKET}/cli/${channel}/manifest.json" - --endpoint-url "$R2_ENDPOINT" 2>/dev/null)"; then
+        manifest_ver="v$(printf '%s' "$mj" | sed -n 's/.*"version"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -1 | sed 's/^v//')"
+        [[ "$manifest_ver" == "v" ]] && manifest_ver=""
+    fi
+    log_step "asserting ${channel} channel pointer names a tagged version"
+    rsv_assert_channel_pointer_tagged "$channel" "$latest_ver" "$manifest_ver" "$tag_versions" "$IN_FLIGHT" ||
+        pointer_rc=1
+done
+
+if ((bijection_rc == 0 && pointer_rc == 0)); then
     log_info "release-state gate: PASS"
     exit 0
+fi
+
+if ((pointer_rc != 0)); then
+    log_error "release-state gate: FAIL — a channel pointer names a version with no git tag"
+    log_error "  every rdc on that channel auto-updates to a build whose release notes 404,"
+    log_error "  and promote-stable will later check out that ref and fail AFTER promoting R2 + Docker"
+    exit 1
 fi
 
 log_error "release-state gate: FAIL — drift between R2 sentinels and git tags"

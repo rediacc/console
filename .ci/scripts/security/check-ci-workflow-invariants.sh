@@ -99,6 +99,73 @@ for name, job in jobs.items():
 
 if candidates == 0:
     print("no-candidates\t<none>")
+
+# ---------------------------------------------------------------- skip-release
+# THE FLAG MUST HAVE A CALLER. `upload-to-r2.sh` grew a `--skip-release` guard
+# so a bump-none commit stops advancing the R2 channel pointer; its own gate
+# test proves the guard works, and declares in its header that it CANNOT see
+# whether any workflow passes the flag. That blind spot is this invariant's
+# subject. A guard nothing invokes is not a safety feature, it is a branch that
+# never executes -- and the bug it exists to stop (cli/edge/manifest.json
+# advertising an untagged version) has already happened three times.
+#
+# Read from the PARSED workflow, so reflowing an `if:` or reordering a `with:`
+# map cannot quietly unenforce it.
+# SCOPE IT BY THE UPLOADER PATH, NOT BY JOB NAME. Keyed on the names alone this
+# invariant hard-failed every synthetic fixture the gate test drives through
+# WORKFLOW_FILE -- a file with no `initialize` job is not a broken ci.yml, it is
+# a different workflow. So the trigger is the job that actually CALLS the
+# staging workflow, which is what writes R2. A workflow that calls it must
+# thread the signal; one that does not is out of scope and says nothing.
+stagers = [
+    n for n, j in jobs.items()
+    if isinstance(j, dict) and str(j.get("uses") or "").endswith("cd-stage.yml")
+]
+
+if stagers:
+    for n in stagers:
+        w = jobs[n].get("with")
+        if not isinstance(w, dict) or "skip_release" not in w:
+            print("skip-release-not-passed\t%s" % n)
+
+    init = jobs.get("initialize")
+    if isinstance(init, dict):
+        outs = init.get("outputs")
+        if not isinstance(outs, dict) or "skip_release" not in outs:
+            print("skip-release-no-output\tinitialize")
+    else:
+        print("skip-release-no-init\tinitialize")
+elif "finalize-release-sentinel" in jobs:
+    # No caller of the staging workflow, yet this file still owns the release
+    # sentinel: that is the real ci.yml with its stager renamed or rewired, and
+    # the invariant would otherwise pass over it having checked nothing.
+    print("skip-release-no-stage\t<no job uses cd-stage.yml>")
+
+# The two pre-publish validators read the STAGED channel pointer and assert the
+# next version against it. If the pointer is deliberately withheld they compare
+# the new version to the old published one and go red, so they must skip.
+if stagers:
+    for vname in ("validate-install", "validate-promote"):
+        v = jobs.get(vname)
+        if not isinstance(v, dict):
+            print("skip-release-missing-job\t%s" % vname)
+            continue
+        cond = v.get("if")
+        cond = "" if cond is None else str(cond).replace('"', "'")
+        if "skip_release" not in cond:
+            print("skip-release-validator-ungated\t%s" % vname)
+
+# ONE evaluation, not two. finalize-release-sentinel used to decide for itself,
+# downstream of the uploader; it must now READ the shared output. A second
+# `--decide-only` anywhere reintroduces the split-brain the guard forbids.
+fin = jobs.get("finalize-release-sentinel")
+if isinstance(fin, dict):
+    steps = fin.get("steps")
+    steps = steps if isinstance(steps, list) else []
+    for st in steps:
+        if isinstance(st, dict) and "--decide-only" in str(st.get("run") or ""):
+            print("skip-release-second-decision\tfinalize-release-sentinel")
+            break
 PY
 )" || {
     rc=$?
@@ -118,6 +185,26 @@ while IFS=$'\t' read -r kind name; do
             log_error "INVARIANT-FAIL: no-jobs: $WORKFLOW_FILE declares no jobs (nothing to check cannot pass)"
             FAILED=1
             ;;
+        skip-release-no-output)
+            log_error "INVARIANT-FAIL: skip-release: job '$name' declares no \`skip_release\` output. The bump-none decision is made there and read by five consumers; without the output every one of them sees an empty string and RELEASES."
+            FAILED=1
+            ;;
+        skip-release-not-passed)
+            log_error "INVARIANT-FAIL: skip-release: job '$name' does not pass \`skip_release\` in its \`with:\`. upload-to-r2.sh's guard then never fires, and a bump-none commit advances cli/<channel>/manifest.json to a version that will never be tagged."
+            FAILED=1
+            ;;
+        skip-release-validator-ungated)
+            log_error "INVARIANT-FAIL: skip-release: validator '$name' does not gate on \`skip_release\`. With the channel pointer withheld it asserts the NEW version against the OLD published one and goes red on exactly the commits that behaved correctly."
+            FAILED=1
+            ;;
+        skip-release-second-decision)
+            log_error "INVARIANT-FAIL: skip-release: job '$name' still runs \`dispatch-release.sh --decide-only\`. The decision must be made ONCE, in initialize, and merely read here -- asking twice can answer differently if a label moves in between."
+            FAILED=1
+            ;;
+        skip-release-no-init | skip-release-no-stage | skip-release-missing-job)
+            log_error "INVARIANT-FAIL: skip-release: expected job '$name' is absent from $WORKFLOW_FILE, so this invariant checked nothing. Retarget it deliberately rather than letting it pass over a renamed job."
+            FAILED=1
+            ;;
         no-candidates)
             # Vacuity guard. If nobody passes a channel-derived docker_tag any
             # more, this gate is asserting nothing and must say so rather than
@@ -133,4 +220,5 @@ if ((FAILED != 0)); then
     log_error "ci workflow invariants FAILED"
     exit 1
 fi
-log_info "ci workflow invariants hold: every channel-derived docker_tag job refuses an empty channel"
+log_info "ci workflow invariants hold: every channel-derived docker_tag job refuses an empty channel; the bump-none skip_release decision is declared once in initialize, passed to stage-artifacts, gates both pre-publish validators, and is not re-decided in finalize-release-sentinel"
+log_info "  Blind spot: this reads ci.yml only. It cannot see whether cd-stage.yml FORWARDS skip_release to the upload scripts (check-workflow-gates.sh CHECK 2b/2c covers the input contract), nor whether the scripts honour it (their own gate test covers that)."

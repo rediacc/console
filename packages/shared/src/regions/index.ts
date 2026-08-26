@@ -10,8 +10,17 @@ import { importPublicKey, verifySignature } from '../subscription/crypto.js';
 import { SIGNING_KEYS } from '../subscription/signing-keys.js';
 import type { SignedSubscriptionBlob } from '../subscription/types.js';
 
-// Baked-in fallback regions. This is a copy of the root regions.json
-// kept in sync by the build process. Always available, even offline.
+// Baked-in fallback regions: a copy of the root regions.json.
+//
+// NOT "kept in sync by the build process", which is what this comment used to
+// say -- no such process exists, and the two files were identical only because
+// somebody last copied one onto the other by hand. They are now held together by
+// a gate (.ci/scripts/quality/check-regions-sync.sh), which fails CI if they
+// diverge; keep them in step with `cp regions.json packages/shared/src/regions/data.json`.
+//
+// And "fallback" overstates the runtime path: region-discovery.ts fetches
+// `${SITE_URL}/regions.json`, which returns 404, so this file is not the backup
+// list -- it is the ONLY list users get.
 import regionsData from './data.json' with { type: 'json' };
 
 export interface RegionInfo {

@@ -168,6 +168,21 @@ check 2 pre-bash/block-worktree-add.sh "$(bash_json 'git worktree add ../foo -b 
 check 2 pre-bash/block-worktree-add.sh "$(bash_json 'git -C /some/path worktree add ../x main')" "worktree-add: -C before the subcommand"
 check 2 pre-bash/block-worktree-add.sh "$(bash_json 'sh -c "git worktree add ../x"')" "worktree-add: sh -c wrapper bypass"
 check 2 pre-bash/block-worktree-add.sh "$(bash_json 'echo start; git worktree add ../x')" "worktree-add: after a command separator"
+# THE WRAPPER FORMS. `./run.sh worktree create` runs `git worktree add -b` inside
+# scripts/dev/worktree.sh, so it is the same decision -- but the text this hook
+# sees never contains "git worktree add", and the literal block matched nothing.
+# It now also starts a devbox, so the bypass costs an image pull and a port block.
+check 2 pre-bash/block-worktree-add.sh "$(bash_json './run.sh worktree create')" "worktree-add: run.sh wrapper"
+check 2 pre-bash/block-worktree-add.sh "$(bash_json 'run.sh worktree create -t')" "worktree-add: wrapper with flags"
+check 2 pre-bash/block-worktree-add.sh "$(bash_json 'bash scripts/dev/worktree.sh create')" "worktree-add: interpreter prefix puts bash in command position, not the script"
+check 2 pre-bash/block-worktree-add.sh "$(bash_json 'cd /x && ./run.sh worktree create')" "worktree-add: wrapper after a separator"
+# The OTHER subcommands must stay usable, and prose about the command must not
+# trip it -- a detector that flags its own documentation cannot be satisfied
+# except by deleting the explanation.
+check 0 pre-bash/block-worktree-add.sh "$(bash_json './run.sh worktree list')" "worktree-add: list is not create"
+check 0 pre-bash/block-worktree-add.sh "$(bash_json './run.sh worktree remove 0826-1')" "worktree-add: remove is not create"
+check 0 pre-bash/block-worktree-add.sh "$(bash_json './run.sh worktree prune')" "worktree-add: prune is not create"
+check 0 pre-bash/block-worktree-add.sh "$(bash_json 'echo "run.sh worktree create is blocked"')" "worktree-add: prose is not an invocation"
 check 2 pre-bash/block-blanket-git-add.sh "$(bash_json 'git add -A')" "blanket-git-add: -A with no pathspec"
 check 2 pre-bash/block-blanket-git-add.sh "$(bash_json 'git add --all')" "blanket-git-add: --all with no pathspec"
 check 2 pre-bash/block-blanket-git-add.sh "$(bash_json 'git add .')" "blanket-git-add: a lone dot"

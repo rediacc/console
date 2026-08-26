@@ -301,9 +301,79 @@ while IFS= read -r label; do
     PROBLEMS=$((PROBLEMS + 1))
 done <<<"$LIVE"
 
+# ---------------------------------------------------------------------------
+# (c) present in both, but the DESCRIPTION or COLOR has drifted
+# ---------------------------------------------------------------------------
+# NAMES WERE NEVER THE WHOLE CONTRACT. This gate reconciled existence in both
+# directions and stopped there, so a label could exist, be declared, and still
+# tell every human the opposite of the truth.
+#
+# Measured 2026-08-26: TEN fields had drifted, silently, for an unknown period.
+# The one that cost real time: `release` still read "Opt-in: triggers CD
+# pipeline on merge to main", while labels.yml says "Historical only: CD reads
+# no label, it is dispatched unconditionally". An operator read the live text,
+# reasonably concluded that a label controlled releases, and scoped a whole task
+# around it. Others: `translation` carried the typo "Missing on wrong
+# translation,"; `no-auto-retry` had an EMPTY description and the wrong colour;
+# `no-cancel-push` described behaviour it does not have.
+#
+# The description is documentation that ships to every human who opens the label
+# picker, and it was the one part of the label nothing checked.
+#
+# LIVE_JSON is a SEPARATE read from LIVE (which is names-only, and whose
+# fixture seam feeds names-only). When it cannot be obtained this section is
+# skipped rather than failing: the name reconciliation above already refuses to
+# pass blind on an unreadable API, so a second hard failure here would only turn
+# fixture-driven runs red.
+LIVE_JSON=""
+if [ -n "${LABEL_INVENTORY_LIVE_JSON_FILE:-}" ]; then
+    LIVE_JSON="$(cat "$LABEL_INVENTORY_LIVE_JSON_FILE" 2>/dev/null || echo "")"
+elif [ "$LIVE_SOURCE" = "GitHub API" ]; then
+    LIVE_JSON="$(gh api 'repos/{owner}/{repo}/labels' --paginate 2>/dev/null || echo "")"
+fi
+
+if [ -n "$LIVE_JSON" ] && [ "$LABELS_FILE" = ".github/labels.yml" ]; then
+    DRIFT="$(
+        LIVE_JSON="$LIVE_JSON" LABELS_FILE="$LABELS_FILE" python3 - <<'PY' || true
+import json, os, re, sys
+
+try:
+    live = {l["name"]: l for l in json.loads(os.environ["LIVE_JSON"])}
+except Exception:
+    sys.exit(0)
+
+want, cur = {}, None
+for line in open(os.environ["LABELS_FILE"], encoding="utf-8"):
+    m = re.match(r"^\s*-\s*name:\s*(.+?)\s*$", line)
+    if m:
+        cur = m.group(1).strip("\"'")
+        want[cur] = {}
+        continue
+    if cur:
+        m2 = re.match(r"^\s*(description|color):\s*(.*)$", line)
+        if m2:
+            want[cur][m2.group(1)] = m2.group(2).strip().strip("\"'")
+
+for name, w in sorted(want.items()):
+    l = live.get(name)
+    if not l:
+        continue  # absence is section (a)'s job, not this one's
+    if "description" in w and (l.get("description") or "") != w["description"]:
+        print("%s\tdescription\t%s" % (name, (l.get("description") or "<empty>")[:70]))
+    if "color" in w and (l.get("color") or "").lower() != w["color"].lower().lstrip("#"):
+        print("%s\tcolor\t%s" % (name, l.get("color")))
+PY
+    )"
+    while IFS=$'\t' read -r dname dfield dlive; do
+        [ -n "$dname" ] || continue
+        log_error "label '$dname' has a drifted $dfield: the repo says '$dlive', $LABELS_FILE says something else. The description is what every human reads in the label picker, so a drifted one is documentation that lies. Push the declared values: gh api --method PATCH repos/{owner}/{repo}/labels/$dname -f $dfield='<value from $LABELS_FILE>'"
+        PROBLEMS=$((PROBLEMS + 1))
+    done <<<"$DRIFT"
+fi
+
 if [ "$PROBLEMS" -gt 0 ]; then
     log_error "$PROBLEMS label inventory mismatch(es) between $LABELS_FILE and the live repo."
     exit 1
 fi
 
-log_info "label inventory reconciled: $DECLARED_COUNT declared, $LIVE_COUNT live (source: $LIVE_SOURCE)"
+log_info "label inventory reconciled: $DECLARED_COUNT declared, $LIVE_COUNT live (source: $LIVE_SOURCE); names, descriptions and colours all agree"

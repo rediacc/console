@@ -255,6 +255,35 @@ def _iter_tail_lines(path, chunk):
     return start, data.split(b"\n")
 
 
+def _is_compact_boundary(d):
+    """True for the `system` / `compact_boundary` entry a compaction writes.
+
+    Kept SEPARATE from reading its size on purpose. The two questions have
+    different answers when the entry is malformed, and conflating them is a
+    real defect this project's own test caught: a boundary carrying no usable
+    `postTokens` must still STOP the backward scan, because the entries behind
+    it belong to a context that no longer exists. Treating "no size" as "no
+    boundary" walks straight back to the pre-compaction peak -- the exact bug
+    the boundary check exists to prevent.
+    """
+    return d.get("type") == "system" and d.get("subtype") == "compact_boundary"
+
+
+def _compact_post_tokens(d):
+    """Post-compaction context size from a compact_boundary entry, or None.
+
+    The boundary entry carries `compactMetadata.postTokens` -- the size of the
+    context the summary produced. It is the authoritative answer to "how much
+    is in use" for the window between the compaction and the first assistant
+    entry that follows it.
+    """
+    if not _is_compact_boundary(d):
+        return None
+    meta = d.get("compactMetadata") or {}
+    post = meta.get("postTokens")
+    return int(post) if isinstance(post, (int, float)) and post > 0 else None
+
+
 def last_usage(transcript_path):
     """(context_tokens, model) from the last real assistant entry, or None.
 
@@ -262,6 +291,31 @@ def last_usage(transcript_path):
     single transcript line here can be hundreds of kilobytes and the file can
     be tens of megabytes. Sidechain entries are skipped: a subagent's usage is
     not this session's context.
+
+    THE SCAN STOPS AT A COMPACTION BOUNDARY, and that is the whole point of the
+    boundary check below. Measured on this project's own transcript 2026-08-26:
+    a PostToolUse hook fired in the gap between the compact_boundary entry and
+    the first assistant entry after it, so the backward scan ran straight past
+    the summary and returned the PRE-compaction peak -- 958,036 against a
+    967,000 threshold, i.e. "0.9% until auto-compact, a headroom of 8,964
+    tokens", when the real post-compaction size was 30,359. Truncating the
+    transcript one line earlier reproduces it exactly; one line later returns
+    98,043.
+
+    That is the worst possible direction to be wrong in: the stale value is by
+    construction the session's MAXIMUM, so the notice screams "nearly full" at
+    precisely the moment the context has just been emptied. It is also not
+    self-correcting within the turn -- the session reads the notice, believes
+    it, and makes real decisions on it (this one delegated work and rushed a
+    hand-off it did not need to). The usage-drop backstop in band-notice does
+    clean up afterwards, but only on a LATER call, and only after the ladder
+    has already been re-seated from a false peak.
+
+    So: walking back past a compact_boundary is never valid. Its own
+    `postTokens` is the correct reading for that window, and returning it beats
+    returning nothing -- the notice stays useful instead of going silent for a
+    call. The model is unchanged by compaction, so the scan continues purely to
+    recover it.
     """
     p = Path(transcript_path)
     if not p.is_file():
@@ -271,6 +325,8 @@ def last_usage(transcript_path):
             start, lines = _iter_tail_lines(p, chunk)
         except OSError:
             return None
+        hit_boundary = False
+        post_tokens = None
         for raw_line in reversed(lines):
             raw = raw_line.strip()
             if not raw or not raw.startswith(b"{"):
@@ -279,9 +335,21 @@ def last_usage(transcript_path):
                 d = json.loads(raw)
             except Exception:  # noqa: BLE001, S112 -- a torn line is expected at a tail boundary
                 continue
+            if not hit_boundary and _is_compact_boundary(d):
+                # Everything older than this belongs to a context that no
+                # longer exists. Stop treating it as usage; keep scanning ONLY
+                # to recover the model, which compaction does not change.
+                hit_boundary = True
+                post_tokens = _compact_post_tokens(d)
+                continue
             if d.get("type") != "assistant" or d.get("isSidechain"):
                 continue
             msg = d.get("message") or {}
+            if hit_boundary:
+                # This entry is OLDER than the boundary. Its usage is dead; the
+                # boundary's own postTokens is the only honest reading, and if
+                # the boundary did not carry one, silence beats the peak.
+                return (post_tokens, msg.get("model")) if post_tokens else None
             u = msg.get("usage") or {}
             total = (
                 (u.get("input_tokens") or 0)
@@ -290,6 +358,11 @@ def last_usage(transcript_path):
             )
             if total:
                 return total, msg.get("model")
+        if hit_boundary:
+            # Boundary seen, no assistant entry in the window to name the
+            # model. Never grow the window past it -- there is nothing valid
+            # back there.
+            return (post_tokens, None) if post_tokens else None
         if start == 0:
             return None
     return None

@@ -681,6 +681,184 @@ def deferral_is_justified(rec):
     return bool(j.get("why") and j.get("how"))
 
 
+# ---- v21: THE IDLE-STALL GATE ----------------------------------------------
+# WHY (operator, 2026-08-26): "it's very annoying that neither you have
+# background agent nor running monitor/shell but you do stop even with
+# remaining items! I see they're not blocked because of dependencies/questioning
+# to me. You misuse the intention of the stop hook."
+#
+# The loophole was NOT that open items pass unnoticed -- `open-items` has always
+# been a violation. It is that `open-items` sits in the ROTATING tier, so the
+# cadence gate (see CADENCE_MAX_PAUSES and the `pause` computation in run_stop)
+# ALLOWS the stop as long as the assistant said something new since the last
+# demand. Case 214 pins exactly that: block -> new message -> allow. And the cap
+# on consecutive pauses resets whenever the outstanding key set SHRINKS, so
+# clearing any one rotating check -- a STATE.md rewrite, a refreshed brief, a
+# plan touch-up -- refills the pause budget. Together those make an endless
+# supply of hook-satisfying non-work: do one thing, stop, be pushed back, do one
+# thing, stop.
+#
+# This gate is in the ALWAYS tier, which is the one thing the cadence cannot
+# pause (guard A). It fires ONLY on the shape the operator described -- open
+# work, nobody else carrying it, and nothing left the open state this turn --
+# and every one of its three exits (tick, lease, defer) is completable by the
+# session alone in the same turn, so it converts into action rather than a
+# deadlock.
+
+#: A '## Remaining' line ASSERTING that an item has no blocker. That claim is
+#: self-refuting: an item nobody is blocking is the next thing to do, not a
+#: remainder. Deliberately narrow -- a bare "nothing" (as in "## Remaining\n-
+#: nothing", which means the list is EMPTY) must not match, only an explicit
+#: not-blocked assertion.
+UNBLOCKED_CLAIM_RE = re.compile(
+    r"blocked[ \t]*(?:on|by)?[ \t]*[:\-\u2014]?[ \t]*(?:nothing|none|no[ \t-]?one|nobody|n/?a)\b"
+    r"|\bnot[ \t]+blocked\b"
+    r"|\bno[ \t]+blocker[s]?\b"
+    r"|\bunblocked\b"
+    r"|\bready[ \t]+to[ \t]+(?:start|go|begin)\b",
+    re.IGNORECASE,
+)
+
+
+def _strip_quoted_spans(text):
+    """Blank out backticked and quoted spans.
+
+    Shared by every detector whose trigger phrases appear in prose ABOUT the
+    rule -- this file, CLAUDE.md and the hook's own messages all quote them. A
+    gate that cannot survive being written about is too broad, and the fix is
+    not a narrower pattern but ignoring the spans where quoting happens.
+    """
+    return re.sub(r"`[^`]*`|\"[^\"]*\"|\u201c[^\u201d]*\u201d", " ", text or "")
+
+
+def unblocked_claims(last_msg, limit=6):
+    """The '## Remaining' lines that claim an item is unblocked, at most `limit`.
+
+    Backticked and quoted spans are stripped first, following the
+    V_FOUND_NOT_FIXED / loop_finished_declared precedent that a gate which
+    cannot survive being WRITTEN ABOUT is too broad -- and it matters here
+    because any message discussing this check quotes its own trigger phrases.
+    """
+    if not last_msg:
+        return []
+    m = REMAINING_HEADING.search(last_msg)
+    if not m:
+        return []
+    out = []
+    for ln in last_msg[m.start() :].splitlines()[1:]:
+        stripped = _strip_quoted_spans(ln)
+        if UNBLOCKED_CLAIM_RE.search(stripped):
+            out.append(ln.strip()[:140])
+        if len(out) >= limit:
+            break
+    return out
+
+
+# The "found, not fixed" FAMILY, not just that one phrase.
+#
+# The original detector matched `found,? not fixed` at line-lead and nothing
+# else, so every near-synonym walked past it. Measured against one real session
+# (2026-08-26): "Reported, not fixed (not my file)", "Agent finding I didn't
+# fix", and "Findings in code I do not own -- not fixed, reported" ALL escaped,
+# and the findings sat unfixed until the operator asked for them by hand. The
+# rule they violate is the same one in every case; only the wording differed.
+#
+# Deliberately anchored at line-lead and stripped of quoted/backticked spans,
+# on the V_FOUND_NOT_FIXED precedent: a gate that cannot survive being written
+# about is too broad, and this file and CLAUDE.md both discuss the rule.
+DEFERRED_FINDING_RE = re.compile(
+    r"^[ \t>*_#-]{0,6}(?:"
+    r"(?:found|reported|flagged|noticed|spotted)\s*[,:-]?\s*(?:but\s+)?not\s+fixed"
+    r"|(?:findings?|defects?|issues?)\b[^\n]{0,60}?\bnot\s+fixed"
+    # This one alternative is allowed to sit mid-line, because the phrasing that
+    # escaped in practice was "- Agent finding I didn't fix: ..." -- the admission
+    # trails the subject rather than leading it. Still bounded to a LIST line, so
+    # ordinary prose in a paragraph does not reach it.
+    r"|[^\n]{0,80}?\b(?:did\s+not|didn't|have\s+not|haven't)\s+fix(?:ed)?\b"
+    r"|not\s+fixed\s*[,(]?\s*(?:reported|flagged|not\s+my)"
+    r")",
+    re.IGNORECASE | re.MULTILINE,
+)
+
+
+def deferred_findings(last_msg, limit=6):
+    """Lines that report a finding the session chose not to fix, at most `limit`."""
+    text = _strip_quoted_spans(last_msg or "")
+    out = []
+    for line in text.split("\n"):
+        if DEFERRED_FINDING_RE.search(line):
+            trimmed = line.strip()[:160]
+            if trimmed and trimmed not in out:
+                out.append(trimmed)
+        if len(out) >= limit:
+            break
+    return out
+
+
+def closed_sig(fold, session_id):
+    """A digest of MY items that are NOT open, as id:state pairs.
+
+    It moves when an item LEAVES the open state -- ticked, leased, or parked on
+    the operator -- and for no other reason. Deliberately blind to `--update`
+    and to new [ ] items: progress notes and fresh findings are talk and intake,
+    neither of which is an item getting off the list, and the whole failure this
+    gate exists for was a session that produced text every turn.
+
+    Returns "" when the store cannot be read, and the caller treats "" as
+    "unknown" and stays quiet -- an unreadable store must never manufacture an
+    accusation.
+    """
+    try:
+        rows = sorted(
+            "%s:%s" % (r["id"], r["state"])
+            for r in fold.items
+            if r["state"] != " " and C.owned_by_me(r.get("owner"), session_id)
+        )
+    except Exception:  # noqa: BLE001 -- a signature must never wedge a stop
+        return ""
+    return hashlib.sha1(("|".join(rows)).encode("utf-8", "replace")).hexdigest()[:16]
+
+
+def idle_stall(state_doc, fold, session_id, open_items, live_bg, in_flight):
+    """(fired, why) -- is this stop the operator's stall?
+
+    Fires when ALL hold:
+      * at least one open `[ ]` item is MINE (peers' items never block here),
+      * no background worker is running, so nothing is carrying work for me,
+      * no live `[>]` lease is outstanding (classify_items has already failed an
+        expired or malformed lease back into `open_items`, so this is a fresh or
+        OS-verified one),
+      * a baseline from a previous stop exists, and nothing has left the open
+        state since it was taken.
+
+    FIRST SIGHT NEVER FIRES. With no baseline there is no evidence about the
+    turn, and the ordinary `open-items` violation blocks that stop anyway, so
+    the quiet direction costs nothing and keeps the gate from accusing on a
+    fact it has not observed.
+
+    Deliberately NOT conditioned on a live work cron, which is what separates
+    this from the I6 idle check next door: I6 asks "will anything ever wake this
+    session again", and a cron answers it. This asks "is there work in hand that
+    only I can do", and a cron does not answer that at all -- it just schedules
+    the same stall for later.
+    """
+    sig = closed_sig(fold, session_id)
+    prev = (state_doc.get("idlestall") or {}).get("sig")
+    if sig:
+        state_doc.setdefault("idlestall", {})["sig"] = sig
+    if not open_items:
+        return False, ""
+    if live_bg:
+        return False, "a background worker is running"
+    if in_flight:
+        return False, "an item is leased to a live worker"
+    if not sig or prev is None:
+        return False, "no baseline yet"
+    if sig != prev:
+        return False, "an item left the open state this turn"
+    return True, "idle"
+
+
 # ---- cron memory and docs drift --------------------------------------------
 
 
@@ -2885,6 +3063,67 @@ def run_stop(event, event_ok, worklist, hook_file):
             False,
             M.V_OPEN_ITEMS % (len(open_items), "\n".join("    " + i for i in open_items)),
         )
+    # ---- v21 THE IDLE-STALL GATE, in the ALWAYS tier, directly beside the
+    # rotating `open-items` it backstops. It must not be rotated or paused: the
+    # whole failure is that `open-items` CAN be, so a copy of it in the same
+    # tier would buy nothing. Wrapped, because a stall detector that crashes a
+    # stop is worse than one that is absent -- on any exception the ordinary
+    # `open-items` block above still stands.
+    try:
+        _stall_fired, _stall_why = idle_stall(
+            state_doc, fold, session_id, open_items, live_bg, in_flight
+        )
+        _stall_claims = unblocked_claims(last_msg) if open_items else []
+    except Exception:  # noqa: BLE001 -- never wedge a stop
+        _stall_fired, _stall_why, _stall_claims = False, "check raised", []
+    if _stall_fired:
+        _rows = "\n".join("    " + i for i in open_items[:8])
+        if _stall_claims:
+            # The tell rides the stall rather than becoming a second block: it
+            # is the same refusal with sharper evidence, and two always-tier
+            # messages saying one thing is how a gate teaches itself to be
+            # skimmed.
+            _rows += "\n  and your own message says they are not blocked:\n" + "\n".join(
+                "    " + c for c in _stall_claims
+            )
+        vadd("idle-stall", True, M.V_IDLE_STALL % (len(open_items), _rows, me8, me8, me8))
+    elif _stall_claims:
+        vadd(
+            "unblocked-claim",
+            True,
+            M.V_UNBLOCKED_CLAIM % (len(open_items), "\n".join("    " + c for c in _stall_claims)),
+        )
+    # ---- THE SWEEP PROMPT, and its whole value is WHEN it fires.
+    #
+    # Not on a stall (idle-stall owns that), not on every stop (a prompt that
+    # fires always is a prompt that gets skimmed). It fires at the one moment
+    # that is genuinely cheap: the queue is EMPTY, nothing is in flight, and
+    # something just left the open state -- i.e. work finished cleanly and the
+    # session is about to walk away with its context still warm.
+    #
+    # That is exactly when the findings noticed in passing get abandoned. The
+    # operator had to ask for them by hand ("let's also fix all what you've
+    # found on the way") after a session reported several and fixed none.
+    # Rediscovery costs a whole session; asking here costs one line.
+    #
+    # ROTATING, not always: it is a nudge, not a refusal, and "there was
+    # nothing" is a complete answer.
+    try:
+        # COUPLED TO idle_stall'S EARLY-RETURN TEXT, and said out loud because
+        # the first version of this line looked for "closed" -- a word that
+        # string never contains -- so the prompt could never have fired. A
+        # silently vacuous nudge is worse than no nudge. The test below pins
+        # both halves, so changing that string turns a test red instead of
+        # turning this check off.
+        _just_closed = "left the open state" in str(_stall_why or "")
+        _sweep_moment = (
+            not open_items and not in_flight and not live_bg and bool(fold) and _just_closed
+        )
+    except Exception:  # noqa: BLE001 -- a nudge must never wedge a stop
+        _sweep_moment = False
+    if _sweep_moment:
+        vadd("sweep-moment", False, M.V_SWEEP_MOMENT % "an item this turn")
+
     undefaulted = [d for d in deferred if not C.DEFAULT_TOKEN.search(d)]
     if undefaulted:
         vadd(
@@ -3838,6 +4077,18 @@ def run_stop(event, event_ok, worklist, hook_file):
         re.IGNORECASE | re.MULTILINE,
     ):
         vadd("found-not-fixed", False, M.V_FOUND_NOT_FIXED)
+    # The same rule, the phrasings the narrow pattern above never saw. Kept as a
+    # SEPARATE key so the original stays exactly as pinned by its own tests.
+    try:
+        _deferred = deferred_findings(last_msg or "")
+    except Exception:  # noqa: BLE001 -- a detector must never crash a stop
+        _deferred = []
+    if _deferred:
+        vadd(
+            "deferred-finding",
+            False,
+            M.V_DEFERRED_FINDING % "\n".join("    " + d for d in _deferred),
+        )
     if unstated:
         vadd("unstated", False, M.V_UNSTATED % ", ".join("#" + i for i in unstated))
     if mislabelled:

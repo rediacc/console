@@ -9,12 +9,15 @@
 #   --channel CHANNEL    Release channel (e.g., "pr-123", "edge", "stable")
 #   --cli-dir DIR        CLI binaries directory (default: dist/cli/)
 #   --packages-dir DIR   DEPRECATED (packages now in self-contained repos)
+#   --skip-release       Release was skipped (bump-none): write NOTHING on a
+#                        release channel. See the guard below for the contract.
 #   --dry-run            Print commands without executing
 #
 # Environment:
 #   R2_ACCESS_KEY_ID      S3-compatible access key (required)
 #   R2_SECRET_ACCESS_KEY  S3-compatible secret key (required)
 #   R2_ENDPOINT           R2 endpoint URL (required)
+#   SKIP_RELEASE          same as --skip-release (truthy: 1/true/yes/y/on)
 
 set -euo pipefail
 
@@ -27,6 +30,7 @@ CHANNEL=""
 CLI_DIR=""
 PACKAGES_DIR=""
 DRY_RUN=false
+SKIP_RELEASE="${SKIP_RELEASE:-}"
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
@@ -46,12 +50,16 @@ while [[ $# -gt 0 ]]; do
             PACKAGES_DIR="$2"
             shift 2
             ;;
+        --skip-release)
+            SKIP_RELEASE=true
+            shift
+            ;;
         --dry-run)
             DRY_RUN=true
             shift
             ;;
         -h | --help)
-            echo "Usage: $0 --version VERSION --channel CHANNEL [--cli-dir DIR] [--packages-dir DIR] [--dry-run]"
+            echo "Usage: $0 --version VERSION --channel CHANNEL [--cli-dir DIR] [--packages-dir DIR] [--skip-release] [--dry-run]"
             exit 0
             ;;
         *)
@@ -74,6 +82,62 @@ if [[ -z "$CHANNEL" ]]; then
     log_error "--channel is required"
     exit 1
 fi
+
+# =============================================================================
+# bump-none: the release was skipped, so NOTHING may be written
+# =============================================================================
+# A `bump-none` merge cuts no tag and publishes no GitHub Release, and
+# dispatch-release.sh has always documented that as "no R2 upload" too. This is
+# where that clause is enforced. Writing cli/<channel>/{manifest,latest}.json
+# here would point the installer, the auto-updater and the stable promoter at a
+# version that has no tag and no release notes -- which is exactly what happened
+# to edge v1.3.1. The versioned prefix cli/v<V>/ is withheld for the same
+# reason: two skipped releases resolving to the same next_version served
+# DIFFERENT bytes from the same "immutable" URL.
+#
+# Deliberately scoped to the release channels. A pr-N channel has no tag
+# contract, so the signal is not computed for it and must not change its
+# behaviour; on any other channel this is a logged no-op.
+#
+# SKIP_RELEASE_GUARD_BEGIN (anchor for the gate test's planted defects --
+# .ci/scripts/test/gates/test-skip-release-channel-pointer.sh assembles its
+# mutants by splitting this file on these two markers; do not remove them)
+skip_release_requested() {
+    case "${SKIP_RELEASE:-}" in
+        true | TRUE | True | 1 | yes | YES | y | on | ON) return 0 ;;
+        *) return 1 ;;
+    esac
+}
+
+if skip_release_requested; then
+    if [[ "$CHANNEL" == "stable" || "$CHANNEL" == "edge" ]]; then
+        echo ""
+        echo "================================================================"
+        echo "  RELEASE SKIPPED (bump-none) -- NOTHING WAS WRITTEN TO R2"
+        echo "================================================================"
+        echo "  version:  v${VERSION}"
+        echo "  channel:  ${CHANNEL}"
+        echo ""
+        echo "  The merged PR carried the 'bump-none' label, so this run cuts"
+        echo "  no git tag and publishes no GitHub Release. Advancing the R2"
+        echo "  channel pointer would therefore aim every installer and every"
+        echo "  auto-updater at a version that does not exist."
+        echo ""
+        echo "  NOT written:"
+        echo "    - cli/${CHANNEL}/manifest.json  (channel pointer)"
+        echo "    - cli/${CHANNEL}/latest.json    (channel pointer)"
+        echo "    - cli/${CHANNEL}/rdc-*          (channel binaries)"
+        echo "    - cli/v${VERSION}/              (versioned, immutable path)"
+        echo "    - npm/${CHANNEL}/               (npm tarballs)"
+        echo ""
+        echo "  This is the intended outcome of a bump-none merge, not an error."
+        echo "================================================================"
+        echo ""
+        exit 0
+    fi
+    log_info "--skip-release ignored on channel '${CHANNEL}': not a release channel, uploading as usual"
+fi
+# SKIP_RELEASE_GUARD_END
 
 log_step "Uploading v$VERSION to R2 channel: $CHANNEL"
 

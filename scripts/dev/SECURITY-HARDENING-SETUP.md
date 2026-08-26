@@ -200,7 +200,7 @@ for env in edge stable edge-eu edge-us edge-asia stable-eu stable-us stable-asia
 done
 
 # Trigger a no-op release dispatch to confirm CD pipeline still works end-to-end
-gh workflow run "Release" -f release_mode=retry
+gh workflow run "Release to Edge" -f release_mode=retry
 ```
 
 ---

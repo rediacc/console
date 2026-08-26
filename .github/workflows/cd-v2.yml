@@ -1,4 +1,4 @@
-name: Release
+name: Release to Edge
 
 # Publish workflow -- dispatched from CI's finalize-release-sentinel job
 # (right after the sentinel is sealed), or manually. Promotes Docker images,
@@ -64,7 +64,6 @@ jobs:
       next_version: ${{ steps.version.outputs.next_version || steps.init.outputs.next_version }}
       bump_type: ${{ steps.version.outputs.bump_type || steps.init.outputs.bump_type }}
       channel: ${{ steps.channel.outputs.channel }}
-      skip_release: ${{ steps.skip-check.outputs.skip_release }}
       retry_mode: ${{ steps.skip-check.outputs.retry_mode }}
       workers_only: ${{ steps.skip-check.outputs.workers_only }}
     steps:
@@ -133,7 +132,6 @@ jobs:
       # Normal mode: recalculate version from git state
       - name: Initialize CI
         if: >-
-          steps.skip-check.outputs.skip_release != 'true' &&
           steps.skip-check.outputs.retry_mode != 'true' &&
           steps.skip-check.outputs.workers_only != 'true'
         id: init
@@ -147,7 +145,6 @@ jobs:
           .ci/scripts/ci/initialize.sh --output "$GITHUB_OUTPUT"
 
       - name: Generate channel
-        if: steps.skip-check.outputs.skip_release != 'true'
         id: channel
         run: |
           echo "channel=edge" >> "$GITHUB_OUTPUT"
@@ -155,7 +152,6 @@ jobs:
       # Version guard: fail early if this version was already published (skip in retry/workers-only mode)
       - name: Check for existing release
         if: >-
-          steps.skip-check.outputs.skip_release != 'true' &&
           steps.skip-check.outputs.retry_mode != 'true' &&
           steps.skip-check.outputs.workers_only != 'true'
         env:
@@ -185,9 +181,13 @@ jobs:
       #
       # Still skipped for workers-only: it doesn't promote artifacts at all.
       - name: Assert artifact version matches promotion target
-        if: >-
-          steps.skip-check.outputs.skip_release != 'true' &&
-          steps.skip-check.outputs.workers_only != 'true'
+        # workers_only is what actually skips this. A `skip_release` clause
+        # used to sit here too, and `decide-release-mode.sh` wrote that output
+        # `false` on ALL THREE of its paths -- so every one of its ~9 guards was
+        # permanently true, and the comment further down credited it with a skip
+        # that workers_only was doing. A condition that cannot be false is not a
+        # guard, it is a claim, and this one was already misleading a reader.
+        if: steps.skip-check.outputs.workers_only != 'true'
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
           # Same precedence as the job's next_version output: the retry/
@@ -206,8 +206,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: [init]
     if: >-
-      success() &&
-      needs.init.outputs.skip_release != 'true'
+      success()
     environment:
       name: edge
       url: https://edge.rediacc.com
@@ -376,7 +375,7 @@ jobs:
     name: Deploy edge Marketing
     needs: [init, publish]
     # Cannot use bare success() here: in workers_only mode `publish` is
-    # correctly skipped (its own `if:` gates on skip_release), and bare
+    # correctly skipped (its own `if:` gates on workers_only), and bare
     # success() treats a skipped need as a failure -> this job silently
     # skips too, defeating workers_only's whole purpose. Use explicit
     # per-job result checks. See the deploy-marketing-stable pattern in
@@ -384,8 +383,7 @@ jobs:
     if: >-
       always() &&
       needs.init.result == 'success' &&
-      (needs.publish.result == 'success' || needs.publish.result == 'skipped') &&
-      needs.init.outputs.skip_release != 'true'
+      (needs.publish.result == 'success' || needs.publish.result == 'skipped')
     uses: ./.github/workflows/cd-deploy-worker.yml
     with:
       target: edge
@@ -415,8 +413,7 @@ jobs:
     if: >-
       always() &&
       needs.init.result == 'success' &&
-      (needs.publish.result == 'success' || needs.publish.result == 'skipped') &&
-      needs.init.outputs.skip_release != 'true'
+      (needs.publish.result == 'success' || needs.publish.result == 'skipped')
     uses: ./.github/workflows/cd-deploy-account.yml
     with:
       target: edge
@@ -470,7 +467,6 @@ jobs:
       needs.publish.result == 'success' &&
       needs.smoke-test.result == 'success' &&
       (needs.tag-and-release.result == 'success' || needs.tag-and-release.result == 'skipped') &&
-      needs.init.outputs.skip_release != 'true' &&
       inputs.publish_stable == true
     uses: ./.github/workflows/cd-deploy-worker.yml
     with:
@@ -504,7 +500,6 @@ jobs:
       needs.publish.result == 'success' &&
       needs.smoke-test.result == 'success' &&
       (needs.tag-and-release.result == 'success' || needs.tag-and-release.result == 'skipped') &&
-      needs.init.outputs.skip_release != 'true' &&
       inputs.publish_stable == true
     uses: ./.github/workflows/cd-deploy-account.yml
     with:
@@ -558,8 +553,7 @@ jobs:
       needs.init.result == 'success' &&
       (needs.publish.result == 'success' || needs.publish.result == 'skipped') &&
       needs.deploy-marketing-edge.result == 'success' &&
-      needs.deploy-account-edge.result == 'success' &&
-      needs.init.outputs.skip_release != 'true'
+      needs.deploy-account-edge.result == 'success'
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -588,7 +582,7 @@ jobs:
     name: Validate Install (post-publish)
     needs: [init, publish, deploy-marketing-edge, deploy-account-edge, smoke-test]
     # See deploy-marketing-edge above for why we don't use bare success().
-    # Workers-only already excluded by skip_release/workers_only checks; we
+    # Workers-only already excluded by the workers_only check; we
     # still need explicit per-job result checks for the other needs.
     if: >-
       always() &&
@@ -597,7 +591,6 @@ jobs:
       needs.deploy-marketing-edge.result == 'success' &&
       needs.deploy-account-edge.result == 'success' &&
       needs.smoke-test.result == 'success' &&
-      needs.init.outputs.skip_release != 'true' &&
       needs.init.outputs.workers_only != 'true'
     uses: ./.github/workflows/ct-install-methods.yml
     with:
@@ -617,7 +610,6 @@ jobs:
     needs: [init, publish, deploy-marketing-edge, deploy-account-edge, smoke-test, validate-install-published]
     if: >-
       success() &&
-      needs.init.outputs.skip_release != 'true' &&
       needs.init.outputs.retry_mode != 'true' &&
       needs.init.outputs.workers_only != 'true'
     steps:

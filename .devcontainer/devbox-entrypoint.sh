@@ -98,14 +98,62 @@ log "starting openvscode-server on :$DEVBOX_PORT for $DEVBOX_WORKSPACE"
 target_home="$(getent passwd "$HOST_UID" | cut -d: -f6)"
 [ -n "$target_home" ] || target_home="/home/$CONTAINER_USER"
 
+# THE WORKSPACE IS AN OPTION, NOT A POSITIONAL ARGUMENT, and it was passed as
+# one for a long time. `openvscode-server --help` (1.109.5) prints
+# `Usage: openvscode-server [options]` -- there is NO `[paths]` -- so the
+# trailing "$DEVBOX_WORKSPACE" was accepted and silently ignored, and every
+# browser session opened on $HOME (/home/vscode) instead of the repo. VS Code's
+# parser does not warn about arguments it does not understand, which is why this
+# looked like it worked.
+#
+# `--default-folder` is the supported form. It is missing from `--help` in this
+# build, so it was verified against the running binary rather than the docs:
+# starting with `--default-folder=/tmp/PROBE_MARKER` and fetching `/` yields
+#   "folderUri":{"path":"/tmp/PROBE_MARKER","scheme":"vscode-remote",...}
+# in the served HTML. That is proof it reaches the client, not just that the
+# flag was tolerated.
+#
+# The path stays $DEVBOX_WORKSPACE -- the host path bound 1:1 into the container
+# -- so no username is baked in anywhere.
+#
+# TELEMETRY IS OFF, explicitly. The same --help says: "If not specified, the
+# server will send telemetry until a client connects, it will then use the
+# clients telemetry setting." So the default is not "off", it is "on until
+# something says otherwise", and a devbox that mostly serves automation may
+# never have a client that says otherwise. `--telemetry-level off` is documented
+# there as equivalent to --disable-telemetry.
+vscode_args="--host 0.0.0.0 --port $DEVBOX_PORT $token_args --telemetry-level off"
+
+# Bring the HTTP services up alongside VS Code. BEFORE the exec, because the
+# exec replaces this process -- anything queued after it never runs. Launched as
+# the target user, not root, so nothing it writes into the bind-mounted repo
+# lands as root-owned (which would then need sudo to clean up on the host).
+#
+# Deliberately non-fatal and non-blocking: `|| true` plus a background launch,
+# so a devbox whose account server cannot start still gives you a working editor.
+AUTOSTART="$(dirname "$0")/devbox-autostart.sh"
+if [ -x "$AUTOSTART" ]; then
+  log "dispatching service autostart (DEVBOX_AUTOSTART=${DEVBOX_AUTOSTART:-1})"
+  if command -v setpriv >/dev/null 2>&1; then
+    env HOME="$target_home" USER="$CONTAINER_USER" LOGNAME="$CONTAINER_USER" \
+      DEVBOX_WORKSPACE="$DEVBOX_WORKSPACE" \
+      setpriv --reuid "$HOST_UID" --regid "$HOST_GID" --init-groups \
+      "$AUTOSTART" 2>&1 | while IFS= read -r l; do log "$l"; done || true
+  else
+    su -s /bin/bash "$CONTAINER_USER" -c \
+      "DEVBOX_WORKSPACE='$DEVBOX_WORKSPACE' '$AUTOSTART'" 2>&1 |
+      while IFS= read -r l; do log "$l"; done || true
+  fi
+fi
+
 # --init-groups so the supplementary groups (docker) actually apply.
 if command -v setpriv >/dev/null 2>&1; then
   # shellcheck disable=SC2086
   exec env HOME="$target_home" USER="$CONTAINER_USER" LOGNAME="$CONTAINER_USER" \
     setpriv --reuid "$HOST_UID" --regid "$HOST_GID" --init-groups \
-    openvscode-server --host 0.0.0.0 --port "$DEVBOX_PORT" $token_args "$DEVBOX_WORKSPACE"
+    openvscode-server $vscode_args --default-folder "$DEVBOX_WORKSPACE"
 fi
 
 # shellcheck disable=SC2086
 exec su -s /bin/bash "$CONTAINER_USER" -c \
-  "exec openvscode-server --host 0.0.0.0 --port $DEVBOX_PORT $token_args '$DEVBOX_WORKSPACE'"
+  "exec openvscode-server $vscode_args --default-folder '$DEVBOX_WORKSPACE'"
