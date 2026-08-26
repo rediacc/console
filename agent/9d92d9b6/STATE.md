@@ -1,71 +1,82 @@
-## SESSION 9d92d9b6 2026-08-26T19:22:00Z
+## SESSION 9d92d9b6 2026-08-26T19:46:42Z
 
-Console branch `0826-3` @ `8b355067e`+ (15 commits, all `PR-TASK: f2757830`),
-submodule `private/account` on its own `0826-3` @ `3e79b39`. NOTHING PUSHED.
-`origin/0826-2` is PR #577 (draft, operator's, 8 commits).
+Branch `0826-3`, REBASED ONTO `origin/0826-2` (PR #577, draft, the operator's
+other machine). 16 commits, all `PR-TASK: f2757830`. Submodule
+`private/account` on its own `0826-3` @ `5f55c91`. NOTHING PUSHED.
 
-## Refs, and why there is no 0826-4/5 any more
+Uncommitted: the rebase's `run.sh` repairs (see Next action).
 
-A backup is not a wave, so it must not consume a wave slot. Two safety branches
-were converted to TAGS and deleted (verified the tags held every commit BEFORE
-forcing `-d`, which git had refused because the redo made them unreachable):
+## Recovery refs, if anything looks wrong
 
-- `prerebase-0826` = `9f3cb9f8c` (13 commits, before the rebase work)
-- `preredo-0826`  = `8b355067e` (15 commits, before the commit redo)
+- tag `preredo-0826` = `3ced1a4d8` -- console tip BEFORE this rebase
+- tag `prerebase-0826` = `9f3cb9f8c` -- console tip before the commit redo
 - `private/account` tag `prerebase-0826` = `3e79b39`
 
-Next wave takes **0826-4**. MAX+1 is computed over CONSUMED names
-(`gh pr list --state all --json headRefName`), never `git branch -r`: a merged
-PR's branch is deleted, which is how `0826-1` was taken twice today.
+A backup is not a wave, so these are TAGS, not `MMDD-N` branches. Next wave
+takes **0826-4**.
 
-## The history redo (operator asked for it explicitly)
+## The rebase, and how it was verified
 
-`wl_email.py`'s 570-line deletion had been swept into the review-status commit
-by a bare `git commit` after a staged `git rm`. Both commits were rebuilt so
-each carries only its own diff. **Proof it was lossless: `0826-3^{tree}` ==
-`preredo-0826^{tree}` == `0c3e02e05d`, and both hold 15 commits.** Tree identity
-plus a commit count is the required control for a message rewrite; git is
-content-addressed, so identical messages can silently collapse two commits.
+`private/account` rebased onto its OWN `origin/main` first (submodules always
+do), producing `5f55c91`. The console gitlink then conflicted with stage 2 =
+`218776b` (their main tip) and stage 3 = `3e79b39` (my pre-rebase tip) -- and
+the correct answer was NEITHER: `5f55c91`, the rebased tip. `--git
+resolve-gitlinks` named it and verified containment; I ran the two commands it
+printed.
 
-## Landed this session (highlights)
+Verified after: all four gitlinks contain their base; **16 commits carried, 0
+absorbed** by `git cherry` (a COUNT cannot tell a legitimate rebase-merge drop
+from a `--skip`, which is why branch-rebase.md no longer compares counts); tree
+clean; `git submodule update` was needed for renet/homebrew-tap, whose
+worktrees lagged the correctly-recorded pointers.
 
-`8b2a6d66b` the alignment wave. Root cause across most defects: prose asserting
-a fact the platform could be ASKED. All five repos report
-`delete_branch_on_merge=true`, `allow_squash_merge=false`.
-- `--git` could not write and said it had; `Plan.run` now executes and halts on
-  first failure. Only `force-push` executes -- a rebase executor is deliberately
-  NOT built (conflict is the normal case, and Plan has no resume or rollback).
-- `check-git-tool-safety.ts` was all denials; it now asserts the executor is
-  REACHED. Making it unreachable turns it red.
-- `wl_git` (24 controls) and `wl_admit` (18) selftests now actually run.
-- `/standing-orders` un-blinded: was 0 plans + STATE.md MISSING for 8 days,
-  now 42 plans / 11 peers / live timestamp.
-- New gate `check:ci-merge-method-prose` (283 registrations, ci-parity agrees).
+## Merges that were decisions, not conflicts
 
-Hook suite **1283 PASS / 0 FAIL**. Worklist 784/0. review-status 60/0.
+- **`setup()`**: both waves rewrote it the same day. Result keeps 0826-2's
+  devcontainer skeleton and flags, swaps its check-only step 1 for 0826-3's
+  INSTALLERS, and KEEPS `ensure_host_tools` after them (it also checks zstd,
+  curl, git, which no installer covers). `exit 1` became `return 1`.
+- **`npm install` vs `install:natives`**: sequential, not alternatives. Both
+  kept; `.npmrc` sets ignore-scripts, so dropping either breaks the tree.
+- **The suite**: 0826-2 split the 11,978-line monolith into 22 files under
+  `.claude/hooks/stop/worklist-cases/`. THEIR architecture won; my cases were
+  relocated into it (ARITY -> 08, L1_TABLE/NO_ME/183 -> 18, email removal ->
+  13, case 176 -> 17, ci_run json.dumps -> 09).
+
+## Defects the rebase introduced, all fixed
+
+1. Merging both waves' stopword lines GLUED `touched`+`see` into `touchedsee`
+   (adjacent Python literals concatenate). Two stopwords silently died. Fixed,
+   swept, and gated in `check_agent_hint_liveness.py`.
+2. `setup()` ran `setup_go_toolchain` (reads `private/renet/go.mod`) BEFORE the
+   submodule init. On a fresh clone: "Cannot determine the required Go version".
+   Caught by `check:ci-setup-idempotency`; init lifted ahead of its reader.
+3. `setup_check` did not report the phases the merge added, so `--check`
+   under-counted. Now reports gh, compiler, git identity.
 
 ## Next action
 
-Build `--git snapshot` + `verify-rebase` (item `#e80415f5`), the last piece of
-the approved plan at `~/.claude/plans/good-now-we-still-expressive-curry.md`.
-It must distinguish a commit legitimately absorbed as patch-identical (use
-`git cherry`) from one a `--skip` ate -- a COUNT cannot, which is why
-branch-rebase.md's count heuristic was removed.
+COMMIT the uncommitted `run.sh` work (submodule-init ordering + the
+`setup_check` phases) with a `PR-TASK: f2757830` trailer. Then read waiter
+`b01tlqoge` (worklist suite; an earlier run DIED at case 65 with no summary --
+a partial run is not a pass, check for the `passed=` line). Then build
+`--git snapshot` + `verify-rebase` (item `#e80415f5`), the last piece of the
+approved plan.
 
-THEN the operator's rebase: `private/account` onto its own `origin/main`
-(`218776b3` is that repo's main tip; it has no `0826-*` branch), then console
-`0826-3` onto `origin/0826-2`, taking theirs for the `renet`/`homebrew-tap`
-gitlinks. `private/account` gitlinks are DIVERGED (checked both directions), so
-that one cannot be resolved by picking a side.
+Gates already green on the rebased tree: check:ci-setup-idempotency,
+check:ci-bootstrap-idempotency, check:ci-shell-size, check:ci-watch-recipe,
+check:ci-parity, check:ci-merge-method-prose. `./run.sh setup --check` runs
+clean and mutates nothing.
 
 ## Open, operator-gated
 
 - `[?] #f6e059ec` CI confirmation of the trapguard heredoc controls on a real
-  PR. Locally proven via the CI wrapper at exit 0. DEFAULT: do not push.
-- SES: `private/account/.env`'s `AWS_SES_ACCESS_KEY_ID` and `SES_AK_ID` are in
-  no `ses-*` slug. Ticked `door:operator-only`; do not reopen.
+  PR. DEFAULT: do not push.
+- SES: `.env`'s AWS_SES_ACCESS_KEY_ID and SES_AK_ID are in no `ses-*` slug.
+  Ticked `door:operator-only`; do not reopen.
 
-## Settled today, do not re-ask
+## Settled, do not re-ask
 
-Guard density: KEEP adding hooks, fix false positives as they fire. gitlab
-remote: credential stored, `git fetch --all` exits 0. Commit redo: done.
+Guard density: keep adding, fix false positives as they fire. gitlab remote:
+credential stored, `git fetch --all` exits 0. Commit redo: done. Rebase target:
+0826-2, chosen by the operator over waiting for the merge.

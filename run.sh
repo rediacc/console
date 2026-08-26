@@ -1773,6 +1773,24 @@ EOF
     setup_system_tools || return 1
     echo ""
 
+    # Submodules BEFORE the first phase that READS one, and the merge moved
+    # which phase that is. 0826-2 put this immediately before the docker phase,
+    # correctly, because that phase read private/renet/go.mod. 0826-3's
+    # setup_go_toolchain reads the SAME file and now runs earlier, so leaving
+    # the init where it was would resurrect the exact failure the comment below
+    # describes -- on a fresh clone, "Cannot determine the required Go version",
+    # a message that never mentions submodules. check:ci-setup-idempotency
+    # caught this ordering, which is the whole reason that gate exists.
+    #
+    # Best-effort (`|| true`) for the same reason devcontainer.json is: a
+    # developer without access to every private submodule should still get a
+    # working devbox.
+    if [[ -f "$ROOT_DIR/.gitmodules" ]]; then
+        log_step "Initializing submodules"
+        bash "$ROOT_DIR/.devcontainer/init-submodules.sh" --quiet || true
+        echo ""
+    fi
+
     # Mandatory: ./rdc.sh rebuilds renet from source and stops dead without Go.
     setup_go_toolchain || return 1
     echo ""
@@ -1823,17 +1841,6 @@ EOF
         fi
     fi
 
-    # Submodules BEFORE the docker phase, because that phase reads
-    # private/renet/go.mod to decide the Go version. On a fresh clone the file
-    # does not exist yet and setup died with "Cannot determine the required Go
-    # version" -- a message that never mentions submodules. Best-effort (`|| true`)
-    # for the same reason devcontainer.json is: a developer without access to
-    # every private submodule should still get a working devbox.
-    if [[ -f "$ROOT_DIR/.gitmodules" ]]; then
-        log_step "Initializing submodules"
-        bash "$ROOT_DIR/.devcontainer/init-submodules.sh" --quiet || true
-    fi
-
     if ! ensure_docker_installed; then
         log_error "Docker could not be prepared; cannot continue"
         return 1
@@ -1878,6 +1885,34 @@ setup_check() {
         printf '  go          %s\n' "$(go version | awk '{print $3}')"
     else
         printf '  go          absent (setup installs it only if docker is missing)\n'
+    fi
+
+    # THE PHASES THE MERGE ADDED TO setup() MUST ALSO BE REPORTED HERE. This
+    # function's whole contract is to be the report-only counterpart -- what an
+    # operator runs to find out why setup would do work -- so a phase that setup
+    # performs and check does not mention makes the count a lie. Caught by
+    # running `--check` after merging the two waves' setup(): it said "2 item(s)
+    # would be acted on" while setup would also have installed gh and written a
+    # git identity.
+    if command -v gh &>/dev/null; then
+        printf '  gh          %s\n' "$(gh --version | head -1 | awk '{print $3}')"
+    else
+        printf '  gh          MISSING (setup installs it; the PR guards fail closed without it)\n'
+        pending=$((pending + 1))
+    fi
+
+    if command -v cc &>/dev/null || command -v gcc &>/dev/null; then
+        printf '  compiler    %s\n' "$( (cc --version 2>/dev/null || gcc --version) | head -1 | awk '{print $1, $NF}')"
+    else
+        printf '  compiler    MISSING (setup installs build-essential; install:natives needs it)\n'
+        pending=$((pending + 1))
+    fi
+
+    if [[ -n "$(git config --global user.email 2>/dev/null)" ]]; then
+        printf '  git identity %s\n' "$(git config --global user.email)"
+    else
+        printf '  git identity UNSET (setup asks for it once, then remembers)\n'
+        pending=$((pending + 1))
     fi
 
     if docker version &>/dev/null; then
