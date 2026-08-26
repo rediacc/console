@@ -1,6 +1,9 @@
 ## SESSION 9d92d9b6 2026-08-26T16:39:22Z
 
-Branch `0826-1`, console + `private/account` (its own `0826-1` at `3e79b39`).
+Branch `0826-3`, console + `private/account` (its own `0826-3` at `3e79b39`).
+RENAMED from `0826-1` on 2026-08-26: PR #576 had already consumed that name
+and merged at 11:01, so the slot is taken. The convention is MAX+1, and
+`origin/0826-2` (PR #577, open) is the max.
 Tree CLEAN, twelve commits, all tagged `PR-TASK: f2757830`. NOTHING PUSHED, no
 PR open, and that is deliberate: `CLAUDE.md` Session default 1 forbids it
 unasked and the operator said this task "we don't stop for a new PR yet". The
