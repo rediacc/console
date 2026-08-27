@@ -396,6 +396,7 @@ export const GATES: readonly GateSpec[] = [
   {
     id: 'check:test-workers',
     run: 'npm run check:test-workers',
+    slow: true, // needs build:www (131.9s); the runner demoted it anyway
     gate: true,
     needs: ['build:www'],
     leaves: ['vitest'],
@@ -2071,6 +2072,7 @@ export const GATES: readonly GateSpec[] = [
   {
     id: 'check:ci-seo',
     run: 'npm run check:ci-seo',
+    slow: true, // needs build:www (131.9s); the runner demoted it anyway
     gate: true,
     needs: ['build:www'],
     leaves: ['scripts/check-seo.ts', 'scripts/check-client-bundle-budget.ts'],
@@ -2089,6 +2091,7 @@ export const GATES: readonly GateSpec[] = [
   {
     id: 'check:ci-docs-render-parity',
     run: 'npm run check:ci-docs-render-parity',
+    slow: true, // needs build:www (131.9s); the runner demoted it anyway
     gate: true,
     needs: ['build:www'],
     leaves: ['scripts/check-docs-render-parity.ts'],
@@ -2177,6 +2180,7 @@ export const GATES: readonly GateSpec[] = [
   {
     id: 'check:ci-redirects',
     run: 'npm run check:ci-redirects',
+    slow: true, // needs build:www (131.9s); the runner demoted it anyway
     gate: true,
     needs: ['build:www'],
     leaves: ['scripts/check-redirect-integrity.ts', 'scripts/check-anchor-integrity.ts'],
@@ -2251,6 +2255,7 @@ export const GATES: readonly GateSpec[] = [
   {
     id: 'check:ci-cta-bolt',
     run: 'npm run check:ci-cta-bolt',
+    slow: true, // needs build:www (131.9s); the runner demoted it anyway
     gate: true,
     needs: ['build:www'],
     leaves: ['packages/www/scripts/check-cta-bolt-uniqueness.js'],
@@ -2700,6 +2705,7 @@ export const GATES: readonly GateSpec[] = [
   {
     id: 'check:ci-anchor-integrity',
     run: 'npm run check:ci-anchor-integrity',
+    slow: true, // needs build:www (131.9s); the runner demoted it anyway
     gate: true,
     needs: ['build:www'],
     leaves: ['scripts/check-anchor-integrity.ts'],
@@ -2713,6 +2719,7 @@ export const GATES: readonly GateSpec[] = [
   {
     id: 'check:ci-client-bundle-budget',
     run: 'npm run check:ci-client-bundle-budget',
+    slow: true, // needs build:www (131.9s); the runner demoted it anyway
     gate: true,
     needs: ['build:www'],
     leaves: ['scripts/check-client-bundle-budget.ts'],

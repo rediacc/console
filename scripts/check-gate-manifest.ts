@@ -65,10 +65,17 @@ interface Finding {
 
 function tierFindings(specs: readonly GateSpec[], dur: Record<string, number>): Finding[] {
   const out: Finding[] = [];
+  // A GATE IS ALSO SLOW BY CLOSURE, and without this the two oracles here
+  // contradict each other. check:ci-client-bundle-budget costs 0.8s ITSELF and
+  // 132s through `needs: build:www`: the closure oracle says mark it, the tier
+  // oracle then says it is too cheap to be marked. Both are right about
+  // different costs, so tier defers to closure -- the number that decides lane
+  // membership is what the gate costs to RUN, prerequisites included.
+  const slowByClosure = slowByClosureSet(specs);
   for (const spec of specs) {
     const ms = dur[spec.id];
     if (typeof ms !== 'number') continue;
-    if (spec.slow === true && ms < BUDGET_MS / SLACK) {
+    if (spec.slow === true && ms < BUDGET_MS / SLACK && !slowByClosure.has(spec.id)) {
       out.push({
         oracle: 'tier',
         text: `${spec.id} is marked slow but measures ${(ms / 1000).toFixed(1)}s — cheap enough for the pre-push lane. Drop \`slow: true\`.`,
@@ -78,6 +85,80 @@ function tierFindings(specs: readonly GateSpec[], dur: Record<string, number>): 
       out.push({
         oracle: 'tier',
         text: `${spec.id} is in the pre-push lane but measures ${(ms / 1000).toFixed(1)}s. Mark \`slow: true\` with a one-line reason, or make it faster.`,
+      });
+    }
+  }
+  return out;
+}
+
+/**
+ * TIER CONSISTENCY ALONG `needs`, which is the direction the tier oracle above
+ * cannot see. `slow` PROPAGATES: a gate is only as cheap as its prerequisites,
+ * because buildGraph pulls them in transitively. So `slow` on B and not-slow on
+ * A-needs-B is not two independent claims, it is one claim contradicting
+ * itself.
+ *
+ * The runner already handles this at RUNTIME -- select() computes a fixpoint
+ * and demotes A -- but a runtime demotion is discovered by running, and the
+ * manifest goes on asserting that A is in the lane. Seven gates were being
+ * demoted this way (all needing `build:www`, 131.9s) with nothing in the
+ * manifest saying so, and marking a NEW prerequisite slow would silently pull
+ * more gates out of the lane with no diff to review.
+ *
+ * Asserting it here turns the runner's demotion list into an invariant: after
+ * this, a demotion at runtime means the manifest and the graph have diverged,
+ * which is exactly the condition worth a red.
+ */
+/**
+ * Ids whose `needs` closure reaches a gate marked slow, IGNORING the gate's own
+ * marking but honouring its prerequisites'.
+ *
+ * The first draft derived this by re-running closureFindings over specs with
+ * `slow` stripped from ALL of them -- which made nothing slow, so the set came
+ * back empty and the interaction control failed. It also parsed the id back out
+ * of a human-readable sentence with `.text.split(' ')[0]`, which would have
+ * broken silently the first time anyone reworded the message. One traversal,
+ * shared by both callers, returning ids.
+ */
+function slowByClosureSet(specs: readonly GateSpec[]): Set<string> {
+  const byId = new Map(specs.map((s) => [s.id, s]));
+  const slow = new Set(specs.filter((s) => s.slow === true).map((s) => s.id));
+  const out = new Set<string>();
+  const walk = (id: string, seen: Set<string>): string | undefined => {
+    for (const need of byId.get(id)?.needs ?? []) {
+      if (seen.has(need)) continue;
+      seen.add(need);
+      if (slow.has(need)) return need;
+      const deeper = walk(need, seen);
+      if (deeper !== undefined) return deeper;
+    }
+    return undefined;
+  };
+  for (const spec of specs) if (walk(spec.id, new Set()) !== undefined) out.add(spec.id);
+  return out;
+}
+
+function closureFindings(specs: readonly GateSpec[]): Finding[] {
+  const byId = new Map(specs.map((s) => [s.id, s]));
+  const slow = new Set(specs.filter((s) => s.slow === true).map((s) => s.id));
+  const via_ = (id: string, seen: Set<string>): string | undefined => {
+    for (const need of byId.get(id)?.needs ?? []) {
+      if (seen.has(need)) continue;
+      seen.add(need);
+      if (slow.has(need)) return need;
+      const deeper = via_(need, seen);
+      if (deeper !== undefined) return deeper;
+    }
+    return undefined;
+  };
+  const out: Finding[] = [];
+  for (const spec of specs) {
+    if (spec.slow === true) continue;
+    const via = via_(spec.id, new Set());
+    if (via !== undefined) {
+      out.push({
+        oracle: 'closure',
+        text: `${spec.id} is in the pre-push lane but its needs closure reaches slow gate ${via} — it costs that gate's time, so the lane is not what the manifest claims. Mark it \`slow: true\` (the runner already demotes it at runtime).`,
       });
     }
   }
@@ -145,6 +226,31 @@ function selftest(tracked: readonly string[]): number {
   check('tier CONTROL: a fast-lane gate that IS fast passes', tierFindings([spec({})], { x: 100 }).length === 0);
   check('tier CONTROL: an unmeasured gate is not judged', tierFindings([spec({ slow: true })], {}).length === 0);
 
+  // Closure, both directions AND transitively -- a one-hop-only check would
+  // pass the two-hop case, which is the shape that actually occurs.
+  const a = spec({ id: 'a', needs: ['b'] });
+  const b = spec({ id: 'b', needs: ['c'] });
+  const cSlow = spec({ id: 'c', slow: true });
+  const cFast = spec({ id: 'c' });
+  check('closure: a fast gate needing a slow gate is caught', closureFindings([spec({ id: 'a', needs: ['c'] }), cSlow]).length === 1);
+  check('closure: it follows the chain, not just one hop', closureFindings([a, b, cSlow]).length === 2);
+  check('closure CONTROL: an all-fast chain passes', closureFindings([a, b, cFast]).length === 0);
+  check('closure CONTROL: a slow gate needing a slow gate is not a finding', closureFindings([spec({ id: 'a', needs: ['c'], slow: true }), cSlow]).length === 0);
+  check('closure CONTROL: a cycle does not hang the walk', closureFindings([spec({ id: 'a', needs: ['b'] }), spec({ id: 'b', needs: ['a'] })]).length === 0);
+
+  // THE TWO ORACLES MUST NOT CONTRADICT EACH OTHER. This fired live: a gate
+  // costing 0.8s itself but 132s through its closure was told to mark itself
+  // slow by one oracle and unmark itself by the other.
+  check(
+    'tier defers to closure: a cheap gate that is slow by closure may stay marked',
+    tierFindings([spec({ id: 'a', needs: ['c'], slow: true }), spec({ id: 'c', slow: true })], { a: 800 }).length === 0
+  );
+  check(
+    'tier CONTROL: a cheap gate slow by NOTHING is still caught',
+    tierFindings([spec({ id: 'a', slow: true })], { a: 800 }).length === 1
+  );
+
+
   check('leaf: a gate excluding its own leaf is caught', leafFindings([spec({ paths: ['other/**'] })]).length === 1);
   check('leaf CONTROL: a gate including its own leaf passes', leafFindings([spec({ paths: ['.ci/**'] })]).length === 0);
   check('leaf CONTROL: a gate with NO paths is out of scope', leafFindings([spec({})]).length === 0);
@@ -177,7 +283,7 @@ function main(): number {
       process.stderr.write('CONTROL FAILED: check-gate-manifest oracles did not fire\n');
       return 1;
     }
-    process.stdout.write('check-gate-manifest: selftest ok (12 controls)\n');
+    process.stdout.write('check-gate-manifest: selftest ok (19 controls)\n');
     return 0;
   }
 
@@ -193,6 +299,7 @@ function main(): number {
 
   const findings = [
     ...tierFindings(GATES, dur),
+    ...closureFindings(GATES),
     ...leafFindings(GATES),
     ...globFindings(GATES, tracked),
   ];

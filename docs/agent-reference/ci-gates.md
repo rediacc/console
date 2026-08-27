@@ -10,6 +10,34 @@ describes actually happens. Keep the pointer line in CLAUDE.md in sync. -->
 
 `npm run ci` is a parallel worker pool (`scripts/ci-runner/run.ts`), not a shell chain. It used to be a 93-step `&&` string measured at 1041.6 s serial, and that shape cost both time and signal: `&&` stops at the first red, so one failure hid every other one, and `check:ci-quality-gates` was 443 s of the total as a single opaque unit.
 
+## The pre-push lane (`npm run ci:quick`)
+
+`git push` is refused unless `.ci/cache/prepush-receipt.json` shows a green,
+whole run of this lane against the CURRENT `HEAD^{tree}`
+(`.claude/hooks/pre-bash/block-unverified-push.sh`). That is enforced, not
+advised, because advice was already here and did not work: three of the five CI
+reds on PR #579 were `check:format` (1.72s), `check:ci-python-lint` (0.59s) and
+`check:ci-parity` (1.29s) — 3.6 seconds of gate time that cost roughly 45
+minutes of CI.
+
+- **It is PARTIAL and says so.** Gates marked `slow: true` in the manifest are
+  deferred to CI, along with any gate whose `needs` closure reaches one. The
+  footer names every deferral. `npm run ci` is still the whole set.
+- **`slow` is measured, not judged.** `.ci/cache/gate-durations.json` holds an
+  EWMA per gate, and `check:ci-gate-manifest` asserts the marking against it in
+  BOTH directions. Those numbers are CONTENDED wall time and run ~2-3x above a
+  stopwatch (`check:ci-pipefail-grep-q`: 37.0s cached, 13.5s standalone).
+- **BLOCKED is not FAIL.** A gate that cannot run here (a toolchain this machine
+  lacks) exits 77, is reported separately, and does NOT redden the run or block
+  the push — it warns. A gate that ran and judged your code red still refuses.
+  Before assuming a red is a missing tool, check the obvious: an empty
+  `private/account/node_modules` presented as four separate gate failures
+  including a "missing @cloudflare/workers-types".
+- **If a red is not yours** — this tree usually holds another session's
+  uncommitted work — do not route around it and do not edit their file. Ask:
+  `.claude/hooks/stop/worklist.py --ask <you> <them> '<gate>: <what you saw>'`.
+
+
 The gate set lives in `scripts/ci-runner/manifest.ts`, which is also the input to `npm run check:ci-parity`. Every individual `check:*` npm key still exists and still works on its own; the manifest schedules them.
 
 The CI-side quality-gate battery (`.ci/scripts/test/run-all.sh`, the "Quality-gate unit tests" step) is ALSO parallel since 2026-08-08, with a W/S/T schedule: two tests write fixtures into the real tree, so they run as a serial chain while temp-isolated tests pool, and the real-tree scanners are held back until the writers finish. Triage notes: `RUN_ALL_JOBS=1 .ci/scripts/test/run-all.sh` reproduces the exact serial behavior through the same code path; a "no result recorded" failure means the scheduler lost a test, which is a runner bug, never a skip; and a failure that appears parallel-only but not under `RUN_ALL_JOBS=1` is a real isolation leak in that test, not battery flakiness -- see the W/S/T header in run-all.sh before touching the schedule.
@@ -17,6 +45,8 @@ The CI-side quality-gate battery (`.ci/scripts/test/run-all.sh`, the "Quality-ga
 | Command | What it does |
 |---|---|
 | `npm run ci` | Full run at `availableParallelism() - 2` workers, keep-going |
+| `npm run ci:quick` | **The pre-push lane.** 254 fast gates, ~48s wall. `git push` is REFUSED without a green receipt from it |
+| `npm run ci -- --quick` | The same selection without minting a receipt |
 | `npm run ci:serial` | The same set at `--jobs 1`. Use this to decide whether a red is caused by parallelism |
 | `npm run ci:list` | Every gate id and the exact command it runs |
 | `npm run ci -- --only 'check:ci-embed-*'` | Run a subset. Glob or comma-separated ids |
