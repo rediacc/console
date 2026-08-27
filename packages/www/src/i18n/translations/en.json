@@ -227,11 +227,6 @@
       ]
     }
   },
-  "pricingPreview": {
-    "title": "Clear pricing. No surprises.",
-    "subtitle": "Free to start. Scale when you're ready.",
-    "compareAll": "Compare all plans and features"
-  },
   "announcement": {
     "enabled": false,
     "text": "New: start Rediacc with a 14-day free trial.",
@@ -2448,23 +2443,6 @@
           "title": "Stop paying for idle environments",
           "subtitle": "Spin up a test server on demand. Kill it when the work is done. Pay for what runs, not for servers sitting idle."
         },
-        "stats": [
-          {
-            "number": "70%",
-            "label": "Cost reduction",
-            "icon": "trend-up"
-          },
-          {
-            "number": "On-demand",
-            "label": "No always-on waste",
-            "icon": "zap"
-          },
-          {
-            "number": "Auto",
-            "label": "Cleanup & TTL",
-            "icon": "clock"
-          }
-        ],
         "problem": {
           "overline": "THE PROBLEM",
           "title": "Always-on environments burn money",
@@ -2488,34 +2466,7 @@
               "source": "Industry composite",
               "ref": 3
             }
-          ],
-          "timeline": {
-            "oldLabel": "ALWAYS-ON ENVIRONMENTS",
-            "oldSteps": [
-              {
-                "day": "24/7",
-                "text": "15 servers running"
-              },
-              {
-                "day": "Nights",
-                "text": "Idle, still paying"
-              },
-              {
-                "day": "Weekends",
-                "text": "Idle, still paying"
-              },
-              {
-                "day": "Holidays",
-                "text": "Idle, still paying"
-              },
-              {
-                "day": "Result",
-                "text": "67% waste"
-              }
-            ],
-            "newLabel": "WITH REDIACC",
-            "newSteps": ["Spin up", "$0 idle", "Auto-cleanup"]
-          }
+          ]
         },
         "calculator": {
           "overline": "THE REAL COST",
@@ -2648,27 +2599,6 @@
             {
               "traditional": "A staging Kubernetes cluster: a second set of nodes, paid 24/7",
               "rediacc": "Fork the cluster for the test, delete it after. Copies share storage."
-            }
-          ]
-        },
-        "benefits": {
-          "overline": "WHY IT MATTERS",
-          "title": "What it includes",
-          "items": [
-            {
-              "title": "Pay for what runs",
-              "description": "No idle servers. Copies share disk space with production. Spin up 10 copies for the cost of a few GB of changes.",
-              "icon": "dollar"
-            },
-            {
-              "title": "Automatic cleanup",
-              "description": "Set a timer on each copy (1h, 4h, 8h). It deletes itself when time runs out. No forgotten servers eating the budget for months.",
-              "icon": "clock"
-            },
-            {
-              "title": "Scale freely",
-              "description": "Spin up 50 environments for a load test. Tear them all down after. No capacity planning. No purchase orders.",
-              "icon": "person-plus"
             }
           ]
         },
@@ -3113,23 +3043,6 @@
           "title": "Plug into the existing workflow",
           "subtitle": "Push the code. Rediacc spins up a fresh copy of production. Tests run on real data, not fake data. No custom scripts to write."
         },
-        "stats": [
-          {
-            "number": "1 line",
-            "label": "Config to integrate",
-            "icon": "terminal"
-          },
-          {
-            "number": "Git",
-            "label": "Native integration",
-            "icon": "git-branch"
-          },
-          {
-            "number": "0",
-            "label": "Custom scripts needed",
-            "icon": "x"
-          }
-        ],
         "problem": {
           "overline": "THE PROBLEM",
           "title": "Custom CI/CD scripts break and no one maintains them",
@@ -3153,34 +3066,7 @@
               "source": "Atlassian 2024",
               "ref": 1
             }
-          ],
-          "timeline": {
-            "oldLabel": "CUSTOM CI SCRIPTS",
-            "oldSteps": [
-              {
-                "day": "Step 1",
-                "text": "Write bash scripts"
-              },
-              {
-                "day": "Step 2",
-                "text": "Set up servers"
-              },
-              {
-                "day": "Step 3",
-                "text": "Load test data"
-              },
-              {
-                "day": "Monthly",
-                "text": "Debug broken CI"
-              },
-              {
-                "day": "Result",
-                "text": "Tests pass, prod fails"
-              }
-            ],
-            "newLabel": "WITH REDIACC",
-            "newSteps": ["git push", "Auto", "Real data"]
-          }
+          ]
         },
         "calculator": {
           "overline": "THE REAL COST",
@@ -3283,27 +3169,6 @@
             {
               "traditional": "Manual cleanup, forgotten environments",
               "rediacc": "Automatic cleanup after pipeline completes"
-            }
-          ]
-        },
-        "benefits": {
-          "overline": "WHY IT MATTERS",
-          "title": "What it includes",
-          "items": [
-            {
-              "title": "Built-in Git integration",
-              "description": "A push builds the environment. Works with GitLab CI, GitHub Actions, Gitea, or any system that sends a webhook.",
-              "icon": "git-branch"
-            },
-            {
-              "title": "Production copies in CI",
-              "description": "Tests run on real production data and settings. No more \"tests pass, then production breaks\" surprises. Kubernetes apps included: a namespace forks like any repo. CI tests run against real cluster state.",
-              "icon": "monitor"
-            },
-            {
-              "title": "Zero maintenance",
-              "description": "No custom scripts to maintain, update, or fix. No more paging someone at 2 AM because the CI setup broke.",
-              "icon": "check-circle"
             }
           ]
         },
@@ -3429,23 +3294,6 @@
           "title": "Backups that ransomware can’t touch",
           "subtitle": "Backups lock the moment they're made. No one can change them. Not hackers. Not even the owner."
         },
-        "stats": [
-          {
-            "number": "0",
-            "label": "Files Changed After Backup",
-            "icon": "shield"
-          },
-          {
-            "number": "100%",
-            "label": "Immutable by Default",
-            "icon": "check-circle"
-          },
-          {
-            "number": "<60s",
-            "label": "Full Backup Time",
-            "icon": "clock"
-          }
-        ],
         "problem": {
           "overline": "THE PROBLEM",
           "title": "Ransomware targets backups first",
@@ -3469,34 +3317,7 @@
               "source": "Coveware Quarterly Report",
               "ref": 3
             }
-          ],
-          "timeline": {
-            "oldLabel": "The old way",
-            "oldSteps": [
-              {
-                "day": "Day 1",
-                "text": "Schedule backup"
-              },
-              {
-                "day": "Day 2",
-                "text": "Backup runs"
-              },
-              {
-                "day": "Day 7",
-                "text": "Hope it’s clean"
-              },
-              {
-                "day": "Day 14",
-                "text": "Ransomware hits"
-              },
-              {
-                "day": "Day 15",
-                "text": "Backup encrypted too"
-              }
-            ],
-            "newLabel": "With Rediacc",
-            "newSteps": ["Backup", "Sealed", "Verified"]
-          }
+          ]
         },
         "calculator": {
           "overline": "THE REAL COST",
@@ -3625,27 +3446,6 @@
             {
               "traditional": "Full copy each time: 380 GB × 30 days = 11.4 TB of storage",
               "rediacc": "Shortcut copies: 30 daily backups share data (~40 GB total)"
-            }
-          ]
-        },
-        "benefits": {
-          "overline": "WHY IT MATTERS",
-          "title": "What it includes",
-          "items": [
-            {
-              "icon": "lock",
-              "title": "Write once, read forever",
-              "description": "No one can change, delete, or encrypt a sealed backup. Not hackers. Not a hacked admin account. Not ransomware that grabbed the top admin password."
-            },
-            {
-              "icon": "eye-off",
-              "title": "No trust required",
-              "description": "Even a hacked admin account can't touch a sealed backup. We test every backup automatically, every day. A failure raises an alert before it matters."
-            },
-            {
-              "icon": "check-circle",
-              "title": "Instant verification",
-              "description": "We restore every backup to a test copy and check it works. Not just a 'backup done' message. We actually prove it, every day."
             }
           ]
         },
@@ -4897,23 +4697,6 @@
           "title": "Keep data as long as the law requires",
           "subtitle": "Set how long to keep backups. Rediacc keeps them that long, then cleans up. HIPAA, SOC2, and GDPR rules are covered from day one."
         },
-        "stats": [
-          {
-            "number": "7+ yrs",
-            "label": "Maximum Retention",
-            "icon": "clock"
-          },
-          {
-            "number": "3",
-            "label": "Compliance Frameworks",
-            "icon": "clipboard-check"
-          },
-          {
-            "number": "100%",
-            "label": "Audit-Ready",
-            "icon": "check-circle"
-          }
-        ],
         "problem": {
           "overline": "THE PROBLEM",
           "title": "Compliance failures are expensive",
@@ -4937,34 +4720,7 @@
               "source": "CMS GDPR Enforcement Tracker 2024/2025",
               "ref": 3
             }
-          ],
-          "timeline": {
-            "oldLabel": "The old way",
-            "oldSteps": [
-              {
-                "day": "Month 1",
-                "text": "Write retention policy"
-              },
-              {
-                "day": "Month 3",
-                "text": "Manual cleanup"
-              },
-              {
-                "day": "Month 6",
-                "text": "Missed some data"
-              },
-              {
-                "day": "Month 9",
-                "text": "Audit notice arrives"
-              },
-              {
-                "day": "Month 10",
-                "text": "Scramble to prove it"
-              }
-            ],
-            "newLabel": "With Rediacc",
-            "newSteps": ["Set policy", "Auto", "Audit-ready"]
-          }
+          ]
         },
         "calculator": {
           "overline": "THE REAL COST",
@@ -5094,27 +4850,6 @@
             {
               "traditional": "No proof backups are restorable",
               "rediacc": "Every kept backup checked daily"
-            }
-          ]
-        },
-        "benefits": {
-          "overline": "WHY IT MATTERS",
-          "title": "What it includes",
-          "items": [
-            {
-              "icon": "clock",
-              "title": "Set and forget",
-              "description": "Set the retention rules once. Rediacc enforces them forever. Old backups get cleaned up on their own. No cron jobs. No scripts."
-            },
-            {
-              "icon": "shield",
-              "title": "Compliance-ready",
-              "description": "Built for HIPAA, SOC2, and GDPR rules. Audit logs export to any security log tool. Pull a compliance report in seconds."
-            },
-            {
-              "icon": "clipboard-check",
-              "title": "Full audit trail",
-              "description": "Every backup, check, and deletion is logged with a timestamp. Every report is audit-ready by default."
             }
           ]
         },
@@ -6000,23 +5735,6 @@
           "title": "Every backup verified. Automatically.",
           "subtitle": "Don’t wait for a disaster to find out a backup is corrupted. Rediacc checks every backup the moment it’s created."
         },
-        "stats": [
-          {
-            "number": "100%",
-            "label": "Backups Verified",
-            "icon": "check-circle"
-          },
-          {
-            "number": "Auto",
-            "label": "No Manual Checks",
-            "icon": "refresh"
-          },
-          {
-            "number": "<1min",
-            "label": "Verification Time",
-            "icon": "clock"
-          }
-        ],
         "problem": {
           "overline": "THE PROBLEM",
           "title": "Corrupted backups are worse than no backups",
@@ -6040,34 +5758,7 @@
               "source": "IBM Cost of a Data Breach Report 2024",
               "ref": 3
             }
-          ],
-          "timeline": {
-            "oldLabel": "The old way",
-            "oldSteps": [
-              {
-                "day": "Day 1",
-                "text": "Run backup"
-              },
-              {
-                "day": "Day 2-364",
-                "text": "Trust “completed”"
-              },
-              {
-                "day": "Day 365",
-                "text": "Disaster strikes"
-              },
-              {
-                "day": "Day 365",
-                "text": "Try to restore"
-              },
-              {
-                "day": "Day 365",
-                "text": "Backup corrupted"
-              }
-            ],
-            "newLabel": "With Rediacc",
-            "newSteps": ["Backup", "47s", "Verified"]
-          }
+          ]
         },
         "calculator": {
           "overline": "THE REAL COST",
@@ -6196,27 +5887,6 @@
             {
               "traditional": "Requires separate test environment and hours of setup",
               "rediacc": "Instant copy in seconds, almost no extra storage"
-            }
-          ]
-        },
-        "benefits": {
-          "overline": "WHY IT MATTERS",
-          "title": "What it includes",
-          "items": [
-            {
-              "icon": "check-circle",
-              "title": "Zero surprises",
-              "description": "We copy, boot, and health-check every backup long before it is needed. Corruption surfaces within 24 hours, not during a crisis."
-            },
-            {
-              "icon": "shield",
-              "title": "Automatic integrity checks",
-              "description": "No manual testing. No scripts. Checks run automatically in the pipeline. A failure raises an alert before it matters."
-            },
-            {
-              "icon": "bell",
-              "title": "Instant alerts",
-              "description": "PagerDuty, Slack, or email. The alert lands the moment a backup fails a check. No dashboard to watch. No scheduled spot-checks."
             }
           ]
         },
@@ -6786,6 +6456,8 @@
           "overline": "UNDER THE HOOD",
           "title": "Why this works",
           "description": "Old-school pentests hit a staging copy. That copy drifts from production within days. So the test misses real holes. We copy actual production instead. Same data, same setup, same weak spots. We attack that copy, then delete it. The live systems stay safe.",
+          "traditionalLabel": "Traditional pentesting",
+          "rediaccLabel": "Rediacc (attacks a production copy)",
           "rows": [
             {
               "traditional": "Staging copy (weeks old, drifted from real)",
@@ -6853,7 +6525,7 @@
         "bottomCta": {
           "title": "Find the weak spots before attackers do",
           "description": "Run the first pentest in under 60 seconds. Start the 14-day free trial.",
-          "ctaText": "Start free trial",
+          "primaryCta": "Start free trial",
           "command": "rdc repo fork production --tag pentest"
         },
         "references": {
@@ -6881,23 +6553,6 @@
           "title": "Own the keys. Own the encryption. No exceptions.",
           "subtitle": "Every backup is encrypted with locally owned keys. Not the vendor's keys. Not shared keys. One owner only."
         },
-        "stats": [
-          {
-            "number": "AES-256",
-            "label": "Encryption Standard",
-            "icon": "shield"
-          },
-          {
-            "number": "Local",
-            "label": "Key Owner",
-            "icon": "key"
-          },
-          {
-            "number": "Always",
-            "label": "Encrypted at Rest & Transit",
-            "icon": "lock"
-          }
-        ],
         "problem": {
           "overline": "THE PROBLEM",
           "title": "Vendor-managed keys belong to the vendor",
@@ -6921,34 +6576,7 @@
               "ref": 1,
               "text": "of companies juggle 5+ key systems, leaving blind spots"
             }
-          ],
-          "timeline": {
-            "oldLabel": "THE OLD WAY",
-            "oldSteps": [
-              {
-                "day": "Setup",
-                "text": "Upload to vendor"
-              },
-              {
-                "day": "Trust",
-                "text": "Vendor holds keys"
-              },
-              {
-                "day": "Day N",
-                "text": "Vendor breached"
-              },
-              {
-                "day": "Day N+1",
-                "text": "Keys compromised"
-              },
-              {
-                "day": "Result",
-                "text": "Data exposed"
-              }
-            ],
-            "newLabel": "WITH REDIACC",
-            "newSteps": ["Keys stay local", "AES-256", "Zero-knowledge"]
-          }
+          ]
         },
         "calculator": {
           "overline": "THE REAL COST",
@@ -7059,6 +6687,8 @@
           "overline": "UNDER THE HOOD",
           "title": "Why vendor-managed encryption fails",
           "description": "When the vendor holds the keys, they can open the data. Their staff can too. One breach on their side and everything spills out. We do it the opposite way. The keys stay with the customer. We never see raw data or keys. Honestly, that's how it should have always worked.",
+          "traditionalLabel": "Vendor-held keys",
+          "rediaccLabel": "Rediacc (customer-held keys)",
           "rows": [
             {
               "traditional": "Vendor holds the keys, so they can open the data",
@@ -7074,28 +6704,7 @@
             },
             {
               "traditional": "Changing keys needs the vendor's help",
-              "rediacc": "Rotate keys with one command"
-            }
-          ]
-        },
-        "benefits": {
-          "overline": "WHY IT MATTERS",
-          "title": "What it includes",
-          "items": [
-            {
-              "icon": "lock",
-              "title": "Local keys only",
-              "description": "Generated locally. Stored on local servers. No shared key vaults. No vendor access. Nothing taken on trust."
-            },
-            {
-              "icon": "shield",
-              "title": "AES-256-GCM encryption",
-              "description": "AES-256-GCM does two jobs at once. It locks the data and checks that nothing has been touched. Every read is verified. Tampering shows up immediately."
-            },
-            {
-              "icon": "eye-off",
-              "title": "Zero-knowledge architecture",
-              "description": "We never see raw data. We never touch the key. So even if someone hacked our own code, there's nothing here to steal."
+              "rediacc": "Rotate keys with one command. Every read is verified, so tampering shows up immediately."
             }
           ]
         },
@@ -7161,7 +6770,7 @@
         "bottomCta": {
           "title": "Own the encryption keys",
           "description": "Generate the first key in under a minute. Start the 14-day free trial.",
-          "ctaText": "Start free trial",
+          "primaryCta": "Start free trial",
           "command": "rdc repo up production"
         },
         "references": {
@@ -7427,6 +7036,8 @@
           "overline": "UNDER THE HOOD",
           "title": "Why continuous testing works",
           "description": "Each test starts with a fresh copy of the live systems. The copy is built by our storage engine. It makes instant copies for almost no extra space. We run the full AI attack on that copy and return a ranked report with trends. Then we delete the copy. No spare environment to keep up to date. No drift. No stale data. Every test checks exactly what's running for real right now.",
+          "traditionalLabel": "Scheduled annual testing",
+          "rediaccLabel": "Rediacc (continuous)",
           "rows": [
             {
               "traditional": "1-2 times a year (booked months ahead)",
@@ -7494,7 +7105,7 @@
         "bottomCta": {
           "title": "Close the window attackers count on",
           "description": "Set up the first daily test in 30 seconds. Start the 14-day free trial.",
-          "ctaText": "Start free trial",
+          "primaryCta": "Start free trial",
           "command": "rdc backup restore production --as production-verify -m primary --up"
         },
         "references": {
@@ -7700,6 +7311,8 @@
           "overline": "UNDER THE HOOD",
           "title": "Why app logs aren't audit trails",
           "description": "App logs are built for debugging. They can be edited, they miss things, and they live in many places. Our audit trail is built for compliance. Every action is signed, kept in order, and exports as one report.",
+          "traditionalLabel": "Editable application logs",
+          "rediaccLabel": "Rediacc audit trail",
           "rows": [
             {
               "traditional": "Editable logs: the top admin can change or delete entries",
@@ -7802,7 +7415,7 @@
         "bottomCta": {
           "title": "See everything. Miss nothing.",
           "description": "Make the first audit report in under a minute. Start the 14-day free trial.",
-          "ctaText": "Start free trial",
+          "primaryCta": "Start free trial",
           "command": "rdc repo status production"
         },
         "references": {
@@ -8054,6 +7667,8 @@
           "overline": "UNDER THE HOOD",
           "title": "Why data residency is not data sovereignty",
           "description": "A US-owned provider can keep data in Frankfurt and still be forced by US courts to give it up. Our setup removes that risk at the root. There are no keys for us to hand over. There is no phone-home channel to tap.",
+          "traditionalLabel": "US-owned provider",
+          "rediaccLabel": "Rediacc (no keys to hand over)",
           "rows": [
             {
               "traditional": "Provider answers to US courts no matter where the data sits",
@@ -8160,7 +7775,7 @@
         "bottomCta": {
           "title": "Stop renting data back from a US-owned provider.",
           "description": "Run the first key-custody check in under a minute. Start the 14-day free trial.",
-          "ctaText": "Start free trial",
+          "primaryCta": "Start free trial",
           "command": "rdc config show"
         },
         "references": {
@@ -8232,23 +7847,6 @@
           "title": "Recover in minutes. Not days.",
           "subtitle": "When ransomware hits, every minute costs money. Rediacc restores service fast, before the damage spreads."
         },
-        "stats": [
-          {
-            "number": "<5min",
-            "label": "Average Recovery Time",
-            "icon": "clock"
-          },
-          {
-            "number": "99.9%",
-            "label": "Recovery Success Rate",
-            "icon": "check-circle"
-          },
-          {
-            "number": "0",
-            "label": "Data Loss Incidents",
-            "icon": "shield"
-          }
-        ],
         "problem": {
           "overline": "THE PROBLEM",
           "title": "Slow recovery costs more than the attack",
@@ -8272,34 +7870,7 @@
               "ref": 3,
               "text": "of victims who paid are hit again"
             }
-          ],
-          "timeline": {
-            "oldLabel": "THE OLD WAY",
-            "oldSteps": [
-              {
-                "day": "Hour 1",
-                "text": "Discover attack"
-              },
-              {
-                "day": "Day 1",
-                "text": "Assess damage"
-              },
-              {
-                "day": "Day 3",
-                "text": "Rebuild servers"
-              },
-              {
-                "day": "Day 5",
-                "text": "Restore data"
-              },
-              {
-                "day": "Day 7+",
-                "text": "Still catching up"
-              }
-            ],
-            "newLabel": "WITH REDIACC",
-            "newSteps": ["Detect", "<5 min", "Online"]
-          }
+          ]
         },
         "calculator": {
           "overline": "THE REAL COST",
@@ -8411,6 +7982,8 @@
           "overline": "UNDER THE HOOD",
           "title": "Why recovery takes minutes, not days",
           "description": "Old recovery rebuilds everything from scratch: reinstall the system, restore files, set up services again. Rediacc works differently. It uses btrfs, the storage engine that makes cheap instant copies possible. A clean copy already sits on the disk. We just flip it on. No reinstall, no setup, no slow data transfer.",
+          "traditionalLabel": "Traditional rebuild",
+          "rediaccLabel": "Rediacc (btrfs instant copies)",
           "rows": [
             {
               "traditional": "Reinstall the system and software: 2-4 hours per server",
@@ -8426,28 +7999,7 @@
             },
             {
               "traditional": "Check by hand after restore: hope nothing was missed",
-              "rediacc": "Automatic health check after restore: 8/8 services confirmed running"
-            }
-          ]
-        },
-        "benefits": {
-          "overline": "WHY IT MATTERS",
-          "title": "What it includes",
-          "items": [
-            {
-              "icon": "zap",
-              "title": "Minutes, not days",
-              "description": "The full system recovers in under 5 minutes. Every container, every database, every settings file. All restored from a backup copy that can't be changed. Kubernetes too: fork the whole cluster first. The copy keeps the evidence while the restore runs."
-            },
-            {
-              "icon": "clock",
-              "title": "Down to the minute",
-              "description": "Roll back to the exact minute before the attack. We take saved copies all the time. So the restore point is a choice, not the attacker's."
-            },
-            {
-              "icon": "check-circle",
-              "title": "Zero data loss",
-              "description": "We save copies all the time, so nothing slips through. A daily test checks that every backup restores cleanly."
+              "rediacc": "Automatic health check after restore: 8/8 services confirmed running. The copy keeps the evidence while the restore runs."
             }
           ]
         },
@@ -8508,7 +8060,7 @@
         "bottomCta": {
           "title": "Don't let recovery be slower than the attack",
           "description": "Protect the production servers. Start the 14-day free trial.",
-          "ctaText": "Start free trial",
+          "primaryCta": "Start free trial",
           "command": "rdc repo pull production --from backup-vault --force"
         },
         "references": {
@@ -8750,6 +8302,8 @@
           "overline": "UNDER THE HOOD",
           "title": "Why a cluster can move like a file",
           "description": "Every node runs from an image file on btrfs. Every volume is a Ceph RBD image. Copying a cluster means cloning those images, copy-on-write. No export, no conversion, no restore step. That is why a fork takes seconds, not months.",
+          "traditionalLabel": "Backup-and-restore migration",
+          "rediaccLabel": "Rediacc (copy-on-write clone)",
           "rows": [
             {
               "traditional": "Backup tools restore into an empty cluster, piece by piece",
@@ -8831,7 +8385,7 @@
         "bottomCta": {
           "title": "Give the cluster an exit route",
           "description": "Fork it, test the move, then migrate for real. Start the 14-day free trial.",
-          "ctaText": "Start free trial",
+          "primaryCta": "Start free trial",
           "command": "rdc cluster fork prod --tag staging"
         },
         "references": {
@@ -9070,6 +8624,8 @@
           "overline": "UNDER THE HOOD",
           "title": "Why migration takes minutes, not months",
           "description": "Rediacc keeps all data in standard Linux storage. No locked-in format. No vendor software. To move, it sends only the changes since the last copy. So a 420 GB system with 3.8 GB of new data transfers just 3.8 GB, not 420 GB.",
+          "traditionalLabel": "Proprietary format lock-in",
+          "rediaccLabel": "Rediacc (standard Linux storage)",
           "rows": [
             {
               "traditional": "6-18 month project: assess, rebuild, convert, test, switch over",
@@ -9176,7 +8732,7 @@
         "bottomCta": {
           "title": "Take back control of the infrastructure",
           "description": "Run it anywhere. Move it anytime. Start the 14-day free trial.",
-          "ctaText": "Start free trial",
+          "primaryCta": "Start free trial",
           "command": "rdc repo push production --to new-provider --checkpoint"
         },
         "references": {

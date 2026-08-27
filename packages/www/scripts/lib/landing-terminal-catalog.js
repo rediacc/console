@@ -54,6 +54,49 @@ function visitTerminals(node, pathParts, out) {
   }
 }
 
+/**
+ * The CTA command block: `pages.{solutionPages,personaPages}.<key>.bottomCta.command`.
+ *
+ * THIS IS THE LANDING TERMINAL SURFACE TODAY. The `terminal.lines` blocks this file was
+ * written for are gone from every catalog, and `heroTerminalLines` left index.astro with
+ * the homepage reshape, so the collector was scanning two extinct shapes and finding
+ * nothing. It reported that honestly ("no landing terminal sources exist") and exited 0,
+ * which is the correct answer to the wrong question: the commands did not leave the site,
+ * they MOVED. 23 of them render today, one per solution/persona page, in a copy-me code
+ * block at the bottom of the page (SPBottomCta.astro:30-33).
+ *
+ * That is a stricter contract than the old animated terminal, not a looser one. A
+ * decorative terminal demo could be abbreviated for rhythm; `bottomCta.command` is
+ * presented as THE command to run, so an unrunnable one is a defect a reader hits
+ * personally.
+ */
+function visitCtaCommands(node, pathParts, out) {
+  if (!node || typeof node !== 'object') return;
+
+  if (Array.isArray(node)) {
+    for (let i = 0; i < node.length; i += 1) {
+      visitCtaCommands(node[i], [...pathParts, `[${i}]`], out);
+    }
+    return;
+  }
+
+  for (const [key, value] of Object.entries(node)) {
+    const nextPath = [...pathParts, key];
+    if (key === 'bottomCta' && value && typeof value.command === 'string') {
+      out.push({ path: `${nextPath.join('.')}.command`, command: value.command });
+    }
+    visitCtaCommands(value, nextPath, out);
+  }
+}
+
+/** `solution:instantRecovery:bottomCta`, `persona:forDevops:bottomCta`, or a raw path. */
+function sourceIdFromCtaPath(ctaPath) {
+  const match = ctaPath.match(/^pages\.(solutionPages|personaPages)\.([^.]+)\.bottomCta\.command$/);
+  if (!match) return `unknown:${ctaPath}`;
+  const [, group, key] = match;
+  return `${group === 'solutionPages' ? 'solution' : 'persona'}:${key}:bottomCta`;
+}
+
 function sourceIdFromTerminalPath(terminalPath, lineIndex) {
   const match = terminalPath.match(/^pages\.(solutionPages|personaPages)\.([^.]+)\.terminal$/);
   if (!match) return `unknown:${terminalPath}:line:${lineIndex}`;
@@ -72,8 +115,24 @@ export function getTranslationTerminalCommands(lang) {
   const json = loadTranslationJson(lang);
   const terminals = [];
   visitTerminals(json, [], terminals);
+  const ctas = [];
+  visitCtaCommands(json, [], ctas);
 
   const results = [];
+  for (const cta of ctas) {
+    const commandText = normalizeCommandText(cta.command);
+    results.push({
+      lang,
+      source: 'cta',
+      sourcePath: cta.path,
+      sourceId: sourceIdFromCtaPath(cta.path),
+      lineIndex: 0,
+      rawLine: { type: 'command', text: cta.command },
+      commandText: commandText || null,
+      isRdcCommand: commandText.startsWith('rdc '),
+    });
+  }
+
   for (const terminal of terminals) {
     for (let i = 0; i < terminal.lines.length; i += 1) {
       const line = terminal.lines[i];
@@ -154,9 +213,12 @@ export function getAllLandingTerminalCommandsForLanguage(lang) {
 export function countLandingTerminalSources(lang) {
   const src = fs.readFileSync(INDEX_PAGE_PATH, 'utf-8');
   const homepageArray = /const\s+heroTerminalLines\s*=\s*\[/.test(src);
+  const json = loadTranslationJson(lang);
   const terminals = [];
-  visitTerminals(loadTranslationJson(lang), [], terminals);
-  return { homepageArray, terminalBlocks: terminals.length };
+  visitTerminals(json, [], terminals);
+  const ctas = [];
+  visitCtaCommands(json, [], ctas);
+  return { homepageArray, terminalBlocks: terminals.length, ctaCommands: ctas.length };
 }
 
 export function getAllLanguages() {

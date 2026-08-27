@@ -3067,7 +3067,7 @@
         "blurb": "Klooni tootmiskeskkond. Lase tehisintellektil seda rünnata.",
         "bottomCta": {
           "command": "rdc repo fork production --tag pentest",
-          "ctaText": "Alusta tasuta",
+          "primaryCta": "Alusta tasuta",
           "description": "Alustage tasuta Community väljaandega. Käivitage esimene pentest alla 60 sekundiga.",
           "title": "Leidke haavatavused enne ründajaid"
         },
@@ -3275,6 +3275,8 @@
         "techDiff": {
           "description": "Traditsiooniline läbitungimistestimine suunab lavastuskeskkondadele, mis kalduvad tootmisest kõrvale juba päevade jooksul pärast loomist. Rediacc loob btrfs copy-on-write hetktõmmise teie tegelikust tootmisinfrastruktuurist - samad andmed, samad konfiguratsioonid, samad haavatavused - ja käivitab selle vastu automatiseeritud rünnakusimulatsioonid. Kloon hävitatakse pärast testimist. Tootmiskeskkond jääb puutumata.",
           "overline": "KAPOTI ALL",
+          "traditionalLabel": "Traditsiooniline pentest",
+          "rediaccLabel": "Rediacc (ründab tootmiklooni)",
           "rows": [
             {
               "rediacc": "Tootmiskloon (sekundeid vana, 100% vastavus)",
@@ -3329,7 +3331,7 @@
         "blurb": "Iga tegevus logitud. Mitte midagi peidetud.",
         "bottomCta": {
           "command": "rdc repo status production",
-          "ctaText": "Alusta tasuta Community väljaandega",
+          "primaryCta": "Alusta tasuta Community väljaandega",
           "description": "Alustage tasuta Community väljaandega. Genereerige esimene auditiaruanne alla minutiga.",
           "title": "Näe kõike. Jäta midagi märkamata."
         },
@@ -3635,6 +3637,8 @@
         "techDiff": {
           "description": "Rakenduse logid on mõeldud silumiseks - need on muudetavad, puudulikud ja hajutatud üle süsteemide. Rediacci auditirada on mõeldud vastavuseks: iga operatsioon on krüptograafiliselt allkirjastatud, kronoloogiliselt aheldatud ja eksporditav ühe aruandena.",
           "overline": "KAPOTI ALL",
+          "traditionalLabel": "Muudetavad rakenduslogid",
+          "rediaccLabel": "Rediacc auditirada",
           "rows": [
             {
               "rediacc": "Krüptograafiliselt allkirjastatud - rikkumise tuvastamine sisseehitatud",
@@ -3657,27 +3661,6 @@
         }
       },
       "backupVerification": {
-        "benefits": {
-          "items": [
-            {
-              "description": "Iga varukoopia kloonitakse, käivitatakse ja kontrollitakse enne vajadust. Rikutus tuvastatakse 24 tunni jooksul, mitte kriisi ajal.",
-              "icon": "check-circle",
-              "title": "Null üllatusi"
-            },
-            {
-              "description": "Manuaalset testimist pole. Skripte pole. Varukoopiate kontrollimine töötab teie CI-torujuhtmes. Ebaõnnestumine? Saate hoiatuse enne, kui see on oluline.",
-              "icon": "shield",
-              "title": "Automaatsed terviklikkuse kontrollid"
-            },
-            {
-              "description": "PagerDuty, Slack või e-post - kohe, kui varukoopia kontrollimine ebaõnnestub. Kontrolltahvleid pole vaja vaadata. Plaanilisi pistekontrolle pole.",
-              "icon": "bell",
-              "title": "Kohesed hoiatused"
-            }
-          ],
-          "overline": "MIKS SEE ON OLULINE",
-          "title": "Mida saate"
-        },
         "blurb": "Iga varukoopia kontrollitakse automaatselt",
         "bottomCta": {
           "command": "rdc backup verify my-app",
@@ -3867,33 +3850,6 @@
               "text": "keskmine kulu ohustatud kirje kohta"
             }
           ],
-          "timeline": {
-            "newLabel": "Rediacciga",
-            "newSteps": ["Varunda", "47s", "Kontrollitud"],
-            "oldLabel": "Vana viis",
-            "oldSteps": [
-              {
-                "day": "1. päev",
-                "text": "Varukoopia tegemine"
-              },
-              {
-                "day": "2.-364. päev",
-                "text": "Usaldada \"lõpetatud\""
-              },
-              {
-                "day": "365. päev",
-                "text": "Katastroof tabab"
-              },
-              {
-                "day": "365. päev",
-                "text": "Taastamise katse"
-              },
-              {
-                "day": "365. päev",
-                "text": "Varukoopia rikutud"
-              }
-            ]
-          },
           "title": "Rikutud varukoopiad on hullemad kui varukoopiate puudumine"
         },
         "references": {
@@ -3976,23 +3932,6 @@
           },
           "quote": "Käivitasime automatiseeritud kontrollimise esimesel nädalal ja leidsime 12 rikutud varukoopiat 3 teenuse üleselt - MariaDB dump katkestatud tabelitega, vananenud Nextcloudi konfiguratsioon ja 6 kuu vanune Redise hetktõmmis. Ilma Rediaccita oleksime need avastanud tegeliku katastroofi ajal. Nüüd kontrollitakse iga varukoopia 47 sekundi jooksul pärast loomist."
         },
-        "stats": [
-          {
-            "icon": "check-circle",
-            "label": "Varukoopiad kontrollitud",
-            "number": "100%"
-          },
-          {
-            "icon": "refresh",
-            "label": "Manuaalseid kontrolle pole",
-            "number": "Auto"
-          },
-          {
-            "icon": "clock",
-            "label": "Kontrollimise aeg",
-            "number": "<1min"
-          }
-        ],
         "techDiff": {
           "description": "Traditsioonilised varukoopiatööriistad kontrollivad, et failid kirjutati. Rediacc läheb kaugemale: kloonib varukoopia, käivitab iga konteineri, käivitab tervisekontrolle iga teenuse vastu ja raporteerib läbitud/ebaõnnestunud. Mitte faili kontrollsumma - täielik taastetest.",
           "overline": "KAPOTI ALL",
@@ -4404,7 +4343,7 @@
         "blurb": "Testa turvalisust pidevalt, mitte aastase intervalliga",
         "bottomCta": {
           "command": "rdc backup restore production --as production-verify -m primary --up",
-          "ctaText": "Alusta tasuta",
+          "primaryCta": "Alusta tasuta",
           "description": "Alustage tasuta Community väljaandega. Planeerige esimene pidev pentest 30 sekundiga.",
           "title": "Sulgege aken, millele ründajad loodavad"
         },
@@ -4607,6 +4546,8 @@
         "techDiff": {
           "description": "Iga ajakava järgi käivitatud skaneerimine loob värske btrfs copy-on-write hetktõmmise teie tootmisinfrastruktuurist, käivitab selle vastu täieliku tehisintellekti pentesti komplekti, genereerib prioritiseeritud aruande koos trendianalüüsiga ja hävitab klooni. Lavastuskeskkonda pole vaja hallata. Kaldumist pole. Vananenud andmeid pole. Iga skaneerimine testib seda, mis tegelikult tootmises praegu töötab.",
           "overline": "KAPOTI ALL",
+          "traditionalLabel": "Planeeritud iga-aastane testimine",
+          "rediaccLabel": "Rediacc (pidev)",
           "rows": [
             {
               "rediacc": "Iga päev, igal nädalal või igal juurutamisel",
@@ -4661,7 +4602,7 @@
         "blurb": "Teie serverid, teie võtmed, teie jurisdiktsioon.",
         "bottomCta": {
           "command": "rdc config show",
-          "ctaText": "Alusta tasuta Community väljaandega",
+          "primaryCta": "Alusta tasuta Community väljaandega",
           "description": "Alustage tasuta Community väljaandega. Käivitage oma esimene võtmehalduse audit alla minuti jooksul.",
           "title": "Lõpetage oma andmete rentimise USA jurisdiktsiooni all olevalt teenusepakkujalt."
         },
@@ -4969,6 +4910,8 @@
         "techDiff": {
           "description": "USA jurisdiktsiooni all olev teenusepakkuja saab teie andmeid hoida Frankfurdis ja USA kohtud saavad siiski kohustada neid andmeid avaldama. Rediacc-i arhitektuur eemaldab sunnivektori täielikult: pole võtmeid, mida üle anda, ja pole call-home kanalit, mida pealt kuulata.",
           "overline": "KAPOTI ALL",
+          "traditionalLabel": "USA-omanduses pakkuja",
+          "rediaccLabel": "Rediacc (pole võtmeid üle anda)",
           "rows": [
             {
               "rediacc": "Operaator asutatud Eestis; USA emaettevõte puudub, CLOUD Act-i sunnipind puudub",
@@ -5010,31 +4953,10 @@
         "title": "Aeg on piiratud?"
       },
       "encryption": {
-        "benefits": {
-          "items": [
-            {
-              "description": "Teie genereerite need. Teie hoiate neid oma infrastruktuuris. Jagatud võtmehoidlaid pole, tarnijajuurdepääsu pole, usalduse eeldusi pole.",
-              "icon": "lock",
-              "title": "Ainult teie võtmed"
-            },
-            {
-              "description": "Seostatud andmetega autentitud krüpteerimine. Mitte ainult krüpteeritud — terviklikkus on kontrollitud iga lugemise korral. Rikkumiskindel disainilt.",
-              "icon": "shield",
-              "title": "AES-256-GCM krüpteerimine"
-            },
-            {
-              "description": "Rediacc ei näe kunagi teie selgeteksti. Ei puutu kunagi teie võtit. Isegi kui meie koodibaasiline oleks ohustatud, pole midagi varastada.",
-              "icon": "eye-off",
-              "title": "Nullteadlikkuse arhitektuur"
-            }
-          ],
-          "overline": "MIKS SEE OLULINE ON",
-          "title": "Mida saate"
-        },
         "blurb": "Teie võtmed. Teie krüpteerimine. Ilma eranditeta.",
         "bottomCta": {
           "command": "rdc repo up production",
-          "ctaText": "Alusta tasuta Community versiooniga",
+          "primaryCta": "Alusta tasuta Community versiooniga",
           "description": "Alustage tasuta Community versiooniga. Genereerige oma esimene võti alla minuti jooksul.",
           "title": "Omage oma krüpteerimisvõtmeid"
         },
@@ -5219,33 +5141,6 @@
               "text": "organisatsioonidest kasutab 5+ võtmehaldussüsteemi, luues krüpteerimise pimedaid laike"
             }
           ],
-          "timeline": {
-            "newLabel": "REDIACC-IGA",
-            "newSteps": ["Teie võti", "AES-256", "Nullteadlikkus"],
-            "oldLabel": "VANA VIIS",
-            "oldSteps": [
-              {
-                "day": "Seadistamine",
-                "text": "Laadimine tarnijasse"
-              },
-              {
-                "day": "Usaldus",
-                "text": "Tarnija hoiab võtmeid"
-              },
-              {
-                "day": "Päev N",
-                "text": "Tarnija on ründe all"
-              },
-              {
-                "day": "Päev N+1",
-                "text": "Võtmed on ohustatud"
-              },
-              {
-                "day": "Tulemus",
-                "text": "Teie andmed on paljastatud"
-              }
-            ]
-          },
           "title": "Tarnija hallatavad võtmed ei kuulu tegelikult teile"
         },
         "references": {
@@ -5352,26 +5247,11 @@
           },
           "quote": "Meie tervishoiukliendid nõuavad HIPAA-nõuetele vastavat andmesuveräänsust — krüpteerimisvõtmed ei tohi kunagi meie infrastruktuurist lahkuda. Hindasime kõiki suuremaid varukoopiatarnijaid ja Rediacc oli ainus, kus peame tõesti ainsat võtit. SOC 2 auditi ajal palus audiitor kinnitada võtme väärtpaberiühist. Käivitasin ühe käsu ja näitasin, et võti on meie HSM-il, mitte ühelgi tarnijasüsteemil. Auditi tulemus: null lünka võtmehalduses."
         },
-        "stats": [
-          {
-            "icon": "shield",
-            "label": "Krüpteerimisstandard",
-            "number": "AES-256"
-          },
-          {
-            "icon": "key",
-            "label": "Võtme omanik",
-            "number": "Teie"
-          },
-          {
-            "icon": "lock",
-            "label": "Krüpteeritud puhkeolekus ja transiidil",
-            "number": "Alati"
-          }
-        ],
         "techDiff": {
           "description": "Tarnijahaldusega krüpteerimine tähendab, et tarnija hoiab võtmeid. Nad saavad teie andmeid dekrüpteerida. Nende töötajatel on juurdepääs. Nendepoolne turvarikkumine paljastab kõik. Rediacc kasutab kliendi omavõtmeid nullteadlikkuse arhitektuuriga — me ei näe kunagi teie selgeteksti ega teie võtit.",
           "overline": "KAPOTI ALL",
+          "traditionalLabel": "Võtmed tarnija käes",
+          "rediaccLabel": "Rediacc (võtmed kliendi käes)",
           "rows": [
             {
               "rediacc": "Kliendi omavõtmed — ainult teie saate dekrüpteerida",
@@ -5386,7 +5266,7 @@
               "traditional": "Tarnijapoolne turvarikkumine paljastab kõik krüpteeritud andmed"
             },
             {
-              "rediacc": "Iseteeninduslik võtme rotatsioon CLI kaudu — ilma sõltuvusteta",
+              "rediacc": "Iseteeninduslik võtme rotatsioon CLI kaudu — ilma sõltuvusteta. Iga lugemine kontrollitakse üle, seega rikkumine tuleb kohe ilmsiks.",
               "traditional": "Võtme rotatsioon nõuab tarnija kaasamist"
             }
           ],
@@ -6109,27 +5989,6 @@
         }
       },
       "immutableBackups": {
-        "benefits": {
-          "items": [
-            {
-              "description": "Varukoopiad ei ole muudetavad, kustutavad ega krüpteeritavad kellegi poolt — ei häkkerite, kompromiteeritud administraatorite ega root-juurdepääsuga lunavara poolt.",
-              "icon": "lock",
-              "title": "Kirjuta kord, loe igavesti"
-            },
-            {
-              "description": "Isegi kompromiteeritud administraatorkontod ei saa suletud varukoopiad muuta. Automatiseeritud igapäevane kontrollimine käivitatakse teie CI-torujuhtmes — ebaõnnestus? Saate hoiatuse enne, kui see loeb.",
-              "icon": "eye-off",
-              "title": "Usaldust pole vaja"
-            },
-            {
-              "description": "Iga varukoopia taastatakse ajutisesse klooni ja kontrollitakse automaatselt tervisekontrollidega. Mitte \"varukoopia lõpetatud\" — tegelikult kontrollitud, iga päev.",
-              "icon": "check-circle",
-              "title": "Kohene kontrollimine"
-            }
-          ],
-          "overline": "MIKS SEE OLULINE ON",
-          "title": "Mida saate"
-        },
         "blurb": "Varukoopiad, mida lunavara ei puutu",
         "bottomCta": {
           "command": "rdc repo push production --to backup-vault",
@@ -6319,33 +6178,6 @@
               "text": "keskmine taastumisaeg"
             }
           ],
-          "timeline": {
-            "newLabel": "Rediacc-iga",
-            "newSteps": ["Varukoopia", "Suletud", "Kontrollitud"],
-            "oldLabel": "Vana viis",
-            "oldSteps": [
-              {
-                "day": "Päev 1",
-                "text": "Plaani varukoopia"
-              },
-              {
-                "day": "Päev 2",
-                "text": "Varukoopia käivitatakse"
-              },
-              {
-                "day": "Päev 7",
-                "text": "Looda, et see on puhas"
-              },
-              {
-                "day": "Päev 14",
-                "text": "Lunavara tabab"
-              },
-              {
-                "day": "Päev 15",
-                "text": "Varukoopia on ka krüpteeritud"
-              }
-            ]
-          },
           "title": "Lunavara sihib kõigepealt teie varukoopiad"
         },
         "references": {
@@ -6456,23 +6288,6 @@
           },
           "quote": "Meid tabas lunavara kell 3:17 hommikul laupäeval. Ründajad krüpteerisid 14 serverit, sealhulgas meie varukoopia hoidla — või nii nad arvasid. Rediacc muutumatud hetktõmmised olid puutumata. Kell 3:24 olid kõik 14 serverit taastatud suletud varukoopiatest. Kokku andmekadu: null baiti. Kokku makstud lunaraha: null dollarit."
         },
-        "stats": [
-          {
-            "icon": "shield",
-            "label": "Faile muudetud pärast varundamist",
-            "number": "0"
-          },
-          {
-            "icon": "check-circle",
-            "label": "Muutumatu vaikimisi",
-            "number": "100%"
-          },
-          {
-            "icon": "clock",
-            "label": "Täieliku varundamise aeg",
-            "number": "<60s"
-          }
-        ],
         "techDiff": {
           "description": "Rediacc kasutab btrfs kirjutuskaitstud hetktõmmiseid failisüsteemi tasandil. Kui hetktõmmis on suletud, takistab kernel ise muutmist — mitte tarkvara lukud, mida pahavara saab mööda minna, vaid failisüsteemi tasandi muutumatus. Isegi root-juurdepääsuga ei suuda lunavara suletud btrfs hetktõmmist krüpteerida, muuta ega kustutada.",
           "overline": "KAPOTI ALL",
@@ -6500,27 +6315,6 @@
         }
       },
       "infrastructureCosts": {
-        "benefits": {
-          "items": [
-            {
-              "description": "Jõudeolekus servereid pole. Kloonid jagavad salvestust CoW kaudu. Käivita 10 klooni mõne GB delta hinnaga.",
-              "icon": "dollar",
-              "title": "Maksa selle eest, mida kasutad"
-            },
-            {
-              "description": "Seadista TTL klooni kohta (1h, 4h, 8h). Keskkonnad hävitatakse automaatselt. Unustatud serverid ei põleta eelarveid kuude kaupa.",
-              "icon": "clock",
-              "title": "Automaatne puhastamine"
-            },
-            {
-              "description": "Käivita 50 keskkonda koormustestiks, hävita need kõik pärast. Mahutähtsust pole vaja planeerida. Hanget pole vaja.",
-              "icon": "person-plus",
-              "title": "Skaleeri vabalt"
-            }
-          ],
-          "overline": "MIKS SEE OLULINE ON",
-          "title": "Mida saate"
-        },
         "blurb": "Lõpeta maksmast jõudeolekus keskkondade eest",
         "bottomCta": {
           "command": "rdc repo fork production --tag dev-loadtest",
@@ -6705,33 +6499,6 @@
               "text": "arendaja kohta aastas kaotatud keskkondade ettevalmistamise ja kontekstivahetuse tõttu"
             }
           ],
-          "timeline": {
-            "newLabel": "REDIACC-IGA",
-            "newSteps": ["Käivita", "$0 jõude", "Autopuhastus"],
-            "oldLabel": "ALATI-TÖÖTAVAD KESKKONNAD",
-            "oldSteps": [
-              {
-                "day": "24/7",
-                "text": "15 serverit töötab"
-              },
-              {
-                "day": "Öösel",
-                "text": "Jõude, maksad ikka"
-              },
-              {
-                "day": "Nädalavahetusel",
-                "text": "Jõude, maksad ikka"
-              },
-              {
-                "day": "Pühadel",
-                "text": "Jõude, maksad ikka"
-              },
-              {
-                "day": "Tulemus",
-                "text": "67% raiskamist"
-              }
-            ]
-          },
           "title": "Alati-töötavad keskkonnad põletavad raha"
         },
         "references": {
@@ -6786,23 +6553,6 @@
           },
           "quote": "Meie igakuine infrastruktuuriarve langes $4 500-lt $1 440-le pärast nõudmisel kloonidele üleminekut. Meil oli 15 alati-töötavat arenduskeskkonda 30% kasutusega. Nüüd käivitame need vastavalt vajadusele ja hävitatakse automaatselt 4 tunni pärast. $36K aastane sääst rahastab kahe noorema arendaja palga."
         },
-        "stats": [
-          {
-            "icon": "trend-up",
-            "label": "Kulude vähenemine",
-            "number": "70%"
-          },
-          {
-            "icon": "zap",
-            "label": "Alati-töötava raiskamist pole",
-            "number": "Nõudmisel"
-          },
-          {
-            "icon": "clock",
-            "label": "Puhastamine ja TTL",
-            "number": "Auto"
-          }
-        ],
         "techDiff": {
           "description": "Traditsioonilised arenduskeskkonnad dubleerivad terveid servereid — iga bait andmeid, iga konfiguratsioonifail, iga teek. Rediacc kasutab btrfs copy-on-write: kloonid jagavad muutumatuid plokke tootmisega, kasutades ainult 1% lisaruumi 380 GB keskkonna jaoks.",
           "overline": "KAPOTI ALL",
@@ -7195,27 +6945,6 @@
         }
       },
       "integrations": {
-        "benefits": {
-          "items": [
-            {
-              "description": "Push käivitab keskkonnad. Töötab GitLab CI, GitHub Actions, Gitea või mis tahes webhook-võimelise süsteemiga.",
-              "icon": "git-branch",
-              "title": "Natiivne Git-integratsioon"
-            },
-            {
-              "description": "Testid töötavad päris tootmisandmete ja -konfiguratsioonide vastu. Ei rohkem üllatusi \"testid läbitud, tootmine kukub\".",
-              "icon": "monitor",
-              "title": "Tootmiskloonid CI-s"
-            },
-            {
-              "description": "Pole kohandatud skripte, mida hooldada, uuendada või siluda. Ei rohkem öist väljakutsumist, kuna CI seadistamine läks katki.",
-              "icon": "check-circle",
-              "title": "Nullhooldus"
-            }
-          ],
-          "overline": "MIKS SEE ON OLULINE",
-          "title": "Mida saate"
-        },
         "blurb": "Ühenda oma olemasoleva töövooguga",
         "bottomCta": {
           "command": "rdc repo fork production --tag ci-build",
@@ -7374,33 +7103,6 @@
               "text": "arendajate ebaefektiivsuse kulu 500 arendaja kohta"
             }
           ],
-          "timeline": {
-            "newLabel": "REDIACCIGA",
-            "newSteps": ["git push", "Automaatne", "Pärisandmed"],
-            "oldLabel": "KOHANDATUD CI SKRIPTID",
-            "oldSteps": [
-              {
-                "day": "Samm 1",
-                "text": "Kirjuta bash-skriptid"
-              },
-              {
-                "day": "Samm 2",
-                "text": "Seadista VM-id"
-              },
-              {
-                "day": "Samm 3",
-                "text": "Sisesta testiaimed"
-              },
-              {
-                "day": "Igakuiselt",
-                "text": "Siluge katkist CI-d"
-              },
-              {
-                "day": "Tulemus",
-                "text": "Testid läbitud, tootmine kukub"
-              }
-            ]
-          },
           "title": "Kohandatud CI/CD skriptid lähevad katki ja keegi ei hooldа neid"
         },
         "references": {
@@ -7467,23 +7169,6 @@
           },
           "quote": "Kustutasime 400 rida CI seadistusskripte ja asendasime need ühe webhook-konfiguratsioonireaga. Meie torujuhe läks 22-minutilistest seadistustest sünteetiliste andmetega 52-sekundilistele tootmiskloonidele. Kolm kuud hiljem pole meil ühtegi CI-ga seotud intsidenti olnud. Enne Rediacci oli neid neli kuus."
         },
-        "stats": [
-          {
-            "icon": "terminal",
-            "label": "Seadistus integreerimiseks",
-            "number": "1 rida"
-          },
-          {
-            "icon": "git-branch",
-            "label": "Natiivne integratsioon",
-            "number": "Git"
-          },
-          {
-            "icon": "x",
-            "label": "Kohandatud skripte vaja",
-            "number": "0"
-          }
-        ],
         "techDiff": {
           "description": "Traditsiooniline CI/CD seadistab tühjad konteinerid ja täidab need sünteetiliste andmetega. Rediacc integreerib infrastruktuuri tasemel - iga push saab täieliku tootmisklooni pärisandmete, pärisconfiguratsioonide ja päristeenustega.",
           "overline": "KAPOTI ALL",
@@ -7535,7 +7220,7 @@
         "blurb": "Kloonida või teisaldada töötava klastri andmed kaasas",
         "bottomCta": {
           "command": "rdc cluster fork prod --tag staging",
-          "ctaText": "Alusta tasuta prooviga",
+          "primaryCta": "Alusta tasuta prooviga",
           "description": "Kloonita, testi üleminekut, siis migreeri päriselt. Käivita 14-päevane tasuta prooviaeg.",
           "title": "Anna klastrile väljapääs"
         },
@@ -7786,6 +7471,8 @@
         "techDiff": {
           "description": "Iga sõlm töötab btrfs-il asuvast tõmmisfailist. Iga maht on Ceph RBD tõmmis. Klastri kopeerimine tähendab nende tõmmiste kloonimist, copy-on-write põhimõttel. Ei mingit eksporti, teisendust ega taastamissammu. Sellepärast võtab fork aega sekundeid, mitte kuid.",
           "overline": "KAPOTI ALL",
+          "traditionalLabel": "Varundus- ja taastemigratsioon",
+          "rediaccLabel": "Rediacc (copy-on-write kloon)",
           "rows": [
             {
               "rediacc": "Sõlmede tõmmised ja mahud liiguvad ühe komplektina",
@@ -8517,31 +8204,10 @@
         }
       },
       "rapidRecovery": {
-        "benefits": {
-          "items": [
-            {
-              "description": "Täieliku keskkonna taastamine alla 5 minutiga. Iga konteineri, iga andmebaasi, iga konfiguratsioonifail - taastatud muutumatust hetktõmmisest.",
-              "icon": "zap",
-              "title": "Minutid, mitte päevad"
-            },
-            {
-              "description": "Kerige tagasi täpsele minutile enne rünnakut. Pidevad hetktõmmised tähendavad, et valite taastepunkti teie, mitte ründaja.",
-              "icon": "clock",
-              "title": "Ajahetke täpsus"
-            },
-            {
-              "description": "Pidevad hetktõmmised tähendavad, et midagi ei jää piludesse. Automaatne igapäevane tõendamine CI torujuhtmes kinnitab, et iga varukoopia taastatakse puhtalt.",
-              "icon": "check-circle",
-              "title": "Null andmekadu"
-            }
-          ],
-          "overline": "MIKS SEE ON OLULINE",
-          "title": "Mida saate"
-        },
         "blurb": "Taasta minutitega, mitte päevadega",
         "bottomCta": {
           "command": "rdc repo pull production --from backup-vault --force",
-          "ctaText": "Alusta tasuta Community-ga",
+          "primaryCta": "Alusta tasuta Community-ga",
           "description": "Alusta tasuta Community versiooniga. Kaitse kuni 10 töökoormust tasuta. Krediitkaarti ei nõuta.",
           "title": "Ära lase taastamisel olla aeglasem kui rünnak"
         },
@@ -8722,33 +8388,6 @@
               "text": "maksnutest tabatakse uuesti"
             }
           ],
-          "timeline": {
-            "newLabel": "REDIACCIGA",
-            "newSteps": ["Tuvasta", "<5 min", "Võrgus"],
-            "oldLabel": "VANA VIIS",
-            "oldSteps": [
-              {
-                "day": "Tund 1",
-                "text": "Avasta rünnak"
-              },
-              {
-                "day": "Päev 1",
-                "text": "Hinda kahju"
-              },
-              {
-                "day": "Päev 3",
-                "text": "Ehita serverid uuesti"
-              },
-              {
-                "day": "Päev 5",
-                "text": "Taasta andmed"
-              },
-              {
-                "day": "Päev 7+",
-                "text": "Ikka järele jõudmas"
-              }
-            ]
-          },
           "title": "Aeglane taastamine maksab rohkem kui rünnak ise"
         },
         "references": {
@@ -8843,26 +8482,11 @@
           },
           "quote": "Läksime 3-päevaselt taastamisplaanilt alla 4 minuti peale. Tegeliku lunavararünnaku ajal kell 2 öösel käivitas valveinseneer ühe käsu ja kõik 8 tootmiskonteinerit olid võrgus kell 2:04. Meie eelmise tarnija hinnang oli 72 tundi - tegime selle 240 sekundiga."
         },
-        "stats": [
-          {
-            "icon": "clock",
-            "label": "Keskmine taastamisaeg",
-            "number": "<5min"
-          },
-          {
-            "icon": "check-circle",
-            "label": "Taastamise õnnestumismäär",
-            "number": "99,9%"
-          },
-          {
-            "icon": "shield",
-            "label": "Andmekao intsidente",
-            "number": "0"
-          }
-        ],
         "techDiff": {
           "description": "Traditsiooniline taastamine ehitab nullist - installi OS uuesti, taasta failid, konfigureeri teenused uuesti. Rediacc taastab btrfs-hetktõmmistest: failisüsteem lülitub lihtsalt salvestatud olekule. Uuesti installimist pole, uuesti konfigureerimist pole, andmeedastust pole. Hetktõmmis on juba kettal - see lihtsalt muutub aktiivseks.",
           "overline": "KAPOTI ALL",
+          "traditionalLabel": "Traditsiooniline taasülesehitus",
+          "rediaccLabel": "Rediacc (hetkelised btrfs-koopiad)",
           "rows": [
             {
               "rediacc": "Hetktõmmis on juba kettal: lülita aktiivne alammaht sekunditega",
@@ -8877,7 +8501,7 @@
               "traditional": "Konfigureeri võrgustik, teenused, SSL uuesti: käsitsi, veaohtlik"
             },
             {
-              "rediacc": "Automaatne tervisekontroll pärast taastamist: 8/8 teenust tõendatult töötab",
+              "rediacc": "Automaatne tervisekontroll pärast taastamist: 8/8 teenust tõendatult töötab. Hetktõmmis säilitab tõendid, kuni taastamine käib.",
               "traditional": "Tõenda käsitsi pärast taastamist: looda, et midagi ei jäänud vahele"
             }
           ],
@@ -8885,27 +8509,6 @@
         }
       },
       "retentionCompliance": {
-        "benefits": {
-          "items": [
-            {
-              "description": "Määrake säilitusreeglid üks kord. Rediacc täidab neid igavesti. Vanad varukoopiad puhastatakse automaatselt - ei mingeid cron-töid, ei mingeid skripte.",
-              "icon": "clock",
-              "title": "Seadista ja unusta"
-            },
-            {
-              "description": "Loodud HIPAA, SOC2 ja GDPR nõuete jaoks. Auditilogi eksporditav teie SIEM-i. Tõmmake vastavusaruanne sekunditega.",
-              "icon": "shield",
-              "title": "Vastavusvalmidus"
-            },
-            {
-              "description": "Iga varukoopia loomine, kontrollimine ja kustutamine logitakse ajatemplitega. Iga säilitusaruanne on vaikimisi auditivalmisolekus.",
-              "icon": "clipboard-check",
-              "title": "Täielik auditijälg"
-            }
-          ],
-          "overline": "MIKS SEE OLULINE ON",
-          "title": "Mida te saate"
-        },
         "blurb": "Hoidke andmeid nii kaua, kui seadus nõuab",
         "bottomCta": {
           "command": "rdc config backup-strategy set --cron '0 2 * * *'",
@@ -9096,33 +8699,6 @@
               "text": "GDPR trahve Euroopas ainuüksi 2024. aastal"
             }
           ],
-          "timeline": {
-            "newLabel": "Rediacciga",
-            "newSteps": ["Poliitika seadmine", "Automaatne", "Auditivalmisolekus"],
-            "oldLabel": "Vana viis",
-            "oldSteps": [
-              {
-                "day": "1. kuu",
-                "text": "Säilituspoliitika kirjutamine"
-              },
-              {
-                "day": "3. kuu",
-                "text": "Käsitsi puhastamine"
-              },
-              {
-                "day": "6. kuu",
-                "text": "Osa andmeid jäi puhastatama"
-              },
-              {
-                "day": "9. kuu",
-                "text": "Audititeade saabub"
-              },
-              {
-                "day": "10. kuu",
-                "text": "Kiirelt tõendite otsimine"
-              }
-            ]
-          },
           "title": "Vastavusrikkumised on kulukad"
         },
         "references": {
@@ -9233,23 +8809,6 @@
           },
           "quote": "Meie SOC2 audiitor nõudis 3 aasta varukoopiasäilitamise tõendust. Varem tähendas see 2 nädalat logide läbikaevamist ja tabelarvutuste ristkontrolli. Rediacciga käivitasin rdc retention report --framework soc2 ja andsin üle täieliku aruande 4 minutiga. Audiitor ütles, et see oli kõige korrektsem tõendus, mida nad olid näinud."
         },
-        "stats": [
-          {
-            "icon": "clock",
-            "label": "Maksimaalne säilitusperiood",
-            "number": "7+ aastat"
-          },
-          {
-            "icon": "clipboard-check",
-            "label": "Vastavusraamistikku",
-            "number": "3"
-          },
-          {
-            "icon": "check-circle",
-            "label": "Auditivalmisolekus",
-            "number": "100%"
-          }
-        ],
         "techDiff": {
           "description": "Traditsiooniline säilitushaldus tähendab varukoopiakuupäevade jälgimist tabelarvutustes, käsitsi puhastamisskriptide käivitamist ja lootmist, et midagi pole enne audiitorit jäänud kahe silma vahele. Rediacc kasutab btrfs-i snapshotide elutsüklihaldust koos automatiseeritud poliitikajõustamisega - varukoopiad säilitatakse, kontrollitakse ja puhastatakse ilma inimese sekkumiseta.",
           "overline": "KAPOTI ALL",
@@ -9660,7 +9219,7 @@
         "blurb": "Teie taristu. Teie valik. Alati.",
         "bottomCta": {
           "command": "rdc repo push production --to new-provider --checkpoint",
-          "ctaText": "Alusta tasuta Community-ga",
+          "primaryCta": "Alusta tasuta Community-ga",
           "description": "Alustage tasuta Community väljaandega. Paigaldage kuhu tahes. Migreerige millal tahes. Krediitkaarti ei nõuta.",
           "title": "Võtke oma taristu juhtimine tagasi"
         },
@@ -9959,6 +9518,8 @@
         "techDiff": {
           "description": "Rediacc salvestab kõik andmed standardsetesse btrfs alamköidetesse - esialgseid vorminguid pole, tarnija-spetsiifilist agenti pole. Migratsioon kasutab btrfs send/receive inkrementaalse snapshot ülekandmiseks mis tahes Linuxi masinasse. 420 GB keskkond, mille viimase sünkimise ajast on muutunud 3,8 GB, kannab üle 3,8 GB - mitte 420 GB.",
           "overline": "KAPOTI ALL",
+          "traditionalLabel": "Patenteeritud vormingu lukustus",
+          "rediaccLabel": "Rediacc (standardne Linuxi salvestus)",
           "rows": [
             {
               "rediacc": "Üks käsk: snapshot, ülekanne, kontroll, DNS-i vahetus - alla 1 tunni",
@@ -10714,11 +10275,6 @@
         "title": "Sisukord"
       }
     }
-  },
-  "pricingPreview": {
-    "compareAll": "Võrdle kõiki plaane ja funktsioone",
-    "subtitle": "Tasuta algus. Kasva, kui valmis.",
-    "title": "Selge hinnakujundus. Üllatusi pole."
   },
   "regionPicker": {
     "footer": "Vali endale lähim piirkond või see, mida sinu organisatsioon nõuab.",

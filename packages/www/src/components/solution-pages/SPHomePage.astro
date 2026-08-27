@@ -22,6 +22,14 @@
  *   - `metrics-bar` deleted. All four of its numbers were already prose in
  *     `home-difference` 2,200px above it, and one of them ("241 GB in under
  *     60 seconds") flatly contradicted the hero's "3.2 TB in 4.7s".
+ *   - `pricing-preview` deleted, with its `PricingPreview.astro` component and
+ *     its 3-leaf `pricingPreview.*` i18n namespace. It was a second copy of
+ *     `/[lang]/pricing`: the same `buildPlans()` cards, the same billing
+ *     toggle, the same tax note, ending in a "compare all plans" link to the
+ *     real page. The header nav links `/[lang]/pricing` directly, so the
+ *     route was never reachable only through here. The three `#pricing`
+ *     fragment links that pointed at this section (footer, refund policy, the
+ *     `ceo` persona CTA) now point at `/[lang]/pricing` itself.
  *
  * The five 12-line `SPHome*` pass-through wrappers are gone with them. They
  * forwarded `lang` and nothing else, and one of them renamed `HomeDifference`
@@ -41,7 +49,6 @@ import SPHomeHero from './SPHomeHero.astro';
 import SolutionConstellation from './SolutionConstellation.astro';
 import SPHomeNotASlice from './SPHomeNotASlice.astro';
 import HomeDifference from '../HomeDifference.astro';
-import PricingPreview from '../PricingPreview.astro';
 import SPHomeBottomCta from './SPHomeBottomCta.astro';
 
 interface Props {
@@ -60,6 +67,5 @@ const { t } = createTranslator(lang);
   <SolutionConstellation lang={lang} id="solutions" preset="full" heading={t('solutions.title')} />
   <SPHomeNotASlice lang={lang} />
   <HomeDifference lang={lang} />
-  <PricingPreview lang={lang} />
   <SPHomeBottomCta lang={lang} />
 </div>

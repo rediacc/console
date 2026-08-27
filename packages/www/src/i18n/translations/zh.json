@@ -3019,7 +3019,7 @@
         "blurb": "克隆生产环境，让 AI 发起攻击。",
         "bottomCta": {
           "command": "rdc repo fork production --tag pentest",
-          "ctaText": "免费开始",
+          "primaryCta": "免费开始",
           "description": "从免费的社区版开始。60 秒内运行你的第一次渗透测试。",
           "title": "在攻击者之前发现漏洞"
         },
@@ -3227,6 +3227,8 @@
         "techDiff": {
           "description": "传统渗透测试针对的是在创建几天内就与生产环境偏差的预发布环境。Rediacc 创建实际生产基础设施的 btrfs 写时复制快照——相同的数据、相同的配置、相同的漏洞——并对其运行自动化攻击模拟。测试后克隆被销毁。生产环境永远不会被触及。",
           "overline": "底层技术",
+          "traditionalLabel": "传统渗透测试",
+          "rediaccLabel": "Rediacc（攻击生产克隆）",
           "rows": [
             {
               "rediacc": "生产克隆（数秒前创建，100% 匹配）",
@@ -3281,7 +3283,7 @@
         "blurb": "每项操作都有记录，无任何隐藏。",
         "bottomCta": {
           "command": "rdc repo status production",
-          "ctaText": "免费开始使用社区版",
+          "primaryCta": "免费开始使用社区版",
           "description": "从免费的社区版开始。一分钟内生成你的第一份审计报告。",
           "title": "看到一切，遗漏为零。"
         },
@@ -3587,6 +3589,8 @@
         "techDiff": {
           "description": "应用日志用于调试——它们是可变的、不完整的，分散在各个系统中。Rediacc 的审计追踪专为合规设计：每项操作都经过加密签名、按时间链式记录，并可导出为单一报告。",
           "overline": "底层技术",
+          "traditionalLabel": "可变的应用日志",
+          "rediaccLabel": "Rediacc 审计日志",
           "rows": [
             {
               "rediacc": "加密签名——内建篡改检测",
@@ -3609,27 +3613,6 @@
         }
       },
       "backupVerification": {
-        "benefits": {
-          "items": [
-            {
-              "description": "每个备份在您需要之前就已被克隆、启动并进行健康检查。损坏在 24 小时内发现，而非在危机中。",
-              "icon": "check-circle",
-              "title": "零意外"
-            },
-            {
-              "description": "无需手动测试。无需脚本。备份验证在您的 CI 流水线中运行。失败了？在问题变严重之前您就会收到告警。",
-              "icon": "shield",
-              "title": "自动完整性检查"
-            },
-            {
-              "description": "PagerDuty、Slack 或电子邮件——备份验证失败的那一刻。无需检查仪表板，无需定期抽查。",
-              "icon": "bell",
-              "title": "即时告警"
-            }
-          ],
-          "overline": "重要意义",
-          "title": "您将获得什么"
-        },
         "blurb": "每次备份自动验证",
         "bottomCta": {
           "command": "rdc backup verify my-app",
@@ -3819,33 +3802,6 @@
               "text": "每条受损记录的平均成本"
             }
           ],
-          "timeline": {
-            "newLabel": "使用 Rediacc",
-            "newSteps": ["备份", "47s", "已验证"],
-            "oldLabel": "传统方式",
-            "oldSteps": [
-              {
-                "day": "第 1 天",
-                "text": "运行备份"
-              },
-              {
-                "day": "第 2-364 天",
-                "text": "相信\"已完成\""
-              },
-              {
-                "day": "第 365 天",
-                "text": "灾难来袭"
-              },
-              {
-                "day": "第 365 天",
-                "text": "尝试恢复"
-              },
-              {
-                "day": "第 365 天",
-                "text": "备份已损坏"
-              }
-            ]
-          },
           "title": "损坏的备份比没有备份更糟"
         },
         "references": {
@@ -3928,23 +3884,6 @@
           },
           "quote": "我们在第一周运行自动验证后发现了 3 个服务中的 12 个损坏备份——一个截断表的 MariaDB 导出、一个过期的 Nextcloud 配置、以及一个 6 个月前的 Redis 快照。没有 Rediacc，我们会在真正的灾难中才发现这些。现在每个备份在创建后 47 秒内就被验证。"
         },
-        "stats": [
-          {
-            "icon": "check-circle",
-            "label": "Backups Verified",
-            "number": "100%"
-          },
-          {
-            "icon": "refresh",
-            "label": "No Manual Checks",
-            "number": "Auto"
-          },
-          {
-            "icon": "clock",
-            "label": "Verification Time",
-            "number": "<1min"
-          }
-        ],
         "techDiff": {
           "description": "传统备份工具检查文件是否已写入。Rediacc 更进一步：它克隆备份、启动每个容器、对每个服务运行健康检查并报告通过/失败。不是文件校验和——而是完整的恢复测试。",
           "overline": "底层技术",
@@ -4356,7 +4295,7 @@
         "blurb": "持续测试安全性，而非每年一次",
         "bottomCta": {
           "command": "rdc backup restore production --as production-verify -m primary --up",
-          "ctaText": "免费开始",
+          "primaryCta": "免费开始",
           "description": "从免费的社区版开始。30 秒内安排你的第一次持续渗透测试。",
           "title": "关闭攻击者依赖的窗口"
         },
@@ -4559,6 +4498,8 @@
         "techDiff": {
           "description": "每次计划扫描都创建一个生产基础设施的全新 btrfs 写时复制快照，对其运行完整的 AI 渗透测试套件，生成带有趋势比较的优先级报告，然后销毁克隆。无需维护预发布环境。无偏差。无过时数据。每次扫描测试的是生产环境当前实际运行的内容。",
           "overline": "底层技术",
+          "traditionalLabel": "计划性年度测试",
+          "rediaccLabel": "Rediacc（持续）",
           "rows": [
             {
               "rediacc": "每日、每周或每次部署时",
@@ -4613,7 +4554,7 @@
         "blurb": "您的服务器，您的密钥，您的司法管辖。",
         "bottomCta": {
           "command": "rdc config show",
-          "ctaText": "免费开始使用社区版",
+          "primaryCta": "免费开始使用社区版",
           "description": "从免费社区版开始。一分钟内运行您的第一次密钥托管审计。",
           "title": "停止从美国司法管辖的提供商那里租用您自己的数据。"
         },
@@ -4917,6 +4858,8 @@
         "techDiff": {
           "description": "美国司法管辖的提供商可以将您的数据存储在法兰克福，仍然可能被美国法院强制要求披露。Rediacc的架构从根本上消除了强制向量：没有密钥可以交出，没有回传通道可以拦截。",
           "overline": "底层技术",
+          "traditionalLabel": "美资供应商",
+          "rediaccLabel": "Rediacc（无密钥可交出）",
           "rows": [
             {
               "rediacc": "运营商在爱沙尼亚注册，无美国母公司，无CLOUD Act强制面",
@@ -4958,31 +4901,10 @@
         "title": "时间有限？"
       },
       "encryption": {
-        "benefits": {
-          "items": [
-            {
-              "description": "由您生成，存储在您的基础设施上。没有共享密钥库，没有供应商访问，没有信任假设。",
-              "icon": "lock",
-              "title": "仅您持有密钥"
-            },
-            {
-              "description": "带关联数据的认证加密。不仅仅是加密——每次读取都进行完整性验证。设计上防篡改。",
-              "icon": "shield",
-              "title": "AES-256-GCM 加密"
-            },
-            {
-              "description": "Rediacc 永远看不到您的明文。永远不接触您的密钥。即使我们的代码库被入侵，也没有什么可窃取的。",
-              "icon": "eye-off",
-              "title": "零知识架构"
-            }
-          ],
-          "overline": "重要意义",
-          "title": "您将获得什么"
-        },
         "blurb": "您的密钥，您的加密，没有例外。",
         "bottomCta": {
           "command": "rdc repo up production",
-          "ctaText": "免费开始使用社区版",
+          "primaryCta": "免费开始使用社区版",
           "description": "从免费的社区版开始。一分钟内生成你的第一个密钥。",
           "title": "掌控你的加密"
         },
@@ -5167,33 +5089,6 @@
               "text": "的组织使用 5 个以上的密钥管理系统，导致加密盲区"
             }
           ],
-          "timeline": {
-            "newLabel": "使用 REDIACC",
-            "newSteps": ["您的密钥", "AES-256", "Zero-knowledge"],
-            "oldLabel": "传统方式",
-            "oldSteps": [
-              {
-                "day": "设置",
-                "text": "上传到供应商"
-              },
-              {
-                "day": "信任",
-                "text": "供应商持有密钥"
-              },
-              {
-                "day": "第 N 天",
-                "text": "供应商被攻破"
-              },
-              {
-                "day": "第 N+1 天",
-                "text": "密钥泄露"
-              },
-              {
-                "day": "结果",
-                "text": "您的数据暴露"
-              }
-            ]
-          },
           "title": "厂商管理的密钥并非真正属于你"
         },
         "references": {
@@ -5300,26 +5195,11 @@
           },
           "quote": "我们的医疗客户要求 HIPAA 合规的数据主权——加密密钥绝不能离开我们的基础设施。我们评估了每家主要备份厂商，Rediacc 是唯一一家我们真正持有唯一密钥的。在 SOC 2 审计期间，审计员要求验证密钥托管。我运行了一条命令，显示密钥在我们的 HSM 上，而不在任何厂商系统上。审计发现：密钥管理零差距。"
         },
-        "stats": [
-          {
-            "icon": "shield",
-            "label": "Encryption Standard",
-            "number": "AES-256"
-          },
-          {
-            "icon": "key",
-            "label": "Key Owner",
-            "number": "You"
-          },
-          {
-            "icon": "lock",
-            "label": "Encrypted at Rest & Transit",
-            "number": "始终"
-          }
-        ],
         "techDiff": {
           "description": "厂商管理加密意味着你的厂商持有密钥。他们可以解密你的数据。他们的员工可以访问它。他们端的泄露会暴露一切。Rediacc 使用客户持有密钥和零知识架构——我们永远看不到你的明文或你的密钥。",
           "overline": "底层技术",
+          "traditionalLabel": "供应商持有密钥",
+          "rediaccLabel": "Rediacc（客户持有密钥）",
           "rows": [
             {
               "rediacc": "客户持有密钥——只有您能解密",
@@ -5334,7 +5214,7 @@
               "traditional": "供应商泄露暴露所有加密数据"
             },
             {
-              "rediacc": "通过 CLI 自助密钥轮换——无依赖",
+              "rediacc": "通过 CLI 自助密钥轮换——无依赖。每次读取都会被验证，因此篡改会立即显现。",
               "traditional": "密钥轮换需要供应商参与"
             }
           ],
@@ -6057,27 +5937,6 @@
         }
       },
       "immutableBackups": {
-        "benefits": {
-          "items": [
-            {
-              "description": "备份无法被任何人修改、删除或加密——无论是黑客、被入侵的管理员，还是拥有 root 权限的勒索软件。",
-              "icon": "lock",
-              "title": "一次写入，永久读取"
-            },
-            {
-              "description": "即使管理员账户被入侵，也无法修改封存的备份。自动化每日验证在您的 CI 流水线中运行——失败？在问题变严重之前您就会收到告警。",
-              "icon": "eye-off",
-              "title": "无需信任"
-            },
-            {
-              "description": "每个备份都会自动恢复到临时克隆并进行健康检查。不是\"备份完成\"——而是每天实际验证。",
-              "icon": "check-circle",
-              "title": "即时验证"
-            }
-          ],
-          "overline": "重要意义",
-          "title": "您将获得什么"
-        },
         "blurb": "勒索软件无法触及的备份",
         "bottomCta": {
           "command": "rdc repo push production --to backup-vault",
@@ -6267,33 +6126,6 @@
               "text": "平均恢复时间"
             }
           ],
-          "timeline": {
-            "newLabel": "使用 Rediacc",
-            "newSteps": ["备份", "封存", "已验证"],
-            "oldLabel": "传统方式",
-            "oldSteps": [
-              {
-                "day": "第 1 天",
-                "text": "安排备份"
-              },
-              {
-                "day": "第 2 天",
-                "text": "备份运行"
-              },
-              {
-                "day": "第 7 天",
-                "text": "期望备份干净"
-              },
-              {
-                "day": "第 14 天",
-                "text": "勒索软件来袭"
-              },
-              {
-                "day": "第 15 天",
-                "text": "备份也被加密了"
-              }
-            ]
-          },
           "title": "勒索软件首先瞄准你的备份"
         },
         "references": {
@@ -6404,23 +6236,6 @@
           },
           "quote": "我们在一个周六凌晨 3:17 遭到勒索软件攻击。攻击者加密了 14 台服务器，包括我们的备份仓库——或者他们以为如此。Rediacc 的不可变快照完好无损。到凌晨 3:24，所有 14 台服务器都从封存备份中恢复。总数据损失：零字节。总支付赎金：零美元。"
         },
-        "stats": [
-          {
-            "icon": "shield",
-            "label": "Files Changed After Backup",
-            "number": "0"
-          },
-          {
-            "icon": "check-circle",
-            "label": "Immutable by Default",
-            "number": "100%"
-          },
-          {
-            "icon": "clock",
-            "label": "Full Backup Time",
-            "number": "<60s"
-          }
-        ],
         "techDiff": {
           "description": "Rediacc 使用 btrfs 只读快照在文件系统层面运行。一旦快照被封存，内核本身就会阻止修改——不是恶意软件可以绕过的软件锁，而是文件系统级别的不可变性。即使拥有 root 权限，勒索软件也无法加密、修改或删除封存的 btrfs 快照。",
           "overline": "底层技术",
@@ -6448,27 +6263,6 @@
         }
       },
       "infrastructureCosts": {
-        "benefits": {
-          "items": [
-            {
-              "description": "没有闲置服务器。克隆通过 CoW 共享存储。以几 GB 增量的成本启动 10 个克隆。",
-              "icon": "dollar",
-              "title": "按使用付费"
-            },
-            {
-              "description": "为每个克隆设置 TTL（1 小时、4 小时、8 小时）。环境自动销毁。不再有被遗忘的服务器持续烧钱数月。",
-              "icon": "clock",
-              "title": "自动清理"
-            },
-            {
-              "description": "为负载测试启动 50 个环境，测试完全部销毁。无需容量规划，无需采购。",
-              "icon": "person-plus",
-              "title": "自由扩展"
-            }
-          ],
-          "overline": "重要意义",
-          "title": "您将获得什么"
-        },
         "blurb": "不再为闲置环境付费",
         "bottomCta": {
           "command": "rdc repo fork production --tag dev-loadtest",
@@ -6653,33 +6447,6 @@
               "text": "每位开发者每年因环境部署和上下文切换造成的损失"
             }
           ],
-          "timeline": {
-            "newLabel": "使用 REDIACC",
-            "newSteps": ["启动", "$0 闲置", "自动清理"],
-            "oldLabel": "始终在线的环境",
-            "oldSteps": [
-              {
-                "day": "24/7",
-                "text": "15 台服务器运行中"
-              },
-              {
-                "day": "夜间",
-                "text": "闲置，仍在付费"
-              },
-              {
-                "day": "周末",
-                "text": "闲置，仍在付费"
-              },
-              {
-                "day": "假期",
-                "text": "闲置，仍在付费"
-              },
-              {
-                "day": "结果",
-                "text": "67% 浪费"
-              }
-            ]
-          },
           "title": "始终在线的环境在烧钱"
         },
         "references": {
@@ -6734,23 +6501,6 @@
           },
           "quote": "我们的月度基础设施账单在切换到按需克隆后从 $4,500 降至 $1,440。我们之前有 15 个始终在线的开发环境，利用率仅 30%。现在我们按需启动，4 小时后自动销毁。$36K 的年度节省足以支付两名初级开发人员的薪资。"
         },
-        "stats": [
-          {
-            "icon": "trend-up",
-            "label": "Cost reduction",
-            "number": "70%"
-          },
-          {
-            "icon": "zap",
-            "label": "No always-on waste",
-            "number": "按需"
-          },
-          {
-            "icon": "clock",
-            "label": "Cleanup & TTL",
-            "number": "Auto"
-          }
-        ],
         "techDiff": {
           "description": "传统开发环境复制整个服务器——每个字节的数据、每个配置文件、每个库。Rediacc 使用 btrfs 写时复制：克隆与生产环境共享未更改的数据块，380 GB 环境仅使用 1% 的额外存储。",
           "overline": "底层技术",
@@ -7143,27 +6893,6 @@
         }
       },
       "integrations": {
-        "benefits": {
-          "items": [
-            {
-              "description": "推送即触发环境。适用于 GitLab CI、GitHub Actions、Gitea 或任何支持 webhook 的系统。",
-              "icon": "git-branch",
-              "title": "原生 Git 集成"
-            },
-            {
-              "description": "测试在真实生产数据和配置上运行。不再有\"测试通过，生产失败\"的意外。",
-              "icon": "monitor",
-              "title": "CI 中的生产克隆"
-            },
-            {
-              "description": "无需维护、更新或调试自定义脚本。不再因 CI 部署出问题而在凌晨 2 点被叫醒。",
-              "icon": "check-circle",
-              "title": "零维护"
-            }
-          ],
-          "overline": "重要意义",
-          "title": "您将获得什么"
-        },
         "blurb": "融入您现有的工作流程",
         "bottomCta": {
           "command": "rdc repo fork production --tag ci-build",
@@ -7322,33 +7051,6 @@
               "text": "每 500 名开发者因效率低下造成的成本"
             }
           ],
-          "timeline": {
-            "newLabel": "使用 REDIACC",
-            "newSteps": ["git push", "Auto", "真实数据"],
-            "oldLabel": "自定义 CI 脚本",
-            "oldSteps": [
-              {
-                "day": "步骤 1",
-                "text": "编写 bash 脚本"
-              },
-              {
-                "day": "步骤 2",
-                "text": "部署虚拟机"
-              },
-              {
-                "day": "步骤 3",
-                "text": "填充测试数据"
-              },
-              {
-                "day": "每月",
-                "text": "调试崩溃的 CI"
-              },
-              {
-                "day": "结果",
-                "text": "测试通过，生产失败"
-              }
-            ]
-          },
           "title": "自定义 CI/CD 脚本频繁崩溃且无人维护"
         },
         "references": {
@@ -7415,23 +7117,6 @@
           },
           "quote": "我们删除了 400 行 CI 配置脚本，用一行 webhook 配置替代。我们的流水线从 22 分钟的合成数据配置变为 52 秒的生产克隆。三个月后，我们零 CI 相关事故。在使用 Rediacc 之前，每月有四次。"
         },
-        "stats": [
-          {
-            "icon": "terminal",
-            "label": "Config to integrate",
-            "number": "1 行"
-          },
-          {
-            "icon": "git-branch",
-            "label": "Native integration",
-            "number": "Git"
-          },
-          {
-            "icon": "x",
-            "label": "Custom scripts needed",
-            "number": "0"
-          }
-        ],
         "techDiff": {
           "description": "传统 CI/CD 配置空容器并填充合成数据。Rediacc 在基础设施层面集成——每次推送都获得一个包含真实数据、真实配置和真实服务的完整生产克隆。",
           "overline": "底层技术",
@@ -7483,7 +7168,7 @@
         "blurb": "克隆或迁移正在运行的集群，数据完整保留",
         "bottomCta": {
           "command": "rdc cluster fork prod --tag staging",
-          "ctaText": "免费开始使用社区版",
+          "primaryCta": "免费开始使用社区版",
           "description": "克隆后测试迁移，验证无误后再正式切换。立即开始 14 天免费试用。",
           "title": "为集群提供出口"
         },
@@ -7728,6 +7413,8 @@
         "techDiff": {
           "description": "每个节点都从 btrfs 上的一个镜像文件启动。每个存储卷都是一个 Ceph RBD 镜像。复制集群，就是对这些镜像做写时复制克隆。没有导出，没有格式转换，没有恢复步骤。这就是为什么克隆只需几秒，而不是几个月。",
           "overline": "底层技术",
+          "traditionalLabel": "备份恢复式迁移",
+          "rediaccLabel": "Rediacc（写时复制克隆）",
           "rows": [
             {
               "rediacc": "节点镜像和存储卷作为一个整体一起迁移",
@@ -8459,31 +8146,10 @@
         }
       },
       "rapidRecovery": {
-        "benefits": {
-          "items": [
-            {
-              "description": "5 分钟内完成完整环境恢复。每个容器、每个数据库、每个配置文件——从不可变快照恢复。",
-              "icon": "zap",
-              "title": "分钟级，而非数天"
-            },
-            {
-              "description": "回滚到攻击发生前的精确分钟。持续快照意味着由您选择恢复点，而不是攻击者。",
-              "icon": "clock",
-              "title": "时间点精度"
-            },
-            {
-              "description": "持续快照确保没有遗漏。CI 流水线中的自动化每日验证确认每个备份都能干净恢复。",
-              "icon": "check-circle",
-              "title": "零数据丢失"
-            }
-          ],
-          "overline": "重要意义",
-          "title": "您将获得什么"
-        },
         "blurb": "分钟级恢复，而非数天",
         "bottomCta": {
           "command": "rdc repo pull production --from backup-vault --force",
-          "ctaText": "免费开始使用社区版",
+          "primaryCta": "免费开始使用社区版",
           "description": "从免费的社区版开始。免费保护最多 10 个工作负载。无需信用卡。",
           "title": "不要让恢复比攻击还慢"
         },
@@ -8664,33 +8330,6 @@
               "text": "付了赎金的受害者再次被攻击的比例"
             }
           ],
-          "timeline": {
-            "newLabel": "使用 REDIACC",
-            "newSteps": ["检测", "<5 min", "在线"],
-            "oldLabel": "传统方式",
-            "oldSteps": [
-              {
-                "day": "第 1 小时",
-                "text": "发现攻击"
-              },
-              {
-                "day": "第 1 天",
-                "text": "评估损失"
-              },
-              {
-                "day": "第 3 天",
-                "text": "重建服务器"
-              },
-              {
-                "day": "第 5 天",
-                "text": "恢复数据"
-              },
-              {
-                "day": "第 7+ 天",
-                "text": "仍在追赶进度"
-              }
-            ]
-          },
           "title": "缓慢恢复的代价超过攻击本身"
         },
         "references": {
@@ -8785,26 +8424,11 @@
           },
           "quote": "我们从 3 天的恢复计划缩短到了 4 分钟以内。在凌晨 2 点的一次真实勒索软件事件中，我们的值班工程师运行了一条命令，到凌晨 2:04 所有 8 个生产容器都恢复上线了。我们之前的厂商估计需要 72 小时——我们用了 240 秒。"
         },
-        "stats": [
-          {
-            "icon": "clock",
-            "label": "Average Recovery Time",
-            "number": "<5min"
-          },
-          {
-            "icon": "check-circle",
-            "label": "Recovery Success Rate",
-            "number": "99.9%"
-          },
-          {
-            "icon": "shield",
-            "label": "Data Loss Incidents",
-            "number": "0"
-          }
-        ],
         "techDiff": {
           "description": "传统恢复从头重建——重装操作系统、恢复文件、重新配置服务。Rediacc 从 btrfs 快照恢复：文件系统只需切换到保存的状态。无需重装，无需重新配置，无需数据传输。快照已经在磁盘上——它只是变为活跃状态。",
           "overline": "底层技术",
+          "traditionalLabel": "传统重建",
+          "rediaccLabel": "Rediacc（btrfs 即时副本）",
           "rows": [
             {
               "rediacc": "快照已在磁盘上：数秒内切换活跃子卷",
@@ -8819,7 +8443,7 @@
               "traditional": "重新配置网络、服务、SSL：手动操作，容易出错"
             },
             {
-              "rediacc": "恢复后自动健康检查：8/8 服务验证运行中",
+              "rediacc": "恢复后自动健康检查：8/8 服务验证运行中。快照会在恢复运行期间保留证据。",
               "traditional": "恢复后手动验证：期望没有遗漏"
             }
           ],
@@ -8827,27 +8451,6 @@
         }
       },
       "retentionCompliance": {
-        "benefits": {
-          "items": [
-            {
-              "description": "定义一次留存规则。Rediacc 永远执行。旧备份自动清理——无需 cron 任务，无需脚本。",
-              "icon": "clock",
-              "title": "设置后无需操心"
-            },
-            {
-              "description": "为 HIPAA、SOC2 和 GDPR 要求而构建。审计日志可导出到您的 SIEM。数秒内生成合规报告。",
-              "icon": "shield",
-              "title": "合规就绪"
-            },
-            {
-              "description": "每次备份创建、验证和删除都带有时间戳记录。每份留存报告默认即为审计就绪。",
-              "icon": "clipboard-check",
-              "title": "完整审计追踪"
-            }
-          ],
-          "overline": "重要意义",
-          "title": "您将获得什么"
-        },
         "blurb": "按法律要求保留数据",
         "bottomCta": {
           "command": "rdc config backup-strategy set --cron '0 2 * * *'",
@@ -9038,33 +8641,6 @@
               "text": "仅 2024 年欧洲就开出的 GDPR 罚款总额"
             }
           ],
-          "timeline": {
-            "newLabel": "使用 Rediacc",
-            "newSteps": ["设置策略", "Auto", "随时可审计"],
-            "oldLabel": "传统方式",
-            "oldSteps": [
-              {
-                "day": "第 1 月",
-                "text": "编写留存策略"
-              },
-              {
-                "day": "第 3 月",
-                "text": "手动清理"
-              },
-              {
-                "day": "第 6 月",
-                "text": "遗漏了部分数据"
-              },
-              {
-                "day": "第 9 月",
-                "text": "审计通知到达"
-              },
-              {
-                "day": "第 10 月",
-                "text": "手忙脚乱地证明合规"
-              }
-            ]
-          },
           "title": "合规失败代价高昂"
         },
         "references": {
@@ -9175,23 +8751,6 @@
           },
           "quote": "我们的 SOC2 审计员要求提供 3 年的备份保留证明。之前这意味着 2 周的日志翻查和电子表格交叉引用。使用 Rediacc，我运行了 rdc retention report --framework soc2，4 分钟内交出了一份完整的报告。审计员说这是她见过的最干净的证据。"
         },
-        "stats": [
-          {
-            "icon": "clock",
-            "label": "Maximum Retention",
-            "number": "7+ 年"
-          },
-          {
-            "icon": "clipboard-check",
-            "label": "Compliance Frameworks",
-            "number": "3"
-          },
-          {
-            "icon": "check-circle",
-            "label": "Audit-Ready",
-            "number": "100%"
-          }
-        ],
         "techDiff": {
           "description": "传统保留管理意味着在电子表格中跟踪备份日期，运行手动清理脚本，并祈祷在审计员到来前没有遗漏。Rediacc 使用 btrfs 快照生命周期管理和自动化策略执行——备份被保留、验证和清理，无需人工干预。",
           "overline": "底层技术",
@@ -9602,7 +9161,7 @@
         "blurb": "您的基础设施，您的选择，始终如此。",
         "bottomCta": {
           "command": "rdc repo push production --to new-provider --checkpoint",
-          "ctaText": "免费开始使用社区版",
+          "primaryCta": "免费开始使用社区版",
           "description": "从免费的社区版开始。随处部署，随时迁移。无需信用卡。",
           "title": "夺回基础设施的控制权"
         },
@@ -9901,6 +9460,8 @@
         "techDiff": {
           "description": "Rediacc 将所有数据存储在标准 btrfs 子卷中——没有专有格式，没有厂商特定代理。迁移使用 btrfs send/receive 将增量快照传输到任何 Linux 机器。一个 420 GB 的环境如果自上次同步以来有 3.8 GB 的变更，就只传输 3.8 GB——而非 420 GB。",
           "overline": "底层技术",
+          "traditionalLabel": "专有格式锁定",
+          "rediaccLabel": "Rediacc（标准 Linux 存储）",
           "rows": [
             {
               "rediacc": "一条命令：快照、传输、验证、切换 DNS——不到 1 小时",
@@ -10650,11 +10211,6 @@
         "title": "目录"
       }
     }
-  },
-  "pricingPreview": {
-    "compareAll": "对比所有套餐和功能",
-    "subtitle": "免费开始，按需升级",
-    "title": "价格清晰，绝无意外。"
   },
   "regionPicker": {
     "footer": "选择离您最近的区域，或您的组织所要求的区域。",

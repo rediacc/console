@@ -14,10 +14,6 @@
     font-size: var(--font-size-2xl);
   }
 
-  .section-subtitle {
-    font-size: var(--font-size-base);
-  }
-
   .solution-card {
     min-height: auto;
     padding: var(--space-8);

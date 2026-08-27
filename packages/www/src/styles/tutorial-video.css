@@ -268,10 +268,12 @@
  * "integrated to the player" is delivered by position rather than by living in that menu.
  * z-index sits above the poster and below Plyr's own controls, which own the bottom edge.
  *
- * The colour rules outrank `.sp-hero-media .tvp-toolbar .language-trigger` on purpose. That
- * one paints translucent WHITE, which is right on the hero's dark band and wrong over a
- * video: a bright frame washes it out, and the frame is not ours to predict. A dark scrim
- * is legible over anything.
+ * The colour rules outrank `.sp-hero-media .tvp-toolbar .language-trigger` on purpose.
+ * That one now tracks the hero band, which INVERTS with the theme after operator decision
+ * A7 (2026-08-27): light-theme component tokens on #ffffff, translucent white on #111113.
+ * Neither is right OVER A VIDEO, because the frame is not ours to predict and a bright one
+ * washes out either treatment. A dark scrim is legible over anything, so it wins here in
+ * both themes.
  */
 .tvp-toolbar-overlay {
   position: absolute;

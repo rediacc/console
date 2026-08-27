@@ -3044,7 +3044,7 @@
         "blurb": "Üretimi klonlayın. Yapay zekanın saldırmasına izin verin.",
         "bottomCta": {
           "command": "rdc repo fork production --tag pentest",
-          "ctaText": "Ücretsiz Başlayın",
+          "primaryCta": "Ücretsiz Başlayın",
           "description": "Ücretsiz Community sürümüyle başlayın. İlk sızma testinizi 60 saniyeden kısa sürede çalıştırın.",
           "title": "Güvenlik açıklarını saldırganlardan önce bulun"
         },
@@ -3252,6 +3252,8 @@
         "techDiff": {
           "description": "Geleneksel sızma testi oluşturulmasından günler içinde üretim ortamından sapan staging ortamlarını hedef alır. Rediacc, gerçek üretim altyapınızın — aynı veri, aynı yapılandırmalar, aynı güvenlik açıkları — btrfs copy-on-write anlık görüntüsünü oluşturur ve buna karşı otomatik saldırı simülasyonları çalıştırır. Klon test sonrası yok edilir. Üretim ortamına asla dokunulmaz.",
           "overline": "KAPUTUN ALTINDA",
+          "traditionalLabel": "Geleneksel sızma testi",
+          "rediaccLabel": "Rediacc (üretim klonuna saldırır)",
           "rows": [
             {
               "rediacc": "Üretim klonu (saniyeler eski, %100 eşleşme)",
@@ -3306,7 +3308,7 @@
         "blurb": "Her eylem kayıt altında. Gizli bir şey yok.",
         "bottomCta": {
           "command": "rdc repo status production",
-          "ctaText": "Community ile Ücretsiz Başlayın",
+          "primaryCta": "Community ile Ücretsiz Başlayın",
           "description": "Ücretsiz Community sürümüyle başlayın. İlk denetim raporunuzu bir dakikadan kısa sürede oluşturun.",
           "title": "Her şeyi görün. Hiçbir şeyi kaçırmayın."
         },
@@ -3612,6 +3614,8 @@
         "techDiff": {
           "description": "Uygulama günlükleri hata ayıklama için tasarlanmıştır — değiştirilebilir, eksik ve sistemler arasında dağınıktır. Rediacc'ın denetim izi uyumluluk için tasarlanmıştır: her işlem kriptografik olarak imzalanır, kronolojik olarak zincirlenir ve tek bir rapor olarak dışa aktarılabilir.",
           "overline": "KAPUTUN ALTINDA",
+          "traditionalLabel": "Değiştirilebilir uygulama günlükleri",
+          "rediaccLabel": "Rediacc denetim günlüğü",
           "rows": [
             {
               "rediacc": "Kriptografik olarak imzalanmış — kurcalama tespiti yerleşik",
@@ -3634,27 +3638,6 @@
         }
       },
       "backupVerification": {
-        "benefits": {
-          "items": [
-            {
-              "description": "Her yedek ihtiyaç duymadan önce klonlanır, başlatılır ve sağlık kontrolünden geçirilir. Bozulma, kriz sırasında değil 24 saat içinde yakalanır.",
-              "icon": "check-circle",
-              "title": "Sıfır sürpriz"
-            },
-            {
-              "description": "Manuel test yok. Betik yok. Yedek doğrulaması CI pipeline'ınızda çalışır. Başarısız mı? Önemli olmadan önce uyarı alırsınız.",
-              "icon": "shield",
-              "title": "Otomatik bütünlük kontrolleri"
-            },
-            {
-              "description": "PagerDuty, Slack veya e-posta — bir yedek doğrulamada başarısız olduğu an. Kontrol edilecek gösterge paneli yok. Planlanmış rastgele kontrol yok.",
-              "icon": "bell",
-              "title": "Anında uyarılar"
-            }
-          ],
-          "overline": "NEDEN ÖNEMLİ",
-          "title": "Ne elde edersiniz"
-        },
         "blurb": "Her yedek otomatik olarak doğrulanır",
         "bottomCta": {
           "command": "rdc backup verify my-app",
@@ -3844,33 +3827,6 @@
               "text": "ele geçirilen kayıt başına ortalama maliyet"
             }
           ],
-          "timeline": {
-            "newLabel": "Rediacc ile",
-            "newSteps": ["Yedekle", "47s", "Doğrulandı"],
-            "oldLabel": "Eski yöntem",
-            "oldSteps": [
-              {
-                "day": "1. Gün",
-                "text": "Yedeği çalıştır"
-              },
-              {
-                "day": "Gün 2-364",
-                "text": "\"Tamamlandı\"ya güven"
-              },
-              {
-                "day": "365. Gün",
-                "text": "Felaket gelir"
-              },
-              {
-                "day": "365. Gün",
-                "text": "Geri yüklemeyi dene"
-              },
-              {
-                "day": "365. Gün",
-                "text": "Yedek bozulmuş"
-              }
-            ]
-          },
           "title": "Bozuk yedeklemeler yedekleme olmamasından daha kötüdür"
         },
         "references": {
@@ -3953,23 +3909,6 @@
           },
           "quote": "İlk haftamızda otomatik doğrulama çalıştırdık ve 3 hizmette 12 bozuk yedekleme bulduk — kesilmiş tablolarla bir MariaDB dökümü, eski bir Nextcloud yapılandırması ve 6 aylık bir Redis anlık görüntüsü. Rediacc olmadan bunları gerçek bir felaket sırasında keşfederdik. Artık her yedekleme oluşturulduktan 47 saniye içinde doğrulanıyor."
         },
-        "stats": [
-          {
-            "icon": "check-circle",
-            "label": "Backups Verified",
-            "number": "100%"
-          },
-          {
-            "icon": "refresh",
-            "label": "No Manual Checks",
-            "number": "Auto"
-          },
-          {
-            "icon": "clock",
-            "label": "Verification Time",
-            "number": "<1dk"
-          }
-        ],
         "techDiff": {
           "description": "Geleneksel yedekleme araçları dosyaların yazıldığını kontrol eder. Rediacc daha ileri gider: yedeklemeyi klonlar, her konteyneri başlatır, her hizmete karşı sağlık kontrolleri çalıştırır ve başarılı/başarısız raporu verir. Dosya sağlama toplamı değil — tam bir geri yükleme testi.",
           "overline": "KAPUTUN ALTINDA",
@@ -4381,7 +4320,7 @@
         "blurb": "Güvenliği yılda bir değil, sürekli test edin",
         "bottomCta": {
           "command": "rdc backup restore production --as production-verify -m primary --up",
-          "ctaText": "Ücretsiz Başlayın",
+          "primaryCta": "Ücretsiz Başlayın",
           "description": "Ücretsiz Community sürümüyle başlayın. İlk sürekli sızma testinizi 30 saniyede zamanlayın.",
           "title": "Saldırganların güvendiği pencereyi kapatın"
         },
@@ -4584,6 +4523,8 @@
         "techDiff": {
           "description": "Her zamanlanmış tarama üretim altyapınızın taze bir btrfs copy-on-write anlık görüntüsünü oluşturur, tam AI sızma testi paketini buna karşı çalıştırır, trend karşılaştırmalı önceliklendirilmiş bir rapor oluşturur ve klonu yok eder. Bakım yapılacak staging ortamı yok. Sapma yok. Eski veri yok. Her tarama, şu anda üretimde gerçekten çalışanı test eder.",
           "overline": "KAPUTUN ALTINDA",
+          "traditionalLabel": "Planlı yıllık test",
+          "rediaccLabel": "Rediacc (sürekli)",
           "rows": [
             {
               "rediacc": "Günlük, haftalık veya her dağıtımda",
@@ -4638,7 +4579,7 @@
         "blurb": "Sunucularınız, anahtarlarınız, yargı yetkiniz.",
         "bottomCta": {
           "command": "rdc config show",
-          "ctaText": "Community ile Ücretsiz Başlayın",
+          "primaryCta": "Community ile Ücretsiz Başlayın",
           "description": "Ücretsiz Community sürümüyle başlayın. İlk anahtar saklama denetimini bir dakikadan kısa sürede çalıştırın.",
           "title": "Verilerinizi ABD yargı yetkisindeki bir sağlayıcıdan geri kiralamayı bırakın."
         },
@@ -4946,6 +4887,8 @@
         "techDiff": {
           "description": "ABD yargı yetkisindeki bir sağlayıcı, verilerinizi Frankfurt'ta depolayabilir ve yine de ABD mahkemeleri tarafından bunları ifşa etmeye zorlanabilir. Rediacc'ın mimarisi, zorlama vektörünü tamamen ortadan kaldırır: teslim edilecek anahtar yoktur ve izlenecek geri arama kanalı yoktur.",
           "overline": "ARKA PLANDA",
+          "traditionalLabel": "ABD sahipli sağlayıcı",
+          "rediaccLabel": "Rediacc (teslim edilecek anahtar yok)",
           "rows": [
             {
               "rediacc": "Operatör Estonya'da kurulmuştur; ABD ana şirketi yok, CLOUD Act zorlama yüzeyi yok",
@@ -4987,31 +4930,10 @@
         "title": "Zamanınız mı kısıtlı?"
       },
       "encryption": {
-        "benefits": {
-          "items": [
-            {
-              "description": "Siz oluşturursunuz. Altyapınızda saklarsınız. Paylaşılan anahtar depoları yok, tedarikçi erişimi yok, güven varsayımları yok.",
-              "icon": "lock",
-              "title": "Yalnızca sizin anahtarlarınız"
-            },
-            {
-              "description": "İlişkili verilerle doğrulanmış şifreleme. Yalnızca şifreli değil — her okumada bütünlük doğrulaması. Tasarım gereği kurcalamaya dayanıklı.",
-              "icon": "shield",
-              "title": "AES-256-GCM şifreleme"
-            },
-            {
-              "description": "Rediacc düz metninizi asla görmez. Anahtarınıza asla dokunmaz. Kod tabanımız ele geçirilse bile çalınacak bir şey yok.",
-              "icon": "eye-off",
-              "title": "Sıfır bilgi mimarisi"
-            }
-          ],
-          "overline": "NEDEN ÖNEMLİ",
-          "title": "Ne elde edersiniz"
-        },
         "blurb": "Sizin anahtarlarınız. Sizin şifrelemeniz. İstisna yok.",
         "bottomCta": {
           "command": "rdc repo up production",
-          "ctaText": "Community ile Ücretsiz Başlayın",
+          "primaryCta": "Community ile Ücretsiz Başlayın",
           "description": "Ücretsiz Community sürümüyle başlayın. İlk anahtarınızı bir dakikadan kısa sürede oluşturun.",
           "title": "Şifrelemenizin kontrolünü elinize alın"
         },
@@ -5196,33 +5118,6 @@
               "text": "kuruluşların 5+ anahtar yönetim sistemi kullanması, şifreleme kör noktaları oluşturması"
             }
           ],
-          "timeline": {
-            "newLabel": "REDİACC İLE",
-            "newSteps": ["Sizin anahtarınız", "AES-256", "Zero-knowledge"],
-            "oldLabel": "ESKİ YÖNTEM",
-            "oldSteps": [
-              {
-                "day": "Kurulum",
-                "text": "Tedarikçiye yükle"
-              },
-              {
-                "day": "Güven",
-                "text": "Tedarikçi anahtarları tutar"
-              },
-              {
-                "day": "Gün N",
-                "text": "Tedarikçi ihlal edilir"
-              },
-              {
-                "day": "Gün N+1",
-                "text": "Anahtarlar ele geçirilir"
-              },
-              {
-                "day": "Sonuç",
-                "text": "Verileriniz açığa çıkar"
-              }
-            ]
-          },
           "title": "Sağlayıcı tarafından yönetilen anahtarlar gerçekten sizin değil"
         },
         "references": {
@@ -5329,26 +5224,11 @@
           },
           "quote": "Sağlık müşterilerimiz HIPAA uyumlu veri egemenliği gerektiriyor — şifreleme anahtarları altyapımızdan asla çıkmamalı. Her büyük yedekleme sağlayıcısını değerlendirdik ve Rediacc tek anahtarı gerçekten bizim tuttuğumuz tek sağlayıcıydı. SOC 2 denetimimizde denetçi anahtar velayetini doğrulamak istedi. Tek bir komut çalıştırdım ve anahtarın HSM'imizde olduğunu, herhangi bir sağlayıcı sisteminde olmadığını gösterdim. Denetim bulgusu: anahtar yönetiminde sıfır açık."
         },
-        "stats": [
-          {
-            "icon": "shield",
-            "label": "Encryption Standard",
-            "number": "AES-256"
-          },
-          {
-            "icon": "key",
-            "label": "Key Owner",
-            "number": "You"
-          },
-          {
-            "icon": "lock",
-            "label": "Encrypted at Rest & Transit",
-            "number": "Her zaman"
-          }
-        ],
         "techDiff": {
           "description": "Sağlayıcı tarafından yönetilen şifreleme, sağlayıcınızın anahtarları tutması anlamına gelir. Verilerinizin şifresini çözebilirler. Çalışanları erişebilir. Onlar tarafında bir ihlal her şeyi açığa çıkarır. Rediacc, sıfır bilgi mimarisiyle müşteri tutumlu anahtarlar kullanır — düz metninizi veya anahtarınızı asla görmeyiz.",
           "overline": "KAPUTUN ALTINDA",
+          "traditionalLabel": "Tedarikçide tutulan anahtarlar",
+          "rediaccLabel": "Rediacc (müşteride tutulan anahtarlar)",
           "rows": [
             {
               "rediacc": "Müşteride tutulan anahtarlar — yalnızca siz çözebilirsiniz",
@@ -5363,7 +5243,7 @@
               "traditional": "Tedarikçi ihlali tüm şifreli verileri açığa çıkarır"
             },
             {
-              "rediacc": "CLI ile self-servis anahtar rotasyonu — bağımlılık yok",
+              "rediacc": "CLI ile self-servis anahtar rotasyonu — bağımlılık yok. Her okuma doğrulanır, bu yüzden kurcalama anında ortaya çıkar.",
               "traditional": "Anahtar rotasyonu tedarikçi müdahalesi gerektirir"
             }
           ],
@@ -6086,27 +5966,6 @@
         }
       },
       "immutableBackups": {
-        "benefits": {
-          "items": [
-            {
-              "description": "Yedekler kimse tarafından değiştirilemez, silinemez veya şifrelenemez — bilgisayar korsanları tarafından da, ele geçirilmiş yöneticiler tarafından da, root erişimine sahip fidye yazılımı tarafından da.",
-              "icon": "lock",
-              "title": "Bir kez yaz, sonsuza kadar oku"
-            },
-            {
-              "description": "Ele geçirilmiş yönetici hesapları bile mühürlenmiş yedekleri değiştiremez. Otomatik günlük doğrulama CI pipeline'ınızda çalışır — başarısız mı? Önemli olmadan önce uyarı alırsınız.",
-              "icon": "eye-off",
-              "title": "Güven gerektirmez"
-            },
-            {
-              "description": "Her yedek geçici bir klona geri yüklenir ve otomatik olarak sağlık kontrolü yapılır. \"Yedek tamamlandı\" değil — her gün gerçekten doğrulanır.",
-              "icon": "check-circle",
-              "title": "Anında doğrulama"
-            }
-          ],
-          "overline": "NEDEN ÖNEMLİ",
-          "title": "Ne elde edersiniz"
-        },
         "blurb": "Fidye yazılımının dokunamayacağı yedekler",
         "bottomCta": {
           "command": "rdc repo push production --to backup-vault",
@@ -6296,33 +6155,6 @@
               "text": "ortalama kurtarma süresi"
             }
           ],
-          "timeline": {
-            "newLabel": "Rediacc ile",
-            "newSteps": ["Yedekle", "Mühürlendi", "Doğrulandı"],
-            "oldLabel": "Eski yöntem",
-            "oldSteps": [
-              {
-                "day": "1. Gün",
-                "text": "Yedek planla"
-              },
-              {
-                "day": "2. Gün",
-                "text": "Yedek çalışır"
-              },
-              {
-                "day": "7. Gün",
-                "text": "Temiz olmasını um"
-              },
-              {
-                "day": "14. Gün",
-                "text": "Fidye yazılımı vurur"
-              },
-              {
-                "day": "15. Gün",
-                "text": "Yedek de şifrelenmiş"
-              }
-            ]
-          },
           "title": "Fidye yazılımı önce yedeklemelerinizi hedef alır"
         },
         "references": {
@@ -6433,23 +6265,6 @@
           },
           "quote": "Bir Cumartesi sabahı saat 3:17'de fidye yazılımına yakalandık. Saldırganlar yedekleme depomuz dahil 14 sunucuyu şifreledi — ya da öyle sandılar. Rediacc'ın değiştirilemez anlık görüntüleri dokunulmamıştı. Saat 3:24'te tüm 14 sunucu mühürlü yedeklemelerden geri yüklendi. Toplam veri kaybı: sıfır bayt. Toplam ödenen fidye: sıfır dolar."
         },
-        "stats": [
-          {
-            "icon": "shield",
-            "label": "Files Changed After Backup",
-            "number": "0"
-          },
-          {
-            "icon": "check-circle",
-            "label": "Immutable by Default",
-            "number": "100%"
-          },
-          {
-            "icon": "clock",
-            "label": "Full Backup Time",
-            "number": "<60s"
-          }
-        ],
         "techDiff": {
           "description": "Rediacc, dosya sistemi seviyesinde btrfs salt okunur anlık görüntüler kullanır. Bir anlık görüntü mühürlendikten sonra, çekirdeğin kendisi değişikliği engeller — kötü amaçlı yazılımın atlayabileceği yazılım kilitleri değil, dosya sistemi seviyesinde değiştirilemezlik. Root erişimiyle bile fidye yazılımı mühürlü bir btrfs anlık görüntüsünü şifreleyemez, değiştiremez veya silemez.",
           "overline": "KAPUTUN ALTINDA",
@@ -6477,27 +6292,6 @@
         }
       },
       "infrastructureCosts": {
-        "benefits": {
-          "items": [
-            {
-              "description": "Boşta sunucu yok. Klonlar CoW ile depolamayı paylaşır. Birkaç GB delta maliyetiyle 10 klon oluşturun.",
-              "icon": "dollar",
-              "title": "Kullandığınız kadar ödeyin"
-            },
-            {
-              "description": "Klon başına TTL ayarlayın (1sa, 4sa, 8sa). Ortamlar otomatik yok olur. Aylarca bütçe yakan unutulmuş sunuculara son.",
-              "icon": "clock",
-              "title": "Otomatik temizlik"
-            },
-            {
-              "description": "Yük testi için 50 ortam oluşturun, hepsini sonra kaldırın. Kapasite planlaması yok. Tedarik yok.",
-              "icon": "person-plus",
-              "title": "Özgürce ölçekleyin"
-            }
-          ],
-          "overline": "NEDEN ÖNEMLİ",
-          "title": "Ne elde edersiniz"
-        },
         "blurb": "Boşta kalan ortamlar için ödeme yapmayı bırakın",
         "bottomCta": {
           "command": "rdc repo fork production --tag dev-loadtest",
@@ -6682,33 +6476,6 @@
               "text": "geliştirici başına yıllık ortam hazırlama ve bağlam değiştirme kaybı"
             }
           ],
-          "timeline": {
-            "newLabel": "REDİACC İLE",
-            "newSteps": ["Başlat", "$0 boşta", "Otomatik temizlik"],
-            "oldLabel": "HER ZAMAN AÇIK ORTAMLAR",
-            "oldSteps": [
-              {
-                "day": "24/7",
-                "text": "15 sunucu çalışıyor"
-              },
-              {
-                "day": "Geceler",
-                "text": "Boşta, hâlâ ödeniyor"
-              },
-              {
-                "day": "Hafta sonları",
-                "text": "Boşta, hâlâ ödeniyor"
-              },
-              {
-                "day": "Tatiller",
-                "text": "Boşta, hâlâ ödeniyor"
-              },
-              {
-                "day": "Sonuç",
-                "text": "%67 israf"
-              }
-            ]
-          },
           "title": "Her zaman açık ortamlar para yakıyor"
         },
         "references": {
@@ -6763,23 +6530,6 @@
           },
           "quote": "İsteğe bağlı klonlara geçtikten sonra aylık altyapı faturamız $4,500'dan $1,440'a düştü. %30 kullanım oranıyla çalışan 15 her zaman açık geliştirme ortamımız vardı. Artık ihtiyaç duyduğumuzda ayağa kaldırıp 4 saat sonra otomatik yok ediyoruz. Yıllık $36K tasarruf, iki junior geliştirici maaşını finanse etti."
         },
-        "stats": [
-          {
-            "icon": "trend-up",
-            "label": "Cost reduction",
-            "number": "70%"
-          },
-          {
-            "icon": "zap",
-            "label": "No always-on waste",
-            "number": "İsteğe bağlı"
-          },
-          {
-            "icon": "clock",
-            "label": "Cleanup & TTL",
-            "number": "Auto"
-          }
-        ],
         "techDiff": {
           "description": "Geleneksel geliştirme ortamları sunucuların tamamını kopyalar — her bayt veri, her yapılandırma dosyası, her kütüphane. Rediacc btrfs copy-on-write kullanır: klonlar değişmeyen blokları üretim ortamıyla paylaşır ve 380 GB'lık bir ortam için yalnızca %1 ek depolama kullanır.",
           "overline": "KAPUTUN ALTINDA",
@@ -7172,27 +6922,6 @@
         }
       },
       "integrations": {
-        "benefits": {
-          "items": [
-            {
-              "description": "Push'lar ortamları tetikler. GitLab CI, GitHub Actions, Gitea veya webhook destekleyen herhangi bir sistemle çalışır.",
-              "icon": "git-branch",
-              "title": "Yerleşik Git entegrasyonu"
-            },
-            {
-              "description": "Testler gerçek üretim verileri ve yapılandırmalarıyla çalışır. Artık \"testler geçer, prod başarısız\" sürprizleri yok.",
-              "icon": "monitor",
-              "title": "CI'da üretim klonları"
-            },
-            {
-              "description": "Bakım yapılacak, güncellenecek veya hata ayıklanacak özel betik yok. CI hazırlığı bozulduğu için sabah 2'de birini aramaya son.",
-              "icon": "check-circle",
-              "title": "Sıfır bakım"
-            }
-          ],
-          "overline": "NEDEN ÖNEMLİ",
-          "title": "Ne elde edersiniz"
-        },
         "blurb": "Mevcut iş akışınıza entegre edin",
         "bottomCta": {
           "command": "rdc repo fork production --tag ci-build",
@@ -7351,33 +7080,6 @@
               "text": "500 geliştirici başına geliştirici verimsizliğinin maliyeti"
             }
           ],
-          "timeline": {
-            "newLabel": "REDİACC İLE",
-            "newSteps": ["git push", "Auto", "Gerçek veri"],
-            "oldLabel": "ÖZEL CI BETİKLERİ",
-            "oldSteps": [
-              {
-                "day": "Adım 1",
-                "text": "Bash betikleri yaz"
-              },
-              {
-                "day": "Adım 2",
-                "text": "VM'leri hazırla"
-              },
-              {
-                "day": "Adım 3",
-                "text": "Test verisini doldur"
-              },
-              {
-                "day": "Aylık",
-                "text": "Bozuk CI'ı hata ayıkla"
-              },
-              {
-                "day": "Sonuç",
-                "text": "Testler geçer, prod başarısız"
-              }
-            ]
-          },
           "title": "Özel CI/CD betikleri bozuluyor ve kimse bakım yapmıyor"
         },
         "references": {
@@ -7444,23 +7146,6 @@
           },
           "quote": "400 satırlık CI hazırlama betiğini sildik ve tek bir webhook yapılandırma satırıyla değiştirdik. Pipeline'ımız sentetik verili 22 dakikalık hazırlıklardan 52 saniyelik üretim klonlarına geçti. Üç ay sonra, sıfır CI kaynaklı olay yaşadık. Rediacc öncesi ayda dört oluyordu."
         },
-        "stats": [
-          {
-            "icon": "terminal",
-            "label": "Config to integrate",
-            "number": "1 satır"
-          },
-          {
-            "icon": "git-branch",
-            "label": "Native integration",
-            "number": "Git"
-          },
-          {
-            "icon": "x",
-            "label": "Custom scripts needed",
-            "number": "0"
-          }
-        ],
         "techDiff": {
           "description": "Geleneksel CI/CD boş konteynerler hazırlar ve sentetik veri yükler. Rediacc altyapı seviyesinde entegre olur — her push gerçek verili, gerçek yapılandırmalı ve gerçek hizmetli tam bir üretim klonu alır.",
           "overline": "KAPUTUN ALTINDA",
@@ -7512,7 +7197,7 @@
         "blurb": "Çalışan kümeyi fork'la veya taşı, verileriyle birlikte",
         "bottomCta": {
           "command": "rdc cluster fork prod --tag staging",
-          "ctaText": "Ücretsiz başlayın",
+          "primaryCta": "Ücretsiz başlayın",
           "description": "Fork'la, taşımayı test et, sonra gerçekten göç et. 14 günlük ücretsiz denemeyi başlat.",
           "title": "Kümenize çıkış yolu aç"
         },
@@ -7763,6 +7448,8 @@
         "techDiff": {
           "description": "Her node, btrfs üzerinde bir imaj dosyasından çalışır. Her volume bir Ceph RBD imajıdır. Bir cluster'ı kopyalamak, bu imajları copy-on-write olarak klonlamak demektir. Dışa aktarma yok, dönüştürme yok, geri yükleme adımı yok. Bir fork'un aylar değil saniyeler sürmesinin nedeni budur.",
           "overline": "KAPUTUN ALTINDA",
+          "traditionalLabel": "Yedekleme ve geri yükleme ile geçiş",
+          "rediaccLabel": "Rediacc (copy-on-write klon)",
           "rows": [
             {
               "rediacc": "Node imajları ve volume'lar birlikte, tek parça halinde taşınır",
@@ -8494,31 +8181,10 @@
         }
       },
       "rapidRecovery": {
-        "benefits": {
-          "items": [
-            {
-              "description": "5 dakikanın altında tam ortam kurtarma. Her konteyner, her veritabanı, her yapılandırma dosyası — değiştirilemez anlık görüntüden geri yüklenir.",
-              "icon": "zap",
-              "title": "Günler değil, dakikalar"
-            },
-            {
-              "description": "Saldırıdan önceki tam dakikaya geri dönün. Sürekli anlık görüntüler, geri yükleme noktasını saldırganın değil sizin seçmenizi sağlar.",
-              "icon": "clock",
-              "title": "Zaman noktası hassasiyeti"
-            },
-            {
-              "description": "Sürekli anlık görüntüler hiçbir şeyin gözden kaçmamasını sağlar. CI pipeline'ınızdaki otomatik günlük doğrulama her yedeğin temiz geri yüklendiğini onaylar.",
-              "icon": "check-circle",
-              "title": "Sıfır veri kaybı"
-            }
-          ],
-          "overline": "NEDEN ÖNEMLİ",
-          "title": "Ne elde edersiniz"
-        },
         "blurb": "Günler değil, dakikalar içinde kurtarın",
         "bottomCta": {
           "command": "rdc repo pull production --from backup-vault --force",
-          "ctaText": "Community ile Ücretsiz Başlayın",
+          "primaryCta": "Community ile Ücretsiz Başlayın",
           "description": "Ücretsiz Community sürümüyle başlayın. 10 iş yüküne kadar ücretsiz koruyun. Kredi kartı gerekmez.",
           "title": "Kurtarmanın saldırıdan daha yavaş olmasına izin vermeyin"
         },
@@ -8699,33 +8365,6 @@
               "text": "ödeme yapan kurbanların tekrar hedef alınması"
             }
           ],
-          "timeline": {
-            "newLabel": "REDİACC İLE",
-            "newSteps": ["Algıla", "<5 min", "Çevrimiçi"],
-            "oldLabel": "ESKİ YÖNTEM",
-            "oldSteps": [
-              {
-                "day": "Saat 1",
-                "text": "Saldırıyı keşfet"
-              },
-              {
-                "day": "1. Gün",
-                "text": "Hasarı değerlendir"
-              },
-              {
-                "day": "3. Gün",
-                "text": "Sunucuları yeniden oluştur"
-              },
-              {
-                "day": "5. Gün",
-                "text": "Verileri geri yükle"
-              },
-              {
-                "day": "7+ Gün",
-                "text": "Hâlâ yetişmeye çalışıyor"
-              }
-            ]
-          },
           "title": "Yavaş kurtarma, saldırının kendisinden daha pahalıdır"
         },
         "references": {
@@ -8820,26 +8459,11 @@
           },
           "quote": "3 günlük kurtarma planından 4 dakikanın altına indik. Sabah 2'de gerçek bir fidye yazılımı olayında nöbetçi mühendisimiz tek bir komut çalıştırdı ve saat 2:04'te tüm 8 üretim konteyneri tekrar çevrimiçiydi. Önceki sağlayıcımızın tahmini 72 saatti — biz 240 saniyede yaptık."
         },
-        "stats": [
-          {
-            "icon": "clock",
-            "label": "Average Recovery Time",
-            "number": "<5dk"
-          },
-          {
-            "icon": "check-circle",
-            "label": "Recovery Success Rate",
-            "number": "%99,9"
-          },
-          {
-            "icon": "shield",
-            "label": "Data Loss Incidents",
-            "number": "0"
-          }
-        ],
         "techDiff": {
           "description": "Geleneksel kurtarma sıfırdan yeniden oluşturur — işletim sistemini yeniden kurun, dosyaları geri yükleyin, hizmetleri yeniden yapılandırın. Rediacc btrfs anlık görüntülerinden geri yükler: dosya sistemi basitçe kaydedilmiş duruma geçer. Yeniden kurulum yok, yeniden yapılandırma yok, veri transferi yok. Anlık görüntü zaten diskte — sadece aktif hale gelir.",
           "overline": "KAPUTUN ALTINDA",
+          "traditionalLabel": "Geleneksel yeniden kurulum",
+          "rediaccLabel": "Rediacc (anlık btrfs kopyaları)",
           "rows": [
             {
               "rediacc": "Anlık görüntü zaten diskte: aktif alt birimi saniyeler içinde değiştir",
@@ -8854,7 +8478,7 @@
               "traditional": "Ağ, hizmetler, SSL'i yeniden yapılandır: manuel, hataya açık"
             },
             {
-              "rediacc": "Geri yüklemeden sonra otomatik sağlık kontrolü: 8/8 hizmetin çalıştığı doğrulandı",
+              "rediacc": "Geri yüklemeden sonra otomatik sağlık kontrolü: 8/8 hizmetin çalıştığı doğrulandı. Anlık görüntü, geri yükleme sürerken kanıtı korur.",
               "traditional": "Geri yüklemeden sonra manuel doğrulama: hiçbir şeyin atlanmadığını um"
             }
           ],
@@ -8862,27 +8486,6 @@
         }
       },
       "retentionCompliance": {
-        "benefits": {
-          "items": [
-            {
-              "description": "Saklama kurallarını bir kez tanımlayın. Rediacc sonsuza kadar uygular. Eski yedekler otomatik temizlenir — cron işleri yok, betikler yok.",
-              "icon": "clock",
-              "title": "Kur ve unut"
-            },
-            {
-              "description": "HIPAA, SOC2 ve GDPR gereksinimleri için tasarlanmıştır. Denetim günlükleri SIEM'inize aktarılır. Saniyeler içinde uyumluluk raporu çekin.",
-              "icon": "shield",
-              "title": "Uyumluluğa hazır"
-            },
-            {
-              "description": "Her yedek oluşturma, doğrulama ve silme zaman damgalarıyla kaydedilir. Her saklama raporu varsayılan olarak denetime hazırdır.",
-              "icon": "clipboard-check",
-              "title": "Tam denetim izi"
-            }
-          ],
-          "overline": "NEDEN ÖNEMLİ",
-          "title": "Ne elde edersiniz"
-        },
         "blurb": "Verilerinizi yasaların gerektirdiği süre boyunca saklayın",
         "bottomCta": {
           "command": "rdc config backup-strategy set --cron '0 2 * * *'",
@@ -9073,33 +8676,6 @@
               "text": "yalnızca 2024'te Avrupa genelinde verilen GDPR cezaları"
             }
           ],
-          "timeline": {
-            "newLabel": "Rediacc ile",
-            "newSteps": ["Politika belirle", "Auto", "Denetime hazır"],
-            "oldLabel": "Eski yöntem",
-            "oldSteps": [
-              {
-                "day": "1. Ay",
-                "text": "Saklama politikası yaz"
-              },
-              {
-                "day": "3. Ay",
-                "text": "Manuel temizlik"
-              },
-              {
-                "day": "6. Ay",
-                "text": "Bazı veriler atlandı"
-              },
-              {
-                "day": "9. Ay",
-                "text": "Denetim bildirimi gelir"
-              },
-              {
-                "day": "10. Ay",
-                "text": "Kanıtlamak için çabalama"
-              }
-            ]
-          },
           "title": "Uyumluluk başarısızlıkları pahalıdır"
         },
         "references": {
@@ -9210,23 +8786,6 @@
           },
           "quote": "SOC2 denetçimiz 3 yıllık yedekleme saklama kanıtı istedi. Daha önce bu, 2 hafta boyunca günlükleri araştırmak ve elektronik tablolarla çapraz referans vermek anlamına geliyordu. Rediacc ile rdc retention report --framework soc2 çalıştırdım ve 4 dakikada eksiksiz bir rapor teslim ettim. Denetçi gördüğü en temiz kanıt olduğunu söyledi."
         },
-        "stats": [
-          {
-            "icon": "clock",
-            "label": "Maximum Retention",
-            "number": "7+ yıl"
-          },
-          {
-            "icon": "clipboard-check",
-            "label": "Compliance Frameworks",
-            "number": "3"
-          },
-          {
-            "icon": "check-circle",
-            "label": "Audit-Ready",
-            "number": "100%"
-          }
-        ],
         "techDiff": {
           "description": "Geleneksel saklama yönetimi, yedekleme tarihlerini elektronik tablolarda takip etmek, manuel temizlik betikleri çalıştırmak ve denetçi gelmeden önce hiçbir şeyin atlanmadığını ummak anlamına gelir. Rediacc, otomatik politika uygulamasıyla btrfs anlık görüntü yaşam döngüsü yönetimi kullanır — yedeklemeler insan müdahalesi olmadan saklanır, doğrulanır ve temizlenir.",
           "overline": "KAPUTUN ALTINDA",
@@ -9637,7 +9196,7 @@
         "blurb": "Sizin altyapınız. Sizin seçiminiz. Her zaman.",
         "bottomCta": {
           "command": "rdc repo push production --to new-provider --checkpoint",
-          "ctaText": "Community ile Ücretsiz Başlayın",
+          "primaryCta": "Community ile Ücretsiz Başlayın",
           "description": "Ücretsiz Community sürümüyle başlayın. İstediğiniz yere dağıtın. İstediğiniz zaman göç edin. Kredi kartı gerekmez.",
           "title": "Altyapınızın kontrolünü geri alın"
         },
@@ -9936,6 +9495,8 @@
         "techDiff": {
           "description": "Rediacc tüm verileri standart btrfs alt birimlerinde saklar — tescilli format yok, sağlayıcıya özel ajan yok. Göç, herhangi bir Linux makinesine artımlı bir anlık görüntü aktarmak için btrfs send/receive kullanır. Son senkronizasyondan bu yana 3,8 GB değişikliğe sahip 420 GB'lık bir ortam 3,8 GB transfer eder — 420 GB değil.",
           "overline": "KAPUTUN ALTINDA",
+          "traditionalLabel": "Tescilli format bağımlılığı",
+          "rediaccLabel": "Rediacc (standart Linux depolama)",
           "rows": [
             {
               "rediacc": "Tek komut: anlık görüntü, aktar, doğrula, DNS'i değiştir — 1 saatin altında",
@@ -10693,11 +10254,6 @@
         "title": "İçindekiler"
       }
     }
-  },
-  "pricingPreview": {
-    "compareAll": "Tüm paketleri ve özellikleri karşılaştır",
-    "subtitle": "Ücretsiz başla. Hazır olunca ölçekle.",
-    "title": "Net fiyatlandırma. Sürpriz yok."
   },
   "regionPicker": {
     "footer": "Size en yakın bölgeyi veya kuruluşunuzun gerektirdiği bölgeyi seçin.",

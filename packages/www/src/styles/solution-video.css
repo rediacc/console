@@ -1,11 +1,17 @@
-/* The solution video ON THE HERO'S DARK BAND.
+/* The solution video ON THE HERO BAND.
  *
  * Everything that used to be here describing a player is gone: the solution pages mount
  * the tutorial player now (see SPSolutionVideo.astro), so `.sp-video-player`, the
  * landscape/vertical pair and the standalone `.sp-video` section went with the second
- * island. What remains is the one thing the shared player cannot know: it is sitting on
- * `--sp-bg-hero`, which is dark in BOTH themes, and its chrome paints from light-theme
- * tokens.
+ * island. What remains is the one thing the shared player cannot know: which surface it
+ * is sitting on.
+ *
+ * THAT SURFACE NOW INVERTS. Until operator decision A7 (2026-08-27) the hero was
+ * `--sp-bg-hero`, dark in BOTH themes, and every rule here could hardcode translucent
+ * white and be right twice. The hero is `--color-bg-band` now: #ffffff in light theme,
+ * #111113 in dark. Translucent white on #ffffff is the SAME white-on-white failure this
+ * file was written to fix, with the themes swapped, so the light case is served by the
+ * shared component's own tokens and the dark case by an explicitly theme-scoped block.
  *
  * These rules moved from a scoped <style> block in SPSolutionVideo.astro when the player
  * became a React island: Astro's scoping rewrites selectors against the elements IT
@@ -18,26 +24,44 @@
    `border-color: var(--color-border)` (language-switcher.css:15-16). Setting only
    `color: white` here left the background resolving to white on this hero, so the
    control rendered white-on-white at contrast 1.00 -- in BOTH themes, measured.
-   Exactly the failure the FOOTER switcher had earlier in the same wave: a dark band
-   must re-point every token the component paints from, not only the text one.
-   Translucent white rather than a fixed hex so the hero's own gradient shows through
-   and one rule serves both themes. */
+
+   LIGHT BAND: those component defaults are already the right answer on #ffffff, and
+   they are RESTATED rather than deleted for the reason the hover rule below gives --
+   the outcome must not depend on which stylesheet the bundler emits first.
+   #1a1a1a ink on #ffffff is 17.40:1 and the #d2d2d7 edge is 1.51:1, the same treatment
+   the trigger gets in the nav. */
 .sp-hero-media .tvp-toolbar .language-trigger {
-  background: rgba(255, 255, 255, 0.12);
-  border-color: rgba(255, 255, 255, 0.24);
-  color: var(--sp-text-white);
+  background: var(--color-bg-alt);
+  border-color: var(--color-border);
+  color: var(--color-text);
 }
 
 /* Higher specificity than `.language-trigger:hover` on purpose, so the outcome does not
-   depend on which stylesheet the bundler emits first. `--color-hover` is a light-theme
-   surface; on the dark band a translucent white is the readable hover. */
+   depend on which stylesheet the bundler emits first. */
 .sp-hero-media .tvp-toolbar .language-trigger:hover {
-  background-color: rgba(255, 255, 255, 0.08);
-  color: var(--sp-text-white);
+  background-color: var(--color-hover);
+  color: var(--color-text);
 }
 
+/* DARK BAND: on #111113 the component's own surface tokens are #1a1a1b (1.14:1) and
+   #1f1f23 for the hover, so the control would read as a shape with no edges. Translucent
+   white rather than a fixed hex so the hero's own gradient shows through. #e4e4e7 ink on
+   the composited chip (#2e2e2f) is 10.69:1. Scoped to the theme, not written into the base
+   rule, because the base rule now has a light surface to serve. */
+:root[data-theme='dark'] .sp-hero-media .tvp-toolbar .language-trigger {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.24);
+}
+
+:root[data-theme='dark'] .sp-hero-media .tvp-toolbar .language-trigger:hover {
+  background-color: rgba(255, 255, 255, 0.08);
+}
+
+/* The toolbar's own label. --color-text-secondary inverts with the band: 6.45:1 on
+   #ffffff, 7.36:1 on #111113. It read --sp-text-muted-dark, a fixed #a1a1aa, which is
+   2.56:1 on the light band. */
 .sp-hero-media .tvp-toolbar {
-  color: var(--sp-text-muted-dark);
+  color: var(--color-text-secondary);
 }
 
 /* The hero clips at its bounds (`.sp-hero` is overflow: hidden so its decorative glow
@@ -71,7 +95,13 @@
   display: block;
   aspect-ratio: 16 / 9;
   border-radius: var(--radius-md);
-  background: #0b0e14;
+  /* A reserved box, not a preview of the player. The literal #0b0e14 here dated from when
+     the hero band was black and the placeholder disappeared into it; after A7 the same
+     rectangle is a near-black slab sitting on a white hero for as long as the dynamic
+     import takes, which is the most visible thing on the page while it lasts. The
+     semantic token follows the band in both themes, so the reservation is felt as a
+     shape rather than seen as a colour. */
+  background: var(--color-bg-light);
 }
 
 @media (max-width: 768px) {

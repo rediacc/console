@@ -44,48 +44,68 @@ const illustrationSvg = slug ? resolveSolutionIllustration(slug) : null;
 ---
 
 <section class="sp-problem" id="problem">
-  <div class="sp-problem-inner">
-    <div class="sp-overline">{problem.overline}</div>
-    <h2>{problem.title}</h2>
-    <p>{problem.description}</p>
+  {/*
+    Two-column on desktop, one column below 900px. The container only becomes a
+    grid when there IS an illustration to put in the second column; with no
+    illustration `.sp-problem-inner` stays the plain 720px prose block it was.
+
+    DOM order is text-then-illustration, matching `.sp-hero-split` in
+    solution-pages.css and for the same reason: grid places the first child on
+    the inline-START edge, so LTR reads text-left / drawing-right and /ar
+    mirrors to text-right / drawing-left with no direction-specific rules. The
+    900px collapse keeps that order, so mobile leads with the title.
+
+    The stat callouts live INSIDE the text column: they are short chips that
+    restate the prose claim, and keeping them in the column is what balances the
+    two column heights so the vertical centring reads as intentional. The
+    timeline stays a full-width row under both columns because it is a
+    horizontal band by design (a row of connected steps, capped at 700px) and
+    squeezing it into a half-width column would break its own layout.
+  */}
+  <div class:list={['sp-problem-inner', illustrationSvg && 'sp-problem-split']}>
+    <div class="sp-problem-text">
+      <div class="sp-overline">{problem.overline}</div>
+      <h2>{problem.title}</h2>
+      <p>{problem.description}</p>
+
+      {problem.statCallouts && problem.statCallouts.length > 0 && (
+        <div class="sp-stat-callouts">
+          {problem.statCallouts.map((callout) => {
+            /*
+              B4: the callout keeps its number and its claim and loses the stacked source
+              line. What replaces it is a marker into SPSources, and it is rendered ONLY when
+              the `ref` actually resolves to an item.
+
+              That guard is the whole point rather than defensive habit. `statCallout.ref` is
+              unvalidated: `scripts/validate-comparison-refs.js` iterates `comparison.features`
+              and nothing else, so no gate has ever read these indices. And the case is live,
+              not hypothetical -- `pages.personaPages.*` carries `ref` numbers but has never
+              carried a `references` branch in any locale, so `PersonaPage.astro` passes no
+              `referenceItems` and every persona callout lands here unresolved. An
+              unconditional marker would emit `#sp-ref-N` against an id no page contains.
+            */
+            const cited = callout.ref && callout.ref > 0 ? referenceItems[callout.ref - 1] : undefined;
+            return (
+              <div class="sp-stat-callout">
+                <span class="sp-stat-callout-number">{callout.number}</span>
+                {callout.text}
+                {cited && (
+                  <a
+                    class="sp-stat-ref"
+                    href={`#sp-ref-${callout.ref}`}
+                    title={callout.source}
+                    aria-label={`${callout.source}: ${cited.text}`}
+                  >{callout.ref}</a>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
 
     {illustrationSvg && (
       <div class="sp-problem-illustration" set:html={illustrationSvg} />
-    )}
-
-    {problem.statCallouts && problem.statCallouts.length > 0 && (
-      <div class="sp-stat-callouts">
-        {problem.statCallouts.map((callout) => {
-          /*
-            B4: the callout keeps its number and its claim and loses the stacked source
-            line. What replaces it is a marker into SPSources, and it is rendered ONLY when
-            the `ref` actually resolves to an item.
-
-            That guard is the whole point rather than defensive habit. `statCallout.ref` is
-            unvalidated: `scripts/validate-comparison-refs.js` iterates `comparison.features`
-            and nothing else, so no gate has ever read these indices. And the case is live,
-            not hypothetical -- `pages.personaPages.*` carries `ref` numbers but has never
-            carried a `references` branch in any locale, so `PersonaPage.astro` passes no
-            `referenceItems` and every persona callout lands here unresolved. An
-            unconditional marker would emit `#sp-ref-N` against an id no page contains.
-          */
-          const cited = callout.ref && callout.ref > 0 ? referenceItems[callout.ref - 1] : undefined;
-          return (
-            <div class="sp-stat-callout">
-              <span class="sp-stat-callout-number">{callout.number}</span>
-              {callout.text}
-              {cited && (
-                <a
-                  class="sp-stat-ref"
-                  href={`#sp-ref-${callout.ref}`}
-                  title={callout.source}
-                  aria-label={`${callout.source}: ${cited.text}`}
-                >{callout.ref}</a>
-              )}
-            </div>
-          );
-        })}
-      </div>
     )}
 
     {problem.timeline && (

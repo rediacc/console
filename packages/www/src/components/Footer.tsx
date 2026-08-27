@@ -133,7 +133,7 @@ const Footer: React.FC<FooterProps> = ({ lang }) => {
               </li>
               <li>
                 <a
-                  href={`/${currentLang}#pricing`}
+                  href={`/${currentLang}/pricing`}
                   className="footer-link"
                   data-track="cta_click"
                   data-track-label="footer-product"

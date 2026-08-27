@@ -52,6 +52,21 @@ export interface ManifestAsset {
    * sole place a check can ask "what actually spoke this?".
    */
   engine?: string;
+  /**
+   * Which RENDERER produced this mp4, e.g. `remotion-4.0.518`. Set only on the `mp4`
+   * field, same reasoning as `engine`.
+   *
+   * WHY THIS EXISTS. `engine` above records what SPOKE the video and calls itself "the
+   * only engine provenance CI can see". Nothing recorded what DREW it. That is the same
+   * blind spot, one layer down: a Remotion bump applied halfway through a fleet splits it
+   * into two visually different halves, and every gate stays green, exactly as 207 of 273
+   * narrations sat stale on Qwen3-TTS until a human noticed the voice on edge.rediacc.com.
+   *
+   * OPTIONAL for the same reason `engine` is: every entry published before 2026-08-27
+   * predates the field. A gate reading it must treat `undefined` as "unknown, therefore
+   * stale", never as "assume current". Backfill honestly or not at all.
+   */
+  renderer?: string;
 }
 
 export interface VideoManifest {
@@ -193,6 +208,7 @@ if (isMain) {
     // JSON.stringify drops undefined values, so both forms serialize identically, but
     // only this one keeps the in-memory object honest for anything that checks `in`.
     ...(args.engine ? { engine: args.engine } : {}),
+    ...(args.renderer ? { renderer: args.renderer } : {}),
   });
   console.log(
     `Updated manifest: ${args.kind}.${args.key}.${args.lang}.${args.field} -> ${args.path}`

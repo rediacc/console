@@ -36,6 +36,35 @@
  * bias here: a false positive costs a real translation, while a missed dead key costs
  * nothing but bytes.
  *
+ * WHERE GENEROSITY BECAME BLINDNESS, AND WHAT NARROWS IT. `to()` returns a SUBTREE, and a
+ * subtree pattern vouches for everything beneath it. `SolutionPage.astro` does
+ * `const content = to(`pages.solutionPages.${config.contentKey}`)`, `contentKey` is not
+ * resolvable, so the pattern was `pages.solutionPages.*` -- a prefix of EVERY key of EVERY
+ * one of the 21 solution pages. Any whole SECTION could be deleted from the template and
+ * this gate would still report its keys reachable, which is exactly what happened: the
+ * social-proof section stopped rendering (rediacc/console#519) and 184 leaves went on being
+ * translated into thirteen catalogs with nothing able to say so.
+ *
+ * So a `to()` result BOUND TO A VARIABLE is narrowed to the properties actually read off
+ * that variable: `content.hero` and `content.problem` yield `<ns>.hero` and `<ns>.problem`,
+ * and a section nobody reads yields nothing. Three guards keep this from inventing false
+ * positives, and each one is a control in the self-test:
+ *   - only `to()`, never `t()`. `t()` returns a STRING, so `askTemplate.replaceAll(...)` is
+ *     a String method, not a key. Narrowing `t()` reported `documentation.pageActions.ask`
+ *     as dead on the real tree;
+ *   - any use of the variable that is NOT a plain property read (passed whole, indexed,
+ *     spread, or read through an Array/Object/String builtin) falls back to the whole
+ *     subtree. `roi-calculator.astro` hands `content` to a component intact;
+ *   - the scan runs on COMMENT-STRIPPED source. Not cosmetic: `SolutionPage.astro`'s
+ *     frontmatter note contains the English word "content" in prose, which read as a bare
+ *     use and switched narrowing off for the whole file.
+ *
+ * SHRINK-ONLY BASELINE. Turning that blindness off exposed 192 pre-existing dead leaves in
+ * one step, none of them deletable by the session that sharpened the gate (the thirteen
+ * catalogs are a serialised surface with one owner). They are frozen in
+ * `scripts/data/dead-translation-keys-baseline.json`, so a NEW dead key fails today, and a
+ * baselined key that gets deleted or wired up must be DRAINED or the gate hard-errors.
+ *
  * A KEY REPORTED HERE THAT IS ACTUALLY REACHED IS A BUG IN THIS FILE, NOT A CANDIDATE FOR
  * AN ALLOWLIST. It means the site reaches a key by a shape the extractor cannot see, and
  * the fix is to teach the extractor that shape, so the next key reached the same way is
@@ -43,17 +72,25 @@
  *
  * Usage:
  *   tsx scripts/check-dead-translation-keys.ts [--root <dir>] [--selftest] [--list]
+ *                                              [--write-baseline [--first-seed]]
  */
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
+import {
+  baselineAdditions,
+  renderRefusal,
+  sharedSelftestCases,
+  writeBaselineVerdict,
+} from './lib/shrink-only-baseline.js';
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const WWW_SRC = 'packages/www/src';
 const EN_JSON = 'packages/www/src/i18n/translations/en.json';
 const SOURCE_EXTS = ['.astro', '.tsx', '.ts', '.js', '.mjs', '.md', '.mdx'];
+const BASELINE = 'scripts/data/dead-translation-keys-baseline.json';
 
 /** Floors. Either one failing means the scan lost its input, not that the site is clean. */
 const MIN_SOURCE_FILES = 50;
@@ -131,6 +168,81 @@ export function catalogImportVars(src: string): string[] {
   return out;
 }
 
+/**
+ * Comments removed, so that PROSE cannot be mistaken for code.
+ *
+ * Only the subtree-narrowing scan below uses this. Pattern extraction still reads the whole
+ * file on purpose: a key path written inside a comment is a documented re-enable path, and
+ * treating it as unreachable would report a deliberately parked branch as dead.
+ */
+export function stripComments(src: string): string {
+  return src.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:\\])\/\/[^\n]*/gm, '$1 ');
+}
+
+/**
+ * Property reads that belong to the LANGUAGE, not to a catalog. Seeing one means the
+ * variable is being treated as an array/object/string rather than as a bag of key paths,
+ * so the whole subtree stays vouched for.
+ */
+const BUILTIN_PROPS = new Set([
+  'map', 'filter', 'forEach', 'length', 'slice', 'find', 'findIndex', 'some', 'every',
+  'reduce', 'join', 'entries', 'keys', 'values', 'at', 'concat', 'includes', 'indexOf',
+  'sort', 'flat', 'flatMap', 'push', 'toString', 'constructor', 'then', 'catch',
+  'replaceAll', 'replace', 'split', 'trim', 'startsWith', 'endsWith',
+]);
+
+export interface SubtreeNarrowing {
+  /** Subtree patterns this file no longer vouches for wholesale. */
+  drop: Set<string>;
+  /** The narrower patterns that replace them. */
+  add: string[];
+}
+
+/**
+ * `const content = to('a.b')` followed by `content.hero` reaches `a.b.hero`, and NOT the
+ * siblings of `hero`. See the header for why this exists and what it refuses to narrow.
+ */
+export function subtreeNarrowing(src: string, ns: Map<string, string>): SubtreeNarrowing {
+  const drop = new Set<string>();
+  const add: string[] = [];
+  const scan = stripComments(src);
+
+  for (const m of src.matchAll(
+    /\b(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*(?::[^=]+)?=\s*\bto\(\s*(?:'([^']+)'|"([^"]+)"|`([^`]+)`)/g
+  )) {
+    const id = m[1];
+    const literal = m[2] ?? m[3];
+    const key =
+      literal !== undefined
+        ? literal
+        : wildcard(
+            m[4].replace(/\$\{([A-Za-z_$][\w$]*)\}/g, (whole, name: string) => ns.get(name) ?? whole)
+          );
+
+    const occurrences = new RegExp(`(?<![\\w$.])${id.replace(/\$/g, '\\$')}(?![\\w$])`, 'g');
+    const props = new Set<string>();
+    let bare = false;
+    for (const occ of scan.matchAll(occurrences)) {
+      const rest = scan.slice(occ.index + id.length);
+      // The declaration itself, and a JSX attribute that happens to share the name.
+      if (/^\s*=(?!=)/.test(rest)) continue;
+      // `content.hero`, `content?.hero`, `(content as any).hero`.
+      const read = /^\s*(?:as\s+[^).]+)?\)?\s*\??\.\s*([A-Za-z_$][\w$]*)/.exec(rest);
+      if (read && !BUILTIN_PROPS.has(read[1])) {
+        props.add(read[1]);
+        continue;
+      }
+      bare = true;
+      break;
+    }
+    if (!bare && props.size > 0) {
+      drop.add(key);
+      for (const p of props) add.push(`${key}.${p}`);
+    }
+  }
+  return { drop, add };
+}
+
 export function referencePatterns(src: string): string[] {
   const pats: string[] = [];
   const ns = namespaceVars(src);
@@ -158,7 +270,12 @@ export function referencePatterns(src: string): string[] {
     const re = new RegExp(`\\b${v}\\.([A-Za-z][\\w]*(?:\\.[A-Za-z][\\w]*)*)`, 'g');
     for (const m of src.matchAll(re)) pats.push(m[1]);
   }
-  return pats;
+  // A `to()` subtree bound to a variable vouches only for the properties actually read.
+  // Applied LAST because it REMOVES patterns the rules above emitted: the same key text is
+  // produced both by the `to()` call and by rule 3 seeing the backtick, and leaving either
+  // copy in would restore the whole subtree and undo the narrowing.
+  const { drop, add } = subtreeNarrowing(src, ns);
+  return drop.size === 0 ? pats : [...pats.filter((p) => !drop.has(p)), ...add];
 }
 
 /** A pattern matches a key when it equals it or is a prefix of it. `*` spans one segment. */
@@ -256,6 +373,63 @@ export const P = () => <h1>{t(\`\${ns}.hero.title\`)}</h1>;`;
     reach("const o = to('pages.company.mission');", 'pages.company.mission.belief')
   );
 
+  // SUBTREE NARROWING. The blind spot that let a whole deleted section keep 184 translated
+  // leaves alive. `o` above is declared and never read, so it stays a whole subtree; the
+  // moment a file READS properties off it, only those properties are vouched for.
+  const NARROW = `const content = to(\`pages.solutionPages.\${config.contentKey}\`);
+const title = (content as any).hero?.title;
+const body = (content as any).problem;`;
+  check(
+    'a narrowed subtree still reaches the properties that ARE read (control)',
+    reach(NARROW, 'pages.solutionPages.encryption.hero.title') &&
+      reach(NARROW, 'pages.solutionPages.encryption.problem.timeline.oldLabel')
+  );
+  check(
+    'PLANT: a SECTION nobody reads off the subtree is unreachable',
+    !reach(NARROW, 'pages.solutionPages.encryption.socialProof.quote'),
+    'this is the defect: `pages.solutionPages.*` is a prefix of every key of every page'
+  );
+  check(
+    'a subtree passed WHOLE is not narrowed (control)',
+    reach(
+      "const content = to('pages.roiCalculator');\nconst el = <C content={content} />;",
+      'pages.roiCalculator.anything.at.all'
+    ),
+    'a component handed the object intact can read any key under it'
+  );
+  check(
+    'a subtree read through an ARRAY builtin is not narrowed (control)',
+    reach(
+      "const items = to('pages.pricing.faq.items');\nconst n = items.map((i) => i.q);",
+      'pages.pricing.faq.items.0.question'
+    )
+  );
+  check(
+    'a t() STRING is never narrowed by its String methods (control)',
+    reach(
+      "const askTemplate = t('documentation.pageActions.ask');\n" +
+        "const l = (p) => askTemplate.replaceAll('{{provider}}', p);",
+      'documentation.pageActions.ask'
+    ),
+    'narrowing t() reported this real key as dead on the whole tree'
+  );
+  check(
+    'a property read only inside a COMMENT does not keep narrowing switched off',
+    !reach(
+      '// restore with: <X y={(content as any).socialProof} /> -- the content behind it\n' +
+        "const content = to('pages.solutionPages.encryption');\n" +
+        'const h = (content as any).hero;',
+      'pages.solutionPages.encryption.socialProof.quote'
+    ),
+    'prose containing the variable name read as a bare use and disabled narrowing entirely'
+  );
+  check(
+    'stripComments leaves a URL alone',
+    stripComments("const u = 'https://x.dev/a';").includes('https://x.dev/a')
+  );
+
+  for (const c of sharedSelftestCases()) check(c.name, c.ok, c.detail);
+
   // A different key with a matching SUFFIX must not be laundered as reachable, or half the
   // dead keys in the tree would look alive.
   check(
@@ -347,10 +521,60 @@ function main(): void {
     return;
   }
 
-  if (dead.length === 0) {
+  const baselinePath = path.join(base, BASELINE);
+  const baselineExists = fs.existsSync(baselinePath);
+  const previous: string[] = baselineExists
+    ? JSON.parse(fs.readFileSync(baselinePath, 'utf-8'))
+    : [];
+
+  if (argv.includes('--write-baseline')) {
+    // COMPOSITION lives in scripts/lib/shrink-only-baseline.ts. No seed target: there is no
+    // legitimate way for this backlog to grow, because a new dead key is always either a
+    // deletion someone forgot or a wiring someone forgot.
+    const verdict = writeBaselineVerdict({
+      baselineExists,
+      firstSeedFlag: argv.includes('--first-seed'),
+      additions: baselineExists ? baselineAdditions(previous, dead) : [],
+    });
+    if (verdict !== null) {
+      console.error(
+        `\n\x1b[31m✗\x1b[0m ${renderRefusal(verdict, {
+          baselineLabel: BASELINE,
+          noun: 'dead key',
+          previousCount: previous.length,
+          newCount: dead.length,
+        })}`
+      );
+      process.exit(1);
+    }
+    fs.writeFileSync(baselinePath, `${JSON.stringify(dead, null, 2)}\n`);
+    console.log(
+      `baseline written: ${dead.length} dead key(s) (${previous.length} before, ` +
+        `${previous.filter((k) => !dead.includes(k)).length} drained, 0 added)`
+    );
+    return;
+  }
+
+  const known = new Set(previous);
+  const fresh = dead.filter((k) => !known.has(k));
+  const drained = previous.filter((k) => !dead.includes(k));
+
+  if (drained.length > 0) {
+    console.error(
+      `\n\x1b[31m✗\x1b[0m ${drained.length} baselined key(s) are no longer dead -- either ` +
+        `deleted from the\ncatalogs or wired up. This baseline is SHRINK-ONLY, so drain it:\n` +
+        `  npx tsx scripts/check-dead-translation-keys.ts --write-baseline\n`
+    );
+    for (const k of drained.slice(0, 10)) console.error(`    ${k}`);
+    if (drained.length > 10) console.error(`    ... and ${drained.length - 10} more`);
+    process.exit(1);
+  }
+
+  if (fresh.length === 0) {
     console.log(
       `✓ All ${keys.length} English translation key(s) are reachable from ${files.length} ` +
-        `source file(s) (${patterns.size} reference pattern(s)).`
+        `source file(s) (${patterns.size} reference pattern(s)), ` +
+        `baseline ${previous.length} known dead.`
     );
     return;
   }
@@ -358,14 +582,15 @@ function main(): void {
   // Group by the shallowest branch that holds only dead leaves, so 46 sibling leaves read
   // as one decision to make rather than 46.
   const byBranch = new Map<string, string[]>();
-  for (const k of dead) {
+  for (const k of fresh) {
     const branch = k.split('.').slice(0, 3).join('.');
     byBranch.set(branch, [...(byBranch.get(branch) ?? []), k]);
   }
 
   console.error(
-    `✗ ${dead.length} English translation key(s) in ${byBranch.size} branch(es) are reachable ` +
-      `by no code path, out of ${keys.length} key(s):\n`
+    `✗ ${fresh.length} NEW English translation key(s) in ${byBranch.size} branch(es) are ` +
+      `reachable by no code path, out of ${keys.length} key(s) ` +
+      `(${previous.length} already baselined):\n`
   );
   for (const [branch, list] of [...byBranch]
     .sort((a, b) => b[1].length - a[1].length)
@@ -378,7 +603,7 @@ function main(): void {
   console.error(
     `\nEach of these is also carried in twelve other catalogs, translated, re-naturalized on\n` +
       `every English change, and shipped to every visitor. Delete the branch from all 13\n` +
-      `catalogs, or wire it up.\n` +
+      `catalogs, or wire it up. Do NOT add it to ${BASELINE}.\n` +
       `Full list: npx tsx scripts/check-dead-translation-keys.ts --list\n` +
       `If a key IS reached and is listed here, the reference shape is one this gate cannot\n` +
       `see: extend referencePatterns() rather than allowlisting the key.`

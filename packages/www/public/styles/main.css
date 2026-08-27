@@ -130,20 +130,25 @@
        page    --color-bg / --color-bg-light   #f7f7f8  the default sheet
        raised  --color-bg-alt / --color-surface #ffffff most cards, alternated
                                                         light sections
-       accent  --color-brand-tint               #eef3ea the sp-stats band, the
-                                                        one tinted surface
-       band    --color-bg-dark                  #111113 EVERY dark band: hero,
-                                                        section-dark, bottom
-                                                        CTA, footer
+       accent  --color-brand-tint               #eef3ea the sp-stats band and
+                                                        the two emphasis bands
+       band    --color-bg-dark                  #111113 the TERMINATOR dark:
+                                                        the footer,
+                                                        section-dark,
+                                                        video-wrapper
 
      ONE dark, deliberately. #1a1a1a (--gray-900) used to be a second dark
-     surface (`section-dark`, `--sp-bg-dark`), and wherever it met the #111113
-     band the 1.08:1 step read as a seam, not a boundary (sp-benefits against
-     sp-bottom-cta on the persona pages, pricing-cta against the footer
-     everywhere). Adjacent dark sections now MERGE into one continuous band,
-     which is the documented design for the bottom CTA + footer already; the
+     surface (`section-dark`), and wherever it met the #111113 band the 1.08:1
+     step read as a seam, not a boundary (pricing-cta against the footer
+     everywhere). Adjacent dark sections MERGE into one continuous band; the
      boundary inside a band is spacing and content, never a near-identical
-     background step. --gray-900 remains as ink, not as a surface. ---- */
+     background step. --gray-900 remains as ink, not as a surface.
+
+     --color-bg-dark does NOT flip with the theme, and after 2026-08-27 that
+     is a much smaller claim than it used to be: the only page-level surface
+     still holding it in light mode is the FOOTER, which is a deliberate page
+     terminator. Everything else that used to be a dark band moved to
+     --color-bg-band / --color-bg-band-accent below. ---- */
   --color-bg: var(--gray-100);
   --color-bg-alt: var(--gray-0);
   --color-bg-light: var(--gray-100);
@@ -154,6 +159,48 @@
   --color-hover: var(--gray-100);
   --color-surface: var(--gray-0);
   --color-surface-alt: var(--gray-100);
+
+  /* ---- 3b. THE BAND, and it is the one surface group that INVERTS.
+
+     Operator decision A7 (2026-08-27): a page-level dark band goes LIGHT in
+     light mode; the footer stays dark as the page terminator. Before that the
+     solution-page opener (breadcrumb + page header + hero), the benefits band
+     and the closing CTA were all #111113 in BOTH themes, so a light-theme
+     solution page opened on a black screen and closed on another one.
+
+     TWO band surfaces, because the dark band was doing two jobs:
+
+       --color-bg-band         the OPENING band. Its neighbour below is always
+                               .sp-problem (#f7f7f8), so the raised rung reads
+                               as a step. Headings land at 17.40:1 and
+                               --color-brand-primary at 4.95:1, both AA.
+       --color-bg-band-accent  the EMPHASIS bands, .sp-benefits and
+                               .sp-bottom-cta. Their neighbours vary by page
+                               (17 pages use ALL_SECTIONS, 3 drop the
+                               comparison, 1 is bespoke, and the 4 persona
+                               pages put the comparison directly under
+                               benefits), and the accent rung is the only one
+                               that cannot collide with EITHER #ffffff or
+                               #f7f7f8. Headings 15.45:1, --color-text-secondary
+                               5.72:1, --color-text-tertiary 4.50:1.
+
+     Both collapse to --color-bg-dark in dark theme, so dark mode is unchanged
+     and the closing CTA still merges with the footer there.
+
+     --color-brand-on-band is the brand green for SMALL text on either band.
+     --color-brand-primary is 4.95:1 on the opening band but only 4.39:1 on the
+     accent band, which fails AA for anything under 18.66px; the secondary green
+     is 6.51:1 and 5.78:1 respectively, and in dark mode this token resolves to
+     the brightened #7fa03f at 6.29:1 on #111113.
+
+     The two ornament tokens carry the hero dot grid and the radial glow, which
+     were authored as translucent WHITE and therefore vanished the moment the
+     band stopped being black. ---- */
+  --color-bg-band: var(--color-bg-alt);
+  --color-bg-band-accent: var(--color-brand-tint);
+  --color-brand-on-band: var(--color-brand-secondary);
+  --color-band-dot: rgba(0, 0, 0, 0.05);
+  --color-band-glow: rgba(74, 124, 63, 0.1);
 
   /* ---- 4. Semantic foregrounds. Three levels, each AA on --color-bg. ---- */
   --color-text: var(--gray-900);
@@ -266,7 +313,16 @@
   --max-width: 1200px;
   --nav-height: 3.5rem;
   --announcement-bar-height: 0px;
-  --nav-top-offset: calc(var(--nav-height) + var(--announcement-bar-height, 0px));
+  /* The fixed nav's own hairline, counted INTO --nav-top-offset rather than added on top
+     of it. The offset is what mega-menu panels drop from and what sticky sidebars and
+     scroll-padding measure against, so a border the offset did not know about would leave
+     a 1px seam of page showing between the nav and every panel anchored under it. */
+  --nav-border-width: 1px;
+  --nav-top-offset: calc(
+    var(--nav-height) +
+    var(--nav-border-width) +
+    var(--announcement-bar-height, 0px)
+  );
   /* Height of the docs chrome strip. Was three independent literals: the header row's
      min-height, the tab link height, and the docs sidebar top offset. */
   --docs-chrome-height: 3rem;
@@ -424,11 +480,14 @@
   --sp-brand-dark: var(--color-brand-dark);
   --sp-brand-light: var(--color-brand-tint);
   --sp-brand-glow: var(--color-brand-glow);
-  /* Both dark aliases resolve onto the ONE band surface (see the ladder in
-     section 3): hero, benefits and bottom CTA are the same dark, so adjacent
-     dark sections merge instead of meeting at a 1.08:1 seam. */
-  --sp-bg-hero: var(--color-bg-dark);
-  --sp-bg-dark: var(--color-bg-dark);
+  /* --sp-bg-hero no longer paints a hero. Operator decision A7 moved the
+     solution-page opener, the benefits band and the closing CTA onto
+     --color-bg-band / --color-bg-band-accent in section 3b, and the surfaces
+     that stay black in both themes now name --color-bg-dark directly. What is
+     left is ONE consumer, SPHomeHero.astro:51, the homepage hero, which is a
+     component this stylesheet's owner does not own. When that hero is flipped
+     the alias goes with it.
+     --sp-bg-dark was deleted here: after A7 it had zero consumers. */
   --sp-bg-light: var(--color-bg-light);
   --sp-bg-white: var(--color-bg-alt);
   --sp-bg-stats: var(--color-brand-tint);
@@ -438,7 +497,10 @@
   --sp-text-muted-light: var(--color-text-tertiary);
   --sp-text-muted-dark: var(--color-text-on-dark-muted);
   --sp-border-light: var(--color-border);
-  --sp-border-dark: var(--color-border-on-dark);
+  /* --sp-border-dark was deleted here: its one consumer, .sp-benefit-card,
+     moved onto --sp-border-light when A7 flipped the benefits band.
+     --color-border-on-dark, which it aliased, still has a consumer at
+     ImageModal.astro:111. */
   --sp-font-sans: var(--font-family);
   --sp-font-mono: var(--font-family-mono);
   --sp-page-max: var(--max-width);
@@ -491,10 +553,15 @@
   --color-bg: #0f0f10;
   --color-bg-alt: #1a1a1b;
   --color-bg-light: #141416;
-  /* The one band surface (see the ladder note in :root). #111113 in BOTH
-     themes: the dark bands are the part of the page the theme does not flip,
-     which is also why the footer never changed colour. Was #0a0a0b, a fourth
-     near-identical dark that only ever met #111113 at 1.05:1. */
+  /* The terminator surface (see the ladder note in :root). #111113 in BOTH
+     themes, which is why the footer never changes colour. Was #0a0a0b, a
+     fourth near-identical dark that only ever met #111113 at 1.05:1.
+
+     This used to read "the dark bands are the part of the page the theme does
+     not flip". That stopped being true on 2026-08-27: operator decision A7
+     flipped every PAGE-LEVEL band to light in light mode and left only the
+     footer here. The band tokens are re-pointed at this value below, so in
+     DARK mode the page still reads exactly as it did. */
   --color-bg-dark: #111113;
   --color-bg-darker: #111113;
   --color-bg-secondary: #141416;
@@ -502,6 +569,23 @@
   --color-hover: #1f1f23;
   --color-surface: #1a1a1b;
   --color-surface-alt: #141416;
+
+  /* The band (section 3b) is the one group that INVERTS, so in dark mode both
+     rungs collapse back onto the terminator surface and the whole page reads
+     as one dark sheet again: the closing CTA still merges with the footer, and
+     the ratios measured on #111113 are the ones that apply.
+       --color-heading        #e4e4e7 on #111113  14.86:1
+       --color-text-secondary #a1a1aa on #111113   7.36:1
+       --color-text-tertiary  #8f8f99 on #111113   5.89:1
+       --color-brand-on-band  #7fa03f on #111113   6.29:1
+     --color-brand-on-band must be re-pointed and cannot be left as the light
+     value: --color-brand-secondary is #3d6834 in both themes (it is a FILL
+     carrying white text) and lands at 2.90:1 on this surface. */
+  --color-bg-band: var(--color-bg-dark);
+  --color-bg-band-accent: var(--color-bg-dark);
+  --color-brand-on-band: var(--color-brand-primary);
+  --color-band-dot: rgba(255, 255, 255, 0.04);
+  --color-band-glow: var(--color-brand-glow);
 
   /* Foregrounds */
   --color-text: #e4e4e7; /* 13.71:1 */
@@ -947,6 +1031,14 @@ a[target='_blank']::after {
   top: var(--announcement-bar-height, 0);
   inset-inline: 0;
   background-color: var(--color-bg-alt);
+  /* The nav's lower edge, and it has to be DRAWN rather than inherited from contrast.
+     `--color-bg-alt` is also what `--color-bg-band` resolves to after A7, so on the 25
+     solution and persona pages the fixed bar and the hero band directly beneath it are the
+     same white and the bar simply ends nowhere: content scrolls up into it with no
+     boundary. Site-wide on purpose -- a fixed bar over scrolling content wants an edge on
+     every route, and on pages whose opening band already differs this reads as a seam
+     rather than a rule at 8% black. Its width is counted into --nav-top-offset above. */
+  border-bottom: var(--nav-border-width) solid var(--color-border-subtle);
   z-index: var(--z-fixed); /* Fixed navigation layer */
   /* Clip the upward slide of .nav-translate at the nav's top edge so items
      visibly cut off instead of vanishing behind the announcement banner.
@@ -1761,9 +1853,12 @@ body[data-nav-collapsed='true'] .nav-breadcrumb {
        `@media (min-width: 64rem) { .hamburger-btn { display: none } }`, so the
        hamburger reappeared at desktop, took a grid column, and pushed the
        whole `.nav-right` cluster onto an implicit SECOND grid row at y=64,
-       outside the 56px nav band and on top of the dark hero;
+       outside the 56px nav band and over the hero beneath it (black at the
+       time, light since A7 -- the overflow is the same, it just no longer
+       announces itself with a change of colour);
      - the base's 48px `min-height` overflowed the same 56px row, and the CTA
-       label went from 4.90:1 on the white nav to 3.51:1 on the hero, which is
+       label went from 4.90:1 on the white nav to 3.51:1 on the then-black
+       hero, which is
        what axe reported and what led back to the wrap.
 
    The `calc(var(--space-2) - 1.5px)` that used to compensate for the outline
@@ -2239,14 +2334,6 @@ body[data-nav-collapsed='true'] .nav-breadcrumb {
   color: var(--color-text);
 }
 
-.section-subtitle {
-  font-size: var(--font-size-lg);
-  color: var(--color-text-secondary);
-  max-width: var(--container-md);
-  margin: 0 auto;
-  line-height: var(--leading-relaxed);
-}
-
 /* ===== PROBLEM SECTION ===== */
 .problem-content {
   max-width: var(--max-width);
@@ -2305,21 +2392,6 @@ body[data-nav-collapsed='true'] .nav-breadcrumb {
   max-width: var(--container-xl);
   margin: 0 auto;
   padding: 0 var(--space-8);
-}
-
-/* ===== PRICING PREVIEW ===== */
-.pricing-preview-compare {
-  display: block;
-  text-align: center;
-  margin-top: var(--space-8);
-  color: var(--color-brand-primary);
-  font-weight: var(--font-weight-semibold);
-  text-decoration: none;
-  font-size: var(--font-size-base);
-}
-
-.pricing-preview-compare:hover {
-  text-decoration: underline;
 }
 
 .cf-guarantee-strip {
@@ -2389,22 +2461,27 @@ a.cf-guarantee-link:hover {
 }
 
 /* ===== CLOSING CTA SECTION ===== */
-/* The homepage's bottom CTA joins the black closing band, exactly like
-   .sp-bottom-cta does on the 25 solution/persona pages: the final CTA and the
+/* The homepage's bottom CTA joins the black closing band: the final CTA and the
    footer below it read as ONE continuous #111113 band. It used to be
    transparent, which resolved to the body's #f7f7f8 and sat invisible against
    the identical #f7f7f8 pricing section above it. Token values are copied
    from the .footer block below, whose ratios on this band are measured there
    (13.71:1 / 6.79:1); the buttons inside consume the same semantic tokens, so
-   re-pointing them here restyles both CTAs without touching the primitive. */
+   re-pointing them here restyles both CTAs without touching the primitive.
+
+   NOT flipped by operator decision A7, which scoped itself to the four
+   SOLUTION-PAGE bands. This one is the homepage's, and flipping it alone would
+   leave the homepage opening on `SPHomeHero`'s black band and closing on a
+   light one. `SPHomeHero.astro` is a component, not a stylesheet, so the pair
+   has to move together and under one owner. Reported, not taken. */
 .closing-cta {
   padding: var(--space-16) 0;
-  background-color: var(--sp-bg-hero);
-  --color-text: #e4e4e7;
-  --color-text-secondary: #a1a1aa;
-  --color-border: rgb(255 255 255 / 12%);
-  --color-interactive-hover: rgb(255 255 255 / 8%);
-  --color-interactive-active: rgb(255 255 255 / 14%);
+  /* The ACCENT rung, matching .sp-bottom-cta, not the opening band: on #ffffff a
+     closing CTA vanishes into the white section above it. Flipped together with
+     SPHomeHero.astro, because the pair is what A7 actually implies for the
+     homepage: it may not open light and close black, nor the reverse. In dark
+     theme both band tokens are #111113, so the footer merge survives there. */
+  background-color: var(--color-bg-band-accent);
   color: var(--color-text);
 }
 
@@ -2975,9 +3052,18 @@ a.cf-guarantee-link:hover {
 }
 
 /* ===== FOOTER ===== */
-/* The footer is BLACK IN BOTH THEMES and shares its background token with
- * `.sp-bottom-cta`, so the final CTA and the footer read as ONE continuous black
- * band at the bottom of the page rather than a dark strip above a white island.
+/* The footer is BLACK IN BOTH THEMES, and after operator decision A7
+ * (2026-08-27) it is the ONLY page-level surface that is: it is a deliberate
+ * page TERMINATOR, the one band the theme does not flip.
+ *
+ * It used to share `--sp-bg-hero` with `.sp-bottom-cta` so the two merged into
+ * one continuous black band. `.sp-bottom-cta` is now light in light mode, so
+ * that merge is deliberately broken there and the footer's top edge is a hard
+ * boundary at 16.74:1 against the accent band above it -- which is the point of
+ * a terminator. In DARK mode both resolve to #111113 and the old merge is
+ * exactly preserved. The token is named directly here rather than through
+ * `--sp-bg-hero`, which is retired: it had no consumers left once the homepage hero
+ * moved onto `--color-bg-band` with the rest of the page bands.
  *
  * The text colours are re-pointed HERE, on the container, rather than by editing
  * the thirty `.footer-*` rules below: they all consume the semantic tokens, so
@@ -2990,7 +3076,7 @@ a.cf-guarantee-link:hover {
  * legal included, which is deliberate.
  */
 .footer {
-  background-color: var(--sp-bg-hero);
+  background-color: var(--color-bg-dark);
   padding: var(--space-20) 0 var(--space-8);
   --color-text: #e4e4e7;
   --color-text-secondary: #a1a1aa;
@@ -3248,10 +3334,6 @@ a.cf-guarantee-link:hover {
 
   .section-title {
     font-size: var(--font-size-4xl);
-  }
-
-  .section-subtitle {
-    font-size: var(--font-size-lg);
   }
 }
 

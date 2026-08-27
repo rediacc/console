@@ -48,7 +48,7 @@ const { t } = createTranslator(lang);
      the same way `.sp-page > nav.sp-breadcrumb` already does, rather than
      letting the header overlap the first child. */
   .sp-home-hero {
-    background: var(--sp-bg-hero);
+    background: var(--color-bg-band);
     padding: calc(var(--nav-top-offset, 3.5rem) + var(--space-16)) var(--space-12) var(--space-16);
     text-align: center;
   }
@@ -68,7 +68,7 @@ const { t } = createTranslator(lang);
     font-weight: 700;
     line-height: 1.15;
     letter-spacing: -0.03em;
-    color: var(--sp-text-white);
+    color: var(--color-heading);
   }
 
   .sp-home-hero-sub {
@@ -76,7 +76,7 @@ const { t } = createTranslator(lang);
     max-width: 600px;
     font-size: var(--font-size-lg);
     line-height: 1.5;
-    color: var(--sp-text-muted-dark);
+    color: var(--color-text-secondary);
   }
 
   @media (max-width: 900px) {

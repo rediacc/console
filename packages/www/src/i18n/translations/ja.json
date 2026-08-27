@@ -3044,7 +3044,7 @@
         "blurb": "本番環境をクローン。AIに攻撃させる。",
         "bottomCta": {
           "command": "rdc repo fork production --tag pentest",
-          "ctaText": "無料で始める",
+          "primaryCta": "無料で始める",
           "description": "無料のCommunityエディションから始めましょう。60秒以内に最初のペンテストを実行できます。",
           "title": "攻撃者より先に脆弱性を発見"
         },
@@ -3252,6 +3252,8 @@
         "techDiff": {
           "description": "従来のペネトレーションテストは、作成から数日で本番と乖離するステージング環境を対象とします。Rediaccは実際の本番インフラのbtrfsコピーオンライトスナップショットを作成します — 同じデータ、同じ設定、同じ脆弱性 — そしてそれに対して自動攻撃シミュレーションを実行します。クローンはテスト後に破棄されます。本番は一切触れません。",
           "overline": "技術詳細",
+          "traditionalLabel": "従来のペネトレーションテスト",
+          "rediaccLabel": "Rediacc（本番クローンを攻撃）",
           "rows": [
             {
               "rediacc": "本番クローン（数秒前、100%一致）",
@@ -3306,7 +3308,7 @@
         "blurb": "すべてのアクションを記録。隠し事なし。",
         "bottomCta": {
           "command": "rdc repo status production",
-          "ctaText": "Communityで無料で始める",
+          "primaryCta": "Communityで無料で始める",
           "description": "無料のCommunityエディションから始めましょう。1分以内に最初の監査レポートを生成できます。",
           "title": "すべてを見る。何も見逃さない。"
         },
@@ -3612,6 +3614,8 @@
         "techDiff": {
           "description": "アプリケーションログはデバッグ用に設計されています — 変更可能で、不完全で、システム間に分散しています。Rediaccの監査証跡はコンプライアンス用に設計されています：すべての操作が暗号署名され、時系列で連鎖され、単一のレポートとしてエクスポート可能です。",
           "overline": "技術詳細",
+          "traditionalLabel": "変更可能なアプリケーションログ",
+          "rediaccLabel": "Rediaccの監査ログ",
           "rows": [
             {
               "rediacc": "暗号署名済み — 改ざん検出が組み込み",
@@ -3634,27 +3638,6 @@
         }
       },
       "backupVerification": {
-        "benefits": {
-          "items": [
-            {
-              "description": "すべてのバックアップは必要になる前にクローン、起動、ヘルスチェック済み。破損は危機時ではなく24時間以内に検出。",
-              "icon": "check-circle",
-              "title": "サプライズゼロ"
-            },
-            {
-              "description": "手動テスト不要。スクリプト不要。バックアップ検証はCIパイプラインで実行。失敗した場合は問題が発生する前にアラート。",
-              "icon": "shield",
-              "title": "自動整合性チェック"
-            },
-            {
-              "description": "PagerDuty、Slack、またはメール — バックアップが検証に失敗した瞬間に通知。確認すべきダッシュボードなし。定期的なスポットチェック不要。",
-              "icon": "bell",
-              "title": "即時アラート"
-            }
-          ],
-          "overline": "重要な理由",
-          "title": "得られるもの"
-        },
         "blurb": "すべてのバックアップを自動検証",
         "bottomCta": {
           "command": "rdc backup verify my-app",
@@ -3844,33 +3827,6 @@
               "text": "侵害されたレコードあたりの平均コスト"
             }
           ],
-          "timeline": {
-            "newLabel": "Rediaccを使えば",
-            "newSteps": ["バックアップ", "47s", "検証済み"],
-            "oldLabel": "従来のやり方",
-            "oldSteps": [
-              {
-                "day": "1日目",
-                "text": "バックアップを実行"
-              },
-              {
-                "day": "2-364日目",
-                "text": "「完了」を信じる"
-              },
-              {
-                "day": "365日目",
-                "text": "災害が発生"
-              },
-              {
-                "day": "365日目",
-                "text": "リストアを試行"
-              },
-              {
-                "day": "365日目",
-                "text": "バックアップが破損していた"
-              }
-            ]
-          },
           "title": "破損したバックアップはバックアップなしより悪い"
         },
         "references": {
@@ -3953,23 +3909,6 @@
           },
           "quote": "初週に自動検証を実行し、3つのサービスにわたる12の破損バックアップを発見しました — テーブルが切り詰められたMariaDBダンプ、古いNextcloud設定、6ヶ月前のRedisスナップショット。Rediaccがなければ、実際の災害時にこれらを発見していたでしょう。今では、作成から47秒以内にすべてのバックアップが検証されます。"
         },
-        "stats": [
-          {
-            "icon": "check-circle",
-            "label": "Backups Verified",
-            "number": "100%"
-          },
-          {
-            "icon": "refresh",
-            "label": "No Manual Checks",
-            "number": "Auto"
-          },
-          {
-            "icon": "clock",
-            "label": "Verification Time",
-            "number": "<1分"
-          }
-        ],
         "techDiff": {
           "description": "従来のバックアップツールはファイルが書き込まれたことをチェックします。Rediaccはさらに進みます：バックアップをクローンし、すべてのコンテナを起動し、すべてのサービスに対してヘルスチェックを実行し、合格/不合格を報告します。ファイルチェックサムではなく、完全な復元テストです。",
           "overline": "技術詳細",
@@ -4381,7 +4320,7 @@
         "blurb": "年次ではなく継続的にセキュリティをテスト",
         "bottomCta": {
           "command": "rdc backup restore production --as production-verify -m primary --up",
-          "ctaText": "無料で始める",
+          "primaryCta": "無料で始める",
           "description": "無料のCommunityエディションから始めましょう。30秒で最初の継続的ペンテストをスケジュールできます。",
           "title": "攻撃者が頼りにするウィンドウを閉じる"
         },
@@ -4584,6 +4523,8 @@
         "techDiff": {
           "description": "スケジュールされた各スキャンは、本番インフラの新しいbtrfsコピーオンライトスナップショットを作成し、完全なAIペンテストスイートを実行し、トレンド比較付きの優先順位レポートを生成し、クローンを破棄します。メンテナンスするステージング環境なし。ドリフトなし。古いデータなし。すべてのスキャンが、今実際に本番で動いているものをテストします。",
           "overline": "技術詳細",
+          "traditionalLabel": "年次スケジュールテスト",
+          "rediaccLabel": "Rediacc（継続的）",
           "rows": [
             {
               "rediacc": "毎日、毎週、またはデプロイごと",
@@ -4638,7 +4579,7 @@
         "blurb": "あなたのサーバー、あなたの鍵、あなたの管轄。",
         "bottomCta": {
           "command": "rdc config show",
-          "ctaText": "Communityで無料で始める",
+          "primaryCta": "Communityで無料で始める",
           "description": "無料のCommunityエディションから始めてください。最初の鍵管理監査を1分以内に実行できます。",
           "title": "米国司法管轄のプロバイダーからデータを借り返すのをやめましょう。"
         },
@@ -4942,6 +4883,8 @@
         "techDiff": {
           "description": "米国司法管轄のプロバイダーはフランクフルトにデータを保存しながら、米国の裁判所から開示を強制される可能性があります。Rediaccのアーキテクチャは強制ベクターを完全に除去します。提出できる鍵は存在せず、傍受できる通信チャネルもありません。",
           "overline": "技術的詳細",
+          "traditionalLabel": "米国資本のプロバイダー",
+          "rediaccLabel": "Rediacc（引き渡す鍵がない）",
           "rows": [
             {
               "rediacc": "オペレーターはエストニアで設立。米国の親会社なし、CLOUD Act強制の対象面なし",
@@ -4983,31 +4926,10 @@
         "title": "お時間がありませんか？"
       },
       "encryption": {
-        "benefits": {
-          "items": [
-            {
-              "description": "あなたが生成。あなたのインフラに保存。共有鍵ストアなし、ベンダーアクセスなし、信頼の仮定なし。",
-              "icon": "lock",
-              "title": "あなたの鍵のみ"
-            },
-            {
-              "description": "関連データ付き認証暗号化。暗号化されるだけでなく、すべての読み取り時に整合性検証。設計上改ざん防止。",
-              "icon": "shield",
-              "title": "AES-256-GCM暗号化"
-            },
-            {
-              "description": "Rediaccはあなたの平文を見ることも、鍵に触れることもありません。たとえコードベースが侵害されても、盗むものがありません。",
-              "icon": "eye-off",
-              "title": "ゼロ知識アーキテクチャ"
-            }
-          ],
-          "overline": "重要な理由",
-          "title": "得られるもの"
-        },
         "blurb": "あなたの鍵。あなたの暗号化。例外なし。",
         "bottomCta": {
           "command": "rdc repo up production",
-          "ctaText": "Communityで無料で始める",
+          "primaryCta": "Communityで無料で始める",
           "description": "無料のCommunityエディションから始めましょう。1分以内に最初の鍵を生成できます。",
           "title": "暗号化の制御を取り戻す"
         },
@@ -5192,33 +5114,6 @@
               "text": "の組織が5つ以上の鍵管理システムを使用し、暗号化の死角を生んでいる"
             }
           ],
-          "timeline": {
-            "newLabel": "REDIACCを使えば",
-            "newSteps": ["あなたの鍵", "AES-256", "Zero-knowledge"],
-            "oldLabel": "従来のやり方",
-            "oldSteps": [
-              {
-                "day": "セットアップ",
-                "text": "ベンダーにアップロード"
-              },
-              {
-                "day": "信頼",
-                "text": "ベンダーが鍵を保持"
-              },
-              {
-                "day": "N日目",
-                "text": "ベンダーが侵害される"
-              },
-              {
-                "day": "N+1日目",
-                "text": "鍵が漏洩"
-              },
-              {
-                "day": "結果",
-                "text": "あなたのデータが露出"
-              }
-            ]
-          },
           "title": "ベンダー管理の鍵は本当にあなたのものではない"
         },
         "references": {
@@ -5325,26 +5220,11 @@
           },
           "quote": "ヘルスケアクライアントはHIPAA準拠のデータ主権を要求しています — 暗号化鍵がインフラ外に出てはいけません。すべての主要バックアップベンダーを評価しましたが、唯一の鍵を本当に保持できるのはRediaccだけでした。SOC 2監査中、監査人が鍵の管理状態を確認するよう求めました。1コマンドを実行し、鍵がベンダーシステムではなく自社のHSMにあることを示しました。監査結果：鍵管理のギャップゼロ。"
         },
-        "stats": [
-          {
-            "icon": "shield",
-            "label": "Encryption Standard",
-            "number": "AES-256"
-          },
-          {
-            "icon": "key",
-            "label": "Key Owner",
-            "number": "You"
-          },
-          {
-            "icon": "lock",
-            "label": "Encrypted at Rest & Transit",
-            "number": "常時"
-          }
-        ],
         "techDiff": {
           "description": "ベンダー管理暗号化とは、ベンダーが鍵を保持することです。彼らがデータを復号できます。彼らの従業員がアクセスできます。彼ら側の侵害ですべてが露出します。Rediaccは顧客保持の鍵とゼロナレッジアーキテクチャを使用 — 平文も鍵も見ることはありません。",
           "overline": "技術詳細",
+          "traditionalLabel": "ベンダー保持の鍵",
+          "rediaccLabel": "Rediacc（お客様保持の鍵）",
           "rows": [
             {
               "rediacc": "お客様保持の鍵 — 復号できるのはあなただけ",
@@ -5359,7 +5239,7 @@
               "traditional": "ベンダー侵害で暗号化されたすべてのデータが露出"
             },
             {
-              "rediacc": "CLIによるセルフサービス鍵ローテーション — 依存関係なし",
+              "rediacc": "CLIによるセルフサービス鍵ローテーション — 依存関係なし。すべての読み取りが検証されるため、改ざんはすぐに判明します。",
               "traditional": "鍵のローテーションにベンダーの関与が必要"
             }
           ],
@@ -6082,27 +5962,6 @@
         }
       },
       "immutableBackups": {
-        "benefits": {
-          "items": [
-            {
-              "description": "バックアップは誰にも変更、削除、暗号化できません — ハッカーにも、侵害された管理者にも、root権限を持つランサムウェアにも。",
-              "icon": "lock",
-              "title": "一度書き込み、永久に読み取り"
-            },
-            {
-              "description": "侵害された管理者アカウントでもシールされたバックアップは変更できません。CIパイプラインで毎日自動検証を実行 — 失敗した場合は問題が発生する前にアラートが届きます。",
-              "icon": "eye-off",
-              "title": "信頼不要"
-            },
-            {
-              "description": "すべてのバックアップは一時的なクローンにリストアされ、自動的にヘルスチェックされます。「バックアップ完了」ではなく、実際に検証 — 毎日。",
-              "icon": "check-circle",
-              "title": "即時検証"
-            }
-          ],
-          "overline": "重要な理由",
-          "title": "得られるもの"
-        },
         "blurb": "ランサムウェアが触れないバックアップ",
         "bottomCta": {
           "command": "rdc repo push production --to backup-vault",
@@ -6292,33 +6151,6 @@
               "text": "平均復旧時間"
             }
           ],
-          "timeline": {
-            "newLabel": "Rediaccを使えば",
-            "newSteps": ["バックアップ", "シール済み", "検証済み"],
-            "oldLabel": "従来のやり方",
-            "oldSteps": [
-              {
-                "day": "1日目",
-                "text": "バックアップをスケジュール"
-              },
-              {
-                "day": "2日目",
-                "text": "バックアップを実行"
-              },
-              {
-                "day": "7日目",
-                "text": "クリーンであることを祈る"
-              },
-              {
-                "day": "14日目",
-                "text": "ランサムウェア攻撃"
-              },
-              {
-                "day": "15日目",
-                "text": "バックアップも暗号化された"
-              }
-            ]
-          },
           "title": "ランサムウェアはまずバックアップを狙う"
         },
         "references": {
@@ -6429,23 +6261,6 @@
           },
           "quote": "土曜日の午前3時17分にランサムウェアに襲われました。攻撃者はバックアップリポジトリを含む14台のサーバーを暗号化しました — そう思いました。Rediaccのイミュータブルスナップショットは無傷でした。午前3時24分までに14台すべてのサーバーが封印済みバックアップから復元されました。データ損失：ゼロバイト。支払った身代金：ゼロドル。"
         },
-        "stats": [
-          {
-            "icon": "shield",
-            "label": "Files Changed After Backup",
-            "number": "0"
-          },
-          {
-            "icon": "check-circle",
-            "label": "Immutable by Default",
-            "number": "100%"
-          },
-          {
-            "icon": "clock",
-            "label": "Full Backup Time",
-            "number": "<60s"
-          }
-        ],
         "techDiff": {
           "description": "Rediaccはファイルシステムレベルでbtrfsの読み取り専用スナップショットを使用します。スナップショットが封印されると、カーネル自体が変更を防ぎます — マルウェアがバイパスできるソフトウェアロックではなく、ファイルシステムレベルのイミュータビリティです。root権限を持っていても、ランサムウェアは封印されたbtrfsスナップショットを暗号化、変更、削除できません。",
           "overline": "技術詳細",
@@ -6473,27 +6288,6 @@
         }
       },
       "infrastructureCosts": {
-        "benefits": {
-          "items": [
-            {
-              "description": "アイドルサーバーなし。クローンはCoWでストレージを共有。わずか数GBのデルタコストで10クローンを起動。",
-              "icon": "dollar",
-              "title": "使った分だけ支払い"
-            },
-            {
-              "description": "クローンごとにTTLを設定（1時間、4時間、8時間）。環境は自動破棄。何か月も予算を浪費する忘れられたサーバーはありません。",
-              "icon": "clock",
-              "title": "自動クリーンアップ"
-            },
-            {
-              "description": "ロードテスト用に50環境を起動し、終了後にすべて破棄。キャパシティプランニング不要。調達不要。",
-              "icon": "person-plus",
-              "title": "自由にスケール"
-            }
-          ],
-          "overline": "重要な理由",
-          "title": "得られるもの"
-        },
         "blurb": "アイドル環境への課金を停止",
         "bottomCta": {
           "command": "rdc repo fork production --tag dev-loadtest",
@@ -6678,33 +6472,6 @@
               "text": "環境プロビジョニングとコンテキストスイッチによる開発者1人あたりの年間損失"
             }
           ],
-          "timeline": {
-            "newLabel": "REDIACCを使えば",
-            "newSteps": ["起動", "$0 アイドル", "自動クリーンアップ"],
-            "oldLabel": "常時稼働環境",
-            "oldSteps": [
-              {
-                "day": "24/7",
-                "text": "15台のサーバー稼働中"
-              },
-              {
-                "day": "夜間",
-                "text": "アイドル、課金継続"
-              },
-              {
-                "day": "週末",
-                "text": "アイドル、課金継続"
-              },
-              {
-                "day": "休日",
-                "text": "アイドル、課金継続"
-              },
-              {
-                "day": "結果",
-                "text": "67%が無駄"
-              }
-            ]
-          },
           "title": "常時稼働の環境はお金を浪費する"
         },
         "references": {
@@ -6759,23 +6526,6 @@
           },
           "quote": "オンデマンドクローンに切り替えた後、月間インフラ費用が$4,500から$1,440に下がりました。稼働率30%で常時稼働していた15の開発環境がありました。今は必要に応じて起動し、4時間後に自動破棄します。年間$36Kの節約で、ジュニア開発者2名の給与を賄えました。"
         },
-        "stats": [
-          {
-            "icon": "trend-up",
-            "label": "Cost reduction",
-            "number": "70%"
-          },
-          {
-            "icon": "zap",
-            "label": "No always-on waste",
-            "number": "オンデマンド"
-          },
-          {
-            "icon": "clock",
-            "label": "Cleanup & TTL",
-            "number": "Auto"
-          }
-        ],
         "techDiff": {
           "description": "従来の開発環境はサーバー全体を複製します — すべてのデータバイト、すべての設定ファイル、すべてのライブラリ。Rediaccはbtrfsコピーオンライトを使用：クローンは本番環境と未変更ブロックを共有し、380 GBの環境でも追加ストレージはわずか1%です。",
           "overline": "技術詳細",
@@ -7168,27 +6918,6 @@
         }
       },
       "integrations": {
-        "benefits": {
-          "items": [
-            {
-              "description": "プッシュで環境が起動。GitLab CI、GitHub Actions、Gitea、またはWebhook対応の任意のシステムで動作。",
-              "icon": "git-branch",
-              "title": "ネイティブGit統合"
-            },
-            {
-              "description": "実際の本番データと設定でテストを実行。「テストは通るが本番で失敗」というサプライズはもうありません。",
-              "icon": "monitor",
-              "title": "CIでの本番クローン"
-            },
-            {
-              "description": "メンテナンス、更新、デバッグが必要なカスタムスクリプトなし。CIプロビジョニングが壊れて午前2時に呼び出されることもありません。",
-              "icon": "check-circle",
-              "title": "メンテナンスゼロ"
-            }
-          ],
-          "overline": "重要な理由",
-          "title": "得られるもの"
-        },
         "blurb": "既存のワークフローにプラグイン",
         "bottomCta": {
           "command": "rdc repo fork production --tag ci-build",
@@ -7347,33 +7076,6 @@
               "text": "500人の開発者あたりの開発効率低下コスト"
             }
           ],
-          "timeline": {
-            "newLabel": "REDIACCを使えば",
-            "newSteps": ["git push", "Auto", "実データ"],
-            "oldLabel": "カスタムCIスクリプト",
-            "oldSteps": [
-              {
-                "day": "ステップ1",
-                "text": "bashスクリプトを作成"
-              },
-              {
-                "day": "ステップ2",
-                "text": "VMをプロビジョニング"
-              },
-              {
-                "day": "ステップ3",
-                "text": "テストデータを投入"
-              },
-              {
-                "day": "毎月",
-                "text": "壊れたCIをデバッグ"
-              },
-              {
-                "day": "結果",
-                "text": "テストは通るが本番で失敗"
-              }
-            ]
-          },
           "title": "カスタムCI/CDスクリプトは壊れ、誰もメンテナンスしない"
         },
         "references": {
@@ -7440,23 +7142,6 @@
           },
           "quote": "400行のCIプロビジョニングスクリプトを削除し、1行のwebhook設定に置き換えました。パイプラインは合成データでの22分のプロビジョニングから、52秒の本番クローンに変わりました。3ヶ月後、CI関連のインシデントはゼロです。Rediacc以前は月4件でした。"
         },
-        "stats": [
-          {
-            "icon": "terminal",
-            "label": "Config to integrate",
-            "number": "1行"
-          },
-          {
-            "icon": "git-branch",
-            "label": "Native integration",
-            "number": "Git"
-          },
-          {
-            "icon": "x",
-            "label": "Custom scripts needed",
-            "number": "0"
-          }
-        ],
         "techDiff": {
           "description": "従来のCI/CDは空のコンテナをプロビジョニングし、合成データを投入します。Rediaccはインフラレベルで統合されます — すべてのpushで実データ、実設定、実サービスを備えた完全な本番クローンが得られます。",
           "overline": "技術詳細",
@@ -7508,7 +7193,7 @@
         "blurb": "実行中のクラスタをデータ込みでフォークか移動",
         "bottomCta": {
           "command": "rdc cluster fork prod --tag staging",
-          "ctaText": "無料トライアルを開始",
+          "primaryCta": "無料トライアルを開始",
           "description": "フォークしてテストしてから本番移行。14日間の無料トライアルから始めましょう。",
           "title": "クラスタに退路を"
         },
@@ -7753,6 +7438,8 @@
         "techDiff": {
           "description": "すべてのノードはbtrfs上のイメージファイルから起動します。すべてのボリュームはCeph RBDイメージです。クラスタのコピーとは、これらのイメージをコピーオンライトで複製することです。エクスポートも変換も復元ステップも不要。だからフォークは数か月ではなく数秒で完了します。",
           "overline": "技術詳細",
+          "traditionalLabel": "バックアップと復元による移行",
+          "rediaccLabel": "Rediacc（コピーオンライトのクローン）",
           "rows": [
             {
               "rediacc": "ノードイメージとボリュームが一式で移動",
@@ -8484,31 +8171,10 @@
         }
       },
       "rapidRecovery": {
-        "benefits": {
-          "items": [
-            {
-              "description": "5分以内に環境全体をリカバリ。すべてのコンテナ、すべてのデータベース、すべての設定ファイル — イミュータブルスナップショットからリストア。",
-              "icon": "zap",
-              "title": "日単位ではなく分単位"
-            },
-            {
-              "description": "攻撃前の正確な分にロールバック。継続的スナップショットにより、リストアポイントはあなたが選ぶもの — 攻撃者が選ぶものではありません。",
-              "icon": "clock",
-              "title": "ポイントインタイムの精度"
-            },
-            {
-              "description": "継続的スナップショットにより何も見落とさない。CIパイプラインでの毎日の自動検証がすべてのバックアップのクリーンなリストアを確認。",
-              "icon": "check-circle",
-              "title": "データ損失ゼロ"
-            }
-          ],
-          "overline": "重要な理由",
-          "title": "得られるもの"
-        },
         "blurb": "日単位ではなく分単位で復旧",
         "bottomCta": {
           "command": "rdc repo pull production --from backup-vault --force",
-          "ctaText": "Communityで無料で始める",
+          "primaryCta": "Communityで無料で始める",
           "description": "無料のCommunityエディションから始めましょう。最大10ワークロードまで無料で保護。クレジットカード不要。",
           "title": "復旧を攻撃より遅くしない"
         },
@@ -8689,33 +8355,6 @@
               "text": "身代金を支払った被害者のうち再度攻撃を受ける割合"
             }
           ],
-          "timeline": {
-            "newLabel": "REDIACCを使えば",
-            "newSteps": ["検知", "<5 min", "オンライン"],
-            "oldLabel": "従来のやり方",
-            "oldSteps": [
-              {
-                "day": "1時間目",
-                "text": "攻撃を発見"
-              },
-              {
-                "day": "1日目",
-                "text": "被害を評価"
-              },
-              {
-                "day": "3日目",
-                "text": "サーバーを再構築"
-              },
-              {
-                "day": "5日目",
-                "text": "データをリストア"
-              },
-              {
-                "day": "7日目以降",
-                "text": "まだ追いついていない"
-              }
-            ]
-          },
           "title": "遅い復旧は攻撃自体よりコストがかかる"
         },
         "references": {
@@ -8810,26 +8449,11 @@
           },
           "quote": "3日間の復旧プランから4分未満に短縮しました。午前2時の実際のランサムウェアインシデントで、オンコールエンジニアが1コマンドを実行し、午前2時4分までに8つの本番コンテナすべてがオンラインに復帰しました。以前のベンダーの見積もりは72時間 — 240秒で実現しました。"
         },
-        "stats": [
-          {
-            "icon": "clock",
-            "label": "Average Recovery Time",
-            "number": "<5分"
-          },
-          {
-            "icon": "check-circle",
-            "label": "Recovery Success Rate",
-            "number": "99.9%"
-          },
-          {
-            "icon": "shield",
-            "label": "Data Loss Incidents",
-            "number": "0"
-          }
-        ],
         "techDiff": {
           "description": "従来の復旧はゼロから再構築します — OSの再インストール、ファイルの復元、サービスの再設定。Rediaccはbtrfsスナップショットから復元します：ファイルシステムが単に保存された状態に切り替わります。再インストールなし、再設定なし、データ転送なし。スナップショットはすでにディスク上にあります — アクティブになるだけです。",
           "overline": "技術詳細",
+          "traditionalLabel": "従来の再構築",
+          "rediaccLabel": "Rediacc（btrfs即時コピー）",
           "rows": [
             {
               "rediacc": "スナップショットがディスク上に既存: アクティブサブボリュームの切り替えは数秒",
@@ -8844,7 +8468,7 @@
               "traditional": "ネットワーク、サービス、SSLの再設定: 手動でエラーが起きやすい"
             },
             {
-              "rediacc": "リストア後の自動ヘルスチェック: 8/8サービスの稼働を検証",
+              "rediacc": "リストア後の自動ヘルスチェック: 8/8サービスの稼働を検証。スナップショットはリストアの実行中も証拠を保持します。",
               "traditional": "リストア後の手動検証: 見落としがないことを祈る"
             }
           ],
@@ -8852,27 +8476,6 @@
         }
       },
       "retentionCompliance": {
-        "benefits": {
-          "items": [
-            {
-              "description": "保持ルールを一度定義。Rediaccが永久に適用。古いバックアップは自動クリーンアップ — cronジョブもスクリプトも不要。",
-              "icon": "clock",
-              "title": "設定して忘れる"
-            },
-            {
-              "description": "HIPAA、SOC2、GDPR要件に対応。監査ログはSIEMにエクスポート可能。コンプライアンスレポートを数秒で取得。",
-              "icon": "shield",
-              "title": "コンプライアンス対応済み"
-            },
-            {
-              "description": "すべてのバックアップ作成、検証、削除がタイムスタンプ付きで記録。すべての保持レポートがデフォルトで監査対応。",
-              "icon": "clipboard-check",
-              "title": "完全な監査証跡"
-            }
-          ],
-          "overline": "重要な理由",
-          "title": "得られるもの"
-        },
         "blurb": "法律が求める期間データを保持",
         "bottomCta": {
           "command": "rdc config backup-strategy set --cron '0 2 * * *'",
@@ -9063,33 +8666,6 @@
               "text": "2024年だけで欧州全域で課されたGDPR罰金"
             }
           ],
-          "timeline": {
-            "newLabel": "Rediaccを使えば",
-            "newSteps": ["ポリシーを設定", "Auto", "監査対応済み"],
-            "oldLabel": "従来のやり方",
-            "oldSteps": [
-              {
-                "day": "1か月目",
-                "text": "保持ポリシーを作成"
-              },
-              {
-                "day": "3か月目",
-                "text": "手動クリーンアップ"
-              },
-              {
-                "day": "6か月目",
-                "text": "一部のデータを見落とす"
-              },
-              {
-                "day": "9か月目",
-                "text": "監査通知が届く"
-              },
-              {
-                "day": "10か月目",
-                "text": "証明に奔走"
-              }
-            ]
-          },
           "title": "コンプライアンス違反は高くつく"
         },
         "references": {
@@ -9200,23 +8776,6 @@
           },
           "quote": "SOC2監査人が3年間のバックアップ保持証明を要求しました。以前は、ログを2週間かけて掘り返し、スプレッドシートと照合する作業でした。Rediaccでは、rdc retention report --framework soc2 を実行し、4分で完全なレポートを提出しました。監査人はこれまで見た中で最もクリーンな証跡だと言いました。"
         },
-        "stats": [
-          {
-            "icon": "clock",
-            "label": "Maximum Retention",
-            "number": "7年以上"
-          },
-          {
-            "icon": "clipboard-check",
-            "label": "Compliance Frameworks",
-            "number": "3"
-          },
-          {
-            "icon": "check-circle",
-            "label": "Audit-Ready",
-            "number": "100%"
-          }
-        ],
         "techDiff": {
           "description": "従来の保持管理とは、スプレッドシートでバックアップ日を追跡し、手動クリーンアップスクリプトを実行し、監査人が来る前に何も漏れていないことを祈ることです。Rediaccはbtrfsスナップショットのライフサイクル管理と自動ポリシー適用を使用 — バックアップは人手を介さずに保持、検証、クリーンアップされます。",
           "overline": "技術詳細",
@@ -9627,7 +9186,7 @@
         "blurb": "あなたのインフラ。あなたの選択。常に。",
         "bottomCta": {
           "command": "rdc repo push production --to new-provider --checkpoint",
-          "ctaText": "Communityで無料で始める",
+          "primaryCta": "Communityで無料で始める",
           "description": "無料のCommunityエディションから始めましょう。どこにでもデプロイ。いつでも移行。クレジットカード不要。",
           "title": "インフラの制御を取り戻す"
         },
@@ -9926,6 +9485,8 @@
         "techDiff": {
           "description": "Rediaccはすべてのデータを標準のbtrfsサブボリュームに保存します — 独自フォーマットなし、ベンダー固有のエージェントなし。移行はbtrfs send/receiveを使用して任意のLinuxマシンに差分スナップショットを転送します。420 GBの環境で最後の同期から3.8 GBの変更がある場合、420 GBではなく3.8 GBが転送されます。",
           "overline": "技術詳細",
+          "traditionalLabel": "独自フォーマットによるロックイン",
+          "rediaccLabel": "Rediacc（標準Linuxストレージ）",
           "rows": [
             {
               "rediacc": "1コマンド: スナップショット、転送、検証、DNS切り替え — 1時間以内",
@@ -10683,11 +10244,6 @@
         "title": "目次"
       }
     }
-  },
-  "pricingPreview": {
-    "compareAll": "全プランと機能を比較",
-    "subtitle": "無料で始める。成長に合わせてステップアップ。",
-    "title": "明快な料金設定。隠れたコストなし。"
   },
   "regionPicker": {
     "footer": "最寄りのリージョン、または組織が必要とするリージョンを選択してください。",

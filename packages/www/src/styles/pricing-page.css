@@ -836,12 +836,7 @@
   }
 }
 
-/* ── Cloudflare-style pricing cards (homepage embed) ── */
-.cf-pricing-section {
-  padding: var(--section-padding);
-  background: var(--color-bg);
-}
-
+/* ── Cloudflare-style pricing cards ── */
 .cf-pricing-container {
   max-width: var(--container-2xl);
   margin: 0 auto;
@@ -1075,10 +1070,6 @@
 @media (max-width: 40rem) {
   .cf-pricing-grid {
     grid-template-columns: 1fr;
-  }
-
-  .cf-pricing-section {
-    padding: var(--space-16) var(--space-4);
   }
 }
 

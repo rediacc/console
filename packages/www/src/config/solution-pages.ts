@@ -3,30 +3,6 @@
  * Separate from the existing solutions.ts — both systems coexist.
  */
 
-import type { ImageMetadata } from 'astro';
-// Problem section illustrations
-import illustrationAiPentesting from '../assets/images/illustrations/ai-pentesting.svg';
-import illustrationAuditTrail from '../assets/images/illustrations/audit-trail.svg';
-import illustrationBackupVerification from '../assets/images/illustrations/backup-verification.svg';
-import illustrationCloudOutageProtection from '../assets/images/illustrations/cloud-outage-protection.svg';
-import illustrationContinuousSecurityTesting from '../assets/images/illustrations/continuous-security-testing.svg';
-import illustrationDataSovereignty from '../assets/images/illustrations/data-sovereignty.svg';
-import illustrationEncryption from '../assets/images/illustrations/encryption.svg';
-import illustrationEnvironmentCloning from '../assets/images/illustrations/environment-cloning.svg';
-import illustrationFailoverTesting from '../assets/images/illustrations/failover-testing.svg';
-import illustrationImmutableBackups from '../assets/images/illustrations/immutable-backups.svg';
-import illustrationInfrastructureCosts from '../assets/images/illustrations/infrastructure-costs.svg';
-import illustrationInstantRecoveryMobile from '../assets/images/illustrations/instant-recovery.mobile.svg';
-import illustrationInstantRecovery from '../assets/images/illustrations/instant-recovery.svg';
-import illustrationIntegrations from '../assets/images/illustrations/integrations.svg';
-import illustrationKubernetesClusterMobility from '../assets/images/illustrations/kubernetes-cluster-mobility.svg';
-import illustrationMigrationSafety from '../assets/images/illustrations/migration-safety.svg';
-import illustrationProductionParity from '../assets/images/illustrations/production-parity.svg';
-import illustrationRapidRecovery from '../assets/images/illustrations/rapid-recovery.svg';
-import illustrationRetentionCompliance from '../assets/images/illustrations/retention-compliance.svg';
-import illustrationSafeOsTesting from '../assets/images/illustrations/safe-os-testing.svg';
-import illustrationVendorLockIn from '../assets/images/illustrations/vendor-lock-in.svg';
-import illustrationVulnerabilityManagement from '../assets/images/illustrations/vulnerability-management.svg';
 import { ACCOUNT_PATH } from './constants';
 
 export type SectionType =
@@ -40,7 +16,6 @@ export type SectionType =
   | 'benefits'
   | 'downloadGated'
   | 'competitorComparison'
-  | 'socialProof'
   | 'bottomCta'
   | 'downloadShort'
   | 'exploreSolutions';
@@ -76,10 +51,6 @@ export interface SolutionPageConfig {
   calculatorPreset?: string;
   /** Competitor column headers for comparison table */
   competitors?: string[];
-  /** Problem section illustration */
-  illustration?: ImageMetadata;
-  /** Optional portrait/mobile variant, swapped in under 768px (vector <picture>). */
-  illustrationMobile?: ImageMetadata;
   /** Primary CTA destination (overrides category default). Relative to /{lang}. */
   ctaHref?: string;
 }
@@ -105,7 +76,6 @@ const ALL_SECTIONS = [
   'benefits',
   'downloadGated',
   'competitorComparison',
-  'socialProof',
   'bottomCta',
   'downloadShort',
   'exploreSolutions',
@@ -118,7 +88,6 @@ export const SOLUTION_PAGES: Record<string, SolutionPageConfig> = {
     contentKey: 'environmentCloning',
     role: 'copy',
     category: 'dev-env',
-    illustration: illustrationEnvironmentCloning,
     sections: ALL_SECTIONS,
     calculatorPreset: 'environment-cloning',
     competitors: ['Codespaces', 'Coder', 'Vercel', 'Delphix', 'Neon'],
@@ -127,8 +96,7 @@ export const SOLUTION_PAGES: Record<string, SolutionPageConfig> = {
     contentKey: 'infrastructureCosts',
     role: 'copy',
     category: 'dev-env',
-    illustration: illustrationInfrastructureCosts,
-    sections: ALL_SECTIONS,
+    sections: ALL_SECTIONS.filter((s) => s !== 'stats' && s !== 'benefits'),
     calculatorPreset: 'infrastructure-costs',
     competitors: ['Codespaces', 'Coder', 'Vercel', 'Railway'],
   },
@@ -136,7 +104,6 @@ export const SOLUTION_PAGES: Record<string, SolutionPageConfig> = {
     contentKey: 'productionParity',
     role: 'copy',
     category: 'dev-env',
-    illustration: illustrationProductionParity,
     sections: ALL_SECTIONS,
     calculatorPreset: 'production-parity',
     competitors: ['Codespaces', 'Coder', 'Vercel', 'Railway'],
@@ -145,8 +112,7 @@ export const SOLUTION_PAGES: Record<string, SolutionPageConfig> = {
     contentKey: 'integrations',
     role: 'property',
     category: 'dev-env',
-    illustration: illustrationIntegrations,
-    sections: ALL_SECTIONS,
+    sections: ALL_SECTIONS.filter((s) => s !== 'stats' && s !== 'benefits'),
     calculatorPreset: 'integrations',
     competitors: ['Codespaces', 'Coder', 'Vercel', 'Railway'],
   },
@@ -154,8 +120,7 @@ export const SOLUTION_PAGES: Record<string, SolutionPageConfig> = {
     contentKey: 'immutableBackups',
     role: 'recover',
     category: 'ransomware',
-    illustration: illustrationImmutableBackups,
-    sections: ALL_SECTIONS,
+    sections: ALL_SECTIONS.filter((s) => s !== 'stats' && s !== 'benefits'),
     calculatorPreset: 'immutable-backups',
     competitors: ['Veeam', 'Rubrik', 'Commvault', 'Druva', 'Zerto'],
   },
@@ -163,7 +128,6 @@ export const SOLUTION_PAGES: Record<string, SolutionPageConfig> = {
     contentKey: 'migrationSafety',
     role: 'test',
     category: 'encryption',
-    illustration: illustrationMigrationSafety,
     sections: ALL_SECTIONS,
     calculatorPreset: 'migration-safety',
     competitors: ['Veeam', 'Rubrik', 'Commvault', 'Druva'],
@@ -172,8 +136,6 @@ export const SOLUTION_PAGES: Record<string, SolutionPageConfig> = {
     contentKey: 'instantRecovery',
     role: 'recover',
     category: 'backups',
-    illustration: illustrationInstantRecovery,
-    illustrationMobile: illustrationInstantRecoveryMobile,
     sections: ALL_SECTIONS,
     calculatorPreset: 'instant-recovery',
     competitors: ['Veeam', 'Rubrik', 'Commvault', 'Druva'],
@@ -182,7 +144,6 @@ export const SOLUTION_PAGES: Record<string, SolutionPageConfig> = {
     contentKey: 'safeOsTesting',
     role: 'test',
     category: 'ransomware',
-    illustration: illustrationSafeOsTesting,
     sections: ALL_SECTIONS,
     calculatorPreset: 'safe-os-testing',
     competitors: ['Veeam', 'Rubrik', 'Commvault', 'Zerto'],
@@ -191,8 +152,7 @@ export const SOLUTION_PAGES: Record<string, SolutionPageConfig> = {
     contentKey: 'retentionCompliance',
     role: 'recover',
     category: 'backups',
-    illustration: illustrationRetentionCompliance,
-    sections: ALL_SECTIONS,
+    sections: ALL_SECTIONS.filter((s) => s !== 'stats' && s !== 'benefits'),
     calculatorPreset: 'retention-compliance',
     competitors: ['Veeam', 'Rubrik', 'Commvault', 'Druva'],
   },
@@ -200,7 +160,6 @@ export const SOLUTION_PAGES: Record<string, SolutionPageConfig> = {
     contentKey: 'cloudOutageProtection',
     role: 'recover',
     category: 'multi-cloud',
-    illustration: illustrationCloudOutageProtection,
     sections: ALL_SECTIONS,
     calculatorPreset: 'cloud-outage-protection',
     competitors: ['AWS Backup', 'Veeam', 'Zerto', 'Druva'],
@@ -209,7 +168,6 @@ export const SOLUTION_PAGES: Record<string, SolutionPageConfig> = {
     contentKey: 'failoverTesting',
     role: 'test',
     category: 'multi-cloud',
-    illustration: illustrationFailoverTesting,
     sections: ALL_SECTIONS,
     calculatorPreset: 'failover-testing',
     competitors: ['AWS Backup', 'Veeam', 'Zerto', 'Druva'],
@@ -218,8 +176,7 @@ export const SOLUTION_PAGES: Record<string, SolutionPageConfig> = {
     contentKey: 'backupVerification',
     role: 'test',
     category: 'backups',
-    illustration: illustrationBackupVerification,
-    sections: ALL_SECTIONS,
+    sections: ALL_SECTIONS.filter((s) => s !== 'stats' && s !== 'benefits'),
     calculatorPreset: 'backup-verification',
     competitors: ['Veeam', 'Rubrik', 'Commvault', 'Druva'],
   },
@@ -227,7 +184,6 @@ export const SOLUTION_PAGES: Record<string, SolutionPageConfig> = {
     contentKey: 'vulnerabilityManagement',
     role: 'test',
     category: 'defense',
-    illustration: illustrationVulnerabilityManagement,
     sections: SECTIONS_NO_COMPARISON,
     calculatorPreset: 'vulnerability-management',
   },
@@ -235,7 +191,6 @@ export const SOLUTION_PAGES: Record<string, SolutionPageConfig> = {
     contentKey: 'aiPentesting',
     role: 'test',
     category: 'defense',
-    illustration: illustrationAiPentesting,
     sections: SECTIONS_NO_COMPARISON,
     calculatorPreset: 'ai-pentesting',
   },
@@ -243,8 +198,7 @@ export const SOLUTION_PAGES: Record<string, SolutionPageConfig> = {
     contentKey: 'encryption',
     role: 'property',
     category: 'encryption',
-    illustration: illustrationEncryption,
-    sections: ALL_SECTIONS,
+    sections: ALL_SECTIONS.filter((s) => s !== 'stats' && s !== 'benefits'),
     calculatorPreset: 'encryption',
     competitors: ['Veeam', 'Rubrik', 'Commvault', 'Druva'],
   },
@@ -252,7 +206,6 @@ export const SOLUTION_PAGES: Record<string, SolutionPageConfig> = {
     contentKey: 'continuousSecurityTesting',
     role: 'test',
     category: 'defense',
-    illustration: illustrationContinuousSecurityTesting,
     sections: SECTIONS_NO_COMPARISON,
     calculatorPreset: 'continuous-security-testing',
   },
@@ -260,7 +213,6 @@ export const SOLUTION_PAGES: Record<string, SolutionPageConfig> = {
     contentKey: 'auditTrail',
     role: 'property',
     category: 'encryption',
-    illustration: illustrationAuditTrail,
     sections: ALL_SECTIONS,
     calculatorPreset: 'audit-trail',
     competitors: ['Veeam', 'Rubrik', 'Commvault', 'Druva'],
@@ -269,8 +221,7 @@ export const SOLUTION_PAGES: Record<string, SolutionPageConfig> = {
     contentKey: 'rapidRecovery',
     role: 'recover',
     category: 'ransomware',
-    illustration: illustrationRapidRecovery,
-    sections: ALL_SECTIONS,
+    sections: ALL_SECTIONS.filter((s) => s !== 'stats' && s !== 'benefits'),
     calculatorPreset: 'rapid-recovery',
     competitors: ['Veeam', 'Rubrik', 'Commvault', 'Druva', 'Zerto'],
   },
@@ -278,7 +229,6 @@ export const SOLUTION_PAGES: Record<string, SolutionPageConfig> = {
     contentKey: 'dataSovereignty',
     role: 'property',
     category: 'encryption',
-    illustration: illustrationDataSovereignty,
     sections: ALL_SECTIONS,
     calculatorPreset: 'data-sovereignty',
     competitors: ['Veeam', 'Rubrik', 'AWS Sovereign', 'Microsoft Bleu', 'Keepit'],
@@ -287,7 +237,6 @@ export const SOLUTION_PAGES: Record<string, SolutionPageConfig> = {
     contentKey: 'kubernetesClusterMobility',
     role: 'copy',
     category: 'multi-cloud',
-    illustration: illustrationKubernetesClusterMobility,
     sections: [
       'hero',
       'stats',
@@ -308,7 +257,6 @@ export const SOLUTION_PAGES: Record<string, SolutionPageConfig> = {
     contentKey: 'vendorLockIn',
     role: 'property',
     category: 'multi-cloud',
-    illustration: illustrationVendorLockIn,
     sections: ALL_SECTIONS,
     calculatorPreset: 'vendor-lock-in',
     competitors: ['AWS Backup', 'Veeam', 'Zerto', 'Druva'],

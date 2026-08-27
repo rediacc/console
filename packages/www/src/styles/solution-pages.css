@@ -19,22 +19,41 @@
   -webkit-font-smoothing: antialiased;
 }
 
-/* ========== BREADCRUMB ========== */
+/* ========== THE OPENING BAND ==========
+   Breadcrumb + page header + hero are ONE band, `--color-bg-band`. It was
+   #111113 in both themes until operator decision A7 (2026-08-27) ruled that a
+   page-level dark band goes LIGHT in light mode, leaving only the footer dark
+   as a page terminator. Every rule below therefore names a token that INVERTS;
+   nothing on this band may hardcode white ink again.
+
+   Measured on the light band (#ffffff) / the dark band (#111113):
+     --color-heading         17.40:1 / 14.86:1
+     --color-text-secondary   6.45:1 /  7.36:1
+     --color-brand-primary    4.95:1 /  6.29:1
+   The opening band is the RAISED rung, not the accent one, which is what keeps
+   --color-brand-primary above 4.5:1 here; on the accent band it is 4.39:1 and
+   the two emphasis bands lower down have to use --color-brand-on-band instead.
+*/
 .sp-page > nav.sp-breadcrumb {
   --breadcrumb-margin-bottom: 0;
-  --breadcrumb-link-color: var(--sp-text-muted-dark);
-  --breadcrumb-link-hover-color: var(--sp-brand-primary);
-  --breadcrumb-current-color: var(--sp-text-white);
-  --breadcrumb-separator-color: var(--sp-text-muted-dark);
-  background: var(--sp-bg-hero);
+  /* The four COLOUR overrides that used to sit here are gone. They existed only
+     to survive a black band; on a band that is an ordinary surface in each
+     theme, Breadcrumb.astro:103,109,114,123,128 already falls back to exactly
+     the right tokens, and all of them clear AA on both bands:
+       link      --color-text-secondary  6.45:1 on #ffffff / 7.36:1 on #111113
+       hover     --color-brand-primary   4.95:1 / 6.29:1
+       current   --color-text           17.40:1 / 14.86:1
+       separator --color-text-secondary  6.45:1 / 7.36:1
+     Restating a component's own default is how a fork starts. */
+  background: var(--color-bg-band);
   padding: calc(var(--nav-top-offset, 3.5rem) + 24px) 48px 0;
 }
 
 /* ========== PAGE HEADER ========== */
-/* Continues the breadcrumb's dark band; centers the title within the page max. */
+/* Continues the breadcrumb's band; centers the title within the page max. */
 .sp-page > .sp-page-header {
-  background: var(--sp-bg-hero);
-  color: var(--sp-text-white);
+  background: var(--color-bg-band);
+  color: var(--color-heading);
   padding: 16px 48px 48px;
   text-align: center;
 }
@@ -60,7 +79,7 @@
    sentence and a button. The breadcrumb above carries the same background and
    already clears the fixed header, so the hero only needs its own padding. */
 .sp-hero {
-  background: var(--sp-bg-hero);
+  background: var(--color-bg-band);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -69,11 +88,15 @@
   position: relative;
   overflow: hidden;
 }
+/* The dot grid and the glow below were authored as translucent WHITE, so on a
+   light band they disappeared entirely. Both now read a token that inverts:
+   rgba(0,0,0,0.05) over #ffffff (1.12:1) in light, rgba(255,255,255,0.04) over
+   #111113 (1.10:1) in dark, i.e. the same whisper on either side. */
 .sp-hero::before {
   content: '';
   position: absolute;
   inset: 0;
-  background-image: radial-gradient(circle, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
+  background-image: radial-gradient(circle, var(--color-band-dot) 1px, transparent 1px);
   background-size: 32px 32px;
   pointer-events: none;
 }
@@ -85,7 +108,7 @@
   transform: translateX(-50%);
   width: 600px;
   height: 400px;
-  background: radial-gradient(ellipse at center, var(--sp-brand-glow), transparent 70%);
+  background: radial-gradient(ellipse at center, var(--color-band-glow), transparent 70%);
   pointer-events: none;
 }
 .sp-hero-content {
@@ -97,14 +120,14 @@
 .sp-hero h1 {
   font-size: var(--font-size-4xl);
   font-weight: 700;
-  color: var(--sp-text-white);
+  color: var(--color-heading);
   line-height: 1.15;
   letter-spacing: -0.03em;
   margin-bottom: 20px;
 }
 .sp-hero-sub {
   font-size: var(--font-size-lg);
-  color: var(--sp-text-muted-dark);
+  color: var(--color-text-secondary);
   line-height: 1.5;
   max-width: 600px;
   /* No trailing 32px any more: the hero CTA it used to clear is gone (n6). */
@@ -162,7 +185,11 @@
   align-items: center;
   gap: 8px;
   background: linear-gradient(135deg, var(--color-brand-fill), var(--color-brand-secondary));
-  color: var(--sp-text-white);
+  /* --color-on-brand, not the band ink: this is text on a brand FILL, which is
+     4.95:1 on #4a7c3f and 6.51:1 on #3d6834 and stays white in both themes.
+     It read --sp-text-white until A7, where that name meant the same thing by
+     coincidence; on a light band the coincidence would have been a bug. */
+  color: var(--color-on-brand);
   font-size: var(--font-size-base);
   font-weight: 600;
   padding: 14px 32px;
@@ -238,6 +265,48 @@
   max-width: var(--sp-content-max);
   margin: 0 auto;
 }
+
+/* ========== PROBLEM SPLIT (the drawing beside the copy) ==========
+   The stacked version put 109 words above a 1100px-wide drawing and measured
+   1318px tall on /en/solutions/encryption, most of it the drawing's own empty
+   margins. Two tracks instead, the same shape as `.sp-hero-split` above, and
+   the same reason for the DOM order: grid places the first child on the
+   inline-START edge, so LTR reads copy-left / drawing-right and /ar mirrors to
+   copy-right / drawing-left with no direction-specific rules. There is no
+   physical left/right anywhere in this block.
+
+   SPProblem adds `.sp-problem-split` only when a slug actually resolved to an
+   illustration. Without one there is no second column to make, and the
+   container stays the plain 720px prose block it has always been. */
+.sp-problem-split {
+  /* 32rem + 48px gap + 36rem: the hero's tracks, so the two bands line up. */
+  max-width: 1136px;
+  display: grid;
+  grid-template-columns: minmax(0, 32rem) minmax(0, 36rem);
+  justify-content: center;
+  align-items: center;
+  column-gap: 48px;
+  row-gap: 48px;
+}
+.sp-problem-text {
+  /* A grid item's automatic minimum is its content, so a long unbroken word in
+     a heading would otherwise widen the track past its 32rem cap. */
+  min-width: 0;
+}
+/* The stat callouts ride INSIDE `.sp-problem-text` (see SPProblem.astro): they
+   are chips that restate the prose claim, and keeping them in the column is
+   what makes the two column heights comparable, which is what makes the
+   vertical centring read as deliberate rather than accidental.
+
+   The timeline does NOT. It is a horizontal band of connected steps capped at
+   700px, and half a column crushes it, so it spans both tracks under them.
+   Grid line numbers follow the writing mode, so `1 / -1` mirrors in RTL too.
+   Its standalone `margin-top` is dropped because `row-gap` now supplies the
+   same separation and the two would compound. */
+.sp-problem-split > .sp-timeline-contrast {
+  grid-column: 1 / -1;
+  margin-top: 0;
+}
 .sp-overline {
   font-size: var(--font-size-xs);
   font-weight: 700;
@@ -261,20 +330,12 @@
   max-width: 640px;
 }
 .sp-problem-illustration {
-  margin-top: 40px;
-  margin-bottom: 8px;
-  /* Break out of the 720px text column to let the illustration breathe.
-     Centered horizontally so the illustration stays visually anchored to the
-     section content even though it's wider than the prose column. */
-  width: min(1100px, calc(100vw - 96px));
-  max-width: none;
-  /* Logical, not `margin-left`/`margin-right`. The negative offset is meant to
-     pull the illustration out of the prose column towards the START edge; with
-     physical properties RTL kept pulling it LEFT while the auto margin sat on
-     the right, which put the box 27px past the viewport edge and gave every
-     Arabic solution and persona page 13px of horizontal scroll. */
-  margin-inline-start: calc((var(--sp-content-max) - min(1100px, calc(100vw - 96px))) / 2);
-  margin-inline-end: auto;
+  /* A grid track now, so the width comes from the column and the inline SVG
+     (viewBox 800x450, `width:100%;height:auto`) scales into it. The break-out
+     that used to live here -- 1100px wide with a negative logical start margin
+     to escape the 720px prose column -- is gone with the stacked layout, and so
+     is the RTL overflow it kept causing. */
+  min-width: 0;
   border-radius: var(--radius-md);
   overflow: hidden;
 }
@@ -309,10 +370,20 @@ button.sp-illustration-trigger:focus-visible {
   outline: 2px solid var(--color-brand-primary);
   outline-offset: 4px;
 }
-@media (max-width: 768px) {
+/* 900px, matching `.sp-hero-split` rather than inventing a breakpoint for this
+   one section. The DOM order survives the collapse, so the title still leads and
+   the drawing sits under the copy it illustrates. */
+@media (max-width: 900px) {
+  .sp-problem-split {
+    grid-template-columns: minmax(0, 1fr);
+    row-gap: 32px;
+  }
   .sp-problem-illustration {
+    /* Capped so the drawing does not tower over the copy on a phone. It stays on
+       the inline-start edge with the text instead of being centred, because the
+       copy above it is start-aligned in both directions. */
     width: 100%;
-    margin-inline: 0;
+    max-width: 36rem;
   }
 }
 
@@ -430,14 +501,17 @@ button.sp-illustration-trigger:focus-visible {
 .sp-timeline-old-step:not(:last-child)::after {
   content: '';
   position: absolute;
-  right: -1px;
+  /* Logical, not physical: under RTL the arrowhead must sit on the left and point
+     left. `border-inline-start` resolves to border-right in RTL, which is what turns
+     the triangle around; `right`/`border-left` left it pointing back up the timeline. */
+  inset-inline-end: -1px;
   top: 50%;
   transform: translateY(-50%);
   width: 0;
   height: 0;
   border-top: 6px solid transparent;
   border-bottom: 6px solid transparent;
-  border-left: 6px solid var(--color-error-border);
+  border-inline-start: 6px solid var(--color-error-border);
   z-index: 1;
 }
 .sp-timeline-new {
@@ -462,7 +536,7 @@ button.sp-illustration-trigger:focus-visible {
 }
 .sp-timeline-new-step:nth-child(2) {
   background: linear-gradient(135deg, var(--color-brand-fill), var(--color-brand-secondary));
-  color: var(--sp-text-white);
+  color: var(--color-on-brand);
   border-color: var(--sp-brand-primary);
   font-size: var(--font-size-lg);
   font-weight: 700;
@@ -480,6 +554,14 @@ button.sp-illustration-trigger:focus-visible {
 .sp-cost-section {
   background: var(--sp-bg-white);
   padding: 96px 48px;
+  /* The seam. `.sp-how-it-works` is the next band on every page that renders both, and it
+     is the SAME --sp-bg-white, so without this the calculator and the three steps meet at
+     a 1.00:1 boundary and read as one enormous section. A sibling selector cannot do it:
+     SPCostCalculator is a `client:visible` island, so the built HTML puts .sp-cost-section
+     inside an <astro-island> and .sp-how-it-works is a sibling of the WRAPPER, not of it.
+     Carried by the band that ends, matching `.sp-stats` above; on the pages that have no
+     howItWorks the next band is --sp-bg-light and a hairline there is still correct. */
+  border-bottom: 1px solid var(--color-border-subtle);
 }
 .sp-cost-section-inner {
   max-width: var(--sp-content-max);
@@ -711,10 +793,16 @@ button.sp-illustration-trigger:focus-visible {
   content: '';
   position: absolute;
   top: 28px;
-  right: -16px;
+  /* Same reason as the timeline arrowhead above: `right` put this connector on the
+     wrong side of the step under RTL. The gradient is directional too, so it is
+     flipped for RTL rather than left running against the reading order. */
+  inset-inline-end: -16px;
   width: 32px;
   height: 2px;
   background: linear-gradient(90deg, var(--color-brand-fill), var(--color-brand-glow));
+}
+[dir='rtl'] .sp-step:not(:last-child)::after {
+  background: linear-gradient(270deg, var(--color-brand-fill), var(--color-brand-glow));
 }
 .sp-step-icon {
   width: 36px;
@@ -738,7 +826,7 @@ button.sp-illustration-trigger:focus-visible {
   width: 56px;
   height: 56px;
   background: linear-gradient(135deg, var(--color-brand-fill), var(--color-brand-secondary));
-  color: var(--sp-text-white);
+  color: var(--color-on-brand);
   font-size: var(--font-size-xl);
   font-weight: 700;
   border-radius: var(--radius-full);
@@ -1217,9 +1305,25 @@ button.sp-illustration-trigger:focus-visible {
   border-bottom: none;
 }
 
-/* ========== BENEFITS ========== */
+/* ========== BENEFITS ==========
+   The FIRST of the two emphasis bands (operator decision A7, 2026-08-27).
+   `--color-bg-band-accent`, not `--color-bg-band`, and the reason is adjacency
+   rather than taste: this section's neighbours differ per page. On all 21
+   solution pages `techDiff` (#f7f7f8) is above it and `.sp-downloads-row`
+   (#f7f7f8) below, but on the 4 persona pages `.sp-comparison-section`
+   (#ffffff) sits directly under it (PersonaPage.astro:124-128). The accent
+   rung is the only one that collides with NEITHER neighbour, so this band
+   never dissolves into the section next to it whichever page renders it.
+
+   Measured on the light accent band (#eef3ea) / the dark band (#111113):
+     --color-heading         15.45:1 / 14.86:1
+     --color-text-secondary   5.72:1 /  7.36:1
+     --color-brand-on-band    5.78:1 /  6.29:1
+   The overline is --font-size-xs, so it needs 4.5:1 and NOT the 3:1 large-text
+   allowance --sp-stat-number leans on one band up the page. That is exactly
+   why it cannot use --color-brand-primary, which is 4.39:1 here. */
 .sp-benefits {
-  background: var(--sp-bg-dark);
+  background: var(--color-bg-band-accent);
   padding: 96px 48px;
 }
 .sp-benefits-inner {
@@ -1228,12 +1332,12 @@ button.sp-illustration-trigger:focus-visible {
 }
 .sp-benefits .sp-overline {
   text-align: center;
-  color: var(--sp-brand-primary);
+  color: var(--color-brand-on-band);
 }
 .sp-benefits h2 {
   font-size: var(--font-size-3xl);
   font-weight: 700;
-  color: var(--sp-text-white);
+  color: var(--color-heading);
   line-height: 1.2;
   letter-spacing: -0.02em;
   text-align: center;
@@ -1245,13 +1349,24 @@ button.sp-illustration-trigger:focus-visible {
 }
 .sp-benefit-card {
   flex: 1;
-  border: 1px solid var(--sp-border-dark);
+  /* --sp-border-light, i.e. --color-border: #d2d2d7 on the light accent band
+     (1.34:1) and #2e2e32 on the dark one (1.39:1), so the card edge survives
+     the flip. The old --sp-border-dark was rgba(255,255,255,0.1) and would
+     have been invisible on #eef3ea; it has no consumers left and is gone from
+     the token layer. */
+  border: 1px solid var(--sp-border-light);
   border-radius: var(--radius-md);
   padding: 36px 28px;
 }
 .sp-benefit-icon {
   width: 48px;
   height: 48px;
+  /* A 15% brand wash rather than a token, and deliberately so: it composites
+     to #d5e1d0 on the light accent band and #1a211a on the dark one, i.e. it
+     tracks whatever it sits on. --color-brand-tint would have been #eef3ea,
+     identical to the band underneath it in light mode. The stroke below reads
+     4.80:1 on the light chip and 5.49:1 on the dark one, past the 3:1 a
+     graphic needs. */
   background: rgba(74, 124, 63, 0.15);
   border-radius: var(--radius-md);
   display: flex;
@@ -1262,7 +1377,7 @@ button.sp-illustration-trigger:focus-visible {
 .sp-benefit-icon svg {
   width: 24px;
   height: 24px;
-  stroke: var(--sp-brand-primary);
+  stroke: var(--color-brand-on-band);
   fill: none;
   stroke-width: 2;
   stroke-linecap: round;
@@ -1271,13 +1386,13 @@ button.sp-illustration-trigger:focus-visible {
 .sp-benefit-card h3 {
   font-size: var(--font-size-lg);
   font-weight: 600;
-  color: var(--sp-text-white);
+  color: var(--color-heading);
   margin-bottom: 10px;
   line-height: 1.3;
 }
 .sp-benefit-card p {
   font-size: var(--font-size-base);
-  color: var(--sp-text-muted-dark);
+  color: var(--color-text-secondary);
   line-height: 1.6;
 }
 
@@ -1494,9 +1609,35 @@ button.sp-illustration-trigger:focus-visible {
   border-radius: var(--radius-full);
 }
 
-/* ========== BOTTOM CTA ========== */
+/* ========== BOTTOM CTA ==========
+   The SECOND emphasis band, and THE SEAM DECISION lives here.
+
+   This section was designed to merge with the footer: both painted
+   `--sp-bg-hero`, and SolutionPage.astro:176 moved `exploreSolutions` above it
+   specifically so nothing broke the one continuous black strip. Operator
+   decision A7 flips this band and keeps the footer dark, so that merge is
+   deliberately over in light mode. What replaces it:
+
+     - The CTA takes `--color-bg-band-accent` (#eef3ea), NOT `--color-bg-band`.
+       `SolutionConstellation` directly above it is #ffffff, so the raised rung
+       would have made the closing call to action vanish into the section it is
+       supposed to close. The accent rung reads 1.13:1 against it, the same
+       step size the site already uses everywhere for #ffffff against #f7f7f8.
+     - The footer's top edge becomes a HARD boundary at 16.74:1 instead of an
+       invisible one. That is the point of a terminator: the page ends, and the
+       reader can see it end. A merged pair could only ever say "this is all one
+       thing", which is the opposite of what a page terminator is for.
+     - In DARK mode both tokens resolve to #111113, so the original merge is
+       preserved exactly and this paragraph describes light mode only.
+
+   Measured on #eef3ea / #111113:
+     --color-heading         15.45:1 / 14.86:1
+     --color-text-secondary   5.72:1 /  7.36:1
+     --color-text-tertiary    4.50:1 /  5.89:1
+     --color-brand-on-band    5.78:1 /  6.29:1
+*/
 .sp-bottom-cta {
-  background: var(--sp-bg-hero);
+  background: var(--color-bg-band-accent);
   padding: 96px 48px;
   text-align: center;
   position: relative;
@@ -1510,7 +1651,7 @@ button.sp-illustration-trigger:focus-visible {
   transform: translate(-50%, -50%);
   width: 500px;
   height: 300px;
-  background: radial-gradient(ellipse at center, var(--sp-brand-glow), transparent 70%);
+  background: radial-gradient(ellipse at center, var(--color-band-glow), transparent 70%);
   pointer-events: none;
 }
 .sp-bottom-cta-inner {
@@ -1522,24 +1663,34 @@ button.sp-illustration-trigger:focus-visible {
 .sp-bottom-cta h2 {
   font-size: var(--font-size-3xl);
   font-weight: 700;
-  color: var(--sp-text-white);
+  color: var(--color-heading);
   line-height: 1.2;
   letter-spacing: -0.02em;
   margin-bottom: 16px;
 }
 .sp-bottom-cta p {
   font-size: var(--font-size-lg);
-  color: var(--sp-text-muted-dark);
+  color: var(--color-text-secondary);
   margin-bottom: 36px;
 }
 .sp-bottom-cta .sp-btn-primary {
   font-size: var(--font-size-lg);
   padding: 16px 40px;
 }
+/* These three were translucent white and translucent green over #111113, which
+   is unreadable on a light band and was already thin on the dark one. Their
+   composites and what replaced them, all measured on #111113:
+     rgba(255,255,255,0.45) -> #7c7c7d, 4.52:1  now --color-text-secondary 7.36:1
+     rgba(255,255,255,0.25) -> #4c4c4e, 2.20:1  now --color-text-tertiary  5.89:1
+     rgba(74,124,63,0.5)    -> #2e4629, 1.82:1  now --color-brand-on-band  6.29:1
+   Two of the three failed AA on the surface they were authored for, so this is
+   a legibility fix riding the flip, not only a re-token. The hierarchy between
+   the badge and the command line is preserved: the badge is still the louder
+   of the two, both are still quieter than the paragraph above them. */
 .sp-cta-tier-badge {
   display: block;
   font-size: var(--font-size-sm);
-  color: rgba(255, 255, 255, 0.45);
+  color: var(--color-text-secondary);
   margin-top: 8px;
   font-weight: 400;
 }
@@ -1547,14 +1698,14 @@ button.sp-illustration-trigger:focus-visible {
   margin-top: 24px;
   font-family: var(--sp-font-mono);
   font-size: var(--font-size-sm);
-  color: rgba(255, 255, 255, 0.25);
+  color: var(--color-text-tertiary);
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 6px;
 }
 .sp-cta-command-prompt {
-  color: rgba(74, 124, 63, 0.5);
+  color: var(--color-brand-on-band);
   font-weight: 600;
 }
 
@@ -1895,13 +2046,18 @@ button.sp-illustration-trigger:focus-visible {
   margin-bottom: 32px;
 }
 
+/* NOT flipped by A7, and the distinction is the whole rule: this is a dark
+   CARD inside a light section, not a page-level BAND. It keeps
+   --color-bg-dark, named directly now that --sp-bg-hero no longer paints a
+   hero, and it keeps white ink at 18.86:1 with --sp-text-muted-dark at 7.36:1
+   on it. */
 .sp-roi-summary-item {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 6px;
   padding: 24px 16px;
-  background: var(--sp-bg-hero);
+  background: var(--color-bg-dark);
 }
 
 .sp-roi-summary-label {

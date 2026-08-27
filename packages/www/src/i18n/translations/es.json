@@ -3051,7 +3051,7 @@
         "blurb": "Clone producción. Deje que la IA lo ataque.",
         "bottomCta": {
           "command": "rdc repo fork production --tag pentest",
-          "ctaText": "Empieza gratis",
+          "primaryCta": "Empieza gratis",
           "description": "Comienza con la edición Community gratuita. Ejecuta tu primer pentesting en menos de 60 segundos.",
           "title": "Encuentra vulnerabilidades antes que los atacantes"
         },
@@ -3259,6 +3259,8 @@
         "techDiff": {
           "description": "Las pruebas de penetración tradicionales apuntan a entornos de staging que se desvían de producción en días. Rediacc crea una instantánea copy-on-write de btrfs de tu infraestructura de producción real — mismos datos, mismas configuraciones, mismas vulnerabilidades — y ejecuta simulaciones de ataque automatizadas contra ella. El clon se destruye después de las pruebas. Producción nunca se toca.",
           "overline": "BAJO EL CAPÓ",
+          "traditionalLabel": "Pentesting tradicional",
+          "rediaccLabel": "Rediacc (ataca un clon de producción)",
           "rows": [
             {
               "rediacc": "Clon de producción (segundos de antigüedad, 100% de coincidencia)",
@@ -3313,7 +3315,7 @@
         "blurb": "Cada acción registrada. Nada oculto.",
         "bottomCta": {
           "command": "rdc repo status production",
-          "ctaText": "Empieza gratis con Community",
+          "primaryCta": "Empieza gratis con Community",
           "description": "Comienza con la edición Community gratuita. Genera tu primer informe de auditoría en menos de un minuto.",
           "title": "Velo todo. No te pierdas nada."
         },
@@ -3619,6 +3621,8 @@
         "techDiff": {
           "description": "Los logs de aplicación están diseñados para depuración — son mutables, incompletos y dispersos entre sistemas. El registro de auditoría de Rediacc está diseñado para cumplimiento: cada operación está firmada criptográficamente, encadenada cronológicamente y exportable como un solo informe.",
           "overline": "BAJO EL CAPÓ",
+          "traditionalLabel": "Logs de aplicación mutables",
+          "rediaccLabel": "Registro de auditoría de Rediacc",
           "rows": [
             {
               "rediacc": "Firmados criptográficamente — detección de manipulación incorporada",
@@ -3641,27 +3645,6 @@
         }
       },
       "backupVerification": {
-        "benefits": {
-          "items": [
-            {
-              "description": "Cada backup se clona, arranca y verifica antes de que lo necesite. La corrupción se detecta en 24 horas, no durante una crisis.",
-              "icon": "check-circle",
-              "title": "Cero sorpresas"
-            },
-            {
-              "description": "Sin pruebas manuales. Sin scripts. La verificación de backup se ejecuta en su pipeline de CI. Falló? Recibe una alerta antes de que importe.",
-              "icon": "shield",
-              "title": "Verificaciones de integridad automáticas"
-            },
-            {
-              "description": "PagerDuty, Slack o email — en el momento en que un backup falla la verificación. Sin dashboard que revisar. Sin verificaciones puntuales programadas.",
-              "icon": "bell",
-              "title": "Alertas instantáneas"
-            }
-          ],
-          "overline": "POR QUÉ IMPORTA",
-          "title": "Lo que obtienes"
-        },
         "blurb": "Cada backup verificado automáticamente",
         "bottomCta": {
           "command": "rdc backup verify my-app",
@@ -3851,33 +3834,6 @@
               "text": "costo promedio por registro comprometido"
             }
           ],
-          "timeline": {
-            "newLabel": "Con Rediacc",
-            "newSteps": ["Respaldo", "47s", "Verificado"],
-            "oldLabel": "La forma antigua",
-            "oldSteps": [
-              {
-                "day": "Día 1",
-                "text": "Ejecutar backup"
-              },
-              {
-                "day": "Día 2-364",
-                "text": "Confiar en \"completado\""
-              },
-              {
-                "day": "Día 365",
-                "text": "El desastre llega"
-              },
-              {
-                "day": "Día 365",
-                "text": "Intentar restaurar"
-              },
-              {
-                "day": "Día 365",
-                "text": "Backup corrupto"
-              }
-            ]
-          },
           "title": "Las copias corruptas son peores que no tener copias"
         },
         "references": {
@@ -3960,23 +3916,6 @@
           },
           "quote": "Ejecutamos la verificación automatizada en nuestra primera semana y encontramos 12 copias corruptas en 3 servicios — un volcado de MariaDB con tablas truncadas, una configuración de Nextcloud obsoleta y una instantánea de Redis de hace 6 meses. Sin Rediacc, habríamos descubierto esto durante un desastre real. Ahora cada copia se verifica en 47 segundos desde su creación."
         },
-        "stats": [
-          {
-            "icon": "check-circle",
-            "label": "Backups Verified",
-            "number": "100%"
-          },
-          {
-            "icon": "refresh",
-            "label": "No Manual Checks",
-            "number": "Auto"
-          },
-          {
-            "icon": "clock",
-            "label": "Verification Time",
-            "number": "<1min"
-          }
-        ],
         "techDiff": {
           "description": "Las herramientas de backup tradicionales verifican que se escribieron los archivos. Rediacc va más allá: clona la copia, arranca cada contenedor, ejecuta verificaciones de salud contra cada servicio e informa de aprobado/fallido. No es una suma de verificación de archivos — es una prueba de restauración completa.",
           "overline": "BAJO EL CAPÓ",
@@ -4388,7 +4327,7 @@
         "blurb": "Pruebe la seguridad continuamente, no anualmente",
         "bottomCta": {
           "command": "rdc backup restore production --as production-verify -m primary --up",
-          "ctaText": "Empieza gratis",
+          "primaryCta": "Empieza gratis",
           "description": "Comienza con la edición Community gratuita. Programa tu primer pentesting continuo en 30 segundos.",
           "title": "Cierra la ventana con la que cuentan los atacantes"
         },
@@ -4591,6 +4530,8 @@
         "techDiff": {
           "description": "Cada escaneo programado crea una instantánea copy-on-write de btrfs fresca de tu infraestructura de producción, ejecuta la suite completa de pentesting con IA contra ella, genera un informe priorizado con comparación de tendencias y destruye el clon. Sin entorno de staging que mantener. Sin desviaciones. Sin datos obsoletos. Cada escaneo prueba lo que realmente se está ejecutando en producción en este momento.",
           "overline": "BAJO EL CAPÓ",
+          "traditionalLabel": "Pruebas anuales programadas",
+          "rediaccLabel": "Rediacc (continuo)",
           "rows": [
             {
               "rediacc": "Diario, semanal o en cada despliegue",
@@ -4645,7 +4586,7 @@
         "blurb": "Sus servidores, sus claves, su jurisdicción.",
         "bottomCta": {
           "command": "rdc config show",
-          "ctaText": "Empieza gratis con Community",
+          "primaryCta": "Empieza gratis con Community",
           "description": "Comience con la edición Community gratuita. Realice su primera auditoría de custodia de claves en menos de un minuto.",
           "title": "Deje de alquilar sus datos a un proveedor bajo jurisdicción estadounidense."
         },
@@ -4953,6 +4894,8 @@
         "techDiff": {
           "description": "Un proveedor bajo jurisdicción estadounidense puede almacenar sus datos en Fráncfort y aun así ser obligado por tribunales de EE.UU. a divulgarlos. La arquitectura de Rediacc elimina completamente el vector de coacción: no hay claves que entregar y no hay canal de retorno que interceptar.",
           "overline": "BAJO EL CAPÓ",
+          "traditionalLabel": "Proveedor estadounidense",
+          "rediaccLabel": "Rediacc (sin claves que entregar)",
           "rows": [
             {
               "rediacc": "Operador constituido en Estonia; sin empresa matriz en EE.UU., sin superficie de coacción del CLOUD Act",
@@ -4994,31 +4937,10 @@
         "title": "¿Escaso de tiempo?"
       },
       "encryption": {
-        "benefits": {
-          "items": [
-            {
-              "description": "Usted las genera. Usted las almacena en su infraestructura. Sin almacenes de claves compartidos, sin acceso del proveedor, sin suposiciones de confianza.",
-              "icon": "lock",
-              "title": "Solo sus claves"
-            },
-            {
-              "description": "Cifrado autenticado con datos asociados. No solo cifrado — integridad verificada en cada lectura. A prueba de manipulaciones por diseño.",
-              "icon": "shield",
-              "title": "Cifrado AES-256-GCM"
-            },
-            {
-              "description": "Rediacc nunca ve su texto plano. Nunca toca su clave. Incluso si nuestro código fuente fuera comprometido, no habría nada que robar.",
-              "icon": "eye-off",
-              "title": "Arquitectura de conocimiento cero"
-            }
-          ],
-          "overline": "POR QUÉ IMPORTA",
-          "title": "Lo que obtienes"
-        },
         "blurb": "Sus claves. Su cifrado. Sin excepciones.",
         "bottomCta": {
           "command": "rdc repo up production",
-          "ctaText": "Empieza gratis con Community",
+          "primaryCta": "Empieza gratis con Community",
           "description": "Comienza con la edición Community gratuita. Genera tu primera clave en menos de un minuto.",
           "title": "Toma el control de tu cifrado"
         },
@@ -5203,33 +5125,6 @@
               "text": "de las organizaciones usan 5+ sistemas de gestión de claves, creando puntos ciegos de cifrado"
             }
           ],
-          "timeline": {
-            "newLabel": "CON REDIACC",
-            "newSteps": ["Su clave", "AES-256", "Zero-knowledge"],
-            "oldLabel": "LA FORMA ANTIGUA",
-            "oldSteps": [
-              {
-                "day": "Configuración",
-                "text": "Subir al proveedor"
-              },
-              {
-                "day": "Confianza",
-                "text": "El proveedor tiene las claves"
-              },
-              {
-                "day": "Día N",
-                "text": "Proveedor comprometido"
-              },
-              {
-                "day": "Día N+1",
-                "text": "Claves comprometidas"
-              },
-              {
-                "day": "Resultado",
-                "text": "Sus datos expuestos"
-              }
-            ]
-          },
           "title": "Las claves gestionadas por el proveedor no son realmente tuyas"
         },
         "references": {
@@ -5336,26 +5231,11 @@
           },
           "quote": "Nuestros clientes sanitarios requieren soberanía de datos compatible con HIPAA — las claves de cifrado nunca deben salir de nuestra infraestructura. Evaluamos todos los principales proveedores de backup y Rediacc fue el único donde genuinamente tenemos la única clave. Durante nuestra auditoría SOC 2, el auditor pidió verificar la custodia de claves. Ejecuté un comando y mostré que la clave estaba en nuestro HSM, no en ningún sistema del proveedor. Resultado de la auditoría: cero brechas en gestión de claves."
         },
-        "stats": [
-          {
-            "icon": "shield",
-            "label": "Encryption Standard",
-            "number": "AES-256"
-          },
-          {
-            "icon": "key",
-            "label": "Key Owner",
-            "number": "You"
-          },
-          {
-            "icon": "lock",
-            "label": "Encrypted at Rest & Transit",
-            "number": "Siempre"
-          }
-        ],
         "techDiff": {
           "description": "El cifrado gestionado por el proveedor significa que tu proveedor tiene las claves. Pueden descifrar tus datos. Sus empleados pueden acceder. Una brecha en su lado expone todo. Rediacc usa claves en manos del cliente con una arquitectura de conocimiento cero — nunca vemos tu texto plano ni tu clave.",
           "overline": "BAJO EL CAPÓ",
+          "traditionalLabel": "Claves en manos del proveedor",
+          "rediaccLabel": "Rediacc (claves en manos del cliente)",
           "rows": [
             {
               "rediacc": "Claves en manos del cliente — solo usted puede descifrar",
@@ -5370,7 +5250,7 @@
               "traditional": "Una brecha del proveedor expone todos los datos cifrados"
             },
             {
-              "rediacc": "Rotación de claves autoservicio vía CLI — sin dependencias",
+              "rediacc": "Rotación de claves autoservicio vía CLI — sin dependencias. Cada lectura se verifica, así que la manipulación se detecta al instante.",
               "traditional": "La rotación de claves requiere la participación del proveedor"
             }
           ],
@@ -6093,27 +5973,6 @@
         }
       },
       "immutableBackups": {
-        "benefits": {
-          "items": [
-            {
-              "description": "Los backups no pueden ser modificados, eliminados o cifrados por nadie — ni por hackers, ni por administradores comprometidos, ni por ransomware con acceso root.",
-              "icon": "lock",
-              "title": "Escribir una vez, leer siempre"
-            },
-            {
-              "description": "Ni siquiera cuentas de administrador comprometidas pueden alterar backups sellados. La verificación diaria automatizada se ejecuta en su pipeline de CI — si falla, recibe una alerta antes de que importe.",
-              "icon": "eye-off",
-              "title": "Sin necesidad de confianza"
-            },
-            {
-              "description": "Cada backup se restaura en un clon temporal y se verifica automáticamente. No \"backup completado\" — realmente verificado, todos los días.",
-              "icon": "check-circle",
-              "title": "Verificación instantánea"
-            }
-          ],
-          "overline": "POR QUÉ IMPORTA",
-          "title": "Lo que obtienes"
-        },
         "blurb": "Backups que el ransomware no puede tocar",
         "bottomCta": {
           "command": "rdc repo push production --to backup-vault",
@@ -6303,33 +6162,6 @@
               "text": "tiempo promedio de recuperación"
             }
           ],
-          "timeline": {
-            "newLabel": "Con Rediacc",
-            "newSteps": ["Respaldo", "Sellado", "Verificado"],
-            "oldLabel": "La forma antigua",
-            "oldSteps": [
-              {
-                "day": "Día 1",
-                "text": "Programar backup"
-              },
-              {
-                "day": "Día 2",
-                "text": "Se ejecuta el backup"
-              },
-              {
-                "day": "Día 7",
-                "text": "Esperar que esté limpio"
-              },
-              {
-                "day": "Día 14",
-                "text": "El ransomware ataca"
-              },
-              {
-                "day": "Día 15",
-                "text": "El backup también fue cifrado"
-              }
-            ]
-          },
           "title": "El ransomware ataca primero tus copias de seguridad"
         },
         "references": {
@@ -6440,23 +6272,6 @@
           },
           "quote": "Nos atacó un ransomware a las 3:17am un sábado. Los atacantes cifraron 14 servidores incluyendo nuestro repositorio de copias de seguridad — o eso creyeron. Las instantáneas inmutables de Rediacc estaban intactas. A las 3:24am los 14 servidores estaban restaurados desde copias selladas. Pérdida total de datos: cero bytes. Rescate pagado: cero dólares."
         },
-        "stats": [
-          {
-            "icon": "shield",
-            "label": "Files Changed After Backup",
-            "number": "0"
-          },
-          {
-            "icon": "check-circle",
-            "label": "Immutable by Default",
-            "number": "100%"
-          },
-          {
-            "icon": "clock",
-            "label": "Full Backup Time",
-            "number": "<60s"
-          }
-        ],
         "techDiff": {
           "description": "Rediacc usa instantáneas btrfs de solo lectura a nivel de sistema de archivos. Una vez sellada una instantánea, el propio kernel impide su modificación — no son bloqueos de software que el malware pueda eludir, sino inmutabilidad a nivel del sistema de archivos. Incluso con acceso root, el ransomware no puede cifrar, modificar o eliminar una instantánea btrfs sellada.",
           "overline": "BAJO EL CAPÓ",
@@ -6484,27 +6299,6 @@
         }
       },
       "infrastructureCosts": {
-        "benefits": {
-          "items": [
-            {
-              "description": "Sin servidores inactivos. Los clones comparten almacenamiento vía CoW. Levante 10 clones por el costo de unos pocos GB de delta.",
-              "icon": "dollar",
-              "title": "Pague por lo que usa"
-            },
-            {
-              "description": "Configure TTL por clon (1h, 4h, 8h). Los entornos se autodestruyen. No más servidores olvidados consumiendo presupuesto durante meses.",
-              "icon": "clock",
-              "title": "Limpieza automática"
-            },
-            {
-              "description": "Levante 50 entornos para una prueba de carga, elimínelos todos después. Sin planificación de capacidad. Sin adquisiciones.",
-              "icon": "person-plus",
-              "title": "Escale libremente"
-            }
-          ],
-          "overline": "POR QUÉ IMPORTA",
-          "title": "Lo que obtienes"
-        },
         "blurb": "Deje de pagar por entornos inactivos",
         "bottomCta": {
           "command": "rdc repo fork production --tag dev-loadtest",
@@ -6689,33 +6483,6 @@
               "text": "por desarrollador por año perdidos en aprovisionamiento de entornos y cambio de contexto"
             }
           ],
-          "timeline": {
-            "newLabel": "CON REDIACC",
-            "newSteps": ["Levantar", "$0 inactivo", "Limpieza automática"],
-            "oldLabel": "ENTORNOS SIEMPRE ACTIVOS",
-            "oldSteps": [
-              {
-                "day": "24/7",
-                "text": "15 servidores activos"
-              },
-              {
-                "day": "Noches",
-                "text": "Inactivos, aún pagando"
-              },
-              {
-                "day": "Fines de semana",
-                "text": "Inactivos, aún pagando"
-              },
-              {
-                "day": "Festivos",
-                "text": "Inactivos, aún pagando"
-              },
-              {
-                "day": "Resultado",
-                "text": "67% de desperdicio"
-              }
-            ]
-          },
           "title": "Los entornos siempre activos queman dinero"
         },
         "references": {
@@ -6770,23 +6537,6 @@
           },
           "quote": "Nuestra factura mensual de infraestructura bajó de $4,500 a $1,440 tras cambiar a clones bajo demanda. Teníamos 15 entornos de desarrollo siempre activos con un 30% de utilización. Ahora los iniciamos según necesidad y se autodestruyen tras 4 horas. Los $36K de ahorro anual financiaron dos salarios de desarrolladores junior."
         },
-        "stats": [
-          {
-            "icon": "trend-up",
-            "label": "Cost reduction",
-            "number": "70%"
-          },
-          {
-            "icon": "zap",
-            "label": "No always-on waste",
-            "number": "Bajo demanda"
-          },
-          {
-            "icon": "clock",
-            "label": "Cleanup & TTL",
-            "number": "Auto"
-          }
-        ],
         "techDiff": {
           "description": "Los entornos de desarrollo tradicionales duplican servidores completos — cada byte de datos, cada archivo de configuración, cada biblioteca. Rediacc usa btrfs copy-on-write: los clones comparten bloques sin cambios con producción, usando solo un 1% de almacenamiento adicional para un entorno de 380 GB.",
           "overline": "BAJO EL CAPÓ",
@@ -7179,27 +6929,6 @@
         }
       },
       "integrations": {
-        "benefits": {
-          "items": [
-            {
-              "description": "Los push activan entornos. Funciona con GitLab CI, GitHub Actions, Gitea o cualquier sistema compatible con webhooks.",
-              "icon": "git-branch",
-              "title": "Integración nativa con Git"
-            },
-            {
-              "description": "Las pruebas se ejecutan contra datos y configuraciones reales de producción. No más sorpresas de \"las pruebas pasan, prod falla\".",
-              "icon": "monitor",
-              "title": "Clones de producción en CI"
-            },
-            {
-              "description": "Sin scripts personalizados que mantener, actualizar o depurar. No más llamadas a alguien a las 2 AM porque el aprovisionamiento de CI se rompió.",
-              "icon": "check-circle",
-              "title": "Cero mantenimiento"
-            }
-          ],
-          "overline": "POR QUÉ IMPORTA",
-          "title": "Lo que obtienes"
-        },
         "blurb": "Integre con su flujo de trabajo existente",
         "bottomCta": {
           "command": "rdc repo fork production --tag ci-build",
@@ -7358,33 +7087,6 @@
               "text": "costo de la ineficiencia de desarrolladores por cada 500 desarrolladores"
             }
           ],
-          "timeline": {
-            "newLabel": "CON REDIACC",
-            "newSteps": ["git push", "Auto", "Datos reales"],
-            "oldLabel": "SCRIPTS CI PERSONALIZADOS",
-            "oldSteps": [
-              {
-                "day": "Paso 1",
-                "text": "Escribir scripts bash"
-              },
-              {
-                "day": "Paso 2",
-                "text": "Aprovisionar VMs"
-              },
-              {
-                "day": "Paso 3",
-                "text": "Cargar datos de prueba"
-              },
-              {
-                "day": "Mensual",
-                "text": "Depurar CI roto"
-              },
-              {
-                "day": "Resultado",
-                "text": "Las pruebas pasan, prod falla"
-              }
-            ]
-          },
           "title": "Los scripts de CI/CD personalizados se rompen y nadie los mantiene"
         },
         "references": {
@@ -7451,23 +7153,6 @@
           },
           "quote": "Eliminamos 400 líneas de scripts de aprovisionamiento CI y las reemplazamos con una línea de configuración de webhook. Nuestro pipeline pasó de aprovisionamientos de 22 minutos con datos sintéticos a clones de producción en 52 segundos. Tres meses después, hemos tenido cero incidentes relacionados con CI. Antes de Rediacc, eran cuatro por mes."
         },
-        "stats": [
-          {
-            "icon": "terminal",
-            "label": "Config to integrate",
-            "number": "1 línea"
-          },
-          {
-            "icon": "git-branch",
-            "label": "Native integration",
-            "number": "Git"
-          },
-          {
-            "icon": "x",
-            "label": "Custom scripts needed",
-            "number": "0"
-          }
-        ],
         "techDiff": {
           "description": "El CI/CD tradicional aprovisiona contenedores vacíos y carga datos sintéticos. Rediacc se integra a nivel de infraestructura — cada push obtiene un clon completo de producción con datos reales, configuraciones reales y servicios reales.",
           "overline": "BAJO EL CAPÓ",
@@ -7519,7 +7204,7 @@
         "blurb": "Clona o traslada tu clúster en ejecución, datos incluidos",
         "bottomCta": {
           "command": "rdc cluster fork prod --tag staging",
-          "ctaText": "Empieza gratis",
+          "primaryCta": "Empieza gratis",
           "description": "Clónalo, prueba el cambio y luego migra de verdad. Inicia tu prueba gratuita de 14 días.",
           "title": "Dale a tu clúster una puerta de salida"
         },
@@ -7770,6 +7455,8 @@
         "techDiff": {
           "description": "Cada nodo se ejecuta desde un archivo de imagen sobre btrfs. Cada volumen es una imagen Ceph RBD. Copiar un clúster significa clonar esas imágenes, copy-on-write. Sin exportación, sin conversión, sin paso de restauración. Por eso un fork tarda segundos, no meses.",
           "overline": "BAJO EL CAPÓ",
+          "traditionalLabel": "Migración por backup y restauración",
+          "rediaccLabel": "Rediacc (clon copy-on-write)",
           "rows": [
             {
               "rediacc": "Las imágenes de nodo y los volúmenes se mueven como un solo conjunto",
@@ -8501,31 +8188,10 @@
         }
       },
       "rapidRecovery": {
-        "benefits": {
-          "items": [
-            {
-              "description": "Recuperación completa del entorno en menos de 5 minutos. Cada contenedor, cada base de datos, cada archivo de configuración — restaurado desde un snapshot inmutable.",
-              "icon": "zap",
-              "title": "Minutos, no días"
-            },
-            {
-              "description": "Retroceda al minuto exacto antes del ataque. Los snapshots continuos significan que usted elige el punto de restauración, no el atacante.",
-              "icon": "clock",
-              "title": "Precisión de punto en el tiempo"
-            },
-            {
-              "description": "Los snapshots continuos significan que nada se escapa. La verificación diaria automatizada en su pipeline de CI confirma que cada backup se restaura correctamente.",
-              "icon": "check-circle",
-              "title": "Cero pérdida de datos"
-            }
-          ],
-          "overline": "POR QUÉ IMPORTA",
-          "title": "Lo que obtienes"
-        },
         "blurb": "Recupere en minutos, no en días",
         "bottomCta": {
           "command": "rdc repo pull production --from backup-vault --force",
-          "ctaText": "Empieza gratis con Community",
+          "primaryCta": "Empieza gratis con Community",
           "description": "Comienza con la edición Community gratuita. Protege hasta 10 cargas de trabajo sin coste. Sin tarjeta de crédito.",
           "title": "No dejes que la recuperación sea más lenta que el ataque"
         },
@@ -8706,33 +8372,6 @@
               "text": "de las víctimas que pagaron son atacadas de nuevo"
             }
           ],
-          "timeline": {
-            "newLabel": "CON REDIACC",
-            "newSteps": ["Detectar", "<5 min", "En línea"],
-            "oldLabel": "LA FORMA ANTIGUA",
-            "oldSteps": [
-              {
-                "day": "Hora 1",
-                "text": "Descubrir ataque"
-              },
-              {
-                "day": "Día 1",
-                "text": "Evaluar daños"
-              },
-              {
-                "day": "Día 3",
-                "text": "Reconstruir servidores"
-              },
-              {
-                "day": "Día 5",
-                "text": "Restaurar datos"
-              },
-              {
-                "day": "Día 7+",
-                "text": "Aún poniéndose al día"
-              }
-            ]
-          },
           "title": "La recuperación lenta cuesta más que el ataque"
         },
         "references": {
@@ -8827,26 +8466,11 @@
           },
           "quote": "Pasamos de un plan de recuperación de 3 días a menos de 4 minutos. Durante un incidente real de ransomware a las 2am, nuestro ingeniero de guardia ejecutó un comando y los 8 contenedores de producción estaban de vuelta en línea a las 2:04am. La estimación de nuestro proveedor anterior era de 72 horas — nosotros lo hicimos en 240 segundos."
         },
-        "stats": [
-          {
-            "icon": "clock",
-            "label": "Average Recovery Time",
-            "number": "<5min"
-          },
-          {
-            "icon": "check-circle",
-            "label": "Recovery Success Rate",
-            "number": "99.9%"
-          },
-          {
-            "icon": "shield",
-            "label": "Data Loss Incidents",
-            "number": "0"
-          }
-        ],
         "techDiff": {
           "description": "La recuperación tradicional reconstruye desde cero — reinstalar SO, restaurar archivos, reconfigurar servicios. Rediacc restaura desde instantáneas btrfs: el sistema de archivos simplemente cambia al estado guardado. Sin reinstalación, sin reconfiguración, sin transferencia de datos. La instantánea ya está en disco — simplemente se activa.",
           "overline": "BAJO EL CAPÓ",
+          "traditionalLabel": "Reconstrucción tradicional",
+          "rediaccLabel": "Rediacc (copias btrfs instantáneas)",
           "rows": [
             {
               "rediacc": "Snapshot ya en disco: cambiar subvolumen activo en segundos",
@@ -8861,7 +8485,7 @@
               "traditional": "Reconfigurar red, servicios, SSL: manual, propenso a errores"
             },
             {
-              "rediacc": "Verificación de salud automatizada después de restaurar: 8/8 servicios verificados ejecutándose",
+              "rediacc": "Verificación de salud automatizada después de restaurar: 8/8 servicios verificados ejecutándose. El snapshot conserva la evidencia mientras se ejecuta la restauración.",
               "traditional": "Verificar manualmente después de restaurar: esperar que no se haya omitido nada"
             }
           ],
@@ -8869,27 +8493,6 @@
         }
       },
       "retentionCompliance": {
-        "benefits": {
-          "items": [
-            {
-              "description": "Defina las reglas de retención una vez. Rediacc las aplica para siempre. Los backups antiguos se limpian automáticamente — sin tareas cron, sin scripts.",
-              "icon": "clock",
-              "title": "Configurar y olvidar"
-            },
-            {
-              "description": "Diseñado para requisitos de HIPAA, SOC2 y RGPD. Los registros de auditoría se exportan a su SIEM. Genere un informe de cumplimiento en segundos.",
-              "icon": "shield",
-              "title": "Listo para cumplimiento"
-            },
-            {
-              "description": "Cada creación, verificación y eliminación de backup se registra con marcas de tiempo. Cada informe de retención está listo para auditoría por defecto.",
-              "icon": "clipboard-check",
-              "title": "Registro de auditoría completo"
-            }
-          ],
-          "overline": "POR QUÉ IMPORTA",
-          "title": "Lo que obtienes"
-        },
         "blurb": "Conserve sus datos el tiempo que la ley exija",
         "bottomCta": {
           "command": "rdc config backup-strategy set --cron '0 2 * * *'",
@@ -9080,33 +8683,6 @@
               "text": "en multas RGPD emitidas en toda Europa solo en 2024"
             }
           ],
-          "timeline": {
-            "newLabel": "Con Rediacc",
-            "newSteps": ["Definir política", "Auto", "Listo para auditoría"],
-            "oldLabel": "La forma antigua",
-            "oldSteps": [
-              {
-                "day": "Mes 1",
-                "text": "Escribir política de retención"
-              },
-              {
-                "day": "Mes 3",
-                "text": "Limpieza manual"
-              },
-              {
-                "day": "Mes 6",
-                "text": "Se omitieron algunos datos"
-              },
-              {
-                "day": "Mes 9",
-                "text": "Llega aviso de auditoría"
-              },
-              {
-                "day": "Mes 10",
-                "text": "Correr para demostrarlo"
-              }
-            ]
-          },
           "title": "Los fallos de cumplimiento son caros"
         },
         "references": {
@@ -9217,23 +8793,6 @@
           },
           "quote": "Nuestro auditor de SOC2 pidió pruebas de retención de copias de 3 años. Anteriormente, eso significaba 2 semanas de buscar en logs y cruzar referencias con hojas de cálculo. Con Rediacc, ejecuté rdc retention report --framework soc2 y entregué un informe completo en 4 minutos. El auditor dijo que era la evidencia más limpia que había visto."
         },
-        "stats": [
-          {
-            "icon": "clock",
-            "label": "Maximum Retention",
-            "number": "7+ años"
-          },
-          {
-            "icon": "clipboard-check",
-            "label": "Compliance Frameworks",
-            "number": "3"
-          },
-          {
-            "icon": "check-circle",
-            "label": "Audit-Ready",
-            "number": "100%"
-          }
-        ],
         "techDiff": {
           "description": "La gestión tradicional de retención significa rastrear fechas de copias en hojas de cálculo, ejecutar scripts de limpieza manuales y esperar que nada se haya omitido antes de que llegue el auditor. Rediacc usa gestión del ciclo de vida de instantáneas btrfs con aplicación automatizada de políticas — las copias se retienen, verifican y limpian sin intervención humana.",
           "overline": "BAJO EL CAPÓ",
@@ -9644,7 +9203,7 @@
         "blurb": "Su infraestructura. Su elección. Siempre.",
         "bottomCta": {
           "command": "rdc repo push production --to new-provider --checkpoint",
-          "ctaText": "Empieza gratis con Community",
+          "primaryCta": "Empieza gratis con Community",
           "description": "Comienza con la edición Community gratuita. Despliega en cualquier lugar. Migra en cualquier momento. Sin tarjeta de crédito.",
           "title": "Recupera el control de tu infraestructura"
         },
@@ -9943,6 +9502,8 @@
         "techDiff": {
           "description": "Rediacc almacena todos los datos en subvolúmenes btrfs estándar — sin formato propietario, sin agente específico del proveedor. La migración usa btrfs send/receive para transferir una instantánea incremental a cualquier máquina Linux. Un entorno de 420 GB con 3,8 GB de cambios desde la última sincronización transfiere 3,8 GB — no 420 GB.",
           "overline": "BAJO EL CAPÓ",
+          "traditionalLabel": "Lock-in por formato propietario",
+          "rediaccLabel": "Rediacc (almacenamiento Linux estándar)",
           "rows": [
             {
               "rediacc": "Un comando: snapshot, transferir, verificar, cambiar DNS — menos de 1 hora",
@@ -10702,11 +10263,6 @@
         "title": "Tabla de contenidos"
       }
     }
-  },
-  "pricingPreview": {
-    "compareAll": "Compara todos los planes y características",
-    "subtitle": "Empieza gratis. Crece cuando estés listo.",
-    "title": "Precios claros. Sin sorpresas."
   },
   "regionPicker": {
     "footer": "Elige la región más cercana a ti o la que requiera tu organización.",
