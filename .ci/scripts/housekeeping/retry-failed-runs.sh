@@ -45,6 +45,9 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=../lib/common.sh
 # BLOCKER: shared log_* helpers used by every housekeeping script
 source "$SCRIPT_DIR/../lib/common.sh" 2>/dev/null || {
+
+require_cmd gh
+require_cmd jq
     log_info() { echo "  $*"; }
     log_warn() { echo "  WARN: $*" >&2; }
     log_step() { echo "==> $*"; }

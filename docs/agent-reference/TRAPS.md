@@ -216,6 +216,15 @@ So: never edit a script a background job is running. Let it finish, or copy the
 tree and edit the copy. And when a shell syntax error cites a line that looks
 fine, check whether anything rewrote the file mid-run before debugging the line.
 
+**Hit again on 2026-08-26, on the same file, with the same signature**: a
+backgrounded `test-hooks.sh` died at `line 1179: syntax error near unexpected
+token 'else'` while `bash -n` on that exact file was clean. Two occurrences of a
+trap this fully written up is a trap that needs a gate, so it now has one:
+`.claude/hooks/pre-edit/block-edit-of-running-script.sh` refuses an Edit or
+Write to a `.sh` file a live process is executing, and names the process. Scope
+is shell scripts only -- a `.ts` or `.py` file is read into memory once, so
+editing it mid-run is confusing rather than corrupting.
+
 ## Rerunning Smoke Test Preview trades one failure for another
 
 `gh run rerun --failed` is the standing remedy for a live-state gate, but it is

@@ -731,6 +731,65 @@ check 0 pre-bash/block-long-sleep.sh "$(bash_json 'git commit -F /tmp/commit-msg
 check 2 pre-bash/block-self-matching-pgrep.sh \
     "$(bash_json "until ! pgrep -f 'some-suite.sh' >/dev/null 2>&1; do sleep 5; done")" \
     "self-pgrep: a loop whose pattern matches its own command line"
+# THE PREMISE, MEASURED RATHER THAN ASSERTED. Every control around it proves the
+# GUARD fires; none proved the hazard is real. This spawns the two loops for real
+# and times them, so "a self-matching pgrep never exits" stops being a claim the
+# suite inherits from a comment.
+#
+# BOUNDED ON BOTH SIDES, deliberately. The deadlock case is capped at 3s, which
+# is the whole reason this can live in a test suite at all -- an unbounded
+# reproduction of a hang IS the hang. The remedy case is given the same 3s and
+# must finish well inside it; if the bracket form ever started hanging too, the
+# guard's advice would be worthless and this goes red.
+PG_MARK="selfmatch-probe-$$"
+timeout 3 bash -c "until ! pgrep -f '${PG_MARK}' >/dev/null 2>&1; do sleep 0.2; done" >/dev/null 2>&1
+if [[ $? -eq 124 ]]; then
+    PASS=$((PASS + 1))
+    echo "ok   [2] self-pgrep PREMISE: a self-matching wait really does hang (timed out at 3s)"
+else
+    FAIL=$((FAIL + 1))
+    echo "FAIL [2] self-pgrep PREMISE: the self-matching wait EXITED, so the guard guards nothing"
+fi
+timeout 3 bash -c "until ! pgrep -f '[s]elfmatch-probe-absent-$$' >/dev/null 2>&1; do sleep 0.2; done" >/dev/null 2>&1
+if [[ $? -eq 0 ]]; then
+    PASS=$((PASS + 1))
+    echo "ok   [0] self-pgrep CONTROL: the bracket-class remedy exits promptly"
+else
+    FAIL=$((FAIL + 1))
+    echo "FAIL [0] self-pgrep CONTROL: the documented remedy hung too; the advice is wrong"
+fi
+unset PG_MARK
+
+# Editing a shell script a process is RUNNING corrupts the running interpreter:
+# bash reads lazily by byte offset, so the edit lands under its feet and it dies
+# at an innocent line while `bash -n` stays clean. Documented at TRAPS.md since
+# 2026-08-09 and hit again on 2026-08-26, on THIS file, costing a suite pass.
+# The guard needs a live process to fire, so the fixture makes one.
+RS_TMP="$(mktemp -d)"
+printf '#!/usr/bin/env bash\nsleep 8\n' >"$RS_TMP/running-fixture.sh"
+bash "$RS_TMP/running-fixture.sh" &
+RS_PID=$!
+sleep 0.3
+check 2 pre-edit/block-edit-of-running-script.sh \
+    "$(printf '{"tool_input":{"file_path":"%s"}}' "$RS_TMP/running-fixture.sh")" \
+    "running-script: editing a .sh a live process is executing is refused"
+check 0 pre-edit/block-edit-of-running-script.sh \
+    "$(printf '{"tool_input":{"file_path":"%s"}}' "$RS_TMP/idle-fixture.sh")" \
+    "running-script CONTROL: a .sh nothing is running is untouched"
+check 0 pre-edit/block-edit-of-running-script.sh \
+    "$(printf '{"tool_input":{"file_path":"%s"}}' "$RS_TMP/running-fixture.ts")" \
+    "running-script CONTROL: a non-shell file is out of scope"
+check 0 pre-edit/block-edit-of-running-script.sh '{"tool_input":{}}' \
+    "running-script CONTROL: no file_path names nothing"
+kill "$RS_PID" 2>/dev/null || true
+wait "$RS_PID" 2>/dev/null || true
+# CONTROL THAT MATTERS: once the process is gone the guard must go QUIET, or it
+# would block every edit to any script that was ever run.
+check 0 pre-edit/block-edit-of-running-script.sh \
+    "$(printf '{"tool_input":{"file_path":"%s"}}' "$RS_TMP/running-fixture.sh")" \
+    "running-script CONTROL: the guard goes quiet once the process exits"
+rm -rf "$RS_TMP"
+unset RS_TMP RS_PID
 check 2 pre-bash/block-self-matching-pgrep.sh \
     "$(bash_json 'until ! pgrep -f "some-suite.sh" >/dev/null; do sleep 2; done')" \
     "self-pgrep: the double-quoted form too"

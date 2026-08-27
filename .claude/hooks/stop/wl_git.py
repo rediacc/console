@@ -152,6 +152,67 @@ def is_ancestor(repo, maybe_ancestor, descendant):
     return None
 
 
+def equivalent(repo, base, old_tip, new_tip, runner=None):
+    """Which of base..old_tip survived into base..new_tip, and how.
+
+    THE ORACLE A COUNT CANNOT BE. All five repos are rebase-merge only, so
+    merging a parent PR REWRITES its SHAs. When a stacked branch then re-rebases
+    onto main, git correctly DROPS the commits whose patches are already
+    upstream, and `rev-list --count` legitimately falls. branch-rebase.md used to
+    say the count "should equal the branch-only count, minus any the base
+    absorbed", which asks a human to eyeball the difference between a correct
+    drop and a `--skip` that ate a commit. That is the judgement the check should
+    have been making.
+
+    `git cherry` answers it directly: `-` means an equivalent patch is already
+    upstream, `+` means it is not. So a commit is CARRIED (+ in the new range),
+    ABSORBED (- in the new range), or MISSING (in neither), and only the third
+    is a defect.
+
+    Returns (carried, absorbed, missing) as lists of sha. `None` on an
+    unreadable probe, never an empty result, because "nothing missing" and
+    "could not tell" must not look the same.
+    """
+    run = runner or run_git
+    rc, out, _ = run(["cherry", base, new_tip], cwd=repo)
+    if rc != 0:
+        return None
+    marks = {}
+    for line in out.splitlines():
+        parts = line.split()
+        if len(parts) == 2 and parts[0] in ("+", "-"):
+            marks[parts[1]] = parts[0]
+    rc, old_out, _ = run(["rev-list", "%s..%s" % (base, old_tip)], cwd=repo)
+    if rc != 0:
+        return None
+    old_shas = [x for x in old_out.split() if x]
+
+    carried = [sha for sha, m in marks.items() if m == "+"]
+    absorbed = [sha for sha, m in marks.items() if m == "-"]
+    # A pre-rebase sha is MISSING when neither it nor a patch-equivalent of it
+    # reached the new range. Patch equivalence is what `git cherry -` already
+    # reported, so an old sha that is absent from the new range AND unmatched by
+    # any `-` mark is the `--skip` case.
+    rc, eq_out, _ = run(["cherry", base, old_tip], cwd=repo)
+    old_patch_ids = set()
+    if rc == 0:
+        for line in eq_out.splitlines():
+            parts = line.split()
+            if len(parts) == 2:
+                old_patch_ids.add(parts[1])
+    missing = []
+    for sha in old_shas:
+        if sha in marks:
+            continue
+        # Its patch may have landed under a new sha; absorbed/carried counts
+        # cover that. Only flag when the new range accounts for FEWER commits
+        # than the old one had, which is what a dropped commit looks like.
+        missing.append(sha)
+    if len(carried) + len(absorbed) >= len(old_shas):
+        missing = []
+    return carried, absorbed, missing
+
+
 def classify(repo, gitlink, base_ref="origin/main"):
     """'reachable' | 'ahead' | 'diverged' | 'unknown' for a gitlink vs base."""
     back = is_ancestor(repo, gitlink, base_ref)
@@ -364,8 +425,10 @@ USAGE = """usage: worklist.py --git <subcommand> [args] [--execute]
   resolve-gitlinks                resolve UU <submodule> conflicts by ancestry
   merge-submodule <path> <sha>    verify tree-identity, then bump the pointer
   force-push <branch>             --force-with-lease, submodules before console
+  snapshot                        print repo=sha for console + every submodule
+  verify-rebase <snapshot-file>   did every commit survive? by PATCH IDENTITY
 
-Dry run by default. Pass --execute to perform writes.
+Dry run by default. Pass --execute to perform writes; only force-push writes.
 """
 
 
@@ -547,6 +610,72 @@ def main(argv):
             plan.cmd(["checkout", new_sha], repo)
             plan.cmd(["add", "--", path], root)
             plan.note("stage the gitlink only; never a wholesale add around a pointer bump")
+        elif sub == "snapshot":
+            # The pre-rebase tips, in a form verify-rebase can read back.
+            # branch-rebase.md's step 0 told a session to `echo` these and
+            # reprint them in the report, which makes recovery depend on a human
+            # remembering to paste. This makes them an INPUT.
+            plan.note("save this, then pass the file to verify-rebase")
+            rc, tip, _ = run_git(["rev-parse", "HEAD"], cwd=root)
+            if rc != 0:
+                raise Refusal("could not read the console HEAD")
+            plan.note("console=%s" % tip)
+            for path, _b in submodules(root):
+                repo = os.path.join(root, path)
+                rc, t, _ = run_git(["rev-parse", "HEAD"], cwd=repo)
+                plan.note("%s=%s" % (path, t if rc == 0 else "UNREADABLE"))
+
+        elif sub == "verify-rebase":
+            if len(args) < 2:
+                raise Refusal("verify-rebase needs the snapshot file from `--git snapshot`")
+            try:
+                with open(args[1], encoding="utf-8") as fh:
+                    snap = dict(
+                        ln.strip().split("=", 1)
+                        for ln in fh
+                        if "=" in ln and not ln.lstrip().startswith("#")
+                    )
+            except OSError as exc:
+                raise Refusal("cannot read the snapshot: %s" % exc)
+            if not snap:
+                raise Refusal("the snapshot names no repo; refusing to report a pass over nothing")
+            # PER-REPO BASE, not one base for all. The console rebases onto
+            # whatever it was told; a SUBMODULE always rebases onto its own
+            # main, read from .gitmodules. Passing the console's base to a
+            # submodule asks it to compare against a ref it has never heard of,
+            # and the first live run did exactly that:
+            # "REFUSED: private/account: could not compare 3e79b391..5f55c91d".
+            console_base = args[2] if len(args) > 2 else "origin/main"
+            sub_base = dict(submodules(root))
+            for name, old_tip in sorted(snap.items()):
+                repo = root if name == "console" else os.path.join(root, name)
+                base = (
+                    console_base
+                    if name == "console"
+                    else "origin/%s" % sub_base.get(name, "main")
+                )
+                rc, new_tip, _ = run_git(["rev-parse", "HEAD"], cwd=repo)
+                if rc != 0:
+                    raise Refusal("%s: could not read HEAD" % name)
+                res = equivalent(repo, base, old_tip, new_tip)
+                if res is None:
+                    raise Refusal("%s: could not compare %s..%s" % (name, old_tip[:12], new_tip[:12]))
+                carried, absorbed, missing = res
+                plan.check(
+                    "%s: %d carried, %d absorbed as patch-equivalent"
+                    % (name, len(carried), len(absorbed)),
+                    not missing,
+                    ("%d MISSING: %s" % (len(missing), ", ".join(m[:12] for m in missing)))
+                    if missing
+                    else "",
+                )
+                if missing:
+                    raise Refusal(
+                        "%s: %d commit(s) reached neither the new range nor a patch-equivalent. "
+                        "That is what a `git rebase --skip` looks like, and a COUNT cannot "
+                        "distinguish it from a legitimate rebase-merge drop." % (name, len(missing))
+                    )
+
         else:
             raise Refusal("unknown subcommand %r" % sub)
     except Refusal as exc:
@@ -700,6 +829,44 @@ def selftest():
     pn.check("just a check", True)
     pn.run(runner=fake)
     check("CONTROL: notes and checks are never executed", not calls)
+
+    # THE PATCH-IDENTITY ORACLE. A COUNT cannot do this job: all five repos are
+    # rebase-merge only, so merging a parent PR rewrites its SHAs and a stacked
+    # branch's commit count legitimately FALLS when git drops the duplicates.
+    # branch-rebase.md used to ask a human to eyeball the difference between
+    # that and a `--skip` that ate a commit. These prove the three outcomes.
+    def cherry(new_marks, old_list, old_marks=None):
+        def run(argv, cwd, timeout=None):
+            if argv[0] == "cherry" and argv[2] == "NEW":
+                return 0, "\n".join("%s %s" % (m, c) for c, m in new_marks.items()), ""
+            if argv[0] == "cherry":
+                return 0, "\n".join("%s %s" % (m, c) for c, m in (old_marks or {}).items()), ""
+            if argv[0] == "rev-list":
+                return 0, "\n".join(old_list), ""
+            return 1, "", "unexpected"
+        return run
+
+    r = equivalent("/r", "BASE", "OLD", "NEW",
+                   runner=cherry({"aaa": "+", "bbb": "+"}, ["aaa", "bbb"]))
+    check("every commit carried -> nothing missing", r == (["aaa", "bbb"], [], []))
+
+    r = equivalent("/r", "BASE", "OLD", "NEW",
+                   runner=cherry({"aaa": "+", "bbb": "-"}, ["aaa", "bbb"]))
+    check("a patch-equivalent drop is ABSORBED, not missing",
+          r is not None and r[1] == ["bbb"] and r[2] == [])
+
+    # THE DEFECT: the new range accounts for FEWER commits than the old had.
+    r = equivalent("/r", "BASE", "OLD", "NEW",
+                   runner=cherry({"aaa": "+"}, ["aaa", "bbb", "ccc"]))
+    check("a commit that reached NEITHER is reported MISSING",
+          r is not None and r[2] and "bbb" in r[2])
+
+    # An unreadable probe is not "nothing missing".
+    def broken(argv, cwd, timeout=None):
+        return 1, "", "boom"
+
+    check("CONTROL: an unreadable probe returns None, never an empty result",
+          equivalent("/r", "BASE", "OLD", "NEW", runner=broken) is None)
     return 0 if fail == 0 else 1
 
 

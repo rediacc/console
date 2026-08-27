@@ -34,6 +34,8 @@ ROOT_DIR="$(cd "$SCRIPT_DIR/../../.." && pwd)"
 # shellcheck source=../lib/common.sh
 # BLOCKER: shared logging helpers used by every .ci/scripts entry point
 source "$ROOT_DIR/.ci/scripts/lib/common.sh" 2>/dev/null || {
+
+require_cmd gh
     log_info() { echo "$*"; }
     log_error() { echo "$*" >&2; }
 }

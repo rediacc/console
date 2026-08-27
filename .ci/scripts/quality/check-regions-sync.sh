@@ -27,6 +27,8 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # BLOCKER: log_error / log_info and get_repo_root are used throughout this gate
 source "$SCRIPT_DIR/../lib/common.sh"
 
+require_cmd python3
+
 REPO_ROOT="$(get_repo_root)"
 cd "$REPO_ROOT"
 

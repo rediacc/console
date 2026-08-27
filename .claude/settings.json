@@ -148,7 +148,12 @@
           },
           {
             "type": "command",
-            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/pre-edit/block-agent-state-shape.sh\""
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/pre-edit/block-agent-state-shape.sh\"",
+            "type": "command"
+          },
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/pre-edit/block-edit-of-running-script.sh\""
           },
           {
             "type": "command",
