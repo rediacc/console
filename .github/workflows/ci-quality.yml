@@ -554,6 +554,11 @@ jobs:
       - name: CI-watch recipe has one source
         run: .ci/scripts/quality/check-ci-watch-recipe.sh
 
+      # Every CLI flag a script has must be taught in its canonical doc, or a
+      # flag exists that no session reading only the doc would ever learn.
+      - name: CLI docs stay in sync with their scripts' real flags
+        run: .ci/scripts/quality/check-cli-doc-coverage.sh
+
       # Meta-gate: a control built by pattern substitution must prove the plant
       # landed, or a reworded target line turns the control green against
       # unmutated source.

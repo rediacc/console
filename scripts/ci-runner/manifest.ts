@@ -592,6 +592,26 @@ export const GATES: readonly GateSpec[] = [
     },
   },
   {
+    id: 'check:ci-cli-doc-coverage',
+    run: 'npm run check:ci-cli-doc-coverage',
+    gate: true,
+    // The pairs it checks: ci-trace.py against its skill, run.ts against
+    // ci-gates.md. Trigger on either script or either doc changing.
+    paths: [
+      '.ci/scripts/ci/ci-trace.py',
+      '.claude/skills/ci-watch/**',
+      'scripts/ci-runner/run.ts',
+      'docs/agent-reference/ci-gates.md',
+    ],
+    leaves: ['.ci/scripts/quality/check-cli-doc-coverage.sh'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-code',
+      step: "CLI docs stay in sync with their scripts' real flags",
+    },
+  },
+  {
     id: 'check:ci-ceph-image-pin',
     run: 'npm run check:ci-ceph-image-pin',
     gate: true,
