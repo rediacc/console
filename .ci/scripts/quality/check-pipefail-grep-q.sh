@@ -73,11 +73,22 @@ offenders() {
     [ -n "$fns" ] || return 0
     while IFS= read -r fn; do
         [ -n "$fn" ] || continue
-        # A CALL to that function, then a pipe, then grep -q. Comment lines are
-        # excluded: prose explaining this very bug must not read as committing
-        # it, which is the mention-as-execution class this repo has paid for
-        # repeatedly -- including inside the guard written to catch it.
-        grep -nE "^[^#]*\b${fn}\b[^|#]*\|[[:space:]]*grep -q" "$f" 2>/dev/null
+        # A CALL to that function, then a pipe, then grep -q -- in CODE.
+        #
+        # COMMENTS AND STRING LITERALS ARE BOTH STRIPPED FIRST, and the second
+        # one was learned the hard way: this gate flagged ITSELF the moment it
+        # became a tracked file, because its own message text says
+        # "no racing <function> | grep -q ..." and `pass` is a function it
+        # defines. Four findings, every one of them prose describing the very
+        # bug the gate exists for. That is the mention-as-execution class, this
+        # time inside the gate written to catch a different class -- and its own
+        # fixture heredoc (`if producer "$2" | grep -q ...`) is real code that
+        # must stay quoted-out too, since it is a CONTROL, not a defect.
+        #
+        # `sed` blanks quoted spans rather than deleting the line, so line
+        # numbers stay honest in the report.
+        sed -e 's/#.*$//' -e "s/'[^']*'/''/g" -e 's/"[^"]*"/""/g' "$f" 2>/dev/null |
+            grep -nE "\b${fn}\b[^|]*\|[[:space:]]*grep -q"
     done <<<"$fns"
 }
 
@@ -102,10 +113,17 @@ scan_files() {
 #
 # `grep -v` is used here because that is literally what the defect's producer
 # was: `advice_only()` in check-ci-watch-recipe.sh is a `grep -vE`.
-cat >"$TMP/mech.sh" <<'MECH'
+# THE FIXTURE IS ASSEMBLED AT RUNTIME so this file's own TEXT never carries the
+# racing shape contiguously. Written out literally, the gate flagged its own
+# control fixture -- correctly, by its rule, since the fixture IS the bad shape
+# on purpose. Self-exemption was the wrong answer: a gate that skips its own
+# file stops policing the one script most likely to grow this bug next. The
+# same runtime-concatenation convention test-hooks.sh uses for banned tokens.
+GQ="grep -q"
+cat >"$TMP/mech.sh" <<MECH
 set -uo pipefail
-producer() { grep -v ZZZ_NEVER_MATCHES "$1"; }
-if producer "$2" | grep -q 'NEEDLE'; then echo MATCHED; else echo MISSED; fi
+producer() { grep -v ZZZ_NEVER_MATCHES "\$1"; }
+if producer "\$2" | $GQ 'NEEDLE'; then echo MATCHED; else echo MISSED; fi
 MECH
 {
     echo NEEDLE
