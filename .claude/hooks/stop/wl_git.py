@@ -473,65 +473,68 @@ def stage_resolution(plan, root, resolved):
 
 
 def equivalent(repo, base, old_tip, new_tip, runner=None):
-    """Which of base..old_tip survived into base..new_tip, and how.
+    """Which of base..old_tip survived into new_tip, and how.
 
     THE ORACLE A COUNT CANNOT BE. All five repos are rebase-merge only, so
     merging a parent PR REWRITES its SHAs. When a stacked branch then re-rebases
     onto main, git correctly DROPS the commits whose patches are already
-    upstream, and `rev-list --count` legitimately falls. branch-rebase.md used to
-    say the count "should equal the branch-only count, minus any the base
-    absorbed", which asks a human to eyeball the difference between a correct
-    drop and a `--skip` that ate a commit. That is the judgement the check should
-    have been making.
+    upstream, and `rev-list --count` legitimately falls. Only a patch-identity
+    question tells that apart from a `--skip` that ate a commit.
 
-    `git cherry` answers it directly: `-` means an equivalent patch is already
-    upstream, `+` means it is not. So a commit is CARRIED (+ in the new range),
-    ABSORBED (- in the new range), or MISSING (in neither), and only the third
-    is a defect.
+    TWO PROBES, EACH ASKED DIRECTLY OF GIT:
 
-    Returns (carried, absorbed, missing) as lists of sha. `None` on an
-    unreadable probe, never an empty result, because "nothing missing" and
+      git cherry <new_tip> <old_tip>   accountability. `-` means a
+                                       patch-equivalent of that pre-rebase
+                                       commit IS reachable from the new tip.
+                                       `+` means it is nowhere: MISSING.
+      git cherry <base> <old_tip>      the split. `-` means the patch was
+                                       already upstream in base, so the rebase
+                                       was right to drop it: ABSORBED. `+` means
+                                       it was the branch's own work: CARRIED.
+
+    THE FIRST VERSION COMPARED SHAS, WHICH A REBASE HAS JUST REWRITTEN. It read
+    `git cherry base new_tip` for marks keyed by NEW shas and looked up OLD shas
+    in them, so every commit fell through to `missing` -- and it then rescued
+    itself with `if len(carried) + len(absorbed) >= len(old_shas): missing = []`,
+    a COUNT, in the function whose docstring says a count cannot answer this.
+    On its second live run it reported 48 of 48 commits missing on a rebase that
+    was perfectly correct.
+
+    Its controls passed throughout, because the fake used the SAME sha strings
+    for the old and new ranges -- the one thing a rebase never does. The
+    controls below use distinct ids for exactly that reason.
+
+    Returns (carried, absorbed, missing) as lists of pre-rebase shas. `None` on
+    an unreadable probe, never an empty result, because "nothing missing" and
     "could not tell" must not look the same.
     """
     run = runner or run_git
-    rc, out, _ = run(["cherry", base, new_tip], cwd=repo)
-    if rc != 0:
-        return None
-    marks = {}
-    for line in out.splitlines():
-        parts = line.split()
-        if len(parts) == 2 and parts[0] in ("+", "-"):
-            marks[parts[1]] = parts[0]
-    rc, old_out, _ = run(["rev-list", "%s..%s" % (base, old_tip)], cwd=repo)
-    if rc != 0:
-        return None
-    old_shas = [x for x in old_out.split() if x]
 
-    carried = [sha for sha, m in marks.items() if m == "+"]
-    absorbed = [sha for sha, m in marks.items() if m == "-"]
-    # A pre-rebase sha is MISSING when neither it nor a patch-equivalent of it
-    # reached the new range. Patch equivalence is what `git cherry -` already
-    # reported, so an old sha that is absent from the new range AND unmatched by
-    # any `-` mark is the `--skip` case.
-    rc, eq_out, _ = run(["cherry", base, old_tip], cwd=repo)
-    old_patch_ids = set()
-    if rc == 0:
-        for line in eq_out.splitlines():
+    def marks(upstream, head):
+        rc, out, _ = run(["cherry", upstream, head], cwd=repo)
+        if rc != 0:
+            return None
+        found = {}
+        order = []
+        for line in out.splitlines():
             parts = line.split()
-            if len(parts) == 2:
-                old_patch_ids.add(parts[1])
-    missing = []
-    for sha in old_shas:
-        if sha in marks:
-            continue
-        # Its patch may have landed under a new sha; absorbed/carried counts
-        # cover that. Only flag when the new range accounts for FEWER commits
-        # than the old one had, which is what a dropped commit looks like.
-        missing.append(sha)
-    if len(carried) + len(absorbed) >= len(old_shas):
-        missing = []
-    return carried, absorbed, missing
+            if len(parts) == 2 and parts[0] in ("+", "-"):
+                found[parts[1]] = parts[0]
+                order.append(parts[1])
+        return found, order
 
+    accounted = marks(new_tip, old_tip)
+    split = marks(base, old_tip)
+    if accounted is None or split is None:
+        return None
+    acc_marks, _acc_order = accounted
+    split_marks, split_order = split
+
+    missing = [sha for sha in split_order if acc_marks.get(sha) == "+"]
+    gone = set(missing)
+    carried = [s for s in split_order if split_marks[s] == "+" and s not in gone]
+    absorbed = [s for s in split_order if split_marks[s] == "-" and s not in gone]
+    return carried, absorbed, missing
 
 def classify(repo, gitlink, base_ref="origin/main"):
     """'reachable' | 'ahead' | 'diverged' | 'unknown' for a gitlink vs base."""
@@ -1122,6 +1125,37 @@ def main(argv):
             # and the first live run did exactly that:
             # "REFUSED: private/account: could not compare 3e79b391..5f55c91d".
             console_base = args[2] if len(args) > 2 else "origin/main"
+            # A BARE BRANCH NAME MEANS THE REMOTE ONE. Found on this verb's
+            # second live run: `verify-rebase <snap> main` compared against the
+            # LOCAL `main`, which in this checkout is 2048 commits divergent --
+            # a pre-history-rewrite main that nothing updated after the
+            # 2026-08-23 SHA rewrite. It reported "78 carried, 0 absorbed" with
+            # no complaint, when the truth was 28 carried and 20 absorbed.
+            #
+            # A confident wrong number is worse than a refusal, and the caller
+            # did nothing unreasonable: /branch-rebase documents the argument as
+            # `[base]` and this module's own trapguard hint says `[base]` too.
+            # So normalise, and SAY that it happened rather than doing it
+            # silently -- a reader who meant the local ref must be able to see
+            # that they did not get it.
+            if "/" not in console_base:
+                rc_r, _o, _e = run_git(
+                    ["rev-parse", "--verify", "--quiet", "origin/%s" % console_base], cwd=root
+                )
+                if rc_r == 0:
+                    rc_l, local_sha, _ = run_git(
+                        ["rev-parse", "--verify", "--quiet", console_base], cwd=root
+                    )
+                    rc_o, remote_sha, _ = run_git(
+                        ["rev-parse", "origin/%s" % console_base], cwd=root
+                    )
+                    if rc_l == 0 and local_sha != remote_sha:
+                        plan.note(
+                            "base %r means origin/%s here; the LOCAL %s is a different "
+                            "commit (%s) and is not what a rebase targeted"
+                            % (console_base, console_base, console_base, (local_sha or "?")[:12])
+                        )
+                    console_base = "origin/%s" % console_base
             sub_base = dict(submodules(root))
             for name, old_tip in sorted(snap.items()):
                 repo = root if name == "console" else os.path.join(root, name)
@@ -1381,31 +1415,55 @@ def selftest():
     # branch's commit count legitimately FALLS when git drops the duplicates.
     # branch-rebase.md used to ask a human to eyeball the difference between
     # that and a `--skip` that ate a commit. These prove the three outcomes.
-    def cherry(new_marks, old_list, old_marks=None):
+    # OLD AND NEW SHAS MUST DIFFER IN THE FIXTURE. The previous fake used one
+    # id for both ranges, which is the one thing a rebase never does -- and that
+    # is why these controls stayed green while the function reported 48 of 48
+    # commits missing on a correct rebase. `o*` are pre-rebase ids, `n*` are
+    # post-rebase ones, and nothing in the fake lets them be confused.
+    def cherry(accounted, split):
+        """accounted: {old_sha: mark} from `cherry NEW OLD`.
+        split:      {old_sha: mark} from `cherry BASE OLD`."""
+
         def run(argv, cwd, timeout=None):
-            if argv[0] == "cherry" and argv[2] == "NEW":
-                return 0, "\n".join("%s %s" % (m, c) for c, m in new_marks.items()), ""
-            if argv[0] == "cherry":
-                return 0, "\n".join("%s %s" % (m, c) for c, m in (old_marks or {}).items()), ""
-            if argv[0] == "rev-list":
-                return 0, "\n".join(old_list), ""
-            return 1, "", "unexpected"
+            if argv[0] != "cherry":
+                return 1, "", "unexpected %r" % argv
+            table = accounted if argv[1] == "NEW" else split
+            return 0, "\n".join("%s %s" % (m, c) for c, m in table.items()), ""
+
         return run
 
     r = equivalent("/r", "BASE", "OLD", "NEW",
-                   runner=cherry({"aaa": "+", "bbb": "+"}, ["aaa", "bbb"]))
-    check("every commit carried -> nothing missing", r == (["aaa", "bbb"], [], []))
+                   runner=cherry({"o1": "-", "o2": "-"}, {"o1": "+", "o2": "+"}))
+    check("every commit carried -> nothing missing", r == (["o1", "o2"], [], []))
 
     r = equivalent("/r", "BASE", "OLD", "NEW",
-                   runner=cherry({"aaa": "+", "bbb": "-"}, ["aaa", "bbb"]))
+                   runner=cherry({"o1": "-", "o2": "-"}, {"o1": "+", "o2": "-"}))
     check("a patch-equivalent drop is ABSORBED, not missing",
-          r is not None and r[1] == ["bbb"] and r[2] == [])
+          r is not None and r[0] == ["o1"] and r[1] == ["o2"] and r[2] == [])
 
-    # THE DEFECT: the new range accounts for FEWER commits than the old had.
+    # THE DEFECT: a pre-rebase commit with no equivalent anywhere in the new tip.
     r = equivalent("/r", "BASE", "OLD", "NEW",
-                   runner=cherry({"aaa": "+"}, ["aaa", "bbb", "ccc"]))
+                   runner=cherry({"o1": "-", "o2": "+"}, {"o1": "+", "o2": "+"}))
     check("a commit that reached NEITHER is reported MISSING",
-          r is not None and r[2] and "bbb" in r[2])
+          r is not None and r[2] == ["o2"] and r[0] == ["o1"])
+
+    # THE REGRESSION THIS REWRITE EXISTS FOR: every commit re-keyed by the
+    # rebase, all of them genuinely present. The old sha-matching version
+    # reported ALL of these missing and then hid it behind a count.
+    r = equivalent("/r", "BASE", "OLD", "NEW",
+                   runner=cherry({"o%d" % i: "-" for i in range(1, 49)},
+                                 {"o%d" % i: ("+" if i <= 28 else "-") for i in range(1, 49)}))
+    check("48 re-keyed commits: 28 carried, 20 absorbed, 0 missing",
+          r is not None and len(r[0]) == 28 and len(r[1]) == 20 and r[2] == [])
+
+    # AND THE COUNT MUST NOT RESCUE A REAL LOSS. The old version zeroed `missing`
+    # whenever carried+absorbed reached the old count; here the totals match and
+    # a commit is still gone.
+    r = equivalent("/r", "BASE", "OLD", "NEW",
+                   runner=cherry({"o1": "-", "o2": "-", "o3": "+"},
+                                 {"o1": "+", "o2": "-", "o3": "+"}))
+    check("CONTROL: a matching total does not excuse a missing commit",
+          r is not None and r[2] == ["o3"])
 
     # An unreadable probe is not "nothing missing".
     def broken(argv, cwd, timeout=None):
