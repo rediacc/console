@@ -238,6 +238,7 @@
     "lint:unused": "knip --treat-config-hints-as-errors",
     "lint:unused:fix": "knip --fix",
     "ci": "tsx scripts/ci-runner/run.ts --selftest && tsx scripts/ci-runner/run.ts",
+    "ci:quick": "tsx scripts/ci-runner/run.ts --selftest && tsx scripts/ci-runner/run.ts --quick",
     "ci:list": "tsx scripts/ci-runner/run.ts --list",
     "ci:serial": "tsx scripts/ci-runner/run.ts --jobs 1",
     "quality": "npm run ci",

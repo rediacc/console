@@ -81,6 +81,19 @@ export function createReporter(opts: ReporterOptions) {
         opts.out(`  SKIP  ${pad(result.id)}         ${result.reason ?? ''}\n`);
         return;
       }
+      // BLOCKED IS NOT FAIL, AND THE PER-GATE LINE MUST SAY SO. The footer
+      // counted the two separately from the start while this line still
+      // printed FAIL for both, so a run read "8 failed" above nine FAIL lines.
+      // A status that is only honest in the summary is not honest: the reader
+      // scanning for what to fix is reading THESE lines.
+      if (result.status === 'blocked') {
+        opts.out(`BLOCK ${pad(result.id)} ${secs(result.ms).padStart(7)}   could not run here\n`);
+        opts.out('  --- why ---\n');
+        const why_ = (result.stderr || result.stdout).trim();
+        opts.out(why_ === '' ? '  (said nothing, which is itself a defect)\n' : ensureNewline(why_));
+        opts.out('\n');
+        return;
+      }
       opts.out(`FAIL  ${pad(result.id)} ${secs(result.ms).padStart(7)}   ${why(result)}\n`);
       opts.out(`  rerun: ${result.rerun}\n`);
       opts.out('  --- stdout ---\n');
@@ -93,14 +106,23 @@ export function createReporter(opts: ReporterOptions) {
     footer(results: readonly GateResult[], meta: RunMeta): number {
       const failed = results.filter((r) => r.status === 'fail');
       const skipped = results.filter((r) => r.status === 'skipped');
+      const blocked = results.filter((r) => r.status === 'blocked');
       const ok = results.filter((r) => r.status === 'ok');
       const serialMs = results.reduce((sum, r) => sum + r.ms, 0);
       const speedup = meta.wallMs > 0 ? serialMs / meta.wallMs : 0;
+      // BLOCKED DOES NOT REDDEN THE RUN. A gate that could not run has said
+      // nothing about the code, and treating "this machine lacks ruff" as a
+      // finding is what turns a pre-push lane into a wall nobody keeps. It is
+      // never silent though -- it is counted below, listed by name with the
+      // gate's own message, and recorded in the receipt for the guard to warn
+      // on. Under CI the toolchain is present, so a gate exiting CANNOT_RUN
+      // there is a broken lane and shows up as a plain non-zero to the workflow.
       const exitCode = failed.length > 0 || skipped.length > 0 ? 1 : 0;
 
       opts.out(`${RULE}\n`);
       opts.out(
         `${gates(results.length)}: ${ok.length} ok, ${failed.length} failed, ${skipped.length} skipped` +
+          (blocked.length > 0 ? `, ${blocked.length} BLOCKED (could not run)` : '') +
           `     wall ${secs(meta.wallMs)} (serial ${secs(serialMs)}, ${speedup.toFixed(1)}x)\n`
       );
       if (meta.selection !== undefined) {
@@ -125,6 +147,17 @@ export function createReporter(opts: ReporterOptions) {
         opts.out('SKIPPED:\n');
         for (const r of skipped) opts.out(`  ${pad(r.id)}  ${r.reason ?? ''}\n`);
       }
+      if (blocked.length > 0) {
+        // Named, with the gate's own words. The whole point of the status is
+        // that the reader can tell a missing tool from a real finding, and
+        // that distinction is only visible if the reason is printed.
+        opts.out('BLOCKED (could not run here; NOT a verdict on the code):\n');
+        for (const r of blocked) {
+          const why = (r.stderr || r.stdout).trim().split('\n').filter(Boolean).slice(-3);
+          opts.out(`  ${pad(r.id)}\n`);
+          for (const line of why) opts.out(`      ${line}\n`);
+        }
+      }
       if (failed.length > 0) {
         opts.out('rerun all failures:\n');
         opts.out(`  ${failed.map((r) => r.rerun).join(' && ')}\n`);
@@ -142,6 +175,7 @@ export function createReporter(opts: ReporterOptions) {
             serialMs,
             ok: ok.length,
             failed: failed.length,
+            blocked: blocked.length,
             skipped: skipped.length,
             exitCode,
             gates: results,

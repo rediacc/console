@@ -156,6 +156,25 @@ rm -rf "$WIRE_TMP"
 # the worklist-epics block and CI fails minutes later naming nothing useful.
 check 2 pre-bash/block-raw-pr-body-edit.sh "$(bash_json 'gh pr edit 42 --body-file b.md')" "raw-pr-body(blocked)"
 check 0 pre-bash/block-raw-pr-body-edit.sh "$(bash_json '.ci/scripts/pr/sync-epic-block.sh 42 0826-1')" "raw-pr-body(tool passes)"
+# THE PRE-PUSH RECEIPT GUARD. A CI round costs ~15 minutes; three of the five
+# reds on PR #579 were sub-2-second gates -- check:format 1.72s,
+# check:ci-python-lint 0.59s, check:ci-parity 1.29s -- which cost roughly 45
+# minutes of CI between them. The gates existed; nothing made anyone run them.
+#
+# Only the ALLOW direction is pinned here, deliberately. The refusal arms need a
+# receipt file planted at a specific tree sha, which is fixture work this
+# suite's `check` helper cannot express; they live in the dedicated gate suite
+# instead. What these four pin is the half that decides whether the guard is
+# tolerable: a guard that refuses things it has no business refusing is a guard
+# that gets bypassed, and every one of these ran green before the guard existed.
+check 0 pre-bash/block-unverified-push.sh "$(bash_json 'git status')" \
+    "unverified-push CONTROL: a non-push is out of scope"
+check 0 pre-bash/block-unverified-push.sh "$(bash_json 'git push --dry-run origin 0827-1')" \
+    "unverified-push CONTROL: a dry run publishes nothing, so it buys no CI round"
+check 0 pre-bash/block-unverified-push.sh "$(bash_json "echo 'remember to git push once green'")" \
+    "unverified-push CONTROL: prose about pushing is not a push"
+check 0 pre-bash/block-unverified-push.sh "$(bash_json 'cd private/account && git push origin 0827-1')" \
+    "unverified-push CONTROL: a submodule push advances no console branch"
 check 0 pre-bash/block-raw-pr-body-edit.sh "$(bash_json 'gh pr edit 42 --add-label ci')" "raw-pr-body(non-body passes)"
 # CONTROL: prose ABOUT the rule is not a violation of it. The first version
 # blocked this, which is the false-positive class block-commit-meta.sh warns of.
@@ -1644,6 +1663,7 @@ fi
 for mod in context/test-context-bands.py \
     pre-bash/test-block-destructive-git-restore.py \
     pre-bash/test-block-git-amend.py \
+    pre-bash/test-block-unverified-push.py \
     stop/test-completion-evidence.py; do
     if [[ ! -f "$DIR/$mod" ]]; then
         FAIL=$((FAIL + 1))

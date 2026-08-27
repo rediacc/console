@@ -18,7 +18,29 @@
 import type { ExecOutcome } from './exec';
 import type { GateSpec } from './manifest';
 
-type GateStatus = 'ok' | 'fail' | 'skipped';
+/**
+ * `blocked` is a gate that COULD NOT RUN, as distinct from one that ran and
+ * judged the code red. A missing toolchain is not evidence about the code, and
+ * conflating the two is what makes a pre-push lane unusable: measured
+ * 2026-08-27, ten of twelve reds on a normal developer tree were ambient, three
+ * of them purely "this machine lacks ruff / workers-types".
+ *
+ * It is NOT a skip. A gate that opts into this must exit CANNOT_RUN
+ * deliberately and say what is missing; the default for any other non-zero exit
+ * is still `fail`. And it stays visible: the footer counts it, the receipt
+ * records it, and the pre-push guard WARNS on it rather than staying quiet --
+ * "a linter that cannot run is a gate that cannot fail" remains true, so this
+ * makes that state loud rather than forgiving it.
+ */
+type GateStatus = 'ok' | 'fail' | 'blocked' | 'skipped';
+
+/**
+ * Exit code a gate uses to say "I could not run", borrowed from the POSIX
+ * convention automake uses for a skipped test. Chosen because it cannot collide
+ * with a real verdict: 1 is a finding, 2 is usage, 124 is a timeout, 127 is
+ * not-found (which is a genuine breakage, not a considered "cannot run").
+ */
+export const CANNOT_RUN = 77;
 
 export interface GateResult {
   id: string;
@@ -237,11 +259,15 @@ export async function runPool(
     if (spec.heavy === true) heavyRunning -= 1;
     for (const group of spec.mutex ?? []) held.delete(group);
 
-    const failed = outcome.code !== 0 || outcome.vacuity !== undefined;
+    // A vacuity finding always means `fail`, even at CANNOT_RUN: a gate that
+    // claims it cannot run AND trips the anti-vacuity oracle is not a machine
+    // missing a tool, it is a gate lying about what it did.
+    const cannotRun = outcome.code === CANNOT_RUN && outcome.vacuity === undefined;
+    const failed = !cannotRun && (outcome.code !== 0 || outcome.vacuity !== undefined);
     record({
       id,
       gate: spec.gate,
-      status: failed ? 'fail' : 'ok',
+      status: cannotRun ? 'blocked' : failed ? 'fail' : 'ok',
       ms: outcome.ms,
       exitCode: outcome.code,
       stdout: outcome.stdout,

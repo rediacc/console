@@ -27,6 +27,7 @@
   "pre-bash/block-ssh-file-write.sh",
   "pre-bash/block-stale-pr-branch-date.sh",
   "pre-bash/block-untagged-commit.sh",
+  "pre-bash/block-unverified-push.sh",
   "pre-bash/block-worktree-add.sh",
   "pre-edit/block-agent-state-shape.sh",
   "pre-edit/block-edit-of-running-script.sh",

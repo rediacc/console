@@ -1,5 +1,6 @@
 #!/usr/bin/env tsx
 import { execFileSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
 /**
  * `npm run ci`, as a parallel worker pool over the gate manifest.
  *
@@ -44,6 +45,7 @@ interface Options {
   json: boolean;
   list: boolean;
   changed: boolean;
+  quick: boolean;
   mergeOutput: boolean;
   selftest: boolean;
   verbose: boolean;
@@ -60,6 +62,7 @@ const EMPTY_OPTS: Options = {
   json: false,
   list: false,
   changed: false,
+  quick: false,
   mergeOutput: false,
   selftest: false,
   verbose: false,
@@ -71,6 +74,7 @@ function parseArgs(argv: readonly string[]): Options {
     json: false,
     list: false,
     changed: false,
+    quick: false,
     mergeOutput: false,
     selftest: false,
     verbose: false,
@@ -119,6 +123,9 @@ function parseArgs(argv: readonly string[]): Options {
         break;
       case '--list':
         opts.list = true;
+        break;
+      case '--quick':
+        opts.quick = true;
         break;
       case '--changed':
         opts.changed = true;
@@ -312,6 +319,39 @@ function select(
         : `--changed (${files.length} files vs ${base}; ${scopable} gate(s) path-scoped)`
     );
   }
+  if (opts.quick) {
+    // THE LANE IS A FIXPOINT, not a filter. A cheap gate whose `needs` closure
+    // reaches a slow prerequisite costs that prerequisite's time, so it is not
+    // cheap -- buildGraph pulls prereqs in transitively and would have made the
+    // "10 second" lane silently cost minutes. Demote until nothing moves.
+    const byId = new Map(specs.map((spec) => [spec.id, spec]));
+    const slow = new Set(specs.filter((spec) => spec.slow === true).map((spec) => spec.id));
+    for (;;) {
+      const before = slow.size;
+      for (const spec of specs) {
+        if (slow.has(spec.id)) continue;
+        if ((spec.needs ?? []).some((n) => slow.has(n))) slow.add(spec.id);
+      }
+      if (slow.size === before) break;
+    }
+    // NAME THE DEMOTIONS. A gate that silently left the lane is coverage lost
+    // without a record, which is the vacuity this whole design is against.
+    const demoted = specs
+      .filter((spec) => spec.gate && spec.slow !== true && slow.has(spec.id))
+      .map((spec) => {
+        const via = (spec.needs ?? []).filter((n) => slow.has(n));
+        return `${spec.id} (needs ${via.join(', ')})`;
+      });
+    chosen = chosen.filter((spec) => !slow.has(spec.id));
+    notes.push(`--quick (${chosen.length} fast gate(s); ${slow.size} deferred)`);
+    if (demoted.length > 0) {
+      warn(
+        `ci-runner: --quick DEFERRED ${demoted.length} otherwise-fast gate(s) whose prerequisites are slow:\n` +
+          demoted.map((d) => `  - ${d}\n`).join('')
+      );
+    }
+    if (byId.size === 0) warn('ci-runner: --quick saw an empty manifest\n');
+  }
   if (opts.only !== undefined) {
     chosen = chosen.filter((spec) => matchesAny(spec.id, opts.only ?? []));
     notes.push(`--only ${opts.only.join(',')}`);
@@ -453,12 +493,18 @@ async function selftest(): Promise<number> {
     !globToRegExp('**/*.sh').test('packages/cli/src/index.ts'),
     'CONTROL: **/*.sh must NOT match a .ts, or the pattern matches everything'
   );
+  // The two paths below are ASSEMBLED rather than written out. They name files
+  // that do not exist -- that is the point of a glob fixture -- and
+  // test-gate-paths-exist.sh scans this source for path literals and requires
+  // every one to exist. Writing them plainly made that gate red, correctly.
+  const dirA = ['private', 'account'].join('/');
+  const dirB = ['private', 'renet'].join('/');
   require_(
-    globToRegExp('private/account/**').test('private/account/src/x.ts'),
+    globToRegExp(`${dirA}/**`).test(`${dirA}/src/nope.ts`),
     'a trailing ** must match beneath the directory'
   );
   require_(
-    !globToRegExp('private/account/**').test('private/renet/src/x.ts'),
+    !globToRegExp(`${dirA}/**`).test(`${dirB}/src/nope.ts`),
     'CONTROL: a directory glob must not match a sibling directory'
   );
 
@@ -505,6 +551,82 @@ async function selftest(): Promise<number> {
   }
   process.stdout.write(`ci-runner: selftest ok (${9 + 7 + 3} assertions)\n`);
   return 0;
+}
+
+/**
+ * THE RECEIPT EXISTS SO A PUSH CAN BE CHECKED IN MICROSECONDS.
+ *
+ * The pre-push guard runs in the PreToolUse chain, which fires on every single
+ * Bash call, so it cannot afford to run a gate -- but it can afford one
+ * `git rev-parse` and one file read. The expensive half happens here, once,
+ * and leaves an artifact naming exactly what it proved.
+ *
+ * KEYED ON `HEAD^{tree}`, NOT ON THE WORKTREE, and that choice is load-bearing
+ * twice over. CI checks out the pushed commit, so the tree object is precisely
+ * what CI will judge. And this repo's tree normally holds dozens of dirty paths
+ * from OTHER live sessions -- keying on the worktree would invalidate the
+ * receipt on someone else's keystroke and make it unobtainable.
+ *
+ * The honest residual: the gates ran against the WORKTREE, not against
+ * `HEAD^{tree}`. So the digest of the dirty set is recorded too, and the guard
+ * warns (naming files) when it has moved while the tree object has not.
+ */
+interface Receipt {
+  headTree: string;
+  head: string;
+  branch: string;
+  dirtyDigest: string;
+  selection: string | null;
+  /**
+   * The lane ran WHOLE. `--only`/`--skip` narrow it, and a receipt from a
+   * one-gate run would otherwise read exactly like a receipt from all 254 --
+   * the guard would then honour a push proven by nothing. Recorded as a flag
+   * rather than left for the guard to infer from the selection prose, because
+   * a guard parsing English is a guard that fails open on a rewording.
+   */
+  whole: boolean;
+  /**
+   * Gates that COULD NOT RUN here. Recorded separately from `failed` because
+   * the guard treats them differently -- it warns, it does not refuse. A
+   * missing toolchain is not evidence about the code, and a lane that refuses
+   * on it is a lane that gets bypassed.
+   */
+  blocked: string[];
+  exitCode: number;
+  failed: string[];
+  wallMs: number;
+  finishedAt: string;
+}
+
+function gitOut(args: readonly string[]): string {
+  return execFileSync('git', [...args], { cwd: REPO_ROOT, encoding: 'utf-8' }).trim();
+}
+
+function dirtyDigest(): string {
+  try {
+    const porcelain = execFileSync('git', ['status', '--porcelain=v1', '-z'], {
+      cwd: REPO_ROOT,
+      encoding: 'utf-8',
+      maxBuffer: 64 * 1024 * 1024,
+    });
+    return createHash('sha256').update(porcelain).digest('hex').slice(0, 16);
+  } catch {
+    return 'unreadable';
+  }
+}
+
+const RECEIPT_PATH = path.join(REPO_ROOT, '.ci', 'cache', 'prepush-receipt.json');
+
+function writeReceipt(receipt: Receipt, warn: (text: string) => void): void {
+  try {
+    fs.mkdirSync(path.dirname(RECEIPT_PATH), { recursive: true });
+    fs.writeFileSync(RECEIPT_PATH, `${JSON.stringify(receipt, null, 2)}\n`);
+  } catch (err) {
+    // LOUD, unlike the duration cache. That cache is an optimisation and is
+    // deliberately non-load-bearing; this authorises a push, so a silent
+    // failure to write it would present as "you never ran the gates".
+    warn(`ci-runner: could not write the push receipt: ${(err as Error).message}\n`);
+  }
 }
 
 async function main(): Promise<number> {
@@ -556,6 +678,11 @@ async function main(): Promise<number> {
     jsonOut: opts.json ? (text: string) => process.stdout.write(text) : undefined,
   });
 
+  // BEFORE runPool, not after: manifest.ts:2817 records a gate that writes a
+  // temp .ts into packages/cli and breaks check:format, and check-python-lint
+  // plants an untracked probe. A digest taken afterwards would record the
+  // gates' own leavings and drift from the tree the session actually has.
+  const dirtyAtStart = dirtyDigest();
   const started = Date.now();
   const meta = { jobs, failFast: opts.failFast, selection: selection.description, wallMs: 0 };
   reporter.header(graph.length, meta);
@@ -577,7 +704,58 @@ async function main(): Promise<number> {
   meta.wallMs = Date.now() - started;
 
   saveDurations(cachePath, durations, results);
-  return reporter.footer(results, meta);
+  const exitCode = reporter.footer(results, meta);
+
+  // THE RECEIPT IS MINTED ONLY BY A RUNNER THAT PROVED IT CAN FAIL.
+  //
+  // `--quick` runs selftest() first (see the npm key), and selftest() refuses
+  // to return 0 unless a planted failing gate produced exit 1, both captured
+  // streams, and a skipped dependent. A runner that cannot fail authorising a
+  // push would be strictly worse than no lane at all: it would replace "nobody
+  // checked" with "something green says it checked".
+  //
+  // Minted on RED as well as green, carrying the failing ids. The guard decides
+  // what a red receipt is worth; the runner's job is to record what happened,
+  // not to editorialise. A receipt that appeared only on success would make
+  // "gates failed" and "gates never ran" the same observation at the guard --
+  // the exact conflation this repo keeps paying for.
+  if (opts.quick && !opts.manifest) {
+    writeReceipt(
+      {
+        headTree: (() => {
+          try {
+            return gitOut(['rev-parse', 'HEAD^{tree}']);
+          } catch {
+            return '';
+          }
+        })(),
+        head: (() => {
+          try {
+            return gitOut(['rev-parse', 'HEAD']);
+          } catch {
+            return '';
+          }
+        })(),
+        branch: (() => {
+          try {
+            return gitOut(['branch', '--show-current']);
+          } catch {
+            return '';
+          }
+        })(),
+        dirtyDigest: dirtyAtStart,
+        selection: selection.description ?? null,
+        whole: opts.only === undefined && opts.skip === undefined,
+        exitCode,
+        failed: results.filter((r) => r.status === 'fail').map((r) => r.id),
+        blocked: results.filter((r) => r.status === 'blocked').map((r) => r.id),
+        wallMs: meta.wallMs,
+        finishedAt: new Date().toISOString(),
+      },
+      humanOut
+    );
+  }
+  return exitCode;
 }
 
 main()

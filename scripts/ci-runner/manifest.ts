@@ -46,6 +46,20 @@ export interface GateSpec {
   heavy?: boolean;
   /** Repo-relative globs this gate validates; powers --changed. */
   paths?: string[];
+  /**
+   * Too expensive for the pre-push lane. ABSENT MEANS FAST, deliberately: a
+   * new gate is enforced before a push until someone takes it out on purpose,
+   * which is the fail-safe direction. Opting out is the one mechanism -- there
+   * is no second exemption file -- so the reason lives in a comment beside it.
+   *
+   * The threshold is measured, not judged: `.ci/cache/gate-durations.json`
+   * holds an EWMA per gate from real runs, and check:ci-gate-tiers asserts
+   * this field against it in BOTH directions. A gate marked slow that is in
+   * fact cheap fails just as loudly as the converse, because the cheap-marked-
+   * slow direction is the invisible one: the push stays fast and the coverage
+   * quietly shrinks.
+   */
+  slow?: true;
   /** Set on the 62 entries flattened out of .ci/scripts/test/gates/. Their set
    *  must equal the on-disk glob; see assertion 7 in section 6.3. */
   qualityGateTest?: boolean;
@@ -105,6 +119,7 @@ export const GATES: readonly GateSpec[] = [
   {
     id: 'check:deps',
     run: 'npm run check:deps',
+    slow: true, // 17.8s measured
     gate: true,
     leaves: ['scripts/check-deps.ts'],
     ci: {
@@ -117,6 +132,7 @@ export const GATES: readonly GateSpec[] = [
   {
     id: 'check:lint',
     run: 'npm run check:lint',
+    slow: true, // 244.9s measured
     gate: true,
     weight: 2,
     heavy: true,
@@ -135,6 +151,7 @@ export const GATES: readonly GateSpec[] = [
   {
     id: 'lint:unused',
     run: 'npm run lint:unused',
+    slow: true, // 13.4s measured
     gate: true,
     heavy: true,
     leaves: ['knip'],
@@ -172,6 +189,7 @@ export const GATES: readonly GateSpec[] = [
   {
     id: 'check:i18n',
     run: 'npm run check:i18n',
+    slow: true, // 76.3s measured
     gate: true,
     leaves: [
       'scripts/check-translation-hashes.ts',
@@ -307,6 +325,7 @@ export const GATES: readonly GateSpec[] = [
   {
     id: 'check:ci-guard-mutations',
     run: 'npm run check:ci-guard-mutations',
+    slow: true, // 25.4s measured
     gate: true,
     weight: 2,
     heavy: true,
@@ -321,6 +340,7 @@ export const GATES: readonly GateSpec[] = [
   {
     id: 'check:test-cli',
     run: 'npm run check:test-cli',
+    slow: true, // 38.3s measured
     gate: true,
     weight: 2,
     heavy: true,
@@ -634,6 +654,7 @@ export const GATES: readonly GateSpec[] = [
   {
     id: 'check:ci-toolchain-pins',
     run: 'npm run check:ci-toolchain-pins',
+    slow: true, // 26.7s measured
     gate: true,
     // Triggers on every surface that could restate a pin or acquire a tool
     // unpinned, so a version added back into a workflow or the Dockerfile
@@ -759,6 +780,7 @@ export const GATES: readonly GateSpec[] = [
   {
     id: 'check:ci-script-exec-bit',
     run: 'npm run check:ci-script-exec-bit',
+    slow: true, // 22.1s measured
     gate: true,
     leaves: ['.ci/scripts/quality/check-script-exec-bit.sh'],
     ci: {
@@ -771,6 +793,7 @@ export const GATES: readonly GateSpec[] = [
   {
     id: 'check:ci-lockfile',
     run: 'npm run check:ci-lockfile',
+    slow: true, // 52.3s measured
     gate: true,
     leaves: ['.ci/scripts/quality/check-lockfile.sh'],
     ci: {
@@ -795,6 +818,7 @@ export const GATES: readonly GateSpec[] = [
   {
     id: 'check:ci-security-audit',
     run: 'npm run check:ci-security-audit',
+    slow: true, // 60.9s measured
     gate: true,
     leaves: ['.ci/scripts/security/audit.sh'],
     ci: {
@@ -807,6 +831,7 @@ export const GATES: readonly GateSpec[] = [
   {
     id: 'check:ci-scope-scripts-reachability',
     run: 'npm run check:ci-scope-scripts-reachability',
+    slow: true, // 24.3s measured
     gate: true,
     leaves: ['.ci/scripts/quality/check-scope-scripts-reachability.sh'],
     ci: {
@@ -837,6 +862,7 @@ export const GATES: readonly GateSpec[] = [
   {
     id: 'check:ci-hook-worklist-suite',
     run: 'npm run check:ci-hook-worklist-suite',
+    slow: true, // 460.3s measured
     gate: true,
     weight: 2,
     heavy: true,
@@ -851,6 +877,7 @@ export const GATES: readonly GateSpec[] = [
   {
     id: 'check:ci-shell-lint',
     run: 'npm run check:ci-shell-lint',
+    slow: true, // 124.0s measured
     gate: true,
     leaves: ['.ci/scripts/security/shellcheck.sh'],
     ci: {
@@ -1074,6 +1101,7 @@ export const GATES: readonly GateSpec[] = [
   {
     id: 'check:ci-lint-rule-liveness',
     run: 'npm run check:ci-lint-rule-liveness',
+    slow: true, // 30.6s measured
     gate: true,
     leaves: ['.ci/scripts/quality/check_lint_rule_liveness.py'],
     ci: {
@@ -1212,6 +1240,7 @@ export const GATES: readonly GateSpec[] = [
   {
     id: 'check:ci-lint-scope-coverage',
     run: 'npm run check:ci-lint-scope-coverage',
+    slow: true, // 163.0s measured
     gate: true,
     leaves: ['.ci/scripts/quality/check_lint_scope_coverage.py'],
     ci: {
@@ -1309,6 +1338,7 @@ export const GATES: readonly GateSpec[] = [
   {
     id: 'check:ci-workflows',
     run: 'npm run check:ci-workflows',
+    slow: true, // 12.0s measured
     gate: true,
     leaves: ['.ci/scripts/quality/check-workflows.sh'],
     ci: {
@@ -1441,6 +1471,7 @@ export const GATES: readonly GateSpec[] = [
   {
     id: 'check:ci-cli-contract',
     run: 'npm run check:ci-cli-contract',
+    slow: true, // 12.7s measured
     gate: true,
     needs: ['build:packages'],
     mutex: ['build-artifacts'],
@@ -1455,6 +1486,7 @@ export const GATES: readonly GateSpec[] = [
   {
     id: 'check:ci-command-tree',
     run: 'npm run check:ci-command-tree',
+    slow: true, // 10.7s measured
     gate: true,
     needs: ['build:packages'],
     mutex: ['build-artifacts'],
@@ -1721,6 +1753,7 @@ export const GATES: readonly GateSpec[] = [
   {
     id: 'check:ci-editorconfig',
     run: 'npm run check:ci-editorconfig',
+    slow: true, // 12.9s measured
     gate: true,
     leaves: ['.ci/scripts/quality/check-editorconfig.sh'],
     ci: {
@@ -1733,6 +1766,7 @@ export const GATES: readonly GateSpec[] = [
   {
     id: 'check:ci-account-portal',
     run: 'npm run check:ci-account-portal',
+    slow: true, // 53.7s measured
     gate: true,
     heavy: true,
     leaves: ['.ci/scripts/quality/check-account-portal.sh'],
@@ -1761,6 +1795,7 @@ export const GATES: readonly GateSpec[] = [
   {
     id: 'check:ci-account-layer-isolation',
     run: 'npm run check:ci-account-layer-isolation',
+    slow: true, // 10.8s measured
     gate: true,
     heavy: true,
     leaves: ['eslint'],
@@ -1831,6 +1866,7 @@ export const GATES: readonly GateSpec[] = [
   {
     id: 'check:ci-test-account-web',
     run: 'npm run check:ci-test-account-web',
+    slow: true, // 32.6s measured
     gate: true,
     mutex: ['account-vitest'],
     weight: 2,
@@ -1871,6 +1907,7 @@ export const GATES: readonly GateSpec[] = [
   {
     id: 'check:ci-renet-types',
     run: 'npm run check:ci-renet-types',
+    slow: true, // 10.7s measured
     gate: true,
     mutex: ['renet-bin'],
     leaves: ['.ci/scripts/quality/check-renet-types.sh'],
@@ -1967,6 +2004,7 @@ export const GATES: readonly GateSpec[] = [
   {
     id: 'check:ci-no-otlp-creds',
     run: 'npm run check:ci-no-otlp-creds',
+    slow: true, // 21.2s measured
     gate: true,
     leaves: ['.ci/scripts/quality/check-no-otlp-creds.sh'],
     ci: {
@@ -2048,6 +2086,7 @@ export const GATES: readonly GateSpec[] = [
   {
     id: 'check:ci-external-links',
     run: 'npm run check:ci-external-links',
+    slow: true, // 17.2s measured
     gate: true,
     leaves: ['scripts/check-external-links.ts'],
     ci: {
@@ -2121,6 +2160,7 @@ export const GATES: readonly GateSpec[] = [
   {
     id: 'check:ci-browser-smoke',
     run: 'npm run check:ci-browser-smoke',
+    slow: true, // 20.4s measured
     gate: true,
     leaves: ['.ci/scripts/quality/browser-smoke.sh'],
     ci: {
@@ -2194,6 +2234,7 @@ export const GATES: readonly GateSpec[] = [
   {
     id: 'check:ci-content-quality',
     run: 'npm run check:ci-content-quality',
+    slow: true, // 17.3s measured
     gate: true,
     leaves: ['.ci/scripts/quality/check-content-quality.sh'],
     ci: {
@@ -2218,6 +2259,7 @@ export const GATES: readonly GateSpec[] = [
   {
     id: 'check:cli-examples',
     run: 'npm run check:cli-examples',
+    slow: true, // 22.7s measured
     gate: true,
     leaves: ['scripts/validate-cli-examples.ts'],
     ci: {
@@ -2404,6 +2446,7 @@ export const GATES: readonly GateSpec[] = [
   {
     id: 'check:ci-dead-bash',
     run: 'npm run check:ci-dead-bash',
+    slow: true, // 141.7s measured
     gate: true,
     leaves: ['scripts/check-dead-bash.ts'],
     ci: {
@@ -2756,6 +2799,7 @@ export const GATES: readonly GateSpec[] = [
   {
     id: 'build:www',
     run: 'npm run build:www',
+    slow: true, // 131.9s measured
     gate: false,
     mutex: ['www-dist'],
     heavy: true,
@@ -2934,6 +2978,7 @@ export const GATES: readonly GateSpec[] = [
   {
     id: 'gate-test:autopilot-harness',
     run: '.ci/scripts/test/gates/test-autopilot-harness.sh',
+    slow: true, // 59.8s measured
     gate: true,
     qualityGateTest: true,
     leaves: ['.ci/scripts/test/gates/test-autopilot-harness.sh'],
@@ -3400,6 +3445,7 @@ export const GATES: readonly GateSpec[] = [
   {
     id: 'gate-test:ci-parity',
     run: '.ci/scripts/test/gates/test-ci-parity.sh',
+    slow: true, // 42.3s measured
     gate: true,
     qualityGateTest: true,
     leaves: ['.ci/scripts/test/gates/test-ci-parity.sh'],
@@ -3413,6 +3459,7 @@ export const GATES: readonly GateSpec[] = [
   {
     id: 'gate-test:ci-runner',
     run: '.ci/scripts/test/gates/test-ci-runner.sh',
+    slow: true, // 16.9s measured
     gate: true,
     qualityGateTest: true,
     leaves: ['.ci/scripts/test/gates/test-ci-runner.sh'],
@@ -3426,6 +3473,7 @@ export const GATES: readonly GateSpec[] = [
   {
     id: 'gate-test:claude-hooks',
     run: '.ci/scripts/test/gates/test-claude-hooks.sh',
+    slow: true, // 537.4s measured
     gate: true,
     qualityGateTest: true,
     leaves: ['.ci/scripts/test/gates/test-claude-hooks.sh'],
@@ -3569,6 +3617,7 @@ export const GATES: readonly GateSpec[] = [
   {
     id: 'gate-test:stop-hook-stdin',
     run: '.ci/scripts/test/gates/test-stop-hook-stdin.sh',
+    slow: true, // 12.9s measured
     gate: true,
     qualityGateTest: true,
     leaves: ['.ci/scripts/test/gates/test-stop-hook-stdin.sh'],
@@ -3595,6 +3644,7 @@ export const GATES: readonly GateSpec[] = [
   {
     id: 'gate-test:worklist-hooks',
     run: '.ci/scripts/test/gates/test-worklist-hooks.sh',
+    slow: true, // 454.2s measured
     gate: true,
     qualityGateTest: true,
     leaves: ['.ci/scripts/test/gates/test-worklist-hooks.sh'],
@@ -3608,6 +3658,7 @@ export const GATES: readonly GateSpec[] = [
   {
     id: 'gate-test:dead-bash',
     run: '.ci/scripts/test/gates/test-dead-bash.sh',
+    slow: true, // 199.8s measured
     gate: true,
     qualityGateTest: true,
     leaves: ['.ci/scripts/test/gates/test-dead-bash.sh'],
@@ -3647,6 +3698,7 @@ export const GATES: readonly GateSpec[] = [
   {
     id: 'gate-test:e2e-coverage',
     run: '.ci/scripts/test/gates/test-e2e-coverage.sh',
+    slow: true, // 13.0s measured
     gate: true,
     qualityGateTest: true,
     leaves: ['.ci/scripts/test/gates/test-e2e-coverage.sh'],
@@ -3725,6 +3777,7 @@ export const GATES: readonly GateSpec[] = [
   {
     id: 'gate-test:gate-anti-vacuity',
     run: '.ci/scripts/test/gates/test-gate-anti-vacuity.sh',
+    slow: true, // 72.0s measured
     gate: true,
     qualityGateTest: true,
     leaves: ['.ci/scripts/test/gates/test-gate-anti-vacuity.sh'],
@@ -3790,6 +3843,7 @@ export const GATES: readonly GateSpec[] = [
   {
     id: 'gate-test:greenlight',
     run: '.ci/scripts/test/gates/test-greenlight.sh',
+    slow: true, // 14.8s measured
     gate: true,
     qualityGateTest: true,
     leaves: ['.ci/scripts/test/gates/test-greenlight.sh'],
@@ -3816,6 +3870,7 @@ export const GATES: readonly GateSpec[] = [
   {
     id: 'gate-test:housekeeping-phases',
     run: '.ci/scripts/test/gates/test-housekeeping-phases.sh',
+    slow: true, // 26.3s measured
     gate: true,
     qualityGateTest: true,
     leaves: ['.ci/scripts/test/gates/test-housekeeping-phases.sh'],
@@ -4016,6 +4071,7 @@ export const GATES: readonly GateSpec[] = [
   {
     id: 'gate-test:profiler-coverage',
     run: '.ci/scripts/test/gates/test-profiler-coverage.sh',
+    slow: true, // 21.5s measured
     gate: true,
     qualityGateTest: true,
     leaves: ['.ci/scripts/test/gates/test-profiler-coverage.sh'],
@@ -4029,6 +4085,7 @@ export const GATES: readonly GateSpec[] = [
   {
     id: 'gate-test:profiler-report',
     run: '.ci/scripts/test/gates/test-profiler-report.sh',
+    slow: true, // 16.6s measured
     gate: true,
     qualityGateTest: true,
     leaves: ['.ci/scripts/test/gates/test-profiler-report.sh'],
@@ -4094,6 +4151,7 @@ export const GATES: readonly GateSpec[] = [
   {
     id: 'gate-test:review-status',
     run: '.ci/scripts/test/gates/test-review-status.sh',
+    slow: true, // 86.1s measured
     gate: true,
     qualityGateTest: true,
     leaves: ['.ci/scripts/test/gates/test-review-status.sh'],
@@ -4107,6 +4165,7 @@ export const GATES: readonly GateSpec[] = [
   {
     id: 'gate-test:run-all-parallel',
     run: '.ci/scripts/test/gates/test-run-all-parallel.sh',
+    slow: true, // 10.9s measured
     gate: true,
     qualityGateTest: true,
     leaves: ['.ci/scripts/test/gates/test-run-all-parallel.sh'],
@@ -4146,6 +4205,7 @@ export const GATES: readonly GateSpec[] = [
   {
     id: 'gate-test:scope-engine',
     run: '.ci/scripts/test/gates/test-scope-engine.sh',
+    slow: true, // 13.2s measured
     gate: true,
     qualityGateTest: true,
     leaves: ['.ci/scripts/test/gates/test-scope-engine.sh'],
@@ -4159,6 +4219,7 @@ export const GATES: readonly GateSpec[] = [
   {
     id: 'gate-test:scope-gate-outputs',
     run: '.ci/scripts/test/gates/test-scope-gate-outputs.sh',
+    slow: true, // 11.5s measured
     gate: true,
     qualityGateTest: true,
     leaves: ['.ci/scripts/test/gates/test-scope-gate-outputs.sh'],
@@ -4237,6 +4298,7 @@ export const GATES: readonly GateSpec[] = [
   {
     id: 'gate-test:suppression-liveness',
     run: '.ci/scripts/test/gates/test-suppression-liveness.sh',
+    slow: true, // 18.3s measured
     gate: true,
     qualityGateTest: true,
     leaves: ['.ci/scripts/test/gates/test-suppression-liveness.sh'],
@@ -4302,6 +4364,7 @@ export const GATES: readonly GateSpec[] = [
   {
     id: 'gate-test:watchdog-log-capture',
     run: '.ci/scripts/test/gates/test-watchdog-log-capture.sh',
+    slow: true, // 60.9s measured
     gate: true,
     qualityGateTest: true,
     leaves: ['.ci/scripts/test/gates/test-watchdog-log-capture.sh'],
@@ -4393,6 +4456,7 @@ export const GATES: readonly GateSpec[] = [
   {
     id: 'gate-test:workflow-env-shell-vars',
     run: '.ci/scripts/test/gates/test-workflow-env-shell-vars.sh',
+    slow: true, // 17.8s measured
     gate: true,
     qualityGateTest: true,
     leaves: ['.ci/scripts/test/gates/test-workflow-env-shell-vars.sh'],
@@ -4406,6 +4470,7 @@ export const GATES: readonly GateSpec[] = [
   {
     id: 'gate-test:workflow-inline',
     run: '.ci/scripts/test/gates/test-workflow-inline.sh',
+    slow: true, // 30.6s measured
     gate: true,
     qualityGateTest: true,
     leaves: ['.ci/scripts/test/gates/test-workflow-inline.sh'],

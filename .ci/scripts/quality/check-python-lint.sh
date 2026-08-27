@@ -156,7 +156,18 @@ if ! RUFF="$(resolve_ruff)"; then
     echo "  or point RUFF_BIN at an existing binary:" >&2
     echo "    RUFF_BIN=/path/to/ruff npm run check:ci-python-lint" >&2
     echo "  NOT skipping: a linter that cannot run is a gate that cannot fail." >&2
-    exit 1
+    # EXIT 77 = "COULD NOT RUN", not "found something". The distinction is the
+    # whole point: exit 1 said `ruff found a problem`, which is false and which
+    # made a pre-push lane refuse every push on a machine that simply lacks the
+    # tool. The ci-runner classifies 77 as BLOCKED -- counted, named with these
+    # very lines, recorded in the push receipt and WARNED about -- but not a
+    # verdict on the code.
+    #
+    # This is not a skip and it is not softer. Under CI the toolchain is
+    # present, so 77 never fires there; if it ever did, the workflow sees a
+    # plain non-zero and the lane is broken, which is correct. The sentence
+    # above stays true: what changed is that "cannot run" is now SAYABLE.
+    exit 77
 fi
 
 # ---- CONTROL: the linter must report a planted defect ------------------------
