@@ -5137,3 +5137,84 @@ sources, which is the same drift this document exists to prevent.
 
 The per-epic matrix actually dispatching in GitHub Actions. That needs a real PR,
 and none is open.
+
+### The second half of 0826-3, after two rebases onto `0826-2`
+
+The section above was written mid-wave and stops at the pr-epics skill. Eleven
+more commits landed, and the through-line is one the operator named:
+
+> "You had known how and when to use verify-rebase because you built it. Is
+> there any help for related commands that prints hint?"
+
+There was none. Measured: `worklist.py --git` was referenced by **zero**
+commands, agents and docs. The capability existed and the affordance did not.
+
+**A guard that refuses must name what works.** `block-git-force-push` refused a
+force-push and then said "the operator runs it directly with the `!` prefix" --
+sending a session away empty-handed for an operation this repo AUTHORISES
+through `--git force-push`. A refusal is the last thing read before changing
+course, so it is the most expensive place in the tree to omit the alternative.
+
+**`trapguard[rebase-unverified]`** is the hint itself, firing when a rebase
+reports success. trapguard is the right surface because it never blocks and
+already exists to say "you just did X, here is what bites".
+
+**Rebase-merge rewrites SHAs, so a COUNT cannot verify a rebase.** When a
+stacked branch re-rebases after its parent merges, git correctly drops the
+patch-identical duplicates and `rev-list --count` legitimately falls.
+`branch-rebase.md` used to ask a human to eyeball that against a `--skip` that
+ate a commit. `--git verify-rebase` answers it by patch identity instead:
+carried / absorbed / MISSING, per repo, and only MISSING is a defect. Its FIRST
+live run found a bug in itself, applying one base to every repo when submodules
+base on their own main.
+
+**`[base]` was deleted and then restored.** It was advertised for weeks while
+every executable line said `origin/main`, so passing a feature branch rebased
+the console onto it and verified against main. Deleting a knob that lies is
+defensible; deleting one the operator uses routinely is not, and they stack
+often enough that two such rebases were driven by hand in a day. Restored with
+the base threaded through the console rebase AND the verification, submodules
+keeping their own main. That work also added a **console-side containment
+check**, which had never existed: with `base=main` it is true by construction,
+so its absence cost nothing and hid.
+
+**Two verbs may now write.** `force-push` (irreversible, prints an UNDO block)
+and `resolve-gitlinks` (local, undone by `git rebase --abort`). What makes the
+second safe is the refusal, not the resolution: on a MIXED conflict set it names
+the offending path and leaves the index untouched, because a half-resolved index
+reads as nearly done and the next `--continue` fails for a reason that no longer
+names the submodule.
+
+**The repo had no git fixture harness**, which is why conflict handling could
+only be tested as pure functions over hand-written stage tables.
+`.ci/scripts/test/lib/git-fixture.sh` builds repos that halt a rebase on a
+chosen conflict kind, and it caught two of its own author's broken fixtures: one
+where the submodule commits were linear so git took the descendant and nothing
+conflicted, and one where the submodule's own rebase conflicted and silently did
+nothing under `|| true`.
+
+### The class that cost the most this wave
+
+**Mention read as execution, six times.** A deny-list flagged itself; a
+`log_warn` string read as code; prose about a rule read as the rule being
+broken; a heredoc BODY read as a command; a shell variable assignment read as an
+execution; and finally a one-shot `pgrep -cf` sharing a line with the English
+word "while" read as a wedged wait loop -- that last one inside the guard
+written to catch the fifth. Every fix anchors on execution: command position
+after comment and heredoc stripping, and for the loop case, requiring the
+`pgrep` to sit inside the loop's own condition.
+
+The sibling class is **a union read as safe**. Merging both waves' additions to
+`wl_agents._STOPWORD_TEXT` produced adjacent Python literals with no separating
+space, so `touched` + `see` concatenated and two real stopwords silently stopped
+existing. The file parsed, the suite passed, nothing failed. That is why
+`agent/PLAN-resumable-rebase-executor.md` requires every mechanical union to
+land behind an invariant proving meaning survived, and why a class with no
+invariant stays "judgement" and is left untouched.
+
+### Still true at the end of the wave
+
+`check:ci-pr-task-trailers` is RED, on nine untagged commits every one of which
+was individually attributed to `0826-2`. The operator's ruling: wait for #577 to
+merge, re-rebase onto `origin/main`, and base the PR there. Do not weaken the
+gate and do not open a stacked PR.
