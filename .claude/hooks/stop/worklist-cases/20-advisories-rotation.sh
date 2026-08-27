@@ -610,7 +610,15 @@ unset WORKLIST_REPORT_PER_STOP
 setup
 export WORKLIST_REPORT_PER_STOP=4
 mk_agent benchops "The bench rig: deploy the account worker to the bench box and reset its store."
-say "there is bench server deployment. Why you don't utilize it?"
+# THE OPERATOR'S SENTENCE IS VERBATIM AND MUST STAY VERBATIM; what changed on
+# 2026-08-27 is only the assistant framing around it. As a bare message it is a
+# closing line that ends in `?` and addresses the operator, which is exactly the
+# shape the v23 pending-ask gate refuses -- and a blocked stop emits no advisory,
+# so this case went red on a gate that had nothing to do with agent hints. No
+# real assistant message is a quoted operator question with nothing else in it;
+# every term this case measures is still in the haystack, in the operator's own
+# words and in the same order.
+say "The operator asked: there is bench server deployment. Why you don't utilize it? Wiring the bench drill now."
 brief_now
 hand_now
 OUT="$(run)"

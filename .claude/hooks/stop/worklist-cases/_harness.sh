@@ -97,6 +97,39 @@ open(sys.argv[2],"a").write(json.dumps(rec)+"\n")
 ' "$1" "$BASE/t.jsonl"
 }
 
+# used_tool <name> -- one assistant record whose only block is a tool_use.
+#
+# say() writes TEXT blocks only, so before this there was no way to fixture "the
+# session called a tool this turn" -- and a gate whose whole subject is the
+# difference between announcing a tool call and making one cannot be tested
+# without it. Like say(), it does NOT imply a turn boundary: the pending-ask
+# pair (case 223/223b) depends on the tool call landing in the SAME turn as the
+# message, which is the only thing that separates the two fixtures.
+used_tool() {
+    python3 -c '
+import json,sys
+rec={"type":"assistant","message":{"content":[
+    {"type":"tool_use","id":"tu_1","name":sys.argv[1],"input":{}}]}}
+open(sys.argv[2],"a").write(json.dumps(rec)+"\n")
+' "$1" "$BASE/t.jsonl"
+}
+
+# operator_says <text> -- a REAL operator turn carrying words.
+#
+# newturn() writes a fixed "go" and exists to reset the transcript window;
+# this writes the same shape with content the case chooses, which is what a
+# check reading the operator's words needs. The shape is deliberate and is the
+# one wl_admit._is_operator_turn recognises: type=user, content a STRING, and
+# NO isMeta -- hook feedback carries isMeta:true and tool results carry an
+# array, and neither of those is a person speaking.
+operator_says() {
+    python3 -c '
+import json,sys
+rec={"type":"user","message":{"content":sys.argv[1]}}
+open(sys.argv[2],"a").write(json.dumps(rec)+"\n")
+' "$1" "$BASE/t.jsonl"
+}
+
 mk_agent() { # mk_agent <name> <description> -- one fixture agent in the corpus
     # INVENTED NOUNS ONLY in the cases below. A fixture that borrows the real
     # agents' vocabulary would pass or fail depending on prose nobody thinks of

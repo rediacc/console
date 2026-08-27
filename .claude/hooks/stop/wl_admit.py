@@ -73,6 +73,7 @@ import sys
 import tempfile
 import time
 
+import wl_core as C
 import wl_judge
 
 # Families are deliberately broad. They decide only whether to SPEND a model
@@ -324,6 +325,290 @@ def process_admission(ad, text, worklist, session_id, me8, hits, sig, settled, a
         record_hits(worklist, session_id, hits, sig, extra={"verdict": kind, "detail": detail})
     save_settled(worklist, session_id, settled)
     return kind, new_id, detail
+
+
+# ---- THE PENDING-ASK GATE ---------------------------------------------------
+#
+# WHAT IT COSTS TODAY, measured as a sequence rather than argued: a session
+# announces in prose that it is going to ask the operator something, stops, the
+# operator spends a turn saying "ask", and only THEN does
+# .claude/hooks/pre-ask/block-settled-questions.sh refuse the question as
+# already settled. The removable cost is the OPERATOR'S TURN, and a Stop hook
+# that blocks is the only place that reaches it: every other hook in the chain
+# runs after the turn has already been yielded.
+#
+# IT LIVES HERE, NOT IN wl_checks, for a size reason that is not cosmetic.
+# wl_checks is ~5,000 lines and is the file every stop-gate change has to be
+# read against; a detector with its own regex family and its own state
+# signature belongs beside its sibling in this module, and wl_checks gains one
+# call site and one violation key.
+#
+# THREE CONDITIONS, ALL OF THEM, and each one is there to kill a specific false
+# positive:
+#
+#   1. an ask ANNOUNCEMENT in the CLOSING span of the message. Not "question
+#      shape" -- `should I` alone is far too broad, this repo writes ABOUT these
+#      phrases constantly, and the closing span is where an announcement lives
+#      (a mid-message aside about a question is narration, not a hand-off).
+#   2. AskUserQuestion was NOT called since the operator last spoke. If the
+#      session already asked, there is nothing to convert.
+#   3. no `[?]` deferral of mine appeared this turn. Parking the question WITH a
+#      DEFAULT is one of the three exits, so a session that took it must not
+#      then be accused of not taking it.
+#
+# UNLIKE THE ADMISSION DETECTOR ABOVE, THIS ONE BLOCKS -- and the difference is
+# principled rather than inconsistent. wl_admit's own header explains why a
+# phantom regret must never block: "a session blocked by a phantom regret learns
+# to phrase things evasively", and evasive REPORTING costs more than a missed
+# detection. Nothing here depends on candour. The trigger is an announcement of
+# a hand-off, its every exit is completable by the session alone in the same
+# turn, and the cost of a miss is the operator's turn -- the exact resource the
+# gate exists to protect. So it blocks, in the ALWAYS tier, because a paused
+# stop still yields the turn and yielding the turn IS the defect.
+
+#: The ANNOUNCEMENT family. Every alternative is a session HANDING SOMETHING
+#: OVER, not a session asking a question of the code, of a file, or of itself.
+#: Deliberately short: each entry earned its place by appearing in the shape
+#: this gate is about, and anything broader (a bare "should I", "which") matches
+#: the prose in this very file.
+ASK_ANNOUNCEMENT_RE = re.compile(
+    r"\b(?:one|two|three|four|five|six|a|\d+)\s+questions?\s+for\s+you\b"
+    r"|\bquestions?\s+for\s+you\s*[:.—-]"
+    r"|\bdecisions?\s+(?:that\s+are\s+)?(?:genuinely\s+)?yours\b"
+    r"|\blet\s+me\s+know\s+(?:if|whether|which|what|how|when|before)\b"
+    r"|\byour\s+call\b"
+    r"|\bwant\s+me\s+to\b",
+    re.IGNORECASE,
+)
+
+#: A closing line that IS the question: it ends in `?` and it addresses the
+#: operator. Second-person is what separates "Do you want the cluster fixed?"
+#: from "Why did the rebase drop a commit?", and the second is a fact the
+#: session answers for itself.
+CLOSING_QUESTION_RE = re.compile(r"\byou\b|\byour\b", re.IGNORECASE)
+
+#: A line already carrying a DEFAULT is a PARKED deferral being restated, not an
+#: announcement. Restating `## Remaining` is required of every message, so
+#: without this the gate would fire on the very behaviour it asks for.
+DEFAULT_TOKEN_RE = re.compile(r"\bDEFAULT\s*:", re.IGNORECASE)
+
+#: How much of the tail counts as "closing". Wide enough for a report's final
+#: paragraph plus a `## Remaining` table, narrow enough that a question quoted
+#: in the body of a long report does not reach it.
+PENDING_ASK_TAIL = 800
+
+#: How many trailing non-empty lines the bare-question rule may look at. The
+#: announcement regexes are shape-anchored and get the whole closing span; the
+#: bare `?` rule is the loosest of the two, so it gets the least room.
+PENDING_ASK_CLOSING_LINES = 3
+
+
+def _is_operator_turn(rec):
+    """True for a record that is the OPERATOR speaking, and nothing else.
+
+    Three kinds of record carry `type == "user"` in this repo's transcripts and
+    only one of them is a person:
+
+        the operator     content is a STRING, `isMeta` absent
+        hook feedback    `isMeta: true` -- this machinery talking to itself
+        a tool result    content is an ARRAY whose blocks include `tool_result`
+
+    wl_core.transcript_tail resets its accumulators on ALL THREE, which is
+    correct for its own caller and useless here: the reset that matters for this
+    gate is "since the operator last had the floor", and tool results are the
+    overwhelming majority of user records (2,172 of 2,371 in one measured
+    transcript), so a tool-result reset makes the tool window almost always
+    empty -- i.e. makes condition 2 always true and the gate a rubber stamp.
+    """
+    if rec.get("type") != "user" or rec.get("isMeta"):
+        return False
+    content = (rec.get("message") or {}).get("content")
+    if isinstance(content, str):
+        return bool(content.strip())
+    if isinstance(content, list):
+        return not any(isinstance(b, dict) and b.get("type") == "tool_result" for b in content)
+    return False
+
+
+def turn_tools(path):
+    """(tool_names, last_operator_text) since the operator last spoke.
+
+    The tool list is what condition 2 reads. The operator text is returned
+    because it was, until now, information no Stop-time check could obtain at
+    all -- transcript_tail collects assistant text only -- and a gate about what
+    the session promised the operator is the first thing that will want it.
+
+    Tail-read and exception-free for the same reasons transcript_tail is: this
+    runs on every stop, and a reader that can raise turns a detector into an
+    outage.
+    """
+    if not path or not os.path.exists(path):
+        return [], ""
+    try:
+        with open(path, "rb") as f:
+            f.seek(0, 2)
+            size = f.tell()
+            f.seek(max(0, size - TAIL_BYTES))
+            chunk = f.read()
+    except OSError:
+        return [], ""
+    lines = chunk.split(b"\n")
+    if size > TAIL_BYTES:
+        lines = lines[1:]  # first line is probably partial
+    tools, operator_text = [], ""
+    for raw in lines:
+        if not raw.strip():
+            continue
+        try:
+            rec = json.loads(raw)
+        except ValueError:
+            continue
+        if _is_operator_turn(rec):
+            tools = []
+            content = (rec.get("message") or {}).get("content")
+            if isinstance(content, str):
+                operator_text = content
+            else:
+                operator_text = " ".join(
+                    b.get("text", "")
+                    for b in content or []
+                    if isinstance(b, dict) and b.get("type") == "text"
+                )
+            continue
+        if rec.get("type") != "assistant":
+            continue
+        for block in (rec.get("message") or {}).get("content") or []:
+            if isinstance(block, dict) and block.get("type") == "tool_use" and block.get("name"):
+                tools.append(block["name"])
+    return tools, operator_text
+
+
+def defer_sig(fold, session_id):
+    """A digest of MY `[?]` items. Moves when a deferral of mine appears or goes.
+
+    Deliberately narrower than wl_checks.closed_sig, which digests every
+    non-open state: a tick or a lease is not "I parked this on the operator",
+    and letting either of them satisfy condition 3 would hand the gate an exit
+    it never offered. Returns "" when the store cannot be read, and the caller
+    treats "" as unknown.
+    """
+    try:
+        rows = sorted(
+            r["id"]
+            for r in fold.items
+            if r["state"] == "?" and C.owned_by_me(r.get("owner"), session_id)
+        )
+    except Exception:  # noqa: BLE001 -- a signature must never wedge a stop
+        return ""
+    return hashlib.sha1(("|".join(rows)).encode("utf-8", "replace")).hexdigest()[:16]
+
+
+def defer_created(state_doc, fold, session_id):
+    """True when a `[?]` of mine appeared (or vanished) since the previous stop.
+
+    FIRST SIGHT IS LENIENT, NOT SILENT, and the distinction is the whole design.
+    idle_stall's baseline rule is "first sight never fires", which is right for a
+    check whose subject is a whole turn of inactivity. Here the first stop of a
+    session is an ordinary place to announce an ask, so refusing to look would
+    concede the common case.
+
+    Instead, with no baseline, ANY `[?]` of mine counts as possibly-this-turn.
+    That is the safe direction: it can only make the gate quieter, and it closes
+    the one way this gate could have deadlocked -- a session that deferred
+    BEFORE its first stop, whose deferral would otherwise look identical on
+    every later stop and be refused forever.
+    """
+    sig = defer_sig(fold, session_id)
+    slot = state_doc.setdefault("pendingask", {}) if isinstance(state_doc, dict) else {}
+    prev = slot.get("defersig")
+    if sig:
+        slot["defersig"] = sig
+    if prev is None:
+        return any(
+            r["state"] == "?" and C.owned_by_me(r.get("owner"), session_id) for r in fold.items
+        )
+    return bool(sig) and sig != prev
+
+
+def ask_announcement(last_msg):
+    """The closing line that ANNOUNCES an ask, or "" -- the message half alone.
+
+    Quoted and backticked spans go first (wl_core.strip_quoted_spans), because
+    every message discussing this gate quotes its own triggers; that is the
+    lesson V_FOUND_NOT_FIXED and loop_finished_declared each paid for.
+    """
+    stripped = C.strip_quoted_spans(last_msg or "")
+    if not stripped.strip():
+        return ""
+    tail = stripped[-PENDING_ASK_TAIL:]
+    lines = [ln.strip() for ln in tail.splitlines()]
+    nonempty = [ln for ln in lines if ln]
+    closing = set(nonempty[-PENDING_ASK_CLOSING_LINES:])
+    for ln in nonempty:
+        if DEFAULT_TOKEN_RE.search(ln):
+            continue
+        if ASK_ANNOUNCEMENT_RE.search(ln):
+            return ln[:160]
+        if ln in closing and ln.endswith("?") and CLOSING_QUESTION_RE.search(ln):
+            return ln[:160]
+    return ""
+
+
+def pending_ask(last_msg, tool_names, deferred_this_turn):
+    """(fired, the announcing line) -- an ask announced and never made.
+
+    All three conditions, in the cheapest-first order. `tool_names` is
+    turn_tools()'s first element; `deferred_this_turn` is defer_created()'s
+    verdict. Both are passed in rather than fetched, so this stays a pure
+    function the suite can drive without a transcript or a store.
+    """
+    if "AskUserQuestion" in (tool_names or []):
+        return False, ""
+    if deferred_this_turn:
+        return False, ""
+    line = ask_announcement(last_msg)
+    return bool(line), line
+
+
+# ---- THE REFUSAL LEDGER, read side ------------------------------------------
+# .claude/hooks/pre-ask/block-settled-questions.sh appends one line per refusal.
+# Nothing read it, which made the ledger a write-only file and left the operator
+# exactly where test-hooks.sh says they were: "a false positive is invisible by
+# construction: the operator never learns what was not asked." This is the
+# minimum that changes that -- a count and a path, ADVISORY, never a violation.
+
+
+def ask_refusal_path(worklist):
+    """Beside the worklist, one file per repo. Must match the bash hook's form."""
+    return pathlib.Path(str(worklist) + ".ask-refusals.jsonl")
+
+
+def ask_refusals(worklist, session_id):
+    """(n_this_session, path) -- how many of MY questions the pre-ask hook ate.
+
+    Session-scoped because that is the number this session can act on; the file
+    keeps every session's rows so the operator reading it sees the whole
+    denominator. Unreadable or absent is (0, path), never an exception: an
+    advisory that can fail a stop is a worse bug than a missing advisory.
+    """
+    path = ask_refusal_path(worklist)
+    sid = (session_id or "")[:8]
+    n = 0
+    try:
+        with open(path, encoding="utf-8") as f:
+            for raw in f:
+                line = raw.strip()
+                if not line:
+                    continue
+                try:
+                    row = json.loads(line)
+                except ValueError:
+                    continue
+                if sid and str(row.get("session", ""))[:8] == sid:
+                    n += 1
+    except OSError:
+        return 0, path
+    return n, path
 
 
 # The corpus fixture. Every case marked REAL is quoted from this repo's own

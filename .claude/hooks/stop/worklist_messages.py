@@ -104,6 +104,52 @@ V_IDLE_STALL = (
     "it> HOW: <what concretely resolves it>'"
 )
 
+# ---- v23: THE PENDING-ASK GATE (wl_admit.pending_ask) -----------------------
+# The message a session gets for ANNOUNCING an ask it never made. Two
+# substitutions: the announcing line quoted back, then the session prefix for
+# the --defer exit.
+#
+# It quotes the line rather than describing it because the first question a
+# wrongly-accused session asks is "which sentence?", and a gate that cannot
+# answer that gets argued with instead of obeyed.
+V_PENDING_ASK = (
+    "YOU ANNOUNCED A QUESTION AND THEN STOPPED WITHOUT ASKING IT. Your closing "
+    "span says:\n    %s\n"
+    "but AskUserQuestion was not called since the operator last spoke, and no "
+    "[?] deferral of yours appeared this turn. So this stop hands the operator "
+    "a turn whose ONLY content is 'go ahead and ask' -- and the question then "
+    "still has to survive .claude/hooks/pre-ask/block-settled-questions.sh, "
+    "which refuses whatever CLAUDE.md already answers. Announcing costs the "
+    "round trip; it does not buy permission.\n"
+    "Three exits, and you can finish any of them THIS turn:\n"
+    "    ask it now:   call AskUserQuestion with the question, in this turn\n"
+    "    park it:      .claude/hooks/stop/worklist.py --defer %s <id> "
+    "'<question> DEFAULT: <what you do if unanswered> WHY: <why this session "
+    "cannot settle it> HOW: <what concretely resolves it>'\n"
+    "    settle it:    answer it yourself from the code, the request or a "
+    "sensible default, and DELETE the line -- most of them are yours to decide, "
+    "and 'blocked on you' for something you could have settled is the ask this "
+    "repo keeps paying for."
+)
+
+# The refusal-ledger advisory. Two substitutions: how many of THIS session's
+# questions the pre-ask hook refused, and the ledger path. ADVISORY and
+# ROTATING on purpose: a refusal is not a violation, and the only thing worth
+# saying is that the file exists and has rows in it.
+N_ASK_REFUSALS = (
+    "ADVISORY (this stop is already allowed; nothing here blocks you).\n"
+    "%d question(s) from this session were REFUSED by "
+    ".claude/hooks/pre-ask/block-settled-questions.sh, which means the operator "
+    "never saw them. Every refusal is now one line -- timestamp, session, the "
+    "matched question, and the two spans that matched -- in:\n"
+    "    %s\n"
+    "That file is the denominator: it is the only way a false positive in that "
+    "hook becomes visible, because a question nobody was asked leaves no other "
+    "trace. If a refusal there was wrong, the question was a DESIGN or FACT "
+    "question wearing permission-seeking words -- rephrase it as the question it "
+    "actually is and it passes."
+)
+
 V_UNBLOCKED_CLAIM = (
     "your '## Remaining' section CLAIMS an item has no blocker while %d open "
     "item(s) of yours sit in the store:\n%s\n"
@@ -475,6 +521,67 @@ N_WAITER_DRAINED = (
     "anyway): python3 %s %s --timeout %d"
 )
 
+# FIVE ROUNDS, FIVE DIFFERENT STATEMENTS, AND IT NEVER GIVES UP.
+#
+# A violation that repeats itself verbatim becomes wallpaper: the session reads
+# the first line, recognises it, and skips the rest -- so an identical fifth
+# nudge is weaker than the first, not stronger. Each rung here adds a FACT the
+# previous one did not carry (who is blocked, that the answer may already be
+# sitting unread, that withdrawing is a legitimate exit, how long this has
+# gone on) rather than simply raising its voice.
+#
+# Past the last rung the message stops changing but the check keeps firing.
+# Giving up would return the session to exactly the state this exists to
+# prevent -- stopped, not listening, waiting forever for something it cannot
+# hear -- and a check that tires before the session does is not a check.
+V_ASK_NOLISTEN_LADDER = (
+    # 1 -- plainest statement of the fact plus the command.
+    "YOU ASKED %(n)d QUESTION%(s)s AND ARE NOT LISTENING FOR THE ANSWER.\n"
+    "%(rows)s"
+    "Posting a request is this session choosing to depend on a reply. Without a\n"
+    "waiter the answer sits unseen until your next stop, so if you stop now you\n"
+    "may wait indefinitely for something already delivered.\n"
+    "%(cmd)s",
+    # 2 -- name who is holding the obligation.
+    "STILL NOT LISTENING (round 2). The session%(s2)s below %(is_are)s holding an\n"
+    "obligation to answer YOU, and cannot know you have stopped reading:\n"
+    "%(rows)s"
+    "They answer into a channel nothing here is watching.\n"
+    "%(cmd)s",
+    # 3 -- the answer may ALREADY be there.
+    "ROUND 3, AND THE REPLY MAY ALREADY BE WAITING. A waiter is not only for\n"
+    "future answers: it exits the moment anything new arrives, including a reply\n"
+    "posted minutes ago that you have not read.\n"
+    "%(rows)s"
+    "Check now, before assuming silence: python3 %(hook)s --poll %(me)s\n"
+    "%(cmd)s",
+    # 4 -- withdrawing is a legitimate exit, and the honest one.
+    "ROUND 4. There are TWO ways out of this and only one of them is a waiter.\n"
+    "%(rows)s"
+    "If you no longer need the answer, SAY SO to the recipient instead of\n"
+    "leaving the question open -- an open request is an obligation on them, and\n"
+    "abandoning it silently is the thing this whole channel exists to stop:\n"
+    "    python3 %(hook)s --ask %(me)s <them> 'withdrawing #<id>, no longer needed'\n"
+    "%(cmd)s",
+    # 5 and after -- terminal, and honest that it will not relent.
+    "ROUND %(round)d. THIS CHECK WILL NOT STOP FIRING, and it is not going to\n"
+    "tire before you do. It has now asked %(round)d times.\n"
+    "%(rows)s"
+    "Nothing here is a judgement about the work; it is that you are waiting on\n"
+    "an answer through a channel you are not watching, which ends one of two\n"
+    "ways: start the waiter, or withdraw the question. Both are one command.\n"
+    "%(cmd)s",
+)
+
+V_ASK_NOLISTEN_CMD = (
+    "Start one as a BACKGROUND task (run_in_background: true), NO QUOTES anywhere\n"
+    "in the command line (a quoted path renders the waiter `unverifiable`, which\n"
+    "does not satisfy this check -- it is confirmed against the OS, not believed):\n"
+    "    python3 %s %s --timeout 900\n"
+    "Its EXIT is the notification, and it fires ONCE: relaunch it in the same\n"
+    "turn you act on what it reports.\n"
+)
+
 V_NO_WAITER = (
     "THIS SESSION HAS A WORK LOOP AND %d LIVE PEER(S), AND IS NOT LISTENING. "
     "No confirmed waiter is running, so a request addressed to you sits unseen "
@@ -620,7 +727,22 @@ N_CADENCE_PAUSE = (
     "turn rather than talking over you. Pause %d of %d before it demands again; "
     "the integrity, judge and evidence tiers never pause, so anything urgent "
     "would have blocked regardless. Nothing here is forgotten or excused: the "
-    "same checks are waiting at the next stop."
+    "same checks are waiting at the next stop.%s"
+)
+
+# A PAUSE SPENDS THE DEMAND, NOT THE INFORMATION -- and until 2026-08-27 it
+# spent both. The pause named the check CATEGORIES ("open-items; requests") and
+# nothing else, so a session paused over a `requests` check was told a label
+# while ANOTHER session sat blocked on an answer it could have given in
+# seconds. Reported by the operator watching exactly that happen.
+#
+# Cross-session obligations are carried through the pause in full, because they
+# are the one class where the cost of staying quiet lands on somebody else. A
+# session may reasonably defer its own open items for a turn; it cannot
+# reasonably defer a peer without knowing the peer is there.
+N_CADENCE_PAUSE_CARRIED = (
+    "\n\nCARRIED THROUGH THE PAUSE, because another session is waiting on you "
+    "and cannot see that you stood down:\n%s"
 )
 
 N_CL_DOOR_PARKED = (

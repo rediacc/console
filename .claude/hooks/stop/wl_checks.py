@@ -726,8 +726,14 @@ def _strip_quoted_spans(text):
     rule -- this file, CLAUDE.md and the hook's own messages all quote them. A
     gate that cannot survive being written about is too broad, and the fix is
     not a narrower pattern but ignoring the spans where quoting happens.
+
+    THE IMPLEMENTATION MOVED TO wl_core (2026-08-27) when wl_admit's pending-ask
+    gate needed the same treatment. This stays as the name six call sites here
+    already use; what it must never become again is a SECOND copy of the regex,
+    because the two would drift and only one of them would be the one anybody
+    tested.
     """
-    return re.sub(r"`[^`]*`|\"[^\"]*\"|\u201c[^\u201d]*\u201d", " ", text or "")
+    return C.strip_quoted_spans(text)
 
 
 def unblocked_claims(last_msg, limit=6):
@@ -1934,7 +1940,13 @@ def handle_post_compact(event):
     # titles plus the path is the same economy the judge uses.
     root = C.project_root(C.project_start(event))
     sid = event.get("session_id", "")
-    traps = S.trap_headings(root)
+    # THE PROMPT CARRIES RESIDUE, NOT TITLES. A trap whose Enforced-By resolves
+    # to a live gate or hook is enforced whether or not anyone reads about it,
+    # so spending prompt on its title buys nothing; a JUDGMENT-ONLY trap is
+    # enforced by attention alone, which is exactly what a prompt can supply.
+    # 48 titles -> 43 residue sentences today, and the ratio improves every time
+    # a trap gets mechanized, which is the incentive worth creating.
+    traps = S.trap_prompt_lines(root)
     traps_block = "\n".join("  - " + h for h in traps) or "  (none recorded)"
     # Bound before the arms so the agent-hint haystack below has one shape on
     # both of them; only the arm that reads a section fills it. There is no
@@ -2951,6 +2963,13 @@ def run_stop(event, event_ok, worklist, hook_file):
     # nothing. Terse per-check wording rides the text itself.
     violations = []
 
+    # Checks whose text is carried verbatim through a cadence pause. The rule
+    # is not "important" -- every check here is important -- it is WHO PAYS for
+    # the silence. These are the ones where another session is already blocked,
+    # so a label like "requests" tells this session to stand down while telling
+    # the peer nothing at all.
+    CARRY_THROUGH_PAUSE = frozenset({"requests", "no-waiter-asked", "no-waiter"})
+
     def vadd(key, always, text):
         violations.append((key, always, text))
 
@@ -3076,6 +3095,28 @@ def run_stop(event, event_ok, worklist, hook_file):
             True,
             M.V_UNBLOCKED_CLAIM % (len(open_items), "\n".join("    " + c for c in _stall_claims)),
         )
+    # ---- v23 THE PENDING-ASK GATE (wl_admit.pending_ask), ALWAYS tier, and
+    # directly beside idle-stall because it is the same failure through a
+    # different door: a stop that yields the operator's turn without needing to.
+    # The detector, its regexes and its state signature all live in wl_admit --
+    # this file is ~5,000 lines and is what every stop-gate change has to be read
+    # against, so it gets the call site and the key and nothing else.
+    #
+    # ALWAYS, not rotating, for the reason case 214 pins: the cadence can pause
+    # a rotating check, and a PAUSED stop still ends the turn. Ending the turn is
+    # precisely the cost this gate exists to remove, so a rotating copy of it
+    # would buy nothing.
+    #
+    # WRAPPED, because a stall detector that crashes a stop is worse than one
+    # that is absent. On any exception the rest of the battery still stands.
+    try:
+        _pa_tools, _ = wl_admit.turn_tools(event.get("transcript_path", ""))
+        _pa_deferred = wl_admit.defer_created(state_doc, fold, session_id)
+        _pa_fired, _pa_line = wl_admit.pending_ask(last_msg, _pa_tools, _pa_deferred)
+    except Exception:  # noqa: BLE001 -- never wedge a stop
+        _pa_fired, _pa_line = False, ""
+    if _pa_fired:
+        vadd("pending-ask", True, M.V_PENDING_ASK % (_pa_line, me8))
     # ---- THE SWEEP PROMPT, and its whole value is WHEN it fires.
     #
     # Not on a stall (idle-stall owns that), not on every stop (a prompt that
@@ -3727,6 +3768,29 @@ def run_stop(event, event_ok, worklist, hook_file):
             )
     except Exception:  # noqa: BLE001 -- an advisory surface must never wedge a stop
         pass
+    # v23: the pre-ask refusal ledger, surfaced. `block-settled-questions.sh`
+    # refuses permission-shaped git questions and, until now, left no trace
+    # anywhere the operator looks -- which .claude/hooks/test-hooks.sh names as
+    # the flaw in its own design: "a false positive is invisible by
+    # construction: the operator never learns what was not asked". The hook now
+    # appends one row per refusal; this is the read side.
+    #
+    # ROTATING AND ADVISORY, never a violation. A refusal is the gate working;
+    # the only thing worth saying is that the file exists, has rows, and is
+    # where a wrong refusal becomes visible.
+    try:
+        _ar_n, _ar_path = wl_admit.ask_refusals(worklist, session_id)
+        if _ar_n:
+            outq_add(
+                worklist,
+                session_id,
+                state_doc,
+                "ask-refusals",
+                M.N_ASK_REFUSALS % (_ar_n, _ar_path),
+                2,
+            )
+    except Exception:  # noqa: BLE001 -- an advisory surface must never wedge a stop
+        pass
     # v19 L2: identities that write to this store but have never stopped. The
     # CLI check refuses them at the door from now on; this is the backstop for
     # what it cannot reach -- history already written, and the deliberate hole
@@ -3828,6 +3892,81 @@ def run_stop(event, event_ok, worklist, hook_file):
                 M.V_NO_WAITER
                 % (len(_peers), str(pathlib.Path(__file__).resolve().parent / "wl_wait.py"), me8),
             )
+    # ASKING IS A COMMITMENT TO LISTEN, and the check above cannot express that.
+    # It needs THREE things before it fires -- a live non-poll work cron, a live
+    # peer, and WAITER_GRACE_NUDGES ignored PostToolUse nudges (half an hour) --
+    # which is a fair trade for a session that merely COULD receive work.
+    #
+    # It is the wrong trade for a session that has ASKED something and is
+    # waiting on the reply. Measured 2026-08-27, live: this session had no cron
+    # directory at all, so `live_work_crons` was empty and the check could NEVER
+    # fire for it, while it held an open request to a peer last seen minutes
+    # earlier and no waiter running. It would have stopped and waited forever
+    # for an answer it had no way to hear.
+    #
+    # Posting a request is the session choosing to depend on an answer, so no
+    # grace period is warranted: one stop is enough. Scoped to recipients that
+    # can actually reply -- an `operator` request is answered by a human at a
+    # shell and needs no waiter, and a peer that has not briefed inside the dead
+    # window cannot be waited on either.
+    #
+    # `_waiters_confirmed` is the right liveness source and not merely the
+    # convenient one: confirmed_waiters() accepts only the OS-verified verdict,
+    # so `suspect` and `unverifiable` do not buy the trade. The whole argument
+    # for relaxing anything here is that the process's EXIT is the wake-up,
+    # which is worth nothing if nobody can see the process.
+    # A POLL CRON IS A LISTENER, JUST A SLOWER ONE, and the first draft of this
+    # check forgot that -- it blocked a session that was polling on a cadence,
+    # which two existing cases correctly called a legitimate idle. V_NO_WAITER's
+    # own text says the two are complementary rather than alternatives: a waiter
+    # is faster, a cron sees things a waiter cannot. Either one means the answer
+    # will be heard, which is the whole obligation here.
+    _ask_ladder_n = wl_wait.ask_nolisten_count(worklist, me8)
+    if req_open_mine and not _waiters_confirmed and not live_poll_crons:
+        _ask_dead = float(os.environ.get("WORKLIST_REQUEST_DEAD_MIN", "180"))
+        _live_asks = [
+            r
+            for r in req_open_mine
+            if r["to"] != "operator"
+            and (
+                r["to"] == "*"
+                or (S.brief_age_min(worklist, r["to"], briefs) or _ask_dead + 1) <= _ask_dead
+            )
+        ]
+        if _live_asks:
+            _round = _ask_ladder_n + 1
+            _rung = M.V_ASK_NOLISTEN_LADDER[min(_round - 1, len(M.V_ASK_NOLISTEN_LADDER) - 1)]
+            _waiter_py = str(pathlib.Path(__file__).resolve().parent / "wl_wait.py")
+            _hook_py = str(pathlib.Path(__file__).resolve().parent / "worklist.py")
+            vadd(
+                "no-waiter-asked",
+                False,
+                _rung
+                % {
+                    "n": len(_live_asks),
+                    "s": "" if len(_live_asks) == 1 else "S",
+                    "s2": "" if len(_live_asks) == 1 else "s",
+                    "is_are": "is" if len(_live_asks) == 1 else "are",
+                    "round": _round,
+                    "rows": "".join(
+                        "    #%s -> %s\n" % (r["id"], r["to"]) for r in _live_asks[:5]
+                    ),
+                    "hook": _hook_py,
+                    "me": me8,
+                    "cmd": M.V_ASK_NOLISTEN_CMD % (_waiter_py, me8),
+                },
+            )
+            wl_wait.bump_ask_nolisten(worklist, me8)
+        elif _ask_ladder_n:
+            wl_wait.reset_ask_nolisten(worklist, me8)
+    elif _ask_ladder_n:
+        # THE RESET IS THE OTHER HALF OF THE LADDER. Without it the counter only
+        # ever grows, so a session that complied once would still be greeted at
+        # round 5 the next time it asked anything -- the ladder would measure
+        # its history rather than its current behaviour, and rung 5's "it has
+        # now asked 5 times" would be a lie.
+        wl_wait.reset_ask_nolisten(worklist, me8)
+
     # v20: THE OTHER HALF OF THE SAME MECHANISM. Everything above forces a busy
     # session to LISTEN; nothing ever told a finished one to STOP, so a drained
     # session kept a process alive for up to an hour and was nagged on every
@@ -4202,6 +4341,40 @@ def run_stop(event, event_ok, worklist, hook_file):
         and msg_sig != cad.get("msg")
         # (C) the judge and evidence tiers are never paused.
         and not judge_now
+        # (E) NOTHING LEFT TO ADVANCE. Operator, 2026-08-27: the pause message
+        # fires "too often. It should be the last chance, since we usually have
+        # lots to do!"
+        #
+        # Guards (A)-(D) all ask about the CHECKS -- which tier, whether the
+        # message changed, how many pauses have been spent. None of them asks
+        # the only question that decides whether ending the turn is defensible:
+        # is there work in hand. So a session holding open items got its turn
+        # handed back for having produced a defensible report, which is exactly
+        # the bar CLAUDE.md refuses: "the bar for stopping is 'there is
+        # genuinely nothing I can advance', not 'I have produced a defensible
+        # report'."
+        #
+        # `actionable_remains` is the file's existing answer to that question
+        # (open items, pending tasks, or a live `[>]` lease) and is already what
+        # the stuck gate and the waiter-drained check consult, so the pause now
+        # reads the same fact they do rather than a second definition of "busy".
+        #
+        # CADENCE_MAX_PAUSES STAYS AT 3, deliberately, and the argument runs
+        # both ways. FOR lowering it to 1: the operator asked for a "last
+        # chance", and a cap of 1 makes that literal -- one stand-down per
+        # outstanding set, then demands forever. AGAINST, which is why it did
+        # not move: the cap and this guard measure different things, and with
+        # (E) in place the cap is no longer what was misfiring. A stop that
+        # reaches here now has NOTHING actionable -- no open item, no task, no
+        # lease -- and what is outstanding is a rotating nag (docs drift, a
+        # dead loop, an uncited claim). Three quiet turns on a session with no
+        # work in hand is not the every-other-stop stand-down the operator
+        # described; it is the ordinary shape of a session waiting on something
+        # external. Lowering the cap would also silently retune every
+        # WORKLIST_CADENCE_MAX-dependent case for a reason unrelated to the
+        # complaint. If routine pausing survives (E), lower it then, with the
+        # measurement that shows it -- not on the same hunch twice.
+        and not actionable_remains
         and int(cad.get("n") or 0) < CADENCE_MAX_PAUSES
     )
     if pause:
@@ -4227,6 +4400,21 @@ def run_stop(event, event_ok, worklist, hook_file):
                     "; ".join(sorted(rot_now))[:180],
                     int(cad["n"]),
                     CADENCE_MAX_PAUSES,
+                    # CROSS-SESSION OBLIGATIONS SURVIVE THE PAUSE INTACT. A
+                    # session may defer its OWN work for a turn; deferring a
+                    # peer without telling it is a different thing, and the
+                    # peer cannot see that this session stood down. Carried in
+                    # full, not summarised -- the whole defect was a summary.
+                    (
+                        M.N_CADENCE_PAUSE_CARRIED
+                        % "".join(
+                            "\n".join("  " + ln for ln in _t.splitlines()) + "\n"
+                            for _k, _a, _t in violations
+                            if _k in CARRY_THROUGH_PAUSE
+                        )
+                        if any(_k in CARRY_THROUGH_PAUSE for _k, _a, _t in violations)
+                        else ""
+                    ),
                 )
             }
         )
@@ -4535,7 +4723,7 @@ def run_stop(event, event_ok, worklist, hook_file):
                 # headings that is ~8,400 chars, ~2,100 tokens, which is the
                 # only figure in this comment that cannot rot, because the cap
                 # is enforced in code at wl_store.trap_headings().
-                traps=S.trap_headings(root),
+                traps=S.trap_prompt_lines(root),
             )
         if err is not None:
             # FAIL CLOSED, by operator instruction. A judge that cannot answer

@@ -94,6 +94,8 @@
     "check:ci-cli-doc-coverage": ".ci/scripts/quality/check-cli-doc-coverage.sh",
     "check:ci-hook-integrity": ".ci/scripts/quality/check-hook-integrity.sh",
     "check:ci-gate-manifest": "tsx scripts/check-gate-manifest.ts --selftest && tsx scripts/check-gate-manifest.ts",
+    "check:ci-trap-registry": ".ci/scripts/quality/check-trap-registry.sh",
+    "check:ci-runner-selftest": "tsx scripts/ci-runner/run.ts --selftest",
     "check:ci-devbox-exec": ".ci/scripts/quality/check-devbox-exec.sh",
     "check:ci-shell-size": ".ci/scripts/quality/check-shell-size.sh",
     "check:ci-toolchain-pins": ".ci/scripts/quality/check-toolchain-pins.sh",

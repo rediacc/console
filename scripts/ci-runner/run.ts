@@ -525,6 +525,45 @@ async function selftest(): Promise<number> {
     );
   }
 
+  // ORDERING, END TO END, THROUGH main() ITSELF. The two select() controls
+  // below exercise the FUNCTION; neither would notice `--list` moving back
+  // above the `select()` call, which is exactly the regression that shipped:
+  // `--list` returned before selection ran, so `--list --changed` printed all
+  // 314 specs whatever the scoping did, and a measurement taken from it was
+  // reported to the operator by an instrument that could not have shown
+  // otherwise.
+  //
+  // A unit test on select() cannot see that; only the real argv path can. The
+  // first draft of this spawned `process.execPath run.ts`, which fails because
+  // node cannot execute TypeScript -- so it drives main() in-process with argv
+  // set and stdout captured. Same path, no interpreter, no subprocess.
+  const listGateLines = async (argv: string[]): Promise<number> => {
+    const realArgv = process.argv;
+    const realWrite = process.stdout.write.bind(process.stdout);
+    let captured = '';
+    process.argv = [realArgv[0], realArgv[1], ...argv];
+    (process.stdout as { write: unknown }).write = (chunk: unknown): boolean => {
+      captured += String(chunk);
+      return true;
+    };
+    try {
+      await main();
+    } finally {
+      process.argv = realArgv;
+      (process.stdout as { write: unknown }).write = realWrite;
+    }
+    return captured.split('\n').filter((l) => l.startsWith('gate ')).length;
+  };
+  const onlyOne = await listGateLines(['--list', '--only', 'check:ci-npmrc']);
+  require_(onlyOne === 1, `--list must print the SELECTION: --only one id printed ${onlyOne} gate lines`);
+  // CONTROL: a bare --list must print many. Without this the assertion above
+  // also passes on a --list that prints nothing at all.
+  const allGates = await listGateLines(['--list']);
+  require_(
+    allGates > 50,
+    `CONTROL: a bare --list must print the whole set, got ${allGates} -- the --only case proves nothing without this`
+  );
+
   // `--list` MUST REFLECT THE SELECTION. Before this it returned before
   // select() ran, so a scoped list was indistinguishable from a full one --
   // and no oracle could assert on a selection it could not read.
@@ -549,7 +588,7 @@ async function selftest(): Promise<number> {
     process.stderr.write(text);
     return 1;
   }
-  process.stdout.write(`ci-runner: selftest ok (${9 + 7 + 3} assertions)\n`);
+  process.stdout.write(`ci-runner: selftest ok (${9 + 7 + 3 + 2} assertions)\n`);
   return 0;
 }
 

@@ -136,27 +136,38 @@ echo "== 214. THE CADENCE: the hook stands down for ONE turn after being answere
 # it. These are the ONLY cases that exercise the cadence: run() defaults it off.
 setup
 CADENCE=on
-# A LIVE WORKER, added with the v21 idle-stall gate (case 222). That gate is in
-# the ALWAYS tier, so an open item with nobody carrying it now defeats the pause
-# by design -- which would turn this case into a test of the new gate instead of
-# a test of the cadence. A running worker is the shape where a pause is still
-# legitimate (someone IS moving the work), so this case keeps pinning the thing
-# it was written to pin. Case 222f asserts the other half: strip the worker from
-# this exact fixture and the pause is refused.
-BG='[{"status":"running","description":"agent"}]'
+# THE FIXTURE CHANGED ON 2026-08-27 and the change is the case's subject now, so
+# read this before "restoring" it. It used to be an OPEN ITEM plus a live worker,
+# and it pinned that a session holding open work could be handed its quiet turn.
+# The operator asked for the opposite: the pause message fires "too often. It
+# should be the last chance, since we usually have lots to do!" So guard (E) --
+# `not actionable_remains` -- now refuses the pause whenever there is an open
+# item, a pending task or a live [>] lease, and the old fixture can no longer
+# pause by construction. Keeping it here would have pinned a behaviour that was
+# deliberately removed.
+#
+# What replaces it is a rotating violation with NOTHING actionable behind it: a
+# reported-but-unfixed finding. That is the shape where a stand-down is still
+# right -- the session has no work in hand, only a nag outstanding -- so this
+# case still pins the cadence itself. Case 214f is the other half, and it is the
+# old fixture with the opposite expectation.
+FNF='- Agent finding I did not fix: the dead symlink under .ci'
 say "answer
 
+$FNF
+
 ## Remaining
-- stuff"
+- nothing outstanding"
 brief_now
 hand_now
-echo '- [ ] (deadbeef) open thing' >>"$WL"
-check "214: the first stop still DEMANDS" block "OPEN worklist item"
+check "214: the first stop still DEMANDS" block "finding(s) you did not fix"
 newturn
 say "I have now answered the demand
 
+$FNF
+
 ## Remaining
-- stuff"
+- nothing outstanding"
 OUT="$(run)"
 DEC="$(python3 -c 'import json,sys
 raw=sys.stdin.read().strip()
@@ -173,35 +184,52 @@ echo "== 214b. GUARD B: an unchanged message buys NOTHING =="
 # No `say` between stops here, so the assistant message is byte-identical.
 setup
 CADENCE=on
+# Same non-actionable fixture as 214, for the same reason: with an open item the
+# pause is refused by guard (E) and this case would pass without ever exercising
+# guard B -- green, and proving nothing about the thing it is named after.
+FNF='- Agent finding I did not fix: the dead symlink under .ci'
 say "answer
 
+$FNF
+
 ## Remaining
-- stuff"
+- nothing outstanding"
 brief_now
 hand_now
-echo '- [ ] (deadbeef) open thing' >>"$WL"
-check "214b: first stop demands" block "OPEN worklist item"
-newturn
-check "214b GUARD B: no new say means no pause, it demands again" block "OPEN worklist item"
+check "214b: first stop demands" block "finding(s) you did not fix"
+# NO newturn HERE, and that is the correction rather than a shortcut. The old
+# fixture called newturn with no say, which does not leave the message
+# byte-identical at all: it resets the transcript window, so last_msg becomes
+# EMPTY and its signature changes. That worked only because the violation was
+# store-derived and survived an empty message; a message-derived one vanishes
+# with the window, and the stop went clean. Running again on the same transcript
+# is what "the assistant said nothing new" actually looks like to the hook.
+check "214b GUARD B: no new say means no pause, it demands again" block "finding(s) you did not fix"
 
 echo "== 214c. GUARD A: the ALWAYS tier defeats the pause =="
 # The integrity tier is the reason this machinery exists. A session that just
 # answered still does not get a quiet turn while something urgent is outstanding.
 setup
 CADENCE=on
+# Non-actionable fixture, as 214: otherwise guard (E) refuses the pause first and
+# this case stops testing guard A at all.
+FNF='- Agent finding I did not fix: the dead symlink under .ci'
 say "answer
 
+$FNF
+
 ## Remaining
-- stuff"
+- nothing outstanding"
 brief_now
 hand_now
-echo '- [ ] (deadbeef) open thing' >>"$WL"
-check "214c: first stop demands" block "OPEN worklist item"
+check "214c: first stop demands" block "finding(s) you did not fix"
 newturn
 say "answered, and now something urgent is also true
 
+$FNF
+
 ## Remaining
-- stuff"
+- nothing outstanding"
 # hook-blind is an always-tier violation: an unparseable event.
 printf 'not json at all' >"$BASE/t.jsonl"
 # stderr is CAPTURED, not discarded. This case failed once in CI with an EMPTY
@@ -227,34 +255,73 @@ echo "== 214d. a CLEAN stop consumes the debt =="
 # 3619: block, clean allow, new item -- and the new item was silently paused.
 setup
 CADENCE=on
+# Non-actionable fixture, as 214. The debt is now spent by DROPPING the finding
+# line rather than by ticking an item, which is the same three-stop shape:
+# violation -> clean stop -> violation again.
+FNF='- Agent finding I did not fix: the dead symlink under .ci'
 say "answer
 
+$FNF
+
 ## Remaining
-- stuff"
+- nothing outstanding"
 brief_now
 hand_now
-echo '- [ ] (deadbeef) open thing' >>"$WL"
-check "214d: first stop demands" block "OPEN worklist item"
-sed -i 's/^- \[ \] (deadbeef) open thing/- [x] (deadbeef) open thing/' "$WL"
+check "214d: first stop demands" block "finding(s) you did not fix"
 newturn
-say "all done
+say "all done, and I fixed the symlink rather than reporting it
 
 ## Remaining
-- nothing"
+- nothing outstanding"
 check "214d: the clean stop allows" allow ""
-echo '- [ ] (deadbeef) a brand new thing' >>"$WL"
 newturn
-say "starting the new thing
+say "a fresh finding turned up
+
+$FNF
 
 ## Remaining
-- the new thing"
-check "214d: the NEW item demands, the debt was spent on the clean stop" block "OPEN worklist item"
+- nothing outstanding"
+check "214d: the NEW violation demands, the debt was spent on the clean stop" block "finding(s) you did not fix"
 
 echo "== 214e. WORKLIST_CADENCE=off restores the old behaviour exactly =="
 # The kill switch has to work, or there is no way back if this proves wrong in
 # daily use.
 setup
 CADENCE=off
+# Non-actionable fixture, as 214: with an open item this stop would block under
+# guard (E) whatever the kill switch said, so the case could not tell the switch
+# working from the switch being ignored.
+FNF='- Agent finding I did not fix: the dead symlink under .ci'
+say "answer
+
+$FNF
+
+## Remaining
+- nothing outstanding"
+brief_now
+hand_now
+check "214e: first stop demands" block "finding(s) you did not fix"
+newturn
+say "answered
+
+$FNF
+
+## Remaining
+- nothing outstanding"
+check "214e: with cadence OFF it demands again immediately" block "finding(s) you did not fix"
+
+echo "== 214f. GUARD E: actionable work in hand REFUSES the pause =="
+# The other half of 214, and the operator's actual complaint: "it fires too
+# often. It should be the last chance, since we usually have lots to do!"
+#
+# This is 214's ORIGINAL fixture, verbatim -- an open item plus a live worker,
+# so the always-tier idle-stall gate stands down ("a background worker is
+# running") and `open-items` is the only outstanding check, rotating and
+# therefore pausable under every guard except (E). Before (E) this stop was
+# PAUSED, which is the exact turn the operator wanted back. Now it demands.
+setup
+CADENCE=on
+BG='[{"status":"running","description":"agent"}]'
 say "answer
 
 ## Remaining
@@ -262,13 +329,23 @@ say "answer
 brief_now
 hand_now
 echo '- [ ] (deadbeef) open thing' >>"$WL"
-check "214e: first stop demands" block "OPEN worklist item"
+check "214f: the first stop demands" block "OPEN worklist item"
 newturn
-say "answered
+say "I have now answered the demand
 
 ## Remaining
 - stuff"
-check "214e: with cadence OFF it demands again immediately" block "OPEN worklist item"
+# ONE RUN, BOTH FACTS. The demand and the absence of the stand-down text have to
+# be read off the SAME stop: a second check() call is a second stop, and after a
+# pause the next stop blocks anyway, so a split assertion would pass on a fixture
+# that had just paused. (It did, while this case was being written.)
+OUT="$(run)"
+if grep -qF '"decision": "block"' <<<"$OUT" && grep -qF "OPEN worklist item" <<<"$OUT" &&
+    ! grep -qF "but this stop is YOURS" <<<"$OUT"; then
+    pass "214f GUARD E: an open item refuses the pause the message alone would earn"
+else
+    fail "214f GUARD E: the pause survived actionable work: ${OUT:0:300}"
+fi
 
 echo "== 222. THE IDLE-STALL GATE: an open item, nobody carrying it, nothing moved =="
 # WHY (operator, 2026-08-26): "it's very annoying that neither you have
@@ -378,9 +455,13 @@ say "the worker is on it
 - the thing"
 check_quiet "222e CONTROL: a running background worker suppresses the gate" "ACTIONABLE WORK IN HAND"
 
-echo "== 222f. THE CADENCE CANNOT PAUSE IT (case 214's fixture, minus the worker) =="
-# The regression this whole gate exists for. Byte-for-byte case 214, except no
-# background worker: 214 gets its pause, this must not.
+echo "== 222f. THE CADENCE CANNOT PAUSE IT (case 214f's fixture, minus the worker) =="
+# The regression this whole gate exists for: an open item with NOBODY carrying
+# it. Byte-for-byte case 214f, except no background worker -- which is what
+# moves the refusal from the rotating `open-items` check to the always-tier
+# idle-stall gate, and that is exactly the needle below. (This comment named
+# case 214 until 2026-08-27; 214's fixture is non-actionable now, and 214f
+# inherited the open-item-plus-worker shape.)
 setup
 CADENCE=on
 say "answer
@@ -499,3 +580,210 @@ PYEOF
 else
     fail "222j: a helper raised on an unreadable store"
 fi
+
+echo "== 223. THE PENDING-ASK GATE: an ask ANNOUNCED and never made =="
+# THE COST, as a sequence rather than an argument. A session writes "two
+# questions for you" and stops. The operator spends a turn saying "ask". The
+# session calls AskUserQuestion, and .claude/hooks/pre-ask/block-settled-
+# questions.sh refuses it as something CLAUDE.md already answers. The removable
+# cost is THE OPERATOR'S TURN, and a Stop hook that blocks is the only place in
+# the chain that reaches it -- every later hook runs after the turn is gone.
+#
+# The detector is wl_admit.pending_ask; this file holds the controls because the
+# gate is always-tier, exactly like idle-stall above, and for the same reason: a
+# paused stop still ends the turn, so a rotating copy would buy nothing.
+#
+# PA_MSG IS DEFINED ONCE AND USED BY 223, 223b AND 223c VERBATIM. That is the
+# anti-vacuity floor of this group: 223 blocks and 223b is silent, and the ONLY
+# difference between them is the fixture state (one tool_use record). If the two
+# messages differed as well, the pair would prove nothing about the detector --
+# it would be consistent with a gate that simply matched different prose.
+PA_MSG='Wave 3 landed and the suite is 810/0.
+
+## Remaining
+- nothing outstanding
+
+Two questions for you before I pick the branch.'
+setup
+brief_now
+hand_now
+say "$PA_MSG"
+check "223: an announced ask with no AskUserQuestion is refused" block "YOU ANNOUNCED A QUESTION AND THEN STOPPED WITHOUT ASKING IT"
+check "223: and it quotes the line it matched" block "Two questions for you before I pick the branch."
+check "223: it offers asking now as an exit" block "call AskUserQuestion with the question, in this turn"
+check "223: it offers parking it with a DEFAULT" block "worklist.py --defer deadbeef"
+check "223: it offers settling it yourself" block "answer it yourself from the code"
+
+echo "== 223b. CONTROL: the SAME message, with the ask actually made, is silent =="
+# One byte of fixture state apart from 223: an assistant record whose only block
+# is a tool_use for AskUserQuestion, in the same turn. used_tool() exists for
+# this; say() writes text blocks only, so before it there was no way to fixture
+# "the session called the tool" and this control could not have been written.
+setup
+brief_now
+hand_now
+used_tool AskUserQuestion
+say "$PA_MSG"
+check_quiet "223b CONTROL: asking it satisfies the gate" "YOU ANNOUNCED A QUESTION"
+
+echo "== 223c. CONTROL: the SAME message, with a --defer this turn, is silent =="
+# The second exit. The baseline stop is deliberate: without it the fixture would
+# be silenced by defer_created's first-sight leniency instead of by the deferral,
+# and the case would pass without exercising the signature at all.
+setup
+brief_now
+hand_now
+say "$PA_MSG"
+PA_ID=$(reqcli --add deadbeef "the branch decision" | grep -oE '#[0-9a-f]+' | tr -d '#')
+run >/dev/null # baseline: my [?] set is empty and banked as such
+reqcli --defer deadbeef "$PA_ID" "which branch should this ride? DEFAULT: the branch of the PR that is already open WHY: a second PR is the operator's call, not a fact in the tree HOW: the operator names the branch, or the DEFAULT lands it on the open one" >/dev/null
+check_quiet "223c CONTROL: parking it with a DEFAULT satisfies the gate" "YOU ANNOUNCED A QUESTION"
+
+echo "== 223d. CONTROL: writing ABOUT the gate does not trip it =="
+# The V_FOUND_NOT_FIXED precedent, and the reason wl_core.strip_quoted_spans is
+# shared rather than copied: every message describing this gate quotes its own
+# triggers, and a gate that cannot survive being written about is too broad.
+setup
+brief_now
+hand_now
+say 'Wired the new gate. It anchors on announcement, so it matches `two questions for you`, `your call` and `want me to` in the closing span, and ignores them inside backticks.
+
+## Remaining
+- nothing outstanding'
+check_quiet "223d CONTROL: backticked triggers are not an announcement" "YOU ANNOUNCED A QUESTION"
+
+echo "== 223e. CONTROL: an ordinary completion report is silent =="
+setup
+brief_now
+hand_now
+say 'Suite is 810/0. The ledger writes one row per refusal and the Stop advisory names the path.
+
+## Remaining
+- nothing outstanding'
+check_quiet "223e CONTROL: a plain report is not an announcement" "YOU ANNOUNCED A QUESTION"
+
+echo "== 223f. IT IS NOT SHADOWED BY ANOTHER ALWAYS-TIER VIOLATION =="
+# Violations are gathered and emitted as ONE block, and the always tier is
+# printed in full while everything else becomes a bare count. So a gate that
+# computes correctly and is then swallowed by an earlier emit looks green
+# forever. This fires the pending-ask gate WHILE idle-stall is live and demands
+# BOTH texts -- the only assertion that can tell "computed" from "delivered".
+setup
+brief_now
+hand_now
+echo '- [ ] (deadbeef) do the thing' >>"$WL"
+say "$PA_MSG"
+run >/dev/null # idle-stall needs a baseline before it can accuse
+newturn
+say "$PA_MSG"
+OUT="$(run)"
+if grep -qF "YOU ANNOUNCED A QUESTION AND THEN STOPPED WITHOUT ASKING IT" <<<"$OUT" &&
+    grep -qF "YOU ARE STOPPING WITH ACTIONABLE WORK IN HAND" <<<"$OUT"; then
+    pass "223f: both always-tier texts are delivered, neither shadows the other"
+else
+    fail "223f: only one always-tier text survived: ${OUT:0:400}"
+fi
+
+echo "== 223g. THE FAILURE PATH: the detector's helpers never raise =="
+# Same contract as 222j next door: a stall detector that crashes a stop is worse
+# than one that is absent. The call site is wrapped; these are the helpers under
+# it, driven directly on the inputs that would break a careless implementation.
+if python3 - "$(dirname "$HOOK")" <<'PYEOF'; then
+import sys
+
+sys.path.insert(0, sys.argv[1])
+import wl_admit
+
+
+class Boom:
+    @property
+    def items(self):
+        raise RuntimeError("unreadable store")
+
+
+assert wl_admit.defer_sig(Boom(), "deadbeef") == ""
+assert wl_admit.pending_ask(None, None, False) == (False, "")
+assert wl_admit.pending_ask("", [], False) == (False, "")
+assert wl_admit.turn_tools("/does/not/exist") == ([], "")
+assert wl_admit.ask_refusals("/does/not/exist", "deadbeef")[0] == 0
+# The three conditions, each one alone able to keep it quiet.
+_msg = "done\n\nTwo questions for you before I pick the branch."
+assert wl_admit.pending_ask(_msg, [], False)[0]
+assert not wl_admit.pending_ask(_msg, ["AskUserQuestion"], False)[0]
+assert not wl_admit.pending_ask(_msg, [], True)[0]
+# A restated deferral carries its DEFAULT and is not an announcement.
+assert not wl_admit.pending_ask("- [?] which branch? DEFAULT: the open one", [], False)[0]
+# A tool_result user record is NOT the operator speaking, so it must not reset
+# the tool window -- the whole reason this does not reuse transcript_tail.
+assert not wl_admit._is_operator_turn(
+    {"type": "user", "message": {"content": [{"type": "tool_result", "content": "x"}]}}
+)
+assert not wl_admit._is_operator_turn({"type": "user", "isMeta": True, "message": {"content": "hi"}})
+assert wl_admit._is_operator_turn({"type": "user", "message": {"content": "go"}})
+PYEOF
+    pass "223g: defer_sig/pending_ask/turn_tools/ask_refusals survive bad input"
+else
+    fail "223g: a pending-ask helper raised"
+fi
+
+echo "== 223h. THE REFUSAL LEDGER: a refusal is recorded and then surfaced =="
+# Before this the pre-ask hook refused questions and left NO trace anywhere the
+# operator looks -- .claude/hooks/test-hooks.sh names the consequence itself: "a
+# false positive is invisible by construction: the operator never learns what was
+# not asked". This drives the real bash hook, then asserts the Stop advisory that
+# reads what it wrote.
+setup
+brief_now
+hand_now
+say "done
+
+## Remaining
+- nothing outstanding"
+PA_HOOK="$(cd "$(dirname "$HOOK")/../pre-ask" && pwd)/block-settled-questions.sh"
+PA_LEDGER="${WL}.ask-refusals.jsonl"
+printf '{"session_id":"%s","tool_input":{"questions":[{"question":"Should I commit this now?","header":"commit"}]}}' "$SID" |
+    TMPDIR="$BASE/tmp" CLAUDE_PROJECT_DIR="$BASE/proj" bash "$PA_HOOK" >/dev/null 2>&1
+PA_RC=$?
+if [[ "$PA_RC" -eq 2 && -s "$PA_LEDGER" ]] &&
+    grep -qF '"permission":"should i"' "$PA_LEDGER" && grep -qF '"object":"commit"' "$PA_LEDGER"; then
+    pass "223h: a refusal appends one row naming BOTH matched conditions"
+else
+    fail "223h: rc=$PA_RC ledger=[$(head -c 200 "$PA_LEDGER" 2>/dev/null)]"
+fi
+# A question that is NOT permission-seeking must pass AND leave the ledger alone,
+# or the count the advisory prints is meaningless.
+printf '{"session_id":"%s","tool_input":{"questions":[{"question":"Which branch strategy fits this repo?","header":"design"}]}}' "$SID" |
+    TMPDIR="$BASE/tmp" CLAUDE_PROJECT_DIR="$BASE/proj" bash "$PA_HOOK" >/dev/null 2>&1
+PA_RC2=$?
+if [[ "$PA_RC2" -eq 0 && "$(wc -l <"$PA_LEDGER")" -eq 1 ]]; then
+    pass "223h: a design question passes and is NOT ledgered"
+else
+    fail "223h: rc=$PA_RC2 rows=$(wc -l <"$PA_LEDGER")"
+fi
+# ONE RUN, BOTH NEEDLES. A queued advisory is drained exactly once, so two
+# check() calls would be two stops and the second would assert the absence of
+# something it had already consumed -- a green test proving the opposite of what
+# it reads like.
+export WORKLIST_REPORT_PER_STOP=9
+OUT="$(run)"
+if grep -qF "were REFUSED by" <<<"$OUT" && grep -qF ".ask-refusals.jsonl" <<<"$OUT" &&
+    ! grep -qF '"decision": "block"' <<<"$OUT"; then
+    pass "223h: the Stop hook surfaces the ledger by path, advisory and non-blocking"
+else
+    fail "223h: the ledger advisory did not surface: ${OUT:0:300}"
+fi
+unset WORKLIST_REPORT_PER_STOP
+
+echo "== 223i. CONTROL: no refusals means no advisory =="
+# A surface that speaks when the count is zero is noise, and noise is what the
+# rotation exists to prevent.
+setup
+brief_now
+hand_now
+say "done
+
+## Remaining
+- nothing outstanding"
+export WORKLIST_REPORT_PER_STOP=9
+check_quiet "223i CONTROL: an empty ledger says nothing" "were REFUSED by"
+unset WORKLIST_REPORT_PER_STOP

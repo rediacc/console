@@ -516,25 +516,112 @@ def trap_headings(root):
     silent truncation that would have kept the OLDEST titles and dropped the
     NEWEST. The history and the keep-the-TAIL decision for the next time it
     bites are recorded on `TRAP_HEADING_CAP` directly above, so neither gets
-    re-litigated from scratch."""
-    try:
-        text = agent_traps_path(root).read_text(encoding="utf-8", errors="replace")
-    except OSError:
-        return []
-    out = []
-    total = 0
-    for line in text.splitlines():
-        if line.startswith("## ") and not line.startswith("### "):
-            total += 1
-            if len(out) < TRAP_HEADING_CAP:
-                out.append(line[3:].strip()[:120])
-    remaining = total - len(out)
+    re-litigated from scratch.
+
+    Headings inside FENCED CODE BLOCKS are examples, not entries; see
+    `trap_entries`, which this now delegates to."""
+    entries = trap_entries(root)
+    out = [e["title"][:120] for e in entries[:TRAP_HEADING_CAP]]
+    remaining = len(entries) - len(out)
     if remaining > 0:
         out.append(
             "(+%d further entries not shown; read docs/agent-reference/TRAPS.md in full)"
             % remaining
         )
     return out
+
+
+# Only entries the machine is NOT already watching reach a model prompt, so the
+# corpus can grow mechanized entries for free. TRAP_PROMPT_CAP is belt and
+# braces against a pathological corpus, never the mechanism; it overflows LOUDLY
+# for the same reason TRAP_HEADING_CAP does.
+TRAP_PROMPT_CAP = 60
+
+TRAILER_KEYS = ("Trap-Id:", "Enforced-By:", "Residue:")
+
+
+def trap_entries(root):
+    """Every `## ` entry of TRAPS.md as {line, title, id, enforced, residue}.
+
+    FENCED CODE BLOCKS ARE NOT ENTRIES, and the bare `startswith("## ")` this
+    replaces could not tell the difference. Latent while no trap body contained
+    a fenced `## ` line; ACTIVATED by the registry, because once
+    check:ci-trap-registry requires a Trap-Id per entry, a `## ` inside a
+    fenced markdown example becomes a phantom entry with no id and the gate
+    reds on a document that is correct. A trap body carrying a markdown example
+    is ordinary, and this file's own header now carries fenced examples.
+
+    The trailer is read only from the block between the heading and the first
+    blank line, so a body paragraph that opens with "Residue:" stays body.
+
+    [] when absent or unreadable, never an exception: the corpus is reference
+    material, and a stop must not die because a doc moved.
+    """
+    try:
+        text = agent_traps_path(root).read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return []
+    entries = []
+    fence = ""
+    in_trailer = False
+    for n, line in enumerate(text.splitlines(), 1):
+        stripped = line.lstrip(" \t")
+        if stripped.startswith("```") or stripped.startswith("~~~"):
+            char = stripped[0]
+            if not fence:
+                fence = char
+            elif fence == char:
+                fence = ""
+            continue
+        if fence:
+            continue
+        if line.startswith("## ") and not line.startswith("### "):
+            entries.append(
+                {"line": n, "title": line[3:].strip(), "id": "", "enforced": "", "residue": ""}
+            )
+            in_trailer = True
+            continue
+        if in_trailer:
+            if not line.strip():
+                in_trailer = False
+                continue
+            for key, field in zip(TRAILER_KEYS, ("id", "enforced", "residue")):
+                if line.startswith(key):
+                    entries[-1][field] = line[len(key) :].strip()
+                    break
+            else:
+                in_trailer = False
+    return entries
+
+
+def trap_prompt_lines(root):
+    """The trap lines a MODEL still needs, and only those.
+
+    A trap whose Enforced-By names live instruments is watched by something that
+    fires whether or not anyone reads, so it leaves the prompt permanently: it
+    is the gate's business now, not the judge's. What is left is the residue,
+    rendered as the residue SENTENCE rather than the title, because the sentence
+    is the part no instrument reaches and the title is just its name.
+
+    Growth in the mechanized population therefore costs no prompt, and growth in
+    the residue is exactly the thing that should cost attention. An entry with
+    no trailer at all is UNCLASSIFIED, not clean, so it stays in the prompt as
+    its title: unknown is never folded into fine.
+    """
+    out = []
+    entries = trap_entries(root)
+    for e in entries:
+        if e["residue"]:
+            out.append(e["residue"])
+        elif not e["enforced"]:
+            out.append(e["title"][:120])
+    kept = out[:TRAP_PROMPT_CAP]
+    if len(out) > len(kept):
+        kept.append(
+            "(+%d further residue entries not shown; read docs/agent-reference/TRAPS.md in full)"
+            % (len(out) - len(kept))
+        )
+    return kept
 
 
 def requests_path(worklist):

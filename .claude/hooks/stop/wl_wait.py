@@ -154,6 +154,42 @@ def heartbeat_path(worklist, me):
     return worklist.with_suffix(".waiter-%s" % (me or "unknown")[:8])
 
 
+def ask_nolisten_path(worklist, me):
+    return worklist.with_suffix(".asknolisten-%s" % (me or "unknown")[:8])
+
+
+def ask_nolisten_count(worklist, me):
+    """Consecutive stops where this session held an open ask and was not listening.
+
+    Drives which rung of V_ASK_NOLISTEN_LADDER fires. A plain integer in a
+    sidecar rather than an event, for the same reason nudge_path is: compact()
+    folds the event log to a known set of kinds and would destroy a novel one,
+    and this counter is worth nothing after a fold anyway.
+
+    Unreadable counts as zero. The failure direction is one extra gentle nudge,
+    never a session pinned at the terminal rung by a corrupt file.
+    """
+    try:
+        return int(ask_nolisten_path(worklist, me).read_text(encoding="utf-8").split()[0])
+    except (OSError, ValueError, IndexError):
+        return 0
+
+
+def bump_ask_nolisten(worklist, me):
+    n = ask_nolisten_count(worklist, me) + 1
+    with contextlib.suppress(OSError):
+        ask_nolisten_path(worklist, me).write_text(str(n), encoding="utf-8")
+    return n
+
+
+def reset_ask_nolisten(worklist, me):
+    """Back to rung 1. Called whenever the session is listening again OR has no
+    open ask left -- the ladder must describe what is true now, not what the
+    session did an hour ago."""
+    with contextlib.suppress(OSError):
+        ask_nolisten_path(worklist, me).unlink(missing_ok=True)
+
+
 def nudge_path(worklist, me):
     return worklist.with_suffix(".waiternudge-%s" % (me or "unknown")[:8])
 

@@ -140,6 +140,7 @@ SCANNER_TESTS=(
     test-scope-gate-outputs.sh
     test-label-inventory.sh
     test-swallowed-failures.sh
+    test-trap-registry.sh
     test-breakpoint-portability.sh
     test-autopilot-breakpoint-alignment.sh
     test-label-references.sh

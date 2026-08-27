@@ -352,3 +352,74 @@ else
     echo "  FAIL: expected 1 [?] item and 1 escalate event, got $NESC and $NEVT"
     FAIL=$((FAIL + 1))
 fi
+
+echo "== 81. asking a live peer without a waiter BLOCKS (v21) =="
+# THE GAP THIS CLOSES, measured live 2026-08-27. The general NOT LISTENING
+# check needs three things before it fires: a live non-poll work cron, a live
+# peer, and WAITER_GRACE_NUDGES ignored nudges (half an hour). A session with
+# NO cron directory can therefore never trip it -- and one was observed holding
+# an open request to a peer seen minutes earlier, with no waiter, about to stop
+# and wait forever for an answer it had no way to hear.
+#
+# Posting a request is the session choosing to depend on a reply, so this arm
+# needs no grace period at all: one stop is enough.
+setup
+# NO POLL CRON. The default fixture carries one, and a 5-minute poll IS a
+# listener -- the answer arrives within the rung, so the check correctly stays
+# quiet there (case 81b pins that). What this arm models is the session that has
+# NEITHER: measured live 2026-08-27, a session with no cron directory at all,
+# holding an open ask, about to stop.
+# NO CRONS AT ALL, and that is the precise gap. A work cron WITHOUT a poll cron
+# trips the existing V_NO_POLL_CRON check ("THIS SESSION HAS A LOOP BUT NOTHING
+# LISTENING"), which would block first and mask this one -- the first draft of
+# this case did exactly that and reported a block from the wrong check. A
+# session with NO loop is outside that check by construction, and is the shape
+# actually observed live: no cron directory, an open ask, about to stop.
+CRONS='[]'
+say "done for now"
+brief_now
+brief_other cafe1234
+askid deadbeef cafe1234 "please format the file that is reddening the lane" >/dev/null
+check "an open ask, no waiter and no poll cron, blocks the stop" block "NOT LISTENING FOR THE ANSWER"
+
+echo "== 81b. CONTROL: a POLL CRON is a listener, so the same state is allowed =="
+# The distinction the first draft of this check missed, and two existing cases
+# caught: a waiter is faster, a cron is slower, both HEAR. Without this control
+# the arm above would pass just as well if the check ignored crons entirely.
+setup
+say "done for now"
+brief_now
+brief_other cafe1234
+askid deadbeef cafe1234 "same state, but this session polls" >/dev/null
+check_quiet "an open ask with a live poll cron does not demand a waiter" "NOT LISTENING FOR THE ANSWER"
+
+echo "== 82. CONTROL: an ask to the OPERATOR needs no waiter =="
+# A human answers at a shell; there is nothing for a waiter to hear, and
+# blocking here would make `--ask operator` unusable.
+setup
+say "done for now"
+brief_now
+askid deadbeef operator "which branch should this land on" >/dev/null
+check_quiet "an operator ask does not demand a waiter" "NOT LISTENING FOR THE ANSWER"
+
+echo "== 83. CONTROL: an ask to a session that never briefed does not demand one =="
+# Nobody is going to answer, so requiring a listener would be theatre. The
+# existing escalation path owns that case.
+setup
+say "done for now"
+brief_now
+askid deadbeef 99999999 "into the void" >/dev/null
+check_quiet "an ask to an unbriefed session does not demand a waiter" "NOT LISTENING FOR THE ANSWER"
+
+echo "== 84. CONTROL: once the peer ANSWERS, the demand lifts =="
+# The obligation is to hear the reply, not to hold a process forever. This leg
+# proves the check keys on OPEN requests rather than on any request having
+# ever existed -- without it, a check stuck permanently on would pass case 81.
+setup
+say "done for now"
+brief_now
+brief_other cafe1234
+RID=$(askid deadbeef cafe1234 "answer me")
+as_peer cafe1234 reqcli --answer cafe1234 "$RID" "done" >/dev/null
+reqcli --ack deadbeef "$RID" >/dev/null
+check_quiet "an answered ask no longer demands a waiter" "NOT LISTENING FOR THE ANSWER"

@@ -789,6 +789,22 @@ def task_statuses(session_id, transcript_path=None):
     return out
 
 
+#: Backticked and quoted spans, blanked out.
+#:
+#: LIVES HERE, not beside its first caller, because two modules now need the
+#: same one. wl_checks has used it since V_FOUND_NOT_FIXED for every detector
+#: whose trigger phrases appear in prose ABOUT the rule, and wl_admit's
+#: pending-ask gate needs exactly the same treatment for exactly the same
+#: reason: this file, CLAUDE.md and the hook's own block texts all quote the
+#: phrases these gates match. A gate that cannot survive being WRITTEN ABOUT is
+#: too broad, and the fix is not a narrower pattern but ignoring the spans where
+#: quoting happens. wl_checks._strip_quoted_spans delegates here so its ~6 call
+#: sites keep one definition rather than acquiring a second copy that drifts.
+def strip_quoted_spans(text):
+    """Blank out backticked and quoted spans."""
+    return re.sub(r"`[^`]*`|\"[^\"]*\"|\u201c[^\u201d]*\u201d", " ", text or "")
+
+
 TRANSCRIPT_TAIL_BYTES = int(os.environ.get("WORKLIST_TAIL_BYTES", "2000000"))
 
 

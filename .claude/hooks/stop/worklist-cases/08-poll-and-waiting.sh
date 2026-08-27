@@ -398,7 +398,8 @@ ARITY = {
     "N_CL_FOREIGN_DRIFT": ("d", "executing", "o", "rows"),
     "N_CL_FOREIGN_WAVES": ("slug", "d", "o", "rows", "hint"),
     "N_CL_DOOR_PARKED": ("d", 1, "rows"),
-    "N_CADENCE_PAUSE": (1, "keys", 1, 3),
+    "N_CADENCE_PAUSE": (2, "k", 1, 3, "carried"),
+    "N_CADENCE_PAUSE_CARRIED": ("rows",), "V_ASK_NOLISTEN_CMD": ("p", "m"),
     "V_PLAN_DRIFT": (1, "rows"),
     "V_INTENT_EXPIRED": ("t", 1, 1, "cov"),
     # Epics and the published snapshot. USAGE constants carry no placeholder;
@@ -460,6 +461,11 @@ ARITY = {
     # --defer). V_UNBLOCKED_CLAIM takes the count and the claimed lines.
     "V_IDLE_STALL": (1, "rows", "me", "me", "me"),
     "V_UNBLOCKED_CLAIM": (1, "rows"),
+    # v23 pending-ask gate. V_PENDING_ASK takes the announcing line then the
+    # session prefix (the --defer exit); N_ASK_REFUSALS takes the count and the
+    # ledger path.
+    "V_PENDING_ASK": ("line", "me"),
+    "N_ASK_REFUSALS": (2, "p"),
     # v22. V_DEFERRED_FINDING takes the rendered finding lines; V_SWEEP_MOMENT
     # takes what just closed. Both are single-substitution, and case 117 is
     # what caught them being unregistered -- the registry works.

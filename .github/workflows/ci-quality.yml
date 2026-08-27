@@ -550,6 +550,19 @@ jobs:
       - name: Gate manifest self-consistency
         run: npm run check:ci-gate-manifest
 
+      # TRAPS.md is the ledger of which instrument protects what. Every entry
+      # names a pointer that must RESOLVE and be LIVE, or declares
+      # JUDGMENT-ONLY and says what nothing reaches. The gate plants its own
+      # defects first and refuses to judge the tree if any control misbehaves.
+      - name: Trap registry dispositions
+        run: npm run check:ci-trap-registry
+
+      # The ci-runner's own controls. They ran on ONE side until now: `npm run
+      # ci` executed them locally and nothing in CI did, which is the exact
+      # asymmetry check:ci-parity exists to name.
+      - name: CI runner selftest
+        run: npm run check:ci-runner-selftest
+
       # Hermetic text check: the canonical CI-watch loop must live in one
       # place and be attempt-stable. Nine divergent copies existed before this,
       # several handing out a form that exits on the first `completed` -- which

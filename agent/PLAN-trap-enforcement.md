@@ -1,5 +1,5 @@
 # PLAN: Trap enforcement, from prose to instruments
-Status: draft
+Status: W1 LANDED 2026-08-27; W2 to W4 still draft
 Owner: 99ccf057
 Updated: 2026-08-09
 
@@ -7,6 +7,21 @@ Replace "a session reads TRAPS.md" with instruments that fire whether or not any
 read anything. The corpus stops being the protection and becomes the ledger of which
 instrument protects what, with a gate that reds when a trap has neither an instrument
 nor a stated reason it cannot have one.
+
+**2026-08-27, W1 IS DONE, and the file below is no longer describing an unbuilt
+thing.** All 48 `## ` entries of `docs/agent-reference/TRAPS.md` carry the
+`Trap-Id` / `Enforced-By` / `Residue` trailer of section 3.1;
+`.ci/scripts/quality/check-trap-registry.sh` implements F1 to F6 (F5 in FULL,
+not deferred: `gate:` liveness is manifest membership with `gate: true`, and
+`hook:` liveness is a firing case plus a silent case in the hook suite, both
+proven load-bearing against real inputs); `wl_store.trap_headings` now tracks
+fenced code blocks and `wl_store.trap_prompt_lines` implements the section 3.3
+prompt filter. Two deviations from this text are stated in the gate's header:
+`suite:` is not implemented (`file:<path>:<line>` covers the one case that
+wanted it) and F3b is not implemented (the dispatcher has no block tier). W2 and
+W3 partly landed OUTSIDE this plan in the meantime: the dispatcher and five
+PostToolUse rules exist, so section 6's candidate list should be re-read against
+`.claude/hooks/trapguard/dispatch.py` before anyone executes W2.
 
 **2026-08-23: two TRAPS.md entries and one trapguard rule (`rule_history_rewrite_controls`) landed OUTSIDE this plan -- individual instruments again, NOT this plan starting; it is still `draft` and still unowned.**
 
