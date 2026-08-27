@@ -536,6 +536,14 @@ jobs:
       - name: Toolchain pins
         run: .ci/scripts/quality/check-toolchain-pins.sh
 
+      # A script that INSTALLS a go tool must be able to FIND it. `go install`
+      # writes to $(go env GOPATH)/bin, which is on no PATH by default, so a
+      # bare invocation dies at 127 the line after a successful install. CI
+      # never sees it -- actions/setup-go adds that directory itself -- which is
+      # exactly why four instances accumulated in the submodule unnoticed.
+      - name: Go tool PATH
+        run: .ci/scripts/quality/check-go-tool-path.sh
+
       # The enforcement layer cannot quietly disarm itself: guards are
       # inventoried shrink-only, and each must keep a case proving it blocks
       # AND one proving it allows. Block-only coverage cannot see

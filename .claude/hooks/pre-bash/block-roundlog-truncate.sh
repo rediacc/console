@@ -127,10 +127,30 @@ fi
 # FAIL CLOSED when no target can be resolved: that unidentifiable shape is
 # precisely `p.write_text(s[:i] + new)`, which is what destroyed the round
 # history on 2026-08-19 and is the reason this guard exists.
-if echo "$CMD" | grep -qE 'write_text|open\([^)]*["'\'']w'; then
-    PYTARGET=$(echo "$CMD" |
-        grep -oE "(=|open\(|Path\()[[:space:]]*[\"'][^\"']+\.md" |
-        grep -oE "[A-Za-z0-9_./-]+\.md")
+# shutil/os MOVE AND COPY COUNT AS WRITES. Measured 2026-08-27: shutil.copy and
+# os.replace onto a round log both returned 0 from this guard, because the arm
+# below triggered only on write_text and open(...,"w"). Each of them overwrites
+# the file completely. The shell half has covered `cp` and `mv` onto a round log
+# from the start; these are their python spelling, and their absence made the
+# guard read as thorough while a one-line rename walked through it.
+if echo "$CMD" | grep -qE 'write_text|open\([^)]*["'\'']w|shutil\.(copy|copyfile|copy2|move)|os\.(replace|rename)'; then
+    # Candidates come from an assignment/open()/Path() position AND from every
+    # quoted path inside a copy/move call. A copy names a source and a
+    # destination and only the destination truncates, but telling them apart by
+    # position across copy/copyfile/copy2/move/replace/rename is fragile, and
+    # taking both is strictly safer: a call with a round log on either side is
+    # not something to wave through. Two innocent paths still pass, which is
+    # what stops this becoming a blanket refusal.
+    PYTARGET=$(
+        {
+            echo "$CMD" |
+                grep -oE "(=|open\(|Path\()[[:space:]]*[\"'][^\"']+\.md" |
+                grep -oE "[A-Za-z0-9_./-]+\.md"
+            echo "$CMD" |
+                grep -oE "(shutil\.(copy|copyfile|copy2|move)|os\.(replace|rename))\([^)]*" |
+                grep -oE "[A-Za-z0-9_./-]+\.md"
+        } | sort -u
+    )
     if [ -z "$PYTARGET" ]; then
         TRUNCATING=1
     elif echo "$PYTARGET" | grep -qE "$RL"; then

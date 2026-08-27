@@ -1521,6 +1521,29 @@ import pathlib
 q = pathlib.Path(*['$RLOG'.split('/')[-1]])
 q.write_text(s[:i] + new)
 PY")" "roundlog: an UNRESOLVABLE target still fires (fail closed)"
+# PYTHON COPY AND MOVE ARE WRITES TOO. The shell half has refused `cp` and `mv` onto a
+# round log since it was written; their python spelling was never covered, so
+# shutil.copy and os.replace onto the log both returned 0 -- a one-line rename walked
+# through a guard that read as thorough. Measured 2026-08-27.
+check 2 pre-bash/block-roundlog-truncate.sh "$(bash_json "python3 - <<PY
+import shutil
+shutil.copy('/tmp/x', '$RLOG')
+PY")" "roundlog: shutil.copy ONTO the log is a write, and is blocked"
+check 2 pre-bash/block-roundlog-truncate.sh "$(bash_json "python3 - <<PY
+import os
+os.replace('/tmp/x', '$RLOG')
+PY")" "roundlog: os.replace ONTO the log is a write, and is blocked"
+check 2 pre-bash/block-roundlog-truncate.sh "$(bash_json "python3 - <<PY
+import shutil
+shutil.move('/tmp/x', '$RLOG')
+PY")" "roundlog: shutil.move ONTO the log is a write, and is blocked"
+# And the control that keeps the new arm from becoming a blanket refusal: a copy
+# between two innocent paths, with the log named only in a comment.
+check 0 pre-bash/block-roundlog-truncate.sh "$(bash_json "python3 - <<PY
+import shutil
+# see $RLOG for the round history
+shutil.copy('/tmp/a.md', '/tmp/scratch/n.md')
+PY")" "roundlog CONTROL: a copy between two innocent .md paths still passes"
 rm -rf "$(dirname "$(dirname "$RLOG_REAL")")"
 unset RLOG_REAL
 

@@ -698,6 +698,25 @@ export const GATES: readonly GateSpec[] = [
     },
   },
   {
+    // Console's own scripts already use the right shape -- toolchain.sh installs
+    // with GOBIN and invokes by absolute path, which is why check:ci-shell-format
+    // passes on a host with no shfmt on PATH. This gate exists so that stays
+    // true: the defect it names cost four instances in the renet submodule on
+    // 2026-08-27, each one a `go install` followed by a bare invocation, and CI
+    // could not see any of them because actions/setup-go masks it.
+    id: 'check:ci-go-tool-path',
+    run: 'npm run check:ci-go-tool-path',
+    gate: true,
+    paths: ['.ci/**', 'scripts/**'],
+    leaves: ['.ci/scripts/quality/check-go-tool-path.sh'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-code',
+      step: 'Go tool PATH',
+    },
+  },
+  {
     // The manifest is the pre-push lane's only source of truth about which
     // gates are cheap and which files select them, and nothing re-reads it.
     // Three oracles, each with both directions in --selftest: a `slow` claim

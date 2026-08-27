@@ -100,6 +100,7 @@
     "check:ci-devbox-exec": ".ci/scripts/quality/check-devbox-exec.sh",
     "check:ci-shell-size": ".ci/scripts/quality/check-shell-size.sh",
     "check:ci-toolchain-pins": ".ci/scripts/quality/check-toolchain-pins.sh",
+    "check:ci-go-tool-path": ".ci/scripts/quality/check-go-tool-path.sh",
     "check:ci-control-vacuity": ".ci/scripts/quality/check-control-vacuity.sh",
     "check:ci-setup-idempotency": ".ci/scripts/quality/check-setup-idempotency.sh",
     "check:ci-lockfile": ".ci/scripts/quality/check-lockfile.sh",
