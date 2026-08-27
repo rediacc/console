@@ -108,7 +108,55 @@ R_BLOCKED=$(jq -r '(.blocked // []) | join(", ")' "$RECEIPT" 2>/dev/null)
     refuse "that receipt came from a NARROWED run (--only/--skip), not the whole lane."
 
 if [ "$R_EXIT" != "0" ]; then
-    refuse "the gate run went RED and those failures are still unfixed: ${R_FAILED:-see the run}."
+    # A RED RECEIPT MAY STILL AUTHORISE A PUSH, but only when every failure is
+    # named and justified in .ci/config/carried-reds.json. All-or-nothing is the
+    # shape that gets a guard routed around; naming the exception keeps the
+    # refusal informative and leaves the excuse in git where it can be reviewed.
+    CARRIED_FILE="$ROOT/.ci/config/carried-reds.json"
+    CARRIED=""
+    if [ -f "$CARRIED_FILE" ]; then
+        # Only entries whose reason is SUBSTANTIVE count. The bar is the one
+        # .dead-bash-allowlist uses and gate-test:dead-bash pins with a
+        # low-effort-BLOCKER case: a bare "known issue" excuses nothing.
+        CARRIED=$(jq -r '[.carried[]? | select((.reason // "" | length) >= 80) | .gate] | join(" ")' \
+            "$CARRIED_FILE" 2>/dev/null)
+    fi
+
+    UNNAMED=""
+    for g in $(jq -r '(.failed // [])[]' "$RECEIPT" 2>/dev/null); do
+        case " $CARRIED " in
+            *" $g "*) ;;
+            *) UNNAMED="$UNNAMED $g" ;;
+        esac
+    done
+
+    # STALE ENTRIES REFUSE. An excuse that outlives its failure is exactly how an
+    # allowlist rots into a permanent hole -- the npm side of this repo once
+    # carried 101 dead entries for that reason. If a carried gate is no longer
+    # failing, the entry must go before the next push.
+    STALE=""
+    for g in $CARRIED; do
+        jq -e --arg g "$g" '(.failed // []) | index($g)' "$RECEIPT" >/dev/null 2>&1 ||
+            STALE="$STALE $g"
+    done
+
+    if [ -n "$UNNAMED" ]; then
+        refuse "the gate run went RED and these failures are neither fixed nor carried:${UNNAMED}.
+  To carry one deliberately, add it to .ci/config/carried-reds.json with a reason
+  that says WHY it cannot be fixed now. CI still runs it and still fails on it --
+  carrying only records the decision instead of routing around it."
+    fi
+
+    if [ -n "$STALE" ]; then
+        refuse "these gates are carried in .ci/config/carried-reds.json but are NOT failing any more:${STALE}.
+  Remove the entries. A carried red that has gone green is a standing excuse for
+  a problem that no longer exists, which is how an allowlist becomes permanent."
+    fi
+
+    echo "NOTE: pushing with CARRIED reds, each named in .ci/config/carried-reds.json:" >&2
+    echo "  ${R_FAILED}" >&2
+    echo "  CI runs these for real and will fail on them. Carrying is a record of a" >&2
+    echo "  deliberate decision, not a way to make CI green." >&2
 fi
 
 # A GATE THAT COULD NOT RUN WARNS, IT DOES NOT REFUSE (operator decision,

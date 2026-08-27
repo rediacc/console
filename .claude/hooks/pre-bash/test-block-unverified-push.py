@@ -62,6 +62,29 @@ def put(**over):
         json.dump(base, fh)
 
 
+CARRIED = os.path.join(d, ".ci", "config", "carried-reds.json")
+
+# A reason long enough to clear the substance bar the guard applies (>= 80
+# chars), so these cases test the CARRYING logic rather than accidentally
+# testing the length check. The low-effort case below uses a short one on
+# purpose.
+GOOD_REASON = (
+    "BLOCKER: the repair is a rebase reword and block-git-amend.sh has no override, "
+    "so it belongs to the operator rather than this session."
+)
+
+
+def carry(*entries):
+    os.makedirs(os.path.dirname(CARRIED), exist_ok=True)
+    with open(CARRIED, "w", encoding="utf-8") as fh:
+        json.dump({"carried": list(entries)}, fh)
+
+
+def uncarry():
+    if os.path.exists(CARRIED):
+        os.remove(CARRIED)
+
+
 def drop():
     if os.path.exists(RECEIPT):
         os.remove(RECEIPT)
@@ -118,6 +141,38 @@ cases.append(
 
 drop()
 cases.append((0, run("git status"), "CONTROL: no receipt is still fine for a non-push"))
+
+# --- carried reds: a RED receipt may authorise a push only when NAMED ---------
+# All-or-nothing is the shape that gets a guard bypassed, so a red may be carried
+# -- but only with every failure named, no stale entry, and a substantive reason.
+uncarry()
+put(exitCode=1, failed=["check:ci-pr-task-trailers"])
+cases.append((2, run(PUSH), "a red with NO carried-reds file still refuses"))
+
+carry({"gate": "check:ci-pr-task-trailers", "reason": GOOD_REASON})
+cases.append((0, run(PUSH), "a red whose every failure is NAMED and justified is allowed"))
+
+put(exitCode=1, failed=["check:ci-pr-task-trailers", "check:lint"])
+cases.append((2, run(PUSH), "a SECOND, unnamed red still refuses -- carrying is per-gate"))
+
+# The rot guard: an excuse must not outlive the failure it excuses. The npm side
+# of this repo once carried 101 dead allowlist entries for exactly this reason.
+put(exitCode=1, failed=["check:lint"])
+carry({"gate": "check:ci-pr-task-trailers", "reason": GOOD_REASON})
+cases.append((2, run(PUSH), "a STALE carried entry (its gate now green) refuses"))
+
+# A bare excuse is not a justification -- the bar .dead-bash-allowlist applies.
+put(exitCode=1, failed=["check:ci-pr-task-trailers"])
+carry({"gate": "check:ci-pr-task-trailers", "reason": "known issue"})
+cases.append((2, run(PUSH), "a LOW-EFFORT reason does not carry anything"))
+
+# ORDERING: `whole` is checked BEFORE carrying, so carrying cannot become a
+# second way to launder a --only run. That hole is what the whole flag closed.
+put(exitCode=1, failed=["check:ci-pr-task-trailers"], whole=False)
+carry({"gate": "check:ci-pr-task-trailers", "reason": GOOD_REASON})
+cases.append((2, run(PUSH), "a NARROWED run is refused even when its red is carried"))
+
+uncarry()
 
 shutil.rmtree(d, ignore_errors=True)
 
