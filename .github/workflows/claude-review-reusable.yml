@@ -58,7 +58,7 @@ jobs:
       epics: ${{ steps.find.outputs.epics }}
     steps:
       - name: Check out the PR head
-        uses: actions/checkout@v5
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: ${{ github.event.pull_request.head.repo.full_name || github.repository }}
           ref: ${{ github.event.pull_request.head.ref || github.event.workflow_run.head_branch }}
@@ -69,24 +69,7 @@ jobs:
         id: find
         env:
           PR_HEAD_REF: ${{ github.event.pull_request.head.ref || github.event.workflow_run.head_branch }}
-        run: |
-          set -euo pipefail
-          snap="agent/pr/${PR_HEAD_REF//\//-}.md"
-          ids=()
-          if [[ -f "$snap" ]]; then
-            while IFS= read -r id; do
-              [[ -n "$id" ]] && ids+=("$id")
-            done < <(grep -oE '^`?PR-TASK:[[:space:]]*[0-9a-f]{6,32}`?$' "$snap" \
-                     | grep -oE '[0-9a-f]{6,32}' || true)
-          fi
-          if [[ ${#ids[@]} -eq 0 ]]; then
-            echo 'no epics declared; one flat review pass will run'
-            echo 'epics=[""]' >>"$GITHUB_OUTPUT"
-          else
-            printf 'epics: %s\n' "${ids[*]}"
-            json="$(printf '%s\n' "${ids[@]}" | jq -R . | jq -sc .)"
-            echo "epics=$json" >>"$GITHUB_OUTPUT"
-          fi
+        run: .ci/scripts/review/discover-epics.sh
 
   review:
     needs: discover-epics
