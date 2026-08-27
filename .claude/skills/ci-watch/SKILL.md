@@ -10,13 +10,15 @@ self-improving: true
 ## Use this. There is no second way.
 
 ```bash
-.ci/scripts/ci/ci-trace.py            # one-shot: what is CI doing right now
-.ci/scripts/ci/ci-trace.py --wait     # block until THIS head is final
-.ci/scripts/ci/ci-trace.py --json     # machine-readable
+.ci/scripts/ci/ci-trace.py                    # one-shot: what is CI doing right now
+.ci/scripts/ci/ci-trace.py --wait             # block until THIS head is final
+.ci/scripts/ci/ci-trace.py --wait --until-final  # babysitting: keep waiting past the first red
+.ci/scripts/ci/ci-trace.py --json             # machine-readable
 ```
 
 `--wait` goes in a background task (`run_in_background: true`). It owns its
-polling interval, so you never write a loop; the process exit is the wake-up.
+polling interval (`--timeout` overrides the 5400s default), so you never write
+a loop; the process exit is the wake-up.
 
 | exit | meaning |
 |---|---|
