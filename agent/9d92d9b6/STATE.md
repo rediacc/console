@@ -1,79 +1,71 @@
-## SESSION 9d92d9b6 2026-08-27T09:02:17Z
+## SESSION 9d92d9b6 2026-08-27T09:29:28Z
 
-Branch `0826-3` @ `b015da5e2`, REBASED A SECOND TIME onto `origin/0826-2`, which
-had gained 11 commits. 18 commits, all `PR-TASK: f2757830`. Submodule
-`private/account` on `0826-3` @ `5f55c91`. NOTHING PUSHED. PR #577 is still
-OPEN (its CI is green; it has NOT merged).
+Branch `0826-3` @ `8ce700584`, rebased TWICE onto `origin/0826-2`. 21 commits,
+all `PR-TASK: f2757830`. Submodule `private/account` on `0826-3` @ `5f55c91`.
+Clean tree. NOTHING PUSHED. PR #577 is OPEN, not merged.
 
-Uncommitted: trapguard's `rebase-unverified` rule, the
-`block-self-matching-pgrep` false-positive fix, and
-`block-git-force-push`'s new message.
+## Recovery refs (tags, not branches -- a backup is not a wave)
 
-## The second rebase, verified by the tool built for it
+`preredo-0826` = `3ced1a4d8`, `prerebase-0826` = `9f3cb9f8c`, and
+`private/account` `prerebase-0826` = `3e79b39`. Next wave takes **0826-4**.
 
-`--git verify-rebase` against a `--git snapshot` taken first:
-console **18 carried, 0 absorbed**, `private/account` 1 carried, the other three
-0/0, **0 MISSING anywhere**. All four gitlinks contain their base.
-`private/account` needed no rebase this round (its `origin/main` had not moved
-and its tip already contained it). `private/renet`'s WORKTREE lagged the
-recorded pointer again -- `git submodule update` fixed it; that is a
-worktree-vs-index gap, not a bad gitlink.
+## The live design work
 
-## Verified on the rebased tree
+`agent/PLAN-resumable-rebase-executor.md` -- the operator VETOED my narrowing
+(`--execute` for force-push only, refusing rebase verbs): "We have AI. AI should
+receive a prompt to continue and/or what happened. So, it should fix conflicts
+and try again where he lefts."
 
-- `packages/cli` unit tests: **2402 passed**
-- `.ci/scripts/test/gates/test-review-status.sh`: **60 pass / 0 fail**
-- Still running: `test-worklist-v5.sh`, `test-hooks.sh` (both under nohup, so
-  the Stop hook cannot see them; watch their SUMMARY lines, not the tail).
-- Still to run: `npm run ci` end to end (held only because it runs the two hook
-  suites itself), and `private/account`'s own `npm test`.
+THE INSIGHT: `git rebase` is ALREADY resumable. It persists step N of M, the
+stopped sha, the todo and the conflict stages. So there is no state machine to
+build -- anything this module wrote down would be a SECOND copy of a truth git
+holds, and a second copy drifts. The missing piece was a verb that READS it.
 
-## Operator's discoverability point, and what it exposed
+MEASURED taxonomy from this branch's two real rebases, ten conflicts: ONE
+gitlink (resolve_gitlink_target settled it unaided, naming a commit in NEITHER
+stage), SIX mechanical registry unions, TWO genuine judgement calls (`run.sh`
+setup(), and the suite one wave refactored from a monolith into 22 case files).
 
-"You knew how and when to use verify-rebase because you built it -- is there any
-hint?" There was none. Measured: `worklist.py --git` was referenced by ZERO
-commands, agents and docs. Worse, `block-git-force-push.sh` REFUSED a force-push
-and said "the operator runs it with the ! prefix", sending a session away
-empty-handed for an operation the repo authorises through `--git force-push`.
-That message now names the verb, both forms, and why the guard must stay strict
-rather than gain an allow-list.
+**Step 1 is SHIPPED** (`8ce700584`): `--git rebase-status` reads the halt and
+classifies each path gitlink / registry / judgement. Verified against a REAL
+halted rebase in a throwaway fixture. Conservative: anything unplaceable is
+judgement, i.e. untouched.
 
-The hint itself is `trapguard[rebase-unverified]`: fires right after a rebase
-reports success and names both checks. trapguard is the right surface because it
-never blocks and already exists to say "you just did X, here is what bites".
+Steps 2-5 remain: the invariants, `rebase-resolve` (gitlink class first, it is
+already proven), registry classes one at a time, then the continue loop. **Step
+2 needs a git fixture harness this repo does not have** -- that is the real cost.
 
-## A false positive in my own guard, fixed
+THE MECHANICAL HALF IS THE DANGEROUS HALF. A blind union glued `touched`+`see`
+into one token in `wl_agents.py` today and silently killed two stopwords; the
+file parsed and the suite passed. Every union must land behind an invariant
+proving meaning survived, and a class with no invariant stays judgement.
 
-`block-self-matching-pgrep` refused an ordinary command: it tested the loop
-keyword and the `pgrep` INDEPENDENTLY, so a one-shot `pgrep -cf` plus the
-English word "while" in a worklist message read as a wedged waiter. It now
-requires the pgrep to sit inside the loop's CONDITION (keyword to `; do`). Also
-learned: the bracket trick hides a pattern from ITSELF, not from a plain copy of
-the literal elsewhere in the same command.
+## Verified on the twice-rebased tree
+
+`packages/cli` 2402 passed; review-status 60/0; worklist 805/0; hooks 1395/0
+(wl_git now 35 controls); `--git verify-rebase` 18 carried / 0 missing; all four
+gitlinks contain their base.
 
 ## Next action
 
-Read the two suite summary lines (item `#6f67f133` is leased to waiter
-`bnvbx8yai`, which watches the OUTPUT FILES, not processes -- no pgrep, the
-shape the guard recommends). When both are green, WIRE THE CONTROLS for
-`trapguard[rebase-unverified]` and for the pgrep false-positive fix into
-`.claude/hooks/test-hooks.sh` -- that edit is blocked until the suites exit, by
-`block-edit-of-running-script`. Then commit with a `PR-TASK: f2757830` trailer,
-then run `npm run ci` and `private/account`'s suite.
+Read `/tmp/.../scratchpad/v-acct.txt` (`private/account` npm test, started under
+nohup -- check for a SUMMARY line, not the tail). Then run `npm run ci` end to
+end, the last of the four checks the operator asked for. Then steps 2-5 of the
+plan.
 
-## Expected failure, do NOT "fix" it
+## Operator rulings, do NOT re-litigate
 
-`check:ci-pr-task-trailers` fails on `0826-2`'s untagged commits. Each was
-attributed individually; none are mine. It self-resolves when #577 merges and
-this branch re-rebases onto `origin/main`. Do not weaken the gate and do not
-back-fill trailers onto another wave's commits.
+- PR base: wait for #577 to merge, then re-rebase onto `origin/main` and base
+  the PR there. `check:ci-pr-task-trailers` stays RED until then on 0826-2's
+  nine untagged commits (each attributed; none are mine). Do NOT weaken the gate
+  and do NOT open a stacked PR.
+- `/branch-rebase`'s `[base]` argument: implemented, not deleted (`f74a0c120`).
+  Console rebases onto `origin/$BASE`; SUBMODULES always onto their own
+  `origin/main`; step 4 verifies each against its own ref.
+- Guard density: keep adding hooks, fix false positives as they fire.
+- gitlab remote: credential stored, `git fetch --all` exits 0.
 
 ## Open, operator-gated
 
 SES: `.env`'s AWS_SES_ACCESS_KEY_ID and SES_AK_ID are in no `ses-*` slug.
 Ticked `door:operator-only`; do not reopen.
-
-## Settled, do not re-ask
-
-Guard density: keep adding, fix FPs as they fire. gitlab remote: credential
-stored. Commit redo: done. Rebase target: 0826-2 by operator choice.

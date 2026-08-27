@@ -598,6 +598,69 @@ check_inject silent "$(inject_json 'git rebase origin/main' 'Current branch 0826
     "trapguard CONTROL: a no-op rebase has nothing to verify"
 check_inject silent "$(inject_json 'echo "run git rebase later"' 'Successfully rebased and updated refs/heads/x')" \
     "trapguard CONTROL: a rebase named in a string is not a rebase"
+# --git rebase-status against a REAL halted rebase, one per conflict kind. The
+# selftest's classifier controls prove the ARITHMETIC over hand-written stage
+# tables; only a real halt proves the verb reads what git actually writes into
+# .git/rebase-merge and the index. The harness refuses to hand back a fixture
+# that did not halt, which already caught a broken fixture of its own: the two
+# submodule commits were linear, so git took the descendant and nothing
+# conflicted.
+# shellcheck source=/dev/null
+source "$DIR/../../.ci/scripts/test/lib/git-fixture.sh"
+for gfk in registry judgement gitlink; do
+    gfd="$(git_fixture_rebase "$gfk" 2>/dev/null)" || {
+        FAIL=$((FAIL + 1)); echo "FAIL [1] git-fixture: '$gfk' did not halt"; continue
+    }
+    gfout="$(cd "$gfd" && python3 "$DIR/stop/worklist.py" --git rebase-status 2>&1)"
+    if grep -qF 'rebase HALTED' <<<"$gfout" && grep -qE "\-> ${gfk}\b" <<<"$gfout"; then
+        PASS=$((PASS + 1))
+        echo "ok   [0] rebase-status reads a real $gfk halt and classifies it"
+    else
+        FAIL=$((FAIL + 1))
+        echo "FAIL [1] rebase-status on a real $gfk halt: ${gfout:0:200}"
+    fi
+    git_fixture_cleanup "$gfd"
+done
+unset gfk gfd gfout
+
+# STEP 3: resolve-gitlinks may now WRITE, and these are the two halves that make
+# that safe. The happy path resolves a real halt end to end; the guard refuses a
+# MIXED conflict set rather than half-resolving it, because a half-resolved
+# index reads as nearly done and the next --continue then fails for a reason
+# that no longer names the submodule.
+gfd="$(git_fixture_rebase gitlink-rebased 2>/dev/null)"
+if [[ -n "$gfd" ]]; then
+    gfout="$(cd "$gfd" && python3 "$DIR/stop/worklist.py" --git resolve-gitlinks --execute 2>&1)"
+    gfleft="$(cd "$gfd" && git ls-files -u | wc -l | tr -d ' ')"
+    if grep -qF 'command(s) ran' <<<"$gfout" && [[ "$gfleft" == "0" ]]; then
+        PASS=$((PASS + 1))
+        echo "ok   [0] resolve-gitlinks --execute clears a real gitlink halt"
+    else
+        FAIL=$((FAIL + 1))
+        echo "FAIL [1] resolve-gitlinks --execute left $gfleft unmerged: ${gfout:0:160}"
+    fi
+    git_fixture_cleanup "$gfd"
+else
+    FAIL=$((FAIL + 1)); echo "FAIL [1] git-fixture: gitlink-rebased did not halt"
+fi
+
+gfd="$(git_fixture_rebase mixed 2>/dev/null)"
+if [[ -n "$gfd" ]]; then
+    gfbefore="$(cd "$gfd" && git ls-files -u | wc -l | tr -d ' ')"
+    gfout="$(cd "$gfd" && python3 "$DIR/stop/worklist.py" --git resolve-gitlinks --execute 2>&1)"
+    gfafter="$(cd "$gfd" && git ls-files -u | wc -l | tr -d ' ')"
+    if grep -qF 'non-gitlink conflict' <<<"$gfout" && [[ "$gfbefore" == "$gfafter" ]]; then
+        PASS=$((PASS + 1))
+        echo "ok   [2] resolve-gitlinks refuses a MIXED set and changes nothing"
+    else
+        FAIL=$((FAIL + 1))
+        echo "FAIL [2] mixed set: $gfbefore -> $gfafter unmerged: ${gfout:0:160}"
+    fi
+    git_fixture_cleanup "$gfd"
+else
+    FAIL=$((FAIL + 1)); echo "FAIL [1] git-fixture: mixed did not halt"
+fi
+unset gfd gfout gfleft gfbefore gfafter
 check_inject silent "$(inject_json 'git filter-repo --analyze' 'Processed 6177 commits')" \
     "trapguard CONTROL: --analyze is a READ of history and is never warned about"
 

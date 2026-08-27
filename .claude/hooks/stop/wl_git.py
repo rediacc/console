@@ -821,13 +821,63 @@ def main(argv):
     # would be a re-implementation of git's own state machine in a tree where
     # stash and restore are banned, i.e. where its worst failure has no
     # recovery. Refusing is honest; half-executing is not.
-    if sub != "force-push":
+    # WHICH VERBS MAY WRITE, and why these two and not the rest.
+    #
+    # force-push: the one command Bash genuinely cannot run, because
+    #   block-git-force-push refuses it unconditionally. Irreversible, so it
+    #   prints an UNDO block first.
+    # resolve-gitlinks: local and reversible -- a `checkout <sha>` inside a
+    #   submodule and an `add -- <path>` in the parent, both undone by
+    #   `git rebase --abort`. The CHOICE is made by an oracle, not a guess, and
+    #   verified by the containment check afterwards. Proven in anger twice on
+    #   branch 0826-3, where it named a commit in NEITHER conflict stage.
+    #
+    # Everything else still refuses. A rebase halts mid-list and needs a
+    # decision this module cannot make; see agent/PLAN-resumable-rebase-executor.md.
+    EXECUTABLE = ("force-push", "resolve-gitlinks")
+    if sub not in EXECUTABLE:
         sys.stderr.write(
-            "\nREFUSED: --execute is only implemented for force-push.\n"
+            "\nREFUSED: --execute is implemented for %s only.\n"
             "The steps above are safe to run yourself, and running them from Bash\n"
             "keeps them in the transcript and under the pre-bash guards.\n"
+            % ", ".join(EXECUTABLE)
         )
         return 2
+
+    if sub == "resolve-gitlinks":
+        # ALL-OR-NOTHING ON THE CONFLICT SET. Resolving the gitlinks while file
+        # conflicts remain leaves a half-resolved index that looks closer to
+        # done than it is, and the next `--continue` fails for a reason that no
+        # longer names the gitlink. Refuse, and say exactly what is left.
+        others = {}
+        paths = conflicted_paths(root) or {}
+        for path, stages in paths.items():
+            kind, _why = classify_conflict(root, path, stages)
+            if kind != "gitlink":
+                others[path] = kind
+        if others:
+            sys.stderr.write(
+                "\nREFUSED: %d non-gitlink conflict(s) are still unresolved:\n%s\n"
+                "Resolving only the gitlinks would leave a half-resolved index that\n"
+                "reads as nearly done. Settle these first, then re-run.\n"
+                % (
+                    len(others),
+                    "\n".join("    %s (%s)" % (p, k) for p, k in sorted(others.items())),
+                )
+            )
+            return 2
+        done, failed = plan.run()
+        sys.stdout.write("\n%d command(s) ran.\n" % len(done))
+        if failed:
+            argv_, cwd_, err_ = failed
+            sys.stderr.write(
+                "\nHALTED: `git -C %s %s` failed.\n%s\n"
+                "Recover with `git rebase --abort`; nothing here is irreversible.\n"
+                % (cwd_, " ".join(argv_), err_)
+            )
+            return 1
+        sys.stdout.write("Now: git rebase --continue\n")
+        return 0
 
     sys.stdout.write("\nUNDO -- the pre-push remote tips, the only recovery a force-push has:\n")
     for path, _b in [(p_, b_) for p_, b_ in submodules(root)] + [(".", None)]:
