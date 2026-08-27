@@ -5477,3 +5477,104 @@ messages say.
 --selftest` 18, was 10; `test-rebase-resolve.sh` 9/9 and
 `test-swallowed-failures.sh` 22/0 under the stripped git env. Every new control
 is paired, and four reproduce the actual defect rather than the fix.
+
+## 0827-1, later: a name is not a target, and a lane that measured a moving tree
+
+### Four guards read a MENTION as a WRITE
+
+`block-bash-write-to-running-script.sh` took every `.sh` token in a command as a
+candidate target once a python heredoc appeared. Correct for a heredoc naming its
+target; wrong for one whose payload merely *mentions* a script, which is what
+documentation, a hook message and a commit body routinely do. It refused three
+consecutive honest edits, then refused the commit message describing the fix.
+
+Targets are now resolved from both places a command names one — python positions
+(assignment, `open(`, `Path(`) and shell redirects, at any extension. If any
+target resolves, that set is authoritative; if none of them is a shell script,
+the command writes none however many it names. Only when NOTHING resolves does
+the broad scan run.
+
+**Two wrong cuts on the way, both caught by a control rather than by review.**
+The first asked "did the precise pass find a `.sh`?" and fell back to broad when
+it did not — the false positive's exact shape, so it changed nothing. The second
+harvested redirect targets only when they ended in `.sh`, so `cat > notes.txt`
+read as unidentifiable while its target sat in plain sight.
+
+`block-roundlog-truncate.sh` had the same defect one file over and got the same
+treatment, keeping FAIL CLOSED when no target resolves — that unresolvable
+`p.write_text(s[:i] + new)` is what destroyed the round history on 2026-08-19.
+
+### Three of six entries in the devbox routing table were wrong
+
+`block-host-toolchain-run.sh` routes a gate at the devbox when the host lacks its
+binary. But `check:ci-shell-lint`, `check:ci-shell-format` and
+`check:ci-actionlint` all provision their own PINNED tool — the first two via
+`toolchain_acquire`, whose whole purpose is that a bare `command -v` accepts any
+version. Verified with neither binary on PATH: all three exit 0. The guard was
+refusing gates that work, with specific advice to install something unnecessary.
+The criterion now lives in the file beside the table, with three controls.
+
+Its refusal message also **executed backticks**: both heredocs interpolate
+`$NEED` so they are unquoted, and the text said `` `devbox remove` ``, which bash
+ran — printing `devbox: command not found` above the refusal. Same trap that ate
+a `PR-TASK` trailer out of a commit message the same night.
+
+### `check:ci-renet` never reached govulncheck
+
+It died at exit 127: `go install` writes to `$(go env GOPATH)/bin`, which is on
+no PATH. **Four instances** — `format.sh`, `lint.sh`, `deadcode.sh`,
+`run-tests.sh` — so patching one just moved the failure to the next script.
+Fixed once in the `common.sh` all six source. CI never hit it because
+`actions/setup-go` adds that directory itself: invisible where it is tested,
+fatal where it is used.
+
+Its old "fast" tier was therefore **the cost of crashing early**. Once it ran for
+real: 40.4s, over the pre-push budget, now `slow: true`. The tier oracle caught
+that itself.
+
+The fix is committed as `3f49e09` on renet branch `0827-1` but the console
+pointer is deliberately restored: `check-submodule-branches.sh` requires a
+pointer change to carry a matching branch AND a linked submodule PR.
+
+### THE LANE MEASURED A MOVING TREE, twice
+
+`check:lint`, `check:ci-toolchain-pins`, `check:ci-browser-smoke` and
+`check:ci-ssr-locale` failed in BOTH whole-lane runs and passed standalone every
+time. Not the code: `check-toolchain-pins.sh` derives ROOT from `BASH_SOURCE`, no
+gate writes `.devcontainer/Dockerfile`, and the `COPY toolchain.env` it demanded
+is at line 222 of the commit under test. **This worktree is shared with a live
+peer session and a whole-lane run takes ~12 minutes**, so anything they touch in
+that window becomes a false red.
+
+`dirtyDigest()` was sampled once, at start, so nothing said the ground had moved.
+The receipt now samples again at the end, records `stable`, and warns by name. It
+does NOT detect an edit reverted inside the window — two samples cannot, and the
+doc comment says so. Not wired as a gate: any automated form must plant a change
+while a lane is in flight, so it races the gate it times. It ships as
+`.ci/scripts/test/manual/probe-receipt-stability.sh`.
+
+**That control took three attempts and each failure reported success.**
+`--only check:types` matched zero gates (slow-tier, which `--quick` defers), so
+the run refused instantly and a stale receipt read `stable:true`. Then the probe
+file was named `*.tmp`, which `.gitignore:73` hides from `git status`, so the
+digest never moved. It now asserts both its own visibility and that a gate was
+selected.
+
+### Corrections to earlier entries here
+
+- The line above stating `check-dead-bash` flags an untracked
+  `.ci/docker/run-in-render.sh` is superseded: the orphan was
+  `.ci/docker/run-in-web.sh`, the TOP of that chain (its siblings are reachable —
+  `run-in-tts.sh` from `tts/Dockerfile`, `run-in-render.sh` from `run-in-web.sh`),
+  which is why nothing could name it. Declared `manual:` with that mechanism.
+- **The quick lane defers 62 gates.** Reporting lane health from `ci:quick` is
+  how this session claimed "green but for one gate" and was wrong; the whole lane
+  found ten.
+
+### Counts
+
+`test-hooks.sh` 1555/0 (was 1551) — the four added cases separate a NAME from a
+TARGET, which none of the guard's 23 existing cases did. `gate-test:claude-hooks`
+green at 732.5s. `check-gate-manifest` 319 entries, 318 measured, 19 controls.
+`shfmt.sh` now exits 77 (CANNOT_RUN) rather than 1 when its toolchain is
+unusable, the convention `check-python-lint.sh:170` set.
