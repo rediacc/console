@@ -3993,6 +3993,27 @@ export const GATES: readonly GateSpec[] = [
     },
   },
   {
+    // Which BRANCH the trailer guard is judging, in four HEAD states. Not in
+    // test-hooks.sh because every case needs a real repo detached, or halted
+    // mid-rebase, and that suite's `check` helper drives the guard against the
+    // live tree with no env or cwd control. The defect it pins was invisible on
+    // a developer machine and unconditional in CI: `rev-parse --abbrev-ref HEAD`
+    // prints the string "HEAD" when detached, so the guard looked for
+    // agent/pr/HEAD.md and had no epic set to catch a typo'd id against.
+    id: 'gate-test:untagged-commit-branch',
+    run: '.ci/scripts/test/gates/test-untagged-commit-branch.sh',
+    gate: true,
+    qualityGateTest: true,
+    leaves: ['.ci/scripts/test/gates/test-untagged-commit-branch.sh'],
+    paths: ['.claude/hooks/pre-bash/block-untagged-commit.sh'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-security',
+      step: 'Quality-gate unit tests',
+    },
+  },
+  {
     id: 'gate-test:profiler-coverage',
     run: '.ci/scripts/test/gates/test-profiler-coverage.sh',
     gate: true,
