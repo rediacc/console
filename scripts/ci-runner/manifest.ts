@@ -482,7 +482,9 @@ export const GATES: readonly GateSpec[] = [
     id: 'check:ci-setup-idempotency',
     run: 'npm run check:ci-setup-idempotency',
     gate: true,
-    paths: ['.ci/lib/**', 'run.sh'],
+    paths: ['.ci/lib/**', 'run.sh',
+      '.ci/scripts/quality/check-setup-idempotency.sh',
+    ],
     leaves: ['.ci/scripts/quality/check-setup-idempotency.sh'],
     ci: {
       kind: 'step',
@@ -611,7 +613,9 @@ export const GATES: readonly GateSpec[] = [
     id: 'check:ci-devcontainer-scripts',
     run: 'npm run check:ci-devcontainer-scripts',
     gate: true,
-    paths: ['.devcontainer/**'],
+    paths: ['.devcontainer/**',
+      '.ci/scripts/quality/check-devcontainer-scripts.sh',
+    ],
     leaves: ['.ci/scripts/quality/check-devcontainer-scripts.sh'],
     ci: {
       kind: 'step',
@@ -675,6 +679,28 @@ export const GATES: readonly GateSpec[] = [
     },
   },
   {
+    // The manifest is the pre-push lane's only source of truth about which
+    // gates are cheap and which files select them, and nothing re-reads it.
+    // Three oracles, each with both directions in --selftest: a `slow` claim
+    // must agree with the measured cache BOTH ways (a cheap gate marked slow
+    // is the invisible direction -- the push stays fast while coverage
+    // shrinks); a gate declaring paths must include its own leaves, or editing
+    // the gate does not select the gate; and a declared glob must match at
+    // least one tracked file. Found eight live leaf violations and one
+    // mis-tiered gate on its first run.
+    id: 'check:ci-gate-manifest',
+    run: 'npm run check:ci-gate-manifest',
+    gate: true,
+    paths: ['scripts/ci-runner/**', 'scripts/check-gate-manifest.ts'],
+    leaves: ['scripts/check-gate-manifest.ts'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-code',
+      step: 'Gate manifest self-consistency',
+    },
+  },
+  {
     id: 'check:ci-hook-integrity',
     run: 'npm run check:ci-hook-integrity',
     gate: true,
@@ -685,6 +711,7 @@ export const GATES: readonly GateSpec[] = [
       '.claude/hooks/**',
       'scripts/data/hook-inventory-baseline.json',
       'scripts/data/hook-coverage-baseline.json',
+      '.ci/scripts/quality/check-hook-integrity.sh',
     ],
     leaves: ['.ci/scripts/quality/check-hook-integrity.sh'],
     ci: {
@@ -702,6 +729,7 @@ export const GATES: readonly GateSpec[] = [
     // offender for as long as it existed.
     id: 'check:ci-pipefail-grep-q',
     run: 'npm run check:ci-pipefail-grep-q',
+    slow: true, // 13.5s standalone / 37.0s contended: it greps every shell file twice
     gate: true,
     paths: ['.ci/scripts/**', 'scripts/**', '.claude/hooks/**'],
     leaves: ['.ci/scripts/quality/check-pipefail-grep-q.sh'],
@@ -724,6 +752,7 @@ export const GATES: readonly GateSpec[] = [
       '.claude/agents/**',
       '.claude/hooks/**',
       'docs/agent-reference/**',
+      '.ci/scripts/quality/check-ci-watch-recipe.sh',
     ],
     leaves: ['.ci/scripts/quality/check-ci-watch-recipe.sh'],
     ci: {
@@ -744,6 +773,7 @@ export const GATES: readonly GateSpec[] = [
       '.claude/skills/ci-watch/**',
       'scripts/ci-runner/run.ts',
       'docs/agent-reference/ci-gates.md',
+      '.ci/scripts/quality/check-cli-doc-coverage.sh',
     ],
     leaves: ['.ci/scripts/quality/check-cli-doc-coverage.sh'],
     ci: {
@@ -4039,7 +4069,10 @@ export const GATES: readonly GateSpec[] = [
       '.ci/scripts/test/gates/test-rebase-resolve.sh',
       '.ci/scripts/test/lib/git-fixture.sh',
     ],
-    paths: ['.claude/hooks/stop/wl_git.py'],
+    paths: ['.claude/hooks/stop/wl_git.py',
+      '.ci/scripts/test/gates/test-rebase-resolve.sh',
+      '.ci/scripts/test/lib/git-fixture.sh',
+    ],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -4060,7 +4093,9 @@ export const GATES: readonly GateSpec[] = [
     gate: true,
     qualityGateTest: true,
     leaves: ['.ci/scripts/test/gates/test-untagged-commit-branch.sh'],
-    paths: ['.claude/hooks/pre-bash/block-untagged-commit.sh'],
+    paths: ['.claude/hooks/pre-bash/block-untagged-commit.sh',
+      '.ci/scripts/test/gates/test-untagged-commit-branch.sh',
+    ],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',

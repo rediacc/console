@@ -543,6 +543,13 @@ jobs:
       - name: Hook integrity
         run: .ci/scripts/quality/check-hook-integrity.sh
 
+      # The manifest decides which gates the PRE-PUSH lane runs, so a wrong
+      # `slow` marking or a path set that omits a gate's own implementation
+      # silently shrinks local coverage. Both directions are pinned in its
+      # --selftest, which this step runs first.
+      - name: Gate manifest self-consistency
+        run: npm run check:ci-gate-manifest
+
       # Hermetic text check: the canonical CI-watch loop must live in one
       # place and be attempt-stable. Nine divergent copies existed before this,
       # several handing out a form that exits on the first `completed` -- which
