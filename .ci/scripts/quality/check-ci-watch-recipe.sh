@@ -20,6 +20,7 @@
 #   D. The sanctioned registry is self-consistent and its tools exist.
 #   E. The script's own --help works.
 #   F. The skill teaches --run for a DISPATCHED run, not --ref.
+#   G. Every CLI flag the script actually has is taught in the skill.
 #
 # Controls are built by CONSTRUCTION (fixtures written literally), never by
 # pattern-substituting real source, so rewording a target cannot silently void
@@ -234,6 +235,72 @@ else
     fail "F. $SKILL no longer teaches --run for a dispatched run -- this is exactly" \
         "how the 2026-08-26 false-green (main read GREEN while a Release run was" \
         "still tagging/deploying) would silently come back"
+fi
+
+# ---- G. every CLI flag ci-trace.py actually has is taught in the skill --------
+# Check F fixed ONE instance (--run for dispatched runs) of a class: the skill
+# is the single doc a session reads to learn this tool, but nothing kept it in
+# sync with the tool's own CLI surface -- --until-final and --timeout existed
+# and were undocumented in SKILL.md at the time this check was written, found
+# by running the extraction below, not assumed.
+#
+# Source of truth is the SCRIPT's own argparse block, not another doc (a
+# doc-vs-doc comparison is exactly as capable of both being stale together;
+# a doc-vs-SOURCE comparison cannot drift without either the flag or the
+# doc actually changing). -h/--help is excluded: argparse always provides it
+# and it needs no teaching.
+#
+# Scoped to the line AFTER each `add_argument(` call, not every quoted
+# `--flag` in the file: a bare `grep -oE '"--[a-z-]+"'` over the whole script
+# also matched internal subprocess flags the script shells out to (git's
+# `--abbrev-ref`, gh's `--repo`) that are not part of ci-trace.py's own CLI
+# surface at all -- caught by running this before trusting it, not assumed.
+mapfile -t cli_flags < <(
+    grep -A1 "add_argument(" "$TRACE" | grep -oE '"--[a-z][a-z-]*"' | tr -d '"' | sort -u
+)
+if [ "${#cli_flags[@]}" -eq 0 ]; then
+    fail "G. found ZERO flags in $TRACE_REL -- the extraction broke, not the script"
+elif [ ! -f "$SKILL" ]; then
+    fail "G. $SKILL is missing"
+else
+    missing=()
+    for flag in "${cli_flags[@]}"; do
+        grep -qF -- "$flag" "$SKILL" || missing+=("$flag")
+    done
+    if [ "${#missing[@]}" -eq 0 ]; then
+        pass "G. every one of ${#cli_flags[@]} CLI flag(s) in $TRACE_REL is taught in the skill"
+    else
+        fail "G. $SKILL does not mention: ${missing[*]} -- a flag that exists but is" \
+            "never taught is invisible to any session reading only the skill"
+    fi
+
+    # CONTROL, built by construction: a REAL copy of the skill with one real
+    # flag's only mention replaced, not a synthetic fixture -- the extraction
+    # above must fire on it, or this whole check proves nothing.
+    if [ -f "$SKILL" ] && [ "${#cli_flags[@]}" -gt 0 ]; then
+        cp "$SKILL" "$TMP/skill-missing-flag.md"
+        target=""
+        for flag in "${cli_flags[@]}"; do
+            if grep -qF -- "$flag" "$TMP/skill-missing-flag.md"; then
+                target="$flag"
+                break
+            fi
+        done
+        if [ -z "$target" ]; then
+            fail "G control: no flag found in the skill to remove -- the fixture cannot test anything"
+        else
+            sed -i "s/${target//-/\\-}/REDACTED/g" "$TMP/skill-missing-flag.md"
+            ctrl_missing=()
+            for flag in "${cli_flags[@]}"; do
+                grep -qF -- "$flag" "$TMP/skill-missing-flag.md" || ctrl_missing+=("$flag")
+            done
+            if [[ " ${ctrl_missing[*]} " == *" $target "* ]]; then
+                pass "G control: removing $target's only mention is detected"
+            else
+                fail "G control: removing $target's only mention was NOT detected -- the check cannot fail"
+            fi
+        fi
+    fi
 fi
 
 echo
