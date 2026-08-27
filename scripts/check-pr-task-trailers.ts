@@ -112,6 +112,29 @@ const selftest = (): number => {
     judge([{ sha: 's1', message: 'x\n\nPR-TASK: abc123\nPR-TASK: bbb111' }], known).length === 1
   );
   check('no commits yields no verdicts', judge([], known).length === 0);
+
+  // BASE-REF RESOLUTION, the CI-only failure this gate died on: PR_BASE_REF was
+  // set correctly and the ref was still absent from the checkout, so the gate
+  // reported an "ambiguous argument" about the RANGE and said nothing about the
+  // missing fetch. Both directions, against real git rather than a stub -- a
+  // stub would only prove the helper's arithmetic, and the defect was that the
+  // ref genuinely was not there.
+  const canResolve = (ref: string): boolean => {
+    try {
+      execFileSync('git', ['rev-parse', '--verify', '--quiet', `${ref}^{commit}`], {
+        cwd: REPO,
+        stdio: 'ignore',
+      });
+      return true;
+    } catch {
+      return false;
+    }
+  };
+  check('a ref that exists resolves', canResolve('HEAD'));
+  check(
+    'CONTROL: a ref that cannot exist does NOT resolve, so the guard can fire',
+    !canResolve('origin/zzz-no-such-ref-ever')
+  );
   return fail === 0 ? 0 : 1;
 };
 
