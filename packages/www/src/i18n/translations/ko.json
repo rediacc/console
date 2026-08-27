@@ -95,7 +95,8 @@
     },
     "submit": "메시지 보내기",
     "success": "메시지가 전송되었습니다! 48시간 이내에 답변드리겠습니다.",
-    "title": "문의하기"
+    "title": "문의하기",
+    "errorRequiredFields": "이름, 이메일, 메시지를 입력해 주세요."
   },
   "documentation": {
     "browse": {
@@ -314,7 +315,8 @@
     "subscribe": "구독하기",
     "successMessage": "받은 편지함에서 구독을 확인해 주세요",
     "title": "뉴스레터",
-    "unsubscribed": "구독이 취소됐어요. 떠나셔서 아쉬워요"
+    "unsubscribed": "구독이 취소됐어요. 떠나셔서 아쉬워요",
+    "errorRequiredEmail": "이메일 주소를 입력해 주세요."
   },
   "notASlice": {
     "overline": "하나의 도구. 전체 스택.",
@@ -7808,7 +7810,8 @@
         "submitLabel": "PDF 보내주세요",
         "successBody": "새 탭에서 열어 두었으며, 링크를 이메일로도 보내드렸습니다. 잠시 후 창이 닫힙니다.",
         "successTitle": "PDF를 발송했습니다",
-        "title": "기술 브리프 받기"
+        "title": "기술 브리프 받기",
+        "errorRequiredEmail": "이메일 주소를 입력해 주세요."
       },
       "migrationSafety": {
         "benefits": {

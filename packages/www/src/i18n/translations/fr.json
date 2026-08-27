@@ -95,7 +95,8 @@
     },
     "submit": "Envoyer le message",
     "success": "Message envoyé ! Nous vous répondrons sous 48 heures.",
-    "title": "Nous contacter"
+    "title": "Nous contacter",
+    "errorRequiredFields": "Veuillez indiquer votre nom, votre e-mail et votre message."
   },
   "documentation": {
     "browse": {
@@ -314,7 +315,8 @@
     "subscribe": "S'abonner",
     "successMessage": "Vérifiez votre boîte mail pour confirmer votre inscription.",
     "title": "Newsletter",
-    "unsubscribed": "Vous avez été désabonné. C'est dommage de vous voir partir."
+    "unsubscribed": "Vous avez été désabonné. C'est dommage de vous voir partir.",
+    "errorRequiredEmail": "Veuillez saisir votre adresse e-mail."
   },
   "notASlice": {
     "overline": "Un outil. L'infrastructure complète.",
@@ -7811,7 +7813,8 @@
         "submitLabel": "M'envoyer le PDF",
         "successBody": "Nous l'avons ouvert dans un nouvel onglet et vous avons envoyé le lien par e-mail. Fermeture dans un instant.",
         "successTitle": "PDF en route",
-        "title": "Obtenir la note technique"
+        "title": "Obtenir la note technique",
+        "errorRequiredEmail": "Veuillez saisir votre adresse e-mail."
       },
       "migrationSafety": {
         "benefits": {

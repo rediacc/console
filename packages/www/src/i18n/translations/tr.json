@@ -95,7 +95,8 @@
     },
     "submit": "Mesaj Gönder",
     "success": "Mesaj gönderildi! 48 saat içinde size dönüş yapacağız.",
-    "title": "İletişime Geçin"
+    "title": "İletişime Geçin",
+    "errorRequiredFields": "Lütfen adınızı, e-posta adresinizi ve mesajınızı girin."
   },
   "documentation": {
     "browse": {
@@ -314,7 +315,8 @@
     "subscribe": "Abone ol",
     "successMessage": "Gelen kutunuzu kontrol edin, onay e-postası orada.",
     "title": "Haberler",
-    "unsubscribed": "Aboneliğiniz iptal edildi. Gittiğinizi görmek üzücü."
+    "unsubscribed": "Aboneliğiniz iptal edildi. Gittiğinizi görmek üzücü.",
+    "errorRequiredEmail": "Lütfen e-posta adresinizi girin."
   },
   "notASlice": {
     "overline": "Bir araç. Her şey.",
@@ -7800,7 +7802,8 @@
         "submitLabel": "PDF'yi bana gönder",
         "successBody": "PDF'yi yeni bir sekmede açtık ve bağlantıyı size e-posta ile gönderdik. Bu pencere kısa süre içinde kapanacak.",
         "successTitle": "PDF yolda",
-        "title": "Teknik özeti edinin"
+        "title": "Teknik özeti edinin",
+        "errorRequiredEmail": "Lütfen e-posta adresinizi girin."
       },
       "migrationSafety": {
         "benefits": {

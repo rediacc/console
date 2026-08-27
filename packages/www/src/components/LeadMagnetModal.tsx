@@ -89,7 +89,11 @@ const LeadMagnetModal: React.FC = () => {
     e.preventDefault();
     if (!opts) return;
     const email = emailRef.current?.value.trim();
-    if (!email) return;
+    if (!email) {
+      setState('error');
+      setErrorMsg(t('pages.solutionPages.leadMagnetModal.errorRequiredEmail'));
+      return;
+    }
 
     if (captchaEnabled && !turnstileToken) {
       setState('error');

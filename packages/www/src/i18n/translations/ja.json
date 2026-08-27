@@ -95,7 +95,8 @@
     },
     "submit": "メッセージを送信",
     "success": "メッセージが送信されました！48時間以内にご返信いたします。",
-    "title": "お問い合わせ"
+    "title": "お問い合わせ",
+    "errorRequiredFields": "お名前、メールアドレス、メッセージをご入力ください。"
   },
   "documentation": {
     "browse": {
@@ -314,7 +315,8 @@
     "subscribe": "購読する",
     "successMessage": "受信トレイを確認して、購読を確定してください。",
     "title": "メールマガジン",
-    "unsubscribed": "購読が解除されました。ご利用ありがとうございました。"
+    "unsubscribed": "購読が解除されました。ご利用ありがとうございました。",
+    "errorRequiredEmail": "メールアドレスをご入力ください。"
   },
   "notASlice": {
     "overline": "1つのツール。完全対応。",
@@ -7790,7 +7792,8 @@
         "submitLabel": "PDFを送ってください",
         "successBody": "新しいタブで開き、リンクをメールでもお送りしました。まもなくこのウィンドウを閉じます。",
         "successTitle": "PDFを送信しました",
-        "title": "技術概要書を入手する"
+        "title": "技術概要書を入手する",
+        "errorRequiredEmail": "メールアドレスをご入力ください。"
       },
       "migrationSafety": {
         "benefits": {

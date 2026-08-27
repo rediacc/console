@@ -95,7 +95,8 @@
     },
     "submit": "Enviar Mensagem",
     "success": "Mensagem enviada! Responderemos em até 48 horas.",
-    "title": "Entre em Contacto"
+    "title": "Entre em Contacto",
+    "errorRequiredFields": "Por favor, preencha o seu nome, e-mail e mensagem."
   },
   "documentation": {
     "browse": {
@@ -314,7 +315,8 @@
     "subscribe": "Inscrever",
     "successMessage": "Verifique sua caixa de entrada para confirmar.",
     "title": "Boletim",
-    "unsubscribed": "Sua inscrição foi cancelada. Fico triste em vê-lo partir."
+    "unsubscribed": "Sua inscrição foi cancelada. Fico triste em vê-lo partir.",
+    "errorRequiredEmail": "Por favor, introduza o seu e-mail."
   },
   "notASlice": {
     "overline": "Uma ferramenta. Tudo.",
@@ -7831,7 +7833,8 @@
         "submitLabel": "Enviar-me o PDF",
         "successBody": "Abrimos num novo separador e enviámos o link por email. Esta janela fecha em breve.",
         "successTitle": "PDF a caminho",
-        "title": "Obter o briefing técnico"
+        "title": "Obter o briefing técnico",
+        "errorRequiredEmail": "Por favor, introduza o seu e-mail."
       },
       "migrationSafety": {
         "benefits": {

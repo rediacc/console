@@ -95,7 +95,8 @@
     },
     "submit": "Enviar mensaje",
     "success": "¡Mensaje enviado! Le responderemos en un plazo de 48 horas.",
-    "title": "Contáctenos"
+    "title": "Contáctenos",
+    "errorRequiredFields": "Por favor, indique su nombre, correo electrónico y mensaje."
   },
   "documentation": {
     "browse": {
@@ -314,7 +315,8 @@
     "subscribe": "Suscribirse",
     "successMessage": "Revisa tu bandeja de entrada para confirmar tu suscripción.",
     "title": "Boletín",
-    "unsubscribed": "Te has dado de baja. Lamentamos verte partir."
+    "unsubscribed": "Te has dado de baja. Lamentamos verte partir.",
+    "errorRequiredEmail": "Por favor, introduzca su correo electrónico."
   },
   "notASlice": {
     "overline": "Una herramienta. Tu stack completo.",
@@ -7807,7 +7809,8 @@
         "submitLabel": "Enviarme el PDF",
         "successBody": "Lo hemos abierto en una nueva pestaña y le hemos enviado el enlace por correo. Esta ventana se cerrará en un momento.",
         "successTitle": "PDF en camino",
-        "title": "Obtenga el informe técnico"
+        "title": "Obtenga el informe técnico",
+        "errorRequiredEmail": "Por favor, introduzca su correo electrónico."
       },
       "migrationSafety": {
         "benefits": {

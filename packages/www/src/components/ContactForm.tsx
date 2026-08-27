@@ -45,6 +45,23 @@ const ContactForm: React.FC<Props> = ({ interest }) => {
     e.preventDefault();
     setState('loading');
     setErrorMsg('');
+    // BEFORE the captcha guard, deliberately: an empty form sails straight past
+    // that one, POSTs an empty payload, and renders "Something went wrong" from
+    // the network-error branch -- which reads as a broken site rather than as a
+    // form the visitor has not filled in.
+    // BOUND FIRST, then tested -- the shape PartnerApplicationForm.tsx:149 uses.
+    // Testing `nameRef.current?.value.trim()` inline reads identically to a
+    // human and is invisible to check-form-validation, whose fieldIdentifiers()
+    // only recognises a field that is assigned to a variable. It also stops the
+    // payload below reading each ref a second time.
+    const name = nameRef.current?.value.trim() ?? '';
+    const email = emailRef.current?.value.trim() ?? '';
+    const message = messageRef.current?.value.trim() ?? '';
+    if (!name || !email || !message) {
+      setState('error');
+      setErrorMsg(t('contactModal.errorRequiredFields'));
+      return;
+    }
     if (captchaEnabled && !turnstileToken) {
       setState('error');
       setErrorMsg(t('captchaRequired') || 'Please complete captcha verification.');
@@ -57,10 +74,10 @@ const ContactForm: React.FC<Props> = ({ interest }) => {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          name: nameRef.current?.value.trim(),
-          email: emailRef.current?.value.trim(),
+          name,
+          email,
           subject: selectedSubject,
-          message: messageRef.current?.value.trim(),
+          message,
           source: 'contact-page',
           lang: currentLang,
           company_url: honeypotValue === '' ? undefined : honeypotValue,

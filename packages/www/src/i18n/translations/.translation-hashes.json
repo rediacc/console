@@ -2,8 +2,8 @@
   "$meta": {
     "algorithm": "crc32",
     "sourceLanguage": "en",
-    "keyCount": 6212,
-    "sourceCommit": "5c8e0049377b96b7616179531fa28bd327774137"
+    "keyCount": 6215,
+    "sourceCommit": "2c473c6777458615c82ab0a3d1841b6f34c91af1"
   },
   "hashes": {
     "announcement.link": "767605c6",
@@ -57,6 +57,7 @@
     "contactModal.close": "d2c0aec0",
     "contactModal.description": "cb8bca83",
     "contactModal.error": "4d77468b",
+    "contactModal.errorRequiredFields": "11f6394f",
     "contactModal.fields.email": "26535370",
     "contactModal.fields.emailPlaceholder": "324db907",
     "contactModal.fields.message": "790009e3",
@@ -214,6 +215,7 @@
     "newsletter.confirmed": "9a2e1f39",
     "newsletter.description": "001e168f",
     "newsletter.errorGeneric": "4d77468b",
+    "newsletter.errorRequiredEmail": "be9fc167",
     "newsletter.pageDescription": "06203633",
     "newsletter.pageTitle": "fa5c14d3",
     "newsletter.placeholder": "b25a2019",
@@ -4524,6 +4526,7 @@
     "pages.solutionPages.leadMagnetModal.emailLabel": "7a40bb9f",
     "pages.solutionPages.leadMagnetModal.emailPlaceholder": "324db907",
     "pages.solutionPages.leadMagnetModal.errorGeneric": "970200ef",
+    "pages.solutionPages.leadMagnetModal.errorRequiredEmail": "be9fc167",
     "pages.solutionPages.leadMagnetModal.sendingLabel": "57cf7ca4",
     "pages.solutionPages.leadMagnetModal.submitLabel": "b87925c3",
     "pages.solutionPages.leadMagnetModal.successBody": "8a85c8bf",

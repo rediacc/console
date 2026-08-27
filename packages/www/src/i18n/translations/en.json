@@ -272,7 +272,8 @@
       "close": "Close popup",
       "note": "We use your email to send product updates. You can unsubscribe at any time."
     },
-    "privacyNote": "We respect your privacy. Unsubscribe at any time."
+    "privacyNote": "We respect your privacy. Unsubscribe at any time.",
+    "errorRequiredEmail": "Please enter your email address."
   },
   "captchaRequired": "Please complete the captcha verification.",
   "regionPicker": {
@@ -305,7 +306,8 @@
     "sending": "Sending...",
     "success": "Message sent! We'll get back to you within 48 hours.",
     "error": "Something went wrong. Please try again.",
-    "close": "Close"
+    "close": "Close",
+    "errorRequiredFields": "Please fill in your name, email, and message."
   },
   "pages": {
     "home": {
@@ -9238,7 +9240,8 @@
         "errorGeneric": "Something went wrong. Please try again or reach out at support@rediacc.com.",
         "captchaRequired": "Please complete the captcha verification.",
         "disclaimer": "One email. No marketing list. Unsubscribe with one click.",
-        "closeLabel": "Close"
+        "closeLabel": "Close",
+        "errorRequiredEmail": "Please enter your email address."
       },
       "leadMagnetButton": {
         "title": "Get the technical brief",

@@ -95,7 +95,8 @@
     },
     "submit": "Saada sõnum",
     "success": "Sõnum saadetud! Vastame sulle 48 tunni jooksul.",
-    "title": "Võta ühendust"
+    "title": "Võta ühendust",
+    "errorRequiredFields": "Palun sisestage oma nimi, e-posti aadress ja sõnum."
   },
   "documentation": {
     "browse": {
@@ -314,7 +315,8 @@
     "subscribe": "Telli",
     "successMessage": "Vaata oma postkasti tellimuse kinnitamiseks.",
     "title": "Uudiskiri",
-    "unsubscribed": "Oled tellimusest loobunud. Kahju, et lahkud."
+    "unsubscribed": "Oled tellimusest loobunud. Kahju, et lahkud.",
+    "errorRequiredEmail": "Palun sisestage oma e-posti aadress."
   },
   "notASlice": {
     "overline": "Üks tööriist. Kogu pinu.",
@@ -7823,7 +7825,8 @@
         "submitLabel": "Saada mulle PDF",
         "successBody": "Avasime selle uuel vahekaardil ja saatsime sulle lingi e-postiga. Sulgen akna hetke pärast.",
         "successTitle": "PDF on teel",
-        "title": "Hangi tehniline ülevaade"
+        "title": "Hangi tehniline ülevaade",
+        "errorRequiredEmail": "Palun sisestage oma e-posti aadress."
       },
       "migrationSafety": {
         "benefits": {

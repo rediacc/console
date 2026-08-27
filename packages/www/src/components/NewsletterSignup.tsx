@@ -42,7 +42,15 @@ const NewsletterSignup: React.FC<Props> = ({
   const handleSubmit = async (e: React.SyntheticEvent<HTMLFormElement>) => {
     e.preventDefault();
     const email = inputRef.current?.value.trim();
-    if (!email) return;
+    // A BARE `return` HERE MADE THE BUTTON DEAD. The form sets noValidate, so
+    // the browser does not enforce `required`; an empty submit read the input,
+    // found nothing, and returned without a message, a focus move or a state
+    // change. Nothing told the visitor why, on the site's main email capture.
+    if (!email) {
+      setState('error');
+      setErrorMsg(t('newsletter.errorRequiredEmail'));
+      return;
+    }
 
     setState('loading');
     setErrorMsg('');

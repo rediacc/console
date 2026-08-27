@@ -95,7 +95,8 @@
     },
     "submit": "发送消息",
     "success": "消息已发送！我们将在48小时内回复您。",
-    "title": "联系我们"
+    "title": "联系我们",
+    "errorRequiredFields": "请填写您的姓名、电子邮箱和留言。"
   },
   "documentation": {
     "browse": {
@@ -314,7 +315,8 @@
     "subscribe": "订阅",
     "successMessage": "请检查邮箱，确认订阅。",
     "title": "通讯",
-    "unsubscribed": "已取消订阅，期待你的回归。"
+    "unsubscribed": "已取消订阅，期待你的回归。",
+    "errorRequiredEmail": "请填写您的电子邮箱。"
   },
   "notASlice": {
     "overline": "一个工具。全栈搞定。",
@@ -7765,7 +7767,8 @@
         "submitLabel": "发送 PDF",
         "successBody": "已在新标签页中打开，并通过邮件发送了链接。即将自动关闭。",
         "successTitle": "PDF 正在发送",
-        "title": "获取技术简报"
+        "title": "获取技术简报",
+        "errorRequiredEmail": "请填写您的电子邮箱。"
       },
       "migrationSafety": {
         "benefits": {

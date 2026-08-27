@@ -95,7 +95,8 @@
     },
     "submit": "Nachricht senden",
     "success": "Nachricht gesendet! Wir melden uns innerhalb von 48 Stunden.",
-    "title": "Kontakt aufnehmen"
+    "title": "Kontakt aufnehmen",
+    "errorRequiredFields": "Bitte geben Sie Ihren Namen, Ihre E-Mail-Adresse und Ihre Nachricht ein."
   },
   "documentation": {
     "browse": {
@@ -314,7 +315,8 @@
     "subscribe": "Abonnieren",
     "successMessage": "Überprüfen Sie Ihren Posteingang, um Ihr Abonnement zu bestätigen.",
     "title": "Newsletter",
-    "unsubscribed": "Sie wurden abgemeldet. Schade, dass Sie gehen."
+    "unsubscribed": "Sie wurden abgemeldet. Schade, dass Sie gehen.",
+    "errorRequiredEmail": "Bitte geben Sie Ihre E-Mail-Adresse ein."
   },
   "notASlice": {
     "overline": "Ein Tool. Der ganze Stack.",
@@ -7811,7 +7813,8 @@
         "submitLabel": "PDF zusenden",
         "successBody": "Das PDF wurde in einem neuen Tab geöffnet und der Link per E-Mail zugestellt. Dieses Fenster schließt sich gleich.",
         "successTitle": "PDF ist unterwegs",
-        "title": "Technisches Briefing anfordern"
+        "title": "Technisches Briefing anfordern",
+        "errorRequiredEmail": "Bitte geben Sie Ihre E-Mail-Adresse ein."
       },
       "migrationSafety": {
         "benefits": {
