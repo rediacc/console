@@ -349,12 +349,12 @@ except Exception as e:
     # NEVER exit 0 here. The outer bash captures this process's exit code as
     # drift_rc and treats 0 as "the comparison ran and found nothing" -- the
     # exact swallowed-failure class check-swallowed-failures.sh already caught
-    # once at the shell level (1eac336b: a `|| true` around $DRIFT made a
+    # once at the shell level (1eac336b: a no-op fallback around $DRIFT made a
     # crashed comparator indistinguishable from a clean tree). This is the
     # same defect one level down: LIVE_JSON can be malformed (a paginated
-    # `gh api` call that fails mid-stream leaves partial stdout, and the
-    # caller's `|| echo ""` fallback does not un-truncate it), and a bare
-    # `sys.exit(0)` here reported that as "names, descriptions and colours
+    # gh api call that fails mid-stream leaves partial stdout, and the
+    # caller's own empty-string fallback does not un-truncate it), and a bare
+    # sys.exit success here reported that as "names, descriptions and colours
     # all agree" with the comparison never having run.
     print("LIVE_JSON is not valid JSON: %s" % e, file=sys.stderr)
     sys.exit(1)
