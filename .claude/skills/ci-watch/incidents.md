@@ -22,9 +22,7 @@ All four were hand-rolled `gh` loops written from prose. They are why
 4. **A swallowed network blip.** `network is unreachable` mid-poll, survived
    only because that particular retry arm happened to be written correctly.
 
-The fix is structural, not another rule: keying on the PR head and reading
-`statusCheckRollup` means a rerun replaces the old attempt and an old head is
-absent entirely. 2 and 3 stop being handled and become inexpressible.
+The fix is structural: keying on the PR head makes 2 and 3 inexpressible.
 
 ## The compound watch that swallowed a red run (2026-08-24)
 
@@ -38,20 +36,25 @@ command — and now one script that owns the waiting.
 
 ## A killed watch answered as a no-op (2026-08-24)
 
-A round-4 watch was killed rather than completing. The notification was treated
-as "no response requested" and the session stopped. The run had gone **green**
-and sat unwatched, PR still in draft, until the operator asked.
+A round-4 watch was killed rather than completing; treated as "no response
+requested" and the session stopped. The run had gone **green** and sat
+unwatched, PR still in draft, until the operator asked.
+
+## `--ref main` cannot see a dispatched run (2026-08-26)
+
+A branch's `statusCheckRollup` has NO `workflow_dispatch` check runs at all:
+Release run `32968110599` was `in_progress` per the REST check-runs API while
+`--wait --ref main` read the rollup as SUCCESS, none in flight, and printed
+GREEN -- twice, including with `--until-final`. Certified a release that had
+not run. Fix: `--run <id>` reads per-JOB conclusions directly, not the branch.
 
 ## The banned tool is a convenience, not a contract
 
-Its `--exit-status` flag returns non-zero when a run fails
-(<https://cli.github.com/manual/gh_run_watch>). Still rejected: it dropped
-**four times out of four** in one campaign, and has been seen exiting 1 while
-the run was still in progress.
+`gh run watch`'s `--exit-status` returns non-zero on failure, but it dropped
+**four times out of four** in one campaign and has exited 1 mid-run.
 
 ## Why the mechanism is what it is
 
-Confirmed against the docs, not assumed: background output is written to a file
-read on demand, and the wake-up is the process exiting. Sources:
-<https://code.claude.com/docs/en/interactive-mode> and
-<https://code.claude.com/docs/en/tools-reference>.
+Confirmed against the docs: background output is written to a file read on
+demand, and the wake-up is the process exiting
+(<https://code.claude.com/docs/en/interactive-mode>).

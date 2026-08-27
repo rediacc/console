@@ -25,18 +25,18 @@ polling interval, so you never write a loop; the process exit is the wake-up.
 | 2 | no verdict: still in flight, no open PR, or unreadable |
 | 3 | head moved: a push replaced the head being watched |
 
+## Watching a DISPATCHED run (Release), not a PR's CI
+
+A branch's `statusCheckRollup` does NOT contain a `workflow_dispatch` run's
+checks. `--wait --ref main` reported GREEN while a Release run was still
+tagging/deploying. Use `--run <id>` instead (in-flight -> exit 2, success -> 0).
+
 ## Why you cannot hand-roll it
 
-Ad-hoc `gh` watch commands are **refused** by `block-adhoc-sanctioned.sh`, and a
-hand-rolled watch left running **blocks the Stop hook**. Four failures in one
-afternoon bought that ([incidents.md](incidents.md)): a stale recipe in nine
-places, a verdict from a superseded attempt, a verdict from an already-cancelled
-run, and a swallowed network blip.
-
-The script keys on the **PR head commit** and reads `statusCheckRollup`, which
-exposes the latest check run per context. A watchdog rerun therefore *replaces*
-the old attempt, and an old head is not in the rollup at all — so those failures
-are not handled, they are inexpressible.
+Ad-hoc `gh` watch commands are **refused**, and a hand-rolled watch left running
+**blocks the Stop hook** -- five incidents in one week bought that
+([incidents.md](incidents.md)). The script keys on the **PR head commit**, so a
+watchdog rerun *replaces* the old attempt rather than becoming inexpressible.
 
 ## Reading the answer
 
@@ -48,13 +48,11 @@ which, so do not re-derive it:
 | cancelled **with** a failed job | the watchdog killed the run for that failure |
 | cancelled, **zero** failures | a newer push superseded it; trace the new head |
 
-**Classify before fixing.** A job that passed on an earlier run of this branch is
-transient, already being retried, and "fixing" it edits working code. The script
-marks retryable failures as not-yet-actionable while the head is live.
+**Classify before fixing.** A job that passed on an earlier run of this branch
+is transient and already being retried; "fixing" it edits working code.
 
 ## Re-check on every wake
 
 **A watch that never fires is indistinguishable from a run that never finished.**
-Re-read on any re-invocation; a `killed`/`failed` notification is a re-arm
-trigger, not a no-op. Each push restarts the pipeline, so batch fixes into one
-push.
+A `killed`/`failed` notification is a re-arm trigger, not a no-op. Each push
+restarts the pipeline, so batch fixes into one push.
