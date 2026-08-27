@@ -28,15 +28,3 @@ github.com/landlock-lsm/go-landlock  # BLOCKER: v0.9.0 is a 0.x minor that can c
 # kubelet release requires the tagged version.
 k8s.io/kubelet
 
-# BLOCKER: spec v1.13.0 REMOVES two enum values renet's CSI sanity suite compiles
-# against: ControllerServiceCapability_RPC_VOLUME_CONDITION and
-# NodeServiceCapability_RPC_VOLUME_CONDITION (9 occurrences in v1.12.0's
-# lib/go/csi/csi.pb.go, zero in v1.13.0). They are still referenced by
-# kubernetes-csi/csi-test v5.5.0 at pkg/sanity/controller.go:149 and
-# pkg/sanity/node.go:338, so taking v1.13.0 makes `deadcode` and the sanity suite
-# fail to compile under the btrfs/root/e2e build tags. There is no upgrade path
-# today: v5.5.0 is the LATEST csi-test release (no v5.6, and no v6 module exists),
-# so the consumer cannot be moved first. Verified 2026-07-27 by taking the bump,
-# building, and reading the failure. Revisit when csi-test ships a release built
-# against spec v1.13.
-github.com/container-storage-interface/spec
