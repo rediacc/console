@@ -804,18 +804,29 @@ def repo_root():
     return out
 
 
+# HELP TEXT IS A CLAIM ABOUT THE CODE, and this one had drifted from it. As
+# found 2026-08-27 it omitted rebase-resolve and rebase-continue entirely, hid
+# verify-rebase's optional [base], and its footer said "only force-push writes"
+# while EXECUTABLE had grown to three. A session reading it would have believed
+# two verbs did not exist. The selftest now pins USAGE against the dispatch in
+# BOTH directions, so the next verb cannot be added silently.
 USAGE = """usage: worklist.py --git <subcommand> [args] [--execute]
 
-  rebase-submodules <branch>      rebase each submodule branch onto its own origin/main
-  resolve-gitlinks                resolve UU <submodule> conflicts by ancestry
-  merge-submodule <path> <sha>    verify tree-identity, then bump the pointer
-  force-push <branch>             --force-with-lease, submodules before console
-  snapshot                        print repo=sha for console + every submodule
-  verify-rebase <snapshot-file>   did every commit survive? by PATCH IDENTITY
-  rebase-status                   where an in-progress rebase stopped, and why
+  rebase-submodules <branch>       rebase each submodule branch onto its own origin/main
+  resolve-gitlinks                 resolve UU <submodule> conflicts by ancestry
+  merge-submodule <path> <sha>     verify tree-identity, then bump the pointer
+  force-push <branch>              --force-with-lease, submodules before console
+  snapshot                         print repo=sha for console + every submodule
+  verify-rebase <snap> [base]      did every commit survive? by PATCH IDENTITY
+                                   base defaults to origin/main; a BARE name is
+                                   read as the remote one, and it says so
+  rebase-status                    where an in-progress rebase stopped, and why
+  rebase-resolve                   report a halt and stage what it can decide
+                                   (all-or-nothing: any undecidable path -> none)
+  rebase-continue                  continue once every conflicted path is staged
 
-Dry run by default. Pass --execute to perform writes; only force-push writes.
-"""
+Dry run by default. Pass --execute to perform writes. Writing verbs: %s.
+""" % ", ".join(EXECUTABLE)
 
 
 def main(argv):
@@ -1390,6 +1401,31 @@ def selftest():
     # run_git completes against a core.editor that would block forever, and the
     # SAME git call without the env genuinely blocks -- without that second half
     # the first proves only that --amend works.
+    # USAGE VS THE DISPATCH, both directions. The help text had drifted: two
+    # verbs the dispatch handles were missing from it entirely. Reading the
+    # verbs out of THIS file's own source rather than restating them is what
+    # makes the control fire on the next addition instead of on nobody.
+    with open(__file__, encoding="utf-8") as _fh:
+        _src = _fh.read()
+    _dispatched = set(re.findall(r'sub == "([a-z-]+)"', _src))
+    _documented = set(re.findall(r"^  ([a-z-]+)[ <]", USAGE, re.M))
+    check(
+        "every dispatched --git verb is in USAGE",
+        bool(_dispatched) and _dispatched <= _documented,
+    )
+    check(
+        "and every verb USAGE names is dispatched",
+        bool(_documented) and _documented <= _dispatched,
+    )
+    check(
+        "CONTROL: the scan found real verbs, not an empty set matching everything",
+        "force-push" in _dispatched and "rebase-resolve" in _dispatched,
+    )
+    check(
+        "USAGE names the writing verbs from EXECUTABLE, not a stale list",
+        all(v in USAGE for v in EXECUTABLE),
+    )
+
     _ed = tempfile.mkdtemp()
     try:
         for _a in (

@@ -53,6 +53,26 @@ test_dry_run_emits_zero_object_count() {
     log_pass "object count normalises to 0 on empty/unreachable prefix"
 }
 
+# THIS SUITE NEEDS THE `aws` CLI, and without it every case fails for a reason
+# that has nothing to do with the regression it pins. Measured 2026-08-27 on a
+# developer machine: `scrub-sentinel.sh` exits 1 with `✗ Required command 'aws'
+# is not available` on stderr and prints nothing on stdout, and this suite
+# reported `dry-run must succeed even with bad credentials: expected 0, got 1`
+# -- indistinguishable from the pipefail bug coming back.
+#
+# So say which one it is. And refuse to skip in CI: a missing tool THERE is a
+# broken lane, and a suite that quietly passes over it is the gate-that-cannot-
+# fail shape this repo keeps paying for.
+if ! command -v aws >/dev/null 2>&1; then
+    if [ -n "${CI:-}" ]; then
+        log_fail "aws is missing in CI: this lane cannot run the scrub-sentinel cases at all"
+        exit 1
+    fi
+    log_info "aws is not installed here."
+    log_pass "NOT VERIFIED locally: the empty-prefix dry-run needs the aws CLI (CI runs it)"
+    exit 0
+fi
+
 test_dry_run_completes_with_no_credentials
 test_dry_run_emits_zero_object_count
 
