@@ -35,7 +35,9 @@ MSG
 }
 
 [[ $# -lt 2 ]] && usage
-PR="$1"; BRANCH="$2"; DRY="${3:-}"
+PR="$1"
+BRANCH="$2"
+DRY="${3:-}"
 REPO_ROOT="$(git rev-parse --show-toplevel)"
 SNAP="$REPO_ROOT/agent/pr/${BRANCH//\//-}.md"
 

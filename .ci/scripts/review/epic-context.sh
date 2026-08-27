@@ -89,9 +89,9 @@ if git rev-parse --verify --quiet "$BASE" >/dev/null; then
             --format='%h %s' | sed 's/^/  /'
         echo
         echo "  files touched:"
-        git log "$BASE..HEAD" --no-merges --grep="^PR-TASK: $EPIC" --format='%H' \
-            | while read -r sha; do git show --name-only --format= "$sha"; done \
-            | sort -u | sed 's/^/    /'
+        git log "$BASE..HEAD" --no-merges --grep="^PR-TASK: $EPIC" --format='%H' |
+            while read -r sha; do git show --name-only --format= "$sha"; done |
+            sort -u | sed 's/^/    /'
     fi
 else
     echo "base ref $BASE is not resolvable in this checkout; commit list skipped"

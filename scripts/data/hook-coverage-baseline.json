@@ -1,10 +1,1 @@
-[
-  "block-binary-deploy.sh",
-  "block-cli-bundle.sh",
-  "block-commit-meta.sh",
-  "block-git-empty-commit.sh",
-  "block-premature-ready.sh",
-  "block-protected-files.sh",
-  "block-second-open-pr.sh",
-  "block-shell-background-waiter.sh"
-]
+[]

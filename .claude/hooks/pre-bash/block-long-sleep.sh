@@ -23,6 +23,12 @@
 # reading used to let such text through by accident). Narrowing it to exempt
 # heredoc bodies would exempt the shape most likely to hide a real long sleep,
 # so it stays; write the file with the Write tool and pass it by path instead.
+#
+# RE-CONFIRMED 2026-08-27. Nine sibling guards were routed through
+# lib/command-scan.sh that day to stop them matching prose, and this one was
+# routed with them. The suite case pinning the 2026-08-25 ruling turned red and
+# reverted it: the shared scanner drops heredoc bodies, which is the option the
+# ruling names as the most tempting and the worst. The pin worked as designed.
 FG_MAX=20
 BG_MAX=120
 

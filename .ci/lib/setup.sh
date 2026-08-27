@@ -59,7 +59,10 @@ setup_node_toolchain() {
     # Their manager, their call. Print the command; do not drive it.
     local mgr=""
     for m in fnm nvm volta asdf mise; do
-        command -v "$m" >/dev/null 2>&1 && { mgr="$m"; break; }
+        command -v "$m" >/dev/null 2>&1 && {
+            mgr="$m"
+            break
+        }
     done
     if [[ -z "$mgr" && -s "$HOME/.nvm/nvm.sh" ]]; then mgr="nvm"; fi
     if [[ -n "$mgr" ]]; then
@@ -67,11 +70,11 @@ setup_node_toolchain() {
         log_warn "put a second toolchain on this machine:"
         echo ""
         case "$mgr" in
-            fnm)   echo "fnm install $major && fnm use $major" ;;
-            nvm)   echo "nvm install $major && nvm use $major" ;;
+            fnm) echo "fnm install $major && fnm use $major" ;;
+            nvm) echo "nvm install $major && nvm use $major" ;;
             volta) echo "volta install node@$major" ;;
-            asdf)  echo "asdf install nodejs latest:$major && asdf global nodejs latest:$major" ;;
-            mise)  echo "mise use -g node@$major" ;;
+            asdf) echo "asdf install nodejs latest:$major && asdf global nodejs latest:$major" ;;
+            mise) echo "mise use -g node@$major" ;;
         esac
         echo ""
         echo "Then re-run: ./run.sh setup"
@@ -81,14 +84,20 @@ setup_node_toolchain() {
 
     local os arch
     case "$(uname -s)" in
-        Linux)  os=linux ;;
+        Linux) os=linux ;;
         Darwin) os=darwin ;;
-        *)      log_error "Unsupported OS $(uname -s); install Node.js >= $min yourself."; return 1 ;;
+        *)
+            log_error "Unsupported OS $(uname -s); install Node.js >= $min yourself."
+            return 1
+            ;;
     esac
     case "$(uname -m)" in
-        x86_64|amd64)  arch=x64 ;;
-        aarch64|arm64) arch=arm64 ;;
-        *)             log_error "Unsupported arch $(uname -m); install Node.js >= $min yourself."; return 1 ;;
+        x86_64 | amd64) arch=x64 ;;
+        aarch64 | arm64) arch=arm64 ;;
+        *)
+            log_error "Unsupported arch $(uname -m); install Node.js >= $min yourself."
+            return 1
+            ;;
     esac
 
     if [[ ! -t 0 ]]; then
@@ -106,8 +115,8 @@ setup_node_toolchain() {
     # Resolve the newest LTS on the required major from the official index, so
     # this does not rot into a pinned version nobody remembers to bump.
     local ver
-    ver=$(curl -fsS --max-time 30 https://nodejs.org/dist/index.json 2>/dev/null \
-        | node_pick_lts "$major") || ver=""
+    ver=$(curl -fsS --max-time 30 https://nodejs.org/dist/index.json 2>/dev/null |
+        node_pick_lts "$major") || ver=""
     if [[ -z "$ver" ]]; then
         log_error "Could not resolve the latest Node.js $major LTS from nodejs.org."
         log_error "Check network access, or install Node.js >= $min yourself."
@@ -123,14 +132,16 @@ setup_node_toolchain() {
     log_step "Downloading ${base}.tar.xz"
     if ! curl -fsSL --max-time 300 "$url" -o "$tmp/$base.tar.xz"; then
         log_error "Download failed: $url"
-        rm -rf "$tmp"; return 1
+        rm -rf "$tmp"
+        return 1
     fi
 
     # Verify BEFORE extracting. An unverified tarball is the whole attack.
     log_step "Verifying checksum against the official SHASUMS256.txt"
     if ! curl -fsSL --max-time 60 "https://nodejs.org/dist/${ver}/SHASUMS256.txt" -o "$tmp/SHASUMS256.txt"; then
         log_error "Could not fetch SHASUMS256.txt; refusing to install an unverified tarball."
-        rm -rf "$tmp"; return 1
+        rm -rf "$tmp"
+        return 1
     fi
     local want got
     want=$(grep " ${base}.tar.xz\$" "$tmp/SHASUMS256.txt" | awk '{print $1}')
@@ -139,7 +150,8 @@ setup_node_toolchain() {
         log_error "Checksum MISMATCH for ${base}.tar.xz"
         log_error "  expected: ${want:-<not listed in SHASUMS256.txt>}"
         log_error "  got:      $got"
-        rm -rf "$tmp"; return 1
+        rm -rf "$tmp"
+        return 1
     fi
     log_info "Checksum verified"
 
@@ -147,7 +159,8 @@ setup_node_toolchain() {
     mkdir -p "$dest"
     if ! tar -xJf "$tmp/$base.tar.xz" -C "$dest" --strip-components=1; then
         log_error "Extraction failed."
-        rm -rf "$tmp"; return 1
+        rm -rf "$tmp"
+        return 1
     fi
     rm -rf "$tmp"
 
@@ -223,9 +236,9 @@ print(rel[0]['version'])
 # instead of running it whenever it cannot ask (non-TTY) or cannot elevate.
 setup_system_tools() {
     local missing=()
-    command -v cc   >/dev/null 2>&1 || missing+=("a C compiler")
+    command -v cc >/dev/null 2>&1 || missing+=("a C compiler")
     command -v make >/dev/null 2>&1 || missing+=("make")
-    command -v jq   >/dev/null 2>&1 || missing+=("jq")
+    command -v jq >/dev/null 2>&1 || missing+=("jq")
 
     if [[ ${#missing[@]} -eq 0 ]]; then
         log_info "System tools present: $(cc --version 2>/dev/null | head -1), jq $(jq --version 2>/dev/null)"
@@ -335,14 +348,20 @@ setup_go_toolchain() {
 
     local os arch
     case "$(uname -s)" in
-        Linux)  os=linux ;;
+        Linux) os=linux ;;
         Darwin) os=darwin ;;
-        *) log_error "Unsupported OS $(uname -s); install Go $want_ver yourself."; return 1 ;;
+        *)
+            log_error "Unsupported OS $(uname -s); install Go $want_ver yourself."
+            return 1
+            ;;
     esac
     case "$(uname -m)" in
-        x86_64|amd64)  arch=amd64 ;;
-        aarch64|arm64) arch=arm64 ;;
-        *) log_error "Unsupported arch $(uname -m); install Go $want_ver yourself."; return 1 ;;
+        x86_64 | amd64) arch=amd64 ;;
+        aarch64 | arm64) arch=arm64 ;;
+        *)
+            log_error "Unsupported arch $(uname -m); install Go $want_ver yourself."
+            return 1
+            ;;
     esac
 
     local file="go${want_ver}.${os}-${arch}.tar.gz"
@@ -358,37 +377,44 @@ setup_go_toolchain() {
         return 1
     }
 
-    local tmp; tmp=$(mktemp -d) || return 1
+    local tmp
+    tmp=$(mktemp -d) || return 1
     log_step "Resolving $file checksum from go.dev"
     local want_sha
-    want_sha=$(curl -fsS --max-time 60 "https://go.dev/dl/?mode=json&include=all" 2>/dev/null \
-        | go_pick_sha "$file")
+    want_sha=$(curl -fsS --max-time 60 "https://go.dev/dl/?mode=json&include=all" 2>/dev/null |
+        go_pick_sha "$file")
     if [[ -z "$want_sha" ]]; then
         log_error "Could not find a published checksum for $file."
         log_error "Check that $want_ver exists on https://go.dev/dl/ (the pin may be wrong)."
-        rm -rf "$tmp"; return 1
+        rm -rf "$tmp"
+        return 1
     fi
 
     log_step "Downloading $file"
     if ! curl -fsSL --max-time 600 "https://go.dev/dl/${file}" -o "$tmp/$file"; then
         log_error "Download failed: https://go.dev/dl/${file}"
-        rm -rf "$tmp"; return 1
+        rm -rf "$tmp"
+        return 1
     fi
-    local got_sha; got_sha=$(sha256sum "$tmp/$file" | awk '{print $1}')
+    local got_sha
+    got_sha=$(sha256sum "$tmp/$file" | awk '{print $1}')
     if [[ "$want_sha" != "$got_sha" ]]; then
         log_error "Checksum MISMATCH for $file"
         log_error "  expected: $want_sha"
         log_error "  got:      $got_sha"
-        rm -rf "$tmp"; return 1
+        rm -rf "$tmp"
+        return 1
     fi
     log_info "Checksum verified"
 
     local dest="$HOME/.local/share/go/${want_ver}"
     log_step "Installing to $dest"
-    rm -rf "$dest"; mkdir -p "$dest"
+    rm -rf "$dest"
+    mkdir -p "$dest"
     if ! tar -xzf "$tmp/$file" -C "$dest" --strip-components=1; then
         log_error "Extraction failed."
-        rm -rf "$tmp"; return 1
+        rm -rf "$tmp"
+        return 1
     fi
     rm -rf "$tmp"
 
@@ -485,8 +511,8 @@ setup_gh_cli() {
     fi
 
     # Verbatim from the official docs, split only for readability.
-    if ! (type -p wget >/dev/null || (sudo apt-get update && sudo apt-get install wget -y)) \
-        || ! sudo mkdir -p -m 755 /etc/apt/keyrings; then
+    if ! (type -p wget >/dev/null || (sudo apt-get update && sudo apt-get install wget -y)) ||
+        ! sudo mkdir -p -m 755 /etc/apt/keyrings; then
         log_error "Could not prepare /etc/apt/keyrings."
         return 1
     fi
@@ -494,14 +520,15 @@ setup_gh_cli() {
     out=$(mktemp) || return 1
     if ! wget -nv -O"$out" https://cli.github.com/packages/githubcli-archive-keyring.gpg; then
         log_error "Could not download the GitHub CLI keyring."
-        rm -f "$out"; return 1
+        rm -f "$out"
+        return 1
     fi
     sudo tee /etc/apt/keyrings/githubcli-archive-keyring.gpg >/dev/null <"$out"
     rm -f "$out"
     sudo chmod go+r /etc/apt/keyrings/githubcli-archive-keyring.gpg
     sudo mkdir -p -m 755 /etc/apt/sources.list.d
-    echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" \
-        | sudo tee /etc/apt/sources.list.d/github-cli.list >/dev/null
+    echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" |
+        sudo tee /etc/apt/sources.list.d/github-cli.list >/dev/null
     if ! sudo apt-get update || ! sudo apt-get install gh -y; then
         log_error "apt could not install gh. See the official instructions:"
         log_error "  https://github.com/cli/cli/blob/trunk/docs/install_linux.md"
@@ -583,9 +610,9 @@ setup_git_identity() {
     # Propose this repo's dominant human author, so a second machine matches the
     # history the first one wrote. Bots are excluded by name.
     local suggested
-    suggested=$(git log -200 --format='%an <%ae>' 2>/dev/null \
-        | grep -v '\[bot\]' | sort | uniq -c | sort -rn | head -1 \
-        | sed 's/^ *[0-9]* //')
+    suggested=$(git log -200 --format='%an <%ae>' 2>/dev/null |
+        grep -v '\[bot\]' | sort | uniq -c | sort -rn | head -1 |
+        sed 's/^ *[0-9]* //')
 
     if [[ ! -t 0 ]]; then
         log_warn "Non-interactive run; skipping the prompt. Set it yourself with:"
@@ -607,12 +634,18 @@ setup_git_identity() {
 
     if [[ -z "$want_name" ]]; then
         read -p "  Full name for git commits (blank to skip): " want_name || true
-        [[ -z "$want_name" ]] && { log_warn "Skipped; git identity still unset."; return 0; }
+        [[ -z "$want_name" ]] && {
+            log_warn "Skipped; git identity still unset."
+            return 0
+        }
         read -p "  Email for git commits (blank to skip): " want_email || true
-        [[ -z "$want_email" ]] && { log_warn "Skipped; git identity still unset."; return 0; }
+        [[ -z "$want_email" ]] && {
+            log_warn "Skipped; git identity still unset."
+            return 0
+        }
     fi
 
-    git config --global user.name  "$want_name"
+    git config --global user.name "$want_name"
     git config --global user.email "$want_email"
     log_info "Git identity set: $want_name <$want_email>"
 
@@ -666,8 +699,8 @@ setup_git_credentials() {
 
     # Does a GitHub credential actually resolve, without prompting?
     local probe_rc=0
-    printf 'protocol=https\nhost=github.com\n\n' \
-        | GIT_TERMINAL_PROMPT=0 timeout 20 git credential fill >/dev/null 2>&1 || probe_rc=$?
+    printf 'protocol=https\nhost=github.com\n\n' |
+        GIT_TERMINAL_PROMPT=0 timeout 20 git credential fill >/dev/null 2>&1 || probe_rc=$?
 
     if [[ $probe_rc -eq 0 ]]; then
         log_info "GitHub credential available${helper:+ (helper: $helper)}"
@@ -720,8 +753,8 @@ setup_git_credentials() {
             log_info "gh is already authenticated; wiring it in as git's credential helper."
             if gh auth setup-git >/dev/null 2>&1; then
                 local gh_rc=0
-                printf 'protocol=https\nhost=github.com\n\n' \
-                    | GIT_TERMINAL_PROMPT=0 timeout 20 git credential fill >/dev/null 2>&1 || gh_rc=$?
+                printf 'protocol=https\nhost=github.com\n\n' |
+                    GIT_TERMINAL_PROMPT=0 timeout 20 git credential fill >/dev/null 2>&1 || gh_rc=$?
                 if [[ $gh_rc -eq 0 ]]; then
                     log_info "GitHub credential now served by gh; no token to paste."
                     return 0
@@ -739,8 +772,8 @@ setup_git_credentials() {
             if prompt_continue "Run 'gh auth login' now?"; then
                 if gh auth login && gh auth setup-git; then
                     local gh_rc2=0
-                    printf 'protocol=https\nhost=github.com\n\n' \
-                        | GIT_TERMINAL_PROMPT=0 timeout 20 git credential fill >/dev/null 2>&1 || gh_rc2=$?
+                    printf 'protocol=https\nhost=github.com\n\n' |
+                        GIT_TERMINAL_PROMPT=0 timeout 20 git credential fill >/dev/null 2>&1 || gh_rc2=$?
                     if [[ $gh_rc2 -eq 0 ]]; then
                         log_info "Logged in and wired into git; no token to paste."
                         return 0
@@ -762,7 +795,10 @@ setup_git_credentials() {
 
     local gh_user gh_token
     read -p "  GitHub username: " gh_user
-    [[ -z "$gh_user" ]] && { log_error "No username given; nothing stored."; return 1; }
+    [[ -z "$gh_user" ]] && {
+        log_error "No username given; nothing stored."
+        return 1
+    }
 
     # -s so the token never appears on screen or in scrollback. It still reaches
     # the credential helper, which for `store` writes ~/.git-credentials in
@@ -770,7 +806,10 @@ setup_git_credentials() {
     # boxes, not a default this script picked.
     read -r -s -p "  GitHub token (input hidden): " gh_token
     echo ""
-    [[ -z "$gh_token" ]] && { log_error "No token given; nothing stored."; return 1; }
+    [[ -z "$gh_token" ]] && {
+        log_error "No token given; nothing stored."
+        return 1
+    }
     if [[ "$gh_token" == "<"*">" ]]; then
         log_error "That looks like a placeholder ('$gh_token'), not a token. Nothing stored."
         return 1
@@ -783,8 +822,8 @@ setup_git_credentials() {
     # VERIFY, because approve reports nothing and a silently-empty store is
     # exactly what sent the operator round this loop once already.
     local check_rc=0
-    printf 'protocol=https\nhost=github.com\n\n' \
-        | GIT_TERMINAL_PROMPT=0 timeout 20 git credential fill >/dev/null 2>&1 || check_rc=$?
+    printf 'protocol=https\nhost=github.com\n\n' |
+        GIT_TERMINAL_PROMPT=0 timeout 20 git credential fill >/dev/null 2>&1 || check_rc=$?
     if [[ $check_rc -ne 0 ]]; then
         log_error "Stored nothing: the credential helper did not return it back."
         log_error "Check that credential.helper is set (it is: ${helper:-unset})."

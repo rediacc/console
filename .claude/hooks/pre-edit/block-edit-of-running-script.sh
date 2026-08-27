@@ -17,6 +17,15 @@
 # that number any more. `bash -n` being clean is the tell: a syntax error the
 # syntax checker cannot reproduce is not in the file, it is in the READER.
 #
+# HOOK-CHAIN SIBLINGS ARE NOT A RUNNING JOB. Every guard in a chain executes on
+# every tool call in that chain, including the call carrying your edit -- so
+# editing a pre-edit guard finds that guard "running", permanently, with no
+# moment of quiet to wait for. Its Bash-side sibling hit this on 2026-08-27 and
+# blocked four commands including its own repair. A chain evaluator lives for
+# milliseconds and is re-read from scratch next call, so the lazy-read window
+# below does not exist for it; a suite or background job running for minutes,
+# which is what this guard is for, still matches and still blocks.
+#
 # SCOPE: shell scripts only, and only while something is actually running one.
 # A .ts or .py file is read once into memory by its interpreter, so editing it
 # mid-run is merely confusing rather than corrupting. Narrow on purpose -- a
@@ -36,7 +45,9 @@ BASE=$(basename "$CMD")
 # self-matching-pgrep.sh exists for, and writing this guard is exactly where it
 # would have bitten again.
 PAT="[${BASE:0:1}]${BASE:1}"
-RUNNING=$(pgrep -af -- "$PAT" 2>/dev/null | grep -v 'pre-edit/block-edit-of-running-script' | head -3)
+RUNNING=$(pgrep -af -- "$PAT" 2>/dev/null |
+    grep -vE '\.claude/hooks/(pre-bash|pre-edit|pre-ask|post-bash)/' |
+    head -3)
 [ -z "$RUNNING" ] && exit 0
 
 cat >&2 <<MSG

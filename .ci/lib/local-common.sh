@@ -161,6 +161,43 @@ write_stamp_hash() {
     printf '%s\n' "$stamp_hash" >"$stamp_file"
 }
 
+# Generate cpu-features' buildcheck.gypi, which its npm install script would
+# normally produce.
+#
+# CALLED AFTER `npm install`, NEVER BEFORE, and that order is a fixed bug rather
+# than a preference: on a fresh clone node_modules/cpu-features does not exist
+# when ensure_deps starts, so a pre-install placement generated nothing,
+# install:natives was never reached, and the stamp was written anyway -- every
+# later run then reported "up-to-date" over a tree whose natives had never been
+# compiled. Found 2026-08-26 by check:ci-native-rebuild.
+#
+# Extracted from ensure_deps 2026-08-27 so the install and its native rebuild
+# sit next to each other. They were 59 lines apart, which is past the 20-line
+# window check:ci-native-rebuild pairs within -- and a rebuild you have to
+# scroll to find is one the next edit drops.
+ensure_cpu_features_gypi() {
+    local node_modules_dir="$1"
+    local cpu_features_dir="$node_modules_dir/cpu-features"
+    # A ZERO-BYTE gypi is worse than a missing one: the guard below is a plain
+    # existence test, so a crashed run (e.g. no C compiler -> "Unable to detect
+    # compiler type") leaves an empty file that every later run then SKIPS.
+    # Observed on a host with no build-essential.
+    if [[ -f "$cpu_features_dir/buildcheck.gypi" ]] && [[ ! -s "$cpu_features_dir/buildcheck.gypi" ]]; then
+        log_debug "Removing empty buildcheck.gypi left by a failed run"
+        rm -f "$cpu_features_dir/buildcheck.gypi"
+    fi
+    if [[ -f "$cpu_features_dir/buildcheck.js" ]] && [[ ! -f "$cpu_features_dir/buildcheck.gypi" ]]; then
+        # Write to a temp file and only publish on success, so a failure cannot
+        # poison the guard above.
+        if ! (cd "$cpu_features_dir" && node buildcheck.js >buildcheck.gypi.tmp); then
+            rm -f "$cpu_features_dir/buildcheck.gypi.tmp"
+            log_error "cpu-features buildcheck failed (is a C compiler installed?)"
+            return 1
+        fi
+        mv "$cpu_features_dir/buildcheck.gypi.tmp" "$cpu_features_dir/buildcheck.gypi"
+    fi
+}
+
 # Smart dependency installation (only if needed)
 # Uses a hash-based stamp so npm metadata-only mtime changes do not force reinstall
 ensure_deps() {
@@ -198,39 +235,6 @@ ensure_deps() {
         return 0
     fi
 
-    log_step "Installing dependencies..."
-    (cd "$LOCAL_ROOT_DIR" && npm install)
-
-    # cpu-features (ssh2 optional dep) generates buildcheck.gypi via its npm
-    # install script. With ignore-scripts=true that script never runs, so
-    # generate the gypi here before install:natives rebuilds cpu-features.
-    #
-    # THIS RUNS AFTER `npm install`, NOT BEFORE, and the order is the bug that
-    # was here: on a fresh clone node_modules/cpu-features does not exist yet
-    # when ensure_deps starts, so the pre-install placement generated nothing,
-    # and install:natives was never called at all -- the stamp below was then
-    # written anyway, so every later run reported "up-to-date" over a tree whose
-    # natives had never been compiled. Found 2026-08-26 by check:ci-native-rebuild.
-    local cpu_features_dir="$node_modules_dir/cpu-features"
-    # A ZERO-BYTE gypi is worse than a missing one: the guard below is a plain
-    # existence test, so a crashed run (e.g. no C compiler -> "Unable to detect
-    # compiler type") leaves an empty file that every later run then SKIPS.
-    # Observed on a host with no build-essential.
-    if [[ -f "$cpu_features_dir/buildcheck.gypi" ]] && [[ ! -s "$cpu_features_dir/buildcheck.gypi" ]]; then
-        log_debug "Removing empty buildcheck.gypi left by a failed run"
-        rm -f "$cpu_features_dir/buildcheck.gypi"
-    fi
-    if [[ -f "$cpu_features_dir/buildcheck.js" ]] && [[ ! -f "$cpu_features_dir/buildcheck.gypi" ]]; then
-        # Write to a temp file and only publish on success, so a failure cannot
-        # poison the guard above.
-        if ! (cd "$cpu_features_dir" && node buildcheck.js >buildcheck.gypi.tmp); then
-            rm -f "$cpu_features_dir/buildcheck.gypi.tmp"
-            log_error "cpu-features buildcheck failed (is a C compiler installed?)"
-            return 1
-        fi
-        mv "$cpu_features_dir/buildcheck.gypi.tmp" "$cpu_features_dir/buildcheck.gypi"
-    fi
-
     # Install with npm 10, which is what CI pins (.ci/scripts/quality/check-lockfile.sh)
     # and what the lockfile's nested layout describes.
     #
@@ -241,6 +245,13 @@ ensure_deps() {
     # symptom is packages/shared failing to compile with "Property 'uuid' does
     # not exist" (v4 API against a v3 copy), which takes `./run.sh account dev`
     # down with it. Reproduced on npm 11.9.0; npm@10 fixes it in one run.
+    #
+    # THERE WAS A SECOND, PLAIN `npm install` ABOVE THIS ONE until 2026-08-27,
+    # left by a rebase that kept both sides of a conflict where one superseded
+    # the other. It ran whatever npm is on PATH -- precisely the command this
+    # comment exists to prevent -- and logged "Installing dependencies..." a
+    # second time. check:ci-native-rebuild found it by noticing that the install
+    # at that line had no native rebuild within its window.
     local npm_cmd=(npm)
     local npm_major
     npm_major="$(npm --version 2>/dev/null | cut -d. -f1)"
@@ -251,6 +262,7 @@ ensure_deps() {
 
     log_step "Installing dependencies..."
     (cd "$LOCAL_ROOT_DIR" && "${npm_cmd[@]}" install)
+    ensure_cpu_features_gypi "$node_modules_dir" || return 1
     # BOTH STEPS, IN THIS ORDER -- not one or the other. `.npmrc` sets
     # ignore-scripts=true, so `npm install` deliberately does NOT build ssh2,
     # cpu-features or esbuild. Dropping this line leaves a tree that installed

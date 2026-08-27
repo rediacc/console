@@ -1,8 +1,11 @@
 #!/usr/bin/env bash
 # Smoke-test every guard hook by feeding sample tool_input JSON and asserting the exit code.
 # Usage: bash .claude/hooks/test-hooks.sh   (run after `/hooks` reload; needs jq)
-# NOTE: suppression test tokens are concatenated at runtime ("@ts-""ignore") so this file's
-# text never contains the literal banned token, otherwise the suppressions guard blocks it.
+# NOTE: this file used to concatenate the suppression tokens at runtime so its text never
+# contained one literally, because block-suppressions.sh would otherwise refuse edits to it.
+# That workaround is retired as of 2026-08-27: the guard now checks CODE FILES ONLY (.ts,
+# .tsx, .js and friends), so a .sh naming a directive is out of its scope by construction.
+# The cases below therefore spell the tokens out, which is what makes them readable as tests.
 set -u
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PASS=0
@@ -162,6 +165,102 @@ check 2 pre-bash/block-protected-files.sh "$(bash_json 'git checkout .claude/set
 check 2 pre-bash/block-commit-meta.sh "$(bash_json 'git commit -m msg Co-Authored-By: bot')" "commit-meta"
 check 2 pre-bash/block-binary-deploy.sh "$(bash_json 'scp renet host:/tmp')" "binary-deploy"
 check 2 pre-bash/block-cli-bundle.sh "$(bash_json 'node packages/cli/dist/x.js')" "cli-bundle"
+
+# ALLOW CASES FOR THE FOUR GUARDS ABOVE, and they are not a formality. Until
+# 2026-08-27 each of these had exactly one block case and NOTHING asserting it
+# let anything through, so nobody had ever measured the other direction. When
+# somebody finally did, every one of the four was over-blocking:
+#
+#   block-cli-bundle       refused `node packages/cli/bundle.mjs`, this repo's
+#                          OWN build entry (package.json build:bundle)
+#   block-commit-meta      refused `grep -rn 'co-authored-by' docs/` --
+#                          searching for the banned trailer, i.e. auditing the
+#                          rule the guard enforces
+#   block-binary-deploy    refused pulling a LOG back from a host, which is the
+#                          opposite of deploying a binary
+#   block-protected-files  refused `git checkout main && cat .claude/settings.json`, because
+#                          `.*` in its pattern spanned the `&&`
+#
+# All four now require EXECUTION INTENT rather than a matching substring. That
+# is one bug in four places, and it is the same bug the guards written to catch
+# it kept committing: twelve mention-as-execution false positives in one
+# session, including one where a guard blocked its own repair.
+check 0 pre-bash/block-cli-bundle.sh "$(bash_json 'node packages/cli/bundle.mjs')" "cli-bundle CONTROL: the repo's own build entry is not the bundle"
+check 0 pre-bash/block-cli-bundle.sh "$(bash_json 'node scripts/x.mjs --outdir packages/cli/dist')" "cli-bundle CONTROL: the path is an output flag, not the program"
+check 0 pre-bash/block-commit-meta.sh "$(bash_json "grep -rn 'co-authored-by' docs/")" "commit-meta CONTROL: GREPPING for the banned trailer is how you audit it"
+check 0 pre-bash/block-commit-meta.sh "$(bash_json 'echo "the rule bans Co-Authored-By lines"')" "commit-meta CONTROL: prose naming the rule is not a violation of it"
+# THE GAP MUST NOT CROSS A CLAUSE, and the first draft of the commit-verb gate
+# let it. `git ...* (commit|tag)` has to tolerate flags between the verb and its
+# subcommand, but a gap of "any non-space token" spans `|` and `&&` too, so a
+# `git log` in one clause and the word `commit` in another read as a commit
+# carrying a trailer. Same defect, same day, same fix as block-protected-files.
+check 0 pre-bash/block-commit-meta.sh "$(bash_json 'git log --oneline | grep commit | grep co-authored-by')" "commit-meta CONTROL: a git verb and the word commit in DIFFERENT clauses"
+check 0 pre-bash/block-commit-meta.sh "$(bash_json 'git diff HEAD~1 && echo commit && echo Co-Authored-By')" "commit-meta CONTROL: the gap does not span two && clauses"
+# And the enforcement shapes the gate has to keep reaching. Narrowing a guard
+# without pinning what it must still catch is how the next narrowing goes too far.
+check 2 pre-bash/block-commit-meta.sh "$(bash_json 'git -C private/account commit -m x --trailer Co-Authored-By=bot')" "commit-meta: git -C <path> commit is still reached"
+check 2 pre-bash/block-commit-meta.sh "$(bash_json 'git commit -a -m x --trailer Co-Authored-By=bot')" "commit-meta: flags between the verb and the subcommand are still reached"
+check 2 pre-bash/block-commit-meta.sh "$(bash_json 'git tag -a v1 -m Co-Authored-By:bot')" "commit-meta: a tag message carries the same rule"
+check 2 pre-bash/block-commit-meta.sh "$(bash_json 'gh pr create --body Co-Authored-By:bot')" "commit-meta: a PR body carries it too"
+check 0 pre-bash/block-binary-deploy.sh "$(bash_json 'scp host:/var/log/renet.log ./logs/')" "binary-deploy CONTROL: pulling a log back is diagnosis, not a deploy"
+check 0 pre-bash/block-protected-files.sh "$(bash_json 'git checkout main && cat .claude/settings.json')" "protected-files CONTROL: checkout then READ is not a restore"
+check 0 pre-bash/block-protected-files.sh "$(bash_json 'grep -n hooks .claude/settings.json')" "protected-files CONTROL: reading the file is untouched"
+
+# ECHOING A BANNED COMMAND IS NOT RUNNING IT. Several guards matched their raw
+# command text, so a string merely NAMING the thing they guard was refused --
+# `echo '<banned command>'`, a doc quoting a recipe, a commit message. A sweep
+# on 2026-08-27 asked this of all 48 block cases at once and 17 fired, where
+# reading the guards one at a time had found four. The ones below were routed
+# through lib/command-scan.sh in response: it strips heredoc bodies and quoted
+# prose while still EXTRACTING `sh -c` and `eval` payloads. The anti-evasion
+# cases that follow are what make that claim checkable rather than a hope.
+#
+# THREE GUARDS WERE DELIBERATELY LEFT ALONE, and the sweep is where that got
+# decided rather than assumed. block-ci-polling, block-ci-reverse-poll and
+# block-long-sleep keep their prose false positive under the operator's
+# 2026-08-25 ruling (see the pinned cases further down): their failure is LOUD,
+# every narrowing fails SILENTLY, and the shared scanner drops heredoc bodies --
+# the option that ruling names as the most tempting and the worst. They WERE
+# routed with the others in this sweep, and those pinned cases turned red and
+# reverted it, which is exactly the job they were written for.
+#
+# The distinction is not arbitrary. For the guards below, a narrowing does not
+# fail silently: the real violation is still caught, which the `sh -c` and
+# `eval` cases assert. For the sleep/poll family, a missed match means a real
+# poll runs and nobody is told.
+check 0 pre-bash/block-ssh-docker.sh "$(bash_json "echo 'ssh host docker ps'")" "ssh-docker CONTROL: echoing it is not running it"
+check 0 pre-bash/block-ssh-file-write.sh "$(bash_json "echo 'cat a | ssh host tee /etc/x'")" "ssh-file-write CONTROL: echoing it is not writing"
+check 0 pre-bash/block-git-amend.sh "$(bash_json "echo 'git commit --amend'")" "git-amend CONTROL: quoting the rule is not amending"
+# AND THE EVASION THAT CAME WITH IT. Stripping quoted spans to stop this guard
+# matching prose ALSO removed `sh -c "git commit --amend"`, where the whole
+# command lives inside a quoted span -- the guard returned 0 on a real amend.
+# The comment shipped alongside that draft claimed the dedicated
+# test-block-git-amend.py pinned the `sh -c` case; it did not, and the claim was
+# never checked. One probe found the false comment and the hole together, which
+# is why these live here now rather than in a sentence.
+check 2 pre-bash/block-git-amend.sh "$(bash_json 'sh -c "git commit --amend"')" "git-amend: an amend hidden in sh -c is still caught"
+check 2 pre-bash/block-git-amend.sh "$(bash_json 'eval "git commit --amend"')" "git-amend: an amend hidden in eval is still caught"
+check 0 pre-bash/block-git-empty-commit.sh "$(bash_json "echo 'git commit --allow-empty -m x'")" "git-empty-commit CONTROL: echoing it is not committing"
+check 0 pre-bash/block-cli-bundle.sh "$(bash_json "echo 'node packages/cli/cli-bundle.cjs'")" "cli-bundle CONTROL: echoing it is not running it"
+check 0 pre-bash/block-protected-files.sh "$(bash_json "echo 'git restore .claude/settings.json'")" "protected-files CONTROL: echoing it is not restoring"
+# AND THE OTHER DIRECTION, which is the half that makes the narrowing safe. The
+# scanner extracts shell-wrapper payloads, so hiding a banned command inside
+# `sh -c` / `eval` must still be caught. Without these, "we stopped matching
+# prose" and "we stopped matching" look identical from the outside.
+check 2 pre-bash/block-ci-polling.sh "$(bash_json 'bash -c "sleep 30 && gh run view 123"')" "ci-polling: polling hidden in bash -c is still caught"
+check 2 pre-bash/block-ssh-docker.sh "$(bash_json "sh -c 'ssh host docker ps'")" "ssh-docker: hidden in sh -c is still caught"
+check 2 pre-bash/block-cli-bundle.sh "$(bash_json 'eval "node packages/cli/cli-bundle.cjs x"')" "cli-bundle: hidden in eval is still caught"
+check 2 pre-bash/block-git-empty-commit.sh "$(bash_json 'bash -c "git commit --allow-empty -m x"')" "git-empty-commit: hidden in bash -c is still caught"
+check 2 pre-bash/block-protected-files.sh "$(bash_json 'sh -c "git restore .claude/settings.json"')" "protected-files: hidden in sh -c is still caught"
+check 2 pre-bash/block-long-sleep.sh "$(bash_json 'bash -c "sleep 300"')" "long-sleep: hidden in bash -c is still caught"
+# THE HEREDOC CASE IS NOT NEGOTIABLE for this guard. block-long-sleep documented
+# its prose false positive as ACCEPTED, reasoning that exempting heredoc bodies
+# would hide the shape most likely to carry a real long sleep. That reasoning is
+# right and it is about heredocs, not quotes -- so only the quotes were dropped,
+# and this pins the part that was kept.
+check 2 pre-bash/block-long-sleep.sh "$(bash_json 'bash <<EOF
+sleep 300
+EOF')" "long-sleep: a heredoc fed to bash is still scanned"
 check 2 pre-bash/block-ssh-docker.sh "$(bash_json 'ssh host docker ps')" "ssh-docker"
 check 2 pre-bash/block-ssh-file-write.sh "$(bash_json 'cat a | ssh host tee /etc/x')" "ssh-file-write"
 check 2 pre-bash/block-ci-polling.sh "$(bash_json 'sleep 5 && gh run view 1')" "ci-polling"
@@ -403,9 +502,15 @@ check_out 2 pre-edit/block-agent-state-shape.sh "$(tool_json Write /r/agent/0814
 check_out 2 pre-edit/block-agent-state-shape.sh "$(tool_json Write /r/.agent/b/STATE.md content "$STATE_GOOD")" "agent-state: the legacy dotted path is blocked too" "worklist.py --state"
 
 # --- should PASS (exit 0) ---
-# NOTE: block-premature-ready.sh and block-admin-merge.sh verify live CI/thread
-# state over the network on their enforcement paths; only their pattern paths
-# (--undo, --auto, --draft flags, non-matching commands) are unit-tested here.
+# NOTE: block-admin-merge.sh verifies live thread state over the network on its
+# enforcement path; only its pattern paths (--auto, --draft flags, non-matching
+# commands) are unit-tested here.
+#
+# block-premature-ready.sh USED to be in that sentence, and the network was the
+# stated reason. It was not a good one: `gh` is stubbed for the second-open-PR
+# cases a few lines below, and stubbing it here reaches the enforcement path in
+# both directions (see ready_case). "Cannot be tested here" is a claim, and the
+# command that would have disproved it took one minute to write.
 check 0 pre-bash/block-blanket-git-add.sh "$(bash_json 'git add -A -- packages/cli/src')" "blanket-git-add: -A WITH a pathspec is the escape, allowed"
 check 0 pre-bash/block-blanket-git-add.sh "$(bash_json 'git add packages/cli/src/foo.ts')" "blanket-git-add: a named file is allowed"
 check 0 pre-bash/block-blanket-git-add.sh "$(bash_json 'git -C private/renet add -A -- pkg/')" "blanket-git-add: -C plus a pathspec is allowed"
@@ -609,7 +714,9 @@ check_inject silent "$(inject_json 'echo "run git rebase later"' 'Successfully r
 source "$DIR/../../.ci/scripts/test/lib/git-fixture.sh"
 for gfk in registry judgement gitlink; do
     gfd="$(git_fixture_rebase "$gfk" 2>/dev/null)" || {
-        FAIL=$((FAIL + 1)); echo "FAIL [1] git-fixture: '$gfk' did not halt"; continue
+        FAIL=$((FAIL + 1))
+        echo "FAIL [1] git-fixture: '$gfk' did not halt"
+        continue
     }
     gfout="$(cd "$gfd" && python3 "$DIR/stop/worklist.py" --git rebase-status 2>&1)"
     if grep -qF 'rebase HALTED' <<<"$gfout" && grep -qE "\-> ${gfk}\b" <<<"$gfout"; then
@@ -641,7 +748,8 @@ if [[ -n "$gfd" ]]; then
     fi
     git_fixture_cleanup "$gfd"
 else
-    FAIL=$((FAIL + 1)); echo "FAIL [1] git-fixture: gitlink-rebased did not halt"
+    FAIL=$((FAIL + 1))
+    echo "FAIL [1] git-fixture: gitlink-rebased did not halt"
 fi
 
 gfd="$(git_fixture_rebase mixed 2>/dev/null)"
@@ -658,7 +766,8 @@ if [[ -n "$gfd" ]]; then
     fi
     git_fixture_cleanup "$gfd"
 else
-    FAIL=$((FAIL + 1)); echo "FAIL [1] git-fixture: mixed did not halt"
+    FAIL=$((FAIL + 1))
+    echo "FAIL [1] git-fixture: mixed did not halt"
 fi
 unset gfd gfout gfleft gfbefore gfafter
 check_inject silent "$(inject_json 'git filter-repo --analyze' 'Processed 6177 commits')" \
@@ -739,6 +848,13 @@ check 0 pre-bash/block-adhoc-sanctioned.sh "$(bash_json '.ci/scripts/ci/ci-trace
 check 0 pre-bash/block-adhoc-sanctioned.sh "$(bash_json 'gh run view 123 --json conclusion,jobs')" "adhoc: a one-shot read is not a watch"
 check 0 pre-bash/block-adhoc-sanctioned.sh "$(bash_json 'gh api repos/o/r/pulls/574 -X PATCH -F body=@b.md')" "adhoc: the sanctioned body update passes"
 check 0 pre-bash/block-adhoc-sanctioned.sh "$(bash_json 'git status')" "adhoc: an unrelated command passes"
+# WHAT THE HEREDOC NARROWING BOUGHT. A heredoc body is DATA, never executed, so
+# documentation quoting a banned recipe is not a use of it. This guard keeps
+# reading INSIDE quotes -- the hand-rolled loop above depends on that -- so the
+# quoted-prose false positive stays, knowingly.
+check 0 pre-bash/block-adhoc-sanctioned.sh "$(bash_json "cat > doc.md <<'EOF'
+Use gh run watch 123 --exit-status to follow it
+EOF")" "adhoc CONTROL: a DOC quoting the banned recipe is not a use of it"
 # THE CONTROL THAT MATTERS: it must FAIL OPEN on its own breakage. A guard that
 # bricks every command when its registry is missing gets deleted, and then
 # nothing is guarded at all.
@@ -867,6 +983,54 @@ check 0 pre-edit/block-edit-of-running-script.sh \
     "running-script CONTROL: the guard goes quiet once the process exits"
 rm -rf "$RS_TMP"
 unset RS_TMP RS_PID
+
+# --- the BASH half of the same trap -----------------------------------------
+# block-bash-write-to-running-script.sh shipped 2026-08-27 with ZERO cases in
+# either direction -- the only guard in the tree in that state, and the reason
+# check:ci-hook-integrity was red. It needs a genuinely LIVE process to fire, so
+# it gets a real one rather than a stubbed pgrep: the guard's whole claim is
+# that it reads the process table, and a stub would prove the arithmetic while
+# leaving that claim untested.
+BW_TMP="$(mktemp -d)"
+printf '#!/usr/bin/env bash\nsleep 8\n' >"$BW_TMP/bw-fixture.sh"
+# A decoy whose NAME CONTAINS the live fixture's, never run. Without it, nothing
+# distinguishes "matches this process" from "appears in this process's name".
+printf '#!/usr/bin/env bash\nsleep 8\n' >"$BW_TMP/myLongbw-fixture.sh"
+bash "$BW_TMP/bw-fixture.sh" &
+BW_PID=$!
+sleep 0.3
+check 2 pre-bash/block-bash-write-to-running-script.sh "$(bash_json "echo x > $BW_TMP/bw-fixture.sh")" "bash-write: a redirect onto a live script is refused"
+check 2 pre-bash/block-bash-write-to-running-script.sh "$(bash_json "sed -i s/a/b/ $BW_TMP/bw-fixture.sh")" "bash-write: an in-place edit of a live script is refused"
+check 2 pre-bash/block-bash-write-to-running-script.sh "$(bash_json "cp other.sh $BW_TMP/bw-fixture.sh")" "bash-write: copying over a live script is refused"
+# WRITE INTENT, not the filename. Every second command here names a .sh path;
+# blocking on the name alone is the over-matching that gets a guard switched
+# off, and this session produced twelve instances of exactly that class.
+check 0 pre-bash/block-bash-write-to-running-script.sh "$(bash_json "cat $BW_TMP/bw-fixture.sh")" "bash-write CONTROL: READING a live script is not writing to it"
+check 0 pre-bash/block-bash-write-to-running-script.sh "$(bash_json "bash $BW_TMP/bw-fixture.sh")" "bash-write CONTROL: RUNNING it is not writing to it"
+check 0 pre-bash/block-bash-write-to-running-script.sh "$(bash_json "grep -n sleep $BW_TMP/bw-fixture.sh")" "bash-write CONTROL: grepping it is not writing to it"
+check 0 pre-bash/block-bash-write-to-running-script.sh "$(bash_json "echo x > $BW_TMP/never-run.sh")" "bash-write CONTROL: a .sh nothing is running is untouched"
+# A DECOY WHOSE NAME CONTAINS THE LIVE ONE. `pgrep -f` matches anywhere in a
+# command line, so a bare basename matched by SUBSTRING: the candidate `ver.sh`
+# (itself a phantom, see below) matched a running `wslServer.sh`, and the guard
+# reported VS Code's server as the job about to be corrupted. The pattern now
+# anchors to a path boundary.
+check 0 pre-bash/block-bash-write-to-running-script.sh "$(bash_json "echo x > $BW_TMP/myLongbw-fixture.sh")" "bash-write CONTROL: a name CONTAINING the live one is not the live one"
+# A VARIABLE EXPANSION IS NOT A FILENAME. `"$SP/mp-$ver.sh"` yielded the
+# candidate `ver.sh` -- the tail of a variable name plus the suffix, naming a
+# file that exists nowhere. The guard cannot know what $ver expands to, so it
+# must not guess; both defects fired on one command while measuring this guard.
+check 0 pre-bash/block-bash-write-to-running-script.sh "$(bash_json 'python3 - "$SP/mp-$ver.sh" "$SP/out-$ver.sh" && x.write_text(1)')" "bash-write CONTROL: a variable expansion yields no phantom candidate"
+# A HOOK-CHAIN SIBLING IS NOT A RUNNING JOB. Every pre-bash guard executes on
+# every Bash call, so without this exclusion the guard blocked all four of the
+# commands repairing it -- permanently, with no moment of quiet to wait for.
+check 0 pre-bash/block-bash-write-to-running-script.sh "$(bash_json "sed -i s/a/b/ $DIR/pre-bash/block-binary-deploy.sh")" "bash-write CONTROL: a chain evaluator is not a job you can corrupt"
+kill "$BW_PID" 2>/dev/null || true
+wait "$BW_PID" 2>/dev/null || true
+# THE CONTROL THAT MATTERS: liveness, not the filename. Without this the guard
+# could be keyed on the name and every case above would still pass.
+check 0 pre-bash/block-bash-write-to-running-script.sh "$(bash_json "echo x > $BW_TMP/bw-fixture.sh")" "bash-write CONTROL: the guard goes quiet once the process exits"
+rm -rf "$BW_TMP"
+unset BW_TMP BW_PID
 check 2 pre-bash/block-self-matching-pgrep.sh \
     "$(bash_json 'until ! pgrep -f "some-suite.sh" >/dev/null; do sleep 2; done')" \
     "self-pgrep: the double-quoted form too"
@@ -987,6 +1151,85 @@ check 0 pre-bash/block-worktree-add.sh "$(bash_json 'git worktree remove ../foo'
 check 0 pre-bash/block-worktree-add.sh "$(bash_json 'git status')" "worktree-add: unrelated git command ok"
 check 0 pre-bash/block-worktree-add.sh "$(bash_json 'echo "lets talk about git worktree add sometime"')" "worktree-add: quoted prose mention ignored"
 check 0 pre-edit/block-suppressions.sh "$(edit_json 'const x = 1;')" "suppressions: clean"
+
+# THE NEAR-MISS that `const x = 1;` never tested. block-suppressions' own header
+# named this over-block class as a known risk and nothing asserted against it,
+# so the guard refused documentation of the rule it enforces -- and then refused
+# the edit repairing it, because the repair's comment named the tokens. A real
+# suppression sits immediately after a comment opener; prose puts words in
+# between, and those words are the whole difference.
+check 0 pre-edit/block-suppressions.sh "$(wf_edit_json 'docs/style.md' "Never write @ts-ignore; fix the type instead.")" "suppressions CONTROL: prose in Markdown naming the directive"
+check 0 pre-edit/block-suppressions.sh "$(wf_edit_json 'a.ts' "// Never write @ts-ignore here -- fix the type.")" "suppressions CONTROL: prose INSIDE a code comment"
+check 0 pre-edit/block-suppressions.sh "$(wf_edit_json 'docs/x.md' "\`\`\`ts
+// @ts-ignore
+\`\`\`")" "suppressions CONTROL: a fenced example of the wrong way stays writable"
+check 2 pre-edit/block-suppressions.sh "$(wf_edit_json 'a.ts' "const x = 1; // @ts-ignore")" "suppressions: a real directive in a .ts still blocks"
+
+# --- inline Python in a JS/TS file ------------------------------------------
+# ZERO cases in either direction until 2026-08-27, and structurally invisible to
+# check:ci-hook-integrity, which audited only pre-bash/. This guard exists for a
+# 130-line Python program that lived inside a template literal and had grown a
+# code-injection hole no linter in this repo could see.
+INLINE_PY='const script = `
+import os
+import sys
+
+def main(argv):
+    for a in argv:
+        print(a)
+    return 0
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv[1:]))
+`;'
+check 2 pre-edit/block-inline-python.sh "$(wf_edit_json 'packages/cli/src/x.ts' "$INLINE_PY")" "inline-python: a Python program inside a .ts is refused"
+# THE SAME BYTES, a different extension. This is what proves the guard selects
+# on file type rather than sniffing for Python-ish text anywhere.
+check 0 pre-edit/block-inline-python.sh "$(wf_edit_json 'scripts/x.py' "$INLINE_PY")" "inline-python CONTROL: the identical content in a real .py file"
+check 0 pre-edit/block-inline-python.sh "$(wf_edit_json 'docs/x.md' "$INLINE_PY")" "inline-python CONTROL: the identical content in Markdown"
+check 0 pre-edit/block-inline-python.sh "$(wf_edit_json 'packages/cli/src/x.ts' 'export const n: number = 1;')" "inline-python CONTROL: ordinary TypeScript"
+check 0 pre-edit/block-inline-python.sh "$(wf_edit_json 'packages/cli/src/x.ts' 'const cmd = "python3 --version"; // run python here')" "inline-python CONTROL: TypeScript that merely MENTIONS python"
+unset INLINE_PY
+
+# --- the shell-backgrounded mail waiter -------------------------------------
+# Also zero cases in either direction, and grandfathered into the coverage
+# baseline since it was written. The whole guard is one regex matching a single
+# literal behind a two-stage heredoc stripper: if the stripper ever over-strips,
+# the guard silently becomes a no-op and every existing check stays green. It
+# cannot detect its own neutering, so something else has to.
+check 2 pre-bash/block-shell-background-waiter.sh "$(bash_json 'python3 .claude/hooks/stop/wl_wait.py abc --timeout 60 &')" "background-waiter: a shell & makes it untracked"
+check 0 pre-bash/block-shell-background-waiter.sh "$(bash_json 'python3 .claude/hooks/stop/wl_wait.py abc --timeout 60')" "background-waiter CONTROL: the same command in the foreground"
+check 0 pre-bash/block-shell-background-waiter.sh "$(bash_json 'ps -eo pid,args | grep "[p]ython3.*wl_wait"')" "background-waiter CONTROL: checking whether one already runs"
+check 0 pre-bash/block-shell-background-waiter.sh "$(bash_json 'grep -n timeout .claude/hooks/stop/wl_wait.py')" "background-waiter CONTROL: merely reading the module"
+
+# --- premature `gh pr ready` ------------------------------------------------
+# Four allow cases and NO block case: nothing reached its single exit 2, so if
+# hook_gh_pr_at_command_pos stopped matching, the guard would become a total
+# no-op and every case would still pass. The enforcement path calls `gh pr view`
+# over the network, which is why it was skipped -- so stub gh, the way the
+# second-open-PR cases already do, and stop claiming the network as a reason.
+# A HELPER, not two inline blocks, and the reason is mechanical:
+# check-hook-integrity resolves a case wrapper by reading which single guard a
+# function's body names. Inline code naming the guard is invisible to it, so the
+# guard would keep reading 0/0 and keep its coverage-baseline entry -- a slot
+# where the next regression could hide.
+ready_case() { # ready_case <expected-rc> <ci-conclusion> <command> <label>
+    local exp="$1" conclusion="$2" cmd="$3" label="$4" d rc
+    d="$(stub_gh "$conclusion" 0)"
+    printf '{"tool_input":{"command":%s},"cwd":%s}' "$(jq -Rn --arg c "$cmd" '$c')" "$(jq -Rn --arg c "$PWD" '$c')" |
+        PATH="$d:$PATH" bash "$DIR/pre-bash/block-premature-ready.sh" >/dev/null 2>&1
+    rc=$?
+    rm -rf "$d"
+    if [[ "$rc" == "$exp" ]]; then
+        PASS=$((PASS + 1))
+        printf 'ok   [%s] %s\n' "$exp" "$label"
+    else
+        FAIL=$((FAIL + 1))
+        printf 'FAIL [%s] %s (got %s)\n' "$exp" "$label" "$rc"
+    fi
+}
+ready_case 2 FAILURE 'gh pr ready 42 --repo rediacc/console' "premature-ready: flipping ready while CI is not SUCCESS is refused"
+ready_case 0 SUCCESS 'gh pr ready 42 --repo rediacc/console' "premature-ready CONTROL: a green CI Complete lets the flip through"
 # INVERTED 2026-08-09: a well-shaped whole-file Write used to PASS here, and
 # that is the hole the incident went through. It is now denied like every other
 # direct write, and it lives up in the deny block above only in spirit -- it is
@@ -1120,10 +1363,13 @@ rm -rf "$DRIFT_TMP"
 # table and CITES "18 controls in wl_git.py --selftest" as the justification.
 # Coverage was being claimed from a suite that never executed.
 for orphan in wl_git:18 wl_admit:18; do
-    mod="${orphan%%:*}"; floor="${orphan##*:}"
+    mod="${orphan%%:*}"
+    floor="${orphan##*:}"
     OMOD="$DIR/stop/${mod}.py"
     if [[ ! -f "$OMOD" ]]; then
-        FAIL=$((FAIL + 1)); echo "FAIL [1] stop/${mod}.py missing"; continue
+        FAIL=$((FAIL + 1))
+        echo "FAIL [1] stop/${mod}.py missing"
+        continue
     fi
     if out="$(python3 "$OMOD" --selftest 2>&1)"; then
         n=$(grep -c "^  PASS " <<<"$out")
@@ -1146,8 +1392,17 @@ RLOG_MOD="$DIR/stop/wl_roundlog.py"
 if [[ -f "$RLOG_MOD" ]]; then
     if out="$(python3 "$RLOG_MOD" --selftest 2>&1)"; then
         n=$(grep -c "^  PASS " <<<"$out")
-        PASS=$((PASS + n))
-        echo "ok   [0] stop/wl_roundlog.py --selftest: $n control(s) passed"
+        # A FLOOR, like the orphan loop above. Without one, a selftest that
+        # prints nothing and exits 0 folds in as a passing suite -- the exact
+        # vacuous green that loop was written to stop, left open twice in the
+        # same file. check:ci-hook-integrity now names any unfloored fold.
+        if [[ "$n" -lt 12 ]]; then
+            FAIL=$((FAIL + 1))
+            echo "FAIL [1] stop/wl_roundlog.py --selftest: $n control(s), expected >= 12"
+        else
+            PASS=$((PASS + n))
+            echo "ok   [0] stop/wl_roundlog.py --selftest: $n control(s) passed"
+        fi
     else
         FAIL=$((FAIL + 1))
         echo "FAIL [1] stop/wl_roundlog.py --selftest"
@@ -1168,8 +1423,17 @@ PLANFID_MOD="$DIR/stop/wl_planfid.py"
 if [[ -f "$PLANFID_MOD" ]]; then
     if out="$(python3 "$PLANFID_MOD" --selftest 2>&1)"; then
         n=$(grep -c "^  PASS " <<<"$out")
-        PASS=$((PASS + n))
-        echo "ok   [0] stop/wl_planfid.py --selftest: $n control(s) passed"
+        # A FLOOR, like the orphan loop above. Without one, a selftest that
+        # prints nothing and exits 0 folds in as a passing suite -- the exact
+        # vacuous green that loop was written to stop, left open twice in the
+        # same file. check:ci-hook-integrity now names any unfloored fold.
+        if [[ "$n" -lt 50 ]]; then
+            FAIL=$((FAIL + 1))
+            echo "FAIL [1] stop/wl_planfid.py --selftest: $n control(s), expected >= 50"
+        else
+            PASS=$((PASS + n))
+            echo "ok   [0] stop/wl_planfid.py --selftest: $n control(s) passed"
+        fi
     else
         FAIL=$((FAIL + 1))
         echo "FAIL [1] stop/wl_planfid.py --selftest"

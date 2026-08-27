@@ -214,7 +214,6 @@ else
 fi
 unset WORKLIST_REPORT_PER_STOP CIMSG
 
-
 echo "== 177. the judge line is a STAMP unless the context is fresh or the reason changed =="
 # Operator, 2026-07-31: the approval reason was reprinted on every stop. It
 # now rides a stop whose context was just rebuilt (SessionStart, PostCompact)

@@ -64,7 +64,24 @@ function fsSafeList(dir: string): string[] {
 /** How far after an install we still accept the rebuild. */
 export const WINDOW = 20;
 
-const INSTALL_RE = /\bnpm\s+(install|ci)\b/;
+/**
+ * An install, however npm is spelled at the call site.
+ *
+ * The second alternative is not hypothetical. `ensure_deps` in
+ * `.ci/lib/local-common.sh` selects its npm deliberately -- npm 11 hoists zod
+ * differently and breaks `packages/shared` -- so it builds `npm_cmd=(npm)` or
+ * `npm_cmd=(npx -y npm@10)` and runs `"${npm_cmd[@]}" install`. A pattern
+ * requiring the literal word `npm` could not see that line, so the ONLY install
+ * this gate ever matched in that file was a duplicate left by a rebase. Removing
+ * the duplicate dropped the count to zero and the anti-vacuity floor fired,
+ * which is the only reason the blind spot surfaced at all.
+ *
+ * The variable name must MENTION npm (`npm_cmd`, `NPM`, `npm_bin`). A bare
+ * `"$cmd" install` could be anything -- terraform, apt, a helper -- and matching
+ * it would be the over-matching this repo has paid for repeatedly.
+ */
+const INSTALL_RE =
+  /\bnpm\s+(install|ci)\b|\$\{?"?[A-Za-z_]*npm[A-Za-z0-9_]*(?:\[@\])?\}?"?\s+(install|ci)\b/i;
 const NATIVES_RE = /npm\s+run\s+install:natives/;
 /** `cd $ROOT_DIR` / `cd "$LOCAL_ROOT_DIR"` -- but NOT `cd "$ROOT_DIR/sub"`. */
 const ROOT_CD_RE = /\bcd\s+"?\$\{?(?:LOCAL_)?ROOT_DIR\}?"?(?=\s|\)|&|;|$)/;
@@ -146,6 +163,27 @@ const selftest = (): number => {
       'x.sh',
       ['npm install', ...Array(40).fill('echo x'), 'npm run install:natives'].join('\n')
     ).length === 1
+  );
+  // npm reached through a variable. The real tree spells it this way to pin
+  // npm@10, and a literal-only pattern was blind to it -- so the gate's only
+  // match in that file was a duplicate install, and it saw nothing once the
+  // duplicate was removed.
+  check(
+    'an install through a $npm_cmd array is seen, and flagged when unpaired',
+    scanSource('x.sh', '(cd "$LOCAL_ROOT_DIR" && "${npm_cmd[@]}" install)\n').length === 1
+  );
+  check(
+    'the same install, paired, is clean',
+    scanSource(
+      'x.sh',
+      '(cd "$LOCAL_ROOT_DIR" && "${npm_cmd[@]}" install)\nnpm run install:natives\n'
+    ).length === 0
+  );
+  // CONTROL: the variable must NAME npm. Matching any `"$cmd" install` would
+  // sweep in terraform, apt, and every helper that takes an `install` verb.
+  check(
+    'CONTROL: a variable that does not mention npm is NOT an install',
+    scanSource('x.sh', '(cd "$LOCAL_ROOT_DIR" && "${tf_cmd[@]}" install)\n').length === 0
   );
   check(
     'a sub-project install is out of scope',

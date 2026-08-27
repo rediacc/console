@@ -36,7 +36,34 @@ if [[ ! -x "$RUNNER" ]]; then
     log_fail "$RUNNER is missing or not executable; this gate has nothing to prove"
 fi
 
-now_ms() { date +%s%3N; }
+# NOT `date +%s%3N`, and the reason is a whole class of host difference.
+#
+# uutils coreutils (the Rust reimplementation, 0.8.0 here) IGNORES the precision
+# digit in `%3N` and returns full NANOSECONDS. GNU coreutils honours it. So on a
+# GNU host this returned milliseconds and the gate passed, while on a uutils
+# host it returned a number a million times larger and the assertion below --
+# `>= 6000` -- could never be satisfied. Measured on 2026-08-27: four 2s tests
+# "took 2034286583ms", which is 2.03 SECONDS in the units actually returned, so
+# the runner was behaving perfectly and the stopwatch was lying.
+#
+# That is docs/agent-reference/TRAPS.md, "A gate green in CI can be red on every
+# developer machine": CI runs GNU coreutils, so nothing there could ever have
+# caught it.
+#
+# EPOCHREALTIME is a bash builtin (5.0+), so it depends on no `date` at all.
+# It reads `<seconds>.<microseconds>`, with the separator taken from the locale,
+# hence the comma fold. `10#` forces base 10 so a leading zero in the fraction
+# cannot be read as octal.
+now_ms() {
+    local t=${EPOCHREALTIME/,/.}
+    if [[ -z "$t" ]]; then
+        # bash < 5: fall back to full nanoseconds, which BOTH implementations
+        # agree on, and scale here rather than trusting a precision flag.
+        echo $(($(date +%s%N) / 1000000))
+        return
+    fi
+    echo $((${t%%.*} * 1000 + 10#${t#*.} / 1000))
+}
 
 # mk_fixture <dir> <name> <body-line>...
 mk_fixture() {

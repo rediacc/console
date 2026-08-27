@@ -1153,11 +1153,101 @@ or a similar shape-matching scanner also reads, paraphrase the shape instead of
 quoting it verbatim — "a no-op fallback", not `` `|| true` ``.
 
 Operator ruling 2026-08-26 said revisit a meta-gate once a third instance
-appeared; it has. Still not written here — each instance so far needed a
-different, specific fix (strip comments, require a real mutation, paraphrase
-instead of quote), so a single meta-gate would need to generalize across three
-unrelated scanners rather than add one shared rule. Worth a session picking this
-up deliberately rather than folding it into an unrelated fix.
+appeared; it has. Still not written for the CI gates — each instance there
+needed a different, specific fix (strip comments, require a real mutation,
+paraphrase instead of quote), so a meta-gate would have to generalize across
+three unrelated scanners rather than add one shared rule.
+
+### The same class on the HOOK surface, where there IS one shared rule
+
+**2026-08-27: nine commands refused in a single session, every one a PreToolUse
+guard objecting to a command whose only offence was NAMING what it guards
+against** — on top of the six the previous wave recorded, and separate from the
+seventeen latent cases the sweep below found. (A tenth block that day was a TRUE
+positive: `test-hooks.sh` really was executing.) The guards are not gates and
+the remedy is not the gates' remedy, which is why this sits here as its own half.
+
+What it looks like: `echo 'sleep 30'` refused as a stall. `grep -rn
+'co-authored-by' docs/` refused as an attribution trailer — i.e. the command
+that AUDITS the rule refused by the rule. `git checkout main && cat
+.claude/settings.json` refused as a restore, because `.*` in the pattern spans
+`&&`. And `node packages/cli/bundle.mjs`, this repo's own `build:bundle`,
+refused as running the CLI bundle.
+
+**Two properties make this worse than the gate version, and both bit:**
+
+1. **The guard blocks its own repair.** `block-suppressions` refused the edit
+   fixing `block-suppressions`, because the fix's comment named the tokens.
+   `block-cli-bundle` and `block-protected-files` each refused the command
+   measuring them, because the probe's line carried the fixture text. There is
+   no way to write the fix without naming the thing.
+2. **A hook-chain sibling looks like a running job, permanently.**
+   `block-bash-write-to-running-script` found `block-binary-deploy.sh` "being
+   executed right now" — true, as a sibling in the chain evaluating that very
+   edit. Every pre-bash guard runs on every Bash call, so the block never
+   clears: there is no moment of quiet to wait for, and its own message says
+   "let it finish". It cost four blocked commands before the cause was visible.
+
+**The shared rule the gates never had:** `.claude/hooks/pre-bash/lib/
+command-scan.sh`. `hook_scan_target` drops heredoc bodies and quoted spans while
+still EXTRACTING `sh -c` / `eval` payloads, so routing a guard through it removes
+false positives without weakening enforcement. Eleven guards already used it;
+every one of the nine refusals came from a guard that did not.
+
+**But it is not the answer everywhere, and three separate things stopped it.**
+Of the 17 sweep hits: 5 were fixed outright by routing, 6 were reverted under an
+operator ruling (below), 3 were `sh -c "..."` fixtures the scanner is *supposed*
+to see into, and 3 are documented residue. Zero were left unexplained, which is
+the bar — a sweep that ends in "and the rest are probably fine" has not finished.
+
+**Two guards must NOT use it, and knowing why is the point.** Their targets
+legitimately live inside quotes: `block-commit-meta` reads the trailer from `git
+commit -m "..."`, and `block-adhoc-sanctioned`'s best fixture is a hand-rolled
+watch loop whose banned command sits in a `$(...)` inside a quoted test.
+Prose-stripping deleted exactly the part that mattered and the case went green
+catching nothing. Those two get a different narrowing — a commit-verb gate, and
+heredoc-stripping only.
+
+### The sharpest lesson: a PINNED false positive caught the "fix"
+
+`block-ci-polling` and `block-long-sleep` were routed through the scanner along
+with the rest, and two suite cases went red:
+
+```
+FAIL [2] ci-polling: prose showing an INLINE poll is blocked on purpose (operator ruling 2026-08-25)
+FAIL [2] long-sleep: a commit message quoting a literal long sleep is blocked on purpose (operator ruling 2026-08-25)
+```
+
+Those cases exist because on 2026-08-25 this exact narrowing was put to the
+operator with four scored options, and the ruling was to KEEP both guards as
+they are: the false positive fails **loudly** (a blocked command that names its
+workaround) while every narrowing fails **silently** — a real long poll runs and
+nobody is told. The ruling names exempting heredoc bodies as the most tempting
+option and the worst, and `hook_scan_target` drops heredoc bodies, so routing
+them through it *was* that option, arrived at from a different direction and
+with no memory of the decision.
+
+**Generalise this, because it is the reusable part.** A false positive you have
+decided to accept is indistinguishable, to the next session, from one nobody has
+noticed yet — and the next session will "fix" it, in good faith, from a
+sweep like the one above. The only thing that stops it is a test asserting the
+accepted behaviour, labelled with the ruling and its date. Not a comment: a
+comment is read only by someone already looking at the file, and a sweep does
+not look at files. `block-ci-reverse-poll` had the same reasoning behind it and
+no pinned case, so it did NOT go red, and it had to be reverted by hand once its
+siblings gave the game away.
+
+**The check to run:** when you accept a false positive rather than fixing it,
+write the case that asserts it, name the ruling and the date in the label, and
+say in the guard's header that it is deliberately not using the shared remedy
+its siblings use. Then a later sweep re-opens the decision instead of quietly
+reversing it.
+
+**The check to run, and it is cheap:** for every command your suite asserts is
+BLOCKED, assert that `echo '<that command>'` is ALLOWED. Echoing executes
+nothing, so a guard refusing it is matching on mention. Asking this of all 48
+block cases at once took one script and found 17 in a surface where reading the
+guards one at a time had found four.
 
 ## A gate green in CI can be red on every developer machine, because glibc collates by locale and codepoint order does not
 
@@ -1191,3 +1281,50 @@ unmodified file. If only the first fails, the bug is collation, not content.
 
 See `.ci/scripts/test/gates/test-scope-gate-outputs.sh:254` for the fixed
 instance and `agent/PLAN-scope-gate-sort-collation.md` for the full trace.
+
+## `date +%s%3N` returns NANOSECONDS under uutils coreutils, and CI will never tell you
+
+**GNU `date` honours the precision digit in `%3N` (milliseconds). uutils
+coreutils — the Rust reimplementation, shipping by default on more and more
+systems, 0.8.0 on this host — IGNORES it and returns the full nine digits.**
+Same command, same flags, a number a million times larger.
+
+Found 2026-08-27 in `.ci/scripts/test/gates/test-run-all-parallel.sh`, whose
+`now_ms()` was `date +%s%3N`. Its assertion is `parallel_ms >= 6000` → fail, so
+on a uutils host the gate could **never pass**:
+
+```
+FAIL: four 2s tests took 2034286583ms at jobs=4; they are not overlapping
+```
+
+2034286583 **nanoseconds** is 2.03 seconds — the runner was parallelising
+perfectly and the stopwatch was lying. The failure text accuses the subject,
+which is what makes this expensive: every instinct says go read the runner.
+
+**Why CI cannot catch it.** GitHub runners have GNU coreutils, so the gate is
+green there forever. This is the same shape as the glibc-collation entry above:
+an environment difference that only ever fires on a developer machine, where it
+reads as "the repo is broken" rather than "my coreutils differ".
+
+**The tell:** a duration with far too many digits. A millisecond count for
+anything interactive is 3–5 digits; 19 digits is a nanosecond epoch, 13 is a
+millisecond epoch. If a "ms" value has 10+ digits, suspect the clock before the
+subject.
+
+**The fix, and why not just `%N`:** use bash's `EPOCHREALTIME` builtin (5.0+),
+which depends on no `date` at all, and scale it yourself:
+
+```bash
+now_ms() {
+    local t=${EPOCHREALTIME/,/.}       # separator is locale-dependent
+    echo $((${t%%.*} * 1000 + 10#${t#*.} / 1000))
+}
+```
+
+`10#` forces base 10, or a fraction with a leading zero is read as octal.
+`date +%s%N` and dividing also works — both implementations agree on bare `%N`
+— but it costs a subprocess per call and still trusts `date`.
+
+**Sweep, not fix:** `git grep 'date +%s%[0-9]*N'`. Bare `%N` compared against
+`%N` is safe (consistent units, as in `test-ci-runner.sh`); a precision digit
+compared against a threshold is not. Only the one site used a precision digit.

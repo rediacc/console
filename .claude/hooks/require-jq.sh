@@ -59,19 +59,19 @@ INPUT=$(cat)
 
 # Any chaining/substitution metacharacter: refuse without further thought.
 case "$INPUT" in
-    *';'*|*'&&'*|*'||'*|*'`'*|*'$('*|*$'\n'*) allow=no ;;
+    *';'* | *'&&'* | *'||'* | *'`'* | *'$('* | *$'\n'*) allow=no ;;
     *) allow=maybe ;;
 esac
 
 if [ "$allow" = maybe ]; then
     # Remedy 1: a package-manager install whose package list includes jq.
-    if printf '%s' "$INPUT" \
-        | grep -qE '(apt-get|apt|dnf|yum|pacman|apk|brew)[^"]*(install|add|-S)[^"]*[[:space:]]jq([[:space:]]|\\"|"|$)'; then
+    if printf '%s' "$INPUT" |
+        grep -qE '(apt-get|apt|dnf|yum|pacman|apk|brew)[^"]*(install|add|-S)[^"]*[[:space:]]jq([[:space:]]|\\"|"|$)'; then
         exit 0
     fi
     # Remedy 2: this repo's own bootstrap, setup subcommand only.
-    if printf '%s' "$INPUT" \
-        | grep -qE '(^|[^A-Za-z0-9_./-])(\./|bash[[:space:]]+|sh[[:space:]]+)?[^"[:space:]]*run\.sh[[:space:]]+setup([[:space:]]|\\"|"|$)'; then
+    if printf '%s' "$INPUT" |
+        grep -qE '(^|[^A-Za-z0-9_./-])(\./|bash[[:space:]]+|sh[[:space:]]+)?[^"[:space:]]*run\.sh[[:space:]]+setup([[:space:]]|\\"|"|$)'; then
         exit 0
     fi
 fi

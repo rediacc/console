@@ -103,8 +103,12 @@ git_fixture_rebase() {
             # step 2 does. Its tip then contains BOTH sides and is in neither
             # conflict stage, which is the case the oracle is built for.
             git -C "$r/sub" checkout -q feature-side
-            git -C "$r/sub" rebase main >/dev/null 2>&1 \
-                || { echo "git_fixture_rebase: sub rebase must succeed for this kind" >&2; rm -rf "$root"; return 4; }
+            git -C "$r/sub" rebase main >/dev/null 2>&1 ||
+                {
+                    echo "git_fixture_rebase: sub rebase must succeed for this kind" >&2
+                    rm -rf "$root"
+                    return 4
+                }
             ;;
         mixed)
             # A gitlink AND a file conflict in one halt. This is what the
@@ -181,7 +185,10 @@ git_fixture_cleanup() {
     # The fixture root is the PARENT of the repo (it also holds the submodule
     # origin), so remove that. Guarded against a caller passing something else.
     case "$r" in
-        /tmp/*|/var/folders/*) rm -rf "$(dirname "$r")" ;;
-        *) echo "git_fixture_cleanup: refusing to remove '$r'" >&2; return 1 ;;
+        /tmp/* | /var/folders/*) rm -rf "$(dirname "$r")" ;;
+        *)
+            echo "git_fixture_cleanup: refusing to remove '$r'" >&2
+            return 1
+            ;;
     esac
 }

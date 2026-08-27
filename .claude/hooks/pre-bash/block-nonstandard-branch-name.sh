@@ -86,7 +86,10 @@ if [ -z "$CANDIDATE" ]; then
             for tok in "${TOKENS[@]}"; do
                 case "$tok" in
                     -*) continue ;;
-                    *) CANDIDATE="$tok"; break ;;
+                    *)
+                        CANDIDATE="$tok"
+                        break
+                        ;;
                 esac
             done
         fi

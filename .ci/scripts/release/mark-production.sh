@@ -34,11 +34,20 @@ ROOT_DIR="$(cd "$SCRIPT_DIR/../../.." && pwd)"
 # shellcheck source=../lib/common.sh
 # BLOCKER: shared logging helpers used by every .ci/scripts entry point
 source "$ROOT_DIR/.ci/scripts/lib/common.sh" 2>/dev/null || {
-
-require_cmd gh
     log_info() { echo "$*"; }
     log_error() { echo "$*" >&2; }
+    # A fallback for "common.sh is missing" cannot call common.sh's own
+    # require_cmd. Define a minimal one here, or this branch dies at 127 while
+    # reporting nothing about the missing dependency it exists to report.
+    require_cmd() {
+        command -v "$1" >/dev/null 2>&1 || {
+            log_error "Required command '$1' is not available"
+            exit 1
+        }
+    }
 }
+
+require_cmd gh
 
 VERSION="${1:-${VERSION:-}}"
 

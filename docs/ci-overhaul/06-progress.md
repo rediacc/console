@@ -5212,6 +5212,55 @@ existing. The file parsed, the suite passed, nothing failed. That is why
 land behind an invariant proving meaning survived, and why a class with no
 invariant stays "judgement" and is left untouched.
 
+### The same class, measured instead of counted
+
+The six above were found by reading, one at a time, as each one blocked
+something. This wave added nine more the same way — nine commands actually
+refused, each with the hook's own output as evidence — and two were sharper than
+the rest: **`block-suppressions` refused the edit that would have fixed
+`block-suppressions`**, because the fix's comment named the tokens; and
+**`block-bash-write-to-running-script` refused four commands in a row** because
+it found its sibling guard "being executed right now" — true, as a chain member
+evaluating that very edit, and permanently true, since every pre-bash guard runs
+on every Bash call. Its own message said "let it finish".
+
+Reading found four. A five-line instrument found seventeen: for every command
+the suite asserts is BLOCKED, assert that `echo '<that command>'` is ALLOWED.
+Echoing executes nothing, so a guard refusing it is matching on mention.
+
+**All seventeen are now accounted for, which is the bar** — 5 fixed by routing
+through `lib/command-scan.sh` (it strips heredocs and quoted prose while still
+EXTRACTING `sh -c`/`eval` payloads, so enforcement is unchanged and the
+anti-evasion cases prove it), 3 are `sh -c` fixtures the scanner is supposed to
+see into, 3 are documented residue in a guard that must read inside quotes, and
+**6 were reverted under the operator's 2026-08-25 ruling.**
+
+That revert is the wave's best result. Two suite cases labelled *"blocked on
+purpose (operator ruling 2026-08-25)"* went red the moment the narrowing landed.
+The ruling had weighed four scored options and kept the false positive because
+it fails LOUDLY while every narrowing fails SILENTLY — and it named exempting
+heredoc bodies as the most tempting option and the worst, which is precisely
+what `hook_scan_target` does. A sweep does not read files, so a comment would
+not have stopped this; only a test asserting the accepted behaviour did.
+`block-ci-reverse-poll` shared the reasoning, had no pinned case, did not go
+red, and had to be reverted by hand once its siblings gave the game away.
+
+### The gate that could not see two thirds of the guards
+
+`check:ci-hook-integrity` had `GUARD_DIR` hard-wired to `pre-bash`, so `pre-edit/`
+and `pre-ask/` were outside BOTH its assertions — not merely uncovered but
+structurally invisible, `block-inline-python` among them at zero cases in either
+direction. It also grepped only the literal `check 2 <guard>`, so the five
+`gh_case` and four `_gc_run` cases were unseen and two well-covered guards sat in
+the coverage baseline as gaps they had not been for months.
+
+Widened to all three chains, with helper wrappers resolved by reading which
+single guard a function's body names rather than from a list that would rot the
+same way. **The coverage baseline went 8 grandfathered gaps to zero**: all 35
+guards now have a case in each direction, and the four that had a block case and
+nothing else turned out to be over-blocking every one — including one that
+refused this repo's own `build:bundle`.
+
 ### Still true at the end of the wave
 
 `check:ci-pr-task-trailers` is RED, on nine untagged commits every one of which

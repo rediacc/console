@@ -579,8 +579,8 @@ review_epic_ids() {
     root="${WORKLIST_PUBLISH_ROOT:-$(git rev-parse --show-toplevel 2>/dev/null || echo .)}"
     snap="$root/agent/pr/${branch//\//-}.md"
     [[ -f "$snap" ]] || return 0
-    grep -oE '^`?PR-TASK:[[:space:]]*[0-9a-f]{6,32}`?$' "$snap" \
-        | grep -oE '[0-9a-f]{6,32}' || true
+    grep -oE '^`?PR-TASK:[[:space:]]*[0-9a-f]{6,32}`?$' "$snap" |
+        grep -oE '[0-9a-f]{6,32}' || true
 }
 
 # review_spent_attempt_count <pr> <attempt-prefix> -> passes that produced no report.

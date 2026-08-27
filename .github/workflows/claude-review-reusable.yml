@@ -65,6 +65,12 @@ jobs:
           persist-credentials: false
           filter: blob:none
 
+      # Every Linux job carries this (check:ci-profiler-coverage). It is a LOCAL
+      # action, so it has to follow the checkout rather than lead the job.
+      - uses: ./.github/actions/profiler
+        with:
+          runner-label: ubuntu-latest
+
       - name: Read the published snapshot
         id: find
         env:

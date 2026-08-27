@@ -34,9 +34,19 @@
 # an API error, a sha that is not HEAD -- because "I could not check" must never
 # read as "there is no run".
 
+#
+# ROUTED THROUGH lib/command-scan.sh 2026-08-27. Matching the raw command meant
+# matching PROSE: `echo '<the banned command>'` was refused, and so was a
+# worklist note or a doc quoting it. hook_scan_target removes heredoc bodies and
+# quoted spans while still extracting `sh -c` / `eval` payloads, so a command
+# hidden in a wrapper is scanned exactly as before -- this narrows what the
+# guard refuses, never what it catches.
 CMD=$(jq -r '.tool_input.command' 2>/dev/null)
 
-if ! echo "$CMD" | grep -qE 'git commit[^|;&]*--allow-empty'; then
+source "$(dirname "${BASH_SOURCE[0]}")/lib/command-scan.sh"
+SCAN=$(hook_scan_target "$CMD")
+
+if ! printf '%s' "$SCAN" | grep -qE 'git commit[^|;&]*--allow-empty'; then
     exit 0
 fi
 

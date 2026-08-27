@@ -53,6 +53,12 @@ import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 
+import {
+  baselineAdditions,
+  renderRefusal,
+  writeBaselineVerdict,
+} from './lib/shrink-only-baseline.js';
+
 /** Binaries that are NOT on a minimal POSIX host and can therefore be absent. */
 export const RISKY = [
   'unzip', 'zip', 'yq', 'gpg', 'xmllint', 'rsync', 'python3',
@@ -136,6 +142,28 @@ const main = (): number => {
 
   if (process.argv.slice(2).includes('--write-baseline')) {
     const found = scan(root, tracked(root)).map(key).sort();
+    // REFUSE BEFORE WRITING, through the shared composition guard rather than a
+    // private copy of the rule. An unconditional reseed can drain thirty
+    // findings, absorb one brand-new one, and print a SMALLER number while
+    // doing it -- the shrink-only baseline's whole point defeated by the
+    // command that maintains it. gate-test:shrink-only-composition caught this
+    // file bypassing the guard on the day it was written.
+    const verdict = writeBaselineVerdict({
+      baselineExists: fs.existsSync(baseFile),
+      firstSeedFlag: process.argv.includes('--first-seed'),
+      additions: fs.existsSync(baseFile) ? baselineAdditions(base, found) : [],
+    });
+    if (verdict !== null) {
+      console.error(
+        `\n\x1b[31m✗\x1b[0m ${renderRefusal(verdict, {
+          baselineLabel: DEFAULT_BASELINE,
+          noun: 'undeclared-binary finding',
+          previousCount: base.length,
+          newCount: found.length,
+        })}\n`
+      );
+      return 1;
+    }
     fs.mkdirSync(path.dirname(baseFile), { recursive: true });
     fs.writeFileSync(baseFile, `${JSON.stringify(found, null, 2)}\n`);
     console.log(`wrote ${found.length} baselined finding(s) to ${DEFAULT_BASELINE}`);

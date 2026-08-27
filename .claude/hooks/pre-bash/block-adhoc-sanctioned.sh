@@ -27,7 +27,26 @@ command -v python3 >/dev/null 2>&1 || exit 0
 # ARGUMENT, so os.environ["LIB"] raised, `|| exit 0` swallowed it, and the guard
 # exited 0 for every command in both directions -- a guard that cannot fail.
 # Caught only because the controls assert the BLOCK direction too.
-MSG=$(CMD="$CMD" LIB="$LIB" python3 -c '
+# HEREDOC BODIES ONLY, and the quotes deliberately STAY. Every other guard in
+# this sweep moved to hook_scan_target, which also strips quoted spans; doing
+# that here broke the guard's best case, and the failure is worth recording
+# because it marks the limit of the technique.
+#
+# This guard's targets legitimately live INSIDE quotes. Its strongest fixture is
+# a hand-rolled watch loop -- `until [ "$(gh run view $R --json status ...)" =
+# completed ]` -- where the banned command sits in a command substitution inside
+# a quoted test. Prose-stripping deleted exactly the part that matters and the
+# case went green while catching nothing.
+#
+# A heredoc body is different: it is DATA, never executed, so dropping it is
+# safe and it kills the false positive that actually costs something here -- a
+# worklist note or a doc quoting a banned recipe. The residue is that `echo 'gh
+# run watch 123'` is still refused. That is the price of seeing inside quotes,
+# it is paid knowingly, and the sanctioned alternative is in the message.
+source "$(dirname "${BASH_SOURCE[0]}")/lib/command-scan.sh"
+SCAN=$(printf '%s' "$CMD" | _hook_strip_heredocs)
+
+MSG=$(CMD="$SCAN" LIB="$LIB" python3 -c '
 import os, sys
 sys.path.insert(0, os.environ["LIB"])
 try:

@@ -45,13 +45,23 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=../lib/common.sh
 # BLOCKER: shared log_* helpers used by every housekeeping script
 source "$SCRIPT_DIR/../lib/common.sh" 2>/dev/null || {
-
-require_cmd gh
-require_cmd jq
     log_info() { echo "  $*"; }
     log_warn() { echo "  WARN: $*" >&2; }
     log_step() { echo "==> $*"; }
+    log_error() { echo "$*" >&2; }
+    # A fallback for "common.sh is missing" cannot call common.sh's own
+    # require_cmd. Define a minimal one here, or this branch dies at 127 while
+    # reporting nothing about the missing dependency it exists to report.
+    require_cmd() {
+        command -v "$1" >/dev/null 2>&1 || {
+            log_error "Required command '$1' is not available"
+            exit 1
+        }
+    }
 }
+
+require_cmd gh
+require_cmd jq
 
 REPO="${RETRY_REPO:-rediacc/console}"
 MAX_AGE_HOURS="${RETRY_MAX_AGE_HOURS:-48}"

@@ -45,6 +45,30 @@ SCAN=$(printf '%s' "$CMD" | awk '
     }
 ')
 
+# QUOTED SPANS GO TOO, on top of the heredoc stripping above. The awk pass
+# handles a documented heredoc; it does nothing for `echo 'git commit --amend'`
+# or a commit message quoting the rule, both of which were refused as if they
+# were amends.
+#
+# BUT STRIPPING QUOTES ALONE OPENS AN EVASION, and the first draft of this
+# shipped it: `sh -c "git commit --amend"` has the whole command inside a quoted
+# span, so removing quotes removed the amend and the guard returned 0. The
+# comment written alongside that draft claimed the dedicated test file pinned
+# the `sh -c` case. It does not -- the file has no such case, and the claim was
+# never checked. One probe found both the false comment and the hole.
+#
+# So the wrapper payload is extracted and appended, exactly as
+# hook_scan_target does for the guards that use it wholesale. This one cannot
+# use it wholesale: hook_scan_target drops heredoc BODIES, and the awk pass
+# above exists to keep a `cat <<EOF` body as docs while still reading a body
+# that would execute. Two different heredoc rules, so only the wrapper half is
+# borrowed.
+source "$(dirname "${BASH_SOURCE[0]}")/lib/command-scan.sh"
+SCAN_WRAPPED=$(printf '%s' "$SCAN" | tr '\n' ' ' | _hook_wrapper_payload | sed -e "s/['\"]/ /g")
+SCAN=$(printf '%s' "$SCAN" | tr '\n' '\001' | sed -e "s/'[^']*'//g" -e 's/"[^"]*"//g' | tr '\001' '\n')
+SCAN="$SCAN
+$SCAN_WRAPPED"
+
 if echo "$SCAN" | grep -qE 'git commit[^|;&]*--amend|git commit[^|;&]*[[:space:]]-[a-zA-Z]*amend'; then
     echo "❌ BLOCKED: Do not use 'git commit --amend' for PR babysitting. Amending rewrites the existing PR commit in place, which collapses every CI fix into one commit and destroys the per-change history (this PR's single commit was already amended 16 times and the individual changes became impossible to trace). Make EACH fix a NEW commit: git commit -m 'fix(scope): ...' then a plain 'git push'. The reviewer needs a readable per-commit trail. If commits genuinely need squashing, that is the user's call at merge time, not yours." >&2
     exit 2
