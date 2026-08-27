@@ -51,6 +51,10 @@ import sys
 # A rebase with more halts than this is not a loop to automate. The bound
 # exists so a resolver that somehow stops making progress cannot spin
 # forever against a real repository.
+# The verbs that may WRITE. Everything else is plan-only, and a verb added
+# here without its own execute branch is refused loudly rather than falling
+# through to force-push's tail.
+EXECUTABLE = ("force-push", "resolve-gitlinks", "rebase-continue")
 REBASE_MAX_STEPS = 50
 TIMEOUT_S = 120
 
@@ -58,7 +62,7 @@ TIMEOUT_S = 120
 # a string handed to a shell.
 
 
-class Refusal(Exception):
+class RefusalError(Exception):
     """A safety check said no. Carries the reason shown to the caller."""
 
 
@@ -147,9 +151,7 @@ def is_ancestor(repo, maybe_ancestor, descendant):
     twice: `|| echo "[]"` once made an unreadable probe indistinguishable from a
     clean result, and the caller then read a guess as a fact.
     """
-    rc, _, _ = run_git(
-        ["merge-base", "--is-ancestor", maybe_ancestor, descendant], cwd=repo
-    )
+    rc, _, _ = run_git(["merge-base", "--is-ancestor", maybe_ancestor, descendant], cwd=repo)
     if rc == 0:
         return True
     if rc == 1:
@@ -172,12 +174,16 @@ def rebase_state(root):
     for d in ("rebase-merge", "rebase-apply"):
         base = os.path.join(root, ".git", d)
         if os.path.isdir(base):
-            def read(name):
+            # `base` is bound as a DEFAULT, not captured. The closure is
+            # correct today only because this function returns inside the same
+            # iteration; binding it makes that independent of control flow.
+            def read(name, base=base):
                 try:
                     with open(os.path.join(base, name), encoding="utf-8") as fh:
                         return fh.read().strip()
                 except OSError:
                     return ""
+
             return {
                 "dir": d,
                 "step": read("msgnum"),
@@ -205,7 +211,7 @@ def conflicted_paths(root):
     return paths
 
 
-def classify_conflict(root, path, stages):
+def classify_conflict(_root, path, stages):
     """'gitlink' | 'registry' | 'judgement', and WHY.
 
     THE TAXONOMY IS MEASURED, not invented. Ten conflicts across two real
@@ -434,7 +440,7 @@ def resolve_halt(root):
     resolved, blocked = {}, []
     paths = conflicted_paths(root)
     if paths is None:
-        raise Refusal("could not read the index; refusing to resolve blind")
+        raise RefusalError("could not read the index; refusing to resolve blind")
     for path in sorted(paths):
         kind, why = classify_conflict(root, path, paths[path])
         if kind == "gitlink":
@@ -442,12 +448,18 @@ def resolve_halt(root):
             shas = {n: sha for n, (sha, _m) in paths[path].items()}
             tip = None
             rc, head, _ = run_git(["rev-parse", "HEAD"], cwd=repo)
-            if rc == 0 and head and 2 in shas and 3 in shas:
-                if is_ancestor(repo, shas[2], head) and is_ancestor(repo, shas[3], head):
-                    tip = head
+            if (
+                rc == 0
+                and head
+                and 2 in shas
+                and 3 in shas
+                and is_ancestor(repo, shas[2], head)
+                and is_ancestor(repo, shas[3], head)
+            ):
+                tip = head
             try:
                 target, ruling = resolve_gitlink_target(repo, shas, rebased_tip=tip)
-            except Refusal as exc:
+            except RefusalError as exc:
                 blocked.append((path, "gitlink", str(exc)))
                 continue
             resolved[path] = ("gitlink", target, ruling)
@@ -536,6 +548,7 @@ def equivalent(repo, base, old_tip, new_tip, runner=None):
     absorbed = [s for s in split_order if split_marks[s] == "-" and s not in gone]
     return carried, absorbed, missing
 
+
 def classify(repo, gitlink, base_ref="origin/main"):
     """'reachable' | 'ahead' | 'diverged' | 'unknown' for a gitlink vs base."""
     back = is_ancestor(repo, gitlink, base_ref)
@@ -606,7 +619,7 @@ def branch_exists(repo, branch):
 
 
 def resolve_gitlink_target(repo, stages, rebased_tip=None):
-    """Which commit the gitlink must point at. Raises Refusal when unknowable.
+    """Which commit the gitlink must point at. Raises RefusalError when unknowable.
 
     THE CASE TABLE, and the reason this function exists at all. On a gitlink
     conflict BOTH obvious answers are wrong, and both leave a clean tree and a
@@ -624,18 +637,18 @@ def resolve_gitlink_target(repo, stages, rebased_tip=None):
         return rebased_tip, "the submodule's rebased tip (in neither conflict stage)"
     ours, theirs = stages.get(2), stages.get(3)
     if not ours or not theirs:
-        raise Refusal("incomplete conflict stages; refusing to guess")
+        raise RefusalError("incomplete conflict stages; refusing to guess")
     fwd = is_ancestor(repo, ours, theirs)
     back = is_ancestor(repo, theirs, ours)
     if fwd is None or back is None:
-        raise Refusal("could not compute ancestry between the two stages")
+        raise RefusalError("could not compute ancestry between the two stages")
     if fwd and not back:
         return theirs, "the replayed side is a descendant of the base side"
     if back and not fwd:
         return ours, "the base side is a descendant of the replayed side"
     if fwd and back:
         return ours, "both sides are the same commit"
-    raise Refusal(
+    raise RefusalError(
         "the two sides genuinely diverged and neither contains the other; this "
         "submodule needs its own branch rebased first (rebase-submodules)"
     )
@@ -653,12 +666,12 @@ def validate_push_args(args):
     """
     for a in args:
         if a in FORBIDDEN_PUSH_FLAGS or a.startswith("--force="):
-            raise Refusal(
+            raise RefusalError(
                 "refusing %s: only --force-with-lease is permitted, because it is "
                 "the one form that refuses to clobber another push" % a
             )
         if a.startswith("+"):
-            raise Refusal(
+            raise RefusalError(
                 "refusing a leading '+' refspec (%s): it forces the ref the same "
                 "way --force does" % a
             )
@@ -667,7 +680,7 @@ def validate_push_args(args):
 
 def refuse_main(branch):
     if branch in ("main", "master", "origin/main", "origin/master"):
-        raise Refusal("refusing to force-push %s; main is never rewritten here" % branch)
+        raise RefusalError("refusing to force-push %s; main is never rewritten here" % branch)
     return True
 
 
@@ -761,7 +774,7 @@ class Plan:
 def repo_root():
     rc, out, _ = run_git(["rev-parse", "--show-toplevel"], cwd=os.getcwd())
     if rc != 0:
-        raise Refusal("not inside a git repository")
+        raise RefusalError("not inside a git repository")
     return out
 
 
@@ -801,7 +814,7 @@ def main(argv):
             )
         if sub == "force-push":
             if len(args) < 2:
-                raise Refusal("force-push needs a branch")
+                raise RefusalError("force-push needs a branch")
             branch = args[1]
             refuse_main(branch)
             validate_push_args(args[2:])
@@ -810,14 +823,14 @@ def main(argv):
                 repo = os.path.join(root, path)
                 dels = staged_deletions(repo)
                 if dels is None:
-                    raise Refusal("could not read staged deletions in %s" % path)
+                    raise RefusalError("could not read staged deletions in %s" % path)
                 plan.check(
                     "%s has no staged deletions" % path,
                     not dels,
                     ("%d staged deletion(s)" % len(dels)) if dels else "",
                 )
                 if dels:
-                    raise Refusal(
+                    raise RefusalError(
                         "%s has %d staged deletion(s); the parent shows only 'm %s' "
                         "and would hide them" % (path, len(dels), path)
                     )
@@ -829,7 +842,7 @@ def main(argv):
             )
         elif sub == "rebase-submodules":
             if len(args) < 2:
-                raise Refusal("rebase-submodules needs a branch")
+                raise RefusalError("rebase-submodules needs a branch")
             branch = args[1]
             refuse_main(branch)
             any_found = False
@@ -846,9 +859,9 @@ def main(argv):
                 # module's own rule ("an unreadable probe is never a pass")
                 # holding on one path out of three.
                 if dels is None:
-                    raise Refusal("could not read staged deletions for %s" % path)
+                    raise RefusalError("could not read staged deletions for %s" % path)
                 if dels:
-                    raise Refusal("%s has staged deletion(s); refusing" % path)
+                    raise RefusalError("%s has staged deletion(s); refusing" % path)
                 plan.check("%s has a %s branch" % (path, branch), True)
                 plan.cmd(["fetch", "origin", base], repo)
                 plan.cmd(["checkout", branch], repo)
@@ -865,7 +878,7 @@ def main(argv):
             for path, base in submodules(root):
                 stages = conflict_stages(root, path)
                 if stages is None:
-                    raise Refusal("could not read conflict stages for %s" % path)
+                    raise RefusalError("could not read conflict stages for %s" % path)
                 if not stages:
                     continue
                 found = True
@@ -878,14 +891,14 @@ def main(argv):
                 plan.cmd(["add", "--", path], root)
                 contains = is_ancestor(repo, "origin/%s" % base, target)
                 if contains is None:
-                    raise Refusal("%s: could not verify the choice contains the base" % path)
+                    raise RefusalError("%s: could not verify the choice contains the base" % path)
                 plan.check(
                     "%s: chosen commit contains origin/%s" % (path, base),
                     contains,
                     "this is the only check that catches an ours/theirs mistake",
                 )
                 if not contains:
-                    raise Refusal(
+                    raise RefusalError(
                         "%s: the chosen commit does NOT contain origin/%s, which is "
                         "the silent-rollback failure; refusing" % (path, base)
                     )
@@ -894,27 +907,29 @@ def main(argv):
 
         elif sub == "merge-submodule":
             if len(args) < 3:
-                raise Refusal("merge-submodule needs <path> <new-sha>")
+                raise RefusalError("merge-submodule needs <path> <new-sha>")
             path, new_sha = args[1], args[2]
             known = [p for p, _ in submodules(root)]
             base_branch = dict(submodules(root)).get(path, "main")
             if path not in known:
-                raise Refusal("%r is not a submodule of this repo (have: %s)"
-                              % (path, ", ".join(known)))
+                raise RefusalError(
+                    "%r is not a submodule of this repo (have: %s)" % (path, ", ".join(known))
+                )
             repo = os.path.join(root, path)
             rc, old_sha, _ = run_git(["rev-parse", "HEAD"], cwd=repo)
             if rc != 0:
-                raise Refusal("could not read the current pointer for %s" % path)
+                raise RefusalError("could not read the current pointer for %s" % path)
             dels = staged_deletions(repo)
             if dels is None:
-                raise Refusal("could not read staged deletions for %s" % path)
+                raise RefusalError("could not read staged deletions for %s" % path)
             if dels:
-                raise Refusal("%s has staged deletion(s); refusing" % path)
+                raise RefusalError("%s has staged deletion(s); refusing" % path)
             plan.cmd(["fetch", "origin"], repo)
             same = trees_identical(repo, old_sha, new_sha)
             if same is None:
-                raise Refusal("could not diff %s against %s in %s"
-                              % (old_sha[:12], new_sha[:12], path))
+                raise RefusalError(
+                    "could not diff %s against %s in %s" % (old_sha[:12], new_sha[:12], path)
+                )
             plan.check(
                 "%s: trees identical between %s and %s" % (path, old_sha[:12], new_sha[:12]),
                 same,
@@ -922,16 +937,16 @@ def main(argv):
                 "diff means main advanced mid-merge",
             )
             if not same:
-                raise Refusal(
+                raise RefusalError(
                     "%s: the trees differ, so this is not a content-neutral pointer "
                     "move; stop and find out what diverged" % path
                 )
             fwd = is_ancestor(repo, old_sha, new_sha)
             if fwd is None:
-                raise Refusal("%s: could not verify the new pointer is a descendant" % path)
+                raise RefusalError("%s: could not verify the new pointer is a descendant" % path)
             plan.check("%s: new pointer is not a rollback" % path, fwd)
             if not fwd:
-                raise Refusal(
+                raise RefusalError(
                     "%s: %s is NOT a descendant of the recorded %s; that is a pointer "
                     "rollback" % (path, new_sha[:12], old_sha[:12])
                 )
@@ -948,7 +963,7 @@ def main(argv):
                 "state=%s" % state,
             )
             if state != "reachable":
-                raise Refusal(
+                raise RefusalError(
                     "%s: %s is not reachable from origin/%s (state=%s). main must "
                     "never depend on a commit that lives only on a branch; merge "
                     "the submodule PR first, then bump to the merged commit"
@@ -970,13 +985,18 @@ def main(argv):
                 plan.note(
                     "rebase HALTED: step %s of %s, replaying %s onto %s (%s)"
                     % (
-                        st["step"] or "?", st["total"] or "?",
-                        (st["stopped"] or "?")[:12], (st["onto"] or "?")[:12], st["dir"],
+                        st["step"] or "?",
+                        st["total"] or "?",
+                        (st["stopped"] or "?")[:12],
+                        (st["onto"] or "?")[:12],
+                        st["dir"],
                     )
                 )
                 paths = conflicted_paths(root)
                 if paths is None:
-                    raise Refusal("could not read the index; refusing to describe a halt blind")
+                    raise RefusalError(
+                        "could not read the index; refusing to describe a halt blind"
+                    )
                 if not paths:
                     plan.note("no conflicted paths: the halt is a stopped edit or an empty commit")
                 for path in sorted(paths):
@@ -1002,19 +1022,23 @@ def main(argv):
             # cause. So one judgement path means nothing is written.
             st = rebase_state(root)
             if st is None:
-                raise Refusal("no rebase in progress; nothing to resolve")
+                raise RefusalError("no rebase in progress; nothing to resolve")
             resolved, blocked = resolve_halt(root)
             if not resolved and not blocked:
                 plan.note("no conflicted paths: the halt is a stopped edit or an empty commit")
             for path, (how, payload, ruling) in sorted(resolved.items()):
-                label = "%s -> %s" % (path, "gitlink " + payload[:12] if how == "gitlink" else "registry union")
+                label = "%s -> %s" % (
+                    path,
+                    "gitlink " + payload[:12] if how == "gitlink" else "registry union",
+                )
                 plan.check(label, True, ruling)
             for path, kind, why in blocked:
                 plan.check("%s -> %s" % (path, kind), False, why)
             if blocked:
                 plan.note("")
-                plan.note("%d path(s) need you, so NOTHING was written. Resolving only the"
-                          % len(blocked))
+                plan.note(
+                    "%d path(s) need you, so NOTHING was written. Resolving only the" % len(blocked)
+                )
                 plan.note("decidable half leaves an index that reads as nearly done and")
                 plan.note("fails later for a reason that no longer names the cause.")
                 plan.note("NEVER `git rebase --skip`: it drops the commit entirely.")
@@ -1045,7 +1069,7 @@ def main(argv):
                 while True:
                     steps += 1
                     if steps > REBASE_MAX_STEPS:
-                        raise Refusal(
+                        raise RefusalError(
                             "gave up after %d halts; a rebase this long is not a loop "
                             "to automate, it is a rebase to reconsider" % REBASE_MAX_STEPS
                         )
@@ -1055,7 +1079,12 @@ def main(argv):
                         break
                     plan.note(
                         "halt %d: step %s of %s, replaying %s"
-                        % (steps, st["step"] or "?", st["total"] or "?", (st["stopped"] or "?")[:12])
+                        % (
+                            steps,
+                            st["step"] or "?",
+                            st["total"] or "?",
+                            (st["stopped"] or "?")[:12],
+                        )
                     )
                     resolved, blocked = resolve_halt(root)
                     for path, kind, why in blocked:
@@ -1082,12 +1111,11 @@ def main(argv):
                     plan.steps = [s for s in plan.steps if s[0] != "cmd" and s[0] != "write"]
                     if failed:
                         argv_txt = " ".join(failed[0])
-                        raise Refusal(
+                        raise RefusalError(
                             "halt %d: `%s` failed -- %s. The tree is mid-rebase; "
                             "`git rebase --abort` returns to the step-0 tips."
                             % (steps, argv_txt, failed[2])
                         )
-
 
         elif sub == "snapshot":
             # The pre-rebase tips, in a form verify-rebase can read back.
@@ -1097,7 +1125,7 @@ def main(argv):
             plan.note("save this, then pass the file to verify-rebase")
             rc, tip, _ = run_git(["rev-parse", "HEAD"], cwd=root)
             if rc != 0:
-                raise Refusal("could not read the console HEAD")
+                raise RefusalError("could not read the console HEAD")
             plan.note("console=%s" % tip)
             for path, _b in submodules(root):
                 repo = os.path.join(root, path)
@@ -1106,7 +1134,7 @@ def main(argv):
 
         elif sub == "verify-rebase":
             if len(args) < 2:
-                raise Refusal("verify-rebase needs the snapshot file from `--git snapshot`")
+                raise RefusalError("verify-rebase needs the snapshot file from `--git snapshot`")
             try:
                 with open(args[1], encoding="utf-8") as fh:
                     snap = dict(
@@ -1115,9 +1143,11 @@ def main(argv):
                         if "=" in ln and not ln.lstrip().startswith("#")
                     )
             except OSError as exc:
-                raise Refusal("cannot read the snapshot: %s" % exc)
+                raise RefusalError("cannot read the snapshot: %s" % exc) from exc
             if not snap:
-                raise Refusal("the snapshot names no repo; refusing to report a pass over nothing")
+                raise RefusalError(
+                    "the snapshot names no repo; refusing to report a pass over nothing"
+                )
             # PER-REPO BASE, not one base for all. The console rebases onto
             # whatever it was told; a SUBMODULE always rebases onto its own
             # main, read from .gitmodules. Passing the console's base to a
@@ -1146,7 +1176,7 @@ def main(argv):
                     rc_l, local_sha, _ = run_git(
                         ["rev-parse", "--verify", "--quiet", console_base], cwd=root
                     )
-                    rc_o, remote_sha, _ = run_git(
+                    _rc_o, remote_sha, _ = run_git(
                         ["rev-parse", "origin/%s" % console_base], cwd=root
                     )
                     if rc_l == 0 and local_sha != remote_sha:
@@ -1160,16 +1190,16 @@ def main(argv):
             for name, old_tip in sorted(snap.items()):
                 repo = root if name == "console" else os.path.join(root, name)
                 base = (
-                    console_base
-                    if name == "console"
-                    else "origin/%s" % sub_base.get(name, "main")
+                    console_base if name == "console" else "origin/%s" % sub_base.get(name, "main")
                 )
                 rc, new_tip, _ = run_git(["rev-parse", "HEAD"], cwd=repo)
                 if rc != 0:
-                    raise Refusal("%s: could not read HEAD" % name)
+                    raise RefusalError("%s: could not read HEAD" % name)
                 res = equivalent(repo, base, old_tip, new_tip)
                 if res is None:
-                    raise Refusal("%s: could not compare %s..%s" % (name, old_tip[:12], new_tip[:12]))
+                    raise RefusalError(
+                        "%s: could not compare %s..%s" % (name, old_tip[:12], new_tip[:12])
+                    )
                 carried, absorbed, missing = res
                 plan.check(
                     "%s: %d carried, %d absorbed as patch-equivalent"
@@ -1180,15 +1210,15 @@ def main(argv):
                     else "",
                 )
                 if missing:
-                    raise Refusal(
+                    raise RefusalError(
                         "%s: %d commit(s) reached neither the new range nor a patch-equivalent. "
                         "That is what a `git rebase --skip` looks like, and a COUNT cannot "
                         "distinguish it from a legitimate rebase-merge drop." % (name, len(missing))
                     )
 
         else:
-            raise Refusal("unknown subcommand %r" % sub)
-    except Refusal as exc:
+            raise RefusalError("unknown subcommand %r" % sub)
+    except RefusalError as exc:
         sys.stderr.write("REFUSED: %s\n" % exc)
         return 2
 
@@ -1232,13 +1262,11 @@ def main(argv):
     #
     # Everything else still refuses. A rebase halts mid-list and needs a
     # decision this module cannot make; see agent/PLAN-resumable-rebase-executor.md.
-    EXECUTABLE = ("force-push", "resolve-gitlinks", "rebase-continue")
     if sub not in EXECUTABLE:
         sys.stderr.write(
             "\nREFUSED: --execute is implemented for %s only.\n"
             "The steps above are safe to run yourself, and running them from Bash\n"
-            "keeps them in the transcript and under the pre-bash guards.\n"
-            % ", ".join(EXECUTABLE)
+            "keeps them in the transcript and under the pre-bash guards.\n" % ", ".join(EXECUTABLE)
         )
         return 2
 
@@ -1345,8 +1373,14 @@ def selftest():
     check("a feature branch is allowed", refuse_main("0826-1"))
 
     st = {1: "a" * 40, 2: "b" * 40, 3: "c" * 40}
-    check("a rebased tip wins over both stages", resolve_gitlink_target(".", st, "d" * 40)[0] == "d" * 40)
-    check("incomplete stages are refused", _refused_kw(resolve_gitlink_target, ".", {1: "a" * 40}, None))
+    check(
+        "a rebased tip wins over both stages",
+        resolve_gitlink_target(".", st, "d" * 40)[0] == "d" * 40,
+    )
+    check(
+        "incomplete stages are refused",
+        _refused_kw(resolve_gitlink_target, ".", {1: "a" * 40}, None),
+    )
 
     check("classify names the unknown case", classify("/nonexistent", "x", "y") == "unknown")
 
@@ -1371,7 +1405,7 @@ def selftest():
     # them.
     calls = []
 
-    def fake(argv, cwd, timeout=None):
+    def fake(argv, cwd, **_kw):
         calls.append((argv, cwd))
         return 0, "", ""
 
@@ -1392,7 +1426,7 @@ def selftest():
     # never follow a FAILED submodule push, which is incident #541's shape.
     calls.clear()
 
-    def fake_fail(argv, cwd, timeout=None):
+    def fake_fail(argv, cwd, **_kw):
         calls.append((argv, cwd))
         return (1, "", "boom") if cwd == "/sub" else (0, "", "")
 
@@ -1424,7 +1458,7 @@ def selftest():
         """accounted: {old_sha: mark} from `cherry NEW OLD`.
         split:      {old_sha: mark} from `cherry BASE OLD`."""
 
-        def run(argv, cwd, timeout=None):
+        def run(argv, **_kw):
             if argv[0] != "cherry":
                 return 1, "", "unexpected %r" % argv
             table = accounted if argv[1] == "NEW" else split
@@ -1432,45 +1466,69 @@ def selftest():
 
         return run
 
-    r = equivalent("/r", "BASE", "OLD", "NEW",
-                   runner=cherry({"o1": "-", "o2": "-"}, {"o1": "+", "o2": "+"}))
+    r = equivalent(
+        "/r", "BASE", "OLD", "NEW", runner=cherry({"o1": "-", "o2": "-"}, {"o1": "+", "o2": "+"})
+    )
     check("every commit carried -> nothing missing", r == (["o1", "o2"], [], []))
 
-    r = equivalent("/r", "BASE", "OLD", "NEW",
-                   runner=cherry({"o1": "-", "o2": "-"}, {"o1": "+", "o2": "-"}))
-    check("a patch-equivalent drop is ABSORBED, not missing",
-          r is not None and r[0] == ["o1"] and r[1] == ["o2"] and r[2] == [])
+    r = equivalent(
+        "/r", "BASE", "OLD", "NEW", runner=cherry({"o1": "-", "o2": "-"}, {"o1": "+", "o2": "-"})
+    )
+    check(
+        "a patch-equivalent drop is ABSORBED, not missing",
+        r is not None and r[0] == ["o1"] and r[1] == ["o2"] and r[2] == [],
+    )
 
     # THE DEFECT: a pre-rebase commit with no equivalent anywhere in the new tip.
-    r = equivalent("/r", "BASE", "OLD", "NEW",
-                   runner=cherry({"o1": "-", "o2": "+"}, {"o1": "+", "o2": "+"}))
-    check("a commit that reached NEITHER is reported MISSING",
-          r is not None and r[2] == ["o2"] and r[0] == ["o1"])
+    r = equivalent(
+        "/r", "BASE", "OLD", "NEW", runner=cherry({"o1": "-", "o2": "+"}, {"o1": "+", "o2": "+"})
+    )
+    check(
+        "a commit that reached NEITHER is reported MISSING",
+        r is not None and r[2] == ["o2"] and r[0] == ["o1"],
+    )
 
     # THE REGRESSION THIS REWRITE EXISTS FOR: every commit re-keyed by the
     # rebase, all of them genuinely present. The old sha-matching version
     # reported ALL of these missing and then hid it behind a count.
-    r = equivalent("/r", "BASE", "OLD", "NEW",
-                   runner=cherry({"o%d" % i: "-" for i in range(1, 49)},
-                                 {"o%d" % i: ("+" if i <= 28 else "-") for i in range(1, 49)}))
-    check("48 re-keyed commits: 28 carried, 20 absorbed, 0 missing",
-          r is not None and len(r[0]) == 28 and len(r[1]) == 20 and r[2] == [])
+    r = equivalent(
+        "/r",
+        "BASE",
+        "OLD",
+        "NEW",
+        runner=cherry(
+            {"o%d" % i: "-" for i in range(1, 49)},
+            {"o%d" % i: ("+" if i <= 28 else "-") for i in range(1, 49)},
+        ),
+    )
+    check(
+        "48 re-keyed commits: 28 carried, 20 absorbed, 0 missing",
+        r is not None and len(r[0]) == 28 and len(r[1]) == 20 and r[2] == [],
+    )
 
     # AND THE COUNT MUST NOT RESCUE A REAL LOSS. The old version zeroed `missing`
     # whenever carried+absorbed reached the old count; here the totals match and
     # a commit is still gone.
-    r = equivalent("/r", "BASE", "OLD", "NEW",
-                   runner=cherry({"o1": "-", "o2": "-", "o3": "+"},
-                                 {"o1": "+", "o2": "-", "o3": "+"}))
-    check("CONTROL: a matching total does not excuse a missing commit",
-          r is not None and r[2] == ["o3"])
+    r = equivalent(
+        "/r",
+        "BASE",
+        "OLD",
+        "NEW",
+        runner=cherry({"o1": "-", "o2": "-", "o3": "+"}, {"o1": "+", "o2": "-", "o3": "+"}),
+    )
+    check(
+        "CONTROL: a matching total does not excuse a missing commit",
+        r is not None and r[2] == ["o3"],
+    )
 
     # An unreadable probe is not "nothing missing".
-    def broken(argv, cwd, timeout=None):
+    def broken(*_a, **_kw):
         return 1, "", "boom"
 
-    check("CONTROL: an unreadable probe returns None, never an empty result",
-          equivalent("/r", "BASE", "OLD", "NEW", runner=broken) is None)
+    check(
+        "CONTROL: an unreadable probe returns None, never an empty result",
+        equivalent("/r", "BASE", "OLD", "NEW", runner=broken) is None,
+    )
 
     # THE CONFLICT CLASSIFIER. Every case below is a conflict that ACTUALLY
     # occurred while rebasing this branch twice on 2026-08-26/27 -- ten of them,
@@ -1480,26 +1538,36 @@ def selftest():
     def kind(path, stages):
         return classify_conflict(".", path, stages)[0]
 
-    THREE = {1: ("a", "100644"), 2: ("b", "100644"), 3: ("c", "100644")}
-    LINK = {1: ("a", "160000"), 2: ("b", "160000"), 3: ("c", "160000")}
-    check("a submodule pointer classifies as gitlink",
-          kind("private/account", LINK) == "gitlink")
-    check("a keyed manifest classifies as registry",
-          kind("scripts/ci-runner/manifest.ts", THREE) == "registry")
-    check("a sectioned doc classifies as registry",
-          kind("docs/ci-overhaul/06-progress.md", THREE) == "registry")
+    three = {1: ("a", "100644"), 2: ("b", "100644"), 3: ("c", "100644")}
+    link = {1: ("a", "160000"), 2: ("b", "160000"), 3: ("c", "160000")}
+    check("a submodule pointer classifies as gitlink", kind("private/account", link) == "gitlink")
+    check(
+        "a keyed manifest classifies as registry",
+        kind("scripts/ci-runner/manifest.ts", three) == "registry",
+    )
+    check(
+        "a sectioned doc classifies as registry",
+        kind("docs/ci-overhaul/06-progress.md", three) == "registry",
+    )
     # THE TWO THAT MUST STAY UNTOUCHED. run.sh was two designs for one function;
     # wl_agents.py is where a blind union glued `touched`+`see` into one token
     # and silently killed two stopwords. Both must land in judgement.
-    check("CONTROL: two designs for one function is judgement",
-          kind("run.sh", THREE) == "judgement")
-    check("CONTROL: a token list is judgement, not a free union",
-          kind(".claude/hooks/stop/wl_agents.py", THREE) == "judgement")
-    check("CONTROL: incomplete stages refuse rather than guess",
-          kind("some.json", {2: ("b", "100644"), 3: ("c", "100644")}) == "judgement")
+    check(
+        "CONTROL: two designs for one function is judgement", kind("run.sh", three) == "judgement"
+    )
+    check(
+        "CONTROL: a token list is judgement, not a free union",
+        kind(".claude/hooks/stop/wl_agents.py", three) == "judgement",
+    )
+    check(
+        "CONTROL: incomplete stages refuse rather than guess",
+        kind("some.json", {2: ("b", "100644"), 3: ("c", "100644")}) == "judgement",
+    )
     # No rebase in progress is the NORMAL case, never a halt.
-    check("CONTROL: rebase_state is None outside a rebase",
-          rebase_state("/nonexistent-root-for-selftest") is None)
+    check(
+        "CONTROL: rebase_state is None outside a rebase",
+        rebase_state("/nonexistent-root-for-selftest") is None,
+    )
 
     # THE REGISTRY UNION (PLAN step 4). A union that merely PARSES proves
     # nothing, which is not a hypothesis: merging both waves' additions to a
@@ -1511,17 +1579,23 @@ def selftest():
         return json_union(base, ours, theirs)
 
     ok, why = u('["a"]', '["a","mine"]', '["a","theirs"]')
-    check("two appends to a scalar registry union cleanly",
-          ok is not None and json.loads(ok) == ["a", "mine", "theirs"])
+    check(
+        "two appends to a scalar registry union cleanly",
+        ok is not None and json.loads(ok) == ["a", "mine", "theirs"],
+    )
     check("the union reports what it did", "identity set verified" in why)
 
     ok, _ = u('[{"id":"a"}]', '[{"id":"a"},{"id":"m"}]', '[{"id":"a"},{"id":"t"}]')
-    check("two appends to a KEYED registry union by id",
-          ok is not None and [e["id"] for e in json.loads(ok)] == ["a", "m", "t"])
+    check(
+        "two appends to a KEYED registry union by id",
+        ok is not None and [e["id"] for e in json.loads(ok)] == ["a", "m", "t"],
+    )
 
     ok, _ = u('{"a":1}', '{"a":1,"m":2}', '{"a":1,"t":3}')
-    check("two appends to an object registry union by key",
-          ok is not None and json.loads(ok) == {"a": 1, "m": 2, "t": 3})
+    check(
+        "two appends to an object registry union by key",
+        ok is not None and json.loads(ok) == {"a": 1, "m": 2, "t": 3},
+    )
 
     # A DELETION IS NOT AN APPEND, and this is the invariant people skip. A
     # union of "I removed x" and "I added y" silently brings x back, which is
@@ -1529,26 +1603,30 @@ def selftest():
     # session drains are shrink-only, so resurrecting an entry would re-arm a
     # suppression somebody deliberately retired.
     ok, why = u('["a","b"]', '["a"]', '["a","b","t"]')
-    check("CONTROL: a DELETED entry refuses rather than resurrecting",
-          ok is None and "DELETED" in why)
+    check(
+        "CONTROL: a DELETED entry refuses rather than resurrecting", ok is None and "DELETED" in why
+    )
 
     # Both sides editing the SAME entry differently is a real collision.
     ok, why = u('[{"id":"a","v":1}]', '[{"id":"a","v":2}]', '[{"id":"a","v":3}]')
-    check("CONTROL: two different edits to one entry is judgement",
-          ok is None and "differently" in why)
+    check(
+        "CONTROL: two different edits to one entry is judgement",
+        ok is None and "differently" in why,
+    )
     ok, why = u('{"a":1}', '{"a":2}', '{"a":3}')
-    check("CONTROL: the same, for an object registry",
-          ok is None and "differently" in why)
+    check("CONTROL: the same, for an object registry", ok is None and "differently" in why)
 
     # Shape disagreement, unparseable text, and a list this code cannot key are
     # each a refusal, not a guess.
-    check("CONTROL: a list and an object do not merge",
-          u('["a"]', '["a","m"]', '{"a":1}')[0] is None)
-    check("CONTROL: unparseable JSON refuses",
-          u('["a"]', 'not json', '["a"]')[0] is None)
+    check(
+        "CONTROL: a list and an object do not merge", u('["a"]', '["a","m"]', '{"a":1}')[0] is None
+    )
+    check("CONTROL: unparseable JSON refuses", u('["a"]', "not json", '["a"]')[0] is None)
     ok, why = u('[{"x":1}]', '[{"x":1},{"x":2}]', '[{"x":1},{"x":3}]')
-    check("CONTROL: a list of objects with no id field is not a registry",
-          ok is None and "identifies an entry" in why)
+    check(
+        "CONTROL: a list of objects with no id field is not a registry",
+        ok is None and "identifies an entry" in why,
+    )
 
     # THE GLUED-SEAM CASE, required by the plan by name. The defect that shipped
     # was a TEXTUAL union of two token lists; the point of doing this
@@ -1557,15 +1635,18 @@ def selftest():
     # concatenation that killed them is not even expressible here.
     ok, _ = u('["fixed"]', '["fixed","touched"]', '["fixed","see"]')
     merged = json.loads(ok) if ok else []
-    check("the glued-seam defect is not expressible: both tokens survive whole",
-          "touched" in merged and "see" in merged and "touchedsee" not in merged)
-    check("CONTROL: and the count is the union, not the concatenation",
-          len(merged) == 3)
+    check(
+        "the glued-seam defect is not expressible: both tokens survive whole",
+        "touched" in merged and "see" in merged and "touchedsee" not in merged,
+    )
+    check("CONTROL: and the count is the union, not the concatenation", len(merged) == 3)
 
     # Duplicates on ONE side must not silently collapse the identity check.
     ok, why = u('["a"]', '["a","m","m"]', '["a"]')
-    check("a side repeating an entry still yields each identity once",
-          ok is not None and json.loads(ok) == ["a", "m"])
+    check(
+        "a side repeating an entry still yields each identity once",
+        ok is not None and json.loads(ok) == ["a", "m"],
+    )
 
     # EVERY `dels is None` GUARD, BOTH WAYS. These were the two fail-OPEN sites
     # this session closed: `staged_deletions` returns None when its probe fails,
@@ -1602,8 +1683,10 @@ def selftest():
             refused == want_refusal,
         )
         if want_refusal and label == "an UNREADABLE probe":
-            check("and the refusal SAYS the probe was unreadable, not that the tree was clean",
-                  "could not read staged deletions" in err)
+            check(
+                "and the refusal SAYS the probe was unreadable, not that the tree was clean",
+                "could not read staged deletions" in err,
+            )
     return 0 if fail == 0 else 1
 
 
@@ -1611,15 +1694,15 @@ def _refused_kw(fn, *a):
     try:
         fn(*a)
         return False
-    except Refusal:
+    except RefusalError:
         return True
 
 
 def _refused(fn, arg):
     try:
-        fn(arg if isinstance(arg, list) else arg)
+        fn(arg)
         return False
-    except Refusal:
+    except RefusalError:
         return True
 
 

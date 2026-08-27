@@ -1182,9 +1182,7 @@ def main():
         # dirties a shared working tree, which is the one thing this repo's
         # sessions cannot tolerate from each other.
         root = pathlib.Path(
-            os.environ.get("WORKLIST_PUBLISH_ROOT")
-            or C.project_root(os.getcwd())
-            or os.getcwd()
+            os.environ.get("WORKLIST_PUBLISH_ROOT") or C.project_root(os.getcwd()) or os.getcwd()
         )
         out = root / "agent" / "pr" / ("%s.md" % branch.replace("/", "-"))
         out.parent.mkdir(parents=True, exist_ok=True)
@@ -1224,20 +1222,25 @@ def main():
             sys.exit(0)
         if sub == "add":
             if len(rest) < 2:
-                sys.stderr.write(M.CLI_EPIC_REFUSED % "usage: --epic <me> add <epic-id> <item-id>...")
+                sys.stderr.write(
+                    M.CLI_EPIC_REFUSED % "usage: --epic <me> add <epic-id> <item-id>..."
+                )
                 sys.exit(2)
             got = E.add_to_epic(wl, me, rest[0], rest[1:])
             if not got:
-                sys.stderr.write(M.CLI_EPIC_REFUSED % ("no epic %r; run --epic <me> list" % rest[0]))
+                sys.stderr.write(
+                    M.CLI_EPIC_REFUSED % ("no epic %r; run --epic <me> list" % rest[0])
+                )
                 sys.exit(2)
             total = len(E.load_epics(wl)[got].get("covers") or [])
             sys.stdout.write(M.CLI_EPIC_ATTACHED % (got, total))
             sys.exit(0)
         if sub == "list":
             for eid, rec in E.load_epics(wl).items():
-                sys.stdout.write("#%s  %s  (%d item(s))\n"
-                                 % (eid, rec.get("title") or "(untitled)",
-                                    len(rec.get("covers") or [])))
+                sys.stdout.write(
+                    "#%s  %s  (%d item(s))\n"
+                    % (eid, rec.get("title") or "(untitled)", len(rec.get("covers") or []))
+                )
             sys.exit(0)
         sys.stderr.write(M.CLI_EPIC_REFUSED % ("unknown subcommand %r" % sub))
         sys.exit(2)

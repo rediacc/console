@@ -454,18 +454,18 @@ def rule_history_rewrite_controls(cmd, _out, root, _resp):
 
 
 REBASE_DONE = re.compile(
-    r"Successfully rebased and updated|Applying:|^Rebasing \(\d+/\d+\)", re.M
+    r"Successfully rebased and updated|Applying:|^Rebasing \(\d+/\d+\)", re.MULTILINE
 )
 # Command position, like every other matcher in this family. The rule already
 # needs REAL rebase output to fire, so a mention alone cannot trigger it, but
 # anchoring costs nothing and this session fixed five mention-as-execution
 # false positives -- the cheapest time to be consistent is now.
 REBASE_CMD = re.compile(
-    r"(?:^|[;&|(]|\$\(|`)\s*git\b(?:\s+-[A-Za-z-]+\s+\S+)*\s+rebase\b", re.M
+    r"(?:^|[;&|(]|\$\(|`)\s*git\b(?:\s+-[A-Za-z-]+\s+\S+)*\s+rebase\b", re.MULTILINE
 )
 
 
-def rule_rebase_unverified(cmd, out, root, _resp):
+def rule_rebase_unverified(cmd, out, _root, _resp):
     """A rebase that SUCCEEDED can still be wrong, and nothing says so at the time.
 
     THE OPERATOR'S OBSERVATION, 2026-08-26: "you had known how and when to use

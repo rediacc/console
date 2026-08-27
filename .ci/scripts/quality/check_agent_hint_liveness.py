@@ -332,19 +332,18 @@ def glued_stopword_seams(src: str) -> list:
     them as literals and reports seventeen seams instead of one. Mention is not
     execution, in an analysis tool as much as in a guard.
     """
-    m = re.search(r"_STOPWORD_TEXT = \((.*?)\n\)", src, re.S)
+    m = re.search(r"_STOPWORD_TEXT = \((.*?)\n\)", src, re.DOTALL)
     if not m:
         return [("_STOPWORD_TEXT", "not found -- the list moved or was renamed")]
-    code = "\n".join(
-        ln for ln in m.group(1).split("\n") if not ln.lstrip().startswith("#")
-    )
+    code = "\n".join(ln for ln in m.group(1).split("\n") if not ln.lstrip().startswith("#"))
     lits = re.findall(r'"([^"]*)"', code)
     seams = []
     for i, lit in enumerate(lits[:-1]):
         nxt = lits[i + 1]
         if lit and nxt and not lit.endswith(" ") and not nxt.startswith(" "):
-            seams.append((lit.split()[-1] if lit.split() else lit,
-                          nxt.split()[0] if nxt.split() else nxt))
+            seams.append(
+                (lit.split()[-1] if lit.split() else lit, nxt.split()[0] if nxt.split() else nxt)
+            )
     return seams
 
 

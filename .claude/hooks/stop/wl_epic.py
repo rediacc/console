@@ -99,7 +99,10 @@ def load_epics(worklist):
         out[eid] = merged
     ordered = sorted(
         out.values(),
-        key=lambda r: (r.get("order") if r.get("order") is not None else 10**6, seen.index(r["id"])),
+        key=lambda r: (
+            r.get("order") if r.get("order") is not None else 10**6,
+            seen.index(r["id"]),
+        ),
     )
     return {r["id"]: r for r in ordered}
 
@@ -116,8 +119,9 @@ def add_to_epic(worklist, me, epic_id, item_ids):
     epics = load_epics(worklist)
     if epic_id not in epics:
         return None
-    record_epic(worklist, me, epic_id, epics[epic_id].get("title"), item_ids,
-                epics[epic_id].get("order"))
+    record_epic(
+        worklist, me, epic_id, epics[epic_id].get("title"), item_ids, epics[epic_id].get("order")
+    )
     return epic_id
 
 
@@ -157,7 +161,9 @@ def render(worklist, fold, heading="###"):
         for iid in covered:
             claimed.add(iid)
             r = items[iid]
-            lines.append("- [%s] `#%s` %s" % (r.get("state", " "), iid, neutralize(S.brief_text(r, cap=200))))
+            lines.append(
+                "- [%s] `#%s` %s" % (r.get("state", " "), iid, neutralize(S.brief_text(r, cap=200)))
+            )
         lines.append("")
     # An item in no epic is REPORTED, never hidden: silence here would be
     # indistinguishable from having no such work.
@@ -165,7 +171,9 @@ def render(worklist, fold, heading="###"):
     if orphans:
         lines.append("%s Not in any epic" % heading)
         lines.append("")
-        for r in orphans:
-            lines.append("- [%s] `#%s` %s" % (r.get("state", " "), r["id"], neutralize(S.brief_text(r, cap=200))))
+        lines.extend(
+            "- [%s] `#%s` %s" % (r.get("state", " "), r["id"], neutralize(S.brief_text(r, cap=200)))
+            for r in orphans
+        )
         lines.append("")
     return "\n".join(lines).rstrip() + "\n"

@@ -4261,9 +4261,8 @@ def run_stop(event, event_ok, worklist, hook_file):
         sysmsg_tail = (
             "" if not reg_forgot else " [reggate marker was corrupt; settled verdicts forgotten]"
         )
-        extras = (
-            ("\n\n" + ci_report if ci_report else "")
-            + ("\n\n" + queue_note if queue_note else "")
+        extras = ("\n\n" + ci_report if ci_report else "") + (
+            "\n\n" + queue_note if queue_note else ""
         )
         if os.environ.get("WORKLIST_FOCUS", "on").lower() in ("off", "0", "no"):
             C.emit(
