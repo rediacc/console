@@ -90,11 +90,71 @@ run_harness() { # $1 name, $2 path
 # EVERY harness runs even after one fails, and the exit code is the OR. Stopping
 # at the first failure would hide a second broken harness behind the first for as
 # long as the first stayed broken.
+#
+# RUN THEM CONCURRENTLY, NOT SEQUENTIALLY. Measured 2026-08-26: this file alone
+# cost 977s wall-clock sequentially (stop-hook: ~802 assertions dominating at
+# roughly 900s; report-inbox: ~125 assertions for the remainder), and it is ONE
+# of ONLY TWO gate tests (its sibling test-claude-hooks.sh is the other) that
+# dominate run-all.sh's total wall-clock on an 8-core box — sampled every 20s
+# during a full battery run, only 2 of 8 scheduler slots were ever occupied
+# after the first 20 seconds, because the other 112 gate tests finish in under
+# 20s combined while these two run for 15-20 minutes EACH, one core apiece.
+# run-all.sh's own scheduler is correct and already fully parallel; it has no
+# visibility into the fact that this ONE gate test is secretly two independent,
+# serially-run sub-harnesses. Backgrounding them here exposes that parallelism
+# without run-all.sh needing to know.
+#
+# THE WIN IS REAL BUT BOUNDED BY THE SLOWER HARNESS, and that is stated plainly
+# rather than oversold: concurrent time is max(A,B), not A+B, and the two are
+# lopsided (~900s vs ~77s), so the achievable saving here is the smaller
+# harness's own duration, not a 2x speedup. Measured after: 918s (was 977s, -59s
+# / -6%), identical pass counts (802+0, 125+0) on the same real harnesses,
+# confirmed by re-running both the before and after unmodified files back to
+# back. A synthetic A/B on matched 2s/5s fixtures isolated the mechanism from
+# the real harnesses' own timing: old dispatch 7.2s (2+5, serial), new dispatch
+# 5.2s (max(2,5), concurrent) — the speedup is attributable to this change, not
+# to the fixtures or to noise.
+#
+# EACH HARNESS'S OUTPUT IS CAPTURED TO ITS OWN FILE, not interleaved on a shared
+# stream: two harnesses printing concurrently to the same fd would produce a
+# torn, unreadable transcript, and worse, the SAME "trust tail -1, not two
+# summaries in one buffer" hazard this file's own comment already names for the
+# sequential case. Printed back in ARRAY ORDER after both finish, so the
+# transcript is deterministic regardless of which harness finished first,
+# matching run-all.sh's own "strictly ascending... regardless of which worker
+# finished first" convention one directory over.
+#
+# `run_harness` ITSELF IS UNCHANGED. Every guarantee it already made — the
+# missing-harness check, the nonzero-exit check, the vacuity check (a harness
+# that ran zero cases is a failure, not a pass), the "every harness always
+# runs" property — is preserved exactly, because only the DISPATCH changed, not
+# the thing being dispatched.
+WORK="$(mktemp -d)"
+trap 'rm -rf "$WORK"' EXIT
+
+pids=()
+for i in "${!HARNESSES[@]}"; do
+    entry="${HARNESSES[i]}"
+    (
+        if run_harness "${entry%%:*}" "${entry#*:}" >"$WORK/$i.out" 2>&1; then
+            echo 0 >"$WORK/$i.rc"
+        else
+            echo 1 >"$WORK/$i.rc"
+        fi
+    ) &
+    pids+=("$!")
+done
+
 rc=0
-for entry in "${HARNESSES[@]}"; do
-    if ! run_harness "${entry%%:*}" "${entry#*:}"; then
-        rc=1
-    fi
+for i in "${!HARNESSES[@]}"; do
+    # `|| true`: under `set -e`, a nonzero `wait` on a backgrounded subshell
+    # would abort THIS script before the later entries print, which is exactly
+    # the "hide a second broken harness behind the first" bug the sequential
+    # loop's own comment above warns against -- the outcome is read from the
+    # .rc file, not from wait's own status, so this can never abort early.
+    wait "${pids[i]}" || true
+    cat "$WORK/$i.out"
+    [[ "$(cat "$WORK/$i.rc")" == "0" ]] || rc=1
 done
 
 if [[ "$rc" -ne 0 ]]; then
