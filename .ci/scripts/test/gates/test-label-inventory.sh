@@ -318,6 +318,64 @@ test_real_tree_reconciles_against_an_injected_live_list() {
     log_pass "the real gate runs over the real labels file and fires in both directions"
 }
 
+test_malformed_live_json_fails_closed() {
+    # Found by the automated review of 01e7111c, and confirmed real: LIVE_JSON
+    # feeds a python heredoc that used to swallow a JSON decode failure with a
+    # bare `sys.exit(0)`. The outer bash captures that exit code as `drift_rc`,
+    # so a truncated/malformed API response (a real risk: `gh api ... --paginate
+    # || echo ""` can leave partial stdout on a mid-stream failure) read as "the
+    # comparison ran and found nothing" -- the exact swallowed-failure class
+    # 1eac336b already fixed once at the shell `|| true` level, one layer down.
+    local d="$1" rc=0
+    grep -E '^- name:' "$REAL_LABELS" | sed -E 's/^- name:[[:space:]]*//' >"$d/live.txt"
+    printf 'not valid json{{{' >"$d/live.json"
+    LAST_OUT="$(LABEL_INVENTORY_LIVE_FILE="$d/live.txt" LABEL_INVENTORY_LIVE_JSON_FILE="$d/live.json" bash "$GATE" 2>&1)" || rc=$?
+    assert_exit_code 1 "$rc" "malformed LIVE_JSON must fail closed, not report a clean tree (output: $LAST_OUT)"
+    assert_contains "$LAST_OUT" "FAILED to run" "the failure names itself as an unreadable comparison, not a clean reconciliation"
+    if grep -qi "all agree" <<<"$LAST_OUT"; then
+        log_fail "malformed LIVE_JSON was reported as a reconciled, agreeing tree"
+    fi
+
+    # CONTROL, built by construction: restore the exact bug this test exists
+    # for (a literal string replace of the CURRENT fixed line, not a pattern
+    # over unrelated text) and require the same input to flip to a false-clean
+    # exit 0. If it does not flip, this test is not measuring anything.
+    #
+    # The mutant is a plain copy elsewhere, so two more lines that assume the
+    # gate's OWN directory location also need patching, or it fails on those
+    # for a DIFFERENT reason (source-not-found, or "labels file not found"
+    # from get_repo_root()'s 3-levels-up walk landing nowhere) -- either of
+    # which looks identical to "control did not fire" without proving
+    # anything. Pinning both to the real, already-known $REPO_ROOT sidesteps
+    # that path math entirely.
+    local mutant="$d/mutant-gate.sh"
+    cp "$GATE" "$mutant"
+    python3 - "$mutant" "$REPO_ROOT" <<'PY'
+import sys
+path, repo_root = sys.argv[1], sys.argv[2]
+src = open(path, encoding="utf-8").read()
+needle = 'except Exception as e:'
+assert src.count(needle) == 1, "mutation anchor missing or ambiguous"
+start = src.index(needle)
+end = src.index("sys.exit(1)", start) + len("sys.exit(1)")
+src = src[:start] + "except Exception:\n    sys.exit(0)" + src[end:]
+source_needle = 'source "$SCRIPT_DIR/../lib/common.sh"'
+assert src.count(source_needle) == 1, "source anchor missing or ambiguous"
+src = src.replace(source_needle, 'source %r' % (repo_root + "/.ci/scripts/lib/common.sh"), 1)
+root_needle = 'REPO_ROOT="$(get_repo_root)"'
+assert src.count(root_needle) == 1, "REPO_ROOT anchor missing or ambiguous"
+src = src.replace(root_needle, 'REPO_ROOT=%r' % repo_root, 1)
+open(path, "w", encoding="utf-8").write(src)
+PY
+    local rc2=0
+    LAST_OUT="$(LABEL_INVENTORY_LIVE_FILE="$d/live.txt" LABEL_INVENTORY_LIVE_JSON_FILE="$d/live.json" bash "$mutant" 2>&1)" || rc2=$?
+    if [ "$rc2" -eq 1 ]; then
+        log_fail "CONTROL DID NOT FIRE: the mutant with the old sys.exit(0) still failed closed"
+    fi
+    assert_exit_code 0 "$rc2" "control: the pre-fix behavior swallows malformed JSON as a clean tree"
+    log_pass "malformed LIVE_JSON fails closed; control proves the old code did not"
+}
+
 log_test "test-label-inventory"
 with_temp_dir test_matching_sets_are_clean
 with_temp_dir test_declared_but_absent_fires
@@ -335,5 +393,6 @@ with_temp_dir test_re_verification_does_not_touch_the_undeclared_direction
 with_temp_dir test_injected_mode_without_a_probe_seam_still_reports
 with_temp_dir test_indented_fields_are_never_mistaken_for_names
 with_temp_dir test_real_tree_reconciles_against_an_injected_live_list
+with_temp_dir test_malformed_live_json_fails_closed
 echo ""
 log_pass "all tests passed"

@@ -345,8 +345,19 @@ import json, os, re, sys
 
 try:
     live = {l["name"]: l for l in json.loads(os.environ["LIVE_JSON"])}
-except Exception:
-    sys.exit(0)
+except Exception as e:
+    # NEVER exit 0 here. The outer bash captures this process's exit code as
+    # drift_rc and treats 0 as "the comparison ran and found nothing" -- the
+    # exact swallowed-failure class check-swallowed-failures.sh already caught
+    # once at the shell level (1eac336b: a `|| true` around $DRIFT made a
+    # crashed comparator indistinguishable from a clean tree). This is the
+    # same defect one level down: LIVE_JSON can be malformed (a paginated
+    # `gh api` call that fails mid-stream leaves partial stdout, and the
+    # caller's `|| echo ""` fallback does not un-truncate it), and a bare
+    # `sys.exit(0)` here reported that as "names, descriptions and colours
+    # all agree" with the comparison never having run.
+    print("LIVE_JSON is not valid JSON: %s" % e, file=sys.stderr)
+    sys.exit(1)
 
 want, cur = {}, None
 for line in open(os.environ["LABELS_FILE"], encoding="utf-8"):
