@@ -255,9 +255,11 @@ fi
 # also matched internal subprocess flags the script shells out to (git's
 # `--abbrev-ref`, gh's `--repo`) that are not part of ci-trace.py's own CLI
 # surface at all -- caught by running this before trusting it, not assumed.
-mapfile -t cli_flags < <(
-    grep -A1 "add_argument(" "$TRACE" | grep -oE '"--[a-z][a-z-]*"' | tr -d '"' | sort -u
-)
+cli_flags=()
+while IFS= read -r flag; do
+    [ -n "$flag" ] || continue
+    cli_flags+=("$flag")
+done < <(grep -A1 "add_argument(" "$TRACE" | grep -oE '"--[a-z][a-z-]*"' | tr -d '"' | sort -u)
 if [ "${#cli_flags[@]}" -eq 0 ]; then
     fail "G. found ZERO flags in $TRACE_REL -- the extraction broke, not the script"
 elif [ ! -f "$SKILL" ]; then
