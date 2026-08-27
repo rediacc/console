@@ -1362,7 +1362,15 @@ rm -rf "$DRIFT_TMP"
 # Sharpest detail: test-worklist-v5.sh exempts `--git` from its verb-coverage
 # table and CITES "18 controls in wl_git.py --selftest" as the justification.
 # Coverage was being claimed from a suite that never executed.
-for orphan in wl_git:18 wl_admit:18; do
+# FLOORS SIT BELOW THE MEASURED COUNT, NEVER AT IT. A floor equal to today's
+# count turns every added control into a suite failure, which teaches people to
+# lower the floor -- and a floor someone edits routinely is not a floor. What it
+# has to catch is a selftest that STOPPED RUNNING: zero, or a handful left after
+# a module half-broke.
+#
+# Measured 2026-08-27: wl_git 52, wl_admit 18. wl_git's floor was still 18, set
+# when it HAD 18, so two thirds of its controls could have vanished silently.
+for orphan in wl_git:40 wl_admit:16; do
     mod="${orphan%%:*}"
     floor="${orphan##*:}"
     OMOD="$DIR/stop/${mod}.py"

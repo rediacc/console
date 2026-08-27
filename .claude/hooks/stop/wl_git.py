@@ -42,11 +42,16 @@ When neither direction holds the histories genuinely diverged, and this refuses
 rather than guessing. Fail closed: an unreadable probe is never a pass.
 """
 
+import json
 import os
 import re
 import subprocess
 import sys
 
+# A rebase with more halts than this is not a loop to automate. The bound
+# exists so a resolver that somehow stops making progress cannot spin
+# forever against a real repository.
+REBASE_MAX_STEPS = 50
 TIMEOUT_S = 120
 
 # Shell metacharacters are impossible here: every git call is an argv list, never
@@ -225,6 +230,246 @@ def classify_conflict(root, path, stages):
     if lowered.endswith(".md"):
         return "registry", "sectioned prose; union is safe ONLY if both heading sets survive"
     return "judgement", "no invariant proves a union preserves meaning here"
+
+
+# Field names a registry entry is keyed by, most specific first. A list of
+# objects with none of these is NOT a keyed registry, and a union of it would be
+# guessing at identity.
+REGISTRY_KEYS = ("id", "name", "key", "slug")
+
+
+def _entry_ids(value):
+    """The identity set of a parsed registry, or None if it is not one.
+
+    Three shapes, and nothing else: a list of scalars (identity IS the value), a
+    list of objects sharing a key field, and an object (identity is the key).
+    Anything else refuses -- a union needs to know what "the same entry" means,
+    and inventing an answer is how a merge silently drops one.
+    """
+    if isinstance(value, dict):
+        return ("dict", list(value.keys()))
+    if not isinstance(value, list):
+        return None
+    if all(isinstance(x, (str, int, float, bool)) or x is None for x in value):
+        return ("scalars", [json.dumps(x, sort_keys=True) for x in value])
+    if all(isinstance(x, dict) for x in value) and value:
+        for field in REGISTRY_KEYS:
+            if all(field in x for x in value):
+                return ("keyed:" + field, [x[field] for x in value])
+    return None
+
+
+def json_union(base_text, ours_text, theirs_text):
+    """Union two edits to an APPEND-ONLY keyed JSON registry.
+
+    Returns (merged_text, why). merged_text is None when the union is refused,
+    and `why` then says which invariant failed -- a refusal is a result, not an
+    error, because 'this needs a human' is the correct answer for most files.
+
+    THE INVARIANTS, all of which must hold, because a union that merely PARSES
+    proves nothing. The failure this guards against actually shipped: merging
+    both waves' additions to a Python stopword list produced adjacent string
+    literals with no separating space, `touched` + `see` became `touchedsee`,
+    two real stopwords stopped existing, the file parsed, and the suite passed.
+
+      1. all three sides parse, and agree on SHAPE (a list of scalars does not
+         merge with an object);
+      2. neither side DELETED an entry that base had. This is the one people
+         forget: a union of a deletion and an addition silently resurrects the
+         deleted entry, which is worse than a conflict because nothing reports
+         it. Append-only means append-only;
+      3. the merged identity set is exactly ours | theirs -- no entry invented,
+         none dropped;
+      4. no duplicate identities in the result;
+      5. where both sides carry the SAME id, they must carry the same body.
+         Two different edits to one entry is a genuine collision and belongs to
+         a human.
+    """
+    try:
+        base = json.loads(base_text)
+        ours = json.loads(ours_text)
+        theirs = json.loads(theirs_text)
+    except (ValueError, TypeError) as exc:
+        return None, "a side does not parse as JSON (%s)" % exc
+
+    shapes = [_entry_ids(v) for v in (base, ours, theirs)]
+    if any(s is None for s in shapes):
+        return None, "not a keyed registry: no field in %s identifies an entry" % (
+            ", ".join(REGISTRY_KEYS),
+        )
+    kinds = {s[0] for s in shapes}
+    if len(kinds) != 1:
+        return None, "the three sides disagree on shape (%s)" % ", ".join(sorted(kinds))
+    kind = kinds.pop()
+    base_ids, our_ids, their_ids = (s[1] for s in shapes)
+
+    dropped = (set(base_ids) - set(our_ids)) | (set(base_ids) - set(their_ids))
+    if dropped:
+        return None, "a side DELETED %s; a union would resurrect it" % ", ".join(
+            sorted(str(d) for d in dropped)[:3]
+        )
+
+    inner_rulings = []
+    if kind == "dict":
+        merged = dict(ours)
+        for k, v in theirs.items():
+            if k in merged and merged[k] != v:
+                # A WRAPPED REGISTRY is the common real shape --
+                # `{"entries": [...]}`, `{"gates": [...]}` -- and both sides
+                # appending to the inner list looks, at this level, like both
+                # sides changing one key differently. Recurse into the list
+                # rather than refusing: the inner call applies the SAME
+                # invariants, so nothing is weakened by descending.
+                if isinstance(v, list) and isinstance(merged[k], list):
+                    inner, why = json_union(
+                        json.dumps(base.get(k, [])),
+                        json.dumps(merged[k]),
+                        json.dumps(v),
+                    )
+                    if inner is None:
+                        return None, "%s: %s" % (k, why)
+                    merged[k] = json.loads(inner)
+                    # Carry the INNER ruling up. Counting outer keys reported
+                    # "union of 1 + 1 -> 1 entr(y|ies)" for a file where three
+                    # entries had just merged -- true of the wrapper, useless
+                    # about the registry, and the count is the whole reason the
+                    # message exists.
+                    inner_rulings.append("%s: %s" % (k, why))
+                    continue
+                return None, "both sides changed %r differently" % k
+            merged[k] = v
+        want = set(our_ids) | set(their_ids)
+        got = set(merged.keys())
+    elif kind == "scalars":
+        seen, merged = set(), []
+        for x in list(ours) + list(theirs):
+            marker = json.dumps(x, sort_keys=True)
+            if marker not in seen:
+                seen.add(marker)
+                merged.append(x)
+        want = set(our_ids) | set(their_ids)
+        got = {json.dumps(x, sort_keys=True) for x in merged}
+    else:
+        field = kind.split(":", 1)[1]
+        merged, by_id = [], {}
+        for x in list(ours) + list(theirs):
+            ident = x[field]
+            if ident in by_id:
+                if by_id[ident] != x:
+                    return None, "both sides changed entry %r differently" % ident
+                continue
+            by_id[ident] = x
+            merged.append(x)
+        want = set(our_ids) | set(their_ids)
+        got = {x[field] for x in merged}
+
+    if got != want:
+        missing = ", ".join(sorted(str(m) for m in (want - got))[:3]) or "-"
+        extra = ", ".join(sorted(str(m) for m in (got - want))[:3]) or "-"
+        return None, "identity set changed (missing: %s / invented: %s)" % (missing, extra)
+    if len(got) != len(merged):
+        return None, "the merged registry carries duplicate identities"
+
+    text = json.dumps(merged, indent=2) + "\n"
+    # RE-READ WHAT WE ARE ABOUT TO WRITE. Every check above ran against
+    # in-memory objects; this one runs against the BYTES, which is the only
+    # thing the next reader sees.
+    try:
+        reread = json.loads(text)
+    except ValueError as exc:
+        return None, "the merged text does not parse (%s)" % exc
+    back = _entry_ids(reread)
+    if back is None or set(back[1]) != want:
+        return None, "the merged TEXT does not round-trip to the merged set"
+    ruling = "union of %d + %d -> %d entr(y|ies), identity set verified" % (
+        len(our_ids),
+        len(their_ids),
+        len(merged),
+    )
+    if inner_rulings:
+        ruling = "%s [%s]" % (ruling, "; ".join(inner_rulings))
+    return text, ruling
+
+
+def stage_blob(root, sha):
+    """The bytes of one conflict stage, or None if unreadable."""
+    rc, out, _ = run_git(["cat-file", "blob", sha], cwd=root)
+    return out if rc == 0 else None
+
+
+def resolve_registry(root, path, stages):
+    """Merged text for one conflicted registry file, or (None, why).
+
+    Only .json today. classify_conflict also calls sectioned markdown a
+    registry, and it is -- but "both heading sets survive" is a DIFFERENT
+    invariant and it is not written yet, so this refuses rather than reaching
+    for the JSON one. A resolver that applies the wrong invariant is worse than
+    one that stops: the plan's rule is that a class with no invariant is
+    judgement, and an unwritten invariant is no invariant.
+    """
+    if not path.lower().endswith(".json"):
+        return None, "no invariant is implemented for this registry shape yet"
+    texts = {}
+    for n in (1, 2, 3):
+        if n not in stages:
+            return None, "stage %d is missing; refusing to union a partial conflict" % n
+        blob = stage_blob(root, stages[n][0])
+        if blob is None:
+            return None, "stage %d is unreadable; refusing to guess its content" % n
+        texts[n] = blob
+    return json_union(texts[1], texts[2], texts[3])
+
+
+def resolve_halt(root):
+    """Decide every conflicted path at the CURRENT halt.
+
+    Returns (resolved, blocked). `resolved` maps path -> ("gitlink", sha) or
+    ("text", merged). `blocked` is a list of (path, kind, why).
+
+    ONE resolver, two verbs. rebase-resolve reports it and rebase-continue acts
+    on it; had each grown its own copy, the one that reports and the one that
+    writes would eventually disagree about what is safe -- which is the failure
+    mode where a dry run and its --execute do different things.
+    """
+    resolved, blocked = {}, []
+    paths = conflicted_paths(root)
+    if paths is None:
+        raise Refusal("could not read the index; refusing to resolve blind")
+    for path in sorted(paths):
+        kind, why = classify_conflict(root, path, paths[path])
+        if kind == "gitlink":
+            repo = os.path.join(root, path)
+            shas = {n: sha for n, (sha, _m) in paths[path].items()}
+            tip = None
+            rc, head, _ = run_git(["rev-parse", "HEAD"], cwd=repo)
+            if rc == 0 and head and 2 in shas and 3 in shas:
+                if is_ancestor(repo, shas[2], head) and is_ancestor(repo, shas[3], head):
+                    tip = head
+            try:
+                target, ruling = resolve_gitlink_target(repo, shas, rebased_tip=tip)
+            except Refusal as exc:
+                blocked.append((path, "gitlink", str(exc)))
+                continue
+            resolved[path] = ("gitlink", target, ruling)
+        elif kind == "registry":
+            text, ruling = resolve_registry(root, path, paths[path])
+            if text is None:
+                blocked.append((path, "registry", ruling))
+                continue
+            resolved[path] = ("text", text, ruling)
+        else:
+            blocked.append((path, kind, why))
+    return resolved, blocked
+
+
+def stage_resolution(plan, root, resolved):
+    """Turn a resolved map into ordered steps: write, then stage."""
+    for path, (how, payload, _why) in sorted(resolved.items()):
+        if how == "gitlink":
+            plan.cmd(["update-index", "--cacheinfo", "160000,%s,%s" % (payload, path)], root)
+        else:
+            plan.write(os.path.join(root, path), payload)
+            plan.cmd(["add", "--", path], root)
 
 
 def equivalent(repo, base, old_tip, new_tip, runner=None):
@@ -443,6 +688,17 @@ class Plan:
     def note(self, text):
         self.steps.append(("note", text, None, None))
 
+    def write(self, path, text):
+        """A file write, as a STEP -- so the dry run prints it and execute does it.
+
+        A resolver that returns merged bytes has nothing to say in `git` verbs,
+        and doing the write outside the step list would break this class's one
+        invariant: what is printed is what runs. That invariant is not
+        decorative -- its absence is what let `--execute` print five push lines
+        and write nothing.
+        """
+        self.steps.append(("write", path, text, None))
+
     def render(self):
         lines = []
         for kind, a, b, c in self.steps:
@@ -451,6 +707,9 @@ class Plan:
             elif kind == "check":
                 mark = "ok " if b else "REFUSE"
                 lines.append("  [%s] %s%s" % (mark, a, (" -- %s" % c) if c else ""))
+            elif kind == "write":
+                prefix = "write" if self.execute else "would write"
+                lines.append("  [%s] %d byte(s) -> %s" % (prefix, len(b), a))
             else:
                 prefix = "run" if self.execute else "would run"
                 lines.append("  [%s] git -C %s %s" % (prefix, b, " ".join(a)))
@@ -477,6 +736,15 @@ class Plan:
         run = runner or run_git
         done, failed = [], None
         for kind, a, b, _c in self.steps:
+            if kind == "write":
+                try:
+                    with open(a, "w", encoding="utf-8") as fh:
+                        fh.write(b)
+                except OSError as exc:
+                    failed = (["write", a], os.path.dirname(a), str(exc)[:200])
+                    break
+                done.append((["write", a], os.path.dirname(a), 0))
+                continue
             if kind != "cmd":
                 continue
             rc, out, err = run(a, cwd=b)
@@ -722,6 +990,102 @@ def main(argv):
                 plan.note("judgement -> yours. NEVER `git rebase --skip`: it drops the commit.")
                 plan.note("recover   -> git rebase --abort, then the step-0 tips")
 
+        elif sub == "rebase-resolve":
+            # ALL OR NOTHING, and the `mixed` fixture in
+            # .ci/scripts/test/lib/git-fixture.sh exists for exactly this: a halt
+            # carrying a gitlink AND a judgement file. Resolving only the
+            # decidable half leaves an index that READS as nearly done, and the
+            # next --continue then fails for a reason that no longer names the
+            # cause. So one judgement path means nothing is written.
+            st = rebase_state(root)
+            if st is None:
+                raise Refusal("no rebase in progress; nothing to resolve")
+            resolved, blocked = resolve_halt(root)
+            if not resolved and not blocked:
+                plan.note("no conflicted paths: the halt is a stopped edit or an empty commit")
+            for path, (how, payload, ruling) in sorted(resolved.items()):
+                label = "%s -> %s" % (path, "gitlink " + payload[:12] if how == "gitlink" else "registry union")
+                plan.check(label, True, ruling)
+            for path, kind, why in blocked:
+                plan.check("%s -> %s" % (path, kind), False, why)
+            if blocked:
+                plan.note("")
+                plan.note("%d path(s) need you, so NOTHING was written. Resolving only the"
+                          % len(blocked))
+                plan.note("decidable half leaves an index that reads as nearly done and")
+                plan.note("fails later for a reason that no longer names the cause.")
+                plan.note("NEVER `git rebase --skip`: it drops the commit entirely.")
+            elif resolved:
+                stage_resolution(plan, root, resolved)
+                plan.note("")
+                plan.note("then: git rebase --continue (or --git rebase-continue --execute)")
+
+        elif sub == "rebase-continue":
+            # THE LOOP. git rebase is ALREADY resumable -- .git/rebase-merge
+            # holds msgnum, end, stopped-sha and the remaining todo -- so this
+            # persists nothing of its own. A second copy of state git already
+            # keeps is a second copy that drifts.
+            #
+            # It stops on the FIRST halt it cannot decide and hands back the
+            # report, which is the whole shape the operator asked for: not "a
+            # conflict needs a human, therefore refuse", but "resolve what is
+            # decidable and say precisely what is left".
+            #
+            # `--skip` appears nowhere, at any point. It drops the commit
+            # entirely, and a rebase that quietly loses a commit is the failure
+            # this module's verify-rebase exists to detect after the fact.
+            st = rebase_state(root)
+            if st is None:
+                plan.note("no rebase in progress -- nothing to continue")
+            else:
+                steps = 0
+                while True:
+                    steps += 1
+                    if steps > REBASE_MAX_STEPS:
+                        raise Refusal(
+                            "gave up after %d halts; a rebase this long is not a loop "
+                            "to automate, it is a rebase to reconsider" % REBASE_MAX_STEPS
+                        )
+                    st = rebase_state(root)
+                    if st is None:
+                        plan.note("rebase finished after %d resolved halt(s)" % (steps - 1))
+                        break
+                    plan.note(
+                        "halt %d: step %s of %s, replaying %s"
+                        % (steps, st["step"] or "?", st["total"] or "?", (st["stopped"] or "?")[:12])
+                    )
+                    resolved, blocked = resolve_halt(root)
+                    for path, kind, why in blocked:
+                        plan.check("%s -> %s" % (path, kind), False, why)
+                    if blocked:
+                        plan.note("")
+                        plan.note("STOPPED, nothing written for this halt. Resolve the path(s)")
+                        plan.note("above by hand, `git add` them, then re-run this verb; the")
+                        plan.note("halts already resolved are committed and are not repeated.")
+                        plan.note("NEVER `git rebase --skip`: it drops the commit entirely.")
+                        break
+                    for path, (how, payload, ruling) in sorted(resolved.items()):
+                        label = "gitlink " + payload[:12] if how == "gitlink" else "registry union"
+                        plan.check("%s -> %s" % (path, label), True, ruling)
+                    stage_resolution(plan, root, resolved)
+                    plan.cmd(["rebase", "--continue"], root)
+                    if not plan.execute:
+                        plan.note("")
+                        plan.note("DRY RUN: showing the FIRST halt only. Each --continue")
+                        plan.note("reveals the next conflict, which cannot be known without")
+                        plan.note("performing this one. Re-run with --execute to walk them.")
+                        break
+                    done, failed = plan.run()
+                    plan.steps = [s for s in plan.steps if s[0] != "cmd" and s[0] != "write"]
+                    if failed:
+                        argv_txt = " ".join(failed[0])
+                        raise Refusal(
+                            "halt %d: `%s` failed -- %s. The tree is mid-rebase; "
+                            "`git rebase --abort` returns to the step-0 tips."
+                            % (steps, argv_txt, failed[2])
+                        )
+
+
         elif sub == "snapshot":
             # The pre-rebase tips, in a form verify-rebase can read back.
             # branch-rebase.md's step 0 told a session to `echo` these and
@@ -834,7 +1198,7 @@ def main(argv):
     #
     # Everything else still refuses. A rebase halts mid-list and needs a
     # decision this module cannot make; see agent/PLAN-resumable-rebase-executor.md.
-    EXECUTABLE = ("force-push", "resolve-gitlinks")
+    EXECUTABLE = ("force-push", "resolve-gitlinks", "rebase-continue")
     if sub not in EXECUTABLE:
         sys.stderr.write(
             "\nREFUSED: --execute is implemented for %s only.\n"
@@ -878,6 +1242,26 @@ def main(argv):
             return 1
         sys.stdout.write("Now: git rebase --continue\n")
         return 0
+
+    if sub == "rebase-continue":
+        # The loop ALREADY executed each halt's steps as it went -- it has to,
+        # because the next conflict cannot be known until this --continue has
+        # run. Nothing is left for the shared tail below, and that tail is
+        # force-push's.
+        return 0
+
+    # EVERY EXECUTABLE VERB MUST CLAIM ITS OWN TAIL. This used to fall through
+    # unguarded, so adding "rebase-continue" to EXECUTABLE silently routed it
+    # into force-push's UNDO block, which reads args[1] as a branch name and
+    # died with IndexError AFTER the rebase had already completed successfully.
+    # A loud refusal here costs the next verb one line; a fall-through costs it
+    # a crash on the far side of real work.
+    if sub != "force-push":
+        sys.stderr.write(
+            "\nINTERNAL: `%s` is declared executable but has no execute branch.\n"
+            "Add one that returns, above the force-push tail.\n" % sub
+        )
+        return 2
 
     sys.stdout.write("\nUNDO -- the pre-push remote tips, the only recovery a force-push has:\n")
     for path, _b in [(p_, b_) for p_, b_ in submodules(root)] + [(".", None)]:
@@ -1058,6 +1442,72 @@ def selftest():
     # No rebase in progress is the NORMAL case, never a halt.
     check("CONTROL: rebase_state is None outside a rebase",
           rebase_state("/nonexistent-root-for-selftest") is None)
+
+    # THE REGISTRY UNION (PLAN step 4). A union that merely PARSES proves
+    # nothing, which is not a hypothesis: merging both waves' additions to a
+    # Python stopword list glued `touched`+`see` into `touchedsee`, two real
+    # stopwords stopped existing, the file parsed and the suite passed. So every
+    # refusal path below is asserted, and so is the accept path -- a resolver
+    # that refused everything would satisfy half of this and be useless.
+    def u(base, ours, theirs):
+        return json_union(base, ours, theirs)
+
+    ok, why = u('["a"]', '["a","mine"]', '["a","theirs"]')
+    check("two appends to a scalar registry union cleanly",
+          ok is not None and json.loads(ok) == ["a", "mine", "theirs"])
+    check("the union reports what it did", "identity set verified" in why)
+
+    ok, _ = u('[{"id":"a"}]', '[{"id":"a"},{"id":"m"}]', '[{"id":"a"},{"id":"t"}]')
+    check("two appends to a KEYED registry union by id",
+          ok is not None and [e["id"] for e in json.loads(ok)] == ["a", "m", "t"])
+
+    ok, _ = u('{"a":1}', '{"a":1,"m":2}', '{"a":1,"t":3}')
+    check("two appends to an object registry union by key",
+          ok is not None and json.loads(ok) == {"a": 1, "m": 2, "t": 3})
+
+    # A DELETION IS NOT AN APPEND, and this is the invariant people skip. A
+    # union of "I removed x" and "I added y" silently brings x back, which is
+    # worse than a conflict because nothing reports it. Both baselines this
+    # session drains are shrink-only, so resurrecting an entry would re-arm a
+    # suppression somebody deliberately retired.
+    ok, why = u('["a","b"]', '["a"]', '["a","b","t"]')
+    check("CONTROL: a DELETED entry refuses rather than resurrecting",
+          ok is None and "DELETED" in why)
+
+    # Both sides editing the SAME entry differently is a real collision.
+    ok, why = u('[{"id":"a","v":1}]', '[{"id":"a","v":2}]', '[{"id":"a","v":3}]')
+    check("CONTROL: two different edits to one entry is judgement",
+          ok is None and "differently" in why)
+    ok, why = u('{"a":1}', '{"a":2}', '{"a":3}')
+    check("CONTROL: the same, for an object registry",
+          ok is None and "differently" in why)
+
+    # Shape disagreement, unparseable text, and a list this code cannot key are
+    # each a refusal, not a guess.
+    check("CONTROL: a list and an object do not merge",
+          u('["a"]', '["a","m"]', '{"a":1}')[0] is None)
+    check("CONTROL: unparseable JSON refuses",
+          u('["a"]', 'not json', '["a"]')[0] is None)
+    ok, why = u('[{"x":1}]', '[{"x":1},{"x":2}]', '[{"x":1},{"x":3}]')
+    check("CONTROL: a list of objects with no id field is not a registry",
+          ok is None and "identifies an entry" in why)
+
+    # THE GLUED-SEAM CASE, required by the plan by name. The defect that shipped
+    # was a TEXTUAL union of two token lists; the point of doing this
+    # structurally is that the same inputs cannot produce it. Union the two
+    # additions and assert both tokens survive as SEPARATE entries -- the
+    # concatenation that killed them is not even expressible here.
+    ok, _ = u('["fixed"]', '["fixed","touched"]', '["fixed","see"]')
+    merged = json.loads(ok) if ok else []
+    check("the glued-seam defect is not expressible: both tokens survive whole",
+          "touched" in merged and "see" in merged and "touchedsee" not in merged)
+    check("CONTROL: and the count is the union, not the concatenation",
+          len(merged) == 3)
+
+    # Duplicates on ONE side must not silently collapse the identity check.
+    ok, why = u('["a"]', '["a","m","m"]', '["a"]')
+    check("a side repeating an entry still yields each identity once",
+          ok is not None and json.loads(ok) == ["a", "m"])
 
     # EVERY `dels is None` GUARD, BOTH WAYS. These were the two fail-OPEN sites
     # this session closed: `staged_deletions` returns None when its probe fails,

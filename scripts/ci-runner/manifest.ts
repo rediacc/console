@@ -3952,6 +3952,29 @@ export const GATES: readonly GateSpec[] = [
     },
   },
   {
+    // The `rebase-resolve` verb, driven against REAL halted rebases rather than
+    // hand-written stage tables. wl_git.py's own selftest covers the classifier
+    // and the union as pure functions; this covers the half that only a real
+    // halt can reach -- what git writes into .git/rebase-merge and the index.
+    // The first wiring passed (sha, mode) tuples to an oracle wanting bare
+    // shas; a pure-function test could not have seen it.
+    id: 'gate-test:rebase-resolve',
+    run: '.ci/scripts/test/gates/test-rebase-resolve.sh',
+    gate: true,
+    qualityGateTest: true,
+    leaves: [
+      '.ci/scripts/test/gates/test-rebase-resolve.sh',
+      '.ci/scripts/test/lib/git-fixture.sh',
+    ],
+    paths: ['.claude/hooks/stop/wl_git.py'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-security',
+      step: 'Quality-gate unit tests',
+    },
+  },
+  {
     id: 'gate-test:profiler-coverage',
     run: '.ci/scripts/test/gates/test-profiler-coverage.sh',
     gate: true,

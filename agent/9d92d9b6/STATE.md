@@ -1,74 +1,66 @@
-## SESSION 9d92d9b6 2026-08-27T09:49:59Z
+## SESSION 9d92d9b6 2026-08-27T11:22:08Z
 
-Branch `0826-3` @ `74075d30d`, rebased TWICE onto `origin/0826-2`. 23 commits,
-all `PR-TASK: f2757830`. Submodule `private/account` on `0826-3` @ `5f55c91`.
-Clean tree. NOTHING PUSHED. PR #577 is OPEN, not merged.
+## Where things stand
 
-Recovery tags: `preredo-0826`=`3ced1a4d8`, `prerebase-0826`=`9f3cb9f8c`,
-`private/account` `prerebase-0826`=`3e79b39`. Next wave takes **0826-4**.
+Branch `0826-3`, 25 commits, **nothing pushed, no PR**. #577 (`0826-2`) is the
+only open PR and must stay so. Recovery tags: `preredo-0826`=3ced1a4d8,
+`prerebase-0826`=9f3cb9f8c, `private/account` `prerebase-0826`=3e79b39.
 
-## The live work: agent/PLAN-resumable-rebase-executor.md
+The working tree holds ONE uncommitted wave: a hook-guard sweep. Nothing is
+half-applied; every file is syntactically valid, and the hook suite passes
+**1464 cases / 0 failures** on exactly these bytes.
 
-The operator vetoed my refusal to execute rebase verbs: "AI should receive a
-prompt to continue and/or what happened. So, it should fix conflicts and try
-again where he lefts."
+## What this wave did
 
-KEY INSIGHT: `git rebase` is ALREADY resumable (`.git/rebase-merge` holds step
-N of M, the stopped sha, the todo, and the index holds the stages). There is no
-state machine to build; anything this module persisted would be a SECOND copy
-of a truth git holds. The missing piece was a verb that READS it.
+`check:ci-hook-integrity` had `GUARD_DIR` hard-wired to `pre-bash`, so
+`pre-edit/` and `pre-ask/` sat outside BOTH assertions. It also grepped only the
+literal `check 2 <guard>`, missing helper-driven cases. Widened to all three
+chains with chain-qualified keys; helper wrappers resolved by reading which
+single guard a function body names. **The coverage baseline went 8 grandfathered
+gaps to 0** — all 35 guards now have a case in each direction.
 
-MEASURED taxonomy from this branch's two real rebases, ten conflicts: ONE
-gitlink, SIX registry unions, TWO judgement calls.
+Twelve guards matched MENTION rather than execution intent. Nine live refusals
+this session, including `block-suppressions` refusing its own repair and
+`block-bash-write-to-running-script` refusing four commands because a chain
+SIBLING is always "running". Fixed by routing through
+`.claude/hooks/pre-bash/lib/command-scan.sh` where safe.
 
-**Steps 1-3 SHIPPED** (`8ce700584`, `ef21046e1`):
-- `--git rebase-status` reads the halt and classifies each path.
-- `.ci/scripts/test/lib/git-fixture.sh` -- the git fixture harness this repo
-  never had. Five kinds, each halting a REAL rebase. Its anti-vacuity guard
-  caught two of my own broken fixtures.
-- `--git resolve-gitlinks --execute` now WRITES (local, undone by
-  `git rebase --abort`). Safety is the REFUSAL: on a mixed conflict set it names
-  the offending path and leaves the index untouched.
+**SIX WERE REVERTED under the operator's 2026-08-25 ruling.** `block-ci-polling`,
+`block-ci-reverse-poll` and `block-long-sleep` keep their prose false positive:
+it fails LOUDLY while every narrowing fails SILENTLY, and the ruling names
+heredoc exemption as the worst option — exactly what `hook_scan_target` does.
+Two pinned suite cases caught the narrowing and reverted it. Those three guards'
+code is byte-identical to HEAD. **Do not re-narrow them.**
 
-**Steps 4-5 REMAIN.** Step 4 is the dangerous half: registry unions must land
-behind an INVARIANT proving meaning survived. A blind union glued
-`touched`+`see` into one token in `wl_agents.py` this wave and silently killed
-two stopwords while the file parsed and the suite passed. A class with no
-invariant stays "judgement" and is left untouched. Step 5 is the continue loop.
+`npm run ci` was 283 ok / 26 failed. Seven were real and are fixed: shell-format,
+profiler-coverage, native-rebuild (a rebase left TWO `npm install` calls in
+`ensure_deps`), shrink-only-composition, run-all-parallel (`date +%s%3N` returns
+NANOSECONDS under uutils coreutils), mark-production and nightly-retry-filters
+(both called `require_cmd` inside the fallback for `require_cmd` being missing).
 
-## Verified on the twice-rebased tree
+## Not mine, shown rather than asserted
 
-`packages/cli` 2402 passed; review-status 60/0; worklist 805/0; hooks 1400/0
-(wl_git 35 controls); `verify-rebase` 18 carried / 0 missing; all four gitlinks
-contain their base. `private/account` npm test is RED for a reason that is NOT
-this branch's: `node_modules` lacks drizzle-orm, better-sqlite3,
-@aws-sdk/client-s3, @simplewebauthn/server, and the failing files appear in no
-commit here.
+`private/account/node_modules` is EMPTY (0 entries) — one fact behind ~17
+failures (`check:types` on `@cloudflare/workers-types`, `check:deps`,
+`ci-account-*`, `ci-peer-deps`). `ruff` and `aws` are absent, so
+`check:ci-python-lint` and `gate-test:scrub-sentinel-empty` cannot run; both
+correctly refuse to skip. Do NOT run `npm install` unasked — npm 11 rewrites
+`package-lock.json` here.
+
+`check:ci-pr-task-trailers` stays RED by operator ruling: wait for #577 to merge,
+re-rebase onto `origin/main`, base the PR there. Do not weaken it, do not stack a PR.
+
+`packages/www/--full-page` is a stray 97KB PNG from ANOTHER session in this
+shared worktree. Leave it.
 
 ## Next action
 
-Read `/tmp/.../scratchpad/v-ci.txt` -- `npm run ci` is RUNNING under nohup (the
-last of the four checks the operator asked for). Check for its SUMMARY, not the
-tail. Then steps 4-5.
-
-WAITER HYGIENE, learned twice this wave: a waiter on a SUPERSEDED run's output
-file waits forever, and the Stop hook reports it as "VERIFIED ALIVE" because a
-wedged loop and a patient one are identical from outside. Kill a waiter whose
-target run was replaced. Never `pgrep -f` a pattern your own command contains.
-
-## Operator rulings, do NOT re-litigate
-
-- PR base: wait for #577 to merge, re-rebase onto `origin/main`, base the PR
-  there. `check:ci-pr-task-trailers` stays RED until then on 0826-2's nine
-  untagged commits (each attributed; none mine). Do NOT weaken the gate, do NOT
-  open a stacked PR.
-- `/branch-rebase`'s `[base]`: implemented, not deleted. Console onto
-  `origin/$BASE`; SUBMODULES always onto their own `origin/main`; step 4
-  verifies each against its own ref.
-- Guard density: keep adding hooks, fix false positives as they fire.
-
-## Open, operator-gated
-
-SES: `.env`'s AWS_SES_ACCESS_KEY_ID and SES_AK_ID are in no `ses-*` slug.
-Ticked `door:operator-only`; do not reopen. (`9d92d9b6` is this SESSION's id,
-not a commit -- there is no diff to analyse for it.)
+1. Commit the wave with a `PR-TASK: f2757830` trailer. Do NOT push, do NOT open a
+   PR. Message draft: `<scratchpad>/commitmsg.txt`, where `<scratchpad>` is
+   /tmp/claude-1000/-home-developer-console/9d92d9b6-77d0-4b72-a748-6b8a129d5338/scratchpad
+2. Item `#051bce55`: the resumable rebase executor, steps 4-5 (registry
+   invariants, then the continue loop) per
+   `agent/PLAN-resumable-rebase-executor.md`. Steps 1-3 already shipped.
+3. Re-run `npm run ci` to confirm the residual failure set is only the
+   environmental one above plus `pr-task-trailers`. No run is currently in
+   flight; the hook suite finished green.

@@ -1,6 +1,6 @@
 # PLAN: a resumable rebase executor with an AI in the loop
 
-Status: designed, not implemented
+Status: IMPLEMENTED 2026-08-27. All five steps shipped; see the closing section.
 Owner: session 9d92d9b6, branch 0826-3
 Updated: 2026-08-27
 
@@ -148,3 +148,55 @@ precisely what `.git/rebase-merge/` knows and a session does not.
 No rollback of a partially-applied rebase. `git rebase --abort` already exists,
 is atomic, and returns to the pre-rebase state recorded in step 0. Wrapping it
 would add a second recovery path with worse guarantees than the one git ships.
+
+
+---
+
+## What actually shipped, 2026-08-27
+
+All five sequenced steps, plus the two things the plan asked for by name.
+
+1. **`rebase-status`** — read-only, ships alone.
+2. **The classifier and its invariants**, as pure functions with 52 controls in
+   `wl_git.py --selftest`, and a real git fixture harness at
+   `.ci/scripts/test/lib/git-fixture.sh` (five kinds, each halting a real
+   rebase, each refusing to return if it did NOT halt).
+3. **`resolve-gitlinks --execute`**, gitlink class only.
+4. **`rebase-resolve`** with the JSON registry union. Five invariants, all
+   required: every side parses, the three sides agree on shape, **neither side
+   DELETED an entry base had** (a union of a deletion and an addition silently
+   resurrects the deleted one), the merged identity set is exactly ours|theirs,
+   no duplicate identities, and same-id-different-body is judgement. The merged
+   BYTES are re-read and re-checked, because every prior check ran against
+   in-memory objects.
+5. **`rebase-continue [--execute]`**, the loop. It persists nothing: git already
+   holds `msgnum`, `end`, `stopped-sha` and the remaining todo, and a second
+   copy of state git keeps is a second copy that drifts.
+
+**The glued-seam control the plan required** is there, and the structural
+approach makes the defect *inexpressible*: the union works on parsed entries, so
+`touched` + `see` cannot become `touchedsee`. The control asserts both tokens
+survive whole and the count is the union, not the concatenation.
+
+**The `--skip` ban is now a gate**, not a convention: `check:ci-git-tool-safety`
+refuses any argv carrying it, with a control proving that the module's own prose
+warning against `--skip` is not mistaken for issuing it. Proven non-vacuous by
+planting a real `rebase --skip` emission (gate exit 1, names it, restores
+byte-identical).
+
+### Three defects the real-halt fixtures caught that pure functions could not
+
+- `conflicted_paths` yields `{n: (sha, mode)}`; the gitlink oracle wants bare
+  shas. The first wiring passed the tuples straight through.
+- That oracle returns `(target, why)`, and the first wiring sliced the tuple.
+- Adding `rebase-continue` to `EXECUTABLE` routed it into force-push's UNDO
+  epilogue, which reads `args[1]` as a branch name — an `IndexError` raised
+  **after** the rebase had already completed successfully, so the verb did its
+  job and reported failure. The epilogue is now explicitly force-push's, and any
+  future executable verb without its own branch gets a loud refusal instead.
+
+### What is still NOT covered, stated so the green is not read as more than it is
+
+The fixtures are single-halt, so the loop actually *looping* — a multi-halt
+rebase — is not exercised. `.ci/scripts/test/gates/test-rebase-resolve.sh` says
+so in its own closing lines rather than leaving it to be discovered.

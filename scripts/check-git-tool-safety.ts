@@ -72,6 +72,13 @@ const BANNED: ReadonlyArray<{ rule: string; re: RegExp }> = [
   { rule: '--mirror (forces every ref and deletes remote refs)', re: /"--mirror"/ },
   { rule: 'checkout --ours on a gitlink (drops your submodule work)', re: /"--ours"/ },
   { rule: 'checkout --theirs on a gitlink (drops the base work)', re: /"--theirs"/ },
+  // `rebase --skip` DROPS THE REPLAYED COMMIT. It is the one command that can
+  // silently lose work during a rebase, and it looks like progress: the halt
+  // clears and the rebase runs on. wl_git.py's messages name it repeatedly so
+  // a reader does not reach for it -- this rule is what stops the tool itself
+  // ever emitting it. Required by agent/PLAN-resumable-rebase-executor.md,
+  // which automates the loop around exactly this hazard.
+  { rule: 'rebase --skip (drops the replayed commit entirely)', re: /"--skip"/ },
 ];
 
 /**
@@ -115,6 +122,14 @@ const selftest = (): number => {
   check('--mirror is caught', scan('run_git(["push", "--mirror"], r)').length === 1);
   check('--ours is caught', scan('run_git(["checkout", "--ours"], r)').length === 1);
   check('--theirs is caught', scan('run_git(["checkout", "--theirs"], r)').length === 1);
+  check('--skip is caught', scan('run_git(["rebase", "--skip"], r)').length === 1);
+  // CONTROL: the module's own prose names --skip on nearly every refusal path,
+  // and warning against a command must never read as issuing it. Without this,
+  // the rule above would fire on the very text that stops people using it.
+  check(
+    'CONTROL: prose naming --skip is not issuing it',
+    scan('plan.note("NEVER `git rebase --skip`: it drops the commit.")').length === 0
+  );
   // THE CONTROL THAT MATTERS: the permitted flag must NOT be flagged, or a gate
   // that refuses everything would also pass its defect test.
   check(
