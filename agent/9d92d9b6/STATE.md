@@ -1,58 +1,72 @@
-## SESSION 9d92d9b6 2026-08-27T11:45:39Z
+## SESSION 9d92d9b6 2026-08-27T12:46:19Z
 
 ## Where things stand
 
-Branch `0826-3`, **27 commits, nothing pushed, no PR**. #577 (`0826-2`) is the
-only open PR and must stay so. Working tree is CLEAN apart from one untracked
-stray (below). Recovery tags: `preredo-0826`=3ced1a4d8, `prerebase-0826`=9f3cb9f8c,
-`private/account` `prerebase-0826`=3e79b39.
+Branch `0826-3`, **29 commits, nothing pushed, no PR yet**. Rebased onto
+`origin/main` after #577 merged: verify-rebase reports 28 carried / 20 absorbed /
+0 missing, matching `git cherry` by hand. All four submodules contain their own
+`origin/main`. `check:ci-pr-task-trailers` is GREEN, 29/29 tagged
+`PR-TASK: f2757830`.
 
-Two commits landed this session:
+Recovery tags: `prerebase-main-0827` on console (=32613fd65) and on
+`private/account` (=5f55c91). Pre-rebase snapshot file:
+`<scratchpad>/snap-main.txt`, where `<scratchpad>` is
+/tmp/claude-1000/-home-developer-console/9d92d9b6-77d0-4b72-a748-6b8a129d5338/scratchpad
 
-- **`bd9df8682`** — hook-guard sweep. `check:ci-hook-integrity` had `GUARD_DIR`
-  hard-wired to `pre-bash`, so `pre-edit/` and `pre-ask/` were outside BOTH
-  assertions. Widened to all three chains; helper-driven cases are now seen.
-  **Coverage baseline drained 8 grandfathered gaps to 0** — all 35 guards have a
-  case in each direction. Twelve guards were matching MENTION rather than
-  execution intent and were narrowed via `pre-bash/lib/command-scan.sh`.
-- **`f38d64621`** — the resumable rebase executor, all five PLAN steps.
-  `json_union` (5 invariants), `rebase-resolve` (all-or-nothing per halt),
-  `rebase-continue [--execute]` (the loop). New gate
-  `.ci/scripts/test/gates/test-rebase-resolve.sh`, 8 cases against REAL halted
-  rebases, three-point wired. `--skip` is now banned by
-  `check:ci-git-tool-safety`.
+**A `/pr-babysit` wave is RUNNING, inline mode, this session is the babysitter.**
+Round log: `~/.claude/projects/-home-developer-console/reports/pr-babysit-0826-3.md`
+— read its wave header + STATUS before touching anything. It carries the
+sanctioned reds and the frozen surfaces.
 
-## Do not undo these
+## Round 1 (pre-snapshot) — four defects in the enforcement layer
 
-**`block-ci-polling`, `block-ci-reverse-poll` and `block-long-sleep` keep their
-prose false positive**, under the operator's 2026-08-25 ruling: it fails LOUDLY
-while every narrowing fails SILENTLY, and the ruling names heredoc exemption as
-the worst option — which is exactly what `hook_scan_target` does. Routing them
-through it was tried this session and two pinned suite cases reverted it. Their
-code is byte-identical to HEAD. **Do not re-narrow them.**
+Uncommitted right now: `.ci/scripts/quality/check-ci-watch-recipe.sh`,
+`.claude/hooks/pre-edit/block-roundlog-write.sh`, `.claude/hooks/test-hooks.sh`.
 
-`check:ci-pr-task-trailers` stays RED by operator ruling: wait for #577 to merge,
-re-rebase onto `origin/main`, base the PR there. Do not weaken it, do not stack a
-second PR.
+- **D1** `block-roundlog-write.sh` refused to let a round log be CREATED, while
+  `worklist.py --roundlog` refuses to create one ("write the wave header first").
+  Deadlock, no third door. Exempted creation: a file that does not exist has no
+  appendix to silently truncate.
+- **D1a** the suite's pinned case then went red — correctly. Its fixture was a
+  path under `/home/x/` that never existed, so it had only ever proved the guard
+  refuses on the NAME. Both directions now key on existence.
+- **D2** `check:ci-watch-recipe` COULD NOT FAIL. Its detectors were
+  `advice_only | grep -q` under the gate's own `set -o pipefail`: grep -q exits
+  at the first match, SIGPIPEs the producer, and 141 becomes the verdict.
+  Measured 8/8 trips without pipefail, 0/8 with it. Replaced with command
+  substitution.
+- **D2a** my first replacement control was ALSO vacuous — 32 KB fits inside the
+  64 KB pipe buffer, so the producer never blocks. Now ~240 KB; proven by
+  reverting the detector in a copy and watching the control go red.
+- **D3** the real offender was a `test-hooks.sh` fixture quoting the banned
+  recipe in a heredoc body. Assembled at runtime now.
 
-## Verified state
+All five are logged under DECISIONS in the round log for post-hoc veto.
 
-Hook suite **1464 cases / 0 failures**. `npm run ci`: **310 gates, 18 failed**
-(was 26; all seven attributable ones fixed). Every one of the 18 was
-cross-referenced against the files this session touched — none is attributable
-here. They are: `private/account/node_modules` is EMPTY (0 entries), which
-accounts for ~15; `ruff` and `aws` are not installed, which accounts for two;
-and `check:ci-pr-task-trailers`, deferred above.
+## Do not undo
+
+`block-ci-polling`, `block-ci-reverse-poll`, `block-long-sleep` keep their prose
+false positive under the operator's 2026-08-25 ruling. Their code is
+byte-identical to HEAD. **Do not re-narrow them.**
+
+`packages/www/--full-page` is a stray 97KB PNG from ANOTHER session in this
+shared worktree. Not in the snapshot, deliberately. Leave it.
+
+Local `npm run ci` reds that are ENVIRONMENTAL, not failures:
+`private/account/node_modules` is EMPTY (~15 gates), and `ruff`/`aws` are absent
+(2 more). Do NOT run `npm install` — npm 11 rewrites `package-lock.json` here.
 
 ## Next action
 
-1. **Nothing is queued for this session.** Both open items are `[?]` awaiting the
-   operator (`#7ff62e83` install the account submodule's deps — DEFAULT leave it,
-   npm 11 rewrites the lockfile; `#c824d9d7` delete the stray
-   `packages/www/--full-page`, a 97KB PNG from ANOTHER session in this shared
-   worktree — DEFAULT leave it). Do not act on either without an answer.
-2. When #577 merges: `git fetch`, re-rebase `0826-3` onto `origin/main`, then
-   verify with `--git snapshot` before and `--git verify-rebase <file>` after.
-   Expect patch-identical commits to be ABSORBED, not missing — that distinction
-   is what `verify-rebase` exists for, and a commit COUNT cannot make it.
-3. Only then open the PR, with `PR-TASK: f2757830`.
+1. Snapshot commit of the three round-1 files, `PR-TASK: f2757830` trailer.
+   This is the babysit snapshot: `git add -A -- .` MINUS the stray PNG, so name
+   the three paths explicitly.
+2. `private/account` FIRST: push its `0826-3` (one commit, `5f55c91`), open a
+   PLAIN PR (private repo, no drafts). Then re-point the console gitlink.
+3. Push console `0826-3`, open the PR with `--draft`, body linking the account
+   PR (the `Submodule Branches` gate reads the body for it).
+4. Arm `.ci/scripts/ci/ci-trace.py --wait` with `run_in_background: true`
+   immediately after the push — never end a turn with a run in flight and no
+   armed wake-up.
+5. A hook suite run (`<scratchpad>/suite6.out`) is in flight; last full run was
+   1478 pass / 1 fail, that one fail being D1a which is now fixed.
