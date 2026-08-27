@@ -52,6 +52,19 @@ interface Options {
   manifest?: string;
 }
 
+/** Every flag off. Selftest-only, so a control states the flag it exercises
+ *  and nothing else; spelling one out per case invites a typo that silently
+ *  changes what is under test. */
+const EMPTY_OPTS: Options = {
+  failFast: false,
+  json: false,
+  list: false,
+  changed: false,
+  mergeOutput: false,
+  selftest: false,
+  verbose: false,
+};
+
 function parseArgs(argv: readonly string[]): Options {
   const opts: Options = {
     failFast: false,
@@ -148,9 +161,23 @@ async function loadManifest(source: string | undefined): Promise<readonly GateSp
  * `*`, `**` and `?`; enough for gate ids and repo-relative path globs.
  * One pass, because a two-pass version needs a placeholder byte that cannot
  * occur in the input, and any such byte is invisible in the source.
+ *
+ * `**\/` MEANS ZERO OR MORE DIRECTORIES, and it used to mean "at least one".
+ * `**` alone expanded to `.*`, so `**\/*.sh` compiled to `^.*\/[^/]*\.sh$` --
+ * a pattern REQUIRING a literal slash. Measured 2026-08-27: `run.sh` and
+ * `rdc.sh` are both tracked, both matched by `git ls-files '*.sh'` (which is
+ * how check-shell-size.sh actually enumerates), and neither matched this
+ * regex. So a diff touching only `run.sh` silently dropped the gate that
+ * would have judged it.
+ *
+ * That is the narrowing direction, which is the dangerous one: the glob did
+ * not fail loudly, it quietly covered less than its author wrote. The
+ * `**\/` -> `(?:.*\/)?` form is handled before the bare `**` so the optional
+ * separator is part of the token rather than left behind.
  */
 function globToRegExp(glob: string): RegExp {
-  const body = glob.replace(/\*\*|[*?.+^${}()|[\]\\]/g, (token) => {
+  const body = glob.replace(/\*\*\/|\*\*|[*?.+^${}()|[\]\\]/g, (token) => {
+    if (token === '**/') return '(?:.*/)?';
     if (token === '**') return '.*';
     if (token === '*') return '[^/]*';
     if (token === '?') return '.';
@@ -163,6 +190,69 @@ function matchesAny(text: string, globs: readonly string[]): boolean {
   return globs.some((g) => globToRegExp(g).test(text));
 }
 
+/**
+ * A CHANGED SUBMODULE IS ONE DIFF ENTRY, NOT A LIST OF FILES.
+ *
+ * `git diff --name-only` reports a gitlink as the submodule PATH -- measured
+ * on this branch, `private/account` and nothing beneath it, mode 160000. So a
+ * glob like `private/account/**` can never match a real submodule change, and
+ * any gate scoped that way is dead by construction rather than by mistake.
+ *
+ * Widen instead of narrowing: keep the gitlink entry (so a glob naming the
+ * submodule path itself still matches) and add a bare wildcard beneath it. A
+ * caller that can read the submodule gets the real file list; one that cannot
+ * still gets the wildcard, so the failure direction is INCLUSION. That matters
+ * more here than precision -- a missed file silently drops a gate, an extra
+ * one costs a few seconds.
+ */
+/** The first submodule path recorded in HEAD, for the selftest's precondition. */
+function firstGitlink(): string | undefined {
+  try {
+    for (const line of execFileSync('git', ['ls-tree', '-r', '--format=%(objectmode) %(path)', 'HEAD'], {
+      cwd: REPO_ROOT,
+      encoding: 'utf-8',
+      maxBuffer: 64 * 1024 * 1024,
+    }).split('\n')) {
+      if (line.startsWith('160000 ')) return line.slice('160000 '.length);
+    }
+  } catch {
+    /* reported by the caller as a failed precondition */
+  }
+  return undefined;
+}
+
+function expandGitlinks(named: readonly string[], warn: (text: string) => void): string[] {
+  const out = new Set<string>(named);
+  for (const entry of named) {
+    let isGitlink = false;
+    try {
+      isGitlink =
+        execFileSync('git', ['ls-tree', '--format=%(objectmode)', 'HEAD', '--', entry], {
+          cwd: REPO_ROOT,
+          encoding: 'utf-8',
+        }).trim() === '160000';
+    } catch {
+      isGitlink = false;
+    }
+    if (!isGitlink) continue;
+    // The wildcard goes in FIRST, so a submodule we cannot read still selects
+    // every gate scoped beneath it rather than none.
+    out.add(`${entry}/**`);
+    try {
+      const inner = execFileSync('git', ['-C', entry, 'diff', '--name-only', 'HEAD'], {
+        cwd: REPO_ROOT,
+        encoding: 'utf-8',
+      })
+        .split('\n')
+        .filter(Boolean);
+      for (const f of inner) out.add(`${entry}/${f}`);
+    } catch {
+      warn(`ci-runner: could not read inside ${entry}; kept ${entry}/** as a wildcard\n`);
+    }
+  }
+  return [...out];
+}
+
 function changedFiles(warn: (text: string) => void): string[] {
   const base = process.env.CI_RUNNER_BASE ?? 'origin/main';
   try {
@@ -170,12 +260,13 @@ function changedFiles(warn: (text: string) => void): string[] {
       cwd: REPO_ROOT,
       encoding: 'utf-8',
     }).trim();
-    return execFileSync('git', ['diff', '--name-only', mergeBase], {
+    const named = execFileSync('git', ['diff', '--name-only', mergeBase], {
       cwd: REPO_ROOT,
       encoding: 'utf-8',
     })
       .split('\n')
       .filter(Boolean);
+    return expandGitlinks(named, warn);
   } catch {
     warn(
       `ci-runner: --changed could not resolve a merge base against ${base}; selecting every gate\n`
@@ -348,6 +439,63 @@ async function selftest(): Promise<number> {
   );
   require_(!text.includes('selftest-pass'), "a passing gate's output must stay quiet");
 
+  // GLOB SEMANTICS, both directions. These three were all FALSE before the
+  // `**\/` fix, and the first one is a live defect: manifest.ts declares
+  // `paths: ['**\/*.sh']` for check:ci-shell-size under a comment saying
+  // "deliberately not path-narrowed", while the gate itself enumerates with
+  // the git pathspec `*.sh`, which DOES match at the root.
+  require_(globToRegExp('**/*.sh').test('run.sh'), '**/*.sh must match a root-level run.sh');
+  require_(
+    globToRegExp('**/*.sh').test('.ci/scripts/quality/check-npmrc.sh'),
+    '**/*.sh must still match a nested .sh'
+  );
+  require_(
+    !globToRegExp('**/*.sh').test('packages/cli/src/index.ts'),
+    'CONTROL: **/*.sh must NOT match a .ts, or the pattern matches everything'
+  );
+  require_(
+    globToRegExp('private/account/**').test('private/account/src/x.ts'),
+    'a trailing ** must match beneath the directory'
+  );
+  require_(
+    !globToRegExp('private/account/**').test('private/renet/src/x.ts'),
+    'CONTROL: a directory glob must not match a sibling directory'
+  );
+
+  // A GITLINK MUST WIDEN, NOT PASS THROUGH. `git diff --name-only` names a
+  // changed submodule as ONE entry (mode 160000), so a `private/x/**` glob can
+  // never match it. Both directions against the real repo, with a precondition
+  // so the case cannot pass because the fixture stopped being a submodule.
+  const gitlink = firstGitlink();
+  if (gitlink === undefined) {
+    require_(false, 'CONTROL: no gitlink found in HEAD, so the expansion case proves nothing');
+  } else {
+    const expanded = expandGitlinks([gitlink, 'package.json'], () => {});
+    require_(expanded.includes(`${gitlink}/**`), `a changed ${gitlink} must widen to ${gitlink}/**`);
+    require_(expanded.includes(gitlink), 'the gitlink entry itself must survive');
+    require_(
+      expanded.includes('package.json') && !expanded.includes('package.json/**'),
+      'CONTROL: an ordinary file must pass through unwidened'
+    );
+  }
+
+  // `--list` MUST REFLECT THE SELECTION. Before this it returned before
+  // select() ran, so a scoped list was indistinguishable from a full one --
+  // and no oracle could assert on a selection it could not read.
+  const listSpecs = [
+    syntheticSpec('selftest:list-a', 'true'),
+    syntheticSpec('selftest:list-b', 'true'),
+  ];
+  const listSel = select(listSpecs, { ...EMPTY_OPTS, only: ['selftest:list-a'] }, () => {});
+  require_(
+    listSel.ids.has('selftest:list-a') && !listSel.ids.has('selftest:list-b'),
+    'select() must honour --only'
+  );
+  require_(
+    select(listSpecs, EMPTY_OPTS, () => {}).ids.size === 2,
+    'CONTROL: with no flags select() must keep every gate, or --only proves nothing'
+  );
+
   if (failures.length > 0) {
     process.stderr.write('CONTROL FAILED: ci-runner --selftest did not fire\n');
     for (const f of failures) process.stderr.write(`  - ${f}\n`);
@@ -355,7 +503,7 @@ async function selftest(): Promise<number> {
     process.stderr.write(text);
     return 1;
   }
-  process.stdout.write('ci-runner: selftest ok (9 assertions)\n');
+  process.stdout.write(`ci-runner: selftest ok (${9 + 7 + 3} assertions)\n`);
   return 0;
 }
 
@@ -369,17 +517,25 @@ async function main(): Promise<number> {
     return 1;
   }
 
+  const humanOut = opts.json
+    ? (text: string) => process.stderr.write(text)
+    : (text: string) => process.stdout.write(text);
+
+  // `--list` USED TO RETURN BEFORE `select()` RAN, so `--list --changed`
+  // printed all 314 specs whatever the scoping did. That is worse than
+  // unhelpful: it is an instrument that answers a question it never asked, and
+  // it is how --changed stayed inert without anyone noticing. Measured
+  // 2026-08-27 -- a reader (me) concluded from it that --changed scoped
+  // nothing, on evidence that could not have shown otherwise.
+  const selection = select(specs, opts, humanOut);
   if (opts.list) {
     for (const spec of specs) {
+      if (spec.gate && !selection.ids.has(spec.id)) continue;
       process.stdout.write(`${spec.gate ? 'gate ' : 'prereq'} ${spec.id.padEnd(48)} ${spec.run}\n`);
     }
     return 0;
   }
 
-  const humanOut = opts.json
-    ? (text: string) => process.stderr.write(text)
-    : (text: string) => process.stdout.write(text);
-  const selection = select(specs, opts, humanOut);
   const graph = buildGraph(specs, selection.ids);
   if (graph.length === 0) {
     process.stderr.write('ci-runner: Refusing to run: the selection matched zero gates.\n');
