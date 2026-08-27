@@ -4927,3 +4927,100 @@ no pyyaml, no pip, no aws and no ruff, but the devbox has pyyaml 6.0.2 and `uvx`
 `./run.sh devbox exec -- <gate>` runs them. The lesson generalises — a gate that
 exits 2 on the host is a gate run in the wrong PLACE, not an environmental
 excuse — and `aws` (missing on both) is now in the devcontainer image.
+
+### The CPU-idle battery: two gate tests were secretly giant serial batteries
+
+Operator observation: `run-all.sh`'s 114-test battery left 6/8 cores idle for
+most of a 23-minute wall-clock run. The first hypothesis (a writer-chain
+scheduling barrier starving slots) was wrong, refuted by live slot-occupancy
+sampling: only 2/8 slots occupied from t=20s onward for ~22 of 23 minutes. The
+real cause is granularity, not scheduling: 2 of 114 "gate tests"
+(`test-worklist-hooks.sh`, `test-claude-hooks.sh`) are each secretly 700-900+
+assertion serial batteries, each pinning one core for 15-20 minutes, while the
+other 112 finish in under 20 seconds combined.
+
+Fixed `test-worklist-hooks.sh`: its two sub-harnesses (`test-worklist-v5.sh`,
+`test-report-inbox.sh`) now dispatch as background subshells with per-harness
+output captured to temp files and printed in array order for a deterministic
+transcript. `run_harness()` itself is unchanged; only dispatch is concurrent.
+Measured: 977s -> 918s (-6%, bounded by the slower harness, not a 2x speedup).
+`test-claude-hooks.sh` (the bigger long pole) was deliberately left untouched —
+shared, load-bearing, out of scope for a mechanical dispatch change.
+
+### A gate green in CI can be red on every developer machine
+
+`test-scope-gate-outputs.sh` compared a bare `sort` of grep output against a
+list ordered by node's `Array.prototype.sort()` (UTF-16 code-unit order). Under
+`en_US.UTF-8` glibc collation, `run_e2e_k8s_ceph=false` sorts before
+`run_e2e_k8s=false` — `=` and `_` collate below letters at the primary level —
+so the SAME 17 keys appeared to "differ" in a way that reads exactly like a
+missing key. Green in CI for 26 days (`ubuntu-latest` collates by codepoint),
+red on the very first local run with a UTF-8 desktop locale.
+
+Both `scope-map.cjs` and `scope-shadow.sh` were correct; the bug was entirely
+in the test's own comparison. Fixed with `LC_ALL=C sort`, plus hardening the
+node side to sort the SAME byte strings the shell side does (post-`map`, not
+pre-). Three controls proved the fix is exactly the collation (both locales
+green after, only `en_US.UTF-8` red before), that it still catches a real
+missing-key defect (planted, fired, reverted), and that it stays order-blind
+(emission order reversed, stayed green). Sibling hardening in
+`check-profiler-coverage.sh` (same shape, not yet broken only by luck of
+alphabetical ordering). New TRAPS.md entry: any shell `sort` compared against a
+node/jq/python/hand-written-literal ordering needs `LC_ALL=C`.
+
+### The Go-deps freshness gate fired for real, twice in one PR — and confirmed a documented pattern
+
+`check:ci-go-deps` red: renet's csi-test, logrus, otel family and grpc had all
+shipped newer patch/minor releases. Bumping csi-test to v5.6.0 pulled
+`container-storage-interface/spec` v1.13.0 transitively — a package the
+blocklist explicitly forbids, with a reason naming its own revisit condition:
+*"Revisit when csi-test ships a release built against spec v1.13."* csi-test
+v5.6.0 does exactly that (its source now guards the two enum references
+`.go-deps-upgrade-blocklist` cited, behind a comment reading "CSI 1.13 removed
+the deprecated VOLUME_CONDITION capability name"), so the block was lifted —
+verified by taking the bump, building under the real CI tags
+(`btrfs root ebpf_e2e e2e system`), and running `deadcode.sh` and the full test
+suite, not by re-reading the blocklist's prose.
+
+The renet dep bump then reproduced, live, the exact class this doc's
+`## 2026-08-24` entry (`### Some dependencies can only move as a SET`) already
+named: `.ci/scripts/private/license-mint/` replaces the renet worktree locally,
+so its own `go.mod`/`go.sum` fell out of sync and `check:ci-go-module-sync`
+caught it precisely as designed — plus the License Enforcement battery failed
+the same way one job later (license-mint's build itself couldn't resolve,
+before any license logic ran). `go mod tidy` in `license-mint` resynced both.
+Confirms the earlier fix generalizes rather than needing extension.
+
+### The reggate's own coverage check was blind to its own manifest's citations
+
+Landed mid-wave, discovered by dogfooding the reggate mechanism against itself:
+`wl_reggate.apply_regression_verdict`'s REBUT path validated a judge-cited
+`existing_gate` against `package.json` `check:*` keys only. `gate_reachable()`
+already trusted `_manifest_gate_ids()` (gate-test:* manifest ids) for the WRITE
+path, but the REBUT path never consulted it — so a correct citation of real,
+`npm run ci`-scheduled coverage (`gate-test:ci-trace-branch`) was
+unconditionally reported HALLUCINATED, and stayed that way across several
+consecutive stops even after multiple correct rebuttals, because most
+citations (by a human or the judge) are FILE PATHS, optionally with
+`::test_name`, not the bare manifest id. Extended the citation check to
+resolve both shapes against the manifest's `run:` fields. Control-first cases
+(a real id, a bogus id, a real path::name, a bogus path) in
+`worklist-cases/06-regression-gate.sh`; full `test-worklist-v5.sh` suite,
+808/808.
+
+### The automated review found a live instance of the class it was warned about
+
+The Claude Review on this PR's own commits found one real, confirmed defect:
+`check-label-inventory.sh`'s new description/colour drift comparison wrapped
+its JSON parse in `except Exception: sys.exit(0)`. The outer bash captures that
+exit code as `drift_rc`, so a malformed `LIVE_JSON` (a real risk — a paginated
+`gh api` call failing mid-stream leaves partial stdout, and the caller's
+`|| echo ""` fallback does not un-truncate it) read as "the comparison ran and
+found nothing" rather than failing closed. This is the exact swallowed-failure
+class `1eac336b` (this same PR, this same file, a few commits earlier) already
+fixed once — at the shell `|| true` level, one layer above the python-level
+early exit that was still there. Fixed with `sys.exit(1)`; the existing
+`drift_rc != 0` hard-failure path needed no change, only a caller that
+actually triggered it. New regression case, control-first: a construction-built
+mutant restoring the literal old `sys.exit(0)` line proves the pre-fix
+behaviour would have swallowed it.
