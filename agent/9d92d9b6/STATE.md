@@ -1,10 +1,8 @@
-## SESSION 9d92d9b6 2026-08-27T22:10:55Z
+## SESSION 9d92d9b6 2026-08-27T22:36:07Z
 
 Wave 0827-1 — epic `f2757830`, PR #579, still DRAFT. Round log under `reports/`.
 
-## Where the work is
-
-SIX commits on `0827-1`, unpushed, tree otherwise clean:
+## Seven commits on `0827-1`, unpushed
 
     070096b95  hooks/gates: a name is not a target, a missing tool is not a verdict
     0c3afc742  ci: containerised tts/render/web toolchains
@@ -12,61 +10,63 @@ SIX commits on `0827-1`, unpushed, tree otherwise clean:
     5fc385241  agent: session state
     5106ce6f4  pr: epic snapshot refresh
     799410a65  ci: two reds the quick lane could not see
+    929cdb380  agent: STATE.md for a session that knows nothing
 
-All six carry `PR-TASK: f2757830`. `0081ab315` (pre-existing HEAD when this
-session resumed) does NOT — bash executed the backticks in its `git commit -m`.
+All seven carry `PR-TASK: f2757830`. `0081ab315` (already HEAD when this session
+resumed) does NOT — bash executed the backticks in its `git commit -m`.
+
+UNCOMMITTED right now: `scripts/ci-runner/run.ts` (the `stable` field, below),
+`.dead-bash-allowlist`, and new `.ci/scripts/test/manual/probe-receipt-stability.sh`.
 
 ## In CI, exactly ONE gate fails
 
 `check:ci-pr-task-trailers`, on that missing trailer. Everything else that looks
-red locally is not a CI problem, and each was probed rather than assumed:
+red locally was probed, not assumed:
 
-- `check:ci-renet` — red only here. HOST go is 1.26.4; CI installs go1.25.13 via
-  `go-version-file` on `private/renet/go.mod`. Same-moment govulncheck in
-  throwaway containers: go1.26.4 = 9 vulns, go1.26.6 = 2, go1.25.13 = 2. The two
-  are `GO-2026-4883/4887` (docker/docker, `Fixed in: N/A`), already suppressed.
-- `check:ci-python-lint` — BLOCKED here (no ruff). Passes in the devbox and CI.
-- `check:test-workers` — `workers/www` is NOT a root workspace and its
-  node_modules is absent locally; CI runs `npm ci --prefix workers/www` first
-  (`ci-quality.yml:1479`). Zero `workers/` files in this wave.
+- `check:ci-renet` — host go is 1.26.4; CI installs go1.25.13 via `go-version-file`
+  on `private/renet/go.mod`. Same-moment govulncheck: 1.26.4 = 9 vulns,
+  1.26.6 = 2, 1.25.13 = 2, the two being `GO-2026-4883/4887` (docker/docker,
+  `Fixed in: N/A`) which `.ci/scripts/quality/security.sh:89` suppresses.
+- `check:ci-python-lint` — BLOCKED here (no ruff); passes in the devbox and CI.
+- `check:test-workers` — `workers/www` is NOT a root workspace, its node_modules
+  is absent locally, and CI runs `npm ci --prefix workers/www` first
+  (`.github/workflows/ci-quality.yml:1479`).
 
-**The quick lane defers 62 gates.** Reporting lane health from `ci:quick` is how
-this session claimed "green but for one gate" and was wrong. Use `npm run ci`.
+## THE MEASUREMENT TRAP THAT COST TWO 12-MINUTE RUNS
 
-## Two traps this session paid for
+**This worktree is SHARED with a live peer session, and a whole-lane run takes
+~12 minutes.** Anything a peer touches inside that window flips gates red that
+pass standalone before and after. `check:lint`, `check:ci-toolchain-pins`,
+`check:ci-browser-smoke` and `check:ci-ssr-locale` failed in BOTH whole-lane runs
+and pass standalone every time. Proof it was not the code:
+`check-toolchain-pins.sh` derives ROOT from BASH_SOURCE, nothing writes
+`.devcontainer/Dockerfile`, and its `COPY toolchain.env` is at line 222 of the
+very commit under test.
 
-1. **Do not change the tree while a lane runs.** Restoring the submodule pointer
-   mid-run produced FOUR phantom failures (`check:lint`, `check:ci-toolchain-pins`,
-   `check:ci-ssr-locale`, `check:ci-browser-smoke`) that all pass standalone.
-2. **Backticks in an unquoted heredoc execute.** It ate the PR-TASK trailer, and
-   separately ran `devbox remove` from inside a hook's own refusal message.
+Also: **the quick lane defers 62 gates.** Reporting lane health from `ci:quick`
+is how this session claimed "green but for one gate" and was wrong.
+
+## The receipt now says whether the tree held still
+
+`run.ts` sampled `dirtyDigest()` only at start, so mid-run churn was invisible.
+It now samples again at the end, records `stable`, and warns by name. Proven both
+ways; the probe is `.ci/scripts/test/manual/probe-receipt-stability.sh`.
+Deliberately NOT a CI gate — it must plant a change while a lane is in flight, so
+any automated form races the gate it times. It also does NOT detect an edit made
+and reverted inside the window; two samples cannot.
 
 ## The renet fix is committed but NOT in this PR
 
-`3f49e09` on submodule branch `0827-1` (name must match the console branch or
-`/pr-merge` drops it). It fixes a 4-instance class: every quality script installs
-a Go tool then invokes it bare, dying at exit 127, because `go install` writes to
-`$(go env GOPATH)/bin` which is on no PATH. Fixed once in `.ci/scripts/lib/common.sh`.
-CI never hit it — `actions/setup-go` adds that directory itself.
-
-The console pointer is deliberately restored to `dbdbeb884`:
-`check-submodule-branches.sh` requires a pointer change to carry a matching
-branch AND a linked submodule PR. The commit is anchored to its branch ref, not
-orphaned — verified.
-
-## Blocked on the operator
-
-The trailer repair is now a rebase reword (six commits deep) and
-`block-git-amend.sh` is an unconditional `exit 2` with no override, so it is not
-this session's to run. `block-unverified-push.sh` requires a whole-green receipt,
-which that one red prevents.
+`3f49e09` on submodule branch `0827-1`. Console pointer deliberately restored to
+`dbdbeb884`: `check-submodule-branches.sh` requires a pointer change to carry a
+matching branch AND a linked submodule PR. Commit is anchored to its branch ref.
 
 ## Next action
 
-1. Commit this STATE.md, then run `npm run ci` ONCE on a stable tree for a
-   receipt that can be trusted — do not touch the tree while it runs.
-2. Then either the operator's reword (CI goes green outright), or build the
-   named-carried-reds receipt mechanism — named+justified reds only, unnamed
-   still refused, an entry refused once its gate goes green — and push with
-   `check:ci-pr-task-trailers` named. That is `[?] #9e2c9d54`, DEFAULT executes.
+1. Confirm `check:ci-dead-bash` accepts the new `manual:` allowlist entry, then
+   commit `run.ts` + allowlist + probe.
+2. Then `[?] #9e2c9d54`: either the operator's rebase reword of `0081ab315` (CI
+   goes green outright) or, on DEFAULT, build the named-carried-reds receipt —
+   named+justified reds only, unnamed still refused, an entry refused once its
+   gate goes green — design drafted in the scratchpad.
 3. `gh pr ready` → Claude review → resolve threads. **Never merge, never push main.**

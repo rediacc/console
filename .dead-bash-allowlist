@@ -61,3 +61,6 @@ manual:.ci/breakpoint/scripts/sync-breakpoint.sh
 
 # BLOCKER: operator-invoked wrapper carrying its own "Usage: .ci/docker/run-in-web.sh <command...>" line, the entry point of the containerised web toolchain added alongside .ci/docker/{tts,render}. Its siblings are reachable statically -- run-in-tts.sh from .ci/docker/tts/Dockerfile, run-in-render.sh from this file -- so it is the TOP of that chain and nothing above it can name it. REDIACC_NO_DOCKER=1 makes it exec on the host, which is how it is driven locally.
 manual:.ci/docker/run-in-web.sh
+
+# BLOCKER: operator-run probe for the receipt's `stable` field, which cannot be gated without flakiness -- it must plant a tree change WHILE a real lane run is in flight, so any automated version races the gate it is timing against. Kept because the control took three attempts to stop reporting success while measuring nothing (a slow-tier gate matched zero gates; then a *.tmp probe was invisible to git status via .gitignore:73), and that knowledge is worth more as a runnable script than as prose.
+manual:.ci/scripts/test/manual/probe-receipt-stability.sh

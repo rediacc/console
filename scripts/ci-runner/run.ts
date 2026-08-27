@@ -615,6 +615,16 @@ interface Receipt {
   head: string;
   branch: string;
   dirtyDigest: string;
+  /**
+   * Did the working tree hold still for the whole run?
+   *
+   * false means at least one file changed between the first and last sample, so
+   * the gates did not all judge the same tree and a red may belong to the churn
+   * rather than to the code. Not a guarantee of the converse: an edit made and
+   * reverted inside the window leaves both samples equal, and two samples cannot
+   * see that.
+   */
+  stable: boolean;
   selection: string | null;
   /**
    * The lane ran WHOLE. `--only`/`--skip` narrow it, and a receipt from a
@@ -758,6 +768,21 @@ async function main(): Promise<number> {
   // not to editorialise. A receipt that appeared only on success would make
   // "gates failed" and "gates never ran" the same observation at the guard --
   // the exact conflation this repo keeps paying for.
+  // SAMPLE THE TREE AGAIN, and compare. dirtyAtStart alone answers "was the tree
+  // dirty when we began"; it cannot answer "did it hold still", and those are
+  // different questions once anything else is running in this worktree. Two
+  // whole-lane runs were spent on 2026-08-27 discovering that four gates failed
+  // only in the lane and passed standalone every time, because a peer session
+  // was editing files mid-run. The lane read a moving tree and said nothing.
+  const dirtyAtEnd = dirtyDigest();
+  if (dirtyAtEnd !== dirtyAtStart) {
+    humanOut(
+      'WARNING: the working tree CHANGED while these gates ran, so they did not all judge\n' +
+        '  the same tree and a failure here may belong to the churn rather than to the code.\n' +
+        '  Re-run on a still tree before believing a red. This worktree may be shared.'
+    );
+  }
+
   if (opts.quick && !opts.manifest) {
     writeReceipt(
       {
@@ -783,6 +808,7 @@ async function main(): Promise<number> {
           }
         })(),
         dirtyDigest: dirtyAtStart,
+        stable: dirtyAtEnd === dirtyAtStart,
         selection: selection.description ?? null,
         whole: opts.only === undefined && opts.skip === undefined,
         exitCode,
