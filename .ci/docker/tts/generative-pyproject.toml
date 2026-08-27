@@ -1,0 +1,42 @@
+[build-system]
+requires = ["setuptools>=69", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "rediacc-generative"
+version = "0.2.0"
+description = "Local GPU inference tools: TTS, green-screen removal, thumbnail generation"
+requires-python = ">=3.10"
+dependencies = [
+  "numpy>=1.26",
+  "torch>=2.2",
+  "torchaudio>=2.2",
+  "transformers>=4.44",
+  "Pillow>=10.0",
+  "rembg>=2.0",
+]
+
+[project.optional-dependencies]
+tts = [
+  "qwen-asr",
+  # VoxCPM2 backs the DEFAULT engine (audio.py::get_engine, engine_voxcpm.py:75).
+  # It was declared in no dependency file and no run.sh pip line until 2026-08-27, so a
+  # clean venv could not import the engine it defaults to.
+  "voxcpm",
+]
+thumbnail = [
+  "diffusers>=0.30",
+  "bitsandbytes>=0.43",
+  "accelerate>=0.33",
+  "sentencepiece>=0.2",
+  "safetensors>=0.4",
+]
+all = [
+  "rediacc-generative[tts,thumbnail]",
+]
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]

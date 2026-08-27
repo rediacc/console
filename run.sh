@@ -100,6 +100,20 @@ ensure_audio_system_deps() {
     command -v ffprobe >/dev/null 2>&1 || missing+=("ffmpeg")
     command -v sox >/dev/null 2>&1 || missing+=("sox")
 
+    # The venv toolchain is a dep of this function too, and it used to be invisible here.
+    # Probing only the three BINARIES meant a host with ffmpeg but without a working
+    # ensurepip installed nothing and failed much later, inside `python3 -m venv`, with
+    # "ensurepip is not available" and no hint about which package supplies it.
+    # Measured 2026-08-27 on a rebuilt host: ffmpeg present, python3.14-venv absent,
+    # every generative venv creation failing.
+    local pyver
+    pyver="$(python3 -c 'import sys; print(f"{sys.version_info[0]}.{sys.version_info[1]}")' 2>/dev/null || echo "")"
+    if ! python3 -c 'import ensurepip' >/dev/null 2>&1; then
+        # The VERSIONED name, not the generic python3-venv metapackage: on a host whose
+        # python3 is newer than the distro default, the metapackage pulls the wrong one.
+        missing+=("python${pyver}-venv")
+    fi
+
     if [[ "${#missing[@]}" -eq 0 ]]; then
         return 0
     fi
@@ -113,10 +127,12 @@ ensure_audio_system_deps() {
     log_step "Installing missing system dependencies: ${missing[*]}"
     if command -v sudo >/dev/null 2>&1; then
         sudo apt-get update
-        sudo apt-get install -y ffmpeg sox python3-venv python3-dev build-essential
+        sudo apt-get install -y ffmpeg sox python3-venv python3-dev build-essential \
+            ${pyver:+"python${pyver}-venv" "python${pyver}-dev"}
     else
         apt-get update
-        apt-get install -y ffmpeg sox python3-venv python3-dev build-essential
+        apt-get install -y ffmpeg sox python3-venv python3-dev build-essential \
+            ${pyver:+"python${pyver}-venv" "python${pyver}-dev"}
     fi
 }
 
