@@ -1,46 +1,44 @@
-## SESSION 854ac1c6 2026-08-27T02:46:45Z
+## SESSION 854ac1c6 2026-08-27T05:11:47Z
 
 ## Where things stand
 
-**PR #577** (branch `0826-2`, head `3e4f1105`) is READY, watching round 14 CI
-(background `bv5r3q1mu`) after fixing two real reds: round 12 was outdated Go
-deps in renet (fixed via renet PR rediacc/renet#108, which also lifted the
-now-resolved `container-storage-interface/spec` blocklist entry), round 13 was
-Submodule Branches failing because the console PR body didn't link renet#108
-and renet#108's automated review had no reply (both fixed, PR body patched via
-`gh api .../pulls/577 -X PATCH -F body=@file`, replied to the review).
+**PR #577** (branch `0826-2`, head `10d41d05`) is READY and round-17 CI is
+GREEN (verified independently: 0 non-success/skipped checks, isDraft:false).
+Since the last STATE.md write, three more real problems were found and fixed,
+all pushed:
 
-**Uncommitted in the tree** (not yet part of #577, verifying before commit):
-a real bug fix in `.claude/hooks/stop/wl_reggate.py`'s `apply_regression_verdict`
-— it validated `existing_gate` citations ONLY against `package.json` `check:*`
-keys, never `_manifest_gate_ids()` (same helper `gate_reachable()` already
-uses), so a correct citation of a real `gate-test:*` manifest entry
-(`gate-test:ci-trace-branch`, which I cited across two reggate rounds this
-session for the ci-trace ref-validation finding) was unconditionally reported
-HALLUCINATED. Fixed + added control-first cases 91/92 to
-`worklist-cases/06-regression-gate.sh`. Full suite verifying now, background
-`bh0qe63wu` (~700+ assertions, takes several minutes on this host).
+1. **Round 16 red**: the automated review's own fix commit introduced a false
+   positive in `check-swallowed-failures.sh` — a comment quoting the historical
+   bug's exact syntax (`` `|| true` ``, `` `|| echo ""` ``) matched the
+   scanner's own pattern once the multi-line capture folded to one logical
+   line. Reworded to paraphrase instead of quote. Documented as the THIRD
+   instance of TRAPS.md's "a detector can match its own prose" (operator's
+   prior ruling said revisit a meta-gate at 3; noted but not written — three
+   different specific fixes so far, no shared rule yet).
+2. Design docs (`docs/ci-overhaul/06-progress.md`) updated to record this
+   whole wave's fixes (CPU-idle battery, scope-gate locale collation, Go-deps
+   freshness chain, the reggate manifest-citation bug, the label-inventory
+   swallowed-failure).
+3. **Claude Review for head `10d41d05` is running now** (run `33041668835`,
+   auto-triggered on round-17 green). Watching via background `buf5m39id`.
+   This is the SECOND real review of this PR — the first (head `01e7111c`)
+   found one real finding (label-inventory swallowed-failure), already fixed
+   and replied to.
 
 Round log: `~/.claude/projects/-home-muhammed-console/reports/pr-babysit-0826-2.md`.
-renet PR: https://github.com/rediacc/renet/pull/108.
+renet PR (merged into this pointer chain): https://github.com/rediacc/renet/pull/108.
 
 ## Next action
 
-1. **On `bh0qe63wu` (full worklist suite) landing green**: commit the
-   wl_reggate.py fix + test cases + this STATE.md into #577 (it's an
-   infra/tooling fix discovered while babysitting, same pattern as the
-   CPU-idle and eslint-heap fixes already in this PR), push, which restarts
-   CI as round 15.
-2. **On `bv5r3q1mu` (round 14 CI) landing green**: if round 15 (post the
-   hook-fix push) is a separate CI run, watch that instead/also — check
-   which head is current before re-arming.
-3. **Once truly green**: arm/confirm the Claude Review watch for the final
-   head, read `gh api repos/rediacc/console/pulls/577/comments`, fix real
-   findings per the tier system, reply substantively to every thread,
-   resolve via GraphQL `resolveReviewThread`.
-4. **Finish line**: reviewed + every thread resolved. Report PR link +
-   headline results. **STOP THERE — never merge, never push main.**
-   `/pr-merge` is the operator's call.
+1. **On `buf5m39id` landing**: read
+   `gh api repos/rediacc/console/pulls/577/comments` and
+   `gh pr view 577 --json comments`, check for new findings. If real: fix per
+   the tier system, reply substantively, resolve. If clean/LGTM: the finish
+   line is reached.
+2. **Finish line**: every job green + reviewed + every thread/finding
+   addressed. Report PR link + headline results to the operator, distill the
+   round log into a `pr-babysit-0826-2` memory file. **STOP THERE — never
+   merge, never push main.** `/pr-merge` is the operator's call.
 
 **RUN GATES WHERE THE TOOLCHAIN IS.** Host lacks pyyaml, pip, aws, ruff.
 `./run.sh devbox exec -- <gate>`.
