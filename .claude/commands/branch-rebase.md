@@ -1,5 +1,6 @@
 ---
 description: Rebase the current branch (console + every submodule that has a matching branch) onto its base branch, submodule-first, resolving the gitlink conflicts that plain `git rebase` gets wrong. Rebase and verify ONLY - merges nothing, lands nothing, and never force-pushes. Use to refresh a long-running branch onto a moved main before or during a PR.
+argument-hint: "[base]  (optional; defaults to main. A feature branch is legal: see below)"
 disable-model-invocation: true
 allowed-tools: Bash(git branch:*), Bash(git status:*), Bash(git submodule status:*), Bash(git log:*), Bash(git rev-parse:*), Bash(git rev-list:*), Bash(git ls-tree:*), Bash(git remote:*), Bash(gh pr list:*)
 ---
@@ -9,29 +10,35 @@ allowed-tools: Bash(git branch:*), Bash(git status:*), Bash(git submodule status
 - Branch: !`git branch --show-current`
 - Working tree: !`git status --short | grep -v '.claude/settings.local.json' || echo '(clean aside from settings.local.json)'`
 - Submodule pointers: !`git submodule status private/renet private/account private/elite private/homebrew-tap 2>/dev/null || echo '(unavailable)'`
-- Branch vs base (left=base-only, right=branch-only): !`cb="$(git branch --show-current)"; git rev-list --left-right --count origin/main...HEAD 2>/dev/null || echo '(unavailable)'`
+- Base: !`echo "origin/${ARGUMENTS:-main}" | tr -d ' '`
+- Branch vs base (left=base-only, right=branch-only): !`b="origin/${ARGUMENTS:-main}"; b="$(echo "$b" | tr -d " ")"; git rev-list --left-right --count "$b"...HEAD 2>/dev/null || echo '(unavailable -- does that base exist? `git fetch origin` first)'`
 - Matching branches in submodules: !`cb="$(git branch --show-current)"; for d in private/renet private/account private/elite private/homebrew-tap; do [ -e "$d/.git" ] || continue; if git -C "$d" show-ref --verify --quiet "refs/heads/$cb" || git -C "$d" ls-remote --exit-code --heads origin "$cb" >/dev/null 2>&1; then echo "  $d: HAS $cb"; else echo "  $d: none"; fi; done; true`
 
-## Task: rebase the current branch onto `origin/main`
+## Task: rebase the current branch onto `origin/$ARGUMENTS` (default `main`)
 
-Rebase the current branch onto `origin/main` across the console repo **and** every
-submodule carrying a branch of the same name.
+Rebase the current branch onto `origin/<base>` across the console repo **and** every
+submodule carrying a branch of the same name. `<base>` is the first token of
+`$ARGUMENTS`, defaulting to `main`.
 
-**The base is not configurable, and the `[base]` argument was DELETED rather than
-implemented.** It was advertised for weeks and never used: the executable rebase below
-is `origin/main`, submodules always base on their own `main`, and step 4 verifies
-containment against `origin/main`. Passing a feature branch rebased the console onto it
-while the verification checked main -- a false pass, on the one case worth checking.
-Making the knob real would mean threading a per-repo base through the submodule loop,
-the classifier and the containment check, and the code is right that submodules base on
-their own main. There is one operator and no external consumer, so the knob is gone.
+**A FEATURE BRANCH IS A LEGAL BASE, and the threading is the whole point.** This
+argument was advertised for weeks while every executable line said `origin/main`, so
+passing `0826-2` rebased the console onto it and then VERIFIED against `main` -- a false
+pass on the one case worth checking. It was deleted for that reason and restored when the
+operator pointed out they stack onto a feature branch routinely. So:
 
-If you genuinely need to stack on another feature branch, do it by hand and know what
-you are buying: all five repos are rebase-merge only, so merging the parent PR REWRITES
-its SHAs. Your branch then carries the pre-merge ones and must be rebased again onto
-`origin/main`, where git drops the patch-identical duplicates. A commit count that
-falls across that second rebase is CORRECT, which is why step 4 no longer compares
-counts.
+- the console rebases onto `origin/<base>`;
+- **submodules always rebase onto their OWN `origin/main`**, never onto `<base>`. A
+  submodule's work lands on its own main; `<base>` is a console ref and means nothing
+  inside `private/renet`. `--git verify-rebase` learned this the hard way, refusing with
+  "could not compare" on its first live run;
+- step 4 verifies the CONSOLE against `origin/<base>` and each SUBMODULE against its own
+  `origin/main`. Mixing those two is the corruption this section exists to prevent.
+
+**Stacking has a second act, and skipping it is how a branch rots.** All five repos are
+rebase-merge only, so merging the parent PR REWRITES its SHAs. Your branch then carries
+the pre-merge ones and must be rebased AGAIN, onto `origin/main`, where git drops the
+patch-identical duplicates. A commit count that falls across that second rebase is
+CORRECT, which is why step 4 asks by patch identity rather than by count.
 
 **This command lands nothing.** It does not merge, does not touch a PR, does not tag,
 does not deploy. It ends with a rebased local branch and an explicit verification
@@ -75,6 +82,14 @@ git ls-files -u <submodule>   # stage 1 = base(ancestor), 2 = upstream, 3 = repl
   tips so any outcome is recoverable, and **print them in the final report**:
 
   ```bash
+  # SET THE BASE ONCE, HERE, and use $BASE everywhere below. Every later step
+  # defaults to main if it is unset, so a base named only in prose silently
+  # rebases onto main while you believe otherwise -- which is precisely the
+  # corruption that got this argument deleted the first time.
+  BASE="${ARGUMENTS%% *}"; BASE="${BASE:-main}"
+  git fetch origin "$BASE" || { echo "no such base: origin/$BASE"; exit 1; }
+  echo "base = origin/$BASE"
+
   cb="$(git branch --show-current)"
   echo "console $cb = $(git rev-parse HEAD)"
   for d in private/*/; do d="${d%/}"; [ -e "$d/.git" ] || continue
@@ -128,7 +143,7 @@ for d in private/renet private/account private/elite private/homebrew-tap; do
 done
 ```
 
-Rebase onto `origin/main`, never the possibly-stale local `main` ref.
+Rebase onto `origin/<base>`, never the possibly-stale local ref.
 
 ### 2. Rebase the submodules FIRST (only those with a matching branch)
 
@@ -156,7 +171,7 @@ git -C <sm> rev-parse HEAD              # <-- the tip step 3 needs; record it
 ### 3. Rebase the console branch
 
 ```bash
-git rebase origin/main
+git rebase "origin/${BASE:-main}"
 ```
 
 Every conflict falls into one of two kinds and they are resolved differently.
@@ -222,6 +237,18 @@ rebase**, so the tree state alone proves nothing. Check the content:
   ```
 
   This is the check that catches an `--ours`/`--theirs` mistake, and nothing else does.
+  Note the ref: each submodule is checked against its OWN `origin/main`, never against
+  `$BASE`, which is a console ref and means nothing inside `private/renet`.
+- **The console contains its base**, which nothing checked until 2026-08-27. With
+  `$BASE` = `main` this is nearly always true by construction, so its absence cost
+  nothing and hid; with a FEATURE-BRANCH base it is the assertion that catches a rebase
+  onto the wrong ref, which is the failure the `[base]` argument makes possible:
+
+  ```bash
+  git merge-base --is-ancestor "origin/${BASE:-main}" HEAD \
+    && echo "console: contains origin/${BASE:-main}" \
+    || echo "console: DOES NOT CONTAIN ITS BASE -- you rebased onto something else"
+  ```
 - **Your commits survived**, and a COUNT cannot tell you that. Rebase-merge rewrites
   SHAs, so when a stacked branch re-rebases after its parent PR merges, git correctly
   drops the patch-identical duplicates and the count legitimately falls. The old
@@ -233,9 +260,22 @@ rebase**, so the tree state alone proves nothing. Check the content:
   `-` (an equivalent is already upstream):
 
   ```bash
-  git cherry origin/main HEAD | awk '$1=="-"{print "absorbed: " $2}'
+  git cherry "origin/${BASE:-main}" HEAD | awk '$1=="-"{print "absorbed: " $2}'
   git rev-list <pre-rebase-tip-from-step-0>..HEAD --format=%s   # what you still carry
   ```
+
+  Or let the tool do all of it, which is the same two oracles with the per-repo base
+  already threaded -- `--git verify-rebase` checks the console against the base you pass
+  and each SUBMODULE against its own `origin/main`, because it reads `.gitmodules`:
+
+  ```bash
+  .claude/hooks/stop/worklist.py --git snapshot > /tmp/pre.snap   # BEFORE the rebase
+  .claude/hooks/stop/worklist.py --git verify-rebase /tmp/pre.snap "origin/${BASE:-main}"
+  ```
+
+  It reports carried / absorbed / MISSING per repo and refuses on MISSING. Prefer it:
+  the hand-run commands above and this verb encode the same rule, and two copies of a
+  rule drift -- the prose copy is the one that drifted last time.
 
   A commit that is neither carried nor marked absorbed is MISSING, and that is the
   `--skip` case. Nothing else distinguishes the two.
