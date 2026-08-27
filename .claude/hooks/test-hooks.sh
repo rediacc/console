@@ -183,6 +183,16 @@ check 0 pre-bash/block-raw-pr-body-edit.sh "$(bash_json "gh pr create --draft --
     "raw-pr-body CONTROL: an unreadable --body-file is ALLOWED, not refused blind"
 check 2 pre-bash/block-raw-pr-body-edit.sh "$(bash_json "gh pr edit 42 --body-file $PB_DIR/with.md")" \
     "raw-pr-body: EDIT is refused even WITH the block -- it rewrites the whole body"
+# ONE COMMAND CAN DO BOTH, and reading the flags line-wide gets the scope wrong
+# in both directions. hook_gh_pr_segment exists for exactly this; the first
+# draft of the create arm did not use it, so a legal `create --body <with the
+# block> && edit --add-label x` was refused for the edit's sake.
+check 2 pre-bash/block-raw-pr-body-edit.sh \
+    "$(bash_json "gh pr create --draft --fill && gh pr edit 42 --body-file $PB_DIR/with.md")" \
+    "raw-pr-body: a create beside it does not let a raw EDIT through"
+check 0 pre-bash/block-raw-pr-body-edit.sh \
+    "$(bash_json "gh pr create --draft --body \"x $PB_M y\" && gh pr edit 42 --add-label a")" \
+    "raw-pr-body CONTROL: the edit's --add-label is not the create's --body"
 rm -rf "$PB_DIR"
 unset PB_M PB_DIR
 

@@ -46,6 +46,42 @@ if printf '%s' "$CMD" | grep -qF 'sync-epic-block.sh'; then
     exit 0
 fi
 
+# ORDER MATTERS: the edit arm runs FIRST. One command can do both, and the
+# create arm below exits 0 on a body that already carries the block -- so with
+# create checked first, `gh pr create --fill && gh pr edit N --body-file b.md`
+# would take that exit and never reach the edit refusal, which applies whether
+# or not the block is there.
+# THE FLAG BELONGS TO ITS OWN INVOCATION, and reading it line-wide is the same
+# scope bug hook_gh_pr_segment was written for. `gh pr create --body "<a body
+# that carries the block>" && gh pr edit N --add-label x` is entirely legal, and
+# a line-wide `--body` test refuses it -- the edit verb is present, the flag is
+# present, and they belong to different commands. Scope both arms to segments.
+EDIT_SEG=$(hook_gh_pr_at_command_pos "$SCAN" edit && hook_gh_pr_segment "$SCAN" edit)
+CREATE_SEG=$(hook_gh_pr_at_command_pos "$SCAN" create && hook_gh_pr_segment "$SCAN" create)
+
+if [ -n "$EDIT_SEG" ] &&
+    { hook_flag_present "$EDIT_SEG" body || hook_flag_present "$EDIT_SEG" body-file; }; then
+    cat >&2 <<'MSG'
+BLOCKED: do not write a PR body by hand.
+
+The description carries a generated `<!-- worklist-epics:begin -->` block built
+from agent/pr/<branch>.md, and a raw `gh pr edit --body` replaces the WHOLE body,
+so the block goes with it. CI then fails on a missing block, minutes later,
+naming nothing that would point back here.
+
+Use the tool, which strips and rebuilds only its own markers and leaves your
+prose alone:
+
+  worklist.py --publish <me> <branch>          # refresh the snapshot
+  .ci/scripts/pr/sync-epic-block.sh <pr> <branch>   # sync it into the PR
+
+To change the narrative part of the description, edit it in the GitHub UI or
+re-run the sync afterwards. `gh pr edit --title`, `--add-label` and friends are
+not affected by this guard.
+MSG
+    exit 2
+fi
+
 # ---- `gh pr create` was the hole, and it is the one that bit -------------
 # Measured 2026-08-27: this guard returned rc=0 for every `gh pr create --body`
 # shape and rc=2 for the matching `edit` ones. The operator's symptom -- "why
@@ -60,14 +96,16 @@ fi
 # in this guard's way at all.
 BEGIN_MARKER='<!-- worklist-epics:begin -->'
 
-if hook_gh_pr_at_command_pos "$SCAN" create; then
-    hook_flag_present "$CMD" body || hook_flag_present "$CMD" body-file || exit 0
+if [ -n "$CREATE_SEG" ]; then
+    hook_flag_present "$CREATE_SEG" body || hook_flag_present "$CREATE_SEG" body-file || exit 0
 
     # What body text can we actually see? --body is in the command; --body-file
     # is on disk. Same readability rule as block-untagged-commit.sh: judge what
     # can be read, ALLOW what cannot, rather than refusing blind.
+    # Content, unlike flags, is read from the RAW command: a quoted body may
+    # itself contain a separator, and a segment would truncate it.
     BODY=""
-    hook_flag_present "$CMD" body && BODY="$CMD"
+    hook_flag_present "$CREATE_SEG" body && BODY="$CMD"
     ROOT="${CLAUDE_PROJECT_DIR:-$(git rev-parse --show-toplevel 2>/dev/null)}"
     SAW_FILE=0
     while IFS= read -r f; do
@@ -87,7 +125,8 @@ $(cat "$cand" 2>/dev/null)"
     # A --body-file naming a path that does not exist yet (written by a later
     # step of the same command, or by a heredoc this scan stripped) is genuinely
     # unreadable. Allow it; CI still gates the result.
-    if hook_flag_present "$CMD" body-file && [ "$SAW_FILE" = 0 ] && ! hook_flag_present "$CMD" body; then
+    if hook_flag_present "$CREATE_SEG" body-file && [ "$SAW_FILE" = 0 ] &&
+        ! hook_flag_present "$CREATE_SEG" body; then
         exit 0
     fi
 
@@ -113,27 +152,4 @@ MSG
     exit 2
 fi
 
-hook_gh_pr_at_command_pos "$SCAN" edit || exit 0
-
-if hook_flag_present "$CMD" body || hook_flag_present "$CMD" body-file; then
-    cat >&2 <<'MSG'
-BLOCKED: do not write a PR body by hand.
-
-The description carries a generated `<!-- worklist-epics:begin -->` block built
-from agent/pr/<branch>.md, and a raw `gh pr edit --body` replaces the WHOLE body,
-so the block goes with it. CI then fails on a missing block, minutes later,
-naming nothing that would point back here.
-
-Use the tool, which strips and rebuilds only its own markers and leaves your
-prose alone:
-
-  worklist.py --publish <me> <branch>          # refresh the snapshot
-  .ci/scripts/pr/sync-epic-block.sh <pr> <branch>   # sync it into the PR
-
-To change the narrative part of the description, edit it in the GitHub UI or
-re-run the sync afterwards. `gh pr edit --title`, `--add-label` and friends are
-not affected by this guard.
-MSG
-    exit 2
-fi
 exit 0
