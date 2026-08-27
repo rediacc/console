@@ -54,11 +54,11 @@ log_info "Control: planted NUL byte in a synthetic .ts file fires as binary+NUL 
 _classify() {
     awk -F': ' '$NF ~ /binary/ { sub(/: [^:]*$/, "", $0); print }'
 }
-if printf '%s\n' 'some-binary-name.sh: us-ascii' | _classify | grep -q .; then
+if [ -n "$(printf '%s\n' 'some-binary-name.sh: us-ascii' | _classify | grep .)" ]; then
     log_error "Binary-classifier control failed: a us-ascii file whose PATH contains 'binary' was classified as binary. Checks 1-3 would silently skip it."
     exit 1
 fi
-if ! printf '%s\n' 'assets/logo.png: binary' | _classify | grep -q .; then
+if [ -z "$(printf '%s\n' 'assets/logo.png: binary' | _classify | grep .)" ]; then
     log_error "Binary-classifier control failed: a genuinely binary file was NOT classified as binary. The NUL-corruption path would never run."
     exit 1
 fi

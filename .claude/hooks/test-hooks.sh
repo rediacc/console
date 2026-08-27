@@ -1325,6 +1325,54 @@ check 2 pre-bash/block-roundlog-truncate.sh "$(bash_json "echo hi > $RLOG")" "ro
 check 2 pre-bash/block-roundlog-truncate.sh "$(bash_json "sed -i s/a/b/ $RLOG")" "roundlog: sed -i is blocked"
 rm -rf "$(dirname "$(dirname "$RLOG_REAL")")"
 unset RLOG_REAL
+
+# THE DEADLOCK CHECK, and it is an INTERACTION -- which is why neither side's
+# own cases could see it. Tested in isolation both parties were correct:
+# `worklist.py --roundlog` refuses to create a log ("This verb REPLACES a STATUS
+# block ... Write the wave header first"), and the guard refuses whole-file
+# writes to a round log. Put them in sequence and there was NO DOOR AT ALL: the
+# verb sends you to Write, and Write was refused. A session following the
+# documented path could not create a round log, which is exactly what happened
+# on 2026-08-27 when one tried.
+#
+# So the assertion is about the PAIR: for a log that does not exist yet, the two
+# must not BOTH refuse. Whichever way a future change moves the responsibility
+# -- guard exempts creation, or the verb learns to create -- this stays true;
+# it only goes red if a door closes with no other one open.
+DL_LOG="$(mktemp -d)/reports/pr-babysit-zz-deadlock-probe.md"
+mkdir -p "$(dirname "$DL_LOG")"
+rm -f "$DL_LOG" # must NOT exist: creation is the case under test
+echo "$(tool_json Write "$DL_LOG" content x)" | bash "$DIR/pre-edit/block-roundlog-write.sh" >/dev/null 2>&1
+dl_guard=$?
+python3 "$DIR/stop/worklist.py" --roundlog zz-deadlock-probe >/dev/null 2>&1 <<'DLEOF'
+run:      probe
+result:   probe body long enough to clear the verb's minimum-length floor
+red:      none
+doing:    proving the verb refuses to CREATE a log
+blocked:  nothing
+DLEOF
+dl_verb=$?
+if [[ "$dl_verb" != 0 && "$dl_guard" != 0 ]]; then
+    FAIL=$((FAIL + 1))
+    printf 'FAIL [0] %s (verb=%s guard=%s -- BOTH refuse, so a round log cannot be created at all)\n' \
+        "roundlog: the guard and the verb must not BOTH refuse creation" "$dl_verb" "$dl_guard"
+else
+    PASS=$((PASS + 1))
+    printf 'ok   [0] %s (verb=%s guard=%s -- at least one door is open)\n' \
+        "roundlog: the guard and the verb must not BOTH refuse creation" "$dl_verb" "$dl_guard"
+fi
+# CONTROL: the probe must be measuring a real refusal from the verb, or the
+# assertion above passes because the verb happily creates logs -- a different
+# world, and one this case would be silent about.
+if [[ "$dl_verb" != 0 ]]; then
+    PASS=$((PASS + 1))
+    printf 'ok   [0] %s\n' "roundlog CONTROL: the verb does refuse to create, so the pair check is not vacuous"
+else
+    FAIL=$((FAIL + 1))
+    printf 'FAIL [0] %s\n' "roundlog CONTROL: the verb no longer refuses to create -- re-read the pair check above, it now proves nothing"
+fi
+rm -rf "$(dirname "$(dirname "$DL_LOG")")"
+unset DL_LOG dl_guard dl_verb
 check 0 pre-bash/block-roundlog-truncate.sh "$(bash_json "echo hi >> $RLOG")" "roundlog: appending passes (it cannot truncate)"
 check 0 pre-bash/block-roundlog-truncate.sh "$(bash_json "grep -n STATUS $RLOG")" "roundlog: reading passes"
 # THE UNDER-BLOCK REGRESSIONS, found in review 2026-08-19 and each reproduced against the

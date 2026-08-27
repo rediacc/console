@@ -184,7 +184,7 @@ STATUS=0
 # PROVED NOTHING about a case that was in fact behaving perfectly.
 MUT_MISSING=()
 for cid in "${EXPECT_RED[@]}"; do
-    if ! fails_in "$MUT_LOG" | grep -qE "^ *FAIL: ${cid}\b"; then
+    if [ -z "$(fails_in "$MUT_LOG" | grep -E "^ *FAIL: ${cid}\b")" ]; then
         MUT_MISSING+=("$cid")
     fi
 done

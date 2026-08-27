@@ -175,7 +175,7 @@ if (process.argv.includes('--write-baseline')) {
 }
 EOF
     local detected=0
-    unguarded | grep -qx "$probe" && detected=1
+    [ -n "$(unguarded | grep -x "$probe")" ] && detected=1
     rm -f "$probe"
     [[ -f "$probe" ]] && log_fail "control probe was not removed"
     [[ "$detected" -eq 1 ]] || log_fail "CONTROL FAILED: an unguarded reseed was NOT detected, so this gate cannot fail"
@@ -194,7 +194,7 @@ if (process.argv.includes('--write-baseline')) {
 }
 EOF
     local detected=0
-    unguarded | grep -qx "$probe" && detected=1
+    [ -n "$(unguarded | grep -x "$probe")" ] && detected=1
     rm -f "$probe"
     [[ -f "$probe" ]] && log_fail "mention probe was not removed"
     [[ "$detected" -eq 1 ]] || log_fail "CONTROL FAILED: a prose mention was accepted as a guard route"

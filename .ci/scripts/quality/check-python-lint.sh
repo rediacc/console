@@ -81,7 +81,7 @@ enum_probe="enum_probe_$$_$(date +%s).py"
 cleanup_probe() { rm -f "$REPO_ROOT/$enum_probe"; }
 trap cleanup_probe EXIT
 printf 'x = 1\n' >"$REPO_ROOT/$enum_probe"
-if ! enumerate_py | grep -qx -- "$enum_probe"; then
+if [ -z "$(enumerate_py | grep -x -- "$enum_probe")" ]; then
     echo "${RED}✗ CONTROL FAILED${NC}: the file enumeration did not return a planted" >&2
     echo "  UNTRACKED Python file (${enum_probe}), so this gate is blind to exactly" >&2
     echo "  the case that shipped on 2026-08-09. Refusing to judge the real files." >&2

@@ -72,8 +72,8 @@ test_a_longer_version_no_longer_satisfies_the_field_check() {
     # The control. Both old idioms accept it, which is what made them worth
     # replacing even at low severity.
     local old_deb old_rpm
-    deb_info "$longer" | grep -q "Version: ${TEST_VERSION}" && old_deb=0 || old_deb=1
-    rpm_info "$longer" | grep -q "Version.*: ${TEST_VERSION}" && old_rpm=0 || old_rpm=1
+    [ -n "$(deb_info "$longer" | grep "Version: ${TEST_VERSION}")" ] && old_deb=0 || old_deb=1
+    [ -n "$(rpm_info "$longer" | grep "Version.*: ${TEST_VERSION}")" ] && old_rpm=0 || old_rpm=1
     assert_eq "0" "$old_deb" "the OLD deb idiom must accept it, or this test proves nothing"
     assert_eq "0" "$old_rpm" "the OLD rpm idiom must accept it, or this test proves nothing"
     log_pass "a substring version is refused where it used to pass"

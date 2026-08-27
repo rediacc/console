@@ -43,7 +43,25 @@ CMD=$(jq -r '.tool_input.command' 2>/dev/null)
 # block-protected-files needed for the same reason on the same day.
 printf '%s' "$CMD" | grep -qE '(^|[;&|(]|[[:space:]])git[[:space:]]+([^[:space:];|&]+[[:space:]]+)*(commit|tag)\b|(^|[;&|(]|[[:space:]])gh[[:space:]]+pr[[:space:]]+(create|edit)\b' || exit 0
 
-if printf '%s' "$CMD" | grep -qiE 'Co-Authored-By|^[[:space:]]*([^[:alnum:]]{0,4}[[:space:]]*)?Generated with\b'; then
+# THE COLON IS WHAT MAKES IT A TRAILER. `Co-Authored-By` was left unanchored on
+# the claim -- written into this file -- that it is "unambiguous anywhere". It is
+# not, and the commit-verb gate above does not save it once the verb is really
+# present:
+#
+#   gh pr create --body '... | `grep -rn "co-authored-by" docs/` | ...'
+#
+# That is a PR body DOCUMENTING this guard's own over-block history, refused by
+# the guard it documents, on 2026-08-27.
+#
+# LINE-ANCHORING IT WAS THE WRONG FIX, and the first attempt shipped it: a
+# single-line `--body 'Co-Authored-By: A <a@b.c>'` puts a REAL trailer mid-line,
+# so the anchor let it straight through. Requiring the colon separates the two
+# without any positional assumption -- a trailer has a separator, prose quoting
+# the token does not. BOTH separators: `--trailer Co-Authored-By=bot` is a real
+# trailer git accepts, and the colon-only draft let it through -- caught by the
+# suite case pinning exactly that form. `Generated with` keeps its line anchor, which it earned over three
+# separate false positives.
+if printf '%s' "$CMD" | grep -qiE 'Co-Authored-By[[:space:]]*[:=]|^[[:space:]]*([^[:alnum:]]{0,4}[[:space:]]*)?Generated with\b'; then
     echo "❌ BLOCKED: Do not add Co-Authored-By or Generated with lines in commits." >&2
     exit 2
 fi

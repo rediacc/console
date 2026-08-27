@@ -674,6 +674,24 @@ export const GATES: readonly GateSpec[] = [
     },
   },
   {
+    // A detector built as `producer | grep -q` under pipefail cannot reliably
+    // fail: grep -q exits at its first match, SIGPIPEs the producer, and
+    // pipefail makes that 141 the verdict. check-ci-watch-recipe.sh shipped
+    // exactly that in both detectors and certified 124 files clean over a real
+    // offender for as long as it existed.
+    id: 'check:ci-pipefail-grep-q',
+    run: 'npm run check:ci-pipefail-grep-q',
+    gate: true,
+    paths: ['.ci/scripts/**', 'scripts/**', '.claude/hooks/**'],
+    leaves: ['.ci/scripts/quality/check-pipefail-grep-q.sh'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-code',
+      step: 'No racing pipefail/grep -q detectors',
+    },
+  },
+  {
     id: 'check:ci-watch-recipe',
     run: 'npm run check:ci-watch-recipe',
     gate: true,

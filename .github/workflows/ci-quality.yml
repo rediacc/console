@@ -554,6 +554,13 @@ jobs:
       - name: CI-watch recipe has one source
         run: .ci/scripts/quality/check-ci-watch-recipe.sh
 
+      # `producer | grep -q` under pipefail is a RACE, not a test: grep -q exits
+      # at its first match, SIGPIPEs the producer, and pipefail makes that 141
+      # the verdict. The step above shipped exactly that in both of its
+      # detectors and certified "124 file(s) clean" over a real offender.
+      - name: No racing pipefail/grep -q detectors
+        run: npm run check:ci-pipefail-grep-q
+
       # Every CLI flag a script has must be taught in its canonical doc, or a
       # flag exists that no session reading only the doc would ever learn.
       - name: CLI docs stay in sync with their scripts' real flags

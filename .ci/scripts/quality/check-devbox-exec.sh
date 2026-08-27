@@ -104,7 +104,7 @@ fi
     printf 'd="$(devbox_docker)"\n'
     printf '"$d" exec -u vscode "$cid" bash -lc "$*"\n'
 } >"$TMP/bad.sh"
-if code_of "$TMP/bad.sh" | grep -qE "$BUG_RE"; then
+if [ -n "$(code_of "$TMP/bad.sh" | grep -E "$BUG_RE")" ]; then
     pass "B1 control: a quoted two-word invocation is detected"
 else
     fail "B1 CONTROL DID NOT FIRE: the planted defect went undetected"
@@ -117,7 +117,7 @@ fi
     printf 'local -a dk; read -r -a dk <<<"$d"\n'
     printf '"${dk[@]}" exec "$cid" bash\n'
 } >"$TMP/good.sh"
-if code_of "$TMP/good.sh" | grep -qE "$BUG_RE"; then
+if [ -n "$(code_of "$TMP/good.sh" | grep -E "$BUG_RE")" ]; then
     fail "B1 IS OVER-BROAD: correct word-splitting and array forms were flagged"
 else
     pass "B1 control: unquoted and array forms are not flagged"
@@ -127,7 +127,7 @@ fi
     printf '#!/bin/bash\n'
     printf '$d exec -it -u "$(id -u):$(id -g)" -w "$w" "$cid" bash\n'
 } >"$TMP/numeric.sh"
-if code_of "$TMP/numeric.sh" | grep -qE '\-u[[:space:]]+"?\$\(id -u\)'; then
+if [ -n "$(code_of "$TMP/numeric.sh" | grep -E '\-u[[:space:]]+"?\$\(id -u\)')" ]; then
     pass "B2 control: a numeric container identity is detected"
 else
     fail "B2 CONTROL DID NOT FIRE: a numeric -u went undetected"
@@ -137,7 +137,7 @@ fi
     printf '#!/bin/bash\n'
     printf '# $d exec -u "$(id -u)" -- the wrong shape, explained in a comment\n'
 } >"$TMP/comment.sh"
-if code_of "$TMP/comment.sh" | grep -qE '\-u[[:space:]]+"?\$\(id -u\)'; then
+if [ -n "$(code_of "$TMP/comment.sh" | grep -E '\-u[[:space:]]+"?\$\(id -u\)')" ]; then
     fail "B2 IS OVER-BROAD: prose describing the wrong shape was flagged as code"
 else
     pass "B2 control: a comment describing the bad shape is not flagged"
