@@ -19,6 +19,7 @@
 #   C. No doc or hook hands out a hand-rolled loop or a banned invocation.
 #   D. The sanctioned registry is self-consistent and its tools exist.
 #   E. The script's own --help works.
+#   F. The skill teaches --run for a DISPATCHED run, not --ref.
 #
 # Controls are built by CONSTRUCTION (fixtures written literally), never by
 # pattern-substituting real source, so rewording a target cannot silently void
@@ -218,6 +219,21 @@ elif "$TRACE" --help >"$TMP/help.out" 2>&1; then
     fi
 else
     fail "E. $TRACE_REL --help exited non-zero"
+fi
+
+# ---- F. the skill teaches --run for a DISPATCHED run --------------------------
+# `--wait --ref main` cannot see a workflow_dispatch run's check runs at all --
+# a branch's statusCheckRollup structurally excludes them (incidents.md,
+# 2026-08-26). That is not fixable in ci-trace.py itself; the only defense is
+# that the taught recipe says to use --run for that case, and stays saying so.
+if [ ! -f "$SKILL" ]; then
+    fail "F. $SKILL is missing"
+elif grep -q -- '--run' "$SKILL" && grep -qi 'workflow_dispatch\|dispatched' "$SKILL"; then
+    pass "F. the skill teaches --run for a dispatched run"
+else
+    fail "F. $SKILL no longer teaches --run for a dispatched run -- this is exactly" \
+        "how the 2026-08-26 false-green (main read GREEN while a Release run was" \
+        "still tagging/deploying) would silently come back"
 fi
 
 echo
