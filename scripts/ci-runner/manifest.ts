@@ -217,6 +217,8 @@ export const GATES: readonly GateSpec[] = [
       'scripts/check-dead-translation-keys.ts',
       'scripts/check-em-dash-surfaces.ts',
       'packages/www/scripts/check-client-i18n-freshness.ts',
+      'scripts/check-locale-currency-integrity.ts',
+      'scripts/__tests__/check-locale-currency-integrity.control.ts',
     ],
     ci: {
       kind: 'step',
@@ -262,6 +264,21 @@ export const GATES: readonly GateSpec[] = [
     },
   },
   {
+    id: 'check:ci-locale-currency',
+    run: 'npm run check:ci-locale-currency',
+    gate: true,
+    leaves: [
+      'scripts/check-locale-currency-integrity.ts',
+      'scripts/__tests__/check-locale-currency-integrity.control.ts',
+    ],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-i18n',
+      step: 'i18n',
+    },
+  },
+  {
     id: 'check:ci-i18n-locale-only',
     run: 'npm run check:ci-i18n-locale-only',
     gate: true,
@@ -299,6 +316,7 @@ export const GATES: readonly GateSpec[] = [
   {
     id: 'check:types',
     run: 'npm run check:types',
+    slow: true, // 51.4s contended (tsc over every workspace)
     gate: true,
     mutex: ['build-artifacts'],
     heavy: true,
@@ -699,6 +717,50 @@ export const GATES: readonly GateSpec[] = [
       workflow: '.github/workflows/ci-quality.yml',
       job: 'quality-code',
       step: 'Gate manifest self-consistency',
+    },
+  },
+  {
+    // TRAPS.md is a REGISTRY, not prose: every `## ` entry names the instrument
+    // that enforces it, and the gate proves that pointer RESOLVES and is LIVE.
+    // Presence alone would be worse than nothing -- the cheapest thing to name
+    // under a coverage gate is a check that cannot fire -- so a gate: pointer
+    // must be scheduled by `npm run ci`, a hook: rule must have both a firing
+    // and a silent case, and a file: pointer must be reachable from something
+    // that runs it. No `paths`, deliberately: pointers resolve against the
+    // manifest, package.json, the dispatcher, the hook suite and settings.json,
+    // so almost any change can dangle one, and a half-populated path table
+    // would drop the gate from --changed exactly when it was needed.
+    id: 'check:ci-trap-registry',
+    run: 'npm run check:ci-trap-registry',
+    gate: true,
+    leaves: ['.ci/scripts/quality/check-trap-registry.sh'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-code',
+      step: 'Trap registry dispositions',
+    },
+  },
+  {
+    // The runner's 21 assertions were its ONLY controls and ran on ONE side:
+    // `npm run ci` executes them on a developer machine and nothing in CI did,
+    // which is the "a gate that runs on one side only" case check:ci-parity
+    // exists to name. They pin the pre-push lane's correctness -- glob
+    // semantics (a `**` glob must match a root-level run.sh), gitlink widening (a
+    // changed submodule is one diff entry, not a file list), and that --list
+    // reflects the SELECTION rather than every spec -- each with its converse.
+    id: 'check:ci-runner-selftest',
+    run: 'npm run check:ci-runner-selftest',
+    gate: true,
+    // The leaf must be inside the paths, or editing the runner does not select
+    // the gate that checks the runner (check:ci-gate-manifest asserts this).
+    paths: ['scripts/ci-runner/**'],
+    leaves: ['scripts/ci-runner/run.ts'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-code',
+      step: 'CI runner selftest',
     },
   },
   {
@@ -1811,6 +1873,7 @@ export const GATES: readonly GateSpec[] = [
   {
     id: 'check:ci-account-server',
     run: 'npm run check:ci-account-server',
+    slow: true, // 41.5s contended (submodule vitest suite)
     gate: true,
     mutex: ['account-vitest'],
     weight: 2,
@@ -1914,6 +1977,12 @@ export const GATES: readonly GateSpec[] = [
     id: 'check:ci-renet',
     run: 'npm run check:ci-renet',
     gate: true,
+    // 40.4s measured 2026-08-27, and only now: it used to die at exit 127 in
+    // format.sh (goimports installed to $(go env GOPATH)/bin, which was on no
+    // PATH) about a second in, so its old "fast" tier was the cost of crashing
+    // early rather than of running. With that fixed it does the real work --
+    // gofmt, goimports, golangci-lint and govulncheck over the whole module.
+    slow: true,
     mutex: ['renet-bin'],
     leaves: ['.ci/scripts/private/run-renet.sh'],
     ci: {
@@ -4357,6 +4426,20 @@ export const GATES: readonly GateSpec[] = [
     gate: true,
     qualityGateTest: true,
     leaves: ['.ci/scripts/test/gates/test-swallowed-failures.sh'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-security',
+      step: 'Quality-gate unit tests',
+    },
+  },
+  {
+    id: 'gate-test:trap-registry',
+    run: '.ci/scripts/test/gates/test-trap-registry.sh',
+    slow: true, // 46.4s contended (reads corpus, manifest, dispatcher, suite, settings)
+    gate: true,
+    qualityGateTest: true,
+    leaves: ['.ci/scripts/test/gates/test-trap-registry.sh'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',

@@ -41,7 +41,11 @@ CMD=$(jq -r '.tool_input.command' 2>/dev/null)
 
 # A write indicator: a redirect, an in-place edit, a copy/move onto it, or a
 # python/perl write. Reading, running and grepping are none of these.
-printf '%s' "$CMD" | grep -qE '>[[:space:]]*[^|&;[:space:]]*\.sh|sed[[:space:]]+-i|tee[[:space:]]|write_text|\bcp[[:space:]]|\bmv[[:space:]]|\bshfmt[[:space:]]+-w|>>[[:space:]]*[^|&;[:space:]]*\.sh' || exit 0
+# The write-detector. It recognised `write_text` -- the exact idiom in the header
+# comment above -- but NOT `open(path, "w").write(...)`, which is the commoner one,
+# so the door this guard exists to close was open for that spelling. Verified
+# 2026-08-27: the header's own example was caught and its sibling was not.
+printf '%s' "$CMD" | grep -qE '>[[:space:]]*[^|&;[:space:]]*\.sh|sed[[:space:]]+-i|tee[[:space:]]|write_text|write_bytes|writelines|\.write\(|open\([^)]*["'"'"']]?[wa]|shutil\.(copy|move)|truncate|\bcp[[:space:]]|\bmv[[:space:]]|\bshfmt[[:space:]]+-w|>>[[:space:]]*[^|&;[:space:]]*\.sh' || exit 0
 
 # Which .sh files does this command name at all?
 #
@@ -49,7 +53,66 @@ printf '%s' "$CMD" | grep -qE '>[[:space:]]*[^|&;[:space:]]*\.sh|sed[[:space:]]+
 # skipped. Without it, `"$SP/mp-$ver.sh"` yielded the candidate `ver.sh` -- the
 # tail of a variable name plus the suffix, a filename that appears nowhere. The
 # guard cannot know what `$ver` expands to, so it must not guess.
-for cand in $(printf '%s' "$CMD" | grep -oE '[A-Za-z0-9_.$/-]+\.sh' | sort -u); do
+# Only .sh paths that are actually the TARGET of a write. Collecting every .sh
+# token anywhere in the command blocked a heredoc that merely MENTIONED a running
+# script while writing a different file -- and a false block on a safety guard is
+# how a guard gets worked around, which costs more than the block saved.
+TARGETS=$(printf '%s' "$CMD" |
+    grep -oE '>>?[[:space:]]*[^|&;[:space:]]+\.sh|tee[[:space:]]+(-[a-z]+[[:space:]]+)*[^|&;[:space:]]+\.sh|sed[[:space:]]+-i[^|&;]*[[:space:]][^|&;[:space:]]+\.sh|shfmt[[:space:]]+-w[^|&;]*[[:space:]][^|&;[:space:]]+\.sh|\b(cp|mv)[[:space:]]+[^|&;]*[[:space:]][^|&;[:space:]]+\.sh' |
+    grep -oE '[A-Za-z0-9_.$/-]+\.sh' | sort -u)
+# A python/perl heredoc can name its target in ways no redirect grep will see, so
+# fall back to the old broad scan whenever the command opens one. Broad and noisy
+# beats silent here: this is the door the pre-edit guard cannot cover.
+if printf '%s' "$CMD" | grep -qE 'write_text|open\(|<<[[:space:]]*.?(PY|EOPY|PYTHON)'; then
+    # PRECISE FIRST, BROAD ONLY IF THAT FINDS NOTHING.
+    #
+    # The old line took EVERY .sh token in the command. That is correct for a
+    # python heredoc naming its target, and badly wrong for one whose payload
+    # merely MENTIONS a script -- which is what documentation, a hook message,
+    # or a commit body routinely does. Measured 2026-08-27: patching this very
+    # guard's sibling was refused twice because the replacement TEXT contained
+    # `./run.sh devbox remove` while a peer ran that script. No interpreter was
+    # executing the file being written, and the same false-positive class is
+    # already recorded twice in this file's own comments.
+    #
+    # A python write target appears in a target POSITION: assigned to a name, or
+    # passed to open()/Path(). A mention inside prose does not.
+    #
+    # ASK "COULD I IDENTIFY THE TARGET AT ALL", not "did I find a .sh".
+    # The first cut of this asked the second question and fell back to the broad
+    # scan whenever no .sh sat in a target position -- which is precisely the
+    # shape of the false positive (real target a .py, payload mentioning a
+    # script), so the narrowing changed nothing. Control 1 caught it.
+    # Targets come from TWO places, and looking in only one of them was the bug.
+    # A `cat > notes.txt <<'PY'`-shaped command names its target in the REDIRECT;
+    # the earlier cut only harvested redirect targets ending in .sh, so a
+    # redirect to any other extension contributed nothing and the command read as
+    # "target unidentifiable" while its target sat in plain sight. Measured
+    # 2026-08-27: writing two commit-message files was refused because their TEXT
+    # discussed write_text and named a running script.
+    ANYTARGET=$(
+        {
+            printf '%s' "$CMD" |
+                grep -oE '(=|open\(|Path\()[[:space:]]*["'"'"'][^"'"'"']+\.[A-Za-z0-9]+' |
+                grep -oE '[A-Za-z0-9_.$/-]+\.[A-Za-z0-9]+$'
+            printf '%s' "$CMD" |
+                grep -oE '>>?[[:space:]]*"?[^|&;<[:space:]"]+\.[A-Za-z0-9]+' |
+                grep -oE '[A-Za-z0-9_.$/-]+\.[A-Za-z0-9]+$'
+        } | sort -u
+    )
+    PRECISE=$(printf '%s\n' "$ANYTARGET" | grep -E '\.sh$' | sort -u)
+    if [ -n "$ANYTARGET" ]; then
+        # Targets were identifiable. If none is a shell script, this command
+        # writes none, however many it happens to NAME in its payload.
+        [ -n "$PRECISE" ] && TARGETS=$(printf '%s\n%s' "$TARGETS" "$PRECISE" | sort -u)
+    else
+        # Nothing looked like a target, so keep the old broad-and-noisy scan
+        # rather than going silent: a missed corruption costs more than a
+        # false positive, which is why the broad form was chosen originally.
+        TARGETS=$(printf '%s\n%s' "$TARGETS" "$(printf '%s' "$CMD" | grep -oE '[A-Za-z0-9_.$/-]+\.sh')" | sort -u)
+    fi
+fi
+for cand in $TARGETS; do
     case "$cand" in
         *'$'*) continue ;;
     esac
@@ -64,9 +127,28 @@ for cand in $(printf '%s' "$CMD" | grep -oE '[A-Za-z0-9_.$/-]+\.sh' | sort -u); 
     # guard reported VS Code's server as the job about to be corrupted. The
     # basename must start at the beginning, after a `/`, or after whitespace.
     pat="(^|[/[:space:]])[${base:0:1}]${base:1}"
-    running=$(pgrep -af -- "$pat" 2>/dev/null |
-        grep -vE '\.claude/hooks/(pre-bash|pre-edit|pre-ask|post-bash)/' |
-        head -2)
+    # `pgrep -af` matches any process whose ARGUMENTS mention the name, which is the
+    # very trap this guard exists to prevent, wearing a different hat. Measured
+    # 2026-08-27: an edit to the hook suite was refused because a PEER session's
+    # `claude -p` carried a long prompt that happened to contain that filename. No
+    # interpreter was executing the script at all, and the refusal was unarguable.
+    #
+    # A process is RUNNING the script only if an interpreter is executing it. So require
+    # the matching process to BE a shell, and the name to sit in the first few argv slots
+    # where a script argument lives, rather than buried in a prose payload.
+    running=""
+    for rpid in $(pgrep -f -- "$pat" 2>/dev/null); do
+        case "$(ps -o comm= -p "$rpid" 2>/dev/null)" in
+            bash | sh | dash | zsh | ksh) ;;
+            *) continue ;;
+        esac
+        rargs=$(tr '\0' ' ' <"/proc/$rpid/cmdline" 2>/dev/null)
+        printf '%s' "$rargs" | cut -d' ' -f1-4 | grep -qE -- "$pat" || continue
+        printf '%s' "$rargs" | grep -qE '\.claude/hooks/(pre-bash|pre-edit|pre-ask|post-bash)/' && continue
+        running="$running$rpid $(printf '%s' "$rargs" | cut -c1-80)
+"
+    done
+    running=$(printf '%s' "$running" | head -2)
     [ -z "$running" ] && continue
     cat >&2 <<MSG
 BLOCKED: '${base}' is being executed right now, and this command writes to it.

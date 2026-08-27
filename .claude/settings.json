@@ -123,6 +123,14 @@
           },
           {
             "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/pre-bash/block-agent-browser-repo-output.sh\""
+          },
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/pre-bash/block-host-toolchain-run.sh\""
+          },
+          {
+            "type": "command",
             "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/pre-bash/warn-hook-change.sh\""
           },
           {
@@ -176,6 +184,10 @@
       {
         "matcher": "AskUserQuestion",
         "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/require-jq.sh\""
+          },
           {
             "type": "command",
             "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/pre-ask/block-settled-questions.sh\""

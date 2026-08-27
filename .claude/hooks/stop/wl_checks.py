@@ -2968,7 +2968,7 @@ def run_stop(event, event_ok, worklist, hook_file):
     # the silence. These are the ones where another session is already blocked,
     # so a label like "requests" tells this session to stand down while telling
     # the peer nothing at all.
-    CARRY_THROUGH_PAUSE = frozenset({"requests", "no-waiter-asked", "no-waiter"})
+    carry_through_pause = frozenset({"requests", "no-waiter-asked", "no-waiter"})
 
     def vadd(key, always, text):
         violations.append((key, always, text))
@@ -3948,9 +3948,7 @@ def run_stop(event, event_ok, worklist, hook_file):
                     "s2": "" if len(_live_asks) == 1 else "s",
                     "is_are": "is" if len(_live_asks) == 1 else "are",
                     "round": _round,
-                    "rows": "".join(
-                        "    #%s -> %s\n" % (r["id"], r["to"]) for r in _live_asks[:5]
-                    ),
+                    "rows": "".join("    #%s -> %s\n" % (r["id"], r["to"]) for r in _live_asks[:5]),
                     "hook": _hook_py,
                     "me": me8,
                     "cmd": M.V_ASK_NOLISTEN_CMD % (_waiter_py, me8),
@@ -4410,9 +4408,9 @@ def run_stop(event, event_ok, worklist, hook_file):
                         % "".join(
                             "\n".join("  " + ln for ln in _t.splitlines()) + "\n"
                             for _k, _a, _t in violations
-                            if _k in CARRY_THROUGH_PAUSE
+                            if _k in carry_through_pause
                         )
-                        if any(_k in CARRY_THROUGH_PAUSE for _k, _a, _t in violations)
+                        if any(_k in carry_through_pause for _k, _a, _t in violations)
                         else ""
                     ),
                 )

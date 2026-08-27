@@ -113,7 +113,30 @@ fi
 # NAMED RESIDUAL: a script that writes some OTHER file while merely mentioning a
 # round-log path is still blocked here. That is the one over-block left standing,
 # and it is deliberate: this is the exact shape that destroyed the appendix.
-echo "$CMD" | grep -qE 'write_text|open\([^)]*["'\'']w' && TRUNCATING=1
+# THE PYTHON ARM MUST TEST THE TARGET, NOT JUST THE IDIOM.
+#
+# This used to be an unconditional `grep write_text|open(...,'w') && TRUNCATING=1`.
+# Reaching here already means a round-log NAME appears somewhere in the command
+# (the gate above), but a name is not a target: a heredoc editing an unrelated
+# file whose CONTENT quotes a round-log path matched every time. Measured
+# 2026-08-27, refusing an edit to a scratchpad state-body file that could not
+# have touched a round log.
+#
+# So resolve the write target the way python actually spells one -- assigned to a
+# name, or handed to open()/Path() -- and fire only when it IS a round log.
+# FAIL CLOSED when no target can be resolved: that unidentifiable shape is
+# precisely `p.write_text(s[:i] + new)`, which is what destroyed the round
+# history on 2026-08-19 and is the reason this guard exists.
+if echo "$CMD" | grep -qE 'write_text|open\([^)]*["'\'']w'; then
+    PYTARGET=$(echo "$CMD" |
+        grep -oE "(=|open\(|Path\()[[:space:]]*[\"'][^\"']+\.md" |
+        grep -oE "[A-Za-z0-9_./-]+\.md")
+    if [ -z "$PYTARGET" ]; then
+        TRUNCATING=1
+    elif echo "$PYTARGET" | grep -qE "$RL"; then
+        TRUNCATING=1
+    fi
+fi
 
 [ "$TRUNCATING" = "1" ] || exit 0
 

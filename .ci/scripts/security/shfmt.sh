@@ -40,10 +40,18 @@ main() {
     # gate's verdict -- measured 2026-08-25: host shellcheck 0.9.0 against CI's
     # 0.10.0, and two unpinned shfmt installs that agreed only by luck.
     if ! SHFMT_BIN="$(toolchain_acquire shfmt)"; then
-        log_error "shfmt is unusable for this gate"
+        log_error "shfmt is unusable for this gate -- CANNOT RUN, not a verdict"
         log_info "Every lane's toolchain: .ci/scripts/lib/toolchain.sh --report"
         log_info "Or run the gate where it is pinned: ./run.sh devbox exec -- .ci/scripts/security/shfmt.sh"
-        exit 1
+        # 77 = CANNOT_RUN, the convention check-python-lint.sh:170 established
+        # for ruff and for the same reason. exit 1 here claimed "shfmt found bad
+        # formatting", which is false on a host that has no shfmt at all, and it
+        # put this gate in the pre-push lane's FAILED list beside genuine reds --
+        # measured 2026-08-27, while the very same check passed inside the devbox.
+        # The ci-runner classifies 77 as BLOCKED: counted, named, recorded in the
+        # push receipt and warned about, but never a claim about the code.
+        # Under CI the pinned toolchain is present, so this never fires there.
+        exit 77
     fi
 
     "$SHFMT_BIN" --version

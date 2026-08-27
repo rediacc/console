@@ -317,6 +317,35 @@ sleep 300
 EOF')" "long-sleep: a heredoc fed to bash is still scanned"
 check 2 pre-bash/block-ssh-docker.sh "$(bash_json 'ssh host docker ps')" "ssh-docker"
 check 2 pre-bash/block-ssh-file-write.sh "$(bash_json 'cat a | ssh host tee /etc/x')" "ssh-file-write"
+
+# --- block-agent-browser-repo-output: two mechanisms, both exit 0 in the wild ---
+# 1. positional flag-eating: `screenshot [selector] [path]`, an unknown --flag is eaten
+#    as [path] and the file lands in $PWD. Reproduced 2026-08-27.
+# 2. AGENT_BROWSER_SCREENSHOT_DIR is ignored, so a bare filename resolves against $PWD
+#    (browser-probe.md:119-123: it put three untracked PNGs into a repo).
+check_out 2 pre-bash/block-agent-browser-repo-output.sh "$(bash_json 'agent-browser screenshot /tmp/x.png --full-page')" "agent-browser: unknown flag is eaten as the output path" "consume it as the output PATH"
+check_out 2 pre-bash/block-agent-browser-repo-output.sh "$(bash_json 'agent-browser screenshot probe.png')" "agent-browser: bare filename resolves against \$PWD" "No absolute output path"
+check_out 2 pre-bash/block-agent-browser-repo-output.sh "$(bash_json 'agent-browser screenshot /home/developer/console/packages/www/x.png')" "agent-browser: absolute path inside the repo" "is inside the repo at"
+check 2 pre-bash/block-agent-browser-repo-output.sh "$(bash_json 'agent-browser pdf out.pdf')" "agent-browser: pdf with a relative path"
+check 0 pre-bash/block-agent-browser-repo-output.sh "$(bash_json 'agent-browser screenshot /tmp/x.png --full')" "agent-browser: absolute path outside the repo is fine"
+check 0 pre-bash/block-agent-browser-repo-output.sh "$(bash_json 'agent-browser screenshot .sp-problem /tmp/sec.png')" "agent-browser: selector plus absolute path"
+check 0 pre-bash/block-agent-browser-repo-output.sh "$(bash_json 'agent-browser open http://localhost:4321/en')" "agent-browser: open writes no file"
+check 0 pre-bash/block-agent-browser-repo-output.sh "$(bash_json "echo 'agent-browser screenshot probe.png'")" "agent-browser CONTROL: echoing it is not running it"
+# A compound command has more than one agent-browser segment. Selecting only the FIRST
+# judged `open` (which has no path) and so BLOCKED a correct absolute screenshot, while a
+# second output subcommand on the same line was never inspected at all. Both directions:
+check 0 pre-bash/block-agent-browser-repo-output.sh "$(bash_json 'agent-browser open http://localhost:4321/en && agent-browser screenshot /tmp/x.png')" "agent-browser: open then an absolute screenshot is fine"
+check_out 2 pre-bash/block-agent-browser-repo-output.sh "$(bash_json 'agent-browser open http://localhost:4321/en && agent-browser screenshot /home/developer/console/x.png')" "agent-browser: open then an in-repo screenshot" "is inside the repo at"
+check_out 2 pre-bash/block-agent-browser-repo-output.sh "$(bash_json 'agent-browser screenshot /tmp/a.png && agent-browser screenshot b.png')" "agent-browser: the SECOND output command is bare" "No absolute output path"
+
+# --- block-host-toolchain-run: a gate that cannot run reports no verdict ---
+# This guard sat on disk UNREGISTERED, so the lesson it encodes had no enforcement at all.
+# It fires only when the HOST lacks the toolchain and the devbox has it, so its allow
+# direction is the interesting half: a host that has the tool must not be pushed anywhere.
+check 0 pre-bash/block-host-toolchain-run.sh "$(bash_json './run.sh devbox exec -- npm run check:ci-python-lint')" "host-toolchain: already routed through the devbox"
+check 0 pre-bash/block-host-toolchain-run.sh "$(bash_json 'npm run check:ci-dead-css')" "host-toolchain: a gate needing no extra toolchain"
+check 0 pre-bash/block-host-toolchain-run.sh "$(bash_json "echo 'npm run check:ci-python-lint'")" "host-toolchain CONTROL: echoing a gate name is not running it"
+check 0 pre-bash/block-host-toolchain-run.sh "$(bash_json 'ls -la')" "host-toolchain: an unrelated command"
 check 2 pre-bash/block-ci-polling.sh "$(bash_json 'sleep 5 && gh run view 1')" "ci-polling"
 check 2 pre-bash/block-ci-reverse-poll.sh "$(bash_json 'gh run view 1 --jq .x && sleep 5')" "ci-reverse-poll"
 check 2 pre-bash/block-long-sleep.sh "$(bash_json 'sleep 30')" "long-sleep"
@@ -1073,6 +1102,41 @@ check 0 pre-bash/block-bash-write-to-running-script.sh "$(bash_json "cat $BW_TMP
 check 0 pre-bash/block-bash-write-to-running-script.sh "$(bash_json "bash $BW_TMP/bw-fixture.sh")" "bash-write CONTROL: RUNNING it is not writing to it"
 check 0 pre-bash/block-bash-write-to-running-script.sh "$(bash_json "grep -n sleep $BW_TMP/bw-fixture.sh")" "bash-write CONTROL: grepping it is not writing to it"
 check 0 pre-bash/block-bash-write-to-running-script.sh "$(bash_json "echo x > $BW_TMP/never-run.sh")" "bash-write CONTROL: a .sh nothing is running is untouched"
+# The guard header names `p.write_text(...)` as the idiom it exists for, and it caught that
+# spelling while `open(path, "w").write(...)`, the commoner one, walked through its
+# write-detector untouched. Verified missed 2026-08-27, then closed.
+check 2 pre-bash/block-bash-write-to-running-script.sh "$(bash_json "python3 - <<PY
+open('$BW_TMP/bw-fixture.sh', 'w').write('x')
+PY")" "bash-write: open(path,w) in a heredoc is refused, not only write_text"
+# Naming a live script in the CONTENT you write elsewhere is not writing to it. The broad
+# scan got this wrong, and a guard that blocks correct commands is a guard people route
+# around, which costs more than the block saves.
+check 0 pre-bash/block-bash-write-to-running-script.sh "$(bash_json "printf '%s' 'bash $BW_TMP/bw-fixture.sh' > $BW_TMP/other-target.sh")" "bash-write CONTROL: MENTIONING a live script while writing a different file"
+# THE SAME DISTINCTION ON THE HEREDOC PATH, which is a different branch: the redirect
+# above is caught by the precise grep, while a python heredoc falls to the broad scan
+# that takes every .sh token in the command. That branch had no mention-control, so it
+# refused three honest edits in a row on 2026-08-27 -- each one writing documentation
+# that quoted a rebuild command while a peer happened to be running that script.
+check 0 pre-bash/block-bash-write-to-running-script.sh "$(bash_json "python3 - <<PY
+p = '$BW_TMP/notes.py'
+open(p, 'w').write('docs: bash $BW_TMP/bw-fixture.sh')
+PY")" "bash-write CONTROL: a heredoc writing a .py that MENTIONS a live script"
+# And the hole that narrowing could have opened: when NO target position is
+# identifiable, the broad scan must still fire. Without this the fix would trade a
+# false positive for a silent miss, which is the worse of the two.
+check 2 pre-bash/block-bash-write-to-running-script.sh "$(bash_json "python3 - <<PY
+import pathlib
+pathlib.Path(*['$BW_TMP/bw-fixture.sh']).write_text('x')
+PY")" "bash-write: unidentifiable target falls back to the broad scan"
+# And the expensive one: `pgrep -af` matched a PEER SESSION whose long prompt merely
+# contained a filename, so the guard reported a script as executing when no interpreter
+# had it open. Only a SHELL running it counts. A non-shell process carrying the name in
+# its argv must not register.
+BW_ARGV_PID=""
+python3 -c 'import sys,time; time.sleep(45)' "$BW_TMP/argv-only.sh" >/dev/null 2>&1 &
+BW_ARGV_PID=$!
+check 0 pre-bash/block-bash-write-to-running-script.sh "$(bash_json "echo x > $BW_TMP/argv-only.sh")" "bash-write CONTROL: a NON-SHELL process carrying the name in argv is not running it"
+kill "$BW_ARGV_PID" 2>/dev/null
 # A DECOY WHOSE NAME CONTAINS THE LIVE ONE. `pgrep -f` matches anywhere in a
 # command line, so a bare basename matched by SUBSTRING: the candidate `ver.sh`
 # (itself a phantom, see below) matched a running `wslServer.sh`, and the guard
@@ -1433,6 +1497,30 @@ check 0 pre-edit/block-roundlog-write.sh "$(tool_json Write packages/www/src/x.a
 check 2 pre-bash/block-roundlog-truncate.sh "$(bash_json "$RL_HEREDOC")" "roundlog: the exact 2026-08-19 heredoc is blocked"
 check 2 pre-bash/block-roundlog-truncate.sh "$(bash_json "echo hi > $RLOG")" "roundlog: truncating redirection is blocked"
 check 2 pre-bash/block-roundlog-truncate.sh "$(bash_json "sed -i s/a/b/ $RLOG")" "roundlog: sed -i is blocked"
+# A NAME IS NOT A TARGET. The python arm used to fire on any write idiom as soon as a
+# round-log name appeared ANYWHERE in the command. Measured 2026-08-27: it refused a
+# heredoc editing a scratchpad state-body file whose CONTENT quoted a round-log path --
+# a write that could not have touched a round log. None of the 23 existing cases for
+# this guard separated the two, which is how it survived.
+check 0 pre-bash/block-roundlog-truncate.sh "$(bash_json "python3 - <<PY
+q = '/tmp/scratch/state-body.md'
+open(q, 'w').write('see $RLOG for the round history')
+PY")" "roundlog CONTROL: a python write to a DIFFERENT .md that merely QUOTES a round log"
+check 2 pre-bash/block-roundlog-truncate.sh "$(bash_json "python3 - <<PY
+open('$RLOG', 'w').write('x')
+PY")" "roundlog: a python write whose open() TARGET is the log is blocked"
+check 2 pre-bash/block-roundlog-truncate.sh "$(bash_json "python3 - <<PY
+q = '$RLOG'
+open(q, 'w').write('x')
+PY")" "roundlog: a python write whose ASSIGNED target is the log is blocked"
+# FAIL CLOSED, and this is the case that makes the narrowing safe rather than merely
+# quieter: no resolvable literal target, a slicing write_text, a round-log name in the
+# command. That is the 2026-08-19 shape verbatim and it must still fire.
+check 2 pre-bash/block-roundlog-truncate.sh "$(bash_json "python3 - <<PY
+import pathlib
+q = pathlib.Path(*['$RLOG'.split('/')[-1]])
+q.write_text(s[:i] + new)
+PY")" "roundlog: an UNRESOLVABLE target still fires (fail closed)"
 rm -rf "$(dirname "$(dirname "$RLOG_REAL")")"
 unset RLOG_REAL
 
@@ -1664,6 +1752,7 @@ for mod in context/test-context-bands.py \
     pre-bash/test-block-destructive-git-restore.py \
     pre-bash/test-block-git-amend.py \
     pre-bash/test-block-unverified-push.py \
+    pre-bash/test-block-host-toolchain-run.py \
     stop/test-completion-evidence.py; do
     if [[ ! -f "$DIR/$mod" ]]; then
         FAIL=$((FAIL + 1))

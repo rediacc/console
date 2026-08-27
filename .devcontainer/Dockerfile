@@ -10,7 +10,7 @@
 FROM mcr.microsoft.com/devcontainers/base:ubuntu-24.04
 
 ARG NODE_VERSION=22
-ARG GO_VERSION=1.26.4
+ARG GO_VERSION=1.26.6
 
 # Align the vscode user with the Rediacc universal UID/GID (7111). This matches
 # common.RediaccUID in renet and the host-side ownership of /mnt/rediacc/...
@@ -189,6 +189,15 @@ ENV GOPATH=/go
 # with the pinned GO_VERSION. Without this, a tool's `go` directive can pull
 # a same-day toolchain whose sumdb entry is not published yet (gopls v0.22.0
 # resolved the never-published go1.26.5 and 404'd the whole image build).
+# THAT WAS TRUE WHEN WRITTEN AND IS NOT NOW: go1.26.5 and go1.26.6 are both
+# published (checked 2026-08-27 with `curl -sL -I`, following the redirect --
+# a bare -I returns 302 for EVERY version, published or not, so the obvious
+# probe cannot answer this question and go1.26.4 is the control that proves
+# the check works). Pinned to 1.26.6 because govulncheck reports SIX
+# actionable standard-library vulnerabilities against 1.26.4 -- GO-2026-4970,
+# 5026, 5856, 5942, 5972, 6088, including an Encrypted Client Hello privacy
+# leak in crypto/tls and a Punycode label-rejection failure in net/http.
+# net/http's fix lands in 1.26.6 specifically, so 1.26.5 is not enough.
 ENV GOTOOLCHAIN=local
 ARG TARGETARCH
 

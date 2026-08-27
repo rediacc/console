@@ -536,41 +536,51 @@ N_WAITER_DRAINED = (
 # hear -- and a check that tires before the session does is not a check.
 V_ASK_NOLISTEN_LADDER = (
     # 1 -- plainest statement of the fact plus the command.
-    "YOU ASKED %(n)d QUESTION%(s)s AND ARE NOT LISTENING FOR THE ANSWER.\n"
-    "%(rows)s"
-    "Posting a request is this session choosing to depend on a reply. Without a\n"
-    "waiter the answer sits unseen until your next stop, so if you stop now you\n"
-    "may wait indefinitely for something already delivered.\n"
-    "%(cmd)s",
+    (
+        "YOU ASKED %(n)d QUESTION%(s)s AND ARE NOT LISTENING FOR THE ANSWER.\n"
+        "%(rows)s"
+        "Posting a request is this session choosing to depend on a reply. Without a\n"
+        "waiter the answer sits unseen until your next stop, so if you stop now you\n"
+        "may wait indefinitely for something already delivered.\n"
+        "%(cmd)s"
+    ),
     # 2 -- name who is holding the obligation.
-    "STILL NOT LISTENING (round 2). The session%(s2)s below %(is_are)s holding an\n"
-    "obligation to answer YOU, and cannot know you have stopped reading:\n"
-    "%(rows)s"
-    "They answer into a channel nothing here is watching.\n"
-    "%(cmd)s",
+    (
+        "STILL NOT LISTENING (round 2). The session%(s2)s below %(is_are)s holding an\n"
+        "obligation to answer YOU, and cannot know you have stopped reading:\n"
+        "%(rows)s"
+        "They answer into a channel nothing here is watching.\n"
+        "%(cmd)s"
+    ),
     # 3 -- the answer may ALREADY be there.
-    "ROUND 3, AND THE REPLY MAY ALREADY BE WAITING. A waiter is not only for\n"
-    "future answers: it exits the moment anything new arrives, including a reply\n"
-    "posted minutes ago that you have not read.\n"
-    "%(rows)s"
-    "Check now, before assuming silence: python3 %(hook)s --poll %(me)s\n"
-    "%(cmd)s",
+    (
+        "ROUND 3, AND THE REPLY MAY ALREADY BE WAITING. A waiter is not only for\n"
+        "future answers: it exits the moment anything new arrives, including a reply\n"
+        "posted minutes ago that you have not read.\n"
+        "%(rows)s"
+        "Check now, before assuming silence: python3 %(hook)s --poll %(me)s\n"
+        "%(cmd)s"
+    ),
     # 4 -- withdrawing is a legitimate exit, and the honest one.
-    "ROUND 4. There are TWO ways out of this and only one of them is a waiter.\n"
-    "%(rows)s"
-    "If you no longer need the answer, SAY SO to the recipient instead of\n"
-    "leaving the question open -- an open request is an obligation on them, and\n"
-    "abandoning it silently is the thing this whole channel exists to stop:\n"
-    "    python3 %(hook)s --ask %(me)s <them> 'withdrawing #<id>, no longer needed'\n"
-    "%(cmd)s",
+    (
+        "ROUND 4. There are TWO ways out of this and only one of them is a waiter.\n"
+        "%(rows)s"
+        "If you no longer need the answer, SAY SO to the recipient instead of\n"
+        "leaving the question open -- an open request is an obligation on them, and\n"
+        "abandoning it silently is the thing this whole channel exists to stop:\n"
+        "    python3 %(hook)s --ask %(me)s <them> 'withdrawing #<id>, no longer needed'\n"
+        "%(cmd)s"
+    ),
     # 5 and after -- terminal, and honest that it will not relent.
-    "ROUND %(round)d. THIS CHECK WILL NOT STOP FIRING, and it is not going to\n"
-    "tire before you do. It has now asked %(round)d times.\n"
-    "%(rows)s"
-    "Nothing here is a judgement about the work; it is that you are waiting on\n"
-    "an answer through a channel you are not watching, which ends one of two\n"
-    "ways: start the waiter, or withdraw the question. Both are one command.\n"
-    "%(cmd)s",
+    (
+        "ROUND %(round)d. THIS CHECK WILL NOT STOP FIRING, and it is not going to\n"
+        "tire before you do. It has now asked %(round)d times.\n"
+        "%(rows)s"
+        "Nothing here is a judgement about the work; it is that you are waiting on\n"
+        "an answer through a channel you are not watching, which ends one of two\n"
+        "ways: start the waiter, or withdraw the question. Both are one command.\n"
+        "%(cmd)s"
+    ),
 )
 
 V_ASK_NOLISTEN_CMD = (

@@ -566,7 +566,7 @@ def trap_entries(root):
     in_trailer = False
     for n, line in enumerate(text.splitlines(), 1):
         stripped = line.lstrip(" \t")
-        if stripped.startswith("```") or stripped.startswith("~~~"):
+        if stripped.startswith(("```", "~~~")):
             char = stripped[0]
             if not fence:
                 fence = char
@@ -585,7 +585,7 @@ def trap_entries(root):
             if not line.strip():
                 in_trailer = False
                 continue
-            for key, field in zip(TRAILER_KEYS, ("id", "enforced", "residue")):
+            for key, field in zip(TRAILER_KEYS, ("id", "enforced", "residue"), strict=True):
                 if line.startswith(key):
                     entries[-1][field] = line[len(key) :].strip()
                     break

@@ -25,7 +25,10 @@ d = tempfile.mkdtemp()
 
 
 def git(*a, **kw):
-    return subprocess.run(["git", "-C", d, *a], capture_output=True, text=True, **kw)
+    # check=True: these are fixtures, not assertions. Nothing here inspects a
+    # return code, so a failed setup step must abort loudly rather than leave
+    # an empty TREE that fails every later case for the wrong reason.
+    return subprocess.run(["git", "-C", d, *a], capture_output=True, text=True, check=True, **kw)
 
 
 git("init", "-q", "-b", "0827-1")
@@ -42,9 +45,16 @@ RECEIPT = os.path.join(d, ".ci", "cache", "prepush-receipt.json")
 
 def put(**over):
     base = {
-        "headTree": TREE, "head": "x", "branch": "0827-1", "dirtyDigest": "",
-        "selection": "--quick", "whole": True, "exitCode": 0, "failed": [],
-        "wallMs": 1, "finishedAt": "now",
+        "headTree": TREE,
+        "head": "x",
+        "branch": "0827-1",
+        "dirtyDigest": "",
+        "selection": "--quick",
+        "whole": True,
+        "exitCode": 0,
+        "failed": [],
+        "wallMs": 1,
+        "finishedAt": "now",
     }
     base.update(over)
     os.makedirs(os.path.dirname(RECEIPT), exist_ok=True)
@@ -60,8 +70,13 @@ def drop():
 def run(cmd):
     env = dict(os.environ, CLAUDE_PROJECT_DIR=d)
     return subprocess.run(
-        ["bash", GUARD], input=json.dumps({"tool_input": {"command": cmd}}),
-        capture_output=True, text=True, cwd=d, env=env,
+        ["bash", GUARD],
+        input=json.dumps({"tool_input": {"command": cmd}}),
+        capture_output=True,
+        text=True,
+        cwd=d,
+        env=env,
+        check=False,
     ).returncode
 
 
@@ -93,8 +108,13 @@ put()
 cases.append((0, run("git status"), "CONTROL: a non-push is out of scope"))
 cases.append((0, run("git push --dry-run origin 0827-1"), "CONTROL: a dry run buys no CI round"))
 cases.append((0, run("echo 'remember to git push once green'"), "CONTROL: prose is not a push"))
-cases.append((0, run("cd private/account && git push origin x"),
-              "CONTROL: a submodule push advances no console branch"))
+cases.append(
+    (
+        0,
+        run("cd private/account && git push origin x"),
+        "CONTROL: a submodule push advances no console branch",
+    )
+)
 
 drop()
 cases.append((0, run("git status"), "CONTROL: no receipt is still fine for a non-push"))
@@ -106,6 +126,8 @@ for want, got, label in cases:
     if want != got:
         bad += 1
         print(f"  FAIL [{want}] {label} (got {got})")
-print(f"FAILURES: {bad}  ({len(cases)} case(s), {sum(1 for w, _, _ in cases if w == 2)} block / "
-      f"{sum(1 for w, _, _ in cases if w == 0)} allow)")
+print(
+    f"FAILURES: {bad}  ({len(cases)} case(s), {sum(1 for w, _, _ in cases if w == 2)} block / "
+    f"{sum(1 for w, _, _ in cases if w == 0)} allow)"
+)
 sys.exit(1 if bad else 0)
