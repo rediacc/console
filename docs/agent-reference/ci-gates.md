@@ -24,6 +24,9 @@ The CI-side quality-gate battery (`.ci/scripts/test/run-all.sh`, the "Quality-ga
 | `npm run ci -- --fail-fast` | Stop at the first failure. Off by default, see below |
 | `npm run ci -- --json` | Machine-readable document on stdout, human stream on stderr |
 | `npm run ci -- --jobs N` | Override the worker budget (`CI_JOBS=N` also works) |
+| `npm run ci -- --heavy-limit N` | Cap concurrent "heavy" gates specifically, separate from `--jobs`. Defaults to `max(2, jobs / 4)` |
+| `npm run ci -- --manifest <path>` | Schedule from an alternate manifest file instead of `scripts/ci-runner/manifest.ts` |
+| `npm run ci -- --list` | List every gate id and its command without running any of them (what `npm run ci:list` wraps) |
 | `npm run ci -- --verbose` | Also print a line when each gate starts. Worth it at `--jobs 1`, where a five-minute gate is otherwise indistinguishable from a hang |
 
 **Keep-going is the default, deliberately.** CI made the same call: every quality step carries `!cancelled()` so one push surfaces every failure in the lane. With keep-going, N independent failures cost one run; with `--fail-fast` they cost N runs. Use `--fail-fast` only in a tight edit loop where the first red is the only one you care about.

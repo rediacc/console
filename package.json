@@ -82,6 +82,7 @@
     "check:ci-npmrc": ".ci/scripts/quality/check-npmrc.sh",
     "check:ci-devcontainer-scripts": ".ci/scripts/quality/check-devcontainer-scripts.sh",
     "check:ci-watch-recipe": ".ci/scripts/quality/check-ci-watch-recipe.sh",
+    "check:ci-cli-doc-coverage": ".ci/scripts/quality/check-cli-doc-coverage.sh",
     "check:ci-hook-integrity": ".ci/scripts/quality/check-hook-integrity.sh",
     "check:ci-devbox-exec": ".ci/scripts/quality/check-devbox-exec.sh",
     "check:ci-shell-size": ".ci/scripts/quality/check-shell-size.sh",
