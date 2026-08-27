@@ -189,6 +189,55 @@ const selftest = (): number => {
         return false;
       }
     };
+    // A BARE `git fetch origin <branch>` DOES NOT ALWAYS CREATE origin/<branch>.
+    // It updates the remote-tracking ref only when the fetched ref matches
+    // remote.origin.fetch, and actions/checkout configures a NARROW refspec on
+    // a PR. Both directions against real git, because the whole tip fix rests
+    // on this: with a narrow refspec the bare form leaves the tracking ref
+    // absent, and the explicit form creates it.
+    // The scratch repo's commits were built with commit-tree, so no branch
+    // points at them yet; the fetch below needs a real refs/heads/main.
+    g('branch', '-f', 'main', b);
+    const narrow = fs.mkdtempSync(path.join(os.tmpdir(), 'prtask-clone-'));
+    try {
+      execFileSync('git', ['init', '-q', '-b', 'main', narrow], { stdio: 'ignore' });
+      const n = (...args: string[]): void => {
+        execFileSync('git', ['-C', narrow, ...args], { stdio: 'ignore' });
+      };
+      n('remote', 'add', 'origin', scratch);
+      // The shape actions/checkout leaves behind: one refspec, not refs/heads/*.
+      n('config', 'remote.origin.fetch', '+refs/heads/nothing:refs/remotes/origin/nothing');
+      const tracks = (): boolean => {
+        try {
+          execFileSync('git', ['-C', narrow, 'rev-parse', '--verify', '--quiet', 'origin/main'], {
+            stdio: 'ignore',
+          });
+          return true;
+        } catch {
+          return false;
+        }
+      };
+      execFileSync('git', ['-C', narrow, 'fetch', '--no-tags', 'origin', 'main'], {
+        stdio: 'ignore',
+      });
+      check('CONTROL: a BARE fetch under a narrow refspec leaves origin/main absent', !tracks());
+      execFileSync(
+        'git',
+        [
+          '-C',
+          narrow,
+          'fetch',
+          '--no-tags',
+          'origin',
+          '+refs/heads/main:refs/remotes/origin/main',
+        ],
+        { stdio: 'ignore' }
+      );
+      check('an EXPLICIT refspec creates it, which is what the gate now sends', tracks());
+    } finally {
+      fs.rmSync(narrow, { recursive: true, force: true });
+    }
+
     check('two commits on one history share a merge base', hasBase(a, b));
     check(
       'CONTROL: two unrelated roots do NOT, so the precondition can fire',
@@ -261,10 +310,23 @@ const main = (): number => {
   if (!resolves(base)) {
     const remoteRef = base.startsWith('origin/') ? base.slice('origin/'.length) : base;
     try {
-      execFileSync('git', ['fetch', '--no-tags', '--depth=200', 'origin', remoteRef], {
-        cwd: REPO,
-        stdio: 'ignore',
-      });
+      // AN EXPLICIT REFSPEC, not a bare branch name. `git fetch origin main`
+      // only updates refs/remotes/origin/main when the fetched ref matches
+      // remote.origin.fetch, and actions/checkout configures a NARROW refspec
+      // (refs/pull/N/merge on a PR). A bare fetch there succeeds, writes
+      // FETCH_HEAD, leaves origin/main absent -- and this gate would then fail
+      // closed on every PR for a reason that reads like a broken checkout.
+      execFileSync(
+        'git',
+        [
+          'fetch',
+          '--no-tags',
+          '--depth=200',
+          'origin',
+          `+refs/heads/${remoteRef}:refs/remotes/origin/${remoteRef}`,
+        ],
+        { cwd: REPO, stdio: 'ignore' }
+      );
     } catch {
       // Reported below by the range read, with the base named.
     }
@@ -301,10 +363,17 @@ const main = (): number => {
     const remoteTip = `origin/${headRef}`;
     if (!resolves(remoteTip)) {
       try {
-        execFileSync('git', ['fetch', '--no-tags', '--depth=200', 'origin', headRef], {
-          cwd: REPO,
-          stdio: 'ignore',
-        });
+        execFileSync(
+          'git',
+          [
+            'fetch',
+            '--no-tags',
+            '--depth=200',
+            'origin',
+            `+refs/heads/${headRef}:refs/remotes/origin/${headRef}`,
+          ],
+          { cwd: REPO, stdio: 'ignore' }
+        );
       } catch {
         // Reported immediately below, with the ref named.
       }
