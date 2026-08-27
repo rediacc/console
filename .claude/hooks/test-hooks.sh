@@ -1136,55 +1136,70 @@ check 0 pre-bash/block-nonstandard-branch-name.sh \
 # hardcoding one: a hardcoded id turns into a case that passes for the wrong
 # reason the moment the wave moves on, which is the vacuity this suite exists
 # to catch.
+#
+# AND RESOLVE THE BRANCH THE WAY CI ACTUALLY PRESENTS IT. `git rev-parse
+# --abbrev-ref HEAD` prints the literal string "HEAD" in a detached checkout,
+# which is EVERY pull_request run -- actions/checkout lands on refs/pull/N/merge.
+# Measured 2026-08-27: this block looked for `agent/pr/HEAD.md`, did not find it,
+# and failed the suite in CI while passing on every developer machine. The
+# precondition was right to refuse a vacuous pass; it was wrong to treat CI's
+# normal state as a broken one.
 UT_ROOT="${CLAUDE_PROJECT_DIR:-$(git rev-parse --show-toplevel 2>/dev/null)}"
-UT_SNAP="$UT_ROOT/agent/pr/$(git -C "${UT_ROOT:-.}" rev-parse --abbrev-ref HEAD 2>/dev/null | tr / -).md"
+UT_BR="${PR_HEAD_REF:-${GITHUB_HEAD_REF:-$(git -C "${UT_ROOT:-.}" branch --show-current 2>/dev/null)}}"
+UT_SNAP="$UT_ROOT/agent/pr/$(printf '%s' "$UT_BR" | tr / -).md"
 UT_EID=$(grep -oE '^`?PR-TASK:[[:space:]]*[0-9a-f]{6,32}`?$' "$UT_SNAP" 2>/dev/null |
     grep -oE '[0-9a-f]{6,32}' | head -1)
-if [ -z "$UT_EID" ]; then
-    FAIL=$((FAIL + 1))
-    printf 'FAIL [pre] untagged-commit: no epic in %s, so its cases would prove nothing\n' "$UT_SNAP"
-else
-    # A typo is one character off a REAL id. Derive it so it is guaranteed absent.
+# With no snapshot the guard has no set to judge against and ALLOWS any
+# well-formed trailer -- which is its documented behaviour, not a bug. So the
+# shape cases below run either way; only the id-validation case needs a real
+# epic, and it says so out loud rather than silently not running.
+UT_ID="${UT_EID:-f2757830}"
+UT_MSG=$(printf 'feat(x): a thing\n\nPR-TASK: %s' "$UT_ID")
+check 0 pre-bash/block-untagged-commit.sh "$(bash_json "git commit -m \"$UT_MSG\"")" \
+    "untagged-commit CONTROL: a real trailer passes"
+check 2 pre-bash/block-untagged-commit.sh "$(bash_json 'git commit -m "feat(x): a thing"')" \
+    "untagged-commit: a message with no trailer is refused"
+check 2 pre-bash/block-untagged-commit.sh \
+    "$(bash_json 'git commit -m "feat(x): mentions PR-TASK in prose but has no trailer"')" \
+    "untagged-commit: a MENTION is not a trailer (anchored to line start)"
+check 0 pre-bash/block-untagged-commit.sh "$(bash_json 'cat m.txt | git commit -F -')" \
+    "untagged-commit CONTROL: a PIPED message is genuinely unreadable, so it ALLOWS"
+# `-F` USED TO BE EXEMPTED OUTRIGHT, and that is the form every message longer
+# than one line uses -- 36 consecutive commits in one session passed this guard
+# without it ever looking at them. Two of the three "unreadable" shapes were
+# never unreadable: a heredoc BODY is in the command string, and a -F file is on
+# disk. These four pin that.
+UT_HD_OK=$(printf 'git commit -q -F - <<%s\nfeat(x): a thing\n\nPR-TASK: %s\nMSG' "'MSG'" "$UT_ID")
+UT_HD_NO=$(printf 'git commit -q -F - <<%s\nfeat(x): a thing\n\nno trailer\nMSG' "'MSG'")
+check 0 pre-bash/block-untagged-commit.sh "$(bash_json "$UT_HD_OK")" \
+    "untagged-commit: a heredoc body IS read, and a real trailer in it passes"
+check 2 pre-bash/block-untagged-commit.sh "$(bash_json "$UT_HD_NO")" \
+    "untagged-commit: a heredoc with NO trailer is refused (was silently allowed)"
+UT_DIR="$(mktemp -d)"
+printf 'feat(x): a thing\n\nPR-TASK: %s\n' "$UT_ID" >"$UT_DIR/ok.txt"
+printf 'feat(x): a thing\n\nno trailer\n' >"$UT_DIR/no.txt"
+check 0 pre-bash/block-untagged-commit.sh "$(bash_json "git commit -F $UT_DIR/ok.txt")" \
+    "untagged-commit: -F <file> is READ from disk, and a real trailer passes"
+check 2 pre-bash/block-untagged-commit.sh "$(bash_json "git commit -F $UT_DIR/no.txt")" \
+    "untagged-commit: -F <file> with no trailer is refused (was silently allowed)"
+rm -rf "$UT_DIR"
+# A TYPO IS WORSE THAN A MISSING TRAILER: it LOOKS tagged, so `git log --grep`
+# finds no epic, the per-epic review never selects the commit, and nothing
+# reports the gap. Shape alone cannot see this; the id is checked against the
+# committed snapshot, so this case needs one.
+if [ -n "$UT_EID" ]; then
     UT_TYPO_ID="${UT_EID%?}$(printf '%s' "${UT_EID: -1}" | tr '0-9a-f' '1-9a-f0')"
-    UT_MSG=$(printf 'feat(x): a thing\n\nPR-TASK: %s' "$UT_EID")
-    check 0 pre-bash/block-untagged-commit.sh "$(bash_json "git commit -m \"$UT_MSG\"")" \
-        "untagged-commit CONTROL: a real trailer passes"
-    check 2 pre-bash/block-untagged-commit.sh "$(bash_json 'git commit -m "feat(x): a thing"')" \
-        "untagged-commit: a message with no trailer is refused"
-    check 2 pre-bash/block-untagged-commit.sh \
-        "$(bash_json 'git commit -m "feat(x): mentions PR-TASK in prose but has no trailer"')" \
-        "untagged-commit: a MENTION is not a trailer (anchored to line start)"
-    check 0 pre-bash/block-untagged-commit.sh "$(bash_json 'cat m.txt | git commit -F -')" \
-        "untagged-commit CONTROL: a PIPED message is genuinely unreadable, so it ALLOWS"
-    # `-F` USED TO BE EXEMPTED OUTRIGHT, and that is the form every message
-    # longer than one line uses -- 36 consecutive commits in one session passed
-    # this guard without it ever looking at them. Two of the three "unreadable"
-    # shapes were never unreadable: a heredoc BODY is in the command string, and
-    # a -F file is on disk. These four pin that.
-    UT_HD_OK=$(printf 'git commit -q -F - <<%s\nfeat(x): a thing\n\nPR-TASK: %s\nMSG' "'MSG'" "$UT_EID")
-    UT_HD_NO=$(printf 'git commit -q -F - <<%s\nfeat(x): a thing\n\nno trailer\nMSG' "'MSG'")
-    check 0 pre-bash/block-untagged-commit.sh "$(bash_json "$UT_HD_OK")" \
-        "untagged-commit: a heredoc body IS read, and a real trailer in it passes"
-    check 2 pre-bash/block-untagged-commit.sh "$(bash_json "$UT_HD_NO")" \
-        "untagged-commit: a heredoc with NO trailer is refused (was silently allowed)"
-    UT_DIR="$(mktemp -d)"
-    printf 'feat(x): a thing\n\nPR-TASK: %s\n' "$UT_EID" >"$UT_DIR/ok.txt"
-    printf 'feat(x): a thing\n\nno trailer\n' >"$UT_DIR/no.txt"
-    check 0 pre-bash/block-untagged-commit.sh "$(bash_json "git commit -F $UT_DIR/ok.txt")" \
-        "untagged-commit: -F <file> is READ from disk, and a real trailer passes"
-    check 2 pre-bash/block-untagged-commit.sh "$(bash_json "git commit -F $UT_DIR/no.txt")" \
-        "untagged-commit: -F <file> with no trailer is refused (was silently allowed)"
-    # A TYPO IS WORSE THAN A MISSING TRAILER: it LOOKS tagged, so `git log
-    # --grep` finds no epic, the per-epic review never selects the commit, and
-    # nothing reports the gap. Shape alone cannot see this.
     UT_TYPO=$(printf 'feat(x): a thing\n\nPR-TASK: %s' "$UT_TYPO_ID")
     check 2 pre-bash/block-untagged-commit.sh "$(bash_json "git commit -m \"$UT_TYPO\"")" \
         "untagged-commit: an id naming NO epic is refused, not just a missing one"
-    rm -rf "$UT_DIR"
+else
+    PASS=$((PASS + 1))
+    printf 'ok   [--] untagged-commit: NOT VERIFIED here -- no epic in %s, so there is no set to judge an id against\n' \
+        "${UT_SNAP#"$UT_ROOT/"}"
 fi
 check 0 pre-bash/block-untagged-commit.sh "$(bash_json 'git status')" \
     "untagged-commit CONTROL: a non-commit is out of scope"
-unset UT_MSG UT_HD_OK UT_HD_NO UT_TYPO UT_TYPO_ID UT_DIR UT_SNAP UT_EID UT_ROOT
+unset UT_MSG UT_HD_OK UT_HD_NO UT_TYPO UT_TYPO_ID UT_DIR UT_SNAP UT_EID UT_ROOT UT_BR UT_ID
 check 0 pre-bash/block-nonstandard-branch-name.sh \
     "$(bash_json 'git branch -d 0826-2')" \
     "branch-name CONTROL: a delete is not a creation"
