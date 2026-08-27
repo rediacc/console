@@ -387,11 +387,13 @@ jobs:
           GITHUB_REPOSITORY: ${{ github.repository }}
 
   # ============================================================================
-  # L2 BRANCH -- alone on purpose.
-  # This is the ONLY `push`-preset app token in CI (check-branch.sh auto-rebases
-  # and pushes the PR branch). Merging it into another lane would hand
-  # contents:write to every gate in that lane, in a job whose code comes from the
-  # PR itself. Do not.
+  # L2 BRANCH -- read-only, and kept in its own job.
+  # It used to be the ONLY `push`-preset app token in CI, because
+  # check-branch.sh rebased and republished the PR branch from here. That is
+  # gone: the script only REPORTS now, so this job runs on the default
+  # contents:read token with no app token at all. Do not hand it a writable
+  # token again -- its code comes from the PR itself, and the app bypasses the
+  # main-branch ruleset.
   # ============================================================================
   quality-branch:
     name: Branch
@@ -399,14 +401,6 @@ jobs:
     timeout-minutes: 12
     if: inputs.is_bot != 'true' && github.event_name == 'pull_request'
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: ./.github/actions/app-token
-        id: app-token
-        with:
-          client-id: ${{ vars.APP_ID }}
-          private-key: ${{ secrets.APP_PRIVATE_KEY }}
-          preset: push      # check-branch.sh auto-rebases and pushes the PR branch
-          repositories: console
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
@@ -420,15 +414,17 @@ jobs:
           # went stale, which is why this reasons from the ACCESS PATTERN
           # instead.)
           filter: blob:none
+          # LOAD-BEARING. The default checkout for a pull_request event is the
+          # MERGE ref, which already contains the base branch -- so
+          # `HEAD..origin/<base>` would be empty and this gate could never
+          # report a behind branch. It must look at the PR head itself.
           ref: ${{ github.head_ref }}
-          token: ${{ steps.app-token.outputs.token }}
-      - name: Check branch status and auto-rebase if needed
+      - name: Check whether the branch is behind its base
         run: .ci/scripts/quality/check-branch.sh
         env:
           GITHUB_BASE_REF: ${{ github.base_ref }}
           GITHUB_HEAD_REF: ${{ github.head_ref }}
           GITHUB_EVENT_NAME: ${{ github.event_name }}
-          PR_AUTHOR: ${{ github.event.pull_request.user.login }}
 
   # NOTE: PR reviews come from the Claude Review workflow (claude-review.yml),
   # which fires only when CI Complete is green and the PR is non-draft; the

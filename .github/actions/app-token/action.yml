@@ -24,10 +24,6 @@ inputs:
         pr-read      contents:read + pull_requests:read
                      Jobs that read PR metadata (gh pr list/view, review
                      threads, comments) but never write it back.
-        push         contents:write
-                     Jobs that genuinely push commits/branches. Currently only
-                     ci-quality.yml's `quality-branch` (auto-rebase via
-                     .ci/scripts/quality/check-branch.sh).
         cd           contents:write + pull_requests:write + actions:write
                      Release/deploy paths (push-to-main, workflow_dispatch).
         housekeeping contents:write + packages:write + actions:write +
@@ -62,13 +58,14 @@ runs:
             echo "perm-contents=read" >> "$GITHUB_OUTPUT"
             echo "perm-pull-requests=read" >> "$GITHUB_OUTPUT"
             ;;
-          push)
-            echo "perm-contents=write" >> "$GITHUB_OUTPUT"
-            ;;
-          # NOTE: the old `ci` preset (contents:write + pull_requests:read +
-          # actions:write) was deleted, not merely unused. It was the catch-all
-          # on PR-triggered jobs, and this App bypasses the main-branch ruleset.
-          # `preset: ci` now fails loudly here rather than silently over-scoping.
+          # NOTE: the old `ci` and `push` presets were deleted, not merely
+          # unused, and for the same reason: both handed contents:write to
+          # PR-triggered jobs, and this App bypasses the main-branch ruleset.
+          # `push` existed solely so ci-quality.yml's `quality-branch` could
+          # rebase and republish the PR branch; that job now only REPORTS that a
+          # rebase is needed (.ci/scripts/quality/check-branch.sh) and runs on
+          # the default contents:read token. `preset: ci` and `preset: push` now
+          # fail loudly here rather than silently over-scoping.
           cd)
             echo "perm-contents=write" >> "$GITHUB_OUTPUT"
             echo "perm-pull-requests=write" >> "$GITHUB_OUTPUT"

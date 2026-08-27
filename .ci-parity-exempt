@@ -24,7 +24,7 @@
 # before a push. There are none in the local-only direction today, and that is
 # the state to keep.
 
-# BLOCKER: reads the PR head/base refs from the GITHUB_* event environment and queries the GitHub API for the branch's PR; outside a pull_request event there is no branch pair to validate, so a local run has nothing to check
+# BLOCKER: reads the PR head/base refs from the GITHUB_* event environment; outside a pull_request event there is no branch pair to validate, so a local run has nothing to check
 ci-only  .ci/scripts/quality/check-branch.sh
 
 # BLOCKER: fetches the PR's commit list over the GitHub API to assert no commit carries an unwanted Claude attribution trailer; a local checkout has no PR number and the commits are not yet pushed

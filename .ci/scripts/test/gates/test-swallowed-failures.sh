@@ -161,9 +161,12 @@ test_quoted_capture_fires() {
 }
 
 test_empty_case_that_exits_zero_fires() {
-    # The subtlest true positive, and the live shape of check-review-comments.sh
-    # and check-branch.sh: the author DID test for empty, and then treated empty
-    # as a pass.
+    # The subtlest true positive, and the shape check-review-comments.sh and
+    # check-branch.sh BOTH carried before they were repaired: the author DID
+    # test for empty, and then treated empty as a pass. Both now fail closed
+    # (see the repairs pinned in test_the_repaired_sites_stay_repaired), so this
+    # fixture is the only place the shape still lives -- which is exactly why it
+    # is pinned here rather than left to be rediscovered in the wild.
     reset_tree
     write_case exits-zero \
         'COMMENTS=$(gh api "repos/x/pulls/1/comments" 2>/dev/null || echo "[]")' \

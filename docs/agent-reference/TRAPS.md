@@ -905,11 +905,15 @@ is genuinely common: build artifacts, generated search indexes and
 
 ## A dangerous line in a gate is not a fired line
 
-`.ci/scripts/quality/check-branch.sh:84-88` runs `git rebase origin/main` and
+`.ci/scripts/quality/check-branch.sh` used to run `git rebase origin/main` and
 `git checkout <sha>` against the LIVE working tree. In a shared checkout holding
-300+ uncommitted files from several sessions that reads like a catastrophe, and
-it is a real latent hazard -- but it is guarded: the script exits at line 62
-when the branch is not behind the base, which is the normal case.
+300+ uncommitted files from several sessions that read like a catastrophe, and
+it was a real latent hazard -- but it was guarded: the script exited early when
+the branch was not behind the base, which is the normal case. (Those lines are
+gone as of 2026-08-27: the script now only REPORTS that a rebase is needed, and
+probes for conflicts with `git merge-tree --write-tree`, which writes loose
+objects and nothing else. The trap below is what survives it, and it is the part
+worth keeping.)
 
 Before attributing an observed effect to scary-looking code, prove the code RAN.
 `git rev-list --left-right --count origin/main...HEAD` answers the guard's own
