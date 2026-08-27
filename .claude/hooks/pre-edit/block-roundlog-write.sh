@@ -58,5 +58,19 @@ case "$FILE" in
 esac
 [[ "$FILE" =~ (^|/)reports/pr-babysit-[^/]+\.md$ ]] || exit 0
 
+# CREATING one is not truncating one. A file that does not exist has no appendix
+# to swallow, and the failure this guard prevents is specifically the SILENT LOSS
+# of an existing history.
+#
+# Without this line the two halves of the contract deadlocked, and walking the
+# documented path hit it head-on on 2026-08-27: `worklist.py --roundlog` refuses
+# to create a log ("This verb REPLACES a STATUS block, it does not create a round
+# log ... Write the wave header first"), and this guard then refused the write it
+# had just been told to make. There was no third door. That is the exact failure
+# this file's own header names -- "denying those would leave legitimate work with
+# no path at all, which is how a guard teaches people to route around it" -- and
+# it had it for creation.
+[ -e "$FILE" ] || exit 0
+
 echo "❌ BLOCKED: a whole-file write to a pr-babysit round log. Its STATUS block is spliced in place, and the obvious splice (text[:i] + new) deletes the entire round history below it -- which is what happened on 2026-08-19, silently, to a file with no backup. To refresh STATUS use the verb, which replaces ONLY that block and reports the bytes it kept above and below:  .claude/hooks/stop/worklist.py --roundlog <branch> <<'EOF' ... EOF   The tool writes the '## STATUS (round N, <utc>)' heading itself: the round auto-increments, and the stamp is machine-written because a watchdog reads it to decide whether this loop is wedged. To append to the history or amend the wave header, use Edit -- targeted edits are deliberately allowed, because they cannot swallow an appendix they never named." >&2
 exit 2

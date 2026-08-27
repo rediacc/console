@@ -70,16 +70,36 @@ advice_only() {
     grep -vE '"(command|cmd)"[[:space:]]*:|^[[:space:]]*check [0-9]+ ' "$1"
 }
 
+# NEVER `advice_only ... | grep -q` HERE. `grep -q` exits at its FIRST match and
+# SIGPIPEs the upstream grep; under this file's own `set -o pipefail` that 141
+# becomes the pipeline's status, so a genuine match reports FALSE. The verdict is
+# then a race between grep -q exiting and the upstream finishing, decided by file
+# size and machine load.
+#
+# Measured 2026-08-27 on .claude/hooks/test-hooks.sh (1644 lines, match at line
+# 692 of the filtered stream): 8/8 trips WITHOUT pipefail, 0/8 WITH it. The gate
+# had been reporting "no hand-rolled watch in 124 scanned file(s)" over a real
+# offender, and only surfaced under `npm run ci`'s parallel load, where the
+# timing flipped the other way.
+#
+# The CONTROLS could not have caught it: they run on 2-line fixtures, where the
+# upstream finishes long before grep -q exits. A control smaller than the thing
+# it models is not a control. There is now a large-file one below.
+#
+# Command substitution reads the producer to completion, so there is no signal to
+# race.
 hands_out_loop() {
-    local f="$1"
-    advice_only "$f" | grep -qE '\.status' || return 1
-    advice_only "$f" | grep -E '\.status' | grep -qE '"completed"' || return 1
+    local f="$1" statuses
+    statuses="$(advice_only "$f" | grep -E '\.status')"
+    [ -n "$statuses" ] || return 1
+    [ -n "$(printf '%s\n' "$statuses" | grep -E '"completed"')" ] || return 1
     grep -q 'run_attempt' "$f" && return 1
     return 0
 }
 
 hands_out_banned() {
-    advice_only "$1" | grep -qE 'gh run watch[^|;&]*--(exit-status|interval)'
+    # Command substitution, not `| grep -q` -- see the note on hands_out_loop.
+    [ -n "$(advice_only "$1" | grep -E 'gh run watch[^|;&]*--(exit-status|interval)')" ]
 }
 
 # ---- A. the skill hands out the script --------------------------------------
@@ -197,6 +217,34 @@ if hands_out_banned "$TMP/data.md"; then
     fail "C IS OVER-BROAD: a JSON value and a test assertion were read as advice"
 else
     pass "C control: data and test assertions are not advice"
+fi
+
+# THE CONTROL THE OTHERS COULD NOT BE: a LARGE file with the offending line
+# EARLY. That is the only shape in which `grep -q` exits far enough ahead of its
+# producer to SIGPIPE it, and under `set -o pipefail` that turned a real match
+# into a clean bill of health. Every other C control here is two lines long and
+# passed throughout the period this gate could not fail.
+#
+# IT MUST EXCEED THE PIPE BUFFER, IN BYTES -- not merely be "long". The first
+# draft of this control was 2000 SHORT lines (~32 KB) and PASSED against a
+# deliberately reverted detector: at that size the upstream grep writes
+# everything into the 64 KB pipe and exits before `grep -q` closes it, so there
+# is no SIGPIPE to race and the bug cannot appear. Only once the producer BLOCKS
+# on a full pipe does grep -q's early exit kill it.
+#
+# So: the hit goes early, and ~240 KB of padding follows it. Verified by
+# MUTATION -- revert hands_out_banned to the `| grep -q` form and this control
+# goes red, which the 32 KB version did not.
+{
+    printf 'padding %d\n' $(seq 1 39)
+    printf 'Poll it with `gh run watch 12345 --exit-status` until it finishes.\n'
+    pad="$(printf 'x%.0s' $(seq 1 200))"
+    for _i in $(seq 1 1200); do printf 'padding %s\n' "$pad"; done
+} >"$TMP/big.md"
+if hands_out_banned "$TMP/big.md"; then
+    pass "C control: an early hit in a LARGE file is still detected (no SIGPIPE race)"
+else
+    fail "C CONTROL DID NOT FIRE: a banned invocation at line 40 of a 2000-line file went undetected -- the detector is racing its own pipe, so its green means nothing"
 fi
 
 # ---- D. the registry is self-consistent --------------------------------------

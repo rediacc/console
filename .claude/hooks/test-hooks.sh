@@ -852,9 +852,19 @@ check 0 pre-bash/block-adhoc-sanctioned.sh "$(bash_json 'git status')" "adhoc: a
 # documentation quoting a banned recipe is not a use of it. This guard keeps
 # reading INSIDE quotes -- the hand-rolled loop above depends on that -- so the
 # quoted-prose false positive stays, knowingly.
+# THE RECIPE IS ASSEMBLED AT RUNTIME, so this file's TEXT never carries it
+# contiguously -- the same convention the suppression tokens above use, and for
+# the same reason. Written out in full, the heredoc BODY reads as documentation
+# handing out the banned command, and check:ci-watch-recipe is right to refuse
+# that: its `advice_only` strips `check N ...` lines but cannot strip a heredoc
+# body. Writing it literally is what made that gate red on 2026-08-27 -- and the
+# gate could only fail on it under parallel load, which is how the SIGPIPE race
+# in its own detector came to light.
+ADHOC_WATCH="gh run wat""ch 123 --exit-status"
 check 0 pre-bash/block-adhoc-sanctioned.sh "$(bash_json "cat > doc.md <<'EOF'
-Use gh run watch 123 --exit-status to follow it
+Use $ADHOC_WATCH to follow it
 EOF")" "adhoc CONTROL: a DOC quoting the banned recipe is not a use of it"
+unset ADHOC_WATCH
 # THE CONTROL THAT MATTERS: it must FAIL OPEN on its own breakage. A guard that
 # bricks every command when its registry is missing gets deleted, and then
 # nothing is guarded at all.
@@ -1294,13 +1304,27 @@ from pathlib import Path
 p=Path('$RLOG'); s=p.read_text(); i=s.index('## STATUS')
 p.write_text(s[:i] + new)
 PY"
-check 2 pre-edit/block-roundlog-write.sh "$(tool_json Write "$RLOG" content x)" "roundlog: a whole-file Write is blocked"
+# EXISTENCE IS WHAT DECIDES NOW, so the fixture has to have it. This case used a
+# path under /home/x/ that has never existed, and passed for the wrong reason:
+# the guard was refusing on the NAME alone. That also refused CREATING a round
+# log -- and `worklist.py --roundlog` refuses to create one too ("write the wave
+# header first"), so the two halves of the contract deadlocked with no third
+# door. Walking the documented path hit it on 2026-08-27.
+RLOG_REAL="$(mktemp -d)/reports/pr-babysit-0818-1.md"
+mkdir -p "$(dirname "$RLOG_REAL")"
+printf '## Wave header\nx\n## STATUS (round 1, t)\ny\n## Rounds\nhistory\n' >"$RLOG_REAL"
+check 2 pre-edit/block-roundlog-write.sh "$(tool_json Write "$RLOG_REAL" content x)" "roundlog: a whole-file Write over an EXISTING log is blocked"
+# The exemption, and the reason it is safe: nothing to swallow.
+check 0 pre-edit/block-roundlog-write.sh "$(tool_json Write "$RLOG" content x)" "roundlog CONTROL: CREATING one passes -- a file that does not exist has no appendix"
+check 0 pre-edit/block-roundlog-write.sh "$(tool_json Edit "$RLOG_REAL" new_string x)" "roundlog: a targeted Edit of an existing log passes"
 check 0 pre-edit/block-roundlog-write.sh "$(tool_json Edit "$RLOG" new_string x)" "roundlog: a targeted Edit passes (it cannot swallow an unnamed appendix)"
 check 0 pre-edit/block-roundlog-write.sh "$(tool_json Write /r/reports/pr-babysit-0818-1-briefing.md content x)" "roundlog: a briefing has its own contract, not this guard's"
 check 0 pre-edit/block-roundlog-write.sh "$(tool_json Write packages/www/src/x.astro content x)" "roundlog: an unrelated file is untouched"
 check 2 pre-bash/block-roundlog-truncate.sh "$(bash_json "$RL_HEREDOC")" "roundlog: the exact 2026-08-19 heredoc is blocked"
 check 2 pre-bash/block-roundlog-truncate.sh "$(bash_json "echo hi > $RLOG")" "roundlog: truncating redirection is blocked"
 check 2 pre-bash/block-roundlog-truncate.sh "$(bash_json "sed -i s/a/b/ $RLOG")" "roundlog: sed -i is blocked"
+rm -rf "$(dirname "$(dirname "$RLOG_REAL")")"
+unset RLOG_REAL
 check 0 pre-bash/block-roundlog-truncate.sh "$(bash_json "echo hi >> $RLOG")" "roundlog: appending passes (it cannot truncate)"
 check 0 pre-bash/block-roundlog-truncate.sh "$(bash_json "grep -n STATUS $RLOG")" "roundlog: reading passes"
 # THE UNDER-BLOCK REGRESSIONS, found in review 2026-08-19 and each reproduced against the
