@@ -39,6 +39,44 @@
 # Measured 2026-08-27: three fixture kinds died with `fatal: empty ident name`
 # in CI while passing locally, and the anti-vacuity check reported them as
 # "did not halt" -- naming the symptom, not the missing identity.
+# IDENTITY AND NON-INTERACTIVITY AS FLAGS ON THE CALL, not config written into
+# a git dir. Both halves were paid for on a runner.
+#
+# `git -C "$r" config user.name` writes $r/.git/config, and the checked-out
+# submodule at $r/sub does NOT read that -- its git dir is $r/.git/modules/sub,
+# which `submodule add` clones without an identity. Eight call sites each had to
+# REMEMBER to configure a git dir, and the one that mattered did not exist yet
+# when the first two were configured. Three fixture kinds died with `fatal:
+# empty ident name` on a GitHub runner while passing on every developer machine,
+# and the anti-vacuity check reported them as "did not halt" -- naming the
+# symptom, not the missing identity.
+#
+# The four GIT_* variables come from the same incident class one layer up:
+# wl_git.py's executor sat until its 120-second timeout because `rebase
+# --continue` opened $EDITOR with no tty. A fixture that rebases is exactly as
+# exposed. `init.defaultBranch` is here because .ci/lib/setup.sh sets it
+# globally on every developer machine -- the repo itself hands you the ambient
+# state that hides the defect.
+_GF_FLAGS=(
+    -c user.email=fixture@example.invalid
+    -c user.name=git-fixture
+    -c init.defaultBranch=main
+    -c commit.gpgsign=false
+    -c core.hooksPath=/dev/null
+)
+
+# gf_git <dir> <args...> -- git in a fixture, stating everything it depends on.
+gf_git() {
+    local d="$1"
+    shift
+    GIT_EDITOR=true GIT_SEQUENCE_EDITOR=true GIT_TERMINAL_PROMPT=0 GIT_PAGER=cat \
+        git -C "$d" "${_GF_FLAGS[@]}" "$@"
+}
+
+# Kept for the call sites that configure a git dir directly. It is no longer
+# load-bearing -- gf_git states the identity per call, so a git dir nobody
+# remembered to configure still commits -- but leaving it means the existing
+# sites keep working and read the same.
 _gf_ident() {
     git -C "$1" config user.email fixture@example.invalid
     git -C "$1" config user.name 'git-fixture'
@@ -199,10 +237,24 @@ git_fixture_cleanup() {
     local r="${1:-}"
     # The fixture root is the PARENT of the repo (it also holds the submodule
     # origin), so remove that. Guarded against a caller passing something else.
+    # THE GUARD ASKS THE WRONG QUESTION when it hardcodes prefixes. `mktemp`
+    # honours TMPDIR, and a GitHub runner sets RUNNER_TEMP outside both /tmp and
+    # /var/folders -- so the fixture builds fine and then cleanup REFUSES,
+    # returning 1 under `set -e` and aborting the suite with a message naming
+    # neither temp dirs nor the runner. Reproduced 2026-08-27 with
+    # TMPDIR=/var/tmp/...: "refusing to remove '/var/tmp/.../r'".
+    #
+    # What the guard actually wants to know is "did this come from mktemp under
+    # the temp root we are using", so ask that. The refusal stays -- it is what
+    # stops a caller passing a repo path -- it just stops being wrong about
+    # where temp lives.
+    local tmproot="${TMPDIR:-/tmp}"
+    tmproot="${tmproot%/}"
     case "$r" in
-        /tmp/* | /var/folders/*) rm -rf "$(dirname "$r")" ;;
+        "$tmproot"/* | /tmp/* | /var/folders/*) rm -rf "$(dirname "$r")" ;;
         *)
             echo "git_fixture_cleanup: refusing to remove '$r'" >&2
+            echo "  (not under TMPDIR=$tmproot, /tmp or /var/folders)" >&2
             return 1
             ;;
     esac
