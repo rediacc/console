@@ -154,6 +154,41 @@ else
     fail "CONTROL DID NOT FIRE: a dedicated test file was not counted"
 fi
 
+# ---- C. the anti-vacuity FLOOR cannot be removed ----------------------------
+#
+# test-hooks.sh runs sibling modules' `--selftest` and folds their PASS count
+# into its own. Without a MINIMUM-COUNT floor, a selftest that prints nothing and
+# exits 0 reads as a passing suite -- and that is not hypothetical twice over:
+# `wl_git.py` and `wl_admit.py` carried 18 controls each that NOTHING ran for
+# months, while `wl_reggate.py --selftest` exits 0 having no selftest at all,
+# because running a library module as a script does nothing and succeeds.
+#
+# The floor is what separates those three states from a real pass, so the floor
+# itself is enforcement, and this file's whole premise is that enforcement
+# cannot quietly disarm itself. Deleting the floor is a one-line edit that turns
+# every orphaned control back into a silent green.
+HARNESS="$ROOT/.claude/hooks/test-hooks.sh"
+if [ ! -f "$HARNESS" ]; then
+    fail "test-hooks.sh is missing; the selftest floor cannot be checked"
+elif ! grep -q 'lt "\$floor"' "$HARNESS"; then
+    fail "test-hooks.sh lost its selftest minimum-count FLOOR. Without it a module whose --selftest prints nothing and exits 0 counts as a passing suite, which is how 36 orphaned controls hid for months."
+else
+    pass "the selftest loop enforces a minimum control count"
+fi
+
+# CONTROL, by construction: strip the floor from a copy and require the check to
+# notice. Built by DELETION of a line that is present, not by pattern
+# substitution, so it cannot silently produce an identical copy -- the vacuous-
+# plant hole check-control-vacuity.sh exists for.
+HARNESS_COPY="$(mktemp)"
+grep -v 'lt "\$floor"' "$HARNESS" >"$HARNESS_COPY"
+if grep -q 'lt "\$floor"' "$HARNESS_COPY"; then
+    fail "CONTROL IS VACUOUS: the floor line survived its own removal"
+else
+    pass "CONTROL: the floor line is detectable, so its absence would be caught"
+fi
+rm -f "$HARNESS_COPY"
+
 echo
 if [ "$fails" -eq 0 ]; then
     echo "${GREEN}✓${NC} hook integrity: ${#on_disk[@]} guard(s) present, none newly uncovered."

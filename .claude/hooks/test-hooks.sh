@@ -917,6 +917,24 @@ check 0 pre-bash/block-nonstandard-branch-name.sh \
 check 0 pre-bash/block-nonstandard-branch-name.sh \
     "$(bash_json 'git branch --show-current')" \
     "branch-name CONTROL: a read is not a creation"
+# The PR-TASK trailer guard shipped this session with NO cases in either
+# direction, which check:ci-hook-integrity caught: a guard with only block-cases
+# cannot detect OVER-blocking, and an over-blocking guard is one that gets
+# deleted. Its own header states the rule these pin -- anchored to line start,
+# and ALLOW what it cannot read rather than refuse a commit it cannot judge.
+UT_MSG=$(printf 'feat(x): a thing\n\nPR-TASK: f2757830')
+check 0 pre-bash/block-untagged-commit.sh "$(bash_json "git commit -m \"$UT_MSG\"")" \
+    "untagged-commit CONTROL: a real trailer passes"
+check 2 pre-bash/block-untagged-commit.sh "$(bash_json 'git commit -m "feat(x): a thing"')" \
+    "untagged-commit: a message with no trailer is refused"
+check 2 pre-bash/block-untagged-commit.sh \
+    "$(bash_json 'git commit -m "feat(x): mentions PR-TASK in prose but has no trailer"')" \
+    "untagged-commit: a MENTION is not a trailer (anchored to line start)"
+check 0 pre-bash/block-untagged-commit.sh "$(bash_json 'git commit -F /tmp/msg.txt')" \
+    "untagged-commit CONTROL: -F is unreadable, so it ALLOWS rather than refusing blind"
+check 0 pre-bash/block-untagged-commit.sh "$(bash_json 'git status')" \
+    "untagged-commit CONTROL: a non-commit is out of scope"
+unset UT_MSG
 check 0 pre-bash/block-nonstandard-branch-name.sh \
     "$(bash_json 'git branch -d 0826-2')" \
     "branch-name CONTROL: a delete is not a creation"

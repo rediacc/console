@@ -1058,6 +1058,44 @@ def selftest():
     # No rebase in progress is the NORMAL case, never a halt.
     check("CONTROL: rebase_state is None outside a rebase",
           rebase_state("/nonexistent-root-for-selftest") is None)
+
+    # EVERY `dels is None` GUARD, BOTH WAYS. These were the two fail-OPEN sites
+    # this session closed: `staged_deletions` returns None when its probe fails,
+    # None is falsy, and a bare `if dels:` therefore read "the probe broke" as
+    # "no deletions". force-push had it right and two other paths did not.
+    #
+    # Controls that only exercised the happy path would not have seen the
+    # inversion, which is the whole reason this block asserts BOTH returns per
+    # site: None must refuse, and an empty list must NOT.
+    import contextlib  # noqa: PLC0415 -- selftest-only
+    import io  # noqa: PLC0415
+
+    real_sd = globals()["staged_deletions"]
+
+    def _run(argv):
+        buf, err = io.StringIO(), io.StringIO()
+        with contextlib.redirect_stdout(buf), contextlib.redirect_stderr(err):
+            rc = main(argv)
+        return rc, err.getvalue()
+
+    for probe, want_refusal, label in (
+        (lambda _repo: None, True, "an UNREADABLE probe"),
+        (lambda _repo: ["some/file"], True, "a real staged deletion"),
+        (lambda _repo: [], False, "a clean probe"),
+    ):
+        globals()["staged_deletions"] = probe
+        try:
+            rc, err = _run(["force-push", "0826-3"])
+        finally:
+            globals()["staged_deletions"] = real_sd
+        refused = rc == 2 and "REFUSED" in err
+        check(
+            "force-push: %s %s" % (label, "refuses" if want_refusal else "does NOT refuse"),
+            refused == want_refusal,
+        )
+        if want_refusal and label == "an UNREADABLE probe":
+            check("and the refusal SAYS the probe was unreadable, not that the tree was clean",
+                  "could not read staged deletions" in err)
     return 0 if fail == 0 else 1
 
 
