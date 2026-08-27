@@ -18,6 +18,10 @@
 # NOT BLOCKED, deliberately:
 #   - the sanctioned tool itself, .ci/scripts/pr/sync-epic-block.sh, which
 #     strips and rebuilds only its own markers;
+#   - `gh pr create` whose body ALREADY carries the block, and `gh pr create`
+#     with no body flag at all -- create is the one call with no block to
+#     destroy, so it is judged on what it produces, not on being a whole-body
+#     write;
 #   - `gh pr edit` for anything that is not the body: --title, --add-label,
 #     --add-reviewer, --milestone. The guard keys on the body flags alone,
 #     because a guard whose usual outcome is a false positive teaches people to
@@ -40,6 +44,73 @@ SCAN=$(hook_scan_target "$CMD")
 # The sanctioned tool is allowed to do exactly what it exists to do.
 if printf '%s' "$CMD" | grep -qF 'sync-epic-block.sh'; then
     exit 0
+fi
+
+# ---- `gh pr create` was the hole, and it is the one that bit -------------
+# Measured 2026-08-27: this guard returned rc=0 for every `gh pr create --body`
+# shape and rc=2 for the matching `edit` ones. The operator's symptom -- "why
+# don't I see the epics in the PR description?" -- came in through create, not
+# edit, and the guard was looking only at the door nobody used.
+#
+# create is NOT refused outright, because it is the one call that legitimately
+# writes a whole body: there is no block yet to destroy. It is refused only when
+# the body it writes does NOT already carry the block, which is precisely the
+# state CI fails on minutes later. A body that carries it passes untouched, so
+# the sanctioned flow (build the body from the snapshot, create with it) is not
+# in this guard's way at all.
+BEGIN_MARKER='<!-- worklist-epics:begin -->'
+
+if hook_gh_pr_at_command_pos "$SCAN" create; then
+    hook_flag_present "$CMD" body || hook_flag_present "$CMD" body-file || exit 0
+
+    # What body text can we actually see? --body is in the command; --body-file
+    # is on disk. Same readability rule as block-untagged-commit.sh: judge what
+    # can be read, ALLOW what cannot, rather than refusing blind.
+    BODY=""
+    hook_flag_present "$CMD" body && BODY="$CMD"
+    ROOT="${CLAUDE_PROJECT_DIR:-$(git rev-parse --show-toplevel 2>/dev/null)}"
+    SAW_FILE=0
+    while IFS= read -r f; do
+        [ -n "$f" ] || continue
+        [ "$f" = "-" ] && continue
+        for cand in "$f" "$ROOT/$f"; do
+            if [ -f "$cand" ]; then
+                SAW_FILE=1
+                BODY="$BODY
+$(cat "$cand" 2>/dev/null)"
+                break
+            fi
+        done
+    done < <(printf '%s' "$CMD" | grep -oE -- '--body-file([[:space:]]+|=)[^[:space:];|&]+' |
+        sed -E 's/^--body-file([[:space:]]+|=)//')
+
+    # A --body-file naming a path that does not exist yet (written by a later
+    # step of the same command, or by a heredoc this scan stripped) is genuinely
+    # unreadable. Allow it; CI still gates the result.
+    if hook_flag_present "$CMD" body-file && [ "$SAW_FILE" = 0 ] && ! hook_flag_present "$CMD" body; then
+        exit 0
+    fi
+
+    printf '%s' "$BODY" | grep -qF -- "$BEGIN_MARKER" && exit 0
+
+    cat >&2 <<MSG
+BLOCKED: this \`gh pr create\` body carries no worklist-epics block.
+
+The description is generated content: CI's check:ci-pr-epic-block diffs the
+\`$BEGIN_MARKER\` block against agent/pr/<branch>.md. Creating the PR with a
+hand-written body means the block is absent from the moment the PR exists, and
+the first anyone hears of it is a red gate several minutes later.
+
+Create it, then sync the block in the same breath:
+
+  .claude/hooks/stop/worklist.py --publish <me> <branch>   # refresh the snapshot
+  gh pr create --draft --title "..." --body "..."          # your prose
+  .ci/scripts/pr/sync-epic-block.sh <pr> <branch>          # add the block
+
+A body that already contains the block is NOT refused, so building the body
+from the snapshot first works too.
+MSG
+    exit 2
 fi
 
 hook_gh_pr_at_command_pos "$SCAN" edit || exit 0

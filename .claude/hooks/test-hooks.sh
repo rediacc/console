@@ -160,6 +160,31 @@ check 0 pre-bash/block-raw-pr-body-edit.sh "$(bash_json 'gh pr edit 42 --add-lab
 # CONTROL: prose ABOUT the rule is not a violation of it. The first version
 # blocked this, which is the false-positive class block-commit-meta.sh warns of.
 check 0 pre-bash/block-raw-pr-body-edit.sh "$(bash_json 'echo "never use gh pr edit --body by hand"')" "raw-pr-body(prose passes)"
+# THE CREATE SIDE WAS OPEN, and it is the door the symptom came through:
+# measured 2026-08-27, every `gh pr create --body` shape returned rc=0 while the
+# matching `edit` ones returned rc=2. create is judged on WHAT IT PRODUCES, not
+# on being a whole-body write -- there is no block yet to destroy -- so a body
+# already carrying the block passes and only a blockless one is refused.
+PB_M='<!-- worklist-epics:begin -->'
+PB_DIR="$(mktemp -d)"
+printf 'prose\n\n%s\n- epic\n<!-- worklist-epics:end -->\n' "$PB_M" >"$PB_DIR/with.md"
+printf 'prose only\n' >"$PB_DIR/without.md"
+check 2 pre-bash/block-raw-pr-body-edit.sh "$(bash_json 'gh pr create --draft --body "x"')" \
+    "raw-pr-body: CREATE --body with no epic block is refused (was allowed)"
+check 2 pre-bash/block-raw-pr-body-edit.sh "$(bash_json "gh pr create --draft --body-file $PB_DIR/without.md")" \
+    "raw-pr-body: CREATE --body-file with no epic block is refused (was allowed)"
+check 0 pre-bash/block-raw-pr-body-edit.sh "$(bash_json "gh pr create --draft --body \"x $PB_M y\"")" \
+    "raw-pr-body CONTROL: CREATE --body that ALREADY carries the block passes"
+check 0 pre-bash/block-raw-pr-body-edit.sh "$(bash_json "gh pr create --draft --body-file $PB_DIR/with.md")" \
+    "raw-pr-body CONTROL: CREATE --body-file that ALREADY carries the block passes"
+check 0 pre-bash/block-raw-pr-body-edit.sh "$(bash_json 'gh pr create --draft --title t --fill')" \
+    "raw-pr-body CONTROL: CREATE with no body flag is out of scope"
+check 0 pre-bash/block-raw-pr-body-edit.sh "$(bash_json "gh pr create --draft --body-file $PB_DIR/absent.md")" \
+    "raw-pr-body CONTROL: an unreadable --body-file is ALLOWED, not refused blind"
+check 2 pre-bash/block-raw-pr-body-edit.sh "$(bash_json "gh pr edit 42 --body-file $PB_DIR/with.md")" \
+    "raw-pr-body: EDIT is refused even WITH the block -- it rewrites the whole body"
+rm -rf "$PB_DIR"
+unset PB_M PB_DIR
 
 check 2 pre-bash/block-protected-files.sh "$(bash_json 'git checkout .claude/settings.json')" "protected-files"
 check 2 pre-bash/block-commit-meta.sh "$(bash_json 'git commit -m msg Co-Authored-By: bot')" "commit-meta"
@@ -1096,19 +1121,60 @@ check 0 pre-bash/block-nonstandard-branch-name.sh \
 # cannot detect OVER-blocking, and an over-blocking guard is one that gets
 # deleted. Its own header states the rule these pin -- anchored to line start,
 # and ALLOW what it cannot read rather than refuse a commit it cannot judge.
-UT_MSG=$(printf 'feat(x): a thing\n\nPR-TASK: f2757830')
-check 0 pre-bash/block-untagged-commit.sh "$(bash_json "git commit -m \"$UT_MSG\"")" \
-    "untagged-commit CONTROL: a real trailer passes"
-check 2 pre-bash/block-untagged-commit.sh "$(bash_json 'git commit -m "feat(x): a thing"')" \
-    "untagged-commit: a message with no trailer is refused"
-check 2 pre-bash/block-untagged-commit.sh \
-    "$(bash_json 'git commit -m "feat(x): mentions PR-TASK in prose but has no trailer"')" \
-    "untagged-commit: a MENTION is not a trailer (anchored to line start)"
-check 0 pre-bash/block-untagged-commit.sh "$(bash_json 'git commit -F /tmp/msg.txt')" \
-    "untagged-commit CONTROL: -F is unreadable, so it ALLOWS rather than refusing blind"
+# The guard judges an id against agent/pr/<branch>.md, so BOTH the id and the
+# snapshot are branch-dependent. Read the epic out of the snapshot rather than
+# hardcoding one: a hardcoded id turns into a case that passes for the wrong
+# reason the moment the wave moves on, which is the vacuity this suite exists
+# to catch.
+UT_ROOT="${CLAUDE_PROJECT_DIR:-$(git rev-parse --show-toplevel 2>/dev/null)}"
+UT_SNAP="$UT_ROOT/agent/pr/$(git -C "${UT_ROOT:-.}" rev-parse --abbrev-ref HEAD 2>/dev/null | tr / -).md"
+UT_EID=$(grep -oE '^`?PR-TASK:[[:space:]]*[0-9a-f]{6,32}`?$' "$UT_SNAP" 2>/dev/null |
+    grep -oE '[0-9a-f]{6,32}' | head -1)
+if [ -z "$UT_EID" ]; then
+    FAIL=$((FAIL + 1))
+    printf 'FAIL [pre] untagged-commit: no epic in %s, so its cases would prove nothing\n' "$UT_SNAP"
+else
+    # A typo is one character off a REAL id. Derive it so it is guaranteed absent.
+    UT_TYPO_ID="${UT_EID%?}$(printf '%s' "${UT_EID: -1}" | tr '0-9a-f' '1-9a-f0')"
+    UT_MSG=$(printf 'feat(x): a thing\n\nPR-TASK: %s' "$UT_EID")
+    check 0 pre-bash/block-untagged-commit.sh "$(bash_json "git commit -m \"$UT_MSG\"")" \
+        "untagged-commit CONTROL: a real trailer passes"
+    check 2 pre-bash/block-untagged-commit.sh "$(bash_json 'git commit -m "feat(x): a thing"')" \
+        "untagged-commit: a message with no trailer is refused"
+    check 2 pre-bash/block-untagged-commit.sh \
+        "$(bash_json 'git commit -m "feat(x): mentions PR-TASK in prose but has no trailer"')" \
+        "untagged-commit: a MENTION is not a trailer (anchored to line start)"
+    check 0 pre-bash/block-untagged-commit.sh "$(bash_json 'cat m.txt | git commit -F -')" \
+        "untagged-commit CONTROL: a PIPED message is genuinely unreadable, so it ALLOWS"
+    # `-F` USED TO BE EXEMPTED OUTRIGHT, and that is the form every message
+    # longer than one line uses -- 36 consecutive commits in one session passed
+    # this guard without it ever looking at them. Two of the three "unreadable"
+    # shapes were never unreadable: a heredoc BODY is in the command string, and
+    # a -F file is on disk. These four pin that.
+    UT_HD_OK=$(printf 'git commit -q -F - <<%s\nfeat(x): a thing\n\nPR-TASK: %s\nMSG' "'MSG'" "$UT_EID")
+    UT_HD_NO=$(printf 'git commit -q -F - <<%s\nfeat(x): a thing\n\nno trailer\nMSG' "'MSG'")
+    check 0 pre-bash/block-untagged-commit.sh "$(bash_json "$UT_HD_OK")" \
+        "untagged-commit: a heredoc body IS read, and a real trailer in it passes"
+    check 2 pre-bash/block-untagged-commit.sh "$(bash_json "$UT_HD_NO")" \
+        "untagged-commit: a heredoc with NO trailer is refused (was silently allowed)"
+    UT_DIR="$(mktemp -d)"
+    printf 'feat(x): a thing\n\nPR-TASK: %s\n' "$UT_EID" >"$UT_DIR/ok.txt"
+    printf 'feat(x): a thing\n\nno trailer\n' >"$UT_DIR/no.txt"
+    check 0 pre-bash/block-untagged-commit.sh "$(bash_json "git commit -F $UT_DIR/ok.txt")" \
+        "untagged-commit: -F <file> is READ from disk, and a real trailer passes"
+    check 2 pre-bash/block-untagged-commit.sh "$(bash_json "git commit -F $UT_DIR/no.txt")" \
+        "untagged-commit: -F <file> with no trailer is refused (was silently allowed)"
+    # A TYPO IS WORSE THAN A MISSING TRAILER: it LOOKS tagged, so `git log
+    # --grep` finds no epic, the per-epic review never selects the commit, and
+    # nothing reports the gap. Shape alone cannot see this.
+    UT_TYPO=$(printf 'feat(x): a thing\n\nPR-TASK: %s' "$UT_TYPO_ID")
+    check 2 pre-bash/block-untagged-commit.sh "$(bash_json "git commit -m \"$UT_TYPO\"")" \
+        "untagged-commit: an id naming NO epic is refused, not just a missing one"
+    rm -rf "$UT_DIR"
+fi
 check 0 pre-bash/block-untagged-commit.sh "$(bash_json 'git status')" \
     "untagged-commit CONTROL: a non-commit is out of scope"
-unset UT_MSG
+unset UT_MSG UT_HD_OK UT_HD_NO UT_TYPO UT_TYPO_ID UT_DIR UT_SNAP UT_EID UT_ROOT
 check 0 pre-bash/block-nonstandard-branch-name.sh \
     "$(bash_json 'git branch -d 0826-2')" \
     "branch-name CONTROL: a delete is not a creation"
