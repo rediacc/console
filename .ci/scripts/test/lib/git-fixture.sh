@@ -28,6 +28,22 @@
 # the requested conflict unresolved. Returns non-zero if the rebase did NOT
 # halt, because a fixture that silently applied cleanly would make every
 # assertion below it vacuous.
+# IDENTITY IS PER GIT DIR, and a submodule working tree has its OWN.
+#
+# `git -C "$r" config user.name` writes $r/.git/config. The checked-out
+# submodule at $r/sub does NOT read that: its git dir is $r/.git/modules/sub,
+# and `submodule add` clones it without an identity. Every `(cd "$r/sub" && git
+# commit)` below therefore depended on a GLOBAL identity being present.
+#
+# It always is on a developer machine, and it is NOT on a GitHub runner.
+# Measured 2026-08-27: three fixture kinds died with `fatal: empty ident name`
+# in CI while passing locally, and the anti-vacuity check reported them as
+# "did not halt" -- naming the symptom, not the missing identity.
+_gf_ident() {
+    git -C "$1" config user.email fixture@example.invalid
+    git -C "$1" config user.name 'git-fixture'
+}
+
 git_fixture_rebase() {
     local kind="${1:?kind required: registry|judgement|gitlink}"
     local root
@@ -35,19 +51,18 @@ git_fixture_rebase() {
     local r="$root/r"
 
     git init -q -b main "$r" || return 1
-    git -C "$r" config user.email fixture@example.invalid
-    git -C "$r" config user.name 'git-fixture'
+    _gf_ident "$r"
 
     case "$kind" in
         gitlink)
             local sub="$root/sub"
             git init -q -b main "$sub"
-            git -C "$sub" config user.email fixture@example.invalid
-            git -C "$sub" config user.name 'git-fixture'
+            _gf_ident "$sub"
             echo base >"$sub/f.txt"
             git -C "$sub" add -- f.txt
             git -C "$sub" commit -qm base
             git -C "$r" -c protocol.file.allow=always submodule add -q "$sub" sub >/dev/null 2>&1
+            _gf_ident "$r/sub"
             git -C "$r" add -- .gitmodules sub
             git -C "$r" commit -qm base
             # THE TWO SUBMODULE COMMITS MUST DIVERGE, and the first draft of this
@@ -78,12 +93,12 @@ git_fixture_rebase() {
             # resolution.
             local sub2="$root/sub"
             git init -q -b main "$sub2"
-            git -C "$sub2" config user.email fixture@example.invalid
-            git -C "$sub2" config user.name 'git-fixture'
+            _gf_ident "$sub2"
             echo base >"$sub2/f.txt"
             git -C "$sub2" add -- f.txt
             git -C "$sub2" commit -qm base
             git -C "$r" -c protocol.file.allow=always submodule add -q "$sub2" sub >/dev/null 2>&1
+            _gf_ident "$r/sub"
             git -C "$r" add -- .gitmodules sub
             git -C "$r" commit -qm base
             # DIFFERENT FILES per side, deliberately: the submodule's OWN rebase
@@ -120,11 +135,11 @@ git_fixture_rebase() {
             # fixture is both easier and honest.
             local sub3="$root/sub"
             git init -q -b main "$sub3"
-            git -C "$sub3" config user.email fixture@example.invalid
-            git -C "$sub3" config user.name 'git-fixture'
+            _gf_ident "$sub3"
             echo base >"$sub3/f.txt"
             git -C "$sub3" add -- f.txt && git -C "$sub3" commit -qm base
             git -C "$r" -c protocol.file.allow=always submodule add -q "$sub3" sub >/dev/null 2>&1
+            _gf_ident "$r/sub"
             printf 'shared\n' >"$r/code.sh"
             git -C "$r" add -- .gitmodules sub code.sh && git -C "$r" commit -qm base
             git -C "$r" checkout -qb feature

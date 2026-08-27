@@ -45,8 +45,10 @@ rather than guessing. Fail closed: an unreadable probe is never a pass.
 import json
 import os
 import re
+import shutil
 import subprocess
 import sys
+import tempfile
 
 # A rebase with more halts than this is not a loop to automate. The bound
 # exists so a resolver that somehow stops making progress cannot spin
@@ -66,8 +68,31 @@ class RefusalError(Exception):
     """A safety check said no. Carries the reason shown to the caller."""
 
 
+# NON-INTERACTIVE BY CONSTRUCTION, and this was paid for. `git rebase
+# --continue` opens $EDITOR for the commit message; on a machine where that is
+# a real editor and there is no tty, it BLOCKS. Measured in CI 2026-08-27: the
+# executor's --continue sat until run_git's 120-second timeout and the failure
+# read `rebase --continue failed -- timed out after 120s`, which names the
+# symptom and hides the cause. A developer machine with EDITOR=true or a
+# configured core.editor never sees it, so the defect is invisible exactly
+# where the tests run.
+#
+# GIT_SEQUENCE_EDITOR is the same hazard for the todo list, GIT_TERMINAL_PROMPT
+# stops a credential prompt blocking forever, and GIT_PAGER=cat stops a paged
+# read waiting for a keypress. All four are the difference between a wrong
+# answer after two minutes and a right one now.
+GIT_NONINTERACTIVE = {
+    "GIT_EDITOR": "true",
+    "GIT_SEQUENCE_EDITOR": "true",
+    "GIT_TERMINAL_PROMPT": "0",
+    "GIT_PAGER": "cat",
+}
+
+
 def run_git(args, cwd, timeout=TIMEOUT_S):
     """(rc, stdout, stderr). Never raises on a non-zero git; callers decide."""
+    env = dict(os.environ)
+    env.update(GIT_NONINTERACTIVE)
     try:
         p = subprocess.run(
             ["git", *args],
@@ -76,6 +101,7 @@ def run_git(args, cwd, timeout=TIMEOUT_S):
             text=True,
             timeout=timeout,
             check=False,
+            env=env,
         )
         return p.returncode, p.stdout.strip(), p.stderr.strip()
     except subprocess.TimeoutExpired:
@@ -1358,6 +1384,45 @@ def selftest():
         '[submodule "private/renet"]\n\tpath = private/renet\n\turl = x\n\tbranch = main\n'
         '[submodule "private/account"]\n\tpath = private/account\n\turl = y\n'
     )
+    # A BLOCKING EDITOR IS A HANG, NOT AN ERROR, and this executor ran into it.
+    # In CI 2026-08-27 `rebase --continue` sat until the 120s timeout and
+    # reported "timed out", naming the symptom. Real git behaviour, both ways:
+    # run_git completes against a core.editor that would block forever, and the
+    # SAME git call without the env genuinely blocks -- without that second half
+    # the first proves only that --amend works.
+    _ed = tempfile.mkdtemp()
+    try:
+        for _a in (
+            ["init", "-q", "-b", "main"],
+            ["config", "user.email", "s@example.invalid"],
+            ["config", "user.name", "selftest"],
+            ["config", "core.editor", "tail -f /dev/null"],
+        ):
+            subprocess.run(["git", "-C", _ed, *_a], capture_output=True, check=False)
+        with open(os.path.join(_ed, "f.txt"), "w", encoding="utf-8") as _fh:
+            _fh.write("x\n")
+        subprocess.run(["git", "-C", _ed, "add", "--", "f.txt"], capture_output=True, check=False)
+        subprocess.run(["git", "-C", _ed, "commit", "-qm", "c1"], capture_output=True, check=False)
+
+        _rc, _, _ = run_git(["commit", "--amend"], _ed, timeout=8)
+        check("run_git completes against an editor that would block forever", _rc == 0)
+
+        _clean = {k: v for k, v in os.environ.items() if not k.startswith("GIT_")}
+        _blocked = False
+        try:
+            subprocess.run(
+                ["git", "-C", _ed, "commit", "--amend"],
+                capture_output=True,
+                env=_clean,
+                timeout=5,
+                check=False,
+            )
+        except subprocess.TimeoutExpired:
+            _blocked = True
+        check("CONTROL: the same call WITHOUT the env blocks, so the fix is load-bearing", _blocked)
+    finally:
+        shutil.rmtree(_ed, ignore_errors=True)
+
     check("parses every submodule from .gitmodules", len(mods) == 2)
     check("keeps declared paths", [m[0] for m in mods] == ["private/renet", "private/account"])
     check("defaults a missing branch to main", mods[1][1] == "main")
