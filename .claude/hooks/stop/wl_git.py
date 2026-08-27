@@ -152,6 +152,81 @@ def is_ancestor(repo, maybe_ancestor, descendant):
     return None
 
 
+def rebase_state(root):
+    """Where an in-progress rebase stopped, read from GIT's own state.
+
+    NOTHING IS PERSISTED HERE, deliberately, and that is the design. `git rebase`
+    is already resumable: on a halt it keeps `msgnum`/`end` (step N of M),
+    `stopped-sha`, and the remaining todo under .git/rebase-merge, plus the
+    conflict stages in the index. Anything this module wrote down would be a
+    SECOND copy of a truth git already holds, and a second copy drifts.
+
+    Returns None when no rebase is in progress -- which is not an error, it is
+    the normal case, and the caller must not report it as a halt.
+    """
+    for d in ("rebase-merge", "rebase-apply"):
+        base = os.path.join(root, ".git", d)
+        if os.path.isdir(base):
+            def read(name):
+                try:
+                    with open(os.path.join(base, name), encoding="utf-8") as fh:
+                        return fh.read().strip()
+                except OSError:
+                    return ""
+            return {
+                "dir": d,
+                "step": read("msgnum"),
+                "total": read("end"),
+                "stopped": read("stopped-sha"),
+                "onto": read("onto"),
+                "head_name": read("head-name"),
+            }
+    return None
+
+
+def conflicted_paths(root):
+    """Every path with unmerged stages, with its stages BY NUMBER."""
+    rc, out, _ = run_git(["ls-files", "-u"], cwd=root)
+    if rc != 0:
+        return None
+    paths = {}
+    for line in out.splitlines():
+        try:
+            meta, path = line.split("\t", 1)
+            mode, sha, stage = meta.split()
+        except ValueError:
+            continue
+        paths.setdefault(path, {})[int(stage)] = (sha, mode)
+    return paths
+
+
+def classify_conflict(root, path, stages):
+    """'gitlink' | 'registry' | 'judgement', and WHY.
+
+    THE TAXONOMY IS MEASURED, not invented. Ten conflicts across two real
+    rebases of this branch on 2026-08-26/27: one gitlink (an oracle already
+    decides it), six mechanical unions of append-only registries, two genuine
+    design collisions (`run.sh setup()`, and a test suite that one wave had
+    refactored from a monolith into 22 case files). Refusing all ten to protect
+    the two is the trade this classifier exists to stop making.
+
+    Conservative by construction: anything it cannot place is 'judgement', which
+    means untouched. A wrong 'judgement' costs a human a look; a wrong
+    'registry' silently corrupts a file, which is the failure mode that shipped
+    a glued stopword seam today.
+    """
+    if any(mode == "160000" for _sha, mode in stages.values()):
+        return "gitlink", "a submodule pointer; resolve_gitlink_target decides it by ancestry"
+    if len(stages) < 3:
+        return "judgement", "incomplete stages (%s); refusing to guess" % sorted(stages)
+    lowered = path.lower()
+    if lowered.endswith((".json",)) or "manifest" in lowered:
+        return "registry", "keyed entries; union is safe ONLY behind an id-set invariant"
+    if lowered.endswith(".md"):
+        return "registry", "sectioned prose; union is safe ONLY if both heading sets survive"
+    return "judgement", "no invariant proves a union preserves meaning here"
+
+
 def equivalent(repo, base, old_tip, new_tip, runner=None):
     """Which of base..old_tip survived into base..new_tip, and how.
 
@@ -427,6 +502,7 @@ USAGE = """usage: worklist.py --git <subcommand> [args] [--execute]
   force-push <branch>             --force-with-lease, submodules before console
   snapshot                        print repo=sha for console + every submodule
   verify-rebase <snapshot-file>   did every commit survive? by PATCH IDENTITY
+  rebase-status                   where an in-progress rebase stopped, and why
 
 Dry run by default. Pass --execute to perform writes; only force-push writes.
 """
@@ -610,6 +686,42 @@ def main(argv):
             plan.cmd(["checkout", new_sha], repo)
             plan.cmd(["add", "--", path], root)
             plan.note("stage the gitlink only; never a wholesale add around a pointer bump")
+        elif sub == "rebase-status":
+            # READ-ONLY, and shippable before any resolver exists. This is the
+            # "what happened" half of the operator's ask: an agent resuming a
+            # halted rebase can read the files itself, but it cannot
+            # reconstruct WHICH commit is being replayed onto what. That lives
+            # in .git/rebase-merge and nowhere else.
+            st = rebase_state(root)
+            if st is None:
+                plan.note("no rebase in progress -- this is the normal case, not a halt")
+            else:
+                plan.note(
+                    "rebase HALTED: step %s of %s, replaying %s onto %s (%s)"
+                    % (
+                        st["step"] or "?", st["total"] or "?",
+                        (st["stopped"] or "?")[:12], (st["onto"] or "?")[:12], st["dir"],
+                    )
+                )
+                paths = conflicted_paths(root)
+                if paths is None:
+                    raise Refusal("could not read the index; refusing to describe a halt blind")
+                if not paths:
+                    plan.note("no conflicted paths: the halt is a stopped edit or an empty commit")
+                for path in sorted(paths):
+                    kind, why = classify_conflict(root, path, paths[path])
+                    stage_txt = " ".join(
+                        "stage%d=%s" % (n, sha[:12]) for n, (sha, _m) in sorted(paths[path].items())
+                    )
+                    plan.check("%s -> %s" % (path, kind), kind != "judgement", why)
+                    plan.note("    %s" % stage_txt)
+                plan.note("")
+                plan.note("gitlink   -> --git resolve-gitlinks decides it; no judgement needed")
+                plan.note("registry  -> a union is safe ONLY behind an invariant; see")
+                plan.note("             agent/PLAN-resumable-rebase-executor.md")
+                plan.note("judgement -> yours. NEVER `git rebase --skip`: it drops the commit.")
+                plan.note("recover   -> git rebase --abort, then the step-0 tips")
+
         elif sub == "snapshot":
             # The pre-rebase tips, in a form verify-rebase can read back.
             # branch-rebase.md's step 0 told a session to `echo` these and
@@ -867,6 +979,35 @@ def selftest():
 
     check("CONTROL: an unreadable probe returns None, never an empty result",
           equivalent("/r", "BASE", "OLD", "NEW", runner=broken) is None)
+
+    # THE CONFLICT CLASSIFIER. Every case below is a conflict that ACTUALLY
+    # occurred while rebasing this branch twice on 2026-08-26/27 -- ten of them,
+    # of which one needed an oracle, six were mechanical, and two needed the
+    # operator. Refusing all ten to protect the two was the trade the operator
+    # vetoed, and this table is what replaces it.
+    def kind(path, stages):
+        return classify_conflict(".", path, stages)[0]
+
+    THREE = {1: ("a", "100644"), 2: ("b", "100644"), 3: ("c", "100644")}
+    LINK = {1: ("a", "160000"), 2: ("b", "160000"), 3: ("c", "160000")}
+    check("a submodule pointer classifies as gitlink",
+          kind("private/account", LINK) == "gitlink")
+    check("a keyed manifest classifies as registry",
+          kind("scripts/ci-runner/manifest.ts", THREE) == "registry")
+    check("a sectioned doc classifies as registry",
+          kind("docs/ci-overhaul/06-progress.md", THREE) == "registry")
+    # THE TWO THAT MUST STAY UNTOUCHED. run.sh was two designs for one function;
+    # wl_agents.py is where a blind union glued `touched`+`see` into one token
+    # and silently killed two stopwords. Both must land in judgement.
+    check("CONTROL: two designs for one function is judgement",
+          kind("run.sh", THREE) == "judgement")
+    check("CONTROL: a token list is judgement, not a free union",
+          kind(".claude/hooks/stop/wl_agents.py", THREE) == "judgement")
+    check("CONTROL: incomplete stages refuse rather than guess",
+          kind("some.json", {2: ("b", "100644"), 3: ("c", "100644")}) == "judgement")
+    # No rebase in progress is the NORMAL case, never a halt.
+    check("CONTROL: rebase_state is None outside a rebase",
+          rebase_state("/nonexistent-root-for-selftest") is None)
     return 0 if fail == 0 else 1
 
 
