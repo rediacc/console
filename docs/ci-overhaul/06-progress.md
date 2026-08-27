@@ -5267,3 +5267,213 @@ refused this repo's own `build:bundle`.
 was individually attributed to `0826-2`. The operator's ruling: wait for #577 to
 merge, re-rebase onto `origin/main`, and base the PR there. Do not weaken the
 gate and do not open a stacked PR.
+
+## Wave 0827-1 — the enforcement layer graded on a real runner (2026-08-27, PR #579)
+
+**Correction to the section above.** "Still true at the end of the wave:
+`check:ci-pr-task-trailers` is RED, on nine untagged commits" is no longer the
+state, and the diagnosis embedded in it was incomplete. #577 merged, `0826-3`
+re-rebased onto `origin/main` (28 carried, 20 absorbed, 0 missing, matching
+`git cherry` by hand), and the branch became `0827-1`. The gate then went red
+again for a completely different reason — see below — which is worth knowing
+because "the same gate is red" invited reading it as the same problem.
+
+### The operator asked four questions and each one measured a hole
+
+*"Will an AI session be aware of epics and tasks when it commits and when it
+needs to edit the PR?"* Four gaps, each established by running the guard rather
+than reading it:
+
+1. **`block-untagged-commit.sh` exempted `-F` outright**, and `-F` is the form
+   every message longer than one line uses. Thirty-six consecutive commits in
+   one session passed that guard without it ever looking at them. They happened
+   to carry trailers; nothing checked. Two of the three "unreadable" shapes were
+   never unreadable — a heredoc BODY is in the command string, a `-F <file>` is
+   on disk — and only a piped stdin remains genuinely opaque, which still
+   ALLOWS. It also accepted any hex-shaped id; a **typo'd** id is worse than a
+   missing one, because it looks tagged, so `git log --grep` finds no epic and
+   the per-epic review never selects the commit. Ids are now checked against
+   `agent/pr/<branch>.md`.
+2. **`block-raw-pr-body-edit.sh` covered `gh pr edit` and never `gh pr create`.**
+   Measured: rc=0 for every create shape, rc=2 for every matching edit shape.
+   The operator's symptom — *"why don't I see the epics in the PR
+   description?"* — came in through create, and the guard was watching the door
+   nobody used. Create is not refused outright, because it is the one call that
+   legitimately writes a whole body: there is nothing to destroy yet. It is
+   refused only when the body it writes does not already carry the block, which
+   is exactly the state `check:ci-pr-epic-block` fails on minutes later.
+3. **Neither guard had a regression case**, in either direction.
+4. **`check:ci-pr-task-trailers` had no base-ref precondition.** `PR_BASE_REF`
+   was set correctly and the ref was still absent from the checkout, so the gate
+   reported an "ambiguous argument" about the RANGE and said nothing about the
+   missing fetch.
+
+### The create arm then got its own scope wrong, which is the more useful lesson
+
+The first version matched the verb per command and tested `--body` against the
+whole line. Those disagree the moment one line does both, and it fails in both
+directions: `gh pr create --fill && gh pr edit N --body-file b.md` takes the
+create arm's `exit 0` when `b.md` happens to carry the block, so the edit
+refusal — which applies whether or not the block is there, because edit rewrites
+the WHOLE body — is never reached; and `gh pr create --body "<body with the
+block>" && gh pr edit N --add-label x` is entirely legal and was refused.
+
+`hook_gh_pr_segment` already existed for exactly this, and its own header calls
+the class *"a field read at the wrong scope"*. The new arm was written without
+it. **A helper that exists is not a helper that gets used**, and the sweep for
+siblings found only one other line-wide flag read — `block-admin-merge.sh:38`,
+where it is deliberate and documented, because `--admin` has no legitimate use
+and over-blocking is the safe direction.
+
+Body CONTENT still comes from the raw command and the file on disk, never from a
+segment: a quoted body may itself contain a separator. That trades a contrived
+evasion for never refusing a legitimate body, which is the right way round for a
+guard whose false positives teach people to route around it.
+
+### `--no-merges` was already there, and it did not exclude the merge commit
+
+The trailer gate reported `1 of 1 commit(s) are not attributable to an epic —
+55b982fc0  Merge f05ea28fc into d7d9fa46`. That is `refs/pull/579/merge`,
+GitHub's synthetic merge commit, which `actions/checkout` puts at HEAD on a
+`pull_request` event. No human wrote it, so of course it names no epic.
+
+The reflex reading is that `--no-merges` was missing. **It was there.**
+`--no-merges` counts PARENTS, and the `quality-code` lane checks out at the
+default `fetch-depth: 1`, so the merge commit's parents are grafted away and git
+sees a parentless root. The same shallowness is why the range held one commit
+instead of the branch's thirty: fetching the base made `origin/main` resolvable
+without making HEAD's ancestry present.
+
+A selftest control reproduces exactly that, in a scratch repo, both ways: a
+two-parent commit IS excluded by `--no-merges`, and a parentless commit whose
+subject reads as a merge is NOT.
+
+Fixed inside the gate rather than by adding `fetch-depth: 0` to the lane. The
+workflow fix is correct and cheap; it also puts this gate's precondition in a
+shared lane where the next person tuning checkout cost silently removes it. Two
+more repairs fell out of the same reading:
+
+- **A too-shallow `A..B` is not an error, it is a wrong answer.** Git does not
+  complain when the merge base is outside the fetched window; it lists
+  everything reachable from the tip, so main's own untagged history would have
+  become this PR's fault. The merge base is now demanded explicitly.
+- **An empty range under CI now fails.** An open PR always has commits, so an
+  empty range there is a broken range — and printing `- skipped` for the exact
+  topology defect the gate exists to survive is the gate-that-cannot-fail shape.
+
+### A fetch is not a promise about the ref you then demand
+
+The tip fix sent `git fetch --no-tags --depth=200 origin <branch>` and then
+required `origin/<branch>` to resolve. **Those are not the same thing.** The
+remote-tracking ref is updated only when the fetched ref matches
+`remote.origin.fetch`, and `actions/checkout` configures that narrowly on a pull
+request. The fetch would have succeeded, written `FETCH_HEAD`, left
+`origin/<branch>` absent — and the gate would have failed closed on every PR,
+reporting a broken checkout.
+
+Two controls against real git: under a narrow refspec the bare form leaves
+`origin/main` absent, and `+refs/heads/x:refs/remotes/origin/x` creates it. The
+base-ref fetch shipped one wave earlier had the identical shape and the same
+latent bug; so did `check-branch.sh`. All three are explicit now.
+
+### Two failures that only exist where there is no developer
+
+Both were CI reds that passed locally, which is the whole reason they got through.
+
+- **Identity is per git dir, and a submodule working tree has its own.**
+  `git_fixture_rebase` set `user.name` on the superproject and on the source
+  submodule, but every `(cd "$r/sub" && git commit)` runs against
+  `$r/.git/modules/sub`, which `submodule add` clones without an identity. Three
+  fixture kinds died with `fatal: empty ident name` on the runner and passed
+  locally off `~/.gitconfig`. The anti-vacuity check reported them as *"did not
+  halt"* — naming the symptom, not the missing identity.
+- **A blocking editor is a hang, not an error.** `git rebase --continue` opens
+  `$EDITOR`; with no tty and a real editor configured it blocks. The executor sat
+  until `run_git`'s 120-second timeout and reported *"timed out after 120s"*,
+  which again names the symptom and hides the cause. `run_git` sets
+  `GIT_EDITOR`, `GIT_SEQUENCE_EDITOR`, `GIT_TERMINAL_PROMPT` and `GIT_PAGER` for
+  every call now — non-interactive by construction rather than by luck.
+
+Both were verified in both directions before being called fixed, under
+`HOME=<empty> GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_SYSTEM=/dev/null`, which is
+the cheap way to make a developer machine tell the truth about a runner.
+
+### CI stopped rewriting branches (operator request)
+
+`quality-branch` minted a `contents:write` app token (`preset: push`), checked
+the PR branch out writably, and `check-branch.sh` rebased and force-pushed it.
+The operator recognised a bot force-push on their own branch as an older design.
+Three things were wrong beyond the surprise: it rewrote a contributor's branch
+from a job whose code comes from the PR itself; it needed a write token in a lane
+that otherwise needs none; and it rebased a REAL checkout, which a gate has no
+business doing. It is also redundant now — `/branch-rebase` handles the
+submodules a plain rebase gets wrong, and the `--git` verbs resolve, continue,
+and then PROVE by patch identity that nothing was lost.
+
+Detection stayed and improved: `git merge-tree --write-tree` answers "would this
+conflict?" without touching the working tree, the index, HEAD or any ref, and its
+three outcomes are kept apart — clean, conflicts with the paths, and
+probe-could-not-run, which reports **unknown** rather than silently as clean. It
+is a three-way merge and not a replay, and the comment says so, because reading
+it as a proof is the next mistake.
+
+**One deviation worth recording**, because the obvious simplification is wrong:
+`ref: ${{ github.head_ref }}` STAYS on the checkout. A "plain" checkout takes the
+`pull_request` merge ref, which already contains the base, so
+`HEAD..origin/<base>` would always be empty and the gate could never fire. Same
+synthetic-merge-ref fact that took the trailer gate down, met twice in one wave
+from opposite directions.
+
+### Two instruments that were describing something else
+
+- **The `--git` help named seven verbs; the dispatch handles nine.**
+  `rebase-resolve` and `rebase-continue` were missing entirely, `verify-rebase`'s
+  optional `[base]` was hidden, and the footer said *"only force-push writes"*
+  while `EXECUTABLE` had grown to three. A session reading it would conclude two
+  verbs do not exist, one of them a WRITING verb. `USAGE` is now pinned against
+  the dispatch in both directions by reading the module's own source. The
+  empty-scan control earned its place immediately: the first draft read
+  `__file__` through a name unbound inside a function, the scan came back empty,
+  and set-inclusion made both arms vacuously true.
+- **A suite that cannot run must say so, not fail.**
+  `test-scrub-sentinel-empty.sh` reported `expected 0, got 1`. Read separately,
+  stdout was empty and stderr said `Required command 'aws' is not available` —
+  indistinguishable from the pipefail regression the suite pins, which is the
+  worse kind of red because it costs a diagnosis every time and teaches you to
+  ignore the gate. It names the missing tool now, marks the cases NOT VERIFIED,
+  and **refuses to skip under CI**, where a missing tool is a broken lane.
+
+### Working a shared tree without a safety net
+
+A second session held uncommitted work in this same checkout throughout,
+including fourteen lines inside `.claude/hooks/test-hooks.sh` — the file this
+wave's regression cases belong in. The constraint is *committing* their work,
+not *editing* the file, so the cases were staged alone with
+`git hash-object -w` + `git update-index --cacheinfo`: the index carries HEAD
+plus my hunks, the working tree keeps theirs untouched, and the committed blob
+was diffed against HEAD afterwards to prove only two hunks landed. `git add -A`
+was never used.
+
+The same tree also produces a local red that is not ours and never reaches CI:
+`check-dead-bash` flags an UNTRACKED `.ci/docker/run-in-render.sh`. Stated here
+so the next session does not "fix" someone else's work-in-progress.
+
+### Two guards refused this session's own commands, both correctly
+
+`block-adhoc-sanctioned.sh` refused a `grep` whose PATTERN quoted a banned
+recipe, and `block-long-sleep.sh` refused a heredoc writing a probe file that
+contained a long sleep. Neither is a finding, and it matters that they are not:
+both headers state the residue and why it is priced in. The first keeps quoted
+spans because its strongest fixture lives inside quotes; the second keeps heredoc
+bodies under the operator's 2026-08-25 ruling, which a pinned suite case already
+reverted one narrowing of. **The sanctioned route in both cases is to write the
+file with the Write tool and pass it by path**, which is what the guards' own
+messages say.
+
+### Counts
+
+`test-hooks.sh` 1507 offline cases (CI last saw 1481 with 2 FAIL);
+`wl_git.py --selftest` 60 controls, was 54; `check-pr-task-trailers.ts
+--selftest` 18, was 10; `test-rebase-resolve.sh` 9/9 and
+`test-swallowed-failures.sh` 22/0 under the stripped git env. Every new control
+is paired, and four reproduce the actual defect rather than the fix.

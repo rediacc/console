@@ -158,9 +158,23 @@ supervision. It is the existing house flow; do not invent a new one.
 7. **Review, then threads.** The review fires on the ready-flip and on green pushes, capped at
    3 passes per PR. Resolve threads and reply substantively; note that a resolved thread and a
    replied comment are **different facts**, checked independently.
-8. **Merge with `/pr-merge`.** Submodule PRs squash-merge first, then bump console pointers to
-   the **squash commits** (verify `git diff --stat <old-tip> <new-main-sha>` is empty), then
-   `gh pr merge --squash --auto` on console. `--admin` is banned by hook.
+8. **Merge with `/pr-merge`.** Submodule PRs merge first, then bump console pointers to the
+   resulting `main` SHAs (verify `git diff --stat <old-tip> <new-main-sha>` is empty), then
+   merge console. `--admin` is banned by hook.
+
+   **The verb is `--rebase`, not `--squash`, and this is queryable rather than remembered.**
+   Asked live on 2026-08-27, all five repos (console, renet, account, elite, homebrew-tap)
+   report `allow_squash_merge=false`, `allow_rebase_merge=true`, `allow_merge_commit=false`,
+   `delete_branch_on_merge=true`:
+
+       gh pr merge --rebase --auto
+
+   which is the same string `block-admin-merge.sh` prints in its refusal. A guard whose
+   message prescribes a command the platform rejects burns its own authority, so the two are
+   kept in step deliberately. `delete_branch_on_merge=true` also means **you do not delete the
+   branch and cannot**: GitHub already did, which is why a merged PR's branch name is invisible
+   to `git branch -r` and why `MMDD-N` must be taken over consumed PR heads, not over the
+   remote branch list.
 9. **Watch the release land**, then re-sync `main`, remembering that CD pushes two commits back
    to `main` after every release.
 
