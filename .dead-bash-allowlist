@@ -58,3 +58,6 @@ manual:scripts/pre-commit-check.sh
 
 # BLOCKER: downstream re-vendor helper for the copyable .ci/breakpoint/ folder, run by the operator in a repo that vendored breakpoint when check-breakpoint-drift.sh reports the copy has fallen behind rediacc/console
 manual:.ci/breakpoint/scripts/sync-breakpoint.sh
+
+# BLOCKER: operator-invoked wrapper carrying its own "Usage: .ci/docker/run-in-web.sh <command...>" line, the entry point of the containerised web toolchain added alongside .ci/docker/{tts,render}. Its siblings are reachable statically -- run-in-tts.sh from .ci/docker/tts/Dockerfile, run-in-render.sh from this file -- so it is the TOP of that chain and nothing above it can name it. REDIACC_NO_DOCKER=1 makes it exec on the host, which is how it is driven locally.
+manual:.ci/docker/run-in-web.sh

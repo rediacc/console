@@ -40,7 +40,12 @@ type GateStatus = 'ok' | 'fail' | 'blocked' | 'skipped';
  * with a real verdict: 1 is a finding, 2 is usage, 124 is a timeout, 127 is
  * not-found (which is a genuine breakage, not a considered "cannot run").
  */
-export const CANNOT_RUN = 77;
+// NOT exported: nothing outside this module imports it, and knip's
+// --treat-config-hints-as-errors counts an unused export as a finding. The
+// shell gates that exit 77 (check-python-lint.sh, shfmt.sh) cannot import a
+// TypeScript constant anyway, so the value is duplicated there as a literal
+// with this comment as its reference point.
+const CANNOT_RUN = 77;
 
 export interface GateResult {
   id: string;
