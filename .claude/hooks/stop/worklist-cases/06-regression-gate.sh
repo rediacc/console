@@ -178,3 +178,86 @@ fi
 # Evidence in the line (a real sha), else I7 blocks before the reggate settle.
 echo "- [x] (deadbeef) fixed the parser crash on empty input, $(git -C "$BASE/proj" rev-parse --short HEAD)" >>"$WL"
 checkj "a NEWLY ticked [x] is a fix signal even with no commit" allow "settled as one-off"
+
+echo "== 91. CONTROL: a manifest-id citation that does not exist still hallucinates =="
+setup
+say "done for now"
+brief_now
+reg_repo
+printf '{"name":"p","version":"0.0.0","scripts":{"ci":"tsx scripts/ci-runner/run.ts"}}\n' >"$BASE/proj/package.json"
+mkdir -p "$BASE/proj/scripts/ci-runner"
+printf "export const GATES = [\n  { id: 'gate-test:real-thing', run: '.ci/scripts/test/gates/test-real-thing.sh', gate: true },\n];\n" >"$BASE/proj/scripts/ci-runner/manifest.ts"
+run >/dev/null # marker init
+fixcommit src.ts "fix: a real defect"
+shim_judge '{"applicable":true,"blind_spot":"uncovered path","existing_gate":"gate-test:i-dreamed-this","recurring":true,"gate_needed":false,"gate_proven":false,"instruction":"write a gate"}'
+OUT="$(runj)"
+if grep -qF '"decision": "block"' <<<"$OUT" && grep -qF "HALLUCINATED" <<<"$OUT"; then
+    echo "  PASS: a manifest id that is not actually registered still hallucinates"
+    PASS=$((PASS + 1))
+else
+    echo "  FAIL: a nonexistent manifest id was not caught: ${OUT:0:220}"
+    FAIL=$((FAIL + 1))
+fi
+
+echo "== 92. a fix COVERED by a real gate-test:* manifest id (no check:* key) settles =="
+setup
+say "done for now"
+brief_now
+reg_repo
+printf '{"name":"p","version":"0.0.0","scripts":{"ci":"tsx scripts/ci-runner/run.ts"}}\n' >"$BASE/proj/package.json"
+mkdir -p "$BASE/proj/scripts/ci-runner"
+printf "export const GATES = [\n  { id: 'gate-test:real-thing', run: '.ci/scripts/test/gates/test-real-thing.sh', gate: true },\n];\n" >"$BASE/proj/scripts/ci-runner/manifest.ts"
+run >/dev/null # marker init
+fixcommit src.ts "fix(cli): guard the empty ref"
+shim_judge '{"applicable":true,"blind_spot":"no check compared refs","existing_gate":"gate-test:real-thing","recurring":true,"gate_needed":false,"gate_proven":false,"instruction":"none"}'
+checkj "a REAL gate-test:* manifest id (npm run ci runs it via the runner, not a check:* key) settles as covered" allow "settled as covered"
+if grep -q '"verdict": "covered"' "$MARKER"; then
+    echo "  PASS: the manifest-id citation is recorded as covered, not hallucinated"
+    PASS=$((PASS + 1))
+else
+    echo "  FAIL: no covered verdict in the marker: $(cat "$MARKER")"
+    FAIL=$((FAIL + 1))
+fi
+
+echo "== 93. a fix COVERED by a FILE-PATH citation (with ::test_name) settles =="
+setup
+say "done for now"
+brief_now
+reg_repo
+printf '{"name":"p","version":"0.0.0","scripts":{"ci":"tsx scripts/ci-runner/run.ts"}}\n' >"$BASE/proj/package.json"
+mkdir -p "$BASE/proj/scripts/ci-runner" "$BASE/proj/.ci/scripts/test/gates"
+printf "export const GATES = [\n  { id: 'gate-test:real-thing', run: '.ci/scripts/test/gates/test-real-thing.sh', gate: true },\n];\n" >"$BASE/proj/scripts/ci-runner/manifest.ts"
+run >/dev/null # marker init
+fixcommit src.ts "fix(cli): guard the empty ref"
+# Citation is a PATH with a ::test_name qualifier, not the manifest id -- the
+# shape a human or the judge actually reaches for, and the shape 91/92 do not
+# cover: they only prove the id-keyed lookup.
+shim_judge '{"applicable":true,"blind_spot":"no check compared refs","existing_gate":".ci/scripts/test/gates/test-real-thing.sh::test_the_specific_case","recurring":true,"gate_needed":false,"gate_proven":false,"instruction":"none"}'
+checkj "a FILE-PATH::test_name citation resolves to the real gate and settles as covered" allow "settled as covered"
+if grep -q '"verdict": "covered"' "$MARKER"; then
+    echo "  PASS: the path-shaped citation is recorded as covered, not hallucinated"
+    PASS=$((PASS + 1))
+else
+    echo "  FAIL: no covered verdict in the marker: $(cat "$MARKER")"
+    FAIL=$((FAIL + 1))
+fi
+
+echo "== 94. CONTROL: a file path that is NOT a real gate's run: still hallucinates =="
+setup
+say "done for now"
+brief_now
+reg_repo
+printf '{"name":"p","version":"0.0.0","scripts":{"ci":"tsx scripts/ci-runner/run.ts"}}\n' >"$BASE/proj/package.json"
+mkdir -p "$BASE/proj/scripts/ci-runner"
+printf "export const GATES = [\n  { id: 'gate-test:real-thing', run: '.ci/scripts/test/gates/test-real-thing.sh', gate: true },\n];\n" >"$BASE/proj/scripts/ci-runner/manifest.ts"
+run >/dev/null
+fixcommit src.ts "fix: a real defect"
+shim_judge '{"applicable":true,"blind_spot":"uncovered path","existing_gate":".ci/scripts/test-i-dreamed-this.sh::test_x","recurring":true,"gate_needed":false,"gate_proven":false,"instruction":"write a gate"}'
+OUT="$(runj)"
+if grep -qF '"decision": "block"' <<<"$OUT" && grep -qF "HALLUCINATED" <<<"$OUT"; then
+    echo "  PASS: a path that matches no gate's run: still hallucinates"
+    PASS=$((PASS + 1))
+else
+    echo "  FAIL: a nonexistent path citation was not caught: ${OUT:0:220}"
+    FAIL=$((FAIL + 1))
+fi

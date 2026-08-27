@@ -292,6 +292,48 @@ def _manifest_gate_ids(root):
     return ids
 
 
+def _manifest_gate_run_paths(root):
+    """`run:` script paths for every `gate: true` manifest entry, as a set.
+
+    A citation of real, ci-runner-scheduled coverage is far more often a FILE
+    PATH ("test-ci-trace-branch.sh" or its full repo-relative path, optionally
+    with "::test_name" naming the specific case inside it) than the manifest's
+    own `id:` string -- both a human and a judge model reach for the path they
+    can see in the tree, not an id that exists only in manifest.ts. Checking
+    ids alone (the first fix here) left that whole citation shape unrecognized
+    and still reporting real coverage as hallucinated. Same regex/parsing
+    approach as _manifest_gate_ids, deliberately: one manifest scan, two views.
+    """
+    paths = set()
+    if root is None:
+        return paths
+    mf = os.path.join(str(root), "scripts", "ci-runner", "manifest.ts")
+    try:
+        with open(mf, encoding="utf-8") as fh:
+            src = fh.read()
+    except OSError:
+        return paths
+    for m in re.finditer(r"\{(?:\s|//[^\n]*\n)*id:\s*'([^']+)'(.*?)\}", src, re.DOTALL):
+        if "gate: true" not in m.group(2):
+            continue
+        rm = re.search(r"run:\s*'([^']+)'", m.group(2))
+        if rm:
+            paths.add(rm.group(1))
+    return paths
+
+
+def _citation_matches_gate(eg, root):
+    """True when `eg` names real, `npm run ci`-scheduled coverage: either a
+    manifest `id:` (checked by the caller against `_manifest_gate_ids`
+    directly) or a `run:` file path, exact or with a trailing "::name"/"#name"
+    case qualifier and/or a leading "./" stripped."""
+    base = re.split(r"::|#", eg, maxsplit=1)[0].strip()
+    while base.startswith("./"):
+        base = base[2:]
+    paths = _manifest_gate_run_paths(root)
+    return base in paths or any(p.endswith("/" + base) for p in paths)
+
+
 def gate_reachable(scripts, target, root=None):
     """Is `target` TRANSITIVELY reachable from the `ci` script via `npm run`
     references? Transitive, because ci reaches most gates through batch keys.
@@ -553,6 +595,25 @@ def apply_regression_verdict(rg, scripts, root, state, sig, lines, me8):
     hall, eg = "", str(rg["existing_gate"] or "").strip()
     if eg:
         if eg in keys:
+            return "settle", "covered", eg
+        # A `gate-test:*` (or any other) manifest id with `gate: true` is run
+        # DIRECTLY by `npm run ci` -- scripts/ci-runner/run.ts schedules from
+        # manifest.ts, not from package.json `check:*` keys. gate_reachable()
+        # already trusts this same set for the WRITE path; the REBUT path was
+        # checking package.json only, so a correct citation of a real,
+        # ci-runner-scheduled suite gate (e.g. gate-test:ci-trace-branch) was
+        # unconditionally reported as hallucinated. Verified live 2026-08-27:
+        # `npx tsx scripts/ci-runner/run.ts --only gate-test:ci-trace-branch`
+        # actually executes and passes it.
+        if eg in _manifest_gate_ids(root):
+            return "settle", "covered", eg
+        # A citation is at least as often a FILE PATH (optionally with
+        # "::test_name") as it is a manifest id -- both a human rebuttal and
+        # the judge itself reach for the path visible in the tree. Observed
+        # live 2026-08-27: three consecutive REBUTs, each naming a real,
+        # already-passing case in test-ci-trace-branch.sh by path/function,
+        # kept reporting hallucinated because only the bare id was checked.
+        if _citation_matches_gate(eg, root):
             return "settle", "covered", eg
         hall = eg
     if rg["recurring"] is False and not hall:
