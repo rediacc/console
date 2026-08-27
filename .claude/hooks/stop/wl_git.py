@@ -1408,7 +1408,7 @@ def selftest():
     with open(__file__, encoding="utf-8") as _fh:
         _src = _fh.read()
     _dispatched = set(re.findall(r'sub == "([a-z-]+)"', _src))
-    _documented = set(re.findall(r"^  ([a-z-]+)[ <]", USAGE, re.M))
+    _documented = set(re.findall(r"^  ([a-z-]+)[ <]", USAGE, re.MULTILINE))
     check(
         "every dispatched --git verb is in USAGE",
         bool(_dispatched) and _dispatched <= _documented,

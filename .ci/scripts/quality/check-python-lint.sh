@@ -143,9 +143,18 @@ resolve_ruff() {
 if ! RUFF="$(resolve_ruff)"; then
     echo "${RED}error${NC}: ruff is not available and neither is uvx." >&2
     echo "  install one of:" >&2
+    # THE STANDALONE INSTALLER IS FIRST BECAUSE IT IS THE ONE THAT WORKS HERE.
+    # Measured 2026-08-27 in the devbox: `python3 -m pip` reports "No module
+    # named pip" and neither uv nor uvx nor pipx is on PATH, so BOTH of the
+    # options this message used to offer are dead ends on the machine most
+    # likely to be reading it. A session that trusts the message concludes the
+    # gate cannot be run locally and ships Python to CI unlinted -- which is
+    # exactly what happened, at one ~10-minute CI round for a one-word finding.
+    echo "    curl -fsSL https://astral.sh/ruff/${RUFF_VERSION}/install.sh | sh   # no pip needed" >&2
     echo "    pip install ruff==${RUFF_VERSION}" >&2
     echo "    uv tool install ruff@${RUFF_VERSION}" >&2
-    echo "  or point RUFF_BIN at an existing binary." >&2
+    echo "  or point RUFF_BIN at an existing binary:" >&2
+    echo "    RUFF_BIN=/path/to/ruff npm run check:ci-python-lint" >&2
     echo "  NOT skipping: a linter that cannot run is a gate that cannot fail." >&2
     exit 1
 fi
