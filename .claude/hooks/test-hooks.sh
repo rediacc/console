@@ -584,6 +584,20 @@ prose
 MD
 git filter-repo --force --message-callback /tmp/strip.py" '')" \
     "trapguard: a real rewrite AFTER a heredoc still fires" "history-rewrite-no-baseline"
+# THE JUST-IN-TIME HINT. The operator asked, 2026-08-26: "you had known how and
+# when to use verify-rebase because you built it -- is there any hint?" There was
+# none: `worklist.py --git` was referenced by ZERO commands, agents and docs, so
+# the capability existed and the affordance did not. trapguard is the right
+# surface because it never blocks and already exists to say "you just did X".
+#
+# BOTH SIGNALS REQUIRED -- a rebase COMMAND and real rebase OUTPUT -- so a no-op
+# rebase stays quiet and a mention cannot trigger it.
+check_inject fires "$(inject_json 'git rebase origin/0826-2' 'Rebasing (1/18)Successfully rebased and updated refs/heads/0826-3.')" \
+    "trapguard: a completed rebase points at verify-rebase" "rebase-unverified"
+check_inject silent "$(inject_json 'git rebase origin/main' 'Current branch 0826-3 is up to date.')" \
+    "trapguard CONTROL: a no-op rebase has nothing to verify"
+check_inject silent "$(inject_json 'echo "run git rebase later"' 'Successfully rebased and updated refs/heads/x')" \
+    "trapguard CONTROL: a rebase named in a string is not a rebase"
 check_inject silent "$(inject_json 'git filter-repo --analyze' 'Processed 6177 commits')" \
     "trapguard CONTROL: --analyze is a READ of history and is never warned about"
 
@@ -802,6 +816,17 @@ check 0 pre-bash/block-self-matching-pgrep.sh \
 check 0 pre-bash/block-self-matching-pgrep.sh \
     "$(bash_json 'until [ -s out.txt ]; do sleep 5; done')" \
     "self-pgrep CONTROL: an artifact waiter names no process at all"
+# THE SIXTH MENTION-AS-EXECUTION FALSE POSITIVE OF THIS SESSION, and it was in
+# the guard written to catch the fifth. The loop keyword and the pgrep were
+# tested INDEPENDENTLY, so a one-shot `pgrep -cf` sharing a line with the
+# ordinary English word "while" -- in a worklist message, not a loop -- read as a
+# wedged waiter. The pgrep must sit in the loop's CONDITION.
+check 0 pre-bash/block-self-matching-pgrep.sh \
+    "$(bash_json 'echo "alive: $(pgrep -cf x.sh)"; worklist.py --add me "blocked while the suite runs"')" \
+    "self-pgrep CONTROL: a one-shot count beside the WORD while is not a loop"
+check 2 pre-bash/block-self-matching-pgrep.sh \
+    "$(bash_json 'while pgrep -f "my-job.sh" >/dev/null; do sleep 2; done')" \
+    "self-pgrep: the while form fires like the until form"
 # Branch names are MMDD-N with no suffix. The FIRE cases are the two shapes
 # that actually happened: a `-prerebase` safety copy (2026-08-26, in the console
 # AND a submodule) and a slashed feature name. The slashed one is here because

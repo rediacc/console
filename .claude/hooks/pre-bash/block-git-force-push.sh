@@ -29,7 +29,16 @@
 # directly, with the ! prefix, which is the intended path.
 CMD=$(jq -r '.tool_input.command' 2>/dev/null)
 if echo "$CMD" | grep -qE 'git push[^|;&]*(--force-with-lease|--force([[:space:]]|=|$)|[[:space:]]-f([[:space:]]|$)|--mirror([[:space:]]|=|$)|[[:space:]]\+[^[:space:]])'; then
-    echo "BLOCKED: Do not force-push (--force / -f / --force-with-lease / --mirror / +refspec). Force-push overwrites remote history and erases the trace of individual PR changes, which is exactly what broke traceability before. Use a plain git push so each CI fix lands as its own reviewable commit. Rewriting already-pushed history is the user's decision, not an agent's: the operator runs it directly with the ! prefix." >&2
+    echo "BLOCKED: Do not force-push (--force / -f / --force-with-lease / --mirror / +refspec). Force-push overwrites remote history and erases the trace of individual PR changes, which is exactly what broke traceability before. Use a plain git push so each CI fix lands as its own reviewable commit. Rewriting already-pushed history is the user's decision, not an agent's: the operator runs it directly with the ! prefix.
+
+THE ONE SANCTIONED EXCEPTION, named here because this guard is the last thing you read before changing course and it used to send you away empty-handed. After a REBASE the branch and its submodules have to be republished together, and there is a mediated verb for exactly that:
+
+    .claude/hooks/stop/worklist.py --git force-push <branch>            # prints the plan
+    .claude/hooks/stop/worklist.py --git force-push <branch> --execute  # performs it
+
+It refuses main, refuses every forcing flag except the leased one, pushes SUBMODULES BEFORE THE CONSOLE so a console head can never name an unpublished submodule commit, prints the pre-push remote tips as an UNDO block, and halts on the first failure. Dry run by default: run it without --execute and read the plan first.
+
+This guard staying strict is the whole security story, so do not add an allow-list to it. Use the verb." >&2
     exit 2
 fi
 exit 0

@@ -453,11 +453,69 @@ def rule_history_rewrite_controls(cmd, _out, root, _resp):
     return "\n".join(notes) or None
 
 
+REBASE_DONE = re.compile(
+    r"Successfully rebased and updated|Applying:|^Rebasing \(\d+/\d+\)", re.M
+)
+# Command position, like every other matcher in this family. The rule already
+# needs REAL rebase output to fire, so a mention alone cannot trigger it, but
+# anchoring costs nothing and this session fixed five mention-as-execution
+# false positives -- the cheapest time to be consistent is now.
+REBASE_CMD = re.compile(
+    r"(?:^|[;&|(]|\$\(|`)\s*git\b(?:\s+-[A-Za-z-]+\s+\S+)*\s+rebase\b", re.M
+)
+
+
+def rule_rebase_unverified(cmd, out, root, _resp):
+    """A rebase that SUCCEEDED can still be wrong, and nothing says so at the time.
+
+    THE OPERATOR'S OBSERVATION, 2026-08-26: "you had known how and when to use
+    verify-rebase because you built it -- is there any hint?" There was none.
+    `worklist.py --git` is referenced by ZERO commands, agents and docs
+    (measured), so the capability existed and the affordance did not. A tool
+    nobody can be pointed at is a tool nobody uses.
+
+    A hint at the MOMENT OF NEED beats a line in a document a session may never
+    open, which is this repo's standing lesson about hooks versus prose. So this
+    fires once, right after a rebase reports success, and says the one thing that
+    is easy to get wrong afterwards.
+
+    WHY A COUNT IS THE WRONG CHECK, and why the hint is worth printing: all five
+    repos are rebase-merge only, so merging a parent PR REWRITES its SHAs. When a
+    stacked branch then re-rebases, git correctly drops the commits whose patches
+    are already upstream and `rev-list --count` legitimately FALLS. Eyeballing
+    that against a `--skip` that ate a commit is exactly the judgement the check
+    should be making for you.
+
+    NOT A REFUSAL. trapguard never blocks; this is a note on a stop that already
+    happened. Silent when the command was not a rebase, or when the output shows
+    no rebase actually ran (a no-op `git rebase` on an up-to-date branch prints
+    nothing to match).
+    """
+    if not REBASE_CMD.search(cmd):
+        return None
+    if not REBASE_DONE.search(out or ""):
+        return None
+    return (
+        "trapguard[rebase-unverified]: the rebase reported success, which is not the "
+        "same as correct. A gitlink resolved with --ours/--theirs, or a commit lost to "
+        "`--skip`, both leave a CLEAN tree and a green rebase. Two checks, neither of "
+        "which a count can do:\n"
+        "    .claude/hooks/stop/worklist.py --git verify-rebase <snapshot-file> [base]\n"
+        "      carried / absorbed-as-patch-equivalent / MISSING, per repo. Only MISSING "
+        "is a defect: a count legitimately FALLS when a stacked branch re-rebases after "
+        "its parent merged, because rebase-merge rewrote those SHAs.\n"
+        "    git -C <submodule> merge-base --is-ancestor origin/main HEAD\n"
+        "      the only check that catches an --ours/--theirs mistake on a gitlink.\n"
+        "  Take the snapshot BEFORE the next one: `--git snapshot`."
+    )
+
+
 RULES = (
     rule_cancelled_run_not_passed,
     rule_phantom_deletion_diff,
     rule_interrupted_cleanup_skipped,
     rule_history_rewrite_controls,
+    rule_rebase_unverified,
 )
 
 

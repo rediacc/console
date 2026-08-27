@@ -37,8 +37,17 @@ CMD=$(jq -r '.tool_input.command' 2>/dev/null)
 
 # A loop, and a pgrep that matches on the full command line (-f, in any flag
 # cluster). Either alone is fine.
-printf '%s' "$CMD" | grep -qE '(^|[;&|(]|[[:space:]])(until|while)[[:space:]]' || exit 0
-printf '%s' "$CMD" | grep -qE 'pgrep[[:space:]]+-[a-zA-Z]*f' || exit 0
+# THE pgrep MUST BE IN THE LOOP'S CONDITION, not merely somewhere in the same
+# command as the word "while". Testing the two independently made this refuse a
+# one-shot `pgrep -cf` diagnostic that happened to sit in the same line as a
+# worklist message containing the ordinary English word "while" -- a line that
+# loops over nothing. That is the sixth mention-as-execution false positive of
+# this session, this time in the guard written to stop the previous one.
+#
+# A loop condition runs from the keyword to the `; do` that closes it, so that
+# is the span to search. `[^;]*` keeps it to a single condition rather than
+# letting a later, unrelated pgrep pair up with an earlier loop.
+printf '%s' "$CMD" | grep -qE '(^|[;&|(]|[[:space:]])(until|while)[^;]*pgrep[[:space:]]+-[a-zA-Z]*f' || exit 0
 
 # The pattern is the first argument after the flag cluster: quoted either way,
 # or bare up to the next whitespace.
