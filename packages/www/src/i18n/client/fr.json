@@ -69,7 +69,8 @@
     "sending": "Envoi en cours...",
     "success": "Message envoyé ! Nous vous répondrons sous 48 heures.",
     "error": "Une erreur est survenue. Veuillez réessayer.",
-    "close": "Fermer"
+    "close": "Fermer",
+    "errorRequiredFields": "Veuillez indiquer votre nom, votre e-mail et votre message."
   },
   "documentation": {
     "categories": {
@@ -188,7 +189,8 @@
       "close": "Fermer",
       "note": "Nous utilisons votre email pour vous envoyer les mises à jour produit. Vous pouvez vous désabonner à tout moment."
     },
-    "privacyNote": "Nous respectons votre vie privée. Vous pouvez vous désabonner à tout moment."
+    "privacyNote": "Nous respectons votre vie privée. Vous pouvez vous désabonner à tout moment.",
+    "errorRequiredEmail": "Veuillez saisir votre adresse e-mail."
   },
   "pages": {
     "solutionPages": {
@@ -210,7 +212,8 @@
         "errorGeneric": "Une erreur s'est produite. Veuillez réessayer ou contactez-nous à support@rediacc.com.",
         "captchaRequired": "Veuillez compléter la vérification captcha.",
         "disclaimer": "Un seul e-mail. Aucune liste marketing. Désabonnement en un clic.",
-        "closeLabel": "Fermer"
+        "closeLabel": "Fermer",
+        "errorRequiredEmail": "Veuillez saisir votre adresse e-mail."
       },
       "environmentCloning": {
         "hero": {

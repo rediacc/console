@@ -69,7 +69,8 @@
     "sending": "Wird gesendet...",
     "success": "Nachricht gesendet! Wir melden uns innerhalb von 48 Stunden.",
     "error": "Etwas ist schiefgelaufen. Bitte versuchen Sie es erneut.",
-    "close": "Schließen"
+    "close": "Schließen",
+    "errorRequiredFields": "Bitte geben Sie Ihren Namen, Ihre E-Mail-Adresse und Ihre Nachricht ein."
   },
   "documentation": {
     "categories": {
@@ -188,7 +189,8 @@
       "close": "Popup schließen",
       "note": "Wir verwenden Ihre E-Mail-Adresse für Produktupdates. Sie können sich jederzeit abmelden."
     },
-    "privacyNote": "Wir respektieren Ihre Privatsphäre. Sie können sich jederzeit abmelden."
+    "privacyNote": "Wir respektieren Ihre Privatsphäre. Sie können sich jederzeit abmelden.",
+    "errorRequiredEmail": "Bitte geben Sie Ihre E-Mail-Adresse ein."
   },
   "pages": {
     "solutionPages": {
@@ -210,7 +212,8 @@
         "errorGeneric": "Ein Fehler ist aufgetreten. Bitte versuchen Sie es erneut oder wenden Sie sich an support@rediacc.com.",
         "captchaRequired": "Bitte schließen Sie die Captcha-Verifizierung ab.",
         "disclaimer": "Eine E-Mail. Kein Verteiler. Abmeldung mit einem Klick.",
-        "closeLabel": "Schließen"
+        "closeLabel": "Schließen",
+        "errorRequiredEmail": "Bitte geben Sie Ihre E-Mail-Adresse ein."
       },
       "environmentCloning": {
         "hero": {

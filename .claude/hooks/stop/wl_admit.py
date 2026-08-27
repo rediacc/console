@@ -373,7 +373,7 @@ def process_admission(ad, text, worklist, session_id, me8, hits, sig, settled, a
 #: the prose in this very file.
 ASK_ANNOUNCEMENT_RE = re.compile(
     r"\b(?:one|two|three|four|five|six|a|\d+)\s+questions?\s+for\s+you\b"
-    r"|\bquestions?\s+for\s+you\s*[:.—-]"
+    r"|\bquestions?\s+for\s+you\s*[:.\u2014-]"
     r"|\bdecisions?\s+(?:that\s+are\s+)?(?:genuinely\s+)?yours\b"
     r"|\blet\s+me\s+know\s+(?:if|whether|which|what|how|when|before)\b"
     r"|\byour\s+call\b"

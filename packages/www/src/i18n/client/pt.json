@@ -69,7 +69,8 @@
     "sending": "A enviar...",
     "success": "Mensagem enviada! Responderemos em até 48 horas.",
     "error": "Algo correu mal. Por favor, tente novamente.",
-    "close": "Fechar"
+    "close": "Fechar",
+    "errorRequiredFields": "Por favor, preencha o seu nome, e-mail e mensagem."
   },
   "documentation": {
     "categories": {
@@ -188,7 +189,8 @@
       "close": "Fechar",
       "note": "Usamos seu e-mail para enviar notícias do produto. Pode cancelar a inscrição a qualquer hora."
     },
-    "privacyNote": "Respeitamos sua privacidade. Cancele a inscrição a qualquer hora."
+    "privacyNote": "Respeitamos sua privacidade. Cancele a inscrição a qualquer hora.",
+    "errorRequiredEmail": "Por favor, introduza o seu e-mail."
   },
   "pages": {
     "solutionPages": {
@@ -210,7 +212,8 @@
         "errorGeneric": "Ocorreu um erro. Por favor tente novamente ou contacte-nos em support@rediacc.com.",
         "captchaRequired": "Por favor complete a verificação captcha.",
         "disclaimer": "Um email. Sem listas de marketing. Cancelar subscrição com um clique.",
-        "closeLabel": "Fechar"
+        "closeLabel": "Fechar",
+        "errorRequiredEmail": "Por favor, introduza o seu e-mail."
       },
       "environmentCloning": {
         "hero": {

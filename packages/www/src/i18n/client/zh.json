@@ -69,7 +69,8 @@
     "sending": "发送中...",
     "success": "消息已发送！我们将在48小时内回复您。",
     "error": "出现错误，请重试。",
-    "close": "关闭"
+    "close": "关闭",
+    "errorRequiredFields": "请填写您的姓名、电子邮箱和留言。"
   },
   "documentation": {
     "categories": {
@@ -188,7 +189,8 @@
       "close": "关闭",
       "note": "我们用你的邮箱发送产品更新，随时可以取消订阅。"
     },
-    "privacyNote": "放心，你可以随时取消订阅。"
+    "privacyNote": "放心，你可以随时取消订阅。",
+    "errorRequiredEmail": "请填写您的电子邮箱。"
   },
   "pages": {
     "solutionPages": {
@@ -210,7 +212,8 @@
         "errorGeneric": "出现错误，请重试或联系 support@rediacc.com。",
         "captchaRequired": "请完成验证码验证。",
         "disclaimer": "仅一封邮件，不加入营销列表，一键退订。",
-        "closeLabel": "关闭"
+        "closeLabel": "关闭",
+        "errorRequiredEmail": "请填写您的电子邮箱。"
       },
       "environmentCloning": {
         "hero": {

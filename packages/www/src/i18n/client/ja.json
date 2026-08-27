@@ -69,7 +69,8 @@
     "sending": "送信中...",
     "success": "メッセージが送信されました！48時間以内にご返信いたします。",
     "error": "エラーが発生しました。もう一度お試しください。",
-    "close": "閉じる"
+    "close": "閉じる",
+    "errorRequiredFields": "お名前、メールアドレス、メッセージをご入力ください。"
   },
   "documentation": {
     "categories": {
@@ -188,7 +189,8 @@
       "close": "ポップアップを閉じる",
       "note": "メールアドレスは製品の最新情報をお送りするのに使わせていただきます。いつでも配信停止できます。"
     },
-    "privacyNote": "プライバシーを大切にしています。いつでも配信停止できます。"
+    "privacyNote": "プライバシーを大切にしています。いつでも配信停止できます。",
+    "errorRequiredEmail": "メールアドレスをご入力ください。"
   },
   "pages": {
     "solutionPages": {
@@ -210,7 +212,8 @@
         "errorGeneric": "エラーが発生しました。もう一度お試しいただくか、support@rediacc.com までお問い合わせください。",
         "captchaRequired": "キャプチャ認証を完了してください。",
         "disclaimer": "送信は1通のみ。マーケティングリストへの登録はありません。ワンクリックで配信停止できます。",
-        "closeLabel": "閉じる"
+        "closeLabel": "閉じる",
+        "errorRequiredEmail": "メールアドレスをご入力ください。"
       },
       "environmentCloning": {
         "hero": {

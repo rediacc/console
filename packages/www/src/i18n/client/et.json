@@ -69,7 +69,8 @@
     "sending": "Saadan...",
     "success": "Sõnum saadetud! Vastame sulle 48 tunni jooksul.",
     "error": "Midagi läks valesti. Proovi uuesti.",
-    "close": "Sulge"
+    "close": "Sulge",
+    "errorRequiredFields": "Palun sisestage oma nimi, e-posti aadress ja sõnum."
   },
   "documentation": {
     "categories": {
@@ -188,7 +189,8 @@
       "close": "Sulge hüpikaken",
       "note": "Kasutame sinu e-posti tooteuuenduste saatmiseks. Saad igal ajal tellimusest loobuda."
     },
-    "privacyNote": "Austame sinu privaatsust. Loobu tellimusest igal ajal."
+    "privacyNote": "Austame sinu privaatsust. Loobu tellimusest igal ajal.",
+    "errorRequiredEmail": "Palun sisestage oma e-posti aadress."
   },
   "pages": {
     "solutionPages": {
@@ -210,7 +212,8 @@
         "errorGeneric": "Midagi läks valesti. Proovi uuesti või võta ühendust aadressil support@rediacc.com.",
         "captchaRequired": "Palun läbi captcha kinnitamine.",
         "disclaimer": "Üks e-kiri. Turunduslistis ei osale. Tühista tellimus ühe klikiga.",
-        "closeLabel": "Sulge"
+        "closeLabel": "Sulge",
+        "errorRequiredEmail": "Palun sisestage oma e-posti aadress."
       },
       "environmentCloning": {
         "hero": {

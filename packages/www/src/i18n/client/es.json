@@ -69,7 +69,8 @@
     "sending": "Enviando...",
     "success": "¡Mensaje enviado! Le responderemos en un plazo de 48 horas.",
     "error": "Algo salió mal. Por favor, inténtelo de nuevo.",
-    "close": "Cerrar"
+    "close": "Cerrar",
+    "errorRequiredFields": "Por favor, indique su nombre, correo electrónico y mensaje."
   },
   "documentation": {
     "categories": {
@@ -188,7 +189,8 @@
       "close": "Cerrar ventana",
       "note": "Usamos tu correo para enviar actualizaciones del producto. Puedes darte de baja en cualquier momento."
     },
-    "privacyNote": "Respetamos tu privacidad. Puedes darte de baja en cualquier momento."
+    "privacyNote": "Respetamos tu privacidad. Puedes darte de baja en cualquier momento.",
+    "errorRequiredEmail": "Por favor, introduzca su correo electrónico."
   },
   "pages": {
     "solutionPages": {
@@ -210,7 +212,8 @@
         "errorGeneric": "Algo ha salido mal. Por favor, inténtelo de nuevo o contacte con nosotros en support@rediacc.com.",
         "captchaRequired": "Por favor, complete la verificación del captcha.",
         "disclaimer": "Un único correo. Sin listas de marketing. Cancele la suscripción con un clic.",
-        "closeLabel": "Cerrar"
+        "closeLabel": "Cerrar",
+        "errorRequiredEmail": "Por favor, introduzca su correo electrónico."
       },
       "environmentCloning": {
         "hero": {
