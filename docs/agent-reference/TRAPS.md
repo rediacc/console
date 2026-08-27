@@ -1099,8 +1099,7 @@ only parses a markdown file and never calls git. Ask what the case depends on.
 
 **A gate that greps for a dangerous construct will eventually match text that
 merely LOOKS like that construct** — and it will name a file that is doing
-nothing wrong. Two instances in one afternoon, 2026-08-26, both on this repo's
-own new gates:
+nothing wrong. Three instances now, all on this repo's own gates:
 
 - **`check-toolchain-pins.sh` A6** ("does this gate invoke a pinned tool?")
   flagged `check-shell-size.sh`. Its only matches were two `echo` lines
@@ -1111,26 +1110,45 @@ own new gates:
   were `s/^/.../` — one indenting a message for display, one generating a fixture
   from `seq`. Neither mutates a copy of the subject, so neither has a plant that
   could fail to land.
+- **`check-swallowed-failures.sh`** (2026-08-27), fired on
+  `check-label-inventory.sh`'s label-drift capture — a capture that DOES check
+  its own exit status (`|| drift_rc=$?` then `if [ "$drift_rc" -ne 0 ]`), the
+  exact remedy the gate's own message recommends. The scanner folds a whole
+  `VAR="$( <multi-line command> )"` into ONE logical line before matching
+  `swallow_re` against it, so a COMMENT inside that same capture — explaining a
+  *prior, already-fixed* incident by quoting its literal shape (`` `|| true` ``,
+  `` `|| echo ""` ``) — made the current, correct capture match the pattern for
+  the defect it was explaining. The fix text became indistinguishable from the
+  bug it described.
 
 A6 already stripped comments for exactly this reason ("judge the code, not the
 words describing it"). **The lesson is that comments are not the only place prose
-hides**: an echoed string is prose, a formatting pipe is not a mutation, and a
-generated fixture is not a copy of the source.
+hides**: an echoed string is prose, a formatting pipe is not a mutation, a
+generated fixture is not a copy of the source, and a comment inside a folded
+multi-line capture is still inside the text the scanner matches against.
 
 **Why it fools you rather than blocking you:** the gate is red, the finding names
 a real file and a real line, and the fastest way to green is to do what it says.
-Both of these could have been "satisfied" — by exempting the file, or by
-cargo-culting a proof-of-plant assertion into a display pipe. Either would have
-gone green while making the gate say something false, and left the detector wrong
-for the next author.
+All three could have been "satisfied" — by exempting the file, by cargo-culting a
+proof-of-plant assertion into a display pipe, or by adding a waiver comment
+excusing a capture that was never broken. Any of those would have gone green
+while making the gate say something false, and left the detector wrong for the
+next author.
 
 **The check to run:** before satisfying a detector, ask whether the matched line
 actually DOES the dangerous thing, or merely contains its shape. If a gate you
 write greps for a construct, test it against its own documentation and its own
-output strings.
+output strings. When writing a comment that explains a bug BY QUOTING its exact
+syntax (`|| true`, `sys.exit(0)`, etc.), inside or near code a swallowed-failure
+or a similar shape-matching scanner also reads, paraphrase the shape instead of
+quoting it verbatim — "a no-op fallback", not `` `|| true` ``.
 
-Operator ruling 2026-08-26: two instances is a pattern, not yet a class worth its
-own meta-gate. Revisit if a third appears.
+Operator ruling 2026-08-26 said revisit a meta-gate once a third instance
+appeared; it has. Still not written here — each instance so far needed a
+different, specific fix (strip comments, require a real mutation, paraphrase
+instead of quote), so a single meta-gate would need to generalize across three
+unrelated scanners rather than add one shared rule. Worth a session picking this
+up deliberately rather than folding it into an unrelated fix.
 
 ## A gate green in CI can be red on every developer machine, because glibc collates by locale and codepoint order does not
 
