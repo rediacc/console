@@ -9,10 +9,12 @@
  *
  * WHY CI AND NOT JUST THE HOOK. The local guard
  * (.claude/hooks/pre-bash/block-untagged-commit.sh) sees only the raw Bash
- * string, so `git commit -F file` and a command-substituted message are opaque
- * to it, and it deliberately allows what it cannot read rather than refusing a
- * commit it cannot judge. This is where the rule is actually enforced, against
- * the commits that really landed.
+ * string. As of 2026-08-27 it reads more of it than it used to -- a heredoc body
+ * is in the command, and a `-F <file>` is on disk -- but a piped stdin and a
+ * command-substituted message remain genuinely opaque, and it allows those
+ * rather than refusing a commit it cannot judge. It also never sees a commit
+ * made outside the model's Bash tool. This is where the rule is actually
+ * enforced, against the commits that really landed.
  *
  * IDS ARE CHECKED AGAINST THE PUBLISHED SNAPSHOT, not merely for shape. A typo'd
  * id is worse than a missing one: it looks tagged, passes a shape check, and
@@ -26,6 +28,7 @@
 
 import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
@@ -135,6 +138,66 @@ const selftest = (): number => {
     'CONTROL: a ref that cannot exist does NOT resolve, so the guard can fire',
     !canResolve('origin/zzz-no-such-ref-ever')
   );
+
+  // THE SYNTHETIC MERGE COMMIT, and why `--no-merges` did not save us from it.
+  // On PR #579 this gate reported GitHub's `refs/pull/N/merge` commit as an
+  // untagged commit. The reflex reading is "--no-merges is missing"; it was
+  // there. `--no-merges` counts PARENTS, and in a depth-1 checkout the merge
+  // commit's parents are grafted away, so git sees a parentless root.
+  //
+  // Both directions against real git, in a scratch repo: a two-parent commit IS
+  // excluded, and a parentless commit whose subject reads exactly like a merge
+  // is NOT. Without the second control the fix below (name the tip explicitly)
+  // looks like belt-and-braces instead of the actual repair.
+  const scratch = fs.mkdtempSync(path.join(os.tmpdir(), 'prtask-'));
+  const g = (...args: string[]): string =>
+    execFileSync('git', args, { cwd: scratch, encoding: 'utf8' }).trim();
+  try {
+    g('init', '-q', '-b', 'main');
+    g('config', 'user.email', 'g@example.invalid');
+    g('config', 'user.name', 'gate');
+    const empty = execFileSync('git', ['hash-object', '-t', 'tree', '-w', '--stdin'], {
+      cwd: scratch,
+      encoding: 'utf8',
+      input: '',
+    }).trim();
+    const a = g('commit-tree', empty, '-m', 'a');
+    const b = g('commit-tree', empty, '-p', a, '-m', 'b');
+    const realMerge = g('commit-tree', empty, '-p', a, '-p', b, '-m', 'Merge b into a');
+    const graftedMerge = g('commit-tree', empty, '-m', `Merge ${b} into ${a}`);
+    const listed = (tip: string): string =>
+      execFileSync('git', ['log', tip, '--no-merges', '--format=%s'], {
+        cwd: scratch,
+        encoding: 'utf8',
+      });
+    check(
+      'a REAL merge commit is excluded by --no-merges',
+      !listed(realMerge).split('\n').includes('Merge b into a')
+    );
+    check(
+      'CONTROL: a PARENTLESS commit that reads as a merge is NOT excluded -- the #579 defect',
+      listed(graftedMerge).startsWith('Merge ')
+    );
+    // The merge-base precondition, which stops a too-shallow range from
+    // inventing findings instead of naming the missing depth.
+    const orphan = g('commit-tree', empty, '-m', 'orphan');
+    const hasBase = (x: string, y: string): boolean => {
+      try {
+        execFileSync('git', ['merge-base', x, y], { cwd: scratch, stdio: 'ignore' });
+        return true;
+      } catch {
+        return false;
+      }
+    };
+    check('two commits on one history share a merge base', hasBase(a, b));
+    check(
+      'CONTROL: two unrelated roots do NOT, so the precondition can fire',
+      !hasBase(b, orphan)
+    );
+  } finally {
+    fs.rmSync(scratch, { recursive: true, force: true });
+  }
+
   return fail === 0 ? 0 : 1;
 };
 
@@ -213,15 +276,73 @@ const main = (): number => {
     }
   }
 
+  // AND SO MUST THE TIP, which is the failure that actually landed. Measured on
+  // PR #579, run 33077…: this gate reported `1 of 1 commit(s) are not
+  // attributable`, naming `55b982fc0  Merge f05ea28fc… into d7d9fa46…`. That is
+  // GitHub's SYNTHETIC merge commit -- `refs/pull/N/merge`, the thing
+  // actions/checkout puts at HEAD on a pull_request event -- and it belongs to
+  // no epic because no human wrote it.
+  //
+  // `--no-merges` was already on the log call and did not exclude it. It could
+  // not: the quality-code lane checks out at the default fetch-depth 1, so the
+  // merge commit's parents are GRAFTED AWAY and git sees a parentless root, not
+  // a merge. The same shallowness is why the range held one commit instead of
+  // the branch's thirty -- fetching the base made `origin/main` resolvable
+  // without making HEAD's ancestry present.
+  //
+  // Fixing it in the workflow (fetch-depth: 0) would work and is the wrong
+  // place: it puts this gate's precondition in a shared lane where the next
+  // person tuning checkout cost silently removes it. So the gate names its own
+  // tip -- the PR's real head branch, fetched if absent -- exactly as it
+  // already does for the base.
+  let tip = 'HEAD';
+  const headRef = process.env.PR_HEAD_REF || process.env.GITHUB_HEAD_REF || '';
+  if (headRef) {
+    const remoteTip = `origin/${headRef}`;
+    if (!resolves(remoteTip)) {
+      try {
+        execFileSync('git', ['fetch', '--no-tags', '--depth=200', 'origin', headRef], {
+          cwd: REPO,
+          stdio: 'ignore',
+        });
+      } catch {
+        // Reported immediately below, with the ref named.
+      }
+    }
+    if (!resolves(remoteTip)) {
+      console.error(`✗ head ref ${remoteTip} does not exist here, and fetching it failed.`);
+      console.error('  HEAD on a pull_request checkout is GitHub\'s synthetic merge commit,');
+      console.error('  which carries no trailer, so judging it would report a defect nobody made.');
+      console.error('  Failing closed rather than judging the wrong commits.');
+      return 1;
+    }
+    tip = remoteTip;
+  }
+
+  // A SHALLOW `A..B` IS NOT AN ERROR, IT IS A WRONG ANSWER. Both refs above are
+  // fetched at depth 200, and if their merge base falls outside that window git
+  // does not complain -- it lists everything reachable from the tip, which here
+  // would report main's own untagged history as this PR's fault. Ask for the
+  // merge base explicitly so the failure is the missing depth, named, rather
+  // than two hundred invented findings.
+  try {
+    execFileSync('git', ['merge-base', base, tip], { cwd: REPO, stdio: 'ignore' });
+  } catch {
+    console.error(`✗ ${base} and ${tip} have no common ancestor in this checkout.`);
+    console.error('  Both are fetched shallow (depth 200); their merge base is deeper than that.');
+    console.error('  The range would list unrelated history, so no verdict here would be true.');
+    return 1;
+  }
+
   let raw: string;
   try {
-    raw = execFileSync('git', ['log', `${base}..HEAD`, '--format=%H%x1f%B%x1e', '--no-merges'], {
+    raw = execFileSync('git', ['log', `${base}..${tip}`, '--format=%H%x1f%B%x1e', '--no-merges'], {
       encoding: 'utf8',
       cwd: REPO,
     });
   } catch (err) {
     console.error(
-      `✗ could not read the commit range ${base}..HEAD: ${(err as Error).message.split('\n')[0]}`
+      `✗ could not read the commit range ${base}..${tip}: ${(err as Error).message.split('\n')[0]}`
     );
     console.error('  Failing closed: an unreadable range is not evidence the commits are tagged.');
     return 1;
@@ -237,7 +358,17 @@ const main = (): number => {
     });
 
   if (commits.length === 0) {
-    console.log(`- skipped: no commits in ${base}..HEAD`);
+    // An OPEN PR always has at least one commit, so an empty range under CI is
+    // a broken range, not a clean one. Reporting "skipped" there is the shape
+    // this repo calls a gate that cannot fail: it prints a success line for the
+    // exact topology defect it exists to survive.
+    if (headRef) {
+      console.error(`✗ ${base}..${tip} is empty, but a pull request always has commits.`);
+      console.error('  Something is wrong with the range, not with the branch. Refusing to');
+      console.error('  report "nothing to check" for a checkout whose history is not there.');
+      return 1;
+    }
+    console.log(`- skipped: no commits in ${base}..${tip}`);
     return 0;
   }
 
