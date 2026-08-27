@@ -80,7 +80,35 @@ done < <(printf '%s' "$CMD" | grep -oE '(-F|--file)([[:space:]]+|=)[^[:space:];|
 [ -z "${MSG//[[:space:]]/}" ] && exit 0
 
 # ---- the epics that actually exist -----------------------------------------
-BRANCH=$(git -C "${ROOT:-.}" rev-parse --abbrev-ref HEAD 2>/dev/null)
+# `rev-parse --abbrev-ref HEAD` PRINTS THE STRING "HEAD" WHEN DETACHED, and a
+# detached HEAD is not exotic: it is every pull_request checkout and every
+# halted rebase. The snapshot path then became agent/pr/HEAD.md, which does not
+# exist, so KNOWN was empty and a TYPO'D id -- the case this guard was extended
+# for -- sailed through. Measured 2026-08-27: the suite case asserting the typo
+# is refused returned 0 in CI while passing on every developer machine.
+#
+# `git branch --show-current` prints EMPTY when detached rather than lying, and
+# the CI environment names the branch outright. Same resolution order as
+# scripts/check-pr-task-trailers.ts, so the gate and the guard agree about which
+# branch they are judging.
+BRANCH="${PR_HEAD_REF:-${GITHUB_HEAD_REF:-$(git -C "${ROOT:-.}" branch --show-current 2>/dev/null)}}"
+# A HALTED REBASE IS THE DETACHED CASE THAT ACTUALLY MATTERS HERE. This repo
+# has a rebase executor, so committing mid-rebase is a normal thing to do, and
+# that is exactly when losing id validation would hurt. git remembers the
+# branch it is rebasing in rebase-merge/head-name (rebase-apply/head-name for
+# the am backend), so ask instead of guessing.
+if [ -z "$BRANCH" ]; then
+    for hn in rebase-merge/head-name rebase-apply/head-name; do
+        hp=$(git -C "${ROOT:-.}" rev-parse --git-path "$hn" 2>/dev/null)
+        if [ -n "$hp" ] && [ -f "$hp" ]; then
+            BRANCH=$(sed -e 's#^refs/heads/##' "$hp" 2>/dev/null)
+            break
+        fi
+    done
+fi
+# Still empty means a plain detached checkout, where there genuinely IS no
+# branch and therefore no published epic set. The guard allows, as it does
+# whenever it has nothing to judge against.
 SNAP="$ROOT/agent/pr/${BRANCH//\//-}.md"
 KNOWN=""
 [ -f "$SNAP" ] && KNOWN=$(grep -oE '^`?PR-TASK:[[:space:]]*[0-9a-f]{6,32}`?$' "$SNAP" 2>/dev/null |
