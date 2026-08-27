@@ -149,6 +149,47 @@ const main = (): number => {
 
   // Local range against origin/main; in CI the PR base is authoritative.
   const base = process.env.PR_BASE_REF || 'origin/main';
+
+  // THE BASE REF MUST EXIST, AND IN CI IT OFTEN DOES NOT. `PR_BASE_REF` was set
+  // correctly (`origin/main`) and the gate still died with
+  // `fatal: ambiguous argument 'origin/main..HEAD': unknown revision` -- because
+  // the PR checkout simply had not fetched that ref. Green on every developer
+  // machine, where origin/main is always present; red in CI for a reason that
+  // names the RANGE and not the missing fetch.
+  //
+  // So the gate carries its own precondition rather than trusting a workflow
+  // step to have arranged it: a future edit to the checkout cannot silently
+  // take this gate down with it. One fetch, best-effort, only when the ref is
+  // genuinely absent.
+  const resolves = (ref: string): boolean => {
+    try {
+      execFileSync('git', ['rev-parse', '--verify', '--quiet', `${ref}^{commit}`], {
+        cwd: REPO,
+        stdio: 'ignore',
+      });
+      return true;
+    } catch {
+      return false;
+    }
+  };
+  if (!resolves(base)) {
+    const remoteRef = base.startsWith('origin/') ? base.slice('origin/'.length) : base;
+    try {
+      execFileSync('git', ['fetch', '--no-tags', '--depth=200', 'origin', remoteRef], {
+        cwd: REPO,
+        stdio: 'ignore',
+      });
+    } catch {
+      // Reported below by the range read, with the base named.
+    }
+    if (!resolves(base)) {
+      console.error(`✗ base ref ${base} does not exist here, and fetching it failed.`);
+      console.error('  The commit range cannot be computed, so no trailer can be judged.');
+      console.error('  Failing closed: an unreadable range is not evidence the commits are tagged.');
+      return 1;
+    }
+  }
+
   let raw: string;
   try {
     raw = execFileSync('git', ['log', `${base}..HEAD`, '--format=%H%x1f%B%x1e', '--no-merges'], {
