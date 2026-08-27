@@ -1,66 +1,58 @@
-## SESSION 9d92d9b6 2026-08-27T11:22:08Z
+## SESSION 9d92d9b6 2026-08-27T11:45:39Z
 
 ## Where things stand
 
-Branch `0826-3`, 25 commits, **nothing pushed, no PR**. #577 (`0826-2`) is the
-only open PR and must stay so. Recovery tags: `preredo-0826`=3ced1a4d8,
-`prerebase-0826`=9f3cb9f8c, `private/account` `prerebase-0826`=3e79b39.
+Branch `0826-3`, **27 commits, nothing pushed, no PR**. #577 (`0826-2`) is the
+only open PR and must stay so. Working tree is CLEAN apart from one untracked
+stray (below). Recovery tags: `preredo-0826`=3ced1a4d8, `prerebase-0826`=9f3cb9f8c,
+`private/account` `prerebase-0826`=3e79b39.
 
-The working tree holds ONE uncommitted wave: a hook-guard sweep. Nothing is
-half-applied; every file is syntactically valid, and the hook suite passes
-**1464 cases / 0 failures** on exactly these bytes.
+Two commits landed this session:
 
-## What this wave did
+- **`bd9df8682`** — hook-guard sweep. `check:ci-hook-integrity` had `GUARD_DIR`
+  hard-wired to `pre-bash`, so `pre-edit/` and `pre-ask/` were outside BOTH
+  assertions. Widened to all three chains; helper-driven cases are now seen.
+  **Coverage baseline drained 8 grandfathered gaps to 0** — all 35 guards have a
+  case in each direction. Twelve guards were matching MENTION rather than
+  execution intent and were narrowed via `pre-bash/lib/command-scan.sh`.
+- **`f38d64621`** — the resumable rebase executor, all five PLAN steps.
+  `json_union` (5 invariants), `rebase-resolve` (all-or-nothing per halt),
+  `rebase-continue [--execute]` (the loop). New gate
+  `.ci/scripts/test/gates/test-rebase-resolve.sh`, 8 cases against REAL halted
+  rebases, three-point wired. `--skip` is now banned by
+  `check:ci-git-tool-safety`.
 
-`check:ci-hook-integrity` had `GUARD_DIR` hard-wired to `pre-bash`, so
-`pre-edit/` and `pre-ask/` sat outside BOTH assertions. It also grepped only the
-literal `check 2 <guard>`, missing helper-driven cases. Widened to all three
-chains with chain-qualified keys; helper wrappers resolved by reading which
-single guard a function body names. **The coverage baseline went 8 grandfathered
-gaps to 0** — all 35 guards now have a case in each direction.
+## Do not undo these
 
-Twelve guards matched MENTION rather than execution intent. Nine live refusals
-this session, including `block-suppressions` refusing its own repair and
-`block-bash-write-to-running-script` refusing four commands because a chain
-SIBLING is always "running". Fixed by routing through
-`.claude/hooks/pre-bash/lib/command-scan.sh` where safe.
-
-**SIX WERE REVERTED under the operator's 2026-08-25 ruling.** `block-ci-polling`,
-`block-ci-reverse-poll` and `block-long-sleep` keep their prose false positive:
-it fails LOUDLY while every narrowing fails SILENTLY, and the ruling names
-heredoc exemption as the worst option — exactly what `hook_scan_target` does.
-Two pinned suite cases caught the narrowing and reverted it. Those three guards'
+**`block-ci-polling`, `block-ci-reverse-poll` and `block-long-sleep` keep their
+prose false positive**, under the operator's 2026-08-25 ruling: it fails LOUDLY
+while every narrowing fails SILENTLY, and the ruling names heredoc exemption as
+the worst option — which is exactly what `hook_scan_target` does. Routing them
+through it was tried this session and two pinned suite cases reverted it. Their
 code is byte-identical to HEAD. **Do not re-narrow them.**
 
-`npm run ci` was 283 ok / 26 failed. Seven were real and are fixed: shell-format,
-profiler-coverage, native-rebuild (a rebase left TWO `npm install` calls in
-`ensure_deps`), shrink-only-composition, run-all-parallel (`date +%s%3N` returns
-NANOSECONDS under uutils coreutils), mark-production and nightly-retry-filters
-(both called `require_cmd` inside the fallback for `require_cmd` being missing).
-
-## Not mine, shown rather than asserted
-
-`private/account/node_modules` is EMPTY (0 entries) — one fact behind ~17
-failures (`check:types` on `@cloudflare/workers-types`, `check:deps`,
-`ci-account-*`, `ci-peer-deps`). `ruff` and `aws` are absent, so
-`check:ci-python-lint` and `gate-test:scrub-sentinel-empty` cannot run; both
-correctly refuse to skip. Do NOT run `npm install` unasked — npm 11 rewrites
-`package-lock.json` here.
-
 `check:ci-pr-task-trailers` stays RED by operator ruling: wait for #577 to merge,
-re-rebase onto `origin/main`, base the PR there. Do not weaken it, do not stack a PR.
+re-rebase onto `origin/main`, base the PR there. Do not weaken it, do not stack a
+second PR.
 
-`packages/www/--full-page` is a stray 97KB PNG from ANOTHER session in this
-shared worktree. Leave it.
+## Verified state
+
+Hook suite **1464 cases / 0 failures**. `npm run ci`: **310 gates, 18 failed**
+(was 26; all seven attributable ones fixed). Every one of the 18 was
+cross-referenced against the files this session touched — none is attributable
+here. They are: `private/account/node_modules` is EMPTY (0 entries), which
+accounts for ~15; `ruff` and `aws` are not installed, which accounts for two;
+and `check:ci-pr-task-trailers`, deferred above.
 
 ## Next action
 
-1. Commit the wave with a `PR-TASK: f2757830` trailer. Do NOT push, do NOT open a
-   PR. Message draft: `<scratchpad>/commitmsg.txt`, where `<scratchpad>` is
-   /tmp/claude-1000/-home-developer-console/9d92d9b6-77d0-4b72-a748-6b8a129d5338/scratchpad
-2. Item `#051bce55`: the resumable rebase executor, steps 4-5 (registry
-   invariants, then the continue loop) per
-   `agent/PLAN-resumable-rebase-executor.md`. Steps 1-3 already shipped.
-3. Re-run `npm run ci` to confirm the residual failure set is only the
-   environmental one above plus `pr-task-trailers`. No run is currently in
-   flight; the hook suite finished green.
+1. **Nothing is queued for this session.** Both open items are `[?]` awaiting the
+   operator (`#7ff62e83` install the account submodule's deps — DEFAULT leave it,
+   npm 11 rewrites the lockfile; `#c824d9d7` delete the stray
+   `packages/www/--full-page`, a 97KB PNG from ANOTHER session in this shared
+   worktree — DEFAULT leave it). Do not act on either without an answer.
+2. When #577 merges: `git fetch`, re-rebase `0826-3` onto `origin/main`, then
+   verify with `--git snapshot` before and `--git verify-rebase <file>` after.
+   Expect patch-identical commits to be ABSORBED, not missing — that distinction
+   is what `verify-rebase` exists for, and a commit COUNT cannot make it.
+3. Only then open the PR, with `PR-TASK: f2757830`.
