@@ -324,6 +324,12 @@ jobs:
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: npm run check:ci-agent-browser-exit
 
+      # A runner checks out tracked files only, so a step reaching into a gitignored path
+      # runs against a file that is not there. Five separate stops proposed exactly that.
+      - name: CI executes only tracked paths
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: npm run check:ci-scans-tracked-paths
+
       # Runtime sidecars must never be tracked. They have no static markers in
       # source -- they exist only while a session runs -- so every other gate is
       # blind to them by construction and `git ls-files` is the only observable

@@ -54,8 +54,8 @@ scan() {
         # `private/bin/renet-linux-*` reads as an executable. Without the executable test,
         # a tracked script writing its OUTPUT to `./private/bin` reads as running from it.
         case "$stripped" in
-            run:* | -\ run:* | bash\ * | sh\ * | ./* | source\ * | .\ * \
-                | npm\ * | npx\ * | node\ * | python3\ * | tsx\ *) ;;
+            run:* | -\ run:* | bash\ * | sh\ * | ./* | source\ * | .\ * | \
+                npm\ * | npx\ * | node\ * | python3\ * | tsx\ *) ;;
             *) continue ;;
         esac
 
@@ -68,8 +68,11 @@ scan() {
         exe="${exe#run: }"
         case "$exe" in
             bash\ * | sh\ * | source\ * | node\ * | python3\ * | tsx\ *) exe="${exe#* }" ;;
-            npx\ *) exe="${exe#npx }"; exe="${exe#* }" ;;
-            npm\ *) continue ;;   # an npm key, resolved by package.json, not a path
+            npx\ *)
+                exe="${exe#npx }"
+                exe="${exe#* }"
+                ;;
+            npm\ *) continue ;; # an npm key, resolved by package.json, not a path
         esac
         exe="${exe%% *}"
         printf '%s' "$exe" | grep -qE "^\.?/?($pat)/" || continue
@@ -83,29 +86,33 @@ scan() {
 }
 
 # --- controls first. A gate nobody has watched fail is not a gate. -------------------
-CTL=$(mktemp -d); trap 'rm -rf "$CTL"' EXIT
+CTL=$(mktemp -d)
+trap 'rm -rf "$CTL"' EXIT
 mkdir -p "$CTL/.github/workflows" "$CTL/.ci/scripts" "$CTL/ignoredir"
 git -C "$CTL" init -q 2>/dev/null
-printf 'ignoredir/\n' > "$CTL/.gitignore"
-: > "$CTL/ignoredir/thing.sh"
+printf 'ignoredir/\n' >"$CTL/.gitignore"
+: >"$CTL/ignoredir/thing.sh"
 
 printf '%s\n' 'jobs:' '  x:' '    steps:' \
     '      # ignoredir/thing.sh is explained here, which is PROSE' \
-    '      - run: bash ignoredir/thing.sh' > "$CTL/.github/workflows/w.yml"
+    '      - run: bash ignoredir/thing.sh' >"$CTL/.github/workflows/w.yml"
 printf '%s\n' '#!/usr/bin/env bash' \
     '# see ignoredir/thing.sh for why' \
-    'bash ignoredir/thing.sh' > "$CTL/.ci/scripts/s.sh"
+    'bash ignoredir/thing.sh' >"$CTL/.ci/scripts/s.sh"
 
 if scan "$CTL" >/dev/null; then
-    echo "CONTROL FAILED: an executed ignored path was NOT reported." >&2; exit 1
+    echo "CONTROL FAILED: an executed ignored path was NOT reported." >&2
+    exit 1
 fi
 found=$(scan "$CTL" || true)
 if [ "$(printf '%s' "$found" | grep -c 'executes a gitignored path')" -ne 2 ]; then
     echo "CONTROL FAILED: expected exactly 2 findings (one per surface), got:" >&2
-    printf '%s\n' "$found" >&2; exit 1
+    printf '%s\n' "$found" >&2
+    exit 1
 fi
 if printf '%s' "$found" | grep -q '# '; then
-    echo "CONTROL FAILED: a COMMENT was reported as execution." >&2; exit 1
+    echo "CONTROL FAILED: a COMMENT was reported as execution." >&2
+    exit 1
 fi
 echo "  PASS  control: an executed ignored path is reported, on both surfaces"
 echo "  PASS  control: a comment naming the same path is NOT reported"

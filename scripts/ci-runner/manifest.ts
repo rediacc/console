@@ -1539,6 +1539,18 @@ export const GATES: readonly GateSpec[] = [
     },
   },
   {
+    id: 'check:ci-scans-tracked-paths',
+    run: 'npm run check:ci-scans-tracked-paths',
+    gate: true,
+    leaves: ['.ci/scripts/quality/check-ci-scans-tracked-paths.sh'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-static',
+      step: 'CI executes only tracked paths',
+    },
+  },
+  {
     id: 'check:ci-agent-browser-exit',
     run: 'npm run check:ci-agent-browser-exit',
     gate: true,
