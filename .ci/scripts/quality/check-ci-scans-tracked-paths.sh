@@ -100,11 +100,19 @@ printf '%s\n' '#!/usr/bin/env bash' \
     '# see ignoredir/thing.sh for why' \
     'bash ignoredir/thing.sh' >"$CTL/.ci/scripts/s.sh"
 
-if scan "$CTL" >/dev/null; then
+# ONE scan, capturing BOTH the output and the status. This used to be two calls
+# -- an `if scan ... >/dev/null` for the status, then `found=$(scan ... || true)`
+# for the text -- and the second discarded the status and stderr, which
+# gate-test:swallowed-failures flags: a scan that DIED produces the same empty
+# value as a scan that found nothing, and the control would then pass for the
+# wrong reason. Here the non-zero IS the expected answer, so it is captured and
+# asserted rather than swallowed.
+scan_rc=0
+found=$(scan "$CTL") || scan_rc=$?
+if [ "$scan_rc" -eq 0 ]; then
     echo "CONTROL FAILED: an executed ignored path was NOT reported." >&2
     exit 1
 fi
-found=$(scan "$CTL" || true)
 if [ "$(printf '%s' "$found" | grep -c 'executes a gitignored path')" -ne 2 ]; then
     echo "CONTROL FAILED: expected exactly 2 findings (one per surface), got:" >&2
     printf '%s\n' "$found" >&2
