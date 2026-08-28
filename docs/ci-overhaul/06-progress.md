@@ -5666,3 +5666,122 @@ not the paths of the preceding `git add`. They asked that it NOT be unpicked: a
 `test-hooks.sh` 1559/0. First fully green pre-push receipt of the wave: `exit 0`,
 `stable: true`, `whole: true`, empty carried-reds. Two coordinated submodule PRs
 open, linked and review-answered: rediacc/account#83 and rediacc/renet#109.
+
+## 0827-1, later still: two count-floors, and a check that could not see its own gap
+
+Eleven more commits on the same wave, all pushed on the session's first fully
+clean receipt (`exitCode 0`, `whole`, `stable`, `failed: []`, zero carried-reds).
+Landed: `12de2e910` `609314a41` `0583b1690` `da2ecc5b5` `4afa862a4` `ef52d6d9e`
+`59a1beaa9` `a5983d9eb` `43d7797d7` `e60e30331` `2e41493a1`.
+
+### The always-tier, and a channel that never reached a blocking session
+
+The stop hook's rotation is LRU with a battery-order tiebreak; 23 rotating keys
+sorted ahead of "you are not listening", so `no-waiter-asked`'s five-rung ladder
+landed at its terminal rung on first sighting and claimed "asked N times" when it
+had asked once. Promoted `no-waiter`, `no-waiter-asked` and `requests` to the
+`always` tier (someone else pays for the silence); graduated `unread-reports`,
+whose `outq_drain` ran only on the ALLOW path and let 4 reports survive 57
+blocking stops untold. Tier now 21 → 27 keys, `ALWAYS_FULL_MAX=2` quotes at most
+two in full and names the rest. Independent suite run: 854/0.
+
+Two judged stop rules landed alongside: sweep-the-class (a fix with no evidence
+its siblings were searched for) and brave defaults (a `[?]` whose DEFAULT does
+nothing). Checking the peer's `judge_schema_for`/`copy.deepcopy` found that all
+four pre-existing non-mutation controls asserted membership of one key, so every
+one of them **passed under a shallow copy** — the deepcopy was a comment, not a
+contract. Ten controls now pin it; planting `deepcopy → dict()` gives exactly 2
+reds naming the shared nested objects.
+
+### A guard must refuse a command, never a sentence about one
+
+The mention-vs-target class recurred four times in one day, including a brand
+new guard reintroducing it within the hour of the other three being fixed. A
+control-first gate (`check_guard_mention_anchoring.py`) now turns each guard's
+own pattern into a concrete instance, embeds it in a sentence, and checks the
+guard doesn't refuse prose. It was vacuous twice before it was right — once
+because instances were built from alphabetised vocabulary (order-dependent
+patterns need `git commit` before `--allow-empty`), once because a broader
+pattern reader buried the real matcher behind message text and a probe cap cut
+it off — both caught only by planting the real regression, not by reading the
+code. Scoped to `pre-bash` only at first; a peer found the same chain-scoping
+hole this check exists to prevent, in the file written to prevent it. Extended
+to all three chains with per-chain payload builders; per-guard reachability was
+tried and discarded (37/42 inconclusive, because most guards need several
+conditions ANDed, not one substring) in favour of a per-chain plumbing control —
+one real trigger against one real guard, proven before anything is judged.
+Sweeping the corrected model across all chains found two more real offenders.
+Total: 7 guards anchored, 35 probed + 6 static across 3 chains, each fix proven
+with plant-then-restore.
+
+### Two count-floors calibrated for the wrong direction
+
+`test-breakpoint-portability.sh`'s subset check compares a vendored BLOCKER list
+against a canonical one, guarded by `canon_count >= 30` after a 2026-07-31
+incident where a truncated read false-accused the vendored side. The floor
+survives a catastrophic truncation, not a one-phrase one: it fired again,
+dropping exactly one phrase out of 54, clearing the floor of 30 with room to
+spare. Fixed with a second independent read, announced on stderr, not silent.
+**Its untested sibling was worse**: the vendored-side floor (`count >= 20`)
+guards the direction that fails GREEN — a truncated vendored read means fewer
+phrases checked, `missing` stays 0, and the gate reports "all N phrases exist"
+with an N nobody compares against the truth. It had never fired, which is
+exactly the danger; found by sweeping the class, not by a failure.
+
+Same shape, different file: `check-trap-registry.sh`'s `TRAP_FLOOR` was left at
+48 after a commit grew TRAPS.md to 49, so its own F1 control — delete one entry,
+expect a red — landed on exactly 48, not *below* it, and the gate lost the
+ability to detect a deletion at all. Ratcheted to 49.
+
+### Two www gates that were simply missing a declaration
+
+`check:ci-landmarks` and `check:ci-ssr-locale` failed every local `ci:quick`
+with "the gate is not seeing the build" — a `packages/www/dist` with zero
+`.html` files. The first diagnosis proposed a new manifest field and a runner
+branch; **none of it was needed**. `needs: string[]`, the `build:www` node and
+the `blocked` status all already existed, and seven sibling gates already used
+exactly this pattern with the comment "not an optimisation: without dist it
+REFUSES rather than self-skipping." The fix was two `needs` lines. Checking
+`check:i18n` as a third candidate found a false positive — it matched only a
+`.control.ts` fixture — confirmed by evidence (it passed in both runs) rather
+than by reading.
+
+### The inventory that keeps guards alive had its own blind spot, twice
+
+`check-hook-integrity.sh` globbed `block-*.sh` only, so `warn-*` guards
+(including a new one this wave) and an entire registered chain — `post-bash`,
+two live hooks, both wired in settings.json — sat outside the inventory its own
+failure text calls "deleted with no gate noticing." Extending the enumeration
+naively broke a second check that demands a block/allow pair no warn guard has;
+split into two lists per what each check actually asks. `all_guards` now globs
+every hook script rather than two filename prefixes, plus an explicit list for
+guards outside any chain directory whose absence is silent (`trapguard/dispatch.py`,
+`require-jq.sh`) versus loud (the stop/context machinery, deliberately excluded).
+
+### Local vs CI divergence: EXE001, and a git-mode file the local gate cannot see
+
+CI failed `Python lint + format (ruff)` with `EXE001` on two new files at
+git-mode 644 with a shebang — every sibling `test-*.py` is 755. Same ruff
+version, same config, same 66 files: local reported all-checks-passed. A fresh
+644 file with a shebang, linted with an explicit `--select EXE`, still produced
+nothing on this machine — ruff here does not report the rule at all. Fixed by
+checking the property directly: git mode, not disk mode, because that is the
+actual divergence (a file `chmod +x`'d after `git add` reads 755 locally and 644
+in CI).
+
+### `git commit -F` commits the INDEX, and it cost two real defects this wave
+
+Once swept in two of a peer's staged files under an unrelated message; once, a
+path staged and THEN edited committed its stale version, so a commit's own
+message claimed a wording change the commit did not contain. No existing hook
+checked for this. `warn-stale-index.sh` now warns when a path is both staged
+and unstaged at commit time — and its own first draft reintroduced the
+mention-vs-target class within the hour, fixed the same session.
+
+### Counts
+
+`test-hooks.sh` **1737/0** (was 1730/1: the host-toolchain case, itself fixed
+this wave after it was pinned to `want=2` for a host that happened to lack
+ruff). `check:ci-parity` 324/324 gates, both directions. Push receipt:
+`exitCode 0`, `whole`, `stable`, `failed: []`, zero carried-reds — the first
+time this wave a receipt had nothing to carry at all.

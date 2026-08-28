@@ -1,5 +1,5 @@
 # PLAN: the always-tier, and three checks that could never reach a reader
-Status: draft
+Status: landed
 Owner: unowned (drafted by 9d92d9b6, 2026-08-28)
 Updated: 2026-08-28
 
@@ -228,3 +228,10 @@ test file, so they land while the peer works). Batch steps 3-7 into ONE announce
 window on `wl_checks.py`. Announce it by cross-session request **and arm a waiter
 in the same turn** — doing otherwise while implementing this plan would be the
 joke telling itself.
+
+## Landed
+
+`12de2e910` — all three promotions (`no-waiter`, `no-waiter-asked`, `requests`),
+`unread-reports` graduated, the tombstone in `wl_wait.py`, nudge decay,
+`ALWAYS_FULL_MAX=2` collapse, `test-always-tier.py` pinning the always-key set.
+Tier 21 -> 27. Independent suite run: 854/0.
