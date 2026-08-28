@@ -48,12 +48,32 @@ scan() {
         case "$(basename "$f")" in "$SELF") continue ;; esac
         stripped="${line#"${line%%[![:space:]]*}"}"
         case "$stripped" in '#'*) continue ;; esac
-        # A COMMAND position only. Prose naming the same path is correct and common.
+
+        # BOTH conditions, and dropping either one makes this gate noise. Without the
+        # command-position test, a YAML artifact `path:` list entry like
+        # `private/bin/renet-linux-*` reads as an executable. Without the executable test,
+        # a tracked script writing its OUTPUT to `./private/bin` reads as running from it.
         case "$stripped" in
             run:* | -\ run:* | bash\ * | sh\ * | ./* | source\ * | .\ * \
                 | npm\ * | npx\ * | node\ * | python3\ * | tsx\ *) ;;
             *) continue ;;
         esac
+
+        # THE EXECUTABLE, not the line. `ci-build-renet.yml:199` runs a TRACKED script and
+        # merely writes its output to `./private/bin`, which is ignored; flagging that would
+        # be noise, and a noisy gate gets silenced. Only the thing being RUN matters, so
+        # strip the command keyword and test the token immediately after it.
+        exe="$stripped"
+        exe="${exe#- }"
+        exe="${exe#run: }"
+        case "$exe" in
+            bash\ * | sh\ * | source\ * | node\ * | python3\ * | tsx\ *) exe="${exe#* }" ;;
+            npx\ *) exe="${exe#npx }"; exe="${exe#* }" ;;
+            npm\ *) continue ;;   # an npm key, resolved by package.json, not a path
+        esac
+        exe="${exe%% *}"
+        printf '%s' "$exe" | grep -qE "^\.?/?($pat)/" || continue
+
         printf '  %s:%s executes a gitignored path\n    %s\n' "${f#"$root"/}" "$n" "$stripped"
         hits=$((hits + 1))
     done < <(grep -rnE "$pat" \
@@ -80,7 +100,7 @@ if scan "$CTL" >/dev/null; then
     echo "CONTROL FAILED: an executed ignored path was NOT reported." >&2; exit 1
 fi
 found=$(scan "$CTL" || true)
-if [ "$(printf '%s' "$found" | grep -c 'executes a path')" -ne 2 ]; then
+if [ "$(printf '%s' "$found" | grep -c 'executes a gitignored path')" -ne 2 ]; then
     echo "CONTROL FAILED: expected exactly 2 findings (one per surface), got:" >&2
     printf '%s\n' "$found" >&2; exit 1
 fi
