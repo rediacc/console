@@ -385,6 +385,21 @@ test_vendored_blocker_list_is_a_subset() {
         fi
     done <<<"$vendored"
 
+    # THE VENDORED FLOOR HAS THE SAME WEAKNESS AS THE CANONICAL ONE ABOVE, and
+    # in the more dangerous direction. A canonical read that drops a phrase
+    # produces a false RED, which is loud. A VENDORED read that drops one
+    # produces a false GREEN: fewer phrases are checked, `missing` stays 0, and
+    # the pass line cheerfully reports "all $count ... exist" with a $count
+    # nobody compares against the truth. A floor of 20 against 42 real phrases
+    # cannot see that, exactly as >= 30 could not see one phrase missing from 54.
+    #
+    # Same remedy: a second independent read, and the two must AGREE. This is
+    # the sibling found by sweeping the class after fixing the canonical side;
+    # it had never fired, which is precisely the problem with a silent one.
+    local vendored2 count2
+    vendored2="$(extract_array "$bp/lib/breakpoint-blocker.sh" "BREAKPOINT_LOW_EFFORT_BLOCKERS")"
+    count2="$(printf '%s\n' "$vendored2" | grep -c .)"
+    ((count == count2)) || log_fail "vendored read is unstable: $count phrases then $count2; the extractor or its read is at fault, not the list"
     ((count >= 20)) || log_fail "only $count vendored phrases parsed; the extractor is broken, not the list"
     assert_eq "$missing" "0" "the vendored blocker list must stay a SUBSET of the canonical one"
     log_pass "all $count vendored BLOCKER phrases exist in the canonical validator"
