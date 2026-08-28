@@ -38,7 +38,24 @@ import tempfile
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
-GUARD_DIR = REPO_ROOT / ".claude" / "hooks" / "pre-bash"
+HOOKS = REPO_ROOT / ".claude" / "hooks"
+
+# EVERY CHAIN, not just pre-bash. Scoping this to one directory was the same
+# hole check-hook-integrity.sh has now had twice (pre-edit/pre-ask in its
+# 2026-08-27 repair, post-bash in e60e30331) -- and it was in the file written
+# to stop exactly this class. Found by e580532b: 35 of 42 guards were probed and
+# 7 were not.
+#
+# The chains do not share a payload shape, which is why this is a builder and
+# not one dict. A wrong key produces a probe that CANNOT FIRE, and a probe that
+# cannot fire proves nothing -- so every prose probe below is paired with a
+# positive one, and a guard whose positive probe stays silent is reported
+# UNPROBED rather than counted clean.
+CHAINS = {
+    "pre-bash": "command",
+    "pre-edit": "edit",
+    "pre-ask": "ask",
+}
 
 RED = "\033[0;31m"
 GREEN = "\033[0;32m"
@@ -81,11 +98,47 @@ def instantiate(pattern: str) -> str:
     costs coverage that is visible, never a false green.
     """
     text = pattern
+    # DROP A LEADING ANCHOR GROUP FIRST. `(^|[;&|(]|&&|\|\|)[[:space:]]*` is a
+    # POSITION assertion, not text, and it must contribute nothing to the
+    # literal. Left in, it survives as junk: the branch-picker below cannot
+    # split it (its character class contains parentheses, so `[^()|]*` fails)
+    # and the class then collapses to a literal `x`, yielding
+    # `x git commit --allow-empty`. That string is not at command position, so a
+    # correctly-anchored guard does NOT fire on it -- and the positive probe
+    # then reports every anchored guard as unreachable. Measured: 0 of 42
+    # probed.
+    text = re.sub(r"^\((?=[^)]*\^)[^)]*\)(\[\[:space:\]\][*+])?", "", text)
     # An alternation: take the first branch, which is what a real command does.
-    text = re.sub(r"\(([^()|]*)\|[^()]*\)", r"\1", text)
+    # RESOLVED INNERMOST-FIRST, in a fixed-point loop. The single-pass version
+    # only matched a group with NO nested parens (`[^()]*`), so a pattern like
+    # `\bssh\b...\b(cat|echo|printf)\b` -- an alternation with a NESTED one
+    # inside its second branch -- left the outer group untouched and the whole
+    # instance collapsed to a stray `>`. Measured against
+    # block-ssh-file-write.sh, which is why this exists.
     text = re.sub(r"\(\?:", "(", text)
+    # ESCAPE-AWARE: `[^()|]` treats a literal `\|` (an ESCAPED pipe, i.e. the
+    # two characters backslash-then-pipe, matching a real `|` in a command) as
+    # the alternation delimiter, because the character class excludes bare `|`
+    # regardless of what precedes it. That misread block-ssh-file-write.sh's
+    # `\|\s*\bssh\b...` down to a single stray `>`. `(?:[^()|\\]|\\.)`
+    # consumes a backslash-escaped pair as ONE unit first, so only a genuine,
+    # unescaped `|` ends a branch.
+    for _ in range(10):
+        prev = text
+        text = re.sub(r"\(((?:[^()|\\]|\\.)*)\|(?:[^()\\]|\\.)*\)", r"\1", text)
+        if text == prev:
+            break
     for rx, rep in CLASS_SUB:
         text = rx.sub(rep, text)
+    # A TOP-LEVEL alternation, with no enclosing parens at all. The loop above
+    # only resolves a `|` sitting inside `(...)`; block-ssh-file-write.sh's
+    # pattern is a bare `BRANCH1|BRANCH2` at the top, so nothing caught it and
+    # the second branch leaked into the instance. Escape-aware, same as the
+    # parenthesized case: an escaped `\|` (a literal pipe target) must not be
+    # read as the delimiter.
+    m = re.match(r"^((?:[^|\\]|\\.)*)\|", text)
+    if m:
+        text = m.group(1)
     text = text.replace("(", "").replace(")", "")
     text = re.sub(r"\\b|\\B|\^|\$", "", text)
     text = re.sub(r"([A-Za-z0-9_./-])[+*]", r"\1", text)
@@ -140,8 +193,34 @@ def patterns_of(path: Path) -> list[str]:
     return [p for p in uniq if INTERESTING.search(p)]
 
 
-def fires(guard: Path, command: str) -> bool:
-    payload = json.dumps({"tool_input": {"command": command}})
+def payload_for(kind: str, text: str, file_path: str) -> str:
+    """The tool_input shape each chain actually reads.
+
+    Derived from the guards themselves: pre-edit reads file_path plus one of
+    content / new_string / new_source / edits; pre-ask reads question and
+    questions. Every field is filled rather than guessed at, because a guard
+    that reads the one field left out would silently never fire.
+    """
+    if kind == "command":
+        return json.dumps({"tool_input": {"command": text}})
+    if kind == "edit":
+        return json.dumps(
+            {
+                "tool_name": "Write",
+                "tool_input": {
+                    "file_path": file_path,
+                    "content": text,
+                    "new_string": text,
+                    "new_source": text,
+                    "edits": [{"old_string": "x", "new_string": text}],
+                },
+            }
+        )
+    return json.dumps({"tool_input": {"question": text, "questions": [{"question": text}]}})
+
+
+def fires(guard: Path, command: str, kind: str = "command", file_path: str = "") -> bool:
+    payload = payload_for(kind, command, file_path)
     try:
         proc = subprocess.run(
             ["bash", str(guard)],
@@ -155,6 +234,23 @@ def fires(guard: Path, command: str) -> bool:
     except subprocess.TimeoutExpired:
         return False
     return proc.returncode == 2
+
+
+def file_path_for(guard: Path) -> str:
+    """A path the guard will consider in scope, taken from its own source.
+
+    pre-edit guards gate on file_path before they look at content, so a probe
+    carrying an irrelevant path never reaches the matcher. Rather than guess,
+    the first concrete-looking repo path in the guard is reused.
+    """
+    src = guard.read_text(encoding="utf-8", errors="replace")
+    for m in re.finditer(r"[\"'\(|]((?:\.?[a-z][a-z0-9_.-]*/)+[a-zA-Z0-9_.*-]+)", src):
+        cand = m.group(1)
+        if cand.startswith((".git/", "http")) or "*" in cand:
+            continue
+        if "/" in cand and len(cand) > 6:
+            return str(REPO_ROOT / cand)
+    return str(REPO_ROOT / "agent" / "probe" / "STATE.md")
 
 
 def sentence(instance: str) -> str:
@@ -187,10 +283,67 @@ def controls() -> None:
             fail(
                 "the anchored fixture missed the REAL command; anchoring must narrow prose, not the target"
             )
+        # CHAIN PLUMBING, proven with a REAL trigger against a REAL guard, one
+        # per non-pre-bash chain. This is what stands in for per-guard
+        # reachability, which was tried and discarded: most extracted
+        # fragments are one clause of a multi-part trigger (file_path AND
+        # tool_name AND content, all at once), so no single instantiated
+        # substring fires most guards alone. Proving the PAYLOAD SHAPE once per
+        # chain is the part that is actually load-bearing.
+        edit_guard = HOOKS / "pre-edit" / "block-roundlog-write.sh"
+        if edit_guard.exists():
+            # `[ -e "$FILE" ]` gates this guard before anything else -- a
+            # nonexistent path is silently allowed by design (creating a log is
+            # not truncating one), so the fixture must actually exist on disk.
+            rlog_dir = Path(tempfile.mkdtemp()) / "reports"
+            rlog_dir.mkdir()
+            rlog = rlog_dir / "pr-babysit-0827-1.md"
+            rlog.write_text("## STATUS (round 1)\n")
+            edit_payload = payload_for("edit", "irrelevant content", str(rlog))
+            proc = subprocess.run(
+                ["bash", str(edit_guard)],
+                input=edit_payload,
+                capture_output=True,
+                text=True,
+                timeout=30,
+                cwd=str(REPO_ROOT),
+                check=False,
+            )
+            if proc.returncode != 2:
+                fail(
+                    "pre-edit payload plumbing: block-roundlog-write.sh did not fire on a "
+                    "REAL round-log write -- the edit payload shape cannot be trusted"
+                )
+
+        ask_payload = payload_for("ask", "should i commit this change", "")
+        ask_guard = HOOKS / "pre-ask" / "block-settled-questions.sh"
+        if ask_guard.exists():
+            proc = subprocess.run(
+                ["bash", str(ask_guard)],
+                input=ask_payload,
+                capture_output=True,
+                text=True,
+                timeout=30,
+                cwd=str(REPO_ROOT),
+                check=False,
+            )
+            if proc.returncode != 2:
+                fail(
+                    "pre-ask payload plumbing: block-settled-questions.sh did not fire on a "
+                    "REAL settled question -- the ask payload shape cannot be trusted"
+                )
+
         # The instantiator is load-bearing, so it gets its own control.
         got = instantiate(r"git[[:space:]]+commit[^|;&]*--allow-empty")
         if "git commit" not in got or "--allow-empty" not in got:
             fail(f"instantiate() lost the pattern's order or literals: {got!r}")
+        # And the ANCHORED spelling must instantiate to the same literal, or the
+        # positive probe cannot reach any guard that was fixed for this class.
+        anchored = instantiate(
+            r"(^|[;&|(]|&&|\|\|)[[:space:]]*git[[:space:]]+commit[^|;&]*--allow-empty"
+        )
+        if not anchored.startswith("git commit"):
+            fail(f"instantiate() left anchor junk on the front: {anchored!r}")
 
 
 def fail(msg: str) -> None:
@@ -207,7 +360,13 @@ def main() -> int:
     unprobed: list[str] = []
     offenders: list[tuple[str, str]] = []
 
-    for guard in sorted(GUARD_DIR.glob("*.sh")):
+    guards: list[tuple[Path, str]] = []
+    for chain, kind in CHAINS.items():
+        d = HOOKS / chain
+        if d.is_dir():
+            guards += [(g, kind) for g in sorted(d.glob("*.sh"))]
+
+    for guard, kind in guards:
         name = guard.name
         if name.startswith("test-"):
             continue
@@ -238,10 +397,21 @@ def main() -> int:
                 continue
             unprobed.append(name)
             continue
+        # PROSE FIRING IS SELF-EVIDENT: nothing else has to be true for a
+        # guard refusing a sentence to be a defect. Requiring a POSITIVE probe
+        # to also fire before trusting silence was tried and rejected -- most
+        # extracted instances are one fragment of a multi-part trigger (a
+        # roundlog guard needs BOTH a matching file_path AND a write call; no
+        # single instantiated substring can satisfy that alone), so demanding
+        # per-instance reachability reported 37 of 42 guards as inconclusive
+        # even though most were already known-clean from the pre-bash-only
+        # scan. The signal this check needs is the one that is unconditionally
+        # trustworthy: does prose trip the guard.
+        fp = file_path_for(guard)
         probed += 1
         for inst in instances[:40]:
-            if fires(guard, sentence(inst)):
-                offenders.append((name, inst))
+            if fires(guard, sentence(inst), kind, fp):
+                offenders.append((f"{guard.parent.name}/{name}", inst))
                 break
 
     if probed < 20:
@@ -278,9 +448,8 @@ def main() -> int:
         return 1
 
     print(
-        f"{GREEN}✓{NC} {probed} pre-bash guard(s) probed with a live sentence and refuse "
-        f"commands, not sentences about them; {static_ok} more are anchored or do not "
-        f"phrase-match"
+        f"{GREEN}✓{NC} {probed} guard(s) across {len(CHAINS)} chain(s) refuse commands, not "
+        f"sentences about them; {static_ok} anchored or not phrase-matching"
     )
     return 0
 

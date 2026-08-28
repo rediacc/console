@@ -9,7 +9,13 @@ CMD=$(jq -r '.tool_input.command' 2>/dev/null)
 source "$(dirname "${BASH_SOURCE[0]}")/lib/command-scan.sh"
 SCAN=$(hook_scan_target "$CMD")
 STRIPPED=$(printf '%s' "$SCAN" | sed -E 's/[0-9]?>+[[:space:]]*(&[0-9]|\/dev\/null)//g')
-if echo "$STRIPPED" | grep -qE '(\|\s*\bssh\b[[:space:]][^|;&]*\btee\b|\bssh\b[[:space:]][^|;&]*\b(cat|echo|printf)\b[^|;&]*>)' && ! echo "$CMD" | grep -qE '192\.168\.111\.'; then
+# ANCHORED TO COMMAND POSITION 2026-08-28, found by
+# check:ci-guard-mention-anchoring. The first branch already required an actual
+# `|` before `ssh`; the SECOND had no anchor at all, so
+# "echo the guard blocks ssh ... cat > file redirections" refused as if it were
+# the write itself. hook_scan_target's quote-stripping above covers the QUOTED
+# case only, same class as block-git-empty-commit.sh's fix the same day.
+if echo "$STRIPPED" | grep -qE '(\|\s*\bssh\b[[:space:]][^|;&]*\btee\b|(^|[;&|(]|&&|\|\|)[[:space:]]*\bssh\b[[:space:]][^|;&]*\b(cat|echo|printf)\b[^|;&]*>)' && ! echo "$CMD" | grep -qE '192\.168\.111\.'; then
     echo "❌ BLOCKED: Raw SSH file write detected. Use: ./rdc.sh repo sync upload -m MACHINE -r REPO --local FILE --remote PATH. That transfers via rsync with delta compression and proper permissions." >&2
     exit 2
 fi

@@ -47,7 +47,13 @@ CMD=$(jq -r '.tool_input.command' 2>/dev/null)
 # A loop condition runs from the keyword to the `; do` that closes it, so that
 # is the span to search. `[^;]*` keeps it to a single condition rather than
 # letting a later, unrelated pgrep pair up with an earlier loop.
-printf '%s' "$CMD" | grep -qE '(^|[;&|(]|[[:space:]])(until|while)[^;]*pgrep[[:space:]]+-[a-zA-Z]*f' || exit 0
+# ANCHORED TO COMMAND POSITION 2026-08-28, found by
+# check:ci-guard-mention-anchoring. The old group's own [[:space:]] alternative
+# defeated it: ANY word followed by a space before `until` matched, so
+# "TRAPS.md explains why until pgrep -xf never exits" refused as if it were the
+# loop itself. This narrows PROSE only -- the real loop, at line start or after
+# a separator, is still caught by the control below.
+printf '%s' "$CMD" | grep -qE '(^|[;&|(]|&&|\|\|)[[:space:]]*(until|while)[^;]*pgrep[[:space:]]+-[a-zA-Z]*f' || exit 0
 
 # The pattern is the first argument after the flag cluster: quoted either way,
 # or bare up to the next whitespace.
