@@ -729,6 +729,13 @@ jobs:
         env:
           PR_NUMBER: ${{ github.event.pull_request.number }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Sibling of the same gap: the script itself already prefers
+          # PR_HEAD_REF (scripts/check-pr-epic-block.ts:114), but nothing set
+          # it, so on this workflow_call chain's detached checkout it fell all
+          # the way to `git branch --show-current` (empty) and the check
+          # silently reported "skipped: on an unknown branch" instead of
+          # actually validating the epic block.
+          PR_HEAD_REF: ${{ github.event.pull_request.head.ref }}
 
       # The local hook cannot read a -F message, so this is where the trailer
       # rule is actually enforced, against the commits that really landed.
