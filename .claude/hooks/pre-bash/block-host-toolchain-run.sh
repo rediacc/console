@@ -40,6 +40,35 @@ REPO_ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)
 printf '%s' "$CMD" | grep -qE 'devbox|docker[[:space:]]+exec' && exit 0
 
 # ---------------------------------------------------------------------------
+# NPX CANNOT RESOLVE A NON-NPM BINARY. Measured 2026-08-28: `npx --yes ruff
+# format ...` failed with "npm error could not determine executable to run",
+# and the session reading that failure concluded "no ruff binary resolves in
+# this shell" and hand-patched two files instead of running the tool. The real
+# ruff (0.16.1, the pinned version) was on PATH the entire time. npx resolves
+# its argument as an NPM PACKAGE NAME; none of this repo's pinned non-JS
+# toolchain binaries are npm packages, so npx can never run them, whether or
+# not they are actually installed. This fires on the shape alone, independent
+# of host tool state, because the diagnosis is "wrong verb", not "missing tool".
+NPX_TOOLS=(ruff go shfmt shellcheck actionlint)
+for _t in "${NPX_TOOLS[@]}"; do
+    printf '%s' "$SCAN" | grep -qE "(^|[;&|(]|\\$\(|\`)[[:space:]]*npx([[:space:]]+(-y|--yes))?[[:space:]]+${_t}([[:space:]]|\$)" || continue
+    cat >&2 <<MSG
+BLOCKED: npx cannot run '$_t'. npx resolves its argument as an NPM PACKAGE NAME, and
+'$_t' is one of this repo's pinned non-JS toolchain binaries, never an npm package --
+so this fails whether or not '$_t' is actually on PATH, with an error ('npm error
+could not determine executable to run') that reads like a missing tool and is not one.
+
+Run it directly instead:
+
+    $_t ...
+
+If '$_t' is genuinely missing from PATH, that is what the direct form (and the rest
+of this guard) will tell you. Try that and read ITS answer, not npx's.
+MSG
+    exit 2
+done
+
+# ---------------------------------------------------------------------------
 # CREDENTIALS THAT LIVE IN A FILE, NOT IN YOUR SHELL. Measured 2026-08-28.
 #
 # `main.py --publish-www` copied 52 files locally, uploaded ZERO, exited 0, and
@@ -120,6 +149,7 @@ declare -A NEEDS=(
 
 HIT=""
 NEED=""
+BARE=0
 for key in "${!NEEDS[@]}"; do
     printf '%s' "$SCAN" | grep -qF "$key" || continue
     tool="${NEEDS[$key]}"
@@ -137,6 +167,23 @@ for key in "${!NEEDS[@]}"; do
     NEED="$tool"
     break
 done
+
+# BARE INVOCATIONS. The table above matches only a GATE KEY (`check:ci-python-lint`
+# in the command), so a session running the tool directly -- `ruff format <files>`,
+# not `npm run check:ci-python-lint` -- was invisible to it. That gap is real
+# independent of the npx incident above: this catches the correctly-shaped direct
+# command too, when the host genuinely lacks the tool.
+BARE_TOOLS=(ruff go shfmt shellcheck actionlint)
+if [ -z "$HIT" ]; then
+    for tool in "${BARE_TOOLS[@]}"; do
+        printf '%s' "$SCAN" | grep -qE "(^|[;&|(]|\\$\(|\`)[[:space:]]*${tool}([[:space:]]|\$)" || continue
+        test -x "$(command -v "$tool" 2>/dev/null)" 2>/dev/null && continue
+        HIT="$tool"
+        NEED="$tool"
+        BARE=1
+        break
+    done
+fi
 [ -z "$HIT" ] && exit 0
 
 # ---------------------------------------------------------------------------
@@ -185,9 +232,21 @@ for tok in $SCAN; do
     [ -n "$HOSTBOUND" ] && break
 done
 
+# LABEL and ROUTE differ for a gate-key hit ("check:ci-python-lint needs 'ruff'",
+# routed as "npm run check:ci-python-lint") versus a bare-tool hit ("go needs 'go'"
+# read wrong, and "npm run go" is not a command that exists). BARE is set above by
+# whichever of the two loops matched.
+if [ "$BARE" = 1 ]; then
+    LABEL="this command"
+    ROUTE="./run.sh devbox exec -- $CMD"
+else
+    LABEL="gate '$HIT'"
+    ROUTE="./run.sh devbox exec -- npm run $HIT"
+fi
+
 if [ -n "$HOSTBOUND" ]; then
     cat >&2 <<MSG
-NOTE: $HIT needs '$NEED', which this host lacks -- but this command reaches into
+NOTE: $LABEL needs '$NEED', which this host lacks -- but this command reaches into
 '$HOSTBOUND', which owns a HOST-BUILT toolchain (.venv or node_modules). The devbox
 cannot run it: a venv carries absolute shebangs and host glibc, and node_modules is
 deliberately not shared across the boundary.
@@ -225,8 +284,8 @@ MSG
 fi
 if ! docker exec -u vscode "$CID" bash -lc "command -v $NEED" >/dev/null 2>&1; then
     cat >&2 <<MSG
-NOTE: $HIT needs '$NEED'. Neither this host nor the devbox ($CID) has it, so the
-gate genuinely cannot run anywhere right now -- that is a real finding about the
+NOTE: $LABEL needs '$NEED'. Neither this host nor the devbox ($CID) has it, so it
+genuinely cannot run anywhere right now -- that is a real finding about the
 IMAGE, not about your change.
 
 Fix the image rather than recording another "environmental" red:
@@ -249,11 +308,11 @@ MSG
 fi
 
 cat >&2 <<MSG
-BLOCKED: $HIT needs '$NEED', which is missing on this host and PRESENT in the devbox.
+BLOCKED: $LABEL needs '$NEED', which is missing on this host and PRESENT in the devbox.
 
 Run it there instead:
 
-  ./run.sh devbox exec -- npm run $HIT
+  $ROUTE
 
 WHY THIS IS REFUSED RATHER THAN WARNED. A gate that cannot run does not report a
 verdict about your code, and this session recorded exactly that as an
