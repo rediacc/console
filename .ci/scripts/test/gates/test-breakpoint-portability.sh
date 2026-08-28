@@ -352,11 +352,35 @@ test_vendored_blocker_list_is_a_subset() {
     canon_count="$(printf '%s\n' "$canon" | grep -c .)"
     ((canon_count >= 30)) || log_fail "only $canon_count canonical phrases parsed; the extractor or its read was truncated, not the list"
 
+    # RE-VERIFY A SUSPECTED ABSENCE BEFORE BLAMING THE LIST, the same idiom
+    # test-label-inventory.sh already uses ("a stale list read is re-verified,
+    # and the false positive is dropped").
+    #
+    # The canon_count floor above was added after 2026-07-31, when a truncated
+    # canonical read under the parallel runner false-accused the vendored list.
+    # It is not sufficient, and this gate proved it on 2026-08-28: the lane
+    # reported "vendored-only phrase: 'skipped'" and failed, while the SAME
+    # gate passed standalone three times in a row. Measured afterwards, the
+    # canonical read is stable at 54 phrases over five reads and `skipped` is
+    # present in BOTH files. A read that drops ONE phrase clears a floor of 30
+    # comfortably, so the floor cannot see the failure it was added for.
+    #
+    # A second, independent read costs nothing here and separates the two cases
+    # by construction: a transient truncation does not survive it, a real
+    # subset violation does. The re-verification is ANNOUNCED rather than
+    # silent -- a check that quietly forgives itself is how a gate stops
+    # meaning anything.
+    local canon2=""
     while IFS= read -r phrase; do
         [[ -z "$phrase" ]] && continue
         count=$((count + 1))
         if ! printf '%s\n' "$canon" | grep -qxF "$phrase"; then
-            echo "  vendored-only phrase: '$phrase'" >&2
+            [[ -n "$canon2" ]] || canon2="$(extract_array "$CANONICAL_VALIDATOR" "LOW_EFFORT_BLOCKER_PATTERNS")"
+            if printf '%s\n' "$canon2" | grep -qxF "$phrase"; then
+                echo "  re-verified: '$phrase' IS canonical; the first read was short" >&2
+                continue
+            fi
+            echo "  vendored-only phrase: '$phrase' (absent from two independent reads)" >&2
             missing=$((missing + 1))
         fi
     done <<<"$vendored"
