@@ -203,8 +203,19 @@ while IFS= read -r g; do
     # Only a line whose FIRST word is echo/printf and that carries no command
     # separator is dropped: `echo x; shfmt y` still gets scrutinised, so this
     # narrows the false-positive without opening a bypass.
+    #
+    # DATA IS NOT AN INVOCATION EITHER, the same reasoning one step over. A
+    # `NAME=(a b c)` array literal naming a gated tool as one of its elements
+    # is being DEFINED, not run -- check-host-toolchain-coverage.sh's own
+    # NPX_TOOLS/BARE_TOOLS fixtures tripped this before the exemption existed
+    # (measured 2026-08-28, run 98854256844, Quality / Code), because the
+    # tool name sits after `(` and before a space, which the invocation regex
+    # cannot distinguish from a bare command word. Only a line matching
+    # `NAME=(...)` in full (the assignment is complete on one line, no command
+    # separator) is dropped, same narrowing discipline as the echo/printf case.
     grep -vE '^[[:space:]]*#' "$ROOT/$g" |
         grep -vE '^[[:space:]]*(echo|printf)[[:space:]][^;&|]*$' |
+        grep -vE '^[[:space:]]*[A-Za-z_][A-Za-z0-9_]*=\([^)]*\)[[:space:]]*$' |
         grep -qE "(^|[;&|(]|[[:space:]])(${GATED_TOOLS})[[:space:]]" || continue
     # RESOLVING at a pin, not merely NAMING one. The first version accepted any
     # `*_VERSION` mention, and check-python-lint.sh passed it while still taking
@@ -352,6 +363,23 @@ if grep -vE '^[[:space:]]*#' "$TMP/c/prose-gate.sh" |
     fail "A6 IS OVER-BROAD: a comment and an echoed string read as an invocation"
 else
     pass "A6 control: naming a tool in prose or an echo is not invoking it"
+fi
+
+# A6 ARRAY-LITERAL CONTROL. A `NAME=(...)` definition naming a gated tool is
+# DATA, not an invocation -- check-host-toolchain-coverage.sh's own
+# NPX_TOOLS/BARE_TOOLS fixtures tripped A6 before this exemption existed.
+{
+    printf '#!/usr/bin/env bash\n'
+    printf '# this gate only reads NPX_TOOLS from another file, it never runs any of them\n'
+    printf 'NPX_TOOLS=(ruff go shfmt shellcheck actionlint)\n'
+} >"$TMP/c/array-literal-gate.sh"
+if grep -vE '^[[:space:]]*#' "$TMP/c/array-literal-gate.sh" |
+    grep -vE '^[[:space:]]*(echo|printf)[[:space:]][^;&|]*$' |
+    grep -vE '^[[:space:]]*[A-Za-z_][A-Za-z0-9_]*=\([^)]*\)[[:space:]]*$' |
+    grep -qE "(^|[;&|(]|[[:space:]])(${GATED_TOOLS})[[:space:]]"; then
+    fail "A6 IS OVER-BROAD: an array literal defining tool names reads as an invocation"
+else
+    pass "A6 control: naming a tool inside an array literal is not invoking it"
 fi
 
 printf '#!/usr/bin/env bash\nBIN="$(toolchain_acquire shellcheck)"\n' >"$TMP/c/pinned-gate.sh"
