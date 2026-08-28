@@ -16,10 +16,5 @@
     "A narrowed run (--only/--skip) is refused before any of this is consulted,",
     "so carrying cannot become a second way to launder a partial lane."
   ],
-  "carried": [
-    {
-      "gate": "check:ci-pr-task-trailers",
-      "reason": "BLOCKER: commit 0081ab315 lost its PR-TASK trailer because bash executed the backticks inside `git commit -m`. The commit is now eight deep, so the repair is a rebase reword, and block-git-amend.sh is an unconditional exit 2 with no override -- it is the operator's to run, not this session's. Every other commit on this branch carries PR-TASK: f2757830, verified one per commit; the gate reports exactly 1 of 64 unattributable. Remove this entry the moment the reword lands: the gate going green makes it stale, and a stale entry refuses the push."
-    }
-  ]
+  "carried": []
 }
