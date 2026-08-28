@@ -698,6 +698,44 @@ export const GATES: readonly GateSpec[] = [
     },
   },
   {
+    id: 'check:ci-host-toolchain-coverage',
+    run: 'npm run check:ci-host-toolchain-coverage',
+    gate: true,
+    // The pinned-tools DEFINITION (check-toolchain-pins.sh's GATED_TOOLS) and the
+    // host-toolchain runtime GUARD's call sites (block-host-toolchain-run.sh's
+    // NPX_TOOLS/BARE_TOOLS) are two independently maintained lists. Either
+    // surface changing is when they can drift.
+    paths: [
+      '.ci/scripts/quality/check-toolchain-pins.sh',
+      '.claude/hooks/pre-bash/block-host-toolchain-run.sh',
+      '.ci/scripts/quality/check-host-toolchain-coverage.sh',
+    ],
+    leaves: ['.ci/scripts/quality/check-host-toolchain-coverage.sh'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-code',
+      step: 'Host toolchain runtime coverage',
+    },
+  },
+  {
+    id: 'check:ci-git-op-conditionals',
+    run: 'npm run check:ci-git-op-conditionals',
+    gate: true,
+    // Scoped to .claude/hooks and .ci/scripts/quality, where the two real
+    // defects lived (a git identity capture guarded against empty but not
+    // against rev-parse --abbrev-ref HEAD's misleading literal "HEAD" on a
+    // detached checkout, in both an assignment and a bare-statement shape).
+    paths: ['.claude/hooks/**/*.sh', '.ci/scripts/quality/*.sh'],
+    leaves: ['.ci/scripts/quality/check-git-op-conditionals.sh'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-code',
+      step: 'Git-op conditional guards',
+    },
+  },
+  {
     // Console's own scripts already use the right shape -- toolchain.sh installs
     // with GOBIN and invokes by absolute path, which is why check:ci-shell-format
     // passes on a host with no shfmt on PATH. This gate exists so that stays
@@ -732,6 +770,25 @@ export const GATES: readonly GateSpec[] = [
       workflow: '.github/workflows/ci-quality.yml',
       job: 'quality-code',
       step: 'Gate prerequisites',
+    },
+  },
+  {
+    // Found by hand three times in one session (2026-08-28: 891ff49db,
+    // 946e0e6da, 74114a26b) before this existed: a script preferring
+    // PR_HEAD_REF, invoked by a workflow step that never set it. On this
+    // repo's workflow_call chain the runner's default GITHUB_HEAD_REF does
+    // not reliably materialise, so the gap is silent -- a skipped check or a
+    // degraded one, never a crash.
+    id: 'check:ci-pr-head-ref-completeness',
+    run: 'npm run check:ci-pr-head-ref-completeness',
+    gate: true,
+    paths: ['.github/workflows/**', 'package.json', '.ci/scripts/**', 'scripts/**'],
+    leaves: ['.ci/scripts/quality/check_pr_head_ref_completeness.py'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-code',
+      step: 'PR_HEAD_REF completeness',
     },
   },
   {
