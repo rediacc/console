@@ -858,6 +858,27 @@ def main(argv):
             plan.check("branch is not main", True, branch)
             for path, _ in submodules(root):
                 repo = os.path.join(root, path)
+                # A SUBMODULE WITHOUT THIS BRANCH HAS NOTHING TO PUBLISH, and
+                # pushing it anyway does not merely waste a call -- it fails with
+                # "src refspec <branch> does not match any" and HALTS the whole
+                # plan before the console push. Measured 2026-08-28 on branch
+                # 0827-1: private/renet and private/account both carried the
+                # branch and were pushed, then private/homebrew-tap, which this
+                # wave never touched, killed the run and left the console
+                # unpublished. The halt itself is correct and deliberate (the
+                # console is last so it can never name an unpublished submodule
+                # commit); what was wrong is treating "has no such branch" as a
+                # failure rather than as nothing to do.
+                rc_b, _, _ = run_git(
+                    ["rev-parse", "--verify", "--quiet", "refs/heads/%s" % branch], repo
+                )
+                if rc_b != 0:
+                    plan.check(
+                        "%s has no '%s' branch, nothing to publish" % (path, branch),
+                        True,
+                        "skipped",
+                    )
+                    continue
                 dels = staged_deletions(repo)
                 if dels is None:
                     raise RefusalError("could not read staged deletions in %s" % path)
