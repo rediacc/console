@@ -14,6 +14,8 @@ import shutil
 import subprocess
 import time
 
+import wl_bravedefault as BD
+import wl_classsweep as CS
 import worklist_messages as M
 
 # v5: no cap. Kept as a name so the counter file (used only to TELL the judge
@@ -92,6 +94,19 @@ JUDGE_SCHEMA = {
             ],
             "additionalProperties": False,
         },
+        # v14: the class sweep. Same optional-at-the-top-level shape as
+        # regression_gate and admission, made REQUIRED by judge_schema_for when
+        # the prompt actually asks for it. Its failure semantics are the
+        # admission's, NOT the regression gate's: a missing or malformed object
+        # never fails closed, because the only thing this object can do is turn
+        # a stop into a continue, so degrading loses a demand rather than
+        # granting an exit. See wl_classsweep.
+        "class_sweep": CS.CLASS_SWEEP_SCHEMA,
+        # v14, the second of the pair. Same optional-at-the-top-level shape and
+        # the same never-fails-closed semantics as class_sweep, asked on a
+        # different trigger: a `[?]` in the remaining list that carries a
+        # DEFAULT. See wl_bravedefault.
+        "brave_default": BD.BRAVE_DEFAULT_SCHEMA,
         "regression_gate": {
             "type": "object",
             "properties": {
@@ -587,12 +602,29 @@ _REGGATE_MARKER = "A FIX LANDED THIS TURN"
 
 
 def judge_schema_for(extra):
-    """JUDGE_SCHEMA, with regression_gate required iff the prompt asks for it."""
-    if _REGGATE_MARKER not in (extra or ""):
+    """JUDGE_SCHEMA, with each optional object required iff the prompt asks for it.
+
+    ONE rule, applied per marker: regression_gate for _REGGATE_MARKER,
+    class_sweep for CS.SWEEP_MARKER, brave_default for BD.BRAVE_MARKER. The
+    three markers are INDEPENDENT and must not collapse into one boolean: the
+    sweep section is also appended on a carried-forward demand, and the brave
+    section triggers on the remaining list, so either can arrive on a stop where
+    no fix landed at all. Requiring regression_gate on such a stop would fail
+    the judge closed for a question nobody asked.
+    """
+    text = extra or ""
+    wanted = []
+    if _REGGATE_MARKER in text:
+        wanted.append("regression_gate")
+    if CS.SWEEP_MARKER in text:
+        wanted.append("class_sweep")
+    if BD.BRAVE_MARKER in text:
+        wanted.append("brave_default")
+    missing = [k for k in wanted if k not in JUDGE_SCHEMA["required"]]
+    if not missing:
         return JUDGE_SCHEMA
     schema = copy.deepcopy(JUDGE_SCHEMA)
-    if "regression_gate" not in schema["required"]:
-        schema["required"] = [*schema["required"], "regression_gate"]
+    schema["required"] = [*schema["required"], *missing]
     return schema
 
 
@@ -608,6 +640,19 @@ def run_judge(
         workdir.mkdir(parents=True, exist_ok=True)
     except OSError as exc:
         return None, "judge workdir unusable: %s" % exc
+    # THE CLASS SWEEP rides this call rather than making its own: the question
+    # "were the siblings swept?" is about the same fix-set the regression gate
+    # is already being asked about, and a second model call would double the
+    # cost of every fix stop to ask half a question. `extra` is extended BEFORE
+    # the schema is built so the two stay in lockstep -- a section the prompt
+    # asks for is a field the schema requires.
+    sweep_outstanding = None if _REGGATE_MARKER in (extra or "") else CS.load_outstanding()
+    sweep_extra = CS.prompt_section(_REGGATE_MARKER in (extra or ""), sweep_outstanding)
+    # THE BRAVE-DEFAULT rule rides the same call on its own trigger: a parked
+    # decision whose DEFAULT does nothing. Its trigger is the remaining list, not
+    # `extra`, so the two rules are independent and either may be asked alone.
+    brave_extra = BD.prompt_section(remaining_lines)
+    extra = (extra or "") + sweep_extra + brave_extra
     prompt = M.JUDGE_PROMPT % {
         "streak": streak,
         "remaining": "\n".join("  " + r for r in remaining_lines[:20]) or "  (none tracked)",
@@ -662,6 +707,30 @@ def run_judge(
     out = env_out.get("structured_output")
     if not isinstance(out, dict) or out.get("verdict") not in ("stop", "continue"):
         return None, _explain_no_output("judge", env_out, out)
+    # BEFORE sanitize_next_action, deliberately: the search command and the
+    # braver default are the MODEL's text, so they go through the operator-only
+    # filter like any other next_action rather than around it.
+    fired = False
+    if sweep_extra:
+        kind, note = CS.apply_verdict(out, sweep_outstanding)
+        fired = kind == "fire"
+        if kind == "degraded":
+            # Never a block (see wl_classsweep FAIL SEMANTICS), but never
+            # silent either: a paid question that produced no answer must be
+            # visible in the one field the session always reads.
+            out["reason"] = ("%s [class-sweep not judged: %s]" % (out.get("reason", ""), note))[
+                :400
+            ]
+    if brave_extra and not fired:
+        # ONE ORDER PER STOP. A live defect still in the tree outranks a parked
+        # decision, and two orders in one block is how a block stops being read.
+        # Skipping is safe here and would not be for the sweep: this rule's
+        # trigger is the `[?]` itself, which is still there next stop.
+        kind, note = BD.apply_verdict(out)
+        if kind == "degraded":
+            out["reason"] = ("%s [brave-default not judged: %s]" % (out.get("reason", ""), note))[
+                :400
+            ]
     return sanitize_next_action(out), None
 
 
