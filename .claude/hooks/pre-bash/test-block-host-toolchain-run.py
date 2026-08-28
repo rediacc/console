@@ -18,6 +18,7 @@ import sys
 import tempfile
 
 GUARD = os.path.join(os.path.dirname(os.path.abspath(__file__)), "block-host-toolchain-run.sh")
+REPO = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", ".."))
 
 # A PATH with the real tools plus a shim dir we control.
 shim = tempfile.mkdtemp()
@@ -136,6 +137,46 @@ else:
             run("npm run check:ci-python-lint", REAL),
             "CONTROL: no devbox running, so the guard notes rather than blocks",
         )
+    )
+
+# ---------------------------------------------------------------------------
+# Submodule / non-submodule split, and the credential file. Both added 2026-08-28
+# after each failed for real.
+#
+# The property that decides routing is NOT "is this a submodule". It is whether the
+# target owns a HOST-BUILT toolchain. private/renet is a submodule with neither a
+# .venv nor node_modules, so it routes like the root repo. private/account is a
+# submodule WITH node_modules, and private/growth/video_pipeline is not a submodule
+# at all but carries its own .venv; neither can run in the container. Routing
+# video_pipeline into the devbox produced ModuleNotFoundError: anyio.
+if have_box:
+    for path, want, why in (
+        ("private/growth/video_pipeline", 0, "a pipeline with its own .venv must NOT be routed"),
+        ("private/account", 0, "a submodule with host-built node_modules must NOT be routed"),
+        ("private/renet", 2, "a submodule with no host toolchain routes like the root repo"),
+    ):
+        if not os.path.exists(os.path.join(REPO, path)):
+            continue
+        cases.append(
+            (want, run(f"npm run check:ci-python-lint --prefix {path}", REAL), why)
+        )
+
+# A command that uploads to R2 without sourcing private/account/.env does not fail,
+# it half-succeeds: 52 files copied locally, 0 uploaded, exit 0, and a closing warning
+# that named the wrong cause. Only assert this when the credential file is present,
+# since the guard is deliberately silent without it.
+if os.path.exists(os.path.join(REPO, "private/account/.env")):
+    cases.append(
+        (2, run("./run.sh --publish-www --langs en", REAL),
+         "publish-www without sourcing private/account/.env is refused")
+    )
+    cases.append(
+        (0, run("set -a; . private/account/.env; set +a; ./run.sh --publish-www --langs en", REAL),
+         "CONTROL: sourcing it in the same command is accepted")
+    )
+    cases.append(
+        (0, run("R2_MEDIA_ACCESS_KEY_ID=x ./run.sh --publish-www --langs en", REAL),
+         "CONTROL: setting the credential inline states the intent, so it is accepted")
     )
 
 shutil.rmtree(shim, ignore_errors=True)

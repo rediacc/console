@@ -33,8 +33,61 @@ CMD=$(jq -r '.tool_input.command' 2>/dev/null)
 source "$(dirname "${BASH_SOURCE[0]}")/lib/command-scan.sh"
 SCAN=$(hook_scan_target "$CMD")
 
+# Repo root from BASH_SOURCE, not CLAUDE_PROJECT_DIR, which is unreliable inside hooks.
+REPO_ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)
+
 # Already routed through the devbox, or driving the devbox itself: out of scope.
 printf '%s' "$CMD" | grep -qE 'devbox|docker[[:space:]]+exec' && exit 0
+
+# ---------------------------------------------------------------------------
+# CREDENTIALS THAT LIVE IN A FILE, NOT IN YOUR SHELL. Measured 2026-08-28.
+#
+# `main.py --publish-www` copied 52 files locally, uploaded ZERO, exited 0, and
+# printed "R2_MEDIA_* env vars not set". Every one of those words was load-bearing
+# and the run still read as a publish: the site had new files in packages/www, and
+# nothing reached media.rediacc.com.
+#
+# The credentials are not meant to be in the shell. They live in
+# private/account/.env, a SUBMODULE file, alongside 48 other keys. A command that
+# needs them and does not source it does not fail; it half-succeeds, which is worse.
+# So require the sourcing to be VISIBLE in the command.
+#
+# Extend the table when another command grows a credential dependency. Match on
+# something specific to that command, never on a bare tool name.
+ACCOUNT_ENV="$REPO_ROOT/private/account/.env"
+declare -A NEEDS_ENV=(
+    ["--publish-www"]="R2_MEDIA_ACCESS_KEY_ID"
+    ["sync-media-to-r2"]="R2_MEDIA_ACCESS_KEY_ID"
+    ["sync-media-from-r2"]="R2_MEDIA_ACCESS_KEY_ID"
+)
+if [ -f "$ACCOUNT_ENV" ]; then
+    for key in "${!NEEDS_ENV[@]}"; do
+        printf '%s' "$SCAN" | grep -qF -- "$key" || continue
+        var="${NEEDS_ENV[$key]}"
+        # Already sourcing the file, or setting the credential inline: fine.
+        printf '%s' "$CMD" | grep -qF 'private/account/.env' && continue
+        printf '%s' "$CMD" | grep -qF "$var" && continue
+        # Only complain if the file actually carries the credential.
+        grep -q "^${var}=" "$ACCOUNT_ENV" 2>/dev/null || continue
+        cat >&2 <<MSG
+BLOCKED: '$key' uploads to R2, and its credentials are NOT in your shell. They live
+in private/account/.env, which this command does not source.
+
+Without them the run does NOT fail. It copies files locally, uploads nothing, exits 0,
+and warns about the wrong thing. That happened on 2026-08-28: 52 files copied, 0
+uploaded, and the closing line blamed unset env vars that were about to be set.
+
+Source the file in the same command:
+
+    set -a; . private/account/.env; set +a
+    <your command>
+
+If you are deliberately doing a local-only copy, say so by setting the variable
+yourself ($var=) so the intent is in the command rather than in your memory.
+MSG
+        exit 2
+    done
+fi
 
 # gate key -> the host binary it needs. Extend this table when a gate acquires
 # a new toolchain dependency; the entry is what makes the refusal specific
@@ -85,6 +138,69 @@ for key in "${!NEEDS[@]}"; do
     break
 done
 [ -z "$HIT" ] && exit 0
+
+# ---------------------------------------------------------------------------
+# HOST-BOUND WORK MUST NOT BE ROUTED. Measured 2026-08-28.
+#
+# Routing into the devbox is only correct when the command can actually RUN
+# there. Two whole families cannot, and both live in this repo:
+#
+#   * the eight Python pipelines under private/growth (and private/generative)
+#     each carry their own `.venv`, built against the HOST interpreter. A venv
+#     is not portable into a container: absolute shebangs, host glibc. Routing
+#     `video_pipeline/run.sh` into the devbox produced
+#     `ModuleNotFoundError: No module named anyio` -- the container has aws and
+#     none of the pipeline's dependencies.
+#   * node_modules is deliberately NOT shared between host and container
+#     (different glibc; CLAUDE.md, REDIACC_NPM_RUNTIME). private/account
+#     carries a host-built one.
+#
+# So before routing, ask whether the command reaches into a directory that owns
+# a host-built toolchain. If it does, the container is the WRONG destination and
+# saying so is more useful than a block the reader has to argue with. This is
+# the submodule / non-submodule split: a root-repo gate is portable, a
+# submodule or pipeline with its own venv is not.
+HOSTBOUND=""
+for tok in $SCAN; do
+    case "$tok" in
+        -*) continue ;;
+    esac
+    cand="${tok#./}"
+    # Start at the token ITSELF when it names a directory. Starting at its parent
+    # skipped the very case this guard is for: `--prefix private/growth/video_pipeline`
+    # walked from private/growth and never saw the venv one level down.
+    if [ -d "$REPO_ROOT/$cand" ]; then
+        dir="$REPO_ROOT/$cand"
+    else
+        dir="$REPO_ROOT/${cand%/*}"
+    fi
+    # Walk up from the referenced path looking for a host-built toolchain.
+    while [ "$dir" != "$REPO_ROOT" ] && [ "$dir" != "/" ] && [ -n "$dir" ]; do
+        if [ -d "$dir/.venv" ] || [ -d "$dir/node_modules" ]; then
+            HOSTBOUND="${dir#"$REPO_ROOT"/}"
+            break
+        fi
+        dir="${dir%/*}"
+    done
+    [ -n "$HOSTBOUND" ] && break
+done
+
+if [ -n "$HOSTBOUND" ]; then
+    cat >&2 <<MSG
+NOTE: $HIT needs '$NEED', which this host lacks -- but this command reaches into
+'$HOSTBOUND', which owns a HOST-BUILT toolchain (.venv or node_modules). The devbox
+cannot run it: a venv carries absolute shebangs and host glibc, and node_modules is
+deliberately not shared across the boundary.
+
+Routing this would trade a missing tool for a missing interpreter. Install '$NEED' on
+the host instead, or into that component's own venv, which is usually one command:
+
+    $HOSTBOUND/.venv/bin/pip install <the package providing $NEED>
+
+Proceeding, because the container is not the answer here.
+MSG
+    exit 0
+fi
 
 # The container must actually be able to help, or this is a wall rather than a
 # route. If it is not running, or lacks the tool too, say so and let the command
