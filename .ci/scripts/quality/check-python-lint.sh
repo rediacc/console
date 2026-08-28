@@ -216,4 +216,56 @@ $RUFF format --config "$REPO_ROOT/ruff.toml" --check --no-cache -- "${PY_FILES[@
     exit 1
 }
 
-echo "${GREEN}✓${NC} ${count} Python file(s) pass ruff lint and format"
+# EXE001 IS INVISIBLE FROM HERE, so it is checked directly rather than trusted.
+# Measured 2026-08-28: CI failed `Python lint + format (ruff)` with two EXE001
+# findings ("Shebang is present but file is not executable"), while THIS gate --
+# same ruff 0.16.1, same ruff.toml, same 66 files -- reported "All checks
+# passed". A fresh 644 file carrying a shebang, placed in the repo and linted
+# with an explicit `--select EXE`, still produced no finding on this machine.
+# So the divergence is environmental and NOT something this gate can fix by
+# arguing with ruff; the answer is to check the property ourselves.
+#
+# THE PROPERTY IS THE GIT MODE, NOT THE DISK MODE, and that distinction is the
+# whole point: CI lints a fresh checkout, so what it sees is whatever git
+# recorded. A file chmod +x on disk AFTER `git add` is 755 locally and 644 in
+# CI, which is exactly how two files passed here and failed there.
+#
+# Fix a violation with `git update-index --chmod=+x <file>` (or remove the
+# shebang if the file is a library). Both directions are checked: an executable
+# file with no shebang is EXE002 and is just as much a defect.
+exe_bad=0
+exe_seen=0
+while IFS= read -r mode_path; do
+    mode="${mode_path%% *}"
+    file="${mode_path#* }"
+    [ -f "$file" ] || continue
+    exe_seen=$((exe_seen + 1))
+    has_shebang=0
+    [ "$(head -c2 "$file" 2>/dev/null)" = "#!" ] && has_shebang=1
+    if [ "$has_shebang" = 1 ] && [ "$mode" = "100644" ]; then
+        echo "${RED}✗${NC} $file has a shebang but git mode is 100644 (EXE001 in CI)" >&2
+        echo "    fix: git update-index --chmod=+x $file" >&2
+        exe_bad=$((exe_bad + 1))
+    elif [ "$has_shebang" = 0 ] && [ "$mode" = "100755" ]; then
+        echo "${RED}✗${NC} $file is git mode 100755 but has no shebang (EXE002 in CI)" >&2
+        echo "    fix: git update-index --chmod=-x $file" >&2
+        exe_bad=$((exe_bad + 1))
+    fi
+done < <(git -C "$REPO_ROOT" ls-files -s -- '*.py' ':!:private/**' | awk '{print $1, $4}')
+
+# ANTI-VACUITY. An empty enumeration would make this silent forever, which is
+# the failure the file-list section above already documents for ruff itself.
+if [ "$exe_seen" -eq 0 ]; then
+    echo "${RED}✗${NC} the shebang/mode scan enumerated ZERO tracked Python files." >&2
+    echo "  A scan that sees nothing cannot fail, so its silence proves nothing." >&2
+    exit 1
+fi
+
+if [ "$exe_bad" -gt 0 ]; then
+    echo "" >&2
+    echo "${RED}✗${NC} ${exe_bad} Python file(s) have a git mode CI will reject." >&2
+    exit 1
+fi
+
+echo "${GREEN}✓${NC} ${count} Python file(s) pass ruff lint and format" \
+    "(+ ${exe_seen} checked for shebang/mode agreement)"
