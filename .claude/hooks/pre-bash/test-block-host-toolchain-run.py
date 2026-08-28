@@ -101,14 +101,14 @@ cases.append(
 # rather than remembered. These run with the REAL host PATH: if either tool is
 # absent here (it is, on this host) the old table refused the command outright,
 # while the gate itself acquires its pin and passes.
-for gate in ("check:ci-shell-lint", "check:ci-shell-format", "check:ci-actionlint"):
-    cases.append(
-        (
-            0,
-            run(f"npm run {gate}", REAL),
-            f"CONTROL: {gate} self-provisions its pin, so it is never routed",
-        )
+cases.extend(
+    (
+        0,
+        run(f"npm run {gate}", REAL),
+        f"CONTROL: {gate} self-provisions its pin, so it is never routed",
     )
+    for gate in ("check:ci-shell-lint", "check:ci-shell-format", "check:ci-actionlint")
+)
 
 # --- REFUSE: only when the host lacks it and the box has it -----------------
 if have_box:

@@ -717,6 +717,24 @@ export const GATES: readonly GateSpec[] = [
     },
   },
   {
+    // The gap check:ci-parity leaves open: it proves a gate is WIRED into a
+    // workflow, never that the job it landed in can RUN it. Two tsx gates were
+    // added to a job that does checkout and nothing else, and run 33125687081
+    // died on `tsx: not found` and took seven cancelled siblings with it.
+    // Verified against the pre-fix workflow: this reports exactly those two.
+    id: 'check:ci-gate-prerequisites',
+    run: 'npm run check:ci-gate-prerequisites',
+    gate: true,
+    paths: ['.github/workflows/**', 'package.json', '.ci/scripts/quality/**'],
+    leaves: ['.ci/scripts/quality/check_ci_gate_prerequisites.py'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-code',
+      step: 'Gate prerequisites',
+    },
+  },
+  {
     // The manifest is the pre-push lane's only source of truth about which
     // gates are cheap and which files select them, and nothing re-reads it.
     // Three oracles, each with both directions in --selftest: a `slow` claim

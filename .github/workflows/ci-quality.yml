@@ -556,6 +556,13 @@ jobs:
       - name: Go tool PATH
         run: .ci/scripts/quality/check-go-tool-path.sh
 
+      # check:ci-parity proves a gate is WIRED into a workflow. It says nothing
+      # about whether the JOB it landed in can execute it -- wired and runnable
+      # are different claims, and only the first was checked. Run 33125687081
+      # cost seven cancelled sibling jobs to that gap.
+      - name: Gate prerequisites
+        run: npm run check:ci-gate-prerequisites
+
       # The enforcement layer cannot quietly disarm itself: guards are
       # inventoried shrink-only, and each must keep a case proving it blocks
       # AND one proving it allows. Block-only coverage cannot see
