@@ -16,5 +16,14 @@
     "A narrowed run (--only/--skip) is refused before any of this is consulted,",
     "so carrying cannot become a second way to launder a partial lane."
   ],
-  "carried": []
+  "carried": [
+    {
+      "gate": "check:ci-landmarks",
+      "reason": "Needs a built packages/www/dist and this lane did not build one: the directory exists but holds ZERO .html files, so the gate refuses rather than reporting a meaningless green -- correct anti-vacuity behaviour, not a finding. In CI it runs as a STEP of job quality-www-build (manifest.ts:2342-2347), after that job's build step, so CI exercises it properly and will still fail on any real regression. Not caused by this branch: ZERO of the 29 files changed on 0827-1 are under packages/www (verified with git diff --name-only origin/0827-1..HEAD). Building www locally was deliberately not done -- a peer session is running a live GPU/TTS pipeline in this SHARED worktree and CLAUDE.md names www builds as a corruption hazard there. Clear this entry once a www build is present locally."
+    },
+    {
+      "gate": "check:ci-ssr-locale",
+      "reason": "Same cause as check:ci-landmarks: no local packages/www build, so zero probes were comparable and the gate refuses rather than emitting a green it did not earn. Its own 6/6 self-controls PASS, so the gate logic is proven live; only its INPUT is absent. In CI it is a step of job quality-www-build (manifest.ts:2354-2359), run after the build, so coverage is not lost. ZERO of the 29 files changed on this branch are under packages/www. Not built locally because a peer session is running a live pipeline in this shared worktree. Clear this entry once a www build exists."
+    }
+  ]
 }

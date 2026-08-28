@@ -208,8 +208,7 @@ def _emit(payload, as_json):
             # 98788324965: exit 1, 0 bytes out, the reason on stderr alone.
             print(
                 "      log: gh api repos/%s/%s/actions/jobs/%s/logs"
-                " --allow-escape-sequences"
-                % (payload["owner"], payload["name"], row["job"])
+                " --allow-escape-sequences" % (payload["owner"], payload["name"], row["job"])
             )
         elif row.get("url"):
             print("      %s" % row["url"])

@@ -96,8 +96,8 @@ echo "== 231. THE LADDER DECIDES THE FIRST PICK, where line order used to =="
 # mission one must go first -- under the old tiebreak that was decided by which
 # `vadd` call sat earlier in a 5,000-line file.
 setup
-hand_now                       # so `agent-state` is not a third check
-echo '- [ ] (deadbeef) the mission item' >>"$WL"   # T_MISSION: open-items
+hand_now                                         # so `agent-state` is not a third check
+echo '- [ ] (deadbeef) the mission item' >>"$WL" # T_MISSION: open-items
 # no brief_now                 # T_HYGIENE: the session brief
 say "status update
 
