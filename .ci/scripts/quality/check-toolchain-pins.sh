@@ -247,6 +247,9 @@ fi
 # sources nothing but the library -- which is exactly the caller that broke.
 a9_bad=()
 for t in shfmt shellcheck ruff actionlint go node; do
+    # A crashed subshell and a genuinely empty pin both mean this tool has no
+    # resolvable pin, which the very next line reports as bad either way.
+    # swallowed-failure-ok: either a crash or a genuinely empty pin makes t bad on the next line, so the cause does not change the outcome
     v="$(bash -c "source '$ROOT/.ci/scripts/lib/toolchain.sh'; toolchain_pin_for $t" 2>/dev/null || true)"
     [[ -n "$v" ]] || a9_bad+=("$t")
 done
@@ -263,6 +266,9 @@ mkdir -p "$TMP/a9"
 cp "$ROOT/.ci/scripts/lib/toolchain.sh" "$TMP/a9/toolchain.sh"
 printf '\ntoolchain_load() { return 0; }\n' >>"$TMP/a9/toolchain.sh"
 if grep -q 'toolchain_load() { return 0; }' "$TMP/a9/toolchain.sh"; then
+    # This IS the control: empty is the tested-for outcome (the mutant skips
+    # the load), and the next branch treats non-empty as the failure.
+    # swallowed-failure-ok: empty is the state under test here, a crash reads the same as the mutant working, both are the pass case
     ctl="$(bash -c "source '$TMP/a9/toolchain.sh'; toolchain_pin_for shellcheck" 2>/dev/null || true)"
     if [[ -z "$ctl" ]]; then
         pass "A9 control: a library that skips the load is detectable"
