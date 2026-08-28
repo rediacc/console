@@ -131,10 +131,33 @@ PY
 
 # Guards on disk, chain-qualified. A glob, not `ls`: nothing to parse, and it
 # cannot misread an odd filename.
+#
+# TWO LISTS, because A and B ask different questions of a guard.
+#
+#   all_guards  block-* AND warn-*  -- A: "can this file vanish unnoticed?"
+#                                      That applies to every guard there is.
+#   on_disk     block-* only        -- B/C: "does it have a block case AND an
+#                                      allow case?" A warn-* guard exits 0
+#                                      always and has NO block direction, so
+#                                      demanding one would make the gate wrong
+#                                      about four correct guards -- and a gate
+#                                      that is wrong is a gate that gets
+#                                      suppressed. Measured before splitting:
+#                                      extending the single list to warn-*
+#                                      failed all four with block=0,allow=0.
+#
+# Until this split, warn-hook-change.sh, warn-remote-drift.sh and
+# warn-submodule-deletions.sh were outside the inventory entirely -- and A's own
+# failure text, "each of these can be deleted with no gate noticing", was true of
+# them with nothing saying so.
 on_disk=()
+all_guards=()
 for _c in "${CHAINS[@]}"; do
     for _f in "$HOOKS/$_c"/block-*.sh; do
         [ -e "$_f" ] && on_disk+=("$_c/$(basename "$_f")")
+    done
+    for _f in "$HOOKS/$_c"/block-*.sh "$HOOKS/$_c"/warn-*.sh; do
+        [ -e "$_f" ] && all_guards+=("$_c/$(basename "$_f")")
     done
 done
 
@@ -146,7 +169,7 @@ lookup() { # lookup <chain/name> -> "block allow"
 }
 
 # ---- A. inventory is shrink-only -------------------------------------------
-if [ ${#on_disk[@]} -eq 0 ]; then
+if [ ${#all_guards[@]} -eq 0 ]; then
     fail "A. found ZERO guards on disk -- this gate is not seeing the tree."
 elif [ ! -f "$INV" ]; then
     fail "A. inventory baseline missing: $INV"
@@ -157,7 +180,7 @@ else
         [ -f "$HOOKS/$want" ] || missing+=("$want")
     done < <(python3 -c 'import json,sys;[print(x) for x in json.load(open(sys.argv[1]))]' "$INV")
     if [ ${#missing[@]} -eq 0 ]; then
-        pass "A. all $(python3 -c 'import json,sys;print(len(json.load(open(sys.argv[1]))))' "$INV") baselined guard(s) still present (${#on_disk[@]} on disk across ${#CHAINS[@]} chain(s))"
+        pass "A. all $(python3 -c 'import json,sys;print(len(json.load(open(sys.argv[1]))))' "$INV") baselined guard(s) still present (${#all_guards[@]} on disk across ${#CHAINS[@]} chain(s))"
     else
         fail "A. guard(s) in the baseline but GONE from the tree: ${missing[*]}"
         echo "     Removing a guard is a deliberate act: drain the baseline in the same commit and say why." >&2
@@ -167,7 +190,7 @@ else
     # 2026-08-27 because nobody re-ran the baseline after adding them.
     unlisted=()
     listed="$(python3 -c 'import json,sys;[print(x) for x in json.load(open(sys.argv[1]))]' "$INV")"
-    for g in "${on_disk[@]}"; do
+    for g in "${all_guards[@]}"; do
         grep -qx "$g" <<<"$listed" || unlisted+=("$g")
     done
     if [ ${#unlisted[@]} -gt 0 ]; then

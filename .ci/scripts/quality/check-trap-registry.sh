@@ -78,11 +78,18 @@ TRAP_HOOK_SUITE="${TRAP_HOOK_SUITE:-$REPO_ROOT/.claude/hooks/test-hooks.sh}"
 TRAP_SETTINGS="${TRAP_SETTINGS:-$REPO_ROOT/.claude/settings.json}"
 TRAP_FILE_ROOT="${TRAP_FILE_ROOT:-$REPO_ROOT}"
 
-# A RATCHET, not a target. 48 entries on 2026-08-27. Raising it is the only
-# direction that keeps meaning something: lowering it to get past a red is how a
-# corpus shrinks silently, so lowering it requires saying why, out loud, in the
-# commit that does it.
-TRAP_FLOOR="${TRAP_FLOOR:-48}"
+# A RATCHET, not a target. 48 entries on 2026-08-27, 49 on 2026-08-28. Raising
+# it is the only direction that keeps meaning something: lowering it to get past
+# a red is how a corpus shrinks silently, so lowering it requires saying why, out
+# loud, in the commit that does it.
+#
+# THE RATCHET MUST MOVE WITH THE CORPUS, and this is what it costs when it does
+# not. Commit 0b47292e1 added a 49th entry and left the floor at 48, so F1's
+# control -- delete one entry, expect a red -- landed on exactly 48, which is
+# not BELOW 48. The gate stopped being able to detect a deletion at all, and
+# CI reported it as "a shrinking corpus must red (F1): expected 1, got 0".
+# An unratcheted floor does not merely lag; it disarms the check it belongs to.
+TRAP_FLOOR="${TRAP_FLOOR:-49}"
 
 ID_RE='^[a-z0-9][a-z0-9-]{2,48}$'
 
@@ -330,7 +337,8 @@ scan() {
 
     if [ ! -f "$TRAP_CORPUS" ]; then
         err "the corpus is not at $TRAP_CORPUS. The gate cannot see the tree, so its green would mean nothing."
-        return "$errors"
+        [ "$errors" -eq 0 ]
+        return
     fi
 
     local seen_ids=""
@@ -414,7 +422,10 @@ scan() {
         err "the corpus holds $n_entries entries, below the floor of $TRAP_FLOOR. Either the parser stopped seeing the tree, or entries were deleted; both are reds."
     fi
 
-    return "$errors"
+    # NOT `return "$errors"`. A shell return is taken mod 256, so exactly 256 findings
+    # would return 0 and read as a clean scan. Only the STATUS is made boolean here;
+    # the count itself is still printed with the findings.
+    [ "$errors" -eq 0 ]
 }
 
 # ---------------------------------------------------------------------------
