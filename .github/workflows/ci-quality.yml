@@ -576,6 +576,12 @@ jobs:
       - name: Gate prerequisites
         run: npm run check:ci-gate-prerequisites
 
+      # A guard must refuse a COMMAND, never a SENTENCE about one. Probes each
+      # pre-bash guard with prose built from its own pattern; anchoring is the
+      # fix, never deleting the pattern.
+      - name: Guard mention anchoring
+        run: npm run check:ci-guard-mention-anchoring
+
       # The enforcement layer cannot quietly disarm itself: guards are
       # inventoried shrink-only, and each must keep a case proving it blocks
       # AND one proving it allows. Block-only coverage cannot see

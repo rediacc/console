@@ -735,6 +735,25 @@ export const GATES: readonly GateSpec[] = [
     },
   },
   {
+    // A guard that refuses PROSE is a guard nobody can write a doc line about.
+    // The class recurred FOUR times on 2026-08-28 and every instance was fixed
+    // by hand, including one reintroduced within the hour by the session doing
+    // the fixing -- which is the i18n lesson exactly. This probes each guard
+    // with a sentence built from its OWN pattern, so it cannot go stale as
+    // guards are added.
+    id: 'check:ci-guard-mention-anchoring',
+    run: 'npm run check:ci-guard-mention-anchoring',
+    gate: true,
+    paths: ['.claude/hooks/pre-bash/**', '.ci/scripts/quality/check_guard_mention_anchoring.py'],
+    leaves: ['.ci/scripts/quality/check_guard_mention_anchoring.py'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-code',
+      step: 'Guard mention anchoring',
+    },
+  },
+  {
     // The manifest is the pre-push lane's only source of truth about which
     // gates are cheap and which files select them, and nothing re-reads it.
     // Three oracles, each with both directions in --selftest: a `slow` claim

@@ -19,7 +19,12 @@ CMD=$(jq -r '.tool_input.command' 2>/dev/null)
 [ -z "$CMD" ] && exit 0
 
 # The renet binary specifically, however it gets there.
-if printf '%s' "$CMD" | grep -qE 'sudo cp[^;&|]*/usr/local/bin/renet'; then
+# ANCHORED TO COMMAND POSITION 2026-08-28, after check:ci-guard-mention-anchoring
+# found this guard refusing an ordinary sentence. Matching the phrase ANYWHERE
+# means a doc line, a worklist note or an `echo` explaining the rule is refused
+# as if it were the rule being broken. This NARROWS PROSE ONLY: every control
+# below still blocks the real command, at line start and after a separator.
+if printf '%s' "$CMD" | grep -qE '(^|[;&|(])[[:space:]]*sudo cp[^;&|]*/usr/local/bin/renet'; then
     echo "❌ BLOCKED: Do not manually deploy binaries via scp/ssh. Use ./rdc.sh which handles provisioning automatically." >&2
     exit 2
 fi

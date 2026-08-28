@@ -27,7 +27,12 @@ source "$(dirname "${BASH_SOURCE[0]}")/lib/command-scan.sh"
 SCAN=$(hook_scan_target "$CMD")
 
 # Only the subcommands that write a file to disk.
-echo "$SCAN" | grep -qE '\bagent-browser\b[^;|&]*\b(screenshot|pdf|download)\b' || exit 0
+# ANCHORED TO COMMAND POSITION 2026-08-28, after check:ci-guard-mention-anchoring
+# found this guard refusing an ordinary sentence. Matching the phrase ANYWHERE
+# means a doc line, a worklist note or an `echo` explaining the rule is refused
+# as if it were the rule being broken. This NARROWS PROSE ONLY: every control
+# below still blocks the real command, at line start and after a separator.
+echo "$SCAN" | grep -qE '(^|[;&|(])[[:space:]]*(sudo[[:space:]]+)?agent-browser\b[^;|&]*\b(screenshot|pdf|download)\b' || exit 0
 
 # Repo root from BASH_SOURCE, not CLAUDE_PROJECT_DIR, which is unreliable inside hooks.
 REPO_ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)

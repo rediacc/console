@@ -104,6 +104,7 @@
     "check:ci-toolchain-pins": ".ci/scripts/quality/check-toolchain-pins.sh",
     "check:ci-go-tool-path": ".ci/scripts/quality/check-go-tool-path.sh",
     "check:ci-gate-prerequisites": ".ci/scripts/quality/check_ci_gate_prerequisites.py",
+    "check:ci-guard-mention-anchoring": ".ci/scripts/quality/check_guard_mention_anchoring.py",
     "check:ci-control-vacuity": ".ci/scripts/quality/check-control-vacuity.sh",
     "check:ci-setup-idempotency": ".ci/scripts/quality/check-setup-idempotency.sh",
     "check:ci-lockfile": ".ci/scripts/quality/check-lockfile.sh",

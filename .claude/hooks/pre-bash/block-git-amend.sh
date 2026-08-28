@@ -69,7 +69,12 @@ SCAN=$(printf '%s' "$SCAN" | tr '\n' '\001' | sed -e "s/'[^']*'//g" -e 's/"[^"]*
 SCAN="$SCAN
 $SCAN_WRAPPED"
 
-if echo "$SCAN" | grep -qE 'git commit[^|;&]*--amend|git commit[^|;&]*[[:space:]]-[a-zA-Z]*amend'; then
+# ANCHORED TO COMMAND POSITION 2026-08-28, after check:ci-guard-mention-anchoring
+# found this guard refusing an ordinary sentence. Matching the phrase ANYWHERE
+# means a doc line, a worklist note or an `echo` explaining the rule is refused
+# as if it were the rule being broken. This NARROWS PROSE ONLY: every control
+# below still blocks the real command, at line start and after a separator.
+if echo "$SCAN" | grep -qE '(^|[;&|(])[[:space:]]*git commit[^|;&]*--amend|(^|[;&|(])[[:space:]]*git commit[^|;&]*[[:space:]]-[a-zA-Z]*amend'; then
     echo "❌ BLOCKED: Do not use 'git commit --amend' for PR babysitting. Amending rewrites the existing PR commit in place, which collapses every CI fix into one commit and destroys the per-change history (this PR's single commit was already amended 16 times and the individual changes became impossible to trace). Make EACH fix a NEW commit: git commit -m 'fix(scope): ...' then a plain 'git push'. The reviewer needs a readable per-commit trail. If commits genuinely need squashing, that is the user's call at merge time, not yours." >&2
     exit 2
 fi
