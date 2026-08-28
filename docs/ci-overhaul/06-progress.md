@@ -5785,3 +5785,108 @@ this wave after it was pinned to `want=2` for a host that happened to lack
 ruff). `check:ci-parity` 324/324 gates, both directions. Push receipt:
 `exitCode 0`, `whole`, `stable`, `failed: []`, zero carried-reds — the first
 time this wave a receipt had nothing to carry at all.
+
+## 0827-1, still later: a detached HEAD, a variable this repo already knew to
+## set, and two of a peer's finished features swept into pushed history by
+## a "safe" pattern that was not
+
+Eleven more commits. The thread through all of them: `actions/checkout` on a
+`pull_request` trigger checks out the MERGE COMMIT in a DETACHED HEAD, and this
+repo's `ci-quality.yml` is a `workflow_call` chain where the runner's default
+`GITHUB_HEAD_REF` does not reliably materialise -- so every script deriving
+"the current branch" the naive way gets the literal string `"HEAD"` instead.
+
+### wl_git.py's own anti-vacuity control caught it -- twice, wrongly diagnosed once
+
+CI failed `wl_git.py --selftest`'s force-push probe-reach controls (the exact
+ones added earlier this wave). First fix preferred `GITHUB_HEAD_REF` --
+correct reasoning, wrong var: measured on the NEXT CI run, it still failed,
+because `GITHUB_HEAD_REF` does not reliably appear in this workflow_call
+chain. This repo had ALREADY solved this: `block-untagged-commit.sh`'s own
+step sets a custom `PR_HEAD_REF: ${{ github.event.pull_request.head.ref }}`
+for the identical reason. A grep for that precedent before writing the first
+fix would have found it in seconds; the correction is recorded in the commit
+that fixed it properly.
+
+### The class swept twice, from both directions
+
+Sweep 1 (setter -> reader): every workflow step invoking a PR_HEAD_REF-
+preferring script, checked against whether it actually sets the var. Found
+`check-pr-epic-block.ts`'s step, which silently SKIPPED real validation on a
+detached checkout ("skipped: on an unknown branch") -- a silent skip, not a
+crash, exactly why nobody noticed. Sweep 2 (reader -> setter): every reader
+mapped against every known setter; found `check-review-report-replies.sh`'s
+step, lower severity (degrades to a coarser flat check rather than skipping
+entirely). A THIRD sweep, control-first this time: a new gate
+(`check_pr_head_ref_completeness.py`) that finds every reader, resolves its
+invoking step (direct match or through an npm-run alias), and asserts the
+step's env sets the var -- proven by replanting each of the three real fixes
+and watching it name the exact broken step each time.
+
+### "git commit -F msg -- <path>" is not as safe as it sounds
+
+The pattern used all wave to avoid sweeping a peer's staged INDEX into a
+commit has a hole: it takes the path's WHOLE CURRENT ON-DISK CONTENT, not a
+scoped hunk. When a peer had already added their own uncommitted wiring to
+the SAME files (`manifest.ts`, `ci-quality.yml`, `package.json`) before this
+session's pathspec-commits on those same paths, both landed together --
+twice, silently, in already-pushed history. Two of the peer's finished,
+self-tested gates (`check-host-toolchain-coverage.sh`,
+`check-git-op-conditionals.sh`) went live with their WIRING present and their
+SCRIPTS never committed, breaking CI for the whole shared branch. Found the
+second instance by sweeping rather than stopping at the one CI named;
+confirmed via a wider sweep (540 candidate script references across every
+workflow and `.ci/scripts/**`) that exactly these two were missing and no
+more. Fixed by committing the peer's already-passing scripts unmodified,
+crediting them explicitly -- faster and less destructive than reverting
+finished work already breaking CI for everyone. The peer independently
+verified both commits byte-identical to their own working copies.
+
+A THIRD instance surfaced one layer deeper: the coverage script itself
+depended on a peer's NPX-guard feature (arrays `NPX_TOOLS`/`BARE_TOOLS` in
+`block-host-toolchain-run.sh`) that existed only in local uncommitted state,
+never pushed -- so committing the coverage checker created a live dependency
+on code that had never shipped. Same remedy: the dependency was complete and
+self-tested (39/0), so it was committed too, crediting the author.
+
+### A6's own mention-vs-target gap -- a THIRD instance of the day's headline class
+
+`check-toolchain-pins.sh`'s A6 rule ("a gate invoking a pinned tool must
+acquire it at the pin") flagged the newly-committed coverage script, because
+its `NPX_TOOLS=(ruff go shfmt shellcheck actionlint)` array LITERAL --
+describing what it compares, never invoking anything -- looked identical to a
+bare command word to A6's regex. A6 already carried the identical fix for a
+sibling shape (an echoed string is prose, not an invocation, from a
+2026-08-26 incident); extended the same reasoning to array-literal
+assignments, proved in both directions with a planted regression.
+
+Fixing THAT edit then broke a THIRD, unrelated gate: inserting eleven comment
+lines shifted two pre-existing, already-safe swallowed-failure captures
+eleven lines down, and the shrink-only scanner reported them as freshly
+"regrown" at their new position though the code never changed. First waiver
+attempt was silently discarded -- the scanner clears a pending waiver on ANY
+comment line that is not itself the waiver line, so a multi-line explanation
+wipes out its own waiver. Fixed to a single line; proved the quality bar is
+real by planting a low-effort reason ("fine") and watching it get rejected by
+name.
+
+### A genuine mistake, owned plainly
+
+Mid-investigation, a `git clone` into a scratch dir failed, its `cd` failed
+too (no `set -e`), and the next line -- `git checkout --detach HEAD` -- ran in
+the actual shared console repo instead of the intended scratch clone,
+detaching this shared worktree's HEAD with a peer's live uncommitted work in
+the index. Recovered with zero destructive commands: verified
+`git rev-parse HEAD == git rev-parse 0827-1` (byte-identical, since the
+branch already pointed at that commit) before touching anything, then
+`git checkout 0827-1` -- a pure symbolic-ref move onto an identical commit,
+zero files touched.
+
+### Counts
+
+Every push this stretch got a fresh, tree-matched receipt before going out;
+several came back fully clean (`exitCode 0`, `whole`, `stable`, `failed: []`,
+`blocked: []`) for the first time this wave. `check:ci-parity` held at 327
+gates, both directions, across every wiring change. `check:ci-guard-mention-
+anchoring` (yesterday's gate) stayed green through the peer's new NPX block
+without modification -- confirming it was already correctly anchored.
