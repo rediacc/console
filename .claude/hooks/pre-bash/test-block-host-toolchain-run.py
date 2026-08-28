@@ -149,11 +149,32 @@ else:
 # submodule WITH node_modules, and private/growth/video_pipeline is not a submodule
 # at all but carries its own .venv; neither can run in the container. Routing
 # video_pipeline into the devbox produced ModuleNotFoundError: anyio.
+# THE ROOT-REPO EXPECTATION IS DERIVED, NEVER HARDCODED. This case asserted a
+# literal 2 for private/renet and went red on 2026-08-28 the moment `ruff` was
+# installed on this host -- the guard then correctly declined to route, exactly
+# as its own comment says it should ("THE HOST IS ASKED, NOT ASSUMED").
+#
+# The property under test is the one the section header states: a submodule with
+# no host toolchain routes LIKE THE ROOT REPO. So compare it to the root repo's
+# verdict rather than to a constant, which holds in both worlds and keeps the
+# case meaningful on a machine that has ruff and on one that does not.
+#
+# SAME CLASS AS wl_git.py's force-push probe trio, found the same day: a control
+# whose expectation was pinned to ambient machine state (there, a branch name
+# from an earlier wave). Neither went green and lied -- both went RED for a
+# reason unrelated to what they assert, which is worse, because a red nobody can
+# explain is a red everybody learns to ignore.
+_root_like = 2 if (have_box and shutil.which("ruff", path=REAL) is None) else 0
 if have_box:
     for path, want, why in (
         ("private/growth/video_pipeline", 0, "a pipeline with its own .venv must NOT be routed"),
         ("private/account", 0, "a submodule with host-built node_modules must NOT be routed"),
-        ("private/renet", 2, "a submodule with no host toolchain routes like the root repo"),
+        (
+            "private/renet",
+            _root_like,
+            "a submodule with no host toolchain routes like the root repo (expected %d here)"
+            % _root_like,
+        ),
     ):
         if not os.path.exists(os.path.join(REPO, path)):
             continue

@@ -602,6 +602,99 @@ def staged_deletions(repo):
     return [ln for ln in out.splitlines() if ln.strip()]
 
 
+# WHY A REBASE IN A SHARED WORKTREE DEADLOCKS, and why git cannot say so.
+# `agent/<session>/STATE.md` is per-session VOLATILE state living in a TRACKED
+# path: the stop hook rewrites a session's document whenever that session's
+# world signature moves (wl_checks.py:1080 -- the trigger is WORK, never the
+# clock). With two live sessions in one worktree the tree is therefore never
+# clean for both at once, and `git rebase` refuses on a dirty tree. That block
+# is CORRECT and must stay.
+#
+# What made it cost a round trip on 2026-08-28 is that git names the PATHS and
+# not the OWNER, so the one party who can clear the block is absent from the
+# message. Rewording a single commit on 0827-1 stalled until a peer was asked by
+# hand to commit their own document. The owner is right there in the path.
+VOLATILE_STATE_RE = re.compile(r"^agent/([^/]+)/STATE\.md$")
+
+
+def dirty_paths(repo):
+    """Every path git reports as changed, or None when the PROBE ITSELF failed.
+
+    None is not "clean". An unreadable probe is never a pass -- the same rule
+    `staged_deletions` had to learn after `if dels:` let a failed probe through
+    on two of its three call sites.
+    """
+    rc, out, _ = run_git(["status", "--porcelain", "-z"], cwd=repo)
+    if rc != 0:
+        return None
+    fields = [f for f in out.split("\0") if f]
+    paths, i = [], 0
+    while i < len(fields):
+        entry = fields[i]
+        i += 1
+        if len(entry) < 4:
+            continue
+        xy, path = entry[:2], entry[3:]
+        paths.append(path)
+        # A rename/copy entry is followed by its ORIGIN path as a separate
+        # NUL-terminated field. Consuming it HERE is what keeps the loop in
+        # phase -- treating it as its own entry would read the origin path's
+        # first two characters as a status code and mis-split every path after
+        # it.
+        if ("R" in xy or "C" in xy) and i < len(fields):
+            paths.append(fields[i])
+            i += 1
+    return sorted(set(paths))
+
+
+def classify_dirt(paths):
+    """Split dirty paths into volatile per-session state and everything else.
+
+    Returns (owners, real): `owners` maps a session id to its document, `real`
+    is every path that is somebody's actual work. The split is what turns "the
+    tree is dirty" into "ask e580532b to commit theirs".
+    """
+    owners, real = {}, []
+    for path in paths:
+        match = VOLATILE_STATE_RE.match(path)
+        if match:
+            owners[match.group(1)] = path
+        else:
+            real.append(path)
+    return owners, real
+
+
+def dirt_verdict(repo, me=None):
+    """One line saying whether a rebase can start here, and who must act.
+
+    Deliberately does NOT decide for the caller. A refusal that says only "not
+    clean" is what sent a session hunting; a refusal naming the sessions whose
+    documents are in the way is actionable by the only people who can act.
+    """
+    paths = dirty_paths(repo)
+    if paths is None:
+        return False, "could not read the working tree state (probe failed)"
+    if not paths:
+        return True, "clean"
+    owners, real = classify_dirt(paths)
+    if real:
+        return False, "%d path(s) of real work are uncommitted, first: %s" % (
+            len(real),
+            ", ".join(real[:3]),
+        )
+    mine = sorted(k for k in owners if me and k.startswith(me))
+    theirs = sorted(k for k in owners if k not in mine)
+    parts = []
+    if mine:
+        parts.append("commit your own (%s)" % ", ".join(owners[k] for k in mine))
+    if theirs:
+        parts.append("ask %s to commit theirs" % ", ".join(theirs))
+    return False, (
+        "the only uncommitted paths are volatile per-session STATE.md documents; "
+        + "; ".join(parts)
+    )
+
+
 def trees_identical(repo, a, b):
     """True when two commits have byte-identical trees.
 
@@ -812,6 +905,8 @@ def repo_root():
 # BOTH directions, so the next verb cannot be added silently.
 USAGE = """usage: worklist.py --git <subcommand> [args] [--execute]
 
+  rebase-preflight [me]            can a rebase start here? names the SESSION
+                                   whose volatile STATE.md is in the way
   rebase-submodules <branch>       rebase each submodule branch onto its own origin/main
   resolve-gitlinks                 resolve UU <submodule> conflicts by ancestry
   merge-submodule <path> <sha>     verify tree-identity, then bump the pointer
@@ -898,6 +993,22 @@ def main(argv):
                 "after this: CI re-runs, and the claude-reviewed marker no longer "
                 "matches the new head, so the PR needs a fresh review pass"
             )
+        elif sub == "rebase-preflight":
+            # THE CONSOLE ROOT WAS NEVER COVERED. rebase-submodules rebases
+            # submodules; the deadlock on 2026-08-28 was in the parent, where
+            # this module planned nothing at all, so a session hit git's own
+            # bare refusal and had to work out the owner by hand.
+            me = args[1] if len(args) > 1 else None
+            ok_root, why_root = dirt_verdict(root, me)
+            plan.check("console: %s" % why_root, ok_root)
+            for path, _base in submodules(root):
+                ok_sub, why_sub = dirt_verdict(os.path.join(root, path), me)
+                plan.check("%s: %s" % (path, why_sub), ok_sub)
+            plan.note(
+                "a volatile STATE.md is its OWNER'S to commit: never commit a "
+                "peer's document to clear your own rebase, and never "
+                "checkout/restore/stash it -- the tree holds other sessions' work"
+            )
         elif sub == "rebase-submodules":
             if len(args) < 2:
                 raise RefusalError("rebase-submodules needs a branch")
@@ -920,6 +1031,14 @@ def main(argv):
                     raise RefusalError("could not read staged deletions for %s" % path)
                 if dels:
                     raise RefusalError("%s has staged deletion(s); refusing" % path)
+                # `git rebase` refuses on a dirty tree and names only the paths.
+                # Checking it HERE, before a single write is planned, is what
+                # turns a halt partway through the submodule list into a
+                # refusal that names who must act. See dirt_verdict.
+                ok_dirt, why_dirt = dirt_verdict(repo)
+                if not ok_dirt:
+                    raise RefusalError("%s cannot rebase: %s" % (path, why_dirt))
+                plan.check("%s tree is clean" % path, True)
                 plan.check("%s has a %s branch" % (path, branch), True)
                 plan.cmd(["fetch", "origin", base], repo)
                 plan.cmd(["checkout", branch], repo)
@@ -1789,16 +1908,39 @@ def selftest():
             rc = main(argv)
         return rc, err.getvalue()
 
+    # THE BRANCH IS READ FROM THE REPO, NEVER HARDCODED, and that is not a
+    # style preference -- it is the defect this block already suffered. It named
+    # `0826-3`, a branch from an earlier wave. Once that branch was gone AND
+    # force-push learned (correctly) to skip a submodule that lacks the branch,
+    # every submodule was skipped, `staged_deletions` was never called, and all
+    # three probes below tested nothing at all. They did not go green and lie;
+    # they went RED for a reason unrelated to what they assert, which is worse,
+    # because a red nobody can explain is a red everybody learns to ignore.
+    _rc_b, _cur_branch, _ = run_git(["rev-parse", "--abbrev-ref", "HEAD"], cwd=repo_root())
+    _cur_branch = _cur_branch.strip() if _rc_b == 0 else ""
     for probe, want_refusal, label in (
         (lambda _repo: None, True, "an UNREADABLE probe"),
         (lambda _repo: ["some/file"], True, "a real staged deletion"),
         (lambda _repo: [], False, "a clean probe"),
     ):
-        globals()["staged_deletions"] = probe
+        # ANTI-VACUITY: count the calls. Asserting the refusal without
+        # asserting the probe was REACHED is what let this rot silently for a
+        # whole wave, so the reach is now itself a control.
+        reached = []
+
+        def counting(repo_arg, _p=probe, _seen=reached):
+            _seen.append(repo_arg)
+            return _p(repo_arg)
+
+        globals()["staged_deletions"] = counting
         try:
-            rc, err = _run(["force-push", "0826-3"])
+            rc, err = _run(["force-push", _cur_branch])
         finally:
             globals()["staged_deletions"] = real_sd
+        check(
+            "CONTROL: force-push actually REACHED the probe for %s" % label,
+            bool(reached),
+        )
         refused = rc == 2 and "REFUSED" in err
         check(
             "force-push: %s %s" % (label, "refuses" if want_refusal else "does NOT refuse"),

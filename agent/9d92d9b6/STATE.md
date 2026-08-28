@@ -1,76 +1,153 @@
-## SESSION 9d92d9b6 2026-08-28T07:32:48Z
+# 9d92d9b6 — wave 0827-1, epic `f2757830`, PR #579 (DRAFT)
 
-Wave 0827-1 — epic `f2757830`, PR #579, still DRAFT. 31 commits on the branch,
-4 unpushed, head `a63def760`.
+`origin/0827-1` = `3dbdfbb1f`. Local head `9d3dd06dc`, 1 commit unpushed.
 
-## Two submodule PRs, open, linked and reviewed
+## The PR wave is DONE
 
-- **rediacc/account#83** `0827-1` -> `0f1bc52` (hono, @simplewebauthn bumps).
-- **rediacc/renet#109** `0827-1` -> `3f49e09` (the `$(go env GOPATH)/bin` fix).
+Trailer green (`all 84 commits name a known epic`), `.ci/config/carried-reds.json`
+EMPTY, first fully green receipt (exit 0, stable, whole). Submodule PRs open and
+review-answered: **rediacc/account#83**, **rediacc/renet#109**. Operator ruled
+review starts only AFTER CI is green.
 
-`check-submodule-branches.sh` passes ONLY with `PR_NUMBER=579` set: without it
-the PR-link and review-reply halves never run, so a local green means less than
-it looks. It demanded a reply to the automated review on #109; posted.
+## Two agents landed. BOTH sets verified against the artifact, not on report.
 
-## TWO PLANS FILED THIS SESSION, both draft, neither implemented
+**Ladder set** (`wl_checks.py`, `wl_wait.py`, `worklist_messages.py`,
+`worklist-cases/{01,05,08,14,15,21,23}.sh`, `test-always-tier.py`, registrations
+in `test-worklist-v5.sh` + `test-hooks.sh`). Staged. My independent run: **854/0**.
 
-- `agent/PLAN-ci-watch-enforcement.md` — a session must not stop with a pushed
-  head it never watched. Root cause VERIFIED: `ci_watch_armed` has ONE call site
-  (`wl_ci.py:769`), reached only after a job has already failed, so it can only
-  EXCUSE a block; and `ci_trouble` returns at its first two statements
-  (`:737-739` unset `WORKLIST_PUBLISH_REF`, `:740-743` multi-session) — zero
-  `cistate` sidecars after a full night proves it never ran.
-- `agent/PLAN-stop-always-tier.md` — the "always to do" list. `no-waiter`,
-  `no-waiter-asked` and `requests` are `always=False`, so the three checks where
-  ANOTHER session is blocked sit in the rotatable tier, 23 keys deep. Worse,
-  `no-waiter-asked` bumps its ladder at COMPUTE time (`:3957`), so rungs advance
-  unseen. And `wl_wait.nudge()` UNLINKS the grace counter on compliance, so
-  arming one waiter buys 30+ min of silence after it lapses — `.waiternudge` for
-  this session does not exist while the peer's does.
+**Judge set** (`wl_judge.py`, `test-judge-schema.py`, new `wl_bravedefault.py`,
+`wl_classsweep.py`, `wl_rules.py`, `calibrate-judge-rules.py`). NOT yet staged.
+**141 controls**, live calibration 14/14 against real haiku.
 
-**Read CI with `.ci/scripts/ci/ci-trace.py`, never raw `gh`.** It gives the
-verdict AND explains cancellation inline. A run showing `success` may be
-**Watchdog Monitor**, not Console CI; a one-job run is never full CI.
+## What verification actually caught (all three would have shipped silently)
 
-## Peer coordination (this worked; use it)
+1. **`check:ci-python-lint` was RED on `wl_checks.py`** — my own about-to-commit
+   file, found only because the judge agent reported it. Format-only, fixed by
+   `ruff format` on THAT ONE FILE (the gate's advice names all 66; running it
+   would have rewritten peer files).
+2. **The always-tier is NOT inflated — my alarm was a broken grep.** `grep` can't
+   span multiline `vadd(` calls, so "7 before / 8 now" was wrong. AST comparison:
+   **21 → 27**, added `no-waiter`, `no-waiter-asked`, `requests` (the three
+   planned promotions), `unread-reports` (planned graduation), `waiter-lapsed`
+   (new, from the tombstone), `pr-finish` (the operator's open-PR-red mandate).
+   Nothing removed. Defensible set.
+3. **The deepcopy was a comment, not a contract.** All four pre-existing
+   non-mutation controls assert MEMBERSHIP of one key, and the builder only
+   rebinds `required` to a fresh list — so every one survived a shallow copy.
+   10 new controls pin it. **I planted M9 myself:** `deepcopy → dict()` gives
+   exactly 2 reds naming the shared nested objects; restore byte-identical; 141.
+   e580532b re-verified independently and agreed: *"I wrote a comment claiming a
+   contract and a control that could not fail on it."*
 
-`worklist.py --ask <me> <peer> <text>` is the channel. It caps at 1000 chars and
-REFUSES rather than truncating, so put detail in a file and cite the path.
-Answers arrive through the Stop-hook BLOCK, then `--ack` them.
+## The DEFAULT wording: the class was wider than either of us said
 
-`e580532b` declined to authorise committing their work — correctly: only the
-OPERATOR asks, and asking a peer to bless an operator grant converts it into
-their decision. They gave the fact that mattered instead: their console paths are
-finished, their live worker writes only to `private/growth` (gitignored).
-Committed as `c06896c6a` with authorship stated.
+My note said 4 sites (103/127/217/**1563**). `1563` does not exist. The agent
+found **5** exact-literal sites (103, 127, 217, 1614, 2218). Sweeping the class
+myself found **5 MORE** timid variants — `:166`, `:272`, `:1032`, `:1465`,
+`:1495` — of which `:272`'s `<what happens if nobody acts>` is the worst, passive
+voice inviting "nothing". All ten now read
+`DEFAULT: <the ACTION you take alone if unanswered -- 'hold' is not one>`.
+Three `<action>` sites were already correct and left alone. Whole file re-parsed;
+zero timid placeholders remain.
 
-Outstanding request `#9d95b805`: asked them for a ~2 minute window with no writes
-to tracked console files, because `check-ci-scans-tracked-paths.sh` is still
-being edited and `git rebase` refuses on a dirty tree.
+## Placement drift in agent reports (CLAUDE.md rule 4, confirmed again)
 
-**`git add` is not private here.** My `git commit -F` swept two of their STAGED
-files into `449b95f09` — a commit takes the whole INDEX. They asked me NOT to
-split them out; a `git reset` on a tree they are working in costs more than the
-attribution.
+Every BEHAVIOR the judge agent claimed is present; its line refs drift ~30 lines.
+`judge_schema_for` is at `wl_judge.py:604` (claimed 617); the `evidence_kind:
+none` fire logic is at `wl_classsweep.py:263` (claimed 229) and is correct —
+`swept: true` with `evidence_kind none` counts as NOT swept, the operator's
+"evidence, not assertion" made mechanical.
 
-## The one CI red left
+## Open question, hypothesis only
 
-`check:ci-pr-task-trailers` on `0081ab315`, carried in
-`.ci/config/carried-reds.json`. **Delete that entry the moment the trailer is
-repaired** — a carried red whose gate has gone green REFUSES the next push.
+Agent reported "5 stop-suite failures, base 833/5". My run: 854/0. Its cases
+failed **rc=127** (command not found) and it installed `ruff` partway through.
+Likely environment, not code. The in-flight re-run settles it — do not report
+either number as fact until it lands.
 
-The repair is MINE, not the operator's: `git rebase -i` returns rc 0; only
-`git commit --amend` is guarded. The force-push has a sanctioned verb,
-`worklist.py --git force-push 0827-1 --execute`. Blocked only by the dirty tree.
+## Verify-don't-trust: tools that lied this session
 
-Operator ruled: review starts AFTER checks are green, so #579 stays draft.
+1. `worklist.py --git force-push --execute` printed "2 command(s) ran" and pushed
+   nothing — it HALTS at the TOP, so `| tail` hides it. **Verify with
+   `git ls-remote`.** Fixed.
+2. A dead scan read identical to a clean one (`|| true` ate the status).
+3. `ci_watch_armed` has ONE call site, after a job already failed.
+
+Read CI with `.ci/scripts/ci/ci-trace.py`, never raw `gh`: a `success` run may be
+**Watchdog Monitor**, and a one-job run is never full CI.
+
+## LANDED
+
+- **`12de2e910`** ladder set, 13 files. Suite re-run after `ruff format`: **854/0,
+  exit 0**.
+- **`f4b1e...`** judge set, 6 files (see `git log`). 141 controls, M9 planted and
+  restored byte-identical.
+
+## `git commit -F` COMMITS THE INDEX. It bit me TWICE in one session.
+
+1. It swept two of a peer's STAGED files into `449b95f09`.
+2. I staged `worklist_messages.py`, THEN made the DEFAULT edits, then committed:
+   `12de2e910` does **not** contain the wording change its own message claims.
+   Audited the rest of that message — `--timeout 900 -> 60` IS in it, always tier
+   27 IS in it, only the wording claim is not. The tree has all 10 sites; they
+   land in the next commit.
+
+**No hook guards this.** `.claude/hooks/pre-bash/` has 7 git guards and none
+checks whether a staged path was edited afterwards. Adding
+`warn-stale-index.sh`: paths in BOTH `diff --cached --name-only` and
+`diff --name-only` commit their STALE version while the message describes disk.
+
+## IN FLIGHT / UNCOMMITTED
+
+`wl_git.py`, `test-hooks.sh` (floor 40 -> 55), `worklist_messages.py` (the 10
+DEFAULT sites). Held until `test-hooks.sh` reports — it is the gate that would
+have caught the force-push rot and it has been red.
+
+## The force-push probe trio was RED and UNREACHABLE, by my own earlier fix
+
+Fixture hardcoded branch `0826-3` from a previous wave. Once that branch was gone
+AND force-push learned (correctly, my fix) to skip a submodule lacking the
+branch, every submodule was skipped and `staged_deletions` was never called.
+Branch now read from the repo; three `CONTROL: ... REACHED the probe` assertions
+added. Replanting `0826-3` fires all six reds. **57 PASS/3 FAIL -> 63 PASS/0
+FAIL.** Floor bumped 40 -> 55 per that file's own policy.
+
+## TWO DEFECT CLASSES SWEPT (#e6e76009), not two instances
+
+**Class A — mention-vs-target.** My own new `warn-stale-index.sh` reintroduced it
+within the hour: `echo do not run git commit here` WARNED. Sweeping found a LIVE
+sibling — **`block-git-empty-commit.sh` BLOCKED (exit 2) on prose**. Its own
+header says it was routed through `command-scan.sh` to stop matching prose; that
+fixed the QUOTED case only. `hook_scan_target` strips quoted spans, so an
+unquoted sentence survives to a matcher that looked ANYWHERE. Both anchored to
+command position. Probed from a FILE — running the strings inline makes the
+harness its own subject and the chain refuses it. **BEFORE: 2 FAIL. AFTER: 6/6,
+all four blocking controls still blocking.** `block-untagged-commit.sh` and
+`block-commit-meta.sh` probed clean.
+
+**Class B — controls pinned to ambient machine state.**
+`test-block-host-toolchain-run.py` hardcoded `want=2` for `private/renet` and
+went red the moment `ruff` was installed on this host mid-session; the guard then
+correctly declined to route, exactly as its own *THE HOST IS ASKED, NOT ASSUMED*
+comment says. Expectation now DERIVED from the same fact the guard uses.
+Inverting the derivation fires the red; restore byte-identical. Same class as
+`wl_git`'s force-push trio (branch `0826-3` from an earlier wave), hours earlier.
+Swept the rest: the `0826-x` literals in `test-hooks.sh` are command STRINGS
+parsed by hooks, not ambient state — probed `block-unverified-push` with a
+non-current branch to confirm (both exit 0). **Class has exactly 2 members, both
+fixed.**
+
+Neither went green and lied. Both went RED for a reason unrelated to what they
+assert, which is worse: a red nobody can explain is a red everybody learns to
+ignore.
 
 ## Next action
 
-1. Commit the peer's three currently-dirty paths (operator authorised this wave)
-   so the tree is clean, then `git rebase -i de391e527` rewording `0081ab315` to
-   append `PR-TASK: f2757830` (message file `<scratchpad>/amend-msg.txt`).
-2. Delete the `check:ci-pr-task-trailers` entry from carried-reds.json, then
-   republish with the force-push verb and VERIFY the remote sha moved.
-3. `npm run ci:quick` until only expected reds remain; then `gh pr ready` on
-   #579, request review, resolve threads. **Never merge, never push `main`.**
+1. Definitive suite `bsvsgpdl3` (prev run was PASS=1730 FAIL=1, that 1 now
+   fixed) → then ONE commit: `wl_git.py`, `test-hooks.sh`, `worklist_messages.py`,
+   `warn-stale-index.sh`, `block-git-empty-commit.sh`,
+   `test-block-host-toolchain-run.py`, `settings.json`.
+   **Re-stage every path immediately before committing** — the stale-index
+   defect above is exactly what bit `12de2e910`.
+2. Push, then `ci-trace.py` on the new head; when green `gh pr ready` #579,
+   request review, resolve threads. **Never merge, never push `main`.**

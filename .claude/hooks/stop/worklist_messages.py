@@ -100,7 +100,7 @@ V_IDLE_STALL = (
     "    delegate:  .claude/hooks/stop/worklist.py --lease %s <id> +60 "
     "worker:<bg-id> '<what it is doing>'\n"
     "    ask:       .claude/hooks/stop/worklist.py --defer %s <id> '<question> "
-    "DEFAULT: <what you do if unanswered> WHY: <why this session cannot settle "
+    "DEFAULT: <the ACTION you take alone if unanswered -- 'hold' is not one> WHY: <why this session cannot settle "
     "it> HOW: <what concretely resolves it>'"
 )
 
@@ -124,7 +124,7 @@ V_PENDING_ASK = (
     "Three exits, and you can finish any of them THIS turn:\n"
     "    ask it now:   call AskUserQuestion with the question, in this turn\n"
     "    park it:      .claude/hooks/stop/worklist.py --defer %s <id> "
-    "'<question> DEFAULT: <what you do if unanswered> WHY: <why this session "
+    "'<question> DEFAULT: <the ACTION you take alone if unanswered -- 'hold' is not one> WHY: <why this session "
     "cannot settle it> HOW: <what concretely resolves it>'\n"
     "    settle it:    answer it yourself from the code, the request or a "
     "sensible default, and DELETE the line -- most of them are yours to decide, "
@@ -163,8 +163,8 @@ V_UNBLOCKED_CLAIM = (
 
 V_UNDEFAULTED = (
     "%d deferred item(s) carry no DEFAULT:. A '- [?]' without a default is a "
-    "note, not a decision. Append 'DEFAULT: <what you will do if the operator "
-    "does not answer>' to each, then execute the default next turn:\n%s"
+    "note, not a decision. Append 'DEFAULT: <the ACTION you take alone if "
+    "unanswered -- 'hold' is not one>' to each, then execute the default next turn:\n%s"
 )
 
 V_REQUESTS_WAITING = (
@@ -214,7 +214,7 @@ V_XSESSION_BAD = (
     "just a synonym for blocked wearing a checkable-looking name:\n%s\n"
     "Post the ask and put its #id on the Remaining line:\n"
     "    .claude/hooks/stop/worklist.py --ask %s <recipient|*> '<what you "
-    "need> DEFAULT: <what you do if unanswered>'\n"
+    "need> DEFAULT: <the ACTION you take alone if unanswered -- 'hold' is not one>'\n"
     "or change the state word to one that is true."
 )
 
@@ -269,7 +269,7 @@ THIS CANNOT TRAP YOU: it blocks at most %d consecutive stop(s) per failure set
 (this is %d), then downgrades to a report for that set forever. To clear it now,
 push the fix, or name the failing job in your stop message, or -- if it is not
 yours to fix -- file
-    - [?] (%s) CI: <job> red, <one-line reason>  DEFAULT: <what happens if nobody acts>  WHY: <why it is not yours>  HOW: <who or what resolves it>"""
+    - [?] (%s) CI: <job> red, <one-line reason>  DEFAULT: <the ACTION you take alone -- 'hold' is not one>  WHY: <why it is not yours>  HOW: <who or what resolves it>"""
 
 V_ADHOC_WATCH = (
     "A background task is watching CI BY HAND: %s\n"
@@ -1029,8 +1029,8 @@ V_UNCITED = (
 V_FOUND_NOT_FIXED = (
     "your message carries a 'found, not fixed' list. CLAUDE.md's rule is to FIX "
     "what you find: reporting it is the fallback, not the default. For each item, "
-    "either fix it now and say you did, or record it as '- [?] ... DEFAULT: <what "
-    "you will do if unanswered>' so it is tracked and time-boxed rather than "
+    "either fix it now and say you did, or record it as '- [?] ... DEFAULT: <the ACTION "
+    "you take alone if unanswered -- 'hold' is not one>' so it is tracked and time-boxed rather than "
     "restated every turn. Then drop the phrase."
 )
 
@@ -1462,8 +1462,8 @@ R_REGGATE_BLOCK = (
     "  2. DEFER to the operator, the ONLY exit that ends a finding without a "
     "fix, and only for a decision that is genuinely theirs: append to the "
     "worklist\n"
-    "     - [?] (%s) %s <should this be gated?> DEFAULT: <what you do if "
-    "unanswered> WHY: <why the call is not yours> HOW: <what settles it>\n"
+    "     - [?] (%s) %s <should this be gated?> DEFAULT: <the ACTION you take alone if "
+    "unanswered -- 'hold' is not one> WHY: <why the call is not yours> HOW: <what settles it>\n"
     "     and the deferral machinery prints it to them every stop.\n"
     "  3. REBUT in your message: say why it is not applicable, already "
     "covered (name the REAL key), or a one-off; the judge re-reads your "
@@ -1492,7 +1492,7 @@ CLI_ASK_OPERATOR_NO_DEFAULT = (
     "REFUSED: a request to the operator must carry a DEFAULT:. It leaves this "
     "machine as an email and is answered by a human who may be asleep, so "
     "without a stated fallback you have volunteered to stall until they wake "
-    "up. Re-ask with '... DEFAULT: <what you will do if no answer arrives>'."
+    "up. Re-ask with '... DEFAULT: <the ACTION you take alone -- 'hold' is not one>'."
 )
 
 CLI_ASK_UNKNOWN_RECIPIENT = (
@@ -1611,7 +1611,7 @@ CLI_TRIAGE_OPERATOR = (
     + "\nIf this is a genuine DECISION that is theirs, park it as a question "
     "whose default executes:\n"
     "    .claude/hooks/stop/worklist.py --defer %(me)s %(id)s '<question> "
-    "DEFAULT: <what you do if unanswered> WHY: <the door plus the specifics> "
+    "DEFAULT: <the ACTION you take alone if unanswered -- 'hold' is not one> WHY: <the door plus the specifics> "
     "HOW: <what concretely settles it>'\n"
     "If it is a last-resort ISSUE (operator-only powers, or a target outside "
     "this session's write access), file it WITH the evidence and a "
@@ -2215,7 +2215,7 @@ V_PLANFID = (
     "your message next stop.\n"
     "  3. DEFER to the operator, only for a call that is genuinely theirs (the plan "
     "is superseded, the scope changed): append\n"
-    "     - [?] (%s) %s <the question> DEFAULT: <what you do if unanswered> "
+    "     - [?] (%s) %s <the question> DEFAULT: <the ACTION you take alone if unanswered -- 'hold' is not one> "
     "WHY: <why the call is not yours> HOW: <what settles it>\n"
     "     and the deferral machinery prints it to them every stop."
 )

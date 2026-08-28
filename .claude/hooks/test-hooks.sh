@@ -302,6 +302,11 @@ check 0 pre-bash/block-git-amend.sh "$(bash_json "echo 'git commit --amend'")" "
 check 2 pre-bash/block-git-amend.sh "$(bash_json 'sh -c "git commit --amend"')" "git-amend: an amend hidden in sh -c is still caught"
 check 2 pre-bash/block-git-amend.sh "$(bash_json 'eval "git commit --amend"')" "git-amend: an amend hidden in eval is still caught"
 check 0 pre-bash/block-git-empty-commit.sh "$(bash_json "echo 'git commit --allow-empty -m x'")" "git-empty-commit CONTROL: echoing it is not committing"
+# The quoted case above was pinned; the UNQUOTED one was not, and the guard
+# blocked on it until 2026-08-28. hook_scan_target strips quoted spans, so an
+# ordinary sentence survives it intact and reached a matcher that looked for
+# the phrase ANYWHERE. A doc line or worklist note was refused as a command.
+check 0 pre-bash/block-git-empty-commit.sh "$(bash_json 'echo never use git commit --allow-empty to retrigger CI')" "git-empty-commit CONTROL: unquoted prose is not a command"
 check 0 pre-bash/block-cli-bundle.sh "$(bash_json "echo 'node packages/cli/cli-bundle.cjs'")" "cli-bundle CONTROL: echoing it is not running it"
 check 0 pre-bash/block-protected-files.sh "$(bash_json "echo 'git restore .claude/settings.json'")" "protected-files CONTROL: echoing it is not restoring"
 # AND THE OTHER DIRECTION, which is the half that makes the narrowing safe. The
@@ -395,6 +400,54 @@ check 0 pre-bash/block-worktree-add.sh "$(bash_json './run.sh worktree list')" "
 check 0 pre-bash/block-worktree-add.sh "$(bash_json './run.sh worktree remove 0826-1')" "worktree-add: remove is not create"
 check 0 pre-bash/block-worktree-add.sh "$(bash_json './run.sh worktree prune')" "worktree-add: prune is not create"
 check 0 pre-bash/block-worktree-add.sh "$(bash_json 'echo "run.sh worktree create is blocked"')" "worktree-add: prose is not an invocation"
+
+# ---- warn-stale-index: `git commit` takes the INDEX, not the working tree ----
+#
+# Needs a REAL repo in a known state, because the condition it reports is a
+# property of the index rather than of the command line. Two defects in one
+# session motivated it: `git commit -F` swept in a peer's staged files, and a
+# file staged then edited committed its stale version under a message that
+# described the edits.
+STALE_REPO="$(mktemp -d)"
+(
+    cd "$STALE_REPO" || exit 1
+    git init -q .
+    git config user.email t@t
+    git config user.name t
+    printf 'v1\n' >a.txt
+    git add -- a.txt
+    printf 'fixture\n\nPR-TASK: f2757830\n' >.msg
+    git commit -q -F .msg
+    printf 'v2\n' >a.txt
+    git add -- a.txt
+    printf 'v3\n' >a.txt
+) >/dev/null 2>&1
+
+stale_probe() {
+    local want="$1" desc="$2" cmd="$3" out
+    out="$(cd "$STALE_REPO" && printf '{"tool_input":{"command":%s}}' \
+        "$(printf '%s' "$cmd" | jq -Rs .)" |
+        bash "$DIR/pre-bash/warn-stale-index.sh" 2>&1 >/dev/null)"
+    local got=silent
+    [ -n "$out" ] && got=warn
+    if [ "$got" = "$want" ]; then
+        PASS=$((PASS + 1))
+        echo "ok   [0] stale-index: $desc"
+    else
+        FAIL=$((FAIL + 1))
+        echo "FAIL [1] stale-index: $desc (want $want, got $got)"
+    fi
+}
+
+stale_probe warn "a staged-then-edited path is named" "git commit -F msg.txt"
+stale_probe warn "after a separator, still named" "cd . && git commit -F msg.txt"
+# CONTROL: -a takes the WORKING TREE for tracked paths, so there is no staleness.
+stale_probe silent "CONTROL: commit -a is not index-only" "git commit -a -m x"
+# CONTROL: the mention-vs-target class. The first draft of this guard warned on
+# this line, which is why it is pinned rather than remembered.
+stale_probe silent "CONTROL: unquoted prose is not a command" "echo do not run git commit here"
+stale_probe silent "CONTROL: a non-commit is out of scope" "git status"
+rm -rf "$STALE_REPO"
 
 # ---- block-git-empty-commit: the advice must not name a run that does not exist
 #
@@ -1670,7 +1723,13 @@ rm -rf "$DRIFT_TMP"
 #
 # Measured 2026-08-27: wl_git 52, wl_admit 18. wl_git's floor was still 18, set
 # when it HAD 18, so two thirds of its controls could have vanished silently.
-for orphan in wl_git:40 wl_admit:16; do
+#
+# Re-measured 2026-08-28: wl_git 63 (three new anti-vacuity reach controls, plus
+# the force-push probe trio that had been RED and unreachable -- its fixture
+# named a branch from an earlier wave, so every submodule was skipped and the
+# probe was never called). A floor of 40 against 63 leaves the same third-of-the
+# -suite gap this comment was written to close, so it moves with the count.
+for orphan in wl_git:55 wl_admit:16; do
     mod="${orphan%%:*}"
     floor="${orphan##*:}"
     OMOD="$DIR/stop/${mod}.py"

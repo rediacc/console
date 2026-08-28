@@ -46,7 +46,17 @@ CMD=$(jq -r '.tool_input.command' 2>/dev/null)
 source "$(dirname "${BASH_SOURCE[0]}")/lib/command-scan.sh"
 SCAN=$(hook_scan_target "$CMD")
 
-if ! printf '%s' "$SCAN" | grep -qE 'git commit[^|;&]*--allow-empty'; then
+# ANCHORED TO COMMAND POSITION 2026-08-28. Routing through command-scan.sh in
+# the comment above fixed the QUOTED case (`echo '<the banned command>'`) and
+# left the unquoted one: hook_scan_target strips quoted spans, so an ordinary
+# unquoted sentence advising against the command survived it intact and this
+# guard BLOCKED it -- a worklist note or a doc line refused as if it were the
+# command itself. Measured before the fix: exit 2 on such a sentence.
+#
+# SAME DEFECT CLASS as block-bash-write-to-running-script.sh and
+# block-roundlog-truncate.sh, both fixed earlier the same day: a guard that
+# matches a MENTION rather than a TARGET.
+if ! printf '%s' "$SCAN" | grep -qE '(^|[;&|(]|&&|\|\|)[[:space:]]*git[[:space:]]+commit[^|;&]*--allow-empty'; then
     exit 0
 fi
 

@@ -199,8 +199,16 @@ def _emit(payload, as_json):
         att = (" (attempt %s)" % row["attempt"]) if row.get("attempt") else ""
         print("  %-9s %s%s%s" % (row["conclusion"], row["name"], step, att))
         if row.get("job"):
+            # --allow-escape-sequences IS REQUIRED, and its absence does not
+            # look like an error. Job logs carry ANSI colour, and without the
+            # flag `gh` writes NOTHING to stdout, exits 1, and explains itself
+            # only on stderr. Piped into a grep -- which is what anyone does
+            # with a log -- that reads as "the log has no findings" rather than
+            # "the log was never fetched". Measured 2026-08-28 on job
+            # 98788324965: exit 1, 0 bytes out, the reason on stderr alone.
             print(
                 "      log: gh api repos/%s/%s/actions/jobs/%s/logs"
+                " --allow-escape-sequences"
                 % (payload["owner"], payload["name"], row["job"])
             )
         elif row.get("url"):
