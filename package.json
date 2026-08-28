@@ -288,7 +288,7 @@
     "eslint-plugin-unicorn": "^65.0.1",
     "glob": "^11.0.0",
     "globals": "^17.11.0",
-    "knip": "^6.32.2",
+    "knip": "^6.32.3",
     "lockfile-lint": "^5.0.1",
     "syncpack": "^15.3.3",
     "tsx": "^4.21.0",
