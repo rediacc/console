@@ -65,6 +65,17 @@ def run_full(cmd, path=None):
 REAL = os.environ.get("PATH", "")
 WITH_SHIM = f"{shim}:{REAL}"
 
+# The directory that resolves `bash` must survive every "host lacks <tool>"
+# PATH strip below, even when that directory ALSO resolves the tool being
+# hidden. On this CI runner go is apt-installed into /usr/bin, the same
+# directory bash lives in, so a strip keyed only on "does this dir contain
+# <tool>" silently removed bash too and every subprocess.run(["bash", GUARD])
+# call in this file failed with FileNotFoundError. Locally go lives under
+# /usr/local/go/bin (the go.dev tarball path from `./run.sh setup`), a
+# separate directory from bash's, which is why this never reproduced there.
+_bash_which = shutil.which("bash", path=REAL)
+BASH_DIR = os.path.dirname(_bash_which) if _bash_which else None
+
 # Does a devbox exist? The refusal arm requires one; without it the guard
 # correctly downgrades to a note, and asserting exit 2 would be asserting the
 # wrong thing on a machine with no container.
@@ -162,7 +173,7 @@ else:
 # is exactly what happened the first time this case was written: it passed while
 # testing nothing, because `go` was on this host's PATH the whole time).
 NOGO = os.pathsep.join(
-    d for d in REAL.split(os.pathsep) if not os.path.isfile(os.path.join(d, "go"))
+    d for d in REAL.split(os.pathsep) if d == BASH_DIR or not os.path.isfile(os.path.join(d, "go"))
 )
 if have_box:
     r = run_full("go build ./...", NOGO)
@@ -296,9 +307,13 @@ ALL_TOOLS = ["ruff", "go", "shfmt", "shellcheck", "actionlint"]
 
 
 def _path_without(tool, base):
-    """base's PATH entries, minus any that resolve `tool`."""
+    """base's PATH entries, minus any that resolve `tool` -- except bash's own
+    directory, which must survive every strip or the subprocess call used to
+    exercise the guard can no longer find bash itself (see BASH_DIR above)."""
     return os.pathsep.join(
-        d for d in base.split(os.pathsep) if not os.path.isfile(os.path.join(d, tool))
+        d
+        for d in base.split(os.pathsep)
+        if d == BASH_DIR or not os.path.isfile(os.path.join(d, tool))
     )
 
 

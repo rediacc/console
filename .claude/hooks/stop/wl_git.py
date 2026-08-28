@@ -1908,70 +1908,90 @@ def selftest():
             rc = main(argv)
         return rc, err.getvalue()
 
-    # THE BRANCH IS READ FROM THE REPO, NEVER HARDCODED, and that is not a
-    # style preference -- it is the defect this block already suffered. It named
-    # `0826-3`, a branch from an earlier wave. Once that branch was gone AND
-    # force-push learned (correctly) to skip a submodule that lacks the branch,
-    # every submodule was skipped, `staged_deletions` was never called, and all
-    # three probes below tested nothing at all. They did not go green and lie;
-    # they went RED for a reason unrelated to what they assert, which is worse,
-    # because a red nobody can explain is a red everybody learns to ignore.
-    # `rev-parse --abbrev-ref HEAD` ALONE IS NOT CI-SAFE. `actions/checkout` on a
-    # `pull_request` trigger checks out the MERGE COMMIT in a DETACHED HEAD, so
-    # this returned the literal string "HEAD" -- not a branch, and not one any
-    # submodule has -- so force-push skipped every submodule, staged_deletions
-    # was never called, and the anti-vacuity CONTROL added earlier the same day
-    # correctly went red for exactly the reason it exists: it caught its own
-    # host's checkout being detached.
+    # THE BRANCH USED TO BE READ FROM THE AMBIENT REPO -- PR_HEAD_REF, then
+    # GITHUB_HEAD_REF, then a `rev-parse --abbrev-ref HEAD` fallback -- and that
+    # was still wrong, just at one remove. Getting the NAME right does not help
+    # when the actual defect is that force-push's submodule loop checks a LOCAL
+    # branch ref (`rev-parse --verify refs/heads/<branch>`), and a CI checkout's
+    # submodules are `actions/checkout`-cloned in DETACHED HEAD with no local
+    # branch ref AT ALL, for any name. A hand-maintained dev worktree has one
+    # (because that is what "checked out on a branch" means), so this control
+    # passed locally and failed in CI regardless of which env var it read --
+    # measured 2026-08-28: PR_HEAD_REF resolved correctly to `0827-1` in the
+    # very run that still failed, because no submodule in that checkout had
+    # `refs/heads/0827-1` to find.
     #
-    # `GITHUB_HEAD_REF` FIRST FIX WAS NOT ENOUGH, measured the next CI run: it
-    # does not reliably materialise in THIS repo's ci-quality.yml, which is a
-    # `workflow_call` chain, not a direct pull_request trigger. block-untagged-
-    # commit.sh's step already worked around exactly this by setting a custom
-    # `PR_HEAD_REF: ${{ github.event.pull_request.head.ref }}` rather than
-    # trusting the default var, so the "Quality-gate unit tests" step (where
-    # this selftest actually runs) now sets the same variable, and this
-    # derivation follows the identical precedence order rather than inventing
-    # a second one.
-    _cur_branch = (
-        os.environ.get("PR_HEAD_REF", "").strip() or os.environ.get("GITHUB_HEAD_REF", "").strip()
-    )
-    if not _cur_branch:
-        _rc_b, _cur_branch, _ = run_git(["rev-parse", "--abbrev-ref", "HEAD"], cwd=repo_root())
-        _cur_branch = _cur_branch.strip() if _rc_b == 0 else ""
-    for probe, want_refusal, label in (
-        (lambda _repo: None, True, "an UNREADABLE probe"),
-        (lambda _repo: ["some/file"], True, "a real staged deletion"),
-        (lambda _repo: [], False, "a clean probe"),
-    ):
-        # ANTI-VACUITY: count the calls. Asserting the refusal without
-        # asserting the probe was REACHED is what let this rot silently for a
-        # whole wave, so the reach is now itself a control.
-        reached = []
+    # The fix is to stop depending on ambient repo state at all. Build one
+    # throwaway git repo as the sole "submodule", with a branch name this
+    # control controls end to end, and monkeypatch `submodules`/`repo_root` to
+    # point at it -- the same isolation `_ed` already uses a few blocks above
+    # for the editor-blocking control. `staged_deletions` is monkeypatched the
+    # same way it always was; `execute` stays False, so `plan.cmd()` only
+    # records steps and never runs a real push against the fixture.
+    _branch = "selftest-force-push-branch"
+    _fixture_root = tempfile.mkdtemp()
+    try:
+        _fixture_sub = "fake-submodule"
+        _sub_path = os.path.join(_fixture_root, _fixture_sub)
+        os.makedirs(_sub_path)
+        for _a in (
+            ["init", "-q", "-b", _branch],
+            ["config", "user.email", "s@example.invalid"],
+            ["config", "user.name", "selftest"],
+        ):
+            subprocess.run(["git", "-C", _sub_path, *_a], capture_output=True, check=False)
+        with open(os.path.join(_sub_path, "f.txt"), "w", encoding="utf-8") as _fh:
+            _fh.write("x\n")
+        subprocess.run(["git", "-C", _sub_path, "add", "--", "f.txt"], capture_output=True, check=False)
+        subprocess.run(
+            ["git", "-C", _sub_path, "commit", "-qm", "c1"], capture_output=True, check=False
+        )
 
-        def counting(repo_arg, _p=probe, _seen=reached):
-            _seen.append(repo_arg)
-            return _p(repo_arg)
-
-        globals()["staged_deletions"] = counting
+        real_submodules = globals()["submodules"]
+        real_repo_root = globals()["repo_root"]
+        globals()["submodules"] = lambda _root: [(_fixture_sub, "main")]
+        globals()["repo_root"] = lambda: _fixture_root
         try:
-            rc, err = _run(["force-push", _cur_branch])
+            for probe, want_refusal, label in (
+                (lambda _repo: None, True, "an UNREADABLE probe"),
+                (lambda _repo: ["some/file"], True, "a real staged deletion"),
+                (lambda _repo: [], False, "a clean probe"),
+            ):
+                # ANTI-VACUITY: count the calls. Asserting the refusal without
+                # asserting the probe was REACHED is what let this rot
+                # silently for a whole wave, so the reach is now itself a
+                # control.
+                reached = []
+
+                def counting(repo_arg, _p=probe, _seen=reached):
+                    _seen.append(repo_arg)
+                    return _p(repo_arg)
+
+                globals()["staged_deletions"] = counting
+                try:
+                    rc, err = _run(["force-push", _branch])
+                finally:
+                    globals()["staged_deletions"] = real_sd
+                check(
+                    "CONTROL: force-push actually REACHED the probe for %s" % label,
+                    bool(reached),
+                )
+                refused = rc == 2 and "REFUSED" in err
+                check(
+                    "force-push: %s %s" % (label, "refuses" if want_refusal else "does NOT refuse"),
+                    refused == want_refusal,
+                )
+                if want_refusal and label == "an UNREADABLE probe":
+                    check(
+                        "and the refusal SAYS the probe was unreadable, not that the tree "
+                        "was clean",
+                        "could not read staged deletions" in err,
+                    )
         finally:
-            globals()["staged_deletions"] = real_sd
-        check(
-            "CONTROL: force-push actually REACHED the probe for %s" % label,
-            bool(reached),
-        )
-        refused = rc == 2 and "REFUSED" in err
-        check(
-            "force-push: %s %s" % (label, "refuses" if want_refusal else "does NOT refuse"),
-            refused == want_refusal,
-        )
-        if want_refusal and label == "an UNREADABLE probe":
-            check(
-                "and the refusal SAYS the probe was unreadable, not that the tree was clean",
-                "could not read staged deletions" in err,
-            )
+            globals()["submodules"] = real_submodules
+            globals()["repo_root"] = real_repo_root
+    finally:
+        shutil.rmtree(_fixture_root, ignore_errors=True)
     return 0 if fail == 0 else 1
 
 

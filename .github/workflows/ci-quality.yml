@@ -1661,11 +1661,14 @@ jobs:
       # runs inside a workflow_call chain), which is the same reason
       # block-untagged-commit.sh's own gate step (above, "Every commit names
       # its epic") already sets this custom variable instead of trusting the
-      # default one. wl_git.py --selftest runs inside this step (via
-      # test-hooks.sh) and needs the real branch to test force-push against a
-      # detached CI checkout; without it every submodule was skipped and its
-      # anti-vacuity controls went red for a reason unrelated to what they
-      # test.
+      # default one. `test-hooks.sh`'s untagged-commit fixture (UT_BR) reads
+      # it to derive the real branch and locate `agent/pr/<branch>.md`;
+      # without it, a detached CI checkout resolves no branch at all and that
+      # fixture looks at the wrong snapshot path. (wl_git.py --selftest, also
+      # run from this step, no longer needs this: its force-push probe-reach
+      # controls now run against a throwaway fixture repo instead of the
+      # ambient checkout, precisely because depending on ambient submodule
+      # branch state was itself the earlier defect here.)
       - name: Quality-gate unit tests
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: npm run check:ci-quality-gates
