@@ -157,9 +157,7 @@ if have_box:
     ):
         if not os.path.exists(os.path.join(REPO, path)):
             continue
-        cases.append(
-            (want, run(f"npm run check:ci-python-lint --prefix {path}", REAL), why)
-        )
+        cases.append((want, run(f"npm run check:ci-python-lint --prefix {path}", REAL), why))
 
 # A command that uploads to R2 without sourcing private/account/.env does not fail,
 # it half-succeeds: 52 files copied locally, 0 uploaded, exit 0, and a closing warning
@@ -167,16 +165,25 @@ if have_box:
 # since the guard is deliberately silent without it.
 if os.path.exists(os.path.join(REPO, "private/account/.env")):
     cases.append(
-        (2, run("./run.sh --publish-www --langs en", REAL),
-         "publish-www without sourcing private/account/.env is refused")
+        (
+            2,
+            run("./run.sh --publish-www --langs en", REAL),
+            "publish-www without sourcing private/account/.env is refused",
+        )
     )
     cases.append(
-        (0, run("set -a; . private/account/.env; set +a; ./run.sh --publish-www --langs en", REAL),
-         "CONTROL: sourcing it in the same command is accepted")
+        (
+            0,
+            run("set -a; . private/account/.env; set +a; ./run.sh --publish-www --langs en", REAL),
+            "CONTROL: sourcing it in the same command is accepted",
+        )
     )
     cases.append(
-        (0, run("R2_MEDIA_ACCESS_KEY_ID=x ./run.sh --publish-www --langs en", REAL),
-         "CONTROL: setting the credential inline states the intent, so it is accepted")
+        (
+            0,
+            run("R2_MEDIA_ACCESS_KEY_ID=x ./run.sh --publish-www --langs en", REAL),
+            "CONTROL: setting the credential inline states the intent, so it is accepted",
+        )
     )
 
 shutil.rmtree(shim, ignore_errors=True)

@@ -45,6 +45,50 @@ Corollary: report counts of files that exist, not stages that "completed".
 
 ---
 
+## Rule 1b - A STEP IS SKIPPED WHEN ITS OUTPUT EXISTS, AND NOTHING SAYS SO
+
+The pipeline resumes by artifact presence: `main.py:130` is
+`if (proc / step.output).exists(): continue`, and `steps/step8000_teaser.py:58` returns on
+a cached sentinel. **A phase can therefore print every slug marker, report zero failures,
+and do nothing at all.** Hit three times on 2026-08-28:
+
+- `--until 8000` across 26 slugs regenerated teasers for only the 5 subjects that had
+  never had one. The other 21 kept their July artifacts. 26 markers, 0 failures.
+- The 12-locale phase logged `Using cached teaser` 15 times against `Building teaser cut`
+  0 times. Left alone it would have run 28 hours and refreshed none of the 280 localized
+  teasers, which was half the point of the run.
+
+The sentinel is `8000_teaser.json`, or `8000_teaser.<lang>.json` per locale. Deleting it
+re-runs that step ONLY. **Never reach for `--reprocess`**: it rebuilds from scratch and
+would discard renders that are already published.
+
+The tell is never in the log. Count artifacts, or measure one:
+
+    ./media.sh luma <mp4>        # light is meanY about 210; the pre-palette files are 30-50
+
+## Rule 1d - `--until 8000` NOW REGENERATES SCRIPTS FOR 20 SLUGS. THAT IS CORRECT AND EXPENSIVE.
+
+Once `get_resume_step` began comparing artifacts against their inputs (2026-08-28), it
+started telling the truth: 20 of 26 English slugs are NOT done, because their
+`1000_source.json` genuinely re-derived after their `2000_script.json` was written.
+Step 1000 does not rewrite on a cache hit, so those timestamps are real.
+
+So the next `--until 8000` on those slugs will regenerate and RE-JUDGE their scripts. That
+is the resume logic working, not a bug to route around, and the artifacts it would replace
+are the ones behind the 26 English videos already PUBLISHED to R2.
+
+**Do not trigger it casually.** Run `--until 6000` when you only want a render, and treat
+`--until 8000` on an already-published slug as a deliberate decision to re-derive its copy.
+If you do want the regeneration, say so out loud and re-publish afterwards, because the
+published mp4 and the local script would otherwise disagree about what the video says.
+
+## Rule 1c - A TEASER IS CUT FROM THE MAIN, SO ITS SOURCE MUST BE FRESH FIRST
+
+Rebuilding a teaser whose main video predates the palette change produces another dark
+teaser and looks like progress. Measured: `safe-os-testing.teaser.ru` rebuilt from a July
+main came out at meanY 46.9, indistinguishable from what it replaced. `./media.sh teaser`
+warns when the source main is older than `remotion/src/palette.ts`.
+
 ## Rule 2 - A SILENT LANGUAGE FALLBACK IS THE HOUSE BUG. HUNT IT.
 
 This codebase has shipped wrong-language audio to production, and every instance had the
@@ -367,6 +411,25 @@ a collapsed cue - `vtt-emit.ts` segments them with `Intl.Segmenter`, and the che
   tagged `boundary_source: "estimated"`. Deliberate, not a defect.
 
 ## Verification commands worth knowing
+
+### Use `./media.sh`, not a hand-rolled invocation
+
+Every pipeline must run with **cwd = `private/growth`** and **its own venv on PATH**. Get
+that wrong and config resolves `packages/www/...` against the wrong root, failing deep
+inside a step:
+
+    FileNotFoundError: .../private/growth/packages/www/src/config/persona-pages.ts
+
+On 2026-08-28 that landed AFTER the sentinels had already been deleted, leaving the tree
+mid-operation with no way back except finishing the rebuild. `./media.sh` cannot get the
+directory wrong, and its `teaser` verb deletes the sentinel and rebuilds as ONE step so it
+cannot half-finish:
+
+    ./media.sh run <pipeline> [args...]   # a normal invocation, correct cwd and venv
+    ./media.sh teaser <slug> [lang...]    # drop sentinel + rebuild; refuses a slug a live
+                                          # fleet pass is currently processing
+    ./media.sh luma <mp4>                 # measure luminance
+
 
     # what still needs rendering (the one predicate; refuses on an empty tree)
     node packages/www/scripts/list-tutorial-render-pairs.js --stale-only --require-provider voxcpm2

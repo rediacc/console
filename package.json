@@ -36,6 +36,7 @@
     "check:ci-workflow-invariants": ".ci/scripts/security/check-ci-workflow-invariants.sh",
     "check:ci-tracked-sidecars": ".ci/scripts/quality/check-tracked-sidecars.sh",
     "check:ci-silent-failures": ".ci/scripts/quality/check-silent-failure-patterns.sh",
+    "check:ci-agent-browser-exit": ".ci/scripts/quality/check-agent-browser-exit.sh",
     "check:ci-workflow-gates": ".ci/scripts/security/check-workflow-gates.sh",
     "check:ci-content-quality": ".ci/scripts/quality/check-content-quality.sh",
     "check:ci-nis2-quotes": "tsx scripts/check-directive-quotes.ts",

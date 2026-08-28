@@ -1867,6 +1867,27 @@ else
     echo "FAIL [1] stop/test-plan-status-parse.py missing"
 fi
 
+JUDGESCHEMA_MOD="$DIR/stop/test-judge-schema.py"
+if [[ -f "$JUDGESCHEMA_MOD" ]]; then
+    if out="$(python3 "$JUDGESCHEMA_MOD" 2>&1)"; then
+        n=$(sed -n 's/^\([0-9][0-9]*\) control(s) passed$/\1/p' <<<"$out")
+        if [[ -n "$n" && $n -gt 0 ]]; then
+            PASS=$((PASS + n))
+            echo "ok   [0] stop/test-judge-schema.py: $n control(s) passed"
+        else
+            FAIL=$((FAIL + 1))
+            echo "FAIL [1] stop/test-judge-schema.py exited 0 but reported NO controls"
+        fi
+    else
+        FAIL=$((FAIL + 1))
+        echo "FAIL [1] stop/test-judge-schema.py"
+        grep -E "^  FAIL " <<<"$out" | sed 's/^/       /'
+    fi
+else
+    FAIL=$((FAIL + 1))
+    echo "FAIL [1] stop/test-judge-schema.py missing"
+fi
+
 STOP_SUITE="$DIR/stop/test-worklist-v5.sh"
 if [[ -x "$STOP_SUITE" ]]; then
     echo

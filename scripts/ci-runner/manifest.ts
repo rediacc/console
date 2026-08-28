@@ -1539,6 +1539,18 @@ export const GATES: readonly GateSpec[] = [
     },
   },
   {
+    id: 'check:ci-agent-browser-exit',
+    run: 'npm run check:ci-agent-browser-exit',
+    gate: true,
+    leaves: ['.ci/scripts/quality/check-agent-browser-exit.sh'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-static',
+      step: 'agent-browser exit status',
+    },
+  },
+  {
     id: 'check:ci-silent-failures',
     run: 'npm run check:ci-silent-failures',
     gate: true,

@@ -317,6 +317,13 @@ jobs:
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: npm run check:ci-silent-failures
 
+      # `agent-browser open` returns 1 when its stdout is REDIRECTED and 0 on a terminal,
+      # for a URL that loads correctly either way. Under `set -e` that kills a harness at
+      # its first page with no error text. No script may let that status decide flow.
+      - name: agent-browser exit status
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: npm run check:ci-agent-browser-exit
+
       # Runtime sidecars must never be tracked. They have no static markers in
       # source -- they exist only while a session runs -- so every other gate is
       # blind to them by construction and `git ls-files` is the only observable

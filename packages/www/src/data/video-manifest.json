@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-20T05:16:30.794Z",
+  "generatedAt": "2026-08-28T01:49:57.660Z",
   "baseUrl": "https://media.rediacc.com",
   "tutorials": {
     "tutorial-add-server": {
@@ -6398,19 +6398,19 @@
       "en": {
         "mp4": {
           "path": "videos/solutions/en/ai-pentesting.mp4",
-          "size": 9098346,
-          "sha256": "abf33b77bf68f5b5512ae69e94e34c5faaa53a9f0264e582a5464e0eaacadcf6",
+          "size": 8633002,
+          "sha256": "74a8c4c1424c0449528869b942329b276475fbebbea00410de2c699a26e8c85b",
           "engine": "voxcpm2"
         },
         "vertical": {
           "path": "videos/solutions/en/ai-pentesting.vertical.mp4",
-          "size": 9024984,
-          "sha256": "8b67c01240fa374b17c972c99d37cc72342e7f21f0e435b33237a87114a83374"
+          "size": 8633340,
+          "sha256": "77113d9a4e2400234f1de7c7c7553531a3291f41bad2184dfd30c844a44c2d2b"
         },
         "poster": {
           "path": "videos/solutions/en/ai-pentesting.poster.jpg",
-          "size": 40962,
-          "sha256": "855f6e75183838121de843eb8e7fd8bbaa57cca3b2642e9296303949e2b880e5"
+          "size": 40161,
+          "sha256": "099c860025d0eec42372e1f0896fd1836e40bc43b4f4ef5cbdbfbe8efe2be62a"
         }
       },
       "es": {
@@ -6634,19 +6634,19 @@
       "en": {
         "mp4": {
           "path": "videos/solutions/en/audit-trail.mp4",
-          "size": 10755651,
-          "sha256": "69dda9b95bfb38425b589ec111e99948308d89f4dc9142d54d6d792e7c9b19a7",
+          "size": 8820464,
+          "sha256": "97c33c4b48f9deb7ff09151faee5ea003044a32d7606f22204d2d6a2696e314b",
           "engine": "voxcpm2"
         },
         "vertical": {
           "path": "videos/solutions/en/audit-trail.vertical.mp4",
-          "size": 10964282,
-          "sha256": "9f16914fb01f8d26cd5146cb428ecec02034137f753aa1e1c37565fd9a8f2ba5"
+          "size": 9013112,
+          "sha256": "10b453680209b3206eb031c4cf6ad7a6c50fa3e59f3f7d4d93361425d14b87a4"
         },
         "poster": {
           "path": "videos/solutions/en/audit-trail.poster.jpg",
-          "size": 55734,
-          "sha256": "74292339e7d1d0913359c8d6e83797cecb821543aa4abaad93e757403671e395"
+          "size": 58681,
+          "sha256": "8a989641f42aee12ca47a9799ef5def46d23c3feb92bd0487f8e7fea0babf9c9"
         }
       },
       "es": {
@@ -6870,19 +6870,19 @@
       "en": {
         "mp4": {
           "path": "videos/solutions/en/backup-verification.mp4",
-          "size": 7784699,
-          "sha256": "9698aeba21aed4896192b29bb42608c59a425032a108347d6d84c32925de406e",
+          "size": 6411002,
+          "sha256": "86fe24a8a4685c1051f1ffcf76871acbf920335a5b09f505e425247117e5d865",
           "engine": "voxcpm2"
         },
         "vertical": {
           "path": "videos/solutions/en/backup-verification.vertical.mp4",
-          "size": 7432545,
-          "sha256": "7fefb9019785d1e9cd90f7a5e01cf94c4e40a0dae104d1ab18becfd27f120414"
+          "size": 6410892,
+          "sha256": "9ea907a661ac87c7cf5531f2235e5a4a0eb06b216b162dd53a052ec19ecd08a2"
         },
         "poster": {
           "path": "videos/solutions/en/backup-verification.poster.jpg",
-          "size": 32062,
-          "sha256": "e3b511279da4278015634390908f17c7297ffd119af5e6a9b6e8f0c829b3ea66"
+          "size": 34216,
+          "sha256": "7fa5b5f842487794e11196c54f93258a2cdc2372984457cc4532f0631f1ce8f9"
         }
       },
       "es": {
@@ -7106,19 +7106,19 @@
       "en": {
         "mp4": {
           "path": "videos/solutions/en/cloud-outage-protection.mp4",
-          "size": 9192491,
-          "sha256": "4a8b255f91d3c39e3b82592a9011642cb8eb4d33ca3730926d481d0df2fc7efe",
+          "size": 7530737,
+          "sha256": "b951ab7540cd68799f1c6687fbdb61dd0db6f9e5e07725a58243f05a830b51f3",
           "engine": "voxcpm2"
         },
         "vertical": {
           "path": "videos/solutions/en/cloud-outage-protection.vertical.mp4",
-          "size": 8856817,
-          "sha256": "ebb7790dc57a986fe4c2c52982bfcd5eeec03681a10ef346192d6faf4982d2eb"
+          "size": 7457248,
+          "sha256": "d4dc63296cc50c3692baa7ed47f99b77f7791c8001269d3ce26c6eb8592625a3"
         },
         "poster": {
           "path": "videos/solutions/en/cloud-outage-protection.poster.jpg",
-          "size": 46358,
-          "sha256": "36528283c3ff29bb8a062ba6c47a24591119d35245f7b8cd1da258b9edc36d4e"
+          "size": 46939,
+          "sha256": "0139a2321028444842dba48d215e0b6219872c979184639510e83fd6ac2815e3"
         }
       },
       "es": {
@@ -7342,19 +7342,19 @@
       "en": {
         "mp4": {
           "path": "videos/solutions/en/continuous-security-testing.mp4",
-          "size": 7904752,
-          "sha256": "687bab908d142fad954d95f31224155f0dd60e25e119a7558fe8ddb3894b5afb",
+          "size": 7072957,
+          "sha256": "22d5ee2708bb19a9e9dbb27206c2a411b289f064b0f2e4f9b43ed062a5e9454e",
           "engine": "voxcpm2"
         },
         "vertical": {
           "path": "videos/solutions/en/continuous-security-testing.vertical.mp4",
-          "size": 7692769,
-          "sha256": "13439b99583c780190f94721c56b9f831ef49651b3f5eeef4caa6626d11947e9"
+          "size": 6806123,
+          "sha256": "64892c77ab7777dc3eef44ccaf82c57595e21daf9d87551569bd32dc0b49cc8d"
         },
         "poster": {
           "path": "videos/solutions/en/continuous-security-testing.poster.jpg",
-          "size": 57062,
-          "sha256": "3e95af47d41317467efa3f3cc0c52d45b9a2e7f076f5c6574b073b175dea8b32"
+          "size": 21315,
+          "sha256": "7c0099bfa7719c8e82c4ae3732ef9ca3f00b5beae92e8d22df56d7b67f84c1ca"
         }
       },
       "es": {
@@ -7578,19 +7578,19 @@
       "en": {
         "mp4": {
           "path": "videos/solutions/en/data-sovereignty.mp4",
-          "size": 7898602,
-          "sha256": "3ef208ac5a9454b913989f932ff813a7592d4e1be8725876072bf1b6524147ce",
+          "size": 7338475,
+          "sha256": "8e39a556500fcf5d887d1db02e1d049021df55a4e44d93b11a2528ed545a8708",
           "engine": "voxcpm2"
         },
         "vertical": {
           "path": "videos/solutions/en/data-sovereignty.vertical.mp4",
-          "size": 7817269,
-          "sha256": "d209ad1626599a7a991a730717827745292ab03e4b7e125ef9d9e34a241b300f"
+          "size": 7074938,
+          "sha256": "2409c7650b9ffe49ce204b2869087e853fd553ab6b0dcd8c18c2827ac3c86b32"
         },
         "poster": {
           "path": "videos/solutions/en/data-sovereignty.poster.jpg",
-          "size": 52085,
-          "sha256": "cc405093c0d0691ef484cd668f8912b991f8083153f964f7ef0ccea8586b7d2d"
+          "size": 56362,
+          "sha256": "325f773fe25b3442bd0e10dd05dedec5e93f6d52b932b5717819d23777f4ab6e"
         }
       },
       "es": {
@@ -7814,19 +7814,19 @@
       "en": {
         "mp4": {
           "path": "videos/solutions/en/encryption.mp4",
-          "size": 9704079,
-          "sha256": "45b9a35a0b372ea9a698a2de9f78753d4ff8c782c52c5d9c3b4b9cd7c907a2a6",
+          "size": 8806806,
+          "sha256": "17e822c56b666ac77030cfe9d0a1d1b9c695addbff537a36ccff995f001c8386",
           "engine": "voxcpm2"
         },
         "vertical": {
           "path": "videos/solutions/en/encryption.vertical.mp4",
-          "size": 10120231,
-          "sha256": "01b1d05f26e3851c1c44234ebb74050d81214d7090511942ede10765dc8caeb4"
+          "size": 9226212,
+          "sha256": "bf0c6c959c238922254c9cc266675aa19fb264dcfeb7d357ffa3936bce4ab769"
         },
         "poster": {
           "path": "videos/solutions/en/encryption.poster.jpg",
-          "size": 47158,
-          "sha256": "85d46ba56d2b4cd0c9def410a72eedc00b22a9b6dedfdcd1436cd7e70bb7f085"
+          "size": 21308,
+          "sha256": "3e3de558d332a3999b76ec522d6263f48ca197b46a047e84c804aacd610c58dd"
         }
       },
       "es": {
@@ -8050,19 +8050,19 @@
       "en": {
         "mp4": {
           "path": "videos/solutions/en/environment-cloning.mp4",
-          "size": 9042450,
-          "sha256": "b52db3a72676e2a95ad00f3d44831e358c61b058b0074e96b1214dc978d7c3aa",
+          "size": 8170818,
+          "sha256": "9a1f20f8d90a2c851706a7c2002419beef52dd2940d7b8e4c1f512b574d4f678",
           "engine": "voxcpm2"
         },
         "vertical": {
           "path": "videos/solutions/en/environment-cloning.vertical.mp4",
-          "size": 8740049,
-          "sha256": "9a194cbf540e0ecbef8e291d5ef54a05af147611823b5e056cecd18ea9a74665"
+          "size": 7971644,
+          "sha256": "059bdbe8e8224f0766799f9bc1122184fa3ed9f7d2d358170aa354ae2157dfd3"
         },
         "poster": {
           "path": "videos/solutions/en/environment-cloning.poster.jpg",
-          "size": 39239,
-          "sha256": "39fffe0f9d40bda98aea43a17398700a228b1d7a1c09c9eab38d009bea9fc779"
+          "size": 41049,
+          "sha256": "fae50623911104e86497d21860961c29c7e38e5c6ec34785dd52d5189445b17f"
         }
       },
       "es": {
@@ -8286,19 +8286,19 @@
       "en": {
         "mp4": {
           "path": "videos/solutions/en/failover-testing.mp4",
-          "size": 8354049,
-          "sha256": "8c001464d8e5a6913c46e0402b0ad3a6dfb98b0998b104d0b4cebd60107a1a7e",
+          "size": 7834006,
+          "sha256": "1add670ef0dd2e933f2748d17fb8c8d2f4ddd79ee3b2489bc2873e980b3b66a2",
           "engine": "voxcpm2"
         },
         "vertical": {
           "path": "videos/solutions/en/failover-testing.vertical.mp4",
-          "size": 8430031,
-          "sha256": "3325ed2ae718eaaaa066c31680599b45e59304b3a6f73b026cbdc22c7e36d9f7"
+          "size": 7767902,
+          "sha256": "8c3f168d0275c74bdf575a24390b999190d40e4565877fcb29215b3af3e53f5f"
         },
         "poster": {
           "path": "videos/solutions/en/failover-testing.poster.jpg",
-          "size": 50190,
-          "sha256": "d8344935b9a594eba7a928e4a743678fe68b17c199bc49f73c8a1996e9b9fb6a"
+          "size": 54215,
+          "sha256": "01cf20942233343fb936b39854d64d48512ee6937b951fe22e5942391bc6e20e"
         }
       },
       "es": {
@@ -8522,19 +8522,19 @@
       "en": {
         "mp4": {
           "path": "videos/solutions/en/immutable-backups.mp4",
-          "size": 8953648,
-          "sha256": "65579df9a601d519fac31d0c1419b53207cd2a82eb36a0129ea10e2ff024b652",
+          "size": 7330665,
+          "sha256": "f6e5ad399b14190ed4cef067e09813f485a63d473565dda23ea68ff5b23d4739",
           "engine": "voxcpm2"
         },
         "vertical": {
           "path": "videos/solutions/en/immutable-backups.vertical.mp4",
-          "size": 8477094,
-          "sha256": "8570d6303cb1c266b51d534d0c8d52c3568da9957e539affb2ff269aeeebba2f"
+          "size": 7141999,
+          "sha256": "7d633e54272e51ad023e26b5c29ac3e10d140710e64b470425efffc25ee073f0"
         },
         "poster": {
           "path": "videos/solutions/en/immutable-backups.poster.jpg",
-          "size": 59001,
-          "sha256": "bcaa1ab4a1ca82a9f71b8c8aa872654f4974280c8acdc53a6579805791283105"
+          "size": 48344,
+          "sha256": "5617d276a824207c5dacccf89b7d0133b2849bebe301e3219175f237cf3dd386"
         }
       },
       "es": {
@@ -8758,19 +8758,19 @@
       "en": {
         "mp4": {
           "path": "videos/solutions/en/infrastructure-costs.mp4",
-          "size": 7229122,
-          "sha256": "1ef1d0a48633d1fef36927c94fe8da88e4d89f840994724328deaed9162b6575",
+          "size": 6251911,
+          "sha256": "f6e8f7830402dc4f44ac4b78fb310ee3cfc69289a8665ded25c9dce666bae214",
           "engine": "voxcpm2"
         },
         "vertical": {
           "path": "videos/solutions/en/infrastructure-costs.vertical.mp4",
-          "size": 7236417,
-          "sha256": "9bfdf3cc09fa2f10780334076ce7a81d825fda4b95e2c46d959087230493e777"
+          "size": 6179278,
+          "sha256": "68c7ed5a1f912848e14bad69516acde53f171dd833b15b284ea1884903cec605"
         },
         "poster": {
           "path": "videos/solutions/en/infrastructure-costs.poster.jpg",
-          "size": 31066,
-          "sha256": "582dad6aa3ebb9ecf4a16ed6aa2ba678d3fd346ae3ab4261c9713d8cd3d68d3c"
+          "size": 32015,
+          "sha256": "23e04b3df07cd0732a05e3b711ef9e3290c58caaed4a659ce2ac31c66e0cbc15"
         }
       },
       "es": {
@@ -8994,19 +8994,19 @@
       "en": {
         "mp4": {
           "path": "videos/solutions/en/instant-recovery.mp4",
-          "size": 9059515,
-          "sha256": "c6bbfd975f02e4e95f520d52582a3bf68d75953bb93e96dd18f0294fb0d5fb8f",
+          "size": 7675689,
+          "sha256": "72bab2947321c3f648961f3e0a0a6f5f15e4a4b36f6c111079039c557832b043",
           "engine": "voxcpm2"
         },
         "vertical": {
           "path": "videos/solutions/en/instant-recovery.vertical.mp4",
-          "size": 9129723,
-          "sha256": "a3835f8731d0d3d09532bff0a5147a55d9ca6d798d9133f47634a2b7d1c3be18"
+          "size": 7665206,
+          "sha256": "fde0d953ce92b56b5bb1d86bca8e1c563abce3dc1c38f6efcf51e030b1f2b2fb"
         },
         "poster": {
           "path": "videos/solutions/en/instant-recovery.poster.jpg",
-          "size": 42643,
-          "sha256": "ff96636cd7990783a456aa62bd7691b2480ccca98b83ec32afa78624e847336e"
+          "size": 43266,
+          "sha256": "7ce86f4107f0e73daf3075a1f97d062bd7bbf796280bf421d9003160e4ca42dc"
         }
       },
       "es": {
@@ -9230,19 +9230,19 @@
       "en": {
         "mp4": {
           "path": "videos/solutions/en/integrations.mp4",
-          "size": 8686545,
-          "sha256": "4d2df24305b51b05dcff48b80f34d83005240fb5c08d6ca602ed146ef8df7903",
+          "size": 8085338,
+          "sha256": "e11f7acd747e97772390c9d5eecde42fd0b6083ab84e506ae7234317420e249c",
           "engine": "voxcpm2"
         },
         "vertical": {
           "path": "videos/solutions/en/integrations.vertical.mp4",
-          "size": 8359229,
-          "sha256": "1e5d9a65cb774047e60dd9163fec34d7cc13b6f713d65d96c0b8fbe275682296"
+          "size": 7705797,
+          "sha256": "875b9fba565c4afdf90694f54362e46ca663ee2635f155e84798208ce628a209"
         },
         "poster": {
           "path": "videos/solutions/en/integrations.poster.jpg",
-          "size": 43287,
-          "sha256": "881dba86a5bcb40c3d6ecd46af0d70db463c30dc43b4abb40f62b0a370780cc5"
+          "size": 47829,
+          "sha256": "622dd753449e19f0a19a347876ce7286247485cb9c1421b42e101f981160f89b"
         }
       },
       "es": {
@@ -9466,19 +9466,19 @@
       "en": {
         "mp4": {
           "path": "videos/solutions/en/kubernetes-cluster-mobility.mp4",
-          "size": 8187286,
-          "sha256": "61b29236b1d827dc67e0fec2cc23e286743da9125eb00e17c3cc08b77bbbb881",
+          "size": 7821820,
+          "sha256": "d8cbe2dbbc98c2636fe3a3aa9440d150e117e3953addb9e15980e39b9022b3da",
           "engine": "voxcpm2"
         },
         "vertical": {
           "path": "videos/solutions/en/kubernetes-cluster-mobility.vertical.mp4",
-          "size": 7769831,
-          "sha256": "f28182bdb73589256ba9b9444fc0d4c0a64283fa528280271eb98e7f7e4606fa"
+          "size": 7472136,
+          "sha256": "fff28948b66dfb777187c7de23f22349c1f3e425c7c3cfe5bd20d7c436b97e6a"
         },
         "poster": {
           "path": "videos/solutions/en/kubernetes-cluster-mobility.poster.jpg",
-          "size": 42160,
-          "sha256": "f29d173630f0cbe7f1eb11e7244540a26b632c1ca97c3c3cbe2346589f6ada04"
+          "size": 43268,
+          "sha256": "98c18c64c67dba72856c853608ca977f1aa09e86c5f52dd5dd6d74ee9180fee4"
         }
       },
       "es": {
@@ -9702,19 +9702,19 @@
       "en": {
         "mp4": {
           "path": "videos/solutions/en/migration-safety.mp4",
-          "size": 7368192,
-          "sha256": "61a882470ea45c1aee1492a3e1d9fbb1613ee5374c6bbcd3c0cc91daab3ef244",
+          "size": 6158077,
+          "sha256": "bd7cba154b93126c2a0b0c572413fe8beea91be3776d56bda29aa17971b6c084",
           "engine": "voxcpm2"
         },
         "vertical": {
           "path": "videos/solutions/en/migration-safety.vertical.mp4",
-          "size": 7002374,
-          "sha256": "22383be1c6756c2aa1cd6030ca838dc9dee8a3d3b671c010152059a7c237c58b"
+          "size": 6017479,
+          "sha256": "e7badb11cbeb163f7d1f4239c1cb336cc8157ce2cad1c760dcb4c45fc0c1ba34"
         },
         "poster": {
           "path": "videos/solutions/en/migration-safety.poster.jpg",
-          "size": 50755,
-          "sha256": "1cf8ac6a95a9826280eaf7ade015d3de98f248d05e8ebce40f67143aac25161e"
+          "size": 41286,
+          "sha256": "e41cf93d579a811a10a099e17875f35b3dfcc0adbdd61d51f2eb554c758f2a25"
         }
       },
       "es": {
@@ -9938,19 +9938,19 @@
       "en": {
         "mp4": {
           "path": "videos/solutions/en/production-parity.mp4",
-          "size": 8604389,
-          "sha256": "983189f08947695aafff66805ad45f9f77779318c64daa70de0749c8368d774a",
+          "size": 7834897,
+          "sha256": "30beef6017eb5b4b94b2df4ec315e26565248ae03e0b7b8f495363f3b52884cc",
           "engine": "voxcpm2"
         },
         "vertical": {
           "path": "videos/solutions/en/production-parity.vertical.mp4",
-          "size": 8428626,
-          "sha256": "986cc7b4eeef28de777dca869b578faaef08df14f8cd9314826340e94d346267"
+          "size": 7582234,
+          "sha256": "7be29c5798de800ed3120bd352995c1b3eac38698954526b232b1c19eb71c2fc"
         },
         "poster": {
           "path": "videos/solutions/en/production-parity.poster.jpg",
-          "size": 42177,
-          "sha256": "9161b42e6d2d54fe59cd73e35bec19fa38aa5899713e72e4bb24152d9f5af4a4"
+          "size": 20670,
+          "sha256": "c0a7a0cff855196cb8d60d19f3c010d9913b6c13f99b1d3b4e06f11860d80467"
         }
       },
       "es": {
@@ -10174,19 +10174,19 @@
       "en": {
         "mp4": {
           "path": "videos/solutions/en/rapid-recovery.mp4",
-          "size": 8107201,
-          "sha256": "d23e41f75217612b58a93f036935f505fffec317610d36f723e64a6a62f14517",
+          "size": 7766596,
+          "sha256": "66178de238aee73a2790260c1a83db22023dc42b1fec2d5905f0714dc0978ce5",
           "engine": "voxcpm2"
         },
         "vertical": {
           "path": "videos/solutions/en/rapid-recovery.vertical.mp4",
-          "size": 8160317,
-          "sha256": "f034c3ac094b4ea2f94d25d1836acb2a4dc7877ac1c475c095f6f0fb28d41502"
+          "size": 7625523,
+          "sha256": "72db5c5aa8e2024a3b8fd66634d18e0017fdaf8e5ad191c913c98dc77ce5f854"
         },
         "poster": {
           "path": "videos/solutions/en/rapid-recovery.poster.jpg",
-          "size": 67617,
-          "sha256": "c792c3119c7236528dd43463abd60bd9f7cef959bd17622fe77830493f8a8654"
+          "size": 75119,
+          "sha256": "4f6fa2376d6997aea03bf2de238307e41271c5b8a82de60728a24d6cea9607d4"
         }
       },
       "es": {
@@ -10410,19 +10410,19 @@
       "en": {
         "mp4": {
           "path": "videos/solutions/en/retention-compliance.mp4",
-          "size": 9885594,
-          "sha256": "65cb7af4998f70c26aee2445d7c71a05362ac03f2938fa31203d268773f8c43b",
+          "size": 9327304,
+          "sha256": "04195349abf4707d896516e57ccbd424495452fda51d24c69d8b397776b54d86",
           "engine": "voxcpm2"
         },
         "vertical": {
           "path": "videos/solutions/en/retention-compliance.vertical.mp4",
-          "size": 10155508,
-          "sha256": "e345122b865c224918fed95b1da85eb19bd6e15b7005d8bfca093bd04f5424f2"
+          "size": 9537375,
+          "sha256": "83eeee4ac33c4aec1bac3deee252de718b058b5714c4747c6fc3122e147bcf5b"
         },
         "poster": {
           "path": "videos/solutions/en/retention-compliance.poster.jpg",
-          "size": 48737,
-          "sha256": "aa090c3b0e4c3a41179ecf3e101d4341654da5dfeeb82a8152f30f4fefc94c8c"
+          "size": 50303,
+          "sha256": "d9aa96047a9afb9bd7bb13decccb79f72cdbb0aa6c8ba1673fb8d74bbcf45310"
         }
       },
       "es": {
@@ -10646,19 +10646,19 @@
       "en": {
         "mp4": {
           "path": "videos/solutions/en/safe-os-testing.mp4",
-          "size": 8014330,
-          "sha256": "d8668ed8ff9d4a055b42ce81130ce0ca2ba2743f6fbb34822c7f5df2c201c398",
+          "size": 7657625,
+          "sha256": "585fdaaeff9b86a485b840acd4e5998d6190e8fbeee2107140b53ba4cb80c2c3",
           "engine": "voxcpm2"
         },
         "vertical": {
           "path": "videos/solutions/en/safe-os-testing.vertical.mp4",
-          "size": 7954948,
-          "sha256": "ef71e277a7f1982636fa8658d5911243fea4a0c631545e827107dcc5247043e9"
+          "size": 7491410,
+          "sha256": "de41bba380d252a58bd521e22c5cf4f6a5ee8d1b795b0acb776a016029375e04"
         },
         "poster": {
           "path": "videos/solutions/en/safe-os-testing.poster.jpg",
-          "size": 39722,
-          "sha256": "8a5bfe47dff940ce951db525166f2c204e077ed6df5dc97a4c24a05e3e206928"
+          "size": 42603,
+          "sha256": "b08d830bfbe5e030f17c4e50aa058647b6bfda11c0b3287271ade804a536c3f8"
         }
       },
       "es": {
@@ -10882,19 +10882,19 @@
       "en": {
         "mp4": {
           "path": "videos/solutions/en/vendor-lock-in.mp4",
-          "size": 8561543,
-          "sha256": "0bedaaabaafb8fcd812fc6aec727924ed7a883f5be6bb4b6d39349f0d362a389",
+          "size": 7944984,
+          "sha256": "68544fae890f14899a13e4bf0cd5afbe542c3b603b292a94d3ce3bd24c4318fc",
           "engine": "voxcpm2"
         },
         "vertical": {
           "path": "videos/solutions/en/vendor-lock-in.vertical.mp4",
-          "size": 8442824,
-          "sha256": "fdc689bf3084f3d11cbc16721efe8bcf844640f72cdcbf251449b493ef9b270a"
+          "size": 7711695,
+          "sha256": "bc8acb2c9b5c6526418a413238c36e7d5f699c5bd2c71f48e495992b918ae24c"
         },
         "poster": {
           "path": "videos/solutions/en/vendor-lock-in.poster.jpg",
-          "size": 56216,
-          "sha256": "da36da7256e59e928f138e42c538749e5d1af9f7acba8558c8df4f3eff824eb4"
+          "size": 21337,
+          "sha256": "b65097406e391d7b07e7ff25c8c2255095f2271db58806e539220ae6b9fcce9a"
         }
       },
       "es": {
@@ -11118,19 +11118,19 @@
       "en": {
         "mp4": {
           "path": "videos/solutions/en/vulnerability-management.mp4",
-          "size": 4754180,
-          "sha256": "8bb71566dadcfd0712a7c2412ac63ef4f04b8731782396d2effc8bd9e46fe197",
+          "size": 7698613,
+          "sha256": "44996217a605c846d129ce2a949163880c34bf12a8b754cf73fd4b24a77d7234",
           "engine": "voxcpm2"
         },
         "vertical": {
           "path": "videos/solutions/en/vulnerability-management.vertical.mp4",
-          "size": 4561854,
-          "sha256": "6d7ba128ed11f93e7b15f6db422b2358dfe49b0c60df42e44638c6a934938ec2"
+          "size": 7653707,
+          "sha256": "07301fba9111409f5e726a00b320e8facf43b40bbbc8fd41b8ccd94c3f0e4051"
         },
         "poster": {
           "path": "videos/solutions/en/vulnerability-management.poster.jpg",
-          "size": 26182,
-          "sha256": "5d849b6ebed5b7c86c076ab950ace4ff62e0919cdb704e0983520484cedac670"
+          "size": 61880,
+          "sha256": "5528cda0401a0fedafe2d3fc8baa508ee0823d0ba417d0cfafe1313d3cdaaad1"
         }
       },
       "es": {
@@ -11311,6 +11311,106 @@
           "path": "videos/solutions/zh/vulnerability-management.poster.jpg",
           "size": 91823,
           "sha256": "747ec5cc51d97cbeb6cd4195c2745e9feac93b47a5722a4773e17fdd3fb2515f"
+        }
+      }
+    },
+    "for-devops": {
+      "en": {
+        "mp4": {
+          "path": "videos/solutions/en/for-devops.mp4",
+          "size": 7966221,
+          "sha256": "1fc0ad7efa3e4414a21f2f0b3cb5cf28e6a8dbbc82af82216f0314da32640bbb",
+          "engine": "voxcpm2"
+        },
+        "vertical": {
+          "path": "videos/solutions/en/for-devops.vertical.mp4",
+          "size": 7584200,
+          "sha256": "a4803b2fa690cd66960784f0f2dd64551efce216c0eeac514058eabeb5bf853a"
+        },
+        "poster": {
+          "path": "videos/solutions/en/for-devops.poster.jpg",
+          "size": 70007,
+          "sha256": "280e18c7eb8e4ded3fc5cd7a98fd15316c16dbd2384899a45a84b4d490121b76"
+        }
+      }
+    },
+    "for-ctos": {
+      "en": {
+        "mp4": {
+          "path": "videos/solutions/en/for-ctos.mp4",
+          "size": 8914281,
+          "sha256": "612bf1bbb4b8e13683193b33de71dd0d80bc0d13e5d34530059eed872fe13dda",
+          "engine": "voxcpm2"
+        },
+        "vertical": {
+          "path": "videos/solutions/en/for-ctos.vertical.mp4",
+          "size": 8608499,
+          "sha256": "bc152f5834d86d6fb0c0bc45501891e12a23de9678c67ccf52c0c0f9f6d7dce6"
+        },
+        "poster": {
+          "path": "videos/solutions/en/for-ctos.poster.jpg",
+          "size": 44161,
+          "sha256": "cdd5c8e5aa0f9b50fb0bee3c4b7325615b188ecb6363843ec99477f83f35a550"
+        }
+      }
+    },
+    "for-ceos": {
+      "en": {
+        "mp4": {
+          "path": "videos/solutions/en/for-ceos.mp4",
+          "size": 12841082,
+          "sha256": "6ece0394c91c2ea12b828df917182d9ddaa5e1204f7475e52948981aa21e1914",
+          "engine": "voxcpm2"
+        },
+        "vertical": {
+          "path": "videos/solutions/en/for-ceos.vertical.mp4",
+          "size": 12354809,
+          "sha256": "15741b3156dc70516e0e354d8e1a8b093871fdfaff4bfeff4e046cb5e556a794"
+        },
+        "poster": {
+          "path": "videos/solutions/en/for-ceos.poster.jpg",
+          "size": 40871,
+          "sha256": "b74b8125e3700cba54e085c9a52714b4237db92b9ba8763040722ea0217777cb"
+        }
+      }
+    },
+    "for-ai-agents": {
+      "en": {
+        "mp4": {
+          "path": "videos/solutions/en/for-ai-agents.mp4",
+          "size": 7894826,
+          "sha256": "e7bf6af3fef7e6ce9ed51a38c299ea97466959a446b3d5653c2f8b90ddc9506c",
+          "engine": "voxcpm2"
+        },
+        "vertical": {
+          "path": "videos/solutions/en/for-ai-agents.vertical.mp4",
+          "size": 7907054,
+          "sha256": "e79df44c09b3f4bbaac4abdfc3c438520fc5750fa80552e947de178c0acf95ac"
+        },
+        "poster": {
+          "path": "videos/solutions/en/for-ai-agents.poster.jpg",
+          "size": 42046,
+          "sha256": "5255f9f0665295655254fd7fcd3b25d37a2aaa9ba9238d847a426fc9c2c802b4"
+        }
+      }
+    },
+    "home": {
+      "en": {
+        "mp4": {
+          "path": "videos/solutions/en/home.mp4",
+          "size": 8264605,
+          "sha256": "3054fc2ef6fea83ec750c2b9b67344dbae69a14fe9fbe5ee9d844052ffe0700a",
+          "engine": "voxcpm2"
+        },
+        "vertical": {
+          "path": "videos/solutions/en/home.vertical.mp4",
+          "size": 8278498,
+          "sha256": "094360dbf6a866c40b465df1e9da76cdc3a3def038d13acf474812effe4aad61"
+        },
+        "poster": {
+          "path": "videos/solutions/en/home.poster.jpg",
+          "size": 49060,
+          "sha256": "33169729210490f40feb8f4e83da7e7fca800db5cf644e0226e55ea24636819c"
         }
       }
     }

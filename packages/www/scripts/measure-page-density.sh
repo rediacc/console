@@ -46,17 +46,24 @@ export AGENT_BROWSER_SESSION="${AGENT_BROWSER_SESSION:-page-density}"
 
 echo "slug,height,screens,words,atoms,nodes" > "$OUT"
 measure() {
-    local path="$1" label="$2" r h w a n
+    local path="$1" label="$2" r h w a n vph vpw
     # `open --viewport WxH` is SILENTLY IGNORED: it reports 1280x577 whatever you pass,
     # and so does a bare `viewport 1280 900`. The width happens to be the 1280 we want, so
     # every reflow-dependent number here is sound; the HEIGHT never was. Do not divide by a
     # height you asked for. Read innerHeight back and divide by that.
-    agent-browser open "http://localhost:$PORT$path" --viewport 1280x900 >/dev/null 2>&1
-    r=$(agent-browser eval "JSON.stringify({vph:innerHeight,vpw:innerWidth,h:document.documentElement.scrollHeight,words:(document.body.innerText||'').trim().split(/\s+/).filter(Boolean).length,atoms:document.body.querySelectorAll('h1,h2,h3,h4,li,td,th,[class*=card],[class*=chip],[class*=stat],[class*=step],[class*=item],[class*=row]').length,nodes:document.body.querySelectorAll('*').length})" 2>/dev/null | tail -1 | tr -d '\\"')
+    # `|| true` is NOT laziness, and it does not weaken this harness. Measured 2026-08-28:
+    # `agent-browser open` exits 1 when its stdout is REDIRECTED and 0 on a terminal, for
+    # the same URL that loads correctly either way -- the eval immediately after returns a
+    # real scrollHeight in both cases. Under `set -e` that killed the run at the first
+    # page, silently, with an empty log and a CSV containing only its header.
+    # A genuinely failed load is still caught, by the DOM-node FLOOR below, which is a
+    # statement about the page rather than about a wrapper's exit code.
+    agent-browser open "http://localhost:$PORT$path" --viewport 1280x900 >/dev/null 2>&1 || true
+    r=$(agent-browser eval "JSON.stringify({vph:innerHeight,vpw:innerWidth,h:document.documentElement.scrollHeight,words:(document.body.innerText||'').trim().split(/\s+/).filter(Boolean).length,atoms:document.body.querySelectorAll('h1,h2,h3,h4,li,td,th,[class*=card],[class*=chip],[class*=stat],[class*=step],[class*=item],[class*=row]').length,nodes:document.body.querySelectorAll('*').length})" 2>/dev/null | tail -1)
     # Parsed as JSON, not grepped: `grep -oE '"?h"?:[0-9]+'` also matches the h inside vph.
     read -r h w a n vph vpw < <(python3 -c '
 import json,sys,re
-raw=sys.stdin.read().strip()
+raw=sys.stdin.read().strip().replace(chr(92)+chr(34), chr(34))
 m=re.search(r"\{.*\}",raw,re.S)
 if not m: sys.exit(0)
 d=json.loads(m.group(0))

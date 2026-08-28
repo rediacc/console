@@ -4,6 +4,7 @@ Fail CLOSED by contract: every error path returns an error string, and the
 caller turns that into a block. See "NO ESCAPE HATCH" in worklist.py.
 """
 
+import copy
 import hashlib
 import json
 import os
@@ -572,6 +573,29 @@ def bank_stop_verdict(state_doc, sig, message, reason):
     }
 
 
+# The fix-signal is a SEPARATE prompt section (M.REGGATE_PROMPT, appended as `extra`),
+# but v7 shipped ONE schema in which `regression_gate` is optional at the top level. So on
+# a fix-signal stop the model could satisfy the schema while omitting the object entirely,
+# and `wl_reggate` then reports "regression_gate missing or incomplete: None" and blocks by
+# the no-escape-hatch rule. That is the gate refusing to be bypassed, which is correct, but
+# the session is blocked by a JUDGE error rather than by anything it did. Observed live
+# 2026-08-28.
+#
+# The fix is upstream of the failure: when the prompt ASKS for the object, the schema
+# REQUIRES it. Nothing here weakens the fail-closed path; a malformed object still blocks.
+_REGGATE_MARKER = "A FIX LANDED THIS TURN"
+
+
+def judge_schema_for(extra):
+    """JUDGE_SCHEMA, with regression_gate required iff the prompt asks for it."""
+    if _REGGATE_MARKER not in (extra or ""):
+        return JUDGE_SCHEMA
+    schema = copy.deepcopy(JUDGE_SCHEMA)
+    if "regression_gate" not in schema["required"]:
+        schema["required"] = [*schema["required"], "regression_gate"]
+    return schema
+
+
 def run_judge(
     remaining_lines, leases, message, streak, loop_desc, citations=None, extra="", traps=None
 ):
@@ -606,7 +630,7 @@ def run_judge(
                 "--output-format",
                 "json",
                 "--json-schema",
-                json.dumps(JUDGE_SCHEMA),
+                json.dumps(judge_schema_for(extra)),
                 "--model",
                 JUDGE_MODEL,
                 "--max-budget-usd",

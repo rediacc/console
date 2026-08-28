@@ -1,6 +1,6 @@
 # Handoff checklist: clarity-round6
 
-Status: executing
+Status: done
 Owner: e580532b
 
 Source session `e580532b`, 2026-08-27, planned in `/home/developer/console` on branch `0827-1`.
@@ -25,6 +25,6 @@ Program state: `~/.claude/projects/-home-developer-console/programs/clarity-roun
 - [x] w5 Wave 4: solution-page density, 21 pages, parallel readers and a serialised i18n writer
 - [x] w6 Wave 5: eliminate the dark bands outside dark mode (single owner, main.css)
 - [x] w7 Wave 6: new videos, 4 persona pages and the homepage, via the ported source adapter
-- [ ] w8 Wave 7: ONE render and publish pass for the whole fleet
+- [x] w8 Wave 7: ONE render and publish pass for the whole fleet
 - [x] w9 Wave 8: Docker portability for the helper toolchain, GPU included
 - [x] w10 Wave 9: verification and the before/after scorecard

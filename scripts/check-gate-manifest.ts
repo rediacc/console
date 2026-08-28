@@ -182,6 +182,35 @@ function leafFindings(specs: readonly GateSpec[]): Finding[] {
   return out;
 }
 
+/** A leaf CI cannot see is a gate CI cannot run.
+ *
+ * `globFindings` proves a gate's PATHS match tracked files; nothing proved the same of
+ * its LEAVES, and a spec with no `paths` skipped the leaf oracle entirely. So a manifest
+ * entry could name a script under a gitignored directory: the CI step would invoke a file
+ * absent from the runner and either error or, worse, pass having checked nothing.
+ *
+ * Found 2026-08-28 while being asked three times to wire a gate living in
+ * `private/growth`, which is a separate repository ignored at `.gitignore:69` with zero
+ * tracked files. This oracle makes that mistake impossible to land rather than something
+ * each session has to notice.
+ */
+function leafTrackedFindings(specs: readonly GateSpec[], tracked: readonly string[]): Finding[] {
+  const known = new Set(tracked);
+  const out: Finding[] = [];
+  for (const spec of specs) {
+    for (const leaf of spec.leaves) {
+      if (!leaf.includes('/')) continue; // an npm key, not a file
+      if (!known.has(leaf)) {
+        out.push({
+          oracle: 'leaf-tracked',
+          text: `${spec.id} declares leaf \`${leaf}\`, which git does not track. CI checks out only tracked files, so that step would run against a file that is not there.`,
+        });
+      }
+    }
+  }
+  return out;
+}
+
 function globFindings(specs: readonly GateSpec[], tracked: readonly string[]): Finding[] {
   const out: Finding[] = [];
   for (const spec of specs) {
@@ -257,6 +286,15 @@ function selftest(tracked: readonly string[]): number {
 
   check('glob: a glob matching nothing is caught', globFindings([spec({ paths: ['no/such/dir/**'] })], tracked).length === 1);
   check('glob CONTROL: a glob matching something passes', globFindings([spec({ paths: ['.ci/**'] })], tracked).length === 0);
+
+  // A leaf CI cannot see. `.ci/x.sh` is the fixture leaf and is deliberately NOT tracked,
+  // so the positive case needs no planted file; the control uses a leaf that really is.
+  check('leaf-tracked: an untracked leaf is caught', leafTrackedFindings([spec({})], tracked).length === 1);
+  check(
+    'leaf-tracked CONTROL: a tracked leaf passes',
+    leafTrackedFindings([spec({ leaves: ['scripts/check-gate-manifest.ts'] })], tracked).length === 0,
+  );
+  check('leaf-tracked CONTROL: a bare npm key is not a path', leafTrackedFindings([spec({ leaves: ['check:ci-thing'] })], tracked).length === 0);
   check(
     'glob CONTROL: the tracked list is real, or every glob would look dead',
     tracked.length > 500
@@ -302,6 +340,7 @@ function main(): number {
     ...closureFindings(GATES),
     ...leafFindings(GATES),
     ...globFindings(GATES, tracked),
+    ...leafTrackedFindings(GATES, tracked),
   ];
 
   if (findings.length === 0) {

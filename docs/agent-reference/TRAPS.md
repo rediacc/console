@@ -1504,3 +1504,38 @@ now_ms() {
 **Sweep, not fix:** `git grep 'date +%s%[0-9]*N'`. Bare `%N` compared against
 `%N` is safe (consistent units, as in `test-ci-runner.sh`); a precision digit
 compared against a threshold is not. Only the one site used a precision digit.
+
+## `agent-browser open` returns 1 when its stdout is REDIRECTED and 0 on a terminal
+Trap-Id: agent-browser-exit-depends-on-tty
+Enforced-By: gate:check:ci-agent-browser-exit
+Residue: The gate covers TRACKED shell scripts under `set -e`. A one-off `agent-browser open ... >/dev/null` typed into a tool call lives in no file, and the same TTY-dependence in any OTHER wrapper this repo drives is uncovered until someone names it.
+
+**Same binary, same URL, page loads correctly both ways:**
+
+    agent-browser open "$URL"                    -> rc=0
+    agent-browser open "$URL" >/dev/null 2>&1    -> rc=1
+
+Measured 2026-08-28. The `eval` immediately after returns a real `scrollHeight` in both
+cases, so the page is genuinely there; only the exit code differs.
+
+**Why it is expensive.** `packages/www/scripts/measure-page-density.sh` runs under
+`set -euo pipefail` and redirects that call, so `set -e` killed it at its FIRST page. The
+symptom was not an error message. It was an empty log and a CSV containing only its header
+row, which reads as "the harness produced nothing to say" rather than "the harness was
+shot". Two runs were written off as a wedged browser session before the exit code was
+suspected at all.
+
+**The fix is not to trust the status.** Neutralise it and let a claim about the PAGE decide:
+
+    agent-browser open "$URL" >/dev/null 2>&1 || true
+    # then assert something real: a DOM-node floor, an expected selector, a title.
+
+`|| true` is the right call here and not laziness, because the exit code carries no
+information about the load. The harness keeps a 50-node DOM floor, which is a statement
+about the page rather than about a wrapper's exit status, and that is what catches a
+genuinely failed load.
+
+**The general shape, worth more than this instance:** a tool whose exit code depends on
+whether it is attached to a terminal is invisible in interactive use and fires only under
+redirection, which is to say only in scripts, background jobs and CI. Everything you tested
+by hand keeps working while everything automated dies.
