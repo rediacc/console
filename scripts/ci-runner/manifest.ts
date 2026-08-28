@@ -2337,7 +2337,13 @@ export const GATES: readonly GateSpec[] = [
   {
     id: 'check:ci-landmarks',
     run: 'npm run check:ci-landmarks',
+    slow: true, // needs build:www (131.9s); the runner demoted it anyway
     gate: true,
+    // Reads packages/www/dist, so this is NOT an optimisation: without dist the
+    // gate REFUSES ("zero built pages found") rather than self-skipping, and the
+    // runner recorded that refusal as a FAILURE on every local lane. Seven
+    // sibling gates that read dist already declare this; these two never did.
+    needs: ['build:www'],
     leaves: ['scripts/check-landmarks.ts'],
     ci: {
       kind: 'step',
@@ -2349,7 +2355,12 @@ export const GATES: readonly GateSpec[] = [
   {
     id: 'check:ci-ssr-locale',
     run: 'npm run check:ci-ssr-locale',
+    slow: true, // needs build:www (131.9s); the runner demoted it anyway
     gate: true,
+    // Same as check:ci-landmarks above: without dist it refuses with "zero
+    // probes were comparable", which is correct anti-vacuity behaviour and was
+    // being classified as a failure.
+    needs: ['build:www'],
     leaves: ['scripts/check-ssr-locale.ts'],
     ci: {
       kind: 'step',

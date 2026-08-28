@@ -1,3 +1,5 @@
+## SESSION legacy 2026-08-28T09:17:20Z (adopted from a pre-section document)
+
 # 9d92d9b6 — wave 0827-1, epic `f2757830`, PR #579 (DRAFT)
 
 `origin/0827-1` = `3dbdfbb1f`. Local head `9d3dd06dc`, 1 commit unpushed.
@@ -151,3 +153,55 @@ ignore.
    defect above is exactly what bit `12de2e910`.
 2. Push, then `ci-trace.py` on the new head; when green `gh pr ready` #579,
    request review, resolve threads. **Never merge, never push `main`.**
+
+## SESSION 9d92d9b6 2026-08-28T09:39:46Z
+
+Wave 0827-1, epic `f2757830`, PR #579 (DRAFT). `origin/0827-1` = `da2ecc5b5`,
+verified with `git ls-remote`, not with the tool that claims the push. Both
+submodules (rediacc/account#83, rediacc/renet#109) have 0 unpushed.
+
+## Four commits landed and pushed
+
+- `12de2e910` priority ladder. Independent suite 854/0, re-run after formatting.
+- `609314a41` two judged rules (sweep-the-class, brave defaults). 141 controls.
+- `0583b1690` two guards that matched a MENTION; two controls that could not be REACHED.
+- `da2ecc5b5` formatters, plus two reds named in carried-reds.
+
+`test-hooks.sh` = **PASS=1737 FAIL=0** (was 1730/1).
+
+## UNCOMMITTED, verified, needs one commit + push
+
+`scripts/ci-runner/manifest.ts` — `check:ci-landmarks` and `check:ci-ssr-locale`
+gained `slow: true` + `needs: ['build:www']`, and
+`.ci/config/carried-reds.json` is back to EMPTY (mandatory: a carried entry
+whose gate stops failing is stale and REFUSES the next push).
+Also `agent/PLAN-local-ci-gate-prerequisites.md` (Status: executing).
+
+Both gates now report DEFERRED, not failed. Green: `check:ci-parity` (323 gates,
+both directions), `check:ci-gate-manifest` (323 entries), runner selftest (21).
+
+## Next action
+
+1. Read `ciq4.out` (task `bdowtcx7g`). The receipt must show `failed: []`.
+   `check:ci-gate-manifest` was the last failure and is now green.
+2. Commit the manifest + carried-reds + plan, then push. **Re-stage every path
+   immediately before committing**: `git commit -F` commits the INDEX, and a
+   path staged then edited commits its stale version. That bit `12de2e910`,
+   whose message claims a DEFAULT rewording the commit does not contain.
+3. Read CI with `.ci/scripts/ci/ci-trace.py`, never raw `gh`. Watch
+   `bcywk2wkn` is tracing `da2ecc5b5` to a final verdict. The previous red was
+   PR-description staleness (329 min); the body has since been synced from the
+   republished snapshot, so that edit is now newer than the head commit.
+4. When green: `gh pr ready` on #579, request review, resolve threads.
+   **Never merge, never push `main`.**
+
+## Live hazards
+
+- Shared worktree. A peer session (`e580532b`) runs a GPU/TTS pipeline in
+  `private/growth`. Do NOT build `packages/www` here — that is why the two www
+  gates are deferred rather than satisfied.
+- `agent/e580532b/STATE.md` is dirty and is THEIRS. Never stage it.
+- `npm run ci` writes NO receipt; only `ci:quick` does (`run.ts:786`).
+- `gh api .../logs` needs `--allow-escape-sequences` or it exits 1 with an
+  EMPTY body and the reason on stderr alone — piped to grep that reads as
+  "no findings".
