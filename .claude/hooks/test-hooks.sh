@@ -1783,7 +1783,8 @@ for mod in context/test-context-bands.py \
     pre-bash/test-block-git-amend.py \
     pre-bash/test-block-unverified-push.py \
     pre-bash/test-block-host-toolchain-run.py \
-    stop/test-completion-evidence.py; do
+    stop/test-completion-evidence.py \
+    stop/test-always-tier.py; do
     if [[ ! -f "$DIR/$mod" ]]; then
         FAIL=$((FAIL + 1))
         echo "FAIL [1] $mod missing"

@@ -100,6 +100,7 @@ CASE_FILES=(
     20-advisories-rotation.sh
     21-cadence.sh
     22-plan-fidelity.sh
+    23-priority-ladder.sh
 )
 
 # A case file that nothing sources is an orphan the same way a test file that

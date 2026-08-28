@@ -771,3 +771,110 @@ if ! grep -qF "AND IS NOT LISTENING" <<<"$OUT"; then
 else
     fail "163w-c3 CONTROL: blocked with nobody to hear from: ${OUT:0:250}"
 fi
+
+echo "== 163w-c4. THE TOMBSTONE: a LAPSED waiter blocks with ZERO ignored nudges =="
+# THE PERVERSE INCENTIVE THIS CLOSES. wait() used to `hb.unlink()` on BOTH of
+# its exits, so a waiter that had died left exactly what a session that never
+# listened leaves: nothing. Combined with nudge()'s counter RESET, arming a
+# single 60-minute waiter therefore bought 30+ minutes of guaranteed silence
+# after it lapsed -- the cheapest way to be left alone was to arm one waiter
+# every few hours and never relaunch it.
+#
+# Zero nudges here, deliberately: the ignored-count grace is for a session that
+# merely COULD receive work. A session whose waiter exited already volunteered,
+# was told on the way out to relaunch, and did not.
+setup
+brief_now
+hand_now
+brief_other peer1234
+CRONS='[{"id":"c1","schedule":"*/30 * * * *","prompt":"work loop"},{"id":"p","schedule":"*/5 * * * *"}]'
+rm -f "${WL%.md}.waiternudge-deadbeef"
+printf 'EXPIRED 2026-01-01T00:00:00Z timeout\n' >"${WL%.md}.waiter-deadbeef"
+# Aged past HEARTBEAT_STALE_S so the marker is a lapse rather than a waiter that
+# exited seconds ago and is about to be relaunched in the same turn.
+touch -d '-10 minutes' "${WL%.md}.waiter-deadbeef"
+say "answer"
+OUT="$(run)"
+if grep -qF "YOUR WAITER LAPSED" <<<"$OUT" && grep -qF "timeout" <<<"$OUT"; then
+    pass "163w-c4: a lapsed waiter blocks at once, and the block names WHICH exit it was"
+else
+    fail "163w-c4: the lapse was invisible: ${OUT:0:350}"
+fi
+
+echo "== 163w-c5. CONTROL: NEVER ARMED, zero nudges, is silent =="
+# The whole point of the tombstone is that these two states are different. If
+# this fires too, the change has bought nothing -- it has just made the hook
+# harsher at everybody.
+setup
+brief_now
+hand_now
+brief_other peer1234
+CRONS='[{"id":"c1","schedule":"*/30 * * * *","prompt":"work loop"},{"id":"p","schedule":"*/5 * * * *"}]'
+rm -f "${WL%.md}.waiternudge-deadbeef" "${WL%.md}.waiter-deadbeef"
+say "answer"
+OUT="$(run)"
+if ! grep -qF "YOUR WAITER LAPSED" <<<"$OUT"; then
+    pass "163w-c5 CONTROL: a session that never armed one is not accused of losing one"
+else
+    fail "163w-c5 CONTROL: never-armed and lapsed are still indistinguishable: ${OUT:0:350}"
+fi
+
+echo "== 163w-c6. CONTROL: a LIVE heartbeat is not a tombstone =="
+# _is_tombstone reads the CONTENT, because a tombstone is a WRITE and therefore
+# looks `fresh` for its first HEARTBEAT_STALE_S seconds. A live pulse must never
+# be mistaken for one.
+setup
+brief_now
+hand_now
+brief_other peer1234
+CRONS='[{"id":"c1","schedule":"*/30 * * * *","prompt":"work loop"},{"id":"p","schedule":"*/5 * * * *"}]'
+rm -f "${WL%.md}.waiternudge-deadbeef"
+printf '2026-08-28T10:00:00Z\n' >"${WL%.md}.waiter-deadbeef"
+touch -d '-10 minutes' "${WL%.md}.waiter-deadbeef"
+say "answer"
+OUT="$(run)"
+if ! grep -qF "YOUR WAITER LAPSED" <<<"$OUT"; then
+    pass "163w-c6 CONTROL: a stale ordinary heartbeat is not read as a lapse"
+else
+    fail "163w-c6 CONTROL: an ordinary heartbeat was read as a tombstone: ${OUT:0:350}"
+fi
+
+echo "== 163w-c7. THE NUDGE DECAYS BY ONE, it does not reset to zero =="
+# The counter used to be UNLINKED the moment a heartbeat looked fresh, which
+# made it resettable BY THE FAILURE: arming one waiter zeroed it, so when that
+# waiter lapsed the Stop-side backstop had to climb from zero over another half
+# hour of nudges. Decay keeps it a measure of recent behaviour without letting
+# one act of compliance erase a history of ignoring it.
+setup
+printf '3 2026-01-01T00:00:00Z\n' >"${WL%.md}.waiternudge-deadbeef"
+# Backdated past NUDGE_EVERY_S, or the throttle returns before the decay.
+touch -d '-30 minutes' "${WL%.md}.waiternudge-deadbeef"
+printf '2026-08-28T10:00:00Z\n' >"${WL%.md}.waiter-deadbeef"
+printf '{"session_id":"%s","cwd":"%s","transcript_path":"%s","tool_name":"Bash"}' \
+    "$SID" "$BASE/proj" "$BASE/t.jsonl" |
+    TMPDIR="$BASE/tmp" CLAUDE_PROJECT_DIR="$BASE/proj" WORKLIST_TASKS_DIR="$BASE/tasks" \
+        python3 "$(dirname "$HOOK")/wl_wait.py" --nudge >/dev/null 2>&1
+N163C7="$(cut -d' ' -f1 <"${WL%.md}.waiternudge-deadbeef" 2>/dev/null || echo GONE)"
+if [[ "$N163C7" == "2" ]]; then
+    pass "163w-c7: three ignored nudges decay to two on compliance, not to zero"
+else
+    fail "163w-c7: the counter went to '$N163C7' instead of 2"
+fi
+
+echo "== 163w-c8. CONTROL: complying repeatedly still walks it all the way down =="
+# Decay must not become a counter that can never be cleared: a session doing the
+# right thing for long enough gets back to zero, which is what the reset was
+# rightly for.
+for _i in 1 2; do
+    touch -d '-30 minutes' "${WL%.md}.waiternudge-deadbeef" 2>/dev/null
+    printf '2026-08-28T10:00:00Z\n' >"${WL%.md}.waiter-deadbeef"
+    printf '{"session_id":"%s","cwd":"%s","transcript_path":"%s","tool_name":"Bash"}' \
+        "$SID" "$BASE/proj" "$BASE/t.jsonl" |
+        TMPDIR="$BASE/tmp" CLAUDE_PROJECT_DIR="$BASE/proj" WORKLIST_TASKS_DIR="$BASE/tasks" \
+            python3 "$(dirname "$HOOK")/wl_wait.py" --nudge >/dev/null 2>&1
+done
+if [[ ! -f "${WL%.md}.waiternudge-deadbeef" ]]; then
+    pass "163w-c8 CONTROL: two more compliant windows clear the counter entirely"
+else
+    fail "163w-c8 CONTROL: the counter is stuck at $(cut -d' ' -f1 <"${WL%.md}.waiternudge-deadbeef")"
+fi

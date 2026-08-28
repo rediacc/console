@@ -423,3 +423,49 @@ RID=$(askid deadbeef cafe1234 "answer me")
 as_peer cafe1234 reqcli --answer cafe1234 "$RID" "done" >/dev/null
 reqcli --ack deadbeef "$RID" >/dev/null
 check_quiet "an answered ask no longer demands a waiter" "NOT LISTENING FOR THE ANSWER"
+
+echo "== 69z. A PEER'S REQUEST IS AN INVARIANT: it cannot be rotated away =="
+# Its own comment says "the payload rides inside the obstacle" -- this block IS
+# the delivery of the peer's message, not a pointer to it. A delivery mechanism
+# that can be rotated behind docs drift is not one, and the peer cannot see that
+# this session decided to read about its STATE.md instead. Promoted 2026-08-28
+# under I2 (somebody else pays), alongside no-waiter and no-waiter-asked.
+setup
+CRONS='[{"id":"c1","schedule":"*/30 * * * *","prompt":"work loop"}]'
+brief_other peer1234
+# brief_now is REQUIRED, not decoration: `--ask` is refused when the recipient
+# has never briefed, so without it the fixture plants no request at all and the
+# case measures an empty inbox. (It did, on its first run: six checks
+# outstanding and not one of them the request.)
+brief_now
+# NO hand_now, one open item, an unfixed finding, no poll cron: four rotating
+# checks that used to be able to win the pick ahead of the request.
+echo '- [ ] (deadbeef) something of my own' >>"$WL"
+askid_as peer1234 deadbeef 'the baseline number you measured, please' >/dev/null
+say "I looked at it.
+
+- Agent finding I did not fix: the dead symlink under .ci"
+OUT="$(run)"
+if grep -qF "cross-session REQUEST(S) are waiting on you" <<<"$OUT" &&
+    grep -qF "the baseline number you measured" <<<"$OUT"; then
+    pass "69z: the peer's request and its whole body survive a crowded first stop"
+else
+    fail "69z: the request was rotated behind this session's own housekeeping: ${OUT:0:400}"
+fi
+
+echo "== 69z-c1. CONTROL: no request, and the same crowd says nothing about one =="
+# Without this, 69z passes for any hook that prints the word REQUEST somewhere.
+setup
+CRONS='[{"id":"c1","schedule":"*/30 * * * *","prompt":"work loop"}]'
+brief_other peer1234
+brief_now
+echo '- [ ] (deadbeef) something of my own' >>"$WL"
+say "I looked at it.
+
+- Agent finding I did not fix: the dead symlink under .ci"
+OUT="$(run)"
+if [[ -n "${OUT//[[:space:]]/}" ]] && ! grep -qF "cross-session REQUEST(S) are waiting on you" <<<"$OUT"; then
+    pass "69z-c1 CONTROL: with no request outstanding the invariant is silent"
+else
+    fail "69z-c1 CONTROL: the request section fires with no request: ${OUT:0:300}"
+fi

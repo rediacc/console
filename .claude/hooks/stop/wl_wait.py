@@ -200,6 +200,57 @@ def _touch(path):
         path.write_text(C.stamp_now(), encoding="utf-8")
 
 
+# The tombstone a waiter leaves BEHIND ITSELF on exit, in place of the unlink
+# both exits used to do. See tombstone().
+TOMBSTONE = "EXPIRED"
+
+
+def tombstone(path, why):
+    """Mark a waiter's heartbeat DEAD instead of deleting it.
+
+    WHY THIS EXISTS. wait() used to `hb.unlink()` on both of its exits -- the
+    timeout at the top of the loop and the fired-and-returning path at the
+    bottom -- which made a LAPSED waiter byte-identical to one that was never
+    armed: in both cases there is simply no file. Combined with nudge()'s
+    counter reset (see decay_nudges), arming a single waiter therefore bought
+    30+ minutes of guaranteed silence AFTER it died. That is a perverse
+    incentive, not a gap: the cheapest way to be left alone was to arm one
+    60-minute waiter every few hours and never relaunch it.
+
+    THE CARRIER IS THE SAME PATH, deliberately, and that is what makes this the
+    cheapest possible change. Every existing reader is `_fresh(hb,
+    HEARTBEAT_STALE_S)` with HEARTBEAT_STALE_S = 60s, and a tombstone is a
+    WRITE, so it ages out within a minute exactly as a real heartbeat would. No
+    existing caller changes behaviour; the only new reader is waiter_lapsed()
+    below, which looks at the CONTENT rather than the mtime.
+    """
+    with contextlib.suppress(OSError):
+        path.write_text("%s %s %s\n" % (TOMBSTONE, C.stamp_now(), why), encoding="utf-8")
+
+
+def waiter_lapsed(worklist, me):
+    """("", None) when no waiter has ever been armed for this session, or
+    (why, age_minutes) when the last one EXITED and was never relaunched.
+
+    A live waiter answers ("", None) too -- a fresh heartbeat is not a lapse --
+    so the caller does not have to re-derive liveness. NO GRACE PERIOD is
+    warranted on the answer: unlike "you have never armed one", a lapse means
+    the session already accepted the contract and then stopped listening.
+    """
+    path = heartbeat_path(worklist, me)
+    try:
+        raw = path.read_text(encoding="utf-8")
+        age_s = time.time() - path.stat().st_mtime
+    except OSError:
+        return "", None  # never armed, or armed and its marker was removed
+    if not raw.startswith(TOMBSTONE):
+        return "", None  # a real heartbeat, live or merely stale
+    if age_s <= HEARTBEAT_STALE_S:
+        return "", None  # it exited seconds ago; the relaunch is still in hand
+    parts = raw.split()
+    return (parts[2] if len(parts) > 2 else "exited"), age_s / 60.0
+
+
 def wait(me, timeout_min, start):
     import wl_report as RPT  # noqa: PLC0415 -- see the import note at the top
     import wl_requests as R  # noqa: PLC0415
@@ -240,7 +291,11 @@ def wait(me, timeout_min, start):
                 "listening: python3 %s %s --timeout %d"
                 % (timeout_min, me, pathlib.Path(__file__).resolve(), me, timeout_min)
             )
-            hb.unlink(missing_ok=True)
+            # A TOMBSTONE, NOT AN UNLINK. See tombstone(): deleting the file
+            # made "this waiter lapsed" indistinguishable from "no waiter was
+            # ever armed", which is the state the Stop hook is most lenient
+            # about.
+            tombstone(hb, "timeout")
             return 0
         time.sleep(min(TICK_S, remaining))
 
@@ -299,7 +354,7 @@ def wait(me, timeout_min, start):
             "anything: python3 %s %s --timeout %d"
             % (pathlib.Path(__file__).resolve(), me, timeout_min)
         )
-        hb.unlink(missing_ok=True)
+        tombstone(hb, "fired")  # see tombstone(); never an unlink
         return 0
 
 
@@ -368,6 +423,43 @@ def _fresh(path, max_age_s):
         return (time.time() - path.stat().st_mtime) <= max_age_s
     except OSError:
         return False
+
+
+def _is_tombstone(path):
+    """Is this heartbeat file a waiter's EXIT marker rather than a live pulse?
+    Unreadable counts as NOT a tombstone: the failure direction is one extra
+    nudge, never a session accused of losing a waiter it still has."""
+    try:
+        return path.read_text(encoding="utf-8").startswith(TOMBSTONE)
+    except OSError:
+        return False
+
+
+def decay_nudges(worklist, me):
+    """Take ONE off the ignored-count, floor zero. Never a reset.
+
+    THE UNLINK THIS REPLACES WAS RESETTABLE BY THE FAILURE ITSELF. nudge() saw a
+    fresh heartbeat and deleted the counter outright, so arming a single waiter
+    zeroed it; when that waiter lapsed the count had to climb from zero again,
+    over another WAITER_GRACE_NUDGES * NUDGE_EVERY_S (half an hour) before the
+    Stop-side `no-waiter` backstop could fire. A session that armed one
+    60-minute waiter every few hours therefore held the check permanently below
+    threshold while being deaf most of the time -- and the absent
+    `.waiternudge-<id>` file on the failing night is the evidence it happened.
+
+    Decay keeps the counter a measure of RECENT behaviour (which is what the
+    reset was rightly for) without letting one act of compliance erase a
+    history of ignoring it. Complying repeatedly still walks it to zero, one
+    nudge window at a time.
+    """
+    n = nudges_ignored(worklist, me) - 1
+    np = nudge_path(worklist, me)
+    with contextlib.suppress(OSError):
+        if n <= 0:
+            np.unlink(missing_ok=True)
+        else:
+            np.write_text("%d %s\n" % (n, C.stamp_now()), encoding="utf-8")
+    return max(n, 0)
 
 
 def nudges_ignored(worklist, me):
@@ -448,11 +540,16 @@ def nudge(event):
 
     if _fresh(nudge_path(worklist, me), NUDGE_EVERY_S):
         return  # already said recently
-    if _fresh(heartbeat_path(worklist, me), HEARTBEAT_STALE_S):
-        # A waiter is listening. RESET the ignored-count: the session complied,
-        # and a counter that only ever grows would eventually block a session
-        # that has been doing the right thing for hours.
-        nudge_path(worklist, me).unlink(missing_ok=True)
+    hb = heartbeat_path(worklist, me)
+    if _fresh(hb, HEARTBEAT_STALE_S) and not _is_tombstone(hb):
+        # A waiter is listening. DECAY the ignored-count by one -- do NOT delete
+        # it. See decay_nudges: the unlink this replaces was resettable BY THE
+        # FAILURE, so one 60-minute waiter armed every few hours kept the
+        # Stop-side backstop permanently under threshold. `_is_tombstone` is
+        # part of the same repair: a waiter's exit marker is a WRITE, so for its
+        # first HEARTBEAT_STALE_S seconds it is "fresh" while naming a process
+        # that is already gone.
+        decay_nudges(worklist, me)
         return
 
     # DO NOT NUDGE WHEN THERE IS NOTHING TO LISTEN FOR. With no other live

@@ -115,24 +115,35 @@ fi
 echo "== 163y. v18: unread sub-agent reports are surfaced on an ORDINARY stop =="
 # SessionStart and PostCompact are covered by wl_report's own hooks. This is the
 # commoner case they miss: a long-running session whose teammate finished twenty
-# minutes ago and whose SendMessage has scrolled out of reach. Report-only: an
-# unread report is information, not an obligation, and there is no honest
-# evidence a stop could demand for "I read it".
-setup
-brief_now
-hand_now
-python3 - "$BASE/reports" <<'PYEOF'
+# minutes ago and whose SendMessage has scrolled out of reach.
+#
+# IT USED TO BE REPORT-ONLY FOREVER, on the stated grounds that "there is no
+# honest evidence a stop could demand for 'I read it'". That grounds was untrue
+# -- `wl_report.py --read <me> <id>` is exactly such evidence, and the advisory
+# already printed the command -- and the cost was measured: outq_drain runs only
+# on the ALLOW path, so one session carried four unread teammate reports through
+# 57 consecutive BLOCKING stops and was never once told. So it graduates: an
+# advisory while it is news, a violation once it is a debt, an invariant at
+# UNREAD_INVARIANT_MIN or on any [SILENT] report.
+mk163y() { # mk163y <stamp> <yes|no silent> <title>
+    python3 - "$BASE/reports" "$1" "$2" "$3" <<'MK163YEOF'
 import json, pathlib, sys
 store = pathlib.Path(sys.argv[1])
 (store / "agenttest").mkdir(parents=True, exist_ok=True)
-(store / "agenttest" / "r.md").write_text("SUBSTANTIVE FINDING FROM A TEAMMATE\nbody")
+(store / "agenttest" / "r.md").write_text(sys.argv[4] + "\nbody")
 (store / "index.jsonl").write_text(json.dumps({
-    "ev": "report", "id": "abcdef123456", "at": "2026-08-05T10:00:00Z",
+    "ev": "report", "id": "abcdef123456", "at": sys.argv[2],
     "branch": "agenttest", "agent": "some-teammate", "type": "some-teammate",
     "session": "deadbeef", "body": "agenttest/r.md", "bytes": 900,
-    "silent": False, "sends": 1, "title": "SUBSTANTIVE FINDING FROM A TEAMMATE",
+    "silent": sys.argv[3] == "yes", "sends": 1, "title": sys.argv[4],
     "transcript": "", "src": "hook"}) + "\n")
-PYEOF
+MK163YEOF
+}
+setup
+brief_now
+hand_now
+# FRESH: minutes old, so it is still news. Advisory, exactly as before.
+mk163y "$(date -u -d '-2 minutes' +%Y-%m-%dT%H:%M:%SZ)" no "SUBSTANTIVE FINDING FROM A TEAMMATE"
 say "all done, nothing outstanding"
 OUT="$(run)"
 if grep -qF "UNREAD SUB-AGENT REPORTS" <<<"$OUT" && grep -qF "SUBSTANTIVE FINDING FROM A TEAMMATE" <<<"$OUT"; then
@@ -141,10 +152,37 @@ else
     fail "163y: no unread-report section: ${OUT:0:300}"
 fi
 if ! grep -qF '"decision": "block"' <<<"$OUT"; then
-    pass "163y: it is REPORT-ONLY and does not block the stop"
+    pass "163y: while it is still NEWS it is report-only and does not block"
 else
-    fail "163y: an unread report blocked the stop: ${OUT:0:300}"
+    fail "163y: a two-minute-old report blocked the stop: ${OUT:0:300}"
 fi
+# AGED past UNREAD_INVARIANT_MIN: the advisory queue has demonstrably failed to
+# deliver it, so it becomes an invariant and blocks.
+newturn
+mk163y "2026-01-01T10:00:00Z" no "SUBSTANTIVE FINDING FROM A TEAMMATE"
+say "all done, nothing outstanding"
+OUT="$(run)"
+if grep -qF '"decision": "block"' <<<"$OUT" && grep -qF "UNREAD SUB-AGENT REPORTS" <<<"$OUT"; then
+    pass "163y: an unread report old enough to be a debt BLOCKS"
+else
+    fail "163y: an ancient unread report still slid past: ${OUT:0:300}"
+fi
+# A [SILENT] report blocks regardless of age: an agent that stopped without
+# reporting is the case indistinguishable from a healthy one unless somebody
+# looks, which is the whole reason the flag exists.
+newturn
+mk163y "$(date -u -d '-2 minutes' +%Y-%m-%dT%H:%M:%SZ)" yes "SILENT TEAMMATE"
+say "all done, nothing outstanding"
+OUT="$(run)"
+if grep -qF '"decision": "block"' <<<"$OUT" && grep -qF "SILENT TEAMMATE" <<<"$OUT"; then
+    pass "163y: a fresh [SILENT] report blocks without waiting out the ladder"
+else
+    fail "163y: a silent teammate went unnoticed: ${OUT:0:300}"
+fi
+# Back to a fresh substantive one, so the CONTROLS below read the same shape the
+# original fixture handed them.
+newturn
+mk163y "$(date -u -d '-2 minutes' +%Y-%m-%dT%H:%M:%SZ)" no "SUBSTANTIVE FINDING FROM A TEAMMATE"
 # CONTROL: marked read, the section is gone. Without this the assertion above is
 # satisfied by any section that is simply always emitted.
 python3 - "$BASE/reports" <<'PYEOF'

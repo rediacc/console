@@ -472,6 +472,14 @@ ARITY = {
     "V_DEFERRED_FINDING": ("rows",),
     "V_SWEEP_MOMENT": ("an item this turn",),
     "PLANFID_PROMPT": {"plan": "p", "items": "i", "message": "m"},
+    # v21 priority ladder. V_WAITER_LAPSED takes which exit the waiter took, how
+    # many minutes ago, the live-peer count, the wl_wait path and the session
+    # prefix. V_PR_FINISH takes the branch, the PR number, the rendered boxes,
+    # then hook/me/PR-number for the --add exit and hook/me for the --tick.
+    # R_ALWAYS_COLLAPSED takes the rendered one-line-per-invariant block.
+    "V_WAITER_LAPSED": ("timeout", 12, 2, "p", "me"),
+    "V_PR_FINISH": ("b", 543, "rows", "h", "me", 543, "h", "me"),
+    "R_ALWAYS_COLLAPSED": ("rows",),
 }
 fail = 0
 for name, args in ARITY.items():

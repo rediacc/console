@@ -347,6 +347,85 @@ else
     fail "214f GUARD E: the pause survived actionable work: ${OUT:0:300}"
 fi
 
+echo "== 214g. GUARD F: an unfinished MISSION refuses the pause =="
+# The operator's sentence, made executable: "There should be list of 'has to
+# show with this order' until we check all of them, we should not be able to say
+# 'but this stop is YOURS'."
+#
+# Guard (E) already refuses the pause while there is an open item, a pending
+# task or a live lease -- but that is "my queue is non-empty", which is not the
+# same fact as "the job is done". The fixture below has an EMPTY board and an
+# unticked program wave: nothing actionable in the worklist sense, and the thing
+# the session was handed is plainly unfinished. Before (F) this stop was handed
+# its quiet turn.
+setup
+CADENCE=on
+brief_now
+hand_now
+cldeliver docs/demo/README.md "the readme"
+clfile demo <<'MD'
+# Handoff checklist: demo
+Status: executing
+Owner: deadbeef
+
+## Deliverables
+- [x] d1 file:docs/demo/README.md
+
+## Waves
+- [ ] w1 Wave A: the thing this session was handed
+MD
+say "answer
+
+## Remaining
+- nothing outstanding"
+check "214g: the first stop demands the unticked wave" block "w1"
+newturn
+say "I have now answered the demand
+
+## Remaining
+- nothing outstanding"
+# ONE RUN, BOTH FACTS, for the reason 214f states: after a pause the NEXT stop
+# blocks anyway, so a split assertion passes on a fixture that had just paused.
+OUT="$(run)"
+if grep -qF '"decision": "block"' <<<"$OUT" && ! grep -qF "but this stop is YOURS" <<<"$OUT"; then
+    pass "214g GUARD F: an unfinished mission refuses the pause the message alone would earn"
+else
+    fail "214g GUARD F: the pause survived an unfinished mission: ${OUT:0:300}"
+fi
+
+echo "== 214h. CONTROL: the SAME fixture, mission SETTLED, pauses exactly as before =="
+# Without this, 214g is satisfied by a hook that had simply stopped pausing.
+# The wave is ticked and the checklist flipped done, so the only thing left is a
+# rotating nag with nothing actionable behind it -- 214's own shape.
+setup
+CADENCE=on
+brief_now
+hand_now
+FNF='- Agent finding I did not fix: the dead symlink under .ci'
+say "answer
+
+$FNF
+
+## Remaining
+- nothing outstanding"
+check "214h: the first stop demands" block "finding(s) you did not fix"
+newturn
+say "I have now answered the demand
+
+$FNF
+
+## Remaining
+- nothing outstanding"
+OUT="$(run)"
+DEC="$(python3 -c 'import json,sys
+raw=sys.stdin.read().strip()
+print(json.loads(raw).get("decision","allow") if raw else "allow")' <<<"$OUT" 2>/dev/null)"
+if [[ "$DEC" != "block" ]] && grep -qF "still outstanding" <<<"$OUT"; then
+    pass "214h CONTROL: with the mission settled the stand-down still works"
+else
+    fail "214h CONTROL: guard F swallowed the ordinary pause: decision=$DEC ${OUT:0:250}"
+fi
+
 echo "== 222. THE IDLE-STALL GATE: an open item, nobody carrying it, nothing moved =="
 # WHY (operator, 2026-08-26): "it's very annoying that neither you have
 # background agent nor running monitor/shell but you do stop even with remaining

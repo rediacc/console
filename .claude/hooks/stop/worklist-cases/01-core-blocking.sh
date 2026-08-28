@@ -503,11 +503,23 @@ done
 # Advisory, never blocking. The controls that matter are the SILENT ones: it must
 # not fire twice in an episode, must not fire while a teammate is live, and must
 # re-arm only after the queue actually drains. A nag would be routed around.
+#
+# THE STAMP MOVED OUT OF THIS FUNCTION (2026-08-28) and the fixture below says so
+# explicitly rather than quietly. `solo_grind_due` used to write `solognd` itself,
+# i.e. on the stop that COMPUTED it -- so a rotation miss or a cadence pause spent
+# the one mention this advisory ever gets on a stop that never rendered a word of
+# it. The stamp is now a DISPLAY-time latch in run_stop (spend_display_latches),
+# so "the text was shown" is modelled here by writing the key by hand, and the
+# once-per-episode property is asserted against that. The DISARM stays in the
+# function: an emptied queue is the episode genuinely being over, not a
+# suppression.
 if python3 -c "
 import sys; sys.path.insert(0, '$(dirname "$HOOK")')
 import wl_checks as C
 d = {}
 ok = C.solo_grind_due(39, 0, d) is True            # fires: long queue, working alone
+ok = ok and C.solo_grind_due(39, 0, d) is True     # NOT SHOWN yet, so still due
+d['solognd'] = 39                                  # <- what the display latch writes
 ok = ok and C.solo_grind_due(39, 0, d) is False    # once per episode, not per stop
 ok = ok and C.solo_grind_due(39, 2, d) is False    # silent once a teammate is live
 ok = ok and C.solo_grind_due(3, 0, d) is False     # queue drained: episode ends
@@ -516,7 +528,7 @@ ok = ok and C.solo_grind_due(11, 0, {}) is False   # below the floor it never sp
 ok = ok and C.solo_grind_due(39, None, {}) is True  # a fact-gatherer that returns None
 ok = ok and C.solo_grind_due(None, 0, {}) is False  # crashed the whole hook once
 sys.exit(0 if ok else 1)"; then
-    pass "solo-grind fires once per episode, stays silent with a teammate live"
+    pass "solo-grind stays due until it is SHOWN, then fires once per episode"
 else
     fail "solo-grind advisory logic is wrong"
 fi

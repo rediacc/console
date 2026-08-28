@@ -26,6 +26,7 @@ import wl_planfid
 import wl_reggate
 import wl_report
 import wl_requests
+import wl_roundlog
 import wl_store as S
 import wl_wait
 import worklist_messages as M
@@ -2195,6 +2196,31 @@ def _agent_state_because(astate, aage):
 # hours -- the same reason the no-op ladder needs a streak before it speaks.
 SOLO_GRIND_MIN_ITEMS = int(os.environ.get("WORKLIST_SOLO_MIN", "12"))
 
+# How long a teammate's unread report may sit before it stops being news and
+# becomes a debt. The first rung matches BG_REPORT_MIN's 15 minutes -- the
+# interval this file already treats as "long enough that a session should have
+# noticed" -- and the second is three of those.
+UNREAD_ROTATE_MIN = float(os.environ.get("WORKLIST_UNREAD_ROTATE_MIN", "15"))
+UNREAD_INVARIANT_MIN = float(os.environ.get("WORKLIST_UNREAD_INVARIANT_MIN", "45"))
+
+
+def _prf_covered(fold, token):
+    """Is a pr-babysit finish-line box TICKED?
+
+    True only for a store record that carries the linkage token AND is closed
+    (`x`). An OPEN item carrying it is the session having claimed the box, not
+    having done it -- and that open item blocks on its own, in the same mission
+    tier, so nothing is lost by refusing to count it here.
+
+    Word-bounded and literal-escaped, exactly as wl_checklist._covering_items
+    is, so `pr:5/reviewed` never matches `pr:53/reviewed`.
+    """
+    rx = re.compile(r"\b%s\b" % re.escape(token))
+    return any(
+        rec.get("state") == "x" and rx.search(rec.get("line") or rec.get("text") or "")
+        for rec in (getattr(fold, "items", None) or [])
+    )
+
 
 def solo_grind_due(n_open, n_teammates, state_doc):
     """True when a long solo queue deserves ONE mention. Mutates state_doc.
@@ -2215,10 +2241,13 @@ def solo_grind_due(n_open, n_teammates, state_doc):
         # Episode over. Re-arm so a queue that grows again is asked again.
         state_doc.pop("solognd", None)
         return False
-    if state_doc.get("solognd"):
-        return False
-    state_doc["solognd"] = n_open
-    return True
+    # THE STAMP IS NO LONGER WRITTEN HERE. It is registered as a display-time
+    # latch by the caller (see spend_display_latches in run_stop): this function
+    # runs on every stop, and writing `solognd` from it burned the one mention
+    # this advisory ever gets on stops that never rendered it. The DISARM above
+    # stays at compute time -- it is not a suppression, it is the episode
+    # genuinely being over.
+    return not state_doc.get("solognd")
 
 
 # ---- CADENCE (operator-approved 2026-08-15, PLAN-stop-hook-cadence.md sec 3) --
@@ -2238,6 +2267,159 @@ CADENCE_MAX_PAUSES = int(os.environ.get("WORKLIST_CADENCE_MAX", "3"))
 JUDGE_TIER_KEYS = frozenset(
     {"unjustified", "defer-expired", "completion", "undefaulted", "no-remaining"}
 )
+
+
+# ---------------------------------------------------------------------------
+# v21: THE PRIORITY LADDER (operator, 2026-08-28: "Stop hook should have a list
+# for prioritization items to pick for each case. There should be list of 'has
+# to show with this order' until we check all of them, we should not be able to
+# say 'but this stop is YOURS'.")
+#
+# WHAT WAS WRONG. Rotation was LRU over check keys with the BATTERY'S LINE ORDER
+# as the tiebreak, and every never-served key ties at -1, so the first stop of a
+# crowded session picked whichever check happened to be written earliest in this
+# file. Measured on the failing night: 23 rotating keys sorted ahead of
+# `no-waiter-asked`, so "you asked a peer and nothing is listening" could not be
+# reached until the twenty-fourth stop -- while its five-rung ladder burned a
+# rung per stop, unseen. Line order is a shape of the source file. It is not a
+# statement about which unfinished thing matters most, and it was being read as
+# one.
+#
+# THE LADDER IS THE STATEMENT, made explicit and orderable. Four tiers, and the
+# order is an argument about WHO IS STUCK, not about how alarming a message is:
+#
+#   T_MISSION (0)   The thing this session was ASKED to do is not done. Read off
+#                   markdown checkboxes that already exist -- the worklist's
+#                   `- [ ]` items, agent/programs/<slug>/CHECKLIST.md's
+#                   deliverable and wave boxes, and the pr-babysit finish line.
+#                   Nothing else can matter more, because everything else is
+#                   housekeeping around work that has not landed. This is the
+#                   operator's own example: "if there is an open-pr and if it's
+#                   red we must continue to work until making it green."
+#
+#   T_OWED (1)      Somebody ELSE is blocked, and cannot see that this session
+#                   stood down. A peer's request, an answer this session asked
+#                   for and is not listening for, a teammate's finished report.
+#                   Above integrity because a stalled peer is a stalled second
+#                   session, and hook blindness only costs this one.
+#
+#   T_INTEGRITY (2) A gate, the hook, or the evidence ledger cannot SEE. Its
+#                   silence is not evidence, so nothing below it can be trusted
+#                   while it is outstanding.
+#
+#   T_HYGIENE (3)   Everything else: STATE.md, the brief, docs drift, a
+#                   submodule pointer, a stale PR body. Real, and last. This is
+#                   the DEFAULT, so a new check is hygiene until somebody argues
+#                   it up -- which is the safe direction for a ladder whose top
+#                   tier can never be rotated away.
+#
+# T_MISSION ALSO DEFEATS THE CADENCE PAUSE. That is the operator's sentence
+# rendered as code: the "but this stop is YOURS" stand-down may spend the
+# DEMAND, but never while the asked-for work is still unfinished.
+#
+# MATCHING IS BY EXACT KEY OR BY `prefix:` -- several checks are scoped per
+# subject (`cl-producing:<slug>`, `agent-pushback:<agent>`), and a ladder that
+# only understood whole keys would silently drop every one of them to hygiene.
+T_MISSION, T_OWED, T_INTEGRITY, T_HYGIENE = 0, 1, 2, 3
+
+PRIORITY_LADDER = (
+    (
+        T_MISSION,
+        frozenset(
+            {
+                # The worklist's own `- [ ]` boxes, and the two states that turn
+                # a parked box back into an order.
+                "open-items",
+                "defer-expired",
+                "undefaulted",
+                # agent/programs/<slug>/CHECKLIST.md -- deliverable and wave
+                # boxes, same four-state markdown the worklist uses.
+                "cl-producing",
+                "cl-flip",
+                "cl-waves",
+                # The pr-babysit finish line, box by box (green / ready /
+                # reviewed / threads), and the red that keeps it unticked.
+                "pr-finish",
+                "ci-red",
+            }
+        ),
+    ),
+    (
+        T_OWED,
+        frozenset(
+            {
+                "requests",
+                "no-waiter-asked",
+                "no-waiter",
+                "waiter-lapsed",
+                "answers",
+                "bg-report",
+                "unread-reports",
+                "agent-pushback",
+                # NB `ladder-ping` is an outq advisory, not a vadd key, so it
+                # is deliberately absent: test-always-tier.py fails on a ladder
+                # entry that no check can ever produce.
+                "ladder-investigate",
+                "ladder-gone",
+                "ladder-idle",
+                "ladder-resolve",
+                "xsession",
+                "unconfirmed",
+            }
+        ),
+    ),
+    (
+        T_INTEGRITY,
+        frozenset(
+            {
+                "hook-blind",
+                "event-unparseable",
+                "adhoc-watch",
+                "adhoc-watch-broken",
+                "ci-unreadable",
+                "ci-waiting",
+                "pr-unreadable",
+                "cl-shape",
+                "plan-fidelity",
+                "agent-bootstrap",
+                "pending-ask",
+                "stuck",
+                "idle-stall",
+                "unblocked-claim",
+                "completion",
+                "unjustified",
+                "uncited",
+                "unstated",
+                "mislabelled",
+                "out-of-sync",
+                "loop-died",
+                "broken-schedule",
+                "no-poll",
+                "many-poll-crons",
+                "many-work-crons",
+            }
+        ),
+    ),
+)
+
+# The invariant (`always=True`) tier is deliberately SCARCE -- this file's own
+# warning, at the sweep prompt below, is that "a prompt that fires always is a
+# prompt that gets skimmed". So on a stop where several invariants are
+# outstanding, at most this many are QUOTED IN FULL; the rest are NAMED, one
+# line each, with their opening line. Nothing is dropped, and the count in the
+# header stays truthful either way.
+ALWAYS_FULL_MAX = int(os.environ.get("WORKLIST_ALWAYS_FULL_MAX", "2"))
+
+
+def check_tier(key):
+    """Where a violation key sits on the priority ladder. Unknown keys are
+    HYGIENE, which is the safe default: a new check has to be argued upward
+    rather than inheriting a promotion it never asked for."""
+    head = str(key).split(":", 1)[0]
+    for tier, keys in PRIORITY_LADDER:
+        if key in keys or head in keys:
+            return tier
+    return T_HYGIENE
 
 
 def planfid_check(worklist, session_id, event, fold, lines, me8, last_msg, vadd):
@@ -2955,12 +3137,37 @@ def run_stop(event, event_ok, worklist, hook_file):
     # (broken_schedules, below), which is silent when there is nothing wrong.
 
     # ---- v13: keyed, tiered violations (operator, 2026-07-31: "single and
-    # focused message at a time"). Each entry is (key, always, text). `always`
-    # marks the tier that can never be rotated away: latched one-shots (their
-    # producers spend a budget or mark state at COMPUTE time, so hiding the
-    # text swallows it forever) and hook-integrity failures. Everything else
-    # is recomputed from artifacts each stop, so showing one at a time loses
-    # nothing. Terse per-check wording rides the text itself.
+    # focused message at a time"). Each entry is (key, always, text) -- KEEP THE
+    # TUPLE 3-WIDE; six unpack sites below depend on it, and the priority ladder
+    # is derived from the key rather than carried as a fourth field precisely so
+    # that stays true. `always` marks the INVARIANT tier, which is never rotated
+    # away; everything else rotates one per stop, ordered by the ladder at
+    # PRIORITY_LADDER above.
+    #
+    # THE ADMISSION RULE FOR `always=True`, written down because it was
+    # previously only implied and three checks violated it while nobody could
+    # point at the sentence they broke. A check is an INVARIANT iff at least one
+    # of these holds:
+    #
+    #   I1  COMPUTE-TIME BUDGET. The producer spends a latch, bumps a counter,
+    #       or pays for an API call while computing its text. Hiding that text
+    #       spends the budget on a line nobody read. (`plan-fidelity` pays for a
+    #       model call; `no-waiter-asked` bumps its ladder rung; `submodule` and
+    #       `solo-grind` stamp a suppression window.)
+    #
+    #   I2  SOMEONE ELSE PAYS. The remedy is owed to a party that cannot observe
+    #       this session's silence -- a peer blocked on a request, an answer this
+    #       session asked for and is not listening for.
+    #
+    #   I3  HOOK INTEGRITY. The hook or a gate cannot see, so its silence is not
+    #       evidence and nothing below it can be trusted.
+    #
+    # COROLLARY THAT KEEPS THE TIER SMALL: a check qualifying ONLY under I1
+    # should have its latch moved to display time rather than be promoted -- see
+    # `submodule` and `solo-grind`, which now stamp only on the stop that
+    # actually showed them. And when several invariants are outstanding at once,
+    # at most ALWAYS_FULL_MAX are quoted in full and the rest are NAMED; the tier
+    # buys un-rotatability, not unlimited column inches.
     violations = []
 
     # Checks whose text is carried verbatim through a cadence pause. The rule
@@ -2968,10 +3175,46 @@ def run_stop(event, event_ok, worklist, hook_file):
     # the silence. These are the ones where another session is already blocked,
     # so a label like "requests" tells this session to stand down while telling
     # the peer nothing at all.
-    carry_through_pause = frozenset({"requests", "no-waiter-asked", "no-waiter"})
+    #
+    # DERIVED FROM THE LADDER SINCE 2026-08-28, not hand-listed. The old literal
+    # named exactly `{"requests", "no-waiter-asked", "no-waiter"}` -- i.e. the
+    # file had already identified the three checks where another party pays and
+    # left all three ROTATABLE, so each could be starved 23 keys deep by a check
+    # that had nothing to do with anyone else. That mismatch IS the seam this
+    # version closes: "somebody else is blocked" is now a TIER, the carry list
+    # reads it, and the three originals are additionally invariants under I2 (so
+    # for them the pause is defeated outright and this list is belt to braces).
+    # Anything the ladder calls T_OWED is carried, with no second place to
+    # remember to add it.
+    def carried_through_pause(key):
+        return check_tier(key) == T_OWED
 
     def vadd(key, always, text):
         violations.append((key, always, text))
+
+    # ---- LATCHES THAT MUST BE SPENT AT DISPLAY TIME, NOT COMPUTE TIME.
+    #
+    # A handful of checks suppress themselves after speaking once: `submodule`
+    # writes a time-boxed `subptr` window, `solo-grind` writes `solognd` and
+    # never asks again. Both used to stamp that state inside their vadd block --
+    # i.e. on the stop that COMPUTED them, whether or not the session ever saw a
+    # word of it. So a rotation miss (or, since the cadence landed, a paused
+    # stop) silently opened a suppression window for a message nobody read, and
+    # the mechanism was strictly worse than having no latch at all: it went
+    # quiet about a real pointer AND left no trace of having done so.
+    #
+    # This is the tier comment's I1 corollary in code. Rather than promote these
+    # two to the invariant tier -- which would fix the swallowing by making them
+    # unskippable, at the cost of the scarcity that tier depends on -- the latch
+    # moves to the moment the text is actually rendered. Register the mutation
+    # here; `spend_display_latches` runs it for the keys this stop really shows.
+    display_latch = {}
+
+    def spend_display_latches(keys):
+        for key in keys:
+            fn = display_latch.pop(key, None)
+            if fn is not None:
+                fn()
 
     if bgwait_due:
         # A silent stream alone cannot distinguish "stuck" from "a poll loop
@@ -3237,8 +3480,13 @@ def run_stop(event, event_ok, worklist, hook_file):
                 )
             )
         vadd(
+            # INVARIANT under I2 since 2026-08-28. Its own comment two lines
+            # above says "the payload rides inside the obstacle" -- the block IS
+            # the delivery of a peer's message. A delivery mechanism that can be
+            # rotated 23 keys deep is not one, and the peer cannot see that this
+            # session decided to read about docs drift instead.
             "requests",
-            False,
+            True,
             M.V_REQUESTS_WAITING % (len(req_to_me) + len(req_bcast), "\n".join(rows), me8, me8),
         )
     if req_answered:
@@ -3451,7 +3699,11 @@ def run_stop(event, event_ok, worklist, hook_file):
                     "; ".join("%s %s -> %s, %s" % (p, a, b, w) for p, a, b, w in moves),
                 ),
             )
-            state_doc["subptr"] = {"sig": _sub_sig, "at": C.stamp_now()}
+            # DISPLAY-TIME, see spend_display_latches: stamping here used to
+            # open the suppression window on a stop that rotated the text away.
+            display_latch["submodule"] = lambda sig=_sub_sig: state_doc.__setitem__(
+                "subptr", {"sig": sig, "at": C.stamp_now()}
+            )
     elif state_doc.get("subptr"):
         # Pointers match again (pushed, or reverted): drop the latch so the next
         # genuine move fires at once rather than inheriting a stale window.
@@ -3568,6 +3820,90 @@ def run_stop(event, event_ok, worklist, hook_file):
                 else "",
                 _txt,
             )
+    # ---- v21: THE pr-babysit FINISH LINE, as the markdown checkboxes it is.
+    #
+    # THE OPERATOR'S OWN EXAMPLE for the priority ladder: "if there is an
+    # open-pr and if it's red we must continue to work until making it green.
+    # That should be determined by our markdown tasks. You know we already have
+    # empty/checked boxes."
+    #
+    # `ci-red` already blocks on the red -- but it has a HARD CEILING of
+    # CI_MAX_BLOCKS and then downgrades to a report, for good reasons that are
+    # about a red nobody here can fix. Nothing then held the WAVE open. A
+    # session could reach green, leave the PR sitting in draft with the review
+    # never requested and threads unresolved, and stop clean: every check on the
+    # board was satisfied while the thing it was asked to do was unfinished.
+    # That is the state a mission tier exists to refuse.
+    #
+    # THE FOUR BOXES ARE READ OFF `.claude/commands/pr-babysit.md`, not invented
+    # here -- "The console PR rides as a draft until green; stops at green +
+    # Claude-reviewed + threads-resolved PRs; never merges."
+    #
+    # WHAT GATES IT, so it cannot become a tax on every session that happens to
+    # have a PR: a pr-babysit ROUND LOG must exist for this branch. That file is
+    # the wave's own artifact (wl_roundlog.roundlog_path, the path the skill
+    # already writes), so the check fires for a session running the loop and is
+    # structurally silent for one that is not.
+    #
+    # THE LAST TWO BOXES ARE STORE-BACKED, and deliberately not guessed. The
+    # hook cannot see a `<!-- claude-reviewed: <sha> -->` marker or a resolved
+    # review thread without spending another GraphQL round trip, and a box that
+    # ticks itself on an unreliable read is worse than one the session ticks
+    # with evidence. So they are covered by a TICKED worklist item carrying
+    # `pr:<n>/reviewed` / `pr:<n>/threads` -- the same `cl:<slug>/<wN>` linkage
+    # agent/programs/<slug>/CHECKLIST.md already uses, and the same evidence
+    # discipline every other tick carries.
+    try:
+        _prf_info = None
+        if cistate == "ok":
+            _prf_info = cidetail
+        elif cistate in ("trouble", "downgraded", "soft", "watched") and isinstance(cidetail, dict):
+            _prf_info = cidetail.get("info")
+        _prf_num = (_prf_info or {}).get("pr")
+        # The branch is read LOCALLY. `agent_branch` is not bound until the
+        # unread-reports surface several hundred lines below, and referencing it
+        # here raised UnboundLocalError -- caught by the fail-closed arm, which
+        # turned the whole check into a HOOK BUG banner on the proving case.
+        # That is the arm working; it is not a reason to leave it reachable.
+        _prf_branch = C.git_branch(root) or ""
+        _prf_log = wl_roundlog.roundlog_path(projects_dir, _prf_branch) if projects_dir else None
+        if _prf_num and _prf_branch and _prf_log is not None and _prf_log.is_file():
+            _prf_green = cistate == "ok"
+            _prf_ready = not (_prf_info or {}).get("draft")
+            _prf_rev = _prf_covered(fold, "pr:%s/reviewed" % _prf_num)
+            _prf_thr = _prf_covered(fold, "pr:%s/threads" % _prf_num)
+            _prf_boxes = [
+                (_prf_green, "green -- every check on PR #%s passing" % _prf_num),
+                (_prf_ready, "ready for review -- the console PR is out of draft"),
+                (_prf_rev, "Claude-reviewed (tick an item carrying pr:%s/reviewed)" % _prf_num),
+                (_prf_thr, "threads resolved (tick an item carrying pr:%s/threads)" % _prf_num),
+            ]
+            if not all(done for done, _ in _prf_boxes):
+                vadd(
+                    "pr-finish",
+                    False,
+                    M.V_PR_FINISH
+                    % (
+                        _prf_branch,
+                        _prf_num,
+                        "\n".join(
+                            "    - [%s] %s" % ("x" if done else " ", label)
+                            for done, label in _prf_boxes
+                        ),
+                        hook_file,
+                        me8,
+                        _prf_num,
+                        hook_file,
+                        me8,
+                    ),
+                )
+    except Exception as exc:  # noqa: BLE001 -- a blind finish line must SAY SO
+        vadd(
+            "pr-finish",
+            True,
+            "THIS IS A HOOK BUG: the pr-babysit finish-line check failed: %s: %s"
+            % (type(exc).__name__, str(exc)[:120]),
+        )
     if ci_report:
         # Class 0, volatile, refresh_min=0 for the same reason as the queue
         # note: ci_trouble recomputes this from the live run every stop, and a
@@ -3642,6 +3978,8 @@ def run_stop(event, event_ok, worklist, hook_file):
         _n_mates = 0
     if solo_grind_due(len(open_items), _n_mates, state_doc):
         vadd("solo-grind", False, M.V_SOLO_GRIND % (len(open_items), SOLO_GRIND_MIN_ITEMS))
+        _sg_n = len(open_items)
+        display_latch["solo-grind"] = lambda: state_doc.__setitem__("solognd", _sg_n)
 
     if something_remains and astate in (
         "missing",
@@ -3732,9 +4070,29 @@ def run_stop(event, event_ok, worklist, hook_file):
     # a long-running session whose teammate finished twenty minutes ago and
     # whose SendMessage has since scrolled out of reach.
     #
-    # REPORT-ONLY, never a violation. An unread report is information the
-    # session may act on, not an obligation it owes anyone -- and there is no
-    # honest evidence a stop could demand for "I read it".
+    # IT GRADUATES, since 2026-08-28. The old rule here was "REPORT-ONLY, never
+    # a violation", on the stated grounds that "there is no honest evidence a
+    # stop could demand for 'I read it'". That grounds is simply untrue:
+    # `wl_report.py --read <me> <id>` is exactly such evidence, and the advisory
+    # ALREADY PRINTS THAT COMMAND two lines below its own excuse.
+    #
+    # And the cost of the excuse was measured, not theorised: `outq_drain` has
+    # exactly one call site, on the ALLOW path, so a continuously blocking
+    # session never sees a queued advisory at all. One session carried FOUR
+    # unread teammate reports through 57 consecutive blocking stops and was
+    # never once told. A teammate's finished report is the clearest case of
+    # somebody else having paid to produce something this session is not
+    # reading, which is the T_OWED tier's whole definition.
+    #
+    # THE LADDER, so it stays proportionate to how long the report has waited:
+    #   < UNREAD_ROTATE_MIN      advisory only, as before -- a report that
+    #                            landed minutes ago is news, not a debt.
+    #   >= UNREAD_ROTATE_MIN     a rotating violation at T_OWED.
+    #   >= UNREAD_INVARIANT_MIN, an invariant: at that age the advisory queue
+    #   or any [SILENT] one       has demonstrably not delivered it, and a
+    #                             [SILENT] report is the case that is
+    #                             indistinguishable from a healthy agent unless
+    #                             somebody looks.
     #
     # The branch is read HERE and nowhere else on this path now: the report
     # store is keyed per branch in TMPDIR (wl_report.store_root), which is a
@@ -3758,14 +4116,23 @@ def run_stop(event, event_ok, worklist, hook_file):
             )
             if len(_unread) > 10:
                 _rows = "    (%d older not shown)\n%s" % (len(_unread) - 10, _rows)
-            outq_add(
-                worklist,
-                session_id,
-                state_doc,
-                "unread-reports",
-                M.N_UNREAD_REPORTS % (len(_unread), agent_branch or "?", _rows, _rp, _rp, me8),
-                2,
+            _ur_text = M.N_UNREAD_REPORTS % (
+                len(_unread),
+                agent_branch or "?",
+                _rows,
+                _rp,
+                _rp,
+                me8,
             )
+            # OLDEST first, so the age is the age of the longest-ignored one.
+            _ur_age = max((C.stamp_age_min(e.get("at")) or 0) for e in _unread)
+            _ur_silent = any(e.get("silent") for e in _unread)
+            if _ur_age >= UNREAD_INVARIANT_MIN or _ur_silent:
+                vadd("unread-reports", True, _ur_text)
+            elif _ur_age >= UNREAD_ROTATE_MIN:
+                vadd("unread-reports", False, _ur_text)
+            else:
+                outq_add(worklist, session_id, state_doc, "unread-reports", _ur_text, 2)
     except Exception:  # noqa: BLE001 -- an advisory surface must never wedge a stop
         pass
     # v23: the pre-ask refusal ledger, surfaced. `block-settled-questions.sh`
@@ -3874,10 +4241,33 @@ def run_stop(event, event_ok, worklist, hook_file):
     #
     # So the trigger is the IGNORED COUNT the PostToolUse nudge maintains. The
     # nudge does the forcing -- every 10 minutes, with the exact command, at no
-    # cost when satisfied -- and it resets the moment a waiter appears. This is
+    # cost when satisfied -- and it DECAYS the moment a waiter appears. This is
     # only the backstop for a session that has been asked WAITER_GRACE_NUDGES
     # times over half an hour and has not complied.
-    if live_work_crons and not _waiters_confirmed:
+    #
+    # THE GATE WAS `live_work_crons` AND THAT COULD NEVER FIRE FOR THE SESSION
+    # IT WAS BUILT FOR. Measured 2026-08-27, live and recorded a few lines below
+    # in this very file: a session with no cron directory at all had an empty
+    # `live_work_crons`, so this check was structurally unreachable for it. The
+    # workaround was to add `no-waiter-asked` beside it; the gate itself was
+    # never repaired, so the general case stayed dead. It now ALSO accepts
+    # `wl_wait.outstanding_work(...)` -- the SAME predicate the PostToolUse
+    # nudge uses to decide whether to nudge at all -- so the two ends of this
+    # mechanism cannot disagree about whether the session still owes anything.
+    #
+    # A UNION, NOT A REPLACEMENT, and the difference is a case this suite
+    # already pins: 163w models a looped session with a work cron and an EMPTY
+    # board, which is a session that can perfectly well be sent work and must
+    # still be listening. Swapping the gate outright would have silenced the
+    # very check the case exists for. A cron is one way to have work; open
+    # items and leases are another; neither is the definition of it.
+    try:
+        _has_work = bool(live_work_crons) or wl_wait.outstanding_work(
+            worklist, session_id, event.get("transcript_path", "")
+        )
+    except Exception:  # noqa: BLE001 -- a blind predicate must not silence the check
+        _has_work = True
+    if _has_work and not _waiters_confirmed:
         _dead_min = float(os.environ.get("WORKLIST_REQUEST_DEAD_MIN", "180"))
         _peers = [
             k
@@ -3887,11 +4277,44 @@ def run_stop(event, event_ok, worklist, hook_file):
         ]
         if _peers and wl_wait.nudges_ignored(worklist, me8) >= WAITER_GRACE_NUDGES:
             vadd(
+                # INVARIANT under I2. By the time this fires the session has
+                # ignored WAITER_GRACE_NUDGES PostToolUse nudges over half an
+                # hour with a live peer present: peers can address it and it
+                # cannot hear them. Nobody on the other end can observe that.
                 "no-waiter",
-                False,
+                True,
                 M.V_NO_WAITER
                 % (len(_peers), str(pathlib.Path(__file__).resolve().parent / "wl_wait.py"), me8),
             )
+        # A LAPSE IS NOT THE SAME THING AS NEVER HAVING ARMED ONE, and until the
+        # tombstone (wl_wait.tombstone) the hook could not tell them apart --
+        # wait() unlinked its heartbeat on BOTH exits, so a waiter that had died
+        # left exactly what a session that never listened leaves: nothing. With
+        # the nudge counter also reset by the arming, the net effect was that
+        # arming one 60-minute waiter BOUGHT 30+ minutes of guaranteed silence
+        # after it lapsed. That is a perverse incentive rather than a gap.
+        #
+        # NO GRACE HERE, deliberately, and this is the one place the waiter
+        # machinery is allowed to be impatient: the nudge ladder's whole
+        # justification is that a session which merely COULD receive work should
+        # not be punished for not having volunteered. A session whose waiter
+        # exited already volunteered, was told on the way out to relaunch, and
+        # did not. There is nothing left to establish.
+        elif _peers:
+            _lapse_why, _lapse_age = wl_wait.waiter_lapsed(worklist, me8)
+            if _lapse_why:
+                vadd(
+                    "waiter-lapsed",
+                    True,
+                    M.V_WAITER_LAPSED
+                    % (
+                        _lapse_why,
+                        int(_lapse_age or 0),
+                        len(_peers),
+                        str(pathlib.Path(__file__).resolve().parent / "wl_wait.py"),
+                        me8,
+                    ),
+                )
     # ASKING IS A COMMITMENT TO LISTEN, and the check above cannot express that.
     # It needs THREE things before it fires -- a live non-poll work cron, a live
     # peer, and WAITER_GRACE_NUDGES ignored PostToolUse nudges (half an hour) --
@@ -3939,8 +4362,25 @@ def run_stop(event, event_ok, worklist, hook_file):
             _waiter_py = str(pathlib.Path(__file__).resolve().parent / "wl_wait.py")
             _hook_py = str(pathlib.Path(__file__).resolve().parent / "worklist.py")
             vadd(
+                # INVARIANT under I1 AND I2, and the headline promotion of this
+                # change. I1: bump_ask_nolisten() below advances the five-rung
+                # ladder at COMPUTE time, so every stop that rotated this away
+                # still burned a rung -- the tier comment's claim that
+                # "everything else is recomputed from artifacts each stop, so
+                # showing one at a time loses nothing" was FALSE here, and
+                # R_FOCUS_MORE's "rotation forgets nothing" was a lie in exactly
+                # the case the operator hit. Measured: with ~23 rotating keys
+                # ahead of it, the FIRST sighting landed at round >= 5, the
+                # terminal rung, so rungs 2-4 (the only ones carrying new
+                # information) were unreachable in a crowded session and rung
+                # 5's "it has now asked %d times" was false. I2: the session
+                # asked a peer for something and is not listening for the reply.
+                #
+                # As an invariant, compute time and display time coincide, so
+                # the bump becomes correct where it stands and the ladder walks
+                # 1 -> 2 -> 3 -> 4 -> 5. No relocation needed.
                 "no-waiter-asked",
-                False,
+                True,
                 _rung
                 % {
                     "n": len(_live_asks),
@@ -4317,6 +4757,20 @@ def run_stop(event, event_ok, worklist, hook_file):
     cad = state_doc.setdefault("cadence", {})
     cad_off = os.environ.get("WORKLIST_CADENCE", "on").lower() in ("off", "0", "no")
     always_now = any(a for _k, a, _t in violations)
+    # (F) THE MISSION TIER DEFEATS THE PAUSE, exactly as the always tier does,
+    # and this is the operator's sentence made executable: "There should be list
+    # of 'has to show with this order' until we check all of them, we should not
+    # be able to say 'but this stop is YOURS'."
+    #
+    # Guard (E) already refuses the pause while `actionable_remains` -- an open
+    # item, a pending task, a live lease -- and that covers `open-items`. It does
+    # NOT cover the shape the operator actually named: a red PR, an unticked
+    # program wave, a wave that never reached its finish line. None of those is
+    # a worklist item, so a session with an empty board and a red CI could be
+    # handed its quiet turn while the thing it was ASKED to do sat unfinished.
+    # (F) is the difference between "nothing is in my queue" and "the job is
+    # done", and only the second one earns a stand-down.
+    mission_now = any(check_tier(k) == T_MISSION for k, _a, _t in violations)
     rot_now = [k for k, a, _t in violations if not a]
     judge_now = any(k in JUDGE_TIER_KEYS for k, _a, _t in violations)
     msg_sig = hashlib.sha1((last_msg or "").encode("utf-8", "replace")).hexdigest()[:16]
@@ -4332,6 +4786,8 @@ def run_stop(event, event_ok, worklist, hook_file):
         and cad.get("owed") == "report"
         # (A) the always tier defeats the pause, unconditionally.
         and not always_now
+        # (F) so does the mission tier -- see above.
+        and not mission_now
         and rot_now
         # (B) only if the assistant actually SAID something new. Without this a
         # session emits an empty turn after every block and buys a free allow
@@ -4408,9 +4864,9 @@ def run_stop(event, event_ok, worklist, hook_file):
                         % "".join(
                             "\n".join("  " + ln for ln in _t.splitlines()) + "\n"
                             for _k, _a, _t in violations
-                            if _k in carry_through_pause
+                            if carried_through_pause(_k)
                         )
-                        if any(_k in carry_through_pause for _k, _a, _t in violations)
+                        if any(carried_through_pause(_k) for _k, _a, _t in violations)
                         else ""
                     ),
                 )
@@ -4451,6 +4907,12 @@ def run_stop(event, event_ok, worklist, hook_file):
             "\n\n" + queue_note if queue_note else ""
         )
         if os.environ.get("WORKLIST_FOCUS", "on").lower() in ("off", "0", "no"):
+            # EVERY violation is rendered on this path, so every display latch
+            # is genuinely spent. Saved explicitly because this branch emits
+            # (and therefore exits) without reaching the save below -- the same
+            # trap the queue's compute-time persistence was moved for.
+            spend_display_latches([k for k, _a, _t in violations])
+            S.save_state(worklist, session_id, state_doc)
             C.emit(
                 {
                     "systemMessage": "Stop hook: %d check(s) failed, continuing. %s%s"
@@ -4496,17 +4958,99 @@ def run_stop(event, event_ok, worklist, hook_file):
             # the header count stays truthful and nothing is silently forgotten.
             # An intent reorders attention; it does not make work disappear.
             _covered = set((_intent or {}).get("covers") or [])
-            pick = min(rot, key=lambda v: (v[0] in _covered, served.get(v[0], -1), order[v[0]]))
+            # THE LADDER REPLACES LINE ORDER AS THE TIEBREAK, and its position
+            # in this key is the whole design decision -- so read the ordering
+            # before changing it.
+            #
+            # WHAT WAS WRONG: every never-served key ties at `-1`, and the tie
+            # was broken by `order[...]`, i.e. by where a `vadd` call happens to
+            # sit in a 5,000-line file. That is not a statement about priority,
+            # and it decided the FIRST pick of every crowded session. Measured on
+            # the failing night: 23 rotating keys sorted ahead of
+            # `no-waiter-asked`.
+            #
+            # WHY TIER SITS AFTER `served` AND NOT BEFORE IT. Before it, a
+            # T_MISSION check is re-picked on every single stop until satisfied
+            # and the lower tiers STARVE -- docs drift, a stale PR body and an
+            # unpushed submodule pointer become unreachable for as long as one
+            # item is open, which is most of a session. After it, the ladder is
+            # WALKED IN ORDER instead: on the first stop every key is unserved,
+            # so tier decides and MISSION goes first; the next stop takes the
+            # next-most-stale, which is the highest remaining tier; and the cycle
+            # repeats by staleness with tier breaking every tie. That is the
+            # operator's sentence read literally -- "has to show with this order
+            # UNTIL WE CHECK ALL OF THEM" -- rather than "show the first one
+            # forever".
+            #
+            # The part of the request that starvation was reaching for is
+            # delivered by two other mechanisms, both stronger: T_MISSION
+            # defeats the cadence pause (guard F), so the session cannot be
+            # released while the job is unfinished, and the genuinely
+            # unskippable checks are invariants, which never enter this sort at
+            # all.
+            pick = min(
+                rot,
+                key=lambda v: (
+                    v[0] in _covered,
+                    served.get(v[0], -1),
+                    check_tier(v[0]),
+                    order[v[0]],
+                ),
+            )
             served[pick[0]] = seq
+        # The keys this stop will actually RENDER: every invariant (quoted in
+        # full or named in the collapse below -- either counts as shown, since
+        # both put the check in front of the reader) plus the one rotating pick.
+        spend_display_latches(
+            [k for k, a, _t in violations if a] + ([pick[0]] if pick is not None else [])
+        )
         S.save_state(worklist, session_id, state_doc)
-        shown = [t for _k, a, t in violations if a]
+        # ---- THE COLLAPSE. Invariants are ORDERED by the ladder (not by where
+        # their vadd sits in this file), at most ALWAYS_FULL_MAX are QUOTED in
+        # full, and every remaining one is NAMED on one line with its opening
+        # sentence.
+        #
+        # The tier buys UN-ROTATABILITY, and that is all it should buy. This
+        # file's own warning at the sweep prompt -- "a prompt that fires always
+        # is a prompt that gets skimmed" -- is the constraint, and three
+        # promotions in one change is exactly when it starts to bite: five full
+        # blocks on one stop is not five times the attention, it is one skim.
+        #
+        # NOTHING IS DROPPED, and that is the difference between this and
+        # rotation. Every invariant is named on every stop; at most two are
+        # quoted. A named one still tells the session which obligation exists
+        # and, because these messages all put their verdict on line one, roughly
+        # what it is.
+        _inv = sorted(
+            ((k, t) for k, a, t in violations if a),
+            key=lambda kt: check_tier(kt[0]),
+        )
+        shown = [t for _k, t in _inv[:ALWAYS_FULL_MAX]]
+        _named = _inv[ALWAYS_FULL_MAX:]
+        if _named:
+            shown.append(
+                M.R_ALWAYS_COLLAPSED
+                % "\n".join(
+                    "    %s: %s" % (k, (t.splitlines() or [""])[0][:150]) for k, t in _named
+                )
+            )
         if pick is not None:
             shown.append(pick[2])
-        n_more = len(violations) - len(shown)
+        # COUNTED AGAINST THE VIOLATIONS, not against `shown`. `shown` may now
+        # carry one synthetic entry (the collapse block) and fewer entries than
+        # invariants, so `len(violations) - len(shown)` would report a number
+        # that is not the number of anything. What the reader needs is how many
+        # outstanding checks got neither a quote nor a name, which is exactly
+        # the rotating ones this stop did not pick.
+        n_more = len(rot) - (1 if pick is not None else 0)
         C.emit(
             {
+                # SURFACED, not len(shown): `shown` may carry the synthetic
+                # collapse block, which is one entry standing for several
+                # checks. Every invariant is surfaced (quoted or named) plus at
+                # most one rotating pick.
                 "systemMessage": "Stop hook: %d check(s) outstanding, surfacing %d.%s"
-                % (len(violations), len(shown), sysmsg_tail),
+                % (len(violations), len(_inv) + (1 if pick is not None else 0), sysmsg_tail),
                 "decision": "block",
                 "reason": M.R_BLOCK_FOCUS
                 % (

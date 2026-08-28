@@ -587,7 +587,12 @@ V_ASK_NOLISTEN_CMD = (
     "Start one as a BACKGROUND task (run_in_background: true), NO QUOTES anywhere\n"
     "in the command line (a quoted path renders the waiter `unverifiable`, which\n"
     "does not satisfy this check -- it is confirmed against the OS, not believed):\n"
-    "    python3 %s %s --timeout 900\n"
+    # SIXTY, not 900. `--timeout` is in MINUTES (wl_wait.DEFAULT_TIMEOUT_MIN,
+    # `timeout_min * 60.0`), so 900 asked for a FIFTEEN-HOUR wait while
+    # V_NO_WAITER and wl_wait.HELP both said 60. A session shown both picks one
+    # and its waiter then lapses at an hour while the other message insists it
+    # should still be running.
+    "    python3 %s %s --timeout 60\n"
     "Its EXIT is the notification, and it fires ONCE: relaunch it in the same\n"
     "turn you act on what it reports.\n"
 )
@@ -607,6 +612,52 @@ V_NO_WAITER = (
     "This does NOT replace the poll cron: a waiter cannot see a request that "
     "predates it, so keep the hourly cron as the backlog backstop."
 )
+
+# THE LAPSE, which used to be invisible. wl_wait.wait() unlinked its heartbeat
+# on both exits, so "my waiter died 40 minutes ago" and "I have never listened"
+# left the filesystem in the same state -- and the hook is far more lenient
+# about the second. The tombstone makes the difference readable; this message
+# is what the difference is FOR, so it names which of the two exits happened.
+V_WAITER_LAPSED = (
+    "YOUR WAITER LAPSED (%s) %d MINUTE(S) AGO AND YOU HAVE NOT RELAUNCHED IT. "
+    "%d live peer(s) can address you and nothing here is listening. This is not "
+    "the gentle 'you have never started one' nudge: you started one, it told "
+    "you on the way out that it fires ONCE and must be relaunched, and it was "
+    "not. Every request sent since then is sitting unread.\n"
+    "    python3 %s %s --timeout 60\n"
+    "as a BACKGROUND task (run_in_background: true), NO QUOTES anywhere in the "
+    "command line. If you are genuinely finished, say so and close your open "
+    "items instead -- a drained session is told to stop its waiter, not to keep "
+    "one."
+)
+
+# THE FINISH LINE OF A pr-babysit WAVE, rendered as the markdown checkboxes it
+# already is. The four boxes are read off `.claude/commands/pr-babysit.md`
+# ("The console PR rides as a draft until green; stops at green +
+# Claude-reviewed + threads-resolved PRs; never merges") rather than invented
+# here, and the two the hook cannot observe are backed by ticked worklist
+# items, which is the same evidence discipline every other tick carries.
+V_PR_FINISH = (
+    "THE WAVE IS NOT FINISHED. A pr-babysit round log is live for this branch "
+    "(%s) and PR #%s has not reached the finish line stated in "
+    ".claude/commands/pr-babysit.md. This is the mission; everything else the "
+    "hook has to say is housekeeping around it.\n"
+    "%s\n"
+    "The first two boxes are read live off the PR. The last two are ticked by "
+    "closing a worklist item that carries the token, with evidence -- the hook "
+    "cannot see a review marker or a resolved thread and will not pretend to:\n"
+    "    python3 %s --add %s pr:%s/reviewed  <what still needs reviewing>\n"
+    "    python3 %s --tick %s <id> <the review comment URL>\n"
+    "Never merge, and never push main: that stays the operator's call."
+)
+
+# ONE LINE PER INVARIANT that was not quoted in full. The tier's value is that
+# it cannot be rotated away; it is NOT a licence to print five long blocks,
+# because "a prompt that fires always is a prompt that gets skimmed" and a
+# skimmed invariant is a rotated one with extra steps. So the excess is NAMED,
+# never dropped: key plus its opening line, which is the line every one of
+# these messages puts its verdict on.
+R_ALWAYS_COLLAPSED = "ALSO BLOCKING, IN BRIEF (quoted in full on a later stop):\n%s"
 
 N_UNREAD_REPORTS = (
     "UNREAD SUB-AGENT REPORTS (%d on branch %s). A teammate's report arrives by "
