@@ -26,10 +26,9 @@ import { spawnSync } from 'node:child_process';
  * Usage:
  *   npx tsx scripts/check-docker-image-freshness.ts [--selftest] [--json]
  */
-import { existsSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
-import { globSync } from 'glob';
 
 /**
  * Drop paths git IGNORES, because CI cannot see them and a baseline entry it cannot
@@ -84,6 +83,48 @@ function gitVisible(paths: string[]): string[] {
       .filter(Boolean)
   );
   return rels.filter((r) => !ignored.has(r.rel)).map((r) => r.abs);
+}
+
+/**
+ * Every `Dockerfile*` in the tree, by a hand-rolled walk rather than `glob`.
+ *
+ * WHY NOT glob. This used `globSync('<ROOT>/**' + '/Dockerfile*')`, and that ONE call was
+ * the entire cost of the gate. Measured on this tree 2026-08-28: 7.3s of user CPU for the
+ * glob, against 0.33s for a Docker Hub tag listing and 0.25s for `find` doing the same
+ * 30,000-directory walk. That put the gate at ~10s idle and 20-27s under load, past the
+ * 20s tier-honesty budget in `scripts/check-gate-manifest.ts`, and it read as a
+ * "network-bound gate" when it was never network-bound at all. `ignore` does not help --
+ * glob still pattern-matches every entry it walks (measured: 7.1s with the ignore list,
+ * 4.9s with none), and most of the 30k directories are under `private/`, which
+ * `gitVisible` throws away afterwards anyway.
+ *
+ * The set produced is IDENTICAL to the glob's, so the gate's coverage is unchanged:
+ *   - entries beginning with `.` are skipped, matching glob's `dot: false` default
+ *     (which is why `.git` never appeared in the old results either);
+ *   - `node_modules` and `dist` are pruned, matching the old `ignore` list;
+ *   - symlinked directories are not followed, matching glob's `follow: false` default,
+ *     because `Dirent.isDirectory()` is false for a symlink;
+ *   - only regular files are returned. The glob would also have returned a DIRECTORY
+ *     named `Dockerfile*`, which `readFileSync` then crashes on; there is none today.
+ * Sorted, so the `file:line` a finding reports is stable across runs.
+ */
+function findDockerfiles(dir: string, out: string[] = []): string[] {
+  let entries;
+  try {
+    entries = readdirSync(dir, { withFileTypes: true });
+  } catch {
+    return out; // unreadable directory: the glob skipped these silently too
+  }
+  for (const e of entries) {
+    if (e.name.startsWith('.')) continue;
+    if (e.isDirectory()) {
+      if (e.name === 'node_modules' || e.name === 'dist') continue;
+      findDockerfiles(path.join(dir, e.name), out);
+    } else if (e.isFile() && e.name.startsWith('Dockerfile')) {
+      out.push(path.join(dir, e.name));
+    }
+  }
+  return out;
 }
 
 /** Submodule paths from .gitmodules, so they can be exempted from check-ignore. */
@@ -201,19 +242,26 @@ function dockerHubRepo(image: string): string | null {
 // No repo parameter: Docker Hub login is account-wide, not per-repository. The repo argument
 // this used to take was never read, and this config's policy is to delete an unused parameter
 // rather than underscore it.
-async function hubToken(): Promise<string | null> {
-  const explicit = process.env.DOCKERHUB_TOKEN;
-  if (explicit) return explicit;
-  const user = process.env.DOCKERHUB_USERNAME;
-  const pass = process.env.DOCKERHUB_PASSWORD;
-  if (!user || !pass) return null;
-  const r = await fetch('https://hub.docker.com/v2/users/login', {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ username: user, password: pass }),
-  });
-  if (!r.ok) return null;
-  return ((await r.json()) as { token?: string }).token ?? null;
+// Memoised for the same reason there is no repo parameter: login is account-wide, so the
+// per-image call site was paying one extra login round-trip PER IMAGE for a value that
+// cannot differ between them. Anonymous runs never noticed; a credentialled CI run did.
+let hubTokenOnce: Promise<string | null> | undefined;
+function hubToken(): Promise<string | null> {
+  hubTokenOnce ??= (async () => {
+    const explicit = process.env.DOCKERHUB_TOKEN;
+    if (explicit) return explicit;
+    const user = process.env.DOCKERHUB_USERNAME;
+    const pass = process.env.DOCKERHUB_PASSWORD;
+    if (!user || !pass) return null;
+    const r = await fetch('https://hub.docker.com/v2/users/login', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ username: user, password: pass }),
+    });
+    if (!r.ok) return null;
+    return ((await r.json()) as { token?: string }).token ?? null;
+  })();
+  return hubTokenOnce;
 }
 
 /** Why a listing failed, so "unknown" can name its own cause instead of guessing. */
@@ -377,11 +425,7 @@ async function main(): Promise<void> {
     process.exit(1);
   }
 
-  const files = [
-    ...gitVisible(
-      globSync(`${ROOT}/**/Dockerfile*`, { ignore: ['**/node_modules/**', '**/dist/**'] })
-    ),
-  ];
+  const files = gitVisible(findDockerfiles(ROOT).sort());
   const pins: Pin[] = [];
   for (const f of files) pins.push(...parsePins(readFileSync(f, 'utf8'), path.relative(ROOT, f)));
 
