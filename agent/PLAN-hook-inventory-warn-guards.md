@@ -1,5 +1,5 @@
 # PLAN: warn-* guards are outside the inventory that exists to keep guards alive
-Status: executing
+Status: landed
 Owner: 9d92d9b6
 Updated: 2026-08-28
 
@@ -83,3 +83,7 @@ proves it stays SILENT on prose — the exact class
 `check:ci-guard-mention-anchoring` was added for in `43d7797d7`. That gate now
 covers the prose direction behaviourally for every guard including warns, which
 is why this is a gap rather than a hole.
+
+## Landed
+
+`e60e30331` -- Enumeration split into all_guards (A) and on_disk (B/C); three warn guards baselined, 39 -> 42; both A directions proven with plants that could not fail before.

@@ -1,5 +1,5 @@
 # PLAN: two gates read packages/www/dist and never said so
-Status: executing
+Status: landed
 Owner: 9d92d9b6
 Updated: 2026-08-28
 
@@ -96,3 +96,7 @@ A plan's claim about code it has not read is a hypothesis. This one proposed
 building a mechanism that already existed, was already documented in a comment,
 and was already used by seven neighbours. The tree answered the question in one
 grep.
+
+## Landed
+
+`4afa862a4` -- Two `needs: [build:www]` declarations plus the `slow: true` the manifest gate demanded; both gates now DEFER instead of failing, carried-reds emptied.
