@@ -561,6 +561,18 @@ jobs:
       - name: Toolchain pins
         run: .ci/scripts/quality/check-toolchain-pins.sh
 
+      # The pinned-tools definition and the host-toolchain runtime guard's call
+      # sites are two independently maintained lists; a tool added to one and
+      # not the other is invisible until someone hits it by hand.
+      - name: Host toolchain runtime coverage
+        run: .ci/scripts/quality/check-host-toolchain-coverage.sh
+
+      # A git identity capture (branch/ref/sha) guarded against empty but not
+      # against a command's own misleading sentinel value is invisible to a
+      # gate that only watches whether git itself succeeded.
+      - name: Git-op conditional guards
+        run: .ci/scripts/quality/check-git-op-conditionals.sh
+
       # A script that INSTALLS a go tool must be able to FIND it. `go install`
       # writes to $(go env GOPATH)/bin, which is on no PATH by default, so a
       # bare invocation dies at 127 the line after a successful install. CI
@@ -1632,9 +1644,21 @@ jobs:
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: npm run check:ci-test-file-orphans
 
+      # PR_HEAD_REF, not GITHUB_HEAD_REF: measured 2026-08-28 on this exact
+      # step, `GITHUB_HEAD_REF` does not reliably materialise here (this job
+      # runs inside a workflow_call chain), which is the same reason
+      # block-untagged-commit.sh's own gate step (above, "Every commit names
+      # its epic") already sets this custom variable instead of trusting the
+      # default one. wl_git.py --selftest runs inside this step (via
+      # test-hooks.sh) and needs the real branch to test force-push against a
+      # detached CI checkout; without it every submodule was skipped and its
+      # anti-vacuity controls went red for a reason unrelated to what they
+      # test.
       - name: Quality-gate unit tests
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: npm run check:ci-quality-gates
+        env:
+          PR_HEAD_REF: ${{ github.event.pull_request.head.ref }}
 
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
         if: always()

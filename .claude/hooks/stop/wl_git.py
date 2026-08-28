@@ -1922,10 +1922,20 @@ def selftest():
     # submodule has -- so force-push skipped every submodule, staged_deletions
     # was never called, and the anti-vacuity CONTROL added earlier the same day
     # correctly went red for exactly the reason it exists: it caught its own
-    # host's checkout being detached. `GITHUB_HEAD_REF` is set automatically by
-    # Actions on every step of a pull_request-triggered run and names the real
-    # source branch; local runs have no such env var and keep the git derivation.
-    _cur_branch = os.environ.get("GITHUB_HEAD_REF", "").strip()
+    # host's checkout being detached.
+    #
+    # `GITHUB_HEAD_REF` FIRST FIX WAS NOT ENOUGH, measured the next CI run: it
+    # does not reliably materialise in THIS repo's ci-quality.yml, which is a
+    # `workflow_call` chain, not a direct pull_request trigger. block-untagged-
+    # commit.sh's step already worked around exactly this by setting a custom
+    # `PR_HEAD_REF: ${{ github.event.pull_request.head.ref }}` rather than
+    # trusting the default var, so the "Quality-gate unit tests" step (where
+    # this selftest actually runs) now sets the same variable, and this
+    # derivation follows the identical precedence order rather than inventing
+    # a second one.
+    _cur_branch = (
+        os.environ.get("PR_HEAD_REF", "").strip() or os.environ.get("GITHUB_HEAD_REF", "").strip()
+    )
     if not _cur_branch:
         _rc_b, _cur_branch, _ = run_git(["rev-parse", "--abbrev-ref", "HEAD"], cwd=repo_root())
         _cur_branch = _cur_branch.strip() if _rc_b == 0 else ""
