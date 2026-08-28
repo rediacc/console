@@ -513,6 +513,18 @@ jobs:
       - name: Block legacy-peer-deps workarounds
         run: .ci/scripts/quality/check-npmrc.sh
 
+      # THE INSTALL THE COMMENT ABOVE ALREADY REFERRED TO. Most steps in this job
+      # are shell scripts needing no node, but two are tsx -- check:ci-gate-manifest
+      # and check:ci-runner-selftest -- and without a node_modules tree they die
+      # with `sh: 1: tsx: not found`, exit 127. Measured on run 33125687081: that
+      # 127 failed Quality / Code and the watchdog cancelled seven sibling jobs,
+      # so a missing dependency read as a broad CI failure.
+      #
+      # Defaults deliberately: no account submodule, no natives, no package build.
+      # This job needs only node plus the cached tree, which untars in ~2.5s.
+      - name: Setup workspace
+        uses: ./.github/actions/setup-workspace
+
       # Text + a hermetic scratch git repo; no network, no submodule access.
       # Guards the bootstrap scripts against silently swallowing failures again.
       - name: Devcontainer script stderr visibility
