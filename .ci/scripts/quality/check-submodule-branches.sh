@@ -154,7 +154,20 @@ get_current_branch() {
     elif [[ -n "${GITHUB_REF_NAME:-}" ]]; then
         echo "$GITHUB_REF_NAME"
     else
-        git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "main"
+        # `rev-parse --abbrev-ref HEAD` SUCCEEDS on a detached checkout and
+        # prints the literal string "HEAD" -- the `|| echo "main"` fallback
+        # below never fires for that case, since git did not fail. Downstream
+        # this value is compared against a submodule's own (possibly ALSO
+        # detached) branch name; two coincidentally-detached checkouts would
+        # both read "HEAD" and compare EQUAL, reporting a branch match that
+        # is not real. Caught explicitly rather than left to the fallback.
+        local b
+        b="$(git rev-parse --abbrev-ref HEAD 2>/dev/null)" || b=""
+        if [[ -z "$b" || "$b" == "HEAD" ]]; then
+            echo "main"
+        else
+            echo "$b"
+        fi
     fi
 }
 
@@ -171,8 +184,16 @@ submodule_has_pointer_changes() {
 
 # Get submodule's current branch
 get_submodule_branch() {
-    local sm_path="$1"
-    git -C "$sm_path" rev-parse --abbrev-ref HEAD 2>/dev/null || echo "detached"
+    local sm_path="$1" b
+    # Same trap as get_current_branch above: a detached checkout makes git
+    # SUCCEED with the literal "HEAD", so `|| echo "detached"` -- the sentinel
+    # this function's own name promises -- never actually fires.
+    b="$(git -C "$sm_path" rev-parse --abbrev-ref HEAD 2>/dev/null)" || b=""
+    if [[ -z "$b" || "$b" == "HEAD" ]]; then
+        echo "detached"
+    else
+        echo "$b"
+    fi
 }
 
 # Check if branch exists in submodule remote

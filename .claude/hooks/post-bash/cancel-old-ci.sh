@@ -18,7 +18,13 @@ if ! echo "$CMD" | grep -qE 'git push'; then exit 0; fi
 # So parse the refspec out of the command: `HEAD:0728-2` and `0728-3` both name a
 # destination branch, and a bare `git push` targets the current one.
 BRANCH=$(git -C "${CLAUDE_PROJECT_DIR:-.}" rev-parse --abbrev-ref HEAD 2>/dev/null)
-if [[ -z "$BRANCH" || "$BRANCH" == "main" ]]; then exit 0; fi
+# `rev-parse --abbrev-ref HEAD` returns the LITERAL STRING "HEAD" on a detached
+# checkout, unlike `symbolic-ref` which fails outright (see wl_core.py's
+# git_branch, which chose symbolic-ref for exactly this reason). Guarded
+# explicitly rather than relying on "no branch is ever named HEAD" as an
+# implicit safety net: `gh pr list --head HEAD` would just find nothing today,
+# but that is luck holding the door shut, not a check.
+if [[ -z "$BRANCH" || "$BRANCH" == "main" || "$BRANCH" == "HEAD" ]]; then exit 0; fi
 
 BRANCHES="$BRANCH"
 # Everything after `git push [flags] [remote]`; take the DESTINATION side of any

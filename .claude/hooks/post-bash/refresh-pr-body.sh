@@ -34,7 +34,11 @@ command -v gh >/dev/null 2>&1 || exit 0
 # Destination branches, same parsing as cancel-old-ci.sh: `HEAD:0728-2` and a
 # bare `0728-3` both name one, and a bare `git push` targets the current branch.
 BRANCH=$(git -C "$ROOT" rev-parse --abbrev-ref HEAD 2>/dev/null)
-[[ -z "$BRANCH" || "$BRANCH" == "main" ]] && exit 0
+# `rev-parse --abbrev-ref HEAD` returns the LITERAL STRING "HEAD" on a detached
+# checkout, unlike `symbolic-ref` which fails outright. Guarded explicitly
+# rather than relying on "no branch is ever named HEAD" as an implicit safety
+# net, same fix as its sibling cancel-old-ci.sh.
+[[ -z "$BRANCH" || "$BRANCH" == "main" || "$BRANCH" == "HEAD" ]] && exit 0
 BRANCHES="$BRANCH"
 for tok in $(echo "$CMD" | sed -n 's/.*git push//p' | tr ' ' '\n'); do
     case "$tok" in
