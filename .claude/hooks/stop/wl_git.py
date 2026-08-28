@@ -1916,8 +1916,19 @@ def selftest():
     # three probes below tested nothing at all. They did not go green and lie;
     # they went RED for a reason unrelated to what they assert, which is worse,
     # because a red nobody can explain is a red everybody learns to ignore.
-    _rc_b, _cur_branch, _ = run_git(["rev-parse", "--abbrev-ref", "HEAD"], cwd=repo_root())
-    _cur_branch = _cur_branch.strip() if _rc_b == 0 else ""
+    # `rev-parse --abbrev-ref HEAD` ALONE IS NOT CI-SAFE. `actions/checkout` on a
+    # `pull_request` trigger checks out the MERGE COMMIT in a DETACHED HEAD, so
+    # this returned the literal string "HEAD" -- not a branch, and not one any
+    # submodule has -- so force-push skipped every submodule, staged_deletions
+    # was never called, and the anti-vacuity CONTROL added earlier the same day
+    # correctly went red for exactly the reason it exists: it caught its own
+    # host's checkout being detached. `GITHUB_HEAD_REF` is set automatically by
+    # Actions on every step of a pull_request-triggered run and names the real
+    # source branch; local runs have no such env var and keep the git derivation.
+    _cur_branch = os.environ.get("GITHUB_HEAD_REF", "").strip()
+    if not _cur_branch:
+        _rc_b, _cur_branch, _ = run_git(["rev-parse", "--abbrev-ref", "HEAD"], cwd=repo_root())
+        _cur_branch = _cur_branch.strip() if _rc_b == 0 else ""
     for probe, want_refusal, label in (
         (lambda _repo: None, True, "an UNREADABLE probe"),
         (lambda _repo: ["some/file"], True, "a real staged deletion"),
