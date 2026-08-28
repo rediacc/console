@@ -327,22 +327,21 @@ test_drift_gate_runs_standalone() {
 # =============================================================================
 # h) the vendored BLOCKER phrase list has not rotted away from the canonical one
 # =============================================================================
-test_vendored_blocker_list_is_a_subset() {
-    local bp phrase canon vendored canon_count missing=0 count=0
-    bp="$(make_isolated "$1")"
+# CHECK_SUBSET IS ITS OWN FUNCTION, callable with any canonical path and any
+# vendored breakpoint-blocker.sh, precisely so PLANTED-DEFECT REGRESSION TESTS
+# below can drive it against synthetic inputs instead of only ever exercising
+# today's real, already-agreeing files. A test that only runs the happy path
+# proves the mechanism ran, never that it can still catch anything -- which is
+# exactly how the two count-floors this function replaced (59a1beaa9,
+# a5983d9eb) went undetected until they actually misfired in CI.
+check_subset() {
+    local canon_path="$1" bp="$2"
+    local phrase canon vendored canon_count missing=0 count=0
 
-    if [[ ! -f "$CANONICAL_VALIDATOR" ]]; then
-        # Downstream: there is no canonical file to compare against, and that is
-        # the normal state there. Skipping is correct -- but it must be SAID, or
-        # a silently-skipped subset check looks identical to a passing one.
-        log_pass "SKIPPED (no $CANONICAL_VALIDATOR here): subset check is console-only"
-        return 0
-    fi
-
-    canon="$(extract_array "$CANONICAL_VALIDATOR" "LOW_EFFORT_BLOCKER_PATTERNS")"
+    canon="$(extract_array "$canon_path" "LOW_EFFORT_BLOCKER_PATTERNS")"
     vendored="$(extract_array "$bp/lib/breakpoint-blocker.sh" "BREAKPOINT_LOW_EFFORT_BLOCKERS")"
 
-    [[ -n "$canon" ]] || log_fail "could not parse LOW_EFFORT_BLOCKER_PATTERNS out of $CANONICAL_VALIDATOR"
+    [[ -n "$canon" ]] || log_fail "could not parse LOW_EFFORT_BLOCKER_PATTERNS out of $canon_path"
     [[ -n "$vendored" ]] || log_fail "could not parse BREAKPOINT_LOW_EFFORT_BLOCKERS out of the vendored copy"
     # Same sanity rule the vendored side gets below. A truncated CANONICAL read
     # (seen once under the parallel npm-ci runner, 2026-07-31: canon came back
@@ -375,7 +374,7 @@ test_vendored_blocker_list_is_a_subset() {
         [[ -z "$phrase" ]] && continue
         count=$((count + 1))
         if ! printf '%s\n' "$canon" | grep -qxF "$phrase"; then
-            [[ -n "$canon2" ]] || canon2="$(extract_array "$CANONICAL_VALIDATOR" "LOW_EFFORT_BLOCKER_PATTERNS")"
+            [[ -n "$canon2" ]] || canon2="$(extract_array "$canon_path" "LOW_EFFORT_BLOCKER_PATTERNS")"
             if printf '%s\n' "$canon2" | grep -qxF "$phrase"; then
                 echo "  re-verified: '$phrase' IS canonical; the first read was short" >&2
                 continue
@@ -405,6 +404,111 @@ test_vendored_blocker_list_is_a_subset() {
     log_pass "all $count vendored BLOCKER phrases exist in the canonical validator"
 }
 
+test_vendored_blocker_list_is_a_subset() {
+    local bp
+    bp="$(make_isolated "$1")"
+
+    if [[ ! -f "$CANONICAL_VALIDATOR" ]]; then
+        # Downstream: there is no canonical file to compare against, and that is
+        # the normal state there. Skipping is correct -- but it must be SAID, or
+        # a silently-skipped subset check looks identical to a passing one.
+        log_pass "SKIPPED (no $CANONICAL_VALIDATOR here): subset check is console-only"
+        return 0
+    fi
+
+    check_subset "$CANONICAL_VALIDATOR" "$bp"
+}
+
+# =============================================================================
+# a.1) PLANTED-DEFECT REGRESSION: a REAL subset violation must still fire,
+# and must be named as one rather than excused as instability. Both reads of
+# the mutated canonical see the SAME (genuinely missing) content, which is
+# exactly what distinguishes a real violation from the transient case below.
+# =============================================================================
+test_subset_check_catches_a_real_violation() {
+    local bp mutant out rc=0
+    bp="$(make_isolated "$1")"
+    [[ -f "$CANONICAL_VALIDATOR" ]] || {
+        log_pass "SKIPPED (no $CANONICAL_VALIDATOR here): planted-violation control is console-only"
+        return 0
+    }
+
+    mutant="$1/canonical-missing-skipped.sh"
+    # Delete the exact phrase this gate's own header cites as the one that
+    # false-accused the vendored list on 2026-08-28, so the fixture is not a
+    # synthetic string this check happens to ignore.
+    sed 's/"skip" "skipping" "skipped" "ignore"/"skip" "skipping" "ignore"/' \
+        "$CANONICAL_VALIDATOR" >"$mutant"
+    cmp -s "$CANONICAL_VALIDATOR" "$mutant" && log_fail "the plant did not land: canonical copy is unchanged"
+
+    out="$(check_subset "$mutant" "$bp" 2>&1)" || rc=$?
+    assert_eq "$rc" "1" "a genuine subset violation must still FAIL, not pass silently"
+    assert_contains "$out" "absent from two independent reads" \
+        "a STABLE violation must be named as real, not excused as a flaky read"
+    log_pass "a real subset violation (stable across both reads) still fails, named correctly"
+}
+
+# =============================================================================
+# a.2) PLANTED-DEFECT REGRESSION: a TRANSIENT truncation on the second read
+# must be reported as an unstable extractor, never as a subset violation.
+# This is the exact shape of the 2026-07-31 and 2026-08-28 incidents: the two
+# reads DISAGREE, which is the one fact that proves the list is not at fault.
+# =============================================================================
+test_subset_check_survives_a_flaky_second_read() {
+    local bp out rc=0
+    bp="$(make_isolated "$1")"
+    [[ -f "$CANONICAL_VALIDATOR" ]] || {
+        log_pass "SKIPPED (no $CANONICAL_VALIDATOR here): flaky-read control is console-only"
+        return 0
+    }
+
+    # `command extract_array` cannot reach the shadowed original -- bash has
+    # no function-call stack to unwind through, and `command` only bypasses
+    # aliases/functions to find an EXTERNAL program, which does not exist here.
+    # So the real extraction is inlined into the wrapper rather than delegated.
+    #
+    # A FILE, NOT A SHELL VARIABLE, tracks which call this is. `canon=$(...)`
+    # is a COMMAND SUBSTITUTION, which bash runs in a SUBSHELL -- an in-memory
+    # counter resets to its parent value on every single call and can never
+    # see call #2 as different from call #1. First draft used `local -i` and
+    # every call truncated, including the re-verify read, which is why the
+    # first version of this test asserted the wrong thing.
+    local FLAKY_TMP
+    FLAKY_TMP="$(mktemp -d)"
+    extract_array() {
+        awk -v start="readonly $2=(" '
+            index($0, start) == 1 { inside = 1; next }
+            inside && index($0, ")") == 1 { inside = 0 }
+            inside { print }
+        ' "$1" | grep -oE '"[^"]*"' | tr -d '"' >"$FLAKY_TMP/full.txt"
+        if [[ "$2" == "LOW_EFFORT_BLOCKER_PATTERNS" ]]; then
+            if [[ ! -e "$FLAKY_TMP/canon-call-seen" ]]; then
+                # Call #1 is the INITIAL canon capture the loop checks vendored
+                # phrases against; truncating THAT (not the re-verify call) is
+                # what makes a real phrase look absent on first read, so the
+                # re-verify path actually fires and finds it on the full
+                # re-read. Drop exactly ONE real phrase, the same one the
+                # 2026-08-28 incident dropped, so canon_count stays
+                # comfortably above the >=30 floor and the per-phrase
+                # re-verify loop is what actually has to catch this, not the
+                # coarse floor.
+                touch "$FLAKY_TMP/canon-call-seen"
+                grep -vxF skipped "$FLAKY_TMP/full.txt"
+                return
+            fi
+        fi
+        cat "$FLAKY_TMP/full.txt"
+    }
+
+    out="$(check_subset "$CANONICAL_VALIDATOR" "$bp" 2>&1)" || rc=$?
+    unset -f extract_array
+    rm -rf "$FLAKY_TMP"
+    assert_contains "$out" "IS canonical; the first read was short" \
+        "a phrase absent only from a truncated re-read must be recognised as re-verified, not missing"
+    assert_eq "$rc" "0" "a transient truncation on the RE-VERIFY read must not fail the check"
+    log_pass "a flaky second canonical read is caught and excused, never blamed on the vendored list"
+}
+
 with_temp_dir test_console_script_tree_is_optional
 with_temp_dir test_no_nonportable_common_helpers
 with_temp_dir test_no_app_token_plumbing
@@ -413,3 +517,5 @@ with_temp_dir test_workflow_runner_choices
 with_temp_dir test_all_scripts_parse_standalone
 with_temp_dir test_drift_gate_runs_standalone
 with_temp_dir test_vendored_blocker_list_is_a_subset
+with_temp_dir test_subset_check_catches_a_real_violation
+with_temp_dir test_subset_check_survives_a_flaky_second_read
