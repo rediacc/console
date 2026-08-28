@@ -602,6 +602,12 @@ jobs:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
           GITHUB_REPOSITORY: ${{ github.repository }}
+          # Same class as ci-quality.yml's epic-block and trailer steps: the
+          # script already prefers PR_HEAD_REF for the per-epic lookup
+          # (check-review-report-replies.sh:85), but without it on this
+          # detached checkout it degrades to the flat, non-per-epic path
+          # (still enforced, just coarser than intended for a PR with epics).
+          PR_HEAD_REF: ${{ github.event.pull_request.head.ref }}
 
   # ============================================================================
   # STRIPE SANDBOX: Deploy per-PR account server with sandbox Stripe keys
