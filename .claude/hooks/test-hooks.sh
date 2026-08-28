@@ -8,6 +8,13 @@
 # The cases below therefore spell the tokens out, which is what makes them readable as tests.
 set -u
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# The repo root, derived exactly as block-agent-browser-repo-output.sh derives
+# its own REPO_ROOT. Two cases below hardcoded /home/developer/console, so they
+# asserted "inside the repo" about a path that is inside the repo only on the
+# machine they were written on. In CI the tree is at /home/runner/work/... and
+# the guard CORRECTLY allowed the command, so the tests failed while the code
+# was right. Measured: run 33133377611, PASS=1557 FAIL=2.
+TEST_REPO_ROOT="$(cd "$DIR/../.." && pwd)"
 PASS=0
 FAIL=0
 
@@ -325,7 +332,7 @@ check 2 pre-bash/block-ssh-file-write.sh "$(bash_json 'cat a | ssh host tee /etc
 #    (browser-probe.md:119-123: it put three untracked PNGs into a repo).
 check_out 2 pre-bash/block-agent-browser-repo-output.sh "$(bash_json 'agent-browser screenshot /tmp/x.png --full-page')" "agent-browser: unknown flag is eaten as the output path" "consume it as the output PATH"
 check_out 2 pre-bash/block-agent-browser-repo-output.sh "$(bash_json 'agent-browser screenshot probe.png')" "agent-browser: bare filename resolves against \$PWD" "No absolute output path"
-check_out 2 pre-bash/block-agent-browser-repo-output.sh "$(bash_json 'agent-browser screenshot /home/developer/console/packages/www/x.png')" "agent-browser: absolute path inside the repo" "is inside the repo at"
+check_out 2 pre-bash/block-agent-browser-repo-output.sh "$(bash_json "agent-browser screenshot $TEST_REPO_ROOT/packages/www/x.png")" "agent-browser: absolute path inside the repo" "is inside the repo at"
 check 2 pre-bash/block-agent-browser-repo-output.sh "$(bash_json 'agent-browser pdf out.pdf')" "agent-browser: pdf with a relative path"
 check 0 pre-bash/block-agent-browser-repo-output.sh "$(bash_json 'agent-browser screenshot /tmp/x.png --full')" "agent-browser: absolute path outside the repo is fine"
 check 0 pre-bash/block-agent-browser-repo-output.sh "$(bash_json 'agent-browser screenshot .sp-problem /tmp/sec.png')" "agent-browser: selector plus absolute path"
@@ -335,7 +342,7 @@ check 0 pre-bash/block-agent-browser-repo-output.sh "$(bash_json "echo 'agent-br
 # judged `open` (which has no path) and so BLOCKED a correct absolute screenshot, while a
 # second output subcommand on the same line was never inspected at all. Both directions:
 check 0 pre-bash/block-agent-browser-repo-output.sh "$(bash_json 'agent-browser open http://localhost:4321/en && agent-browser screenshot /tmp/x.png')" "agent-browser: open then an absolute screenshot is fine"
-check_out 2 pre-bash/block-agent-browser-repo-output.sh "$(bash_json 'agent-browser open http://localhost:4321/en && agent-browser screenshot /home/developer/console/x.png')" "agent-browser: open then an in-repo screenshot" "is inside the repo at"
+check_out 2 pre-bash/block-agent-browser-repo-output.sh "$(bash_json "agent-browser open http://localhost:4321/en && agent-browser screenshot $TEST_REPO_ROOT/x.png")" "agent-browser: open then an in-repo screenshot" "is inside the repo at"
 check_out 2 pre-bash/block-agent-browser-repo-output.sh "$(bash_json 'agent-browser screenshot /tmp/a.png && agent-browser screenshot b.png')" "agent-browser: the SECOND output command is bare" "No absolute output path"
 
 # --- block-host-toolchain-run: a gate that cannot run reports no verdict ---
