@@ -1283,9 +1283,32 @@ jobs:
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: cd "$HOME" && npm install -g agent-browser@latest --ignore-scripts=false
 
+      # A silent-install failure (a broken postinstall, a PATH the shell that
+      # ran npm install cannot see, a platform binary that never got selected)
+      # would otherwise surface downstream as the browser gate's own confusing
+      # symptom -- exactly the "root cause invisible" shape a stop-hook judge
+      # sweep named 2026-08-30. This makes the environment check its own
+      # named, explicit step: a broken install fails HERE, with its real
+      # cause, instead of two steps later as an unrelated-looking test error.
+      - name: Verify agent-browser is functional
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: agent-browser --version
+
+      # Video assets under packages/www/public/assets/tutorials/ are gitignored (see
+      # CLAUDE.md's Media Assets section) -- a fresh CI checkout has none of them, and
+      # without this var the plugin that embeds tutorial videos
+      # (packages/www/src/plugins/remark-tutorial-embed.ts) falls back to a local path
+      # that can never resolve here. Without it this gate could not ever observe real
+      # playback: the <video> src 404s, readyState never leaves 0, and every scenario's
+      # "did not enter playing state" assertion fails deterministically, indistinguishable
+      # from a real player regression. cd-deploy-worker.yml sets the same var for the
+      # same reason (its "Build pages" step) -- confirmed reachable: `curl -sI
+      # https://media.rediacc.com/tutorials/video/en/tutorial-production-mode.mp4` -> 200.
       - name: Tutorial player release gate
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: npm run check:test:tutorial-player
+        env:
+          PUBLIC_VIDEO_CDN_BASE_URL: https://media.rediacc.com
 
       - name: Run CLI unit tests
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
