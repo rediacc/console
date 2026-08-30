@@ -1942,7 +1942,9 @@ def selftest():
             subprocess.run(["git", "-C", _sub_path, *_a], capture_output=True, check=False)
         with open(os.path.join(_sub_path, "f.txt"), "w", encoding="utf-8") as _fh:
             _fh.write("x\n")
-        subprocess.run(["git", "-C", _sub_path, "add", "--", "f.txt"], capture_output=True, check=False)
+        subprocess.run(
+            ["git", "-C", _sub_path, "add", "--", "f.txt"], capture_output=True, check=False
+        )
         subprocess.run(
             ["git", "-C", _sub_path, "commit", "-qm", "c1"], capture_output=True, check=False
         )
