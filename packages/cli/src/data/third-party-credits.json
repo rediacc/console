@@ -37,11 +37,11 @@
       "kind": "embedded-binary",
       "asset": "k3s",
       "name": "k3s",
-      "version": "1.36.3+k3s1",
+      "version": "1.36.4+k3s1",
       "spdx": "Apache-2.0",
       "license": "Apache License 2.0 (Copyright The k3s Authors / SUSE); conveyed as an unmodified upstream binary (the single static k3s release binary, not the airgap images tarball), invoked as a subprocess. Apache-2.0 s4 attribution retained.",
-      "upstreamSourceUrl": "https://github.com/k3s-io/k3s/archive/v1.36.3+k3s1/k3s-1.36.3+k3s1.tar.gz",
-      "plannedMirrorUrl": "https://releases.rediacc.com/third-party-src/k3s-1.36.3+k3s1.tar.gz",
+      "upstreamSourceUrl": "https://github.com/k3s-io/k3s/archive/v1.36.4+k3s1/k3s-1.36.4+k3s1.tar.gz",
+      "plannedMirrorUrl": "https://releases.rediacc.com/third-party-src/k3s-1.36.4+k3s1.tar.gz",
       "notes": "k3s ships no top-level NOTICE file in its release archive as of this version; the Apache-2.0 LICENSE and this attribution satisfy s4. The binary vendors third-party components (containerd, runc, CoreDNS, etc.) under their own licenses, catalogued in the k3s source tree."
     },
     {
