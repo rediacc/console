@@ -393,6 +393,17 @@ check 2 pre-bash/block-git-force-push.sh "$(bash_json 'git p''ush origin +refs/h
 # above tested the REGEX; these test the THREAT.
 check 2 pre-bash/block-git-force-push.sh "$(bash_json 'git p''ush origin +main:main')" "force-push: a plus-prefixed branch shorthand forces too"
 check 2 pre-bash/block-git-force-push.sh "$(bash_json 'git p''ush origin +HEAD:main')" "force-push: +HEAD:<branch> is the same force in shorthand"
+# THE WRAPPER BYPASS, review-found on PR #579. Every sibling guard touched in
+# that same PR (block-cli-bundle.sh, block-protected-files.sh, etc.) routes
+# through lib/command-scan.sh's hook_scan_target, which unwraps eval/sh -c
+# payloads; this guard matched $CMD directly, so wrapping the forbidden push
+# left the push text preceded by a quote character instead of a line start or
+# accepted separator, and the command-position anchor never fired. Same class
+# as the worktree-add wrapper case above, on the one guard this file's own
+# comment calls "the whole security story".
+check 2 pre-bash/block-git-force-push.sh "$(bash_json 'eval "git p''ush --force origin main"')" "force-push: eval wrapper bypass"
+check 2 pre-bash/block-git-force-push.sh "$(bash_json 'sh -c "git p''ush --force origin main"')" "force-push: sh -c wrapper bypass"
+check 2 pre-bash/block-git-force-push.sh "$(bash_json 'eval "git p''ush origin +main:main"')" "force-push: eval wrapper bypass, refspec form"
 check 2 pre-bash/block-git-empty-commit.sh "$(bash_json 'git commit --allow-empty -m x')" "git-empty-commit"
 check 2 pre-bash/block-worktree-add.sh "$(bash_json 'git worktree add ../foo -b bar')" "worktree-add"
 check 2 pre-bash/block-worktree-add.sh "$(bash_json 'git -C /some/path worktree add ../x main')" "worktree-add: -C before the subcommand"
@@ -1150,6 +1161,36 @@ check 0 pre-edit/block-edit-of-running-script.sh \
     "running-script CONTROL: a non-shell file is out of scope"
 check 0 pre-edit/block-edit-of-running-script.sh '{"tool_input":{}}' \
     "running-script CONTROL: no file_path names nothing"
+# THE MENTION-VS-EXECUTION BYPASS, review-found on PR #579. A real incident hit
+# mid-session: the stop-hook judge's own `claude -p '<huge prompt>'` process had
+# this guard's OWN filename embedded in its prompt text (an example quoted from
+# TRAPS.md), and the guard scored that as "executing" it -- blocking an edit
+# with no interpreter anywhere near the file. The Bash-side sibling
+# (block-bash-write-to-running-script.sh) got the fix for this exact class on
+# 2026-08-27; this guard never did until now. Two fixtures below reproduce both
+# halves of the bypass: a non-shell process, and a shell process with the name
+# buried in a late free-text argument rather than at an invocation position.
+RS_NONSHELL_NAME="rs-nonshell-fixture-$$.sh"
+sleep 8 -- "prose mentioning $RS_NONSHELL_NAME, not an invocation" &
+RS_NONSHELL_PID=$!
+sleep 0.3
+check 0 pre-edit/block-edit-of-running-script.sh \
+    "$(printf '{"tool_input":{"file_path":"%s"}}' "$RS_TMP/$RS_NONSHELL_NAME")" \
+    "running-script CONTROL: a NON-SHELL process carrying the name in argv is not running it"
+kill "$RS_NONSHELL_PID" 2>/dev/null || true
+wait "$RS_NONSHELL_PID" 2>/dev/null || true
+
+RS_PROSE_NAME="rs-prose-fixture-$$.sh"
+bash -c 'read x' -- "a long prose payload mentioning $RS_PROSE_NAME deep inside it, not as an invocation" &
+RS_PROSE_PID=$!
+sleep 0.3
+check 0 pre-edit/block-edit-of-running-script.sh \
+    "$(printf '{"tool_input":{"file_path":"%s"}}' "$RS_TMP/$RS_PROSE_NAME")" \
+    "running-script CONTROL: a SHELL process mentioning the name outside argv position is not running it"
+kill "$RS_PROSE_PID" 2>/dev/null || true
+wait "$RS_PROSE_PID" 2>/dev/null || true
+unset RS_NONSHELL_NAME RS_NONSHELL_PID RS_PROSE_NAME RS_PROSE_PID
+
 kill "$RS_PID" 2>/dev/null || true
 wait "$RS_PID" 2>/dev/null || true
 # CONTROL THAT MATTERS: once the process is gone the guard must go QUIET, or it

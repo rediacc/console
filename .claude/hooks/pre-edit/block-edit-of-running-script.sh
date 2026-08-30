@@ -44,10 +44,40 @@ BASE=$(basename "$CMD")
 # contains the path it was handed. That is the self-matching trap that block-
 # self-matching-pgrep.sh exists for, and writing this guard is exactly where it
 # would have bitten again.
-PAT="[${BASE:0:1}]${BASE:1}"
-RUNNING=$(pgrep -af -- "$PAT" 2>/dev/null |
-    grep -vE '\.claude/hooks/(pre-bash|pre-edit|pre-ask|post-bash)/' |
-    head -3)
+#
+# ANCHOR TO A PATH BOUNDARY. A bare basename matches any process whose command
+# line merely CONTAINS it as a substring (`ver.sh` inside a running
+# `wslServer.sh`). The basename must start at the beginning, after a `/`, or
+# after whitespace. Fixed here 2026-08-30 to match the Bash-side sibling
+# (block-bash-write-to-running-script.sh), which got this anchor on 2026-08-27
+# and this guard never did -- a sibling drift, not a design choice.
+PAT="(^|[/[:space:]])[${BASE:0:1}]${BASE:1}"
+# `pgrep -af` matches any process whose ARGUMENTS mention the name, which is
+# the very trap this guard exists to prevent, wearing a different hat. Fixed
+# here 2026-08-30, mirroring the Bash-side sibling's 2026-08-27 fix
+# (review-found on PR #579, on a different guard, same class): a running
+# `claude -p '<huge prompt text>'` invocation -- the stop-hook judge itself --
+# has this exact filename embedded in its prompt (an example inside
+# docs/agent-reference/TRAPS.md, quoted in this very file's own comments) and
+# was scored as "executing" it. No interpreter was running the script at all.
+#
+# A process is RUNNING the script only if an interpreter is executing it. So
+# require the matching process to BE a shell, and the name to sit in the first
+# few argv slots where a script argument lives, rather than buried in a prose
+# payload.
+RUNNING=""
+for RPID in $(pgrep -f -- "$PAT" 2>/dev/null); do
+    case "$(ps -o comm= -p "$RPID" 2>/dev/null)" in
+        bash | sh | dash | zsh | ksh) ;;
+        *) continue ;;
+    esac
+    RARGS=$(tr '\0' ' ' <"/proc/$RPID/cmdline" 2>/dev/null)
+    printf '%s' "$RARGS" | cut -d' ' -f1-4 | grep -qE -- "$PAT" || continue
+    printf '%s' "$RARGS" | grep -qE '\.claude/hooks/(pre-bash|pre-edit|pre-ask|post-bash)/' && continue
+    RUNNING="$RUNNING$RPID $(printf '%s' "$RARGS" | cut -c1-80)
+"
+done
+RUNNING=$(printf '%s' "$RUNNING" | head -3)
 [ -z "$RUNNING" ] && exit 0
 
 cat >&2 <<MSG

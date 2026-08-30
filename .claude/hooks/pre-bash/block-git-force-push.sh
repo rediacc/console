@@ -28,6 +28,10 @@
 # caller. The mirror git push for a history rewrite is run by the operator
 # directly, with the ! prefix, which is the intended path.
 CMD=$(jq -r '.tool_input.command' 2>/dev/null)
+
+source "$(dirname "${BASH_SOURCE[0]}")/lib/command-scan.sh"
+SCAN=$(hook_scan_target "$CMD")
+
 # ANCHORED TO COMMAND POSITION 2026-08-28, after check:ci-guard-mention-anchoring
 # found this guard refusing an ordinary sentence. Matching the phrase ANYWHERE
 # means a doc line, a worklist note or an `echo` explaining the rule is refused
@@ -36,7 +40,18 @@ CMD=$(jq -r '.tool_input.command' 2>/dev/null)
 # NOT AN ALLOW-LIST, which this guard's own text forbids: the set of refused
 # FLAGS is untouched. Only the position of `git push` is constrained, so a
 # sentence about force-pushing stops being treated as one.
-if echo "$CMD" | grep -qE '(^|[;&|(])[[:space:]]*git push[^|;&]*(--force-with-lease|--force([[:space:]]|=|$)|[[:space:]]-f([[:space:]]|$)|--mirror([[:space:]]|=|$)|[[:space:]]\+[^[:space:]])'; then
+#
+# ROUTED THROUGH lib/command-scan.sh 2026-08-30 (review finding on PR #579).
+# Every sibling guard touched in this same PR (block-cli-bundle.sh,
+# block-protected-files.sh, block-unverified-push.sh, block-untagged-commit.sh)
+# scans hook_scan_target's output specifically because it unwraps eval/sh -c
+# payloads; this guard matched $CMD directly, so `eval "git push --force ..."`
+# or `sh -c 'git push --force ...'` left the push text preceded by a quote
+# character instead of a line start or accepted separator, and the anchor
+# added above never fired -- the exact bypass class command-scan.sh's own
+# header exists to close, on the one guard this file calls "the whole
+# security story".
+if printf '%s' "$SCAN" | grep -qE '(^|[;&|(])[[:space:]]*git push[^|;&]*(--force-with-lease|--force([[:space:]]|=|$)|[[:space:]]-f([[:space:]]|$)|--mirror([[:space:]]|=|$)|[[:space:]]\+[^[:space:]])'; then
     echo "BLOCKED: Do not force-push (--force / -f / --force-with-lease / --mirror / +refspec). Force-push overwrites remote history and erases the trace of individual PR changes, which is exactly what broke traceability before. Use a plain git push so each CI fix lands as its own reviewable commit. Rewriting already-pushed history is the user's decision, not an agent's: the operator runs it directly with the ! prefix.
 
 THE ONE SANCTIONED EXCEPTION, named here because this guard is the last thing you read before changing course and it used to send you away empty-handed. After a REBASE the branch and its submodules have to be republished together, and there is a mediated verb for exactly that:
