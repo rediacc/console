@@ -803,7 +803,17 @@ export const GATES: readonly GateSpec[] = [
     id: 'check:ci-gate-prerequisites',
     run: 'npm run check:ci-gate-prerequisites',
     gate: true,
-    paths: ['.github/workflows/**', 'package.json', '.ci/scripts/quality/**'],
+    // packages/*/package.json and workers/*/package.json joined 2026-08-30:
+    // the resolver now follows `npm run <key> -w <workspace>` into that
+    // workspace's OWN scripts (needed to find check:test:tutorial-player's
+    // real agent-browser dependency, two hops past root's package.json).
+    paths: [
+      '.github/workflows/**',
+      'package.json',
+      'packages/*/package.json',
+      'workers/*/package.json',
+      '.ci/scripts/quality/**',
+    ],
     leaves: ['.ci/scripts/quality/check_ci_gate_prerequisites.py'],
     ci: {
       kind: 'step',
