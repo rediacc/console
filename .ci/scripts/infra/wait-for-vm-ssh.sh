@@ -16,7 +16,13 @@
 #   VM_NET_BASE   used to build the default host list when no args are given
 #   SSH_USER      user to connect as (default: $USER)
 #
-# 30 attempts, 5s apart -> 150s per VM.
+# 36 attempts, 5s apart -> 180s per VM. Raised from 150s: this repo already has
+# a documented incident (docs/ci-overhaul/06-progress.md) where a DIFFERENT
+# subsystem's 150s healthcheck budget was insufficient on a downclocked host --
+# nested-KVM boot under contention is the same physical phenomenon (CPU
+# scheduling pressure slowing a cold start), and 150s is a number already known
+# not to be safe for it. No incident is claimed for this exact script; this is
+# a preventive alignment to the repo's own evidenced floor, not a repro.
 
 set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -37,7 +43,7 @@ mkdir -p ~/.ssh
 for vm in "${TARGETS[@]}"; do
     log_info "Waiting for $vm as $SSH_AS..."
     ready=false
-    for i in $(seq 1 30); do
+    for i in $(seq 1 36); do
         if ssh -o StrictHostKeyChecking=accept-new -o ConnectTimeout=5 \
             "${SSH_AS}@${vm}" echo ready 2>/dev/null; then
             log_info "VM $vm is SSH-ready"
@@ -45,11 +51,12 @@ for vm in "${TARGETS[@]}"; do
             ready=true
             break
         fi
-        log_info "Waiting for VM $vm SSH... ($i/30)"
+        log_info "Waiting for VM $vm SSH... ($i/36)"
         sleep 5
     done
     if [[ "$ready" != "true" ]]; then
-        log_error "VM $vm SSH not ready after 150s"
+        log_error "VM $vm SSH not ready after 180s"
+        log_error "load average (1m 5m 15m): $(cut -d' ' -f1-3 /proc/loadavg 2>/dev/null || echo unavailable), cores: $(nproc 2>/dev/null || echo unknown)"
         exit 1
     fi
 done

@@ -48,7 +48,13 @@
 set -uo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
 HOOKS="$ROOT/.claude/hooks"
-CHAINS=(pre-bash pre-edit pre-ask)
+# post-bash was MISSING until 2026-08-28. It is a real, registered chain --
+# settings.json wires cancel-old-ci.sh and refresh-pr-body.sh into it -- and
+# because it was absent from this list, both were outside the inventory and
+# could be deleted with no gate noticing. Found by sweeping the class after the
+# warn-* gap: that was a filename prefix escaping the net, this was a whole
+# chain. B/C are unaffected: they glob block-*.sh, and post-bash has none.
+CHAINS=(pre-bash pre-edit pre-ask post-bash)
 SUITE="$HOOKS/test-hooks.sh"
 INV="$ROOT/scripts/data/hook-inventory-baseline.json"
 COV="$ROOT/scripts/data/hook-coverage-baseline.json"
@@ -150,15 +156,37 @@ PY
 # warn-submodule-deletions.sh were outside the inventory entirely -- and A's own
 # failure text, "each of these can be deleted with no gate noticing", was true of
 # them with nothing saying so.
+# GUARDS OUTSIDE ANY CHAIN DIRECTORY, listed explicitly because a glob cannot
+# find them. The admission rule is WHETHER ABSENCE IS SILENT, not what the file
+# is named or where it sits:
+#
+#   * a missing pre-bash/post-bash guard just stops blocking -- nothing says so,
+#     which is the entire reason this inventory exists
+#   * a missing trapguard/dispatch.py means traps stop firing, equally silent
+#   * a missing require-jq.sh means the precondition it enforces goes unchecked
+#
+# DELIBERATELY EXCLUDED, and this is the other half of the rule: stop/worklist.py,
+# stop/wl_wait.py, stop/wl_report.py and the context/*.py hooks are MACHINERY,
+# not guards, and their absence is LOUD -- a missing stop hook errors on every
+# single stop rather than quietly permitting something. A gate that cannot tell
+# those apart would be inventorying files that already announce their own death.
+EXTRA_GUARDS=(trapguard/dispatch.py require-jq.sh)
+
 on_disk=()
 all_guards=()
 for _c in "${CHAINS[@]}"; do
     for _f in "$HOOKS/$_c"/block-*.sh; do
         [ -e "$_f" ] && on_disk+=("$_c/$(basename "$_f")")
     done
-    for _f in "$HOOKS/$_c"/block-*.sh "$HOOKS/$_c"/warn-*.sh; do
+    # EVERY .sh in the chain, not a name pattern. Verified equal to the old
+    # block-*+warn-* set for the three original chains (42 files, 42 listed),
+    # so this widens the net without reclassifying anything.
+    for _f in "$HOOKS/$_c"/*.sh; do
         [ -e "$_f" ] && all_guards+=("$_c/$(basename "$_f")")
     done
+done
+for _g in "${EXTRA_GUARDS[@]}"; do
+    [ -e "$HOOKS/$_g" ] && all_guards+=("$_g")
 done
 
 MAP="$TMP/covmap.txt"

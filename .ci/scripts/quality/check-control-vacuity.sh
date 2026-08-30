@@ -166,4 +166,25 @@ if [ "$fails" -ne 0 ]; then
     exit 1
 fi
 
-echo "${GREEN}✓${NC} $checked pattern-substitution control(s) prove their plant landed; $exempt built by construction (exempt)"
+# STATE THE SCOPE, do not leave it to the glob. This check parses BASH, so its
+# enumeration is `check-*.sh` and every `check_*.py` gate is outside it. That is
+# a real limit, and on 2026-08-28 it was invisible: a reader saw a green with no
+# hint that 21 sibling gates had not been looked at.
+#
+# Measured the same day, which is why this is a printed COUNT and not new
+# parsing: of the 21 Python gates, ZERO build a control mutant by substitution.
+# The four that use `.replace`/`re.sub` at all use it for PARSING -- joining line
+# continuations, stripping escapes, stripping trailing comments -- and the one
+# with a control fixture builds it by CONSTRUCTION, which this check exempts by
+# design. So the class has no Python members today; writing a Python parser for
+# it would be building against a hypothetical.
+#
+# What must not happen is that changing silently. A future `.py` gate that
+# mutates its own source by substitution would escape this check with nothing
+# said, so the number of unscanned gates is now part of the green line.
+py_unscanned=0
+for _pf in "$GATE_DIR"/check_*.py; do
+    [ -f "$_pf" ] && py_unscanned=$((py_unscanned + 1))
+done
+
+echo "${GREEN}✓${NC} $checked pattern-substitution control(s) prove their plant landed; $exempt built by construction (exempt); $py_unscanned python gate(s) NOT scanned (this check parses bash)"

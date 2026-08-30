@@ -99,7 +99,12 @@ function main(): number {
     if (stale.length) staleByLang[lang] = stale;
     staleTotal += stale.length;
     orphanTotal += orphan;
-    langCount[lang] = Object.keys(keys).length;
+    // LIVE entries only. Counting orphans here made the coverage floor -- a fraction of
+    // the best-covered language -- drift upward every time an English key was deleted,
+    // without anyone's real coverage moving. At 9702 orphans the floor stood at 1006
+    // against a real best of 1187, so a newly added locale had to reach 85% of the
+    // leader to clear a bar documented as 50%.
+    langCount[lang] = Object.keys(keys).length - orphan;
   }
 
   // -- Coverage floor: every maintained locale must reach COVERAGE_FLOOR of the
@@ -131,7 +136,7 @@ function main(): number {
     if (orphanTotal) {
       console.log(
         `\n${orphanTotal} ledger entries reference deleted English keys ` +
-          `(harmless; cleaned on next run).`
+          `(not counted towards coverage; pruned by the pipeline's next ledger write).`
       );
     }
     console.log(

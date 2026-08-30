@@ -82,7 +82,10 @@ scan() {
     done < <(grep -rnE "$pat" \
         "$root/.github/workflows" "$root/.ci/scripts" \
         --include='*.yml' --include='*.sh' 2>/dev/null | sort)
-    return "$hits"
+    # NOT `return "$hits"`. A shell return is taken mod 256, so exactly 256 findings
+    # would return 0 and read as a clean scan. Only the STATUS is made boolean here;
+    # the count itself is still printed with the findings.
+    [ "$hits" -eq 0 ]
 }
 
 # --- controls first. A gate nobody has watched fail is not a gate. -------------------

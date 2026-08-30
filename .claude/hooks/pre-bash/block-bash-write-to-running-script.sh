@@ -90,10 +90,26 @@ if printf '%s' "$CMD" | grep -qE 'write_text|open\(|<<[[:space:]]*.?(PY|EOPY|PYT
     # "target unidentifiable" while its target sat in plain sight. Measured
     # 2026-08-27: writing two commit-message files was refused because their TEXT
     # discussed write_text and named a running script.
+    #
+    # THE `=` BRANCH NEEDS A SPACE BEFORE IT, and this is the third round of the
+    # same class. Measured 2026-08-28: a python heredoc's REPLACEMENT STRING held
+    # `ROUTE="./run.sh devbox exec -- $CMD"` -- valid bash SOURCE TEXT the script
+    # was writing INTO a hook file, never executed by the outer command -- and the
+    # bare `=` alternative scored it as a real python assignment because it looks
+    # identical in shape to one.
+    #
+    # The two are not identical in FORM, only in shape: this repo's own python is
+    # ruff-formatted (PEP8), so a real target assignment reads `p = 'x.sh'` with a
+    # space on both sides of `=`; a bash env-assignment payload being written out
+    # as DATA is valid bash, which forbids the space (`VAR=value`, no spaces,
+    # or it is a syntax error). Requiring a preceding space keeps every documented
+    # true positive (all authored `NAME = value` in this repo) while dropping the
+    # embedded-bash-as-data shape. `open(`/`Path(` are untouched -- neither of
+    # those idioms exists as bash syntax, so they carry no equivalent ambiguity.
     ANYTARGET=$(
         {
             printf '%s' "$CMD" |
-                grep -oE '(=|open\(|Path\()[[:space:]]*["'"'"'][^"'"'"']+\.[A-Za-z0-9]+' |
+                grep -oE '([[:space:]]=[[:space:]]|open\(|Path\()[[:space:]]*["'"'"'][^"'"'"']+\.[A-Za-z0-9]+' |
                 grep -oE '[A-Za-z0-9_.$/-]+\.[A-Za-z0-9]+$'
             printf '%s' "$CMD" |
                 grep -oE '>>?[[:space:]]*"?[^|&;<[:space:]"]+\.[A-Za-z0-9]+' |

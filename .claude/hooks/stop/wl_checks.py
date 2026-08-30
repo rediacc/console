@@ -1023,6 +1023,9 @@ def docs_drift(root):
 PLAN_STATUS_RE = re.compile(r"^\*{0,2}Status\*{0,2}:\s*([A-Za-z-]+)", re.MULTILINE)
 PLAN_STATUS_INLINE_RE = re.compile(r"\bStatus\*{0,2}:\s*([A-Za-z-]+)", re.IGNORECASE)
 PLAN_HEADER_LINES = 10
+# `Owner: <session-prefix>` in the same header block. plan_drift_rows is scoped to the
+# plans THIS session owns, so it needs to read the field, not just the status.
+PLAN_OWNER_RE = re.compile(r"^\*{0,2}Owner\*{0,2}:\s*[`'\"]?([0-9A-Za-z_-]{4,})", re.MULTILINE)
 PLAN_DONE_STATES = ("done", "superseded")
 PLAN_EXCERPT_CHARS = 1500
 PLAN_DRIFT_MAX = int(os.environ.get("WORKLIST_PLAN_DRIFT_MAX", "5"))
@@ -1032,6 +1035,21 @@ PLAN_DRIFT_MIN_MOVES = int(os.environ.get("WORKLIST_PLAN_DRIFT_MIN", "4"))
 
 def plan_dir(root):
     return S.agent_plan_dir(root)
+
+
+def plan_owner(root, rel):
+    """The `Owner:` prefix in a plan's header block, or None when it declares none.
+
+    Read separately rather than widened into `plan_records`'s tuple, which has three
+    other callers that would all have to change arity for one consumer's benefit.
+    """
+    try:
+        text = (pathlib.Path(root) / rel).read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return None
+    head = "\n".join(text.splitlines()[:PLAN_HEADER_LINES])
+    m = PLAN_OWNER_RE.search(head)
+    return m.group(1) if m else None
 
 
 def plan_records(root):
@@ -1099,6 +1117,17 @@ def plan_drift_rows(root, fold, session_id, plan_max_read=12):
 
     rows = []
     for rel, status, _lines in recs[:plan_max_read]:
+        # OWNERSHIP, the half this check was missing. The docstring above has always
+        # promised "a PEER's items moving is not a reason to rewrite MY plan", but the
+        # scoping was applied only to the ITEMS: any executing plan in agent/ was then
+        # matched against them, so MY items moving demanded I rewrite a plan whose
+        # header says `Owner: <someone else>`. That is the exact shape recorded at
+        # PLAN_STATUS_RE above -- "two plans that were already accurate and were not
+        # even its own" -- where only the status half was fixed. A plan with no Owner
+        # line stays in scope, matching the untagged-item rule in C.owned_by_me.
+        owner = plan_owner(root, rel)
+        if not C.owned_by_me(owner, session_id):
+            continue
         # ONLY `executing` (and UNKNOWN, which is loud by design). A plan that
         # SAYS it is being executed while this session's work moved past it is a
         # direct contradiction, and that is the whole signal.

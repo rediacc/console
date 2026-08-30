@@ -217,19 +217,13 @@ interface TagInfo {
  *
  * Returned newest-first, so callers can take [0] as the best evidence.
  */
-export function staleEvidence(
-  tag: string,
-  tags: TagInfo[],
-  now: number,
-  win: number
-): TagInfo[] {
+export function staleEvidence(tag: string, tags: TagInfo[], now: number, win: number): TagInfo[] {
   const newer = tags
     .filter((t) => isNewer(tag, t.name))
     .sort((a, b) => (isNewer(a.name, b.name) ? 1 : -1));
   if (newer.length === 0) return [];
   const newest = newer[0];
-  const soaked =
-    newest.pushedMs !== null && isWithinFreshnessWindow(newest.pushedMs, now, win);
+  const soaked = newest.pushedMs !== null && isWithinFreshnessWindow(newest.pushedMs, now, win);
   return soaked ? newer.slice(1) : newer;
 }
 
@@ -341,12 +335,8 @@ function selftest(): number {
 
   check(
     'a rebuild wave does NOT make an established newer series invisible',
-    staleEvidence(
-      '3.9-slim',
-      [tag('3.14-slim', HOUR), tag('3.10-slim', HOUR)],
-      NOW,
-      SOAK
-    ).length > 0
+    staleEvidence('3.9-slim', [tag('3.14-slim', HOUR), tag('3.10-slim', HOUR)], NOW, SOAK).length >
+      0
   );
   check(
     'the newest is the only soakable one, so the next one down is the evidence',
@@ -395,18 +385,12 @@ function selftest(): number {
   // it is the absence of a gate.
   const seedFilter = (additions: string[], seed?: string): string[] =>
     additions.filter((a) => a !== seed);
-  check(
-    'a seeded entry is admitted',
-    seedFilter(['a:1  img'], 'a:1  img').length === 0
-  );
+  check('a seeded entry is admitted', seedFilter(['a:1  img'], 'a:1  img').length === 0);
   check(
     'CONTROL: a second addition alongside the seed is STILL refused',
     seedFilter(['a:1  img', 'b:2  other'], 'a:1  img').join(',') === 'b:2  other'
   );
-  check(
-    'CONTROL: no seed admits nothing',
-    seedFilter(['a:1  img'], undefined).length === 1
-  );
+  check('CONTROL: no seed admits nothing', seedFilter(['a:1  img'], undefined).length === 1);
 
   return bad;
 }
@@ -439,6 +423,18 @@ async function main(): Promise<void> {
   const win = getMinReleaseAgeMs();
   const now = Date.now();
   const stale: string[] = [];
+  // BASELINE IDENTITY, kept separate from the DISPLAY string above it. `stale[i]`
+  // embeds `file:line` for a human to find the pin; `staleKeys[i]` (same index,
+  // same order) is `image:tag` alone, which `seen` already proves is globally
+  // unique. A baseline keyed on the display string re-keys itself on any
+  // Dockerfile edit that shifts the FROM line -- a comment added above it, an
+  // unrelated stage inserted earlier in the file -- reporting the SAME
+  // unresolved debt as simultaneously "newly stale" (new key, not in the old
+  // baseline) and "no longer stale" (old key, missing from the new run). Same
+  // shape as the CSS-selector re-keying trap this repo already paid for once;
+  // this baseline's key must not depend on anything that can move independent
+  // of the finding itself.
+  const staleKeys: string[] = [];
   const unknown: string[] = [];
   let checked = 0;
 
@@ -459,6 +455,7 @@ async function main(): Promise<void> {
     const newer = staleEvidence(p.tag, tags, now, win);
     if (newer.length > 0) {
       stale.push(`${p.file}:${p.line}  ${p.image}:${p.tag}  ->  ${newer[0].name}`);
+      staleKeys.push(`${p.image}:${p.tag}`);
     }
   }
 
@@ -476,7 +473,7 @@ async function main(): Promise<void> {
   // image across a major (ubuntu 24.04 -> 26.10, python 3.9 -> 3.14) is a decision with
   // real blast radius, not a side effect of installing a watchdog. So today's debt is
   // frozen and NEW staleness fails immediately. Drain with --write-baseline as pins move.
-  const keyed = stale.map((s) => s.trim().replace(/\s+->\s+.*$/, ''));
+  const keyed = staleKeys;
   if (process.argv.includes('--write-baseline')) {
     // COMPOSITION. "Drain with --write-baseline as pins move" was an unconditional
     // reseed, so a drain could retire two pins that had been bumped and quietly enshrine
@@ -509,7 +506,7 @@ async function main(): Promise<void> {
     if (seedImage !== undefined && !additions.includes(seedImage)) {
       console.error(
         `\n\x1b[31m✗\x1b[0m --seed-image named ${JSON.stringify(seedImage)}, which is not ` +
-          'among this run\'s additions. A seed that matches nothing is a typo, and accepting ' +
+          "among this run's additions. A seed that matches nothing is a typo, and accepting " +
           'it would let the next real addition through unnoticed.'
       );
       process.exit(1);
@@ -526,7 +523,7 @@ async function main(): Promise<void> {
           // path, and a message that hides it sends the reader either to a bump that
           // breaks the build or to editing the JSON by hand.
           seedHelp:
-            '--write-baseline --seed-image "<file>:<line>  <image>"  (ONE deliberately ' +
+            '--write-baseline --seed-image "<image>:<tag>"  (ONE deliberately ' +
             'held-back pin, named exactly; anything else stale in the same run is still refused)',
         })}`
       );
@@ -541,7 +538,9 @@ async function main(): Promise<void> {
   }
   const base: string[] = existsSync(BASELINE) ? JSON.parse(readFileSync(BASELINE, 'utf8')) : [];
   const known = new Set(base);
-  const fresh = stale.filter((s) => !known.has(s.trim().replace(/\s+->\s+.*$/, '')));
+  // Filtered by INDEX against staleKeys, not re-derived from the display string:
+  // `stale[i]` and `staleKeys[i]` are the same pin, one for a human, one for identity.
+  const fresh = stale.filter((_, i) => !known.has(staleKeys[i]));
   const fixed = base.filter((b) => !keyed.includes(b));
 
   if (fresh.length > 0) {

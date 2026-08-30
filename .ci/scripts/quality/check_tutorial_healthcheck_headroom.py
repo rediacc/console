@@ -17,7 +17,13 @@ gate runs the suite on one.
 
 WHAT THIS CHECKS
 ----------------
-The startup budget of every healthcheck under `.ci/tutorials/apps/`:
+The startup budget of every healthcheck under `.ci/tutorials/apps/`, plus
+`.ci/docker/ci/docker-compose.yml` (the account-server container
+ci-start-account.sh's own wait loop polls -- widened here rather than given a
+second gate, since it is the exact same "sized for a fast host only" property
+this gate already exists to catch). `private/elite/docker-compose.yml` is
+NOT included: it lives in a submodule this console-repo gate does not own the
+source of truth for.
 
     budget = start_period + interval * retries
 
@@ -60,6 +66,10 @@ MIN_BUDGET_SECONDS = 180.0
 
 REPO = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
 APPS_GLOB = os.path.join(REPO, ".ci", "tutorials", "apps", "**", "docker-compose.y*ml")
+# Not a glob match: exactly one file, in-repo (not a submodule), with a
+# healthcheck a wait-loop script (ci-start-account.sh) depends on being
+# realistic about contention. See the module docstring's WHAT THIS CHECKS.
+EXTRA_PATHS = [os.path.join(REPO, ".ci", "docker", "ci", "docker-compose.yml")]
 
 # Compose defaults, from the Compose spec. Used when a key is omitted.
 DEFAULT_INTERVAL = 30.0
@@ -193,7 +203,7 @@ def main() -> int:
     print("Tutorial Healthcheck Headroom")
     print("=" * 60)
 
-    paths = sorted(glob.glob(APPS_GLOB, recursive=True))
+    paths = sorted(set(glob.glob(APPS_GLOB, recursive=True)) | set(EXTRA_PATHS))
     if not paths:
         print(
             "FAIL: required subject missing -- no compose files under "

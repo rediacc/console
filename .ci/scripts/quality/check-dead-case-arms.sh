@@ -83,6 +83,12 @@ key_is_live() {
         grep -qvE '^[[:space:]]*(#|//|\*)'
 }
 
+# SCAN_HITS carries the count OUT of scan(). It used to come back as the exit status,
+# which a shell takes mod 256: exactly 256 dead arms would have returned 0 and read
+# as a clean tree, and the control that proves this gate works compares that same
+# status against zero.
+SCAN_HITS=0
+
 scan() {
     local dirs="$1" found=0 line file lineno key
     # shellcheck disable=SC2086 # dirs is deliberately word-split
@@ -99,7 +105,8 @@ scan() {
         done < <(printf '%s' "$line" | grep -oE '"[^"]*"' |
             grep -oE '[A-Za-z_][A-Za-z0-9_]{2,}=' | sed 's/=$//' | sort -u)
     done < <(extract_case_keys $dirs)
-    return "$found"
+    SCAN_HITS="$found"
+    [ "$found" -eq 0 ]
 }
 
 # ---------------------------------------------------------------------------
@@ -124,8 +131,8 @@ case "\$out" in
 esac
 PLANTED
 
-control_hits=0
-scan "$CONTROL_DIR/test" 2>/dev/null || control_hits=$?
+scan "$CONTROL_DIR/test" 2>/dev/null || true
+control_hits="$SCAN_HITS"
 if [ "$control_hits" -eq 0 ]; then
     log_error "CONTROL FAILED: the scanner did not catch a planted dead case arm, so its verdict on the real tree means nothing"
     exit 1
@@ -134,8 +141,8 @@ fi
 # ---------------------------------------------------------------------------
 # The real scan.
 # ---------------------------------------------------------------------------
-real_hits=0
-scan "$TEST_DIRS" || real_hits=$?
+scan "$TEST_DIRS" || true
+real_hits="$SCAN_HITS"
 if [ "$real_hits" -gt 0 ]; then
     log_error "$real_hits dead case arm(s). Parse the data and assert on the PARSED value instead of globbing for a field name that may not exist."
     exit 1

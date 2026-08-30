@@ -81,6 +81,38 @@ PERM_HIT=$(printf '%s' "$QUESTION" | grep -oE "$PERMISSION" | head -n1)
 OBJ_HIT=$(printf '%s' "$QUESTION" | grep -oE "$OBJECT" | head -n1)
 [ -z "$OBJ_HIT" ] && exit 0
 
+# ---- ANCHOR: the permission must GOVERN the object, not merely precede it ----
+# Both regexes hit anywhere in the question, so a sentence ABOUT the rule was
+# refused as if it were the rule being broken:
+#
+#   "Should I explain in the report why we never commit unasked?"
+#    ^^^^^^^^ PERMISSION                        ^^^^^^ OBJECT   -> exit 2
+#
+# That is the mention-vs-target class -- the same one that hit four pre-bash
+# guards on 2026-08-28 -- reaching the pre-ask chain, which
+# check_guard_mention_anchoring.py does not probe (it globs pre-bash only).
+#
+# ANCHOR, DO NOT NARROW: the object list stays exactly as it was. What is added
+# is that no CLAUSE BOUNDARY may sit between the permission and the object. A
+# subordinating conjunction or a comma means the object belongs to a different
+# clause, which is precisely what "a sentence about it" looks like. The direct
+# forms this guard exists for have nothing between them: "should i commit",
+# "shall i open a pr", "do you want me to create a branch".
+CLAUSE='(^|[^a-z])(why|whether|that|because|how|when|if|before|after|unless|since|instead)([^a-z]|$)|,'
+AFTER_PERM="${QUESTION#*"$PERM_HIT"}"
+case "$AFTER_PERM" in
+    *"$OBJ_HIT"*)
+        BETWEEN="${AFTER_PERM%%"$OBJ_HIT"*}"
+        if printf '%s' "$BETWEEN" | grep -qE "$CLAUSE"; then
+            exit 0
+        fi
+        ;;
+    # The object sits BEFORE the permission phrase. Left refusing, deliberately:
+    # this anchor exists to stop a false positive, and guessing at an unmeasured
+    # word order is how anchoring turns into narrowing.
+    *) : ;;
+esac
+
 # ---- THE REFUSAL LEDGER -----------------------------------------------------
 # One line per refusal, appended BEFORE the message is printed, so a refusal is
 # recorded even if everything after this point fails. It carries the timestamp,

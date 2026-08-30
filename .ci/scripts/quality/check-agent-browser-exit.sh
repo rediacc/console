@@ -48,7 +48,10 @@ scan() {
     done < <(grep -rl --include='*.sh' 'agent-browser' "$root" 2>/dev/null |
         grep -v '/node_modules/' | grep -v '/\.git/' |
         grep -vF 'check-agent-browser-exit.sh' | sort)
-    return "$hits"
+    # NOT `return "$hits"`. A shell return is taken mod 256, so exactly 256 findings
+    # would return 0 and read as a clean scan. Only the STATUS is made boolean here;
+    # the count itself is still printed with the findings.
+    [ "$hits" -eq 0 ]
 }
 
 # --- controls, run BEFORE the real scan: a gate nobody has watched fail is not a gate ---

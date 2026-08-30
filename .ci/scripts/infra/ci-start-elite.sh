@@ -72,8 +72,17 @@ cd "$ELITE_DIR"
 # =============================================================================
 echo "Waiting for Elite web service to be ready..."
 
+# 180s, not the original 60s: this repo already has two independent, real
+# incidents establishing 180s as the floor for "a container becoming healthy
+# on a contended host" -- packages/www's tutorial-player release gate
+# (measured an 84s cold boot against a then-60s budget) and
+# check_tutorial_healthcheck_headroom.py's MIN_BUDGET_SECONDS (born from an
+# 18-tutorial recording run that aborted at tutorial 9 because a 150s
+# healthcheck budget wasn't enough on a downclocked host). No incident is
+# claimed for THIS script specifically -- this is a preventive alignment to
+# the repo's own evidenced floor, not a repro.
 wait_for_web() {
-    local timeout=60
+    local timeout=180
     local elapsed=0
     local interval=2
 
@@ -87,6 +96,10 @@ wait_for_web() {
         elapsed=$((elapsed + interval))
     done
     echo "  Web failed to start within ${timeout}s"
+    # A false failure from a merely-busy shared runner and a genuine defect
+    # produce the same symptom here; print what a human would otherwise have
+    # to SSH in to find out, so the log itself can distinguish them.
+    echo "  load average (1m 5m 15m): $(cut -d' ' -f1-3 /proc/loadavg 2>/dev/null || echo unavailable), cores: $(nproc 2>/dev/null || echo unknown)"
     return 1
 }
 

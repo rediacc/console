@@ -225,6 +225,16 @@ jobs:
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: .ci/scripts/quality/check_hooks_resolvable.py
 
+      # A guard that calls a shared-lib function it never sourced dies at runtime
+      # with "command not found" on stderr -- which a warn/block test's "expect
+      # non-empty output" assertion cannot tell apart from a real warning. Proven
+      # live 2026-08-28: renaming warn-stale-index.sh's sourced hook_scan_target
+      # produced exactly that crash, and it would have passed the guard's own
+      # "warn" test case.
+      - name: Guard feature completeness
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: .ci/scripts/quality/check_guard_feature_completeness.py
+
       # An apt source rewritten to ONE mirror must carry a fallback to another.
       # Retrying a single point of failure is still a single point of failure:
       # on 2026-08-19 a dead azure.archive.ubuntu.com took down four consecutive
@@ -560,6 +570,9 @@ jobs:
 
       - name: Toolchain pins
         run: .ci/scripts/quality/check-toolchain-pins.sh
+
+      - name: Toolchain env/Dockerfile sync
+        run: .ci/scripts/quality/check-toolchain-env-dockerfile-sync.sh
 
       # The pinned-tools definition and the host-toolchain runtime guard's call
       # sites are two independently maintained lists; a tool added to one and
@@ -1012,6 +1025,12 @@ jobs:
         env:
           DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
         run: npm run check:ci-docker-image-freshness
+      - name: Baseline key semantics
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: npm run check:ci-baseline-key-semantics
+      - name: Test-gate wiring
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: npm run check:ci-test-gate-wiring
       - name: Pricing consistency
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: npm run check:ci-pricing-consistency
@@ -1253,6 +1272,10 @@ jobs:
       - name: Run www unit tests
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: npm run test:unit --workspace=@rediacc/www
+
+      - name: Tutorial player release gate
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: npm run check:test:tutorial-player
 
       - name: Run CLI unit tests
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}

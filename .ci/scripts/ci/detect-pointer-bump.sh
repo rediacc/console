@@ -100,6 +100,18 @@ if [[ -n "${GITHUB_EVENT_PATH:-}" && -r "${GITHUB_EVENT_PATH:-}" ]] && command -
     fi
 fi
 [[ -n "$current" ]] || current=$(git rev-parse HEAD)
+# Captured once, checked once: the walk loop below compares against this on
+# every iteration via `$(git rev-parse HEAD)` re-invoked inline, unguarded --
+# if that call ever failed mid-walk it would yield an empty string, the
+# comparison would read as "not HEAD" instead of erroring, and the walk would
+# silently continue past the commit it exists to stop at. HEAD does not move
+# during this walk, so hoisting is exact, not an approximation.
+head_sha=$(git rev-parse HEAD) || {
+    log_info "git rev-parse HEAD failed; cannot verify the walk's own stopping point"
+    write_output "pointer_bump_only" "false"
+    write_output "baseline_sha" ""
+    exit 0
+}
 baseline=""
 for _ in $(seq 1 "$WALK_CAP"); do
     if git rev-parse --verify --quiet "${current}^2" >/dev/null; then
@@ -113,7 +125,7 @@ for _ in $(seq 1 "$WALK_CAP"); do
     [[ -n "$raw" ]] || no_fast_path "empty commit ${current:0:7}"
     if grep -vE '^:160000 160000 ' <<<"$raw" | grep -q .; then
         # First commit that touches anything beyond existing gitlinks.
-        if [[ "$current" == "$(git rev-parse HEAD)" ]]; then
+        if [[ "$current" == "$head_sha" ]]; then
             no_fast_path "HEAD is not a pointer-only commit"
         fi
         break

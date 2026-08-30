@@ -358,6 +358,19 @@ check 0 pre-bash/block-host-toolchain-run.sh "$(bash_json './run.sh devbox exec 
 check 0 pre-bash/block-host-toolchain-run.sh "$(bash_json 'npm run check:ci-dead-css')" "host-toolchain: a gate needing no extra toolchain"
 check 0 pre-bash/block-host-toolchain-run.sh "$(bash_json "echo 'npm run check:ci-python-lint'")" "host-toolchain CONTROL: echoing a gate name is not running it"
 check 0 pre-bash/block-host-toolchain-run.sh "$(bash_json 'ls -la')" "host-toolchain: an unrelated command"
+
+# NPX CANNOT RESOLVE A NON-NPM BINARY. Measured 2026-08-28: `npx --yes ruff
+# format ...` failed with an npm resolution error even though the real ruff
+# binary was on PATH the whole time; the session read that as "no ruff
+# resolves" and hand-patched two files instead. This fires on shape alone.
+check 2 pre-bash/block-host-toolchain-run.sh "$(bash_json 'npx --yes ruff format file.py')" "host-toolchain: npx cannot run a pinned non-npm tool"
+check 2 pre-bash/block-host-toolchain-run.sh "$(bash_json 'npx -y shfmt -l .')" "host-toolchain: npx misuse, short flag form"
+check 0 pre-bash/block-host-toolchain-run.sh "$(bash_json 'npx --yes tsx scripts/foo.ts')" "host-toolchain CONTROL: npx running an actual npm package is untouched"
+
+# BARE TOOL INVOCATIONS. The NEEDS table above only matches a GATE KEY in the
+# command; running the tool directly was invisible to it.
+check 0 pre-bash/block-host-toolchain-run.sh "$(bash_json 'ruff format file.py')" "host-toolchain: bare tool, host has it"
+check 0 pre-bash/block-host-toolchain-run.sh "$(bash_json 'git commit -m \"note: install ruff and go before running this\"')" "host-toolchain CONTROL: prose mentioning tool names is not a command"
 check 2 pre-bash/block-ci-polling.sh "$(bash_json 'sleep 5 && gh run view 1')" "ci-polling"
 check 2 pre-bash/block-ci-reverse-poll.sh "$(bash_json 'gh run view 1 --jq .x && sleep 5')" "ci-reverse-poll"
 check 2 pre-bash/block-long-sleep.sh "$(bash_json 'sleep 30')" "long-sleep"
@@ -609,6 +622,16 @@ check 2 pre-ask/block-settled-questions.sh "$(ask_json "Do you want me to create
 check 0 pre-ask/block-settled-questions.sh "$(ask_json "Which branching strategy should this repo use, trunk or release branches?")" "settled(design passes)"
 check 0 pre-ask/block-settled-questions.sh "$(ask_json "Did the rebase drop a commit, or is the count right?")" "settled(fact passes)"
 check 0 pre-ask/block-settled-questions.sh "$(ask_json "Should I install node from a tarball or a package manager?")" "settled(unrelated permission passes)"
+
+# THE MENTION-VS-TARGET PAIR. Both regexes hit anywhere in the question, so a
+# sentence ABOUT the settled rule was refused as if it were the rule being
+# broken -- measured 2026-08-28, "Should I explain in the report why we never
+# commit unasked?" exited 2. The fix anchors the permission to the clause it
+# GOVERNS (no subordinating conjunction or comma in between) and does not touch
+# the object list, so the three direct forms above still refuse.
+check 0 pre-ask/block-settled-questions.sh "$(ask_json "Should I explain in the report why we never commit unasked?")" "settled(mention of the rule passes)"
+check 0 pre-ask/block-settled-questions.sh "$(ask_json "Can we record that the commit rule is settled?")" "settled(that-clause passes)"
+check 0 pre-ask/block-settled-questions.sh "$(ask_json "Should I describe how the branch guard works?")" "settled(how-clause passes)"
 
 check 2 pre-edit/block-suppressions.sh "$(edit_json "a // @ts-""ignore")" "suppressions(new_string)"
 check 2 pre-edit/block-suppressions.sh "$(multiedit_json "b // eslint-""disable")" "suppressions(MultiEdit)"
@@ -1181,6 +1204,19 @@ check 0 pre-bash/block-bash-write-to-running-script.sh "$(bash_json "python3 - <
 p = '$BW_TMP/notes.py'
 open(p, 'w').write('docs: bash $BW_TMP/bw-fixture.sh')
 PY")" "bash-write CONTROL: a heredoc writing a .py that MENTIONS a live script"
+# THE THIRD ROUND OF THE SAME CLASS, 2026-08-28. Not inside a .write() argument this
+# time -- the mention text is ITSELF shaped like an assignment, `ROUTE="./x.sh ..."`,
+# because it is genuine bash SOURCE TEXT being written out as data. The `=` branch of
+# ANYTARGET scored that as a real python target because it looks identical in shape to
+# one. Fixed by requiring a space on both sides of `=`: every ruff-formatted real target
+# assignment in this repo has one; a bash env-assignment never can (bash forbids spaces
+# around `=`, or it is a syntax error).
+check 0 pre-bash/block-bash-write-to-running-script.sh "$(bash_json "python3 - <<PY
+p = '$BW_TMP/other-guard.py'
+s = open(p).read()
+s = s.replace('X', 'ROUTE=\"./$BW_TMP/bw-fixture.sh devbox exec\"')
+open(p, 'w').write(s)
+PY")" "bash-write CONTROL: a bash-shaped assignment MENTION inside replacement text"
 # And the hole that narrowing could have opened: when NO target position is
 # identifiable, the broad scan must still fire. Without this the fix would trade a
 # false positive for a silent miss, which is the worse of the two.

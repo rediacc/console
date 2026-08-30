@@ -91,8 +91,13 @@ docker compose -f docker-compose.yml up -d account-server
 # =============================================================================
 echo "Waiting for Account Server to be ready..."
 
+# 180s, not the original 120s: same evidenced floor as ci-start-elite.sh's
+# wait_for_web (see its comment) -- this repo has two independent real
+# incidents establishing 180s as the minimum for a container to become
+# healthy on a contended host. No incident is claimed for this script
+# specifically; this is a preventive alignment, not a repro.
 wait_for_account_server() {
-    local timeout=120
+    local timeout=180
     local elapsed=0
     local interval=3
 
@@ -115,6 +120,7 @@ wait_for_account_server() {
         fi
     done
     echo "  Account server failed to become healthy within ${timeout}s"
+    echo "  load average (1m 5m 15m): $(cut -d' ' -f1-3 /proc/loadavg 2>/dev/null || echo unavailable), cores: $(nproc 2>/dev/null || echo unknown)"
     docker logs rediacc-account-server --tail 100 || true
     return 1
 }

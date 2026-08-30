@@ -402,6 +402,24 @@ export const GATES: readonly GateSpec[] = [
       step: 'Run www unit tests',
     },
   },
+  {
+    // Was defined in package.json but referenced nowhere: never ran in CI, and
+    // failed locally against its own 60s dev-server-boot timeout the first
+    // time it was actually invoked (a cold `astro dev` measured 84s). Fixed
+    // the timeout (packages/www/scripts/test-tutorial-player-release-gate.js)
+    // alongside wiring this in.
+    id: 'check:test:tutorial-player',
+    run: 'npm run check:test:tutorial-player',
+    slow: true, // spins up a real astro dev server; measured ~90s+ cold
+    gate: true,
+    leaves: ['packages/www/scripts/test-tutorial-player-release-gate.js'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-packages',
+      step: 'Tutorial player release gate',
+    },
+  },
   // A FOURTH www-dist consumer, which the plan's F5 list did not have.
   // workers/www/src/__tests__/redirect-aliases.test.ts:3 statically imports
   // packages/www/dist/route-manifest.json. `astro build` empties dist before
@@ -698,6 +716,28 @@ export const GATES: readonly GateSpec[] = [
     },
   },
   {
+    // check-toolchain-pins.sh's A1 deliberately EXEMPTS GO_VERSION/NODE_VERSION
+    // from its single-source check (they legitimately appear elsewhere: go.mod,
+    // third-party action inputs) -- which also removes any check that the TWO
+    // files meant to carry the identical value on purpose (toolchain.env and the
+    // Dockerfile's matching ARG) actually do. This is that narrower check.
+    id: 'check:ci-toolchain-env-dockerfile-sync',
+    run: 'npm run check:ci-toolchain-env-dockerfile-sync',
+    gate: true,
+    paths: [
+      '.devcontainer/toolchain.env',
+      '.devcontainer/Dockerfile',
+      '.ci/scripts/quality/check-toolchain-env-dockerfile-sync.sh',
+    ],
+    leaves: ['.ci/scripts/quality/check-toolchain-env-dockerfile-sync.sh'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-code',
+      step: 'Toolchain env/Dockerfile sync',
+    },
+  },
+  {
     id: 'check:ci-host-toolchain-coverage',
     run: 'npm run check:ci-host-toolchain-coverage',
     gate: true,
@@ -801,7 +841,17 @@ export const GATES: readonly GateSpec[] = [
     id: 'check:ci-guard-mention-anchoring',
     run: 'npm run check:ci-guard-mention-anchoring',
     gate: true,
-    paths: ['.claude/hooks/pre-bash/**', '.ci/scripts/quality/check_guard_mention_anchoring.py'],
+    // The script scans all 3 chains (pre-bash, pre-edit, pre-ask) since the
+    // peer's extension on 2026-08-28; this list had stayed pre-bash-only, the
+    // exact "half-populated path table" anti-pattern gate-author.md warns
+    // against -- a guard added under pre-edit/pre-ask would not have
+    // re-selected this gate on --changed.
+    paths: [
+      '.claude/hooks/pre-bash/**',
+      '.claude/hooks/pre-edit/**',
+      '.claude/hooks/pre-ask/**',
+      '.ci/scripts/quality/check_guard_mention_anchoring.py',
+    ],
     leaves: ['.ci/scripts/quality/check_guard_mention_anchoring.py'],
     ci: {
       kind: 'step',
@@ -1151,6 +1201,19 @@ export const GATES: readonly GateSpec[] = [
       workflow: '.github/workflows/ci-quality.yml',
       job: 'quality-static',
       step: 'Hooks resolvable',
+    },
+  },
+  {
+    id: 'check:ci-guard-feature-completeness',
+    run: 'npm run check:ci-guard-feature-completeness',
+    gate: true,
+    paths: ['.claude/hooks/**', '.ci/scripts/quality/check_guard_feature_completeness.py'],
+    leaves: ['.ci/scripts/quality/check_guard_feature_completeness.py'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-static',
+      step: 'Guard feature completeness',
     },
   },
   {
@@ -2455,6 +2518,56 @@ export const GATES: readonly GateSpec[] = [
       workflow: '.github/workflows/ci-quality.yml',
       job: 'quality-content',
       step: 'Docker image freshness',
+    },
+  },
+  {
+    id: 'check:ci-baseline-key-semantics',
+    run: 'npm run check:ci-baseline-key-semantics',
+    gate: true,
+    // `leaves` is what package.json's run command actually resolves to (the real
+    // source file check:ci-parity cross-checks); the 13 baseline JSON files this
+    // script reads at runtime belong in `paths` (change-detection selection), not
+    // here -- conflating the two is what check:ci-parity caught on this entry's
+    // first real run.
+    paths: [
+      'scripts/check-baseline-key-semantics.ts',
+      'scripts/data/dead-translation-keys-baseline.json',
+      'scripts/data/dead-css-baseline.json',
+      'scripts/data/sentence-wrapping-baseline.json',
+      'scripts/data/em-dash-surfaces-baseline.json',
+      'scripts/data/locale-de-contamination-baseline.json',
+      'scripts/data/docker-image-freshness-baseline.json',
+      'scripts/data/shell-declared-commands-baseline.json',
+      'scripts/data/static-nowrap-baseline.json',
+      'scripts/data/hook-coverage-baseline.json',
+      'scripts/data/css-dom-refs-baseline.json',
+      'scripts/data/hook-inventory-baseline.json',
+      '.ci/scripts/quality/job-timeout-baseline.json',
+      '.ci/scripts/quality/runner-sizing-baseline.json',
+    ],
+    leaves: ['scripts/check-baseline-key-semantics.ts'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-content',
+      step: 'Baseline key semantics',
+    },
+  },
+  {
+    // check:test:tutorial-player sat in package.json for three months with no
+    // manifest.ts entry and no workflow step -- found by hand this session,
+    // not by any gate. This is the gate: every check:test* key must resolve
+    // to a real manifest.ts entry wired to ci-quality.yml.
+    id: 'check:ci-test-gate-wiring',
+    run: 'npm run check:ci-test-gate-wiring',
+    gate: true,
+    paths: ['package.json', 'scripts/ci-runner/manifest.ts', 'scripts/check-test-gate-wiring.ts'],
+    leaves: ['scripts/check-test-gate-wiring.ts'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-content',
+      step: 'Test-gate wiring',
     },
   },
   {

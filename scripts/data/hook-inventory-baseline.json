@@ -1,4 +1,6 @@
 [
+  "post-bash/cancel-old-ci.sh",
+  "post-bash/refresh-pr-body.sh",
   "pre-ask/block-settled-questions.sh",
   "pre-bash/block-adhoc-sanctioned.sh",
   "pre-bash/block-admin-merge.sh",
@@ -40,5 +42,7 @@
   "pre-edit/block-inline-python.sh",
   "pre-edit/block-inline-workflow-run.sh",
   "pre-edit/block-roundlog-write.sh",
-  "pre-edit/block-suppressions.sh"
+  "pre-edit/block-suppressions.sh",
+  "require-jq.sh",
+  "trapguard/dispatch.py"
 ]

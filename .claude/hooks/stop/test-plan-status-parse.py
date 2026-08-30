@@ -100,6 +100,47 @@ below = (
 )
 control("CONTROL: a status past the header window does not count", status_of(below), "UNKNOWN")
 
+# ---------------------------------------------------------------------------
+# 5. OWNERSHIP. plan_drift_rows promises "a PEER's items moving is not a reason to
+#    rewrite MY plan", but the scoping used to apply to the ITEMS only: any executing
+#    plan in agent/ was matched against them, so this session's ticks demanded edits to
+#    a plan headed `Owner: 9d92d9b6`. Same shape as the status bug above, which the
+#    module's own comment already recorded as sending a session at "plans that were
+#    already accurate and were not even its own".
+# ---------------------------------------------------------------------------
+MINE = "e580532b-53bf-4b76-92d8-b15b242c96d5"
+
+
+def owner_of(body):
+    with tempfile.TemporaryDirectory() as td:
+        root = pathlib.Path(td)
+        (root / "agent").mkdir()
+        (root / "agent" / "PLAN-fixture.md").write_text(body, encoding="utf-8")
+        return C.plan_owner(root, "agent/PLAN-fixture.md")
+
+
+control("owner on its own line", owner_of("# P\nOwner: 9d92d9b6\nStatus: executing\n"), "9d92d9b6")
+control(
+    "owner in a dot-separated metadata line",
+    owner_of("# P\nOwner: b7baf3ee - 2026-08-24 - status: BUILT\n"),
+    "b7baf3ee",
+)
+control("CONTROL: no Owner line reads None", owner_of("# P\nStatus: executing\n"), None)
+control(
+    "CONTROL: an Owner past the header window does not count",
+    owner_of(
+        "# P\n" + "\n".join(f"l {i}" for i in range(C.PLAN_HEADER_LINES + 3)) + "\nOwner: dead\n"
+    ),
+    None,
+)
+
+# The pair that matters: the same fixture is IN scope unowned and OUT of scope when a
+# peer owns it. Asserting only the peer case would pass for a check that returns
+# nothing at all.
+control("a peer's plan is not mine", C.C.owned_by_me("9d92d9b6", MINE), False)
+control("my own plan is mine", C.C.owned_by_me("e580532b", MINE), True)
+control("an unowned plan stays in scope", C.C.owned_by_me(None, MINE), True)
+
 if Tally.fails:
     print(f"FAIL: {Tally.fails} of {Tally.count} control(s) failed", file=sys.stderr)
     sys.exit(1)

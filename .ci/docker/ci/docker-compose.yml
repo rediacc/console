@@ -54,7 +54,12 @@ services:
       interval: 10s
       timeout: 5s
       retries: 6
-      start_period: 10s
+      # 150s, not 10s: start_period + interval*retries was 70s, under the 180s
+      # floor check:ci-tutorial-healthcheck-headroom already enforces elsewhere
+      # in this repo (born from a real incident: an 18-tutorial recording run
+      # aborted non-resumably when a 150s healthcheck budget wasn't enough on a
+      # downclocked host). 150 + 60 = 210s, comfortably above that floor.
+      start_period: 150s
     networks:
       intranet:
         aliases:
