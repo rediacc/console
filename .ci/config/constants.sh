@@ -36,8 +36,13 @@ unset _REDIACC_TOOLCHAIN_ENV
 # =============================================================================
 # VERSION REQUIREMENTS
 # =============================================================================
-readonly NODE_VERSION_REQUIRED="22"
-readonly NODE_VERSION_MIN="22.0.0"
+# DERIVED FROM toolchain.env, NOT restated: NODE_VERSION is already in scope
+# from the source block above. Hardcoding "22" here separately is the exact
+# drift class check-toolchain-env-dockerfile-sync.sh exists to catch for
+# toolchain.env vs the Dockerfile -- this pair had the identical bug one file
+# over, just never caught because nothing compared it against anything.
+readonly NODE_VERSION_REQUIRED="${NODE_VERSION:?NODE_VERSION not sourced from toolchain.env}"
+readonly NODE_VERSION_MIN="${NODE_VERSION_REQUIRED}.0.0"
 
 # =============================================================================
 # PATHS (must be defined early, used by other sections)
