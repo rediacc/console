@@ -13,6 +13,7 @@ import os
 import pathlib
 import re
 import subprocess
+import sys
 import time
 
 import wl_core as C
@@ -179,6 +180,22 @@ CI_RETRY_PATTERNS = [
 # NEUTRAL and STALE are deliberately absent: see the CANCELLED note above.
 CI_FAIL_CONCLUSIONS = {"FAILURE", "TIMED_OUT", "STARTUP_FAILURE", "ACTION_REQUIRED"}
 CI_LIVE_ROLLUP = {"PENDING", "EXPECTED"}
+# NEVER A FAILURE, regardless of conclusion. "Review Complete" is a check-run
+# posted directly by .ci/scripts/review/review-status.sh from a workflow no CI
+# job references -- its own `output.summary` says outright "this check ... can
+# never block Console CI". It reports the review-currency state (has this head
+# been reviewed yet), not a CI result, and its `conclusion` is `failure`
+# whenever a head is unreviewed, which is the common case right after a push.
+# Documented as a trap (docs/agent-reference/TRAPS.md,
+# "gh pr checks half is uncovered") since 2026-08-06 and never fixed here
+# until a session actually walked into it on 2026-08-30: the remedy on file
+# was "go read .output.summary by hand", which is a workaround repeated
+# indefinitely rather than a fix. Unlike CI_RETRY_PATTERNS this is not a name
+# SUBSTRING match against a shifting set of flaky suites -- it is one fixed,
+# permanently-non-blocking check name, so an exact match is correct and a
+# substring match would risk swallowing a real job that merely contains
+# "Review" in its name.
+CI_NONBLOCKING_CONTEXTS = {"Review Complete"}
 # Cost control (this hook runs on EVERY stop, including a 5-minute poll cron).
 # Keyed on the published tip SHA, so any push invalidates it immediately.
 CI_CACHE_LIVE_S = int(os.environ.get("WORKLIST_CI_CACHE_LIVE_S", "180"))
@@ -395,6 +412,14 @@ def ci_classify(info):
     """
     rows, pending = [], 0
     for c in info.get("contexts") or []:
+        # Skipped BEFORE branching on shape, and before the pending count too:
+        # this context can be a StatusContext OR a CheckRun depending on how it
+        # was posted, and it must never contribute to "live" either -- it can
+        # sit at conclusion=failure indefinitely (an unreviewed head is the
+        # NORMAL state right after a push), which would otherwise wedge the
+        # rollup as perpetually in-flight rather than genuinely final.
+        if (c.get("context") or c.get("name") or "?") in CI_NONBLOCKING_CONTEXTS:
+            continue
         if c.get("__typename") == "StatusContext":
             state = (c.get("state") or "").upper()
             if state in ("PENDING", "EXPECTED"):
@@ -887,3 +912,131 @@ def submodule_pointer_moves(root):
             )
         moves.append((path, recorded[:9], live[:9], where))
     return moves
+
+
+def _selftest():
+    """Controls for ci_classify. Run: wl_ci.py --selftest
+
+    Narrow on purpose: ci_classify is pure (info dict in, (live, hard, soft)
+    out), so this proves the CI_NONBLOCKING_CONTEXTS filter on synthetic
+    fixtures shaped like the real GraphQL contexts, not a live API read.
+    """
+    ok = True
+
+    def check(label, cond, detail=""):
+        nonlocal ok
+        if not cond:
+            ok = False
+        print(
+            "  %s  %s%s" % ("PASS" if cond else "FAIL", label, "" if cond else "  <- %s" % detail)
+        )
+
+    review_complete_only = {
+        "rollup": "SUCCESS",
+        "contexts": [
+            {
+                "status": "COMPLETED",
+                "conclusion": "FAILURE",
+                "name": "Review Complete",
+                "databaseId": 1,
+                "checkSuite": {"workflowRun": {"databaseId": 1}},
+                "detailsUrl": "https://example/1",
+            }
+        ],
+    }
+    live, hard, soft = ci_classify(review_complete_only)
+    check(
+        "THE REAL 2026-08-30 DEFECT: a head whose ONLY context is a failing "
+        "'Review Complete' is not live and has no hard failures",
+        live is False and hard == [] and soft == [],
+        "live=%r hard=%r soft=%r" % (live, hard, soft),
+    )
+
+    review_complete_plus_real_failure = {
+        "rollup": "SUCCESS",
+        "contexts": [
+            review_complete_only["contexts"][0],
+            {
+                "status": "COMPLETED",
+                "conclusion": "FAILURE",
+                "name": "Quality / Code",
+                "databaseId": 2,
+                "checkSuite": {"workflowRun": {"databaseId": 2}},
+                "detailsUrl": "https://example/2",
+            },
+        ],
+    }
+    live, hard, soft = ci_classify(review_complete_plus_real_failure)
+    check(
+        "REGRESSION CONTROL: a genuine failure beside Review Complete is "
+        "still reported, and Review Complete is not swallowed into it",
+        hard == [] or all(r["name"] != "Review Complete" for r in hard),
+        "hard=%r" % (hard,),
+    )
+    check(
+        "REGRESSION CONTROL: the genuine failure IS the one hard failure",
+        [r["name"] for r in hard] == ["Quality / Code"],
+        "hard=%r" % (hard,),
+    )
+
+    review_complete_plus_pending = {
+        "rollup": "SUCCESS",
+        "contexts": [
+            review_complete_only["contexts"][0],
+            {"status": "IN_PROGRESS", "conclusion": "", "name": "Stage Artifacts"},
+        ],
+    }
+    live, hard, soft = ci_classify(review_complete_plus_pending)
+    check(
+        "CONTROL: a genuinely in-flight job beside Review Complete still "
+        "reads as live, and Review Complete contributes nothing either way",
+        live is True and hard == [],
+        "live=%r hard=%r" % (live, hard),
+    )
+
+    status_context_review_complete = {
+        "rollup": "SUCCESS",
+        "contexts": [
+            {
+                "__typename": "StatusContext",
+                "state": "FAILURE",
+                "context": "Review Complete",
+                "targetUrl": "https://example/3",
+            }
+        ],
+    }
+    live, hard, soft = ci_classify(status_context_review_complete)
+    check(
+        "CONTROL: the filter matches on EITHER shape (StatusContext.context "
+        "or CheckRun.name), since GitHub can post it as either",
+        live is False and hard == [] and soft == [],
+        "live=%r hard=%r soft=%r" % (live, hard, soft),
+    )
+
+    unrelated_review_named_job = {
+        "rollup": "SUCCESS",
+        "contexts": [
+            {
+                "status": "COMPLETED",
+                "conclusion": "FAILURE",
+                "name": "Review Gate",
+                "databaseId": 4,
+                "checkSuite": {"workflowRun": {"databaseId": 4}},
+                "detailsUrl": "https://example/4",
+            }
+        ],
+    }
+    live, hard, soft = ci_classify(unrelated_review_named_job)
+    check(
+        "CONTROL: an EXACT match only -- a differently-named job that merely "
+        "contains the word 'Review' is not swallowed by the filter",
+        [r["name"] for r in hard] == ["Review Gate"],
+        "hard=%r" % (hard,),
+    )
+
+    print("  %s" % ("all ci controls passed" if ok else "*** FAILURES ***"))
+    return 0 if ok else 1
+
+
+if __name__ == "__main__":
+    sys.exit(_selftest() if "--selftest" in sys.argv else 0)

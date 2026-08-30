@@ -1888,6 +1888,33 @@ else
     echo "FAIL [1] stop/wl_planfid.py missing"
 fi
 
+# ci_classify's CI_NONBLOCKING_CONTEXTS filter (stop/wl_ci.py). Review-found on
+# PR #579: ci-trace.py reported RED on a head where the ONLY failing context was
+# "Review Complete", a check posted by a separate workflow whose own summary
+# says it can never block Console CI -- documented as a trap since 2026-08-06
+# but never actually fixed in the instrument until this. Pure-function fixture
+# controls, no live API read.
+CI_MOD="$DIR/stop/wl_ci.py"
+if [[ -f "$CI_MOD" ]]; then
+    if out="$(python3 "$CI_MOD" --selftest 2>&1)"; then
+        n=$(grep -c "^  PASS " <<<"$out")
+        if [[ "$n" -lt 6 ]]; then
+            FAIL=$((FAIL + 1))
+            echo "FAIL [1] stop/wl_ci.py --selftest: $n control(s), expected >= 6"
+        else
+            PASS=$((PASS + n))
+            echo "ok   [0] stop/wl_ci.py --selftest: $n control(s) passed"
+        fi
+    else
+        FAIL=$((FAIL + 1))
+        echo "FAIL [1] stop/wl_ci.py --selftest"
+        grep -E "^  FAIL " <<<"$out" | sed 's/^/       /'
+    fi
+else
+    FAIL=$((FAIL + 1))
+    echo "FAIL [1] stop/wl_ci.py missing"
+fi
+
 # The teammate idle/liveness classifier's own controls
 # (stop/test-teammate-idle.py). WITHOUT THIS BLOCK THOSE CONTROLS RAN NOWHERE:
 # the file was added, passed 20/20 when invoked by hand, and was referenced only
