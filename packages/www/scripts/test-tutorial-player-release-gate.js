@@ -334,12 +334,12 @@ function scenarioBasicPlayPauseResume() {
   wait(1200);
   clearConsole();
 
-  assertCondition(clickPlaybackButton()?.ok, 'play button click failed at start');
+  assertCondition(clickPlaybackButton().ok, 'play button click failed at start');
   wait(1400);
   const started = currentState();
   assertCondition(isPlaying(started), 'start did not enter playing state', started);
 
-  assertCondition(clickPlaybackButton()?.ok, 'pause button click failed');
+  assertCondition(clickPlaybackButton().ok, 'pause button click failed');
   wait(900);
   const paused = currentState();
   assertCondition(paused.paused === true, 'pause did not stop the video', paused);
@@ -351,7 +351,7 @@ function scenarioBasicPlayPauseResume() {
     { paused, pausedStable }
   );
 
-  assertCondition(clickPlaybackButton()?.ok, 'resume button click failed');
+  assertCondition(clickPlaybackButton().ok, 'resume button click failed');
   wait(1400);
   const resumed = currentState();
   assertCondition(isPlaying(resumed), 'resume did not re-enter playing state', resumed);
@@ -366,9 +366,9 @@ function scenarioBurstToggle() {
   wait(1000);
   clearConsole();
 
-  assertCondition(clickPlaybackButton()?.ok, 'initial click failed before burst');
+  assertCondition(clickPlaybackButton().ok, 'initial click failed before burst');
   wait(350);
-  assertCondition(burstPlaybackClicks(6, 80)?.ok, 'burst click scheduling failed');
+  assertCondition(burstPlaybackClicks(6, 80).ok, 'burst click scheduling failed');
 
   const rows = sampledStates(12000, 700);
   writeArtifact('scenario-burst-states.json', rows);
@@ -399,7 +399,7 @@ function scenarioSeekNoSnapback() {
   assertCondition(hasVideo, 'tutorial video element not found on the page');
   if (!hasVideo) return;
 
-  assertCondition(clickPlaybackButton()?.ok, 'play click failed before seek');
+  assertCondition(clickPlaybackButton().ok, 'play click failed before seek');
   wait(1200);
   // Direct media-element seek rather than driving a .tvp-chapter-tick click: the
   // chapter overlay only paints once the <track> cues have loaded (async, no
@@ -439,7 +439,7 @@ function scenarioFullscreenAndLayering() {
   log('→ scenario: fullscreen and layering');
   open(`${baseUrl}/en/docs/tutorial-production-mode`);
   wait(1000);
-  assertCondition(clickPlaybackButton()?.ok, 'play click failed before fullscreen');
+  assertCondition(clickPlaybackButton().ok, 'play click failed before fullscreen');
   wait(900);
 
   // The Fullscreen API refuses requestFullscreen() without a trusted user gesture,

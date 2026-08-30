@@ -1273,6 +1273,16 @@ jobs:
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: npm run test:unit --workspace=@rediacc/www
 
+      # This gate drives a real browser via `agent-browser`, and this job never
+      # installed one -- it never ran in CI before today (see the manifest.ts
+      # comment on check:test:tutorial-player), only locally on a devbox that
+      # already has it. Installed from $HOME, not the repo checkout: this
+      # repo's own .npmrc sets ignore-scripts=true, which silently skips the
+      # postinstall that selects and chmods the platform binary.
+      - name: Install agent-browser
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: cd "$HOME" && npm install -g agent-browser@latest --ignore-scripts=false
+
       - name: Tutorial player release gate
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: npm run check:test:tutorial-player
