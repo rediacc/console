@@ -1171,7 +1171,15 @@ check 0 pre-edit/block-edit-of-running-script.sh '{"tool_input":{}}' \
 # halves of the bypass: a non-shell process, and a shell process with the name
 # buried in a late free-text argument rather than at an invocation position.
 RS_NONSHELL_NAME="rs-nonshell-fixture-$$.sh"
-sleep 8 -- "prose mentioning $RS_NONSHELL_NAME, not an invocation" &
+# Review-found on THIS commit: `sleep 8 -- "prose..."` does not survive to the
+# `sleep 0.3` check window at all -- GNU coreutils sleep validates every
+# operand as a NUMBER before sleeping, so a non-numeric trailing argument makes
+# it exit immediately with "invalid time interval", and the control below then
+# passes VACUOUSLY (nothing is running) rather than by exercising the `comm=`
+# shell-filter it claims to pin. `exec -a` renames argv[0] without touching the
+# numeric operand sleep actually needs, so the process stays alive for real
+# with comm=sleep (non-shell) and the fixture name genuinely in argv.
+bash -c 'exec -a "$1" sleep 8' -- "$RS_NONSHELL_NAME" &
 RS_NONSHELL_PID=$!
 sleep 0.3
 check 0 pre-edit/block-edit-of-running-script.sh \
