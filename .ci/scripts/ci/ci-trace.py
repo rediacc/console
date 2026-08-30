@@ -32,6 +32,8 @@ disagree about what red means.
 """
 
 import argparse
+import contextlib
+import io
 import json
 import os
 import pathlib
@@ -134,6 +136,16 @@ def _trace_run(root, run_id, wait, timeout, as_json):
             continue
         read_failures = 0
 
+        # SAME FILTER AS ci_classify, and this path needed it independently:
+        # `--run <id>` reads the run's OWN jobs endpoint directly rather than
+        # going through wl_ci.ci_classify's GraphQL contexts, so the
+        # CI_NONBLOCKING_CONTEXTS fix landed on the branch-tracing path
+        # (_snapshot below) and never touched this one -- proven live on
+        # PR #579 commit 9cbcf7d9's own rerun, which this trace called RED on
+        # a run GitHub itself scored "success" once "Review Complete" (a
+        # check-run whose own summary says it can never block Console CI) was
+        # excluded.
+        jobs = [j for j in jobs if j.get("name") not in wl_ci.CI_NONBLOCKING_CONTEXTS]
         failed = [j["name"] for j in jobs if j.get("conclusion") == "failure"]
         live = [j["name"] for j in jobs if not j.get("conclusion")]
 
@@ -447,5 +459,72 @@ def main(argv=None):
         time.sleep(POLL_SECONDS)
 
 
+def _selftest():
+    """Controls for _trace_run's CI_NONBLOCKING_CONTEXTS filter.
+
+    Review-found live on PR #579: `--run <id>` reads a run's jobs endpoint
+    DIRECTLY rather than through wl_ci.ci_classify's GraphQL contexts, so the
+    filter fixing ci_classify (see wl_ci.py --selftest) never touched this
+    path -- proven by ci-trace.py itself calling a run GitHub scored
+    "success" RED, because "Review Complete" (a check-run that can never
+    block Console CI) showed up as conclusion=failure in the jobs list.
+    """
+    ok = True
+
+    def check(label, cond, detail=""):
+        nonlocal ok
+        if not cond:
+            ok = False
+        print(
+            "  %s  %s%s" % ("PASS" if cond else "FAIL", label, "" if cond else "  <- %s" % detail)
+        )
+
+    review_complete_job = {"name": "Review Complete", "conclusion": "failure"}
+    real_failure_job = {"name": "Quality / Code", "conclusion": "failure"}
+    pending_job = {"name": "Stage Artifacts", "conclusion": None}
+
+    def run_it(jobs, status="completed", run_conclusion="success"):
+        def fake_snapshot(_root, _run_id):
+            return status, run_conclusion, jobs
+
+        orig = globals()["_run_snapshot"]
+        globals()["_run_snapshot"] = fake_snapshot
+        try:
+            buf_out, buf_err = io.StringIO(), io.StringIO()
+            with contextlib.redirect_stdout(buf_out), contextlib.redirect_stderr(buf_err):
+                rc = _trace_run(pathlib.Path("."), 1, wait=False, timeout=1, as_json=False)
+            return rc, buf_out.getvalue() + buf_err.getvalue()
+        finally:
+            globals()["_run_snapshot"] = orig
+
+    rc, out = run_it([review_complete_job])
+    check(
+        "THE REAL 2026-08-30 DEFECT: a run whose only failing job is "
+        "'Review Complete' reports GREEN, not RED",
+        rc == EXIT_GREEN,
+        "rc=%r out=%r" % (rc, out),
+    )
+
+    rc, out = run_it([review_complete_job, real_failure_job])
+    check(
+        "REGRESSION CONTROL: a genuine failure beside Review Complete is "
+        "still reported RED, naming the real job",
+        rc == EXIT_RED and "Quality / Code" in out and "Review Complete" not in out,
+        "rc=%r out=%r" % (rc, out),
+    )
+
+    rc, out = run_it([review_complete_job, pending_job], status="in_progress")
+    check(
+        "CONTROL: the filter does not interfere with the in-flight path -- a "
+        "run that is genuinely still running reports no-verdict, not GREEN, "
+        "even though its only completed job is the filtered-out one",
+        rc == EXIT_NO_VERDICT,
+        "rc=%r out=%r" % (rc, out),
+    )
+
+    print("  %s" % ("all ci-trace controls passed" if ok else "*** FAILURES ***"))
+    return 0 if ok else 1
+
+
 if __name__ == "__main__":
-    sys.exit(main())
+    sys.exit(_selftest() if "--selftest" in sys.argv else main())

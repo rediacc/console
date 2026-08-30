@@ -371,6 +371,21 @@ PY
     log_pass "control fires: without the status test, in-flight stops being reported (rc=$rc, not 2)"
 }
 
+test_ci_nonblocking_contexts_selftest() {
+    log_test "ci-trace.py's own CI_NONBLOCKING_CONTEXTS fixture controls"
+    # Review-found live on PR #579: --run reads a run's jobs endpoint DIRECTLY
+    # (see test_dispatched_run_is_traced_by_id above), a completely separate
+    # path from wl_ci.ci_classify's GraphQL contexts, so the fix landed on the
+    # branch-tracing path and never touched this one -- proven by ci-trace.py
+    # itself calling a run GitHub scored "success" RED, because "Review
+    # Complete" (a check-run whose own summary says it can never block Console
+    # CI) showed up as conclusion=failure in --run's jobs list. --selftest
+    # unit-tests _trace_run's filter directly against fixtures shaped like
+    # that real defect.
+    python3 "$TRACE" --selftest || log_fail "ci-trace.py --selftest failed"
+    log_pass "ci-trace.py --selftest: 3/3"
+}
+
 test_default_still_answers_no_pr
 test_opt_in_reads_the_branch
 test_dispatched_run_is_traced_by_id
@@ -382,9 +397,10 @@ test_default_signature_is_false
 test_green_draft_names_the_finish_sequence
 test_every_caller_handles_the_no_pr_state
 test_control_a_blind_caller_is_detected
+test_ci_nonblocking_contexts_selftest
 
 echo
-log_pass "ci-trace branch-read gate: 11/11"
+log_pass "ci-trace branch-read gate: 12/12"
 echo "  Blind spot: does not validate the GraphQL selection against the live schema,"
 echo "  and the --run cases are shimmed, so they do not prove the gh JSON field"
 echo "  names are still current -- a rename surfaces as exit 2, which at least says so."
