@@ -10325,6 +10325,7 @@
     },
     "disclosure": {
       "mechanism": "Vaata mehhanismi",
+      "timeline": "Vaata ajajoont",
       "comparison": "Võrdle kõiki tööriistu"
     },
     "references": {

@@ -10331,6 +10331,7 @@
     },
     "disclosure": {
       "mechanism": "Guarda il meccanismo",
+      "timeline": "Guarda la cronologia",
       "comparison": "Confronta tutti gli strumenti"
     },
     "references": {

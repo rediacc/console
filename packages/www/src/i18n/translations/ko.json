@@ -10310,6 +10310,7 @@
     },
     "disclosure": {
       "mechanism": "메커니즘 보기",
+      "timeline": "타임라인 보기",
       "comparison": "전체 도구 비교"
     },
     "references": {

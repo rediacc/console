@@ -127,7 +127,9 @@ const breadcrumbItems = [
     ))}
 
     {has('problem') && (
-      <SPProblem problem={(content as any).problem} referenceItems={(content as any).references?.items} slug={slug} />
+      <SPProblem
+        timelineLabel={t('solutions.disclosure.timeline')}
+        problem={(content as any).problem} referenceItems={(content as any).references?.items} slug={slug} />
     )}
 
     {/* Operator item n5: the three-stat panel reads as the ANSWER to the problem

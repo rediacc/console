@@ -10261,6 +10261,7 @@
     },
     "disclosure": {
       "mechanism": "查看工作原理",
+      "timeline": "查看时间线",
       "comparison": "比较所有工具"
     },
     "references": {

@@ -10313,6 +10313,7 @@
     },
     "disclosure": {
       "mechanism": "Ver el mecanismo",
+      "timeline": "Ver la cronología",
       "comparison": "Comparar todas las herramientas"
     },
     "references": {

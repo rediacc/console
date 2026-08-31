@@ -118,7 +118,9 @@ const breadcrumbItems = [
       indices left in the catalog data are inert and are queued for retirement.
     */}
     {has('problem') && (
-      <SPProblem problem={(content as any).problem} slug={config.illustrationSlug} />
+      <SPProblem
+        timelineLabel={t('solutions.disclosure.timeline')}
+        problem={(content as any).problem} slug={config.illustrationSlug} />
     )}
 
     {has('stats') && (

@@ -19,6 +19,8 @@ interface ReferenceItem {
 }
 
 interface Props {
+  /** Button label for the timeline disclosure, from `solutions.disclosure.*`. */
+  timelineLabel: string;
   problem: {
     overline: string;
     title: string;
@@ -35,7 +37,7 @@ interface Props {
   slug?: string;
 }
 
-const { problem, referenceItems = [], slug } = Astro.props;
+const { problem, referenceItems = [], slug, timelineLabel } = Astro.props;
 
 // The drawings are textless and decorative (the meaning lives in the copy
 // around them), so one file serves every locale and viewport, inlined so it
@@ -43,6 +45,7 @@ const { problem, referenceItems = [], slug } = Astro.props;
 const illustrationSvg = slug ? resolveSolutionIllustration(slug) : null;
 // Unique per mount: aria-describedby must point at an id that exists exactly once.
 const popIdBase = `sp-callout-src-${slug ?? 'page'}`;
+const timelinePopId = `sp-pop-timeline-${slug ?? 'page'}`;
 ---
 
 <section class="sp-problem" id="problem">
@@ -141,6 +144,26 @@ const popIdBase = `sp-callout-src-${slug ?? 'page'}`;
     )}
 
     {problem.timeline && (
+      <Fragment>
+      {/* THE TIMELINE IS THE THIRD TELLING, so it goes behind a click.
+          The title states the problem, the callouts prove it with numbers, and this
+          says the same thing a third time as a before/after strip. Measured on
+          /en/for-ctos it was 233px of a 1019px section for 24 words. Behind a trigger
+          the argument is still one click away for anyone who wants it, and the section
+          reads as claim + evidence instead of claim + evidence + re-enactment.
+          Native popover for the same reason as SPTechDiff: this is static Astro. */}
+      <button type="button" class="sp-disclosure-trigger" popovertarget={timelinePopId}>
+        {timelineLabel}
+      </button>
+
+      <div
+        class="sp-disclosure-pop"
+        id={timelinePopId}
+        popover="auto"
+        role="dialog"
+        aria-labelledby={`${timelinePopId}-title`}
+      >
+        <h3 class="sp-disclosure-pop-title" id={`${timelinePopId}-title`}>{timelineLabel}</h3>
       <div class="sp-timeline-contrast">
         <div class="sp-timeline-label old">{problem.timeline.oldLabel}</div>
         <div class="sp-timeline-old">
@@ -159,6 +182,8 @@ const popIdBase = `sp-callout-src-${slug ?? 'page'}`;
           ))}
         </div>
       </div>
+      </div>
+      </Fragment>
     )}
   </div>
 </section>

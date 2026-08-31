@@ -2,8 +2,8 @@
   "$meta": {
     "algorithm": "crc32",
     "sourceLanguage": "en",
-    "keyCount": 6012,
-    "sourceCommit": "ea3666bf981fb2cb4b1b1e2f30017f4e1ee9efaa"
+    "keyCount": 6013,
+    "sourceCommit": "33a71e981f5f607d1293695446c90d624e99013c"
   },
   "hashes": {
     "announcement.link": "767605c6",
@@ -6002,6 +6002,7 @@
     "solutions.constellation.title": "10ce3087",
     "solutions.disclosure.comparison": "fa33ae1e",
     "solutions.disclosure.mechanism": "7108ba0e",
+    "solutions.disclosure.timeline": "9c2bff74",
     "solutions.references.title": "1de05c6e",
     "solutions.roles.copy": "ed8814bc",
     "solutions.roles.property": "c024b29d",
