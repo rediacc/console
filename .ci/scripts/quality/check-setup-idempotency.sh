@@ -89,12 +89,34 @@ check_a() {
 # ---------------------------------------------------------------------------
 # B. `setup --check` changes nothing.
 # ---------------------------------------------------------------------------
+# A NEIGHBOUR'S TEST FIXTURE IS NOT EVIDENCE ABOUT `setup --check`.
+#
+# This snapshot is taken twice around one command, and under `npm run ci` twenty-two
+# gates share the tree. `gate-test:gate-paths-exist` plants a scan fixture INSIDE the
+# repo on purpose -- the detector it controls globs `.ci/scripts/**/*.ts`, so a fixture
+# outside the tree would prove nothing -- and names it
+# `.gate-paths-exist-<kind>-fixture.<pid>.ts`. If that lands between the two snapshots,
+# check B reports "setup --check changed the working tree" over a file `run.sh` never
+# touched. Observed 2026-08-31 in the pre-push lane:
+#
+#     FAIL B: setup --check changed the working tree
+#     < ?? .ci/scripts/.gate-paths-exist-noise-fixture.2530850.ts
+#
+# The filter is deliberately the DOTTED, PID-SUFFIXED fixture shape those gates already
+# share, applied to BOTH snapshots so it cannot hide a real change: a path `setup --check`
+# actually created would have to be named like another gate's throwaway fixture to slip
+# through, and nothing under run.sh is.
+tree_snapshot() {
+    (cd "$ROOT" && git status --porcelain 2>/dev/null) |
+        grep -vE '(^|/)\.[a-z0-9-]+-fixture\.[0-9]+\.[a-z]+$' | sort
+}
+
 check_b() {
     local out rc before after
-    before="$(cd "$ROOT" && git status --porcelain 2>/dev/null | sort)"
+    before="$(tree_snapshot)"
     out="$(cd "$ROOT" && NO_COLOR=1 ./run.sh setup --check 2>&1)"
     rc=$?
-    after="$(cd "$ROOT" && git status --porcelain 2>/dev/null | sort)"
+    after="$(tree_snapshot)"
 
     if [ "$before" != "$after" ]; then
         fail "B: setup --check changed the working tree"
