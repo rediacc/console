@@ -148,7 +148,7 @@ _verify_extracted_version() {
         log_warn "$base-linux-$arch: no version string found; cannot verify against lockfile ($want)"
         return 0
     }
-    if printf '%s\n' "$found" | grep -qxF "$want"; then
+    if grep -qxF "$want" <<<"$found"; then
         return 0
     fi
     log_error "$base-linux-$arch declares version(s) [$(printf '%s' "$found" | tr '\n' ' ')] but the lockfile requires $want"

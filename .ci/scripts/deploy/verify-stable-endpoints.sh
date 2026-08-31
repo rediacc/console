@@ -48,7 +48,7 @@ cd "$(get_repo_root)"
 echo "Verifying stable deployment..."
 
 INSTALL_SH=$(curl -fsSL https://www.rediacc.com/install.sh)
-if ! echo "$INSTALL_SH" | grep -q 'REDIACC_CHANNEL:-stable'; then
+if ! grep -q 'REDIACC_CHANNEL:-stable' <<<"$INSTALL_SH"; then
     echo "::error::www.rediacc.com/install.sh is not baked to channel=stable"
     echo "$INSTALL_SH" | grep -E 'REDIACC_CHANNEL' || true
     exit 1
@@ -56,7 +56,7 @@ fi
 echo "  marketing (install.sh): OK (channel=stable)"
 
 INSTALL_PS1=$(curl -fsSL https://www.rediacc.com/install.ps1)
-if ! echo "$INSTALL_PS1" | grep -qF '} else { "stable" }'; then
+if ! grep -qF '} else { "stable" }' <<<"$INSTALL_PS1"; then
     echo "::error::www.rediacc.com/install.ps1 is not baked to channel=stable"
     echo "$INSTALL_PS1" | grep -F '$Channel' || true
     exit 1
@@ -98,7 +98,7 @@ echo "  worker fingerprint (asset-path guard): OK (Inter-Regular.woff2=200)"
 # (above) rewrites REDIACC_CHANNEL:-edge → :-stable; this asserts it
 # worked and the upload actually landed.
 R2_SH=$(curl -fsSL https://releases.rediacc.com/cli/stable/install.sh)
-if ! echo "$R2_SH" | grep -q 'REDIACC_CHANNEL:-stable'; then
+if ! grep -q 'REDIACC_CHANNEL:-stable' <<<"$R2_SH"; then
     echo "::error::releases.rediacc.com/cli/stable/install.sh not baked to channel=stable"
     echo "$R2_SH" | grep -E 'REDIACC_CHANNEL' || true
     exit 1
@@ -106,7 +106,7 @@ fi
 echo "  R2 cli/stable/install.sh: OK (channel=stable)"
 
 R2_PS1=$(curl -fsSL https://releases.rediacc.com/cli/stable/install.ps1)
-if ! echo "$R2_PS1" | grep -qF '} else { "stable" }'; then
+if ! grep -qF '} else { "stable" }' <<<"$R2_PS1"; then
     echo "::error::releases.rediacc.com/cli/stable/install.ps1 not baked to channel=stable"
     exit 1
 fi
@@ -120,8 +120,8 @@ while read -r domain; do
         continue
     fi
     HDRS=$(curl -sI "${INFO_URL}" | tr -d '\r')
-    if echo "$HDRS" | grep -qi '^strict-transport-security:'; then
-        if ! echo "$HDRS" | grep -qi '^x-content-type-options: *nosniff'; then
+    if grep -qi '^strict-transport-security:' <<<"$HDRS"; then
+        if ! grep -qi '^x-content-type-options: *nosniff' <<<"$HDRS"; then
             echo "::warning::${domain} has HSTS but missing X-Content-Type-Options"
             continue
         fi

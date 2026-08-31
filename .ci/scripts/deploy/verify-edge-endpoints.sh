@@ -96,7 +96,7 @@ echo "Verifying edge deployment for v${VERSION}..."
 # Marketing worker — also verify the channel default was rewritten.
 _install_sh_baked() {
     INSTALL_SH=$(curl -fsSL https://edge.rediacc.com/install.sh 2>/dev/null) || return 1
-    echo "$INSTALL_SH" | grep -q 'REDIACC_CHANNEL:-edge'
+    grep -q 'REDIACC_CHANNEL:-edge' <<<"$INSTALL_SH"
 }
 if ! fetch_retry "install.sh channel" _install_sh_baked; then
     echo "::error::edge.rediacc.com/install.sh is not baked to channel=edge"
@@ -107,7 +107,7 @@ echo "  marketing (install.sh): OK (channel=edge)"
 
 _install_ps1_baked() {
     INSTALL_PS1=$(curl -fsSL https://edge.rediacc.com/install.ps1 2>/dev/null) || return 1
-    echo "$INSTALL_PS1" | grep -qF '} else { "edge" }'
+    grep -qF '} else { "edge" }' <<<"$INSTALL_PS1"
 }
 if ! fetch_retry "install.ps1 channel" _install_ps1_baked; then
     echo "::error::edge.rediacc.com/install.ps1 is not baked to channel=edge"
@@ -183,7 +183,7 @@ fi
 if [[ "$WORKERS_ONLY" != "true" ]]; then
     _r2_sh_baked() {
         R2_SH=$(curl -fsSL https://releases.rediacc.com/cli/edge/install.sh 2>/dev/null) || return 1
-        echo "$R2_SH" | grep -q 'REDIACC_CHANNEL:-edge'
+        grep -q 'REDIACC_CHANNEL:-edge' <<<"$R2_SH"
     }
     if ! fetch_retry "R2 install.sh channel" _r2_sh_baked; then
         echo "::error::releases.rediacc.com/cli/edge/install.sh not baked to channel=edge"
@@ -194,7 +194,7 @@ if [[ "$WORKERS_ONLY" != "true" ]]; then
 
     _r2_ps1_baked() {
         R2_PS1=$(curl -fsSL https://releases.rediacc.com/cli/edge/install.ps1 2>/dev/null) || return 1
-        echo "$R2_PS1" | grep -qF '} else { "edge" }'
+        grep -qF '} else { "edge" }' <<<"$R2_PS1"
     }
     if ! fetch_retry "R2 install.ps1 channel" _r2_ps1_baked; then
         echo "::error::releases.rediacc.com/cli/edge/install.ps1 not baked to channel=edge"
@@ -241,8 +241,8 @@ while read -r domain; do
         continue
     fi
     HDRS=$(curl -sI "${INFO_URL}" | tr -d '\r')
-    if echo "$HDRS" | grep -qi '^strict-transport-security:'; then
-        if ! echo "$HDRS" | grep -qi '^x-content-type-options: *nosniff'; then
+    if grep -qi '^strict-transport-security:' <<<"$HDRS"; then
+        if ! grep -qi '^x-content-type-options: *nosniff' <<<"$HDRS"; then
             echo "::error::${domain} has HSTS but missing X-Content-Type-Options: nosniff"
             FAILED=1
             continue

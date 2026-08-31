@@ -298,7 +298,7 @@ verify_version() {
 
     if [[ "$expected" == "latest" ]]; then
         # Any well-formed semver satisfies "latest", but it must be well formed.
-        echo "$output" | grep -qE '^v?[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9.]+)?$'
+        grep -qE '^v?[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9.]+)?$' <<<"$output"
         return
     fi
 
@@ -639,7 +639,7 @@ test_promotion_config_fixup() {
     }
 
     # Verify it contains the current channel
-    if ! echo "$repo_content" | grep -q "${REPO_CHANNEL}"; then
+    if ! grep -q "${REPO_CHANNEL}" <<<"$repo_content"; then
         log_error ".repo file does not contain channel '${REPO_CHANNEL}'"
         return 1
     fi
@@ -649,11 +649,11 @@ test_promotion_config_fixup() {
     local promoted
     promoted=$(echo "$repo_content" | sed "s|/${REPO_CHANNEL}/|/stable/|g")
 
-    if ! echo "$promoted" | grep -q "/stable/"; then
+    if ! grep -q "/stable/" <<<"$promoted"; then
         log_error "Promotion sed-fix failed: /stable/ not found"
         return 1
     fi
-    if echo "$promoted" | grep -q "/${REPO_CHANNEL}/"; then
+    if grep -q "/${REPO_CHANNEL}/" <<<"$promoted"; then
         log_error "Promotion sed-fix incomplete: /${REPO_CHANNEL}/ still present"
         return 1
     fi

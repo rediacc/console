@@ -80,12 +80,12 @@ main() {
                             continue
                         fi
                         # Skip if it's in a comment
-                        if echo "$line_content" | grep -qE "^\s*#"; then
+                        if grep -qE "^\s*#" <<<"$line_content"; then
                             continue
                         fi
                         # Skip YAML keys in heredocs (e.g., "timeout: 3s" in compose files)
                         # cmd followed by : is never a valid bash command invocation
-                        if echo "$line_content" | grep -qE "\\b${cmd}:"; then
+                        if grep -qE "\\b${cmd}:" <<<"$line_content"; then
                             continue
                         fi
 

@@ -50,11 +50,11 @@ echo "$out"
 
 # Loud-skip guard: the whole suite skips off-root/off-BTRFS. Require a non-zero
 # executed-spec count AND a passing TestCSISanity.
-if ! echo "$out" | grep -qE 'Ran [1-9][0-9]* of [0-9]+ Specs'; then
+if ! grep -qE 'Ran [1-9][0-9]* of [0-9]+ Specs' <<<"$out"; then
     echo "::error::csi-sanity ran zero specs — root/BTRFS prerequisites not met"
     exit 1
 fi
-if ! echo "$out" | grep -q -- '--- PASS: TestCSISanity'; then
+if ! grep -q -- '--- PASS: TestCSISanity' <<<"$out"; then
     echo "::error::csi-sanity did not PASS"
     exit 1
 fi

@@ -148,7 +148,7 @@ while IFS= read -r sha; do
         esac
         seen_prs="$seen_prs $pr_num"
         verbose_log "PR #$pr_num labels: ${labels:-<none>}"
-        if printf '%s\n' "${labels//,/$'\n'}" | grep -qx "bump-major"; then
+        if grep -qx "bump-major" <<<"${labels//,/$'\n'}"; then
             found_major=true
             verbose_log "Found bump-major label on PR #$pr_num"
         elif printf '%s\n' "${labels//,/$'\n'}" | grep -qx "bump-minor"; then

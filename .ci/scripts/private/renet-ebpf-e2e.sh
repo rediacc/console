@@ -32,7 +32,7 @@ echo "$out"
 
 # Loud-skip guard: these tests SKIP without root/bpffs/cgroup2. An all-skips run
 # is green-but-useless — fail unless at least one actually PASSed.
-if ! echo "$out" | grep -q -- '--- PASS: TestEBPF_'; then
+if ! grep -q -- '--- PASS: TestEBPF_' <<<"$out"; then
     echo "::error::ebpf_e2e executed zero tests (all skipped) — root/bpffs/cgroup2 prerequisites not met on this runner"
     exit 1
 fi

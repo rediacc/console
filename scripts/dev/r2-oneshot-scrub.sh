@@ -377,7 +377,7 @@ stage2d() {
                     continue
                 fi
                 # Keep if semver is in top-N
-                if echo "$top_versions" | grep -qxF "$semver"; then
+                if grep -qxF "$semver" <<<"$top_versions"; then
                     continue
                 fi
                 local tag="v${semver}, outside top-${keep_versions}"

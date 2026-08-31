@@ -135,7 +135,7 @@ decide() {
         pr_num="${row%% *}"
         labels="${row#"$pr_num"}"
         labels="${labels# }"
-        if printf '%s\n' "${labels//,/$'\n'}" | grep -qx "$SKIP_LABEL"; then
+        if grep -qx "$SKIP_LABEL" <<<"${labels//,/$'\n'}"; then
             skip_prs="${skip_prs}#${pr_num} "
         else
             keep_prs="${keep_prs}#${pr_num} "

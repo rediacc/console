@@ -27,7 +27,7 @@ echo "$out"
 # Loud guard: each named root test must actually PASS (t.Fatal off-root, so a
 # non-root run would have already failed rather than silently skipped).
 for t in TestSaveState_SetsOwnership TestSaveState_OwnershipMatchesMountDir TestLoadState_PreservesData; do
-    if ! echo "$out" | grep -q -- "--- PASS: $t"; then
+    if ! grep -q -- "--- PASS: $t" <<<"$out"; then
         echo "::error::$t did not PASS (root-tagged repository test)"
         exit 1
     fi
