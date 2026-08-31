@@ -1,5 +1,6 @@
 import { Turnstile, type TurnstileInstance } from '@marsidev/react-turnstile';
 import React, { useRef, useState } from 'react';
+import { captchaMessage, useCaptchaGuard } from '../hooks/useCaptchaGuard';
 import { useLanguage } from '../hooks/useLanguage';
 // Route-scoped translations: this island hydrates on ONE page, so its strings ride
 // this component's chunk instead of the catalog every route downloads.
@@ -118,7 +119,8 @@ const PartnerApplicationForm: React.FC = () => {
   const [isDistributor, setIsDistributor] = useState(false);
   const [howHeard, setHowHeard] = useState('');
   const [consent, setConsent] = useState(false);
-  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
+  // Shared state machine; see useCaptchaGuard for the widget-never-mounted case.
+  const captcha = useCaptchaGuard();
 
   const contactNameRef = useRef<HTMLInputElement>(null);
   const emailRef = useRef<HTMLInputElement>(null);
@@ -156,9 +158,11 @@ const PartnerApplicationForm: React.FC = () => {
       setErrorMsg(t(`${NS}.errors.consent`));
       return;
     }
-    if (captchaEnabled && !turnstileToken) {
+    if (captchaEnabled && !captcha.token) {
       setState('error');
-      setErrorMsg(t(`${NS}.errors.captcha`));
+      setErrorMsg(
+        captchaMessage(captcha, t(`${NS}.errors.captchaUnavailable`), t(`${NS}.errors.captcha`))
+      );
       return;
     }
 
@@ -183,7 +187,7 @@ const PartnerApplicationForm: React.FC = () => {
           howHeard: orUndef(howHeard),
           consent,
           company_url: honeypotValue === '' ? undefined : honeypotValue,
-          turnstileToken: turnstileToken ?? undefined,
+          turnstileToken: captcha.token ?? undefined,
         }),
       });
 
@@ -193,7 +197,7 @@ const PartnerApplicationForm: React.FC = () => {
       }
 
       setState('success');
-      setTurnstileToken(null);
+      captcha.reset();
       const utm =
         (window as unknown as { __pa_get_utm?: () => Record<string, string> }).__pa_get_utm?.() ??
         {};
@@ -208,7 +212,7 @@ const PartnerApplicationForm: React.FC = () => {
       setErrorMsg(err instanceof Error ? err.message : t(`${NS}.errors.generic`));
       // Turnstile tokens are single-use: the failed request consumed this one,
       // so reset the widget or every retry would fail captcha until a reload.
-      setTurnstileToken(null);
+      captcha.reset();
       turnstileRef.current?.reset();
     }
   };
@@ -427,10 +431,24 @@ const PartnerApplicationForm: React.FC = () => {
           ref={turnstileRef}
           siteKey={turnstileSiteKey}
           options={{ action: 'partner_apply' }}
-          onSuccess={setTurnstileToken}
-          onExpire={() => setTurnstileToken(null)}
-          onError={() => setTurnstileToken(null)}
+          key={captcha.nonce}
+          onSuccess={captcha.onSuccess}
+          onExpire={captcha.onExpire}
+          onError={captcha.onError}
         />
+      )}
+      {captchaEnabled && captcha.failed && (
+        <p className="partner-form-error" role="status">
+          {t(`${NS}.errors.captchaUnavailable`)}{' '}
+          <button
+            type="button"
+            className="form-inline-action"
+            onClick={captcha.retry}
+            data-track="captcha_retry"
+          >
+            {t(`${NS}.errors.captchaRetry`)}
+          </button>
+        </p>
       )}
 
       <button type="submit" className="partner-form-submit" disabled={disabled}>

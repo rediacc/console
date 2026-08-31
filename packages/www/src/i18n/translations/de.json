@@ -26,6 +26,8 @@
     "title": "Der Unterschied"
   },
   "captchaRequired": "Bitte vervollständigen Sie die Captcha-Verifizierung.",
+  "captchaUnavailable": "Die Verifizierung konnte nicht geladen werden: Bitte überprüfen Sie Ihre Verbindung oder einen Werbeblocker.",
+  "captchaRetry": "Verifizierung neu laden",
   "common": {
     "aria": {
       "breadcrumbNavigation": "Brotkrümel-Navigation",
@@ -949,6 +951,8 @@
       "form": {
         "errors": {
           "captcha": "Bitte lösen Sie das Captcha, um fortzufahren.",
+          "captchaUnavailable": "Die Verifizierung konnte nicht geladen werden: Bitte überprüfen Sie Ihre Verbindung oder einen Werbeblocker.",
+          "captchaRetry": "Verifizierung neu laden",
           "consent": "Bitte stimmen Sie der Kontaktaufnahme zu, damit wir auf Ihre Bewerbung antworten können.",
           "generic": "Etwas ist schiefgelaufen. Bitte versuchen Sie es erneut.",
           "requiredFields": "Bitte geben Sie Ihren Namen, Ihre geschäftliche E-Mail-Adresse, Ihr Unternehmen, Ihr Land und mindestens eine Vertriebsart an."
@@ -1112,7 +1116,7 @@
           "title": "Lassen Sie Ihren KI-Agent Ihre Infrastruktur verwalten."
         },
         "hero": {
-          "primaryCta": "Jetzt kostenlos testen",
+          "ctaLabel": "Server für Agenten bereitstellen",
           "subtitle": "CLI-first. SSH-basiert. JSON standardmäßig. Jeder rdc-Befehl ist für autonome Agenten gebaut: kein GUI, keine Browser-Automatisierung, keine benutzerdefinierten Integrationen.",
           "title": "Infrastruktur, die Ihr KI-Agent sofort versteht."
         },
@@ -1351,7 +1355,7 @@
           "withTag": "Mit Rediacc"
         },
         "hero": {
-          "primaryCta": "Preise ansehen",
+          "ctaLabel": "Zum Festpreis starten",
           "subtitle": "Schützen Sie Ihre Geschäftsdaten auf Hardware, die Ihnen gehört. Ein fester Preis pro Maschine – ohne Gebühren pro Benutzer, ohne überraschende Cloud-Rechnungen, ohne dass der Anbieter Ihre Daten als Geisel hält.",
           "title": "Ein Pauschalpreis pro Server. Ihre Daten bleiben bei Ihnen."
         },
@@ -1541,7 +1545,7 @@
           "title": "Wie Rediacc im Vergleich abschneidet"
         },
         "hero": {
-          "primaryCta": "Demo vereinbaren",
+          "ctaLabel": "TCO senken",
           "subtitle": "Infrastruktur ohne Cloud-Markup. Keine Pro-Sitz-Preise. Recovery in Minuten, nicht Stunden.",
           "title": "Infrastruktur-TCO um 60 % senken. Auf Ihrer Hardware skalieren."
         },
@@ -1697,7 +1701,7 @@
           "title": "Probier's"
         },
         "hero": {
-          "primaryCta": "Kostenlos testen",
+          "ctaLabel": "Prod klonen",
           "subtitle": "CLI-first Infrastruktur: Produktion in 60 Sekunden geklont, Rollback unter 5 Minuten, auf deiner Hardware. Keine Tickets. Kein Warten. Alles bleibt bei dir.",
           "title": "Klone in einer Minute. Stelle her in fünf. Keine Tickets mehr."
         },
@@ -3086,6 +3090,7 @@
           "withTag": "MIT REDIACC"
         },
         "hero": {
+          "ctaLabel": "KI-Pentest starten",
           "subtitle": "Erstellen Sie identische Kopien Ihrer Infrastruktur und führen Sie KI-gestützte Penetrationstests durch — ohne die Produktion zu gefährden.",
           "title": "Produktion klonen. KI angreifen lassen."
         },
@@ -3395,6 +3400,7 @@
           "title": "Audit-Trail im Vergleich"
         },
         "hero": {
+          "ctaLabel": "Audit-Trail starten",
           "subtitle": "Vollständige Transparenz darüber, wer was wann und warum getan hat. Manipulationssichere Audit-Logs für jede Operation.",
           "title": "Jede Aktion protokolliert. Nichts verborgen."
         },
@@ -3729,6 +3735,7 @@
           "title": "Backup-Verifizierung im Vergleich"
         },
         "hero": {
+          "ctaLabel": "Backups verifizieren",
           "subtitle": "Warten Sie nicht auf eine Katastrophe, um herauszufinden, dass Ihr Backup beschädigt ist. Rediacc prüft jedes Backup im Moment seiner Erstellung.",
           "title": "Jedes Backup verifiziert. Automatisch."
         },
@@ -4048,6 +4055,7 @@
           "title": "Kein anderes Tool wechselt in Sekunden zwischen Clouds"
         },
         "hero": {
+          "ctaLabel": "Online bleiben",
           "subtitle": "Ihre Infrastruktur läuft auf mehreren Clouds. Wenn eine ausfällt, übernehmen die anderen. Automatisch.",
           "title": "Wenn AWS ausfällt, Sie nicht"
         },
@@ -4362,6 +4370,7 @@
           "withTag": "KONTINUIERLICH (REDIACC)"
         },
         "hero": {
+          "ctaLabel": "Kontinuierlich testen",
           "subtitle": "Führen Sie täglich Sicherheitstests auf frischen Produktionsklonen durch. Finden Sie Schwachstellen, wenn sie auftreten — nicht Monate später.",
           "title": "Sicherheit kontinuierlich testen. Nicht jährlich."
         },
@@ -4664,6 +4673,7 @@
           "title": "Souveränität im Vergleich"
         },
         "hero": {
+          "ctaLabel": "In Ihrer Region starten",
           "subtitle": "Sie hosten es. Sie halten die Schlüssel. Kein US-Anbieter kann zur Herausgabe von etwas gezwungen werden, das er nicht hat.",
           "title": "Souverän durch Architektur, nicht durch Zertifikat."
         },
@@ -5020,6 +5030,7 @@
           "title": "Verschlüsselungskontrolle im Vergleich"
         },
         "hero": {
+          "ctaLabel": "Eigene Schlüssel nutzen",
           "subtitle": "Jedes Backup wird mit Schlüsseln verschlüsselt, die Ihnen gehören. Nicht die Schlüssel Ihres Anbieters. Nicht geteilte Schlüssel. Nur Ihre.",
           "title": "Ihre Schlüssel. Ihre Verschlüsselung. Keine Ausnahmen."
         },
@@ -5358,6 +5369,7 @@
           "title": "Kein anderes Tool klont Ihren vollständigen Stack"
         },
         "hero": {
+          "ctaLabel": "Jetzt klonen",
           "subtitle": "Erstellen Sie exakte Kopien der Produktion — Anwendung, Datenbank und Konfiguration — für Entwicklung und Tests. Keine Tickets. Kein Warten.",
           "title": "Produktion in 60 Sekunden klonen"
         },
@@ -5727,6 +5739,7 @@
           "title": "DR-Test-Tools im Vergleich"
         },
         "hero": {
+          "ctaLabel": "Failover testen",
           "subtitle": "Führen Sie Katastrophensimulationen sicher durch. Wissen Sie, dass Ihre Wiederherstellung tatsächlich funktioniert. Keine Überraschungen, wenn es darauf ankommt.",
           "title": "Testen Sie Ihr Failover, bevor Sie es brauchen"
         },
@@ -6057,6 +6070,7 @@
           "title": "Das einzige Backup mit Unveränderlichkeit auf Dateisystemebene"
         },
         "hero": {
+          "ctaLabel": "Backups schützen",
           "subtitle": "Ihre Backups sind unveränderlich ab dem Moment ihrer Erstellung. Niemand kann sie ändern. Keine Hacker. Nicht einmal Sie.",
           "title": "Backups, die Ransomware nicht anrühren kann"
         },
@@ -6380,6 +6394,7 @@
           "title": "Was andere für ungenutzte Kapazität berechnen"
         },
         "hero": {
+          "ctaLabel": "Kosten senken",
           "subtitle": "Erstellen Sie Umgebungen bei Bedarf. Löschen Sie sie, wenn Sie fertig sind. Zahlen Sie nur für das, was Sie tatsächlich nutzen.",
           "title": "Hören Sie auf, für ungenutzte Umgebungen zu zahlen"
         },
@@ -6675,6 +6690,7 @@
           "title": "Wiederherstellungsfähigkeit im Vergleich"
         },
         "hero": {
+          "ctaLabel": "In Minuten wiederherstellen",
           "subtitle": "Nicht nur Dateien. Ganze Umgebungen — Server, Konfigurationen, Datenbanken — in Minuten wiederhergestellt und betriebsbereit.",
           "title": "Vollständige Umgebungswiederherstellung in Minuten"
         },
@@ -7006,6 +7022,7 @@
           "title": "Testfixtures vs. Produktionsklone"
         },
         "hero": {
+          "ctaLabel": "Integrationen starten",
           "subtitle": "Git Push löst eine frische Umgebung aus. Tests laufen auf Produktionsklonen. CI/CD funktioniert einfach — kein Custom-Scripting erforderlich.",
           "title": "In Ihren bestehenden Workflow einfügen"
         },
@@ -7257,6 +7274,7 @@
           "title": "Niemand sonst verschiebt einen laufenden Cluster samt seinen Daten"
         },
         "hero": {
+          "ctaLabel": "Cluster forken",
           "subtitle": "Ihr Cluster zieht als ganzes um: Nodes, Konfiguration, Daten. Auf eine andere Maschine oder in ein anderes Rechenzentrum. Die Umschaltung dauert Sekunden, nicht ein Wochenende.",
           "title": "Einen laufenden Kubernetes-Cluster forken oder verschieben"
         },
@@ -7490,6 +7508,8 @@
       },
       "leadMagnetModal": {
         "captchaRequired": "Bitte schließen Sie die Captcha-Verifizierung ab.",
+        "captchaUnavailable": "Die Verifizierung konnte nicht geladen werden: Bitte überprüfen Sie Ihre Verbindung oder einen Werbeblocker.",
+        "captchaRetry": "Verifizierung neu laden",
         "closeLabel": "Schließen",
         "description": "Geben Sie Ihre geschäftliche E-Mail-Adresse ein. Wir senden Ihnen den PDF-Link und legen eine Kopie in Ihrem Posteingang ab.",
         "disclaimer": "Eine E-Mail. Kein Verteiler. Abmeldung mit einem Klick.",
@@ -7603,6 +7623,7 @@
           "title": "Was andere bei der Migration nicht können"
         },
         "hero": {
+          "ctaLabel": "Sicher migrieren",
           "subtitle": "Wechsel zwischen Servern, Clouds oder Anbietern? Ihre Daten bleiben verschlüsselt – vom Start bis ins Ziel. Keine Exposition. Kein Datenverlust.",
           "title": "Sicher migrieren – ohne Datenverlust"
         },
@@ -7960,6 +7981,7 @@
           "title": "Code-Klonen vs. Umgebungs-Klonen"
         },
         "hero": {
+          "ctaLabel": "Produktion angleichen",
           "subtitle": "Kein 'es funktioniert auf meinem Rechner' mehr. Jede Entwicklungsumgebung ist ein identischer Klon der Produktion.",
           "title": "Entwicklungsumgebungen, die der Produktion entsprechen. Exakt."
         },
@@ -8266,6 +8288,7 @@
           "title": "Kein anderes Tool stellt so schnell wieder her"
         },
         "hero": {
+          "ctaLabel": "Schneller wiederherstellen",
           "subtitle": "Wenn Ransomware zuschlägt, kostet jede Minute Geld. Rediacc bringt Sie wieder online, bevor sich der Schaden ausbreitet.",
           "title": "Wiederherstellung in Minuten. Nicht Tagen."
         },
@@ -8577,6 +8600,7 @@
           "title": "Aufbewahrungskonformität im Vergleich"
         },
         "hero": {
+          "ctaLabel": "Aufbewahrung festlegen",
           "subtitle": "Konfigurierbare Aufbewahrungsrichtlinien, die Compliance-Anforderungen erfüllen. HIPAA, SOC2, DSGVO — standardmäßig abgedeckt.",
           "title": "Bewahren Sie Ihre Daten so lange auf, wie das Gesetz es verlangt"
         },
@@ -8925,6 +8949,7 @@
           "title": "Kein anderes Tool testet Patches auf echten Produktionsdaten"
         },
         "hero": {
+          "ctaLabel": "Sicher testen",
           "subtitle": "Klonen Sie Ihre Produktionsumgebung. Wenden Sie den Patch an. Sehen Sie, was bricht. Rollen Sie bei Bedarf zurück. Alles ohne die Produktion zu berühren.",
           "title": "OS-Updates ohne Risiko testen"
         },
@@ -9283,6 +9308,7 @@
           "title": "Kein anderes Tool migriert Ihren vollständigen Stack in Minuten"
         },
         "hero": {
+          "ctaLabel": "Überall betreiben",
           "subtitle": "Überall deployen. Jederzeit migrieren. Keine Lock-in-Verträge. Keine proprietären Formate. Ihre Daten bleiben Ihre.",
           "title": "Ihre Infrastruktur. Ihre Wahl. Immer."
         },
@@ -9585,6 +9611,7 @@
           "withTag": "Mit Rediacc"
         },
         "hero": {
+          "ctaLabel": "Schwachstellen beheben",
           "subtitle": "Finden, testen und patchen Sie Sicherheitslücken auf sicheren Klonen. Deployen Sie Fixes mit Vertrauen in die Produktion.",
           "title": "Schwachstellen beheben, bevor Angreifer kommen"
         },
@@ -10285,6 +10312,10 @@
     "constellation": {
       "centre": "Jede Lösung ist eine Aktion an einer Kopie deines Live-Systems.",
       "title": "Weitere Lösungen entdecken"
+    },
+    "disclosure": {
+      "mechanism": "Mechanismus ansehen",
+      "comparison": "Alle Tools vergleichen"
     },
     "references": {
       "title": "Quellen"

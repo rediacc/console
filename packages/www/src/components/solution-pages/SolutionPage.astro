@@ -41,7 +41,7 @@ import { slugsForRole } from './constellation';
 import { createTranslator } from '../../i18n/utils';
 import type { Language } from '../../i18n/types';
 import { SOLUTION_PAGES, CATEGORY_CTA_MAP } from '../../config/solution-pages';
-import { SITE_URL, EXTERNAL_LINKS } from '../../config/constants';
+import { SITE_URL, EXTERNAL_LINKS, ACCOUNT_PATH } from '../../config/constants';
 import Breadcrumb from '../Breadcrumb.astro';
 import '../../styles/solution-pages.css';
 
@@ -81,6 +81,22 @@ const exploreHeading = t('solutions.constellation.title', 'Explore Other Solutio
 // is appended by the component, so this stays a plain noun in every locale.
 const sourcesTitle = t('solutions.references.title', 'Sources');
 
+// THE HERO CTA GOES TO THE ACCOUNT, always, and that is a deliberate split from
+// `ctaHref` above rather than a reuse of it. The bottom CTA stays routed by category
+// (`/contact?interest=...`, consultation booking, pricing) because that is the tailored,
+// higher-touch ask. The hero's job is the opposite: one self-serve action, no
+// qualification step, offered before the visitor has scrolled anywhere.
+//
+// The label is PER PAGE, an action rather than a product noun: "Start cloning", not
+// "Start free trial". It lives in the page's own subtree so each page names the thing
+// its reader came to do. `hero.title` is the fallback only so a page whose key has not
+// landed yet renders a button instead of a raw key.
+const heroCtaLabel = t(
+  `pages.solutionPages.${config.contentKey}.hero.ctaLabel` as any,
+  ''
+);
+const heroCta = heroCtaLabel ? { label: heroCtaLabel, href: ACCOUNT_PATH } : undefined;
+
 // Breadcrumb items
 const pageTitle = (content as any).hero?.title ?? slug;
 const breadcrumbItems = [
@@ -103,11 +119,11 @@ const breadcrumbItems = [
         as passed slot content in SPHero's `Astro.slots.has('default')` even
         when it renders nothing. */}
     {has('hero') && (has('video') ? (
-      <SPHero hero={(content as any).hero}>
+      <SPHero hero={(content as any).hero} cta={heroCta}>
         <SPSolutionVideo lang={lang} slug={slug} />
       </SPHero>
     ) : (
-      <SPHero hero={(content as any).hero} />
+      <SPHero hero={(content as any).hero} cta={heroCta} />
     ))}
 
     {has('problem') && (
@@ -125,6 +141,7 @@ const breadcrumbItems = [
         client:visible
         content={(content as any).calculator}
         preset={config.calculatorPreset}
+        closeLabel={t('common.close')}
       />
     )}
 
@@ -133,7 +150,11 @@ const breadcrumbItems = [
     )}
 
     {has('techDiff') && (
-      <SPTechDiff techDiff={(content as any).techDiff} />
+      <SPTechDiff
+        techDiff={(content as any).techDiff}
+        triggerLabel={t('solutions.disclosure.mechanism')}
+        popId="sp-pop-mechanism"
+      />
     )}
 
     {has('benefits') && (
@@ -158,6 +179,8 @@ const breadcrumbItems = [
 
     {has('competitorComparison') && config.competitors && (
       <SPComparisonTable
+        triggerLabel={t('solutions.disclosure.comparison')}
+        popId="sp-pop-comparison"
         comparison={(content as any).comparison}
         competitors={config.competitors}
         referenceItems={(content as any).references?.items}

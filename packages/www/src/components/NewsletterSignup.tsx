@@ -1,5 +1,6 @@
 import { Turnstile } from '@marsidev/react-turnstile';
 import React, { useRef, useState } from 'react';
+import { captchaMessage, useCaptchaGuard } from '../hooks/useCaptchaGuard';
 import { useLanguage } from '../hooks/useLanguage';
 import { useTranslation } from '../i18n/react';
 import '../styles/newsletter.css';
@@ -34,7 +35,8 @@ const NewsletterSignup: React.FC<Props> = ({
 }) => {
   const [state, setState] = useState<FormState>('idle');
   const [errorMsg, setErrorMsg] = useState('');
-  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
+  // Shared state machine; see useCaptchaGuard for the widget-never-mounted case.
+  const captcha = useCaptchaGuard();
   const inputRef = useRef<HTMLInputElement>(null);
   const currentLang = useLanguage();
   const { t } = useTranslation(currentLang);
@@ -54,9 +56,9 @@ const NewsletterSignup: React.FC<Props> = ({
 
     setState('loading');
     setErrorMsg('');
-    if (captchaEnabled && !turnstileToken) {
+    if (captchaEnabled && !captcha.token) {
       setState('error');
-      setErrorMsg(t('captchaRequired') || 'Please complete captcha verification.');
+      setErrorMsg(captchaMessage(captcha, t('captchaUnavailable'), t('captchaRequired')));
       return;
     }
     if (openOnSuccessUrl) {
@@ -71,7 +73,7 @@ const NewsletterSignup: React.FC<Props> = ({
           email,
           source,
           lang: currentLang,
-          turnstileToken: turnstileToken ?? undefined,
+          turnstileToken: captcha.token ?? undefined,
         }),
       });
 
@@ -81,7 +83,7 @@ const NewsletterSignup: React.FC<Props> = ({
       }
 
       setState('success');
-      setTurnstileToken(null);
+      captcha.reset();
       onSuccess?.();
       const utm =
         (window as unknown as { __pa_get_utm?: () => Record<string, string> }).__pa_get_utm?.() ??
@@ -168,10 +170,24 @@ const NewsletterSignup: React.FC<Props> = ({
           <Turnstile
             siteKey={turnstileSiteKey}
             options={{ action: 'newsletter_subscribe' }}
-            onSuccess={setTurnstileToken}
-            onExpire={() => setTurnstileToken(null)}
-            onError={() => setTurnstileToken(null)}
+            key={captcha.nonce}
+            onSuccess={captcha.onSuccess}
+            onExpire={captcha.onExpire}
+            onError={captcha.onError}
           />
+        )}
+        {captchaEnabled && captcha.failed && (
+          <p className="form-error" role="status">
+            {t('captchaUnavailable')}{' '}
+            <button
+              type="button"
+              className="form-inline-action"
+              onClick={captcha.retry}
+              data-track="captcha_retry"
+            >
+              {t('captchaRetry')}
+            </button>
+          </p>
         )}
       </form>
     </div>

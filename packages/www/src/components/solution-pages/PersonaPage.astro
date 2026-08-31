@@ -19,6 +19,7 @@
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import StructuredData from '../StructuredData.astro';
 import SPHero from './SPHero.astro';
+import SPSolutionVideo from './SPSolutionVideo.astro';
 import SPStatsBar from './SPStatsBar.astro';
 import SPProblem from './SPProblem.astro';
 import SPCostCalculator from './SPCostCalculator';
@@ -33,7 +34,7 @@ import SPSources from './SPSources.astro';
 import { createTranslator } from '../../i18n/utils';
 import type { Language } from '../../i18n/types';
 import { PERSONA_PAGES, PERSONA_CTA_MAP } from '../../config/persona-pages';
-import { SITE_URL, EXTERNAL_LINKS } from '../../config/constants';
+import { SITE_URL, EXTERNAL_LINKS, ACCOUNT_PATH } from '../../config/constants';
 import Breadcrumb from '../Breadcrumb.astro';
 import '../../styles/solution-pages.css';
 import '../../styles/persona-pages.css';
@@ -62,6 +63,18 @@ const has = (section: string) => config.sections.includes(section as any);
 const sourcesTitle = t('solutions.references.title', 'Sources');
 
 // Resolve CTA href: per-page override → persona default
+// THE HERO CTA GOES TO THE ACCOUNT, always, and deliberately NOT through the
+// resolution below. `PERSONA_CTA_MAP` sends the CTO to an external calendar and the
+// CEO to pricing, which is the right ask AFTER someone has read the page and the
+// wrong one before they have read anything. Measured: for-ctos had no self-serve
+// path anywhere on 7,150px, its only exit an external booking link at 89% depth.
+// The bottom CTA keeps that routing untouched; the hero adds the missing one.
+const heroCtaLabel = t(
+  `pages.personaPages.${config.contentKey}.hero.ctaLabel` as any,
+  ''
+);
+const heroCta = heroCtaLabel ? { label: heroCtaLabel, href: ACCOUNT_PATH } : undefined;
+
 const rawCtaHref = config.ctaHref ?? PERSONA_CTA_MAP[config.personaType];
 const ctaHref = rawCtaHref === 'CONSULTATION'
   ? EXTERNAL_LINKS.SCHEDULE_CONSULTATION
@@ -86,9 +99,17 @@ const breadcrumbItems = [
 >
   <div class="sp-page" data-persona={config.personaType}>
     <Breadcrumb items={breadcrumbItems} class="sp-breadcrumb" />
-    {has('hero') && (
-      <SPHero hero={(content as any).hero} />
-    )}
+    {/* The video rides INSIDE the hero as its media column, same as SolutionPage.astro
+        (operator item n7). A ternary, not a falsy expression child: an expression child
+        would count as passed slot content in SPHero's Astro.slots.has('default') even
+        when it renders nothing. */}
+    {has('hero') && (has('video') ? (
+      <SPHero hero={(content as any).hero} cta={heroCta}>
+        <SPSolutionVideo lang={lang} slug={slug} />
+      </SPHero>
+    ) : (
+      <SPHero hero={(content as any).hero} cta={heroCta} />
+    ))}
 
     {/*
       No `referenceItems`: `pages.personaPages.*` has never carried a `references`
@@ -109,6 +130,7 @@ const breadcrumbItems = [
         client:visible
         content={(content as any).calculator}
         preset={config.calculatorPreset}
+        closeLabel={t('common.close')}
       />
     )}
 
@@ -117,7 +139,11 @@ const breadcrumbItems = [
     )}
 
     {has('techDiff') && (
-      <SPTechDiff techDiff={(content as any).techDiff} />
+      <SPTechDiff
+        techDiff={(content as any).techDiff}
+        triggerLabel={t('solutions.disclosure.mechanism')}
+        popId="sp-pop-mechanism"
+      />
     )}
 
     {has('benefits') && (
@@ -126,6 +152,8 @@ const breadcrumbItems = [
 
     {has('competitorComparison') && config.competitors && (
       <SPComparisonTable
+        triggerLabel={t('solutions.disclosure.comparison')}
+        popId="sp-pop-comparison"
         comparison={(content as any).comparison}
         competitors={config.competitors}
       />
@@ -166,4 +194,9 @@ const breadcrumbItems = [
       url: `${SITE_URL}/${lang}/${slug}`,
     }}
   />
+
+  {/* The hero video mounts through the shared hydrator rather than as an island, because
+      `plyr` reads `document` at module scope and cannot be server-rendered. Same script
+      SolutionPage.astro loads for its own hero video. */}
+  <script src="../../scripts/tutorial-video-hydrate.ts"></script>
 </BaseLayout>

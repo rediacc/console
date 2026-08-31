@@ -1,5 +1,7 @@
 {
   "captchaRequired": "Please complete the captcha verification.",
+  "captchaUnavailable": "Verification could not load: check your connection or any ad blocker.",
+  "captchaRetry": "Reload verification",
   "common": {
     "close": "Close",
     "logoAlt": "Rediacc - Infrastructure Automation Platform",
@@ -211,6 +213,8 @@
         "successBody": "We've opened it in a new tab and emailed the link. Closing this in a moment.",
         "errorGeneric": "Something went wrong. Please try again or reach out at support@rediacc.com.",
         "captchaRequired": "Please complete the captcha verification.",
+        "captchaUnavailable": "Verification could not load: check your connection or any ad blocker.",
+        "captchaRetry": "Reload verification",
         "disclaimer": "One email. No marketing list. Unsubscribe with one click.",
         "closeLabel": "Close",
         "errorRequiredEmail": "Please enter your email address."

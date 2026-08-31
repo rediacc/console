@@ -21,6 +21,7 @@
 #   HOST_UID, HOST_GID   the operator's numeric ids
 #   DOCKER_GID           host docker group gid, for the bound socket (optional)
 #   DEVBOX_PORT          port openvscode-server listens on
+#   DEVBOX_TERM_PORT     port ttyd listens on (optional; no terminal without it)
 #   DEVBOX_WORKSPACE     directory to open (an absolute HOST path, bound 1:1)
 #   CONNECTION_TOKEN     optional; when empty the server runs without a token
 
@@ -30,6 +31,11 @@ CONTAINER_USER="${CONTAINER_USER:-vscode}"
 HOST_UID="${HOST_UID:?HOST_UID is required}"
 HOST_GID="${HOST_GID:?HOST_GID is required}"
 DEVBOX_PORT="${DEVBOX_PORT:-8080}"
+# No default. Empty means "this container has no terminal", which is exactly the
+# state of every container created before the -term route existed, and
+# devbox-autostart.sh treats it as such rather than guessing 7681 and colliding
+# with whatever else holds that port.
+DEVBOX_TERM_PORT="${DEVBOX_TERM_PORT:-}"
 DEVBOX_WORKSPACE="${DEVBOX_WORKSPACE:?DEVBOX_WORKSPACE is required}"
 CONNECTION_TOKEN="${CONNECTION_TOKEN:-}"
 
@@ -136,12 +142,12 @@ if [ -x "$AUTOSTART" ]; then
   log "dispatching service autostart (DEVBOX_AUTOSTART=${DEVBOX_AUTOSTART:-1})"
   if command -v setpriv >/dev/null 2>&1; then
     env HOME="$target_home" USER="$CONTAINER_USER" LOGNAME="$CONTAINER_USER" \
-      DEVBOX_WORKSPACE="$DEVBOX_WORKSPACE" \
+      DEVBOX_WORKSPACE="$DEVBOX_WORKSPACE" DEVBOX_TERM_PORT="$DEVBOX_TERM_PORT" \
       setpriv --reuid "$HOST_UID" --regid "$HOST_GID" --init-groups \
       "$AUTOSTART" 2>&1 | while IFS= read -r l; do log "$l"; done || true
   else
     su -s /bin/bash "$CONTAINER_USER" -c \
-      "DEVBOX_WORKSPACE='$DEVBOX_WORKSPACE' '$AUTOSTART'" 2>&1 |
+      "DEVBOX_WORKSPACE='$DEVBOX_WORKSPACE' DEVBOX_TERM_PORT='$DEVBOX_TERM_PORT' '$AUTOSTART'" 2>&1 |
       while IFS= read -r l; do log "$l"; done || true
   fi
 fi

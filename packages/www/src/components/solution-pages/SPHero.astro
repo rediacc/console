@@ -18,8 +18,9 @@
  *     black bottom CTA carries the action.
  *
  * Round 6 also brought the solution video INTO the hero: when a caller passes
- * children (SolutionPage does, PersonaPage does not), the hero becomes a
- * two-column grid: text on the reading start edge, video on the end edge.
+ * children (SolutionPage and PersonaPage both do, when their config lists
+ * `'video'`), the hero becomes a two-column grid: text on the reading start
+ * edge, video on the end edge.
  * DOM order is text-then-video, so the grid mirrors itself under RTL and the
  * single-column collapse leads with the title, not a dark rectangle.
  *
@@ -28,14 +29,33 @@
  * three short elements it reserved a whole viewport to centre them in, which is
  * exactly the measurement that took the homepage hero apart.
  */
+import AccountLink from '../AccountLink.astro';
+
 interface Props {
   hero: {
     title: string;
     subtitle: string;
   };
+  /**
+   * ONE primary action, and it reverses the round-6 ruling recorded above.
+   *
+   * That ruling ("the hero states the claim, the black bottom CTA carries the
+   * action") assumed visitors reach the bottom. Measured across all 25 pages at
+   * 1440x900 they do not have to: the pages run 7.7 to 9.8 screens and the first
+   * thing a visitor can act on sits at 84 to 91 percent of page depth on EVERY
+   * one of them, with zero of 25 offering anything inside the first viewport.
+   * A 45-second visitor never arrives.
+   *
+   * Optional, so every existing caller renders exactly as before. Operator
+   * decision, 2026-08-31.
+   */
+  cta?: {
+    label: string;
+    href: string;
+  };
 }
 
-const { hero } = Astro.props;
+const { hero, cta } = Astro.props;
 const hasMedia = Astro.slots.has('default');
 ---
 
@@ -43,6 +63,21 @@ const hasMedia = Astro.slots.has('default');
   <div class="sp-hero-content">
     <h1>{hero.title}</h1>
     <p class="sp-hero-sub">{hero.subtitle}</p>
+    {cta && (
+      <div class="sp-hero-cta">
+        {/* AccountLink, not a bare <a>: it carries the data-track-* contract the
+            rest of the site's CTAs report through, and it is what
+            SPHomeBottomCta and CfPricingCard already use. */}
+        <AccountLink
+          label={cta.label}
+          href={cta.href}
+          className="btn btn--primary sp-hero-cta-btn"
+          trackEvent="cta_click"
+          trackLabel="sp-hero-cta"
+          trackDest={cta.href}
+        />
+      </div>
+    )}
   </div>
   {hasMedia && (
     <div class="sp-hero-media" id="video">

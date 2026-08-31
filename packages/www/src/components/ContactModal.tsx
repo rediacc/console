@@ -1,6 +1,7 @@
 import { Turnstile } from '@marsidev/react-turnstile';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useLanguage } from '../hooks/useLanguage';
+import { captchaMessage, useCaptchaGuard } from '../hooks/useCaptchaGuard';
 import { useTranslation } from '../i18n/react';
 import Overlay from './Overlay';
 import type { Language } from '../i18n/types';
@@ -57,7 +58,8 @@ const ContactModal: React.FC<ContactModalProps> = ({ lang }) => {
   const messageRef = useRef<HTMLTextAreaElement>(null);
   const honeypotRef = useRef<HTMLInputElement>(null);
   const hasFiredStart = useRef(false);
-  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
+  // Shared state machine; see useCaptchaGuard for the widget-never-mounted case.
+  const captcha = useCaptchaGuard();
 
   const open = useCallback((interest?: string) => {
     if (interest && INTEREST_TO_SUBJECT[interest]) {
@@ -102,9 +104,11 @@ const ContactModal: React.FC<ContactModalProps> = ({ lang }) => {
       setErrorMsg(t('contactModal.errorRequiredFields'));
       return;
     }
-    if (captchaEnabled && !turnstileToken) {
+    if (captchaEnabled && !captcha.token) {
       setState('error');
-      setErrorMsg(t('captchaRequired') || 'Please complete captcha verification.');
+      // The widget is present and unsolved, or it never loaded at all. Only the second
+      // one needs a retry, and saying "complete the captcha" there points at nothing.
+      setErrorMsg(captchaMessage(captcha, t('captchaUnavailable'), t('captchaRequired')));
       return;
     }
 
@@ -120,7 +124,7 @@ const ContactModal: React.FC<ContactModalProps> = ({ lang }) => {
           source: 'contact-modal',
           lang: currentLang,
           company_url: honeypotRef.current?.value === '' ? undefined : honeypotRef.current?.value,
-          turnstileToken: turnstileToken ?? undefined,
+          turnstileToken: captcha.token ?? undefined,
         }),
       });
 
@@ -130,7 +134,7 @@ const ContactModal: React.FC<ContactModalProps> = ({ lang }) => {
       }
 
       setState('success');
-      setTurnstileToken(null);
+      captcha.reset();
       const utm =
         (window as unknown as { __pa_get_utm?: () => Record<string, string> }).__pa_get_utm?.() ??
         {};
@@ -284,12 +288,26 @@ const ContactModal: React.FC<ContactModalProps> = ({ lang }) => {
 
           {captchaEnabled && (
             <Turnstile
+              key={captcha.nonce}
               siteKey={turnstileSiteKey}
               options={{ action: 'contact_submit' }}
-              onSuccess={setTurnstileToken}
-              onExpire={() => setTurnstileToken(null)}
-              onError={() => setTurnstileToken(null)}
+              onSuccess={captcha.onSuccess}
+              onExpire={captcha.onExpire}
+              onError={captcha.onError}
             />
+          )}
+          {captchaEnabled && captcha.failed && (
+            <p className="form-error" role="status">
+              {t('captchaUnavailable')}{' '}
+              <button
+                type="button"
+                className="form-inline-action"
+                onClick={captcha.retry}
+                data-track="captcha_retry"
+              >
+                {t('captchaRetry')}
+              </button>
+            </p>
           )}
 
           <button type="submit" className="btn btn--primary" disabled={state === 'loading'}>

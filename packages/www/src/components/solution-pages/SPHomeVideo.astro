@@ -1,0 +1,44 @@
+---
+/**
+ * The homepage solution video, as its own section.
+ *
+ * Not inside SPHomeHero: that hero was deliberately stripped down (operator
+ * decisions L5, n6 in SPHomeHero.astro's own note -- no terminal, no CTA,
+ * height set by three short lines of text), so putting a video into it would
+ * undo that. `.sp-hero-media` is reused for its toolbar/mobile-width rules
+ * (`solution-video.css`, `solution-pages.css`) without wrapping in
+ * `.sp-hero-split`, so the desktop two-column grid those rules pair with
+ * never applies here.
+ */
+import type { Language } from '../../i18n/types';
+import SPSolutionVideo from './SPSolutionVideo.astro';
+
+interface Props {
+  lang: Language;
+}
+
+const { lang } = Astro.props as Props;
+---
+
+<section class="sp-home-video">
+  <div class="sp-home-video-inner sp-hero-media">
+    <SPSolutionVideo lang={lang} slug="home" />
+  </div>
+</section>
+
+<style>
+  .sp-home-video {
+    padding: 0 var(--space-12) var(--space-16);
+  }
+
+  .sp-home-video-inner {
+    max-width: 48rem;
+    margin: 0 auto;
+  }
+
+  @media (max-width: 900px) {
+    .sp-home-video {
+      padding: 0 var(--space-6) var(--space-10);
+    }
+  }
+</style>

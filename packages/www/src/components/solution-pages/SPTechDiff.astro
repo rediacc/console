@@ -1,5 +1,9 @@
 ---
 interface Props {
+  /** Button label, from the shared `solutions.disclosure.*` nouns. */
+  triggerLabel: string;
+  /** Unique per mount: a popover needs an id, and two on one page must not collide. */
+  popId: string;
   techDiff: {
     overline: string;
     title: string;
@@ -10,7 +14,8 @@ interface Props {
   };
 }
 
-const { techDiff } = Astro.props;
+const { techDiff, triggerLabel, popId } = Astro.props;
+const titleId = `${popId}-title`;
 ---
 
 <section class="sp-tech-detail">
@@ -19,16 +24,56 @@ const { techDiff } = Astro.props;
     <h2>{techDiff.title}</h2>
     <p>{techDiff.description}</p>
 
-    <div class="sp-tech-detail-compare">
-      <div class="sp-tech-detail-col-header traditional">{techDiff.traditionalLabel}</div>
-      <div class="sp-tech-detail-col-header rediacc">{techDiff.rediaccLabel}</div>
+    {/* A real <table>, not a CSS grid, and the labels are repeated INSIDE every
+        cell for the single-column collapse.
 
-      {techDiff.rows.map((row) => (
-        <Fragment>
-          <div class="sp-tech-detail-cell">{row.traditional}</div>
-          <div class="sp-tech-detail-cell">{row.rediacc}</div>
-        </Fragment>
-      ))}
+        The grid version carried column identity in grid POSITION alone. Below
+        768px `solution-pages.css` collapses it to one column, so the two headers
+        stayed at the top and every cell under them became unlabelled: measured at
+        390px, 10 cells against exactly ONE "traditional" and ONE "rediacc"
+        header. The only surviving cue was a 20%-alpha tint, which is not one.
+
+        `SPComparisonTable.astro` next door was already a proper table, so this is
+        adopting the sibling that works rather than patching the media query.
+
+        The per-cell label is `aria-hidden`: `<th scope="col">` already gives
+        assistive tech the association at every width, so this span is purely the
+        visual half and must not be announced twice. It adds no i18n keys - both
+        strings are the ones the header row already renders. */}
+    {/* NATIVE POPOVER, not a React island. This component is static Astro, and adding
+        React to get a dialog would ship a runtime for a table. `popover="auto"` gives
+        light-dismiss, Escape and top-layer stacking from the platform, and the pattern is
+        already on this page: SolutionConstellation.astro:289 does exactly this.
+        WITHOUT JS the button is inert and the table stays in the DOM, so a crawler and a
+        no-script visitor still get the whole comparison. */}
+    <button type="button" class="sp-disclosure-trigger" popovertarget={popId}>
+      {triggerLabel}
+    </button>
+
+    <div class="sp-disclosure-pop" id={popId} popover="auto" role="dialog" aria-labelledby={titleId}>
+      <h3 class="sp-disclosure-pop-title" id={titleId}>{techDiff.title}</h3>
+    <table class="sp-tech-detail-compare">
+      <thead>
+        <tr>
+          <th scope="col" class="sp-tech-detail-col-header traditional">{techDiff.traditionalLabel}</th>
+          <th scope="col" class="sp-tech-detail-col-header rediacc">{techDiff.rediaccLabel}</th>
+        </tr>
+      </thead>
+      <tbody>
+        {techDiff.rows.map((row) => (
+          <tr>
+            <td class="sp-tech-detail-cell">
+              <span class="sp-tech-detail-cell-label" aria-hidden="true">{techDiff.traditionalLabel}</span>
+              {row.traditional}
+            </td>
+            <td class="sp-tech-detail-cell">
+              <span class="sp-tech-detail-cell-label" aria-hidden="true">{techDiff.rediaccLabel}</span>
+              {row.rediacc}
+            </td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
     </div>
   </div>
 </section>

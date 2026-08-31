@@ -10,6 +10,7 @@
 #   docker compose -f docker-compose.server.yml up -d
 #   Open http://localhost:8080 in browser (VS Code)
 #   Open http://localhost:6080/vnc.html in browser (Desktop)
+#   Open http://localhost:7681 in browser (Terminal: ttyd + a persistent tmux session)
 #
 # With authentication:
 #   CONNECTION_TOKEN=your-secret docker compose -f docker-compose.server.yml up -d
@@ -30,6 +31,7 @@ services:
     ports:
       - "8080:8080" # VS Code browser access
       - "6080:6080" # Desktop (noVNC)
+      - "7681:7681" # Terminal (ttyd + tmux)
       - "3000:3000" # Console dev server
     environment:
       - HOME=/home/vscode
@@ -41,6 +43,11 @@ services:
       bash -c "
         # Start desktop environment
         start-desktop.sh
+
+        # Start the browser terminal (ttyd + a persistent tmux session).
+        # setsid, because the exec at the end of this command replaces the shell
+        # that owns it.
+        setsid start-ttyd.sh > /tmp/ttyd.log 2>&1 &
 
         # Start KVM if available
         start-kvm.sh

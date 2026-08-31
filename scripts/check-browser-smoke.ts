@@ -1,5 +1,5 @@
 #!/usr/bin/env tsx
-import { existsSync, readFileSync, statSync } from 'node:fs';
+import { existsSync } from 'node:fs';
 /**
  * Drive the BUILT site in a real browser and fail on anything a visitor would see break.
  *
@@ -21,9 +21,9 @@ import { existsSync, readFileSync, statSync } from 'node:fs';
  * Usage:
  *   npx tsx scripts/check-browser-smoke.ts [--selftest] [--routes a,b] [--keep]
  */
-import { createServer } from 'node:http';
 import path from 'node:path';
 import process from 'node:process';
+import { serveDist } from './lib/serve-dist.ts';
 
 const ROOT = path.resolve(import.meta.dirname, '..');
 const DIST = path.join(ROOT, 'packages/www/dist');
@@ -44,43 +44,6 @@ const ROUTES = [
   '/en/pricing',
   '/ja/',
 ];
-
-const MIME: Record<string, string> = {
-  '.html': 'text/html; charset=utf-8',
-  '.js': 'text/javascript; charset=utf-8',
-  '.mjs': 'text/javascript; charset=utf-8',
-  '.css': 'text/css; charset=utf-8',
-  '.json': 'application/json; charset=utf-8',
-  '.svg': 'image/svg+xml',
-  '.woff2': 'font/woff2',
-};
-
-function serve(dir: string): Promise<{ port: number; close: () => Promise<void> }> {
-  const server = createServer((req, res) => {
-    const url = (req.url ?? '/').split('?')[0];
-    const candidates = [
-      path.join(dir, url),
-      path.join(dir, url, 'index.html'),
-      path.join(dir, `${url}.html`),
-    ];
-    for (const c of candidates) {
-      if (existsSync(c) && statSync(c).isFile()) {
-        res.writeHead(200, { 'content-type': MIME[path.extname(c)] ?? 'application/octet-stream' });
-        res.end(readFileSync(c));
-        return;
-      }
-    }
-    // A REAL 404. Serving index.html for a miss would hide every broken link.
-    res.writeHead(404, { 'content-type': 'text/plain' });
-    res.end('not found');
-  });
-  return new Promise((resolve) => {
-    server.listen(0, '127.0.0.1', () => {
-      const port = (server.address() as { port: number }).port;
-      resolve({ port, close: () => new Promise((r) => server.close(() => r())) });
-    });
-  });
-}
 
 interface Finding {
   route: string;
@@ -137,7 +100,7 @@ async function main(): Promise<void> {
     console.error(`  underlying: ${(e as Error).message.split('\n')[0]}`);
     process.exit(1);
   }
-  const { port, close } = await serve(DIST);
+  const { port, close } = await serveDist(DIST);
   const base = `http://127.0.0.1:${port}`;
   const browser = await chromium.launch();
   const findings: Finding[] = [];

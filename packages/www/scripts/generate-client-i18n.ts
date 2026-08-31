@@ -83,6 +83,11 @@ type BundleName = keyof typeof BUNDLES;
 const CLIENT_KEY_PATHS: Record<BundleName, readonly string[]> = {
   client: [
     'captchaRequired',
+    // Its two siblings, added with the captcha recovery path: a widget that fails to
+    // mount now says so and offers a retry, and both strings render inside client
+    // islands (ContactForm, ContactModal, NewsletterSignup, SPRoiCalculator).
+    'captchaUnavailable',
+    'captchaRetry',
     'common',
     'contactModal',
     // LearnMenu renders the six docs categories by their translated LABEL while

@@ -29,6 +29,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { collectActionRefs } from './lib/action-refs.js';
 import { parseDockerfileVersions } from './lib/dockerfile-versions.js';
+import { DEVCONTAINER_PIN_SOURCES } from './lib/devcontainer-pin-sources.js';
 import { EMBED_ASSET_SOURCES } from './lib/embed-asset-sources.js';
 import {
   blockeredEntries,
@@ -151,6 +152,28 @@ function embedAssetBases(root: string): Universe | null {
   return { names, source: `${names.size} embedded assets in ${path.basename(dockerfile)}` };
 }
 
+/**
+ * Devcontainer pin bases that are BOTH a Dockerfile ARG and a watched source.
+ *
+ * The intersection, not either side alone, and that is the point: a hold on a
+ * base the gate does not watch suppresses nothing, and so does a hold on an ARG
+ * that has been renamed or deleted. Either way the entry is a claim about a
+ * suppression that cannot fire.
+ */
+function devcontainerPinBases(root: string): Universe | null {
+  const dockerfile = path.join(root, '.devcontainer', 'Dockerfile');
+  if (!fs.existsSync(dockerfile)) return null;
+  let versions: Map<string, string>;
+  try {
+    versions = parseDockerfileVersions(fs.readFileSync(dockerfile, 'utf-8')).versions;
+  } catch {
+    return null;
+  }
+  const known = new Set(DEVCONTAINER_PIN_SOURCES.map((s) => s.base));
+  const names = new Set([...versions.keys()].filter((k) => known.has(k)));
+  return { names, source: `${names.size} watched devcontainer pins in .devcontainer/Dockerfile` };
+}
+
 /** Every third-party action referenced by a workflow or composite action. */
 function referencedActions(root: string): Universe | null {
   const refs = collectActionRefs(root);
@@ -231,6 +254,21 @@ const PROBES: Probe[] = [
       `"${entry}" is not an embedded asset any more (oracle: ${u.source}); it is absent from the renet Dockerfile ARGs, the known source list, or both.`,
     (entry, line) => [
       `remove line ${line} ("${entry}") from .embed-assets-upgrade-blocklist, then: npm run check:ci-embed-asset-freshness`,
+    ]
+  ),
+  // minUniverse 1, not the 3-5 its neighbours use: this inventory deliberately
+  // holds ONE entry (see scripts/lib/devcontainer-pin-sources.ts on why glab,
+  // bottom and openvscode-server are not seeded), so any higher floor would
+  // disable the probe rather than guard it.
+  listProbe(
+    'devcontainer-pins',
+    '.devcontainer-upgrade-blocklist',
+    devcontainerPinBases,
+    1,
+    (entry, u) =>
+      `"${entry}" is not a watched devcontainer pin (oracle: ${u.source}); it is absent from .devcontainer/Dockerfile's ARGs, from scripts/lib/devcontainer-pin-sources.ts, or both.`,
+    (entry, line) => [
+      `remove line ${line} ("${entry}") from .devcontainer-upgrade-blocklist, then: npm run check:ci-devcontainer-pins`,
     ]
   ),
   listProbe(
@@ -558,6 +596,7 @@ function main(): void {
     '.deps-upgrade-blocklist',
     '.go-deps-upgrade-blocklist',
     '.embed-assets-upgrade-blocklist',
+    '.devcontainer-upgrade-blocklist',
     '.actions-upgrade-blocklist',
     '.cli-i18n-orphan-allowlist',
     '.audit-allowlist',

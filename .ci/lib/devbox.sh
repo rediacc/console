@@ -518,6 +518,7 @@ devbox_up() { # devbox_up [force_pull] [--no-rehost]
 
     local vscode_port=$((base_port + DEVBOX_OFFSET_VSCODE))
     local studio_port=$((base_port + DEVBOX_OFFSET_STUDIO))
+    local term_port=$((base_port + DEVBOX_OFFSET_TERM))
 
     local -a binds=()
     # The repo at its IDENTICAL path. Non-negotiable: worktree gitdir links are
@@ -533,6 +534,14 @@ devbox_up() { # devbox_up [force_pull] [--no-rehost]
     # `[ -x "$AUTOSTART" ]` guard turns "the file is not there" into "autostart
     # is disabled", which looks exactly like working as intended.
     binds+=(-v "$DEVBOX_LIB_DIR/../../.devcontainer/devbox-autostart.sh:/usr/local/bin/devbox-autostart.sh:ro")
+    # start-ttyd.sh, for the third time and the same reason. It is ALSO baked into
+    # the image (Dockerfile COPYs it, and the hub invokes that copy by name), so
+    # skipping this bind looks harmless -- the file is there either way. It is not:
+    # the baked copy is only as new as the last image publish, so every fix to the
+    # terminal would be untestable locally and land unverified. Measured while
+    # wiring this up: the container was running an August 23 copy whose idempotency
+    # guard read a PID file nothing ever wrote.
+    binds+=(-v "$DEVBOX_LIB_DIR/../../.devcontainer/start-ttyd.sh:/usr/local/bin/start-ttyd.sh:ro")
     [[ -S /var/run/docker.sock ]] && binds+=(-v /var/run/docker.sock:/var/run/docker.sock)
 
     # Credentials and agent config, named rather than the whole $HOME: ~/.ssh
@@ -596,6 +605,19 @@ devbox_up() { # devbox_up [force_pull] [--no-rehost]
         --label "traefik.http.routers.${slug}-db.entrypoints=web"
         --label "traefik.http.routers.${slug}-db.service=${slug}-db"
         --label "traefik.http.services.${slug}-db.loadbalancer.server.port=$studio_port"
+        # Browser terminal: ttyd serving an attach-or-create tmux session, started
+        # by devbox-autostart.sh. A ROUTE and not a published port, for the same
+        # reason as the three above -- on ChromeOS every published port needs its
+        # own manual forward, and the proxy is the machine's only ingress.
+        #
+        # ttyd's terminal is a WebSocket upgrade. Traefik v3 proxies Upgrade with
+        # no middleware, so there is nothing extra here; the thing to know is that
+        # a BROKEN upgrade still answers 200 on `/`, so the status probe below
+        # cannot see it and only a browser can.
+        --label "traefik.http.routers.${slug}-term.rule=Host(\`${slug}-term.${DEVBOX_DOMAIN}\`)"
+        --label "traefik.http.routers.${slug}-term.entrypoints=web"
+        --label "traefik.http.routers.${slug}-term.service=${slug}-term"
+        --label "traefik.http.services.${slug}-term.loadbalancer.server.port=$term_port"
     )
 
     log_step "Creating devbox for $workspace"
@@ -621,6 +643,7 @@ devbox_up() { # devbox_up [force_pull] [--no-rehost]
         -e HOST_GID="$(id -g)" \
         -e DOCKER_GID="${docker_gid:-}" \
         -e DEVBOX_PORT="$vscode_port" \
+        -e DEVBOX_TERM_PORT="$term_port" \
         -e DEVBOX_WORKSPACE="$workspace" \
         -e REDIACC_NPM_RUNTIME=devbox \
         -e REDIACC_DEV_BIND=0.0.0.0 \
@@ -731,9 +754,13 @@ devbox_status() {
         # reads "Bad Gateway" for a backend that was simply never started, or was
         # started on the HOST instead of inside the devbox.
         local _svc _label _code _host _routed
+        # The Terminal row carries NO hint on purpose: ttyd is started by
+        # devbox-autostart.sh, so there is no command an operator could run to
+        # fix a 502 here -- the answer is the container's ttyd.log, not a verb.
         for _svc in "code:VS Code::" \
             "account:Account:account:./run.sh account dev (INSIDE the devbox)" \
-            "db:Database:db:./run.sh account db (INSIDE the devbox)"; do
+            "db:Database:db:./run.sh account db (INSIDE the devbox)" \
+            "term:Terminal:term:"; do
             IFS=: read -r _ _label _suffix _hint <<<"$_svc"
             # `|| true` is load-bearing under `set -e`: curl exits non-zero on a
             # timeout (28) or refused connection (7), and a failing command

@@ -130,8 +130,27 @@
   color: var(--color-text-secondary);
   line-height: 1.5;
   max-width: 600px;
-  /* No trailing 32px any more: the hero CTA it used to clear is gone (n6). */
+  /* The trailing gap belongs to `.sp-hero-cta` below, NOT here. The CTA removed in
+     round 6 is back (operator decision, 2026-08-31), but it is optional per page, so
+     spacing that lives on the subtitle would leave a stray 32px under every hero that
+     renders without one. */
   margin: 0 auto;
+}
+
+/* The hero's one action. Measured before it existed: across all 25 solution and
+   persona pages the first thing a visitor could act on sat at 84 to 91 percent of
+   page depth, and not one page offered anything inside the first viewport. */
+.sp-hero-cta {
+  margin-top: 32px;
+}
+
+/* The hero is a two-column grid only when it has media; text-align comes from
+   `.sp-hero`, so the button follows the same axis as the copy above it in both
+   variants and needs no alignment of its own. */
+.sp-hero-cta-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
 }
 
 /* ========== HERO SPLIT (video beside the text, operator item n7) ==========
@@ -279,14 +298,57 @@
    illustration. Without one there is no second column to make, and the
    container stays the plain 720px prose block it has always been. */
 .sp-problem-split {
-  /* 32rem + 48px gap + 36rem: the hero's tracks, so the two bands line up. */
+  /* THREE CELLS ON TWO ROWS, not two side-by-side stacks.
+       row 1:  text (wide)          |  illustration
+       row 2:  numbers (full width) |
+     The old `32rem 36rem` gave the ILLUSTRATION the wider track to hold two small line
+     drawings, while the text column carried four stacked devices. Measured on
+     /en/for-ctos: 483px of content squeezed left, 324px of near-empty air right, 1019px
+     of section for 106 words.
+     The text track is now the wider one and the numbers get their own row across the
+     full width, so three chips sit in a ROW instead of a 184px stack. */
   max-width: 1136px;
   display: grid;
-  grid-template-columns: minmax(0, 32rem) minmax(0, 36rem);
+  grid-template-columns: minmax(0, 36rem) minmax(0, 26rem);
+  grid-template-areas:
+    'text illo'
+    'nums nums';
   justify-content: center;
   align-items: center;
   column-gap: 48px;
-  row-gap: 48px;
+  row-gap: 32px;
+}
+
+.sp-problem-split .sp-problem-text {
+  grid-area: text;
+}
+
+.sp-problem-split .sp-stat-callouts {
+  grid-area: nums;
+  /* A ROW of equal chips. Stacked, three chips cost 184px and left a 152px ragged edge;
+     side by side they cost about 70px and read as one set of evidence. */
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+}
+
+.sp-problem-split .sp-problem-illustration {
+  grid-area: illo;
+}
+
+/* Below the split, the grid collapses and the chips must stack again: three of these
+   side by side in a phone's width is three unreadable slivers. */
+@media (max-width: 900px) {
+  .sp-problem-split {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      'text'
+      'illo'
+      'nums';
+  }
+
+  .sp-problem-split .sp-stat-callouts {
+    grid-auto-flow: row;
+  }
 }
 .sp-problem-text {
   /* A grid item's automatic minimum is its content, so a long unbroken word in
@@ -582,6 +644,75 @@ button.sp-illustration-trigger:focus-visible {
   margin-bottom: 0;
   max-width: 500px;
 }
+/* The card that replaced 1,150px of always-on calculator.
+   It leads with the ANSWER at the default inputs, because a trigger that only says
+   "open the calculator" asks the reader for work before giving them anything. */
+.sp-calc-trigger {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  width: 100%;
+  margin-top: 24px;
+  padding: 20px 24px;
+  text-align: start;
+  background: var(--color-bg);
+  border: 1px solid var(--sp-border-light);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: border-color var(--transition-duration-base) var(--ease-standard);
+}
+
+.sp-calc-trigger:hover {
+  border-color: var(--sp-brand-primary);
+}
+
+.sp-calc-trigger:focus-visible {
+  outline: 2px solid var(--color-brand-primary);
+  outline-offset: 2px;
+}
+
+.sp-calc-trigger-figure {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.sp-calc-trigger-label {
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--sp-text-muted-light);
+}
+
+/* The number is the whole point of the card, so it carries the weight the section
+   heading used to. `tabular-nums` because it changes with the sliders in the dialog
+   and a reflowing figure reads as instability. */
+.sp-calc-trigger-value {
+  font-size: var(--font-size-2xl);
+  font-weight: 700;
+  line-height: 1.1;
+  color: var(--sp-text-primary);
+  font-variant-numeric: tabular-nums;
+}
+
+.sp-calc-trigger-cta {
+  flex: none;
+  font-weight: var(--font-weight-semibold);
+  color: var(--sp-brand-primary);
+}
+
+/* The dialog holds the full calculator, which was authored for a full-width section.
+   Overlay's `wide` panel plus this cap keeps the two result columns side by side. */
+.sp-calc-panel .sp-calculator {
+  margin-top: 0;
+  border: 0;
+  padding: 0;
+}
+
 .sp-calculator {
   margin-top: 40px;
   max-width: 700px;
@@ -1264,17 +1395,28 @@ button.sp-illustration-trigger:focus-visible {
   line-height: 1.7;
   margin-bottom: 32px;
 }
+/* A real table since the D2 fix. It used to be `display: grid` with
+   `grid-template-columns: 1fr 1fr`, which meant a cell's COLUMN was its only
+   identity; the 768px collapse to `1fr` then stranded ten cells under two
+   headers that never repeated. `table-layout: fixed` reproduces the old
+   equal-halves behaviour exactly. */
 .sp-tech-detail-compare {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 0;
+  width: 100%;
+  table-layout: fixed;
+  border-collapse: collapse;
   border: 1px solid var(--sp-border-light);
   border-radius: var(--radius-md);
   overflow: hidden;
   font-size: var(--font-size-sm);
 }
+
+/* Shown only in the single-column layout, where the header row is gone. */
+.sp-tech-detail-cell-label {
+  display: none;
+}
 .sp-tech-detail-col-header {
   padding: 14px 20px;
+  text-align: start;
   font-size: var(--font-size-xs);
   font-weight: 700;
   letter-spacing: 0.08em;
@@ -1294,14 +1436,20 @@ button.sp-illustration-trigger:focus-visible {
   border-bottom: 1px solid var(--sp-border-light);
   color: var(--sp-text-body);
   line-height: 1.4;
+  vertical-align: top;
 }
-.sp-tech-detail-cell:nth-child(even) {
+
+/* The Rediacc column is the SECOND cell of its row. This was
+   `:nth-child(even)` over a flat grid, which only worked because the two
+   headers made the count line up; inside a table the row is the parent, so the
+   position is stated directly. */
+.sp-tech-detail-cell:nth-child(2) {
   background: rgba(232, 245, 227, 0.2);
   color: var(--sp-text-primary);
   font-weight: 500;
 }
-.sp-tech-detail-cell:last-child,
-.sp-tech-detail-cell:nth-last-child(2) {
+
+.sp-tech-detail-compare tbody tr:last-child .sp-tech-detail-cell {
   border-bottom: none;
 }
 
@@ -1430,6 +1578,36 @@ button.sp-illustration-trigger:focus-visible {
   margin: 0 auto 48px;
   line-height: 1.6;
 }
+/* Owns the horizontal scroll so the table can stay a table. At desktop widths
+   there is nothing to scroll and this is an inert wrapper.
+
+   THE AFFORDANCE IS THE POINT, not decoration. The table scrolled before this
+   too; what it never did was say so, and a comparison whose final column is the
+   product being sold is worth nothing if the reader never learns it is there.
+   The right-edge fade is painted with a background-attachment trick rather than
+   a pseudo-element so it rides the scroll: it disappears exactly when there is
+   nothing further to reach. */
+.sp-comparison-scroll {
+  overflow-x: auto;
+  background:
+    linear-gradient(to right, var(--color-bg) 30%, rgba(255, 255, 255, 0)) left center,
+    linear-gradient(to left, var(--color-bg) 30%, rgba(255, 255, 255, 0)) right center,
+    radial-gradient(farthest-side at 0 50%, rgba(0, 0, 0, 0.16), rgba(0, 0, 0, 0)) left center,
+    radial-gradient(farthest-side at 100% 50%, rgba(0, 0, 0, 0.16), rgba(0, 0, 0, 0)) right center;
+  background-repeat: no-repeat;
+  background-size:
+    32px 100%,
+    32px 100%,
+    14px 100%,
+    14px 100%;
+  background-attachment: local, local, scroll, scroll;
+}
+
+.sp-comparison-scroll:focus-visible {
+  outline: 2px solid var(--color-brand-primary);
+  outline-offset: 2px;
+}
+
 .sp-comparison-table {
   width: 100%;
   border-collapse: collapse;
@@ -1821,11 +1999,44 @@ button.sp-illustration-trigger:focus-visible {
     border-right: none;
     border-bottom: 1px solid var(--sp-border-light);
   }
-  .sp-tech-detail-compare {
-    grid-template-columns: 1fr;
+  /* Single column, and every cell carries its own label.
+     The old rule here was `grid-template-columns: 1fr`, which stacked the cells
+     and left the two headers marooned at the top: from the third element down,
+     nothing said which side a statement belonged to. Dropping the header row and
+     labelling each cell is the standard responsive-table answer, and it keeps
+     the <th scope="col"> association intact for assistive tech at every width. */
+  .sp-tech-detail-compare,
+  .sp-tech-detail-compare tbody,
+  .sp-tech-detail-compare tr,
+  .sp-tech-detail-cell {
+    display: block;
+    width: 100%;
   }
-  .sp-tech-detail-col-header.traditional {
-    border-right: none;
+
+  .sp-tech-detail-compare thead {
+    display: none;
+  }
+
+  .sp-tech-detail-compare tbody tr + tr {
+    border-top: 1px solid var(--sp-border-light);
+  }
+
+  .sp-tech-detail-cell {
+    border-bottom: none;
+  }
+
+  .sp-tech-detail-cell-label {
+    display: block;
+    margin-bottom: 4px;
+    font-size: var(--font-size-xs);
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--sp-text-muted-light);
+  }
+
+  .sp-tech-detail-cell:nth-child(2) .sp-tech-detail-cell-label {
+    color: var(--sp-brand-primary);
   }
   .sp-stat-callouts {
     flex-direction: column;
@@ -1833,9 +2044,31 @@ button.sp-illustration-trigger:focus-visible {
   .sp-timeline-old {
     flex-wrap: wrap;
   }
+  /* The SCROLLER is `.sp-comparison-scroll`, not the table. `display: block` on
+     a <table> was how this scrolled before; it works and costs the column model,
+     which is what made a sticky label column impossible. The table stays a table
+     and overflows its wrapper instead.
+     `min-width` keeps the columns from squashing into unreadable slivers, so the
+     row genuinely scrolls rather than compressing to fit. */
   .sp-comparison-table {
-    display: block;
-    overflow-x: auto;
+    min-width: 34rem;
+  }
+
+  /* The label column stays put while the competitor columns scroll under it.
+     Without this the reader scrolls right to reach REDIACC and no longer knows
+     which capability the row is about. */
+  .sp-comparison-table th:first-child,
+  .sp-comparison-table td:first-child {
+    position: sticky;
+    left: 0;
+    z-index: 1;
+    background: var(--color-bg);
+  }
+
+  .sp-comparison-table thead th:first-child {
+    /* The header cell sits above both its own column and the scrolling row, so
+       it needs to win against the sticky body cells as well. */
+    z-index: 2;
   }
   .sp-impact-card {
     flex-direction: column;
@@ -2430,5 +2663,159 @@ button.sp-illustration-trigger:focus-visible {
   }
   .sp-download-short__title {
     font-size: var(--font-size-lg);
+  }
+}
+
+/* ===== DISCLOSURE (native popover) =====
+   Shared by SPTechDiff and SPComparisonTable. Both are static Astro, so the platform's
+   Popover API does the work a React dialog would otherwise ship a runtime for: light
+   dismiss, Escape, and top-layer stacking. The page-wide `::backdrop` dimming already
+   lives in public/styles/main.css and applies to every popover, so it is not repeated. */
+.sp-disclosure-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 24px;
+  padding: 12px 20px;
+  font: inherit;
+  font-weight: var(--font-weight-semibold);
+  color: var(--sp-brand-primary);
+  background: var(--color-bg);
+  border: 1px solid var(--sp-border-light);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: border-color var(--transition-duration-base) var(--ease-standard);
+}
+
+.sp-disclosure-trigger:hover {
+  border-color: var(--sp-brand-primary);
+}
+
+.sp-disclosure-trigger:focus-visible {
+  outline: 2px solid var(--color-brand-primary);
+  outline-offset: 2px;
+}
+
+/* `min()` rather than a fixed max-width: the comparison table is 7 columns wide and
+   wants every pixel on a laptop, while on a phone the popover must not exceed the
+   viewport or its own internal scroller becomes unreachable. */
+.sp-disclosure-pop {
+  /* CENTRED EXPLICITLY, because the site's reset takes the centring away.
+     A `[popover]` is `position: fixed; inset: 0; margin: auto` in the UA stylesheet, and
+     that `margin: auto` is what centres it in the top layer. `main.css:54` sets
+     `*, *::before, *::after { margin: 0 }`, which is a normal author rule and therefore
+     beats the UA default, so every popover here rendered pinned to the top-left corner
+     at x=0,y=0. Restoring `margin: auto` locally is the fix; widening the reset to
+     exclude [popover] would reach every popover on the site, including the
+     constellation's, which positions itself deliberately. */
+  margin: auto;
+  width: min(92vw, 60rem);
+  max-height: 86vh;
+  overflow-y: auto;
+  padding: 28px;
+  border: 1px solid var(--sp-border-light);
+  border-radius: var(--radius-md);
+  background: var(--color-bg);
+  color: var(--sp-text-body);
+}
+
+.sp-disclosure-pop-title {
+  margin: 0 0 20px;
+  font-size: var(--font-size-xl);
+  color: var(--sp-text-primary);
+}
+
+@media (max-width: 768px) {
+  .sp-disclosure-pop {
+    width: 94vw;
+    padding: 20px 16px;
+  }
+}
+
+/* ===== STAT CALLOUT SOURCE TOOLTIP =====
+   Gives back the attribution B4 removed, at zero layout cost.
+
+   NO JS AND NO TIMER, on purpose. Hover-to-open was removed from this site after two
+   live bugs (PersonaMegaMenu.tsx:186-191); both required a timer and a competing click
+   target, and a tooltip has neither. The other half of that ruling was that hover
+   excludes keyboard and touch, so this opens on `:hover`, `:focus-visible` AND
+   `:focus-within` and the chip carries `tabindex="0"`. */
+.sp-stat-callout {
+  position: relative;
+}
+
+.sp-stat-callout:focus-visible {
+  outline: 2px solid var(--color-brand-primary);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
+/* BESIDE the chip, not above it. Above collided with the paragraph's last line, and
+   there is a wide empty column to the inline-end anyway: the grid gives the illustration
+   576px to hold two small drawings, so the tooltip costs nothing by living there.
+   Falls back to above only when the chip is full-width and there is no room beside it
+   (the single-column layout below 900px). */
+.sp-callout-pop {
+  position: absolute;
+  inset-inline-start: calc(100% + 12px);
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 2;
+  width: max-content;
+  max-width: 20rem;
+  padding: 6px 10px;
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  letter-spacing: 0.02em;
+  color: var(--color-bg);
+  background: var(--sp-text-primary);
+  border-radius: var(--radius-sm);
+  /* `visibility` as well as opacity: an opacity-0 tooltip stays in the a11y tree and
+     gets announced out of context. Same reasoning as .nav-translate in main.css. */
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    opacity 80ms linear,
+    visibility 80ms linear;
+}
+
+.sp-stat-callout:hover .sp-callout-pop,
+.sp-stat-callout:focus-visible .sp-callout-pop,
+.sp-stat-callout:focus-within .sp-callout-pop {
+  opacity: 1;
+  visibility: visible;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sp-callout-pop {
+    transition: none;
+  }
+}
+
+/* ===== PROBLEM SECTION COMPOSITION =====
+   The crowding was never word count: measured on /en/for-ctos the section was 1019px for
+   106 words, laid out on a `512px 576px` grid where the WIDER column held two small line
+   drawings and the narrower one held everything real. The three chips were
+   `width: fit-content` at 403/512/361px, ragged by 152px on the right, which reads as
+   mess independently of how much text is in them. */
+.sp-stat-callouts {
+  display: grid;
+  gap: 10px;
+}
+
+/* One column, equal widths: the ragged right edge is gone and the three read as a set. */
+.sp-stat-callout {
+  width: 100%;
+}
+
+/* Below 900px the problem section is one column, so there is no space beside the chip
+   and the tooltip goes back above it. The paragraph it used to collide with is far
+   enough away at this width because the chips stack full-bleed under it. */
+@media (max-width: 900px) {
+  .sp-callout-pop {
+    inset-inline-start: 0;
+    top: auto;
+    bottom: calc(100% + 8px);
+    transform: none;
   }
 }

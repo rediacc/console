@@ -38,6 +38,7 @@ Everything is reached through one port via hostnames named after the worktree:
 | `http://<worktree>.localhost:8090` | VS Code |
 | `http://<worktree>-account.localhost:8090` | the app (after `account dev`): marketing at `/`, portal at `/account/`, API at `/account/api/` |
 | `http://<worktree>-db.localhost:8090` | database browser (after `account db`) |
+| `http://<worktree>-term.localhost:8090` | browser terminal — ttyd on a tmux session that survives a reload |
 
 **On ChromeOS forward exactly one port — 8090 — in Settings → Linux → Port
 forwarding.** Chrome resolves `*.localhost` itself, so that single forward covers

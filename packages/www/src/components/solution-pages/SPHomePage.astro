@@ -46,6 +46,7 @@
 import type { Language } from '../../i18n/types';
 import { createTranslator } from '../../i18n/utils';
 import SPHomeHero from './SPHomeHero.astro';
+import SPHomeVideo from './SPHomeVideo.astro';
 import SolutionConstellation from './SolutionConstellation.astro';
 import SPHomeNotASlice from './SPHomeNotASlice.astro';
 import HomeDifference from '../HomeDifference.astro';
@@ -61,6 +62,7 @@ const { t } = createTranslator(lang);
 
 <div class="sp-page">
   <SPHomeHero lang={lang} />
+  <SPHomeVideo lang={lang} />
   {/* `heading` is what makes this render an <h2> and take the .cx--boxed frame.
       Without it the `full` preset emits no heading at all, and the homepage's
       one <h1> is SPHomeHero's, so a second one here would be wrong anyway. */}
@@ -69,3 +71,8 @@ const { t } = createTranslator(lang);
   <HomeDifference lang={lang} />
   <SPHomeBottomCta lang={lang} />
 </div>
+
+{/* The homepage video mounts through the shared hydrator rather than as an island,
+    because `plyr` reads `document` at module scope and cannot be server-rendered.
+    Same script SolutionPage.astro loads for its own hero video. */}
+<script src="../../scripts/tutorial-video-hydrate.ts"></script>

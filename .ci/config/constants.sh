@@ -107,11 +107,17 @@ readonly DEVBOX_PORT_RANGE_START=17000
 readonly DEVBOX_PORT_RANGE_END=17999
 readonly DEVBOX_PORT_BLOCK=10
 readonly DEVBOX_STATE_FILE="$CONSOLE_ROOT_DIR/.devbox-state"
-# Offsets inside a block. Only two survive: the container publishes nothing and
-# everything is reached through the proxy, so these are the ports processes bind
-# INSIDE the container. (novnc/www offsets existed while ports were published.)
+# Offsets inside a block. The container publishes nothing and everything is
+# reached through the proxy, so these are the ports processes bind INSIDE the
+# container. (novnc/www offsets existed while ports were published.)
+#
+# TERM is block-derived rather than ttyd's own default 7681 for the reason the
+# block exists at all: two worktrees on one machine must never collide. The fixed
+# 7681 survives in .devcontainer/devcontainer.json and docker-compose.server.yml,
+# where there is exactly one container and no block to derive from.
 readonly DEVBOX_OFFSET_VSCODE=0
 readonly DEVBOX_OFFSET_STUDIO=3
+readonly DEVBOX_OFFSET_TERM=5
 
 # Reverse proxy: ONE published port for every worktree and every service.
 # Routing is by Host header, so each app still believes it is at "/" and needs no

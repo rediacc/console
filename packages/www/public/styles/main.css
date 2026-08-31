@@ -1207,10 +1207,23 @@ body[data-nav-collapsed='true'] .nav-breadcrumb {
   pointer-events: auto;
 }
 
+/* Ancestor crumbs keep their intrinsic width. `min-width: 0` used to sit on
+   EVERY item, so the first crumb shrank below its own contents: measured at
+   390px the "Solutions" item was a 41px box holding a 61px anchor, and because
+   the list is `white-space: nowrap` the anchor and the "/" kept full width and
+   painted OUTSIDE that box, on top of the next crumb. The separator landed at
+   x=185-190 inside the next item's 165-303 span, which is the "/" sitting on
+   the "P" of "Production".
+   Only the LAST crumb may shrink, because it is the one carrying the ellipsis. */
 .nav-breadcrumb-item {
   display: flex;
   align-items: center;
   gap: var(--space-2);
+  flex: 0 0 auto;
+}
+
+.nav-breadcrumb-item:last-child {
+  flex: 0 1 auto;
   min-width: 0;
 }
 
@@ -1230,9 +1243,13 @@ body[data-nav-collapsed='true'] .nav-breadcrumb {
   border-radius: var(--radius-sm);
 }
 
+/* `min-width: 0` is load-bearing here, not decoration: this span is a flex child,
+   and a flex child's automatic minimum size is its content, so without it the
+   span never shrinks and `text-overflow` has nothing to clip against. */
 .nav-breadcrumb-item [aria-current='page'] {
   color: var(--color-text);
   font-weight: var(--font-weight-medium);
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
 }
@@ -1435,6 +1452,22 @@ body[data-nav-collapsed='true'] .nav-breadcrumb {
 
   .nav-right {
     grid-column: 5;
+  }
+
+  /* The collapsed breadcrumb borrows the link cluster's track, and ONLY in this
+     band, because only here is column 4 the links and column 5 the CTA. The
+     links keep their grid space when collapsed (`visibility: hidden` preserves
+     layout) while being invisible, non-interactive and out of the tab order, so
+     the space is free. Without this the breadcrumb was pinned to a
+     content-sized column 3 and truncated to "Pro..." at 1024px with 546px empty
+     beside it.
+
+     NOT in the base collapsed rule: below 64rem `.nav-links` is `display: none`
+     and holds no track at all, while `.nav-right` is `4 / 6`. Spanning there put
+     the breadcrumb under the CTA -- measured at 390px, breadcrumb right edge 331
+     against a CTA starting at 311. */
+  body[data-nav-collapsed='true'] .nav-breadcrumb {
+    grid-column: 3 / 5;
   }
 }
 
@@ -2692,6 +2725,35 @@ a.cf-guarantee-link:hover {
   content: '⚠';
   flex-shrink: 0;
   font-size: var(--font-size-base);
+}
+
+/* An action offered INSIDE a form message, for the case where the message alone
+   leaves the visitor stuck. Introduced for the captcha-unavailable path in
+   LeadMagnetModal: when the Turnstile widget fails to mount there is nothing on
+   screen to complete, so the message carries its own retry.
+   A real <button>, styled as a link: it performs an action rather than
+   navigating, and the underline is what makes it read as pressable inside a
+   sentence. */
+.form-inline-action {
+  appearance: none;
+  background: none;
+  border: 0;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+}
+
+.form-inline-action:hover {
+  text-decoration-thickness: 2px;
+}
+
+.form-inline-action:focus-visible {
+  outline: 2px solid var(--color-brand-primary);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
 }
 
 .form-input:invalid:not(:placeholder-shown),

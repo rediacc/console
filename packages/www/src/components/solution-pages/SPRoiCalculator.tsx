@@ -1,5 +1,6 @@
 import { Turnstile } from '@marsidev/react-turnstile';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { captchaMessage, useCaptchaGuard } from '../../hooks/useCaptchaGuard';
 import { useLanguage } from '../../hooks/useLanguage';
 import { useTranslation } from '../../i18n/react';
 import {
@@ -84,7 +85,8 @@ const SPRoiCalculator: React.FC<Props> = ({ content }) => {
   const [gateEmail, setGateEmail] = useState('');
   const [gateLoading, setGateLoading] = useState(false);
   const [gateError, setGateError] = useState('');
-  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
+  // Shared state machine; see useCaptchaGuard for the widget-never-mounted case.
+  const captcha = useCaptchaGuard();
   const gateInputRef = useRef<HTMLInputElement>(null);
   const gateViewedRef = useRef(false);
   const currentLang = useLanguage();
@@ -105,8 +107,8 @@ const SPRoiCalculator: React.FC<Props> = ({ content }) => {
       e.preventDefault();
       const email = gateEmail.trim();
       if (!email) return;
-      if (captchaEnabled && !turnstileToken) {
-        setGateError(t('captchaRequired') || 'Please complete captcha verification.');
+      if (captchaEnabled && !captcha.token) {
+        setGateError(captchaMessage(captcha, t('captchaUnavailable'), t('captchaRequired')));
         return;
       }
 
@@ -120,12 +122,12 @@ const SPRoiCalculator: React.FC<Props> = ({ content }) => {
             email,
             magnetName: 'roi-report',
             source: 'roi-calculator',
-            turnstileToken: turnstileToken ?? undefined,
+            turnstileToken: captcha.token ?? undefined,
           }),
         });
         if (!res.ok) throw new Error(t('newsletter.errorGeneric'));
         setDetailsUnlocked(true);
-        setTurnstileToken(null);
+        captcha.reset();
         const utm =
           (window as unknown as { __pa_get_utm?: () => Record<string, string> }).__pa_get_utm?.() ??
           {};
@@ -143,7 +145,7 @@ const SPRoiCalculator: React.FC<Props> = ({ content }) => {
         setGateLoading(false);
       }
     },
-    [gateEmail, t, turnstileToken]
+    [gateEmail, t, captcha]
   );
 
   useEffect(() => {
@@ -284,10 +286,24 @@ const SPRoiCalculator: React.FC<Props> = ({ content }) => {
                     <Turnstile
                       siteKey={turnstileSiteKey}
                       options={{ action: 'newsletter_lead_magnet' }}
-                      onSuccess={setTurnstileToken}
-                      onExpire={() => setTurnstileToken(null)}
-                      onError={() => setTurnstileToken(null)}
+                      key={captcha.nonce}
+                      onSuccess={captcha.onSuccess}
+                      onExpire={captcha.onExpire}
+                      onError={captcha.onError}
                     />
+                  )}
+                  {captchaEnabled && captcha.failed && (
+                    <p className="form-error" role="status">
+                      {t('captchaUnavailable')}{' '}
+                      <button
+                        type="button"
+                        className="form-inline-action"
+                        onClick={captcha.retry}
+                        data-track="captcha_retry"
+                      >
+                        {t('captchaRetry')}
+                      </button>
+                    </p>
                   )}
                   {gateError && <p className="form-error">{gateError}</p>}
                   <p className="newsletter-privacy">{t('newsletter.privacyNote')}</p>

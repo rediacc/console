@@ -167,6 +167,8 @@
           "requiredFields": "Rellena tu nombre, email de trabajo, empresa, país y al menos una forma de venta.",
           "consent": "Acepta que te contactemos para poder responder a tu solicitud.",
           "captcha": "Completa el captcha para continuar.",
+          "captchaUnavailable": "No se pudo cargar la verificación: comprueba tu conexión o algún bloqueador de anuncios.",
+          "captchaRetry": "Recargar verificación",
           "generic": "Algo salió mal. Inténtalo de nuevo."
         }
       }

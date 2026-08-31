@@ -167,6 +167,8 @@
           "requiredFields": "Palun täida oma nimi, töö e-post, ettevõte, riik ja vähemalt üks müügiviis.",
           "consent": "Palun nõustu, et sinuga võetakse ühendust, et saaksime taotlusele vastata.",
           "captcha": "Palun lahenda captcha, et jätkata.",
+          "captchaUnavailable": "Kontrolli ei õnnestunud laadida: kontrolli oma internetiühendust või reklaamiblokeerijat.",
+          "captchaRetry": "Laadi kontroll uuesti",
           "generic": "Midagi läks valesti. Palun proovi uuesti."
         }
       }

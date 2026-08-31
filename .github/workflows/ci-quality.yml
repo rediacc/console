@@ -1564,6 +1564,16 @@ jobs:
       - name: Browser smoke
         if: ${{ !cancelled() && steps.build-www.outcome == 'success' }}
         run: npm run check:ci-browser-smoke
+
+      # Guards what browser-smoke cannot see: a page can render perfectly, log nothing,
+      # and still offer the visitor no way to act while reserving space it never fills.
+      # A captcha-gated form must handle the captcha never arriving. Six forms shipped a
+      # guard that fired while its widget was absent, stranding the visitor.
+      - name: Captcha recovery
+        run: npm run check:ci-captcha-recovery
+
+      - name: Page density
+        run: npm run check:ci-page-density
       # One <main> per built page. The duplicate-landmark defect sat on 1,120 of 1,842
       # pages through nine waves because no gate looked at document structure.
       - name: Landmarks
@@ -1865,6 +1875,19 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
           EXTERNAL_QUALITY_MODE: ${{ inputs.external_quality }}
         run: .ci/scripts/quality/run-external-gate.sh npm run check:ci-embed-asset-freshness
+
+      # The same question for .devcontainer/Dockerfile, which until this gate had
+      # NOTHING watching it: check-deps sees npm, check-go-deps sees go.mod, and
+      # the embed gate above is hardcoded to private/renet/Dockerfile. Same soak,
+      # same soft-fail, same external_quality treatment -- a new Bitwarden release
+      # is external drift by definition, so it must not redden the nightly that
+      # validates main.
+      - name: Check devcontainer pin upstream freshness
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' && inputs.external_quality != 'skip' }}
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          EXTERNAL_QUALITY_MODE: ${{ inputs.external_quality }}
+        run: .ci/scripts/quality/run-external-gate.sh npm run check:ci-devcontainer-pins
 
       # Kept inline (3 logic lines, under check-workflows.sh's limit) rather than
       # extracted: a check-*.sh path would make check-ci-parity's R2 demand a

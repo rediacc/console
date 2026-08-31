@@ -209,6 +209,12 @@ const ALLOWED_IDENTICAL = new Set([
   // International words (same or very similar across languages)
   'Online',
   'Failover',
+  // Found 2026-08-31 wiring packages/shared/src/i18n/locales into this gate for the
+  // first time: 'Information' is the correct spelling in German and French too (not
+  // a leftover English placeholder), and 'Total' is the correct word in Spanish,
+  // French and Portuguese (all three use it identically, unlike German's 'Gesamt').
+  'Information',
+  'Total',
   'Rollback',
   'Installation',
   'Description',
@@ -869,12 +875,74 @@ function controlUntranslatedThreshold(): void {
   }
 }
 
+/**
+ * CONTROL for the missing-key and orphan-key detectors (checkLocaleDir lines ~716,
+ * ~738). Neither had a planted-defect proof before this: the untranslated-value
+ * threshold above was control-proven, but "every English key exists in the
+ * locale" and "the locale carries no key absent from English" were only ever
+ * exercised by the shape of real, already-clean catalogs, so a broken
+ * `key in langKeys` / `key in enKeys` comparison (e.g. an unflattened nested
+ * object comparing reference identity instead of the flattened key string)
+ * could silently report zero missing/orphan keys forever and nothing would
+ * catch it. Plants one of each and proves both are reported, then proves a
+ * clean catalog with neither defect stays silent.
+ */
+function controlMissingAndOrphanKeys(): void {
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'completeness-missing-control-'));
+  const failures: string[] = [];
+
+  const en: Record<string, string> = { present: 'Present', dropped: 'Dropped from locale' };
+  const deMissing: Record<string, string> = { present: 'Anwesend' }; // 'dropped' absent
+  fs.writeFileSync(path.join(tmp, 'en.json'), JSON.stringify(en));
+  fs.writeFileSync(path.join(tmp, 'de.json'), JSON.stringify(deMissing));
+
+  const missingRun = checkLocaleDir('control', tmp, true);
+  const missingStat = missingRun.stats?.de;
+  if (!missingStat || missingStat.missing !== 1) {
+    failures.push(
+      `planted 1 missing key (dropped from de), detector counted ${missingStat?.missing ?? 'no stats'}`
+    );
+  }
+  if (!missingRun.errors.some((e) => e.includes('Missing 1 keys'))) {
+    failures.push('a key present in English and absent from the locale was NOT reported');
+  }
+
+  const deOrphan: Record<string, string> = {
+    present: 'Anwesend',
+    dropped: 'Fehlend',
+    stray: 'Kein englisches Gegenstück',
+  };
+  fs.writeFileSync(path.join(tmp, 'de.json'), JSON.stringify(deOrphan));
+  const orphanRun = checkLocaleDir('control', tmp, true);
+  if (!orphanRun.errors.some((e) => e.includes('orphan keys not present in English'))) {
+    failures.push('a locale key absent from English (orphan) was NOT reported');
+  }
+
+  const deClean: Record<string, string> = { present: 'Anwesend', dropped: 'Fehlend' };
+  fs.writeFileSync(path.join(tmp, 'de.json'), JSON.stringify(deClean));
+  const clean = checkLocaleDir('control', tmp, true);
+  if (clean.errors.length > 0) {
+    failures.push(
+      `a catalog with matching key sets on both sides reported ${clean.errors.length} error(s)`
+    );
+  }
+
+  fs.rmSync(tmp, { recursive: true, force: true });
+  if (failures.length > 0) {
+    console.error('\x1b[31m✗\x1b[0m CONTROL FAILED: this gate cannot detect a missing or');
+    console.error('  orphaned key, so its verdict on the real trees means nothing.');
+    for (const f of failures) console.error(`    ${f}`);
+    process.exit(1);
+  }
+}
+
 function main(): void {
   console.log('Translation Completeness Check');
   console.log('============================================================\n');
 
   // CONTROL FIRST. Nothing below is evidence if the threshold cannot fire.
   controlUntranslatedThreshold();
+  controlMissingAndOrphanKeys();
 
   const allErrors: string[] = [];
   const allWarnings: string[] = [];
@@ -896,9 +964,26 @@ function main(): void {
   }[] = [
     { name: 'cli', label: 'CLI', dir: path.join(__dirname, '../packages/cli/src/i18n/locales') },
     {
+      name: 'shared',
+      label: 'shared',
+      dir: path.join(__dirname, '../packages/shared/src/i18n/locales'),
+    },
+    {
       name: 'www',
       label: 'WWW',
       dir: path.join(__dirname, '../packages/www/src/i18n/translations'),
+      flatFiles: true,
+    },
+    {
+      name: 'www-client',
+      label: 'WWW client',
+      dir: path.join(__dirname, '../packages/www/src/i18n/client'),
+      flatFiles: true,
+    },
+    {
+      name: 'www-client-route',
+      label: 'WWW client-route',
+      dir: path.join(__dirname, '../packages/www/src/i18n/client-route'),
       flatFiles: true,
     },
     {

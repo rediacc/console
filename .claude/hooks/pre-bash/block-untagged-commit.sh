@@ -42,6 +42,32 @@ printf '%s' "$SCAN" | grep -qE '(^|[;&|(]|\$\(|`)[[:space:]]*git([[:space:]]+-[A
 
 ROOT="${CLAUDE_PROJECT_DIR:-$(git rev-parse --show-toplevel 2>/dev/null)}"
 
+# THIS REPO IS NOT THE ONLY ONE ON THE MACHINE. A command that `cd`s into an
+# independent sibling checkout (e.g. private/growth, private/generative -- real
+# repos with their own origin, not a console submodule) and commits there was
+# still judged against CLAUDE_PROJECT_DIR/agent/pr/<console-branch>.md: wrong
+# branch name (this repo's HEAD, not the target's), wrong epic snapshot (one
+# that cannot possibly name an epic for a repo it has never heard of), so every
+# such commit was refused for a trailer no epic file could ever supply. Detect
+# a `cd`/`git -C` into another repo anywhere on the line -- a cd applies to
+# every later segment, so this is deliberately line-wide, matching
+# hook_target_repo's convention in lib/command-scan.sh -- and if the git root
+# THAT resolves to is a real repo distinct from this one, this guard has
+# nothing to check: that repo's commits are not this repo's epics' business.
+CDPATH_HINT=$(printf '%s\n' "$SCAN" |
+    grep -oE '(cd [^;|&]*|-C[[:space:]]+[^[:space:];|&]+)' | tail -1 |
+    sed -E 's/^(cd |-C )[[:space:]]*//; s/[[:space:]]*&&.*$//; s/^["'"'"']//; s/["'"'"']$//; s/[[:space:]]+$//')
+if [ -n "$CDPATH_HINT" ]; then
+    case "$CDPATH_HINT" in
+        /*) CD_ABS="$CDPATH_HINT" ;;
+        *) CD_ABS="$ROOT/$CDPATH_HINT" ;;
+    esac
+    TARGET_ROOT=$(git -C "$CD_ABS" rev-parse --show-toplevel 2>/dev/null)
+    if [ -n "$TARGET_ROOT" ] && [ "$TARGET_ROOT" != "$ROOT" ]; then
+        exit 0
+    fi
+fi
+
 # ---- what message text can we actually see? --------------------------------
 # Everything readable is concatenated; the trailer only has to appear once.
 MSG=""

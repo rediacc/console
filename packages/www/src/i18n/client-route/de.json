@@ -167,6 +167,8 @@
           "requiredFields": "Bitte geben Sie Ihren Namen, Ihre geschäftliche E-Mail-Adresse, Ihr Unternehmen, Ihr Land und mindestens eine Vertriebsart an.",
           "consent": "Bitte stimmen Sie der Kontaktaufnahme zu, damit wir auf Ihre Bewerbung antworten können.",
           "captcha": "Bitte lösen Sie das Captcha, um fortzufahren.",
+          "captchaUnavailable": "Die Verifizierung konnte nicht geladen werden: Bitte überprüfen Sie Ihre Verbindung oder einen Werbeblocker.",
+          "captchaRetry": "Verifizierung neu laden",
           "generic": "Etwas ist schiefgelaufen. Bitte versuchen Sie es erneut."
         }
       }

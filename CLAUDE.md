@@ -397,8 +397,10 @@ and `./run.sh setup --check` reports what is missing without changing anything.
 
 **One published port for the whole machine.** A shared `traefik:v3.6` container
 (`rediacc-devbox-proxy`, `.ci/lib/devbox.sh`) publishes `DEVBOX_PROXY_PORT` and routes
-by **Host header** to `<worktree>.localhost` (VS Code), `-account` (the whole app)
-and `-db`. Host routing rather than path routing is deliberate: every app keeps
+by **Host header** to `<worktree>.localhost` (VS Code), `-account` (the whole app),
+`-db` and `-term` (ttyd on an attach-or-create tmux session, started by
+`devbox-autostart.sh`; a reload re-attaches rather than opening a new shell).
+Host routing rather than path routing is deliberate: every app keeps
 its own root path, so nothing needs `--server-base-path`/`base` configuration. Routes
 come from labels on the devbox container itself, so adding a worktree changes no proxy
 config. This exists because each published port needs its own manual forward on
@@ -621,6 +623,8 @@ check the manifest, not the local filesystem, so they're unaffected by
 whether media happens to be checked out locally. Because the files leave the
 git tree entirely (not just history), no CI sparse-checkout workaround was
 needed — even a full default `actions/checkout` no longer transfers them.
+
+**Solution-video publishing is gated in a repo this file cannot see.** `check-locale-tutorial-assets.ts`/`check-solution-videos.ts` above verify the *manifest* post-publish, in console CI. What verifies *pre*-publish — that a render pass actually produced all 26 slugs × 13 locales × 3 artifacts (main, vertical, teaser) before anything ships — lives entirely in `private/growth`, a separate, gitignored repo console CI cannot check out or run: `private/growth/.ci/checks/check-locale-completeness.sh --strict` is a mandatory, non-bypassable precondition inside `private/growth/video_pipeline/publish-solutions.sh` (no flag or env var skips it; it runs unconditionally in step 0, before the `--yes` real-upload gate). If you edit `publish-solutions.sh`, keep that call — its removal reopens the exact defect the two console-side gates above only catch after the fact, on manifest content, not before a bad publish ships.
 
 The tutorial-narration `.mp3` cache (`tutorials/audio/`) is a **different
 case**: it's never served to a browser (TTS narration muxed into the final

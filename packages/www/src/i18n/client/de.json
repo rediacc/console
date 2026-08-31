@@ -1,5 +1,7 @@
 {
   "captchaRequired": "Bitte vervollständigen Sie die Captcha-Verifizierung.",
+  "captchaUnavailable": "Die Verifizierung konnte nicht geladen werden: Bitte überprüfen Sie Ihre Verbindung oder einen Werbeblocker.",
+  "captchaRetry": "Verifizierung neu laden",
   "common": {
     "close": "Schließen",
     "logoAlt": "Rediacc – Infrastrukturautomatisierungsplattform",
@@ -211,6 +213,8 @@
         "successBody": "Das PDF wurde in einem neuen Tab geöffnet und der Link per E-Mail zugestellt. Dieses Fenster schließt sich gleich.",
         "errorGeneric": "Ein Fehler ist aufgetreten. Bitte versuchen Sie es erneut oder wenden Sie sich an support@rediacc.com.",
         "captchaRequired": "Bitte schließen Sie die Captcha-Verifizierung ab.",
+        "captchaUnavailable": "Die Verifizierung konnte nicht geladen werden: Bitte überprüfen Sie Ihre Verbindung oder einen Werbeblocker.",
+        "captchaRetry": "Verifizierung neu laden",
         "disclaimer": "Eine E-Mail. Kein Verteiler. Abmeldung mit einem Klick.",
         "closeLabel": "Schließen",
         "errorRequiredEmail": "Bitte geben Sie Ihre E-Mail-Adresse ein."

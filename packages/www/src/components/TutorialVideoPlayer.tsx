@@ -359,6 +359,14 @@ const TutorialVideoPlayer: FC<TutorialVideoPlayerProps> = ({
     // settings pane are dropped when there is no subtitles file. The solution videos burn
     // their captions into the media, so this is their normal state, not a degraded one.
     const player = new Plyr(video, {
+      // THE RATIO HAS TO BE TOLD TO PLYR, not just to the outer box.
+      // `.tvp-root--portrait` sets `aspect-ratio: 9 / 16` on the container, but Plyr
+      // builds its own wrapper and defaults it to 16:9, so the portrait cut was
+      // letterboxed inside it: measured at 390px the mount was a correct 327x581 while
+      // the <video> inside was 327x184 with `object-fit: contain`, leaving 397px of dead
+      // black under a sliver of picture. The file was right (1080x1920) and the container
+      // was right; only Plyr's wrapper disagreed.
+      ratio: usePortrait ? '9:16' : '16:9',
       controls: [
         'play-large',
         'play',
@@ -521,7 +529,20 @@ const TutorialVideoPlayer: FC<TutorialVideoPlayerProps> = ({
     // here. They arrived with the in-menu picker and were left out; CI lints with
     // `--max-warnings 0`, so an exhaustive-deps warning is a failing build, and calling it
     // pre-existing was wrong -- it is on lines written this session.
-  }, [activeSrc, activeLang, activeBase, activeSubtitles, handleLanguageChange, pickerLangs, t]);
+  }, [
+    activeSrc,
+    activeLang,
+    activeBase,
+    activeSubtitles,
+    handleLanguageChange,
+    pickerLangs,
+    t,
+    // `usePortrait` now feeds Plyr's `ratio`. It moves in lockstep with `activeSrc`
+    // today, but exhaustive-deps is a failing build here (`--max-warnings 0`), and a
+    // value read inside the effect belongs in the list regardless of what it correlates
+    // with.
+    usePortrait,
+  ]);
 
   // Word-by-word caption overlay driven by RAF + Plyr CC events.
   useEffect(() => {

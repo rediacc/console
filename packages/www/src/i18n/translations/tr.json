@@ -26,6 +26,8 @@
     "title": "Aradaki Fark"
   },
   "captchaRequired": "Lütfen captcha doğrulamasını tamamlayın.",
+  "captchaUnavailable": "Doğrulama yüklenemedi: Bağlantınızı veya reklam engelleyicinizi kontrol edin.",
+  "captchaRetry": "Doğrulamayı yeniden yükle",
   "common": {
     "aria": {
       "breadcrumbNavigation": "Breadcrumb gezinmesi",
@@ -947,6 +949,8 @@
       "form": {
         "errors": {
           "captcha": "Devam etmek için lütfen captcha'yı tamamlayın.",
+          "captchaUnavailable": "Doğrulama yüklenemedi: Bağlantınızı veya reklam engelleyicinizi kontrol edin.",
+          "captchaRetry": "Doğrulamayı yeniden yükle",
           "consent": "Başvurunuza yanıt verebilmemiz için lütfen iletişime geçilmesini kabul edin.",
           "generic": "Bir şeyler ters gitti. Lütfen tekrar deneyin.",
           "requiredFields": "Lütfen adınızı, iş e-postanızı, şirketinizi, ülkenizi ve en az bir satış yönteminizi girin."
@@ -1107,7 +1111,7 @@
           "title": "AI ajan altyapıyı yönetsin"
         },
         "hero": {
-          "primaryCta": "Ücretsiz Başlayın",
+          "ctaLabel": "Bir Ajana Sunucu Verin",
           "subtitle": "CLI-first. SSH tabanlı. Varsayılan olarak JSON. Her rdc komutu otonom ajanlar için tasarlandı — GUI yok, tarayıcı otomasyonu yok, entegrasyon gerekmiyor.",
           "title": "AI ajanın zaten bildiği altyapı"
         },
@@ -1346,7 +1350,7 @@
           "withTag": "Rediacc ile"
         },
         "hero": {
-          "primaryCta": "Fiyatları Gör",
+          "ctaLabel": "Tek Sabit Fiyatla Başlayın",
           "subtitle": "İşletme verilerinizi kendi donanımda koruyun. Sunucu başına tek fiyat — personel sayısına göre ücret yok, sürpriz fatura yok, satıcıya bağımlılık yok.",
           "title": "Sunucu başına tek sabit fiyat. Verileriniz sizde."
         },
@@ -1536,7 +1540,7 @@
           "title": "Rediacc Nasıl Duruyor"
         },
         "hero": {
-          "primaryCta": "Demo Al",
+          "ctaLabel": "TCO'yu Azaltmaya Başlayın",
           "subtitle": "Kendi barındırmalı altyapı koruması. Bulut artırımı yok, koltuk başı fiyatlandırma yok, saatler değil dakikalar içinde kurtarma.",
           "title": "Altyapı TCO'nu %60 azalt. Kendi donanımında ölçekle."
         },
@@ -1692,7 +1696,7 @@
           "title": "Hemen deneyin"
         },
         "hero": {
-          "primaryCta": "Ücretsiz Başlayın",
+          "ctaLabel": "Prod'u Klonlamaya Başlayın",
           "subtitle": "CLI-first altyapı: 60 saniyede prod klonlama, 5 dakika içinde geri alma, kendi donanımında çalışma. Talep yok, bekleme yok, veri çıkmaz.",
           "title": "Bir dakikada klonla. Beş dakikada kurtar. Talep yazmayı bitir."
         },
@@ -3075,6 +3079,7 @@
           "withTag": "REDİACC İLE"
         },
         "hero": {
+          "ctaLabel": "AI Pentestine Başlayın",
           "subtitle": "Altyapınızın birebir kopyalarını oluşturun ve AI destekli sızma testleri çalıştırın — üretim ortamını riske atmadan.",
           "title": "Üretim ortamını klonlayın. AI'nın saldırmasına izin verin."
         },
@@ -3384,6 +3389,7 @@
           "title": "Denetim izi karşılaştırması"
         },
         "hero": {
+          "ctaLabel": "Denetim İzini Başlatın",
           "subtitle": "Kimin ne yaptığına, ne zaman ve neden yaptığına tam görünürlük. Her işlem için kurcalamaya dayanıklı denetim günlükleri.",
           "title": "Her eylem kaydedilir. Hiçbir şey gizlenmez."
         },
@@ -3718,6 +3724,7 @@
           "title": "Yedekleme doğrulaması karşılaştırması"
         },
         "hero": {
+          "ctaLabel": "Yedekleri Doğrulamaya Başlayın",
           "subtitle": "Yedeklemenizin bozuk olduğunu öğrenmek için felaket beklemeyin. Rediacc her yedeklemeyi oluşturulduğu anda kontrol eder.",
           "title": "Her yedekleme doğrulanır. Otomatik olarak."
         },
@@ -4037,6 +4044,7 @@
           "title": "Başka hiçbir araç bulutlar arası saniyeler içinde yük devretmez"
         },
         "hero": {
+          "ctaLabel": "Çevrimiçi Kalmaya Başlayın",
           "subtitle": "Altyapınız birden fazla bulutta çalışır. Biri çökünce, diğerleri devralır. Otomatik olarak.",
           "title": "AWS çökünce siz çökmezsiniz"
         },
@@ -4351,6 +4359,7 @@
           "withTag": "SÜREKLİ (REDİACC)"
         },
         "hero": {
+          "ctaLabel": "Sürekli Test Etmeye Başlayın",
           "subtitle": "Her gün taze üretim klonlarında güvenlik testleri çalıştırın. Güvenlik açıklarını ortaya çıktıklarında bulun — aylar sonra değil.",
           "title": "Güvenliği sürekli test edin. Yılda bir değil."
         },
@@ -4653,6 +4662,7 @@
           "title": "Egemenlik karşılaştırması"
         },
         "hero": {
+          "ctaLabel": "Kendi Bölgenizde Başlayın",
           "subtitle": "Siz barındırırsınız. Anahtarlar sizdedir. ABD yargı yetkisindeki hiçbir sağlayıcı, elinde olmayan şeyi teslim etmeye zorlanamaz.",
           "title": "Sertifikayla değil, mimariyle egemen."
         },
@@ -5009,6 +5019,7 @@
           "title": "Şifreleme kontrolü karşılaştırması"
         },
         "hero": {
+          "ctaLabel": "Anahtarlarınızın Sahibi Olun",
           "subtitle": "Her yedekleme sizin sahip olduğunuz anahtarlarla şifrelenir. Sağlayıcınızın anahtarları değil. Paylaşılan anahtarlar değil. Yalnızca sizin.",
           "title": "Sizin anahtarlarınız. Sizin şifrelemeniz. İstisnasız."
         },
@@ -5347,6 +5358,7 @@
           "title": "Başka hiçbir araç tam yığınınızı klonlamaz"
         },
         "hero": {
+          "ctaLabel": "Klonlamaya Başlayın",
           "subtitle": "Üretim ortamının birebir kopyalarını oluşturun — uygulama, veritabanı ve yapılandırma — geliştirme ve test için. Talep açmadan. Beklemeden.",
           "title": "Üretim ortamını 60 saniyede klonlayın"
         },
@@ -5716,6 +5728,7 @@
           "title": "Felaket kurtarma test araçları karşılaştırması"
         },
         "hero": {
+          "ctaLabel": "Failover Testine Başlayın",
           "subtitle": "Felaket simülasyonlarını güvenle çalıştırın. Kurtarmanızın gerçekten çalıştığını bilin. En çok ihtiyaç duyduğunuz anda sürpriz yok.",
           "title": "Yük devretmenizi ihtiyacınız olmadan önce test edin"
         },
@@ -6046,6 +6059,7 @@
           "title": "Dosya sistemi seviyesinde değiştirilemezliğe sahip tek yedekleme"
         },
         "hero": {
+          "ctaLabel": "Yedekleri Korumaya Başlayın",
           "subtitle": "Yedeklemeleriniz oluşturuldukları andan itibaren değiştirilemez. Kimse onları değiştiremez. Bilgisayar korsanları da. Siz bile.",
           "title": "Fidye yazılımının dokunamayacağı yedeklemeler"
         },
@@ -6369,6 +6383,7 @@
           "title": "Başkalarının boşta kapasite için ne aldığı"
         },
         "hero": {
+          "ctaLabel": "Maliyetleri Azaltmaya Başlayın",
           "subtitle": "İhtiyaç duyduğunuzda ortam oluşturun. İşiniz bitince yok edin. Yalnızca gerçekten kullandığınız için ödeme yapın.",
           "title": "Boşta kalan ortamlar için ödeme yapmayı durdurun"
         },
@@ -6664,6 +6679,7 @@
           "title": "Kurtarma yeteneği karşılaştırması"
         },
         "hero": {
+          "ctaLabel": "Dakikalar İçinde Geri Yükleyin",
           "subtitle": "Sadece dosyalar değil. Tüm ortamlar — sunucular, yapılandırmalar, veritabanları — dakikalar içinde geri yüklenir ve çalışır.",
           "title": "Dakikalar içinde tam ortam kurtarma"
         },
@@ -6995,6 +7011,7 @@
           "title": "Test fikstürleri vs. üretim klonları"
         },
         "hero": {
+          "ctaLabel": "Bağlanmaya Başlayın",
           "subtitle": "Git push yeni bir ortam tetikler. Testler üretim klonlarında çalışır. CI/CD özel betik gerektirmeden çalışır.",
           "title": "Mevcut iş akışınıza bağlanın"
         },
@@ -7246,6 +7263,7 @@
           "title": "Başka hiç kimse çalışan bir cluster'ı verisiyle birlikte taşımaz"
         },
         "hero": {
+          "ctaLabel": "Cluster'ları Fork'lamaya Başlayın",
           "subtitle": "Kümeniz bir bütün olarak hareket eder: node'lar, ayarlar ve veriler hepsi beraber. Başka bir sunucuya ya da veri merkezine. Geçiş saniyelerle ölçülür, hafta sonlarıyla değil.",
           "title": "Çalışan bir Kubernetes cluster'ını fork'layın veya taşıyın"
         },
@@ -7479,6 +7497,8 @@
       },
       "leadMagnetModal": {
         "captchaRequired": "Lütfen captcha doğrulamasını tamamlayın.",
+        "captchaUnavailable": "Doğrulama yüklenemedi: Bağlantınızı veya reklam engelleyicinizi kontrol edin.",
+        "captchaRetry": "Doğrulamayı yeniden yükle",
         "closeLabel": "Kapat",
         "description": "Kurumsal e-posta adresinizi girin. PDF bağlantısını size göndereceğiz ve bir kopyasını posta kutunuzda saklayacağız.",
         "disclaimer": "Tek e-posta. Pazarlama listesi yok. Tek tıkla abonelik iptali.",
@@ -7592,6 +7612,7 @@
           "title": "Başkalarının göç sırasında yapamadığı şey"
         },
         "hero": {
+          "ctaLabel": "Güvenle Taşımaya Başlayın",
           "subtitle": "Sunucu, bulut veya sağlayıcılar arasında geçiş yapıyor musunuz? Yedeklemeler baştan sona şifreli kalır. Maruziyet yok. Veri kaybı yok.",
           "title": "Veri kaybı riskine girmeden göç yapın"
         },
@@ -7949,6 +7970,7 @@
           "title": "Kod klonlama vs. ortam klonlama"
         },
         "hero": {
+          "ctaLabel": "Production'a Uyum Sağlayın",
           "subtitle": "Artık \"benim makinemde çalışıyor\" yok. Her geliştirme ortamı üretim ortamının birebir klonudur.",
           "title": "Üretim ortamıyla birebir eşleşen geliştirme ortamları."
         },
@@ -8255,6 +8277,7 @@
           "title": "Başka hiçbir araç bu kadar hızlı kurtarmaz"
         },
         "hero": {
+          "ctaLabel": "Daha Hızlı Kurtarın",
           "subtitle": "Fidye yazılımı saldırdığında her dakika para kaybettirir. Rediacc hasar yayılmadan sizi tekrar çevrimiçi getirir.",
           "title": "Günler değil dakikalar içinde kurtarın."
         },
@@ -8566,6 +8589,7 @@
           "title": "Saklama uyumluluğu karşılaştırması"
         },
         "hero": {
+          "ctaLabel": "Saklama Kurallarını Belirleyin",
           "subtitle": "Uyumluluk gereksinimlerini karşılayan yapılandırılabilir saklama politikaları. HIPAA, SOC2, GDPR — varsayılan olarak kapsanır.",
           "title": "Verilerinizi yasanın gerektirdiği sürece saklayın"
         },
@@ -8914,6 +8938,7 @@
           "title": "Başka hiçbir araç yamaları gerçek üretim verisi üzerinde test etmez"
         },
         "hero": {
+          "ctaLabel": "Güvenle Test Edin",
           "subtitle": "Üretim ortamınızı klonlayın. Yamayı uygulayın. Neyin bozulduğunu görün. Gerekirse geri alın. Üretim ortamına dokunmadan.",
           "title": "İşletim sistemi güncellemelerini risksiz test edin"
         },
@@ -9272,6 +9297,7 @@
           "title": "Başka hiçbir araç tam yığınınızı dakikalar içinde göç ettirmez"
         },
         "hero": {
+          "ctaLabel": "Her Yerde Çalışmaya Başlayın",
           "subtitle": "İstediğiniz yere dağıtın. İstediğiniz zaman göç edin. Bağlayıcı sözleşme yok. Tescilli format yok. Verileriniz sizin kalır.",
           "title": "Sizin altyapınız. Sizin seçiminiz. Her zaman."
         },
@@ -9574,6 +9600,7 @@
           "withTag": "Rediacc ile"
         },
         "hero": {
+          "ctaLabel": "Güvenlik Açıklarını Giderin",
           "subtitle": "Güvenli klonlarda güvenlik açıklarını bulun, test edin ve yamalayın. Yamaları güvenle üretime dağıtın.",
           "title": "Saldırganlar gelmeden güvenlik açıklarını düzeltin"
         },
@@ -10274,6 +10301,10 @@
     "constellation": {
       "centre": "Her çözüm canlı sisteminizin bir kopyası üzerinde yapılan tek bir işlemdir.",
       "title": "Diğer Çözümleri Keşfedin"
+    },
+    "disclosure": {
+      "mechanism": "Mekanizmayı Görün",
+      "comparison": "Tüm Araçları Karşılaştırın"
     },
     "references": {
       "title": "Kaynaklar"

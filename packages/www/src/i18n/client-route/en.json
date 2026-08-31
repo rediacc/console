@@ -167,6 +167,8 @@
           "requiredFields": "Please fill in your name, work email, company, country, and at least one way you sell.",
           "consent": "Please agree to be contacted so we can reply to your application.",
           "captcha": "Please complete the captcha to continue.",
+          "captchaUnavailable": "Verification could not load: check your connection or any ad blocker.",
+          "captchaRetry": "Reload verification",
           "generic": "Something went wrong. Please try again."
         }
       }

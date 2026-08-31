@@ -1,0 +1,21 @@
+# Devcontainer pin upgrade blocklist — one <base> per line to HOLD a tool in
+# .devcontainer/Dockerfile at its current `ARG <BASE>_VERSION` pin instead of
+# tracking upstream latest.
+#
+# Base names match the Dockerfile ARG <BASE>_VERSION, lowercased, and must be one
+# the gate actually watches (scripts/lib/devcontainer-pin-sources.ts):
+#   bw
+#
+# NOTE: do NOT add an entry for a release that is merely too fresh.
+# scripts/check-devcontainer-pin-freshness.ts reads `minimum-release-age` from
+# .npmrc and automatically defers anything published inside that window — the
+# hold clears itself once the version ages out. Only blocklist a pin held back
+# for a real reason (a breaking change, a broken asset, an upstream regression).
+#
+# Each entry needs a substantive BLOCKER reason (>=30 chars, no banned phrases),
+# exactly like every other suppression list in this repo. Format:
+#
+#   # BLOCKER: <why this tool is pinned back and when to revisit>
+#   <base>
+#
+# Empty by default — nothing is held; every pin tracks upstream.

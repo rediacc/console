@@ -356,6 +356,36 @@ else
     fail "CONTROL DID NOT FIRE: an unlisted guard went unnamed, so A's second arm proves nothing"
 fi
 
+# A's FIRST arm ("guard(s) in the baseline but GONE from the tree", the
+# missing-array check above) had no control at all until this stop: every
+# assertion this gate makes elsewhere is proven by a planted fixture, but a
+# baseline entry whose file was deleted from disk had never been shown to
+# actually trip a failure. Same shape as the anti-vacuity rule this file
+# itself states: a check that has never been proven to fail is the same class
+# as a check that cannot fail. Built the same way as the second arm's control
+# above -- fixture inventory + fixture hooks dir, never the real ones.
+inv_missing() { # inv_missing <inventory-json> <hooks-dir> -> baselined names absent from disk
+    local inv="$1" hooks="$2" want
+    while IFS= read -r want; do
+        [ -n "$want" ] || continue
+        [ -f "$hooks/$want" ] || printf '%s\n' "$want"
+    done < <(python3 -c 'import json,sys;[print(x) for x in json.load(open(sys.argv[1]))]' "$inv")
+}
+mkdir -p "$TMP/inv-hooks/pre-bash"
+printf '#!/usr/bin/env bash\nexit 0\n' >"$TMP/inv-hooks/pre-bash/block-a.sh"
+# block-b.sh is deliberately absent: inv-full.json baselines it, so a correct
+# reader must name it as gone.
+if [ "$(inv_missing "$TMP/inv-full.json" "$TMP/inv-hooks")" = "pre-bash/block-b.sh" ]; then
+    pass "control: a baseline entry whose guard is gone from disk is named"
+else
+    fail "CONTROL DID NOT FIRE: A's first arm (guard gone from tree) proves nothing"
+fi
+if [ -z "$(inv_missing "$TMP/inv-short.json" "$TMP/inv-hooks")" ]; then
+    pass "control: a baseline entry whose guard still exists is not flagged"
+else
+    fail "CONTROL DID NOT FIRE: an existing guard was wrongly reported as gone"
+fi
+
 # ---- C. the anti-vacuity FLOOR cannot be removed ----------------------------
 #
 # test-hooks.sh runs sibling modules' `--selftest` and folds their PASS count

@@ -337,6 +337,52 @@ RUN ARCH=$(dpkg --print-architecture) \
     && dpkg -i /tmp/glab.deb \
     && rm /tmp/glab.deb
 
+# Bitwarden CLI (bw) — https://github.com/bitwarden/clients
+#
+# THE NATIVE ZIP, NOT npm, AND THE HASH IS PINNED. @bitwarden/cli@2026.4.0 was
+# malicious on npm for ~90 minutes on 2026-04-22 (CVE-2026-42994): a compromised
+# GitHub Action injected a credential harvester into the npm PACKAGING step only,
+# leaving the GitHub release assets and the snap untouched. It took GitHub/npm
+# tokens, SSH keys, env vars and shell history off CI runners -- this container's
+# exact threat model. So the channel that was not compromised is the one used
+# here, and it is pinned to a digest rather than to a moving tag.
+#
+# It costs nothing in toolchain either: the native build embeds its own Node
+# runtime (pkg), so `ldd` wants only libc/libstdc++/libm/libgcc_s/libpthread/libdl
+# -- glibc >= 2.28, which ubuntu-24.04 satisfies several times over. It does cost
+# ~142 MB unpacked, which is the honest price of not using the 5 MB npm package.
+#
+# THE DIGESTS ARE THE `digest` FIELD ON EACH RELEASE ASSET. Bitwarden publishes no
+# .sha256 sidecar files and no GPG/cosign signatures, and the docs' talk of
+# "checksum files" means the sha256 GitHub renders beside each asset. Re-read both
+# with, for version V:
+#   curl -s https://api.github.com/repos/bitwarden/clients/releases/tags/cli-v$V \
+#     | jq -r '.assets[]|select(.name|test("bw-linux(-arm64)?-"))|"\(.name) \(.digest)"'
+# scripts/check-devcontainer-pin-freshness.ts watches this pin and rewrites all
+# three ARGs together; the CLI lives in a MONOREPO, so that gate filters tags by
+# the `cli-v` prefix rather than trusting /releases/latest.
+ARG BW_VERSION=2026.8.0
+ARG BW_SHA256_AMD64=367f618e9fcccaac4980ec12c7bafd01df739b5f3cb1af31bc9045cf75eea1d6
+ARG BW_SHA256_ARM64=74d822a5dceda5896ed8fc07bc61925b29afd98d96a6a3e9e525ae556c3083a8
+RUN ARCH=$(dpkg --print-architecture) \
+    && case "$ARCH" in \
+    amd64) BW_ASSET="bw-linux-${BW_VERSION}.zip";       BW_SHA="${BW_SHA256_AMD64}" ;; \
+    arm64) BW_ASSET="bw-linux-arm64-${BW_VERSION}.zip"; BW_SHA="${BW_SHA256_ARM64}" ;; \
+    *) echo "unsupported arch for bw: $ARCH" >&2; exit 1 ;; \
+    esac \
+    && curl -fsSL -o /tmp/bw.zip \
+        "https://github.com/bitwarden/clients/releases/download/cli-v${BW_VERSION}/${BW_ASSET}" \
+    && echo "${BW_SHA}  /tmp/bw.zip" | sha256sum -c - \
+    && unzip -o -q /tmp/bw.zip -d /usr/local/bin \
+    && chmod +x /usr/local/bin/bw \
+    && rm /tmp/bw.zip \
+    # `status`, not just `--version`: it exercises the embedded Node runtime and
+    # the first write to the appdata dir, which is where a broken pkg bundle
+    # actually fails. Same reflex as `aws --version` above -- fail the BUILD
+    # rather than ship a binary that cannot start.
+    && bw --version \
+    && bw status >/dev/null
+
 # bottom (btm) — system monitor (https://github.com/ClementTsang/bottom)
 ARG BTM_VERSION=0.12.3
 RUN curl -fsSL -o /tmp/bottom.deb "https://github.com/ClementTsang/bottom/releases/download/${BTM_VERSION}/bottom_${BTM_VERSION}-1_$(dpkg --print-architecture).deb" \

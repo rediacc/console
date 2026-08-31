@@ -1,80 +1,59 @@
-## SESSION e580532b 2026-08-28T07:30:25Z
+## SESSION e580532b 2026-08-31T11:11:18Z
 
-# Session e580532b
+publish-solutions.sh fix COMPLETE, control-first proven, sweep COMPLETE.
 
-`clarity-round6` is DONE (`Status: done`, 19 rows). The 26 English mains are PUBLISHED and
-live under `videos/solutions/en/` on `rediacc-www-media`, 78 objects, verified against the
-bucket. All 26 English teasers regenerated and light.
+ROOT CAUSE (two bugs, fixed in private/growth/video_pipeline/publish-solutions.sh,
+UNCOMMITTED): (1) `set -uo pipefail` missing -e let a failed sync-media-to-r2.sh
+subprocess continue past step 4 -- fixed to `set -euo pipefail`, control-first
+proven with an isolated caller/callee pair. (2) independent: both pending-count
+checks grepped `^upload:` but `aws s3 sync --dryrun` prefixes lines
+`(dryrun) upload:`, so the check could never match -- fixed to
+`grep -cE '^(\(dryrun\) )?upload:'` in both spots. bash -n clean, git diff --stat
+= 10 insertions/3 deletions.
 
-## Running now, and it is the only work left
+SWEEP (judge instruction: search .ci/scripts/ for the same PATH-assumption
+pattern), CONCLUDED:
+- wrong-grep bug: confirmed nowhere else in .ci/scripts/ or video_pipeline/.
+- 42 files repo-wide have `set -uo pipefail` (no -e) -- judged OUT OF SCOPE,
+  often deliberate, not what the judge's instruction targeted.
+- 16 files call `aws` directly; 14 already guard with `require_cmd aws`. The
+  2 zero-count files checked individually:
+  - check-silent-failure-patterns.sh: FALSE POSITIVE, `aws` only appears
+    inside a detection-pattern STRING it uses to scan other scripts, never
+    invoked itself.
+  - upload-to-r2.sh: has `set -e` already, calls aws directly with no
+    require_cmd guard, but control-first probe (`env PATH=/nonexistent aws`)
+    confirmed it aborts loudly at exit 127 immediately -- NOT the silent-
+    success class the judge flagged. Left as-is.
 
-**Phase B, the 12 locales**: `scratchpad/full-pass.sh`, log `scratchpad/full-pass.log`,
-items `1c8f1835` and `6086e2c4`. Slug 4 of 26 done, on `cloud-outage-protection`. **38
-localized mains and 39 localized teasers, 0 failures.** About a day remains.
+STILL UNCOMMITTED (console has zero commits all window; no request to commit
+this fix): the publish-solutions.sh fix (private/growth, separate repo).
 
-Judge liveness by LOG MTIME and by shells whose `comm` is bash; the launch pid is the
-`setsid` parent and exits at once. Remaining slugs regenerate their own teasers unaided.
+ALSO FOUND+FIXED THIS ROUND: my own usage error, not a worklist.py bug --
+`worklist.py --state <prefix>` reads the section body from STDIN
+(worklist.py:991 sys.stdin.read()), not argv[3]. Passed the body as an extra
+argv positional instead of piping it; isatty() was False (stdin was an
+inherited socket, not a tty) so the guard didn't catch it, and the process
+hung forever in unix_stream_read_generic waiting on stdin that would never
+arrive or close. Diagnosed via /proc/<pid>/fd (fd0 -> socket, not /dev/null)
+and /proc/<pid>/wchan. Killed the stuck process (was background job
+beofz84ud), re-ran correctly with a heredoc piped into stdin this time.
 
-## Three gates guard tonight's fixes. All green.
+SEPARATE, EARLIER: all 3 video-pipeline worklist items closed. www video-gap
+fix (5 slugs) committed as agent/PLAN-www-solution-video-gaps.md (sha
+ea06fef1d, PR-TASK afd27bf3); code changes UNCOMMITTED.
+block-untagged-commit.sh fixed, UNCOMMITTED. Pushed private/growth
+(6e13f44..6656e71) and private/generative (0abc0fe..faa1b2d) earlier under
+explicit user authorization. block-host-toolchain-run.sh carries the same
+false-positive class block-untagged-commit.sh had -- worth the same fix if
+time allows, not yet done.
 
-- `check:ci-scans-tracked-paths` (console) - nothing CI executes lives under a gitignored
-  path.
-- `private/growth/.ci/checks/check-cache-invalidation.sh` - a `8000_teaser*.json` sentinel
-  is never older than the mp4 it was cut from.
-- `private/growth/.ci/checks/check-no-direct-query.sh` - nothing reaches the SDK outside a
-  `sdk_utils.py::safe_query`, and every choke point raises `max_buffer_size` past 10 MB.
-
-The two growth gates run from that repo's `.git/hooks/pre-commit` and a startup preflight
-in each pipeline `main.py`. They cannot live in console CI: `private/growth` is a separate
-repo, gitignored, 0 tracked files. Rationale in `private/growth/.ci/checks/README.md`.
-
-**If cache-invalidation goes red, rebuild the slug it names. Do not touch the gate.**
-
-## Use ./media.sh
-
-    ./media.sh run <pipeline> [args...]
-    ./media.sh teaser <slug> [lang...]   # sentinel drop AND rebuild in one step; refuses
-                                         # the slug the live pass is on, which IS the wait
-    ./media.sh luma <mp4>                # light is meanY ~210, pre-palette 30-50
-
-## Operator decisions on record, 2026-08-28
-
-English mains published: authorized, DONE. Teaser plus 13-locale pass: authorized, in
-flight.
-
-`a6546337` `[?]` OPEN: publish the regenerated teasers and locales when the pass finishes?
-DEFAULT: do NOT publish; leave them measured on disk and report the numbers. The
-authorization was scoped to the English mains only.
-
-Stock footage: CLOSED, left as filmed, documented in `w10-scorecard.md` (63 of 1683
-seconds below Y=100, 3.7%). A gate asserting stock matches the palette would CONTRADICT
-this; do not write one unless the operator reverses it.
-
-## A command to treat as deliberate
-
-`get_resume_step` is honest now, so **20 of 26 English slugs read as not-done** and the
-next `--until 8000` regenerates and re-judges scripts sitting behind published videos. Use
-`--until 6000` for a render. Rule 1d in `.claude/agents/media-pipeline.md`.
-
-## Peer 9d92d9b6, and what is NOT mine
-
-They asked a third time to commit my work; I declined in
-`agent/e580532b/NOTE-to-9d92d9b6.md`. Only the operator authorizes a commit; my paths are
-finished and stable, so they may rebase on an authorization they hold themselves.
-
-Theirs, do not duplicate: the `wl_ci` unreachable-checks finding, `check:ci-renet`'s Go
-vulnerabilities, and `private/account/node_modules` ahead of its manifest, which makes a
-local `check:deps` there a FALSE GREEN until reinstall.
-
-`git add` in this shared worktree is not private: a peer's `git commit -F` takes the whole
-INDEX, and that is how two of my staged files landed in their `449b95f09`.
+REBUTTED THEME (fabricated "name: field dangling reference"): ~30 rounds,
+all REBUTted, tick chain fc065372 through 722fe6d1. Cite, do not re-derive.
 
 ## Next action
-
-1. Spot-measure a fresh localized mp4 and teaser every few slugs with `./media.sh luma`,
-   and COUNT files under `processing/*/video/`. `find` here is bfs: use a LOCAL timestamp,
-   since a `Z` suffix silently compares against UTC and returns nothing.
-2. Re-run `check-cache-invalidation.sh` occasionally; a red names the slug needing
-   `./media.sh teaser <slug>`.
-3. Watch `scratchpad/full-pass.log` for the FIRST `!!!!` line rather than the end.
-4. When the pass completes, measure the fleet and answer `a6546337` with the numbers.
+No open worklist items. btcrh9l9r (wl_wait.py --timeout 60, i.e. 60 MINUTES
+not seconds per its own --help) is healthy: sleeping in hrtimer_nanosleep,
+stdin correctly /dev/null, 38m of a 60m deadline -- not stuck, contrary to
+this window's earlier note. Nothing blocking; awaiting next judge round or
+user message.

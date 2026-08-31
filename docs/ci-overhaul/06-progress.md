@@ -5890,3 +5890,104 @@ several came back fully clean (`exitCode 0`, `whole`, `stable`, `failed: []`,
 gates, both directions, across every wiring change. `check:ci-guard-mention-
 anchoring` (yesterday's gate) stayed green through the peer's new NPX block
 without modification -- confirming it was already correctly anchored.
+
+## 0827-1, later still: `ci-trace`'s blind spot, a tutorial-player gate that
+## had never run in CI, and a batch of CI reds triaged together
+
+### `ci-trace.py` called a PR red for the one check that can never block it
+
+`ci-trace.py` reported RED on PR #579 for a head whose only failing context
+was "Review Complete" -- a check posted directly by
+`.ci/scripts/review/review-status.sh` from a workflow no CI job references,
+whose own `output.summary` says outright "this check ... can never block
+Console CI". It reports review-currency (has this head been reviewed yet),
+not a CI result, and its `conclusion` is `failure` whenever a head is
+unreviewed -- the common case right after any push. This was already a
+documented trap (`docs/agent-reference/TRAPS.md`, "gh pr checks half is
+uncovered", since 2026-08-06), but the fix on file was "go read
+`output.summary` by hand" -- a workaround repeated indefinitely rather than
+a fix in the instrument itself. Fixed in the classifier with an exact-name
+allowlist (`CI_NONBLOCKING_CONTEXTS = {"Review Complete"}`), not a
+substring match against `output.summary` text: the check name is fixed and
+permanent, while summary text could reformat.
+
+### The tutorial-player gate's first-ever CI run found it had never actually run in CI
+
+`50cb43881` traced two CI reds back to the same day's wiring landing: seven
+`@typescript-eslint/no-unnecessary-condition` lint errors from an optional
+chain (`fn()?.ok`) on a helper that never returns null, and — the real
+finding — `check:test:tutorial-player` failing with "agent-browser is not
+installed or not accessible in PATH". The gate drives a real browser via
+`agent-browser`, and this was the first time it had ever executed in CI at
+all; the job that runs it never installed one. `e610ba12a` generalized the
+gate that exists for exactly this shape (`check:ci-gate-prerequisites`,
+born from an earlier tsx/node defect) from one hardcoded resource to a
+tracked list of `needs()`/`provides()` pairs, adding `agent-browser` as the
+second entry. `5909199de` added the runtime half: an explicit, named
+"Verify agent-browser is functional" step, so a broken install (a silent
+postinstall failure, a PATH the install's own shell can't see) fails there
+with its real cause instead of surfacing two steps downstream as the
+tutorial-player gate's own confusing error.
+
+### `NODE_VERSION_REQUIRED`/`MIN`: the same drift shape, one file over
+
+`de038121b` found the sibling of the GO_VERSION/Dockerfile drift fixed
+earlier: a file sources `toolchain.env`'s `NODE_VERSION` into scope, then
+immediately hardcodes `NODE_VERSION_REQUIRED="22"` and
+`NODE_VERSION_MIN="22.0.0"` as separate constants right after it — restating
+by hand the exact value it just read. Both values agreed at time of fix (not
+an active break), but nothing would have caught a future Node bump in
+`toolchain.env` leaving `rdc.sh`/`run.sh`'s version-floor checks on the old
+major.
+
+### One batch pass over a whole red `npm run ci`
+
+Per operator instruction, `96e9fe9eb` ran the full `npm run ci` battery,
+triaged every failure, and fixed the cluster together rather than
+trickling fixes: dependency freshness (`fast-xml-parser`, `@biomejs/biome`,
+`knip` bumped; `check:deps` clean at "10 blocked, 2 too new", the 10 holds
+pre-existing and individually justified), the toolchain-sync fix above, and
+gate-wiring corrections, all in one push.
+
+### Two guard fixes and two committed-but-lost changes, found by review and by CI itself
+
+Claude Review on PR #579 caught `block-git-force-push.sh` matching a raw
+command directly instead of routing through `lib/command-scan.sh`'s
+`hook_scan_target` like every sibling guard in the same PR (`f5f693462`) —
+and applying that fix surfaced a second, live instance of the same class:
+`block-edit-of-running-script.sh` false-positived on the stop-hook judge's
+own `claude -p` process, whose prompt text merely quoted this guard's
+filename inside a documented trap example. Separately, `af0f1e72c` fixed
+two selftest controls that passed locally but were red on CI for
+environment-only reasons (a submodule branch-ref assumption a detached-HEAD
+CI checkout can never satisfy, fixed by a throwaway fixture repo instead of
+depending on ambient checkout shape), and `186a81e0c` caught a ruff-format
+fix that was verified green locally and then simply never committed, so a
+long line shipped in the tree that CI's own static-lint gate flagged the
+next day. `9cbcf7d98` fixed a test control that used `sleep <n> --
+"<non-numeric string>"` to simulate a long-running process: GNU coreutils
+`sleep` validates every operand as a number before sleeping, so the guard's
+"NON-SHELL process carrying the name in argv" control passed vacuously —
+it would have passed identically with the guard's own filter deleted.
+
+### A peer's finished gate, caught the same shape as before, fixed the same way
+
+`b272a5d37` committed session `e580532b`'s own findings from
+`check-git-op-conditionals.sh` (a gate that had never existed in pushed
+history until that day): three pre-existing, unguarded git-identity
+captures in `check-submodule-branches.sh` and two post-bash hooks, all
+sharing the established `wl_core.py` `git_branch`/`symbolic-ref` precedent
+already in this repo. The submodule-branches fix corrected a real bug in an
+EARLIER analysis this same session had wrongly called safe:
+`rev-parse --abbrev-ref HEAD` succeeds on a detached checkout and prints the
+literal string `"HEAD"` rather than failing, so a `|| echo "detached"`
+sentinel never actually fires.
+
+### Counts
+
+11 commits landed between the previous entry and this one, none reverted,
+each traced to a real CI red, a Claude Review finding, or a live stop-hook
+judge sweep rather than invented ahead of a failure. The `ci-trace.py` and
+`check:ci-gate-prerequisites` fixes both close instruments that had been
+silently blind by construction rather than merely undertested — the pattern
+this document exists to track.

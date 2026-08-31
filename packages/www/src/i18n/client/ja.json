@@ -1,5 +1,7 @@
 {
   "captchaRequired": "キャプチャ認証を完了してください。",
+  "captchaUnavailable": "認証を読み込めなかったため、通信状況や広告ブロッカーをご確認ください。",
+  "captchaRetry": "認証を再読み込み",
   "common": {
     "close": "閉じる",
     "logoAlt": "Rediacc - インフラストラクチャ自動化プラットフォーム",
@@ -211,6 +213,8 @@
         "successBody": "新しいタブで開き、リンクをメールでもお送りしました。まもなくこのウィンドウを閉じます。",
         "errorGeneric": "エラーが発生しました。もう一度お試しいただくか、support@rediacc.com までお問い合わせください。",
         "captchaRequired": "キャプチャ認証を完了してください。",
+        "captchaUnavailable": "認証を読み込めなかったため、通信状況や広告ブロッカーをご確認ください。",
+        "captchaRetry": "認証を再読み込み",
         "disclaimer": "送信は1通のみ。マーケティングリストへの登録はありません。ワンクリックで配信停止できます。",
         "closeLabel": "閉じる",
         "errorRequiredEmail": "メールアドレスをご入力ください。"

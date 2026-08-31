@@ -2288,6 +2288,18 @@ export const GATES: readonly GateSpec[] = [
     },
   },
   {
+    id: 'check:ci-devcontainer-pins',
+    run: 'npm run check:ci-devcontainer-pins',
+    gate: true,
+    leaves: ['scripts/check-devcontainer-pin-freshness.ts'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-go',
+      step: 'Check devcontainer pin upstream freshness',
+    },
+  },
+  {
     id: 'check:ci-embed-asset-versions',
     run: 'npm run check:ci-embed-asset-versions',
     gate: true,
@@ -2481,6 +2493,31 @@ export const GATES: readonly GateSpec[] = [
       workflow: '.github/workflows/ci-quality.yml',
       job: 'quality-www-build',
       step: 'Browser smoke',
+    },
+  },
+  {
+    id: 'check:ci-captcha-recovery',
+    run: 'npm run check:ci-captcha-recovery',
+    gate: true,
+    leaves: ['scripts/check-captcha-recovery.ts'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-www-build',
+      step: 'Captcha recovery',
+    },
+  },
+  {
+    id: 'check:ci-page-density',
+    run: 'npm run check:ci-page-density',
+    slow: true, // drives 3 routes x 4 viewports in a container
+    gate: true,
+    leaves: ['.ci/scripts/quality/page-density.sh'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-www-build',
+      step: 'Page density',
     },
   },
   {
@@ -4105,6 +4142,19 @@ export const GATES: readonly GateSpec[] = [
     gate: true,
     qualityGateTest: true,
     leaves: ['.ci/scripts/test/gates/test-embed-asset-freshness.sh'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-security',
+      step: 'Quality-gate unit tests',
+    },
+  },
+  {
+    id: 'gate-test:devcontainer-pin-freshness',
+    run: '.ci/scripts/test/gates/test-devcontainer-pin-freshness.sh',
+    gate: true,
+    qualityGateTest: true,
+    leaves: ['.ci/scripts/test/gates/test-devcontainer-pin-freshness.sh'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',

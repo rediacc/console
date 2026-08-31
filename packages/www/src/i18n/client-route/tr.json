@@ -167,6 +167,8 @@
           "requiredFields": "Lütfen adınızı, iş e-postanızı, şirketinizi, ülkenizi ve en az bir satış yönteminizi girin.",
           "consent": "Başvurunuza yanıt verebilmemiz için lütfen iletişime geçilmesini kabul edin.",
           "captcha": "Devam etmek için lütfen captcha'yı tamamlayın.",
+          "captchaUnavailable": "Doğrulama yüklenemedi: Bağlantınızı veya reklam engelleyicinizi kontrol edin.",
+          "captchaRetry": "Doğrulamayı yeniden yükle",
           "generic": "Bir şeyler ters gitti. Lütfen tekrar deneyin."
         }
       }

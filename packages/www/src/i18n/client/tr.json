@@ -1,5 +1,7 @@
 {
   "captchaRequired": "Lütfen captcha doğrulamasını tamamlayın.",
+  "captchaUnavailable": "Doğrulama yüklenemedi: Bağlantınızı veya reklam engelleyicinizi kontrol edin.",
+  "captchaRetry": "Doğrulamayı yeniden yükle",
   "common": {
     "close": "Kapat",
     "logoAlt": "Rediacc - Altyapı Otomasyon Platformu",
@@ -211,6 +213,8 @@
         "successBody": "PDF'yi yeni bir sekmede açtık ve bağlantıyı size e-posta ile gönderdik. Bu pencere kısa süre içinde kapanacak.",
         "errorGeneric": "Bir sorun oluştu. Lütfen tekrar deneyin ya da support@rediacc.com adresinden bize ulaşın.",
         "captchaRequired": "Lütfen captcha doğrulamasını tamamlayın.",
+        "captchaUnavailable": "Doğrulama yüklenemedi: Bağlantınızı veya reklam engelleyicinizi kontrol edin.",
+        "captchaRetry": "Doğrulamayı yeniden yükle",
         "disclaimer": "Tek e-posta. Pazarlama listesi yok. Tek tıkla abonelik iptali.",
         "closeLabel": "Kapat",
         "errorRequiredEmail": "Lütfen e-posta adresinizi girin."

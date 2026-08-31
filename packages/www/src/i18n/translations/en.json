@@ -157,6 +157,10 @@
       "dev-env": "Dev Environments",
       "defense": "Preemptive Defense"
     },
+    "disclosure": {
+      "mechanism": "See the mechanism",
+      "comparison": "Compare all tools"
+    },
     "references": {
       "title": "Sources"
     }
@@ -271,6 +275,8 @@
     "errorRequiredEmail": "Please enter your email address."
   },
   "captchaRequired": "Please complete the captcha verification.",
+  "captchaUnavailable": "Verification could not load: check your connection or any ad blocker.",
+  "captchaRetry": "Reload verification",
   "regionPicker": {
     "title": "Choose your account region",
     "subtitle": "Your account, billing, and configurations stay in the region you choose.",
@@ -554,6 +560,8 @@
           "requiredFields": "Please fill in your name, work email, company, country, and at least one way you sell.",
           "consent": "Please agree to be contacted so we can reply to your application.",
           "captcha": "Please complete the captcha to continue.",
+          "captchaUnavailable": "Verification could not load: check your connection or any ad blocker.",
+          "captchaRetry": "Reload verification",
           "generic": "Something went wrong. Please try again."
         }
       },
@@ -2077,7 +2085,8 @@
         },
         "hero": {
           "title": "Clone production in 60 seconds",
-          "subtitle": "Make an exact copy of production in seconds. The app, the database, and the settings. No tickets. No waiting."
+          "subtitle": "Make an exact copy of production in seconds. The app, the database, and the settings. No tickets. No waiting.",
+          "ctaLabel": "Start cloning"
         },
         "stats": [
           {
@@ -2441,7 +2450,8 @@
         },
         "hero": {
           "title": "Stop paying for idle environments",
-          "subtitle": "Spin up a test server on demand. Kill it when the work is done. Pay for what runs, not for servers sitting idle."
+          "subtitle": "Spin up a test server on demand. Kill it when the work is done. Pay for what runs, not for servers sitting idle.",
+          "ctaLabel": "Start cutting costs"
         },
         "problem": {
           "overline": "THE PROBLEM",
@@ -2710,7 +2720,8 @@
         },
         "hero": {
           "title": "Dev environments that match production. Exactly.",
-          "subtitle": "Everyone knows the line: it works on my machine. Here, every dev setup is an exact copy of production."
+          "subtitle": "Everyone knows the line: it works on my machine. Here, every dev setup is an exact copy of production.",
+          "ctaLabel": "Start matching production"
         },
         "stats": [
           {
@@ -3041,7 +3052,8 @@
         },
         "hero": {
           "title": "Plug into the existing workflow",
-          "subtitle": "Push the code. Rediacc spins up a fresh copy of production. Tests run on real data, not fake data. No custom scripts to write."
+          "subtitle": "Push the code. Rediacc spins up a fresh copy of production. Tests run on real data, not fake data. No custom scripts to write.",
+          "ctaLabel": "Start connecting"
         },
         "problem": {
           "overline": "THE PROBLEM",
@@ -3292,7 +3304,8 @@
         },
         "hero": {
           "title": "Backups that ransomware can’t touch",
-          "subtitle": "Backups lock the moment they're made. No one can change them. Not hackers. Not even the owner."
+          "subtitle": "Backups lock the moment they're made. No one can change them. Not hackers. Not even the owner.",
+          "ctaLabel": "Start protecting backups"
         },
         "problem": {
           "overline": "THE PROBLEM",
@@ -3618,7 +3631,8 @@
         },
         "hero": {
           "title": "Migrate without risking the data",
-          "subtitle": "Switching servers, clouds, or providers? Backups stay locked the whole way. No data exposed. None lost."
+          "subtitle": "Switching servers, clouds, or providers? Backups stay locked the whole way. No data exposed. None lost.",
+          "ctaLabel": "Start migrating safely"
         },
         "stats": [
           {
@@ -3975,7 +3989,8 @@
         },
         "hero": {
           "title": "Get the whole setup back in minutes",
-          "subtitle": "Not just files. Whole setups: servers, configs, and databases. Back up and running in minutes."
+          "subtitle": "Not just files. Whole setups: servers, configs, and databases. Back up and running in minutes.",
+          "ctaLabel": "Restore in minutes"
         },
         "stats": [
           {
@@ -4336,7 +4351,8 @@
         },
         "hero": {
           "title": "Test OS updates without the risk",
-          "subtitle": "Make a copy of the live servers. Install the update on the copy. See what breaks. If it goes wrong, throw the copy away. The real servers never get touched."
+          "subtitle": "Make a copy of the live servers. Install the update on the copy. See what breaks. If it goes wrong, throw the copy away. The real servers never get touched.",
+          "ctaLabel": "Start testing safely"
         },
         "stats": [
           {
@@ -4695,7 +4711,8 @@
         },
         "hero": {
           "title": "Keep data as long as the law requires",
-          "subtitle": "Set how long to keep backups. Rediacc keeps them that long, then cleans up. HIPAA, SOC2, and GDPR rules are covered from day one."
+          "subtitle": "Set how long to keep backups. Rediacc keeps them that long, then cleans up. HIPAA, SOC2, and GDPR rules are covered from day one.",
+          "ctaLabel": "Set retention rules"
         },
         "problem": {
           "overline": "THE PROBLEM",
@@ -5022,7 +5039,8 @@
         },
         "hero": {
           "title": "When AWS goes down, the business stays up",
-          "subtitle": "Apps run across more than one cloud. When one cloud goes down, the others take over on their own. Nobody gets paged."
+          "subtitle": "Apps run across more than one cloud. When one cloud goes down, the others take over on their own. Nobody gets paged.",
+          "ctaLabel": "Start staying online"
         },
         "stats": [
           {
@@ -5382,7 +5400,8 @@
         },
         "hero": {
           "title": "Test failover before it is needed",
-          "subtitle": "Run a fake disaster on a safe copy of the systems. See if recovery really works. Find the gaps before a real outage does."
+          "subtitle": "Run a fake disaster on a safe copy of the systems. See if recovery really works. Find the gaps before a real outage does.",
+          "ctaLabel": "Start testing failover"
         },
         "stats": [
           {
@@ -5733,7 +5752,8 @@
         },
         "hero": {
           "title": "Every backup verified. Automatically.",
-          "subtitle": "Don’t wait for a disaster to find out a backup is corrupted. Rediacc checks every backup the moment it’s created."
+          "subtitle": "Don’t wait for a disaster to find out a backup is corrupted. Rediacc checks every backup the moment it’s created.",
+          "ctaLabel": "Start verifying backups"
         },
         "problem": {
           "overline": "THE PROBLEM",
@@ -6031,7 +6051,8 @@
         },
         "hero": {
           "title": "Fix vulnerabilities before attackers arrive",
-          "subtitle": "Test the patch on an exact copy of production first. Then deploy the fix for real, knowing it works."
+          "subtitle": "Test the patch on an exact copy of production first. Then deploy the fix for real, knowing it works.",
+          "ctaLabel": "Start fixing vulnerabilities"
         },
         "stats": [
           {
@@ -6287,7 +6308,8 @@
         },
         "hero": {
           "title": "Clone production. Let AI attack it.",
-          "subtitle": "Make an exact copy of the servers. Let AI attack the copy. The real systems never get touched."
+          "subtitle": "Make an exact copy of the servers. Let AI attack the copy. The real systems never get touched.",
+          "ctaLabel": "Start an AI pentest"
         },
         "stats": [
           {
@@ -6551,7 +6573,8 @@
         },
         "hero": {
           "title": "Own the keys. Own the encryption. No exceptions.",
-          "subtitle": "Every backup is encrypted with locally owned keys. Not the vendor's keys. Not shared keys. One owner only."
+          "subtitle": "Every backup is encrypted with locally owned keys. Not the vendor's keys. Not shared keys. One owner only.",
+          "ctaLabel": "Start owning your keys"
         },
         "problem": {
           "overline": "THE PROBLEM",
@@ -6872,7 +6895,8 @@
         },
         "hero": {
           "title": "Test security continuously. Not annually.",
-          "subtitle": "We test security every day on a fresh copy of the live systems. Holes surface the day they show up, not months later."
+          "subtitle": "We test security every day on a fresh copy of the live systems. Holes surface the day they show up, not months later.",
+          "ctaLabel": "Start testing continuously"
         },
         "stats": [
           {
@@ -7131,7 +7155,8 @@
         },
         "hero": {
           "title": "Every action logged. Nothing hidden.",
-          "subtitle": "See who did what, when, and why. Every action lands in a record nobody can fake."
+          "subtitle": "See who did what, when, and why. Every action lands in a record nobody can fake.",
+          "ctaLabel": "Start the audit trail"
         },
         "stats": [
           {
@@ -7485,7 +7510,8 @@
         },
         "hero": {
           "title": "Sovereign by design, not by certificate.",
-          "subtitle": "It runs on local servers. The only keys stay local. A US-owned provider can't hand over data it never had."
+          "subtitle": "It runs on local servers. The only keys stay local. A US-owned provider can't hand over data it never had.",
+          "ctaLabel": "Start in your region"
         },
         "stats": [
           {
@@ -7845,7 +7871,8 @@
         },
         "hero": {
           "title": "Recover in minutes. Not days.",
-          "subtitle": "When ransomware hits, every minute costs money. Rediacc restores service fast, before the damage spreads."
+          "subtitle": "When ransomware hits, every minute costs money. Rediacc restores service fast, before the damage spreads.",
+          "ctaLabel": "Start recovering faster"
         },
         "problem": {
           "overline": "THE PROBLEM",
@@ -8150,7 +8177,8 @@
         },
         "hero": {
           "title": "Fork or move a running Kubernetes cluster",
-          "subtitle": "The cluster moves as one set: nodes, config, and data. To another machine or another datacenter. The cutover is measured in seconds, not a weekend."
+          "subtitle": "The cluster moves as one set: nodes, config, and data. To another machine or another datacenter. The cutover is measured in seconds, not a weekend.",
+          "ctaLabel": "Start forking clusters"
         },
         "stats": [
           {
@@ -8443,7 +8471,8 @@
         },
         "hero": {
           "title": "Run it anywhere. Move it anytime. Always.",
-          "subtitle": "Run it on any cloud. Move it anytime. No long contracts. No locked-in data formats. The data stays under local control."
+          "subtitle": "Run it on any cloud. Move it anytime. No long contracts. No locked-in data formats. The data stays under local control.",
+          "ctaLabel": "Start running anywhere"
         },
         "stats": [
           {
@@ -8795,6 +8824,8 @@
         "successBody": "We've opened it in a new tab and emailed the link. Closing this in a moment.",
         "errorGeneric": "Something went wrong. Please try again or reach out at support@rediacc.com.",
         "captchaRequired": "Please complete the captcha verification.",
+        "captchaUnavailable": "Verification could not load: check your connection or any ad blocker.",
+        "captchaRetry": "Reload verification",
         "disclaimer": "One email. No marketing list. Unsubscribe with one click.",
         "closeLabel": "Close",
         "errorRequiredEmail": "Please enter your email address."
@@ -8816,7 +8847,7 @@
         "hero": {
           "title": "Clone prod in a minute. Roll back in five. Stop filing tickets.",
           "subtitle": "CLI-first infrastructure that clones production in 60 seconds, rolls back in under five minutes, and runs on self-owned hardware. No tickets. No waiting. The data never leaves.",
-          "primaryCta": "Start free trial"
+          "ctaLabel": "Start cloning prod"
         },
         "stats": [
           {
@@ -9040,7 +9071,7 @@
         "hero": {
           "title": "Reduce infrastructure TCO by 60%. Scale on owned hardware.",
           "subtitle": "Self-hosted infrastructure protection. No cloud markup, no per-seat pricing, recovery in minutes instead of hours.",
-          "primaryCta": "Schedule a Demo"
+          "ctaLabel": "Start cutting TCO"
         },
         "stats": [
           {
@@ -9259,7 +9290,7 @@
         "hero": {
           "title": "One flat price per server. The data never leaves.",
           "subtitle": "Protect business data on owned hardware. One flat price per machine. No per-seat fees, no surprise cloud bills, no vendor holding the data hostage.",
-          "primaryCta": "See Pricing"
+          "ctaLabel": "Start on one flat price"
         },
         "stats": [
           {
@@ -9413,7 +9444,7 @@
         "hero": {
           "title": "Infrastructure an AI agent already knows how to use.",
           "subtitle": "CLI-first. SSH-based. JSON by default. Every rdc command is built for autonomous agents: no GUI, no browser automation, no custom integrations.",
-          "primaryCta": "Start free trial"
+          "ctaLabel": "Give an agent a server"
         },
         "stats": [
           {

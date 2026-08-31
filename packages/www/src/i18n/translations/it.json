@@ -26,6 +26,8 @@
     "title": "La differenza"
   },
   "captchaRequired": "Completa la verifica captcha.",
+  "captchaUnavailable": "Non è stato possibile caricare la verifica: controlla la connessione o un blocco pubblicità.",
+  "captchaRetry": "Ricarica verifica",
   "common": {
     "aria": {
       "breadcrumbNavigation": "Navigazione breadcrumb",
@@ -953,6 +955,8 @@
       "form": {
         "errors": {
           "captcha": "Completa il captcha per continuare.",
+          "captchaUnavailable": "Non è stato possibile caricare la verifica: controlla la connessione o un blocco pubblicità.",
+          "captchaRetry": "Ricarica verifica",
           "consent": "Acconsenti a essere contattato per permetterci di rispondere alla tua richiesta.",
           "generic": "Qualcosa è andato storto. Riprova.",
           "requiredFields": "Compila nome, email di lavoro, azienda, paese e almeno una modalità di vendita."
@@ -1116,7 +1120,7 @@
           "title": "Lascia che l'agente AI gestisca la tua infrastruttura"
         },
         "hero": {
-          "primaryCta": "Inizia gratis",
+          "ctaLabel": "Dai un server all'agente",
           "subtitle": "CLI-first. SSH. JSON di default. Ogni comando rdc è pensato per agenti autonomi: niente GUI, niente automazione browser, niente integrazioni custom.",
           "title": "L'infrastruttura che il tuo agente AI sa già usare."
         },
@@ -1355,7 +1359,7 @@
           "withTag": "Con Rediacc"
         },
         "hero": {
-          "primaryCta": "Scopri i prezzi",
+          "ctaLabel": "Inizia a prezzo fisso",
           "subtitle": "I dati aziendali rimangono sul tuo hardware. Prezzo fisso per macchina: zero tariffe per dipendente, zero sorprese cloud, nessun fornitore che tiene i dati in ostaggio.",
           "title": "Un prezzo per server. I dati rimangono tuoi."
         },
@@ -1545,7 +1549,7 @@
           "title": "Come Rediacc si differenzia"
         },
         "hero": {
-          "primaryCta": "Prenota una demo",
+          "ctaLabel": "Riduci il TCO",
           "subtitle": "Infrastruttura self-hosted. Zero margini cloud, zero costi per utente, recovery in minuti non ore.",
           "title": "Riduci il TCO del 60%. Scala sul tuo hardware."
         },
@@ -1701,7 +1705,7 @@
           "title": "Provalo"
         },
         "hero": {
-          "primaryCta": "Inizia gratis",
+          "ctaLabel": "Clona la produzione",
           "subtitle": "CLI-first. Clona prod in 60 secondi, rollback in meno di 5 minuti, su hardware tuo. Niente ticket. Niente attese. I dati restano tuoi.",
           "title": "Clona prod in un minuto. Ripristina in 5 minuti. Basta ticket."
         },
@@ -3102,6 +3106,7 @@
           "withTag": "CON REDIACC"
         },
         "hero": {
+          "ctaLabel": "Avvia un pentest IA",
           "subtitle": "Crea copie identiche della tua infrastruttura ed esegui penetration test basati su AI — senza rischiare la produzione.",
           "title": "Clona la produzione. Lascia attaccare l'AI."
         },
@@ -3411,6 +3416,7 @@
           "title": "Audit trail a confronto"
         },
         "hero": {
+          "ctaLabel": "Avvia l'audit trail",
           "subtitle": "Visibilità completa su chi ha fatto cosa, quando e perché. Log di audit a prova di manomissione per ogni operazione.",
           "title": "Ogni azione registrata. Nulla nascosto."
         },
@@ -3745,6 +3751,7 @@
           "title": "Verifica dei backup a confronto"
         },
         "hero": {
+          "ctaLabel": "Verifica i backup",
           "subtitle": "Non aspettare un disastro per scoprire che il tuo backup è corrotto. Rediacc controlla ogni backup nel momento in cui viene creato.",
           "title": "Ogni backup verificato. Automaticamente."
         },
@@ -4064,6 +4071,7 @@
           "title": "Nessun altro strumento esegue il failover tra cloud in pochi secondi"
         },
         "hero": {
+          "ctaLabel": "Resta sempre online",
           "subtitle": "La tua infrastruttura opera su più cloud. Quando uno fallisce, gli altri subentrano automaticamente.",
           "title": "Quando AWS è giù, tu no"
         },
@@ -4378,6 +4386,7 @@
           "withTag": "CONTINUO (REDIACC)"
         },
         "hero": {
+          "ctaLabel": "Testa in continuo",
           "subtitle": "Esegui test di sicurezza ogni giorno su cloni di produzione aggiornati. Trova le vulnerabilità quando compaiono, non mesi dopo.",
           "title": "Testa la sicurezza in modo continuo. Non annuale."
         },
@@ -4680,6 +4689,7 @@
           "title": "Sovranità a confronto"
         },
         "hero": {
+          "ctaLabel": "Inizia nella tua regione",
           "subtitle": "Lo ospiti tu. Le chiavi le tieni tu. Nessun provider soggetto alla giurisdizione statunitense può essere obbligato a consegnare ciò che non possiede.",
           "title": "Sovrano per architettura, non per certificato."
         },
@@ -5036,6 +5046,7 @@
           "title": "Controllo della crittografia a confronto"
         },
         "hero": {
+          "ctaLabel": "Gestisci le tue chiavi",
           "subtitle": "Ogni backup è crittografato con chiavi di tua proprietà. Non quelle del fornitore. Non chiavi condivise. Solo le tue.",
           "title": "Le tue chiavi. La tua crittografia. Nessuna eccezione."
         },
@@ -5374,6 +5385,7 @@
           "title": "Nessun altro strumento clona il tuo stack completo"
         },
         "hero": {
+          "ctaLabel": "Inizia a clonare",
           "subtitle": "Avvia copie esatte della produzione, applicazione, database e configurazione inclusi, per sviluppo e test. Nessun ticket. Nessuna attesa.",
           "title": "Clona la produzione in 60 secondi"
         },
@@ -5743,6 +5755,7 @@
           "title": "Strumenti di test DR a confronto"
         },
         "hero": {
+          "ctaLabel": "Testa il failover",
           "subtitle": "Esegui simulazioni di disastro in sicurezza. Accertati che il ripristino funzioni davvero. Nessuna sorpresa quando conta di più.",
           "title": "Testa il tuo failover prima di averne bisogno"
         },
@@ -6073,6 +6086,7 @@
           "title": "L'unico backup con immutabilità a livello di filesystem"
         },
         "hero": {
+          "ctaLabel": "Proteggi i backup",
           "subtitle": "I tuoi backup sono immutabili dal momento in cui vengono creati. Nessuno può modificarli. Né gli hacker. Né tu stesso.",
           "title": "Backup che il ransomware non può toccare"
         },
@@ -6396,6 +6410,7 @@
           "title": "Quello che gli altri fanno pagare per la capacità inattiva"
         },
         "hero": {
+          "ctaLabel": "Riduci i costi",
           "subtitle": "Crea ambienti on demand. Distruggili quando hai finito. Paga solo per ciò che usi davvero.",
           "title": "Smetti di pagare per ambienti inattivi"
         },
@@ -6691,6 +6706,7 @@
           "title": "Capacità di ripristino a confronto"
         },
         "hero": {
+          "ctaLabel": "Ripristina in pochi minuti",
           "subtitle": "Non solo file. Interi ambienti, server, configurazioni, database, ripristinati e operativi in pochi minuti.",
           "title": "Ripristino completo dell'ambiente in pochi minuti"
         },
@@ -7022,6 +7038,7 @@
           "title": "Fixture di test vs. cloni di produzione"
         },
         "hero": {
+          "ctaLabel": "Inizia a connettere",
           "subtitle": "Un git push avvia un ambiente aggiornato. I test vengono eseguiti su cloni di produzione. CI/CD funziona subito, senza script personalizzati.",
           "title": "Integrati nel tuo workflow esistente"
         },
@@ -7273,6 +7290,7 @@
           "title": "Nessun altro sposta un cluster attivo con i suoi dati"
         },
         "hero": {
+          "ctaLabel": "Forka i tuoi cluster",
           "subtitle": "Il cluster si muove come un blocco unico: nodi, config, dati. Verso un'altra macchina o un altro datacenter. Il cambio avviene in secondi, non nel weekend.",
           "title": "Fai il fork o sposta un cluster Kubernetes attivo"
         },
@@ -7506,6 +7524,8 @@
       },
       "leadMagnetModal": {
         "captchaRequired": "La preghiamo di completare la verifica captcha.",
+        "captchaUnavailable": "Non è stato possibile caricare la verifica: controlla la connessione o un blocco pubblicità.",
+        "captchaRetry": "Ricarica verifica",
         "closeLabel": "Chiudi",
         "description": "Inserisca la sua email aziendale. Le invieremo il link al PDF e ne conserveremo una copia nella sua casella di posta.",
         "disclaimer": "Una sola email. Nessuna lista marketing. Cancellazione con un clic.",
@@ -7619,6 +7639,7 @@
           "title": "Cosa gli altri non riescono a fare durante la migrazione"
         },
         "hero": {
+          "ctaLabel": "Migra in sicurezza",
           "subtitle": "Stai passando server, cloud o provider? I backup rimangono bloccati dall'inizio alla fine. Dati sempre protetti. Niente si perde.",
           "title": "Migra senza mettere a rischio i tuoi dati"
         },
@@ -7976,6 +7997,7 @@
           "title": "Clonazione del codice vs. clonazione dell'ambiente"
         },
         "hero": {
+          "ctaLabel": "Allinea alla produzione",
           "subtitle": "Basta con il \"funziona sul mio computer\". Ogni ambiente di sviluppo è un clone identico della produzione.",
           "title": "Ambienti di sviluppo identici alla produzione. Esattamente."
         },
@@ -8282,6 +8304,7 @@
           "title": "Nessun altro strumento recupera così velocemente"
         },
         "hero": {
+          "ctaLabel": "Recupera più velocemente",
           "subtitle": "Quando il ransomware colpisce, ogni minuto costa denaro. Rediacc ti riporta online prima che il danno si diffonda.",
           "title": "Ripristina in minuti. Non in giorni."
         },
@@ -8593,6 +8616,7 @@
           "title": "Conformità alla conservazione a confronto"
         },
         "hero": {
+          "ctaLabel": "Imposta la conservazione",
           "subtitle": "Politiche di conservazione configurabili che soddisfano i requisiti di conformità. HIPAA, SOC2, GDPR - coperti per impostazione predefinita.",
           "title": "Conserva i tuoi dati per tutto il tempo richiesto dalla legge"
         },
@@ -8941,6 +8965,7 @@
           "title": "Nessun altro strumento testa le patch su dati di produzione reali"
         },
         "hero": {
+          "ctaLabel": "Testa in sicurezza",
           "subtitle": "Clona il tuo ambiente di produzione. Applica la patch. Vedi cosa si rompe. Torna indietro se necessario. Tutto senza toccare la produzione.",
           "title": "Testa gli aggiornamenti OS senza rischi"
         },
@@ -9299,6 +9324,7 @@
           "title": "Nessun altro strumento migra l'intero stack in pochi minuti"
         },
         "hero": {
+          "ctaLabel": "Esegui ovunque",
           "subtitle": "Distribuisci ovunque. Migra in qualsiasi momento. Nessun contratto di lock-in. Nessun formato proprietario. I tuoi dati restano tuoi.",
           "title": "La tua infrastruttura. La tua scelta. Sempre."
         },
@@ -9601,6 +9627,7 @@
           "withTag": "Con Rediacc"
         },
         "hero": {
+          "ctaLabel": "Correggi le vulnerabilità",
           "subtitle": "Trova, testa e correggi le falle di sicurezza su cloni sicuri. Distribuisci le correzioni in produzione con fiducia.",
           "title": "Correggi le vulnerabilità prima che arrivino gli attaccanti"
         },
@@ -10301,6 +10328,10 @@
     "constellation": {
       "centre": "Ogni soluzione è un'azione su una copia della tua produzione.",
       "title": "Esplora altre soluzioni"
+    },
+    "disclosure": {
+      "mechanism": "Guarda il meccanismo",
+      "comparison": "Confronta tutti gli strumenti"
     },
     "references": {
       "title": "Fonti"

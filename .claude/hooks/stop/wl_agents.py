@@ -168,6 +168,17 @@ _STOPWORD_TEXT = (
     # failure the `word words` note below already paid for. Half a closed class is
     # not a closed class.
     "while because though although whether unless "
+    # `total` is the same shape as `while` above, one class down: ordinary English
+    # that happens to appear in exactly one description, so `discriminative()` hands
+    # it to that description at full weight. licensing-ops says "the TOTAL tier map",
+    # and `total` is what every count in this repo reaches for -- "32 errors total",
+    # "total runtime", "total across 26 slugs". It fired live on a claim about
+    # TypeScript error counts in packages/www, routing a www dismissal to the
+    # licensing specialist on that single token. The pushback itself was right (the
+    # claim was unproven and pushing back found a real error in it); only the routing
+    # was nonsense, and a hint that names the wrong specialist spends the reader's
+    # trust in every later hint.
+    "total totals "
     "not but its are was were been being have has had having does did doing "
     "can could should would will shall may might must "
     "you your yours our ours mine his her hers theirs "

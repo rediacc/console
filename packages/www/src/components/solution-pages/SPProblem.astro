@@ -41,6 +41,8 @@ const { problem, referenceItems = [], slug } = Astro.props;
 // around them), so one file serves every locale and viewport, inlined so it
 // can paint from the theme-aware --illustration-* tokens.
 const illustrationSvg = slug ? resolveSolutionIllustration(slug) : null;
+// Unique per mount: aria-describedby must point at an id that exists exactly once.
+const popIdBase = `sp-callout-src-${slug ?? 'page'}`;
 ---
 
 <section class="sp-problem" id="problem">
@@ -55,9 +57,13 @@ const illustrationSvg = slug ? resolveSolutionIllustration(slug) : null;
     mirrors to text-right / drawing-left with no direction-specific rules. The
     900px collapse keeps that order, so mobile leads with the title.
 
-    The stat callouts live INSIDE the text column: they are short chips that
-    restate the prose claim, and keeping them in the column is what balances the
-    two column heights so the vertical centring reads as intentional. The
+    THE CALLOUTS ARE THEIR OWN COLUMN, not part of the text block. They used to sit
+    inside it, on the reasoning that stacking them there balanced the two column
+    heights. Measured on /en/for-ctos that was backwards: the text column carried
+    four stacked devices for 483px while the illustration column held two small line
+    drawings in 324px of mostly empty air, and the section ran 1019px for 106 words.
+    Four things stacked in a narrow column beside a near-empty one is what reads as
+    crowded, and it is a composition problem rather than a word-count one. The
     timeline stays a full-width row under both columns because it is a
     horizontal band by design (a row of connected steps, capped at 700px) and
     squeezing it into a half-width column would break its own layout.
@@ -68,41 +74,67 @@ const illustrationSvg = slug ? resolveSolutionIllustration(slug) : null;
       <h2>{problem.title}</h2>
       <p>{problem.description}</p>
 
-      {problem.statCallouts && problem.statCallouts.length > 0 && (
-        <div class="sp-stat-callouts">
-          {problem.statCallouts.map((callout) => {
-            /*
-              B4: the callout keeps its number and its claim and loses the stacked source
-              line. What replaces it is a marker into SPSources, and it is rendered ONLY when
-              the `ref` actually resolves to an item.
-
-              That guard is the whole point rather than defensive habit. `statCallout.ref` is
-              unvalidated: `scripts/validate-comparison-refs.js` iterates `comparison.features`
-              and nothing else, so no gate has ever read these indices. And the case is live,
-              not hypothetical -- `pages.personaPages.*` carries `ref` numbers but has never
-              carried a `references` branch in any locale, so `PersonaPage.astro` passes no
-              `referenceItems` and every persona callout lands here unresolved. An
-              unconditional marker would emit `#sp-ref-N` against an id no page contains.
-            */
-            const cited = callout.ref && callout.ref > 0 ? referenceItems[callout.ref - 1] : undefined;
-            return (
-              <div class="sp-stat-callout">
-                <span class="sp-stat-callout-number">{callout.number}</span>
-                {callout.text}
-                {cited && (
-                  <a
-                    class="sp-stat-ref"
-                    href={`#sp-ref-${callout.ref}`}
-                    title={callout.source}
-                    aria-label={`${callout.source}: ${cited.text}`}
-                  >{callout.ref}</a>
-                )}
-              </div>
-            );
-          })}
-        </div>
-      )}
     </div>
+
+    {problem.statCallouts && problem.statCallouts.length > 0 && (
+      <div class="sp-stat-callouts">
+        {problem.statCallouts.map((callout, idx) => {
+          /*
+            B4: the callout keeps its number and its claim and loses the stacked source
+            line. What replaces it is a marker into SPSources, and it is rendered ONLY when
+            the `ref` actually resolves to an item.
+
+            That guard is the whole point rather than defensive habit. `statCallout.ref` is
+            unvalidated: `scripts/validate-comparison-refs.js` iterates `comparison.features`
+            and nothing else, so no gate has ever read these indices. And the case is live,
+            not hypothetical -- `pages.personaPages.*` carries `ref` numbers but has never
+            carried a `references` branch in any locale, so `PersonaPage.astro` passes no
+            `referenceItems` and every persona callout lands here unresolved. An
+            unconditional marker would emit `#sp-ref-N` against an id no page contains.
+          */
+          const cited = callout.ref && callout.ref > 0 ? referenceItems[callout.ref - 1] : undefined;
+          return (
+            <div
+              class="sp-stat-callout"
+              tabindex={callout.source ? 0 : undefined}
+              aria-describedby={callout.source ? `${popIdBase}-${idx}` : undefined}
+            >
+              <span class="sp-stat-callout-number">{callout.number}</span>
+              {callout.text}
+              {cited && (
+                <a
+                  class="sp-stat-ref"
+                  href={`#sp-ref-${callout.ref}`}
+                  title={callout.source}
+                  aria-label={`${callout.source}: ${cited.text}`}
+                >{callout.ref}</a>
+              )}
+              {/* THE SOURCE, GIVEN BACK WITHOUT ITS OLD COST.
+                  B4 above removed the stacked source line to save vertical space, and on
+                  persona pages that left these numbers with NO attribution at all, because
+                  `pages.personaPages.*` carries `ref` indices but has never carried a
+                  `references` branch, so `cited` is always undefined there.
+                  This costs zero layout: it is absolutely positioned and only painted on
+                  hover or focus.
+
+                  HOVER *AND* FOCUS, and no JS. PersonaMegaMenu.tsx:186-191 records that
+                  hover-to-open was deliberately removed from this site after two live bugs
+                  (a hover-open whose own click closed it, an orphaned 100ms timer). Both
+                  needed a TIMER and a competing CLICK action; a tooltip has neither, so
+                  neither bug can occur here. The other half of that ruling was that hover
+                  has no keyboard or touch equivalent -- which is why this is driven by
+                  `:hover, :focus-visible, :focus-within` together and the chip is
+                  focusable, so a keyboard reaches it and a tap opens it. */}
+              {callout.source && (
+                <span class="sp-callout-pop" id={`${popIdBase}-${idx}`} role="tooltip">
+                  {callout.source}
+                </span>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    )}
 
     {illustrationSvg && (
       <div class="sp-problem-illustration" set:html={illustrationSvg} />

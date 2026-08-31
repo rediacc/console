@@ -1,5 +1,7 @@
 {
   "captchaRequired": "Palun läbi captcha kontroll.",
+  "captchaUnavailable": "Kontrolli ei õnnestunud laadida: kontrolli oma internetiühendust või reklaamiblokeerijat.",
+  "captchaRetry": "Laadi kontroll uuesti",
   "common": {
     "close": "Sulge",
     "logoAlt": "Rediacc - Infrastruktuuri Automatiseerimisplatvorm",
@@ -211,6 +213,8 @@
         "successBody": "Avasime selle uuel vahekaardil ja saatsime sulle lingi e-postiga. Sulgen akna hetke pärast.",
         "errorGeneric": "Midagi läks valesti. Proovi uuesti või võta ühendust aadressil support@rediacc.com.",
         "captchaRequired": "Palun läbi captcha kinnitamine.",
+        "captchaUnavailable": "Kontrolli ei õnnestunud laadida: kontrolli oma internetiühendust või reklaamiblokeerijat.",
+        "captchaRetry": "Laadi kontroll uuesti",
         "disclaimer": "Üks e-kiri. Turunduslistis ei osale. Tühista tellimus ühe klikiga.",
         "closeLabel": "Sulge",
         "errorRequiredEmail": "Palun sisestage oma e-posti aadress."

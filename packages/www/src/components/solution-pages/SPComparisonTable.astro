@@ -11,6 +11,10 @@ interface ReferenceItem {
 }
 
 interface Props {
+  /** Button label, from the shared `solutions.disclosure.*` nouns. */
+  triggerLabel: string;
+  /** Unique per mount: two popovers on one page must not share an id. */
+  popId: string;
   comparison: {
     overline: string;
     title: string;
@@ -22,7 +26,8 @@ interface Props {
   referenceItems?: ReferenceItem[];
 }
 
-const { comparison, competitors, referenceItems = [] } = Astro.props;
+const { comparison, competitors, referenceItems = [], triggerLabel, popId } = Astro.props;
+const cmpTitleId = `${popId}-title`;
 
 const attr = (s: string) =>
   s
@@ -64,6 +69,32 @@ function renderValue(val: string, ref?: number) {
     <h2>{comparison.title}</h2>
     <p>{comparison.description}</p>
 
+    {/* A real block wrapper owns the horizontal scroll. It used to be
+        `display: block; overflow-x: auto` on the <table> itself, which does
+        scroll but only by making the table stop being a table: `display: block`
+        drops the column model, so `position: sticky` on the first column could
+        not work and the row label scrolled away with everything else.
+        Measured at 390px before this: 7 columns spanning 562px inside 327px,
+        with the REDIACC column starting at x=512 -- the one column the table
+        exists to show was always off-screen, and nothing indicated it was
+        reachable. tabindex + role make the scroller keyboard-reachable, which
+        an overflow container is not on its own. */}
+    {/* Same native-popover treatment as SPTechDiff, and for the same reason: this is
+        static Astro, so a dialog costs no JS runtime. The scroll wrapper and its sticky
+        first column stay INSIDE the popover, because a 7-column table still needs both
+        on a phone once opened. */}
+    <button type="button" class="sp-disclosure-trigger" popovertarget={popId}>
+      {triggerLabel}
+    </button>
+
+    <div class="sp-disclosure-pop" id={popId} popover="auto" role="dialog" aria-labelledby={cmpTitleId}>
+      <h3 class="sp-disclosure-pop-title" id={cmpTitleId}>{comparison.title}</h3>
+    <div
+      class="sp-comparison-scroll"
+      tabindex="0"
+      role="region"
+      aria-label={comparison.title}
+    >
     <table class="sp-comparison-table">
       <thead>
         <tr>
@@ -87,5 +118,7 @@ function renderValue(val: string, ref?: number) {
         ))}
       </tbody>
     </table>
+    </div>
+    </div>
   </div>
 </section>

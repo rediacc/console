@@ -10,7 +10,7 @@
     "ghcr.io/devcontainers/features/docker-in-docker:2": {}
   },
   "runArgs": ["--init", "--shm-size=1g"],
-  "forwardPorts": [3000, 6080, 8080],
+  "forwardPorts": [3000, 6080, 7681, 8080],
   "portsAttributes": {
     "3000": {
       "label": "Console Dev Server",
@@ -20,13 +20,17 @@
       "label": "Desktop (noVNC)",
       "onAutoForward": "notify"
     },
+    "7681": {
+      "label": "Terminal (ttyd + tmux)",
+      "onAutoForward": "notify"
+    },
     "8080": {
       "label": "VS Code (Self-Hosted)",
       "onAutoForward": "ignore"
     }
   },
   "postCreateCommand": "{ bash .devcontainer/init-submodules.sh || true; } && npm install && npm install --prefix private/account && npm run build:packages && npx --prefix packages/e2e playwright install chromium",
-  "postStartCommand": "start-desktop.sh; start-kvm.sh; ./run.sh provision auto; ./run.sh backend auto; npm install",
+  "postStartCommand": "start-desktop.sh; setsid start-ttyd.sh >/tmp/ttyd.log 2>&1 & start-kvm.sh; ./run.sh provision auto; ./run.sh backend auto; npm install",
   "remoteEnv": {
     "PORT": "3000",
     "DISPLAY": ":99"

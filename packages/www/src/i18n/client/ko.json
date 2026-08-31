@@ -1,5 +1,7 @@
 {
   "captchaRequired": "캡차 인증을 완료해 주세요.",
+  "captchaUnavailable": "인증을 불러오지 못했으니 인터넷 연결이나 광고 차단 프로그램을 확인해 주세요.",
+  "captchaRetry": "인증 다시 불러오기",
   "common": {
     "close": "닫기",
     "logoAlt": "Rediacc - 인프라 자동화 플랫폼",
@@ -211,6 +213,8 @@
         "successBody": "새 탭에서 열어 두었으며, 링크를 이메일로도 보내드렸습니다. 잠시 후 창이 닫힙니다.",
         "errorGeneric": "문제가 발생했습니다. 다시 시도하시거나 support@rediacc.com으로 문의해 주세요.",
         "captchaRequired": "캡차 인증을 완료해 주세요.",
+        "captchaUnavailable": "인증을 불러오지 못했으니 인터넷 연결이나 광고 차단 프로그램을 확인해 주세요.",
+        "captchaRetry": "인증 다시 불러오기",
         "disclaimer": "이메일 한 통. 마케팅 리스트 없음. 원 클릭으로 구독 취소.",
         "closeLabel": "닫기",
         "errorRequiredEmail": "이메일 주소를 입력해 주세요."

@@ -1874,8 +1874,16 @@ EOF
 
     devbox_up || return 1
 
+    # THE URLS ARE THE DELIVERABLE. devbox_up has already printed the probed
+    # route table, so these two lines are the bookmark, not the report: the pair
+    # a person actually needs after a fresh machine setup. Terminal is named
+    # explicitly because it is new and nothing else would tell anyone it exists.
     echo ""
-    log_info "Setup complete. Everything below runs INSIDE the devbox:"
+    log_info "Setup complete."
+    log_info "  VS Code:  $(devbox_url)"
+    log_info "  Terminal: $(devbox_url term)   tmux in the browser"
+    echo ""
+    log_info "Everything below runs INSIDE the devbox:"
     log_info "  ./run.sh account dev    start the account dev stack"
     log_info "  ./run.sh account db     browse the dev database"
     log_info "  ./run.sh devbox shell   a shell in the container"
@@ -2265,7 +2273,15 @@ main() {
                 # capture it. `worktree create` needs exactly this to show the URL
                 # in its summary; parsing it back out of `status` would couple a
                 # script to a human-facing layout.
-                url) devbox_url ;;
+                #
+                # The optional suffix reaches the other routes -- `url term`,
+                # `url account`, `url db` -- because a scriptable URL for one
+                # service and a status-table scrape for the rest is the coupling
+                # this subcommand exists to avoid.
+                url)
+                    shift
+                    devbox_url "${1:-}"
+                    ;;
                 stop) devbox_stop ;;
                 proxy)
                     shift
@@ -2304,7 +2320,7 @@ main() {
                     ;;
                 *)
                     log_error "Unknown devbox command: $1"
-                    log_info "Usage: ./run.sh devbox [up|status|stop|remove|shell|logs]"
+                    log_info "Usage: ./run.sh devbox [up|status|url [term|account|db]|stop|remove|shell|logs]"
                     exit 1
                     ;;
             esac

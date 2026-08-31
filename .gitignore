@@ -172,3 +172,10 @@ packages/www/src/i18n/translations/*.lock
 .claude/hooks/stop/.waiter-*
 .claude/hooks/stop/.requests
 .claude/hooks/stop/.loop
+
+# Byproducts of the worklist hook's own test suite (.claude/hooks/stop/test-worklist-v5.sh).
+# The harness writes a `<worklist>.events.jsonl` beside its fixture worklist and stages
+# synthetic TRAPS.md trees under capfix-*/; both carry `deadbeef` fixture data, not state.
+.claude/hooks/stop/.events.jsonl
+.claude/hooks/stop/capfix-at/
+.claude/hooks/stop/capfix-over/

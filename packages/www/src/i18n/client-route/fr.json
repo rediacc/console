@@ -167,6 +167,8 @@
           "requiredFields": "Merci de renseigner votre nom, votre e-mail professionnel, votre entreprise, votre pays et au moins un mode de vente.",
           "consent": "Merci de cocher la case pour que nous puissions répondre à votre candidature.",
           "captcha": "Merci de compléter le captcha pour continuer.",
+          "captchaUnavailable": "La vérification n'a pas pu se charger : vérifiez votre connexion ou un bloqueur de publicités.",
+          "captchaRetry": "Recharger la vérification",
           "generic": "Une erreur s'est produite. Merci de réessayer."
         }
       }

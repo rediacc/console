@@ -1,5 +1,6 @@
 import { Turnstile } from '@marsidev/react-turnstile';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { captchaMessage, useCaptchaGuard } from '../hooks/useCaptchaGuard';
 import { useLanguage } from '../hooks/useLanguage';
 import { useTranslation } from '../i18n/react';
 import Overlay from './Overlay';
@@ -35,7 +36,9 @@ const LeadMagnetModal: React.FC = () => {
   const [state, setState] = useState<FormState>('idle');
   const [errorMsg, setErrorMsg] = useState('');
   const [opts, setOpts] = useState<LeadMagnetOpenOpts | null>(null);
-  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
+  // Shared with ContactModal and ContactForm; see useCaptchaGuard for why the widget
+  // failing to mount needed its own state at all.
+  const captcha = useCaptchaGuard();
 
   const currentLang = useLanguage();
   const { t } = useTranslation(currentLang);
@@ -44,16 +47,19 @@ const LeadMagnetModal: React.FC = () => {
   const emailRef = useRef<HTMLInputElement>(null);
   const autoCloseTimer = useRef<number | null>(null);
 
-  const open = useCallback((nextOpts: LeadMagnetOpenOpts) => {
-    setOpts(nextOpts);
-    setIsOpen(true);
-    setState('idle');
-    setErrorMsg('');
-    setTurnstileToken(null);
-    window.plausible?.('lead_magnet_open', {
-      props: { source: nextOpts.source, magnetName: nextOpts.magnetName },
-    });
-  }, []);
+  const open = useCallback(
+    (nextOpts: LeadMagnetOpenOpts) => {
+      setOpts(nextOpts);
+      setIsOpen(true);
+      setState('idle');
+      setErrorMsg('');
+      captcha.reset();
+      window.plausible?.('lead_magnet_open', {
+        props: { source: nextOpts.source, magnetName: nextOpts.magnetName },
+      });
+    },
+    [captcha]
+  );
 
   const close = useCallback(() => {
     setIsOpen(false);
@@ -95,11 +101,17 @@ const LeadMagnetModal: React.FC = () => {
       return;
     }
 
-    if (captchaEnabled && !turnstileToken) {
+    if (captchaEnabled && !captcha.token) {
       setState('error');
+      // Two different situations, and telling them apart is the whole fix: the widget is
+      // there and untouched, or the widget never loaded. The second one needs to say so
+      // and offer the retry, not repeat an instruction that points at nothing.
       setErrorMsg(
-        t('pages.solutionPages.leadMagnetModal.captchaRequired') ||
-          'Please complete captcha verification.'
+        captchaMessage(
+          captcha,
+          t('pages.solutionPages.leadMagnetModal.captchaUnavailable'),
+          t('pages.solutionPages.leadMagnetModal.captchaRequired')
+        )
       );
       return;
     }
@@ -121,7 +133,7 @@ const LeadMagnetModal: React.FC = () => {
           magnetName: opts.magnetName,
           source: opts.source,
           lang: currentLang,
-          turnstileToken: turnstileToken ?? undefined,
+          turnstileToken: captcha.token ?? undefined,
         }),
       });
       const body = (await res.json().catch(() => null)) as {
@@ -155,7 +167,7 @@ const LeadMagnetModal: React.FC = () => {
       });
 
       setState('success');
-      setTurnstileToken(null);
+      captcha.reset();
       autoCloseTimer.current = window.setTimeout(close, AUTO_CLOSE_MS);
     } catch (err) {
       pdfWindow?.close();
@@ -219,12 +231,26 @@ const LeadMagnetModal: React.FC = () => {
           </div>
           {captchaEnabled && (
             <Turnstile
+              key={captcha.nonce}
               siteKey={turnstileSiteKey}
               options={{ action: 'newsletter_lead_magnet', size: 'flexible' }}
-              onSuccess={setTurnstileToken}
-              onExpire={() => setTurnstileToken(null)}
-              onError={() => setTurnstileToken(null)}
+              onSuccess={captcha.onSuccess}
+              onExpire={captcha.onExpire}
+              onError={captcha.onError}
             />
+          )}
+          {captchaEnabled && captcha.failed && (
+            <p className="form-error" role="status">
+              {t('pages.solutionPages.leadMagnetModal.captchaUnavailable')}{' '}
+              <button
+                type="button"
+                className="form-inline-action"
+                onClick={captcha.retry}
+                data-track="captcha_retry"
+              >
+                {t('pages.solutionPages.leadMagnetModal.captchaRetry')}
+              </button>
+            </p>
           )}
           {state === 'error' && (
             <p className="form-error" role="alert">

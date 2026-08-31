@@ -1,5 +1,7 @@
 {
   "captchaRequired": "Veuillez compléter la vérification du captcha.",
+  "captchaUnavailable": "La vérification n'a pas pu se charger : vérifiez votre connexion ou un bloqueur de publicités.",
+  "captchaRetry": "Recharger la vérification",
   "common": {
     "close": "Fermer",
     "logoAlt": "Rediacc - Plateforme d'automatisation des infrastructures",
@@ -211,6 +213,8 @@
         "successBody": "Nous l'avons ouvert dans un nouvel onglet et vous avons envoyé le lien par e-mail. Fermeture dans un instant.",
         "errorGeneric": "Une erreur s'est produite. Veuillez réessayer ou contactez-nous à support@rediacc.com.",
         "captchaRequired": "Veuillez compléter la vérification captcha.",
+        "captchaUnavailable": "La vérification n'a pas pu se charger : vérifiez votre connexion ou un bloqueur de publicités.",
+        "captchaRetry": "Recharger la vérification",
         "disclaimer": "Un seul e-mail. Aucune liste marketing. Désabonnement en un clic.",
         "closeLabel": "Fermer",
         "errorRequiredEmail": "Veuillez saisir votre adresse e-mail."

@@ -48,6 +48,7 @@ export const PERSONA_PAGES: Record<string, PersonaPageConfig> = {
     personaType: 'devops',
     sections: [
       'hero',
+      'video',
       'stats',
       'problem',
       'howItWorks',
@@ -69,6 +70,7 @@ export const PERSONA_PAGES: Record<string, PersonaPageConfig> = {
     personaType: 'cto',
     sections: [
       'hero',
+      'video',
       'stats',
       'problem',
       'costCalculator',
@@ -96,6 +98,7 @@ export const PERSONA_PAGES: Record<string, PersonaPageConfig> = {
     personaType: 'ceo',
     sections: [
       'hero',
+      'video',
       'stats',
       'problem',
       'costCalculator',
@@ -112,6 +115,7 @@ export const PERSONA_PAGES: Record<string, PersonaPageConfig> = {
     personaType: 'ai-agent',
     sections: [
       'hero',
+      'video',
       'stats',
       'problem',
       'howItWorks',

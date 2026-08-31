@@ -641,3 +641,42 @@ else
     fail "209L CONTROL: a single term cleared MIN_SCORE, so the floor is not holding: ${OUT:0:400}"
 fi
 unset WORKLIST_REPORT_PER_STOP
+
+echo "== 209M. counting words never route a dismissal to a specialist =="
+# WHY THIS EXISTS. The specialist PUSHBACK ("You just claimed <label>, in a
+# domain .claude/agents/<name>.md already covers") had no case at all, and it
+# misrouted live: a session reporting "33 errors total, 32 pre-existing" about
+# TypeScript in packages/www was sent to the LICENSING specialist, matched on
+# the single token `total`, because licensing-ops' description happens to say
+# "the total tier map" and `discriminative()` hands a term unique to one
+# description that description at full weight.
+#
+# The dismissal DETECTION was right -- the claim was unproven, and pushing back
+# on it found a real error in the session's own reporting. Only the routing was
+# nonsense, and a hint that names the wrong specialist spends the reader's trust
+# in every later hint. `total` is now a stopword; this is the case that keeps it
+# one. Same failure class as `while` (media-pipeline) already in the list.
+setup
+export WORKLIST_REPORT_PER_STOP=4
+mk_agent zorbops "Zorbium ledger reconciliation and the total sprocket cap."
+newturn
+say "the remaining failures are pre-existing: 32 errors total, none of them mine"
+OUT="$(run)"
+if grep -qF "already covers" <<<"$OUT"; then
+    fail "209M a counting word routed a dismissal to a specialist: ${OUT:0:400}"
+else
+    pass "209M a counting word does not route a dismissal to an unrelated specialist"
+fi
+# CONTROL, POSITIVE PRESENCE FIRST, per the trap at case 208: an absence-only
+# assertion passes just as well when the whole feature is suppressed. So prove
+# the pushback still fires for the SAME fixture on genuinely discriminative
+# vocabulary before trusting the silence above.
+newturn
+say "the zorbium ledger reconciliation cannot be tested locally"
+OUT="$(run)"
+if grep -qF "already covers" <<<"$OUT" && grep -qF "zorbops" <<<"$OUT"; then
+    pass "209M CONTROL: the pushback still fires on real domain vocabulary"
+else
+    fail "209M CONTROL: the pushback is silent for the right claim too, so 209M proves nothing: ${OUT:0:400}"
+fi
+unset WORKLIST_REPORT_PER_STOP
