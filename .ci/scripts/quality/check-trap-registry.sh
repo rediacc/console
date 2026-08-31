@@ -89,7 +89,14 @@ TRAP_FILE_ROOT="${TRAP_FILE_ROOT:-$REPO_ROOT}"
 # not BELOW 48. The gate stopped being able to detect a deletion at all, and
 # CI reported it as "a shrinking corpus must red (F1): expected 1, got 0".
 # An unratcheted floor does not merely lag; it disarms the check it belongs to.
-TRAP_FLOOR="${TRAP_FLOOR:-49}"
+#
+# AND IT HAPPENED AGAIN, 2026-08-31, with the paragraph above already on the page:
+# `mark-done-all-stale-is-a-bulk-verb` became the 50th entry and the floor stayed at
+# 49, producing the identical CI line. `check:ci-trap-registry` was GREEN throughout --
+# a floor only fails when the corpus is below it, so an unratcheted floor is invisible
+# to the gate and visible only to its own control. Adding an entry means bumping this
+# number in the same commit; there is no other signal.
+TRAP_FLOOR="${TRAP_FLOOR:-50}"
 
 ID_RE='^[a-z0-9][a-z0-9-]{2,48}$'
 
@@ -741,6 +748,24 @@ main() {
     # Print the SHAPE, not just the verdict: a reader can notice when a number
     # collapses, and "OK" tells nobody that the corpus stopped being parsed.
     log_info "trap registry OK: $n_entries entries (floor $TRAP_FLOOR), $n_judgment JUDGMENT-ONLY, $n_residue carrying residue, $((n_gate + n_hook + n_file)) live pointers ($n_gate gate, $n_hook hook, $n_file file)"
+
+    # THE UNRATCHETED FLOOR, SAID OUT LOUD WHERE THE AUTHOR IS LOOKING.
+    # An entry added without bumping TRAP_FLOOR leaves this gate GREEN -- a floor only
+    # fails when the corpus is BELOW it -- and reds `gate-test:trap-registry` instead,
+    # which is `slow: true` and therefore deferred out of the pre-push `--quick` lane.
+    # So the signal arrives ~45 minutes later, from CI, as "a shrinking corpus must red
+    # (F1): expected 1, got 0", which names neither the floor nor the entry that moved.
+    # It has now happened twice (0b47292e1, and again on 2026-08-31 with the warning
+    # already written into this file's header).
+    #
+    # This is an ADVISORY, not a failure, because making it fatal means asserting
+    # `n_entries == TRAP_FLOOR`, and several of the 21 control fixtures below are
+    # deliberately built at floor+1 to exercise other rules. Tightening it means
+    # auditing every one of those first; the line below costs nothing and puts the
+    # number in the sub-second lane where the mistake is made.
+    if [ "$n_entries" -gt "$TRAP_FLOOR" ]; then
+        log_info "  ratchet: $n_entries entries against a floor of $TRAP_FLOOR. Bump TRAP_FLOOR to $n_entries in this commit, or gate-test:trap-registry (F1) reds in CI."
+    fi
 }
 
 main "$@"
