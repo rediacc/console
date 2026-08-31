@@ -25,14 +25,34 @@
 # `grep -q` exits, so the mechanism does not exist at that size.
 #
 # WHY A LOCALLY-DEFINED FUNCTION IS THE TEST, and not "any pipe into grep -q".
-# There are 139 `| grep -q` sites under pipefail in this repo and almost all are
-# harmless: `printf '%s' "$x" | grep -q` has a bounded producer that finishes
-# before anything can race. What makes the shape dangerous is a producer whose
-# output SCALES WITH ITS INPUT -- a function that reads a file, filters a
-# corpus, enumerates a tree. Judging "is the producer a function this file
-# defines" is a property this gate owns, independent of what the code claims,
-# which is the trap gates.md warns about: an assertion that re-asks a question
-# the code already answered cannot fire.
+# There are 115 `| grep -q` sites under pipefail in this repo. What makes the shape
+# MOST dangerous is a producer whose output SCALES WITH ITS INPUT -- a function that
+# reads a file, filters a corpus, enumerates a tree. Judging "is the producer a
+# function this file defines" is a property this gate owns, independent of what the
+# code claims, which is the trap gates.md warns about: an assertion that re-asks a
+# question the code already answered cannot fire.
+#
+# THE EXEMPTION BELOW USED TO BE STATED AS SAFETY, AND THAT WAS WRONG.
+# This block previously read "almost all are harmless: `printf '%s' "$x" | grep -q`
+# has a bounded producer that finishes before anything can race". Falsified on
+# 2026-08-31 by CI run 33432878128, job 99628247967:
+#
+#     .ci/scripts/test/gates/test-run-sh.sh:67
+#     if printf '%s' "$QA" | grep -q 'return 1'; then
+#
+# `$QA` is 1129 bytes, far inside the 64 KB pipe buffer, and the match sits on line
+# 23 of ~30. It still raced: the log carries `printf: write error: Broken pipe` and
+# the branch took the else, reporting "quality_all has no failure path" against code
+# whose `return 1` grep had just FOUND. EPIPE does not depend on the buffer filling.
+# It depends on whether `grep -q` has already exited and CLOSED the read end when the
+# write syscall lands, and that is pure scheduling. A bounded producer is less likely
+# to lose the race, never immune to it.
+#
+# So the narrow scope here is a matter of BLAST RADIUS, not of safety: the scaling
+# producers are converted and gated at zero, and the bounded ones remain a known,
+# measured flake source rather than a proven-safe pattern. Do not read this gate's
+# green as a claim that a bounded `printf | grep -q` is correct. It is not; it is
+# untriaged.
 #
 # THE FIX IS ALWAYS THE SAME and is a drop-in: command substitution reads the
 # producer to completion, so there is no signal to race.

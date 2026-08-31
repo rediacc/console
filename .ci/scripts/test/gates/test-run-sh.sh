@@ -59,12 +59,24 @@ body() { # body <file> <function-name>  -> the function's body, comments strippe
 }
 
 QA="$(body "$RUN" quality_all)"
-if printf '%s' "$QA" | grep -q 'log_warn'; then
+# HERE-STRINGS, NOT `printf | grep -q`, and this cost a CI red (run 33432878128, job
+# 99628247967). `grep -q` exits the instant it matches; bash's builtin `printf` is then
+# left writing into a closed pipe, prints `printf: write error: Broken pipe` and returns
+# non-zero; `set -o pipefail` at the top of this file makes that the PIPELINE's status.
+# So a MATCH can present as a failed test. It did: `quality_all` carries `return 1` on
+# line 23 of its 1129-byte body -- grep found it, quit, and the `if` took the else branch
+# anyway, reporting "quality_all has no failure path" against correct code.
+#
+# Whether printf gets that far is a scheduling race, so this is intermittent, and the
+# check on the NEXT line fails in the worse direction: there the else branch is the PASS,
+# so a broken pipe turns the control guarding against a vacuous green into a vacuous
+# green itself. A here-string has no second process and no pipe.
+if grep -q 'log_warn' <<<"$QA"; then
     no "CONTROL: quality_all warns and falls through when shfmt is absent (the vacuous green is back)"
 else
     ok "quality_all does not warn-and-continue when shfmt is unusable"
 fi
-if printf '%s' "$QA" | grep -q 'return 1'; then
+if grep -q 'return 1' <<<"$QA"; then
     ok "quality_all returns non-zero when the shell gates cannot run"
 else
     no "quality_all has no failure path when the shell gates cannot run"
