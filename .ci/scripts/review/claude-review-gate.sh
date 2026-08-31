@@ -177,6 +177,32 @@ emit_review_turns() {
     log_info "diff size ${changed:-0} lines -> review_turns=$turns"
 }
 
+# sed_replacement <text> -- escape TEXT for use as the replacement half of `s|…|…|`.
+#
+# THE BUG THIS EXISTS TO CLOSE, from the first epic-scoped review of PR #583
+# (run 33445357414, job 99663191041):
+#
+#     sed: -e expression #6, char 77: unterminated `s' command
+#
+# Expression #6 is {{EPIC_SCOPE}}, and `epic_scope` is a SEVEN-LINE paragraph.
+# A `s` command's replacement may not contain a raw newline: the first one ends
+# the expression, and everything after it is parsed as more sed script. So the
+# whole review died before it began, on prose this file authors itself, and it
+# would have died the same way on every epic-scoped review from here on -- the
+# flat path was fine only because {{EPIC_SCOPE}} rendered to the empty string.
+#
+# Four things are unsafe in a replacement and all four are escaped here:
+# a backslash (starts an escape), the `|` delimiter (ends the command), `&`
+# (expands to the whole match), and a newline (must be backslash-continued).
+# Backslash goes FIRST or it re-escapes the escapes.
+sed_replacement() {
+    local s=$1
+    s=${s//\\/\\\\}
+    s=${s//|/\\|}
+    s=${s//&/\\&}
+    printf '%s' "${s//$'\n'/\\$'\n'}"
+}
+
 # emit_prompt <template>  -- substitutes the {{...}} placeholders.
 #
 # THE ONLY SUBSTITUTION POINT. Everything the review knows about its own scope
@@ -198,15 +224,33 @@ FIRST, because it is the context you would otherwise spend turns rediscovering.
 Changes belonging to other epics are reviewed by their own pass; do not review
 them here, and do not report them as gaps."
     fi
+    local rendered
+    if ! rendered=$(
+        sed -e "s|{{REPO}}|$(sed_replacement "$GITHUB_REPOSITORY")|g" \
+            -e "s|{{PR_NUMBER}}|$(sed_replacement "$pr")|g" \
+            -e "s|{{HEAD_SHA}}|$(sed_replacement "$head_sha")|g" \
+            -e "s|{{LAST_REVIEWED_SHA}}|$(sed_replacement "$last_sha")|g" \
+            -e "s|{{EPIC_ID}}|$(sed_replacement "$REVIEW_EPIC")|g" \
+            -e "s|{{EPIC_SCOPE}}|$(sed_replacement "$epic_scope")|g" \
+            "$1"
+    ); then
+        # RENDER FIRST, APPEND SECOND, and this ordering is the point rather than
+        # style. The block used to be `{ echo delim; sed ...; echo delim; } >>
+        # "$GITHUB_OUTPUT"` under `bash -e`, so when sed died the OPENING delimiter
+        # had already been written and the closing one never was. GitHub then
+        # reported a second, misleading error over the first:
+        #
+        #     ##[error]Invalid value. Matching delimiter not found 'CLAUDE_REVIEW_PROMPT_EOF'
+        #
+        # which reads like a heredoc-quoting bug and is really "the command inside
+        # it failed". A corrupted $GITHUB_OUTPUT also poisons every later step's
+        # outputs, not just this one.
+        echo "✗ prompt template did not render; \$GITHUB_OUTPUT left untouched" >&2
+        return 1
+    fi
     {
         echo "prompt<<CLAUDE_REVIEW_PROMPT_EOF"
-        sed -e "s|{{REPO}}|${GITHUB_REPOSITORY}|g" \
-            -e "s|{{PR_NUMBER}}|${pr}|g" \
-            -e "s|{{HEAD_SHA}}|${head_sha}|g" \
-            -e "s|{{LAST_REVIEWED_SHA}}|${last_sha}|g" \
-            -e "s|{{EPIC_ID}}|${REVIEW_EPIC}|g" \
-            -e "s|{{EPIC_SCOPE}}|${epic_scope}|g" \
-            "$1"
+        printf '%s\n' "$rendered"
         echo "CLAUDE_REVIEW_PROMPT_EOF"
     } >>"$GITHUB_OUTPUT"
 }
