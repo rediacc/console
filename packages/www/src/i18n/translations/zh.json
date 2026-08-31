@@ -3139,7 +3139,7 @@
             {
               "number": "194 days",
               "ref": 1,
-              "source": "IBM Cost of a Data Breach 2024",
+              "source": "IBM Cost of a Data Breach Report 2024",
               "text": "识别数据泄露的平均时间"
             },
             {
@@ -3151,7 +3151,7 @@
             {
               "number": "$4.88M",
               "ref": 1,
-              "source": "IBM Cost of a Data Breach 2024",
+              "source": "IBM Cost of a Data Breach Report 2024",
               "text": "数据泄露的平均成本"
             }
           ],
@@ -3458,19 +3458,19 @@
             {
               "number": "204 days",
               "ref": 1,
-              "source": "IBM Cost of Data Breach 2024",
+              "source": "IBM Cost of a Data Breach Report 2024",
               "text": "识别数据泄露的平均时间"
             },
             {
               "number": ">1/3",
               "ref": 1,
-              "source": "IBM Cost of Data Breach 2024",
+              "source": "IBM Cost of a Data Breach Report 2024",
               "text": "的数据泄露涉及影子数据，导致取证调查复杂化"
             },
             {
               "number": "$1.76M",
               "ref": 1,
-              "source": "IBM Cost of Data Breach 2024",
+              "source": "IBM Cost of a Data Breach Report 2024",
               "text": "安全人员不足延迟响应所产生的额外泄露成本"
             }
           ],
@@ -3630,7 +3630,7 @@
         "calculator": {
           "annualLabel": "年度数据风险",
           "description": "拖动滑块以匹配你的环境。查看信任“备份完成”的真实成本。",
-          "footnote": "损坏备份数：每周任务数 × 52 × 损坏率。恢复失败：损坏备份数 × 恢复小时数 × $100/小时（人员 + 生产力损失）。数据丢失：损坏备份数 × 每次事故 8 条面临风险的记录 × $173/记录（IBM 数据泄露成本 2024）。通过每日自动验证，损坏在 24 小时内被发现——在其累积之前。",
+          "footnote": "损坏备份数：每周任务数 × 52 × 损坏率。恢复失败：损坏备份数 × 恢复小时数 × $100/小时（人员 + 生产力损失）。数据丢失：损坏备份数 × 每次事故 8 条面临风险的记录 × $173/记录（IBM Cost of a Data Breach Report 2024）。通过每日自动验证，损坏在 24 小时内被发现——在其累积之前。",
           "headerTitle": "计算你的备份风险敞口",
           "overline": "真实成本",
           "results": {
@@ -4426,7 +4426,7 @@
             {
               "number": "$4.88M",
               "ref": 2,
-              "source": "IBM Cost of a Data Breach 2024",
+              "source": "IBM Cost of a Data Breach Report 2024",
               "text": "数据泄露的平均成本"
             }
           ],
@@ -5090,7 +5090,7 @@
             {
               "number": "$4.88M",
               "ref": 2,
-              "source": "IBM Cost of Data Breach 2024",
+              "source": "IBM Cost of a Data Breach Report 2024",
               "text": "全球数据泄露的平均成本"
             },
             {
@@ -6130,7 +6130,7 @@
             {
               "number": "$4.88M",
               "ref": 2,
-              "source": "IBM Cost of a Data Breach 2024",
+              "source": "IBM Cost of a Data Breach Report 2024",
               "text": "平均数据泄露成本"
             },
             {
@@ -7671,19 +7671,19 @@
             {
               "number": "89%",
               "ref": 2,
-              "source": "Flexera 2024 [1] / Thales 2025 [2]",
+              "source": "Flexera 2024 / Thales 2025",
               "text": "的企业运营多云环境，但仅 8% 加密了 80% 以上的云数据"
             },
             {
               "number": "$4.88M",
               "ref": 3,
-              "source": "IBM Cost of Data Breach 2024 [3]",
+              "source": "IBM Cost of a Data Breach Report 2024",
               "text": "全球数据泄露的平均成本"
             },
             {
               "number": "$90K–$300K",
               "ref": 4,
-              "source": "Cloud provider pricing [4]",
+              "source": "Cloud provider pricing",
               "text": "在云之间迁移加密数据的每 PB 出站流量成本"
             }
           ],
@@ -8649,7 +8649,7 @@
             {
               "number": "$4.88M",
               "ref": 1,
-              "source": "IBM Cost of Data Breach 2024",
+              "source": "IBM Cost of a Data Breach Report 2024",
               "text": "全球数据泄露的平均成本"
             },
             {
@@ -9662,7 +9662,7 @@
             {
               "number": "$4.88M",
               "ref": 3,
-              "source": "IBM Cost of a Data Breach 2024",
+              "source": "IBM Cost of a Data Breach Report 2024",
               "text": "数据泄露的平均成本"
             }
           ],

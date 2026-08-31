@@ -3175,7 +3175,7 @@
             {
               "number": "194 Tage",
               "ref": 1,
-              "source": "IBM Cost of a Data Breach 2024",
+              "source": "IBM Cost of a Data Breach Report 2024",
               "text": "durchschnittliche Zeit zur Identifizierung einer Datenpanne"
             },
             {
@@ -3187,7 +3187,7 @@
             {
               "number": "$4,88M",
               "ref": 1,
-              "source": "IBM Cost of a Data Breach 2024",
+              "source": "IBM Cost of a Data Breach Report 2024",
               "text": "durchschnittliche Kosten einer Datenpanne"
             }
           ],
@@ -3494,19 +3494,19 @@
             {
               "number": "204 Tage",
               "ref": 1,
-              "source": "IBM Cost of Data Breach 2024",
+              "source": "IBM Cost of a Data Breach Report 2024",
               "text": "durchschnittliche Zeit zur Identifizierung einer Datenpanne"
             },
             {
               "number": ">1/3",
               "ref": 1,
-              "source": "IBM Cost of Data Breach 2024",
+              "source": "IBM Cost of a Data Breach Report 2024",
               "text": "der Datenpannen betreffen Schattendaten, was die forensische Untersuchung erschwert"
             },
             {
               "number": "$1,76M",
               "ref": 1,
-              "source": "IBM Cost of Data Breach 2024",
+              "source": "IBM Cost of a Data Breach Report 2024",
               "text": "zusaetzliche Kosten bei Datenpannen, wenn Personalluecken in der Sicherheit die Reaktion verzoegern"
             }
           ],
@@ -3666,7 +3666,7 @@
         "calculator": {
           "annualLabel": "Jährliches Datenrisiko",
           "description": "Bewegen Sie die Regler passend zu Ihrer Umgebung. Sehen Sie die wahren Kosten des Vertrauens auf 'Backup abgeschlossen'.",
-          "footnote": "Beschädigte Backups: wöchentliche Jobs × 52 × Beschädigungsrate. Wiederherstellungsausfall: beschädigte Backups × Wiederherstellungsstunden × 100 $/Std. (Personal + verlorene Produktivität). Datenverlust: beschädigte Backups × 8 gefährdete Datensätze pro Vorfall × 173 $/Datensatz (IBM Cost of a Data Breach 2024). Mit täglicher automatisierter Verifizierung wird Beschädigung innerhalb von 24 Stunden erkannt — bevor sie sich verstärkt.",
+          "footnote": "Beschädigte Backups: wöchentliche Jobs × 52 × Beschädigungsrate. Wiederherstellungsausfall: beschädigte Backups × Wiederherstellungsstunden × 100 $/Std. (Personal + verlorene Produktivität). Datenverlust: beschädigte Backups × 8 gefährdete Datensätze pro Vorfall × 173 $/Datensatz (IBM Cost of a Data Breach Report 2024). Mit täglicher automatisierter Verifizierung wird Beschädigung innerhalb von 24 Stunden erkannt — bevor sie sich verstärkt.",
           "headerTitle": "Berechnen Sie Ihre Backup-Risikoexposition",
           "overline": "DIE WAHREN KOSTEN",
           "results": {
@@ -4462,7 +4462,7 @@
             {
               "number": "$4,88M",
               "ref": 2,
-              "source": "IBM Cost of a Data Breach 2024",
+              "source": "IBM Cost of a Data Breach Report 2024",
               "text": "durchschnittliche Kosten einer Datenpanne"
             }
           ],
@@ -5130,7 +5130,7 @@
             {
               "number": "$4,88M",
               "ref": 2,
-              "source": "IBM Cost of Data Breach 2024",
+              "source": "IBM Cost of a Data Breach Report 2024",
               "text": "durchschnittliche Kosten einer Datenpanne weltweit"
             },
             {
@@ -6170,7 +6170,7 @@
             {
               "number": "$4,88M",
               "ref": 2,
-              "source": "IBM Cost of a Data Breach 2024",
+              "source": "IBM Cost of a Data Breach Report 2024",
               "text": "durchschnittliche Kosten einer Datenpanne"
             },
             {
@@ -7717,19 +7717,19 @@
             {
               "number": "89%",
               "ref": 2,
-              "source": "Flexera 2024 [1] / Thales 2025 [2]",
+              "source": "Flexera 2024 / Thales 2025",
               "text": "der Unternehmen arbeiten Multi-Cloud, aber nur 8% verschluesseln 80%+ der Cloud-Daten"
             },
             {
               "number": "$4,88M",
               "ref": 3,
-              "source": "IBM Cost of Data Breach 2024 [3]",
+              "source": "IBM Cost of a Data Breach Report 2024",
               "text": "durchschnittliche Kosten einer Datenpanne weltweit"
             },
             {
               "number": "$90K–$300K",
               "ref": 4,
-              "source": "Cloud provider pricing [4]",
+              "source": "Cloud provider pricing",
               "text": "Egress-Kosten pro Petabyte bei der Migration verschluesselter Daten zwischen Clouds"
             }
           ],
@@ -8695,7 +8695,7 @@
             {
               "number": "$4,88M",
               "ref": 1,
-              "source": "IBM Cost of Data Breach 2024",
+              "source": "IBM Cost of a Data Breach Report 2024",
               "text": "durchschnittliche Kosten einer Datenpanne weltweit"
             },
             {
@@ -9708,7 +9708,7 @@
             {
               "number": "$4,88M",
               "ref": 3,
-              "source": "IBM Cost of a Data Breach 2024",
+              "source": "IBM Cost of a Data Breach Report 2024",
               "text": "durchschnittliche Kosten einer Datenpanne"
             }
           ],

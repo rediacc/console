@@ -110,11 +110,114 @@ function isEmDashRepair(was: string, now: string): boolean {
   return was.includes('\u2014') && !now.includes('\u2014');
 }
 
+/** A superscript reference marker, `[1]`, `[12]`, with any space in front of it. */
+const REF_MARKER = /\s*\[\d+\]/g;
+
+/**
+ * True when the edit ONLY removes `[n]` reference markers that English never carried.
+ *
+ * THE CASE, found 2026-08-31. Eight locales held
+ * `"Flexera 2024 [1] / Thales 2025 [2]"` and `"Cloud provider pricing [4]"` at
+ * `pages.solutionPages.migrationSafety.problem.statCallouts[0,2].source`, against an
+ * English that has read `"Flexera 2024 / Thales 2025"` and `"Cloud provider pricing"`
+ * for as long as the base knows. They are markers from a superseded English value that
+ * survived translation and were never cleaned when English dropped them, and they RENDER
+ * -- a visitor on /de sees a literal `[1]` in the source tooltip, pointing at nothing.
+ *
+ * Removing them is a locale-only edit with no English change to justify it, which is
+ * precisely what this gate exists to refuse, and the gate's own remedy ("commit
+ * translations alone, re-run with --base past it") does not apply inside a PR: the base
+ * is `origin/main`, so the finding survives every commit until merge. Without an
+ * exemption the correct fix is unshippable.
+ *
+ * NARROW BY CONSTRUCTION, and narrower than the em-dash exemption above. It is not
+ * "the value converged to English", which would let a bad run overwrite a good German
+ * sentence with the English one. It is: delete the markers from the OLD value, and what
+ * is left must equal the NEW value exactly, once whitespace is collapsed. Every other
+ * byte must be untouched, so no wording, number or fact can move through here. The
+ * markers must also be absent from English, so a marker English genuinely carries is
+ * still protected.
+ */
+function isRefMarkerRepair(was: string, now: string, en: string): boolean {
+  REF_MARKER.lastIndex = 0;
+  if (!REF_MARKER.test(was)) return false;
+  REF_MARKER.lastIndex = 0;
+  if (REF_MARKER.test(en)) return false;
+  const collapse = (t: string) => t.replace(REF_MARKER, '').replace(/\s+/g, ' ').trim();
+  return collapse(was) === collapse(now) && collapse(now) === now.replace(/\s+/g, ' ').trim();
+}
+
+/**
+ * Controls for the exemption above, run with `--selftest`.
+ *
+ * An exemption is a hole in a gate, and a hole nobody has watched close is not a hole
+ * anyone can reason about. These drive the SAME function the real scan calls; a control
+ * that re-implements the rule proves only that the reimplementation agrees with itself.
+ */
+const REF_MARKER_CONTROLS: { name: string; was: string; now: string; en: string; want: boolean }[] =
+  [
+    {
+      name: 'the real case: two markers English never carried are dropped',
+      was: 'Flexera 2024 [1] / Thales 2025 [2]',
+      now: 'Flexera 2024 / Thales 2025',
+      en: 'Flexera 2024 / Thales 2025',
+      want: true,
+    },
+    {
+      name: 'CONTROL: a marker removed AND the wording changed is NOT exempt',
+      was: 'Flexera 2024 [1] / Thales 2025',
+      now: 'Flexera 2025 / Thales 2025',
+      en: 'Flexera 2024 / Thales 2025',
+      want: false,
+    },
+    {
+      name: 'CONTROL: a rewrite with no marker at all is NOT exempt',
+      was: '1 Floating-Lizenz',
+      now: '10 Floating-Lizenzen',
+      en: '1 Floating license',
+      want: false,
+    },
+    {
+      name: 'CONTROL: a marker ENGLISH also carries is protected, not exempt',
+      was: 'IBM 2024 [3]',
+      now: 'IBM 2024',
+      en: 'IBM 2024 [3]',
+      want: false,
+    },
+    {
+      name: 'CONTROL: dropping a marker AND a whole clause is NOT exempt',
+      was: 'Cloud provider pricing [4], as of June',
+      now: 'Cloud provider pricing',
+      en: 'Cloud provider pricing',
+      want: false,
+    },
+  ];
+
+function selftest(): number {
+  let bad = 0;
+  for (const c of REF_MARKER_CONTROLS) {
+    const got = isRefMarkerRepair(c.was, c.now, c.en);
+    const ok = got === c.want;
+    if (!ok) bad++;
+    process.stdout.write(`  ${ok ? 'PASS' : 'FAIL'}  ${c.name}\n`);
+  }
+  if (bad > 0) {
+    process.stderr.write(
+      `check-locale-only-edits: ${bad} control(s) failed; the marker exemption cannot be trusted\n`
+    );
+    return 1;
+  }
+  return 0;
+}
+
 function main(argv: string[]): number {
   let explicitBase: string | null = null;
   for (let i = 0; i < argv.length; i++) {
     if (argv[i] === '--base') explicitBase = argv[++i] ?? null;
-    else {
+    else if (argv[i] === '--selftest') {
+      const rc = selftest();
+      if (rc !== 0) return rc;
+    } else {
       process.stderr.write(`unknown argument: ${argv[i]}\n`);
       return 2;
     }
@@ -176,6 +279,7 @@ function main(argv: string[]): number {
 
   const findings: string[] = [];
   const emDashRepairs: string[] = [];
+  const refMarkerRepairs: string[] = [];
   let checkedKeys = 0;
 
   for (const loc of locales) {
@@ -212,6 +316,11 @@ function main(argv: string[]): number {
       // unjustified rewrite. Deliberately narrow -- the values must be identical once the
       // dash and its surrounding spaces are normalised away, so a rewrite that also
       // changes wording is still reported.
+      if (isRefMarkerRepair(was[key], now[key], enNow[key] ?? '')) {
+        refMarkerRepairs.push(`  ${loc}  ${key}`);
+        continue;
+      }
+
       if (isEmDashRepair(was[key], now[key])) {
         emDashRepairs.push(`  ${loc}  ${key}`);
         continue;
@@ -223,6 +332,17 @@ function main(argv: string[]): number {
           `      now:            ${JSON.stringify(now[key]).slice(0, 100)}`
       );
     }
+  }
+
+  if (refMarkerRepairs.length > 0) {
+    // Printed for the same reason the em-dash advisory is: an exemption nobody can see
+    // is how an exemption becomes a blind spot.
+    process.stdout.write(
+      `check-locale-only-edits: ${refMarkerRepairs.length} locale value(s) exempted as ` +
+        'reference-marker repairs\n(a locale-only `[n]` that English does not carry was ' +
+        'removed, and nothing else changed):\n' +
+        `${refMarkerRepairs.join('\n')}\n\n`
+    );
   }
 
   if (emDashRepairs.length > 0) {

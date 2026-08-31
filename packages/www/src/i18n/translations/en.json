@@ -3322,7 +3322,7 @@
             {
               "number": "$4.88M",
               "text": "average breach cost",
-              "source": "IBM Cost of a Data Breach 2024",
+              "source": "IBM Cost of a Data Breach Report 2024",
               "ref": 2
             },
             {
@@ -3666,7 +3666,7 @@
             {
               "number": "$4.88M",
               "text": "average cost of one data breach worldwide",
-              "source": "IBM Cost of Data Breach 2024",
+              "source": "IBM Cost of a Data Breach Report 2024",
               "ref": 3
             },
             {
@@ -4723,7 +4723,7 @@
             {
               "number": "$4.88M",
               "text": "average cost of a data breach globally",
-              "source": "IBM Cost of Data Breach 2024",
+              "source": "IBM Cost of a Data Breach Report 2024",
               "ref": 1
             },
             {
@@ -5807,7 +5807,7 @@
             "dataLoss": "0"
           },
           "withAnnual": "$0",
-          "footnote": "Corrupted backups: weekly jobs × 52 × corruption rate. Recovery failure: corrupted backups × recovery hours × $100/hr (staff + lost productivity). Data loss: corrupted backups × 8 records at risk per incident × $173/record (IBM Cost of a Data Breach 2024). With daily automated verification, corruption is caught within 24 hours, before it compounds."
+          "footnote": "Corrupted backups: weekly jobs × 52 × corruption rate. Recovery failure: corrupted backups × recovery hours × $100/hr (staff + lost productivity). Data loss: corrupted backups × 8 records at risk per incident × $173/record (IBM Cost of a Data Breach Report 2024). With daily automated verification, corruption is caught within 24 hours, before it compounds."
         },
         "howItWorks": {
           "overline": "HOW IT WORKS",
@@ -6092,7 +6092,7 @@
             {
               "number": "$4.88M",
               "text": "average cost of a data breach",
-              "source": "IBM Cost of a Data Breach 2024",
+              "source": "IBM Cost of a Data Breach Report 2024",
               "ref": 3
             }
           ],
@@ -6336,7 +6336,7 @@
           "statCallouts": [
             {
               "number": "194 days",
-              "source": "IBM Cost of a Data Breach 2024",
+              "source": "IBM Cost of a Data Breach Report 2024",
               "ref": 1,
               "text": "average time to identify a breach"
             },
@@ -6348,7 +6348,7 @@
             },
             {
               "number": "$4.88M",
-              "source": "IBM Cost of a Data Breach 2024",
+              "source": "IBM Cost of a Data Breach Report 2024",
               "ref": 1,
               "text": "average cost of a data breach"
             }
@@ -6590,7 +6590,7 @@
             },
             {
               "number": "$4.88M",
-              "source": "IBM Cost of Data Breach 2024",
+              "source": "IBM Cost of a Data Breach Report 2024",
               "ref": 2,
               "text": "average cost of a data breach globally"
             },
@@ -6935,7 +6935,7 @@
             },
             {
               "number": "$4.88M",
-              "source": "IBM Cost of a Data Breach 2024",
+              "source": "IBM Cost of a Data Breach Report 2024",
               "ref": 2,
               "text": "average cost of a data breach"
             }
@@ -7183,19 +7183,19 @@
           "statCallouts": [
             {
               "number": "204 days",
-              "source": "IBM Cost of Data Breach 2024",
+              "source": "IBM Cost of a Data Breach Report 2024",
               "ref": 1,
               "text": "average time to identify a data breach"
             },
             {
               "number": ">1/3",
-              "source": "IBM Cost of Data Breach 2024",
+              "source": "IBM Cost of a Data Breach Report 2024",
               "ref": 1,
               "text": "of breaches involve hidden data, which makes the investigation harder"
             },
             {
               "number": "$1.76M",
-              "source": "IBM Cost of Data Breach 2024",
+              "source": "IBM Cost of a Data Breach Report 2024",
               "ref": 1,
               "text": "extra breach cost when short staffing slows the response"
             }

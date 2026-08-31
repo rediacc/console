@@ -1539,3 +1539,46 @@ genuinely failed load.
 whether it is attached to a terminal is invisible in interactive use and fires only under
 redirection, which is to say only in scripts, background jobs and CI. Everything you tested
 by hand keeps working while everything automated dies.
+
+---
+
+## `--mark-done --all-stale` stamps the WHOLE catalogue, not the keys the gate named
+
+`check:ci-i18n-naturalization` and `private/growth/i18n_pipeline` both talk about "stale"
+keys, and they do not mean the same thing. Reading one and acting through the other cost
+23,561 bogus ledger stamps on 2026-08-31.
+
+**What the console gate means by stale**: a key that WAS naturalized and whose English has
+since changed. On the run in question it named exactly one key, in twelve locales:
+
+    [de] 1 stale:
+      ~ pages.solutionPages.migrationSafety.problem.statCallouts.1.source
+
+**What the pipeline means by stale**: any key whose current English CRC is not recorded in
+`.naturalized-hashes.json` — which includes every key that was never naturalized at all.
+For this surface that was **1,965 keys per locale**, against 1,180 already in the ledger.
+
+So `./run.sh --mark-done --lang de --all-stale`, run to close the ONE key the gate named,
+reported:
+
+    [mark-done] de (all-stale): 1965 stamped, 0 failed parity, 1965 stale scanned
+
+and the ledger went from 1,180 entries per locale to 3,140. `0 failed parity` is not
+reassurance: parity is a deterministic check on placeholders, tags and numbers, not a
+claim that anything was translated. The result is the exact condition
+`check-locale-only-edits.ts` already documents as having happened before — "369 keys
+across 12 locales were stamped naturalized while still holding the English string" — with
+a future `naturalize-status` reporting nothing to do over keys nobody has ever looked at.
+
+**Do not use `--all-stale` to close a key a gate named.** It is a bulk closure verb.
+Scope it (`--surface`), or, for a value no translation can change (a proper noun, a
+published report title, a product name), splice the twelve CRCs into the ledger directly.
+
+**Repairing it**: the ledger is tracked in the CONSOLE repo at
+`packages/www/src/i18n/translations/.naturalized-hashes.json`, despite the tool living in
+`private/growth`. Rebuild it forward from `git show HEAD:<path>` plus the intended delta —
+never `git checkout` it, which is the standing rule and matters doubly here because the
+same file carries other sessions' work. The intended delta is a byte-splice: the key's
+line appears once per locale, so replacing
+`"<key>": "<old-crc>"` with the new CRC hits exactly twelve sites and touches nothing
+else. Verify with a set-difference against `HEAD`, `added=0`, before believing it.

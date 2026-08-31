@@ -3182,7 +3182,7 @@
             {
               "number": "194일",
               "ref": 1,
-              "source": "IBM Cost of a Data Breach 2024",
+              "source": "IBM Cost of a Data Breach Report 2024",
               "text": "침해 사고를 탐지하는 데 걸리는 평균 시간"
             },
             {
@@ -3194,7 +3194,7 @@
             {
               "number": "$4.88M",
               "ref": 1,
-              "source": "IBM Cost of a Data Breach 2024",
+              "source": "IBM Cost of a Data Breach Report 2024",
               "text": "데이터 침해 평균 비용"
             }
           ],
@@ -3501,19 +3501,19 @@
             {
               "number": "204일",
               "ref": 1,
-              "source": "IBM Cost of Data Breach 2024",
+              "source": "IBM Cost of a Data Breach Report 2024",
               "text": "데이터 침해를 탐지하는 데 걸리는 평균 시간"
             },
             {
               "number": "1/3 이상",
               "ref": 1,
-              "source": "IBM Cost of Data Breach 2024",
+              "source": "IBM Cost of a Data Breach Report 2024",
               "text": "의 침해가 섀도 데이터를 포함하여 포렌식 조사를 복잡하게 만듦"
             },
             {
               "number": "$1.76M",
               "ref": 1,
-              "source": "IBM Cost of Data Breach 2024",
+              "source": "IBM Cost of a Data Breach Report 2024",
               "text": "보안 인력 부족으로 대응이 지연될 경우 추가 침해 비용"
             }
           ],
@@ -3673,7 +3673,7 @@
         "calculator": {
           "annualLabel": "연간 데이터 위험",
           "description": "슬라이더를 환경에 맞게 조정하세요. \"백업 완료\"를 신뢰하는 실제 비용을 확인하세요.",
-          "footnote": "손상된 백업: 주간 작업 × 52 × 손상률. 복구 실패: 손상된 백업 × 복구 시간 × $100/시간 (인력 + 생산성 손실). 데이터 손실: 손상된 백업 × 사고당 위험 기록 8건 × $173/기록 (IBM Cost of a Data Breach 2024). 일일 자동화 검증으로 손상이 24시간 이내에 감지됩니다.",
+          "footnote": "손상된 백업: 주간 작업 × 52 × 손상률. 복구 실패: 손상된 백업 × 복구 시간 × $100/시간 (인력 + 생산성 손실). 데이터 손실: 손상된 백업 × 사고당 위험 기록 8건 × $173/기록 (IBM Cost of a Data Breach Report 2024). 일일 자동화 검증으로 손상이 24시간 이내에 감지됩니다.",
           "headerTitle": "백업 위험 노출 계산",
           "overline": "실제 비용",
           "results": {
@@ -4469,7 +4469,7 @@
             {
               "number": "$4.88M",
               "ref": 2,
-              "source": "IBM Cost of a Data Breach 2024",
+              "source": "IBM Cost of a Data Breach Report 2024",
               "text": "데이터 침해 평균 비용"
             }
           ],
@@ -5133,7 +5133,7 @@
             {
               "number": "$4.88M",
               "ref": 2,
-              "source": "IBM 데이터 침해 비용 보고서 2024",
+              "source": "IBM Cost of a Data Breach Report 2024",
               "text": "전 세계 데이터 침해의 평균 비용"
             },
             {
@@ -6173,7 +6173,7 @@
             {
               "number": "$4.88M",
               "ref": 2,
-              "source": "IBM Cost of a Data Breach 2024",
+              "source": "IBM Cost of a Data Breach Report 2024",
               "text": "평균 침해 비용"
             },
             {
@@ -7720,7 +7720,7 @@
             {
               "number": "$488만",
               "ref": 3,
-              "source": "IBM Cost of Data Breach 2024",
+              "source": "IBM Cost of a Data Breach Report 2024",
               "text": "전 세계 데이터 침해 평균 비용"
             },
             {
@@ -8692,7 +8692,7 @@
             {
               "number": "$4.88M",
               "ref": 1,
-              "source": "IBM Cost of Data Breach 2024",
+              "source": "IBM Cost of a Data Breach Report 2024",
               "text": "전 세계 데이터 침해 평균 비용"
             },
             {
@@ -9705,7 +9705,7 @@
             {
               "number": "$4.88M",
               "ref": 3,
-              "source": "IBM Cost of a Data Breach 2024",
+              "source": "IBM Cost of a Data Breach Report 2024",
               "text": "데이터 침해 평균 비용"
             }
           ],

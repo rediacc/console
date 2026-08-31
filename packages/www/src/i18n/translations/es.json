@@ -3171,7 +3171,7 @@
             {
               "number": "194 días",
               "ref": 1,
-              "source": "IBM Cost of a Data Breach 2024",
+              "source": "IBM Cost of a Data Breach Report 2024",
               "text": "tiempo promedio para identificar una brecha"
             },
             {
@@ -3183,7 +3183,7 @@
             {
               "number": "$4.88M",
               "ref": 1,
-              "source": "IBM Cost of a Data Breach 2024",
+              "source": "IBM Cost of a Data Breach Report 2024",
               "text": "costo promedio de una brecha de datos"
             }
           ],
@@ -3490,19 +3490,19 @@
             {
               "number": "204 días",
               "ref": 1,
-              "source": "IBM Cost of Data Breach 2024",
+              "source": "IBM Cost of a Data Breach Report 2024",
               "text": "tiempo promedio para identificar una brecha de datos"
             },
             {
               "number": ">1/3",
               "ref": 1,
-              "source": "IBM Cost of Data Breach 2024",
+              "source": "IBM Cost of a Data Breach Report 2024",
               "text": "de las brechas involucran datos ocultos, complicando la investigación forense"
             },
             {
               "number": "$1.76M",
               "ref": 1,
-              "source": "IBM Cost of Data Breach 2024",
+              "source": "IBM Cost of a Data Breach Report 2024",
               "text": "costo adicional de brecha cuando la falta de personal de seguridad retrasa la respuesta"
             }
           ],
@@ -3662,7 +3662,7 @@
         "calculator": {
           "annualLabel": "Riesgo anual de datos",
           "description": "Arrastra los controles deslizantes para ajustarlos a tu entorno. Ve el coste real de confiar en \"copia completada\".",
-          "footnote": "Copias corruptas: trabajos semanales × 52 × tasa de corrupción. Fallo de recuperación: copias corruptas × horas de recuperación × $100/hr (personal + productividad perdida). Pérdida de datos: copias corruptas × 8 registros en riesgo por incidente × $173/registro (IBM Cost of a Data Breach 2024). Con verificación automatizada diaria, la corrupción se detecta en 24 horas — antes de que se acumule.",
+          "footnote": "Copias corruptas: trabajos semanales × 52 × tasa de corrupción. Fallo de recuperación: copias corruptas × horas de recuperación × $100/hr (personal + productividad perdida). Pérdida de datos: copias corruptas × 8 registros en riesgo por incidente × $173/registro (IBM Cost of a Data Breach Report 2024). Con verificación automatizada diaria, la corrupción se detecta en 24 horas — antes de que se acumule.",
           "headerTitle": "Calcula tu exposición al riesgo de copias",
           "overline": "EL COSTE REAL",
           "results": {
@@ -4458,7 +4458,7 @@
             {
               "number": "$4.88M",
               "ref": 2,
-              "source": "IBM Cost of a Data Breach 2024",
+              "source": "IBM Cost of a Data Breach Report 2024",
               "text": "costo promedio de una brecha de datos"
             }
           ],
@@ -5126,7 +5126,7 @@
             {
               "number": "$4.88M",
               "ref": 2,
-              "source": "IBM Cost of Data Breach 2024",
+              "source": "IBM Cost of a Data Breach Report 2024",
               "text": "costo promedio de una brecha de datos a nivel global"
             },
             {
@@ -6166,7 +6166,7 @@
             {
               "number": "$4.88M",
               "ref": 2,
-              "source": "IBM Cost of a Data Breach 2024",
+              "source": "IBM Cost of a Data Breach Report 2024",
               "text": "costo promedio de brecha"
             },
             {
@@ -7713,19 +7713,19 @@
             {
               "number": "89%",
               "ref": 2,
-              "source": "Flexera 2024 [1] / Thales 2025 [2]",
+              "source": "Flexera 2024 / Thales 2025",
               "text": "de las empresas operan multi-nube, pero solo el 8% cifra más del 80% de los datos en la nube"
             },
             {
               "number": "$4.88M",
               "ref": 3,
-              "source": "IBM Cost of Data Breach 2024 [3]",
+              "source": "IBM Cost of a Data Breach Report 2024",
               "text": "costo promedio de una brecha de datos a nivel global"
             },
             {
               "number": "$90K–$300K",
               "ref": 4,
-              "source": "Cloud provider pricing [4]",
+              "source": "Cloud provider pricing",
               "text": "costo de egreso por petabyte al migrar datos cifrados entre nubes"
             }
           ],
@@ -8691,7 +8691,7 @@
             {
               "number": "$4.88M",
               "ref": 1,
-              "source": "IBM Cost of Data Breach 2024",
+              "source": "IBM Cost of a Data Breach Report 2024",
               "text": "costo promedio de una brecha de datos a nivel global"
             },
             {
@@ -9704,7 +9704,7 @@
             {
               "number": "$4.88M",
               "ref": 3,
-              "source": "IBM Cost of a Data Breach 2024",
+              "source": "IBM Cost of a Data Breach Report 2024",
               "text": "costo promedio de una brecha de datos"
             }
           ],
