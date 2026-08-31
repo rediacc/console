@@ -23,7 +23,10 @@
  * ideally, its hashArgs. That is the whole migration.
  */
 
-export interface DevcontainerPinHashArg {
+/* NOT exported: `DevcontainerPinSource.hashArgs` is its only reference, and it is in
+   this file. knip runs with `--treat-config-hints-as-errors`, so an export nobody
+   imports is a hard CI failure, not a warning. */
+interface DevcontainerPinHashArg {
   /** The Dockerfile ARG holding this asset's sha256, e.g. "BW_SHA256_AMD64". */
   arg: string;
   /** Release-asset filename for a given version. */

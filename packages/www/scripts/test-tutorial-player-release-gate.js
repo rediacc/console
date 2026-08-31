@@ -67,14 +67,68 @@ function writeArtifact(name, data) {
 
 function runAgent(args) {
   const commandArgs = ['--session', session, '--json', ...args];
-  const out = execFileSync('agent-browser', commandArgs, {
-    cwd: repoRoot,
-    encoding: 'utf8',
-    maxBuffer: 8 * 1024 * 1024,
-  });
-  const parsed = JSON.parse(out);
+  let out = null;
+  // A phrase rather than a number: the caller has to render it either way, and
+  // `${status ?? 'with no status'}` is both a hardcoded nullish default (banned by
+  // custom/no-hardcoded-nullish-defaults) and, once `status` is inferred as a number, an
+  // unnecessary conditional. Deciding the wording once at the throw site avoids both.
+  let exitInfo = 'exited 0';
+  try {
+    out = execFileSync('agent-browser', commandArgs, {
+      cwd: repoRoot,
+      encoding: 'utf8',
+      maxBuffer: 8 * 1024 * 1024,
+      // Both streams piped, so a non-zero exit hands its output to the catch instead of
+      // leaking to the console and vanishing from the error object.
+      stdio: ['ignore', 'pipe', 'pipe'],
+    });
+  } catch (error) {
+    // THE EXIT STATUS OF `agent-browser open` IS NOT EVIDENCE, and this repo already
+    // knows it: `.ci/scripts/quality/check-agent-browser-exit.sh` measured the same
+    // binary returning rc=0 on a terminal and rc=1 with stdout redirected, for a page
+    // that loaded correctly both ways, and states the invariant as "no script may let
+    // that exit status decide control flow". That gate scans SHELL scripts under
+    // `set -e`; this is the same defect in JavaScript, where `execFileSync` throws on
+    // the same worthless status.
+    //
+    // THE RED THIS EXPLAINS: CI run 33430885467, job 99616335703, died on the FIRST
+    // navigation of the first scenario with the single line `Error: Command failed:
+    // agent-browser --session ... open http://127.0.0.1:4511/en/docs/tutorial-production-mode`
+    // -- no status, no output, and the identical command passing locally on the same
+    // tree. `String(error)` produces exactly that and drops `.status`/`.stdout`/`.stderr`.
+    //
+    // So: the ENVELOPE decides, never the status. agent-browser prints its verdict as
+    // JSON on STDOUT even when it exits 1 (verified against the real binary: a failed
+    // open exits 1 with an empty stderr and
+    // `{"success":false,...,"error":"Navigation failed: net::ERR_UNSAFE_PORT"}` on
+    // stdout). A real failure therefore still fails below, with its reason quoted.
+    out = String(error.stdout ?? '');
+    exitInfo =
+      typeof error.status === 'number' ? `exited ${error.status}` : 'exited with no status';
+    if (!out.trim()) {
+      const stderr = String(error.stderr ?? '').trim();
+      throw new Error(
+        `agent-browser ${args.join(' ')} ${exitInfo} and printed nothing on stdout` +
+          (error.signal ? `\n  signal: ${error.signal}` : '') +
+          `\n  stderr: ${stderr || '(empty)'}`
+      );
+    }
+  }
+  let parsed;
+  try {
+    parsed = JSON.parse(out);
+  } catch {
+    // `--json` printing something unparseable is its own distinct failure, and calling
+    // it a JSON SyntaxError hides the bytes that caused it.
+    throw new Error(
+      `agent-browser ${args.join(' ')} ${exitInfo} with unparseable --json output:` +
+        `\n  ${String(out).trim().slice(0, 2000) || '(empty)'}`
+    );
+  }
   if (!parsed.success) {
-    throw new Error(`agent-browser failed: ${JSON.stringify(parsed.error)}`);
+    throw new Error(
+      `agent-browser ${args.join(' ')} failed: ${JSON.stringify(parsed.error)} (${exitInfo})`
+    );
   }
   return parsed.data;
 }

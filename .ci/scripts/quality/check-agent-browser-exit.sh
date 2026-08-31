@@ -54,6 +54,45 @@ scan() {
     [ "$hits" -eq 0 ]
 }
 
+# --- the same defect in JavaScript -------------------------------------------------
+#
+# `scan` above reads SHELL scripts under `set -e`. The identical bug lives in Node,
+# where `execSync`/`execFileSync` THROW on the same worthless status, and it cost a CI
+# red on 2026-08-31 (run 33430885467, job 99616335703): the tutorial-player release gate
+# died on its first navigation with `Error: Command failed: agent-browser ... open <url>`
+# and nothing else, while the identical command passed locally on the same tree.
+#
+# THE INVARIANT, deliberately crude so it cannot false-positive on style: a file that
+# runs agent-browser through a THROWING exec must reach for the child's `.stdout`
+# somewhere. agent-browser prints its verdict as JSON on stdout even when it exits 1, so
+# `.stdout` is the only place a caller can learn what actually happened. A caller that
+# never mentions it is a caller that has thrown the reason away.
+scan_js() {
+    local root="$1" hits=0 f line n
+    while IFS= read -r f; do
+        # The recovery is present: this file reads the child's stdout on the throw path.
+        grep -q '\.stdout' "$f" && continue
+        n=0
+        while IFS= read -r line; do
+            n=$((n + 1))
+            case "$line" in
+                *'execSync('* | *'execFileSync('*) ;;
+                *) continue ;;
+            esac
+            case "$line" in *'agent-browser'*) ;; *) continue ;; esac
+            # A comment is prose, not a call.
+            case "${line#"${line%%[![:space:]]*}"}" in '//'* | '*'* | '/*'*) continue ;; esac
+            printf '  %s:%d\n    %s\n' "${f#"$root"/}" "$n" "$(echo "$line" | sed 's/^[[:space:]]*//')"
+            hits=$((hits + 1))
+        done <"$f"
+    done < <(grep -rlE --include='*.js' --include='*.mjs' --include='*.cjs' --include='*.ts' \
+        'agent-browser' "$root" 2>/dev/null |
+        grep -v '/node_modules/' | grep -v '/\.git/' | grep -v '/dist/' | sort)
+    # Same reason as `scan`: a shell return is taken mod 256, so 256 findings would read
+    # as a clean scan. Only the STATUS is made boolean.
+    [ "$hits" -eq 0 ]
+}
+
 # --- controls, run BEFORE the real scan: a gate nobody has watched fail is not a gate ---
 CTL=$(mktemp -d)
 trap 'rm -rf "$CTL"' EXIT
@@ -80,9 +119,47 @@ fi
 echo "  PASS  control: an unguarded call under set -e is reported"
 echo "  PASS  control: a guarded call, and one outside set -e, are not"
 
+# The JS half gets its own controls, for the same reason the shell half does.
+rm -rf "$CTL/js" && mkdir -p "$CTL/js"
+printf '%s\n' "const out = execFileSync('agent-browser', args, { encoding: 'utf8' });" \
+    >"$CTL/js/bad.js"
+if scan_js "$CTL/js" >/dev/null; then
+    echo "CONTROL FAILED: a JS exec of agent-browser that never reads .stdout was NOT reported." >&2
+    exit 1
+fi
+printf '%s\n' "try { out = execFileSync('agent-browser', args); }" \
+    "catch (e) { out = String(e.stdout ?? ''); }" >"$CTL/js/bad.js"
+printf '%s\n' "// execFileSync('agent-browser', ...) is described here, not called." \
+    >"$CTL/js/comment.js"
+if ! scan_js "$CTL/js" >/dev/null; then
+    echo "CONTROL FAILED: a JS caller that recovers .stdout, or a comment, was reported." >&2
+    exit 1
+fi
+echo "  PASS  control: a JS exec of agent-browser that discards .stdout is reported"
+echo "  PASS  control: one that recovers .stdout, and a comment, are not"
+
 # --- the real scan -----------------------------------------------------------------
+js_out=""
+if ! js_out=$(scan_js "$ROOT"); then
+    echo "✗ a JS/TS caller execs \`agent-browser\` and never reads the child's stdout:" >&2
+    printf '%s\n' "$js_out" >&2
+    cat >&2 <<'MSG'
+
+`execSync`/`execFileSync` THROW on a non-zero status, and agent-browser's status is not
+evidence (see below). Its verdict is JSON on STDOUT even when it exits 1, so catch the
+throw, take `error.stdout`, and let the parsed envelope decide:
+
+    let out;
+    try { out = execFileSync('agent-browser', args, { encoding: 'utf8' }); }
+    catch (error) { out = String(error.stdout ?? ''); if (!out.trim()) throw error; }
+    const parsed = JSON.parse(out);
+    if (!parsed.success) throw new Error(`agent-browser failed: ${parsed.error}`);
+MSG
+    exit 1
+fi
+
 if out=$(scan "$ROOT"); then
-    echo "✓ No script lets \`agent-browser open\` decide control flow."
+    echo "✓ No shell script, and no JS/TS caller, lets \`agent-browser\`'s exit status decide control flow."
     exit 0
 fi
 echo "✗ \`agent-browser open\` exit status is load-bearing in a \`set -e\` script:" >&2
