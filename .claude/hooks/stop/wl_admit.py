@@ -374,8 +374,18 @@ def process_admission(ad, text, worklist, session_id, me8, hits, sig, settled, a
 ASK_ANNOUNCEMENT_RE = re.compile(
     r"\b(?:one|two|three|four|five|six|a|\d+)\s+questions?\s+for\s+you\b"
     r"|\bquestions?\s+for\s+you\s*[:.\u2014-]"
-    r"|\bdecisions?\s+(?:that\s+are\s+)?(?:genuinely\s+)?yours\b"
-    r"|\blet\s+me\s+know\s+(?:if|whether|which|what|how|when|before)\b"
+    # THE SAME CLASS AS "your call" BELOW, swept 2026-08-31 after that one
+    # false-fired twice live: a copula ("are"/"is"/"were"/"was") immediately
+    # before "decision(s)" makes it a settled-fact statement of whose call
+    # something already is ("these are decisions that are genuinely yours,
+    # not mine to make"), not an announcement. A genuine standalone use
+    # ("Two decisions that are genuinely yours:") is unaffected.
+    r"|(?<!are\s)(?<!\bis\s)(?<!were\s)(?<!was\s)\bdecisions?\s+(?:that\s+are\s+)?(?:genuinely\s+)?yours\b"
+    # NOT preceded by "say/says/said to": citing an EXISTING documented
+    # instruction ("the docs already say to let me know if the build
+    # breaks") is reported speech about a convention, not the session live
+    # asking the operator to tell it something now.
+    r"|(?<!say to )(?<!says to )(?<!said to )\blet\s+me\s+know\s+(?:if|whether|which|what|how|when|before)\b"
     # NOT preceded by "is"/"was": "merging is your call, not something I
     # should do autonomously" and "PR #579 ... merge is your call" both fired
     # here, twice in one session, and neither is an unasked question -- both
@@ -385,7 +395,12 @@ ASK_ANNOUNCEMENT_RE = re.compile(
     # is unaffected, and a phrasing that also poses an actual question still
     # fires via the separate closing-`?` rule below.
     r"|(?<!\bis\s)(?<!\bwas\s)\byour\s+call\b"
-    r"|\bwant\s+me\s+to\b",
+    # NOT preceded by a negation: "you do not want me to push there without
+    # asking" and "the standing rule says you never want me to merge without
+    # being asked" both cite an EXISTING constraint as the reason for past
+    # behavior, not a live offer. "Do you want me to...?" is unaffected (no
+    # negation precedes it, and it also ends in `?`).
+    r"|(?<!not\s)(?<!n't\s)(?<!never\s)\bwant\s+me\s+to\b",
     re.IGNORECASE,
 )
 

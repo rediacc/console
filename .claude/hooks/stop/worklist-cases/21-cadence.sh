@@ -768,6 +768,74 @@ say 'Your call on which branch to use before I continue.
 - nothing outstanding'
 check "223i: a standalone 'your call' lead-in (not preceded by is/was) still fires" block "YOU ANNOUNCED A QUESTION AND THEN STOPPED WITHOUT ASKING IT"
 
+echo "== 223j. SWEEP: the SAME class in 'decisions...yours', 'let me know', 'want me to' =="
+# Found by sweeping ASK_ANNOUNCEMENT_RE's other alternatives for the exact
+# defect class 223h fixed, after a judge demanded the sweep: a phrase that
+# can ALSO be used declaratively (citing an existing fact/rule) rather than
+# as a live solicitation. All three fired on real prose before this fix.
+setup
+brief_now
+hand_now
+say 'I left both alone since these are decisions that are genuinely yours, not mine to make for you.
+
+## Remaining
+- nothing outstanding'
+check_quiet "223j CONTROL: a declarative 'decisions...yours' close does not fire" "YOU ANNOUNCED A QUESTION"
+
+setup
+brief_now
+hand_now
+say 'Two decisions that are genuinely yours: which vendor, and when to ship.
+
+## Remaining
+- nothing outstanding'
+check "223j: a standalone 'decisions...yours' lead-in (not preceded by a copula) still fires" block "YOU ANNOUNCED A QUESTION AND THEN STOPPED WITHOUT ASKING IT"
+
+setup
+brief_now
+hand_now
+say 'The docs already say to let me know if the build breaks, so I did not change that convention.
+
+## Remaining
+- nothing outstanding'
+check_quiet "223j CONTROL: reported speech about an existing convention (say/says/said to let me know) does not fire" "YOU ANNOUNCED A QUESTION"
+
+setup
+brief_now
+hand_now
+say 'Let me know if you want the cluster fixed before I continue.
+
+## Remaining
+- nothing outstanding'
+check "223j: a genuine 'let me know if' request still fires" block "YOU ANNOUNCED A QUESTION AND THEN STOPPED WITHOUT ASKING IT"
+
+setup
+brief_now
+hand_now
+say 'I did not touch main because you do not want me to push there without asking.
+
+## Remaining
+- nothing outstanding'
+check_quiet "223j CONTROL: 'do not want me to' citing an existing constraint does not fire" "YOU ANNOUNCED A QUESTION"
+
+setup
+brief_now
+hand_now
+say 'I skipped the merge since the standing rule says you never want me to merge without being asked.
+
+## Remaining
+- nothing outstanding'
+check_quiet "223j CONTROL: 'never want me to' citing a standing rule does not fire" "YOU ANNOUNCED A QUESTION"
+
+setup
+brief_now
+hand_now
+say 'Want me to proceed with the merge now.
+
+## Remaining
+- nothing outstanding'
+check "223j: a genuine 'want me to' offer (no negation) still fires" block "YOU ANNOUNCED A QUESTION AND THEN STOPPED WITHOUT ASKING IT"
+
 echo "== 223f. IT IS NOT SHADOWED BY ANOTHER ALWAYS-TIER VIOLATION =="
 # Violations are gathered and emitted as ONE block, and the always tier is
 # printed in full while everything else becomes a bare count. So a gate that

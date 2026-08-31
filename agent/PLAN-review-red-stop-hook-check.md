@@ -1,6 +1,6 @@
 # PLAN: a stop-hook check for "CI green, Review Complete red" -- the local
 # session has the context a remote job does not
-Status: planned, not yet implemented
+Status: done
 Owner: review-red-stop-hook-check plan agent, branch 0827-1 (PR #579)
 Updated: 2026-08-31
 
@@ -706,4 +706,14 @@ CALLER (`review_red`) is the unit tested against a fixture that supplies
 
 ## Status
 
-Planned only. Nothing implemented. Awaiting operator go-ahead.
+Implemented, wired, and tested as specified in commit `4a00daed`: F1-F5
+landed in `wl_ci.py`/`wl_checks.py`/`worklist_messages.py`, the priority-
+ladder registration in `test-always-tier.py`'s `ALWAYS_KEYS`, and the
+message-catalogue arity map in `worklist-cases/08-poll-and-waiting.sh`
+(both real gaps the suite itself caught while landing this, per that
+commit's message). 15 fixture controls in `wl_ci.py --selftest` (was 6).
+Full hook suite: 1773/1773. `ci:quick` clean. Reviewed by two automated
+passes with zero new findings; the `pr-finish` green-box interaction this
+plan's "Implementer notes" section flagged as a deliberate non-goal was
+independently re-confirmed by the second review as intentional, not
+missed.
