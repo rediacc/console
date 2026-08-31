@@ -1,61 +1,80 @@
-## SESSION f88f9be7 2026-08-31T16:39:05Z
+## SESSION f88f9be7 2026-08-31T20:40Z
 
-Executing `/home/developer/.claude/plans/let-s-make-comprehensive-plan-luminous-sparrow.md`:
-a comprehension big-bang on the 21 solution + 4 persona pages in `packages/www`.
-Goal: 8.7 screens -> ~4, and a CTA in the first viewport.
+Running `/pr-babysit` INLINE on branch `0831-1`. I am the babysitter; principal is the
+operator. Loop and mechanics: `.claude/agents/pr-babysitter.md`. Round log (the deep
+state, read it before touching anything):
+`~/.claude/projects/-home-developer-console/reports/pr-babysit-0831-1.md`.
 
 ## Next action
 
-W2, the disclosure conversions, which is the only workstream that still moves the
-screen-count number. Convert in this order, by what the component already is:
-`SPCostCalculator` (React island, 1,150px, the single largest object on the page) behind
-`components/Overlay.tsx`; `SPTechDiff` and `SPComparisonTable` (both Astro, static) behind
-native `popover="auto"`, copying `SolutionConstellation.astro:289` which already does this
-on the same page and degrades without JS. Each collapsed section leaves a trigger card:
-heading, one line, headline number, and a ~120px textless thumbnail (that thumbnail is W5,
-hand-authored - the private illustration_pipeline CANNOT be used, see the plan's W5).
-Do NOT add React to a static section just to get a dialog.
+W4's second half. Two READ-ONLY sonnet agents are returning the nine
+`techDiff.description` values per locale with the btrfs explainer clause removed
+(`a1eb57074f0095fe7` = de/es/fr/it/pt/tr, `adc82fbd732af86d5` = ru/ja/ko/zh/ar/et).
+When they land: splice them myself (single owner), rebuild www, verify the popover at
+390/768/1024/1440, `npm run i18n:generate-hashes`, `npm run ci:quick`, push, re-arm the
+CI watch.
 
-After converting, re-run `npx tsx scripts/check-page-density.ts --selftest` (needs a built
-dist) and confirm the page-height target; the gate already asserts CTA/dead-space/columns.
+## PRs
 
-## Landed and gate-verified this session
+- console **#583** DRAFT https://github.com/rediacc/console/pull/583 @ `bb50d5fe9`
+- account **#84** https://github.com/rediacc/account/pull/84 (consumed by #583's pointer)
 
-W1 and W3 are COMPLETE.
-- Hero CTA on all 25 pages via an optional `cta` prop on SPHero, rendered through the
-  existing `AccountLink.astro`. Always -> ACCOUNT_PATH; the bottom CTA keeps its category
-  routing. First-CTA depth moved 84-91% -> 5-9%. `for-ctos` has a self-serve path at last.
-- 25 per-page action labels ("Start cloning", "Start cutting TCO"), all 13 catalogs.
-- Five defects fixed: captcha dead end (6 forms onto a new `src/hooks/useCaptchaGuard.ts`),
-  techDiff column labels, Plyr `ratio` (397px dead black -> 0), collapsed-nav breadcrumb,
-  comparison-table scroll wrapper + sticky column.
-- NEW GATE `check:ci-page-density` (scripts/check-page-density.ts, runner
-  .ci/scripts/quality/page-density.sh, wired at package.json:182 /
-  manifest.ts:2499 / ci-quality.yml:1570). Verified IN the ci-runner plan via
-  `run.ts --list`. Against the pre-fix dist it reproduced all three defects; against the
-  rebuilt dist EXIT=0 over 12 page/viewport pairs, 5 controls firing.
-- Extracted `scripts/lib/serve-dist.ts`; check-browser-smoke.ts:103 now uses it and still
-  passes 6 routes.
+## Operator rulings (authoritative, do not re-litigate)
 
-Gates green: dead-css (62/62, not grown), css-dom-refs (31/31, not grown), landmarks,
-hydration-clean, layout-overflow, browser-smoke, page-density, ci-parity,
-gate-reachability, i18n completeness + key-usage + em-dash, sentence-wrapping (9/9).
+- **R1. ALL remaining plan work rides #583.** Do not open a second PR.
+- **R2. Overlays centre on the VIEWPORT** site-wide. DONE in f73d9c328.
+- **R3. Fix the vitest flake properly in the submodule.** DONE, account#84.
+- Operator correction 2026-08-31T19:0xZ: CLAUDE.md already mandates fix-on-sight and
+  big-bang, so STOP ASKING permission for either. Settle it and execute.
 
-## In flight
+## Landed this stretch
 
-`- [>]` #7cbd0f40, worker a8e18b51c73b33df7, until 17:08Z: collapsing
-`captchaUnavailable` from two sentences to one in the 12 non-English catalogs. English was
-already collapsed ("Verification could not load: check your connection or any ad blocker.")
-because check:ci-sentence-wrapping caught it in 5 .tsx files. **The gate scans English
-only, so it cannot see the locale half** - that is why this is tracked rather than assumed
-done. Agent owns the 12 locale files ONLY; en.json is mine.
+- `1abdaf621` W2: SPProblem timeline behind a native popover (worklist #167dbe32 ticked)
+- `d2dd21be2` W5: 5 hand-authored textless SVGs in a new `src/assets/images/disclosure/`
+  + resolver, on all four disclosure triggers; 3 derived stat-callout glyphs in
+  `icons.ts`; fixed a 227px horizontal overflow from `.sp-callout-pop` at 1024 and a
+  trigger stretching to 576px in the SPProblem grid (worklist #9dff7331 ticked)
+- `a8a872b29` the tutorial-player gate no longer trusts agent-browser's exit status, and
+  `check-agent-browser-exit.sh` now scans JS/TS too; knip unused export dropped
+- `4ca07f0cb` `test-run-sh.sh` SIGPIPE race under pipefail (the CI red)
+- `4298b44e3` + `bb50d5fe9` W4 part 1: one spelling for the IBM citation across 13 sites,
+  4 translated report titles restored, 16 stray `[n]` markers removed, and
+  `check-locale-only-edits.ts` gained a narrow marker-repair exemption with 5 controls
 
-## Volatile state
+## Uncommitted right now (W4 part 2, in flight)
 
-- A fresh `packages/www/dist` EXISTS (1814 pages, built 18:28). The page-density gate needs
-  it. My dev server on :4399 is STOPPED - restart it if you need one.
-- `npx playwright install chromium` was run, so both browser gates run locally without
-  Docker via `REDIACC_SMOKE_NO_DOCKER=1`.
-- Peer session still owns SPHero.astro / PersonaPage.astro / SPHomePage.astro /
-  SPHomeVideo.astro / persona-pages.ts. I have edited SPHero and PersonaPage additively;
-  their video wiring is intact and must stay so.
+`en.json` + 12 locales carry the new `solutions.mechanism.cow`; the nine English
+`techDiff.description` values are collapsed; `SPTechDiff.astro` renders the shared
+explainer beside `mechanism-cow.svg` inside the popover; `SolutionPage`/`PersonaPage`
+pass `mechanismNote`; `solution-pages.css` has `.sp-mechanism*`. The twelve locales'
+nine descriptions still hold the OLD English's clause -- that is what the two agents
+are producing.
+
+## Open worklist
+
+- `#d84b5b51` W4 (in progress, above)
+- `#7ecac9ea` SWEEP: 113 bounded `printf|echo | grep -q` sites under pipefail
+
+## Live machinery (session-only, dies with this session)
+
+- CI watch `b0ty48qxb` on `bb50d5fe9` -- IN FLIGHT
+- heartbeat cron `f892a1f9` (:23), mail poll cron `b4bff02e` (:47)
+- Tear the two crons down at the finish line and say so in the final report.
+
+## Traps this session paid for
+
+- **`--mark-done --all-stale` is a BULK verb.** Run to close the one key the gate named,
+  it stamped 1,965 per locale (23,561 total). The pipeline's "stale" is "CRC not in the
+  ledger"; the gate's is "was naturalized, English changed". Repaired forward from
+  `git show HEAD:` + a 12-CRC splice. Written up in TRAPS.md and in memory.
+- **agent-browser prints its diagnosis on STDOUT and still exits 1**, so `String(error)`
+  on an execFileSync throw drops the only copy of the reason.
+- **`printf | grep -q` under pipefail is a race** even for a 1 KB producer.
+- **Never read a CI verdict through a pipe.** `npm run ci | tail` returns tail's status.
+- `git commit --amend` is hook-blocked during babysitting; make each fix a NEW commit.
+- The round log lives at the projects path, NOT repo `reports/` (gitignored).
+- A www build needs `GITHUB_TOKEN` or `downloads.astro` fails on the GitHub rate limit.
+- The pre-push hook hashes the WHOLE tree: do not touch a file (even
+  `.ci/cache/gate-durations.json`) between `ci:quick` and `git push`.
+- Peer session owns SPHero/PersonaPage/SPHomePage/SPHomeVideo/persona-pages.ts. My edits
+  there are additive; their video wiring must stay.

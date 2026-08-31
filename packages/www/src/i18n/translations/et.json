@@ -10328,6 +10328,9 @@
       "timeline": "Vaata ajajoont",
       "comparison": "Võrdle kõiki tööriistu"
     },
+    "mechanism": {
+      "cow": "Rediacc kopeerib salvestuskihis btrfs-i abil, nii et koopia lihtsalt osutab samadele andmetele selle asemel, et neid dubleerida, ning 100 GB kopeerimine võtab sama palju aega kui 1 GB."
+    },
     "references": {
       "title": "Allikad"
     },

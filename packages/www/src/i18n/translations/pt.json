@@ -10336,6 +10336,9 @@
       "timeline": "Ver a Cronologia",
       "comparison": "Comparar Todas as Ferramentas"
     },
+    "mechanism": {
+      "cow": "A Rediacc copia na camada de armazenamento com btrfs, então uma cópia aponta para os mesmos dados em vez de duplicá-los, e 100 GB levam o mesmo tempo que 1 GB."
+    },
     "references": {
       "title": "Fontes"
     },

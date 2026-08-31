@@ -10307,6 +10307,9 @@
       "timeline": "Zaman Çizelgesini Görün",
       "comparison": "Tüm Araçları Karşılaştırın"
     },
+    "mechanism": {
+      "cow": "Rediacc, btrfs ile depolama katmanında kopyalar; yani bir kopya veriyi çoğaltmak yerine aynı veriye işaret eder ve 100 GB, 1 GB ile aynı sürede tamamlanır."
+    },
     "references": {
       "title": "Kaynaklar"
     },

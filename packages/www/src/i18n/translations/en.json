@@ -162,6 +162,9 @@
       "timeline": "See the timeline",
       "comparison": "Compare all tools"
     },
+    "mechanism": {
+      "cow": "Rediacc copies at the storage layer with btrfs, so a copy points at the same data instead of duplicating it, and 100 GB takes the same seconds as 1 GB."
+    },
     "references": {
       "title": "Sources"
     }
@@ -2272,7 +2275,7 @@
         "techDiff": {
           "overline": "UNDER THE HOOD",
           "title": "Why 60-second clones are possible",
-          "description": "Here's the trick. Rediacc copies at the storage layer. It uses btrfs, an open-source storage tool built into Linux. A copy of a 241 GB setup finishes in under a second. It uses almost no extra space at first. As the clone changes, only the changed parts take new space. Ten clones of a 241 GB database can fit in under 12 GB.",
+          "description": "Here's the trick. Rediacc copies at the storage layer. A copy of a 241 GB setup finishes in under a second. It uses almost no extra space at first. As the clone changes, only the changed parts take new space. Ten clones of a 241 GB database can fit in under 12 GB.",
           "traditionalLabel": "Traditional approach",
           "rediaccLabel": "Rediacc (storage-layer clones)",
           "rows": [
@@ -3441,7 +3444,7 @@
         "techDiff": {
           "overline": "UNDER THE HOOD",
           "title": "Why ransomware can’t encrypt these backups",
-          "description": "Rediacc saves data with btrfs, an open-source storage system built into Linux. It takes a read-only copy, a frozen snapshot of the files at one moment. Once that copy is sealed, the storage layer itself blocks any change. This isn't a software lock that malware can pick. Even with the top admin password, ransomware can't encrypt, change, or delete a sealed copy.",
+          "description": "Rediacc takes a read-only copy, a frozen snapshot of the files at one moment. Once that copy is sealed, the storage layer itself blocks any change. This isn't a software lock that malware can pick. Even with the top admin password, ransomware can't encrypt, change, or delete a sealed copy.",
           "traditionalLabel": "Traditional backup tools",
           "rediaccLabel": "Rediacc (locked in storage)",
           "rows": [
@@ -4172,7 +4175,7 @@
         "techDiff": {
           "overline": "UNDER THE HOOD",
           "title": "Why file-by-file restores fail",
-          "description": "The old way: set up a new server. Install packages. Restore files one by one. Reconfigure services. Then hope nothing was missed. Rediacc works differently. It uses btrfs, the storage engine that makes cheap instant copies possible. It copies a whole setup at once. Drives, configs, containers, network, all in one move.",
+          "description": "The old way: set up a new server. Install packages. Restore files one by one. Reconfigure services. Then hope nothing was missed. Rediacc works differently. It copies a whole setup at once. Drives, configs, containers, network, all in one move.",
           "traditionalLabel": "Traditional Recovery",
           "rediaccLabel": "Rediacc",
           "rows": [
@@ -4532,7 +4535,7 @@
         "techDiff": {
           "overline": "UNDER THE HOOD",
           "title": "Why safe testing works at the storage level",
-          "description": "Rediacc copies a whole live setup in seconds. That means the operating system, the apps, the databases, and all the settings. It works thanks to btrfs, the storage engine that makes cheap instant copies possible. The copy runs on its own isolated network with its own Docker. Patches on the copy never touch the real servers. If the copy breaks, delete it. If it works, apply the same patch for real.",
+          "description": "Rediacc copies a whole live setup in seconds. That means the operating system, the apps, the databases, and all the settings. The copy runs on its own isolated network with its own Docker. Patches on the copy never touch the real servers. If the copy breaks, delete it. If it works, apply the same patch for real.",
           "traditionalLabel": "Traditional approach",
           "rediaccLabel": "Rediacc (btrfs storage engine)",
           "rows": [
@@ -4849,7 +4852,7 @@
         "techDiff": {
           "overline": "UNDER THE HOOD",
           "title": "Why spreadsheet compliance fails",
-          "description": "Spreadsheet compliance means tracking backup dates by hand, running cleanup scripts, and hoping nothing slipped before the auditor shows up. Rediacc uses btrfs, the storage engine that makes cheap instant copies. It keeps, checks, and cleans up backups on its own. No human steps.",
+          "description": "Spreadsheet compliance means tracking backup dates by hand, running cleanup scripts, and hoping nothing slipped before the auditor shows up. Rediacc keeps, checks, and cleans up backups on its own. No human steps.",
           "traditionalLabel": "Manual Retention Management",
           "rediaccLabel": "Rediacc Retention",
           "rows": [
@@ -5221,7 +5224,7 @@
         "techDiff": {
           "overline": "UNDER THE HOOD",
           "title": "Why cross-cloud replication is fast and cheap",
-          "description": "Rediacc runs on btrfs, the storage engine that makes cheap instant copies possible. It only copies the data that changed since last time. Take a 380 GB setup where 2.4 GB changes today. Rediacc moves 2.4 GB, not 380 GB. That cuts bandwidth by 98%. It can run all the time or on a schedule.",
+          "description": "Rediacc only copies the data that changed since last time. Take a 380 GB setup where 2.4 GB changes today. Rediacc moves 2.4 GB, not 380 GB. That cuts bandwidth by 98%. It can run all the time or on a schedule.",
           "traditionalLabel": "Traditional approach",
           "rediaccLabel": "Rediacc (btrfs send/receive)",
           "rows": [
@@ -5581,7 +5584,7 @@
         "techDiff": {
           "overline": "UNDER THE HOOD",
           "title": "Why traditional DR testing fails",
-          "description": "Old-school DR tests need production downtime, a room full of engineers, and weeks of planning. Rediacc uses btrfs, the storage engine that makes cheap instant copies possible. It clones a whole setup in seconds. The test runs on the copy. Production never stops.",
+          "description": "Old-school DR tests need production downtime, a room full of engineers, and weeks of planning. Rediacc clones a whole setup in seconds. The test runs on the copy. Production never stops.",
           "traditionalLabel": "Traditional DR Testing",
           "rediaccLabel": "Rediacc DR Testing",
           "rows": [
@@ -6216,7 +6219,7 @@
         "techDiff": {
           "overline": "UNDER THE HOOD",
           "title": "Why copy-based patching works",
-          "description": "Old patching needs a staging copy that matches production. But staging drifts within days. Rediacc makes an instant copy of the real production setup in seconds. It uses btrfs, the storage engine that makes cheap instant copies possible. Apply the patch on the copy. Test it against real data and real settings. If it works, deploy to production. If it fails, throw the copy away. Production stays untouched.",
+          "description": "Old patching needs a staging copy that matches production. But staging drifts within days. Rediacc makes an instant copy of the real production setup in seconds. Apply the patch on the copy. Test it against real data and real settings. If it works, deploy to production. If it fails, throw the copy away. Production stays untouched.",
           "traditionalLabel": "Traditional patching",
           "rediaccLabel": "Rediacc",
           "rows": [
@@ -8009,7 +8012,7 @@
         "techDiff": {
           "overline": "UNDER THE HOOD",
           "title": "Why recovery takes minutes, not days",
-          "description": "Old recovery rebuilds everything from scratch: reinstall the system, restore files, set up services again. Rediacc works differently. It uses btrfs, the storage engine that makes cheap instant copies possible. A clean copy already sits on the disk. We just flip it on. No reinstall, no setup, no slow data transfer.",
+          "description": "Old recovery rebuilds everything from scratch: reinstall the system, restore files, set up services again. Rediacc works differently. A clean copy already sits on the disk. We just flip it on. No reinstall, no setup, no slow data transfer.",
           "traditionalLabel": "Traditional rebuild",
           "rediaccLabel": "Rediacc (btrfs instant copies)",
           "rows": [

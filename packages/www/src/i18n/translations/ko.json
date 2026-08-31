@@ -10313,6 +10313,9 @@
       "timeline": "타임라인 보기",
       "comparison": "전체 도구 비교"
     },
+    "mechanism": {
+      "cow": "Rediacc는 btrfs를 이용해 스토리지 계층에서 복사하므로 복사본은 데이터를 중복 저장하지 않고 같은 데이터를 가리키기만 하며, 100 GB도 1 GB와 똑같이 몇 초면 끝납니다."
+    },
     "references": {
       "title": "출처"
     },

@@ -2729,6 +2729,55 @@ button.sp-illustration-trigger:focus-visible {
   outline-offset: 2px;
 }
 
+/* THE MECHANISM, ONCE, INSIDE THE POPOVER.
+   Twelve pages each carried their own btrfs explainer mid-paragraph; this is the one
+   they were collapsed into. It sits under the table it explains, so a reader who opened
+   the disclosure to see HOW gets the how, and a reader who never opens it is not charged
+   for it. */
+.sp-mechanism {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  margin: 24px 0 0;
+  padding: 16px 20px;
+  background: var(--color-bg);
+  border: 1px solid var(--sp-border-light);
+  border-radius: var(--radius-md);
+}
+
+.sp-mechanism-figure {
+  flex: none;
+  width: 200px;
+}
+
+.sp-mechanism-figure svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.sp-mechanism-note {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  line-height: 1.55;
+  color: var(--sp-text-muted-light);
+}
+
+/* Below 600px the drawing goes above the sentence rather than beside it: at 64px wide
+   the four forks stop being four things and become a smudge. */
+@media (max-width: 600px) {
+  .sp-mechanism {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+
+  .sp-mechanism-figure {
+    width: 100%;
+    max-width: 240px;
+  }
+}
+
 /* THE PICTURE ON THE TRIGGER.
    A collapsed section is only cheaper than an expanded one if the reader can tell what
    is behind it without spending the click. "Show the comparison" does not say that a

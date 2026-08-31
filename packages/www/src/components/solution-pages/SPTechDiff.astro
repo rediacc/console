@@ -6,6 +6,17 @@ interface Props {
   triggerLabel: string;
   /** Unique per mount: a popover needs an id, and two on one page must not collide. */
   popId: string;
+  /**
+   * The ONE shared copy-on-write explainer, `solutions.mechanism.cow`.
+   *
+   * Twelve solution pages used to carry their own version of it, wedged mid-paragraph
+   * into a section about something else ("It uses btrfs, the storage engine that makes
+   * cheap instant copies possible." appeared verbatim on seven of them). A reader sees
+   * exactly one of those pages, so the repetition bought them nothing and cost every one
+   * of them a sentence. It lives here now, behind the same click as the table it
+   * explains, next to a drawing of the thing.
+   */
+  mechanismNote: string;
   techDiff: {
     overline: string;
     title: string;
@@ -16,9 +27,10 @@ interface Props {
   };
 }
 
-const { techDiff, triggerLabel, popId } = Astro.props;
+const { techDiff, triggerLabel, popId, mechanismNote } = Astro.props;
 const titleId = `${popId}-title`;
 const thumb = resolveDisclosureThumb('trigger-tech-diff');
+const cowDiagram = resolveDisclosureThumb('mechanism-cow');
 ---
 
 <section class="sp-tech-detail">
@@ -56,6 +68,16 @@ const thumb = resolveDisclosureThumb('trigger-tech-diff');
 
     <div class="sp-disclosure-pop" id={popId} popover="auto" role="dialog" aria-labelledby={titleId}>
       <h3 class="sp-disclosure-pop-title" id={titleId}>{techDiff.title}</h3>
+
+    {/* The mechanism, once, as a picture and a sentence. The drawing carries what the
+        sentence deliberately leaves out -- that only what a fork CHANGES gets a new
+        block -- because a second sentence about storage is a second sentence a
+        45-second reader does not spend. It is textless (operator decision L4) and
+        inlined so its `--illustration-*` tokens resolve against the page. */}
+    <figure class="sp-mechanism">
+      {cowDiagram && <div class="sp-mechanism-figure" set:html={cowDiagram} />}
+      <figcaption class="sp-mechanism-note">{mechanismNote}</figcaption>
+    </figure>
     <table class="sp-tech-detail-compare">
       <thead>
         <tr>

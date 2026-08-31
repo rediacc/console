@@ -10297,6 +10297,9 @@
       "timeline": "タイムラインを見る",
       "comparison": "全ツールを比較"
     },
+    "mechanism": {
+      "cow": "Rediaccはbtrfsを使ってストレージ層でコピーするため、コピーはデータを複製せず同じデータを指すだけで、100 GBのコピーも1 GBと同じ数秒で終わります。"
+    },
     "references": {
       "title": "出典"
     },

@@ -10318,6 +10318,9 @@
       "timeline": "Zeitverlauf ansehen",
       "comparison": "Alle Tools vergleichen"
     },
+    "mechanism": {
+      "cow": "Rediacc kopiert auf der Speicherebene mit btrfs, sodass eine Kopie einfach auf dieselben Daten verweist, statt sie zu duplizieren, und 100 GB genauso schnell gehen wie 1 GB."
+    },
     "references": {
       "title": "Quellen"
     },

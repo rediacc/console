@@ -10264,6 +10264,9 @@
       "timeline": "查看时间线",
       "comparison": "比较所有工具"
     },
+    "mechanism": {
+      "cow": "Rediacc通过btrfs在存储层进行复制，副本只是指向同一份数据而非重复写入，因此100 GB和1 GB耗时一样，只需几秒。"
+    },
     "references": {
       "title": "来源"
     },

@@ -10316,6 +10316,9 @@
       "timeline": "Ver la cronología",
       "comparison": "Comparar todas las herramientas"
     },
+    "mechanism": {
+      "cow": "Rediacc copia a nivel de almacenamiento con btrfs, así que una copia apunta a los mismos datos en lugar de duplicarlos, y 100 GB tardan lo mismo que 1 GB."
+    },
     "references": {
       "title": "Fuentes"
     },
