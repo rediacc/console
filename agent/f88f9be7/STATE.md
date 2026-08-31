@@ -7,16 +7,13 @@ state, read it before touching anything):
 
 ## Next action
 
-W4's second half. Two READ-ONLY sonnet agents are returning the nine
-`techDiff.description` values per locale with the btrfs explainer clause removed
-(`a1eb57074f0095fe7` = de/es/fr/it/pt/tr, `adc82fbd732af86d5` = ru/ja/ko/zh/ar/et).
-When they land: splice them myself (single owner), rebuild www, verify the popover at
-390/768/1024/1440, `npm run i18n:generate-hashes`, `npm run ci:quick`, push, re-arm the
-CI watch.
+Wait on CI watch `bolahleo6` (head `5d1213f5c`). Everything the operator's plan asked for
+has landed; the only open item is the `[?]` below. On green: refresh the round log, flip
+#583 out of draft, request Claude review, tear down the two crons.
 
 ## PRs
 
-- console **#583** DRAFT https://github.com/rediacc/console/pull/583 @ `bb50d5fe9`
+- console **#583** DRAFT https://github.com/rediacc/console/pull/583 @ `5d1213f5c`
 - account **#84** https://github.com/rediacc/account/pull/84 (consumed by #583's pointer)
 
 ## Operator rulings (authoritative, do not re-litigate)
@@ -40,24 +37,26 @@ CI watch.
 - `4298b44e3` + `bb50d5fe9` W4 part 1: one spelling for the IBM citation across 13 sites,
   4 translated report titles restored, 16 stray `[n]` markers removed, and
   `check-locale-only-edits.ts` gained a narrow marker-repair exemption with 5 controls
+- `03b6259b6` W4 part 2: nine btrfs re-explanations collapsed into one
+  `solutions.mechanism.cow`, rendered once beside the CoW diagram in the mechanism popover
+- `f24b3a8a4` TRAP_FLOOR ratcheted to 50 (the CI red), plus a fast-lane advisory so an
+  unratcheted floor is named where the mistake is made
+- `c7970a9e8` + `5d1213f5c` 60 pipefail/grep -q races drained across 27 files
+- `9b1f68a28` setup-idempotency no longer reads a neighbour gate's fixture as a mutation
 
-## Uncommitted right now (W4 part 2, in flight)
+## Uncommitted right now
 
-`en.json` + 12 locales carry the new `solutions.mechanism.cow`; the nine English
-`techDiff.description` values are collapsed; `SPTechDiff.astro` renders the shared
-explainer beside `mechanism-cow.svg` inside the popover; `SolutionPage`/`PersonaPage`
-pass `mechanismNote`; `solution-pages.css` has `.sp-mechanism*`. The twelve locales'
-nine descriptions still hold the OLD English's clause -- that is what the two agents
-are producing.
+Nothing. Tree clean.
 
 ## Open worklist
 
-- `#d84b5b51` W4 (in progress, above)
-- `#7ecac9ea` SWEEP: 113 bounded `printf|echo | grep -q` sites under pipefail
+- `#d84b5b51` is a `[?]`: re-syncing the 12 locales' nine `techDiff.description` values,
+  which translate the pre-round-6 English. DEFAULT is a dedicated pass after #583 merges.
+  All numbers are in the deferral text.
 
 ## Live machinery (session-only, dies with this session)
 
-- CI watch `b0ty48qxb` on `bb50d5fe9` -- IN FLIGHT
+- CI watch `bolahleo6` on `5d1213f5c` -- IN FLIGHT
 - heartbeat cron `f892a1f9` (:23), mail poll cron `b4bff02e` (:47)
 - Tear the two crons down at the finish line and say so in the final report.
 
