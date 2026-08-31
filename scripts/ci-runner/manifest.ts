@@ -214,6 +214,7 @@ export const GATES: readonly GateSpec[] = [
       'scripts/check-cli-docs.ts',
       'scripts/check-i18n-naturalization.ts',
       'scripts/check-locale-only-edits.ts',
+      'scripts/check-i18n-ledger-growth.ts',
       'scripts/check-dead-translation-keys.ts',
       'scripts/check-em-dash-surfaces.ts',
       'packages/www/scripts/check-client-i18n-freshness.ts',
@@ -283,6 +284,18 @@ export const GATES: readonly GateSpec[] = [
     run: 'npm run check:ci-i18n-locale-only',
     gate: true,
     leaves: ['scripts/check-locale-only-edits.ts'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-i18n',
+      step: 'i18n',
+    },
+  },
+  {
+    id: 'check:ci-i18n-ledger-growth',
+    run: 'npm run check:ci-i18n-ledger-growth',
+    gate: true,
+    leaves: ['scripts/check-i18n-ledger-growth.ts'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
