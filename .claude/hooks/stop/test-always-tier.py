@@ -39,6 +39,7 @@ ALWAYS_KEYS = frozenset(
         "event-unparseable",
         "hook-blind",
         "ci-unreadable",
+        "review-unreadable",
         "pr-unreadable",
         "cl-shape",
         "adhoc-watch",
@@ -50,6 +51,12 @@ ALWAYS_KEYS = frozenset(
         "unblocked-claim",
         "pending-ask",
         "ci-red",
+        # "Review Complete" red while everything else is clean: silence here
+        # reads identically to a genuinely reviewed, unresolved-thread-free
+        # head, which is the exact ambiguity CI_NONBLOCKING_CONTEXTS created
+        # by design for ci_classify -- this check exists specifically to
+        # un-hide it, so it cannot itself be left to rotate away.
+        "review-red",
         "ladder-investigate",
         "ladder-gone",
         "ladder-idle",

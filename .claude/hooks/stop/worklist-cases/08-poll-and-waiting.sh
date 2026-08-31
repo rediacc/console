@@ -333,6 +333,20 @@ ARITY = {
     "V_ADHOC_WATCH": ("b1", "blob"),
     "CI_NOTE_RETRYABLE": ("9", 1, "pats", "rows"),
     "CI_NOTE_DOWNGRADED": ("9", 1, 2, "", "rows"),
+    # v24 review-red gate (wl_ci.review_red). V_REVIEW_RED takes the PR
+    # number, head sha, the check-run's title and summary, then owner/name/pr
+    # FOUR times (inline-query, inline-reply, top-level-reply, workflow
+    # re-dispatch commands each need their own repo slug), then the block
+    # ceiling, the current count, the session prefix, and the PR number again
+    # for the --defer exit. REVIEW_NOTE_DOWNGRADED takes the PR, the title,
+    # the count, then owner/name/pr for its own re-dispatch command.
+    "V_REVIEW_RED": (
+        "9", "sha", "t", "s",
+        "o", "n", 9, "o", "n", 9, "o", "n", 9, "o", "n", 9,
+        2, 1, "me", "9",
+    ),
+    "REVIEW_NOTE_DOWNGRADED": ("9", "t", 1, "o", "n", "9"),
+    "V_REVIEW_UNREADABLE": ("d",),
     "V_NO_POLL_CRON": ("m", "m"), "V_NO_WAITER": (2, "p", "m"),
     "N_WAITER_NUDGE": (2, "p", "m", 60), "V_MANY_WORK_CRONS": (2, "l"),
     # (n waiters, the TaskStop rows, the wl_wait path, me, the fresh timeout)

@@ -2370,6 +2370,11 @@ PRIORITY_LADDER = (
                 # reviewed / threads), and the red that keeps it unticked.
                 "pr-finish",
                 "ci-red",
+                # Not a genuine CI failure (CI_NONBLOCKING_CONTEXTS keeps it out
+                # of "ci-red" on purpose) but the local session has context a
+                # remote job does not, so it joins ci-red's tier rather than
+                # sitting in hygiene where it could be starved by real work.
+                "review-red",
             }
         ),
     ),
@@ -2407,6 +2412,7 @@ PRIORITY_LADDER = (
                 "adhoc-watch-broken",
                 "ci-unreadable",
                 "ci-waiting",
+                "review-unreadable",
                 "pr-unreadable",
                 "cl-shape",
                 "plan-fidelity",
@@ -3848,6 +3854,63 @@ def run_stop(event, event_ok, worklist, hook_file):
                 if cidetail["acked"]
                 else "",
                 _txt,
+            )
+    elif cistate == "ok":
+        # CI is genuinely clean. Separate from the hard/soft bucket above ON
+        # PURPOSE: "Review Complete" is deliberately excluded from ci_classify
+        # (CI_NONBLOCKING_CONTEXTS) so it can never read as a CI failure, but
+        # that exclusion also means a red "Review Complete" was previously
+        # INVISIBLE here -- identical to a fully clean head. This session has
+        # the context (what it just pushed, what the review is about) that a
+        # remote job does not, so it is the right place to surface it.
+        try:
+            rstate, rdetail = wl_ci.review_red(
+                root,
+                worklist,
+                session_id,
+                cidetail,
+                (last_msg or "") + "\n" + "\n".join(deferred),
+            )
+        except Exception as exc:  # noqa: BLE001 -- a broken check must SAY SO
+            rstate, rdetail = "unreadable", "%s: %s" % (type(exc).__name__, str(exc)[:120])
+        if rstate == "unreadable":
+            vadd("review-unreadable", True, M.V_REVIEW_UNREADABLE % rdetail)
+        elif rstate == "trouble":
+            vadd(
+                "review-red",
+                True,
+                M.V_REVIEW_RED
+                % (
+                    rdetail["pr"],
+                    rdetail["sha"],
+                    rdetail["title"],
+                    rdetail["summary"],
+                    rdetail["owner"],
+                    rdetail["name"],
+                    rdetail["pr"],
+                    rdetail["owner"],
+                    rdetail["name"],
+                    rdetail["pr"],
+                    rdetail["owner"],
+                    rdetail["name"],
+                    rdetail["pr"],
+                    rdetail["owner"],
+                    rdetail["name"],
+                    rdetail["pr"],
+                    wl_ci.REVIEW_MAX_BLOCKS,
+                    rdetail["n"],
+                    me8,
+                    rdetail["pr"],
+                ),
+            )
+        elif rstate == "downgraded":
+            ci_report = (ci_report + "\n\n" if ci_report else "") + M.REVIEW_NOTE_DOWNGRADED % (
+                rdetail["pr"],
+                rdetail["title"],
+                rdetail["n"],
+                rdetail["owner"],
+                rdetail["name"],
+                rdetail["pr"],
             )
     # ---- v21: THE pr-babysit FINISH LINE, as the markdown checkboxes it is.
     #

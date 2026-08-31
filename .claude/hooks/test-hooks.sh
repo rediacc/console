@@ -1906,9 +1906,9 @@ CI_MOD="$DIR/stop/wl_ci.py"
 if [[ -f "$CI_MOD" ]]; then
     if out="$(python3 "$CI_MOD" --selftest 2>&1)"; then
         n=$(grep -c "^  PASS " <<<"$out")
-        if [[ "$n" -lt 6 ]]; then
+        if [[ "$n" -lt 15 ]]; then
             FAIL=$((FAIL + 1))
-            echo "FAIL [1] stop/wl_ci.py --selftest: $n control(s), expected >= 6"
+            echo "FAIL [1] stop/wl_ci.py --selftest: $n control(s), expected >= 15"
         else
             PASS=$((PASS + n))
             echo "ok   [0] stop/wl_ci.py --selftest: $n control(s) passed"
