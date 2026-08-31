@@ -86,7 +86,7 @@ test_the_founding_defect_fires() {
     old_verify() {
         local output="$1" expected="$2"
         if [[ "$expected" == "latest" ]]; then
-            [[ -n "$output" ]] && echo "$output" | grep -qE '^v?[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9.]+)?$'
+            [[ -n "$output" ]] && grep -qE '^v?[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9.]+)?$' <<<"$output"
         else
             grep -q "$expected" <<<"$output"
         fi

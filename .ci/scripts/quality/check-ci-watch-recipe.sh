@@ -114,7 +114,7 @@ assert_skill() {
         echo "the canonical block does not invoke $TRACE_REL"
         return 1
     fi
-    if printf '%s' "$blk" | grep -qE '(until|while)[^\n]*gh '; then
+    if grep -qE '(until|while)[^\n]*gh ' <<<"$blk"; then
         echo "the canonical block still contains a hand-rolled loop"
         return 1
     fi

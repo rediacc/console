@@ -116,7 +116,7 @@ test_transcript_noise_cannot_satisfy_the_check() {
     # decorative and nobody would know.
     local raw naive
     raw="$(fake_container '1.2.16' "$noise" 2>&1)"
-    echo "$raw" | grep -q '1\.2\.17' && naive=0 || naive=1
+    grep -q '1\.2\.17' <<<"$raw" && naive=0 || naive=1
     assert_eq "0" "$naive" "an unfenced grep must accept the wrong binary, or this test proves nothing"
     log_pass "fencing is what stops the installer's own output from passing the check"
 }

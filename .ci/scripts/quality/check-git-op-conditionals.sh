@@ -89,10 +89,10 @@ scan_file() {
 
         # Guard 0: the assignment is itself the CONDITION of an if/elif/while,
         # whose failure branch is the guard (`elif ! head_sha=$(...); then`).
-        printf '%s' "$line" | grep -qE '^[[:space:]]*(if|elif|while)[[:space:]]+!?[[:space:]]*'"${varname}"'=' && continue
+        grep -qE '^[[:space:]]*(if|elif|while)[[:space:]]+!?[[:space:]]*'"${varname}"'=' <<<"$line" && continue
 
         # Guard 1: the assignment line itself ends in a failure handler.
-        printf '%s' "$line" | grep -qE '\|\|[[:space:]]*(exit|return|continue|true|:)([[:space:]]|$)' && continue
+        grep -qE '\|\|[[:space:]]*(exit|return|continue|true|:)([[:space:]]|$)' <<<"$line" && continue
 
         # rev-parse --abbrev-ref HEAD is a SPECIAL CASE, checked before the
         # general empty-check guard: it does not fail on a detached checkout
@@ -100,7 +100,7 @@ scan_file() {
         # an emptiness check alone (guard below) does not catch it. Only the
         # explicit HEAD-literal comparison, or guard 1 above, clears this shape.
         if grep -qE 'rev-parse[[:space:]]+--abbrev-ref[[:space:]]+HEAD' <<<"$line"; then
-            printf '%s' "$body" | grep -qE "\"\\\$${varname}\"[[:space:]]*(==|=)[[:space:]]*\"HEAD\"" && continue
+            grep -qE "\"\\\$${varname}\"[[:space:]]*(==|=)[[:space:]]*\"HEAD\"" <<<"$body" && continue
             printf '%s:%s\n' "${f#"$ROOT"/}" "$varname"
             continue
         fi
@@ -109,7 +109,7 @@ scan_file() {
         # file. Sufficient for symbolic-ref / branch --show-current, both of
         # which fail closed to EMPTY on a detached checkout with no misleading
         # literal to also guard against.
-        printf '%s' "$body" | grep -qE "(-z|-n)[[:space:]]+\"\\\$${varname}\"" && continue
+        grep -qE "(-z|-n)[[:space:]]+\"\\\$${varname}\"" <<<"$body" && continue
 
         printf '%s:%s\n' "${f#"$ROOT"/}" "$varname"
         # `git` and its subcommand are not necessarily adjacent: `git -C "$dir"

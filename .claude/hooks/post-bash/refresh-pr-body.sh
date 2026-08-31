@@ -24,9 +24,9 @@ set -uo pipefail
 CMD=$(jq -r '.tool_input.command' 2>/dev/null)
 # Word-boundary, or `echo git pushed` matches. It only stayed harmless above
 # because no PR happened to exist for that branch, which is luck, not a guard.
-echo "$CMD" | grep -qE 'git +push([[:space:]]|$)' || exit 0
+grep -qE 'git +push([[:space:]]|$)' <<<"$CMD" || exit 0
 # A dry run pushes nothing, so there is nothing to describe.
-echo "$CMD" | grep -qE '(^| )--dry-run( |$)' && exit 0
+grep -qE '(^| )--dry-run( |$)' <<<"$CMD" && exit 0
 
 ROOT="${CLAUDE_PROJECT_DIR:-.}"
 command -v gh >/dev/null 2>&1 || exit 0

@@ -506,10 +506,10 @@ _gc_run() { # _gc_run <expected-rc> <shim-mode> <claim> <label> [needle] [not-ne
     rc=$?
     rm -rf "$d"
     [ "$rc" = "$exp" ] || bad="exit $rc, wanted $exp"
-    if [ -z "$bad" ] && [ -n "$needle" ] && ! printf '%s' "$out" | grep -qF "$needle"; then
+    if [ -z "$bad" ] && [ -n "$needle" ] && ! grep -qF "$needle" <<<"$out"; then
         bad="message lacked: $needle"
     fi
-    if [ -z "$bad" ] && [ -n "$notneedle" ] && printf '%s' "$out" | grep -qF "$notneedle"; then
+    if [ -z "$bad" ] && [ -n "$notneedle" ] && grep -qF "$notneedle" <<<"$out"; then
         bad="message WRONGLY advised: $notneedle"
     fi
     if [ -z "$bad" ]; then

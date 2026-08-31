@@ -57,11 +57,11 @@ scan_file() {
     body="$(cat "$f" 2>/dev/null)" || return 0
 
     # Does it provision a go tool at all?
-    printf '%s' "$body" | grep -qE '(^|[[:space:];&|])go[[:space:]]+install[[:space:]]' || return 0
+    grep -qE '(^|[[:space:];&|])go[[:space:]]+install[[:space:]]' <<<"$body" || return 0
 
     # An explicit GOBIN, or a PATH that includes GOPATH/bin, is the fix. Either
     # anywhere in the file clears it -- see the per-FILE note above.
-    if printf '%s' "$body" | grep -qE 'GOBIN=|go env GOPATH.*bin|GOPATH_BIN|_go_bin'; then
+    if grep -qE 'GOBIN=|go env GOPATH.*bin|GOPATH_BIN|_go_bin' <<<"$body"; then
         return 0
     fi
 

@@ -119,13 +119,13 @@ hook_scan_target() {
 # prefix-stripped), or after ; & | ( $( or a backtick.
 hook_gh_pr_at_command_pos() {
     local scan="$1" verb="$2"
-    printf '%s' "$scan" | grep -qE "(^|[;&|(]|\\\$\\(|\`)[[:space:]]*gh[[:space:]]+pr[[:space:]]+${verb}([[:space:]]|\$)"
+    grep -qE "(^|[;&|(]|\\\$\\(|\`)[[:space:]]*gh[[:space:]]+pr[[:space:]]+${verb}([[:space:]]|\$)" <<<"$scan"
 }
 
 # hook_flag_present <raw-cmd> <flag-without-dashes>
 hook_flag_present() {
     local cmd="$1" flag="$2"
-    printf '%s' "$cmd" | grep -qE -- "--${flag}([[:space:]=;&|)\"'\`]|\$)"
+    grep -qE -- "--${flag}([[:space:]=;&|)\"'\`]|\$)" <<<"$cmd"
 }
 
 # hook_gh_pr_segment <scan-target> <verb>

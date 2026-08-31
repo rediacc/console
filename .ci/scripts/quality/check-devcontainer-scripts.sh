@@ -128,7 +128,7 @@ assert_b() { # assert_b <script-under-test>
         return 1
     fi
     # The load-bearing part: git's own words, not a paraphrase of them.
-    if ! printf '%s' "$out" | grep -qiE "does not (appear to be|exist)|repository .* not found|fatal:"; then
+    if ! grep -qiE "does not (appear to be|exist)|repository .* not found|fatal:" <<<"$out"; then
         fail "B: $(basename "$script") never printed git's actual error. Output was:"
         printf '%s\n' "$out" | sed 's/^/       /' >&2
         return 1

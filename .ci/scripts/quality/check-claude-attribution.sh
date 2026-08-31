@@ -89,7 +89,7 @@ for SHA in $COMMITS; do
     AUTHOR_EMAIL=$(gh_retry "commit author email for ${SHA}" -- \
         api "repos/${REPO}/commits/${SHA}" --jq '.commit.author.email') || probe_failed
 
-    if echo "$AUTHOR_NAME $AUTHOR_EMAIL" | grep -qiE "(claude|anthropic)"; then
+    if grep -qiE "(claude|anthropic)" <<<"$AUTHOR_NAME $AUTHOR_EMAIL"; then
         SHORT_SHA="${SHA:0:7}"
         ISSUES+=("Commit ${SHORT_SHA} authored by: ${AUTHOR_NAME} <${AUTHOR_EMAIL}>")
     fi

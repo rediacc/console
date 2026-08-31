@@ -145,7 +145,7 @@ test_no_pipe_to_interpreter_or_sudo() {
         # bytes go from the network into an interpreter with nothing in
         # between where a checksum could be. The word-boundary form is
         # deliberate -- a naive '| sh' also matches '| sha256sum'.
-        if echo "$code" | grep -qE '\|[[:space:]]*(bash|sh|sudo)([[:space:]]|$)'; then
+        if grep -qE '\|[[:space:]]*(bash|sh|sudo)([[:space:]]|$)' <<<"$code"; then
             echo "$code" | grep -nE '\|[[:space:]]*(bash|sh|sudo)([[:space:]]|$)' >&2 || true
             log_fail "$name pipes into an interpreter or sudo"
         fi

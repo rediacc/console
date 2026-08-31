@@ -194,7 +194,7 @@ ALLOWED=""
 for entry in "${CREATE_ON_DEMAND[@]}"; do
     name="${entry%%|*}"
     creator="${entry#*|}"
-    if [ "$LABEL_INVENTORY_VERIFY_ALLOWLIST" = "true" ] && ! printf '%s\n' "$DECLARED" | grep -qx "$name"; then
+    if [ "$LABEL_INVENTORY_VERIFY_ALLOWLIST" = "true" ] && ! grep -qx "$name" <<<"$DECLARED"; then
         log_error "create-on-demand allowlist names '$name', which is not declared in $LABELS_FILE. Remove the allowlist entry or declare the label."
         exit 1
     fi
@@ -274,7 +274,7 @@ probe_label() {
 PROBLEMS=0
 while IFS= read -r label; do
     [ -n "$label" ] || continue
-    if printf '%s\n' "$LIVE" | grep -qx "$label"; then continue; fi
+    if grep -qx "$label" <<<"$LIVE"; then continue; fi
     if grep -qx "$label" <<<"$ALLOWED"; then
         log_info "'$label' is declared and absent, which is expected: it is created on demand (see the allowlist in this script)."
         continue
@@ -296,7 +296,7 @@ done <<<"$DECLARED"
 # ---------------------------------------------------------------------------
 while IFS= read -r label; do
     [ -n "$label" ] || continue
-    if printf '%s\n' "$DECLARED" | grep -qx "$label"; then continue; fi
+    if grep -qx "$label" <<<"$DECLARED"; then continue; fi
     log_error "label '$label' exists on the repo but is declared nowhere in $LABELS_FILE. Nothing in the tree records that it exists, and it cannot reach the PR label guide, so it is a label people can apply and nobody can look up. Declare it (name/color/description, plus 'guide: false' if it should stay off the PR guide) or delete it: gh label delete '$label'"
     PROBLEMS=$((PROBLEMS + 1))
 done <<<"$LIVE"

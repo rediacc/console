@@ -75,7 +75,7 @@ scan() {
             npm\ *) continue ;; # an npm key, resolved by package.json, not a path
         esac
         exe="${exe%% *}"
-        printf '%s' "$exe" | grep -qE "^\.?/?($pat)/" || continue
+        grep -qE "^\.?/?($pat)/" <<<"$exe" || continue
 
         printf '  %s:%s executes a gitignored path\n    %s\n' "${f#"$root"/}" "$n" "$stripped"
         hits=$((hits + 1))

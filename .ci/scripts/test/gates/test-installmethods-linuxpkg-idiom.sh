@@ -55,7 +55,7 @@ field() {
 }
 
 token() {
-    printf '%s\n' "$1" | grep -qE "$TEST_VERSION_RE" && echo 0 || echo 1
+    grep -qE "$TEST_VERSION_RE" <<<"$1" && echo 0 || echo 1
 }
 
 test_the_right_version_is_accepted_in_both_layouts() {

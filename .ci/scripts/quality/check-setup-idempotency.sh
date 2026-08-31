@@ -188,7 +188,7 @@ check_d() { # check_d <local-common.sh path>
         fail "D: ensure_renet_built not found in $(basename "$f")"
         return 1
     fi
-    if ! printf '%s' "$body" | grep -qE 'if ! \(cd "\$renet_dir" && \./build\.sh dev\)|build\.sh dev\) \|\||\|\| \{[[:space:]]*$'; then
+    if ! grep -qE 'if ! \(cd "\$renet_dir" && \./build\.sh dev\)|build\.sh dev\) \|\||\|\| \{[[:space:]]*$' <<<"$body"; then
         fail "D: ensure_renet_built runs build.sh without checking its exit code"
         return 1
     fi

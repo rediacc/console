@@ -74,9 +74,9 @@ main() {
                     local cmd="${entry%%|*}"
                     local alt="${entry#*|}"
 
-                    if echo "$line_content" | grep -qE "(^[[:space:]]*|[|&;]\s*|\$\()${cmd}\\b"; then
+                    if grep -qE "(^[[:space:]]*|[|&;]\s*|\$\()${cmd}\\b" <<<"$line_content"; then
                         # Skip if it's a variable assignment like: local timeout=30
-                        if echo "$line_content" | grep -qE "^\s*(local\s+|export\s+|readonly\s+)?${cmd}="; then
+                        if grep -qE "^\s*(local\s+|export\s+|readonly\s+)?${cmd}=" <<<"$line_content"; then
                             continue
                         fi
                         # Skip if it's in a comment

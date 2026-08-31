@@ -98,7 +98,7 @@ fi
 # reported PASS, so a build tag or a t.Skip cannot retire one silently.
 MISSING=()
 for test_name in "${EXPECTED_TESTS[@]}"; do
-    printf '%s\n' "$OUTPUT" | grep -q -- "--- PASS: $test_name" || MISSING+=("$test_name")
+    grep -q -- "--- PASS: $test_name" <<<"$OUTPUT" || MISSING+=("$test_name")
 done
 if [[ "${#MISSING[@]}" -gt 0 ]]; then
     printf '%s\n' "$OUTPUT" >&2
