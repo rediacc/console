@@ -56,10 +56,10 @@ assert_guarded() { # assert_guarded <file> <function> <mutation-regex> <guard-re
         fail "A: no function $fn in $(basename "$file")"
         return 1
     fi
-    if ! printf '%s' "$body" | grep -qE "$mutation"; then
+    if ! grep -qE "$mutation" <<<"$body"; then
         return 0 # nothing mutating here
     fi
-    if ! printf '%s' "$body" | grep -qE "$guard"; then
+    if ! grep -qE "$guard" <<<"$body"; then
         fail "A: $fn mutates ($mutation) with no guard matching /$guard/"
         return 1
     fi
@@ -105,7 +105,7 @@ check_b() {
     # nothing is indistinguishable from a check that did not run.
     local row
     for row in node docker image devbox 'port block'; do
-        if ! printf '%s' "$out" | grep -qi "$row"; then
+        if ! grep -qi "$row" <<<"$out"; then
             fail "B: setup --check never mentioned '$row'"
             return 1
         fi
@@ -200,7 +200,7 @@ check_e() { # check_e <devbox.sh path>
             fail "E: devbox_route_label produced nothing for $code"
             return 1
         fi
-        if printf '%s' "$out" | grep -qE "$SUCCESS_WORDS"; then
+        if grep -qE "$SUCCESS_WORDS" <<<"$out"; then
             fail "E: HTTP $code is labelled with a success word: \"$out\""
             return 1
         fi
@@ -208,7 +208,7 @@ check_e() { # check_e <devbox.sh path>
 
     # A 502 must name the actual cause rather than a bare failure.
     out="$(bash -c "source '$lib' 2>/dev/null; devbox_route_label 502 'run account dev'" 2>/dev/null)"
-    if ! printf '%s' "$out" | grep -qi "no backend"; then
+    if ! grep -qi "no backend" <<<"$out"; then
         fail "E: a 502 must say no backend is listening, got: \"$out\""
         return 1
     fi
@@ -216,7 +216,7 @@ check_e() { # check_e <devbox.sh path>
     # 2xx/3xx must still be reported as reachable.
     for code in 200 301; do
         out="$(bash -c "source '$lib' 2>/dev/null; devbox_route_label $code" 2>/dev/null)"
-        if ! printf '%s' "$out" | grep -qi "live"; then
+        if ! grep -qi "live" <<<"$out"; then
             fail "E: HTTP $code should be reported live, got: \"$out\""
             return 1
         fi
@@ -251,7 +251,7 @@ check_f() { # check_f <devbox.sh path>
         fi
         case "$rule" in
             *"Path("*)
-                if ! printf '%s' "$rule" | grep -q 'Method('; then
+                if ! grep -q 'Method(' <<<"$rule"; then
                     fail "F: router '${router}' redirects a Path without scoping the Method; a non-GET request to that path (an API endpoint) would be redirected instead of served"
                     printf '       %s\n' "$rule" >&2
                     return 1

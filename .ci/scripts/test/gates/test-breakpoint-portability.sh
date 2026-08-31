@@ -373,9 +373,9 @@ check_subset() {
     while IFS= read -r phrase; do
         [[ -z "$phrase" ]] && continue
         count=$((count + 1))
-        if ! printf '%s\n' "$canon" | grep -qxF "$phrase"; then
+        if ! grep -qxF "$phrase" <<<"$canon"; then
             [[ -n "$canon2" ]] || canon2="$(extract_array "$canon_path" "LOW_EFFORT_BLOCKER_PATTERNS")"
-            if printf '%s\n' "$canon2" | grep -qxF "$phrase"; then
+            if grep -qxF "$phrase" <<<"$canon2"; then
                 echo "  re-verified: '$phrase' IS canonical; the first read was short" >&2
                 continue
             fi

@@ -430,7 +430,7 @@ ordering_violations() {
         # an upstream job cannot follow this job's seal. But "absent" must not be
         # confused with "unguarded", so absence is only acceptable when the job
         # demonstrably READS the upstream decision.
-        if printf '%s\n' "$job" | grep -q 'needs.initialize.outputs.skip_release'; then
+        if grep -q 'needs.initialize.outputs.skip_release' <<<"$job"; then
             return 0
         fi
         echo "no --decide-only step AND no read of needs.initialize.outputs.skip_release: nothing decides"

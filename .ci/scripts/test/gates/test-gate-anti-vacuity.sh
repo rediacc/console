@@ -338,7 +338,7 @@ test_validator_rejects_empty_tree() {
         log_fail "$script exited 0 on an EMPTY tree -- it asserts nothing (vacuous gate)"
     fi
     # Case-insensitive: the diagnostic must be about the missing input.
-    if ! printf '%s\n' "$out" | grep -qi -- "$needle"; then
+    if ! grep -qi -- "$needle" <<<"$out"; then
         printf '%s\n' "$out" >&2
         log_fail "$script failed on an empty tree, but its message never mentions '$needle' -- it may be crashing for an unrelated reason"
     fi

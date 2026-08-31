@@ -83,11 +83,11 @@ else
             ERRORS=$((ERRORS + 1))
             continue
         fi
-        if echo "$buildinfo" | grep -q 'telemetry\.otlpUser'; then
+        if grep -q 'telemetry\.otlpUser' <<<"$buildinfo"; then
             log_error "$bin: .go.buildinfo contains telemetry.otlpUser ldflag"
             ERRORS=$((ERRORS + 1))
         fi
-        if echo "$buildinfo" | grep -q 'telemetry\.otlpPass'; then
+        if grep -q 'telemetry\.otlpPass' <<<"$buildinfo"; then
             log_error "$bin: .go.buildinfo contains telemetry.otlpPass ldflag"
             ERRORS=$((ERRORS + 1))
         fi

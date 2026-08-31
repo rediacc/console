@@ -54,11 +54,11 @@ check_pattern() {
                 local_line="${match%%:*}"
                 local_content="${match#*:}"
                 # Skip comments
-                if echo "$local_content" | grep -qE "^\s*#"; then
+                if grep -qE "^\s*#" <<<"$local_content"; then
                     continue
                 fi
                 # Skip lines with security approval comment
-                if echo "$local_content" | grep -qF "# security: approved"; then
+                if grep -qF "# security: approved" <<<"$local_content"; then
                     continue
                 fi
                 log_error "$file:$local_line: ${label} is banned"
@@ -110,17 +110,17 @@ for file in "${GITHUB_YAMLS[@]}"; do
             local_line="${match%%:*}"
             local_content="${match#*:}"
             # Skip comments
-            if echo "$local_content" | grep -qE "^\s*#"; then
+            if grep -qE "^\s*#" <<<"$local_content"; then
                 continue
             fi
             # Skip lines with security approval comment
-            if echo "$local_content" | grep -qF "# security: approved"; then
+            if grep -qF "# security: approved" <<<"$local_content"; then
                 continue
             fi
             # Safe: YAML key-value assignment (key: value) where key is NOT 'run'
             # This covers env:, with:, secrets:, private-key:, password:, etc.
-            if echo "$local_content" | grep -qE '^\s+[a-zA-Z][a-zA-Z0-9_-]*:' &&
-                ! echo "$local_content" | grep -qE '^\s+run:'; then
+            if grep -qE '^\s+[a-zA-Z][a-zA-Z0-9_-]*:' <<<"$local_content" &&
+                ! grep -qE '^\s+run:' <<<"$local_content"; then
                 continue
             fi
             # Unsafe: secret interpolation in shell code (run: block or continuation line)
@@ -145,19 +145,19 @@ for file in "${GITHUB_YAMLS[@]}"; do
             local_line="${match%%:*}"
             local_content="${match#*:}"
             # Skip comments
-            if echo "$local_content" | grep -qE "^\s*#"; then
+            if grep -qE "^\s*#" <<<"$local_content"; then
                 continue
             fi
             # Skip local actions (./path)
-            if echo "$local_content" | grep -qE 'uses:\s*\./'; then
+            if grep -qE 'uses:\s*\./' <<<"$local_content"; then
                 continue
             fi
             # Skip lines with security approval comment
-            if echo "$local_content" | grep -qF "# security: approved"; then
+            if grep -qF "# security: approved" <<<"$local_content"; then
                 continue
             fi
             # Check if the action reference uses a SHA (40-char hex)
-            if ! echo "$local_content" | grep -qE '@[a-f0-9]{40}'; then
+            if ! grep -qE '@[a-f0-9]{40}' <<<"$local_content"; then
                 log_error "$file:$local_line: unpinned action reference"
                 echo "  Line: $local_content"
                 echo "  Fix:  Pin action to SHA commit hash (e.g. uses: actions/checkout@abc123...def  # v4)"

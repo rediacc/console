@@ -20,7 +20,7 @@ log_step "Checking for peer dependency conflicts..."
 # Run npm ls and capture output (it may have non-zero exit on warnings)
 NPM_LS_OUTPUT=$(npm ls 2>&1 || true)
 
-if echo "$NPM_LS_OUTPUT" | grep -q "invalid"; then
+if grep -q "invalid" <<<"$NPM_LS_OUTPUT"; then
     log_error "Peer dependency conflicts detected"
     echo ""
     echo "Invalid dependencies:"

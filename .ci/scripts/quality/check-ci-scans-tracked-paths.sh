@@ -121,7 +121,7 @@ if [ "$(printf '%s' "$found" | grep -c 'executes a gitignored path')" -ne 2 ]; t
     printf '%s\n' "$found" >&2
     exit 1
 fi
-if printf '%s' "$found" | grep -q '# '; then
+if grep -q '# ' <<<"$found"; then
     echo "CONTROL FAILED: a COMMENT was reported as execution." >&2
     exit 1
 fi

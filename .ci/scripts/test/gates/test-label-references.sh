@@ -44,7 +44,7 @@ CJS
     cat >"$d/scan/gate.sh" <<'SH'
 LABEL="${AUTOPILOT_LABEL:-fixture-theta}"
 jq -e --arg l "fixture-iota" '.labels | index($l)'
-echo "$labels" | grep -qx "fixture-kappa"
+grep -qx "fixture-kappa" <<<"$labels"
 SH
     cat >"$d/labels.yml" <<'YAML'
 - name: fixture-alpha

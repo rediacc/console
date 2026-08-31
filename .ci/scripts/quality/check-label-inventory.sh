@@ -275,7 +275,7 @@ PROBLEMS=0
 while IFS= read -r label; do
     [ -n "$label" ] || continue
     if printf '%s\n' "$LIVE" | grep -qx "$label"; then continue; fi
-    if printf '%s\n' "$ALLOWED" | grep -qx "$label"; then
+    if grep -qx "$label" <<<"$ALLOWED"; then
         log_info "'$label' is declared and absent, which is expected: it is created on demand (see the allowlist in this script)."
         continue
     fi

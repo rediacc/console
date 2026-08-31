@@ -88,7 +88,7 @@ test_the_founding_defect_fires() {
         if [[ "$expected" == "latest" ]]; then
             [[ -n "$output" ]] && echo "$output" | grep -qE '^v?[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9.]+)?$'
         else
-            echo "$output" | grep -q "$expected"
+            grep -q "$expected" <<<"$output"
         fi
     }
     local empty_expectation substring

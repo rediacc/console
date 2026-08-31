@@ -99,7 +99,7 @@ scan_file() {
         # the way symbolic-ref does, it returns the literal string "HEAD", so
         # an emptiness check alone (guard below) does not catch it. Only the
         # explicit HEAD-literal comparison, or guard 1 above, clears this shape.
-        if printf '%s' "$line" | grep -qE 'rev-parse[[:space:]]+--abbrev-ref[[:space:]]+HEAD'; then
+        if grep -qE 'rev-parse[[:space:]]+--abbrev-ref[[:space:]]+HEAD' <<<"$line"; then
             printf '%s' "$body" | grep -qE "\"\\\$${varname}\"[[:space:]]*(==|=)[[:space:]]*\"HEAD\"" && continue
             printf '%s:%s\n' "${f#"$ROOT"/}" "$varname"
             continue

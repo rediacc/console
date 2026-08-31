@@ -182,7 +182,7 @@ DECLARED="$(grep -E '^- name:' "$LABELS_FILE" | sed -E 's/^- name:[[:space:]]*//
 MISSING=0
 while IFS= read -r label; do
     [ -n "$label" ] || continue
-    if ! printf '%s\n' "$DECLARED" | grep -qx "$label"; then
+    if ! grep -qx "$label" <<<"$DECLARED"; then
         # Name every referencing site so the fix needs no re-discovery.
         # `|| true` because this runs under `set -o pipefail` and grep exits 1
         # on no-match: without it, a label whose site list came up empty would

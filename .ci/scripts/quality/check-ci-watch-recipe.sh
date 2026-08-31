@@ -110,7 +110,7 @@ assert_skill() {
         echo "no bash block found"
         return 1
     fi
-    if ! printf '%s' "$blk" | grep -q 'ci-trace'; then
+    if ! grep -q 'ci-trace' <<<"$blk"; then
         echo "the canonical block does not invoke $TRACE_REL"
         return 1
     fi

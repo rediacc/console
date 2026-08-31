@@ -496,14 +496,14 @@ for wf in "${WORKFLOWS[@]}"; do
                 [ -n "$kv" ] || continue
                 k="${kv%%=*}"
                 v="${kv#*=}"
-                if ! printf '%s\n' "$DECLARED" | grep -qx "$k"; then
+                if ! grep -qx "$k" <<<"$DECLARED"; then
                     log_error "$key: passes input '$k', which $ACTION_YML does not declare (declared: $(printf '%s' "$DECLARED" | tr '\n' ' '))"
                     FAILURES=$((FAILURES + 1))
                     continue
                 fi
                 case "$k" in
                     interval)
-                        if ! printf '%s' "$v" | grep -qE '^[0-9]+$'; then
+                        if ! grep -qE '^[0-9]+$' <<<"$v"; then
                             log_error "$key: interval '$v' is not an integer; the sampler sleeps for it, and a non-numeric value makes the sample loop spin or die"
                             FAILURES=$((FAILURES + 1))
                         elif [ "$v" -lt 1 ] || [ "$v" -gt 300 ]; then
