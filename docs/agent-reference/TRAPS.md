@@ -1543,6 +1543,9 @@ by hand keeps working while everything automated dies.
 ---
 
 ## `--mark-done --all-stale` stamps the WHOLE catalogue, not the keys the gate named
+Trap-Id: mark-done-all-stale-is-a-bulk-verb
+Enforced-By: JUDGMENT-ONLY
+Residue: Nothing measures the ledger's SIZE against what a run was asked to close, and the tool reports its own overreach as success (`1965 stamped, 0 failed parity`). The console gates read the same file and are satisfied by it, so a bulk stamp makes every downstream check greener, not redder. Both repos would have to agree on one definition of stale before an instrument could exist.
 
 `check:ci-i18n-naturalization` and `private/growth/i18n_pipeline` both talk about "stale"
 keys, and they do not mean the same thing. Reading one and acting through the other cost
