@@ -2708,7 +2708,14 @@ button.sp-illustration-trigger:focus-visible {
      at x=0,y=0. Restoring `margin: auto` locally is the fix; widening the reset to
      exclude [popover] would reach every popover on the site, including the
      constellation's, which positions itself deliberately. */
-  margin: auto;
+  /* Same viewport-centring correction as .overlay-backdrop in main.css: a popover is
+     `position: fixed; inset: 0` too, so `margin: auto` alone centres it in the 1425px
+     containing block that `scrollbar-gutter: stable` leaves. `left: 50vw` measures from
+     the true viewport edge and the translate pulls back by half the popover's own width. */
+  margin-block: auto;
+  left: 50vw;
+  right: auto;
+  translate: -50% 0;
   width: min(92vw, 60rem);
   max-height: 86vh;
   overflow-y: auto;

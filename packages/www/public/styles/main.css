@@ -2220,6 +2220,14 @@ body[data-nav-collapsed='true'] .nav-breadcrumb {
 .overlay-backdrop {
   position: fixed;
   inset: 0;
+  /* CENTRE ON THE VIEWPORT, not on the containing block.
+     `scrollbar-gutter: stable` on <html> reserves 15px, so a `position: fixed; inset: 0`
+     element gets a 1425px containing block on a 1440px viewport and everything centred
+     inside it lands 7px left of the visual centre. Measured: panel gaps 403 left / 418
+     right. `100vw` INCLUDES the reserved gutter, so this restores true centring for every
+     Overlay consumer at once -- contact, search, region picker, lead magnet, newsletter
+     and the cost calculator. */
+  width: 100vw;
   z-index: var(--z-toast);
   display: flex;
   align-items: flex-start;
