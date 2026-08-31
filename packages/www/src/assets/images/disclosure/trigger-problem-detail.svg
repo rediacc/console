@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 80" width="120" height="80" style="display:block;width:100%;height:auto" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+  <!-- The long way: a span crossing the whole frame, with stops along it -->
+  <g style="stroke:var(--illustration-ink-soft,#6e6e73)">
+    <line x1="12" y1="26" x2="108" y2="26"/>
+    <circle cx="12" cy="26" r="4"/>
+    <circle cx="44" cy="26" r="4"/>
+    <circle cx="76" cy="26" r="4"/>
+    <circle cx="108" cy="26" r="4"/>
+  </g>
+  <!-- The short way: the same journey, one stop, ending where the other only started -->
+  <g style="stroke:var(--illustration-accent,#4a7c3f)">
+    <line x1="12" y1="58" x2="36" y2="58"/>
+    <circle cx="12" cy="58" r="4" style="fill:var(--illustration-surface,#ffffff);stroke:var(--illustration-accent,#4a7c3f)"/>
+    <circle cx="36" cy="58" r="5" style="fill:var(--illustration-surface,#ffffff);stroke:var(--illustration-accent,#4a7c3f)"/>
+  </g>
+  <!-- The gap the two spans leave between them is the finding -->
+  <line x1="42" y1="58" x2="108" y2="58" stroke-dasharray="3 6" stroke-width="2" style="stroke:var(--illustration-ink-soft,#6e6e73)"/>
+  <line x1="12" y1="70" x2="12" y2="14" stroke-width="2" style="stroke:var(--illustration-ink,#1a1a1a)"/>
+</svg>

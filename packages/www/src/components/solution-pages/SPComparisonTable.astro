@@ -1,4 +1,6 @@
 ---
+import { resolveDisclosureThumb } from '../../utils/disclosure-thumb';
+
 interface Feature {
   name: string;
   values: string[];
@@ -28,6 +30,7 @@ interface Props {
 
 const { comparison, competitors, referenceItems = [], triggerLabel, popId } = Astro.props;
 const cmpTitleId = `${popId}-title`;
+const thumb = resolveDisclosureThumb('trigger-comparison');
 
 const attr = (s: string) =>
   s
@@ -84,7 +87,8 @@ function renderValue(val: string, ref?: number) {
         first column stay INSIDE the popover, because a 7-column table still needs both
         on a phone once opened. */}
     <button type="button" class="sp-disclosure-trigger" popovertarget={popId}>
-      {triggerLabel}
+      {thumb && <span class="sp-disclosure-thumb" set:html={thumb} />}
+      <span class="sp-disclosure-trigger-label">{triggerLabel}</span>
     </button>
 
     <div class="sp-disclosure-pop" id={popId} popover="auto" role="dialog" aria-labelledby={cmpTitleId}>

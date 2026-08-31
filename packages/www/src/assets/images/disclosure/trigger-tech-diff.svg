@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 80" width="120" height="80" style="display:block;width:100%;height:auto" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+  <!-- Left panel: the traditional way, drawn soft -->
+  <g style="stroke:var(--illustration-ink-soft,#6e6e73)">
+    <rect x="8" y="10" width="46" height="60" rx="7"/>
+    <line x1="17" y1="26" x2="45" y2="26"/>
+    <line x1="17" y1="38" x2="45" y2="38"/>
+    <line x1="17" y1="50" x2="38" y2="50"/>
+  </g>
+  <!-- Right panel: the Rediacc way, drawn in the accent -->
+  <g style="stroke:var(--illustration-accent,#4a7c3f)">
+    <rect x="66" y="10" width="46" height="60" rx="7" style="fill:var(--illustration-surface,#ffffff);stroke:var(--illustration-accent,#4a7c3f)"/>
+    <line x1="75" y1="26" x2="103" y2="26"/>
+    <line x1="75" y1="38" x2="95" y2="38"/>
+    <path d="M75 50 L80 55 L90 43"/>
+  </g>
+  <!-- The seam between them -->
+  <line x1="60" y1="6" x2="60" y2="74" stroke-dasharray="4 5" style="stroke:var(--illustration-ink,#1a1a1a)" stroke-width="2"/>
+</svg>

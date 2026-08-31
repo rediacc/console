@@ -1,5 +1,7 @@
 ---
 import { resolveSolutionIllustration } from '../../utils/solution-illustration';
+import { resolveDisclosureThumb } from '../../utils/disclosure-thumb';
+import { getIcon } from './icons';
 
 interface StatCallout {
   number: string;
@@ -46,6 +48,29 @@ const illustrationSvg = slug ? resolveSolutionIllustration(slug) : null;
 // Unique per mount: aria-describedby must point at an id that exists exactly once.
 const popIdBase = `sp-callout-src-${slug ?? 'page'}`;
 const timelinePopId = `sp-pop-timeline-${slug ?? 'page'}`;
+// The trigger's own picture: a long span of stops over a short one, which is the
+// timeline's argument in a form that survives being 96px wide.
+const timelineThumb = resolveDisclosureThumb('trigger-problem-detail');
+
+/**
+ * The glyph beside a callout, derived from the figure itself.
+ *
+ * A number on its own is a wall of characters; a 20px mark in front of it says what KIND
+ * of number it is before the reader has parsed a digit. Deriving it from the value costs
+ * no i18n key and cannot go stale when a figure is updated.
+ *
+ * Only what survives translation is read: currency symbols, `%`, `12x`, `1/3`. Unit
+ * nouns are localized (`24 days` / `24 Tage` / `24 gün`), so a rule that matched them
+ * would work in English and misfile the other twelve. A value with no digit at all is
+ * not a quantity -- one callout on these pages is a QUOTE -- and gets no glyph rather
+ * than a wrong one.
+ */
+function calloutGlyph(value: string): string | null {
+  if (!/\d/.test(value)) return null;
+  if (/[$€£¥]/.test(value)) return getIcon('stat-money');
+  if (/%|\d\s*[x×]|\d\s*\/\s*\d/.test(value)) return getIcon('stat-share');
+  return getIcon('stat-quantity');
+}
 ---
 
 <section class="sp-problem" id="problem">
@@ -96,12 +121,16 @@ const timelinePopId = `sp-pop-timeline-${slug ?? 'page'}`;
             unconditional marker would emit `#sp-ref-N` against an id no page contains.
           */
           const cited = callout.ref && callout.ref > 0 ? referenceItems[callout.ref - 1] : undefined;
+          const glyph = calloutGlyph(callout.number);
           return (
             <div
               class="sp-stat-callout"
               tabindex={callout.source ? 0 : undefined}
               aria-describedby={callout.source ? `${popIdBase}-${idx}` : undefined}
             >
+              {glyph && (
+                <span class="sp-stat-callout-glyph" aria-hidden="true" set:html={glyph} />
+              )}
               <span class="sp-stat-callout-number">{callout.number}</span>
               {callout.text}
               {cited && (
@@ -153,7 +182,8 @@ const timelinePopId = `sp-pop-timeline-${slug ?? 'page'}`;
           reads as claim + evidence instead of claim + evidence + re-enactment.
           Native popover for the same reason as SPTechDiff: this is static Astro. */}
       <button type="button" class="sp-disclosure-trigger" popovertarget={timelinePopId}>
-        {timelineLabel}
+        {timelineThumb && <span class="sp-disclosure-thumb" set:html={timelineThumb} />}
+        <span class="sp-disclosure-trigger-label">{timelineLabel}</span>
       </button>
 
       <div

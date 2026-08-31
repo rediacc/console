@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 80" width="120" height="80" style="display:block;width:100%;height:auto" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+  <!-- Row labels, as rules rather than words: the drawing is textless (L4) -->
+  <g style="stroke:var(--illustration-ink-soft,#6e6e73)" stroke-width="2">
+    <line x1="8" y1="30" x2="30" y2="30"/>
+    <line x1="8" y1="46" x2="30" y2="46"/>
+    <line x1="8" y1="62" x2="26" y2="62"/>
+  </g>
+  <!-- Header rule over the matrix -->
+  <line x1="40" y1="16" x2="112" y2="16" style="stroke:var(--illustration-ink,#1a1a1a)" stroke-width="2"/>
+  <!-- Three competitor columns: mostly absent -->
+  <g style="stroke:var(--illustration-ink-soft,#6e6e73)" stroke-width="2">
+    <circle cx="48" cy="30" r="5"/>
+    <path d="M65 27 L71 33 M71 27 L65 33"/>
+    <path d="M83 27 L89 33 M89 27 L83 33"/>
+    <path d="M45 43 L51 49 M51 43 L45 49"/>
+    <circle cx="68" cy="46" r="5"/>
+    <path d="M83 43 L89 49 M89 43 L83 49"/>
+    <path d="M45 59 L51 65 M51 59 L45 65"/>
+    <path d="M65 59 L71 65 M71 59 L65 65"/>
+    <path d="M83 59 L89 65 M89 59 L83 65"/>
+  </g>
+  <!-- The Rediacc column: present on every row, which is the whole point of the table -->
+  <g style="stroke:var(--illustration-accent,#4a7c3f)">
+    <circle cx="105" cy="30" r="6" style="fill:var(--illustration-surface,#ffffff);stroke:var(--illustration-accent,#4a7c3f)"/>
+    <circle cx="105" cy="46" r="6" style="fill:var(--illustration-surface,#ffffff);stroke:var(--illustration-accent,#4a7c3f)"/>
+    <circle cx="105" cy="62" r="6" style="fill:var(--illustration-surface,#ffffff);stroke:var(--illustration-accent,#4a7c3f)"/>
+  </g>
+</svg>

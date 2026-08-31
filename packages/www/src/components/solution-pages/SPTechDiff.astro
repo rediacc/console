@@ -1,4 +1,6 @@
 ---
+import { resolveDisclosureThumb } from '../../utils/disclosure-thumb';
+
 interface Props {
   /** Button label, from the shared `solutions.disclosure.*` nouns. */
   triggerLabel: string;
@@ -16,6 +18,7 @@ interface Props {
 
 const { techDiff, triggerLabel, popId } = Astro.props;
 const titleId = `${popId}-title`;
+const thumb = resolveDisclosureThumb('trigger-tech-diff');
 ---
 
 <section class="sp-tech-detail">
@@ -47,7 +50,8 @@ const titleId = `${popId}-title`;
         WITHOUT JS the button is inert and the table stays in the DOM, so a crawler and a
         no-script visitor still get the whole comparison. */}
     <button type="button" class="sp-disclosure-trigger" popovertarget={popId}>
-      {triggerLabel}
+      {thumb && <span class="sp-disclosure-thumb" set:html={thumb} />}
+      <span class="sp-disclosure-trigger-label">{triggerLabel}</span>
     </button>
 
     <div class="sp-disclosure-pop" id={popId} popover="auto" role="dialog" aria-labelledby={titleId}>

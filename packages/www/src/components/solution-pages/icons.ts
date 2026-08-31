@@ -94,6 +94,25 @@ const ICONS: Record<string, string> = {
   'arrow-right':
     '<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8h10m0 0L9 4m4 4L9 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
 
+  /* STAT-CALLOUT GLYPHS.
+     Three shapes, because the 75 callout figures on these pages are three kinds of
+     thing: an amount of money, a proportion, and everything else that is simply a
+     measured quantity. The glyph is derived from the VALUE in SPProblem.astro rather
+     than authored per callout, so it costs no i18n keys and cannot drift out of sync
+     with a number that changes.
+
+     There is deliberately no "duration" glyph even though 9 of the 75 are durations.
+     Telling `24 days` from `0 US primaries` needs the unit word, and that word is
+     localized -- `24 Tage`, `24 gün` -- so any rule that reads it is a rule that works
+     in English and quietly misfiles the other twelve locales. Currency symbols, `%`,
+     `12x` and `1/3` survive translation; unit nouns do not. */
+  'stat-money':
+    '<svg viewBox="0 0 24 24"><ellipse cx="12" cy="5.5" rx="8" ry="3"/><path d="M4 5.5v6c0 1.66 3.58 3 8 3s8-1.34 8-3v-6"/><path d="M4 11.5v6c0 1.66 3.58 3 8 3s8-1.34 8-3v-6"/></svg>',
+  'stat-share':
+    '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" opacity="0.35"/><path d="M12 3a9 9 0 018.49 12" stroke-width="2.75"/></svg>',
+  'stat-quantity':
+    '<svg viewBox="0 0 24 24"><line x1="3" y1="21" x2="21" y2="21"/><line x1="8" y1="21" x2="8" y2="14"/><line x1="16" y1="21" x2="16" y2="4" stroke-width="2.75"/></svg>',
+
   // Calculator header
   calculator:
     '<svg viewBox="0 0 24 24"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="6" x2="16" y2="6"/><line x1="8" y1="10" x2="10" y2="10"/><line x1="12" y1="10" x2="14" y2="10"/><line x1="16" y1="10" x2="16" y2="10"/><line x1="8" y1="14" x2="10" y2="14"/><line x1="12" y1="14" x2="14" y2="14"/><line x1="16" y1="14" x2="16" y2="14"/><line x1="8" y1="18" x2="16" y2="18"/></svg>',

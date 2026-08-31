@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 80" width="120" height="80" style="display:block;width:100%;height:auto" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+  <!-- Calculator body -->
+  <rect x="10" y="10" width="52" height="60" rx="7" style="fill:var(--illustration-surface,#ffffff);stroke:var(--illustration-ink,#1a1a1a)"/>
+  <!-- Readout -->
+  <rect x="19" y="19" width="34" height="11" rx="3" style="stroke:var(--illustration-ink-soft,#6e6e73)"/>
+  <!-- Keypad: two rows of three -->
+  <g style="stroke:var(--illustration-ink-soft,#6e6e73)" stroke-width="4">
+    <line x1="21" y1="42" x2="21.5" y2="42"/>
+    <line x1="36" y1="42" x2="36.5" y2="42"/>
+    <line x1="51" y1="42" x2="51.5" y2="42"/>
+    <line x1="21" y1="57" x2="21.5" y2="57"/>
+    <line x1="36" y1="57" x2="36.5" y2="57"/>
+  </g>
+  <g style="stroke:var(--illustration-accent,#4a7c3f)" stroke-width="4">
+    <line x1="51" y1="57" x2="51.5" y2="57"/>
+  </g>
+  <!-- The answer: a cost curve falling -->
+  <g style="stroke:var(--illustration-accent,#4a7c3f)">
+    <path d="M74 24 L88 38 L98 32 L110 52"/>
+    <path d="M110 40 L110 52 L98 52"/>
+  </g>
+  <line x1="74" y1="66" x2="110" y2="66" style="stroke:var(--illustration-ink-soft,#6e6e73)"/>
+</svg>

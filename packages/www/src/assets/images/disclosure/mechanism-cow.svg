@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 120" width="240" height="120" style="display:block;width:100%;height:auto" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+  <!-- ONE stored copy of the data. Everything to the right of it points back here,
+       and that is the whole of copy-on-write: the fork is a set of references, so it
+       costs the same whether the block holds a gigabyte or a hundred. -->
+  <rect x="14" y="30" width="58" height="60" rx="8" style="fill:var(--illustration-surface,#ffffff);stroke:var(--illustration-ink,#1a1a1a)"/>
+  <g style="stroke:var(--illustration-ink-soft,#6e6e73)" stroke-width="2">
+    <line x1="26" y1="46" x2="60" y2="46"/>
+    <line x1="26" y1="60" x2="60" y2="60"/>
+    <line x1="26" y1="74" x2="52" y2="74"/>
+  </g>
+
+  <!-- Four forks, each a reference rather than a duplicate -->
+  <g style="stroke:var(--illustration-accent,#4a7c3f)" stroke-width="2">
+    <path d="M76 60 C104 60 104 20 128 20"/>
+    <path d="M76 60 C104 60 104 47 128 47"/>
+    <path d="M76 60 C104 60 104 73 128 73"/>
+    <path d="M76 60 C104 60 104 100 128 100"/>
+  </g>
+  <g style="stroke:var(--illustration-accent,#4a7c3f)">
+    <rect x="132" y="8" width="46" height="24" rx="6" style="fill:var(--illustration-surface,#ffffff);stroke:var(--illustration-accent,#4a7c3f)"/>
+    <rect x="132" y="35" width="46" height="24" rx="6" style="fill:var(--illustration-surface,#ffffff);stroke:var(--illustration-accent,#4a7c3f)"/>
+    <rect x="132" y="61" width="46" height="24" rx="6" style="fill:var(--illustration-surface,#ffffff);stroke:var(--illustration-accent,#4a7c3f)"/>
+    <rect x="132" y="88" width="46" height="24" rx="6" style="fill:var(--illustration-surface,#ffffff);stroke:var(--illustration-accent,#4a7c3f)"/>
+  </g>
+
+  <!-- Only what a fork CHANGES gets its own block. One of the four has written; the
+       new block hangs off it, and it is the size of the change, not of the data. -->
+  <path d="M178 47 L196 47" style="stroke:var(--illustration-ink,#1a1a1a)" stroke-width="2"/>
+  <rect x="200" y="38" width="22" height="18" rx="5" style="fill:var(--illustration-surface,#ffffff);stroke:var(--illustration-ink,#1a1a1a)"/>
+</svg>

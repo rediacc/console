@@ -28,6 +28,7 @@ import SPStatsBar from './SPStatsBar.astro';
 import SPProblem from './SPProblem.astro';
 import SPSolutionVideo from './SPSolutionVideo.astro';
 import SPCostCalculator from './SPCostCalculator';
+import { resolveDisclosureThumb } from '../../utils/disclosure-thumb';
 import SPHowItWorks from './SPHowItWorks.astro';
 import SPTechDiff from './SPTechDiff.astro';
 import SPBenefits from './SPBenefits.astro';
@@ -144,6 +145,7 @@ const breadcrumbItems = [
         content={(content as any).calculator}
         preset={config.calculatorPreset}
         closeLabel={t('common.close')}
+        thumb={resolveDisclosureThumb('trigger-calculator')}
       />
     )}
 

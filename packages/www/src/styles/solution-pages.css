@@ -468,6 +468,28 @@ button.sp-illustration-trigger:focus-visible {
   font-size: var(--font-size-sm);
   line-height: 1.4;
 }
+/* The glyph says what KIND of figure follows before the reader parses a digit.
+   `align-self: center` because the callout is baseline-aligned for its text and a
+   drawing has no baseline worth aligning to; sitting it on the text baseline drops it
+   noticeably below the number it belongs to. Muted, because it is an aid to scanning
+   and must not compete with the figure itself. */
+.sp-stat-callout-glyph {
+  display: flex;
+  flex: none;
+  align-self: center;
+}
+
+.sp-stat-callout-glyph svg {
+  width: 20px;
+  height: 20px;
+  stroke: var(--sp-brand-primary);
+  fill: none;
+  stroke-width: 1.75;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  opacity: 0.65;
+}
+
 .sp-stat-callout-number {
   font-family: var(--sp-font-mono);
   font-size: var(--font-size-lg);
@@ -651,7 +673,11 @@ button.sp-illustration-trigger:focus-visible {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  justify-content: space-between;
+  /* `flex-start`, not `space-between`: the thumbnail joined this row as a THIRD child,
+     and space-between would have parked the figure in the middle of the card with a gap
+     either side of it. The picture and the number belong together at the start; the CTA
+     is pushed to the end by its own auto margin below. */
+  justify-content: flex-start;
   gap: 20px;
   width: 100%;
   margin-top: 24px;
@@ -701,6 +727,7 @@ button.sp-illustration-trigger:focus-visible {
 
 .sp-calc-trigger-cta {
   flex: none;
+  margin-inline-start: auto;
   font-weight: var(--font-weight-semibold);
   color: var(--sp-brand-primary);
 }
@@ -2674,6 +2701,12 @@ button.sp-illustration-trigger:focus-visible {
 .sp-disclosure-trigger {
   display: inline-flex;
   align-items: center;
+  /* `inline-flex` BLOCKIFIES to `flex` when the button is a grid item, and SPProblem's
+     timeline trigger is a direct child of `.sp-problem-inner`, which is a grid. Measured
+     at 1440 it stretched to the full 576px column, so a 3-word label sat in a box four
+     times its width. `justify-self` is inert outside a grid, so this is one rule rather
+     than a scoped exception. */
+  justify-self: start;
   gap: 8px;
   margin-top: 24px;
   padding: 12px 20px;
@@ -2694,6 +2727,45 @@ button.sp-illustration-trigger:focus-visible {
 .sp-disclosure-trigger:focus-visible {
   outline: 2px solid var(--color-brand-primary);
   outline-offset: 2px;
+}
+
+/* THE PICTURE ON THE TRIGGER.
+   A collapsed section is only cheaper than an expanded one if the reader can tell what
+   is behind it without spending the click. "Show the comparison" does not say that a
+   seven-column matrix is under there; a 96px drawing of one does, in the time it takes
+   to glance.
+
+   Textless by construction (operator decision L4), so the same file serves all 13
+   locales, and INLINED rather than `<img src>` so the `--illustration-*` tokens inside
+   it resolve against the page and flip with the theme.
+
+   `flex: none` because the drawing must not be squeezed by a long label -- German and
+   Turkish run roughly a third longer than English here, and a thumbnail that shrinks to
+   40px on one locale is worse than no thumbnail. */
+.sp-disclosure-thumb {
+  display: block;
+  flex: none;
+  width: 96px;
+}
+
+.sp-disclosure-thumb svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+/* The label is now a sibling of the drawing rather than the button's only child, so it
+   takes the wrapping the button used to do itself. */
+.sp-disclosure-trigger-label {
+  text-align: start;
+}
+
+/* On a phone the trigger is already close to full width, so the drawing gets smaller
+   rather than the label getting narrower. */
+@media (max-width: 600px) {
+  .sp-disclosure-thumb {
+    width: 64px;
+  }
 }
 
 /* `min()` rather than a fixed max-width: the comparison table is 7 columns wide and
@@ -2762,14 +2834,25 @@ button.sp-illustration-trigger:focus-visible {
    576px to hold two small drawings, so the tooltip costs nothing by living there.
    Falls back to above only when the chip is full-width and there is no room beside it
    (the single-column layout below 900px). */
+/* ABOVE THE CHIP, ALIGNED TO ITS OWN INLINE-START EDGE, AT EVERY WIDTH.
+   It used to sit beside the chip (`inset-inline-start: calc(100% + 12px)`) above 900px.
+   Measured on /en/solutions/instant-recovery at 1024x768 that put the THIRD callout's
+   tooltip at right=1251 against a 1024 client width, and a `position: absolute` box
+   contributes to scrollable overflow whether or not it is `visibility: hidden` -- so the
+   document carried 227px of horizontal overflow with nothing visible to explain it.
+   82px of the same at 1440.
+
+   `max-width: min(20rem, 100%)` is the guarantee rather than a guess: 100% resolves
+   against the chip, which is the grid column, so the tooltip can never be wider than the
+   thing it is anchored to and therefore can never leave the container. */
 .sp-callout-pop {
   position: absolute;
-  inset-inline-start: calc(100% + 12px);
-  top: 50%;
-  transform: translateY(-50%);
+  inset-inline-start: 0;
+  top: auto;
+  bottom: calc(100% + 8px);
   z-index: 2;
   width: max-content;
-  max-width: 20rem;
+  max-width: min(20rem, 100%);
   padding: 6px 10px;
   font-size: var(--font-size-xs);
   font-weight: var(--font-weight-medium);
@@ -2813,16 +2896,4 @@ button.sp-illustration-trigger:focus-visible {
 /* One column, equal widths: the ragged right edge is gone and the three read as a set. */
 .sp-stat-callout {
   width: 100%;
-}
-
-/* Below 900px the problem section is one column, so there is no space beside the chip
-   and the tooltip goes back above it. The paragraph it used to collide with is far
-   enough away at this width because the chips stack full-bleed under it. */
-@media (max-width: 900px) {
-  .sp-callout-pop {
-    inset-inline-start: 0;
-    top: auto;
-    bottom: calc(100% + 8px);
-    transform: none;
-  }
 }

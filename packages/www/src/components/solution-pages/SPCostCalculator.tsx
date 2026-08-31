@@ -31,9 +31,18 @@ interface Props {
    * locale-correct translator; it hands the one string down.
    */
   closeLabel: string;
+  /**
+   * Raw markup for the trigger's thumbnail, resolved by the Astro caller.
+   *
+   * Passed down rather than globbed here for the same reason `closeLabel` is: this is an
+   * island. `import.meta.glob` inside it would put ~1.3 KB of SVG into the CLIENT chunk,
+   * where `check:ci-client-bundle-budget` counts it, to draw a picture that never
+   * changes after first paint. As a prop it lands in the HTML instead.
+   */
+  thumb: string | null;
 }
 
-const SPCostCalculator: React.FC<Props> = ({ content, preset, closeLabel }) => {
+const SPCostCalculator: React.FC<Props> = ({ content, preset, closeLabel, thumb }) => {
   const sliderConfigs = useMemo(() => SLIDER_CONFIGS[preset] ?? [], [preset]);
   const computeFn = PRESETS[preset];
 
@@ -157,6 +166,13 @@ const SPCostCalculator: React.FC<Props> = ({ content, preset, closeLabel }) => {
           aria-haspopup="dialog"
           data-track="calculator_open"
         >
+          {thumb && (
+            <span
+              className="sp-disclosure-thumb"
+              aria-hidden="true"
+              dangerouslySetInnerHTML={{ __html: thumb }}
+            />
+          )}
           <span className="sp-calc-trigger-figure">
             <span className="sp-calc-trigger-label">{content.annualLabel}</span>
             <span className="sp-calc-trigger-value">{computed.annual}</span>
