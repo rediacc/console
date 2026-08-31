@@ -151,7 +151,7 @@ while IFS= read -r sha; do
         if grep -qx "bump-major" <<<"${labels//,/$'\n'}"; then
             found_major=true
             verbose_log "Found bump-major label on PR #$pr_num"
-        elif printf '%s\n' "${labels//,/$'\n'}" | grep -qx "bump-minor"; then
+        elif grep -qx "bump-minor" <<<"${labels//,/$'\n'}"; then
             found_minor=true
             verbose_log "Found bump-minor label on PR #$pr_num"
         fi

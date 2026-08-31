@@ -19,7 +19,7 @@ APP_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../apps/demo-pgadmin" && pwd)"
 
 repos="$(rdc repo list --machine "$M" 2>/dev/null || true)"
 
-if echo "$repos" | grep -q '"demo-pgadmin"'; then
+if grep -q '"demo-pgadmin"' <<<"$repos"; then
     rdc repo up demo-pgadmin >/dev/null
 else
     # The machine may have been re-provisioned since the config last saw this
@@ -35,7 +35,7 @@ else
     rdc repo up demo-pgadmin
 fi
 
-if echo "$repos" | grep -q '"demo-pgadmin:experiment"'; then
+if grep -q '"demo-pgadmin:experiment"' <<<"$repos"; then
     rdc repo up demo-pgadmin:experiment >/dev/null
 else
     if ! rdc repo fork demo-pgadmin --tag experiment --up; then

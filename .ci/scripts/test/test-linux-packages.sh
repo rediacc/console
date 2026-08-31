@@ -209,10 +209,10 @@ phase1_validate_deb_metadata() {
     info=$(dpkg-deb --info "$deb_file")
 
     # Check required fields
-    echo "$info" | grep -q "Package: ${PKG_NAME}" || return 1
+    grep -q "Package: ${PKG_NAME}" <<<"$info" || return 1
     assert_version_field "$info" "Version" || return 1
-    echo "$info" | grep -q "Architecture: amd64" || return 1
-    echo "$info" | grep -q "Maintainer:" || return 1
+    grep -q "Architecture: amd64" <<<"$info" || return 1
+    grep -q "Maintainer:" <<<"$info" || return 1
     log_info "  DEB fields validated: Package, Version, Architecture, Maintainer"
 }
 
@@ -224,9 +224,9 @@ phase1_validate_rpm_metadata() {
     info=$(rpm -qip "$rpm_file" 2>/dev/null)
 
     # Check required fields
-    echo "$info" | grep -q "Name.*: ${PKG_NAME}" || return 1
+    grep -q "Name.*: ${PKG_NAME}" <<<"$info" || return 1
     assert_version_field "$info" "Version" || return 1
-    echo "$info" | grep -q "Architecture: x86_64" || return 1
+    grep -q "Architecture: x86_64" <<<"$info" || return 1
     log_info "  RPM fields validated: Name, Version, Architecture"
 }
 
@@ -386,15 +386,15 @@ phase4_validate_apt_metadata() {
     # Validate Packages content
     local packages_content
     packages_content=$(zcat "$packages_gz")
-    echo "$packages_content" | grep -q "Package: ${PKG_NAME}" || {
+    grep -q "Package: ${PKG_NAME}" <<<"$packages_content" || {
         log_error "Packages missing Package field"
         return 1
     }
-    echo "$packages_content" | grep -q "Filename:" || {
+    grep -q "Filename:" <<<"$packages_content" || {
         log_error "Packages missing Filename field"
         return 1
     }
-    echo "$packages_content" | grep -q "SHA256:" || {
+    grep -q "SHA256:" <<<"$packages_content" || {
         log_error "Packages missing SHA256 field"
         return 1
     }

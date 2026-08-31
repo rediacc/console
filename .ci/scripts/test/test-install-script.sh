@@ -95,12 +95,12 @@ test_write_install_config_channel_only() {
     [[ -f "$config" ]] || log_fail "write_install_config should write rediacc.json when channel != stable"
     local body
     body="$(cat "$config")"
-    echo "$body" | grep -q '"updateChannel":"edge"' || log_fail "updateChannel field not edge: $body"
-    echo "$body" | grep -q '"accountServer":"https://www.rediacc.com"' || log_fail "accountServer should default to production: $body"
+    grep -q '"updateChannel":"edge"' <<<"$body" || log_fail "updateChannel field not edge: $body"
+    grep -q '"accountServer":"https://www.rediacc.com"' <<<"$body" || log_fail "accountServer should default to production: $body"
     # The absent-file branch must produce a valid minimal v3 config, not a bare
     # account blob — the CLI parses this file directly.
-    echo "$body" | grep -q '"schemaVersion":3' || log_fail "minimal config must carry schemaVersion 3: $body"
-    echo "$body" | grep -q '"encryption":{"mode":"plaintext"}' || log_fail "minimal config must be plaintext: $body"
+    grep -q '"schemaVersion":3' <<<"$body" || log_fail "minimal config must carry schemaVersion 3: $body"
+    grep -q '"encryption":{"mode":"plaintext"}' <<<"$body" || log_fail "minimal config must be plaintext: $body"
     local perms
     perms="$(stat -c '%a' "$config" 2>/dev/null || stat -f '%A' "$config")"
     [[ "$perms" == "600" ]] || log_fail "rediacc.json mode must be 600 (got $perms)"
@@ -116,7 +116,7 @@ test_write_install_config_custom_releases() {
     [[ -f "$config" ]] || log_fail "write_install_config should write when SERVER_URL is set"
     local body
     body="$(cat "$config")"
-    echo "$body" | grep -q '"releasesUrl":"https://my.r2.example"' || log_fail "releasesUrl must persist: $body"
+    grep -q '"releasesUrl":"https://my.r2.example"' <<<"$body" || log_fail "releasesUrl must persist: $body"
     log_pass "custom releases URL persists in rediacc.json"
 }
 
@@ -144,7 +144,7 @@ test_write_install_config_present_no_jq_untouched() {
     local after
     after="$(cat "$config")"
     [[ "$before" == "$after" ]] || log_fail "no-jq path must not modify the live config (before=$before after=$after)"
-    echo "$out" | grep -q 'rdc update --channel edge' || log_fail "no-jq path must print the follow-up command: $out"
+    grep -q 'rdc update --channel edge' <<<"$out" || log_fail "no-jq path must print the follow-up command: $out"
     log_pass "present config + no jq -> untouched, prints follow-up command"
 }
 

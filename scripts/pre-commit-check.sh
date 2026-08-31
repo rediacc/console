@@ -34,7 +34,7 @@ echo "✓ Node.js version: v$NODE_VERSION"
 
 # 1. Verify .backend-state is not being committed
 STAGED_FILES=$(git diff --cached --name-only 2>/dev/null || true)
-if echo "$STAGED_FILES" | grep -q "\.backend-state"; then
+if grep -q "\.backend-state" <<<"$STAGED_FILES"; then
     echo "❌ .backend-state file should not be committed"
     echo "   This file is auto-generated and should be in .gitignore"
     echo "   Run: git reset HEAD .backend-state"
@@ -42,7 +42,7 @@ if echo "$STAGED_FILES" | grep -q "\.backend-state"; then
 fi
 
 # 2. Sync dependencies if package files changed (ensures local matches CI)
-if echo "$STAGED_FILES" | grep -qE "^(package\.json|package-lock\.json|packages/.*/package\.json)$"; then
+if grep -qE "^(package\.json|package-lock\.json|packages/.*/package\.json)$" <<<"$STAGED_FILES"; then
     echo "→ Package files changed, syncing dependencies..."
     if ! npm ci --silent 2>/dev/null; then
         echo "❌ Failed to sync dependencies. Run 'npm ci' manually."
@@ -62,7 +62,7 @@ fi
 # The pattern must cover EVERY locale tree fix:i18n regenerates -- www lives
 # under i18n/translations/, not i18n/locales/, so a www-only English change used
 # to slip past this block entirely.
-if echo "$STAGED_FILES" | grep -qE "i18n/(locales|translations)/.*\.json$"; then
+if grep -qE "i18n/(locales|translations)/.*\.json$" <<<"$STAGED_FILES"; then
     echo "→ Translation files modified, ensuring hashes are up-to-date..."
 
     # Run i18n hash check

@@ -305,7 +305,7 @@ verify_version() {
     # Exact token match: dots escaped, and the version may not be flanked by
     # another digit or dot, so 1.2.1 no longer matches 1.2.16 or 11.2.1.
     local want="${expected#v}"
-    echo "$output" | grep -qE "(^|[^0-9.])v?${want//./\\.}([^0-9.]|\$)"
+    grep -qE "(^|[^0-9.])v?${want//./\\.}([^0-9.]|\$)" <<<"$output"
 }
 
 # =============================================================================

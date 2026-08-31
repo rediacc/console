@@ -37,7 +37,7 @@ prewarm_vscode() {
 
 list="$(rdc repo list --machine "$M" 2>/dev/null || true)"
 
-if echo "$list" | grep -q "rollback" && echo "$list" | grep -q "work"; then
+if grep -q "rollback" <<<"$list" && grep -q "work" <<<"$list"; then
     rdc repo up app:work >/dev/null 2>&1 || true
     rdc repo up app:rollback >/dev/null 2>&1 || true
     prewarm_vscode app:rollback

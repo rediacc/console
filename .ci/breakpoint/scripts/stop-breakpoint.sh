@@ -109,7 +109,7 @@ cf_deleted_ok() {
     local resp="$1"
     cf_ok "$resp" && return 0
     echo "$resp" | jq -e '[.errors[]?.code] | any(. == 1000 or . == 1146 or . == 10000 or . == 81044)' >/dev/null 2>&1 && return 0
-    echo "$resp" | grep -qiE 'not found|does not exist' && return 0
+    grep -qiE 'not found|does not exist' <<<"$resp" && return 0
     return 1
 }
 
