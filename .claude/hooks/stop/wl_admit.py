@@ -376,7 +376,15 @@ ASK_ANNOUNCEMENT_RE = re.compile(
     r"|\bquestions?\s+for\s+you\s*[:.\u2014-]"
     r"|\bdecisions?\s+(?:that\s+are\s+)?(?:genuinely\s+)?yours\b"
     r"|\blet\s+me\s+know\s+(?:if|whether|which|what|how|when|before)\b"
-    r"|\byour\s+call\b"
+    # NOT preceded by "is"/"was": "merging is your call, not something I
+    # should do autonomously" and "PR #579 ... merge is your call" both fired
+    # here, twice in one session, and neither is an unasked question -- both
+    # are a settled-fact CLOSE ("this is whose decision it already is"), the
+    # copula makes it declarative rather than a lead-in to a solicitation. A
+    # genuine standalone announcement ("Your call on which branch to use.")
+    # is unaffected, and a phrasing that also poses an actual question still
+    # fires via the separate closing-`?` rule below.
+    r"|(?<!\bis\s)(?<!\bwas\s)\byour\s+call\b"
     r"|\bwant\s+me\s+to\b",
     re.IGNORECASE,
 )

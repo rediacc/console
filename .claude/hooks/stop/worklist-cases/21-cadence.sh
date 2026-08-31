@@ -741,6 +741,33 @@ say 'Suite is 810/0. The ledger writes one row per refusal and the Stop advisory
 - nothing outstanding'
 check_quiet "223e CONTROL: a plain report is not an announcement" "YOU ANNOUNCED A QUESTION"
 
+echo "== 223h. CONTROL: a DECLARATIVE 'your call' close is not an announcement =="
+# Review-found live, twice in one session: "merging is your call, not
+# something I should do autonomously" and "merge is your call" as a closing
+# sentence both fired this gate, and neither was an unasked question -- both
+# are a settled-fact close, not a solicitation. The copula ("is"/"was") is
+# what makes it declarative.
+setup
+brief_now
+hand_now
+say 'PR #579 is green, out of draft, mergeable, and fully reviewed. Stopping here -- merge is your call.
+
+## Remaining
+- nothing outstanding'
+check_quiet "223h CONTROL: a declarative close naming whose call it is does not fire" "YOU ANNOUNCED A QUESTION"
+
+echo "== 223i. FIRE: a genuine standalone 'your call' announcement still fires =="
+# The regression control for 223h's fix: narrowing the copula-attached form
+# must not silence the alternative entirely.
+setup
+brief_now
+hand_now
+say 'Your call on which branch to use before I continue.
+
+## Remaining
+- nothing outstanding'
+check "223i: a standalone 'your call' lead-in (not preceded by is/was) still fires" block "YOU ANNOUNCED A QUESTION AND THEN STOPPED WITHOUT ASKING IT"
+
 echo "== 223f. IT IS NOT SHADOWED BY ANOTHER ALWAYS-TIER VIOLATION =="
 # Violations are gathered and emitted as ONE block, and the always tier is
 # printed in full while everything else becomes a bare count. So a gate that
