@@ -258,7 +258,7 @@
     "i18n:update-hashes": "tsx scripts/generate-translation-hashes.ts",
     "i18n:backfill-commits": "tsx scripts/i18n-backfill-commits.ts",
     "lint": "./scripts/eslint-heap.sh 8192 packages scripts private/account",
-    "lint:unused": "knip --treat-config-hints-as-errors",
+    "lint:unused": ".ci/scripts/quality/typecheck-workers.sh --install && knip --treat-config-hints-as-errors",
     "lint:unused:fix": "knip --fix",
     "ci": "tsx scripts/ci-runner/run.ts --selftest && tsx scripts/ci-runner/run.ts",
     "ci:quick": "tsx scripts/ci-runner/run.ts --selftest && tsx scripts/ci-runner/run.ts --quick",

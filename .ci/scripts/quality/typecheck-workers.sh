@@ -47,6 +47,15 @@ if [ "${1:-}" = "--list" ]; then
     exit 0
 fi
 
+# --install stops once every worker project has its deps, without typechecking. knip needs
+# exactly the same trees: with a worker's node_modules absent it cannot resolve `wrangler`
+# and reports it as BOTH an unused devDependency and an unlisted binary. That is not a
+# finding, it is the absence of an install -- and it shipped a CI red, because `lint:unused`
+# runs BEFORE the TypeScript step that was incidentally producing those trees. A gate must
+# not depend on an earlier step's side effect, so `lint:unused` asks for them itself.
+INSTALL_ONLY=0
+[ "${1:-}" = "--install" ] && INSTALL_ONLY=1
+
 for config in "${CONFIGS[@]}"; do
     dir="$(dirname "$config")"
 
@@ -63,8 +72,15 @@ for config in "${CONFIGS[@]}"; do
         fi
     fi
 
+    [ "$INSTALL_ONLY" -eq 1 ] && continue
+
     echo "typecheck-workers: $config"
     npx tsc --noEmit -p "$config"
 done
+
+if [ "$INSTALL_ONLY" -eq 1 ]; then
+    echo "typecheck-workers: ${#CONFIGS[@]} worker project(s) have their deps"
+    exit 0
+fi
 
 echo "typecheck-workers: ${#CONFIGS[@]} worker project(s) typechecked clean"

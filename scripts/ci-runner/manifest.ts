@@ -154,7 +154,7 @@ export const GATES: readonly GateSpec[] = [
     slow: true, // 13.4s measured
     gate: true,
     heavy: true,
-    leaves: ['knip'],
+    leaves: ['.ci/scripts/quality/typecheck-workers.sh', 'knip'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
