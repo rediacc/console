@@ -739,7 +739,7 @@ async function main() {
       session,
       baseUrl,
       resources,
-    navigationRetries,
+      navigationRetries,
       serverDiedMidRun,
     };
     writeArtifact('summary.json', summary);
