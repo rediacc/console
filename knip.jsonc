@@ -120,6 +120,31 @@
         "react-router"
       ]
     },
+    // workers/www is a real package with its own package.json, lockfile and
+    // node_modules (CI installs it with `npm ci --prefix workers/www`), but it is NOT an
+    // npm workspace, so knip could not see it. It became visible the moment the root
+    // `check:types`/`typecheck` scripts started running `tsc -p workers/www/tsconfig.json`:
+    // knip then read that tsconfig as a ROOT-workspace config and reported its
+    // `types: ["@cloudflare/workers-types"]` as an unlisted dependency -- a dependency that
+    // is in fact declared, one directory away, in a package.json knip was not looking at.
+    // Declaring the workspace is the fix; suppressing the specifier would have hidden a
+    // structural gap rather than closed it.
+    // Entry points need no `entry` here: the wrangler plugin supplies `src/index.ts` from
+    // wrangler.toml's `main`, and the vitest plugin supplies the tests.
+    // Its three siblings (workers/account, workers/mta-sts, workers/proxy) are the same
+    // shape and are NOT declared yet: none of them can `npm install` today (their
+    // `@cloudflare/workers-types@^4` conflicts with their own wrangler's `^5` peer), so
+    // knip cannot resolve anything in them and every finding would be an install artifact.
+    // That install is worklist item 768387ed; these three follow it.
+    "workers/www": {
+      "project": [
+        "src/**/*.ts"
+      ],
+      "ignoreDependencies": [
+        // BLOCKER: wrangler is invoked as `npx wrangler ...` from .ci/scripts/deploy/*.sh with working-directory workers/www (cd-deploy-worker.yml), never from a package.json script, so knip has no call site to trace; the declaration is what pins the version those deploys resolve
+        "wrangler"
+      ]
+    },
     "private/account/e2e": {
       "entry": [
         "tests/**/*.ts"

@@ -28,7 +28,10 @@ export interface PatternRule {
   rationale: string;
 }
 
-export interface RedirectsFile {
+// Not exported: the only consumer is the `redirectsJson as RedirectsFile` cast six lines
+// below. An exported shape nothing outside this file names is a public surface nobody
+// asked for.
+interface RedirectsFile {
   exact: Record<string, RedirectTarget>;
   patterns: PatternRuleRaw[];
   /**
