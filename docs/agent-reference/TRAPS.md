@@ -1585,3 +1585,38 @@ same file carries other sessions' work. The intended delta is a byte-splice: the
 line appears once per locale, so replacing
 `"<key>": "<old-crc>"` with the new CRC hits exactly twelve sites and touches nothing
 else. Verify with a set-difference against `HEAD`, `added=0`, before believing it.
+
+## A tsconfig can `include` a GENERATED file, so the project typechecks on your machine and cannot on a fresh one
+Trap-Id: generated-dts-warm-machine
+Enforced-By: ci:Quality / Code -> TypeScript
+Residue:
+
+`packages/www/tsconfig.json` reads:
+
+    "include": [".astro/types.d.ts", "**/*"]
+
+`.astro/types.d.ts` is written by `astro sync`, is gitignored, and is a build
+artifact of the last `astro build` anyone happened to run in that tree. Wiring the
+project into `check:types` and verifying it locally therefore proves nothing about
+CI: on a warm machine tsc reports 0, and on a fresh checkout it reports 65.
+
+What makes it a trap rather than an oversight is that the failure does not look
+like a missing file. Nothing says `.astro`. It arrives as ordinary-looking type
+errors in ordinary-looking components -- 25 x `Property 'env' does not exist on
+type 'ImportMeta'`, 22 implicit-any parameters, 10 side-effect CSS imports, 8
+`Cannot find module 'astro:content'` -- and every one of them invites a local fix
+to the file it names. The instinct is to start declaring `ImportMetaEnv`.
+
+The reproduction is one command and it is the only thing that settles it:
+
+    mv packages/www/.astro /tmp/ && npx tsc --noEmit -p packages/www/tsconfig.json
+
+If the error count and its shape match CI's, the artifact is the cause. Fix by
+generating it (`astro sync && tsc --noEmit`, as a workspace script so its cwd is
+right), never by hand-writing a stand-in: half of these types are per-content-
+collection and a checked-in copy is stale the day it lands.
+
+The general shape: before believing a green typecheck of a project you just wired
+up, `grep` its tsconfig `include`/`files`/`references` for anything gitignored.
+`git check-ignore -v <path>` answers it per entry. A project whose types depend on
+a build artifact is green exactly as often as someone has recently built it.
