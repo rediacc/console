@@ -110,19 +110,19 @@ the same fix-set.
 
 This project's standing rule is "Before calling a bug fixed, grep for its
 siblings. One bad call site usually has several." It is written down and
-routinely not followed. Five real defects from one night, each fixed at ONE
-site while the siblings were found later by luck:
+routinely not followed. Three real defects, each fixed at ONE site while the
+siblings were found later by luck. They are three because each names a
+DIFFERENT mechanism; two more from the same night were dropped as restating
+one of these:
 
-  - a guard script matched a MENTION of a filename where it needed the
-    filename as a command TARGET; the identical line in a second guard was
-    found minutes later. Two files, one class.
-  - a CI script died on a PATH assumption; patching it moved the failure to
-    the next script, and four scripts in that directory had it.
-  - one row of a six-row routing table was wrong; three rows were.
-  - two test cases hardcoded one machine's path; nothing asked whether the
-    other 1,557 cases in that suite do the same.
-  - a guard false positive was fixed on the heredoc path; the redirect path
-    had the same hole and fired again later.
+  - TWO PATHS THROUGH ONE GUARD. A guard matched a MENTION of a filename
+    where it needed the filename as a command TARGET; the identical line in
+    a second guard was found minutes later.
+  - A DIRECTORY WRITTEN FROM ONE TEMPLATE. A CI script died on a PATH
+    assumption; patching it moved the failure to the next script, and four
+    scripts in that directory had it.
+  - A TABLE WITH MORE ROWS. One row of a six-row routing table was wrong;
+    three rows were.
 
 The shape is always identical: the fix lands, the message describes ONE site,
 and no evidence is offered that anything looked for the others.
