@@ -323,6 +323,46 @@ control(
     True,
 )
 
+# A SWEEP ONLY READS. A model-authored command reaches the session under the word
+# "Run:", so one that writes is not a bad search -- it is an order to damage the
+# tree. Both halves are controlled: destructive verbs reject, and the two shapes
+# that LOOK destructive but are not must still pass, or the rule loses the
+# actionability it depends on.
+for bad, want in [
+    ("git clean -xdf packages", "git clean"),
+    ("git checkout -- .claude/hooks", "git checkout"),
+    ("git stash", "git stash"),
+    ("rm -rf packages/cli", "`rm`"),
+    ("mv .claude/hooks/stop/wl_core.py .claude/", "`mv`"),
+    ("find .claude -name '*.py' -delete", "-delete"),
+    ("sed -i 's/a/b/' .claude/hooks/stop/wl_core.py", "sed -i"),
+    ("grep -rn foo .claude > /tmp/out", "redirects"),
+]:
+    ok, why = wl_classsweep.validate_search(bad)
+    control("a sweep that WRITES is rejected: %s" % bad[:34], ok, False)
+    control("  and the reason names it (%s)" % want, want in why, True)
+
+control(
+    "CONTROL: `git grep` is a sweep's own tool and passes",
+    wl_classsweep.validate_search("git grep -n 'apply_order' .claude/hooks/")[0],
+    True,
+)
+control(
+    "CONTROL: a quoted pattern containing > is not a redirection",
+    wl_classsweep.validate_search("grep -rn 'a>b' .claude/hooks/")[0],
+    True,
+)
+
+out = answer(search="git clean -xdf packages")
+kind, _note = wl_classsweep.apply_verdict(out, path=MARKER)
+control("a destructive command still FIRES the demand", kind, "fire")
+control(
+    "and it is never handed over as `Run:`",
+    out["next_action"].startswith("Run:"),
+    False,
+)
+wl_classsweep.clear_outstanding(MARKER)
+
 # The whole point: a rejected command must NOT weaken the block.
 out = answer(search=BAD_PATH)
 kind, _note = wl_classsweep.apply_verdict(out, path=MARKER)

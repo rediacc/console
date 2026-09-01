@@ -319,6 +319,45 @@ def read_verdict(out):
 
 SEARCH_MAX = 300  # the schema's maxLength; a value at the cap arrived truncated
 
+# A SWEEP ENUMERATES. It never writes, moves or deletes, so a proposed command that
+# does is not a bad search -- it is an order to damage the tree, issued by a model,
+# handed to a session under the words "Run:". This repo's standing rule that no
+# session may `git checkout` / `restore` / `stash` / `clean` exists because the tree
+# carries other sessions' uncommitted work; a rule that ORDERS one of those would be
+# worse than the mistake it was written to stop.
+#
+# A denylist rather than an allowlist of read-only verbs: the set below is small,
+# well known and unambiguous, while the set of legitimate ways to enumerate siblings
+# is not, and rejecting a valid search costs the very actionability this rule needs.
+_DESTRUCTIVE = frozenset(
+    (
+        "rm",
+        "rmdir",
+        "mv",
+        "cp",
+        "dd",
+        "truncate",
+        "shred",
+        "install",
+        "chmod",
+        "chown",
+        "chgrp",
+        "ln",
+        "mkdir",
+        "touch",
+        "tee",
+        "kill",
+        "pkill",
+        "reboot",
+        "shutdown",
+    )
+)
+# git subcommands that discard work. `git grep` / `git ls-files` are exactly what a
+# sweep should use, so git itself is not denied -- only these second words are.
+_DESTRUCTIVE_GIT = frozenset(
+    ("checkout", "restore", "stash", "clean", "reset", "rm", "mv", "push", "commit")
+)
+
 # A token shaped like a repo path: at least one `/`, and only characters a path
 # or a glob would carry.
 _PATHY = re.compile(r"^[A-Za-z0-9_.@+-]*(?:/[A-Za-z0-9_.@+*?\[\]-]*)+/?$")
@@ -344,6 +383,22 @@ def validate_search(search, root=None):
         return False, "it does not parse (%s)" % exc
     if not tokens:
         return False, "it is empty once parsed"
+
+    for i, tok in enumerate(tokens):
+        if tok in (">", ">>"):
+            return False, "it redirects output into a file, and a sweep only reads"
+        if tok.startswith(">"):
+            return False, "it redirects output into a file, and a sweep only reads"
+        if tok in _DESTRUCTIVE:
+            return False, "it runs `%s`, which writes or deletes; a sweep only reads" % tok
+        if tok == "git" and i + 1 < len(tokens) and tokens[i + 1] in _DESTRUCTIVE_GIT:
+            return False, "it runs `git %s`, which changes the tree; a sweep only reads" % tokens[
+                i + 1
+            ]
+        if tok == "-delete":
+            return False, "it passes -delete to find; a sweep only reads"
+        if tok == "-i" and tokens[0] in ("sed", "perl"):
+            return False, "it edits in place with `%s -i`; a sweep only reads" % tokens[0]
 
     for tok in tokens:
         if tok.startswith("-") or not _PATHY.match(tok):
