@@ -1,4 +1,4 @@
-## SESSION f88f9be7 2026-09-01T16:13:38Z
+## SESSION f88f9be7 2026-09-01T16:30:50Z
 
 `/pr-merge` is RUNNING on `0831-1`, PR #583. The operator invoked it. Resume at the step
 below; do NOT restart the flow.
@@ -12,29 +12,27 @@ below; do NOT restart the flow.
 3. PR body refreshed via `gh api repos/<o>/<r>/pulls/<n> -X PATCH -F body=@<file>`
    (`gh pr edit --body-file` is hook-blocked).
 
-## Right now: the pushed head is DOOMED, one commit is held
+## Right now
 
-Pushed head `75d8274e0` is RED: `Build (Docker) / Devcontainer (amd64)` failed on
-`curl: (22) ... error: 500` fetching the Go tarball. PROBED -- that URL answers 302 now,
-so it was a transient go.dev outage, not our code.
-
-The real defect was the class around it, and it is FIXED in the held commit `37a888adf`:
-two apt steps had hand-rolled retry loops while EIGHT other fetches in
-`.devcontainer/Dockerfile` had none. All nine now share `ARG CURL_RETRY`.
-
-Watch `bar6jfjoa` (PID 1172509) is still alive but is watching that doomed run -- it waits
-for a FINAL verdict and other contexts are still going. Do not trust it; re-read.
+- Pushed head `647376265`: CI RUNNING, 6 contexts in flight, no failures. Watch
+  `b1yh0ilbx` (PID 1272808) alive; mail waiter `bpspozekj` (PID 343120) alive.
+- **ONE COMMIT HELD**: `b8e825123`. It fixes `check:ci-fetch-retry`, which I had shipped
+  VACUOUS one commit earlier -- it parsed shell scripts with a Dockerfile `RUN` parser
+  (25 blocks for the Dockerfile, 0 for any .sh), so it printed "551 files scanned" while
+  every shell script contributed nothing. Four real unretried fetches in `.devcontainer/`
+  shell scripts were hiding inside its own corpus; all four are fixed, none baselined.
 
 ## Next action
 
 1. `rm -f .ci/cache/gate-durations.json && GITHUB_TOKEN="$(gh auth token)" npm run ci:quick`
-   AND, separately, `npm run check:ci-shape-duplication` -- ci:quick does NOT include that
-   gate, and a red reached CI because a "275 ok" was read as full cover.
-2. `git push origin 0831-1` (this supersedes the doomed run).
+   AND separately `npm run check:ci-shape-duplication` -- ci:quick does NOT include that
+   gate, and a red reached CI once because a "277 ok" was read as full cover.
+2. `git push origin 0831-1` (supersedes the in-flight run; its head is superseded anyway).
 3. **Poll `gh api repos/rediacc/console/pulls/583 --jq .head.sha` until it shows the new
-   head BEFORE arming a watch.** The API lagged 30-60s three times; a watch armed early
-   traced a stale head and exited 1 "superseded". Then arm
-   `.ci/scripts/ci/ci-trace.py --wait --until-final` in the background.
+   head BEFORE arming a watch**, and cross-check `git ls-remote origin refs/heads/0831-1`.
+   The API lagged 30-60s four times today; a watch armed early traced a stale head and
+   exited 1 "superseded". Then arm `.ci/scripts/ci/ci-trace.py --wait --until-final`
+   in the background.
 4. On green: the Claude review fires on `Console CI` completion, `Review Complete` posts,
    then `gh pr merge 583 --repo rediacc/console --rebase --auto`. Console is REBASE-ONLY.
    If `--rebase` errors "This branch can't be rebased", check
@@ -46,12 +44,14 @@ for a FINAL verdict and other contexts are still going. Do not trust it; re-read
    its two `[skip ci]` commits; mirror to `gitlab`; hand-back note.
 6. Only then CronDelete `f892a1f9` and `b4bff02e`.
 
-## Ordering rules this wave paid for
+## Rules this wave paid for
 
 - **Commit everything FIRST, then gate, then push.** `block-unverified-push.sh` refuses a
-  gate stamp that predates the tree, and committing after a run invalidates it.
-- Two CI reds so far were BOTH transient upstream outages (openSUSE mirror 403, go.dev
-  500). Probe the URL before diagnosing; both answered fine minutes later.
+  gate stamp that predates the tree; committing after a run invalidates it.
+- **Both CI reds so far were transient upstream outages** (openSUSE mirror 403, go.dev
+  500). PROBE the failing URL before diagnosing -- both answered fine minutes later.
+- A gate that reuses a sibling's CORPUS must also be able to PARSE it. Check the block
+  count per file type before believing a green.
 
 ## Volatile facts a fresh session would get wrong
 
@@ -59,8 +59,8 @@ for a FINAL verdict and other contexts are still going. Do not trust it; re-read
   workstream's. Never `git add` it. `private/generative` is clean. Both on gitlab.
 - Calibration is NOT deterministic: 14/14 was one draw, a 20-fixture run scored 17/20.
   `SHAPE_PROMPT` is deliberately ABSENT from `.ci/config/rubric-calibration.json`.
-- `check:ci-git-history-depth` deliberately does NOT follow the step->script hop: 89 false
-  findings, because the scripts are already shallow-safe.
+- `check:ci-fetch-retry` is scoped to image builds ON PURPOSE: unrestricted it reports 119
+  findings across 69 files, which is a wall, not a gate.
 - No round log for this wave; STATE.md is the artifact.
 
 ## Open, not fixed
