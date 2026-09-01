@@ -51,7 +51,16 @@ BASE=$(basename "$CMD")
 # after whitespace. Fixed here 2026-08-30 to match the Bash-side sibling
 # (block-bash-write-to-running-script.sh), which got this anchor on 2026-08-27
 # and this guard never did -- a sibling drift, not a design choice.
-PAT="(^|[/[:space:]])[${BASE:0:1}]${BASE:1}"
+# ESCAPE THE DOTS, same defect and same fix as the Bash-side twin. `.` is a regex
+# wildcard and the basename was interpolated raw, so a one-letter name plus the shell
+# suffix produced `[x].sh` -- which for `b` matches **/bin/bash**, i.e. every bash process
+# alive. Measured on the twin 2026-09-01: an edit was refused naming
+# `/bin/bash --init-file ...` as the job it would corrupt, with no such script running.
+# Found here by sweeping the class rather than by being bitten a second time; the two
+# guards build this pattern identically, so a fix to one that skipped the other would have
+# left the same hole open on the Edit door.
+ESC=$(printf '%s' "${BASE:1}" | sed 's/[.[\*^$()+?{}|]/\\&/g')
+PAT="(^|[/[:space:]])[${BASE:0:1}]${ESC}"
 # `pgrep -af` matches any process whose ARGUMENTS mention the name, which is
 # the very trap this guard exists to prevent, wearing a different hat. Fixed
 # here 2026-08-30, mirroring the Bash-side sibling's 2026-08-27 fix

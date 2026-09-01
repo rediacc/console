@@ -1257,6 +1257,14 @@ check 0 pre-edit/block-edit-of-running-script.sh \
     "running-script CONTROL: a non-shell file is out of scope"
 check 0 pre-edit/block-edit-of-running-script.sh '{"tool_input":{}}' \
     "running-script CONTROL: no file_path names nothing"
+# THE SAME WILDCARD BUG AS THE BASH-SIDE TWIN, found by sweeping the class rather than by
+# being bitten a second time. Both guards built their pattern by interpolating the
+# basename RAW, so a one-letter name plus the shell suffix gave `[x].sh` -- and `.` is a
+# wildcard, so for `b` that matches /bin/bash, every bash process alive. Fixing one door
+# and not the other would have left this one open.
+check 0 pre-edit/block-edit-of-running-script.sh \
+    "$(printf '{"tool_input":{"file_path":"%s/b.sh"}}' "$RS_TMP")" \
+    "running-script CONTROL: a one-letter name does not match /bin/bash"
 # THE MENTION-VS-EXECUTION BYPASS, review-found on PR #579. A real incident hit
 # mid-session: the stop-hook judge's own `claude -p '<huge prompt>'` process had
 # this guard's OWN filename embedded in its prompt text (an example quoted from
