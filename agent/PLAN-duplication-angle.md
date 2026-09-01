@@ -133,7 +133,15 @@ these was load-bearing enough to act on.
    returns **0** where `git ls-files` returns 103, and `:(glob)` magic is rejected outright
    by that command. A replay that trusted it would have reported a clean history having
    scanned nothing — a silent zero, the worst shape a measurement can have.
-3. **Importing the counter for its exports ran the whole gate.** `main()` was called at
+3. **The counter's `file:line` was not a file line.** `normalise()` strips comments and
+   drops the blanked lines, so position N in its output is not line N of the file. A
+   finding in `test-watchdog-log-capture.sh` reported `:17`; the code sits at line 46, and
+   `:17` is a comment. The coordinate is the actionable half of a duplication finding, and
+   it was wrong in every finding the gate had ever emitted. It also made the output LOOK
+   like duplicated comment blocks, contradicting the gate's own stated exclusion. Fixed in
+   `5607b136d`; found only by building a calibration fixture from the counter's output
+   instead of from a survey table.
+4. **Importing the counter for its exports ran the whole gate.** `main()` was called at
    module scope while the module also exported `normalise`/`windows`/`judge`/`coalesce`
    "so the controls exercise the SAME function the tree goes through". Fixed with an
    entry-point guard. Swept: 23 other `scripts/check-*.ts` both export and call `main()`
@@ -148,13 +156,30 @@ these was load-bearing enough to act on.
 The trim was re-calibrated against real haiku and returned **14/14** (five sweep fires,
 three sweep controls silent, four brave fires, two brave controls silent).
 
-A second live run of the same fixtures, same rubric, roughly 30 minutes later, returned
-**MISS** on `CONTROL: searched, and it is the only instance` — want silent, got fire.
+Re-running the same fixtures against the same rubric does not reproduce it. Across the
+samples taken on 2026-09-01:
 
-So 14/14 is one sample, not a proof. The trim stands: the fixture that missed is a control
-the rule over-fires on rather than a defect it now misses, and the operator ruled on the
-trim as a rubric-quality change. But any future claim of the form "the rubric is calibrated
-at N/N" must say how many samples it rests on. One does not settle it.
+| fixture | rule | sample A | sample B | sample C |
+|---|---|---|---|---|
+| `CONTROL: searched, and it is the only instance` | sweep | OK | **MISS** (fired) | OK |
+| `MEASURED: leave it on its branch` | brave | OK | — | **MISS** (silent) |
+| `CONTROL: the findings report is ten distinct shapes` | shapedup | **MISS** | OK (alone) | **MISS** |
+
+Five distinct fixtures missed at least once; none missed consistently. A full 20-fixture
+sample scored **17/20** where the first scored 14/14 on its 14.
+
+**So "14/14" is one draw, not a property**, and it spans three different rules — this is
+the harness's variance, not one rubric's weakness. The trim stands: the operator ruled on
+it as a rubric-quality change, and the fixtures that miss are controls the rules over-fire
+on rather than defects they now miss. But no claim of the form "calibrated at N/N" may omit
+how many samples it rests on, and a single clean run is not evidence that a rubric change
+was safe.
+
+**Consequence: `SHAPE_PROMPT` was deliberately NOT added to
+`.ci/config/rubric-calibration.json`.** That manifest exists to prove a calibrated rubric
+has not changed since it was calibrated, and on this evidence `SHAPE_PROMPT` has not been
+calibrated to a standard the entry would honestly assert. Adding it would record a
+calibration that did not happen — the exact shape of a green that means nothing.
 
 ### 4a. A negative fixture that pointed at real duplication
 
