@@ -1,4 +1,4 @@
-## SESSION f88f9be7 2026-09-01T16:30:50Z
+## SESSION f88f9be7 2026-09-01T16:51:29Z
 
 `/pr-merge` is RUNNING on `0831-1`, PR #583. The operator invoked it. Resume at the step
 below; do NOT restart the flow.
@@ -14,20 +14,16 @@ below; do NOT restart the flow.
 
 ## Right now
 
-- Pushed head `647376265`: CI RUNNING, 6 contexts in flight, no failures. Watch
-  `b1yh0ilbx` (PID 1272808) alive; mail waiter `bpspozekj` (PID 343120) alive.
-- **ONE COMMIT HELD**: `b8e825123`. It fixes `check:ci-fetch-retry`, which I had shipped
-  VACUOUS one commit earlier -- it parsed shell scripts with a Dockerfile `RUN` parser
-  (25 blocks for the Dockerfile, 0 for any .sh), so it printed "551 files scanned" while
-  every shell script contributed nothing. Four real unretried fetches in `.devcontainer/`
-  shell scripts were hiding inside its own corpus; all four are fixed, none baselined.
+- Pushed head `cc17eab54`: CI RUNNING, 1 context in flight, no failures. Watch
+  `b9rhnsm0b` (PID 1373233) alive; mail waiter `bpspozekj` (PID 343120) alive.
+- **ONE COMMIT HELD**: `e51bfb6fe`, the ci-overhaul doc update.
 
 ## Next action
 
 1. `rm -f .ci/cache/gate-durations.json && GITHUB_TOKEN="$(gh auth token)" npm run ci:quick`
    AND separately `npm run check:ci-shape-duplication` -- ci:quick does NOT include that
    gate, and a red reached CI once because a "277 ok" was read as full cover.
-2. `git push origin 0831-1` (supersedes the in-flight run; its head is superseded anyway).
+2. `git push origin 0831-1`.
 3. **Poll `gh api repos/rediacc/console/pulls/583 --jq .head.sha` until it shows the new
    head BEFORE arming a watch**, and cross-check `git ls-remote origin refs/heads/0831-1`.
    The API lagged 30-60s four times today; a watch armed early traced a stale head and
@@ -48,10 +44,12 @@ below; do NOT restart the flow.
 
 - **Commit everything FIRST, then gate, then push.** `block-unverified-push.sh` refuses a
   gate stamp that predates the tree; committing after a run invalidates it.
-- **Both CI reds so far were transient upstream outages** (openSUSE mirror 403, go.dev
-  500). PROBE the failing URL before diagnosing -- both answered fine minutes later.
-- A gate that reuses a sibling's CORPUS must also be able to PARSE it. Check the block
-  count per file type before believing a green.
+- **All THREE CI reds so far were transient**, each established rather than assumed:
+  openSUSE mirror 403 and go.dev 500 both PROBED (200 / 302 now), and the tutorial-player
+  gate passes locally 5/5 and passed on four earlier heads. Probe before diagnosing.
+- **A gate that reuses a sibling's CORPUS must also be able to PARSE it.** check:ci-fetch-
+  retry shipped reading shell with a Dockerfile `RUN` parser: 0 blocks per .sh, "551 files
+  scanned", four real findings hidden. Check the block count per file type.
 
 ## Volatile facts a fresh session would get wrong
 
@@ -60,7 +58,9 @@ below; do NOT restart the flow.
 - Calibration is NOT deterministic: 14/14 was one draw, a 20-fixture run scored 17/20.
   `SHAPE_PROMPT` is deliberately ABSENT from `.ci/config/rubric-calibration.json`.
 - `check:ci-fetch-retry` is scoped to image builds ON PURPOSE: unrestricted it reports 119
-  findings across 69 files, which is a wall, not a gate.
+  findings across 69 files, a wall not a gate.
+- `check_dockerfile_mirror_resilience.py:136` is a deliberate whole-file fallback for shell
+  scripts and it FIRES. It is NOT vacuous; do not "fix" it (I started to, and reverted).
 - No round log for this wave; STATE.md is the artifact.
 
 ## Open, not fixed
