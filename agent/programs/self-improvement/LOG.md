@@ -12,3 +12,4 @@ DELETION, SPEED, DOCUMENTATION DEBT.
 
 2026-09-01 | INSTRUMENT HONESTY | b95507436 | wl_classsweep validates the command it orders a session to run; a nonexistent path or a truncated command is dropped (never the demand) instead of sending the session after grep's error line, which one stop read as a finding.
 2026-09-01 | INSTRUMENT HONESTY | 3c7943c29 | the same validator now checks what a proposed sweep command DOES, not only whether it runs: destructive verbs, the nine git subcommands that discard work, find -delete, sed -i and > redirection are refused, so the stop hook cannot order a session to damage the tree.
+2026-09-01 | INSTRUMENT HONESTY | c6b2dcbfb | the same guard reaches the other two doors a model-authored order travels through -- class_sweep.instruction prose and wl_bravedefault's braver/instruction -- at two deliberately different thresholds, so a stop hook can no longer propose an action that destroys uncommitted work.
