@@ -66,6 +66,7 @@ import { createHash } from 'node:crypto';
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
+import { validateBlockerQuality } from './lib/blocker-validator.js';
 import { runControls } from './lib/controls.js';
 import { GREEN, NC, RED } from './utils/console.js';
 
@@ -289,6 +290,28 @@ function controls(): { name: string; ok: boolean; detail?: string }[] {
       ok: windows(normalise('a\nb\nc\nd', 'ts')).length === 0,
     },
     {
+      name: 'an accepted divergence with a real BLOCKER is honoured',
+      ok:
+        checkAccepted({
+          abc123: 'BLOCKER: run_gate() has three incompatible return contracts (echo rc, echo PASS/FAIL, propagate); extracting it verbatim would be wrong',
+        }).ok.length === 1,
+    },
+    {
+      name: 'CONTROL: a low-effort BLOCKER buys no silence',
+      ok: checkAccepted({ abc123: 'BLOCKER: tbd' }).ok.length === 0,
+    },
+    {
+      // The reason here is deliberately LONG and substantive, so the only rule that can
+      // reject it is the prefix rule. The first version of this control used a 28-char
+      // reason, which `validateBlockerQuality` rejects for length alone -- it passed with
+      // the prefix check deleted, which is a control that cannot fail.
+      name: 'CONTROL: a reason without the BLOCKER: prefix buys no silence',
+      ok:
+        checkAccepted({
+          abc123: 'run_gate() has three incompatible return contracts (echo rc, echo PASS/FAIL, propagate); extracting it verbatim would be wrong',
+        }).ok.length === 0,
+    },
+    {
       name: 'CONTROL: an import preamble is adoption, not duplication',
       ok: (() => {
         const imports = [
@@ -338,10 +361,62 @@ function controls(): { name: string; ok: boolean; detail?: string }[] {
   ];
 }
 
-function loadSeed(): Set<string> {
-  if (!existsSync(SEED_FILE)) return new Set();
-  const raw = JSON.parse(readFileSync(SEED_FILE, 'utf8')) as { shapes?: string[] };
-  return new Set(raw.shapes ?? []);
+/**
+ * The pure half of the `accepted` check, split out so the controls drive the REAL
+ * validation rather than a reimplementation of it -- the same reason `normalise`, `windows`
+ * and `judge` are exported.
+ */
+export function checkAccepted(accepted: Record<string, string>): { ok: string[]; bad: string[] } {
+  const ok: string[] = [];
+  const bad: string[] = [];
+  for (const [h, reason] of Object.entries(accepted)) {
+    if (!/^BLOCKER:/i.test(reason)) {
+      bad.push(`  ${h}: reason does not start with "BLOCKER:"`);
+      continue;
+    }
+    const fail = validateBlockerQuality(h, reason.replace(/^BLOCKER:\s*/i, ''), SEED_FILE);
+    if (fail) bad.push(fail.message);
+    else ok.push(h);
+  }
+  return { ok, bad };
+}
+
+/**
+ * The silence set: the standing backlog PLUS the shapes a person judged not one thing.
+ *
+ * THE SECOND HALF IS AN EXIT THIS GATE DID NOT HAVE, and its absence was a real defect
+ * rather than a missing nicety. The judged rule next door (`wl_shapedup.py`) has three
+ * answers -- yes, already, and `no` with a named DIVERGENCE -- because `run_gate()` really
+ * is duplicated 23 times across three incompatible return contracts and extracting it
+ * verbatim would be wrong. This gate had only two: consolidate, or stay red forever. The
+ * only way out was re-running `--seed`, which absorbs EVERY new shape at once, so the sole
+ * exit from a legitimate divergence was a command that silently suppresses the whole gate.
+ *
+ * So `accepted` is the repo's ordinary escape hatch, held to the ordinary rule: a
+ * `BLOCKER:` reason, validated by the SAME `validateBlockerQuality` every other allowlist
+ * uses (30-char minimum, banned-phrase list). Writing a second reason-checker here is the
+ * exact duplication this gate exists to catch.
+ *
+ * `shapes` carries no reasons and should not: it is one measurement taken at install, the
+ * same shape as `wl_reggate.py:130` hashing every existing check script so only new ones
+ * count. `accepted` is per-entry judgement, and judgement is what needs a reason.
+ */
+function loadSeed(): { silent: Set<string>; accepted: number } {
+  if (!existsSync(SEED_FILE)) return { silent: new Set(), accepted: 0 };
+  const raw = JSON.parse(readFileSync(SEED_FILE, 'utf8')) as {
+    shapes?: string[];
+    accepted?: Record<string, string>;
+  };
+  const silent = new Set(raw.shapes ?? []);
+  const { ok, bad } = checkAccepted(raw.accepted ?? {});
+  for (const h of ok) silent.add(h);
+  const accepted = ok.length;
+  if (bad.length > 0) {
+    console.error(`${RED}✗${NC} ${bad.length} accepted divergence(s) carry no usable BLOCKER:`);
+    for (const b of bad) console.error(b);
+    process.exit(1);
+  }
+  return { silent, accepted };
 }
 
 function main(): void {
@@ -373,6 +448,20 @@ function main(): void {
   }
 
   if (argv.includes('--seed')) {
+    // RE-SEEDING IS GATE SUPPRESSION, so it is not a routine command. A second `--seed`
+    // absorbs every shape that has reached N copies since install -- including the
+    // genuine duplication this gate exists to report -- and leaves no record that it
+    // did. The exit for a shape that is legitimately not one thing is `accepted` with a
+    // BLOCKER, one entry at a time, which is reviewable. This refuses rather than warns.
+    if (existsSync(SEED_FILE) && !argv.includes('--force')) {
+      console.error(
+        `${RED}✗${NC} a seed already exists at ${SEED_FILE}.\n` +
+          '    Re-seeding silences every shape that reached N copies since install, with no\n' +
+          '    record of what was silenced. To accept ONE shape as legitimately divergent,\n' +
+          '    add it to `accepted` with a BLOCKER reason instead. --force overrides.'
+      );
+      process.exit(1);
+    }
     // ONLY the shapes that have ALREADY reached N copies. Seeding every hash in the tree
     // was the first attempt and it is wrong twice over: a 708 KB artifact, and -- the part
     // that matters -- it would suppress a line that exists ONCE today and gets copied
@@ -397,7 +486,7 @@ function main(): void {
     return;
   }
 
-  const seed = loadSeed();
+  const { silent: seed, accepted } = loadSeed();
   if (seed.size === 0) {
     console.error(`${RED}✗${NC} no seed at ${SEED_FILE}; run --seed once, and commit it.`);
     console.error('    Without it every pre-existing shape reports as new.');
@@ -405,6 +494,15 @@ function main(): void {
   }
 
   const findings = judge(perFile, seed);
+
+  // MACHINE-READABLE, for the stop-hook rule that asks the judged half of this question.
+  // `wl_shapedup.py` needs the file:line spans as data; parsing them back out of the
+  // human report would be a second, undeclared interface to the same answer.
+  if (argv.includes('--json')) {
+    console.log(JSON.stringify({ n: N, window: WINDOW, seeded: seed.size, findings }));
+    return;
+  }
+
   if (findings.length > 0) {
     console.error(`${RED}✗${NC} ${findings.length} NEW shape(s) have reached ${N} copies:\n`);
     for (const f of findings) {
@@ -421,8 +519,22 @@ function main(): void {
 
   console.log(
     `${GREEN}✓${NC} shape duplication: ${files.length} file(s), ${totalWindows} window(s), ` +
-      `${seed.size} seeded shape(s); no NEW shape has reached ${N} copies`
+      `${seed.size - accepted} seeded + ${accepted} accepted shape(s); ` +
+      `no NEW shape has reached ${N} copies`
   );
 }
 
-main();
+// ENTRY-POINT GUARD, and it is not decoration. This module exports `normalise`, `windows`,
+// `judge` and `coalesce` so a consumer can drive the REAL judgement rather than a
+// reimplementation -- and until this line existed, importing any of them ran a full
+// 320-file scan as a side effect and printed the gate's verdict. Found by doing exactly
+// that from the calibration replay.
+//
+// The other 23 `scripts/check-*.ts` that both export and call `main()` bare are left
+// alone deliberately: swept 2026-09-01, NONE of them is imported anywhere (the apparent
+// hits in `ci-runner/manifest.ts` are script-name strings, not imports). This one is the
+// only member of the class with a consumer, so it is the only one where the defect is
+// live rather than latent.
+if (process.argv[1] && import.meta.filename === path.resolve(process.argv[1])) {
+  main();
+}
