@@ -20,6 +20,17 @@
       "@rediacc/shared/*": ["./packages/shared/src/*"]
     }
   },
+  // SOLUTION-STYLE, not a project. This file exists to hold the shared compilerOptions the
+  // five workspace configs `extends`, plus the `references` graph for `tsc -b`. It matches
+  // NO files of its own, and `files: []` is what says so.
+  //
+  // Without it, a bare `tsc --noEmit` here compiles EVERY .ts in the repository under this
+  // file's options -- ES2020 lib, `types: ["node"]`, no DOM, no astro, no workers-types --
+  // and reports 10,095 errors that are all the wrong config rather than any defect. That
+  // is a foot-gun aimed at exactly the person trying to check the repo's types, and it also
+  // forced `check:ci-typecheck-scope-coverage` to special-case a base whose file set is the
+  // whole tree. Use `npm run typecheck`, which runs each project under its own options.
+  "files": [],
   "references": [
     { "path": "./packages/shared" },
     { "path": "./packages/cli" }
