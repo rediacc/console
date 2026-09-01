@@ -40,6 +40,11 @@
  *   - ONE-LINERS. The repo-root resolution appears in 79 files with 18 spellings. At a
  *     window of 1 it drowns every real signal; the 5-line window excludes it by
  *     construction, and a fix there would be churn across 79 files for no drift risk.
+ *   - IMPORT BLOCKS. Three files importing the same helper is ADOPTION, not duplication:
+ *     an import statement IS the consolidation. This gate caught itself on this within an
+ *     hour of landing -- moving five gates onto `utils/console.js` created a shared
+ *     import preamble in three of them and the gate reported it, which would have
+ *     discouraged exactly the consolidation it exists to encourage.
  *   - WRITTEN DECISIONS. `block-ci-polling.sh:19` says "NOT ROUTED THROUGH
  *     lib/command-scan.sh, and that is a decision". A counter that fires on a recorded
  *     decision is noise, so an opt-out marker excludes the file.
@@ -110,11 +115,25 @@ export function normalise(src: string, kind: 'ts' | 'sh'): string[] {
 
 const hash = (s: string) => createHash('sha1').update(s).digest('hex').slice(0, 12);
 
-/** Every sliding WINDOW-line span of a normalised file, as (hash, firstLine). */
+/** An import, a require, or a shell `source` -- the line that USES a shared module. */
+export function isImportish(line: string): boolean {
+  return /^(import\b|export .*\bfrom\b|const .*=\s*require\(|source |\. )/.test(line);
+}
+
+/**
+ * Every sliding WINDOW-line span, minus the ones that are mostly imports.
+ *
+ * A window over an import preamble is not duplicated logic; it is three files agreeing to
+ * use the same module, which is the outcome this gate wants. Majority rather than any,
+ * so a genuine shared span that happens to start one line into an import block still
+ * registers.
+ */
 export function windows(lines: string[], startLine = 1): { h: string; line: number }[] {
   const out: { h: string; line: number }[] = [];
   for (let i = 0; i + WINDOW <= lines.length; i++) {
-    out.push({ h: hash(lines.slice(i, i + WINDOW).join('\n')), line: startLine + i });
+    const slice = lines.slice(i, i + WINDOW);
+    if (slice.filter(isImportish).length * 2 > WINDOW) continue;
+    out.push({ h: hash(slice.join('\n')), line: startLine + i });
   }
   return out;
 }
@@ -268,6 +287,49 @@ function controls(): { name: string; ok: boolean; detail?: string }[] {
     {
       name: `CONTROL: a ${WINDOW - 1}-line file yields no window, so a one-liner cannot fire`,
       ok: windows(normalise('a\nb\nc\nd', 'ts')).length === 0,
+    },
+    {
+      name: 'CONTROL: an import preamble is adoption, not duplication',
+      ok: (() => {
+        const imports = [
+          "import a from 'x';",
+          "import b from 'y';",
+          "import c from 'z';",
+          'const R = 1;',
+          'const S = 2;',
+        ].join('\n');
+        return judge(
+          new Map(
+            Array.from({ length: N }, (_, i): [string, { h: string; line: number }[]] => [
+              `f${i}.ts`,
+              windows(normalise(imports, 'ts')),
+            ])
+          ),
+          new Set()
+        ).length === 0;
+      })(),
+    },
+    {
+      name: 'CONTROL: but a real span next to imports still fires',
+      ok: (() => {
+        const mixed = [
+          "import a from 'x';",
+          'const p = 1;',
+          'const q = 2;',
+          'const r = 3;',
+          'const s = 4;',
+          'const t = 5;',
+        ].join('\n');
+        return judge(
+          new Map(
+            Array.from({ length: N }, (_, i): [string, { h: string; line: number }[]] => [
+              `f${i}.ts`,
+              windows(normalise(mixed, 'ts')),
+            ])
+          ),
+          new Set()
+        ).length === 1;
+      })(),
     },
     {
       name: 'CONTROL: a file declaring it stands apart is excluded from the corpus',

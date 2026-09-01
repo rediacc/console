@@ -22,6 +22,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
 import { globSync } from 'glob';
+import { GREEN, NC, RED } from './utils/console.js';
 
 const ROOT = path.resolve(import.meta.dirname, '..');
 const WWW = path.join(ROOT, 'packages/www');
@@ -57,7 +58,7 @@ function resolve(ref: string): string | null {
 function selftest(): number {
   let bad = 0;
   const check = (label: string, ok: boolean) => {
-    console.log(`  ${ok ? '\x1b[32mPASS\x1b[0m' : '\x1b[31mFAIL\x1b[0m'}  ${label}`);
+    console.log(`  ${ok ? `${GREEN}PASS${NC}` : `${RED}FAIL${NC}`}  ${label}`);
     if (!ok) bad++;
   };
   check(
@@ -89,8 +90,8 @@ function main(): void {
     const bad = selftest();
     console.log(
       bad === 0
-        ? '\n\x1b[32m✓\x1b[0m 5/5 controls pass'
-        : `\n\x1b[31m✗\x1b[0m ${bad} control(s) failed`
+        ? '\n${GREEN}✓${NC} 5/5 controls pass'
+        : `\n${RED}✗${NC} ${bad} control(s) failed`
     );
     process.exit(bad === 0 ? 0 : 1);
   }
@@ -124,7 +125,7 @@ function main(): void {
   }
   if (findings.length > 0) {
     console.error(
-      `\n\x1b[31m✗\x1b[0m ${findings.length} SVG(s) ask for host tokens they can never receive:`
+      `\n${RED}✗${NC} ${findings.length} SVG(s) ask for host tokens they can never receive:`
     );
     for (const f of findings) console.error(`    ${f}`);
     console.error(
@@ -136,7 +137,7 @@ function main(): void {
     process.exit(1);
   }
   console.log(
-    `\x1b[32m✓\x1b[0m ${scanned} external SVG reference(s) checked; none expects host tokens`
+    `${GREEN}✓${NC} ${scanned} external SVG reference(s) checked; none expects host tokens`
   );
 }
 

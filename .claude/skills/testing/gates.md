@@ -52,8 +52,8 @@ Nothing asks on its own. Measured 2026-09-01, already past a third copy:
 | `mktemp -d` + hand-written `trap` | **28** | `with_temp_dir` (`test-helpers.sh:73`), used by 26 |
 | colour constants | **28** inline, **7** redeclared | `scripts/utils/console.ts`, TTY-gated, imported by 10 |
 
-Not hypothetical: across those 35 closures, `check-i18n-cross-locale.ts:555` discards
-`selftest()`'s return value, so a failing control does not stop that gate.
+Not hypothetical: five copies inline unconditional `\x1b[…` and pipe raw escape bytes into
+non-TTY CI logs, while `scripts/utils/console.ts:8-15` TTY-gates them for its ten importers.
 Copying is sometimes right, and the answer is a **named divergence**, not a shrug:
 `run_gate()` is duplicated 23× with three incompatible return contracts. Say which.
 Never the findings report — 10 gates, 10 distinct hashes. Count duplication in the

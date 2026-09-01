@@ -141,6 +141,7 @@ function readGitmodulePaths(): string[] {
 }
 
 import { getMinReleaseAgeMs, isWithinFreshnessWindow } from './lib/release-age.js';
+import { GREEN, NC, RED, YELLOW } from './utils/console.js';
 import {
   baselineAdditions,
   renderRefusal,
@@ -309,7 +310,7 @@ async function listHubTags(repo: string): Promise<TagInfo[] | null> {
 function selftest(): number {
   let bad = 0;
   const check = (label: string, ok: boolean) => {
-    console.log(`  ${ok ? '\x1b[32mPASS\x1b[0m' : '\x1b[31mFAIL\x1b[0m'}  ${label}`);
+    console.log(`  ${ok ? `${GREEN}PASS${NC}` : `${RED}FAIL${NC}`}  ${label}`);
     if (!ok) bad++;
   };
   const pins = parsePins('FROM node:22-slim AS build\nFROM ghcr.io/rediacc/renet:latest\n', 'X');
@@ -400,7 +401,7 @@ async function main(): Promise<void> {
     console.log('docker image freshness selftest');
     const bad = selftest();
     console.log(
-      bad === 0 ? `\n\x1b[32m✓\x1b[0m 13/13 controls pass` : `\n\x1b[31m✗\x1b[0m ${bad} failed`
+      bad === 0 ? `\n${GREEN}✓${NC} 13/13 controls pass` : `\n${RED}✗${NC} ${bad} failed`
     );
     process.exit(bad === 0 ? 0 : 1);
   }
@@ -461,7 +462,7 @@ async function main(): Promise<void> {
 
   if (unknown.length > 0) {
     console.error(
-      `\n\x1b[31m✗\x1b[0m ${unknown.length} image(s) could NOT be checked. Unknown is not a pass:`
+      `\n${RED}✗${NC} ${unknown.length} image(s) could NOT be checked. Unknown is not a pass:`
     );
     for (const u of unknown) console.error(`    ${u}`);
     console.error('\nDocker Hub rate limits anonymous listings. Set DOCKERHUB_TOKEN (or');
@@ -505,7 +506,7 @@ async function main(): Promise<void> {
     });
     if (seedImage !== undefined && !additions.includes(seedImage)) {
       console.error(
-        `\n\x1b[31m✗\x1b[0m --seed-image named ${JSON.stringify(seedImage)}, which is not ` +
+        `\n${RED}✗${NC} --seed-image named ${JSON.stringify(seedImage)}, which is not ` +
           "among this run's additions. A seed that matches nothing is a typo, and accepting " +
           'it would let the next real addition through unnoticed.'
       );
@@ -513,7 +514,7 @@ async function main(): Promise<void> {
     }
     if (verdict !== null) {
       console.error(
-        `\n\x1b[31m✗\x1b[0m ${renderRefusal(verdict, {
+        `\n${RED}✗${NC} ${renderRefusal(verdict, {
           baselineLabel: path.relative(ROOT, BASELINE),
           noun: 'known-stale pin',
           previousCount: previous.length,
@@ -545,7 +546,7 @@ async function main(): Promise<void> {
 
   if (fresh.length > 0) {
     console.error(
-      `\n\x1b[31m✗\x1b[0m ${fresh.length} base image pin(s) newly stale past the soak window:\n`
+      `\n${RED}✗${NC} ${fresh.length} base image pin(s) newly stale past the soak window:\n`
     );
     for (const s of fresh) console.error(`    ${s}`);
     console.error(
@@ -557,7 +558,7 @@ async function main(): Promise<void> {
   }
   if (fixed.length > 0) {
     console.error(
-      `\n\x1b[31m✗\x1b[0m ${fixed.length} baselined pin(s) are no longer stale. This baseline is`
+      `\n${RED}✗${NC} ${fixed.length} baselined pin(s) are no longer stale. This baseline is`
     );
     console.error(
       'SHRINK-ONLY, so drain it: npx tsx scripts/check-docker-image-freshness.ts --write-baseline'
@@ -567,12 +568,12 @@ async function main(): Promise<void> {
   }
   if (stale.length > 0) {
     console.log(
-      `\x1b[33m!\x1b[0m ${stale.length} known-stale pin(s) still baselined (drain as they are bumped):`
+      `${YELLOW}!${NC} ${stale.length} known-stale pin(s) still baselined (drain as they are bumped):`
     );
     for (const s of stale) console.log(`    ${s}`);
   }
   console.log(
-    `\x1b[32m✓\x1b[0m ${checked} Docker Hub pin(s) checked, ${checked - stale.length} current, ` +
+    `${GREEN}✓${NC} ${checked} Docker Hub pin(s) checked, ${checked - stale.length} current, ` +
       `${stale.length} known-stale and baselined. No NEW staleness.`
   );
 }

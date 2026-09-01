@@ -29,6 +29,7 @@ import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
 import { globSync } from 'glob';
+import { GREEN, NC, RED } from './utils/console.js';
 
 import {
   baselineAdditions,
@@ -184,7 +185,7 @@ function findDead(): string[] {
 function selftest(): number {
   let bad = 0;
   const check = (label: string, ok: boolean) => {
-    console.log(`  ${ok ? '\x1b[32mPASS\x1b[0m' : '\x1b[31mFAIL\x1b[0m'}  ${label}`);
+    console.log(`  ${ok ? `${GREEN}PASS${NC}` : `${RED}FAIL${NC}`}  ${label}`);
     if (!ok) bad++;
   };
   const d = definedClasses(
@@ -264,7 +265,7 @@ function main(): void {
     console.log('dead-css gate selftest');
     const bad = selftest();
     console.log(
-      bad === 0 ? '\n\x1b[32m✓\x1b[0m all controls pass' : `\n\x1b[31m✗\x1b[0m ${bad} failed`
+      bad === 0 ? '\n${GREEN}✓${NC} all controls pass' : `\n${RED}✗${NC} ${bad} failed`
     );
     process.exit(bad === 0 ? 0 : 1);
   }
@@ -299,7 +300,7 @@ function main(): void {
     });
     if (verdict !== null) {
       console.error(
-        `\n\x1b[31m✗\x1b[0m ${renderRefusal(verdict, {
+        `\n${RED}✗${NC} ${renderRefusal(verdict, {
           baselineLabel: path.relative(ROOT, BASELINE),
           noun: 'dead class',
           previousCount: previous.length,
@@ -326,7 +327,7 @@ function main(): void {
     `${sheets().length} stylesheet(s), ${sources().length} source file(s); ${dead.length} dead class(es), baseline ${base.length}.`
   );
   if (fresh.length > 0) {
-    console.error(`\n\x1b[31m✗\x1b[0m ${fresh.length} NEW dead class(es):`);
+    console.error(`\n${RED}✗${NC} ${fresh.length} NEW dead class(es):`);
     for (const f of fresh.slice(0, 25)) console.error(`    ${f}`);
     if (fresh.length > 25) console.error(`    ... and ${fresh.length - 25} more`);
     console.error('\nDelete the rule, or render the class. Do not add it to the baseline.');
@@ -334,7 +335,7 @@ function main(): void {
   }
   if (fixed.length > 0) {
     console.error(
-      `\n\x1b[31m✗\x1b[0m ${fixed.length} baselined class(es) are no longer dead. This baseline is`
+      `\n${RED}✗${NC} ${fixed.length} baselined class(es) are no longer dead. This baseline is`
     );
     console.error('SHRINK-ONLY, so drain it: npx tsx scripts/check-dead-css.ts --write-baseline');
     process.exit(1);
@@ -346,13 +347,13 @@ function main(): void {
   const orphaned = fullyDeadSheets(new Set(dead));
   if (orphaned.length > 0) {
     console.error(
-      `\n\x1b[31m✗\x1b[0m ${orphaned.length} stylesheet(s) in which EVERY class is dead:`
+      `\n${RED}✗${NC} ${orphaned.length} stylesheet(s) in which EVERY class is dead:`
     );
     for (const o of orphaned) console.error(`    ${o}`);
     console.error('\nDelete the file and drain its baseline entries, or render what it styles.');
     process.exit(1);
   }
-  console.log(`\x1b[32m✓\x1b[0m no new dead CSS. ${base.length} known finding(s) still baselined.`);
+  console.log(`${GREEN}✓${NC} no new dead CSS. ${base.length} known finding(s) still baselined.`);
 }
 
 main();

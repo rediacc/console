@@ -12,21 +12,24 @@
  * in two idioms — a `failures: string[]` form (12 files, 8 byte-identical) and a counter
  * form (20 files, 5 clusters). ~196 duplicated lines.
  *
- * THE DRIFT IS NOT HYPOTHETICAL. Three defects were found by comparing those copies to
- * each other, none of them looked for:
+ * THE DRIFT IS NOT HYPOTHETICAL, though it is smaller than first reported. A survey of
+ * those copies claimed three defects; probing each one kept ONE:
  *
- *   - `check-i18n-cross-locale.ts:555` calls `selftest()` and DISCARDS the return value,
- *     so a failing control does not stop that gate. Every sibling in its cluster reads
- *     `&& !selftest()) process.exit(1)`.
- *   - `check-merge-method-prose.ts:78` and `check-shell-declared-commands.ts:113` write
- *     `bad = 1` instead of `bad++`. Saturating: neither can report HOW MANY controls
- *     failed.
- *   - Five gates inline unconditional `\x1b[…` escapes and emit them into non-TTY CI logs,
- *     while `scripts/utils/console.ts:8-15` already gates the identical codes on
- *     `process.stdout.isTTY` and ten files import it.
+ *   - REAL. Five gates inline unconditional `\x1b[…` escapes and pipe them into non-TTY CI
+ *     logs -- `check-dead-css.ts:187`, `check-docker-image-freshness.ts:312`,
+ *     `check-landmarks.ts:52`, `check-ssr-locale.ts:62`, `check-svg-theme-reach.ts:60`.
+ *     Demonstrated with `cat -v` on a piped run. `scripts/utils/console.ts:8-15` already
+ *     gates the identical codes on `process.stdout.isTTY`, and ten files import it.
+ *   - NOT A DEFECT. `check-i18n-cross-locale.ts:555` was reported as discarding
+ *     `selftest()`'s return value. It cannot: `selftest(): void` and it calls
+ *     `process.exit(1)` itself at `:536`. Planting a failing control there exits 1 today.
+ *   - NOT A DEFECT. `check-merge-method-prose.ts:78` writes `bad = 1` rather than `bad++`.
+ *     Its caller is `process.exit(main())`, so a saturating 1 is a correct non-zero, and a
+ *     true count is arguably worse -- an exit code above 125 wraps.
  *
- * All three are the same shape: a copy that diverged from its siblings in a way nobody
- * could see, because there were no siblings to compare it against in one place.
+ * Recording all three is the point. Two of them were a SUB-AGENT'S report taken at face
+ * value and repeated in a commit message before anyone ran the code; the rule that a
+ * report is not evidence until spot-checked was learned here at the cost of a correction.
  *
  * A SHARED HARNESS IS A SHARED POINT OF FAILURE, and that is the honest cost. If this
  * function ever passes silently, every gate on it goes blind AT ONCE — strictly worse than

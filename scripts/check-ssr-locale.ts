@@ -25,6 +25,7 @@
 import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
+import { GREEN, NC, RED } from './utils/console.js';
 
 const ROOT = path.resolve(import.meta.dirname, '..');
 const WWW = path.join(ROOT, 'packages/www');
@@ -59,7 +60,7 @@ function locales(): string[] {
 function selftest(): number {
   let bad = 0;
   const check = (label: string, ok: boolean) => {
-    console.log(`  ${ok ? '\x1b[32mPASS\x1b[0m' : '\x1b[31mFAIL\x1b[0m'}  ${label}`);
+    console.log(`  ${ok ? `${GREEN}PASS${NC}` : `${RED}FAIL${NC}`}  ${label}`);
     if (!ok) bad++;
   };
   check('a dotted path resolves', at({ a: { b: 'x' } }, 'a.b') === 'x');
@@ -75,7 +76,7 @@ function main(): void {
   if (process.argv.includes('--selftest')) {
     console.log('ssr-locale gate selftest');
     const bad = selftest();
-    console.log(bad === 0 ? '\n\x1b[32m✓\x1b[0m 6/6 controls pass' : `\n\x1b[31m✗\x1b[0m ${bad} failed`);
+    console.log(bad === 0 ? '\n${GREEN}✓${NC} 6/6 controls pass' : `\n${RED}✗${NC} ${bad} failed`);
     process.exit(bad === 0 ? 0 : 1);
   }
   if (selftest() !== 0) { console.error('controls failed; the gate cannot be trusted'); process.exit(1); }
@@ -114,14 +115,14 @@ function main(): void {
     process.exit(1);
   }
   if (findings.length > 0) {
-    console.error(`\n\x1b[31m✗\x1b[0m ${findings.length} server-rendered locale failure(s):\n`);
+    console.error(`\n${RED}✗${NC} ${findings.length} server-rendered locale failure(s):\n`);
     for (const f of findings.slice(0, 20)) console.error(`    ${f}`);
     if (findings.length > 20) console.error(`    ... and ${findings.length - 20} more`);
     console.error('\nAn island that calls useLanguage() renders English on the server, because there');
     console.error('is no window. Pass `lang` down from BaseLayout and prefer it over the hook.');
     process.exit(1);
   }
-  console.log(`\x1b[32m✓\x1b[0m ${checked} probe(s) across ${locales().length - 1} non-English locale(s): all server-render natively.`);
+  console.log(`${GREEN}✓${NC} ${checked} probe(s) across ${locales().length - 1} non-English locale(s): all server-render natively.`);
 }
 
 main();

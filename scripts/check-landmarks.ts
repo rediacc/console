@@ -24,6 +24,7 @@ import { existsSync, readFileSync, statSync } from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
 import { globSync } from 'glob';
+import { GREEN, NC, RED, YELLOW } from './utils/console.js';
 
 const ROOT = path.resolve(import.meta.dirname, '..');
 const DIST = path.join(ROOT, 'packages/www/dist');
@@ -49,7 +50,7 @@ export function countMain(html: string): number {
 function selftest(): number {
   let bad = 0;
   const check = (label: string, ok: boolean) => {
-    console.log(`  ${ok ? '\x1b[32mPASS\x1b[0m' : '\x1b[31mFAIL\x1b[0m'}  ${label}`);
+    console.log(`  ${ok ? `${GREEN}PASS${NC}` : `${RED}FAIL${NC}`}  ${label}`);
     if (!ok) bad++;
   };
   check('one main is counted', countMain('<body><main id="x">hi</main></body>') === 1);
@@ -69,7 +70,7 @@ function main(): void {
     console.log('landmark gate selftest');
     const bad = selftest();
     console.log(
-      bad === 0 ? '\n\x1b[32m✓\x1b[0m 6/6 controls pass' : `\n\x1b[31m✗\x1b[0m ${bad} failed`
+      bad === 0 ? '\n${GREEN}✓${NC} 6/6 controls pass' : `\n${RED}✗${NC} ${bad} failed`
     );
     process.exit(bad === 0 ? 0 : 1);
   }
@@ -116,7 +117,7 @@ function main(): void {
   if (duplicates.length > 0 || missing.length > 0) {
     if (duplicates.length > 0) {
       console.error(
-        `\n\x1b[31m✗\x1b[0m ${duplicates.length} page(s) ship more than one <main> landmark:`
+        `\n${RED}✗${NC} ${duplicates.length} page(s) ship more than one <main> landmark:`
       );
       for (const d of duplicates.slice(0, 15)) console.error(`    ${d}`);
       if (duplicates.length > 15) console.error(`    ... and ${duplicates.length - 15} more`);
@@ -126,14 +127,14 @@ function main(): void {
       console.error('one; an inner region should be a <div> or a <section>.');
     }
     if (missing.length > 0) {
-      console.error(`\n\x1b[31m✗\x1b[0m ${missing.length} page(s) carry NO <main> landmark:`);
+      console.error(`\n${RED}✗${NC} ${missing.length} page(s) carry NO <main> landmark:`);
       for (const m of missing.slice(0, 15)) console.error(`    ${m}`);
     }
     process.exit(1);
   }
   if (vendored.length > 0) {
     console.log(
-      `\x1b[33m!\x1b[0m ${vendored.length} vendored page(s) exempt and still landmark-less (owned by another package):`
+      `${YELLOW}!${NC} ${vendored.length} vendored page(s) exempt and still landmark-less (owned by another package):`
     );
     for (const v of vendored) console.log(`    ${v}`);
   }
@@ -156,7 +157,7 @@ function main(): void {
     process.exit(1);
   }
   console.log(
-    `\x1b[32m✓\x1b[0m ${verified} built page(s) verified: exactly one <main> each ` +
+    `${GREEN}✓${NC} ${verified} built page(s) verified: exactly one <main> each ` +
       `(${stubs} redirect stub(s) and ${vendored.length} vendored page(s) exempt, ` +
       `${files.length} file(s) scanned).`
   );
