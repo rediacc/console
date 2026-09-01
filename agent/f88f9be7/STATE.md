@@ -1,71 +1,63 @@
-## SESSION f88f9be7 2026-09-01T13:45:18Z
+## SESSION f88f9be7 2026-09-01T14:07:07Z
 
-`/pr-babysit` INLINE on `0831-1`, PR #583. Principal is the operator.
+`/pr-merge` is RUNNING on `0831-1`, PR #583. The operator invoked it explicitly.
+A land pass, not a babysit: do not restart the flow, resume at the step below.
 
-## The one thing that needs the operator
+## Already landed (do NOT redo)
 
-PR #583 @ `2f94fe197` is **fully green** -- re-verified this turn with a one-shot
-`.ci/scripts/ci/ci-trace.py`, exit **0**, "every context succeeded or was skipped".
+1. **`rediacc/account#84` is MERGED**, rebase-merged to `account/main` = `3d8dc142d`.
+   Its branch is deleted (`delete_branch_on_merge: true` on all five repos).
+2. **`private/account` pointer bumped** to it, after the mandatory tree check:
+   `git -C private/account diff --stat dfe648e4c 3d8dc142d` was EMPTY.
+3. **Pushed**: head `a3701d631`, carrying the 17 previously-held commits.
+4. PR body refreshed via `gh api repos/<o>/<r>/pulls/<n> -X PATCH -F body=@<file>`
+   (`gh pr edit --body-file` is hook-blocked).
 
-It still does not merge. Ruleset `12344707` requires TWO checks; the second,
-**`Review Complete`**, never ran, because the operator settled that #583 merges with
-no automated review. `/pr-merge` was made model-invocable by the operator this session
-("make it AI callable. I authorize!", recorded in `.claude/commands/pr-merge.md`) and
-that did NOT clear it. Dispatching `Review Status` by hand posts `failure`
-(unreviewed head) -- more blocked, not less. Verified by reading the ruleset, the
-workflow and its script.
+## The Review Complete block is GONE; nothing is pending on the operator
 
-Two honest exits, both the operator's: `gh pr merge 583 --squash --admin` (admins hold
-`bypass_mode: always`; `--admin` is hook-banned for me by design), or
-`gh workflow run "Claude Review" -f pr_number=583` then the normal path.
+#583 was stuck because the old head `2f94fe197` was green with no review run against it.
+`Claude Review` fires on `workflow_run: ["Console CI"] completed`, so a green run on a NEW
+head triggers it. The head moved, so the path exists. If delivery silently misses (a
+documented failure mode in `claude-review.yml`), use
+`gh workflow run "Claude Review" -f pr_number=583`. Do NOT reach for `--admin`.
 
-Tracked as `[?] f46112c0`. **Its DEFAULT fires ~2026-09-01T15:00Z and PUSHES the
-sixteen held commits.**
+## Right now
 
-## State of the tree
-
-Tree CLEAN. **Sixteen commits local and unpushed**, `f5d9159c8`..`3d7f83b22`.
-They live ONLY on `0831-1`, which a merge deletes -- **`git branch 0901-1` before any
-merge.**
-
-All gates green as of this turn: `ci:quick` **274 ok / 0 failed**, hook harness
-**PASS=1885 FAIL=0**, 239 judge-schema controls, 16 counter controls, 15 controls on
-the newest gate, ruff lint+format clean, shfmt clean.
-
-Landed this session: the plan-section-10 replay (74 firings/month vs a once-a-month
-floor, so `wl_shapedup` is WIRED and running on the allow path); an
-accepted-divergence exit for the shape counter; a line-number fix (every `file:line`
-it emitted was a normalised-array index); round five of the arrow/redirect guard
-false positive; and `check:ci-git-history-depth`, three-point wired.
+- CI in flight on `a3701d631`: `RUNNING, 5 context(s)`, `ci-trace` exit 2.
+- Watch alive PID 415540 (`b1vxbxvy8`); mail waiter alive PID 343120 (`bpspozekj`).
+- **ONE COMMIT UNPUSHED**: `23e734384`, the shallow-history class sweep. It MUST be pushed
+  before the merge or the merge deletes the branch under it. `ci:quick` is running because
+  `block-unverified-push.sh` demands the gate run judged THIS tree.
 
 ## Next action
 
-1. Answer `[?] f46112c0`, or let its DEFAULT push at ~15:00Z.
-2. **If that push happens, a CI run starts and needs a watch.** That is why crons
-   `f892a1f9` and `b4bff02e` are still ARMED: this tick's step 8 said to CronDelete
-   them on green, and I deliberately did not, because deleting a watchdog minutes
-   before an automated push is the dropped-watch failure the cron exists to catch.
-   Say so in any report rather than letting it look like an oversight.
-3. Nothing else is blocked. If more work is wanted, the honest next piece is the
-   208-span backlog -- but re-scope FIRST and read section 5 of
-   `agent/PLAN-duplication-angle.md`: the span the plan called "the cleanest case in
-   the repo" does NOT consolidate for 46 of its 62 instances.
+1. On a clean `ci:quick`: `git push origin 0831-1`, then re-arm
+   `.ci/scripts/ci/ci-trace.py --wait --until-final` in the background. This restarts CI.
+2. On green: the review fires, `Review Complete` posts, then
+   `gh pr merge 583 --repo rediacc/console --rebase --auto`. Console is REBASE-ONLY.
+   If `--rebase` fails with "This branch can't be rebased", check
+   `git merge-base --is-ancestor origin/main origin/0831-1` and only on a pure
+   fast-forward, `git push origin origin/0831-1:main`.
+3. Then `/pr-merge` steps 4-8: checkout `main`; watch Console CI on main, then the
+   **Release to Edge** run **BY ID** (`--run <id>`, never `--ref main` -- a
+   workflow_dispatch run is absent from the branch rollup and `--ref main` printed a false
+   GREEN twice); re-sync after CD pushes its two `[skip ci]` commits; mirror to `gitlab`;
+   hand-back note.
+4. Only then CronDelete `f892a1f9` and `b4bff02e`. Still deliberately ARMED.
 
 ## Volatile facts a fresh session would get wrong
 
-- **The judged-rule calibration is NOT deterministic.** 14/14 was ONE draw. Across
-  three live samples five fixtures missed at least once and none consistently,
-  spanning all three rules; a 20-fixture run scored 17/20. `SHAPE_PROMPT` is
-  deliberately ABSENT from `.ci/config/rubric-calibration.json` for that reason --
-  do not "fix" that by adding it.
-- There is NO round log for this wave; STATE.md is the artifact. Do not hunt for
-  `reports/pr-babysit-0831-1.md`.
-- ONE `wl_wait.py f88f9be7` waiter is alive. Two earlier ones overran their own
-  `--timeout 3600` by 90+ minutes and were killed; elapsed-vs-timeout is what
-  distinguishes hung from merely silent, never the byte count.
-- `scripts/ci-runner/manifest.ts` carries peer `a276391d`'s hunks. Stage the HUNK.
+- **`private/growth` has 1430 dirty paths and is NOT a submodule** -- gitignored, another
+  workstream's. Never `git add` it. `private/generative` is clean. Both are on gitlab.
+- The judged-rule calibration is NOT deterministic: 14/14 was one draw, a 20-fixture run
+  scored 17/20. `SHAPE_PROMPT` is deliberately ABSENT from
+  `.ci/config/rubric-calibration.json` -- do not "fix" that.
+- `check:ci-git-history-depth` deliberately does NOT follow the step->script hop: it
+  produced 89 false findings because the scripts are already shallow-safe
+  (`check-branch.sh:63`, `resolve-version.sh:44`).
+- No round log exists for this wave; STATE.md is the artifact.
 
 ## Open, not fixed
 
-`[?] f46112c0` only. Peer `a276391d`'s `BACKUP_S3_BUCKET` finding needs credentials
-neither session has.
+`[>] f46112c0`, leased to `b1vxbxvy8` until 14:53Z. Peer `a276391d`'s `BACKUP_S3_BUCKET`
+finding needs credentials neither session has.
