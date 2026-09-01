@@ -195,10 +195,47 @@ the rubric will agree with a mistake. Re-pointed at the actual bespoke report li
 
 ---
 
-## 5. What is NOT done
+## 5. The drain's headline case is NOT the clean win the plan called it
 
-- **The 219-span standing backlog** (plan step 5) is seeded silent and undrained. The plan
+The plan named one span as the best reason to start draining:
+
+> **28 hand-rolled `WORK=$(mktemp -d)` + `trap … EXIT`** against a `with_temp_dir`
+> (`test-helpers.sh:73-86`) that 26 other files already use. The cleanest "the harness
+> already has it" case in the repo.
+
+Measured 2026-09-01, and both halves are off:
+
+| claim | measured |
+|---|---|
+| 28 files hand-roll it | **62** |
+| 26 files use the helper | 26 ✓ |
+| adopting the helper is the fix | **fits 22 at most; 46 cannot use it as written** |
+
+`with_temp_dir` takes a FUNCTION NAME and hands the directory to it as `$1`:
+
+```bash
+with_temp_dir() { local fn="$1"; shift; local TEMP; TEMP="$(mktemp -d)"
+    trap "rm -rf '$TEMP'" EXIT; "$fn" "$TEMP" "$@"; rm -rf "$TEMP"; trap - EXIT; }
+```
+
+That contract fits a file whose temp directory is scoped to one function. **46 of the 62
+create it at TOP LEVEL, for the whole script's lifetime.** In
+`.ci/scripts/test/gates/test-autopilot-breakpoint-alignment.sh:29` the directory is made at
+file scope and referenced 27 times from several helper functions. Adopting the helper there
+means restructuring the entire script into one function and threading `$1` through all of
+them — a rewrite, not an adoption.
+
+So the repo's most-cited consolidation opportunity is, for three quarters of its instances,
+a **NOT-CONSOLIDATABLE with a concrete divergence** — exactly the third exit the judged rule
+has and the CI gate now has too. This is the fourth plan claim in this document that did not
+survive contact with the code, and it is the one that most changes what the drain is worth.
+
+## 6. What is NOT done
+
+- **The 208-span standing backlog** (plan step 5) is seeded silent and undrained. The plan
   budgeted ~9 spans from a survey of the nine largest; the real number measured 219 spans
   (336 raw windows before coalescing), and its three headline defects turned out to be
   one, already fixed. It needs re-scoping before it is worth starting, not execution
-  against the plan's estimate.
+  against the plan's estimate -- and section 5 is the first instalment of that
+  re-scoping: the single span the plan advanced as the reason to start does not
+  consolidate for 46 of its 62 instances.
