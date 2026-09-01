@@ -431,7 +431,49 @@ FIXTURE
     log_pass "runControls counts a planted failure, an empty set, and a clean set"
 }
 
+test_sharedselftestcases_can_fail() {
+    # THE OTHER SHARED CONTROL PROVIDER. `scripts/lib/shrink-only-baseline.ts:181`
+    # exports `sharedSelftestCases()`, and NINE gates run its cases as their own
+    # controls. Nothing proved those cases can go false: if the provider ever
+    # returned an all-passing set -- a refactor that stubs `baselineAdditions`, a
+    # short-circuit -- all nine gates would keep printing PASS while asserting
+    # nothing, at once. That is the same shared-point-of-failure argument that gave
+    # runControls() its meta-control above, and it applies harder here because the
+    # provider is already load-bearing for nine consumers.
+    #
+    # The plant is on the function the cases are COMPUTED from, not on the cases: a
+    # provider that hardcoded `ok: true` would survive any assertion about its shape.
+    local work="$REPO_ROOT/scripts/.shrink-only-baseline-fixture.ts"
+    local probe="$REPO_ROOT/scripts/.shared-cases-probe.ts"
+    # BLOCKER: expanding both paths now binds them into the trap so cleanup fires even if the variables are later reassigned
+    # shellcheck disable=SC2064
+    trap "rm -f '$work' '$probe'" RETURN
+
+    sed 's/^export const baselineAdditions = (/export const baselineAdditions = ((..._a: unknown[]) => [])  as unknown as typeof _unused_orig; const _unused_orig = (/' \
+        "$REPO_ROOT/scripts/lib/shrink-only-baseline.ts" >"$work" || true
+
+    # PROVE THE PLANT LANDED. A no-op sed produces an identical file and the control
+    # then passes against unmutated source -- a green that proves nothing.
+    if cmp -s "$REPO_ROOT/scripts/lib/shrink-only-baseline.ts" "$work"; then
+        log_fail "CONTROL COULD NOT PLANT: the mutation left shrink-only-baseline.ts unchanged"
+    fi
+
+    printf 'import { sharedSelftestCases } from "./%s";\nconst c = sharedSelftestCases();\nconsole.log(`n=${c.length} failing=${c.filter((x) => !x.ok).length}`);\n' \
+        "$(basename "$work" .ts)" >"$probe"
+
+    local out rc=0
+    out="$(cd "$REPO_ROOT" && npx tsx "$probe" 2>&1)" || rc=$?
+    if [[ "$rc" -ne 0 ]]; then
+        printf '%s\n' "$out" >&2
+        log_fail "the shared-cases probe did not run (exit $rc) -- this meta-control asserts nothing"
+    fi
+    assert_not_contains "$out" "failing=0" "sharedSelftestCases() must go FALSE when its computation is broken"
+    assert_not_contains "$out" "n=0" "an empty case set would make all nine consumers vacuous"
+    log_pass "sharedSelftestCases() reports failures when its computation is broken"
+}
+
 log_test "test-gate-anti-vacuity"
+test_sharedselftestcases_can_fail
 test_runcontrols_can_fail
 test_harness_catches_a_vacuous_validator
 test_registry_is_not_empty
