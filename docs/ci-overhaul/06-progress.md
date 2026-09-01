@@ -6180,3 +6180,102 @@ green, and useless. The gate then caught its own author: moving five files onto 
 colour module created an identical import preamble, and it reported that as duplication.
 Three files importing the same helper is adoption; an import statement IS the
 consolidation. Import-majority windows are excluded now, with controls in both directions.
+
+## The stretch that wired the third judged rule, and the four claims that died
+
+Twelve commits, `1a8f9bc60`..`b41506cac`. The design is in `agent/PLAN-duplication-angle.md`;
+this section records what moved and what stopped being true.
+
+### The replay answered the question the rule was waiting on
+
+`wl_shapedup` was written but NOT wired, because the approved plan made shipping it
+conditional on a history replay: *"if a new shape reaches its 3rd copy less than roughly
+once a month, re-open the depth question rather than shipping a rule that fires twice a
+year."* The clone was shallow, grafted at 2026-08-28, so the replay could not run —
+`609314a41` reported **4,531 added files** under the graft and adds **4** with real history.
+
+`git fetch --unshallow` (101 -> 2,353 commits; it only ADDS objects, which is why it was
+safe in a shared tree) made it answerable. Replaying the REAL `judge()`/`normalise()`/
+`windows()` over historical trees read from the object store, seeded at 2026-07: **79
+firings in two months, 74 of them in 2026-08**. The floor is cleared by roughly seventy
+times, in the opposite direction from the worry, so the rule is wired and running.
+
+The unanticipated risk is the reverse one. The distribution is violently bursty — 0-3
+firings in a quiet month, 74-172 in a gate-authoring month — so seeded at ANY point the
+gate accumulates a standing red within a month or two of the next burst.
+
+### That forced the exit the gate did not have
+
+The judged rule has three answers; the CI gate had two — consolidate, or stay red. Its only
+way past a legitimate divergence was re-running `--seed`, which absorbs every new shape at
+once and records nothing, so the sole exit from one divergence was a command that
+suppresses the whole gate. It now takes `accepted: {"<hash>": "BLOCKER: <reason>"}`,
+validated by the SAME `validateBlockerQuality` every other allowlist uses — writing a
+second reason-checker here would have been the exact duplication the gate exists to catch —
+and `--seed` refuses over an existing seed without `--force`.
+
+### Four claims that did not survive contact with the code
+
+1. **The counter's `file:line` was not a file line.** `normalise()` strips comments and
+   drops the blanked lines, so position N in its output is not line N of the file. A
+   finding in `test-watchdog-log-capture.sh` reported `:17`; the code sits at line 46. The
+   coordinate is the entire actionable half of a duplication finding and it was wrong in
+   every finding the gate had ever emitted — and it made the output LOOK like duplicated
+   comment blocks, contradicting the gate's own stated exclusion. Fixed in `5607b136d`.
+2. **`gate-test:claude-hooks` (1,852 offline cases) does not exist.** The suite is
+   `check:ci-hook-worklist-suite`, and the harness that runs it reports `PASS=1885 FAIL=0`.
+3. **`git ls-tree` does not glob.** It returns 0 for `scripts/check-*.ts` where
+   `git ls-files` returns 103, and rejects `:(glob)` magic outright. A replay trusting it
+   reports a clean history having scanned nothing — a silent zero.
+4. **The drain's headline case does not consolidate.** The plan called 28 hand-rolled
+   `mktemp -d` + `trap` against `with_temp_dir` "the cleanest 'the harness already has it'
+   case in the repo". Measured: **62** files, and `with_temp_dir` takes a FUNCTION NAME, so
+   the **46** that create the directory at top level would each need the whole script
+   restructured. Three quarters of the repo's most-cited consolidation opportunity is a
+   NOT-CONSOLIDATABLE with a concrete divergence.
+
+### Corrections to this document
+
+- The span count above reads **219 spans (336 raw windows)**. That was true under the
+  pre-`5607b136d` normalisation; a block comment was replaced by nothing rather than by its
+  own newlines, which glued the line before it to the line after. Corrected, the tree
+  measures **208 spans / 39,456 windows**. Both numbers are true of their moment and the
+  older one is left standing rather than rewritten.
+- "Two more instruments were blind and green" undercounts. The line-numbering bug above is
+  a third, and it was the most consequential of them.
+
+### The calibration is not deterministic, and that changes what "calibrated" means
+
+`.ci/config/rubric-calibration.json` exists to prove a calibrated rubric has not changed
+since it was calibrated, and the SWEEP_PROMPT trim was authorised by a live **14/14**.
+
+Re-running the same fixtures against the same rubric does not reproduce it. Across three
+samples, **five distinct fixtures missed at least once and none missed consistently**,
+spanning all three rules — sweep, brave and shapedup. A full 20-fixture run scored 17/20.
+So 14/14 is one draw, not a property, and this is the harness's variance rather than one
+rubric's weakness.
+
+The trim stands: the misses are controls the rules over-fire on rather than defects they
+now miss. But **`SHAPE_PROMPT` was deliberately NOT added to the manifest** — on this
+evidence the entry would assert a calibration that did not happen, which is precisely the
+green-that-means-nothing this programme exists to prevent. No claim of the form "calibrated
+at N/N" may omit how many samples it rests on.
+
+### Two fixtures that tested nothing, and one guard fixed for the fifth time
+
+Two of the three new `SHAPE_CASES` fixtures were transcribed from a survey table without
+opening the files, and the model was RIGHT both times it disagreed: one cited three lines
+that are a byte-identical closure while asserting they were not duplication, the other
+mixed two clusters. **A negative fixture aimed at real duplication does not test a rubric;
+it tests whether the rubric will agree with a mistake.** Building the replacement from the
+counter's own output is what found the line-numbering bug. The second fixture was deleted
+rather than transcribed a third time.
+
+`block-bash-write-to-running-script.sh` took round FIVE of "a MENTION was scored as a
+TARGET": an ASCII `->` in prose, pointing at a running script, matched the redirect
+pattern, so writing a markdown file that DESCRIBED a script was refused as a command
+overwriting it. Its own comments record the four previous rounds. The guard already had a
+thorough case set and the class still shipped five times, so the three cases added are
+exactly the ones that were missing — the arrow, and the two redirect forms the fix had to
+keep working. A first draft added eight and was deleted: five duplicated the existing
+section, which is the defect this whole stretch is about.
