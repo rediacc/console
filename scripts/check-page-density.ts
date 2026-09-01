@@ -500,6 +500,7 @@ async function main(): Promise<void> {
             techDiff: null,
             // The real numbers off /en/solutions/instant-recovery at 1024x768.
             hiddenOverflow: [{ sel: 'sp-callout-pop', right: 1251, clientWidth: 1024 }],
+            overlayCentring: [],
           },
         },
         {

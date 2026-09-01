@@ -134,8 +134,10 @@ function selftest(): number {
   let bad = 0;
   for (const c of CONTROLS) {
     const { problems } = judgeSvg('control.svg', c.svg);
-    const ok =
-      c.expect === null ? problems.length === 0 : problems.some((p) => p.includes(c.expect));
+    // Bound to a local first: TS narrows `c.expect` on the ternary but not INSIDE the
+    // closure, where it is still `string | null`. `tsc` catches that and biome does not.
+    const needle = c.expect;
+    const ok = needle === null ? problems.length === 0 : problems.some((p) => p.includes(needle));
     if (!ok) bad++;
     process.stdout.write(`  ${ok ? 'PASS' : 'FAIL'}  ${c.name}\n`);
   }
