@@ -201,8 +201,21 @@ ENV GOPATH=/go
 ENV GOTOOLCHAIN=local
 ARG TARGETARCH
 
-RUN curl -fsSL "https://go.dev/dl/go${GO_VERSION}.linux-${TARGETARCH}.tar.gz" \
-        | tar -xz -C /usr/local \
+# Checksums from go.dev's own index: curl -s 'https://go.dev/dl/?mode=json&include=all'
+# | jq '.[]|select(.version=="go<V>")|.files[]|select(.os=="linux" and .kind=="archive")'
+ARG GO_SHA256_AMD64=708effb774be8237570d0add163225abbdfaf4fca28b2611df167beba4feef89
+ARG GO_SHA256_ARM64=d0507e9e9d7fe012aae570108cbd76c15de879e17130ab8cb90d4d7445cb1f2e
+# Downloaded to a file rather than streamed into tar: a stream cannot be verified
+# before it is extracted, which is the whole point of having a checksum.
+RUN case "$TARGETARCH" in \
+    amd64) GO_SHA="$GO_SHA256_AMD64" ;; \
+    arm64) GO_SHA="$GO_SHA256_ARM64" ;; \
+    *) echo "no pinned go checksum for $TARGETARCH" >&2; exit 1 ;; \
+    esac \
+    && curl -fsSL -o /tmp/go.tgz "https://go.dev/dl/go${GO_VERSION}.linux-${TARGETARCH}.tar.gz" \
+    && echo "${GO_SHA}  /tmp/go.tgz" | sha256sum -c - \
+    && tar -xz -C /usr/local -f /tmp/go.tgz \
+    && rm /tmp/go.tgz \
     && mkdir -p "$GOPATH/bin" \
     && groupadd -f golang \
     && usermod -aG golang vscode \
@@ -332,8 +345,18 @@ RUN ARCH=$(dpkg --print-architecture) \
 
 # glab — GitLab CLI (https://gitlab.com/gitlab-org/cli)
 ARG GLAB_VERSION=1.90.0
+# From the release's own checksums.txt:
+#   curl -sL https://gitlab.com/gitlab-org/cli/-/releases/v<V>/downloads/checksums.txt
+ARG GLAB_SHA256_AMD64=e487c07ed8e634bae1737e17d4dfe192d762f8acf5b64d7f1658a741aa1e4060
+ARG GLAB_SHA256_ARM64=9ba8431991dc4b4ad78c3c6e0b6341076d0d7063ca81ed370bcd1378665a4370
 RUN ARCH=$(dpkg --print-architecture) \
+    && case "$ARCH" in \
+    amd64) GLAB_SHA="$GLAB_SHA256_AMD64" ;; \
+    arm64) GLAB_SHA="$GLAB_SHA256_ARM64" ;; \
+    *) echo "no pinned glab checksum for $ARCH" >&2; exit 1 ;; \
+    esac \
     && curl -fsSL -o /tmp/glab.deb "https://gitlab.com/gitlab-org/cli/-/releases/v${GLAB_VERSION}/downloads/glab_${GLAB_VERSION}_linux_${ARCH}.deb" \
+    && echo "${GLAB_SHA}  /tmp/glab.deb" | sha256sum -c - \
     && dpkg -i /tmp/glab.deb \
     && rm /tmp/glab.deb
 
@@ -385,7 +408,17 @@ RUN ARCH=$(dpkg --print-architecture) \
 
 # bottom (btm) — system monitor (https://github.com/ClementTsang/bottom)
 ARG BTM_VERSION=0.12.3
-RUN curl -fsSL -o /tmp/bottom.deb "https://github.com/ClementTsang/bottom/releases/download/${BTM_VERSION}/bottom_${BTM_VERSION}-1_$(dpkg --print-architecture).deb" \
+# Digests from the release API's `digest` field, same source as the bw pins above.
+ARG BTM_SHA256_AMD64=75dd4aa31eeb61087925c434627191062d9811b5da91c75ed28b83137a42ff27
+ARG BTM_SHA256_ARM64=6247af81c0f5befe46d95f8e34444e8f1aae04a525c571565fce4e1a0d3682a0
+RUN ARCH=$(dpkg --print-architecture) \
+    && case "$ARCH" in \
+    amd64) BTM_SHA="$BTM_SHA256_AMD64" ;; \
+    arm64) BTM_SHA="$BTM_SHA256_ARM64" ;; \
+    *) echo "no pinned bottom checksum for $ARCH" >&2; exit 1 ;; \
+    esac \
+    && curl -fsSL -o /tmp/bottom.deb "https://github.com/ClementTsang/bottom/releases/download/${BTM_VERSION}/bottom_${BTM_VERSION}-1_${ARCH}.deb" \
+    && echo "${BTM_SHA}  /tmp/bottom.deb" | sha256sum -c - \
     && dpkg -i /tmp/bottom.deb \
     && rm /tmp/bottom.deb
 
@@ -432,12 +465,22 @@ RUN chmod +x /tmp/download-extensions.sh \
 # https://github.com/gitpod-io/openvscode-server - MIT License
 # =============================================================================
 ARG OPENVSCODE_VERSION=1.109.5
+# Digests from the release API's `digest` field.
+ARG OPENVSCODE_SHA256_X64=b433bf4f0227321a7014d8460d10a8f958adc0f45aa79bd889e84e65e8f88363
+ARG OPENVSCODE_SHA256_ARM64=36d9c14036489b63de84ebace837fcacf7e60e669a0dc715802c5443684ea4dc
 
 RUN ARCH=$(dpkg --print-architecture) \
     && case "$ARCH" in amd64) OVSX_ARCH="x64" ;; arm64) OVSX_ARCH="arm64" ;; esac \
     && echo "Installing OpenVSCode Server v${OPENVSCODE_VERSION} for ${OVSX_ARCH}..." \
-    && curl -fsSL "https://github.com/gitpod-io/openvscode-server/releases/download/openvscode-server-v${OPENVSCODE_VERSION}/openvscode-server-v${OPENVSCODE_VERSION}-linux-${OVSX_ARCH}.tar.gz" \
-        | tar -xz -C /opt \
+    && case "$OVSX_ARCH" in \
+    x64) OVSX_SHA="$OPENVSCODE_SHA256_X64" ;; \
+    arm64) OVSX_SHA="$OPENVSCODE_SHA256_ARM64" ;; \
+    *) echo "no pinned openvscode checksum for $OVSX_ARCH" >&2; exit 1 ;; \
+    esac \
+    && curl -fsSL -o /tmp/ovsx.tgz "https://github.com/gitpod-io/openvscode-server/releases/download/openvscode-server-v${OPENVSCODE_VERSION}/openvscode-server-v${OPENVSCODE_VERSION}-linux-${OVSX_ARCH}.tar.gz" \
+    && echo "${OVSX_SHA}  /tmp/ovsx.tgz" | sha256sum -c - \
+    && tar -xz -C /opt -f /tmp/ovsx.tgz \
+    && rm /tmp/ovsx.tgz \
     && mv "/opt/openvscode-server-v${OPENVSCODE_VERSION}-linux-${OVSX_ARCH}" /opt/openvscode-server \
     && ln -sf /opt/openvscode-server/bin/openvscode-server /usr/local/bin/openvscode-server \
     # Pre-install extensions into OpenVSCode Server
@@ -476,7 +519,12 @@ COPY start-desktop.sh /usr/local/bin/start-desktop.sh
 RUN chmod +x /usr/local/bin/start-desktop.sh
 
 # ttyd web terminal (lightweight, static binary from official image)
-COPY --from=tsl0922/ttyd:1.7.8-alpine /usr/bin/ttyd /usr/bin/ttyd
+# Pinned by DIGEST, not by tag: a tag is mutable, so `1.7.8-alpine` can be
+# repointed at a different image without the version string changing. The digest
+# is the only form a rebuild cannot silently drift under. Comment keeps the
+# human-readable version. Re-read with:
+#   docker buildx imagetools inspect tsl0922/ttyd:1.7.8-alpine
+COPY --from=tsl0922/ttyd@sha256:9355735b28a407fe7fb09597f6773d5550f2502259d22b350a2e2460125f9072 /usr/bin/ttyd /usr/bin/ttyd
 
 # ttyd startup script (starts ttyd with tmux session persistence)
 COPY start-ttyd.sh /usr/local/bin/start-ttyd.sh

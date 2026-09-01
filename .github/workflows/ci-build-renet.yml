@@ -271,7 +271,13 @@ jobs:
           cd private/renet
           # Keep the version in sync with .ci/scripts/quality/lint.sh
           GOLANGCI_VERSION="v2.9.0"
-          curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | \
+          # Installer pinned to the RELEASE TAG, not master. Piping a script from
+          # a moving branch into sh means the thing being executed can change
+          # between two runs of the same commit; the tagged copy cannot. The
+          # installer itself then verifies the binary it fetches against the
+          # release checksums, so the binary was never the weak link -- the
+          # script fetch was.
+          curl -sSfL "https://raw.githubusercontent.com/golangci/golangci-lint/${GOLANGCI_VERSION}/install.sh" | \
               sh -s -- -b "$(go env GOPATH)/bin" "$GOLANGCI_VERSION"
           GOPATH_BIN="$(go env GOPATH)/bin"
           export PATH="$GOPATH_BIN:$PATH"

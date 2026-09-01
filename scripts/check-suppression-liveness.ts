@@ -24,6 +24,7 @@
  * dependent oracle over the same facts.
  */
 
+import { execSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -174,6 +175,39 @@ function devcontainerPinBases(root: string): Universe | null {
   return { names, source: `${names.size} watched devcontainer pins in .devcontainer/Dockerfile` };
 }
 
+/**
+ * Tokens that still appear in some tracked Dockerfile.
+ *
+ * An allowlist entry naming a URL no Dockerfile fetches any more suppresses
+ * nothing -- the download was removed or re-pinned, and the exemption outlived it.
+ */
+function dockerfileFetchTokens(root: string): Universe | null {
+  let files: string[];
+  try {
+    files = execSync('git ls-files', { cwd: root, encoding: 'utf-8' })
+      .split('\n')
+      .filter((p) => /(^|\/)Dockerfile(\.|$)/.test(p));
+  } catch {
+    return null;
+  }
+  const blob = files
+    .map((f) => {
+      try {
+        return fs.readFileSync(path.join(root, f), 'utf-8');
+      } catch {
+        return '';
+      }
+    })
+    .join('\n');
+  if (!blob) return null;
+  const names = new Set(
+    blockeredEntries(path.join(root, '.unverified-download-allowlist'))
+      .map((e) => e.entry.trim())
+      .filter((t) => blob.includes(t))
+  );
+  return { names, source: `${files.length} tracked Dockerfile(s)` };
+}
+
 /** Every third-party action referenced by a workflow or composite action. */
 function referencedActions(root: string): Universe | null {
   const refs = collectActionRefs(root);
@@ -269,6 +303,17 @@ const PROBES: Probe[] = [
       `"${entry}" is not a watched devcontainer pin (oracle: ${u.source}); it is absent from .devcontainer/Dockerfile's ARGs, from scripts/lib/devcontainer-pin-sources.ts, or both.`,
     (entry, line) => [
       `remove line ${line} ("${entry}") from .devcontainer-upgrade-blocklist, then: npm run check:ci-devcontainer-pins`,
+    ]
+  ),
+  listProbe(
+    'unverified-downloads',
+    '.unverified-download-allowlist',
+    dockerfileFetchTokens,
+    1,
+    (entry, u) =>
+      `no tracked Dockerfile fetches "${entry}" any more (oracle: ${u.source}); the download was removed or re-pinned, so this exemption suppresses nothing.`,
+    (entry, line) => [
+      `remove line ${line} ("${entry}") from .unverified-download-allowlist, then: npm run check:ci-unverified-downloads`,
     ]
   ),
   listProbe(
@@ -597,6 +642,7 @@ function main(): void {
     '.go-deps-upgrade-blocklist',
     '.embed-assets-upgrade-blocklist',
     '.devcontainer-upgrade-blocklist',
+    '.unverified-download-allowlist',
     '.actions-upgrade-blocklist',
     '.cli-i18n-orphan-allowlist',
     '.audit-allowlist',

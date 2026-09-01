@@ -2314,6 +2314,18 @@ export const GATES: readonly GateSpec[] = [
     },
   },
   {
+    id: 'check:ci-unverified-downloads',
+    run: 'npm run check:ci-unverified-downloads',
+    gate: true,
+    leaves: ['scripts/check-unverified-downloads.ts'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-security',
+      step: 'Check every Dockerfile download is cryptographically verified',
+    },
+  },
+  {
     id: 'check:ci-devcontainer-pins',
     run: 'npm run check:ci-devcontainer-pins',
     gate: true,
@@ -4192,6 +4204,19 @@ export const GATES: readonly GateSpec[] = [
     gate: true,
     qualityGateTest: true,
     leaves: ['.ci/scripts/test/gates/test-embed-asset-freshness.sh'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-security',
+      step: 'Quality-gate unit tests',
+    },
+  },
+  {
+    id: 'gate-test:unverified-downloads',
+    run: '.ci/scripts/test/gates/test-unverified-downloads.sh',
+    gate: true,
+    qualityGateTest: true,
+    leaves: ['.ci/scripts/test/gates/test-unverified-downloads.sh'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',

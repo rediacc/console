@@ -129,8 +129,16 @@ jobs:
           sudo apt-get update -qq && sudo apt-get install -y -qq dpkg-dev createrepo-c gnupg
           # Install nfpm (unified Linux package builder — replaces dpkg-deb + rpmbuild)
           source .ci/config/constants.sh
-          curl -sfL "https://github.com/goreleaser/nfpm/releases/download/v${NFPM_VERSION}/nfpm_${NFPM_VERSION}_Linux_x86_64.tar.gz" \
-            | sudo tar xz -C /usr/local/bin nfpm
+          # Verify BEFORE extracting. ci.yml:805-810 already did this; this
+          # sibling call site kept the old `| sudo tar` form, so the pinned
+          # NFPM_SHA256_LINUX_X86_64 in constants.sh was checked on one of the
+          # two nfpm installs and not the other.
+          TARBALL="nfpm_${NFPM_VERSION}_Linux_x86_64.tar.gz"
+          curl -sfL -o "$TARBALL" \
+            "https://github.com/goreleaser/nfpm/releases/download/v${NFPM_VERSION}/${TARBALL}"
+          echo "${NFPM_SHA256_LINUX_X86_64}  ${TARBALL}" | sha256sum -c -
+          sudo tar xz -C /usr/local/bin -f "$TARBALL" nfpm
+          rm -f "$TARBALL"
 
       - name: Build Linux packages
         run: .ci/scripts/build/build-linux-packages.sh
