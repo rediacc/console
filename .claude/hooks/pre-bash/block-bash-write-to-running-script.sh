@@ -45,7 +45,17 @@ CMD=$(jq -r '.tool_input.command' 2>/dev/null)
 # comment above -- but NOT `open(path, "w").write(...)`, which is the commoner one,
 # so the door this guard exists to close was open for that spelling. Verified
 # 2026-08-27: the header's own example was caught and its sibling was not.
-printf '%s' "$CMD" | grep -qE '>[[:space:]]*[^|&;[:space:]]*\.sh|sed[[:space:]]+-i|tee[[:space:]]|write_text|write_bytes|writelines|\.write\(|open\([^)]*["'"'"']]?[wa]|shutil\.(copy|move)|truncate|\bcp[[:space:]]|\bmv[[:space:]]|\bshfmt[[:space:]]+-w|>>[[:space:]]*[^|&;[:space:]]*\.sh' || exit 0
+# AN ASCII ARROW IS NOT A REDIRECT, and this is the FIFTH round of the same class --
+# every previous one is recorded in the comments below. Measured 2026-09-01: writing a
+# plain markdown file was refused because its PROSE contained
+# `check:ci-hook-worklist-suite -> .claude/hooks/stop/test-worklist-v5.sh`. The `->` scored
+# as a redirect and the path after it as the target, so a document describing a script was
+# treated as a command overwriting it. A pure `grep` diagnostic that writes nothing
+# reproduced the same block.
+#
+# A real redirect's `>` is preceded by whitespace, start-of-string, or a digit (`2>`).
+# Never by `-`. Requiring that keeps every true positive and drops the arrow.
+printf '%s' "$CMD" | grep -qE '(^|[^->])>>?[[:space:]]*[^|&;[:space:]]*\.sh|sed[[:space:]]+-i|tee[[:space:]]|write_text|write_bytes|writelines|\.write\(|open\([^)]*["'"'"']]?[wa]|shutil\.(copy|move)|truncate|\bcp[[:space:]]|\bmv[[:space:]]|\bshfmt[[:space:]]+-w' || exit 0
 
 # Which .sh files does this command name at all?
 #
@@ -58,7 +68,7 @@ printf '%s' "$CMD" | grep -qE '>[[:space:]]*[^|&;[:space:]]*\.sh|sed[[:space:]]+
 # script while writing a different file -- and a false block on a safety guard is
 # how a guard gets worked around, which costs more than the block saved.
 TARGETS=$(printf '%s' "$CMD" |
-    grep -oE '>>?[[:space:]]*[^|&;[:space:]]+\.sh|tee[[:space:]]+(-[a-z]+[[:space:]]+)*[^|&;[:space:]]+\.sh|sed[[:space:]]+-i[^|&;]*[[:space:]][^|&;[:space:]]+\.sh|shfmt[[:space:]]+-w[^|&;]*[[:space:]][^|&;[:space:]]+\.sh|\b(cp|mv)[[:space:]]+[^|&;]*[[:space:]][^|&;[:space:]]+\.sh' |
+    grep -oE '(^|[^->])>>?[[:space:]]*[^|&;[:space:]]+\.sh|tee[[:space:]]+(-[a-z]+[[:space:]]+)*[^|&;[:space:]]+\.sh|sed[[:space:]]+-i[^|&;]*[[:space:]][^|&;[:space:]]+\.sh|shfmt[[:space:]]+-w[^|&;]*[[:space:]][^|&;[:space:]]+\.sh|\b(cp|mv)[[:space:]]+[^|&;]*[[:space:]][^|&;[:space:]]+\.sh' |
     grep -oE '[A-Za-z0-9_.$/-]+\.sh' | sort -u)
 # A python/perl heredoc can name its target in ways no redirect grep will see, so
 # fall back to the old broad scan whenever the command opens one. Broad and noisy
@@ -112,7 +122,7 @@ if printf '%s' "$CMD" | grep -qE 'write_text|open\(|<<[[:space:]]*.?(PY|EOPY|PYT
                 grep -oE '([[:space:]]=[[:space:]]|open\(|Path\()[[:space:]]*["'"'"'][^"'"'"']+\.[A-Za-z0-9]+' |
                 grep -oE '[A-Za-z0-9_.$/-]+\.[A-Za-z0-9]+$'
             printf '%s' "$CMD" |
-                grep -oE '>>?[[:space:]]*"?[^|&;<[:space:]"]+\.[A-Za-z0-9]+' |
+                grep -oE '(^|[^->])>>?[[:space:]]*"?[^|&;<[:space:]"]+\.[A-Za-z0-9]+' |
                 grep -oE '[A-Za-z0-9_.$/-]+\.[A-Za-z0-9]+$'
         } | sort -u
     )

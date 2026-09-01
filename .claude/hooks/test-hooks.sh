@@ -1199,6 +1199,7 @@ kill "$RS_PROSE_PID" 2>/dev/null || true
 wait "$RS_PROSE_PID" 2>/dev/null || true
 unset RS_NONSHELL_NAME RS_NONSHELL_PID RS_PROSE_NAME RS_PROSE_PID
 
+
 kill "$RS_PID" 2>/dev/null || true
 wait "$RS_PID" 2>/dev/null || true
 # CONTROL THAT MATTERS: once the process is gone the guard must go QUIET, or it
@@ -1234,6 +1235,17 @@ check 0 pre-bash/block-bash-write-to-running-script.sh "$(bash_json "cat $BW_TMP
 check 0 pre-bash/block-bash-write-to-running-script.sh "$(bash_json "bash $BW_TMP/bw-fixture.sh")" "bash-write CONTROL: RUNNING it is not writing to it"
 check 0 pre-bash/block-bash-write-to-running-script.sh "$(bash_json "grep -n sleep $BW_TMP/bw-fixture.sh")" "bash-write CONTROL: grepping it is not writing to it"
 check 0 pre-bash/block-bash-write-to-running-script.sh "$(bash_json "echo x > $BW_TMP/never-run.sh")" "bash-write CONTROL: a .sh nothing is running is untouched"
+# ROUND FIVE OF "A MENTION IS NOT A TARGET", measured 2026-09-01. Writing a plain
+# markdown file was refused because its PROSE contained
+# `check:ci-hook-worklist-suite -> <a live>.sh`: the ASCII arrow scored as a redirect
+# and the path after it as the target. A pure `grep` diagnostic that writes nothing
+# reproduced the same block. Four earlier rounds of this class are recorded in the
+# guard's own comments; none of them was this one, because `-` before `>` was never
+# considered. A real redirect's `>` follows whitespace, start-of-string or a digit.
+check 0 pre-bash/block-bash-write-to-running-script.sh "$(bash_json "$(printf 'cat > agent/NOTES.md <<MD\nthe suite is check:ci-hook-worklist-suite -> %s\nMD' "$BW_TMP/bw-fixture.sh")")" "bash-write CONTROL: an ASCII arrow in prose is not a redirect"
+# The two redirect FORMS the arrow fix had to keep working. Neither was covered.
+check 2 pre-bash/block-bash-write-to-running-script.sh "$(bash_json "echo x >> $BW_TMP/bw-fixture.sh")" "bash-write: an APPEND onto a live script is refused"
+check 2 pre-bash/block-bash-write-to-running-script.sh "$(bash_json "foo 2> $BW_TMP/bw-fixture.sh")" "bash-write: a NUMBERED stderr redirect is still a redirect"
 # The guard header names `p.write_text(...)` as the idiom it exists for, and it caught that
 # spelling while `open(path, "w").write(...)`, the commoner one, walked through its
 # write-detector untouched. Verified missed 2026-08-27, then closed.
