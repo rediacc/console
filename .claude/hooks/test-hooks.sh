@@ -1653,6 +1653,23 @@ unset INLINE_PY
 check 2 pre-bash/block-shell-background-waiter.sh "$(bash_json 'python3 .claude/hooks/stop/wl_wait.py abc --timeout 60 &')" "background-waiter: a shell & makes it untracked"
 check 0 pre-bash/block-shell-background-waiter.sh "$(bash_json 'python3 .claude/hooks/stop/wl_wait.py abc --timeout 60')" "background-waiter CONTROL: the same command in the foreground"
 check 0 pre-bash/block-shell-background-waiter.sh "$(bash_json 'ps -eo pid,args | grep "[p]ython3.*wl_wait"')" "background-waiter CONTROL: checking whether one already runs"
+# THE QUOTED HEREDOC DELIMITER, which reopened a false positive this guard had already
+# closed once. Quote-stripping runs `s/'[^']*'//g` and turns `<<'EOF'` into a bare `<<`,
+# so the heredoc stripper below it finds no delimiter, never enters the body, and scans
+# the document as commands. It worked for `<<EOF` and failed for `<<'EOF'` -- the form
+# this repo's own guidance uses. Measured 2026-09-01: a session writing its recovery
+# document was blocked because the DOCUMENT said "never with a shell &". Both delimiter
+# forms are pinned now, and the shell-heredoc bypass stays closed.
+BGW_DOC_Q="$(printf 'worklist.py --state abc <<%sEOF%s\n- wl_wait.py must never run with a shell &.\nEOF' "'" "'")"
+BGW_DOC_U="$(printf 'worklist.py --state abc <<EOF\n- wl_wait.py must never run with a shell &.\nEOF')"
+check 0 pre-bash/block-shell-background-waiter.sh "$(bash_json "$BGW_DOC_Q")" \
+    "background-waiter CONTROL: a QUOTED-delimiter heredoc body is data, not commands"
+check 0 pre-bash/block-shell-background-waiter.sh "$(bash_json "$BGW_DOC_U")" \
+    "background-waiter CONTROL: the unquoted-delimiter form too"
+check 2 pre-bash/block-shell-background-waiter.sh \
+    "$(bash_json "$(printf 'bash <<%sEOF%s\npython3 wl_wait.py x &\nEOF' "'" "'")")" \
+    "background-waiter: a heredoc feeding a SHELL is still the command"
+unset BGW_DOC_Q BGW_DOC_U
 check 0 pre-bash/block-shell-background-waiter.sh "$(bash_json 'grep -n timeout .claude/hooks/stop/wl_wait.py')" "background-waiter CONTROL: merely reading the module"
 
 # --- premature `gh pr ready` ------------------------------------------------

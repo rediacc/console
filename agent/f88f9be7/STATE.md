@@ -1,4 +1,4 @@
-## SESSION f88f9be7 2026-09-01T18:44:54Z
+## SESSION f88f9be7 2026-09-01T19:09:01Z
 
 `/pr-merge` is RUNNING on `0831-1`, PR #583. The operator invoked it. Resume below; do NOT
 restart the flow.
@@ -8,43 +8,37 @@ restart the flow.
 1. **`rediacc/account#84` MERGED** -> `account/main` = `3d8dc142d`; branch deleted.
 2. **`private/account` pointer bumped**; the mandatory tree check
    `git -C private/account diff --stat dfe648e4c 3d8dc142d` was EMPTY.
-3. PR body refreshed via `gh api repos/<o>/<r>/pulls/<n> -X PATCH -F body=@<file>`
-   (`gh pr edit --body-file` is hook-blocked).
+3. PR body refreshed via `gh api repos/<o>/<r>/pulls/<n> -X PATCH -F body=@<file>`.
 
 ## Right now
 
-- Head `0176414d1` is **RED** and dead. **NO WATCH ARMED.**
-- **ONE COMMIT HELD**: `aa6542874`.
+- Head `605969882`: CI RUNNING, 4 contexts in flight, no failures. Watch `b1veabonq`
+  (PID 2101888) alive; mail waiter relaunched as task `bjiicrimq`.
+- **HELD: `def1c34e2` plus an uncommitted guard fix.**
 
-## I broke the gate, then the instrumentation caught me
+## New this stretch
 
-`c6a7c36c8` replaced the dev-server readiness test `text.includes('ready')` with a regex
-(good reason: "address already in use" CONTAINS "ready"). But `onData` tests whatever
-bytes arrive TOGETHER, and my needle grew 5 chars -> 8 ("ready in"), so a chunk boundary
-inside it matched neither half. Run 33542869307 timed out at `bootMs: 180061` where every
-earlier run booted in ~32s -- a matcher that never fired, not a server that never started.
+**`wl_histfirst`** -- the operator's idea. On a red, the block now PRINTS the commits
+between the last green head and the red, and which touch files named like the failing job.
+This session made ZERO `git log` calls naming the gate that failed four times, while eight
+lines of `git log --oneline -- <file>` held both decisive facts. MECHANICAL, not judged,
+and structurally so: `wl_core.emit` ends in `sys.exit(0)` and the red-CI block emits at
+`wl_checks.py:4987`, UPSTREAM of `wl_judge.run_judge` at `:5326`. It DEMANDS nothing, so
+it cannot become a wall.
 
-`aa6542874` fixes it by testing the ACCUMULATED buffer. Astro's real banner, captured:
-` astro  v5.18.1 ready in 4806 ms` then `Local    http://localhost:4599/` -- note
-**localhost, not 127.0.0.1**, so the URL branch never matched in ANY version.
+**`block-shell-background-waiter.sh`** had reopened a false positive it once closed:
+quote-stripping turns a QUOTED heredoc delimiter into a bare `<<`, so the heredoc stripper
+found none and scanned the document as commands. Heredocs now come off the raw command
+FIRST.
 
-**The artifact upload is what made this one download instead of another guess.** Four
-earlier failures reported only "Operation timed out" and died with the runner. If the gate
-reds again: `gh run download <id> -n tutorial-player-release-gate-<attempt>` FIRST.
-
-## The tutorial-player gate is ALSO an ~8% flake -- two different failures now
-
-Separate from the above: three failures at 28.4/29.0/29.0s on the FIRST navigation, a
-fixed CEILING against agent-browser's 25s `AGENT_BROWSER_DEFAULT_TIMEOUT` (unusable above
-~30s). A planning agent proved there is a PASS BETWEEN failures I called consecutive (job
-`99944615218`, head `cc17eab54`, STEP = success; its JOB says `cancelled` only because my
-push superseded it). **Read the STEP, not the run.**
+NOT done, recommended by the planning agent: history prose in
+`.claude/skills/ci-watch/SKILL.md` and `docs/agent-reference/TRAPS.md`.
 
 ## Next action
 
 1. `rm -f .ci/cache/gate-durations.json && GITHUB_TOKEN="$(gh auth token)" npm run ci:quick`,
    AND separately `npm run check:lint` and `npm run check:ci-shape-duplication` -- ci:quick
-   defers the first and omits the second.
+   defers the first and omits the second. That gap cost two CI rounds today.
 2. `git push origin 0831-1`.
 3. **Poll `gh api repos/rediacc/console/pulls/583 --jq .head.sha` until it shows the new
    head BEFORE arming a watch**, then arm `.ci/scripts/ci/ci-trace.py --wait --until-final`
@@ -59,16 +53,24 @@ push superseded it). **Read the STEP, not the run.**
    to `gitlab`; hand-back note.
 6. Only then CronDelete `f892a1f9` and `b4bff02e`.
 
+## The tutorial-player gate: TWO failures, do not conflate
+
+- An ~8% flake at the FIRST navigation, 28.4/29.0/29.0s against agent-browser's 25s
+  default -- a fixed CEILING. A PASS sits BETWEEN failures I called consecutive (job
+  `99944615218`, STEP = success; its JOB says `cancelled` only because my push superseded
+  it). **Read the STEP, not the run.**
+- A regression I introduced in `c6a7c36c8`, fixed in `aa6542874`: the readiness matcher
+  tested each CHUNK, so boot hung to 180s. Now tests the accumulated buffer.
+
+**If it reds again, download `tutorial-player-release-gate-<attempt>` FIRST.**
+
 ## Volatile facts a fresh session would get wrong
 
-- **Do NOT run `npm run ci` locally beside a live CI watch.** Tried it: 4 of 343 gates
-  red, ALL FALSE -- two timeouts at ~120s under contention, two starved; all four pass
-  standalone.
+- **Do NOT run `npm run ci` locally beside a live CI watch.** 4 of 343 gates red, ALL
+  FALSE -- two timeouts under contention, two starved; all pass standalone.
 - **`private/growth` has ~1430 dirty paths and is NOT a submodule** -- gitignored, another
-  workstream's. Never `git add` it. `private/generative` is clean.
+  workstream's. Never `git add` it.
 - `check:ci-fetch-retry` is scoped to image builds ON PURPOSE: unrestricted, 119 findings.
-- `check_dockerfile_mirror_resilience.py:136` is a deliberate fallback that FIRES.
-- No round log; STATE.md is the artifact.
 
 ## Open, not fixed
 
