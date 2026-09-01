@@ -131,11 +131,30 @@
     // structural gap rather than closed it.
     // Entry points need no `entry` here: the wrangler plugin supplies `src/index.ts` from
     // wrangler.toml's `main`, and the vitest plugin supplies the tests.
-    // Its three siblings (workers/account, workers/mta-sts, workers/proxy) are the same
-    // shape and are NOT declared yet: none of them can `npm install` today (their
-    // `@cloudflare/workers-types@^4` conflicts with their own wrangler's `^5` peer), so
-    // knip cannot resolve anything in them and every finding would be an install artifact.
-    // That install is worklist item 768387ed; these three follow it.
+    // Its three siblings are declared below, on the same terms. They were held back on the
+    // belief that none could `npm install`; probing each one separately showed that was
+    // true of workers/proxy ALONE, which had no lockfile and so resolved wrangler to a
+    // version peering `@cloudflare/workers-types@^5`. account and mta-sts install from
+    // their lockfiles untouched.
+    "workers/account": {
+      "project": [
+        "src/**/*.ts"
+      ],
+      "ignoreDependencies": [
+        // BLOCKER: same as workers/www below -- wrangler is invoked as `npx wrangler ...` from .ci/scripts/deploy/*.sh with this directory as the working directory, never from a package.json script, so knip has no call site to trace
+        "wrangler"
+      ]
+    },
+    "workers/mta-sts": {
+      "project": [
+        "src/**/*.ts"
+      ]
+    },
+    "workers/proxy": {
+      "project": [
+        "src/**/*.ts"
+      ]
+    },
     "workers/www": {
       "project": [
         "src/**/*.ts"

@@ -333,7 +333,7 @@ export const GATES: readonly GateSpec[] = [
     gate: true,
     mutex: ['build-artifacts'],
     heavy: true,
-    leaves: ['tsc'],
+    leaves: ['tsc', '.ci/scripts/quality/typecheck-workers.sh'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',

@@ -1,10 +1,7 @@
 {
-  // NOT YET IN `npm run typecheck`, and the reason is an install rather than a config.
-  // This worker declares @cloudflare/workers-types in its package.json but has no
-  // node_modules in this checkout -- only workers/www does -- so `tsc -p` here reports
-  // TS2688 "Cannot find type definition file". Wiring it into the root typecheck would
-  // therefore break typecheck on any machine (CI included) that has not installed this
-  // worker's deps. The missing piece is an install step, not this file. See worklist.
+  // Wired into `npm run typecheck` through .ci/scripts/quality/typecheck-workers.sh,
+  // which installs this project's deps first: `types` below resolves only from THIS
+  // directory's node_modules, never the repo root.
   "compilerOptions": {
     "target": "ES2022",
     // ESNext, not ES2022: src/__tests__ reaches private/account/src/i18n/index.ts, which
