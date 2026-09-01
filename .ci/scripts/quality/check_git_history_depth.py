@@ -33,6 +33,27 @@ version of this gate worked, but `yaml` is not a declared npm dependency here (i
 only as an override), so shipping it would have meant adding a dependency to duplicate a
 capability the repo already has. knip caught that, which is the gate doing its job.
 
+SWEPT THE CLASS, 2026-09-01, and the sweep is why this gate stops at the step's own text.
+18 files under `.ci/scripts/` and `scripts/` run depth-dependent git. Following the step ->
+script hop (via check_workflow_submodule_deps.py's resolver, which already does exactly
+that walk) produced **89 findings across 25+ jobs** on a CI that has been green for months.
+They are false by construction, because the scripts mitigate shallowness THEMSELVES in ways
+no text-level gate can see:
+
+  - `check-branch.sh:63` fetches the base ref explicitly -- `+refs/heads/X:refs/remotes/
+    origin/X` -- before its `rev-list`, and its comment at :69 names "a shallow clone with
+    no merge base" as a case it already handles.
+  - `resolve-version.sh:44` says it uses `git tag -l` rather than `git describe` BECAUSE
+    describe requires tags. It was written shallow-safe deliberately.
+
+So the hop was reverted, and a rule that hard-coded `resolve-version.sh` as a history op
+went with it: that rule punished a script for the mitigation it already had. A gate that
+reports 89 findings nobody can act on is a wall, and this repo has the scar already.
+
+The class is therefore NOT-GATEABLE at the script level with a concrete divergence -- the
+same third exit the shape rule has. What IS soundly gateable is a step that reads history
+in its own text, which is what remains below.
+
 WHAT COUNTS AS READING HISTORY is deliberately narrow -- see HISTORY_OPS. `git log -1`,
 `git rev-parse HEAD` and `git status` are all CORRECT on a depth-1 clone and are not
 flagged. False positives here would push authors toward `fetch-depth: 0` everywhere, which
@@ -71,10 +92,6 @@ HISTORY_OPS = [
     (
         re.compile(r"\bgit\s+(?:-C\s+\S+\s+)?diff\b[^\n|;&]*\.\.\."),
         "a three-dot diff needs the merge base",
-    ),
-    (
-        re.compile(r"\bresolve-version\.sh\b"),
-        "resolve-version.sh reads the latest tag, which a shallow clone may not have",
     ),
 ]
 
@@ -235,9 +252,13 @@ def selftest():
         "an op BEFORE any deep re-checkout is still an offence",
         len(judge(job(co, {"run": "git describe --tags"}, deep))) == 1,
     )
+    # THE RULE THAT USED TO BE HERE WAS WRONG, and the sweep is what proved it.
+    # `resolve-version.sh:44` says in as many words that it uses `git tag -l` rather than
+    # `git describe` BECAUSE describe requires tags -- it was written shallow-safe on
+    # purpose. Flagging it punished a script for the mitigation it already has.
     check(
-        "resolve-version.sh needs tags, so it counts as a history op",
-        len(judge(job(co, {"run": ".ci/scripts/version/resolve-version.sh --current"}))) == 1,
+        "CONTROL: a script written shallow-safe is not flagged for being called",
+        len(judge(job(co, {"run": ".ci/scripts/version/resolve-version.sh --current"}))) == 0,
     )
     check("CONTROL: an empty workflow set yields no offences", len(judge([])) == 0)
     return ok
