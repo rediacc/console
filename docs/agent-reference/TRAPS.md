@@ -1620,3 +1620,17 @@ The general shape: before believing a green typecheck of a project you just wire
 up, `grep` its tsconfig `include`/`files`/`references` for anything gitignored.
 `git check-ignore -v <path>` answers it per entry. A project whose types depend on
 a build artifact is green exactly as often as someone has recently built it.
+
+SECOND FACE, same trap: a source file can pull the artifact in by IMPORTING it.
+`workers/www/src/__tests__/redirect-aliases.test.ts` opened with
+
+    import manifest from '../../../../packages/www/dist/route-manifest.json'
+      with { type: 'json' };
+
+which puts a `dist/` output in the TYPE graph, so `tsc` gave TS2307 on a clean
+checkout and passed on any machine that had built the site. The import bought
+nothing -- the value was cast to a locally declared type on the next line -- and
+`readFileSync` + `JSON.parse`, resolved from `import.meta.url`, keeps the runtime
+behaviour while leaving the typecheck artifact-free. So extend the grep past the
+tsconfig: `grep -rnE "from ['\"][^'\"]*dist/" --include='*.ts'` over the
+typechecked trees. It found exactly one, and that one had shipped a CI red.

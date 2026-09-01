@@ -1,6 +1,7 @@
 import { describe, test, expect } from 'vitest';
 import { EXACT, PATTERNS, ALLOWED_NON_MANIFEST_TARGETS, applyRedirect } from '../redirect-aliases';
-import manifest from '../../../../packages/www/dist/route-manifest.json' with { type: 'json' };
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 
 type ManifestEntry = {
   path: string;
@@ -9,7 +10,18 @@ type ManifestEntry = {
   slug: string;
   keywords: string[];
 };
-const manifestPaths = new Set((manifest as ManifestEntry[]).map((e) => e.path));
+
+// READ, not imported. `packages/www/dist/route-manifest.json` is a BUILD ARTIFACT: it
+// exists only after `npm run build:www`, which the job that typechecks this worker does
+// not run. A static import puts it in the TYPE graph, so `tsc` failed with TS2307 on a
+// clean checkout while passing on any machine that had once built the site -- and the
+// import bought nothing, because the value was cast to ManifestEntry[] on the very next
+// line. Resolved from import.meta.url rather than cwd so the vitest run is unaffected.
+const MANIFEST_PATH = fileURLToPath(
+  new URL('../../../../packages/www/dist/route-manifest.json', import.meta.url)
+);
+const manifest = JSON.parse(readFileSync(MANIFEST_PATH, 'utf8')) as ManifestEntry[];
+const manifestPaths = new Set(manifest.map((e) => e.path));
 const allLiveTargets = new Set<string>([...manifestPaths, ...ALLOWED_NON_MANIFEST_TARGETS]);
 
 // redirect-aliases.ts casts redirects.json to a discriminated union where

@@ -17,6 +17,7 @@
   },
   "include": [
     "src",
+    "vitest.config.ts",
     // Ambient module declarations must be visible to EVERY project that reaches the
     // module that uses them -- the same rule scripts/tsconfig.json states for
     // packages/cli/src/types/*.d.ts. src/index.ts imports private/account/src/app.js,

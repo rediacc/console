@@ -50,6 +50,10 @@ export interface World {
   shellList(script: string): string[];
   /** The tsconfig a given tsconfig `extends`, repo-relative, or null. */
   extendsTarget(tsconfig: string): string | null;
+  /** Every source file a project matches, repo-relative. */
+  projectFiles(tsconfig: string): string[];
+  /** Every tracked .ts/.tsx that is not a .d.ts, repo-relative. */
+  trackedSources: string[];
 }
 
 export interface Verdict {
@@ -58,6 +62,9 @@ export interface Verdict {
   /** tsconfigs the chain names that do not exist -- a chain rotted by a rename. */
   dangling: string[];
   covered: string[];
+  /** Source files no project in the chain compiles. */
+  uncoveredFiles: string[];
+  coveredFileCount: number;
 }
 
 const norm = (p: string) => p.split(path.sep).join('/').replace(/^\.\//, '');
@@ -136,11 +143,39 @@ export function judge(world: World): Verdict {
   const known = new Set(world.discovered);
   const dangling = [...reached].filter((p) => !known.has(p) && !p.startsWith('private/'));
 
-  return { uncovered, dangling, covered };
+  // THE SECOND HALF, and the one the 185 untypechecked packages/cli test files needed:
+  // a project being RUN says nothing about which files it matches. `packages/provisioning`
+  // was run and carried `exclude: ["src/**/*.test.ts"]`; every config here is run and 13
+  // tool configs (vitest.config.ts, playwright.*.config.ts) sat beside `include` patterns
+  // that reached past them. So ask each project what it actually compiles.
+  //
+  // ONLY the projects the chain actually RUNS, never the whole `covered` list. A base
+  // excused by extension is not run, and the root tsconfig.json declares no `include`, so
+  // tsc reports it as matching every .ts in the repository. Counting that set made this
+  // very check answer "all compiled" for a planted orphan -- the gate reporting a success
+  // it had not verified, which is the failure it exists to prevent. Found by planting.
+  const compiled = new Set<string>();
+  for (const cfg of reached) for (const f of world.projectFiles(cfg)) compiled.add(f);
+  // `.d.ts` files are excluded by construction: a declaration file has no independent
+  // compilation, it is pulled in by whoever needs it, so "no project INCLUDES it" is its
+  // normal state rather than a gap (packages/locales/index.d.ts is exactly this).
+  const uncoveredFiles = world.trackedSources.filter((f) => !compiled.has(f));
+
+  return { uncovered, dangling, covered, uncoveredFiles, coveredFileCount: compiled.size };
 }
 
 /** Assembled, never written whole: see the comment on the dangling control below. */
 const ABSENT_CONFIG = ['packages', 'no-such-workspace', 'tsconfig.json'].join('/');
+
+/**
+ * Fixture source path, assembled for the same reason as ABSENT_CONFIG: it names a file
+ * that deliberately does not exist, and gate-test:gate-paths-exist scans this source for
+ * path constants whose target is missing.
+ */
+const FIXTURE_SRC = ['packages', 'cli', 'src', 'a.ts'].join('/');
+const FIXTURE_ORPHAN_DIR = ['packages', 'orphan'].join('/');
+const FIXTURE_ORPHAN_SRC = `${FIXTURE_ORPHAN_DIR}/src/b.ts`;
+const FIXTURE_ORPHAN_CFG = `${FIXTURE_ORPHAN_DIR}/tsconfig.json`;
 
 /** Controls: each is the real defect, reconstructed. */
 const CONTROLS: { name: string; world: World; expect: (v: Verdict) => boolean }[] = [];
@@ -152,6 +187,8 @@ function fakeWorld(over: Partial<World>): World {
     packageScript: () => null,
     shellList: () => [],
     extendsTarget: () => null,
+    projectFiles: () => [],
+    trackedSources: [],
     ...over,
   };
 }
@@ -218,6 +255,51 @@ CONTROLS.push(
     expect: (v) => v.uncovered.join() === 'tsconfig.json',
   },
   {
+    name: 'a source file no project compiles is reported (the 185-test-files shape)',
+    world: fakeWorld({
+      discovered: ['packages/cli/tsconfig.json'],
+      rootTypecheck: 'tsc -b packages/cli',
+      projectFiles: () => [FIXTURE_SRC],
+      trackedSources: [FIXTURE_SRC, 'packages/cli/vitest.config.ts'],
+    }),
+    expect: (v) => v.uncoveredFiles.join() === 'packages/cli/vitest.config.ts',
+  },
+  {
+    name: 'CONTROL: widening the project to match it clears the finding',
+    world: fakeWorld({
+      discovered: ['packages/cli/tsconfig.json'],
+      rootTypecheck: 'tsc -b packages/cli',
+      projectFiles: () => [FIXTURE_SRC, 'packages/cli/vitest.config.ts'],
+      trackedSources: [FIXTURE_SRC, 'packages/cli/vitest.config.ts'],
+    }),
+    expect: (v) => v.uncoveredFiles.length === 0 && v.coveredFileCount === 2,
+  },
+  {
+    name: 'files of an UNCOVERED project do not count as compiled',
+    world: fakeWorld({
+      discovered: ['packages/cli/tsconfig.json', FIXTURE_ORPHAN_CFG],
+      rootTypecheck: 'tsc -b packages/cli',
+      projectFiles: (c) =>
+        c === 'packages/cli/tsconfig.json' ? [FIXTURE_SRC] : [FIXTURE_ORPHAN_SRC],
+      trackedSources: [FIXTURE_SRC, FIXTURE_ORPHAN_SRC],
+    }),
+    expect: (v) =>
+      v.uncovered.join() === FIXTURE_ORPHAN_CFG && v.uncoveredFiles.join() === FIXTURE_ORPHAN_SRC,
+  },
+  {
+    name: "a BASE config's file set does not count as compilation",
+    // The root tsconfig.json declares no `include`, so tsc reports it as matching every
+    // .ts in the repo. Counting a base made the real gate green over a planted orphan.
+    world: fakeWorld({
+      discovered: ['tsconfig.json', 'packages/cli/tsconfig.json'],
+      rootTypecheck: 'tsc -b packages/cli',
+      extendsTarget: (c) => (c === 'packages/cli/tsconfig.json' ? 'tsconfig.json' : null),
+      projectFiles: (c) => (c === 'tsconfig.json' ? [FIXTURE_SRC, 'stray.ts'] : [FIXTURE_SRC]),
+      trackedSources: [FIXTURE_SRC, 'stray.ts'],
+    }),
+    expect: (v) => v.uncovered.length === 0 && v.uncoveredFiles.join() === 'stray.ts',
+  },
+  {
     name: 'a chain clause naming a tsconfig that does not exist is reported',
     // The absent path is BUILT at runtime rather than written as a literal:
     // gate-test:gate-paths-exist scans source for path constants whose workspace root is
@@ -273,7 +355,42 @@ function realWorld(): World {
       if (typeof ext !== 'string' || !ext.startsWith('.')) return null;
       return norm(path.join(path.dirname(tsconfig), ext));
     },
+    projectFiles(tsconfig) {
+      // `--showConfig` RESOLVES include/exclude/files and prints the result without
+      // compiling: 7s for all thirteen projects, against ~2 minutes for the `--listFiles`
+      // of a real typecheck. It reports what each project MATCHES, which is the question
+      // -- a file reached only transitively is compiled today and orphaned the moment its
+      // one importer stops importing it.
+      let out: string;
+      try {
+        out = execFileSync('npx', ['tsc', '--showConfig', '-p', tsconfig], {
+          cwd: ROOT,
+          encoding: 'utf8',
+          stdio: ['ignore', 'pipe', 'ignore'],
+          maxBuffer: 64 * 1024 * 1024,
+        });
+      } catch {
+        return [];
+      }
+      let cfg: { files?: string[] };
+      try {
+        cfg = JSON.parse(out.replace(/^\s*\/\/.*$/gm, '')) as { files?: string[] };
+      } catch {
+        return [];
+      }
+      const dir = path.dirname(tsconfig);
+      return (cfg.files ?? []).map((f) => norm(path.normalize(path.join(dir, f))));
+    },
+    trackedSources: tracked_sources(),
   };
+}
+
+/** Tracked .ts/.tsx, minus .d.ts -- see the comment in judge() for why. */
+function tracked_sources(): string[] {
+  return execFileSync('git', ['ls-files'], { cwd: ROOT, encoding: 'utf8' })
+    .split('\n')
+    .filter((f) => /\.tsx?$/.test(f) && !/\.d\.ts$/.test(f) && !f.includes('node_modules'))
+    .sort();
 }
 
 function main(): void {
@@ -309,8 +426,24 @@ function main(): void {
     console.error('\x1b[31m✗\x1b[0m the chain resolved to nothing; the resolver is broken');
     process.exit(1);
   }
+  if (world.trackedSources.length < 500 || v.coveredFileCount < 500) {
+    console.error(
+      `\x1b[31m✗\x1b[0m only ${world.trackedSources.length} tracked source(s) and ` +
+        `${v.coveredFileCount} compiled: far below this repo's size, so the scan is broken`
+    );
+    process.exit(1);
+  }
 
-  if (v.uncovered.length > 0 || v.dangling.length > 0) {
+  if (v.uncovered.length > 0 || v.dangling.length > 0 || v.uncoveredFiles.length > 0) {
+    for (const f of v.uncoveredFiles) {
+      console.error(`\x1b[31m✗\x1b[0m ${f} is compiled by no typecheck project.`);
+    }
+    if (v.uncoveredFiles.length > 0) {
+      console.error(
+        '    Widen the `include` of the project that owns it. A file beside a project is' +
+          ' not inside it.\n'
+      );
+    }
     for (const c of v.uncovered) {
       console.error(
         `\x1b[31m✗\x1b[0m ${c} is not reached by \`npm run typecheck\` and nothing extends it.`
@@ -325,8 +458,9 @@ function main(): void {
   }
 
   console.log(
-    `\x1b[32m✓\x1b[0m typecheck scope: ${world.discovered.length} tsconfig(s), all reached by ` +
-      '`npm run typecheck` or extended by one that is'
+    `\x1b[32m✓\x1b[0m typecheck scope: ${world.discovered.length} tsconfig(s) all reached by ` +
+      `\`npm run typecheck\`, and all ${world.trackedSources.length} tracked source file(s) ` +
+      `compiled by one of them (${v.coveredFileCount} matched)`
   );
 }
 

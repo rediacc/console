@@ -33,6 +33,6 @@
     // these tests legitimately reach outside src.
     "rootDir": "."
   },
-  "include": ["src/**/*.ts", "src/types/*.d.ts"],
+  "include": ["src/**/*.ts", "src/types/*.d.ts", "vitest.config.ts"],
   "exclude": ["node_modules", "dist"]
 }

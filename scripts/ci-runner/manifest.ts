@@ -329,6 +329,7 @@ export const GATES: readonly GateSpec[] = [
   {
     id: 'check:ci-typecheck-scope-coverage',
     run: 'npm run check:ci-typecheck-scope-coverage',
+    slow: true, // 17.7s: `tsc --showConfig` on all 13 projects, twice (selftest + real run)
     gate: true,
     leaves: ['scripts/check-typecheck-scope-coverage.ts'],
     ci: {

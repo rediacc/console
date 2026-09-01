@@ -8,8 +8,21 @@
     "composite": false,
     "noEmit": true,
     "declaration": false,
-    "declarationMap": false
+    "declarationMap": false,
+    // `.` rather than the build's inherited `./src`, for the same reason
+    // packages/cli/tsconfig.test.json states: this project also reaches vitest.config.ts
+    // and scripts/, which sit BESIDE src, and the build's rootDir makes those TS6059
+    // "not under rootDir". The build needs `./src` because it emits into dist and the
+    // layout must mirror; this project sets noEmit, so rootDir constrains nothing here
+    // except which files may be reached.
+    "rootDir": "."
   },
-  "include": ["src/**/*.ts", "src/**/*.tsx", "src/**/*.json"],
+  "include": [
+    "src/**/*.ts",
+    "src/**/*.tsx",
+    "src/**/*.json",
+    "vitest.config.ts",
+    "scripts/**/*.ts"
+  ],
   "exclude": ["node_modules", "dist"]
 }

@@ -19,6 +19,6 @@
       "@/utils/*": ["./src/utils/*"]
     }
   },
-  "include": ["src/**/*", "tests/**/*"],
+  "include": ["src/**/*", "tests/**/*", "*.config.ts"],
   "exclude": ["node_modules", "test-results", "playwright-report", "screenshots", "reports"]
 }
