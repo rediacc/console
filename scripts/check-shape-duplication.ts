@@ -93,10 +93,18 @@ const FAMILIES = [
  * Exported so the controls exercise the SAME function the tree goes through. A control
  * that runs a reimplementation proves nothing.
  */
-export function normalise(src: string, kind: 'ts' | 'sh'): string[] {
+export interface NormLine {
+  /** The line's number in the ORIGINAL file, 1-based. */
+  line: number;
+  text: string;
+}
+
+export function normalise(src: string, kind: 'ts' | 'sh'): NormLine[] {
   let s = src;
   if (kind === 'ts') {
-    s = s.replace(/\/\*[\s\S]*?\*\//g, '');
+    // Replaced with its own newlines, not with nothing: swallowing them would renumber
+    // every line after a JSDoc block.
+    s = s.replace(/\/\*[\s\S]*?\*\//g, (m) => m.replace(/[^\n]/g, ''));
     s = s.replace(/(^|[^:])\/\/.*$/gm, '$1');
   } else {
     // A leading-hash line only. A trailing `# ...` can live inside a string or a regex,
@@ -108,10 +116,21 @@ export function normalise(src: string, kind: 'ts' | 'sh'): string[] {
   s = s.replace(/'(?:[^'\\]|\\.)*'/g, "'S'");
   s = s.replace(/"(?:[^"\\]|\\.)*"/g, '"S"');
   s = s.replace(/`(?:[^`\\]|\\.)*`/g, '`S`');
+  // THE LINE NUMBER IS CARRIED, and its absence was a real bug rather than a nicety.
+  // Comment-stripping blanks a line and the filter below then DROPS it, so the index into
+  // this array is not the index into the file -- every earlier `file:line` this gate
+  // emitted was a normalised-array position wearing a file line's clothes. Measured
+  // 2026-09-01 on `.ci/scripts/test/gates/test-watchdog-log-capture.sh`: a finding
+  // reported at `:17` actually sits at file line 46. A finding whose coordinate points
+  // somewhere else is a finding nobody can act on.
+  //
+  // Comment-stripping must therefore preserve the LINE COUNT, so a multi-line `/* */`
+  // block cannot swallow the newlines that separate the code after it from the code
+  // before it.
   return s
     .split('\n')
-    .map((l) => l.replace(/\s+/g, ' ').trim())
-    .filter((l) => l.length > 0);
+    .map((l, i): NormLine => ({ line: i + 1, text: l.replace(/\s+/g, ' ').trim() }))
+    .filter((l) => l.text.length > 0);
 }
 
 const hash = (s: string) => createHash('sha1').update(s).digest('hex').slice(0, 12);
@@ -129,12 +148,13 @@ export function isImportish(line: string): boolean {
  * so a genuine shared span that happens to start one line into an import block still
  * registers.
  */
-export function windows(lines: string[], startLine = 1): { h: string; line: number }[] {
+export function windows(lines: NormLine[]): { h: string; line: number }[] {
   const out: { h: string; line: number }[] = [];
   for (let i = 0; i + WINDOW <= lines.length; i++) {
     const slice = lines.slice(i, i + WINDOW);
-    if (slice.filter(isImportish).length * 2 > WINDOW) continue;
-    out.push({ h: hash(slice.join('\n')), line: startLine + i });
+    if (slice.filter((l) => isImportish(l.text)).length * 2 > WINDOW) continue;
+    // The window's line is the REAL file line its first row came from.
+    out.push({ h: hash(slice.map((l) => l.text).join('\n')), line: slice[0].line });
   }
   return out;
 }
@@ -282,8 +302,8 @@ function controls(): { name: string; ok: boolean; detail?: string }[] {
     {
       name: 'two gates whose only difference is their message are the same scaffolding',
       ok:
-        normalise('const m = "dead css found";', 'ts')[0] ===
-        normalise('const m = "dead keys found";', 'ts')[0],
+        normalise('const m = "dead css found";', 'ts')[0].text ===
+        normalise('const m = "dead keys found";', 'ts')[0].text,
     },
     {
       name: `CONTROL: a ${WINDOW - 1}-line file yields no window, so a one-liner cannot fire`,
@@ -310,6 +330,20 @@ function controls(): { name: string; ok: boolean; detail?: string }[] {
         checkAccepted({
           abc123: 'run_gate() has three incompatible return contracts (echo rc, echo PASS/FAIL, propagate); extracting it verbatim would be wrong',
         }).ok.length === 0,
+    },
+    {
+      // THE COORDINATE MUST BE A FILE LINE. Comment-stripping drops lines, so the index
+      // into the normalised array is not the index into the file. Before this, a finding
+      // in `test-watchdog-log-capture.sh` reported `:17` for code sitting at line 46.
+      name: 'a finding names the REAL file line, not the normalised index',
+      ok: (() => {
+        const src = '// a\n// b\n// c\nconst a = 1;\nconst b = 2;\nconst c = 3;\nconst d = 4;\nconst e = 5;';
+        return normalise(src, 'ts')[0].line === 4 && windows(normalise(src, 'ts'))[0].line === 4;
+      })(),
+    },
+    {
+      name: 'CONTROL: a block comment does not renumber the code after it',
+      ok: normalise('/* a\n b\n c */\nconst z = 1;', 'ts')[0].line === 4,
     },
     {
       name: 'CONTROL: an import preamble is adoption, not duplication',
