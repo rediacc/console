@@ -12,6 +12,28 @@ FROM mcr.microsoft.com/devcontainers/base:ubuntu-24.04
 ARG NODE_VERSION=22
 ARG GO_VERSION=1.26.6
 
+# EVERY NETWORK FETCH RETRIES, because one upstream hiccup must not kill a ten-minute
+# multi-arch build that gates every PR.
+#
+# MEASURED 2026-09-01: `Build (Docker) / Devcontainer (amd64)` died at
+# `curl: (22) The requested URL returned error: 500` on the Go tarball. go.dev was briefly
+# unwell; probed minutes later the same URL answered 302. Nothing was wrong with the image
+# or the pin -- the build simply had no second attempt.
+#
+# The asymmetry was the real defect: the two apt steps each carry a hand-rolled
+# `for i in 1 2 3 4 5` retry loop, while EIGHT other fetches -- Go, nvm, and six
+# architecture-keyed tool downloads -- had none. Eight more copies of that loop would be
+# eight more things to drift, so this uses curl's own retry instead, once, as a shared ARG.
+#
+# MEASURED, not assumed, against a local server that always answers 500: `--retry 3` makes
+# curl hit it FOUR times (one attempt plus three retries), so a 5xx is already inside
+# curl's transient set and plain `--retry` would have covered this outage. A first draft of
+# this comment claimed `--retry-all-errors` was what made 500 retryable; the hit count says
+# otherwise. It is kept because it widens cover to errors curl does not class as transient
+# (a truncated body, a DNS hiccup mid-transfer), which cost nothing here. Requires curl
+# >= 7.71; the base image is ubuntu-24.04, which ships 8.x.
+ARG CURL_RETRY="--retry 5 --retry-delay 3 --retry-all-errors --retry-max-time 180"
+
 # Align the vscode user with the Rediacc universal UID/GID (7111). This matches
 # common.RediaccUID in renet and the host-side ownership of /mnt/rediacc/...
 # mounts, so files created inside the container have the same UID as everything
@@ -145,7 +167,7 @@ RUN usermod -aG libvirt,kvm vscode
 # a per-user Docker socket into the container at /var/run/docker.sock.
 # =============================================================================
 RUN install -m 0755 -d /etc/apt/keyrings \
-    && curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg \
+    && curl -fsSL $CURL_RETRY https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg \
     && chmod a+r /etc/apt/keyrings/docker.gpg \
     && echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu $(. /etc/os-release && echo $VERSION_CODENAME) stable" \
        > /etc/apt/sources.list.d/docker.list \
@@ -168,7 +190,7 @@ ENV NVM_DIR=/usr/local/share/nvm
 ENV NVM_SYMLINK_CURRENT=true
 
 RUN mkdir -p "$NVM_DIR" \
-    && curl -fsSL https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.3/install.sh | bash \
+    && curl -fsSL $CURL_RETRY https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.3/install.sh | bash \
     && . "$NVM_DIR/nvm.sh" \
     && nvm install ${NODE_VERSION} \
     && nvm alias default ${NODE_VERSION} \
@@ -212,7 +234,7 @@ RUN case "$TARGETARCH" in \
     arm64) GO_SHA="$GO_SHA256_ARM64" ;; \
     *) echo "no pinned go checksum for $TARGETARCH" >&2; exit 1 ;; \
     esac \
-    && curl -fsSL -o /tmp/go.tgz "https://go.dev/dl/go${GO_VERSION}.linux-${TARGETARCH}.tar.gz" \
+    && curl -fsSL $CURL_RETRY -o /tmp/go.tgz "https://go.dev/dl/go${GO_VERSION}.linux-${TARGETARCH}.tar.gz" \
     && echo "${GO_SHA}  /tmp/go.tgz" | sha256sum -c - \
     && tar -xz -C /usr/local -f /tmp/go.tgz \
     && rm /tmp/go.tgz \
@@ -337,7 +359,7 @@ RUN ARCH=$(dpkg --print-architecture) \
     arm64) AWS_ARCH=aarch64 ;; \
     *) echo "unsupported arch for awscli: $ARCH" >&2; exit 1 ;; \
     esac \
-    && curl -fsSL -o /tmp/awscliv2.zip "https://awscli.amazonaws.com/awscli-exe-linux-${AWS_ARCH}.zip" \
+    && curl -fsSL $CURL_RETRY -o /tmp/awscliv2.zip "https://awscli.amazonaws.com/awscli-exe-linux-${AWS_ARCH}.zip" \
     && unzip -q /tmp/awscliv2.zip -d /tmp \
     && /tmp/aws/install \
     && rm -rf /tmp/aws /tmp/awscliv2.zip \
@@ -355,7 +377,7 @@ RUN ARCH=$(dpkg --print-architecture) \
     arm64) GLAB_SHA="$GLAB_SHA256_ARM64" ;; \
     *) echo "no pinned glab checksum for $ARCH" >&2; exit 1 ;; \
     esac \
-    && curl -fsSL -o /tmp/glab.deb "https://gitlab.com/gitlab-org/cli/-/releases/v${GLAB_VERSION}/downloads/glab_${GLAB_VERSION}_linux_${ARCH}.deb" \
+    && curl -fsSL $CURL_RETRY -o /tmp/glab.deb "https://gitlab.com/gitlab-org/cli/-/releases/v${GLAB_VERSION}/downloads/glab_${GLAB_VERSION}_linux_${ARCH}.deb" \
     && echo "${GLAB_SHA}  /tmp/glab.deb" | sha256sum -c - \
     && dpkg -i /tmp/glab.deb \
     && rm /tmp/glab.deb
@@ -393,7 +415,7 @@ RUN ARCH=$(dpkg --print-architecture) \
     arm64) BW_ASSET="bw-linux-arm64-${BW_VERSION}.zip"; BW_SHA="${BW_SHA256_ARM64}" ;; \
     *) echo "unsupported arch for bw: $ARCH" >&2; exit 1 ;; \
     esac \
-    && curl -fsSL -o /tmp/bw.zip \
+    && curl -fsSL $CURL_RETRY -o /tmp/bw.zip \
         "https://github.com/bitwarden/clients/releases/download/cli-v${BW_VERSION}/${BW_ASSET}" \
     && echo "${BW_SHA}  /tmp/bw.zip" | sha256sum -c - \
     && unzip -o -q /tmp/bw.zip -d /usr/local/bin \
@@ -417,7 +439,7 @@ RUN ARCH=$(dpkg --print-architecture) \
     arm64) BTM_SHA="$BTM_SHA256_ARM64" ;; \
     *) echo "no pinned bottom checksum for $ARCH" >&2; exit 1 ;; \
     esac \
-    && curl -fsSL -o /tmp/bottom.deb "https://github.com/ClementTsang/bottom/releases/download/${BTM_VERSION}/bottom_${BTM_VERSION}-1_${ARCH}.deb" \
+    && curl -fsSL $CURL_RETRY -o /tmp/bottom.deb "https://github.com/ClementTsang/bottom/releases/download/${BTM_VERSION}/bottom_${BTM_VERSION}-1_${ARCH}.deb" \
     && echo "${BTM_SHA}  /tmp/bottom.deb" | sha256sum -c - \
     && dpkg -i /tmp/bottom.deb \
     && rm /tmp/bottom.deb
@@ -446,7 +468,7 @@ USER root
 
 # Claude Code (installs to ~/.local/bin for vscode user)
 USER vscode
-RUN curl -fsSL https://claude.ai/install.sh | bash
+RUN curl -fsSL $CURL_RETRY https://claude.ai/install.sh | bash
 USER root
 
 # =============================================================================
@@ -477,7 +499,7 @@ RUN ARCH=$(dpkg --print-architecture) \
     arm64) OVSX_SHA="$OPENVSCODE_SHA256_ARM64" ;; \
     *) echo "no pinned openvscode checksum for $OVSX_ARCH" >&2; exit 1 ;; \
     esac \
-    && curl -fsSL -o /tmp/ovsx.tgz "https://github.com/gitpod-io/openvscode-server/releases/download/openvscode-server-v${OPENVSCODE_VERSION}/openvscode-server-v${OPENVSCODE_VERSION}-linux-${OVSX_ARCH}.tar.gz" \
+    && curl -fsSL $CURL_RETRY -o /tmp/ovsx.tgz "https://github.com/gitpod-io/openvscode-server/releases/download/openvscode-server-v${OPENVSCODE_VERSION}/openvscode-server-v${OPENVSCODE_VERSION}-linux-${OVSX_ARCH}.tar.gz" \
     && echo "${OVSX_SHA}  /tmp/ovsx.tgz" | sha256sum -c - \
     && tar -xz -C /opt -f /tmp/ovsx.tgz \
     && rm /tmp/ovsx.tgz \
