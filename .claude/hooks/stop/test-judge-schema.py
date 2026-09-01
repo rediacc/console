@@ -1067,7 +1067,11 @@ def _sd(**kw):
     return {"shape_dup": base}
 
 
-control("the marker is in the prompt the rule sends", SHAPE_MARKER_TEXT in wl_shapedup.SHAPE_PROMPT, True)
+control(
+    "the marker is in the prompt the rule sends",
+    SHAPE_MARKER_TEXT in wl_shapedup.SHAPE_PROMPT,
+    True,
+)
 control(
     "no instances means no prompt at all, so the call is never made",
     wl_shapedup.prompt_section([]),
@@ -1148,9 +1152,17 @@ control(
 _out = _sd(harness="scripts/lib/controls.ts")
 _kind, _note = wl_shapedup.apply_verdict(_out, ["a.ts:1", "b.ts:1", "c.ts:1"], "sh1", path=SMARK)
 control("firing flips the verdict to continue", _out.get("verdict"), "continue")
-control("the order names the harness", "scripts/lib/controls.ts" in _out.get("next_action", ""), True)
-control("the reason carries the COUNTER's count, not the model's", "at 3 places" in _out.get("reason", ""), True)
-control("the order routes through the existing triage", "--triage" in _out.get("next_action", ""), True)
+control(
+    "the order names the harness", "scripts/lib/controls.ts" in _out.get("next_action", ""), True
+)
+control(
+    "the reason carries the COUNTER's count, not the model's",
+    "at 3 places" in _out.get("reason", ""),
+    True,
+)
+control(
+    "the order routes through the existing triage", "--triage" in _out.get("next_action", ""), True
+)
 
 # 6e. The latch: once per SHAPE. A session authoring three gates in one family gets ONE
 #     consolidation question, not three.
@@ -1188,13 +1200,13 @@ wl_shapedup.demand_for("sh2").clear(SMARK2)
 #     never grant an exit that was otherwise refused, and it can never wedge a stop.
 _orig_counter = wl_shapedup.counter_findings
 try:
-    wl_shapedup.counter_findings = lambda root: ([], "counter exploded")
+    wl_shapedup.counter_findings = lambda _root: ([], "counter exploded")
     _st = {}
     _fired, _r, _a, _n = wl_shapedup.run(REPO, _st)
     control("a broken counter does not fire", _fired, False)
     control("...but it is not silent about it", "counter exploded" in _n, True)
 
-    wl_shapedup.counter_findings = lambda root: ([], "")
+    wl_shapedup.counter_findings = lambda _root: ([], "")
     _st2 = {}
     control("CONTROL: no findings, no model call, no fire", wl_shapedup.run(REPO, _st2)[0], False)
 
@@ -1202,17 +1214,19 @@ try:
     # edit moves an mtime. Proven by running twice against a counter that would fire.
     _calls = []
 
-    def _boom(root):
+    def _boom(_root):
         _calls.append(1)
         return [{"shape": "h", "files": ["a.ts:1", "b.ts:1", "c.ts:1"], "span": 5}], ""
 
     wl_shapedup.counter_findings = _boom
     _st3 = {}
-    wl_shapedup.ask = lambda inst: (None, "stubbed: no model call in a control")
+    wl_shapedup.ask = lambda _inst: (None, "stubbed: no model call in a control")
     wl_shapedup.run(REPO, _st3)
     wl_shapedup.run(REPO, _st3)
     control("an unchanged corpus is scanned once, not twice", len(_calls), 1)
-    control("the signature is recorded so the skip can happen", bool(_st3.get("shapedup_sig")), True)
+    control(
+        "the signature is recorded so the skip can happen", bool(_st3.get("shapedup_sig")), True
+    )
 finally:
     wl_shapedup.counter_findings = _orig_counter
 

@@ -30,6 +30,8 @@ a real Nth instance lands. The model is never asked to FIND anything -- `instanc
 from the counter and is not read back off the model, so it cannot be fabricated.
 """
 
+import glob
+import hashlib
 import json
 import os
 import subprocess
@@ -312,12 +314,9 @@ CORPUS_GLOBS = (
 
 
 def corpus_sig(root):
-    import glob as _glob
-    import hashlib
-
     h = hashlib.sha1()
     for pat in CORPUS_GLOBS:
-        for p in sorted(_glob.glob(os.path.join(root, pat))):
+        for p in sorted(glob.glob(os.path.join(root, pat))):
             try:
                 st = os.stat(p)
             except OSError:

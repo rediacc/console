@@ -1199,7 +1199,6 @@ kill "$RS_PROSE_PID" 2>/dev/null || true
 wait "$RS_PROSE_PID" 2>/dev/null || true
 unset RS_NONSHELL_NAME RS_NONSHELL_PID RS_PROSE_NAME RS_PROSE_PID
 
-
 kill "$RS_PID" 2>/dev/null || true
 wait "$RS_PID" 2>/dev/null || true
 # CONTROL THAT MATTERS: once the process is gone the guard must go QUIET, or it

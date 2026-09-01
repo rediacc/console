@@ -24,10 +24,10 @@ import wl_judge
 import wl_liveness
 import wl_planfid
 import wl_reggate
-import wl_shapedup
 import wl_report
 import wl_requests
 import wl_roundlog
+import wl_shapedup
 import wl_store as S
 import wl_wait
 import worklist_messages as M
@@ -5564,7 +5564,12 @@ def run_stop(event, event_ok, worklist, hook_file):
             try:
                 sd_fired, sd_reason, sd_action, sd_note = wl_shapedup.run(str(root), state_doc)
             except Exception as exc:  # noqa: BLE001 -- an advisory rule must never wedge a stop
-                sd_fired, sd_reason, sd_action, sd_note = False, "", "", "shape rule errored: %s" % exc
+                sd_fired, sd_reason, sd_action, sd_note = (
+                    False,
+                    "",
+                    "",
+                    "shape rule errored: %s" % exc,
+                )
             S.save_state(worklist, session_id, state_doc)
             if sd_note:
                 # A paid question that produced no answer must still be visible; this rule
