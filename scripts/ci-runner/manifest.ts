@@ -327,6 +327,18 @@ export const GATES: readonly GateSpec[] = [
     },
   },
   {
+    id: 'check:ci-www-build-token',
+    run: 'npm run check:ci-www-build-token',
+    gate: true,
+    leaves: ['.ci/scripts/quality/check-www-build-token.sh'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-code',
+      step: 'www build token',
+    },
+  },
+  {
     id: 'check:ci-shape-duplication',
     run: 'npm run check:ci-shape-duplication',
     slow: true, // 21.4s: hashes ~40k sliding windows over 316 files, twice (selftest + run)

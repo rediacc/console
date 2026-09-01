@@ -235,6 +235,7 @@
     "check:ci-install-sh-config": ".ci/scripts/test/test-install-sh-config.sh",
     "check:ci-rdc-sh-env": ".ci/scripts/test/test-rdc-sh-env.sh",
     "check:test:tutorial-player": "npm run test:tutorial-player -w @rediacc/www",
+    "check:ci-www-build-token": ".ci/scripts/quality/check-www-build-token.sh",
     "check:ci-shape-duplication": "tsx scripts/check-shape-duplication.ts --selftest && tsx scripts/check-shape-duplication.ts",
     "check:ci-typecheck-scope-coverage": "tsx scripts/check-typecheck-scope-coverage.ts --selftest && tsx scripts/check-typecheck-scope-coverage.ts",
     "check:types": "tsc -b packages/shared packages/provisioning packages/cli && tsc --noEmit -p private/account/tsconfig.json && tsc --noEmit -p scripts/tsconfig.json && tsc --noEmit -p packages/shared/tsconfig.test.json && tsc --noEmit -p packages/cli/tsconfig.test.json && tsc --noEmit -p packages/provisioning/tsconfig.test.json && tsc --noEmit -p packages/e2e-tests/tsconfig.json && npm run typecheck --workspace packages/www && .ci/scripts/quality/typecheck-workers.sh",

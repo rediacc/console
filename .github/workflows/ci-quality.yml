@@ -818,6 +818,12 @@ jobs:
       # The Nth copy of a shape. SEEDED at scripts/data/shape-duplication-seed.json, so
       # the 219-span standing backlog is silent and only a NEW shape reaching 3 copies
       # reports. Draining that backlog is separate, measured work.
+      # Every www build must pass github.token. Found and fixed by hand at two of
+      # three call sites, twice, before the third reddened job 99839065246.
+      - name: www build token
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: npm run check:ci-www-build-token
+
       - name: Shape duplication
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: npm run check:ci-shape-duplication
