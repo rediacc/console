@@ -223,6 +223,19 @@ const RULES = [
   // the whole VM matrix in anyway; full is both cheaper and honest.
   { name: 'scripts-drills', match: matchPrefix('scripts/drills/'), full: 'harness' },
 
+  // The shape-duplication SEED, and it must force full CI for a reason that is easy
+  // to get backwards. The seed is not an input the gate reads for reference -- it IS
+  // the gate's baseline: every hash in it is a shape the gate has agreed to stay
+  // silent about. A delta touching only the seed is therefore a delta that CHANGES
+  // WHAT THE GATE ENFORCES, and under 'reduced' it would skip the very job that runs
+  // check:ci-shape-duplication. Seeding a shape and never running the gate that
+  // honours it is exactly how a baseline stops describing anything real.
+  {
+    name: 'scripts-shape-seed',
+    match: matchPrefix('scripts/data/shape-duplication-seed.json'),
+    full: 'harness',
+  },
+
   // Runs INSIDE the executable build (.ci/scripts/build/prepare-cli-assets.sh:190,
   // reached from build-cli-executables.sh:123) and its output ships in the CLI
   // binary. A throw reds the ungated build job, but a silently-WRONG credits

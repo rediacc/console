@@ -94,18 +94,3 @@ export function runControls(cases: ControlCase[], opts: RunControlsOptions = {})
   }
   return failed;
 }
-
-/**
- * The bail-out every consumer writes after `runControls`, so its wording cannot drift.
- *
- * Exits 1 when anything failed; returns otherwise. The sentence is the one already in the
- * corpus (`check-dead-css.ts:270` and three siblings, byte-identical), kept verbatim
- * because it is the string those gates are recognised by.
- */
-export function exitUnlessControlsPass(failed: number, gate: string): void {
-  if (failed === 0) return;
-  console.error(
-    `${RED}✗${NC} ${failed} control(s) failed; the gate cannot be trusted${gate ? ` (${gate})` : ''}`
-  );
-  process.exit(1);
-}
