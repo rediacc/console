@@ -24,6 +24,7 @@ import wl_judge
 import wl_liveness
 import wl_planfid
 import wl_reggate
+import wl_shapedup
 import wl_report
 import wl_requests
 import wl_roundlog
@@ -5547,6 +5548,44 @@ def run_stop(event, event_ok, worklist, hook_file):
                     + guide_tail,
                 }
             )
+        # IS THIS THE NTH COPY. The third judged rule, and the only one that does NOT ride
+        # the judge's call: the trim that was supposed to pay for a fourth object in that
+        # prompt freed 62 characters, not the ~2,300 the plan estimated, and a fix stop
+        # already carries ~17,700 characters of rubric across three calibrated sections.
+        # So it makes its own `claude -p`, and earns it by being rare -- a MECHANICAL
+        # counter gates the call, and only a shape that was not in the seed and has just
+        # reached its third copy opens it.
+        #
+        # ON THE ALLOW PATH ONLY, deliberately. A judge that already said continue has
+        # placed an order; a second order in the same block is how a block stops being
+        # read (the same argument wl_judge makes for skipping brave_default after the
+        # sweep fires). The shape is still there next stop.
+        if judged_ok:
+            try:
+                sd_fired, sd_reason, sd_action, sd_note = wl_shapedup.run(str(root), state_doc)
+            except Exception as exc:  # noqa: BLE001 -- an advisory rule must never wedge a stop
+                sd_fired, sd_reason, sd_action, sd_note = False, "", "", "shape rule errored: %s" % exc
+            S.save_state(worklist, session_id, state_doc)
+            if sd_note:
+                # A paid question that produced no answer must still be visible; this rule
+                # never fails closed (see wl_shapedup FAIL SEMANTICS).
+                outq_add(worklist, session_id, state_doc, "shapedup", sd_note[:300], 2)
+            if sd_fired:
+                counter.write_text(str(streak + 1))
+                C.emit(
+                    {
+                        "systemMessage": "Stop hook: a shape reached its Nth copy. %s"
+                        % sd_reason[:110],
+                        "decision": "block",
+                        "reason": M.R_JUDGE_CONTINUE
+                        % (
+                            sd_reason,
+                            sd_action,
+                            "\n".join("  " + r for r in remaining_lines[:12]),
+                        )
+                        + guide_tail,
+                    }
+                )
         if judged_ok and not judge_cached and not reg_signals:
             wl_judge.bank_stop_verdict(state_doc, cur_sig, last_msg, verdict.get("reason", ""))
             S.save_state(worklist, session_id, state_doc)

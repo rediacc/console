@@ -1038,6 +1038,184 @@ control(
     sorted(_all["required"]),
 )
 
+# ---------------------------------------------------------------------------
+# PART 6 -- wl_shapedup: "is this the Nth copy of a shape you already have?"
+#
+# The third judged rule, and the only one on its OWN model call. Its verdict half is pure
+# and its trigger half is a subprocess, so the controls below drive the pure half directly
+# and stub the subprocess for the driver.
+
+import wl_shapedup  # noqa: E402 -- the module under test, imported where its section starts
+
+SHAPE_MARKER_TEXT = wl_shapedup.SHAPE_MARKER
+SMARK = MARKER.with_suffix(".shape")
+# The repo root: wl_shapedup checks a named harness against the DISK, so the controls need
+# a real tree to check against.
+REPO = str(pathlib.Path(__file__).resolve().parents[3])
+
+
+def _sd(**kw):
+    base = {
+        "applicable": True,
+        "shape": "argv loop + surface floor + exit 2",
+        "harness": "",
+        "consolidatable": "yes",
+        "divergence": "",
+        "instruction": "extract the argv preamble",
+    }
+    base.update(kw)
+    return {"shape_dup": base}
+
+
+control("the marker is in the prompt the rule sends", SHAPE_MARKER_TEXT in wl_shapedup.SHAPE_PROMPT, True)
+control(
+    "no instances means no prompt at all, so the call is never made",
+    wl_shapedup.prompt_section([]),
+    "",
+)
+control(
+    "the instances the COUNTER measured are what the prompt carries",
+    "a.ts:12" in wl_shapedup.prompt_section(["a.ts:12", "b.ts:30", "c.ts:8"]),
+    True,
+)
+
+# 6a. The three verdicts.
+control("consolidatable=yes fires", wl_shapedup.read_verdict(_sd())[0], "fire")
+control(
+    "CONTROL: applicable=false is silent",
+    wl_shapedup.read_verdict(_sd(applicable=False))[0],
+    "silent",
+)
+control(
+    "CONTROL: consolidatable=no WITH a concrete divergence is a terminal answer",
+    wl_shapedup.read_verdict(
+        _sd(
+            consolidatable="no",
+            divergence="three incompatible return contracts: one echoes the exit code, one echoes PASS/FAIL, one propagates",
+        )
+    )[0],
+    "silent",
+)
+
+# 6b. THE EVIDENCE IS CHECKED AGAINST ITSELF. A refusal that names no divergence is not a
+#     refusal; it degrades rather than blocking, because an unactionable block is the one
+#     thing these rules cannot afford.
+control(
+    "consolidatable=no with no divergence degrades, it does not buy silence",
+    wl_shapedup.read_verdict(_sd(consolidatable="no", divergence="short"))[0],
+    "degraded",
+)
+control(
+    "a fire with no shape named degrades",
+    wl_shapedup.read_verdict(_sd(shape="  "))[0],
+    "degraded",
+)
+control(
+    "a missing shape_dup object degrades, it never fails closed",
+    wl_shapedup.read_verdict({})[0],
+    "degraded",
+)
+control(
+    "a consolidatable value outside the enum degrades",
+    wl_shapedup.read_verdict(_sd(consolidatable="maybe"))[0],
+    "degraded",
+)
+
+# 6c. `already` is the claim most worth checking, and one os.path.exists checks it.
+control(
+    "already, naming a module that IS on disk, is silent",
+    wl_shapedup.read_verdict(
+        _sd(consolidatable="already", harness=".claude/hooks/stop/wl_rules.py"), root=REPO
+    )[0],
+    "silent",
+)
+control(
+    "CONTROL: already, naming a module that is NOT on disk, fires anyway",
+    wl_shapedup.read_verdict(
+        _sd(consolidatable="already", harness="scripts/lib/a-harness-that-does-not-exist.ts"),
+        root=REPO,
+    )[0],
+    "fire",
+)
+control(
+    "already with no harness named fires",
+    wl_shapedup.read_verdict(_sd(consolidatable="already", harness=""), root=REPO)[0],
+    "fire",
+)
+
+# 6d. The order it places, and the count it places it with. `instances` comes from the
+#     counter and is never read off the model, so it cannot be fabricated.
+_out = _sd(harness="scripts/lib/controls.ts")
+_kind, _note = wl_shapedup.apply_verdict(_out, ["a.ts:1", "b.ts:1", "c.ts:1"], "sh1", path=SMARK)
+control("firing flips the verdict to continue", _out.get("verdict"), "continue")
+control("the order names the harness", "scripts/lib/controls.ts" in _out.get("next_action", ""), True)
+control("the reason carries the COUNTER's count, not the model's", "at 3 places" in _out.get("reason", ""), True)
+control("the order routes through the existing triage", "--triage" in _out.get("next_action", ""), True)
+
+# 6e. The latch: once per SHAPE. A session authoring three gates in one family gets ONE
+#     consolidation question, not three.
+_again = _sd(harness="scripts/lib/controls.ts")
+for _ in range(wl_shapedup.SHAPE_MAX_FIRES + 2):
+    wl_shapedup.apply_verdict(_again, ["a.ts:1", "b.ts:1", "c.ts:1"], "sh1", path=SMARK)
+control(
+    "CONTROL: the same shape stops being asked once the cap is reached",
+    wl_shapedup.apply_verdict(_sd(), ["a.ts:1", "b.ts:1", "c.ts:1"], "sh1", path=SMARK)[0],
+    "capped",
+)
+# A capped rule is not a wall: it must let the stop through, not block forever.
+_capped = _sd()
+wl_shapedup.apply_verdict(_capped, ["a.ts:1", "b.ts:1", "c.ts:1"], "sh1", path=SMARK)
+control("CONTROL: a capped shape places no order", _capped.get("verdict"), None)
+# THE KEYING IS IN THE PATH, so a control that passes one explicit `path` for two shapes
+# overrides the very thing it claims to test -- and did, reporting the second shape as
+# capped. In production `path` is None and `demand_for(hash).path()` derives one file per
+# shape; these two controls test that derivation directly and then use per-shape markers.
+control(
+    "each shape gets its own marker file",
+    wl_shapedup.demand_for("sh1").path() != wl_shapedup.demand_for("sh2").path(),
+    True,
+)
+SMARK2 = MARKER.with_suffix(".shape2")
+control(
+    "a DIFFERENT shape is still asked, because the latch keys on the hash",
+    wl_shapedup.apply_verdict(_sd(), ["x.ts:1", "y.ts:1", "z.ts:1"], "sh2", path=SMARK2)[0],
+    "fire",
+)
+wl_shapedup.demand_for("sh1").clear(SMARK)
+wl_shapedup.demand_for("sh2").clear(SMARK2)
+
+# 6f. The driver never fails closed. A counter that cannot answer loses a demand; it can
+#     never grant an exit that was otherwise refused, and it can never wedge a stop.
+_orig_counter = wl_shapedup.counter_findings
+try:
+    wl_shapedup.counter_findings = lambda root: ([], "counter exploded")
+    _st = {}
+    _fired, _r, _a, _n = wl_shapedup.run(REPO, _st)
+    control("a broken counter does not fire", _fired, False)
+    control("...but it is not silent about it", "counter exploded" in _n, True)
+
+    wl_shapedup.counter_findings = lambda root: ([], "")
+    _st2 = {}
+    control("CONTROL: no findings, no model call, no fire", wl_shapedup.run(REPO, _st2)[0], False)
+
+    # THE SKIP IS A CACHE, NOT A SWITCH: an unchanged corpus costs a stat sweep, and any
+    # edit moves an mtime. Proven by running twice against a counter that would fire.
+    _calls = []
+
+    def _boom(root):
+        _calls.append(1)
+        return [{"shape": "h", "files": ["a.ts:1", "b.ts:1", "c.ts:1"], "span": 5}], ""
+
+    wl_shapedup.counter_findings = _boom
+    _st3 = {}
+    wl_shapedup.ask = lambda inst: (None, "stubbed: no model call in a control")
+    wl_shapedup.run(REPO, _st3)
+    wl_shapedup.run(REPO, _st3)
+    control("an unchanged corpus is scanned once, not twice", len(_calls), 1)
+    control("the signature is recorded so the skip can happen", bool(_st3.get("shapedup_sig")), True)
+finally:
+    wl_shapedup.counter_findings = _orig_counter
+
 if Tally.fails:
     print(f"FAIL: {Tally.fails} of {Tally.count} control(s) failed", file=sys.stderr)
     sys.exit(1)
