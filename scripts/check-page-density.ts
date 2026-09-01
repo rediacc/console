@@ -92,6 +92,7 @@ interface Probe {
   ctaDepthPct: number;
   media: { sel: string; deadFraction: number; mountH: number; videoH: number }[];
   techDiff: { cells: number; visibleLabels: number; headerVisible: boolean } | null;
+  hiddenOverflow: { sel: string; right: number; clientWidth: number }[];
 }
 
 /**
@@ -175,7 +176,70 @@ const PROBE_SRC = String.raw`(() => {
     };
   }
 
+  // A BOX THAT IS HIDDEN STILL OCCUPIES SCROLL WIDTH, and that surprise cost 227px.
+  //
+  // .sp-callout-pop was a source tooltip parked beside its chip with
+  // 'inset-inline-start: calc(100% + 12px)'. On the THIRD callout of a three-column row
+  // that put it past the viewport, and 'position: absolute' + 'visibility: hidden' does
+  // NOT remove a box from scrollable overflow the way 'display: none' does. Measured on
+  // /en/solutions/instant-recovery at 1024x768: right=1251 against a 1024 client width,
+  // 227px of horizontal overflow with nothing visible on screen to explain it.
+  //
+  // The repo carries FOUR more rules in the same shape (.cf-feature-info::after,
+  // .docs-card-description, .tvp-caption, .tvp-chapter-tooltip). None reproduces today,
+  // which is exactly why this is an assertion and not a note: the next one to drift is
+  // invisible to a reader and to every static check, because the element renders nothing.
+  //
+  // THE OPTIONS ARE THE WHOLE ASSERTION, and a bare checkVisibility() made this vacuous.
+  // Its DEFAULTS consider only display:none and content-visibility, so the exact element
+  // this exists to catch reports VISIBLE. Measured on the planted defect:
+  //
+  //   checkVisibility()                                      -> true
+  //   checkVisibility({visibilityProperty, opacityProperty}) -> false
+  //   (display: block, visibility: hidden, opacity: 0)
+  //
+  // The first version of this probe shipped with the bare call, its fixture control
+  // passed, and re-planting the real CSS defect and rebuilding the site produced NO
+  // finding. The fixture proved the judge; only the plant proved the probe.
+  //
+  // display is still checked separately because it is an element's OWN value and never an
+  // ancestor's: a child of a closed popover reports 'block' either way, and a
+  // display:none subtree has no layout to overflow with. Zero-size boxes are skipped,
+  // since a collapsed element cannot overflow anything.
+  //
+  // TWO NARROWINGS, both paid for by a false positive on the restored tree.
+  //
+  // (a) RIGHT EDGE ONLY (no backticks in this comment: PROBE_SRC is a String.raw
+  //     template, so one would end the literal). An earlier version also flagged boxes
+  //     with a negative left edge,
+  //     and reported '.btn--icon' nine times: the nav carousel's previous button, parked
+  //     off-canvas INSIDE a clipping scroller, which is a legitimate technique and adds
+  //     nothing to document scroll width.
+  // (b) ONLY WHEN THE DOCUMENT ACTUALLY SCROLLS SIDEWAYS. A hidden box may extend past
+  //     the viewport inside an 'overflow: hidden' ancestor and be clipped away. Requiring
+  //     documentElement.scrollWidth > clientWidth makes the assertion about the OBSERVABLE
+  //     symptom, with the hidden element named as its cause, rather than about a shape
+  //     that is sometimes fine.
+  var hiddenOverflow = [];
+  var cw = document.documentElement.clientWidth;
+  var docOverflows = document.documentElement.scrollWidth - cw > 1;
+  var VIS_OPTS = { visibilityProperty: true, opacityProperty: true, contentVisibilityAuto: true };
+  if (docOverflows) Array.prototype.slice.call(document.querySelectorAll('*')).forEach(function (el) {
+    if (el.checkVisibility ? el.checkVisibility(VIS_OPTS) : true) return;
+    if (getComputedStyle(el).display === 'none') return;
+    var r = el.getBoundingClientRect();
+    if (r.width === 0 && r.height === 0) return;
+    if (r.right <= cw + 1) return;
+    var cls = el.className && el.className.baseVal !== undefined ? el.className.baseVal : el.className;
+    hiddenOverflow.push({
+      sel: String(cls || el.tagName).split(' ')[0].slice(0, 40),
+      right: Math.round(r.right),
+      clientWidth: cw
+    });
+  });
+
   return {
+    hiddenOverflow: hiddenOverflow,
     domNodes: document.querySelectorAll('*').length,
     navHydrated: !!document.querySelector('.nav-translate'),
     ctaInFold: ctaInFold,
@@ -218,6 +282,15 @@ function judge(route: string, viewport: string, width: number, p: Probe): Findin
           `${(m.deadFraction * 100).toFixed(0)}% dead space, over the ${(MAX_DEAD_FRACTION * 100).toFixed(0)}% ceiling`
       );
     }
+  }
+
+  for (const h of p.hiddenOverflow ?? []) {
+    add(
+      'hidden-overflow',
+      `.${h.sel} is not visible yet its box reaches x=${h.right} against a ` +
+        `${h.clientWidth}px client width: a hidden element still counts toward scroll ` +
+        'width unless it is display:none, so the page scrolls sideways over nothing'
+    );
   }
 
   if (p.techDiff && p.techDiff.cells > 0) {
@@ -300,6 +373,7 @@ async function main(): Promise<void> {
             ctaDepthPct: 89.8,
             media: [],
             techDiff: null,
+            hiddenOverflow: [],
           },
         },
         {
@@ -314,6 +388,7 @@ async function main(): Promise<void> {
             ctaDepthPct: 5,
             media: [{ sel: 'video-player-mount', deadFraction: 0.683, mountH: 581, videoH: 184 }],
             techDiff: null,
+            hiddenOverflow: [],
           },
         },
         {
@@ -328,6 +403,7 @@ async function main(): Promise<void> {
             ctaDepthPct: 5,
             media: [],
             techDiff: { cells: 10, visibleLabels: 0, headerVisible: false },
+            hiddenOverflow: [],
           },
         },
         {
@@ -342,6 +418,23 @@ async function main(): Promise<void> {
             ctaDepthPct: -1,
             media: [],
             techDiff: null,
+            hiddenOverflow: [],
+          },
+        },
+        {
+          name: 'a hidden-but-positioned tooltip reaching past the viewport is reported',
+          width: 1024,
+          expect: 'hidden-overflow',
+          probe: {
+            domNodes: 900,
+            navHydrated: true,
+            ctaInFold: true,
+            ctaLabel: 'x',
+            ctaDepthPct: 5,
+            media: [],
+            techDiff: null,
+            // The real numbers off /en/solutions/instant-recovery at 1024x768.
+            hiddenOverflow: [{ sel: 'sp-callout-pop', right: 1251, clientWidth: 1024 }],
           },
         },
       ];
@@ -363,6 +456,7 @@ async function main(): Promise<void> {
         ctaDepthPct: 5,
         media: [{ sel: 'video-player-mount', deadFraction: 0.02, mountH: 581, videoH: 570 }],
         techDiff: { cells: 10, visibleLabels: 10, headerVisible: false },
+        hiddenOverflow: [],
       });
       const quiet = clean.length === 0;
       allFired &&= quiet;
@@ -396,7 +490,7 @@ async function main(): Promise<void> {
   }
 
   console.log(
-    `\x1b[32m✓\x1b[0m ${measured} page/viewport pairs: CTA in the fold, reserved space occupied, columns labelled.`
+    `\x1b[32m✓\x1b[0m ${measured} page/viewport pairs: CTA in the fold, reserved space occupied, columns labelled, nothing hidden overflowing.`
   );
 }
 
