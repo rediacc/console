@@ -49,7 +49,7 @@ Verified by running the real gate under `CI=true` (exit 0, 5/5) and forcing the 
 3. Then steps 4-8: checkout `main`; Console CI on main; **Release to Edge BY ID**
    (`--run <id>`, never `--ref main`); re-sync after CD's two `[skip ci]` commits; mirror
    to `gitlab`; hand-back note.
-4. Then CronDelete `f892a1f9`, `b4bff02e` AND `467ccd9f`, and say so in the final report.
+4. Then CronDelete `f892a1f9`, `b4bff02e` AND `ab4ff5c3`, and say so in the final report.
 5. On a NEW red: poll `gh api .../pulls/583 --jq .head.sha` until it shows the pushed head
    BEFORE arming a watch, else the watch traces the stale head and exits 1.
 
