@@ -1330,6 +1330,15 @@ check 0 pre-bash/block-bash-write-to-running-script.sh "$(bash_json "cat $BW_TMP
 check 0 pre-bash/block-bash-write-to-running-script.sh "$(bash_json "bash $BW_TMP/bw-fixture.sh")" "bash-write CONTROL: RUNNING it is not writing to it"
 check 0 pre-bash/block-bash-write-to-running-script.sh "$(bash_json "grep -n sleep $BW_TMP/bw-fixture.sh")" "bash-write CONTROL: grepping it is not writing to it"
 check 0 pre-bash/block-bash-write-to-running-script.sh "$(bash_json "echo x > $BW_TMP/never-run.sh")" "bash-write CONTROL: a .sh nothing is running is untouched"
+# THE TARGET NAME ITSELF BECAME A WILDCARD, round six and a different mechanism from the
+# five before it. `pat` interpolated the basename RAW, so a one-letter name plus the shell
+# suffix produced `[x].sh` -- and `.` is a regex wildcard, so for the letter `b` that
+# matches **/bin/bash**, i.e. every bash process alive. Measured 2026-09-01: writing a
+# TypeScript control whose FIXTURE filename was one letter long was refused, naming
+# `/bin/bash --init-file ...` as the job it would corrupt, with no such script running.
+: >"$BW_TMP/b.sh"
+check 0 pre-bash/block-bash-write-to-running-script.sh "$(bash_json "echo x > $BW_TMP/b.sh")" \
+    "bash-write CONTROL: a one-letter name does not match /bin/bash"
 # ROUND FIVE OF "A MENTION IS NOT A TARGET", measured 2026-09-01. Writing a plain
 # markdown file was refused because its PROSE contained
 # `check:ci-hook-worklist-suite -> <a live>.sh`: the ASCII arrow scored as a redirect

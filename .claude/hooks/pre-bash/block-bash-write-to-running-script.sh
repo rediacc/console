@@ -152,7 +152,19 @@ for cand in $TARGETS; do
     # it as a substring: `ver.sh` matched a running `wslServer.sh`, and the
     # guard reported VS Code's server as the job about to be corrupted. The
     # basename must start at the beginning, after a `/`, or after whitespace.
-    pat="(^|[/[:space:]])[${base:0:1}]${base:1}"
+    # ESCAPE THE DOTS. `.` is a regex wildcard and the basename was interpolated raw, so a
+    # target whose name is one letter plus `.sh` produced the pattern `[x].sh`, which
+    # matches any process containing `x<any>sh` -- and for the letter `b` that is
+    # **/bin/bash**, i.e. every bash process on the machine.
+    #
+    # Measured 2026-09-01: writing a TypeScript control whose FIXTURE filename was one
+    # letter plus the shell suffix was refused, naming `/bin/bash --init-file ...` as the
+    # job it would corrupt. No script of that name was running anywhere. Round six of this
+    # guard's over-matching, and the first that is not about command shape at all -- the
+    # previous five were all "a mention scored as a target"; this one is the TARGET name
+    # itself becoming a wildcard.
+    esc=$(printf '%s' "${base:1}" | sed 's/[.[\*^$()+?{}|]/\\&/g')
+    pat="(^|[/[:space:]])[${base:0:1}]${esc}"
     # `pgrep -af` matches any process whose ARGUMENTS mention the name, which is the
     # very trap this guard exists to prevent, wearing a different hat. Measured
     # 2026-08-27: an edit to the hook suite was refused because a PEER session's

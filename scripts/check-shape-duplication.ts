@@ -141,6 +141,31 @@ export function isImportish(line: string): boolean {
 }
 
 /**
+ * A line whose whole content is a MESSAGE, once the string is normalised away.
+ *
+ * THIS GATE PROMISED THIS EXCLUSION AND DID NOT IMPLEMENT IT FOR SHELL. The docstring
+ * above says the findings report is never counted -- "the sentence telling a reader what
+ * failed and why IS the gate's value" -- and that held for TypeScript, where a report is
+ * built from template literals inside distinguishable code. In shell the idiom is bare
+ * `echo "..." >&2`, and string normalisation collapses EVERY such line to `echo "S" >&2`.
+ * Four consecutive ones plus a `fi` therefore hash identically no matter what they say.
+ *
+ * Caught on its author, 2026-09-01, and it is the strongest possible demonstration of the
+ * defect: the gate reported `check-control-vacuity.sh`, `block-untagged-commit.sh` and
+ * `block-unverified-push.sh` as sharing a shape. They share nothing but the ACT of
+ * printing four lines to stderr; their messages are three unrelated explanations, and
+ * consolidating them would delete the only part that has value.
+ *
+ * Same treatment as an import preamble, for the same reason: it is a majority test, so a
+ * genuine shared span that happens to contain one echo still registers.
+ */
+export function isMessageish(line: string): boolean {
+  // The `>&2` redirect is part of the idiom, so `&` cannot be excluded wholesale -- the
+  // first cut did that and matched nothing, which is why this carries a control.
+  return /^(echo|printf|print|console\.(log|error|warn))\b[^|;]*$/.test(line);
+}
+
+/**
  * Every sliding WINDOW-line span, minus the ones that are mostly imports.
  *
  * A window over an import preamble is not duplicated logic; it is three files agreeing to
@@ -153,6 +178,7 @@ export function windows(lines: NormLine[]): { h: string; line: number }[] {
   for (let i = 0; i + WINDOW <= lines.length; i++) {
     const slice = lines.slice(i, i + WINDOW);
     if (slice.filter((l) => isImportish(l.text)).length * 2 > WINDOW) continue;
+    if (slice.filter((l) => isMessageish(l.text)).length * 2 > WINDOW) continue;
     // The window's line is the REAL file line its first row came from.
     out.push({ h: hash(slice.map((l) => l.text).join('\n')), line: slice[0].line });
   }
@@ -344,6 +370,36 @@ function controls(): { name: string; ok: boolean; detail?: string }[] {
     {
       name: 'CONTROL: a block comment does not renumber the code after it',
       ok: normalise('/* a\n b\n c */\nconst z = 1;', 'ts')[0].line === 4,
+    },
+    {
+      // THE GATE CAUGHT ITS AUTHOR ON THIS. String literals normalise to "S", so four
+      // consecutive stderr messages hash identically no matter what they SAY. It reported
+      // check-control-vacuity.sh, block-untagged-commit.sh and block-unverified-push.sh as
+      // one shape; they share only the ACT of printing, and consolidating them would
+      // delete three unrelated explanations -- the findings report this gate's own
+      // docstring promises never to count.
+      name: 'CONTROL: four stderr messages are a report, not a shared shape',
+      ok: (() => {
+        const body =
+          'if [ -n "$x" ]; then\n' +
+          '  echo "a" >&2\n  echo "b" >&2\n  echo "c" >&2\n  echo "d" >&2\nfi';
+        const per = new Map(
+          ['f1', 'f2', 'f3'].map((f): [string, { h: string; line: number }[]] => [
+            f,
+            windows(normalise(body, 'sh')),
+          ])
+        );
+        return judge(per, new Set()).length === 0;
+      })(),
+    },
+    {
+      name: 'the message matcher takes a stderr redirect and rejects a pipe or plain code',
+      ok:
+        isMessageish('echo "S" >&2') &&
+        isMessageish('printf "S"') &&
+        !isMessageish('fi') &&
+        !isMessageish('echo "S" | grep x') &&
+        !isMessageish('const a = 1;'),
     },
     {
       name: 'CONTROL: an import preamble is adoption, not duplication',
