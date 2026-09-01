@@ -812,6 +812,13 @@ jobs:
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: npm run check:ci-dead-bash
 
+      # Before TypeScript, not after: this asserts the chain below actually POINTS at
+      # every tsconfig in the repo. A project nobody runs cannot fail, so a green
+      # TypeScript step says nothing about it.
+      - name: Typecheck scope coverage
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: npm run check:ci-typecheck-scope-coverage
+
       - name: TypeScript
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: npm run typecheck

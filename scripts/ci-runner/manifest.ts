@@ -327,6 +327,18 @@ export const GATES: readonly GateSpec[] = [
     },
   },
   {
+    id: 'check:ci-typecheck-scope-coverage',
+    run: 'npm run check:ci-typecheck-scope-coverage',
+    gate: true,
+    leaves: ['scripts/check-typecheck-scope-coverage.ts'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-code',
+      step: 'Typecheck scope coverage',
+    },
+  },
+  {
     id: 'check:types',
     run: 'npm run check:types',
     slow: true, // 51.4s contended (tsc over every workspace)
