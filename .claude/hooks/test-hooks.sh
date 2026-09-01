@@ -1006,6 +1006,54 @@ git -C "$MU_TMP" commit -qm "the commit that would be stranded"
 )
 rm -rf "$MU_TMP"
 unset MU_TMP
+
+# --- a guard must judge the tree the COMMAND touches, not this one ----------
+# hook_target_root (lib/command-scan.sh) is what makes that true, and it had NO case
+# until now: it was verified by hand and committed, so deleting the call would have
+# broken three guards silently. That is the exact shape this harness exists to prevent.
+#
+# THE DEFECT IT CLOSES WAS LIVE. `git -C <scratch> push origin main` was refused by
+# block-unverified-push.sh because the gate-run stamp it compares belongs to CONSOLE and
+# a scratch tree can never match it (reproduced 2026-09-01, exit 2). warn-remote-drift.sh
+# had the same shape latently, and block-untagged-commit.sh had already hand-rolled the
+# fix -- three copies, which is why the walk moved to lib/.
+#
+# block-untagged-commit.sh anchors these cases because its verdict is DETERMINISTIC in
+# both directions: a commit with no PR-TASK trailer is refused here and irrelevant
+# elsewhere. The push guards depend on a gate-run stamp, which a harness cannot pin.
+TR_TMP="$(mktemp -d)"
+git -C "$TR_TMP" init -q -b main
+git -C "$TR_TMP" config user.email t@t
+git -C "$TR_TMP" config user.name t
+: >"$TR_TMP/f"
+git -C "$TR_TMP" add f
+git -C "$TR_TMP" commit -qm seed
+
+# SANITY FIRST. Every exemption case below is vacuous if the guard does not fire on an
+# untagged commit in THIS repo -- a guard that exits 0 for everything passes them all.
+check 2 pre-bash/block-untagged-commit.sh "$(bash_json 'git commit -m "chore: no trailer here"')" \
+    "target-root SANITY: an untagged commit in THIS repo is refused"
+check 0 pre-bash/block-untagged-commit.sh "$(bash_json "git -C $TR_TMP commit -m 'chore: no trailer here'")" \
+    "target-root: -C into another repo is that repo's business, not ours"
+check 0 pre-bash/block-untagged-commit.sh "$(bash_json "cd $TR_TMP && git commit -m 'chore: no trailer here'")" \
+    "target-root: a cd into another repo exempts the whole line"
+# THE SUBTLE ONE, and the reason the resolver compares git ROOTS rather than paths: a
+# -C into a SUBDIRECTORY of this repo is still this repo, and must stay covered. A
+# naive "any -C means elsewhere" check passes every case above and fails this one.
+check 2 pre-bash/block-untagged-commit.sh "$(bash_json 'git -C packages/cli commit -m "chore: no trailer here"')" \
+    "target-root CONTROL: -C into a subdirectory of THIS repo is still this repo"
+check 2 pre-bash/block-untagged-commit.sh "$(bash_json 'git -C /nonexistent-path-xyz commit -m "chore: no trailer"')" \
+    "target-root CONTROL: a -C that resolves to no repo is not an exemption"
+
+# The two guards the fix was made FOR. Only the exempting direction is asserted here:
+# their blocking direction depends on a gate-run stamp and a remote's position, neither
+# of which a harness can pin, and both are covered by their own cases above.
+check 0 pre-bash/block-unverified-push.sh "$(bash_json "git -C $TR_TMP push origin main")" \
+    "target-root: block-unverified-push ignores another repo's push"
+check 0 pre-bash/warn-remote-drift.sh "$(bash_json "git -C $TR_TMP push origin main")" \
+    "target-root: warn-remote-drift ignores another repo's push"
+rm -rf "$TR_TMP"
+unset TR_TMP
 # Even a command-position-looking mention inside a heredoc BODY is data, not a
 # command, and must not fire (heredoc-body stripping, the FP that fired on a
 # worklist write).
