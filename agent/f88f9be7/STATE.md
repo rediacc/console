@@ -1,68 +1,67 @@
-## SESSION f88f9be7 2026-09-01T13:09:10Z
+## SESSION f88f9be7 2026-09-01T13:25:42Z
 
 `/pr-babysit` INLINE on `0831-1`, PR #583. Principal is the operator.
 
-## The headline: CI is GREEN, and the merge is OPERATOR-ONLY
+## The one thing that needs you
 
-PR #583 @ `2f94fe197`: **0 failing, 0 pending**, "CI Complete" success. It does NOT
-merge, and the reason is mechanical: the ruleset (`12344707`) requires TWO checks,
-`CI Complete` and **`Review Complete`**. The second never ran, because the operator
-settled that #583 merges with no automated review. `mergeStateStatus` is BLOCKED
-solely on that.
+PR #583 @ `2f94fe197` is **fully green** -- 0 failing, 0 pending, `CI Complete`
+success. It does not merge, and `/pr-merge` being AI-callable did not change that.
+Ruleset `12344707` requires TWO checks; the second, **`Review Complete`**, never ran
+because you settled that #583 merges with no automated review. Dispatching
+`Review Status` would post `failure` (unreviewed head) -- more blocked, not less.
 
-The operator has since made `/pr-merge` model-invocable ("make it AI callable. I
-authorize!"), recorded in `.claude/commands/pr-merge.md` frontmatter. So the merge is
-now runnable HERE, but `Review Complete` is still missing and no honest path posts
-that status. **Do not fake a check and do not `--admin` around it. Ask.**
+Two honest exits, both yours: `gh pr merge 583 --squash --admin` (repo admins hold
+`bypass_mode: always`; `--admin` is hook-banned for me by design), or run the review
+after all. Tracked as `[?] f46112c0`, DEFAULT in ~105m = push the held commits so the
+wave is not stranded on a branch the merge deletes.
 
-## Local commits, NOT pushed (a push restarts the run the merge waits on)
+**Before any merge: `git branch 0901-1`.** Twelve commits live only on `0831-1`.
 
-`f5d9159c8` wl_shapedup, `8dd3d1546` meta-control, `1cf2a3733` rubric-calibration,
-plus this stretch: `1a8f9bc60` the arrow fix, `e42f9352e` the counter's accepted
-exit, `85549005f` the wl_shapedup wiring.
+## Where the work stands
 
-**Before merging, `git branch 0901-1` first.** These commits live only on `0831-1`,
-which the merge deletes.
+Tree CLEAN. Twelve commits local and unpushed. This stretch landed nine of them and
+all gates are green: `ci:quick` **274 ok / 0 failed**, hook harness **PASS=1885
+FAIL=0**, 239 judge-schema controls, 16 counter controls, python lint+format clean,
+shfmt clean.
 
-## Done this stretch
-
-- **The replay (plan section 10) is DONE** and written up in
-  `agent/PLAN-duplication-angle.md`. Seeded at 2026-07 the counter would have fired
-  **74x in 2026-08**, far above the plan's once-a-month floor. The depth question
-  does NOT re-open. Graft artifact gone: `609314a41` adds 4 files, not 4,531.
-- The counter gained an `accepted` + BLOCKER exit; `--seed` now refuses over an
-  existing seed.
-- `wl_shapedup` wired on the ALLOW path; its latch had two real bugs (never
-  incremented, wrong guard) plus one bad control. 239 controls green.
-- `block-bash-write-to-running-script.sh`: round FIVE of "a mention is not a target"
-  -- an ASCII `->` read as a redirect. Fixed, 3 cases added.
+- **The replay is DONE** (`4cbdddd88`). Seeded at 2026-07 the counter would have
+  fired **74x in 2026-08**. The plan feared twice a year; the depth question does
+  not re-open.
+- `wl_shapedup` is WIRED and running on the allow path.
+- Four plan claims died on contact with the code; all four are in
+  `agent/PLAN-duplication-angle.md`.
 
 ## Next action
 
-1. **Ask the operator how to clear `Review Complete`** -- it is the only thing
-   between green and merged, and no answer to it is mine to invent.
-2. `git branch 0901-1`, then `/pr-merge 0831-1` once (1) is answered.
-3. Finish the SHAPE_PROMPT calibration (worker below) and add it to
-   `.ci/config/rubric-calibration.json` only if it earns the entry.
-4. `[?] 5fd1f91d`: step 5, RE-SCOPE FIRST -- 219 spans, not ~9.
+1. Answer `[?] f46112c0` above, or let its DEFAULT push.
+2. Nothing else is blocked. If more work is wanted, the honest next piece is the
+   208-span backlog -- but re-scope it first, and read section 5 of the plan doc
+   before starting: the span the plan called "the cleanest case in the repo" does
+   NOT consolidate for 46 of its 62 instances.
 
-## Volatile traps right now
+## Traps worth carrying
 
-- **The calibration is NOT deterministic.** 14/14 was ONE sample. Re-runs of the
-  same fixtures on the same rubric produced a sweep MISS and later a brave MISS,
-  each passing on other samples. Never claim "calibrated at N/N" without saying how
-  many samples.
-- A negative fixture that points at REAL duplication tests nothing. Mine cited three
-  `check` closures as "the findings report"; the model was right and I was wrong.
-- `gate-test:claude-hooks` does NOT exist. It is `check:ci-hook-worklist-suite`.
-- `git ls-tree` does NOT glob: 0 hits where `git ls-files` gives 103.
-- Reading `$?` after a pipeline gives grep's status, not the gate's.
-- `sleep` over 120s is hook-blocked, even backgrounded.
+- **The judged-rule calibration is NOT deterministic.** 14/14 was ONE draw. Across
+  three samples, five fixtures missed at least once and none consistently, spanning
+  all three rules; a 20-fixture run scored 17/20. Never claim "calibrated at N/N"
+  without saying how many samples. `SHAPE_PROMPT` is deliberately NOT in
+  `.ci/config/rubric-calibration.json` for exactly this reason.
+- **Never build a fixture from a transcribed file:line.** Two of three were wrong;
+  the model was right both times it disagreed. Build them from the counter's output
+  -- doing so is what found the line-numbering bug.
+- A negative fixture pointing at REAL duplication tests nothing.
+- `gate-test:claude-hooks` does NOT exist; it is `check:ci-hook-worklist-suite`.
+- `git ls-tree` does NOT glob (0 hits where `git ls-files` gives 103).
+- `$?` after a pipeline is grep's status, not the gate's.
+- A control whose subject must be running ELSEWHERE goes vacuous when that thing
+  exits. Start your own victim process.
+- `sleep` over 120s is hook-blocked even backgrounded; `npx ruff` is blocked (use
+  `ruff` directly); a whole Bash call is rejected at PreToolUse, so a blocked
+  command runs NONE of its parts.
 - Do NOT put `"files": []` on the root tsconfig (`4dbcff0c7`).
 - `scripts/ci-runner/manifest.ts` carries peer `a276391d`'s hunks. Stage the HUNK.
 
 ## Open, not fixed
 
-`[>] b4fee388` (SHAPE_CASES live run in flight), `[?] 5fd1f91d`, `[>] 3b520036`
-(replay done; ticking). Peer `a276391d`'s `BACKUP_S3_BUCKET` finding needs
-credentials neither session has.
+`[?] f46112c0` only. Peer `a276391d`'s `BACKUP_S3_BUCKET` finding needs credentials
+neither session has.
