@@ -6279,3 +6279,95 @@ thorough case set and the class still shipped five times, so the three cases add
 exactly the ones that were missing — the arrow, and the two redirect forms the fix had to
 keep working. A first draft added eight and was deleted: five duplicated the existing
 section, which is the defect this whole stretch is about.
+
+## Three gates shipped, two of them defective on arrival
+
+Commits `0875535bb`..`cc17eab54`. Every fix in this stretch came from CI going red or from
+the stop-gate judge asking for the siblings of a fix, and the pattern worth recording is
+that **two of the three new gates were wrong when they landed, and their own controls did
+not say so.**
+
+### What shipped
+
+- **`check:ci-git-history-depth`** — a job that reads history must have checked out
+  history. A shallow clone does not fail `git rev-list`; it returns a smaller number. This
+  session lost hours to that: a grafted checkout reported one commit as adding 4,531 files
+  when it adds 4. 11 of 144 checkout steps declare `fetch-depth: 0` and nothing enforced
+  the pairing.
+- **`check:ci-judged-rule-wiring`** — a judged stop-rule that nothing CALLS does not run.
+  `wl_shapedup` shipped with 239 controls, every one exercising the module in isolation;
+  deleting its single call site left all 239 green while the rule silently stopped. The
+  rule set is discovered (a `*_MARKER` plus an `apply_verdict`), never listed.
+- **`check:ci-fetch-retry`** — a network fetch in an image build must survive one bad
+  minute. Two apt steps in `.devcontainer/Dockerfile` had five-attempt retry loops while
+  eight other fetches had none.
+
+### The pattern: a green that had verified nothing
+
+**`check:ci-git-history-depth` over-fired through the script hop.** Following step ->
+script (via the submodule-deps gate's resolver) produced 89 findings across 25+ jobs on a
+CI green for months. They are false by construction: `check-branch.sh:63` fetches its base
+ref explicitly and its comment names "a shallow clone with no merge base" as handled, and
+`resolve-version.sh:44` says it uses `git tag -l` rather than `git describe` BECAUSE
+describe requires tags. The hop was reverted, and a rule that had hard-coded
+`resolve-version.sh` as a history op went with it — it punished a script for the
+mitigation it already had.
+
+**`check:ci-fetch-retry` shipped VACUOUS for most of its corpus.** It reused `run_blocks`
+from `check_dockerfile_mirror_resilience.py` — a parser for Dockerfile `RUN` instructions —
+over a corpus that is mostly shell. Measured: **25 blocks for the Dockerfile, 0 for any
+`.sh`**. It printed "551 file(s) scanned" and reported clean while four real unretried
+fetches sat in `.devcontainer/` shell scripts inside its own corpus. All ten of its
+controls passed, because every one fed it Dockerfile text.
+
+Reusing the sibling's CORPUS was right. Reusing a parser that cannot read that corpus was
+not, and one commit was all it took for that to matter. The lesson is now a meta-control in
+`test-gate-anti-vacuity.sh`: **a gate must be able to SEE every file type it claims to
+scan**, which is a different assertion from the REGISTRY's "fails against an empty tree" —
+a gate can pass the first and fail the second.
+
+Then the honest number forced a scope: with shell readable the unrestricted corpus reported
+**119 unretried fetches across 69 files**, a wall rather than a gate. Scoped to image
+builds (Dockerfiles + `.devcontainer/`) the tree had four, all fixed rather than baselined.
+
+### Guards: round five and round six of one class
+
+`block-bash-write-to-running-script.sh` took two more rounds, and the second is a different
+mechanism from the five before it:
+
+- **Round five, a mention scored as a target**: an ASCII `->` in prose pointing at a
+  running script matched the redirect pattern, so writing a markdown file that DESCRIBED a
+  script was refused. A real redirect's `>` follows whitespace, start-of-string or a digit,
+  never `-`.
+- **Round six, the TARGET NAME became a regex**: the basename was interpolated raw, so a
+  one-letter name plus `.sh` produced `[x].sh` — and `.` is a wildcard, so for `b` that
+  matches **/bin/bash**, every bash process alive. Found while writing an unrelated control
+  whose fixture happened to be one letter long. Its Edit-door twin had the construction
+  byte-identical and was fixed BEFORE being bitten, by sweeping rather than waiting.
+
+A third class closed the same way: `hook_target_root` now lives in `lib/command-scan.sh`
+because three guards needed it. Two were judging THIS checkout for commands aimed
+elsewhere — `block-unverified-push.sh` refused a foreign repo's push against console's
+gate stamp (reproduced), and `warn-remote-drift.sh` had the same shape latently.
+
+### Reds that were not defects, and how that was established
+
+Three CI reds, all transient, none "fixed" by changing code that worked:
+
+| red | evidence it was transient |
+|---|---|
+| `E2E Workers (opensuse-16.0)` | openSUSE mirror answered 403; **probed** — the same URL returns 200 |
+| `Devcontainer (amd64)` | go.dev answered 500; **probed** — the same URL returns 302 |
+| `Quality / Packages` (tutorial player) | passes locally on the identical tree, 5/5 scenarios, and passed on four earlier heads of this PR |
+
+The middle one still produced a real fix, because the outage was not the defect: the
+asymmetry was. That is the distinction worth carrying — classify the red honestly, then ask
+whether the class around it is sound anyway.
+
+### A correction, recorded rather than buried
+
+While sweeping, this session read `check_dockerfile_mirror_resilience.py` as having the
+same shell-blindness and began "fixing" it. It does not: line 136 is a deliberate
+whole-file fallback for exactly the no-`RUN`-instructions case, documented in place, and it
+fires — a shell script pinning one mirror yields one offender. The edit would have disabled
+that path by making `not blocks` false. Reverted byte-identical before it shipped.
