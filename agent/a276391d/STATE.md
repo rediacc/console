@@ -1,65 +1,72 @@
-## SESSION a276391d 2026-09-01T09:48:57Z
+## SESSION a276391d 2026-09-01T11:00:32Z
 
-# Session a276391d — Bitwarden discovery + Dockerfile supply-chain hardening
+# Session a276391d — Bitwarden SM migration, proven live
 
-## Uncommitted in the tree right now
+## ACT FIRST: leaked credential
 
-**Bitwarden CLI + browser terminal + pin-freshness gate** (verified earlier this session):
-`bw` 2026.8.0 in `.devcontainer/Dockerfile` from the native zip; the `-term` traefik route
-with ttyd/tmux, proven in a real browser; `check:ci-devcontainer-pins` with an 8-case test.
+`AUTOPILOT_PRIVATE_KEY` was printed IN FULL into this transcript — `bws secret create`
+treats a value starting with `-----` as a flag and echoed the whole value. Fixed with `--`
+before the positionals; exposure stands. Rotate via GitHub → Developer settings → GitHub
+Apps → autopilot app → Private keys → new, revoke old; then update org secret, vault field
+and SM secret. Tracked `[?] #76f6f55e`.
 
-**Supply-chain hardening, landed this turn.** Five downloads in `.devcontainer/Dockerfile`
-now verify a sha256 (go :215, glab :358, bottom :396, openvscode :480) and ttyd :527 is
-pinned by `@sha256:` digest instead of a mutable tag. `go` and `openvscode` were streamed
-into `tar` and now download-then-verify — a stream cannot be checked before extraction.
+## Migration DONE — 39 secrets in `ci-shared`
 
-**New gate `check:ci-unverified-downloads`** (`scripts/check-unverified-downloads.ts`,
-`.unverified-download-allowlist`, `.ci/scripts/test/gates/test-unverified-downloads.sh`),
-three-point wired: `package.json:78`, `manifest.ts:2317`, `ci-quality.yml` quality-security.
-A liveness probe was added to `check-suppression-liveness.ts` (12 probes now, was 11).
-Its own two bugs are fixed: it listed with a bare `git ls-files` (blind to 5 submodule
-Dockerfiles) and it executed on import.
+Org **Rediacc** `61f8e970`, SM enabled. Project `ci-shared` =
+`2b5e33f9-b5ae-4ecc-972d-b36f00b0f86a`. Token in `private/account/.env` as
+`mc_migrate_claude` (**7-day validity**, read-write). 36 vault fields (round-trip verified,
+0 missing) + 3 minted R2 backup credentials.
 
-## Bitwarden discovery — complete
+It REPAIRED two keys in flight: both PEMs were corrupt in the vault differently —
+`rediacc-ci-cd…pem` by **spaces**, `AUTOPILOT_PRIVATE_KEY` by **literal `\n`**. Neither
+parsed as stored; both parse from SM. **SM holds a more correct copy than the vault.**
 
-`~/.bw-session` holds an unlocked session for mfbayraktar@live.com. Vault item
-`c38d82bb` = `github.com`, 36 custom fields, `organizationId: null` even though org
-**Rediacc** `61f8e970` exists. Full table: `agent/a276391d/secret-mapping.md`.
+## ED25519 — PROVEN production
 
-Of 44 migratable GitHub secrets: 17 in the vault, 5 in `.env`, 6 re-mintable by
-`./run.sh rotation rotate` (admin creds already in `.env`), 4 more once `ses-eu`/`ses-us`
-gain `github-secret:` consumers, 2 dead, 9 needing the operator.
+Streamed released `s3://rediacc-releases/cli/stable/rdc-linux-x64` (503 MB): vault
+`ACCOUNT_ED25519_PUBLIC_KEY` appears **6×**, dev key **0×** (control). That binary carries
+`keys.ProductionPublicKey` from `build-renet.sh:201`. Fingerprint `fb37f1ae16f8b7c0`.
+Corroborated: vault X25519 == `rediacc.json` `account.e2ePublicKey` (`edge-eu.rediacc.com`).
+**renet has ZERO X25519 refs** — X25519 is the CLI config key, ED25519 the licence key.
 
-Three facts that cost real work to establish:
-- `gh secret` has no `get`. The migration is a re-mint, not a copy.
-- Cloudflare Workers rename everything (`ACCOUNT_ED25519_PRIVATE_KEY` ->
-  `ED25519_PRIVATE_KEY`); `set-account-worker-secrets.sh` is the translation table.
-- `AWS_SES_*_ASIA` are `required: true`, passed, then overwritten with EU at
-  `set-account-worker-secrets.sh:84`. Dead.
+## Cloudflare
 
-## The open operator decision
+`CF_EMAIL`+`CF_GLOBAL_API_KEY` in `.env` work against account
+`fa51e4a18d553c30e1633288e9733d04`. Minted `backup-s3-20260901T103133Z` (account-scoped R2
+write, matching the 3 existing R2 tokens); derived S3 creds verified live. **The OLD backup
+credential is still active and unidentified.**
 
-`GPG_PRIVATE_KEY`/`GPG_PASSPHRASE` exist ONLY in the unreadable GitHub org secret. The
-local keyring is empty; the published public half is `rsa4096/49BA687F0527C72B`. Options
-put to the operator: leave it, extract once from inside a CI job, or generate a new
-keypair. No default is safe to execute alone.
+## Reusable
+
+```
+export BWS_ACCESS_TOKEN="$(grep -m1 '^mc_migrate_claude=' private/account/.env | cut -d= -f2-)"
+docker run --rm -e BWS_ACCESS_TOKEN \
+  ghcr.io/bitwarden/bws@sha256:3927158c53ac5a17d6cbe59fc3e1353e426f168bf246dbfe3668f6de5eaa107f \
+  secret list 2b5e33f9-b5ae-4ecc-972d-b36f00b0f86a -o json
+```
+`~/.bw-session` = unlocked PM session; `bw` at `~/.local/bin/bw`.
+
+## Also landed (uncommitted except commit 3dffe820f)
+
+5 Dockerfile downloads sha256-verified + ttyd by digest; gate
+`check:ci-unverified-downloads`; 2 workflow fixes (`cd-stage.yml` piped nfpm into `sudo
+tar` while sibling `ci.yml:810` verified; `ci-build-renet.yml` pulled golangci-lint from
+`master`). **Do not commit `scripts/ci-runner/manifest.ts` wholesale** — peer f88f9be7 has
+a hunk there.
 
 ## Next action
 
-1. Add `github-secret:AWS_SES_{ACCESS_KEY_ID,SECRET_ACCESS_KEY}_{EU,US}` to the `ses-eu`
-   and `ses-us` consumers in `private/account/rotation-manifest.json`. Rotation already
-   mints SES credentials and already holds `SES_AK_ID`/`SES_AK_SECRET`; it just never
-   pushes them to GitHub. Four manifest entries, no operator, and it moves four secrets
-   from "operator must" to "automatable".
-2. Then `npm run ci` for the full local pass — only targeted gates have been run.
-3. The migration plan itself stays DRAFT at
-   `/home/developer/.claude/plans/1-go-to-web-peppy-twilight.md`; do not decompose it
-   into tracked items until the operator approves one.
+1. Migrate the 5 `.env`-sourced secrets into `ci-shared` (`R2_ACCESS_KEY_ID`,
+   `R2_SECRET_ACCESS_KEY`, `R2_ENDPOINT`, `CLAUDE_CODE_OAUTH_TOKEN`,
+   `TURNSTILE_SECRET_KEY`). No operator needed; token live 7 days.
+2. Fold in the backup-storage sub-agent's verdict on `BACKUP_S3_BUCKET` (single value
+   shared by all regions, yet buckets are region-suffixed and **no `rediacc-backups-eu`
+   exists**; operator thinks it is an untested new feature).
+3. Then the 16 rotation-backed secrets via `./run.sh rotation rotate <slug>`.
 
 ## Remaining
 
-- GPG decision (operator).
-- 9 values only the operator can fetch; Stripe is copy-paste, `BACKUP_S3_*` needs a
-  provider named.
-- `gh auth refresh -h github.com -s admin:org` — org secrets no workflow references
-  are still invisible.
+- `[?] #76f6f55e` rotate the leaked AUTOPILOT_PRIVATE_KEY — operator only.
+- GPG regeneration + the revocation cert `docs/code-signing-guide.md:559` leaves unticked.
+- `BACKUP_S3_BUCKET` value; repoint the org secret at the new R2 credential, revoke the old.
+- `gh auth refresh -h github.com -s admin:org`.
