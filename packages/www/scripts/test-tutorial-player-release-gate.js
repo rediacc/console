@@ -4,6 +4,7 @@ import { execFileSync, spawn } from 'node:child_process';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import { isDevServerReady, stripAnsi } from './lib/dev-server-ready.js';
 import { captureNavigationEvidence, pollRoutesReady } from './lib/tutorial-player-diagnostics.js';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
@@ -47,6 +48,7 @@ let intentionalShutdown = false;
 function log(message) {
   process.stdout.write(`${message}\n`);
 }
+
 
 /**
  * @param {string} message
@@ -189,6 +191,18 @@ function reportInconclusiveCauses(resources) {
         `boot=${resources.bootMs}ms of a 180000ms budget) -- this may be resource contention, ` +
         `not a real regression. Re-run on an idle machine before treating it as a product bug.\n`
     );
+    return;
+  }
+  if (resources.slowBoot) {
+    // THE OPPOSITE READING, SAID OUT LOUD. A slow boot on an IDLE machine is the
+    // signature of something that never became ready, not of a busy runner, and the
+    // reader needs pushing toward the evidence rather than away from it.
+    process.stderr.write(
+      `\n⚠ THE SERVER TOOK ${resources.bootMs}ms TO BOOT, but the machine was IDLE ` +
+        `(load/core=${resources.loadPerCore.toFixed(2)}). That is NOT resource contention. ` +
+        `Read serverLog in summary.json: if it contains a ready banner, the server started ` +
+        `fine and the READINESS MATCHER failed to see it.\n`
+    );
   }
 }
 
@@ -219,7 +233,14 @@ function resourceSnapshot(bootMs) {
     loadavg1m: os.loadavg()[0],
     loadPerCore,
     bootMs,
-    pressureDetected: slowBoot || highLoad,
+    slowBoot,
+    // PRESSURE IS WHAT THE LOAD AVERAGE SAYS, NOTHING ELSE. This used to be
+    // `slowBoot || highLoad`, which made every boot timeout announce "SYSTEM UNDER
+    // LOAD" -- because slowBoot is the timeout restated, not evidence about the
+    // machine. Printed verbatim in CI on 2026-09-01: "SYSTEM UNDER LOAD (load/core=0.06)".
+    // An instrument that tells you to dismiss the failure it just detected is worse
+    // than one that says nothing, and this one bought five re-runs of a real bug.
+    pressureDetected: highLoad,
   };
 }
 
@@ -256,33 +277,36 @@ async function startDevServer() {
       reject(new Error('Timed out waiting for astro dev server to start'));
     }, 180000);
 
-    // MATCH ASTRO'S BANNER, ON THE ACCUMULATED BUFFER, NOT ON EACH CHUNK.
-    //
-    // Two defects here, and the second one I introduced and then shipped:
+    // WAITING FOR THE BANNER. Three defects lived here, in order, and the middle one
+    // was a WRONG DIAGNOSIS of the third -- worth recording, because it cost four
+    // re-runs that each looked like infrastructure flake.
     //
     // 1. The original test was `text.includes('ready')`. "address already in use"
-    //    CONTAINS "ready", so an EADDRINUSE line would read as "the server is up" and the
-    //    run would proceed against somebody else's listener.
-    // 2. Replacing it with a regex over the CHUNK made it fragile in the opposite
-    //    direction. `onData` sees whatever bytes arrive together, so a boundary falling
-    //    inside the banner leaves neither half matching -- and the needle grew from 5
-    //    characters ("ready") to 8 ("ready in"), which is strictly more splittable.
-    //    Measured: run 33542869307 timed out with `bootMs: 180061` and
-    //    `pressureDetected: true`, where every earlier run booted in ~32s. That is the
-    //    shape of a matcher that never fired, not a server that never started.
+    //    CONTAINS "ready", so an EADDRINUSE line read as "the server is up" and the run
+    //    would have proceeded against somebody else's listener. Tightening it was right.
+    // 2. The tightened regex was then blamed on CHUNK BOUNDARIES -- the theory being that
+    //    `onData` sees whatever bytes arrive together, so a split inside the banner leaves
+    //    neither half matching. The buffer was made cumulative to fix that. THE THEORY WAS
+    //    WRONG and the change did not help: the very next run timed out identically.
+    // 3. The real cause, measured 2026-09-01 by running the command both ways: GitHub
+    //    Actions always sets `CI=true`, astro's colour library treats that as
+    //    colour-capable with no TTY, and the coloured banner puts an escape sequence
+    //    exactly between `in` and the space -- `\x1b[2mready in\x1b[22m 4739`. The
+    //    matcher returns TRUE on the plain capture and FALSE on the CI capture, byte for
+    //    byte. So it could never go green in CI and always went green locally, which is
+    //    precisely the shape that reads as a flaky runner.
     //
-    // Testing the ACCUMULATED buffer removes the boundary hazard entirely: the banner is
-    // matched once it has all arrived, however it was delivered.
+    // The fix is to strip ANSI on INGEST (see ./lib/dev-server-ready.js), not to teach one
+    // regex about escape codes. That keeps the artifact readable and makes every future
+    // matcher over this buffer colour-proof by construction rather than by remembering.
     //
-    // The URL alternative also said `127.0.0.1`, which astro never prints -- its banner
-    // reads `Local    http://localhost:<port>/`. Neither this version nor the original
-    // could ever have matched on that, so it was doing no work at all. Captured from a
-    // real run: " astro  v5.18.1 ready in 4806 ms" then "Local    http://localhost:4599/".
-    const READY = /ready in \s*\d|Local\s+https?:\/\/(localhost|127\.0\.0\.1):/i;
+    // Both host spellings are matched because astro prints the host it was GIVEN:
+    // `localhost` by default, and `127.0.0.1` under `--host 127.0.0.1`, which is how this
+    // gate starts it. An earlier comment here asserted astro "never prints 127.0.0.1";
+    // that was wrong, and a real capture is what settled it.
     const onData = (chunk) => {
-      const text = String(chunk);
-      serverLog.push(text);
-      if (READY.test(serverLog.join(''))) {
+      serverLog.push(stripAnsi(String(chunk)));
+      if (isDevServerReady(serverLog.join(''))) {
         clearTimeout(timeout);
         resolve();
       }
@@ -728,6 +752,13 @@ async function main() {
       baseUrl,
       resources,
       serverDiedMidRun,
+      // THE BOOT TIMEOUT IS THE ONE FAILURE THAT CANNOT BE READ WITHOUT THIS, and it
+      // was the one path that omitted it. `serverLog` was written on the navigation
+      // path only, so five boot-timeout artifacts in a row reported that the server
+      // "timed out" while discarding the banner proving it had started in 4.7s. The
+      // header comment above already claimed this was "written out on failure"; now
+      // it is.
+      serverLog,
     });
     exitCode = 1;
   } finally {

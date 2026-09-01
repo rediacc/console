@@ -24,6 +24,7 @@ import type {
 } from '../storyboard.ts';
 import type { LiveSession } from './browser-session.ts';
 import type { ChunkProducer, SceneContext } from './index.ts';
+import { stripAnsi } from '../dev-server-ready.js';
 
 /** Ceiling (and default) for how long a click waits for its target. */
 const CLICK_TIMEOUT_MS = 5000;
@@ -89,7 +90,12 @@ export async function resolvePageSource(
       180_000
     );
     proc.stdout.on('data', (chunk: Buffer) => {
-      buffer += chunk.toString();
+      // ANSI stripped for the same reason the release gate strips it: a command run
+      // under `CI=true` colours its output even with no TTY, and the escape lands
+      // inside the value being parsed. Here that surfaces as the confusing
+      // `printed "<esc>[36mhttp://..." , not a URL` rather than a silent hang, but it
+      // is the same defect and it is swept here rather than waiting to be hit.
+      buffer += stripAnsi(chunk.toString());
       const newline = buffer.indexOf('\n');
       if (newline >= 0) {
         clearTimeout(timer);
