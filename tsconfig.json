@@ -20,17 +20,27 @@
       "@rediacc/shared/*": ["./packages/shared/src/*"]
     }
   },
-  // SOLUTION-STYLE, not a project. This file exists to hold the shared compilerOptions the
-  // five workspace configs `extends`, plus the `references` graph for `tsc -b`. It matches
-  // NO files of its own, and `files: []` is what says so.
+  // NO `files` AND NO `include`, DELIBERATELY, and do NOT "fix" that -- it was tried and
+  // reverted the same morning (b6e4ac65b, undone here).
   //
-  // Without it, a bare `tsc --noEmit` here compiles EVERY .ts in the repository under this
-  // file's options -- ES2020 lib, `types: ["node"]`, no DOM, no astro, no workers-types --
-  // and reports 10,095 errors that are all the wrong config rather than any defect. That
-  // is a foot-gun aimed at exactly the person trying to check the repo's types, and it also
-  // forced `check:ci-typecheck-scope-coverage` to special-case a base whose file set is the
-  // whole tree. Use `npm run typecheck`, which runs each project under its own options.
-  "files": [],
+  // The temptation: with neither key, tsc treats this as matching EVERY .ts under the repo,
+  // so a bare `npx tsc --noEmit` here compiles the whole tree under the options this file
+  // exists to SHARE rather than apply -- lib ES2020, `types: ["node"]`, no DOM, no astro,
+  // no workers-types -- and reports 10,095 errors that are all the wrong config and none of
+  // them a defect. `"files": []` is the textbook solution-file fix and it silences that.
+  //
+  // WHY IT IS WRONG HERE. eslint lints type-aware through `projectService`
+  // (eslint.config.js:312), which picks a file's project by walking UP to the nearest
+  // tsconfig.json. Every `__tests__` tree is EXCLUDED by its own package's build config, so
+  // for 356 files -- packages/cli/src/**/__tests__ (144), private/account/tests (94),
+  // packages/shared/src/**/__tests__, packages/cli/scripts, private/account/scripts -- the
+  // match-everything root IS the project of last resort. Add `files: []` and all 356 fail
+  // to PARSE: "was not found by the project service", and `check:lint` reds in CI.
+  //
+  // So the cosmetic hazard stays. `npm run typecheck` is the supported way to check types
+  // and runs each project under its own options; a bare `tsc` here is not a workflow
+  // anybody has, and check:ci-typecheck-scope-coverage special-cases this file for exactly
+  // this reason.
   "references": [
     { "path": "./packages/shared" },
     { "path": "./packages/cli" }
