@@ -1,10 +1,10 @@
 import { Turnstile } from '@marsidev/react-turnstile';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { useLanguage } from '../hooks/useLanguage';
 import { captchaMessage, useCaptchaGuard } from '../hooks/useCaptchaGuard';
+import { useLanguage } from '../hooks/useLanguage';
 import { useTranslation } from '../i18n/react';
-import Overlay from './Overlay';
 import type { Language } from '../i18n/types';
+import Overlay from './Overlay';
 
 declare global {
   interface Window {
@@ -135,9 +135,7 @@ const ContactModal: React.FC<ContactModalProps> = ({ lang }) => {
 
       setState('success');
       captcha.reset();
-      const utm =
-        (window as unknown as { __pa_get_utm?: () => Record<string, string> }).__pa_get_utm?.() ??
-        {};
+      const utm = window.__pa_get_utm?.() ?? {};
       const lastSolution = sessionStorage.getItem('__pa_last_solution') ?? undefined;
       window.plausible?.('contact_submit', {
         props: {

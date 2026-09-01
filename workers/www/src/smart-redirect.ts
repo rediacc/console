@@ -58,7 +58,10 @@ async function loadManifest(assets: Fetcher): Promise<RouteEntry[]> {
   } catch {
     manifestCache = [];
   }
-  return manifestCache;
+  // `?? []` rather than a bare return: `manifestCache` is `RouteEntry[] | null` and TS
+  // cannot see that both branches above have assigned it. Narrowing here says the same
+  // thing the code already guarantees, without loosening the declared type.
+  return manifestCache ?? [];
 }
 
 // ---------------------------------------------------------------------------
@@ -73,7 +76,10 @@ function parseRequestPath(pathname: string): ParsedRequest {
   // Detect language prefix
   let lang = 'en';
   let rest = segments;
-  if (segments.length > 0 && SUPPORTED_LANGUAGES.includes(segments[0])) {
+  // `SUPPORTED_LANGUAGES` is a readonly tuple of locale LITERALS, so `.includes()` will
+  // not take an arbitrary string. Widening the receiver for the membership test is the
+  // narrow fix; casting `segments[0]` to the union would assert something not yet known.
+  if (segments.length > 0 && (SUPPORTED_LANGUAGES as readonly string[]).includes(segments[0])) {
     lang = segments[0];
     rest = segments.slice(1);
   }

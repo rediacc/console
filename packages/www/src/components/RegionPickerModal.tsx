@@ -2,9 +2,9 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { REGIONS, type Region } from '../config/regions';
 import { useLanguage } from '../hooks/useLanguage';
 import { useTranslation } from '../i18n/react';
+import type { Language } from '../i18n/types';
 import { buildPortalRedirectUrl, getHostKind } from '../utils/marketing-host';
 import Overlay from './Overlay';
-import type { Language } from '../i18n/types';
 
 const DEFAULT_TARGET_PATH = '/account/';
 

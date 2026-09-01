@@ -1,7 +1,12 @@
 {
   "compilerOptions": {
     "target": "ES2022",
-    "module": "ES2022",
+    // ESNext, not ES2022: src/__tests__ reaches private/account/src/i18n/index.ts, which
+    // uses IMPORT ATTRIBUTES (`with { type: 'json' }`). Under ES2022 tsc reports TS2823
+    // thirteen times for a file that is not this worker's and is not broken -- it is a
+    // module-setting mismatch, not a defect. `moduleResolution: bundler` below already
+    // requires an esnext-family module setting, so this also makes the pair consistent.
+    "module": "ESNext",
     "moduleResolution": "bundler",
     "lib": ["ES2022"],
     "types": ["@cloudflare/workers-types"],
@@ -10,5 +15,15 @@
     "skipLibCheck": true,
     "resolveJsonModule": true
   },
-  "include": ["src"]
+  "include": [
+    "src",
+    // Ambient module declarations must be visible to EVERY project that reaches the
+    // module that uses them -- the same rule scripts/tsconfig.json states for
+    // packages/cli/src/types/*.d.ts. src/index.ts imports private/account/src/app.js,
+    // which transitively reaches services/pdf/qr.ts, which deep-imports
+    // `qrcode/lib/core/qrcode.js`. private/account ALREADY declares that module in
+    // src/types/qrcode-core.d.ts; this worker just could not see the file, so it reported
+    // TS7016 for a module that is in fact typed.
+    "../../private/account/src/types/*.d.ts"
+  ]
 }

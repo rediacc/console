@@ -85,9 +85,7 @@ const NewsletterSignup: React.FC<Props> = ({
       setState('success');
       captcha.reset();
       onSuccess?.();
-      const utm =
-        (window as unknown as { __pa_get_utm?: () => Record<string, string> }).__pa_get_utm?.() ??
-        {};
+      const utm = window.__pa_get_utm?.() ?? {};
       window.plausible?.('newsletter_signup', { props: { source, variant, ...utm } });
     } catch (err) {
       setState('error');

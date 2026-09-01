@@ -1,0 +1,19 @@
+{
+  // Typechecks what tsconfig.json excludes from the build, the same shape as
+  // packages/shared/tsconfig.test.json and packages/cli/tsconfig.test.json.
+  //
+  // The build config carries `exclude: ["src/**/*.test.ts"]` because it EMITS into dist
+  // and a test has no business shipping. That left this package's tests typechecked by
+  // nothing: vitest transpiles without checking, so a fixture could assert against a
+  // shape the code stopped having and every gate stayed green.
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "composite": false,
+    "noEmit": true,
+    "declaration": false,
+    "declarationMap": false,
+    "types": ["node", "vitest/globals"]
+  },
+  "include": ["src/**/*.ts"],
+  "exclude": ["node_modules", "dist"]
+}

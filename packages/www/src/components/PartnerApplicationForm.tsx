@@ -198,9 +198,7 @@ const PartnerApplicationForm: React.FC = () => {
 
       setState('success');
       captcha.reset();
-      const utm =
-        (window as unknown as { __pa_get_utm?: () => Record<string, string> }).__pa_get_utm?.() ??
-        {};
+      const utm = window.__pa_get_utm?.() ?? {};
       window.plausible?.('partner_apply_submit', {
         props: {
           source: 'partners-page',

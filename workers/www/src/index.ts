@@ -1,10 +1,10 @@
-import { findSmartRedirect } from './smart-redirect';
-import { applyRedirect } from './redirect-aliases';
 import { drizzle } from 'drizzle-orm/d1';
 import { createApp } from '../../../private/account/src/app.js';
+import type { Database } from '../../../private/account/src/db/index.js';
 import * as schema from '../../../private/account/src/db/schema.js';
 import { envSchema } from '../../../private/account/src/types/env.js';
-import type { Database } from '../../../private/account/src/db/index.js';
+import { applyRedirect } from './redirect-aliases';
+import { findSmartRedirect } from './smart-redirect';
 
 interface Env {
   ASSETS: Fetcher;
@@ -52,7 +52,9 @@ export const REWRITABLE_TYPES = [
 export const REWRITABLE_PATHS = ['/install.sh', '/install.ps1'] as const;
 
 export function shouldRewrite(contentType: string | null, pathname: string): boolean {
-  if (REWRITABLE_PATHS.includes(pathname)) return true;
+  // Same widening as smart-redirect's locale test: REWRITABLE_PATHS is `as const`, so
+  // `.includes()` rejects a plain string. The receiver widens; the tuple does not.
+  if ((REWRITABLE_PATHS as readonly string[]).includes(pathname)) return true;
   if (!contentType) return false;
   return REWRITABLE_TYPES.some((t) => contentType.startsWith(t));
 }
