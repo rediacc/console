@@ -49,7 +49,6 @@ function log(message) {
   process.stdout.write(`${message}\n`);
 }
 
-
 /**
  * @param {string} message
  * @param {unknown} [details] structured context dumped alongside the failure
