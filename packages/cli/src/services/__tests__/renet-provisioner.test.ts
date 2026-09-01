@@ -56,18 +56,26 @@ vi.mock('../renet/provision-state.js', () => ({
 
 class MockSFTPClient {
   connect = vi.fn(() => connectDelegate());
-  exec = vi.fn<(command: string) => Promise<string>>((command: string) => {
-    if (command === 'uname -m') return 'x86_64\n';
-    if (command.includes('flock -w 120')) return 'UPDATED CURRENT_UPDATED\n';
-    if (command.includes(' version 2>/dev/null')) return 'remote-hash\n';
-    if (command.includes('command -v rsync')) return '';
-    if (command.startsWith('readlink ')) return '';
-    if (command.includes('find ')) return '';
-    if (command.includes('sha256sum')) return 'remote-hash\n';
-    if (command.includes('systemctl is-active --quiet rediacc-router')) return 'RESTARTED\n';
-    if (command.startsWith('rm -f ')) return '';
-    throw new Error(`Unexpected command: ${command}`);
-  });
+  // The mocked signature returns Promise<string> but these bodies are sync lookup tables.
+  // `async` satisfies tsc and then trips @typescript-eslint/require-await, which is right:
+  // there is no await. So the body stays sync and is wrapped at the boundary, which is the
+  // pattern already used at remote/sync/__tests__/sftp-fallback.test.ts:31.
+  exec = vi.fn<(command: string) => Promise<string>>((command: string) =>
+    Promise.resolve(
+      ((): string => {
+        if (command === 'uname -m') return 'x86_64\n';
+        if (command.includes('flock -w 120')) return 'UPDATED CURRENT_UPDATED\n';
+        if (command.includes(' version 2>/dev/null')) return 'remote-hash\n';
+        if (command.includes('command -v rsync')) return '';
+        if (command.startsWith('readlink ')) return '';
+        if (command.includes('find ')) return '';
+        if (command.includes('sha256sum')) return 'remote-hash\n';
+        if (command.includes('systemctl is-active --quiet rediacc-router')) return 'RESTARTED\n';
+        if (command.startsWith('rm -f ')) return '';
+        throw new Error(`Unexpected command: ${command}`);
+      })()
+    )
+  );
   writeFile = vi.fn((_path: string, _data: Buffer) => Promise.resolve());
   exists = vi.fn((_path: string) => Promise.resolve(false));
   close = vi.fn();
@@ -138,18 +146,22 @@ function configureExec(
 ) {
   const remoteHash = options?.remoteHash ?? 'remote-hash';
   const lockResult = options?.lockResult ?? 'UPDATED CURRENT_UPDATED\n';
-  instance.exec.mockImplementation((command: string) => {
-    if (command === 'uname -m') return 'x86_64\n';
-    if (command.includes('flock -w 120')) return lockResult;
-    if (command.includes(' version 2>/dev/null')) return `${remoteHash}\n`;
-    if (command.includes('command -v rsync')) return '';
-    if (command.startsWith('readlink ')) return '';
-    if (command.includes('find ')) return '';
-    if (command.includes('sha256sum')) return `${remoteHash}\n`;
-    if (command.includes('systemctl is-active --quiet rediacc-router')) return 'RESTARTED\n';
-    if (command.startsWith('rm -f ')) return '';
-    throw new Error(`Unexpected command: ${command}`);
-  });
+  instance.exec.mockImplementation((command: string) =>
+    Promise.resolve(
+      ((): string => {
+        if (command === 'uname -m') return 'x86_64\n';
+        if (command.includes('flock -w 120')) return lockResult;
+        if (command.includes(' version 2>/dev/null')) return `${remoteHash}\n`;
+        if (command.includes('command -v rsync')) return '';
+        if (command.startsWith('readlink ')) return '';
+        if (command.includes('find ')) return '';
+        if (command.includes('sha256sum')) return `${remoteHash}\n`;
+        if (command.includes('systemctl is-active --quiet rediacc-router')) return 'RESTARTED\n';
+        if (command.startsWith('rm -f ')) return '';
+        throw new Error(`Unexpected command: ${command}`);
+      })()
+    )
+  );
 }
 
 function getMockInstance(index: number): MockSFTPClient {
@@ -388,16 +400,20 @@ describe('RenetProvisionerService', () => {
     );
 
     await vi.waitFor(() => expect(mockInstances).toHaveLength(1));
-    getMockInstance(0).exec.mockImplementation((command: string) => {
-      if (command === 'uname -m') return 'x86_64\n';
-      if (command.includes('flock -w 120')) return 'UPDATED CURRENT_UPDATED\n';
-      if (command.includes(' version 2>/dev/null')) return 'remote-hash\n';
-      if (command.includes('command -v rsync')) return '/usr/bin/rsync\n';
-      if (command.startsWith('readlink ')) return '/usr/lib/rediacc/renet/0.5.9/renet\n';
-      if (command.startsWith('cp -f ')) return '';
-      if (command.includes('sha256sum')) return 'local-hash\n';
-      throw new Error(`Unexpected command: ${command}`);
-    });
+    getMockInstance(0).exec.mockImplementation((command: string) =>
+      Promise.resolve(
+        ((): string => {
+          if (command === 'uname -m') return 'x86_64\n';
+          if (command.includes('flock -w 120')) return 'UPDATED CURRENT_UPDATED\n';
+          if (command.includes(' version 2>/dev/null')) return 'remote-hash\n';
+          if (command.includes('command -v rsync')) return '/usr/bin/rsync\n';
+          if (command.startsWith('readlink ')) return '/usr/lib/rediacc/renet/0.5.9/renet\n';
+          if (command.startsWith('cp -f ')) return '';
+          if (command.includes('sha256sum')) return 'local-hash\n';
+          throw new Error(`Unexpected command: ${command}`);
+        })()
+      )
+    );
     connectGate.resolve();
 
     const result = await provisionPromise;
@@ -423,16 +439,20 @@ describe('RenetProvisionerService', () => {
     );
 
     await vi.waitFor(() => expect(mockInstances).toHaveLength(1));
-    getMockInstance(0).exec.mockImplementation((command: string) => {
-      if (command === 'uname -m') return 'x86_64\n';
-      if (command.includes('flock -w 120')) return 'UPDATED CURRENT_UPDATED\n';
-      if (command.includes(' version 2>/dev/null')) return 'remote-hash\n';
-      if (command.includes('command -v rsync')) return '/usr/bin/rsync\n';
-      if (command.startsWith('readlink ')) return `${remoteInstallPath}\n`;
-      if (command.startsWith('cp -f ')) return '';
-      if (command.includes('sha256sum')) return 'local-hash\n';
-      throw new Error(`Unexpected command: ${command}`);
-    });
+    getMockInstance(0).exec.mockImplementation((command: string) =>
+      Promise.resolve(
+        ((): string => {
+          if (command === 'uname -m') return 'x86_64\n';
+          if (command.includes('flock -w 120')) return 'UPDATED CURRENT_UPDATED\n';
+          if (command.includes(' version 2>/dev/null')) return 'remote-hash\n';
+          if (command.includes('command -v rsync')) return '/usr/bin/rsync\n';
+          if (command.startsWith('readlink ')) return `${remoteInstallPath}\n`;
+          if (command.startsWith('cp -f ')) return '';
+          if (command.includes('sha256sum')) return 'local-hash\n';
+          throw new Error(`Unexpected command: ${command}`);
+        })()
+      )
+    );
     connectGate.resolve();
 
     const result = await provisionPromise;
@@ -475,14 +495,18 @@ describe('RenetProvisionerService', () => {
     );
 
     await vi.waitFor(() => expect(mockInstances).toHaveLength(1));
-    getMockInstance(0).exec.mockImplementation((command: string) => {
-      if (command === 'uname -m') return 'x86_64\n';
-      if (command.includes('flock -w 120')) return 'UPDATED CURRENT_UPDATED\n';
-      if (command.includes(' version 2>/dev/null')) return 'remote-hash\n';
-      if (command.includes('command -v rsync')) return '/usr/bin/rsync\n';
-      if (command.startsWith('readlink ')) return '/usr/lib/rediacc/renet/0.5.9/renet\n';
-      throw new Error(`Unexpected command: ${command}`);
-    });
+    getMockInstance(0).exec.mockImplementation((command: string) =>
+      Promise.resolve(
+        ((): string => {
+          if (command === 'uname -m') return 'x86_64\n';
+          if (command.includes('flock -w 120')) return 'UPDATED CURRENT_UPDATED\n';
+          if (command.includes(' version 2>/dev/null')) return 'remote-hash\n';
+          if (command.includes('command -v rsync')) return '/usr/bin/rsync\n';
+          if (command.startsWith('readlink ')) return '/usr/lib/rediacc/renet/0.5.9/renet\n';
+          throw new Error(`Unexpected command: ${command}`);
+        })()
+      )
+    );
     connectGate.resolve();
 
     const result = await provisionPromise;
@@ -504,17 +528,21 @@ describe('RenetProvisionerService', () => {
     );
 
     await vi.waitFor(() => expect(mockInstances).toHaveLength(1));
-    getMockInstance(0).exec.mockImplementation((command: string) => {
-      if (command === 'uname -m') return 'x86_64\n';
-      if (command.includes('flock -w 120')) return 'UPDATED CURRENT_UPDATED\n';
-      if (command.includes(' version 2>/dev/null')) return 'remote-hash\n';
-      if (command.includes('command -v rsync')) return '/usr/local/bin/rsync-renet\n';
-      if (command.startsWith('readlink ')) return '';
-      if (command.includes('find ')) return '/usr/lib/rediacc/renet/0.5.8/renet\n';
-      if (command.startsWith('cp -f ')) return '';
-      if (command.includes('sha256sum')) return 'local-hash\n';
-      throw new Error(`Unexpected command: ${command}`);
-    });
+    getMockInstance(0).exec.mockImplementation((command: string) =>
+      Promise.resolve(
+        ((): string => {
+          if (command === 'uname -m') return 'x86_64\n';
+          if (command.includes('flock -w 120')) return 'UPDATED CURRENT_UPDATED\n';
+          if (command.includes(' version 2>/dev/null')) return 'remote-hash\n';
+          if (command.includes('command -v rsync')) return '/usr/local/bin/rsync-renet\n';
+          if (command.startsWith('readlink ')) return '';
+          if (command.includes('find ')) return '/usr/lib/rediacc/renet/0.5.8/renet\n';
+          if (command.startsWith('cp -f ')) return '';
+          if (command.includes('sha256sum')) return 'local-hash\n';
+          throw new Error(`Unexpected command: ${command}`);
+        })()
+      )
+    );
     connectGate.resolve();
 
     const result = await provisionPromise;
@@ -536,17 +564,21 @@ describe('RenetProvisionerService', () => {
     );
 
     await vi.waitFor(() => expect(mockInstances).toHaveLength(1));
-    getMockInstance(0).exec.mockImplementation((command: string) => {
-      if (command === 'uname -m') return 'x86_64\n';
-      if (command.includes('flock -w 120'))
-        throw new Error('Command exited with code 127: FLOCK_MISSING');
-      if (command.includes(' version 2>/dev/null')) return 'remote-hash\n';
-      if (command.includes('command -v rsync')) return '';
-      if (command.startsWith('readlink ')) return '';
-      if (command.includes('find ')) return '';
-      if (command.startsWith('rm -f ')) return '';
-      throw new Error(`Unexpected command: ${command}`);
-    });
+    getMockInstance(0).exec.mockImplementation((command: string) =>
+      Promise.resolve(
+        ((): string => {
+          if (command === 'uname -m') return 'x86_64\n';
+          if (command.includes('flock -w 120'))
+            throw new Error('Command exited with code 127: FLOCK_MISSING');
+          if (command.includes(' version 2>/dev/null')) return 'remote-hash\n';
+          if (command.includes('command -v rsync')) return '';
+          if (command.startsWith('readlink ')) return '';
+          if (command.includes('find ')) return '';
+          if (command.startsWith('rm -f ')) return '';
+          throw new Error(`Unexpected command: ${command}`);
+        })()
+      )
+    );
     connectGate.resolve();
 
     const result = await provisionPromise;

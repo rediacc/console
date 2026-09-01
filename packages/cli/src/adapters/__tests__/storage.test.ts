@@ -185,21 +185,25 @@ describe('ConfigFileStorage', () => {
 
     it('should save config atomically (temp file + rename)', async () => {
       const config: RdcConfig = {
+        schemaVersion: 3,
         id: '550e8400-e29b-41d4-a716-446655440000',
         version: 1,
-        machines: {
-          prod: { ip: '10.0.0.1', user: 'admin' },
+        resources: {
+          machines: {
+            prod: { ip: '10.0.0.1', user: 'admin' },
+          },
         },
       };
 
       await storage.save(config, 'test');
 
       const loaded = await readRawConfig('test');
-      expect(loaded.machines?.prod.ip).toBe('10.0.0.1');
+      expect(loaded.resources?.machines?.prod.ip).toBe('10.0.0.1');
     });
 
     it('should set restrictive file permissions (0o600)', async () => {
       const config: RdcConfig = {
+        schemaVersion: 3,
         id: '550e8400-e29b-41d4-a716-446655440000',
         version: 1,
         token: 'secret-token',
@@ -224,7 +228,11 @@ describe('ConfigFileStorage', () => {
 
   describe('version auto-increment', () => {
     it('should increment version on save', async () => {
-      const config: RdcConfig = { id: '7c8d1e9f-2a3b-4c5d-8e6f-1a2b3c4d5e6f', version: 1 };
+      const config: RdcConfig = {
+        schemaVersion: 3,
+        id: '7c8d1e9f-2a3b-4c5d-8e6f-1a2b3c4d5e6f',
+        version: 1,
+      };
 
       await storage.save(config, 'test');
 
@@ -233,7 +241,11 @@ describe('ConfigFileStorage', () => {
     });
 
     it('should increment version on each successive save', async () => {
-      const config: RdcConfig = { id: '7c8d1e9f-2a3b-4c5d-8e6f-1a2b3c4d5e6f', version: 1 };
+      const config: RdcConfig = {
+        schemaVersion: 3,
+        id: '7c8d1e9f-2a3b-4c5d-8e6f-1a2b3c4d5e6f',
+        version: 1,
+      };
 
       await storage.save(config, 'test');
       storage.clearCache();
@@ -277,7 +289,11 @@ describe('ConfigFileStorage', () => {
       await storage.load('test');
 
       // Write directly to disk, bypassing the storage instance
-      const external: RdcConfig = { id: '8d9e2f0a-3b4c-4d5e-9f70-2b3c4d5e6f70', version: 99 };
+      const external: RdcConfig = {
+        schemaVersion: 3,
+        id: '8d9e2f0a-3b4c-4d5e-9f70-2b3c4d5e6f70',
+        version: 99,
+      };
       await writeRawConfig('test', external);
 
       const config = await storage.load('test');
@@ -290,6 +306,7 @@ describe('ConfigFileStorage', () => {
       await storage.load('test');
 
       const external: RdcConfig = {
+        schemaVersion: 3,
         id: '8d9e2f0a-3b4c-4d5e-9f70-2b3c4d5e6f70',
         version: 99,
         machine: 'external-machine',
@@ -317,19 +334,22 @@ describe('ConfigFileStorage', () => {
   describe('update', () => {
     it('should apply updater function to current config', async () => {
       const initial = createEmptyRdcConfig();
-      initial.machines = { initial: { ip: '10.0.0.1', user: 'admin' } };
+      initial.resources = { machines: { initial: { ip: '10.0.0.1', user: 'admin' } } };
       await writeRawConfig('test', initial);
 
       const updated = await storage.update('test', (cfg) => ({
         ...cfg,
-        machines: {
-          ...cfg.machines,
-          added: { ip: '10.0.0.2', user: 'deploy' },
+        resources: {
+          ...cfg.resources,
+          machines: {
+            ...cfg.resources?.machines,
+            added: { ip: '10.0.0.2', user: 'deploy' },
+          },
         },
       }));
 
-      expect(updated.machines).toHaveProperty('initial');
-      expect(updated.machines).toHaveProperty('added');
+      expect(updated.resources?.machines).toHaveProperty('initial');
+      expect(updated.resources?.machines).toHaveProperty('added');
     });
 
     it('should persist updated config to disk', async () => {
@@ -350,6 +370,7 @@ describe('ConfigFileStorage', () => {
 
       // Write externally to disk
       const external: RdcConfig = {
+        schemaVersion: 3,
         id: '8d9e2f0a-3b4c-4d5e-9f70-2b3c4d5e6f70',
         version: 5,
         machine: 'external',
@@ -597,6 +618,7 @@ describe('ConfigFileStorage', () => {
 
       // Write externally
       const external: RdcConfig = {
+        schemaVersion: 3,
         id: '8d9e2f0a-3b4c-4d5e-9f70-2b3c4d5e6f70',
         version: 42,
         machine: 'external-machine',
@@ -654,6 +676,7 @@ describe('ConfigFileStorage', () => {
     it('should force fresh read from file', async () => {
       await storage.init('test');
       const config: RdcConfig = {
+        schemaVersion: 3,
         id: '7c8d1e9f-2a3b-4c5d-8e6f-1a2b3c4d5e6f',
         version: 1,
         machine: 'original',
@@ -663,6 +686,7 @@ describe('ConfigFileStorage', () => {
 
       // External write
       const external: RdcConfig = {
+        schemaVersion: 3,
         id: '7c8d1e9f-2a3b-4c5d-8e6f-1a2b3c4d5e6f',
         version: 5,
         machine: 'updated-by-other-process',

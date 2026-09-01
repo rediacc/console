@@ -45,7 +45,13 @@ function buildConfig(): RdcConfig {
     },
     storages: {},
     clusters: { prod: prodCluster },
-    datastores: { 'ds-k8s': { backend: 'rbd', size: '10G', cluster: 'prod' } },
+    datastores: {
+      'ds-k8s': {
+        backend: { kind: 'rbd', pool: 'rbd', image: 'ds-k8s' },
+        size: '10G',
+        cluster: 'prod',
+      },
+    },
     repositories: {
       shop: family({ machine: 'standalone' }, ['main', 'test']),
       web: family({ datastore: 'ds-k8s' }, ['main']),

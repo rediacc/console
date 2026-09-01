@@ -1,5 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+/** The real `buildLocalVault` parameter shape, so the mock records a typed call. */
+type BuildLocalVaultOptions = Parameters<
+  typeof import('../renet/renet-execution.js').buildLocalVault
+>[0];
+
 const {
   mockConnect,
   mockClose,
@@ -35,7 +40,7 @@ const {
   mockRefreshRepoLicenseIdentity: vi.fn(),
   mockAuthorizeSubscriptionViaDeviceCode: vi.fn(),
   mockGetSubscriptionTokenState: vi.fn(),
-  mockBuildLocalVault: vi.fn(() => '{"vault":"ok"}'),
+  mockBuildLocalVault: vi.fn((_opts: BuildLocalVaultOptions) => '{"vault":"ok"}'),
   mockProvisionRenetToRemote: vi.fn(() => ({ remotePath: '/usr/bin/renet', uploaded: false })),
   mockReadSSHKey: vi.fn(() => 'PRIVATE_KEY'),
   mockReadOptionalSSHKey: vi.fn(() => 'PUBLIC_KEY'),

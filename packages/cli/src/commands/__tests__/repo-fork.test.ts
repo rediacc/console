@@ -1,5 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
+import type { MockInstance } from 'vitest';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 // i18n stub
@@ -106,7 +107,7 @@ const PARENT = {
   },
 };
 
-let stdoutSpy: ReturnType<typeof vi.spyOn>;
+let stdoutSpy: MockInstance<typeof process.stdout.write>;
 
 function stdoutText(): string {
   return stdoutSpy.mock.calls.map((c) => String(c[0])).join('');

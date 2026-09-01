@@ -212,16 +212,6 @@ describe('contract-sourced tool derivation', () => {
     }
   });
 
-  it('no experimental command produces an auto-derived tool (parity with the hidden tree)', () => {
-    for (const cmd of CLI_CONTRACT.commands) {
-      if (!cmd.experimental) continue;
-      expect(
-        autoNames.has(toolName(cmd.pathKey)),
-        `experimental ${cmd.pathKey} must not derive a tool`
-      ).toBe(false);
-    }
-  });
-
   it('every auto-derived tool traces back to an mcp-annotated command', () => {
     for (const tool of autoTools) {
       const cmd = CLI_CONTRACT.commands.find((c) => toolName(c.pathKey) === tool.name);

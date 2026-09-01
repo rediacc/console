@@ -34,16 +34,27 @@ const BOB: SessionPrincipal = {
   orgRole: 'owner',
 };
 
+/**
+ * Copy into a freshly allocated ArrayBuffer. `fromBase64` hands back a
+ * `Uint8Array<ArrayBufferLike>`, which WebCrypto's `BufferSource` will not
+ * accept because `ArrayBufferLike` admits `SharedArrayBuffer`.
+ */
+function toArrayBuffer(data: Uint8Array): ArrayBuffer {
+  const copy = new Uint8Array(data.byteLength);
+  copy.set(data);
+  return copy.buffer;
+}
+
 /** Seal a fresh CEK to a session's public key, exactly as a client would. */
 async function sealCekTo(publicKeyB64: string): Promise<{
   blob: Awaited<ReturnType<typeof cekHandoffEncrypt>>;
-  rawCek: ArrayBuffer;
+  rawCek: Uint8Array;
 }> {
   const cek = await generateCek();
   const rawCek = await exportAesKey(cek);
   const publicKey = await crypto.subtle.importKey(
     'spki',
-    fromBase64(publicKeyB64),
+    toArrayBuffer(fromBase64(publicKeyB64)),
     { name: 'X25519' },
     false,
     []

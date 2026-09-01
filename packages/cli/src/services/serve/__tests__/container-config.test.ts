@@ -40,6 +40,18 @@ import { authorize } from '../policy.js';
 import { createServeApp } from '../server.js';
 import { SessionStore } from '../sessions.js';
 
+/**
+ * Extract an ArrayBuffer for the Web Crypto API, exactly as config-crypto's own
+ * private `buf()` does. `Uint8Array` is `Uint8Array<ArrayBufferLike>`, which is
+ * not a `BufferSource` (that wants `ArrayBufferView<ArrayBuffer>`).
+ */
+function buf(data: Uint8Array): ArrayBuffer {
+  if (data.byteOffset === 0 && data.byteLength === data.buffer.byteLength) {
+    return data.buffer as ArrayBuffer;
+  }
+  return data.buffer.slice(data.byteOffset, data.byteOffset + data.byteLength) as ArrayBuffer;
+}
+
 // /v1/command runs the REAL Commander tree in-process, which would otherwise
 // read the developer's own config from disk. This is the only stub: the config
 // the EXECUTOR holds still comes from the encrypted blob under test.
@@ -259,7 +271,7 @@ describe('container-tier config loading', () => {
 
     const executorPublicKey = await crypto.subtle.importKey(
       'spki',
-      fromBase64(publicKey),
+      buf(fromBase64(publicKey)),
       { name: 'X25519' },
       false,
       []
@@ -337,7 +349,7 @@ describe('container-tier config loading', () => {
     // executor saw no document, fell back to MISSING_POLICY_DEFAULT, and an owner
     // sailed straight through a rule that explicitly forbade the command.
     expect(response.status).toBe(403);
-    expect((await response.json<{ error: string }>()).error).toMatch(/denies/);
+    expect(((await response.json()) as { error: string }).error).toMatch(/denies/);
     expect(executed).toHaveLength(0);
 
     // And the rule really came out of the blob: policy reached authorize().
@@ -428,7 +440,7 @@ describe('container-tier config loading', () => {
 
     const response = await runCommand();
     expect(response.status).toBeGreaterThanOrEqual(400);
-    expect((await response.json<{ error: string }>()).error).toMatch(/Complete the key grant/);
+    expect(((await response.json()) as { error: string }).error).toMatch(/Complete the key grant/);
 
     // A fresh grant re-pulls rather than serving the dead session's plaintext.
     await grantKey();
@@ -476,7 +488,7 @@ describe('container-tier config loading', () => {
     const response = await runCommand(OTHER_TOKEN, { 'X-Config-Session': sessionId });
 
     expect(response.status).toBe(404);
-    expect((await response.json<{ error: string }>()).error).toMatch(/unknown or expired/i);
+    expect(((await response.json()) as { error: string }).error).toMatch(/unknown or expired/i);
     expect(executed).toHaveLength(0);
   });
 

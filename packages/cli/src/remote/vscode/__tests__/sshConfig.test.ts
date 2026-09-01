@@ -5,7 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 // getSSHHome is called at module load time via getSSHConfigPath, so we must
 // mock the platform module before importing sshConfig.
-const mockGetSSHHome = vi.fn<[], string>();
+const mockGetSSHHome = vi.fn<() => string>();
 
 vi.mock('../../utils/platform.js', async () => {
   const actual = await vi.importActual<Record<string, unknown>>('../../utils/platform.js');

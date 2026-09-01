@@ -60,7 +60,6 @@ const { outputService } = await import('../core/output.js');
 const { refreshRepoLicenseIdentity } = await import('../account/license.js');
 
 const machine: MachineConfig = {
-  machineName: 'hostinger',
   ip: '127.0.0.1',
   user: 'root',
   port: 22,

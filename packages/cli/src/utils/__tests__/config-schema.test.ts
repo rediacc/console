@@ -524,6 +524,7 @@ describe('config-schema', () => {
 
     it('sorts nested object keys alphabetically', () => {
       const config: RdcConfig = {
+        schemaVersion: 3,
         id: 'test',
         version: 1,
         resources: {
@@ -540,6 +541,7 @@ describe('config-schema', () => {
 
     it('preserves arrays in order', () => {
       const config: RdcConfig = {
+        schemaVersion: 3,
         id: 'test',
         version: 1,
         resources: {
@@ -554,7 +556,12 @@ describe('config-schema', () => {
     });
 
     it('strips undefined values', () => {
-      const config: RdcConfig = { id: 'test', version: 1, renetPath: undefined };
+      const config: RdcConfig = {
+        schemaVersion: 3,
+        id: 'test',
+        version: 1,
+        renetPath: undefined,
+      };
       const json = stringifyConfig(config);
       expect(json).not.toContain('renetPath');
     });
@@ -563,6 +570,7 @@ describe('config-schema', () => {
       // Alphabetically this would be account, encryption, resources; the list
       // says account, resources, encryption, and the list must win.
       const config: RdcConfig = {
+        schemaVersion: 3,
         id: 'test',
         version: 1,
         encryption: { mode: 'plaintext' },

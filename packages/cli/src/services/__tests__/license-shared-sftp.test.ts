@@ -70,7 +70,6 @@ function createSharedSftp() {
 
 describe('license sharedSftp plumb-through', () => {
   const machine: MachineConfig = {
-    machineName: 'hostinger',
     ip: '127.0.0.1',
     user: 'root',
     port: 22,

@@ -25,8 +25,8 @@ function setupExecFile(result: { stdout?: string; stderr?: string; error?: ExecE
     (_cmd: string, _args: string[], _opts: unknown, callback: (...args: unknown[]) => void) => {
       if (result.error) {
         const err = result.error;
-        (err as Record<string, unknown>).stdout = result.stdout ?? '';
-        (err as Record<string, unknown>).stderr = result.stderr ?? '';
+        err.stdout = result.stdout ?? '';
+        err.stderr = result.stderr ?? '';
         callback(err);
       } else {
         callback(null, { stdout: result.stdout ?? '', stderr: result.stderr ?? '' });

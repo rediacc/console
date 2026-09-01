@@ -586,7 +586,9 @@ describe('subscription command helpers', () => {
       unchanged: 1,
       failed: 1,
       valid: 2,
+      invalidSignatureDetected: 0,
       failures: [{ repositoryGuid: 'repo-x', error: 'account quota reached' }],
+      recoveryFailureMode: null,
     });
 
     expect(mockOutputInfo).toHaveBeenCalledWith(

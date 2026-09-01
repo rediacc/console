@@ -21,7 +21,7 @@ const {
 });
 
 vi.mock('../../remote/sync/index.js', async (orig) => {
-  const real = await orig();
+  const real = await orig<Record<string, unknown>>();
   return {
     ...real,
     sftpUploadFile: mockSftpUploadFile,

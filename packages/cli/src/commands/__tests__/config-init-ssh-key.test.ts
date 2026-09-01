@@ -27,7 +27,7 @@ const PUBLIC_KEY_BODY = 'ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAICGJtmxsvlC7O6eD te
 
 function baseConfig(): RdcConfig {
   return {
-    schemaVersion: 2,
+    schemaVersion: 3,
     id: '00000000-0000-0000-0000-000000000001',
     version: 1,
     encryption: { mode: 'plaintext' },

@@ -135,7 +135,7 @@ const readConfig = {
  * --mode, say) is raised by the subcommand that owns the option, and a root-only
  * exitOverride leaves that subcommand still calling process.exit.
  */
-function applyExitOverride(cmd: Command): void {
+function applyExitOverride(cmd: InstanceType<typeof Command>): void {
   cmd.exitOverride();
   for (const sub of cmd.commands) applyExitOverride(sub);
 }

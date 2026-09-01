@@ -1,3 +1,4 @@
+import type { RdcConfig } from '@rediacc/shared/config-schema';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 // ─── Hoisted Mocks ──────────────────────────────────────────────────────
@@ -264,7 +265,8 @@ describe('RemoteConfigAdapter', () => {
         data: { version: 6 },
       });
 
-      const config = {
+      const config: RdcConfig = {
+        schemaVersion: 3,
         id: 'cfg-id',
         version: 5,
         machines: { m1: { ip: '10.0.0.1', user: 'root' } },
@@ -303,7 +305,7 @@ describe('RemoteConfigAdapter', () => {
         data: { version: 2 },
       });
 
-      await adapter.push({ id: 'id', version: 1 }, 1);
+      await adapter.push({ schemaVersion: 3, id: 'id', version: 1 }, 1);
 
       expect(tokenStorage.updateToken).toHaveBeenCalledWith(CONFIG_NAME, 'tok_push_rotated');
     });
@@ -323,7 +325,7 @@ describe('RemoteConfigAdapter', () => {
         new ConfigServerError('Version conflict: current version is 7', 409)
       );
 
-      const err = await adapter.push({ id: 'id', version: 1 }, 1).then(
+      const err = await adapter.push({ schemaVersion: 3, id: 'id', version: 1 }, 1).then(
         () => null,
         (e: unknown) => e
       );

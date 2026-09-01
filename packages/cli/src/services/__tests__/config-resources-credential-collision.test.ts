@@ -91,7 +91,12 @@ describe('addRepository credential collision guard', { timeout: 30000 }, () => {
         tag: 'latest',
         credential: 'cred-b',
       })
-      .catch((e: unknown) => e as Error);
+      .then(
+        () => {
+          throw new Error('expected addRepository to reject, but it resolved');
+        },
+        (e: unknown) => e as Error
+      );
 
     expect(err).toBeInstanceOf(Error);
     expect(err.message).toContain('copy:latest');

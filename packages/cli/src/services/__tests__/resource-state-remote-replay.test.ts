@@ -151,7 +151,7 @@ describe('RemoteResourceState persist', () => {
     });
     const state = loadState(adapter);
 
-    await expect(state.setStorages({ s2: { provider: 's3' } })).rejects.toThrow(
+    await expect(state.setStorages({ s2: { provider: 's3', vaultContent: {} } })).rejects.toThrow(
       /still conflicting/
     );
 

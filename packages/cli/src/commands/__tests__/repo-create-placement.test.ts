@@ -9,11 +9,14 @@
  * record carries the declared placement every derived-machine op resolves through.
  */
 
-import type { RdcConfig } from '@rediacc/shared/config-schema';
+import type { RdcConfig, RepositoryConfig } from '@rediacc/shared/config-schema';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import type { ExecuteOptions } from '../../services/executor/types.js';
 
-const execute = vi.fn(() => Promise.resolve({ success: true, allSteps: [] }));
-const addRepository = vi.fn(() => Promise.resolve());
+const execute = vi.fn((_options: ExecuteOptions) =>
+  Promise.resolve({ success: true, allSteps: [] })
+);
+const addRepository = vi.fn((_name: string, _config: RepositoryConfig) => Promise.resolve());
 const getCurrent = vi.fn<() => Promise<RdcConfig>>();
 
 vi.mock('../../services/executor/executor-factory.js', () => ({
@@ -25,7 +28,7 @@ vi.mock('../../services/config/config-resources.js', () => ({
     allocateNetworkId: vi.fn(() => Promise.resolve(42)),
     removeRepository: vi.fn(() => Promise.resolve()),
     getCurrent: () => getCurrent(),
-    addRepository: (name: string, config: unknown) => addRepository(name, config),
+    addRepository: (name: string, config: RepositoryConfig) => addRepository(name, config),
   },
 }));
 vi.mock('../../services/core/output.js', () => ({

@@ -2,7 +2,6 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { setConfigNameOverride } from '../config/config-name.js';
 import {
   getSubscriptionScopeMismatch,
   getSubscriptionServerUrl,
@@ -12,6 +11,7 @@ import {
   normalizeServerUrl,
   saveStoredSubscriptionToken,
 } from '../account/subscription-auth.js';
+import { setConfigNameOverride } from '../config/config-name.js';
 
 const DEFAULT_SERVER = 'https://eu.rediacc.com';
 
@@ -181,12 +181,9 @@ describe('subscription-auth', () => {
     it('reports a hard mismatch when the config team differs from the token team', () => {
       expect(
         getSubscriptionScopeMismatch(
-          {
-            token: 'rdt_valid',
-            serverUrl: 'http://localhost:4800',
-            teamId: 'team_123',
-            teamName: 'Platform',
-          },
+          // The signature narrowed to Pick<StoredSubscriptionToken, 'teamName'>:
+          // the scope check reads nothing else.
+          { teamName: 'Platform' },
           'Infra'
         )
       ).toContain('Platform');
@@ -195,10 +192,8 @@ describe('subscription-auth', () => {
     it('requires re-login when config team exists but token team metadata is missing', () => {
       expect(
         getSubscriptionScopeMismatch(
-          {
-            token: 'rdt_valid',
-            serverUrl: 'http://localhost:4800',
-          },
+          // A token stored before team metadata existed: no teamName at all.
+          {},
           'Platform'
         )
       ).toContain('Run "rdc subscription login" again');

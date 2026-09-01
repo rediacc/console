@@ -275,9 +275,9 @@ describe('forkCluster (P3 anchor+rejoin orchestrator)', () => {
       .map((c) => c[0])
       .filter((c) => c.functionName === 'ceph_client_config_install');
     expect(installs.map((c) => c.machineName)).toEqual(['dest-cp-1', 'dest-w-1']);
-    expect(installs.every((c) => c.params.conf === 'Y29uZg==' && c.params.keyring === 'a2V5')).toBe(
-      true
-    );
+    expect(
+      installs.every((c) => c.params?.conf === 'Y29uZg==' && c.params.keyring === 'a2V5')
+    ).toBe(true);
   });
 
   it('group-snaps, clones each datastore, attaches --writes, forks the CP, rejoins agents', async () => {

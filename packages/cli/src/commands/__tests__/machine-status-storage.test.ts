@@ -92,7 +92,9 @@ function makeStorageHealth(): StorageHealthResult {
         guid: GUID_A,
         size: 2 * 1024 ** 3, // 2 GiB
         size_human: '13.7 GB',
+        exclusive: 910.3 * 1024 ** 2,
         exclusive_human: '910.3 MB',
+        shared: 12.8 * 1024 ** 3,
         shared_human: '12.8 GB',
         divergence_percent: 6.42,
         extents: 300, // 300 / 2GiB = 150/GB
@@ -108,24 +110,52 @@ function makeStorageHealth(): StorageHealthResult {
         guid: GUID_B,
         size: 128 * 1024 ** 3,
         size_human: '128.0 GB',
+        exclusive: 97.8 * 1024 ** 2,
         exclusive_human: '97.8 MB',
+        shared: 127.9 * 1024 ** 3,
         shared_human: '127.9 GB',
         divergence_percent: 0.1,
         extents: 6400,
         fragmentation: 'low',
+        quota_bytes: 256 * 1024 ** 3,
+        allocated_bytes: 128 * 1024 ** 3,
+        // The sealed volume: NOT mounted, so status.ts's `!sh.mounted` branch prints '-'
+        // for both mounted-only columns. The fixture used to express this by omitting the
+        // field, which `RepositoryStorageHealth` does not permit -- it declares
+        // `mounted: boolean`. Only the `as unknown as` cast let that stand.
+        mounted: false,
+        discards_enabled: false,
       },
     ],
     savings_human: 'Unique: 2.3 GB | Shared: 656.2 GB | Efficiency: 99.6%',
-  } as unknown as StorageHealthResult;
+    savings_bytes: 656.2 * 1024 ** 3,
+    scan_duration_ms: 412,
+    total_repos: 2,
+    total_size: 130 * 1024 ** 3,
+    total_exclusive: 910.3 * 1024 ** 2 + 97.8 * 1024 ** 2,
+    total_shared: 12.8 * 1024 ** 3 + 127.9 * 1024 ** 3,
+  } satisfies StorageHealthResult;
 }
 
 describe('buildStorageHealthRows', () => {
   it('returns an empty array when storage-health data is absent', () => {
     const resolve = createRepoNameResolver({});
     expect(buildStorageHealthRows(undefined, resolve)).toEqual([]);
-    expect(buildStorageHealthRows({ repositories: [] } as StorageHealthResult, resolve)).toEqual(
-      []
-    );
+    expect(
+      buildStorageHealthRows(
+        {
+          repositories: [],
+          savings_bytes: 0,
+          savings_human: '',
+          scan_duration_ms: 0,
+          total_exclusive: 0,
+          total_repos: 0,
+          total_shared: 0,
+          total_size: 0,
+        },
+        resolve
+      )
+    ).toEqual([]);
   });
 
   it('passes pre-formatted *_human fields through and formats divergence', () => {
@@ -147,7 +177,7 @@ describe('buildStorageHealthRows', () => {
   it('shows dashes for the mounted-only columns when a repo is unmounted', () => {
     const resolve = createRepoNameResolver({ [GUID_A]: 'gitlab:latest' });
     const rows = buildStorageHealthRows(makeStorageHealth(), resolve);
-    // GUID_B has no mounted flag in the fixture (sealed volume).
+    // GUID_B is `mounted: false` in the fixture (a sealed volume).
     expect(rows[1].reclaimable).toBe('-');
     expect(rows[1].discards).toBe('-');
   });

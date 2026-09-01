@@ -1,0 +1,38 @@
+{
+  // Typechecks what tsconfig.json excludes from the build, exactly as
+  // packages/shared/tsconfig.test.json does for its own tree.
+  //
+  // WHY IT DID NOT EXIST UNTIL NOW. `tsc -b packages/cli` compiles what ships, and
+  // `packages/cli/tsconfig.json` excludes `src/**/__tests__/**` so `dist` holds only
+  // importable modules. That left 185 test files typechecked by NOTHING: vitest
+  // transpiles without checking, so a fixture could assert against a shape the code
+  // stopped having and every gate stayed green. Measured before turning it on: 156
+  // errors, the bulk of them config literals missing `schemaVersion: 3` -- fixtures
+  // written against a schema that has since gained a required field.
+  //
+  // `types` is widened for vitest's globals; the build config cannot carry them because
+  // the shipped bundle must not depend on a test runner's ambient types.
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "composite": false,
+    "noEmit": true,
+    "declaration": false,
+    "declarationMap": false,
+    "emitDeclarationOnly": false,
+    "types": ["node", "vitest/globals"],
+    // `rootDir: "."` rather than the inherited `./src`. Two tests import
+    // `../../../scripts/lib/*.ts` -- plane-rules and command-tree-lib, the generators
+    // whose output they exist to check -- and under the build's rootDir those are TS6059
+    // "not under rootDir". The build needs `./src` because it EMITS into dist and the
+    // layout must mirror; this project sets noEmit, so rootDir constrains nothing here
+    // except which files may be reached.
+    //
+    // The alternative was rewriting the static import as a dynamic one, which happens to
+    // dodge the diagnostic (the same file's `await import(".../command-tree-lib.js")`
+    // raises nothing). That is silencing by restructure, and it would hide the fact that
+    // these tests legitimately reach outside src.
+    "rootDir": "."
+  },
+  "include": ["src/**/*.ts", "src/types/*.d.ts"],
+  "exclude": ["node_modules", "dist"]
+}

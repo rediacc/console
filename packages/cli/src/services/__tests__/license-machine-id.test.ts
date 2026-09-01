@@ -38,7 +38,6 @@ vi.mock('../telemetry/telemetry.js', () => ({
 
 describe('license machine-id resolution', () => {
   const machine: MachineConfig = {
-    machineName: 'hostinger',
     ip: '127.0.0.1',
     user: 'root',
     port: 22,

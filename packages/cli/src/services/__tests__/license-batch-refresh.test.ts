@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { MachineConfig } from '../../types/index.js';
 import { refreshRepoLicensesBatch } from '../account/license.js';
+import type { SubscriptionTokenState } from '../account/subscription-auth.js';
 
 // A well-formed signing-key fingerprint (16-char lowercase hex). writeRepoLicense
 // now names the license file after this and rejects anything else.
@@ -8,11 +9,13 @@ const VALID_KEY_ID = 'fc6a12b178711e65';
 const REPO_GUID = '550e8400-e29b-41d4-a716-446655440000';
 
 const { mockGetSubscriptionTokenState } = vi.hoisted(() => ({
-  mockGetSubscriptionTokenState: vi.fn(() => ({
-    kind: 'ready',
-    serverUrl: 'http://localhost:4800',
-    token: { token: 'rdt_test' },
-  })),
+  mockGetSubscriptionTokenState: vi.fn(
+    (): SubscriptionTokenState => ({
+      kind: 'ready',
+      serverUrl: 'http://localhost:4800',
+      token: { token: 'rdt_test', serverUrl: 'http://localhost:4800' },
+    })
+  ),
 }));
 
 const { mockExec, mockExecStreaming, mockConnect, mockClose, mockListRepositories } = vi.hoisted(
@@ -66,7 +69,7 @@ describe('refreshRepoLicensesBatch', () => {
     mockGetSubscriptionTokenState.mockReturnValue({
       kind: 'ready',
       serverUrl: 'http://localhost:4800',
-      token: { token: 'rdt_test' },
+      token: { token: 'rdt_test', serverUrl: 'http://localhost:4800' },
     });
     mockListRepositories.mockResolvedValue([
       {
@@ -186,8 +189,9 @@ describe('refreshRepoLicensesBatch', () => {
   });
 
   it('surfaces parsed batch request failures from the account server', async () => {
-    const error = new Error('Monthly repo license issuance limit reached');
-    (error as Record<string, unknown>).status = 403;
+    const error = Object.assign(new Error('Monthly repo license issuance limit reached'), {
+      status: 403,
+    });
     mockAccountServerFetch.mockRejectedValueOnce(error);
 
     await expect(refreshRepoLicensesBatch(machine, 'dummy-key', '/usr/bin/renet')).rejects.toThrow(

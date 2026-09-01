@@ -30,7 +30,7 @@ vi.mock('../config/config-resources.js', () => ({
   configService: {
     // undefined config => the R2 family guard is skipped (the fixture family is
     // supplied to resolveMachine directly, not through this service).
-    getCurrent: vi.fn().mockResolvedValue(undefined),
+    getCurrent: vi.fn().mockResolvedValue(null),
     getRepository: vi.fn().mockResolvedValue({ repositoryGuid: h.GUID }),
     getLocalConfig: vi.fn().mockResolvedValue({ machines: { m1: {}, m2: {} } }),
     ensureRepositoryNetworkId: vi.fn().mockResolvedValue(1),
@@ -128,7 +128,7 @@ beforeEach(() => {
   h.deletedRepos = [];
   // Re-establish defaults each test: clearAllMocks() wipes call history but NOT
   // implementations, so a per-test getCurrent/resolveRepoRef override would leak.
-  vi.mocked(configService.getCurrent).mockResolvedValue(undefined);
+  vi.mocked(configService.getCurrent).mockResolvedValue(null);
   vi.mocked(resolveRepoRef).mockResolvedValue({
     name: 'shop',
     repoKey: 'shop',

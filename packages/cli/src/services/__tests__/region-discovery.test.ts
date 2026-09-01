@@ -95,8 +95,20 @@ describe('discoverRegions', () => {
 
 describe('detectLikelyRegion', () => {
   const TEST_REGIONS = [
-    { id: 'eu', label: 'Europe', domain: 'eu.rediacc.com', default: true },
-    { id: 'us', label: 'United States', domain: 'us.rediacc.com', default: false },
+    {
+      id: 'eu',
+      label: 'Europe',
+      domain: 'eu.rediacc.com',
+      edgeDomain: 'edge-eu.rediacc.com',
+      default: true,
+    },
+    {
+      id: 'us',
+      label: 'United States',
+      domain: 'us.rediacc.com',
+      edgeDomain: 'edge-us.rediacc.com',
+      default: false,
+    },
   ];
 
   it('should return a valid region from the input list', () => {
@@ -105,7 +117,15 @@ describe('detectLikelyRegion', () => {
   });
 
   it('should return default region when only one region exists', () => {
-    const single = [{ id: 'eu', label: 'Europe', domain: 'eu.rediacc.com', default: true }];
+    const single = [
+      {
+        id: 'eu',
+        label: 'Europe',
+        domain: 'eu.rediacc.com',
+        edgeDomain: 'edge-eu.rediacc.com',
+        default: true,
+      },
+    ];
     const result = detectLikelyRegion(single);
     expect(result.id).toBe('eu');
   });

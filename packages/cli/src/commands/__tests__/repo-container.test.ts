@@ -11,8 +11,11 @@
 
 import { Command } from 'commander';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import type { ExecuteOptions } from '../../services/executor/types.js';
 
-const execute = vi.fn(() => Promise.resolve({ success: true, exitCode: 0, allSteps: [] }));
+const execute = vi.fn((_options: ExecuteOptions) =>
+  Promise.resolve({ success: true, exitCode: 0, allSteps: [] })
+);
 
 vi.mock('../../services/executor/executor-factory.js', () => ({
   getExecutor: () => ({ execute }),

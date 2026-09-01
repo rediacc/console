@@ -17,6 +17,7 @@
  * failure is a plain error string and never the structured LICENSE_REQUIRED
  * that the CLI's recovery framework watches for.
  */
+import type { MockInstance } from 'vitest';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const {
@@ -175,7 +176,7 @@ function installedLicence(repositoryGuid: string, datastoreId?: string) {
 
 describe('backup restore: licensing the target machine', () => {
   const savedSkipActivation = process.env.REDIACC_SKIP_MACHINE_ACTIVATION;
-  let warnSpy: ReturnType<typeof vi.spyOn>;
+  let warnSpy: MockInstance<typeof outputService.warn>;
 
   beforeEach(() => {
     vi.clearAllMocks();

@@ -72,7 +72,7 @@ vi.mock('@rediacc/shared/update', () => mockSharedUpdate);
 
 const mockUpdateState = vi.hoisted(() => ({
   readUpdateState: vi.fn(),
-  writeUpdateState: vi.fn().mockResolvedValue(undefined),
+  writeUpdateState: vi.fn<(state: CliUpdateState) => Promise<void>>().mockResolvedValue(undefined),
   getStagedBinaryPath: vi
     .fn()
     .mockReturnValue('/home/testuser/.cache/rediacc/staged-update/rdc-0.5.0'),
@@ -529,7 +529,7 @@ describe('services/background-updater', () => {
       // writeUpdateState should NOT have been called with pendingUpdate: null and lastError
       const writeCalls = mockUpdateState.writeUpdateState.mock.calls;
       for (const call of writeCalls) {
-        const state = call[0] as CliUpdateState;
+        const state = call[0];
         if (state.pendingUpdate === null && state.lastError) {
           throw new Error('pendingUpdate was incorrectly cleared on EBUSY');
         }

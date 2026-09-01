@@ -68,22 +68,24 @@ describe('classifyArchives', () => {
     const archives: ArchivedRepository[] = [
       // 10 days ago — expired (grace = 7)
       {
-        name: 'old:latest',
+        name: 'old',
+        tag: 'latest',
         repositoryGuid: '11111111-1111-1111-1111-111111111111',
         deletedAt: '2026-04-24T00:00:00Z',
       },
       // 3 days ago — still in grace
       {
-        name: 'recent:latest',
+        name: 'recent',
+        tag: 'latest',
         repositoryGuid: '22222222-2222-2222-2222-222222222222',
         deletedAt: '2026-05-01T00:00:00Z',
       },
     ];
 
     const { expired, inGrace } = classifyArchives(archives, 7, NOW);
-    expect(expired.map((e) => e.name)).toEqual(['old:latest']);
+    expect(expired.map((e) => e.name)).toEqual(['old']);
     expect(inGrace).toHaveLength(1);
-    expect(inGrace[0].name).toBe('recent:latest');
+    expect(inGrace[0].name).toBe('recent');
     expect(inGrace[0].daysAgo).toBe(3);
     expect(inGrace[0].daysRemaining).toBe(4);
   });
@@ -91,7 +93,8 @@ describe('classifyArchives', () => {
   it('skips entries with unparseable deletedAt', () => {
     const archives: ArchivedRepository[] = [
       {
-        name: 'bogus:latest',
+        name: 'bogus',
+        tag: 'latest',
         repositoryGuid: '33333333-3333-3333-3333-333333333333',
         deletedAt: 'not-a-date',
       },

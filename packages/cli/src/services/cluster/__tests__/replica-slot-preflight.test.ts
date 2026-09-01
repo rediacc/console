@@ -80,7 +80,10 @@ describe('replica placement asks for machine slots first', () => {
       return Promise.resolve({ success: true, stdout: '{}' });
     });
 
-    const error = await provisionReplicaDatastores({ ...base, replicas: 2, nodes }).catch(
+    const error = await provisionReplicaDatastores({ ...base, replicas: 2, nodes }).then(
+      () => {
+        throw new Error('expected provisionReplicaDatastores to reject, but it resolved');
+      },
       (e: unknown) => e as Error
     );
 

@@ -4,7 +4,7 @@ import { pruneDanglingRefs } from '../config/config-refs-prune.js';
 
 function baseConfig(): RdcConfig {
   return {
-    schemaVersion: 2,
+    schemaVersion: 3,
     id: '00000000-0000-0000-0000-000000000000',
     version: 1,
     resources: {
@@ -12,19 +12,25 @@ function baseConfig(): RdcConfig {
         m1: { ip: '1.2.3.4', user: 'root' },
       },
       repositories: {
-        'gitlab:latest': { repositoryGuid: '11111111-1111-1111-1111-111111111111' },
-        'mail:latest': { repositoryGuid: '22222222-2222-2222-2222-222222222222' },
+        gitlab: {
+          grand: 'latest',
+          tags: { latest: { repositoryGuid: '11111111-1111-1111-1111-111111111111' } },
+        },
+        mail: {
+          grand: 'latest',
+          tags: { latest: { repositoryGuid: '22222222-2222-2222-2222-222222222222' } },
+        },
       },
       storages: {
         s1: { provider: 'onedrive', vaultContent: {} },
       },
       backupStrategies: {
         hourly: {
-          destinations: [{ name: 'd1', storage: 's1' }],
+          destinations: [{ kind: 'storage', name: 'd1', storage: 's1' }],
           schedule: '0 * * * *',
         },
         daily: {
-          destinations: [{ name: 'd1', storage: 's1' }],
+          destinations: [{ kind: 'storage', name: 'd1', storage: 's1' }],
           schedule: '0 0 * * *',
         },
       },

@@ -45,7 +45,6 @@ function synthEntry(positionals: ContractPositional[]): ContractCommand {
     pathKey: 'thing do',
     domain: 'thing',
     group: null,
-    experimental: false,
     plane: 'machine',
     descriptionKey: null,
     label: '',
@@ -138,6 +137,7 @@ describe('positionals', () => {
         defaultValue: null,
         descriptionKey: null,
         label: '',
+        tier: 'common',
       },
     ];
     const argv = buildArgv(entry, { machine: 'prod-1' }, { ref: 'shop' });
