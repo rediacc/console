@@ -5991,3 +5991,143 @@ judge sweep rather than invented ahead of a failure. The `ci-trace.py` and
 `check:ci-gate-prerequisites` fixes both close instruments that had been
 silently blind by construction rather than merely undertested — the pattern
 this document exists to track.
+
+---
+
+## 2026-09-01, branch `0831-1` (PR #583): three instruments were blind, and each was found by planting
+
+11 commits touched `.ci/`, `.github/` and `.claude/` in this stretch. Every one
+traces to a CI red or to a gate that was measuring nothing, none to work invented
+ahead of a failure. What they have in common is worth more than the individual
+fixes: **in each case the gate's own controls passed while the gate could not
+have failed.** The fixture proved the judge; only re-planting the real defect
+proved the probe.
+
+### `agent-browser`'s exit status is not evidence, and now the gate says so in JS too
+
+The tutorial-player release gate died on its first navigation with one line —
+`Error: Command failed: agent-browser … open <url>` — and the identical command
+passed locally on the same tree. The reason was never missing: agent-browser
+prints its verdict as JSON on **stdout** and still exits 1, and `String(error)`
+on an `execFileSync` throw discards `.status`, `.stdout` and `.stderr`. This repo
+already knew the status was worthless (`check-agent-browser-exit.sh` measured
+rc=0 on a terminal and rc=1 under redirection for a page that loads either way)
+but that gate scanned only `*.sh`. It now scans JS/TS as well, with the invariant
+kept deliberately crude so it cannot false-positive on style: a file that runs
+agent-browser through a THROWING exec must reach for the child's `.stdout`
+somewhere. Proven non-vacuous by stripping `.stdout` from the real gate file and
+watching the scan report it (`a8a872b29`).
+
+### `printf | grep -q` under `pipefail` is a race, and "bounded producers are safe" was false
+
+`check-pipefail-grep-q.sh` had exempted bounded producers in writing: *"almost all
+are harmless: `printf '%s' "$x" | grep -q` has a bounded producer that finishes
+before anything can race."* A 1,129-byte producer raced anyway
+(`test-run-sh.sh:67`), because EPIPE depends on whether `grep -q` has already
+CLOSED the read end when the write syscall lands, not on whether the payload fits
+the 64 KB buffer. A match presented as a failure. The header now says so, and says
+plainly that its green is not a claim that a bounded call is correct.
+
+111 sites converted across 36 files (`4ca07f0cb`, `c7970a9e8`, `5d1213f5c`,
+`b2c7b8b13`). The scripted transform was wrong three times — a `&&` continuation,
+an escaped quote inside a pattern, a concatenated pattern — and **`bash -n` caught
+none of them, because all three parse.** The rule is now about the OUTPUT: a
+rewrite is accepted only if it ends in a here-string followed by nothing, `;`,
+`&&` or `||`. Everything else is refused by name and edited by hand.
+
+One of those excluded shapes then cost a CI red of its own (`0c06f9157`): the
+label-inventory gate reported `nightly-red` "not declared in .github/labels.yml"
+over a label declared at line 68, because `! printf … | grep -qx` inverted a
+spurious EPIPE into "not declared". The excluded shapes were never safer, only
+harder to rewrite.
+
+### A gate that reads a neighbour's fixture is reading noise
+
+`check:ci-setup-idempotency` takes `git status --porcelain` twice around one
+`./run.sh setup --check`. Under `npm run ci` twenty-two gates share the tree, and
+`gate-test:gate-paths-exist` plants a scan fixture INSIDE the repo on purpose (its
+detector globs `.ci/scripts/**/*.ts`, so a fixture outside would prove nothing).
+Landing between the snapshots, it made check B report a mutation `run.sh` never
+made. Both snapshots now drop the dotted, pid-suffixed fixture shape those gates
+share (`9b1f68a28`).
+
+The first control written to prove check B still fires **passed vacuously**: the
+plant anchored on `#!/usr/bin/env bash` and `run.sh` opens `#!/bin/bash`, so the
+substitution was a no-op that looks exactly like a passing control. `cmp -s`
+proving the plant landed is now part of the procedure.
+
+### An unratcheted floor disarms the check it belongs to, twice
+
+`TRAP_FLOOR` stayed at 49 when a 50th trap entry landed, so F1's control — delete
+one entry, expect a red — landed on exactly 49, which is not BELOW 49. The file's
+own header already documented this happening once (`0b47292e1`, 48 → 49). It is
+invisible to `check:ci-trap-registry` itself, because a floor only fails when the
+corpus is below it, and visible only to `gate-test:trap-registry`, which is
+`slow: true` and deferred out of the pre-push lane — so the signal arrived ~45
+minutes later from CI. The gate now prints the ratchet advisory in the sub-second
+lane, where the mistake is made (`f24b3a8a4`).
+
+### The epic-scoped Claude review has NEVER rendered its prompt
+
+PR #583's was the first epic-scoped review ever attempted, and it died in two
+seconds:
+
+    sed: -e expression #6, char 77: unterminated `s' command
+    ##[error]Invalid value. Matching delimiter not found 'CLAUDE_REVIEW_PROMPT_EOF'
+
+Expression #6 is `{{EPIC_SCOPE}}`, and `epic_scope` is a seven-line paragraph
+`claude-review-gate.sh` writes itself. A `s` command's replacement may not contain
+a raw newline. `git log -S` puts the feature in `609314a41` and every prior review
+run is `skipped`, so the substitution had never once run with a value in it; the
+flat path survived only because an empty `{{EPIC_SCOPE}}` renders to nothing. The
+second error was a consequence that lies about the cause: the opening heredoc
+delimiter had already been appended to `$GITHUB_OUTPUT` when sed died under
+`bash -e`, which also corrupts every later step's outputs.
+
+Fixed in `246073721` with a `sed_replacement` helper escaping backslash, the `|`
+delimiter, `&` and newlines, plus render-into-a-variable-then-append.
+
+**This fix cannot review its own PR**, and that is by design rather than an
+oversight: `claude-review-reusable.yml` checks `.review-scripts` out of
+`console@main` — *"never the reviewed PR's copy"* — with no `workflow_call` or
+`workflow_dispatch` input to override it. Landing it is an operator push. Worth
+recording because it is easy to misread as urgent: a crashed review consumes NO
+budget, measured on both failed runs (`review budget: 0/5 spent (0 posted, 0
+produced nothing)`).
+
+### Vendored `.ci/breakpoint/` re-stamped, accept list still empty
+
+Touching two files there tripped the integrity manifest. Regenerated with
+`check-breakpoint-drift.sh --write`, which is the documented path and not a
+suppression: that script refuses `--write` in a DOWNSTREAM copy precisely so a
+vendored fork cannot record itself as canonical, and permits it in
+`rediacc/console`, which is where this repo is (`466675fb3`).
+
+### Two new gates, both non-retroactive, both planted before being believed
+
+- **`check:ci-i18n-ledger-growth`** — a key NEW in `en.json` must arrive with a
+  naturalization fingerprint in every locale. Measured hole: the hash manifest
+  carries 6,014 www keys and the ledger covers 1,180 per locale, so **55,825
+  locale/key pairs under `pages.*` have no fingerprint at all** and their
+  staleness is not merely unanswered but unaskable. Requiring retroactive coverage
+  would mean a multi-megabyte baseline nobody drains, so the invariant stops at
+  growth: zero debt, no baseline file. It went red on its own PR and the fix was
+  the honest one — 420 pairs run through the pipeline's own `parity.check` (0
+  failures) and stamped via `ledger.record`, verified `added=420 changed=0`.
+- **`check:ci-viewport-unit-mixing`** — a positioned box may not size against the
+  viewport and position against its containing block. `scrollbar-gutter: stable`
+  leaves the ICB 15px narrower, so the two disagree by 7.5px.
+  `.persona-menu-panel` had been half-converted for months: `left: 50%` beside
+  `width: min(calc(100vw - …), 1020px)`. **`\bvw\b` does not match inside `100vw`**
+  — `0` and `v` are both word characters — and the first version of the scan
+  reported zero findings on a rule that plainly had the signature.
+
+### The lesson this section exists to record
+
+Three instruments in this stretch were blind by construction and green:
+`checkVisibility()`'s defaults ignore `visibility:hidden` and `opacity:0`, so a
+hidden-overflow probe reported a hidden element as visible; `\bvw\b` never matches
+`100vw`; and a no-op string substitution makes a plant look like a passing control.
+**None was caught by a fixture control.** Each was caught by re-planting the real
+defect into the real tree, rebuilding, and requiring the gate to go red. A
+control-first gate is only as good as the plant it was last shown to fail on.
