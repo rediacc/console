@@ -389,6 +389,55 @@ test_harness_catches_a_vacuous_validator() {
     log_pass "harness catches a vacuous validator (control case)"
 }
 
+test_fetch_retry_reads_every_file_type() {
+    # PER-FILE-TYPE BLINDNESS: absence of matches is indistinguishable from success.
+    #
+    # check:ci-fetch-retry shipped 2026-09-01 reusing `run_blocks` from
+    # check_dockerfile_mirror_resilience.py -- a parser for Dockerfile RUN instructions --
+    # over a corpus that is mostly shell. Measured: 25 blocks for the Dockerfile, ZERO for
+    # any .sh. It printed "551 file(s) scanned" and reported the tree clean while four real
+    # unretried fetches sat in .devcontainer shell scripts inside its own corpus.
+    #
+    # Every one of its ten controls passed, because they all fed it Dockerfile text. A
+    # gate's own selftest cannot catch a parser that is blind to a file type the selftest
+    # never uses, which is why this assertion lives out here.
+    #
+    # NOT the same as the REGISTRY check below: that one proves a validator fails on an
+    # EMPTY tree. This proves it can SEE each kind of file it claims to read.
+    # DRIVEN THROUGH THE PARSER, not through a planted file. The gate's corpus comes from
+    # `git ls-files`, deliberately -- "an untracked scratch file cannot change the verdict
+    # either way" -- so a fixture written to disk is invisible and a plant-based version of
+    # this control passes vacuously. That was the first cut, and it failed here rather than
+    # in CI.
+    python3 - "$REPO_ROOT" <<'PYEOF' || log_fail "fetch-retry gate cannot read shell scripts"
+import sys, os
+sys.path.insert(0, os.path.join(sys.argv[1], ".ci/scripts/quality"))
+import check_fetch_retry as G
+
+bare = "curl -fsSL -o /tmp/x.tgz https://example.com/x.tgz"
+retried = "curl -fsSL --retry 5 -o /tmp/x.tgz https://example.com/x.tgz"
+
+# The blindness itself: a shell script must yield blocks at all.
+if len(G.logical_blocks(bare + "\n", is_dockerfile=False)) == 0:
+    print("shell yields ZERO blocks; the parser is blind to it", file=sys.stderr)
+    sys.exit(1)
+# It must FIND the bare fetch...
+if len(G.offences_in(bare, is_dockerfile=False)) != 1:
+    print("a bare shell fetch was not reported", file=sys.stderr)
+    sys.exit(1)
+# ...and must NOT report the retried one, or the assertion above is satisfied by a
+# function that flags everything.
+if len(G.offences_in(retried, is_dockerfile=False)) != 0:
+    print("a retried shell fetch was wrongly reported", file=sys.stderr)
+    sys.exit(1)
+# And the Dockerfile path must still work, so this cannot pass by breaking that.
+if len(G.offences_in("RUN " + bare, is_dockerfile=True)) != 1:
+    print("the Dockerfile path stopped working", file=sys.stderr)
+    sys.exit(1)
+PYEOF
+    log_pass "fetch-retry gate reads shell, not just Dockerfiles (both directions)"
+}
+
 test_runcontrols_can_fail() {
     # THE SHARED-HARNESS META-CONTROL. scripts/lib/controls.ts runControls() is the one
     # loop 35 gates are being moved onto, which makes it a shared point of failure: if it
@@ -473,6 +522,7 @@ test_sharedselftestcases_can_fail() {
 }
 
 log_test "test-gate-anti-vacuity"
+test_fetch_retry_reads_every_file_type
 test_sharedselftestcases_can_fail
 test_runcontrols_can_fail
 test_harness_catches_a_vacuous_validator
