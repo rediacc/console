@@ -834,6 +834,10 @@ jobs:
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: npm run check:ci-shape-duplication
 
+      - name: Judged rule wiring
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: npm run check:ci-judged-rule-wiring
+
       - name: Git history depth
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: npm run check:ci-git-history-depth

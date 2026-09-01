@@ -364,6 +364,18 @@ export const GATES: readonly GateSpec[] = [
     },
   },
   {
+    id: 'check:ci-judged-rule-wiring',
+    run: 'npm run check:ci-judged-rule-wiring',
+    gate: true,
+    leaves: ['.ci/scripts/quality/check_judged_rule_wiring.py'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-code',
+      step: 'Judged rule wiring',
+    },
+  },
+  {
     id: 'check:ci-git-history-depth',
     run: 'npm run check:ci-git-history-depth',
     gate: true,
