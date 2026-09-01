@@ -20,6 +20,7 @@ import wl_agents as A
 import wl_checklist
 import wl_ci
 import wl_core as C
+import wl_histfirst
 import wl_judge
 import wl_liveness
 import wl_planfid
@@ -3814,6 +3815,15 @@ def run_stop(event, event_ok, worklist, hook_file):
         _rows = cidetail["hard"] or cidetail["soft"]
         _txt = wl_ci.ci_rows_text(_rows, cidetail["info"])
         _pr = cidetail["info"].get("pr", "?")
+        # THE COMMITS THAT COULD HAVE CAUSED IT, printed with the red rather than left for
+        # the session to think of. It demands nothing and adds no blocking path -- it only
+        # appends facts to a block already being emitted -- so it cannot become a wall.
+        # This has to be MECHANICAL and live here: `C.emit` below ends in `sys.exit(0)`,
+        # upstream of `wl_judge.run_judge`, so a judged rule could never fire on a red-CI
+        # stop at all.
+        _histkind, _hist = wl_histfirst.apply_verdict(root, _rows, None)
+        if _histkind == "fire":
+            _txt = "%s\n\n%s" % (_txt, _hist)
         if cistate == "trouble":
             vadd(
                 "ci-red",

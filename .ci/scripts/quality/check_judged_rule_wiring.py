@@ -32,8 +32,10 @@ ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..")
 STOP = os.path.join(ROOT, ".claude", "hooks", "stop")
 # The modules that DRIVE a stop. A rule is wired iff one of these calls it.
 DRIVERS = ("wl_checks.py", "wl_judge.py")
-# Below this, discovery is broken rather than the tree being empty.
-MIN_RULES = 3
+# Below this, discovery is broken rather than the tree being empty. Raised 3 -> 4 when
+# wl_histfirst landed: a floor that sits below the real count lets a rule be deleted
+# without the floor noticing, which is the failure this gate exists to prevent.
+MIN_RULES = 4
 
 
 def judged_rules(stop_dir):
