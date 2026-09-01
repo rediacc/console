@@ -35,7 +35,7 @@ download_extension() {
 
 	# Get latest version metadata
 	local metadata
-	metadata=$(curl -fsSL "https://open-vsx.org/api/${namespace}/${name}/latest" 2>/dev/null) || {
+	metadata=$(curl -fsSL --retry 5 --retry-delay 3 --retry-all-errors "https://open-vsx.org/api/${namespace}/${name}/latest" 2>/dev/null) || {
 		echo "  WARNING: Could not fetch metadata for $ext, skipping"
 		return 0
 	}
@@ -53,7 +53,7 @@ download_extension() {
 	version=$(echo "$metadata" | jq -r '.version // "unknown"')
 	local filename="${namespace}.${name}-${version}.vsix"
 
-	if curl -fsSL -o "${EXTENSIONS_DIR}/${filename}" "$download_url"; then
+	if curl -fsSL --retry 5 --retry-delay 3 --retry-all-errors -o "${EXTENSIONS_DIR}/${filename}" "$download_url"; then
 		echo "  Downloaded: $filename"
 	else
 		echo "  WARNING: Failed to download $ext"

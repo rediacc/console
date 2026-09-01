@@ -43,8 +43,10 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import check_dockerfile_mirror_resilience as MIRROR
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
-# Below this the scan is broken rather than the tree being clean.
-MIN_FILES = 20
+# Below this the scan is broken rather than the tree being clean. Sized to the SCOPED
+# corpus (16 image-build files today), not the 551 the sibling gate walks -- a floor
+# carried over from a wider scope refuses every run, which is how this was caught.
+MIN_FILES = 10
 
 # A fetch INVOCATION: the command at the start of a segment, not the word anywhere.
 # `ca-certificates curl \` in an apt package list is not a fetch, and that false positive
@@ -65,10 +67,55 @@ RETRIED = re.compile(r"--retry\b|--tries\b|\bCURL_RETRY\b|\bWGET_RETRY\b|for i i
 LOCAL = re.compile(r"https?://(127\.0\.0\.1|localhost|\[::1\])")
 
 
-def offences_in(text):
+def in_scope(path):
+    """Image builds only: Dockerfiles, and the scripts that run inside one.
+
+    SCOPED AFTER MEASURING, and the number is why. Once the shell parser above was fixed,
+    the unrestricted corpus reported **119 unretried fetches across 69 files** -- a wall,
+    not a gate, and this repo already has the scar from shipping one of those.
+
+    The defect that was actually paid for is narrower and worth stating exactly: a fetch
+    inside an IMAGE BUILD, where one upstream hiccup discards ten minutes of work that
+    every PR waits on. A `curl` in a local dev helper or a CI diagnostic retries by being
+    re-run by a human who is already watching. Same command, different cost.
+
+    In this scope the tree had FOUR offences, all in `.devcontainer/` shell scripts that
+    the Dockerfile-only parser could not see. All four were fixed rather than baselined.
+    Widening later is a decision with its own evidence; it is not this gate's job to
+    smuggle it in.
+    """
+    rel = os.path.relpath(str(path), ROOT)
+    name = os.path.basename(rel)
+    return (
+        name == "Dockerfile" or name.startswith("Dockerfile.") or rel.startswith(".devcontainer/")
+    )
+
+
+def logical_blocks(text, is_dockerfile):
+    """The units a fetch can live in, with backslash continuations joined.
+
+    A SHELL SCRIPT HAS NO `RUN` INSTRUCTIONS, and that is how this gate shipped vacuous.
+    It reused `run_blocks` -- a Dockerfile parser -- for a corpus that is mostly shell,
+    and measured after the fact: 25 blocks for `.devcontainer/Dockerfile`, **0** for
+    `.devcontainer/download-extensions.sh`. The gate printed "551 file(s) scanned" while
+    every shell script contributed nothing, so three real unretried fetches under
+    `.devcontainer/` sat inside its own corpus and it called the tree clean.
+
+    That is the exact vacuity this repo gates against, in a gate written to catch a class.
+    Reusing the corpus was right; reusing a parser that cannot read it was not.
+    """
+    if is_dockerfile:
+        return MIRROR.run_blocks(text)
+    # Shell: join continuations, then one logical line per unit, so a retry flag on the
+    # same command counts and one three files away does not.
+    joined = re.sub(r"\\\n\s*", " ", text)
+    return [ln for ln in joined.split("\n") if ln.strip()]
+
+
+def offences_in(text, is_dockerfile=True):
     """[(block_excerpt, tool)] for every unretried network fetch in one file."""
     out = []
-    for block in MIRROR.run_blocks(text):
+    for block in logical_blocks(text, is_dockerfile):
         # A comment is not an invocation.
         stripped = re.sub(r"(?m)^\s*#.*$", "", block)
         if RETRIED.search(stripped):
@@ -145,6 +192,26 @@ def selftest():
         len(offences_in("RUN curl -fsSL https://example.com/install.sh | bash")) == 1,
     )
     check("CONTROL: a file with no fetch yields nothing", len(offences_in("RUN echo hi")) == 0)
+    # THE VACUITY CONTROL. This gate shipped reading shell scripts with a Dockerfile `RUN`
+    # parser: 25 blocks for the Dockerfile, ZERO for any .sh, so it printed "551 file(s)
+    # scanned" while every shell script in its corpus contributed nothing -- and three real
+    # offences sat inside that corpus while it reported clean.
+    check(
+        "SANITY: a shell script is actually parsed, not silently skipped",
+        len(logical_blocks("curl -fsSL https://example.com/x\n", is_dockerfile=False)) == 1
+        and len(offences_in("curl -fsSL https://example.com/x.tgz", is_dockerfile=False)) == 1,
+    )
+    check(
+        "CONTROL: a retried shell fetch is fine",
+        len(offences_in("curl -fsSL --retry 5 https://example.com/x.tgz", is_dockerfile=False))
+        == 0,
+    )
+    check(
+        "CONTROL: scope is image builds, not every script in the repo",
+        in_scope(os.path.join(ROOT, ".devcontainer/start-vscode.sh"))
+        and in_scope(os.path.join(ROOT, "Dockerfile"))
+        and not in_scope(os.path.join(ROOT, ".ci/breakpoint/scripts/check-breakpoint-drift.sh")),
+    )
     return ok
 
 
@@ -156,7 +223,7 @@ def main():
         return 1
 
     # tracked_files returns pathlib.Path objects and wants a Path root.
-    files = MIRROR.tracked_files(pathlib.Path(ROOT))
+    files = [p for p in MIRROR.tracked_files(pathlib.Path(ROOT)) if in_scope(p)]
     if len(files) < MIN_FILES:
         print(
             "scanned %d file(s), floor %d. The scan is broken, not the tree."
@@ -172,7 +239,9 @@ def main():
                 text = fh.read()
         except OSError:
             continue
-        for excerpt, tool in offences_in(text):
+        name = os.path.basename(str(path))
+        is_df = name == "Dockerfile" or name.startswith("Dockerfile.")
+        for excerpt, tool in offences_in(text, is_df):
             findings.append((path, tool, excerpt))
 
     if findings:

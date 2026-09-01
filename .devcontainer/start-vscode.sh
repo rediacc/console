@@ -174,7 +174,7 @@ resolve_latest_version() {
   trap "rm -f '$TMP_ERR'" RETURN
   local body err
   err="$TMP_ERR"
-  body="$(curl -fsS https://api.github.com/repos/gitpod-io/openvscode-server/releases/latest 2>"$err")"
+  body="$(curl -fsS --retry 5 --retry-delay 3 --retry-all-errors https://api.github.com/repos/gitpod-io/openvscode-server/releases/latest 2>"$err")"
   tag="$(printf '%s' "$body" | sed -n 's/.*"tag_name"[^"]*"openvscode-server-v\([^"]*\)".*/\1/p' | head -1)"
   if [ -z "$tag" ]; then
     # Print what curl actually said. "could not resolve the latest release" on
@@ -210,7 +210,7 @@ install_server() {
   echo "  $url"
   # No pipe into tar: a 404 page piped to tar fails in a way that is hard to
   # read, and a truncated download must not half-populate the install root.
-  curl -fL --progress-bar -o "$tmp/server.tar.gz" "$url" \
+  curl -fL --retry 5 --retry-delay 3 --retry-all-errors --progress-bar -o "$tmp/server.tar.gz" "$url" \
     || die "download failed — is v${VERSION} a real release for ${arch}?"
   tar -xzf "$tmp/server.tar.gz" -C "$tmp" || die "archive did not unpack"
   [ -x "$tmp/$asset/bin/openvscode-server" ] || die "unpacked tree has no bin/openvscode-server"

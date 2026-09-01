@@ -193,7 +193,7 @@ diagnose_github_auth() {
       # earlier version keyed off "did curl print anything", which reports a
       # rejected token as valid: `curl -f -D -` still dumps the 401 headers.
       local resp code login scopes
-      resp="$(curl -sS -D - -H "Authorization: Bearer $SUBMODULE_TOKEN" \
+      resp="$(curl -sS --retry 5 --retry-delay 3 -D - -H "Authorization: Bearer $SUBMODULE_TOKEN" \
                 https://api.github.com/user 2>/dev/null)"
       code="$(printf '%s' "$resp" | sed -n '1s@^HTTP/[0-9.]* \([0-9]*\).*@\1@p' | tail -1)"
       if [ "$code" = 200 ]; then
