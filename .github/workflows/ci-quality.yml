@@ -1351,6 +1351,21 @@ jobs:
         env:
           PUBLIC_VIDEO_CDN_BASE_URL: https://media.rediacc.com
 
+      # THE EVIDENCE WAS BEING COLLECTED AND THROWN AWAY. The gate writes a summary,
+      # screenshots and (on a navigation timeout) the browser's pending requests plus the
+      # dev server's own output into artifacts/ -- and nothing uploaded them, so every one
+      # of the three observed failures died with the runner naming only "Operation timed
+      # out". At an ~8% failure rate the cause is a handful of runs away, but only if the
+      # run that fails leaves something behind.
+      - name: Upload tutorial player gate artifacts
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
+        with:
+          name: tutorial-player-release-gate-${{ github.run_attempt }}
+          path: artifacts/tutorial-player-release-gate/
+          retention-days: 7
+          if-no-files-found: ignore
+
       - name: Run CLI unit tests
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: npm run test:unit --workspace=@rediacc/cli

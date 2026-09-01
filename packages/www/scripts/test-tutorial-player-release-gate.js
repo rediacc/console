@@ -37,6 +37,10 @@ let exitCode = 0;
  * this flag made it a first-class, reported fact instead.
  */
 let serverDiedMidRun = null;
+let navigationRetries = 0;
+// PIPED SINCE FOREVER AND NEVER READ. On a navigation timeout this is the only record
+// of what the server thought it was doing, so it is kept and written out on failure.
+const serverLog = [];
 let intentionalShutdown = false;
 
 function log(message) {
@@ -251,9 +255,16 @@ async function startDevServer() {
       reject(new Error('Timed out waiting for astro dev server to start'));
     }, 180000);
 
+    // MATCH ASTRO'S BANNER, NOT THE SUBSTRING `ready`. The string "address already in
+    // use" CONTAINS "ready", and so does any message quoting the URL -- so an EADDRINUSE
+    // line would have been read as "the server is up" and the run would proceed against
+    // somebody else's listener. It did not fire in the observed failures (no
+    // serverDiedMidRun warning in either), but it is a booby trap in exactly this path.
+    const READY = /ready in \d|Local\s+http:\/\/127\.0\.0\.1:/i;
     const onData = (chunk) => {
       const text = String(chunk);
-      if (text.includes('ready') || text.includes(`http://127.0.0.1:${port}`)) {
+      serverLog.push(text);
+      if (READY.test(text)) {
         clearTimeout(timeout);
         resolve();
       }
@@ -384,7 +395,7 @@ function sampledStates(durationMs, tickMs) {
 
 function scenarioBasicPlayPauseResume() {
   log('→ scenario: basic play/pause/resume');
-  open(`${baseUrl}/en/docs/tutorial-production-mode`);
+  openFirst(`${baseUrl}/en/docs/tutorial-production-mode`);
   wait(1200);
   clearConsole();
 
@@ -582,6 +593,122 @@ function scenarioMountConsistency() {
   );
 }
 
+/**
+ * Poll each visited route over HTTP until it serves 200, bounded.
+ *
+ * `astro dev` prints its banner when it is LISTENING, not when it can serve a page, so
+ * this asserts servability instead of assuming it. It replaces a fire-and-forget warm
+ * fetch, which asserted nothing and would have leaked its own failure into the next
+ * navigation's timeout.
+ *
+ * SOLD AS READINESS, NOT AS THE FIX, because the measurement says it is not one.
+ * Timing the phases across 16 passing runs: the first `open` costs ~5s of a 25s budget,
+ * and scenarios 3 and 5 open never-before-compiled routes against a warm module graph for
+ * ~0.4-0.5s each -- and THAT is the SSR route-compile cost this removes. The other ~4.5s
+ * is the browser pulling the client module graph (React + Plyr, dynamically imported at
+ * src/scripts/tutorial-video-hydrate.ts) through Vite's on-demand transform, which a
+ * `fetch()` of the HTML never requests. So this buys under half a second.
+ *
+ * The failures are not a squeeze on that budget anyway: three of them at 28.4s / 29.0s /
+ * 29.0s against agent-browser's 25s default operation timeout is a fixed CEILING, not a
+ * distribution tail. A budget 20% utilised on 16 of 16 passes does not intermittently
+ * need 500%. Base rate since the step was added: 3 failures in 38 executions (~8%),
+ * across two agent-browser versions and ~20 commits, with passes interleaved -- including
+ * one BETWEEN the two failures that first looked consecutive.
+ */
+async function pollRoutesReady() {
+  const routes = [
+    '/en/docs/tutorial-production-mode',
+    '/en/docs/tutorial-add-server',
+    '/en/solutions/rapid-recovery',
+  ];
+  for (const route of routes) {
+    const startedAt = Date.now();
+    const deadline = startedAt + 60000;
+    let last = 'no attempt';
+    while (Date.now() < deadline) {
+      try {
+        const res = await fetch(`${baseUrl}${route}`, { signal: AbortSignal.timeout(20000) });
+        if (res.ok) {
+          log(`→ ready ${route} (${res.status}, ${Date.now() - startedAt}ms)`);
+          last = null;
+          break;
+        }
+        last = `HTTP ${res.status}`;
+      } catch (err) {
+        last = String(err);
+      }
+      await new Promise((r) => setTimeout(r, 500));
+    }
+    if (last !== null) {
+      log(`→ NOT READY ${route} after ${Date.now() - startedAt}ms: ${last}`);
+    }
+  }
+}
+
+/**
+ * The first navigation, timed, and self-describing when it fails.
+ *
+ * WHY THIS EXISTS RATHER THAN A BARE open(): the gate has failed three times at exactly
+ * this call and each time reported only "Operation timed out. The page may still be
+ * loading or the element may not exist." -- which names neither what was pending nor how
+ * long the healthy case takes. Logging the elapsed time on EVERY run makes the ~5s
+ * baseline visible, so the next 29s reads instantly as a ceiling rather than a slowdown.
+ *
+ * On timeout it dumps the browser's pending requests and the dev server's own output
+ * before retrying, because that is the evidence that names the stalled resource. The
+ * leading suspect is the analytics script BaseLayout.astro loads unconditionally from a
+ * third-party host on every page, dev included: an `async` script still delays `load`,
+ * and a tutorial-player release gate has no business being decided by it. That is a
+ * CANDIDATE, not a finding -- agent-browser's docs do not state what `open` waits for,
+ * so the dump is what will settle it.
+ *
+ * The retry is recorded, never silent: a run that needed it is not clean, and a second
+ * timeout still fails the gate.
+ */
+function openFirst(url) {
+  const startedAt = Date.now();
+  try {
+    const out = open(url);
+    log(`→ first navigation ok (${Date.now() - startedAt}ms)`);
+    return out;
+  } catch (err) {
+    log(`→ first navigation FAILED after ${Date.now() - startedAt}ms: ${err}`);
+    captureNavigationEvidence();
+    navigationRetries += 1;
+    log('→ retrying the first navigation once');
+    const retryAt = Date.now();
+    const out = open(url);
+    log(`→ first navigation ok on RETRY (${Date.now() - retryAt}ms)`);
+    return out;
+  }
+}
+
+/** Pending requests and server output, written where the artifact upload can find them. */
+function captureNavigationEvidence() {
+  const dir = path.join(repoRoot, 'artifacts', 'tutorial-player-release-gate', stamp);
+  try {
+    fs.mkdirSync(dir, { recursive: true });
+  } catch {
+    return;
+  }
+  try {
+    const net = runAgent(['network', 'requests']);
+    fs.writeFileSync(path.join(dir, 'network-requests.json'), JSON.stringify(net, null, 2));
+  } catch (err) {
+    try {
+      fs.writeFileSync(path.join(dir, 'network-requests.json'), `capture failed: ${err}\n`);
+    } catch {
+      // Evidence is best-effort; never let it mask the real failure.
+    }
+  }
+  try {
+    fs.writeFileSync(path.join(dir, 'dev-server.log'), serverLog.join(''));
+  } catch {
+    // As above.
+  }
+}
+
 async function main() {
   try {
     execFileSync('agent-browser', ['--version'], { encoding: 'utf8' });
@@ -596,6 +723,7 @@ async function main() {
     log(`→ starting astro dev server on ${baseUrl}`);
     await startDevServer();
     resources = resourceSnapshot(Date.now() - bootStartedAt);
+    await pollRoutesReady();
     wait(1500);
 
     scenarioBasicPlayPauseResume();
@@ -611,6 +739,7 @@ async function main() {
       session,
       baseUrl,
       resources,
+    navigationRetries,
       serverDiedMidRun,
     };
     writeArtifact('summary.json', summary);
