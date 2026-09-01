@@ -364,6 +364,18 @@ export const GATES: readonly GateSpec[] = [
     },
   },
   {
+    id: 'check:ci-fetch-retry',
+    run: 'npm run check:ci-fetch-retry',
+    gate: true,
+    leaves: ['.ci/scripts/quality/check_fetch_retry.py'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-code',
+      step: 'Fetch retry',
+    },
+  },
+  {
     id: 'check:ci-judged-rule-wiring',
     run: 'npm run check:ci-judged-rule-wiring',
     gate: true,

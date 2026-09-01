@@ -834,6 +834,10 @@ jobs:
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: npm run check:ci-shape-duplication
 
+      - name: Fetch retry
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: npm run check:ci-fetch-retry
+
       - name: Judged rule wiring
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: npm run check:ci-judged-rule-wiring
