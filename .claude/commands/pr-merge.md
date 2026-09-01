@@ -1,7 +1,11 @@
 ---
 description: Land the current branch's stacked PRs: rebase-merge submodule PRs first, bump the console pointers to the merged commits, wait for the fast-path CI run and auto-merge the console PR (flipping it ready first if needed), check out main, watch the release pipeline (Console CI on main + CD edge deploy) to green, then RE-SYNC main because CD pushes a homebrew-tap pointer bump and a release-state commit back to main after the merge. Use when the console PR is ready + Claude-reviewed with threads resolved, and you want to release without re-typing the submodule sequence.
 argument-hint: "[branch]  (optional; defaults to the current branch)"
-disable-model-invocation: true
+# Operator authorisation, 2026-09-01: made model-invocable so a babysit session that has
+# driven CI to green can land the wave without a round trip. The guardrails that matter are
+# NOT this flag -- they are the ones inside the task body (only run when the user has asked
+# to land the PRs; never push main or cut a release unasked), and they still stand.
+disable-model-invocation: false
 allowed-tools: Bash(git branch:*), Bash(git status:*), Bash(git submodule status:*), Bash(gh pr list:*), Bash(gh pr view:*)
 ---
 
