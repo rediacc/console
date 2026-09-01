@@ -2482,6 +2482,18 @@ export const GATES: readonly GateSpec[] = [
     },
   },
   {
+    id: 'check:ci-viewport-unit-mixing',
+    run: 'npm run check:ci-viewport-unit-mixing',
+    gate: true,
+    leaves: ['scripts/check-viewport-unit-mixing.ts'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-content',
+      step: 'Dead CSS',
+    },
+  },
+  {
     id: 'check:ci-redirects',
     run: 'npm run check:ci-redirects',
     slow: true, // needs build:www (131.9s); the runner demoted it anyway

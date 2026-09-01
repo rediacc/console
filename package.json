@@ -178,6 +178,7 @@
     "check:ci-css-dom-refs": "tsx scripts/check-css-dom-refs.ts --selftest && tsx scripts/check-css-dom-refs.ts",
     "check:ci-svg-theme-reach": "tsx scripts/check-svg-theme-reach.ts --selftest && tsx scripts/check-svg-theme-reach.ts",
     "check:ci-dead-css": "tsx scripts/check-dead-css.ts --selftest && tsx scripts/check-dead-css.ts",
+    "check:ci-viewport-unit-mixing": "tsx scripts/check-viewport-unit-mixing.ts --selftest",
     "check:ci-redirects": "tsx scripts/check-redirect-integrity.ts && npm run check:ci-anchor-integrity",
     "check:ci-browser-smoke": ".ci/scripts/quality/browser-smoke.sh",
     "check:ci-page-density": ".ci/scripts/quality/page-density.sh",
