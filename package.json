@@ -239,6 +239,7 @@
     "check:ci-rubric-calibration": ".ci/scripts/quality/check-rubric-calibration.sh",
     "check:ci-shape-duplication": "tsx scripts/check-shape-duplication.ts --selftest && tsx scripts/check-shape-duplication.ts",
     "check:ci-typecheck-scope-coverage": "tsx scripts/check-typecheck-scope-coverage.ts --selftest && tsx scripts/check-typecheck-scope-coverage.ts",
+    "check:ci-git-history-depth": ".ci/scripts/quality/check_git_history_depth.py",
     "check:types": "tsc -b packages/shared packages/provisioning packages/cli && tsc --noEmit -p private/account/tsconfig.json && tsc --noEmit -p scripts/tsconfig.json && tsc --noEmit -p packages/shared/tsconfig.test.json && tsc --noEmit -p packages/cli/tsconfig.test.json && tsc --noEmit -p packages/provisioning/tsconfig.test.json && tsc --noEmit -p packages/e2e-tests/tsconfig.json && npm run typecheck --workspace packages/www && .ci/scripts/quality/typecheck-workers.sh",
     "check:version": "tsx scripts/check-workspace-versions.ts && syncpack lint",
     "clean": "npm run clean -w @rediacc/shared && npm run clean -w @rediacc/cli",

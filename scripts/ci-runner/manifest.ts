@@ -364,6 +364,18 @@ export const GATES: readonly GateSpec[] = [
     },
   },
   {
+    id: 'check:ci-git-history-depth',
+    run: 'npm run check:ci-git-history-depth',
+    gate: true,
+    leaves: ['.ci/scripts/quality/check_git_history_depth.py'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-code',
+      step: 'Git history depth',
+    },
+  },
+  {
     id: 'check:ci-typecheck-scope-coverage',
     run: 'npm run check:ci-typecheck-scope-coverage',
     slow: true, // 17.7s: `tsc --showConfig` on all 13 projects, twice (selftest + real run)
