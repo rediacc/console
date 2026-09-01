@@ -28,7 +28,81 @@ import hashlib
 import json
 import os
 import pathlib
+import re
 import time
+
+# -- What a model-authored order is allowed to tell a session to DO ----------
+#
+# BOTH judged rules interpolate model text into an order the session then acts on,
+# so the question "may this order write?" belongs here rather than in either one.
+# It is answered DIFFERENTLY by each, and the difference is the whole point:
+#
+#   wl_classsweep  a sweep ENUMERATES. It has an intrinsic read-only guarantee, so
+#                  the full write set is refused.
+#   wl_bravedefault a braver DEFAULT may legitimately write -- "delete the stale
+#                  baseline entries" is exactly the kind of action that rule exists
+#                  to push a session toward -- so only TREE_DESTROYING is refused.
+#                  That subset is never acceptable on any path in this repo: the
+#                  working tree carries other sessions' uncommitted work, and a
+#                  brave DEFAULT is worse than a sweep order because it EXECUTES on
+#                  a timer with nobody reading it first.
+WRITE_VERBS = frozenset(
+    (
+        "rm",
+        "rmdir",
+        "mv",
+        "cp",
+        "dd",
+        "truncate",
+        "shred",
+        "install",
+        "chmod",
+        "chown",
+        "chgrp",
+        "ln",
+        "mkdir",
+        "touch",
+        "tee",
+        "kill",
+        "pkill",
+        "reboot",
+        "shutdown",
+    )
+)
+# git subcommands that discard work or publish. `git grep` / `git ls-files` are what
+# a sweep should use, so git itself is never denied -- only these second words.
+WRITE_GIT = frozenset(
+    ("checkout", "restore", "stash", "clean", "reset", "rm", "mv", "push", "commit")
+)
+# The subset that destroys work nobody can get back. Forbidden everywhere.
+TREE_DESTROYING = frozenset(("checkout", "restore", "stash", "clean", "reset"))
+
+
+def names_write(text, verbs=None, git_subs=None):
+    """The write verb this PROSE names, or "".
+
+    Word boundaries are load-bearing in both directions: "remove the duplicate
+    line" must not trip on `rm` and "move the check" must not trip on `mv`, while
+    "rm the stale entries" and "git clean -xdf" must. An instruction is prose,
+    where ordinary English words are expected.
+    """
+    verbs = WRITE_VERBS if verbs is None else verbs
+    git_subs = WRITE_GIT if git_subs is None else git_subs
+    low = " %s " % (text or "").lower().replace("`", " ").replace("\n", " ")
+    for verb in sorted(verbs):
+        if re.search(r"(?<![\w-])%s(?![\w-])" % re.escape(verb), low):
+            return verb
+    for sub in sorted(git_subs):
+        if re.search(r"(?<![\w-])git\s+%s(?![\w-])" % re.escape(sub), low):
+            return "git %s" % sub
+    if verbs is WRITE_VERBS and re.search(r"(?<![\w-])-delete(?![\w-])", low):
+        return "-delete"
+    return ""
+
+
+def names_tree_destroying(text):
+    """Only the git verbs that destroy uncommitted work. No plain-verb set."""
+    return names_write(text, verbs=frozenset(), git_subs=TREE_DESTROYING)
 
 
 class Demand:

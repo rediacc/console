@@ -320,43 +320,12 @@ def read_verdict(out):
 SEARCH_MAX = 300  # the schema's maxLength; a value at the cap arrived truncated
 
 # A SWEEP ENUMERATES. It never writes, moves or deletes, so a proposed command that
-# does is not a bad search -- it is an order to damage the tree, issued by a model,
-# handed to a session under the words "Run:". This repo's standing rule that no
-# session may `git checkout` / `restore` / `stash` / `clean` exists because the tree
-# carries other sessions' uncommitted work; a rule that ORDERS one of those would be
-# worse than the mistake it was written to stop.
-#
-# A denylist rather than an allowlist of read-only verbs: the set below is small,
-# well known and unambiguous, while the set of legitimate ways to enumerate siblings
-# is not, and rejecting a valid search costs the very actionability this rule needs.
-_DESTRUCTIVE = frozenset(
-    (
-        "rm",
-        "rmdir",
-        "mv",
-        "cp",
-        "dd",
-        "truncate",
-        "shred",
-        "install",
-        "chmod",
-        "chown",
-        "chgrp",
-        "ln",
-        "mkdir",
-        "touch",
-        "tee",
-        "kill",
-        "pkill",
-        "reboot",
-        "shutdown",
-    )
-)
-# git subcommands that discard work. `git grep` / `git ls-files` are exactly what a
-# sweep should use, so git itself is not denied -- only these second words are.
-_DESTRUCTIVE_GIT = frozenset(
-    ("checkout", "restore", "stash", "clean", "reset", "rm", "mv", "push", "commit")
-)
+# does is not a bad search -- it is an order to damage the tree, issued by a model and
+# handed to a session under the word "Run:". The verb sets and the prose matcher live
+# in wl_rules because wl_bravedefault needs them too at a DIFFERENT threshold; keeping
+# a second copy here is the very duplication this module exists to catch.
+_DESTRUCTIVE = wl_rules.WRITE_VERBS
+_DESTRUCTIVE_GIT = wl_rules.WRITE_GIT
 
 # A token shaped like a repo path: at least one `/`, and only characters a path
 # or a glob would carry.
@@ -368,6 +337,19 @@ def _repo_root():
     return os.path.abspath(
         os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "..")
     )
+
+
+def names_destructive(text):
+    """The write verb this PROSE names, or "". See wl_rules.names_write.
+
+    THE SECOND DOOR, and it stayed open after the first was shut. `search` is a command
+    and is validated as one; `instruction` is model-authored PROSE that reaches the
+    session verbatim through V_ACTION_NOSEARCH whenever `search` is empty. Prose is not
+    a command line, so it is not tokenised -- but a session told "next step: git clean
+    -xdf" may well run it, and the read-only guarantee a sweep carries has to hold on
+    every path out of this module, not only the one wearing the word "Run:".
+    """
+    return wl_rules.names_write(text)
 
 
 def validate_search(search, root=None):
@@ -453,7 +435,12 @@ def enforce(out, payload):
     elif payload["search"]:
         action = V_ACTION_DROPPED % {"why": why[:70]}
     else:
-        action = V_ACTION_NOSEARCH % payload["instruction"]
+        verb = names_destructive(payload["instruction"])
+        action = (
+            V_ACTION_DROPPED % {"why": "its instruction named `%s`, and a sweep only reads" % verb}
+            if verb
+            else V_ACTION_NOSEARCH % payload["instruction"]
+        )
     wl_rules.apply_order(out, reason, action)
     return "class-sweep: %s" % payload["defect_class"][:160]
 

@@ -38,6 +38,7 @@ import wl_bravedefault
 import wl_classsweep
 import wl_core
 import wl_judge
+import wl_rules
 
 
 class Tally:
@@ -363,6 +364,52 @@ control(
 )
 wl_classsweep.clear_outstanding(MARKER)
 
+# THE SECOND DOOR. `instruction` is model-authored PROSE and reaches the session
+# verbatim through V_ACTION_NOSEARCH whenever `search` is empty, so the read-only
+# guarantee has to hold there too -- a session told "next step: git clean -xdf" may
+# run it even without the word "Run:". Word boundaries are load-bearing in both
+# directions and both directions are controlled.
+for prose, want in [
+    ("run git clean -xdf then re-check", "git clean"),
+    ("rm the stale baseline entries", "rm"),
+    ("use `find . -name x -delete` to clear them", "-delete"),
+    ("git checkout the previous version first", "git checkout"),
+]:
+    control(
+        "prose naming a write is caught: %s" % prose[:32],
+        wl_classsweep.names_destructive(prose),
+        want,
+    )
+for prose in [
+    "grep the sibling guards and fix every one",
+    "remove the duplicate line from the table",
+    "move the check into the other file",
+    "commitment to the class matters here",
+]:
+    control(
+        "CONTROL: ordinary prose is not a write: %s" % prose[:32],
+        wl_classsweep.names_destructive(prose),
+        "",
+    )
+
+out = answer(search="", instruction="run git clean -xdf then re-check")
+kind, _note = wl_classsweep.apply_verdict(out, path=MARKER)
+control("a destructive INSTRUCTION with no search still fires", kind, "fire")
+control(
+    "and the instruction is not repeated back at the session",
+    "git clean" in out["next_action"].split("DROPPED")[-1].split(".")[0],
+    True,
+)
+out = answer(search="", instruction="grep the sibling guards and fix every one")
+wl_classsweep.apply_verdict(out, path=MARKER)
+control(
+    "CONTROL: a harmless instruction with no search is passed through",
+    out["next_action"].startswith("Grep for siblings")
+    and "grep the sibling guards" in out["next_action"],
+    True,
+)
+wl_classsweep.clear_outstanding(MARKER)
+
 # The whole point: a rejected command must NOT weaken the block.
 out = answer(search=BAD_PATH)
 kind, _note = wl_classsweep.apply_verdict(out, path=MARKER)
@@ -664,6 +711,92 @@ control(
 )
 control("and says the hold had no stated reason", "no stated reason" in out["reason"], True)
 wl_bravedefault.BRAVE_DEMAND.clear(BMARKER)
+
+# -- 4c2. A DEFAULT EXECUTES, so the order it proposes may not destroy work. --
+# `braver` becomes the deferral's DEFAULT and that runs on a timer with nobody
+# reading it first, which makes a destructive string here worse than the same
+# string in a sweep order. The threshold is NARROWER than wl_classsweep's on
+# purpose: a braver default may legitimately write, so only the git verbs that
+# discard uncommitted work are refused. Both halves are controlled, because a
+# guard that over-fires would gut the rule.
+for braver, want in [
+    ("git stash the peer work then rebuild", "git stash"),
+    ("git checkout the previous config and retry", "git checkout"),
+    ("git clean -xdf and re-run", "git clean"),
+    ("git reset --hard onto the tag", "git reset"),
+]:
+    out = bd_answer(braver=braver)
+    kind, _note = wl_bravedefault.apply_verdict(out, path=BMARKER)
+    control("a DEFAULT that would destroy work still fires: %s" % want, kind, "fire")
+    control("  and its suggestion is dropped, naming %s" % want, want in out["next_action"], True)
+    control(
+        "  and the destructive text is not handed back",
+        out["next_action"].startswith(
+            "Rewrite that deferral's DEFAULT as the action you would take alone: %s" % braver[:12]
+        ),
+        False,
+    )
+    control("  and the order still fits the 200-char cap", len(out["next_action"]) < 200, True)
+    wl_bravedefault.BRAVE_DEMAND.clear(BMARKER)
+
+# THE GENERIC BRANCH, which had no control at all until an audit of every V_ACTION
+# interpolation found it: with `braver` empty the order is built from `instruction`
+# instead, and it is guarded only because `proposed = braver or instruction` makes
+# instruction the validated value. Nothing pinned that, so a refactor of one line
+# could have reopened the path silently. Both directions, as above.
+out = bd_answer(braver="", instruction="git stash the peer work first")
+kind, _note = wl_bravedefault.apply_verdict(out, path=BMARKER)
+control("the generic branch refuses a destructive instruction too", kind, "fire")
+control("  and names it", "git stash" in out["next_action"], True)
+control(
+    "  and does not echo the instruction back",
+    "peer work" in out["next_action"],
+    False,
+)
+wl_bravedefault.BRAVE_DEMAND.clear(BMARKER)
+
+out = bd_answer(braver="", instruction="delete the stale entries and re-run")
+wl_bravedefault.apply_verdict(out, path=BMARKER)
+control(
+    "CONTROL: the generic branch still passes a legitimate writing instruction",
+    "delete the stale entries" in out["next_action"],
+    True,
+)
+wl_bravedefault.BRAVE_DEMAND.clear(BMARKER)
+
+# The narrow threshold, from the other side: these MUST pass through, or the rule
+# stops being able to ask for the actions it exists to ask for.
+for braver in [
+    "delete the stale baseline entries",
+    "remove the suppression and re-run",
+    "rm the generated dir and rebuild",
+    "move the check into the other file",
+]:
+    out = bd_answer(braver=braver)
+    wl_bravedefault.apply_verdict(out, path=BMARKER)
+    control(
+        "CONTROL: a legitimate writing default is passed through: %s" % braver[:26],
+        braver in out["next_action"],
+        True,
+    )
+    wl_bravedefault.BRAVE_DEMAND.clear(BMARKER)
+
+# The two thresholds are genuinely different, and that difference is the design.
+control(
+    "the sweep threshold refuses `rm`",
+    wl_rules.names_write("rm the stale entries"),
+    "rm",
+)
+control(
+    "the default threshold does NOT refuse `rm`",
+    wl_rules.names_tree_destroying("rm the stale entries"),
+    "",
+)
+control(
+    "both refuse git clean",
+    (wl_rules.names_write("git clean -xdf"), wl_rules.names_tree_destroying("git clean -xdf")),
+    ("git clean", "git clean"),
+)
 
 # -- 4d. THE SILENT PAIR: a real action, and a justified hold. -------------
 out = bd_answer(changes_state=True, default_text="land it on the open PR", hold_reason="none")

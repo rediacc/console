@@ -240,6 +240,11 @@ V_ACTION_GENERIC = (
     "Rewrite that deferral's DEFAULT as the action you would take alone -- the recommended "
     "one, stated as an executable step, not as a hold. %s"
 )
+V_ACTION_UNSAFE = (
+    "Rewrite that deferral's DEFAULT as the action you would take alone. This rule's own "
+    "suggestion was DROPPED: it named `%s`, which destroys uncommitted work and is never "
+    "a default."
+)
 _WHY = {
     "preference": "because the operator might prefer otherwise",
     "none": "for no stated reason",
@@ -253,11 +258,22 @@ def enforce(out, payload):
         payload["default_text"][:80] or "(nothing)",
         _WHY.get(payload["hold_reason"], "for no stated reason"),
     )
-    action = (
-        V_ACTION % payload["braver"]
-        if payload["braver"]
-        else V_ACTION_GENERIC % payload["instruction"]
-    )
+    # THE ORDER IS MODEL TEXT, AND A DEFAULT EXECUTES. `braver` becomes a `[?]`
+    # deferral's DEFAULT, which runs on a timer with nobody reading it first -- so a
+    # destructive string here is worse than the same string in a sweep order, not
+    # better. But the threshold is NARROWER than wl_classsweep's, deliberately: a
+    # braver default may legitimately write ("delete the stale baseline entries" is
+    # exactly what this rule exists to push a session toward), while the git verbs
+    # that discard uncommitted work are unacceptable on every path in this repo,
+    # because the tree carries other sessions' work. See wl_rules.TREE_DESTROYING.
+    proposed = payload["braver"] or payload["instruction"]
+    verb = wl_rules.names_tree_destroying(proposed)
+    if verb:
+        action = V_ACTION_UNSAFE % verb
+    elif payload["braver"]:
+        action = V_ACTION % payload["braver"]
+    else:
+        action = V_ACTION_GENERIC % payload["instruction"]
     wl_rules.apply_order(out, reason, action)
     return "brave-default: %s" % payload["quote"][:160]
 
