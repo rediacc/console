@@ -256,16 +256,33 @@ async function startDevServer() {
       reject(new Error('Timed out waiting for astro dev server to start'));
     }, 180000);
 
-    // MATCH ASTRO'S BANNER, NOT THE SUBSTRING `ready`. The string "address already in
-    // use" CONTAINS "ready", and so does any message quoting the URL -- so an EADDRINUSE
-    // line would have been read as "the server is up" and the run would proceed against
-    // somebody else's listener. It did not fire in the observed failures (no
-    // serverDiedMidRun warning in either), but it is a booby trap in exactly this path.
-    const READY = /ready in \d|Local\s+http:\/\/127\.0\.0\.1:/i;
+    // MATCH ASTRO'S BANNER, ON THE ACCUMULATED BUFFER, NOT ON EACH CHUNK.
+    //
+    // Two defects here, and the second one I introduced and then shipped:
+    //
+    // 1. The original test was `text.includes('ready')`. "address already in use"
+    //    CONTAINS "ready", so an EADDRINUSE line would read as "the server is up" and the
+    //    run would proceed against somebody else's listener.
+    // 2. Replacing it with a regex over the CHUNK made it fragile in the opposite
+    //    direction. `onData` sees whatever bytes arrive together, so a boundary falling
+    //    inside the banner leaves neither half matching -- and the needle grew from 5
+    //    characters ("ready") to 8 ("ready in"), which is strictly more splittable.
+    //    Measured: run 33542869307 timed out with `bootMs: 180061` and
+    //    `pressureDetected: true`, where every earlier run booted in ~32s. That is the
+    //    shape of a matcher that never fired, not a server that never started.
+    //
+    // Testing the ACCUMULATED buffer removes the boundary hazard entirely: the banner is
+    // matched once it has all arrived, however it was delivered.
+    //
+    // The URL alternative also said `127.0.0.1`, which astro never prints -- its banner
+    // reads `Local    http://localhost:<port>/`. Neither this version nor the original
+    // could ever have matched on that, so it was doing no work at all. Captured from a
+    // real run: " astro  v5.18.1 ready in 4806 ms" then "Local    http://localhost:4599/".
+    const READY = /ready in \s*\d|Local\s+https?:\/\/(localhost|127\.0\.0\.1):/i;
     const onData = (chunk) => {
       const text = String(chunk);
       serverLog.push(text);
-      if (READY.test(text)) {
+      if (READY.test(serverLog.join(''))) {
         clearTimeout(timeout);
         resolve();
       }
