@@ -50,8 +50,29 @@ which, so do not re-derive it:
 | cancelled **with** a failed job | the watchdog killed the run for that failure |
 | cancelled, **zero** failures | a newer push superseded it; trace the new head |
 
-**Classify before fixing.** A job that passed on an earlier run of this branch
-is transient and already being retried; "fixing" it edits working code.
+**Classify before fixing, and "it passed earlier" is NOT the classifier.** That
+shortcut used to live here and it was wrong: on 2026-09-01 a gate that had passed
+on five earlier runs of the same branch went red five times running, and it was a
+real regression introduced mid-branch, not a flake. Four re-runs were spent on it.
+
+An earlier pass is evidence only once you have asked what changed since it:
+
+    git log --oneline <last-green-sha>..HEAD     # find the last STEP-level green first
+    git log --oneline -- <the file that broke>   # has this broken before, and why
+
+Read the answer including when it is empty. A window containing only docs is
+affirmative evidence for an environmental cause; a window containing the failing
+file is your suspect. **And find the last green at STEP level, not run level** — a
+cancelled run hides passing steps, so the run list will place the boundary wrong.
+
+**A red that reproduces locally is not environmental, and a red that does NOT
+reproduce locally is not automatically environmental either.** `CI=true` alone
+changes subprocess output (see TRAPS.md, "a gate that fails ONLY in CI may be
+matching bytes that CI coloured"); re-run the failing command with `CI=true` set
+before concluding the runner was at fault.
+
+**Download the artifact before diagnosing from code.** Where a gate uploads one,
+its `summary.json` names the failure mode directly and costs one command.
 
 ## Re-check on every wake
 

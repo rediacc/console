@@ -1634,3 +1634,83 @@ nothing -- the value was cast to a locally declared type on the next line -- and
 behaviour while leaving the typecheck artifact-free. So extend the grep past the
 tsconfig: `grep -rnE "from ['\"][^'\"]*dist/" --include='*.ts'` over the
 typechecked trees. It found exactly one, and that one had shipped a CI red.
+
+## A gate that fails ONLY in CI may be matching bytes that CI coloured
+Trap-Id: ci-true-turns-colour-on-with-no-tty
+Enforced-By: gate:check:test-www
+Residue: Judgment for any NEW subprocess-output matcher. The controls lock the one that was paid for; nothing stops a second matcher being written against raw bytes.
+
+`CI=true` is set by GitHub Actions on every step, and the common colour libraries
+(chalk/picocolors and everything built on them) treat that as "colour is supported"
+**even with no TTY attached**. So a subprocess whose output is plain on a developer's
+machine arrives ANSI-escaped in CI, and any matcher over its raw bytes is reading a
+different string than the one it was written against.
+
+Measured 2026-09-01. The tutorial-player release gate waited for astro's banner:
+
+    plain :  astro  v5.18.1 ready in 4494 ms
+    CI    : \x1b[2mready in\x1b[22m 4739 \x1b[2mms\x1b[22m
+
+`/ready in \s*\d/` requires a space after `in`. In CI an escape sits there instead, so
+the matcher returned TRUE on the plain capture and FALSE on the CI capture, byte for
+byte. The gate timed out after 180s, five runs in a row, and passed locally every time.
+
+**That combination -- green locally, red only in CI, no output from the child -- is the
+signature.** It reads exactly like a flaky or starved runner, which is how it survived
+four re-runs and two wrong root causes (a chunk-boundary theory that changed nothing).
+
+Two things follow. Strip ANSI **on ingest** rather than teaching one regex about escape
+codes, so the buffer is plain for every future matcher and the artifact is readable.
+And note the predecessor here, `text.includes('ready')`, survived colour by accident:
+tightening a matcher is right, but a tightened matcher over raw bytes is a new trap.
+
+## An instrument must not derive "this might not be real" from the failure itself
+Trap-Id: self-certifying-false-comfort
+Enforced-By: JUDGMENT-ONLY
+Residue: No gate can tell an honest hint from a circular one. The check is to ask what the hint would say if the failure were REAL.
+
+The same gate printed, on every timeout:
+
+    ⚠ SYSTEM UNDER LOAD while this ran (load/core=0.06, boot=180063ms of a 180000ms
+      budget) -- this may be resource contention, not a real regression.
+
+`load/core=0.06` is an idle machine. The flag was `pressureDetected = slowBoot ||
+highLoad`, and `slowBoot` was `bootMs > 90000` -- the timeout restated. So **every**
+boot timeout certified itself as probably-not-a-real-bug, including the ones that were.
+
+This is worse than no hint at all. A missing hint leaves you to investigate; a
+self-certifying one actively argues against investigating, and it is written in the
+authoritative voice of the instrument. It bought five re-runs of a real defect.
+
+The test to apply to any "this may be environmental" line: **what would it print if the
+failure were genuinely a product bug?** If the answer is "the same thing", it is
+circular. Report the independent evidence (here, the load average) separately from the
+symptom, and when they disagree say the OPPOSITE out loud -- a slow boot on an idle
+machine is evidence something never became ready, not evidence of contention.
+
+## The commit log is evidence, and it is the evidence nobody reads
+Trap-Id: read-the-history-before-you-guess
+Enforced-By: gate:check:ci-judged-rule-wiring
+Residue: The gate proves `wl_histfirst` is still CALLED from the stop path (settings.json
+reaches it in three hops, which is why the pointer is the wiring gate rather than the module).
+It cannot make anyone read the window the hook prints, and neither says anything about a
+failure that never reaches a stop.
+
+When CI goes red, the reflex is to read the CODE. This repo writes unusually
+substantial commit messages -- measurements, rejected hypotheses, corrections -- so the
+cheapest evidence available is the one systematically skipped.
+
+Measured on the session that prompted the rule: across 2,494 Bash calls there were ZERO
+`git log`/`blame`/`bisect` invocations naming the file that had gone red four times,
+while eight lines of `git log --oneline -- <that file>` held both decisive facts.
+
+Two questions, both cheap, both usually decisive:
+
+    git log --oneline <last-green-sha>..HEAD          # what could possibly have done it
+    git log --oneline -- <the file that broke>        # has this broken before, and why
+
+**And read the ANSWER, including when it is "nothing".** On 2026-09-01 the window
+between the last green run and the first red contained only two markdown files. That is
+affirmative evidence *against* a regression on the branch and *for* an environmental
+cause -- which is what pointed at `CI=true` and the colour trap above. A window with
+nothing in it is a finding, not a dead end.
