@@ -820,6 +820,12 @@ jobs:
       # reports. Draining that backlog is separate, measured work.
       # Every www build must pass github.token. Found and fixed by hand at two of
       # three call sites, twice, before the third reddened job 99839065246.
+      # A calibrated rubric may not change without being re-calibrated. Editing one
+      # is cheap and silent; re-calibrating costs 14 live model calls.
+      - name: Rubric calibration
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: npm run check:ci-rubric-calibration
+
       - name: www build token
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: npm run check:ci-www-build-token

@@ -1,0 +1,19 @@
+{
+  "rubrics": {
+    "BRAVE_PROMPT": {
+      "calibrated": "2026-09-01",
+      "note": "SWEEP_PROMPT re-calibrated after eb34b3a47; the run is the evidence, this file only proves the text matches",
+      "sha": "39e51d685dd94cb4"
+    },
+    "REGGATE_PROMPT": {
+      "calibrated": "2026-09-01",
+      "note": "SWEEP_PROMPT re-calibrated after eb34b3a47; the run is the evidence, this file only proves the text matches",
+      "sha": "4c76bee71ce4494a"
+    },
+    "SWEEP_PROMPT": {
+      "calibrated": "2026-09-01",
+      "note": "SWEEP_PROMPT re-calibrated after eb34b3a47; the run is the evidence, this file only proves the text matches",
+      "sha": "5346ebd5f97791ff"
+    }
+  }
+}

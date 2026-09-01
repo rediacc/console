@@ -327,6 +327,18 @@ export const GATES: readonly GateSpec[] = [
     },
   },
   {
+    id: 'check:ci-rubric-calibration',
+    run: 'npm run check:ci-rubric-calibration',
+    gate: true,
+    leaves: ['.ci/scripts/quality/check-rubric-calibration.sh'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-code',
+      step: 'Rubric calibration',
+    },
+  },
+  {
     id: 'check:ci-www-build-token',
     run: 'npm run check:ci-www-build-token',
     gate: true,
