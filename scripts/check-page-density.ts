@@ -258,10 +258,16 @@ const PROBE_SRC = String.raw`(() => {
   // is exactly the size of bug that survives review and that no static check can see: it
   // exists only once a browser has resolved a containing block.
   //
-  // Every popover is OPENED to measure it, because a closed one has no box.
+  // SCOPED TO THE OVERLAYS THAT MEAN TO BE VIEWPORT-CENTRED, which is not every popover.
+  // Measured on /en/solutions/environment-cloning at 1440: .learn-menu-panel (224px) and
+  // .nav-cta-menu (192px) are anchored under their triggers at 608px and 536px off
+  // centre, and .cx-pop positions itself deliberately (SolutionConstellation.astro). All
+  // three are correct; asserting on them would make this gate red on working code.
+  //
+  // Every popover in scope is OPENED to measure it, because a closed one has no box.
   var overlayCentring = [];
   var vpCentre = window.innerWidth / 2;
-  Array.prototype.slice.call(document.querySelectorAll('.sp-disclosure-pop, .overlay-panel, .overlay-backdrop')).forEach(function (el) {
+  Array.prototype.slice.call(document.querySelectorAll('.sp-disclosure-pop, .overlay-panel, .overlay-backdrop, .persona-menu-panel')).forEach(function (el) {
     var pop = el.matches('[popover]') ? el : el.closest('[popover]');
     if (pop && pop.showPopover && !pop.matches(':popover-open')) {
       try { pop.showPopover(); } catch (e) { /* already open, or unsupported */ }

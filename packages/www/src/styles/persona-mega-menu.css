@@ -52,7 +52,13 @@
   position: fixed;
   inset: auto;
   top: var(--nav-top-offset);
-  left: 50%;
+  /* 50vw, not 50%: this is a popover, so it lives in the top layer and its containing
+     block is the initial containing block, which `scrollbar-gutter: stable` leaves 15px
+     narrower than the viewport. `left: 50%` therefore centred it at 712.5 on a 1440px
+     viewport -- 7.5px left of centre, measured. The `width` line below already measures
+     against 100vw, so the position was the only half still using the containing block.
+     Same correction as `.sp-disclosure-pop` and `.overlay-backdrop` (operator ruling R2). */
+  left: 50vw;
   margin: 0;
   transform: translateX(-50%);
   width: min(calc(100vw - var(--space-8) * 2), 1020px);
