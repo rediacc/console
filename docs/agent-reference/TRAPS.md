@@ -1588,7 +1588,7 @@ else. Verify with a set-difference against `HEAD`, `added=0`, before believing i
 
 ## A tsconfig can `include` a GENERATED file, so the project typechecks on your machine and cannot on a fresh one
 Trap-Id: generated-dts-warm-machine
-Enforced-By: ci:Quality / Code -> TypeScript
+Enforced-By: gate:check:types file:packages/www/package.json
 Residue:
 
 `packages/www/tsconfig.json` reads:
