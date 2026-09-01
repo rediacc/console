@@ -133,7 +133,15 @@ async function main(): Promise<void> {
   // A namespace-rooted, camelCase dotted token: <namespace>(.seg)+.
   const tokenRe = new RegExp(`\\b(?:${namespaces.join('|')})(?:\\.[A-Za-z][A-Za-z0-9]*)+`, 'g');
 
-  const { cli } = (await import('../src/cli.js')) as { cli: CommanderCommand };
+  // Cast the BINDING, not the module, and go through `unknown` because that is what the
+  // conversion honestly is. `CommanderCommand` above is a deliberately minimal structural
+  // view of Commander's `Command` -- the four members this script actually calls -- so it
+  // does not "sufficiently overlap" with the real class and TS2352 is correct to say so.
+  // Casting the whole module additionally claimed something false about every OTHER export
+  // of cli.ts. This file was never typechecked until scripts/tsconfig.json was widened to
+  // include packages/cli/scripts, which is how a live gate leaf carried an unsound cast.
+  const cliModule = await import('../src/cli.js');
+  const cli = cliModule.cli as unknown as CommanderCommand;
 
   const leaks: Leak[] = [];
   const renderErrors: { commandPath: string; error: string }[] = [];

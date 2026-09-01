@@ -60,6 +60,12 @@
   "include": [
     "./**/*.ts",
     "../.ci/scripts/**/*.ts",
+    // packages/cli/scripts/ is the same KIND of tree as the two above -- repo tooling run
+    // by tsx, never built -- and nothing else typechecked it. Two of its ten files are
+    // GATE LEAVES the ci-runner manifest names (check-cli-i18n-help-render.ts,
+    // check-command-planes.ts), so a type error in either reached CI exactly the way the
+    // two in b23b0031a did: biome does not typecheck and ci:quick defers check:types.
+    "../packages/cli/scripts/**/*.ts",
     // Ambient module declarations must be visible to EVERY project that
     // reaches the module that uses them. This project pulls in
     // packages/cli/src/remote/vscode/bootstrap.ts transitively, so without
