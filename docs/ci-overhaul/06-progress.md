@@ -6131,3 +6131,52 @@ hidden-overflow probe reported a hidden element as visible; `\bvw\b` never match
 **None was caught by a fixture control.** Each was caught by re-planting the real
 defect into the real tree, rebuilding, and requiring the gate to go red. A
 control-first gate is only as good as the plant it was last shown to fail on.
+
+## 2026-09-01 — coverage that never executed, and the machinery that orders work
+
+Four gates and one shared harness, all on branch `0831-1`. The through-line is a single
+class: **a check that is green on one machine and cannot be green on a fresh checkout**,
+because it rides an artifact somebody built or an install somebody ran.
+
+- **`check:ci-typecheck-scope-coverage`** — every tsconfig must be reached by
+  `npm run typecheck`, and every tracked source compiled by one of them. It exists because
+  `packages/{e2e-tests,provisioning,www}` and all four `workers/*` had tsconfigs no script
+  ran; `packages/www` alone was hiding 32 `TS2339`. The covered set is DERIVED from the npm
+  script (walking `tsc -b`, `-p`, `npm run … --workspace`, and a `.sh` step asked for its
+  set with `--list`), never listed — a hand-maintained list of covered projects is the same
+  unkept promise the gate distrusts. Then it found 14 source files no project compiled.
+- **`check:ci-shape-duplication`** — the Nth copy of a shape is a finding. Span-scoped
+  5-line fingerprint, `N=3`, and **seeded**: the estimate was ~9 pre-existing shapes and
+  the measurement is **219 spans** (336 raw windows), so an unseeded gate would be a wall
+  rather than a gate.
+- **`scripts/lib/controls.ts`** — one controls loop instead of the 35 hand-rolled closures
+  measured across `scripts/check-*.ts`. It ships with its meta-control in
+  `test-gate-anti-vacuity.sh`, never after: a shared runner is a shared point of failure,
+  and if it passes silently every gate on it goes blind at once.
+- **The stop hook now validates the commands it orders.** `wl_classsweep` wrote
+  `Run: <search>` straight from the model; over four stops it handed this session a path
+  that does not exist (the command returned grep's error line, which reads like a finding)
+  and a command truncated mid-token. It now rejects unparseable, at-cap, nonexistent-path
+  and DESTRUCTIVE commands, at two deliberately different thresholds — a sweep only reads,
+  while a braver DEFAULT may legitimately write and only the git verbs that discard
+  uncommitted work are refused there.
+
+### The lesson this section exists to record
+
+**A sub-agent's report is not evidence until it is run.** A survey named three "live
+defects" in the gate corpus. They went into `gates.md`, into a shared module's header and
+into a commit message before anyone executed the code. Probing each kept **one**:
+`check-i18n-cross-locale.ts:555` does not discard `selftest()`'s return value — the
+signature is `void` and it exits internally, and a planted failing control exits 1 today.
+The saturating `bad = 1` is not a defect either, since its caller is `process.exit(main())`
+and a true count above 125 would wrap. Only the raw ANSI in five gates was real, and that
+one was settled by `| cat -v` rather than by reading.
+
+Two more instruments were blind and green in the same stretch, both found by planting into
+the real tree rather than by a fixture: a shape counter that reported overlapping WINDOWS
+as separate findings (336 where 219 spans exist), and its first seed, which held every hash
+in the tree and would have suppressed a line copied from one file to three **forever** —
+green, and useless. The gate then caught its own author: moving five files onto a shared
+colour module created an identical import preamble, and it reported that as duplication.
+Three files importing the same helper is adoption; an import statement IS the
+consolidation. Import-majority windows are excluded now, with controls in both directions.
