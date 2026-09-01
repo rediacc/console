@@ -62,6 +62,8 @@ noise, which is the one thing this rule cannot afford.
 """
 
 import os
+import re
+import shlex
 
 import wl_rules
 
@@ -168,6 +170,15 @@ false.
 enumerate them? Name a real command (a grep or rg with the actual pattern, a
 glob over the sibling directory), because the session is going to be told to
 run exactly this.
+
+THE COMMAND IS CHECKED BEFORE IT IS HANDED OVER. It must parse, and every
+directory or file it names must actually exist in this repo. Two real misfires:
+one named `packages/workers/`, which does not exist (they live at `workers/`),
+and the session ran it and got grep's error line back looking like a result;
+another was cut off mid-token by the length limit and could not parse. Keep it
+SHORT and use paths you have actually seen in the message. A command that fails
+the check is dropped and the session is told you proposed one that does not
+run -- the class still gets swept, but by a search you did not write.
 
 (3) EVIDENCE. Does the session's message show the class was ACTUALLY swept?
 Only three things count, and quote the words that carry it in `evidence`:
@@ -276,6 +287,83 @@ def read_verdict(out):
     }
 
 
+# -- The judge's own command is CHECKED before it becomes an order ----------
+#
+# WHY. `enforce` writes "Run: <search>" and the session is told to run exactly
+# that, so the command IS the enforcement. Over four consecutive stops in one
+# session the commands handed over were:
+#
+#   grep -rn 'export.*worker' packages/workers/ --include='*.ts' | wc -l
+#       `packages/workers/` DOES NOT EXIST in this repo (the workers live at
+#       `workers/`). The command printed `1` -- grep's error line, counted by
+#       wc -- and a bare `1` reads exactly like a finding.
+#
+#   find workers -type f \( -name '*.ts' -o -name '*.tsx' \) | xargs -I {} sh -c 'grep -q {} tsconfig.json || echo {
+#       cut off at the 300-character schema cap, mid-token, with an unbalanced
+#       quote. It cannot parse, so it cannot run.
+#
+# The module docstring already says an unactionable block is "the one thing
+# this rule cannot afford". A WRONG-BUT-PLAUSIBLE order is worse than an absent
+# one: it spends the session's turn and can manufacture a false finding out of
+# an error message. So the command is validated, and a command that fails is
+# DROPPED -- never the demand. The block still happens, at full strength; only
+# the bogus "Run: ..." is replaced by the generic order plus the reason, which
+# is also how the operator gets to see that the model is emitting commands that
+# do not run.
+#
+# WHAT THIS CANNOT CATCH, said plainly so the green is not over-read: a command
+# that runs and answers the wrong question. `tsc --noEmit | grep 'error TS'` at
+# this repo's root is perfectly runnable and reports 10,095 errors that are all
+# the base config rather than any defect. Static validation reaches syntax and
+# existence; it never reaches meaning.
+
+SEARCH_MAX = 300  # the schema's maxLength; a value at the cap arrived truncated
+
+# A token shaped like a repo path: at least one `/`, and only characters a path
+# or a glob would carry.
+_PATHY = re.compile(r"^[A-Za-z0-9_.@+-]*(?:/[A-Za-z0-9_.@+*?\[\]-]*)+/?$")
+
+
+def _repo_root():
+    # .claude/hooks/stop/ -> repo root
+    return os.path.abspath(
+        os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "..")
+    )
+
+
+def validate_search(search, root=None):
+    """(ok, reason). `reason` is empty when ok, else why the command was dropped."""
+    root = root or _repo_root()
+    if not search:
+        return False, "no command was given"
+    if len(search) >= SEARCH_MAX:
+        return False, "it arrived truncated at the %d-character cap" % SEARCH_MAX
+    try:
+        tokens = shlex.split(search)
+    except ValueError as exc:
+        return False, "it does not parse (%s)" % exc
+    if not tokens:
+        return False, "it is empty once parsed"
+
+    for tok in tokens:
+        if tok.startswith("-") or not _PATHY.match(tok):
+            continue
+        if any(c in tok for c in "*?["):
+            continue  # a glob names a set, not a file; nothing to exist-check
+        rel = tok.rstrip("/")
+        # ONLY judge a token whose FIRST segment is a real top-level entry. That
+        # is what makes it a repo path rather than a quoted regex that happens
+        # to contain a slash, and it is exactly the shape that failed:
+        # `packages/` exists, `packages/workers/` does not.
+        head = rel.split("/", 1)[0]
+        if not head or not os.path.exists(os.path.join(root, head)):
+            continue
+        if not os.path.exists(os.path.join(root, rel)):
+            return False, "it names %s, which does not exist in this repo" % rel
+
+    return True, ""
+
+
 V_REASON = (
     "SWEEP THE CLASS, NOT THE INSTANCE. A fix landed and the message shows only "
     "its own instance fixed. Class: %s. No evidence that the siblings were "
@@ -290,16 +378,27 @@ V_ACTION_NOSEARCH = (
     "Grep for siblings of this class across the repo, fix every one you find and say the COUNT, "
     "or say plainly that this is the only instance. %s"
 )
+# Kept SHORT on purpose: wl_rules.apply_order caps next_action at 200 characters,
+# and the first draft of this string put the reason last, where the cap ate it --
+# the session was handed a sentence that stopped mid-word. The WHY leads, and the
+# rejected command is deliberately NOT echoed: it is the one thing that must not
+# be run, and quoting it is what blew the budget.
+V_ACTION_DROPPED = (
+    "Proposed command DROPPED: %(why)s. Grep for siblings yourself, fix each and say the "
+    "COUNT, or say it is the only instance."
+)
 
 
 def enforce(out, payload):
     """Write the sweep order into a judge verdict, in place. Returns the note."""
     reason = V_REASON % (payload["defect_class"], V_ASSERTED if payload["asserted"] else "")
-    action = (
-        V_ACTION % payload["search"]
-        if payload["search"]
-        else V_ACTION_NOSEARCH % payload["instruction"]
-    )
+    ok, why = validate_search(payload["search"])
+    if ok:
+        action = V_ACTION % payload["search"]
+    elif payload["search"]:
+        action = V_ACTION_DROPPED % {"why": why[:70]}
+    else:
+        action = V_ACTION_NOSEARCH % payload["instruction"]
     wl_rules.apply_order(out, reason, action)
     return "class-sweep: %s" % payload["defect_class"][:160]
 

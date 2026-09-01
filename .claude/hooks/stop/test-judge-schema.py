@@ -284,6 +284,75 @@ control(
 )
 wl_classsweep.clear_outstanding(MARKER)
 
+# -- 2e2. THE JUDGE'S OWN COMMAND IS VALIDATED, and both real misfires. -----
+# Both strings below were handed to a live session on consecutive stops and
+# both were unrunnable; the first printed grep's error line, which the session
+# read as a finding. The demand must survive validation failing -- dropping the
+# block would turn a bad command into an escape hatch.
+BAD_PATH = "grep -rn 'export.*worker' packages/workers/ --include='*.ts' | wc -l"
+TRUNCATED = (
+    "find workers -type f \\( -name '*.ts' -o -name '*.tsx' \\) | xargs -I {} sh -c 'grep -q {"
+)
+
+ok, why = wl_classsweep.validate_search(BAD_PATH)
+control("REAL MISFIRE: a command naming a directory that does not exist is rejected", ok, False)
+control("and the reason names the path", "packages/workers" in why, True)
+
+ok, why = wl_classsweep.validate_search(TRUNCATED)
+control("REAL MISFIRE: a command truncated mid-token is rejected", ok, False)
+control("and the reason says it does not parse", "does not parse" in why, True)
+
+control(
+    "a command at the schema cap is treated as truncated",
+    wl_classsweep.validate_search("grep -rn x .claude/" + "a" * 300)[0],
+    False,
+)
+control(
+    "CONTROL: a command over a directory that DOES exist passes",
+    wl_classsweep.validate_search("grep -rln 'block-' .claude/hooks/pre-bash/"),
+    (True, ""),
+)
+control(
+    "CONTROL: a quoted regex containing a slash is not mistaken for a path",
+    wl_classsweep.validate_search("grep -rn 'error/TS' .claude/hooks/")[0],
+    True,
+)
+control(
+    "CONTROL: a glob names a set, so it is not existence-checked",
+    wl_classsweep.validate_search("ls .claude/hooks/stop/wl_*.py")[0],
+    True,
+)
+
+# The whole point: a rejected command must NOT weaken the block.
+out = answer(search=BAD_PATH)
+kind, _note = wl_classsweep.apply_verdict(out, path=MARKER)
+control("a rejected command still FIRES", kind, "fire")
+control("and still flips the stop to continue", out["verdict"], "continue")
+control(
+    "the bogus command is not handed over as `Run:`",
+    out["next_action"].startswith("Run:"),
+    False,
+)
+control(
+    "the session is told why it was dropped",
+    "does not exist in this repo" in out["next_action"],
+    True,
+)
+control(
+    "and the class is still named in the reason",
+    "argv[0]" in out["reason"],
+    True,
+)
+# wl_rules.apply_order caps next_action at 200 characters. The first draft of the
+# dropped-command order ran to exactly 200 and was cut mid-word, so the session
+# was handed a sentence that stopped at "or say plainly it is t". Pin the fit.
+control(
+    "the dropped-command order fits inside the 200-char next_action cap",
+    len(out["next_action"]) < 200 and out["next_action"].endswith("instance."),
+    True,
+)
+wl_classsweep.clear_outstanding(MARKER)
+
 # -- 2f. The carried-forward demand, and its hard cap. ---------------------
 # Without this the demand is one-shot: wl_reggate settles the fix-set on the
 # same stop, so the next stop carries no fix signal and would never ask again.
