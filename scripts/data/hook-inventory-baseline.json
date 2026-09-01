@@ -18,6 +18,7 @@
   "pre-bash/block-git-force-push.sh",
   "pre-bash/block-host-toolchain-run.sh",
   "pre-bash/block-long-sleep.sh",
+  "pre-bash/block-merge-with-unpushed.sh",
   "pre-bash/block-nondraft-pr-create.sh",
   "pre-bash/block-nonstandard-branch-name.sh",
   "pre-bash/block-premature-ready.sh",

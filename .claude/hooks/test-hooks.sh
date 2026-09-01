@@ -958,6 +958,54 @@ check 0 pre-bash/block-premature-ready.sh "$(bash_json 'gh pr view 531')" "prema
 # unanchored v1 fired on a round-log heredoc that merely mentioned the flow.
 check 0 pre-bash/block-premature-ready.sh "$(bash_json $'cat >> log.md <<EOF\ngreen-gated `gh pr ready` + hook-banned --admin\nEOF')" "premature-ready: prose mention in heredoc ignored"
 check 0 pre-bash/block-admin-merge.sh "$(bash_json $'cat >> log.md <<EOF\nthe old flow used gh pr merge --admin, now banned\nEOF')" "admin-merge: prose mention in heredoc ignored"
+
+# --- merging with unpushed commits ------------------------------------------
+# NEAR-MISS 2026-09-01: a land pass had pushed `a3701d631` and was one step from
+# `gh pr merge` with `23e734384` still local. `delete_branch_on_merge` is true on
+# all five repos, so the merge would have deleted the branch out from under that
+# commit -- not lost, but orphaned: not on main, not on any branch, not in any PR,
+# findable only in one machine's reflog. It was caught by reasoning, which works
+# until the once it does not.
+#
+# A CI GATE CANNOT COVER THIS. A gate runs against the tree that was PUSHED; local
+# unpushed commits are invisible to it by construction. The only place the question
+# is answerable is the machine holding the commits, at the moment the merge is typed.
+#
+# The fixture builds its remote-tracking ref with `update-ref` rather than pushing:
+# a real `git push` here would be judged by block-unverified-push.sh against the
+# CONSOLE tree, because that guard does not scope by `git -C`.
+MU_TMP="$(mktemp -d)"
+git -C "$MU_TMP" init -q -b 0901-1
+git -C "$MU_TMP" config user.email t@t
+git -C "$MU_TMP" config user.name t
+: >"$MU_TMP/a"
+git -C "$MU_TMP" add a
+git -C "$MU_TMP" commit -qm base
+git -C "$MU_TMP" update-ref refs/remotes/origin/0901-1 "$(git -C "$MU_TMP" rev-parse HEAD)"
+(
+    export CLAUDE_PROJECT_DIR="$MU_TMP"
+    check 0 pre-bash/block-merge-with-unpushed.sh "$(bash_json "gh pr merge 1 --rebase")" \
+        "merge-unpushed CONTROL: a branch in sync merges freely"
+    check 0 pre-bash/block-merge-with-unpushed.sh "$(bash_json "gh pr view 1 --json state")" \
+        "merge-unpushed CONTROL: gh pr view is not a merge"
+)
+: >"$MU_TMP/b"
+git -C "$MU_TMP" add b
+git -C "$MU_TMP" commit -qm "the commit that would be stranded"
+(
+    export CLAUDE_PROJECT_DIR="$MU_TMP"
+    # SANITY: every control above is vacuous if this one does not fire.
+    check 2 pre-bash/block-merge-with-unpushed.sh "$(bash_json "gh pr merge 1 --rebase")" \
+        "merge-unpushed SANITY: an unpushed commit refuses the merge"
+    check 2 pre-bash/block-merge-with-unpushed.sh "$(bash_json "gh pr merge 583 --repo rediacc/console --rebase --auto")" \
+        "merge-unpushed: --repo console is still this checkout"
+    check 0 pre-bash/block-merge-with-unpushed.sh "$(bash_json "gh pr merge 84 --repo rediacc/account --rebase")" \
+        "merge-unpushed CONTROL: a merge for a DIFFERENT repo is out of scope"
+    check 0 pre-bash/block-merge-with-unpushed.sh "$(bash_json "git push origin 0901-1")" \
+        "merge-unpushed CONTROL: a push is not a merge"
+)
+rm -rf "$MU_TMP"
+unset MU_TMP
 # Even a command-position-looking mention inside a heredoc BODY is data, not a
 # command, and must not fire (heredoc-body stripping, the FP that fired on a
 # worklist write).
