@@ -4,6 +4,7 @@ import { execFileSync, spawn } from 'node:child_process';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import { captureNavigationEvidence, pollRoutesReady } from './lib/tutorial-player-diagnostics.js';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 
@@ -594,59 +595,6 @@ function scenarioMountConsistency() {
 }
 
 /**
- * Poll each visited route over HTTP until it serves 200, bounded.
- *
- * `astro dev` prints its banner when it is LISTENING, not when it can serve a page, so
- * this asserts servability instead of assuming it. It replaces a fire-and-forget warm
- * fetch, which asserted nothing and would have leaked its own failure into the next
- * navigation's timeout.
- *
- * SOLD AS READINESS, NOT AS THE FIX, because the measurement says it is not one.
- * Timing the phases across 16 passing runs: the first `open` costs ~5s of a 25s budget,
- * and scenarios 3 and 5 open never-before-compiled routes against a warm module graph for
- * ~0.4-0.5s each -- and THAT is the SSR route-compile cost this removes. The other ~4.5s
- * is the browser pulling the client module graph (React + Plyr, dynamically imported at
- * src/scripts/tutorial-video-hydrate.ts) through Vite's on-demand transform, which a
- * `fetch()` of the HTML never requests. So this buys under half a second.
- *
- * The failures are not a squeeze on that budget anyway: three of them at 28.4s / 29.0s /
- * 29.0s against agent-browser's 25s default operation timeout is a fixed CEILING, not a
- * distribution tail. A budget 20% utilised on 16 of 16 passes does not intermittently
- * need 500%. Base rate since the step was added: 3 failures in 38 executions (~8%),
- * across two agent-browser versions and ~20 commits, with passes interleaved -- including
- * one BETWEEN the two failures that first looked consecutive.
- */
-async function pollRoutesReady() {
-  const routes = [
-    '/en/docs/tutorial-production-mode',
-    '/en/docs/tutorial-add-server',
-    '/en/solutions/rapid-recovery',
-  ];
-  for (const route of routes) {
-    const startedAt = Date.now();
-    const deadline = startedAt + 60000;
-    let last = 'no attempt';
-    while (Date.now() < deadline) {
-      try {
-        const res = await fetch(`${baseUrl}${route}`, { signal: AbortSignal.timeout(20000) });
-        if (res.ok) {
-          log(`→ ready ${route} (${res.status}, ${Date.now() - startedAt}ms)`);
-          last = null;
-          break;
-        }
-        last = `HTTP ${res.status}`;
-      } catch (err) {
-        last = String(err);
-      }
-      await new Promise((r) => setTimeout(r, 500));
-    }
-    if (last !== null) {
-      log(`→ NOT READY ${route} after ${Date.now() - startedAt}ms: ${last}`);
-    }
-  }
-}
-
-/**
  * The first navigation, timed, and self-describing when it fails.
  *
  * WHY THIS EXISTS RATHER THAN A BARE open(): the gate has failed three times at exactly
@@ -674,38 +622,18 @@ function openFirst(url) {
     return out;
   } catch (err) {
     log(`→ first navigation FAILED after ${Date.now() - startedAt}ms: ${err}`);
-    captureNavigationEvidence();
+    captureNavigationEvidence({
+      dir: path.join(repoRoot, 'artifacts', 'tutorial-player-release-gate', stamp),
+      runAgent,
+      serverLog,
+      log,
+    });
     navigationRetries += 1;
     log('→ retrying the first navigation once');
     const retryAt = Date.now();
     const out = open(url);
     log(`→ first navigation ok on RETRY (${Date.now() - retryAt}ms)`);
     return out;
-  }
-}
-
-/** Pending requests and server output, written where the artifact upload can find them. */
-function captureNavigationEvidence() {
-  const dir = path.join(repoRoot, 'artifacts', 'tutorial-player-release-gate', stamp);
-  try {
-    fs.mkdirSync(dir, { recursive: true });
-  } catch {
-    return;
-  }
-  try {
-    const net = runAgent(['network', 'requests']);
-    fs.writeFileSync(path.join(dir, 'network-requests.json'), JSON.stringify(net, null, 2));
-  } catch (err) {
-    try {
-      fs.writeFileSync(path.join(dir, 'network-requests.json'), `capture failed: ${err}\n`);
-    } catch {
-      // Evidence is best-effort; never let it mask the real failure.
-    }
-  }
-  try {
-    fs.writeFileSync(path.join(dir, 'dev-server.log'), serverLog.join(''));
-  } catch {
-    // As above.
   }
 }
 
@@ -723,7 +651,15 @@ async function main() {
     log(`→ starting astro dev server on ${baseUrl}`);
     await startDevServer();
     resources = resourceSnapshot(Date.now() - bootStartedAt);
-    await pollRoutesReady();
+    await pollRoutesReady(
+      baseUrl,
+      [
+        '/en/docs/tutorial-production-mode',
+        '/en/docs/tutorial-add-server',
+        '/en/solutions/rapid-recovery',
+      ],
+      log
+    );
     wait(1500);
 
     scenarioBasicPlayPauseResume();
