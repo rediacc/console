@@ -985,6 +985,7 @@ jobs:
         run: |
           npm run check:ci-dead-css
           npm run check:ci-viewport-unit-mixing
+          npm run check:ci-illustration-contract
       # Gate 1 of the sentence-wrapping pair: asserts every multi-sentence catalog
       # value rendered in text position goes through <Sentences>, which makes each
       # sentence an atomic line-breaking unit. Source-level, sub-second. The step name

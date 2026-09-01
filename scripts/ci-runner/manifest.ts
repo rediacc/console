@@ -2494,6 +2494,18 @@ export const GATES: readonly GateSpec[] = [
     },
   },
   {
+    id: 'check:ci-illustration-contract',
+    run: 'npm run check:ci-illustration-contract',
+    gate: true,
+    leaves: ['scripts/check-illustration-contract.ts'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-content',
+      step: 'Dead CSS',
+    },
+  },
+  {
     id: 'check:ci-redirects',
     run: 'npm run check:ci-redirects',
     slow: true, // needs build:www (131.9s); the runner demoted it anyway
