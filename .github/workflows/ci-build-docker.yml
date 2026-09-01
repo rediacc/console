@@ -115,6 +115,18 @@ jobs:
       - run: .ci/scripts/build/build-www.sh
         env:
           APP_VERSION: ${{ inputs.next_version || 'dev' }}
+          # THE THIRD CALL SITE, and it was the one left behind. ci-quality.yml:1572
+          # and cd-deploy-worker.yml:108 both pass this and both carry a comment
+          # naming run 32223128728, where the error message itself said to. This one
+          # did not, and it reds `Build (Docker) / WWW` the same way: downloads.astro
+          # fetches the latest release at build time and deliberately THROWS rather
+          # than shipping a downloads page with nothing on it, and unauthenticated
+          # that call is capped at 60/hour per SHARED runner IP.
+          # Observed live on job 99839065246: "latest-release: GitHub responded 403
+          # rate limit exceeded". `github.token` is injected automatically, is
+          # read-only, and latest-release.ts:20-22 already sends it as a Bearer
+          # header the moment it is set.
+          GITHUB_TOKEN: ${{ github.token }}
       - name: Free source video media (dist/ already holds the copy that is uploaded)
         shell: bash
         run: |
