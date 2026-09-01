@@ -389,7 +389,50 @@ test_harness_catches_a_vacuous_validator() {
     log_pass "harness catches a vacuous validator (control case)"
 }
 
+test_runcontrols_can_fail() {
+    # THE SHARED-HARNESS META-CONTROL. scripts/lib/controls.ts runControls() is the one
+    # loop 35 gates are being moved onto, which makes it a shared point of failure: if it
+    # ever passes silently, every gate on it goes blind AT ONCE -- strictly worse than 35
+    # hand-rolled closures, of which one (check-i18n-cross-locale.ts:555) is already
+    # broken. So the harness must be proved capable of failing before anything depends on
+    # it, and that proof lives here rather than in the harness's own selftest, where a
+    # broken harness would be grading itself.
+    #
+    # Three assertions, because two of them are the ways this could go quietly wrong:
+    # a failing case must return non-zero, an all-passing set must return zero (or the
+    # "proof" is satisfied by a function that always fails), and an EMPTY set must return
+    # non-zero (a case-builder that silently returns [] would otherwise get a clean 0).
+    local fixture="$REPO_ROOT/scripts/.controls-harness-fixture.ts"
+    # BLOCKER: expanding fixture now binds the specific path into the trap so cleanup fires even if the variable is later reassigned
+    # shellcheck disable=SC2064
+    trap "rm -f '$fixture'" RETURN
+
+    cat >"$fixture" <<'FIXTURE'
+import { runControls } from './lib/controls.js';
+const planted = runControls([
+  { name: 'this one passes', ok: true },
+  { name: 'THE PLANT: this one must be counted', ok: false, detail: 'planted' },
+]);
+const clean = runControls([{ name: 'this one passes', ok: true }]);
+const empty = runControls([]);
+console.log(`planted=${planted} clean=${clean} empty=${empty}`);
+FIXTURE
+
+    local out rc=0
+    out="$(cd "$REPO_ROOT" && npx tsx "$fixture" 2>&1)" || rc=$?
+    if [[ "$rc" -ne 0 ]]; then
+        printf '%s\n' "$out" >&2
+        log_fail "the controls-harness fixture did not run (exit $rc) -- the meta-control asserts nothing"
+    fi
+    assert_contains "$out" "planted=1" "runControls must COUNT a failing control, not pass it"
+    assert_contains "$out" "clean=0" "runControls must return 0 when every control passes"
+    assert_contains "$out" "empty=1" "an empty control set verified nothing and must not return 0"
+    assert_contains "$out" "THE PLANT" "the failing control's name must reach the operator"
+    log_pass "runControls counts a planted failure, an empty set, and a clean set"
+}
+
 log_test "test-gate-anti-vacuity"
+test_runcontrols_can_fail
 test_harness_catches_a_vacuous_validator
 test_registry_is_not_empty
 test_registry_entries_exist

@@ -327,6 +327,19 @@ export const GATES: readonly GateSpec[] = [
     },
   },
   {
+    id: 'check:ci-shape-duplication',
+    run: 'npm run check:ci-shape-duplication',
+    slow: true, // 21.4s: hashes ~40k sliding windows over 316 files, twice (selftest + run)
+    gate: true,
+    leaves: ['scripts/check-shape-duplication.ts'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-code',
+      step: 'Shape duplication',
+    },
+  },
+  {
     id: 'check:ci-typecheck-scope-coverage',
     run: 'npm run check:ci-typecheck-scope-coverage',
     slow: true, // 17.7s: `tsc --showConfig` on all 13 projects, twice (selftest + real run)

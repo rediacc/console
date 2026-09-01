@@ -37,3 +37,24 @@ an independent corpus, a separate oracle.
 
 Discovering zero inputs must FAIL, not pass. Print the counts on success so a
 collapse is visible in the log instead of inferred from an absent complaint.
+
+## Before you write the 3rd one
+
+Twice this repo reached this by hand and wrote it down: `shrink-only-baseline.ts:25-31`
+(*"a class, not an instance … seven chances to drift"*) and
+`block-adhoc-sanctioned.sh:4-8` (a new class is *"a row rather than a 22nd copy"*).
+Nothing asks on its own. Measured 2026-09-01, already past a third copy:
+
+| shape | copies | the harness that should own it |
+|---|---|---|
+| the assertion closure | **35** of 101 `check-*.ts` | none — `shrink-only-baseline.ts:181` factors the control *data*, not the loop |
+| the `test-helpers` preamble | **85** of 118 `test-*.sh` | `.ci/scripts/test/lib/test-helpers.sh` |
+| `mktemp -d` + hand-written `trap` | **28** | `with_temp_dir` (`test-helpers.sh:73`), used by 26 |
+| colour constants | **28** inline, **7** redeclared | `scripts/utils/console.ts`, TTY-gated, imported by 10 |
+
+Not hypothetical: across those 35 closures, `check-i18n-cross-locale.ts:555` discards
+`selftest()`'s return value, so a failing control does not stop that gate.
+Copying is sometimes right, and the answer is a **named divergence**, not a shrug:
+`run_gate()` is duplicated 23× with three incompatible return contracts. Say which.
+Never the findings report — 10 gates, 10 distinct hashes. Count duplication in the
+scaffolding, never in the reasons.

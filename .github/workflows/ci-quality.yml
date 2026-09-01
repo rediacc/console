@@ -815,6 +815,13 @@ jobs:
       # Before TypeScript, not after: this asserts the chain below actually POINTS at
       # every tsconfig in the repo. A project nobody runs cannot fail, so a green
       # TypeScript step says nothing about it.
+      # The Nth copy of a shape. SEEDED at scripts/data/shape-duplication-seed.json, so
+      # the 219-span standing backlog is silent and only a NEW shape reaching 3 copies
+      # reports. Draining that backlog is separate, measured work.
+      - name: Shape duplication
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: npm run check:ci-shape-duplication
+
       - name: Typecheck scope coverage
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: npm run check:ci-typecheck-scope-coverage
@@ -1697,6 +1704,16 @@ jobs:
       - name: Suppression liveness — are our allowlist entries still needed?
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: npm run check:ci-suppression-liveness
+
+      # Every other Dockerfile gate asserts the build SUCCEEDS, and a build
+      # succeeds perfectly well while installing a substituted artifact. Five
+      # downloads in .devcontainer/Dockerfile were hand-fixed on 2026-09-01 (go,
+      # glab, bottom, openvscode, and ttyd — which was pinned by a MUTABLE tag);
+      # before that, bw was the only verified fetch in the file, and nothing
+      # would have stopped a sixth. Offline, no network, no token.
+      - name: Check every Dockerfile download is cryptographically verified
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: npm run check:ci-unverified-downloads
 
       # The scope map's scripts/ carve-outs were traced by hand once. This
       # catches the next file that becomes reachable from a gated job and would
