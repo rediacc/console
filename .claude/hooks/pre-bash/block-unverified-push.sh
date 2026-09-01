@@ -42,6 +42,14 @@ printf '%s' "$CMD" | grep -qE 'git push[^|;&]*--dry-run' && exit 0
 ROOT="${CLAUDE_PROJECT_DIR:-$(git rev-parse --show-toplevel 2>/dev/null)}"
 [ -n "$ROOT" ] || exit 0
 
+# ANOTHER REPO'S PUSH IS NOT THIS TREE'S BUSINESS, and it was being refused as though it
+# were. Reproduced 2026-09-01: `git -C <scratch-repo> push origin main` exited 2 here,
+# because the gate-run stamp compared below belongs to CONSOLE and the scratch tree can
+# never match it. The message then reads as "your gates are stale" about a repo the gates
+# were never run against. Same class as block-untagged-commit.sh:52-69; the resolution now
+# lives in lib/command-scan.sh rather than being written a third time.
+[ -n "$(hook_target_root "$SCAN" "$ROOT")" ] && exit 0
+
 # SUBMODULE PUSHES ARE OUT OF SCOPE, deliberately. They advance no console
 # branch and trigger no console CI; cancel-old-ci.sh draws the same line for the
 # same reason. The pointer-bump commit that DOES advance console is covered by

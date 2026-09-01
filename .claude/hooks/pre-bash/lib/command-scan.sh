@@ -187,3 +187,41 @@ hook_pr_selector() {
         sed -n "s/.*gh pr ${verb}[[:space:]]*//p" |
         awk '{for (i = 1; i <= NF; i++) if ($i !~ /^-/) { print $i; exit }}'
 }
+
+# hook_target_root <whole-scan> <this-root>
+# The FILESYSTEM git root a command operates on, or "" when it is this one.
+#
+# DIFFERENT QUESTION FROM hook_target_repo ABOVE, which resolves a GitHub repo NAME for a
+# `gh pr` invocation. This resolves a working tree, for guards that read local git state --
+# a branch name, a HEAD sha, a gate-run stamp. Those guards are only correct when the tree
+# they inspect is the tree the command touches.
+#
+# THIRD COPY, SO IT MOVED HERE. block-untagged-commit.sh:52-69 hand-rolled this and its
+# comment records why: without it, `git -C <other-repo> commit` was "judged against
+# CLAUDE_PROJECT_DIR/agent/pr/<console-branch>.md: wrong branch name, wrong epic snapshot,
+# so every such commit was refused for a trailer no epic file could ever supply."
+#
+# Measured 2026-09-01, the same defect was live in a sibling: `git -C <scratch> push`
+# was refused by block-unverified-push.sh because it compared the SCRATCH repo's push to
+# the CONSOLE tree's gate-run stamp (reproduced: exit 2). warn-remote-drift.sh has the
+# identical shape and is latent -- quiet today only because console's remote happens not
+# to be ahead.
+#
+# A `cd` applies to every later segment, so the scan is deliberately line-wide, matching
+# hook_target_repo's convention. Prints "" when the command targets THIS root, when no
+# hint is present, or when the hint does not resolve to a git repo -- so a caller can
+# treat empty as "this repo, proceed" and never has to distinguish absent from same.
+hook_target_root() {
+    local scan="$1" this_root="$2" hint abs target
+    hint=$(printf '%s\n' "$scan" |
+        grep -oE '(cd [^;|&]*|-C[[:space:]]+[^[:space:];|&]+)' | tail -1 |
+        sed -E 's/^(cd |-C )[[:space:]]*//; s/[[:space:]]*&&.*$//; s/^["'"'"']//; s/["'"'"']$//; s/[[:space:]]+$//')
+    [ -n "$hint" ] || return 0
+    case "$hint" in
+        /*) abs="$hint" ;;
+        *) abs="$this_root/$hint" ;;
+    esac
+    target=$(git -C "$abs" rev-parse --show-toplevel 2>/dev/null) || return 0
+    [ -n "$target" ] && [ "$target" != "$this_root" ] && printf '%s' "$target"
+    return 0
+}

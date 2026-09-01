@@ -54,18 +54,12 @@ ROOT="${CLAUDE_PROJECT_DIR:-$(git rev-parse --show-toplevel 2>/dev/null)}"
 # hook_target_repo's convention in lib/command-scan.sh -- and if the git root
 # THAT resolves to is a real repo distinct from this one, this guard has
 # nothing to check: that repo's commits are not this repo's epics' business.
-CDPATH_HINT=$(printf '%s\n' "$SCAN" |
-    grep -oE '(cd [^;|&]*|-C[[:space:]]+[^[:space:];|&]+)' | tail -1 |
-    sed -E 's/^(cd |-C )[[:space:]]*//; s/[[:space:]]*&&.*$//; s/^["'"'"']//; s/["'"'"']$//; s/[[:space:]]+$//')
-if [ -n "$CDPATH_HINT" ]; then
-    case "$CDPATH_HINT" in
-        /*) CD_ABS="$CDPATH_HINT" ;;
-        *) CD_ABS="$ROOT/$CDPATH_HINT" ;;
-    esac
-    TARGET_ROOT=$(git -C "$CD_ABS" rev-parse --show-toplevel 2>/dev/null)
-    if [ -n "$TARGET_ROOT" ] && [ "$TARGET_ROOT" != "$ROOT" ]; then
-        exit 0
-    fi
+# THE RESOLUTION MOVED TO lib/command-scan.sh when a third guard needed it. Two siblings
+# had the same defect -- block-unverified-push.sh refused a foreign repo's push against
+# THIS tree's gate stamp (reproduced live), and warn-remote-drift.sh has the same shape
+# latently -- so the walk this file pioneered is now shared rather than copied twice more.
+if [ -n "$(hook_target_root "$SCAN" "$ROOT")" ]; then
+    exit 0
 fi
 
 # ---- what message text can we actually see? --------------------------------

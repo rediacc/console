@@ -20,7 +20,16 @@ CMD=$(jq -r '.tool_input.command' 2>/dev/null)
 echo "$CMD" | grep -qE '(^|[|;&[:space:]])git push([[:space:]]|$)' || exit 0
 echo "$CMD" | grep -qE 'git push[^|;&]*--dry-run' && exit 0
 
-cd "${CLAUDE_PROJECT_DIR:-.}" 2>/dev/null || exit 0
+ROOT="${CLAUDE_PROJECT_DIR:-.}"
+# ANOTHER REPO'S PUSH IS NOT THIS TREE'S DRIFT. Everything below reads THIS checkout's
+# branch, HEAD and origin ref, so a `git -C <other> push` would be judged against console.
+# Latent rather than live -- it only misfires when console's remote happens to be ahead --
+# but it is the same defect block-unverified-push.sh had for real, so it is closed the same
+# way, with the shared resolver rather than a third hand-rolled copy.
+source "$(dirname "${BASH_SOURCE[0]}")/lib/command-scan.sh"
+[ -n "$(hook_target_root "$CMD" "$(cd "$ROOT" 2>/dev/null && git rev-parse --show-toplevel 2>/dev/null)")" ] && exit 0
+
+cd "$ROOT" 2>/dev/null || exit 0
 
 BRANCH=$(git symbolic-ref --short -q HEAD) || exit 0
 [ -n "$BRANCH" ] || exit 0
