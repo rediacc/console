@@ -53,6 +53,16 @@ const ROUTES = ['/en/solutions/environment-cloning', '/en/solutions/ai-pentestin
  * 1200. `max-width` is inclusive, so a width sitting ON a boundary is inside that rule:
  * 768 is where the tech-diff collapse applies and 1024 is where it must not.
  */
+/**
+ * How far an overlay's centre may sit from the viewport's, in CSS pixels.
+ *
+ * Not zero: a sub-pixel layout and an odd-width viewport each land half a pixel off. Not
+ * loose either: the defect that motivated ruling R2 was 7.5px, from a `scrollbar-gutter:
+ * stable` containing block 15px narrower than the viewport, so anything above ~3 would
+ * pass the bug it exists to catch.
+ */
+const MAX_CENTRE_OFFSET_PX = 2;
+
 const VIEWPORTS = [
   { label: 'mobile', width: 390, height: 844 },
   { label: 'tablet-portrait', width: 768, height: 1024 },
@@ -93,6 +103,7 @@ interface Probe {
   media: { sel: string; deadFraction: number; mountH: number; videoH: number }[];
   techDiff: { cells: number; visibleLabels: number; headerVisible: boolean } | null;
   hiddenOverflow: { sel: string; right: number; clientWidth: number }[];
+  overlayCentring: { sel: string; centre: number; viewportCentre: number; offset: number }[];
 }
 
 /**
@@ -238,7 +249,37 @@ const PROBE_SRC = String.raw`(() => {
     });
   });
 
+  // OPERATOR RULING R2: an overlay centres on the VIEWPORT, not on its containing block.
+  //
+  // The two are not the same here and the gap is small enough to look like a rounding
+  // artefact. 'scrollbar-gutter: stable' reserves the scrollbar, so a 'position: fixed;
+  // inset: 0' element gets a 1425px containing block on a 1440px viewport, and an overlay
+  // centred inside it sits ~7px left of where the reader's eye expects it. Seven pixels
+  // is exactly the size of bug that survives review and that no static check can see: it
+  // exists only once a browser has resolved a containing block.
+  //
+  // Every popover is OPENED to measure it, because a closed one has no box.
+  var overlayCentring = [];
+  var vpCentre = window.innerWidth / 2;
+  Array.prototype.slice.call(document.querySelectorAll('.sp-disclosure-pop, .overlay-panel, .overlay-backdrop')).forEach(function (el) {
+    var pop = el.matches('[popover]') ? el : el.closest('[popover]');
+    if (pop && pop.showPopover && !pop.matches(':popover-open')) {
+      try { pop.showPopover(); } catch (e) { /* already open, or unsupported */ }
+    }
+    var r = el.getBoundingClientRect();
+    if (r.width === 0) return;
+    var centre = r.left + r.width / 2;
+    var cls = el.className && el.className.baseVal !== undefined ? el.className.baseVal : el.className;
+    overlayCentring.push({
+      sel: String(cls || el.tagName).split(' ')[0].slice(0, 40),
+      centre: Math.round(centre * 10) / 10,
+      viewportCentre: Math.round(vpCentre * 10) / 10,
+      offset: Math.round(Math.abs(centre - vpCentre) * 10) / 10
+    });
+  });
+
   return {
+    overlayCentring: overlayCentring,
     hiddenOverflow: hiddenOverflow,
     domNodes: document.querySelectorAll('*').length,
     navHydrated: !!document.querySelector('.nav-translate'),
@@ -280,6 +321,20 @@ function judge(route: string, viewport: string, width: number, p: Probe): Findin
         'reserved-space',
         `.${m.sel} is ${m.mountH}px tall holding ${m.videoH}px of content: ` +
           `${(m.deadFraction * 100).toFixed(0)}% dead space, over the ${(MAX_DEAD_FRACTION * 100).toFixed(0)}% ceiling`
+      );
+    }
+  }
+
+  // 2px, not 0: sub-pixel layout and an odd-width viewport both land half a pixel off,
+  // and a scrollbar gutter is 15. The defect this catches was 7.5px.
+  for (const o of p.overlayCentring ?? []) {
+    if (o.offset > MAX_CENTRE_OFFSET_PX) {
+      add(
+        'overlay-centring',
+        `.${o.sel} centres at x=${o.centre} against a viewport centre of ` +
+          `${o.viewportCentre}: ${o.offset}px off, over the ${MAX_CENTRE_OFFSET_PX}px ` +
+          'tolerance. It is centred on its containing block, not on the viewport ' +
+          '(operator ruling R2).'
       );
     }
   }
@@ -374,6 +429,7 @@ async function main(): Promise<void> {
             media: [],
             techDiff: null,
             hiddenOverflow: [],
+            overlayCentring: [],
           },
         },
         {
@@ -389,6 +445,7 @@ async function main(): Promise<void> {
             media: [{ sel: 'video-player-mount', deadFraction: 0.683, mountH: 581, videoH: 184 }],
             techDiff: null,
             hiddenOverflow: [],
+            overlayCentring: [],
           },
         },
         {
@@ -404,6 +461,7 @@ async function main(): Promise<void> {
             media: [],
             techDiff: { cells: 10, visibleLabels: 0, headerVisible: false },
             hiddenOverflow: [],
+            overlayCentring: [],
           },
         },
         {
@@ -419,6 +477,7 @@ async function main(): Promise<void> {
             media: [],
             techDiff: null,
             hiddenOverflow: [],
+            overlayCentring: [],
           },
         },
         {
@@ -437,11 +496,51 @@ async function main(): Promise<void> {
             hiddenOverflow: [{ sel: 'sp-callout-pop', right: 1251, clientWidth: 1024 }],
           },
         },
+        {
+          name: 'an overlay centred on its containing block, not the viewport, is reported',
+          width: 1440,
+          expect: 'overlay-centring',
+          probe: {
+            domNodes: 900,
+            navHydrated: true,
+            ctaInFold: true,
+            ctaLabel: 'x',
+            ctaDepthPct: 5,
+            media: [],
+            techDiff: null,
+            hiddenOverflow: [],
+            // The real geometry: scrollbar-gutter: stable gives a 1425px containing
+            // block on a 1440px viewport, so its centre is 712.5 against 720.
+            overlayCentring: [
+              { sel: 'overlay-backdrop', centre: 712.5, viewportCentre: 720, offset: 7.5 },
+            ],
+          },
+        },
+        {
+          name: 'CONTROL: a half-pixel offset is tolerated, not reported',
+          width: 1440,
+          expect: '',
+          probe: {
+            domNodes: 900,
+            navHydrated: true,
+            ctaInFold: true,
+            ctaLabel: 'x',
+            ctaDepthPct: 5,
+            media: [],
+            techDiff: null,
+            hiddenOverflow: [],
+            overlayCentring: [
+              { sel: 'sp-disclosure-pop', centre: 719.5, viewportCentre: 720, offset: 0.5 },
+            ],
+          },
+        },
       ];
       let allFired = true;
       for (const c of controls) {
         const got = judge('control', 'control', c.width, c.probe);
-        const fired = got.some((f) => f.kind === c.expect);
+        // An empty `expect` is the INVERSE control: this shape must produce nothing.
+        // Without it a tolerance can be tightened to zero and every run becomes a finding.
+        const fired = c.expect === '' ? got.length === 0 : got.some((f) => f.kind === c.expect);
         allFired &&= fired;
         console.log(
           `  ${fired ? '\x1b[32mPASS\x1b[0m' : '\x1b[31mFAIL\x1b[0m'}  CONTROL: ${c.name}`
@@ -457,6 +556,7 @@ async function main(): Promise<void> {
         media: [{ sel: 'video-player-mount', deadFraction: 0.02, mountH: 581, videoH: 570 }],
         techDiff: { cells: 10, visibleLabels: 10, headerVisible: false },
         hiddenOverflow: [],
+        overlayCentring: [],
       });
       const quiet = clean.length === 0;
       allFired &&= quiet;

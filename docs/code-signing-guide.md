@@ -249,7 +249,7 @@ AZURE_CLIENT_SECRET=<client-secret>
 
 **Official docs:**
 - [Azure Artifact Signing](https://azure.microsoft.com/en-us/products/artifact-signing)
-- [electron-builder Windows Signing](https://www.electron.build/code-signing-windows.html)
+- [electron-builder Windows Signing](https://www.electron.build/win)
 - [Scott Hanselman's Guide](https://www.hanselman.com/blog/automatically-signing-a-windows-exe-with-azure-trusted-signing-dotnet-sign-and-github-actions)
 - [Melatonin.dev Practical Guide](https://melatonin.dev/blog/code-signing-on-windows-with-azure-trusted-signing/)
 
@@ -419,7 +419,7 @@ APPLE_TEAM_ID=<team-id>
 - [Apple Developer ID](https://developer.apple.com/developer-id/)
 - [Notarization Docs](https://developer.apple.com/documentation/security/notarizing-macos-software-before-distribution)
 - [Electron Code Signing](https://www.electronjs.org/docs/latest/tutorial/code-signing)
-- [electron-builder macOS Signing](https://www.electron.build/code-signing-mac.html)
+- [electron-builder macOS Signing](https://www.electron.build/mac)
 
 ---
 
@@ -595,10 +595,10 @@ Note: SSL.com with eSigner would be ~$1,249+/yr for Windows alone — not recomm
 
 | Topic | URL |
 |-------|-----|
-| Windows Signing | https://www.electron.build/code-signing-windows.html |
-| macOS Signing | https://www.electron.build/code-signing-mac.html |
+| Windows Signing | https://www.electron.build/win |
+| macOS Signing | https://www.electron.build/mac |
 | NSIS Config | https://www.electron.build/nsis.html |
-| Build Hooks | https://www.electron.build/hooks.html |
+| Build Hooks | https://www.electron.build/configuration (hooks folded in) |
 
 ### Linux
 

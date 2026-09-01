@@ -72,6 +72,17 @@ const ALLOWLISTED_DOMAINS = new Set([
   // answer this runner. Recheck by removing this line -- if the host starts
   // answering CI again the gate will pass without it.
   'www.debian.org',
+  // Apple's D-U-N-S enrolment page - returns HTTP 500 to GitHub-hosted runners
+  // (run 33463..., Quality/Content 'External links'), and 403 to a HEAD request
+  // from anywhere. Measured rather than assumed, with this file's own browser
+  // User-Agent from a non-datacenter IP: HEAD 403/403/403, GET 200/200/200, all
+  // in ~0.7-0.95s. So the page is live and Apple simply refuses HEAD outright
+  // and refuses datacenter IPs with a server error rather than a 403 -- the same
+  // shape as www.sectigo.com below, where a 500 reads as "the page is broken"
+  // instead of "you are a bot". The link is correct; it is cited three times in
+  // docs/code-signing-guide.md as the free route to a D-U-N-S number. Recheck by
+  // removing this line -- if the host starts answering CI the gate passes without it.
+  'developer.apple.com',
   // Sectigo code-signing product page - returns HTTP 500 to GitHub-hosted
   // runners (run 31916185063, Quality/Content), which is a server error rather
   // than a 403, so it reads as "the page is broken" instead of "you are a bot".
@@ -134,43 +145,6 @@ const ALLOWLISTED_DOMAINS = new Set([
 // URL stops appearing in the docs (the doc got fixed, so delete the entry) and
 // WARNS when the URL starts answering 200 again (fixed upstream).
 const KNOWN_BROKEN = new Map<string, string>([
-  // electron-builder rewrote its docs site and dropped the `.html` suffixed
-  // pages. Measured 2026-07-29 with this file's own headers:
-  //   /code-signing-mac.html     404  ->  https://www.electron.build/mac (200)
-  //   /code-signing-windows.html 404  ->  https://www.electron.build/win (200)
-  //   /hooks.html                404  ->  no live equivalent found; /hooks is
-  //                                       also 404, the section was folded into
-  //                                       the configuration reference
-  // The fix belongs in docs/code-signing-guide.md:422, :252 and :601, which
-  // this file does not own. Delete these three entries in the same change.
-  [
-    'https://www.electron.build/code-signing-mac.html',
-    'electron-builder docs rewrite; replace with https://www.electron.build/mac in docs/code-signing-guide.md:422',
-  ],
-  [
-    'https://www.electron.build/code-signing-windows.html',
-    'electron-builder docs rewrite; replace with https://www.electron.build/win in docs/code-signing-guide.md:252',
-  ],
-  [
-    'https://www.electron.build/hooks.html',
-    'electron-builder docs rewrite; no live equivalent, drop the link in docs/code-signing-guide.md:601',
-  ],
-  // A third-party blog that ACCEPTS TCP and then never answers, which is why it
-  // reads as `fetch failed` rather than as any status code. Measured 2026-08-25
-  // from two independent networks (a CI runner and a developer box), so it is
-  // not the IP-dependent block the ALLOWLIST above is for:
-  //   DNS          billauer.co.il -> 193.29.56.92        (resolves)
-  //   TCP  443     connect succeeds                      (port open)
-  //   HTTPS GET    curl: (28) Connection timed out       (no response, 12s)
-  // It answered as recently as run 32805254228 on the same branch, so this is a
-  // site that went down mid-landing rather than a link that was always wrong.
-  // The reference is a "users reported unexpected charges" aside, not load-
-  // bearing: if it is still dead when someone next touches that guide, drop the
-  // link and keep the sentence, and delete this entry in the same change.
-  [
-    'https://billauer.co.il/blog/2021/11/esigner-cloud-signing-ssl-com-certificate/',
-    'host accepts TCP then times out (measured 2026-08-25 from two networks); drop the link and keep the sentence in docs/code-signing-guide.md:309',
-  ],
   // A DEAD COMMAND, not just a dead link, and the widened scan is what found
   // it. Both docs used to tell the operator to run:
   //   ACCOUNT_ED25519_PUBLIC_KEY="$(curl -fsS https://www.rediacc.com/api/public/account-key)"
