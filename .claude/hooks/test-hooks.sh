@@ -163,6 +163,13 @@ rm -rf "$WIRE_TMP"
 # the worklist-epics block and CI fails minutes later naming nothing useful.
 check 2 pre-bash/block-raw-pr-body-edit.sh "$(bash_json 'gh pr edit 42 --body-file b.md')" "raw-pr-body(blocked)"
 check 0 pre-bash/block-raw-pr-body-edit.sh "$(bash_json '.ci/scripts/pr/sync-epic-block.sh 42 0826-1')" "raw-pr-body(tool passes)"
+# The edit arm is narrowed to its stated reason: an edit that CARRIES the block
+# cannot drop it, so refusing it was the false positive this file's own header
+# warns about. Both directions, plus the unreadable case, which stays refused for
+# edit (unlike create) because it can silently replace a block that exists.
+check 0 pre-bash/block-raw-pr-body-edit.sh "$(bash_json 'gh pr edit 42 --body "prose <!-- worklist-epics:begin --> x <!-- worklist-epics:end -->"')" "raw-pr-body(edit keeping the block passes)"
+check 2 pre-bash/block-raw-pr-body-edit.sh "$(bash_json 'gh pr edit 42 --body "prose with no block at all"')" "raw-pr-body(edit dropping the block blocked)"
+check 2 pre-bash/block-raw-pr-body-edit.sh "$(bash_json 'gh pr edit 42 --body-file /nonexistent-body.md')" "raw-pr-body(edit with an unreadable body still blocked)"
 # THE PRE-PUSH RECEIPT GUARD. A CI round costs ~15 minutes; three of the five
 # reds on PR #579 were sub-2-second gates -- check:format 1.72s,
 # check:ci-python-lint 0.59s, check:ci-parity 1.29s -- which cost roughly 45

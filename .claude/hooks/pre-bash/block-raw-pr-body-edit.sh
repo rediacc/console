@@ -59,8 +59,52 @@ fi
 EDIT_SEG=$(hook_gh_pr_at_command_pos "$SCAN" edit && hook_gh_pr_segment "$SCAN" edit)
 CREATE_SEG=$(hook_gh_pr_at_command_pos "$SCAN" create && hook_gh_pr_segment "$SCAN" create)
 
+BEGIN_MARKER='<!-- worklist-epics:begin -->'
+
+# Read whatever body text this command makes visible: --body is in the command,
+# --body-file is on disk. Shared by both arms, because both ask the same
+# question -- does the body this call writes carry the block?
+hook_visible_body() {
+    local seg="$1" body="" f cand
+    hook_flag_present "$seg" body && body="$CMD"
+    local root="${CLAUDE_PROJECT_DIR:-$(git rev-parse --show-toplevel 2>/dev/null)}"
+    while IFS= read -r f; do
+        [ -n "$f" ] || continue
+        [ "$f" = "-" ] && continue
+        for cand in "$f" "$root/$f"; do
+            if [ -f "$cand" ]; then
+                body="$body
+$(cat "$cand" 2>/dev/null)"
+                HOOK_SAW_BODY_FILE=1
+                break
+            fi
+        done
+    done < <(printf '%s' "$CMD" | grep -oE -- '--body-file([[:space:]]+|=)[^[:space:];|&]+' |
+        sed -E 's/^--body-file([[:space:]]+|=)//')
+    printf '%s' "$body"
+}
+
+# THE EDIT ARM IS NARROWED TO ITS OWN STATED REASON, 2026-09-03. It used to
+# refuse every body-writing edit outright, including one whose body CARRIES the
+# block -- which cannot drop it, and is therefore exactly as safe as the create
+# this guard already lets through on the same test. That refusal is the failure
+# mode this file's own header names, quoting block-commit-meta.sh: "a guard whose
+# only failure mode is refusing CORRECT input teaches people to route around it."
+# It bit for real: a PR body had to lose a footer that check-claude-attribution.sh
+# refuses, the corrected body kept the block, and the only routes left were the
+# GitHub UI (unavailable to an agent) or closing and reopening the PR.
+#
+# The asymmetry with create that REMAINS is deliberate and is the whole safety
+# argument: create may write an UNREADABLE body (a heredoc, a file a later step
+# writes) because there is no block yet to destroy. Edit may not -- an unreadable
+# edit body is refused, because it can silently replace one that exists.
+HOOK_SAW_BODY_FILE=0
 if [ -n "$EDIT_SEG" ] &&
     { hook_flag_present "$EDIT_SEG" body || hook_flag_present "$EDIT_SEG" body-file; }; then
+    EDIT_BODY=$(hook_visible_body "$EDIT_SEG")
+    if printf '%s' "$EDIT_BODY" | grep -qF -- "$BEGIN_MARKER"; then
+        exit 0
+    fi
     cat >&2 <<'MSG'
 BLOCKED: do not write a PR body by hand.
 
@@ -75,9 +119,16 @@ prose alone:
   worklist.py --publish <me> <branch>          # refresh the snapshot
   .ci/scripts/pr/sync-epic-block.sh <pr> <branch>   # sync it into the PR
 
-To change the narrative part of the description, edit it in the GitHub UI or
-re-run the sync afterwards. `gh pr edit --title`, `--add-label` and friends are
-not affected by this guard.
+To change the narrative part of the description, keep the block in the body you
+write -- an edit whose body already CARRIES the block is not refused, because it
+cannot be the thing that drops it. Read the current body, change your prose,
+leave the markers alone:
+
+  gh pr view <pr> --json body -q .body > body.md   # keeps the block
+  # edit the prose in body.md, leave the worklist-epics markers untouched
+  gh pr edit <pr> --body-file body.md
+
+`gh pr edit --title`, `--add-label` and friends are not affected by this guard.
 MSG
     exit 2
 fi
@@ -94,8 +145,6 @@ fi
 # state CI fails on minutes later. A body that carries it passes untouched, so
 # the sanctioned flow (build the body from the snapshot, create with it) is not
 # in this guard's way at all.
-BEGIN_MARKER='<!-- worklist-epics:begin -->'
-
 if [ -n "$CREATE_SEG" ]; then
     hook_flag_present "$CREATE_SEG" body || hook_flag_present "$CREATE_SEG" body-file || exit 0
 
