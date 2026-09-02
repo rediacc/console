@@ -137,6 +137,7 @@
     "check:ci-shell-format": ".ci/scripts/security/shfmt.sh",
     "check:ci-python-lint": ".ci/scripts/quality/check-python-lint.sh",
     "check:ci-bws-map": ".ci/scripts/quality/check_bws_map.py",
+    "check:ci-actions-allowlist": ".ci/scripts/quality/check_actions_allowlist.py",
     "check:ci-plan-boxes": ".ci/scripts/quality/check_plan_boxes.py",
     "check:ci-secret-reachability": ".ci/scripts/quality/check_secret_reachability.py",
     "check:ci-scope-completeness": ".ci/scripts/quality/check_scope_completeness.py",

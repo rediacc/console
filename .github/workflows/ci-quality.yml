@@ -447,6 +447,14 @@ jobs:
       # only) does not. When A1 lands -- no box may VANISH between base and head
       # -- it needs a merge-base and the step moves. See
       # agent/PLAN-plan-file-lifecycle.md.
+      # In the static lane because it reads only committed files. It exists because
+      # the constraint it checks lives in repository SETTINGS, so the failure it
+      # prevents surfaces only after a push, at action RESOLUTION, in a message that
+      # names no secret and no script (run 33690518859).
+      - name: Actions allowlist
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: npm run check:ci-actions-allowlist
+
       - name: Plan checkbox ledger
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: npm run check:ci-plan-boxes

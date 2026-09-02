@@ -1312,6 +1312,29 @@ export const GATES: readonly GateSpec[] = [
       step: 'Bitwarden secret map',
     },
   },
+  // Offline by construction: it compares .ci/config/actions-allowlist.json, a
+  // committed copy of repository settings, against every `uses:` line. The network
+  // lives only in --refresh, for the same reason check_secret_reachability splits
+  // them -- a gate that needs a token degrades to "passed" where the token is absent.
+  {
+    id: 'check:ci-actions-allowlist',
+    run: 'npm run check:ci-actions-allowlist',
+    gate: true,
+    paths: [
+      '.github/workflows/*.yml',
+      '.github/actions/**/action.yml',
+      '.ci/breakpoint/workflow/*.yml',
+      '.ci/config/actions-allowlist.json',
+      '.ci/scripts/quality/check_actions_allowlist.py',
+    ],
+    leaves: ['.ci/scripts/quality/check_actions_allowlist.py'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-static',
+      step: 'Actions allowlist',
+    },
+  },
   // The comment sits ABOVE the brace deliberately: wl_reggate._manifest_gate_ids
   // matches /\{\s*id:/, so a comment INSIDE the brace makes the entry invisible to
   // check:ci-gate-reachability-coverage (manifest.ts:322 records that trap).

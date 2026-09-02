@@ -1,0 +1,43 @@
+{
+  "$comment": [
+    "A COMMITTED COPY of this repository's GitHub Actions allowlist, so a gate can",
+    "answer offline a question that otherwise only CI can answer -- and only after a",
+    "push, and only as an action-resolution error that names no secret at all.",
+    "",
+    "IT COST A CI ROUND TO LEARN. rediacc/console is `allowed_actions: selected`, and",
+    "the Bitwarden composite's pinned sm-action was not on the list. Run 33690518859",
+    "failed at 'Initialize' with:",
+    "",
+    "    The action bitwarden/sm-action@1238aae8... is not allowed in rediacc/console",
+    "    because all actions must be from a repository owned by rediacc, created by",
+    "    GitHub, verified in the GitHub Marketplace, or match one of the patterns: ...",
+    "",
+    "Nothing in the tree could have said so: the constraint lives in repository",
+    "settings. This file is that constraint, written down.",
+    "",
+    "REFRESH with `npm run check:ci-actions-allowlist -- --refresh`, which reads",
+    "/repos/rediacc/console/actions/permissions/selected-actions. The network lives",
+    "there and nowhere else, so the gate itself needs no token and cannot degrade to",
+    "'passed' on a machine that lacks one.",
+    "",
+    "WHAT THE GATE CANNOT SEE, said plainly rather than assumed away:",
+    "`verified_allowed` lets any Marketplace-VERIFIED creator run, and there is no",
+    "offline way to know who is verified. So an action that would be permitted only by",
+    "that route must be listed in `verified_exceptions` with the CI run that proves it",
+    "ran. Today that list is empty, which is the strongest state: every third-party",
+    "action in this repo is permitted by a pattern or by being GitHub-owned."
+  ],
+  "repo": "rediacc/console",
+  "refreshed_at": "2026-09-02T22:45:10Z",
+  "github_owned_allowed": true,
+  "verified_allowed": true,
+  "patterns_allowed": [
+    "rediacc/*",
+    "docker/*",
+    "cloudflare/*",
+    "softprops/*",
+    "anthropics/*",
+    "bitwarden/sm-action@1238aae8fc64b212641190a9227c8a734ab1a793"
+  ],
+  "verified_exceptions": {}
+}
