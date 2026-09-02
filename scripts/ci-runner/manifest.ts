@@ -2548,6 +2548,10 @@ export const GATES: readonly GateSpec[] = [
     id: 'check:ci-embed-asset-versions',
     run: 'npm run check:ci-embed-asset-versions',
     gate: true,
+    // 46s by the FLOOR of its last five measurements (46.4, 47.1, 47.9, 48.9,
+    // 51.7) -- not load noise, which is what the floor rule filters out. It
+    // unpacks and hashes embedded assets, so the cost is real work.
+    slow: true,
     leaves: ['scripts/check-embed-asset-versions.ts'],
     ci: {
       kind: 'step',
@@ -5198,6 +5202,10 @@ export const GATES: readonly GateSpec[] = [
     id: 'gate-test:workflow-contracts',
     run: '.ci/scripts/test/gates/test-workflow-contracts.sh',
     gate: true,
+    // 22s by the floor of its last five (22.4, 55.7, 56.2, 56.6, 59.3). It
+    // drives the real check-workflow-gates.sh against several fixture trees,
+    // and that script parses every workflow with PyYAML five times over.
+    slow: true,
     qualityGateTest: true,
     leaves: ['.ci/scripts/test/gates/test-workflow-contracts.sh'],
     ci: {
