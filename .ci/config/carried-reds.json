@@ -16,5 +16,11 @@
     "A narrowed run (--only/--skip) is refused before any of this is consulted,",
     "so carrying cannot become a second way to launder a partial lane."
   ],
-  "carried": []
+  "carried": [
+    {
+      "gate": "check:ci-peer-deps",
+      "since": "2026-09-02",
+      "reason": "NOT THIS BRANCH'S FAILURE, and it cannot reproduce in CI. The on-disk node_modules/@opentelemetry/sdk-node is 0.222.0 while packages/cli/package.json declares ^0.221.0, so `npm ls` reports an invalid peer. Both the committed package-lock.json and packages/cli/package.json are CLEAN in git, and the lockfile resolves 0.221.0 under packages/cli/node_modules -- so CI's `npm ci` installs 0.221.0 and this gate is green there. The 0.222.0 on disk comes from another live session's UNCOMMITTED private/account/package.json bump (@opentelemetry 0.221->0.222 and @simplewebauthn 13->14, with the matching passkey.service.ts type change). Those three files were deliberately EXCLUDED from this branch's private/account commit so they stay that session's to land, and the finding was reported to it as request #153e2099. Fixing it here would mean either committing a peer's half-finished dependency bump or reinstalling node_modules underneath a session that is using it -- both are the shared-tree failure CLAUDE.md rule 1 exists to prevent. It clears itself the moment that session lands its bump or reinstalls; the stale-entry rule then REFUSES this entry, which is the correct forcing function."
+    }
+  ]
 }
