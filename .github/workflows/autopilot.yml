@@ -543,9 +543,9 @@ jobs:
           MODEL: ${{ needs.gate.outputs.model }}
           MODE: ${{ needs.gate.outputs.mode }}
           EFFORT: ${{ inputs.effort }}
-          EFFORT_VAR: ${{ vars.AUTOPILOT_EFFORT }}
+          AUTOPILOT_EFFORT: ${{ vars.AUTOPILOT_EFFORT }}
         run: |
-          "$RUNNER_TEMP/harness/.ci/scripts/autopilot/resolve-model-args.sh" --model "$MODEL" --mode "$MODE" --effort "$EFFORT" --effort-var "$EFFORT_VAR"
+          "$RUNNER_TEMP/harness/.ci/scripts/autopilot/resolve-model-args.sh" --model "$MODEL" --mode "$MODE" --effort "$EFFORT" --effort-var "$AUTOPILOT_EFFORT"
 
       # NO WRITE TOKEN: github_token carries this job's contents:read grant,
       # comments and pushes are impossible from inside the model, and the app
@@ -691,7 +691,7 @@ jobs:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_SES_ACCESS_KEY_ID_EU }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SES_SECRET_ACCESS_KEY_EU }}
           AWS_DEFAULT_REGION: ${{ vars.AWS_SES_REGION_EU }}
-          SES_FROM: ${{ vars.AWS_SES_FROM }}
+          AWS_SES_FROM: ${{ vars.AWS_SES_FROM }}
           GITHUB_ACTOR: ${{ github.actor }}
           BP_SEND_EMAIL: ${{ inputs.send-email }}
           BP_DURATION: ${{ inputs.hold-duration }}

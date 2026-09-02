@@ -26,7 +26,21 @@ operator, and no org-secret change; they are one commit at zero migration risk.
       AUDIT: DONE 2026-09-02 (audit): `git grep -n --recurse-submodules 'SSH_USER: '` finds nothing; both lines removed from ct-tests.yml and both steps survive without them (ct-tests.yml:1769-1786).
 - [ ] Fix the schema extractor in `scripts/check-worker-secret-names.ts:69` so it sees all 85 `env.ts` keys, and derive the count in the refusal message at `:104` instead of hardcoding it (finding 2, assertion 12)
       AUDIT: PARTIAL: the extractor is fixed -- check-worker-secret-names.ts:76 reads `/^\s{2}([A-Z][A-Z0-9_]*):\s*(?:z\.|z$|boolFromEnv)/gm` and both counts over env.ts agree at 85; floor raised 40->80 at :113. NOT done: the count is still the hand-maintained ratchet EXPECTED_SCHEMA_KEYS = 85 at :74, not derived from the file, so a hand-edit of that constant still lets the extractor drop a key silently.
-- [ ] Rename the six gratuitous workflow aliases onto their sources (`SES_FROM`, `REPO_CHANNEL`, `EFFORT_VAR`, `FORCE_FULL_CI`, `WATCHDOG_SKIP_RERUN`), consuming scripts included — 12 lines, table row D
+- [x] Rename the six gratuitous workflow aliases onto their sources (`SES_FROM`, `REPO_CHANNEL`, `EFFORT_VAR`, `FORCE_FULL_CI`, `WATCHDOG_SKIP_RERUN`), consuming scripts included — 12 lines, table row D
+      DONE 2026-09-02, and THREE OF THE FIVE TURNED OUT NOT TO BE ALIASES. Renamed:
+      `SES_FROM` -> `AWS_SES_FROM` (autopilot.yml:694, breakpoint.yml:332, the vendored
+      copy, and publish-endpoints.sh:142); `EFFORT_VAR` -> `AUTOPILOT_EFFORT`
+      (autopilot.yml:546,548 -- resolve-model-args.sh's own `EFFORT_VAR` is a LOCAL from
+      the parsed `--effort-var` argument, not an env read, so it is a different
+      namespace and stays); `SKIP_RERUN` -> `WATCHDOG_SKIP_RERUN` at the WRITER
+      (check-rerun-attempt.sh:46) so the value wears the consumer's name once instead of
+      being renamed in transit at watchdog-monitor.yml:126.
+      NOT renamed, with reasons: `FORCE_FULL_CI` is one of TWO kill switches and
+      scope-shadow.sh:24,63 documents the mapping deliberately (`FULL_CI` the repo
+      variable -> `FORCE_FULL_CI` here, beside `FULL_CI_LABEL`); collapsing it would
+      collide with its sibling. `REPO_CHANNEL` is fed from `inputs.repo_channel` (YAML
+      input casing, not a rename) and from `env.PROMOTED`, which ci.yml:1784 COMPUTES as
+      `${CHANNEL}-promoted` -- that is a value being passed, not a name being aliased.
 - [x] Delete the `STRIPE_KEY_${SUFFIX}` fan-in at `cd-deploy-account.yml:334-337,341-342`; export `STRIPE_SECRET_KEY` directly, leaving the webhook loop intact
       AUDIT: DONE 2026-09-02 (audit): STRIPE_KEY_ survives only in past-tense comments (cd-deploy-account.yml:340,377; cd-deploy-worker.yml:217; resolve-account-deploy-config.sh:28; set-account-worker-secrets.sh:13). The webhook SUFFIX loop is intact at cd-deploy-account.yml:366 -> set-account-worker-secrets.sh:114-115.
 - [ ] Write `.ci/config/name-role-substitutions.json` — one entry per homograph site in section 1.3, each naming source key, target key and reason

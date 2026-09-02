@@ -139,7 +139,7 @@ cancelled, the nightly sweeper is the backstop.
 "
 
     aws ses send-email \
-        --from "${SES_FROM:-}" \
+        --from "${AWS_SES_FROM:-}" \
         --destination "ToAddresses=${RECIPIENT}" \
         --message "Subject={Data=\"${subject}\"},Body={Text={Data=\"${body}\"}}" \
         >/dev/null 2>&1

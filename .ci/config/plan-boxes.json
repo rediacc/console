@@ -491,14 +491,13 @@
     "agent/PLAN-secret-names-one-to-one.md": {
       "status": "design",
       "owner": "unowned",
-      "open": 10,
-      "done": 2,
+      "open": 9,
+      "done": 3,
       "open_sigs": [
         "06589548",
         "53106f5f",
         "5df5987f",
         "60d62f80",
-        "664f0162",
         "76b8fdf7",
         "b0a85702",
         "d008669b",
@@ -507,7 +506,8 @@
       ],
       "done_sigs": [
         "361d7efa",
-        "3f8ce996"
+        "3f8ce996",
+        "664f0162"
       ]
     },
     "agent/PLAN-secret-namespace-migration.md": {

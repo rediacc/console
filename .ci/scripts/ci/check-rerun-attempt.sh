@@ -5,7 +5,9 @@
 # misclassification could loop. This is the dumb, deterministic backstop: read
 # the run's current attempt and refuse to rerun at or past the cap.
 #
-# Writes SKIP_RERUN=true|false to $GITHUB_ENV for the following step to gate on.
+# Writes WATCHDOG_SKIP_RERUN=true|false to $GITHUB_ENV for the following step to gate
+# on. The name is the CONSUMER's, spelled once: watchdog-monitor.cjs reads it under
+# exactly that name, and a shorter one here would mean two spellings for one value.
 #
 # Usage:
 #   RUN_ID=123456 GH_REPO=rediacc/console GH_TOKEN=... \
@@ -17,7 +19,7 @@
 #   GH_TOKEN   token for `gh api` (secret — env, never argv)
 # Optional env:
 #   MAX_ATTEMPTS   default 2
-#   GITHUB_ENV     when set, SKIP_RERUN is exported to later steps
+#   GITHUB_ENV     when set, WATCHDOG_SKIP_RERUN is exported to later steps
 
 set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -43,4 +45,4 @@ else
     SKIP="false"
 fi
 
-[[ -n "${GITHUB_ENV:-}" ]] && echo "SKIP_RERUN=${SKIP}" >>"$GITHUB_ENV"
+[[ -n "${GITHUB_ENV:-}" ]] && echo "WATCHDOG_SKIP_RERUN=${SKIP}" >>"$GITHUB_ENV"

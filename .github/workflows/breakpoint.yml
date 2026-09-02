@@ -329,7 +329,7 @@ jobs:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_SES_ACCESS_KEY_ID_EU }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SES_SECRET_ACCESS_KEY_EU }}
           AWS_DEFAULT_REGION: ${{ vars.AWS_SES_REGION_EU }}
-          SES_FROM: ${{ vars.AWS_SES_FROM }}
+          AWS_SES_FROM: ${{ vars.AWS_SES_FROM }}
           GITHUB_ACTOR: ${{ github.actor }}
           # The URL and the tmate strings are DELIBERATELY ABSENT from this
           # env: block, and must never be added back. The runner prints every

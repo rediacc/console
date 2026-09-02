@@ -106,8 +106,9 @@ jobs:
 
       # Deterministic attempt-cap backstop, deliberately OUTSIDE the AI-driven
       # monitor process it guards: a misclassification loop cannot talk its way
-      # past a separate step that just reads run_attempt. Writes SKIP_RERUN to
-      # GITHUB_ENV; the monitor refuses the rerun when it is true.
+      # past a separate step that just reads run_attempt. Writes
+      # WATCHDOG_SKIP_RERUN to GITHUB_ENV under the name the monitor reads it by;
+      # the monitor refuses the rerun when it is true.
       - name: Attempt cap (deterministic backstop)
         if: inputs.pending_rerun == 'true'
         env:
@@ -123,7 +124,7 @@ jobs:
           WATCHDOG_TARGET_RUN_ID: ${{ inputs.target_run_id }}
           WATCHDOG_PR_NUMBER: ${{ inputs.pr_number }}
           WATCHDOG_PENDING_RERUN: ${{ inputs.pending_rerun }}
-          WATCHDOG_SKIP_RERUN: ${{ env.SKIP_RERUN }}
+          WATCHDOG_SKIP_RERUN: ${{ env.WATCHDOG_SKIP_RERUN }}
           # 480s of polling plus the worst-case post-detection tail (AI
           # classification, then force-cancel waiting up to 5 minutes for
           # WATCHDOG_WAIT_PATTERNS jobs) stays under the 15-minute cap.
