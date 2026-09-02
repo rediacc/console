@@ -6371,3 +6371,98 @@ same shell-blindness and began "fixing" it. It does not: line 136 is a deliberat
 whole-file fallback for exactly the no-`RUN`-instructions case, documented in place, and it
 fires — a shell script pinning one mirror yields one offender. The edit would have disabled
 that path by making `not blocks` false. Reverted byte-identical before it shipped.
+
+---
+
+## Secret namespace migration and the move to Bitwarden (PR #585, branch `0903-1`)
+
+Everything below is on **PR #585** with coordinated submodule PRs
+`rediacc/account#85`, `rediacc/renet#110`, `rediacc/elite#16`, all on `0903-1`.
+Epic `24c98380`; every commit carries `PR-TASK: 24c98380`.
+
+The subject is CI's source of truth for secrets moving from GitHub org secrets to
+Bitwarden Secrets Manager, behind a **shadow run** that proves the two agree before
+anything is deleted. The org secrets are still authoritative and are deliberately
+NOT removed by this PR.
+
+### Five gates landed, and what each one is for
+
+| gate | asserts |
+|---|---|
+| `check:ci-bws-map` assertions 5-11 | the map covers what is requested, every job requests what it reads, `PREFIX_${SUFFIX}` names a deploy script builds are mapped, every stored name appears in the corpus, every org secret a workflow reads is mapped/exempt/pre-imaged, the pre-image file is not dead scaffold, and the shadow triple agrees |
+| `check-workflow-gates.sh` CHECK 4 | cross-repo callers of console's reusable workflows are contract-checked against `.github/external-callers.yml` |
+| `check-workflow-gates.sh` CHECK 5 | a job that fetches from Bitwarden must CHECK OUT the map it resolves with |
+| `check:ci-actions-allowlist` | every third-party action is one this repository may actually run |
+| `check:ci-plan-boxes` | a committed ledger of every open plan checkbox, so one cannot quietly disappear |
+
+Plus `check:ci-greenlight-closures` (every closure path exists AND is tracked) and
+selftests at `.ci/scripts/test/gates/test-bws-env.sh` and `test-bws-map.sh`.
+
+### The defect class this cost, and it is worth carrying
+
+`secrets.X` names a secret that lives on **GitHub**. `scripts/dev/secret-rename.py`
+rewrote BOTH sides of `NEW: ${{ secrets.OLD }}`, and the operator had ruled the
+GitHub-side rename skipped — so 267 expressions across 22 workflow files pointed at
+secrets that do not exist. **GitHub does not error on an unknown secret; it
+substitutes the empty string.** Every app-token mint, both GPG signing steps, every
+R2 upload and the whole account deploy would have run with blank credentials, and
+nothing would have said so.
+
+Two of the chosen names were impossible rather than merely wrong:
+
+    $ gh secret set GITHUB_ZZ_PROBE -R rediacc/console
+    HTTP 422: Secret names must not start with GITHUB_.
+
+The same class then turned up twice more, in files nobody had connected to it:
+`rotation-manifest.json` and `scripts/rotation/lib/config.ts` (34 names — a `cf-r2`
+rotation would have CREATED duplicate org secrets and left the live ones stale), and
+the shadow's own scaffold, where the rename moved `SHADOW_NAMES` but not the `GH_`/
+`BWS_`-prefixed forms because its lookbehind treats `_` as a word character.
+
+`.ci/config/github-secret-preimage.json` is the dictionary of what GitHub still calls
+each secret. It is **scaffold** and is deleted with the org secrets; assertion 10 is
+what stops it becoming a second exemption list, and `secret-rename.py` now refuses a
+`secrets.` context the way it already refused a `vars.` one.
+
+### Three constraints CI can see that no local gate could
+
+1. **Repository Actions allowlist.** `rediacc/console` is `allowed_actions: selected`,
+   so `bitwarden/sm-action` failed at action RESOLUTION before any step ran (run
+   33690518859). Allowed the exact pinned SHA, not `bitwarden/*`, which makes a pin
+   bump a two-place change; recorded in the composite's own header, and
+   `check:ci-actions-allowlist` now catches the class offline.
+2. **Sparse checkout cones.** Two jobs used the Bitwarden composite behind a cone that
+   excluded the map it reads. CHECK 5 found 11 such jobs, 9 already correct.
+3. **The shadow itself.** See below.
+
+### What the shadow found, which is the point of building it
+
+Run 33691632299, `Tests + Infra / Account E2E`, "Compare shadow secrets against
+GitHub": six names matched, and **`ACCOUNT_SERVER_API_KEY` and
+`STRIPE_SANDBOX_WEBHOOK_SECRET` came back MISMATCH** — GitHub and Bitwarden hold
+different values. Deleting the org secrets would have destroyed the live value of
+both, and no session can reconcile them because GitHub secrets are write-only.
+Operator-only; parked as worklist `[?] #fbd35dba` with DEFAULT "delete nothing".
+
+That is the whole argument for the ordering: commit, PR, let the shadow run, and only
+then delete. It paid for itself on the first run.
+
+### A correction, recorded rather than buried
+
+This session called a CI red "registry drift, passes locally" **without reading the
+log**. Reading it named three `@opentelemetry` packages and showed it was the same
+root cause as a `check:ci-peer-deps` red already CARRIED in
+`.ci/config/carried-reds.json` — one dependency bump seen from two sides: CI reads
+committed manifests, the local `node_modules` already held the newer version.
+
+Resolving it meant `check:deps` and `check:version` contradicting each other. The
+answer was to read the pin's own BLOCKER rather than pick a side, and **both of its
+clauses argued for the bump**: the pin was holding three OTel packages at 0.221 while
+six siblings were already at 0.222, which is precisely the `@opentelemetry/core` split
+the reason warns about; and its protobufjs clause was probed and is false here
+(`@grpc/proto-loader@0.8.1` resolves `protobufjs@7.6.6`). The labels were two bumps
+stale, naming a "0.219 line" that had not existed for two moves.
+
+`ci:quick` is 288/288 and `carried-reds.json` is empty again — a carry that stops
+failing is refused by that file's own liveness rule, which is the correct forcing
+function. It only became visible after the suppression came off.

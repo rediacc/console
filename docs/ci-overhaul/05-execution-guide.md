@@ -236,8 +236,17 @@ the operator again at the end rather than letting them dissolve.
 - All 8 VM/E2E jobs install three `private/account` npm trees the suites never reference.
 - `generate-tag.sh:92-97`'s renet build-config list omits `.ci/scripts/infra/build-renet.sh`,
   which is what `ct-tests.yml` and `ci-ops-test.yml` actually use.
-- The submodule review pipeline is **doubly** broken: no `ANTHROPIC_CLAUDE_CODE_OAUTH_TOKEN` on
-  `renet`/`account`, **and** the reusable's bootstrap step assumes a script that exists only
-  in console.
+- The submodule review pipeline is **doubly** broken: no OAuth token on `renet`/`account`,
+  **and** the reusable's bootstrap step assumes a script that exists only in console.
+  **Half addressed on PR #585 (2026-09-03), and the token half needs restating carefully**
+  because a find-and-replace made this very line misleading: console's reusable declares
+  the input as `ANTHROPIC_CLAUDE_CODE_OAUTH_TOKEN`, but the org secret those two repos hold
+  is still `CLAUDE_CODE_OAUTH_TOKEN`, and `gh secret set` cannot re-supply a value it may
+  not read. So each submodule's `claude-review.yml` now maps the two names explicitly --
+  new name on the left, the name the repo actually has on the right. Pointing the right
+  side at the new name makes GitHub substitute the EMPTY STRING without erroring, which is
+  the class documented in 06-progress.md. `check-workflow-gates.sh` CHECK 4 now
+  contract-checks both callers against `.github/external-callers.yml`; the bootstrap-script
+  half is untouched and still open.
 - `#533`'s underlying question is still unanswered.
 - The intra-quality serial gate chain.

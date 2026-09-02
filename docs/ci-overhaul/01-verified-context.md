@@ -431,9 +431,20 @@ is **empty**, so no pin-versus-main caveat applies.
   with a join across every `modelUsage` key.
 
 ### The submodule review pipeline is doubly broken
-- `ANTHROPIC_CLAUDE_CODE_OAUTH_TOKEN` is an org secret scoped to **`rediacc/console` only**. Neither
+- ~~`CLAUDE_CODE_OAUTH_TOKEN` is an org secret scoped to **`rediacc/console` only**. Neither
   `renet` nor `account` has it. The outstanding operator action is **confirmed still
-  outstanding**.
+  outstanding**.~~ **NO LONGER TRUE, probed 2026-09-03.** `gh secret list` on each repo:
+  `rediacc/account` and `rediacc/renet` both hold `CLAUDE_CODE_OAUTH_TOKEN` **and**
+  `BWS_ACCESS_TOKEN` as repo secrets. The operator action was done; this line reported it
+  as blocked afterwards, which is the exact failure the design-doc freshness check exists
+  to prevent.
+- **And the NAME in this bullet had drifted too**, which is worth its own line because it
+  was silent: a find-and-replace rewrote it to `ANTHROPIC_CLAUDE_CODE_OAUTH_TOKEN`, a name
+  that exists nowhere on GitHub. That is console's *declared workflow input*; the secret is
+  `CLAUDE_CODE_OAUTH_TOKEN` on all three repos and on the org. `gh secret set` cannot
+  re-supply a value it may not read, so the two names are mapped explicitly at each
+  submodule's caller rather than renamed — see 06-progress.md for why pointing the right
+  side at the new name yields an EMPTY STRING with no error.
 - **Second, separate bug:** account's two `claude-review` runs both failed at
   *"Bootstrap review scripts"* with
   `bash: .ci/scripts/review/bootstrap-review-scripts.sh: No such file or directory` (exit
