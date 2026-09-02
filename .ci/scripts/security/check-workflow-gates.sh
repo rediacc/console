@@ -687,4 +687,98 @@ PYEOF
     fi
 fi
 
+# =============================================================================
+# CHECK 5: a job that fetches from Bitwarden must CHECK OUT the map it resolves with.
+#
+# ./.github/actions/bws-secrets translates NAMES to UUIDs out of
+# .ci/config/bws-secret-map.json before it calls sm-action, because sm-action
+# addresses secrets by UUID only and 197 raw UUIDs across 63 job blocks would be
+# unreviewable. So the map is a RUNTIME input to the composite, not documentation.
+#
+# A sparse checkout that stops at `.github/actions` therefore produces a job that
+# looks deliberately scoped and fails with "bws-secret-map.json not found at ..." --
+# and it fails at the fetch step, in whatever job first needs a secret, which on the
+# CD path is a production deploy. Found on 2026-09-02 in TWO jobs at once
+# (backfill-release-sentinel `backfill`, cd-deploy-account `deploy`), both of which
+# grew their `uses:` line long after their cone was written. Nothing connected the
+# two edits, which is exactly what this check is for.
+#
+# The rule is deliberately narrow: it fires only when a sparse checkout EXISTS. A
+# full checkout has everything, and demanding a `.ci/config` line there would be
+# noise that teaches people to ignore the message.
+# =============================================================================
+log_info "Checking that every Bitwarden-fetching job checks out the secret map"
+
+python3 - "$ROOT_DIR" <<'PYEOF'
+import pathlib
+import sys
+
+import yaml
+
+root = pathlib.Path(sys.argv[1])
+MAP_DIR = ".ci/config"
+files = sorted((root / ".github" / "workflows").glob("*.yml"))
+files += sorted((root / ".ci" / "breakpoint" / "workflow").glob("*.yml"))
+
+offenders = []
+checked = 0
+for path in files:
+    try:
+        doc = yaml.safe_load(path.read_text(encoding="utf-8"))
+    except yaml.YAMLError as exc:
+        print(f"error: {path.name} does not parse ({exc})", file=sys.stderr)
+        sys.exit(1)
+    if not isinstance(doc, dict):
+        continue
+    for job_id, job in (doc.get("jobs") or {}).items():
+        if not isinstance(job, dict):
+            continue
+        steps = [s for s in (job.get("steps") or []) if isinstance(s, dict)]
+        if not any("bws-secrets" in str(s.get("uses", "")) for s in steps):
+            continue
+        cones = [
+            str((s.get("with") or {}).get("sparse-checkout"))
+            for s in steps
+            if "actions/checkout" in str(s.get("uses", ""))
+            and (s.get("with") or {}).get("sparse-checkout")
+        ]
+        if not cones:
+            continue
+        checked += 1
+        for cone in cones:
+            if MAP_DIR not in cone:
+                offenders.append(
+                    f"{path.name}: job '{job_id}' fetches from Bitwarden but its sparse "
+                    f"checkout does not include {MAP_DIR}. "
+                    f"./.github/actions/bws-secrets reads {MAP_DIR}/bws-secret-map.json "
+                    f"at run time and will fail with 'bws-secret-map.json not found'."
+                )
+
+# ANTI-VACUITY. This check can only fire on a job that BOTH fetches from Bitwarden
+# and narrows its checkout, which is a small set by construction. If that set empties
+# -- the composite is renamed, the cones are widened, the glob breaks -- the check
+# passes for a reason indistinguishable from correctness, so say which it was.
+if checked == 0:
+    print(
+        "info: no job both fetches from Bitwarden and narrows its checkout; "
+        "CHECK 5 asserted nothing (this is the vacuous case, not a pass)"
+    )
+
+for line in offenders:
+    print(f"error: {line}", file=sys.stderr)
+if offenders:
+    sys.exit(1)
+print(f"info: {checked} sparse Bitwarden-fetching job(s) check out the map")
+sys.exit(0)
+PYEOF
+
+if [[ $? -eq 0 ]]; then
+    log_success "Every sparse Bitwarden-fetching job checks out .ci/config"
+else
+    log_error "Fix: add .ci/config to that job's sparse-checkout list. The cone must be a"
+    log_error "     superset of what every local action in the job READS, not just where"
+    log_error "     those actions live."
+    FAILED=1
+fi
+
 exit "$FAILED"

@@ -206,7 +206,15 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ inputs.ref }}
-          sparse-checkout: .github/actions
+          # `.ci/config` is not optional here: ./.github/actions/bws-secrets resolves
+          # NAMES to UUIDs out of .ci/config/bws-secret-map.json before it calls
+          # sm-action, so a cone that stops at .github/actions makes the composite
+          # fail with "bws-secret-map.json not found" in a job whose checkout looks
+          # deliberate. Anything added to this list must stay a superset of what
+          # every local action in this job READS, not just where they live.
+          sparse-checkout: |
+            .github/actions
+            .ci/config
 
       - uses: ./.github/actions/app-token
         id: app-token

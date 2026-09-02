@@ -553,6 +553,19 @@ The safety comes from step ordering inside each job, not from commit granularity
       AUDIT: UNVERIFIABLE from the tree: the backup happens inside the operator's password-manager vault, which `gh` cannot see. Proof would be a dated export receipt recorded in a config file, or an operator attestation.
 - [ ] Generate the pre-image rewrite of 102 `GH_<N>` lines from `secret-rename.py`'s `RENAMES` table (§2.2)
 - [ ] Reorder `bws-secrets` ahead of `app-token` in the 7 jobs of §4.2 Trap A; add `.ci/config` to the 2 sparse lists of Trap B
+      HALF DONE 2026-09-02, and the half that was done was a LIVE defect, not a cutover
+      preparation. Trap B is fixed: `.ci/config` added to both sparse cones
+      (backfill-release-sentinel.yml job `backfill`, cd-deploy-account.yml job `deploy`).
+      ./.github/actions/bws-secrets resolves NAMES to UUIDs out of
+      .ci/config/bws-secret-map.json AT RUN TIME, so a cone stopping at `.github/actions`
+      fails the fetch with "bws-secret-map.json not found" -- on the CD path, in a
+      production deploy. Swept as a class rather than as two instances: CHECK 5 in
+      .ci/scripts/security/check-workflow-gates.sh now fails any job that both fetches
+      from Bitwarden and narrows its checkout without the map, proven by planting the
+      defect back (rc=1, names the job) and removing it again. It reports the vacuous
+      case explicitly, because it can only fire on a small set by construction.
+      STILL OPEN: Trap A, the app-token/bws-secrets ORDER in the 7 jobs. That one only
+      bites after the cutover, when the app token's private key comes from Bitwarden.
 - [ ] Flip 137 identity `env:` lines (delete), 78 `with:` aliases and 24 `env:` aliases (→ `${{ env.<N> }}`), 157 passthrough lines (delete), 80 `workflow_call` declarations → 9
 - [ ] Delete the 4 `AWS_SES_*_ASIA` reads and 3 passthrough lines (row O4); delete the 2 exemptions that describe them
 - [ ] Retire assertion 5's `no-github-twin` kind → `unrequested`; invert assertion 6 → 6'; replace assertion 9 with G1
