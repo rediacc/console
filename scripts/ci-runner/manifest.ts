@@ -4991,6 +4991,11 @@ export const GATES: readonly GateSpec[] = [
     id: 'gate-test:slim-timeout',
     run: '.ci/scripts/test/gates/test-slim-timeout.sh',
     gate: true,
+    // 23.7s by the floor of its last five (23.7 24.3 24.7 24.9 27.1). It parses
+    // every workflow and walks each ubuntu-slim job's timeout, several times over
+    // fixture trees. Swept with two siblings on 2026-09-02; a scan of the whole
+    // duration cache says these three were the only unmarked gates over budget.
+    slow: true,
     qualityGateTest: true,
     leaves: ['.ci/scripts/test/gates/test-slim-timeout.sh'],
     ci: {

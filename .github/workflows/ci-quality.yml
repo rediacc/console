@@ -140,13 +140,13 @@ jobs:
         with:
           access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
           secrets: |
-            GITHUB_APP_PRIVATE_KEY > BWS_GITHUB_APP_PRIVATE_KEY
+            GITHUB_APP_PRIVATE_KEY > BWS_APP_PRIVATE_KEY
 
       - name: Compare shadow secrets against GitHub
         shell: bash
         env:
           SHADOW_NAMES: APP_PRIVATE_KEY
-          GH_GITHUB_APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
+          GH_APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
         run: |
           rc=0; read -ra names <<<"$SHADOW_NAMES"
           sha() { printf '%s' "${1-}" | { sha256sum 2>/dev/null || shasum -a 256; } | cut -d' ' -f1; }
@@ -544,13 +544,13 @@ jobs:
         with:
           access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
           secrets: |
-            GITHUB_APP_PRIVATE_KEY > BWS_GITHUB_APP_PRIVATE_KEY
+            GITHUB_APP_PRIVATE_KEY > BWS_APP_PRIVATE_KEY
 
       - name: Compare shadow secrets against GitHub
         shell: bash
         env:
           SHADOW_NAMES: APP_PRIVATE_KEY
-          GH_GITHUB_APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
+          GH_APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
         run: |
           rc=0; read -ra names <<<"$SHADOW_NAMES"
           sha() { printf '%s' "${1-}" | { sha256sum 2>/dev/null || shasum -a 256; } | cut -d' ' -f1; }
@@ -609,13 +609,13 @@ jobs:
         with:
           access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
           secrets: |
-            GITHUB_APP_PRIVATE_KEY > BWS_GITHUB_APP_PRIVATE_KEY
+            GITHUB_APP_PRIVATE_KEY > BWS_APP_PRIVATE_KEY
 
       - name: Compare shadow secrets against GitHub
         shell: bash
         env:
           SHADOW_NAMES: APP_PRIVATE_KEY
-          GH_GITHUB_APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
+          GH_APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
         run: |
           rc=0; read -ra names <<<"$SHADOW_NAMES"
           sha() { printf '%s' "${1-}" | { sha256sum 2>/dev/null || shasum -a 256; } | cut -d' ' -f1; }
@@ -1122,14 +1122,14 @@ jobs:
         with:
           access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
           secrets: |
-            GITHUB_APP_PRIVATE_KEY > BWS_GITHUB_APP_PRIVATE_KEY
+            GITHUB_APP_PRIVATE_KEY > BWS_APP_PRIVATE_KEY
             DOCKERHUB_TOKEN > BWS_DOCKERHUB_TOKEN
 
       - name: Compare shadow secrets against GitHub
         shell: bash
         env:
           SHADOW_NAMES: APP_PRIVATE_KEY DOCKERHUB_TOKEN
-          GH_GITHUB_APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
+          GH_APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
           GH_DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
         run: |
           rc=0; read -ra names <<<"$SHADOW_NAMES"
@@ -1433,13 +1433,13 @@ jobs:
         with:
           access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
           secrets: |
-            GITHUB_APP_PRIVATE_KEY > BWS_GITHUB_APP_PRIVATE_KEY
+            GITHUB_APP_PRIVATE_KEY > BWS_APP_PRIVATE_KEY
 
       - name: Compare shadow secrets against GitHub
         shell: bash
         env:
           SHADOW_NAMES: APP_PRIVATE_KEY
-          GH_GITHUB_APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
+          GH_APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
         run: |
           rc=0; read -ra names <<<"$SHADOW_NAMES"
           sha() { printf '%s' "${1-}" | { sha256sum 2>/dev/null || shasum -a 256; } | cut -d' ' -f1; }
@@ -1620,7 +1620,7 @@ jobs:
         with:
           access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
           secrets: |
-            GITHUB_APP_PRIVATE_KEY > BWS_GITHUB_APP_PRIVATE_KEY
+            GITHUB_APP_PRIVATE_KEY > BWS_APP_PRIVATE_KEY
             CLOUDFLARE_R2_MEDIA_ACCESS_KEY_ID > BWS_CLOUDFLARE_R2_MEDIA_ACCESS_KEY_ID
             CLOUDFLARE_R2_MEDIA_ENDPOINT > BWS_CLOUDFLARE_R2_MEDIA_ENDPOINT
             CLOUDFLARE_R2_MEDIA_SECRET_ACCESS_KEY > BWS_CLOUDFLARE_R2_MEDIA_SECRET_ACCESS_KEY
@@ -1629,7 +1629,7 @@ jobs:
         shell: bash
         env:
           SHADOW_NAMES: APP_PRIVATE_KEY CLOUDFLARE_R2_MEDIA_ACCESS_KEY_ID CLOUDFLARE_R2_MEDIA_ENDPOINT CLOUDFLARE_R2_MEDIA_SECRET_ACCESS_KEY
-          GH_GITHUB_APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
+          GH_APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
           GH_CLOUDFLARE_R2_MEDIA_ACCESS_KEY_ID: ${{ secrets.CLOUDFLARE_R2_MEDIA_ACCESS_KEY_ID }}
           GH_CLOUDFLARE_R2_MEDIA_ENDPOINT: ${{ secrets.CLOUDFLARE_R2_MEDIA_ENDPOINT }}
           GH_CLOUDFLARE_R2_MEDIA_SECRET_ACCESS_KEY: ${{ secrets.CLOUDFLARE_R2_MEDIA_SECRET_ACCESS_KEY }}
@@ -1804,13 +1804,13 @@ jobs:
         with:
           access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
           secrets: |
-            GITHUB_APP_PRIVATE_KEY > BWS_GITHUB_APP_PRIVATE_KEY
+            GITHUB_APP_PRIVATE_KEY > BWS_APP_PRIVATE_KEY
 
       - name: Compare shadow secrets against GitHub
         shell: bash
         env:
           SHADOW_NAMES: APP_PRIVATE_KEY
-          GH_GITHUB_APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
+          GH_APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
         run: |
           rc=0; read -ra names <<<"$SHADOW_NAMES"
           sha() { printf '%s' "${1-}" | { sha256sum 2>/dev/null || shasum -a 256; } | cut -d' ' -f1; }
@@ -1949,13 +1949,13 @@ jobs:
         with:
           access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
           secrets: |
-            GITHUB_APP_PRIVATE_KEY > BWS_GITHUB_APP_PRIVATE_KEY
+            GITHUB_APP_PRIVATE_KEY > BWS_APP_PRIVATE_KEY
 
       - name: Compare shadow secrets against GitHub
         shell: bash
         env:
           SHADOW_NAMES: APP_PRIVATE_KEY
-          GH_GITHUB_APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
+          GH_APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
         run: |
           rc=0; read -ra names <<<"$SHADOW_NAMES"
           sha() { printf '%s' "${1-}" | { sha256sum 2>/dev/null || shasum -a 256; } | cut -d' ' -f1; }
@@ -2132,13 +2132,13 @@ jobs:
         with:
           access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
           secrets: |
-            GITHUB_APP_PRIVATE_KEY > BWS_GITHUB_APP_PRIVATE_KEY
+            GITHUB_APP_PRIVATE_KEY > BWS_APP_PRIVATE_KEY
 
       - name: Compare shadow secrets against GitHub
         shell: bash
         env:
           SHADOW_NAMES: APP_PRIVATE_KEY
-          GH_GITHUB_APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
+          GH_APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
         run: |
           rc=0; read -ra names <<<"$SHADOW_NAMES"
           sha() { printf '%s' "${1-}" | { sha256sum 2>/dev/null || shasum -a 256; } | cut -d' ' -f1; }

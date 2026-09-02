@@ -445,6 +445,72 @@ def preimage_problems(alias: dict[str, str], secrets: dict, read: set[str]) -> l
     return out
 
 
+# The gh CLI reads these from the environment; they are not shadow legs and never
+# were. Measured 2026-09-02: they are the ONLY two `GH_*` names across all 22 caller
+# files that are not part of a shadow triple, which is what makes assertion 11 an
+# equality rather than a subset.
+GH_CLI_ENV = frozenset({"TOKEN", "APP_TOKEN", "REPO"})
+SHADOW_NAMES_RE = re.compile(r"^\s*SHADOW_NAMES:\s*(.+)$", re.MULTILINE)
+GH_ENV_RE = re.compile(r"^\s*GH_([A-Z0-9_]+):", re.MULTILINE)
+BWS_TARGET_RE = re.compile(r">\s*BWS_([A-Z0-9_]+)\s*$", re.MULTILINE)
+
+
+def shadow_triple_problems() -> tuple[list[str], int]:
+    """Assertion 11: within a file, SHADOW_NAMES, GH_* and BWS_* must be the SAME set.
+
+    THE COMPARE STEP DERIVES BOTH SIDES BY STRING CONCATENATION -- `gv="GH_$n"`,
+    `bv="BWS_$n"` over the words in SHADOW_NAMES -- so a name that is renamed in one
+    of the three places and not the others produces `GH_<new>` unset, which the step
+    reports as "EMPTY ... nothing was compared". It fails LOUDLY, which is right, but
+    it fails in CI, minutes after a push, on a defect that is a pure text property of
+    the file.
+
+    It cost a CI round to learn: a rename pass rewrote the bare `GITHUB_APP_PRIVATE_KEY`
+    in SHADOW_NAMES but not the `GH_`/`BWS_`-prefixed forms, because its lookbehind
+    treated the `_` in `GH_` as a word character. 104 lines across 15 files, and the
+    first thing that noticed was run 33690518859. secret-rename.py's own pattern has
+    carried an optional `(GH_|BWS_)` group for exactly this reason since it was
+    written; the repair script did not, and nothing compared them.
+
+    Set equality, not containment, in both directions: an orphan `GH_X` with no
+    SHADOW_NAMES entry is a leg that will never be compared, which is the silent half.
+    """
+    problems: list[str] = []
+    files = call_sites()
+    checked = 0
+    for f in files:
+        text = f.read_text(encoding="utf-8")
+        shadow = {w for line in SHADOW_NAMES_RE.findall(text) for w in line.split()}
+        gh = set(GH_ENV_RE.findall(text)) - GH_CLI_ENV
+        bws = set(BWS_TARGET_RE.findall(text)) - {"ACCESS_TOKEN"}
+        if not (shadow or gh or bws):
+            continue
+        checked += 1
+        rel = f.relative_to(ROOT)
+        problems.extend(
+            f"{rel}: SHADOW_NAMES lists {missing!r} but no GH_{missing} is exported. "
+            f"The compare step builds that name by concatenation, so it will report "
+            f"'shadow {missing} EMPTY -- nothing was compared' and fail the job"
+            for missing in sorted(shadow - gh)
+        )
+        problems.extend(
+            f"{rel}: exports GH_{orphan} but SHADOW_NAMES does not list {orphan!r}, "
+            f"so that leg is never compared -- a shadow that verifies nothing"
+            for orphan in sorted(gh - shadow)
+        )
+        problems.extend(
+            f"{rel}: SHADOW_NAMES lists {missing!r} but nothing is requested into "
+            f"BWS_{missing}; the Bitwarden side of that comparison cannot exist"
+            for missing in sorted(shadow - bws)
+        )
+        problems.extend(
+            f"{rel}: fetches into BWS_{orphan} but SHADOW_NAMES does not list "
+            f"{orphan!r}, so the value is fetched and never checked"
+            for orphan in sorted(bws - shadow)
+        )
+    return problems, checked
+
+
 def unmapped_read_problems(
     secrets: dict, exemptions: dict, alias: dict[str, str]
 ) -> tuple[list[str], int, set[str]]:
@@ -972,6 +1038,11 @@ def main() -> int:
         # row is invisible to 9 by construction (it only widens what 9 forgives).
         if not alias_problems:
             problems += preimage_problems(alias, secrets, read)
+        # 11. The shadow triple agrees. Independent of everything above: it is a
+        # text property of one file, and it is the one the compare step turns into
+        # a CI failure minutes after a push.
+        tri_problems, tri_files = shadow_triple_problems()
+        problems += tri_problems
 
     if problems:
         print(f"✗ bws map check ({len(problems)} problem(s)):", file=sys.stderr)
@@ -997,6 +1068,11 @@ def main() -> int:
         f"✓ reverse: all {n_read} org secret(s) a workflow reads are mapped, exempt, or "
         f"carry a pre-image row ({len(alias)} row(s)); the direction assertion 6 cannot "
         f"see, because it skips unmapped names"
+    )
+    print(
+        f"✓ shadow triple: SHADOW_NAMES, GH_* and BWS_* name the same set in all "
+        f"{tri_files} shadowed file(s) -- the compare step derives both sides by "
+        f"concatenation, so a name renamed in one place and not the others fails in CI"
     )
     if alias:
         print(

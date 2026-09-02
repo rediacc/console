@@ -57,7 +57,12 @@ jobs:
         with:
           secrets: |
             ALPHA_TOKEN > BWS_ALPHA_TOKEN
+      # SHADOW_NAMES is not decoration here: assertion 11 requires the three
+      # spellings to name the same set, because the compare step derives GH_$n
+      # and BWS_$n by concatenation. A leg with no SHADOW_NAMES entry is fetched
+      # and never checked, which is a shadow that verifies nothing.
       - env:
+          SHADOW_NAMES: ALPHA_TOKEN
           GH_ALPHA_TOKEN: ${{ secrets.ALPHA_TOKEN }}
         run: echo hi
 WF

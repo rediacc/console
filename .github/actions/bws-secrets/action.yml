@@ -18,6 +18,23 @@ description: >
   name absent from the map fails HERE, before sm-action runs. A malformed line
   fails here too.
 
+  AN ORG-SETTINGS PRECONDITION THAT NO IN-TREE GATE CAN SEE. rediacc/console
+  restricts which actions may run (`allowed_actions: selected`), and
+  bitwarden/sm-action is not owned by rediacc, not GitHub-owned, and not
+  Marketplace-verified -- so the first CI run of this composite failed with
+  "The action bitwarden/sm-action@1238aae8... is not allowed in rediacc/console"
+  before any secret was fetched (run 33690518859, 2026-09-02). Fixed by adding
+  ONE pattern to the repository allowlist, and deliberately the exact pinned SHA
+  rather than `bitwarden/*`:
+
+      bitwarden/sm-action@1238aae8fc64b212641190a9227c8a734ab1a793
+
+  So bumping the pin below is a TWO-PLACE change: this file and
+  /repos/rediacc/console/actions/permissions/selected-actions. It is recorded
+  here because it is invisible in the tree -- the failure surfaces only after a
+  push, and only as an action-resolution error that names no secret at all.
+  (account/renet/elite are `allowed_actions: all` and needed no change.)
+
   WHAT DOES NOT FAIL: a correct UUID whose stored VALUE is empty. sm-action
   exports "" without complaint, and the Worker's zod schema normalises "" to
   undefined and validates it. That is the deploy scripts' non-empty guards'

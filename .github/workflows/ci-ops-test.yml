@@ -55,7 +55,7 @@ jobs:
           secrets: |
             DOCKERHUB_TOKEN > BWS_DOCKERHUB_TOKEN
             DOCKERHUB_USERNAME > BWS_DOCKERHUB_USERNAME
-            GITHUB_APP_PRIVATE_KEY > BWS_GITHUB_APP_PRIVATE_KEY
+            GITHUB_APP_PRIVATE_KEY > BWS_APP_PRIVATE_KEY
 
       - name: Compare shadow secrets against GitHub
         shell: bash
@@ -63,7 +63,7 @@ jobs:
           SHADOW_NAMES: DOCKERHUB_TOKEN DOCKERHUB_USERNAME APP_PRIVATE_KEY
           GH_DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
           GH_DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
-          GH_GITHUB_APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
+          GH_APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
         run: |
           rc=0; read -ra names <<<"$SHADOW_NAMES"
           sha() { printf '%s' "${1-}" | { sha256sum 2>/dev/null || shasum -a 256; } | cut -d' ' -f1; }
