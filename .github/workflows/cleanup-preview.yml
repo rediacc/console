@@ -37,8 +37,8 @@ jobs:
       - name: Compare shadow secrets against GitHub
         shell: bash
         env:
-          SHADOW_NAMES: GITHUB_APP_PRIVATE_KEY STRIPE_SANDBOX_SECRET_KEY CLOUDFLARE_API_TOKEN
-          GH_GITHUB_APP_PRIVATE_KEY: ${{ secrets.GITHUB_APP_PRIVATE_KEY }}
+          SHADOW_NAMES: APP_PRIVATE_KEY STRIPE_SANDBOX_SECRET_KEY CLOUDFLARE_API_TOKEN
+          GH_GITHUB_APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
           GH_STRIPE_SANDBOX_SECRET_KEY: ${{ secrets.STRIPE_SANDBOX_SECRET_KEY }}
           GH_CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
         run: |
@@ -68,7 +68,7 @@ jobs:
         id: app-token
         with:
           client-id: ${{ vars.APP_ID }}
-          private-key: ${{ secrets.GITHUB_APP_PRIVATE_KEY }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
           preset: readonly
           repositories: console,account
 

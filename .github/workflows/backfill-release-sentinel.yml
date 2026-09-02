@@ -74,7 +74,7 @@ jobs:
         uses: ./.github/actions/app-token
         with:
           client-id: ${{ vars.APP_ID }}
-          private-key: ${{ secrets.GITHUB_APP_PRIVATE_KEY }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
           preset: readonly
           repositories: console
 
@@ -102,11 +102,11 @@ jobs:
       - name: Compare shadow secrets against GitHub
         shell: bash
         env:
-          SHADOW_NAMES: CLOUDFLARE_R2_ACCESS_KEY_ID CLOUDFLARE_R2_ENDPOINT CLOUDFLARE_R2_SECRET_ACCESS_KEY GITHUB_APP_PRIVATE_KEY
-          GH_CLOUDFLARE_R2_ACCESS_KEY_ID: ${{ secrets.CLOUDFLARE_R2_ACCESS_KEY_ID }}
-          GH_CLOUDFLARE_R2_ENDPOINT: ${{ secrets.CLOUDFLARE_R2_ENDPOINT }}
-          GH_CLOUDFLARE_R2_SECRET_ACCESS_KEY: ${{ secrets.CLOUDFLARE_R2_SECRET_ACCESS_KEY }}
-          GH_GITHUB_APP_PRIVATE_KEY: ${{ secrets.GITHUB_APP_PRIVATE_KEY }}
+          SHADOW_NAMES: CLOUDFLARE_R2_ACCESS_KEY_ID CLOUDFLARE_R2_ENDPOINT CLOUDFLARE_R2_SECRET_ACCESS_KEY APP_PRIVATE_KEY
+          GH_CLOUDFLARE_R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          GH_CLOUDFLARE_R2_ENDPOINT: ${{ secrets.R2_ENDPOINT }}
+          GH_CLOUDFLARE_R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          GH_GITHUB_APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
         run: |
           rc=0; read -ra names <<<"$SHADOW_NAMES"
           sha() { printf '%s' "${1-}" | { sha256sum 2>/dev/null || shasum -a 256; } | cut -d' ' -f1; }
@@ -164,9 +164,9 @@ jobs:
 
       - name: Write sentinel
         env:
-          CLOUDFLARE_R2_ACCESS_KEY_ID: ${{ secrets.CLOUDFLARE_R2_ACCESS_KEY_ID }}
-          CLOUDFLARE_R2_SECRET_ACCESS_KEY: ${{ secrets.CLOUDFLARE_R2_SECRET_ACCESS_KEY }}
-          CLOUDFLARE_R2_ENDPOINT: ${{ secrets.CLOUDFLARE_R2_ENDPOINT }}
+          CLOUDFLARE_R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          CLOUDFLARE_R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          CLOUDFLARE_R2_ENDPOINT: ${{ secrets.R2_ENDPOINT }}
           VERSION: ${{ inputs.version }}
           CHANNEL: ${{ inputs.channel }}
           COMMIT_SHA: ${{ steps.resolve.outputs.commit_sha }}
@@ -176,8 +176,8 @@ jobs:
       - name: Re-probe R2 sentinel state
         if: ${{ inputs.dry_run == false }}
         env:
-          CLOUDFLARE_R2_ACCESS_KEY_ID: ${{ secrets.CLOUDFLARE_R2_ACCESS_KEY_ID }}
-          CLOUDFLARE_R2_SECRET_ACCESS_KEY: ${{ secrets.CLOUDFLARE_R2_SECRET_ACCESS_KEY }}
-          CLOUDFLARE_R2_ENDPOINT: ${{ secrets.CLOUDFLARE_R2_ENDPOINT }}
+          CLOUDFLARE_R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          CLOUDFLARE_R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          CLOUDFLARE_R2_ENDPOINT: ${{ secrets.R2_ENDPOINT }}
           VERSION: ${{ inputs.version }}
         run: .ci/scripts/release/reprobe-r2-sentinel.sh

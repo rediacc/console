@@ -5,7 +5,7 @@ on:
     secrets:
       BWS_ACCESS_TOKEN:
         required: true
-      GITHUB_APP_PRIVATE_KEY:
+      APP_PRIVATE_KEY:
         required: true
       DOCKERHUB_USERNAME:
         required: true
@@ -60,10 +60,10 @@ jobs:
       - name: Compare shadow secrets against GitHub
         shell: bash
         env:
-          SHADOW_NAMES: DOCKERHUB_TOKEN DOCKERHUB_USERNAME GITHUB_APP_PRIVATE_KEY
+          SHADOW_NAMES: DOCKERHUB_TOKEN DOCKERHUB_USERNAME APP_PRIVATE_KEY
           GH_DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
           GH_DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
-          GH_GITHUB_APP_PRIVATE_KEY: ${{ secrets.GITHUB_APP_PRIVATE_KEY }}
+          GH_GITHUB_APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
         run: |
           rc=0; read -ra names <<<"$SHADOW_NAMES"
           sha() { printf '%s' "${1-}" | { sha256sum 2>/dev/null || shasum -a 256; } | cut -d' ' -f1; }
@@ -82,7 +82,7 @@ jobs:
         id: app-token
         with:
           client-id: ${{ vars.APP_ID }}
-          private-key: ${{ secrets.GITHUB_APP_PRIVATE_KEY }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
           preset: readonly
           repositories: console,renet,account,elite,homebrew-tap
 

@@ -59,12 +59,12 @@ jobs:
       - name: Compare shadow secrets against GitHub
         shell: bash
         env:
-          SHADOW_NAMES: GITHUB_APP_PRIVATE_KEY CLOUDFLARE_BREAKPOINT_TUNNEL_TOKEN CLOUDFLARE_R2_ACCESS_KEY_ID CLOUDFLARE_R2_ENDPOINT CLOUDFLARE_R2_SECRET_ACCESS_KEY CLOUDFLARE_API_TOKEN
-          GH_GITHUB_APP_PRIVATE_KEY: ${{ secrets.GITHUB_APP_PRIVATE_KEY }}
-          GH_CLOUDFLARE_BREAKPOINT_TUNNEL_TOKEN: ${{ secrets.CLOUDFLARE_BREAKPOINT_TUNNEL_TOKEN }}
-          GH_CLOUDFLARE_R2_ACCESS_KEY_ID: ${{ secrets.CLOUDFLARE_R2_ACCESS_KEY_ID }}
-          GH_CLOUDFLARE_R2_ENDPOINT: ${{ secrets.CLOUDFLARE_R2_ENDPOINT }}
-          GH_CLOUDFLARE_R2_SECRET_ACCESS_KEY: ${{ secrets.CLOUDFLARE_R2_SECRET_ACCESS_KEY }}
+          SHADOW_NAMES: APP_PRIVATE_KEY CLOUDFLARE_BREAKPOINT_TUNNEL_TOKEN CLOUDFLARE_R2_ACCESS_KEY_ID CLOUDFLARE_R2_ENDPOINT CLOUDFLARE_R2_SECRET_ACCESS_KEY CLOUDFLARE_API_TOKEN
+          GH_GITHUB_APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
+          GH_CLOUDFLARE_BREAKPOINT_TUNNEL_TOKEN: ${{ secrets.BREAKPOINT_TUNNEL_TOKEN }}
+          GH_CLOUDFLARE_R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          GH_CLOUDFLARE_R2_ENDPOINT: ${{ secrets.R2_ENDPOINT }}
+          GH_CLOUDFLARE_R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
           GH_CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
         run: |
           rc=0; read -ra names <<<"$SHADOW_NAMES"
@@ -84,7 +84,7 @@ jobs:
         id: app-token
         with:
           client-id: ${{ vars.APP_ID }}
-          private-key: ${{ secrets.GITHUB_APP_PRIVATE_KEY }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
           preset: housekeeping
           repositories: console,renet,elite,account
 
@@ -102,9 +102,9 @@ jobs:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
-          CLOUDFLARE_R2_ACCESS_KEY_ID: ${{ secrets.CLOUDFLARE_R2_ACCESS_KEY_ID }}
-          CLOUDFLARE_R2_SECRET_ACCESS_KEY: ${{ secrets.CLOUDFLARE_R2_SECRET_ACCESS_KEY }}
-          CLOUDFLARE_R2_ENDPOINT: ${{ secrets.CLOUDFLARE_R2_ENDPOINT }}
+          CLOUDFLARE_R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          CLOUDFLARE_R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          CLOUDFLARE_R2_ENDPOINT: ${{ secrets.R2_ENDPOINT }}
           # IN_FLIGHT_VERSION intentionally unset: nightly never overlaps a
           # release, so Phase 8d's sentinel+tag bijection is the correct guard.
           # The ${IN_FLIGHT_VERSION:-} default in the script no-ops when absent.
@@ -126,7 +126,7 @@ jobs:
         run: .ci/breakpoint/scripts/reap-breakpoint-orphans.sh ${{ (github.event_name == 'workflow_dispatch' && inputs.dry_run) && '--dry-run' || '' }}
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
-          CLOUDFLARE_BREAKPOINT_TUNNEL_TOKEN: ${{ secrets.CLOUDFLARE_BREAKPOINT_TUNNEL_TOKEN }}
+          CLOUDFLARE_BREAKPOINT_TUNNEL_TOKEN: ${{ secrets.BREAKPOINT_TUNNEL_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
 
   stripe-cleanup:
@@ -154,8 +154,8 @@ jobs:
       - name: Compare shadow secrets against GitHub
         shell: bash
         env:
-          SHADOW_NAMES: GITHUB_APP_PRIVATE_KEY STRIPE_SANDBOX_SECRET_KEY CLOUDFLARE_API_TOKEN
-          GH_GITHUB_APP_PRIVATE_KEY: ${{ secrets.GITHUB_APP_PRIVATE_KEY }}
+          SHADOW_NAMES: APP_PRIVATE_KEY STRIPE_SANDBOX_SECRET_KEY CLOUDFLARE_API_TOKEN
+          GH_GITHUB_APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
           GH_STRIPE_SANDBOX_SECRET_KEY: ${{ secrets.STRIPE_SANDBOX_SECRET_KEY }}
           GH_CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
         run: |
@@ -186,7 +186,7 @@ jobs:
         id: app-token-stripe
         with:
           client-id: ${{ vars.APP_ID }}
-          private-key: ${{ secrets.GITHUB_APP_PRIVATE_KEY }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
           preset: readonly
           repositories: console,account
 

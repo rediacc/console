@@ -125,6 +125,24 @@ NON_SUBMODULE_REPOS = ("private/growth", "private/generative")
 # `needs.x.outputs.vars.NAME` is a property path, not a variable reference, and
 # is left to the normal rename.
 VARS_CTX = re.compile(r"(?<![A-Za-z0-9_.])vars\s*[.\[]\s*['\"]?$", re.IGNORECASE)
+# `secrets.NAME` is a name that lives on GITHUB, not in this tree, and this tool
+# cannot rename it there: `gh secret set` cannot re-supply a value it is
+# forbidden to read. Rewriting the reference therefore points it at a secret
+# that does not exist -- and GitHub does not error on that, it substitutes the
+# EMPTY STRING, so the job runs and the credential is silently blank.
+#
+# THIS ALREADY HAPPENED, and it is why the guard exists. The first --apply
+# rewrote both sides of `NEW: ${{ secrets.OLD }}` across 267 expressions: every
+# app-token mint, both GPG signing steps, every R2 upload and the whole account
+# deploy would have run with "" . Two of the new names were worse than wrong,
+# they were impossible -- `gh secret set GITHUB_ZZ_PROBE` answers
+# `HTTP 422: Secret names must not start with GITHUB_.` (probed 2026-09-02).
+#
+# Same shape as VARS_CTX one line up, and for the same reason: a name this tool
+# does not own is reported, never rewritten. The surviving old spellings are
+# recorded in .ci/config/github-secret-preimage.json, which check_bws_map.py
+# asserts in both directions.
+SECRETS_CTX = re.compile(r"(?<![A-Za-z0-9_.])secrets\s*[.\[]\s*['\"]?$", re.IGNORECASE)
 
 INDIRECTION = re.compile(r"\$\{!|key_var=|_VAR=\"|\bSUFFIX\b.*\$\{|\$\{[A-Z_]+_\$\{SUFFIX\}")
 
@@ -156,7 +174,8 @@ class Rules:
             # autopilot.yml, whose own comment (:58-62) warns it is a variable
             # NOT a secret -- and this script rewrote that warning too. Every
             # autopilot token mint would have failed. Report, never rewrite.
-            if VARS_CTX.search(text[max(0, m.start() - 48) : m.start()]):
+            before = text[max(0, m.start() - 48) : m.start()]
+            if VARS_CTX.search(before) or SECRETS_CTX.search(before):
                 line = text.count("\n", 0, m.start()) + 1
                 variables.append((line, old, self.map[old]))
                 return m.group(0)

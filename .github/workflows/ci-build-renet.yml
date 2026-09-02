@@ -25,7 +25,7 @@ on:
       # (.github/actions/bws-secrets). Every caller must pass it.
       BWS_ACCESS_TOKEN:
         required: true
-      GITHUB_APP_PRIVATE_KEY:
+      APP_PRIVATE_KEY:
         required: false
       ACCOUNT_ED25519_PUBLIC_KEY:
         required: false
@@ -72,9 +72,9 @@ jobs:
       - name: Compare shadow secrets against GitHub
         shell: bash
         env:
-          SHADOW_NAMES: ACCOUNT_ED25519_PUBLIC_KEY GITHUB_APP_PRIVATE_KEY
+          SHADOW_NAMES: ACCOUNT_ED25519_PUBLIC_KEY APP_PRIVATE_KEY
           GH_ACCOUNT_ED25519_PUBLIC_KEY: ${{ secrets.ACCOUNT_ED25519_PUBLIC_KEY }}
-          GH_GITHUB_APP_PRIVATE_KEY: ${{ secrets.GITHUB_APP_PRIVATE_KEY }}
+          GH_GITHUB_APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
         run: |
           rc=0; read -ra names <<<"$SHADOW_NAMES"
           sha() { printf '%s' "${1-}" | { sha256sum 2>/dev/null || shasum -a 256; } | cut -d' ' -f1; }
@@ -93,7 +93,7 @@ jobs:
         id: app-token
         with:
           client-id: ${{ vars.APP_ID }}
-          private-key: ${{ secrets.GITHUB_APP_PRIVATE_KEY }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
           repositories: console,renet,account,elite,homebrew-tap
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -217,8 +217,8 @@ jobs:
       - name: Compare shadow secrets against GitHub
         shell: bash
         env:
-          SHADOW_NAMES: GITHUB_APP_PRIVATE_KEY
-          GH_GITHUB_APP_PRIVATE_KEY: ${{ secrets.GITHUB_APP_PRIVATE_KEY }}
+          SHADOW_NAMES: APP_PRIVATE_KEY
+          GH_GITHUB_APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
         run: |
           rc=0; read -ra names <<<"$SHADOW_NAMES"
           sha() { printf '%s' "${1-}" | { sha256sum 2>/dev/null || shasum -a 256; } | cut -d' ' -f1; }
@@ -237,7 +237,7 @@ jobs:
         id: app-token
         with:
           client-id: ${{ vars.APP_ID }}
-          private-key: ${{ secrets.GITHUB_APP_PRIVATE_KEY }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
           repositories: console,renet,account,elite,homebrew-tap
 
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -305,8 +305,8 @@ jobs:
       - name: Compare shadow secrets against GitHub
         shell: bash
         env:
-          SHADOW_NAMES: GITHUB_APP_PRIVATE_KEY
-          GH_GITHUB_APP_PRIVATE_KEY: ${{ secrets.GITHUB_APP_PRIVATE_KEY }}
+          SHADOW_NAMES: APP_PRIVATE_KEY
+          GH_GITHUB_APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
         run: |
           rc=0; read -ra names <<<"$SHADOW_NAMES"
           sha() { printf '%s' "${1-}" | { sha256sum 2>/dev/null || shasum -a 256; } | cut -d' ' -f1; }
@@ -325,7 +325,7 @@ jobs:
         id: app-token
         with:
           client-id: ${{ vars.APP_ID }}
-          private-key: ${{ secrets.GITHUB_APP_PRIVATE_KEY }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
           repositories: renet
 
       # Only the renet submodule is needed. A second full checkout with
@@ -405,8 +405,8 @@ jobs:
       - name: Compare shadow secrets against GitHub
         shell: bash
         env:
-          SHADOW_NAMES: GITHUB_APP_PRIVATE_KEY
-          GH_GITHUB_APP_PRIVATE_KEY: ${{ secrets.GITHUB_APP_PRIVATE_KEY }}
+          SHADOW_NAMES: APP_PRIVATE_KEY
+          GH_GITHUB_APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
         run: |
           rc=0; read -ra names <<<"$SHADOW_NAMES"
           sha() { printf '%s' "${1-}" | { sha256sum 2>/dev/null || shasum -a 256; } | cut -d' ' -f1; }
@@ -425,7 +425,7 @@ jobs:
         id: app-token
         with:
           client-id: ${{ vars.APP_ID }}
-          private-key: ${{ secrets.GITHUB_APP_PRIVATE_KEY }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
           repositories: console,renet
       # submodules: true would clone ALL five submodules and the least-privilege
       # token above can only see renet -- account/elite clones 404 and fail the

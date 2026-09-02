@@ -95,7 +95,7 @@ on:
       # (.github/actions/bws-secrets). Every caller must pass it.
       BWS_ACCESS_TOKEN:
         required: true
-      GITHUB_APP_PRIVATE_KEY:
+      APP_PRIVATE_KEY:
         required: false
       DOCKERHUB_USERNAME:
         required: false
@@ -163,8 +163,8 @@ jobs:
       - name: Compare shadow secrets against GitHub
         shell: bash
         env:
-          SHADOW_NAMES: GITHUB_APP_PRIVATE_KEY CLOUDFLARE_API_TOKEN
-          GH_GITHUB_APP_PRIVATE_KEY: ${{ secrets.GITHUB_APP_PRIVATE_KEY }}
+          SHADOW_NAMES: APP_PRIVATE_KEY CLOUDFLARE_API_TOKEN
+          GH_GITHUB_APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
           GH_CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
         run: |
           rc=0; read -ra names <<<"$SHADOW_NAMES"
@@ -184,7 +184,7 @@ jobs:
         id: app-token
         with:
           client-id: ${{ vars.APP_ID }}
-          private-key: ${{ secrets.GITHUB_APP_PRIVATE_KEY }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
           preset: readonly
           repositories: console,account
 
@@ -236,8 +236,8 @@ jobs:
       - name: Compare shadow secrets against GitHub
         shell: bash
         env:
-          SHADOW_NAMES: GITHUB_APP_PRIVATE_KEY
-          GH_GITHUB_APP_PRIVATE_KEY: ${{ secrets.GITHUB_APP_PRIVATE_KEY }}
+          SHADOW_NAMES: APP_PRIVATE_KEY
+          GH_GITHUB_APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
         run: |
           rc=0; read -ra names <<<"$SHADOW_NAMES"
           sha() { printf '%s' "${1-}" | { sha256sum 2>/dev/null || shasum -a 256; } | cut -d' ' -f1; }
@@ -264,7 +264,7 @@ jobs:
         id: app-token
         with:
           client-id: ${{ vars.APP_ID }}
-          private-key: ${{ secrets.GITHUB_APP_PRIVATE_KEY }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
           repositories: console,renet,account,elite,homebrew-tap
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -346,8 +346,8 @@ jobs:
       - name: Compare shadow secrets against GitHub
         shell: bash
         env:
-          SHADOW_NAMES: GITHUB_APP_PRIVATE_KEY DOCKERHUB_TOKEN DOCKERHUB_USERNAME
-          GH_GITHUB_APP_PRIVATE_KEY: ${{ secrets.GITHUB_APP_PRIVATE_KEY }}
+          SHADOW_NAMES: APP_PRIVATE_KEY DOCKERHUB_TOKEN DOCKERHUB_USERNAME
+          GH_GITHUB_APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
           GH_DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
           GH_DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
         run: |
@@ -368,7 +368,7 @@ jobs:
         id: app-token
         with:
           client-id: ${{ vars.APP_ID }}
-          private-key: ${{ secrets.GITHUB_APP_PRIVATE_KEY }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
           repositories: console,renet,account,elite,homebrew-tap
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -534,8 +534,8 @@ jobs:
       - name: Compare shadow secrets against GitHub
         shell: bash
         env:
-          SHADOW_NAMES: GITHUB_APP_PRIVATE_KEY DOCKERHUB_TOKEN DOCKERHUB_USERNAME
-          GH_GITHUB_APP_PRIVATE_KEY: ${{ secrets.GITHUB_APP_PRIVATE_KEY }}
+          SHADOW_NAMES: APP_PRIVATE_KEY DOCKERHUB_TOKEN DOCKERHUB_USERNAME
+          GH_GITHUB_APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
           GH_DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
           GH_DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
         run: |
@@ -556,7 +556,7 @@ jobs:
         id: app-token
         with:
           client-id: ${{ vars.APP_ID }}
-          private-key: ${{ secrets.GITHUB_APP_PRIVATE_KEY }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
           repositories: console,renet,account,elite,homebrew-tap
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -703,8 +703,8 @@ jobs:
       - name: Compare shadow secrets against GitHub
         shell: bash
         env:
-          SHADOW_NAMES: GITHUB_APP_PRIVATE_KEY DOCKERHUB_TOKEN DOCKERHUB_USERNAME
-          GH_GITHUB_APP_PRIVATE_KEY: ${{ secrets.GITHUB_APP_PRIVATE_KEY }}
+          SHADOW_NAMES: APP_PRIVATE_KEY DOCKERHUB_TOKEN DOCKERHUB_USERNAME
+          GH_GITHUB_APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
           GH_DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
           GH_DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
         run: |
@@ -725,7 +725,7 @@ jobs:
         id: app-token
         with:
           client-id: ${{ vars.APP_ID }}
-          private-key: ${{ secrets.GITHUB_APP_PRIVATE_KEY }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
           repositories: console,renet,account,elite,homebrew-tap
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -876,8 +876,8 @@ jobs:
       - name: Compare shadow secrets against GitHub
         shell: bash
         env:
-          SHADOW_NAMES: GITHUB_APP_PRIVATE_KEY DOCKERHUB_TOKEN DOCKERHUB_USERNAME
-          GH_GITHUB_APP_PRIVATE_KEY: ${{ secrets.GITHUB_APP_PRIVATE_KEY }}
+          SHADOW_NAMES: APP_PRIVATE_KEY DOCKERHUB_TOKEN DOCKERHUB_USERNAME
+          GH_GITHUB_APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
           GH_DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
           GH_DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
         run: |
@@ -898,7 +898,7 @@ jobs:
         id: app-token
         with:
           client-id: ${{ vars.APP_ID }}
-          private-key: ${{ secrets.GITHUB_APP_PRIVATE_KEY }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
           repositories: console,renet,account,elite,homebrew-tap
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -1046,8 +1046,8 @@ jobs:
       - name: Compare shadow secrets against GitHub
         shell: bash
         env:
-          SHADOW_NAMES: GITHUB_APP_PRIVATE_KEY DOCKERHUB_TOKEN DOCKERHUB_USERNAME
-          GH_GITHUB_APP_PRIVATE_KEY: ${{ secrets.GITHUB_APP_PRIVATE_KEY }}
+          SHADOW_NAMES: APP_PRIVATE_KEY DOCKERHUB_TOKEN DOCKERHUB_USERNAME
+          GH_GITHUB_APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
           GH_DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
           GH_DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
         run: |
@@ -1068,7 +1068,7 @@ jobs:
         id: app-token
         with:
           client-id: ${{ vars.APP_ID }}
-          private-key: ${{ secrets.GITHUB_APP_PRIVATE_KEY }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
           repositories: console,renet,account,elite,homebrew-tap
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -1222,8 +1222,8 @@ jobs:
       - name: Compare shadow secrets against GitHub
         shell: bash
         env:
-          SHADOW_NAMES: GITHUB_APP_PRIVATE_KEY DOCKERHUB_TOKEN DOCKERHUB_USERNAME
-          GH_GITHUB_APP_PRIVATE_KEY: ${{ secrets.GITHUB_APP_PRIVATE_KEY }}
+          SHADOW_NAMES: APP_PRIVATE_KEY DOCKERHUB_TOKEN DOCKERHUB_USERNAME
+          GH_GITHUB_APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
           GH_DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
           GH_DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
         run: |
@@ -1244,7 +1244,7 @@ jobs:
         id: app-token
         with:
           client-id: ${{ vars.APP_ID }}
-          private-key: ${{ secrets.GITHUB_APP_PRIVATE_KEY }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
           repositories: console,renet,account,elite,homebrew-tap
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -1458,8 +1458,8 @@ jobs:
       - name: Compare shadow secrets against GitHub
         shell: bash
         env:
-          SHADOW_NAMES: GITHUB_APP_PRIVATE_KEY DOCKERHUB_TOKEN DOCKERHUB_USERNAME
-          GH_GITHUB_APP_PRIVATE_KEY: ${{ secrets.GITHUB_APP_PRIVATE_KEY }}
+          SHADOW_NAMES: APP_PRIVATE_KEY DOCKERHUB_TOKEN DOCKERHUB_USERNAME
+          GH_GITHUB_APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
           GH_DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
           GH_DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
         run: |
@@ -1480,7 +1480,7 @@ jobs:
         id: app-token
         with:
           client-id: ${{ vars.APP_ID }}
-          private-key: ${{ secrets.GITHUB_APP_PRIVATE_KEY }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
           repositories: console,renet,account,elite,homebrew-tap
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -1647,8 +1647,8 @@ jobs:
       - name: Compare shadow secrets against GitHub
         shell: bash
         env:
-          SHADOW_NAMES: GITHUB_APP_PRIVATE_KEY DOCKERHUB_TOKEN DOCKERHUB_USERNAME
-          GH_GITHUB_APP_PRIVATE_KEY: ${{ secrets.GITHUB_APP_PRIVATE_KEY }}
+          SHADOW_NAMES: APP_PRIVATE_KEY DOCKERHUB_TOKEN DOCKERHUB_USERNAME
+          GH_GITHUB_APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
           GH_DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
           GH_DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
         run: |
@@ -1669,7 +1669,7 @@ jobs:
         id: app-token
         with:
           client-id: ${{ vars.APP_ID }}
-          private-key: ${{ secrets.GITHUB_APP_PRIVATE_KEY }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
           repositories: console,renet,account,elite,homebrew-tap
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -1829,8 +1829,8 @@ jobs:
       - name: Compare shadow secrets against GitHub
         shell: bash
         env:
-          SHADOW_NAMES: GITHUB_APP_PRIVATE_KEY DOCKERHUB_TOKEN DOCKERHUB_USERNAME
-          GH_GITHUB_APP_PRIVATE_KEY: ${{ secrets.GITHUB_APP_PRIVATE_KEY }}
+          SHADOW_NAMES: APP_PRIVATE_KEY DOCKERHUB_TOKEN DOCKERHUB_USERNAME
+          GH_GITHUB_APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
           GH_DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
           GH_DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
         run: |
@@ -1851,7 +1851,7 @@ jobs:
         id: app-token
         with:
           client-id: ${{ vars.APP_ID }}
-          private-key: ${{ secrets.GITHUB_APP_PRIVATE_KEY }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
           repositories: console,renet,account,elite,homebrew-tap
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -1991,8 +1991,8 @@ jobs:
       - name: Compare shadow secrets against GitHub
         shell: bash
         env:
-          SHADOW_NAMES: GITHUB_APP_PRIVATE_KEY
-          GH_GITHUB_APP_PRIVATE_KEY: ${{ secrets.GITHUB_APP_PRIVATE_KEY }}
+          SHADOW_NAMES: APP_PRIVATE_KEY
+          GH_GITHUB_APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
         run: |
           rc=0; read -ra names <<<"$SHADOW_NAMES"
           sha() { printf '%s' "${1-}" | { sha256sum 2>/dev/null || shasum -a 256; } | cut -d' ' -f1; }
@@ -2011,7 +2011,7 @@ jobs:
         id: app-token
         with:
           client-id: ${{ vars.APP_ID }}
-          private-key: ${{ secrets.GITHUB_APP_PRIVATE_KEY }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
           repositories: console,renet,account,elite,homebrew-tap
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -2066,12 +2066,12 @@ jobs:
       - name: Compare shadow secrets against GitHub
         shell: bash
         env:
-          SHADOW_NAMES: ACCOUNT_ED25519_PRIVATE_KEY ACCOUNT_ED25519_PUBLIC_KEY ACCOUNT_JWT_SECRET ACCOUNT_SERVER_API_KEY GITHUB_APP_PRIVATE_KEY STRIPE_SANDBOX_SECRET_KEY STRIPE_SANDBOX_WEBHOOK_SECRET
+          SHADOW_NAMES: ACCOUNT_ED25519_PRIVATE_KEY ACCOUNT_ED25519_PUBLIC_KEY ACCOUNT_JWT_SECRET ACCOUNT_SERVER_API_KEY APP_PRIVATE_KEY STRIPE_SANDBOX_SECRET_KEY STRIPE_SANDBOX_WEBHOOK_SECRET
           GH_ACCOUNT_ED25519_PRIVATE_KEY: ${{ secrets.ACCOUNT_ED25519_PRIVATE_KEY }}
           GH_ACCOUNT_ED25519_PUBLIC_KEY: ${{ secrets.ACCOUNT_ED25519_PUBLIC_KEY }}
           GH_ACCOUNT_JWT_SECRET: ${{ secrets.ACCOUNT_JWT_SECRET }}
           GH_ACCOUNT_SERVER_API_KEY: ${{ secrets.ACCOUNT_SERVER_API_KEY }}
-          GH_GITHUB_APP_PRIVATE_KEY: ${{ secrets.GITHUB_APP_PRIVATE_KEY }}
+          GH_GITHUB_APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
           GH_STRIPE_SANDBOX_SECRET_KEY: ${{ secrets.STRIPE_SANDBOX_SECRET_KEY }}
           GH_STRIPE_SANDBOX_WEBHOOK_SECRET: ${{ secrets.STRIPE_SANDBOX_WEBHOOK_SECRET }}
         run: |
@@ -2092,7 +2092,7 @@ jobs:
         id: app-token
         with:
           client-id: ${{ vars.APP_ID }}
-          private-key: ${{ secrets.GITHUB_APP_PRIVATE_KEY }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
           repositories: console,renet,account,elite,homebrew-tap
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -2195,8 +2195,8 @@ jobs:
       - name: Compare shadow secrets against GitHub
         shell: bash
         env:
-          SHADOW_NAMES: GITHUB_APP_PRIVATE_KEY DOCKERHUB_TOKEN DOCKERHUB_USERNAME
-          GH_GITHUB_APP_PRIVATE_KEY: ${{ secrets.GITHUB_APP_PRIVATE_KEY }}
+          SHADOW_NAMES: APP_PRIVATE_KEY DOCKERHUB_TOKEN DOCKERHUB_USERNAME
+          GH_GITHUB_APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
           GH_DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
           GH_DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
         run: |
@@ -2217,7 +2217,7 @@ jobs:
         id: app-token
         with:
           client-id: ${{ vars.APP_ID }}
-          private-key: ${{ secrets.GITHUB_APP_PRIVATE_KEY }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
           repositories: console,renet,account,elite,homebrew-tap
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:

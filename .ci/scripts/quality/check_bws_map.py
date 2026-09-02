@@ -62,6 +62,28 @@ each the converse of something already checked:
      the three was in the map -- the founding OTLP incident, reproduced by the
      migration built to prevent it.
 
+  9. REVERSE. Every org secret a workflow READS must be mapped, exempt, or
+     carry a pre-image row. Assertion 6 skips names the map lacks, so a workflow
+     that starts reading a brand-new org secret is invisible to 5, 6 and 7.
+ 10. THE SCAFFOLD DOES NOT ROT. The migration could not rename the secrets on
+     GitHub -- `gh secret set` cannot re-supply a value it is forbidden to read,
+     and two of the chosen names are illegal there outright (`gh secret set
+     GITHUB_ZZ_PROBE` -> `HTTP 422: Secret names must not start with GITHUB_.`,
+     probed 2026-09-02). So `${{ secrets.X }}`, and only there, keeps the old
+     spelling, and .ci/config/github-secret-preimage.json is the dictionary.
+     That file is a second escape hatch and a more dangerous one than the
+     allowlist: an allowlist entry says "do not look", a pre-image row says
+     "look somewhere ELSE", so a wrong row makes 9 report a clean resolution for
+     a read that resolves to nothing. Hence both legs: a row whose STORE name is
+     unmapped is refused, and so is a row whose GITHUB name nothing reads any
+     more. The file is temporary and is deleted with the org secrets, after
+     which 9 goes back to demanding an exact match.
+
+     It is here because it was NOT here: secret-rename.py rewrote both sides of
+     `NEW: ${{ secrets.OLD }}` across 267 expressions, GitHub substituted "" for
+     every one of them, and nothing said so. secret-rename.py now refuses a
+     `secrets.` context the way it already refused a `vars.` one.
+
 Control-first: the parser is proven on synthetic input in both directions
 before any verdict, and the failure direction is proven by a planted name.
 """
@@ -88,6 +110,7 @@ ACTION_REF = "./.github/actions/bws-secrets"
 
 EXEMPT = ROOT / ".ci" / "config" / "bws-unrequested.json"
 REACH = ROOT / ".ci" / "config" / "secret-reachability.json"
+PREIMAGE = ROOT / ".ci" / "config" / "github-secret-preimage.json"
 RENAME_TABLE = ROOT / "scripts" / "dev" / "secret-rename.py"
 REGIONS = ROOT / "regions.json"
 DEPLOY_DIR = ROOT / ".ci" / "scripts" / "deploy"
@@ -331,7 +354,100 @@ def represented_problems(secrets: dict, exemptions: dict) -> tuple[list[str], tu
     return problems, (len(seen & set(names)), len(names))
 
 
-def unmapped_read_problems(secrets: dict, exemptions: dict) -> tuple[list[str], int]:
+def load_preimage(path: Path | None = None) -> tuple[dict[str, str], list[str]]:
+    """{github name it is READ under} -> {name the store holds}, plus problems.
+
+    WHY THIS RELATION EXISTS AT ALL. The migration gave every credential one
+    name at every layer it controls. It does not control GitHub: the operator
+    ruled the org secrets are being DELETED, not renamed, and `gh secret set`
+    cannot re-supply a value it is forbidden to read, so renaming there means
+    retyping 45 values by hand. So `${{ secrets.X }}` -- and only there -- keeps
+    the old spelling, and this file is the dictionary.
+
+    It is SCAFFOLD, and the assertions below are what stop it becoming a second
+    exemption list. Every entry must earn its place twice: the store side must
+    be a name the map really holds, and the GitHub side must really be read by
+    a workflow. An entry that fails either is dead weight to be deleted, not a
+    licence. When the org secrets go, so does the file, and assertion 9 goes
+    back to demanding an exact match.
+    """
+    src = path or PREIMAGE
+    try:
+        doc = json.loads(src.read_text(encoding="utf-8"))
+    except FileNotFoundError:
+        # ABSENT IS LEGAL, and it is the END STATE. Once the org secrets are
+        # deleted every read is an exact match and there is nothing to alias.
+        return {}, []
+    except (OSError, ValueError) as exc:
+        return {}, [f"cannot read {src} ({exc}); assertion 9 is blind"]
+
+    alias: dict[str, str] = {}
+    problems: list[str] = []
+
+    def bind(github_name: str, store_name: str, where: str) -> None:
+        if github_name == store_name:
+            problems.append(
+                f"{where}: {github_name!r} maps to itself. An identity entry documents "
+                f"nothing and silently widens assertion 9 by one name -- delete the row"
+            )
+            return
+        if github_name in alias and alias[github_name] != store_name:
+            problems.append(
+                f"{where}: {github_name!r} is claimed by both {alias[github_name]!r} and "
+                f"{store_name!r}; one GitHub name cannot stand for two stored secrets"
+            )
+            return
+        alias[github_name] = store_name
+
+    for store_name, github_name in (doc.get("preimage") or {}).items():
+        if store_name.startswith("$"):
+            continue
+        bind(github_name, store_name, "preimage")
+    # renamed_away is the reverse shape: the STORE keeps the illegal name and
+    # the workflow layer uses GitHub's. `gh secret set GITHUB_ZZ_PROBE` answers
+    # HTTP 422 "Secret names must not start with GITHUB_." (probed 2026-09-02),
+    # so these are not deferred renames, they are impossible ones.
+    for store_name, github_name in (doc.get("renamed_away") or {}).items():
+        if store_name.startswith("$"):
+            continue
+        bind(github_name, store_name, "renamed_away")
+    for store_name, rec in (doc.get("regional_preimage") or {}).items():
+        if store_name.startswith("$") or not isinstance(rec, dict):
+            continue
+        bind(rec.get("github_name", ""), store_name, "regional_preimage")
+    return alias, problems
+
+
+def preimage_problems(alias: dict[str, str], secrets: dict, read: set[str]) -> list[str]:
+    """Assertion 10: no row of the pre-image file may be dead scaffold.
+
+    Both directions, because each hides a different mistake. A row whose STORE
+    name is not in the map is a typo that would make assertion 9 forgive a read
+    resolving to nothing -- the precise failure this whole file exists to stop.
+    A row whose GITHUB name nothing reads is a rename that already finished, and
+    leaving it behind is how a temporary list becomes permanent.
+    """
+    out = []
+    for github_name, store_name in sorted(alias.items()):
+        if store_name not in secrets:
+            out.append(
+                f"{PREIMAGE.relative_to(ROOT)} says GitHub's {github_name!r} stands for "
+                f"{store_name!r}, but the map holds no {store_name!r}. Either the store "
+                f"name is misspelled or the secret was never seeded -- as written, this "
+                f"row makes assertion 9 forgive a read that resolves to nothing"
+            )
+        if github_name not in read:
+            out.append(
+                f"{PREIMAGE.relative_to(ROOT)} carries {github_name!r}, but no workflow "
+                f"reads secrets.{github_name} any more. The rename it describes is done; "
+                f"delete the row so the file keeps naming only live scaffold"
+            )
+    return out
+
+
+def unmapped_read_problems(
+    secrets: dict, exemptions: dict, alias: dict[str, str]
+) -> tuple[list[str], int, set[str]]:
     """Assertion 9: an org secret a workflow READS must be in the map, or exempt.
 
     Assertion 6 checks the other direction and, by construction, only reaches names
@@ -342,26 +458,35 @@ def unmapped_read_problems(secrets: dict, exemptions: dict) -> tuple[list[str], 
 
     Scoped to secrets the reachability record says console can actually READ, so a
     typo'd `secrets.FOO` is left to actionlint rather than reported twice here.
+
+    `alias` is the pre-image relation (see load_preimage): during the cutover a
+    workflow reads GitHub's older spelling while the store holds the new one, so
+    a read is satisfied by EITHER. Aliasing is the one thing this gate must not
+    do generously -- every row is itself asserted by assertion 10, in both
+    directions, so a typo here cannot quietly forgive a read that resolves to
+    nothing.
     """
-    try:
-        rows = json.loads(REACH.read_text(encoding="utf-8"))["repos"]["console"]
-    except (OSError, ValueError, KeyError) as exc:
-        return ([f"cannot read {REACH.relative_to(ROOT)} ({exc}); assertion 9 is blind"], 0)
-    org = {k for k, v in rows.items() if isinstance(v, dict) and v.get("reachable")}
-    if not org:
-        return ([f"{REACH.relative_to(ROOT)} lists no reachable console secret; blind"], 0)
     read: set[str] = set()
     for f in call_sites():
         read |= set(USE_RE.findall(f.read_text(encoding="utf-8")))
     read -= NOT_SHADOWED
-    gap = sorted((read & org) - set(secrets) - set(exemptions))
+    try:
+        rows = json.loads(REACH.read_text(encoding="utf-8"))["repos"]["console"]
+    except (OSError, ValueError, KeyError) as exc:
+        return ([f"cannot read {REACH.relative_to(ROOT)} ({exc}); assertion 9 is blind"], 0, read)
+    org = {k for k, v in rows.items() if isinstance(v, dict) and v.get("reachable")}
+    if not org:
+        return ([f"{REACH.relative_to(ROOT)} lists no reachable console secret; blind"], 0, read)
+    resolved = set(secrets) | set(exemptions) | {n for n in read if alias.get(n) in secrets}
+    gap = sorted((read & org) - resolved)
     problems = [
         f"a workflow reads secrets.{n}, an org secret console can reach, but the map does "
-        f"not hold it and it carries no exemption -- at cutover the fetch resolves nothing "
+        f"not hold it, it carries no exemption, and {PREIMAGE.name} does not say which "
+        f"stored name it stands for -- at cutover the fetch resolves nothing "
         f"and the value ships EMPTY"
         for n in gap
     ]
-    return problems, len(read & org)
+    return problems, len(read & org), read
 
 
 def load_exemptions(path: Path | None = None) -> tuple[dict, list[str]]:
@@ -677,6 +802,66 @@ jobs:
     if not ok3:
         print(f"        got {got}")
         bad += 1
+
+    # ---- the pre-image relation, in BOTH directions --------------------------
+    # This is the second escape hatch, and it is younger and more dangerous than
+    # the allowlist: an allowlist entry says "do not look", while a pre-image row
+    # says "look somewhere ELSE", so a wrong row makes assertion 9 report a clean
+    # resolution for a read that resolves to nothing. Every way of writing one
+    # badly is planted, and the clean case is required to stay silent.
+    def probe_pre(doc: object) -> list[str]:
+        with tempfile.TemporaryDirectory() as d:
+            f = Path(d) / "pre.json"
+            f.write_text(json.dumps(doc), encoding="utf-8")
+            return load_preimage(f)[1]
+
+    pre_cases: list[tuple[str, object, str]] = [
+        (
+            "a pre-image row that maps a name to itself",
+            {"preimage": {"SAME_NAME": "SAME_NAME"}},
+            "maps to itself",
+        ),
+        (
+            "one GitHub name standing for two stored secrets",
+            {"preimage": {"STORE_A": "GH_SHARED", "STORE_B": "GH_SHARED"}},
+            "cannot stand for two",
+        ),
+    ]
+    for label, doc, needle in pre_cases:
+        got = probe_pre(doc)
+        hit = any(needle in g for g in got)
+        print(f"  {'PASS' if hit else 'FAIL'}  {label} is refused")
+        if not hit:
+            bad += 1
+            print(f"        got {got}")
+    ok_pre_clean = probe_pre({"preimage": {"STORE_A": "GH_OLD_A"}}) == []
+    print(f"  {'PASS' if ok_pre_clean else 'FAIL'}  CONTROL: a well-formed pre-image is silent")
+    if not ok_pre_clean:
+        bad += 1
+
+    # Assertion 10, both legs. A row is dead scaffold if its STORE side is not in
+    # the map (which would forgive a read resolving to nothing) or if its GITHUB
+    # side is no longer read (a finished rename left behind). Neither leg is
+    # visible to assertion 9, which is exactly why they are planted separately.
+    ok10a = any(
+        "the map holds no" in m
+        for m in preimage_problems({"GH_OLD": "STORE_TYPO"}, {"STORE_REAL": {}}, {"GH_OLD"})
+    )
+    print(f"  {'PASS' if ok10a else 'FAIL'}  a pre-image row naming an unmapped secret is refused")
+    if not ok10a:
+        bad += 1
+    ok10b = any(
+        "no workflow reads" in m
+        for m in preimage_problems({"GH_OLD": "STORE_REAL"}, {"STORE_REAL": {}}, set())
+    )
+    print(f"  {'PASS' if ok10b else 'FAIL'}  a pre-image row nothing reads any more is refused")
+    if not ok10b:
+        bad += 1
+    ok10c = preimage_problems({"GH_OLD": "STORE_REAL"}, {"STORE_REAL": {}}, {"GH_OLD"}) == []
+    print(f"  {'PASS' if ok10c else 'FAIL'}  CONTROL: a live pre-image row is silent")
+    if not ok10c:
+        bad += 1
+
     # Assertion 8's two pure-logic edges. The corpus scan itself shells out to
     # git and is exercised against the real tree; what is pinned here is the
     # underscore skip and the refusal to judge an empty name set -- together they
@@ -775,12 +960,18 @@ def main() -> int:
     # 5, 6, 7. Coverage -- the converse direction. See the docstring.
     exemptions, ex_problems = load_exemptions()
     problems += ex_problems
+    alias, alias_problems = load_preimage()
+    problems += alias_problems
     if not ex_problems:
         problems += coverage_problems(secrets, exemptions)
         rep_problems, represented = represented_problems(secrets, exemptions)
         problems += rep_problems
-        read_problems, n_read = unmapped_read_problems(secrets, exemptions)
+        read_problems, n_read, read = unmapped_read_problems(secrets, exemptions, alias)
         problems += read_problems
+        # 10. The scaffold does not rot. Run even when 9 found nothing: a dead
+        # row is invisible to 9 by construction (it only widens what 9 forgives).
+        if not alias_problems:
+            problems += preimage_problems(alias, secrets, read)
 
     if problems:
         print(f"✗ bws map check ({len(problems)} problem(s)):", file=sys.stderr)
@@ -803,9 +994,16 @@ def main() -> int:
         f"tree (console + submodules + sibling repos); the rest carry an exemption"
     )
     print(
-        f"✓ reverse: all {n_read} org secret(s) a workflow reads are mapped or exempt "
-        f"(the direction assertion 6 cannot see, because it skips unmapped names)"
+        f"✓ reverse: all {n_read} org secret(s) a workflow reads are mapped, exempt, or "
+        f"carry a pre-image row ({len(alias)} row(s)); the direction assertion 6 cannot "
+        f"see, because it skips unmapped names"
     )
+    if alias:
+        print(
+            f"✓ pre-image: all {len(alias)} row(s) name a mapped secret AND a name some "
+            f"workflow still reads -- none is dead scaffold. This file is temporary: it "
+            f"is deleted with the org secrets."
+        )
     print("  Blind spot: this proves NAMES resolve. Liveness in Bitwarden is proven at run time,")
     print(
         "  where a missing UUID fails the whole fetch; an EMPTY value is the deploy scripts' job."

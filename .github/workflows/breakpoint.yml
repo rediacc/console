@@ -199,9 +199,9 @@ jobs:
       - name: Compare shadow secrets against GitHub
         shell: bash
         env:
-          SHADOW_NAMES: GITHUB_APP_PRIVATE_KEY CLOUDFLARE_BREAKPOINT_TUNNEL_TOKEN AWS_SES_ACCESS_KEY_ID_EU AWS_SES_SECRET_ACCESS_KEY_EU
-          GH_GITHUB_APP_PRIVATE_KEY: ${{ secrets.GITHUB_APP_PRIVATE_KEY }}
-          GH_CLOUDFLARE_BREAKPOINT_TUNNEL_TOKEN: ${{ secrets.CLOUDFLARE_BREAKPOINT_TUNNEL_TOKEN }}
+          SHADOW_NAMES: APP_PRIVATE_KEY CLOUDFLARE_BREAKPOINT_TUNNEL_TOKEN AWS_SES_ACCESS_KEY_ID_EU AWS_SES_SECRET_ACCESS_KEY_EU
+          GH_GITHUB_APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
+          GH_CLOUDFLARE_BREAKPOINT_TUNNEL_TOKEN: ${{ secrets.BREAKPOINT_TUNNEL_TOKEN }}
           GH_AWS_SES_ACCESS_KEY_ID_EU: ${{ secrets.AWS_SES_ACCESS_KEY_ID_EU }}
           GH_AWS_SES_SECRET_ACCESS_KEY_EU: ${{ secrets.AWS_SES_SECRET_ACCESS_KEY_EU }}
         run: |
@@ -221,7 +221,7 @@ jobs:
       - name: Resolve tunnel mode
         id: mode
         env:
-          CLOUDFLARE_BREAKPOINT_TUNNEL_TOKEN: ${{ secrets.CLOUDFLARE_BREAKPOINT_TUNNEL_TOKEN }}
+          CLOUDFLARE_BREAKPOINT_TUNNEL_TOKEN: ${{ secrets.BREAKPOINT_TUNNEL_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
           BREAKPOINT_DEBUG_SHELL: ${{ inputs.debug-shell }}
           BREAKPOINT_DESKTOP: ${{ inputs.desktop }}
@@ -247,7 +247,7 @@ jobs:
         if: inputs.services != 'none'
         with:
           client-id: ${{ vars.APP_ID }}
-          private-key: ${{ secrets.GITHUB_APP_PRIVATE_KEY }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
           preset: readonly
           repositories: console,elite
 
@@ -306,7 +306,7 @@ jobs:
       - name: Start tunnel
         id: tunnel
         env:
-          CLOUDFLARE_BREAKPOINT_TUNNEL_TOKEN: ${{ secrets.CLOUDFLARE_BREAKPOINT_TUNNEL_TOKEN }}
+          CLOUDFLARE_BREAKPOINT_TUNNEL_TOKEN: ${{ secrets.BREAKPOINT_TUNNEL_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
           GITHUB_RUN_ID: ${{ github.run_id }}
           GITHUB_ACTOR: ${{ github.actor }}
@@ -359,7 +359,7 @@ jobs:
       - name: Teardown
         if: always()
         env:
-          CLOUDFLARE_BREAKPOINT_TUNNEL_TOKEN: ${{ secrets.CLOUDFLARE_BREAKPOINT_TUNNEL_TOKEN }}
+          CLOUDFLARE_BREAKPOINT_TUNNEL_TOKEN: ${{ secrets.BREAKPOINT_TUNNEL_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
           BP_LABEL: ${{ inputs.tunnel-label }}
           GITHUB_RUN_ID: ${{ github.run_id }}

@@ -41,6 +41,8 @@ import re
 import subprocess
 import sys
 
+import yaml
+
 # Refresh cadence. An allowlist can change without any commit touching this
 # repo, so a stale record is a failure rather than a warning.
 MAX_BASELINE_AGE_DAYS = 45
@@ -108,14 +110,50 @@ def repo_roots(root):
     return out
 
 
+def declared_secrets(text):
+    """Names a reusable workflow DECLARES under on.workflow_call.secrets.
+
+    Inside a reusable, `secrets.X` reads the DECLARED INPUT, not an org secret
+    of that name -- the caller supplies it, under whatever name the caller has.
+    Once the two name-spaces diverge (the org keeps `R2_ACCESS_KEY_ID` while the
+    workflow layer says `CLOUDFLARE_R2_ACCESS_KEY_ID`) that distinction stops
+    being academic: 18 declared inputs read as unreachable org secrets, which is
+    a false red on the callee for something only the CALLER can get wrong -- and
+    the caller's passthrough is still scanned, so nothing is lost by excluding
+    these.
+
+    Parsed, not regexed. `on` is the YAML boolean True after safe_load, which is
+    the one gotcha; both spellings are tried.
+    """
+    try:
+        doc = yaml.safe_load(text)
+    except yaml.YAMLError:
+        # A file this cannot parse is left ENTIRELY to the caller: returning an
+        # empty set here means every read in it is judged as an org secret,
+        # which is the conservative direction (noisy, never silent).
+        return set()
+    if not isinstance(doc, dict):
+        return set()
+    on = doc.get(True, doc.get("on"))
+    if not isinstance(on, dict):
+        return set()
+    call = on.get("workflow_call")
+    if not isinstance(call, dict):
+        return set()
+    sec = call.get("secrets")
+    return set(sec) if isinstance(sec, dict) else set()
+
+
 def references(repo_root):
-    """Every distinct secret name referenced by this repo's workflows."""
+    """Every distinct ORG secret name referenced by this repo's workflows."""
     wf = repo_root / ".github" / "workflows"
     names = set()
     files = sorted(wf.glob("*.yml")) + sorted(wf.glob("*.yaml"))
     for path in files:
-        for m in SECRET_RE.finditer(path.read_text(encoding="utf-8", errors="replace")):
-            if m.group(1) not in BUILTIN:
+        text = path.read_text(encoding="utf-8", errors="replace")
+        declared = declared_secrets(text)
+        for m in SECRET_RE.finditer(text):
+            if m.group(1) not in BUILTIN and m.group(1) not in declared:
                 names.add(m.group(1))
     return names, len(files)
 
@@ -256,6 +294,23 @@ def controls(record):
     ok = {"repos": {probe_repo: {"X": {"reachable": True, "via": "repo"}}}}
     if verdicts({probe_repo: {"X"}}, ok):
         return "planted a reachable secret and the detector complained anyway"
+
+    # The workflow_call exclusion, both directions. It is a way for a name to
+    # LEAVE the scan, so it is the one place this gate can be quietly narrowed
+    # to nothing: a bug that returned every name would make the whole check
+    # vacuous while still printing a reassuring count.
+    reusable = (
+        "on:\n  workflow_call:\n    secrets:\n      DECLARED_INPUT:\n"
+        "        required: true\njobs:\n  a:\n    steps:\n"
+        "      - run: echo ${{ secrets.DECLARED_INPUT }} ${{ secrets.NOT_DECLARED }}\n"
+    )
+    got = declared_secrets(reusable)
+    if got != {"DECLARED_INPUT"}:
+        return f"workflow_call declarations parsed as {sorted(got)}, want ['DECLARED_INPUT']"
+    if declared_secrets("on:\n  push:\njobs: {}\n"):
+        return "a workflow with no workflow_call reported declarations anyway"
+    if declared_secrets("this: [is not: valid: yaml"):
+        return "an unparseable workflow reported declarations instead of none"
     return None
 
 
