@@ -1,51 +1,65 @@
-## SESSION 74de73ca 2026-09-02T21:12:14Z
+## SESSION 74de73ca 2026-09-02T21:59:06Z
 
-## OPERATOR IS AWAY AND HAS AUTHORIZED LANDING (2026-09-02)
+## Operator is away; autonomous work is authorized
 
-Verbatim: *"Remove github secrets from github! I authorize! use gh cli tool. Then go for
-/pr-babysit I'll not be around. So, you're alone. You can also set bitwarden secrets there.
-don't worry about expire date... Also use cron for every 45 mins."*
+Verbatim: "I'll not be around. Be autonomous tonight, like defined in CLAUDE.md, if you
+got blocked somehow do not ask until I come." Earlier: "Remove github secrets from
+github! I authorize! use gh cli tool. Then go for /pr-babysit I'll not be around."
+Do NOT ask. Park a real operator decision as [?] with a DEFAULT and keep working.
 
-### THE ORDER IS NOT OPTIONAL — read before deleting anything
+## Where the work lives
 
-`agent/PLAN-github-secrets-removal.md`: **the Bitwarden layer HAS NEVER RUN.** The composite
-action is not in HEAD; not one of the 63 comparisons has executed. `gh secret` has no `get`,
-so deletion is irreversible for the ~10% not recoverable (Stripe, Dockerhub, App key are
-dashboard-or-reissue only). Deleting first would also break CI on the very PR being babysat.
+Branch 0902-1 in console AND all three submodules. Epic 24c98380, trailer
+`PR-TASK: 24c98380` on every commit. Snapshot at agent/pr/0902-1.md.
+console f90baf1d3 (migration, 196 files) + cb27c2b19 (the P0 repair);
+private/account 9e67932; private/renet c003e2a; private/elite f253283.
+NOTHING IS PUSHED -- the pre-push hook needs a green ci:quick on this exact tree.
 
-**commit -> PR -> shadow runs for the FIRST time -> every compare step green -> THEN delete.**
-The compare step fails on mismatch OR on either side empty, so a green run IS the proof.
+## The P0, fixed in cb27c2b19 -- read before touching workflows
 
-## Next action, in order
+secret-rename.py rewrote BOTH sides of `NEW: ${{ secrets.OLD }}`. The right side names a
+GITHUB secret and the operator ruled that rename skipped, so 267 expressions pointed at
+names that do not exist. GitHub substitutes "" rather than erroring: every app-token
+mint, both GPG signing steps, every R2 upload and the whole account deploy would have run
+blank, silently. Two names were IMPOSSIBLE -- `gh secret set GITHUB_ZZ_PROBE` answers
+HTTP 422 "Secret names must not start with GITHUB_." (probed; nothing created).
 
-1. **`#fce6882b`** — commit (account/renet/elite FIRST, then console with pointers bumped),
-   push a branch, open ONE draft PR. `.claude/hooks/pre-bash/block-second-open-pr.sh` enforces
-   one PR; `block-nondraft-pr-create` enforces draft.
-2. **`#fd865ed1`** — 45-minute cron to catch CI errors that do not reproduce locally.
-3. Babysit to green. Expect the shadow's first-ever execution to surface real mismatches;
-   a mismatch is the gate working, not a flake.
-4. **`#fbd35dba` — ONLY after green**: delete the 43 deletable org secrets with `gh`.
-   `scripts/dev/rename-org-secrets.sh` is CANCELLED (Part 22) — do not run it.
-5. **`#06f9fa63`** — setting Bitwarden secrets is authorized; token expiry is explicitly not a
-   blocker, the operator will rotate later.
-6. **`[>] #12b56f61`** — live calibration; do NOT record a `SHAPE_PROMPT` hash off a run that
-   is not fully green.
+.ci/config/github-secret-preimage.json is the committed dictionary and is SCAFFOLD,
+deleted when the org secrets are. Only the RIGHT side of a secrets read goes back, and
+only where the name is not a workflow_call DECLARATION in that file. 112 pre-image + 240
+renamed-away rewrites, 0 unresolvable reads left. check_bws_map.py assertion 10 refuses a
+row whose store name is unmapped AND one whose GitHub name nothing reads.
+secret-rename.py gained SECRETS_CTX beside its vars. guard.
 
-## State of the tree (all uncommitted until step 1)
+## What blocks the push
 
-One gate red on purpose: `check:ci-secret-reachability` (record names OLD org secrets; moot
-once they are deleted). All others green: `ci-bws-map` (assertions 1,5-9), `ci-workflow-gates`
-(CHECK 1-4), `ci-greenlight-closures`, `ci-builder-env-contract`, `ci-worker-secret-names`,
-`ci-actionlint`, `ci-workflows`, `ci-parity`, `ci-gate-manifest`, `ci-trap-registry`,
-`ci-breakpoint-drift`, `ci-autopilot-bp-align`, shellcheck, python-lint, test-judge-schema,
-and gate-tests bws-env / bws-map / workflow-contracts.
+ci:quick (289 gates) has two reds.
+1. check:ci-rubric-calibration: SHAPE_PROMPT recorded (absent). This session changed
+   wl_shapedup.py so it needs its FIRST live calibration. First attempt died at its 600s
+   timeout having printed NOTHING, because `| tail -30` swallowed it -- the wrapper trap.
+   Re-running unbuffered with split streams to .claude/jobs/74de73ca/tmp/calib.{out,err}.
+   Do NOT record a hash off a run that is not fully green; the gate's header says that
+   lie is invisible to it. #12b56f61
+2. check:ci-peer-deps: NOT MINE and cannot reproduce in CI. A peer's uncommitted
+   private/account/package.json bump put @opentelemetry/sdk-node@0.222.0 in node_modules
+   while packages/cli declares ^0.221.0; the committed package-lock.json still resolves
+   0.221.0 and is clean in git. Reported as request #153e2099. package.json,
+   package-lock.json and passkey.service.ts were excluded from my account commit on purpose.
 
-Built today: the secret rename APPLIED; assertions 5-9; CHECK 4 + `.github/external-callers.yml`;
-`check:ci-greenlight-closures`; `.ci/lib/bws-env.sh` + its gate-test; `test-bws-map.sh`;
-four guards on `secret-rename.py`. Recovered from my own dedupe that destroyed 26 workflow
-files. Audit fixed a fail-OPEN production defect (edge deploy would have used the LIVE Stripe
-key) and a total account-deploy failure (matrix missing three fields).
+## The plan-file work
 
-Five plans, none built: `PLAN-github-secrets-removal.md` (the sequencer),
-`PLAN-env-to-bitwarden-v2.md`, `PLAN-secret-names-one-to-one.md`,
-`PLAN-branch-aware-workflows.md`, `PLAN-secret-namespace-migration.md` Parts 17-22.
+agent/PLAN-plan-file-lifecycle.md (Status: ready) carries the design: a ledger gate with
+13 enumerated cheats, a 33-day housekeeping gate, Stop-hook S1-S4. Tracked as #372da8e7.
+PLAN-stop-plan-box-enforcement.md is superseded by it. The audit was applied: 13 boxes
+ticked (24 -> 37 done), 6 PARTIAL, 5 parked [?], every tick carrying a file:line.
+Two measurements not to re-derive: this checkout is SHALLOW so per-path git log returns
+the graft date (an age gate on it is vacuous and GREEN), and 5 of 93 raw open-box hits
+are false positives, so the gate must import wl_planfid.plan_tasks rather than grep.
+
+## Next action
+
+Read .claude/jobs/74de73ca/tmp/calib.out and calib.err SEPARATELY. If fully green, record
+the SHAPE_PROMPT hash in .ci/config/rubric-calibration.json and tick #12b56f61; if not,
+leave the hash and say which fixtures flipped. Then re-run ci:quick, push all four repos,
+open ONE DRAFT PR, and babysit to green. Org secrets are deleted only after every shadow
+compare step is green (#fbd35dba).

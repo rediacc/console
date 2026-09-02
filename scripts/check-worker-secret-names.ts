@@ -71,9 +71,30 @@ const PUSHED_KEY = /^\s+([A-Z][A-Z0-9_]*):\s*\$/gm;
 // so the gate extracted 84 of 85 and the `size < 40` floor is far too low to notice.
 // A one-key loss here is a latent FALSE POSITIVE: the day a builder pushes that name,
 // the gate calls a correct push line undeclared.
-const EXPECTED_SCHEMA_KEYS = 85;
-
 const SCHEMA_KEY = /^\s{2}([A-Z][A-Z0-9_]*):\s*(?:z\.|z$|boolFromEnv)/gm;
+
+/**
+ * Every two-space UPPERCASE key in the schema file, whatever its value looks like.
+ *
+ * THE ORACLE FOR THE ONE ABOVE, and it exists because a hand-maintained count is a
+ * count nobody maintains. This used to be `EXPECTED_SCHEMA_KEYS = 85`, a ratchet a
+ * session was trusted to bump in the same commit -- so the gate's protection against
+ * "the extractor silently lost a key" was itself editable by the session losing it.
+ * Deriving the number from the file removes the trust: adding a key on purpose moves
+ * BOTH counts and needs no edit, while a value shape the strict regex cannot read
+ * moves only one and reds.
+ *
+ * `^ {2}(?! )` and not `^\s{2}`: the latter matches the first two spaces of a
+ * FOUR-space nested line, which would inflate this side and make the comparison
+ * report a loss that is not there. The strict regex above is anchored by `z.` /
+ * `boolFromEnv` so it never had that problem; this one has no anchor and needs the
+ * negative lookahead instead.
+ */
+const ANY_SCHEMA_LINE = /^ {2}(?! )([A-Z][A-Z0-9_]*):/gm;
+
+export function schemaLineKeys(text: string): Set<string> {
+  return new Set([...text.matchAll(ANY_SCHEMA_LINE)].map((m) => m[1]));
+}
 
 export function pushedKeys(text: string): string[] {
   return [...text.matchAll(PUSHED_KEY)].map((m) => m[1]);
@@ -102,35 +123,63 @@ export function schemaKeys(text: string): Set<string> {
     console.error('✗ instrument control did not fire: a pushed key absent from the schema was not detectable.');
     process.exit(1);
   }
+  // And the ORACLE, in both directions. It replaced a hand-maintained count, so it
+  // has to be proven to (a) agree with the strict extractor on a well-formed schema
+  // and (b) DISAGREE on the exact shape that defeated the old regex -- a zod chain
+  // wrapped onto a second line. Without (b) the comparison could be trivially equal
+  // for a reason unrelated to the defect it is here to catch.
+  // NOTE ON THE FIXTURE: a chain wrapped as `KEY:\n    z.string()` is NOT the defect
+  // shape -- SCHEMA_KEY's `\s*` crosses the newline, so it reads that fine, and the
+  // historical `MIN_CLI_VERSION: z` case is covered by the `z$` alternative. The shape
+  // that still defeats it is a value that is neither `z.` nor `boolFromEnv`: a new
+  // helper added to env.ts. That is what this plants, because a control must plant the
+  // defect the comparison can actually catch.
+  const helper =
+    'export const envSchema = z.object({\n  GOOD_KEY: z.string(),\n  HELPER_KEY: portFromEnv(8080),\n    NESTED_NOT_A_KEY: z.string(),\n});';
+  const strict = schemaKeys(helper);
+  const loose = schemaLineKeys(helper);
+  if (loose.has('NESTED_NOT_A_KEY')) {
+    console.error(`✗ instrument control: the schema-line oracle counted a FOUR-space nested line, so it would inflate every comparison. Read ${JSON.stringify([...loose])}.`);
+    process.exit(1);
+  }
+  if (!loose.has('HELPER_KEY') || strict.has('HELPER_KEY')) {
+    console.error('✗ instrument control did not fire: a key declared with a helper the strict regex does not know must be seen by the oracle and MISSED by the extractor, or the comparison below proves nothing.');
+    process.exit(1);
+  }
 }
 
-const schema = schemaKeys(readFileSync(join(ROOT, SCHEMA), 'utf8'));
+const schemaText = readFileSync(join(ROOT, SCHEMA), 'utf8');
+const schema = schemaKeys(schemaText);
+const schemaLines = schemaLineKeys(schemaText);
 // 80, not 40. The old floor was half the population, which is a guard against the
 // extractor finding NOTHING and nothing else -- it sat happily at 84 of 85 while a
-// prettier-wrapped chain silently dropped a key. Be honest about the limit: no floor
-// catches a one-key loss without being exact, and exact breaks the day a key is added
-// on purpose. What catches that class is the regex tolerating a wrapped value, above.
+// prettier-wrapped chain silently dropped a key. A floor guards against finding
+// nothing; only the comparison below guards against finding ALMOST everything.
 if (schema.size < 80) {
-  console.error(`✗ ${SCHEMA} yielded only ${schema.size} keys (${EXPECTED_SCHEMA_KEYS} expected). The schema extractor lost the file; refusing a verdict.`);
+  console.error(`✗ ${SCHEMA} yielded only ${schema.size} keys. The schema extractor lost the file; refusing a verdict.`);
   process.exit(1);
 }
-// AND THE EXACT COUNT, because the floor above provably cannot do this job. Measured:
-// with the pre-2026-09-02 regex the extractor yielded 84 of 85 -- a prettier-wrapped
-// `MIN_CLI_VERSION: z` -- and sailed past a floor of 80 reporting "84 schema keys" as
-// though that were the answer. A floor guards against finding NOTHING; only an exact
-// count guards against finding ALMOST everything, which is the shape that produces a
-// false positive on the day a builder starts pushing the dropped key.
+// AND THE EXACT COUNT, DERIVED FROM THE FILE rather than typed into this one.
+// Measured: with the pre-2026-09-02 regex the extractor yielded 84 of 85 -- a
+// prettier-wrapped `MIN_CLI_VERSION: z` -- and sailed past a floor of 80 reporting
+// "84 schema keys" as though that were the answer.
 //
-// This number is a RATCHET, not a constant: change env.ts's key set on purpose and
-// update it in the same commit. That is the deliberate step the old prose "85 expected"
-// only pretended to be.
-if (schema.size !== EXPECTED_SCHEMA_KEYS) {
+// This used to be `EXPECTED_SCHEMA_KEYS = 85`, a ratchet a session was trusted to bump
+// in the same commit. That put the protection against "the extractor silently lost a
+// key" inside the reach of the session losing it: editing the number is exactly as easy
+// as editing the schema, and a red that says "expected 85, got 84" invites the wrong
+// one. Comparing against a SECOND reading of the same file removes the trust. A key
+// added on purpose moves both counts and needs no edit here; a value shape the strict
+// regex cannot read moves only one, and that is the whole defect class.
+const lost = [...schemaLines].filter((k) => !schema.has(k));
+if (lost.length > 0) {
   console.error(
-    `✗ ${SCHEMA} yielded ${schema.size} keys, expected exactly ${EXPECTED_SCHEMA_KEYS}.\n` +
-      `  If you added or removed a schema key on purpose, update EXPECTED_SCHEMA_KEYS in\n` +
-      `  ${'scripts/check-worker-secret-names.ts'} in the same change. If you did not, the\n` +
-      `  extractor has silently lost a key -- check whether a long zod chain wrapped onto a\n` +
-      `  second line, which is exactly how it lost MIN_CLI_VERSION.`
+    `✗ ${SCHEMA} declares ${schemaLines.size} key(s) but the extractor read only ${schema.size}.\n` +
+      `  Missed: ${lost.join(', ')}\n` +
+      `  The extractor has silently lost a key, which is a latent FALSE POSITIVE: the day\n` +
+      `  a builder pushes one of these names, this gate calls a correct push line\n` +
+      `  undeclared. Check whether a long zod chain wrapped onto a second line, which is\n` +
+      `  exactly how it lost MIN_CLI_VERSION -- SCHEMA_KEY must tolerate the new shape.`
   );
   process.exit(1);
 }

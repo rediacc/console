@@ -441,6 +441,16 @@ jobs:
           PR_NUMBER: ${{ github.event.pull_request.number }}
           GITHUB_REPOSITORY: ${{ github.repository }}
 
+      # Here, and not in quality-branch, because assertions A0 and A6 read only
+      # the working tree -- so this lane's depth-1 checkout is enough AND the
+      # gate keeps running on the nightly, which quality-branch (pull_request
+      # only) does not. When A1 lands -- no box may VANISH between base and head
+      # -- it needs a merge-base and the step moves. See
+      # agent/PLAN-plan-file-lifecycle.md.
+      - name: Plan checkbox ledger
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: npm run check:ci-plan-boxes
+
   # ============================================================================
   # L2 BRANCH -- read-only, and kept in its own job.
   # It used to be the ONLY `push`-preset app token in CI, because
@@ -2047,7 +2057,21 @@ jobs:
       # secrets each workflow references. The network lives only in --refresh.
       - name: Secret reachability
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: .ci/scripts/quality/check_secret_reachability.py
+        # PyYAML, pinned and asserted, for the same reason the two static-lane
+        # steps install it: this gate must know which secret reads are a
+        # reusable's own DECLARED INPUTS rather than org secrets, and that lives
+        # in nested `on.workflow_call.secrets`. (Naming the read form literally
+        # here made CHECK 2 in check-workflow-gates.sh match its own prose and
+        # report this file as reading an undeclared secret -- a detector
+        # matching a comment about it is a documented trap in TRAPS.md.)
+        # Hand-rolling a parser for nested
+        # YAML is the correctness risk a gate cannot afford, and a
+        # yaml-if-available-else-regex fallback would make the gate mean
+        # different things here and locally.
+        run: |
+          python3 -m pip install --user --disable-pip-version-check "PyYAML==${PYYAML_VERSION}"
+          python3 -c "import yaml; print('PyYAML', yaml.__version__)"
+          .ci/scripts/quality/check_secret_reachability.py
 
       # The Bitwarden-side replacement for check-workflow-gates CHECK 2, which
       # goes structurally vacuous once secrets arrive as $GITHUB_ENV injections.

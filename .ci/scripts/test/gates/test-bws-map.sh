@@ -30,8 +30,8 @@ GATE="$REPO_ROOT/.ci/scripts/quality/check_bws_map.py"
 fixture() {
     local d="$1"
     mkdir -p "$d/.ci/config" "$d/.ci/scripts/deploy" "$d/.github/workflows" \
-             "$d/.github/actions" "$d/scripts/dev"
-    ( cd "$d" && git init -q . )
+        "$d/.github/actions" "$d/scripts/dev"
+    (cd "$d" && git init -q .)
     cat >"$d/.ci/config/bws-secret-map.json" <<'MAP'
 { "refreshed_at": "2099-01-01T00:00:00Z", "project": "p",
   "secrets": { "ALPHA_TOKEN": { "id": "aaaaaaaa-0000-4000-8000-000000000001" },
@@ -72,35 +72,42 @@ m["secrets"]["PREFIX_EU"] = {"id": "aaaaaaaa-0000-4000-8000-000000000003"}
 (d / ".ci/scripts/deploy/build.sh").write_text(
     'x_var="PREFIX_${SUFFIX}"\n# ORPHAN_TOKEN PREFIX_EU are named here so the corpus scan sees them\n')
 PY
-    ( cd "$d" && git add -A && git -c user.email=t@t -c user.name=t commit -qm x )
+    (cd "$d" && git add -A && git -c user.email=t@t -c user.name=t commit -qm x)
 }
 
 run_gate() {
-    ( set +e
-      BWS_MAP_ROOT="$1" BWS_MIN_MAP_ENTRIES=1 BWS_MIN_CALLERS=1 \
-        python3 "$GATE" 2>&1
-      echo "rc=$?" )
+    (
+        set +e
+        BWS_MAP_ROOT="$1" BWS_MIN_MAP_ENTRIES=1 BWS_MIN_CALLERS=1 \
+            python3 "$GATE" 2>&1
+        echo "rc=$?"
+    )
 }
 
 test_clean_fixture_passes() {
-    local d="$1"; fixture "$d"
-    local out; out="$(run_gate "$d")"
+    local d="$1"
+    fixture "$d"
+    local out
+    out="$(run_gate "$d")"
     assert_contains "$out" "rc=0" "a coherent fixture tree must pass, or every case below proves nothing"
     log_pass "CONTROL: a coherent fixture tree passes"
 }
 
 test_unexempted_orphan_reds() {
-    local d="$1"; fixture "$d"
+    local d="$1"
+    fixture "$d"
     echo '{ "exemptions": { "UNRELATED": { "kind": "no-github-twin", "reason": "x" } } }' \
         >"$d/.ci/config/bws-unrequested.json"
-    local out; out="$(run_gate "$d")"
+    local out
+    out="$(run_gate "$d")"
     assert_contains "$out" "ORPHAN_TOKEN" "assertion 5 names the unexempted mapped name"
     assert_contains "$out" "rc=1" "and fails"
     log_pass "assertion 5: a mapped name nobody requests and nobody exempts fails"
 }
 
 test_twin_appearing_kills_the_exemption() {
-    local d="$1"; fixture "$d"
+    local d="$1"
+    fixture "$d"
     python3 - "$d" <<'PY'
 import json, pathlib, sys
 p = pathlib.Path(sys.argv[1]) / ".ci/config/secret-reachability.json"
@@ -108,15 +115,18 @@ d = json.loads(p.read_text())
 d["repos"]["console"]["ORPHAN_TOKEN"] = {"reachable": True, "via": "org:all"}
 p.write_text(json.dumps(d))
 PY
-    local out; out="$(run_gate "$d")"
+    local out
+    out="$(run_gate "$d")"
     assert_contains "$out" "IS a console-reachable org secret" "the re-derivation notices the twin appeared"
     assert_contains "$out" "rc=1" "and fails"
     log_pass "no-github-twin is RE-DERIVED: creating the org secret ends the exemption"
 }
 
 test_empty_tree_is_not_a_pass() {
-    local d="$1"; mkdir -p "$d/empty"
-    local out; out="$(run_gate "$d/empty")"
+    local d="$1"
+    mkdir -p "$d/empty"
+    local out
+    out="$(run_gate "$d/empty")"
     assert_contains "$out" "rc=1" "an empty tree must fail, or BWS_MAP_ROOT is an escape hatch"
     log_pass "the fixture override cannot be used to pass vacuously"
 }

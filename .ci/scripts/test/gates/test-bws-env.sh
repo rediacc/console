@@ -41,20 +41,25 @@ MAP
 }
 
 run_load() {
-    local d="$1"; shift
-    ( set +e
-      export BWS_ENV_ROOT="$d" BWS_BIN="$d/bin/bws" PATH="$d/bin:$PATH"
-      # shellcheck disable=SC1090
-      source "$HELPER"
-      bws_env_load "$@" 2>&1
-      echo "rc=$?" )
+    local d="$1"
+    shift
+    (
+        set +e
+        export BWS_ENV_ROOT="$d" BWS_BIN="$d/bin/bws" PATH="$d/bin:$PATH"
+        # shellcheck disable=SC1090
+        source "$HELPER"
+        bws_env_load "$@" 2>&1
+        echo "rc=$?"
+    )
 }
 
 BOTH='[{"key":"ALPHA_TOKEN","value":"a-val"},{"key":"BETA_TOKEN","value":"b-val"}]'
 
 test_loads_both() {
-    local d="$1"; fixture "$d" "$BOTH"
-    local out; out="$(BWS_ACCESS_TOKEN=t run_load "$d")"
+    local d="$1"
+    fixture "$d" "$BOTH"
+    local out
+    out="$(BWS_ACCESS_TOKEN=t run_load "$d")"
     assert_contains "$out" "exported 2 secret(s)" "a complete store exports every mapped name"
     assert_contains "$out" "rc=0" "and succeeds"
     assert_not_contains "$out" "a-val" "NEVER prints a value"
@@ -62,8 +67,10 @@ test_loads_both() {
 }
 
 test_named_subset() {
-    local d="$1"; fixture "$d" "$BOTH"
-    local out; out="$(BWS_ACCESS_TOKEN=t run_load "$d" ALPHA_TOKEN)"
+    local d="$1"
+    fixture "$d" "$BOTH"
+    local out
+    out="$(BWS_ACCESS_TOKEN=t run_load "$d" ALPHA_TOKEN)"
     assert_contains "$out" "exported 1 secret(s)" "an explicit list fetches only those"
     log_pass "an explicit name list is honoured"
 }
@@ -71,24 +78,30 @@ test_named_subset() {
 test_empty_value_is_absent() {
     # The whole point: sm-action exports "" without complaint and zod strips an
     # unknown key, so a blank ships a broken feature that still returns 200.
-    local d="$1"; fixture "$d" '[{"key":"ALPHA_TOKEN","value":""},{"key":"BETA_TOKEN","value":"b"}]'
-    local out; out="$(BWS_ACCESS_TOKEN=t run_load "$d")"
+    local d="$1"
+    fixture "$d" '[{"key":"ALPHA_TOKEN","value":""},{"key":"BETA_TOKEN","value":"b"}]'
+    local out
+    out="$(BWS_ACCESS_TOKEN=t run_load "$d")"
     assert_contains "$out" "ALPHA_TOKEN" "the empty name is reported"
     assert_contains "$out" "rc=1" "an empty value FAILS rather than exporting a blank"
     log_pass "an empty stored value is treated as absent, and fails"
 }
 
 test_missing_name_fails() {
-    local d="$1"; fixture "$d" '[{"key":"ALPHA_TOKEN","value":"a"}]'
-    local out; out="$(BWS_ACCESS_TOKEN=t run_load "$d")"
+    local d="$1"
+    fixture "$d" '[{"key":"ALPHA_TOKEN","value":"a"}]'
+    local out
+    out="$(BWS_ACCESS_TOKEN=t run_load "$d")"
     assert_contains "$out" "BETA_TOKEN" "the missing name is named"
     assert_contains "$out" "rc=1" "a mapped name the store lacks fails"
     log_pass "a mapped name absent from the store fails, naming it"
 }
 
 test_no_token_refuses() {
-    local d="$1"; fixture "$d" "$BOTH"
-    local out; out="$(run_load "$d")"
+    local d="$1"
+    fixture "$d" "$BOTH"
+    local out
+    out="$(run_load "$d")"
     assert_contains "$out" "BWS_ACCESS_TOKEN is not set" "says which credential is missing"
     assert_contains "$out" "cannot come from Bitwarden" "and why it cannot be fetched"
     assert_contains "$out" "rc=1" "refuses"
@@ -96,9 +109,12 @@ test_no_token_refuses() {
 }
 
 test_bws_failure_is_not_silent() {
-    local d="$1"; fixture "$d" "$BOTH"
-    printf '#!/bin/bash\nexit 1\n' >"$d/bin/bws"; chmod +x "$d/bin/bws"
-    local out; out="$(BWS_ACCESS_TOKEN=t run_load "$d")"
+    local d="$1"
+    fixture "$d" "$BOTH"
+    printf '#!/bin/bash\nexit 1\n' >"$d/bin/bws"
+    chmod +x "$d/bin/bws"
+    local out
+    out="$(BWS_ACCESS_TOKEN=t run_load "$d")"
     assert_contains "$out" "secret list failed" "a failing bws is reported"
     assert_contains "$out" "expired" "and points at the likeliest cause"
     assert_contains "$out" "rc=1" "refuses"
@@ -107,10 +123,12 @@ test_bws_failure_is_not_silent() {
 
 test_never_falls_back_to_env() {
     # A silent fallback is how a fetch that stopped working keeps passing locally.
-    local d="$1"; fixture "$d" '[{"key":"BETA_TOKEN","value":"b"}]'
+    local d="$1"
+    fixture "$d" '[{"key":"BETA_TOKEN","value":"b"}]'
     mkdir -p "$d/private/account"
     echo 'ALPHA_TOKEN=from-dot-env' >"$d/private/account/.env"
-    local out; out="$(BWS_ACCESS_TOKEN=t run_load "$d")"
+    local out
+    out="$(BWS_ACCESS_TOKEN=t run_load "$d")"
     assert_contains "$out" "rc=1" "an absent name still fails even when .env has it"
     assert_not_contains "$out" "from-dot-env" "and the local copy is never read"
     log_pass "no silent fallback to .env"

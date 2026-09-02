@@ -8,12 +8,15 @@ Scope: design only. Nothing here was executed against Bitwarden, AWS, Cloudflare
 
 ## Tasks
 
-- [ ] Verify empirically that `bws secret delete` soft-deletes to Trash and that `bws secret list` excludes trashed rows (throwaway secret in a scratch project). Everything below Part 4 depends on it.
+- [?] Verify empirically that `bws secret delete` soft-deletes to Trash and that `bws secret list` excludes trashed rows (throwaway secret in a scratch project). Everything below Part 4 depends on it.
+      AUDIT: UNVERIFIABLE from the tree: a live-store experiment leaves no in-tree artifact and `bws` is not installed here. Proof would be a recorded result committed under docs/ or noted in .ci/config/bws-token-expiry.json.
 - [ ] Mint machine accounts `mc-ci-read` (read, ci-shared) and `mc-rotate` (read/write ci-shared + read admin-bootstrap); replace the token expiring 2026-09-08 and update the GitHub org secret `BWS_ACCESS_TOKEN`.
 - [ ] Create the `admin-bootstrap` SM project and seed the 5 names ci-shared lacks (`UPSTREAM_API_KEY`; `AWS_ADMIN_ACCESS_KEY_ID`, `AWS_ADMIN_SECRET_ACCESS_KEY`, `CLOUDFLARE_GLOBAL_API_KEY`, `CLOUDFLARE_ACCOUNT_EMAIL`), then refresh `.ci/config/bws-secret-map.json`.
 - [ ] Write `.ci/lib/bws-env.sh` implementing `bws_export` with the `NAME > LOCAL_NAME` grammar, no cache by default, and the seven loud failure modes (Part 3).
+      AUDIT: PARTIAL: .ci/lib/bws-env.sh:1-105 exists with no-cache-by-default and five named failure modes, but the function is `bws_env_load` not `bws_export`, there is NO `NAME > LOCAL_NAME` alias grammar (so the AWS_SES_*_EU collapse is inexpressible), it binds with `export` not `declare -g`, and there is no `set +x` guard.
 - [ ] Add `with_fake_bws` to `.ci/scripts/test/lib/test-helpers.sh` beside `with_fake_gh` (`:93-112`).
 - [ ] Write `.ci/scripts/test/gates/test-bws-env-helper.sh` with assertions B1-B7 and their planted-defect controls; wire it three-point (package.json + `scripts/ci-runner/manifest.ts` + `.github/workflows/ci-quality.yml`).
+      AUDIT: PARTIAL: landed as .ci/scripts/test/gates/test-bws-env.sh (different filename), covering B1/B2/B3 and half of B5. MISSING B4 (injection binds verbatim), B6 (alias grammar), B7 (grammar parity with check_bws_map.parse_requests). Three-point wiring IS present: manifest.ts:5160-5172, package.json:129, ci-quality.yml:2079-2081.
 - [ ] Add `archiveBitwardenSecret()` to `private/account/scripts/rotation/consumers/bitwarden-sm.ts` and call it from the edit branch of `pushBitwardenSecret` (`:96-103`).
 - [ ] Add `./run.sh rotation bws-gc` (list `__ROTATED_*` in both projects; `--apply` deletes).
 - [ ] Teach `scripts/dev/bws-map-refresh.py` to exclude `__ROTATED_<stamp>` names after the projection at `:96-104` and report each on stderr.
@@ -34,7 +37,8 @@ Scope: design only. Nothing here was executed against Bitwarden, AWS, Cloudflare
       job, a `.env` that has regrown is this developer's.
 - [ ] Truncate `private/account/.env` to `BWS_ACCESS_TOKEN` + `BWS_ACCESS_TOKEN_ROTATE`. This is the only irreversible step; it goes last.
 - [ ] Retarget `scripts/check-env-credential-drift.ts` (`ENV_FILE` at `:53`) at a `bws_export` of its three tracked names, and the probe at `.claude/hooks/pre-bash/block-host-toolchain-run.sh:86-100` at the token + map.
-- [ ] Fix two stale citations found on the way: `scripts/check-env-credential-drift.ts:23-24` (set-account-worker-secrets.sh does not read `.env`) and `.ci/scripts/private/license-e2e.sh:180` (the function is at `private/renet/build.sh:409-451`).
+- [x] Fix two stale citations found on the way: `scripts/check-env-credential-drift.ts:23-24` (set-account-worker-secrets.sh does not read `.env`) and `.ci/scripts/private/license-e2e.sh:180` (the function is at `private/renet/build.sh:409-451`).
+      AUDIT: DONE 2026-09-02 (audit): scripts/check-env-credential-drift.ts:26-29 carries the correction verbatim; .ci/scripts/private/license-e2e.sh:180 now cites build.sh:409-451.
 - [ ] Add `private/account/dev.local.env` and `dev.defaults.env` to `scripts/dev/secret-rename.py`'s `EXTRA` (`:105`).
 
 ---

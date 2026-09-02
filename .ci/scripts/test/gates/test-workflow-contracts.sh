@@ -208,16 +208,9 @@ test_missing_callee_is_reported() {
 }
 
 test_empty_tree_is_not_a_pass() {
-    local d="$1"
-    mkdir -p "$d/empty"
-
-    local rc=0
-    run_check "$d/empty" || rc=$?
-    assert_exit_code 1 "$rc" "no workflows means nothing asserted, which must fail"
-    assert_contains "$LAST_OUT" "blind" "says the check has nothing to assert"
-    log_pass "empty workflow tree fails (anti-vacuity)"
+    assert_vacuous_tree_fails run_check "$1" "blind" \
+        "no workflows means nothing asserted, which must fail"
 }
-
 
 # ===========================================================================
 # CHECK 4 -- external-caller contracts
@@ -349,7 +342,7 @@ test_ec_unregistered_caller_is_reported() {
     ec_fixture "$1"
     mkdir -p "$EC_ROOT/private/other/.github/workflows"
     cp "$EC_ROOT/private/acct/.github/workflows/review.yml" \
-       "$EC_ROOT/private/other/.github/workflows/review.yml"
+        "$EC_ROOT/private/other/.github/workflows/review.yml"
     local rc=0
     run_ec || rc=$?
     assert_exit_code 1 "$rc" "an external caller nobody registered must fail"

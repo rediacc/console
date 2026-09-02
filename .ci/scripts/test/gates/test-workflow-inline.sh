@@ -203,14 +203,8 @@ test_no_baseline_escape_hatch() {
 test_empty_tree_is_not_a_pass() {
     # Anti-vacuity: if the workflow directory moves or empties, the rule is
     # asserting nothing and must say so instead of reporting clean.
-    local d="$1"
-    mkdir -p "$d/empty"
-
-    local rc=0
-    run_check "$d/empty" || rc=$?
-    assert_exit_code 1 "$rc" "a workflow dir with no workflows must fail, not pass vacuously"
-    assert_contains "$LAST_OUT" "this check is blind" "says the check has nothing to assert"
-    log_pass "empty workflow tree fails (anti-vacuity)"
+    assert_vacuous_tree_fails run_check "$1" "this check is blind" \
+        "a workflow dir with no workflows must fail, not pass vacuously"
 }
 
 log_test "test-workflow-inline"

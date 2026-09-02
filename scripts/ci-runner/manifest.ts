@@ -1312,6 +1312,30 @@ export const GATES: readonly GateSpec[] = [
       step: 'Bitwarden secret map',
     },
   },
+  // The comment sits ABOVE the brace deliberately: wl_reggate._manifest_gate_ids
+  // matches /\{\s*id:/, so a comment INSIDE the brace makes the entry invisible to
+  // check:ci-gate-reachability-coverage (manifest.ts:322 records that trap).
+  // Lane: quality-static, because assertions A0 and A6 read only the working tree.
+  // When A1 (no box may VANISH between base and head) lands it needs a merge-base
+  // and moves to quality-branch, which is the only lane with fetch-depth 0 and the
+  // PR head ref -- see agent/PLAN-plan-file-lifecycle.md.
+  {
+    id: 'check:ci-plan-boxes',
+    run: 'npm run check:ci-plan-boxes',
+    gate: true,
+    paths: [
+      'agent/PLAN-*.md',
+      '.ci/config/plan-boxes.json',
+      '.ci/scripts/quality/check_plan_boxes.py',
+    ],
+    leaves: ['.ci/scripts/quality/check_plan_boxes.py'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-static',
+      step: 'Plan checkbox ledger',
+    },
+  },
   {
     id: 'check:ci-secret-reachability',
     run: 'npm run check:ci-secret-reachability',

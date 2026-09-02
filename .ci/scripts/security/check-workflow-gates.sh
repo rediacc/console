@@ -447,9 +447,9 @@ fi
 if [[ -z "$EXTERNAL_CALLERS_FILE" ]]; then
     log_info "Skipping external-caller contract check (fixture tree: no registry)"
 else
-log_info "Checking external-caller contracts against $(basename "$EXTERNAL_CALLERS_FILE")"
+    log_info "Checking external-caller contracts against $(basename "$EXTERNAL_CALLERS_FILE")"
 
-python3 - "$WORKFLOWS_DIR" "$EXTERNAL_CALLERS_FILE" "$EXTERNAL_CALLERS_ROOT" <<'PYEOF'
+    python3 - "$WORKFLOWS_DIR" "$EXTERNAL_CALLERS_FILE" "$EXTERNAL_CALLERS_ROOT" <<'PYEOF'
 import glob
 import os
 import sys
@@ -672,19 +672,19 @@ print(f"info: {verified} external caller call-site(s) verified against their rea
 sys.exit(0)
 PYEOF
 
-RC=$?
-if [[ $RC -eq 0 ]]; then
-    log_success "External-caller contracts hold and every external caller is registered"
-elif [[ $RC -eq 3 ]]; then
-    log_error "Fix: either .github/external-callers.yml declares no callers, or no"
-    log_error "     submodule holding one is checked out (git submodule update --init"
-    log_error "     private/account private/renet). A check with no input cannot pass."
-    FAILED=1
-else
-    log_error "External-caller contract violations (see above)."
-    log_error "Fix: update .github/external-callers.yml AND the caller in the other repository together. Editing only this repo breaks their next run, not this PR."
-    FAILED=1
-fi
+    RC=$?
+    if [[ $RC -eq 0 ]]; then
+        log_success "External-caller contracts hold and every external caller is registered"
+    elif [[ $RC -eq 3 ]]; then
+        log_error "Fix: either .github/external-callers.yml declares no callers, or no"
+        log_error "     submodule holding one is checked out (git submodule update --init"
+        log_error "     private/account private/renet). A check with no input cannot pass."
+        FAILED=1
+    else
+        log_error "External-caller contract violations (see above)."
+        log_error "Fix: update .github/external-callers.yml AND the caller in the other repository together. Editing only this repo breaks their next run, not this PR."
+        FAILED=1
+    fi
 fi
 
 exit "$FAILED"

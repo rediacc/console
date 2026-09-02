@@ -22,10 +22,13 @@ chases it will make the repo worse. Two corrections come first.
 Everything here is a real unit of work. The four in the first group need no cutover, no
 operator, and no org-secret change; they are one commit at zero migration risk.
 
-- [ ] Delete `SSH_USER: ${{ env.USER }}` at `ct-tests.yml:1774,1787` — the source does not exist, the line is inert (finding 1)
+- [x] Delete `SSH_USER: ${{ env.USER }}` at `ct-tests.yml:1774,1787` — the source does not exist, the line is inert (finding 1)
+      AUDIT: DONE 2026-09-02 (audit): `git grep -n --recurse-submodules 'SSH_USER: '` finds nothing; both lines removed from ct-tests.yml and both steps survive without them (ct-tests.yml:1769-1786).
 - [ ] Fix the schema extractor in `scripts/check-worker-secret-names.ts:69` so it sees all 85 `env.ts` keys, and derive the count in the refusal message at `:104` instead of hardcoding it (finding 2, assertion 12)
+      AUDIT: PARTIAL: the extractor is fixed -- check-worker-secret-names.ts:76 reads `/^\s{2}([A-Z][A-Z0-9_]*):\s*(?:z\.|z$|boolFromEnv)/gm` and both counts over env.ts agree at 85; floor raised 40->80 at :113. NOT done: the count is still the hand-maintained ratchet EXPECTED_SCHEMA_KEYS = 85 at :74, not derived from the file, so a hand-edit of that constant still lets the extractor drop a key silently.
 - [ ] Rename the six gratuitous workflow aliases onto their sources (`SES_FROM`, `REPO_CHANNEL`, `EFFORT_VAR`, `FORCE_FULL_CI`, `WATCHDOG_SKIP_RERUN`), consuming scripts included — 12 lines, table row D
-- [ ] Delete the `STRIPE_KEY_${SUFFIX}` fan-in at `cd-deploy-account.yml:334-337,341-342`; export `STRIPE_SECRET_KEY` directly, leaving the webhook loop intact
+- [x] Delete the `STRIPE_KEY_${SUFFIX}` fan-in at `cd-deploy-account.yml:334-337,341-342`; export `STRIPE_SECRET_KEY` directly, leaving the webhook loop intact
+      AUDIT: DONE 2026-09-02 (audit): STRIPE_KEY_ survives only in past-tense comments (cd-deploy-account.yml:340,377; cd-deploy-worker.yml:217; resolve-account-deploy-config.sh:28; set-account-worker-secrets.sh:13). The webhook SUFFIX loop is intact at cd-deploy-account.yml:366 -> set-account-worker-secrets.sh:114-115.
 - [ ] Write `.ci/config/name-role-substitutions.json` — one entry per homograph site in section 1.3, each naming source key, target key and reason
 - [ ] Write `.ci/config/env-alias-forced.json` — the six externally-read env names only, each with its binary and a `file:line` where that binary is invoked
 - [ ] Add assertion 9 (NO GRATUITOUS ALIAS) to `check_bws_map.py`, with the two planted defects and the silent control named in section 4

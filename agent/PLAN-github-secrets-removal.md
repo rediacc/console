@@ -546,9 +546,11 @@ The safety comes from step ordering inside each job, not from commit granularity
 
 ## Tasks
 
-- [ ] **(operator, step 0)** Non-empty preflight over all 56 map UUIDs — lengths only, never values (G7's manual first run)
+- [?] **(operator, step 0)** Non-empty preflight over all 56 map UUIDs — lengths only, never values (G7's manual first run)
+      AUDIT: UNVERIFIABLE from the tree: the preflight is a `bws secret get` loop needing BWS_ACCESS_TOKEN and its result is recorded nowhere. Proof would be a committed length-only record, or a CD step running `bws secret get ... | jq -r '.value | length'`.
 - [ ] **(operator, Q2)** `./run.sh rotation rotate otlp-{eu,us,asia}`, closing row O3 and the three `deferred` exemptions at `.ci/config/bws-unrequested.json:198-216`
-- [ ] **(operator, §7.3)** Back the 56 Secrets Manager values out to the password-manager vault before any deletion
+- [?] **(operator, §7.3)** Back the 56 Secrets Manager values out to the password-manager vault before any deletion
+      AUDIT: UNVERIFIABLE from the tree: the backup happens inside the operator's password-manager vault, which `gh` cannot see. Proof would be a dated export receipt recorded in a config file, or an operator attestation.
 - [ ] Generate the pre-image rewrite of 102 `GH_<N>` lines from `secret-rename.py`'s `RENAMES` table (§2.2)
 - [ ] Reorder `bws-secrets` ahead of `app-token` in the 7 jobs of §4.2 Trap A; add `.ci/config` to the 2 sparse lists of Trap B
 - [ ] Flip 137 identity `env:` lines (delete), 78 `with:` aliases and 24 `env:` aliases (→ `${{ env.<N> }}`), 157 passthrough lines (delete), 80 `workflow_call` declarations → 9
@@ -556,7 +558,8 @@ The safety comes from step ordering inside each job, not from commit granularity
 - [ ] Retire assertion 5's `no-github-twin` kind → `unrequested`; invert assertion 6 → 6'; replace assertion 9 with G1
 - [ ] Lower `check_secret_reachability.py:50` `MIN_REFERENCES` 10 → 3 **with a comment saying why**
 - [ ] Add gates G1-G5 and G7 with the planted defects named in §8
-- [ ] Write `.ci/scripts/test/gates/test-bws-map.sh` — the harness neither secret gate has
+- [x] Write `.ci/scripts/test/gates/test-bws-map.sh` — the harness neither secret gate has
+      AUDIT: DONE 2026-09-02 (audit): .ci/scripts/test/gates/test-bws-map.sh exists (5631 bytes, executable), drives the REAL scan against fixture trees, and is picked up automatically by .ci/scripts/test/run-all.sh:72's gates/test-*.sh glob.
 - [ ] Delete 63 compare steps, 63 `SHADOW_NAMES:` lines, 197 `GH_` lines; rewrite 197 request lines to the bare identity form; fix the 63 stale "SHADOW RUN" comments
 - [ ] `.github/external-callers.yml:29,35` → `passes_secrets: [BWS_ACCESS_TOKEN]`; three-merge sequence of §6.3
 - [ ] **(operator, irreversible)** Delete 44 GitHub secrets; keep `BWS_ACCESS_TOKEN` in `console`, `account`, `renet`

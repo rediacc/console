@@ -33,25 +33,38 @@ ROOT_DIR="$(cd "$SCRIPT_DIR/../../.." && pwd)"
 cd "$ROOT_DIR" || exit 2
 
 if [[ "${CI:-}" == "true" ]]; then RED="" GREEN="" NC=""; else
-    RED='\033[0;31m' GREEN='\033[0;32m' NC='\033[0m'; fi
+    RED='\033[0;31m' GREEN='\033[0;32m' NC='\033[0m'
+fi
 
 # CONTROL FIRST. Both directions are planted against fixtures before the real
 # tree is judged: a missing path and an untracked path must each be reported, and
 # a clean pair must be silent. Without the silent case, a checker that reported
 # everything would pass its own controls.
 control() {
-    local tmp; tmp="$(mktemp -d)"
+    local tmp
+    tmp="$(mktemp -d)"
     trap 'rm -rf "$tmp"' RETURN
-    ( cd "$tmp" && git init -q . && echo tracked > tracked.txt && echo untracked > untracked.txt \
-        && git add tracked.txt && git -c user.email=t@t -c user.name=t commit -qm x ) || return 1
+    (cd "$tmp" && git init -q . && echo tracked >tracked.txt && echo untracked >untracked.txt &&
+        git add tracked.txt && git -c user.email=t@t -c user.name=t commit -qm x) || return 1
     local out rc=0
     out="$(GL_CLOSURE_PATHS=$'tracked.txt\nuntracked.txt\nno-such-file.txt' \
-           GL_ROOT="$tmp" bash "$0" --scan 2>&1)" || rc=$?
-    [[ $rc -ne 0 ]] || { echo "CONTROL FAILED: a bad fixture passed"; return 1; }
-    grep -q "no-such-file.txt" <<<"$out" || { echo "CONTROL FAILED: missing path unreported"; return 1; }
-    grep -q "untracked.txt" <<<"$out"    || { echo "CONTROL FAILED: untracked path unreported"; return 1; }
+        GL_ROOT="$tmp" bash "$0" --scan 2>&1)" || rc=$?
+    [[ $rc -ne 0 ]] || {
+        echo "CONTROL FAILED: a bad fixture passed"
+        return 1
+    }
+    grep -q "no-such-file.txt" <<<"$out" || {
+        echo "CONTROL FAILED: missing path unreported"
+        return 1
+    }
+    grep -q "untracked.txt" <<<"$out" || {
+        echo "CONTROL FAILED: untracked path unreported"
+        return 1
+    }
     out="$(GL_CLOSURE_PATHS=$'tracked.txt' GL_ROOT="$tmp" bash "$0" --scan 2>&1)" || {
-        echo "CONTROL FAILED: a clean fixture was reported"; return 1; }
+        echo "CONTROL FAILED: a clean fixture was reported"
+        return 1
+    }
     return 0
 }
 
@@ -70,7 +83,9 @@ scan() {
         [[ -n "$p" ]] || continue
         n=$((n + 1))
         if [[ ! -e "$root/$p" ]]; then
-            echo "  $p -- named by a closure but NOT ON DISK"; bad=$((bad + 1)); continue
+            echo "  $p -- named by a closure but NOT ON DISK"
+            bad=$((bad + 1))
+            continue
         fi
         if ! git -C "$root" ls-files --error-unmatch -- "$p" >/dev/null 2>&1; then
             echo "  $p -- on disk but NOT TRACKED; the candidate side reads the remote"
@@ -79,13 +94,19 @@ scan() {
         fi
     done <<<"$paths"
     # A closure set that shrank to nothing must not read as success.
-    [[ $n -gt 0 ]] || { echo "  no closure paths found -- this check is blind"; return 1; }
+    [[ $n -gt 0 ]] || {
+        echo "  no closure paths found -- this check is blind"
+        return 1
+    }
     [[ $bad -eq 0 ]] || return 1
     echo "$n"
     return 0
 }
 
-if [[ "${1:-}" == "--scan" ]]; then scan; exit $?; fi
+if [[ "${1:-}" == "--scan" ]]; then
+    scan
+    exit $?
+fi
 
 if ! control; then
     echo -e "${RED}✗ instrument control failed; every verdict below would be meaningless${NC}" >&2

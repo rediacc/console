@@ -107,3 +107,28 @@ FAKE
     export PATH="$OLD_PATH"
     rm -rf "$BIN"
 }
+
+# assert_vacuous_tree_fails <runner_fn> <dir> <needle> <label>
+#
+# The anti-vacuity case every gate-test that takes a ROOT override owes: point
+# the gate at an EMPTY tree and prove it reds. Without it the override is an
+# escape hatch, and the gate that uses it reports clean for a corpus it never
+# saw -- which is the whole failure class .ci/scripts/test/gates/
+# test-gate-anti-vacuity.sh exists to police.
+#
+# Extracted 2026-09-02 because a third copy appeared and check:ci-shape-
+# duplication caught it. Only the `run_check`-shaped harnesses fit: the runner
+# must return the gate's EXIT CODE and leave its output in $LAST_OUT. A harness
+# whose runner returns the output on stdout instead (test-bws-map.sh's
+# run_gate) has a different contract and keeps its own copy -- one copy is not
+# duplication, and forcing one return contract onto two is how a shared helper
+# becomes worse than the repetition it replaced.
+assert_vacuous_tree_fails() {
+    local runner_fn="$1" dir="$2" needle="$3" label="$4"
+    mkdir -p "$dir/empty"
+    local rc=0
+    "$runner_fn" "$dir/empty" || rc=$?
+    assert_exit_code 1 "$rc" "$label"
+    assert_contains "$LAST_OUT" "$needle" "says the check has nothing to assert"
+    log_pass "empty tree fails (anti-vacuity), it does not pass silently"
+}

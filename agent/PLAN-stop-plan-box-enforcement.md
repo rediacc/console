@@ -1,4 +1,17 @@
-Status: draft
+Status: superseded
+Superseded-by: agent/PLAN-plan-file-lifecycle.md
+
+SUPERSEDED 2026-09-02. Its analysis was re-verified and holds -- OUTQ_PER_STOP = 1
+(wl_checks.py:1562), plan-tasks queued at priority 2 (:3760), outq_drain on the allow
+path only (:5823) -- and its diagnosis of `_pf_rows[0]` is correct. What it could not
+know is the SECOND cause, which is the larger one: NOT_STARTED_STATES exempts 6 of the 8
+box-carrying files, 72 of the 88 boxes, before plan_rows ever opens them, because
+`Status: draft` has since become this repo's default header on plans under active
+execution. Its "adopt one, in order" rung is also deferred rather than adopted: with the
+CI half in place the silenced box is caught at merge anyway, so asking the operator to
+let an unclaimed document block an unrelated session can wait until the cheaper changes
+have been seen to fire. Its parser refactor IS pulled forward. See the successor.
+
 Owner: 74de73ca
 
 # Make an open `- [ ]` in a committed plan drive the session

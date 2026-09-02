@@ -111,7 +111,7 @@ Do not relitigate these; they are the operator's, recorded in 07 §2.
   WORKER/`.env` keys are `ACCOUNT_BACKUP_S3_*` (they were `BACKUP_S3_*`, then briefly
   `CLOUDFLARE_R2_BACKUP_*`), while the GITHUB org-secret names are still `BACKUP_S3_*` and
   deliberately have not moved. zod v4 strips an unknown key silently, so a stale spelling
-  here disables the backup plane with no error — check `private/account/src/types/env.ts`
+  here disables the backup plane with no error. Check `private/account/src/types/env.ts`
   before trusting any of these names.
 - **The SERVER names the keys.** `chunkPrefix` and `manifestKey` ride in the grant. The
   client never composes an object key; that coupling is what caused the wrong-level

@@ -11,13 +11,16 @@ written to Bitwarden, AWS, Cloudflare or GitHub. No value of any secret was read
 
 ## Tasks
 
-- [ ] Fix `private/growth/video_pipeline/publish-solutions.sh:55` and `publish.py:40` — they
+- [x] Fix `private/growth/video_pipeline/publish-solutions.sh:55` and `publish.py:40` — they
+      AUDIT: DONE 2026-09-02 (audit): publish-solutions.sh:55 and publish.py:40 both guard the CLOUDFLARE_R2_MEDIA_* names; the blindness itself is recorded at scripts/dev/secret-rename.py:112-121 (NON_SUBMODULE_REPOS).
       still require the pre-rename names `R2_MEDIA_{ACCESS_KEY_ID,SECRET_ACCESS_KEY,ENDPOINT}`
       while `.env` now holds `CLOUDFLARE_R2_MEDIA_*`. **The solution-video publish pipeline
       aborts at step 0 today.** Part 3, defect D1. Operator/`private/growth` write access.
-- [ ] Delete `R2_MEDIA_BUCKET` from `private/account/.env` and `.env.example`. Zero readers
+- [x] Delete `R2_MEDIA_BUCKET` from `private/account/.env` and `.env.example`. Zero readers
+      AUDIT: DONE 2026-09-02 (audit): no `^R2_MEDIA_BUCKET=` in .env or .env.example; the name survives only as prose explaining the deletion. .env down to 49 assigned names.
       anywhere; `sync-media-to-r2.sh:35` hardcodes `BUCKET="rediacc-www-media"`. Part 3, D2.
-- [ ] Rename the local `.env` key `STRIPE_WEBHOOK_SECRET` → `STRIPE_WEBHOOK_SECRET_E2E_FIXTURE`
+- [x] Rename the local `.env` key `STRIPE_WEBHOOK_SECRET` → `STRIPE_WEBHOOK_SECRET_E2E_FIXTURE`
+      AUDIT: DONE 2026-09-02 (audit) under a DIFFERENT name than proposed -- STRIPE_E2E_WEBHOOK_SECRET, not STRIPE_WEBHOOK_SECRET_E2E_FIXTURE. Writer .ci/lib/account.sh:238-240,298; reader :826-831 exports it as E2E_WEBHOOK_SECRET; .env.example:67. The collision with the store's STRIPE_WEBHOOK_SECRET is gone by construction.
       (writer `.ci/lib/account.sh:238,296`; reader `.ci/lib/account.sh:825-827`). It is a
       committed test constant that collides by NAME with the real production secret in the
       store. Part 3, D3 — the one collision that would break something on cutover.
@@ -29,11 +32,14 @@ written to Bitwarden, AWS, Cloudflare or GitHub. No value of any secret was read
       `AWS_IAM_ADMIN_SECRET_ACCESS_KEY`, `CF_GLOBAL_API_KEY`, `CF_EMAIL`) into whichever
       project the operator picks in `## Remaining` Q2. Operator-only.
 - [ ] Everything in v1's task list from "Write `.ci/lib/bws-env.sh`" onward, unchanged.
+      AUDIT: PARTIAL: this box aggregates v1:14-38 (19 boxes). Audited: 1 DONE, 2 PARTIAL, 16 NOT-DONE. The migration itself has not started -- `grep -rl 'bws-env.sh\|bws_env_load'` finds only the helper, its gate test, the manifest and plan files, so the fetcher has ZERO production callers.
 - [ ] Build `.ci/scripts/test/gates/test-bws-env-helper.sh` (Part 5, harness B).
+      AUDIT: PARTIAL: exists as test-bws-env.sh, wired. Missing B4/B6/B7 plus all three v2 additions (B8 --json expansion, B9 non-object refusal, B10 --cache-to allowlist), because bws-env.sh implements neither --json nor --cache-to. The `command -v bws` precondition is absent too: the test pins BWS_BIN directly.
 - [ ] Add assertion 8 to `.ci/scripts/quality/check_bws_map.py` over
       `private/account/.env.example` + a new `.ci/config/env-local-allowlist.json` (Part 5,
       harness C). This is the gate that keeps the migration from silently rotting.
-- [ ] Do NOT create `private/account/scripts/__tests__/`. Part 5 §"where it does not belong".
+- [x] Do NOT create `private/account/scripts/__tests__/`. Part 5 §"where it does not belong".
+      AUDIT: DONE 2026-09-02 (audit): `ls -d private/account/scripts/__tests__` -> No such file or directory. vitest include globs unchanged at private/account/vitest.config.ts:7.
 
 ---
 

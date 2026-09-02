@@ -54,8 +54,10 @@ Prerequisites (5a) — nothing else can start until these land:
 The rename, as ONE atomic commit (5e forces atomicity):
 
 - [x] Put the Part 4 open questions to the operator and record the answers here — **all five answered 2026-09-02**, recorded in Part 0. Nothing in Part 4 is open; do not re-ask it.
-- [ ] Rename every console occurrence onto the agreed convention in a single commit — `.github/workflows` and `.ci/` are ~75% of ~1,770 hits; `packages/` has 7 and `workers/` has 1 (5e)
-- [ ] Rewrite the seven runtime-constructed names by hand, since find-and-replace cannot see them: `set-account-worker-secrets.sh:70-73,79-89`, `cd-deploy-account.yml:249`, `regions.json:15,30,45`, and the `${!var_name}` presence-checkers in `common.sh:133`, `upload-to-r2.sh:147`, `breakpoint-common.sh:178,346`, `assert-ci-complete.sh:65,74` (5e)
+- [x] Rename every console occurrence onto the agreed convention in a single commit — `.github/workflows` and `.ci/` are ~75% of ~1,770 hits; `packages/` has 7 and `workers/` has 1 (5e)
+      AUDIT: DONE 2026-09-02 (audit): applied and committed as f90baf1d3 (196 files) plus the submodule pointers. Target spellings verified at cd-deploy-account.yml:369-371, :346, upload-to-r2.sh:146,153-154, and all 56 names in .ci/config/bws-secret-map.json. NOTE: commit cb27c2b19 then had to repair 267 `secrets.X` right-hand sides this rename should never have touched.
+- [x] Rewrite the seven runtime-constructed names by hand, since find-and-replace cannot see them: `set-account-worker-secrets.sh:70-73,79-89`, `cd-deploy-account.yml:249`, `regions.json:15,30,45`, and the `${!var_name}` presence-checkers in `common.sh:133`, `upload-to-r2.sh:147`, `breakpoint-common.sh:178,346`, `assert-ci-complete.sh:65,74` (5e)
+      AUDIT: DONE 2026-09-02 (audit): set-account-worker-secrets.sh:114-115, :123-126, :128-130, :134-135 all carry the new spellings; the second key_var="STRIPE_KEY_${SUFFIX}" indirection is deleted with its reason recorded at cd-deploy-account.yml:339-346.
 - [x] **Done 2026-09-02 (Writer B; the workflow env side is Writer D's, in flight).** Delete the `SECRET_*` / `<PREFIX>_<SUFFIX>` workflow-env shim in `set-{account,www,preview}-worker-secrets.sh` (contract at `:26-41`, consumed at `:92-141`) and have the Worker read the full names, updating the `env.ts` zod schema — decision 2, the fourth namespace
 - [x] **Done 2026-09-02 (Writer B for Worker names; Writer E adds explicit `bitwarden_secret_names`).** Update the rotation literals in `scripts/rotation/lib/config.ts:39,54,70,91,97,107,117,133,201,212,222` in the same commit, or `commands/init.ts` reseeds a manifest that disagrees with itself (5b)
 - [x] **Done 2026-09-02** (exit 0, 46 references across 3 repos; the gate is now red only on `BWS_ACCESS_TOKEN`, which is absent from the org by design until the operator mints it). Regenerate `.ci/config/secret-reachability.json` with `npm run check:ci-secret-reachability -- --refresh` (needs the org-admin token; carries `MAX_BASELINE_AGE_DAYS=45` and hardcoded `OPTIONAL` entries) — the one gate guaranteed to fail otherwise (5e)
@@ -63,7 +65,8 @@ The rename, as ONE atomic commit (5e forces atomicity):
 Submodule and sibling-repo coordination, in the same window as the rename:
 
 - [ ] Land the six `private/growth` secrets under provider prefixes — `ELEVENLABS_API_KEY`, `PEXELS_API_KEY`, `MAUTIC_USER`, `MAUTIC_PASS`, `APOLLO_EMAIL`, `APOLLO_PASSWORD` — as a coordinated GitLab commit (decision 6, 5d)
-- [ ] Rename growth's five console-secret reads behind their two indirection constructs — `publish-solutions.sh:51-58` (`${!v}` over a name list) and `publish.py:40` (`_R2_ENV_VARS` tuple) — together with console's `.ci/scripts/deploy/upload-media-to-r2.sh`, or growth's guard passes and the upload dies inside `aws` (5d)
+- [x] Rename growth's five console-secret reads behind their two indirection constructs — `publish-solutions.sh:51-58` (`${!v}` over a name list) and `publish.py:40` (`_R2_ENV_VARS` tuple) — together with console's `.ci/scripts/deploy/upload-media-to-r2.sh`, or growth's guard passes and the upload dies inside `aws` (5d)
+      AUDIT: DONE 2026-09-02 (audit): private/growth/video_pipeline/publish-solutions.sh:55 and publish.py:40 carry the new names; console's counterpart moved with them at upload-media-to-r2.sh:26-28,99,105-106,122,127. CF_GLOBAL_API_KEY/CF_EMAIL are deliberately unchanged (no Part 10 row).
 - [ ] Rename `TTS_ENGINE` in `private/generative` (`src/tutorial_tts/config.py:116`) and `private/growth` (`step4000_voiceover.py:46`) in the SAME change; growth passes its whole environment through at `:157`, so a one-sided rename silently falls back to a different narration engine (5c)
 - [ ] Rename `RDC_GPU_LOCK_FILE` (generative) and `RDC_REMOTION_CONCURRENCY` (growth) out of the `RDC_` prefix — neither has anything to do with the CLI (5c)
 
@@ -79,10 +82,12 @@ Populating `ci-shared` (Part 10's measured gap — 15 absent, 2 copyable, 13 to 
 - [>] **`CLOUDFLARE_API_TOKEN` is in flight 2026-09-02** under decision 9; the `CLOUDFLARE_R2_*`
   trio and `CLOUDFLARE_TURNSTILE_SECRET_KEY` are already present in `ci-shared` (verified against
   the map) and need no mint. Original text: Re-mint the 3 `CLOUDFLARE_R2_*` (`R2_ACCESS_KEY_ID`/`_SECRET_ACCESS_KEY`/`_ENDPOINT`) plus `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_TURNSTILE_SECRET_KEY` into `ci-shared`
-- [ ] Supply the 2 operator-only values `DOCKERHUB_USERNAME` and `ANTHROPIC_CLAUDE_CODE_OAUTH_TOKEN` — no console can re-mint the first
+- [x] Supply the 2 operator-only values `DOCKERHUB_USERNAME` and `ANTHROPIC_CLAUDE_CODE_OAUTH_TOKEN` — no console can re-mint the first
+      AUDIT: DONE 2026-09-02 (audit): both exist as ci-shared entries in the store-generated map -- bws-secret-map.json:43 and :94, each with a UUID, refreshed_at 2026-09-02T20:13:01Z. Caveat recorded by the auditor: this proves the NAME/UUID exists, not the value.
 - [x] **Settled 2026-09-02: one account, so the secret key has no region; the unsuffixed webhook secret is treated as EU per the operator.** Establish which REGION `ci-shared`'s unsuffixed `STRIPE_SECRET_KEY` and `STRIPE_WEBHOOK_SECRET` belong to before either is used as a migration source (Part 10)
 - [x] **Done 2026-09-02 (Writer C), id 2b34dfab preserved.** Rename `OTLP_AUTH_TOKEN=USER:PASS` to `OBS_OTLP_CREDENTIALS` in the vault and `ci-shared` — the current name contains `=` and `:` and breaks KEY=VALUE parsing
 - [ ] Replace `mc_migrate_claude` before it expires 2026-09-08, renamed `BWS_ACCESS_TOKEN` (target corrected, Part 10) — parked as `[?] #d76f8e3d`, the operator creates the read-only machine account; it is the only Bitwarden WRITE credential
+      AUDIT: PARTIAL: the RENAME half is done (BWS_ACCESS_TOKEN everywhere; the mc_migrate_claude fallback removed at rotation/lib/credentials.ts:146-155). The REPLACEMENT is not: .ci/config/bws-token-expiry.json:29-34 still names mc_migrate_claude, expires 2026-09-08, client_id_sha256 unchanged.
 
 Bitwarden, second (see Sequencing):
 
@@ -92,10 +97,13 @@ Bitwarden, second (see Sequencing):
 
 Post-migration cleanup (detail in Part 6):
 
-- [ ] Narrow the `gh` token back to `gist,read:org,repo,workflow` once the reachability baseline is regenerated, and verify by CAPABILITY (`gh api /user/orgs` still works, `gh secret list --org rediacc` starts 403ing) rather than by the scope label (Part 6.1)
+- [?] Narrow the `gh` token back to `gist,read:org,repo,workflow` once the reachability baseline is regenerated, and verify by CAPABILITY (`gh api /user/orgs` still works, `gh secret list --org rediacc` starts 403ing) rather than by the scope label (Part 6.1)
+      AUDIT: UNVERIFIABLE from the tree: a `gh` OAuth scope set lives in the operator's credential store. Its PRECONDITION is also unmet -- .ci/config/secret-reachability.json:8 is still keyed on the OLD names, so the post-rename --refresh (which needs admin:org) has not run.
 - [ ] Delete the old GitHub org secrets once CI reads from Bitwarden — this is what makes decision 3 pay off (Part 6.2)
-- [ ] Revoke the predecessor backup R2 credential, identified via the Cloudflare audit log, and narrow `backup-s3-20260901T103133Z` from account-wide R2 write to the backup buckets only (Part 6.3, decision 8)
-- [ ] Decide the 3 SMTP orphans — `SMTP_HOST`, `SMTP_PASS`, `SMTP_USER` are org secrets no workflow references: delete them, or document what outside CI uses them (Part 6.4)
+- [?] Revoke the predecessor backup R2 credential, identified via the Cloudflare audit log, and narrow `backup-s3-20260901T103133Z` from account-wide R2 write to the backup buckets only (Part 6.3, decision 8)
+      AUDIT: UNVERIFIABLE from the tree: entirely Cloudflare state, and nothing here records token scopes. `grep -rn 'backup-s3-20260901T103133Z'` finds it only in plan prose. Proof would be a token listing showing the predecessor revoked and the successor scoped to the six backup buckets instead of account-wide R2 write.
+- [x] Decide the 3 SMTP orphans — `SMTP_HOST`, `SMTP_PASS`, `SMTP_USER` are org secrets no workflow references: delete them, or document what outside CI uses them (Part 6.4)
+      AUDIT: DONE 2026-09-02 (audit): resolved via the 'document what outside CI uses them' branch -- .ci/config/bws-unrequested.json:67-70, :71-74, :79-82 carry SMTP_HOST / SMTP_PASSWORD / SMTP_USER with re-derivable reasons, plus :63-66 and :75-78 for SMTP_FROM/SMTP_PORT.
 - [ ] Rotate the `mc_migrate_claude` machine-account token — created 2026-09-01 with 7-day validity and read-WRITE on `ci-shared`; the long-lived CI tokens must be read-only and per-project (Part 6.5)
 - [x] ~~Regenerate the GPG signing key~~ **SUPERSEDED by decision 8bis (Part 9): the key IS readable in the vault and was verified importable as `rsa4096/49BA687F0527C72B`, so it was COPIED, not regenerated.** The revocation certificate remains open as its own item above. Original text: produce a revocation certificate — the pair exists only in the unreadable org store, the local keyring is empty, and `docs/code-signing-guide.md:559` is unticked (Part 3; operator accepted regeneration, no users yet)
 

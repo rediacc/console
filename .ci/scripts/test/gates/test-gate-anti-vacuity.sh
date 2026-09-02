@@ -120,6 +120,7 @@ REGISTRY=(
     # Against an empty tree there are no workflows, so no secret is referenced
     # and the gate would report that every reference is reachable. The
     # MIN_REFERENCES floor turns that into a loud refusal.
+    ".ci/scripts/quality/check_plan_boxes.py|VACUOUS INPUT"
     ".ci/scripts/quality/check_secret_reachability.py|VACUOUS INPUT"
     ".ci/scripts/quality/check_bws_map.py|refusing to pass vacuously"
     # Against an empty tree the probe locale file is absent, so no rule set can

@@ -28,7 +28,10 @@
 
 _bws_env_root() {
     local d="${BWS_ENV_ROOT:-}"
-    [[ -n "$d" ]] && { printf '%s' "$d"; return; }
+    [[ -n "$d" ]] && {
+        printf '%s' "$d"
+        return
+    }
     d="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
     printf '%s' "$d"
 }
@@ -84,7 +87,10 @@ for r in rows:
     if r.get("key") == want:
         sys.stdout.write(r.get("value") or "")
         break
-' "$n")" || { missing+=("$n"); continue; }
+' "$n")" || {
+            missing+=("$n")
+            continue
+        }
         if [[ -z "$val" ]]; then
             missing+=("$n")
             continue
