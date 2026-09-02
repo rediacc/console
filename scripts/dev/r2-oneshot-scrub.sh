@@ -30,7 +30,7 @@
 #   scripts/dev/r2-oneshot-scrub.sh --execute          # actually delete
 #   scripts/dev/r2-oneshot-scrub.sh --execute --yes    # skip confirmation prompts
 #
-# Required env: R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, R2_ENDPOINT
+# Required env: CLOUDFLARE_R2_ACCESS_KEY_ID, CLOUDFLARE_R2_SECRET_ACCESS_KEY, CLOUDFLARE_R2_ENDPOINT
 #   (source from private/account/.env for local runs).
 
 set -euo pipefail
@@ -69,15 +69,15 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
-for var in R2_ACCESS_KEY_ID R2_SECRET_ACCESS_KEY R2_ENDPOINT; do
+for var in CLOUDFLARE_R2_ACCESS_KEY_ID CLOUDFLARE_R2_SECRET_ACCESS_KEY CLOUDFLARE_R2_ENDPOINT; do
     if [[ -z "${!var:-}" ]]; then
         log_error "Missing required env: $var"
         exit 1
     fi
 done
 
-export AWS_ACCESS_KEY_ID="$R2_ACCESS_KEY_ID"
-export AWS_SECRET_ACCESS_KEY="$R2_SECRET_ACCESS_KEY"
+export AWS_ACCESS_KEY_ID="$CLOUDFLARE_R2_ACCESS_KEY_ID"
+export AWS_SECRET_ACCESS_KEY="$CLOUDFLARE_R2_SECRET_ACCESS_KEY"
 export AWS_DEFAULT_REGION="auto"
 
 # Helpers -----------------------------------------------------------------
@@ -87,7 +87,7 @@ describe_prefix() {
     local prefix="$1"
     local out
     out="$(aws s3 ls "s3://${BUCKET}/${prefix}" --recursive --summarize --human-readable \
-        --endpoint-url "$R2_ENDPOINT" 2>/dev/null | tail -3 || true)"
+        --endpoint-url "$CLOUDFLARE_R2_ENDPOINT" 2>/dev/null | tail -3 || true)"
     if [[ -z "$out" ]]; then
         log_info "  (empty or missing: ${prefix})"
         return 1
@@ -119,7 +119,7 @@ rm_prefix() {
         return 0
     fi
     aws s3 rm "s3://${BUCKET}/${prefix}" --recursive \
-        --endpoint-url "$R2_ENDPOINT" --quiet
+        --endpoint-url "$CLOUDFLARE_R2_ENDPOINT" --quiet
     log_info "  Deleted."
 }
 
@@ -133,7 +133,7 @@ backup_manifests() {
     tmp="$(mktemp -d)"
     for prefix in cli/ desktop/ npm/ apt/ rpm/ apk/ archlinux/; do
         aws s3 sync "s3://${BUCKET}/${prefix}" "${tmp}/${prefix}" \
-            --endpoint-url "$R2_ENDPOINT" \
+            --endpoint-url "$CLOUDFLARE_R2_ENDPOINT" \
             --exclude '*' --include '*.json' --include '*.yml' \
             --quiet 2>/dev/null || true
     done
@@ -155,7 +155,7 @@ stage1() {
     # Dryrun orphans across every format dir
     for fmt in cli desktop npm apt rpm apk archlinux; do
         local out
-        out="$(aws s3 ls "s3://${BUCKET}/${fmt}/" --endpoint-url "$R2_ENDPOINT" 2>/dev/null |
+        out="$(aws s3 ls "s3://${BUCKET}/${fmt}/" --endpoint-url "$CLOUDFLARE_R2_ENDPOINT" 2>/dev/null |
             awk '/^[[:space:]]*PRE[[:space:]]dryrun-/ {print $2}' || true)"
         while IFS= read -r sub; do
             [[ -z "$sub" ]] && continue
@@ -180,11 +180,11 @@ stage1() {
     for f in cli/manifest.json cli/latest.json \
         desktop/latest-linux.yml desktop/latest-linux-arm64.yml \
         desktop/latest-mac.yml desktop/latest-win.yml; do
-        if aws s3api head-object --bucket "$BUCKET" --key "$f" --endpoint-url "$R2_ENDPOINT" >/dev/null 2>&1; then
+        if aws s3api head-object --bucket "$BUCKET" --key "$f" --endpoint-url "$CLOUDFLARE_R2_ENDPOINT" >/dev/null 2>&1; then
             if $DRY_RUN; then
                 log_warn "  [DRY-RUN] Would delete s3://${BUCKET}/${f} (legacy top-level stray)"
             elif confirm "Delete legacy top-level s3://${BUCKET}/${f}?"; then
-                aws s3 rm "s3://${BUCKET}/${f}" --endpoint-url "$R2_ENDPOINT" --quiet
+                aws s3 rm "s3://${BUCKET}/${f}" --endpoint-url "$CLOUDFLARE_R2_ENDPOINT" --quiet
                 log_info "  Deleted s3://${BUCKET}/${f}"
             else
                 log_info "  skipped: $f"
@@ -202,7 +202,7 @@ stage2() {
         local prefix="desktop/v1.0.${n}/"
         log_step "  Processing $prefix"
         local files
-        files="$(aws s3 ls "s3://${BUCKET}/${prefix}" --endpoint-url "$R2_ENDPOINT" 2>/dev/null |
+        files="$(aws s3 ls "s3://${BUCKET}/${prefix}" --endpoint-url "$CLOUDFLARE_R2_ENDPOINT" 2>/dev/null |
             awk '{print $NF}' | grep -E '^rediacc-desktop-0\.0\.0-dev-' || true)"
         if [[ -z "$files" ]]; then
             log_info "    no 0.0.0-dev-* files under $prefix"
@@ -219,7 +219,7 @@ stage2() {
         fi
         while IFS= read -r f; do
             [[ -z "$f" ]] && continue
-            aws s3 rm "s3://${BUCKET}/${prefix}${f}" --endpoint-url "$R2_ENDPOINT" --quiet
+            aws s3 rm "s3://${BUCKET}/${prefix}${f}" --endpoint-url "$CLOUDFLARE_R2_ENDPOINT" --quiet
             log_info "    deleted ${prefix}${f}"
         done <<<"$files"
     done
@@ -231,7 +231,7 @@ stage2b() {
     log_step "Stage 2b: abort abandoned multipart uploads (any age)"
     local uploads
     uploads="$(aws s3api list-multipart-uploads --bucket "$BUCKET" \
-        --endpoint-url "$R2_ENDPOINT" \
+        --endpoint-url "$CLOUDFLARE_R2_ENDPOINT" \
         --query 'Uploads[].{Key:Key,UploadId:UploadId,Initiated:Initiated}' \
         --output json 2>/dev/null || echo "[]")"
     local count
@@ -255,7 +255,7 @@ stage2b() {
         [[ -z "$key" ]] && continue
         aws s3api abort-multipart-upload \
             --bucket "$BUCKET" --key "$key" --upload-id "$upload_id" \
-            --endpoint-url "$R2_ENDPOINT" 2>/dev/null || continue
+            --endpoint-url "$CLOUDFLARE_R2_ENDPOINT" 2>/dev/null || continue
         aborted=$((aborted + 1))
     done < <(echo "$uploads" | jq -r '.[] | "\(.Key)\t\(.UploadId)"')
     log_info "  Aborted $aborted of $count"
@@ -274,7 +274,7 @@ stage2c() {
     local deleted=0
     for fmt in cli desktop npm apt rpm apk archlinux; do
         local listing
-        listing="$(aws s3 ls "s3://${BUCKET}/${fmt}/" --endpoint-url "$R2_ENDPOINT" 2>/dev/null |
+        listing="$(aws s3 ls "s3://${BUCKET}/${fmt}/" --endpoint-url "$CLOUDFLARE_R2_ENDPOINT" 2>/dev/null |
             awk '/^[[:space:]]*PRE[[:space:]]pr-[0-9]+\// {print $2}')"
         [[ -z "$listing" ]] && continue
         while IFS= read -r sub; do
@@ -283,7 +283,7 @@ stage2c() {
             pr_num="${pr_num%/}"
             local prefix="${fmt}/${sub}"
             local last
-            last="$(aws s3 ls "s3://${BUCKET}/${prefix}" --recursive --endpoint-url "$R2_ENDPOINT" 2>/dev/null |
+            last="$(aws s3 ls "s3://${BUCKET}/${prefix}" --recursive --endpoint-url "$CLOUDFLARE_R2_ENDPOINT" 2>/dev/null |
                 awk 'NR==1 {print $1"T"$2"Z"; exit}')"
             [[ -z "$last" ]] && continue
             local last_epoch
@@ -303,7 +303,7 @@ stage2c() {
             fi
             if [[ -n "$reason" ]]; then
                 log_info "  reaping $prefix ($reason)"
-                aws s3 rm "s3://${BUCKET}/${prefix}" --recursive --endpoint-url "$R2_ENDPOINT" --quiet 2>/dev/null
+                aws s3 rm "s3://${BUCKET}/${prefix}" --recursive --endpoint-url "$CLOUDFLARE_R2_ENDPOINT" --quiet 2>/dev/null
                 deleted=$((deleted + 1))
             fi
         done <<<"$listing"
@@ -339,7 +339,7 @@ stage2d() {
             local root="${fmt}/${channel}/"
             log_step "  $root"
             local listing
-            listing="$(aws s3 ls "s3://${BUCKET}/${root}" --recursive --endpoint-url "$R2_ENDPOINT" 2>/dev/null |
+            listing="$(aws s3 ls "s3://${BUCKET}/${root}" --recursive --endpoint-url "$CLOUDFLARE_R2_ENDPOINT" 2>/dev/null |
                 awk '{
                     n = split($4, p, "/"); fname = p[n];
                     if (fname !~ /^rediacc-(cli|desktop)[-_]/) next
@@ -370,7 +370,7 @@ stage2d() {
                     if $DRY_RUN; then
                         log_warn "    [DRY-RUN] Would delete ${key} (${tag})"
                     else
-                        aws s3 rm "s3://${BUCKET}/${key}" --endpoint-url "$R2_ENDPOINT" --quiet
+                        aws s3 rm "s3://${BUCKET}/${key}" --endpoint-url "$CLOUDFLARE_R2_ENDPOINT" --quiet
                         log_info "    deleted ${key} (${tag})"
                     fi
                     deleted=$((deleted + 1))
@@ -384,7 +384,7 @@ stage2d() {
                 if $DRY_RUN; then
                     log_warn "    [DRY-RUN] Would delete ${key} (${tag})"
                 elif confirm "Delete ${key} (${tag})?"; then
-                    aws s3 rm "s3://${BUCKET}/${key}" --endpoint-url "$R2_ENDPOINT" --quiet
+                    aws s3 rm "s3://${BUCKET}/${key}" --endpoint-url "$CLOUDFLARE_R2_ENDPOINT" --quiet
                     log_info "    deleted ${key} (${tag})"
                 fi
                 deleted=$((deleted + 1))
@@ -404,7 +404,7 @@ stage3() {
         local prefix="desktop/v1.0.${n}/"
         for yml in latest-linux.yml latest-linux-arm64.yml latest-mac.yml latest-win.yml; do
             local key="${prefix}${yml}"
-            if ! aws s3api head-object --bucket "$BUCKET" --key "$key" --endpoint-url "$R2_ENDPOINT" >/dev/null 2>&1; then
+            if ! aws s3api head-object --bucket "$BUCKET" --key "$key" --endpoint-url "$CLOUDFLARE_R2_ENDPOINT" >/dev/null 2>&1; then
                 continue
             fi
             if $DRY_RUN; then
@@ -415,7 +415,7 @@ stage3() {
                 log_info "    skipped: $key"
                 continue
             fi
-            aws s3 rm "s3://${BUCKET}/${key}" --endpoint-url "$R2_ENDPOINT" --quiet
+            aws s3 rm "s3://${BUCKET}/${key}" --endpoint-url "$CLOUDFLARE_R2_ENDPOINT" --quiet
             log_info "  Deleted $key"
         done
     done

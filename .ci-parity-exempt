@@ -45,5 +45,5 @@ ci-only  .ci/scripts/quality/check-review-report-replies.sh
 # BLOCKER: compares each submodule pointer against the branches open on the submodule's own GitHub remote; needs API access to three repos and a PR context to resolve the expected branch
 ci-only  .ci/scripts/quality/check-submodule-branches.sh
 
-# BLOCKER: probes the release-state sentinels in the R2 bucket, so it needs R2_ACCESS_KEY_ID/R2_SECRET_ACCESS_KEY; a developer without release credentials gets "Required environment variable 'R2_ACCESS_KEY_ID' is not set" rather than a verdict
+# BLOCKER: probes the release-state sentinels in the R2 bucket, so it needs CLOUDFLARE_R2_ACCESS_KEY_ID/CLOUDFLARE_R2_SECRET_ACCESS_KEY; a developer without release credentials gets "Required environment variable 'CLOUDFLARE_R2_ACCESS_KEY_ID' is not set" rather than a verdict
 ci-only  .ci/scripts/quality/check-release-state.sh

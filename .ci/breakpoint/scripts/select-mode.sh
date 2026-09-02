@@ -21,7 +21,7 @@
 # Exit:   0 ok, 3 named requested but not configured, 4 bad arguments.
 #
 # Env consulted for named mode:
-#   BREAKPOINT_TUNNEL_TOKEN    Cloudflare API token (Tunnel+DNS+Access edit)
+#   CLOUDFLARE_BREAKPOINT_TUNNEL_TOKEN    Cloudflare API token (Tunnel+DNS+Access edit)
 #   CLOUDFLARE_ACCOUNT_ID      account the tunnel is created in
 #   BREAKPOINT_TUNNEL_ZONE     zone the hostname is created in (or conf)
 
@@ -42,7 +42,7 @@ MODE="${ARG_MODE:-quick}"
 ZONE="${BREAKPOINT_TUNNEL_ZONE:-}"
 
 named_is_configured() {
-    [[ -n "${BREAKPOINT_TUNNEL_TOKEN:-}" ]] &&
+    [[ -n "${CLOUDFLARE_BREAKPOINT_TUNNEL_TOKEN:-}" ]] &&
         [[ -n "${CLOUDFLARE_ACCOUNT_ID:-}" ]] &&
         [[ -n "$ZONE" ]]
 }
@@ -50,8 +50,8 @@ named_is_configured() {
 # Name the FIRST missing piece, so a half-configured setup produces an
 # actionable message instead of a generic one.
 named_missing_what() {
-    if [[ -z "${BREAKPOINT_TUNNEL_TOKEN:-}" ]]; then
-        echo "BREAKPOINT_TUNNEL_TOKEN (secret)"
+    if [[ -z "${CLOUDFLARE_BREAKPOINT_TUNNEL_TOKEN:-}" ]]; then
+        echo "CLOUDFLARE_BREAKPOINT_TUNNEL_TOKEN (secret)"
     elif [[ -z "${CLOUDFLARE_ACCOUNT_ID:-}" ]]; then
         echo "CLOUDFLARE_ACCOUNT_ID (repo or org variable)"
     else

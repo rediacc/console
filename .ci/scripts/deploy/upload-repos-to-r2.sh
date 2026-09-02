@@ -21,9 +21,9 @@
 #
 # Required env:
 #   CHANNEL                release channel to publish under, e.g. edge / pr-123
-#   R2_ACCESS_KEY_ID       exported as AWS_ACCESS_KEY_ID for the aws CLI
-#   R2_SECRET_ACCESS_KEY   exported as AWS_SECRET_ACCESS_KEY for the aws CLI
-#   R2_ENDPOINT            S3 endpoint of the R2 bucket
+#   CLOUDFLARE_R2_ACCESS_KEY_ID       exported as AWS_ACCESS_KEY_ID for the aws CLI
+#   CLOUDFLARE_R2_SECRET_ACCESS_KEY   exported as AWS_SECRET_ACCESS_KEY for the aws CLI
+#   CLOUDFLARE_R2_ENDPOINT            S3 endpoint of the R2 bucket
 #   CLOUDFLARE_API_TOKEN   read by cf-purge-urls.sh
 #   CLOUDFLARE_ZONE_ID     zone whose cache is purged
 #   SKIP_RELEASE           truthy (1/true/yes/y/on) when the merge carried
@@ -31,8 +31,8 @@
 #
 # Reads dist/repos/{apt,rpm,apk,archlinux}/ and dist/pages/install.{sh,ps1}.
 #
-# Run locally (WRITES to R2 -- point R2_ENDPOINT at a scratch bucket first):
-#   CHANNEL=pr-0 R2_ACCESS_KEY_ID=... R2_SECRET_ACCESS_KEY=... R2_ENDPOINT=... \
+# Run locally (WRITES to R2 -- point CLOUDFLARE_R2_ENDPOINT at a scratch bucket first):
+#   CHANNEL=pr-0 CLOUDFLARE_R2_ACCESS_KEY_ID=... CLOUDFLARE_R2_SECRET_ACCESS_KEY=... CLOUDFLARE_R2_ENDPOINT=... \
 #     CLOUDFLARE_API_TOKEN=... CLOUDFLARE_ZONE_ID=... \
 #     .ci/scripts/deploy/upload-repos-to-r2.sh
 #
@@ -47,9 +47,9 @@ source "$SCRIPT_DIR/../lib/common.sh"
 
 require_cmd aws
 : "${CHANNEL:?upload-repos-to-r2.sh: CHANNEL must be set}"
-: "${R2_ACCESS_KEY_ID:?upload-repos-to-r2.sh: R2_ACCESS_KEY_ID must be set}"
-: "${R2_SECRET_ACCESS_KEY:?upload-repos-to-r2.sh: R2_SECRET_ACCESS_KEY must be set}"
-: "${R2_ENDPOINT:?upload-repos-to-r2.sh: R2_ENDPOINT must be set}"
+: "${CLOUDFLARE_R2_ACCESS_KEY_ID:?upload-repos-to-r2.sh: CLOUDFLARE_R2_ACCESS_KEY_ID must be set}"
+: "${CLOUDFLARE_R2_SECRET_ACCESS_KEY:?upload-repos-to-r2.sh: CLOUDFLARE_R2_SECRET_ACCESS_KEY must be set}"
+: "${CLOUDFLARE_R2_ENDPOINT:?upload-repos-to-r2.sh: CLOUDFLARE_R2_ENDPOINT must be set}"
 : "${CLOUDFLARE_ZONE_ID:?upload-repos-to-r2.sh: CLOUDFLARE_ZONE_ID must be set}"
 
 # =============================================================================
@@ -104,8 +104,8 @@ fi
 # exactly as they were in the workflow step.
 cd "$(get_repo_root)"
 
-export AWS_ACCESS_KEY_ID="${R2_ACCESS_KEY_ID}"
-export AWS_SECRET_ACCESS_KEY="${R2_SECRET_ACCESS_KEY}"
+export AWS_ACCESS_KEY_ID="${CLOUDFLARE_R2_ACCESS_KEY_ID}"
+export AWS_SECRET_ACCESS_KEY="${CLOUDFLARE_R2_SECRET_ACCESS_KEY}"
 export AWS_DEFAULT_REGION="auto"
 
 CC_MUTABLE="no-cache"
@@ -115,7 +115,7 @@ for dir in apt rpm apk archlinux; do
     [[ -d "dist/repos/$dir" ]] || continue
     aws s3 sync "dist/repos/$dir" "s3://rediacc-releases/${dir}/${CHANNEL}/" \
         --cache-control "$CC_MUTABLE" \
-        --endpoint-url "$R2_ENDPOINT" --quiet
+        --endpoint-url "$CLOUDFLARE_R2_ENDPOINT" --quiet
     # Purge every uploaded URL to evict entries cached under the
     # old immutable policy. Once every CI cycle has re-uploaded
     # with no-cache, CF won't cache anything and subsequent purges
@@ -136,7 +136,7 @@ for f in dist/pages/install.sh dist/pages/install.ps1; do
         "$f" >"$tmp"
     aws s3 cp "$tmp" "s3://rediacc-releases/cli/${CHANNEL}/$(basename "$f")" \
         --cache-control "$CC_MUTABLE" \
-        --endpoint-url "$R2_ENDPOINT" --quiet
+        --endpoint-url "$CLOUDFLARE_R2_ENDPOINT" --quiet
     rm -f "$tmp"
     PURGE_URLS+=("https://releases.rediacc.com/cli/${CHANNEL}/$(basename "$f")")
 done

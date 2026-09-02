@@ -25,9 +25,9 @@ test_dry_run_completes_with_no_credentials() {
     # line. If pipefail kills it after the count assignment we'll see no exit
     # message and the test fails.
     local out rc=0
-    out="$(R2_ACCESS_KEY_ID="invalid" \
-        R2_SECRET_ACCESS_KEY="invalid" \
-        R2_ENDPOINT="https://invalid.example.invalid" \
+    out="$(CLOUDFLARE_R2_ACCESS_KEY_ID="invalid" \
+        CLOUDFLARE_R2_SECRET_ACCESS_KEY="invalid" \
+        CLOUDFLARE_R2_ENDPOINT="https://invalid.example.invalid" \
         bash "$REPO_ROOT/scripts/dev/scrub-sentinel.sh" v9.99.99 2>&1)" || rc=$?
 
     assert_exit_code 0 "$rc" "dry-run must succeed even with bad credentials"
@@ -41,9 +41,9 @@ test_dry_run_emits_zero_object_count() {
     # to decide whether the scrub is safe. If the helper falls back to a
     # malformed value (e.g. "None"), the count must still normalise to 0.
     local out
-    out="$(R2_ACCESS_KEY_ID="invalid" \
-        R2_SECRET_ACCESS_KEY="invalid" \
-        R2_ENDPOINT="https://invalid.example.invalid" \
+    out="$(CLOUDFLARE_R2_ACCESS_KEY_ID="invalid" \
+        CLOUDFLARE_R2_SECRET_ACCESS_KEY="invalid" \
+        CLOUDFLARE_R2_ENDPOINT="https://invalid.example.invalid" \
         bash "$REPO_ROOT/scripts/dev/scrub-sentinel.sh" v9.99.99 2>&1)"
 
     # One product (cli), one count line. Must contain "objects: 0".

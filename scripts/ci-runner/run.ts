@@ -367,19 +367,49 @@ function select(
   };
 }
 
-function loadDurations(cachePath: string | undefined): Map<string, number> {
-  const durations = new Map<string, number>();
-  if (cachePath === undefined) return durations;
+/**
+ * One cache entry per gate. `ewma` is the scheduling estimate. `recent` is
+ * the last RECENT_KEEP raw measurements, oldest first, and exists for
+ * check-gate-manifest's tier oracle: it judges the FLOOR of those, because
+ * load only ever adds time. One full run overlapping two other sessions on
+ * 2026-09-02 pushed a 4.5s gate's ewma to 21s and the oracle then demanded it
+ * be marked slow; five measurements cannot all be poisoned by one bad run.
+ * A bare number is the pre-2026-09-02 shape and is still read.
+ */
+export interface DurationRecord {
+  ewma: number;
+  recent: number[];
+}
+const RECENT_KEEP = 5;
+
+function loadDurationRecords(cachePath: string | undefined): Map<string, DurationRecord> {
+  const records = new Map<string, DurationRecord>();
+  if (cachePath === undefined) return records;
   try {
     const parsed: unknown = JSON.parse(fs.readFileSync(cachePath, 'utf-8'));
-    if (parsed === null || typeof parsed !== 'object') return durations;
-    for (const [id, ms] of Object.entries(parsed as Record<string, unknown>)) {
-      if (typeof ms === 'number' && Number.isFinite(ms) && ms > 0) durations.set(id, ms);
+    if (parsed === null || typeof parsed !== 'object') return records;
+    for (const [id, v] of Object.entries(parsed as Record<string, unknown>)) {
+      if (typeof v === 'number' && Number.isFinite(v) && v > 0) {
+        records.set(id, { ewma: v, recent: [v] });
+      } else if (v !== null && typeof v === 'object') {
+        const { ewma, recent } = v as { ewma?: unknown; recent?: unknown };
+        if (typeof ewma !== 'number' || !Number.isFinite(ewma) || ewma <= 0) continue;
+        const kept = Array.isArray(recent)
+          ? recent.filter((n): n is number => typeof n === 'number' && Number.isFinite(n) && n > 0)
+          : [];
+        records.set(id, { ewma, recent: kept.length > 0 ? kept : [ewma] });
+      }
     }
   } catch {
     // A missing or corrupt cache is a scheduling hint at worst. It must
     // never fail the run.
   }
+  return records;
+}
+
+function loadDurations(cachePath: string | undefined): Map<string, number> {
+  const durations = new Map<string, number>();
+  for (const [id, rec] of loadDurationRecords(cachePath)) durations.set(id, rec.ewma);
   return durations;
 }
 
@@ -390,12 +420,22 @@ function saveDurations(
 ): void {
   if (cachePath === undefined) return;
   try {
-    const next: Record<string, number> = Object.fromEntries(prior);
+    const next: Record<string, DurationRecord> = Object.fromEntries(loadDurationRecords(cachePath));
     for (const r of results) {
-      if (r.status === 'skipped' || r.ms <= 0) continue;
+      // ONLY a passing run. A gate that fails fast is cheap in wall-clock and
+      // expensive in nothing -- but the tier oracle judges the FLOOR of
+      // `recent`, so one 1.1s failure of a 21s gate makes it look like a
+      // pre-push-lane candidate forever. That is how check:ci-shape-duplication
+      // (21.4s), check:ci-renet-types (10.7s) and gate-test:trap-registry
+      // (46.4s) were all demanded into the fast lane on 2026-09-02, during a
+      // session that had just triaged ten red gates. A failure's duration is
+      // not the gate's cost; it is the cost of the part that ran.
+      if (r.status !== 'ok' || r.ms <= 0) continue;
       const old = prior.get(r.id);
-      next[r.id] =
+      const ewma =
         old === undefined ? r.ms : Math.round(old * (1 - EWMA_ALPHA) + r.ms * EWMA_ALPHA);
+      const recent = [...(next[r.id]?.recent ?? []), r.ms].slice(-RECENT_KEEP);
+      next[r.id] = { ewma, recent };
     }
     fs.mkdirSync(path.dirname(cachePath), { recursive: true });
     fs.writeFileSync(cachePath, `${JSON.stringify(next, null, 2)}\n`);
@@ -581,6 +621,43 @@ async function selftest(): Promise<number> {
     'CONTROL: with no flags select() must keep every gate, or --only proves nothing'
   );
 
+  // THE DURATION CACHE MUST NOT LEARN FROM FAILURES. It feeds the tier oracle
+  // in check-gate-manifest, which judges the FLOOR of `recent` -- so a single
+  // fast failure of a slow gate is indistinguishable from the gate becoming
+  // cheap, and demands it be moved into the pre-push lane forever. Both
+  // directions, because "records nothing" would pass the first assertion alone.
+  const durDir = fs.mkdtempSync(path.join(os.tmpdir(), 'ci-runner-dur-'));
+  const durCache = path.join(durDir, 'gate-durations.json');
+  const durResult = (id: string, status: GateResult['status'], ms: number): GateResult => ({
+    id,
+    gate: true,
+    status,
+    ms,
+    exitCode: status === 'ok' ? 0 : 1,
+    stdout: '',
+    stderr: '',
+    rerun: 'true',
+  });
+  saveDurations(durCache, new Map(), [
+    durResult('selftest:dur-ok', 'ok', 4321),
+    durResult('selftest:dur-fail', 'fail', 11),
+    durResult('selftest:dur-blocked', 'blocked', 12),
+  ]);
+  const durWritten = JSON.parse(fs.readFileSync(durCache, 'utf-8')) as Record<string, unknown>;
+  fs.rmSync(durDir, { recursive: true, force: true });
+  require_(
+    durWritten['selftest:dur-fail'] === undefined,
+    'a FAILED run must not enter the duration cache -- it poisons the tier oracle floor'
+  );
+  require_(
+    durWritten['selftest:dur-blocked'] === undefined,
+    'a BLOCKED run must not enter the duration cache either'
+  );
+  require_(
+    (durWritten['selftest:dur-ok'] as { recent?: number[] } | undefined)?.recent?.[0] === 4321,
+    'CONTROL: a PASSING run must still be recorded, or the two assertions above prove nothing'
+  );
+
   if (failures.length > 0) {
     process.stderr.write('CONTROL FAILED: ci-runner --selftest did not fire\n');
     for (const f of failures) process.stderr.write(`  - ${f}\n`);
@@ -588,7 +665,7 @@ async function selftest(): Promise<number> {
     process.stderr.write(text);
     return 1;
   }
-  process.stdout.write(`ci-runner: selftest ok (${9 + 7 + 3 + 2} assertions)\n`);
+  process.stdout.write(`ci-runner: selftest ok (${9 + 7 + 3 + 2 + 3} assertions)\n`);
   return 0;
 }
 

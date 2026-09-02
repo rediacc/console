@@ -1,0 +1,96 @@
+name: Fetch secrets from Bitwarden
+description: >
+  Fetches named secrets from Bitwarden Secrets Manager (project ci-shared) and
+  exports them as masked environment variables for the rest of the job.
+  Wraps bitwarden/sm-action so there is ONE pin site for it, not one per job,
+  and so workflows name secrets by NAME rather than by UUID.
+
+  HOW IT WORKS. sm-action addresses secrets by UUID only. Raw UUIDs in 62 job
+  blocks would be unreadable and unreviewable, so the translation lives in
+  .ci/config/bws-secret-map.json (name -> uuid, generated from the project
+  itself) and this action does the lookup at job start. check_bws_map.py
+  asserts every name requested anywhere is in that map and the map is fresh.
+
+  WHAT FAILS LOUDLY, established 2026-09-02 against the real API rather than
+  assumed: a UUID that does not exist or that the machine account cannot read
+  makes /secrets/get-by-ids return 404 for the WHOLE request, so sm-action
+  fails the job (src/main.rs, "The secrets provided could not be found"). A
+  name absent from the map fails HERE, before sm-action runs. A malformed line
+  fails here too.
+
+  WHAT DOES NOT FAIL: a correct UUID whose stored VALUE is empty. sm-action
+  exports "" without complaint, and the Worker's zod schema normalises "" to
+  undefined and validates it. That is the deploy scripts' non-empty guards'
+  job (set-*-worker-secrets.sh), not this action's.
+
+inputs:
+  access-token:
+    description: >
+      Bitwarden machine-account access token (GitHub secret BWS_ACCESS_TOKEN).
+      This is the ONE credential that stays in GitHub; everything else comes
+      from Secrets Manager through it.
+    required: true
+  secrets:
+    description: >
+      One secret per line, by NAME as spelled in .ci/config/bws-secret-map.json.
+      Optionally `NAME > ENV_NAME` to export under a different variable name,
+      which is how one Bitwarden secret serves several regional slots
+      (STRIPE_SECRET_KEY > STRIPE_SECRET_KEY_EU). Without `>` the env var is
+      the name itself.
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Resolve names to UUIDs
+      id: resolve
+      shell: bash
+      env:
+        REQUESTED: ${{ inputs.secrets }}
+        MAP: ${{ github.action_path }}/../../../.ci/config/bws-secret-map.json
+      run: |
+        set -euo pipefail
+        [[ -f "$MAP" ]] || { echo "::error::bws-secret-map.json not found at $MAP"; exit 1; }
+        # ubuntu-slim does not ship jq (backfill-release-sentinel.yml and ci.yml both
+        # install it for that reason), and 11 slim jobs run this action. Install it
+        # here rather than in every caller; macOS and Windows runner images carry it.
+        if ! command -v jq >/dev/null 2>&1; then
+          sudo apt-get install -y -qq jq >/dev/null || { echo "::error::jq is missing and could not be installed"; exit 1; }
+        fi
+        lines=""
+        n=0
+        while IFS= read -r raw; do
+          line="$(echo "$raw" | sed -e 's/#.*$//' -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')"
+          [[ -z "$line" ]] && continue
+          name="${line%%>*}"; name="${name%"${name##*[![:space:]]}"}"
+          if [[ "$line" == *">"* ]]; then
+            env_name="${line#*>}"; env_name="${env_name#"${env_name%%[![:space:]]*}"}"
+          else
+            env_name="$name"
+          fi
+          if ! [[ "$name" =~ ^[A-Za-z0-9_.=:-]+$ && "$env_name" =~ ^[A-Za-z_][A-Za-z0-9_]*$ ]]; then
+            echo "::error::malformed secrets line: '$raw' (want NAME or NAME > ENV_NAME)"; exit 1
+          fi
+          uuid="$(jq -r --arg n "$name" '.secrets[$n].id // empty' "$MAP")"
+          if [[ -z "$uuid" ]]; then
+            echo "::error::secret '$name' is not in .ci/config/bws-secret-map.json. Add it to ci-shared and regenerate the map."
+            exit 1
+          fi
+          lines+="${uuid} > ${env_name}"$'\n'
+          n=$((n + 1))
+        done <<<"$REQUESTED"
+        if (( n == 0 )); then
+          echo "::error::no secrets requested -- a fetch that fetches nothing is a wiring mistake"; exit 1
+        fi
+        echo "resolved $n secret(s)"
+        {
+          echo "mapping<<BWS_EOF"
+          printf '%s' "$lines"
+          echo "BWS_EOF"
+        } >> "$GITHUB_OUTPUT"
+
+    - name: Fetch from Bitwarden Secrets Manager
+      uses: bitwarden/sm-action@1238aae8fc64b212641190a9227c8a734ab1a793  # v3.0.1
+      with:
+        access_token: ${{ inputs.access-token }}
+        secrets: ${{ steps.resolve.outputs.mapping }}

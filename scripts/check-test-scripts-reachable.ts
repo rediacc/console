@@ -40,6 +40,7 @@
  */
 
 import { readFileSync } from 'node:fs';
+import { refuse } from './lib/controls';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { globSync } from 'glob';
@@ -176,21 +177,19 @@ function unreachable(root: string, pkgs: Pkg[]): Pkg[] {
   const ghostDir = ['packages', '__ghost__'].join('/');
   const ghost: Pkg = { name: '@rediacc/__no_such_package__', dir: ghostDir, scripts: ['test'] };
   if (unreachable(ROOT, [ghost]).length !== 1) {
-    console.error(
-      '✗ instrument control did not fire: a package that is neither referenced by CI\n' +
-        '  nor documented as an omission was NOT reported, so a green run means nothing.'
+    refuse(
+      '✗ instrument control did not fire: a package that is neither referenced by CI',
+      '  nor documented as an omission was NOT reported, so a green run means nothing.'
     );
-    process.exit(1);
   }
   // And a package that IS documented must NOT be reported, or the gate would
   // fail forever and get deleted rather than obeyed.
   const documented: Pkg = { name: '@rediacc/json', dir: 'packages/json', scripts: ['test'] };
   if (unreachable(ROOT, [documented]).length !== 0) {
-    console.error(
-      '✗ instrument control over-reports: packages/json IS documented under\n' +
-        `  "${OMISSIONS_HEADING}" in ${OMISSIONS_DOC}, and was still flagged.`
+    refuse(
+      '✗ instrument control over-reports: packages/json IS documented under',
+      `  "${OMISSIONS_HEADING}" in ${OMISSIONS_DOC}, and was still flagged.`
     );
-    process.exit(1);
   }
 }
 

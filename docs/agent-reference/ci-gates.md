@@ -539,6 +539,57 @@ Console PRs are opened as **drafts** (`gh pr create --draft`) and stay draft unt
 
 A push whose commits only move submodule gitlinks to tree-identical, on-submodule-`main` commits (the post-squash pointer bump), on top of a baseline commit that already has a successful `CI Complete`, is detected by `.ci/scripts/ci/detect-pointer-bump.sh`, which sets `pointer_bump_only=true` in the `initialize` job. Under that flag `ci.yml` skips `build-renet` (and everything cascading from it: the other builds, tests, install-matrix, preview) plus `stripe-sandbox`, `package-tests`, and `ops-tests` (`tests` carries `Migration Test`, which skips itself under the flag); only `quality`, `review-gate`, and `ci-complete` still run. `assert-ci-complete.sh` accepts those skipped builds as green **only** under this flag, so the aggregated `CI Complete` still goes green, in minutes. This is why `/pr-merge` now WAITS for the fast-path run to go green and merges with `--rebase --auto`, instead of admin-merging over a pending run (which used to leave the merged PR with a permanent red `Quality / Branch`, a wall of cancelled jobs, and no `CI Complete`). A pointer-bump-only delta is also deliberately not re-reviewed by Claude.
 
+### Dispatching a workflow on a branch (`--ref`), and the one half nobody has proven
+
+Console's workflow graph is already branch-aware where it can be: all 18 job-level workflow
+calls in `.github/workflows/` use the local `./` form, and GitHub documents that form as
+resolving to the caller's own commit — *"When you reference a reusable workflow in the same
+repository using `./` (without `{owner}/{repo}` and `@{ref}`), the called workflow is from the
+same commit as the caller workflow."* (*Reuse workflows*). A PR's `ci.yml` closure therefore
+runs the PR's own YAML. What forces merge-first is never the ref: it is `workflow_run` and
+`pull_request_target` reading the default branch **by design** (they hold secrets while a PR's
+code is in play), the deliberate `console@main` pin on the review scripts
+(`claude-review-reusable.yml:170-176`, closing run `30317293249` where a PR reviewed itself
+with its own review logic), `ci.yml:193-199` refusing a non-`main` rehearsal dispatch, and the
+two external callers registered in `.github/external-callers.yml`.
+
+**Acceptance is decided from the default branch. This half is settled.** GitHub: *"This event
+will only trigger a workflow run if the workflow file exists on the default branch."*
+(*Events that trigger workflows*). Two live consequences, both already paid for here:
+
+- Adding a `workflow_dispatch:` trigger costs **one** merge, once per workflow — never one per
+  change. Until it lands on `main`, `gh workflow run <file> -f …` fails closed with a 422,
+  *"Workflow does not have 'workflow_dispatch' trigger"*. Observed on PR #546, run
+  `30588087212` (`claude-review.yml:27-35`).
+- The same resolution applies to the FILENAME, so a brand-new workflow cannot be dispatched
+  from any ref at all: `.ci/scripts/ci/dispatch-watchdog.sh:126-138` fails open on exactly
+  that bootstrap condition, observed as an HTTP 404 on both the head-ref and default-branch
+  attempts in run `29936730679`.
+
+**Which copy then EXECUTES is the dispatched ref's, and one rule explains every trigger.**
+This is not stated in one sentence anywhere, which is why two places in this tree used to
+disagree about it (`claude-review.yml:27-35` said the default branch's copy defines the job;
+`agent/PLAN-branch-aware-workflows.md` said the ref's). It is the conjunction of two pages,
+both re-verified 2026-09-02:
+
+> "Each workflow run will use the version of the workflow that is present in the associated
+> commit SHA or Git ref of the event." — *Workflows (concepts)*
+
+and the per-event table in *Events that trigger workflows*, which gives `workflow_dispatch`
+a `GITHUB_REF` of *"Branch or tag that received dispatch"* and a `GITHUB_SHA` of *"Last commit
+on the `GITHUB_REF` branch or tag"*. So the dispatched branch's YAML runs.
+
+**The same rule is why `workflow_run` and `pull_request_target` read the default branch** —
+their table rows give both a `GITHUB_REF` of *"Default branch"* and a `GITHUB_SHA` of *"Last
+commit on default branch"*. That is not a separate mechanism to memorise; it is the identical
+"version at the event's ref" rule applied to an event whose ref IS the default branch, which
+is the security property those two triggers exist to have.
+
+Practical consequence: **acceptance and execution resolve against different refs, and only for
+`workflow_dispatch`.** Landing the trigger on `main` is a one-time cost; after that
+`--ref <branch>` genuinely tests the branch's copy.
+
+
 ### Never push to `main` or cut a release without explicit user authorization
 
 **AI agents MUST NOT push to `main` (console or any submodule) or trigger a release without an explicit, per-task user request.** Every push to `main` runs the full release pipeline (`cd-v2.yml` deploys edge on green), so an unprompted main push is an unprompted release. Approving an implementation plan is **not** authorization to push to `main` or release. Branch protection forbids direct pushes (`.github/CONTRIBUTING.md`); do not work around it.

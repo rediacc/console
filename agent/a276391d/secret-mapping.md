@@ -1,3 +1,5 @@
+> **Superseded 2026-09-02.** The ci-shared names below are the PRE-rename spellings. The live name-to-UUID record is `.ci/config/bws-secret-map.json` (regenerate with `scripts/dev/bws-map-refresh.py`); the rename rules are Part 12 of `agent/PLAN-secret-namespace-migration.md`.
+
 # Secret coverage map — Bitwarden vault vs GitHub Actions vs private/account/.env
 
 NAMES ONLY. No secret value has been read, printed, or stored here.
@@ -106,9 +108,13 @@ SERVER_API_KEY = admin API), `docs/SECURITY-CONFIG-STORAGE.md:37,65,130` (X25519
 member-key distribution), `docs/code-signing-guide.md:558-560` (GPG, no backup, revocation
 cert unticked).
 
-### D. DEAD — do not migrate (2)
+### D. NOT WIRED TODAY, but KEPT — operator ruling 2026-09-02 (2)
 AWS_SES_ACCESS_KEY_ID_ASIA, AWS_SES_SECRET_ACCESS_KEY_ASIA
   -> declared required, passed, then overwritten with EU (set-account-worker-secrets.sh:84).
+  This file called them "DEAD -- do not migrate". **That was overruled**: the operator
+  said "we must keep the ASIA for the future. AWS didn't allow us to use it but we keep
+  it anyway." They are held for when AWS grants ap-northeast-1 production access, so they
+  MIGRATE with the rest. Unwired is not dead.
 
 ### C. IRRECOVERABLE if lost — regenerating is customer-visible (4)
 ACCOUNT_ED25519_PRIVATE_KEY  IN VAULT  public half is compiled into every shipped renet

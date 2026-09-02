@@ -739,6 +739,47 @@ for braver, want in [
     control("  and the order still fits the 200-char cap", len(out["next_action"]) < 200, True)
     wl_bravedefault.BRAVE_DEMAND.clear(BMARKER)
 
+# -- 4c3. A DEFAULT MAY NOT ORDER AN ACT RESERVED TO THE OPERATOR. ---------
+# Same shape as 4c2, different reason: nothing here destroys anything, but
+# committing needs an ask, so an order carrying one tells the session to break a
+# standing order. This is the exact string this rule emitted on 2026-09-02.
+for braver, want in [
+    (
+        "Rename BACKUP_R2_* across env.ts and the builders, then commit to the open branch",
+        "commit to the open branch",
+    ),
+    ("finish the sweep and leave it committed on the branch", "leave it committed"),
+    ("open a PR with the regenerated files", "open a PR"),
+]:
+    out = bd_answer(braver=braver)
+    kind, _note = wl_bravedefault.apply_verdict(out, path=BMARKER)
+    control("a DEFAULT that would commit still fires: %s" % want, kind, "fire")
+    control("  and its suggestion is dropped, naming %s" % want, want in out["next_action"], True)
+    control(
+        "  and the order says the work stays UNCOMMITTED",
+        "UNCOMMITTED" in out["next_action"],
+        True,
+    )
+    control("  and the order still fits the 200-char cap", len(out["next_action"]) < 200, True)
+    wl_bravedefault.BRAVE_DEMAND.clear(BMARKER)
+# The prompt must not TEACH the thing the filter then drops: the rubric used to
+# offer "commit it onto the open PR's branch" as the model braver form, which is
+# where the 2026-09-02 order came from.
+control(
+    "the rubric no longer offers committing as the braver form",
+    [
+        p
+        for p in ("commit it onto", "leave it committed", "THREE ACTS")
+        if p in wl_bravedefault.BRAVE_PROMPT
+    ],
+    [],
+)
+control(
+    "and it names committing among the reserved acts",
+    "COMMITTING" in wl_bravedefault.BRAVE_PROMPT,
+    True,
+)
+
 # THE GENERIC BRANCH, which had no control at all until an audit of every V_ACTION
 # interpolation found it: with `braver` empty the order is built from `instruction`
 # instead, and it is guarded only because `proposed = braver or instruction` makes
@@ -796,6 +837,91 @@ control(
     "both refuse git clean",
     (wl_rules.names_write("git clean -xdf"), wl_rules.names_tree_destroying("git clean -xdf")),
     ("git clean", "git clean"),
+)
+
+# -- The STANDING-ORDER threshold, which is not the safety one. -------------
+# CLAUDE.md's first standing order: the deliverable is an uncommitted working
+# tree; committing, branching, pushing and opening a PR need the operator's ask.
+# On 2026-09-02 wl_bravedefault's own next_action read "Rename ... then commit to
+# the open branch", the session did the rename and silently dropped the commit,
+# and a rule that must be quietly disobeyed is a broken rule. Both directions are
+# controlled: the version-control sense must fire and the ORDINARY ENGLISH sense
+# must not, because "commit to option A" means DECIDE and is the exact bravery
+# the rule it guards exists to encourage.
+for text, want in [
+    ("Rename it across every reader, then commit to the open branch", "commit to the open branch"),
+    ("finish it and leave it committed on the branch", "leave it committed"),
+    ("git push the fix", "git push"),
+    ("open a PR with the change", "open a PR"),
+    ("cut a release once CI is green", "cut a release"),
+]:
+    control(
+        "the standing-order threshold refuses %r" % want,
+        wl_rules.names_operator_reserved(text),
+        want,
+    )
+for text in [
+    "commit to option A and implement it",
+    "publish the regenerated teasers and say what changed",
+    "delete the dead path",
+    "write the rename across every reader and leave it in the tree",
+]:
+    control(
+        "CONTROL: it does not fire on %r" % text[:34],
+        wl_rules.names_operator_reserved(text),
+        "",
+    )
+
+
+# -- The CLASS-SWEEP reserved path, the sibling of 4c3. `instruction` is model
+# prose that reaches the session verbatim whenever `search` is empty, so it can
+# carry "commit them" as easily as "git clean". Both were verified by hand when
+# the branch landed; only the destructive half had a test.
+_CS_BASE = {
+    "applicable": True,
+    "swept": False,
+    "defect_class": "c",
+    "asserted": False,
+    "search": "",
+    "instruction": "",
+    "evidence_kind": "none",
+    "evidence": "",
+}
+for instr, want_dropped, label in [
+    ("fix the siblings and commit them onto the branch", True, "a commit instruction is dropped"),
+    ("git clean -xdf then re-run", True, "CONTROL: the destructive half still drops"),
+    (
+        "grep for the same shape in the other four builders",
+        False,
+        "CONTROL: a clean instruction passes through",
+    ),
+]:
+    _bd = dict(_CS_BASE)
+    _bd["instruction"] = instr
+    _out = {"verdict": "stop", "reason": "r", "next_action": "", "class_sweep": _bd}
+    _kind, _payload = wl_classsweep.read_verdict(_out)
+    wl_classsweep.enforce(_out, _payload)
+    control("class-sweep -- %s" % label, "DROPPED" in _out["next_action"], want_dropped)
+_named = {
+    "verdict": "stop",
+    "reason": "r",
+    "next_action": "",
+    "class_sweep": dict(_CS_BASE, instruction="fix the siblings and commit them onto the branch"),
+}
+wl_classsweep.enforce(_named, wl_classsweep.read_verdict(_named)[1])
+control(
+    "class-sweep names the reserved phrase it refused, not a generic complaint",
+    "commit them" in _named["next_action"],
+    True,
+)
+
+control(
+    "CONTROL: it is not the destructive threshold in disguise",
+    (
+        wl_rules.names_operator_reserved("git clean -xdf"),
+        wl_rules.names_tree_destroying("commit it onto the branch"),
+    ),
+    ("", ""),
 )
 
 # -- 4d. THE SILENT PAIR: a real action, and a justified hold. -------------
@@ -1125,21 +1251,50 @@ control(
     "degraded",
 )
 
-# 6c. `already` is the claim most worth checking, and one os.path.exists checks it.
-control(
-    "already, naming a module that IS on disk, is silent",
-    wl_shapedup.read_verdict(
-        _sd(consolidatable="already", harness=".claude/hooks/stop/wl_rules.py"), root=REPO
-    )[0],
-    "silent",
+# 6c. `already` FIRES both ways since the operator ruling of 2026-09-02, and the
+#     two ways differ only in `harness_real`, which picks the order. Kept as four
+#     controls rather than one, because "it fires" alone would pass on a rule that
+#     had stopped looking at the disk at all.
+_real = wl_shapedup.read_verdict(
+    _sd(consolidatable="already", harness=".claude/hooks/stop/wl_rules.py"), root=REPO
 )
+control("already, naming a module that IS on disk, fires (it is the adopt case)", _real[0], "fire")
 control(
-    "CONTROL: already, naming a module that is NOT on disk, fires anyway",
-    wl_shapedup.read_verdict(
-        _sd(consolidatable="already", harness="scripts/lib/a-harness-that-does-not-exist.ts"),
-        root=REPO,
-    )[0],
-    "fire",
+    "and it is marked as a real harness, which is what picks the adopt order",
+    _real[1]["harness_real"],
+    True,
+)
+_claimed = wl_shapedup.read_verdict(
+    _sd(consolidatable="already", harness="scripts/lib/a-harness-that-does-not-exist.ts"),
+    root=REPO,
+)
+control("CONTROL: already, naming a module that is NOT on disk, fires too", _claimed[0], "fire")
+control(
+    "CONTROL: and is NOT marked real, or the two branches would be indistinguishable",
+    _claimed[1]["harness_real"],
+    False,
+)
+# The order depends on the VERDICT, not merely on whether the named file exists.
+# `yes` pointing at a real library file is the common case, and it must still say
+# EXTRACT: the shared piece has to be written into that file. harness_real alone
+# gave it the adopt order.
+_yes_real = wl_shapedup.read_verdict(
+    _sd(consolidatable="yes", harness=".claude/hooks/stop/wl_rules.py"), root=REPO
+)
+control("consolidatable=yes carries its verdict on the payload", _yes_real[1]["verdict"], "yes")
+_o1: dict = {}
+wl_shapedup.enforce(_o1, _yes_real[1], 3)
+control(
+    "yes + an existing target says EXTRACT, not adopt",
+    "ALREADY EXISTS" not in json.dumps(_o1),
+    True,
+)
+_o2: dict = {}
+wl_shapedup.enforce(_o2, _real[1], 3)
+control(
+    "CONTROL: already + an existing target DOES say adopt, or the split is a no-op",
+    "ALREADY EXISTS" in json.dumps(_o2),
+    True,
 )
 control(
     "already with no harness named fires",

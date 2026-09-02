@@ -31,7 +31,7 @@
 #
 # Required env:
 #   GH_TOKEN / GITHUB_TOKEN   for `gh` (repo contents: read is enough)
-#   R2_ACCESS_KEY_ID / R2_SECRET_ACCESS_KEY / R2_ENDPOINT   for the sentinel read
+#   CLOUDFLARE_R2_ACCESS_KEY_ID / CLOUDFLARE_R2_SECRET_ACCESS_KEY / CLOUDFLARE_R2_ENDPOINT   for the sentinel read
 # Optional env:
 #   GITHUB_REPOSITORY   owner/repo (default: rediacc/console)
 #   RELEASES_BUCKET     R2 bucket   (default: rediacc-releases)
@@ -79,7 +79,16 @@ TAG="v${VERSION}"
 
 require_cmd gh
 require_cmd aws
-: "${R2_ENDPOINT:?assert-edge-tag-exists.sh: R2_ENDPOINT must be set}"
+: "${CLOUDFLARE_R2_ENDPOINT:?assert-edge-tag-exists.sh: CLOUDFLARE_R2_ENDPOINT must be set}"
+: "${CLOUDFLARE_R2_ACCESS_KEY_ID:?assert-edge-tag-exists.sh: CLOUDFLARE_R2_ACCESS_KEY_ID must be set}"
+: "${CLOUDFLARE_R2_SECRET_ACCESS_KEY:?assert-edge-tag-exists.sh: CLOUDFLARE_R2_SECRET_ACCESS_KEY must be set}"
+# The aws CLI reads AWS_*; the workflow passes R2_*. Every sibling that talks to
+# R2 bridges the two names here (assert-r2-sentinel.sh:47, write-release-sentinel.sh:83,
+# upload-to-r2.sh:154) and this script was the one that did not -- so `aws s3api
+# head-object` below died on NoCredentials, the sentinel probe answered `unknown`,
+# and promote-stable failed all 7 runs from 2026-08-27 onward, never once green.
+export AWS_ACCESS_KEY_ID="$CLOUDFLARE_R2_ACCESS_KEY_ID"
+export AWS_SECRET_ACCESS_KEY="$CLOUDFLARE_R2_SECRET_ACCESS_KEY"
 REPO="${GITHUB_REPOSITORY:-rediacc/console}"
 BUCKET="${RELEASES_BUCKET:-rediacc-releases}"
 
@@ -127,7 +136,7 @@ probe_r2_sentinel() {
     out="$(aws s3api head-object \
         --bucket "$BUCKET" \
         --key "$key" \
-        --endpoint-url "$R2_ENDPOINT" 2>&1)" || rc=$?
+        --endpoint-url "$CLOUDFLARE_R2_ENDPOINT" 2>&1)" || rc=$?
     if ((rc == 0)); then
         echo "present"
         return 0
@@ -140,6 +149,12 @@ probe_r2_sentinel() {
 }
 
 FAILED=0
+# Tracked separately from FAILED because the two states need OPPOSITE advice, and
+# conflating them cost real cycles: the NoCredentials failure above printed
+# "cut the release, then Backfill Release Sentinel" at an operator whose sentinel
+# was already fine. `absent` is a verdict about the release; `unknown` is the
+# absence of a verdict, and nothing about the release follows from it.
+COULD_NOT_TELL=0
 judge() {
     local what="$1" state="$2"
     case "$state" in
@@ -160,6 +175,7 @@ judge() {
             log_error "COULD NOT TELL ${what} -- the probe did not reach a verdict: ${state#unknown:}"
             log_error "  A check that did not run must not read as a pass. Treating it as a failure."
             FAILED=1
+            COULD_NOT_TELL=1
             return 1
             ;;
         # COULD_NOT_TELL_ARM_END
@@ -180,11 +196,20 @@ judge "R2 sentinel s3://${BUCKET}/cli/${TAG}/.released" "$(probe_r2_sentinel "cl
 if ((FAILED != 0)); then
     log_error ""
     log_error "REFUSING TO PROMOTE ${TAG}."
-    log_error "  The edge channel pointer names a version that is not fully published."
-    log_error "  Promoting it would copy unreleased bytes to stable and then fail on"
-    log_error "  'ref: ${TAG}' halfway through, leaving a half-applied release."
-    log_error "  Remediate first: cut the release for ${TAG} (Release workflow), then"
-    log_error "  seal it (Backfill Release Sentinel), then re-run this promotion."
+    if ((COULD_NOT_TELL != 0)); then
+        log_error "  At least one probe COULD NOT REACH A VERDICT (see COULD NOT TELL above)."
+        log_error "  This says nothing about whether ${TAG} is published -- it says the check"
+        log_error "  did not run. Do NOT cut a release and do NOT backfill a sentinel on the"
+        log_error "  strength of this; fix the probe first, then re-run."
+        log_error "  'NoCredentials' means the aws CLI got no AWS_ACCESS_KEY_ID: check that"
+        log_error "  the calling workflow passes CLOUDFLARE_R2_ACCESS_KEY_ID / CLOUDFLARE_R2_SECRET_ACCESS_KEY in."
+    else
+        log_error "  The edge channel pointer names a version that is not fully published."
+        log_error "  Promoting it would copy unreleased bytes to stable and then fail on"
+        log_error "  'ref: ${TAG}' halfway through, leaving a half-applied release."
+        log_error "  Remediate first: cut the release for ${TAG} (Release workflow), then"
+        log_error "  seal it (Backfill Release Sentinel), then re-run this promotion."
+    fi
     exit 1
 fi
 

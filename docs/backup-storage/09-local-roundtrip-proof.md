@@ -37,7 +37,7 @@ The briefing said a gateway served `rediacc-backups-probe` at
 built separately. `programs/backup-storage/start-local-plane.sh` does both:
 
 - the probe bucket on the RustFS `./run.sh account dev` already runs on :9100;
-- the account dev gateway on :4800 with `BACKUP_S3_*` set, which is what makes
+- the account dev gateway on :4800 with `ACCOUNT_BACKUP_S3_*` set, which is what makes
   `createBackupPlane` select the S3 presign minter (the minter the operator
   chose for production, 07 §2.1). It logged
   `Backup chunk storage: http://192.168.111.254:9100/rediacc-backups-probe`.
@@ -53,7 +53,7 @@ from `envConfig.baseUrl`, which is `PUBLIC_SITE_URL ?? url.host`
 suffix swap (`cmd/renet/backup_snapshot.go:540`). Issue a licence over
 `localhost:4800` and the machine gets a session address it cannot dial. So every
 account call goes to `192.168.111.254:4800`. The same applies to
-`BACKUP_S3_ENDPOINT`: SigV4 covers the Host header, so a presigned URL is only
+`ACCOUNT_BACKUP_S3_ENDPOINT`: SigV4 covers the Host header, so a presigned URL is only
 usable if the endpoint is spelled exactly as the VM will dial it.
 
 ## 3. The evidence

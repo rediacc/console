@@ -20,8 +20,8 @@
 #
 # Usage:
 #   scripts/backup-cutover-preflight.sh                  # local/plan checks only
-#   BACKUP_S3_ENDPOINT=... BACKUP_S3_BUCKET=... \
-#   BACKUP_S3_ACCESS_KEY_ID=... BACKUP_S3_SECRET_ACCESS_KEY=... \
+#   ACCOUNT_BACKUP_S3_ENDPOINT=... ACCOUNT_BACKUP_S3_BUCKET=... \
+#   ACCOUNT_BACKUP_S3_ACCESS_KEY_ID=... ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY=... \
 #     scripts/backup-cutover-preflight.sh                # plus the live store leg
 #
 # Exit 0 = every check that could run PASSED and none were skipped silently.
@@ -78,7 +78,7 @@ check_restore_verb() {
 # -----------------------------------------------------------------------------
 # 2. The grant path the deployment will actually take
 # -----------------------------------------------------------------------------
-# createBackupPlane returns EARLY on the r2Binding branch, so BACKUP_S3_* is
+# createBackupPlane returns EARLY on the r2Binding branch, so ACCOUNT_BACKUP_S3_* is
 # UNREACHABLE whenever a BACKUP_BUCKET binding exists. That is not a detail: it
 # decides which grant minter production gets, and only one of the two has ever
 # been accepted by live R2.
@@ -89,18 +89,18 @@ check_grant_plane() {
         pf_fail "private/account is not checked out; cannot verify the plane wiring"
         return
     fi
-    if grep -q 'BACKUP_R2_PARENT_SECRET' "$plane"; then
+    if grep -q 'ACCOUNT_BACKUP_R2_GRANT_PARENT_SECRET' "$plane"; then
         pf_pass "the R2 JWT minter is present in the tree (its selection is the question below)"
     else
-        pf_fail "backup-chunk-store.ts no longer mentions BACKUP_R2_PARENT_SECRET" \
+        pf_fail "backup-chunk-store.ts no longer mentions ACCOUNT_BACKUP_R2_GRANT_PARENT_SECRET" \
             "This preflight is out of date with the plane it checks."
     fi
 
-    if [[ -n "${BACKUP_R2_PARENT_SECRET:-}" ]]; then
-        pf_fail "BACKUP_R2_PARENT_SECRET is set, which selects the LOCALLY-SIGNED R2 JWT minter" \
-            "Live R2 has never accepted a credential from that minter (see docs/backup-storage/07-execution-record.md 6.1). Unset it and use BACKUP_S3_* unless you have re-probed it."
+    if [[ -n "${ACCOUNT_BACKUP_R2_GRANT_PARENT_SECRET:-}" ]]; then
+        pf_fail "ACCOUNT_BACKUP_R2_GRANT_PARENT_SECRET is set, which selects the LOCALLY-SIGNED R2 JWT minter" \
+            "Live R2 has never accepted a credential from that minter (see docs/backup-storage/07-execution-record.md 6.1). Unset it and use ACCOUNT_BACKUP_S3_* unless you have re-probed it."
     else
-        pf_pass "BACKUP_R2_PARENT_SECRET is unset, so the unproven JWT minter is not selected"
+        pf_pass "ACCOUNT_BACKUP_R2_GRANT_PARENT_SECRET is unset, so the unproven JWT minter is not selected"
     fi
 }
 
@@ -111,18 +111,18 @@ check_grant_plane() {
 check_store() {
     log_step "Chunk store reachability"
     local missing=()
-    [[ -n "${BACKUP_S3_ENDPOINT:-}" ]] || missing+=(BACKUP_S3_ENDPOINT)
-    [[ -n "${BACKUP_S3_BUCKET:-}" ]] || missing+=(BACKUP_S3_BUCKET)
-    [[ -n "${BACKUP_S3_ACCESS_KEY_ID:-}" ]] || missing+=(BACKUP_S3_ACCESS_KEY_ID)
-    [[ -n "${BACKUP_S3_SECRET_ACCESS_KEY:-}" ]] || missing+=(BACKUP_S3_SECRET_ACCESS_KEY)
+    [[ -n "${ACCOUNT_BACKUP_S3_ENDPOINT:-}" ]] || missing+=(ACCOUNT_BACKUP_S3_ENDPOINT)
+    [[ -n "${ACCOUNT_BACKUP_S3_BUCKET:-}" ]] || missing+=(ACCOUNT_BACKUP_S3_BUCKET)
+    [[ -n "${ACCOUNT_BACKUP_S3_ACCESS_KEY_ID:-}" ]] || missing+=(ACCOUNT_BACKUP_S3_ACCESS_KEY_ID)
+    [[ -n "${ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY:-}" ]] || missing+=(ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY)
     if [[ ${#missing[@]} -gt 0 ]]; then
         pf_fail "no chunk store to check: ${missing[*]} unset" \
             "This is a REFUSAL, not a skip: the cutover cannot be declared ready against a store nobody reached. Supply them, or accept that this run does not clear the cutover."
         return
     fi
 
-    if [[ "${BACKUP_S3_BUCKET}" == "rediacc-backups" ]]; then
-        pf_fail "BACKUP_S3_BUCKET is the bare production name 'rediacc-backups'" \
+    if [[ "${ACCOUNT_BACKUP_S3_BUCKET}" == "rediacc-backups" ]]; then
+        pf_fail "ACCOUNT_BACKUP_S3_BUCKET is the bare production name 'rediacc-backups'" \
             "Test targets must be named distinctly (e.g. rediacc-backups-probe) so no misconfiguration can cross test and production backups."
     fi
 
@@ -140,14 +140,14 @@ check_store() {
     local code
     code=$(curl -sS -I -o /dev/null -w '%{http_code}' --max-time 20 \
         --aws-sigv4 "aws:amz:auto:s3" \
-        --user "${BACKUP_S3_ACCESS_KEY_ID}:${BACKUP_S3_SECRET_ACCESS_KEY}" \
-        "${BACKUP_S3_ENDPOINT%/}/${BACKUP_S3_BUCKET}" 2>/dev/null) || code=000
+        --user "${ACCOUNT_BACKUP_S3_ACCESS_KEY_ID}:${ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY}" \
+        "${ACCOUNT_BACKUP_S3_ENDPOINT%/}/${ACCOUNT_BACKUP_S3_BUCKET}" 2>/dev/null) || code=000
     case "$code" in
-        200 | 204) pf_pass "the bucket ${BACKUP_S3_BUCKET} exists and the credentials are accepted for it" ;;
-        403) pf_fail "403 on ${BACKUP_S3_BUCKET}: the credentials are not authorized for this bucket" ;;
-        404) pf_fail "404: bucket ${BACKUP_S3_BUCKET} does not exist" "Create it before cutting over." ;;
-        000) pf_fail "the endpoint ${BACKUP_S3_ENDPOINT} did not answer" ;;
-        *) pf_fail "unexpected HTTP $code from ${BACKUP_S3_ENDPOINT%/}/${BACKUP_S3_BUCKET}" ;;
+        200 | 204) pf_pass "the bucket ${ACCOUNT_BACKUP_S3_BUCKET} exists and the credentials are accepted for it" ;;
+        403) pf_fail "403 on ${ACCOUNT_BACKUP_S3_BUCKET}: the credentials are not authorized for this bucket" ;;
+        404) pf_fail "404: bucket ${ACCOUNT_BACKUP_S3_BUCKET} does not exist" "Create it before cutting over." ;;
+        000) pf_fail "the endpoint ${ACCOUNT_BACKUP_S3_ENDPOINT} did not answer" ;;
+        *) pf_fail "unexpected HTTP $code from ${ACCOUNT_BACKUP_S3_ENDPOINT%/}/${ACCOUNT_BACKUP_S3_BUCKET}" ;;
     esac
 }
 

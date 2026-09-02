@@ -42,11 +42,49 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
+      - name: Fetch shadow secrets from Bitwarden
+        # SHADOW RUN: exports BWS_-prefixed copies that nothing consumes. The
+        # live secrets.* reads below are untouched until the cutover flips them.
+        uses: ./.github/actions/bws-secrets
+        with:
+          access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
+          secrets: |
+            GITHUB_APP_PRIVATE_KEY > BWS_GITHUB_APP_PRIVATE_KEY
+            CLOUDFLARE_BREAKPOINT_TUNNEL_TOKEN > BWS_CLOUDFLARE_BREAKPOINT_TUNNEL_TOKEN
+            CLOUDFLARE_R2_ACCESS_KEY_ID > BWS_CLOUDFLARE_R2_ACCESS_KEY_ID
+            CLOUDFLARE_R2_ENDPOINT > BWS_CLOUDFLARE_R2_ENDPOINT
+            CLOUDFLARE_R2_SECRET_ACCESS_KEY > BWS_CLOUDFLARE_R2_SECRET_ACCESS_KEY
+            CLOUDFLARE_API_TOKEN > BWS_CLOUDFLARE_API_TOKEN
+
+      - name: Compare shadow secrets against GitHub
+        shell: bash
+        env:
+          SHADOW_NAMES: GITHUB_APP_PRIVATE_KEY CLOUDFLARE_BREAKPOINT_TUNNEL_TOKEN CLOUDFLARE_R2_ACCESS_KEY_ID CLOUDFLARE_R2_ENDPOINT CLOUDFLARE_R2_SECRET_ACCESS_KEY CLOUDFLARE_API_TOKEN
+          GH_GITHUB_APP_PRIVATE_KEY: ${{ secrets.GITHUB_APP_PRIVATE_KEY }}
+          GH_CLOUDFLARE_BREAKPOINT_TUNNEL_TOKEN: ${{ secrets.CLOUDFLARE_BREAKPOINT_TUNNEL_TOKEN }}
+          GH_CLOUDFLARE_R2_ACCESS_KEY_ID: ${{ secrets.CLOUDFLARE_R2_ACCESS_KEY_ID }}
+          GH_CLOUDFLARE_R2_ENDPOINT: ${{ secrets.CLOUDFLARE_R2_ENDPOINT }}
+          GH_CLOUDFLARE_R2_SECRET_ACCESS_KEY: ${{ secrets.CLOUDFLARE_R2_SECRET_ACCESS_KEY }}
+          GH_CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          rc=0; read -ra names <<<"$SHADOW_NAMES"
+          sha() { printf '%s' "${1-}" | { sha256sum 2>/dev/null || shasum -a 256; } | cut -d' ' -f1; }
+          for n in "${names[@]}"; do
+            gv="GH_$n"; bv="BWS_$n"
+            # An ABSENT GitHub secret and an EMPTY Bitwarden value both hash to
+            # e3b0c442..., so without this arm two nothings compare EQUAL and the
+            # shadow reports "match" having verified nothing -- the exact defect
+            # this whole run exists to catch. Empty on either side is a failure.
+            if [ -z "${!gv-}" ] || [ -z "${!bv-}" ]; then echo "shadow $n EMPTY (github=${!gv:+set}${!gv:-unset} bitwarden=${!bv:+set}${!bv:-unset}) -- nothing was compared"; rc=1
+            elif [ "$(sha "${!gv-}")" = "$(sha "${!bv-}")" ]; then echo "shadow $n match"; else echo "shadow $n MISMATCH"; rc=1; fi
+          done
+          exit "$rc"
+
       - uses: ./.github/actions/app-token
         id: app-token
         with:
           client-id: ${{ vars.APP_ID }}
-          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+          private-key: ${{ secrets.GITHUB_APP_PRIVATE_KEY }}
           preset: housekeeping
           repositories: console,renet,elite,account
 
@@ -64,9 +102,9 @@ jobs:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
-          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
-          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
-          R2_ENDPOINT: ${{ secrets.R2_ENDPOINT }}
+          CLOUDFLARE_R2_ACCESS_KEY_ID: ${{ secrets.CLOUDFLARE_R2_ACCESS_KEY_ID }}
+          CLOUDFLARE_R2_SECRET_ACCESS_KEY: ${{ secrets.CLOUDFLARE_R2_SECRET_ACCESS_KEY }}
+          CLOUDFLARE_R2_ENDPOINT: ${{ secrets.CLOUDFLARE_R2_ENDPOINT }}
           # IN_FLIGHT_VERSION intentionally unset: nightly never overlaps a
           # release, so Phase 8d's sentinel+tag bijection is the correct guard.
           # The ${IN_FLIGHT_VERSION:-} default in the script no-ops when absent.
@@ -88,7 +126,7 @@ jobs:
         run: .ci/breakpoint/scripts/reap-breakpoint-orphans.sh ${{ (github.event_name == 'workflow_dispatch' && inputs.dry_run) && '--dry-run' || '' }}
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
-          BREAKPOINT_TUNNEL_TOKEN: ${{ secrets.BREAKPOINT_TUNNEL_TOKEN }}
+          CLOUDFLARE_BREAKPOINT_TUNNEL_TOKEN: ${{ secrets.CLOUDFLARE_BREAKPOINT_TUNNEL_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
 
   stripe-cleanup:
@@ -101,6 +139,38 @@ jobs:
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Fetch shadow secrets from Bitwarden
+        # SHADOW RUN: exports BWS_-prefixed copies that nothing consumes. The
+        # live secrets.* reads below are untouched until the cutover flips them.
+        uses: ./.github/actions/bws-secrets
+        with:
+          access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
+          secrets: |
+            GITHUB_APP_PRIVATE_KEY > BWS_GITHUB_APP_PRIVATE_KEY
+            STRIPE_SANDBOX_SECRET_KEY > BWS_STRIPE_SANDBOX_SECRET_KEY
+            CLOUDFLARE_API_TOKEN > BWS_CLOUDFLARE_API_TOKEN
+
+      - name: Compare shadow secrets against GitHub
+        shell: bash
+        env:
+          SHADOW_NAMES: GITHUB_APP_PRIVATE_KEY STRIPE_SANDBOX_SECRET_KEY CLOUDFLARE_API_TOKEN
+          GH_GITHUB_APP_PRIVATE_KEY: ${{ secrets.GITHUB_APP_PRIVATE_KEY }}
+          GH_STRIPE_SANDBOX_SECRET_KEY: ${{ secrets.STRIPE_SANDBOX_SECRET_KEY }}
+          GH_CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          rc=0; read -ra names <<<"$SHADOW_NAMES"
+          sha() { printf '%s' "${1-}" | { sha256sum 2>/dev/null || shasum -a 256; } | cut -d' ' -f1; }
+          for n in "${names[@]}"; do
+            gv="GH_$n"; bv="BWS_$n"
+            # An ABSENT GitHub secret and an EMPTY Bitwarden value both hash to
+            # e3b0c442..., so without this arm two nothings compare EQUAL and the
+            # shadow reports "match" having verified nothing -- the exact defect
+            # this whole run exists to catch. Empty on either side is a failure.
+            if [ -z "${!gv-}" ] || [ -z "${!bv-}" ]; then echo "shadow $n EMPTY (github=${!gv:+set}${!gv:-unset} bitwarden=${!bv:+set}${!bv:-unset}) -- nothing was compared"; rc=1
+            elif [ "$(sha "${!gv-}")" = "$(sha "${!bv-}")" ]; then echo "shadow $n match"; else echo "shadow $n MISMATCH"; rc=1; fi
+          done
+          exit "$rc"
 
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7.0.0
         with:
@@ -116,7 +186,7 @@ jobs:
         id: app-token-stripe
         with:
           client-id: ${{ vars.APP_ID }}
-          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+          private-key: ${{ secrets.GITHUB_APP_PRIVATE_KEY }}
           preset: readonly
           repositories: console,account
 

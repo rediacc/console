@@ -130,11 +130,11 @@ EOF
 # SECRET lines that must NEVER reach the CLI environment.
 cat >"$FIX_ROOT/private/account/.env" <<'EOF'
 REDIACC_ACCOUNT_SERVER=http://127.0.0.1:9
-X25519_PUBLIC_KEY=stubpublickey
-ED25519_PRIVATE_KEY=LEAKSENTINEL_ED25519
-X25519_PRIVATE_KEY=LEAKSENTINEL_X25519
-JWT_SECRET=LEAKSENTINEL_JWT
-API_KEY=LEAKSENTINEL_API
+ACCOUNT_X25519_PUBLIC_KEY=stubpublickey
+ACCOUNT_ED25519_PRIVATE_KEY=LEAKSENTINEL_ED25519
+ACCOUNT_X25519_PRIVATE_KEY=LEAKSENTINEL_X25519
+ACCOUNT_JWT_SECRET=LEAKSENTINEL_JWT
+ACCOUNT_SERVER_API_KEY=LEAKSENTINEL_API
 EOF
 
 # A stand-in for the compiled CLI bundle (node shim never actually runs it).
@@ -184,7 +184,7 @@ else
     else
         pass "no sentinel secret value in CLI environment"
     fi
-    for name in ED25519_PRIVATE_KEY X25519_PRIVATE_KEY JWT_SECRET API_KEY; do
+    for name in ACCOUNT_ED25519_PRIVATE_KEY ACCOUNT_X25519_PRIVATE_KEY ACCOUNT_JWT_SECRET ACCOUNT_SERVER_API_KEY; do
         if grep -qE "^${name}=" "$DUMP"; then
             fail "SECRET LEAK: $name present in CLI environment"
         fi

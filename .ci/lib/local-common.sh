@@ -756,7 +756,7 @@ ensure_renet_built() {
     fi
     local _account_key="${ACCOUNT_ED25519_PUBLIC_KEY:-}"
     if [[ -z "$_account_key" ]] && [[ -f "$renet_dir/../account/.env" ]]; then
-        _account_key=$(sed -n 's/^ED25519_PUBLIC_KEY=//p' "$renet_dir/../account/.env" | tr -d '\r')
+        _account_key=$(sed -n 's/^ACCOUNT_ED25519_PUBLIC_KEY=//p' "$renet_dir/../account/.env" | tr -d '\r')
     fi
     # Git-index fast path with the renet-specific full walk as fallback (the
     # generic walk lacks renet's bin//embed-assets prunes, so compute_tree_hash

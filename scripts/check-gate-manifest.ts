@@ -325,9 +325,24 @@ function main(): number {
     return 0;
   }
 
-  let dur: Record<string, number> = {};
+  const dur: Record<string, number> = {};
   try {
-    dur = JSON.parse(fs.readFileSync(path.join(REPO, '.ci', 'cache', 'gate-durations.json'), 'utf-8'));
+    const raw: Record<string, unknown> = JSON.parse(
+      fs.readFileSync(path.join(REPO, '.ci', 'cache', 'gate-durations.json'), 'utf-8')
+    );
+    // The oracle judges the FLOOR of the last few raw measurements, not the
+    // scheduling average: load only ever adds time, so the cheapest recent run
+    // is the honest cost. A full run that overlapped two other sessions on
+    // 2026-09-02 pushed a 4.5s gate's average to 21s and this oracle demanded
+    // it be marked slow. A bare number is the older cache shape.
+    for (const [id, v] of Object.entries(raw)) {
+      if (typeof v === 'number') dur[id] = v;
+      else if (v !== null && typeof v === 'object') {
+        const { ewma, recent } = v as { ewma?: number; recent?: number[] };
+        const floor = Array.isArray(recent) && recent.length > 0 ? Math.min(...recent) : ewma;
+        if (typeof floor === 'number') dur[id] = floor;
+      }
+    }
   } catch {
     // NOT fatal, and NOT silent. The cache is written by real runs, so a fresh
     // clone has none and the tier oracle simply has nothing to say yet. Saying

@@ -97,16 +97,52 @@ test_context_form_passes() {
     log_pass 'the ${{ runner.temp }} form passes'
 }
 
-test_longer_name_is_not_a_false_positive() {
-    # The boundary class exists so $HOMEBREW_PREFIX does not read as $HOME. This
-    # is the case a bare alternation would get wrong.
+test_longer_name_is_reported_as_itself() {
+    # REWRITTEN 2026-09-02 when the rule widened from six names to ANY $IDENT.
+    # Under the six-name rule this case asserted exit 0: $HOMEBREW_PREFIX must
+    # not be flagged BY MISTAKE as $HOME. Under the widened rule it is flagged
+    # ON PURPOSE -- GitHub does not expand $HOMEBREW_PREFIX in an env: value any
+    # more than it expands $HOME, so it ships the literal string. The concern
+    # that survives is the substring one: the report must name the variable
+    # that is actually there, not a shorter one hiding inside it.
     local d="$1"
-    write_wf "$d/ok.yml" 'BREW: $HOMEBREW_PREFIX/bin' 'OTHER: $RUNNER_TEMPLATE_X'
+    write_wf "$d/bad.yml" 'BREW: $HOMEBREW_PREFIX/bin' 'OTHER: $RUNNER_TEMPLATE_X'
 
     local rc=0
     run_check "$d" || rc=$?
-    assert_exit_code 0 "$rc" 'a longer variable name must not match the shorter one'
-    log_pass 'no false positive on $HOMEBREW_PREFIX / $RUNNER_TEMPLATE_X'
+    assert_exit_code 1 "$rc" 'any unexpanded $IDENT in an env: value is a violation, long names included'
+    # run_check captures the gate's stdout+stderr into LAST_OUT; the offending
+    # line is echoed there by check_env_shell_vars.
+    grep -q 'HOMEBREW_PREFIX' <<<"$LAST_OUT" || {
+        log_fail 'the report must name $HOMEBREW_PREFIX itself, not a substring of it'
+        return 1
+    }
+    log_pass '$HOMEBREW_PREFIX / $RUNNER_TEMPLATE_X are flagged, and reported as themselves'
+}
+
+test_arbitrary_variable_is_flagged() {
+    # THE CASE THE WIDENING EXISTS FOR. The six-name rule let this through, and
+    # it is the exact idiom a job-start secret fetch invites: the value looks
+    # like it flows and ships an EMPTY string, because GitHub never expands it.
+    local d="$1"
+    write_wf "$d/bad.yml" 'SECRET_API_KEY: $ACCOUNT_SERVER_API_KEY'
+
+    local rc=0
+    run_check "$d" || rc=$?
+    assert_exit_code 1 "$rc" 'SECRET_X: $SOME_VAR in an env: block must be flagged'
+    log_pass 'an arbitrary $IDENT (not one of the old six) is flagged'
+}
+
+test_comment_line_in_env_block_is_ignored() {
+    # A comment inside an env: mapping is prose, not a value. housekeeping.yml
+    # documents `${IN_FLIGHT_VERSION:-}` this way and must not read as a hit.
+    local d="$1"
+    write_wf "$d/ok.yml" '# the ${SOME_DEFAULT:-} form in the script no-ops when absent' 'REAL: plain'
+
+    local rc=0
+    run_check "$d" || rc=$?
+    assert_exit_code 0 "$rc" 'a comment line inside env: must not be flagged'
+    log_pass 'a comment line inside an env: block is ignored'
 }
 
 test_run_body_is_not_flagged() {
@@ -159,7 +195,9 @@ log_test "test-workflow-env-shell-vars"
 with_temp_dir test_flags_runner_temp
 with_temp_dir test_flags_home
 with_temp_dir test_context_form_passes
-with_temp_dir test_longer_name_is_not_a_false_positive
+with_temp_dir test_longer_name_is_reported_as_itself
+with_temp_dir test_arbitrary_variable_is_flagged
+with_temp_dir test_comment_line_in_env_block_is_ignored
 with_temp_dir test_run_body_is_not_flagged
 with_temp_dir test_env_block_ends_at_dedent
 echo ""

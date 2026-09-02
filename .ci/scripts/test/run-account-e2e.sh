@@ -130,7 +130,7 @@ if [[ "$SKIP_SETUP" != "true" ]]; then
     fi
 
     # Generate X25519 keys if not provided (CI uses throwaway keys)
-    if [[ -z "${X25519_PRIVATE_KEY:-}" ]]; then
+    if [[ -z "${ACCOUNT_X25519_PRIVATE_KEY:-}" ]]; then
         X25519_KEYS=$(node -e "
             const crypto = require('crypto');
             const { privateKey, publicKey } = crypto.generateKeyPairSync('x25519');
@@ -139,19 +139,19 @@ if [[ "$SKIP_SETUP" != "true" ]]; then
                 public: publicKey.export({type:'spki',format:'der'}).toString('base64')
             }));
         ")
-        X25519_PRIVATE_KEY=$(echo "$X25519_KEYS" | jq -r '.private')
-        X25519_PUBLIC_KEY=$(echo "$X25519_KEYS" | jq -r '.public')
+        ACCOUNT_X25519_PRIVATE_KEY=$(echo "$X25519_KEYS" | jq -r '.private')
+        ACCOUNT_X25519_PUBLIC_KEY=$(echo "$X25519_KEYS" | jq -r '.public')
     fi
 
     log_step "Starting backend API on port $ACCOUNT_API_PORT..."
     cd "$ACCOUNT_DIR"
     ACCOUNT_ENV=(
-        "ED25519_PRIVATE_KEY=${ED25519_PRIVATE_KEY:?ED25519_PRIVATE_KEY must be set}"
-        "ED25519_PUBLIC_KEY=${ED25519_PUBLIC_KEY:?ED25519_PUBLIC_KEY must be set}"
-        "X25519_PRIVATE_KEY=${X25519_PRIVATE_KEY}"
-        "X25519_PUBLIC_KEY=${X25519_PUBLIC_KEY}"
-        "API_KEY=${API_KEY:?API_KEY must be set}"
-        "JWT_SECRET=${JWT_SECRET:?JWT_SECRET must be set}"
+        "ACCOUNT_ED25519_PRIVATE_KEY=${ACCOUNT_ED25519_PRIVATE_KEY:?ACCOUNT_ED25519_PRIVATE_KEY must be set}"
+        "ACCOUNT_ED25519_PUBLIC_KEY=${ACCOUNT_ED25519_PUBLIC_KEY:?ACCOUNT_ED25519_PUBLIC_KEY must be set}"
+        "ACCOUNT_X25519_PRIVATE_KEY=${ACCOUNT_X25519_PRIVATE_KEY}"
+        "ACCOUNT_X25519_PUBLIC_KEY=${ACCOUNT_X25519_PUBLIC_KEY}"
+        "ACCOUNT_SERVER_API_KEY=${ACCOUNT_SERVER_API_KEY:?ACCOUNT_SERVER_API_KEY must be set}"
+        "ACCOUNT_JWT_SECRET=${ACCOUNT_JWT_SECRET:?ACCOUNT_JWT_SECRET must be set}"
         "ROOT_EMAIL=${ROOT_EMAIL:?ROOT_EMAIL must be set}"
         "DATABASE_PATH=e2e-account.db"
         "PUBLIC_SITE_URL=http://localhost:$E2E_PORT"

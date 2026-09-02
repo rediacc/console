@@ -16,9 +16,9 @@
 #   .ci/scripts/release/advance-contract-floor.sh
 #
 # Required env:
-#   R2_ACCESS_KEY_ID      R2 credentials, exported as AWS_* for the aws CLI
-#   R2_SECRET_ACCESS_KEY
-#   R2_ENDPOINT           R2 S3 endpoint used by release-state-validator.sh
+#   CLOUDFLARE_R2_ACCESS_KEY_ID      R2 credentials, exported as AWS_* for the aws CLI
+#   CLOUDFLARE_R2_SECRET_ACCESS_KEY
+#   CLOUDFLARE_R2_ENDPOINT           R2 S3 endpoint used by release-state-validator.sh
 #   GIT_BOT_NAME          author identity for the ratchet commit
 #   GIT_BOT_EMAIL
 #
@@ -35,16 +35,16 @@ source "$SCRIPT_DIR/../lib/common.sh"
 
 require_cmd aws
 require_cmd git
-: "${R2_ACCESS_KEY_ID:?advance-contract-floor.sh: R2_ACCESS_KEY_ID must be set}"
-: "${R2_SECRET_ACCESS_KEY:?advance-contract-floor.sh: R2_SECRET_ACCESS_KEY must be set}"
-: "${R2_ENDPOINT:?advance-contract-floor.sh: R2_ENDPOINT must be set}"
+: "${CLOUDFLARE_R2_ACCESS_KEY_ID:?advance-contract-floor.sh: CLOUDFLARE_R2_ACCESS_KEY_ID must be set}"
+: "${CLOUDFLARE_R2_SECRET_ACCESS_KEY:?advance-contract-floor.sh: CLOUDFLARE_R2_SECRET_ACCESS_KEY must be set}"
+: "${CLOUDFLARE_R2_ENDPOINT:?advance-contract-floor.sh: CLOUDFLARE_R2_ENDPOINT must be set}"
 GIT_BOT_NAME="${GIT_BOT_NAME:?advance-contract-floor.sh: GIT_BOT_NAME must be set}"
 GIT_BOT_EMAIL="${GIT_BOT_EMAIL:?advance-contract-floor.sh: GIT_BOT_EMAIL must be set}"
 
 cd "$(get_repo_root)"
 
-export AWS_ACCESS_KEY_ID="$R2_ACCESS_KEY_ID"
-export AWS_SECRET_ACCESS_KEY="$R2_SECRET_ACCESS_KEY"
+export AWS_ACCESS_KEY_ID="$CLOUDFLARE_R2_ACCESS_KEY_ID"
+export AWS_SECRET_ACCESS_KEY="$CLOUDFLARE_R2_SECRET_ACCESS_KEY"
 export AWS_DEFAULT_REGION="auto"
 source .ci/scripts/lib/release-state-validator.sh
 FLOOR_FILE=".ci/config/release-contract-floor.txt"

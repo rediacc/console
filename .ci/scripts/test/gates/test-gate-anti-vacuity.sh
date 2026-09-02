@@ -121,6 +121,7 @@ REGISTRY=(
     # and the gate would report that every reference is reachable. The
     # MIN_REFERENCES floor turns that into a loud refusal.
     ".ci/scripts/quality/check_secret_reachability.py|VACUOUS INPUT"
+    ".ci/scripts/quality/check_bws_map.py|refusing to pass vacuously"
     # Against an empty tree the probe locale file is absent, so no rule set can
     # be resolved at all and the gate would otherwise report that zero enabled
     # rules are healthy -- which is what a healthy repo looks like too.
@@ -149,9 +150,9 @@ REGISTRY=(
     # workflow tree, so an empty fixture makes it vacuous and it must say so.
     # This one never touches the tree at all: it is three `gh api` calls against
     # the live ruleset (:52, :71). An empty-tree run would exit non-zero on the
-    # absent AUTOPILOT_APP_ID, which is an ENVIRONMENT failure wearing a vacuity
+    # absent GITHUB_AUTOPILOT_APP_ID, which is an ENVIRONMENT failure wearing a vacuity
     # failure's exit code, and pinning it would assert nothing about the gate.
-    # Verified live instead, 2026-07-30: with AUTOPILOT_APP_ID=4409539 it exits 0
+    # Verified live instead, 2026-07-30: with GITHUB_AUTOPILOT_APP_ID=4409539 it exits 0
     # and reports ruleset 12344707 bypass actors [RepositoryRole:5,
     # Integration:2772000] with autopilot absent, which is the property it exists
     # to defend.

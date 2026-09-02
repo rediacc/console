@@ -351,7 +351,10 @@ parse_args() {
 r2_count_objects() {
     local bucket="${1:?bucket required}"
     local prefix="${2:?prefix required}"
-    local endpoint="${3:-${R2_ENDPOINT:-}}"
+    # Checked at CALL time, not source time: this is a library, and at source
+    # time the caller has not exported anything yet.
+    : "${AWS_ACCESS_KEY_ID:?r2_count_objects: AWS_ACCESS_KEY_ID must be exported (map it from CLOUDFLARE_R2_ACCESS_KEY_ID)}"
+    local endpoint="${3:-${CLOUDFLARE_R2_ENDPOINT:-}}"
     local count err rc=0
     err="$(mktemp)"
     count="$(aws s3api list-objects-v2 \

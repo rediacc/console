@@ -42,6 +42,7 @@
   "pre-edit/block-edit-of-running-script.sh",
   "pre-edit/block-inline-python.sh",
   "pre-edit/block-inline-workflow-run.sh",
+  "pre-edit/block-plan-without-tasks.sh",
   "pre-edit/block-roundlog-write.sh",
   "pre-edit/block-suppressions.sh",
   "require-jq.sh",

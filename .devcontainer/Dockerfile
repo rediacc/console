@@ -428,6 +428,40 @@ RUN ARCH=$(dpkg --print-architecture) \
     && bw --version \
     && bw status >/dev/null
 
+# Bitwarden Secrets Manager CLI (bws) — https://github.com/bitwarden/sdk-sm
+#
+# A DIFFERENT PRODUCT from `bw` above: `bw` is the password-manager CLI (a
+# person's vault, unlocked with BW_SESSION); `bws` is the Secrets Manager CLI
+# (a machine account, authenticated with BWS_ACCESS_TOKEN). CI reads its
+# credentials from Secrets Manager, and the consumers that run OUTSIDE GitHub
+# Actions -- deploy-bench.sh, run.sh's preview builder, the drills,
+# license-e2e.sh -- cannot use the sm-action, so they need this binary.
+#
+# Same discipline as bw: the native release zip, hash-pinned, never npm. Unlike
+# bitwarden/clients, sdk-sm publishes a real checksums file per release
+# (bws-sha256-checksums-<V>.txt) and these two digests come from it. Also
+# unlike clients it is a plain repo, but its releases are still prefixed
+# (`bws-v`), so the freshness watcher filters by that prefix.
+#
+# glibc build, not musl: the image is ubuntu-24.04 and the gnu build is the
+# one Bitwarden tests against on it.
+ARG BWS_VERSION=2.1.0
+ARG BWS_SHA256_AMD64=ba8233c3a4aee5d43e3c73bbd04d99e9bc5aba13bbbfd06d89b073abe732b860
+ARG BWS_SHA256_ARM64=18253757286e119d450133a87eb463bf8c1ce418ce24c834f4f250d60cba6f9e
+RUN ARCH=$(dpkg --print-architecture) \
+    && case "$ARCH" in \
+    amd64) BWS_ASSET="bws-x86_64-unknown-linux-gnu-${BWS_VERSION}.zip";  BWS_SHA="${BWS_SHA256_AMD64}" ;; \
+    arm64) BWS_ASSET="bws-aarch64-unknown-linux-gnu-${BWS_VERSION}.zip"; BWS_SHA="${BWS_SHA256_ARM64}" ;; \
+    *) echo "unsupported arch for bws: $ARCH" >&2; exit 1 ;; \
+    esac \
+    && curl -fsSL $CURL_RETRY -o /tmp/bws.zip \
+        "https://github.com/bitwarden/sdk-sm/releases/download/bws-v${BWS_VERSION}/${BWS_ASSET}" \
+    && echo "${BWS_SHA}  /tmp/bws.zip" | sha256sum -c - \
+    && unzip -o -q /tmp/bws.zip -d /usr/local/bin \
+    && chmod +x /usr/local/bin/bws \
+    && rm /tmp/bws.zip \
+    && bws --version
+
 # bottom (btm) — system monitor (https://github.com/ClementTsang/bottom)
 ARG BTM_VERSION=0.12.3
 # Digests from the release API's `digest` field, same source as the bw pins above.

@@ -10,7 +10,7 @@
 #
 # Usage:
 #   CHANNEL=pr-123 \
-#   AWS_ACCESS_KEY_ID=... AWS_SECRET_ACCESS_KEY=... R2_ENDPOINT=... \
+#   AWS_ACCESS_KEY_ID=... AWS_SECRET_ACCESS_KEY=... CLOUDFLARE_R2_ENDPOINT=... \
 #   CLOUDFLARE_API_TOKEN=... CLOUDFLARE_ZONE_ID=... \
 #     .ci/scripts/deploy/simulate-promotion.sh
 #
@@ -18,7 +18,7 @@
 #   CHANNEL                 source channel (e.g. pr-123, edge)
 #   AWS_ACCESS_KEY_ID       R2 access key      (secret — passed via env, never argv)
 #   AWS_SECRET_ACCESS_KEY   R2 secret key      (secret)
-#   R2_ENDPOINT             R2 S3 endpoint URL (secret)
+#   CLOUDFLARE_R2_ENDPOINT             R2 S3 endpoint URL (secret)
 #   CLOUDFLARE_API_TOKEN    for the cache purge (secret)
 #   CLOUDFLARE_ZONE_ID      zone whose cache is purged
 # Optional env:
@@ -39,17 +39,17 @@ require_cmd aws
 
 : "${CHANNEL:?CHANNEL is required (the source channel, e.g. pr-123)}"
 [[ -n "${AWS_ACCESS_KEY_ID:-}" ]] || {
-    log_error "R2_ACCESS_KEY_ID not set"
+    log_error "CLOUDFLARE_R2_ACCESS_KEY_ID not set"
     exit 1
 }
-[[ -n "${R2_ENDPOINT:-}" ]] || {
-    log_error "R2_ENDPOINT not set"
+[[ -n "${CLOUDFLARE_R2_ENDPOINT:-}" ]] || {
+    log_error "CLOUDFLARE_R2_ENDPOINT not set"
     exit 1
 }
 
 PROMOTED="${CHANNEL}-promoted"
 BUCKET="rediacc-releases"
-EP=(--endpoint-url "$R2_ENDPOINT")
+EP=(--endpoint-url "$CLOUDFLARE_R2_ENDPOINT")
 
 # Hand PROMOTED back to subsequent workflow steps when running under Actions.
 [[ -n "${GITHUB_ENV:-}" ]] && echo "PROMOTED=${PROMOTED}" >>"$GITHUB_ENV"
@@ -142,7 +142,7 @@ PURGE_URLS=()
 # tuned above governs byte streams, which these no longer are.
 SRC_PREFIX=""
 DST_PREFIX=""
-export BUCKET CC_MUTABLE R2_ENDPOINT SRC_PREFIX DST_PREFIX
+export BUCKET CC_MUTABLE CLOUDFLARE_R2_ENDPOINT SRC_PREFIX DST_PREFIX
 
 copy_one_object() {
     local src_key="$1"
@@ -164,7 +164,7 @@ copy_one_object() {
             --copy-source "${BUCKET}/${src_key}" \
             --metadata-directive REPLACE \
             --cache-control "$CC_MUTABLE" \
-            --endpoint-url "$R2_ENDPOINT" >/dev/null; then
+            --endpoint-url "$CLOUDFLARE_R2_ENDPOINT" >/dev/null; then
             return 0
         fi
         [[ $attempt -eq 3 ]] && {

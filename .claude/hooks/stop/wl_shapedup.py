@@ -156,13 +156,39 @@ def read_verdict(out, root=None):
         if len(divergence) < 20:
             return "degraded", "consolidatable=no with no concrete divergence named"
         return "silent", "not one thing: %s" % divergence[:160]
-    if verdict == "already" and harness_is_real(harness, root):
-        return "silent", "a shared module already exists: %s" % harness
-    # `already` naming a module that is not on disk is a claim, not a fact, so it falls
-    # through and fires -- with the harness it named, so the session can see the mistake.
+    # `already` USED TO RETURN SILENT HERE, and that was backwards. Operator
+    # ruling 2026-09-02, after the calibration fixture and this line had
+    # contradicted each other for a full run: "Make it FIRE".
+    #
+    # The rubric asks whether these copies should become one thing, and reads
+    # `already` as "yes, and the thing already exists". Answering that with
+    # silence made the MOST actionable case the quietest one -- a helper is on
+    # disk, N copies ignore it, and adopting it is a mechanical edit with no
+    # design left to do. V_ACTION already carried the right order for it
+    # ("Extract the shared piece into <harness>"), which is the adopt
+    # instruction; nothing needed writing, only unmuting. The evidence that
+    # settled it: with_temp_dir exists at .ci/scripts/test/lib/test-helpers.sh,
+    # and 70 gate scripts hand-roll `mktemp -d` against 26 that use it.
+    #
+    # `already` naming a module that is NOT on disk still fires too -- that is a
+    # claim, not a fact, and it fires with the harness it named so the session
+    # can see the mistake. Both branches fire now; they differ only in whether
+    # the named harness is real, which the instruction carries either way.
     return "fire", {
         "shape": shape,
         "harness": harness,
+        # Kept on the payload rather than collapsed into the verdict, so BOTH
+        # branches stay separately testable now that both fire. It also picks
+        # the order: adopting a harness that exists is a mechanical edit,
+        # writing one that does not is a design decision.
+        "harness_real": harness_is_real(harness, root),
+        # The VERDICT itself, because harness_real alone is the wrong proxy for
+        # it. `consolidatable: yes` naming an existing library file as the
+        # extraction target is the COMMON case, and it was getting the adopt
+        # order -- "X already exists, adopt it" -- when the shared piece still
+        # has to be written into X. Found by audit; the comment above used to
+        # state that bug as the design.
+        "verdict": verdict,
         "instruction": _clean(sd, "instruction", 300),
     }
 
@@ -175,12 +201,23 @@ V_ACTION = (
     "Extract the shared piece%s, or say which DIVERGENCE makes these not one thing. "
     "Triage it: .claude/hooks/stop/worklist.py --triage <you> '<the finding>'"
 )
+# When the harness is already ON DISK there is nothing to design: the order is to
+# adopt it, and saying "extract" would invite writing a second one beside it.
+V_ACTION_ADOPT = (
+    "%s ALREADY EXISTS and these copies do not use it. Adopt it, or say which "
+    "DIVERGENCE makes these not one thing. Triage it: "
+    ".claude/hooks/stop/worklist.py --triage <you> '<the finding>'"
+)
 
 
 def enforce(out, payload, count):
     reason = V_REASON % (count, payload["shape"])
-    into = " into %s" % payload["harness"] if payload["harness"] else ""
-    wl_rules.apply_order(out, reason, V_ACTION % into)
+    if payload.get("verdict") == "already" and payload.get("harness_real") and payload["harness"]:
+        action = V_ACTION_ADOPT % payload["harness"]
+    else:
+        into = " into %s" % payload["harness"] if payload["harness"] else ""
+        action = V_ACTION % into
+    wl_rules.apply_order(out, reason, action)
     return "shape-dup: %s" % payload["shape"][:160]
 
 
@@ -241,7 +278,16 @@ def ask(instances):
     except (OSError, subprocess.SubprocessError) as exc:
         return None, "shape_dup model call failed: %s" % exc
     if proc.returncode != 0:
-        return None, "shape_dup model call exited %d" % proc.returncode
+        # The TAIL OF THE CHILD'S OUTPUT, because the exit code alone says nothing.
+        # The counter path in this same file already does it (see the run_counter
+        # error below); this branch did not, so a live calibration reported
+        # "shape_dup model call exited 1" and SHAPE_PROMPT sat uncalibrated with
+        # no way to learn why. A rubric with exactly one fixture cannot afford an
+        # opaque failure: one erroring case blanks the whole rubric.
+        return None, "shape_dup model call exited %d: %s" % (
+            proc.returncode,
+            (proc.stderr or proc.stdout or "<no output>").strip()[-300:],
+        )
     try:
         env_out = json.loads(proc.stdout)
     except ValueError as exc:

@@ -91,7 +91,11 @@ on:
         required: false
         default: ''
     secrets:
-      APP_PRIVATE_KEY:
+      # Bitwarden machine-account token for the shadow secret fetch
+      # (.github/actions/bws-secrets). Every caller must pass it.
+      BWS_ACCESS_TOKEN:
+        required: true
+      GITHUB_APP_PRIVATE_KEY:
         required: false
       DOCKERHUB_USERNAME:
         required: false
@@ -142,13 +146,45 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          sparse-checkout: .github/actions
+          sparse-checkout: |
+            .github/actions
+            .ci/config
+
+      - name: Fetch shadow secrets from Bitwarden
+        # SHADOW RUN: exports BWS_-prefixed copies that nothing consumes. The
+        # live secrets.* reads below are untouched until the cutover flips them.
+        uses: ./.github/actions/bws-secrets
+        with:
+          access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
+          secrets: |
+            GITHUB_APP_PRIVATE_KEY > BWS_GITHUB_APP_PRIVATE_KEY
+            CLOUDFLARE_API_TOKEN > BWS_CLOUDFLARE_API_TOKEN
+
+      - name: Compare shadow secrets against GitHub
+        shell: bash
+        env:
+          SHADOW_NAMES: GITHUB_APP_PRIVATE_KEY CLOUDFLARE_API_TOKEN
+          GH_GITHUB_APP_PRIVATE_KEY: ${{ secrets.GITHUB_APP_PRIVATE_KEY }}
+          GH_CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          rc=0; read -ra names <<<"$SHADOW_NAMES"
+          sha() { printf '%s' "${1-}" | { sha256sum 2>/dev/null || shasum -a 256; } | cut -d' ' -f1; }
+          for n in "${names[@]}"; do
+            gv="GH_$n"; bv="BWS_$n"
+            # An ABSENT GitHub secret and an EMPTY Bitwarden value both hash to
+            # e3b0c442..., so without this arm two nothings compare EQUAL and the
+            # shadow reports "match" having verified nothing -- the exact defect
+            # this whole run exists to catch. Empty on either side is a failure.
+            if [ -z "${!gv-}" ] || [ -z "${!bv-}" ]; then echo "shadow $n EMPTY (github=${!gv:+set}${!gv:-unset} bitwarden=${!bv:+set}${!bv:-unset}) -- nothing was compared"; rc=1
+            elif [ "$(sha "${!gv-}")" = "$(sha "${!bv-}")" ]; then echo "shadow $n match"; else echo "shadow $n MISMATCH"; rc=1; fi
+          done
+          exit "$rc"
 
       - uses: ./.github/actions/app-token
         id: app-token
         with:
           client-id: ${{ vars.APP_ID }}
-          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+          private-key: ${{ secrets.GITHUB_APP_PRIVATE_KEY }}
           preset: readonly
           repositories: console,account
 
@@ -187,6 +223,35 @@ jobs:
     timeout-minutes: 14
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Fetch shadow secrets from Bitwarden
+        # SHADOW RUN: exports BWS_-prefixed copies that nothing consumes. The
+        # live secrets.* reads below are untouched until the cutover flips them.
+        uses: ./.github/actions/bws-secrets
+        with:
+          access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
+          secrets: |
+            GITHUB_APP_PRIVATE_KEY > BWS_GITHUB_APP_PRIVATE_KEY
+
+      - name: Compare shadow secrets against GitHub
+        shell: bash
+        env:
+          SHADOW_NAMES: GITHUB_APP_PRIVATE_KEY
+          GH_GITHUB_APP_PRIVATE_KEY: ${{ secrets.GITHUB_APP_PRIVATE_KEY }}
+        run: |
+          rc=0; read -ra names <<<"$SHADOW_NAMES"
+          sha() { printf '%s' "${1-}" | { sha256sum 2>/dev/null || shasum -a 256; } | cut -d' ' -f1; }
+          for n in "${names[@]}"; do
+            gv="GH_$n"; bv="BWS_$n"
+            # An ABSENT GitHub secret and an EMPTY Bitwarden value both hash to
+            # e3b0c442..., so without this arm two nothings compare EQUAL and the
+            # shadow reports "match" having verified nothing -- the exact defect
+            # this whole run exists to catch. Empty on either side is a failure.
+            if [ -z "${!gv-}" ] || [ -z "${!bv-}" ]; then echo "shadow $n EMPTY (github=${!gv:+set}${!gv:-unset} bitwarden=${!bv:+set}${!bv:-unset}) -- nothing was compared"; rc=1
+            elif [ "$(sha "${!gv-}")" = "$(sha "${!bv-}")" ]; then echo "shadow $n match"; else echo "shadow $n MISMATCH"; rc=1; fi
+          done
+          exit "$rc"
+
       # SUBMODULES, because the unit suite reads renet's SOURCE. datastore-prune-parser
       # asserts that the CLI's prune fixtures cover every kind renet's
       # DatastorePrunableResources reports, by parsing
@@ -199,7 +264,7 @@ jobs:
         id: app-token
         with:
           client-id: ${{ vars.APP_ID }}
-          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+          private-key: ${{ secrets.GITHUB_APP_PRIVATE_KEY }}
           repositories: console,renet,account,elite,homebrew-tap
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -266,11 +331,44 @@ jobs:
       CLI_SUITE: ${{ matrix.cli-suite }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Fetch shadow secrets from Bitwarden
+        # SHADOW RUN: exports BWS_-prefixed copies that nothing consumes. The
+        # live secrets.* reads below are untouched until the cutover flips them.
+        uses: ./.github/actions/bws-secrets
+        with:
+          access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
+          secrets: |
+            GITHUB_APP_PRIVATE_KEY > BWS_GITHUB_APP_PRIVATE_KEY
+            DOCKERHUB_TOKEN > BWS_DOCKERHUB_TOKEN
+            DOCKERHUB_USERNAME > BWS_DOCKERHUB_USERNAME
+
+      - name: Compare shadow secrets against GitHub
+        shell: bash
+        env:
+          SHADOW_NAMES: GITHUB_APP_PRIVATE_KEY DOCKERHUB_TOKEN DOCKERHUB_USERNAME
+          GH_GITHUB_APP_PRIVATE_KEY: ${{ secrets.GITHUB_APP_PRIVATE_KEY }}
+          GH_DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+          GH_DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+        run: |
+          rc=0; read -ra names <<<"$SHADOW_NAMES"
+          sha() { printf '%s' "${1-}" | { sha256sum 2>/dev/null || shasum -a 256; } | cut -d' ' -f1; }
+          for n in "${names[@]}"; do
+            gv="GH_$n"; bv="BWS_$n"
+            # An ABSENT GitHub secret and an EMPTY Bitwarden value both hash to
+            # e3b0c442..., so without this arm two nothings compare EQUAL and the
+            # shadow reports "match" having verified nothing -- the exact defect
+            # this whole run exists to catch. Empty on either side is a failure.
+            if [ -z "${!gv-}" ] || [ -z "${!bv-}" ]; then echo "shadow $n EMPTY (github=${!gv:+set}${!gv:-unset} bitwarden=${!bv:+set}${!bv:-unset}) -- nothing was compared"; rc=1
+            elif [ "$(sha "${!gv-}")" = "$(sha "${!bv-}")" ]; then echo "shadow $n match"; else echo "shadow $n MISMATCH"; rc=1; fi
+          done
+          exit "$rc"
+
       - uses: ./.github/actions/app-token
         id: app-token
         with:
           client-id: ${{ vars.APP_ID }}
-          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+          private-key: ${{ secrets.GITHUB_APP_PRIVATE_KEY }}
           repositories: console,renet,account,elite,homebrew-tap
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -421,11 +519,44 @@ jobs:
       CEPH_MODE: 'true'
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Fetch shadow secrets from Bitwarden
+        # SHADOW RUN: exports BWS_-prefixed copies that nothing consumes. The
+        # live secrets.* reads below are untouched until the cutover flips them.
+        uses: ./.github/actions/bws-secrets
+        with:
+          access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
+          secrets: |
+            GITHUB_APP_PRIVATE_KEY > BWS_GITHUB_APP_PRIVATE_KEY
+            DOCKERHUB_TOKEN > BWS_DOCKERHUB_TOKEN
+            DOCKERHUB_USERNAME > BWS_DOCKERHUB_USERNAME
+
+      - name: Compare shadow secrets against GitHub
+        shell: bash
+        env:
+          SHADOW_NAMES: GITHUB_APP_PRIVATE_KEY DOCKERHUB_TOKEN DOCKERHUB_USERNAME
+          GH_GITHUB_APP_PRIVATE_KEY: ${{ secrets.GITHUB_APP_PRIVATE_KEY }}
+          GH_DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+          GH_DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+        run: |
+          rc=0; read -ra names <<<"$SHADOW_NAMES"
+          sha() { printf '%s' "${1-}" | { sha256sum 2>/dev/null || shasum -a 256; } | cut -d' ' -f1; }
+          for n in "${names[@]}"; do
+            gv="GH_$n"; bv="BWS_$n"
+            # An ABSENT GitHub secret and an EMPTY Bitwarden value both hash to
+            # e3b0c442..., so without this arm two nothings compare EQUAL and the
+            # shadow reports "match" having verified nothing -- the exact defect
+            # this whole run exists to catch. Empty on either side is a failure.
+            if [ -z "${!gv-}" ] || [ -z "${!bv-}" ]; then echo "shadow $n EMPTY (github=${!gv:+set}${!gv:-unset} bitwarden=${!bv:+set}${!bv:-unset}) -- nothing was compared"; rc=1
+            elif [ "$(sha "${!gv-}")" = "$(sha "${!bv-}")" ]; then echo "shadow $n match"; else echo "shadow $n MISMATCH"; rc=1; fi
+          done
+          exit "$rc"
+
       - uses: ./.github/actions/app-token
         id: app-token
         with:
           client-id: ${{ vars.APP_ID }}
-          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+          private-key: ${{ secrets.GITHUB_APP_PRIVATE_KEY }}
           repositories: console,renet,account,elite,homebrew-tap
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -557,11 +688,44 @@ jobs:
       CEPH_OSD_MEMORY_TARGET: '1717986918'
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Fetch shadow secrets from Bitwarden
+        # SHADOW RUN: exports BWS_-prefixed copies that nothing consumes. The
+        # live secrets.* reads below are untouched until the cutover flips them.
+        uses: ./.github/actions/bws-secrets
+        with:
+          access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
+          secrets: |
+            GITHUB_APP_PRIVATE_KEY > BWS_GITHUB_APP_PRIVATE_KEY
+            DOCKERHUB_TOKEN > BWS_DOCKERHUB_TOKEN
+            DOCKERHUB_USERNAME > BWS_DOCKERHUB_USERNAME
+
+      - name: Compare shadow secrets against GitHub
+        shell: bash
+        env:
+          SHADOW_NAMES: GITHUB_APP_PRIVATE_KEY DOCKERHUB_TOKEN DOCKERHUB_USERNAME
+          GH_GITHUB_APP_PRIVATE_KEY: ${{ secrets.GITHUB_APP_PRIVATE_KEY }}
+          GH_DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+          GH_DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+        run: |
+          rc=0; read -ra names <<<"$SHADOW_NAMES"
+          sha() { printf '%s' "${1-}" | { sha256sum 2>/dev/null || shasum -a 256; } | cut -d' ' -f1; }
+          for n in "${names[@]}"; do
+            gv="GH_$n"; bv="BWS_$n"
+            # An ABSENT GitHub secret and an EMPTY Bitwarden value both hash to
+            # e3b0c442..., so without this arm two nothings compare EQUAL and the
+            # shadow reports "match" having verified nothing -- the exact defect
+            # this whole run exists to catch. Empty on either side is a failure.
+            if [ -z "${!gv-}" ] || [ -z "${!bv-}" ]; then echo "shadow $n EMPTY (github=${!gv:+set}${!gv:-unset} bitwarden=${!bv:+set}${!bv:-unset}) -- nothing was compared"; rc=1
+            elif [ "$(sha "${!gv-}")" = "$(sha "${!bv-}")" ]; then echo "shadow $n match"; else echo "shadow $n MISMATCH"; rc=1; fi
+          done
+          exit "$rc"
+
       - uses: ./.github/actions/app-token
         id: app-token
         with:
           client-id: ${{ vars.APP_ID }}
-          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+          private-key: ${{ secrets.GITHUB_APP_PRIVATE_KEY }}
           repositories: console,renet,account,elite,homebrew-tap
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -697,11 +861,44 @@ jobs:
       VM_RAM_WORKER: '4096'
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Fetch shadow secrets from Bitwarden
+        # SHADOW RUN: exports BWS_-prefixed copies that nothing consumes. The
+        # live secrets.* reads below are untouched until the cutover flips them.
+        uses: ./.github/actions/bws-secrets
+        with:
+          access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
+          secrets: |
+            GITHUB_APP_PRIVATE_KEY > BWS_GITHUB_APP_PRIVATE_KEY
+            DOCKERHUB_TOKEN > BWS_DOCKERHUB_TOKEN
+            DOCKERHUB_USERNAME > BWS_DOCKERHUB_USERNAME
+
+      - name: Compare shadow secrets against GitHub
+        shell: bash
+        env:
+          SHADOW_NAMES: GITHUB_APP_PRIVATE_KEY DOCKERHUB_TOKEN DOCKERHUB_USERNAME
+          GH_GITHUB_APP_PRIVATE_KEY: ${{ secrets.GITHUB_APP_PRIVATE_KEY }}
+          GH_DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+          GH_DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+        run: |
+          rc=0; read -ra names <<<"$SHADOW_NAMES"
+          sha() { printf '%s' "${1-}" | { sha256sum 2>/dev/null || shasum -a 256; } | cut -d' ' -f1; }
+          for n in "${names[@]}"; do
+            gv="GH_$n"; bv="BWS_$n"
+            # An ABSENT GitHub secret and an EMPTY Bitwarden value both hash to
+            # e3b0c442..., so without this arm two nothings compare EQUAL and the
+            # shadow reports "match" having verified nothing -- the exact defect
+            # this whole run exists to catch. Empty on either side is a failure.
+            if [ -z "${!gv-}" ] || [ -z "${!bv-}" ]; then echo "shadow $n EMPTY (github=${!gv:+set}${!gv:-unset} bitwarden=${!bv:+set}${!bv:-unset}) -- nothing was compared"; rc=1
+            elif [ "$(sha "${!gv-}")" = "$(sha "${!bv-}")" ]; then echo "shadow $n match"; else echo "shadow $n MISMATCH"; rc=1; fi
+          done
+          exit "$rc"
+
       - uses: ./.github/actions/app-token
         id: app-token
         with:
           client-id: ${{ vars.APP_ID }}
-          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+          private-key: ${{ secrets.GITHUB_APP_PRIVATE_KEY }}
           repositories: console,renet,account,elite,homebrew-tap
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -834,11 +1031,44 @@ jobs:
       CEPH_OSD_MEMORY_TARGET: '1717986918'
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Fetch shadow secrets from Bitwarden
+        # SHADOW RUN: exports BWS_-prefixed copies that nothing consumes. The
+        # live secrets.* reads below are untouched until the cutover flips them.
+        uses: ./.github/actions/bws-secrets
+        with:
+          access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
+          secrets: |
+            GITHUB_APP_PRIVATE_KEY > BWS_GITHUB_APP_PRIVATE_KEY
+            DOCKERHUB_TOKEN > BWS_DOCKERHUB_TOKEN
+            DOCKERHUB_USERNAME > BWS_DOCKERHUB_USERNAME
+
+      - name: Compare shadow secrets against GitHub
+        shell: bash
+        env:
+          SHADOW_NAMES: GITHUB_APP_PRIVATE_KEY DOCKERHUB_TOKEN DOCKERHUB_USERNAME
+          GH_GITHUB_APP_PRIVATE_KEY: ${{ secrets.GITHUB_APP_PRIVATE_KEY }}
+          GH_DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+          GH_DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+        run: |
+          rc=0; read -ra names <<<"$SHADOW_NAMES"
+          sha() { printf '%s' "${1-}" | { sha256sum 2>/dev/null || shasum -a 256; } | cut -d' ' -f1; }
+          for n in "${names[@]}"; do
+            gv="GH_$n"; bv="BWS_$n"
+            # An ABSENT GitHub secret and an EMPTY Bitwarden value both hash to
+            # e3b0c442..., so without this arm two nothings compare EQUAL and the
+            # shadow reports "match" having verified nothing -- the exact defect
+            # this whole run exists to catch. Empty on either side is a failure.
+            if [ -z "${!gv-}" ] || [ -z "${!bv-}" ]; then echo "shadow $n EMPTY (github=${!gv:+set}${!gv:-unset} bitwarden=${!bv:+set}${!bv:-unset}) -- nothing was compared"; rc=1
+            elif [ "$(sha "${!gv-}")" = "$(sha "${!bv-}")" ]; then echo "shadow $n match"; else echo "shadow $n MISMATCH"; rc=1; fi
+          done
+          exit "$rc"
+
       - uses: ./.github/actions/app-token
         id: app-token
         with:
           client-id: ${{ vars.APP_ID }}
-          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+          private-key: ${{ secrets.GITHUB_APP_PRIVATE_KEY }}
           repositories: console,renet,account,elite,homebrew-tap
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -977,11 +1207,44 @@ jobs:
       CEPH_OSD_MEMORY_TARGET: '1717986918'
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Fetch shadow secrets from Bitwarden
+        # SHADOW RUN: exports BWS_-prefixed copies that nothing consumes. The
+        # live secrets.* reads below are untouched until the cutover flips them.
+        uses: ./.github/actions/bws-secrets
+        with:
+          access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
+          secrets: |
+            GITHUB_APP_PRIVATE_KEY > BWS_GITHUB_APP_PRIVATE_KEY
+            DOCKERHUB_TOKEN > BWS_DOCKERHUB_TOKEN
+            DOCKERHUB_USERNAME > BWS_DOCKERHUB_USERNAME
+
+      - name: Compare shadow secrets against GitHub
+        shell: bash
+        env:
+          SHADOW_NAMES: GITHUB_APP_PRIVATE_KEY DOCKERHUB_TOKEN DOCKERHUB_USERNAME
+          GH_GITHUB_APP_PRIVATE_KEY: ${{ secrets.GITHUB_APP_PRIVATE_KEY }}
+          GH_DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+          GH_DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+        run: |
+          rc=0; read -ra names <<<"$SHADOW_NAMES"
+          sha() { printf '%s' "${1-}" | { sha256sum 2>/dev/null || shasum -a 256; } | cut -d' ' -f1; }
+          for n in "${names[@]}"; do
+            gv="GH_$n"; bv="BWS_$n"
+            # An ABSENT GitHub secret and an EMPTY Bitwarden value both hash to
+            # e3b0c442..., so without this arm two nothings compare EQUAL and the
+            # shadow reports "match" having verified nothing -- the exact defect
+            # this whole run exists to catch. Empty on either side is a failure.
+            if [ -z "${!gv-}" ] || [ -z "${!bv-}" ]; then echo "shadow $n EMPTY (github=${!gv:+set}${!gv:-unset} bitwarden=${!bv:+set}${!bv:-unset}) -- nothing was compared"; rc=1
+            elif [ "$(sha "${!gv-}")" = "$(sha "${!bv-}")" ]; then echo "shadow $n match"; else echo "shadow $n MISMATCH"; rc=1; fi
+          done
+          exit "$rc"
+
       - uses: ./.github/actions/app-token
         id: app-token
         with:
           client-id: ${{ vars.APP_ID }}
-          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+          private-key: ${{ secrets.GITHUB_APP_PRIVATE_KEY }}
           repositories: console,renet,account,elite,homebrew-tap
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -1180,11 +1443,44 @@ jobs:
       GROUP_B_WORKER: '51'
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Fetch shadow secrets from Bitwarden
+        # SHADOW RUN: exports BWS_-prefixed copies that nothing consumes. The
+        # live secrets.* reads below are untouched until the cutover flips them.
+        uses: ./.github/actions/bws-secrets
+        with:
+          access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
+          secrets: |
+            GITHUB_APP_PRIVATE_KEY > BWS_GITHUB_APP_PRIVATE_KEY
+            DOCKERHUB_TOKEN > BWS_DOCKERHUB_TOKEN
+            DOCKERHUB_USERNAME > BWS_DOCKERHUB_USERNAME
+
+      - name: Compare shadow secrets against GitHub
+        shell: bash
+        env:
+          SHADOW_NAMES: GITHUB_APP_PRIVATE_KEY DOCKERHUB_TOKEN DOCKERHUB_USERNAME
+          GH_GITHUB_APP_PRIVATE_KEY: ${{ secrets.GITHUB_APP_PRIVATE_KEY }}
+          GH_DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+          GH_DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+        run: |
+          rc=0; read -ra names <<<"$SHADOW_NAMES"
+          sha() { printf '%s' "${1-}" | { sha256sum 2>/dev/null || shasum -a 256; } | cut -d' ' -f1; }
+          for n in "${names[@]}"; do
+            gv="GH_$n"; bv="BWS_$n"
+            # An ABSENT GitHub secret and an EMPTY Bitwarden value both hash to
+            # e3b0c442..., so without this arm two nothings compare EQUAL and the
+            # shadow reports "match" having verified nothing -- the exact defect
+            # this whole run exists to catch. Empty on either side is a failure.
+            if [ -z "${!gv-}" ] || [ -z "${!bv-}" ]; then echo "shadow $n EMPTY (github=${!gv:+set}${!gv:-unset} bitwarden=${!bv:+set}${!bv:-unset}) -- nothing was compared"; rc=1
+            elif [ "$(sha "${!gv-}")" = "$(sha "${!bv-}")" ]; then echo "shadow $n match"; else echo "shadow $n MISMATCH"; rc=1; fi
+          done
+          exit "$rc"
+
       - uses: ./.github/actions/app-token
         id: app-token
         with:
           client-id: ${{ vars.APP_ID }}
-          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+          private-key: ${{ secrets.GITHUB_APP_PRIVATE_KEY }}
           repositories: console,renet,account,elite,homebrew-tap
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -1336,11 +1632,44 @@ jobs:
       REDIACC_SKIP_MACHINE_ACTIVATION: '1'
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Fetch shadow secrets from Bitwarden
+        # SHADOW RUN: exports BWS_-prefixed copies that nothing consumes. The
+        # live secrets.* reads below are untouched until the cutover flips them.
+        uses: ./.github/actions/bws-secrets
+        with:
+          access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
+          secrets: |
+            GITHUB_APP_PRIVATE_KEY > BWS_GITHUB_APP_PRIVATE_KEY
+            DOCKERHUB_TOKEN > BWS_DOCKERHUB_TOKEN
+            DOCKERHUB_USERNAME > BWS_DOCKERHUB_USERNAME
+
+      - name: Compare shadow secrets against GitHub
+        shell: bash
+        env:
+          SHADOW_NAMES: GITHUB_APP_PRIVATE_KEY DOCKERHUB_TOKEN DOCKERHUB_USERNAME
+          GH_GITHUB_APP_PRIVATE_KEY: ${{ secrets.GITHUB_APP_PRIVATE_KEY }}
+          GH_DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+          GH_DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+        run: |
+          rc=0; read -ra names <<<"$SHADOW_NAMES"
+          sha() { printf '%s' "${1-}" | { sha256sum 2>/dev/null || shasum -a 256; } | cut -d' ' -f1; }
+          for n in "${names[@]}"; do
+            gv="GH_$n"; bv="BWS_$n"
+            # An ABSENT GitHub secret and an EMPTY Bitwarden value both hash to
+            # e3b0c442..., so without this arm two nothings compare EQUAL and the
+            # shadow reports "match" having verified nothing -- the exact defect
+            # this whole run exists to catch. Empty on either side is a failure.
+            if [ -z "${!gv-}" ] || [ -z "${!bv-}" ]; then echo "shadow $n EMPTY (github=${!gv:+set}${!gv:-unset} bitwarden=${!bv:+set}${!bv:-unset}) -- nothing was compared"; rc=1
+            elif [ "$(sha "${!gv-}")" = "$(sha "${!bv-}")" ]; then echo "shadow $n match"; else echo "shadow $n MISMATCH"; rc=1; fi
+          done
+          exit "$rc"
+
       - uses: ./.github/actions/app-token
         id: app-token
         with:
           client-id: ${{ vars.APP_ID }}
-          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+          private-key: ${{ secrets.GITHUB_APP_PRIVATE_KEY }}
           repositories: console,renet,account,elite,homebrew-tap
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -1442,7 +1771,6 @@ jobs:
         env:
           VM_NET_BASE: ${{ env.VM_NET_BASE }}
           VM_WORKERS: '11'
-          SSH_USER: ${{ env.USER }}
 
       # Curated-repo healthcheck convergence smoke test. Deploys
       # app-postgres on the worker and asserts the db container's
@@ -1455,7 +1783,6 @@ jobs:
         env:
           VM_NET_BASE: ${{ env.VM_NET_BASE }}
           VM_WORKERS: '11'
-          SSH_USER: ${{ env.USER }}
 
       - if: always()
         run: .ci/scripts/signal/create-complete.sh --name "fork-isolation" --status ${{ job.status }}
@@ -1487,11 +1814,44 @@ jobs:
     timeout-minutes: 90
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Fetch shadow secrets from Bitwarden
+        # SHADOW RUN: exports BWS_-prefixed copies that nothing consumes. The
+        # live secrets.* reads below are untouched until the cutover flips them.
+        uses: ./.github/actions/bws-secrets
+        with:
+          access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
+          secrets: |
+            GITHUB_APP_PRIVATE_KEY > BWS_GITHUB_APP_PRIVATE_KEY
+            DOCKERHUB_TOKEN > BWS_DOCKERHUB_TOKEN
+            DOCKERHUB_USERNAME > BWS_DOCKERHUB_USERNAME
+
+      - name: Compare shadow secrets against GitHub
+        shell: bash
+        env:
+          SHADOW_NAMES: GITHUB_APP_PRIVATE_KEY DOCKERHUB_TOKEN DOCKERHUB_USERNAME
+          GH_GITHUB_APP_PRIVATE_KEY: ${{ secrets.GITHUB_APP_PRIVATE_KEY }}
+          GH_DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+          GH_DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+        run: |
+          rc=0; read -ra names <<<"$SHADOW_NAMES"
+          sha() { printf '%s' "${1-}" | { sha256sum 2>/dev/null || shasum -a 256; } | cut -d' ' -f1; }
+          for n in "${names[@]}"; do
+            gv="GH_$n"; bv="BWS_$n"
+            # An ABSENT GitHub secret and an EMPTY Bitwarden value both hash to
+            # e3b0c442..., so without this arm two nothings compare EQUAL and the
+            # shadow reports "match" having verified nothing -- the exact defect
+            # this whole run exists to catch. Empty on either side is a failure.
+            if [ -z "${!gv-}" ] || [ -z "${!bv-}" ]; then echo "shadow $n EMPTY (github=${!gv:+set}${!gv:-unset} bitwarden=${!bv:+set}${!bv:-unset}) -- nothing was compared"; rc=1
+            elif [ "$(sha "${!gv-}")" = "$(sha "${!bv-}")" ]; then echo "shadow $n match"; else echo "shadow $n MISMATCH"; rc=1; fi
+          done
+          exit "$rc"
+
       - uses: ./.github/actions/app-token
         id: app-token
         with:
           client-id: ${{ vars.APP_ID }}
-          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+          private-key: ${{ secrets.GITHUB_APP_PRIVATE_KEY }}
           repositories: console,renet,account,elite,homebrew-tap
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -1618,11 +1978,40 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Fetch shadow secrets from Bitwarden
+        # SHADOW RUN: exports BWS_-prefixed copies that nothing consumes. The
+        # live secrets.* reads below are untouched until the cutover flips them.
+        uses: ./.github/actions/bws-secrets
+        with:
+          access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
+          secrets: |
+            GITHUB_APP_PRIVATE_KEY > BWS_GITHUB_APP_PRIVATE_KEY
+
+      - name: Compare shadow secrets against GitHub
+        shell: bash
+        env:
+          SHADOW_NAMES: GITHUB_APP_PRIVATE_KEY
+          GH_GITHUB_APP_PRIVATE_KEY: ${{ secrets.GITHUB_APP_PRIVATE_KEY }}
+        run: |
+          rc=0; read -ra names <<<"$SHADOW_NAMES"
+          sha() { printf '%s' "${1-}" | { sha256sum 2>/dev/null || shasum -a 256; } | cut -d' ' -f1; }
+          for n in "${names[@]}"; do
+            gv="GH_$n"; bv="BWS_$n"
+            # An ABSENT GitHub secret and an EMPTY Bitwarden value both hash to
+            # e3b0c442..., so without this arm two nothings compare EQUAL and the
+            # shadow reports "match" having verified nothing -- the exact defect
+            # this whole run exists to catch. Empty on either side is a failure.
+            if [ -z "${!gv-}" ] || [ -z "${!bv-}" ]; then echo "shadow $n EMPTY (github=${!gv:+set}${!gv:-unset} bitwarden=${!bv:+set}${!bv:-unset}) -- nothing was compared"; rc=1
+            elif [ "$(sha "${!gv-}")" = "$(sha "${!bv-}")" ]; then echo "shadow $n match"; else echo "shadow $n MISMATCH"; rc=1; fi
+          done
+          exit "$rc"
+
       - uses: ./.github/actions/app-token
         id: app-token
         with:
           client-id: ${{ vars.APP_ID }}
-          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+          private-key: ${{ secrets.GITHUB_APP_PRIVATE_KEY }}
           repositories: console,renet,account,elite,homebrew-tap
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -1658,11 +2047,52 @@ jobs:
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Fetch shadow secrets from Bitwarden
+        # SHADOW RUN: exports BWS_-prefixed copies that nothing consumes. The
+        # live secrets.* reads below are untouched until the cutover flips them.
+        uses: ./.github/actions/bws-secrets
+        with:
+          access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
+          secrets: |
+            ACCOUNT_ED25519_PRIVATE_KEY > BWS_ACCOUNT_ED25519_PRIVATE_KEY
+            ACCOUNT_ED25519_PUBLIC_KEY > BWS_ACCOUNT_ED25519_PUBLIC_KEY
+            ACCOUNT_JWT_SECRET > BWS_ACCOUNT_JWT_SECRET
+            ACCOUNT_SERVER_API_KEY > BWS_ACCOUNT_SERVER_API_KEY
+            GITHUB_APP_PRIVATE_KEY > BWS_GITHUB_APP_PRIVATE_KEY
+            STRIPE_SANDBOX_SECRET_KEY > BWS_STRIPE_SANDBOX_SECRET_KEY
+            STRIPE_SANDBOX_WEBHOOK_SECRET > BWS_STRIPE_SANDBOX_WEBHOOK_SECRET
+
+      - name: Compare shadow secrets against GitHub
+        shell: bash
+        env:
+          SHADOW_NAMES: ACCOUNT_ED25519_PRIVATE_KEY ACCOUNT_ED25519_PUBLIC_KEY ACCOUNT_JWT_SECRET ACCOUNT_SERVER_API_KEY GITHUB_APP_PRIVATE_KEY STRIPE_SANDBOX_SECRET_KEY STRIPE_SANDBOX_WEBHOOK_SECRET
+          GH_ACCOUNT_ED25519_PRIVATE_KEY: ${{ secrets.ACCOUNT_ED25519_PRIVATE_KEY }}
+          GH_ACCOUNT_ED25519_PUBLIC_KEY: ${{ secrets.ACCOUNT_ED25519_PUBLIC_KEY }}
+          GH_ACCOUNT_JWT_SECRET: ${{ secrets.ACCOUNT_JWT_SECRET }}
+          GH_ACCOUNT_SERVER_API_KEY: ${{ secrets.ACCOUNT_SERVER_API_KEY }}
+          GH_GITHUB_APP_PRIVATE_KEY: ${{ secrets.GITHUB_APP_PRIVATE_KEY }}
+          GH_STRIPE_SANDBOX_SECRET_KEY: ${{ secrets.STRIPE_SANDBOX_SECRET_KEY }}
+          GH_STRIPE_SANDBOX_WEBHOOK_SECRET: ${{ secrets.STRIPE_SANDBOX_WEBHOOK_SECRET }}
+        run: |
+          rc=0; read -ra names <<<"$SHADOW_NAMES"
+          sha() { printf '%s' "${1-}" | { sha256sum 2>/dev/null || shasum -a 256; } | cut -d' ' -f1; }
+          for n in "${names[@]}"; do
+            gv="GH_$n"; bv="BWS_$n"
+            # An ABSENT GitHub secret and an EMPTY Bitwarden value both hash to
+            # e3b0c442..., so without this arm two nothings compare EQUAL and the
+            # shadow reports "match" having verified nothing -- the exact defect
+            # this whole run exists to catch. Empty on either side is a failure.
+            if [ -z "${!gv-}" ] || [ -z "${!bv-}" ]; then echo "shadow $n EMPTY (github=${!gv:+set}${!gv:-unset} bitwarden=${!bv:+set}${!bv:-unset}) -- nothing was compared"; rc=1
+            elif [ "$(sha "${!gv-}")" = "$(sha "${!bv-}")" ]; then echo "shadow $n match"; else echo "shadow $n MISMATCH"; rc=1; fi
+          done
+          exit "$rc"
+
       - uses: ./.github/actions/app-token
         id: app-token
         with:
           client-id: ${{ vars.APP_ID }}
-          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+          private-key: ${{ secrets.GITHUB_APP_PRIVATE_KEY }}
           repositories: console,renet,account,elite,homebrew-tap
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -1683,10 +2113,10 @@ jobs:
       - name: Run Account Portal E2E tests
         run: .ci/scripts/test/run-account-e2e.sh
         env:
-          ED25519_PRIVATE_KEY: ${{ secrets.ACCOUNT_ED25519_PRIVATE_KEY }}
-          ED25519_PUBLIC_KEY: ${{ secrets.ACCOUNT_ED25519_PUBLIC_KEY }}
-          API_KEY: ${{ secrets.ACCOUNT_SERVER_API_KEY }}
-          JWT_SECRET: ${{ secrets.ACCOUNT_JWT_SECRET }}
+          ACCOUNT_ED25519_PRIVATE_KEY: ${{ secrets.ACCOUNT_ED25519_PRIVATE_KEY }}
+          ACCOUNT_ED25519_PUBLIC_KEY: ${{ secrets.ACCOUNT_ED25519_PUBLIC_KEY }}
+          ACCOUNT_SERVER_API_KEY: ${{ secrets.ACCOUNT_SERVER_API_KEY }}
+          ACCOUNT_JWT_SECRET: ${{ secrets.ACCOUNT_JWT_SECRET }}
           ROOT_EMAIL: ${{ vars.ROOT_EMAIL }}
           STRIPE_SANDBOX_SECRET_KEY: ${{ secrets.STRIPE_SANDBOX_SECRET_KEY }}
           STRIPE_SANDBOX_WEBHOOK_SECRET: ${{ secrets.STRIPE_SANDBOX_WEBHOOK_SECRET }}
@@ -1750,11 +2180,44 @@ jobs:
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Fetch shadow secrets from Bitwarden
+        # SHADOW RUN: exports BWS_-prefixed copies that nothing consumes. The
+        # live secrets.* reads below are untouched until the cutover flips them.
+        uses: ./.github/actions/bws-secrets
+        with:
+          access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
+          secrets: |
+            GITHUB_APP_PRIVATE_KEY > BWS_GITHUB_APP_PRIVATE_KEY
+            DOCKERHUB_TOKEN > BWS_DOCKERHUB_TOKEN
+            DOCKERHUB_USERNAME > BWS_DOCKERHUB_USERNAME
+
+      - name: Compare shadow secrets against GitHub
+        shell: bash
+        env:
+          SHADOW_NAMES: GITHUB_APP_PRIVATE_KEY DOCKERHUB_TOKEN DOCKERHUB_USERNAME
+          GH_GITHUB_APP_PRIVATE_KEY: ${{ secrets.GITHUB_APP_PRIVATE_KEY }}
+          GH_DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+          GH_DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+        run: |
+          rc=0; read -ra names <<<"$SHADOW_NAMES"
+          sha() { printf '%s' "${1-}" | { sha256sum 2>/dev/null || shasum -a 256; } | cut -d' ' -f1; }
+          for n in "${names[@]}"; do
+            gv="GH_$n"; bv="BWS_$n"
+            # An ABSENT GitHub secret and an EMPTY Bitwarden value both hash to
+            # e3b0c442..., so without this arm two nothings compare EQUAL and the
+            # shadow reports "match" having verified nothing -- the exact defect
+            # this whole run exists to catch. Empty on either side is a failure.
+            if [ -z "${!gv-}" ] || [ -z "${!bv-}" ]; then echo "shadow $n EMPTY (github=${!gv:+set}${!gv:-unset} bitwarden=${!bv:+set}${!bv:-unset}) -- nothing was compared"; rc=1
+            elif [ "$(sha "${!gv-}")" = "$(sha "${!bv-}")" ]; then echo "shadow $n match"; else echo "shadow $n MISMATCH"; rc=1; fi
+          done
+          exit "$rc"
+
       - uses: ./.github/actions/app-token
         id: app-token
         with:
           client-id: ${{ vars.APP_ID }}
-          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+          private-key: ${{ secrets.GITHUB_APP_PRIVATE_KEY }}
           repositories: console,renet,account,elite,homebrew-tap
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:

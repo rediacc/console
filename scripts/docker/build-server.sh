@@ -13,7 +13,7 @@
 #     once to trigger the cross-compile, OR download from a recent CI run
 #     with: gh run download <run-id> --name renet-binaries-<sha>)
 #   - .env or shell env may set ACCOUNT_ED25519_PUBLIC_KEY (or it's read
-#     from private/account/.env's ED25519_PUBLIC_KEY= line)
+#     from private/account/.env's ACCOUNT_ED25519_PUBLIC_KEY= line)
 
 set -euo pipefail
 
@@ -39,7 +39,7 @@ esac
 # Resolve account public key from environment or local account .env
 ACCOUNT_KEY="${ACCOUNT_ED25519_PUBLIC_KEY:-}"
 if [[ -z "$ACCOUNT_KEY" && -f private/account/.env ]]; then
-    ACCOUNT_KEY=$(sed -n 's/^ED25519_PUBLIC_KEY=//p' private/account/.env | tr -d '\r')
+    ACCOUNT_KEY=$(sed -n 's/^ACCOUNT_ED25519_PUBLIC_KEY=//p' private/account/.env | tr -d '\r')
 fi
 
 # Verify renet binaries exist (built by ./rdc.sh or downloaded from CI)

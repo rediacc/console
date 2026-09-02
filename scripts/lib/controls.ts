@@ -94,3 +94,28 @@ export function runControls(cases: ControlCase[], opts: RunControlsOptions = {})
   }
   return failed;
 }
+
+/**
+ * Refuse: print a diagnostic to stderr and exit 1, never returning.
+ *
+ * WHY THIS EXISTS. `check:ci-shape-duplication` found the same ~5-line span in three
+ * gates on 2026-09-02 — a multi-line `console.error(...)` immediately followed by
+ * `process.exit(1)`. The first response was to record an accepted divergence arguing the
+ * three were "a shared token skeleton, not a shared purpose": a control-fixture table, a
+ * missing-subject refusal, and an over-report control. The operator overruled that, and
+ * reading the three spans side by side they were right — the intents differ, but the ACT
+ * is identical and it is the act that was duplicated: state why the gate cannot answer,
+ * then stop. That is one thing.
+ *
+ * `never` is load-bearing: at a call site the compiler then knows the code after it is
+ * unreachable, which is exactly what a hand-written `console.error(); process.exit(1);`
+ * pair does NOT give you.
+ *
+ * Lines are joined with '\n', so a caller passes the shape it already had rather than
+ * pre-formatting a blob. The leading ✗ stays the caller's, because several of these
+ * messages continue past the first line with indented detail that is not a failure marker.
+ */
+export function refuse(...lines: string[]): never {
+  console.error(lines.join('\n'));
+  process.exit(1);
+}

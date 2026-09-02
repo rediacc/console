@@ -346,8 +346,8 @@ phase4_validate_apt_metadata() {
     gpg --batch --yes --no-tty --pinentry-mode loopback --passphrase '' --quick-generate-key "Test <test@test.com>" rsa2048 sign 1d 2>/dev/null
     local key_id
     key_id=$(gpg --list-keys --with-colons 2>/dev/null | grep '^pub' | head -1 | cut -d: -f5 || true)
-    GPG_PRIVATE_KEY=$(gpg --armor --export-secret-keys "$key_id" 2>/dev/null)
-    export GPG_PRIVATE_KEY
+    RELEASE_GPG_PRIVATE_KEY=$(gpg --armor --export-secret-keys "$key_id" 2>/dev/null)
+    export RELEASE_GPG_PRIVATE_KEY
 
     "$SCRIPT_DIR/../build/build-pkg-repo.sh" \
         --version "$TEST_VERSION" \
@@ -355,7 +355,7 @@ phase4_validate_apt_metadata() {
         --output "$repo_out" \
         --channel test
 
-    unset GNUPGHOME GPG_PRIVATE_KEY
+    unset GNUPGHOME RELEASE_GPG_PRIVATE_KEY
     rm -rf "$gnupg_tmp"
 
     # Validate APT structure

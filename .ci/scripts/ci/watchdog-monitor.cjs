@@ -900,27 +900,27 @@ const monitor = async ({ github, context, core }) => {
   // The allowlist is a safety net, not a classifier, and it cannot tell a real
   // break in an E2E job from a flake in one.
   //
-  // AUTH. Prefers ANTHROPIC_API_KEY (the documented x-api-key path) and falls
-  // back to CLAUDE_CODE_OAUTH_TOKEN, which is the credential this org actually
-  // has. The OAuth path needs the oauth beta header; without it the API rejects
-  // a Bearer token. If neither is set this tier is simply absent and the chain
-  // moves on, which is why a missing secret degrades to today's behaviour
-  // instead of breaking the watchdog.
+  // AUTH. ANTHROPIC_CLAUDE_CODE_OAUTH_TOKEN, which is the credential this org has. The
+  // OAuth path needs the oauth beta header; without it the API rejects a Bearer
+  // token. If it is not set this tier is simply absent and the chain moves on,
+  // which is why a missing secret degrades to today's behaviour instead of
+  // breaking the watchdog.
+  //
+  // There was an ANTHROPIC_API_KEY branch here, preferred when set. It was
+  // removed on 2026-09-02: the operator ruled out pay-as-you-go API billing, so
+  // that key will never exist, and a branch nobody can reach is a branch that
+  // invites someone to make it reachable. Behaviour is unchanged -- the key was
+  // never set, so the OAuth branch is the one that always ran.
   async function callClaudeClassifier(logTail, systemPrompt) {
-    const apiKey = process.env.ANTHROPIC_API_KEY || '';
-    const oauth = process.env.CLAUDE_CODE_OAUTH_TOKEN || '';
-    if (!apiKey && !oauth) return null;
+    const oauth = process.env.ANTHROPIC_CLAUDE_CODE_OAUTH_TOKEN || '';
+    if (!oauth) return null;
 
     const headers = {
       'Content-Type': 'application/json',
       'anthropic-version': '2023-06-01',
+      Authorization: `Bearer ${oauth}`,
+      'anthropic-beta': 'oauth-2025-04-20',
     };
-    if (apiKey) {
-      headers['x-api-key'] = apiKey;
-    } else {
-      headers['Authorization'] = `Bearer ${oauth}`;
-      headers['anthropic-beta'] = 'oauth-2025-04-20';
-    }
 
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), AI_TIMEOUT);

@@ -436,11 +436,24 @@ def enforce(out, payload):
         action = V_ACTION_DROPPED % {"why": why[:70]}
     else:
         verb = names_destructive(payload["instruction"])
-        action = (
-            V_ACTION_DROPPED % {"why": "its instruction named `%s`, and a sweep only reads" % verb}
-            if verb
-            else V_ACTION_NOSEARCH % payload["instruction"]
-        )
+        # THE SAME SECOND DOOR, for the standing order rather than for safety.
+        # `instruction` is model prose reaching the session verbatim, so it can
+        # carry "commit the fix" as easily as "git clean" -- and this repo's first
+        # standing order reserves committing, branching, pushing and opening a PR
+        # to an explicit operator ask. wl_bravedefault emitted exactly that on
+        # 2026-09-02 and the session quietly disobeyed it; the fix belongs on every
+        # path that hands model text to a session, not only the one that was seen.
+        reserved = wl_rules.names_operator_reserved(payload["instruction"])
+        if verb:
+            action = V_ACTION_DROPPED % {
+                "why": "its instruction named `%s`, and a sweep only reads" % verb
+            }
+        elif reserved:
+            action = V_ACTION_DROPPED % {
+                "why": "its instruction named `%s`, which needs the operator's ask" % reserved
+            }
+        else:
+            action = V_ACTION_NOSEARCH % payload["instruction"]
     wl_rules.apply_order(out, reason, action)
     return "class-sweep: %s" % payload["defect_class"][:160]
 

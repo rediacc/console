@@ -666,21 +666,23 @@ def run_judge(
     # THE RECURSION GUARD. `claude -p` fires this very hook; --settings does not
     # suppress it. Without this line the hook forks itself forever.
     env["STOPHOOK_CHILD"] = "1"
-    try:
-        proc = subprocess.run(
-            [
-                exe,
-                "-p",
-                prompt,
-                "--output-format",
-                "json",
-                "--json-schema",
-                json.dumps(judge_schema_for(extra)),
-                "--model",
-                JUDGE_MODEL,
-                "--max-budget-usd",
-                JUDGE_BUDGET_USD,
-            ],
+    argv = [
+        exe,
+        "-p",
+        prompt,
+        "--output-format",
+        "json",
+        "--json-schema",
+        json.dumps(judge_schema_for(extra)),
+        "--model",
+        JUDGE_MODEL,
+        "--max-budget-usd",
+        JUDGE_BUDGET_USD,
+    ]
+
+    def _call():
+        return subprocess.run(
+            argv,
             capture_output=True,
             text=True,
             timeout=JUDGE_TIMEOUT_S,
@@ -689,6 +691,9 @@ def run_judge(
             cwd=str(workdir),
             stdin=subprocess.DEVNULL,
         )
+
+    try:
+        proc = _call()
     except subprocess.TimeoutExpired:
         return None, "judge timed out after %ds" % JUDGE_TIMEOUT_S
     except OSError as exc:

@@ -96,7 +96,7 @@ TRAP_FILE_ROOT="${TRAP_FILE_ROOT:-$REPO_ROOT}"
 # a floor only fails when the corpus is below it, so an unratcheted floor is invisible
 # to the gate and visible only to its own control. Adding an entry means bumping this
 # number in the same commit; there is no other signal.
-TRAP_FLOOR="${TRAP_FLOOR:-54}"
+TRAP_FLOOR="${TRAP_FLOOR:-57}"
 
 ID_RE='^[a-z0-9][a-z0-9-]{2,48}$'
 

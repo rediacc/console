@@ -1,6 +1,6 @@
 #!/bin/bash
 # Structural invariants over GitHub Actions workflow YAML that only a real
-# parser can see. Three independent checks, one pyyaml bootstrap.
+# parser can see. Four independent checks, one pyyaml bootstrap.
 #
 # CHECK 1 -- job-level if: needs always()
 #   Audit JOB-LEVEL if: blocks that reference needs.*.result. Prevents the
@@ -24,7 +24,7 @@
 #   failure -- the deploy just ships a blank credential. That is exactly how
 #   OTLP_CLIENT_CREDENTIALS_{EU,US,ASIA} came to be read by cd-deploy-account.yml
 #   while being declared by nobody, so every deployed account Worker ran with
-#   OTLP_CLIENT_CREDENTIALS="" and shipped no telemetry. Nothing caught it
+#   OBS_OTLP_CREDENTIALS="" and shipped no telemetry. Nothing caught it
 #   because an empty secret is indistinguishable from a working one at the YAML
 #   layer. So assert the contract in both directions:
 #     a) a reusable workflow may not read a secret it does not declare
@@ -39,6 +39,15 @@
 #   quality-security hit this twice in three runs. Requiring an explicit
 #   timeout-minutes <= 14 turns that silent kill into an ordinary timeout
 #   failure naming the step that hung.
+#
+# CHECK 4 -- external-caller contracts (.github/external-callers.yml)
+#   CHECK 2 scans .github/workflows only, so it cannot see callers in OTHER
+#   repositories -- and those are the only callers that can actually break,
+#   because a same-repo caller moves with its callee in one commit while a
+#   cross-repo one resolves `@main` at run time. `.github/external-callers.yml`
+#   declares them; this runs CHECK 2's contract against each declaration,
+#   re-checks the declaration against the caller's real file when the submodule
+#   is checked out, and fails on any external caller that is not registered.
 #
 # Exit 1 on any offender, 2 on setup error.
 
@@ -409,6 +418,273 @@ else
     log_error "ubuntu-slim timeout violations (see above)."
     log_error "Fix: add 'timeout-minutes: $SLIM_TIMEOUT_MAX' (or less) to the job, or move it to ubuntu-latest if it genuinely needs longer."
     FAILED=1
+fi
+
+# --- Check 4 ---------------------------------------------------------------
+# CHECK 2 above scans WORKFLOWS_DIR only, so it is structurally blind to callers
+# that live in OTHER repositories -- which are the only callers that can suffer
+# the breakage it exists to prevent. A same-repo caller moves with its callee in
+# one commit; a cross-repo caller resolves `@main` at run time, so a callee edit
+# merged here breaks the other repo's next run, an hour later, in a log nobody
+# on this PR is reading.
+#
+# .github/external-callers.yml declares them. CHECK 4 runs CHECK 2's three-way
+# contract against each declaration, verifies the declaration still matches the
+# caller's real file when the submodule is checked out, and refuses to let an
+# undeclared external caller exist.
+EXTERNAL_CALLERS_ROOT="${EXTERNAL_CALLERS_ROOT:-$ROOT_DIR}"
+if [[ -z "${EXTERNAL_CALLERS_FILE:-}" ]]; then
+    if [[ "$WORKFLOWS_DIR" == "$ROOT_DIR/.github/workflows" ]]; then
+        EXTERNAL_CALLERS_FILE="$ROOT_DIR/.github/external-callers.yml"
+    else
+        # A CHECK 1/2/3 fixture tree has no external callers to speak of. The
+        # real tree always takes the branch above, so this is not an escape
+        # hatch anyone can reach by accident.
+        EXTERNAL_CALLERS_FILE=""
+    fi
+fi
+
+if [[ -z "$EXTERNAL_CALLERS_FILE" ]]; then
+    log_info "Skipping external-caller contract check (fixture tree: no registry)"
+else
+log_info "Checking external-caller contracts against $(basename "$EXTERNAL_CALLERS_FILE")"
+
+python3 - "$WORKFLOWS_DIR" "$EXTERNAL_CALLERS_FILE" "$EXTERNAL_CALLERS_ROOT" <<'PYEOF'
+import glob
+import os
+import sys
+import yaml
+
+workflows_dir, registry_file, scan_root = sys.argv[1], sys.argv[2], sys.argv[3]
+
+offenders = []
+
+
+def die_blind(msg):
+    print(f"{msg} -- this check is blind", file=sys.stderr)
+    sys.exit(3)
+
+
+def load(path):
+    with open(path) as fh:
+        return yaml.safe_load(fh.read())
+
+
+if not os.path.isfile(registry_file):
+    die_blind(f"{registry_file}: no external-caller registry")
+
+try:
+    registry = load(registry_file)
+except (yaml.YAMLError, OSError) as exc:
+    print(f"{registry_file}: unreadable ({exc})", file=sys.stderr)
+    sys.exit(1)
+
+entries = (registry or {}).get('callers') or []
+if not isinstance(entries, list) or not entries:
+    die_blind(f"{registry_file}: declares no callers")
+
+
+def workflow_call(doc):
+    """on: is parsed as the boolean True by YAML 1.1, so look under both keys."""
+    if not isinstance(doc, dict):
+        return {}
+    on = doc.get('on', doc.get(True)) or {}
+    if not isinstance(on, dict):
+        return {}
+    wc = on.get('workflow_call') or {}
+    return wc if isinstance(wc, dict) else {}
+
+
+REQUIRED_FIELDS = ('caller', 'repo', 'pinned_at', 'calls', 'passes_inputs', 'passes_secrets')
+
+# --- (a) the declared contract must hold against the callee's real signature
+registered = set()
+for i, entry in enumerate(entries):
+    if not isinstance(entry, dict):
+        offenders.append(f"{registry_file}: caller #{i} is not a mapping")
+        continue
+    missing = [f for f in REQUIRED_FIELDS if f not in entry]
+    if missing:
+        offenders.append(
+            f"{registry_file}: caller #{i} is missing {', '.join(missing)}"
+        )
+        continue
+
+    caller = entry['caller']
+    calls = entry['calls']
+    registered.add((caller, calls))
+
+    callee_path = os.path.join(workflows_dir, os.path.basename(calls))
+    if not os.path.isfile(callee_path):
+        offenders.append(
+            f"{caller} -> {calls}: the callee does not exist in this repo. "
+            f"An external caller pinned at {entry['pinned_at']} will fail on its "
+            f"next run; restore the workflow or update the caller first."
+        )
+        continue
+
+    wc = workflow_call(load(callee_path))
+    if not wc:
+        offenders.append(
+            f"{caller} -> {calls}: the callee declares no on.workflow_call block, "
+            f"so it cannot be called from another repository at all"
+        )
+        continue
+
+    dinp = wc.get('inputs') or {}
+    dsec = wc.get('secrets') or {}
+    got_inp = set(entry['passes_inputs'] or [])
+    got_sec = entry['passes_secrets']
+    inherits = got_sec == 'inherit'
+    got_sec = set() if inherits else set(got_sec or [])
+
+    for name in sorted({k for k, v in dinp.items() if isinstance(v, dict) and v.get('required')} - got_inp):
+        offenders.append(f"{caller} -> {calls}: does not pass required input {name}")
+    for name in sorted(got_inp - set(dinp)):
+        offenders.append(
+            f"{caller} -> {calls}: passes input {name}, which {os.path.basename(calls)} "
+            f"never declares -- the value goes nowhere"
+        )
+    if not inherits:
+        for name in sorted({k for k, v in dsec.items() if isinstance(v, dict) and v.get('required')} - got_sec):
+            offenders.append(
+                f"{caller} -> {calls}: does not pass required secret {name}. Making it "
+                f"`required: false` in the callee is not a fix -- it ships \"\"."
+            )
+        for name in sorted(got_sec - set(dsec)):
+            offenders.append(
+                f"{caller} -> {calls}: passes secret {name}, which "
+                f"{os.path.basename(calls)} never declares -- the value goes nowhere"
+            )
+
+# --- (b) the declaration must match the caller's real file, when we have it
+CONSOLE_PREFIX = 'rediacc/console/'
+verified = 0
+for entry in entries:
+    if not isinstance(entry, dict) or any(f not in entry for f in REQUIRED_FIELDS):
+        continue
+    caller = entry['caller']
+    abs_caller = os.path.join(scan_root, caller)
+    # The submodule holding this caller may simply not be checked out. That is
+    # not a finding; a checked-out submodule that has LOST the file is.
+    repo_tree = os.path.join(scan_root, caller.split('/.github/')[0], '.github', 'workflows')
+    if not os.path.isfile(abs_caller):
+        if os.path.isdir(repo_tree):
+            offenders.append(
+                f"{caller}: registered here but absent from a checked-out tree -- "
+                f"delete the entry or restore the file"
+            )
+        continue
+
+    try:
+        doc = load(abs_caller)
+    except (yaml.YAMLError, OSError) as exc:
+        offenders.append(f"{caller}: unreadable ({exc})")
+        continue
+
+    want_uses_prefix = CONSOLE_PREFIX + entry['calls'] + '@'
+    found = False
+    for jid, job in ((doc or {}).get('jobs') or {}).items():
+        if not isinstance(job, dict):
+            continue
+        uses = job.get('uses')
+        if not isinstance(uses, str) or not uses.startswith(want_uses_prefix):
+            continue
+        found = True
+        ref = uses.split('@', 1)[1]
+        if ref != entry['pinned_at']:
+            offenders.append(
+                f"{caller}: job '{jid}' pins {entry['calls']}@{ref}, registry says "
+                f"@{entry['pinned_at']}"
+            )
+        real_inp = set((job.get('with') or {}).keys())
+        passed = job.get('secrets')
+        real_sec = 'inherit' if passed == 'inherit' else set((passed or {}).keys())
+        if real_inp != set(entry['passes_inputs'] or []):
+            offenders.append(
+                f"{caller}: job '{jid}' passes inputs {sorted(real_inp)}, registry "
+                f"declares {sorted(entry['passes_inputs'] or [])}"
+            )
+        declared_sec = entry['passes_secrets']
+        norm_declared = 'inherit' if declared_sec == 'inherit' else set(declared_sec or [])
+        if real_sec != norm_declared:
+            offenders.append(
+                f"{caller}: job '{jid}' passes secrets "
+                f"{real_sec if real_sec == 'inherit' else sorted(real_sec)}, registry "
+                f"declares {norm_declared if norm_declared == 'inherit' else sorted(norm_declared)}"
+            )
+        verified += 1
+    if not found:
+        offenders.append(
+            f"{caller}: no job calls {CONSOLE_PREFIX}{entry['calls']} -- the registry "
+            f"entry describes a call that is not there"
+        )
+
+# --- (c) completeness: every external caller on disk must be registered
+# A blind leg is reported only when there is nothing else to say. A concrete
+# offender IS evidence the check ran, and burying it under "this check is blind"
+# was how the first version of CHECK 4 reported a stale registry entry as a
+# missing submodule.
+blind = []
+trees = sorted(glob.glob(os.path.join(scan_root, 'private', '*', '.github', 'workflows')))
+if not trees:
+    blind.append(
+        f"no private/*/.github/workflows tree under {scan_root}: the completeness "
+        f"scan cannot see whether an unregistered external caller exists"
+    )
+
+for tree in trees:
+    for path in sorted(glob.glob(os.path.join(tree, '*.yml')) + glob.glob(os.path.join(tree, '*.yaml'))):
+        rel = os.path.relpath(path, scan_root)
+        try:
+            doc = load(path)
+        except (yaml.YAMLError, OSError):
+            continue
+        for jid, job in ((doc or {}).get('jobs') or {}).items():
+            if not isinstance(job, dict):
+                continue
+            uses = job.get('uses')
+            if not isinstance(uses, str) or not uses.startswith(CONSOLE_PREFIX):
+                continue
+            calls = uses[len(CONSOLE_PREFIX):].split('@', 1)[0]
+            if (rel, calls) not in registered:
+                offenders.append(
+                    f"{rel}: job '{jid}' calls {calls} but is not declared in "
+                    f"{os.path.basename(registry_file)} -- an unregistered external "
+                    f"caller is exactly what this check exists to prevent"
+                )
+
+if not verified:
+    blind.append(
+        "no registered external caller could be checked against its real file "
+        "(no submodule containing one is checked out)"
+    )
+
+if offenders:
+    for line in offenders:
+        print(line, file=sys.stderr)
+    sys.exit(1)
+
+if blind:
+    die_blind('; '.join(blind))
+
+print(f"info: {verified} external caller call-site(s) verified against their real files")
+sys.exit(0)
+PYEOF
+
+RC=$?
+if [[ $RC -eq 0 ]]; then
+    log_success "External-caller contracts hold and every external caller is registered"
+elif [[ $RC -eq 3 ]]; then
+    log_error "Fix: either .github/external-callers.yml declares no callers, or no"
+    log_error "     submodule holding one is checked out (git submodule update --init"
+    log_error "     private/account private/renet). A check with no input cannot pass."
+    FAILED=1
+else
+    log_error "External-caller contract violations (see above)."
+    log_error "Fix: update .github/external-callers.yml AND the caller in the other repository together. Editing only this repo breaks their next run, not this PR."
+    FAILED=1
+fi
 fi
 
 exit "$FAILED"

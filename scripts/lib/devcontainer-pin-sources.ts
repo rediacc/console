@@ -69,4 +69,14 @@ export const DEVCONTAINER_PIN_SOURCES: DevcontainerPinSource[] = [
       arm64: { arg: 'BW_SHA256_ARM64', asset: (v) => `bw-linux-arm64-${v}.zip` },
     },
   },
+  {
+    base: 'bws',
+    display: 'Bitwarden Secrets Manager CLI',
+    repo: 'bitwarden/sdk-sm',
+    tagPrefix: 'bws-v',
+    hashArgs: {
+      amd64: { arg: 'BWS_SHA256_AMD64', asset: (v) => `bws-x86_64-unknown-linux-gnu-${v}.zip` },
+      arm64: { arg: 'BWS_SHA256_ARM64', asset: (v) => `bws-aarch64-unknown-linux-gnu-${v}.zip` },
+    },
+  },
 ];

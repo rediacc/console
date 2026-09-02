@@ -74,10 +74,10 @@ exits 1.
 Once you have created a bucket:
 
 ```bash
-BACKUP_S3_ENDPOINT="https://<account>.r2.cloudflarestorage.com" \
-BACKUP_S3_BUCKET="rediacc-backups-probe" \
-BACKUP_S3_ACCESS_KEY_ID="..." \
-BACKUP_S3_SECRET_ACCESS_KEY="..." \
+ACCOUNT_BACKUP_S3_ENDPOINT="https://<account>.r2.cloudflarestorage.com" \
+ACCOUNT_BACKUP_S3_BUCKET="rediacc-backups-probe" \
+ACCOUNT_BACKUP_S3_ACCESS_KEY_ID="..." \
+ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY="..." \
   scripts/backup-cutover-preflight.sh
 ```
 
@@ -98,30 +98,30 @@ misconfiguration can cross test and production backups.
 
 **CORRECTED 2026-08-15. The previous text here was stale and would have made you
 delete a binding you should keep.** It claimed `createBackupPlane` returns EARLY
-on the R2-binding branch so `BACKUP_S3_*` is unreachable whenever a
+on the R2-binding branch so `ACCOUNT_BACKUP_S3_*` is unreachable whenever a
 `BACKUP_BUCKET` binding exists. That is no longer true, and the code says so in
 as many words: inside the binding branch
 (`private/account/src/services/backup-chunk-store.ts:921-956`), if
-`BACKUP_S3_ENDPOINT` and `BACKUP_S3_ACCESS_KEY_ID` are set it returns
+`ACCOUNT_BACKUP_S3_ENDPOINT` and `ACCOUNT_BACKUP_S3_ACCESS_KEY_ID` are set it returns
 `{ store: R2BackupChunkStore, grantMinter: S3PresignGrantMinter }`.
 
 So a `BACKUP_BUCKET` binding is not merely harmless, it is the BETTER
 configuration: the store stays the native R2 binding (no S3 round trip for GC or
-reads) while grants are presigned with `BACKUP_S3_*`. The JWT minter is kept but
+reads) while grants are presigned with `ACCOUNT_BACKUP_S3_*`. The JWT minter is kept but
 deliberately NOT selected. What still must not be set is
-`BACKUP_R2_PARENT_SECRET`, which is what would select the unproven JWT path, and
+`ACCOUNT_BACKUP_R2_GRANT_PARENT_SECRET`, which is what would select the unproven JWT path, and
 the preflight fails if it is.
 
 | Option | What you set | State |
 |---|---|---|
-| **Presign minter (recommended, the recorded default)** | `BACKUP_S3_ENDPOINT`, `BACKUP_S3_BUCKET`, `BACKUP_S3_ACCESS_KEY_ID`, `BACKUP_S3_SECRET_ACCESS_KEY`, and **no** `BACKUP_BUCKET` binding | The path RustFS, local dev and customer S3 already use. Provable in tier A. |
-| R2 locally-signed JWT | a `BACKUP_BUCKET` binding + `BACKUP_R2_ENDPOINT`, `BACKUP_R2_BUCKET`, `BACKUP_R2_PARENT_ACCESS_KEY_ID`, `BACKUP_R2_PARENT_SECRET` | **Refused by live R2 in every variant tested**, including Cloudflare's documented one. See `07-execution-record.md` §6.1. |
+| **Presign minter (recommended, the recorded default)** | `ACCOUNT_BACKUP_S3_ENDPOINT`, `ACCOUNT_BACKUP_S3_BUCKET`, `ACCOUNT_BACKUP_S3_ACCESS_KEY_ID`, `ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY`, and **no** `BACKUP_BUCKET` binding | The path RustFS, local dev and customer S3 already use. Provable in tier A. |
+| R2 locally-signed JWT | a `BACKUP_BUCKET` binding + `ACCOUNT_BACKUP_R2_GRANT_ENDPOINT`, `ACCOUNT_BACKUP_R2_GRANT_BUCKET`, `ACCOUNT_BACKUP_R2_GRANT_PARENT_ACCESS_KEY_ID`, `ACCOUNT_BACKUP_R2_GRANT_PARENT_SECRET` | **Refused by live R2 in every variant tested**, including Cloudflare's documented one. See `07-execution-record.md` §6.1. |
 
 R2 speaks the S3 API, so the presign option works against an R2 bucket; the
 store is `S3BackupChunkStore` instead of `R2BackupChunkStore`, which is a
 different class and the same bytes.
 
-The preflight fails if `BACKUP_R2_PARENT_SECRET` is set, on the grounds that
+The preflight fails if `ACCOUNT_BACKUP_R2_GRANT_PARENT_SECRET` is set, on the grounds that
 selecting an unproven minter for production is a decision, not a default.
 
 ### 2.3 The copy-paste block
@@ -130,10 +130,10 @@ Substitute your account id and the key pair, then run from the repo root:
 
 ```bash
 # 1. Confirm the bucket exists and the credentials are scoped to it (read-only).
-BACKUP_S3_ENDPOINT="https://<account>.r2.cloudflarestorage.com" \
-BACKUP_S3_BUCKET="rediacc-backups-probe" \
-BACKUP_S3_ACCESS_KEY_ID="<key id>" \
-BACKUP_S3_SECRET_ACCESS_KEY="<secret>" \
+ACCOUNT_BACKUP_S3_ENDPOINT="https://<account>.r2.cloudflarestorage.com" \
+ACCOUNT_BACKUP_S3_BUCKET="rediacc-backups-probe" \
+ACCOUNT_BACKUP_S3_ACCESS_KEY_ID="<key id>" \
+ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY="<secret>" \
   scripts/backup-cutover-preflight.sh
 
 # 2. NOTHING TO DO BY HAND ANY MORE. SUPERSEDED 2026-08-18.
@@ -152,7 +152,7 @@ BACKUP_S3_SECRET_ACCESS_KEY="<secret>" \
 #    shipping a Worker whose backup endpoints answer 503. Verified by control:
 #    deleting one caller's pass-through reddens it with
 #    "promote-stable.yml: job 'deploy-account-stable' -> cd-deploy-account.yml:
-#     does not pass required secret BACKUP_S3_SECRET_ACCESS_KEY".
+#     does not pass required secret ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY".
 #
 #    `wrangler secret bulk` MERGES rather than replacing, so any secret set by
 #    hand outside this list survives a deploy.
@@ -165,9 +165,22 @@ BACKUP_S3_SECRET_ACCESS_KEY="<secret>" \
 #    `--config <file>`, never `--env edge`.
 #
 # cd workers/account
-# for k in BACKUP_S3_ENDPOINT BACKUP_S3_BUCKET BACKUP_S3_ACCESS_KEY_ID BACKUP_S3_SECRET_ACCESS_KEY; do
+# for k in ACCOUNT_BACKUP_S3_ENDPOINT ACCOUNT_BACKUP_S3_BUCKET ACCOUNT_BACKUP_S3_ACCESS_KEY_ID ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY; do
 #   npx wrangler secret put "$k" --config wrangler.edge-eu.toml
 # done
+#
+# NOTE (2026-09-02): ACCOUNT_BACKUP_S3_BUCKET is still the WORKER-side
+# variable name, so the break-glass loop above is unchanged. But it is no longer a GitHub secret
+# and must not be recreated as one. CD now derives it per region and per channel
+# from regions.json (backupR2 / edgeBackupR2) and hands it to
+# set-account-worker-secrets.sh, because one global bucket name against six
+# per-region BACKUP_BUCKET bindings meant the presign signer signed for a
+# different bucket than the Worker read and GC'd. Likewise
+# ACCOUNT_BACKUP_S3_ENDPOINT is stored as the DEFAULT host and the
+# jurisdiction label is inserted at deploy time from regions.json's
+# r2Jurisdiction, since the EU buckets answer only at
+# <account>.eu.r2.cloudflarestorage.com. check:ci-backup-bucket-conformance
+# holds regions.json and the wrangler bindings together.
 
 # 3. Register the credential for rotation (slug: cf-r2-backup), so this key
 #    joins the same lifecycle as cf-r2 and cf-r2-media rather than living

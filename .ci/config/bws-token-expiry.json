@@ -1,0 +1,26 @@
+{
+  "_comment": [
+    "When the Bitwarden machine-account token in BWS_ACCESS_TOKEN stops working.",
+    "",
+    "NO SECRET IS IN THIS FILE. A BWS access token carries no expiry inside it --",
+    "expiry is a property of the machine account, held server-side and visible only",
+    "in the web vault. So the date has to be written down by whoever minted the",
+    "token, and the only alternative is discovering it when every local command",
+    "starts failing with an opaque auth error.",
+    "",
+    "That is not hypothetical: mc_migrate_claude was minted 2026-09-01 with 7-day",
+    "validity, and agent/PLAN-env-to-bitwarden.md would have every local script",
+    "depend on it. Silence here becomes a scheduled outage.",
+    "",
+    "Update this whenever a token is minted or replaced. `warn_days` is how long",
+    "before the date the tools start shouting.",
+    "client_id_sha256 fingerprints the IDENTIFIER half of the token, never the secret.",
+    "It exists so a token swapped without updating this file is reported, rather than",
+    "the date silently describing a machine account that no longer exists."
+  ],
+  "token": "mc_migrate_claude",
+  "expires": "2026-09-08",
+  "warn_days": 5,
+  "replacement_plan": "agent/PLAN-env-to-bitwarden.md -- split into mc-ci-read (read-only, lives in .env) and mc-rotate (read-write, supplied per rotation, never stored)",
+  "client_id_sha256": "00991b3077ee8f57"
+}

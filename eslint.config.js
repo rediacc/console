@@ -1,4 +1,5 @@
 import { NON_ENGLISH_LOCALES } from '@rediacc/locales';
+import path from 'node:path';
 import js from '@eslint/js';
 import json from '@eslint/json';
 import tseslint from 'typescript-eslint';
@@ -87,6 +88,12 @@ function i18nLocaleConfigs({
   cliSyntax,
   cliFlags,
 }) {
+  // `files:` globs stay relative (ESLint resolves them against this config's
+  // directory), but the RULE options are read by the plugin at lint time
+  // relative to process.cwd(). Running eslint from a workspace directory made
+  // that resolve to private/account/private/account/src/... and the rule
+  // refused. Absolute here, so the config means the same thing from any cwd.
+  const localesDirAbs = path.resolve(import.meta.dirname, localesDir);
   const jsonBase = {
     plugins: { json, 'i18n': i18nJsonPlugin },
     language: 'json/json',
@@ -138,7 +145,7 @@ function i18nLocaleConfigs({
         // Runs on EVERY language file, including the `en` source that the non-English
         // block below excludes, so flag-name mangling is caught everywhere. The rule
         // self-guards the en source where that matters.
-        ...(cliFlags ? { 'i18n/cli-flag-consistency': ['error', { localesDir }] } : {}),
+        ...(cliFlags ? { 'i18n/cli-flag-consistency': ['error', { localesDir: localesDirAbs }] } : {}),
       },
     },
     // 2. English cross-language validation
@@ -146,8 +153,8 @@ function i18nLocaleConfigs({
       files: [`${localesDir}/en/**/*.json`],
       ...jsonBase,
       rules: {
-        'i18n/cross-language-consistency': ['error', { localesDir, sourceLanguage: 'en' }],
-        'i18n/translation-coverage': ['error', { localesDir, sourceLanguage: 'en', minimumCoverage: 100 }],
+        'i18n/cross-language-consistency': ['error', { localesDir: localesDirAbs, sourceLanguage: 'en' }],
+        'i18n/translation-coverage': ['error', { localesDir: localesDirAbs, sourceLanguage: 'en', minimumCoverage: 100 }],
         'i18n/translation-staleness': ['off', { hashFileName: '.translation-hashes.json' }],
         ...(sourceDir && unusedKeyIgnores ? {
           'i18n/no-unused-keys': ['off', { sourceDir, ignorePatterns: unusedKeyIgnores }],
@@ -164,11 +171,11 @@ function i18nLocaleConfigs({
       ...jsonBase,
       rules: {
         'i18n/no-untranslated-values': ['error', {
-          localesDir,
+          localesDir: localesDirAbs,
           minLength: 3,
           allowedPatterns: [...UNTRANSLATED_BASE_PATTERNS, ...extraUntranslatedPatterns],
         }],
-        'i18n/interpolation-consistency': ['error', { localesDir }],
+        'i18n/interpolation-consistency': ['error', { localesDir: localesDirAbs }],
       },
     },
   ];
@@ -188,6 +195,12 @@ export default tseslint.config(
       'bin/',
       'cli/dist/',
       'node_modules/',
+      // Throwaway sandboxes a gate builds INSIDE a package (check-guard-mutations.ts
+      // copies packages/cli into `.guard-mutations.<pid>.<rand>.tmp/`). `npm run ci` is a
+      // parallel pool, so eslint's glob can list that tree and then ENOENT on a file the
+      // sibling gate has already removed. ESLint does not read .gitignore, so the
+      // `*.tmp` rule there does not cover it.
+      '**/*.tmp/',
       '*.config.js',
       '*.config.ts',
       '*.config.cjs',

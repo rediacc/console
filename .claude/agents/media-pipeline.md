@@ -340,7 +340,11 @@ silent partial publish that every gate reports as fine.
    `CF_GLOBAL_API_KEY` + `CF_EMAIL`). **Verify against the BUCKET, not the exit code**, and
    export `AWS_DEFAULT_REGION=auto`: the AWS CLI otherwise inherits a real region from
    ambient config and `list-objects-v2` returns an EMPTY list that reads as an empty bucket.
-   `R2_MEDIA_BUCKET` is not in `private/account/.env`; the name is `rediacc-www-media`. Without it the CDN keeps serving pre-publish copies,
+   The bucket is `rediacc-www-media`, hardcoded at `sync-media-to-r2.sh:35`; nothing
+   reads a bucket name from the environment. (Corrected 2026-09-02: this line claimed
+   `R2_MEDIA_BUCKET` was not in `private/account/.env`. It was, under a comment saying
+   publish.py and the sync scripts read it. Neither held, and the key is now deleted.)
+   **Without the PURGE** the CDN keeps serving pre-publish copies,
    and `check-tutorial-caption-sync` - which fetches from `media.rediacc.com` - reports a
    large, entirely false failure set. This produced a bogus 53-combo report. **After a
    publish, purge before believing any mass failure.** Prove the cache is fresh by fetching

@@ -53,7 +53,7 @@ esac
 SHIM
     chmod +x "$SHIMDIR/gh"
     local out rc=0
-    out="$(PATH="$SHIMDIR:$PATH" AUTOPILOT_APP_ID=4409539 "$GATE" 2>&1)" || rc=$?
+    out="$(PATH="$SHIMDIR:$PATH" GITHUB_AUTOPILOT_APP_ID=4409539 "$GATE" 2>&1)" || rc=$?
     echo "${rc}:${out}"
 }
 
@@ -102,8 +102,8 @@ test_empty_bypass_list_passes() {
 
 test_unset_app_id_fails_rather_than_defaulting() {
     local rc=0
-    env -u AUTOPILOT_APP_ID "$GATE" >/dev/null 2>&1 || rc=$?
-    assert_eq "$rc" "1" "an unset AUTOPILOT_APP_ID must fail, not silently check nothing"
+    env -u GITHUB_AUTOPILOT_APP_ID "$GATE" >/dev/null 2>&1 || rc=$?
+    assert_eq "$rc" "1" "an unset GITHUB_AUTOPILOT_APP_ID must fail, not silently check nothing"
     log_pass "missing config fails closed instead of passing against no id"
 }
 

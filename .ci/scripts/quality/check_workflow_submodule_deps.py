@@ -479,7 +479,7 @@ def main() -> int:
         print("        id: app-token")
         print("        with:")
         print("          client-id: ${{ vars.APP_ID }}")
-        print("          private-key: ${{ secrets.APP_PRIVATE_KEY }}")
+        print("          private-key: ${{ secrets.GITHUB_APP_PRIVATE_KEY }}")
         print("          repositories: console,renet,account,elite,homebrew-tap")
         print("      - uses: actions/checkout@<pinned>")
         print("        with:")

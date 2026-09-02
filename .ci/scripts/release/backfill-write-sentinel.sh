@@ -17,7 +17,7 @@
 #   DRY_RUN       "true" prints the invocation and exits 0; anything else writes
 #
 # Required env when DRY_RUN is not "true" (consumed by the writer):
-#   R2_ACCESS_KEY_ID   R2_SECRET_ACCESS_KEY   R2_ENDPOINT
+#   CLOUDFLARE_R2_ACCESS_KEY_ID   CLOUDFLARE_R2_SECRET_ACCESS_KEY   CLOUDFLARE_R2_ENDPOINT
 #
 # Run locally (safe preview, touches nothing):
 #   VERSION=v1.1.2 CHANNEL=edge COMMIT_SHA=deadbeef DRY_RUN=true \

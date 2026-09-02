@@ -239,13 +239,13 @@ fi
 if [[ "${RDC_DEV:-0}" == "1" ]]; then
     # Read EXACTLY two values from the dev gateway's env file, by grep. NEVER
     # `source` it (not even with `set -a`): private/account/.env also holds
-    # ED25519_PRIVATE_KEY, X25519_PRIVATE_KEY, JWT_SECRET and API_KEY, and
+    # ACCOUNT_ED25519_PRIVATE_KEY, ACCOUNT_X25519_PRIVATE_KEY, ACCOUNT_JWT_SECRET and ACCOUNT_SERVER_API_KEY, and
     # sourcing would leak every one of those secrets into the CLI process
     # environment. grep + cut extracts only the two public values the dev
     # config needs — the gateway URL and the server's X25519 public key.
     account_env="$ROOT_DIR/private/account/.env"
     dev_server=$(grep -E '^REDIACC_ACCOUNT_SERVER=' "$account_env" 2>/dev/null | tail -1 | cut -d= -f2-)
-    dev_e2e_key=$(grep -E '^X25519_PUBLIC_KEY=' "$account_env" 2>/dev/null | tail -1 | cut -d= -f2-)
+    dev_e2e_key=$(grep -E '^ACCOUNT_X25519_PUBLIC_KEY=' "$account_env" 2>/dev/null | tail -1 | cut -d= -f2-)
 
     # Fail fast when the gateway is not configured — a half-configured dev mode
     # would otherwise surface as a confusing CLI error later.

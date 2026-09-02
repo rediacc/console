@@ -15,8 +15,8 @@
 #   --dry-run        Preview without building
 #
 # Environment:
-#   GPG_PRIVATE_KEY       GPG private key for RPM/DEB signing (base64 or armored)
-#   GPG_PASSPHRASE        GPG key passphrase (optional)
+#   RELEASE_GPG_PRIVATE_KEY       GPG private key for RPM/DEB signing (base64 or armored)
+#   RELEASE_GPG_PASSPHRASE        GPG key passphrase (optional)
 #   APK_RSA_PRIVATE_KEY   RSA private key for APK signing (PEM format, optional)
 
 set -euo pipefail
@@ -179,12 +179,12 @@ trap cleanup EXIT
 # =============================================================================
 SIGNING_CONFIGURED=false
 
-if [[ "$FORMAT" == "rpm" || "$FORMAT" == "deb" ]] && [[ -n "${GPG_PRIVATE_KEY:-}" ]]; then
+if [[ "$FORMAT" == "rpm" || "$FORMAT" == "deb" ]] && [[ -n "${RELEASE_GPG_PRIVATE_KEY:-}" ]]; then
     log_info "Setting up GPG signing for $FORMAT..."
 
     # Write GPG key to temp file
     GPG_KEY_FILE="$BUILD_DIR/signing-key.gpg"
-    echo "$GPG_PRIVATE_KEY" >"$GPG_KEY_FILE"
+    echo "$RELEASE_GPG_PRIVATE_KEY" >"$GPG_KEY_FILE"
 
     # nfpm reads key_file from YAML config which references these env vars
     if [[ "$FORMAT" == "rpm" ]]; then
@@ -194,10 +194,10 @@ if [[ "$FORMAT" == "rpm" || "$FORMAT" == "deb" ]] && [[ -n "${GPG_PRIVATE_KEY:-}
     fi
 
     # Set passphrase via nfpm environment variable
-    if [[ -n "${GPG_PASSPHRASE:-}" ]]; then
-        echo "::add-mask::$GPG_PASSPHRASE"
-        export NFPM_RPM_PASSPHRASE="$GPG_PASSPHRASE"
-        export NFPM_DEB_PASSPHRASE="$GPG_PASSPHRASE"
+    if [[ -n "${RELEASE_GPG_PASSPHRASE:-}" ]]; then
+        echo "::add-mask::$RELEASE_GPG_PASSPHRASE"
+        export NFPM_RPM_PASSPHRASE="$RELEASE_GPG_PASSPHRASE"
+        export NFPM_DEB_PASSPHRASE="$RELEASE_GPG_PASSPHRASE"
     fi
 
     SIGNING_CONFIGURED=true
@@ -255,7 +255,7 @@ if [[ "$SIGNING_CONFIGURED" == "true" ]]; then
 else
     case "$FORMAT" in
         rpm | deb)
-            log_warn "GPG_PRIVATE_KEY not set, skipping $FORMAT signing"
+            log_warn "RELEASE_GPG_PRIVATE_KEY not set, skipping $FORMAT signing"
             ;;
         apk)
             log_warn "APK_RSA_PRIVATE_KEY not set, skipping APK signing"

@@ -1,0 +1,34 @@
+# Callers of this repo's reusable workflows that live in OTHER repositories.
+#
+# WHY THIS FILE EXISTS. `.ci/scripts/security/check-workflow-gates.sh` CHECK 2 enforces the
+# caller/callee contract in both directions -- a caller must pass every required input and
+# secret the callee declares, and may not pass one it never declares. But that check scans
+# `.github/workflows` only (see its WORKFLOWS_DIR default), so it is structurally blind to
+# callers in other repositories -- which are the ONLY callers that can suffer the breakage
+# it exists to prevent, because a same-repo caller moves with its callee in one commit and
+# a cross-repo one resolves `@main` at run time.
+#
+# The blindness already cost something: `claude-review-reusable.yml` declares
+# BWS_ACCESS_TOKEN as `required: false` and guards its shadow steps on the repository name,
+# solely because these two callers would break on a required secret they do not pass. That
+# workaround was reasoned out by hand. This file is so the next one is caught by a gate.
+#
+# Declaring a caller here does NOT make it testable pre-merge. It turns breaking it into a
+# red gate on the console PR instead of a red run in the other repo an hour later.
+#
+# Each entry is checked against the callee's real `workflow_call` block, and -- when the
+# submodule is checked out -- against the caller's real file, so an entry cannot rot into a
+# comfortable fiction.
+callers:
+  - caller: private/account/.github/workflows/claude-review.yml
+    repo: rediacc/account
+    pinned_at: main
+    calls: .github/workflows/claude-review-reusable.yml
+    passes_inputs: [required_check, pr_number]
+    passes_secrets: [ANTHROPIC_CLAUDE_CODE_OAUTH_TOKEN]
+  - caller: private/renet/.github/workflows/claude-review.yml
+    repo: rediacc/renet
+    pinned_at: main
+    calls: .github/workflows/claude-review-reusable.yml
+    passes_inputs: [required_check, pr_number]
+    passes_secrets: [ANTHROPIC_CLAUDE_CODE_OAUTH_TOKEN]

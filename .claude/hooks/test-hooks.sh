@@ -41,13 +41,13 @@ check_out() {
     local expected="$1" script="$2" json="$3" label="$4" needle="$5" rc out
     out="$(echo "$json" | bash "$DIR/$script" 2>&1 >/dev/null)"
     rc=$?
-    if [[ "$rc" == "$expected" ]] && grep -qF "$needle" <<<"$out"; then
+    if [[ "$rc" == "$expected" ]] && grep -qF -- "$needle" <<<"$out"; then
         PASS=$((PASS + 1))
         printf 'ok   [%s] %s (exit %s)\n' "$expected" "$label" "$rc"
     else
         FAIL=$((FAIL + 1))
         printf 'FAIL [%s] %s (got exit %s, needle %s)\n' "$expected" "$label" "$rc" \
-            "$(grep -qF "$needle" <<<"$out" && echo present || echo MISSING)"
+            "$(grep -qF -- "$needle" <<<"$out" && echo present || echo MISSING)"
     fi
 }
 
@@ -647,6 +647,67 @@ check 0 pre-ask/block-settled-questions.sh "$(ask_json "Should I describe how th
 check 2 pre-edit/block-suppressions.sh "$(edit_json "a // @ts-""ignore")" "suppressions(new_string)"
 check 2 pre-edit/block-suppressions.sh "$(multiedit_json "b // eslint-""disable")" "suppressions(MultiEdit)"
 check 2 pre-edit/block-inline-workflow-run.sh "$(wf_edit_json '.github/workflows/x.yml' "$WF_FAT")" "inline-workflow-run: 9-line block blocked"
+
+# --- block-plan-without-tasks: a plan file must carry a parseable task list ---
+#
+# The defect these pin, measured on agent/PLAN-secret-namespace-migration.md
+# before it was reformatted: wl_planfid.plan_tasks() returned 21 "tasks", 8 of
+# them the operator's locked DECISIONS and 5 open QUESTIONS, while every real
+# unit of work was invisible. So the FIRST case below is the one that matters --
+# a prose plan is not a plan with zero tasks, it is a plan with the wrong ones,
+# and a guard keyed on "zero tasks" would have waved it straight through.
+#
+# Fixtures are built HERE rather than pointed at a real plan in agent/, so
+# deleting or rewriting any plan in the tree cannot silently void these cases.
+PLAN_TMP="$(mktemp -d)"
+mkdir -p "$PLAN_TMP/agent"
+# Prose under an action-shaped heading: 6 bullets that PARSE as tasks and are
+# nothing of the kind.
+PLAN_PROSE="$(python3 -c "
+print('Status: ready'); print(); print('# A plan'); print()
+print('## Part 0 - DECIDED by the operator'); print()
+for i in range(6): print('%d. A locked decision sentence long enough to be a task %d.' % (i + 1, i))
+print(); print('x' * 500)")"
+# No list at all: the weaker failure, still a plan nothing can decompose.
+PLAN_NOTASK="$(python3 -c "
+print('Status: ready'); print(); print('# A plan'); print(); print('## Context'); print()
+print('Just prose. ' * 80)")"
+# The shape the guard asks for.
+PLAN_TASKS="$(python3 -c "
+print('Status: ready'); print(); print('# A plan'); print(); print('## Tasks'); print()
+for i in range(3): print('- [ ] Do the concrete thing number %d at file.ts:%d' % (i, i + 10))
+print(); print('x' * 500)")"
+printf '%s\n' "$PLAN_PROSE" >"$PLAN_TMP/agent/PLAN-legacy.md"
+printf '%s\n' "$PLAN_TASKS" >"$PLAN_TMP/agent/PLAN-conforming.md"
+
+check_out 2 pre-edit/block-plan-without-tasks.sh "$(tool_json Write "$PLAN_TMP/agent/PLAN-new.md" content "$PLAN_PROSE")" \
+    "plan-tasks: a prose plan whose DECISIONS parse as tasks is blocked" "has NO checkbox task"
+check_out 2 pre-edit/block-plan-without-tasks.sh "$(tool_json Write "$PLAN_TMP/agent/PLAN-new.md" content "$PLAN_NOTASK")" \
+    "plan-tasks: a plan with no list at all is blocked" "finds 0 tasks in it"
+check_out 2 pre-edit/block-plan-without-tasks.sh "$(tool_json Write "/r/home/u/.claude/plans/harness.md" content "$PLAN_PROSE")" \
+    "plan-tasks: the harness plan directory is in scope too" "ADD a section like this"
+check_out 2 pre-edit/block-plan-without-tasks.sh "$(tool_json Edit "$PLAN_TMP/agent/PLAN-absent.md" new_string "$PLAN_PROSE")" \
+    "plan-tasks: an edit CREATING a prose plan is blocked" "has NO checkbox task"
+# The message is the product here: a block that does not spell out the fix
+# sends the author back to the same prose. Pin the three things it must say.
+check_out 2 pre-edit/block-plan-without-tasks.sh "$(tool_json Write "$PLAN_TMP/agent/PLAN-new.md" content "$PLAN_PROSE")" \
+    "plan-tasks: the block names the exact syntax to add" "- [ ] Fix <the concrete thing>"
+check_out 2 pre-edit/block-plan-without-tasks.sh "$(tool_json Write "$PLAN_TMP/agent/PLAN-new.md" content "$PLAN_PROSE")" \
+    "plan-tasks: the block says which states do NOT parse" "'- [?]' and '- [>]' do NOT parse"
+
+# --- the ALLOW direction. Without these the guard cannot be shown to leave
+# --- legitimate work alone, which is how an over-blocking guard gets deleted.
+check 0 pre-edit/block-plan-without-tasks.sh "$(tool_json Write "$PLAN_TMP/agent/PLAN-new.md" content "$PLAN_TASKS")" \
+    "plan-tasks: a plan with a checkbox list passes"
+check 0 pre-edit/block-plan-without-tasks.sh "$(tool_json Write "/r/packages/cli/src/foo.ts" content "$PLAN_PROSE")" \
+    "plan-tasks: a non-plan path is out of scope"
+check 0 pre-edit/block-plan-without-tasks.sh "$(tool_json Write "$PLAN_TMP/agent/PLAN-new.md" content "Status: ready")" \
+    "plan-tasks: a stub under 400 chars is exempt"
+check_out 0 pre-edit/block-plan-without-tasks.sh "$(tool_json Edit "$PLAN_TMP/agent/PLAN-legacy.md" new_string "one more paragraph")" \
+    "plan-tasks: amending a legacy prose plan is grandfathered, with a note" "predates the plan-task convention"
+check 0 pre-edit/block-plan-without-tasks.sh "$(tool_json Edit "$PLAN_TMP/agent/PLAN-conforming.md" new_string "one more paragraph")" \
+    "plan-tasks: amending a plan that already has a task list passes"
+rm -rf "$PLAN_TMP"
 # STATE.md write guard: the CLI refusal alone is bypassed by a raw Write (the
 # document lives at a plain repo path), so the guard is the closing half.
 #
@@ -2096,7 +2157,8 @@ for mod in context/test-context-bands.py \
     pre-bash/test-block-unverified-push.py \
     pre-bash/test-block-host-toolchain-run.py \
     stop/test-completion-evidence.py \
-    stop/test-always-tier.py; do
+    stop/test-always-tier.py \
+    stop/test-planfile.py; do
     if [[ ! -f "$DIR/$mod" ]]; then
         FAIL=$((FAIL + 1))
         echo "FAIL [1] $mod missing"

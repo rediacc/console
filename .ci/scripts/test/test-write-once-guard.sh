@@ -62,7 +62,7 @@ export PATH="$TEMP:$PATH"
 
 # Environment upload-to-r2.sh requires before we can source it.
 export RELEASES_BUCKET=rediacc-releases
-export R2_ENDPOINT=https://example.invalid
+export CLOUDFLARE_R2_ENDPOINT=https://example.invalid
 export VERSION=0.0.0-test
 export CHANNEL=pr-0
 export DRY_RUN=false
@@ -76,7 +76,7 @@ log_warn()  { echo "warn: \$*" >&2; }
 log_info()  { echo "info: \$*" >&2; }
 SCRIPT_DIR="$ROOT_DIR/.ci/scripts/deploy"
 RELEASES_BUCKET="$RELEASES_BUCKET"
-R2_ENDPOINT="$R2_ENDPOINT"
+CLOUDFLARE_R2_ENDPOINT="$CLOUDFLARE_R2_ENDPOINT"
 DRY_RUN=\${DRY_RUN:-false}
 STUBS
 cat "$VALIDATOR_LIB" >>"$TEMP/bundle.sh"

@@ -4,7 +4,7 @@
 WHY THIS EXISTS. On 2026-08-07 it turned out that `Claude Review` had NEVER
 succeeded in rediacc/account or rediacc/renet -- every run since at least
 2026-07-28 failed, including runs on `main`. Both repos carry a
-`claude-review.yml` that references `secrets.CLAUDE_CODE_OAUTH_TOKEN`. That
+`claude-review.yml` that references `secrets.ANTHROPIC_CLAUDE_CODE_OAUTH_TOKEN`. That
 secret is an ORGANISATION secret with `visibility=selected`, and its
 selected-repositories list contains exactly one entry: `console`. So in those
 two repos the reference resolved to an empty string and the action aborted on
@@ -62,14 +62,13 @@ BUILTIN = {"GITHUB_TOKEN"}
 # Keep this list tiny. "It is failing and I want green" is not a reason; that is
 # the escape hatch that turned the cli-manifest guard into decoration for its
 # whole life.
-OPTIONAL = {
-    "ANTHROPIC_API_KEY": (
-        "watchdog-monitor.yml:145-150 documents it as a tier that may not exist: "
-        "an undefined secret interpolates to an empty string and the script treats "
-        "'no credential' as 'this tier is absent', falling through to the allowlist. "
-        "CLAUDE_CODE_OAUTH_TOKEN on the next line is the credential this org has."
-    ),
-}
+# EMPTY, and that is the healthy state. It held one entry, ANTHROPIC_API_KEY,
+# excusing a reference to a credential that did not exist. On 2026-09-02 the
+# operator ruled out pay-as-you-go API billing, so the key will never exist and
+# the REFERENCE was deleted rather than excused -- which is the right end for
+# every entry here: a suppression outlives its reason silently, a deleted
+# reference cannot.
+OPTIONAL = {}
 
 # KNOWN-UNREACHABLE, with an EXPIRY. These are real defects that this session
 # cannot fix, because the remedy is a GitHub secret operation and that is an
@@ -80,23 +79,15 @@ OPTIONAL = {
 # exception dies and this gate goes red. That is the difference between an
 # acknowledged defect and a suppression: a suppression is silent and permanent,
 # this one announces itself on every run and has a deadline.
-KNOWN_UNREACHABLE = {
-    ("account", "CLAUDE_CODE_OAUTH_TOKEN"): (
-        "2026-09-07",
-        (
-            "https://github.com/rediacc/account/issues/76 — org secret is visibility=selected "
-            "scoped to `console` alone, so Claude Review has never once succeeded here. "
-            "Fix is a secret operation: add the repo to the allowlist, or create a repo-level "
-            "secret as claude-review.yml:10 already assumes."
-        ),
-    ),
-    ("renet", "CLAUDE_CODE_OAUTH_TOKEN"): (
-        "2026-09-07",
-        (
-            "https://github.com/rediacc/account/issues/76 — identical cause and identical "
-            "remedy; confirmed by checking, every Claude Review run in renet has failed too."
-        ),
-    ),
+KNOWN_UNREACHABLE: dict[tuple[str, str], tuple[str, str]] = {
+    # Empty as of 2026-09-02. The two entries that lived here -- account and
+    # renet unable to read ANTHROPIC_CLAUDE_CODE_OAUTH_TOKEN, waived until 2026-09-07 --
+    # were closed by their own stated remedy: the org secret's visibility was
+    # `selected` and scoped to console alone, and both repos were added to its
+    # allowlist (gh api PUT orgs/rediacc/actions/secrets/.../repositories/<id>).
+    # Claude Review had never once succeeded in either repo before that. Keep
+    # the mechanism: a waiver here announces itself every run and carries a
+    # deadline, which is what separates it from a suppression.
 }
 
 SECRET_RE = re.compile(r"secrets\.([A-Z_][A-Z0-9_]*)")
@@ -178,7 +169,7 @@ def refresh(root, baseline_path):
             "Which secrets each repository can actually READ, not merely reference.",
             "Refresh: npm run check:ci-secret-reachability -- --refresh (needs an org-admin token).",
             "Written because Claude Review failed in account and renet for eleven days:",
-            "both reference CLAUDE_CODE_OAUTH_TOKEN, an org secret scoped to console alone.",
+            "both reference ANTHROPIC_CLAUDE_CODE_OAUTH_TOKEN, an org secret scoped to console alone.",
         ],
         "refreshed_at": dt.datetime.now(dt.UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
         "repos": {},

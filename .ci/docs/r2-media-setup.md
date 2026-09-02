@@ -46,9 +46,9 @@ Dashboard steps:
 Record the following values (also stored in the team password vault):
 
 ```
-R2_MEDIA_ACCESS_KEY_ID=
-R2_MEDIA_SECRET_ACCESS_KEY=
-R2_MEDIA_ENDPOINT=https://fa51e4a18d553c30e1633288e9733d04.r2.cloudflarestorage.com
+CLOUDFLARE_R2_MEDIA_ACCESS_KEY_ID=
+CLOUDFLARE_R2_MEDIA_SECRET_ACCESS_KEY=
+CLOUDFLARE_R2_MEDIA_ENDPOINT=https://fa51e4a18d553c30e1633288e9733d04.r2.cloudflarestorage.com
 ```
 
 Note: if creating the token via the Cloudflare API (`/user/tokens`) instead of
@@ -61,9 +61,9 @@ Item Read" + "Workers R2 Storage Bucket Item Write", scoped via resource key
 ## 4. GitHub Org Secrets
 
 ```bash
-gh secret set R2_MEDIA_ACCESS_KEY_ID --org rediacc --body "<access-key-id>"
-gh secret set R2_MEDIA_SECRET_ACCESS_KEY --org rediacc --body "<secret-access-key>"
-gh secret set R2_MEDIA_ENDPOINT --org rediacc --body "https://fa51e4a18d553c30e1633288e9733d04.r2.cloudflarestorage.com"
+gh secret set CLOUDFLARE_R2_MEDIA_ACCESS_KEY_ID --org rediacc --body "<access-key-id>"
+gh secret set CLOUDFLARE_R2_MEDIA_SECRET_ACCESS_KEY --org rediacc --body "<secret-access-key>"
+gh secret set CLOUDFLARE_R2_MEDIA_ENDPOINT --org rediacc --body "https://fa51e4a18d553c30e1633288e9733d04.r2.cloudflarestorage.com"
 ```
 
 (Not yet wired into any workflow — CI/pipeline integration is a later phase of
@@ -174,7 +174,7 @@ already in the bucket). Safe to re-run any time a tutorial or solution video
 is re-recorded; it will only push what changed.
 
 ```bash
-export R2_MEDIA_ACCESS_KEY_ID=... R2_MEDIA_SECRET_ACCESS_KEY=... R2_MEDIA_ENDPOINT=...
+export CLOUDFLARE_R2_MEDIA_ACCESS_KEY_ID=... CLOUDFLARE_R2_MEDIA_SECRET_ACCESS_KEY=... CLOUDFLARE_R2_MEDIA_ENDPOINT=...
 .ci/scripts/deploy/sync-media-to-r2.sh                  # sync everything
 .ci/scripts/deploy/sync-media-to-r2.sh --dry-run        # preview only
 .ci/scripts/deploy/sync-media-to-r2.sh --tutorials-only # just tutorials/video/
@@ -231,7 +231,7 @@ used to list/diff the bucket; the public `media.rediacc.com` domain doesn't
 expose a listing endpoint, only individual file GETs).
 
 ```bash
-export R2_MEDIA_ACCESS_KEY_ID=... R2_MEDIA_SECRET_ACCESS_KEY=... R2_MEDIA_ENDPOINT=...
+export CLOUDFLARE_R2_MEDIA_ACCESS_KEY_ID=... CLOUDFLARE_R2_MEDIA_SECRET_ACCESS_KEY=... CLOUDFLARE_R2_MEDIA_ENDPOINT=...
 .ci/scripts/deploy/sync-media-from-r2.sh                  # restore everything
 .ci/scripts/deploy/sync-media-from-r2.sh --dry-run        # preview only
 .ci/scripts/deploy/sync-media-from-r2.sh --tutorials-only
@@ -284,7 +284,7 @@ without the cache (narration gets re-synthesized instead of restored).
 already being present locally by the time it runs.
 
 ```bash
-export R2_MEDIA_ACCESS_KEY_ID=... R2_MEDIA_SECRET_ACCESS_KEY=... R2_MEDIA_ENDPOINT=...
+export CLOUDFLARE_R2_MEDIA_ACCESS_KEY_ID=... CLOUDFLARE_R2_MEDIA_SECRET_ACCESS_KEY=... CLOUDFLARE_R2_MEDIA_ENDPOINT=...
 .ci/scripts/deploy/sync-media-to-r2.sh --audio-only     # backup
 .ci/scripts/deploy/sync-media-from-r2.sh --audio-only   # restore
 ```

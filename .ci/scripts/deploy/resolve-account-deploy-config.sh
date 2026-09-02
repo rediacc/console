@@ -13,14 +13,22 @@
 # Required env:
 #   TARGET                    deploy channel: stable | edge
 #   MATRIX_ID                 region id from regions.json, e.g. eu
-#   MATRIX_SECRET_SUFFIX      region suffix used for secret indirection, e.g. EU
+#   MATRIX_SECRET_SUFFIX      region suffix, e.g. EU. Still PASSED by the caller
+#                             (cd-deploy-account.yml:325) and still read below;
+#                             no longer re-emitted as an output.
 #   MATRIX_WORKER_NAME        stable Worker name
 #   MATRIX_DOMAIN             stable hostname
 #   MATRIX_EDGE_WORKER_NAME   edge Worker name
 #   MATRIX_EDGE_DOMAIN        edge hostname
 #   GITHUB_OUTPUT             step-output file to append the resolved values to
 #
-# Outputs: region, suffix, worker, domain, sandbox
+# Outputs: region, worker, domain, sandbox
+#   `suffix` is NOT among them any more. It existed for the Stripe key
+#   indirection in cd-deploy-account.yml, and that indirection is gone: the
+#   live key collapsed to one name, so choosing between STRIPE_KEY_EU/US/ASIA
+#   was choosing between three bindings of the same value. The header said
+#   `suffix` for a while after the echo was dropped, which is worse than
+#   either state -- the consumer read an output that silently did not exist.
 #
 # Run locally (read-only):
 #   TARGET=edge MATRIX_ID=eu MATRIX_SECRET_SUFFIX=EU \
@@ -54,7 +62,6 @@ else
     SANDBOX="--sandbox"
 fi
 echo "region=$REGION" >>"$GITHUB_OUTPUT"
-echo "suffix=$SUFFIX" >>"$GITHUB_OUTPUT"
 echo "worker=$WORKER" >>"$GITHUB_OUTPUT"
 echo "domain=$DOMAIN" >>"$GITHUB_OUTPUT"
 echo "sandbox=$SANDBOX" >>"$GITHUB_OUTPUT"

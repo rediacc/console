@@ -596,12 +596,16 @@ function main(): void {
   if (findings.length > 0) {
     console.error(`${RED}✗${NC} ${findings.length} NEW shape(s) have reached ${N} copies:\n`);
     for (const f of findings) {
-      console.error(`  ~${f.span} lines x ${f.files.length} copies:`);
+      console.error(`  ~${f.span} lines x ${f.files.length} copies:  ${f.shape}`);
       for (const loc of f.files) console.error(`    ${loc}`);
     }
     console.error(
       '\n  Either extract the shared piece, or say which DIVERGENCE makes them not one' +
         '\n  thing (the way `run_gate()` has three incompatible return contracts).' +
+        '\n  To accept one, put its FINGERPRINT (printed above, beside the copy count) into' +
+        `\n  scripts/data/shape-duplication-seed.json under "accepted", with a BLOCKER: reason` +
+        '\n  naming the divergence. The fingerprint used to be absent from this message, which' +
+        '\n  left the documented escape hatch unusable without reading the source.' +
         '\n  Triage it: .claude/hooks/stop/worklist.py --triage <you> "<the finding>"'
     );
     process.exit(1);

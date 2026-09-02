@@ -25,9 +25,13 @@ on:
   # CURRENT head before reviewing anything.
   #
   # `gh workflow run` MUST carry `--ref <branch>` while this trigger is
-  # unmerged: GitHub resolves whether a workflow accepts workflow_dispatch,
-  # and which YAML defines the job, from the DEFAULT BRANCH's copy of this
-  # file. Without --ref, `gh workflow run claude-review.yml -f pr_number=N`
+  # unmerged: GitHub resolves whether a workflow ACCEPTS workflow_dispatch
+  # from the DEFAULT BRANCH's copy of this file. (This comment used to add
+  # "and which YAML defines the job". That half is wrong -- the run uses the
+  # version at the event's own ref, so the dispatched BRANCH's copy executes;
+  # acceptance and execution resolve against different refs. See the dispatch
+  # section of docs/agent-reference/ci-gates.md.) Without --ref,
+  # `gh workflow run claude-review.yml -f pr_number=N`
   # fails closed with a 422 ("Workflow does not have 'workflow_dispatch'
   # trigger") because main does not have this block yet. Observed live: PR
   # #546 run 30588087212. Once this trigger merges to main the flag becomes
@@ -89,4 +93,5 @@ jobs:
       # default applies; only a manual re-review can pick a different model.
       model: ${{ inputs.model || 'claude-sonnet-5' }}
     secrets:
-      CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+      BWS_ACCESS_TOKEN: ${{ secrets.BWS_ACCESS_TOKEN }}
+      ANTHROPIC_CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.ANTHROPIC_CLAUDE_CODE_OAUTH_TOKEN }}

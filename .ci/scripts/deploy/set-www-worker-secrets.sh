@@ -18,17 +18,24 @@
 #   WORKER_NAME                    Worker to write the secrets to
 #   CLOUDFLARE_API_TOKEN           wrangler auth
 #   CLOUDFLARE_ACCOUNT_ID          wrangler auth
-#   SECRET_ED25519_PRIVATE_KEY     SECRET_ED25519_PUBLIC_KEY
-#   SECRET_X25519_PRIVATE_KEY      SECRET_X25519_PUBLIC_KEY
-#   SECRET_API_KEY                 SECRET_JWT_SECRET
-#   SECRET_STRIPE_KEY              SECRET_STRIPE_WEBHOOK
-#   SECRET_ROOT_EMAIL              SECRET_TURNSTILE_KEY
-#   SECRET_SES_ACCESS_KEY_ID       SECRET_SES_SECRET_ACCESS_KEY
-#   SECRET_SES_REGION              VAR_SES_FROM   VAR_SES_CONFIGURATION_SET
-#   VAR_SELLER_NAME                VAR_SELLER_VAT_NUMBER
-#   VAR_SELLER_REGISTRATION_NUMBER VAR_SELLER_ADDRESS_LINE1
-#   VAR_SELLER_ADDRESS_LINE2       VAR_SELLER_CITY
-#   VAR_SELLER_POSTAL_CODE         VAR_SELLER_COUNTRY   VAR_SELLER_EMAIL
+#   ACCOUNT_ED25519_PRIVATE_KEY    ACCOUNT_ED25519_PUBLIC_KEY
+#   ACCOUNT_X25519_PRIVATE_KEY     ACCOUNT_X25519_PUBLIC_KEY
+#   ACCOUNT_SERVER_API_KEY         ACCOUNT_JWT_SECRET
+#   STRIPE_SECRET_KEY              STRIPE_WEBHOOK_SECRET
+#   ROOT_EMAIL                     CLOUDFLARE_TURNSTILE_SECRET_KEY
+#   AWS_SES_ACCESS_KEY_ID          AWS_SES_SECRET_ACCESS_KEY
+#   AWS_SES_REGION                 AWS_SES_FROM   AWS_SES_CONFIGURATION_SET
+#   SELLER_NAME                    SELLER_VAT_NUMBER
+#   SELLER_REGISTRATION_NUMBER     SELLER_ADDRESS_LINE1
+#   SELLER_ADDRESS_LINE2           SELLER_CITY
+#   SELLER_POSTAL_CODE             SELLER_COUNTRY   SELLER_EMAIL
+#
+# ONE NAME EVERYWHERE. The `SECRET_*` / `VAR_*` translation shim is gone: the
+# variable this script READS is the key it WRITES, and that key is what the
+# Worker's zod schema declares (private/account/src/types/env.ts). There is no
+# region indirection at all in this builder -- cd-deploy-worker.yml decides
+# which Stripe/SES credentials to hand it (sandbox on edge, live EU on stable)
+# and passes them under their own names.
 #
 # Run locally (WRITES to Cloudflare — point WORKER_NAME at a scratch Worker):
 #   WORKER_NAME=scratch CLOUDFLARE_API_TOKEN=... \
@@ -46,38 +53,73 @@ require_cmd jq
 require_cmd npx
 : "${WORKER_NAME:?set-www-worker-secrets.sh: WORKER_NAME must be set}"
 
+# ─── Non-empty guards for values zod will NOT catch ──────────────────────────
+# Same reasoning and same shape as set-account-worker-secrets.sh: the Worker
+# schema marks these optional() and normalises "" to undefined, so an empty
+# value deploys cleanly and silently turns the feature off. `required: true`
+# on the GitHub side used to be the guard; a job-start Bitwarden fetch has no
+# equivalent, so the guard lives on the deploy path. Stripe is unconditional
+# here: cd-deploy-worker.yml feeds the sandbox key on edge and the live key on
+# stable, so it is never legitimately empty for www.
+_require_nonempty() {
+    local name="$1" value="$2"
+    if [[ -z "$value" ]]; then
+        echo "set-www-worker-secrets.sh: $name is EMPTY for WORKER_NAME=$WORKER_NAME." >&2
+        echo "  The Worker's schema accepts an empty value and silently disables the feature it" >&2
+        echo "  drives, so this refuses to deploy instead. Check the secret store for that name." >&2
+        exit 1
+    fi
+}
+# The six env.ts declares NON-optional are demanded here too. zod DOES catch
+# those -- but only inside the deployed Worker, as an EnvConfigError 500 on
+# every request afterwards. Catching them at deploy time costs one line each
+# and is the difference between a failed deploy and a broken region.
+_require_nonempty ACCOUNT_ED25519_PRIVATE_KEY "${ACCOUNT_ED25519_PRIVATE_KEY:-}"
+_require_nonempty ACCOUNT_ED25519_PUBLIC_KEY "${ACCOUNT_ED25519_PUBLIC_KEY:-}"
+_require_nonempty ACCOUNT_X25519_PRIVATE_KEY "${ACCOUNT_X25519_PRIVATE_KEY:-}"
+_require_nonempty ACCOUNT_X25519_PUBLIC_KEY "${ACCOUNT_X25519_PUBLIC_KEY:-}"
+_require_nonempty ACCOUNT_SERVER_API_KEY "${ACCOUNT_SERVER_API_KEY:-}"
+_require_nonempty ACCOUNT_JWT_SECRET "${ACCOUNT_JWT_SECRET:-}"
+_require_nonempty ROOT_EMAIL "${ROOT_EMAIL:-}"
+_require_nonempty AWS_SES_ACCESS_KEY_ID "${AWS_SES_ACCESS_KEY_ID:-}"
+_require_nonempty AWS_SES_SECRET_ACCESS_KEY "${AWS_SES_SECRET_ACCESS_KEY:-}"
+_require_nonempty AWS_SES_REGION "${AWS_SES_REGION:-}"
+_require_nonempty CLOUDFLARE_TURNSTILE_SECRET_KEY "${CLOUDFLARE_TURNSTILE_SECRET_KEY:-}"
+_require_nonempty STRIPE_SECRET_KEY "${STRIPE_SECRET_KEY:-}"
+_require_nonempty STRIPE_WEBHOOK_SECRET "${STRIPE_WEBHOOK_SECRET:-}"
+
 jq -n \
-    --arg ed25519_priv "${SECRET_ED25519_PRIVATE_KEY:-}" \
-    --arg ed25519_pub "${SECRET_ED25519_PUBLIC_KEY:-}" \
-    --arg x25519_priv "${SECRET_X25519_PRIVATE_KEY:-}" \
-    --arg x25519_pub "${SECRET_X25519_PUBLIC_KEY:-}" \
-    --arg api_key "${SECRET_API_KEY:-}" \
-    --arg jwt "${SECRET_JWT_SECRET:-}" \
-    --arg stripe "${SECRET_STRIPE_KEY:-}" \
-    --arg stripe_wh "${SECRET_STRIPE_WEBHOOK:-}" \
-    --arg admin "${SECRET_ROOT_EMAIL:-}" \
-    --arg ses_key "${SECRET_SES_ACCESS_KEY_ID:-}" \
-    --arg ses_secret "${SECRET_SES_SECRET_ACCESS_KEY:-}" \
-    --arg ses_region "${SECRET_SES_REGION:-}" \
-    --arg ses_from "${VAR_SES_FROM:-}" \
-    --arg ses_cs "${VAR_SES_CONFIGURATION_SET:-}" \
-    --arg turnstile "${SECRET_TURNSTILE_KEY:-}" \
-    --arg seller_name "${VAR_SELLER_NAME:-}" \
-    --arg seller_vat "${VAR_SELLER_VAT_NUMBER:-}" \
-    --arg seller_reg "${VAR_SELLER_REGISTRATION_NUMBER:-}" \
-    --arg seller_addr1 "${VAR_SELLER_ADDRESS_LINE1:-}" \
-    --arg seller_addr2 "${VAR_SELLER_ADDRESS_LINE2:-}" \
-    --arg seller_city "${VAR_SELLER_CITY:-}" \
-    --arg seller_postal "${VAR_SELLER_POSTAL_CODE:-}" \
-    --arg seller_country "${VAR_SELLER_COUNTRY:-}" \
-    --arg seller_email "${VAR_SELLER_EMAIL:-}" \
+    --arg ed25519_priv "${ACCOUNT_ED25519_PRIVATE_KEY:-}" \
+    --arg ed25519_pub "${ACCOUNT_ED25519_PUBLIC_KEY:-}" \
+    --arg x25519_priv "${ACCOUNT_X25519_PRIVATE_KEY:-}" \
+    --arg x25519_pub "${ACCOUNT_X25519_PUBLIC_KEY:-}" \
+    --arg api_key "${ACCOUNT_SERVER_API_KEY:-}" \
+    --arg jwt "${ACCOUNT_JWT_SECRET:-}" \
+    --arg stripe "${STRIPE_SECRET_KEY:-}" \
+    --arg stripe_wh "${STRIPE_WEBHOOK_SECRET:-}" \
+    --arg admin "${ROOT_EMAIL:-}" \
+    --arg ses_key "${AWS_SES_ACCESS_KEY_ID:-}" \
+    --arg ses_secret "${AWS_SES_SECRET_ACCESS_KEY:-}" \
+    --arg ses_region "${AWS_SES_REGION:-}" \
+    --arg ses_from "${AWS_SES_FROM:-}" \
+    --arg ses_cs "${AWS_SES_CONFIGURATION_SET:-}" \
+    --arg turnstile "${CLOUDFLARE_TURNSTILE_SECRET_KEY:-}" \
+    --arg seller_name "${SELLER_NAME:-}" \
+    --arg seller_vat "${SELLER_VAT_NUMBER:-}" \
+    --arg seller_reg "${SELLER_REGISTRATION_NUMBER:-}" \
+    --arg seller_addr1 "${SELLER_ADDRESS_LINE1:-}" \
+    --arg seller_addr2 "${SELLER_ADDRESS_LINE2:-}" \
+    --arg seller_city "${SELLER_CITY:-}" \
+    --arg seller_postal "${SELLER_POSTAL_CODE:-}" \
+    --arg seller_country "${SELLER_COUNTRY:-}" \
+    --arg seller_email "${SELLER_EMAIL:-}" \
     '{
-        ED25519_PRIVATE_KEY: $ed25519_priv,
-        ED25519_PUBLIC_KEY: $ed25519_pub,
-        X25519_PRIVATE_KEY: $x25519_priv,
-        X25519_PUBLIC_KEY: $x25519_pub,
-        API_KEY: $api_key,
-        JWT_SECRET: $jwt,
+        ACCOUNT_ED25519_PRIVATE_KEY: $ed25519_priv,
+        ACCOUNT_ED25519_PUBLIC_KEY: $ed25519_pub,
+        ACCOUNT_X25519_PRIVATE_KEY: $x25519_priv,
+        ACCOUNT_X25519_PUBLIC_KEY: $x25519_pub,
+        ACCOUNT_SERVER_API_KEY: $api_key,
+        ACCOUNT_JWT_SECRET: $jwt,
         STRIPE_SECRET_KEY: $stripe,
         STRIPE_WEBHOOK_SECRET: $stripe_wh,
         ROOT_EMAIL: $admin,
@@ -86,7 +128,7 @@ jq -n \
         AWS_SES_REGION: $ses_region,
         AWS_SES_FROM: $ses_from,
         AWS_SES_CONFIGURATION_SET: $ses_cs,
-        TURNSTILE_SECRET_KEY: $turnstile,
+        CLOUDFLARE_TURNSTILE_SECRET_KEY: $turnstile,
         SELLER_NAME: $seller_name,
         SELLER_VAT_NUMBER: $seller_vat,
         SELLER_REGISTRATION_NUMBER: $seller_reg,

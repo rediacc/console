@@ -57,7 +57,7 @@ fi
 # It matched '"keys"', but private/account/src/app.ts:154-173 declares
 # `const keys: {...}[] = []` and unconditionally returns
 # `c.json({ e2e: { keys }, ... })`. So the literal `"keys"` is in the body even
-# when X25519_PUBLIC_KEY is unset and the array is empty -- which is exactly the
+# when ACCOUNT_X25519_PUBLIC_KEY is unset and the array is empty -- which is exactly the
 # body the comment above says must be rejected. The gate passed on its own
 # counterexample.
 #

@@ -54,14 +54,16 @@ RSV_SENTINEL_KEY=".released"
 # Emits one `v${VERSION}` per line, semver-sorted. Empty stdout when there
 # are no sentinels yet (callers under `set -euo pipefail` would otherwise
 # trip on grep's exit-1-on-no-match through the pipefail option).
-# Requires: AWS env + R2_ENDPOINT.
+# Requires: AWS env + CLOUDFLARE_R2_ENDPOINT.
 rsv_list_sentinels() {
     local product="${1:?product (cli) required}"
+    # Checked at CALL time, not source time; see r2_count_objects in common.sh.
+    : "${AWS_ACCESS_KEY_ID:?rsv_list_sentinels: AWS_ACCESS_KEY_ID must be exported (map it from CLOUDFLARE_R2_ACCESS_KEY_ID)}"
     {
         aws s3api list-objects-v2 \
             --bucket "$RSV_BUCKET" \
             --prefix "${product}/v" \
-            --endpoint-url "$R2_ENDPOINT" \
+            --endpoint-url "$CLOUDFLARE_R2_ENDPOINT" \
             --query "Contents[?ends_with(Key, \`/${RSV_SENTINEL_KEY}\`)].Key" \
             --output text 2>/dev/null |
             tr '\t' '\n' |
@@ -97,7 +99,7 @@ rsv_prefix_nonempty() {
         --bucket "$RSV_BUCKET" \
         --prefix "$prefix" \
         --max-items 1 \
-        --endpoint-url "$R2_ENDPOINT" \
+        --endpoint-url "$CLOUDFLARE_R2_ENDPOINT" \
         --query 'KeyCount' \
         --output text 2>"$err")" || rc=$?
     if ((rc != 0)); then
@@ -130,7 +132,7 @@ rsv_binary_count() {
     count="$(aws s3api list-objects-v2 \
         --bucket "$RSV_BUCKET" \
         --prefix "$prefix" \
-        --endpoint-url "$R2_ENDPOINT" \
+        --endpoint-url "$CLOUDFLARE_R2_ENDPOINT" \
         --query "length(Contents[?ends_with(Key, \`/${RSV_SENTINEL_KEY}\`) == \`false\`] || \`[]\`)" \
         --output text 2>"$err")" || rc=$?
     if ((rc != 0)); then
@@ -171,7 +173,7 @@ rsv_sentinel_exists() {
     aws s3api head-object \
         --bucket "$RSV_BUCKET" \
         --key "${product}/${version}/${RSV_SENTINEL_KEY}" \
-        --endpoint-url "$R2_ENDPOINT" \
+        --endpoint-url "$CLOUDFLARE_R2_ENDPOINT" \
         >/dev/null 2>"$err" || rc=$?
     if ((rc == 0)); then
         rm -f "$err"
@@ -195,7 +197,7 @@ rsv_get_sentinel_payload() {
     local product="${1:?product required}"
     local version="${2:?version required}"
     aws s3 cp "s3://${RSV_BUCKET}/${product}/${version}/${RSV_SENTINEL_KEY}" - \
-        --endpoint-url "$R2_ENDPOINT" 2>/dev/null || true
+        --endpoint-url "$CLOUDFLARE_R2_ENDPOINT" 2>/dev/null || true
 }
 
 # =============================================================================

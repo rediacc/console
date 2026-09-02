@@ -99,7 +99,9 @@
       ],
       "ignoreBinaries": [
         // BLOCKER: rotation CLI shells out to openssl for key generation; host tool, not an npm dep (knip 6.26 resolves the gh binary natively)
-        "openssl"
+        "openssl",
+        // BLOCKER: the Bitwarden Secrets Manager CLI, spawned by scripts/rotation/consumers/bitwarden-sm.ts; a host binary pinned by sha256 in .devcontainer/Dockerfile, never npm-managed
+        "bws"
       ],
       "ignoreUnresolved": [
         // BLOCKER: knip 6.25's script parser reads the execSync('./rdc.sh ...') command strings in the rotation tool as an import specifier; it is the monorepo wrapper script invoked at its resolved repo root, not a module

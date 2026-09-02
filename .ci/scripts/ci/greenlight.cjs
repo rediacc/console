@@ -105,6 +105,10 @@ const VM_E2E_SUBMODULES = [
 ];
 
 const VM_E2E_PATHS = [
+  // The shadow-run step every VM E2E leg now carries: it `uses:` this local
+  // composite, which resolves from the WORKSPACE, so every key sharing this list
+  // must hold it or a change to the action does not re-run these legs.
+  '.github/actions/bws-secrets',
   // Built and installed globally by every leg: build-cli.sh:32 runs
   // `npm run build:cli`, install-cli-global.sh:36-48 packs and installs it.
   // packages/locales rides along as a workspace dependency of the CLI
@@ -225,6 +229,10 @@ const CLOSURES = {
     // the CONSOLE-side infra/ci-env.sh, which is why this job is not
     // submodule-only however much it looks like it.
     paths: [
+      // The shadow-run step this job now carries: it `uses:` this local composite,
+      // which resolves from the WORKSPACE, so the closure must hold it or a change
+      // to the action does not re-run this key.
+      '.github/actions/bws-secrets',
       '.ci/scripts/private/run-renet.sh',
       '.ci/scripts/private/renet-ebpf-e2e.sh',
       '.ci/scripts/private/renet-root-tests.sh',
@@ -262,6 +270,10 @@ const CLOSURES = {
     // every elite pointer bump for no coverage gain.
     submodules: ['private/renet', 'private/account'],
     paths: [
+      // The shadow-run step this job now carries: it `uses:` this local composite,
+      // which resolves from the WORKSPACE, so the closure must hold it or a change
+      // to the action does not re-run this key.
+      '.github/actions/bws-secrets',
       'packages/cli',
       'packages/shared',
       'packages/provisioning',
@@ -355,6 +367,10 @@ const CLOSURES = {
     // leaves that input unset, calling `npm run build:packages` directly
     // instead. The script is therefore not an input to this job.
     paths: [
+      // The shadow-run step this job now carries: it `uses:` this local composite,
+      // which resolves from the WORKSPACE, so the closure must hold it or a change
+      // to the action does not re-run this key.
+      '.github/actions/bws-secrets',
       '.ci/scripts/test/run-account-e2e.sh',
       // run-account-e2e.sh:27 sources it.
       '.ci/scripts/lib/common.sh',
@@ -389,6 +405,10 @@ const CLOSURES = {
     // renet build).
     submodules: ['private/renet', 'private/account'],
     paths: [
+      // The shadow-run step every ct-tests job now carries: it `uses:` this local
+      // composite, which resolves from the WORKSPACE, so the job's closure has to
+      // hold it or a change to the action does not re-run this key.
+      '.github/actions/bws-secrets',
       'packages/cli',
       'packages/shared',
       'packages/provisioning',
@@ -427,6 +447,10 @@ const CLOSURES = {
     jobNames: ['Elite Run'],
     submodules: ['private/elite', 'private/renet', 'private/account'],
     paths: [
+      // The shadow-run step every ct-tests job now carries: it `uses:` this local
+      // composite, which resolves from the WORKSPACE, so the job's closure has to
+      // hold it or a change to the action does not re-run this key.
+      '.github/actions/bws-secrets',
       // The images this job pulls are content-tagged builds of the console
       // tree: derive-image-tag.sh turns the tree into the tag, so a change
       // anywhere in the image's inputs pulls a DIFFERENT image and the
@@ -474,6 +498,10 @@ const CLOSURES = {
     // account key path is deliberately NOT taken).
     submodules: ['private/renet'],
     paths: [
+      // The shadow-run step every ct-tests job now carries: it `uses:` this local
+      // composite, which resolves from the WORKSPACE, so the job's closure has to
+      // hold it or a change to the action does not re-run this key.
+      '.github/actions/bws-secrets',
       '.ci/scripts/private/license-e2e.sh',
       // license-e2e.sh:69 points MINT_SRC at it and :605 `go build`s it; the
       // job also caches on its go.sum (ct-tests.yml:1626).
@@ -565,6 +593,10 @@ const CLOSURES = {
     // changes what this key proves rather than failing it.
     submodules: ['private/renet', 'private/account'],
     paths: [
+      // The shadow-run step every ct-tests job now carries: it `uses:` this local
+      // composite, which resolves from the WORKSPACE, so the job's closure has to
+      // hold it or a change to the action does not re-run this key.
+      '.github/actions/bws-secrets',
       // The app-token step the submodule checkout needs to authenticate.
       '.github/actions/app-token',
       // run-unit.sh:29,35,41,47 runs the four workspace suites, :55 the

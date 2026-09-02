@@ -7,7 +7,7 @@
 # silently burn a version number.
 #
 # Env:
-#   R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, R2_ENDPOINT  (required)
+#   CLOUDFLARE_R2_ACCESS_KEY_ID, CLOUDFLARE_R2_SECRET_ACCESS_KEY, CLOUDFLARE_R2_ENDPOINT  (required)
 #   RELEASES_BUCKET                                      (optional, default rediacc-releases)
 #   IN_FLIGHT_VERSION                                    (optional; falls back to resolve-version.sh)
 #
@@ -23,11 +23,11 @@ source "$SCRIPT_DIR/../lib/common.sh"
 source "$SCRIPT_DIR/../lib/release-state-validator.sh"
 
 require_cmd aws
-require_var R2_ACCESS_KEY_ID
-require_var R2_SECRET_ACCESS_KEY
-require_var R2_ENDPOINT
-export AWS_ACCESS_KEY_ID="$R2_ACCESS_KEY_ID"
-export AWS_SECRET_ACCESS_KEY="$R2_SECRET_ACCESS_KEY"
+require_var CLOUDFLARE_R2_ACCESS_KEY_ID
+require_var CLOUDFLARE_R2_SECRET_ACCESS_KEY
+require_var CLOUDFLARE_R2_ENDPOINT
+export AWS_ACCESS_KEY_ID="$CLOUDFLARE_R2_ACCESS_KEY_ID"
+export AWS_SECRET_ACCESS_KEY="$CLOUDFLARE_R2_SECRET_ACCESS_KEY"
 export AWS_DEFAULT_REGION="auto"
 
 IN_FLIGHT="${IN_FLIGHT_VERSION:-}"
@@ -69,11 +69,11 @@ pointer_rc=0
 for channel in edge stable; do
     latest_ver=""
     manifest_ver=""
-    if lj="$(aws s3 cp "s3://${RSV_BUCKET}/cli/${channel}/latest.json" - --endpoint-url "$R2_ENDPOINT" 2>/dev/null)"; then
+    if lj="$(aws s3 cp "s3://${RSV_BUCKET}/cli/${channel}/latest.json" - --endpoint-url "$CLOUDFLARE_R2_ENDPOINT" 2>/dev/null)"; then
         latest_ver="v$(printf '%s' "$lj" | sed -n 's/.*"version"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -1 | sed 's/^v//')"
         [[ "$latest_ver" == "v" ]] && latest_ver=""
     fi
-    if mj="$(aws s3 cp "s3://${RSV_BUCKET}/cli/${channel}/manifest.json" - --endpoint-url "$R2_ENDPOINT" 2>/dev/null)"; then
+    if mj="$(aws s3 cp "s3://${RSV_BUCKET}/cli/${channel}/manifest.json" - --endpoint-url "$CLOUDFLARE_R2_ENDPOINT" 2>/dev/null)"; then
         manifest_ver="v$(printf '%s' "$mj" | sed -n 's/.*"version"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -1 | sed 's/^v//')"
         [[ "$manifest_ver" == "v" ]] && manifest_ver=""
     fi

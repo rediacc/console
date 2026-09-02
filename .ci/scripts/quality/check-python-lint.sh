@@ -67,7 +67,10 @@ fi
 # enumeration left the control green -- a check that cannot fail, introduced by
 # the very commit that was fixing one.
 enumerate_py() {
-    git ls-files --cached --others --exclude-standard -- '*.py' ':!:private/**'
+    git ls-files --cached --others --exclude-standard -- '*.py' ':!:private/**' |
+        while IFS= read -r f; do [ -e "$f" ] && printf '%s\n' "$f"; done
+    # `[ -e ]`: a tracked file deleted in the working tree (rm without git rm)
+    # is still listed and would make ruff fail on a path that is not there.
 }
 
 # ---- CONTROL 3: the ENUMERATION must reach an UNTRACKED file -----------------
@@ -210,11 +213,23 @@ if ((rc != 0)); then
     exit 1
 fi
 
-$RUFF format --config "$REPO_ROOT/ruff.toml" --check --no-cache -- "${PY_FILES[@]}" || {
+# Name the files that DIFFER, not the whole list. This used to print every
+# tracked .py after "Run: ruff format", which read as "reformat the tree", and
+# ruff 0.16 moved the path onto a `-->` line under "unformatted:", so the three
+# real offenders were easy to miss among 80 names (2026-09-02).
+format_out="$($RUFF format --config "$REPO_ROOT/ruff.toml" --check --no-cache -- "${PY_FILES[@]}" 2>&1)" || {
+    echo "$format_out" >&2
+    # STRIP ANSI FIRST. ruff colours its output even through a pipe, so the
+    # `-->` lines arrive as `\e[1m\e[94m--> \e[0m<path>` and a plain anchored
+    # sed matches nothing -- which silently fell back to naming all 80 files,
+    # the very thing this block exists to stop. Same shape as the `bws` colour
+    # defect found the same day: a tool that does not test for a tty.
+    differing="$(printf '%s\n' "$format_out" | sed -e 's/\x1b\[[0-9;]*m//g' -e 's/^ *--> \([^:]*\):.*/\1/p' -n | sort -u | tr '\n' ' ')"
     echo "" >&2
-    echo "${RED}✗${NC} Python formatting differs. Run: ruff format ${PY_FILES[*]}" >&2
+    echo "${RED}✗${NC} Python formatting differs. Run: ruff format --config ruff.toml --no-cache -- ${differing:-${PY_FILES[*]}}" >&2
     exit 1
 }
+echo "$format_out"
 
 # EXE001 IS INVISIBLE FROM HERE, so it is checked directly rather than trusted.
 # Measured 2026-08-28: CI failed `Python lint + format (ruff)` with two EXE001

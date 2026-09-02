@@ -110,7 +110,8 @@ run_assert() {
         env PATH="$FAKEBIN:$PATH" \
             TAG_STATE="$tag" REL_STATE="$rel" SENTINEL_STATE="$sent" \
             GITHUB_REPOSITORY=rediacc/console \
-            R2_ENDPOINT=https://example.invalid RELEASES_BUCKET=rediacc-releases \
+            CLOUDFLARE_R2_ENDPOINT=https://example.invalid RELEASES_BUCKET=rediacc-releases \
+            CLOUDFLARE_R2_ACCESS_KEY_ID=test-key-id CLOUDFLARE_R2_SECRET_ACCESS_KEY=test-secret \
             bash "$script" --version 1.3.0 </dev/null 2>&1
     )" || RC=$?
 }

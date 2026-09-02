@@ -34,6 +34,7 @@
  * ADDING A GUARD: append to MUTANTS. `find` must occur exactly once in `file`.
  */
 import { execFileSync } from 'node:child_process';
+import { refuse } from './lib/controls';
 import { randomBytes } from 'node:crypto';
 import { cpSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
@@ -143,12 +144,11 @@ function assertSubjectPresent(): void {
     }
   }
   if (missing.length > 0) {
-    console.error(
-      `✗ required subject missing, so this gate can assert NOTHING:\n` +
-        missing.map((f) => `    - ${f}`).join('\n') +
-        `\n  A mutation gate with no source to mutate must fail, never report success.`
+    refuse(
+      `✗ required subject missing, so this gate can assert NOTHING:`,
+      ...missing.map((f) => `    - ${f}`),
+      `  A mutation gate with no source to mutate must fail, never report success.`
     );
-    process.exit(1);
   }
 }
 

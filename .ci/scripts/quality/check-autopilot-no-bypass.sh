@@ -20,10 +20,10 @@
 # see bypass actors makes this check BLIND, and blind is not clean.
 #
 # Usage:
-#   AUTOPILOT_APP_ID=<id> .ci/scripts/quality/check-autopilot-no-bypass.sh
+#   GITHUB_AUTOPILOT_APP_ID=<id> .ci/scripts/quality/check-autopilot-no-bypass.sh
 #
 # Env:
-#   AUTOPILOT_APP_ID  required. The App ID (org variable of the same name).
+#   GITHUB_AUTOPILOT_APP_ID  required. The App ID (org variable of the same name).
 #   RULESET_REPO      optional, default rediacc/console.
 #
 # Exits 0 when the App is absent from bypass_actors, 1 on a bypass entry, a
@@ -38,14 +38,14 @@ require_cmd jq
 
 RULESET_REPO="${RULESET_REPO:-rediacc/console}"
 
-if [[ -z "${AUTOPILOT_APP_ID:-}" ]]; then
-    log_error "AUTOPILOT_APP_ID is not set."
+if [[ -z "${GITHUB_AUTOPILOT_APP_ID:-}" ]]; then
+    log_error "GITHUB_AUTOPILOT_APP_ID is not set."
     log_error "It is an organisation variable; pass it explicitly rather than defaulting,"
     log_error "because a wrong-or-absent id would make this gate pass against nothing."
     exit 1
 fi
 
-log_step "Checking rediacc-autopilot (app $AUTOPILOT_APP_ID) has no bypass on $RULESET_REPO..."
+log_step "Checking rediacc-autopilot (app $GITHUB_AUTOPILOT_APP_ID) has no bypass on $RULESET_REPO..."
 
 # Find the ruleset by SHAPE, not by a pinned id: ids change when a ruleset is
 # recreated, and a gate pointing at a deleted id would 404 rather than protect.
@@ -88,11 +88,11 @@ while read -r id; do
         continue
     fi
 
-    hit="$(echo "$rs" | jq -r --arg id "$AUTOPILOT_APP_ID" \
+    hit="$(echo "$rs" | jq -r --arg id "$GITHUB_AUTOPILOT_APP_ID" \
         '.bypass_actors[] | select((.actor_id|tostring) == $id) | "\(.actor_type)/\(.bypass_mode)"')"
 
     if [[ -n "$hit" ]]; then
-        log_error "rediacc-autopilot (app ${AUTOPILOT_APP_ID}) HAS a bypass on ruleset ${id} (${name}): ${hit}"
+        log_error "rediacc-autopilot (app ${GITHUB_AUTOPILOT_APP_ID}) HAS a bypass on ruleset ${id} (${name}): ${hit}"
         log_error "Remove it. The autopilot must be subject to the same required checks"
         log_error "as a human contributor, or every other Wave C control is decorative."
         rc=1

@@ -74,7 +74,7 @@ jobs:
         uses: ./.github/actions/app-token
         with:
           client-id: ${{ vars.APP_ID }}
-          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+          private-key: ${{ secrets.GITHUB_APP_PRIVATE_KEY }}
           preset: readonly
           repositories: console
 
@@ -86,6 +86,40 @@ jobs:
           fetch-depth: 0
           filter: blob:none   # tag + commit topology only
           fetch-tags: true
+
+      - name: Fetch shadow secrets from Bitwarden
+        # SHADOW RUN: exports BWS_-prefixed copies that nothing consumes. The
+        # live secrets.* reads below are untouched until the cutover flips them.
+        uses: ./.github/actions/bws-secrets
+        with:
+          access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
+          secrets: |
+            CLOUDFLARE_R2_ACCESS_KEY_ID > BWS_CLOUDFLARE_R2_ACCESS_KEY_ID
+            CLOUDFLARE_R2_ENDPOINT > BWS_CLOUDFLARE_R2_ENDPOINT
+            CLOUDFLARE_R2_SECRET_ACCESS_KEY > BWS_CLOUDFLARE_R2_SECRET_ACCESS_KEY
+            GITHUB_APP_PRIVATE_KEY > BWS_GITHUB_APP_PRIVATE_KEY
+
+      - name: Compare shadow secrets against GitHub
+        shell: bash
+        env:
+          SHADOW_NAMES: CLOUDFLARE_R2_ACCESS_KEY_ID CLOUDFLARE_R2_ENDPOINT CLOUDFLARE_R2_SECRET_ACCESS_KEY GITHUB_APP_PRIVATE_KEY
+          GH_CLOUDFLARE_R2_ACCESS_KEY_ID: ${{ secrets.CLOUDFLARE_R2_ACCESS_KEY_ID }}
+          GH_CLOUDFLARE_R2_ENDPOINT: ${{ secrets.CLOUDFLARE_R2_ENDPOINT }}
+          GH_CLOUDFLARE_R2_SECRET_ACCESS_KEY: ${{ secrets.CLOUDFLARE_R2_SECRET_ACCESS_KEY }}
+          GH_GITHUB_APP_PRIVATE_KEY: ${{ secrets.GITHUB_APP_PRIVATE_KEY }}
+        run: |
+          rc=0; read -ra names <<<"$SHADOW_NAMES"
+          sha() { printf '%s' "${1-}" | { sha256sum 2>/dev/null || shasum -a 256; } | cut -d' ' -f1; }
+          for n in "${names[@]}"; do
+            gv="GH_$n"; bv="BWS_$n"
+            # An ABSENT GitHub secret and an EMPTY Bitwarden value both hash to
+            # e3b0c442..., so without this arm two nothings compare EQUAL and the
+            # shadow reports "match" having verified nothing -- the exact defect
+            # this whole run exists to catch. Empty on either side is a failure.
+            if [ -z "${!gv-}" ] || [ -z "${!bv-}" ]; then echo "shadow $n EMPTY (github=${!gv:+set}${!gv:-unset} bitwarden=${!bv:+set}${!bv:-unset}) -- nothing was compared"; rc=1
+            elif [ "$(sha "${!gv-}")" = "$(sha "${!bv-}")" ]; then echo "shadow $n match"; else echo "shadow $n MISMATCH"; rc=1; fi
+          done
+          exit "$rc"
 
       - name: Install jq
         run: command -v jq >/dev/null || sudo apt-get install -y -qq jq
@@ -130,9 +164,9 @@ jobs:
 
       - name: Write sentinel
         env:
-          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
-          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
-          R2_ENDPOINT: ${{ secrets.R2_ENDPOINT }}
+          CLOUDFLARE_R2_ACCESS_KEY_ID: ${{ secrets.CLOUDFLARE_R2_ACCESS_KEY_ID }}
+          CLOUDFLARE_R2_SECRET_ACCESS_KEY: ${{ secrets.CLOUDFLARE_R2_SECRET_ACCESS_KEY }}
+          CLOUDFLARE_R2_ENDPOINT: ${{ secrets.CLOUDFLARE_R2_ENDPOINT }}
           VERSION: ${{ inputs.version }}
           CHANNEL: ${{ inputs.channel }}
           COMMIT_SHA: ${{ steps.resolve.outputs.commit_sha }}
@@ -142,8 +176,8 @@ jobs:
       - name: Re-probe R2 sentinel state
         if: ${{ inputs.dry_run == false }}
         env:
-          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
-          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
-          R2_ENDPOINT: ${{ secrets.R2_ENDPOINT }}
+          CLOUDFLARE_R2_ACCESS_KEY_ID: ${{ secrets.CLOUDFLARE_R2_ACCESS_KEY_ID }}
+          CLOUDFLARE_R2_SECRET_ACCESS_KEY: ${{ secrets.CLOUDFLARE_R2_SECRET_ACCESS_KEY }}
+          CLOUDFLARE_R2_ENDPOINT: ${{ secrets.CLOUDFLARE_R2_ENDPOINT }}
           VERSION: ${{ inputs.version }}
         run: .ci/scripts/release/reprobe-r2-sentinel.sh

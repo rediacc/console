@@ -13,7 +13,7 @@ in CI.
 ## The questions
 
 **S-2.** Does `--max-budget-usd` actually BIND when `anthropics/claude-code-action` runs
-under OAuth (`CLAUDE_CODE_OAUTH_TOKEN`), or is it silently ignored? Wave C's cost-control
+under OAuth (`ANTHROPIC_CLAUDE_CODE_OAUTH_TOKEN`), or is it silently ignored? Wave C's cost-control
 section is about to claim a dollar stop exists.
 
 **S-1.** Is `--model claude-sonnet-5` honoured at all? Haiku legitimately appears for the
@@ -37,7 +37,7 @@ anything in CI:
   auto-updater.
 - Local auth is `claudeAiOauth` with `subscriptionType: max` in
   `~/.claude/.credentials.json`, and no `ANTHROPIC_API_KEY` is set. That is the same auth
-  class as `CLAUDE_CODE_OAUTH_TOKEN` in CI, an `sk-ant-oat01` subscription token, not an
+  class as `ANTHROPIC_CLAUDE_CODE_OAUTH_TOKEN` in CI, an `sk-ant-oat01` subscription token, not an
   API key.
 
 So four tiers of evidence are present: action source at the pin, SDK source at the pin,
@@ -110,7 +110,7 @@ condition:
 Corroborated in production: the marker comment on PR #540
 (`repos/rediacc/console/issues/comments/5093500917`) reports `Cost: $1.0464`, and CI run
 30527484990 logged `"total_cost_usd": 5.925512999999999`. Both under
-`CLAUDE_CODE_OAUTH_TOKEN`. Cost is fully populated on the OAuth path.
+`ANTHROPIC_CLAUDE_CODE_OAUTH_TOKEN`. Cost is fully populated on the OAuth path.
 
 ### The plumbing, measured end to end
 

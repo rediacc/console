@@ -41,11 +41,39 @@ jobs:
         with:
           persist-credentials: false
 
+      - name: Fetch shadow secrets from Bitwarden
+        # SHADOW RUN: exports BWS_-prefixed copies that nothing consumes. The
+        # live secrets.* reads below are untouched until the cutover flips them.
+        uses: ./.github/actions/bws-secrets
+        with:
+          access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
+          secrets: |
+            ANTHROPIC_CLAUDE_CODE_OAUTH_TOKEN > BWS_ANTHROPIC_CLAUDE_CODE_OAUTH_TOKEN
+
+      - name: Compare shadow secrets against GitHub
+        shell: bash
+        env:
+          SHADOW_NAMES: ANTHROPIC_CLAUDE_CODE_OAUTH_TOKEN
+          GH_ANTHROPIC_CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.ANTHROPIC_CLAUDE_CODE_OAUTH_TOKEN }}
+        run: |
+          rc=0; read -ra names <<<"$SHADOW_NAMES"
+          sha() { printf '%s' "${1-}" | { sha256sum 2>/dev/null || shasum -a 256; } | cut -d' ' -f1; }
+          for n in "${names[@]}"; do
+            gv="GH_$n"; bv="BWS_$n"
+            # An ABSENT GitHub secret and an EMPTY Bitwarden value both hash to
+            # e3b0c442..., so without this arm two nothings compare EQUAL and the
+            # shadow reports "match" having verified nothing -- the exact defect
+            # this whole run exists to catch. Empty on either side is a failure.
+            if [ -z "${!gv-}" ] || [ -z "${!bv-}" ]; then echo "shadow $n EMPTY (github=${!gv:+set}${!gv:-unset} bitwarden=${!bv:+set}${!bv:-unset}) -- nothing was compared"; rc=1
+            elif [ "$(sha "${!gv-}")" = "$(sha "${!bv-}")" ]; then echo "shadow $n match"; else echo "shadow $n MISMATCH"; rc=1; fi
+          done
+          exit "$rc"
+
       # No `prompt:` input -> interactive/tag mode; default trigger_phrase is
       # @claude. Same token strategy as claude-review.yml.
       - name: Run Claude
         uses: anthropics/claude-code-action@fa7e2f0a29a126f0b81cdcf360561b36e44cf608 # v1.0.180
         with:
-          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          claude_code_oauth_token: ${{ secrets.ANTHROPIC_CLAUDE_CODE_OAUTH_TOKEN }}
           github_token: ${{ github.token }}
           claude_args: --model claude-sonnet-5

@@ -1714,3 +1714,99 @@ between the last green run and the first red contained only two markdown files. 
 affirmative evidence *against* a regression on the branch and *for* an environmental
 cause -- which is what pointed at `CI=true` and the colour trap above. A window with
 nothing in it is a finding, not a dead end.
+
+## A cost measured under load becomes a DEMAND, because the cache averages and the oracle believes the average
+Trap-Id: load-poisoned-cost-becomes-policy
+Enforced-By: gate:check:ci-gate-manifest
+Residue: The cache can only be judged against ITSELF. Nothing can tell a gate that genuinely slowed from one measured under contention, so the floor of several measurements is the instrument, and a single number never is.
+
+`check:ci-gate-manifest` judges whether a gate belongs in the pre-push lane from
+`.ci/cache/gate-durations.json`, which `npm run ci` writes after every run. On
+2026-09-02 one full run overlapped two writer sub-agents and the load it carried
+was recorded like any other measurement: a gate that takes 4.5 s alone was
+averaged up to 21 s, and the next manifest check demanded it be marked
+`slow: true` with a reason. The reason would have been a lie, and the gate would
+have left the fast lane for good on the strength of one bad afternoon.
+
+Two things made this easy to fall for. The runner prints `SYSTEM UNDER LOAD` for
+exactly one gate (the tutorial player), so the other 350 measurements looked
+clean. And the finding text names a number, which reads as evidence rather than
+as the artifact of a moving average.
+
+Since then the cache keeps the last five raw measurements beside the average and
+the oracle judges their FLOOR, because load only ever adds time. The general
+rule survives the fix: a number written by a run made under contention is a
+measurement of the contention. Before acting on a cost claim, time the thing
+alone once. It took nine seconds here and overturned both findings.
+
+---
+
+## A gate that goes red because your file is not committed yet
+Trap-Id: uncommitted-file-reds-a-remote-fake
+Enforced-By: JUDGMENT-ONLY
+Residue: Nothing can tell "this closure path is wrong" from "this closure path is correct and not committed yet". The two produce the identical symptom -- a named refusal and empty stdout -- and only the author knows which they are looking at.
+
+Found 2026-09-02. `gate-test:greenlight` case 6 went red on `run_renet=false` not
+being emitted. Everything about it read like a defect in the change under way:
+the same session had edited `greenlight.cjs`, the failing assertion named a key
+that session had touched, and greenlight's own output said *"candidate listing
+failed ... so nothing is greenlit"*.
+
+The cause was that `.github/actions/bws-secrets` had been added to eighteen
+greenlight closures and the composite action **did not exist in `HEAD` yet** —
+`git status` showed it as `??`. The test's fake `gh` resolves the candidate
+repository with `git ls-tree HEAD`, deliberately, because the candidate IS a
+remote commit and modelling it from the dirty worktree would assert something
+the real thing never does. So a path that is correct, present on disk, and
+about to be committed resolves to nothing, greenlight throws its named refusal,
+and stdout is empty.
+
+**In CI the same change is green**, because the PR's tree carries the file. The
+red exists only in the window between adding a path to a closure and committing
+the file it points at — which, in a repo whose standing rule is that work stays
+uncommitted until asked, is a window every session lives inside.
+
+Two general shapes worth carrying away. First: **a test fixture that models a
+REMOTE reads committed state, so your uncommitted work is invisible to it by
+design** — that is the fixture being right, not stale, and "fixing" it to read
+the worktree would delete the property it exists to assert. Second: before
+attributing a red to the logic you just changed, check whether the inputs it
+reads even contain your change. `git ls-tree HEAD -- <path>` answers it in one
+second, and it is the difference between a correct diagnosis and an hour spent
+re-reading code that was never wrong.
+
+---
+
+## A find-and-replace that rewrites its own documentation, and the tests still pass
+Trap-Id: rename-eats-its-own-evidence
+Enforced-By: JUDGMENT-ONLY
+Residue: No scan can tell a name written as a SUBJECT ("we are retiring FOO_EU") from a name written as a USE. Both are the same token, and the rewrite is correct for one and nonsense for the other.
+
+Found 2026-09-02, twice in one turn, by reading a dry run instead of trusting it.
+
+`scripts/dev/secret-rename.py` skips `agent/` precisely because a plan describing
+a rename must not be rewritten by it. Two files outside that prefix had the same
+problem and nobody had noticed:
+
+- A `reason` string in `.ci/config/bws-unrequested.json` said *"the rename points
+  the org secret `OBS_OTLP_CREDENTIALS_EU` here"*. After the rewrite it would
+  have read *"points the org secret `OBS_OTLP_CREDENTIALS_EU` here"* — a sentence
+  claiming a name points at itself.
+- Worse, a **selftest fixture** in `check_bws_map.py` read
+  `STRIPE_SECRET_KEY > STRIPE_SECRET_KEY`, the one case proving that ALIASES
+  parse. A collapse row maps both sides to the same token, so the rewrite turns
+  it into `NAME > NAME` — and **every assertion still passes**, because the
+  expected-value list is rewritten in lockstep. The control keeps reporting PASS
+  while having quietly stopped testing anything.
+
+That second shape is the dangerous one. A find-and-replace does not break a
+fixture; it moves the fixture and its expectation together, so the test stays
+green and the coverage is gone. Nothing red ever appears.
+
+Two habits come out of it. **Write a retiring name in braced form**
+(`FOO_{EU,US,ASIA}`) wherever it appears as a subject rather than a use — the
+matcher wants a whole token and `_{EU` is not one, so prose survives the rename
+it describes. And **use synthetic names in fixtures** (`SELFTEST_ALIASED >
+SELFTEST_ENV_NAME`): realism in a parser fixture buys nothing and costs exactly
+this. The general form: after any bulk rewrite, ask not only "did the tests pass"
+but "does each test still assert what it was written to assert".

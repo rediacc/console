@@ -46,7 +46,7 @@
 
 | Component | Status | Details |
 |-----------|--------|---------|
-| **GPG keypair** | Done | Public key at `.ci/keys/gpg-public.asc`; private key in GitHub Actions secret `GPG_PRIVATE_KEY` |
+| **GPG keypair** | Done | Public key at `.ci/keys/gpg-public.asc`; private key in GitHub Actions secret `RELEASE_GPG_PRIVATE_KEY` |
 | **RPM package signing** | Done | `.ci/scripts/build/build-linux-pkg.sh` uses nfpm YAML config signing via `$NFPM_RPM_KEY_FILE` |
 | **APT repository signing** | Done | `.ci/scripts/build/build-pkg-repo.sh` generates signed `Release.gpg` + `InRelease` (clearsigned) |
 | **RPM repository signing** | Done | Same script signs `repomd.xml` with detached GPG signature, writes `.repo` file |
@@ -435,7 +435,7 @@ APPLE_TEAM_ID=<team-id>
 
 | Component | Implementation | File |
 |-----------|---------------|------|
-| GPG keypair | Public key at `.ci/keys/gpg-public.asc`; private in `GPG_PRIVATE_KEY` secret | `.ci/keys/gpg-public.asc` |
+| GPG keypair | Public key at `.ci/keys/gpg-public.asc`; private in `RELEASE_GPG_PRIVATE_KEY` secret | `.ci/keys/gpg-public.asc` |
 | RPM package signing | nfpm YAML config signing via `$NFPM_RPM_KEY_FILE` env var | `.ci/scripts/build/build-linux-pkg.sh` |
 | APT repo signing | `gpg --detach-sign` on Release file → `Release.gpg` + `InRelease` | `.ci/scripts/build/build-pkg-repo.sh` |
 | RPM repo signing | `gpg --detach-sign` on `repomd.xml` → `repomd.xml.asc` | `.ci/scripts/build/build-pkg-repo.sh` |
@@ -555,9 +555,9 @@ Note: SSL.com with eSigner would be ~$1,249+/yr for Windows alone — not recomm
 
 ### Linux (Mostly Complete)
 
-- [x] Generate GPG keypair — `.ci/keys/gpg-public.asc` + `GPG_PRIVATE_KEY` secret
+- [x] Generate GPG keypair — `.ci/keys/gpg-public.asc` + `RELEASE_GPG_PRIVATE_KEY` secret
 - [ ] Generate revocation certificate and store securely (if not already done)
-- [x] Export private key to GitHub Actions secrets — `GPG_PRIVATE_KEY` + `GPG_PASSPHRASE`
+- [x] Export private key to GitHub Actions secrets — `RELEASE_GPG_PRIVATE_KEY` + `RELEASE_GPG_PASSPHRASE`
 - [x] APT repository signing — `build-pkg-repo.sh` signs `Release` → `Release.gpg` + `InRelease`
 - [x] RPM repository signing — `build-pkg-repo.sh` signs `repomd.xml`
 - [x] RPM package signing — `build-linux-pkg.sh` signs via nfpm YAML config (`$NFPM_RPM_KEY_FILE`)

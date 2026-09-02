@@ -48,7 +48,7 @@ export WEB_TAG="${WORKFLOW_WEB_TAG:-$TAG}"
 # ACCOUNT SERVER CONFIGURATION
 # =============================================================================
 # Generate Ed25519 key pair for subscription signing if not provided
-if [[ -z "${ED25519_PRIVATE_KEY:-}" ]]; then
+if [[ -z "${ACCOUNT_ED25519_PRIVATE_KEY:-}" ]]; then
     KEYS=$(node -e "
         const crypto = require('crypto');
         const { privateKey, publicKey } = crypto.generateKeyPairSync('ed25519');
@@ -57,15 +57,15 @@ if [[ -z "${ED25519_PRIVATE_KEY:-}" ]]; then
             public: publicKey.export({type:'spki',format:'der'}).toString('base64')
         }));
     ")
-    ED25519_PRIVATE_KEY=$(echo "$KEYS" | jq -r '.private')
-    ED25519_PUBLIC_KEY=$(echo "$KEYS" | jq -r '.public')
+    ACCOUNT_ED25519_PRIVATE_KEY=$(echo "$KEYS" | jq -r '.private')
+    ACCOUNT_ED25519_PUBLIC_KEY=$(echo "$KEYS" | jq -r '.public')
 fi
-export ED25519_PRIVATE_KEY ED25519_PUBLIC_KEY
+export ACCOUNT_ED25519_PRIVATE_KEY ACCOUNT_ED25519_PUBLIC_KEY
 
 # Generate X25519 key pair for e2e encryption if not provided
 # Production keys come from GitHub secrets (cd-v2.yml only).
 # CI/test workflows generate throwaway keys here.
-if [[ -z "${X25519_PRIVATE_KEY:-}" ]]; then
+if [[ -z "${ACCOUNT_X25519_PRIVATE_KEY:-}" ]]; then
     X25519_KEYS=$(node -e "
         const crypto = require('crypto');
         const { privateKey, publicKey } = crypto.generateKeyPairSync('x25519');
@@ -74,29 +74,29 @@ if [[ -z "${X25519_PRIVATE_KEY:-}" ]]; then
             public: publicKey.export({type:'spki',format:'der'}).toString('base64')
         }));
     ")
-    X25519_PRIVATE_KEY=$(echo "$X25519_KEYS" | jq -r '.private')
-    X25519_PUBLIC_KEY=$(echo "$X25519_KEYS" | jq -r '.public')
+    ACCOUNT_X25519_PRIVATE_KEY=$(echo "$X25519_KEYS" | jq -r '.private')
+    ACCOUNT_X25519_PUBLIC_KEY=$(echo "$X25519_KEYS" | jq -r '.public')
 fi
-export X25519_PRIVATE_KEY X25519_PUBLIC_KEY
+export ACCOUNT_X25519_PRIVATE_KEY ACCOUNT_X25519_PUBLIC_KEY
 
 # Account server API key (generate if not provided)
 export ACCOUNT_SERVER_API_KEY="${ACCOUNT_SERVER_API_KEY:-$(openssl rand -base64 48 | tr -d '/+=' | cut -c1-64)}"
 export ACCOUNT_SERVER_URL="${ACCOUNT_SERVER_URL:-http://account-server:3000}"
 
 # JWT secret for account-server session management
-export JWT_SECRET="${JWT_SECRET:-$(openssl rand -base64 48 | tr -d '/+=' | cut -c1-64)}"
+export ACCOUNT_JWT_SECRET="${ACCOUNT_JWT_SECRET:-$(openssl rand -base64 48 | tr -d '/+=' | cut -c1-64)}"
 
 # Stripe webhook secret for account-server integration tests
 export STRIPE_WEBHOOK_SECRET="${STRIPE_WEBHOOK_SECRET:-whsec_test_$(openssl rand -hex 32)}"
 
 # Mask ALL generated secrets (GitHub only auto-masks ${{ secrets.* }} values)
 if [[ -n "${GITHUB_ACTIONS:-}" ]]; then
-    echo "::add-mask::$ED25519_PRIVATE_KEY"
-    echo "::add-mask::$ED25519_PUBLIC_KEY"
-    echo "::add-mask::$X25519_PRIVATE_KEY"
-    echo "::add-mask::$X25519_PUBLIC_KEY"
+    echo "::add-mask::$ACCOUNT_ED25519_PRIVATE_KEY"
+    echo "::add-mask::$ACCOUNT_ED25519_PUBLIC_KEY"
+    echo "::add-mask::$ACCOUNT_X25519_PRIVATE_KEY"
+    echo "::add-mask::$ACCOUNT_X25519_PUBLIC_KEY"
     echo "::add-mask::$ACCOUNT_SERVER_API_KEY"
-    echo "::add-mask::$JWT_SECRET"
+    echo "::add-mask::$ACCOUNT_JWT_SECRET"
     echo "::add-mask::$STRIPE_WEBHOOK_SECRET"
 fi
 
@@ -149,12 +149,12 @@ SYSTEM_DEFAULT_TEAM_NAME=${SYSTEM_DEFAULT_TEAM_NAME}
 CI_MODE=${CI_MODE}
 ACCOUNT_SERVER_URL=${ACCOUNT_SERVER_URL}
 ACCOUNT_SERVER_API_KEY=${ACCOUNT_SERVER_API_KEY}
-ED25519_PRIVATE_KEY=${ED25519_PRIVATE_KEY}
-ED25519_PUBLIC_KEY=${ED25519_PUBLIC_KEY}
-X25519_PRIVATE_KEY=${X25519_PRIVATE_KEY}
-X25519_PUBLIC_KEY=${X25519_PUBLIC_KEY}
+ACCOUNT_ED25519_PRIVATE_KEY=${ACCOUNT_ED25519_PRIVATE_KEY}
+ACCOUNT_ED25519_PUBLIC_KEY=${ACCOUNT_ED25519_PUBLIC_KEY}
+ACCOUNT_X25519_PRIVATE_KEY=${ACCOUNT_X25519_PRIVATE_KEY}
+ACCOUNT_X25519_PUBLIC_KEY=${ACCOUNT_X25519_PUBLIC_KEY}
 STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET}
-JWT_SECRET=${JWT_SECRET}
+ACCOUNT_JWT_SECRET=${ACCOUNT_JWT_SECRET}
 ENVBLOCK
 )
 

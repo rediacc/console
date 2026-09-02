@@ -53,8 +53,11 @@ export interface GateSpec {
    * is no second exemption file -- so the reason lives in a comment beside it.
    *
    * The threshold is measured, not judged: `.ci/cache/gate-durations.json`
-   * holds an EWMA per gate from real runs, and check:ci-gate-tiers asserts
-   * this field against it in BOTH directions. A gate marked slow that is in
+   * holds per-gate timings from real runs, and check:ci-gate-manifest's tier
+   * oracle asserts this field against them in BOTH directions. (It named a
+   * `check:ci-gate-tiers` until 2026-09-02; no such gate has ever existed, so
+   * a reader looking for the guard found nothing and could conclude the field
+   * was unasserted. The guard is real, it just lives in the manifest gate.) A gate marked slow that is in
    * fact cheap fails just as loudly as the converse, because the cheap-marked-
    * slow direction is the invisible one: the push stays fast and the coverage
    * quietly shrinks.
@@ -154,6 +157,7 @@ export const GATES: readonly GateSpec[] = [
     slow: true, // 13.4s measured
     gate: true,
     heavy: true,
+    mutex: ['www-src-probe'], // see check:i18n
     leaves: ['.ci/scripts/quality/typecheck-workers.sh', 'knip'],
     ci: {
       kind: 'step',
@@ -191,6 +195,12 @@ export const GATES: readonly GateSpec[] = [
     run: 'npm run check:i18n',
     slow: true, // 76.3s measured
     gate: true,
+    // check-translation-key-usage.control.ts writes __control_probe__.tsx INTO
+    // packages/www/src for the length of its run. knip (lint:unused) scanning at
+    // the same moment reported it as an unused file (seen 2026-09-02 in a full
+    // run). knip refuses an ignore entry for a file that is not on disk, so the
+    // two are kept apart here instead.
+    mutex: ['www-src-probe'],
     leaves: [
       'scripts/check-translation-hashes.ts',
       'scripts/check-translation-completeness.ts',
@@ -353,7 +363,9 @@ export const GATES: readonly GateSpec[] = [
   {
     id: 'check:ci-shape-duplication',
     run: 'npm run check:ci-shape-duplication',
-    slow: true, // 21.4s: hashes ~40k sliding windows over 316 files, twice (selftest + run)
+    // 1.9s measured on a quiet machine, five samples. The 21.4s this entry used
+    // to claim was a contended sample; the tier oracle judges the floor of
+    // `recent` for exactly that reason.
     gate: true,
     leaves: ['scripts/check-shape-duplication.ts'],
     ci: {
@@ -385,6 +397,18 @@ export const GATES: readonly GateSpec[] = [
       workflow: '.github/workflows/ci-quality.yml',
       job: 'quality-code',
       step: 'Judged rule wiring',
+    },
+  },
+  {
+    id: 'check:ci-review-prompt-render',
+    run: 'npm run check:ci-review-prompt-render',
+    gate: true,
+    leaves: ['.ci/scripts/quality/check_review_prompt_render.py'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-code',
+      step: 'Review prompt render',
     },
   },
   {
@@ -1277,6 +1301,18 @@ export const GATES: readonly GateSpec[] = [
     },
   },
   {
+    id: 'check:ci-bws-map',
+    run: 'npm run check:ci-bws-map',
+    gate: true,
+    leaves: ['.ci/scripts/quality/check_bws_map.py'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-security',
+      step: 'Bitwarden secret map',
+    },
+  },
+  {
     id: 'check:ci-secret-reachability',
     run: 'npm run check:ci-secret-reachability',
     gate: true,
@@ -1727,6 +1763,18 @@ export const GATES: readonly GateSpec[] = [
     },
   },
   {
+    id: 'check:ci-greenlight-closures',
+    run: 'npm run check:ci-greenlight-closures',
+    gate: true,
+    leaves: ['.ci/scripts/quality/check-greenlight-closures.sh'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-code',
+      step: 'Greenlight closure paths',
+    },
+  },
+  {
     id: 'check:ci-workflow-gates',
     run: 'npm run check:ci-workflow-gates',
     gate: true,
@@ -2091,6 +2139,66 @@ export const GATES: readonly GateSpec[] = [
     },
   },
   {
+    id: 'check:ci-fetch-integrity',
+    run: 'npm run check:ci-fetch-integrity',
+    gate: true,
+    leaves: ['scripts/check-ci-fetch-integrity.ts'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-code',
+      step: 'CI fetch integrity',
+    },
+  },
+  {
+    id: 'check:ci-aws-credential-bridge',
+    run: 'npm run check:ci-aws-credential-bridge',
+    gate: true,
+    leaves: ['scripts/check-aws-credential-bridge.ts'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-code',
+      step: 'AWS credential bridge',
+    },
+  },
+  {
+    id: 'check:ci-worker-secret-names',
+    run: 'npm run check:ci-worker-secret-names',
+    gate: true,
+    leaves: ['scripts/check-worker-secret-names.ts'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-code',
+      step: 'Worker secret names',
+    },
+  },
+  {
+    id: 'check:ci-builder-env-contract',
+    run: 'npm run check:ci-builder-env-contract',
+    gate: true,
+    leaves: ['scripts/check-builder-env-contract.ts'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-code',
+      step: 'Builder env contract',
+    },
+  },
+  {
+    id: 'check:ci-backup-bucket-conformance',
+    run: 'npm run check:ci-backup-bucket-conformance',
+    gate: true,
+    leaves: ['scripts/check-backup-bucket-conformance.ts'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-code',
+      step: 'Backup bucket conformance',
+    },
+  },
+  {
     id: 'check:ci-backup-protocol-conformance',
     run: 'npm run check:ci-backup-protocol-conformance',
     gate: true,
@@ -2316,7 +2424,9 @@ export const GATES: readonly GateSpec[] = [
   {
     id: 'check:ci-renet-types',
     run: 'npm run check:ci-renet-types',
-    slow: true, // 10.7s measured
+    // 1.4s measured. It shells out to `go build`, so a COLD Go build cache
+    // costs more than this -- but that is a once-per-tree cost, not the
+    // steady-state one the lane is sized against.
     gate: true,
     mutex: ['renet-bin'],
     leaves: ['.ci/scripts/quality/check-renet-types.sh'],
@@ -4905,7 +5015,7 @@ export const GATES: readonly GateSpec[] = [
   {
     id: 'gate-test:trap-registry',
     run: '.ci/scripts/test/gates/test-trap-registry.sh',
-    slow: true, // 46.4s contended (reads corpus, manifest, dispatcher, suite, settings)
+    slow: true, // 10.2s measured, five samples (reads corpus, manifest, dispatcher, suite, settings)
     gate: true,
     qualityGateTest: true,
     leaves: ['.ci/scripts/test/gates/test-trap-registry.sh'],
@@ -5027,6 +5137,32 @@ export const GATES: readonly GateSpec[] = [
     gate: true,
     qualityGateTest: true,
     leaves: ['.ci/scripts/test/gates/test-watchdog-observer-exclusion.sh'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-security',
+      step: 'Quality-gate unit tests',
+    },
+  },
+  {
+    id: 'gate-test:bws-map',
+    run: '.ci/scripts/test/gates/test-bws-map.sh',
+    gate: true,
+    qualityGateTest: true,
+    leaves: ['.ci/scripts/test/gates/test-bws-map.sh'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-security',
+      step: 'Quality-gate unit tests',
+    },
+  },
+  {
+    id: 'gate-test:bws-env',
+    run: '.ci/scripts/test/gates/test-bws-env.sh',
+    gate: true,
+    qualityGateTest: true,
+    leaves: ['.ci/scripts/test/gates/test-bws-env.sh'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',

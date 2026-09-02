@@ -283,7 +283,7 @@ if os.path.exists(os.path.join(REPO, "private/account/.env")):
     cases.append(
         (
             0,
-            run("R2_MEDIA_ACCESS_KEY_ID=x ./run.sh --publish-www --langs en", REAL),
+            run("CLOUDFLARE_R2_MEDIA_ACCESS_KEY_ID=x ./run.sh --publish-www --langs en", REAL),
             "CONTROL: setting the credential inline states the intent, so it is accepted",
         )
     )

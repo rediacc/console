@@ -17,7 +17,7 @@
 #   NEXT_VERSION      semver to stamp into every package, e.g. 1.2.3
 #
 # Optional env (consumed by build-linux-pkg.sh when signing):
-#   GPG_PRIVATE_KEY   GPG_PASSPHRASE
+#   RELEASE_GPG_PRIVATE_KEY   RELEASE_GPG_PASSPHRASE
 #
 # Expects CLI binaries already present at dist/cli/rdc-linux-{x64,arm64}
 # (and optionally rdc-linux-musl-*); writes packages to dist/packages/.

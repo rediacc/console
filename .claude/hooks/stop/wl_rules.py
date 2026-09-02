@@ -105,6 +105,45 @@ def names_tree_destroying(text):
     return names_write(text, verbs=frozenset(), git_subs=TREE_DESTROYING)
 
 
+# ACTS THIS REPO RESERVES TO AN EXPLICIT OPERATOR ASK. CLAUDE.md's first standing
+# order is that the deliverable is an UNCOMMITTED working tree: no commit, no
+# branch, no push, no PR unless the operator asked for it in that task, and
+# approving a plan is not that ask. So an order that tells a session to commit is
+# a rule instructing a standing-order violation -- which is exactly what happened
+# on 2026-09-02, when the brave-default rule's own next_action read "Rename ...
+# then commit to the open branch" and the session silently did the rename part
+# only. A rule that has to be quietly disobeyed is a broken rule.
+#
+# PROSE, NOT ARGV. The offending text was "commit to the open branch" with no
+# `git` in it, so the git-subcommand matcher above could never have seen it.
+# Hence a phrase matcher: it wants the version-control sense of the word and not
+# the ordinary English one, because "commit to option A" means DECIDE and is
+# precisely the bravery this rule exists to encourage.
+OPERATOR_RESERVED_RE = re.compile(
+    r"(?<![\w-])(?:"
+    r"git\s+(?:commit|push|merge|tag)"
+    r"|commit(?:s|ed|ting)?\s+(?:it|them|that|this|the\b|these\b|onto\b|on\s+the\b"
+    r"|to\s+(?:the\s+)?(?:open\s+)?(?:pr\b|branch\b|main\b))"
+    r"|(?:leave|left)\s+(?:it|them)\s+committed"
+    r"|push(?:es|ed|ing)?\s+(?:it|them|to\s|onto\s)"
+    r"|open(?:s|ed|ing)?\s+(?:a|the)\s+(?:pr\b|pull\s+request)"
+    r"|cut(?:s|ting)?\s+(?:a|the)\s+release"
+    r")",
+    re.IGNORECASE,
+)
+
+
+def names_operator_reserved(text):
+    """The commit/push/PR phrase this PROSE names, or "".
+
+    Not a safety guard like `names_tree_destroying` -- nothing here destroys
+    anything. It is a STANDING-ORDER guard: these acts need the operator's ask,
+    so a generated order must never contain one.
+    """
+    m = OPERATOR_RESERVED_RE.search((text or "").replace("`", " ").replace("\n", " "))
+    return " ".join(m.group(0).split()) if m else ""
+
+
 class Demand:
     """One rule's outstanding-order marker. Every read fails toward "nothing owed"."""
 

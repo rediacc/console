@@ -51,7 +51,7 @@ Owner: 97604f47
       delete probe found a latent data-loss defect in `deletePrefix` (string
       prefix matching destroying a sibling lineage), now fixed.
 - [ ] w8 Wave 5b-ii: the REMAINING credentialed legs, still operator-only —
-      set the four BACKUP_S3_* Worker secrets, add the bucket-scoped
+      set the four ACCOUNT_BACKUP_S3_* Worker secrets, add the bucket-scoped
       cf-r2-backup rotation slug, then migrate real machines and cut over.
 - [x] w9 Decommission: CLI restore proven, so on the operator's instruction the
       rclone/OneDrive emission was DELETED (not deprecated). The preflight

@@ -20,7 +20,7 @@
 #   scripts/dev/scrub-sentinel.sh v1.0.5 --execute --yes  # skip confirmation
 #
 # Env (required):
-#   R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, R2_ENDPOINT
+#   CLOUDFLARE_R2_ACCESS_KEY_ID, CLOUDFLARE_R2_SECRET_ACCESS_KEY, CLOUDFLARE_R2_ENDPOINT
 #   RELEASES_BUCKET (optional, default rediacc-releases)
 
 set -euo pipefail
@@ -67,11 +67,11 @@ if [[ ! "$VERSION" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
 fi
 
 require_cmd aws
-require_var R2_ACCESS_KEY_ID
-require_var R2_SECRET_ACCESS_KEY
-require_var R2_ENDPOINT
-export AWS_ACCESS_KEY_ID="$R2_ACCESS_KEY_ID"
-export AWS_SECRET_ACCESS_KEY="$R2_SECRET_ACCESS_KEY"
+require_var CLOUDFLARE_R2_ACCESS_KEY_ID
+require_var CLOUDFLARE_R2_SECRET_ACCESS_KEY
+require_var CLOUDFLARE_R2_ENDPOINT
+export AWS_ACCESS_KEY_ID="$CLOUDFLARE_R2_ACCESS_KEY_ID"
+export AWS_SECRET_ACCESS_KEY="$CLOUDFLARE_R2_SECRET_ACCESS_KEY"
 export AWS_DEFAULT_REGION="auto"
 
 log_step "scrub plan for ${VERSION}"
@@ -91,7 +91,7 @@ fi
 count="$(aws s3api list-objects-v2 \
     --bucket "${RSV_BUCKET}" \
     --prefix "${local_prefix}" \
-    --endpoint-url "$R2_ENDPOINT" \
+    --endpoint-url "$CLOUDFLARE_R2_ENDPOINT" \
     --query 'length(Contents || `[]`)' \
     --output text 2>/dev/null || echo 0)"
 echo "    objects: ${count}"
@@ -128,6 +128,6 @@ fi
 local_prefix="cli/${VERSION}/"
 log_step "deleting s3://${RSV_BUCKET}/${local_prefix}"
 aws s3 rm "s3://${RSV_BUCKET}/${local_prefix}" \
-    --endpoint-url "$R2_ENDPOINT" \
+    --endpoint-url "$CLOUDFLARE_R2_ENDPOINT" \
     --recursive
 log_info "scrubbed ${VERSION}"

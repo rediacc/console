@@ -46,7 +46,7 @@ re-derived rather than accepted:
   scope(s) in the parity surface; 8 exempt; 90 battery test(s)`, all five of its
   own controls PASS. R1/R2/R3 read at `scripts/check-ci-parity.ts:9-11, 398, 408, 424`.
 - `packages/e2e-tests/README.md:31` "Deliberately not in CI" carries 8 entries.
-  Suite 26 is correctly documented (`README.md:68-100`). Two omissions are NOT
+  Suite 26 is correctly documented (`packages/e2e-tests/README.md:68-100`). Two omissions are NOT
   documented, and one documented entry is stale. See section 3.
 - `scripts/drills/backup.sh` is wired: `ct-tests.yml:1815-1818`, alongside
   `universe` (`:1787`) and `transfer` (`:1803`).
@@ -263,9 +263,9 @@ that no live config selects:
 
 | File | Reason | Documented in README "Deliberately not in CI"? |
 |---|---|---|
-| `tests/20-image-build.test.ts` | `playwright.config.ts:96` excludes on `CI` | YES, item 3 (`README.md:48-50`) |
-| `tests/23-cli-migrate-routing.test.ts` | `playwright.config.ts:103-105`, and no matrix leg sets `cli-suite: '1'` | YES, item 8 (`README.md:102-108`) |
-| `tests/26-backup-storage-cli.test.ts` | `playwright.config.ts:117-119`, `BACKUP_STORAGE_SUITE` set nowhere in the repo | YES, item 7 (`README.md:68-100`) |
+| `tests/20-image-build.test.ts` | `playwright.config.ts:96` excludes on `CI` | YES, item 3 (`packages/e2e-tests/README.md:48-50`) |
+| `tests/23-cli-migrate-routing.test.ts` | `playwright.config.ts:103-105`, and no matrix leg sets `cli-suite: '1'` | YES, item 8 (`packages/e2e-tests/README.md:102-108`) |
+| `tests/26-backup-storage-cli.test.ts` | `playwright.config.ts:117-119`, `BACKUP_STORAGE_SUITE` set nowhere in the repo | YES, item 7 (`packages/e2e-tests/README.md:68-100`) |
 | `tests/ops-lifecycle/18-ops-lifecycle.test.ts` | `playwright.config.ts:30` `testIgnore`, and **no dedicated config exists** | **NO** |
 
 Plus one describe block excluded at runtime and undocumented:
@@ -296,7 +296,7 @@ appears anywhere in packages/cli/src. So the two tests exercise a phantom, and
 the file header at :16 asserts CI coverage of it.
 
 The listed README entry that should cover this is stale in both halves. Item 4
-(`README.md:52-54`) reads: "**Suite 18 ops-workflow destructive VM tests.**
+(`packages/e2e-tests/README.md:52-54`) reads: "**Suite 18 ops-workflow destructive VM tests.**
 Self-skipped in CI by design (`tests/18-ops-workflow.test.ts`)". That file is 35
 lines, holds one `test.describe('Parallel Execution @bridge @ops')`, contains no
 skip, and RUNS in CI as project `test-18` (`playwright.config.ts:93`). The

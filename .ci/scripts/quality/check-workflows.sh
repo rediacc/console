@@ -96,7 +96,19 @@ check_pattern \
 check_pattern \
     "secrets:[[:space:]]*inherit" \
     "secrets: inherit" \
-    "Pass required secrets explicitly: secrets: { APP_PRIVATE_KEY: \${{ secrets.APP_PRIVATE_KEY }} }"
+    "Pass required secrets explicitly: secrets: { GITHUB_APP_PRIVATE_KEY: \${{ secrets.GITHUB_APP_PRIVATE_KEY }} }"
+
+# Security: Ban allow-unsafe-pr-checkout.
+# actions/checkout v7 refuses to check out fork-PR code under pull_request_target
+# or workflow_run unless this flag is passed (enforced 2026-07-20). It is the one
+# input that converts those two triggers -- which run with the base repository's
+# secrets -- into arbitrary fork code execution with those secrets in scope. The
+# ban is here rather than in review because it reads as a compatibility shim: a
+# checkout upgrade that "stopped working" invites pasting it in.
+check_pattern \
+    "allow-unsafe-pr-checkout" \
+    "allow-unsafe-pr-checkout" \
+    "Do not check out fork-PR code in a secret-bearing trigger. Use pull_request, or check out the BASE ref and treat the fork's code as data. If a reviewed exception is genuinely needed, add '# security: approved' on the line."
 
 # Security: Ban secrets in run blocks (shell injection risk)
 # Secrets must be passed via env: blocks, never interpolated directly in run: shell code.
@@ -324,7 +336,16 @@ check_env_shell_vars() {
                 ind = match($0, /[^ ]/)
                 if ($0 ~ /^[[:space:]]*$/) next
                 if (ind <= envind) { inenv=0 }
-                else if ($0 ~ /\$(RUNNER_TEMP|RUNNER_OS|GITHUB_WORKSPACE|GITHUB_SHA|HOME|PWD)([^A-Za-z0-9_]|$)/ &&
+                # Comment lines are prose, not values -- housekeeping.yml:72
+                # documents `${IN_FLIGHT_VERSION:-}` inside an env: block and
+                # must not read as a violation.
+                else if ($0 ~ /^[[:space:]]*#/) next
+                # ANY shell-style variable, not a list of six. The six-name form
+                # (RUNNER_TEMP|RUNNER_OS|GITHUB_WORKSPACE|GITHUB_SHA|HOME|PWD)
+                # let `SECRET_X: $SOME_VAR` through -- the exact idiom a
+                # job-start secret fetch invites, and one that ships an EMPTY
+                # string because GitHub never expands it. Widened 2026-09-02.
+                else if ($0 ~ /\$\{?[A-Za-z_][A-Za-z0-9_]*/ &&
                          $0 !~ /\$\{\{/) { print NR ":" $0 }
             }
         ' "$f")"

@@ -96,7 +96,7 @@ autonomy window closed unanswered, so the recorded default became the decision
 and was executed: `createBackupPlane` now takes the presign minter on the
 Workers path, and the locally-signed R2 JWT is NOT selected. The store stays the
 native R2 binding — no S3 round trip for GC or reads — while grants are
-presigned URLs signed with `BACKUP_S3_*`, which works because R2 speaks the S3
+presigned URLs signed with `ACCOUNT_BACKUP_S3_*`, which works because R2 speaks the S3
 API. With no presign credentials the plane is store-only and every mint answers
 `BACKUP_NOT_CONFIGURED`, which is honest; issuing a credential the data plane
 refuses is not.
@@ -109,7 +109,7 @@ mutation-proven — re-selecting the JWT minter fails 2 of 4 while both controls
 stay green. A comment could not fail, and the failure it would miss appears as
 the FIRST CHUNK PUT of the first production backup.
 
-**Operator impact: wave 5b sets `BACKUP_S3_*`, NOT `BACKUP_R2_PARENT_*`.**
+**Operator impact: wave 5b sets `ACCOUNT_BACKUP_S3_*`, NOT `ACCOUNT_BACKUP_R2_GRANT_PARENT_*`.**
 
 ---
 
@@ -143,7 +143,7 @@ find, and a chunk-store destination has no rclone remote BY CONSTRUCTION.
 Defect 5 was found on 2026-08-14 by the operator-authorised read-only probe and is
 the same shape as 1 to 4: our unit tests verify our own signature with our own
 key, so both sides agreed while agreeing with nothing. It is not an outage only
-because `BACKUP_R2_*` does not exist yet; wave 5 creates it, and the first
+because `ACCOUNT_BACKUP_R2_GRANT_*` does not exist yet; wave 5 creates it, and the first
 production backup would have failed. See section 6.1.
 
 Defect 4 is the one to understand, because the code contradicts its own comment:
@@ -535,11 +535,11 @@ the wrapper around it.**
 - **Cold mode has no chunk-store path.** `weekly-cold` is unschedulable until it
   grows one. Not a regression from the removal; the cold path never existed on
   the new store.
-- **The operator-only cutover item** (`#a450387d`): four `BACKUP_S3_*` Worker
+- **The operator-only cutover item** (`#a450387d`): four `ACCOUNT_BACKUP_S3_*` Worker
   secrets, the bucket-scoped `cf-r2-backup` rotation slug, the migration, and the
   cutover itself. Default is HOLD.
 - **Bench deploy is plumbed, not run.** `scripts/dev/deploy-bench.sh` now carries
-  the four `BACKUP_S3_*` entries in its `wrangler secret bulk` payload,
+  the four `ACCOUNT_BACKUP_S3_*` entries in its `wrangler secret bulk` payload,
   defaulting from the `R2_*` values in `.env`. It cannot run from here because
   `lib/cf-auth.sh` needs `CLOUDFLARE_API_TOKEN` or `CF_GLOBAL_API_KEY` +
   `CF_EMAIL`, and `.env` appeared to carry only `CF_EMAIL`. The operator runs it.
@@ -794,7 +794,7 @@ diffs against HEAD a file its own earlier phase regenerates.
 The stop hook asked for `- [x] w8` in `CHECKLIST.md`, on the grounds that worklist
 item `#a450387d` was "done with evidence". It was closed `door:operator-only`,
 which the findings rule defines as *no session can do this* — the four
-`BACKUP_S3_*` secrets are unset, no machine is migrated, the cutover is unrun.
+`ACCOUNT_BACKUP_S3_*` secrets are unset, no machine is migrated, the cutover is unrun.
 Ticking the box would have told the next session the production cutover happened.
 
 `wl_checklist.py` treated any ticked covering item as completion, with no notion

@@ -118,15 +118,15 @@ console.log(JSON.stringify({
   xPub: der(x.publicKey, "spki"),
 }));
 ')"
-ED25519_PRIVATE_KEY="$(jq -r '.edPriv' <<<"$KEYS")"
-ED25519_PUBLIC_KEY="$(jq -r '.edPub' <<<"$KEYS")"
-X25519_PRIVATE_KEY="$(jq -r '.xPriv' <<<"$KEYS")"
-X25519_PUBLIC_KEY="$(jq -r '.xPub' <<<"$KEYS")"
+ACCOUNT_ED25519_PRIVATE_KEY="$(jq -r '.edPriv' <<<"$KEYS")"
+ACCOUNT_ED25519_PUBLIC_KEY="$(jq -r '.edPub' <<<"$KEYS")"
+ACCOUNT_X25519_PRIVATE_KEY="$(jq -r '.xPriv' <<<"$KEYS")"
+ACCOUNT_X25519_PUBLIC_KEY="$(jq -r '.xPub' <<<"$KEYS")"
 # envSchema (private/account/src/types/env.ts:18,55) requires >= 32 characters
 # for both. Fixed placeholder strings were rejected outright, which is the
 # schema doing its job; random 64-hex satisfies it without inventing a secret.
-API_KEY="$(openssl rand -hex 32)"
-JWT_SECRET="$(openssl rand -hex 32)"
+ACCOUNT_SERVER_API_KEY="$(openssl rand -hex 32)"
+ACCOUNT_JWT_SECRET="$(openssl rand -hex 32)"
 
 # ---------------------------------------------------------------------------
 # The server. ENVIRONMENT is left at the node entry's default; TEST_MODE is the
@@ -140,12 +140,12 @@ rm -f "$DB_PATH" "$DB_PATH-wal" "$DB_PATH-shm"
 (
     cd "$ACCOUNT_DIR"
     setsid env \
-        ED25519_PRIVATE_KEY="$ED25519_PRIVATE_KEY" \
-        ED25519_PUBLIC_KEY="$ED25519_PUBLIC_KEY" \
-        X25519_PRIVATE_KEY="$X25519_PRIVATE_KEY" \
-        X25519_PUBLIC_KEY="$X25519_PUBLIC_KEY" \
-        API_KEY="$API_KEY" \
-        JWT_SECRET="$JWT_SECRET" \
+        ACCOUNT_ED25519_PRIVATE_KEY="$ACCOUNT_ED25519_PRIVATE_KEY" \
+        ACCOUNT_ED25519_PUBLIC_KEY="$ACCOUNT_ED25519_PUBLIC_KEY" \
+        ACCOUNT_X25519_PRIVATE_KEY="$ACCOUNT_X25519_PRIVATE_KEY" \
+        ACCOUNT_X25519_PUBLIC_KEY="$ACCOUNT_X25519_PUBLIC_KEY" \
+        ACCOUNT_SERVER_API_KEY="$ACCOUNT_SERVER_API_KEY" \
+        ACCOUNT_JWT_SECRET="$ACCOUNT_JWT_SECRET" \
         ROOT_EMAIL="root@rediacc.invalid" \
         DATABASE_PATH="$DB_PATH" \
         PORT="$PORT" \

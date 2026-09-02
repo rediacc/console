@@ -55,12 +55,12 @@ name: Autopilot
 # input still wins for the round it is given on, and an unrecognised value in
 # either place is ignored with a ::notice rather than forwarded to the CLI.
 #
-# IDENTITY, and the split matters: AUTOPILOT_APP_ID is an org VARIABLE
+# IDENTITY, and the split matters: GITHUB_AUTOPILOT_APP_ID is an org VARIABLE
 # (`vars.AUTOPILOT_APP_ID`, visibility scoped to console), NOT a secret. Setting
-# it with `gh secret set AUTOPILOT_APP_ID` APPEARS TO SUCCEED and leaves the
+# it with `gh secret set GITHUB_AUTOPILOT_APP_ID` APPEARS TO SUCCEED and leaves the
 # variable empty, which silently breaks every app-token mint below. Only
-# AUTOPILOT_PRIVATE_KEY (the rediacc-autopilot app's key; the app has NO bypass
-# on the console ruleset) and CLAUDE_CODE_OAUTH_TOKEN are secrets.
+# GITHUB_AUTOPILOT_PRIVATE_KEY (the rediacc-autopilot app's key; the app has NO bypass
+# on the console ruleset) and ANTHROPIC_CLAUDE_CODE_OAUTH_TOKEN are secrets.
 
 on:
   workflow_run:
@@ -394,6 +394,40 @@ jobs:
           ref: main
           persist-credentials: false
 
+      - name: Fetch shadow secrets from Bitwarden
+        # SHADOW RUN: exports BWS_-prefixed copies that nothing consumes. The
+        # live secrets.* reads below are untouched until the cutover flips them.
+        uses: ./.github/actions/bws-secrets
+        with:
+          access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
+          secrets: |
+            ANTHROPIC_CLAUDE_CODE_OAUTH_TOKEN > BWS_ANTHROPIC_CLAUDE_CODE_OAUTH_TOKEN
+            AWS_SES_ACCESS_KEY_ID_EU > BWS_AWS_SES_ACCESS_KEY_ID_EU
+            AWS_SES_SECRET_ACCESS_KEY_EU > BWS_AWS_SES_SECRET_ACCESS_KEY_EU
+            GITHUB_AUTOPILOT_PRIVATE_KEY > BWS_GITHUB_AUTOPILOT_PRIVATE_KEY
+
+      - name: Compare shadow secrets against GitHub
+        shell: bash
+        env:
+          SHADOW_NAMES: ANTHROPIC_CLAUDE_CODE_OAUTH_TOKEN AWS_SES_ACCESS_KEY_ID_EU AWS_SES_SECRET_ACCESS_KEY_EU GITHUB_AUTOPILOT_PRIVATE_KEY
+          GH_ANTHROPIC_CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.ANTHROPIC_CLAUDE_CODE_OAUTH_TOKEN }}
+          GH_AWS_SES_ACCESS_KEY_ID_EU: ${{ secrets.AWS_SES_ACCESS_KEY_ID_EU }}
+          GH_AWS_SES_SECRET_ACCESS_KEY_EU: ${{ secrets.AWS_SES_SECRET_ACCESS_KEY_EU }}
+          GH_GITHUB_AUTOPILOT_PRIVATE_KEY: ${{ secrets.GITHUB_AUTOPILOT_PRIVATE_KEY }}
+        run: |
+          rc=0; read -ra names <<<"$SHADOW_NAMES"
+          sha() { printf '%s' "${1-}" | { sha256sum 2>/dev/null || shasum -a 256; } | cut -d' ' -f1; }
+          for n in "${names[@]}"; do
+            gv="GH_$n"; bv="BWS_$n"
+            # An ABSENT GitHub secret and an EMPTY Bitwarden value both hash to
+            # e3b0c442..., so without this arm two nothings compare EQUAL and the
+            # shadow reports "match" having verified nothing -- the exact defect
+            # this whole run exists to catch. Empty on either side is a failure.
+            if [ -z "${!gv-}" ] || [ -z "${!bv-}" ]; then echo "shadow $n EMPTY (github=${!gv:+set}${!gv:-unset} bitwarden=${!bv:+set}${!bv:-unset}) -- nothing was compared"; rc=1
+            elif [ "$(sha "${!gv-}")" = "$(sha "${!bv-}")" ]; then echo "shadow $n match"; else echo "shadow $n MISMATCH"; rc=1; fi
+          done
+          exit "$rc"
+
       # $RUNNER_TEMP survives both the PR-head checkout (which empties the
       # workspace) and the action's untracked-file reset; proven the hard way
       # by the review pipeline (claude-review-reusable.yml).
@@ -522,7 +556,7 @@ jobs:
         id: claude
         uses: anthropics/claude-code-action@fa7e2f0a29a126f0b81cdcf360561b36e44cf608 # v1.0.180
         with:
-          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          claude_code_oauth_token: ${{ secrets.ANTHROPIC_CLAUDE_CODE_OAUTH_TOKEN }}
           github_token: ${{ github.token }}
           prompt: ${{ steps.prompt.outputs.prompt }}
           track_progress: 'false'
@@ -623,7 +657,7 @@ jobs:
           "$RUNNER_TEMP/harness/.ci/breakpoint/scripts/start-shell.sh" --timeout 90
 
       # QUICK MODE ONLY, and therefore NO CLOUDFLARE CREDENTIAL IN THIS
-      # STEP'S env. start-tunnel.sh reads BREAKPOINT_TUNNEL_TOKEN and
+      # STEP'S env. start-tunnel.sh reads CLOUDFLARE_BREAKPOINT_TUNNEL_TOKEN and
       # CLOUDFLARE_ACCOUNT_ID only in start_named(); quick mode never touches
       # them, and stop-breakpoint.sh skips its whole account-side block when
       # they are absent (it is written to be mode-agnostic for exactly this).
@@ -698,7 +732,7 @@ jobs:
         uses: ./.github/actions/app-token
         with:
           client-id: ${{ vars.AUTOPILOT_APP_ID }}
-          private-key: ${{ secrets.AUTOPILOT_PRIVATE_KEY }}
+          private-key: ${{ secrets.GITHUB_AUTOPILOT_PRIVATE_KEY }}
           preset: cd
           repositories: ${{ vars.AUTOPILOT_ALLOW_SUBMODULES == 'true' && 'console,renet,account,elite,homebrew-tap' || 'console' }}
 
@@ -900,6 +934,34 @@ jobs:
           ref: main
           persist-credentials: false
 
+      - name: Fetch shadow secrets from Bitwarden
+        # SHADOW RUN: exports BWS_-prefixed copies that nothing consumes. The
+        # live secrets.* reads below are untouched until the cutover flips them.
+        uses: ./.github/actions/bws-secrets
+        with:
+          access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
+          secrets: |
+            GITHUB_AUTOPILOT_PRIVATE_KEY > BWS_GITHUB_AUTOPILOT_PRIVATE_KEY
+
+      - name: Compare shadow secrets against GitHub
+        shell: bash
+        env:
+          SHADOW_NAMES: GITHUB_AUTOPILOT_PRIVATE_KEY
+          GH_GITHUB_AUTOPILOT_PRIVATE_KEY: ${{ secrets.GITHUB_AUTOPILOT_PRIVATE_KEY }}
+        run: |
+          rc=0; read -ra names <<<"$SHADOW_NAMES"
+          sha() { printf '%s' "${1-}" | { sha256sum 2>/dev/null || shasum -a 256; } | cut -d' ' -f1; }
+          for n in "${names[@]}"; do
+            gv="GH_$n"; bv="BWS_$n"
+            # An ABSENT GitHub secret and an EMPTY Bitwarden value both hash to
+            # e3b0c442..., so without this arm two nothings compare EQUAL and the
+            # shadow reports "match" having verified nothing -- the exact defect
+            # this whole run exists to catch. Empty on either side is a failure.
+            if [ -z "${!gv-}" ] || [ -z "${!bv-}" ]; then echo "shadow $n EMPTY (github=${!gv:+set}${!gv:-unset} bitwarden=${!bv:+set}${!bv:-unset}) -- nothing was compared"; rc=1
+            elif [ "$(sha "${!gv-}")" = "$(sha "${!bv-}")" ]; then echo "shadow $n match"; else echo "shadow $n MISMATCH"; rc=1; fi
+          done
+          exit "$rc"
+
       - name: Download fixtures
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
@@ -914,7 +976,7 @@ jobs:
         uses: ./.github/actions/app-token
         with:
           client-id: ${{ vars.AUTOPILOT_APP_ID }}
-          private-key: ${{ secrets.AUTOPILOT_PRIVATE_KEY }}
+          private-key: ${{ secrets.GITHUB_AUTOPILOT_PRIVATE_KEY }}
           preset: cd
           repositories: console
 
@@ -1037,6 +1099,34 @@ jobs:
           ref: main
           persist-credentials: false
 
+      - name: Fetch shadow secrets from Bitwarden
+        # SHADOW RUN: exports BWS_-prefixed copies that nothing consumes. The
+        # live secrets.* reads below are untouched until the cutover flips them.
+        uses: ./.github/actions/bws-secrets
+        with:
+          access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
+          secrets: |
+            GITHUB_AUTOPILOT_PRIVATE_KEY > BWS_GITHUB_AUTOPILOT_PRIVATE_KEY
+
+      - name: Compare shadow secrets against GitHub
+        shell: bash
+        env:
+          SHADOW_NAMES: GITHUB_AUTOPILOT_PRIVATE_KEY
+          GH_GITHUB_AUTOPILOT_PRIVATE_KEY: ${{ secrets.GITHUB_AUTOPILOT_PRIVATE_KEY }}
+        run: |
+          rc=0; read -ra names <<<"$SHADOW_NAMES"
+          sha() { printf '%s' "${1-}" | { sha256sum 2>/dev/null || shasum -a 256; } | cut -d' ' -f1; }
+          for n in "${names[@]}"; do
+            gv="GH_$n"; bv="BWS_$n"
+            # An ABSENT GitHub secret and an EMPTY Bitwarden value both hash to
+            # e3b0c442..., so without this arm two nothings compare EQUAL and the
+            # shadow reports "match" having verified nothing -- the exact defect
+            # this whole run exists to catch. Empty on either side is a failure.
+            if [ -z "${!gv-}" ] || [ -z "${!bv-}" ]; then echo "shadow $n EMPTY (github=${!gv:+set}${!gv:-unset} bitwarden=${!bv:+set}${!bv:-unset}) -- nothing was compared"; rc=1
+            elif [ "$(sha "${!gv-}")" = "$(sha "${!bv-}")" ]; then echo "shadow $n match"; else echo "shadow $n MISMATCH"; rc=1; fi
+          done
+          exit "$rc"
+
       # The four older autopilot jobs sit in .profiler-coverage-allowlist's
       # burn-down ledger, whose own BLOCKER says the gate is blocking for every
       # job added from that day on. This one is new, and it already checks out
@@ -1051,7 +1141,7 @@ jobs:
         uses: ./.github/actions/app-token
         with:
           client-id: ${{ vars.AUTOPILOT_APP_ID }}
-          private-key: ${{ secrets.AUTOPILOT_PRIVATE_KEY }}
+          private-key: ${{ secrets.GITHUB_AUTOPILOT_PRIVATE_KEY }}
           preset: cd
           repositories: console
 
@@ -1091,6 +1181,34 @@ jobs:
           ref: main
           persist-credentials: false
 
+      - name: Fetch shadow secrets from Bitwarden
+        # SHADOW RUN: exports BWS_-prefixed copies that nothing consumes. The
+        # live secrets.* reads below are untouched until the cutover flips them.
+        uses: ./.github/actions/bws-secrets
+        with:
+          access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
+          secrets: |
+            GITHUB_AUTOPILOT_PRIVATE_KEY > BWS_GITHUB_AUTOPILOT_PRIVATE_KEY
+
+      - name: Compare shadow secrets against GitHub
+        shell: bash
+        env:
+          SHADOW_NAMES: GITHUB_AUTOPILOT_PRIVATE_KEY
+          GH_GITHUB_AUTOPILOT_PRIVATE_KEY: ${{ secrets.GITHUB_AUTOPILOT_PRIVATE_KEY }}
+        run: |
+          rc=0; read -ra names <<<"$SHADOW_NAMES"
+          sha() { printf '%s' "${1-}" | { sha256sum 2>/dev/null || shasum -a 256; } | cut -d' ' -f1; }
+          for n in "${names[@]}"; do
+            gv="GH_$n"; bv="BWS_$n"
+            # An ABSENT GitHub secret and an EMPTY Bitwarden value both hash to
+            # e3b0c442..., so without this arm two nothings compare EQUAL and the
+            # shadow reports "match" having verified nothing -- the exact defect
+            # this whole run exists to catch. Empty on either side is a failure.
+            if [ -z "${!gv-}" ] || [ -z "${!bv-}" ]; then echo "shadow $n EMPTY (github=${!gv:+set}${!gv:-unset} bitwarden=${!bv:+set}${!bv:-unset}) -- nothing was compared"; rc=1
+            elif [ "$(sha "${!gv-}")" = "$(sha "${!bv-}")" ]; then echo "shadow $n match"; else echo "shadow $n MISMATCH"; rc=1; fi
+          done
+          exit "$rc"
+
       # LABEL-ARMED UNION CAMPAIGN-ARMED. The label-only sweep reached the
       # arming path that needs a sweeper least: a campaign whose workflow_run
       # never arrived carries no label, so nothing was scheduled to notice it.
@@ -1106,7 +1224,7 @@ jobs:
         uses: ./.github/actions/app-token
         with:
           client-id: ${{ vars.AUTOPILOT_APP_ID }}
-          private-key: ${{ secrets.AUTOPILOT_PRIVATE_KEY }}
+          private-key: ${{ secrets.GITHUB_AUTOPILOT_PRIVATE_KEY }}
           preset: cd
           repositories: console
 

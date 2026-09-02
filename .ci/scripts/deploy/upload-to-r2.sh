@@ -14,9 +14,9 @@
 #   --dry-run            Print commands without executing
 #
 # Environment:
-#   R2_ACCESS_KEY_ID      S3-compatible access key (required)
-#   R2_SECRET_ACCESS_KEY  S3-compatible secret key (required)
-#   R2_ENDPOINT           R2 endpoint URL (required)
+#   CLOUDFLARE_R2_ACCESS_KEY_ID      S3-compatible access key (required)
+#   CLOUDFLARE_R2_SECRET_ACCESS_KEY  S3-compatible secret key (required)
+#   CLOUDFLARE_R2_ENDPOINT           R2 endpoint URL (required)
 #   SKIP_RELEASE          same as --skip-release (truthy: 1/true/yes/y/on)
 
 set -euo pipefail
@@ -143,7 +143,7 @@ log_step "Uploading v$VERSION to R2 channel: $CHANNEL"
 
 # Validate R2 credentials
 if [[ "$DRY_RUN" == "false" ]]; then
-    for var in R2_ACCESS_KEY_ID R2_SECRET_ACCESS_KEY R2_ENDPOINT; do
+    for var in CLOUDFLARE_R2_ACCESS_KEY_ID CLOUDFLARE_R2_SECRET_ACCESS_KEY CLOUDFLARE_R2_ENDPOINT; do
         if [[ -z "${!var:-}" ]]; then
             log_error "Missing required environment variable: $var"
             exit 1
@@ -151,8 +151,8 @@ if [[ "$DRY_RUN" == "false" ]]; then
     done
 
     # Configure AWS CLI for R2
-    export AWS_ACCESS_KEY_ID="$R2_ACCESS_KEY_ID"
-    export AWS_SECRET_ACCESS_KEY="$R2_SECRET_ACCESS_KEY"
+    export AWS_ACCESS_KEY_ID="$CLOUDFLARE_R2_ACCESS_KEY_ID"
+    export AWS_SECRET_ACCESS_KEY="$CLOUDFLARE_R2_SECRET_ACCESS_KEY"
     export AWS_DEFAULT_REGION="auto"
 fi
 
@@ -191,7 +191,7 @@ r2_cp() {
     fi
 
     aws s3 cp "$src" "$full_dest" \
-        --endpoint-url "$R2_ENDPOINT" \
+        --endpoint-url "$CLOUDFLARE_R2_ENDPOINT" \
         --cache-control "$cache_control" \
         --no-progress
 }
@@ -211,7 +211,7 @@ r2_put() {
     fi
 
     echo "$content" | aws s3 cp - "$full_dest" \
-        --endpoint-url "$R2_ENDPOINT" \
+        --endpoint-url "$CLOUDFLARE_R2_ENDPOINT" \
         --content-type "$content_type" \
         --cache-control "$CACHE_CONTROL_MUTABLE" \
         --no-progress
@@ -225,7 +225,7 @@ r2_rm() {
         return 0
     fi
     aws s3 rm "s3://${RELEASES_BUCKET}/${path}" --recursive \
-        --endpoint-url "$R2_ENDPOINT" 2>/dev/null || true
+        --endpoint-url "$CLOUDFLARE_R2_ENDPOINT" 2>/dev/null || true
 }
 
 # Sentinel-aware, idempotent write guard.
@@ -299,7 +299,7 @@ write_once_guard() {
 r2_get() {
     local path="$1"
     aws s3 cp "s3://${RELEASES_BUCKET}/${path}" - \
-        --endpoint-url "$R2_ENDPOINT" 2>/dev/null || echo ""
+        --endpoint-url "$CLOUDFLARE_R2_ENDPOINT" 2>/dev/null || echo ""
 }
 
 # Build R2 path: {type}/{channel}/{rest}

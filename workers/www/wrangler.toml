@@ -49,4 +49,4 @@ service = "rediacc-account-eu"
 # All account env vars set via `wrangler secret put` in CI.
 # See org secrets: ACCOUNT_*, AWS_SES_*, STRIPE_*
 # See org variables: AWS_SES_FROM, CLOUDFLARE_ACCOUNT_ID
-# Turnstile: TURNSTILE_SECRET_KEY (secret) + TURNSTILE_* / CI_MODE (optional vars/secrets)
+# Turnstile: CLOUDFLARE_TURNSTILE_SECRET_KEY (secret) + TURNSTILE_* / CI_MODE (optional vars/secrets)

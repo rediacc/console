@@ -12,8 +12,8 @@
 #   --dry-run           Preview without building
 #
 # Environment:
-#   GPG_PRIVATE_KEY     GPG private key for signing (base64 or armored)
-#   GPG_PASSPHRASE      GPG key passphrase (optional)
+#   RELEASE_GPG_PRIVATE_KEY     GPG private key for signing (base64 or armored)
+#   RELEASE_GPG_PASSPHRASE      GPG key passphrase (optional)
 #
 # Prerequisites: dpkg-dev, createrepo-c, gnupg, curl, jq
 
@@ -109,9 +109,9 @@ cleanup() { rm -rf "${CLEANUP_DIRS[@]}"; }
 trap cleanup EXIT
 
 GPG_OPTS=(--batch --yes --no-tty --pinentry-mode loopback)
-if [[ -n "${GPG_PASSPHRASE:-}" ]]; then
-    echo "::add-mask::$GPG_PASSPHRASE"
-    GPG_OPTS+=(--passphrase "$GPG_PASSPHRASE")
+if [[ -n "${RELEASE_GPG_PASSPHRASE:-}" ]]; then
+    echo "::add-mask::$RELEASE_GPG_PASSPHRASE"
+    GPG_OPTS+=(--passphrase "$RELEASE_GPG_PASSPHRASE")
 fi
 
 mkdir -p "$OUTPUT_DIR/apt" "$OUTPUT_DIR/rpm" "$OUTPUT_DIR/apk" "$OUTPUT_DIR/archlinux"
@@ -120,8 +120,8 @@ if [[ "$DRY_RUN" == "true" ]]; then
     log_info "[DRY-RUN] Skipping GPG setup"
     GPG_KEY_ID=""
 else
-    if [[ -z "${GPG_PRIVATE_KEY:-}" ]]; then
-        log_error "GPG_PRIVATE_KEY environment variable is required"
+    if [[ -z "${RELEASE_GPG_PRIVATE_KEY:-}" ]]; then
+        log_error "RELEASE_GPG_PRIVATE_KEY environment variable is required"
         exit 1
     fi
 
@@ -129,7 +129,7 @@ else
     export GNUPGHOME="$GNUPGHOME_TMP"
     CLEANUP_DIRS+=("$GNUPGHOME_TMP")
 
-    echo "$GPG_PRIVATE_KEY" | gpg "${GPG_OPTS[@]}" --import 2>/dev/null
+    echo "$RELEASE_GPG_PRIVATE_KEY" | gpg "${GPG_OPTS[@]}" --import 2>/dev/null
     log_info "GPG private key imported"
 
     # Get the key ID for signing

@@ -237,7 +237,7 @@ installation `149445627`. It holds **no bypass** on console ruleset `12344707`
 permissions are `actions:write, contents:write, issues:write, metadata:read,
 pull_requests:write` - notably **no `administration` and no `workflows`**, so it
 cannot rewrite the CI that judges it. Credentials are staged as
-`AUTOPILOT_APP_ID` and `AUTOPILOT_PRIVATE_KEY`.
+`GITHUB_AUTOPILOT_APP_ID` and `GITHUB_AUTOPILOT_PRIVATE_KEY`.
 
 That invariant is now pinned by `.ci/scripts/quality/check-autopilot-no-bypass.sh`
 with six controls. The gate is built around a measured trap: console is public,
@@ -286,7 +286,7 @@ false now; full evidence in `spike-s1-s2.md`.
 It did not need a CI dispatch. The action pin `fa7e2f0a` is v1.0.180, which
 bundles Claude Code 2.1.217, and that exact build was already on the dev machine
 under `claudeAiOauth` with no `ANTHROPIC_API_KEY`, i.e. the same auth class as
-`CLAUDE_CODE_OAUTH_TOKEN`. So the experiment ran on the real pinned binary under
+`ANTHROPIC_CLAUDE_CODE_OAUTH_TOKEN`. So the experiment ran on the real pinned binary under
 real OAuth, for $0.49.
 
 **The flag BINDS, but as a post-hoc stop, not a ceiling.** Cap `0.01` produced
@@ -909,7 +909,7 @@ before merging. Issue #548 files the v2 deferrals with reasons. Issues
 defect recorded at 01-verified-context.md:426-435 was already fixed on main
 by b54904779: the reusable checks out rediacc/console@main into
 .review-scripts (claude-review-reusable.yml:110-115), hard-asserts the gate
-script arrived, and stages it into RUNNER_TEMP. CLAUDE_CODE_OAUTH_TOKEN is
+script arrived, and stages it into RUNNER_TEMP. ANTHROPIC_CLAUDE_CODE_OAUTH_TOKEN is
 set repo-level on renet/account/elite (org-level cannot cover private repos
 on the free tier). Remaining: one live dispatch on a submodule PR to confirm
 end to end.
@@ -2653,7 +2653,7 @@ checks out submodules. Measured before the fix:
   repository cannot read. Found that `Claude Review` had **never once succeeded**
   in `account` or `renet` (org secret scoped to `console` alone; see
   rediacc/account#76, waivers expire 2026-09-07), and that
-  `secrets.AUTOPILOT_APP_ID` was a **namespace mismatch** — it is an org
+  `secrets.GITHUB_AUTOPILOT_APP_ID` was a **namespace mismatch** — it is an org
   *variable*, so `client-id` resolved empty at three app-token call sites.
 
 Both follow the same pattern as the older gates here: a committed baseline, a
@@ -3157,9 +3157,9 @@ filenames.
 read as false and silently disarmed the model job -- no error anywhere).
 The old name survives only in 03-v2-autonomy.md's dated rename note. The
 identity comment at autopilot.yml:52-58 now states the split precisely:
-AUTOPILOT_APP_ID is an org VARIABLE (gh secret set on it appears to succeed
+GITHUB_AUTOPILOT_APP_ID is an org VARIABLE (gh secret set on it appears to succeed
 while vars. stays empty -- the exact defect the operator fixed once
-already); only AUTOPILOT_PRIVATE_KEY and CLAUDE_CODE_OAUTH_TOKEN are
+already); only GITHUB_AUTOPILOT_PRIVATE_KEY and ANTHROPIC_CLAUDE_CODE_OAUTH_TOKEN are
 secrets. FOUND, REPORTED, NOT FIXED: the sweeper enumerates only
 LABEL-armed PRs (gh pr list --label), so a campaign-armed PR that misses a
 workflow_run event stalls silently; reaching those means scanning state

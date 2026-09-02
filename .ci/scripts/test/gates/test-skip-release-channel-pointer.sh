@@ -202,7 +202,7 @@ run_upload() {
     OUT="$(
         env -u SKIP_RELEASE PATH="$FAKEBIN:$PATH" \
             ${skip:+SKIP_RELEASE="$skip"} \
-            R2_ACCESS_KEY_ID=k R2_SECRET_ACCESS_KEY=s R2_ENDPOINT=https://example.invalid \
+            CLOUDFLARE_R2_ACCESS_KEY_ID=k CLOUDFLARE_R2_SECRET_ACCESS_KEY=s CLOUDFLARE_R2_ENDPOINT=https://example.invalid \
             NPM_DIR="$ROOT/dist/npm-absent" \
             bash "$script" --version "$VERSION" --channel "$channel" --cli-dir "$ROOT/dist/cli" </dev/null 2>&1
     )" || RC=$?
@@ -217,7 +217,7 @@ run_repos() {
         env -u SKIP_RELEASE PATH="$FAKEBIN:$PATH" \
             ${skip:+SKIP_RELEASE="$skip"} \
             CHANNEL="$channel" \
-            R2_ACCESS_KEY_ID=k R2_SECRET_ACCESS_KEY=s R2_ENDPOINT=https://example.invalid \
+            CLOUDFLARE_R2_ACCESS_KEY_ID=k CLOUDFLARE_R2_SECRET_ACCESS_KEY=s CLOUDFLARE_R2_ENDPOINT=https://example.invalid \
             CLOUDFLARE_ZONE_ID=zone CLOUDFLARE_API_TOKEN=tok \
             bash "$script" </dev/null 2>&1
     )" || RC=$?

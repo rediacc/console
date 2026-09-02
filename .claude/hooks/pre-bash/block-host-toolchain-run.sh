@@ -85,9 +85,9 @@ done
 # something specific to that command, never on a bare tool name.
 ACCOUNT_ENV="$REPO_ROOT/private/account/.env"
 declare -A NEEDS_ENV=(
-    ["--publish-www"]="R2_MEDIA_ACCESS_KEY_ID"
-    ["sync-media-to-r2"]="R2_MEDIA_ACCESS_KEY_ID"
-    ["sync-media-from-r2"]="R2_MEDIA_ACCESS_KEY_ID"
+    ["--publish-www"]="CLOUDFLARE_R2_MEDIA_ACCESS_KEY_ID"
+    ["sync-media-to-r2"]="CLOUDFLARE_R2_MEDIA_ACCESS_KEY_ID"
+    ["sync-media-from-r2"]="CLOUDFLARE_R2_MEDIA_ACCESS_KEY_ID"
 )
 if [ -f "$ACCOUNT_ENV" ]; then
     for key in "${!NEEDS_ENV[@]}"; do

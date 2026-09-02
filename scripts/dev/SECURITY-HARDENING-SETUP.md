@@ -58,7 +58,7 @@ gh secret set CD_APP_PRIVATE_KEY --org rediacc --visibility selected \
 - Save and accept the org-installation permission update prompt.
 
 After narrowing, only the new `rediacc-cd-app` can mint deploy-scoped tokens.
-A leaked `APP_PRIVATE_KEY` (CI-only) cannot deploy.
+A leaked `GITHUB_APP_PRIVATE_KEY` (CI-only) cannot deploy.
 
 ---
 
@@ -113,12 +113,11 @@ Stripe credentials are rotated manually via the Stripe dashboard, so the
 one-shot push is needed once. After this, future rotations are also manual
 (`gh secret set --env ...`).
 
-```bash
-# Export the 6 Stripe values from your Stripe dashboard, then:
-./scripts/dev/migrate-stripe-to-envs.sh
-# Verify, then:
-./scripts/dev/migrate-stripe-to-envs.sh --remove-from-org
-```
+> **Voided 2026-09-02.** `scripts/dev/migrate-stripe-to-envs.sh` was deleted: the operator
+> established in the Stripe dashboard that the three regions are ONE Stripe account
+> (`acct_1ONIroAH2UKrsSNm`), so there is one `STRIPE_SECRET_KEY` and nothing per-region
+> to migrate into environments. Only the webhook secrets differ per region, and they stay
+> org secrets. See `agent/PLAN-secret-namespace-migration.md` Part 10, Stripe.
 
 ### 3b. SES (US/Asia) — rotation tool handles env-scope automatically
 
@@ -159,9 +158,9 @@ since both target=edge and target=stable matrix runs consume the secret).
 Then delete org-level:
 
 ```bash
-gh secret delete OTLP_CLIENT_CREDENTIALS_EU --org rediacc
-gh secret delete OTLP_CLIENT_CREDENTIALS_US --org rediacc
-gh secret delete OTLP_CLIENT_CREDENTIALS_ASIA --org rediacc
+gh secret delete OBS_OTLP_CREDENTIALS_EU --org rediacc
+gh secret delete OBS_OTLP_CREDENTIALS_US --org rediacc
+gh secret delete OBS_OTLP_CREDENTIALS_ASIA --org rediacc
 ```
 
 ### Verify after all three sub-flows:

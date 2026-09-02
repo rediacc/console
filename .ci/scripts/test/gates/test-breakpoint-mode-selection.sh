@@ -39,7 +39,7 @@ SELECT="$REPO_ROOT/.ci/breakpoint/scripts/select-mode.sh"
 
 # Credentials that make named mode configurable. The zone comes from
 # breakpoint.conf, so only these two are environment-supplied.
-readonly FAKE_TOKEN="BREAKPOINT_TUNNEL_TOKEN=not-a-real-token"
+readonly FAKE_TOKEN="CLOUDFLARE_BREAKPOINT_TUNNEL_TOKEN=not-a-real-token"
 readonly FAKE_ACCOUNT="CLOUDFLARE_ACCOUNT_ID=0000000000000000000000000000dead"
 
 # select_mode <tmp> [ENV=val ...] -- [--] [args...]

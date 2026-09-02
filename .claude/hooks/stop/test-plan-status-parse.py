@@ -134,6 +134,51 @@ control(
     None,
 )
 
+# ---------------------------------------------------------------------------
+# THE 28% BLIND SPOT, fixed 2026-09-02. plan_owner used to return the first WORD
+# after `Owner:`. `owned_by_me` compares that against a session id, so any value
+# that is not a session id matched NO session -- forever -- and the plan read as
+# peer-owned to everyone. Measured on this repo: 13 of 46 plans, silently exempt
+# from plan_drift_rows AND from the plan-task check. Nothing errored.
+# These pin BOTH directions: prose must not become a phantom owner, and a real id
+# must still be found when prose surrounds it.
+# ---------------------------------------------------------------------------
+control(
+    "prose owner is UNOWNED, not a phantom peer named 'whichever'",
+    owner_of("# P\nOwner: whichever session picks it up\nStatus: ready\n"),
+    None,
+)
+control(
+    "a hyphenated agent name is not an owner",
+    owner_of("# P\nOwner: w2d-writer\nStatus: ready\n"),
+    None,
+)
+control(
+    "'unowned' wins even when an id is named as the DRAFTER",
+    owner_of("# P\nOwner: unowned (drafted by 9d92d9b6, 2026-08-28)\nStatus: ready\n"),
+    None,
+)
+control(
+    "a real id is recovered from prose around it",
+    owner_of("# P\nOwner: session 9d92d9b6, branch 0826-3\nStatus: ready\n"),
+    "9d92d9b6",
+)
+control(
+    "and from a trailing clause",
+    owner_of("# P\nOwner: written by branch `0804-1`, 2026-08-05; closed by session e6500e92\n"),
+    "e6500e92",
+)
+control(
+    "CONTROL: a 12-hex migrated id still parses",
+    owner_of("# P\nOwner: 0123456789ab\nStatus: ready\n"),
+    "0123456789ab",
+)
+control(
+    "CONTROL: a short hex-looking branch is NOT a session id",
+    owner_of("# P\nOwner: planning agent, branch 0731-2\nStatus: ready\n"),
+    None,
+)
+
 # The pair that matters: the same fixture is IN scope unowned and OUT of scope when a
 # peer owns it. Asserting only the peer case would pass for a check that returns
 # nothing at all.

@@ -135,18 +135,34 @@ and the item is the parking bay the rule forbids.
 Pick the ONE `[?]` whose default is weakest and answer about it.
 
 (1) DOES IT CHANGE STATE? A default changes state when, executed alone, it
-leaves the repo, the branch, or the world different: write it and commit it
-onto the open PR's branch, delete the dead path, pick option A and implement
-it, regenerate the files. It does NOT change state when it describes
+leaves the repo or the world different: write the change into the working
+tree, delete the dead path, pick option A and implement it, regenerate the
+files. An UNCOMMITTED edit is a state change -- this project's deliverable is
+an uncommitted tree, so landing the work in it is the whole act, and no
+default ever needs a commit to count. It does NOT change state when it describes
 continuing: "hold", "keep carrying", "leave it", "wait for", "do not touch",
 "report the numbers", "revisit later", "ask again". Reporting is not acting.
 
-THREE ACTS ARE NEVER A BRAVE DEFAULT, because they are reserved to the
+FOUR ACTS ARE NEVER A BRAVE DEFAULT, because they are reserved to the
 operator and this gate is forbidden to order them: merging a PR, pushing to
-main, and cutting or publishing a release. A deferral about one of those is a
-legitimate hold -- answer `irreversible` or `outward`, not `preference`. The
-braver form for such an item is the work that stands ready underneath it
-("finish it and leave it committed on the branch"), never the act itself.
+main, cutting or publishing a release, and COMMITTING -- which includes
+creating a branch, pushing, or opening a PR. That fourth one is this
+project's first standing order: the deliverable is an uncommitted working
+tree unless the operator asked otherwise in that task, and approving a plan
+is not that ask. A deferral about one of these is a legitimate hold -- answer
+`irreversible` or `outward`, not `preference`. The braver form for such an
+item is the work that stands ready underneath it ("finish it and leave it in
+the tree, ready to commit"), never the act itself.
+
+BUT READ THE DEFAULT, NOT THE NOUNS IN IT. This rule applies only when the
+DEFAULT would PERFORM one of those four acts. A deferral that merely mentions a
+branch, a PR or a release is not thereby a legitimate hold. Measured 2026-09-02:
+"DEFAULT: leave it on its branch." was scored `outward` and let through, when it
+is the paradigm TIMID default -- it performs nothing, changes nothing, and its
+braver form is to FINISH the work so it stands ready. "Leave it", "keep it
+there", "hold it on the branch" are refusals to act dressed in the vocabulary of
+a reserved act. `outward` means the default itself reaches a third party who
+cannot un-see it. Sitting still reaches nobody.
 
 (2) IF IT HOLDS, WHY? Answer with exactly one:
   irreversible     the act cannot be undone once done (a release, a delete, a
@@ -174,9 +190,9 @@ irreversible is being declined is the failure this object exists to catch.
 
 (3) THE BRAVER FORM. Write in `braver` the default the session would actually
 choose if it had to decide alone -- almost always the recommended action,
-stated as an executable step ("commit it onto the open PR's branch",
-"implement option A", "delete the dead path"), never as a question, and never
-one of the three operator-only acts above.
+stated as an executable step ("write the rename across every reader and leave
+it in the tree", "implement option A", "delete the dead path"), never as a
+question, and never one of the four operator-only acts above.
 
 Set applicable=false only when there is genuinely no `[?]` with a `DEFAULT:`
 in the list above, or when every one of them already commits to an action.
@@ -240,6 +256,14 @@ V_ACTION_GENERIC = (
     "Rewrite that deferral's DEFAULT as the action you would take alone -- the recommended "
     "one, stated as an executable step, not as a hold. %s"
 )
+# SHORT, and the WHY leads: apply_order caps next_action at 200 characters, and
+# the first draft of this string put the rewrite instruction first, where the cap
+# ate the reason -- the same failure the sibling rule records above its own
+# V_ACTION_DROPPED. Caught by the test, not by reading it.
+V_ACTION_RESERVED = (
+    "Suggestion DROPPED: it named `%s`, which needs the operator's ask (standing order 1). "
+    "Rewrite that DEFAULT as the action you would take alone, leaving the work UNCOMMITTED."
+)
 V_ACTION_UNSAFE = (
     "Rewrite that deferral's DEFAULT as the action you would take alone. This rule's own "
     "suggestion was DROPPED: it named `%s`, which destroys uncommitted work and is never "
@@ -268,8 +292,18 @@ def enforce(out, payload):
     # because the tree carries other sessions' work. See wl_rules.TREE_DESTROYING.
     proposed = payload["braver"] or payload["instruction"]
     verb = wl_rules.names_tree_destroying(proposed)
+    reserved = wl_rules.names_operator_reserved(proposed)
     if verb:
         action = V_ACTION_UNSAFE % verb
+    elif reserved:
+        # NOT a safety refusal -- nothing here destroys anything. It is the
+        # standing order: committing, branching, pushing and opening a PR need
+        # the operator's ask, so an order carrying one tells the session to break
+        # a rule it must then quietly disobey. Measured 2026-09-02: this rule
+        # emitted "... then commit to the open branch" and the session did the
+        # rename and silently dropped the commit, which is the workaround this
+        # repo treats as a bug report.
+        action = V_ACTION_RESERVED % reserved
     elif payload["braver"]:
         action = V_ACTION % payload["braver"]
     else:

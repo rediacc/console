@@ -3,7 +3,8 @@
 #
 # THE GAP. Three prompt constants drive the stop judge's rules, and each has a fixture set
 # in `.claude/hooks/stop/calibrate-judge-rules.py` that scores it against a REAL model:
-# SWEEP_PROMPT (SWEEP_CASES), BRAVE_PROMPT (BRAVE_CASES), REGGATE_PROMPT. Nothing forced
+# SWEEP_PROMPT (SWEEP_CASES), BRAVE_PROMPT (BRAVE_CASES), REGGATE_PROMPT,
+# SHAPE_PROMPT (SHAPE_CASES). Nothing forced
 # the two to move together. Editing a rubric is cheap and silent; re-calibrating costs 14
 # live model calls and several minutes, so the pressure is entirely toward skipping it --
 # and a rubric whose calibration describes an older text is a rubric nobody has measured.
@@ -31,6 +32,14 @@ SRC = {
     "SWEEP_PROMPT": root / ".claude/hooks/stop/wl_classsweep.py",
     "BRAVE_PROMPT": root / ".claude/hooks/stop/wl_bravedefault.py",
     "REGGATE_PROMPT": root / ".claude/hooks/stop/worklist_messages.py",
+    # Added 2026-09-02. SHAPE_PROMPT had live fixtures (SHAPE_CASES) and was
+    # calibrated by the same runner, yet was absent from this map -- so its text
+    # could drift with nothing noticing, which is the one thing this gate exists
+    # to prevent. It was the only rubric in that state with fixtures already
+    # written; the remaining five (FOLLOWUP, DEFER_AUDIT, TRIAGE, ADMISSION,
+    # PLANFID) have neither fixtures nor a hash, and adding a hash without
+    # fixtures would freeze text nothing has ever proven correct.
+    "SHAPE_PROMPT": root / ".claude/hooks/stop/wl_shapedup.py",
 }
 out = {}
 for name, path in SRC.items():

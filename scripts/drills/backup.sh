@@ -404,7 +404,7 @@ setup_sandbox() {
 # re-read it later.
 #
 # ONE host value for the whole run (the drill_bridge_host lesson): the account
-# server presigns store URLs against BACKUP_S3_ENDPOINT and stamps its own
+# server presigns store URLs against ACCOUNT_BACKUP_S3_ENDPOINT and stamps its own
 # addresses from the request Host header, and an API token binds to the first
 # host it is used with. Mixing 127.0.0.1 and the bridge address inside one run
 # is what produced "Token is bound to a different IP address" in the licensing
@@ -421,20 +421,20 @@ setup_store_env() {
     fi
     if using_real_store; then
         BACKUP_BUCKET="$DRILL_STORE_BUCKET"
-        export BACKUP_S3_ENDPOINT="${DRILL_STORE_ENDPOINT%/}"
-        export BACKUP_S3_BUCKET="$DRILL_STORE_BUCKET"
-        export BACKUP_S3_ACCESS_KEY_ID="$DRILL_STORE_KEY"
-        export BACKUP_S3_SECRET_ACCESS_KEY="$DRILL_STORE_SECRET"
+        export ACCOUNT_BACKUP_S3_ENDPOINT="${DRILL_STORE_ENDPOINT%/}"
+        export ACCOUNT_BACKUP_S3_BUCKET="$DRILL_STORE_BUCKET"
+        export ACCOUNT_BACKUP_S3_ACCESS_KEY_ID="$DRILL_STORE_KEY"
+        export ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY="$DRILL_STORE_SECRET"
         drill_note "TIER-B: real object store, bucket $DRILL_STORE_BUCKET"
     else
-        export BACKUP_S3_ENDPOINT="http://${DRILL_HOST}:${RUSTFS_PORT}"
-        export BACKUP_S3_BUCKET="$BACKUP_BUCKET"
-        export BACKUP_S3_ACCESS_KEY_ID="$RUSTFS_KEY"
-        export BACKUP_S3_SECRET_ACCESS_KEY="$RUSTFS_SECRET"
+        export ACCOUNT_BACKUP_S3_ENDPOINT="http://${DRILL_HOST}:${RUSTFS_PORT}"
+        export ACCOUNT_BACKUP_S3_BUCKET="$BACKUP_BUCKET"
+        export ACCOUNT_BACKUP_S3_ACCESS_KEY_ID="$RUSTFS_KEY"
+        export ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY="$RUSTFS_SECRET"
     fi
     # The maintenance timer would run GC underneath the drill's own objects.
     export BACKUP_MAINTENANCE_INTERVAL_MS=0
-    drill_note "chunk store: $BACKUP_S3_ENDPOINT/$BACKUP_S3_BUCKET"
+    drill_note "chunk store: $ACCOUNT_BACKUP_S3_ENDPOINT/$ACCOUNT_BACKUP_S3_BUCKET"
 }
 
 setup_gateway() {

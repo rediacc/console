@@ -236,7 +236,7 @@ the operator again at the end rather than letting them dissolve.
 - All 8 VM/E2E jobs install three `private/account` npm trees the suites never reference.
 - `generate-tag.sh:92-97`'s renet build-config list omits `.ci/scripts/infra/build-renet.sh`,
   which is what `ct-tests.yml` and `ci-ops-test.yml` actually use.
-- The submodule review pipeline is **doubly** broken: no `CLAUDE_CODE_OAUTH_TOKEN` on
+- The submodule review pipeline is **doubly** broken: no `ANTHROPIC_CLAUDE_CODE_OAUTH_TOKEN` on
   `renet`/`account`, **and** the reusable's bootstrap step assumes a script that exists only
   in console.
 - `#533`'s underlying question is still unanswered.

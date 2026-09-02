@@ -56,7 +56,7 @@ DB_NAME="account-db-bench"
 DOMAIN="bench.rediacc.com"
 # Bench has its own Turnstile widget (rediacc-console-bench) so rotations of
 # the production widget don't block bench deploys. The sitekey is public (it
-# ships in HTML). The secret is in .env.bench as TURNSTILE_SECRET_KEY, managed
+# ships in HTML). The secret is in .env.bench as CLOUDFLARE_TURNSTILE_SECRET_KEY, managed
 # by `./run.sh rotation rotate turnstile-bench`.
 TURNSTILE_SITEKEY="0x4AAAAAAC46Rczgin0T1o04"
 
@@ -122,19 +122,14 @@ npx wrangler deploy --config "$CONFIG"
 log_info "Worker deployed"
 
 # ─── Step 4: rotation preflight + push secrets ─────────────────────────
-# Drift preflight: refuse to push stale credentials. The rotation tool
-# compares manifest entries to live AWS/CF state and exits non-zero on
-# any mismatch. Catches the failure mode where bench would ship a dead
-# SES key because a rotation ran on another machine without updating
-# this clone's manifest.
-log_step "Rotation preflight: ./run.sh rotation check --for=bench"
-if ! "$ROOT_DIR/run.sh" rotation check --for=bench; then
-    log_error "rotation drift detected — refusing to push stale secrets to bench"
-    log_error "fix: run \`./run.sh rotation rotate <slug>\` for the credentials that drifted"
-    exit 1
-fi
+log_step "Loading private/account/.env (with .env.bench overrides)"
 
-log_step "Pushing worker secrets from private/account/.env (with .env.bench overrides)"
+# HOISTED ABOVE THE ROTATION PREFLIGHT on 2026-09-02. It used to sit AFTER it,
+# and `rotation check` needs the AWS_IAM_ADMIN_ACCESS_KEY_ID/AWS_IAM_ADMIN_SECRET_ACCESS_KEY and Cloudflare
+# credentials that live in this very file. So unless the operator happened to
+# have them exported already, the preflight exited 1 with "AWS IAM admin
+# credentials are required" and this script reported "rotation drift detected"
+# -- a verdict about credentials it had never compared.
 
 # Source the .env in a subshell to populate the variables we care about.
 # `set -a` exports everything sourced inside the block.
@@ -153,40 +148,86 @@ fi
 set +a
 set -u
 
+# Drift preflight: refuse to push stale credentials. The rotation tool
+# compares manifest entries to live AWS/CF state and exits non-zero on
+# any mismatch. Catches the failure mode where bench would ship a dead
+# SES key because a rotation ran on another machine without updating
+# this clone's manifest. Runs AFTER the .env load above, deliberately.
+log_step "Rotation preflight: ./run.sh rotation check --for=bench"
+rotation_rc=0
+"$ROOT_DIR/run.sh" rotation check --for=bench || rotation_rc=$?
+if ((rotation_rc != 0)); then
+    # Distinguish a VERDICT from a check that never reached one. Reporting
+    # "drift" for a missing credential sends you off to rotate a key that is
+    # fine, which is the same shape as the assert-edge-tag-exists.sh bug.
+    if [[ -z "${AWS_IAM_ADMIN_ACCESS_KEY_ID:-}${AWS_SES_ADMIN_KEY_ID:-}" ]]; then
+        log_error "rotation check could NOT RUN: no AWS IAM admin credentials in the"
+        log_error "environment even after loading private/account/.env. This is NOT"
+        log_error "drift -- nothing was compared. Add AWS_IAM_ADMIN_ACCESS_KEY_ID + AWS_IAM_ADMIN_SECRET_ACCESS_KEY there."
+    else
+        log_error "rotation drift detected — refusing to push stale secrets to bench"
+        log_error "fix: run \`./run.sh rotation rotate <slug>\` for the credentials that drifted"
+    fi
+    exit 1
+fi
+
 # Required signing keys (fail loud if .env is missing them)
-: "${ED25519_PRIVATE_KEY:?missing in .env}"
-: "${ED25519_PUBLIC_KEY:?missing in .env}"
-: "${X25519_PRIVATE_KEY:?missing in .env}"
-: "${X25519_PUBLIC_KEY:?missing in .env}"
-: "${API_KEY:?missing in .env}"
-: "${JWT_SECRET:?missing in .env}"
+: "${ACCOUNT_ED25519_PRIVATE_KEY:?missing in .env}"
+: "${ACCOUNT_ED25519_PUBLIC_KEY:?missing in .env}"
+: "${ACCOUNT_X25519_PRIVATE_KEY:?missing in .env}"
+: "${ACCOUNT_X25519_PUBLIC_KEY:?missing in .env}"
+: "${ACCOUNT_SERVER_API_KEY:?missing in .env}"
+: "${ACCOUNT_JWT_SECRET:?missing in .env}"
 
 # Bench reuses the prod EU SES creds in .env. Stripe is disabled (empty
 # strings) so the worker boots without billing — same posture as edge.
-SECRET_STRIPE_KEY=""
-SECRET_STRIPE_WEBHOOK=""
+STRIPE_SECRET_KEY_BENCH=""
+STRIPE_WEBHOOK_SECRET_BENCH=""
+
+# The non-empty guard the three CI builders carry, which this one lacked until
+# 2026-09-02. The six ACCOUNT_* keys above fail loud through `:?`, but every key
+# below reached `jq` with a bare `:-` default, so a `.env` that had been renamed
+# out from under this script would push an EMPTY value and say nothing: zod
+# normalises '' to undefined and validates happily, Turnstile silently disables
+# itself, the backup plane returns null, and email builds a null transport.
+# Bench is not production, but it is where those failures are supposed to be
+# CAUGHT, and a silent bench is worse than a red one.
+_require_nonempty() {
+    if [[ -z "${2:-}" ]]; then
+        log_error "$1 is EMPTY for bench — check private/account/.env (and .env.bench)"
+        exit 1
+    fi
+}
+_require_nonempty ROOT_EMAIL "${ROOT_EMAIL:-}"
+_require_nonempty AWS_SES_ACCESS_KEY_ID "${AWS_SES_ACCESS_KEY_ID:-}"
+_require_nonempty AWS_SES_SECRET_ACCESS_KEY "${AWS_SES_SECRET_ACCESS_KEY:-}"
+_require_nonempty CLOUDFLARE_TURNSTILE_SECRET_KEY "${CLOUDFLARE_TURNSTILE_SECRET_KEY:-}"
+_require_nonempty ACCOUNT_BACKUP_S3_ENDPOINT "${ACCOUNT_BACKUP_S3_ENDPOINT:-${CLOUDFLARE_R2_ENDPOINT:-}}"
+_require_nonempty ACCOUNT_BACKUP_S3_ACCESS_KEY_ID "${ACCOUNT_BACKUP_S3_ACCESS_KEY_ID:-${CLOUDFLARE_R2_ACCESS_KEY_ID:-}}"
+_require_nonempty ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY "${ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY:-${CLOUDFLARE_R2_SECRET_ACCESS_KEY:-}}"
+_require_nonempty OBS_OTLP_CREDENTIALS "${OBS_OTLP_CREDENTIALS:-}"
 
 jq -n \
-    --arg ed25519_priv "$ED25519_PRIVATE_KEY" \
-    --arg ed25519_pub "$ED25519_PUBLIC_KEY" \
-    --arg x25519_priv "$X25519_PRIVATE_KEY" \
-    --arg x25519_pub "$X25519_PUBLIC_KEY" \
-    --arg api_key "$API_KEY" \
-    --arg jwt "$JWT_SECRET" \
-    --arg stripe "$SECRET_STRIPE_KEY" \
-    --arg stripe_wh "$SECRET_STRIPE_WEBHOOK" \
+    --arg ed25519_priv "$ACCOUNT_ED25519_PRIVATE_KEY" \
+    --arg ed25519_pub "$ACCOUNT_ED25519_PUBLIC_KEY" \
+    --arg x25519_priv "$ACCOUNT_X25519_PRIVATE_KEY" \
+    --arg x25519_pub "$ACCOUNT_X25519_PUBLIC_KEY" \
+    --arg api_key "$ACCOUNT_SERVER_API_KEY" \
+    --arg jwt "$ACCOUNT_JWT_SECRET" \
+    --arg stripe "$STRIPE_SECRET_KEY_BENCH" \
+    --arg stripe_wh "$STRIPE_WEBHOOK_SECRET_BENCH" \
     --arg admin "${ROOT_EMAIL:-}" \
     --arg ses_key "${AWS_SES_ACCESS_KEY_ID:-}" \
     --arg ses_secret "${AWS_SES_SECRET_ACCESS_KEY:-}" \
     --arg ses_region "${AWS_SES_REGION:-eu-central-1}" \
     --arg ses_from "${AWS_SES_FROM:-noreply@notify.rediacc.com}" \
     --arg ses_cs "${AWS_SES_CONFIGURATION_SET:-}" \
-    --arg turnstile "${TURNSTILE_SECRET_KEY:-}" \
-    --arg backup_ep "${BACKUP_S3_ENDPOINT:-${R2_ENDPOINT:-}}" \
-    --arg backup_bucket "${BACKUP_S3_BUCKET:-rediacc-backups-bench}" \
-    --arg backup_key "${BACKUP_S3_ACCESS_KEY_ID:-${R2_ACCESS_KEY_ID:-}}" \
-    --arg backup_secret "${BACKUP_S3_SECRET_ACCESS_KEY:-${R2_SECRET_ACCESS_KEY:-}}" \
-    --arg otlp_creds "${OTLP_CLIENT_CREDENTIALS:-}" \
+    --arg turnstile "${CLOUDFLARE_TURNSTILE_SECRET_KEY:-}" \
+    --arg backup_ep "${ACCOUNT_BACKUP_S3_ENDPOINT:-${CLOUDFLARE_R2_ENDPOINT:-}}" \
+    --arg backup_bucket "${ACCOUNT_BACKUP_S3_BUCKET:-rediacc-backups-bench}" \
+    --arg backup_key "${ACCOUNT_BACKUP_S3_ACCESS_KEY_ID:-${CLOUDFLARE_R2_ACCESS_KEY_ID:-}}" \
+    --arg backup_secret "${ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY:-${CLOUDFLARE_R2_SECRET_ACCESS_KEY:-}}" \
+    --arg otlp_creds "${OBS_OTLP_CREDENTIALS:-}" \
     --arg seller_name "${SELLER_NAME:-}" \
     --arg seller_vat "${SELLER_VAT_NUMBER:-}" \
     --arg seller_reg "${SELLER_REGISTRATION_NUMBER:-}" \
@@ -197,12 +238,12 @@ jq -n \
     --arg seller_country "${SELLER_COUNTRY:-}" \
     --arg seller_email "${SELLER_EMAIL:-}" \
     '{
-        ED25519_PRIVATE_KEY: $ed25519_priv,
-        ED25519_PUBLIC_KEY: $ed25519_pub,
-        X25519_PRIVATE_KEY: $x25519_priv,
-        X25519_PUBLIC_KEY: $x25519_pub,
-        API_KEY: $api_key,
-        JWT_SECRET: $jwt,
+        ACCOUNT_ED25519_PRIVATE_KEY: $ed25519_priv,
+        ACCOUNT_ED25519_PUBLIC_KEY: $ed25519_pub,
+        ACCOUNT_X25519_PRIVATE_KEY: $x25519_priv,
+        ACCOUNT_X25519_PUBLIC_KEY: $x25519_pub,
+        ACCOUNT_SERVER_API_KEY: $api_key,
+        ACCOUNT_JWT_SECRET: $jwt,
         STRIPE_SECRET_KEY: $stripe,
         STRIPE_WEBHOOK_SECRET: $stripe_wh,
         ROOT_EMAIL: $admin,
@@ -211,12 +252,12 @@ jq -n \
         AWS_SES_REGION: $ses_region,
         AWS_SES_FROM: $ses_from,
         AWS_SES_CONFIGURATION_SET: $ses_cs,
-        TURNSTILE_SECRET_KEY: $turnstile,
-        BACKUP_S3_ENDPOINT: $backup_ep,
-        BACKUP_S3_BUCKET: $backup_bucket,
-        BACKUP_S3_ACCESS_KEY_ID: $backup_key,
-        BACKUP_S3_SECRET_ACCESS_KEY: $backup_secret,
-        OTLP_CLIENT_CREDENTIALS: $otlp_creds,
+        CLOUDFLARE_TURNSTILE_SECRET_KEY: $turnstile,
+        ACCOUNT_BACKUP_S3_ENDPOINT: $backup_ep,
+        ACCOUNT_BACKUP_S3_BUCKET: $backup_bucket,
+        ACCOUNT_BACKUP_S3_ACCESS_KEY_ID: $backup_key,
+        ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY: $backup_secret,
+        OBS_OTLP_CREDENTIALS: $otlp_creds,
         SELLER_NAME: $seller_name,
         SELLER_VAT_NUMBER: $seller_vat,
         SELLER_REGISTRATION_NUMBER: $seller_reg,

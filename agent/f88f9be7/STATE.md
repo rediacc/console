@@ -1,72 +1,65 @@
-## SESSION f88f9be7 2026-09-01T20:25Z
+## SESSION f88f9be7 2026-09-02T03:22:38Z
 
-`/pr-merge` is RUNNING on `0831-1`, PR #583. The operator invoked it. Resume below; do NOT
-restart the flow. **#583 merges with NO automated review -- SETTLED, never re-ask.**
+**THE WAVE IS COMPLETE.** PR #583 merged, released as **v1.3.5**, edge deployed, gitlab
+mirrored. Nothing is in flight. There is no work pending for this session.
 
-## Already landed (do NOT redo)
+## Final state
 
-1. **`rediacc/account#84` MERGED** -> `account/main` = `3d8dc142d`; branch deleted.
-2. **`private/account` pointer bumped**; the tree diff was EMPTY.
-3. **The 5-run tutorial-player red is FIXED** (`16fc6d946`, `e4ba1e65f`). See below.
+- On `main` @ `079edc5d4` == `origin/main`. All 4 submodules clean.
+- Released **v1.3.5**: tagged, GitHub Release published, 6/6 install methods validated
+  post-publish, edge deployed to eu/us/asia + marketing.
+- gitlab mirror pushed: `05d6a6619..079edc5d4` plus tag `v1.3.5`.
+- **All crons deleted** (`f892a1f9`, `467ccd9f`, `ab4ff5c3`, `345c4aec`, `b4bff02e`).
+  `CronList` reports none. Do NOT recreate them.
+- **UNCOMMITTED DELIVERABLE ON MAIN** (the documented default; landing it needs a branch
+  the operator asks for): a new regression gate `check:ci-review-prompt-render`
+  (`.ci/scripts/quality/check_review_prompt_render.py`, staged) plus its three-point wiring
+  in `package.json`, `scripts/ci-runner/manifest.ts` and `.github/workflows/ci-quality.yml`.
+  It renders a 7-line epic scope carrying `|`, `&`, a backslash and newlines through the
+  review prompt's sed substitution. PROVEN control-first: 8 controls, and it exits 1
+  against the pre-fix copy from `05d6a6619` while exiting 0 on the current tree.
+  `ci:quick` 278/278, `check:lint` and `check:ci-shape-duplication` green.
+- Working tree otherwise: only `agent/f88f9be7/STATE.md` (mine) is dirty. `agent/a276391d/STATE.md`
+  and `agent/PLAN-secret-namespace-migration.md` belong to peer session `a276391d` --
+  never touch them.
 
-## Right now
+## What this wave fixed, verified ON MAIN (do not re-open either)
 
-- Head `e4ba1e65f`, pushed. `ci-trace --wait --until-final` armed as bg `b1mqquvtc`.
-- Gates before that push: `ci:quick` 277/277, `check:lint` 0, `check:ci-shape-duplication` 0.
-- Tree clean.
+1. **The tutorial-player gate could never go green in CI.** GitHub Actions sets `CI=true`,
+   astro then colours its banner with no TTY, and the escape lands between `in` and the
+   space -- so the readiness matcher returned TRUE on a plain capture and FALSE on the CI
+   capture. Five reds read as flake. Fixed by stripping ANSI on ingest
+   (`packages/www/scripts/lib/dev-server-ready.js`, present on main, 7 vitest controls on
+   real captured bytes). Also fixed two instruments that prolonged it: `pressureDetected`
+   no longer derives from the timeout itself, and `serverLog` is now in the crash summary.
+2. **Claude Review could never succeed.** `claude-review-gate.sh` interpolated a 7-line
+   epic scope raw into `s|{{EPIC_SCOPE}}|...|`. `sed_replacement` occurrences on main went
+   **0 -> 8**, so the reviewer works for every later PR.
 
-## The 5 reds were ONE real bug, not a flake. Do not re-litigate.
+## How #583 landed (do not re-derive)
 
-**GitHub Actions always sets `CI=true`; astro's colour library then colours its banner with
-no TTY, and the escape lands exactly between `in` and the space:**
-`\x1b[2mready in\x1b[22m 4739`. The matcher tested RAW bytes, so it returned TRUE on a
-plain capture and FALSE on the CI capture -- measured both ways by running the real
-command. A gate that could never pass in CI and always passed locally, which is exactly
-what a flaky runner looks like. The old `includes('ready')` survived colour by accident.
-
-Fixed by stripping ANSI **on ingest**: new `packages/www/scripts/lib/dev-server-ready.js`,
-7 vitest controls carrying the REAL captured bytes plus a vacuity control asserting the CI
-bytes do NOT match unstripped. vitest now includes `scripts/**/__tests__`.
-
-**Two instruments that prolonged the misreading, both fixed:**
-- `pressureDetected` was `slowBoot || highLoad`, and slowBoot is the timeout restated -- so
-  every timeout printed "SYSTEM UNDER LOAD" at `load/core=0.06`. It told the reader to
-  dismiss the failure it had just detected. Now load-only; a slow boot on an idle machine
-  prints the OPPOSITE reading.
-- `serverLog` was omitted from the crash summary -- the one path that needed it.
-
-Swept the class: `lib/scenes/browser.ts` parsed spawned stdout the same raw way.
-Verified by running the real gate under `CI=true` (exit 0, 5/5) and forcing the crash path.
+`gh pr merge --admin` failed with `This branch can't be rebased` -- the documented
+`rebaseable:false` size case (109 commits), NOT a conflict. The operator ran the sanctioned
+fast-forward `git push origin origin/0831-1:main`; the remote reported
+`Bypassed rule violations: Required status check "Review Complete" is expected`. That
+bypass was necessary and one-time: the reviewer's own fix rode the PR it was blocking.
 
 ## Next action
 
-1. Read `b1mqquvtc`. **Read the STEP conclusion, never the run's** -- a cancelled job with
-   a passing step is a PASS.
-2. On green: `gh pr merge 583 --repo rediacc/console --rebase --auto`. Console is
-   REBASE-ONLY. If `--rebase` errors "can't be rebased", check
-   `git merge-base --is-ancestor origin/main origin/0831-1`; only on a pure fast-forward,
-   `git push origin origin/0831-1:main`.
-3. Then steps 4-8: checkout `main`; Console CI on main; **Release to Edge BY ID**
-   (`--run <id>`, never `--ref main`); re-sync after CD's two `[skip ci]` commits; mirror
-   to `gitlab`; hand-back note.
-4. Then CronDelete `f892a1f9`, `b4bff02e` AND `ab4ff5c3`, and say so in the final report.
-5. On a NEW red: poll `gh api .../pulls/583 --jq .head.sha` until it shows the pushed head
-   BEFORE arming a watch, else the watch traces the stale head and exits 1.
+**None. Do not start anything.** If a new task arrives, note two things first:
 
-## Shipped this session, do not re-do
+- **CD auto-dispatches the release** on a green Console CI on main. Do NOT dispatch one by
+  hand without checking `gh run list --workflow "Release to Edge"` first -- a manual
+  dispatch on top of the automatic one ships the same artifacts twice. This nearly
+  happened here; only the check prevented it.
+- A new branch needs a worktree decision (ASK the operator; `git worktree add` is
+  hook-blocked from the assistant's Bash tool).
 
-`wl_histfirst` (`def1c34e2`): on a red, prints the commits between last-green and the red
-and which touch files named like the failing job. Mechanical, not judged.
-NOT done: history prose in `.claude/skills/ci-watch/SKILL.md` and
-`docs/agent-reference/TRAPS.md`, both verified to contain none.
+## Open, not mine
 
-## Volatile facts a fresh session would get wrong
+`[?] 5ed318ca` -- `BACKUP_S3_BUCKET`/`_ENDPOINT` are single global secrets while the R2
+bindings are per-region and EU-jurisdiction-locked. Belongs to session `a276391d`,
+BLOCKED_ON operator. Report it; never tick it.
 
-- **Do NOT run `npm run ci` locally beside a live CI watch.** 4 of 343 red, ALL FALSE.
-- **`private/growth` has ~1430 dirty paths and is NOT a submodule** -- never `git add` it.
-- Commits need `PR-TASK: 23ac415a`; `Co-Authored-By` is hook-BLOCKED here.
-- `wl_wait.py` must launch as a harness background task, never with a shell ampersand.
-
-## Open, not fixed
-
-`[>] f46112c0`. Peer `a276391d`'s `BACKUP_S3_BUCKET` needs credentials neither has.
+`[?] 76f6f55e` (leaked AUTOPILOT_PRIVATE_KEY) is CLOSED: operator accepted the risk
+2026-09-02T01:44Z; relayed as `aa655e5b` and `a276391d` confirmed closure. Do NOT re-raise.

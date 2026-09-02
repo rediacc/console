@@ -235,13 +235,13 @@ main() {
     # disable a designed component, so this does NOT do that.
     #
     # What it fixes is the un-enrolled state being ILLEGIBLE. The server's schema
-    # requires ED25519_PRIVATE_KEY unconditionally
+    # requires ACCOUNT_ED25519_PRIVATE_KEY unconditionally
     # (private/account/src/types/env.ts: z.string().min(1)), and nothing in the
     # on-prem boot path provisions it, so on a fresh install the old
     # `if [ -f bundle.js ]` test launched a process that died instantly.
     # Verified locally against ghcr.io/rediacc/server:edge:
     #
-    #   ZodError: ED25519_PRIVATE_KEY: expected string, received undefined
+    #   ZodError: ACCOUNT_ED25519_PRIVATE_KEY: expected string, received undefined
     #   Warning: account server exited with code 1
     #
     # plus a Node stack trace -- while nginx kept serving /health 200, so every
@@ -249,16 +249,28 @@ main() {
     # reasonably concludes the product is broken, when the true state is
     # "this box has not been enrolled yet".
     #
-    # ED25519_PRIVATE_KEY is the right sentinel precisely because the schema
+    # ACCOUNT_ED25519_PRIVATE_KEY is the right sentinel precisely because the schema
     # makes it mandatory: its absence GUARANTEES the crash rather than merely
     # suggesting it. Nothing that could have worked is prevented from starting.
     if [ -f /app/account/bundle.js ]; then
-        if [ -n "${ED25519_PRIVATE_KEY:-}" ]; then
+        if [ -n "${ACCOUNT_ED25519_PRIVATE_KEY:-}" ]; then
             echo "Starting account server on port 3000..."
             (node /app/account/bundle.js || echo "Warning: account server exited with code $?") &
+        elif [ -n "${ACCOUNT_ED25519_PUBLIC_KEY:-}${ACCOUNT_X25519_PRIVATE_KEY:-}${ACCOUNT_X25519_PUBLIC_KEY:-}${ACCOUNT_SERVER_API_KEY:-}${ACCOUNT_JWT_SECRET:-}" ]; then
+            # PARTIALLY provisioned: some identity material arrived, the one key
+            # the schema demands did not. That is a MISCONFIGURATION, not an
+            # un-enrolled box, and the two must not print the same reassuring
+            # message. A renamed or mistyped ACCOUNT_ED25519_PRIVATE_KEY lands here --
+            # the box IS enrolled, and without this branch it would serve the
+            # web UI forever, answer /health 200, and tell the operator that
+            # everything is exactly as expected.
+            echo "Account server NOT STARTED: MISCONFIGURED, not un-enrolled." >&2
+            echo "  Other identity variables are set but ACCOUNT_ED25519_PRIVATE_KEY is empty." >&2
+            echo "  An enrolled instance must have it; check for a renamed or misspelled" >&2
+            echo "  variable in whatever provisions this container's environment." >&2
         else
             echo "Account server NOT STARTED: this instance has no identity keys yet."
-            echo "  ED25519_PRIVATE_KEY is unset, and the server requires it, so starting it"
+            echo "  ACCOUNT_ED25519_PRIVATE_KEY is unset, and the server requires it, so starting it"
             echo "  would fail immediately with a schema error rather than serve anything."
             echo "  This is the expected state before enrolment. Serving the web UI only;"
             echo "  account requests fall through to ACCOUNT_BACKEND / ACCOUNT_SERVER_URL."

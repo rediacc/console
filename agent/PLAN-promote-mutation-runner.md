@@ -121,8 +121,12 @@ session's tooling made the baseline mandatory, so it was an afterthought.
 **One defect worth fixing, verified rather than assumed.** Both of its summary
 lines are `grep -E '^(passed|failed)=' "$log"`. The suite prints its summary
 indented: `echo "  passed=$PASS failed=$FAIL"`
-(`.claude/hooks/stop/test-worklist-v5.sh:9638`, and `pass()`/`fail()` at
-`:398-405` emit `  PASS: ` and `  FAIL: ` with the same two-space indent). Run
+(in `.claude/hooks/stop/test-worklist-v5.sh`, whose `pass()`/`fail()` emit `  PASS: `
+and `  FAIL: ` with the same two-space indent). **Coordinates dropped 2026-09-02:**
+this cited `:9638` and `:398-405` against a file that is 137 lines long -- the suite
+has since moved to `worklist-cases/`, so both were beyond EOF. The claim about the
+indent is still checkable; the line numbers were not, and a number that cannot be
+checked is worse than none. Run
 against a real green log from today, `grep -cE '^(passed|failed)='` returns **0**
 and `grep -cE '^ *passed='` returns **1**. So the runner printed an empty summary
 section under every run it ever made, mutant and baseline alike. A reporting

@@ -193,7 +193,13 @@ test_no_app_token_plumbing() {
     #
     # Scripts remain absolutely forbidden: a script is what gets vendored and
     # called directly, so a token dependency there has no `if:` to hide behind.
-    hits="$(grep -rlE 'app-token|vars\.APP_ID|APP_PRIVATE_KEY' "$bp" || true)"
+    # BOTH spellings on purpose. This is a DETECTOR pattern, not a reference: the
+    # 2026-09-02 rename rewrote APP_PRIVATE_KEY -> GITHUB_APP_PRIVATE_KEY here and
+    # the assertion silently stopped matching, because .ci/breakpoint/ is vendored
+    # into repos that have NOT been renamed and where the old spelling is exactly
+    # what a violation looks like. A detector must recognise every spelling it may
+    # meet, which is the opposite of a reference, which must carry exactly one.
+    hits="$(grep -rlE 'app-token|vars\.APP_ID|(GITHUB_)?APP_PRIVATE_KEY' "$bp" || true)"
     local offenders=""
     while IFS= read -r hit; do
         [[ -z "$hit" ]] && continue

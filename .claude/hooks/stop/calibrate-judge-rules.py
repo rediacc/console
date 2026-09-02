@@ -199,10 +199,31 @@ SHAPE_CASES = [
     (
         "28 hand-rolled mktemp+trap against an existing with_temp_dir",
         "fire",
+        # COORDINATES CORRECTED 2026-09-02, and this is the THIRD fixture in this file
+        # built from a survey table without opening the files. Two of the three pointed at
+        # code that is not the shape they name: :44 in embed-asset-freshness is a heredoc
+        # writing a JSON fixture (the real mktemp+trap is :29 and :32), and :21 in
+        # ci-workflow-invariants is the `source test-helpers.sh` preamble (real pair at
+        # :28-:29). Only the autopilot one was right.
+        #
+        # THE COST WAS MEASURABLE AND IT LOOKED LIKE SOMETHING ELSE. `wl_shapedup.prompt_
+        # section` sends ONLY file:line, never the code, so the model had to open exactly
+        # those lines -- and what it found was a heredoc, an import preamble and a trap,
+        # which are genuinely NOT one shape. It answered `silent`, correctly, on the input
+        # it was given. Across live runs the fixture then flip-flopped (MISS, OK, MISS),
+        # and that noise was nearly diagnosed as rubric drift and "fixed" by rewriting
+        # SHAPE_PROMPT -- which would have tuned the rubric to agree with wrong
+        # coordinates. Worse, an import preamble is what the sibling gate's own control
+        # calls "adoption, not duplication", so one coordinate was pointing at a span that
+        # is legitimately shared.
+        #
+        # The rule above still stands -- when a fixture flips, the fix is the PROMPT --
+        # but it assumes the fixture describes real code. VERIFY THE COORDINATES FIRST;
+        # that check is one `sed -n` per line and it is the cheapest step here.
         [
-            ".ci/scripts/test/gates/test-embed-asset-freshness.sh:44",
-            ".ci/scripts/test/gates/test-ci-workflow-invariants.sh:21",
-            ".ci/scripts/test/gates/test-autopilot-breakpoint-alignment.sh:30",
+            ".ci/scripts/test/gates/test-embed-asset-freshness.sh:29",
+            ".ci/scripts/test/gates/test-ci-workflow-invariants.sh:28",
+            ".ci/scripts/test/gates/test-autopilot-breakpoint-alignment.sh:29",
         ],
     ),
     # A THIRD FIRE FIXTURE WAS REMOVED RATHER THAN GUESSED AGAIN. It cited

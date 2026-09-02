@@ -639,7 +639,7 @@ www_tutorial_audio_restore() {
     # for a full TTS re-synthesis on every fresh checkout. Skips with a
     # warning if R2 credentials aren't configured -- local iteration without
     # them still works, just without the cache.
-    if [[ -z "${R2_MEDIA_ACCESS_KEY_ID:-}" || -z "${R2_MEDIA_SECRET_ACCESS_KEY:-}" || -z "${R2_MEDIA_ENDPOINT:-}" ]]; then
+    if [[ -z "${CLOUDFLARE_R2_MEDIA_ACCESS_KEY_ID:-}" || -z "${CLOUDFLARE_R2_MEDIA_SECRET_ACCESS_KEY:-}" || -z "${CLOUDFLARE_R2_MEDIA_ENDPOINT:-}" ]]; then
         log_warn "R2_MEDIA_* not set — skipping tutorial-audio cache restore (will regenerate via TTS as needed)"
         return 0
     fi
@@ -650,7 +650,7 @@ www_tutorial_audio_restore() {
 www_tutorial_audio_upload() {
     # Counterpart to www_tutorial_audio_restore: backs up newly-synthesized
     # narration so it's not lost/re-paid-for on the next fresh checkout.
-    if [[ -z "${R2_MEDIA_ACCESS_KEY_ID:-}" || -z "${R2_MEDIA_SECRET_ACCESS_KEY:-}" || -z "${R2_MEDIA_ENDPOINT:-}" ]]; then
+    if [[ -z "${CLOUDFLARE_R2_MEDIA_ACCESS_KEY_ID:-}" || -z "${CLOUDFLARE_R2_MEDIA_SECRET_ACCESS_KEY:-}" || -z "${CLOUDFLARE_R2_MEDIA_ENDPOINT:-}" ]]; then
         log_warn "R2_MEDIA_* not set — skipping tutorial-audio cache upload"
         return 0
     fi
@@ -1498,33 +1498,100 @@ pr_publish() {
 
     # Set worker secrets from private/account/.env (secrets persist across deploys)
     local worker_name="pr-${pr_number}"
-    if [[ -f "$account_env" ]] && [[ -n "$(_env ED25519_PRIVATE_KEY)" ]]; then
+    if [[ -f "$account_env" ]] && [[ -n "$(_env ACCOUNT_ED25519_PRIVATE_KEY)" ]]; then
         log_step "Setting worker secrets for ${worker_name} (from private/account/.env)..."
 
-        # Build secrets JSON, omitting empty values to avoid zod .min(1) failures
+        # ─── Non-empty guards, same shape as the deploy builders ─────────────
+        # This block used to rely on `with_entries(select(.value != ""))` alone
+        # to drop empties. That is the right treatment for a key that is
+        # genuinely optional here, and exactly the WRONG one for a key that is
+        # not: an unreadable name (a rename landed in one file and not the
+        # other, a key never added to .env) yields "", the entry silently
+        # disappears from the payload, `wrangler secret bulk` succeeds, and the
+        # preview Worker keeps whatever it had -- or, on a fresh Worker, runs
+        # with the feature turned off. Nothing in that chain says a name was
+        # wrong. Measured 2026-09-02: STRIPE_SANDBOX_SECRET_KEY is NOT a key
+        # `private/account/.env` has ever carried, so every local preview
+        # shipped with no Stripe credential at all and reported success.
+        #
+        # So this demands, by name, every key the deploy builders demand with
+        # `_require_nonempty` plus the six env.ts declares non-optional. Each
+        # entry is `<.env key>:<Worker key>` -- they differ only where the
+        # preview deliberately fills a role with a different credential (see
+        # the Stripe note below), and printing both is what makes a failure
+        # actionable.
+        local _required=(
+            ACCOUNT_ED25519_PRIVATE_KEY:ACCOUNT_ED25519_PRIVATE_KEY
+            ACCOUNT_ED25519_PUBLIC_KEY:ACCOUNT_ED25519_PUBLIC_KEY
+            ACCOUNT_X25519_PRIVATE_KEY:ACCOUNT_X25519_PRIVATE_KEY
+            ACCOUNT_X25519_PUBLIC_KEY:ACCOUNT_X25519_PUBLIC_KEY
+            ACCOUNT_SERVER_API_KEY:ACCOUNT_SERVER_API_KEY
+            ACCOUNT_JWT_SECRET:ACCOUNT_JWT_SECRET
+            ROOT_EMAIL:ROOT_EMAIL
+            AWS_SES_ACCESS_KEY_ID:AWS_SES_ACCESS_KEY_ID
+            AWS_SES_SECRET_ACCESS_KEY:AWS_SES_SECRET_ACCESS_KEY
+            AWS_SES_REGION:AWS_SES_REGION
+            CLOUDFLARE_TURNSTILE_SECRET_KEY:CLOUDFLARE_TURNSTILE_SECRET_KEY
+            STRIPE_SANDBOX_SECRET_KEY:STRIPE_SECRET_KEY
+            STRIPE_E2E_WEBHOOK_SECRET:STRIPE_WEBHOOK_SECRET
+        )
+        local _missing=() _pair _envkey _workerkey
+        for _pair in "${_required[@]}"; do
+            _envkey="${_pair%%:*}"
+            _workerkey="${_pair##*:}"
+            if [[ -z "$(_env "$_envkey")" ]]; then
+                if [[ "$_envkey" == "$_workerkey" ]]; then
+                    _missing+=("$_envkey")
+                else
+                    _missing+=("$_envkey (worker key $_workerkey)")
+                fi
+            fi
+        done
+        if ((${#_missing[@]})); then
+            log_error "private/account/.env is missing worker secret(s) the preview needs:"
+            for _pair in "${_missing[@]}"; do log_error "    $_pair"; done
+            log_error "  Pushing a preview without these does not fail -- the empty entry is"
+            log_error "  dropped and the Worker silently runs without the feature, so this"
+            log_error "  refuses instead. Add the key(s) to private/account/.env; './run.sh"
+            log_error "  account reset' regenerates the six ACCOUNT_* ones."
+            return 1
+        fi
+
+        # Build secrets JSON. AWS_SES_FROM / AWS_SES_CONFIGURATION_SET are the
+        # only two left unguarded -- both are optional() in env.ts and neither
+        # turns a feature off by its absence -- so the `with_entries` filter
+        # below now drops nothing else.
+        #
+        # THE ONE REMAINING NAME-CROSSING, and it is deliberate: the .env key
+        # STRIPE_SANDBOX_SECRET_KEY fills the Worker's STRIPE_SECRET_KEY. A
+        # preview is a sandbox deployment, and app.ts reads STRIPE_SECRET_KEY
+        # for the ordinary billing path (STRIPE_SANDBOX_SECRET_KEY is a
+        # separate, additional binding), so a preview that wants working
+        # billing must receive the sandbox key in the live key's slot. CI does
+        # exactly the same thing at ci.yml's set-preview-worker-secrets step.
         jq -n \
-            --arg ed25519_priv "$(_env ED25519_PRIVATE_KEY)" \
-            --arg ed25519_pub "$(_env ED25519_PUBLIC_KEY)" \
-            --arg x25519_priv "$(_env X25519_PRIVATE_KEY)" \
-            --arg x25519_pub "$(_env X25519_PUBLIC_KEY)" \
-            --arg api_key "$(_env API_KEY)" \
-            --arg jwt "$(_env JWT_SECRET)" \
+            --arg ed25519_priv "$(_env ACCOUNT_ED25519_PRIVATE_KEY)" \
+            --arg ed25519_pub "$(_env ACCOUNT_ED25519_PUBLIC_KEY)" \
+            --arg x25519_priv "$(_env ACCOUNT_X25519_PRIVATE_KEY)" \
+            --arg x25519_pub "$(_env ACCOUNT_X25519_PUBLIC_KEY)" \
+            --arg api_key "$(_env ACCOUNT_SERVER_API_KEY)" \
+            --arg jwt "$(_env ACCOUNT_JWT_SECRET)" \
             --arg stripe "$(_env STRIPE_SANDBOX_SECRET_KEY)" \
-            --arg stripe_wh "$(_env STRIPE_WEBHOOK_SECRET)" \
+            --arg stripe_wh "$(_env STRIPE_E2E_WEBHOOK_SECRET)" \
             --arg admin "$(_env ROOT_EMAIL)" \
             --arg ses_key "$(_env AWS_SES_ACCESS_KEY_ID)" \
             --arg ses_secret "$(_env AWS_SES_SECRET_ACCESS_KEY)" \
             --arg ses_region "$(_env AWS_SES_REGION)" \
             --arg ses_from "$(_env AWS_SES_FROM)" \
             --arg ses_cs "$(_env AWS_SES_CONFIGURATION_SET)" \
-            --arg turnstile "$(_env TURNSTILE_SECRET_KEY)" \
+            --arg turnstile "$(_env CLOUDFLARE_TURNSTILE_SECRET_KEY)" \
             '{
-              ED25519_PRIVATE_KEY: $ed25519_priv,
-              ED25519_PUBLIC_KEY: $ed25519_pub,
-              X25519_PRIVATE_KEY: $x25519_priv,
-              X25519_PUBLIC_KEY: $x25519_pub,
-              API_KEY: $api_key,
-              JWT_SECRET: $jwt,
+              ACCOUNT_ED25519_PRIVATE_KEY: $ed25519_priv,
+              ACCOUNT_ED25519_PUBLIC_KEY: $ed25519_pub,
+              ACCOUNT_X25519_PRIVATE_KEY: $x25519_priv,
+              ACCOUNT_X25519_PUBLIC_KEY: $x25519_pub,
+              ACCOUNT_SERVER_API_KEY: $api_key,
+              ACCOUNT_JWT_SECRET: $jwt,
               STRIPE_SECRET_KEY: $stripe,
               STRIPE_WEBHOOK_SECRET: $stripe_wh,
               ROOT_EMAIL: $admin,
@@ -1533,7 +1600,7 @@ pr_publish() {
               AWS_SES_REGION: $ses_region,
               AWS_SES_FROM: $ses_from,
               AWS_SES_CONFIGURATION_SET: $ses_cs,
-              TURNSTILE_SECRET_KEY: $turnstile
+              CLOUDFLARE_TURNSTILE_SECRET_KEY: $turnstile
             } | with_entries(select(.value != ""))' | npx wrangler secret bulk --name "$worker_name"
 
         log_info "Secrets set for ${worker_name}"

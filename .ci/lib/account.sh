@@ -217,25 +217,27 @@ REDIACC_ACCOUNT_SERVER=http://localhost:4800
 DATABASE_PATH=account.db
 
 # Ed25519 key pair (for subscription/license signing)
-ED25519_PRIVATE_KEY=${ED25519_PRIV}
-ED25519_PUBLIC_KEY=${ED25519_PUB}
+ACCOUNT_ED25519_PRIVATE_KEY=${ED25519_PRIV}
+ACCOUNT_ED25519_PUBLIC_KEY=${ED25519_PUB}
 
 # X25519 key pair (for E2E encryption)
-X25519_PRIVATE_KEY=${X25519_PRIV}
-X25519_PUBLIC_KEY=${X25519_PUB}
+ACCOUNT_X25519_PRIVATE_KEY=${X25519_PRIV}
+ACCOUNT_X25519_PUBLIC_KEY=${X25519_PUB}
 
 # Admin API key
-API_KEY=${API_K}
+ACCOUNT_SERVER_API_KEY=${API_K}
 
 # JWT secret for session tokens
-JWT_SECRET=${JWT_SEC}
+ACCOUNT_JWT_SECRET=${JWT_SEC}
 
 # Stripe sandbox (uncomment and fill to enable Stripe features)
 # STRIPE_SANDBOX_SECRET_KEY=sk_test_...
 # STRIPE_SANDBOX_WEBHOOK_SECRET is auto-captured from stripe listen
 
-# Fixed webhook secret for E2E webhook simulation tests
-STRIPE_WEBHOOK_SECRET=whsec_e2e_test_webhook_secret_for_simulation_only
+# Fixed webhook secret for E2E webhook simulation tests. Deliberately NOT named
+# STRIPE_WEBHOOK_SECRET: Bitwarden holds a real production secret under that
+# name, and one fetch-by-name away this fixture slot would have received it.
+STRIPE_E2E_WEBHOOK_SECRET=whsec_e2e_test_webhook_secret_for_simulation_only
 
 # Root email (receives alerts for disputes, refunds, etc.)
 # Set via GitHub variable ROOT_EMAIL or environment
@@ -272,7 +274,7 @@ account_ensure_env_keys() {
 
     # Generate keys only if we actually need them
     local need_gen=false
-    for key in ED25519_PRIVATE_KEY ED25519_PUBLIC_KEY X25519_PRIVATE_KEY X25519_PUBLIC_KEY API_KEY JWT_SECRET; do
+    for key in ACCOUNT_ED25519_PRIVATE_KEY ACCOUNT_ED25519_PUBLIC_KEY ACCOUNT_X25519_PRIVATE_KEY ACCOUNT_X25519_PUBLIC_KEY ACCOUNT_SERVER_API_KEY ACCOUNT_JWT_SECRET; do
         if ! grep -q "^${key}=" "$env_file" 2>/dev/null; then
             need_gen=true
             break
@@ -282,22 +284,22 @@ account_ensure_env_keys() {
     if [[ "$need_gen" == "true" ]]; then
         account_generate_crypto_keys
 
-        account_env_add_if_missing "ED25519_PRIVATE_KEY" "$ED25519_PRIV" "Ed25519 key pair (for subscription/license signing)" && added=1
-        account_env_add_if_missing "ED25519_PUBLIC_KEY" "$ED25519_PUB" && added=1
-        account_env_add_if_missing "X25519_PRIVATE_KEY" "$X25519_PRIV" "X25519 key pair (for E2E encryption)" && added=1
-        account_env_add_if_missing "X25519_PUBLIC_KEY" "$X25519_PUB" && added=1
-        account_env_add_if_missing "API_KEY" "$API_K" "Admin API key" && added=1
-        account_env_add_if_missing "JWT_SECRET" "$JWT_SEC" "JWT secret for session tokens" && added=1
+        account_env_add_if_missing "ACCOUNT_ED25519_PRIVATE_KEY" "$ED25519_PRIV" "Ed25519 key pair (for subscription/license signing)" && added=1
+        account_env_add_if_missing "ACCOUNT_ED25519_PUBLIC_KEY" "$ED25519_PUB" && added=1
+        account_env_add_if_missing "ACCOUNT_X25519_PRIVATE_KEY" "$X25519_PRIV" "X25519 key pair (for E2E encryption)" && added=1
+        account_env_add_if_missing "ACCOUNT_X25519_PUBLIC_KEY" "$X25519_PUB" && added=1
+        account_env_add_if_missing "ACCOUNT_SERVER_API_KEY" "$API_K" "Admin API key" && added=1
+        account_env_add_if_missing "ACCOUNT_JWT_SECRET" "$JWT_SEC" "JWT secret for session tokens" && added=1
     fi
 
     # Non-crypto defaults (only added if missing, never overridden)
     account_env_add_if_missing "REDIACC_ACCOUNT_SERVER" "http://localhost:4800" "Account server URL" && added=1
     account_env_add_if_missing "DATABASE_PATH" "account.db" "SQLite database path" && added=1
-    account_env_add_if_missing "STRIPE_WEBHOOK_SECRET" "whsec_e2e_test_webhook_secret_for_simulation_only" "Fixed webhook secret for E2E tests" && added=1
+    account_env_add_if_missing "STRIPE_E2E_WEBHOOK_SECRET" "whsec_e2e_test_webhook_secret_for_simulation_only" "E2E webhook-simulation fixture (not a credential)" && added=1
     account_env_add_if_missing "PORT" "3000" "Server port" && added=1
     # Account server's own outbound OTel endpoint (dev-gateway only; CF
     # Workers use native tracing in prod). The CLI/renet client credentials
-    # are served at runtime from `OTLP_CLIENT_CREDENTIALS`, which the
+    # are served at runtime from `OBS_OTLP_CREDENTIALS`, which the
     # rotation tool writes here during `./run.sh rotation rotate otlp-<region>`.
     account_env_add_if_missing "OTEL_ENDPOINT" "https://otlp.rediacc.io" "OTel OTLP endpoint" && added=1
     # WebAuthn passkey (for config storage setup)
@@ -822,11 +824,11 @@ account_test_e2e() {
     export ROOT_EMAIL="${ROOT_EMAIL:-}"
 
     # Webhook simulation secret (matches backend's STRIPE_WEBHOOK_SECRET)
-    if [[ -n "${STRIPE_WEBHOOK_SECRET:-}" ]]; then
-        export E2E_WEBHOOK_SECRET="$STRIPE_WEBHOOK_SECRET"
-        log_info "Webhook simulation: enabled (STRIPE_WEBHOOK_SECRET)"
+    if [[ -n "${STRIPE_E2E_WEBHOOK_SECRET:-}" ]]; then
+        export E2E_WEBHOOK_SECRET="$STRIPE_E2E_WEBHOOK_SECRET"
+        log_info "Webhook simulation: enabled (STRIPE_E2E_WEBHOOK_SECRET)"
     else
-        log_warn "Webhook simulation: disabled (STRIPE_WEBHOOK_SECRET not set)"
+        log_warn "Webhook simulation: disabled (STRIPE_E2E_WEBHOOK_SECRET not set)"
     fi
 
     # Stripe sandbox key (for real Stripe E2E tests)
@@ -863,12 +865,12 @@ account_reset() {
         log_info "Regenerating crypto keys (preserving user values)..."
         account_generate_crypto_keys
 
-        _sed_i "s|^ED25519_PRIVATE_KEY=.*|ED25519_PRIVATE_KEY=${ED25519_PRIV}|" "$env_file"
-        _sed_i "s|^ED25519_PUBLIC_KEY=.*|ED25519_PUBLIC_KEY=${ED25519_PUB}|" "$env_file"
-        _sed_i "s|^X25519_PRIVATE_KEY=.*|X25519_PRIVATE_KEY=${X25519_PRIV}|" "$env_file"
-        _sed_i "s|^X25519_PUBLIC_KEY=.*|X25519_PUBLIC_KEY=${X25519_PUB}|" "$env_file"
-        _sed_i "s|^JWT_SECRET=.*|JWT_SECRET=${JWT_SEC}|" "$env_file"
-        _sed_i "s|^API_KEY=.*|API_KEY=${API_K}|" "$env_file"
+        _sed_i "s|^ACCOUNT_ED25519_PRIVATE_KEY=.*|ACCOUNT_ED25519_PRIVATE_KEY=${ED25519_PRIV}|" "$env_file"
+        _sed_i "s|^ACCOUNT_ED25519_PUBLIC_KEY=.*|ACCOUNT_ED25519_PUBLIC_KEY=${ED25519_PUB}|" "$env_file"
+        _sed_i "s|^ACCOUNT_X25519_PRIVATE_KEY=.*|ACCOUNT_X25519_PRIVATE_KEY=${X25519_PRIV}|" "$env_file"
+        _sed_i "s|^ACCOUNT_X25519_PUBLIC_KEY=.*|ACCOUNT_X25519_PUBLIC_KEY=${X25519_PUB}|" "$env_file"
+        _sed_i "s|^ACCOUNT_JWT_SECRET=.*|ACCOUNT_JWT_SECRET=${JWT_SEC}|" "$env_file"
+        _sed_i "s|^ACCOUNT_SERVER_API_KEY=.*|ACCOUNT_SERVER_API_KEY=${API_K}|" "$env_file"
 
         # Ensure any newly added keys exist
         account_ensure_env_keys

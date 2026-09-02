@@ -30,8 +30,8 @@ Status: **SUPERSEDED / HISTORICAL** | Created: 2026-04-04 | Superseded: 2026-08-
 
 ### Stripe multi-region secrets (done 2026-04-04)
 
-- Created `STRIPE_SECRET_KEY_EU`, `STRIPE_PUBLISHABLE_KEY_EU`, `STRIPE_WEBHOOK_SECRET_EU` GitHub secrets
-- Created `STRIPE_SECRET_KEY_US`, `STRIPE_PUBLISHABLE_KEY_US`, `STRIPE_WEBHOOK_SECRET_US` GitHub secrets
+- Created `STRIPE_SECRET_KEY`, `STRIPE_PUBLISHABLE_KEY_EU`, `STRIPE_WEBHOOK_SECRET_EU` GitHub secrets
+- Created `STRIPE_SECRET_KEY`, `STRIPE_PUBLISHABLE_KEY_US`, `STRIPE_WEBHOOK_SECRET_US` GitHub secrets
 - **Both EU and US point to the same Stripe account** (Rediacc OU via SPEL, Ireland) for now
 - When a US entity is created (e.g., via Stripe Atlas), swap the `_US` secrets to the new account's keys -- zero code changes
 - Sandbox secrets (`STRIPE_SANDBOX_*`) stay unsuffixed (single sandbox, not regional)
@@ -221,7 +221,7 @@ Current secrets that become per-region:
 
 | Current Secret | EU Secret | US Secret |
 |---|---|---|
-| `STRIPE_SECRET_KEY` | `STRIPE_SECRET_KEY_EU` | `STRIPE_SECRET_KEY_US` |
+| `STRIPE_SECRET_KEY` | `STRIPE_SECRET_KEY` | `STRIPE_SECRET_KEY` |
 | `STRIPE_WEBHOOK_SECRET` | `STRIPE_WEBHOOK_SECRET_EU` | `STRIPE_WEBHOOK_SECRET_US` |
 | `STRIPE_PUBLISHABLE_KEY` | `STRIPE_PUBLISHABLE_KEY_EU` | `STRIPE_PUBLISHABLE_KEY_US` |
 | `STRIPE_SANDBOX_SECRET_KEY` | Stays (edge/sandbox is EU-only) | -- |
@@ -238,9 +238,9 @@ Secrets that stay global (shared across all regions):
 | `ACCOUNT_JWT_SECRET` | Session tokens (could split later, but JWTs are self-contained) |
 | `ACCOUNT_SERVER_API_KEY` | Admin API key |
 | `CLOUDFLARE_API_TOKEN` | Infrastructure management |
-| `R2_ACCESS_KEY_ID` / `R2_SECRET_ACCESS_KEY` | Release uploads only |
-| `APP_PRIVATE_KEY` | GitHub App |
-| `TURNSTILE_SECRET_KEY` | Bot protection (global) |
+| `CLOUDFLARE_R2_ACCESS_KEY_ID` / `CLOUDFLARE_R2_SECRET_ACCESS_KEY` | Release uploads only |
+| `GITHUB_APP_PRIVATE_KEY` | GitHub App |
+| `CLOUDFLARE_TURNSTILE_SECRET_KEY` | Bot protection (global) |
 
 **Open question:** Should `ACCOUNT_JWT_SECRET` be per-region? If a JWT from EU leaks to US, it shouldn't be accepted. Per-region secrets prevent cross-region token replay. Likely yes for production; can defer to implementation.
 
@@ -367,7 +367,7 @@ No code changes. Set up the external infrastructure that takes time.
 - [ ] **AWS SES US region**: Verify `notify.rediacc.com` domain in SES `us-east-1`. Request production access (can take 24-48h). Create IAM credentials scoped to `us-east-1`.
 - [ ] **AWS SES EU credentials**: Create separate IAM credentials scoped to `eu-central-1` (currently using a single set).
 - [ ] **Cloudflare DNS**: Create DNS records for `eu.rediacc.com`, `us.rediacc.com`, `edge-eu.rediacc.com`, `edge-us.rediacc.com`. These can be proxied CNAME records pointing nowhere initially (or placeholder Workers).
-- [ ] **GitHub secrets**: Add the new per-region secrets (`STRIPE_SECRET_KEY_EU`, `STRIPE_SECRET_KEY_US`, `AWS_SES_ACCESS_KEY_ID_EU`, `AWS_SES_ACCESS_KEY_ID_US`, etc.). Keep old secrets until migration is complete.
+- [ ] **GitHub secrets**: Add the new per-region secrets (`STRIPE_SECRET_KEY`, `STRIPE_SECRET_KEY`, `AWS_SES_ACCESS_KEY_ID_EU`, `AWS_SES_ACCESS_KEY_ID_US`, etc.). Keep old secrets until migration is complete.
 
 ### Phase 1: Region registry and infrastructure
 

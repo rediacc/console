@@ -71,6 +71,38 @@ jobs:
           sparse-checkout: |
             .ci/scripts
             .ci/prompts
+            .github/actions
+            .ci/config
+
+      - name: Fetch shadow secrets from Bitwarden
+        # SHADOW RUN: exports BWS_-prefixed copies that nothing consumes. The
+        # live secrets.* reads below are untouched until the cutover flips them.
+        uses: ./.github/actions/bws-secrets
+        with:
+          access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
+          secrets: |
+            ANTHROPIC_CLAUDE_CODE_OAUTH_TOKEN > BWS_ANTHROPIC_CLAUDE_CODE_OAUTH_TOKEN
+            CLOUDFLARE_API_TOKEN > BWS_CLOUDFLARE_API_TOKEN
+
+      - name: Compare shadow secrets against GitHub
+        shell: bash
+        env:
+          SHADOW_NAMES: ANTHROPIC_CLAUDE_CODE_OAUTH_TOKEN CLOUDFLARE_API_TOKEN
+          GH_ANTHROPIC_CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.ANTHROPIC_CLAUDE_CODE_OAUTH_TOKEN }}
+          GH_CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          rc=0; read -ra names <<<"$SHADOW_NAMES"
+          sha() { printf '%s' "${1-}" | { sha256sum 2>/dev/null || shasum -a 256; } | cut -d' ' -f1; }
+          for n in "${names[@]}"; do
+            gv="GH_$n"; bv="BWS_$n"
+            # An ABSENT GitHub secret and an EMPTY Bitwarden value both hash to
+            # e3b0c442..., so without this arm two nothings compare EQUAL and the
+            # shadow reports "match" having verified nothing -- the exact defect
+            # this whole run exists to catch. Empty on either side is a failure.
+            if [ -z "${!gv-}" ] || [ -z "${!bv-}" ]; then echo "shadow $n EMPTY (github=${!gv:+set}${!gv:-unset} bitwarden=${!bv:+set}${!bv:-unset}) -- nothing was compared"; rc=1
+            elif [ "$(sha "${!gv-}")" = "$(sha "${!bv-}")" ]; then echo "shadow $n match"; else echo "shadow $n MISMATCH"; rc=1; fi
+          done
+          exit "$rc"
 
       # Deterministic attempt-cap backstop, deliberately OUTSIDE the AI-driven
       # monitor process it guards: a misclassification loop cannot talk its way
@@ -135,20 +167,18 @@ jobs:
           # Classifier tier 1: Cloudflare / DeepSeek V4 Pro.
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
-          # Classifier tier 2: Anthropic. Tier 1 has been returning HTTP 402
-          # (billing) continuously, which is an UNAVAILABLE tier rather than a
-          # blip, so without a second provider every failure fell through to the
-          # allowlist and a judgment nobody made decided whether to spend a
-          # ~500-machine-minute retry.
+          # Classifier tier 2: Anthropic, on the org's OAuth token. Tier 1 has
+          # been returning HTTP 402 (billing) continuously, which is an
+          # UNAVAILABLE tier rather than a blip, so without a second provider
+          # every failure fell through to the allowlist and a judgment nobody
+          # made decided whether to spend a ~500-machine-minute retry.
           #
-          # ANTHROPIC_API_KEY is the documented x-api-key path and is preferred
-          # if it ever exists; CLAUDE_CODE_OAUTH_TOKEN is the credential this org
-          # actually has today. An undefined secret interpolates to an empty
-          # string, and the script treats "no credential" as "this tier is
-          # absent", so the chain simply falls through to the allowlist exactly
-          # as it does now. Adding the key later needs no code change.
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-          CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          # This used to carry an ANTHROPIC_API_KEY line as a preferred
+          # x-api-key path "if it ever exists". It never will: on 2026-09-02 the
+          # operator ruled out pay-as-you-go API billing, so the credential is
+          # not absent-for-now, it is decided against. The reference is gone
+          # rather than empty, because an empty one reads as a gap to fill.
+          ANTHROPIC_CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.ANTHROPIC_CLAUDE_CODE_OAUTH_TOKEN }}
         with:
           script: return await require('./.ci/scripts/ci/watchdog-monitor.cjs')({github, context, core})
 

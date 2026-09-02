@@ -246,9 +246,9 @@ run_housekeeping() {
         AWS_CALLS="$t/aws-calls.log" \
         GH_TOKEN=fake \
         GITHUB_ACTIONS=true \
-        R2_ACCESS_KEY_ID=fake \
-        R2_SECRET_ACCESS_KEY=fake \
-        R2_ENDPOINT=https://r2.invalid \
+        CLOUDFLARE_R2_ACCESS_KEY_ID=fake \
+        CLOUDFLARE_R2_SECRET_ACCESS_KEY=fake \
+        CLOUDFLARE_R2_ENDPOINT=https://r2.invalid \
         RSV_GRANDFATHER_BEFORE=v0.0.1 \
         NO_COLOR=1 \
         ${envs[@]+"${envs[@]}"} \

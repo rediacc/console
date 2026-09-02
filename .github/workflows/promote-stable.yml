@@ -31,6 +31,40 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
+      - name: Fetch shadow secrets from Bitwarden
+        # SHADOW RUN: exports BWS_-prefixed copies that nothing consumes. The
+        # live secrets.* reads below are untouched until the cutover flips them.
+        uses: ./.github/actions/bws-secrets
+        with:
+          access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
+          secrets: |
+            CLOUDFLARE_R2_ACCESS_KEY_ID > BWS_CLOUDFLARE_R2_ACCESS_KEY_ID
+            CLOUDFLARE_R2_ENDPOINT > BWS_CLOUDFLARE_R2_ENDPOINT
+            CLOUDFLARE_R2_SECRET_ACCESS_KEY > BWS_CLOUDFLARE_R2_SECRET_ACCESS_KEY
+            CLOUDFLARE_API_TOKEN > BWS_CLOUDFLARE_API_TOKEN
+
+      - name: Compare shadow secrets against GitHub
+        shell: bash
+        env:
+          SHADOW_NAMES: CLOUDFLARE_R2_ACCESS_KEY_ID CLOUDFLARE_R2_ENDPOINT CLOUDFLARE_R2_SECRET_ACCESS_KEY CLOUDFLARE_API_TOKEN
+          GH_CLOUDFLARE_R2_ACCESS_KEY_ID: ${{ secrets.CLOUDFLARE_R2_ACCESS_KEY_ID }}
+          GH_CLOUDFLARE_R2_ENDPOINT: ${{ secrets.CLOUDFLARE_R2_ENDPOINT }}
+          GH_CLOUDFLARE_R2_SECRET_ACCESS_KEY: ${{ secrets.CLOUDFLARE_R2_SECRET_ACCESS_KEY }}
+          GH_CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          rc=0; read -ra names <<<"$SHADOW_NAMES"
+          sha() { printf '%s' "${1-}" | { sha256sum 2>/dev/null || shasum -a 256; } | cut -d' ' -f1; }
+          for n in "${names[@]}"; do
+            gv="GH_$n"; bv="BWS_$n"
+            # An ABSENT GitHub secret and an EMPTY Bitwarden value both hash to
+            # e3b0c442..., so without this arm two nothings compare EQUAL and the
+            # shadow reports "match" having verified nothing -- the exact defect
+            # this whole run exists to catch. Empty on either side is a failure.
+            if [ -z "${!gv-}" ] || [ -z "${!bv-}" ]; then echo "shadow $n EMPTY (github=${!gv:+set}${!gv:-unset} bitwarden=${!bv:+set}${!bv:-unset}) -- nothing was compared"; rc=1
+            elif [ "$(sha "${!gv-}")" = "$(sha "${!bv-}")" ]; then echo "shadow $n match"; else echo "shadow $n MISMATCH"; rc=1; fi
+          done
+          exit "$rc"
+
       - name: Check edge manifest
         id: edge
         run: .ci/scripts/release/check-edge-manifest.sh
@@ -49,9 +83,9 @@ jobs:
         if: steps.edge.outputs.skip != 'true'
         env:
           GH_TOKEN: ${{ github.token }}
-          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
-          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
-          R2_ENDPOINT: ${{ secrets.R2_ENDPOINT }}
+          CLOUDFLARE_R2_ACCESS_KEY_ID: ${{ secrets.CLOUDFLARE_R2_ACCESS_KEY_ID }}
+          CLOUDFLARE_R2_SECRET_ACCESS_KEY: ${{ secrets.CLOUDFLARE_R2_SECRET_ACCESS_KEY }}
+          CLOUDFLARE_R2_ENDPOINT: ${{ secrets.CLOUDFLARE_R2_ENDPOINT }}
         run: .ci/scripts/release/assert-edge-tag-exists.sh "${{ steps.edge.outputs.version }}"
 
       - name: Check stable manifest
@@ -92,10 +126,10 @@ jobs:
       - name: Promote R2 artifacts (CLI, Repos)
         if: steps.edge.outputs.skip != 'true' && steps.stable.outputs.same != 'true' && steps.soak.outputs.ready == 'true'
         env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.CLOUDFLARE_R2_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.CLOUDFLARE_R2_SECRET_ACCESS_KEY }}
           AWS_DEFAULT_REGION: auto
-          R2_ENDPOINT: ${{ secrets.R2_ENDPOINT }}
+          CLOUDFLARE_R2_ENDPOINT: ${{ secrets.CLOUDFLARE_R2_ENDPOINT }}
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ZONE_ID: ${{ vars.CLOUDFLARE_ZONE_ID }}
           EDGE_VERSION: ${{ steps.edge.outputs.version }}
@@ -155,7 +189,8 @@ jobs:
       ref: v${{ needs.promote.outputs.version }}
       version: ${{ needs.promote.outputs.version }}
     secrets:
-      APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
+      BWS_ACCESS_TOKEN: ${{ secrets.BWS_ACCESS_TOKEN }}
+      GITHUB_APP_PRIVATE_KEY: ${{ secrets.GITHUB_APP_PRIVATE_KEY }}
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
       ACCOUNT_ED25519_PRIVATE_KEY: ${{ secrets.ACCOUNT_ED25519_PRIVATE_KEY }}
       ACCOUNT_ED25519_PUBLIC_KEY: ${{ secrets.ACCOUNT_ED25519_PUBLIC_KEY }}
@@ -163,13 +198,13 @@ jobs:
       ACCOUNT_X25519_PUBLIC_KEY: ${{ secrets.ACCOUNT_X25519_PUBLIC_KEY }}
       ACCOUNT_SERVER_API_KEY: ${{ secrets.ACCOUNT_SERVER_API_KEY }}
       ACCOUNT_JWT_SECRET: ${{ secrets.ACCOUNT_JWT_SECRET }}
-      STRIPE_SECRET_KEY_EU: ${{ secrets.STRIPE_SECRET_KEY_EU }}
+      STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
       STRIPE_SANDBOX_SECRET_KEY: ${{ secrets.STRIPE_SANDBOX_SECRET_KEY }}
       STRIPE_WEBHOOK_SECRET_EU: ${{ secrets.STRIPE_WEBHOOK_SECRET_EU }}
       STRIPE_SANDBOX_WEBHOOK_SECRET: ${{ secrets.STRIPE_SANDBOX_WEBHOOK_SECRET }}
       AWS_SES_ACCESS_KEY_ID_EU: ${{ secrets.AWS_SES_ACCESS_KEY_ID_EU }}
       AWS_SES_SECRET_ACCESS_KEY_EU: ${{ secrets.AWS_SES_SECRET_ACCESS_KEY_EU }}
-      TURNSTILE_SECRET_KEY: ${{ secrets.TURNSTILE_SECRET_KEY }}
+      CLOUDFLARE_TURNSTILE_SECRET_KEY: ${{ secrets.CLOUDFLARE_TURNSTILE_SECRET_KEY }}
 
   deploy-account-stable:
     name: Deploy stable Account (all regions)
@@ -180,7 +215,8 @@ jobs:
       target: stable
       ref: v${{ needs.promote.outputs.version }}
     secrets:
-      APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
+      BWS_ACCESS_TOKEN: ${{ secrets.BWS_ACCESS_TOKEN }}
+      GITHUB_APP_PRIVATE_KEY: ${{ secrets.GITHUB_APP_PRIVATE_KEY }}
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
       ACCOUNT_ED25519_PRIVATE_KEY: ${{ secrets.ACCOUNT_ED25519_PRIVATE_KEY }}
       ACCOUNT_ED25519_PUBLIC_KEY: ${{ secrets.ACCOUNT_ED25519_PUBLIC_KEY }}
@@ -188,8 +224,7 @@ jobs:
       ACCOUNT_X25519_PUBLIC_KEY: ${{ secrets.ACCOUNT_X25519_PUBLIC_KEY }}
       ACCOUNT_SERVER_API_KEY: ${{ secrets.ACCOUNT_SERVER_API_KEY }}
       ACCOUNT_JWT_SECRET: ${{ secrets.ACCOUNT_JWT_SECRET }}
-      STRIPE_SECRET_KEY_EU: ${{ secrets.STRIPE_SECRET_KEY_EU }}
-      STRIPE_SECRET_KEY_US: ${{ secrets.STRIPE_SECRET_KEY_US }}
+      STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
       STRIPE_SANDBOX_SECRET_KEY: ${{ secrets.STRIPE_SANDBOX_SECRET_KEY }}
       STRIPE_WEBHOOK_SECRET_EU: ${{ secrets.STRIPE_WEBHOOK_SECRET_EU }}
       STRIPE_WEBHOOK_SECRET_US: ${{ secrets.STRIPE_WEBHOOK_SECRET_US }}
@@ -198,18 +233,16 @@ jobs:
       AWS_SES_SECRET_ACCESS_KEY_EU: ${{ secrets.AWS_SES_SECRET_ACCESS_KEY_EU }}
       AWS_SES_ACCESS_KEY_ID_US: ${{ secrets.AWS_SES_ACCESS_KEY_ID_US }}
       AWS_SES_SECRET_ACCESS_KEY_US: ${{ secrets.AWS_SES_SECRET_ACCESS_KEY_US }}
-      STRIPE_SECRET_KEY_ASIA: ${{ secrets.STRIPE_SECRET_KEY_ASIA }}
       STRIPE_WEBHOOK_SECRET_ASIA: ${{ secrets.STRIPE_WEBHOOK_SECRET_ASIA }}
       AWS_SES_ACCESS_KEY_ID_ASIA: ${{ secrets.AWS_SES_ACCESS_KEY_ID_ASIA }}
       AWS_SES_SECRET_ACCESS_KEY_ASIA: ${{ secrets.AWS_SES_SECRET_ACCESS_KEY_ASIA }}
-      TURNSTILE_SECRET_KEY: ${{ secrets.TURNSTILE_SECRET_KEY }}
-      OTLP_CLIENT_CREDENTIALS_EU: ${{ secrets.OTLP_CLIENT_CREDENTIALS_EU }}
-      OTLP_CLIENT_CREDENTIALS_US: ${{ secrets.OTLP_CLIENT_CREDENTIALS_US }}
-      OTLP_CLIENT_CREDENTIALS_ASIA: ${{ secrets.OTLP_CLIENT_CREDENTIALS_ASIA }}
-      BACKUP_S3_ENDPOINT: ${{ secrets.BACKUP_S3_ENDPOINT }}
-      BACKUP_S3_BUCKET: ${{ secrets.BACKUP_S3_BUCKET }}
-      BACKUP_S3_ACCESS_KEY_ID: ${{ secrets.BACKUP_S3_ACCESS_KEY_ID }}
-      BACKUP_S3_SECRET_ACCESS_KEY: ${{ secrets.BACKUP_S3_SECRET_ACCESS_KEY }}
+      CLOUDFLARE_TURNSTILE_SECRET_KEY: ${{ secrets.CLOUDFLARE_TURNSTILE_SECRET_KEY }}
+      OBS_OTLP_CREDENTIALS_EU: ${{ secrets.OBS_OTLP_CREDENTIALS_EU }}
+      OBS_OTLP_CREDENTIALS_US: ${{ secrets.OBS_OTLP_CREDENTIALS_US }}
+      OBS_OTLP_CREDENTIALS_ASIA: ${{ secrets.OBS_OTLP_CREDENTIALS_ASIA }}
+      ACCOUNT_BACKUP_S3_ENDPOINT: ${{ secrets.ACCOUNT_BACKUP_S3_ENDPOINT }}
+      ACCOUNT_BACKUP_S3_ACCESS_KEY_ID: ${{ secrets.ACCOUNT_BACKUP_S3_ACCESS_KEY_ID }}
+      ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY: ${{ secrets.ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY }}
 
   # Verify stable endpoints after deployment
   verify-stable:

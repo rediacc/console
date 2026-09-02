@@ -24,6 +24,7 @@ import wl_histfirst
 import wl_judge
 import wl_liveness
 import wl_planfid
+import wl_planfile
 import wl_reggate
 import wl_report
 import wl_requests
@@ -1039,11 +1040,37 @@ def plan_dir(root):
     return S.agent_plan_dir(root)
 
 
+# A session id, as a whole token: 8 hex from the CLI, 12 from the old markdown.
+# An `Owner:` value that is not one of these cannot be a session, so it must not
+# be compared against one -- see plan_owner.
+PLAN_OWNER_ID_RE = re.compile(r"\b([0-9a-fA-F]{8}|[0-9a-fA-F]{12})\b")
+# A plan that says it is unowned is UNOWNED, whoever drafted it.
+PLAN_UNOWNED_RE = re.compile(r"\bunowned\b", re.IGNORECASE)
+
+
 def plan_owner(root, rel):
-    """The `Owner:` prefix in a plan's header block, or None when it declares none.
+    """The owning SESSION ID in a plan's header block, or None when it declares none.
 
     Read separately rather than widened into `plan_records`'s tuple, which has three
     other callers that would all have to change arity for one consumer's benefit.
+
+    WHY THIS IS NOT JUST THE FIRST WORD AFTER `Owner:`. It was, and that made 13 of
+    the 46 plans in this repo PERMANENTLY invisible to every consumer -- 28% of the
+    corpus, measured 2026-09-02. `owned_by_me` compares the value against a session
+    id prefix, so a value that is not a session id matches NO session, forever, and
+    the plan reads as peer-owned to everyone. Nothing errors; the plans just quietly
+    leave scope. Three real shapes, all silently exempt:
+
+        Owner: unowned (drafted by 9d92d9b6, 2026-08-28)  -> "unowned"
+        Owner: whichever session picks it up              -> "whichever"
+        Owner: session 9d92d9b6, branch 0826-3            -> "session"
+
+    The last is the sharpest: the real id is RIGHT THERE and was thrown away.
+
+    So: an explicit `unowned` wins outright, otherwise take the first session-shaped
+    token on the line, otherwise None. `unowned` is checked FIRST on purpose --
+    "unowned (drafted by 9d92d9b6)" names an id that is not an owner, and reading it
+    as one would hand the plan to a session that disclaimed it.
     """
     try:
         text = (pathlib.Path(root) / rel).read_text(encoding="utf-8", errors="replace")
@@ -1051,7 +1078,13 @@ def plan_owner(root, rel):
         return None
     head = "\n".join(text.splitlines()[:PLAN_HEADER_LINES])
     m = PLAN_OWNER_RE.search(head)
-    return m.group(1) if m else None
+    if not m:
+        return None
+    line = head[m.start() :].split("\n", 1)[0]
+    if PLAN_UNOWNED_RE.search(line):
+        return None
+    hit = PLAN_OWNER_ID_RE.search(line)
+    return hit.group(1) if hit else None
 
 
 def plan_records(root):
@@ -3697,6 +3730,36 @@ def run_stop(event, event_ok, worklist, hook_file):
                 + ("\n    + %d more, same verdict" % _rest if _rest else ""),
             ),
         )
+
+    # ---- PLAN FILE vs WORKLIST (wl_planfile). The sibling of plan-drift above:
+    # that one asks "has the plan gone stale against the work", this one asks
+    # "are the plan's own checkbox TASKS tracked at all". Different questions,
+    # and neither implies the other -- a plan can be freshly rewritten and still
+    # have eighteen boxes nothing tracks, which is exactly what was measured on
+    # agent/PLAN-secret-namespace-migration.md on 2026-09-02.
+    #
+    # AN ADVISORY, NOT A `vadd`, and the reason is a deadlock rather than
+    # politeness: a plan carrying 18 open tasks would, as a block, refuse every
+    # turn of every session in this repo until a multi-week migration finished.
+    # See wl_planfile's design note 1. The queue also supplies the whole noise
+    # policy for free -- OUTQ_PER_STOP=1, plus outq_add's content signature,
+    # which re-fires the moment the untracked set changes and otherwise stays
+    # quiet for REPORT_REFRESH_MIN.
+    #
+    # PRIORITY 2, alongside the other real advisories and above the agent hint
+    # at 3: the operator asked for this specifically, so it should not queue
+    # behind a suggestion, but it must not outrank a report a peer is blocked on
+    # at 1. ONE plan per stop, the newest with findings, remainder counted.
+    try:
+        _pf_rows, _pf_unread = wl_planfile.plan_rows(
+            root, plan_records(root), fold, session_id, plan_owner
+        )
+        if _pf_rows:
+            _pf_text = wl_planfile.render(_pf_rows[0], len(_pf_rows) - 1, _pf_unread)
+            if _pf_text:
+                outq_add(worklist, session_id, state_doc, "plan-tasks", _pf_text, 2)
+    except Exception:  # noqa: BLE001 -- a plan read must never wedge a stop
+        pass
 
     pstate, pahead, pref = wl_ci.publish_divergence(root)
     if pstate == "stale-local":

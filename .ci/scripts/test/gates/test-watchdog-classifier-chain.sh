@@ -152,9 +152,9 @@ run_chain() {
         cf_env=(CLOUDFLARE_API_TOKEN=t CLOUDFLARE_ACCOUNT_ID=a)
     fi
     if [[ "$claude" == "absent" ]]; then
-        claude_env=(ANTHROPIC_API_KEY= CLAUDE_CODE_OAUTH_TOKEN=)
+        claude_env=(ANTHROPIC_CLAUDE_CODE_OAUTH_TOKEN=)
     else
-        claude_env=(ANTHROPIC_API_KEY= CLAUDE_CODE_OAUTH_TOKEN=oauth-tok)
+        claude_env=(ANTHROPIC_CLAUDE_CODE_OAUTH_TOKEN=oauth-tok)
     fi
     (cd "$REPO_ROOT" && env "${cf_env[@]}" "${claude_env[@]}" \
         WATCHDOG_EXCLUDE_PATTERNS='Watchdog,CI Complete' \
@@ -171,7 +171,7 @@ run_chain() {
 run_chain_full() {
     local cf="$1" claude="$2"
     (cd "$REPO_ROOT" && env CLOUDFLARE_API_TOKEN=t CLOUDFLARE_ACCOUNT_ID=a \
-        ANTHROPIC_API_KEY= CLAUDE_CODE_OAUTH_TOKEN=oauth-tok \
+        ANTHROPIC_CLAUDE_CODE_OAUTH_TOKEN=oauth-tok \
         WATCHDOG_EXCLUDE_PATTERNS='Watchdog,CI Complete' \
         WATCHDOG_NO_RETRY_PATTERNS='Quality,Review Gate' \
         WATCHDOG_RETRY_ALLOWLIST_PATTERNS='E2E,OPS,Fork Isolation' \

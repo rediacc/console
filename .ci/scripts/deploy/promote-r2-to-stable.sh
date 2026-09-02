@@ -34,7 +34,7 @@
 #   AWS_ACCESS_KEY_ID      R2 credentials (the workflow maps R2_* onto these)
 #   AWS_SECRET_ACCESS_KEY
 #   AWS_DEFAULT_REGION     "auto" for R2
-#   R2_ENDPOINT            R2 S3 endpoint
+#   CLOUDFLARE_R2_ENDPOINT            R2 S3 endpoint
 #   EDGE_VERSION           version being promoted; log line only
 #
 # Optional env:
@@ -57,11 +57,11 @@ source "$SCRIPT_DIR/../lib/common.sh"
 require_cmd aws
 : "${AWS_ACCESS_KEY_ID:?promote-r2-to-stable.sh: AWS_ACCESS_KEY_ID must be set}"
 : "${AWS_SECRET_ACCESS_KEY:?promote-r2-to-stable.sh: AWS_SECRET_ACCESS_KEY must be set}"
-: "${R2_ENDPOINT:?promote-r2-to-stable.sh: R2_ENDPOINT must be set}"
+: "${CLOUDFLARE_R2_ENDPOINT:?promote-r2-to-stable.sh: CLOUDFLARE_R2_ENDPOINT must be set}"
 EDGE_VERSION="${EDGE_VERSION:?promote-r2-to-stable.sh: EDGE_VERSION must be set}"
 
 BUCKET="rediacc-releases"
-EP="--endpoint-url $R2_ENDPOINT"
+EP="--endpoint-url $CLOUDFLARE_R2_ENDPOINT"
 
 CC_MUTABLE="no-cache"
 

@@ -1144,7 +1144,7 @@ cleanup_orphan_turnstile_widgets() {
 r2_ls_prefix() {
     local prefix="$1"
     aws s3 ls "s3://${R2_BUCKET}/${prefix}" \
-        --endpoint-url "$R2_ENDPOINT" 2>/dev/null || true
+        --endpoint-url "$CLOUDFLARE_R2_ENDPOINT" 2>/dev/null || true
 }
 
 # Return LastModified (ISO8601) of the first object under a prefix; empty if
@@ -1161,7 +1161,7 @@ r2_prefix_last_modified() {
         --bucket "${R2_BUCKET}" \
         --prefix "${prefix}" \
         --max-items 1 \
-        --endpoint-url "$R2_ENDPOINT" \
+        --endpoint-url "$CLOUDFLARE_R2_ENDPOINT" \
         --query 'Contents[0].LastModified' \
         --output text 2>/dev/null || echo)"
     [[ "$stamp" == "None" || -z "$stamp" ]] && return 0
@@ -1179,7 +1179,7 @@ r2_rm_recursive() {
         return 0
     fi
     aws s3 rm "s3://${R2_BUCKET}/${prefix}" --recursive \
-        --endpoint-url "$R2_ENDPOINT" --quiet 2>/dev/null || true
+        --endpoint-url "$CLOUDFLARE_R2_ENDPOINT" --quiet 2>/dev/null || true
     record_delete
     log_info "  Deleted s3://${R2_BUCKET}/${prefix}${label:+ ($label)}"
 }
@@ -1189,13 +1189,13 @@ cleanup_r2() {
 
     # Skip if R2 creds unset; housekeeping job in ci.yml provides them, but
     # local invocations without them should not blow up.
-    if [[ -z "${R2_ACCESS_KEY_ID:-}" ]] || [[ -z "${R2_SECRET_ACCESS_KEY:-}" ]] || [[ -z "${R2_ENDPOINT:-}" ]]; then
-        log_warn "  R2_ACCESS_KEY_ID / R2_SECRET_ACCESS_KEY / R2_ENDPOINT not set, skipping R2 cleanup"
+    if [[ -z "${CLOUDFLARE_R2_ACCESS_KEY_ID:-}" ]] || [[ -z "${CLOUDFLARE_R2_SECRET_ACCESS_KEY:-}" ]] || [[ -z "${CLOUDFLARE_R2_ENDPOINT:-}" ]]; then
+        log_warn "  CLOUDFLARE_R2_ACCESS_KEY_ID / CLOUDFLARE_R2_SECRET_ACCESS_KEY / CLOUDFLARE_R2_ENDPOINT not set, skipping R2 cleanup"
         return 0
     fi
 
-    export AWS_ACCESS_KEY_ID="$R2_ACCESS_KEY_ID"
-    export AWS_SECRET_ACCESS_KEY="$R2_SECRET_ACCESS_KEY"
+    export AWS_ACCESS_KEY_ID="$CLOUDFLARE_R2_ACCESS_KEY_ID"
+    export AWS_SECRET_ACCESS_KEY="$CLOUDFLARE_R2_SECRET_ACCESS_KEY"
     export AWS_DEFAULT_REGION="auto"
 
     # Relax set -e inside the phase -- many aws|awk pipes here have SIGPIPE
@@ -1447,7 +1447,7 @@ cleanup_r2() {
             # any pipeline failure keeps the retention sweep going for the
             # other (fmt, channel) combinations.
             listing="$(aws s3 ls "s3://${R2_BUCKET}/${channel_root}" --recursive \
-                --endpoint-url "$R2_ENDPOINT" 2>/dev/null |
+                --endpoint-url "$CLOUDFLARE_R2_ENDPOINT" 2>/dev/null |
                 awk '{
                     n = split($4, p, "/"); fname = p[n];
                     if (fname !~ /^rediacc-cli[-_]/) next
@@ -1477,7 +1477,7 @@ cleanup_r2() {
                     if [[ "$DRY_RUN" == "true" ]]; then
                         log_warn "  [DRY-RUN] Would delete s3://${R2_BUCKET}/${key} (${tag})"
                     else
-                        aws s3 rm "s3://${R2_BUCKET}/${key}" --endpoint-url "$R2_ENDPOINT" --quiet 2>/dev/null || true
+                        aws s3 rm "s3://${R2_BUCKET}/${key}" --endpoint-url "$CLOUDFLARE_R2_ENDPOINT" --quiet 2>/dev/null || true
                         record_delete
                         log_info "  Deleted ${key} (${tag})"
                     fi
@@ -1495,7 +1495,7 @@ cleanup_r2() {
                 if [[ "$DRY_RUN" == "true" ]]; then
                     log_warn "  [DRY-RUN] Would delete s3://${R2_BUCKET}/${key} (${tag})"
                 else
-                    aws s3 rm "s3://${R2_BUCKET}/${key}" --endpoint-url "$R2_ENDPOINT" --quiet 2>/dev/null || true
+                    aws s3 rm "s3://${R2_BUCKET}/${key}" --endpoint-url "$CLOUDFLARE_R2_ENDPOINT" --quiet 2>/dev/null || true
                     record_delete
                     log_info "  Deleted ${key} (${tag})"
                 fi
@@ -1511,7 +1511,7 @@ cleanup_r2() {
     log_step "  8e: abort multipart uploads older than 24h"
     local uploads
     uploads="$(aws s3api list-multipart-uploads --bucket "$R2_BUCKET" \
-        --endpoint-url "$R2_ENDPOINT" \
+        --endpoint-url "$CLOUDFLARE_R2_ENDPOINT" \
         --query 'Uploads[].{Key:Key,UploadId:UploadId,Initiated:Initiated}' \
         --output json 2>/dev/null || echo "[]")"
     local mpu_count
@@ -1540,7 +1540,7 @@ cleanup_r2() {
             fi
             aws s3api abort-multipart-upload \
                 --bucket "$R2_BUCKET" --key "$key" --upload-id "$upload_id" \
-                --endpoint-url "$R2_ENDPOINT" 2>/dev/null || continue
+                --endpoint-url "$CLOUDFLARE_R2_ENDPOINT" 2>/dev/null || continue
             record_delete
             log_info "  Aborted multipart: $key"
             mpu_aborted=$((mpu_aborted + 1))

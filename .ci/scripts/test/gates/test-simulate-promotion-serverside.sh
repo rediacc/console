@@ -101,7 +101,7 @@ run_promotion() {
     rc=0
     PATH="$FIXTURE/bin:$PATH" \
         CHANNEL=edge AWS_ACCESS_KEY_ID=k AWS_SECRET_ACCESS_KEY=s \
-        R2_ENDPOINT=https://example.invalid CLOUDFLARE_ZONE_ID=z \
+        CLOUDFLARE_R2_ENDPOINT=https://example.invalid CLOUDFLARE_ZONE_ID=z \
         CLOUDFLARE_API_TOKEN=t \
         bash "$TARGET" >"$FIXTURE/out.txt" 2>&1 || rc=$?
     # Surface the script's own output instead of letting set -e kill the test
@@ -158,7 +158,7 @@ test_a_key_outside_the_prefix_is_REFUSED() {
     local rc=0
     PATH="$FIXTURE/bin:$PATH" \
         CHANNEL=edge AWS_ACCESS_KEY_ID=k AWS_SECRET_ACCESS_KEY=s \
-        R2_ENDPOINT=https://example.invalid CLOUDFLARE_ZONE_ID=z \
+        CLOUDFLARE_R2_ENDPOINT=https://example.invalid CLOUDFLARE_ZONE_ID=z \
         CLOUDFLARE_API_TOKEN=t \
         bash "$TARGET" >"$FIXTURE/out.txt" 2>&1 || rc=$?
     [[ $rc -ne 0 ]] || {

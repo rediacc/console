@@ -214,19 +214,19 @@ CF_API="https://api.cloudflare.com/client/v4"
 
 # cf_api <METHOD> <path> [json-body]
 # Mirrors the cf_api helper in .ci/scripts/housekeeping/cleanup-versions.sh, but
-# reads BREAKPOINT_TUNNEL_TOKEN -- deliberately NOT the account-wide
+# reads CLOUDFLARE_BREAKPOINT_TUNNEL_TOKEN -- deliberately NOT the account-wide
 # CLOUDFLARE_API_TOKEN, which carries Workers/D1/R2/Pages rights that have no
 # business being on a box that hands out an interactive shell.
 cf_api() {
     local method="$1" path="$2" body="${3:-}"
     if [[ -n "$body" ]]; then
         curl -sS -X "$method" "${CF_API}${path}" \
-            -H "Authorization: Bearer ${BREAKPOINT_TUNNEL_TOKEN}" \
+            -H "Authorization: Bearer ${CLOUDFLARE_BREAKPOINT_TUNNEL_TOKEN}" \
             -H "Content-Type: application/json" \
             --max-time 30 --data "$body"
     else
         curl -sS -X "$method" "${CF_API}${path}" \
-            -H "Authorization: Bearer ${BREAKPOINT_TUNNEL_TOKEN}" \
+            -H "Authorization: Bearer ${CLOUDFLARE_BREAKPOINT_TUNNEL_TOKEN}" \
             -H "Content-Type: application/json" \
             --max-time 30
     fi
@@ -237,7 +237,7 @@ cf_errors() { echo "$1" | jq -r '.errors[]?.message' 2>/dev/null | head -3; }
 
 start_named() {
     require_cmd jq
-    require_var BREAKPOINT_TUNNEL_TOKEN
+    require_var CLOUDFLARE_BREAKPOINT_TUNNEL_TOKEN
     require_var CLOUDFLARE_ACCOUNT_ID
 
     local zone_name="${BREAKPOINT_TUNNEL_ZONE:-rediacc.io}"

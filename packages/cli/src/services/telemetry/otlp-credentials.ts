@@ -12,7 +12,7 @@
  *      spawning renet via SSH (see `local-executor.ts`).
  *
  * Regional routing: each regional account worker holds its own
- * `OTLP_CLIENT_CREDENTIALS` Worker secret. Clients get the correct
+ * `OBS_OTLP_CREDENTIALS` Worker secret. Clients get the correct
  * credential based on which regional URL their account-server config
  * points to — no per-client logic needed.
  *

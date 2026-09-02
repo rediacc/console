@@ -21,9 +21,9 @@
 #   .ci/scripts/deploy/promote-r2-to-stable-hotfix.sh
 #
 # Required env:
-#   R2_ACCESS_KEY_ID       R2 credentials, exported as AWS_* for the aws CLI
-#   R2_SECRET_ACCESS_KEY
-#   R2_ENDPOINT            R2 S3 endpoint
+#   CLOUDFLARE_R2_ACCESS_KEY_ID       R2 credentials, exported as AWS_* for the aws CLI
+#   CLOUDFLARE_R2_SECRET_ACCESS_KEY
+#   CLOUDFLARE_R2_ENDPOINT            R2 S3 endpoint
 #
 # Optional env:
 #   CLOUDFLARE_ZONE_ID     zone to purge; the purge is best-effort and is the
@@ -43,14 +43,14 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/../lib/common.sh"
 
 require_cmd aws
-: "${R2_ACCESS_KEY_ID:?promote-r2-to-stable-hotfix.sh: R2_ACCESS_KEY_ID must be set}"
-: "${R2_SECRET_ACCESS_KEY:?promote-r2-to-stable-hotfix.sh: R2_SECRET_ACCESS_KEY must be set}"
-: "${R2_ENDPOINT:?promote-r2-to-stable-hotfix.sh: R2_ENDPOINT must be set}"
+: "${CLOUDFLARE_R2_ACCESS_KEY_ID:?promote-r2-to-stable-hotfix.sh: CLOUDFLARE_R2_ACCESS_KEY_ID must be set}"
+: "${CLOUDFLARE_R2_SECRET_ACCESS_KEY:?promote-r2-to-stable-hotfix.sh: CLOUDFLARE_R2_SECRET_ACCESS_KEY must be set}"
+: "${CLOUDFLARE_R2_ENDPOINT:?promote-r2-to-stable-hotfix.sh: CLOUDFLARE_R2_ENDPOINT must be set}"
 
-export AWS_ACCESS_KEY_ID="${R2_ACCESS_KEY_ID}"
-export AWS_SECRET_ACCESS_KEY="${R2_SECRET_ACCESS_KEY}"
+export AWS_ACCESS_KEY_ID="${CLOUDFLARE_R2_ACCESS_KEY_ID}"
+export AWS_SECRET_ACCESS_KEY="${CLOUDFLARE_R2_SECRET_ACCESS_KEY}"
 export AWS_DEFAULT_REGION="auto"
-EP="--endpoint-url $R2_ENDPOINT"
+EP="--endpoint-url $CLOUDFLARE_R2_ENDPOINT"
 BUCKET="rediacc-releases"
 
 CC_MUTABLE="no-cache"

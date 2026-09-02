@@ -23,7 +23,7 @@
 # Usage:
 #   reap-breakpoint-orphans.sh [--dry-run] [--max-deletes <n>] [--repo <o/n>]
 #
-# Env: BREAKPOINT_TUNNEL_TOKEN, CLOUDFLARE_ACCOUNT_ID, GH_TOKEN
+# Env: CLOUDFLARE_BREAKPOINT_TUNNEL_TOKEN, CLOUDFLARE_ACCOUNT_ID, GH_TOKEN
 # Exit: 0 swept (including "nothing to do"), 1 missing precondition.
 #
 # Shape is deliberately copied from .ci/scripts/housekeeping/cleanup-versions.sh
@@ -87,7 +87,7 @@ GH_API="https://api.github.com"
 
 require_cmd jq
 require_cmd curl
-require_var BREAKPOINT_TUNNEL_TOKEN
+require_var CLOUDFLARE_BREAKPOINT_TUNNEL_TOKEN
 require_var CLOUDFLARE_ACCOUNT_ID
 require_var GH_TOKEN
 
@@ -143,7 +143,7 @@ record_delete() {
 cf_api() {
     local method="$1" path="$2"
     curl -sS -X "$method" "${CF_API}${path}" \
-        -H "Authorization: Bearer ${BREAKPOINT_TUNNEL_TOKEN}" \
+        -H "Authorization: Bearer ${CLOUDFLARE_BREAKPOINT_TUNNEL_TOKEN}" \
         -H "Content-Type: application/json" \
         --max-time 30
 }
@@ -587,7 +587,7 @@ done
 # silently asserts "nothing to do" is how this entire class of bug comes back, so
 # say it out loud.
 if [[ $((LISTED_TUNNELS + LISTED_DNS + LISTED_ACCESS)) -eq 0 ]]; then
-    bp_gha_warning "breakpoint sweeper saw ZERO objects in all three listings (tunnels, DNS, Access). Either the account is genuinely empty, or BREAKPOINT_TUNNEL_TOKEN lacks Tunnel:Read / Zone.DNS:Read / Access:Read. Verify the token before trusting this result."
+    bp_gha_warning "breakpoint sweeper saw ZERO objects in all three listings (tunnels, DNS, Access). Either the account is genuinely empty, or CLOUDFLARE_BREAKPOINT_TUNNEL_TOKEN lacks Tunnel:Read / Zone.DNS:Read / Access:Read. Verify the token before trusting this result."
 fi
 
 log_info "listings: ${LISTED_TUNNELS} tunnel(s), ${LISTED_DNS} CNAME(s), ${LISTED_ACCESS} Access app(s)"

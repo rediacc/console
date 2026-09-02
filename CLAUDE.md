@@ -644,7 +644,7 @@ to push changed media (incremental, `--tutorials-only`/`--solutions-only`/
 `--audio-only`), and `.ci/scripts/deploy/sync-media-from-r2.sh` to restore
 media locally (needed for pipeline development / offline ffmpeg work; not
 needed for normal `npm run dev` browsing). Credentials:
-`R2_MEDIA_ACCESS_KEY_ID`/`R2_MEDIA_SECRET_ACCESS_KEY`/`R2_MEDIA_ENDPOINT`
+`CLOUDFLARE_R2_MEDIA_ACCESS_KEY_ID`/`CLOUDFLARE_R2_MEDIA_SECRET_ACCESS_KEY`/`CLOUDFLARE_R2_MEDIA_ENDPOINT`
 (org secrets, scoped to `console`); bucket/domain names are org variables
 `R2_MEDIA_BUCKET`/`MEDIA_CDN_DOMAIN`.
 
@@ -716,11 +716,11 @@ Slugs: `ses-eu`, `ses-us`, `ses-asia`, `ses-bench`, `cf-cd`, `cf-r2`, `cf-r2-med
 
 `cf-r2-media` is bucket-scoped (`rediacc-www-media` only, not account-wide like `cf-r2`) — least-privilege token for the www video-media pipeline, see `.ci/docs/r2-media-setup.md`.
 
-`cf-breakpoint` (secret `BREAKPOINT_TUNNEL_TOKEN`) is the on-demand debug box's Cloudflare token: Tunnel edit + Access apps/policies edit at the account level, DNS edit scoped to the **`rediacc.io` zone only**, and nothing else — no Workers, D1, R2 or Pages. It is deliberately NOT `cf-cd`: a breakpoint session's whole purpose is to put a human on a shell, so anything in that job's environment is readable by that human, and `cf-cd` would make one debug session equivalent to production Worker-deploy and D1-delete rights. See `.ci/breakpoint/README.md`.
+`cf-breakpoint` (secret `CLOUDFLARE_BREAKPOINT_TUNNEL_TOKEN`) is the on-demand debug box's Cloudflare token: Tunnel edit + Access apps/policies edit at the account level, DNS edit scoped to the **`rediacc.io` zone only**, and nothing else — no Workers, D1, R2 or Pages. It is deliberately NOT `cf-cd`: a breakpoint session's whole purpose is to put a human on a shell, so anything in that job's environment is readable by that human, and `cf-cd` would make one debug session equivalent to production Worker-deploy and D1-delete rights. See `.ci/breakpoint/README.md`.
 
 `dkim-notify` is the BYODKIM RSA-2048 keypair applied to every regional SES identity for `notify.rediacc.com`. One private key, one Cloudflare TXT record at `<selector>._domainkey.notify.rediacc.com`, three SES regions (eu/us/asia). To rotate, stage the PEM via `DKIM_NOTIFY_PRIVATE_KEY_PATH=<path>` and run `./run.sh rotation rotate dkim-notify`. The tool publishes the DNS, applies the key to all three regions, smoke-tests propagation, and updates the manifest atomically. If `DKIM_NOTIFY_PRIVATE_KEY_PATH` is unset, a fresh keypair is generated in-memory (acceptable for bench experiments only — production rotations must stage the PEM so the key can be backed up to 1Password before the process exits).
 
-Auth: `SES_AK_ID`/`SES_AK_SECRET` for AWS IAM admin, `CLOUDFLARE_API_TOKEN` (or `CF_GLOBAL_API_KEY`+`CF_EMAIL`) for Cloudflare, authenticated `gh` CLI for GitHub secrets.
+Auth: `AWS_IAM_ADMIN_ACCESS_KEY_ID`/`AWS_IAM_ADMIN_SECRET_ACCESS_KEY` for AWS IAM admin, `CLOUDFLARE_API_TOKEN` (or `CF_GLOBAL_API_KEY`+`CF_EMAIL`) for Cloudflare, authenticated `gh` CLI for GitHub secrets.
 
 `scripts/dev/deploy-bench.sh` runs `rotation check --for=bench` as a preflight, so a stale `private/account/.env.bench` cannot ship a dead key.
 

@@ -1,9 +1,9 @@
 {
   "rubrics": {
     "BRAVE_PROMPT": {
-      "calibrated": "2026-09-01",
-      "note": "SWEEP_PROMPT re-calibrated after eb34b3a47; the run is the evidence, this file only proves the text matches",
-      "sha": "39e51d685dd94cb4"
+      "calibrated": "2026-09-02",
+      "note": "Re-calibrated after the rubric was tightened: the earlier text scored 'DEFAULT: leave it on its branch' as an `outward` hold and let it through, because it read the NOUNS (branch/PR/release) rather than the default. All 6 BRAVE_CASES pass in the 2026-09-02 live run (4 fire, 2 silent). The 2 misses in that run are SWEEP and SHAPE control cases over-firing, and they moved between two runs of the same texts, so they are flake in other rubrics, not drift in this one.",
+      "sha": "4204d33d1267ffca"
     },
     "REGGATE_PROMPT": {
       "calibrated": "2026-09-01",

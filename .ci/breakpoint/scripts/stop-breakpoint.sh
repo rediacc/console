@@ -96,7 +96,7 @@ CF_API="https://api.cloudflare.com/client/v4"
 cf_api() {
     local method="$1" path="$2"
     curl -sS -X "$method" "${CF_API}${path}" \
-        -H "Authorization: Bearer ${BREAKPOINT_TUNNEL_TOKEN}" \
+        -H "Authorization: Bearer ${CLOUDFLARE_BREAKPOINT_TUNNEL_TOKEN}" \
         -H "Content-Type: application/json" \
         --max-time 30
 }
@@ -113,7 +113,7 @@ cf_deleted_ok() {
     return 1
 }
 
-if [[ -n "${BREAKPOINT_TUNNEL_TOKEN:-}" ]] && [[ -n "${CLOUDFLARE_ACCOUNT_ID:-}" ]] && command -v jq >/dev/null 2>&1; then
+if [[ -n "${CLOUDFLARE_BREAKPOINT_TUNNEL_TOKEN:-}" ]] && [[ -n "${CLOUDFLARE_ACCOUNT_ID:-}" ]] && command -v jq >/dev/null 2>&1; then
     ACCT="$CLOUDFLARE_ACCOUNT_ID"
     ZONE_ID="$(bp_state_get BP_ZONE_ID)"
     ZONE_NAME="${BREAKPOINT_TUNNEL_ZONE:-rediacc.io}"
@@ -247,7 +247,7 @@ fi
 # =============================================================================
 # 6. VERIFY -- exit 0 is earned here
 # =============================================================================
-if [[ -n "${BREAKPOINT_TUNNEL_TOKEN:-}" ]] && [[ -n "${CLOUDFLARE_ACCOUNT_ID:-}" ]] && command -v jq >/dev/null 2>&1 && [[ -n "$TUNNEL_NAME" ]]; then
+if [[ -n "${CLOUDFLARE_BREAKPOINT_TUNNEL_TOKEN:-}" ]] && [[ -n "${CLOUDFLARE_ACCOUNT_ID:-}" ]] && command -v jq >/dev/null 2>&1 && [[ -n "$TUNNEL_NAME" ]]; then
     log_step "verifying nothing is left..."
     LEFT="$(cf_api GET "/accounts/${CLOUDFLARE_ACCOUNT_ID}/cfd_tunnel?name=${TUNNEL_NAME}&is_deleted=false" |
         jq -r '.result | length' 2>/dev/null || echo "0")"

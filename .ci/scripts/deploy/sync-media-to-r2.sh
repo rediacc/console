@@ -20,9 +20,9 @@
 #   sync-media-to-r2.sh --delete         # also remove remote objects with no local match
 #
 # Environment:
-#   R2_MEDIA_ACCESS_KEY_ID      S3-compatible access key (required)
-#   R2_MEDIA_SECRET_ACCESS_KEY  S3-compatible secret key (required)
-#   R2_MEDIA_ENDPOINT           R2 endpoint URL (required)
+#   CLOUDFLARE_R2_MEDIA_ACCESS_KEY_ID      S3-compatible access key (required)
+#   CLOUDFLARE_R2_MEDIA_SECRET_ACCESS_KEY  S3-compatible secret key (required)
+#   CLOUDFLARE_R2_MEDIA_ENDPOINT           R2 endpoint URL (required)
 #
 # See .ci/docs/r2-media-setup.md for how these credentials are provisioned.
 
@@ -76,14 +76,14 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
-require_var R2_MEDIA_ACCESS_KEY_ID R2_MEDIA_SECRET_ACCESS_KEY R2_MEDIA_ENDPOINT
+require_var CLOUDFLARE_R2_MEDIA_ACCESS_KEY_ID CLOUDFLARE_R2_MEDIA_SECRET_ACCESS_KEY CLOUDFLARE_R2_MEDIA_ENDPOINT
 require_cmd aws
 
-export AWS_ACCESS_KEY_ID="$R2_MEDIA_ACCESS_KEY_ID"
-export AWS_SECRET_ACCESS_KEY="$R2_MEDIA_SECRET_ACCESS_KEY"
+export AWS_ACCESS_KEY_ID="$CLOUDFLARE_R2_MEDIA_ACCESS_KEY_ID"
+export AWS_SECRET_ACCESS_KEY="$CLOUDFLARE_R2_MEDIA_SECRET_ACCESS_KEY"
 export AWS_DEFAULT_REGION="auto"
 
-SYNC_ARGS=(--endpoint-url "$R2_MEDIA_ENDPOINT" --cache-control "$CACHE_CONTROL" --no-progress)
+SYNC_ARGS=(--endpoint-url "$CLOUDFLARE_R2_MEDIA_ENDPOINT" --cache-control "$CACHE_CONTROL" --no-progress)
 if [[ "$DRY_RUN" == true ]]; then
     SYNC_ARGS+=(--dryrun)
     log_info "Dry run: no objects will be uploaded or deleted."
@@ -118,6 +118,6 @@ fi
 
 if [[ "$DRY_RUN" == false ]]; then
     log_info "Sync complete. Verify with:"
-    log_info "  aws s3 sync --dryrun <local-dir> s3://$BUCKET/<prefix>/ --endpoint-url \$R2_MEDIA_ENDPOINT"
+    log_info "  aws s3 sync --dryrun <local-dir> s3://$BUCKET/<prefix>/ --endpoint-url \$CLOUDFLARE_R2_MEDIA_ENDPOINT"
     log_info "  curl -sI https://media.rediacc.com/<path>"
 fi

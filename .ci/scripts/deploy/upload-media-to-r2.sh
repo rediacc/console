@@ -23,9 +23,9 @@
 # schema / URL builders expect (see update-video-manifest.ts's header comment).
 #
 # Environment:
-#   R2_MEDIA_ACCESS_KEY_ID      S3-compatible access key (required)
-#   R2_MEDIA_SECRET_ACCESS_KEY  S3-compatible secret key (required)
-#   R2_MEDIA_ENDPOINT           R2 endpoint URL (required)
+#   CLOUDFLARE_R2_MEDIA_ACCESS_KEY_ID      S3-compatible access key (required)
+#   CLOUDFLARE_R2_MEDIA_SECRET_ACCESS_KEY  S3-compatible secret key (required)
+#   CLOUDFLARE_R2_MEDIA_ENDPOINT           R2 endpoint URL (required)
 
 set -euo pipefail
 
@@ -96,14 +96,14 @@ if [[ "$KIND" != "tutorials" && "$KIND" != "solutions" ]]; then
 fi
 require_var KEY LANG FIELD FILE
 require_file "$FILE"
-require_var R2_MEDIA_ACCESS_KEY_ID R2_MEDIA_SECRET_ACCESS_KEY R2_MEDIA_ENDPOINT
+require_var CLOUDFLARE_R2_MEDIA_ACCESS_KEY_ID CLOUDFLARE_R2_MEDIA_SECRET_ACCESS_KEY CLOUDFLARE_R2_MEDIA_ENDPOINT
 require_cmd aws
 require_cmd npx
 require_cmd sha256sum
 require_cmd stat
 
-export AWS_ACCESS_KEY_ID="$R2_MEDIA_ACCESS_KEY_ID"
-export AWS_SECRET_ACCESS_KEY="$R2_MEDIA_SECRET_ACCESS_KEY"
+export AWS_ACCESS_KEY_ID="$CLOUDFLARE_R2_MEDIA_ACCESS_KEY_ID"
+export AWS_SECRET_ACCESS_KEY="$CLOUDFLARE_R2_MEDIA_SECRET_ACCESS_KEY"
 export AWS_DEFAULT_REGION="auto"
 
 # Bucket key layout mirrors the local public/assets/{tutorials/video,videos}
@@ -119,12 +119,12 @@ fi
 
 log_step "Uploading $FILE -> s3://$BUCKET/$REMOTE_KEY"
 aws s3 cp "$FILE" "s3://${BUCKET}/${REMOTE_KEY}" \
-    --endpoint-url "$R2_MEDIA_ENDPOINT" \
+    --endpoint-url "$CLOUDFLARE_R2_MEDIA_ENDPOINT" \
     --cache-control "$CACHE_CONTROL" \
     --no-progress
 
 log_step "Verifying upload (HEAD readback)"
-aws s3api head-object --bucket "$BUCKET" --key "$REMOTE_KEY" --endpoint-url "$R2_MEDIA_ENDPOINT" >/dev/null
+aws s3api head-object --bucket "$BUCKET" --key "$REMOTE_KEY" --endpoint-url "$CLOUDFLARE_R2_MEDIA_ENDPOINT" >/dev/null
 
 SIZE="$(stat -c%s "$FILE")"
 SHA256="$(sha256sum "$FILE" | cut -d' ' -f1)"

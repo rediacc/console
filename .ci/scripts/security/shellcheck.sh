@@ -77,6 +77,14 @@ main() {
         git ls-files --others --exclude-standard '*.sh'
     )"
     SH_FILES="$(printf '%s\n' "$SH_FILES" | awk 'NF' | sort -u)"
+    # A tracked file deleted in the working tree (rm without git rm) stays in
+    # `git ls-files` and makes shellcheck die on "openBinaryFile: does not exist",
+    # which reads as a lint finding. Drop those and say so (2026-09-02).
+    missing="$(printf '%s\n' "$SH_FILES" | while IFS= read -r f; do [ -e "$f" ] || printf '%s\n' "$f"; done)"
+    if [ -n "$missing" ]; then
+        log_info "skipping $(printf '%s\n' "$missing" | awk 'NF' | wc -l) tracked file(s) deleted in the working tree: $(printf '%s' "$missing" | tr '\n' ' ')"
+        SH_FILES="$(printf '%s\n' "$SH_FILES" | while IFS= read -r f; do [ -e "$f" ] && printf '%s\n' "$f"; done)"
+    fi
 
     # A gate that lints nothing exits 0 and looks identical to a gate that lints
     # everything. Refuse the empty list rather than pass it.

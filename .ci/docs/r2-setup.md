@@ -30,9 +30,9 @@ Dashboard steps:
 Record the following values:
 
 ```
-R2_ACCESS_KEY_ID=
-R2_SECRET_ACCESS_KEY=
-R2_ENDPOINT=https://fa51e4a18d553c30e1633288e9733d04.r2.cloudflarestorage.com
+CLOUDFLARE_R2_ACCESS_KEY_ID=
+CLOUDFLARE_R2_SECRET_ACCESS_KEY=
+CLOUDFLARE_R2_ENDPOINT=https://fa51e4a18d553c30e1633288e9733d04.r2.cloudflarestorage.com
 ```
 
 ## 4. GitHub Org Secrets
@@ -40,9 +40,9 @@ R2_ENDPOINT=https://fa51e4a18d553c30e1633288e9733d04.r2.cloudflarestorage.com
 After creating the R2 API token, set these secrets:
 
 ```bash
-gh secret set R2_ACCESS_KEY_ID --org rediacc --body "<access-key-id>"
-gh secret set R2_SECRET_ACCESS_KEY --org rediacc --body "<secret-access-key>"
-gh secret set R2_ENDPOINT --org rediacc --body "https://fa51e4a18d553c30e1633288e9733d04.r2.cloudflarestorage.com"
+gh secret set CLOUDFLARE_R2_ACCESS_KEY_ID --org rediacc --body "<access-key-id>"
+gh secret set CLOUDFLARE_R2_SECRET_ACCESS_KEY --org rediacc --body "<secret-access-key>"
+gh secret set CLOUDFLARE_R2_ENDPOINT --org rediacc --body "https://fa51e4a18d553c30e1633288e9733d04.r2.cloudflarestorage.com"
 ```
 
 ## 5. Cloudflare Cache Rule (critical)

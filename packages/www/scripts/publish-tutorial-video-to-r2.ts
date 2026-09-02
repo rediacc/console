@@ -11,8 +11,8 @@
  *   npm run tutorials:publish-video -- --cast tutorial-monitoring --all-langs
  *   npm run tutorials:publish-video -- --all
  *
- * Requires R2_MEDIA_ACCESS_KEY_ID / R2_MEDIA_SECRET_ACCESS_KEY /
- * R2_MEDIA_ENDPOINT in the environment (see .ci/docs/r2-media-setup.md).
+ * Requires CLOUDFLARE_R2_MEDIA_ACCESS_KEY_ID / CLOUDFLARE_R2_MEDIA_SECRET_ACCESS_KEY /
+ * CLOUDFLARE_R2_MEDIA_ENDPOINT in the environment (see .ci/docs/r2-media-setup.md).
  */
 
 import { execFileSync } from 'node:child_process';
@@ -137,9 +137,9 @@ function main(): void {
   const args = parseArgs(process.argv.slice(2));
 
   for (const required of [
-    'R2_MEDIA_ACCESS_KEY_ID',
-    'R2_MEDIA_SECRET_ACCESS_KEY',
-    'R2_MEDIA_ENDPOINT',
+    'CLOUDFLARE_R2_MEDIA_ACCESS_KEY_ID',
+    'CLOUDFLARE_R2_MEDIA_SECRET_ACCESS_KEY',
+    'CLOUDFLARE_R2_MEDIA_ENDPOINT',
   ]) {
     if (!process.env[required]) {
       console.error(`Missing required env var: ${required} (see .ci/docs/r2-media-setup.md)`);

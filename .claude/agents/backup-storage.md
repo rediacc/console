@@ -103,10 +103,16 @@ Two more of the same class worth carrying:
 Do not relitigate these; they are the operator's, recorded in 07 §2.
 
 - **Production R2 uses the PRESIGN minter**, not the locally-signed JWT. The store stays
-  the native R2 binding; grants are presigned URLs signed with `BACKUP_S3_*`. Wave 5b
-  sets `BACKUP_S3_*`, NOT `BACKUP_R2_PARENT_*`. The choice is GATED, not commented:
-  `tests/integration/backup-plane-selection.test.ts` fails if the JWT minter is
-  re-selected.
+  the native R2 binding; grants are presigned URLs signed with the WORKER keys
+  `ACCOUNT_BACKUP_S3_*`. Wave 5b sets those, NOT `ACCOUNT_BACKUP_R2_GRANT_PARENT_*`. The
+  choice is GATED, not commented: `tests/integration/backup-plane-selection.test.ts` fails
+  if the JWT minter is re-selected.
+  Naming, because this family moved twice on 2026-09-02 (durable plan decision 10): the
+  WORKER/`.env` keys are `ACCOUNT_BACKUP_S3_*` (they were `BACKUP_S3_*`, then briefly
+  `CLOUDFLARE_R2_BACKUP_*`), while the GITHUB org-secret names are still `BACKUP_S3_*` and
+  deliberately have not moved. zod v4 strips an unknown key silently, so a stale spelling
+  here disables the backup plane with no error — check `private/account/src/types/env.ts`
+  before trusting any of these names.
 - **The SERVER names the keys.** `chunkPrefix` and `manifestKey` ride in the grant. The
   client never composes an object key; that coupling is what caused the wrong-level
   chunk write.
