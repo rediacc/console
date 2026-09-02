@@ -1,25 +1,28 @@
-Status: executing — as of 2026-09-02 EVERY LOCAL PIECE HAS LANDED, uncommitted: the
-Worker side, the Bitwarden side (names AND per-secret notes), the CI shadow-run in 61 jobs,
-five minted credentials (decision 9), and both backup-family renames (decision 10). What
-remains is not migration work. It is (a) LANDING — this cannot be one commit, because the
-gates that read across a submodule boundary are green only against the dirty worktrees, so
-it needs account, renet and elite committed first and then console with the pointers bumped;
-and (b) the GitHub-secret-side rename, which **APPLIED on 2026-09-02 (Part 19)** after the
-operator ruled "mint the 5, then apply" -- the tree now carries the new names and the dry run
-reports 0 replacements. **CANCELLED as of Part 22**: the operator has directed that GitHub
-secrets be DELETED rather than renamed, so `scripts/dev/rename-org-secrets.sh` must NOT be
-run. See agent/PLAN-github-secrets-removal.md. It was previously described here as DRY-RUN ONLY, blocked on a
-prerequisite rather than a preference: the operator ruled cutover-first, and the cutover has
-executed zero times because the work is uncommitted. Re-measured 2026-09-02 against the tree
-as it then stood: 1289 replacements in 102 files (down from 1315/106 that morning, because
-decision 10 had already moved the backup families out of its path), plus 1 generated file to
-regenerate, 2 runtime-constructed lines and 46 Stripe-collapse lines to hand-edit. See
-Part 12 for the sed rules, Parts 13-22 for what execution taught, and the execution plan.
-**Parts 17-18 are the live ones, and the 18-name gap is CLOSED**: the shadow compared 35 of
-53 because the request list was a set intersection, not a coverage rule. Part 17c's gate now
-asserts the converse in three directions and the read-without-request class is swept. What
-remains is not analysis: three OTLP secrets only the operator can mint, and the `.env` ->
-Bitwarden fetch that Part 18 measures as blocking every local `.env` key's removal.
+Status: executing — the migration's own DESIGN is finished; what is left is values only
+the operator holds. Everything landed on 2026-09-03 as branch `0903-1` / PR #585 with
+`account#85`, `renet#110`, `elite#16`; `ci:quick` is 288/288 and `carried-reds.json` is
+empty. **Read Part 23 first** — it records the P0 that Part 19's rename contained, the two
+files the same class recurred in, the four gates written after each incident, and the one
+finding that changes what this plan is FOR.
+
+That finding: the shadow run compared values and **two disagree** —
+`ACCOUNT_SERVER_API_KEY` and `STRIPE_SANDBOX_WEBHOOK_SECRET` hold different values in
+GitHub and Bitwarden (run 33691632299, Account E2E). Deleting the org secrets now would
+destroy the live value of both, and no session can reconcile them because GitHub secrets
+are write-only. Parked as `[?] #fbd35dba`, DEFAULT "delete nothing". The rule it
+establishes outlives this migration: **a fallback may only be destroyed after something
+has compared it to its replacement, value by value** — every gate in Parts 17-21 checks
+NAMES, and a name that resolves is not a value that agrees.
+
+The GitHub-side rename remains **CANCELLED** (Part 22): the operator directed deletion
+instead, so `scripts/dev/rename-org-secrets.sh` was deleted rather than left as a script
+that must never be run. `.ci/config/github-secret-preimage.json` is the interim dictionary
+of what GitHub still calls each secret, and it is SCAFFOLD — it goes when the org secrets
+do. Deletion itself is `agent/PLAN-github-secrets-removal.md`.
+
+Parts 12-16 are history now: the sed rules, the four-angle audit, decisions 9 and 10 and
+the store's self-documentation all executed. Parts 17-18 closed the 18-name gap. Parts
+19-22 are what applying the rename taught. Part 23 is the live one.
 
 # Secret namespace migration: Bitwarden SM + a project-prefixed naming convention
 
@@ -2412,3 +2415,95 @@ FAILS rather than exporting a blank.
 the sole guard on every credential. A `BWS_MAP_ROOT` override makes the real scan drivable
 against fixtures, and the fourth case proves that override is not an escape hatch — an empty
 tree still reds, because the anti-vacuity clauses fire.
+
+## Part 23 — it LANDED, the rename had a P0 in it, and the shadow changed the endgame (2026-09-03)
+
+Part 22 left two things: land it, then delete the GitHub secrets. Both moved, and the
+second one moved in the opposite direction to the plan.
+
+### The landing
+
+Branch **`0903-1`** in console and all three submodules, PR **#585** (draft) with
+`rediacc/account#85`, `rediacc/renet#110`, `rediacc/elite#16`. Epic `24c98380`; every
+commit carries `PR-TASK: 24c98380`. The ordering Part 22 predicted held: submodules
+committed first, then console with the pointers bumped, because the cross-boundary gates
+are green only against a consistent set. `npm run ci:quick` is 288/288 and
+`.ci/config/carried-reds.json` is empty.
+
+(The branch was `0902-1` for an hour. The date rolled over mid-session and
+`block-stale-pr-branch-date.sh` refused the PR: feature branches are MMDD-N keyed to the
+day the wave is FILED, and `/pr-merge` matches a submodule's coordinated branch by the
+console branch name EXACTLY, so all four had to be renamed together.)
+
+### THE P0: `secrets.X` is a GitHub name, and Part 19 renamed it
+
+Part 19 recorded three things that went wrong applying the rename. There was a fourth,
+and it was the largest. **`scripts/dev/secret-rename.py` rewrote BOTH sides of
+`NEW: ${{ secrets.OLD }}`.** The right-hand side names a secret that lives on GitHub, and
+Part 22 had just ruled the GitHub-side rename CANCELLED — so 267 expressions across 22
+workflow files pointed at secrets that do not exist.
+
+**GitHub does not error on an unknown secret. It substitutes the empty string.** Every
+app-token mint, both GPG signing steps, every R2 upload and the whole account deploy would
+have run with blank credentials, and no step would have said so.
+
+Two of the chosen names were impossible rather than merely wrong:
+
+    $ gh secret set GITHUB_ZZ_PROBE -R rediacc/console
+    HTTP 422: Secret names must not start with GITHUB_.
+
+So `GITHUB_APP_PRIVATE_KEY` and `GITHUB_AUTOPILOT_PRIVATE_KEY` are renamed at EVERY layer
+onto the names GitHub already holds, and the store name is aliased at the request line.
+This is a correction to Part 10's target table: a name that GitHub cannot store is not a
+naming choice, and the `GITHUB_` prefix should never have been proposed.
+
+`.ci/config/github-secret-preimage.json` is the dictionary of what GitHub still calls each
+secret. It is **scaffold**, deleted with the org secrets. `secret-rename.py` now refuses a
+`secrets.` context (`SECRETS_CTX`), the same shape as its existing `vars.` guard.
+
+### The class recurred twice more, in files nothing connected to it
+
+1. **`rotation-manifest.json` and `scripts/rotation/lib/config.ts`** — `githubSecretNames`
+   and the `github-secret:` consumers are GitHub names too, and the rename moved 34 of
+   them. A `cf-r2` rotation would have called `gh secret set CLOUDFLARE_R2_ACCESS_KEY_ID`,
+   CREATING a second org secret nothing reads while leaving the live `R2_ACCESS_KEY_ID`
+   stale. Found only because the test written to DEMONSTRATE that regression stopped
+   demonstrating it: the rename had made its "old derivation" case identical to the
+   correct one.
+2. **The shadow's own scaffold** — `SHADOW_NAMES` was renamed but not the `GH_`/`BWS_`
+   prefixed forms, because the repair's lookbehind treats the `_` in `GH_` as a word
+   character. 104 lines across 15 files. The compare step caught it at run time with
+   `shadow APP_PRIVATE_KEY EMPTY -- nothing was compared`, which is the compare step
+   working exactly as designed.
+
+### Gates added after each incident
+
+| gate | asserts |
+|---|---|
+| `check_bws_map.py` assertion 10 | a pre-image row names a MAPPED secret AND a name some workflow still reads — neither leg is visible to assertion 9 |
+| `check_bws_map.py` assertion 11 | `SHADOW_NAMES`, `GH_*` and `BWS_*` name the SAME SET per file, equality in both directions |
+| `check-workflow-gates.sh` CHECK 5 | a job that fetches from Bitwarden must check out the map it resolves with (found 11 such jobs, 2 broken) |
+| `check:ci-actions-allowlist` | every third-party action is one this repo may run — offline, against a committed copy of repository settings |
+
+### THE ENDGAME CHANGED AGAIN: the shadow found two real mismatches
+
+Run 33691632299, `Tests + Infra / Account E2E`, compare step: six names matched, and
+**`ACCOUNT_SERVER_API_KEY` and `STRIPE_SANDBOX_WEBHOOK_SECRET` came back MISMATCH.**
+GitHub and Bitwarden hold different values.
+
+Part 22 framed deletion as the endgame and the shadow as the precondition. That framing
+was right and this is what it bought: deleting now would have destroyed the live value of
+both. **No session can reconcile them** — GitHub secrets are write-only, so the
+authoritative value cannot be read to copy across. This is operator-only work, parked as
+`[?] #fbd35dba` with DEFAULT "delete no org secret".
+
+The rule this establishes, and it generalises past this migration: **a fallback may only
+be destroyed after something has compared it to its replacement, value by value.** A name
+that resolves is not a value that agrees, and every gate in Parts 17-21 checks names.
+
+### What remains of THIS plan
+
+Nothing but the operator's half. The three OTLP secrets Part 17 named still need
+`./run.sh rotation rotate otlp-*`, the two mismatches above need re-seeding in `ci-shared`,
+and the deletion itself is `agent/PLAN-github-secrets-removal.md`. The migration's own
+design is finished; what is left is values only the operator holds.
