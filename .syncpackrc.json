@@ -34,14 +34,14 @@
       "pinVersion": "^22.20.0"
     },
     {
-      "label": "Pin OpenTelemetry exporter-trace to the sdk-node 0.219 line",
+      "label": "Pin OpenTelemetry exporter-trace to the sdk-node line",
       "packages": [
         "**"
       ],
       "dependencies": [
         "@opentelemetry/exporter-trace-otlp-http"
       ],
-      "pinVersion": "^0.221.0"
+      "pinVersion": "^0.222.0"
     },
     {
       "label": "Pin OpenTelemetry sdk-node for CLI",
@@ -51,17 +51,17 @@
       "dependencies": [
         "@opentelemetry/sdk-node"
       ],
-      "pinVersion": "^0.221.0"
+      "pinVersion": "^0.222.0"
     },
     {
-      "label": "Pin OpenTelemetry resources to compatible version",
+      "label": "Pin OpenTelemetry resources to the sdk-node line",
       "packages": [
         "**"
       ],
       "dependencies": [
         "@opentelemetry/resources"
       ],
-      "pinVersion": "^2.10.0"
+      "pinVersion": "^2.11.0"
     },
     {
       "label": "Pin i18next for CLI",
