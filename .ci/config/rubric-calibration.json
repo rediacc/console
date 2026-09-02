@@ -10,6 +10,11 @@
       "note": "SWEEP_PROMPT re-calibrated after eb34b3a47; the run is the evidence, this file only proves the text matches",
       "sha": "4c76bee71ce4494a"
     },
+    "SHAPE_PROMPT": {
+      "calibrated": "2026-09-02",
+      "note": "FIRST calibration of this rubric. It was absent from the manifest entirely -- it had live fixtures (SHAPE_CASES) and was calibrated by the same runner, yet nothing pinned its text, so it could drift with nothing noticing. The run was FULLY green: 19/19 fixtures matched, 5 shapedup among them including all three CONTROL cases that must stay silent (run_gate's three incompatible return contracts, the ten-distinct-shapes findings report, and a generated file with its fixtures). Recording a hash off a partial run is a lie this gate cannot see, which is why the count is here.",
+      "sha": "4a98f1d634227c47"
+    },
     "SWEEP_PROMPT": {
       "calibrated": "2026-09-01",
       "note": "SWEEP_PROMPT re-calibrated after eb34b3a47; the run is the evidence, this file only proves the text matches",
