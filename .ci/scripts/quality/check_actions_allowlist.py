@@ -33,6 +33,7 @@ change -- deliberate, and stated in the composite's header beside the pin.
 
 from __future__ import annotations
 
+import datetime as dt
 import json
 import os
 import re
@@ -108,8 +109,6 @@ def refresh(record_path: Path) -> int:
         return 1
     live = json.loads(proc.stdout)
     doc = json.loads(record_path.read_text(encoding="utf-8"))
-    import datetime as dt
-
     doc["refreshed_at"] = dt.datetime.now(dt.UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
     for k in ("github_owned_allowed", "verified_allowed", "patterns_allowed"):
         doc[k] = live.get(k)
@@ -118,7 +117,7 @@ def refresh(record_path: Path) -> int:
     return 0
 
 
-def selftest(record: dict) -> int:
+def selftest() -> int:
     """Control-first. The rule is a matcher, so it is proven on both answers."""
     bad = 0
     fake = {
@@ -172,7 +171,7 @@ def main(argv: list[str]) -> int:
         return 1
 
     print("actions allowlist: controls first, then the verdict")
-    if selftest(record):
+    if selftest():
         print(
             "✗ instrument control failed; every verdict below would be meaningless", file=sys.stderr
         )
