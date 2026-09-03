@@ -302,7 +302,8 @@
     "check:ci-form-validation": "tsx scripts/check-form-validation.ts",
     "check:ci-client-i18n": "tsx packages/www/scripts/check-client-i18n-freshness.ts --selftest && tsx packages/www/scripts/check-client-i18n-freshness.ts",
     "check:ci-resprofile": ".ci/scripts/quality/check_resprofile.py",
-    "check:ci-format-scope": ".ci/scripts/quality/check_format_scope.py"
+    "check:ci-format-scope": ".ci/scripts/quality/check_format_scope.py",
+    "check:ci-workflow-env-provision": ".ci/scripts/quality/check_workflow_env_provision.py"
   },
   "dependencies": {
     "proper-lockfile": "^4.1.2"

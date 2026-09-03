@@ -1787,6 +1787,21 @@ export const GATES: readonly GateSpec[] = [
     },
   },
   {
+    id: 'check:ci-workflow-env-provision',
+    // A job may not use a shell variable nothing in that job provides. bash
+    // expands an unset name to the empty string, so the failure always surfaces
+    // downstream wearing somebody else's name.
+    run: 'npm run check:ci-workflow-env-provision',
+    gate: true,
+    leaves: ['.ci/scripts/quality/check_workflow_env_provision.py'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-static',
+      step: 'Workflow env provision',
+    },
+  },
+  {
     id: 'check:ci-shell-commands',
     run: 'npm run check:ci-shell-commands',
     gate: true,

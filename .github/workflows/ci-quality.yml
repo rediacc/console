@@ -297,6 +297,18 @@ jobs:
           python3 -c "import yaml; print('PyYAML', yaml.__version__)"
           .ci/scripts/quality/check_workflow_submodule_deps.py
 
+      - name: Workflow env provision
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        # Reads workflow YAML only, so it sits in the static lane with its two
+        # siblings above and installs the same pinned PyYAML. The gate it
+        # enforces is that no job uses a variable nothing in that job provides --
+        # which is the defect that put THIS pin's own name into a pip error
+        # message three jobs over.
+        run: |
+          python3 -m pip install --user --disable-pip-version-check "PyYAML==${PYYAML_VERSION}"
+          python3 -c "import yaml; print('PyYAML', yaml.__version__)"
+          .ci/scripts/quality/check_workflow_env_provision.py
+
       - name: No inline Python in JS/TS
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: .ci/scripts/quality/check_inline_python.py
@@ -1976,6 +1988,19 @@ jobs:
           token: ${{ steps.app-token.outputs.token }}
       - id: setup
         uses: ./.github/actions/setup-workspace
+
+      - name: Load gate toolchain pins
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        # THIS JOB WAS MISSING IT, and the failure named the wrong thing. The
+        # "Secret reachability" step below installs "PyYAML==${PYYAML_VERSION}",
+        # and that variable comes from here. Without this step it expanded to
+        # EMPTY, so pip was handed the literal `PyYAML==` and answered
+        # "Could not find a version that satisfies the requirement PyYAML==" --
+        # a message about pip, in a step about secrets, in a job that had simply
+        # never loaded the pins quality-static loads.
+        run: |
+          .ci/scripts/lib/toolchain.sh --env >> "$GITHUB_ENV"
+          .ci/scripts/lib/toolchain.sh --report
 
       # external_quality 'skip' only, deliberately NO soft mode: a new
       # production advisory against main's unchanged lockfile is a real
