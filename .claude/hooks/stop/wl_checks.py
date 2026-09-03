@@ -1264,20 +1264,84 @@ def plan_orientation(root, rel):
     return title, [f for f, _n in ranked[:PLAN_ORIENT_FILES]]
 
 
+def plan_box_census(root, recs):
+    """(per_relpath_counts, open_total, done_total, in_scope, exempt) for the boxes.
+
+    S1 of agent/PLAN-plan-file-lifecycle.md, and it exists because the operator asked
+    "I feel like it only catches single file?" -- which was right, for TWO reasons and
+    the smaller one was the known one. wl_planfile renders one plan per stop AND its
+    NOT_STARTED_STATES filter drops the rest before it ever opens them: measured
+    2026-09-02, six of the eight box-carrying plans read `Status: draft`, hiding 72 of
+    88 open boxes, because `draft` has become this repo's default header on plans under
+    ACTIVE execution rather than a marker for proposals.
+
+    This census answers with the whole number instead. It runs from plans_block, which
+    fires at SessionStart and PostCompact OUTSIDE the outq, so it cannot be starved the
+    way the per-stop advisory was -- that one was shown once across six sessions in a
+    day, at drain position 20 of 22 behind eleven priority-1 producers.
+
+    Counts only, never quoted tasks: the advisory owns the quoting, and duplicating it
+    here would rebuild the wall this is meant to replace.
+
+    `wl_planfile` is the module-level import at the top of this file, not a deferred
+    one. The first cut wrapped it in try/ImportError for "blindness", which was wrong
+    twice over: wl_checks cannot load at all without it, so the arm was unreachable,
+    and the control written to prove the arm had to fake `sys.modules` to reach it --
+    a control for a branch production can never take is the vacuous shape this file
+    polices elsewhere. Both are gone. The caller's own `except Exception` at the
+    plan-tasks advisory is what keeps a parser fault from wedging a stop.
+    """
+    counts, o_tot, d_tot, in_scope, exempt = {}, 0, 0, 0, 0
+    for rel, status, _n in recs:
+        try:
+            text = (pathlib.Path(root) / rel).read_text(encoding="utf-8", errors="replace")
+        except OSError:
+            continue
+        open_t, done_t = wl_planfile.plan_boxes(text)
+        if not (open_t or done_t):
+            continue
+        counts[rel] = (len(open_t), len(done_t))
+        o_tot += len(open_t)
+        d_tot += len(done_t)
+        if wl_planfile.in_scope_status(status):
+            in_scope += 1
+        else:
+            exempt += 1
+    return counts, o_tot, d_tot, in_scope, exempt
+
+
 def plans_block(root):
     """(listing, live_records): the non-done plans, one line each, plus one
     count line for the executed ones. ("", []) when there is nothing to say,
-    so a project without plans emits no block at all."""
+    so a project without plans emits no block at all.
+
+    Each line carries its BOX COUNTS, and two summary lines carry the tree-wide
+    totals -- see plan_box_census for why the per-stop advisory cannot supply them.
+    """
     recs = plan_records(root)
     live = [r for r in recs if r[1] not in PLAN_DONE_STATES]
     if not live:
         return "", []
-    lines = ["  %s [%s] (%d lines)" % (rel, status, n) for rel, status, n in live]
+    counts, o_tot, d_tot, in_scope, exempt = plan_box_census(root, recs)
+    lines = []
+    for rel, status, n in live:
+        boxes = counts.get(rel)
+        suffix = ", %d open box(es), %d ticked" % boxes if boxes else ""
+        lines.append("  %s [%s] (%d lines%s)" % (rel, status, n, suffix))
     done = len(recs) - len(live)
     if done:
         lines.append(
             "  (+%d done or superseded plan(s) in the same directory: historical "
             "record, read one only if you need the reasoning behind it)" % done
+        )
+    if counts:
+        lines.append(
+            "  %d plan file(s) carry %d open box(es) and %d ticked, tree-wide."
+            % (len(counts), o_tot, d_tot)
+        )
+        lines.append(
+            "  %d of them are in scope for the per-stop advisory; %d are exempt by "
+            "Status, so their boxes are counted HERE and nowhere else." % (in_scope, exempt)
         )
     return "\n".join(lines), live
 

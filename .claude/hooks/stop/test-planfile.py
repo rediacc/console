@@ -383,6 +383,56 @@ control(
     [],
 )
 
+
+# ---------------------------------------------------------------------------
+# 8bis. THE SessionStart CENSUS (S1). Its entire reason for existing is that the
+#    per-stop advisory CANNOT see a plan whose Status is NOT_STARTED, and on this
+#    repo that is most of them: `draft` became the default header on plans under
+#    active execution, so six of eight box-carrying files hid 72 of 88 open boxes.
+#    So the plant is a `draft` plan -- one the advisory drops -- and the assertion
+#    is that the census counts it anyway and SAYS it is exempt.
+# ---------------------------------------------------------------------------
+def census_for(*plans):
+    """(counts, open, done, in_scope, exempt) for N fixtures written to one root."""
+    td = tempfile.TemporaryDirectory()
+    root = pathlib.Path(td.name)
+    (root / "agent").mkdir()
+    try:
+        for name, body in plans:
+            (root / "agent" / name).write_text(body, encoding="utf-8")
+        recs = K.plan_records(root)
+        return K.plan_box_census(root, recs), K.plans_block(root)[0]
+    finally:
+        td.cleanup()
+
+
+draft = plan_body(status="draft", open_tasks=[TASK_A, TASK_B], done_tasks=[TASK_C])
+(counts, o, d, in_scope, exempt), block = census_for(("PLAN-draft.md", draft))
+control("THE PLANT: a draft plan the advisory DROPS is still counted", (o, d), (2, 1))
+control("  and it is reported as exempt, not as in scope", (in_scope, exempt), (0, 1))
+truthy("  and the exempt count reaches the rendered block", "1 are exempt by Status" in block)
+truthy("  and the per-plan line carries its boxes", "2 open box(es), 1 ticked" in block)
+
+# THE PAIR. A status the advisory DOES admit must be counted as in scope, or the
+# split above is decoration -- every plan would read the same way.
+ready = plan_body(status="ready", open_tasks=[TASK_A])
+(_c, o2, _d2, in2, ex2), _b = census_for(("PLAN-ready.md", ready))
+control("CONTROL: an in-scope status counts as in scope, not exempt", (in2, ex2), (1, 0))
+
+# Two plans, one of each, so the totals are a SUM and not the last file read.
+(_c3, o3, d3, in3, ex3), block3 = census_for(("PLAN-draft.md", draft), ("PLAN-ready.md", ready))
+control("totals are summed across plans, not overwritten", (o3, d3), (3, 1))
+control("  and the scope split is summed too", (in3, ex3), (1, 1))
+truthy("  and the tree-wide line says so", "2 plan file(s) carry 3 open box(es)" in block3)
+
+# A plan with NO boxes must contribute no suffix and no census row, or every
+# prose-only plan in the tree grows a misleading "0 open box(es)".
+none_body = plan_body(status="draft", extra="Prose only, no checkbox anywhere.\n")
+(counts4, o4, _d4, _i4, _e4), block4 = census_for(("PLAN-prose.md", none_body))
+control("a plan with no boxes contributes no census row", (len(counts4), o4), (0, 0))
+truthy("  and its line grows no box suffix", "open box(es)" not in block4)
+
+
 # ---------------------------------------------------------------------------
 # 9. THE CONTROL FOR THE CONTROLS. A green run over fixtures that produced no
 #    tasks proves nothing at all -- this is assertion 5 of test-always-tier.py
@@ -392,7 +442,7 @@ control("the fixtures really do parse as tasks", len(P.plan_tasks(live)), 3)
 truthy(
     "wl_planfid's calibration is what is being reused", P.TASK_MATCH > 0 and P.MIN_MATCH_TOKENS > 0
 )
-if Tally.count < 45:
+if Tally.count < 53:
     Tally.fails += 1
     print(
         "FAIL  only %d control(s) ran; the file is not being executed as written" % Tally.count,

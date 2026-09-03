@@ -392,7 +392,21 @@ Three points each, plus two easy-to-forget fourths.
 - [ ] Write `.ci/scripts/quality/check-plan-housekeeping.sh` until that selftest passes; wire it into `quality-i18n`
 - [ ] Create `.plan-housekeeping-allowlist` (header comment, zero entries) and add its row to `docs/agent-reference/suppressions.md`'s Current sites table
 - [ ] Delete the 19 finished-and-uncited plans to flatten the 2026-09-23 cliff (list in the age agent's report; 33 of 61 are FINISHED, 19 of those cited by nothing outside `agent/`)
-- [ ] Ship S1, the SessionStart census -- cheapest change here and the operator-visible half; do not let it wait on the CI work
+- [x] Ship S1, the SessionStart census -- cheapest change here and the operator-visible half; do not let it wait on the CI work
+      DONE 2026-09-03: wl_checks.plan_box_census + plans_block now carry per-plan box
+      counts and two tree-wide summary lines. Live output: "10 plan file(s) carry 82 open
+      box(es) and 38 ticked, tree-wide. / 3 of them are in scope for the per-stop advisory;
+      7 are exempt by Status, so their boxes are counted HERE and nowhere else." That last
+      clause is the measurement this whole item existed for. Nine controls in
+      test-planfile.py, planted on a `draft` plan (the status the advisory DROPS) with an
+      in-scope pair beside it, a two-plan case proving the totals SUM, and a prose-only
+      plan proving a boxless file grows no misleading suffix. Proven able to fail: making
+      every plan count as in-scope reds three of them.
+      CORRECTION worth carrying: the first cut wrapped the parser import in
+      try/ImportError for "blindness" and wrote a control for that arm. wl_checks:27
+      already imports wl_planfile at module level, so the arm was UNREACHABLE and the
+      control had to fake sys.modules to reach it -- a control for a branch production
+      cannot take. Both removed rather than kept as decoration.
 - [ ] Ship S2 and S3, and amend `wl_planfile`'s design notes 2 and 4 to cite the measurement that overtook them
 - [ ] Pull forward the prior plan's parser refactor (`plan_task_marks`, `[?]`/`[>]` as first-class marks); A1's "parked, not vanished" exit needs it
 - [ ] Confirm cheat 13's exposure against the branch ruleset before treating it as closed
