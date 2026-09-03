@@ -34,32 +34,29 @@
       "pinVersion": "^22.20.0"
     },
     {
-      "label": "Pin OpenTelemetry exporter-trace to the sdk-node line",
+      "label": "Pin the OpenTelemetry 0.x line in lockstep",
       "packages": [
         "**"
       ],
       "dependencies": [
-        "@opentelemetry/exporter-trace-otlp-http"
-      ],
-      "pinVersion": "^0.222.0"
-    },
-    {
-      "label": "Pin OpenTelemetry sdk-node for CLI",
-      "packages": [
-        "**"
-      ],
-      "dependencies": [
+        "@opentelemetry/api-logs",
+        "@opentelemetry/exporter-logs-otlp-http",
+        "@opentelemetry/exporter-metrics-otlp-http",
+        "@opentelemetry/exporter-trace-otlp-http",
+        "@opentelemetry/sdk-logs",
         "@opentelemetry/sdk-node"
       ],
       "pinVersion": "^0.222.0"
     },
     {
-      "label": "Pin OpenTelemetry resources to the sdk-node line",
+      "label": "Pin the OpenTelemetry 2.x line in lockstep",
       "packages": [
         "**"
       ],
       "dependencies": [
-        "@opentelemetry/resources"
+        "@opentelemetry/core",
+        "@opentelemetry/resources",
+        "@opentelemetry/sdk-metrics"
       ],
       "pinVersion": "^2.11.0"
     },
