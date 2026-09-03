@@ -34,11 +34,8 @@
 
 set -uo pipefail
 
-CMD=$(jq -r '.tool_input.command' 2>/dev/null)
-[ -z "$CMD" ] && exit 0
-
 source "$(dirname "${BASH_SOURCE[0]}")/lib/command-scan.sh"
-SCAN=$(hook_scan_target "$CMD")
+hook_init || exit 0
 
 # Is this a commit at all? Command position, so prose about committing is not.
 # Deliberately NOT `git tag` and NOT `gh pr create`: a tag writes a tagger and a PR

@@ -267,8 +267,15 @@ check 0 pre-bash/block-commit-meta.sh "$(bash_json 'echo "the rule bans Co-Autho
 # THE CONFIG WAS NOT THE CAUSE -- the checkout's only user.email source was the
 # correct one -- so every BLOCK case below is an OVERRIDE path. A guard that read
 # `git config` alone would have watched all 30 go past, and these three are why.
+# The fixture cache must contain the REAL resolved author, or every case blocks --
+# including the ALLOW ones, which is how the first draft of this block failed: the
+# prose control was refused because the guard resolved mfbayraktar@live.com and the
+# fixture only listed good@example.com. The guard was right; the fixture was wrong.
+# Only the OVERRIDE cases below should be refused, and they carry their own address.
 UCA_ID="$(mktemp -d)/identity.json"
-printf '{"format":1,"identities":[{"login":"ctl","id":1,"emails":["good@example.com"]}]}\n' >"$UCA_ID"
+UCA_REAL="$(git var GIT_AUTHOR_IDENT 2>/dev/null | sed -nE 's/.*<([^>]+)>.*/\1/p')"
+printf '{"format":1,"identities":[{"login":"ctl","id":1,"emails":["good@example.com","%s"]}]}\n' \
+    "${UCA_REAL:-good@example.com}" >"$UCA_ID"
 export COMMIT_IDENTITY_FILE="$UCA_ID"
 
 check 2 pre-bash/block-unlinked-commit-author.sh \

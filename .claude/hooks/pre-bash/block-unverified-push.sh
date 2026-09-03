@@ -25,11 +25,8 @@
 # this repo's tree normally carries from OTHER live sessions -- keying on the
 # worktree would invalidate the receipt on someone else's keystroke and make it
 # unobtainable, which is how a guard becomes a wall and then gets bypassed.
-CMD=$(jq -r '.tool_input.command' 2>/dev/null)
-[ -z "$CMD" ] && exit 0
-
 source "$(dirname "${BASH_SOURCE[0]}")/lib/command-scan.sh"
-SCAN=$(hook_scan_target "$CMD")
+hook_init || exit 0
 
 # Command position, so prose about pushing is not a push. Same anchor as
 # block-untagged-commit.sh; see lib/command-scan.sh for why the raw string is

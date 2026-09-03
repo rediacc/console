@@ -128,6 +128,26 @@ _hook_strip_env_prefix() {
     sed -E ':a; s/(^|[;&|(]|\$\(|`)([[:space:]]*)([A-Za-z_][A-Za-z0-9_]*=[^[:space:];&|]*[[:space:]]+)/\1\2/g; ta'
 }
 
+# The preamble every command guard repeats: read the command out of the hook event,
+# bail when there is nothing to judge, and compute the normalised scan target.
+#
+# Extracted after check:ci-shape-duplication counted three identical copies
+# (block-untagged-commit, block-unverified-push, block-unlinked-commit-author). The
+# `source` line above cannot be extracted -- something has to load this file -- but
+# everything after it can, and centralising it matters more here than the line count
+# suggests: `hook_scan_target` is where the `FOO=bar ` prefix bypass was fixed, and
+# a guard that hand-rolls its own preamble is a guard that can drift away from that
+# fix without anything noticing.
+#
+# Sets CMD and SCAN in the caller's scope. Returns 1 when there is no command, so the
+# caller's whole preamble becomes:  hook_init || exit 0
+hook_init() {
+    CMD=$(jq -r '.tool_input.command' 2>/dev/null)
+    [ -z "$CMD" ] && return 1
+    SCAN=$(hook_scan_target "$CMD")
+    return 0
+}
+
 hook_scan_target() {
     local cmd="$1" nohd stripped wrapped
     nohd=$(printf '%s' "$cmd" | _hook_strip_heredocs)

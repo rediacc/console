@@ -20,10 +20,13 @@ import { createElement } from 'react';
 import { createRoot } from 'react-dom/client';
 import type { TutorialSourceSet } from '../components/TutorialVideoPlayer';
 
-async function hydrateTutorialVideos() {
-  const containers = document.querySelectorAll<HTMLElement>(
-    '.tutorial-video-container[data-video-src], .video-player-mount[data-video-src]'
-  );
+/**
+ * Mount the players inside `els`. Split out from the scheduling below so the
+ * `import()` -- and therefore plyr's 122,110 B -- happens per visible container
+ * rather than once for the whole page on load.
+ */
+async function mountPlayers(els: HTMLElement[]) {
+  const containers = els;
   if (containers.length === 0) return;
 
   const { default: TutorialVideoPlayer } = await import('../components/TutorialVideoPlayer');
@@ -73,10 +76,53 @@ async function hydrateTutorialVideos() {
   });
 }
 
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', hydrateTutorialVideos);
-} else {
-  void hydrateTutorialVideos();
+/**
+ * HYDRATE WHEN THE PLAYER IS ACTUALLY IN VIEW, not on DOMContentLoaded.
+ *
+ * plyr plus the player is 122,110 B, and it was reaching every visitor of every
+ * locale homepage the moment the document parsed -- `check:ci-client-bundle-budget`
+ * measures the homepage at 576,294 B against a 500,000 B target, and this chunk is
+ * essentially the whole overage.
+ *
+ * `rootMargin` is deliberately generous: the point is to skip the download for a
+ * visitor who never scrolls to the video, not to make someone who does scroll wait
+ * for it. Loading starts while the mount is still a screen away.
+ *
+ * A browser without IntersectionObserver mounts immediately, which is the old
+ * behaviour and the safe direction to fail.
+ */
+function scheduleHydration() {
+  const containers = Array.from(
+    document.querySelectorAll<HTMLElement>(
+      '.tutorial-video-container[data-video-src], .video-player-mount[data-video-src]'
+    )
+  ).filter((el) => !el.dataset.hydrated && !el.dataset.observed);
+  if (containers.length === 0) return;
+
+  if (typeof IntersectionObserver === 'undefined') {
+    void mountPlayers(containers);
+    return;
+  }
+
+  const io = new IntersectionObserver(
+    (entries, observer) => {
+      const visible = entries.filter((e) => e.isIntersecting).map((e) => e.target as HTMLElement);
+      if (visible.length === 0) return;
+      visible.forEach((el) => observer.unobserve(el));
+      void mountPlayers(visible);
+    },
+    { rootMargin: '600px 0px' }
+  );
+  containers.forEach((el) => {
+    el.dataset.observed = 'true';
+    io.observe(el);
+  });
 }
 
-document.addEventListener('astro:page-load', () => void hydrateTutorialVideos());
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', scheduleHydration);
+} else {
+  scheduleHydration();
+}
+
+document.addEventListener('astro:page-load', scheduleHydration);

@@ -27,6 +27,17 @@
 # authoritative regardless of what the runner cloned, so this gate has no shallow
 # branch at all.
 #
+# PROVEN AGAINST THE LIVE DEFECT, both directions, 2026-09-03:
+#
+#   BEFORE the history rewrite      AFTER
+#     console  #585  30 unattributed   48 commit(s), all attributed (mfbayraktar)
+#     account  #85    7 unattributed    9 commit(s), all attributed
+#     renet    #110   2 unattributed    2 commit(s), all attributed
+#     elite    #16    1 unattributed    1 commit(s), all attributed
+#
+# The 30 matched the count measured independently from git, so the gate and the
+# history agreed about the size of the defect before it was repaired.
+#
 # Usage:
 #   GITHUB_TOKEN=xxx PR_NUMBER=123 ./check-commit-identity.sh
 #   ./check-commit-identity.sh --refresh      # regenerate the local identity cache
