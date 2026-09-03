@@ -32,16 +32,10 @@ REPO_ROOT="$(cd "$SCRIPT_DIR/../../../.." && pwd)"
 # BLOCKER: shared assertion helpers used by every .ci/scripts/test gate
 source "$SCRIPT_DIR/../lib/test-helpers.sh"
 
-CHECK="$REPO_ROOT/.ci/scripts/quality/check-workflows.sh"
-
-LAST_OUT=""
-
-# run_check <dir> — drives ONLY the workflow rules against a fixture tree.
-run_check() {
-    local dir="$1" rc=0
-    LAST_OUT="$(CI=true WORKFLOW_INLINE_ONLY=1 WORKFLOW_DIR="$dir" bash "$CHECK" 2>&1)" || rc=$?
-    return "$rc"
-}
+# shellcheck source=../lib/workflow-rule.sh
+# BLOCKER: the shared harness for check-workflows.sh's rules; see its header for
+# why test-workflow-contracts.sh is deliberately NOT a caller
+source "$SCRIPT_DIR/../lib/workflow-rule.sh"
 
 # write_wf <path> <env-block-lines...>
 write_wf() {

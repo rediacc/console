@@ -364,6 +364,71 @@ check_env_shell_vars() {
 check_env_shell_vars
 
 # -----------------------------------------------------------------------------
+# NO JOB MAY DECLARE A `pr-`-PREFIXED ENVIRONMENT.
+#
+# A job-level `environment:` makes GitHub create the environment OBJECT plus a
+# deployment record. ci.yml's deploy-preview job did that for every PR, and CI
+# cannot undo it: deleting an environment needs Administration:write, which
+# check-no-app-admin-perm.sh forbids the CI App from holding. 25 empty `pr-*`
+# shells accumulated on /deployments before they were deleted by hand.
+#
+# BOTH SYNTACTIC FORMS, because only one of them is the obvious one:
+#
+#     environment:            environment: pr-${{ ... }}
+#       name: pr-${{ ... }}
+#
+# A `grep 'name: pr-'` would be the vacuous version -- it misses the scalar
+# shorthand entirely, and the shorthand is exactly what somebody writes when
+# re-adding this in a hurry.
+#
+# No escape hatch, matching the inline-run rule above and for its stated reason:
+# a hatch that exists gets used. An environment that legitimately needs a `pr-`
+# prefix should be renamed.
+check_pr_environment_names() {
+    require_cmd awk
+    local f bn out
+    for f in "$WORKFLOW_DIR"/*.yml; do
+        [[ -e "$f" ]] || continue
+        bn="$(basename "$f")"
+        out="$(awk -v file="$bn" '
+            # Scalar shorthand on one line.
+            /^[[:space:]]*environment:[[:space:]]*[^[:space:]#]/ {
+                v = $0
+                sub(/^[[:space:]]*environment:[[:space:]]*/, "", v)
+                if (v ~ /^["'"'"']?pr-/) print file ":" NR ": " $0
+                in_env = 0
+                next
+            }
+            # Mapping form: remember the key and its indentation.
+            /^[[:space:]]*environment:[[:space:]]*$/ {
+                match($0, /^[[:space:]]*/)
+                env_indent = RLENGTH
+                in_env = 1
+                next
+            }
+            in_env {
+                match($0, /^[[:space:]]*/)
+                if ($0 ~ /^[[:space:]]*$/) next
+                if (RLENGTH <= env_indent) { in_env = 0; next }
+                if ($0 ~ /^[[:space:]]*name:[[:space:]]*["'"'"']?pr-/) print file ":" NR ": " $0
+            }
+        ' "$f")"
+        if [[ -n "$out" ]]; then
+            log_error "job declares a pr-prefixed deployment environment in $bn"
+            echo "$out" | sed 's/^/    /'
+            echo "    GitHub creates the environment OBJECT for this, and no CI token can"
+            echo "    delete it again (Administration:write is forbidden by"
+            echo "    check-no-app-admin-perm.sh). Drop the environment: block; the preview"
+            echo "    URL belongs in \$GITHUB_STEP_SUMMARY."
+            echo ""
+            ERRORS=$((ERRORS + 1))
+        fi
+    done
+}
+
+check_pr_environment_names
+
+# -----------------------------------------------------------------------------
 # The RUNNER's gh refuses `--slurp` combined with `--jq` ("the --slurp option
 # is not supported with --jq or --template") while local gh versions accept it,
 # so the incompatibility is invisible to every local run and to shell linting

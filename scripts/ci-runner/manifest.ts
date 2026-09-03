@@ -5451,6 +5451,21 @@ export const GATES: readonly GateSpec[] = [
     },
   },
   {
+    id: 'gate-test:workflow-pr-environment',
+    run: '.ci/scripts/test/gates/test-workflow-pr-environment.sh',
+    // Sibling of workflow-env-shell-vars: the rule lives inside
+    // check:ci-workflows, this drives it against fixtures in both directions.
+    gate: true,
+    qualityGateTest: true,
+    leaves: ['.ci/scripts/test/gates/test-workflow-pr-environment.sh'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-security',
+      step: 'Quality-gate unit tests',
+    },
+  },
+  {
     id: 'gate-test:workflow-env-shell-vars',
     run: '.ci/scripts/test/gates/test-workflow-env-shell-vars.sh',
     slow: true, // 17.8s measured

@@ -7,7 +7,16 @@ on:
 permissions:
   contents: read
   actions: read
-  deployments: write
+  # NO `deployments: write`. It existed for a step that deleted the deployment
+  # RECORDS of the `pr-N` environment; ci.yml's deploy-preview job no longer
+  # declares an `environment:`, so no run creates a record and nothing here has
+  # anything to delete. A workflow keeping write scope it cannot use is the
+  # shape this repo's other permission gates exist to catch.
+  #
+  # .ci/scripts/housekeeping/cleanup-github-deployments.sh STAYS in the tree: it
+  # is the manual instrument for edge/stable records, and
+  # cleanup-pr-environments.sh names it in prose as the prerequisite for its own
+  # refusal. Only the automatic step is gone.
 
 jobs:
   cleanup:
@@ -115,24 +124,3 @@ jobs:
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
-
-      # Deleting the environment OBJECT requires Administration:write, which
-      # GITHUB_TOKEN can never hold -- the old `gh api -X DELETE
-      # .../environments/pr-N` step here 403'd on every run while reporting
-      # "already deleted". Deleting the deployment RECORDS only needs the
-      # `deployments: write` permission this workflow already has, and the
-      # repo's Deployments view is driven by the records, so this is what
-      # actually removes pr-N from that view. The empty environment object
-      # remains under Settings -> Environments (no secrets, no rules).
-      #
-      # Those empty objects are NOT reaped by automation and never will be.
-      # cleanup-versions.sh Phase 6 exists for them but can never succeed:
-      # check-no-app-admin-perm.sh is a blocking gate that forbids granting the
-      # App Administration:write, deliberately, so a leaked token cannot delete
-      # edge/stable. The real mechanism is a periodic manual `gh` sweep by a
-      # human with an owner token -- one on 2026-08-05 removed 13 stale pr-*
-      # environments with production verified surviving by name and by id.
-      - name: Delete GitHub deployments for PR environment
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: .ci/scripts/housekeeping/cleanup-github-deployments.sh --repo "${{ github.repository }}" --environment "pr-${{ github.event.pull_request.number }}"

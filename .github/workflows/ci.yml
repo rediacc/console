@@ -1220,7 +1220,7 @@ jobs:
     # BEHAVIOUR CHANGE, stated rather than buried: previews are now published
     # for PRs whose tests are RED. That is the point. A preview is a debugging
     # tool, and it was least available exactly when it was most useful. Nothing
-    # here promotes anything: the environment is `pr-N`, the URL is a
+    # here promotes anything: the Worker is named for the PR, the URL is a
     # workers.dev subdomain, and release promotion is gated separately on
     # push-to-main plus a release channel.
     needs: [initialize, stage-artifacts]
@@ -1231,9 +1231,27 @@ jobs:
       github.event_name == 'pull_request' &&
       needs.initialize.result == 'success' &&
       needs.stage-artifacts.result == 'success'
-    environment:
-      name: pr-${{ github.event.pull_request.number }}
-      url: https://pr-${{ github.event.pull_request.number }}.rediacc.workers.dev
+    # NO `environment:` BLOCK, and its absence is the point.
+    #
+    # A job-level `environment:` makes GitHub create the environment OBJECT and a
+    # deployment record. This job created `pr-N` for every PR, and nothing in CI
+    # can clean the objects up again: deleting one needs Administration:write,
+    # which check-no-app-admin-perm.sh deliberately forbids the CI App from
+    # holding, so a leaked token cannot delete `edge` or `stable`. The result was
+    # 25 empty `pr-*` shells on /deployments, deleted by hand on 2026-09-03 with
+    # .ci/scripts/housekeeping/cleanup-pr-environments.sh.
+    #
+    # Nothing depended on the block. Every secret and variable this job reads
+    # resolves at repo or org scope (checked against the live scopes, including
+    # the two that would have hurt -- CLOUDFLARE_ACCOUNT_ID and ROOT_EMAIL, both
+    # repo-level), and all 25 environments held zero secrets, zero variables and
+    # zero protection rules. Its serialization is redundant too: the workflow-level
+    # concurrency group above already cancels a PR's previous run.
+    #
+    # The preview URL is not lost, it moves one click: the "Deployment summary"
+    # step below writes it to $GITHUB_STEP_SUMMARY. Cloudflare-side publish and
+    # cleanup are untouched -- the operator's ask was to stop publishing them on
+    # the GitHub side only.
     env:
       PR_NUMBER: ${{ github.event.pull_request.number }}
     steps:
