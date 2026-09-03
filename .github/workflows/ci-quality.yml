@@ -1961,6 +1961,17 @@ jobs:
           repositories: console,renet,account,elite,homebrew-tap
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          # DEEP, because the suppression-liveness checks in this job read commit
+          # TOPOLOGY. audit.sh and check-go-deps.sh call entry_age_days (.ci/scripts/
+          # lib/age-check.sh), which asks `git log --diff-filter=A` when a blocklist or
+          # allowlist line was ADDED. On a depth-1 checkout every line is attributed to
+          # the graft boundary, so measured 2026-09-03 the docker/docker blocklist entry
+          # read 195 days here and 2 days there, with AGE_WARN_DAYS at 180. The gate whose
+          # whole job is expiring stale suppressions expired nothing, in green.
+          # blob:none, like quality-i18n: this needs commits and trees, never a historical
+          # file's content.
+          fetch-depth: 0
+          filter: blob:none
           submodules: true
           token: ${{ steps.app-token.outputs.token }}
       - id: setup
@@ -2121,6 +2132,17 @@ jobs:
           repositories: console,renet,account,elite,homebrew-tap
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          # DEEP, because the suppression-liveness checks in this job read commit
+          # TOPOLOGY. audit.sh and check-go-deps.sh call entry_age_days (.ci/scripts/
+          # lib/age-check.sh), which asks `git log --diff-filter=A` when a blocklist or
+          # allowlist line was ADDED. On a depth-1 checkout every line is attributed to
+          # the graft boundary, so measured 2026-09-03 the docker/docker blocklist entry
+          # read 195 days here and 2 days there, with AGE_WARN_DAYS at 180. The gate whose
+          # whole job is expiring stale suppressions expired nothing, in green.
+          # blob:none, like quality-i18n: this needs commits and trees, never a historical
+          # file's content.
+          fetch-depth: 0
+          filter: blob:none
           submodules: true
           token: ${{ steps.app-token.outputs.token }}
 

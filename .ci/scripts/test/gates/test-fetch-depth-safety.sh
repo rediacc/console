@@ -33,25 +33,50 @@ fail() {
 
 # A fixture with MORE than 50 commits, or --depth=50 truncates nothing and every
 # case below passes for the wrong reason.
+# THE FIXTURE IS THE INSTRUMENT, so it asserts its own shape.
+#
+# Both of these were paid for on this gate's FIRST CI run (job 100707433574). The
+# runner's `init.defaultBranch` is not this machine's: a bare `git init` there
+# left origin's HEAD pointing at a nonexistent `master`, so `git clone` reported
+# "you appear to have cloned an empty repository" and the whole battery ran
+# against a 1-commit tree. One case then FAILED honestly ("the shallow fixture is
+# not shallow") and another PASSED VACUOUSLY -- "leaves a full clone full (1
+# commits)" -- which is the worse of the two outcomes and the one that would have
+# survived unnoticed if the first had not gone red beside it.
+#
+# So: the default branch is pinned in three places (both inits and an explicit
+# symbolic-ref, because which of them a given git honours has changed across
+# versions), and the commit count is a hard precondition rather than a hope.
+FIXTURE_COMMITS=60
 make_fixture() {
     local dir="$1" origin="$1/origin" work="$1/work"
     mkdir -p "$origin"
-    git init --quiet --bare "$origin"
+    git init --quiet --bare --initial-branch=main "$origin"
     git init --quiet --initial-branch=main "$work"
     git -C "$work" config user.email t@example.com
     git -C "$work" config user.name t
     local i
-    for i in $(seq 1 60); do
+    for i in $(seq 1 "$FIXTURE_COMMITS"); do
         echo "$i" >"$work/f.txt"
         git -C "$work" add f.txt
         git -C "$work" commit --quiet -m "c$i"
     done
     git -C "$work" remote add origin "$origin"
     git -C "$work" push --quiet origin main 2>/dev/null
+    git -C "$origin" symbolic-ref HEAD refs/heads/main
     rm -rf "$dir/clone"
     git clone --quiet "$origin" "$dir/clone"
     git -C "$dir/clone" config user.email t@example.com
     git -C "$dir/clone" config user.name t
+    # PRECONDITION, not a case: a fixture shallower than the --depth this gate
+    # tests cannot demonstrate anything, and a broken one must never pass.
+    local n
+    n="$(git -C "$dir/clone" rev-list --count HEAD 2>/dev/null || echo 0)"
+    if ((n < FIXTURE_COMMITS)); then
+        fail "FIXTURE BROKEN: $dir/clone holds $n commit(s), expected $FIXTURE_COMMITS" \
+            "every verdict below would be vacuous; check the clone's default branch"
+        return 1
+    fi
 }
 
 is_shallow() { [[ "$(git -C "$1" rev-parse --is-shallow-repository)" == "true" ]]; }
@@ -109,7 +134,7 @@ fi
 # ---------------------------------------------------------------------------
 make_fixture "$TMP/shallow"
 rm -rf "$TMP/shallow/clone"
-git clone --quiet --depth 5 "file://$TMP/shallow/origin" "$TMP/shallow/clone"
+git clone --quiet --depth 5 --branch main "file://$TMP/shallow/origin" "$TMP/shallow/clone"
 git -C "$TMP/shallow/clone" config user.email t@example.com
 git -C "$TMP/shallow/clone" config user.name t
 if ! is_shallow "$TMP/shallow/clone"; then

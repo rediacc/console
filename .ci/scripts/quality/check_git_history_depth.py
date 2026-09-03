@@ -319,6 +319,25 @@ def main():
         "git history depth: %d workflow(s), %d job(s); no job reads history it did not fetch"
         % (len(wfs), jobs)
     )
+    # THE BLIND SPOT, stated because its silence cost something. This gate matches
+    # history ops it can SEE in a step's run: block, or in a script named there. It
+    # does not follow a `source`d library, so `quality-security` and `quality-go`
+    # ran depth-1 for months while audit.sh and check-go-deps.sh asked
+    # age-check.sh's entry_age_days when a suppression line was added -- measured
+    # 195 days on a full checkout and 2 days on theirs. This gate said nothing,
+    # correctly by its own model, and the suppression-liveness gates were green for
+    # a reason unrelated to the suppressions.
+    #
+    # The fix was NOT to teach this gate to resolve `source` chains: that is the
+    # npm-key hop above by another name, and the docstring records what that cost.
+    # age-check.sh now REFUSES on a truncated history instead of answering, so the
+    # defect announces itself at runtime wherever it occurs. A runtime refusal
+    # cannot be fooled by a call graph this gate could not walk.
+    print(
+        "  Blind spot: history ops reached through a `source`d library are invisible "
+        "here; those libraries must refuse a truncated history themselves "
+        "(.ci/scripts/lib/age-check.sh does)."
+    )
     return 0
 
 
