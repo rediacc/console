@@ -168,6 +168,36 @@ def main() -> int:
         print(f"VACUOUS INPUT: cannot read {EXCLUSIONS.name} ({exc})", file=sys.stderr)
         return 1
 
+    # THE TREE MUST BE ALL THERE BEFORE ANY VERDICT IS HONEST.
+    #
+    # This gate exists BECAUSE of a submodule, so a checkout without submodules is
+    # the one condition under which its answer is worthless -- and it does not fail
+    # safe on its own: with private/account absent, the manifests simply vanish from
+    # the enumeration and the two `private/account/{e2e,web}` exclusions look DEAD.
+    # That is what happened on the first CI run (job 100494921545, ci-quality
+    # `quality-branch`, which checks out no submodules): two confident findings
+    # telling the reader to delete entries that are entirely correct.
+    #
+    # So check the directories named by the config, not the manifests found in them.
+    # A missing one is "cannot verify", never "clean" and never "your entry is dead".
+    named = {g.split("/package.json")[0] for g in globs if g != "package.json"}
+    named |= {rel.rsplit("/", 1)[0] for rel in excl}
+    absent = sorted(d for d in named if "*" not in d and not (ROOT / d).is_dir())
+    if absent:
+        print(
+            "✗ CANNOT VERIFY: these trees are named by .syncpackrc.json `source` or by\n"
+            "  "
+            + EXCLUSIONS.name
+            + " but are not present in this checkout:\n"
+            + "".join(f"    {d}\n" for d in absent)
+            + "  They are submodules. Every manifest inside them drops silently out of the\n"
+            "  enumeration, which turns a correct exclusion into a 'dead entry' finding and\n"
+            "  makes the coverage answer smaller than the truth.\n"
+            "  Fix: run this gate in a job whose checkout sets `submodules: true`.",
+            file=sys.stderr,
+        )
+        return 1
+
     found = manifests()
     if len(found) < MIN_MANIFESTS:
         print(

@@ -780,5 +780,87 @@ else
     log_error "     those actions live."
     FAILED=1
 fi
+# =============================================================================
+# CHECK 6: nothing optional may run in front of the watchdog's monitor step.
+#
+# The watchdog is the thing that watches every other CI run. Its job therefore
+# has an ordering property nothing else in this repo has: a step that can fail
+# and that the monitor does not need is not merely noisy there, it silently
+# disables the guard. On 2026-09-03 the shadow-secret compare -- a temporary
+# migration scaffold that nothing consumes -- sat at step 7 of 7 ahead of the
+# monitor, hit a real mismatch on ANTHROPIC_CLAUDE_CODE_OAUTH_TOKEN, and exited
+# 1. Run 33704079162 reported "failure" having monitored NOTHING, and the only
+# symptom was a red watchdog, which reads exactly like the watchdog working.
+#
+# The rule: every step BEFORE "Monitor jobs and cancel on failure" must be one
+# the monitor actually needs. The allowlist below is that set, by name, and it
+# is short on purpose -- adding to it is the moment to ask whether the new step
+# failing should really be allowed to stop the watch.
+# =============================================================================
+log_info "Checking that nothing optional precedes the watchdog's monitor step"
+
+python3 - "$ROOT_DIR" <<'PYEOF'
+import pathlib
+import sys
+
+import yaml
+
+root = pathlib.Path(sys.argv[1])
+WORKFLOW = root / ".github" / "workflows" / "watchdog-monitor.yml"
+MONITOR = "Monitor jobs and cancel on failure"
+# Steps the monitor genuinely depends on: the checkout that puts its scripts on
+# disk, and the deterministic attempt cap, which must run first BECAUSE it writes
+# the env var the monitor reads.
+PREREQS = {"Attempt cap (deterministic backstop)"}
+
+if not WORKFLOW.exists():
+    print(f"error: {WORKFLOW} is missing; CHECK 6 cannot report", file=sys.stderr)
+    sys.exit(1)
+
+doc = yaml.safe_load(WORKFLOW.read_text(encoding="utf-8"))
+offenders = []
+found_monitor = False
+for job_id, job in (doc.get("jobs") or {}).items():
+    steps = [s for s in (job.get("steps") or []) if isinstance(s, dict)]
+    names = [s.get("name") or str(s.get("uses", "")) for s in steps]
+    if MONITOR not in names:
+        continue
+    found_monitor = True
+    for name in names[: names.index(MONITOR)]:
+        if name in PREREQS or "actions/checkout" in name:
+            continue
+        offenders.append(
+            f"watchdog-monitor.yml: job '{job_id}' runs {name!r} BEFORE {MONITOR!r}. "
+            f"If it fails, the job stops and the watchdog monitors nothing while still "
+            f"reporting a failure that looks like its own. Move it after the monitor "
+            f"(with `if: always()` so it still reports), or add it to PREREQS in "
+            f"CHECK 6 of this script saying why the monitor needs it."
+        )
+
+# ANTI-VACUITY: a renamed monitor step would empty this check silently, and an
+# ordering rule that stops finding its own anchor is the vacuous case.
+if not found_monitor:
+    print(
+        f"error: no job in watchdog-monitor.yml has a {MONITOR!r} step. Either it was "
+        f"renamed -- update CHECK 6 -- or the watchdog lost its monitor.",
+        file=sys.stderr,
+    )
+    sys.exit(1)
+
+for line in offenders:
+    print(f"error: {line}", file=sys.stderr)
+if offenders:
+    sys.exit(1)
+print("info: nothing optional precedes the watchdog's monitor step")
+sys.exit(0)
+PYEOF
+
+if [[ $? -eq 0 ]]; then
+    log_success "The watchdog monitors before anything optional can stop it"
+else
+    log_error "Fix: move the step after 'Monitor jobs and cancel on failure' and give it"
+    log_error "     'if: always()', so a failure there still reports without costing the watch."
+    FAILED=1
+fi
 
 exit "$FAILED"

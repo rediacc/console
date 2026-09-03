@@ -527,10 +527,6 @@ jobs:
         env:
           GITHUB_BASE_REF: ${{ github.base_ref }}
 
-      - name: syncpack source coverage
-        if: ${{ !cancelled() }}
-        run: npm run check:ci-syncpack-sources
-
   # NOTE: PR reviews come from the Claude Review workflow (claude-review.yml),
   # which fires only when CI Complete is green and the PR is non-draft; the
   # review-gate job in ci.yml enforces thread resolution afterwards.
@@ -961,6 +957,14 @@ jobs:
       - name: Lockfile
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: npm run check:ci-lockfile
+
+      # Beside Lockfile deliberately: both gates are about files INSIDE
+      # private/account, and this is a job whose checkout sets submodules: true.
+      # It first landed in quality-branch, which checks out none, where it turned
+      # two correct exclusions into 'dead entry' findings (job 100494921545).
+      - name: syncpack source coverage
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: npm run check:ci-syncpack-sources
 
       - name: Format
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
