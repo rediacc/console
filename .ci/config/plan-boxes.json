@@ -152,6 +152,28 @@
       "open_sigs": [],
       "done_sigs": []
     },
+    "agent/PLAN-commit-author-identity.md": {
+      "status": "draft",
+      "owner": "74de73ca",
+      "open": 13,
+      "done": 0,
+      "open_sigs": [
+        "36c8e346",
+        "444ac305",
+        "51f6c3d8",
+        "5c05ef83",
+        "68b1dba0",
+        "756ce886",
+        "76c86d5d",
+        "b5849b3f",
+        "ba5ad2fd",
+        "cd572f71",
+        "d3e3de15",
+        "dcdc7331",
+        "e7ea085e"
+      ],
+      "done_sigs": []
+    },
     "agent/PLAN-docker-image-freshness-soak-filter.md": {
       "status": "done",
       "owner": "854ac1c6",
@@ -512,7 +534,7 @@
       ]
     },
     "agent/PLAN-secret-namespace-migration.md": {
-      "status": "executing",
+      "status": "done",
       "owner": "unowned",
       "open": 7,
       "done": 21,

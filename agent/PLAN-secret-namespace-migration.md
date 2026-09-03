@@ -1,5 +1,13 @@
-Status: executing — the migration's own DESIGN is finished; what is left is values only
-the operator holds. Everything landed on 2026-09-03 as branch `0903-1` / PR #585 with
+Status: done — every line of this plan that a session can execute has been executed.
+What remains is not a step in it: three secrets whose two copies hold different
+VALUES, which only the operator can reconcile. That is recorded where it will be
+found without reading 2,600 lines — `.ci/config/shadow-expected-mismatches.json`,
+which carries each drift with the run that found it, its door, and a `$resolution`
+block naming the steps. Worklist `[?] #fbd35dba` was closed 2026-09-03 with
+`door:operator-only` after verifying against the live org that NO org secret has
+been deleted (45 present, all three disputed names intact, queried by name only).
+
+Do not reopen this plan to delete the org secrets. Read Part 24, then the ledger. Everything landed on 2026-09-03 as branch `0903-1` / PR #585 with
 `account#85`, `renet#110`, `elite#16`; `ci:quick` is 290/290 and `carried-reds.json` is
 empty. **Read Part 24 first, then Part 23** — 24 records the shadow's own design change
 (it no longer stops a job on a KNOWN drift, and why that was not optional), 23 records the
@@ -2568,3 +2576,30 @@ the operator decides, so the wait is now free and the deletion can take as long 
 GitHub calls that token `CLAUDE_CODE_OAUTH_TOKEN` while the shadow name carries the
 `ANTHROPIC_` prefix. A rotation applied under one name would never have reached the other,
 which would make this drift a half-landed rotation rather than a seeding error.
+
+
+## Part 25 — closing this plan, and what "done" does NOT mean (2026-09-03)
+
+`Status: done` here means the DESIGN is spent, not that the migration's last artefact
+is gone. Three things are deliberately still standing, and a session that deletes them
+because a plan says "done" would undo the work:
+
+1. **The shadow run itself**, in all 62 jobs. It is the only instrument that compares a
+   GitHub value against its Bitwarden twin, and until the three drifts are reconciled it
+   is the only thing that would notice a fourth.
+2. **`.ci/config/github-secret-preimage.json`**, the dictionary of what GitHub still
+   calls each secret. Assertion 10 keeps every row live; it dies with the org secrets.
+3. **`.ci/config/shadow-expected-mismatches.json`** and its two gates. An excused name
+   that starts MATCHING fails its job until the entry is deleted, so this file drains
+   itself the moment the operator re-seeds — which is the whole reason closing the
+   worklist item is safe.
+
+The ordering rule that this plan exists to have proven, stated once more because it is
+the transferable part: **a fallback may only be destroyed after something has compared
+it to its replacement VALUE BY VALUE.** Every gate here checks NAMES, and a name that
+resolves is not a value that agrees. The shadow found that out on its first run, and it
+is the reason the org secrets still exist.
+
+What ends this plan for good: the operator re-seeds the three, every compare step says
+`match`, the excused-mismatch ledger empties itself, and only then does the deletion
+run. None of that needs this document.
