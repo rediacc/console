@@ -295,6 +295,7 @@
     "check:ci-locale-config-divergence": "tsx scripts/check-locale-config-divergence.ts",
     "check:ci-dead-translation-keys": "tsx scripts/check-dead-translation-keys.ts",
     "check:ci-anchor-integrity": "tsx scripts/check-anchor-integrity.ts",
+    "check:ci-player-css-scope": "tsx scripts/check-player-css-scope.ts",
     "check:ci-client-bundle-budget": "tsx scripts/check-client-bundle-budget.ts",
     "check:ci-layout-overflow": "tsx scripts/check-layout-overflow.ts",
     "check:ci-hydration-clean": "tsx scripts/check-hydration-clean.ts",

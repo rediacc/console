@@ -3435,6 +3435,20 @@ export const GATES: readonly GateSpec[] = [
     },
   },
   {
+    id: 'check:ci-player-css-scope',
+    run: 'npm run check:ci-player-css-scope',
+    slow: true, // reads the built dist; needs build:www like its neighbour
+    gate: true,
+    needs: ['build:www'],
+    leaves: ['scripts/check-player-css-scope.ts'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-www-build',
+      step: 'Player CSS scope',
+    },
+  },
+  {
     id: 'check:ci-client-bundle-budget',
     run: 'npm run check:ci-client-bundle-budget',
     slow: true, // needs build:www (131.9s); the runner demoted it anyway

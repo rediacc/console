@@ -55,8 +55,12 @@ export function definedClasses(css: string): Set<string> {
  * mention because our code never writes them.
  *
  * BLOCKER: `plyr` is a declared dependency (`packages/www/package.json`) imported by
- * `src/components/TutorialVideoPlayer.tsx`, which also imports
- * `../styles/tutorial-video.css`. The library builds `.plyr__poster` and `.plyr__captions`
+ * `src/components/TutorialVideoPlayer.tsx`. Its stylesheet and
+ * `src/styles/tutorial-video.css` are loaded at RUNTIME by
+ * `src/scripts/tutorial-video-styles.ts` (2026-09-03) rather than imported by the
+ * component -- a module-scope import put them on 794 pages with no player. The
+ * suppression is unchanged in substance; only the citation moved, because a reason
+ * that points at a line which no longer exists is a reason nobody can check. The library builds `.plyr__poster` and `.plyr__captions`
  * itself; styling a vendor library's generated DOM is the entire point of those rules, and
  * the gate reported both as dead. Deleting them would unstyle the tutorial player's poster
  * and captions. Scanning `node_modules/plyr/dist` instead was considered and rejected: it

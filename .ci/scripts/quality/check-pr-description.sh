@@ -141,7 +141,22 @@ echo "  4. Update PR description with:"
 echo "     - Summary of ALL changes (not just initial ones)"
 echo "     - Any new features added during review"
 echo "     - Breaking changes or migration notes"
-echo "  5. Use: gh pr edit $PR_NUMBER --title \"new title\" --body \"new body\""
+# NOT a whole-body replacement, and the distinction is the point. This repo's PR
+# bodies carry TWO machine-written sections, <!-- worklist-epics --> and
+# <!-- pushed-head -->, and the edit form writes the WHOLE body: anything the new
+# text omits is gone. Advice that says --body "new body" is advice to destroy both,
+# and it was printed by the very gate that fires when a description needs updating.
+# Corrected 2026-09-03, on the same day the guard that refuses those edits was itself
+# found to have been narrowed into allowing them.
+echo "  5. Update the description WITHOUT dropping its generated sections."
+echo "     The body carries <!-- worklist-epics --> and <!-- pushed-head -->, and an"
+echo "     edit writes the whole body, so anything you omit is deleted:"
+echo "       .ci/scripts/pr/sync-epic-block.sh $PR_NUMBER <branch>"
+echo "     re-reads the current body and rewrites only its own markers."
+echo "     To change the prose, read the body first and keep every marker:"
+echo "       gh pr view $PR_NUMBER --json body --jq .body > /tmp/body.md"
+echo "       # edit /tmp/body.md, leaving the marker blocks alone"
+echo "       gh api repos/{owner}/{repo}/pulls/$PR_NUMBER -X PATCH -F body=@/tmp/body.md"
 echo ""
 echo "------------------------------------------------------------"
 echo "FOR HUMANS:"

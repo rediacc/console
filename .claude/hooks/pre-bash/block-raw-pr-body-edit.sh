@@ -60,6 +60,10 @@ EDIT_SEG=$(hook_gh_pr_at_command_pos "$SCAN" edit && hook_gh_pr_segment "$SCAN" 
 CREATE_SEG=$(hook_gh_pr_at_command_pos "$SCAN" create && hook_gh_pr_segment "$SCAN" create)
 
 BEGIN_MARKER='<!-- worklist-epics:begin -->'
+# Every machine-written section of a PR body in this repo. An edit must carry them
+# ALL, because `gh pr edit --body` writes the whole body and anything absent is gone.
+# Measured on PR #585, 2026-09-03: the body carries worklist-epics AND pushed-head.
+GENERATED_MARKERS='worklist-epics pushed-head'
 
 # Read whatever body text this command makes visible: --body is in the command,
 # --body-file is on disk. Shared by both arms, because both ask the same
@@ -84,10 +88,20 @@ $(cat "$cand" 2>/dev/null)"
     printf '%s' "$body"
 }
 
-# THE EDIT ARM IS NARROWED TO ITS OWN STATED REASON, 2026-09-03. It used to
-# refuse every body-writing edit outright, including one whose body CARRIES the
-# block -- which cannot drop it, and is therefore exactly as safe as the create
-# this guard already lets through on the same test. That refusal is the failure
+# THE EDIT ARM CHECKS EVERY GENERATED MARKER, NOT JUST THE EPIC ONE. Corrected
+# 2026-09-03, same day, after the narrowing below was written and its own test
+# refused it. The narrowing said an edit carrying `worklist-epics` "cannot drop the
+# block" and is therefore as safe as a create. That was half the picture: `gh pr edit
+# --body` replaces the WHOLE body, and this repo's PR bodies carry a SECOND generated
+# section, `<!-- pushed-head:begin -->`. A body carrying only the epic block passes
+# the narrowed check and silently destroys the pushed-head section -- which is exactly
+# the class of loss this guard exists to prevent, arriving through the door the
+# narrowing opened.
+#
+# So the test that failed was right and the narrowing was wrong. The rule is now: an
+# edit is permitted only when its body carries EVERY marker this repo generates. That
+# keeps the real case the narrowing was written for (fix the prose, leave the machine
+# sections alone) and refuses the case it accidentally allowed. That refusal is the failure
 # mode this file's own header names, quoting block-commit-meta.sh: "a guard whose
 # only failure mode is refusing CORRECT input teaches people to route around it."
 # It bit for real: a PR body had to lose a footer that check-claude-attribution.sh
@@ -102,7 +116,11 @@ HOOK_SAW_BODY_FILE=0
 if [ -n "$EDIT_SEG" ] &&
     { hook_flag_present "$EDIT_SEG" body || hook_flag_present "$EDIT_SEG" body-file; }; then
     EDIT_BODY=$(hook_visible_body "$EDIT_SEG")
-    if printf '%s' "$EDIT_BODY" | grep -qF -- "$BEGIN_MARKER"; then
+    EDIT_OK=1
+    for _m in $GENERATED_MARKERS; do
+        printf '%s' "$EDIT_BODY" | grep -qF -- "<!-- ${_m}:begin -->" || EDIT_OK=0
+    done
+    if [ "$EDIT_OK" = 1 ]; then
         exit 0
     fi
     cat >&2 <<'MSG'

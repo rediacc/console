@@ -2077,6 +2077,14 @@ jobs:
         if: ${{ !cancelled() && steps.build-www.outcome == 'success' }}
         run: npm run check:ci-ssr-locale
 
+      # Beside SEO because both read the built dist. This one asserts that no page
+      # links the video player's stylesheet unless it actually has a player: the
+      # import used to be module-scope, which put 37 KB of render-blocking CSS on
+      # 794 pages that never build one.
+      - name: Player CSS scope
+        if: ${{ !cancelled() && steps.build-www.outcome == 'success' }}
+        run: npm run check:ci-player-css-scope
+
       - name: SEO
         if: ${{ !cancelled() && steps.build-www.outcome == 'success' }}
         run: npm run check:ci-seo

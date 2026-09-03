@@ -20,8 +20,10 @@ import { useTranslation } from '../i18n/react';
 import type { Language } from '../i18n/types';
 import LanguageMenu from './LanguageMenu';
 import { baseLocale, mountLanguagePane } from './tutorial-video/language-pane';
-import 'plyr/dist/plyr.css';
-import '../styles/tutorial-video.css';
+// The player's stylesheets are NOT imported here. A module-scope import puts them in
+// this chunk's importedCss, and Astro then links them on every page carrying the
+// hydrator -- 794 pages with no player. They load at runtime instead; see
+// ../scripts/tutorial-video-styles.ts, and check:ci-player-css-scope guards it.
 
 /**
  * One locale's assets.

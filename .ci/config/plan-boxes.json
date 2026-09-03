@@ -439,6 +439,26 @@
         "ff0c1fc4"
       ]
     },
+    "agent/PLAN-plyr-css-on-demand-loading.md": {
+      "status": "draft",
+      "owner": "74de73ca",
+      "open": 11,
+      "done": 0,
+      "open_sigs": [
+        "29de6607",
+        "3c769dac",
+        "3d61b5dc",
+        "6018aa6e",
+        "6aad636d",
+        "7f013d7c",
+        "7f7a85ec",
+        "93207293",
+        "b53ee71d",
+        "bce8eeed",
+        "c65d7dea"
+      ],
+      "done_sigs": []
+    },
     "agent/PLAN-promote-mutation-runner.md": {
       "status": "done",
       "owner": "99ccf057",
@@ -577,6 +597,25 @@
       "open": 0,
       "done": 0,
       "open_sigs": [],
+      "done_sigs": []
+    },
+    "agent/PLAN-session-onboarding-marker.md": {
+      "status": "draft",
+      "owner": "74de73ca",
+      "open": 10,
+      "done": 0,
+      "open_sigs": [
+        "1ad3ed01",
+        "1cf39aeb",
+        "44e0a390",
+        "864ba50b",
+        "94b8a59d",
+        "9eb50a71",
+        "a07d0f8a",
+        "ac008cf3",
+        "c9c3f81c",
+        "fdd528a8"
+      ],
       "done_sigs": []
     },
     "agent/PLAN-skip-release-gates-r2-manifest.md": {

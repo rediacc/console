@@ -18,6 +18,7 @@
 
 import { createElement } from 'react';
 import { createRoot } from 'react-dom/client';
+import { ensurePlayerStyles } from './tutorial-video-styles';
 import type { TutorialSourceSet } from '../components/TutorialVideoPlayer';
 
 /**
@@ -29,7 +30,13 @@ async function mountPlayers(els: HTMLElement[]) {
   const containers = els;
   if (containers.length === 0) return;
 
-  const { default: TutorialVideoPlayer } = await import('../components/TutorialVideoPlayer');
+  // Both in one tick: the stylesheet is a quarter of the component chunk's size, so it
+  // never lengthens the critical path, and awaiting it means the first frame of player
+  // DOM is already styled rather than merely usually styled.
+  const [, { default: TutorialVideoPlayer }] = await Promise.all([
+    ensurePlayerStyles(),
+    import('../components/TutorialVideoPlayer'),
+  ]);
   type SourceSet = TutorialSourceSet;
 
   containers.forEach((el) => {
