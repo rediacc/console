@@ -1,3 +1,4 @@
+# shellcheck shell=bash
 # 24-lineage.sh -- a compaction must not cost a session its own items.
 #
 # THE INCIDENT. A compaction can hand one continuous conversation a NEW session

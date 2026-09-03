@@ -101,6 +101,8 @@ CASE_FILES=(
     21-cadence.sh
     22-plan-fidelity.sh
     23-priority-ladder.sh
+    24-lineage.sh
+    25-first-touch.sh
 )
 
 # A case file that nothing sources is an orphan the same way a test file that

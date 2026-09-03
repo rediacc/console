@@ -134,20 +134,82 @@ def lease_state(line):
     return "fresh"
 
 
+# LINEAGE ALIASES: the ids a compaction gave to ONE conversation.
+#
+# A compaction can hand a continuous session a new id, and the ownership rule --
+# correctly -- then refuses to let it resolve its own items. On 2026-09-02 that
+# left four settled decisions open all night, reported to the operator as a
+# peer's, while the session reasoned about a peer that did not exist.
+#
+# _LINEAGE maps a BOUND id to the set of ids proven to be the same conversation.
+# It is keyed on the bound id rather than held as a bare set for one reason: a
+# peer session loading this module must never pick up my aliases. `bind_lineage`
+# is called once, with the identity this process actually resolved to.
+# The bound id is held under a reserved key INSIDE the mapping rather than in a
+# separate module global: one object, one write, and no `global` statement for a
+# linter to object to. The key cannot collide with a session id because a session
+# id never contains a space.
+_BOUND_KEY = "bound id"
+_LINEAGE = {}
+
+
+def bind_lineage(session_id, aliases):
+    """Declare that `session_id` is also known by `aliases` (proven, not guessed).
+
+    Called once per process from the store load, after the `lineage` events have
+    been folded and the chain resolved transitively.
+    """
+    if not session_id:
+        return
+    _LINEAGE[_BOUND_KEY] = session_id
+    _LINEAGE[session_id] = set(aliases or ())
+
+
+def lineage_of(session_id):
+    """The proven aliases of `session_id`, or an empty set.
+
+    Returns nothing for an id that is not the bound one, which is what keeps a
+    peer from inheriting this process's adoptions.
+    """
+    bound = _LINEAGE.get(_BOUND_KEY)
+    if not session_id or bound is None:
+        return set()
+    if not same_session(session_id, bound):
+        return set()
+    return _LINEAGE.get(bound, set())
+
+
 def owned_by_me(owner, session_id):
     """An UNTAGGED item is mine: that is the safe default, since the cost of
     wrongly claiming one is doing a little extra work, while the cost of wrongly
     disowning one is silently dropping it. A tag is a PREFIX of the session id
-    (CLAUDE.md asks for a short prefix, not the whole uuid)."""
+    (CLAUDE.md asks for a short prefix, not the whole uuid).
+
+    An ANCESTOR's tag is also mine, but only when a `lineage` event has proven the
+    two ids are one conversation (see wl_lineage.py, which requires a compaction
+    boundary AND shared conversational record uuids). This is the single chokepoint
+    for 25 call sites, so the compaction fix cannot roll out half-applied.
+    """
     if owner is None:
         return True
-    return bool(session_id) and session_id.startswith(owner)
+    if not session_id:
+        return False
+    if session_id.startswith(owner):
+        return True
+    return any(alias.startswith(owner) for alias in lineage_of(session_id))
 
 
 def same_session(a, b):
     """Two prefixes/ids denote one session when either is a prefix of the
     other. Symmetric, because CLI callers pass short prefixes while the Stop
-    event carries the full id, and either side of a comparison can be either."""
+    event carries the full id, and either side of a comparison can be either.
+
+    DELIBERATELY NOT LINEAGE-AWARE, and that is not an oversight. Its ~40 callers
+    compare PEERS -- request routing, the brief roster, the dead-session sweep, the
+    waiter -- and a predecessor is genuinely gone for every one of those purposes.
+    Widening this would silently change all forty; the ancestor branch belongs in
+    `owned_by_me`, which is about who may RESOLVE an item.
+    """
     return bool(a) and bool(b) and (a.startswith(b) or b.startswith(a))
 
 
@@ -875,3 +937,21 @@ def transcript_tail(path, want=None, tries=6, delay=0.25):
         time.sleep(delay)
         return transcript_tail(path, want, tries - 1, delay)
     return last_text, since_user, readable
+
+
+# ARM THE EXIT RECORDER, LAST, and inside a suppress that swallows everything.
+#
+# wl_core is imported by 16 modules and by every one of the ~880 python3
+# invocations the case suite makes, so this line is the single seam that turns
+# "profile every hook process" into one edit with no settings change, no wrapper
+# and no per-guard work. It is also, for the same reason, the single line that
+# could break every hook at once -- which is why the import itself is guarded, why
+# wl_resprofile.install() never raises, why its exit handler writes nothing to
+# stdout or stderr, and why WORKLIST_PROFILE=off exists. A profiler that can
+# change the exit code of the thing it measures is not a profiler.
+try:
+    import wl_resprofile as _resprofile
+
+    _resprofile.install()
+except BaseException:  # noqa: BLE001 -- see above; silence is the contract here
+    pass

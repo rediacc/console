@@ -104,6 +104,32 @@ def _record_uuids(records):
     return {r.get("uuid") for r in records if isinstance(r, dict) and r.get("uuid")}
 
 
+def transcript_for(session_id, projects=None):
+    """This session's transcript path, when the harness did not hand us one.
+
+    The Stop hook receives CLAUDE_TRANSCRIPT_PATH, but the CLI verbs do not, and
+    `--adopt` is a CLI verb. The file is named for the session id, so this is a
+    lookup rather than a guess -- and it returns None rather than a best match,
+    because adopting on the strength of the wrong transcript is exactly the
+    failure this module exists to prevent.
+    """
+    if not session_id:
+        return None
+    if projects:
+        cands = sorted(pathlib.Path(projects).glob("%s*.jsonl" % session_id[:8]))
+    else:
+        # Only as a last resort, and it must stay last: wl_core.projects_dir is
+        # the ONE definition of where transcripts live, and it honours
+        # WORKLIST_PROJECTS_DIR. Reaching straight for ~/.claude/projects here
+        # ignored that override, so --adopt could not work in any environment
+        # that sets it -- which is every test fixture, and that is exactly how
+        # this was caught: the case suite's own control-on-the-control reported
+        # the gate refusing a planted chain, i.e. refusing everything.
+        base = pathlib.Path.home() / ".claude" / "projects"
+        cands = sorted(base.glob("*/%s*.jsonl" % session_id[:8])) if base.is_dir() else []
+    return str(cands[0]) if len(cands) == 1 else None
+
+
 def boundary_of(transcript):
     """My compact_boundary head record, or None when I did not arrive by compaction.
 
@@ -168,13 +194,27 @@ def resolve(session_id, transcript, projects, claimed_prev=None):
             continue
 
         # E3, and it is checked even when E1 fired.
+        #
+        # TWO WAYS TO SATISFY IT, and they must be REPORTED DIFFERENTLY. The head
+        # window may simply not reach far enough into a large candidate to catch a
+        # shared record, while the boundary uuid -- which is dual-written, once in
+        # each transcript -- is findable anywhere in the file by mmap. Both are
+        # real shared records. What is NOT acceptable is printing "0 shared" beside
+        # an accept: a mandatory check reporting zero evidence reads exactly like a
+        # check that was skipped, and this line said that for its first run.
         shared = mine & _record_uuids(_head_records(cand, HEAD_BYTES * 8))
-        if not shared and not (me_uuid and _contains(cand, [me_uuid])):
+        if shared:
+            basis = "%d shared head record(s)" % len(shared)
+            weight = len(shared)
+        elif me_uuid and _contains(cand, [me_uuid]):
+            basis = "the dual-written boundary record %s" % me_uuid[:8]
+            weight = 1
+        else:
             return None, (
                 "%s names me but shares no conversational record: that is not one "
                 "conversation, and a single line is the easiest thing to forge" % cand.stem[:8]
             )
-        hits.append((cand, via, len(shared)))
+        hits.append((cand, via, weight, basis))
 
     if not hits:
         return None, "no candidate carries a continued-in line or my boundary uuid"
@@ -183,11 +223,12 @@ def resolve(session_id, transcript, projects, claimed_prev=None):
             h[0].stem[:8] for h in hits
         )
 
-    cand, via, shared = hits[0]
+    cand, via, shared, basis = hits[0]
     return cand.stem, {
         "via": via,
         "ev_id": me_uuid,
         "shared": shared,
+        "basis": basis,
         "prev_tx": cand.name,
         "next_tx": pathlib.Path(transcript).name,
     }

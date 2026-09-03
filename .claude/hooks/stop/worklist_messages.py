@@ -769,6 +769,48 @@ CLI_REASSIGN_DONE = (
     "    worklist.py --list --open %s"
 )
 
+CLI_ADOPT_USAGE = (
+    "usage: --adopt <my-prefix> <predecessor-prefix>\n"
+    "Records that a compaction gave ONE conversation two session ids, so you can "
+    "resolve the items your pre-compaction self opened. Nothing is rewritten: the "
+    "(prefix) tag inside each item still names the session that wrote it, because "
+    "that is true.\n"
+    "\n"
+    "NOT --reassign, and the difference is the evidence direction. --reassign "
+    "repairs a FICTION and is proven by ABSENCE (an identity that never stopped). "
+    "--adopt joins two REAL identities and is proven by PRESENCE (a compaction "
+    "boundary plus conversational records both transcripts share). There is no "
+    "--force: an edge that cannot be proven must not be recorded.\n"
+)
+
+CLI_ADOPT_REFUSED = (
+    "REFUSED: cannot prove %s and %s are one conversation.\n"
+    "  %s\n"
+    "\n"
+    "This needs harness evidence, not a claim. Either the predecessor's transcript "
+    "ends with a continued-in line naming you, or your transcript opens with a "
+    "compact_boundary whose uuid and logicalParentUuid both appear in theirs -- and "
+    "in EITHER case the two transcripts must share at least one conversational "
+    "record uuid. Two concurrent sessions share zero, which is what makes that last "
+    "check a real refutation rather than a formality.\n"
+    "If you are genuinely the same session and this still refuses, the operator can "
+    "declare it with WORKLIST_SESSION_ID, which is recorded as a human's word.\n"
+)
+
+CLI_ADOPT_SELF = (
+    "REFUSED: %s is you. A compaction that kept the session id needs no adoption and gets none.\n"
+)
+
+CLI_ADOPT_DONE = (
+    "adopted %s <- %s (via %s)\n"
+    "  evidence: %s; boundary %s\n"
+    "  now yours: %s open item(s)\n"
+    "The log was APPENDED to, never rewritten. Those items now BLOCK your stop, "
+    "which is the point: you are blocked on your own work again, exactly as you "
+    "were before the compaction.\n"
+    "    worklist.py --list --open %s\n"
+)
+
 N_PHANTOM_IDENTITY = (
     "PHANTOM IDENTITY IN THE STORE (%d). These prefixes WRITE here and have "
     "never stopped -- no .lastevent-<prefix>.json exists for any of them, and "

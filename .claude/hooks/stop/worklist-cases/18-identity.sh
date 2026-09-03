@@ -270,7 +270,7 @@ PYEOF
 l1run() { # the CLI under the fixture; STATE body on stdin so --state is drivable
     printf '%s' "$STATE_BODY" |
         TMPDIR="$BASE/tmp" CLAUDE_PROJECT_DIR="$BASE/proj" WORKLIST_JUDGE=off \
-            WORKLIST_PUBLISH_ROOT="$BASE" \
+            WORKLIST_PUBLISH_ROOT="$BASE" WORKLIST_PROJECTS_DIR="$BASE/l1projects" \
             python3 "$HOOK" "$@" 2>&1
 }
 
@@ -290,6 +290,33 @@ as_peer cafe1234 l1run --answer cafe1234 "$R_ACK" l1-their-answer >/dev/null
 # never stopped, owning open items. Case 184 runs no Stop hook, so no
 # .lastevent- file exists for anybody here, which is exactly the phantom shape.
 phantom_store phantom1 90
+
+# A CHAIN for the --adopt row. Same reasoning as the phantom above: --adopt is a
+# me-taking verb so L1_TABLE must drive it, and CONTROL A demands rc=0 -- which
+# for an EVIDENCE-GATED verb means planting the evidence. The predecessor's
+# transcript needs the continued-in line, the boundary pair, AND a record this
+# suite's own transcript also carries; without all three the verb refuses, which
+# is the whole point of it.
+L1_PROJ="$BASE/l1projects"
+mkdir -p "$L1_PROJ"
+python3 - "$L1_PROJ" "$SID" adopt111 <<'PYEOF'
+import json, pathlib, sys
+d, sid, prev = pathlib.Path(sys.argv[1]), sys.argv[2], sys.argv[3]
+prev_sid = "%s-9999-8888-7777-666666666666" % prev
+bu, lu = "ad0b7ed0-0000-0000-0000-000000000001", "ad0b7ed0-0000-0000-0000-000000000002"
+shared = "ad0b7ed0-1111-2222-3333-444444444444"
+(d / ("%s.jsonl" % sid)).write_text("".join(json.dumps(r) + "\n" for r in [
+    {"type": "mode", "mode": "default"},
+    {"type": "system", "subtype": "compact_boundary", "parentUuid": None,
+     "uuid": bu, "logicalParentUuid": lu},
+    {"type": "user", "uuid": shared, "message": {"role": "user", "content": "carried"}},
+]), encoding="utf-8")
+(d / ("%s.jsonl" % prev_sid)).write_text("".join(json.dumps(r) + "\n" for r in [
+    {"type": "user", "uuid": shared, "message": {"role": "user", "content": "carried"}},
+    {"type": "system", "subtype": "compact_boundary", "uuid": bu, "logicalParentUuid": lu},
+    {"type": "continued-in", "continuedInSessionId": sid},
+]), encoding="utf-8")
+PYEOF
 
 # label | args (@ME@ is substituted) | needle proving the effect happened
 L1_TABLE=(
@@ -316,6 +343,8 @@ L1_TABLE=(
     "--epic|--epic @ME@ new L1 probe epic|epic #"
     "--publish|--publish @ME@ l1probe|wrote agent/pr/"
     "--reassign|--reassign @ME@ phantom1|reassigned phantom1 -> deadbeef"
+    # Evidence-gated, so CONTROL A only passes against the chain planted above.
+    "--adopt|--adopt @ME@ adopt111|adopted"
 )
 COVERED="$BASE/l1covered"
 : >"$COVERED"

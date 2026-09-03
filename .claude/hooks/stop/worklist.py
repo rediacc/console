@@ -374,7 +374,15 @@ def _triage_cli(argv, worklist, me, die):
         rec = fold.by_id.get(item_id)
         if rec is None:
             die("no item #%s (worklist.py --list shows ids)" % item_id)
-        if rec["owner"] is not None and not C.same_session(rec["owner"], me):
+        # owned_by_me, NOT same_session: the latter is a PEER comparison and has no
+        # notion of lineage, so a compaction that renamed this session would make it
+        # refuse its own items -- which is the bug this branch exists to stop. The
+        # resolved id is passed rather than `me` because owned_by_me tests
+        # `session_id.startswith(owner)` (a tag is a short prefix of a full id), and
+        # `me` has already been identity-checked against the environment.
+        if rec["owner"] is not None and not C.owned_by_me(
+            rec["owner"], C.resolve_session_id() or me
+        ):
             die(
                 "#%s is owned by %s; never tick or edit another session's tracking"
                 % (item_id, rec["owner"])
@@ -497,7 +505,9 @@ def _item_cli(argv, worklist):
     rec = fold.by_id.get(item_id)
     if rec is None:
         die("no item #%s (worklist.py --list shows ids)" % item_id)
-    if rec["owner"] is not None and not C.same_session(rec["owner"], me):
+    # See the note at the sibling refusal above: owned_by_me is lineage-aware,
+    # same_session is deliberately not.
+    if rec["owner"] is not None and not C.owned_by_me(rec["owner"], C.resolve_session_id() or me):
         die(
             "#%s is owned by %s; never tick or edit another session's tracking"
             % (item_id, rec["owner"])
@@ -735,6 +745,78 @@ def _annotated_running(ids, me):
         out.append("%s (%dm)" % (i, age) if age is not None else i)
 
     return ", ".join(out)
+
+
+def _adopt_cli(argv):
+    """`--adopt <me> <prev>`: record that a compaction split one conversation.
+
+    THE SIBLING OF --reassign, AND ITS OPPOSITE. --reassign repairs a FICTION and
+    is proven by ABSENCE: an identity that wrote events and never stopped. --adopt
+    joins two REAL identities and is proven by PRESENCE: harness-written evidence
+    that both transcripts belong to one conversation. Merging them would mean one
+    verb whose evidence test flips depending on its argument, so they stay apart.
+
+    There is deliberately NO --force. The whole value of the edge is that it was
+    proven; an unprovable one recorded anyway would let any session claim any
+    other's items, which is precisely what the ownership rule exists to prevent.
+    When the evidence is genuinely absent the operator's WORKLIST_SESSION_ID
+    override remains, and that is recorded as a human's declaration rather than as
+    a derived fact.
+    """
+    if len(argv) < 3:
+        sys.stderr.write(M.CLI_ADOPT_USAGE)
+        sys.exit(2)
+    me, prev = argv[1], argv[2]
+    if not C.PREFIX_RE.match(me) or not C.PREFIX_RE.match(prev):
+        sys.stderr.write(M.CLI_ADOPT_USAGE)
+        sys.exit(2)
+    _identity_or_die(me, _die2)
+    if C.same_session(me, prev):
+        sys.stderr.write(M.CLI_ADOPT_SELF % prev)
+        sys.exit(2)
+
+    # Imported HERE, not at module scope, and deliberately: wl_lineage opens and
+    # mmaps transcripts, and every other verb in this CLI -- run ~880 times by
+    # the case suite alone -- has no use for it. One verb pays for it.
+    import wl_lineage  # noqa: PLC0415
+
+    sid = C.resolve_session_id() or me
+    projects = C.projects_dir(C.project_root(os.getcwd()))
+    transcript = os.environ.get("CLAUDE_TRANSCRIPT_PATH") or wl_lineage.transcript_for(
+        sid, projects
+    )
+    resolved, ev = wl_lineage.resolve(sid, transcript, projects, claimed_prev=prev)
+    if resolved is None:
+        sys.stderr.write(M.CLI_ADOPT_REFUSED % (me, prev, ev))
+        sys.exit(2)
+
+    worklist = C.worklist_for(C.project_start())
+    stamp = C.stamp_now()
+    S.append_events(
+        worklist,
+        [
+            {
+                "ev": "lineage",
+                "at": stamp,
+                "by": me,
+                "prev": resolved,
+                "next": sid,
+                "via": ev["via"],
+                "ev_id": ev["ev_id"],
+                "shared": ev["shared"],
+                "prev_tx": ev["prev_tx"],
+                "next_tx": ev["next_tx"],
+            }
+        ],
+    )
+    fold = S.load(worklist, sync=True)
+    mine = [
+        r for r in fold.items if r["state"] in (" ", "?", ">") and C.owned_by_me(r["owner"], sid)
+    ]
+    sys.stdout.write(
+        M.CLI_ADOPT_DONE
+        % (me, prev, ev["via"], ev["basis"], (ev["ev_id"] or "n/a")[:8], len(mine), me)
+    )
 
 
 def _reassign_cli(argv):
@@ -1543,6 +1625,9 @@ def main():
             _teammate_idle_cli()
         except Exception as exc:  # noqa: BLE001 -- see above: never block a teammate
             sys.stderr.write("teammate-idle journal skipped: %s\n" % exc)
+        return
+    if sys.argv[1:2] == ["--adopt"]:
+        _adopt_cli(sys.argv[1:])
         return
     if sys.argv[1:2] == ["--reassign"]:
         _reassign_cli(sys.argv[1:])

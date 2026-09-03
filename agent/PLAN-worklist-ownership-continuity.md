@@ -171,17 +171,54 @@ The controls that matter:
 
 ## Tasks
 
-- [ ] Write `.claude/hooks/stop/wl_lineage.py`: gate-1 (head `compact_boundary`, `parentUuid: null`), E1 tail scan, E2 mmap joins, E3 shared-uuid refutation (mandatory), bounded reads only
-- [ ] Add the alias set and `bind_lineage()`/`lineage_of()` to `wl_core.py`, and one ancestor branch inside `owned_by_me`, keyed on the bound id so a peer's id can never pick up my aliases
-- [ ] Leave `wl_core.same_session` untouched, with a comment naming its ~40 peer-comparison callers
-- [ ] Add the `lineage` fold arm and resolve the transitive chain at the end of `wl_store.load()`
-- [ ] Carry `lineage` events through `wl_store.compact()` -- without this the next `--compact` silently deletes every adoption
-- [ ] Add `worklist.py --adopt <me> <prev>`, through the identity check, with NO `--force` and refusal text naming which evidence rung failed
-- [ ] Add the `CLI_ADOPT_*` messages beside the `CLI_REASSIGN_*` block
+- [x] Write `.claude/hooks/stop/wl_lineage.py`: gate-1 (head `compact_boundary`, `parentUuid: null`), E1 tail scan, E2 mmap joins, E3 shared-uuid refutation (mandatory), bounded reads only
+- [x] Add the alias set and `bind_lineage()`/`lineage_of()` to `wl_core.py`, and one ancestor branch inside `owned_by_me`, keyed on the bound id so a peer's id can never pick up my aliases
+- [x] Leave `wl_core.same_session` untouched, with a comment naming its ~40 peer-comparison callers
+- [x] Add the `lineage` fold arm and resolve the transitive chain at the end of `wl_store.load()`
+- [x] Carry `lineage` events through `wl_store.compact()` -- without this the next `--compact` silently deletes every adoption
+- [x] Add `worklist.py --adopt <me> <prev>`, through the identity check, with NO `--force` and refusal text naming which evidence rung failed
+- [x] Add the `CLI_ADOPT_*` messages beside the `CLI_REASSIGN_*` block
 - [ ] Record the edge automatically at PostCompact inside a suppressed exception, and retry on the Stop path only when `others` is non-empty and no edge exists
 - [ ] Annotate adopted rows `(via <prev>)` in the guided slice
 - [ ] Offer `--adopt` from the `others-items` block when a listed peer has a resolvable edge
-- [ ] Add `--adopt` to `L1_TABLE` in `18-identity.sh`
-- [ ] Write `worklist-cases/24-lineage.sh` with all the controls in section 5; register it in `CASE_FILES`
-- [ ] Run `worklist.py --adopt 74de73ca a276391d` and settle the four items
-- [ ] Amend the ownership paragraph in CLAUDE.md and add the TRAPS entry
+- [x] Add `--adopt` to `L1_TABLE` in `18-identity.sh`
+- [x] Write `worklist-cases/24-lineage.sh` with all the controls in section 5; register it in `CASE_FILES`
+- [x] Run `worklist.py --adopt 74de73ca a276391d` and settle the four items
+- [x] Amend the ownership paragraph in CLAUDE.md and add the TRAPS entry
+
+
+## Landed 2026-09-03 — what is proven, and what is deliberately still open
+
+The core is in and the four items that started this are settled
+(`#119d740a #3c8d2d34 #51bbba34 #7bd69fa8`). `worklist-cases/24-lineage.sh` is
+registered and all ten of its controls pass; the whole worklist suite is
+**879 passed / 0 failed**.
+
+Two things the suite caught that are worth recording, because both were cases of
+a green-looking result that meant nothing:
+
+- **My first `plant_chain` never adopted at all**, so the REFUSE and E3 cases were
+  passing because the gate refused *everything* in that fixture. The
+  control-on-the-control ("the SAME pair IS adopted once the evidence exists")
+  is what exposed it. Without that one case, five green lines would have been
+  five lies.
+- **The cause was a real bug, not a fixture quirk**: `transcript_for()` reached
+  straight for `~/.claude/projects` and ignored `WORKLIST_PROJECTS_DIR`, so
+  `--adopt` could not work in any environment that overrides it. `wl_core.projects_dir`
+  is the one definition and it is now the one consulted.
+- **`--adopt` printed `0 shared` beside an accept** on its first real run. The
+  accept was legitimate (the boundary record is dual-written and found by mmap
+  rather than in the head window), but a mandatory check reporting zero evidence
+  reads exactly like a check that was skipped. It now names the basis it used.
+
+Still open, all cosmetic or convenience rather than correctness:
+
+The three unchecked boxes in the Tasks list above are what remain, and they are
+convenience rather than correctness. The PostCompact auto-record is the only one
+with real value: today a session must NOTICE the symptom and run the verb, which
+is exactly what a freshly compacted session is worst at. The TRAPS entry shortens
+that gap in the meantime.
+
+The last one is the only one with real value: today a session must notice the
+symptom and run the verb, which is precisely what a compacted session is worst at.
+The TRAPS entry exists to shorten that gap in the meantime.

@@ -494,6 +494,16 @@ ARITY = {
     "V_WAITER_LAPSED": ("timeout", 12, 2, "p", "me"),
     "V_PR_FINISH": ("b", 543, "rows", "h", "me", 543, "h", "me"),
     "R_ALWAYS_COLLAPSED": ("rows",),
+    # v23 lineage. CLI_ADOPT_USAGE takes nothing (it is a static usage block).
+    # CLI_ADOPT_REFUSED takes me, prev and the reason the evidence failed;
+    # CLI_ADOPT_SELF takes the prefix that turned out to be the caller; and
+    # CLI_ADOPT_DONE takes me, prev, the rung that fired, the evidence basis,
+    # the boundary uuid, how many items just became mine, and me again for the
+    # follow-up command.
+    "CLI_ADOPT_USAGE": None,
+    "CLI_ADOPT_REFUSED": ("me", "prev", "why"),
+    "CLI_ADOPT_SELF": ("prev",),
+    "CLI_ADOPT_DONE": ("me", "prev", "continued-in", "1 shared record", "bde8bb05", 3, "me"),
 }
 fail = 0
 for name, args in ARITY.items():

@@ -37,7 +37,7 @@ The sidecars (.requests, .sessions, .loop, .reggate-*,
 .pollbase-*, .pollmark-*, .cistate-*, .cimark-*, .ciqueue-*, .stuck-*,
 .croncount-*, .blocks-*, .waiter-*, .waiternudge-*, .state-*, .events.*,
 .lastevent-*, .reaped-*, .agentstate.*,
-.epics)
+.epics, .resprofile.*)
 keep their v5-v9 formats and names: their shapes
 are pinned by the suite and by living sessions, and consolidating them buys
 nothing. New v10 state (liveness ladder, task ages, judge cache, autonomy
@@ -861,10 +861,15 @@ def brief_line(rec):
 
 
 def _fold_events(events):
-    """(records, md_keys, cli_ids, last_md_hash). Chronological single pass;
-    a later event wins, which is exactly the right answer for the one real
-    conflict (a CLI tick vs a later deliberate markdown re-open)."""
+    """(records, md_keys, cli_ids, last_md_hash, lineage). Chronological single
+    pass; a later event wins, which is exactly the right answer for the one real
+    conflict (a CLI tick vs a later deliberate markdown re-open).
+
+    `lineage` is the list of proven compaction edges, in order. It is a LIST and
+    not a fold-to-latest: a session can compact more than once, and the chain
+    a276391d -> 74de73ca -> ... is only resolvable if every hop survives."""
     records, md_keys, cli_ids = {}, set(), set()
+    lineage = []
     last_md_hash = ""
     for ev in events:
         kind = ev.get("ev")
@@ -897,6 +902,27 @@ def _fold_events(events):
                     rec["upd"] = at
             for k in ev.get("del") or []:
                 md_keys.discard(k)
+        elif kind == "lineage":
+            # ONE conversation, two session ids, proven by wl_lineage.py before
+            # this event was ever written (a compaction boundary the successor
+            # opens with, PLUS conversational record uuids the two transcripts
+            # share). Nothing is rewritten here: the `(prefix)` tag inside each
+            # item still names the session that really wrote it, which is true.
+            prev, nxt = str(ev.get("prev", "")), str(ev.get("next", ""))
+            if prev and nxt:
+                lineage.append(
+                    {
+                        "prev": prev,
+                        "next": nxt,
+                        "via": str(ev.get("via", "")),
+                        "ev_id": str(ev.get("ev_id", "")),
+                        "shared": ev.get("shared"),
+                        "prev_tx": str(ev.get("prev_tx", "")),
+                        "next_tx": str(ev.get("next_tx", "")),
+                        "at": at,
+                    }
+                )
+            continue  # not an item event; there is no `rec` to stamp below
         elif kind == "add":
             rid = ev.get("id")
             if not rid:
@@ -1004,7 +1030,7 @@ def _fold_events(events):
                     "plan": str(ev.get("plan", "")),
                 }
             rec["upd"] = at
-    return records, md_keys, cli_ids, last_md_hash
+    return records, md_keys, cli_ids, last_md_hash, lineage
 
 
 class Fold:
@@ -1014,10 +1040,37 @@ class Fold:
     line (rendered legacy shape), first/upd stamps, origin, until/worker.
     """
 
-    def __init__(self, items, md_hash):
+    def __init__(self, items, md_hash, lineage=()):
         self.items = items
         self.md_hash = md_hash
+        self.lineage = list(lineage)
         self.by_id = {r["id"]: r for r in items}
+
+    def aliases_of(self, session_id):
+        """Every id proven to be the same conversation as `session_id`.
+
+        TRANSITIVE and walked in BOTH directions, because a session that has
+        compacted twice reaches its oldest self only through the middle hop, and
+        because the id we are asked about may be any link in the chain. Bounded
+        by the number of edges, so a cycle (which cannot arise from real
+        evidence, but could from a hand-edited log) terminates rather than hangs.
+        """
+        if not session_id or not self.lineage:
+            return set()
+        adj = {}
+        for e in self.lineage:
+            adj.setdefault(e["prev"], set()).add(e["next"])
+            adj.setdefault(e["next"], set()).add(e["prev"])
+        # Start from every node the argument is a prefix of, or that is a prefix
+        # of it: callers pass short tags, the Stop event carries the full uuid.
+        seen = {n for n in adj if C.same_session(n, session_id)}
+        stack = list(seen)
+        while stack:
+            for nxt in adj.get(stack.pop(), ()):
+                if nxt not in seen:
+                    seen.add(nxt)
+                    stack.append(nxt)
+        return {n for n in seen if not C.same_session(n, session_id)}
 
     def lines(self):
         return [r["line"] for r in self.items]
@@ -1042,8 +1095,8 @@ def load(worklist, sync=True):
     md_hash = hashlib.sha1(md_bytes).hexdigest()[:16]
 
     def build(events):
-        records, md_keys, cli_ids, last_h = _fold_events(events)
-        return records, md_keys, cli_ids, last_h
+        records, md_keys, cli_ids, last_h, lin = _fold_events(events)
+        return records, md_keys, cli_ids, last_h, lin
 
     def diff(records, md_keys, parsed, at):
         add, chg, dele = [], [], []
@@ -1058,14 +1111,14 @@ def load(worklist, sync=True):
         return add, chg, dele
 
     parsed = parse_md_items(md_bytes)
-    records, md_keys, cli_ids, last_h = build(_read_events(worklist))
+    records, md_keys, cli_ids, last_h, lineage = build(_read_events(worklist))
     if last_h != md_hash:
         at = C.stamp_now()
         if sync:
             with open(events_lock_path(worklist), "w") as lock:
                 _flock(lock, LOCK_EX)
                 # Re-fold under the lock: another syncer may have won.
-                records, md_keys, cli_ids, last_h = build(_read_events(worklist))
+                records, md_keys, cli_ids, last_h, lineage = build(_read_events(worklist))
                 if last_h != md_hash:
                     add, chg, dele = diff(records, md_keys, parsed, at)
                     ev = {"ev": "md", "at": at, "h": md_hash}
@@ -1085,7 +1138,7 @@ def load(worklist, sync=True):
                         os.write(fd, blob)
                     finally:
                         os.close(fd)
-                    records, md_keys, cli_ids, last_h = build(_read_events(worklist))
+                    records, md_keys, cli_ids, last_h, lineage = build(_read_events(worklist))
         else:
             # Read-only view: overlay the parsed markdown without writing.
             add, chg, dele = diff(records, md_keys, parsed, at)
@@ -1115,7 +1168,16 @@ def load(worklist, sync=True):
         rec["line"] = _render_line(rec)
         items.append(rec)
     items.sort(key=lambda r: (r.get("first", ""), r["id"]))
-    return Fold(items, md_hash)
+    fold = Fold(items, md_hash, lineage)
+    # BIND ONCE, HERE, and only for the identity this process actually resolved
+    # to. Every ownership question downstream goes through wl_core.owned_by_me,
+    # so binding at the single load point is what makes the compaction fix
+    # impossible to roll out half-applied. A process with no resolvable identity
+    # binds nothing and behaves exactly as it did before lineage existed.
+    me = C.resolve_session_id()
+    if me:
+        C.bind_lineage(me, fold.aliases_of(me))
+    return fold
 
 
 # ---- item verbs (CLI-origin events) ----------------------------------------
@@ -1446,6 +1508,30 @@ def compact(worklist):
             if r["origin"] == "md"
         ]
         out.append({"ev": "md", "at": at, "h": fold.md_hash, "add": md_add})
+        # CARRY THE LINEAGE EDGES, and this is the pitfall the plan called out.
+        #
+        # This rewrite emits the minimal event set reproducing the current fold,
+        # and `lineage` is not an item event -- so without these lines a compact
+        # would SILENTLY DELETE every adoption, and every item a session adopted
+        # from its pre-compaction self would revert to "a peer's", which is the
+        # exact bug lineage exists to fix. Re-emitted verbatim: the evidence
+        # fields (ev_id, shared, prev_tx, next_tx) are the audit trail that lets
+        # anyone re-derive the claim from the named transcripts later.
+        out.extend(
+            {
+                "ev": "lineage",
+                "at": e.get("at", at),
+                "by": "compact",
+                "prev": e["prev"],
+                "next": e["next"],
+                "via": e.get("via", ""),
+                "ev_id": e.get("ev_id", ""),
+                "shared": e.get("shared"),
+                "prev_tx": e.get("prev_tx", ""),
+                "next_tx": e.get("next_tx", ""),
+            }
+            for e in fold.lineage
+        )
         for r in fold.items:
             if r["origin"] != "cli":
                 continue
