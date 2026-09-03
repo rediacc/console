@@ -5467,6 +5467,9 @@ export const GATES: readonly GateSpec[] = [
   {
     id: 'gate-test:workflow-pr-environment',
     run: '.ci/scripts/test/gates/test-workflow-pr-environment.sh',
+    // 7.0s standalone, 22.6s contended: the bare-fixture sweep awk-scans all 1836
+    // tracked shell/yaml files, so its cost is IO over the corpus, not the four cases.
+    slow: true,
     // Sibling of workflow-env-shell-vars: the rule lives inside
     // check:ci-workflows, this drives it against fixtures in both directions.
     gate: true,

@@ -40,6 +40,21 @@ elif [[ $- != *i* ]] && {
     __bashcov_dir="$HOME/.claude/resprofile/$__bashcov_slug/$__bashcov_day"
     [[ -d $__bashcov_dir ]] || mkdir -p "$__bashcov_dir" 2>/dev/null
     export BASHCOV_OUT="$__bashcov_dir/bash.jsonl"
+    # PYTHONPATH RIDES THE ONE SEAM THAT IS PROVEN TO ARRIVE. `sitecustomize.py` is
+    # imported by `site` at interpreter startup, which is the only way to record a
+    # plain `python3` without rewriting the command -- and a PreToolUse hook cannot
+    # rewrite it. Measured 2026-09-03 before this line existed: three `python3 -c
+    # pass` calls added ZERO records, so "every Python invocation leaves a record"
+    # was false for anything that does not import wl_core.
+    #
+    # Delivered from HERE rather than from the settings env block for the reason the
+    # comment above records: BASH_ENV arrives from that block, a PATH set there did
+    # not. Prepended, never replacing: run.sh sets PYTHONPATH=src, and clobbering a
+    # caller's value to profile it would be a profiler changing what it measures.
+    # Cost, measured over 20 invocations each: 23.2 ms -> 26.5 ms per python3.
+    __bashcov_py="$__bashcov_repo/.claude/hooks/profile/py"
+    [[ -r $__bashcov_py/sitecustomize.py ]] &&
+        export PYTHONPATH="$__bashcov_py${PYTHONPATH:+:$PYTHONPATH}"
     __bashcov_f=''
     for __bashcov_c in a b e f k m n p t u v B C E H P T; do [[ $- == *$__bashcov_c* ]] && __bashcov_f+=$__bashcov_c; done
     ((__bashcov_x)) && __bashcov_f+=x

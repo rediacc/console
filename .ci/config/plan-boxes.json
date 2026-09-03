@@ -799,6 +799,14 @@
       "done": 0,
       "open_sigs": [],
       "done_sigs": []
+    },
+    "agent/PLAN-resprofile-wave2.md": {
+      "status": "approved",
+      "owner": "74de73ca",
+      "open": 0,
+      "done": 0,
+      "open_sigs": [],
+      "done_sigs": []
     }
   }
 }

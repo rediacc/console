@@ -670,6 +670,11 @@ jobs:
           sparse-checkout: |
             .github/actions
             .ci/config
+            # .ci/scripts, because the compare step below RUNS one. It used to be
+            # 18 inline lines and needed no file; extracting it to
+            # .ci/scripts/ci/shadow-compare.sh turned a cone that stops at .ci/config
+            # into "No such file or directory" three steps later (job 100795527686).
+            .ci/scripts
 
       - name: Fetch shadow secrets from Bitwarden
         # SHADOW RUN: exports BWS_-prefixed copies that nothing consumes. The
@@ -1260,6 +1265,11 @@ jobs:
           sparse-checkout: |
             .github/actions
             .ci/config
+            # .ci/scripts, because the compare step below RUNS one. It used to be
+            # 18 inline lines and needed no file; extracting it to
+            # .ci/scripts/ci/shadow-compare.sh turned a cone that stops at .ci/config
+            # into "No such file or directory" three steps later (job 100795527686).
+            .ci/scripts
 
       - name: Fetch shadow secrets from Bitwarden
         # SHADOW RUN: exports BWS_-prefixed copies that nothing consumes. The

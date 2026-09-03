@@ -341,6 +341,12 @@ def install() -> None:
     try:
         if os.environ.get("WORKLIST_PROFILE") == "off":
             return
+        # CLAIM THE PROCESS. sitecustomize.py (.claude/hooks/profile/py/) arms a
+        # minimal recorder in EVERY python3 at interpreter startup; this module is
+        # the richer one and runs only where wl_core is imported. The marker tells
+        # the minimal handler to stand down at exit, so a hook process writes one
+        # record, not two.
+        os.environ["_WL_SITEPROFILE"] = "super"
         for name in ("cpu", "io"):
             v = _psi_some_total(name)
             if v is not None:
