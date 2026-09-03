@@ -1769,6 +1769,17 @@ jobs:
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: npm run check:ci-page-locale-imports
 
+      # A TENANT of this lane, not an i18n gate. It is here for one property:
+      # the fetch-depth 0 checkout above is the only deep one in a job that also
+      # runs on the NIGHTLY. On a shallow checkout `git log -- <plan>` returns the
+      # GRAFT commit for every file and this gate would report a confident "none
+      # over 33 days" forever -- so it REFUSES a shallow checkout rather than
+      # answering. A clock-driven gate also needs the nightly, or a plan crossing
+      # the threshold first surfaces by ambushing an unrelated PR.
+      - name: Plan file housekeeping
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: npm run check:ci-plan-housekeeping
+
   # ============================================================================
   # L8 BUILT-WWW GATES -- alone. One astro build is the expensive input.
   #
@@ -1778,6 +1789,7 @@ jobs:
   # redirect table that fronts every marketing URL was validated only on a
   # laptop. One astro build buys both gates at full strength.
   # ============================================================================
+
   quality-www-build:
     name: Built-www Gates
     # Standard runner (not ubuntu-slim), for the same reason build-www in

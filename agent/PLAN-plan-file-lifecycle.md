@@ -387,10 +387,24 @@ Three points each, plus two easy-to-forget fourths.
 - [ ] Add `Owner:` headers to `PLAN-secret-names-one-to-one.md` and `PLAN-secret-namespace-migration.md` so A4 is green
 - [ ] Turn on A1, A3, A4, A5 with `--selftest` and `.ci/scripts/test/gates/test-plan-boxes.sh` (18 cases)
 - [ ] Turn on A2 and create `agent/archive/plans/.gitkeep`; move `agent/archive/0730-2/PLAN-stop-hook-migration.md` in (0 boxes, free). Do NOT migrate anything else -- there is nothing pre-existing
-- [ ] Create `.ci/config/plan-lifecycle.json` with `warn_days` 26 / `delete_days` 33, referenced by BOTH gates so their delete predicates cannot deadlock
-- [ ] Write `.ci/scripts/test/gates/test-plan-housekeeping.sh` FIRST (10 cases) -- with zero live offenders it is the only evidence the age gate is not a comment
-- [ ] Write `.ci/scripts/quality/check-plan-housekeeping.sh` until that selftest passes; wire it into `quality-i18n`
-- [ ] Create `.plan-housekeeping-allowlist` (header comment, zero entries) and add its row to `docs/agent-reference/suppressions.md`'s Current sites table
+- [x] Create `.ci/config/plan-lifecycle.json` with `warn_days` 26 / `delete_days` 33, referenced by BOTH gates so their delete predicates cannot deadlock
+      DONE 2026-09-03: warn_days 26 / delete_days 33, read by the age gate and named
+      in its manifest leaves. A5 will read the same file rather than inlining 33.
+- [x] Write `.ci/scripts/test/gates/test-plan-housekeeping.sh` FIRST (10 cases) -- with zero live offenders it is the only evidence the age gate is not a comment
+      DONE 2026-09-03: 12 cases, all passing. The two no other gate here has are the
+      shallow pair -- a `git clone --depth 1` fixture must REFUSE under CI and SKIP
+      LOUDLY without it. Proven able to fail: making the gate never refuse a shallow
+      clone reds it. Case 2 (a 40-day plan AMENDED today must PASS) is what makes the
+      last-commit-vs-added-date choice testable rather than asserted.
+- [x] Write `.ci/scripts/quality/check-plan-housekeeping.sh` until that selftest passes; wire it into `quality-i18n`
+      DONE 2026-09-03, wired into quality-i18n. One placement trap paid for: the step
+      first landed AFTER the next job's banner comment. YAML did not care, but
+      check-ci-parity's line parser breaks at the indent-2 banner and reported the step
+      as missing -- and a reader would have seen it under the wrong job heading.
+- [x] Create `.plan-housekeeping-allowlist` (header comment, zero entries) and add its row to `docs/agent-reference/suppressions.md`'s Current sites table
+      DONE 2026-09-03: header plus zero entries, which is the correct and safe state --
+      the floor and the three liveness rules mean an empty list cannot make the gate
+      vacuous. Registered in docs/agent-reference/suppressions.md's Current sites table.
 - [ ] Delete the 19 finished-and-uncited plans to flatten the 2026-09-23 cliff (list in the age agent's report; 33 of 61 are FINISHED, 19 of those cited by nothing outside `agent/`)
 - [x] Ship S1, the SessionStart census -- cheapest change here and the operator-visible half; do not let it wait on the CI work
       DONE 2026-09-03: wl_checks.plan_box_census + plans_block now carry per-plan box

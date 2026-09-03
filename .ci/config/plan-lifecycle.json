@@ -1,0 +1,31 @@
+{
+  "$comment": [
+    "ONE number, read by TWO gates, and that is the whole point of the file.",
+    "",
+    "check-plan-housekeeping.sh DEMANDS that a plan older than delete_days be",
+    "deleted. check_plan_boxes.py's A5 (not yet built) REFUSES to delete a plan",
+    "that still carries open boxes -- unless it is older than delete_days.",
+    "",
+    "Those two predicates are complements over this single number, so their",
+    "permitted sets are disjoint by construction and no plan can ever be in both.",
+    "Duplicating `33` into two scripts is exactly what would create the deadlock:",
+    "a 34-day-old plan with one open box would be simultaneously must-delete and",
+    "must-not-delete, and no commit would satisfy both. So neither gate may inline",
+    "the number, and both name this file in their manifest `leaves`.",
+    "",
+    "AGE IS CONTENT AGE, not 'last commit touching the path'. The difference is",
+    "load-bearing: a plan moved into the archive would otherwise reset its clock,",
+    "which makes archiving a way to cheat the age gate. Because the archive is",
+    "append-only, an archived plan's blob never changes and its clock keeps",
+    "ticking -- so it ages out on schedule and archiving buys nothing.",
+    "",
+    "warn_days exists because this gate is clock-driven: its verdict can flip",
+    "overnight with no commit, which scripts/lib/suppression-liveness.ts normally",
+    "bans. The warn band is what makes that exception humane -- a plan announces",
+    "the date it will go red about a week before it does."
+  ],
+  "archive_dir": "agent/archive/plans",
+  "plan_glob": "agent/PLAN-*.md",
+  "warn_days": 26,
+  "delete_days": 33
+}

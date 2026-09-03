@@ -1335,6 +1335,28 @@ export const GATES: readonly GateSpec[] = [
       step: 'Actions allowlist',
     },
   },
+  // quality-i18n is the ONLY lane with fetch-depth 0 that also runs on the
+  // nightly, and this gate needs both: shallow makes it vacuous (see its header),
+  // and a clock-driven gate that never runs on a schedule first surfaces by
+  // ambushing an unrelated PR. It is a TENANT of that lane, not an i18n gate.
+  {
+    id: 'check:ci-plan-housekeeping',
+    run: 'npm run check:ci-plan-housekeeping',
+    gate: true,
+    paths: [
+      'agent/PLAN-*.md',
+      '.ci/config/plan-lifecycle.json',
+      '.plan-housekeeping-allowlist',
+      '.ci/scripts/quality/check-plan-housekeeping.sh',
+    ],
+    leaves: ['.ci/scripts/quality/check-plan-housekeeping.sh'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-i18n',
+      step: 'Plan file housekeeping',
+    },
+  },
   // The comment sits ABOVE the brace deliberately: wl_reggate._manifest_gate_ids
   // matches /\{\s*id:/, so a comment INSIDE the brace makes the entry invisible to
   // check:ci-gate-reachability-coverage (manifest.ts:322 records that trap).
@@ -5193,6 +5215,19 @@ export const GATES: readonly GateSpec[] = [
     gate: true,
     qualityGateTest: true,
     leaves: ['.ci/scripts/test/gates/test-watchdog-observer-exclusion.sh'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-security',
+      step: 'Quality-gate unit tests',
+    },
+  },
+  {
+    id: 'gate-test:plan-housekeeping',
+    run: '.ci/scripts/test/gates/test-plan-housekeeping.sh',
+    gate: true,
+    qualityGateTest: true,
+    leaves: ['.ci/scripts/test/gates/test-plan-housekeeping.sh'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',

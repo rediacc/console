@@ -397,22 +397,22 @@
     "agent/PLAN-plan-file-lifecycle.md": {
       "status": "ready",
       "owner": "74de73ca",
-      "open": 11,
-      "done": 2,
+      "open": 7,
+      "done": 6,
       "open_sigs": [
         "24fbc5fc",
         "35f8115e",
         "54cca06b",
-        "6be59355",
-        "7a89c5be",
-        "7adc2d9f",
-        "86185c7e",
         "9d65a096",
         "a69a55a5",
         "f27685d2",
         "ff0c1fc4"
       ],
       "done_sigs": [
+        "6be59355",
+        "7a89c5be",
+        "7adc2d9f",
+        "86185c7e",
         "daffe83e",
         "e77bfe5f"
       ]
