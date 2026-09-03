@@ -455,10 +455,6 @@ jobs:
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: npm run check:ci-actions-allowlist
 
-      - name: Plan checkbox ledger
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: npm run check:ci-plan-boxes
-
   # ============================================================================
   # L2 BRANCH -- read-only, and kept in its own job.
   # It used to be the ONLY `push`-preset app token in CI, because
@@ -498,6 +494,18 @@ jobs:
           GITHUB_BASE_REF: ${{ github.base_ref }}
           GITHUB_HEAD_REF: ${{ github.head_ref }}
           GITHUB_EVENT_NAME: ${{ github.event_name }}
+
+      # MOVED HERE from quality-static when A1-A5 landed. This is the only lane
+      # with BOTH fetch-depth 0 and the PR head ref, which is exactly what "did a
+      # box open at the merge-base survive at HEAD" needs. The cost is that
+      # quality-branch is pull_request-only, so A1-A5 do not run on push; A0 and
+      # A6 read only the working tree and are unaffected. The gate SAYS when the
+      # transition rules did not run, so a skip can never read as a clean result.
+      - name: Plan checkbox ledger
+        if: ${{ !cancelled() }}
+        run: npm run check:ci-plan-boxes
+        env:
+          GITHUB_BASE_REF: ${{ github.base_ref }}
 
   # NOTE: PR reviews come from the Claude Review workflow (claude-review.yml),
   # which fires only when CI Complete is green and the PR is non-draft; the

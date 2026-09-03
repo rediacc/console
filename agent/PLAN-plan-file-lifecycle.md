@@ -383,10 +383,28 @@ Three points each, plus two easy-to-forget fourths.
 
 ## Tasks
 
-- [ ] Land the ledger alone: `check_plan_boxes.py` with A0 and A6 only, generate `.ci/config/plan-boxes.json`, wire three points plus the anti-vacuity registry
-- [ ] Add `Owner:` headers to `PLAN-secret-names-one-to-one.md` and `PLAN-secret-namespace-migration.md` so A4 is green
-- [ ] Turn on A1, A3, A4, A5 with `--selftest` and `.ci/scripts/test/gates/test-plan-boxes.sh` (18 cases)
-- [ ] Turn on A2 and create `agent/archive/plans/.gitkeep`; move `agent/archive/0730-2/PLAN-stop-hook-migration.md` in (0 boxes, free). Do NOT migrate anything else -- there is nothing pre-existing
+- [x] Land the ledger alone: `check_plan_boxes.py` with A0 and A6 only, generate `.ci/config/plan-boxes.json`, wire three points plus the anti-vacuity registry
+      DONE 2026-09-03 as the A0/A6 half, then extended with A1-A5 in place.
+- [x] Add `Owner:` headers to `PLAN-secret-names-one-to-one.md` and `PLAN-secret-namespace-migration.md` so A4 is green
+      NOT NEEDED as written: A4 only judges plans this BRANCH adds, and it is green.
+      The two files named here are unowned but the rule that would have caught them
+      judges added plans, which they are -- so this was re-checked rather than assumed,
+      and the gate passes because plan_owner resolves an owner for both.
+- [x] Turn on A1, A3, A4, A5 with `--selftest` and `.ci/scripts/test/gates/test-plan-boxes.sh` (18 cases)
+      DONE 2026-09-03. 22 controls, each plant paired with a proof that the LEGITIMATE
+      path stays silent -- ticking a box, moving it to another plan, leaving it open, an
+      in-scope status over open boxes, an untouched plan, an existing unowned plan.
+      A1 also proven end-to-end by deleting a real box from PLAN-handoff-sequence.md and
+      requiring the red. A CONTROL FOUND A DEADLOCK THE DESIGN MISSED: the plan foresaw
+      that A5 must stand down for a plan retired by age, but A1 has the same edge -- a
+      retired plan takes its boxes with it -- and without that, the housekeeping gate
+      would DEMAND a deletion A1 then REFUSES. A5 also now fires only when deletion
+      actually LOSES a box; a husk whose boxes all moved is free to delete.
+- [x] Turn on A2 and create `agent/archive/plans/.gitkeep`; move `agent/archive/0730-2/PLAN-stop-hook-migration.md` in (0 boxes, free). Do NOT migrate anything else -- there is nothing pre-existing
+      DONE 2026-09-03 (the rule; no migration, because there is nothing pre-existing to
+      archive -- 88 of 88 open boxes are branch-new). A2 refuses anything but an R100
+      rename into the archive, plus any M or D on an archived path, plus an A (a fresh
+      file there is a plan whose history was left behind).
 - [x] Create `.ci/config/plan-lifecycle.json` with `warn_days` 26 / `delete_days` 33, referenced by BOTH gates so their delete predicates cannot deadlock
       DONE 2026-09-03: warn_days 26 / delete_days 33, read by the age gate and named
       in its manifest leaves. A5 will read the same file rather than inlining 33.

@@ -1360,10 +1360,10 @@ export const GATES: readonly GateSpec[] = [
   // The comment sits ABOVE the brace deliberately: wl_reggate._manifest_gate_ids
   // matches /\{\s*id:/, so a comment INSIDE the brace makes the entry invisible to
   // check:ci-gate-reachability-coverage (manifest.ts:322 records that trap).
-  // Lane: quality-static, because assertions A0 and A6 read only the working tree.
-  // When A1 (no box may VANISH between base and head) lands it needs a merge-base
-  // and moves to quality-branch, which is the only lane with fetch-depth 0 and the
-  // PR head ref -- see agent/PLAN-plan-file-lifecycle.md.
+  // Lane: quality-branch. A1-A5 compare the merge-base ledger against HEAD, and
+  // that is the only lane with BOTH fetch-depth 0 and the PR head ref. It is
+  // pull_request-only, so A1-A5 do not run on push -- the gate says so rather
+  // than letting a skip read as a clean result.
   {
     id: 'check:ci-plan-boxes',
     run: 'npm run check:ci-plan-boxes',
@@ -1377,7 +1377,7 @@ export const GATES: readonly GateSpec[] = [
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
-      job: 'quality-static',
+      job: 'quality-branch',
       step: 'Plan checkbox ledger',
     },
   },
