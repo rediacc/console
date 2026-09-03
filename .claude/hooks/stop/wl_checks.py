@@ -2673,6 +2673,46 @@ def planfid_check(worklist, session_id, event, fold, lines, me8, last_msg, vadd)
     return lost
 
 
+def _resprofile_report(worklist, session_id, state_doc):
+    """Report-only structural findings from the previous CI run's captures, and the
+    tier-0 -> tier-1 fold. NEVER blocks: the judge gates an exit so "cannot decide" must
+    not be an escape, but this describes how work was done, so "we did not measure"
+    must never become "you may not stop". Every failure is swallowed; the off switch is
+    WORKLIST_PROFILE=off. See agent/PLAN-shell-resource-profiling.md section 3."""
+    if os.environ.get("WORKLIST_PROFILE") == "off":
+        return
+    with contextlib.suppress(Exception):
+        import wl_resprofile  # noqa: PLC0415
+
+        wl_resprofile.fold()
+    with contextlib.suppress(Exception):
+        import wl_profile  # noqa: PLC0415
+
+        root = C.project_root(C.project_start())
+        cdir = pathlib.Path(root) / ".ci" / "cache" / "profiles.prev"
+        if not cdir.is_dir():
+            return
+        caps = [c for c in (wl_profile.load_capture(x) for x in sorted(cdir.glob("*.jsonl"))) if c]
+        j = sum(c.judgeable for c in caps)
+        if not caps or j < 0.5 * len(caps):
+            return  # unjudgeable is silence, never a verdict
+        findings = wl_profile.derive(caps)
+        if not findings:
+            return
+        lines = ["%s  %s" % (f["class"], f["why"]) for f in findings[:8]]
+        outq_add(
+            worklist,
+            session_id,
+            state_doc,
+            "resprofile",
+            "RESOURCE PROFILE (report-only, %d judgeable capture(s) from the last `npm run ci`):\n  "
+            % j
+            + "\n  ".join(lines)
+            + "\n  Verdicts live in check:ci-resprofile; nothing here blocks.",
+            3,
+        )
+
+
 def run_stop(event, event_ok, worklist, hook_file):
     """The full stop battery. Gathers EVERY static violation, then emits ONE
     block (five independent blocking checks would cost five turns to clear,
@@ -2710,6 +2750,7 @@ def run_stop(event, event_ok, worklist, hook_file):
 
     fold = S.load(worklist, sync=True)
     state_doc = S.load_state(worklist, session_id)
+    _resprofile_report(worklist, session_id, state_doc)
 
     archived, orphaned = [], []
     # Dead-session cleanup runs before classification so a tombstoned item is

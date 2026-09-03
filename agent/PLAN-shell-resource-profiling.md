@@ -1,6 +1,6 @@
 # PLAN: a resource-profiling layer for background shells
 
-Status: rulings received 2026-09-03; two follow-up angles in flight (Bash coverage, more findings).
+Status: LANDED 2026-09-03, live on this machine, all gates green (`ci:quick` 292/292 with profiling on by default). Baseline NOT yet seeded -- seed after a few days of real runs.
 
 ## Operator rulings, 2026-09-03
 
@@ -155,6 +155,21 @@ set (only emulated, pipe and pty), and whether the env block reaches hook subpro
 **Bug found in both A and F and fixed:** the exit status of the last BASH_ENV command
 leaked into an empty script's status (`false; return 0` -> `bash -s </dev/null` rc=1);
 every path now ends in `:`.
+
+**Verified live 2026-09-03, after landing:** the settings `env` block delivers `BASH_ENV`
+to the Bash tool shell (read back inside a tool call), but a `PATH` set in the same
+block did NOT arrive -- so `bash_env.sh` finds the supervisor by explicit path
+(`~/.local/share/rediacc/bin/bashcov-sup`, then `/usr/local/bin/`), never via PATH.
+`.claude/settings.local.json` is TRACKED in this repo, so the machine-absolute
+`BASH_ENV` lives in user-scope `~/.claude/settings.json` instead. With that in place
+`bash.jsonl` reached 584 records within minutes: every tool call and every hook.
+
+**Operator ruling on storage (supersedes section 4's "tier 0 never persists"):** keep
+the statistics in a TIME-BASED folder so what to optimise can be decided from ranked
+results. Layout: `~/.claude/resprofile/<repo-slug>/<YYYY-MM-DD>/{exit.jsonl, bash.jsonl,
+<run-id>/*.jsonl}`; `.ci/cache/profiles.{current,prev}` are pointer files to the last
+two runs' capture folders; `wl_profile.py --rank <root>` writes `RANK.md`, shapes by
+total CPU then gates by tree CPU with blocked share and findings per row.
 
 **And the CI-gate side needs none of this.** `scripts/ci-runner/exec.ts:65` is the
 single parent of every gate, so the tree SAMPLER (`wl_ressample.py`) attaches there,
@@ -396,3 +411,66 @@ and are worth a `py:<inline>` bucket rather than a verdict.
 * **Any gate in change one.** Collector + rollup + selftest, accumulate real numbers,
   then seed the baseline from them. Seeding from one machine's first run is how a bad
   number gets enshrined.
+
+
+## Landed 2026-09-03 -- and the two ways the profiler measured itself
+
+Everything above is in the tree and running: exit recorder (`wl_resprofile.py`, armed
+from `wl_core`), tree sampler (`wl_ressample.py`, attached per gate by `exec.ts` at
+500 ms, on by default, `CI_PROFILE=off`), deriver (`wl_profile.py`: E1/E4/E5/E6, D1
+wall-only dilation, D2 self-scan, Wilson admission, `--rank`), gate
+(`check:ci-resprofile` + `gate-test:resprofile`, pristine bootstrap, kill trigger),
+Stop-hook report channel, Bash via F (`bashcov-sup` built on host and in the image,
+`bash_env.sh`, user-scope `env.BASH_ENV`), and the time-based corpus with `RANK.md`.
+First profiled `ci:quick`: 292 captures, 227 judgeable, 0 findings after the E5 fix.
+
+**Two self-measurement traps, both real, both caught by the battery or the gate:**
+
+1. **The sampler's own fixture was supervised.** With `BASH_ENV` live, the bash tree the
+   sampler selftest spawns was re-exec'd under `bashcov-sup`, every depth shifted by one,
+   and three controls failed under the battery while passing standalone. Fixtures now
+   run with `WORKLIST_PROFILE=off`, and -- the design consequence -- the deriver treats
+   a single-child `bashcov-sup` root as transparent (`logical_root`), because under F
+   EVERY gate capture has that shape and E1 could otherwise never count a fanout. A
+   control plants a supervised fanout and requires E1 to fire.
+2. **The gate profiled its own planted zombies.** `check:ci-resprofile` runs the deriver's
+   selftest, which spawns an unreaping parent with four `true` zombies; the sampler
+   attached to that gate caught it as a live E6 -- correct on a fixture, and it would
+   have counted F=1 for E6 in any seed. Gates that plant defects carry `noProfile: true`
+   in the manifest and `exec.ts` skips them; the run after showed 290 captures and 0
+   findings.
+
+Also paid for today: the 62 inline shadow-compare bodies I had generated tripped
+`check:ci-workflows` (8-line cap, no baseline) -- extracted to
+`.ci/scripts/ci/shadow-compare.sh` -- and my second-pass sweep corrupted 28 steps
+(duplicated name item, dropped `run:`), caught only by a per-file steps-vs-calls
+reconciliation; `test-resprofile.sh`'s mutant found a D1 control that checked only
+`run.wall_ms` and not sample `t_ms`; and the "refuse a silent shrink" seed guard was
+vacuous under accumulation and became an empty-seed refusal.
+
+**Two more self-inflicted defects, both caught by looking rather than by a gate:**
+
+* **A nested runner clobbered the pointer.** `gate-test:ci-runner` runs the runner as a
+  gate, so the inner run rotated `.ci/cache/profiles.{current,prev}` and aimed them at
+  its own two selftest captures -- a full 292-gate run left a pointer naming a folder
+  with two files. Nested runs now inherit `CI_PROFILE_RUN` instead of rotating.
+* **Profiling wrote INTO the repo tree.** That same selftest left `selftest_pass.jsonl`
+  and `selftest_fail.jsonl` at the repo root, breaking the one storage rule the brief
+  set. `exec.ts` now refuses a `profileDir` that is relative or resolves inside `cwd`:
+  an unusable directory means no profile, never a file in the tree.
+
+**Retention, from the measured number.** One day of real use is 32 MB / 2,363 files, so
+an unbounded corpus is ~1 GB a month of data whose only consumer -- the rollup and
+`RANK.md` -- has already read it. `fold()` prunes raw day folders older than
+`RAW_RETENTION_DAYS = 14` and keeps the rollup forever; a control asserts an old folder
+is pruned and today's is kept.
+
+**The first ranking, on one day of real data** (`RANK.md`): `worklist.py` with no verb
+is **52% of all Python CPU** -- 1,478 invocations, 357.6 CPU s, 796.7 s wall -- which is
+the Stop hook itself, and is the first thing to look at. `#state` is another 15%. On the
+gate side `check:test-shared` leads at 19,711 tree ticks with 212 MB peak and a 0%
+blocked share, i.e. genuinely CPU-bound rather than waiting.
+
+**Still to do, deliberately:** seed the baseline from real quiet runs after a few days
+(`check_resprofile.py --seed <run-dir>`), never from one machine's first run; the
+optional `acct(2)` backstop for dash/static/SIGKILL; E3 socket attribution.

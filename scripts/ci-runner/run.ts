@@ -35,6 +35,45 @@ import { buildGraph, type GateResult, runPool } from './pool';
 import { createReporter } from './report';
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
+// Per-gate process-tree profiling (agent/PLAN-shell-resource-profiling.md). ON by
+// default: captures land in .ci/cache/profiles (untracked), and the previous run's set
+// is rotated to profiles.prev at start so check:ci-resprofile judges COMPLETE captures,
+// never the torn files of gates still running. CI_PROFILE=off disables it; CI_PROFILE_DIR
+// redirects it. One run id per process so the E4 cross-gate join can pair captures.
+const PROFILE_OPTS = ((): { profileDir?: string; profileRunId?: string } => {
+  if (process.env.CI_PROFILE === 'off') return {};
+  try {
+    // A NESTED RUNNER MUST NOT ROTATE. gate-test:ci-runner runs this very file as a
+    // gate, so without this the inner run rotated the pointer and aimed it at its own
+    // two selftest captures -- last writer wins, and a full 292-gate run left a
+    // profiles.current naming a directory with two files in it. The inner run inherits
+    // the outer run's directory and id and simply writes beside it.
+    const inherited = process.env.CI_PROFILE_RUN;
+    if (inherited !== undefined && inherited !== '') {
+      const [id, ...rest] = inherited.split('\u0000');
+      return { profileDir: rest.join('\u0000'), profileRunId: id };
+    }
+    const runId = `ci-${process.pid}-${Date.now()}`;
+    let dir = process.env.CI_PROFILE_DIR;
+    if (!dir) {
+      // Time-based, durable, outside the tree: one folder per day, one per run.
+      const slug = REPO_ROOT.replace(/^\/+/, '').replace(/\//g, '-');
+      const day = new Date().toISOString().slice(0, 10);
+      dir = path.join(os.homedir(), '.claude', 'resprofile', slug, day, runId);
+    }
+    fs.mkdirSync(dir, { recursive: true });
+    const cache = path.join(REPO_ROOT, '.ci', 'cache');
+    fs.mkdirSync(cache, { recursive: true });
+    const pointer = path.join(cache, 'profiles.current');
+    const prev = path.join(cache, 'profiles.prev');
+    if (fs.existsSync(pointer)) fs.writeFileSync(prev, fs.readFileSync(pointer));
+    fs.writeFileSync(pointer, dir);
+    process.env.CI_PROFILE_RUN = `${runId}\u0000${dir}`;
+    return { profileDir: dir, profileRunId: runId };
+  } catch {
+    return {}; // profiling is best-effort by contract
+  }
+})();
 const DEFAULT_CACHE = path.join(REPO_ROOT, '.ci', 'cache', 'gate-durations.json');
 const EWMA_ALPHA = 0.3;
 
@@ -215,11 +254,15 @@ function matchesAny(text: string, globs: readonly string[]): boolean {
 /** The first submodule path recorded in HEAD, for the selftest's precondition. */
 function firstGitlink(): string | undefined {
   try {
-    for (const line of execFileSync('git', ['ls-tree', '-r', '--format=%(objectmode) %(path)', 'HEAD'], {
-      cwd: REPO_ROOT,
-      encoding: 'utf-8',
-      maxBuffer: 64 * 1024 * 1024,
-    }).split('\n')) {
+    for (const line of execFileSync(
+      'git',
+      ['ls-tree', '-r', '--format=%(objectmode) %(path)', 'HEAD'],
+      {
+        cwd: REPO_ROOT,
+        encoding: 'utf-8',
+        maxBuffer: 64 * 1024 * 1024,
+      }
+    ).split('\n')) {
       if (line.startsWith('160000 ')) return line.slice('160000 '.length);
     }
   } catch {
@@ -488,7 +531,7 @@ async function selftest(): Promise<number> {
     heavyLimit: 1,
     failFast: false,
     durations: new Map(),
-    exec: (spec) => execGate(spec, { cwd: REPO_ROOT, mergeOutput: false }),
+    exec: (spec) => execGate(spec, { cwd: REPO_ROOT, mergeOutput: false, ...PROFILE_OPTS }),
     onFinish: (result) => {
       reporter.finish(result);
     },
@@ -557,7 +600,10 @@ async function selftest(): Promise<number> {
     require_(false, 'CONTROL: no gitlink found in HEAD, so the expansion case proves nothing');
   } else {
     const expanded = expandGitlinks([gitlink, 'package.json'], () => {});
-    require_(expanded.includes(`${gitlink}/**`), `a changed ${gitlink} must widen to ${gitlink}/**`);
+    require_(
+      expanded.includes(`${gitlink}/**`),
+      `a changed ${gitlink} must widen to ${gitlink}/**`
+    );
     require_(expanded.includes(gitlink), 'the gitlink entry itself must survive');
     require_(
       expanded.includes('package.json') && !expanded.includes('package.json/**'),
@@ -595,7 +641,10 @@ async function selftest(): Promise<number> {
     return captured.split('\n').filter((l) => l.startsWith('gate ')).length;
   };
   const onlyOne = await listGateLines(['--list', '--only', 'check:ci-npmrc']);
-  require_(onlyOne === 1, `--list must print the SELECTION: --only one id printed ${onlyOne} gate lines`);
+  require_(
+    onlyOne === 1,
+    `--list must print the SELECTION: --only one id printed ${onlyOne} gate lines`
+  );
   // CONTROL: a bare --list must print many. Without this the assertion above
   // also passes on a --list that prints nothing at all.
   const allGates = await listGateLines(['--list']);
@@ -817,7 +866,8 @@ async function main(): Promise<number> {
     heavyLimit,
     failFast: opts.failFast,
     durations,
-    exec: (spec) => execGate(spec, { cwd: REPO_ROOT, mergeOutput: opts.mergeOutput }),
+    exec: (spec) =>
+      execGate(spec, { cwd: REPO_ROOT, mergeOutput: opts.mergeOutput, ...PROFILE_OPTS }),
     onStart: opts.verbose
       ? (spec) => {
           reporter.start(spec.id);

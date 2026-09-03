@@ -2323,6 +2323,73 @@ else
     echo "FAIL [1] stop/test-judge-schema.py missing"
 fi
 
+# The resource recorder runs at the exit of EVERY hook process, so its selftest
+# runs here, before the worklist suite that exercises it ~880 times. It carries
+# the leak plant (a secret-shaped argv token must never reach a record) and the
+# two silence controls; a green with zero controls is refused like the others.
+RESPROFILE_MOD="$DIR/stop/wl_resprofile.py"
+if [[ -f "$RESPROFILE_MOD" ]]; then
+    if out="$(python3 "$RESPROFILE_MOD" --selftest 2>&1 </dev/null)"; then
+        n=$(grep -cE "^[[:space:]]*PASS[[:space:]]" <<<"$out")
+        if [[ "$n" -eq 0 ]]; then
+            FAIL=$((FAIL + 1))
+            echo "FAIL [1] stop/wl_resprofile.py --selftest exited 0 but reported NO controls"
+        else
+            PASS=$((PASS + n))
+            echo "ok   [0] stop/wl_resprofile.py: $n control(s) passed"
+        fi
+    else
+        FAIL=$((FAIL + 1))
+        echo "FAIL [1] stop/wl_resprofile.py --selftest"
+        sed 's/^/       /' <<<"$out" | tail -12
+    fi
+else
+    FAIL=$((FAIL + 1))
+    echo "FAIL [1] stop/wl_resprofile.py missing"
+fi
+
+# the forkless /proc tree sampler: spawns a known tree and asserts shape, symbolic wchan, and that a planted secret-shaped argv never reaches a sample.
+if [[ -f "$DIR/stop/wl_ressample.py" ]]; then
+    if out="$(python3 "$DIR/stop/wl_ressample.py" --selftest 2>&1 </dev/null)"; then
+        n=$(grep -cE "^[[:space:]]*PASS[[:space:]]" <<<"$out")
+        if [[ "$n" -eq 0 ]]; then
+            FAIL=$((FAIL + 1))
+            echo "FAIL [1] stop/wl_ressample.py --selftest exited 0 but reported NO controls"
+        else
+            PASS=$((PASS + n))
+            echo "ok   [0] stop/wl_ressample.py: $n control(s) passed"
+        fi
+    else
+        FAIL=$((FAIL + 1))
+        echo "FAIL [1] stop/wl_ressample.py --selftest"
+        sed 's/^/       /' <<<"$out" | grep -E "FAIL|selftest" | head -12
+    fi
+else
+    FAIL=$((FAIL + 1))
+    echo "FAIL [1] stop/wl_ressample.py missing"
+fi
+
+# the structural deriver: E1/E4/E5/E6 fire-and-silence pairs, the D1 wall-only dilation control, the D2 no-duration-literal self-scan, and the admission floor.
+if [[ -f "$DIR/stop/wl_profile.py" ]]; then
+    if out="$(python3 "$DIR/stop/wl_profile.py" --selftest 2>&1 </dev/null)"; then
+        n=$(grep -cE "^[[:space:]]*PASS[[:space:]]" <<<"$out")
+        if [[ "$n" -eq 0 ]]; then
+            FAIL=$((FAIL + 1))
+            echo "FAIL [1] stop/wl_profile.py --selftest exited 0 but reported NO controls"
+        else
+            PASS=$((PASS + n))
+            echo "ok   [0] stop/wl_profile.py: $n control(s) passed"
+        fi
+    else
+        FAIL=$((FAIL + 1))
+        echo "FAIL [1] stop/wl_profile.py --selftest"
+        sed 's/^/       /' <<<"$out" | grep -E "FAIL|selftest" | head -12
+    fi
+else
+    FAIL=$((FAIL + 1))
+    echo "FAIL [1] stop/wl_profile.py missing"
+fi
+
 STOP_SUITE="$DIR/stop/test-worklist-v5.sh"
 if [[ -x "$STOP_SUITE" ]]; then
     echo

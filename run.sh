@@ -1887,6 +1887,7 @@ EOF
     # narrow the preflight while looking like a simplification. After the
     # installers it should pass; if it does not, it names what is still missing.
     ensure_host_tools || return 1
+    ensure_bashcov_sup
     echo ""
 
     log_step "Git and GitHub account"

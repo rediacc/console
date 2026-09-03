@@ -462,6 +462,14 @@ RUN ARCH=$(dpkg --print-architecture) \
     && rm /tmp/bws.zip \
     && bws --version
 
+# bashcov-sup — the resource profiler's wait4 supervisor (source in this directory,
+# so git is the pin). Built here so the devbox has it on PATH; run.sh setup builds
+# the same source onto the host. See agent/PLAN-shell-resource-profiling.md §1c.
+COPY bashcov-sup.c /tmp/bashcov-sup.c
+RUN gcc -O2 -Wall -o /usr/local/bin/bashcov-sup /tmp/bashcov-sup.c \
+    && rm /tmp/bashcov-sup.c \
+    && /usr/local/bin/bashcov-sup -- true
+
 # bottom (btm) — system monitor (https://github.com/ClementTsang/bottom)
 ARG BTM_VERSION=0.12.3
 # Digests from the release API's `digest` field, same source as the bw pins above.

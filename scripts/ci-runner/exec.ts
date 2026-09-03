@@ -11,6 +11,7 @@
  * See agent/PLAN-npm-ci-parallel-parity.md section 4.4.
  */
 import { spawn } from 'node:child_process';
+import path from 'node:path';
 import type { GateSpec } from './manifest';
 
 export interface ExecOutcome {
@@ -29,6 +30,17 @@ export interface ExecOutcome {
 export interface ExecOptions {
   cwd: string;
   mergeOutput: boolean;
+  /**
+   * When set, a forkless /proc tree sampler is attached to every gate spawn and
+   * writes `<profileDir>/<gate-id>.jsonl`. This is the ONLY place a CI gate's
+   * process tree is observable from the outside: the spawn below is the single
+   * parent of every gate, and a BASH_ENV trap inside the gate is replaced by any
+   * script's own EXIT trap (test-worklist-v5.sh:60 has one). The sampler is a
+   * detached child that exits by itself when the gate's pid is gone; it never
+   * changes the gate's exit code and its absence is a missing file, never an error.
+   */
+  profileDir?: string;
+  profileRunId?: string;
 }
 
 /**
@@ -66,6 +78,51 @@ export function execGate(spec: GateSpec, opts: ExecOptions): Promise<ExecOutcome
       cwd: opts.cwd,
       stdio: ['ignore', 'pipe', 'pipe'],
     });
+
+    // RECORDS MUST LAND OUTSIDE THE REPO. A relative or in-tree profileDir writes
+    // capture files into the working tree -- the ci-runner's own selftest did exactly
+    // that and left selftest_pass.jsonl / selftest_fail.jsonl at the repo root. An
+    // unusable directory means no profile, never a file in the tree.
+    const profileDir =
+      opts.profileDir !== undefined &&
+      path.isAbsolute(opts.profileDir) &&
+      !path.resolve(opts.profileDir).startsWith(path.resolve(opts.cwd) + path.sep)
+        ? opts.profileDir
+        : undefined;
+    if (profileDir !== undefined && child.pid !== undefined && spec.noProfile !== true) {
+      // Detached and unreferenced: the runner must not wait on the sampler, and the
+      // sampler must not keep the runner alive. `--t0` is the absolute clock E4 needs
+      // to decide whether two gates' lifetimes overlapped.
+      try {
+        const sampler = spawn(
+          'python3',
+          [
+            path.join(opts.cwd, '.claude/hooks/stop/wl_ressample.py'),
+            '--watch',
+            String(child.pid),
+            '--out',
+            path.join(profileDir, `${spec.id.replace(/[^A-Za-z0-9_.-]/g, '_')}.jsonl`),
+            '--interval-ms',
+            // 500, not 2000: measured on the first profiled run, p50 gate wall was 4.0 s and
+            // 224 of 293 gates finished under 6 s, so a 2 s tick left 221 captures with one
+            // or two samples -- unjudgeable by the sampler's own anti-vacuity rule. Every
+            // tick is forkless /proc reads, so the finer cadence costs nothing that matters.
+            '500',
+            '--run',
+            opts.profileRunId ?? String(started),
+            '--t0',
+            String(started),
+          ],
+          { cwd: opts.cwd, stdio: 'ignore', detached: true }
+        );
+        sampler.unref();
+        sampler.on('error', () => {
+          /* a missing sampler costs a profile, never a gate */
+        });
+      } catch {
+        /* same: profiling is best-effort by contract */
+      }
+    }
 
     child.stdout.setEncoding('utf8');
     child.stderr.setEncoding('utf8');

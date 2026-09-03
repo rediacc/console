@@ -24,6 +24,14 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 export interface GateSpec {
+  /**
+   * Skip the per-gate process-tree sampler for this gate. Only for gates that
+   * PLANT structural defects on purpose: check:ci-resprofile's selftest spawns an
+   * unreaping parent with four zombies, and the sampler caught it on the first
+   * default-on run -- a correct finding on a fixture, which would have poisoned
+   * the E6 fire rate in any seed. The profiler must not profile its own test.
+   */
+  noProfile?: boolean;
   /** npm script key, or a synthetic node id like 'build:packages'. */
   id: string;
   /** Exact command to run, and the exact rerun line printed on failure. */
@@ -642,9 +650,7 @@ export const GATES: readonly GateSpec[] = [
     id: 'check:ci-setup-idempotency',
     run: 'npm run check:ci-setup-idempotency',
     gate: true,
-    paths: ['.ci/lib/**', 'run.sh',
-      '.ci/scripts/quality/check-setup-idempotency.sh',
-    ],
+    paths: ['.ci/lib/**', 'run.sh', '.ci/scripts/quality/check-setup-idempotency.sh'],
     leaves: ['.ci/scripts/quality/check-setup-idempotency.sh'],
     ci: {
       kind: 'step',
@@ -773,9 +779,7 @@ export const GATES: readonly GateSpec[] = [
     id: 'check:ci-devcontainer-scripts',
     run: 'npm run check:ci-devcontainer-scripts',
     gate: true,
-    paths: ['.devcontainer/**',
-      '.ci/scripts/quality/check-devcontainer-scripts.sh',
-    ],
+    paths: ['.devcontainer/**', '.ci/scripts/quality/check-devcontainer-scripts.sh'],
     leaves: ['.ci/scripts/quality/check-devcontainer-scripts.sh'],
     ci: {
       kind: 'step',
@@ -1364,6 +1368,21 @@ export const GATES: readonly GateSpec[] = [
   // that is the only lane with BOTH fetch-depth 0 and the PR head ref. It is
   // pull_request-only, so A1-A5 do not run on push -- the gate says so rather
   // than letting a skip read as a clean result.
+  {
+    id: 'check:ci-resprofile',
+    noProfile: true,
+    run: 'npm run check:ci-resprofile',
+    // Judges the PREVIOUS run's process-tree captures (rotated by this runner at
+    // start), so it never reads a torn file. Pristine until the baseline is seeded.
+    gate: true,
+    leaves: ['.ci/scripts/quality/check_resprofile.py'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-branch',
+      step: "Resource profile (previous run's captures)",
+    },
+  },
   {
     id: 'check:ci-plan-boxes',
     run: 'npm run check:ci-plan-boxes',
@@ -4834,7 +4853,8 @@ export const GATES: readonly GateSpec[] = [
       '.ci/scripts/test/gates/test-rebase-resolve.sh',
       '.ci/scripts/test/lib/git-fixture.sh',
     ],
-    paths: ['.claude/hooks/stop/wl_git.py',
+    paths: [
+      '.claude/hooks/stop/wl_git.py',
       '.ci/scripts/test/gates/test-rebase-resolve.sh',
       '.ci/scripts/test/lib/git-fixture.sh',
     ],
@@ -4858,7 +4878,8 @@ export const GATES: readonly GateSpec[] = [
     gate: true,
     qualityGateTest: true,
     leaves: ['.ci/scripts/test/gates/test-untagged-commit-branch.sh'],
-    paths: ['.claude/hooks/pre-bash/block-untagged-commit.sh',
+    paths: [
+      '.claude/hooks/pre-bash/block-untagged-commit.sh',
       '.ci/scripts/test/gates/test-untagged-commit-branch.sh',
     ],
     ci: {
@@ -5301,6 +5322,23 @@ export const GATES: readonly GateSpec[] = [
     gate: true,
     qualityGateTest: true,
     leaves: ['.ci/scripts/test/gates/test-client-bundle-budget.sh'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-security',
+      step: 'Quality-gate unit tests',
+    },
+  },
+  {
+    id: 'gate-test:resprofile',
+    noProfile: true,
+    // Pristine warns, seeded enforces a planted E6, seeding refuses a silent shrink,
+    // and a mutant with wall scaling removed reds the gate's own control.
+    run: '.ci/scripts/test/gates/test-resprofile.sh',
+    slow: true,
+    gate: true,
+    qualityGateTest: true,
+    leaves: ['.ci/scripts/test/gates/test-resprofile.sh'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',

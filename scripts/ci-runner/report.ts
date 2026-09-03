@@ -90,7 +90,9 @@ export function createReporter(opts: ReporterOptions) {
         opts.out(`BLOCK ${pad(result.id)} ${secs(result.ms).padStart(7)}   could not run here\n`);
         opts.out('  --- why ---\n');
         const why_ = (result.stderr || result.stdout).trim();
-        opts.out(why_ === '' ? '  (said nothing, which is itself a defect)\n' : ensureNewline(why_));
+        opts.out(
+          why_ === '' ? '  (said nothing, which is itself a defect)\n' : ensureNewline(why_)
+        );
         opts.out('\n');
         return;
       }

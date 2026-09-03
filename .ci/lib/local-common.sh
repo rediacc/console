@@ -528,6 +528,33 @@ _version_gte() {
 # writes its stamp, and ships a binary with no embedded CRIU/rsync assets. The
 # stamp then matches forever. Installing them up front stops that from being
 # reachable in the first place.
+# The resource profiler's wait4 supervisor, built from the same source the devbox
+# image builds (.devcontainer/bashcov-sup.c). Rebuilt when the source is newer than
+# the binary, so a source change reaches the host on the next setup rather than
+# silently running last month's supervisor. Missing gcc is not fatal here: the
+# BASH_ENV file skips profiling when the binary is absent, and ensure_host_tools
+# already installs build-essential, so the next setup closes the gap.
+ensure_bashcov_sup() {
+    local src="$REPO_ROOT/.devcontainer/bashcov-sup.c"
+    local bin="$HOME/.local/share/rediacc/bin/bashcov-sup"
+    [[ -f "$src" ]] || return 0
+    if [[ -x "$bin" && ! "$src" -nt "$bin" ]]; then
+        return 0
+    fi
+    command -v gcc &>/dev/null || {
+        log_warn "gcc missing: bashcov-sup not built; Bash profiling stays off until setup runs with a compiler"
+        return 0
+    }
+    mkdir -p "$(dirname "$bin")"
+    if gcc -O2 -Wall -o "$bin" "$src" && "$bin" -- true; then
+        log_info "built bashcov-sup -> $bin"
+    else
+        log_warn "bashcov-sup build failed; Bash profiling stays off"
+        rm -f "$bin"
+    fi
+    return 0
+}
+
 ensure_host_tools() {
     local missing=()
     local tool
