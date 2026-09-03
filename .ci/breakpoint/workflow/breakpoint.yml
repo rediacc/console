@@ -184,34 +184,28 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - name: Fetch shadow secrets from Bitwarden
-        # SHADOW RUN: exports BWS_-prefixed copies that nothing consumes. The
-        # live secrets.* reads below are untouched until the cutover flips them.
-        uses: ./.github/actions/bws-secrets
-        with:
-          access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
-          secrets: |
-            GITHUB_APP_PRIVATE_KEY > BWS_APP_PRIVATE_KEY
-            CLOUDFLARE_BREAKPOINT_TUNNEL_TOKEN > BWS_CLOUDFLARE_BREAKPOINT_TUNNEL_TOKEN
-            AWS_SES_ACCESS_KEY_ID_EU > BWS_AWS_SES_ACCESS_KEY_ID_EU
-            AWS_SES_SECRET_ACCESS_KEY_EU > BWS_AWS_SES_SECRET_ACCESS_KEY_EU
+      # NO BITWARDEN SHADOW IN THIS JOB, and its absence is the deliberate part.
+      #
+      # Every other job on the branch carries a `Fetch shadow secrets from Bitwarden`
+      # step plus its comparator. This one carried one too, listing the GitHub App
+      # private key, the Cloudflare tunnel token and the SES EU pair -- and the
+      # bws-secrets action exports through GITHUB_ENV, which puts a value in the
+      # environment of EVERY LATER STEP of the job.
+      #
+      # This job's later steps include `Start debug shell`. That is its entire
+      # purpose: a human on a shell inside this runner. So the shadow quietly
+      # promoted four credentials from step scope -- where every real consumer below
+      # keeps them, each in its own `env:` -- to something that human can read out of
+      # the environment. The App private key is the worst of them: it mints tokens for
+      # any preset and any repository, where the shell already only has a readonly,
+      # one-hour token for console and elite.
+      #
+      # Nothing here consumed the shadow, and the twin-equality it proved is proven
+      # by roughly twenty other jobs, so removing it costs no information at all. If
+      # this job is ever cut over to Bitwarden, it needs a DIFFERENT shape than the
+      # others: mint the app token in a job that has no shell in it and pass the
+      # token, never fetch the key into the job that does.
 
-      - name: Compare shadow secrets against GitHub
-        shell: bash
-        env:
-          SHADOW_NAMES: APP_PRIVATE_KEY CLOUDFLARE_BREAKPOINT_TUNNEL_TOKEN AWS_SES_ACCESS_KEY_ID_EU AWS_SES_SECRET_ACCESS_KEY_EU
-          GH_APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
-          GH_CLOUDFLARE_BREAKPOINT_TUNNEL_TOKEN: ${{ secrets.BREAKPOINT_TUNNEL_TOKEN }}
-          GH_AWS_SES_ACCESS_KEY_ID_EU: ${{ secrets.AWS_SES_ACCESS_KEY_ID_EU }}
-          GH_AWS_SES_SECRET_ACCESS_KEY_EU: ${{ secrets.AWS_SES_SECRET_ACCESS_KEY_EU }}
-        # Guarded, because this workflow is VENDORED to other repos: the step is
-        # repository-guarded to rediacc/console, and the [[ -x ]] is the optional-hook
-        # idiom test-breakpoint-portability.sh requires of anything naming console's
-        # script tree. Absent tree => a clear line, never an obscure "not found".
-        run: |
-          REPO_ROOT="$GITHUB_WORKSPACE"
-          if [[ -x "$REPO_ROOT/.ci/scripts/ci/shadow-compare.sh" ]]; then "$REPO_ROOT/.ci/scripts/ci/shadow-compare.sh"
-          else echo "shadow compare: console's .ci/scripts tree is absent here; skipped"; fi
       - name: Resolve tunnel mode
         id: mode
         env:

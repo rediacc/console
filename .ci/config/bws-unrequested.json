@@ -25,7 +25,15 @@
     "                  or not anyone looked. Never use this to quiet a name you could wire.",
     "NOTE: write a retiring name in braced form (FOO_{EU,US,ASIA}), never as a bare token.",
     "secret-rename.py matches whole tokens, so a plain old name in a `reason` is rewritten by",
-    "the very rename the sentence describes, leaving it claiming the new name points at itself."
+    "the very rename the sentence describes, leaving it claiming the new name points at itself.",
+    "",
+    "SECOND KEY, `no_fetch_jobs`, and it exists because the first one cannot say this.",
+    "`exemptions` is keyed by SECRET NAME, so exempting APP_PRIVATE_KEY there would quiet",
+    "the per-job coverage rule in all 20 workflow files at once. What is needed is the",
+    "opposite: one named job, in one file, that must NEVER fetch a secret it reads. Keys",
+    "are `<path>#<job>`, values carry a BLOCKER reason, and the gate REFUSES an entry",
+    "whose job does not exist or does not actually read an unfetched secret -- so a stale",
+    "entry reds instead of sitting there looking considered."
   ],
   "exemptions": {
     "AWS_SES_HOST": {
@@ -127,6 +135,14 @@
       "kind": "superseded-at-runtime",
       "superseded_by": "EU",
       "reason": "set-account-worker-secrets.sh:123-131 reads this name and then unconditionally overwrites it with the EU pair whenever SUFFIX is ASIA, because ap-northeast-1 production access has not been granted. The org secret exists and is reachable, but its value reaches a deploy environment and is discarded. Operator ruling 2026-09-02: do not mint an ASIA IAM key."
+    }
+  },
+  "no_fetch_jobs": {
+    ".github/workflows/breakpoint.yml#session": {
+      "reason": "BLOCKER: this job's whole purpose is to put a human on a shell inside the runner ('Start debug shell'), and the bws-secrets action exports through GITHUB_ENV, which reaches every later step of the job. Fetching here would hand that human the GitHub App private key -- which mints tokens for any preset and any repository -- where the shell today only has a readonly one-hour token for console and elite, plus the Cloudflare tunnel token and the SES EU pair. Every real consumer in this job keeps its credential in its own step `env:`, which is step-scoped and does not leak that way. Cutting this job over needs a different shape, not a fetch: mint the app token in a job with no shell in it and pass the token down."
+    },
+    ".ci/breakpoint/workflow/breakpoint.yml#session": {
+      "reason": "BLOCKER: the frozen template the .github copy above is vendored from; check-breakpoint-drift.sh requires the two to be byte-identical, so the exemption has to name both. Same reason, same job."
     }
   }
 }

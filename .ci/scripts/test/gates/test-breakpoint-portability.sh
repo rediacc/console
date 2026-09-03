@@ -51,16 +51,16 @@ CANONICAL_VALIDATOR="$REPO_ROOT/.ci/scripts/lib/blocker-validator.sh"
 # real failure and exits 1. Collapsing those two into one tolerant branch is
 # what would actually break vendoring, because the session would then boot with
 # no services and report success.
-# workflow/breakpoint.yml joined on 2026-09-03: its "Compare shadow secrets
-# against GitHub" step is repository-guarded to
-# rediacc/console and calls this console script instead of carrying its 18-line
-# body inline (check:ci-workflows caps inline logic at 8 lines with no baseline).
-# In any other repo the guard skips the step, so the script is never needed there --
-# the same optional-hook shape as pull-service-images.sh.
+# workflow/breakpoint.yml joined on 2026-09-03 and LEFT AGAIN on 2026-09-04, which is
+# the outcome this exact-set rule is for. It was listed because its "Compare shadow
+# secrets against GitHub" step called a console script behind a repository guard. That
+# whole step is gone: the Bitwarden fetch beside it exported four credentials through
+# GITHUB_ENV into a job whose next steps hand a human a shell, so both were removed.
+# The workflow names no console script any more, and the set narrows rather than
+# widening -- which only happens if it is asserted exactly.
 ALLOWED_CONSOLE_HOOKS="scripts/pull-service-images.sh
 scripts/start-origin.sh
-scripts/stop-breakpoint.sh
-workflow/breakpoint.yml"
+scripts/stop-breakpoint.sh"
 
 # -----------------------------------------------------------------------------
 # fixture: an isolated copy with NOTHING around it

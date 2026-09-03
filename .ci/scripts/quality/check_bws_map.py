@@ -130,7 +130,12 @@ MAX_MAP_AGE_DAYS = 45
 # small fixture tree. Lowering them against the REAL tree would be suppressing a
 # finding, which is why the defaults live here and the test sets them explicitly.
 MIN_MAP_ENTRIES = int(os.environ.get("BWS_MIN_MAP_ENTRIES", "30"))
-MIN_CALLERS = int(os.environ.get("BWS_MIN_CALLERS", "22"))  # files, not jobs; see the docstring
+# 20 since 2026-09-04, down from 22: the breakpoint session job's fetch was REMOVED on
+# purpose (it exported four credentials into a job that hands a human a shell), and the
+# frozen template counts as a second file. A floor that is lowered to match a deliberate
+# removal is honest; one lowered to match a finding is not, which is why the reason is
+# written here rather than in a commit nobody re-reads.
+MIN_CALLERS = int(os.environ.get("BWS_MIN_CALLERS", "20"))  # files, not jobs; see the docstring
 
 UUID_RE = re.compile(r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$")
 ENV_NAME_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
@@ -653,6 +658,20 @@ def unmapped_read_problems(
     return problems, len(read & org), read
 
 
+def load_no_fetch_jobs(path: Path | None = None) -> dict:
+    """The `no_fetch_jobs` half of the allowlist file: "<path>#<job>" -> {reason}.
+
+    Deliberately returns {} on any read failure rather than a problem list, because
+    load_exemptions() already refuses a missing or unparseable file -- and {} is the
+    STRICT direction here: with no entries, every unfetched read is reported.
+    """
+    src = path or EXEMPT
+    try:
+        return json.loads(src.read_text(encoding="utf-8")).get("no_fetch_jobs") or {}
+    except (OSError, ValueError):
+        return {}
+
+
 def load_exemptions(path: Path | None = None) -> tuple[dict, list[str]]:
     """The only escape hatch, and it is re-derived rather than believed.
 
@@ -707,9 +726,16 @@ def load_exemptions(path: Path | None = None) -> tuple[dict, list[str]]:
     return ex, problems
 
 
-def coverage_problems(secrets: dict, exemptions: dict) -> list[str]:
-    """Assertions 5, 6 and 7. Every one is the converse of assertion 1."""
+def coverage_problems(secrets: dict, exemptions: dict, no_fetch: dict | None = None) -> list[str]:
+    """Assertions 5, 6 and 7. Every one is the converse of assertion 1.
+
+    `no_fetch` maps "<path>#<job>" to a record whose `reason` says why that ONE job must
+    not fetch a secret it reads. Name-scoped exemptions cannot express that: the names in
+    question are read by nearly every job in the tree.
+    """
     problems: list[str] = []
+    no_fetch = no_fetch or {}
+    seen_no_fetch: set[str] = set()
     renames = dict(rename_pairs())
     pre_images: dict[str, list[str]] = {}
     for old, new in renames.items():
@@ -759,7 +785,15 @@ def coverage_problems(secrets: dict, exemptions: dict) -> list[str]:
             if job in passthrough:
                 continue
             direct_reads += len(reads)
-            for bw_name in sorted(set(reads) - reqs_by_job.get(job, set())):
+            unfetched = sorted(set(reads) - reqs_by_job.get(job, set()))
+            key = f"{f.relative_to(ROOT)}#{job}"
+            if key in no_fetch and unfetched:
+                # Claimed AND live: the entry only stands while the job really does read
+                # something it does not fetch. The converse -- an entry naming a job with
+                # nothing left to forgive -- is reported below, not silently tolerated.
+                seen_no_fetch.add(key)
+                continue
+            for bw_name in unfetched:
                 if exemptions.get(bw_name, {}).get("kind") == "deferred":
                     continue
                 problems.append(
@@ -770,6 +804,20 @@ def coverage_problems(secrets: dict, exemptions: dict) -> list[str]:
         problems.append(
             "no job reads any mapped secret directly; the per-job scan lost its subject"
         )
+    for key, rec in sorted(no_fetch.items()):
+        reason = (rec or {}).get("reason", "")
+        if not reason.startswith("BLOCKER:") or len(reason) < 60:
+            problems.append(
+                f"no_fetch_jobs entry {key!r} carries no substantive reason. It must start "
+                f"with 'BLOCKER:' and say what makes that job different, or the list becomes "
+                f"a place to put anything inconvenient."
+            )
+        elif key not in seen_no_fetch:
+            problems.append(
+                f"no_fetch_jobs entry {key!r} forgives nothing: that job either no longer "
+                f"exists or fetches everything it reads. Delete it -- an exemption that "
+                f"suppresses nothing is how a list outlives its reasons."
+            )
 
     # ---- 5. every mapped name is requested or exempt -------------------------
     for name in sorted(set(secrets) - requested):
@@ -1038,6 +1086,31 @@ jobs:
     if not ok5:
         bad += 1
 
+    # Assertion 12, the per-job escape hatch, in all three directions. It is the ONE
+    # place this gate forgives a job for not fetching what it reads, so a plant that
+    # survives here is a door anyone can walk through.
+    real_ex = load_exemptions()[0]
+    real_map = (json.loads(MAP.read_text(encoding="utf-8")) if MAP.exists() else {}).get(
+        "secrets"
+    ) or {}
+    live_key = ".github/workflows/breakpoint.yml#session"
+    weak = coverage_problems(real_map, real_ex, {live_key: {"reason": "because"}})
+    ok12a = any("carries no substantive reason" in m for m in weak)
+    print(f"  {'PASS' if ok12a else 'FAIL'}  a no_fetch_jobs entry with a thin reason is refused")
+    if not ok12a:
+        bad += 1
+    dead = coverage_problems(
+        real_map,
+        real_ex,
+        {"absent.yml#nojob": {"reason": "BLOCKER: " + "x" * 60}},
+    )
+    ok12b = any("forgives nothing" in m for m in dead)
+    print(
+        f"  {'PASS' if ok12b else 'FAIL'}  a no_fetch_jobs entry that forgives nothing is refused"
+    )
+    if not ok12b:
+        bad += 1
+
     missing_file = load_exemptions(Path("/nonexistent/ex.json"))[1]
     ok4 = any("refusing to pass vacuously" in m for m in missing_file)
     print(f"  {'PASS' if ok4 else 'FAIL'}  a missing allowlist refuses rather than passing")
@@ -1127,7 +1200,7 @@ def main() -> int:
     alias, alias_problems = load_preimage()
     problems += alias_problems
     if not ex_problems:
-        problems += coverage_problems(secrets, exemptions)
+        problems += coverage_problems(secrets, exemptions, load_no_fetch_jobs())
         rep_problems, represented = represented_problems(secrets, exemptions)
         problems += rep_problems
         read_problems, n_read, read = unmapped_read_problems(secrets, exemptions, alias)
