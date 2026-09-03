@@ -17,6 +17,17 @@
  *
  * Order matters: plyr first, then the overrides, matching the concatenation order the
  * single emitted chunk used to have.
+ *
+ * AND THESE LINKS LAND AT THE END OF <head>, after every page stylesheet, whereas
+ * Astro's hoisted <link> used to sit among the page CSS. Verified 2026-09-03 to change
+ * nothing that exists today -- three browser screenshots are byte-identical to the
+ * pre-change baselines -- but the cascade IS genuinely different: page CSS can no
+ * longer beat a `.plyr`/`.tvp-*` rule by SOURCE ORDER at equal specificity.
+ *
+ * So a page-level override of a player selector must win on SPECIFICITY. That is
+ * already how solution-video.css writes its overrides, and its comments say the reason
+ * in as many words; what changed is that specificity is now the only lever rather than
+ * the belt-and-braces one.
  */
 import plyrCssUrl from 'plyr/dist/plyr.css?url';
 import playerCssUrl from '../styles/tutorial-video.css?url';

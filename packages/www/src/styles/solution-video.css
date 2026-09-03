@@ -37,7 +37,12 @@
 }
 
 /* Higher specificity than `.language-trigger:hover` on purpose, so the outcome does not
-   depend on which stylesheet the bundler emits first. */
+   depend on which stylesheet the bundler emits first.
+
+   Since 2026-09-03 that is no longer belt-and-braces, it is the ONLY thing holding.
+   The player's sheets are appended to the end of <head> at runtime by
+   src/scripts/tutorial-video-styles.ts, so they are now always LATER in the cascade
+   than this file. An override written here at equal specificity would silently lose. */
 .sp-hero-media .tvp-toolbar .language-trigger:hover {
   background-color: var(--color-hover);
   color: var(--color-text);
