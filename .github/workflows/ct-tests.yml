@@ -1938,7 +1938,13 @@ jobs:
       - name: Install Stripe CLI
         if: env.STRIPE_SANDBOX_SECRET_KEY != ''
         run: |
-          curl -s https://packages.stripe.dev/api/security/keypair/stripe-cli-gpg/public | gpg --dearmor | sudo tee /usr/share/keyrings/stripe.gpg >/dev/null
+          # -f, and retries: `-s` alone makes an HTTP error SILENT and pipes the
+          # error page into gpg, and a single attempt makes one network blip a
+          # hard job failure. Same class as the sm-action download that killed
+          # run 33753814832.
+          curl -fsSL --retry 5 --retry-all-errors --retry-delay 2 --connect-timeout 10 \
+            https://packages.stripe.dev/api/security/keypair/stripe-cli-gpg/public \
+            | gpg --dearmor | sudo tee /usr/share/keyrings/stripe.gpg >/dev/null
           echo "deb [signed-by=/usr/share/keyrings/stripe.gpg] https://packages.stripe.dev/stripe-cli-debian-local stable main" | sudo tee /etc/apt/sources.list.d/stripe.list
           sudo apt-get update -qq && sudo apt-get install -y -qq stripe
         env:

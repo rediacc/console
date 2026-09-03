@@ -29,11 +29,15 @@ description: >
 
       bitwarden/sm-action@1238aae8fc64b212641190a9227c8a734ab1a793
 
-  So bumping the pin below is a TWO-PLACE change: this file and
-  /repos/rediacc/console/actions/permissions/selected-actions. It is recorded
-  here because it is invisible in the tree -- the failure surfaces only after a
-  push, and only as an action-resolution error that names no secret at all.
-  (account/renet/elite are `allowed_actions: all` and needed no change.)
+  So bumping the pin below is a THREE-PLACE change: this file's `uses:` line,
+  the checksum table in the prewarm step, and
+  /repos/rediacc/console/actions/permissions/selected-actions. The allowlist is
+  recorded here because it is invisible in the tree -- the failure surfaces only
+  after a push, and only as an action-resolution error that names no secret at
+  all. (account/renet/elite are `allowed_actions: all` and needed no change.)
+  Forgetting the checksum table is the safe direction: the prewarm reads the
+  version from sm-action's own version.json, so an unlisted version SKIPS rather
+  than serving a stale binary.
 
   WHAT DOES NOT FAIL: a correct UUID whose stored VALUE is empty. sm-action
   exports "" without complaint, and the Worker's zod schema normalises "" to
@@ -105,6 +109,101 @@ runs:
           printf '%s' "$lines"
           echo "BWS_EOF"
         } >> "$GITHUB_OUTPUT"
+
+    # WHY THIS STEP EXISTS, paid for on 2026-09-03 (run 33753814832, job
+    # "Initialize"). sm-action ships no binary: index.js downloads
+    # sm-action-<triple> from its own GitHub release on every job, ONCE, with no
+    # retry. That download timed out after 5.3s, and its fallback is
+    # `cargo build`, run with cwd = the WORKSPACE rather than the action
+    # directory -- so it died on "could not find Cargo.toml in
+    # /home/runner/work/console/console" and could never have worked here. One
+    # five-second network blip therefore hard-fails the Initialize job, which
+    # every other job in the run depends on.
+    #
+    # index.js:213-224 checks `<action_dir>/target/<triple>/release/sm-action`
+    # FIRST and returns it if present, so placing the file there skips its
+    # download entirely. That is what this does, with curl's retry and a pinned
+    # checksum.
+    #
+    # THE VERSION IS DERIVED, NOT PINNED, and that is the load-bearing choice.
+    # sm-action builds its URL from its own version.json, so pinning a version
+    # here would let a pin bump serve a STALE binary silently -- worse than the
+    # flake. We read the same version.json it reads; a version whose checksums
+    # this file does not carry is a skip, not a guess.
+    #
+    # EVERY FAILURE HERE IS A SKIP, except a checksum mismatch. Skipping leaves
+    # sm-action doing exactly what it does today, so this step can slow a job
+    # down and cannot break one. A mismatch is the one loud case: the bytes at
+    # a pinned release changed, and that is not a thing to route around.
+    - name: Pre-place the sm-action binary (its own download has no retry)
+      shell: bash
+      run: |
+        set -uo pipefail
+        skip() { echo "::warning::bws-secrets prewarm skipped: $1"; exit 0; }
+
+        # The action checkout lives beside the workspace, never inside it.
+        actions_root="${RUNNER_WORKSPACE:-}/../_actions"
+        dir="$(find "$actions_root" -maxdepth 3 -type d -path '*/bitwarden/sm-action/*' 2>/dev/null | head -1)"
+        [[ -n "$dir" && -d "$dir" ]] || skip "sm-action checkout not found under _actions"
+
+        case "${RUNNER_OS:-}/${RUNNER_ARCH:-}" in
+          Linux/X64)     triple=x86_64-unknown-linux-gnu;  ext="" ;;
+          Linux/ARM64)   triple=aarch64-unknown-linux-gnu; ext="" ;;
+          macOS/X64)     triple=x86_64-apple-darwin;       ext="" ;;
+          macOS/ARM64)   triple=aarch64-apple-darwin;      ext="" ;;
+          Windows/X64)   triple=x86_64-pc-windows-msvc;    ext=".exe" ;;
+          Windows/ARM64) triple=aarch64-pc-windows-msvc;   ext=".exe" ;;
+          *) skip "unmapped runner ${RUNNER_OS:-?}/${RUNNER_ARCH:-?}" ;;
+        esac
+
+        dest="$dir/target/$triple/release/sm-action$ext"
+        [[ -f "$dest" ]] && { echo "sm-action binary already present; nothing to do"; exit 0; }
+
+        version="$(sed -n 's/.*"version"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' "$dir/version.json" 2>/dev/null | head -1)"
+        [[ -n "$version" ]] || skip "cannot read a version from $dir/version.json"
+
+        # Checksums of the v3.0.1 release assets, taken from the release itself.
+        # Bumping the sm-action pin is now a FOUR-place change: this table, the
+        # `uses:` line below, the org action allowlist (see the header), and
+        # nothing else -- the version and URL follow from version.json.
+        want=""
+        if [[ "$version" == "3.0.1" ]]; then
+          case "$triple" in
+            x86_64-unknown-linux-gnu)  want=fa998e9db775d5c7bdbc0fd8840ac6474a8348cdc989176c5ce24c3d09045752 ;;
+            aarch64-unknown-linux-gnu) want=35dde396e46be03c2b8f711d8ea4c3c75a3b42ab6681a260d614b17fca726989 ;;
+            x86_64-apple-darwin)       want=9dfeab4d83b0347f9b5a04e8ca57f816c390b0f1c58a3d3bd7919ebfd3ab1124 ;;
+            aarch64-apple-darwin)      want=a426480977db65e7ae0d50c5e0ba70508ff15bb1fc803a9b9048e5ccda8d1b73 ;;
+            x86_64-pc-windows-msvc)    want=ae9cf1f9c400200cf889f17a44d7b3c9c525b9f462c0acd3cda76efab74e0174 ;;
+            aarch64-pc-windows-msvc)   want=be716878c305707b7141e9581cdbf292c785f3aa3f7fbb42ac9c5e5460c09dba ;;
+          esac
+        fi
+        [[ -n "$want" ]] || skip "no pinned checksum for sm-action $version/$triple (pin bumped without updating this table)"
+
+        url="https://github.com/bitwarden/sm-action/releases/download/v${version}/sm-action-${triple}${ext}"
+        tmp="$(mktemp)"
+        if ! curl -fsSL --retry 5 --retry-all-errors --retry-delay 2 \
+                  --connect-timeout 10 --max-time 180 -o "$tmp" "$url"; then
+          rm -f "$tmp"
+          skip "download failed after 5 retries. sm-action will now try ONCE itself; if that also fails it reports a Cargo.toml error, which is its broken source fallback, not a repo problem"
+        fi
+
+        if command -v sha256sum >/dev/null 2>&1; then got="$(sha256sum "$tmp" | cut -d" " -f1)"
+        elif command -v shasum >/dev/null 2>&1; then got="$(shasum -a 256 "$tmp" | cut -d" " -f1)"
+        else rm -f "$tmp"; skip "no sha256sum or shasum to verify the download with"
+        fi
+        if [[ "$got" != "$want" ]]; then
+          rm -f "$tmp"
+          echo "::error::sm-action $version/$triple checksum mismatch: got $got, pinned $want. The bytes at a pinned release changed; do not route around this."
+          exit 1
+        fi
+
+        # No `set -e` here (skip() must be able to exit 0 from a failed test), so
+        # the install is chained explicitly rather than trusting three bare commands.
+        if ! { mkdir -p "$(dirname "$dest")" && mv "$tmp" "$dest" && chmod +x "$dest"; }; then
+          rm -f "$tmp"
+          skip "could not install the binary at $dest"
+        fi
+        echo "pre-placed sm-action $version/$triple (sha256 verified)"
 
     - name: Fetch from Bitwarden Secrets Manager
       uses: bitwarden/sm-action@1238aae8fc64b212641190a9227c8a734ab1a793  # v3.0.1

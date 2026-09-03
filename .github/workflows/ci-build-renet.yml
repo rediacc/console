@@ -329,7 +329,10 @@ jobs:
           # installer itself then verifies the binary it fetches against the
           # release checksums, so the binary was never the weak link -- the
           # script fetch was.
-          curl -sSfL "https://raw.githubusercontent.com/golangci/golangci-lint/${GOLANGCI_VERSION}/install.sh" | \
+          # Retries: a single attempt makes one network blip a hard job failure,
+          # which is what killed run 33753814832 one download over.
+          curl -sSfL --retry 5 --retry-all-errors --retry-delay 2 --connect-timeout 10 \
+              "https://raw.githubusercontent.com/golangci/golangci-lint/${GOLANGCI_VERSION}/install.sh" | \
               sh -s -- -b "$(go env GOPATH)/bin" "$GOLANGCI_VERSION"
           GOPATH_BIN="$(go env GOPATH)/bin"
           export PATH="$GOPATH_BIN:$PATH"
