@@ -297,6 +297,13 @@ jobs:
           python3 -c "import yaml; print('PyYAML', yaml.__version__)"
           .ci/scripts/quality/check_workflow_submodule_deps.py
 
+      - name: Battery clean-tree guard
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        # run-all.sh's tree snapshot must survive a CLEAN checkout. It did not, once,
+        # and the abort happened before the battery printed its first line -- so CI
+        # showed an exit 1 naming no test at all.
+        run: npm run check:ci-battery-clean-tree
+
       - name: Workflow env provision
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         # Reads workflow YAML only, so it sits in the static lane with its two

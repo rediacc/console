@@ -1787,6 +1787,20 @@ export const GATES: readonly GateSpec[] = [
     },
   },
   {
+    id: 'check:ci-battery-clean-tree',
+    // run-all.sh's tree snapshot must not abort on a clean checkout. It extracts the
+    // REAL tree_state() rather than copying it, and refuses if that function is gone.
+    run: 'npm run check:ci-battery-clean-tree',
+    gate: true,
+    leaves: ['.ci/scripts/quality/check-battery-clean-tree.sh'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-static',
+      step: 'Battery clean-tree guard',
+    },
+  },
+  {
     id: 'check:ci-workflow-env-provision',
     // A job may not use a shell variable nothing in that job provides. bash
     // expands an unset name to the empty string, so the failure always surfaces
