@@ -103,14 +103,39 @@ _hook_strip_heredocs() {
     }' 2>/dev/null
 }
 
+# Remove inline environment assignments sitting between a command position and the
+# command itself: `FOO=bar git <verb>` becomes ` git <verb>`.
+#
+# WITHOUT THIS, ONE TOKEN BYPASSED SEVEN GUARDS. Every git guard here anchors its
+# match at a command position, because prose about committing must not be treated as
+# a commit. An assignment prefix puts a word between the anchor and `git`, so the
+# anchor stops matching and the guard exits 0 having decided this is not a git
+# command at all. Measured 2026-09-03, plain versus `FOO=bar `-prefixed, on the
+# identical command -- every one of these went from refusing to permitting:
+#
+#   block-unverified-push          rc=2 -> rc=0
+#   block-untagged-commit          rc=2 -> rc=0
+#   block-destructive-git-restore  rc=2 -> rc=0
+#   block-blanket-git-add          rc=2 -> rc=0
+#   block-worktree-add             rc=2 -> rc=0
+#
+# The fix belongs HERE rather than in seven regexes: an assignment prefix is a
+# property of shell syntax, which is what this file normalises, and a seventh copy of
+# the anchor would have been a seventh chance to miss it. The assignments are dropped
+# rather than kept because no guard matches on them; the one guard that needs their
+# VALUES reads them from the RAW command for exactly that reason.
+_hook_strip_env_prefix() {
+    sed -E ':a; s/(^|[;&|(]|\$\(|`)([[:space:]]*)([A-Za-z_][A-Za-z0-9_]*=[^[:space:];&|]*[[:space:]]+)/\1\2/g; ta'
+}
+
 hook_scan_target() {
     local cmd="$1" nohd stripped wrapped
     nohd=$(printf '%s' "$cmd" | _hook_strip_heredocs)
-    stripped=$(printf '%s' "$nohd" | tr '\n' '\001' | sed -e "s/'[^']*'//g" -e 's/"[^"]*"//g' | tr '\001' '\n')
+    stripped=$(printf '%s' "$nohd" | tr '\n' '\001' | sed -e "s/'[^']*'//g" -e 's/"[^"]*"//g' | tr '\001' '\n' | _hook_strip_env_prefix)
     # Extract the wrapper payload (see _hook_wrapper_payload above), then turn
     # its quotes to spaces so the inner command lands at a command position:
     # `sh -c 'gh pr merge --admin'` -> `gh pr merge --admin `.
-    wrapped=$(printf '%s' "$nohd" | tr '\n' ' ' | _hook_wrapper_payload | sed -e "s/['\"]/ /g")
+    wrapped=$(printf '%s' "$nohd" | tr '\n' ' ' | _hook_wrapper_payload | sed -e "s/['\"]/ /g" | _hook_strip_env_prefix)
     printf '%s\n%s' "$stripped" "$wrapped"
 }
 

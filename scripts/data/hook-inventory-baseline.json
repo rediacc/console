@@ -31,6 +31,7 @@
   "pre-bash/block-ssh-docker.sh",
   "pre-bash/block-ssh-file-write.sh",
   "pre-bash/block-stale-pr-branch-date.sh",
+  "pre-bash/block-unlinked-commit-author.sh",
   "pre-bash/block-untagged-commit.sh",
   "pre-bash/block-unverified-push.sh",
   "pre-bash/block-worktree-add.sh",

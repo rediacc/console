@@ -257,6 +257,46 @@ check 0 pre-bash/block-cli-bundle.sh "$(bash_json 'node packages/cli/bundle.mjs'
 check 0 pre-bash/block-cli-bundle.sh "$(bash_json 'node scripts/x.mjs --outdir packages/cli/dist')" "cli-bundle CONTROL: the path is an output flag, not the program"
 check 0 pre-bash/block-commit-meta.sh "$(bash_json "grep -rn 'co-authored-by' docs/")" "commit-meta CONTROL: GREPPING for the banned trailer is how you audit it"
 check 0 pre-bash/block-commit-meta.sh "$(bash_json 'echo "the rule bans Co-Authored-By lines"')" "commit-meta CONTROL: prose naming the rule is not a violation of it"
+
+# ── block-unlinked-commit-author ────────────────────────────────────────────
+# 30 of 42 commits on 0903-1 carried an email GitHub does not link to the account:
+# same DISPLAY NAME as the good ones, so `git log` looked uniform while GitHub showed
+# a bare name with no avatar and no contribution credit. It cost a history rewrite
+# across four repositories.
+#
+# THE CONFIG WAS NOT THE CAUSE -- the checkout's only user.email source was the
+# correct one -- so every BLOCK case below is an OVERRIDE path. A guard that read
+# `git config` alone would have watched all 30 go past, and these three are why.
+UCA_ID="$(mktemp -d)/identity.json"
+printf '{"format":1,"identities":[{"login":"ctl","id":1,"emails":["good@example.com"]}]}\n' >"$UCA_ID"
+export COMMIT_IDENTITY_FILE="$UCA_ID"
+
+check 2 pre-bash/block-unlinked-commit-author.sh \
+    "$(bash_json 'git -c user.email=bad@example.com commit -m x')" \
+    "unlinked-author: -c user.email override is refused"
+check 2 pre-bash/block-unlinked-commit-author.sh \
+    "$(bash_json 'GIT_AUTHOR_EMAIL=bad@example.com git commit -m x')" \
+    "unlinked-author: GIT_AUTHOR_EMAIL override is refused"
+# --author= must be read from the RAW command: git's own form is
+# `--author="Name <a@b>"`, and the scan strips quoted spans, so reading it from there
+# found an empty `--author=` and permitted the very override this guard exists for.
+check 2 pre-bash/block-unlinked-commit-author.sh \
+    "$(bash_json 'git commit --author="N <bad@example.com>" -m x')" \
+    "unlinked-author: --author= override is refused (quoted value survives the scan)"
+
+# The ALLOW half. Without it, over-blocking is invisible -- and this guard's whole
+# claim is that it CANNOT repeat block-commit-meta.sh's false-positive history,
+# because an author email is never in the command text to begin with.
+check 0 pre-bash/block-unlinked-commit-author.sh \
+    "$(bash_json 'git commit -m "fix: drop bad@example.com from the docs"')" \
+    "unlinked-author CONTROL: prose naming a bad address is not a bad author"
+check 0 pre-bash/block-unlinked-commit-author.sh \
+    "$(bash_json 'grep -rn bad@example.com docs/')" \
+    "unlinked-author CONTROL: grepping for an address is not a commit at all"
+check 0 pre-bash/block-unlinked-commit-author.sh \
+    "$(bash_json 'git tag -m "bad@example.com" v1')" \
+    "unlinked-author CONTROL: a tag writes a tagger, not a commit author"
+unset COMMIT_IDENTITY_FILE
 # THE GAP MUST NOT CROSS A CLAUSE, and the first draft of the commit-verb gate
 # let it. `git ...* (commit|tag)` has to tolerate flags between the verb and its
 # subcommand, but a gap of "any non-space token" spans `|` and `&&` too, so a
