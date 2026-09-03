@@ -5340,6 +5340,26 @@ export const GATES: readonly GateSpec[] = [
     },
   },
   {
+    // A build that broke with no commit behind it: private/account's image resolved
+    // its whole dep tree live, and a package published that morning crashed npm's
+    // arborist. This is the regression test for the CLASS, not for that package.
+    id: 'check:ci-docker-npm-pins',
+    run: 'npm run check:ci-docker-npm-pins',
+    gate: true,
+    // Just the script, matching every other Python gate here: check:ci-parity
+    // requires the manifest's leaves to be what `npm run <id>` actually resolves to,
+    // and a leaf list wider than the command is a claim the runner cannot honour.
+    // The gate still scans every tracked Dockerfile -- it enumerates from git, not
+    // from this list -- so a new one is covered the moment it is committed.
+    leaves: ['.ci/scripts/quality/check_docker_npm_pins.py'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-static',
+      step: 'Dockerfile npm pins',
+    },
+  },
+  {
     // CHECK 6 of check-workflow-gates.sh is the rule that keeps the watchdog
     // watching, and it had no test at all: its only evidence of working was that
     // it was green. It now admits a step on two PROPERTIES rather than on a name,

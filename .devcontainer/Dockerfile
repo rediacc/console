@@ -337,7 +337,20 @@ RUN apt-get update && \
 # =============================================================================
 # Global npm tools
 # =============================================================================
-RUN npm install -g @openai/codex @google/gemini-cli \
+# PINNED, and the pin is not bureaucracy. This line read `npm install -g
+# @openai/codex @google/gemini-cli` with no version at all, so every build of this
+# image resolved both packages live against whatever npm had published that hour.
+# On 2026-09-04 that exact shape took private/account's image down: a package
+# published that morning made npm 10's arborist crash, and nothing in this repo had
+# changed. An unpinned install is a build any stranger can break, and it also means
+# two people building "the same" devcontainer get different tools.
+#
+# Pinned to what `@latest` resolved to on 2026-09-04, so this change moves nothing.
+# Bumping is a one-line edit per tool; there is deliberately no freshness gate on
+# these two, because a CLI whose version nothing depends on is not worth a red build.
+ARG CODEX_VERSION=0.153.1
+ARG GEMINI_CLI_VERSION=0.58.0
+RUN npm install -g @openai/codex@${CODEX_VERSION} @google/gemini-cli@${GEMINI_CLI_VERSION} \
     && npm cache clean --force
 
 # awscli — required by the R2 gates, and its absence made them unrunnable.

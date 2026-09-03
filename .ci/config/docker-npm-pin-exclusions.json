@@ -1,0 +1,20 @@
+{
+  "_comment": [
+    "Lines in a tracked Dockerfile that check_docker_npm_pins.py must forgive.",
+    "",
+    "Keyed '<path>:<the EXACT stripped line>'. Exact, not a substring: the two entries",
+    "below are `npm install` and `npm install --omit=dev && \\`, and under substring",
+    "matching the shorter key claims both while the longer one matches nothing and gets",
+    "reported as dead scaffold. Every reason must start with BLOCKER: and say what makes",
+    "that line different -- and the gate REFUSES an entry that matches nothing, so a",
+    "stale exclusion reds instead of sitting there looking considered.",
+    "",
+    "Both entries are the SAME finding in two stages of one file, and both were",
+    "established by experiment on 2026-09-04, not by reading the old comment that said",
+    "so. The experiment matters because the old comment was doubted first."
+  ],
+  "exclusions": {
+    "private/account/Dockerfile:npm install": "BLOCKER: npm ci genuinely refuses this lockfile, verified 2026-09-04 rather than assumed. With private/account/package-lock.json copied in AND /packages/shared present, npm ci still exits EUSAGE saying it 'can only install with an existing package-lock.json' -- a message that names the wrong subject, since the file is right there at lockfileVersion 3. It is the '../../packages/shared' key that npm cannot reconcile from /app. The registry-churn risk this gate exists for is answered the other way in this stage: npm is pinned to 12.0.2, because the crash that took this image down was node:22-alpine's bundled npm 10.9.8, not the resolution itself.",
+    "private/account/Dockerfile:npm install --omit=dev && \\": "BLOCKER: npm ci genuinely refuses this lockfile, verified 2026-09-04 rather than assumed. With private/account/package-lock.json copied in AND /packages/shared present, npm ci still exits EUSAGE saying it 'can only install with an existing package-lock.json' -- a message that names the wrong subject, since the file is right there at lockfileVersion 3. It is the '../../packages/shared' key that npm cannot reconcile from /app. The registry-churn risk this gate exists for is answered the other way in this stage: npm is pinned to 12.0.2, because the crash that took this image down was node:22-alpine's bundled npm 10.9.8, not the resolution itself."
+  }
+}

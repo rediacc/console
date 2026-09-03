@@ -1,65 +1,64 @@
-## SESSION 74de73ca 2026-09-03T21:38:26Z
+## SESSION 74de73ca 2026-09-03T23:42:35Z
 
-Branch `0903-1`, PR #585, epic `24c98380`. **PUSHED** through `cfbdc6cbe`; renet submodule
-`6c85007` (PR rediacc/renet#110). `ci:quick` 295/295 on the committed tree. Operator away,
-full autonomy, no questions until they run `/ask`, CI reds first. STATE.md is committed
-with real changes only -- a bookkeeping-only push cancels the live cycle.
+# Session 74de73ca -- state
 
-## The thing that would do real damage
+Branch `0903-1`, PR #585, epic `24c98380`. Head as of this write: 873cce233
+(pushed through c770b8ebc; three commits are LOCAL AND UNPUSHED, deliberately --
+see "Why the tail is unpushed").
 
-**Do NOT delete APP_PRIVATE_KEY / CLOUDFLARE_API_TOKEN / DOCKERHUB_TOKEN** even though
-`derive-shadow-pass-list.sh` prints them. It proves an equal Bitwarden twin exists --
-necessary, NOT sufficient. 176 live `secrets.*` reads remain (104/44/28). Two findings:
+## What landed tonight
 
-1. **It is a REORDERING.** In most shadowed jobs `app-token` reads the key BEFORE the
-   bws-secrets fetch (app-token is needed to check out the repo; the local fetch action
-   needs the repo checked out). Flipping in place hands it an EMPTY key. It resolves where
-   the sparse cone already carries `.github/actions` + `.ci/config`. But the ordering is a
-   per-job property: in `breakpoint.yml` the fetch already precedes app-token. Check,
-   never assume.
-2. **Only 155 of 178 reads are reachable.** 23 are passed into REUSABLE workflows via
-   `secrets:` blocks, where env context does not exist. Those callees must fetch from
-   Bitwarden themselves first. A complete flip still does not free the secrets.
+- **The secret cutover's wave 1.** 79 consumer reads flipped from
+  `secrets.{APP_PRIVATE_KEY,CLOUDFLARE_API_TOKEN,DOCKERHUB_TOKEN}` to
+  `env.BWS_*` across 16 workflow files (c770b8ebc). The survey that drove it
+  separates four populations, and the one a find-and-replace would have
+  destroyed is the 73 `GH_<NAME>:` halves of the comparator steps: flipping
+  those makes the shadow compare a value against itself and pass forever.
+  Seven jobs needed the Bitwarden fetch MOVED ahead of app-token first.
+- **CHECK 6 of check-workflow-gates.sh now states a property, not a name.** A
+  step ahead of the watchdog's monitor is admitted when it carries BOTH
+  `continue-on-error: true` and `timeout-minutes: <= 5`, both as literals. It
+  had no test at all; it has nine assertions now
+  (`gate-test:watchdog-monitor-ordering`), and the checker is EXTRACTED from
+  the live gate so a copy cannot outlive the original.
+- **breakpoint.yml lost its shadow rather than gaining a flip** (cc3b468ed).
+  bws-secrets exports through GITHUB_ENV, and this job's later steps hand a
+  human a shell -- so the shadow was promoting the App private key, the tunnel
+  token and the SES EU pair from step scope to that shell. `check_bws_map.py`
+  gained a `no_fetch_jobs` key to say so per-JOB, since its old escape hatch is
+  keyed by secret NAME and would have quieted all 20 files.
+- **private/account's Dockerfile stopped building today** on an npm 10 arborist
+  crash from a package published this morning; fixed in the submodule (b0924d1)
+  by installing from the root workspace lockfile where npm can, and pinning
+  npm@12.0.2 in the two stages where `npm ci` genuinely refuses.
+- **Resprofile wave 2 is complete.** `rank()` folds `bash.jsonl` (246 shell
+  shapes, and `sh:-c` is now the largest row in the corpus at 57,718 CPU
+  seconds); an empty bash corpus is UNJUDGEABLE rather than clean; and the
+  retirement trigger no longer counts prose about the layer as work -- caught by
+  its own first trailer, one commit after it was written.
+- **The retirement tool** (873cce233) writes out the last, irreversible step and
+  applies nothing.
 
-Proven flip: `5216e20bb` (backfill-release-sentinel.yml), the first live consumer of a
-Bitwarden value anywhere in the tree.
+## Why the tail is unpushed
 
-**Do NOT touch `.github/workflows/breakpoint.yml` casually.** It is VENDORED from
-`.ci/breakpoint/workflow/breakpoint.yml` with a MANIFEST.sha256; a flip there was refused
-by check:ci-breakpoint-drift AND gate-test:breakpoint-secret-exposure, and editing the
-template plus `--write` did not satisfy them either. I reverted all three files rather
-than force it. Read `.ci/breakpoint/README.md` before retrying; it is 1 of 72 pairs.
-
-## Where CI stands
-
-Watched by bg `bh03rtnqs`, whose head is superseded -- re-arm with
-`.ci/scripts/ci/ci-trace.py --wait` (background). **No cycle green yet;** ~16 reds fixed,
-and in every one the error named the WRONG SUBJECT. Look EARLIER in the job than the step
-that failed. A CANCELLED run is usually SUPERSEDED: read JOB conclusions, never the run's.
-
-## Landed tonight, do not redo
-
-- Profiling wave 2 COMPLETE (all six pieces of `agent/PLAN-resprofile-wave2.md`): plain
-  `python3` is recorded at last, the devbox builds `bashcov-sup` (it had none), bash
-  records carry a shape, run-delay is probed not sysctl-read, the blocked share reads the
-  tree (0% for 291/291 before; 80/54/10% now), per-thread states, and E7 which abstains
-  rather than guess. Gate deliberately unseeded/report-only.
-- `check:ci-checkout-cone` -- a step may not run a file its job never checked out. 359
-  invocation sites, 106 jobs, 0 findings. Its own controls caught two of my bugs.
-- `check:ci-battery-clean-tree`, `check:ci-workflow-env-provision`,
-  `gate-test:fetch-depth-safety`, `gate-test:workflow-pr-environment` all new tonight.
-
-## Live facts a fresh session would get wrong
-
-- `ci:quick` runs 295 gates; `check:lint` and four others are slow-lane, so a max-lines
-  overrun or a mis-tier can only surface in CI.
-- Hook-blocked: a compound command containing `git push`; `git commit --amend`; polling CI
-  with sleep+gh. Use `ci-trace.py --wait` in the background.
-- No IPv6 egress here -- `curl -4` before judging a host unreachable.
+CI is mid-flight on c770b8ebc, which is the first run where 79 flipped reads
+actually mint tokens from Bitwarden. Every push supersedes that run, and the
+answer it is producing is the one that matters. The three commits after it
+(cc3b468ed, 2e6877c50, dd4be3790, 873cce233) are green on ci:quick 296/296 and
+go out the moment that run reports.
 
 ## Next action
 
-1. **`[?] #13d281a2` is the only open item.** Its DEFAULT is the work: continue the flip
-   file by file, each time checking whether that job's fetch precedes its first consumer
-   and moving it if not. 16 files left. Delete nothing.
-2. If CI is red, read the failing JOB's log first.
+Pin the two unpinned global npm installs, which are the same class as tonight's
+Docker break: `.devcontainer/Dockerfile:340` installs `@openai/codex` and
+`@google/gemini-cli` with no version at all, and `.ci/docker/web/Dockerfile:33`
+installs `agent-browser@latest`. Both resolve live at build time, so a package
+published this morning breaks the image -- which is exactly what happened to
+private/account's shared-build stage today. `gate-test:devcontainer-pin-freshness`
+already enforces a pinning discipline these two lines sit outside; check whether
+its scope should widen rather than adding two pins it does not watch.
+
+## Remaining
+
+- `[?] #13d281a2` -- retire the three org secrets, or hold. DEFAULT is HOLD and
+  it parks no work: everything mechanical is committed and the tool exists.

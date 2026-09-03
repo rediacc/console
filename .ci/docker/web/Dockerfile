@@ -30,7 +30,20 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 # Gotcha 1 and 2. --allow-scripts is what links the binary; the engine warning is expected.
-RUN npm install -g --allow-scripts=agent-browser agent-browser@latest \
+#
+# Gotcha 4, added 2026-09-04: `@latest` is not a version, it is a promise that this
+# image is whatever npm published most recently. That is how a build breaks with no
+# commit behind it -- private/account's image died that morning on a package
+# published hours earlier. Pinned to what @latest resolved to that day, so this
+# changes nothing about what gets installed today and everything about whether the
+# same Dockerfile builds the same image tomorrow.
+#
+# NOTE THE SKEW, deliberately left rather than quietly unified: .devcontainer's
+# ARG AGENT_BROWSER_VERSION is 0.26.0, ten minors behind this. They are different
+# images with different jobs, and picking one number for both is a behaviour change
+# to whichever loses -- a decision, not a tidy-up.
+ARG AGENT_BROWSER_VERSION=0.36.0
+RUN npm install -g --allow-scripts=agent-browser agent-browser@${AGENT_BROWSER_VERSION} \
     && agent-browser --version
 
 # Gotcha 3: the browser is fetched as the RUNTIME user, into a path it owns.
