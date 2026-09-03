@@ -182,7 +182,14 @@ fi
 # tests legitimately plant fixtures inside the tree (gate-paths-exist needs its
 # scan fixture to be scanned); a TRACKED file changing is the defect.
 BATTERY_REPO_ROOT="$(cd "$SCRIPT_DIR/../../.." && pwd)"
-tree_state() { (cd "$BATTERY_REPO_ROOT" && git status --porcelain 2>/dev/null | grep -v '^??' | sort); }
+# `|| true` ON THE GREP, and leaving it out cost a CI round. Under `set -euo
+# pipefail`, a grep that filters EVERYTHING out exits 1, and `T="$(tree_state)"`
+# then aborts the whole battery -- before its first line of output, so CI showed
+# `run-all.sh` exit 1 with nothing else at all. It passed locally for the worst
+# possible reason: a developer's tree nearly always has SOME modified file, so
+# the grep matched and returned 0. A CLEAN checkout is the case that breaks it,
+# and a clean checkout is exactly what CI has.
+tree_state() { (cd "$BATTERY_REPO_ROOT" && git status --porcelain 2>/dev/null | { grep -v '^??' || true; } | sort); }
 TREE_BEFORE="$(tree_state)"
 
 cd "$GATES_DIR"
