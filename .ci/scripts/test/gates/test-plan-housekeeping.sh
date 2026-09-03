@@ -200,6 +200,29 @@ test_shallow_skips_locally() {
     log_pass "locally the age verdict is deferred loudly, never silently"
 }
 
+# ── 8b. AN EMPTY .git/shallow IS NOT A SHALLOW CLONE ───────────────────────
+# `git rev-parse --is-shallow-repository` answers on the FILE'S EXISTENCE, and
+# `git fetch --unshallow` against a partial clone leaves it behind empty. CI job
+# 100500447167 unshallowed successfully and this gate still refused, in the exact
+# lane its own error message recommends. A graft is what corrupts the dates, so an
+# empty graft list must not refuse -- and the over-age plant must still be found
+# through it, or "not shallow" would just be a quieter way of checking nothing.
+test_empty_shallow_file_is_not_shallow() {
+    local d="$1/r"
+    make_repo "$d" 40 PLAN-ancient.md
+    # --git-path answers RELATIVE to the repo, so it must be resolved inside $d;
+    # redirecting from here would create the file in the test's own cwd instead.
+    : >"$d/$(git -C "$d" rev-parse --git-path shallow)"
+    [[ "$(git -C "$d" rev-parse --is-shallow-repository)" == "true" ]] ||
+        log_fail "fixture did not reproduce the condition: git does not call this repo shallow"
+    local rc=0
+    run_gate "$d" CI=true || rc=$?
+    assert_exit_code 1 "$rc" "the AGE finding must still be reported through an empty .git/shallow"
+    assert_contains "$LAST_OUT" "PLAN-ancient.md" "naming the over-age plan"
+    assert_not_contains "$LAST_OUT" "SHALLOW" "and NOT refusing as shallow"
+    log_pass "an empty graft list is a complete history, whatever rev-parse says"
+}
+
 # ── 10. The override is not an escape hatch ────────────────────────────────
 test_empty_tree_is_not_a_pass() {
     local d="$1/empty"
@@ -224,6 +247,7 @@ with_temp_dir test_allowlist_low_effort_blocker
 with_temp_dir test_allowlist_dangling
 with_temp_dir test_shallow_refuses_in_ci
 with_temp_dir test_shallow_skips_locally
+with_temp_dir test_empty_shallow_file_is_not_shallow
 with_temp_dir test_empty_tree_is_not_a_pass
 
 echo ""

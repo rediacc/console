@@ -117,8 +117,28 @@ echo "✓ control: the age arithmetic reports over and under the threshold, and 
 # skip of the age verdict only, so the floor and the allowlist checks still run
 # and a partial run stays distinguishable from a clean one.
 # ---------------------------------------------------------------------------
+#
+# `git rev-parse --is-shallow-repository` IS NOT THE TEST, and believing it cost a
+# CI round. It answers on the EXISTENCE of .git/shallow, and `git fetch
+# --unshallow` against a partial clone (`--filter=blob:none`, which every
+# fetch-depth: 0 checkout in this repo uses) leaves that file behind EMPTY. So on
+# 2026-09-03 job 100500447167 unshallowed successfully at 02:28:52 -- the log shows
+# every branch and tag arriving -- and this gate still refused at 02:33:39, in the
+# very lane its own error message names as the correct one. A gate that cannot pass
+# in the job it tells you to use is indistinguishable from a broken gate.
+#
+# The property that actually matters is whether any GRAFT remains, because a graft
+# is what makes every file report the boundary's date. An empty .git/shallow means
+# no grafts, so history is complete for this gate's purpose whatever rev-parse says.
+is_shallow() {
+    [[ "$(git rev-parse --is-shallow-repository 2>/dev/null)" == "true" ]] || return 1
+    local f
+    f="$(git rev-parse --git-path shallow 2>/dev/null)"
+    [[ -s "$f" ]]
+}
+
 SKIP_AGES=0
-if [[ "$(git rev-parse --is-shallow-repository 2>/dev/null)" == "true" ]]; then
+if is_shallow; then
     if [[ "${CI:-}" == "true" ]]; then
         echo -e "${RED}✗${NC} plan housekeeping: the checkout is SHALLOW, so every plan reports the" >&2
         echo "  graft commit's date and this gate would pass having verified nothing." >&2
@@ -126,6 +146,8 @@ if [[ "$(git rev-parse --is-shallow-repository 2>/dev/null)" == "true" ]]; then
         echo "    fetch-depth: 0" >&2
         echo "    filter: blob:none" >&2
         echo "  quality-i18n in ci-quality.yml is the lane this gate was wired behind." >&2
+        echo "  Measured: $(git rev-list --count HEAD 2>/dev/null) commit(s) reachable, and" >&2
+        echo "  $(git rev-parse --git-path shallow) holds $(wc -l <"$(git rev-parse --git-path shallow)" 2>/dev/null || echo 0) graft(s)." >&2
         exit 1
     fi
     echo -e "${YEL}⚠${NC} plan housekeeping: SHALLOW clone ($(git rev-list --count HEAD) commit(s));"
