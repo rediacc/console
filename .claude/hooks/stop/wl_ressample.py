@@ -82,6 +82,21 @@ def _children(pid: int) -> list[int]:
     return out
 
 
+def _stat_fields_path(path: str) -> list[str] | None:
+    """Parse any /proc stat file. `comm` may contain spaces AND parens, so it is
+    delimited by the LAST ')' -- splitting on whitespace loses every field for a
+    process whose name contains one, and this repo runs several."""
+    raw = _read(path)
+    if not raw:
+        return None
+    rp = raw.rfind(")")
+    if rp < 0:
+        return None
+    comm = raw[raw.find("(") + 1 : rp]
+    rest = raw[rp + 2 :].split()
+    return [raw.split(" ", 1)[0], comm, *rest]
+
+
 def _stat_fields(pid: int) -> list[str] | None:
     raw = _read("/proc/%d/stat" % pid)
     if not raw:
@@ -129,6 +144,68 @@ def _writable_repo_fds(pid: int, root: Path | None) -> list[str]:
     return out
 
 
+def _thread_states(pid: int) -> dict[str, int]:
+    """Per-THREAD run states, because the leader's state lies about every threaded tool.
+
+    `/proc/<pid>/stat` field 3 is the LEADER thread's. Measured over the real corpus:
+    the go toolchain reads `futex_do_wait` for 59 of 62 ticks and biome for 66 of 82
+    while tree CPU climbs from 4 to 18,227 ticks -- both busy, both reading as idle.
+    Any saturation predicate built on the leader is blind to every multi-threaded
+    tool in this repo, which is most of them.
+
+    Returns {"R": n, "S": n, "D": n, ...}; an empty dict means the task dir vanished,
+    which is a process exiting, never a verdict.
+    """
+    out: dict[str, int] = {}
+    try:
+        tids = os.listdir("/proc/%d/task" % pid)
+    except OSError:
+        return out
+    for tid in tids:
+        f = _stat_fields_path("/proc/%d/task/%s/stat" % (pid, tid))
+        if f and len(f) >= 3:
+            out[f[2]] = out.get(f[2], 0) + 1
+    return out
+
+
+def _pipe_inodes(pid: int) -> dict[str, list[int]]:
+    """Pipe inodes this pid READS from and WRITES to, split by the fd's access mode.
+
+    This is what tells a STALL from a healthy `$( )` capture: a parent parked on a
+    pipe whose writer is one of its own descendants is the normal shape of every
+    command substitution in this repo, while the real hang recorded in TRAPS.md was
+    a blocked read on a pipe with no writer and no children. Inode numbers carry no
+    command text, so this stays inside the no-argv rule.
+    """
+    out: dict[str, list[int]] = {"r": [], "w": []}
+    fddir = "/proc/%d/fd" % pid
+    try:
+        names = os.listdir(fddir)
+    except OSError:
+        return out
+    for n in names:
+        try:
+            target = os.readlink("%s/%s" % (fddir, n))
+        except OSError:
+            continue
+        if not target.startswith("pipe:["):
+            continue
+        try:
+            ino = int(target[6:-1])
+        except ValueError:
+            continue
+        flags = None
+        for line in _read("/proc/%d/fdinfo/%s" % (pid, n)).splitlines():
+            if line.startswith("flags:"):
+                with contextlib.suppress(ValueError):
+                    flags = int(line.split()[1], 8)
+                break
+        key = "w" if (flags is not None and (flags & 0o3) != 0) else "r"
+        if ino not in out[key]:
+            out[key].append(ino)
+    return out
+
+
 def sample_pid(pid: int, root: Path | None) -> dict | None:
     st = _stat_fields(pid)
     if st is None or len(st) < 24:
@@ -159,6 +236,8 @@ def sample_pid(pid: int, root: Path | None) -> dict | None:
                     }[k]
                 ] = int(v.split()[0])
     rec["wfd"] = _writable_repo_fds(pid, root)
+    rec["tstates"] = _thread_states(pid)
+    rec["pipes"] = _pipe_inodes(pid)
     return rec
 
 

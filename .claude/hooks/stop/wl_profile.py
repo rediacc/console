@@ -185,7 +185,19 @@ def aggregate(cap: Capture) -> dict[int, dict]:
             )
             a["first"] = min(a["first"], t)
             a["last"] = max(a["last"], t)
-            a["hist"][p["state"]] = a["hist"].get(p["state"], 0) + 1
+            # THE TICK'S STATE IS THE PROCESS'S, NOT THE LEADER THREAD'S. Field 3 of
+            # /proc/<pid>/stat is the leader; measured over the real corpus, the go
+            # toolchain reads futex_do_wait for 59 of 62 ticks and biome for 66 of 82
+            # while tree CPU climbs 4 -> 18,227. A saturation predicate on the leader
+            # is blind to every multi-threaded tool here. `tstates` (per-thread) is
+            # authoritative when the sampler recorded it; older captures have no such
+            # field and fall back to the leader, which is why this reads rather than
+            # requires it -- a format change must never retro-invalidate a corpus.
+            _ts = p.get("tstates") or {}
+            _eff = p["state"]
+            if _ts and (_ts.get("R") or _ts.get("D")):
+                _eff = "R"
+            a["hist"][_eff] = a["hist"].get(_eff, 0) + 1
             a["hwm_kb"] = max(a["hwm_kb"], int(p.get("hwm_kb") or 0))
             a["wfd"].update(p.get("wfd") or [])
             a["cpu"] = max(a["cpu"], int(p.get("utime", 0)) + int(p.get("stime", 0)))
@@ -400,10 +412,95 @@ def e6_zombies(cap: Capture) -> list[dict]:
     return out
 
 
+E7_MIN_TICKS = 3
+
+
+def e7_stalled(c: Capture) -> list[dict]:
+    """A tree that is not merely WAITING but STOPPED. Report-only, by construction.
+
+    THE CASE THIS MUST NOT CALL A HANG is the normal one. `test-hooks.sh` captures a
+    whole suite through `$( )`, so the parent sits in `anon_pipe_read` with its stdout
+    frozen BY DESIGN for minutes while its children cycle. Reading that as a hang cost
+    two killed battery runs before walking /proc down the chain showed the children
+    working. So the predicate never asks "is the parent blocked"; it asks whether the
+    WHOLE TREE stopped moving, on four independent facts that must hold together for
+    E7_MIN_TICKS consecutive samples:
+
+      1. the live pid set is unchanged  -- a set relation
+      2. total tree CPU is unchanged    -- clock TICKS, so dilation cannot move it
+      3. no thread anywhere is R or D   -- per-thread, not the lying leader
+      4. no frontier reader's pipe has a live writer inside the tree
+
+    (4) is what separates the two: in a healthy capture the parent reads a pipe its
+    own descendant writes, which is deferral. The real hang recorded in TRAPS.md was a
+    blocked read on a pipe with NO writer and no children.
+
+    Derived over the six largest real captures this returns ZERO -- which is the point:
+    a stall detector that fires on `$( )` is worse than none.
+    """
+    if len(c.samples) < E7_MIN_TICKS:
+        return []
+    # THE DISCRIMINATOR NEEDS THE FIELDS IT DISCRIMINATES ON. Captures taken before
+    # the sampler recorded `pipes` and `tstates` carry neither, and without the pipe
+    # graph condition (4) is vacuously true -- so on that data E7 degenerates into
+    # exactly the weaker "the parent looks blocked" test that killed two battery runs.
+    # Measured: over 678 captures from the pre-change corpus it produced 2 findings
+    # that CANNOT be validated either way. Abstaining is the only honest answer; a
+    # verdict from an instrument that did not record the evidence is not a verdict.
+    if not any("pipes" in pr for smp in c.samples for pr in (smp.get("p") or [])):
+        return []
+    runs = 0
+    prev_key = None
+    for smp in c.samples:
+        procs = [pr for pr in (smp.get("p") or []) if pr.get("state") != "Z"]
+        if not procs:
+            prev_key, runs = None, 0
+            continue
+        pidset = frozenset(pr["pid"] for pr in procs)
+        tree_cpu = sum(
+            int(pr.get("utime", 0))
+            + int(pr.get("stime", 0))
+            + int(pr.get("cutime", 0))
+            + int(pr.get("cstime", 0))
+            for pr in procs
+        )
+        moving = any(
+            (pr.get("tstates") or {}).get("R")
+            or (pr.get("tstates") or {}).get("D")
+            or (not pr.get("tstates") and pr.get("state") in ("R", "D"))
+            for pr in procs
+        )
+        writers = set()
+        for pr in procs:
+            writers |= set((pr.get("pipes") or {}).get("w") or [])
+        waiting_on_own = any(set((pr.get("pipes") or {}).get("r") or []) & writers for pr in procs)
+        key = (pidset, tree_cpu)
+        if moving or waiting_on_own or key != prev_key:
+            runs = 1 if key == prev_key else 0
+            prev_key = key
+            continue
+        runs += 1
+        prev_key = key
+        if runs >= E7_MIN_TICKS:
+            return [
+                {
+                    "class": "E7",
+                    "enforce": False,
+                    "run": c.run_id,
+                    "why": (
+                        "the whole tree stopped: %d live pid(s), tree CPU unchanged for "
+                        "%d consecutive samples, no thread runnable, and no reader is "
+                        "waiting on a writer inside the tree" % (len(pidset), runs)
+                    ),
+                }
+            ]
+    return []
+
+
 def derive(caps: list[Capture], exclusions: set[frozenset] | None = None) -> list[dict]:
     out: list[dict] = []
     for c in caps:
-        out += e1_sequential_fanout(c) + e5_memory_outlier(c) + e6_zombies(c)
+        out += e1_sequential_fanout(c) + e5_memory_outlier(c) + e6_zombies(c) + e7_stalled(c)
     out += e4_concurrent_writers(caps, exclusions)
     return sorted(out, key=lambda f: json.dumps(f, sort_keys=True))
 
@@ -492,6 +589,15 @@ def _synthetic(
 _FIXTURE_ENV = {**os.environ, "WORKLIST_PROFILE": "off"}
 
 
+def _e1(caps) -> list[dict]:
+    """E1 findings only. The controls below assert that E1 is SILENT, and until E7
+    existed that was the same statement as `not derive(...)`. It no longer is: a
+    synthetic fixture with no runnable thread and no pipes is a stall by
+    construction, so an unscoped assertion would fail for a reason that has nothing
+    to do with E1. Scoping it keeps each control about its own class."""
+    return [f for f in derive(caps) if f["class"] == "E1"]
+
+
 def selftest() -> int:
     import subprocess  # noqa: PLC0415
     import tempfile  # noqa: PLC0415
@@ -523,18 +629,16 @@ def selftest() -> int:
     )
     check(
         "E1 silent when children OVERLAP (interval order relation)",
-        not derive([_synthetic(10, False, 1.0, True)]),
+        not _e1([_synthetic(10, False, 1.0, True)]),
     )
-    check(
-        "E1 silent when children are not R-saturated", not derive([_synthetic(10, True, 0.5, True)])
-    )
+    check("E1 silent when children are not R-saturated", not _e1([_synthetic(10, True, 0.5, True)]))
     check(
         "E1 silent on a SHARED write (Rule 3: absence of disjointness kills it)",
-        not derive([_synthetic(10, True, 1.0, False)]),
+        not _e1([_synthetic(10, True, 1.0, False)]),
     )
     check(
         "E1 silent when NO write was observed (unresolved is never 'independent')",
-        not derive([_synthetic(10, True, 1.0, True, wfd_any=False)]),
+        not _e1([_synthetic(10, True, 1.0, True, wfd_any=False)]),
     )
     sup = _synthetic(10, sequential=True, r_frac=1.0, wfd_disjoint=True)
     for smp in sup.samples:  # wrap: a bashcov-sup root (pid 99) whose single child is the old root
@@ -564,7 +668,7 @@ def selftest() -> int:
     )
     check(
         "E1 silent below the child floor",
-        not derive([_synthetic(E1_MIN_CHILDREN - 1, True, 1.0, True)]),
+        not _e1([_synthetic(E1_MIN_CHILDREN - 1, True, 1.0, True)]),
     )
 
     # ---- D1: DILATION INVARIANCE, wall-only ----
@@ -820,6 +924,63 @@ def selftest() -> int:
     check(
         "a literal sleep is NOT deferring -- that is the thing worth reporting",
         "hrtimer_nanosleep" not in DEFERRING and "hrtimer_nanosleep" in SLEEPING,
+    )
+
+    # E7's TWO DIRECTIONS. The silent one is the load-bearing half: a `$( )` capture
+    # is a parent parked on a pipe its own child writes, and calling that a hang cost
+    # two killed battery runs before this predicate existed.
+    def _cap(procs_per_tick):
+        smps = [
+            {"t_ms": i * 500, "p": [dict(pr) for pr in procs]}
+            for i, procs in enumerate(procs_per_tick)
+        ]
+        return Capture(smps, {"samples_n": len(smps), "expected_n": len(smps), "run_id": "x"})
+
+    _frozen = [
+        {
+            "pid": 1,
+            "ppid": 0,
+            "comm": "bash",
+            "depth": 0,
+            "hwm_kb": 100,
+            "wfd": [],
+            "state": "S",
+            "wchan": "anon_pipe_read",
+            "utime": 5,
+            "stime": 0,
+            "cutime": 0,
+            "cstime": 0,
+            "tstates": {"S": 1},
+            "pipes": {"r": [7], "w": []},
+        },
+        {
+            "pid": 2,
+            "ppid": 1,
+            "comm": "sh",
+            "depth": 1,
+            "hwm_kb": 100,
+            "wfd": [],
+            "state": "S",
+            "wchan": "do_wait",
+            "utime": 3,
+            "stime": 0,
+            "cutime": 0,
+            "cstime": 0,
+            "tstates": {"S": 1},
+            "pipes": {"r": [], "w": []},
+        },
+    ]
+    check(
+        "E7 FIRES when the whole tree stops: same pids, same CPU, nothing runnable",
+        any(f["class"] == "E7" for f in derive([_cap([_frozen, _frozen, _frozen, _frozen])])),
+    )
+    _healthy_parent = dict(_frozen[0], pipes={"r": [7], "w": []})
+    _writing_child = dict(_frozen[1], pipes={"r": [], "w": [7]}, tstates={"R": 1})
+    check(
+        "E7 CONTROL: a $( ) capture -- parent on a pipe its own child WRITES -- is silent",
+        not any(
+            f["class"] == "E7" for f in derive([_cap([[_healthy_parent, _writing_child]] * 4)])
+        ),
     )
     check("admission: 0 fires over 200 is admissible", admissible(0, 200)[0])
     check(
