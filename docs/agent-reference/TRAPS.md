@@ -2180,3 +2180,35 @@ notifies on exit by itself, and the harness verifies that process rather than be
 a loop's claim about it. Related: "buffered-suite-looks-hung" above (why the line count
 was frozen at 472 in the first place) and the self-matching-pgrep guard (the same
 failure mode with a different unsatisfiable condition).
+
+## `git fetch --depth` TRUNCATES a full clone, and the step that pays is not the step that did it
+Trap-Id: fetch-depth-truncates-full-clone
+Enforced-By: file:.ci/scripts/test/gates/test-fetch-depth-safety.sh, file:packages/www/scripts/lib/translation-freshness-git.js
+Residue:
+
+`--depth` reads like a limit on what a fetch transfers. On a complete repository it is
+not: git writes a graft to `.git/shallow` and the whole history is truncated from that
+point. Measured against the real remote on 2026-09-03:
+
+    $ git rev-list --count refs/remotes/pull/585/merge          # 2467
+    $ git fetch --no-tags --depth=50 origin +refs/heads/main:refs/remotes/origin/main
+    $ git rev-list --count refs/remotes/pull/585/merge          # 114, .git/shallow: 1 graft
+
+**The damage is always somebody else's.** The line lived in
+`translation-freshness-git.js` and ran inside `check:i18n`. Four steps later
+`check:ci-plan-housekeeping` refused: "SHALLOW at a boundary that 58 plan(s) sit on".
+The job's `actions/checkout` had taken `fetch-depth: 0` and `filter: blob:none`, exactly
+as the failing gate's own error message demanded — so the message pointed at the one
+thing that was already correct, and I spent twenty minutes proving the checkout innocent
+(fresh clone, then the byte-identical CI fetch command: 2467 commits, no graft) before
+looking anywhere else.
+
+**The tell is the arithmetic.** A shallow checkout has a *stable* commit count; a
+`--depth=N` applied to a full clone leaves `N + <commits on your branch>`, which GROWS
+day by day as the branch does. Three CI jobs had recorded 90, 99 and 114 — a rising
+sequence nobody read as a signal.
+
+So when a topology gate reports a shallow checkout, do not start at the checkout. Ask
+which EARLIER step in that job ran git, and grep the job for `--depth`. And never hand
+`--depth` to a fetch without first asking `git rev-parse --is-shallow-repository`: the
+flag is only ever an optimisation for a repository that is already shallow.

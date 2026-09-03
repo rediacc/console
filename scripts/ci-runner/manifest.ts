@@ -5316,6 +5316,23 @@ export const GATES: readonly GateSpec[] = [
     },
   },
   {
+    id: 'gate-test:fetch-depth-safety',
+    run: '.ci/scripts/test/gates/test-fetch-depth-safety.sh',
+    // 7.9s alone, and the same shape as plan-housekeeping above: three fixture
+    // repositories of 60 commits each, so the cost is process trees rather than
+    // computation and it stretches under the lane's 20x contention.
+    slow: true,
+    gate: true,
+    qualityGateTest: true,
+    leaves: ['.ci/scripts/test/gates/test-fetch-depth-safety.sh'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-security',
+      step: 'Quality-gate unit tests',
+    },
+  },
+  {
     id: 'gate-test:commit-identity',
     run: '.ci/scripts/test/gates/test-commit-identity.sh',
     gate: true,

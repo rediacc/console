@@ -92,8 +92,18 @@ if [[ -n "${GITHUB_EVENT_PATH:-}" && -r "${GITHUB_EVENT_PATH:-}" ]] && command -
     current=$(jq -r '.pull_request.head.sha // empty' "$GITHUB_EVENT_PATH" 2>/dev/null || true)
     # The tip must actually be present in this clone; a shallow fetch that never
     # got it would make every subsequent rev-parse fail for the wrong reason.
+    #
+    # NO --depth ON A FULL CLONE. It does not limit the fetch, it TRUNCATES the
+    # repository -- measured 2026-09-03, one such line took a complete checkout
+    # from 2467 reachable commits to 114 and wrote a graft, which then broke a
+    # topology gate several steps later in the same job. The deepen above is
+    # already guarded that way; this one was not.
     if [[ -n "$current" ]] && ! git rev-parse --verify --quiet "${current}^{commit}" >/dev/null 2>&1; then
-        git fetch --quiet --depth=50 origin "$current" 2>/dev/null || true
+        if [[ -f "$(git rev-parse --git-dir)/shallow" ]]; then
+            git fetch --quiet --depth=50 origin "$current" 2>/dev/null || true
+        else
+            git fetch --quiet origin "$current" 2>/dev/null || true
+        fi
     fi
     if [[ -n "$current" ]] && ! git rev-parse --verify --quiet "${current}^{commit}" >/dev/null 2>&1; then
         current=""

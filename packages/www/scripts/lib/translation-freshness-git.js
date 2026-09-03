@@ -30,14 +30,52 @@ function git(args, cwd) {
     .filter(Boolean);
 }
 
+/**
+ * Is this repository shallow -- i.e. does it already carry grafts?
+ *
+ * Unknown answers `true`, and that direction is deliberate: `--depth` is only
+ * ever ADDED here, never removed, so the safe fallback is the one that does not
+ * touch a repository whose shape we could not read.
+ */
+function isShallow(repoRoot) {
+  try {
+    return (
+      execSync('git rev-parse --is-shallow-repository', {
+        cwd: repoRoot,
+        encoding: 'utf-8',
+        stdio: ['ignore', 'pipe', 'ignore'],
+      }).trim() === 'true'
+    );
+  } catch {
+    return true;
+  }
+}
+
 function tryFetchBaseRef(repoRoot, baseRef) {
   if (!baseRef) {
     return;
   }
 
+  // `--depth` ON A FULL CLONE DOES NOT LIMIT A FETCH -- IT TRUNCATES THE
+  // REPOSITORY. Measured 2026-09-03 against the real remote: a complete
+  // checkout went from 2467 reachable commits to 114, with one graft written to
+  // .git/shallow, purely from running this line. Nothing here needed that; the
+  // depth was an optimisation for the shallow CI checkout this gate used to run
+  // in.
+  //
+  // The damage lands on WHATEVER RUNS NEXT IN THE SAME JOB, which is why it went
+  // unnoticed for so long. In ci-quality's `i18n` job this ran inside check:i18n
+  // and silently shallowified a checkout that actions/checkout had deliberately
+  // taken with `fetch-depth: 0`; check:ci-plan-housekeeping, four steps later,
+  // then refused with "SHALLOW at a boundary that 58 plan(s) sit on" and every
+  // reader went looking at the checkout, which was innocent.
+  //
+  // So: depth only where a depth already exists. On a full clone the base ref's
+  // objects are present anyway, so the unlimited fetch is the cheap one.
+  const depth = isShallow(repoRoot) ? '--depth=50 ' : '';
   try {
     execSync(
-      `git fetch --no-tags --depth=50 origin +refs/heads/${baseRef}:refs/remotes/origin/${baseRef}`,
+      `git fetch --no-tags ${depth}origin +refs/heads/${baseRef}:refs/remotes/origin/${baseRef}`,
       {
         cwd: repoRoot,
         stdio: ['ignore', 'ignore', 'ignore'],
