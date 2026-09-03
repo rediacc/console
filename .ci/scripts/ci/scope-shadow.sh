@@ -134,11 +134,22 @@ bounded() { timeout "$SCOPE_TIMEOUT" "$@"; }
 base="$(git rev-parse --verify -q "${MERGE_SHA:-}^1" 2>/dev/null || true)"
 head="$(git rev-parse --verify -q "${MERGE_SHA:-}^2" 2>/dev/null || true)"
 [[ -z "$head" ]] && head="${HEAD_SHA:-}"
+# `--is-shallow-repository` alone would MISLEAD here, for the reason
+# check-plan-housekeeping.sh documents at length: it answers on the existence of
+# .git/shallow, and `git fetch --unshallow` against a partial clone leaves that
+# file behind EMPTY. This line tells a reader whether to trust everything below
+# it, so reporting `true` for a fully-unshallowed checkout would retire a correct
+# scope decision on sight. Report the graft COUNT, which is the thing that
+# actually truncates history.
 shallow="$(git rev-parse --is-shallow-repository 2>/dev/null || echo unknown)"
+shallow_file="$(git rev-parse --git-path shallow 2>/dev/null || true)"
+grafts=0
+[[ -n "$shallow_file" && -s "$shallow_file" ]] && grafts="$(wc -l <"$shallow_file" 2>/dev/null || echo 0)"
+[[ "$shallow" == "true" && "$grafts" == "0" ]] && shallow="false (empty graft list; rev-parse says true)"
 
 emit "### Scope engine (LIVE: this decides which jobs run)" \
     "" \
-    "shallow: \`${shallow}\` (must be false, or nothing below is meaningful)" \
+    "shallow: \`${shallow}\`, grafts: \`${grafts}\` (grafts must be 0, or nothing below is meaningful)" \
     "base: \`${base:-unknown}\`  head: \`${head:-unknown}\`" \
     ""
 
