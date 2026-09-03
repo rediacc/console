@@ -1787,6 +1787,20 @@ export const GATES: readonly GateSpec[] = [
     },
   },
   {
+    id: 'check:ci-checkout-cone',
+    // A step may not run a file its job never checked out. Corroborates the static
+    // claim (this job checks out X) against what the job actually RUNS.
+    run: 'npm run check:ci-checkout-cone',
+    gate: true,
+    leaves: ['.ci/scripts/quality/check_checkout_cone.py'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-static',
+      step: 'Checkout cone covers what steps run',
+    },
+  },
+  {
     id: 'check:ci-battery-clean-tree',
     // run-all.sh's tree snapshot must not abort on a clean checkout. It extracts the
     // REAL tree_state() rather than copying it, and refuses if that function is gone.

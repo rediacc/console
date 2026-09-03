@@ -304,7 +304,8 @@
     "check:ci-resprofile": ".ci/scripts/quality/check_resprofile.py",
     "check:ci-format-scope": ".ci/scripts/quality/check_format_scope.py",
     "check:ci-workflow-env-provision": ".ci/scripts/quality/check_workflow_env_provision.py",
-    "check:ci-battery-clean-tree": ".ci/scripts/quality/check-battery-clean-tree.sh"
+    "check:ci-battery-clean-tree": ".ci/scripts/quality/check-battery-clean-tree.sh",
+    "check:ci-checkout-cone": ".ci/scripts/quality/check_checkout_cone.py"
   },
   "dependencies": {
     "proper-lockfile": "^4.1.2"

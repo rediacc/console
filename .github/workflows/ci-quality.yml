@@ -304,6 +304,16 @@ jobs:
         # showed an exit 1 naming no test at all.
         run: npm run check:ci-battery-clean-tree
 
+      - name: Checkout cone covers what steps run
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        # A step may not run a file its job never checked out. Extracting the
+        # shadow-compare body to a script broke three jobs whose sparse cone stopped
+        # at .ci/config, and nothing in the tree could see it: the cone was
+        # well-formed, the script existed, the step was correct.
+        run: |
+          python3 -m pip install --user --disable-pip-version-check "PyYAML==${PYYAML_VERSION}"
+          .ci/scripts/quality/check_checkout_cone.py
+
       - name: Workflow env provision
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         # Reads workflow YAML only, so it sits in the static lane with its two
