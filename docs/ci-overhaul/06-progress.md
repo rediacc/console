@@ -6538,6 +6538,10 @@ budget is RED in CI at 1.15x, correctly, and is parked as `[?] #da11407e`; the
 budget was not raised, because this gate's own header argues that a budget set just
 above today's figure ratifies the defect.
 
+> **Superseded 2026-09-03 (see the next section).** Both numbers in that paragraph
+> have moved: `ci:quick` is **292/292**, and the bundle budget is GREEN — not by
+> raising it, but by splitting eager from deferred and making the deferral real.
+
 ### What a reader should take from this
 
 Three of the corrections above are corrections to things *this project had already
@@ -6547,3 +6551,110 @@ called flaky in a report to the operator before its log had been read to the end
 In every case the instrument was right and the prose was stale, which is the
 argument for these documents being updated in the same turn as the code rather
 than at the end of a wave.
+
+
+## Wave 2 — 2026-09-03: the gates found what the migration could not
+
+Fifteen commits after the section above, and the pattern it closes on repeated: in
+almost every case below the *instrument* was right and something written down was
+stale.
+
+### The bundle budget, finished
+
+The previous section records the 124,673 B under-measurement as fixed and the gate as
+correctly RED at 1.15x. Raising the budget was refused then and is still refused. What
+closed it instead:
+
+- The walk now runs in **two phases** and reports eager and deferred separately, with
+  the budget on the eager figure and the deferred figure held to its own named ceiling.
+  Phase ORDER is load-bearing: eager first, `seen` not reset, so a chunk reachable BOTH
+  statically and dynamically counts as EAGER. Without that, any `import()` anywhere
+  launders a chunk out of the budget, and a mutant proves the control bites.
+- That split is only honest if the deferral is real, so the PAGE changed too:
+  `SPSolutionVideo.astro` server-renders a poster and the player is built on first
+  CLICK. An IntersectionObserver was tried first and measured: every mount on the site
+  is above the fold, so it defers nothing.
+- Result: eager **455,632 B** against the 500,000 B budget, deferred 122,110 B against
+  its ceiling, full closure reported and never budgeted.
+
+Two further defects surfaced only because the change was verified in a real browser
+rather than by reading it: the click loaded a *paused* player, and the first fix for
+that silently no-opped because `mountPlayers` resolves several frames before React
+renders a `<video>` and `?.` swallowed the miss.
+
+### The shadow's own steps were too big to keep
+
+`check:ci-workflows` caps inline `run:` logic at 8 lines with no baseline. The shadow
+compare body was **18 lines inlined into 62 steps across 21 files** — added by this
+overhaul, and over the cap from the moment it landed. It is now
+`.ci/scripts/ci/shadow-compare.sh`.
+
+Extracting it needed a per-file reconciliation of step count against call count,
+because the first sweep **corrupted 28 already-thin steps** — duplicating the `- name:`
+item and dropping the `run:` — and nothing about the files looked wrong afterwards. A
+count that must balance is what caught it.
+
+### Two of the three shadow mismatches are resolved, and the third is a different shape
+
+`ACCOUNT_SERVER_API_KEY` and `ANTHROPIC_CLAUDE_CODE_OAUTH_TOKEN` are reconciled by
+writing Bitwarden's value over the GitHub copy. The second is worth recording because
+the ledger's guess was wrong: it supposed a rename had half-landed. The real cause was
+a **third copy** — a repo-level secret shadowing the org one at resolution, so every
+workflow read the repo copy and overwriting the org secret would have changed nothing
+observable.
+
+`STRIPE_SANDBOX_WEBHOOK_SECRET` cannot be resolved by picking a side at all. It is a
+`stripe listen` CLI secret that expires 24h after minting, so neither stored copy is
+authoritative; and it cannot simply be deleted, because `cd-deploy-worker.yml:277-279`
+makes it the edge www worker's `STRIPE_WEBHOOK_SECRET` and
+`set-www-worker-secrets.sh:89` requires it non-empty.
+
+**The deletion still has not happened, and the reason is the rule this overhaul exists
+to prove.** The "42 agree" figure everyone was working from came from a run that was
+**CANCELLED** and whose logs no longer return a single verdict line. Re-derived from
+the workflows: of 45 org secrets only **25** are read by any compare at all.
+`scripts/dev/derive-shadow-pass-list.sh` now derives the deletable set from real run
+logs and prints the exact `gh secret delete` lines — today exactly **four**. Building
+it corrected an error of mine: filtering on the RUN conclusion discarded six genuine
+`match` verdicts from a run whose *job* had succeeded and printed them.
+
+### `check:format` was inspecting a fraction of its own configured scope
+
+It ran `biome format packages/ private/account/` while `biome.json` also covers
+`scripts/`, `.ci/`, `workers/`, `eslint-rules/` and `.github/actions/`. 35 files had
+drifted where nothing was looking — and that blind spot is how a prettier run (not this
+repo's formatter, and nothing said so) put a 424-line quote-churn diff into the tree
+with every gate green. The gate is now `biome format .`, proven both directions: a
+planted drift reds the new scope and passes the old one.
+
+### `check:ci-plan-housekeeping` ran in the one job whose checkout is shallow
+
+`quality-i18n`'s `actions/checkout` carried no `with:` at all, so the gate that dates a
+plan by its first commit refused — "99 commit(s) reachable, .git/shallow holds 1
+graft(s)" — and then listed every plan file as though each were the finding. Invisible
+locally by construction: a developer's clone is deep, so it passes on every machine and
+fails only in the lane that runs it.
+
+### Two hook-side additions the CI story now depends on
+
+- **`worklist.py --adopt`.** A compaction can hand one continuous conversation a new
+  session id, and the ownership rule then refuses to let a session resolve its own
+  items — four settled decisions sat open all night, reported as a peer's. Adoption is
+  an evidence gate (a compaction boundary plus shared conversational records), with no
+  `--force`; measured, 1 of 51 candidate transcripts resolves and 50 are refused.
+- **A resource-profiling layer.** Every Bash and Python invocation now leaves a record.
+  The load-bearing constraint is that a verdict may not change when wall time is
+  multiplied — the same suite measured ~4 min standalone and ~9 min under the battery on
+  identical code — so predicates are counts and ratios, never seconds. Nothing is
+  enforced yet: the baseline is deliberately unseeded, because seeding from one
+  machine's first run is how a bad number gets enshrined.
+
+### What a reader should take from this wave
+
+The previous section argued that the instrument is usually right and the prose usually
+stale. This wave adds a sharper version: **three of the failures above were in things
+this overhaul itself had just built.** The shadow's own steps broke the inline-logic
+cap. The compare's excused-mismatch ledger guessed the wrong cause for one of its three
+entries. The number the whole cutover was waiting on came from a cancelled run. A gate
+being new is not evidence that it is right, and a figure being written down is not
+evidence that it was ever true.
