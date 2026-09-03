@@ -1,0 +1,255 @@
+#!/usr/bin/env python3
+"""check:ci-resprofile -- structural findings from the PREVIOUS run's process-tree captures.
+
+WHY THE PREVIOUS RUN. Gates run in parallel; a capture of a gate still running is
+incomplete, so a gate that judged THIS run would read torn files. scripts/ci-runner/run.ts
+rotates `.ci/cache/profiles` -> `.ci/cache/profiles.prev` at start, and this gate reads
+the completed set. The first run therefore has nothing to judge, and says so.
+
+WHAT IS ENFORCED, AND THE ONE RULE. A finding class may ENFORCE only while it is
+admissible: J >= 20 judgeable captures and a one-sided 95% upper bound on its fire rate
+<= 5% (wl_profile.admissible). Below that it is REPORT-ONLY for lack of denominator.
+Every predicate is dilation-invariant (wall stretched by k changes no verdict) and that
+is proven per run: the captures are re-derived at k=2.3 and the two finding sets must be
+byte-identical or the gate refuses its own verdict.
+
+PRISTINE BOOTSTRAP, copied from .runner-advice-allowlist. Until
+.ci/config/resprofile-baseline.json is SEEDED (`--seed <captures-dir>`, by a human, from
+real numbers), the gate WARNS and exits 0. Seeded means enforced, which is the only reason
+the pristine pass is not a permanent hole. Seeding from one machine's first run is how a
+bad number gets enshrined, so the seed command refuses an EMPTY corpus outright; seeds
+accumulate, and only a NAMED --reseed-class can replace a class's numbers.
+
+THE KILL TRIGGER, fixed in advance. `sunset` in the baseline is 30 days after seeding.
+Past it, if no commit in the last 30 days mentions `resprofile:` AND touches a file a
+finding named, this gate FAILS with the remedy `git rm` -- a metrics layer nobody acts
+on is write-only data, and this hook directory already holds one (wl_admit.py:596-600).
+
+ANTI-VACUITY. A captures dir with zero judgeable captures is UNJUDGEABLE, never clean:
+warn while pristine, fail once seeded. Exit 1 on an enforced finding, 2 on a failed control.
+"""
+
+from __future__ import annotations
+
+import json
+import os
+import subprocess
+import sys
+import time
+from pathlib import Path
+
+ROOT = Path(os.environ.get("RESPROFILE_ROOT") or Path(__file__).resolve().parents[3])
+sys.path.insert(0, str(ROOT / ".claude" / "hooks" / "stop"))
+import wl_profile as W  # noqa: E402
+
+BASELINE = ROOT / ".ci" / "config" / "resprofile-baseline.json"
+
+
+def _default_captures() -> Path:
+    """`.ci/cache/profiles.prev` is a POINTER FILE naming the last completed run's
+    capture folder under ~/.claude/resprofile/<repo>/<day>/<run>/ (time-based, durable,
+    outside the tree). A missing pointer is "no captures", never an error."""
+    ptr = ROOT / ".ci" / "cache" / "profiles.prev"
+    try:
+        return Path(ptr.read_text(encoding="utf-8").strip())
+    except OSError:
+        return ptr  # absent: is_dir() is False and the caller says so
+
+
+DEFAULT_CAPTURES = _default_captures()
+SUNSET_DAYS = 30
+MIN_JUDGEABLE_FRACTION = 0.5
+
+
+def load_baseline() -> dict | None:
+    try:
+        d = json.loads(BASELINE.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+    if d.get("format") != 1:
+        print(
+            f"✗ {BASELINE.name}: unknown format {d.get('format')!r}; refusing to reinterpret",
+            file=sys.stderr,
+        )
+        sys.exit(2)
+    return d
+
+
+def captures_in(d: Path) -> list:
+    return [c for c in (W.load_capture(p) for p in sorted(d.glob("*.jsonl"))) if c]
+
+
+def selftest() -> int:
+    bad = 0
+
+    def check(name, ok, detail=""):
+        nonlocal bad
+        print(
+            "  %s  %s%s"
+            % ("PASS" if ok else "FAIL", name, "\n        " + detail if (detail and not ok) else "")
+        )
+        bad += 0 if ok else 1
+
+    # The deriver's own controls are the substance; this gate adds the wiring controls.
+    check("wl_profile selftest is green (the deriver is the instrument)", W.selftest() == 0)
+    ok, why = W.admissible(0, 19)
+    check("admission floor: J=19 is report-only", not ok and "denominator" in why)
+    check(
+        "a missing baseline is PRISTINE, not an error",
+        load_baseline() is None or load_baseline().get("format") == 1,
+    )
+    return bad
+
+
+def seed(captures_dir: Path, reseed: set[str]) -> int:
+    caps = captures_in(captures_dir)
+    j = sum(c.judgeable for c in caps)
+    # AN EMPTY SEED IS REFUSED, and the gate-test is what made that rule honest. The
+    # first draft carried a "refuse a silent shrink" guard that could never fire: seeds
+    # ACCUMULATE F and J, so nothing but a NAMED --reseed-class can ever lower them,
+    # and the guard was a control that passed vacuously. What a seed must not do is
+    # claim to have measured when it read nothing -- the vacuity rule from
+    # .ci/scripts/ci/profiler/report.awk, applied to the baseline.
+    if j == 0:
+        print(
+            f"✗ refusing to seed from {captures_dir}: 0 judgeable capture(s). A baseline seeded from nothing enshrines nothing. Name a real run folder.",
+            file=sys.stderr,
+        )
+        return 2
+    findings = W.derive(caps)
+    counts: dict[str, int] = {}
+    for f in findings:
+        counts[f["class"]] = counts.get(f["class"], 0) + 1
+    prior = load_baseline() or {"format": 1, "classes": {}}
+    classes = dict(prior.get("classes", {}))
+    for cls in ("E1", "E4", "E5", "E6"):
+        old = classes.get(cls, {"F": 0, "J": 0})
+        # Accumulate by default; a NAMED class is replaced from this corpus alone.
+        classes[cls] = (
+            {"F": counts.get(cls, 0), "J": j}
+            if cls in reseed
+            else {"F": old["F"] + counts.get(cls, 0), "J": old["J"] + j}
+        )
+    doc = {
+        "format": 1,
+        "seeded_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+        "sunset": time.strftime(
+            "%Y-%m-%dT%H:%M:%SZ", time.gmtime(time.time() + SUNSET_DAYS * 86400)
+        ),
+        "classes": classes,
+        "note": "F = findings, J = judgeable captures, accumulated across seeds; --reseed-class <C> replaces one class from the named corpus. Admission per class is decided at gate time.",
+    }
+    BASELINE.parent.mkdir(parents=True, exist_ok=True)
+    BASELINE.write_text(json.dumps(doc, indent=2) + "\n", encoding="utf-8")
+    print(
+        f"✓ seeded {BASELINE.relative_to(ROOT)} from {len(caps)} capture(s), {j} judgeable: {classes}"
+    )
+    return 0
+
+
+def kill_trigger_fired(base: dict) -> str | None:
+    sunset = base.get("sunset")
+    if not sunset or time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()) < sunset:
+        return None
+    try:
+        out = subprocess.run(
+            ["git", "-C", str(ROOT), "log", "--since=30.days", "--grep=resprofile:", "--format=%H"],
+            capture_output=True,
+            text=True,
+            check=False,
+            timeout=30,
+        ).stdout.split()
+    except (OSError, subprocess.TimeoutExpired):
+        return None  # cannot say; a broken git is not evidence of an unread layer
+    if out:
+        return None
+    return (
+        f"past its sunset ({sunset}) with no commit in 30 days citing `resprofile:`. "
+        "A profiling layer that changed no line of code in a month is decoration: "
+        "`git rm` this gate, wl_profile.py, wl_ressample.py and the exec.ts attach."
+    )
+
+
+def main(argv: list[str]) -> int:
+    if "--selftest" in argv:
+        n = selftest()
+        print("%s resprofile gate selftest: %d failure(s)" % ("✓" if n == 0 else "✗", n))
+        return 1 if n else 0
+    if "--seed" in argv:
+        rs = {argv[i + 1] for i, a in enumerate(argv) if a == "--reseed-class"}
+        return seed(Path(argv[argv.index("--seed") + 1]), rs)
+
+    print("resprofile: controls first, then the verdict")
+    if selftest():
+        print(
+            "✗ instrument control failed; every verdict below would be meaningless", file=sys.stderr
+        )
+        return 2
+
+    cdir = Path(argv[argv.index("--captures") + 1]) if "--captures" in argv else DEFAULT_CAPTURES
+    base = load_baseline()
+    pristine = base is None
+
+    if not cdir.is_dir():
+        print(
+            f"{'⚠' if pristine else '✗'} no captures at {cdir}: the runner rotates them in at the start of the NEXT run, so the first run has nothing to judge.{' (pristine: warning only)' if pristine else ''}"
+        )
+        return 0 if pristine else 1
+    caps = captures_in(cdir)
+    j = sum(c.judgeable for c in caps)
+    if not caps or j < MIN_JUDGEABLE_FRACTION * len(caps):
+        print(
+            f"{'⚠' if pristine else '✗'} UNJUDGEABLE: {j} of {len(caps)} capture(s) judgeable (floor {MIN_JUDGEABLE_FRACTION:.0%}). That is a sampler problem, never a clean tree."
+        )
+        return 0 if pristine else 1
+
+    findings = W.derive(caps)
+    # DILATION CONTROL ON THE REAL DATA, every run: wall x2.3 must change nothing.
+    dilated = W.derive([W.dilate(c, 2.3) for c in caps])
+    if json.dumps(findings, sort_keys=True) != json.dumps(dilated, sort_keys=True):
+        print(
+            "✗ dilation control FAILED on this run's captures: a predicate is reading wall-clock. Refusing the verdict.",
+            file=sys.stderr,
+        )
+        return 2
+
+    if pristine:
+        print(
+            f"⚠ pristine: {len(caps)} capture(s), {j} judgeable, {len(findings)} finding(s) -- nothing enforced until `check_resprofile.py --seed {cdir}` records a baseline from real numbers."
+        )
+        for f in findings[:10]:
+            print(f"    {f['class']}  {f['why']}")
+        return 0
+
+    kt = kill_trigger_fired(base)
+    if kt:
+        print(f"✗ KILL TRIGGER: {kt}", file=sys.stderr)
+        return 1
+
+    enforced, reported = [], []
+    for f in findings:
+        cls = f["class"]
+        stats = base.get("classes", {}).get(cls, {"F": 0, "J": 0})
+        ok, why = W.admissible(stats["F"], stats["J"])
+        (enforced if (f.get("enforce") and ok) else reported).append((f, why))
+    for f, why in reported:
+        print(f"  report-only {f['class']} ({why}): {f['why']}")
+    if enforced:
+        print(
+            f"✗ {len(enforced)} enforced finding(s) over {j} judgeable capture(s):", file=sys.stderr
+        )
+        for f, why in enforced:
+            print(f"    {f['class']} [{why}]: {json.dumps(f)}", file=sys.stderr)
+        print(
+            "  Suppress only with a BLOCKER: reason in .profile-finding-allowlist (docs/agent-reference/suppressions.md).",
+            file=sys.stderr,
+        )
+        return 1
+    print(
+        f"✓ resprofile: {len(caps)} capture(s), {j} judgeable, {len(reported)} report-only, 0 enforced; dilation control held."
+    )
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv[1:]))
