@@ -11,6 +11,16 @@
   ],
   "versionGroups": [
     {
+      "label": "A non-workspace consumer must use a file: path, not the wildcard",
+      "packages": [
+        "@rediacc/account"
+      ],
+      "dependencies": [
+        "@rediacc/**"
+      ],
+      "isIgnored": true
+    },
+    {
       "label": "Workspace dependencies should use wildcard",
       "packages": [
         "**"
@@ -95,5 +105,10 @@
       "policy": "sameRange",
       "preferVersion": "highestSemver"
     }
+  ],
+  "source": [
+    "package.json",
+    "packages/*/package.json",
+    "private/account/package.json"
   ]
 }
