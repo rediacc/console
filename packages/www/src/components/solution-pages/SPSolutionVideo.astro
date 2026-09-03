@@ -55,6 +55,18 @@ const here = localized[lang] ?? localized.en;
       data-title={t('video.playVideo')}
       data-lang={lang}
       data-sources={JSON.stringify(localized)}
-    />
+      data-click-to-load
+    >
+      {/* SERVER-RENDERED POSTER, so the visitor sees the frame immediately instead of an
+          empty box until 122 KB of player JS downloads and runs. `data-click-to-load`
+          tells tutorial-video-hydrate.ts to build the player on the first click here
+          rather than on load: an IntersectionObserver cannot help, because every mount
+          on the site is above the fold (measured across 44 pages at two viewports).
+          The hydrator removes this element when it mounts, so nothing is left behind. */}
+      <img class="video-poster-preview" src={here.poster} alt="" loading="eager" decoding="async" />
+      <button class="video-poster-play" type="button" aria-label={t('video.playVideo')}>
+        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M8 5v14l11-7z" /></svg>
+      </button>
+    </div>
   )
 }

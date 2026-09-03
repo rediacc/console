@@ -26,6 +26,32 @@ import type { TutorialSourceSet } from '../components/TutorialVideoPlayer';
  * `import()` -- and therefore plyr's 122,110 B -- happens per visible container
  * rather than once for the whole page on load.
  */
+/** Resolve once React has actually rendered the <video>, or null if it never does.
+ *
+ * Bounded on purpose: a hydration that fails should leave the visitor a still page, not
+ * an observer spinning for the life of the tab.
+ */
+function whenVideoAppears(el: HTMLElement, timeoutMs = 4000): Promise<HTMLVideoElement | null> {
+  const found = el.querySelector('video');
+  if (found) return Promise.resolve(found);
+  return new Promise((resolve) => {
+    let done = false;
+    const finish = (v: HTMLVideoElement | null) => {
+      if (done) return;
+      done = true;
+      observer.disconnect();
+      clearTimeout(timer);
+      resolve(v);
+    };
+    const observer = new MutationObserver(() => {
+      const v = el.querySelector('video');
+      if (v) finish(v);
+    });
+    observer.observe(el, { childList: true, subtree: true });
+    const timer = setTimeout(() => finish(el.querySelector('video')), timeoutMs);
+  });
+}
+
 async function mountPlayers(els: HTMLElement[]) {
   const containers = els;
   if (containers.length === 0) return;
@@ -106,8 +132,55 @@ function scheduleHydration() {
   ).filter((el) => !el.dataset.hydrated && !el.dataset.observed);
   if (containers.length === 0) return;
 
+  // CLICK-TO-LOAD for any mount that carries a server-rendered poster.
+  //
+  // An IntersectionObserver cannot help these: measured across all 44 English
+  // mount-carrying pages at 1440x900 and 390x844, every mount is ABOVE THE FOLD, so the
+  // observer fires on load and defers nothing. The visitor is looking at the poster
+  // already; the 122 KB player only has to exist once they ask for it.
+  //
+  // The poster markup is server-rendered by SPSolutionVideo.astro, so the frame paints
+  // immediately -- sooner than before, when it waited for the player chunk to arrive and
+  // paint it. Mounts WITHOUT a poster (the docs `.tutorial-video-container`, emitted by
+  // remark-tutorial-embed.ts as a bare div) keep the observer path below, because there
+  // is nothing for a visitor to click.
+  const clickToLoad = containers.filter((el) => el.dataset.clickToLoad !== undefined);
+  const observed = containers.filter((el) => el.dataset.clickToLoad === undefined);
+
+  clickToLoad.forEach((el) => {
+    el.dataset.observed = 'true';
+    const start = () => {
+      el.querySelectorAll('.video-poster-preview, .video-poster-play').forEach((n) => n.remove());
+      void mountPlayers([el])
+        .then(() => whenVideoAppears(el))
+        .then((video) => {
+          // START IT. Without this the poster is a TWO-CLICK play: the first click builds
+          // the player and hands back a paused one, so the visitor presses play, watches
+          // nothing happen, and presses play again. Caught in agent-browser on
+          // /en/solutions/backup-verification/ -- the click hydrated correctly and the
+          // video sat at 00:00, which every automated check here would have called a pass.
+          //
+          // The rejection path is not an error and is deliberately silent: the chunk fetch
+          // can outlast the browser's user-gesture window, and a blocked play() leaves
+          // exactly the paused, fully-built player the visitor would have had anyway.
+          //
+          // What it is NOT is the element being missing -- see whenVideoAppears. The first
+          // draft wrote `el.querySelector('video')?.play()` directly here and did nothing at
+          // all, because mountPlayers resolves when the component chunk has LOADED, several
+          // frames before React has rendered a <video>. The `?.` then made a real bug look
+          // like a no-op with no console output, no rejection, and a player that just sat at
+          // 00:00. Measured, not guessed: readyState was 4 and the same play() call
+          // succeeded from the console a second later.
+          video?.play().catch(() => {});
+        });
+    };
+    el.addEventListener('click', start, { once: true });
+  });
+
+  if (observed.length === 0) return;
+
   if (typeof IntersectionObserver === 'undefined') {
-    void mountPlayers(containers);
+    void mountPlayers(observed);
     return;
   }
 
@@ -120,7 +193,7 @@ function scheduleHydration() {
     },
     { rootMargin: '600px 0px' }
   );
-  containers.forEach((el) => {
+  observed.forEach((el) => {
     el.dataset.observed = 'true';
     io.observe(el);
   });

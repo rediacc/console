@@ -96,6 +96,54 @@
  * The breakpoint matches the player's own `matchMedia('(max-width: 768px)')`; if one moves
  * the other must, or the reserved box is the wrong shape for the cut that loads.
  */
+/* THE SERVER-RENDERED POSTER, and why it exists rather than an IntersectionObserver.
+   Every video mount on this site sits ABOVE THE FOLD -- measured across all 44 English
+   mount-carrying pages at 1440x900 and 390x844 -- so an observer fires on load and
+   defers nothing. The only way to stop shipping a 122 KB player to a visitor who never
+   plays it is to not build one until they ask, which is what this poster and its play
+   control are for. The visitor also sees the frame SOONER than before, because the
+   poster no longer waits for the player chunk to arrive and paint it. */
+.video-player-mount[data-click-to-load]:not([data-hydrated]) {
+  position: relative;
+  overflow: hidden;
+  cursor: pointer;
+}
+
+.video-poster-preview {
+  display: block;
+  inline-size: 100%;
+  block-size: 100%;
+  object-fit: cover;
+}
+
+.video-poster-play {
+  position: absolute;
+  inset-block-start: 50%;
+  inset-inline-start: 50%;
+  translate: -50% -50%;
+  inline-size: 4rem;
+  block-size: 4rem;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 50%;
+  cursor: pointer;
+  background: var(--color-primary, #e94e2b);
+  color: #fff;
+  transition: transform 120ms ease;
+}
+
+.video-poster-play svg {
+  inline-size: 1.75rem;
+  block-size: 1.75rem;
+  fill: currentColor;
+}
+
+.video-poster-play:hover,
+.video-poster-play:focus-visible {
+  transform: scale(1.08);
+}
+
 .video-player-mount:not([data-hydrated]) {
   display: block;
   aspect-ratio: 16 / 9;

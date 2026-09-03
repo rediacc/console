@@ -50,28 +50,66 @@ const DEFAULT_DIST = 'packages/www/dist';
  */
 const DEFAULT_BUDGET = 500_000;
 
+/**
+ * THE DEFERRED CEILING, and why a second number rather than one bigger budget.
+ *
+ * Measured on the 2026-09-03 build: eager 454,184 B / 29 files, deferred 122,110 B / 1
+ * (`TutorialVideoPlayer`, i.e. plyr). Folding the deferred chunk into one 600 kB budget
+ * would hide it; dropping it from the report entirely would let it grow without limit
+ * behind an `import()`. So it is measured, named, and held to its own line.
+ *
+ * This split is only honest because the deferral is REAL. Until 2026-09-03 the hydrator
+ * mounted on DOMContentLoaded, so every homepage visitor fetched the player whether or
+ * not they watched anything -- calling that "deferred" would have been a fudge, and the
+ * plan that proposed this split (agent/PLAN-www-bundle-determinism.md section 3a) said
+ * so in those words. What earns it: SPSolutionVideo.astro now server-renders a poster
+ * and tutorial-video-hydrate.ts builds the player on first CLICK. A visitor who never
+ * presses play never pays these bytes.
+ */
+const DEFERRED_CEILING = 150_000;
+
 /** A homepage that pulls in less than this is not a lean page, it is an unresolved graph. */
 const MIN_BYTES = 5_000;
 
 export interface BundleMeasurement {
   page: string;
+  /** The whole reachable closure: eager + deferred. Reported, never budgeted. */
   bytes: number;
-  files: { url: string; bytes: number }[];
+  /** What a visitor downloads before interacting. THIS is what the budget applies to. */
+  eagerBytes: number;
+  /** Behind a dynamic import: fetched only if the visitor asks. Has its own ceiling. */
+  deferredBytes: number;
+  files: { url: string; bytes: number; deferred: boolean }[];
   missing: string[];
 }
 
-/** Static and dynamic import specifiers of a built ES module or an inline module script. */
-function importSpecifiers(source: string): string[] {
-  const out: string[] = [];
-  for (const m of source.matchAll(/\bfrom\s*["']([^"']+)["']/g)) out.push(m[1]);
-  for (const m of source.matchAll(/\bimport\s*\(\s*["']([^"']+)["']/g)) out.push(m[1]);
+/** An import edge, and whether crossing it costs the visitor bytes before they interact. */
+interface Edge {
+  spec: string;
+  /** `import("./x")` -- fetched on demand, so it is not part of the eager cost. */
+  dynamic: boolean;
+}
+
+/** Static and dynamic import specifiers of a built ES module or an inline module script.
+ *
+ * THE THREE REGEXES ARE DISJOINT, which is what makes the eager/deferred tag trustworthy:
+ * `import(` cannot match the bare-specifier form (a paren is not a quote) and cannot match
+ * `from` (no `from` keyword), so no edge is ever classified twice or missed by the split.
+ */
+function importSpecifiers(source: string): Edge[] {
+  const out: Edge[] = [];
+  for (const m of source.matchAll(/\bfrom\s*["']([^"']+)["']/g))
+    out.push({ spec: m[1], dynamic: false });
+  for (const m of source.matchAll(/\bimport\s*\(\s*["']([^"']+)["']/g))
+    out.push({ spec: m[1], dynamic: true });
   // `\s*`, NOT `\s+`, and the difference was worth 124,673 B. Rollup emits bare
   // side-effect imports with no whitespace at all -- `import"./x.js";import"./y.js";` --
   // and `\s+` matched none of them. The homepage's script entry is a 129-BYTE FACADE
   // whose only three edges are all of that form, so this walk dead-ended there and the
   // gate reported 451,621 B while the page shipped 576,294 B. Note the two lines above
   // already use `\s*`; only this one demanded a space.
-  for (const m of source.matchAll(/\bimport\s*["']([^"']+)["']/g)) out.push(m[1]);
+  for (const m of source.matchAll(/\bimport\s*["']([^"']+)["']/g))
+    out.push({ spec: m[1], dynamic: false });
   return out;
 }
 
@@ -96,38 +134,69 @@ export function measurePage(dist: string, pageRel: string): BundleMeasurement {
   for (const m of html.matchAll(/(?:src|component-url|renderer-url)\s*=\s*"([^"]+\.m?js)"/g)) {
     if (m[1].startsWith('/')) entries.add(m[1]);
   }
-  // Inline module scripts import their chunks by URL.
+  // Inline module scripts import their chunks by URL. An inline `import()` is a deferred
+  // entry, not an eager one -- the same distinction the two-phase walk below makes.
+  const deferredEntries = new Set<string>();
   for (const m of html.matchAll(/<script[^>]*type="module"[^>]*>([\s\S]*?)<\/script>/g)) {
-    for (const spec of importSpecifiers(m[1])) {
-      if (spec.startsWith('/')) entries.add(spec);
+    for (const e of importSpecifiers(m[1])) {
+      if (!e.spec.startsWith('/')) continue;
+      (e.dynamic ? deferredEntries : entries).add(e.spec);
     }
   }
 
-  const seen = new Set<string>();
   const missing: string[] = [];
-  const files: { url: string; bytes: number }[] = [];
-  const stack = [...entries];
+  const files: { url: string; bytes: number; deferred: boolean }[] = [];
 
-  while (stack.length > 0) {
-    const url = stack.pop()!;
-    if (seen.has(url)) continue;
-    seen.add(url);
-    const abs = path.join(dist, url.replace(/^\//, ''));
-    if (!fs.existsSync(abs)) {
-      missing.push(url);
-      continue;
+  // TWO PHASES, AND THE ORDER IS THE WHOLE POINT.
+  //
+  // Phase 1 walks ONLY static edges, so it reaches exactly what a visitor downloads
+  // before touching anything. Phase 2 starts from the dynamic-import targets phase 1
+  // collected and walks everything.
+  //
+  // Running eager first is what makes a chunk reachable BY BOTH ROUTES count as eager,
+  // which is the conservative answer and the only honest one: a page that also imports a
+  // chunk statically pays for it whether or not some other site pulls it dynamically. The
+  // reverse order would let any dynamic edge anywhere launder a chunk out of the budget,
+  // and this gate has already been fooled once by a measurement that flattered the page.
+  const seen = new Set<string>();
+  const dynamicTargets = new Set<string>(deferredEntries);
+
+  const walk = (roots: Iterable<string>, deferred: boolean, collectDynamic: boolean) => {
+    const stack = [...roots];
+    while (stack.length > 0) {
+      const url = stack.pop()!;
+      if (seen.has(url)) continue;
+      seen.add(url);
+      const abs = path.join(dist, url.replace(/^\//, ''));
+      if (!fs.existsSync(abs)) {
+        missing.push(url);
+        continue;
+      }
+      files.push({ url, bytes: fs.statSync(abs).size, deferred });
+      for (const e of importSpecifiers(fs.readFileSync(abs, 'utf-8'))) {
+        const resolved = resolveSpecifier(e.spec, url);
+        if (!resolved) continue;
+        if (e.dynamic) {
+          if (collectDynamic) dynamicTargets.add(resolved);
+          else stack.push(resolved);
+        } else {
+          stack.push(resolved);
+        }
+      }
     }
-    const bytes = fs.statSync(abs).size;
-    files.push({ url, bytes });
-    for (const spec of importSpecifiers(fs.readFileSync(abs, 'utf-8'))) {
-      const resolved = resolveSpecifier(spec, url);
-      if (resolved) stack.push(resolved);
-    }
-  }
+  };
+
+  walk(entries, false, true);
+  // Anything phase 1 already claimed is eager and stays eager: `seen` is not reset.
+  walk(dynamicTargets, true, false);
+
+  const sum = (want: boolean) => files.reduce((a, f) => a + (f.deferred === want ? f.bytes : 0), 0);
 
   return {
     page: pageRel,
     bytes: files.reduce((a, f) => a + f.bytes, 0),
+    eagerBytes: sum(false),
+    deferredBytes: sum(true),
     files: files.sort((a, b) => b.bytes - a.bytes),
     missing,
   };
@@ -152,7 +221,13 @@ function selftest(): boolean {
   // the page. This is the fixture's whole point: it stands in for react.*.js, which no
   // <script src> on the real homepage names.
   write('assets/heavy.js', `export const x = "${'x'.repeat(50_000)}";`);
-  write('assets/mid.js', 'import { x } from "./heavy.js";\nexport const y = x;');
+  write(
+    'assets/mid.js',
+    'import { x } from "./heavy.js";\nimport "./dual.js";\nexport const y = x;'
+  );
+  // REACHABLE BY BOTH ROUTES: statically from mid.js, dynamically from facade-dyn.js.
+  // It must be counted EAGER. See the laundering control below.
+  write('assets/dual.js', `export const d = "${'d'.repeat(10_000)}";`);
   write('assets/island.js', 'import { y } from "./mid.js";\nexport default () => y;');
   write('assets/client.js', 'export const boot = 1;');
   // THE FACADE, and it is the shape that hid 124,673 B for as long as this gate was
@@ -168,7 +243,7 @@ function selftest(): boolean {
   write('assets/facade.js', 'import"./facade-only.js";import"./facade-dyn.js";');
   write('assets/facade-only.js', `export const q = "${'q'.repeat(30_000)}";`);
   write('assets/facade-deferred.js', `export const z = "${'z'.repeat(20_000)}";`);
-  write('assets/facade-dyn.js', 'import("./facade-deferred.js");');
+  write('assets/facade-dyn.js', 'import("./facade-deferred.js");import("./dual.js");');
   fs.mkdirSync(path.join(dist, 'scripts'), { recursive: true });
   write('scripts/small.js', 'console.log(1);');
   write(
@@ -195,6 +270,26 @@ function selftest(): boolean {
     'PLANT: a dynamic import reachable ONLY through such a facade is followed',
     m.files.some((f) => f.url === '/assets/facade-deferred.js'),
     `reached: ${m.files.map((f) => f.url).join(', ')}`
+  );
+  const tagged = (u: string) => m.files.find((f) => f.url === u);
+  check(
+    'PLANT: a chunk behind import() is tagged DEFERRED, not eager',
+    tagged('/assets/facade-deferred.js')?.deferred === true,
+    JSON.stringify(tagged('/assets/facade-deferred.js'))
+  );
+  check(
+    'PLANT: the eager total EXCLUDES it -- this is the discriminating assertion',
+    m.eagerBytes < m.bytes && m.eagerBytes + m.deferredBytes === m.bytes,
+    `eager=${m.eagerBytes} deferred=${m.deferredBytes} total=${m.bytes}`
+  );
+  // THE LAUNDERING CONTROL. Without phase ordering, any dynamic edge anywhere would move
+  // a chunk out of the eager budget even when the page also imports it statically. That
+  // would let the budget be defeated by adding an import() nobody calls, so it is proven
+  // on a fixture rather than argued.
+  check(
+    'CONTROL: a chunk reachable BOTH statically and dynamically counts as EAGER',
+    tagged('/assets/dual.js')?.deferred === false,
+    JSON.stringify(tagged('/assets/dual.js'))
   );
   check(
     'PLANT: a chunk reachable ONLY through two levels of import is counted',
@@ -285,7 +380,10 @@ function main(): void {
 
   // The locale universe is @rediacc/locales. A homepage missing for a declared locale is a
   // hard error: scoring zero for a locale nobody built reads exactly like scoring well.
-  const pages = SITE_LOCALES.map((l) => ({ locale: l, rel: path.join(l, 'index.html') }));
+  const pages = SITE_LOCALES.map((l) => ({
+    locale: l,
+    rel: path.join(l, 'index.html'),
+  }));
   const absent = pages.filter((p) => !fs.existsSync(path.join(dist, p.rel)));
   if (absent.length > 0) {
     console.error(
@@ -295,13 +393,16 @@ function main(): void {
     process.exit(1);
   }
 
-  const measured = pages.map((p) => ({ locale: p.locale, ...measurePage(dist, p.rel) }));
+  const measured = pages.map((p) => ({
+    locale: p.locale,
+    ...measurePage(dist, p.rel),
+  }));
 
-  const starved = measured.filter((m) => m.bytes < MIN_BYTES);
+  const starved = measured.filter((m) => m.eagerBytes < MIN_BYTES);
   if (starved.length > 0) {
     console.error(
       `✗ Refusing to run: ${starved.length} homepage(s) resolved to under ${MIN_BYTES} bytes of ` +
-        `JavaScript (${starved.map((s) => `${s.locale}=${s.bytes}`).join(', ')}).\n` +
+        `JavaScript (${starved.map((s) => `${s.locale}=${s.eagerBytes}`).join(', ')}).\n` +
         `  The import graph did not resolve; a near-zero figure is a broken measurement, not ` +
         `a lean page.`
     );
@@ -309,13 +410,27 @@ function main(): void {
   }
 
   const missing = measured.flatMap((m) => m.missing.map((u) => `${m.locale}: ${u}`));
-  const over = measured.filter((m) => m.bytes > budget);
+  const over = measured.filter((m) => m.eagerBytes > budget);
+  const overDeferred = measured.filter((m) => m.deferredBytes > DEFERRED_CEILING);
 
-  if (over.length === 0 && missing.length === 0) {
-    const worst = measured.reduce((a, b) => (a.bytes > b.bytes ? a : b));
+  if (over.length === 0 && overDeferred.length === 0 && missing.length === 0) {
+    const worst = measured.reduce((a, b) => (a.eagerBytes > b.eagerBytes ? a : b));
+    const worstDef = measured.reduce((a, b) => (a.deferredBytes > b.deferredBytes ? a : b));
     console.log(
-      `✓ Every locale homepage is within the ${budget.toLocaleString()} B budget ` +
-        `(worst: ${worst.locale} at ${worst.bytes.toLocaleString()} B across ${worst.files.length} file(s)).`
+      `✓ Every locale homepage is within the ${budget.toLocaleString()} B eager budget ` +
+        `(worst: ${worst.locale} at ${worst.eagerBytes.toLocaleString()} B across ` +
+        `${worst.files.filter((f) => !f.deferred).length} file(s)).`
+    );
+    console.log(
+      `✓ Deferred (behind an import(), fetched only on interaction): worst is ` +
+        `${worstDef.locale} at ${worstDef.deferredBytes.toLocaleString()} B, ceiling ` +
+        `${DEFERRED_CEILING.toLocaleString()} B. Full closure ` +
+        `${worst.bytes.toLocaleString()} B -- reported, not budgeted.`
+    );
+    console.log(
+      `  Blind spot: this counts what the graph makes REACHABLE. It cannot see whether a ` +
+        `deferred chunk is in practice fetched by every visitor anyway; that is a property ` +
+        `of the hydration trigger, which scripts/check-player-css-scope.ts pins separately.`
     );
     return;
   }
@@ -326,20 +441,42 @@ function main(): void {
     console.error('');
   }
 
+  if (overDeferred.length > 0) {
+    console.error(
+      `✗ ${overDeferred.length} of ${measured.length} locale homepage(s) exceed the ` +
+        `${DEFERRED_CEILING.toLocaleString()} B DEFERRED ceiling:\n`
+    );
+    for (const m of overDeferred.sort((a, b) => b.deferredBytes - a.deferredBytes)) {
+      const chunks = m.files.filter((f) => f.deferred);
+      console.error(
+        `  /${m.locale}/  ${m.deferredBytes.toLocaleString()} B across ${chunks.length} chunk(s)`
+      );
+      for (const f of chunks.slice(0, 5)) {
+        console.error(`      ${f.bytes.toLocaleString()} B  ${f.url}`);
+      }
+    }
+    console.error(
+      `\n  Deferred is not free -- it is paid by whoever interacts. This ceiling exists so\n` +
+        `  moving weight behind an import() is a decision with a limit, not an escape hatch.\n`
+    );
+  }
+
   if (over.length > 0) {
     console.error(
       `✗ ${over.length} of ${measured.length} locale homepage(s) exceed the ` +
-        `${budget.toLocaleString()} B decoded-JavaScript budget:\n`
+        `${budget.toLocaleString()} B EAGER decoded-JavaScript budget:\n`
     );
-    for (const m of over.sort((a, b) => b.bytes - a.bytes)) {
+    for (const m of over.sort((a, b) => b.eagerBytes - a.eagerBytes)) {
       console.error(
-        `  /${m.locale}/  ${m.bytes.toLocaleString()} B  ` +
-          `(${(m.bytes / budget).toFixed(1)}x budget, ${m.files.length} file(s))`
+        `  /${m.locale}/  ${m.eagerBytes.toLocaleString()} B eager  ` +
+          `(${(m.eagerBytes / budget).toFixed(1)}x budget, ` +
+          `${m.files.filter((f) => !f.deferred).length} file(s); ` +
+          `+${m.deferredBytes.toLocaleString()} B deferred)`
       );
     }
-    const worst = over.reduce((a, b) => (a.bytes > b.bytes ? a : b));
-    console.error(`\n  Largest chunks on /${worst.locale}/:`);
-    for (const f of worst.files.slice(0, 5)) {
+    const worst = over.reduce((a, b) => (a.eagerBytes > b.eagerBytes ? a : b));
+    console.error(`\n  Largest EAGER chunks on /${worst.locale}/:`);
+    for (const f of worst.files.filter((f) => !f.deferred).slice(0, 5)) {
       console.error(`    ${f.bytes.toLocaleString()} B  ${f.url}`);
     }
     console.error(
