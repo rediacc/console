@@ -64,6 +64,25 @@ const ALLOWLISTED_DOMAINS = new Set([
   'www.meity.gov.in', // India MeitY - intermittent fetch failures from CI runners (Azure US-East), reachable from browsers
   'eur-lex.europa.eu', // EU EUR-Lex - returns 403 to CI runners (Cloudflare/anti-scraping), reachable from browsers
   'www.ftc.gov', // US FTC - returns 503/403 to CI runners (Akamai anti-bot), reachable from browsers
+  // GnuPG handbook - `fetch failed` from a GitHub-hosted runner (run for
+  // 07c5e1c76, Quality/Content 'External links'), after this checker's own two
+  // retries AND its last-chance GET.
+  //
+  // MEASURED, AND THE MEASUREMENT IS THE POINT: from a non-datacenter IP the
+  // same URL answered 200 once and then 000 six times running (three HEAD,
+  // three GET, 20s timeouts). Not "live" and not "dead" -- INTERMITTENT, which
+  // is why one probe would have justified either verdict. docs/ci-overhaul/
+  // 06-progress.md:3201 records the same host answering 000 from two networks
+  // on 2026-07-30, so this is a standing property of gnupg.org rather than one
+  // bad afternoon.
+  //
+  // Two things I checked before believing any of it, because both would have
+  // made the reading a lie: this sandbox has NO IPv6 egress at all (v6 to
+  // debian.org and cloudflare.com also answers 000), so nothing here can be
+  // concluded about gnupg's AAAA record; and the IPv4 path is the one all the
+  // numbers above come from. Recheck by removing this line -- if the host
+  // starts answering CI reliably the gate passes without it.
+  'www.gnupg.org',
   // Debian securing-debian-manual - `fetch failed` from GitHub-hosted runners
   // on 2026-08-05 (run 30990002964), after this checker's own two retries AND
   // its last-chance GET, so not a one-shot blip. Measured rather than assumed:
@@ -175,14 +194,13 @@ const KNOWN_BROKEN = new Map<string, string>([
     'https://www.rediacc.com/api/public/account-key',
     'route does not exist on any host (404 on www/edge/eu/us/asia); both docs now cite it only to warn against it, never as a command',
   ],
-  // The whole domain, not just the page, is unreachable -- a connection
-  // timeout on both http and https, not a 404. Measured 2026-07-30 from two
-  // independent networks (this repo's dev sandbox and, per the CI run that
-  // surfaced this, a GitHub Actions runner: "BROKEN [fetch failed]" on
-  // 30578925361). Referenced from docs/code-signing-guide.md:457 and :608.
-  // the same way, so there is nothing live to point at yet. Re-check when the
-  // site is confirmed back (WARN tier will catch a 200 automatically) rather
-  // than guessing a successor URL now.
+  // NOTE: a comment block for a gnupg.org entry used to sit here, describing
+  // the domain as unreachable from two networks on 2026-07-30. Its ENTRY is
+  // gone -- removed when the host came back -- and the prose outlived it,
+  // ending mid-sentence where the deleted line used to be. A reason with no
+  // entry reads as an entry to a skimming reader, so it is removed rather than
+  // left as furniture. gnupg.org is handled in ALLOWLIST_DOMAINS above, where
+  // the current measurement lives.
 ]);
 
 // Patterns matched against the RAW regex capture, before any punctuation
