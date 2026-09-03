@@ -2,16 +2,22 @@
 /**
  * How much JavaScript the homepage makes a visitor download and parse.
  *
- * THE NUMBER TODAY: 7,043,755 decoded bytes, of which `assets/react.*.js` alone is
- * 6,708,716. That single chunk exists because `packages/www/src/i18n/utils.ts` STATICALLY
- * imports all thirteen locale catalogs, so every visitor in every language receives all
- * thirteen. For comparison, measured the same way on the same day: claude.com ships
- * 1,267,131 B and anthropic.com 305,858 B.
+ * THE NUMBER TODAY: 576,294 decoded bytes, 1.15x the budget. Wave 1's locale chunking
+ * brought this down from 7,043,755 B, so the header's old "red by a factor of fourteen"
+ * is long spent -- but the figure was ALSO wrong in the other direction for as long as
+ * this gate has been green. See below.
+ *
+ * IT WAS UNDER-REPORTING BY 124,673 B, and that is why this comment is rewritten rather
+ * than retouched. `importSpecifiers` required whitespace after `import`, which minified
+ * side-effect imports do not have, so the walk stopped at a 129-byte facade chunk and
+ * never saw the 122,110 B `TutorialVideoPlayer` (plyr) that every homepage visitor in
+ * every locale downloads. The gate passed at 451,621 B over a page shipping 576,294 B.
+ * Fixed 2026-09-03; see agent/PLAN-www-bundle-determinism.md for the full arithmetic,
+ * including how it reconciles to the byte with CI run 33708505104.
  *
  * THE BUDGET IS 500,000 B AND IT IS DELIBERATELY SET WHERE THE FIX LANDS, not where the
- * site is. This gate is RED on purpose until Wave 1 chunks the locales, and it is red by a
- * factor of fourteen, which is the honest description of the gap. A budget set just above
- * today's figure would be a gate that ratifies the defect.
+ * site is. A budget set just above today's figure would be a gate that ratifies the
+ * defect, which is exactly what raising it now would do.
  *
  * IT WALKS THE IMPORT GRAPH, WHICH IS THE ONLY WAY THE FIGURE IS TRUE. The homepage's own
  * HTML references six small scripts totalling about 41 kB and not one byte of React. The
@@ -59,7 +65,13 @@ function importSpecifiers(source: string): string[] {
   const out: string[] = [];
   for (const m of source.matchAll(/\bfrom\s*["']([^"']+)["']/g)) out.push(m[1]);
   for (const m of source.matchAll(/\bimport\s*\(\s*["']([^"']+)["']/g)) out.push(m[1]);
-  for (const m of source.matchAll(/\bimport\s+["']([^"']+)["']/g)) out.push(m[1]);
+  // `\s*`, NOT `\s+`, and the difference was worth 124,673 B. Rollup emits bare
+  // side-effect imports with no whitespace at all -- `import"./x.js";import"./y.js";` --
+  // and `\s+` matched none of them. The homepage's script entry is a 129-BYTE FACADE
+  // whose only three edges are all of that form, so this walk dead-ended there and the
+  // gate reported 451,621 B while the page shipped 576,294 B. Note the two lines above
+  // already use `\s*`; only this one demanded a space.
+  for (const m of source.matchAll(/\bimport\s*["']([^"']+)["']/g)) out.push(m[1]);
   return out;
 }
 
@@ -143,6 +155,20 @@ function selftest(): boolean {
   write('assets/mid.js', 'import { x } from "./heavy.js";\nexport const y = x;');
   write('assets/island.js', 'import { y } from "./mid.js";\nexport default () => y;');
   write('assets/client.js', 'export const boot = 1;');
+  // THE FACADE, and it is the shape that hid 124,673 B for as long as this gate was
+  // green. Rollup emits an entry like this for an Astro page script: no whitespace, no
+  // `from`, nothing but side-effect edges. The real one is 129 bytes. If the walk cannot
+  // cross it, everything behind it is invisible and the gate reports a fraction of the
+  // page while printing a checkmark.
+  // Everything past this facade must be reachable ONLY through its no-space edges.
+  // The first draft of these plants pointed at `mid.js`, which the island chain above
+  // already reaches, and at a dynamic import the `import(` regex catches on its own --
+  // so both passed against the very defect they were written for, and the mutant control
+  // in .ci/scripts/test/gates/test-client-bundle-budget.sh is what caught that.
+  write('assets/facade.js', 'import"./facade-only.js";import"./facade-dyn.js";');
+  write('assets/facade-only.js', `export const q = "${'q'.repeat(30_000)}";`);
+  write('assets/facade-deferred.js', `export const z = "${'z'.repeat(20_000)}";`);
+  write('assets/facade-dyn.js', 'import("./facade-deferred.js");');
   fs.mkdirSync(path.join(dist, 'scripts'), { recursive: true });
   write('scripts/small.js', 'console.log(1);');
   write(
@@ -151,11 +177,25 @@ function selftest(): boolean {
       <script src="/scripts/small.js"></script>
       <astro-island component-url="/assets/island.js" renderer-url="/assets/client.js"></astro-island>
       <script type="module">import "/assets/client.js";</script>
+      <script src="/assets/facade.js"></script>
     </body></html>`
   );
 
   const m = measurePage(dist, 'en/index.html');
   const heavy = m.files.find((f) => f.url === '/assets/heavy.js');
+  // Both plants assert on a chunk BEHIND a no-space facade. They fail on the pre-2026-09-03
+  // gate, whose regex demanded whitespace after `import`, and that failure is the whole
+  // reason the defect existed: the old fixture only ever wrote `import { x } from "..."`.
+  check(
+    'PLANT: a no-space side-effect facade (import"./x.js") is crossed, not dead-ended',
+    m.files.some((f) => f.url === '/assets/facade-only.js'),
+    `reached: ${m.files.map((f) => f.url).join(', ')}`
+  );
+  check(
+    'PLANT: a dynamic import reachable ONLY through such a facade is followed',
+    m.files.some((f) => f.url === '/assets/facade-deferred.js'),
+    `reached: ${m.files.map((f) => f.url).join(', ')}`
+  );
   check(
     'PLANT: a chunk reachable ONLY through two levels of import is counted',
     Boolean(heavy),

@@ -697,6 +697,14 @@
       "done": 0,
       "open_sigs": [],
       "done_sigs": []
+    },
+    "agent/PLAN-www-bundle-determinism.md": {
+      "status": "draft",
+      "owner": "74de73ca",
+      "open": 0,
+      "done": 0,
+      "open_sigs": [],
+      "done_sigs": []
     }
   }
 }

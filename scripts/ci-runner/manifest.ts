@@ -5265,6 +5265,23 @@ export const GATES: readonly GateSpec[] = [
     },
   },
   {
+    id: 'gate-test:client-bundle-budget',
+    run: '.ci/scripts/test/gates/test-client-bundle-budget.sh',
+    // 8.3s alone, ~20s in the pre-push lane. Two `npx tsx` starts (the gate's selftest
+    // and a mutant of it), which is process cost rather than computation and is exactly
+    // what stretches under 20x contention.
+    slow: true,
+    gate: true,
+    qualityGateTest: true,
+    leaves: ['.ci/scripts/test/gates/test-client-bundle-budget.sh'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-security',
+      step: 'Quality-gate unit tests',
+    },
+  },
+  {
     id: 'gate-test:shadow-compare',
     run: '.ci/scripts/test/gates/test-shadow-compare.sh',
     gate: true,
