@@ -39,6 +39,9 @@ ROOT="$(cd "$SCRIPT_DIR/../../.." && pwd)"
 # BLOCKER: gh_retry is needed so a failed API call cannot be mistaken for a PR whose commits all attribute
 source "$SCRIPT_DIR/../lib/common.sh"
 
+require_cmd gh
+require_cmd jq
+
 IDENTITY_FILE="${COMMIT_IDENTITY_FILE:-$ROOT/.ci/config/commit-identity.json}"
 # GitHub's commit-list endpoint caps at 250 even with --paginate. Judging a truncated
 # set would report a clean PR over commits never read.

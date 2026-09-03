@@ -30,6 +30,9 @@ ci-only  .ci/scripts/quality/check-branch.sh
 # BLOCKER: fetches the PR's commit list over the GitHub API to assert no commit carries an unwanted Claude attribution trailer; a local checkout has no PR number and the commits are not yet pushed
 ci-only  .ci/scripts/quality/check-claude-attribution.sh
 
+# BLOCKER: asks the GitHub API which account it resolves each commit's author and committer email to; that answer exists only for commits that are pushed and attached to a PR, so a local checkout has nothing to judge
+ci-only  .ci/scripts/quality/check-commit-identity.sh
+
 # BLOCKER: reads the pull request body and its updatedAt timestamp through the GitHub API to enforce the description-freshness rule; there is no PR body to read before the PR exists
 ci-only  .ci/scripts/quality/check-pr-description.sh
 

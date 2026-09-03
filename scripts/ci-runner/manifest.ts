@@ -5265,6 +5265,19 @@ export const GATES: readonly GateSpec[] = [
     },
   },
   {
+    id: 'gate-test:commit-identity',
+    run: '.ci/scripts/test/gates/test-commit-identity.sh',
+    gate: true,
+    qualityGateTest: true,
+    leaves: ['.ci/scripts/test/gates/test-commit-identity.sh'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-security',
+      step: 'Quality-gate unit tests',
+    },
+  },
+  {
     id: 'gate-test:client-bundle-budget',
     run: '.ci/scripts/test/gates/test-client-bundle-budget.sh',
     // 8.3s alone, ~20s in the pre-push lane. Two `npx tsx` starts (the gate's selftest
