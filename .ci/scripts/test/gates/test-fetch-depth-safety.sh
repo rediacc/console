@@ -1,5 +1,6 @@
 #!/bin/bash
-# gate-test:fetch-depth-safety -- `git fetch --depth` may not truncate a full clone.
+# gate-test:fetch-depth-safety -- no git operation may quietly reshape the repository
+# a later step measures, and no fixture may be built in a shape that measures nothing.
 #
 # WHAT THIS IS ABOUT, measured 2026-09-03 rather than reasoned about. `--depth` on
 # a fetch is not a limit on what that fetch transfers; on a complete repository it
@@ -187,6 +188,45 @@ else
     pass "every git-fetch --depth site can tell whether the repo is already shallow"
 fi
 
+# THE SECOND SHAPE OF THE SAME CLASS: a fixture whose HEAD points nowhere.
+#
+# `git init --bare` takes the branch name from init.defaultBranch, which on a
+# GitHub runner is not what it is on this machine. A bare origin created without
+# `-b main` therefore ends up with HEAD on a nonexistent ref, `git clone` reports
+# "you appear to have cloned an empty repository", and a battery built on that
+# clone reports PASS against a 1-commit tree. That is not a red -- it is a green
+# that measured nothing, which is the more expensive outcome.
+#
+# This repo had already paid for it once: test-autopilot-harness.sh:726 carries a
+# comment recording exactly this lesson. Then THIS gate reintroduced it and CI
+# caught it (job 100707433574). A lesson that lives only in one file's comment is
+# a lesson the next file does not get, so it is a sweep now.
+# PER LINE, not per file, and the first draft of this got it wrong. A file-level
+# "does it mention a pin anywhere" test exempted the whole file as soon as ONE
+# bare init was pinned -- so the mutant that stripped the pin from this very gate
+# still passed, because a `symbolic-ref HEAD` further down satisfied the grep. A
+# rule whose own planted violation survives is not a rule. Each bare init must
+# carry the flag itself; all four existing sites in this tree already do.
+bare_offenders=""
+while IFS= read -r f; do
+    [[ -f "$ROOT_DIR/$f" ]] || continue
+    while IFS= read -r hit; do
+        bare_offenders+="    $f: $hit"$'\n'
+    done < <(awk '
+        { line = $0; sub(/^[ \t-]+/, "", line) }
+        line ~ /^(#|\/\/|\*)/ { next }
+        line ~ /^(printf|echo)[ \t]/ { next }   # writing a fixture, not running git
+        /git +[^|;]*init[^|;]*--bare/ && !/--initial-branch/ && !/ -b [A-Za-z]/ { print $0 }
+    ' "$ROOT_DIR/$f" | sed 's/^[[:space:]]*//')
+done < <(git -C "$ROOT_DIR" ls-files '*.sh')
+
+if [[ -n "$bare_offenders" ]]; then
+    fail "these create a BARE fixture repo without pinning its default branch:" \
+        $'\n'"$bare_offenders        A clone of it comes back EMPTY on a runner whose init.defaultBranch differs, and the battery then passes against nothing."
+else
+    pass "every bare fixture repo pins its default branch"
+fi
+
 # CONTROL ON THAT SWEEP: it must be looking at a real corpus, and it must be able
 # to see a violation. A grep over an empty file list passes silently forever.
 n_scanned="$(git -C "$ROOT_DIR" ls-files '*.sh' '*.js' '*.cjs' '*.mjs' '*.ts' '*.py' '*.yml' | wc -l)"
@@ -209,6 +249,31 @@ if real_fetch_depth "$TMP/prose.sh"; then
     fail "CONTROL: a commented mention is still counted as a command"
 else
     pass "CONTROL: a commented mention is not counted as a command"
+fi
+
+# And the bare-fixture expressions, both directions on planted input.
+bare_hits() {
+    awk '
+        { line = $0; sub(/^[ \t-]+/, "", line) }
+        line ~ /^(#|\/\/|\*)/ { next }
+        /git +[^|;]*init[^|;]*--bare/ && !/--initial-branch/ && !/ -b [A-Za-z]/ { n++ }
+        END { print n + 0 }
+    ' "$1"
+}
+printf 'git init --bare "$d/origin.git"\ngit symbolic-ref HEAD refs/heads/main\n' >"$TMP/bare-bad.sh"
+printf 'git init -q --bare -b main "$d/o.git"\ngit init --quiet --bare --initial-branch=main "$d/p.git"\n' >"$TMP/bare-ok.sh"
+# The bad fixture deliberately carries a symbolic-ref line: that is what defeated
+# the file-level draft of this rule, so the control now plants it on purpose.
+if [[ "$(bare_hits "$TMP/bare-bad.sh")" == "1" ]]; then
+    pass "CONTROL: an unpinned bare init is caught even beside a symbolic-ref line"
+else
+    fail "CONTROL: the bare-fixture rule does not flag a planted violation" \
+        "got $(bare_hits "$TMP/bare-bad.sh") hit(s), want 1"
+fi
+if [[ "$(bare_hits "$TMP/bare-ok.sh")" == "0" ]]; then
+    pass "CONTROL: both pinned spellings are accepted"
+else
+    fail "CONTROL: a pinned bare init is flagged, so the rule is unusable"
 fi
 
 echo
