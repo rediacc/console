@@ -268,9 +268,7 @@ function main(): void {
   if (process.argv.includes('--selftest')) {
     console.log('dead-css gate selftest');
     const bad = selftest();
-    console.log(
-      bad === 0 ? '\n${GREEN}✓${NC} all controls pass' : `\n${RED}✗${NC} ${bad} failed`
-    );
+    console.log(bad === 0 ? '\n${GREEN}✓${NC} all controls pass' : `\n${RED}✗${NC} ${bad} failed`);
     process.exit(bad === 0 ? 0 : 1);
   }
   if (selftest() !== 0) {
@@ -350,9 +348,7 @@ function main(): void {
   // inherited from the deleted `check-unused-css-files.js`.
   const orphaned = fullyDeadSheets(new Set(dead));
   if (orphaned.length > 0) {
-    console.error(
-      `\n${RED}✗${NC} ${orphaned.length} stylesheet(s) in which EVERY class is dead:`
-    );
+    console.error(`\n${RED}✗${NC} ${orphaned.length} stylesheet(s) in which EVERY class is dead:`);
     for (const o of orphaned) console.error(`    ${o}`);
     console.error('\nDelete the file and drain its baseline entries, or render what it styles.');
     process.exit(1);

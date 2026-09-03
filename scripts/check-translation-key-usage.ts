@@ -301,7 +301,9 @@ function main(): void {
     ? undefined
     : files.find((f) => path.basename(f) === '__control_probe__.tsx');
   if (leftover !== undefined) {
-    console.error(`\x1b[31m✗\x1b[0m ${path.relative(WWW_SRC, leftover)} is a leftover TEST FIXTURE, not source.`);
+    console.error(
+      `\x1b[31m✗\x1b[0m ${path.relative(WWW_SRC, leftover)} is a leftover TEST FIXTURE, not source.`
+    );
     console.error('  A control run was killed before its `finally` could unlink it. The key it');
     console.error('  references is meant not to exist. Delete the file and re-run:');
     console.error(`    rm ${path.relative(process.cwd(), leftover)}`);

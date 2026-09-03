@@ -259,7 +259,9 @@ function main(): number {
     return 1;
   }
 
-  console.log(`\n✓ all ${MUTANTS.length} declared guard(s) are pinned by a test that fails without them.`);
+  console.log(
+    `\n✓ all ${MUTANTS.length} declared guard(s) are pinned by a test that fails without them.`
+  );
   return 0;
 }
 

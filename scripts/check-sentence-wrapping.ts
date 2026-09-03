@@ -86,7 +86,9 @@ export const makeSentenceCounter = (): ((s: string) => number) => {
     // No Segmenter is a BROKEN GATE, not a lenient one. Returning 1 here would make every
     // finding vanish and the gate report success -- the exact shape the mutant leg exists
     // to catch. Fail loudly instead.
-    throw new Error('Intl.Segmenter unavailable: this gate cannot count sentences, so it cannot run');
+    throw new Error(
+      'Intl.Segmenter unavailable: this gate cannot count sentences, so it cannot run'
+    );
   }
   const seg = new Seg('en', { granularity: 'sentence' });
   return (s: string) => [...seg.segment(s)].filter((x) => x.segment.trim().length > 0).length;
@@ -175,7 +177,8 @@ export const scan = (
       const lastClose = before.lastIndexOf('</Sentences>');
       if (lastOpen !== -1 && lastOpen > lastClose) continue;
       const id = `${rel}:${key}`;
-      if (!findings.some((f) => f.id === id)) findings.push({ id, file: rel, key, sentences: countSentences(value) });
+      if (!findings.some((f) => f.id === id))
+        findings.push({ id, file: rel, key, sentences: countSentences(value) });
     }
   }
   return { findings, files: files.length };
@@ -240,7 +243,10 @@ const selftest = (): number => {
   const SRC_PREFIX = ['packages', 'www', 'src'].join('/');
   const fixture = (name: string): string => `${SRC_PREFIX}/${name}`;
   fs.writeFileSync(path.join(src, 'Raw.astro'), `<p>{t('multi')}</p>\n`);
-  fs.writeFileSync(path.join(src, 'Wrapped.astro'), `<Sentences text={t('multi')} lang={lang} />\n`);
+  fs.writeFileSync(
+    path.join(src, 'Wrapped.astro'),
+    `<Sentences text={t('multi')} lang={lang} />\n`
+  );
   fs.writeFileSync(path.join(src, 'Single.astro'), `<p>{t('single')}</p>\n`);
   // A PROP, not text. `description={t('multi')}` reaches a `<meta>` tag; wrapping it
   // would inject spans into page metadata. The gate reported eight of these as findings
@@ -253,12 +259,18 @@ const selftest = (): number => {
   const real = makeSentenceCounter();
   const got = scan(tmp, real).findings.map((f) => f.id);
 
-  check('leg 1: a raw multi-sentence render IS reported', got.includes(fixture('Raw.astro') + ':multi'));
+  check(
+    'leg 1: a raw multi-sentence render IS reported',
+    got.includes(fixture('Raw.astro') + ':multi')
+  );
   check(
     'leg 2: the same key inside <Sentences> is NOT reported',
     !got.includes(fixture('Wrapped.astro') + ':multi')
   );
-  check('leg 3: a single-sentence render is NOT reported', !got.includes(fixture('Single.astro') + ':single'));
+  check(
+    'leg 3: a single-sentence render is NOT reported',
+    !got.includes(fixture('Single.astro') + ':single')
+  );
   check(
     'leg 3b: a PROP is not a text-position render',
     !got.includes(fixture('Prop.astro') + ':multi')
@@ -364,7 +376,9 @@ const main = (): number => {
   // along; this gate was strictly weaker than its own sibling.
   const fixed = alreadyFixed(baseline, ids);
   if (fixed.length > 0) {
-    console.error(`✗ ${fixed.length} baselined entr(ies) are already fixed. The baseline only shrinks:\n`);
+    console.error(
+      `✗ ${fixed.length} baselined entr(ies) are already fixed. The baseline only shrinks:\n`
+    );
     for (const id of fixed) console.error(`  ${id}`);
     console.error('\n  Drain them, in the same change that fixed them:');
     console.error('    npx tsx scripts/check-sentence-wrapping.ts --write-baseline');
@@ -378,7 +392,7 @@ const main = (): number => {
     console.error('\n  Each is a catalog value of two or more sentences rendered in text position');
     console.error('  without going through <Sentences>, so it can wrap mid-sentence onto a line');
     console.error('  it shares with its neighbour.');
-    console.error('\n  Wrap it: <Sentences text={t(\'<key>\')} lang={lang} />');
+    console.error("\n  Wrap it: <Sentences text={t('<key>')} lang={lang} />");
     console.error('  Do NOT add it to the baseline. That file only shrinks.');
     return 1;
   }

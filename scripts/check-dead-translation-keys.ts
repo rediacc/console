@@ -185,10 +185,38 @@ export function stripComments(src: string): string {
  * so the whole subtree stays vouched for.
  */
 const BUILTIN_PROPS = new Set([
-  'map', 'filter', 'forEach', 'length', 'slice', 'find', 'findIndex', 'some', 'every',
-  'reduce', 'join', 'entries', 'keys', 'values', 'at', 'concat', 'includes', 'indexOf',
-  'sort', 'flat', 'flatMap', 'push', 'toString', 'constructor', 'then', 'catch',
-  'replaceAll', 'replace', 'split', 'trim', 'startsWith', 'endsWith',
+  'map',
+  'filter',
+  'forEach',
+  'length',
+  'slice',
+  'find',
+  'findIndex',
+  'some',
+  'every',
+  'reduce',
+  'join',
+  'entries',
+  'keys',
+  'values',
+  'at',
+  'concat',
+  'includes',
+  'indexOf',
+  'sort',
+  'flat',
+  'flatMap',
+  'push',
+  'toString',
+  'constructor',
+  'then',
+  'catch',
+  'replaceAll',
+  'replace',
+  'split',
+  'trim',
+  'startsWith',
+  'endsWith',
 ]);
 
 export interface SubtreeNarrowing {
@@ -216,7 +244,10 @@ export function subtreeNarrowing(src: string, ns: Map<string, string>): SubtreeN
       literal !== undefined
         ? literal
         : wildcard(
-            m[4].replace(/\$\{([A-Za-z_$][\w$]*)\}/g, (whole, name: string) => ns.get(name) ?? whole)
+            m[4].replace(
+              /\$\{([A-Za-z_$][\w$]*)\}/g,
+              (whole, name: string) => ns.get(name) ?? whole
+            )
           );
 
     const occurrences = new RegExp(`(?<![\\w$.])${id.replace(/\$/g, '\\$')}(?![\\w$])`, 'g');

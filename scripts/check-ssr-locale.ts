@@ -53,7 +53,9 @@ const PROBES = [
 ] as const;
 
 function locales(): string[] {
-  const raw = JSON.parse(readFileSync(path.join(ROOT, 'packages/locales/site-locales.json'), 'utf8'));
+  const raw = JSON.parse(
+    readFileSync(path.join(ROOT, 'packages/locales/site-locales.json'), 'utf8')
+  );
   return raw.siteLocales as string[];
 }
 
@@ -67,8 +69,14 @@ function selftest(): number {
   check('a missing path is undefined', at({ a: {} }, 'a.b') === undefined);
   check('a non-string leaf is undefined', at({ a: { b: 1 } }, 'a.b') === undefined);
   check('the locale set comes from @rediacc/locales, not a literal', locales().length === 13);
-  check('CONTROL: a translated value absent from html is detected', !'<p>Get Started</p>'.includes('Jetzt starten'));
-  check('CONTROL: a translated value present in html is detected', '<p>Jetzt starten</p>'.includes('Jetzt starten'));
+  check(
+    'CONTROL: a translated value absent from html is detected',
+    !'<p>Get Started</p>'.includes('Jetzt starten')
+  );
+  check(
+    'CONTROL: a translated value present in html is detected',
+    '<p>Jetzt starten</p>'.includes('Jetzt starten')
+  );
   return bad;
 }
 
@@ -79,10 +87,15 @@ function main(): void {
     console.log(bad === 0 ? '\n${GREEN}✓${NC} 6/6 controls pass' : `\n${RED}✗${NC} ${bad} failed`);
     process.exit(bad === 0 ? 0 : 1);
   }
-  if (selftest() !== 0) { console.error('controls failed; the gate cannot be trusted'); process.exit(1); }
+  if (selftest() !== 0) {
+    console.error('controls failed; the gate cannot be trusted');
+    process.exit(1);
+  }
 
   if (!existsSync(DIST)) {
-    console.error(`✗ ${path.relative(ROOT, DIST)} does not exist. Build first: npm run build -w @rediacc/www`);
+    console.error(
+      `✗ ${path.relative(ROOT, DIST)} does not exist. Build first: npm run build -w @rediacc/www`
+    );
     process.exit(1);
   }
 
@@ -93,7 +106,10 @@ function main(): void {
   for (const lang of locales()) {
     if (lang === 'en') continue;
     const page = path.join(DIST, lang, 'index.html');
-    if (!existsSync(page)) { findings.push(`${lang}: dist/${lang}/index.html is missing`); continue; }
+    if (!existsSync(page)) {
+      findings.push(`${lang}: dist/${lang}/index.html is missing`);
+      continue;
+    }
     const html = readFileSync(page, 'utf8');
     const cat = JSON.parse(readFileSync(path.join(CATALOGS, `${lang}.json`), 'utf8'));
 
@@ -104,25 +120,33 @@ function main(): void {
       if (want === undefined || english === undefined || want === english) continue;
       checked++;
       if (!html.includes(want)) {
-        findings.push(`${lang}: ${key} should render ${JSON.stringify(want)}, and the page does not contain it` +
-          (html.includes(english) ? ` (it renders the ENGLISH ${JSON.stringify(english)})` : ''));
+        findings.push(
+          `${lang}: ${key} should render ${JSON.stringify(want)}, and the page does not contain it` +
+            (html.includes(english) ? ` (it renders the ENGLISH ${JSON.stringify(english)})` : '')
+        );
       }
     }
   }
 
   if (checked === 0) {
-    console.error('✗ zero probes were comparable. The gate verified nothing; its green would be meaningless.');
+    console.error(
+      '✗ zero probes were comparable. The gate verified nothing; its green would be meaningless.'
+    );
     process.exit(1);
   }
   if (findings.length > 0) {
     console.error(`\n${RED}✗${NC} ${findings.length} server-rendered locale failure(s):\n`);
     for (const f of findings.slice(0, 20)) console.error(`    ${f}`);
     if (findings.length > 20) console.error(`    ... and ${findings.length - 20} more`);
-    console.error('\nAn island that calls useLanguage() renders English on the server, because there');
+    console.error(
+      '\nAn island that calls useLanguage() renders English on the server, because there'
+    );
     console.error('is no window. Pass `lang` down from BaseLayout and prefer it over the hook.');
     process.exit(1);
   }
-  console.log(`${GREEN}✓${NC} ${checked} probe(s) across ${locales().length - 1} non-English locale(s): all server-render natively.`);
+  console.log(
+    `${GREEN}✓${NC} ${checked} probe(s) across ${locales().length - 1} non-English locale(s): all server-render natively.`
+  );
 }
 
 main();

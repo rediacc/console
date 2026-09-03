@@ -61,15 +61,31 @@ import {
 
 /** Binaries that are NOT on a minimal POSIX host and can therefore be absent. */
 export const RISKY = [
-  'unzip', 'zip', 'yq', 'gpg', 'xmllint', 'rsync', 'python3',
-  'curl', 'wget', 'jq', 'gh', 'docker', 'aws', 'wrangler', 'shellcheck',
+  'unzip',
+  'zip',
+  'yq',
+  'gpg',
+  'xmllint',
+  'rsync',
+  'python3',
+  'curl',
+  'wget',
+  'jq',
+  'gh',
+  'docker',
+  'aws',
+  'wrangler',
+  'shellcheck',
 ] as const;
 
 const DEFAULT_BASELINE = 'scripts/data/shell-declared-commands-baseline.json';
 
 /** Lines whose first non-space character is `#` are prose, never execution. */
 export const stripComments = (src: string): string =>
-  src.split('\n').filter((l) => !l.trimStart().startsWith('#')).join('\n');
+  src
+    .split('\n')
+    .filter((l) => !l.trimStart().startsWith('#'))
+    .join('\n');
 
 export const declared = (src: string): Set<string> =>
   new Set([...src.matchAll(/require_cmd\s+([A-Za-z0-9_-]+)/g)].map((m) => m[1]));
@@ -82,7 +98,10 @@ export const declared = (src: string): Set<string> =>
 export const executes = (code: string, cmd: string): boolean =>
   new RegExp(String.raw`(?:^|[|;&]|\$\(|\`|\bthen\b|\bdo\b|\belse\b)\s*${cmd}\s`, 'm').test(code);
 
-export interface Finding { file: string; cmd: string }
+export interface Finding {
+  file: string;
+  cmd: string;
+}
 
 export const scan = (root: string, files: string[]): Finding[] => {
   const out: Finding[] = [];
@@ -112,22 +131,20 @@ const selftest = (): number => {
     console.log(`  ${cond ? 'PASS' : 'FAIL'}  ${label}`);
     if (!cond) bad = 1;
   };
-  ok('an executed risky binary is a finding',
-    executes('unzip -p a.zip b', 'unzip'));
-  ok('CONTROL: the same word in a comment is not',
-    !executes(stripComments('# we used to unzip here\necho hi'), 'unzip'));
-  ok('CONTROL: the same word inside a string is not command position',
-    !executes('echo "run unzip first"', 'unzip'));
-  ok('after a pipe IS command position',
-    executes('cat x | jq .a', 'jq'));
-  ok('inside a command substitution IS command position',
-    executes('v="$(curl -s url)"', 'curl'));
-  ok('a declaration silences it',
-    declared('require_cmd unzip\nunzip -p a b').has('unzip'));
-  ok('CONTROL: a near-miss declaration does not',
-    !declared('require_cmds unzip').has('unzip'));
-  ok('CONTROL: an undeclared script yields an empty set',
-    declared('echo hi').size === 0);
+  ok('an executed risky binary is a finding', executes('unzip -p a.zip b', 'unzip'));
+  ok(
+    'CONTROL: the same word in a comment is not',
+    !executes(stripComments('# we used to unzip here\necho hi'), 'unzip')
+  );
+  ok(
+    'CONTROL: the same word inside a string is not command position',
+    !executes('echo "run unzip first"', 'unzip')
+  );
+  ok('after a pipe IS command position', executes('cat x | jq .a', 'jq'));
+  ok('inside a command substitution IS command position', executes('v="$(curl -s url)"', 'curl'));
+  ok('a declaration silences it', declared('require_cmd unzip\nunzip -p a b').has('unzip'));
+  ok('CONTROL: a near-miss declaration does not', !declared('require_cmds unzip').has('unzip'));
+  ok('CONTROL: an undeclared script yields an empty set', declared('echo hi').size === 0);
   return bad;
 };
 
@@ -195,10 +212,14 @@ member with python3, which was already declared.`);
   }
 
   if (stale.length) {
-    console.error(`✗ ${stale.length} baseline entr(y|ies) no longer fire. The baseline SHRINKS ONLY;`);
+    console.error(
+      `✗ ${stale.length} baseline entr(y|ies) no longer fire. The baseline SHRINKS ONLY;`
+    );
     console.error('  remove these so it cannot rot into a permanent excuse:\n');
     for (const b of stale) console.error(`    ${b.replace('\t', '  ')}`);
-    console.error('\n  Regenerate with: npx tsx scripts/check-shell-declared-commands.ts --write-baseline');
+    console.error(
+      '\n  Regenerate with: npx tsx scripts/check-shell-declared-commands.ts --write-baseline'
+    );
     return 1;
   }
 

@@ -83,7 +83,18 @@ interface Surface {
 // keeps its copula dash, because `Репозиторий — это ...` is grammatically required where
 // English uses "is". The catalog surface still includes ru; only transcripts are exempt.
 const TRANSCRIPT_DASH_LOCALES = subset('em-dash-transcripts', [
-  'en', 'de', 'es', 'et', 'fr', 'it', 'ja', 'ko', 'pt', 'tr', 'zh', 'ar',
+  'en',
+  'de',
+  'es',
+  'et',
+  'fr',
+  'it',
+  'ja',
+  'ko',
+  'pt',
+  'tr',
+  'zh',
+  'ar',
 ]);
 
 const SURFACES: readonly Surface[] = [

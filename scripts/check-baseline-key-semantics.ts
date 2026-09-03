@@ -118,8 +118,7 @@ function selftest(): number {
   );
   check(
     'a dotted i18n key suffix is not flagged',
-    findOffenders(['packages/www/src/components/ContactForm.tsx:contactModal.success'])
-      .length === 0
+    findOffenders(['packages/www/src/components/ContactForm.tsx:contactModal.success']).length === 0
   );
   check(
     'a 12-char hex content hash is not flagged (contains a non-digit hex letter)',
@@ -165,10 +164,14 @@ function main(): number {
   }
 
   const tracked = new Set(
-    execFileSync('git', ['ls-files', 'scripts/data/*-baseline.json', '.ci/scripts/quality/*-baseline.json'], {
-      cwd: REPO_ROOT,
-      encoding: 'utf8',
-    })
+    execFileSync(
+      'git',
+      ['ls-files', 'scripts/data/*-baseline.json', '.ci/scripts/quality/*-baseline.json'],
+      {
+        cwd: REPO_ROOT,
+        encoding: 'utf8',
+      }
+    )
       .split('\n')
       .filter(Boolean)
   );

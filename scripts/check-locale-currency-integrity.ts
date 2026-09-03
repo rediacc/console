@@ -31,10 +31,14 @@ function leaves(node: unknown, prefix = ''): Leaf[] {
 
 const eaten = (s: string) => s.replace(/\$\d/g, '');
 
-export function findCorruptions(dir = DIR): { locale: string; key: string; en: string; got: string }[] {
+export function findCorruptions(
+  dir = DIR
+): { locale: string; key: string; en: string; got: string }[] {
   const en = new Map(leaves(JSON.parse(fs.readFileSync(path.join(dir, 'en.json'), 'utf8'))));
   const out: { locale: string; key: string; en: string; got: string }[] = [];
-  for (const f of fs.readdirSync(dir).filter((f) => f.endsWith('.json') && f !== 'en.json' && !f.startsWith('.'))) {
+  for (const f of fs
+    .readdirSync(dir)
+    .filter((f) => f.endsWith('.json') && f !== 'en.json' && !f.startsWith('.'))) {
     const loc = new Map(leaves(JSON.parse(fs.readFileSync(path.join(dir, f), 'utf8'))));
     for (const [key, ev] of en) {
       if (!ev.includes('$')) continue;
@@ -53,7 +57,10 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     process.exit(0);
   }
   console.error(`✗ ${bad.length} translated value(s) lost a currency amount:\n`);
-  for (const b of bad) console.error(`  ${b.locale}  ${b.key}\n     en  ${JSON.stringify(b.en)}\n     got ${JSON.stringify(b.got)}`);
+  for (const b of bad)
+    console.error(
+      `  ${b.locale}  ${b.key}\n     en  ${JSON.stringify(b.en)}\n     got ${JSON.stringify(b.got)}`
+    );
   console.error('\nRestore the amount from English. These are headline figures on the page.');
   process.exit(1);
 }

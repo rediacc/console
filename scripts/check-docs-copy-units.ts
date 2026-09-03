@@ -94,7 +94,17 @@ const DANGLING = new Set(['}', 'fi', 'done', 'esac', 'EOF']);
  * SHELL_LANGS was caught only because the planted-defect run came back green. Judging the
  * classifier against a list it does not own is what makes the assertion real.
  */
-const SHELLY = new Set(['bash', 'sh', 'shell', 'shellscript', 'zsh', 'console', 'shellsession', 'powershell', 'ps1']);
+const SHELLY = new Set([
+  'bash',
+  'sh',
+  'shell',
+  'shellscript',
+  'zsh',
+  'console',
+  'shellsession',
+  'powershell',
+  'ps1',
+]);
 
 const selftest = (c: Classifier): number => {
   let fail = 0;
@@ -105,18 +115,35 @@ const selftest = (c: Classifier): number => {
   const u = (lang: string, src: string) => unitsFor(c, lang, src.split('\n'));
 
   // THE CONTROL THAT MATTERS: the exact shape that shipped broken.
-  const rediaccfile = '#!/bin/bash\n\n_compose() {\n  renet compose -- "$@"\n}\n\nup() {\n  _compose up -d\n}';
+  const rediaccfile =
+    '#!/bin/bash\n\n_compose() {\n  renet compose -- "$@"\n}\n\nup() {\n  _compose up -d\n}';
   const fns = u('bash', rediaccfile);
-  check('a Rediaccfile yields one unit per function', fns.map((f) => f.name).join(',') === '_compose,up', JSON.stringify(fns));
-  check('and none of them starts on a closing brace', fns.every((f) => !DANGLING.has(rediaccfile.split('\n')[f.start].trim())));
+  check(
+    'a Rediaccfile yields one unit per function',
+    fns.map((f) => f.name).join(',') === '_compose,up',
+    JSON.stringify(fns)
+  );
+  check(
+    'and none of them starts on a closing brace',
+    fns.every((f) => !DANGLING.has(rediaccfile.split('\n')[f.start].trim()))
+  );
 
   check('a yaml fragment yields nothing', u('yaml', 'labels:\n  - "a=1"\n  - "b=2"').length === 0);
   check('a json fragment yields nothing', u('json', '{\n  "a": 1,\n  "b": 2\n}').length === 0);
-  check('a two-command recipe still yields two units', u('bash', 'rdc repo list\nrdc doctor').length === 2);
+  check(
+    'a two-command recipe still yields two units',
+    u('bash', 'rdc repo list\nrdc doctor').length === 2
+  );
   check('a one-command block yields nothing', u('bash', 'rdc repo list').length === 0);
   check('comments do not count as commands', u('bash', '# note\nrdc doctor').length === 0);
-  check('a trailing backslash joins its continuation', u('bash', 'curl -X POST \\\n  -H "a: b" \\\n  http://x\nrdc doctor').length === 2);
-  check('a heredoc is one unit, not one per body line', u('bash', "cat > f <<'EOF'\nline one\nline two\nEOF\nrdc doctor").length === 2);
+  check(
+    'a trailing backslash joins its continuation',
+    u('bash', 'curl -X POST \\\n  -H "a: b" \\\n  http://x\nrdc doctor').length === 2
+  );
+  check(
+    'a heredoc is one unit, not one per body line',
+    u('bash', "cat > f <<'EOF'\nline one\nline two\nEOF\nrdc doctor").length === 2
+  );
   return fail === 0 ? 0 : 1;
 };
 
@@ -146,19 +173,27 @@ const main = (): number => {
   }
 
   if (total < MIN_BLOCKS) {
-    console.error(`✗ discovered only ${total} fenced block(s) under ${path.relative(REPO, DOCS)}, below the floor of ${MIN_BLOCKS}.`);
+    console.error(
+      `✗ discovered only ${total} fenced block(s) under ${path.relative(REPO, DOCS)}, below the floor of ${MIN_BLOCKS}.`
+    );
     console.error('  The corpus is not being seen, so a green here would mean nothing.');
     return 1;
   }
   if (offences.length) {
-    console.error(`✗ ${offences.length} code block(s) offer a copy control on something nobody can paste:\n`);
+    console.error(
+      `✗ ${offences.length} code block(s) offer a copy control on something nobody can paste:\n`
+    );
     for (const o of offences.slice(0, 30)) console.error(`  ${o}`);
-    console.error('\n  addUnitCopy in packages/www/src/layouts/DocsLayout.astro decides this in three');
+    console.error(
+      '\n  addUnitCopy in packages/www/src/layouts/DocsLayout.astro decides this in three'
+    );
     console.error('  parts: is the fence a shell language, is the block a file or a recipe, and');
     console.error('  where does one command end. Fix it there, not by narrowing this gate.');
     return 1;
   }
-  console.log(`✓ ${total} fenced block(s) checked; ${withUnits} offer per-unit copy, none on a non-shell fence or a dangling terminator.`);
+  console.log(
+    `✓ ${total} fenced block(s) checked; ${withUnits} offer per-unit copy, none on a non-shell fence or a dangling terminator.`
+  );
   return 0;
 };
 

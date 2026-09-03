@@ -61,8 +61,12 @@ const CSS = path.join(REPO, 'packages/www/src/styles/docs-browse.css');
 export const tallyFaults = (astro: string): string[] => {
   const out: string[] = [];
   const m = /<output[^>]*class="([^"]*docs-browse-tally[^"]*)"/.exec(astro);
-  if (!m) out.push('the docs-browse-tally live region is gone; filtering is then silent to a screen reader');
-  else if (!/\bsr-only\b/.test(m[1])) out.push(`docs-browse-tally is visible again (class="${m[1]}")`);
+  if (!m)
+    out.push(
+      'the docs-browse-tally live region is gone; filtering is then silent to a screen reader'
+    );
+  else if (!/\bsr-only\b/.test(m[1]))
+    out.push(`docs-browse-tally is visible again (class="${m[1]}")`);
   if (/docs-browse-status/.test(astro)) out.push('the visible docs-browse-status wrapper is back');
   return out;
 };
@@ -94,7 +98,9 @@ export const headingFaults = (css: string): string[] => {
       new RegExp(`\\${RESULTS}(?![\\w-])`).test(r.selector)
   );
   if (shared.length === 0) {
-    out.push(`${RAIL} and ${RESULTS} are no longer styled by one shared rule, so nothing states that they must match`);
+    out.push(
+      `${RAIL} and ${RESULTS} are no longer styled by one shared rule, so nothing states that they must match`
+    );
   }
   for (const sel of [RAIL, RESULTS]) {
     for (const r of mentions(sel)) {
@@ -104,7 +110,9 @@ export const headingFaults = (css: string): string[] => {
         .map((d) => d.trim())
         .filter((d) => /^(font-size|margin|padding|border)/.test(d));
       for (const d of bad)
-        out.push(`${sel} carries a second rule declaring \`${d}\`, which can pull it away from its pair`);
+        out.push(
+          `${sel} carries a second rule declaring \`${d}\`, which can pull it away from its pair`
+        );
     }
   }
   return out;
@@ -114,12 +122,16 @@ export const headingFaults = (css: string): string[] => {
 export const flashFaults = (astro: string, css: string): string[] => {
   const out: string[] = [];
   if (!/is:inline[\s\S]{0,400}docsCategory/.test(astro))
-    out.push('no is:inline script sets data-docs-category, so the decision moves back after first paint');
+    out.push(
+      'no is:inline script sets data-docs-category, so the decision moves back after first paint'
+    );
   if (!/\[data-docs-category\][^{]*\.docs-rail-group--primary/.test(css))
     out.push('no CSS hides .docs-rail-group--primary under [data-docs-category]');
   const mod = astro.slice(astro.lastIndexOf('<script>'));
   if (/docs-rail-group--primary/.test(mod))
-    out.push('the deferred module script references .docs-rail-group--primary again; it runs after paint, which is the flash');
+    out.push(
+      'the deferred module script references .docs-rail-group--primary again; it runs after paint, which is the flash'
+    );
   return out;
 };
 
@@ -130,30 +142,54 @@ const selftest = (astro: string, css: string): number => {
     console.log(`  ${ok ? 'PASS' : 'FAIL'}  ${name}${ok || !detail ? '' : ` -- ${detail}`}`);
   };
 
-  check('the tree as it stands is clean', [...tallyFaults(astro), ...headingFaults(css), ...flashFaults(astro, css)].length === 0,
-    JSON.stringify([...tallyFaults(astro), ...headingFaults(css), ...flashFaults(astro, css)]));
+  check(
+    'the tree as it stands is clean',
+    [...tallyFaults(astro), ...headingFaults(css), ...flashFaults(astro, css)].length === 0,
+    JSON.stringify([...tallyFaults(astro), ...headingFaults(css), ...flashFaults(astro, css)])
+  );
 
   // Each control plants exactly the regression the fix prevents.
-  check('a tally made visible again is caught',
-    tallyFaults(astro.replace('docs-browse-tally sr-only', 'docs-browse-tally')).length > 0);
-  check('a deleted tally is caught too, not just an unhidden one',
-    tallyFaults(astro.replace(/<output[^>]*docs-browse-tally[\s\S]*?<\/output>/, '')).length > 0);
-  check('the old visible status wrapper coming back is caught',
-    tallyFaults(`${astro}\n<p class="docs-browse-status"></p>`).length > 0);
-  check('a SECOND rule sizing the rail heading alone is caught',
-    headingFaults(`${css}\n.docs-rail-heading { font-size: 1rem; }`).length > 0);
-  check('a SECOND rule spacing the results heading alone is caught',
-    headingFaults(`${css}\n.docs-browse-group-title { margin-block-end: 1rem; }`).length > 0);
+  check(
+    'a tally made visible again is caught',
+    tallyFaults(astro.replace('docs-browse-tally sr-only', 'docs-browse-tally')).length > 0
+  );
+  check(
+    'a deleted tally is caught too, not just an unhidden one',
+    tallyFaults(astro.replace(/<output[^>]*docs-browse-tally[\s\S]*?<\/output>/, '')).length > 0
+  );
+  check(
+    'the old visible status wrapper coming back is caught',
+    tallyFaults(`${astro}\n<p class="docs-browse-status"></p>`).length > 0
+  );
+  check(
+    'a SECOND rule sizing the rail heading alone is caught',
+    headingFaults(`${css}\n.docs-rail-heading { font-size: 1rem; }`).length > 0
+  );
+  check(
+    'a SECOND rule spacing the results heading alone is caught',
+    headingFaults(`${css}\n.docs-browse-group-title { margin-block-end: 1rem; }`).length > 0
+  );
   // THE CONTROL FOR THE NEW HALF: losing the shared rule is the drift this prevents, and
   // a check that only looked for extra rules would call that state clean.
-  check('losing the shared rule is caught',
-    headingFaults(css.replace(`${RAIL},`, '.never-matches,')).length > 0);
-  check('losing the inline flag script is caught',
-    flashFaults(astro.replace('docsCategory', 'somethingElse'), css).length > 0);
-  check('losing the CSS that hides the group is caught',
-    flashFaults(astro, css.replace('[data-docs-category]', '.never-matches')).length > 0);
-  check('the deferred script taking the decision back is caught',
-    flashFaults(`${astro}\n<script>\n  const g = document.querySelector('.docs-rail-group--primary');\n</script>`, css).length > 0);
+  check(
+    'losing the shared rule is caught',
+    headingFaults(css.replace(`${RAIL},`, '.never-matches,')).length > 0
+  );
+  check(
+    'losing the inline flag script is caught',
+    flashFaults(astro.replace('docsCategory', 'somethingElse'), css).length > 0
+  );
+  check(
+    'losing the CSS that hides the group is caught',
+    flashFaults(astro, css.replace('[data-docs-category]', '.never-matches')).length > 0
+  );
+  check(
+    'the deferred script taking the decision back is caught',
+    flashFaults(
+      `${astro}\n<script>\n  const g = document.querySelector('.docs-rail-group--primary');\n</script>`,
+      css
+    ).length > 0
+  );
   return fail === 0 ? 0 : 1;
 };
 
@@ -162,7 +198,9 @@ const main = (): number => {
   const css = fs.readFileSync(CSS, 'utf8');
   // Anti-vacuity: a gate reading the wrong file, or an empty one, must not report success.
   if (!/docs-browse-body/.test(astro) || !/docs-rail-group--primary/.test(css)) {
-    console.error('✗ the docs browse sources do not look like themselves; a green here would mean nothing.');
+    console.error(
+      '✗ the docs browse sources do not look like themselves; a green here would mean nothing.'
+    );
     return 1;
   }
   if (process.argv.slice(2).includes('--selftest')) return selftest(astro, css);
@@ -171,14 +209,20 @@ const main = (): number => {
   if (faults.length) {
     console.error(`✗ ${faults.length} docs-browse invariant(s) broken:\n`);
     for (const f of faults) console.error(`  ${f}`);
-    console.error('\n  These are the mechanisms three shipped fixes rest on. This gate cannot see the');
+    console.error(
+      '\n  These are the mechanisms three shipped fixes rest on. This gate cannot see the'
+    );
     console.error('  pixels; the interactive gate that can is wave D gate 2, still unowned.');
     return 1;
   }
-  console.log('✓ docs browse invariants hold: the tally is sr-only, the two headings are styled by one shared rule, and the category group is decided before first paint.');
+  console.log(
+    '✓ docs browse invariants hold: the tally is sr-only, the two headings are styled by one shared rule, and the category group is decided before first paint.'
+  );
   // The caveat rides the SUCCESS line, not just the failure path: a green is the only
   // output most readers of a CI log will ever see, and this one is structural.
-  console.log('  STRUCTURAL ONLY -- nothing was rendered, measured or compared. Pixel-level regressions with correct selectors and valid CSS pass this gate; that is wave D gate 2.');
+  console.log(
+    '  STRUCTURAL ONLY -- nothing was rendered, measured or compared. Pixel-level regressions with correct selectors and valid CSS pass this gate; that is wave D gate 2.'
+  );
   return 0;
 };
 

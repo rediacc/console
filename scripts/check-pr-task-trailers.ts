@@ -223,14 +223,7 @@ const selftest = (): number => {
       check('CONTROL: a BARE fetch under a narrow refspec leaves origin/main absent', !tracks());
       execFileSync(
         'git',
-        [
-          '-C',
-          narrow,
-          'fetch',
-          '--no-tags',
-          'origin',
-          '+refs/heads/main:refs/remotes/origin/main',
-        ],
+        ['-C', narrow, 'fetch', '--no-tags', 'origin', '+refs/heads/main:refs/remotes/origin/main'],
         { stdio: 'ignore' }
       );
       check('an EXPLICIT refspec creates it, which is what the gate now sends', tracks());
@@ -239,10 +232,7 @@ const selftest = (): number => {
     }
 
     check('two commits on one history share a merge base', hasBase(a, b));
-    check(
-      'CONTROL: two unrelated roots do NOT, so the precondition can fire',
-      !hasBase(b, orphan)
-    );
+    check('CONTROL: two unrelated roots do NOT, so the precondition can fire', !hasBase(b, orphan));
   } finally {
     fs.rmSync(scratch, { recursive: true, force: true });
   }
@@ -333,7 +323,9 @@ const main = (): number => {
     if (!resolves(base)) {
       console.error(`✗ base ref ${base} does not exist here, and fetching it failed.`);
       console.error('  The commit range cannot be computed, so no trailer can be judged.');
-      console.error('  Failing closed: an unreadable range is not evidence the commits are tagged.');
+      console.error(
+        '  Failing closed: an unreadable range is not evidence the commits are tagged.'
+      );
       return 1;
     }
   }
@@ -380,7 +372,7 @@ const main = (): number => {
     }
     if (!resolves(remoteTip)) {
       console.error(`✗ head ref ${remoteTip} does not exist here, and fetching it failed.`);
-      console.error('  HEAD on a pull_request checkout is GitHub\'s synthetic merge commit,');
+      console.error("  HEAD on a pull_request checkout is GitHub's synthetic merge commit,");
       console.error('  which carries no trailer, so judging it would report a defect nobody made.');
       console.error('  Failing closed rather than judging the wrong commits.');
       return 1;

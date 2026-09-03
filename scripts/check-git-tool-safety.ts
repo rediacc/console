@@ -223,9 +223,13 @@ const main = (): number => {
   if (!dryDefault)
     problems.push('the dry-run default is gone: writes would happen without --execute');
   if (!hasExecutor)
-    problems.push('Plan.run is gone: --execute would print a plan and write nothing, while still saying EXECUTE');
+    problems.push(
+      'Plan.run is gone: --execute would print a plan and write nothing, while still saying EXECUTE'
+    );
   if (!reachesExecutor)
-    problems.push('nothing calls plan.run(): the executor exists but no path reaches it, which is the 2026-08-26 defect exactly');
+    problems.push(
+      'nothing calls plan.run(): the executor exists but no path reaches it, which is the 2026-08-26 defect exactly'
+    );
   if (problems.length > 0) {
     console.error(`✗ ${TARGET} lost a safety property:`);
     for (const p of problems) console.error(`    ${p}`);

@@ -55,7 +55,8 @@ const SCOPE = [/^\.github\/workflows\/.*\.ya?ml$/, /^\.ci\/scripts\/.*\.sh$/];
 
 const PIPE_TO_SHELL = /(curl|wget)[^|\n]*\|\s*(sudo\s+)?(ba)?sh\b/;
 const PIPE_TO_ARCHIVER = /(curl|wget)[^|\n]*\|\s*(sudo\s+)?(tar|unzip|zstd|gunzip)\b/;
-const MOVING_REF = /(curl|wget)[^;|\n]*https?:\/\/[^\s"']*(\/(master|main)\/|releases\/latest|\/latest\/)/;
+const MOVING_REF =
+  /(curl|wget)[^;|\n]*https?:\/\/[^\s"']*(\/(master|main)\/|releases\/latest|\/latest\/)/;
 
 /** Verified in the same breath — a hash or signature check makes the fetch answerable. */
 const VERIFIED = /(sha256sum|sha512sum|shasum)\s+(-c|--check)|gpg\s+--verify|cosign\s+verify/;
@@ -143,7 +144,11 @@ export function scan(raw: string): Finding[] {
   }
 }
 
-const files = execSync('git ls-files -z', { cwd: ROOT, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 })
+const files = execSync('git ls-files -z', {
+  cwd: ROOT,
+  encoding: 'utf8',
+  maxBuffer: 64 * 1024 * 1024,
+})
   .split('\0')
   .filter((p) => p && SCOPE.some((re) => re.test(p)));
 

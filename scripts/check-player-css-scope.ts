@@ -32,7 +32,8 @@ const ROOT = process.env.PLAYER_CSS_ROOT ?? process.cwd();
 const DIST = path.join(ROOT, 'packages/www/dist');
 
 /** Both spellings of a mount, token-matched inside the class attribute. */
-const MOUNT = /class="[^"]*\b(?:video-player-mount|tutorial-video-container)\b[^"]*"[^>]*data-video-src/;
+const MOUNT =
+  /class="[^"]*\b(?:video-player-mount|tutorial-video-container)\b[^"]*"[^>]*data-video-src/;
 /** Content markers. Each appears in exactly one built asset; see the header. */
 const MARKERS = ['.plyr__control', '.tvp-caption-word'];
 const LINK = /<link[^>]+rel="stylesheet"[^>]+href="([^"]+\.css)"/g;
@@ -150,20 +151,38 @@ function selftest(): number {
   mk('a/app.js', 'import"./player.css";');
   for (let i = 0; i < MIN_PAGES + 5; i++) mk(`p${i}.html`, page(true, true));
   // P4: a page linking the NON-player sheet with no mount must NOT be reported.
-  mk('over.html', '<html><head><link rel="stylesheet" href="/a/other.css"></head><body></body></html>');
+  mk(
+    'over.html',
+    '<html><head><link rel="stylesheet" href="/a/other.css"></head><body></body></html>'
+  );
   let r = scan(d);
-  check('a clean corpus reports no offender', !r.refusal && r.offenders.length === 0, r.refusal ?? r.offenders.slice(0, 2).join(', '));
-  check('P4 CONTROL: a sheet with .tvp-root but neither marker is not a player sheet', !r.offenders.includes('/over.html'));
+  check(
+    'a clean corpus reports no offender',
+    !r.refusal && r.offenders.length === 0,
+    r.refusal ?? r.offenders.slice(0, 2).join(', ')
+  );
+  check(
+    'P4 CONTROL: a sheet with .tvp-root but neither marker is not a player sheet',
+    !r.offenders.includes('/over.html')
+  );
 
   // P1: the plant.
   mk('bad.html', page(true, false));
   r = scan(d);
-  check('PLANT: a page linking the player sheet with NO mount is reported', r.offenders.includes('/bad.html'), r.refusal ?? '');
+  check(
+    'PLANT: a page linking the player sheet with NO mount is reported',
+    r.offenders.includes('/bad.html'),
+    r.refusal ?? ''
+  );
 
   // P6: F6 fires when nothing loads the sheet.
   fs.writeFileSync(path.join(d, 'a/app.js'), 'console.log(1);');
   r = scan(d);
-  check('F6 fires when no JS chunk names the stylesheet', !!r.refusal?.startsWith('F6'), r.refusal ?? 'no refusal');
+  check(
+    'F6 fires when no JS chunk names the stylesheet',
+    !!r.refusal?.startsWith('F6'),
+    r.refusal ?? 'no refusal'
+  );
 
   fs.rmSync(tmp, { recursive: true, force: true });
   return bad;

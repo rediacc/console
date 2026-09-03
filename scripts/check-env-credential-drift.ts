@@ -205,7 +205,10 @@ const selftest = (): number => {
     credentials: { 'ses-eu': { versions: [{ id: 'AKIA_GOOD', state: 'active' }] } },
   });
   check('reads version ids per slug', ids.get('ses-eu')?.get('AKIA_GOOD') === 'active');
-  check('reads the version STATE, not just the id', ids.get('ses-eu')?.get('AKIA_GOOD') === 'active');
+  check(
+    'reads the version STATE, not just the id',
+    ids.get('ses-eu')?.get('AKIA_GOOD') === 'active'
+  );
 
   check(
     'a key present in the manifest is clean',
@@ -258,7 +261,10 @@ const selftest = (): number => {
       })
     ).length === 0
   );
-  check('an absent value is still classified absent', findDrift({ AWS_SES_ACCESS_KEY_ID: 'NOPE' }, ids)[0]?.kind === 'absent');
+  check(
+    'an absent value is still classified absent',
+    findDrift({ AWS_SES_ACCESS_KEY_ID: 'NOPE' }, ids)[0]?.kind === 'absent'
+  );
   check(
     'the drift report carries no secret, only a prefix',
     findDrift({ AWS_SES_ACCESS_KEY_ID: 'AKIA_SECRET_VALUE' }, ids)[0].idPrefix === 'AKIA_SEC...'

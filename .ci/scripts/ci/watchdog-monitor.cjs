@@ -456,11 +456,19 @@ async function signalByDesign(core, kind, headline, detail, targetRunId) {
   core.setOutput('by_design_kind', kind);
   core.setOutput('by_design_reason', detail);
   const body =
-    '## ' + headline + '\n\n' +
+    '## ' +
+    headline +
+    '\n\n' +
     'The watchdog produced this outcome **by design**; it is not a defect here.\n\n' +
-    '- Monitored run: `' + targetRunId + '`\n' +
-    '- Kind: `' + kind + '`\n' +
-    '- Detail: ' + detail + '\n\n' +
+    '- Monitored run: `' +
+    targetRunId +
+    '`\n' +
+    '- Kind: `' +
+    kind +
+    '`\n' +
+    '- Detail: ' +
+    detail +
+    '\n\n' +
     'Read the monitored run for the real verdict. This generation needs no rerun.';
   try {
     await core.summary.addRaw(body).write();

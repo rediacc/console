@@ -314,7 +314,8 @@ function controls(): { name: string; ok: boolean; detail?: string }[] {
     },
     {
       name: 'the finding names every file, with a line',
-      ok: judge(mk(N, SPAN), empty)[0]?.files.length === N &&
+      ok:
+        judge(mk(N, SPAN), empty)[0]?.files.length === N &&
         /^f0\.ts:\d+$/.test(judge(mk(N, SPAN), empty)[0].files[0]),
     },
     {
@@ -339,7 +340,8 @@ function controls(): { name: string; ok: boolean; detail?: string }[] {
       name: 'an accepted divergence with a real BLOCKER is honoured',
       ok:
         checkAccepted({
-          abc123: 'BLOCKER: run_gate() has three incompatible return contracts (echo rc, echo PASS/FAIL, propagate); extracting it verbatim would be wrong',
+          abc123:
+            'BLOCKER: run_gate() has three incompatible return contracts (echo rc, echo PASS/FAIL, propagate); extracting it verbatim would be wrong',
         }).ok.length === 1,
     },
     {
@@ -354,7 +356,8 @@ function controls(): { name: string; ok: boolean; detail?: string }[] {
       name: 'CONTROL: a reason without the BLOCKER: prefix buys no silence',
       ok:
         checkAccepted({
-          abc123: 'run_gate() has three incompatible return contracts (echo rc, echo PASS/FAIL, propagate); extracting it verbatim would be wrong',
+          abc123:
+            'run_gate() has three incompatible return contracts (echo rc, echo PASS/FAIL, propagate); extracting it verbatim would be wrong',
         }).ok.length === 0,
     },
     {
@@ -363,7 +366,8 @@ function controls(): { name: string; ok: boolean; detail?: string }[] {
       // in `test-watchdog-log-capture.sh` reported `:17` for code sitting at line 46.
       name: 'a finding names the REAL file line, not the normalised index',
       ok: (() => {
-        const src = '// a\n// b\n// c\nconst a = 1;\nconst b = 2;\nconst c = 3;\nconst d = 4;\nconst e = 5;';
+        const src =
+          '// a\n// b\n// c\nconst a = 1;\nconst b = 2;\nconst c = 3;\nconst d = 4;\nconst e = 5;';
         return normalise(src, 'ts')[0].line === 4 && windows(normalise(src, 'ts'))[0].line === 4;
       })(),
     },
@@ -411,15 +415,17 @@ function controls(): { name: string; ok: boolean; detail?: string }[] {
           'const R = 1;',
           'const S = 2;',
         ].join('\n');
-        return judge(
-          new Map(
-            Array.from({ length: N }, (_, i): [string, { h: string; line: number }[]] => [
-              `f${i}.ts`,
-              windows(normalise(imports, 'ts')),
-            ])
-          ),
-          new Set()
-        ).length === 0;
+        return (
+          judge(
+            new Map(
+              Array.from({ length: N }, (_, i): [string, { h: string; line: number }[]] => [
+                `f${i}.ts`,
+                windows(normalise(imports, 'ts')),
+              ])
+            ),
+            new Set()
+          ).length === 0
+        );
       })(),
     },
     {
@@ -433,15 +439,17 @@ function controls(): { name: string; ok: boolean; detail?: string }[] {
           'const s = 4;',
           'const t = 5;',
         ].join('\n');
-        return judge(
-          new Map(
-            Array.from({ length: N }, (_, i): [string, { h: string; line: number }[]] => [
-              `f${i}.ts`,
-              windows(normalise(mixed, 'ts')),
-            ])
-          ),
-          new Set()
-        ).length === 1;
+        return (
+          judge(
+            new Map(
+              Array.from({ length: N }, (_, i): [string, { h: string; line: number }[]] => [
+                `f${i}.ts`,
+                windows(normalise(mixed, 'ts')),
+              ])
+            ),
+            new Set()
+          ).length === 1
+        );
       })(),
     },
     {

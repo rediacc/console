@@ -36,7 +36,8 @@ export const REJECTED = ['--squash'] as const;
 const IMPERATIVE = /\b(use|run|say|sanctioned|then|merge with|prefer)\b/i;
 
 /** Words that make the line a WARNING about the method, not a prescription. */
-const NEGATED = /\b(rejected|refused|refuses|fails|banned|not allowed|never|cannot|is false|do not|don't)\b/i;
+const NEGATED =
+  /\b(rejected|refused|refuses|fails|banned|not allowed|never|cannot|is false|do not|don't)\b/i;
 
 /**
  * THE SCOPE OF A NEGATION IS A SENTENCE, and getting there took two failed
@@ -77,39 +78,65 @@ const selftest = (): number => {
     console.log(`  ${cond ? 'PASS' : 'FAIL'}  ${label}`);
     if (!cond) bad = 1;
   };
-  ok('a prescription is caught',
-    prescribes("the sanctioned merge is `gh pr merge --squash --auto`"));
-  ok('and another imperative form',
-    prescribes("Use 'gh pr merge --squash --auto' to let GitHub merge at green"));
-  ok('CONTROL: a line saying it is REJECTED passes',
-    !prescribes('`--squash` is rejected outright: `gh pr merge <n> --squash` fails'));
-  ok('CONTROL: a line saying it is banned passes',
-    !prescribes('--squash is banned on all five repos'));
-  ok('CONTROL: allow_squash_merge=false prose passes',
-    !prescribes('`allow_squash_merge` is false on all five repos, so `--squash` fails'));
-  ok('CONTROL: a line with no rejected flag is not a finding',
-    !prescribes('the sanctioned merge is `gh pr merge --rebase --auto`'));
-  ok('CONTROL: a bare mention with no imperative is not a prescription',
-    !prescribes('the post-squash pointer bump'));
+  ok(
+    'a prescription is caught',
+    prescribes('the sanctioned merge is `gh pr merge --squash --auto`')
+  );
+  ok(
+    'and another imperative form',
+    prescribes("Use 'gh pr merge --squash --auto' to let GitHub merge at green")
+  );
+  ok(
+    'CONTROL: a line saying it is REJECTED passes',
+    !prescribes('`--squash` is rejected outright: `gh pr merge <n> --squash` fails')
+  );
+  ok(
+    'CONTROL: a line saying it is banned passes',
+    !prescribes('--squash is banned on all five repos')
+  );
+  ok(
+    'CONTROL: allow_squash_merge=false prose passes',
+    !prescribes('`allow_squash_merge` is false on all five repos, so `--squash` fails')
+  );
+  ok(
+    'CONTROL: a line with no rejected flag is not a finding',
+    !prescribes('the sanctioned merge is `gh pr merge --rebase --auto`')
+  );
+  ok(
+    'CONTROL: a bare mention with no imperative is not a prescription',
+    !prescribes('the post-squash pointer bump')
+  );
   // THE ONE THAT CAUGHT THE VACUITY. A line-wide negation test read this as a
   // warning, because it bans --admin, and reported clean on the real defect.
-  ok('a line that BANS one flag and PRESCRIBES another is still a finding',
-    prescribes("BLOCKED: 'gh pr merge --admin' is banned. The sanctioned path: "
-      + "wait for green, then 'gh pr ready' and 'gh pr merge --squash --auto'."));
+  ok(
+    'a line that BANS one flag and PRESCRIBES another is still a finding',
+    prescribes(
+      "BLOCKED: 'gh pr merge --admin' is banned. The sanctioned path: " +
+        "wait for green, then 'gh pr ready' and 'gh pr merge --squash --auto'."
+    )
+  );
   // THE TWO FAILED ATTEMPTS, pinned so neither can come back. Both passed the
   // isolated-string controls above and both reported the live tree clean.
-  const REAL_LINE = "BLOCKED: 'gh pr merge --admin' is banned. It bypasses the required check. "
-    + "The sanctioned path: wait for green, then 'gh pr ready' and 'gh pr merge --squash --auto'. "
-    + "If GitHub refuses a plain merge, the PR is not actually green -- fix that instead.";
-  ok('the REAL line is a finding (line-wide negation missed it: "banned")',
-    prescribes(REAL_LINE));
-  ok('and a 60-char window missed it too: "refuses" belongs to the NEXT sentence',
-    prescribes(REAL_LINE));
-  ok('CONTROL: the same real line with --rebase is clean',
-    !prescribes(REAL_LINE.replace('--squash', '--rebase')));
-  ok('CONTROL: the same line with --rebase is clean',
-    !prescribes("BLOCKED: 'gh pr merge --admin' is banned. The sanctioned path: "
-      + "wait for green, then 'gh pr ready' and 'gh pr merge --rebase --auto'."));
+  const REAL_LINE =
+    "BLOCKED: 'gh pr merge --admin' is banned. It bypasses the required check. " +
+    "The sanctioned path: wait for green, then 'gh pr ready' and 'gh pr merge --squash --auto'. " +
+    'If GitHub refuses a plain merge, the PR is not actually green -- fix that instead.';
+  ok('the REAL line is a finding (line-wide negation missed it: "banned")', prescribes(REAL_LINE));
+  ok(
+    'and a 60-char window missed it too: "refuses" belongs to the NEXT sentence',
+    prescribes(REAL_LINE)
+  );
+  ok(
+    'CONTROL: the same real line with --rebase is clean',
+    !prescribes(REAL_LINE.replace('--squash', '--rebase'))
+  );
+  ok(
+    'CONTROL: the same line with --rebase is clean',
+    !prescribes(
+      "BLOCKED: 'gh pr merge --admin' is banned. The sanctioned path: " +
+        "wait for green, then 'gh pr ready' and 'gh pr merge --rebase --auto'."
+    )
+  );
   return bad;
 };
 
@@ -123,14 +150,18 @@ const main = (): number => {
     const full = path.join(root, f);
     if (!fs.existsSync(full)) continue;
     scanned++;
-    fs.readFileSync(full, 'utf8').split('\n').forEach((line, i) => {
-      if (prescribes(line)) found.push(`${f}:${i + 1}  ${line.trim().slice(0, 120)}`);
-    });
+    fs.readFileSync(full, 'utf8')
+      .split('\n')
+      .forEach((line, i) => {
+        if (prescribes(line)) found.push(`${f}:${i + 1}  ${line.trim().slice(0, 120)}`);
+      });
   }
 
   // ANTI-VACUITY: a scan that reached no files would report a clean tree.
   if (scanned < 20) {
-    console.error(`✗ only ${scanned} file(s) scanned; the surface globs are wrong, so this green means nothing.`);
+    console.error(
+      `✗ only ${scanned} file(s) scanned; the surface globs are wrong, so this green means nothing.`
+    );
     return 1;
   }
 

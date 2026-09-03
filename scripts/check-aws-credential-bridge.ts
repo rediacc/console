@@ -81,17 +81,19 @@ export type Verdict = 'ok-bridges' | 'ok-requires' | 'ok-stubs' | 'MISSING' | 'n
  * gets deleted.
  */
 function executableLines(text: string): string {
-  return text
-    .split('\n')
-    .filter((l) => !l.trimStart().startsWith('#'))
-    // Blank out single-quoted spans. `aws` inside them is DATA, not a call --
-    // this repo's own silent-failure linter holds
-    // `PIPE_HEADS_REGEX='(aws s3 ls|...)'`, and a scanner that reads its
-    // colleague's pattern table as an invocation is just noise. A real
-    // `echo x | aws s3 cp -` (upload-to-r2.sh:213) sits OUTSIDE any quotes and
-    // survives this, which is why the `|` separator can stay.
-    .map((l) => l.replace(/'[^']*'/g, "''"))
-    .join('\n');
+  return (
+    text
+      .split('\n')
+      .filter((l) => !l.trimStart().startsWith('#'))
+      // Blank out single-quoted spans. `aws` inside them is DATA, not a call --
+      // this repo's own silent-failure linter holds
+      // `PIPE_HEADS_REGEX='(aws s3 ls|...)'`, and a scanner that reads its
+      // colleague's pattern table as an invocation is just noise. A real
+      // `echo x | aws s3 cp -` (upload-to-r2.sh:213) sits OUTSIDE any quotes and
+      // survives this, which is why the `|` separator can stay.
+      .map((l) => l.replace(/'[^']*'/g, "''"))
+      .join('\n')
+  );
 }
 
 export function classify(raw: string): Verdict {
@@ -108,7 +110,10 @@ let CONTROL_ARMS = 0;
 {
   const cases: [string, Verdict][] = [
     ['#!/bin/bash\naws s3 cp a b\n', 'MISSING'],
-    ['#!/bin/bash\nexport AWS_ACCESS_KEY_ID="$CLOUDFLARE_R2_ACCESS_KEY_ID"\naws s3 cp a b\n', 'ok-bridges'],
+    [
+      '#!/bin/bash\nexport AWS_ACCESS_KEY_ID="$CLOUDFLARE_R2_ACCESS_KEY_ID"\naws s3 cp a b\n',
+      'ok-bridges',
+    ],
     ['#!/bin/bash\n: "${AWS_ACCESS_KEY_ID:?must be set}"\naws s3 ls\n', 'ok-requires'],
     ['#!/bin/bash\ncat >"$FAKEBIN/aws" <<EOF\nEOF\naws s3 ls\n', 'ok-stubs'],
     ['#!/bin/bash\n# aws s3 cp is what the deploy does\necho hi\n', 'not-a-caller'],
@@ -119,7 +124,10 @@ let CONTROL_ARMS = 0;
     // The two false positives this gate's own first run produced. Both are
     // MENTIONS, not invocations, and both must stay invisible to it.
     ['#!/bin/bash\n# Rationale: `aws s3 ls --recursive` returns exit code 1\n', 'not-a-caller'],
-    ['#!/bin/bash\nassert_x \\\n    \'    count="$(aws s3api list-objects-v2)"\' \\\n', 'not-a-caller'],
+    [
+      '#!/bin/bash\nassert_x \\\n    \'    count="$(aws s3api list-objects-v2)"\' \\\n',
+      'not-a-caller',
+    ],
     ["#!/bin/bash\nPIPE_HEADS_REGEX='(aws s3 ls|find [^|])'\n", 'not-a-caller'],
     // ...while a genuine pipe INTO aws, outside quotes, must still be seen.
     ['#!/bin/bash\necho "$c" | aws s3 cp - s3://b/k\n', 'MISSING'],
@@ -138,11 +146,11 @@ let CONTROL_ARMS = 0;
   }
 }
 
-const files = execFileSync(
-  'git',
-  ['ls-files', '--recurse-submodules', '-z', '*.sh'],
-  { cwd: ROOT, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 }
-)
+const files = execFileSync('git', ['ls-files', '--recurse-submodules', '-z', '*.sh'], {
+  cwd: ROOT,
+  encoding: 'utf8',
+  maxBuffer: 64 * 1024 * 1024,
+})
   .split('\0')
   .filter(Boolean);
 

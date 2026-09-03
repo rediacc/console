@@ -36,7 +36,9 @@ const CSS = path.join(REPO, 'packages/www/src/styles/tutorial-video.css');
 export const qualityPaneFaults = (player: string): string[] => {
   const out: string[] = [];
   if (/settings:\s*[^;]*['"]quality['"]/.test(player))
-    out.push("the Plyr settings array lists 'quality' again; that pane snaps every click to min(options)");
+    out.push(
+      "the Plyr settings array lists 'quality' again; that pane snaps every click to min(options)"
+    );
   if (/quality:\s*\{[^}]*forced/.test(player))
     out.push('`quality.forced` is configured again, which is the pane this work removed');
   return out;
@@ -57,7 +59,9 @@ export const placementFaults = (player: string, hero: string): string[] => {
   // populating the pane is ours. The `i18n` label is required: `i18n.get` returns '' for
   // an unknown key and the row would render blank.
   if (!/'language'/.test(player))
-    out.push("the `language` entry is gone from config.settings; the picker has no row in the settings menu");
+    out.push(
+      'the `language` entry is gone from config.settings; the picker has no row in the settings menu'
+    );
   if (!/i18n:\s*\{\s*language:/.test(player))
     out.push('the `language` i18n label is gone, so the settings row would render blank');
   // The populator moved to its own module when the component hit eslint's max-lines; what
@@ -67,14 +71,18 @@ export const placementFaults = (player: string, hero: string): string[] => {
   if (!/tvp-toolbar-overlay/.test(player))
     out.push('the in-frame overlay fallback is gone; a Plyr upgrade would leave no picker at all');
   if (!/!menuMounted/.test(player))
-    out.push('the overlay is no longer conditional on the menu failing, so both pickers can show at once');
+    out.push(
+      'the overlay is no longer conditional on the menu failing, so both pickers can show at once'
+    );
   // The overlay belongs to the keyed root subtree, not the shell above it.
   const rootAt = player.indexOf('className={`tvp-root');
   const overlayAt = player.indexOf('tvp-toolbar-overlay');
   if (rootAt >= 0 && overlayAt >= 0 && overlayAt < rootAt)
     out.push('the overlay is emitted before the player root, so it is not inside the frame');
   if (/inPlayerLanguage|inPlayerPicker/.test(player) || /in-player-language/.test(hero))
-    out.push('an opt-in flag is back; the in-frame picker is meant to be unconditional on every mount');
+    out.push(
+      'an opt-in flag is back; the in-frame picker is meant to be unconditional on every mount'
+    );
   // Strip the ONE sanctioned use, then any remaining `{toolbar}` is a second render site.
   // The negative-lookahead spelling this replaces could not fire: the planted defect ends
   // in `</div>`, which is exactly what the lookahead excluded.
@@ -90,19 +98,28 @@ export const placementFaults = (player: string, hero: string): string[] => {
 /** Over video, a translucent-white control is unreadable on a bright frame. */
 export const chromeFaults = (css: string): string[] => {
   const out: string[] = [];
-  const rule = /\.tvp-root \.tvp-toolbar-overlay \.tvp-toolbar \.language-trigger\s*\{([^}]*)\}/.exec(css);
+  const rule =
+    /\.tvp-root \.tvp-toolbar-overlay \.tvp-toolbar \.language-trigger\s*\{([^}]*)\}/.exec(css);
   if (!rule) {
-    out.push('the overlay trigger no longer outranks the hero rule, which paints translucent WHITE over video');
+    out.push(
+      'the overlay trigger no longer outranks the hero rule, which paints translucent WHITE over video'
+    );
   } else if (!/background:\s*rgba\(0,\s*0,\s*0/.test(rule[1])) {
-    out.push('the overlay trigger lost its dark scrim; a bright video frame washes a light control out');
+    out.push(
+      'the overlay trigger lost its dark scrim; a bright video frame washes a light control out'
+    );
   }
   if (!/\.tvp-toolbar-overlay \.language-menu\s*\{[^}]*max-height/.test(css))
-    out.push('the 13-locale menu is uncapped inside the frame, which clips its tail with no scrollbar');
+    out.push(
+      'the 13-locale menu is uncapped inside the frame, which clips its tail with no scrollbar'
+    );
   // MEASURED, not stylistic: `.tvp-root` is overflow:hidden, so an unclamped 13-entry pane
   // is 488px tall starting 127px ABOVE the container. The first four languages are not
   // scrolled off, they are invisible and unreachable.
   if (!/\[id\$='-language'\] \[role='menu'\]\s*\{[^}]*max-height/.test(css))
-    out.push("the settings-menu language pane is uncapped; at 13 entries the top of the list is CLIPPED by .tvp-root's overflow, not scrollable");
+    out.push(
+      "the settings-menu language pane is uncapped; at 13 entries the top of the list is CLIPPED by .tvp-root's overflow, not scrollable"
+    );
   return out;
 };
 
@@ -130,7 +147,10 @@ const selftest = (player: string, hero: string, css: string): number => {
   );
   check(
     'dropping the settings-menu row is caught',
-    placementFaults(player.replace("'language',", "'nope',").replaceAll("'language'", "'nope'"), hero).length > 0
+    placementFaults(
+      player.replace("'language',", "'nope',").replaceAll("'language'", "'nope'"),
+      hero
+    ).length > 0
   );
   check(
     'losing the pane populator is caught',
@@ -158,19 +178,27 @@ const selftest = (player: string, hero: string, css: string): number => {
   );
   check(
     'losing the dark scrim is caught',
-    chromeFaults(css.replace('background: rgba(0, 0, 0, 0.55);', 'background: rgba(255, 255, 255, 0.12);')).length > 0
+    chromeFaults(
+      css.replace('background: rgba(0, 0, 0, 0.55);', 'background: rgba(255, 255, 255, 0.12);')
+    ).length > 0
   );
   check(
     'losing the whole overlay rule is caught',
-    chromeFaults(css.replace('.tvp-root .tvp-toolbar-overlay .tvp-toolbar .language-trigger', '.never-matches')).length > 0
+    chromeFaults(
+      css.replace('.tvp-root .tvp-toolbar-overlay .tvp-toolbar .language-trigger', '.never-matches')
+    ).length > 0
   );
   check(
     'uncapping the settings-menu language pane is caught',
-    chromeFaults(css.replace(/(\[id\$='-language'\] \[role='menu'\]\s*\{)[^}]*max-height[^;]*;/, '$1')).length > 0
+    chromeFaults(
+      css.replace(/(\[id\$='-language'\] \[role='menu'\]\s*\{)[^}]*max-height[^;]*;/, '$1')
+    ).length > 0
   );
   check(
     'uncapping the 13-locale overlay menu is caught',
-    chromeFaults(css.replace(/(\.tvp-toolbar-overlay \.language-menu\s*\{)[^}]*max-height[^;]*;/, '$1')).length > 0
+    chromeFaults(
+      css.replace(/(\.tvp-toolbar-overlay \.language-menu\s*\{)[^}]*max-height[^;]*;/, '$1')
+    ).length > 0
   );
   return fail === 0 ? 0 : 1;
 };
@@ -180,22 +208,34 @@ const main = (): number => {
   const hero = fs.readFileSync(HERO, 'utf8');
   const css = fs.readFileSync(CSS, 'utf8');
   if (!/new Plyr\(/.test(player) || !/video-player-mount/.test(hero)) {
-    console.error('✗ the video-player sources do not look like themselves; a green here would mean nothing.');
+    console.error(
+      '✗ the video-player sources do not look like themselves; a green here would mean nothing.'
+    );
     return 1;
   }
   if (process.argv.slice(2).includes('--selftest')) return selftest(player, hero, css);
 
-  const faults = [...qualityPaneFaults(player), ...placementFaults(player, hero), ...chromeFaults(css)];
+  const faults = [
+    ...qualityPaneFaults(player),
+    ...placementFaults(player, hero),
+    ...chromeFaults(css),
+  ];
   if (faults.length) {
     console.error(`✗ ${faults.length} video-player invariant(s) broken:\n`);
     for (const f of faults) console.error(`  ${f}`);
-    console.error('\n  Plyr\'s quality pane cannot host the language picker: it snaps every click to');
+    console.error(
+      "\n  Plyr's quality pane cannot host the language picker: it snaps every click to"
+    );
     console.error('  min(options), so the video plays a language nobody chose. The picker lives');
     console.error('  inside the player frame instead. See the comment on the Plyr config.');
     return 1;
   }
-  console.log('✓ video-player invariants hold: no quality pane, the picker is inside the frame and mutually exclusive, and its chrome survives a bright video.');
-  console.log('  STRUCTURAL ONLY -- nothing was rendered, measured or clicked. A picker that is inside the frame and invisible passes this gate; that is wave D gate 2.');
+  console.log(
+    '✓ video-player invariants hold: no quality pane, the picker is inside the frame and mutually exclusive, and its chrome survives a bright video.'
+  );
+  console.log(
+    '  STRUCTURAL ONLY -- nothing was rendered, measured or clicked. A picker that is inside the frame and invisible passes this gate; that is wave D gate 2.'
+  );
   return 0;
 };
 

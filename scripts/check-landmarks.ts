@@ -69,9 +69,7 @@ function main(): void {
   if (process.argv.includes('--selftest')) {
     console.log('landmark gate selftest');
     const bad = selftest();
-    console.log(
-      bad === 0 ? '\n${GREEN}✓${NC} 6/6 controls pass' : `\n${RED}✗${NC} ${bad} failed`
-    );
+    console.log(bad === 0 ? '\n${GREEN}✓${NC} 6/6 controls pass' : `\n${RED}✗${NC} ${bad} failed`);
     process.exit(bad === 0 ? 0 : 1);
   }
   if (selftest() !== 0) {

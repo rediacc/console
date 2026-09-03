@@ -89,9 +89,7 @@ function main(): void {
     console.log('SVG theme-reach gate selftest');
     const bad = selftest();
     console.log(
-      bad === 0
-        ? '\n${GREEN}✓${NC} 5/5 controls pass'
-        : `\n${RED}✗${NC} ${bad} control(s) failed`
+      bad === 0 ? '\n${GREEN}✓${NC} 5/5 controls pass' : `\n${RED}✗${NC} ${bad} control(s) failed`
     );
     process.exit(bad === 0 ? 0 : 1);
   }

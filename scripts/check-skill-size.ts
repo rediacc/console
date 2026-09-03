@@ -69,7 +69,10 @@ const selftest = (): number => {
     !declaresSelfImproving('---\nname: x\n---\nself-improving: true\n')
   );
   check('a file with no frontmatter does not opt in', !declaresSelfImproving('# just a doc\n'));
-  check('an unterminated frontmatter block does not opt in', !declaresSelfImproving('---\nself-improving: true\n'));
+  check(
+    'an unterminated frontmatter block does not opt in',
+    !declaresSelfImproving('---\nself-improving: true\n')
+  );
 
   check('line counting ignores the trailing newline', countLines('a\nb\n') === 2);
   check('and counts a file with no trailing newline', countLines('a\nb') === 2);
@@ -127,7 +130,9 @@ const main = (): number => {
     );
     return 0;
   }
-  console.log(`✓ ${files} file(s) across ${capped} self-improving skill(s) are within ${MAX_LINES} lines.`);
+  console.log(
+    `✓ ${files} file(s) across ${capped} self-improving skill(s) are within ${MAX_LINES} lines.`
+  );
   return 0;
 };
 

@@ -141,7 +141,9 @@ function main(): number {
 
   const results = findUnwired(pkg.scripts ?? {}, manifestSource);
   if (results.length === 0) {
-    console.error('x found zero check:test* keys -- the scope pattern is broken, not the tree clean.');
+    console.error(
+      'x found zero check:test* keys -- the scope pattern is broken, not the tree clean.'
+    );
     return 1;
   }
 

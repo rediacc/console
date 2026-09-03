@@ -73,7 +73,8 @@ const KNOWN_OFF = {
   'i18n/key-naming-convention':
     'off since 2026-08-06: 1261 findings; the tree has never conformed to the convention',
   'i18n/no-empty-translations': 'off since 2026-08-06: 39 findings, part of the same wave',
-  'i18n/translation-staleness': 'off since 2026-08-06: same wave, needs the hash sidecars re-scoped',
+  'i18n/translation-staleness':
+    'off since 2026-08-06: same wave, needs the hash sidecars re-scoped',
 };
 
 // ---------------------------------------------------------------------------
@@ -122,7 +123,8 @@ const REACH_FLOOR = { 'custom/require-testid': 20 };
 const readJson = (rel) => JSON.parse(fs.readFileSync(path.join(ROOT, rel), 'utf8'));
 
 const EN_CLI = 'packages/cli/src/i18n/locales/en/cli.json';
-const EN_TRANSCRIPT = 'packages/www/src/data/tutorial-transcripts/en/tutorial-storage-management.json';
+const EN_TRANSCRIPT =
+  'packages/www/src/data/tutorial-transcripts/en/tutorial-storage-management.json';
 
 /** Zero-positional leaves of command-tree.json, the same classification the two
  *  positional-syntax rules do (no-positional-cli-syntax-source.js:63-72). */
@@ -350,7 +352,9 @@ const MATRIX = {
   'i18n/seo-no-duplicate-h1-title': {
     filePath: 'packages/www/src/i18n/translations/tr.json',
     code: JSON.stringify(
-      { pages: { x: { meta: { title: 'Yedekleme Cozumu' }, hero: { title: 'Yedekleme Cozumu' } } } },
+      {
+        pages: { x: { meta: { title: 'Yedekleme Cozumu' }, hero: { title: 'Yedekleme Cozumu' } } },
+      },
       null,
       2
     ),
@@ -466,7 +470,8 @@ const walkConfig = (blocks) => {
   for (const block of blocks) {
     for (const [name, plugin] of Object.entries(block?.plugins ?? {})) {
       if (!NAMESPACES.has(name)) continue;
-      for (const ruleName of Object.keys(plugin?.rules ?? {})) registered.add(`${name}/${ruleName}`);
+      for (const ruleName of Object.keys(plugin?.rules ?? {}))
+        registered.add(`${name}/${ruleName}`);
     }
   }
   const enabled = new Set();
@@ -597,7 +602,9 @@ async function main() {
     err('  Add one to MATRIX: a probe path inside the enabling glob, and input that MUST trip it.');
   }
   if (stale.length > 0) {
-    err(`${stale.length} stale matrix entry(ies): a specimen for a rule no longer enabled anywhere:`);
+    err(
+      `${stale.length} stale matrix entry(ies): a specimen for a rule no longer enabled anywhere:`
+    );
     for (const rule of stale) err(`    ${rule}`);
     err('  Either re-enable the rule, or move it to KNOWN_OFF with a written reason.');
   }
@@ -635,9 +642,7 @@ async function main() {
       new ESLint({
         cwd: ROOT,
         overrideConfig: {
-          rules: Object.fromEntries(
-            optionRules.map((r) => [r, ['error', MATRIX[r].options(dir)]])
-          ),
+          rules: Object.fromEntries(optionRules.map((r) => [r, ['error', MATRIX[r].options(dir)]])),
         },
       });
 
@@ -652,7 +657,10 @@ async function main() {
     // 1. in-config mode: sorted-keys on already-sorted input (severity forced
     //    on, since the rule is off by documented decision).
     {
-      const probe = new ESLint({ cwd: ROOT, overrideConfig: { rules: { 'i18n/sorted-keys': 'error' } } });
+      const probe = new ESLint({
+        cwd: ROOT,
+        overrideConfig: { rules: { 'i18n/sorted-keys': 'error' } },
+      });
       const { fired } = firedRuleIds(
         await probe.lintText(JSON.stringify({ a: '1', b: '2' }, null, 2), {
           filePath: path.join(ROOT, 'packages/www/src/i18n/translations/tr.json'),
@@ -752,7 +760,8 @@ async function main() {
         continue;
       }
 
-      const instance = mode === 'option-dir' ? optionProbe : mode === 'isolated' ? isolated : eslint;
+      const instance =
+        mode === 'option-dir' ? optionProbe : mode === 'isolated' ? isolated : eslint;
       const { fired, fatals } = firedRuleIds(
         await instance.lintText(entry.code, {
           filePath: path.join(ROOT, entry.filePath),
@@ -826,9 +835,7 @@ async function main() {
       }
     }
     if (dead.length > 0) {
-      err(
-        `${dead.length} ENABLED rule(s) did NOT fire on a violation they are supposed to catch:`
-      );
+      err(`${dead.length} ENABLED rule(s) did NOT fire on a violation they are supposed to catch:`);
       for (const rule of dead) err(`    ${rule}`);
       err(
         '  That is the sorted-keys defect again: enabled, and structurally unable to report.\n' +

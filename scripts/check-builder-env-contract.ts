@@ -153,8 +153,7 @@ const EXEMPT: Exemption[] = [
   {
     name: 'CLOUDFLARE_ACCOUNT_ID',
     direction: 'exported-not-read',
-    reason:
-      'BLOCKER: same as CLOUDFLARE_API_TOKEN -- wrangler reads it, the builder does not.',
+    reason: 'BLOCKER: same as CLOUDFLARE_API_TOKEN -- wrangler reads it, the builder does not.',
   },
   {
     name: 'PR_NUMBER',
@@ -166,11 +165,39 @@ const EXEMPT: Exemption[] = [
 
 /** Shell variables bash itself supplies; never part of a workflow contract. */
 const SHELL_BUILTINS = new Set([
-  'BASH', 'BASH_SOURCE', 'BASHPID', 'BASH_VERSION', 'FUNCNAME', 'GROUPS',
-  'HISTFILE', 'HOME', 'HOSTNAME', 'IFS', 'LANG', 'LC_ALL', 'LINENO', 'OLDPWD',
-  'OPTARG', 'OPTIND', 'OSTYPE', 'PATH', 'PIPESTATUS', 'PPID', 'PS1', 'PS2',
-  'PWD', 'RANDOM', 'REPLY', 'SECONDS', 'SHELL', 'SHLVL', 'TERM', 'TMPDIR',
-  'UID', 'EUID', 'USER',
+  'BASH',
+  'BASH_SOURCE',
+  'BASHPID',
+  'BASH_VERSION',
+  'FUNCNAME',
+  'GROUPS',
+  'HISTFILE',
+  'HOME',
+  'HOSTNAME',
+  'IFS',
+  'LANG',
+  'LC_ALL',
+  'LINENO',
+  'OLDPWD',
+  'OPTARG',
+  'OPTIND',
+  'OSTYPE',
+  'PATH',
+  'PIPESTATUS',
+  'PPID',
+  'PS1',
+  'PS2',
+  'PWD',
+  'RANDOM',
+  'REPLY',
+  'SECONDS',
+  'SHELL',
+  'SHLVL',
+  'TERM',
+  'TMPDIR',
+  'UID',
+  'EUID',
+  'USER',
 ]);
 
 // ── Extractors, exported so a selftest can drive them directly ─────────────
@@ -178,7 +205,8 @@ const SHELL_BUILTINS = new Set([
 /** `$NAME`, `${NAME}`, `${NAME:-...}`, `${NAME:?...}` -- upper-snake only. */
 const READ_RE = /\$\{([A-Z][A-Z0-9_]*)(?=[}:[])|\$([A-Z][A-Z0-9_]*)/g;
 /** `NAME=`, `local NAME=`, `export NAME=`, `declare -r NAME=`. */
-const ASSIGN_RE = /^\s*(?:local\s+|export\s+|declare\s+(?:-\w+\s+)?|readonly\s+)?([A-Z][A-Z0-9_]*)=/;
+const ASSIGN_RE =
+  /^\s*(?:local\s+|export\s+|declare\s+(?:-\w+\s+)?|readonly\s+)?([A-Z][A-Z0-9_]*)=/;
 
 /**
  * Environment names a builder reads, mapped to the 1-based line of the first
@@ -240,7 +268,9 @@ export function builderFanIns(text: string): { names: Map<string, number>; templ
 /** `_require_nonempty LABEL "${VAR:-}"` pairs, with the line. Local-variable
  *  values (`"$ses_access_key_id"`) are returned with `varName: null`: those are
  *  fan-in RESULTS, whose label is the Worker key rather than an env name. */
-export function guardLabels(text: string): { label: string; varName: string | null; line: number }[] {
+export function guardLabels(
+  text: string
+): { label: string; varName: string | null; line: number }[] {
   const out: { label: string; varName: string | null; line: number }[] = [];
   text.split('\n').forEach((raw, i) => {
     if (/^\s*#/.test(raw)) return;
@@ -271,7 +301,11 @@ export function stepEnvNames(yamlText: string, builder: string): StepEnv | null 
   const lines = yamlText.split('\n');
   const starts: number[] = [];
   lines.forEach((l, i) => {
-    if (/^\s*-\s+(name|uses|id|run|env|if|with|shell|working-directory|continue-on-error|timeout-minutes):/.test(l)) {
+    if (
+      /^\s*-\s+(name|uses|id|run|env|if|with|shell|working-directory|continue-on-error|timeout-minutes):/.test(
+        l
+      )
+    ) {
       starts.push(i);
     }
   });
@@ -286,9 +320,15 @@ export function stepEnvNames(yamlText: string, builder: string): StepEnv | null 
     // indented continuation), never merely somewhere in the step: a comment
     // naming the builder must not claim the step.
     let runEnd = runIdx + 1;
-    while (runEnd < block.length && (block[runEnd].trim() === '' || block[runEnd].length - block[runEnd].trimStart().length > keyIndent)) runEnd += 1;
+    while (
+      runEnd < block.length &&
+      (block[runEnd].trim() === '' ||
+        block[runEnd].length - block[runEnd].trimStart().length > keyIndent)
+    )
+      runEnd += 1;
     if (!block.slice(runIdx, runEnd).join('\n').includes(builder)) continue;
-    const atKey = (re: RegExp) => block.filter((l) => new RegExp(`^\\s{${keyIndent}}${re.source}`).test(l)).length;
+    const atKey = (re: RegExp) =>
+      block.filter((l) => new RegExp(`^\\s{${keyIndent}}${re.source}`).test(l)).length;
     if (atKey(/run:/) !== 1 || atKey(/env:/) !== 1) return null;
     const envIdx = block.findIndex((l) => new RegExp(`^\\s{${keyIndent}}env:\\s*$`).test(l));
     if (envIdx < 0) return null;
@@ -307,7 +347,8 @@ export function stepEnvNames(yamlText: string, builder: string): StepEnv | null 
     }
     const nameIdx = block.findIndex((l) => /^\s*-?\s*name:/.test(l));
     return {
-      stepName: nameIdx >= 0 ? block[nameIdx].replace(/^\s*-?\s*name:\s*/, '').trim() : '(unnamed step)',
+      stepName:
+        nameIdx >= 0 ? block[nameIdx].replace(/^\s*-?\s*name:\s*/, '').trim() : '(unnamed step)',
       stepLine: from + 1,
       names,
     };
@@ -336,28 +377,44 @@ export function stepEnvNames(yamlText: string, builder: string): StepEnv | null 
   const mustNotRead = ['SCRIPT_DIR', 'WORKER', 'BASH_SOURCE', 'COMMENT_ONLY_NAME'];
   for (const n of mustRead) {
     if (!reads.has(n)) {
-      console.error(`x instrument control: builderReads() missed ${n}. Read set was ${JSON.stringify([...reads.keys()])}. Every verdict below would be meaningless.`);
+      console.error(
+        `x instrument control: builderReads() missed ${n}. Read set was ${JSON.stringify([...reads.keys()])}. Every verdict below would be meaningless.`
+      );
       process.exit(1);
     }
   }
   for (const n of mustNotRead) {
     if (reads.has(n)) {
-      console.error(`x instrument control: builderReads() wrongly reported ${n} as an environment read (it is a local variable, a shell builtin, or a comment). A gate that over-reads flags the whole tree.`);
+      console.error(
+        `x instrument control: builderReads() wrongly reported ${n} as an environment read (it is a local variable, a shell builtin, or a comment). A gate that over-reads flags the whole tree.`
+      );
       process.exit(1);
     }
   }
 
   const fan = builderFanIns(builderFixture);
-  for (const n of ['AWS_SES_ACCESS_KEY_ID_EU', 'AWS_SES_ACCESS_KEY_ID_US', 'AWS_SES_ACCESS_KEY_ID_ASIA']) {
+  for (const n of [
+    'AWS_SES_ACCESS_KEY_ID_EU',
+    'AWS_SES_ACCESS_KEY_ID_US',
+    'AWS_SES_ACCESS_KEY_ID_ASIA',
+  ]) {
     if (!fan.names.has(n)) {
-      console.error(`x instrument control: builderFanIns() did not resolve ${n} from AWS_SES_ACCESS_KEY_ID_\${SUFFIX}. Got ${JSON.stringify([...fan.names.keys()])}. The fan-ins are the half a find-and-replace cannot see; unresolved, they would be silently unchecked.`);
+      console.error(
+        `x instrument control: builderFanIns() did not resolve ${n} from AWS_SES_ACCESS_KEY_ID_\${SUFFIX}. Got ${JSON.stringify([...fan.names.keys()])}. The fan-ins are the half a find-and-replace cannot see; unresolved, they would be silently unchecked.`
+      );
       process.exit(1);
     }
   }
 
   const guards = guardLabels(builderFixture);
-  if (guards.length !== 2 || guards[0].varName !== 'ACCOUNT_JWT_SECRET' || guards[1].varName !== null) {
-    console.error(`x instrument control: guardLabels() read ${JSON.stringify(guards)}; expected a direct env guard on ACCOUNT_JWT_SECRET and a local-variable guard with varName null.`);
+  if (
+    guards.length !== 2 ||
+    guards[0].varName !== 'ACCOUNT_JWT_SECRET' ||
+    guards[1].varName !== null
+  ) {
+    console.error(
+      `x instrument control: guardLabels() read ${JSON.stringify(guards)}; expected a direct env guard on ACCOUNT_JWT_SECRET and a local-variable guard with varName null.`
+    );
     process.exit(1);
   }
 
@@ -380,32 +437,53 @@ export function stepEnvNames(yamlText: string, builder: string): StepEnv | null 
     '        run: .ci/scripts/deploy/set-fixture-secrets.sh',
   ].join('\n');
   const step = stepEnvNames(wfFixture, '.ci/scripts/deploy/set-fixture-secrets.sh');
-  if (!step || step.stepName !== 'Set Worker secrets' || step.names.size !== 3 || !step.names.has('ACCOUNT_JWT_SECRET') || step.names.has('DECOY_NAME') || step.names.has('NOT_A_KEY')) {
-    console.error(`x instrument control: stepEnvNames() read ${JSON.stringify(step && { n: step.stepName, k: [...step.names.keys()] })}; expected exactly ACCOUNT_JWT_SECRET, WORKER_NAME and FOLDED_NOTE from the step that runs the fixture builder -- nothing from the neighbouring step, and nothing from the body of a folded scalar.`);
+  if (
+    !step ||
+    step.stepName !== 'Set Worker secrets' ||
+    step.names.size !== 3 ||
+    !step.names.has('ACCOUNT_JWT_SECRET') ||
+    step.names.has('DECOY_NAME') ||
+    step.names.has('NOT_A_KEY')
+  ) {
+    console.error(
+      `x instrument control: stepEnvNames() read ${JSON.stringify(step && { n: step.stepName, k: [...step.names.keys()] })}; expected exactly ACCOUNT_JWT_SECRET, WORKER_NAME and FOLDED_NOTE from the step that runs the fixture builder -- nothing from the neighbouring step, and nothing from the body of a folded scalar.`
+    );
     process.exit(1);
   }
   if (stepEnvNames(wfFixture, '.ci/scripts/deploy/absent-builder.sh') !== null) {
-    console.error('x instrument control: stepEnvNames() invented a step for a builder no step invokes. It must return null so the caller can refuse.');
+    console.error(
+      'x instrument control: stepEnvNames() invented a step for a builder no step invokes. It must return null so the caller can refuse.'
+    );
     process.exit(1);
   }
 
   // The failure direction, both halves, on the same fixture pair.
   const exported = new Set(step.names.keys());
   const renamed = new Set(['ACCOUNT_JWT_SECRETX', 'WORKER_NAME']);
-  const missingRead = [...reads.keys()].filter((n) => n === 'ACCOUNT_JWT_SECRET' && !renamed.has(n));
+  const missingRead = [...reads.keys()].filter(
+    (n) => n === 'ACCOUNT_JWT_SECRET' && !renamed.has(n)
+  );
   if (missingRead.length !== 1) {
-    console.error('x instrument control did not fire: a builder read absent from the step env was not detectable. The gate could not report the defect it exists for.');
+    console.error(
+      'x instrument control did not fire: a builder read absent from the step env was not detectable. The gate could not report the defect it exists for.'
+    );
     process.exit(1);
   }
   const leftover = [...renamed].filter((n) => !reads.has(n));
   if (leftover.length !== 1 || leftover[0] !== 'ACCOUNT_JWT_SECRETX') {
-    console.error('x instrument control did not fire: a leftover export nobody reads was not detectable.');
+    console.error(
+      'x instrument control did not fire: a leftover export nobody reads was not detectable.'
+    );
     process.exit(1);
   }
   // And the NEGATIVE direction: an agreeing pair must produce nothing.
-  const agreeing = [...reads.keys()].filter((n) => ['ACCOUNT_JWT_SECRET'].includes(n) && !exported.has(n));
+  const agreeing = [...reads.keys()].filter(
+    (n) => ['ACCOUNT_JWT_SECRET'].includes(n) && !exported.has(n)
+  );
   if (agreeing.length !== 0) {
-    console.error('x instrument control: a name that IS exported was still reported as missing. The gate would flag a healthy tree.');
+    console.error(
+      'x instrument control: a name that IS exported was still reported as missing. The gate would flag a healthy tree.'
+    );
     process.exit(1);
   }
 }
@@ -430,34 +508,46 @@ for (const pair of PAIRS) {
   try {
     wfText = readFileSync(join(ROOT, pair.workflow), 'utf8');
   } catch {
-    refusals.push(`    ${pair.workflow}: MISSING. Refusing to run: this gate cannot see the workflow half of the contract, and a green verdict would mean nothing.`);
+    refusals.push(
+      `    ${pair.workflow}: MISSING. Refusing to run: this gate cannot see the workflow half of the contract, and a green verdict would mean nothing.`
+    );
     continue;
   }
   try {
     bText = readFileSync(join(ROOT, pair.builder), 'utf8');
   } catch {
-    refusals.push(`    ${pair.builder}: MISSING. Refusing to run: this gate cannot see the builder half of the contract, and a green verdict would mean nothing.`);
+    refusals.push(
+      `    ${pair.builder}: MISSING. Refusing to run: this gate cannot see the builder half of the contract, and a green verdict would mean nothing.`
+    );
     continue;
   }
 
   const step = stepEnvNames(wfText, pair.builder);
   if (step === null) {
-    refusals.push(`    ${pair.workflow}: no step whose \`run:\` invokes ${pair.builder}, or the step's shape is ambiguous (more than one step-level run:/env:). Refusing to run rather than checking a contract with one end missing.`);
+    refusals.push(
+      `    ${pair.workflow}: no step whose \`run:\` invokes ${pair.builder}, or the step's shape is ambiguous (more than one step-level run:/env:). Refusing to run rather than checking a contract with one end missing.`
+    );
     continue;
   }
   if (step.names.size < pair.exportFloor) {
-    refusals.push(`    ${pair.workflow}:${step.stepLine} step "${step.stepName}" yielded only ${step.names.size} exported env name(s), floor is ${pair.exportFloor}. The env block moved or the parser broke; refusing rather than passing on a short read.`);
+    refusals.push(
+      `    ${pair.workflow}:${step.stepLine} step "${step.stepName}" yielded only ${step.names.size} exported env name(s), floor is ${pair.exportFloor}. The env block moved or the parser broke; refusing rather than passing on a short read.`
+    );
     continue;
   }
 
   const reads = builderReads(bText);
   if (reads.size < pair.readFloor) {
-    refusals.push(`    ${pair.builder}: yielded only ${reads.size} environment read(s), floor is ${pair.readFloor}. The extractor lost the file; refusing.`);
+    refusals.push(
+      `    ${pair.builder}: yielded only ${reads.size} environment read(s), floor is ${pair.readFloor}. The extractor lost the file; refusing.`
+    );
     continue;
   }
   const fan = builderFanIns(bText);
   if (fan.templates.length < pair.fanInFloor) {
-    refusals.push(`    ${pair.builder}: resolved ${fan.templates.length} \${!var} fan-in(s), floor is ${pair.fanInFloor}. The regional indirection is the half no find-and-replace can see; refusing rather than checking the easy names only.`);
+    refusals.push(
+      `    ${pair.builder}: resolved ${fan.templates.length} \${!var} fan-in(s), floor is ${pair.fanInFloor}. The regional indirection is the half no find-and-replace can see; refusing rather than checking the easy names only.`
+    );
     continue;
   }
 
@@ -473,7 +563,10 @@ for (const pair of PAIRS) {
   for (const [name, line] of allReads) {
     if (step.names.has(name)) continue;
     const ex = exemptFor(name, 'read-not-exported');
-    if (ex) { fired.add(`${ex.name}|${ex.direction}`); continue; }
+    if (ex) {
+      fired.add(`${ex.name}|${ex.direction}`);
+      continue;
+    }
     problems.push(
       `    ${pair.builder}:${line}  reads ${name}, which ${pair.workflow}:${step.stepLine} ("${step.stepName}") does NOT export.\n` +
         `      Bash expands it to "" and the deploy ships an empty value. Export it from that step, or stop reading it.`
@@ -482,7 +575,10 @@ for (const pair of PAIRS) {
   for (const [name, line] of step.names) {
     if (allReads.has(name)) continue;
     const ex = exemptFor(name, 'exported-not-read');
-    if (ex) { fired.add(`${ex.name}|${ex.direction}`); continue; }
+    if (ex) {
+      fired.add(`${ex.name}|${ex.direction}`);
+      continue;
+    }
     problems.push(
       `    ${pair.workflow}:${line}  exports ${name}, which ${pair.builder} never reads.\n` +
         `      A leftover export is the OTHER half of a rename: the builder is reading some other spelling. Delete it, or fix the name the builder reads.`
@@ -500,7 +596,9 @@ for (const pair of PAIRS) {
     }
   }
 
-  shape.push(`    ${pair.workflow}:${step.stepLine} "${step.stepName}" exports ${step.names.size} -> ${pair.builder} reads ${reads.size} + ${fan.names.size} fan-in name(s) from ${fan.templates.length} template(s)`);
+  shape.push(
+    `    ${pair.workflow}:${step.stepLine} "${step.stepName}" exports ${step.names.size} -> ${pair.builder} reads ${reads.size} + ${fan.names.size} fan-in name(s) from ${fan.templates.length} template(s)`
+  );
 }
 
 if (refusals.length > 0) {
@@ -514,7 +612,9 @@ if (refusals.length > 0) {
 }
 
 if (shape.length !== PAIRS.length) {
-  console.error(`x builder env contract: only ${shape.length} of ${PAIRS.length} pair(s) were checked. Refusing a verdict on a partial run.`);
+  console.error(
+    `x builder env contract: only ${shape.length} of ${PAIRS.length} pair(s) were checked. Refusing a verdict on a partial run.`
+  );
   process.exit(1);
 }
 
@@ -545,10 +645,14 @@ console.log(
     `  ${totalExports} exported env name(s) vs ${totalReads} direct read(s) plus ${totalFanIns} \${!var} fan-in(s)\n` +
     `  expanded over ${REGION_SUFFIXES.join('/')}, and ${totalGuards} _require_nonempty guard label(s) match the\n` +
     `  variable they inspect. ${EXEMPT.length} exemption(s), all live:\n` +
-    EXEMPT.map((e) => `    ${e.name} (${e.direction}): ${e.reason.replace(/^BLOCKER: /, '')}`).join('\n') +
-    '\n' + shape.join('\n') + '\n' +
+    EXEMPT.map((e) => `    ${e.name} (${e.direction}): ${e.reason.replace(/^BLOCKER: /, '')}`).join(
+      '\n'
+    ) +
+    '\n' +
+    shape.join('\n') +
+    '\n' +
     '  Blind spots, stated rather than left to be found: this proves the NAMES agree, not\n' +
-    '  that a value is non-empty (that is the builders\' _require_nonempty guards). It does\n' +
+    "  that a value is non-empty (that is the builders' _require_nonempty guards). It does\n" +
     '  NOT cover scripts/dev/deploy-bench.sh or run.sh, which build the same payload from a\n' +
     '  local .env file rather than a workflow env: block -- a different contract with a\n' +
     '  different oracle. Names read by a sourced library are invisible here too.'

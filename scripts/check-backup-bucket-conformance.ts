@@ -140,7 +140,10 @@ export function extractBinding(
     );
     process.exit(1);
   }
-  const noJur = extractBinding(fixture.replace('jurisdiction = "eu"\n\n[vars]', '\n[vars]'), BINDING);
+  const noJur = extractBinding(
+    fixture.replace('jurisdiction = "eu"\n\n[vars]', '\n[vars]'),
+    BINDING
+  );
   if (noJur.jurisdiction !== null) {
     console.error('✗ instrument control: an absent jurisdiction was reported as present.');
     process.exit(1);
@@ -214,9 +217,7 @@ for (const d of deployments) {
     continue;
   }
   if (d.declared !== bucket) {
-    problems.push(
-      `    ${d.label}: regions.json says "${d.declared}", ${d.toml} binds "${bucket}"`
-    );
+    problems.push(`    ${d.label}: regions.json says "${d.declared}", ${d.toml} binds "${bucket}"`);
   }
   if ((jurisdiction ?? null) !== d.declaredJurisdiction) {
     problems.push(

@@ -106,21 +106,34 @@ export function schemaKeys(text: string): Set<string> {
 
 // ── Control: both extractors, before either is trusted ─────────────────────
 {
-  const jq = "jq -n \\\n  --arg a \"$A\" \\\n  '{\n        ED25519_PRIVATE_KEY: $a,\n        API_KEY: $b,\n        lower_case: $c,\n  }'";
+  const jq =
+    'jq -n \\\n  --arg a "$A" \\\n  \'{\n        ED25519_PRIVATE_KEY: $a,\n        API_KEY: $b,\n        lower_case: $c,\n  }\'';
   const got = pushedKeys(jq);
   if (got.join(',') !== 'ED25519_PRIVATE_KEY,API_KEY') {
-    console.error(`✗ instrument control: pushed-key extractor read ${JSON.stringify(got)} from a fixture that pushes ED25519_PRIVATE_KEY and API_KEY (and a lowercase decoy). Every verdict below would be meaningless.`);
+    console.error(
+      `✗ instrument control: pushed-key extractor read ${JSON.stringify(got)} from a fixture that pushes ED25519_PRIVATE_KEY and API_KEY (and a lowercase decoy). Every verdict below would be meaningless.`
+    );
     process.exit(1);
   }
-  const schema = "export const envSchema = z.object({\n  ED25519_PRIVATE_KEY: z.string().min(1),\n  CI_MODE: boolFromEnv.optional(),\n    NESTED_NOT_A_KEY: z.string(),\n  // API_KEY: z.string()  (a comment)\n});";
+  const schema =
+    'export const envSchema = z.object({\n  ED25519_PRIVATE_KEY: z.string().min(1),\n  CI_MODE: boolFromEnv.optional(),\n    NESTED_NOT_A_KEY: z.string(),\n  // API_KEY: z.string()  (a comment)\n});';
   const keys = schemaKeys(schema);
-  if (!keys.has('ED25519_PRIVATE_KEY') || !keys.has('CI_MODE') || keys.has('NESTED_NOT_A_KEY') || keys.has('API_KEY')) {
-    console.error(`✗ instrument control: schema-key extractor read ${JSON.stringify([...keys])}; expected exactly ED25519_PRIVATE_KEY and CI_MODE (not a 4-space nested line, not a commented one).`);
+  if (
+    !keys.has('ED25519_PRIVATE_KEY') ||
+    !keys.has('CI_MODE') ||
+    keys.has('NESTED_NOT_A_KEY') ||
+    keys.has('API_KEY')
+  ) {
+    console.error(
+      `✗ instrument control: schema-key extractor read ${JSON.stringify([...keys])}; expected exactly ED25519_PRIVATE_KEY and CI_MODE (not a 4-space nested line, not a commented one).`
+    );
     process.exit(1);
   }
   // The failure direction: a pushed name the schema lacks MUST be reportable.
   if (pushedKeys('        RENAMED_KEY: $x,\n').length !== 1 || keys.has('RENAMED_KEY')) {
-    console.error('✗ instrument control did not fire: a pushed key absent from the schema was not detectable.');
+    console.error(
+      '✗ instrument control did not fire: a pushed key absent from the schema was not detectable.'
+    );
     process.exit(1);
   }
   // And the ORACLE, in both directions. It replaced a hand-maintained count, so it
@@ -139,11 +152,15 @@ export function schemaKeys(text: string): Set<string> {
   const strict = schemaKeys(helper);
   const loose = schemaLineKeys(helper);
   if (loose.has('NESTED_NOT_A_KEY')) {
-    console.error(`✗ instrument control: the schema-line oracle counted a FOUR-space nested line, so it would inflate every comparison. Read ${JSON.stringify([...loose])}.`);
+    console.error(
+      `✗ instrument control: the schema-line oracle counted a FOUR-space nested line, so it would inflate every comparison. Read ${JSON.stringify([...loose])}.`
+    );
     process.exit(1);
   }
   if (!loose.has('HELPER_KEY') || strict.has('HELPER_KEY')) {
-    console.error('✗ instrument control did not fire: a key declared with a helper the strict regex does not know must be seen by the oracle and MISSED by the extractor, or the comparison below proves nothing.');
+    console.error(
+      '✗ instrument control did not fire: a key declared with a helper the strict regex does not know must be seen by the oracle and MISSED by the extractor, or the comparison below proves nothing.'
+    );
     process.exit(1);
   }
 }
@@ -156,7 +173,9 @@ const schemaLines = schemaLineKeys(schemaText);
 // prettier-wrapped chain silently dropped a key. A floor guards against finding
 // nothing; only the comparison below guards against finding ALMOST everything.
 if (schema.size < 80) {
-  console.error(`✗ ${SCHEMA} yielded only ${schema.size} keys. The schema extractor lost the file; refusing a verdict.`);
+  console.error(
+    `✗ ${SCHEMA} yielded only ${schema.size} keys. The schema extractor lost the file; refusing a verdict.`
+  );
   process.exit(1);
 }
 // AND THE EXACT COUNT, DERIVED FROM THE FILE rather than typed into this one.
@@ -191,19 +210,25 @@ for (const { file, floor } of BUILDERS) {
   try {
     text = readFileSync(join(ROOT, file), 'utf8');
   } catch {
-    problems.push(`    ${file}: MISSING — a builder this gate knows about is gone; update BUILDERS or restore it`);
+    problems.push(
+      `    ${file}: MISSING — a builder this gate knows about is gone; update BUILDERS or restore it`
+    );
     continue;
   }
   const keys = pushedKeys(text);
   if (keys.length < floor) {
-    problems.push(`    ${file}: extracted only ${keys.length} pushed key(s), floor is ${floor} — the payload moved or the regex broke`);
+    problems.push(
+      `    ${file}: extracted only ${keys.length} pushed key(s), floor is ${floor} — the payload moved or the regex broke`
+    );
     continue;
   }
   checked += keys.length;
   for (const k of keys) {
     if (!schema.has(k)) {
       const line = text.split('\n').findIndex((l) => new RegExp(`^\\s+${k}:\\s*\\$`).test(l)) + 1;
-      problems.push(`    ${file}:${line}  pushes ${k}, which ${SCHEMA} does not declare — zod will STRIP it silently`);
+      problems.push(
+        `    ${file}:${line}  pushes ${k}, which ${SCHEMA} does not declare — zod will STRIP it silently`
+      );
     }
   }
 }

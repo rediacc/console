@@ -59,7 +59,10 @@ export const scan = (
   } catch {
     return { docs: [], missing: [], thumbs: 0 };
   }
-  const docs = entries.filter((f) => f.endsWith('.md') || f.endsWith('.mdx')).map(baseSlug).sort();
+  const docs = entries
+    .filter((f) => f.endsWith('.md') || f.endsWith('.mdx'))
+    .map(baseSlug)
+    .sort();
   let thumbs: string[] = [];
   try {
     thumbs = fs.readdirSync(thumbDir).filter((f) => f.endsWith('.svg'));
@@ -100,7 +103,11 @@ const selftest = (): number => {
   // an empty array unconditionally.
   fs.rmSync(path.join(t, 'beta.svg'));
   const gap = scan(d, t);
-  check('removing ONE thumbnail names exactly that doc', gap.missing.join(',') === 'beta', `got ${gap.missing.join(',')}`);
+  check(
+    'removing ONE thumbnail names exactly that doc',
+    gap.missing.join(',') === 'beta',
+    `got ${gap.missing.join(',')}`
+  );
   check('and it does not spuriously flag the covered one', !gap.missing.includes('alpha'));
 
   // .mdx must resolve the same way .md does, or half the corpus is silently unchecked.
@@ -112,7 +119,10 @@ const selftest = (): number => {
 
   // An unreadable docs dir must yield zero docs, which main() then treats as a hard
   // failure via the floor rather than as "nothing to check".
-  check('an unreadable docs dir yields zero docs', scan(path.join(tmp, 'nope'), t).docs.length === 0);
+  check(
+    'an unreadable docs dir yields zero docs',
+    scan(path.join(tmp, 'nope'), t).docs.length === 0
+  );
 
   fs.rmSync(tmp, { recursive: true, force: true });
   console.log(`\nselftest: ${pass} passed, ${fail} failed`);
@@ -138,7 +148,9 @@ const main = (): number => {
     for (const slug of missing) console.error(`  ${slug}  ->  img/docs-thumbs/${slug}.svg`);
     console.error('\n  The browse card renders blank for these in ALL 13 locales: one thumbnail');
     console.error('  serves every translation, resolved by base slug.');
-    console.error('\n  There is NO regenerate script; the generator was deleted. Author the file by');
+    console.error(
+      '\n  There is NO regenerate script; the generator was deleted. Author the file by'
+    );
     console.error('  hand, viewBox="0 0 320 120", matching a sibling in that directory.');
     return 1;
   }

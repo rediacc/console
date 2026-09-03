@@ -249,11 +249,26 @@ function selftest(tracked: readonly string[]): number {
       ...over,
     }) as GateSpec;
 
-  check('tier: a slow-marked gate that is cheap is caught', tierFindings([spec({ slow: true })], { x: 100 }).length === 1);
-  check('tier CONTROL: a slow-marked gate that IS slow passes', tierFindings([spec({ slow: true })], { x: 60_000 }).length === 0);
-  check('tier: a fast-lane gate that is expensive is caught', tierFindings([spec({})], { x: 60_000 }).length === 1);
-  check('tier CONTROL: a fast-lane gate that IS fast passes', tierFindings([spec({})], { x: 100 }).length === 0);
-  check('tier CONTROL: an unmeasured gate is not judged', tierFindings([spec({ slow: true })], {}).length === 0);
+  check(
+    'tier: a slow-marked gate that is cheap is caught',
+    tierFindings([spec({ slow: true })], { x: 100 }).length === 1
+  );
+  check(
+    'tier CONTROL: a slow-marked gate that IS slow passes',
+    tierFindings([spec({ slow: true })], { x: 60_000 }).length === 0
+  );
+  check(
+    'tier: a fast-lane gate that is expensive is caught',
+    tierFindings([spec({})], { x: 60_000 }).length === 1
+  );
+  check(
+    'tier CONTROL: a fast-lane gate that IS fast passes',
+    tierFindings([spec({})], { x: 100 }).length === 0
+  );
+  check(
+    'tier CONTROL: an unmeasured gate is not judged',
+    tierFindings([spec({ slow: true })], {}).length === 0
+  );
 
   // Closure, both directions AND transitively -- a one-hop-only check would
   // pass the two-hop case, which is the shape that actually occurs.
@@ -261,40 +276,75 @@ function selftest(tracked: readonly string[]): number {
   const b = spec({ id: 'b', needs: ['c'] });
   const cSlow = spec({ id: 'c', slow: true });
   const cFast = spec({ id: 'c' });
-  check('closure: a fast gate needing a slow gate is caught', closureFindings([spec({ id: 'a', needs: ['c'] }), cSlow]).length === 1);
-  check('closure: it follows the chain, not just one hop', closureFindings([a, b, cSlow]).length === 2);
+  check(
+    'closure: a fast gate needing a slow gate is caught',
+    closureFindings([spec({ id: 'a', needs: ['c'] }), cSlow]).length === 1
+  );
+  check(
+    'closure: it follows the chain, not just one hop',
+    closureFindings([a, b, cSlow]).length === 2
+  );
   check('closure CONTROL: an all-fast chain passes', closureFindings([a, b, cFast]).length === 0);
-  check('closure CONTROL: a slow gate needing a slow gate is not a finding', closureFindings([spec({ id: 'a', needs: ['c'], slow: true }), cSlow]).length === 0);
-  check('closure CONTROL: a cycle does not hang the walk', closureFindings([spec({ id: 'a', needs: ['b'] }), spec({ id: 'b', needs: ['a'] })]).length === 0);
+  check(
+    'closure CONTROL: a slow gate needing a slow gate is not a finding',
+    closureFindings([spec({ id: 'a', needs: ['c'], slow: true }), cSlow]).length === 0
+  );
+  check(
+    'closure CONTROL: a cycle does not hang the walk',
+    closureFindings([spec({ id: 'a', needs: ['b'] }), spec({ id: 'b', needs: ['a'] })]).length === 0
+  );
 
   // THE TWO ORACLES MUST NOT CONTRADICT EACH OTHER. This fired live: a gate
   // costing 0.8s itself but 132s through its closure was told to mark itself
   // slow by one oracle and unmark itself by the other.
   check(
     'tier defers to closure: a cheap gate that is slow by closure may stay marked',
-    tierFindings([spec({ id: 'a', needs: ['c'], slow: true }), spec({ id: 'c', slow: true })], { a: 800 }).length === 0
+    tierFindings([spec({ id: 'a', needs: ['c'], slow: true }), spec({ id: 'c', slow: true })], {
+      a: 800,
+    }).length === 0
   );
   check(
     'tier CONTROL: a cheap gate slow by NOTHING is still caught',
     tierFindings([spec({ id: 'a', slow: true })], { a: 800 }).length === 1
   );
 
+  check(
+    'leaf: a gate excluding its own leaf is caught',
+    leafFindings([spec({ paths: ['other/**'] })]).length === 1
+  );
+  check(
+    'leaf CONTROL: a gate including its own leaf passes',
+    leafFindings([spec({ paths: ['.ci/**'] })]).length === 0
+  );
+  check(
+    'leaf CONTROL: a gate with NO paths is out of scope',
+    leafFindings([spec({})]).length === 0
+  );
 
-  check('leaf: a gate excluding its own leaf is caught', leafFindings([spec({ paths: ['other/**'] })]).length === 1);
-  check('leaf CONTROL: a gate including its own leaf passes', leafFindings([spec({ paths: ['.ci/**'] })]).length === 0);
-  check('leaf CONTROL: a gate with NO paths is out of scope', leafFindings([spec({})]).length === 0);
-
-  check('glob: a glob matching nothing is caught', globFindings([spec({ paths: ['no/such/dir/**'] })], tracked).length === 1);
-  check('glob CONTROL: a glob matching something passes', globFindings([spec({ paths: ['.ci/**'] })], tracked).length === 0);
+  check(
+    'glob: a glob matching nothing is caught',
+    globFindings([spec({ paths: ['no/such/dir/**'] })], tracked).length === 1
+  );
+  check(
+    'glob CONTROL: a glob matching something passes',
+    globFindings([spec({ paths: ['.ci/**'] })], tracked).length === 0
+  );
 
   // A leaf CI cannot see. `.ci/x.sh` is the fixture leaf and is deliberately NOT tracked,
   // so the positive case needs no planted file; the control uses a leaf that really is.
-  check('leaf-tracked: an untracked leaf is caught', leafTrackedFindings([spec({})], tracked).length === 1);
+  check(
+    'leaf-tracked: an untracked leaf is caught',
+    leafTrackedFindings([spec({})], tracked).length === 1
+  );
   check(
     'leaf-tracked CONTROL: a tracked leaf passes',
-    leafTrackedFindings([spec({ leaves: ['scripts/check-gate-manifest.ts'] })], tracked).length === 0,
+    leafTrackedFindings([spec({ leaves: ['scripts/check-gate-manifest.ts'] })], tracked).length ===
+      0
   );
-  check('leaf-tracked CONTROL: a bare npm key is not a path', leafTrackedFindings([spec({ leaves: ['check:ci-thing'] })], tracked).length === 0);
+  check(
+    'leaf-tracked CONTROL: a bare npm key is not a path',
+    leafTrackedFindings([spec({ leaves: ['check:ci-thing'] })], tracked).length === 0
+  );
   check(
     'glob CONTROL: the tracked list is real, or every glob would look dead',
     tracked.length > 500
@@ -302,7 +352,10 @@ function selftest(tracked: readonly string[]): number {
 
   // The `**/` semantics this file deliberately does NOT gate on, pinned so the
   // comment above cannot rot into a claim nobody can check.
-  check('the runner matcher treats **/ as zero-or-more dirs', globToRegExp('**/*.sh').test('run.sh'));
+  check(
+    'the runner matcher treats **/ as zero-or-more dirs',
+    globToRegExp('**/*.sh').test('run.sh')
+  );
   return bad;
 }
 
