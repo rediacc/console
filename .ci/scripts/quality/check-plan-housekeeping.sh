@@ -137,25 +137,6 @@ is_shallow() {
     [[ -s "$f" ]]
 }
 
-SKIP_AGES=0
-if is_shallow; then
-    if [[ "${CI:-}" == "true" ]]; then
-        echo -e "${RED}✗${NC} plan housekeeping: the checkout is SHALLOW, so every plan reports the" >&2
-        echo "  graft commit's date and this gate would pass having verified nothing." >&2
-        echo "  Fix: the step must run in a job whose actions/checkout carries" >&2
-        echo "    fetch-depth: 0" >&2
-        echo "    filter: blob:none" >&2
-        echo "  quality-i18n in ci-quality.yml is the lane this gate was wired behind." >&2
-        echo "  Measured: $(git rev-list --count HEAD 2>/dev/null) commit(s) reachable, and" >&2
-        echo "  $(git rev-parse --git-path shallow) holds $(wc -l <"$(git rev-parse --git-path shallow)" 2>/dev/null || echo 0) graft(s)." >&2
-        exit 1
-    fi
-    echo -e "${YEL}⚠${NC} plan housekeeping: SHALLOW clone ($(git rev-list --count HEAD) commit(s));"
-    echo "  the per-file AGE verdict is DEFERRED to CI, where the checkout is deep."
-    echo "  To run it here: git fetch --unshallow --filter=blob:none"
-    SKIP_AGES=1
-fi
-
 # ---------------------------------------------------------------------------
 # The corpus. Tracked-only and non-recursive, which is exactly the Stop hook's
 # own glob (wl_store.agent_plan_dir -> agent_root, d.glob("PLAN-*.md")). If the
@@ -173,6 +154,58 @@ if ((${#PLANS[@]} < MIN_PLANS)); then
     echo "VACUOUS INPUT: found ${#PLANS[@]} tracked plan file(s) matching $PLAN_GLOB, floor is $MIN_PLANS." >&2
     echo "  The glob lost the corpus; refusing a verdict rather than reporting a clean tree." >&2
     exit 1
+fi
+
+# ---------------------------------------------------------------------------
+# THE SHALLOW REFUSAL, and it is measured against THE PLANS rather than against
+# the repository. Third iteration, because the first two asked the wrong question.
+#
+#   1. `git rev-parse --is-shallow-repository` alone. It answers on the EXISTENCE
+#      of .git/shallow, which `git fetch --unshallow` can leave behind empty.
+#   2. "any graft at all". Correct but far too wide: CI job 100507628220 measured
+#      90 commits reachable and 1 graft, and refused -- in the lane its own error
+#      message recommends -- while every plan file's history was entirely present.
+#      `agent/` has only been a tracked directory since 2026-08-18, so nothing in
+#      this corpus is older than the boundary.
+#
+# A graft only corrupts THIS gate when a plan's last commit IS the boundary,
+# because that is the case where `git log -1` reports the graft's date instead of
+# the file's. So ask exactly that, per plan. A deepened clone that contains every
+# plan's history answers correctly and is allowed to.
+GRAFTS_FILE="$(git rev-parse --git-path shallow 2>/dev/null)"
+SKIP_AGES=0
+GRAFTED_PLANS=()
+if [[ -n "$GRAFTS_FILE" && -s "$GRAFTS_FILE" ]]; then
+    for _p in "${PLANS[@]}"; do
+        _last="$(git log -1 --format=%H -- "$_p" 2>/dev/null)"
+        # A plan whose last commit is a graft boundary reports the boundary's
+        # date. A plan with NO commit at all is the same failure, louder.
+        if [[ -z "$_last" ]] || grep -qxF "$_last" "$GRAFTS_FILE" 2>/dev/null; then
+            GRAFTED_PLANS+=("$_p")
+        fi
+    done
+fi
+
+if ((${#GRAFTED_PLANS[@]} > 0)); then
+    if [[ "${CI:-}" == "true" ]]; then
+        echo -e "${RED}✗${NC} plan housekeeping: this checkout is SHALLOW at a boundary that ${#GRAFTED_PLANS[@]} plan(s)" >&2
+        echo "  sit on, so they report the GRAFT commit's date and the age verdict would be" >&2
+        echo "  fiction. Refusing rather than answering." >&2
+        printf '    %s\n' "${GRAFTED_PLANS[@]}" >&2
+        echo "  Fix: the step must run in a job whose actions/checkout carries" >&2
+        echo "    fetch-depth: 0" >&2
+        echo "    filter: blob:none" >&2
+        echo "  Measured: $(git rev-list --count HEAD 2>/dev/null) commit(s) reachable, and" >&2
+        echo "  $GRAFTS_FILE holds $(wc -l <"$GRAFTS_FILE" 2>/dev/null || echo 0) graft(s)." >&2
+        exit 1
+    fi
+    echo -e "${YEL}⚠${NC} plan housekeeping: ${#GRAFTED_PLANS[@]} plan(s) sit on a shallow boundary"
+    echo "  ($(git rev-list --count HEAD) commit(s) reachable); their AGE verdict is DEFERRED."
+    echo "  To run it here: git fetch --unshallow --filter=blob:none"
+    SKIP_AGES=1
+elif [[ -n "$GRAFTS_FILE" && -s "$GRAFTS_FILE" ]]; then
+    echo "  note: the clone is shallow ($(wc -l <"$GRAFTS_FILE") graft(s), $(git rev-list --count HEAD) commit(s)),"
+    echo "  but every plan's last commit is present, so the age verdict below is real."
 fi
 
 # ---------------------------------------------------------------------------

@@ -1,13 +1,15 @@
 Status: executing — the migration's own DESIGN is finished; what is left is values only
 the operator holds. Everything landed on 2026-09-03 as branch `0903-1` / PR #585 with
-`account#85`, `renet#110`, `elite#16`; `ci:quick` is 288/288 and `carried-reds.json` is
-empty. **Read Part 23 first** — it records the P0 that Part 19's rename contained, the two
-files the same class recurred in, the four gates written after each incident, and the one
-finding that changes what this plan is FOR.
+`account#85`, `renet#110`, `elite#16`; `ci:quick` is 290/290 and `carried-reds.json` is
+empty. **Read Part 24 first, then Part 23** — 24 records the shadow's own design change
+(it no longer stops a job on a KNOWN drift, and why that was not optional), 23 records the
+P0 that Part 19's rename contained, the two files the same class recurred in, and the
+gates written after each incident.
 
-That finding: the shadow run compared values and **two disagree** —
-`ACCOUNT_SERVER_API_KEY` and `STRIPE_SANDBOX_WEBHOOK_SECRET` hold different values in
-GitHub and Bitwarden (run 33691632299, Account E2E). Deleting the org secrets now would
+That finding: the shadow run compared values and **THREE disagree** —
+`ACCOUNT_SERVER_API_KEY` and `STRIPE_SANDBOX_WEBHOOK_SECRET` (run 33691632299, Account
+E2E), joined on 2026-09-03 by `ANTHROPIC_CLAUDE_CODE_OAUTH_TOKEN` (run 33704079162, the
+CI watchdog). They hold different values in GitHub and Bitwarden. Deleting the org secrets now would
 destroy the live value of both, and no session can reconcile them because GitHub secrets
 are write-only. Parked as `[?] #fbd35dba`, DEFAULT "delete nothing". The rule it
 establishes outlives this migration: **a fallback may only be destroyed after something
@@ -2507,3 +2509,62 @@ Nothing but the operator's half. The three OTLP secrets Part 17 named still need
 `./run.sh rotation rotate otlp-*`, the two mismatches above need re-seeding in `ci-shared`,
 and the deletion itself is `agent/PLAN-github-secrets-removal.md`. The migration's own
 design is finished; what is left is values only the operator holds.
+
+
+## Part 24 — the shadow was BLOCKING, and a comparison has no business gating (2026-09-03)
+
+Parts 17-23 treat the shadow as a pure observer: it exports `BWS_`-prefixed copies that
+nothing consumes and compares them to `GH_`. That was true of what it READS. It was never
+true of what it COSTS, and this part is the correction.
+
+The compare step exits 1 on a mismatch, and it sits near the TOP of all 62 jobs in this
+repo. So a finding does not report — it stops that job's real work. Nothing in Parts 17-23
+noticed, because until 2026-09-03 every compared name matched in every job that ran.
+
+**What it cost, precisely.** Run `33704079162` is the CI watchdog. Its compare step found
+`ANTHROPIC_CLAUDE_CODE_OAUTH_TOKEN` MISMATCH at step 7 of 7 and exited 1, before
+`Monitor jobs and cancel on failure` ran. The run's conclusion was **failure**, and it had
+monitored nothing at all. A temporary migration scaffold had switched off the mechanism
+that watches every other CI run, and the only symptom was a red watchdog — which is
+exactly what a working watchdog looks like when it catches something.
+
+Sweeping the class: nine jobs carried one of the three drifted names, and they are the
+load-bearing ones — the watchdog, the Claude review gate, autopilot, both CD deploys, the
+preview deploy, the Stripe sandbox job, the account E2E battery.
+
+**The design change.** `.ci/config/shadow-expected-mismatches.json` records a KNOWN drift
+with the run that found it and the door that closes it (all three `operator-only`). A job
+excuses those names via `SHADOW_EXPECTED_MISMATCH` and keeps running. This is deliberately
+NOT a weakening, and every clause is tested by `gate-test:shadow-compare`, which extracts
+the REAL compare body from `ci.yml` rather than copying it:
+
+- an UNEXCUSED mismatch still fails its job;
+- an EMPTY value on either side stays fatal even for an excused name, because an empty is
+  a broken fetch and not the value drift the ledger describes;
+- an excused name that starts MATCHING fails until its entry is deleted — an exemption
+  cannot outlive the condition that justified it;
+- an excused name absent from that job's `SHADOW_NAMES` is refused as excusing nothing.
+
+`check_bws_map` assertion 12 adds the static half in both directions: an excused name must
+carry a ledger entry with a substantive `BLOCKER:` reason, its run and its door; and a
+ledger entry must be excused by some workflow, or it is describing a drift nothing acts on.
+
+The watchdog additionally has its shadow moved LAST with `if: always()`, and
+`check-workflow-gates.sh` CHECK 6 now refuses any step before `Monitor jobs and cancel on
+failure` that is not one the monitor needs. A blanket move for the other 61 was considered
+and REJECTED: several jobs check out PR head partway through, and re-invoking a local
+composite action after that would run PR-controlled code with the Bitwarden token.
+
+**Verified live, not asserted.** Run `33705949777` shows `Monitor jobs and cancel on
+failure` succeeding, then `shadow ANTHROPIC_CLAUDE_CODE_OAUTH_TOKEN MISMATCH (EXPECTED)`.
+The drift is still detected and still named; the guard now runs.
+
+**What this changes about the endgame.** Nothing about the ordering — Part 23's rule
+stands, and no org secret is deleted until every compare says match. What it changes is the
+COST of waiting: the three drifts no longer hold CI, CD and the review gate hostage while
+the operator decides, so the wait is now free and the deletion can take as long as it takes.
+
+**The one worth checking before re-seeding**, recorded in the ledger's `$resolution`:
+GitHub calls that token `CLAUDE_CODE_OAUTH_TOKEN` while the shadow name carries the
+`ANTHROPIC_` prefix. A rotation applied under one name would never have reached the other,
+which would make this drift a half-landed rotation rather than a seeding error.

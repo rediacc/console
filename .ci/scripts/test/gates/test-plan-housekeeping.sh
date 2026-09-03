@@ -237,6 +237,39 @@ test_empty_shallow_file_is_not_shallow() {
     log_pass "an empty graft list is a complete history, whatever rev-parse says"
 }
 
+# ── 8c. A SHALLOW CLONE WHOSE PLANS ARE ALL PRESENT MUST STILL ANSWER ──────
+# The case CI actually hit. Job 100507628220 measured 90 commits reachable and 1
+# graft and REFUSED -- in the lane its own error message recommends -- while every
+# plan's history was entirely present (`agent/` has only been tracked since
+# 2026-08-18, so nothing in the corpus is older than the boundary). A graft only
+# corrupts this gate when a PLAN's last commit is the boundary, so that is what is
+# asked. The plant must still be found through it, or "not on the boundary" would
+# just be a quieter way of checking nothing.
+test_shallow_but_plans_present() {
+    local d="$1/r" c="$1/deep"
+    make_repo "$d" 40 PLAN-ancient.md
+    # One more commit that touches EVERY plan, so no plan's last commit is the
+    # boundary once the clone grafts at the commit below it. Backdated too, or the
+    # over-age plant would be reset by this very commit.
+    local when
+    when="$(date -u -d '40 days ago' +%Y-%m-%dT%H:%M:%S+0000)"
+    local f
+    for f in "$d"/agent/PLAN-*.md; do printf -- '- [ ] one more\n' >>"$f"; done
+    git -C "$d" add -A -- .
+    GIT_AUTHOR_DATE="$when" GIT_COMMITTER_DATE="$when" \
+        git -C "$d" -c commit.gpgsign=false commit -qm "touch every plan"
+    git clone -q --depth 2 "file://$d" "$c" 2>/dev/null
+
+    [[ -s "$c/$(git -C "$c" rev-parse --git-path shallow)" ]] ||
+        log_fail "fixture did not reproduce the condition: the clone carries no graft"
+    local rc=0
+    run_gate "$c" CI=true || rc=$?
+    assert_exit_code 1 "$rc" "the AGE finding must still be reported through a graft no plan sits on"
+    assert_contains "$LAST_OUT" "PLAN-ancient.md" "naming the over-age plan"
+    assert_not_contains "$LAST_OUT" "SHALLOW" "and NOT refusing as shallow"
+    log_pass "a graft below every plan is not a reason to refuse"
+}
+
 # ── 10. The override is not an escape hatch ────────────────────────────────
 test_empty_tree_is_not_a_pass() {
     local d="$1/empty"
@@ -262,6 +295,7 @@ with_temp_dir test_allowlist_dangling
 with_temp_dir test_shallow_refuses_in_ci
 with_temp_dir test_shallow_skips_locally
 with_temp_dir test_empty_shallow_file_is_not_shallow
+with_temp_dir test_shallow_but_plans_present
 with_temp_dir test_empty_tree_is_not_a_pass
 
 echo ""
