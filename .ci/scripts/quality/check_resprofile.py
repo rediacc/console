@@ -117,6 +117,24 @@ def selftest() -> int:
         load_baseline() is None or load_baseline().get("format") == 1,
     )
 
+    # The retirement trigger's "acted on" test, in both directions. Its whole job is
+    # to tell work from talk about work, so a control that only plants real code would
+    # miss the exact case that got through on the first try.
+    check(
+        "acted-on: a commit touching only the layer does NOT count",
+        not acts_outside([".claude/hooks/stop/wl_profile.py", ".devcontainer/bashcov-sup.c"]),
+    )
+    check(
+        "acted-on: the layer PLUS prose about the layer still does NOT count",
+        not acts_outside(
+            [".claude/hooks/stop/wl_profile.py", "agent/PLAN-resprofile-wave2.md", "README.md"]
+        ),
+    )
+    check(
+        "acted-on CONTROL: the layer plus a real code file DOES count",
+        acts_outside([".claude/hooks/stop/wl_profile.py", "packages/cli/src/commands/repo.ts"]),
+    )
+
     # THE BASH ANTI-VACUITY ARM, both answers. This arm exists because silence from
     # the bash corpus read as a clean tree for the running devbox's whole life, so a
     # control that only proves the happy path would reproduce the original defect in
@@ -211,6 +229,30 @@ SUNSET_DAYS = 30
 ACTED_ON_FLOOR = 2
 
 
+def acts_outside(files: list[str]) -> bool:
+    """Did this commit change something the ranking could plausibly have DRIVEN?
+
+    PROSE DOES NOT COUNT, and that exclusion was paid for immediately. The first
+    commit ever to carry a `Resprofile:` trailer changed wl_profile.py,
+    check_resprofile.py and agent/PLAN-resprofile-wave2.md -- three files, all of
+    them the layer or a document about the layer -- and this function accepted it,
+    because the plan file is not in LAYER_FILES. The retirement trigger asks whether
+    the profiler drove work in the CODEBASE; a commit that only writes about the
+    profiler answers that question with its own subject.
+
+    So: at least one changed file outside the layer that is not documentation. Docs
+    are `.md` anywhere, plus everything under agent/ and docs/, which are prose trees
+    whatever the extension.
+    """
+    for f in files:
+        if any(f.startswith(x) for x in LAYER_FILES):
+            continue
+        if f.endswith(".md") or f.startswith(("agent/", "docs/")):
+            continue
+        return True
+    return False
+
+
 def acted_on_commits(days: int = SUNSET_DAYS) -> list[str]:
     """Commits in the window carrying a `Resprofile:` TRAILER and touching real code.
 
@@ -248,7 +290,7 @@ def acted_on_commits(days: int = SUNSET_DAYS) -> list[str]:
             ).stdout.split()
         except (OSError, subprocess.TimeoutExpired):
             continue
-        if any(not any(f.startswith(x) for x in LAYER_FILES) for f in files):
+        if acts_outside(files):
             hits.append(sha)
     return hits
 
