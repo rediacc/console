@@ -1034,6 +1034,10 @@ jobs:
       - name: Every source file reaches a linter
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: .ci/scripts/quality/check_lint_scope_coverage.py
+      - name: Format command covers its config's scope
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: npm run check:ci-format-scope
+
 
       - name: Workflow banned patterns
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}

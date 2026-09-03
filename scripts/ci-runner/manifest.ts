@@ -1771,6 +1771,21 @@ export const GATES: readonly GateSpec[] = [
     },
   },
   {
+    id: 'check:ci-format-scope',
+    // A formatter command may not narrow its own config's scope. Sibling of
+    // lint-scope-coverage: that one proves FILES reach a linter, this proves the
+    // COMMAND does not shrink what biome.json declares.
+    run: 'npm run check:ci-format-scope',
+    gate: true,
+    leaves: ['.ci/scripts/quality/check_format_scope.py'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-code',
+      step: "Format command covers its config's scope",
+    },
+  },
+  {
     id: 'check:ci-shell-commands',
     run: 'npm run check:ci-shell-commands',
     gate: true,
