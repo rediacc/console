@@ -37,12 +37,19 @@ sys.exit("no compare step found in ci.yml -- the extraction is stale, so every v
 PY
 [ -s "$BODY" ] || log_fail "extracted an EMPTY compare body; refusing to report on it"
 
+# FROM THE WORKSPACE ROOT, EXPLICITLY. The extracted body is now one line --
+# `.ci/scripts/ci/shadow-compare.sh` -- and GitHub runs every step with the
+# workspace as CWD, so a RELATIVE path is correct there. This harness inherited
+# its CWD instead, which meant it passed when invoked by hand from the repo root
+# and exited 127 under run-all.sh, which does `cd "$GATES_DIR"` first. The test
+# must reproduce the workflow's condition rather than borrow whatever the caller
+# happened to be standing in.
 run_body() { # run_body <names> <expected> [VAR=VAL...]
     local names="$1" expected="$2"
     shift 2
     local rc=0
-    LAST_OUT=$(env -i PATH="$PATH" SHADOW_NAMES="$names" SHADOW_EXPECTED_MISMATCH="$expected" \
-        "$@" bash "$BODY" 2>&1) || rc=$?
+    LAST_OUT=$(cd "$REPO_ROOT" && env -i PATH="$PATH" SHADOW_NAMES="$names" \
+        SHADOW_EXPECTED_MISMATCH="$expected" "$@" bash "$BODY" 2>&1) || rc=$?
     return "$rc"
 }
 
