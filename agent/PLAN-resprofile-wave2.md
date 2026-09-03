@@ -78,10 +78,23 @@ The measurement only means anything under contention.
    devbox actually looks, and make the gate treat "zero bash records from this
    scope today" as UNJUDGEABLE rather than clean -- the same anti-vacuity rule it
    already applies to captures.
+   **DONE.** Both halves. `check_resprofile.py` counts TODAY's `bash.jsonl`
+   records before it judges anything and reports UNJUDGEABLE at zero -- warning
+   while pristine, failing once seeded. Counted, not existence-checked: the day
+   folder is created before the writer knows whether the supervisor is there, so
+   an empty file is the exact signature of the hole. Three controls plant the
+   absent file, the populated one and the empty one, because a control proving
+   only the happy path would reproduce the very defect the arm exists to catch.
 3. **Give bash records a shape.** `BASHCOV_SHAPE` = repo-relative `$0`, or
    `sh:-c`; never `BASH_EXECUTION_STRING`. The supervisor copies it into the
    record. Then `rank()` folds `bash.jsonl` and 35 MB/day stops being ballast.
    Extend the planted-secret control to the bash record.
+   **DONE.** The fold landed 2026-09-04 and immediately changed the top of the
+   table: 246 shell shapes now rank beside the Python ones, and the row that
+   comes out first is `sh:-c` at 57,718 CPU seconds over 15,232 invocations --
+   the single largest entry in the corpus, previously invisible. It stays a
+   BUCKET (splitting it needs the command line, which can carry a secret), and
+   `rank_markdown` now says so where a reader would otherwise go optimise it.
 4. **Fix the signals that lie.** `avail.run_delay` becomes a probe, not a sysctl
    read; `r_fraction` reads per-thread states (the leader thread is `futex` for
    59/62 ticks on go and 66/82 on biome, so every multi-threaded tool currently

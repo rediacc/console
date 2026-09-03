@@ -1004,7 +1004,50 @@ def rank(root: Path, days: int = 30) -> tuple[list[dict], list[dict]]:
     cutoff = time.strftime("%Y-%m-%d", time.gmtime(time.time() - days * 86400))
     shapes: dict[str, dict] = {}
     gates: dict[str, dict] = {}
+    days_seen = 0
+    days_with_bash = 0
     for day in sorted(p for p in root.iterdir() if p.is_dir() and p.name >= cutoff):
+        days_seen += 1
+        # BASH FIRST, and folding it into the SAME table is the point.
+        #
+        # bash.jsonl was write-only for its whole life: a `grep -rln` for it over the
+        # tree returned exactly one file, its own writer. 35 MB a day of records that
+        # nothing read, while the ranking beside it claimed to say where the time went
+        # and could only see Python. Now that the supervisor stamps a `shape` on every
+        # record, a shell script ranks against a Python one on the same axis -- which
+        # is the only way the top of this table is the real top.
+        #
+        # Units differ by construction: the exit recorder writes ms and kB, the C
+        # supervisor writes us and kB. Converted here rather than at the writer, whose
+        # record format is a public artifact other things parse.
+        bs = day / "bash.jsonl"
+        if bs.exists():
+            n_bash = 0
+            for ln in bs.read_text(encoding="utf-8", errors="replace").splitlines():
+                try:
+                    r = json.loads(ln)
+                except ValueError:
+                    continue
+                shape = r.get("shape")
+                if not shape:
+                    continue  # pre-2026-09-04 records carry no identity; unattributable
+                e = shapes.setdefault(
+                    shape,
+                    {"shape": shape, "n": 0, "cpu_ms": 0, "wall_ms": 0, "rss_kb_max": 0},
+                )
+                e["n"] += 1
+                n_bash += 1
+                e["cpu_ms"] += (int(r.get("utime_us", 0)) + int(r.get("stime_us", 0))) // 1000
+                e["wall_ms"] += int(r.get("wall_us", 0)) // 1000
+                e["rss_kb_max"] = max(
+                    e["rss_kb_max"], int(r.get("maxrss_kb", 0)), int(r.get("peak_hwm_kb", 0))
+                )
+            # Counted per DAY and from THIS day's records, never from the running
+            # table: `shapes` is non-empty as soon as any earlier day contributed,
+            # so a truthiness test on it would report full coverage for a corpus
+            # with one good day and twenty empty ones.
+            if n_bash:
+                days_with_bash += 1
         ex = day / "exit.jsonl"
         if ex.exists():
             for ln in ex.read_text(encoding="utf-8").splitlines():
@@ -1069,6 +1112,7 @@ def rank(root: Path, days: int = 30) -> tuple[list[dict], list[dict]]:
                 g["findings"] += sum(1 for f in derive([c]))
     top_shapes = sorted(shapes.values(), key=lambda e: -e["cpu_ms"])
     top_gates = sorted(gates.values(), key=lambda g: -g["cpu_ticks"])
+    rank.coverage = {"days": days_seen, "days_with_bash": days_with_bash}  # type: ignore[attr-defined]
     return top_shapes, top_gates
 
 
@@ -1122,6 +1166,14 @@ def rank_markdown(root: Path, days: int = 30) -> str:
     out += [
         "",
         "A high blocked share with low CPU is a wait that might be event-driven; high CPU with sequential children is what E1 looks for. Findings are report-only until the class is admissible (see check:ci-resprofile).",
+        "",
+        (
+            "`sh:` rows come from bash.jsonl, `py:` rows from exit.jsonl, on the same axis. "
+            "`sh:-c` is a BUCKET, not a shape: every `bash -c` lands in it, and it stays a "
+            "bucket on purpose -- the only thing that would split it is BASH_EXECUTION_STRING, "
+            "which is a command line and can carry a secret in a public repo. Read its total "
+            "as 'shell invocations, all of them', never as one script to go optimise."
+        ),
         "",
     ]
     return "\n".join(out)

@@ -116,6 +116,37 @@ def selftest() -> int:
         "a missing baseline is PRISTINE, not an error",
         load_baseline() is None or load_baseline().get("format") == 1,
     )
+
+    # THE BASH ANTI-VACUITY ARM, both answers. This arm exists because silence from
+    # the bash corpus read as a clean tree for the running devbox's whole life, so a
+    # control that only proves the happy path would reproduce the original defect in
+    # the check that was written to catch it.
+    import tempfile  # noqa: PLC0415
+    import time as _t  # noqa: PLC0415
+
+    with tempfile.TemporaryDirectory() as td:
+        empty = Path(td) / "empty"
+        n0, why0 = bash_corpus_today(empty)
+        check(
+            "bash corpus: an absent file counts ZERO, and says where it looked",
+            n0 == 0 and str(empty) in why0,
+            why0,
+        )
+        day = (
+            Path(td)
+            / "full"
+            / str(ROOT).lstrip("/").replace("/", "-")
+            / _t.strftime("%Y-%m-%d", _t.gmtime())
+        )
+        day.mkdir(parents=True)
+        (day / "bash.jsonl").write_text('{"shape":"sh:x"}\n\n{"shape":"sh:y"}\n', encoding="utf-8")
+        n1, _ = bash_corpus_today(Path(td) / "full")
+        check("bash corpus CONTROL: two records count 2, blank lines ignored", n1 == 2, f"got {n1}")
+        (day / "bash.jsonl").write_text("", encoding="utf-8")
+        n2, _ = bash_corpus_today(Path(td) / "full")
+        check(
+            "bash corpus: an EMPTY file counts zero, not 'the folder exists'", n2 == 0, f"got {n2}"
+        )
     return bad
 
 
@@ -248,6 +279,35 @@ def kill_trigger_fired(base: dict | None) -> str | None:
     )
 
 
+def bash_corpus_today(corpus: Path | None = None) -> tuple[int, str]:
+    """(records written today, a phrase saying where I looked).
+
+    Counted rather than merely existence-checked: bash_env.sh creates the day folder
+    before it knows whether the supervisor is there, so an EMPTY bash.jsonl -- or a
+    missing one beside a populated exit.jsonl -- is the exact signature of the hole.
+    """
+    import time  # noqa: PLC0415
+
+    # `corpus` is injectable ONLY so selftest() can drive both answers against a
+    # fixture. ROOT cannot serve that purpose: it is also this file's import path for
+    # wl_profile, so pointing it at a temp dir makes the module fail to load rather
+    # than report an empty corpus -- which is how the first attempt at this control
+    # "passed" by crashing before it reached the check.
+    root = corpus or (Path.home() / ".claude" / "resprofile")
+    slug = str(ROOT).lstrip("/").replace("/", "-")
+    day = root / slug / time.strftime("%Y-%m-%d", time.gmtime())
+    f = day / "bash.jsonl"
+    if not f.is_file():
+        return 0, f"{f} does not exist"
+    try:
+        n = sum(
+            1 for ln in f.read_text(encoding="utf-8", errors="replace").splitlines() if ln.strip()
+        )
+    except OSError as exc:
+        return 0, f"{f} unreadable ({exc})"
+    return n, f"{n} record(s) in {f}"
+
+
 def main(argv: list[str]) -> int:
     if "--selftest" in argv:
         n = selftest()
@@ -280,6 +340,26 @@ def main(argv: list[str]) -> int:
             f"{'⚠' if pristine else '✗'} no captures at {cdir}: the runner rotates them in at the start of the NEXT run, so the first run has nothing to judge.{' (pristine: warning only)' if pristine else ''}"
         )
         return 0 if pristine else 1
+    # THE BASH CORPUS IS THE OTHER HALF, and its silence used to read as clean.
+    #
+    # bash_env.sh probes two explicit paths for bashcov-sup and skips SILENTLY when
+    # neither exists -- which is what the running devbox did for its whole life, so
+    # this scope recorded no bash at all while every gate below reported a healthy
+    # tree. That is the same shape as an empty captures dir, and it gets the same
+    # answer: UNJUDGEABLE, warn while pristine and fail once seeded, never "clean".
+    #
+    # TODAY'S file only. An older day proves the writer worked then, not now, and
+    # "it used to record" is exactly the reassurance this check must not give.
+    bl, bwhy = bash_corpus_today()
+    if bl == 0:
+        print(
+            f"{'⚠' if pristine else '✗'} UNJUDGEABLE: no bash records for this scope today "
+            f"({bwhy}). The supervisor is absent or the env seam did not arrive, so every "
+            f"shell in this scope is unmeasured and the ranking below is Python-only."
+        )
+        if not pristine:
+            return 1
+
     caps = captures_in(cdir)
     j = sum(c.judgeable for c in caps)
     if not caps or j < MIN_JUDGEABLE_FRACTION * len(caps):
