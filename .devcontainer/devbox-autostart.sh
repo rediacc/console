@@ -94,4 +94,35 @@ if [ -n "${DEVBOX_TERM_PORT:-}" ] && command -v ttyd >/dev/null 2>&1; then
     fi
 fi
 
+# THE BASH PROFILER'S SUPERVISOR, built where the devbox actually looks for it.
+#
+# bash_env.sh probes two explicit paths for bashcov-sup and skips SILENTLY when
+# neither exists. Measured 2026-09-03: /usr/local/bin/bashcov-sup does not exist in
+# the running devbox and $HOME/.local/share/rediacc/bin does not either, so every
+# bash inside the container was unprofiled while the host was fully covered -- and
+# nothing said so. The Dockerfile does build it; the running image simply predates
+# that line, which is the same "pinned but absent" shape bws had.
+#
+# So it is built here too, from the same source of truth, on every start. Cheap:
+# the -nt test makes it a no-op once built. Failure is logged and never fatal --
+# an autostart that dies over a profiler would cost the container.
+_sup_src="/home/developer/console/.devcontainer/bashcov-sup.c"
+[ -f "$_sup_src" ] || _sup_src="$(ls -1 /home/*/console/.devcontainer/bashcov-sup.c 2>/dev/null | head -1)"
+_sup_bin="$HOME/.local/share/rediacc/bin/bashcov-sup"
+if [ -n "${_sup_src:-}" ] && [ -f "$_sup_src" ]; then
+    if [ -x "$_sup_bin" ] && [ ! "$_sup_src" -nt "$_sup_bin" ]; then
+        log "bashcov-sup already current at $_sup_bin"
+    elif command -v gcc >/dev/null 2>&1; then
+        mkdir -p "$(dirname "$_sup_bin")"
+        if gcc -O2 -Wall -o "$_sup_bin" "$_sup_src" && "$_sup_bin" -- true; then
+            log "built bashcov-sup -> $_sup_bin"
+        else
+            log "bashcov-sup build FAILED; bash profiling stays off in this container"
+            rm -f "$_sup_bin"
+        fi
+    else
+        log "gcc missing; bashcov-sup not built, bash profiling stays off"
+    fi
+fi
+
 log "autostart dispatched; ./run.sh devbox status PROBES what is actually serving"

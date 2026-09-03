@@ -94,6 +94,24 @@ def selftest() -> int:
     check("wl_profile selftest is green (the deriver is the instrument)", W.selftest() == 0)
     ok, why = W.admissible(0, 19)
     check("admission floor: J=19 is report-only", not ok and "denominator" in why)
+    # THE TRIGGER MUST BE ABLE TO FIRE, and the previous one could not: it ran after
+    # the pristine return, every --seed reset its sunset, and it grepped prose. These
+    # three controls are exactly those three defects, planted.
+    check(
+        "kill trigger: an anchor in the FUTURE is silent",
+        kill_trigger_fired({"installed": "2999-01-01T00:00:00Z"}) is None,
+    )
+    check(
+        "kill trigger: a PRISTINE baseline is still evaluated (None in, None out, no crash)",
+        kill_trigger_fired(None) is None,
+    )
+    _past = {"installed": "2000-01-01T00:00:00Z"}
+    _fired = kill_trigger_fired(_past)
+    check(
+        "kill trigger: past its anchor with too few acted-on commits, it FIRES",
+        _fired is not None and "Resprofile:" in _fired,
+        str(_fired)[:120],
+    )
     check(
         "a missing baseline is PRISTINE, not an error",
         load_baseline() is None or load_baseline().get("format") == 1,
@@ -147,24 +165,84 @@ def seed(captures_dir: Path, reseed: set[str]) -> int:
     return 0
 
 
-def kill_trigger_fired(base: dict) -> str | None:
-    sunset = base.get("sunset")
-    if not sunset or time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()) < sunset:
-        return None
+# The layer's own files. A commit that only maintains the profiler is not evidence
+# that the profiler earned anything, so the trailer must touch something ELSE.
+LAYER_FILES = (
+    ".claude/hooks/stop/wl_resprofile.py",
+    ".claude/hooks/stop/wl_ressample.py",
+    ".claude/hooks/stop/wl_profile.py",
+    ".claude/hooks/profile/",
+    ".ci/scripts/quality/check_resprofile.py",
+    ".ci/scripts/test/gates/test-resprofile.sh",
+    ".devcontainer/bashcov-sup.c",
+)
+SUNSET_DAYS = 30
+ACTED_ON_FLOOR = 2
+
+
+def acted_on_commits(days: int = SUNSET_DAYS) -> list[str]:
+    """Commits in the window carrying a `Resprofile:` TRAILER and touching real code.
+
+    A TRAILER, not a grep for the word. The previous version ran
+    `git log --grep=resprofile:`, which matches prose -- including a commit that
+    merely maintains the profiler, and including this very docstring. The repo
+    already enforces a trailer shape for PR-TASK (a trailer must START a line), so
+    the same discipline applies here and the query becomes mechanical.
+    """
     try:
         out = subprocess.run(
-            ["git", "-C", str(ROOT), "log", "--since=30.days", "--grep=resprofile:", "--format=%H"],
+            ["git", "-C", str(ROOT), "log", f"--since={days}.days", "--format=%H%x00%B%x01"],
             capture_output=True,
             text=True,
             check=False,
             timeout=30,
-        ).stdout.split()
+        ).stdout
     except (OSError, subprocess.TimeoutExpired):
-        return None  # cannot say; a broken git is not evidence of an unread layer
-    if out:
+        return []
+    hits = []
+    for block in out.split("\x01"):
+        sha, _, body = block.strip().partition("\x00")
+        if not sha or not any(
+            ln.strip().startswith("Resprofile:") and len(ln.strip()) > 12
+            for ln in body.splitlines()
+        ):
+            continue
+        try:
+            files = subprocess.run(
+                ["git", "-C", str(ROOT), "show", "--name-only", "--format=", sha],
+                capture_output=True,
+                text=True,
+                check=False,
+                timeout=30,
+            ).stdout.split()
+        except (OSError, subprocess.TimeoutExpired):
+            continue
+        if any(not any(f.startswith(x) for x in LAYER_FILES) for f in files):
+            hits.append(sha)
+    return hits
+
+
+def kill_trigger_fired(base: dict | None) -> str | None:
+    """Evaluated even when PRISTINE -- the previous version could never fire.
+
+    It ran AFTER main()'s pristine return, and the baseline is deliberately unseeded,
+    so the layer's own design deferred the act that armed its retirement. Worse, every
+    `--seed` rewrote `sunset` to now + 30 days, making an accumulate-seed a free
+    extension. Both are fixed here: the window is measured from `installed` (set once)
+    and the check runs before any other verdict.
+    """
+    anchor = (base or {}).get("installed") or (base or {}).get("sunset")
+    if not anchor:
+        return None
+    if time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()) < anchor:
+        return None
+    hits = acted_on_commits()
+    if len(hits) >= ACTED_ON_FLOOR:
         return None
     return (
-        f"past its sunset ({sunset}) with no commit in 30 days citing `resprofile:`. "
+        f"past its sunset ({anchor}) with {len(hits)} commit(s) in {SUNSET_DAYS} days "
+        f"carrying a `Resprofile:` trailer AND touching a file outside the layer "
+        f"(floor {ACTED_ON_FLOOR}). "
         "A profiling layer that changed no line of code in a month is decoration: "
         "`git rm` this gate, wl_profile.py, wl_ressample.py and the exec.ts attach."
     )
@@ -189,6 +267,13 @@ def main(argv: list[str]) -> int:
     cdir = Path(argv[argv.index("--captures") + 1]) if "--captures" in argv else DEFAULT_CAPTURES
     base = load_baseline()
     pristine = base is None
+
+    # BEFORE ANYTHING ELSE, because the previous placement made it unreachable: it
+    # ran after the pristine return, and the baseline is deliberately unseeded.
+    kt = kill_trigger_fired(base)
+    if kt:
+        print(f"✗ KILL TRIGGER: {kt}", file=sys.stderr)
+        return 1
 
     if not cdir.is_dir():
         print(
@@ -220,11 +305,6 @@ def main(argv: list[str]) -> int:
         for f in findings[:10]:
             print(f"    {f['class']}  {f['why']}")
         return 0
-
-    kt = kill_trigger_fired(base)
-    if kt:
-        print(f"✗ KILL TRIGGER: {kt}", file=sys.stderr)
-        return 1
 
     enforced, reported = [], []
     for f in findings:
