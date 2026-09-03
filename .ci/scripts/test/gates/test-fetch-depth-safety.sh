@@ -192,3 +192,8 @@ if ((FAIL > 0)); then
     exit 1
 fi
 echo "✓ fetch-depth safety: no script can truncate a full clone by accident"
+# Stated blind spot: the sweep enumerates THIS repository only. Checked by hand on
+# 2026-09-03 -- account, renet, elite and homebrew-tap carry no `git fetch --depth`
+# at all -- and a submodule script runs against the submodule's own git dir anyway,
+# so it cannot truncate the superproject the way this gate's subject did.
+echo "  Blind spot: submodules are not swept (checked by hand 2026-09-03: none carry one)"

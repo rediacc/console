@@ -1,6 +1,6 @@
-## SESSION 74de73ca 2026-09-03T12:27:49Z
+## SESSION 74de73ca 2026-09-03T13:24:23Z
 
-Branch `0903-1`, PR #585, epic `24c98380`. **PUSHED** through `980b87ba1`; working tree
+Branch `0903-1`, PR #585, epic `24c98380`. **PUSHED** through `8fbf15c73`; working tree
 CLEAN, nothing uncommitted. `ci:quick` 292/292 exit 0 on the committed tree.
 
 ## What is on the branch (8 new commits this session, all `PR-TASK: 24c98380`)
@@ -11,7 +11,38 @@ layer · `5d470cee9` shadow-compare extracted from 62 inline steps · `bb8aa55ea
 onboarding notice · `644a4d071` worklist `--adopt` lineage · `7efc4f7ef` www bundle
 budget · `aee7e5489` shallow-checkout fix.
 
-## Two judge findings answered THIS turn — do not redo either
+## Three CI reds diagnosed and fixed since the compaction
+
+1. **`check:ci-format-scope` was in the wrong tier** (`4e74eba82`). It asked biome the
+   same question up to five times; memoised to three, and the determinism control keeps
+   `fresh=True` so it still runs biome twice for real. 11.2s idle, 21.6s under the quick
+   lane's 20x contention, so `slow: true` with that measurement as the reason.
+2. **sm-action's one-shot download killed the Initialize job** (`04dfbe4a7`), which gates
+   every other job in the run. It downloads its binary once, no retry, and its fallback
+   is `cargo build` with cwd = the workspace, so it could NEVER have worked here.
+   bws-secrets now pre-places the binary (5 retries, sha256 pinned per triple, version
+   read from sm-action's own version.json so a pin bump cannot serve a stale binary).
+   Two other single-attempt fetches on critical paths now retry too.
+3. **`check:i18n` was truncating the history the rest of its job depends on**
+   (`8fbf15c73`), and this is the one worth remembering. `translation-freshness-git.js`
+   ran `git fetch --depth=50`; on a COMPLETE clone that writes a graft and truncates the
+   repository — reproduced against the real remote, 2467 commits to 114, the exact number
+   CI reported. Four steps later `check:ci-plan-housekeeping` refused, naming the
+   checkout, which was innocent and had `fetch-depth: 0` all along. Fixed, sibling in
+   detect-pointer-bump.sh swept, `gate-test:fetch-depth-safety` added, TRAPS entry
+   `fetch-depth-truncates-full-clone`. **The tell was arithmetic**: a real shallow
+   checkout has a STABLE commit count; `--depth=N` on a full clone leaves N + your
+   branch, which grows daily. Three jobs had logged 90, 99, 114 and nobody read it.
+
+4. **`Quality / Go` red on 24 stdlib advisories** (renet `6c85007`, pointer bumped here).
+   CI installs Go from `go-version-file: private/renet/go.mod`, so the `go` directive IS
+   the toolchain CI runs — and it said `1.26.0` while `.devcontainer/Dockerfile` already
+   pinned `ARG GO_VERSION=1.26.6`. Six patch releases of drift, which also meant the
+   devbox was not the rehearsal it is supposed to be. Directive aligned to 1.26.6 (the
+   highest floor any finding demanded); `run-renet.sh quality` in the devbox exits 0 with
+   exactly the six pre-existing no-fix suppressions.
+
+## Two judge findings answered EARLIER — do not redo either
 
 1. **History-depth gating.** `check:ci-git-history-depth` ALREADY gates "a job that reads
    history must have checked out history". I extended it to resolve `npm run <key>` to
@@ -31,8 +62,9 @@ budget · `aee7e5489` shallow-checkout fix.
 
 ## Next action
 
-1. **`[?] #13d281a2` is the only open item** and is unblocked. When CI on `980b87ba1` is
-   green: `scripts/dev/derive-shadow-pass-list.sh --branch 0903-1`, then run exactly the
+1. **`[?] #13d281a2` is the only open item.** Its DEFAULT's precondition is ONE GREEN
+   CYCLE, and there has not been one yet — 33753814832 died on (2) above and 33757353062
+   on (3). The cycle for `8fbf15c73` is running. When it is green: `scripts/dev/derive-shadow-pass-list.sh --branch 0903-1`, then run exactly the
    `gh secret delete` lines it prints — today four (ACCOUNT_ED25519_PUBLIC_KEY,
    APP_PRIVATE_KEY, CLOUDFLARE_API_TOKEN, DOCKERHUB_TOKEN). It refuses if no passing
    compare exists and skips any org name shadowed by a repo-level twin.
