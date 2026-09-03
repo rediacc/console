@@ -32,15 +32,30 @@ BW_SHA_ARM64="74d822a5dceda5896ed8fc07bc61925b29afd98d96a6a3e9e525ae556c3083a8"
 FIXTURE_DIR=""
 setup_fixtures() {
     FIXTURE_DIR="$(mktemp -d)"
-    # THE DOCKERFILE RESTORE BELONGS IN THE TRAP, not merely after each --upgrade
-    # case. log_fail exits immediately (that is the helpers' documented contract),
-    # so a restore placed after the call is skipped by exactly the runs that need
-    # it -- and this gate would then leave a TRACKED file rewritten to 9999.1.0 in
-    # somebody's working tree as its parting gift.
-    cp "$DOCKERFILE" "$FIXTURE_DIR/Dockerfile.saved"
+    # THE REAL DOCKERFILE IS NEVER TOUCHED, and that is a correction rather than a
+    # tidy-up. This block used to copy the tracked file aside, let --upgrade rewrite
+    # it IN PLACE, and restore it from the EXIT trap. The restore was correct as far
+    # as it went -- log_fail exits immediately, so a restore after the call is
+    # skipped by exactly the runs that need it -- but the mutation itself is the
+    # problem: it is visible to every other gate sharing the tree. On 2026-09-03 it
+    # reddened check:ci-setup-idempotency in the pre-push lane, which reported
+    # "setup --check changed the working tree" over `.devcontainer/Dockerfile`, a
+    # file run.sh never writes. And this tree usually holds another session's
+    # uncommitted work.
+    #
+    # So the gate now takes a Dockerfile PATH (DEVCONTAINER_DOCKERFILE, alongside
+    # the fixture and blocklist seams it already had) and the test hands it a copy.
+    cp "$DOCKERFILE" "$FIXTURE_DIR/Dockerfile"
+    # WRITABLE regardless of the source's mode: cp gives a new file the source's
+    # permissions, and --upgrade must be able to rewrite the copy. Without this the
+    # test inherits whatever mode the tracked file happens to carry, which is a
+    # dependency on the environment rather than on the code.
+    chmod u+w "$FIXTURE_DIR/Dockerfile"
+    DOCKERFILE="$FIXTURE_DIR/Dockerfile"
+    export DEVCONTAINER_DOCKERFILE="$DOCKERFILE"
     # shellcheck disable=SC2064
-    # BLOCKER: capture FIXTURE_DIR at trap-set time so EXIT restores from and removes this exact path
-    trap "cp -f '$FIXTURE_DIR/Dockerfile.saved' '$DOCKERFILE' 2>/dev/null; rm -rf '$FIXTURE_DIR'" EXIT
+    # BLOCKER: capture FIXTURE_DIR at trap-set time so EXIT removes this exact path
+    trap "rm -rf '$FIXTURE_DIR'" EXIT
 
     # Reported far OLDER than the real pin -> nothing is stale.
     cat >"$FIXTURE_DIR/all-current.json" <<'EOF'
@@ -157,7 +172,11 @@ test_blocklist_accepts_valid_reason() {
 # --upgrade WRITES to the real Dockerfile. The EXIT trap owns the restore (see
 # setup_fixtures); this only puts the file back BETWEEN cases so the second one
 # starts from the tracked pin rather than from the first one's 9999.1.0.
-restore_dockerfile() { cp -f "$FIXTURE_DIR/Dockerfile.saved" "$DOCKERFILE"; }
+# Each --upgrade case needs a PRISTINE copy, because --upgrade rewrites in place
+# and the next case must not see the previous one's edit. The source is the real
+# tracked file; the destination is the fixture copy, so this reads FROM the tree
+# and never writes TO it.
+restore_dockerfile() { cp -f "$REPO_ROOT/.devcontainer/Dockerfile" "$DOCKERFILE" && chmod u+w "$DOCKERFILE"; }
 
 test_upgrade_moves_version_and_hashes() {
     local out rc=0

@@ -64,10 +64,22 @@ import { GREEN, NC, RED, YELLOW } from './utils/console.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const CONSOLE_ROOT = path.resolve(__dirname, '..');
-const DOCKERFILE = path.join(CONSOLE_ROOT, '.devcontainer/Dockerfile');
 // Test seams, mirroring check-embed-asset-freshness.ts: point the gate at fixture
 // files so its test can prove the BLOCKER validation fires and that a stale pin
 // is caught, without mutating the tracked blocklist or hitting the network.
+//
+// DEVCONTAINER_DOCKERFILE is the seam this file was MISSING, and its absence had
+// a cost. --upgrade rewrites the Dockerfile in place, so the gate's test drove it
+// against the REAL tracked file and restored it from a trap. That mutation is
+// visible to every other gate sharing the tree: on 2026-09-03 it reddened
+// check:ci-setup-idempotency in the pre-push lane, which reported
+// "setup --check changed the working tree" over `.devcontainer/Dockerfile` -- a
+// file run.sh never writes, naming the wrong command and sending the reader into
+// run.sh. It is also a hazard beyond CI: this repo's working tree usually holds
+// another session's uncommitted work, and a gate that rewrites a tracked file,
+// however briefly, can be interrupted.
+const DOCKERFILE =
+  process.env.DEVCONTAINER_DOCKERFILE || path.join(CONSOLE_ROOT, '.devcontainer/Dockerfile');
 const BLOCKLIST =
   process.env.DEVCONTAINER_BLOCKLIST_FILE ||
   path.join(CONSOLE_ROOT, '.devcontainer-upgrade-blocklist');
