@@ -6658,3 +6658,106 @@ cap. The compare's excused-mismatch ledger guessed the wrong cause for one of it
 entries. The number the whole cutover was waiting on came from a cancelled run. A gate
 being new is not evidence that it is right, and a figure being written down is not
 evidence that it was ever true.
+
+## Wave 3 — 2026-09-03: eight reds, and not one of them was what its error named
+
+The branch went through eight distinct CI failures before a cycle stayed green. They
+came from unrelated parts of the tree, and the property they share is worth more than
+any one of them: **in every case the message named a command, a file or a job that had
+nothing to do with the cause.** A session that fixes what an error names would have
+fixed none of them.
+
+### The three that were somebody else's name
+
+- **`Initialize` died on `Could not find a version that satisfies the requirement
+  PyYAML==`.** Read as a pip problem in a step called *Secret reachability*. The cause
+  was three steps earlier and invisible: `quality-security` uses `${PYYAML_VERSION}` and
+  never ran the *Load gate toolchain pins* step that `quality-static` has. Bash expands
+  an unset name to the empty string without a word, so this class **always** surfaces
+  downstream wearing someone else's name. Now gated: `check:ci-workflow-env-provision`
+  judges only names this repo provisions somewhere, so runner built-ins cannot be
+  flagged and no allowlist is needed — 124 jobs, 374 names, zero findings.
+- **`check:ci-plan-housekeeping` refused a SHALLOW checkout** whose `actions/checkout`
+  carried `fetch-depth: 0` and `filter: blob:none`, exactly as its own error demanded.
+  The checkout was innocent. `check:i18n` had run `git fetch --depth=50` four steps
+  earlier, and `--depth` on a COMPLETE clone does not limit a fetch — it writes a graft
+  and truncates the repository. Reproduced against the real remote: **2467 commits to
+  114**, the exact number CI reported. The tell was arithmetic nobody read: a real
+  shallow checkout has a *stable* commit count, while `--depth=N` on a full clone leaves
+  N plus your branch, and three jobs had logged 90, 99, 114.
+- **`check:ci-setup-idempotency` accused `setup --check` of changing
+  `.devcontainer/Dockerfile`**, a file `run.sh` never writes. The diff's *direction* was
+  the evidence: the modification was in the BEFORE snapshot and gone from the AFTER one,
+  so it caught a neighbour's cleanup. `test-devcontainer-pin-freshness.sh` was driving
+  `--upgrade` against the real tracked file and restoring it from a trap.
+
+### A gate that proved seven things nothing could see
+
+`gate-test:fetch-depth-safety` — written during this wave, for the truncation above —
+was reported by the battery as *"exited 0 without a single PASS: line"*, and that
+message is exact. `run-all.sh` matches `^PASS:`; the gate printed an indented `  PASS  `
+with no colon. It was invisible to the runner while passing, which is the same vacuity
+this battery exists to prevent, arriving through the door a new gate opened.
+
+Its fixture then failed on its **first CI run**, and the worse half passed *vacuously*:
+a GitHub runner's `init.defaultBranch` is not a developer's, so a bare `git init --bare`
+left the origin's HEAD on a nonexistent ref, the clone came back empty, and one case
+reported *"leaves a full clone full (1 commits)"*. One case went red honestly beside it,
+which is the only reason it was noticed. The fixture now asserts its own commit count as
+a precondition, and the repo had **already paid for this once** —
+`test-autopilot-harness.sh:726` carries a comment recording the same lesson. A lesson
+living in one file's comment is one the next file does not get, so it is a sweep now.
+
+### Two suppression gates that had never once been able to fire
+
+Sweeping the truncation class properly turned up the sharper finding. `age-check.sh`
+dates a suppression by `git log --diff-filter=A`, and on a truncated history every line
+is attributed to the graft. Measured on the real `docker/docker` blocklist entry:
+
+    full clone        195 days   (added 2026-02-20)
+    truncated clone     2 days   (added 2026-09-01)
+
+`AGE_WARN_DAYS` is 180. Its consumers — `audit.sh` and `check-go-deps.sh` — run in
+`quality-security` and `quality-go`, which carried **no `fetch-depth` at all**. The two
+gates whose entire job is expiring stale suppressions had been green for a reason
+unrelated to the suppressions, and `entry_age_days`' documented *"returns 0 (fresh) if
+git log fails"* made the other path fail green too.
+
+Fixed three ways rather than one: the library prints `-1` for CANNOT-VERIFY and refuses
+in CI; both jobs got a deep checkout; and `check_git_history_depth.py` now **states the
+blind spot that hid it** — it cannot follow a `source`d library, and teaching it to is
+the npm-key hop its own docstring records reverting at 89 unactionable findings. A
+runtime refusal cannot be fooled by a call graph a static gate could not walk. Proof the
+instrument is now live rather than vacuous: `check:ci-go-deps` emits a warning it could
+never emit before — *"github.com/docker/docker … 195 days old (>180) — due for
+re-review"* — while still exiting 0.
+
+### The GitHub `pr-N` deployments, removed at both ends
+
+The operator: *"we still keep publishing and cleaning pr-xyz to the cloudflare side.
+Just we don't need to publish them on github side since cleaning not possible by github
+housekeeping because of permission issues."* The diagnosis was exact, and
+`cleanup-github-deployments.sh`'s own header already stated it: deleting an environment
+OBJECT needs `Administration:write`, which `check-no-app-admin-perm.sh` deliberately
+forbids the CI App from holding, so the record cleanup worked and the empty shells
+accumulated — 33 environments, 25 of them `pr-*`, each holding zero deployments, zero
+secrets, zero variables and zero protection rules.
+
+`cleanup-pr-environments.sh` (operator-run, since CI can never have the permission)
+deleted 25 of 25. `ci.yml`'s `deploy-preview` job no longer declares an `environment:`,
+verified inert first: every secret and variable it reads resolves at repo or org scope,
+including the two that would have hurt. The new rule in `check-workflows.sh` matches
+BOTH syntactic forms, and the scalar `environment: pr-…` shorthand is the half that
+decides whether the rule is real — a `grep 'name: pr-'` misses it entirely, and it is
+exactly what gets written when re-adding this in a hurry.
+
+### What a reader should take from this wave
+
+The previous wave's lesson was that the instrument is usually right and the prose
+usually stale. This one narrows it: **the instrument is usually right about THAT
+something is wrong and usually wrong about WHAT.** Every fix above began by disbelieving
+the subject of the error message while believing its verdict. The corollary is the
+expensive half — three of these were in gates written earlier in this same session, and
+one of them, `gate-test:fetch-depth-safety`, managed to be vacuous and green at the same
+time on its first run. A gate being new is not evidence that it is right; a gate being
+green is not evidence that it ran.
