@@ -55,6 +55,21 @@ elif [[ $- != *i* ]] && {
     __bashcov_py="$__bashcov_repo/.claude/hooks/profile/py"
     [[ -r $__bashcov_py/sitecustomize.py ]] &&
         export PYTHONPATH="$__bashcov_py${PYTHONPATH:+:$PYTHONPATH}"
+    # THE SHAPE, and what it deliberately is NOT. The record needs an identity or
+    # bash.jsonl cannot be ranked -- 35 MB a day whose only mention in the tree was
+    # its own writer. `$0` is a path, which is public; BASH_EXECUTION_STRING is a
+    # command line, which in a public repo can carry a secret, so it is never used.
+    # A shell with no script gets a fixed literal, not its arguments.
+    if [[ -n ${BASH_EXECUTION_STRING+x} ]]; then
+        __bashcov_shape='sh:-c'
+    elif [[ $0 != "$BASH" && $0 != bash && -r $0 && -f $0 ]]; then
+        __bashcov_shape=${0#"$__bashcov_repo"/}
+        [[ $__bashcov_shape == /* ]] && __bashcov_shape='<external>'
+        __bashcov_shape="sh:$__bashcov_shape"
+    else
+        __bashcov_shape='sh:-s'
+    fi
+    export BASHCOV_SHAPE="$__bashcov_shape"
     __bashcov_f=''
     for __bashcov_c in a b e f k m n p t u v B C E H P T; do [[ $- == *$__bashcov_c* ]] && __bashcov_f+=$__bashcov_c; done
     ((__bashcov_x)) && __bashcov_f+=x

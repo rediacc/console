@@ -21,6 +21,24 @@ static void fwd(int sig){ if(child>0) kill(child,sig); }
 #define NW 8
 static char wname[NW][128]; static int wcnt[NW]; static int nsamp, nblocked;
 static long peak_hwm;
+// BASHCOV_SHAPE is the record's only text field, and it is deliberately NOT the
+// command. bash.jsonl carried pids, rusage and kernel symbols but no script
+// identity, so 35 MB a day could not be attributed to anything and nothing read it
+// -- the write-only shape the gate's kill trigger exists to punish. The env var is
+// set by bash_env.sh from $0 (a repo-relative path) or a fixed literal for -c/-s;
+// BASH_EXECUTION_STRING is never used, because a command line in a public repo can
+// carry a secret. Copied here with a length bound and printable-ASCII filtering so
+// a hostile value cannot break the JSON.
+static void esc_shape(char*dst,size_t cap){
+    const char*s=getenv("BASHCOV_SHAPE"); size_t j=0;
+    if(!s){ dst[0]=0; return; }
+    for(size_t i=0;s[i]&&j+2<cap;i++){
+        unsigned char c=(unsigned char)s[i];
+        if(c=='"'||c=='\\'){ dst[j++]='\\'; dst[j++]=(char)c; }
+        else if(c>=0x20&&c<0x7f){ dst[j++]=(char)c; }
+    }
+    dst[j]=0;
+}
 static void sample(void){
     char p[64], buf[128]; int fd, n;
     snprintf(p,sizeof p,"/proc/%d/wchan",child);
@@ -51,8 +69,9 @@ int main(int argc,char**argv){
     clock_gettime(CLOCK_MONOTONIC,&t1);
     const char*out=getenv("BASHCOV_OUT");
     if(out){ int fd=open(out,O_WRONLY|O_APPEND|O_CREAT|O_CLOEXEC,0600); if(fd>=0){
-        char buf[1024]; int n=snprintf(buf,sizeof buf,"{\"src\":\"sup\",\"pid\":%d,\"sup\":%d,\"ppid\":%d,\"exit\":%d,\"sig\":%d,\"wall_us\":%ld,\"utime_us\":%ld,\"stime_us\":%ld,\"maxrss_kb\":%ld,\"peak_hwm_kb\":%ld,\"nvcsw\":%ld,\"nivcsw\":%ld,\"samples\":%d,\"blocked\":%d,\"wchan\":[",
-            (int)child,(int)getpid(),(int)getppid(),WIFEXITED(st)?WEXITSTATUS(st):-1,WIFSIGNALED(st)?WTERMSIG(st):0,
+        char shp[192]; esc_shape(shp,sizeof shp);
+        char buf[1280]; int n=snprintf(buf,sizeof buf,"{\"src\":\"sup\",\"shape\":\"%s\",\"pid\":%d,\"sup\":%d,\"ppid\":%d,\"exit\":%d,\"sig\":%d,\"wall_us\":%ld,\"utime_us\":%ld,\"stime_us\":%ld,\"maxrss_kb\":%ld,\"peak_hwm_kb\":%ld,\"nvcsw\":%ld,\"nivcsw\":%ld,\"samples\":%d,\"blocked\":%d,\"wchan\":[",
+            shp,(int)child,(int)getpid(),(int)getppid(),WIFEXITED(st)?WEXITSTATUS(st):-1,WIFSIGNALED(st)?WTERMSIG(st):0,
             (long)((t1.tv_sec-t0.tv_sec)*1000000L+(t1.tv_nsec-t0.tv_nsec)/1000),
             ru.ru_utime.tv_sec*1000000L+ru.ru_utime.tv_usec,ru.ru_stime.tv_sec*1000000L+ru.ru_stime.tv_usec,ru.ru_maxrss,peak_hwm,ru.ru_nvcsw,ru.ru_nivcsw,nsamp,nblocked);
         for(int i=0;i<NW&&wcnt[i]&&n<(int)sizeof buf-80;i++) n+=snprintf(buf+n,sizeof buf-n,"%s[\"%s\",%d]",i?",":"",wname[i],wcnt[i]);
