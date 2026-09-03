@@ -44,8 +44,21 @@ MIN_FILES = 200
 COUNT_RE = re.compile(r"Checked (\d+) files?")
 
 
-def biome_count(args: list[str], root: Path = ROOT) -> int | None:
-    """How many files biome would format for these args, from its own report."""
+_COUNTS: dict[tuple[str, ...], int | None] = {}
+
+
+def biome_count(args: list[str], root: Path = ROOT, fresh: bool = False) -> int | None:
+    """How many files biome would format for these args, from its own report.
+
+    MEMOISED, because each call is a real ~5s pass over 2426 files and this gate asks
+    the same question up to three times in one process. `fresh=True` is the one caller
+    that must NOT be served from the cache: the determinism control below compares two
+    SEPARATE runs, and a cached answer would make it compare a value with itself --
+    a control that cannot fail, which is the shape this repo has been fooled by before.
+    """
+    key = tuple(args)
+    if not fresh and key in _COUNTS:
+        return _COUNTS[key]
     exe = root / "node_modules" / ".bin" / "biome"
     if not exe.is_file():
         return None
@@ -61,7 +74,9 @@ def biome_count(args: list[str], root: Path = ROOT) -> int | None:
     except (OSError, subprocess.TimeoutExpired):
         return None
     m = COUNT_RE.search(r.stdout + r.stderr)
-    return int(m.group(1)) if m else None
+    n = int(m.group(1)) if m else None
+    _COUNTS[key] = n
+    return n
 
 
 def declared_args(root: Path = ROOT) -> list[str] | None:
@@ -113,7 +128,10 @@ def selftest() -> int:
     )
     # CONTROL ON THE PLANT: `.` compared with itself must not look like a narrowing,
     # or every verdict below is an artefact of the comparison rather than of the args.
-    check("CONTROL: the full scope does not narrow itself", biome_count(["."]) == full)
+    # Two SEPARATE runs of the same args, not one cached answer: this proves the
+    # oracle is deterministic, so `mine < full` below reports the arguments rather
+    # than the variance of the instrument.
+    check("CONTROL: the full scope does not narrow itself", biome_count(["."], fresh=True) == full)
     return bad
 
 

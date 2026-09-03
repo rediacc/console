@@ -1776,6 +1776,7 @@ export const GATES: readonly GateSpec[] = [
     // lint-scope-coverage: that one proves FILES reach a linter, this proves the
     // COMMAND does not shrink what biome.json declares.
     run: 'npm run check:ci-format-scope',
+    slow: true, // 21.6s contended: three full biome passes over 2426 files (11.2s idle)
     gate: true,
     leaves: ['.ci/scripts/quality/check_format_scope.py'],
     ci: {

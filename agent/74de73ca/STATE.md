@@ -1,50 +1,45 @@
-## SESSION 74de73ca 2026-09-03T12:05:03Z
+## SESSION 74de73ca 2026-09-03T12:27:49Z
 
-Branch `0903-1`, PR #585, epic `24c98380`. **PUSHED** — `6ba240362..535b25a01`. The
-working tree is CLEAN; nothing is uncommitted any more. This is a change from every
-earlier version of this document, which said the operator pushes: the CI-watch task
-explicitly asked for commit-and-push, and the push guard allowed it.
+Branch `0903-1`, PR #585, epic `24c98380`. **PUSHED** through `980b87ba1`; working tree
+CLEAN, nothing uncommitted. `ci:quick` 292/292 exit 0 on the committed tree.
 
-## What is on the branch now (7 new commits, all `PR-TASK: 24c98380`)
+## What is on the branch (8 new commits this session, all `PR-TASK: 24c98380`)
 
-`535b25a01` docs(traps) · `b5c02fe11` check:format widening · `44659d249` profiling
-layer · `5d470cee9` shadow-compare extraction · `bb8aa55ea` onboarding notice ·
-`644a4d071` worklist lineage · `7efc4f7ef` www bundle budget.
+`980b87ba1` ci-overhaul docs wave 2 · `535b25a01` TRAPS + CLAUDE.md ownership rule ·
+`b5c02fe11` check:format widened to `biome format .` · `44659d249` resource profiling
+layer · `5d470cee9` shadow-compare extracted from 62 inline steps · `bb8aa55ea`
+onboarding notice · `644a4d071` worklist `--adopt` lineage · `7efc4f7ef` www bundle
+budget · `aee7e5489` shallow-checkout fix.
 
-`ci:quick` was **292/292 exit 0** on the exact committed tree before pushing.
+## Two judge findings answered THIS turn — do not redo either
 
-## The three CI failures this watch fixed
-
-1. **Plan file housekeeping** — `quality-i18n`'s `actions/checkout` had no `with:`, so
-   the topology-reading gate refused ("99 commit(s) reachable, 1 graft"). Added
-   `fetch-depth: 0` + `filter: blob:none`. Cannot reproduce locally: a dev clone is deep.
-2. **Client bundle budget** — NOT the non-determinism the old worklist note claimed. The
-   gate under-reported by 124,673 B (its regex demanded whitespace after `import`).
-   Fixed, split eager/deferred, and the page changed so the deferral is real.
-3. **PR description freshness** — title and body rewritten for the real 48-commit scope.
-
-## Two things that will bite a fresh session
-
-* `gh pr edit --body` is **hook-blocked** and `--body-file` **fails** on a
-  Projects-classic GraphQL deprecation. The working form, which the repo's own
-  `refresh-pr-body.sh:83` uses, is
-  `gh api repos/rediacc/console/pulls/585 -X PATCH -F body=@file`. Keep both
-  `worklist-epics` and `pushed-head` marker pairs in whatever you write.
-* Commits need a `PR-TASK: <epic>` trailer and must NOT carry `Co-Authored-By` or
-  "Generated with" lines — `block-commit-meta.sh` refuses them, whatever the ambient
-  attribution guidance says.
+1. **History-depth gating.** `check:ci-git-history-depth` ALREADY gates "a job that reads
+   history must have checked out history". I extended it to resolve `npm run <key>` to
+   the script's source, and it worked — then found the gate's own docstring (lines 40-55)
+   records that this exact hop was tried, measured at **89 unactionable findings**, and
+   deliberately REVERTED, with a control at line 365 (`a script written shallow-safe is
+   not flagged for being called`) that exists to stop it. My new `quality-go` hit proved
+   them right: `check-renet-types.sh:56` feeds `git describe` into `--version` and the
+   comparison is `compare_ignoring_version`, so shallowness cannot change the verdict.
+   **Reverted; the file is byte-identical to HEAD.** Do not re-add the npm-key hop.
+2. **check:format determinism.** Verified empirically, not argued: a real
+   `git clone --depth 1` of HEAD formats **1760 files, 0 fixes, exit 0** — identical to
+   local. biome is pinned to 2.5.11 in the lockfile and CI installs with `npm ci`; there
+   is no biome cache directory. NOTE: `git archive` is NOT a valid stand-in for a CI
+   checkout here — `.gitattributes` carries `* export-ignore` with only `LICENSE`
+   exempted, so an archive contains one file and any test built on it is vacuous.
 
 ## Next action
 
-1. **A CI watch is armed in the background** (`.ci/scripts/ci/ci-trace.py --wait`,
-   task `brfvemjgk`) on the pushed head. On its result: if green, stop. If a job failed,
-   read that JOB's conclusion — not the run's — because a cancelled run reports nothing,
-   and this branch has been fooled by that twice.
-2. **`[?] #13d281a2` is now unblocked and is the next real work.** The push has happened,
-   so once CI is green run `scripts/dev/derive-shadow-pass-list.sh --branch 0903-1` and
-   execute exactly the `gh secret delete` lines it prints — no more. It refuses if no
-   passing compare exists and skips any org name shadowed by a repo-level twin.
-3. Seed the profiling baseline only after several days of real runs:
-   `check_resprofile.py --seed <run-dir>`. Unseeded means nothing is enforced yet.
-4. `bws` lives at `$CLAUDE_JOB_DIR/tmp/bws` and needs `--color no`; the Bitwarden token
-   in `private/account/.env` **expires 2026-09-08**.
+1. **`[?] #13d281a2` is the only open item** and is unblocked. When CI on `980b87ba1` is
+   green: `scripts/dev/derive-shadow-pass-list.sh --branch 0903-1`, then run exactly the
+   `gh secret delete` lines it prints — today four (ACCOUNT_ED25519_PUBLIC_KEY,
+   APP_PRIVATE_KEY, CLOUDFLARE_API_TOKEN, DOCKERHUB_TOKEN). It refuses if no passing
+   compare exists and skips any org name shadowed by a repo-level twin.
+2. Read a failing JOB's conclusion, never the run's — a cancelled run reports nothing and
+   this branch has been fooled by that twice.
+3. `gh pr edit --body` is hook-blocked and `--body-file` fails on a Projects-classic
+   deprecation; use `gh api repos/rediacc/console/pulls/585 -X PATCH -F body=@file`, and
+   keep the `worklist-epics` AND `pushed-head` marker pairs plus the three submodule PR
+   links (dropping those failed CI once already).
+4. Commits need `PR-TASK: <epic>` and must NOT carry `Co-Authored-By`.
