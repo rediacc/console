@@ -279,10 +279,32 @@ check 0 pre-bash/block-commit-meta.sh "$(bash_json 'echo "the rule bans Co-Autho
 # fixture only listed good@example.com. The guard was right; the fixture was wrong.
 # Only the OVERRIDE cases below should be refused, and they carry their own address.
 UCA_ID="$(mktemp -d)/identity.json"
-UCA_REAL="$(git var GIT_AUTHOR_IDENT 2>/dev/null | sed -nE 's/.*<([^>]+)>.*/\1/p')"
-printf '{"format":1,"identities":[{"login":"ctl","id":1,"emails":["good@example.com","%s"]}]}\n' \
-    "${UCA_REAL:-good@example.com}" >"$UCA_ID"
+printf '{"format":1,"identities":[{"login":"ctl","id":1,"emails":["good@example.com"]}]}\n' >"$UCA_ID"
 export COMMIT_IDENTITY_FILE="$UCA_ID"
+# AND THE IDENTITY ITSELF, because borrowing the machine's is what broke in CI.
+#
+# This block used to inject `git var GIT_AUTHOR_IDENT` into the fixture so the
+# ALLOW cases would not be refused for the tester's own address. That works only
+# where an identity EXISTS. A GitHub runner has no global user.email and
+# actions/checkout does not set one, so `git var` there resolves nothing, the
+# guard correctly refuses a commit it cannot attribute, and the prose CONTROL --
+# which is about prose, not about identity -- went red for a reason that has
+# nothing to do with what it asserts. Measured 2026-09-03, job 100727875171:
+# 2042 passed, this one failed with exit 2, and it passes on any developer
+# machine, which is the worst combination.
+#
+# So the ALLOW cases now carry their own identity, listed in the fixture above.
+#
+# AS CONFIG, NOT AS GIT_AUTHOR_EMAIL, and that distinction is the whole trick.
+# git resolves GIT_AUTHOR_EMAIL with HIGHER precedence than user.email, so
+# exporting it masked the `-c user.email=bad@...` case below: the guard resolved
+# the good address and permitted the very override it exists to refuse. Measured,
+# not reasoned -- that swap turned one red into a different red. A global config
+# file sits BELOW every override the refuse cases use, which is exactly where an
+# ambient identity belongs.
+UCA_GITCFG="$(mktemp -d)/gitconfig"
+printf '[user]\n\tname = ctl\n\temail = good@example.com\n' >"$UCA_GITCFG"
+export GIT_CONFIG_GLOBAL="$UCA_GITCFG"
 
 check 2 pre-bash/block-unlinked-commit-author.sh \
     "$(bash_json 'git -c user.email=bad@example.com commit -m x')" \
@@ -309,7 +331,7 @@ check 0 pre-bash/block-unlinked-commit-author.sh \
 check 0 pre-bash/block-unlinked-commit-author.sh \
     "$(bash_json 'git tag -m "bad@example.com" v1')" \
     "unlinked-author CONTROL: a tag writes a tagger, not a commit author"
-unset COMMIT_IDENTITY_FILE
+unset COMMIT_IDENTITY_FILE GIT_CONFIG_GLOBAL
 # THE GAP MUST NOT CROSS A CLAUSE, and the first draft of the commit-verb gate
 # let it. `git ...* (commit|tag)` has to tolerate flags between the verb and its
 # subcommand, but a gap of "any non-space token" spans `|` and `&&` too, so a
