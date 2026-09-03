@@ -118,10 +118,42 @@ check_b() {
     rc=$?
     after="$(tree_snapshot)"
 
+    # A DELTA MUST PERSIST BEFORE IT IS BLAMED ON `setup --check`.
+    #
+    # The filter above pins ONE fixture shape, and shape-filtering is whack-a-mole:
+    # on 2026-09-03 this assertion failed under `ci:quick` over a TRACKED file it had
+    # no pattern for --
+    #
+    #     FAIL B: setup --check changed the working tree
+    #     >  M .ci/scripts/version/resolve-version.sh
+    #
+    # -- which `run.sh` never writes and which was byte-identical to HEAD moments
+    # later. Some neighbour among the 291 gates sharing this tree had it open across
+    # the two snapshots.
+    #
+    # So test the property that actually distinguishes the two: a change `setup --check`
+    # made is STILL THERE afterwards, and a neighbour's scratch is not. Poll back toward
+    # the `before` snapshot for a bounded window; recovering means the delta was never
+    # ours. This keeps the assertion able to fail -- a real mutation never reverts, so it
+    # burns the full window and is then reported -- while removing a false accusation
+    # that names the wrong command and sends the reader hunting through run.sh.
     if [ "$before" != "$after" ]; then
-        fail "B: setup --check changed the working tree"
-        diff <(printf '%s' "$before") <(printf '%s' "$after") >&2 || true
-        return 1
+        local settled=0 i
+        for i in $(seq 1 15); do
+            sleep 1
+            if [ "$(tree_snapshot)" = "$before" ]; then
+                settled=1
+                break
+            fi
+        done
+        if [ "$settled" -eq 1 ]; then
+            echo "  note: the tree moved and came back within ${i}s -- a neighbouring gate's" >&2
+            echo "        scratch file, not setup --check. Not counted against B." >&2
+        else
+            fail "B: setup --check changed the working tree (delta persisted 15s)"
+            diff <(printf '%s' "$before") <(printf '%s' "$after") >&2 || true
+            return 1
+        fi
     fi
     # It must actually REPORT, not just exit quietly: a check that prints
     # nothing is indistinguishable from a check that did not run.

@@ -324,5 +324,8 @@
     "fd053dc46ed8",
     "fecfd54c5b70",
     "ffa06552a34d"
-  ]
+  ],
+  "accepted": {
+    "ddcaba9721fd": "BLOCKER: this is the battery's arrange-act-assert idiom, not a shared piece. The three copies (test-schema-coverage.sh:23, test-shadow-compare.sh:68, test-suppression-liveness.sh:144) drive DIFFERENT subjects through DIFFERENT runners with incompatible contracts -- `npx tsx` on a TS gate, a bash body extracted from a workflow, and a fixture-tree gate runner -- and each asserts its own exit code and its own two diagnostic substrings. What repeats is `local rc=0` plus the helper calls that test-helpers.sh already factors out; the only thing left to extract is a five-parameter wrapper taking runner, args, expected code and two needles, which would replace each case's specific failure message with one generic line and make a red harder to read, not easier. Consolidating the shape would delete the per-case diagnostics that make this battery useful."
+  }
 }

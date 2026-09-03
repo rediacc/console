@@ -123,6 +123,7 @@ REGISTRY=(
     ".ci/scripts/quality/check_actions_allowlist.py|VACUOUS INPUT"
     ".ci/scripts/quality/check-plan-housekeeping.sh|VACUOUS INPUT"
     ".ci/scripts/quality/check_plan_boxes.py|VACUOUS INPUT"
+    ".ci/scripts/quality/check_syncpack_sources.py|VACUOUS INPUT"
     ".ci/scripts/quality/check_secret_reachability.py|VACUOUS INPUT"
     ".ci/scripts/quality/check_bws_map.py|refusing to pass vacuously"
     # Against an empty tree the probe locale file is absent, so no rule set can

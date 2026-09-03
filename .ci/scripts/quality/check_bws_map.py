@@ -455,6 +455,104 @@ GH_ENV_RE = re.compile(r"^\s*GH_([A-Z0-9_]+):", re.MULTILINE)
 BWS_TARGET_RE = re.compile(r">\s*BWS_([A-Z0-9_]+)\s*$", re.MULTILINE)
 
 
+EXPECTED_MISMATCH_RE = re.compile(r"^\s*SHADOW_EXPECTED_MISMATCH:\s*(.+)$", re.MULTILINE)
+EXPECTED_MISMATCH_LEDGER = ROOT / ".ci" / "config" / "shadow-expected-mismatches.json"
+MIN_LEDGER_REASON = 80
+
+
+def expected_mismatch_problems() -> tuple[list[str], int, int]:
+    """Assertion 12: every excused shadow mismatch is recorded, and every record is used.
+
+    SHADOW_EXPECTED_MISMATCH stops a KNOWN value drift from failing its job. That is
+    the right call -- the drift is already the operator's, and blocking on it took the
+    CI watchdog down on 2026-09-03 without it monitoring anything -- but it is also an
+    escape hatch, and an escape hatch with no liveness rule becomes a blanket
+    exemption. The runtime half is in the compare step itself (an excused name that
+    starts MATCHING fails until its entry is deleted). This is the static half:
+
+      a. an excused name must have a ledger entry carrying a substantive BLOCKER
+         reason, the run that found it, and the door that says who can resolve it;
+      b. a ledger entry must be excused by at least one workflow, or it is describing
+         a drift nothing acts on.
+
+    Both directions, because they fail in opposite ways: (a) is an exemption nobody
+    wrote down, (b) is a reason that outlived the thing it excused.
+    """
+    problems: list[str] = []
+    # Collect what the tree excuses FIRST. A tree that excuses nothing needs no
+    # ledger, and demanding one anyway would make this assertion fail on every
+    # fixture tree instead of on a real defect. The moment anything IS excused the
+    # ledger becomes mandatory, and unreadable means refuse rather than forgive.
+    excusing: list[tuple[str, str, set[str]]] = []
+    for path in sorted((ROOT / ".github" / "workflows").glob("*.yml")):
+        text = path.read_text(encoding="utf-8", errors="replace")
+        shadow = {w for line in SHADOW_NAMES_RE.findall(text) for w in line.split()}
+        excusing.extend((path.name, line, shadow) for line in EXPECTED_MISMATCH_RE.findall(text))
+
+    try:
+        ledger = (
+            json.loads(EXPECTED_MISMATCH_LEDGER.read_text(encoding="utf-8")).get(
+                "expected_mismatches"
+            )
+            or {}
+        )
+    except (OSError, ValueError) as exc:
+        if not excusing:
+            return [], 0, 0
+        return (
+            [
+                (
+                    f"{len(excusing)} workflow step(s) excuse a shadow mismatch but "
+                    f"{EXPECTED_MISMATCH_LEDGER.name} cannot be read ({exc}); refusing a verdict"
+                )
+            ],
+            0,
+            0,
+        )
+
+    used: set[str] = set()
+    n_steps = 0
+    for fname, line, shadow in excusing:
+        n_steps += 1
+        for name in line.split():
+            used.add(name)
+            if name not in shadow:
+                problems.append(
+                    f".github/workflows/{fname}: excuses {name!r} but no SHADOW_NAMES "
+                    f"in the file lists it, so the excuse applies to nothing."
+                )
+            entry = ledger.get(name)
+            if not entry:
+                problems.append(
+                    f".github/workflows/{fname}: excuses {name!r} with no entry in "
+                    f"{EXPECTED_MISMATCH_LEDGER.name}. An exemption nobody wrote down is "
+                    f"indistinguishable from a secret quietly going unchecked."
+                )
+                continue
+            reason = entry.get("reason") or ""
+            if not reason.startswith("BLOCKER:") or len(reason) < MIN_LEDGER_REASON:
+                problems.append(
+                    f"{EXPECTED_MISMATCH_LEDGER.name}: {name!r} has no substantive reason. "
+                    f"It must start with 'BLOCKER:' and say what drifted and why only the "
+                    f"operator can fix it."
+                )
+            problems.extend(
+                f"{EXPECTED_MISMATCH_LEDGER.name}: {name!r} is missing {field!r}. "
+                f"Without it the finding cannot be traced back to the run that "
+                f"produced it."
+                for field in ("found_in_run", "door")
+                if not entry.get(field)
+            )
+
+    problems.extend(
+        f"{EXPECTED_MISMATCH_LEDGER.name}: {name!r} is recorded but no workflow excuses it. "
+        f"Either the drift is resolved and the entry should go, or a job is failing on a "
+        f"mismatch this file already explains."
+        for name in sorted(set(ledger) - used)
+    )
+    return problems, len(ledger), n_steps
+
+
 def shadow_triple_problems() -> tuple[list[str], int]:
     """Assertion 11: within a file, SHADOW_NAMES, GH_* and BWS_* must be the SAME set.
 
@@ -1043,6 +1141,11 @@ def main() -> int:
         # a CI failure minutes after a push.
         tri_problems, tri_files = shadow_triple_problems()
         problems += tri_problems
+        # 12. Every excused mismatch is recorded, and every record is used. Also a
+        # text property, and the one that decides whether a known drift stays visible
+        # or quietly becomes permanent.
+        exp_problems, n_ledger, n_excusing = expected_mismatch_problems()
+        problems += exp_problems
 
     if problems:
         print(f"✗ bws map check ({len(problems)} problem(s)):", file=sys.stderr)
@@ -1079,6 +1182,12 @@ def main() -> int:
             f"✓ pre-image: all {len(alias)} row(s) name a mapped secret AND a name some "
             f"workflow still reads -- none is dead scaffold. This file is temporary: it "
             f"is deleted with the org secrets."
+        )
+    if n_ledger:
+        print(
+            f"✓ expected mismatches: all {n_ledger} recorded drift(s) are excused by a workflow "
+            f"({n_excusing} step(s)) and every excuse names a ledger entry with its run and its "
+            f"door -- none is a blanket exemption"
         )
     print("  Blind spot: this proves NAMES resolve. Liveness in Bitwarden is proven at run time,")
     print(

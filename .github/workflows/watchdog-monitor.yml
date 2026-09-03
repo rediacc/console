@@ -74,36 +74,6 @@ jobs:
             .github/actions
             .ci/config
 
-      - name: Fetch shadow secrets from Bitwarden
-        # SHADOW RUN: exports BWS_-prefixed copies that nothing consumes. The
-        # live secrets.* reads below are untouched until the cutover flips them.
-        uses: ./.github/actions/bws-secrets
-        with:
-          access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
-          secrets: |
-            ANTHROPIC_CLAUDE_CODE_OAUTH_TOKEN > BWS_ANTHROPIC_CLAUDE_CODE_OAUTH_TOKEN
-            CLOUDFLARE_API_TOKEN > BWS_CLOUDFLARE_API_TOKEN
-
-      - name: Compare shadow secrets against GitHub
-        shell: bash
-        env:
-          SHADOW_NAMES: ANTHROPIC_CLAUDE_CODE_OAUTH_TOKEN CLOUDFLARE_API_TOKEN
-          GH_ANTHROPIC_CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
-          GH_CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-        run: |
-          rc=0; read -ra names <<<"$SHADOW_NAMES"
-          sha() { printf '%s' "${1-}" | { sha256sum 2>/dev/null || shasum -a 256; } | cut -d' ' -f1; }
-          for n in "${names[@]}"; do
-            gv="GH_$n"; bv="BWS_$n"
-            # An ABSENT GitHub secret and an EMPTY Bitwarden value both hash to
-            # e3b0c442..., so without this arm two nothings compare EQUAL and the
-            # shadow reports "match" having verified nothing -- the exact defect
-            # this whole run exists to catch. Empty on either side is a failure.
-            if [ -z "${!gv-}" ] || [ -z "${!bv-}" ]; then echo "shadow $n EMPTY (github=${!gv:+set}${!gv:-unset} bitwarden=${!bv:+set}${!bv:-unset}) -- nothing was compared"; rc=1
-            elif [ "$(sha "${!gv-}")" = "$(sha "${!bv-}")" ]; then echo "shadow $n match"; else echo "shadow $n MISMATCH"; rc=1; fi
-          done
-          exit "$rc"
-
       # Deterministic attempt-cap backstop, deliberately OUTSIDE the AI-driven
       # monitor process it guards: a misclassification loop cannot talk its way
       # past a separate step that just reads run_attempt. Writes
@@ -222,3 +192,72 @@ jobs:
           .ci/scripts/ci/dispatch-watchdog.sh --run-id "$TARGET_RUN_ID" \
             --generation "$NEXT" --pending-rerun "${PENDING_RERUN:-false}" \
             --pr-number "$PR_NUMBER" --head-ref "$HEAD_REF"
+
+      # THE SHADOW RUNS LAST HERE, AND THAT ORDERING IS THE POINT.
+      #
+      # It used to sit before "Monitor jobs and cancel on failure". On
+      # 2026-09-03 ANTHROPIC_CLAUDE_CODE_OAUTH_TOKEN came back MISMATCH, the
+      # step exited 1, and the job stopped there -- so run 33704079162 reported
+      # "failure" having monitored nothing at all. A temporary migration
+      # scaffold had switched off the mechanism that watches every other CI run,
+      # and the only symptom was a red watchdog, which reads like the watchdog
+      # doing its job.
+      #
+      # Nothing here consumes the shadow, so it has no reason to gate the work.
+      # Last + always() keeps the mismatch just as loud (the job still goes red
+      # and the log still names the secret) while the monitor, the artifact
+      # upload and the generation dispatch have all already happened.
+      #
+      # These two steps are deleted with the org secrets.
+      - name: Fetch shadow secrets from Bitwarden
+        if: always()
+        # SHADOW RUN: exports BWS_-prefixed copies that nothing consumes. The
+        # live secrets.* reads below are untouched until the cutover flips them.
+        uses: ./.github/actions/bws-secrets
+        with:
+          access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
+          secrets: |
+            ANTHROPIC_CLAUDE_CODE_OAUTH_TOKEN > BWS_ANTHROPIC_CLAUDE_CODE_OAUTH_TOKEN
+            CLOUDFLARE_API_TOKEN > BWS_CLOUDFLARE_API_TOKEN
+
+      - name: Compare shadow secrets against GitHub
+        if: always()
+        shell: bash
+        env:
+          SHADOW_NAMES: ANTHROPIC_CLAUDE_CODE_OAUTH_TOKEN CLOUDFLARE_API_TOKEN
+          SHADOW_EXPECTED_MISMATCH: ANTHROPIC_CLAUDE_CODE_OAUTH_TOKEN
+          GH_ANTHROPIC_CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          GH_CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          rc=0; read -ra names <<<"$SHADOW_NAMES"
+          read -ra expected <<<"${SHADOW_EXPECTED_MISMATCH-}"
+          sha() { printf '%s' "${1-}" | { sha256sum 2>/dev/null || shasum -a 256; } | cut -d' ' -f1; }
+          is_expected() { local q="$1" e; for e in ${expected+"${expected[@]}"}; do [ "$e" = "$q" ] && return 0; done; return 1; }
+          # A name excused here must be one this job actually compares, or the entry
+          # sits forever excusing nothing.
+          for e in ${expected+"${expected[@]}"}; do
+            case " $SHADOW_NAMES " in *" $e "*) ;; *) echo "shadow $e is in SHADOW_EXPECTED_MISMATCH but not in SHADOW_NAMES -- it excuses nothing here; delete it"; rc=1 ;; esac
+          done
+          for n in "${names[@]}"; do
+            gv="GH_$n"; bv="BWS_$n"
+            # An ABSENT GitHub secret and an EMPTY Bitwarden value both hash to
+            # e3b0c442..., so without this arm two nothings compare EQUAL and the
+            # shadow reports "match" having verified nothing -- the exact defect
+            # this whole run exists to catch. Empty on either side is a failure, and
+            # stays fatal even for an excused name: an empty is a broken fetch, not
+            # the known value drift the ledger describes.
+            if [ -z "${!gv-}" ] || [ -z "${!bv-}" ]; then echo "shadow $n EMPTY (github=${!gv:+set}${!gv:-unset} bitwarden=${!bv:+set}${!bv:-unset}) -- nothing was compared"; rc=1
+            elif [ "$(sha "${!gv-}")" = "$(sha "${!bv-}")" ]; then
+              # An excused name that MATCHES means the drift is gone, so the excuse must
+              # go too, or exemptions outlive the reason for them.
+              if is_expected "$n"; then echo "shadow $n matches, but is still excused by SHADOW_EXPECTED_MISMATCH -- the drift is resolved; delete it here and in shadow-expected-mismatches.json"; rc=1
+              else echo "shadow $n match"; fi
+            elif is_expected "$n"; then
+              # Known drift, recorded with its evidence and its door. It does not stop
+              # this job (the ledger is .ci/config/shadow-expected-mismatches.json):
+            # blocking on it took the CI watchdog down on 2026-09-03 without
+              # it monitoring anything, and the finding is already the operator's.
+              echo "shadow $n MISMATCH (EXPECTED -- shadow-expected-mismatches.json, operator-only)"
+            else echo "shadow $n MISMATCH"; rc=1; fi
+          done
+          exit "$rc"

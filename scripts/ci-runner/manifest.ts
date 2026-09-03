@@ -1382,6 +1382,24 @@ export const GATES: readonly GateSpec[] = [
     },
   },
   {
+    id: 'check:ci-syncpack-sources',
+    run: 'npm run check:ci-syncpack-sources',
+    gate: true,
+    paths: [
+      '.syncpackrc.json',
+      '.ci/config/syncpack-source-exclusions.json',
+      '.ci/scripts/quality/check_syncpack_sources.py',
+      '**/package.json',
+    ],
+    leaves: ['.ci/scripts/quality/check_syncpack_sources.py'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-branch',
+      step: 'syncpack source coverage',
+    },
+  },
+  {
     id: 'check:ci-secret-reachability',
     run: 'npm run check:ci-secret-reachability',
     gate: true,
@@ -1918,6 +1936,11 @@ export const GATES: readonly GateSpec[] = [
   {
     id: 'check:ci-agent-browser-exit',
     run: 'npm run check:ci-agent-browser-exit',
+    // 20.8s measured serially on an idle machine, so this is the gate's own cost
+    // and not the 17x parallel load the pre-push lane runs under. The oracle
+    // judges the FLOOR of recent samples for exactly that reason, and the floor
+    // is over the line too.
+    slow: true,
     gate: true,
     leaves: ['.ci/scripts/quality/check-agent-browser-exit.sh'],
     ci: {
@@ -5228,6 +5251,19 @@ export const GATES: readonly GateSpec[] = [
     gate: true,
     qualityGateTest: true,
     leaves: ['.ci/scripts/test/gates/test-plan-housekeeping.sh'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-security',
+      step: 'Quality-gate unit tests',
+    },
+  },
+  {
+    id: 'gate-test:shadow-compare',
+    run: '.ci/scripts/test/gates/test-shadow-compare.sh',
+    gate: true,
+    qualityGateTest: true,
+    leaves: ['.ci/scripts/test/gates/test-shadow-compare.sh'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',

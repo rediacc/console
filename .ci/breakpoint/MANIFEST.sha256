@@ -1,5 +1,5 @@
-# canonical: rediacc/console@3f0a880fa192f1759916364f2345aae3dd63dd71
-# generated: 2026-09-02T22:34:26Z
+# canonical: rediacc/console@7a7ccd1d6ce48dab3dd67458c5af7f2b19faa768
+# generated: 2026-09-03T01:50:53Z
 7ee12fc903b5a3da597d5a87803119e276e7ce5cc69cdfda36ffa1eb88173443  docker/Caddyfile
 2025fcbb3384eb42d93caa2a4add6f9fce3c0a89dd81717b7b0fb46cc78f4077  lib/breakpoint-blocker.sh
 e70e63241b60a17671bd79c68b4e6022f396737ffdc5479fbc720b16ef15de03  lib/breakpoint-common.sh
@@ -24,4 +24,4 @@ ffba6d164335b05dc6d439d9b2ed4e64d67806a429e30ab63bf513a99a3fd4ff  scripts/start-
 20598e659231403549e381ddf10dfaa9060241bcd567f100470ac64ccf02ff2d  scripts/sync-breakpoint.sh
 09c2488cd886638918e52d2d6e89470b3cca0eb0cf324298e05c65f05e0268b9  scripts/test-breakpoint-lifecycle.sh
 a002a02494125dcb18834cc1e54cef8164a07321bf01f3ca117c61a2aab1e935  versions.sh
-94e31b686f6766dee43d23eaffe9fd6dac1eeebbe9c2de0a97a4148b9ca31b4e  workflow/breakpoint.yml
+b13df40665d3255eed2ecad1fcbba8910fa96adeaffc348349312d953eb40b0f  workflow/breakpoint.yml

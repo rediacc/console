@@ -1,0 +1,48 @@
+{
+  "$comment": [
+    "DRIFT THE SHADOW ALREADY FOUND, so it stops taking the repo down while the",
+    "operator decides what to do about it.",
+    "",
+    "The shadow run compares each secret's GitHub value against its Bitwarden value",
+    "and fails the job when they disagree. That is the right default and it worked:",
+    "it caught three secrets whose two copies hold DIFFERENT VALUES. But the compare",
+    "step runs near the TOP of every job, so each finding also stopped that job's real",
+    "work -- and the three names below sit in the most load-bearing jobs in the repo:",
+    "the CI watchdog, the Claude review gate, autopilot, both CD deploys, the preview",
+    "deploy, the Stripe sandbox job and the account E2E battery.",
+    "",
+    "On 2026-09-03 that cost the watchdog entirely: run 33704079162 reported failure",
+    "having monitored NOTHING, because the compare exited 1 before the monitor step",
+    "ran. A temporary migration scaffold had switched off the mechanism that guards",
+    "every other CI run, and the only symptom was a red watchdog -- which reads like",
+    "the watchdog working.",
+    "",
+    "An entry here means: this drift is KNOWN, RECORDED, and belongs to the operator.",
+    "It does NOT weaken the shadow. Any name not listed here still fails its job on",
+    "mismatch, an EMPTY value on either side is still fatal for listed names too (an",
+    "empty is a broken fetch, not a known drift), and a listed name that starts",
+    "MATCHING fails the job until its entry is deleted -- an exemption cannot outlive",
+    "the condition that justified it.",
+    "",
+    "This file is deleted with the org secrets, along with the rest of the shadow.",
+    "Only the operator can resolve these: GitHub secrets are write-only, so no session",
+    "can read the GitHub value to reconcile it with Bitwarden."
+  ],
+  "expected_mismatches": {
+    "ACCOUNT_SERVER_API_KEY": {
+      "reason": "BLOCKER: GitHub and Bitwarden hold different VALUES for this secret. Found by the shadow in run 33691632299 (Tests + Infra / Account E2E, 'Compare shadow secrets against GitHub'). Deleting the GitHub org secret would destroy the live value, and GitHub secrets are write-only so no session can read it back to reconcile. Operator must re-seed the correct value into the ci-shared Bitwarden project, then this entry is deleted and the shadow goes green on its own.",
+      "found_in_run": "33691632299",
+      "door": "operator-only"
+    },
+    "STRIPE_SANDBOX_WEBHOOK_SECRET": {
+      "reason": "BLOCKER: GitHub and Bitwarden hold different VALUES for this secret. Found by the shadow in run 33691632299 (Tests + Infra / Account E2E, 'Compare shadow secrets against GitHub'), alongside ACCOUNT_SERVER_API_KEY. Same resolution and the same reason it cannot be resolved here: the GitHub copy is unreadable by anything but GitHub.",
+      "found_in_run": "33691632299",
+      "door": "operator-only"
+    },
+    "ANTHROPIC_CLAUDE_CODE_OAUTH_TOKEN": {
+      "reason": "BLOCKER: GitHub and Bitwarden hold different VALUES. Found in run 33704079162, the CI WATCHDOG, where the compare step aborted the job before it monitored anything. Note the two sides are also named differently: GitHub calls it CLAUDE_CODE_OAUTH_TOKEN (see .ci/config/github-secret-preimage.json) while the shadow name is ANTHROPIC_CLAUDE_CODE_OAUTH_TOKEN, so a rotation applied to one name would not reach the other -- which is a plausible cause of the drift and worth checking before re-seeding.",
+      "found_in_run": "33704079162",
+      "door": "operator-only"
+    }
+  }
+}
