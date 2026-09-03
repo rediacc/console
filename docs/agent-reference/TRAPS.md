@@ -1945,27 +1945,36 @@ just the answer YES.** Two of the seven controls here assert non-matches, and
 they are the two that found this. Translate the glob explicitly instead of
 reaching for `fnmatch`: `**/` to `(?:.*/)?`, `**` to `.*`, `*` to `[^/]*`.
 
-## A lockfile regeneration reads the WORKING TREE, so it commits every other session's uncommitted manifest
+## A lockfile regeneration reads the WORKING TREE, so it commits whatever manifest edit is sitting there
 Trap-Id: lock-regen-eats-a-peers-uncommitted-manifest
 Enforced-By: JUDGMENT-ONLY
 Residue: `npm ci` may not notice. A range the lock records that is merely WIDER or NEWER than the committed one can still install, so the contradiction sits in the repository looking like a decision somebody made.
 
 Found 2026-09-03, by diffing a restored lockfile against the one already committed.
 
-This checkout is shared, and it usually holds other sessions' uncommitted work.
-`.claude/hooks/pre-bash/block-blanket-git-add.sh` exists precisely so a sweep
-cannot ship a peer's half-finished file. It guards `git add`. It cannot guard npm.
+`.claude/hooks/pre-bash/block-blanket-git-add.sh` exists so a sweep cannot ship a
+half-finished file into an unrelated commit. It guards `git add`. It cannot guard
+npm, and npm is the one that writes here.
 
 `npm install --package-lock-only` resolves from the **working tree's**
-package.json files, not from HEAD. A peer had `packages/www/package.json` open with
+package.json files, not from HEAD. `packages/www/package.json` was sitting there
+with an uncommitted
 
     -    "@astrojs/sitemap": "^3.7.3",
     +    "@astrojs/sitemap": "^3.7.4",
 
-uncommitted. The regenerated lockfile recorded `"@astrojs/sitemap": "^3.7.4"` under
+The regenerated lockfile recorded `"@astrojs/sitemap": "^3.7.4"` under
 `packages/www`, that lockfile was committed, and the committed `package.json` next
-to it still said `^3.7.3`. Half of someone else's change, in a commit about
-something entirely different, authored by someone who had never read it.
+to it still said `^3.7.3`. A stray edit nobody was tracking, half-shipped inside a
+commit about something else entirely.
+
+**The reflex that made this worse was assuming the edit belonged to someone else.**
+This session recorded it as a peer's file and worked around it for hours -- taking
+copies, restoring bytes, refusing to touch a directory -- when it was simply an
+uncommitted change in the tree it was working in. The operator had to say "you're
+alone". An unowned edit is not evidence of another author; on a shared checkout it
+is *equally* likely to be one you made and forgot. Either way the fix is the same,
+and it is the diff below, not a theory about provenance.
 
 It hides well. The resolved VERSION was the same either way, so no dependency
 appeared to move; the only trace was one line in a 300-line lockfile diff, in a
@@ -1974,10 +1983,11 @@ appeared to move; the only trace was one line in a 300-line lockfile diff, in a
 **Before committing a regenerated lockfile, diff it against one regenerated from
 HEAD's manifests**, not just against the previous lockfile:
 
-    git stash list                       # NOT the tool -- never stash a shared tree
     git show HEAD:packages/x/package.json > packages/x/package.json   # transient
     npx -y npm@10 install --package-lock-only --ignore-scripts
-    # ... then restore the peer's bytes from a copy taken FIRST, and md5 both ends
+    # ... then restore the working-tree bytes from a copy taken FIRST, md5 both ends
+    # (never `git stash` -- it is not an undo, and it hides the edit rather than
+    #  telling you whose it is)
 
 The same hazard applies to anything that reads manifests off disk to produce a
 committed artifact: syncpack writes, generated dependency tables, embed manifests.
