@@ -163,6 +163,28 @@ if [[ -n "${RUN_ALL_SCANNERS+x}" ]]; then
     SCANNER_TESTS=($RUN_ALL_SCANNERS)
 fi
 
+# THE BATTERY MAY NOT LEAVE A MARK ON THE TREE, and this is here rather than in a
+# static rule because a static rule cannot see the interesting cases.
+#
+# A gate test that rewrites a TRACKED file is not merely untidy. It is visible to
+# every other gate sharing the tree, and this repo runs ~294 of them at 20x
+# concurrency: on 2026-09-03 test-devcontainer-pin-freshness.sh drove `--upgrade`
+# against the real .devcontainer/Dockerfile and restored it from a trap, and
+# check:ci-setup-idempotency -- a gate with nothing to do with devcontainers --
+# reported "setup --check changed the working tree", naming a command that never
+# writes that file. The reader was sent into run.sh. It is also a hazard outside
+# CI, because this working tree usually holds another session's uncommitted work
+# and a test can be interrupted between its mutation and its restore.
+#
+# Snapshot before and after the WHOLE battery rather than per test: one pair of
+# git calls instead of 128, and the delta names the file, which is enough to find
+# the culprit with a targeted re-run. Untracked noise is excluded because several
+# tests legitimately plant fixtures inside the tree (gate-paths-exist needs its
+# scan fixture to be scanned); a TRACKED file changing is the defect.
+BATTERY_REPO_ROOT="$(cd "$SCRIPT_DIR/../../.." && pwd)"
+tree_state() { (cd "$BATTERY_REPO_ROOT" && git status --porcelain 2>/dev/null | grep -v '^??' | sort); }
+TREE_BEFORE="$(tree_state)"
+
 cd "$GATES_DIR"
 shopt -s nullglob
 # BLOCKER: intentional glob expansion of user-supplied $PATTERN into the TEST_FILES array; quoting would prevent shopt nullglob from filtering non-matches
@@ -391,6 +413,19 @@ drain_all
 # count short of the file count means the scheduler dropped work silently.
 if ((printed != ${#TEST_FILES[@]})); then
     log_fail "scheduler printed $printed of ${#TEST_FILES[@]} test blocks; results were lost"
+fi
+
+TREE_AFTER="$(tree_state)"
+if [[ "$TREE_BEFORE" != "$TREE_AFTER" ]]; then
+    echo ""
+    echo "✗ the battery CHANGED TRACKED FILES in the working tree:"
+    diff <(printf '%s\n' "$TREE_BEFORE") <(printf '%s\n' "$TREE_AFTER") | sed 's/^/    /' || true
+    echo "  A gate test must work on a COPY. The validator it drives should take a path"
+    echo "  seam (as check-devcontainer-pin-freshness.ts takes DEVCONTAINER_DOCKERFILE)"
+    echo "  so the test can hand it a fixture instead of the tracked file. Find the"
+    echo "  culprit by re-running tests one at a time against the file named above."
+    fail=$((fail + 1))
+    failed_tests+=("the battery itself: it left a tracked file modified")
 fi
 
 echo "=============================================="

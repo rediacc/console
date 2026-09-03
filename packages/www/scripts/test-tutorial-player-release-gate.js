@@ -608,17 +608,53 @@ function scenarioMountConsistency() {
     };
   })()`);
 
+  // THE SOLUTION PAGE DEFERS ITS PLAYER ON PURPOSE, and this scenario used to
+  // assert the opposite. Solution mounts carry `data-click-to-load` and render a
+  // server-side poster instead of building the 122 KB player: measured across all
+  // 44 English mount-carrying pages at 1440x900 and 390x844, every mount is ABOVE
+  // THE FOLD, so an IntersectionObserver fires on load and defers nothing. Docs
+  // mounts have no poster to click and keep the observer path, which is why
+  // `docs.hasPlayer` above is still immediate.
+  //
+  // So the assertion is now the REAL contract rather than the old one, and it is
+  // strictly stronger: no player before the click, a poster to click, and a player
+  // after it. The previous version could not have told a working deferral from a
+  // broken mount.
   open(`${baseUrl}/en/solutions/rapid-recovery`);
   wait(1000);
-  const solution = evalInPage(`(() => {
+  const solutionBefore = evalInPage(`(() => {
     return {
-      hasPlayer: Boolean(document.querySelector('.tvp-root video'))
+      hasPlayer: Boolean(document.querySelector('.tvp-root video')),
+      hasPoster: Boolean(document.querySelector('.video-poster-play'))
     };
   })()`);
-  writeArtifact('scenario-layering-solution.json', solution);
+  // Native click, not eval'd .click(), for the reason clickSelector documents.
+  clickSelector('.video-poster-play');
+  wait(2500);
+  const solution = evalInPage(`(() => {
+    return {
+      hasPlayer: Boolean(document.querySelector('.tvp-root video')),
+      posterGone: !document.querySelector('.video-poster-play')
+    };
+  })()`);
+  writeArtifact('scenario-layering-solution.json', { before: solutionBefore, after: solution });
 
   assertCondition(docs.hasPlayer, 'docs page tutorial video player not found', docs);
-  assertCondition(solution.hasPlayer, 'solution page tutorial video player not found', solution);
+  assertCondition(
+    !solutionBefore.hasPlayer,
+    'solution page built its player BEFORE any click -- the deferral is not working',
+    solutionBefore
+  );
+  assertCondition(
+    solutionBefore.hasPoster,
+    'solution page has no poster to click, so nothing can ever load the player',
+    solutionBefore
+  );
+  assertCondition(
+    solution.hasPlayer,
+    'solution page tutorial video player not found after clicking the poster',
+    solution
+  );
   // NOT a docs-vs-solution caption z-index comparison: solution videos have no
   // `words` manifest entry (verified: packages/www/src/data/video-manifest.json ->
   // solutions.rapid-recovery.en has only mp4/vertical/poster, no words) because their
