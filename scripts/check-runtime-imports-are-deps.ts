@@ -75,9 +75,24 @@ interface Finding {
   file: string;
 }
 
-/** Bare specifier from an import/require/dynamic-import, package name only. */
+/**
+ * Bare specifier from an import/require/dynamic-import, package name only.
+ *
+ * THE FOURTH BRANCH IS A SIDE-EFFECT IMPORT, `import 'pkg';`, and its absence was a
+ * silent hole in the permissive direction: the first branch requires `from`, the
+ * second requires `(`, the third requires `require`, so a statement that imports a
+ * package purely for its side effects matched NONE of them. An undeclared runtime
+ * dependency of that shape would have been reported as clean.
+ *
+ * Found 2026-09-03 by sweeping the class after the same defect shape was fixed in
+ * check-client-bundle-budget.ts, whose walk required whitespace after `import` and so
+ * could not see rollup's `import"./x.js"`. Different regex, same failure: the pattern
+ * was narrower than the syntax it audits, and being narrow made it QUIETER rather than
+ * louder. There is no instance in `private/account` today (the only TARGET), which is
+ * exactly why it needed a control rather than a live red to justify fixing.
+ */
 const IMPORT_RE =
-  /(?:^|\s)(?:import|export)\s+(?:type\s+)?[^;'"]*from\s*['"]([^'"]+)['"]|(?:^|\s)import\s*\(\s*['"]([^'"]+)['"]|require\(\s*['"]([^'"]+)['"]/gm;
+  /(?:^|\s)(?:import|export)\s+(?:type\s+)?[^;'"]*from\s*['"]([^'"]+)['"]|(?:^|\s)import\s*\(\s*['"]([^'"]+)['"]|require\(\s*['"]([^'"]+)['"]|(?:^|\s)import\s*['"]([^'"]+)['"]/gm;
 
 /** `@scope/name` or `name`, dropping any subpath. */
 function packageOf(spec: string): string | null {
@@ -112,7 +127,7 @@ function scanIn(root: string, pkgDir: string): Finding[] {
     if (/__tests__|\.test\.|\.spec\./.test(file)) continue;
     const text = readFileSync(join(root, file), 'utf8');
     for (const m of text.matchAll(IMPORT_RE)) {
-      const spec = m[1] ?? m[2] ?? m[3];
+      const spec = m[1] ?? m[2] ?? m[3] ?? m[4];
       if (!spec) continue;
       const line = text.slice(
         text.lastIndexOf('\n', m.index ?? 0) + 1,
@@ -146,7 +161,11 @@ function scanIn(root: string, pkgDir: string): Finding[] {
       join(pkgDir, 'package.json'),
       JSON.stringify({
         dependencies: { 'ctl-runtime-ok': '1' },
-        devDependencies: { 'ctl-dev-only': '1', 'ctl-types-only': '1' },
+        devDependencies: {
+          'ctl-dev-only': '1',
+          'ctl-types-only': '1',
+          'ctl-sideeffect-dev': '1',
+        },
       })
     );
     writeFileSync(
@@ -157,11 +176,23 @@ function scanIn(root: string, pkgDir: string): Finding[] {
         "import type { T } from 'ctl-types-only';", // type-only, never at runtime
         "import { z } from './local.js';", // relative
         "import { readFileSync } from 'node:fs';", // builtin
+        // SIDE-EFFECT import of a devDependency. Matches no `from`, no `(`, no
+        // `require`, so before the fourth branch existed it was invisible and this
+        // whole shape could smuggle an undeclared runtime dependency past the gate.
+        "import 'ctl-sideeffect-dev';", // MUST be reported
       ].join('\n')
     );
     // scan() resolves against ROOT, so point it at the fixture for this call.
     const found = scanIn(tmp, 'ctl');
     const names = found.map((f) => f.spec);
+    if (!names.includes('ctl-sideeffect-dev')) {
+      console.error(
+        "✗ instrument control did not fire: a side-effect import (`import 'pkg';`) of a\n" +
+          '  devDependency was not reported. That shape matches no `from`, no `(` and no\n' +
+          '  `require`, so if this arm is dead the scanner is blind to it entirely.'
+      );
+      process.exit(1);
+    }
     if (!names.includes('ctl-dev-only')) {
       console.error(
         '✗ instrument control did not fire: a runtime import of a devDependency\n' +
