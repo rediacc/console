@@ -1810,3 +1810,137 @@ it describes. And **use synthetic names in fixtures** (`SELFTEST_ALIASED >
 SELFTEST_ENV_NAME`): realism in a parser fixture buys nothing and costs exactly
 this. The general form: after any bulk rewrite, ask not only "did the tests pass"
 but "does each test still assert what it was written to assert".
+
+## A pre-bash hook rejects the WHOLE command, so the `git add` beside a blocked `git commit` never ran
+Trap-Id: blocked-compound-drops-the-staging
+Enforced-By: JUDGMENT-ONLY
+Residue: Nothing reads a commit message against its own diff. A message describing a change the commit does not contain is indistinguishable from an accurate one until somebody needs the code.
+
+Found 2026-09-03, by grepping HEAD for a string the commit message quoted.
+
+The command was one line:
+
+    git add <five modified files>
+    git commit -q -F - <<'MSG' ... MSG
+
+`block-untagged-commit.sh` refused it for a missing `PR-TASK:` trailer. The
+refusal is a **PreToolUse** hook, so it rejects the tool call before ANY of it
+runs — the `git add` never happened. The next attempt fixed only the message and
+committed, and the index still held just the two files staged earlier. The
+result was commit `7a7ccd1d6`, whose message spends a paragraph on a fix to
+`check-setup-idempotency.sh` that is not in it.
+
+Nothing catches this. The gates were green because the working tree was correct;
+only the *commit* was wrong, and no gate reads commit messages against diffs.
+
+The habit: **stage in its own tool call, never in the same one as the commit.**
+Any hook that can refuse the commit will take the staging with it, and a retry
+that edits only the message will look like it worked. And after any commit whose
+message makes a specific claim, `git show HEAD --stat` before believing it — the
+message is written from intent, the commit from the index, and a blocked call is
+exactly where those two separate.
+
+## A gate whose subject is a SUBMODULE does not fail safe when the submodule is absent
+Trap-Id: submodule-absent-inverts-the-finding
+Enforced-By: gate:check:ci-syncpack-sources
+Residue: Only for the trees a config NAMES. A gate that discovers its subject by globbing still cannot tell "none exist" from "none are checked out".
+
+Found 2026-09-03 in CI job 100494921545, on a gate written that same hour.
+
+`check:ci-syncpack-sources` exists because `private/account` is a submodule and
+therefore outside syncpack's `source`. It landed in ci-quality's
+`quality-branch`, which checks out no submodules. So `git ls-files
+--recurse-submodules` returned nothing under `private/account`, the manifests
+inside it stopped existing, and the gate's *converse* assertion — an exclusion
+must suppress something real — inverted into two confident findings telling the
+reader to delete two entries that were exactly right.
+
+Note the direction. The gate did not go quiet, which would have been the ordinary
+vacuity failure. It got LOUDER and wrong, and its advice was destructive: follow
+it and the submodule leaves the pins again, which is the defect the gate was
+written to prevent.
+
+The general shape: **an absent tree makes "nothing here" and "nothing exists"
+identical, and any converse assertion built on the second reading fires
+backwards.** The fix is to assert on the DIRECTORIES the config names, before
+reading anything inside them, and to answer CANNOT VERIFY rather than answering
+at all. A gate about a submodule also belongs in a job whose checkout sets
+`submodules: true`; parity checks that a step exists, not that its job can see
+the gate's subject.
+
+## `npm ci --dry-run` passes on your machine under npm 11 and cannot pass in CI under npm 10
+Trap-Id: npm11-prunes-what-npm10-requires
+Enforced-By: gate:check:ci-lockfile
+Residue: That gate is `slow: true`, so the pre-push lane defers it. A push can be locally green and still carry this.
+
+Found 2026-09-03: four CI jobs down at once — Quality/Go, Built-www Gates, i18n
+and Packages — all at `Run ./.github/actions/setup-workspace`.
+
+    npm error Missing: esbuild@0.28.2 from lock file
+    npm error Missing: @esbuild/aix-ppc64@0.28.2 from lock file       (~40 more)
+
+The monorepo already documents that npm 11 omits redundant nested dev markers and
+that CI pins npm@10. This is the same split with real teeth: npm 11 also prunes
+whole nested platform subtrees — here `node_modules/vitest/node_modules/@esbuild/*`
+— that npm 10 requires. A lockfile regenerated under npm 11 then cannot be
+installed by CI at all.
+
+What makes it a trap rather than a bug is the local signal. Plain `npm ci
+--dry-run` in that directory exits **0**, because it runs under npm 11, the same
+npm that wrote the file. Agreement with itself is not evidence.
+
+    npx -y npm@10 ci --dry-run          # reproduces the CI error verbatim
+    npx -y npm@10 install --package-lock-only --ignore-scripts   # the fix
+
+Sweep it: this repo tracks eight lockfiles and any of them can drift
+independently. Only one had.
+
+## A scaffold step in front of a monitor switches the guard off and looks like the guard failing
+Trap-Id: shadow-step-preempts-the-watchdog
+Enforced-By: gate:check:ci-workflow-gates
+Residue: Only the watchdog is checked. Any other job where an early optional step preempts the job's actual purpose is still judgment.
+
+Found 2026-09-03, run 33704079162.
+
+A migration scaffold — a shadow step comparing each secret's GitHub value against
+its Bitwarden value, which nothing consumes — sat near the top of all 62 jobs in
+the repo. In the watchdog it sat at step 7 of 7, ahead of `Monitor jobs and
+cancel on failure`. It found a real mismatch, exited 1, and the job stopped.
+
+The run's conclusion was **failure**. That is the trap: a red watchdog is what a
+working watchdog looks like when it catches something. Nothing in the run summary
+distinguishes "the watchdog found a problem" from "the watchdog never ran", and
+the mechanism that guards every other CI run was off for as long as nobody
+opened the log.
+
+Two rules come out of it. **A step that the job's purpose does not need must not
+be able to stop the job's purpose** — put it last, with `if: always()`, where it
+still reports and still reddens the run without costing the work. And **a guard's
+own red is not self-explanatory**: when a monitoring job fails, read which STEP
+failed before concluding it monitored anything.
+
+One tempting fix is worse than the disease. Moving every such step to the end of
+its job in bulk is unsafe here: several jobs check out PR head partway through,
+and re-invoking a local composite action after that runs PR-controlled code with
+whatever token the step holds.
+
+## `fnmatch`'s `*` crosses `/`, so a gate can be more generous than the tool it audits
+Trap-Id: fnmatch-star-eats-the-separator
+Enforced-By: gate:check:ci-syncpack-sources
+Residue: Any Python check that reimplements a shell/JS glob. `fnmatch` is the obvious import and it is not the same language.
+
+Found 2026-09-03 before the gate landed, by a control written to fail.
+
+A gate auditing whether syncpack's `source` globs cover every manifest matched
+them with `fnmatch.fnmatch`. In `fnmatch`, `*` matches `/`, so
+`packages/*/package.json` "matched" `packages/json/templates/x/app/package.json`
+— a file syncpack itself never reads.
+
+The failure is silent and in the forgiving direction: the gate reports a manifest
+as COVERED, so the tree looks clean while nothing scans those files. Precisely
+the defect the gate was written to catch, reintroduced inside the catcher.
+
+**A gate that models another tool's matching must be tested on the answer NO, not
+just the answer YES.** Two of the seven controls here assert non-matches, and
+they are the two that found this. Translate the glob explicitly instead of
+reaching for `fnmatch`: `**/` to `(?:.*/)?`, `**` to `.*`, `*` to `[^/]*`.
