@@ -6463,6 +6463,87 @@ the reason warns about; and its protobufjs clause was probed and is false here
 (`@grpc/proto-loader@0.8.1` resolves `protobufjs@7.6.6`). The labels were two bumps
 stale, naming a "0.219 line" that had not existed for two moves.
 
-`ci:quick` is 288/288 and `carried-reds.json` is empty again — a carry that stops
+`ci:quick` was 288/288 here and `carried-reds.json` empty again (see the 2026-09-03
+section below: it is 290/290 now) — a carry that stops
 failing is refused by that file's own liveness rule, which is the correct forcing
 function. It only became visible after the suppression came off.
+
+## The night the gates turned on their own author (2026-09-03)
+
+Fifteen commits after the section above, and the through-line is that almost every
+finding came from an instrument disagreeing with a claim someone had already made
+in writing — including several of mine.
+
+### The shadow was not an observer
+
+Everything above describes the shadow run as a pure comparison: it exports `BWS_`
+copies nothing consumes and hashes them against `GH_`. That was true of what it
+READS and never true of what it COSTS. The compare step exits 1 on a mismatch and
+sits near the TOP of all 62 jobs, so a finding did not report — it stopped that
+job's work.
+
+Run `33704079162` is the CI watchdog. Its compare step found a **third** drifted
+secret, `ANTHROPIC_CLAUDE_CODE_OAUTH_TOKEN`, at step 7 of 7, exited 1, and the job
+ended before `Monitor jobs and cancel on failure` ever ran. The run's conclusion
+was *failure*, and it had monitored nothing. A temporary migration scaffold had
+switched off the mechanism that watches every other CI run, and the only symptom
+was a red watchdog — which is exactly what a working watchdog looks like when it
+catches something.
+
+Sweeping the class: nine jobs carried one of the three drifted names, and they are
+the load-bearing ones — the watchdog, the Claude review gate, autopilot, both CD
+deploys, the preview deploy, the Stripe sandbox job, the account E2E battery.
+
+The fix is `.ci/config/shadow-expected-mismatches.json`: a known drift is recorded
+with the run that found it and the door that closes it, and the job keeps running.
+It does not weaken the shadow, and every clause is tested by
+`gate-test:shadow-compare`, which extracts the REAL compare body from `ci.yml`
+rather than copying it. An unexcused mismatch still fails; an EMPTY value stays
+fatal even when excused, because an empty is a broken fetch and not value drift; an
+excused name that starts MATCHING fails until its entry is deleted.
+`check_bws_map` assertion 12 ties both directions statically. The watchdog's own
+shadow moved LAST with `if: always()`, and `check-workflow-gates.sh` CHECK 6 now
+refuses any step before the monitor that the monitor does not need.
+
+**So the count in the section above is out of date: THREE secrets disagree, not
+two.** The third is worth a look before anyone re-seeds — GitHub calls it
+`CLAUDE_CODE_OAUTH_TOKEN` while the shadow name carries the `ANTHROPIC_` prefix, so
+a rotation applied under one name would never have reached the other.
+
+### Four gates that were green because they could not see
+
+- **`check:ci-syncpack-sources`.** syncpack's default `source` is `workspaces`, and
+  a submodule is not a workspace, so every versionGroup pin stopped at
+  `private/account` — including an OpenTelemetry lockstep pin whose whole job is to
+  stop the packages drifting. Its own control then caught a defect in it before it
+  landed: `fnmatch`'s `*` crosses `/`, so it reported files as covered that syncpack
+  never reads.
+- **`check-plan-housekeeping.sh`**, three iterations. `--is-shallow-repository`
+  answers on the EXISTENCE of `.git/shallow`, which `--unshallow` can leave empty;
+  then "any graft at all" refused a checkout with 90 commits and 1 graft where every
+  plan's history was present. A graft breaks this gate only when a PLAN's last commit
+  IS the boundary, so that is now the question.
+- **`check:ci-client-bundle-budget`** had been under-measuring the homepage by
+  **124,673 B**. `importSpecifiers` required whitespace after `import`; rollup emits
+  `import"./x.js"`. The homepage's entry is a 129-byte facade made of exactly that
+  shape, so the walk dead-ended and never saw the 122,110 B video player every
+  visitor downloads. One character, and 451,621 B / 28 files becomes 576,294 / 30 —
+  which reconciles to the byte with the CI run I had dismissed as flaky.
+- **The lockfile.** npm 11 prunes nested platform subtrees that npm 10 requires, and
+  CI pins npm 10. `npm ci --dry-run` passed locally the entire time because it ran
+  under the npm that wrote the file.
+
+`ci:quick` is now **290/290** and `carried-reds.json` is still empty. The bundle
+budget is RED in CI at 1.15x, correctly, and is parked as `[?] #da11407e`; the
+budget was not raised, because this gate's own header argues that a budget set just
+above today's figure ratifies the defect.
+
+### What a reader should take from this
+
+Three of the corrections above are corrections to things *this project had already
+written down confidently*. The shadow was documented as an observer. The bundle
+gate's header described a number that was wrong in both directions. A CI red got
+called flaky in a report to the operator before its log had been read to the end.
+In every case the instrument was right and the prose was stale, which is the
+argument for these documents being updated in the same turn as the code rather
+than at the end of a wave.
