@@ -792,10 +792,26 @@ fi
 # 1. Run 33704079162 reported "failure" having monitored NOTHING, and the only
 # symptom was a red watchdog, which reads exactly like the watchdog working.
 #
-# The rule: every step BEFORE "Monitor jobs and cancel on failure" must be one
-# the monitor actually needs. The allowlist below is that set, by name, and it
-# is short on purpose -- adding to it is the moment to ask whether the new step
-# failing should really be allowed to stop the watch.
+# The rule: a step BEFORE "Monitor jobs and cancel on failure" must either be one
+# the monitor actually needs (the PREREQS allowlist, short on purpose) or be unable
+# to cost the watch at all.
+#
+# "Unable to cost the watch" is not a name, it is two properties, and both are
+# required because each alone leaves a door open:
+#
+#   continue-on-error: true  -- the step cannot FAIL the job, so the 2026-09-03
+#                               shape (exit 1 at step 7 of 7, monitor never runs)
+#                               is structurally impossible rather than promised.
+#   timeout-minutes: <= 5    -- the step cannot HANG the job either. The monitor's
+#                               own deadline is 480s inside a 14-minute slim cap,
+#                               so a step that merely blocks kills the watch just
+#                               as dead as one that exits 1, and continue-on-error
+#                               says nothing about that.
+#
+# This is deliberately stricter than the name list it replaces: a name proves
+# somebody once thought about a step, these two prove the step cannot take the
+# watchdog down no matter what it does. PREREQS stays for the steps that must be
+# allowed to fail, because the monitor cannot run correctly without them.
 # =============================================================================
 log_info "Checking that nothing optional precedes the watchdog's monitor step"
 
@@ -812,6 +828,20 @@ MONITOR = "Monitor jobs and cancel on failure"
 # disk, and the deterministic attempt cap, which must run first BECAUSE it writes
 # the env var the monitor reads.
 PREREQS = {"Attempt cap (deterministic backstop)"}
+MAX_TIMEOUT_MINUTES = 5
+
+
+def harmless(step):
+    """Can this step neither fail nor hang the job?
+
+    Both answers must come from a LITERAL, never an expression: `continue-on-error:
+    ${{ ... }}` is decided at run time, and a rule that reads it as safe is trusting
+    a value it cannot see.
+    """
+    if step.get("continue-on-error") is not True:
+        return False
+    t = step.get("timeout-minutes")
+    return isinstance(t, int) and 0 < t <= MAX_TIMEOUT_MINUTES
 
 if not WORKFLOW.exists():
     print(f"error: {WORKFLOW} is missing; CHECK 6 cannot report", file=sys.stderr)
@@ -826,15 +856,19 @@ for job_id, job in (doc.get("jobs") or {}).items():
     if MONITOR not in names:
         continue
     found_monitor = True
-    for name in names[: names.index(MONITOR)]:
-        if name in PREREQS or "actions/checkout" in name:
+    cut = names.index(MONITOR)
+    for name, step in zip(names[:cut], steps[:cut]):
+        if name in PREREQS or "actions/checkout" in name or harmless(step):
             continue
         offenders.append(
-            f"watchdog-monitor.yml: job '{job_id}' runs {name!r} BEFORE {MONITOR!r}. "
-            f"If it fails, the job stops and the watchdog monitors nothing while still "
-            f"reporting a failure that looks like its own. Move it after the monitor "
-            f"(with `if: always()` so it still reports), or add it to PREREQS in "
-            f"CHECK 6 of this script saying why the monitor needs it."
+            f"watchdog-monitor.yml: job '{job_id}' runs {name!r} BEFORE {MONITOR!r}, "
+            f"and it can stop the watch: a failure there ends the job and the watchdog "
+            f"monitors nothing while reporting a failure that looks like its own. "
+            f"Three ways out, in order of preference: move it after the monitor with "
+            f"`if: always()`; or, if the monitor genuinely needs its output, give it "
+            f"BOTH `continue-on-error: true` and `timeout-minutes: <= "
+            f"{MAX_TIMEOUT_MINUTES}` so it can neither fail nor hang the job; or add it "
+            f"to PREREQS in CHECK 6 saying why it must be allowed to fail."
         )
 
 # ANTI-VACUITY: a renamed monitor step would empty this check silently, and an

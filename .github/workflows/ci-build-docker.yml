@@ -194,26 +194,28 @@ jobs:
         variant: [onprem]
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: ./.github/actions/app-token
-        id: app-token
-        with:
-          client-id: ${{ vars.APP_ID }}
-          private-key: ${{ secrets.APP_PRIVATE_KEY }}
-          repositories: console,renet,account,elite,homebrew-tap
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          submodules: true
-          token: ${{ steps.app-token.outputs.token }}
-
-      - name: Fetch shadow secrets from Bitwarden
-        # SHADOW RUN: exports BWS_-prefixed copies that nothing consumes. The
-        # live secrets.* reads below are untouched until the cutover flips them.
+      - name: Fetch secrets from Bitwarden
+        # LIVE: the BWS_ values below are read by this job's steps, flipped from
+        # secrets.* by the cutover. The secrets.* reads that remain are the
+        # comparator's, which must keep reading GitHub or it compares a value with
+        # itself and passes forever.
         uses: ./.github/actions/bws-secrets
         with:
           access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
           secrets: |
             ACCOUNT_ED25519_PUBLIC_KEY > BWS_ACCOUNT_ED25519_PUBLIC_KEY
             GITHUB_APP_PRIVATE_KEY > BWS_APP_PRIVATE_KEY
+
+      - uses: ./.github/actions/app-token
+        id: app-token
+        with:
+          client-id: ${{ vars.APP_ID }}
+          private-key: ${{ env.BWS_APP_PRIVATE_KEY }}
+          repositories: console,renet,account,elite,homebrew-tap
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          submodules: true
+          token: ${{ steps.app-token.outputs.token }}
 
       - name: Compare shadow secrets against GitHub
         shell: bash
@@ -294,26 +296,28 @@ jobs:
         variant: [onprem]
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: ./.github/actions/app-token
-        id: app-token
-        with:
-          client-id: ${{ vars.APP_ID }}
-          private-key: ${{ secrets.APP_PRIVATE_KEY }}
-          repositories: console,renet,account,elite,homebrew-tap
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          submodules: true
-          token: ${{ steps.app-token.outputs.token }}
-
-      - name: Fetch shadow secrets from Bitwarden
-        # SHADOW RUN: exports BWS_-prefixed copies that nothing consumes. The
-        # live secrets.* reads below are untouched until the cutover flips them.
+      - name: Fetch secrets from Bitwarden
+        # LIVE: the BWS_ values below are read by this job's steps, flipped from
+        # secrets.* by the cutover. The secrets.* reads that remain are the
+        # comparator's, which must keep reading GitHub or it compares a value with
+        # itself and passes forever.
         uses: ./.github/actions/bws-secrets
         with:
           access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
           secrets: |
             ACCOUNT_ED25519_PUBLIC_KEY > BWS_ACCOUNT_ED25519_PUBLIC_KEY
             GITHUB_APP_PRIVATE_KEY > BWS_APP_PRIVATE_KEY
+
+      - uses: ./.github/actions/app-token
+        id: app-token
+        with:
+          client-id: ${{ vars.APP_ID }}
+          private-key: ${{ env.BWS_APP_PRIVATE_KEY }}
+          repositories: console,renet,account,elite,homebrew-tap
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          submodules: true
+          token: ${{ steps.app-token.outputs.token }}
 
       - name: Compare shadow secrets against GitHub
         shell: bash
@@ -507,25 +511,27 @@ jobs:
     if: inputs.renet_exists != 'true'
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: ./.github/actions/app-token
-        id: app-token
-        with:
-          client-id: ${{ vars.APP_ID }}
-          private-key: ${{ secrets.APP_PRIVATE_KEY }}
-          repositories: console,renet,account,elite,homebrew-tap
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          submodules: true
-          token: ${{ steps.app-token.outputs.token }}
-
-      - name: Fetch shadow secrets from Bitwarden
-        # SHADOW RUN: exports BWS_-prefixed copies that nothing consumes. The
-        # live secrets.* reads below are untouched until the cutover flips them.
+      - name: Fetch secrets from Bitwarden
+        # LIVE: the BWS_ values below are read by this job's steps, flipped from
+        # secrets.* by the cutover. The secrets.* reads that remain are the
+        # comparator's, which must keep reading GitHub or it compares a value with
+        # itself and passes forever.
         uses: ./.github/actions/bws-secrets
         with:
           access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
           secrets: |
             GITHUB_APP_PRIVATE_KEY > BWS_APP_PRIVATE_KEY
+
+      - uses: ./.github/actions/app-token
+        id: app-token
+        with:
+          client-id: ${{ vars.APP_ID }}
+          private-key: ${{ env.BWS_APP_PRIVATE_KEY }}
+          repositories: console,renet,account,elite,homebrew-tap
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          submodules: true
+          token: ${{ steps.app-token.outputs.token }}
 
       - name: Compare shadow secrets against GitHub
         shell: bash

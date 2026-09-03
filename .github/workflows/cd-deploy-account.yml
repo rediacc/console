@@ -114,12 +114,22 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ inputs.ref }}
+      - name: Fetch secrets from Bitwarden
+        # LIVE: the BWS_ values below are read by this job's steps, flipped from
+        # secrets.* by the cutover. The secrets.* reads that remain are the
+        # comparator's, which must keep reading GitHub or it compares a value with
+        # itself and passes forever.
+        uses: ./.github/actions/bws-secrets
+        with:
+          access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
+          secrets: |
+            GITHUB_APP_PRIVATE_KEY > BWS_APP_PRIVATE_KEY
 
       - uses: ./.github/actions/app-token
         id: app-token
         with:
           client-id: ${{ vars.APP_ID }}
-          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+          private-key: ${{ env.BWS_APP_PRIVATE_KEY }}
           preset: cd
           repositories: console,renet,account
 
@@ -127,15 +137,6 @@ jobs:
         with:
           ref: ${{ inputs.ref }}
           token: ${{ steps.app-token.outputs.token }}
-
-      - name: Fetch shadow secrets from Bitwarden
-        # SHADOW RUN: exports BWS_-prefixed copies that nothing consumes. The
-        # live secrets.* reads below are untouched until the cutover flips them.
-        uses: ./.github/actions/bws-secrets
-        with:
-          access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
-          secrets: |
-            GITHUB_APP_PRIVATE_KEY > BWS_APP_PRIVATE_KEY
 
       - name: Compare shadow secrets against GitHub
         shell: bash
@@ -202,23 +203,11 @@ jobs:
           sparse-checkout: |
             .github/actions
             .ci/config
-
-      - uses: ./.github/actions/app-token
-        id: app-token
-        with:
-          client-id: ${{ vars.APP_ID }}
-          private-key: ${{ secrets.APP_PRIVATE_KEY }}
-          preset: cd
-          repositories: console,account
-
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          ref: ${{ inputs.ref }}
-          token: ${{ steps.app-token.outputs.token }}
-
-      - name: Fetch shadow secrets from Bitwarden
-        # SHADOW RUN: exports BWS_-prefixed copies that nothing consumes. The
-        # live secrets.* reads below are untouched until the cutover flips them.
+      - name: Fetch secrets from Bitwarden
+        # LIVE: the BWS_ values below are read by this job's steps, flipped from
+        # secrets.* by the cutover. The secrets.* reads that remain are the
+        # comparator's, which must keep reading GitHub or it compares a value with
+        # itself and passes forever.
         uses: ./.github/actions/bws-secrets
         with:
           access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
@@ -244,6 +233,19 @@ jobs:
             STRIPE_WEBHOOK_SECRET_ASIA > BWS_STRIPE_WEBHOOK_SECRET_ASIA
             STRIPE_WEBHOOK_SECRET_EU > BWS_STRIPE_WEBHOOK_SECRET_EU
             STRIPE_WEBHOOK_SECRET_US > BWS_STRIPE_WEBHOOK_SECRET_US
+
+      - uses: ./.github/actions/app-token
+        id: app-token
+        with:
+          client-id: ${{ vars.APP_ID }}
+          private-key: ${{ env.BWS_APP_PRIVATE_KEY }}
+          preset: cd
+          repositories: console,account
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ inputs.ref }}
+          token: ${{ steps.app-token.outputs.token }}
 
       - name: Compare shadow secrets against GitHub
         shell: bash
@@ -333,12 +335,12 @@ jobs:
       - name: Deploy account Worker (${{ matrix.id }})
         run: .ci/scripts/deploy/deploy-account.sh --region ${{ steps.config.outputs.region }} --target ${{ inputs.target }}
         env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_API_TOKEN: ${{ env.BWS_CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
 
       - name: Set Worker secrets (${{ matrix.id }})
         env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_API_TOKEN: ${{ env.BWS_CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
           # Region-aware secrets: resolved via bash indirection from SUFFIX
           # No STRIPE_SANDBOX_*: set-account-worker-secrets.sh blanks Stripe on

@@ -5340,6 +5340,23 @@ export const GATES: readonly GateSpec[] = [
     },
   },
   {
+    // CHECK 6 of check-workflow-gates.sh is the rule that keeps the watchdog
+    // watching, and it had no test at all: its only evidence of working was that
+    // it was green. It now admits a step on two PROPERTIES rather than on a name,
+    // so both directions of that door need proving.
+    id: 'gate-test:watchdog-monitor-ordering',
+    run: '.ci/scripts/test/gates/test-watchdog-monitor-ordering.sh',
+    gate: true,
+    qualityGateTest: true,
+    leaves: ['.ci/scripts/test/gates/test-watchdog-monitor-ordering.sh'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-security',
+      step: 'Quality-gate unit tests',
+    },
+  },
+  {
     id: 'gate-test:plan-housekeeping',
     run: '.ci/scripts/test/gates/test-plan-housekeeping.sh',
     // 7.6s alone, ~20s in the pre-push lane, and the lane is what the tier is
