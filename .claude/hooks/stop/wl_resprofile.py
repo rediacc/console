@@ -102,6 +102,20 @@ def _sysctl_on(name: str) -> bool:
     return _read("/proc/sys/kernel/%s" % name).strip() == "1"
 
 
+def _run_delay_ns() -> int | None:
+    """Cumulative nanoseconds this task spent RUNNABLE-but-not-running, or None.
+
+    Field 2 of /proc/self/schedstat. None means the field is absent or unparseable
+    -- the only honest reading of "unavailable". A value of 0 is a MEASUREMENT (the
+    task never waited), not an absence.
+    """
+    try:
+        f = _read("/proc/self/schedstat").split()
+        return int(f[1]) if len(f) >= 3 else None
+    except (ValueError, IndexError):
+        return None
+
+
 def repo_root() -> Path | None:
     """The repo this module lives in: <repo>/.claude/hooks/stop/wl_resprofile.py."""
     try:
@@ -214,8 +228,21 @@ def record(argv: list[str] | None = None) -> dict | None:
         "io": io,
         "psi_us": psi,
         "scope": _scope(),
+        "run_delay_ns": _run_delay_ns(),
         "avail": {
-            "run_delay": _sysctl_on("sched_schedstats"),
+            # PROBED, not read from the sysctl, and that correction is measured.
+            # kernel.sched_schedstats is 0 on this kernel and field 2 of
+            # /proc/<pid>/schedstat is live anyway: two burners pinned to one core
+            # read run_delay=752ms while a third alone on its own core read 0. The
+            # old line reported a working instrument as dead, which is the mirror
+            # image of trusting a flag over a measurement -- and run-delay is the
+            # counter-signal that stops a "parallelise this" verdict on a box that
+            # is already oversubscribed, so throwing it away was expensive.
+            #
+            # Read it on an IDLE process and it is 0, which looks exactly like the
+            # sysctl being right. The probe asks whether the FIELD PARSES, never
+            # whether this particular process happened to wait.
+            "run_delay": _run_delay_ns() is not None,
             "delayacct": _sysctl_on("task_delayacct"),
         },
         "fixture": bool(

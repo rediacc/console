@@ -53,7 +53,37 @@ import re
 import sys
 from pathlib import Path
 
-DEFERRING = {"do_wait", "anon_pipe_read", "pipe_read"}
+# WHAT "WAITING ON MY OWN CHILD" ACTUALLY LOOKS LIKE ON THIS KERNEL, counted over
+# the real corpus rather than guessed. The old set was three names and missed the
+# single most common one: `do_sigtimedwait`, which is bashcov-sup waiting on the one
+# child it supervises -- 4,422 samples, and the ROOT of every capture, which is why
+# rank()'s blocked share below read 0% by construction. `pipe_read` never occurs on
+# 6.18 at all; the kernel calls it `anon_pipe_read`. Symbol names move between
+# kernels, so this set is a LABEL, never the verdict on its own.
+DEFERRING = {
+    "do_wait",
+    "do_sigtimedwait",
+    "anon_pipe_read",
+    "pipe_wait_readable",
+    "pipe_read",  # pre-6.x spelling; harmless where the symbol no longer exists
+    "poll_schedule_timeout",
+    "do_epoll_wait",
+}
+# A literal sleep is NOT deferring: it is the thing E3 exists to notice.
+SLEEPING = {"hrtimer_nanosleep"}
+
+
+def norm_wchan(w: str | None) -> str | None:
+    """`do_sigtimedwait.isra.0` -> `do_sigtimedwait`.
+
+    GCC clone suffixes (`.isra.N`, `.constprop.N`) vary per kernel BUILD, so a set
+    membership test against the raw string silently stops matching after an upgrade.
+    """
+    if not w:
+        return w
+    return w.split(".", 1)[0]
+
+
 E1_MIN_CHILDREN = 8
 E1_SATURATION = 0.9  # R-fraction, a ratio of counts
 E1_CPU_SHARE = (
@@ -775,6 +805,22 @@ def selftest() -> int:
         "admission: J<20 is report-only for lack of denominator",
         admissible(0, 8) == (False, "report-only for lack of denominator (J=8 < 20)"),
     )
+    # THE TWO CORRECTIONS OF THIS WAVE, planted. Both were silent defects: the set
+    # missed the most common wchan in the corpus, and the share read the supervisor.
+    check(
+        "norm_wchan strips a GCC clone suffix",
+        norm_wchan("do_sigtimedwait.isra.0") == "do_sigtimedwait"
+        and norm_wchan("do_wait") == "do_wait"
+        and norm_wchan(None) is None,
+    )
+    check(
+        "the supervisor's own wait is DEFERRING (it was not, and it is 291/291 roots)",
+        norm_wchan("do_sigtimedwait.isra.0") in DEFERRING,
+    )
+    check(
+        "a literal sleep is NOT deferring -- that is the thing worth reporting",
+        "hrtimer_nanosleep" not in DEFERRING and "hrtimer_nanosleep" in SLEEPING,
+    )
     check("admission: 0 fires over 200 is admissible", admissible(0, 200)[0])
     check(
         "admission: 5%% point rate over 40 is NOT admissible (upper bound > 0.05)",
@@ -844,8 +890,20 @@ def rank(root: Path, days: int = 30) -> tuple[list[dict], list[dict]]:
                 )
                 for smp in c.samples:
                     g["samples"] += 1
-                    root_w = smp["p"][0]["wchan"] if smp["p"] else None
-                    if root_w in DEFERRING or root_w == "hrtimer_nanosleep":
+                    # THE FRONTIER, NOT THE ROOT. This read `p[0]`, which under the
+                    # supervisor IS the supervisor -- parked in do_sigtimedwait for
+                    # 291 of 291 captures while the work happened underneath it. The
+                    # share was 0% by construction and told the reader nothing.
+                    #
+                    # A tree counts as waiting only when NOTHING in it is running:
+                    # no process in R or D, and at least one parked somewhere that is
+                    # not "waiting on my own child". A deferring parent above a
+                    # running child is the normal shape of every $( ) capture.
+                    procs = smp.get("p") or []
+                    if any(pr.get("state") in ("R", "D") for pr in procs):
+                        continue
+                    labels = {norm_wchan(pr.get("wchan")) for pr in procs}
+                    if labels - DEFERRING - {None, "0"}:
                         g["blocked"] += 1
                 g["findings"] += sum(1 for f in derive([c]))
     top_shapes = sorted(shapes.values(), key=lambda e: -e["cpu_ms"])
