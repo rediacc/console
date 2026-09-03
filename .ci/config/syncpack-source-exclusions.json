@@ -1,0 +1,22 @@
+{
+  "$comment": [
+    "Tracked package.json files that syncpack's `source` deliberately does NOT cover.",
+    "",
+    "check:ci-syncpack-sources requires every dependency-declaring manifest to be either",
+    "IN `source` or listed here with a substantive reason. That rule exists because the",
+    "default source is package.json's `workspaces`, which silently excluded the whole",
+    "private/account submodule -- every versionGroup pin stopped at that boundary and",
+    "nothing said so. The fix was by hand; this file plus the gate is what stops it",
+    "returning the next time a manifest appears."
+  ],
+  "exclusions": {
+    ".ci/tutorials/apps/heartbeat/app/package.json": "BLOCKER: sample application shipped AS tutorial content, not built or installed by this repo. Its dependency versions are part of the lesson text, so pinning them to the monorepo's would change what the tutorial teaches.",
+    "packages/json/templates/monitoring/heartbeat/app/package.json": "BLOCKER: the template the tutorial above is generated from, same reasoning -- it is emitted to a user's machine and must stand alone rather than track this repo's pins.",
+    "private/account/e2e/package.json": "BLOCKER: a standalone Playwright harness with its own lockfile and its own CI install; it is not part of the account build graph and shares no runtime types with it.",
+    "private/account/web/package.json": "BLOCKER: the account portal's own React/Vite tree, versioned with the portal rather than with the CLI monorepo. Bringing it under these pins is a real convergence with its own blast radius (33 declared dependencies) and belongs in its own change -- NOT a silent omission, which is what this file exists to distinguish.",
+    "workers/account/package.json": "BLOCKER: a Cloudflare Worker bundle with wrangler-managed deps, deployed independently of the npm workspaces.",
+    "workers/mta-sts/package.json": "BLOCKER: same -- an independently deployed Worker.",
+    "workers/proxy/package.json": "BLOCKER: same -- an independently deployed Worker.",
+    "workers/www/package.json": "BLOCKER: same -- an independently deployed Worker."
+  }
+}
