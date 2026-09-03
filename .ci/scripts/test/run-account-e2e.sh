@@ -172,9 +172,10 @@ if [[ "$SKIP_SETUP" != "true" ]]; then
     if [[ -n "${STRIPE_LISTEN_WEBHOOK_SECRET:-}" ]]; then
         ACCOUNT_ENV+=("STRIPE_WEBHOOK_SECRET=$STRIPE_LISTEN_WEBHOOK_SECRET")
     fi
-    if [[ -n "${STRIPE_SANDBOX_WEBHOOK_SECRET:-}" ]]; then
-        ACCOUNT_ENV+=("STRIPE_SANDBOX_WEBHOOK_SECRET=$STRIPE_SANDBOX_WEBHOOK_SECRET")
-    fi
+    # The server verifies against the same fixture the signer above uses. It is passed
+    # as STRIPE_SANDBOX_WEBHOOK_SECRET because that is the env var app.ts:530 reads into
+    # envConfig.sandboxWebhookSecret; the NAME is a runtime slot, the VALUE is a fixture.
+    ACCOUNT_ENV+=("STRIPE_SANDBOX_WEBHOOK_SECRET=${STRIPE_E2E_WEBHOOK_SECRET:-whsec_e2e_test_webhook_secret_for_simulation_only}")
     if [[ -n "${STRIPE_SANDBOX_SECRET_KEY:-}" ]]; then
         ACCOUNT_ENV+=("STRIPE_SANDBOX_SECRET_KEY=$STRIPE_SANDBOX_SECRET_KEY")
     fi
@@ -220,8 +221,18 @@ if [[ -n "$GREP" ]]; then
     CMD+=("--grep" "$GREP")
 fi
 
+# THE SIGNER USES THE FIXTURE, not a stored credential, and the distinction is the
+# whole point. These tests SIGN a simulated webhook and the server VERIFIES it, so both
+# sides need the same string and nothing talks to Stripe. Feeding them a real secret made
+# the pair self-consistent and therefore untestable: a STRIPE_SANDBOX_WEBHOOK_SECRET that
+# expired 24 hours after it was minted passed exactly as well as a fresh one, which is why
+# green runs here were never evidence that the stored value was current.
+#
+# STRIPE_E2E_WEBHOOK_SECRET is the fixture built for this (.ci/lib/account.sh:240,298),
+# and .ci/lib/account.sh:828 already wires the local path to it. This line was the one
+# place that disagreed.
 if VITE_API_URL="http://localhost:${ACCOUNT_API_PORT}" \
-    E2E_WEBHOOK_SECRET="${STRIPE_SANDBOX_WEBHOOK_SECRET:-}" \
+    E2E_WEBHOOK_SECRET="${STRIPE_E2E_WEBHOOK_SECRET:-whsec_e2e_test_webhook_secret_for_simulation_only}" \
     "${CMD[@]}"; then
     log_info "Account Portal E2E tests passed"
 else

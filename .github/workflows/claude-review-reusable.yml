@@ -190,41 +190,8 @@ jobs:
         shell: bash
         env:
           SHADOW_NAMES: ANTHROPIC_CLAUDE_CODE_OAUTH_TOKEN
-          SHADOW_EXPECTED_MISMATCH: ANTHROPIC_CLAUDE_CODE_OAUTH_TOKEN
           GH_ANTHROPIC_CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.ANTHROPIC_CLAUDE_CODE_OAUTH_TOKEN }}
-        run: |
-          rc=0; read -ra names <<<"$SHADOW_NAMES"
-          read -ra expected <<<"${SHADOW_EXPECTED_MISMATCH-}"
-          sha() { printf '%s' "${1-}" | { sha256sum 2>/dev/null || shasum -a 256; } | cut -d' ' -f1; }
-          is_expected() { local q="$1" e; for e in ${expected+"${expected[@]}"}; do [ "$e" = "$q" ] && return 0; done; return 1; }
-          # A name excused here must be one this job actually compares, or the entry
-          # sits forever excusing nothing.
-          for e in ${expected+"${expected[@]}"}; do
-            case " $SHADOW_NAMES " in *" $e "*) ;; *) echo "shadow $e is in SHADOW_EXPECTED_MISMATCH but not in SHADOW_NAMES -- it excuses nothing here; delete it"; rc=1 ;; esac
-          done
-          for n in "${names[@]}"; do
-            gv="GH_$n"; bv="BWS_$n"
-            # An ABSENT GitHub secret and an EMPTY Bitwarden value both hash to
-            # e3b0c442..., so without this arm two nothings compare EQUAL and the
-            # shadow reports "match" having verified nothing -- the exact defect
-            # this whole run exists to catch. Empty on either side is a failure, and
-            # stays fatal even for an excused name: an empty is a broken fetch, not
-            # the known value drift the ledger describes.
-            if [ -z "${!gv-}" ] || [ -z "${!bv-}" ]; then echo "shadow $n EMPTY (github=${!gv:+set}${!gv:-unset} bitwarden=${!bv:+set}${!bv:-unset}) -- nothing was compared"; rc=1
-            elif [ "$(sha "${!gv-}")" = "$(sha "${!bv-}")" ]; then
-              # An excused name that MATCHES means the drift is gone, so the excuse must
-              # go too, or exemptions outlive the reason for them.
-              if is_expected "$n"; then echo "shadow $n matches, but is still excused by SHADOW_EXPECTED_MISMATCH -- the drift is resolved; delete it here and in shadow-expected-mismatches.json"; rc=1
-              else echo "shadow $n match"; fi
-            elif is_expected "$n"; then
-              # Known drift, recorded with its evidence and its door. It does not stop
-              # this job (the ledger is .ci/config/shadow-expected-mismatches.json):
-            # blocking on it took the CI watchdog down on 2026-09-03 without
-              # it monitoring anything, and the finding is already the operator's.
-              echo "shadow $n MISMATCH (EXPECTED -- shadow-expected-mismatches.json, operator-only)"
-            else echo "shadow $n MISMATCH"; rc=1; fi
-          done
-          exit "$rc"
+        run: .ci/scripts/ci/shadow-compare.sh
 
       # Fail loudly if the tooling is not where it must be. This replaces a
       # "bootstrap" fallback that copied the caller's own scripts in when

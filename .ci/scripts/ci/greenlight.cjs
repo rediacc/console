@@ -109,6 +109,9 @@ const VM_E2E_PATHS = [
   // composite, which resolves from the WORKSPACE, so every key sharing this list
   // must hold it or a change to the action does not re-run these legs.
   '.github/actions/bws-secrets',
+  // and the compare step beside it, extracted from 62 inline bodies on 2026-09-03
+  // (check:ci-workflows caps inline logic at 8 lines).
+  '.ci/scripts/ci/shadow-compare.sh',
   // Built and installed globally by every leg: build-cli.sh:32 runs
   // `npm run build:cli`, install-cli-global.sh:36-48 packs and installs it.
   // packages/locales rides along as a workspace dependency of the CLI
@@ -229,6 +232,8 @@ const CLOSURES = {
     // the CONSOLE-side infra/ci-env.sh, which is why this job is not
     // submodule-only however much it looks like it.
     paths: [
+      // the shadow-compare step this job runs (extracted from inline bodies 2026-09-03)
+      '.ci/scripts/ci/shadow-compare.sh',
       // The shadow-run step this job now carries: it `uses:` this local composite,
       // which resolves from the WORKSPACE, so the closure must hold it or a change
       // to the action does not re-run this key.
@@ -270,6 +275,8 @@ const CLOSURES = {
     // every elite pointer bump for no coverage gain.
     submodules: ['private/renet', 'private/account'],
     paths: [
+      // the shadow-compare step this job runs (extracted from inline bodies 2026-09-03)
+      '.ci/scripts/ci/shadow-compare.sh',
       // The shadow-run step this job now carries: it `uses:` this local composite,
       // which resolves from the WORKSPACE, so the closure must hold it or a change
       // to the action does not re-run this key.
@@ -318,6 +325,7 @@ const CLOSURES = {
     // brew leg installs from the tap.
     submodules: ['private/renet', 'private/homebrew-tap'],
     paths: [
+      '.ci/scripts/ci/shadow-compare.sh',
       'packages/cli',
       'packages/shared',
       'packages/provisioning',
@@ -367,6 +375,8 @@ const CLOSURES = {
     // leaves that input unset, calling `npm run build:packages` directly
     // instead. The script is therefore not an input to this job.
     paths: [
+      // the shadow-compare step this job runs (extracted from inline bodies 2026-09-03)
+      '.ci/scripts/ci/shadow-compare.sh',
       // The shadow-run step this job now carries: it `uses:` this local composite,
       // which resolves from the WORKSPACE, so the closure must hold it or a change
       // to the action does not re-run this key.
@@ -405,6 +415,8 @@ const CLOSURES = {
     // renet build).
     submodules: ['private/renet', 'private/account'],
     paths: [
+      // the shadow-compare step this job runs (extracted from inline bodies 2026-09-03)
+      '.ci/scripts/ci/shadow-compare.sh',
       // The shadow-run step every ct-tests job now carries: it `uses:` this local
       // composite, which resolves from the WORKSPACE, so the job's closure has to
       // hold it or a change to the action does not re-run this key.
@@ -447,6 +459,7 @@ const CLOSURES = {
     jobNames: ['Elite Run'],
     submodules: ['private/elite', 'private/renet', 'private/account'],
     paths: [
+      '.ci/scripts/ci/shadow-compare.sh',
       // The shadow-run step every ct-tests job now carries: it `uses:` this local
       // composite, which resolves from the WORKSPACE, so the job's closure has to
       // hold it or a change to the action does not re-run this key.
@@ -498,6 +511,7 @@ const CLOSURES = {
     // account key path is deliberately NOT taken).
     submodules: ['private/renet'],
     paths: [
+      '.ci/scripts/ci/shadow-compare.sh',
       // The shadow-run step every ct-tests job now carries: it `uses:` this local
       // composite, which resolves from the WORKSPACE, so the job's closure has to
       // hold it or a change to the action does not re-run this key.
@@ -560,6 +574,7 @@ const CLOSURES = {
     // also why no packages/ tree is listed.
     submodules: [],
     paths: [
+      '.ci/scripts/ci/shadow-compare.sh',
       '.ci/scripts/test/test-linux-packages.sh',
       // Invoked at test-linux-packages.sh:137,146,155,164 and :323,352.
       '.ci/scripts/build/build-linux-pkg.sh',
@@ -593,6 +608,7 @@ const CLOSURES = {
     // changes what this key proves rather than failing it.
     submodules: ['private/renet', 'private/account'],
     paths: [
+      '.ci/scripts/ci/shadow-compare.sh',
       // The shadow-run step every ct-tests job now carries: it `uses:` this local
       // composite, which resolves from the WORKSPACE, so the job's closure has to
       // hold it or a change to the action does not re-run this key.

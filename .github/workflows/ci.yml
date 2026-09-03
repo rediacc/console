@@ -230,39 +230,7 @@ jobs:
         env:
           SHADOW_NAMES: APP_PRIVATE_KEY
           GH_APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
-        run: |
-          rc=0; read -ra names <<<"$SHADOW_NAMES"
-          read -ra expected <<<"${SHADOW_EXPECTED_MISMATCH-}"
-          sha() { printf '%s' "${1-}" | { sha256sum 2>/dev/null || shasum -a 256; } | cut -d' ' -f1; }
-          is_expected() { local q="$1" e; for e in ${expected+"${expected[@]}"}; do [ "$e" = "$q" ] && return 0; done; return 1; }
-          # A name excused here must be one this job actually compares, or the entry
-          # sits forever excusing nothing.
-          for e in ${expected+"${expected[@]}"}; do
-            case " $SHADOW_NAMES " in *" $e "*) ;; *) echo "shadow $e is in SHADOW_EXPECTED_MISMATCH but not in SHADOW_NAMES -- it excuses nothing here; delete it"; rc=1 ;; esac
-          done
-          for n in "${names[@]}"; do
-            gv="GH_$n"; bv="BWS_$n"
-            # An ABSENT GitHub secret and an EMPTY Bitwarden value both hash to
-            # e3b0c442..., so without this arm two nothings compare EQUAL and the
-            # shadow reports "match" having verified nothing -- the exact defect
-            # this whole run exists to catch. Empty on either side is a failure, and
-            # stays fatal even for an excused name: an empty is a broken fetch, not
-            # the known value drift the ledger describes.
-            if [ -z "${!gv-}" ] || [ -z "${!bv-}" ]; then echo "shadow $n EMPTY (github=${!gv:+set}${!gv:-unset} bitwarden=${!bv:+set}${!bv:-unset}) -- nothing was compared"; rc=1
-            elif [ "$(sha "${!gv-}")" = "$(sha "${!bv-}")" ]; then
-              # An excused name that MATCHES means the drift is gone, so the excuse must
-              # go too, or exemptions outlive the reason for them.
-              if is_expected "$n"; then echo "shadow $n matches, but is still excused by SHADOW_EXPECTED_MISMATCH -- the drift is resolved; delete it here and in shadow-expected-mismatches.json"; rc=1
-              else echo "shadow $n match"; fi
-            elif is_expected "$n"; then
-              # Known drift, recorded with its evidence and its door. It does not stop
-              # this job (the ledger is .ci/config/shadow-expected-mismatches.json):
-            # blocking on it took the CI watchdog down on 2026-09-03 without
-              # it monitoring anything, and the finding is already the operator's.
-              echo "shadow $n MISMATCH (EXPECTED -- shadow-expected-mismatches.json, operator-only)"
-            else echo "shadow $n MISMATCH"; rc=1; fi
-          done
-          exit "$rc"
+        run: .ci/scripts/ci/shadow-compare.sh
 
       # Fork PRs are not supported (see .github/CONTRIBUTING.md). They fail
       # here anyway: secrets are empty on a fork, so the app-token step below
@@ -636,40 +604,7 @@ jobs:
         env:
           SHADOW_NAMES: APP_PRIVATE_KEY
           GH_APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
-        run: |
-          rc=0; read -ra names <<<"$SHADOW_NAMES"
-          read -ra expected <<<"${SHADOW_EXPECTED_MISMATCH-}"
-          sha() { printf '%s' "${1-}" | { sha256sum 2>/dev/null || shasum -a 256; } | cut -d' ' -f1; }
-          is_expected() { local q="$1" e; for e in ${expected+"${expected[@]}"}; do [ "$e" = "$q" ] && return 0; done; return 1; }
-          # A name excused here must be one this job actually compares, or the entry
-          # sits forever excusing nothing.
-          for e in ${expected+"${expected[@]}"}; do
-            case " $SHADOW_NAMES " in *" $e "*) ;; *) echo "shadow $e is in SHADOW_EXPECTED_MISMATCH but not in SHADOW_NAMES -- it excuses nothing here; delete it"; rc=1 ;; esac
-          done
-          for n in "${names[@]}"; do
-            gv="GH_$n"; bv="BWS_$n"
-            # An ABSENT GitHub secret and an EMPTY Bitwarden value both hash to
-            # e3b0c442..., so without this arm two nothings compare EQUAL and the
-            # shadow reports "match" having verified nothing -- the exact defect
-            # this whole run exists to catch. Empty on either side is a failure, and
-            # stays fatal even for an excused name: an empty is a broken fetch, not
-            # the known value drift the ledger describes.
-            if [ -z "${!gv-}" ] || [ -z "${!bv-}" ]; then echo "shadow $n EMPTY (github=${!gv:+set}${!gv:-unset} bitwarden=${!bv:+set}${!bv:-unset}) -- nothing was compared"; rc=1
-            elif [ "$(sha "${!gv-}")" = "$(sha "${!bv-}")" ]; then
-              # An excused name that MATCHES means the drift is gone, so the excuse must
-              # go too, or exemptions outlive the reason for them.
-              if is_expected "$n"; then echo "shadow $n matches, but is still excused by SHADOW_EXPECTED_MISMATCH -- the drift is resolved; delete it here and in shadow-expected-mismatches.json"; rc=1
-              else echo "shadow $n match"; fi
-            elif is_expected "$n"; then
-              # Known drift, recorded with its evidence and its door. It does not stop
-              # this job (the ledger is .ci/config/shadow-expected-mismatches.json):
-            # blocking on it took the CI watchdog down on 2026-09-03 without
-              # it monitoring anything, and the finding is already the operator's.
-              echo "shadow $n MISMATCH (EXPECTED -- shadow-expected-mismatches.json, operator-only)"
-            else echo "shadow $n MISMATCH"; rc=1; fi
-          done
-          exit "$rc"
-
+        run: .ci/scripts/ci/shadow-compare.sh
       - uses: ./.github/actions/app-token
         id: app-token
         with:
@@ -754,47 +689,13 @@ jobs:
         shell: bash
         env:
           SHADOW_NAMES: ACCOUNT_ED25519_PRIVATE_KEY ACCOUNT_ED25519_PUBLIC_KEY ACCOUNT_JWT_SECRET ACCOUNT_SERVER_API_KEY APP_PRIVATE_KEY STRIPE_SANDBOX_SECRET_KEY
-          SHADOW_EXPECTED_MISMATCH: ACCOUNT_SERVER_API_KEY
           GH_ACCOUNT_ED25519_PRIVATE_KEY: ${{ secrets.ACCOUNT_ED25519_PRIVATE_KEY }}
           GH_ACCOUNT_ED25519_PUBLIC_KEY: ${{ secrets.ACCOUNT_ED25519_PUBLIC_KEY }}
           GH_ACCOUNT_JWT_SECRET: ${{ secrets.ACCOUNT_JWT_SECRET }}
           GH_ACCOUNT_SERVER_API_KEY: ${{ secrets.ACCOUNT_SERVER_API_KEY }}
           GH_APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
           GH_STRIPE_SANDBOX_SECRET_KEY: ${{ secrets.STRIPE_SANDBOX_SECRET_KEY }}
-        run: |
-          rc=0; read -ra names <<<"$SHADOW_NAMES"
-          read -ra expected <<<"${SHADOW_EXPECTED_MISMATCH-}"
-          sha() { printf '%s' "${1-}" | { sha256sum 2>/dev/null || shasum -a 256; } | cut -d' ' -f1; }
-          is_expected() { local q="$1" e; for e in ${expected+"${expected[@]}"}; do [ "$e" = "$q" ] && return 0; done; return 1; }
-          # A name excused here must be one this job actually compares, or the entry
-          # sits forever excusing nothing.
-          for e in ${expected+"${expected[@]}"}; do
-            case " $SHADOW_NAMES " in *" $e "*) ;; *) echo "shadow $e is in SHADOW_EXPECTED_MISMATCH but not in SHADOW_NAMES -- it excuses nothing here; delete it"; rc=1 ;; esac
-          done
-          for n in "${names[@]}"; do
-            gv="GH_$n"; bv="BWS_$n"
-            # An ABSENT GitHub secret and an EMPTY Bitwarden value both hash to
-            # e3b0c442..., so without this arm two nothings compare EQUAL and the
-            # shadow reports "match" having verified nothing -- the exact defect
-            # this whole run exists to catch. Empty on either side is a failure, and
-            # stays fatal even for an excused name: an empty is a broken fetch, not
-            # the known value drift the ledger describes.
-            if [ -z "${!gv-}" ] || [ -z "${!bv-}" ]; then echo "shadow $n EMPTY (github=${!gv:+set}${!gv:-unset} bitwarden=${!bv:+set}${!bv:-unset}) -- nothing was compared"; rc=1
-            elif [ "$(sha "${!gv-}")" = "$(sha "${!bv-}")" ]; then
-              # An excused name that MATCHES means the drift is gone, so the excuse must
-              # go too, or exemptions outlive the reason for them.
-              if is_expected "$n"; then echo "shadow $n matches, but is still excused by SHADOW_EXPECTED_MISMATCH -- the drift is resolved; delete it here and in shadow-expected-mismatches.json"; rc=1
-              else echo "shadow $n match"; fi
-            elif is_expected "$n"; then
-              # Known drift, recorded with its evidence and its door. It does not stop
-              # this job (the ledger is .ci/config/shadow-expected-mismatches.json):
-            # blocking on it took the CI watchdog down on 2026-09-03 without
-              # it monitoring anything, and the finding is already the operator's.
-              echo "shadow $n MISMATCH (EXPECTED -- shadow-expected-mismatches.json, operator-only)"
-            else echo "shadow $n MISMATCH"; rc=1; fi
-          done
-          exit "$rc"
-
+        run: .ci/scripts/ci/shadow-compare.sh
       - uses: ./.github/actions/app-token
         id: app-token
         with:
@@ -1024,40 +925,7 @@ jobs:
           GH_CLOUDFLARE_R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
           GH_CLOUDFLARE_R2_ENDPOINT: ${{ secrets.R2_ENDPOINT }}
           GH_CLOUDFLARE_R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
-        run: |
-          rc=0; read -ra names <<<"$SHADOW_NAMES"
-          read -ra expected <<<"${SHADOW_EXPECTED_MISMATCH-}"
-          sha() { printf '%s' "${1-}" | { sha256sum 2>/dev/null || shasum -a 256; } | cut -d' ' -f1; }
-          is_expected() { local q="$1" e; for e in ${expected+"${expected[@]}"}; do [ "$e" = "$q" ] && return 0; done; return 1; }
-          # A name excused here must be one this job actually compares, or the entry
-          # sits forever excusing nothing.
-          for e in ${expected+"${expected[@]}"}; do
-            case " $SHADOW_NAMES " in *" $e "*) ;; *) echo "shadow $e is in SHADOW_EXPECTED_MISMATCH but not in SHADOW_NAMES -- it excuses nothing here; delete it"; rc=1 ;; esac
-          done
-          for n in "${names[@]}"; do
-            gv="GH_$n"; bv="BWS_$n"
-            # An ABSENT GitHub secret and an EMPTY Bitwarden value both hash to
-            # e3b0c442..., so without this arm two nothings compare EQUAL and the
-            # shadow reports "match" having verified nothing -- the exact defect
-            # this whole run exists to catch. Empty on either side is a failure, and
-            # stays fatal even for an excused name: an empty is a broken fetch, not
-            # the known value drift the ledger describes.
-            if [ -z "${!gv-}" ] || [ -z "${!bv-}" ]; then echo "shadow $n EMPTY (github=${!gv:+set}${!gv:-unset} bitwarden=${!bv:+set}${!bv:-unset}) -- nothing was compared"; rc=1
-            elif [ "$(sha "${!gv-}")" = "$(sha "${!bv-}")" ]; then
-              # An excused name that MATCHES means the drift is gone, so the excuse must
-              # go too, or exemptions outlive the reason for them.
-              if is_expected "$n"; then echo "shadow $n matches, but is still excused by SHADOW_EXPECTED_MISMATCH -- the drift is resolved; delete it here and in shadow-expected-mismatches.json"; rc=1
-              else echo "shadow $n match"; fi
-            elif is_expected "$n"; then
-              # Known drift, recorded with its evidence and its door. It does not stop
-              # this job (the ledger is .ci/config/shadow-expected-mismatches.json):
-            # blocking on it took the CI watchdog down on 2026-09-03 without
-              # it monitoring anything, and the finding is already the operator's.
-              echo "shadow $n MISMATCH (EXPECTED -- shadow-expected-mismatches.json, operator-only)"
-            else echo "shadow $n MISMATCH"; rc=1; fi
-          done
-          exit "$rc"
-
+        run: .ci/scripts/ci/shadow-compare.sh
       - name: Assert release-state bijection
         env:
           CLOUDFLARE_R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
@@ -1221,40 +1089,7 @@ jobs:
         env:
           SHADOW_NAMES: APP_PRIVATE_KEY
           GH_APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
-        run: |
-          rc=0; read -ra names <<<"$SHADOW_NAMES"
-          read -ra expected <<<"${SHADOW_EXPECTED_MISMATCH-}"
-          sha() { printf '%s' "${1-}" | { sha256sum 2>/dev/null || shasum -a 256; } | cut -d' ' -f1; }
-          is_expected() { local q="$1" e; for e in ${expected+"${expected[@]}"}; do [ "$e" = "$q" ] && return 0; done; return 1; }
-          # A name excused here must be one this job actually compares, or the entry
-          # sits forever excusing nothing.
-          for e in ${expected+"${expected[@]}"}; do
-            case " $SHADOW_NAMES " in *" $e "*) ;; *) echo "shadow $e is in SHADOW_EXPECTED_MISMATCH but not in SHADOW_NAMES -- it excuses nothing here; delete it"; rc=1 ;; esac
-          done
-          for n in "${names[@]}"; do
-            gv="GH_$n"; bv="BWS_$n"
-            # An ABSENT GitHub secret and an EMPTY Bitwarden value both hash to
-            # e3b0c442..., so without this arm two nothings compare EQUAL and the
-            # shadow reports "match" having verified nothing -- the exact defect
-            # this whole run exists to catch. Empty on either side is a failure, and
-            # stays fatal even for an excused name: an empty is a broken fetch, not
-            # the known value drift the ledger describes.
-            if [ -z "${!gv-}" ] || [ -z "${!bv-}" ]; then echo "shadow $n EMPTY (github=${!gv:+set}${!gv:-unset} bitwarden=${!bv:+set}${!bv:-unset}) -- nothing was compared"; rc=1
-            elif [ "$(sha "${!gv-}")" = "$(sha "${!bv-}")" ]; then
-              # An excused name that MATCHES means the drift is gone, so the excuse must
-              # go too, or exemptions outlive the reason for them.
-              if is_expected "$n"; then echo "shadow $n matches, but is still excused by SHADOW_EXPECTED_MISMATCH -- the drift is resolved; delete it here and in shadow-expected-mismatches.json"; rc=1
-              else echo "shadow $n match"; fi
-            elif is_expected "$n"; then
-              # Known drift, recorded with its evidence and its door. It does not stop
-              # this job (the ledger is .ci/config/shadow-expected-mismatches.json):
-            # blocking on it took the CI watchdog down on 2026-09-03 without
-              # it monitoring anything, and the finding is already the operator's.
-              echo "shadow $n MISMATCH (EXPECTED -- shadow-expected-mismatches.json, operator-only)"
-            else echo "shadow $n MISMATCH"; rc=1; fi
-          done
-          exit "$rc"
-
+        run: .ci/scripts/ci/shadow-compare.sh
       - uses: ./.github/actions/app-token
         id: app-token
         with:
@@ -1431,7 +1266,6 @@ jobs:
         shell: bash
         env:
           SHADOW_NAMES: ACCOUNT_ED25519_PRIVATE_KEY ACCOUNT_ED25519_PUBLIC_KEY ACCOUNT_JWT_SECRET ACCOUNT_SERVER_API_KEY ACCOUNT_X25519_PRIVATE_KEY ACCOUNT_X25519_PUBLIC_KEY APP_PRIVATE_KEY STRIPE_SANDBOX_SECRET_KEY AWS_SES_ACCESS_KEY_ID_EU AWS_SES_SECRET_ACCESS_KEY_EU CLOUDFLARE_API_TOKEN
-          SHADOW_EXPECTED_MISMATCH: ACCOUNT_SERVER_API_KEY
           GH_ACCOUNT_ED25519_PRIVATE_KEY: ${{ secrets.ACCOUNT_ED25519_PRIVATE_KEY }}
           GH_ACCOUNT_ED25519_PUBLIC_KEY: ${{ secrets.ACCOUNT_ED25519_PUBLIC_KEY }}
           GH_ACCOUNT_JWT_SECRET: ${{ secrets.ACCOUNT_JWT_SECRET }}
@@ -1443,40 +1277,7 @@ jobs:
           GH_AWS_SES_ACCESS_KEY_ID_EU: ${{ secrets.AWS_SES_ACCESS_KEY_ID_EU }}
           GH_AWS_SES_SECRET_ACCESS_KEY_EU: ${{ secrets.AWS_SES_SECRET_ACCESS_KEY_EU }}
           GH_CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-        run: |
-          rc=0; read -ra names <<<"$SHADOW_NAMES"
-          read -ra expected <<<"${SHADOW_EXPECTED_MISMATCH-}"
-          sha() { printf '%s' "${1-}" | { sha256sum 2>/dev/null || shasum -a 256; } | cut -d' ' -f1; }
-          is_expected() { local q="$1" e; for e in ${expected+"${expected[@]}"}; do [ "$e" = "$q" ] && return 0; done; return 1; }
-          # A name excused here must be one this job actually compares, or the entry
-          # sits forever excusing nothing.
-          for e in ${expected+"${expected[@]}"}; do
-            case " $SHADOW_NAMES " in *" $e "*) ;; *) echo "shadow $e is in SHADOW_EXPECTED_MISMATCH but not in SHADOW_NAMES -- it excuses nothing here; delete it"; rc=1 ;; esac
-          done
-          for n in "${names[@]}"; do
-            gv="GH_$n"; bv="BWS_$n"
-            # An ABSENT GitHub secret and an EMPTY Bitwarden value both hash to
-            # e3b0c442..., so without this arm two nothings compare EQUAL and the
-            # shadow reports "match" having verified nothing -- the exact defect
-            # this whole run exists to catch. Empty on either side is a failure, and
-            # stays fatal even for an excused name: an empty is a broken fetch, not
-            # the known value drift the ledger describes.
-            if [ -z "${!gv-}" ] || [ -z "${!bv-}" ]; then echo "shadow $n EMPTY (github=${!gv:+set}${!gv:-unset} bitwarden=${!bv:+set}${!bv:-unset}) -- nothing was compared"; rc=1
-            elif [ "$(sha "${!gv-}")" = "$(sha "${!bv-}")" ]; then
-              # An excused name that MATCHES means the drift is gone, so the excuse must
-              # go too, or exemptions outlive the reason for them.
-              if is_expected "$n"; then echo "shadow $n matches, but is still excused by SHADOW_EXPECTED_MISMATCH -- the drift is resolved; delete it here and in shadow-expected-mismatches.json"; rc=1
-              else echo "shadow $n match"; fi
-            elif is_expected "$n"; then
-              # Known drift, recorded with its evidence and its door. It does not stop
-              # this job (the ledger is .ci/config/shadow-expected-mismatches.json):
-            # blocking on it took the CI watchdog down on 2026-09-03 without
-              # it monitoring anything, and the finding is already the operator's.
-              echo "shadow $n MISMATCH (EXPECTED -- shadow-expected-mismatches.json, operator-only)"
-            else echo "shadow $n MISMATCH"; rc=1; fi
-          done
-          exit "$rc"
-
+        run: .ci/scripts/ci/shadow-compare.sh
       - uses: ./.github/actions/app-token
         id: app-token
         with:
@@ -1660,39 +1461,7 @@ jobs:
           GH_ACCOUNT_ED25519_PUBLIC_KEY: ${{ secrets.ACCOUNT_ED25519_PUBLIC_KEY }}
           GH_ACCOUNT_JWT_SECRET: ${{ secrets.ACCOUNT_JWT_SECRET }}
           GH_CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-        run: |
-          rc=0; read -ra names <<<"$SHADOW_NAMES"
-          read -ra expected <<<"${SHADOW_EXPECTED_MISMATCH-}"
-          sha() { printf '%s' "${1-}" | { sha256sum 2>/dev/null || shasum -a 256; } | cut -d' ' -f1; }
-          is_expected() { local q="$1" e; for e in ${expected+"${expected[@]}"}; do [ "$e" = "$q" ] && return 0; done; return 1; }
-          # A name excused here must be one this job actually compares, or the entry
-          # sits forever excusing nothing.
-          for e in ${expected+"${expected[@]}"}; do
-            case " $SHADOW_NAMES " in *" $e "*) ;; *) echo "shadow $e is in SHADOW_EXPECTED_MISMATCH but not in SHADOW_NAMES -- it excuses nothing here; delete it"; rc=1 ;; esac
-          done
-          for n in "${names[@]}"; do
-            gv="GH_$n"; bv="BWS_$n"
-            # An ABSENT GitHub secret and an EMPTY Bitwarden value both hash to
-            # e3b0c442..., so without this arm two nothings compare EQUAL and the
-            # shadow reports "match" having verified nothing -- the exact defect
-            # this whole run exists to catch. Empty on either side is a failure, and
-            # stays fatal even for an excused name: an empty is a broken fetch, not
-            # the known value drift the ledger describes.
-            if [ -z "${!gv-}" ] || [ -z "${!bv-}" ]; then echo "shadow $n EMPTY (github=${!gv:+set}${!gv:-unset} bitwarden=${!bv:+set}${!bv:-unset}) -- nothing was compared"; rc=1
-            elif [ "$(sha "${!gv-}")" = "$(sha "${!bv-}")" ]; then
-              # An excused name that MATCHES means the drift is gone, so the excuse must
-              # go too, or exemptions outlive the reason for them.
-              if is_expected "$n"; then echo "shadow $n matches, but is still excused by SHADOW_EXPECTED_MISMATCH -- the drift is resolved; delete it here and in shadow-expected-mismatches.json"; rc=1
-              else echo "shadow $n match"; fi
-            elif is_expected "$n"; then
-              # Known drift, recorded with its evidence and its door. It does not stop
-              # this job (the ledger is .ci/config/shadow-expected-mismatches.json):
-            # blocking on it took the CI watchdog down on 2026-09-03 without
-              # it monitoring anything, and the finding is already the operator's.
-              echo "shadow $n MISMATCH (EXPECTED -- shadow-expected-mismatches.json, operator-only)"
-            else echo "shadow $n MISMATCH"; rc=1; fi
-          done
-          exit "$rc"
+        run: .ci/scripts/ci/shadow-compare.sh
 
       # No app-token step here on purpose: this job checks out no submodules
       # and `.npmrc` sets allow-git=none, so nothing needs authenticated git.
@@ -1866,40 +1635,7 @@ jobs:
           GH_CLOUDFLARE_R2_ENDPOINT: ${{ secrets.R2_ENDPOINT }}
           GH_CLOUDFLARE_R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
           GH_CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-        run: |
-          rc=0; read -ra names <<<"$SHADOW_NAMES"
-          read -ra expected <<<"${SHADOW_EXPECTED_MISMATCH-}"
-          sha() { printf '%s' "${1-}" | { sha256sum 2>/dev/null || shasum -a 256; } | cut -d' ' -f1; }
-          is_expected() { local q="$1" e; for e in ${expected+"${expected[@]}"}; do [ "$e" = "$q" ] && return 0; done; return 1; }
-          # A name excused here must be one this job actually compares, or the entry
-          # sits forever excusing nothing.
-          for e in ${expected+"${expected[@]}"}; do
-            case " $SHADOW_NAMES " in *" $e "*) ;; *) echo "shadow $e is in SHADOW_EXPECTED_MISMATCH but not in SHADOW_NAMES -- it excuses nothing here; delete it"; rc=1 ;; esac
-          done
-          for n in "${names[@]}"; do
-            gv="GH_$n"; bv="BWS_$n"
-            # An ABSENT GitHub secret and an EMPTY Bitwarden value both hash to
-            # e3b0c442..., so without this arm two nothings compare EQUAL and the
-            # shadow reports "match" having verified nothing -- the exact defect
-            # this whole run exists to catch. Empty on either side is a failure, and
-            # stays fatal even for an excused name: an empty is a broken fetch, not
-            # the known value drift the ledger describes.
-            if [ -z "${!gv-}" ] || [ -z "${!bv-}" ]; then echo "shadow $n EMPTY (github=${!gv:+set}${!gv:-unset} bitwarden=${!bv:+set}${!bv:-unset}) -- nothing was compared"; rc=1
-            elif [ "$(sha "${!gv-}")" = "$(sha "${!bv-}")" ]; then
-              # An excused name that MATCHES means the drift is gone, so the excuse must
-              # go too, or exemptions outlive the reason for them.
-              if is_expected "$n"; then echo "shadow $n matches, but is still excused by SHADOW_EXPECTED_MISMATCH -- the drift is resolved; delete it here and in shadow-expected-mismatches.json"; rc=1
-              else echo "shadow $n match"; fi
-            elif is_expected "$n"; then
-              # Known drift, recorded with its evidence and its door. It does not stop
-              # this job (the ledger is .ci/config/shadow-expected-mismatches.json):
-            # blocking on it took the CI watchdog down on 2026-09-03 without
-              # it monitoring anything, and the finding is already the operator's.
-              echo "shadow $n MISMATCH (EXPECTED -- shadow-expected-mismatches.json, operator-only)"
-            else echo "shadow $n MISMATCH"; rc=1; fi
-          done
-          exit "$rc"
-
+        run: .ci/scripts/ci/shadow-compare.sh
       - name: Simulate promotion (copy + sed-fix)
         run: .ci/scripts/deploy/simulate-promotion.sh
         env:
@@ -2094,40 +1830,7 @@ jobs:
           GH_CLOUDFLARE_R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
           GH_CLOUDFLARE_R2_ENDPOINT: ${{ secrets.R2_ENDPOINT }}
           GH_CLOUDFLARE_R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
-        run: |
-          rc=0; read -ra names <<<"$SHADOW_NAMES"
-          read -ra expected <<<"${SHADOW_EXPECTED_MISMATCH-}"
-          sha() { printf '%s' "${1-}" | { sha256sum 2>/dev/null || shasum -a 256; } | cut -d' ' -f1; }
-          is_expected() { local q="$1" e; for e in ${expected+"${expected[@]}"}; do [ "$e" = "$q" ] && return 0; done; return 1; }
-          # A name excused here must be one this job actually compares, or the entry
-          # sits forever excusing nothing.
-          for e in ${expected+"${expected[@]}"}; do
-            case " $SHADOW_NAMES " in *" $e "*) ;; *) echo "shadow $e is in SHADOW_EXPECTED_MISMATCH but not in SHADOW_NAMES -- it excuses nothing here; delete it"; rc=1 ;; esac
-          done
-          for n in "${names[@]}"; do
-            gv="GH_$n"; bv="BWS_$n"
-            # An ABSENT GitHub secret and an EMPTY Bitwarden value both hash to
-            # e3b0c442..., so without this arm two nothings compare EQUAL and the
-            # shadow reports "match" having verified nothing -- the exact defect
-            # this whole run exists to catch. Empty on either side is a failure, and
-            # stays fatal even for an excused name: an empty is a broken fetch, not
-            # the known value drift the ledger describes.
-            if [ -z "${!gv-}" ] || [ -z "${!bv-}" ]; then echo "shadow $n EMPTY (github=${!gv:+set}${!gv:-unset} bitwarden=${!bv:+set}${!bv:-unset}) -- nothing was compared"; rc=1
-            elif [ "$(sha "${!gv-}")" = "$(sha "${!bv-}")" ]; then
-              # An excused name that MATCHES means the drift is gone, so the excuse must
-              # go too, or exemptions outlive the reason for them.
-              if is_expected "$n"; then echo "shadow $n matches, but is still excused by SHADOW_EXPECTED_MISMATCH -- the drift is resolved; delete it here and in shadow-expected-mismatches.json"; rc=1
-              else echo "shadow $n match"; fi
-            elif is_expected "$n"; then
-              # Known drift, recorded with its evidence and its door. It does not stop
-              # this job (the ledger is .ci/config/shadow-expected-mismatches.json):
-            # blocking on it took the CI watchdog down on 2026-09-03 without
-              # it monitoring anything, and the finding is already the operator's.
-              echo "shadow $n MISMATCH (EXPECTED -- shadow-expected-mismatches.json, operator-only)"
-            else echo "shadow $n MISMATCH"; rc=1; fi
-          done
-          exit "$rc"
-
+        run: .ci/scripts/ci/shadow-compare.sh
       - name: Install jq
         run: command -v jq >/dev/null || sudo apt-get install -y -qq jq
       # ASK BEFORE SEALING. This step used to come AFTER the sentinel write, so
