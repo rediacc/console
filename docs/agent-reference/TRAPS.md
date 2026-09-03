@@ -1993,3 +1993,190 @@ The same hazard applies to anything that reads manifests off disk to produce a
 committed artifact: syncpack writes, generated dependency tables, embed manifests.
 The rule generalises to: **a generator that reads the working tree inherits the
 working tree's owners.**
+
+## After a compaction, your own open items look like a peer's — and the reflex is to leave them alone
+Trap-Id: compaction-orphans-your-own-items
+Enforced-By: file:.claude/hooks/stop/worklist-cases/24-lineage.sh
+Residue: Any ownership rule keyed on a session id. A compaction can change that id, so identity and continuity are not the same question.
+
+The worklist blocks only on items tagged with YOUR session prefix, and CLAUDE.md is
+emphatic that you never tick another session's tracking. Both are right. What neither
+says is that **a compaction can hand one continuous conversation a new session id**, at
+which point the rule fires against the session's own work.
+
+The failure does not look like a failure. The items are reported every stop under
+"other sessions' open items", which reads as informational; the session writes
+"I cannot resolve another session's items" and stops; the next stop repeats it. On
+2026-09-02 four settled decisions sat that way all night. The session was not confused
+about the items — it had written them — it was confused about who it was. The operator
+ended it with "because of compaction, you think it's someone else items… I've never
+switched to another window."
+
+**The tell** is an open item whose text you recognise as your own reasoning, tagged
+with a prefix that is not your current id. If you find yourself explaining to the
+operator why a peer's items are blocked, ask first whether that peer is you.
+
+**The fix is `worklist.py --adopt <me> <prev>`,** and the reason it is a verb rather
+than a judgement call is that the judgement call is the trap. What a session naturally
+reaches for — same cwd, same branch, adjacent timestamps — is worthless here: measured
+on this machine, four live sessions all carried `cwd=/home/developer/console` and
+`gitBranch=main` with overlapping times. That heuristic's false-positive rate is
+highest on exactly the population it would judge, and its failure mode is one session
+silently resolving another's work.
+
+`--adopt` instead requires harness-written evidence: a `compact_boundary` your
+transcript opens with, and conversational record uuids that appear in BOTH transcripts.
+Two genuinely concurrent sessions share zero — there is no mechanism by which one
+conversation's message uuid lands in another's file — which is what makes that last
+check a refutation rather than a formality. Verified when the verb landed: of 51
+candidate transcripts on this machine, exactly one resolved and 50 were refused.
+
+There is no `--force`, and if it refuses, the items are genuinely not yours.
+
+**The pitfall inside the fix**, worth knowing because it is silent: `wl_store.compact()`
+rewrites the event log to the minimal set reproducing the current fold. A `lineage`
+event is not an item event, so a naive implementation drops it and every adoption
+reverts to "a peer's" — the exact bug, reintroduced by a maintenance command nobody
+associates with ownership. Mutating the carry-forward out and re-running the case is
+what proves that control is real, and it reds correctly when you do.
+
+## `test-hooks.sh` buffers the worklist suite, so "no new output" is the NORMAL state
+Trap-Id: buffered-suite-looks-hung
+Enforced-By: JUDGMENT-ONLY
+Residue: Any harness that captures a child's output with $( ). Silence is the design, so quietness is never evidence of a hang.
+
+`test-hooks.sh:2328` runs the suite as `out="$(bash "$STOP_SUITE" 2>&1)"`. Command
+substitution means **nothing that suite prints reaches the log until it exits** — so
+the battery log sits at the same line count for the whole run, by design.
+
+This looks exactly like a hang, and I treated it as one: two runs killed on a
+10-minute timeout, a wrong first guess (a case file created mid-run — impossible,
+the case list is explicit rather than a glob), and a second wrong guess recorded here
+as fact (inherited stdin) before the evidence was in. What actually settled it was
+reading `/proc/<pid>/wchan` down the whole process chain rather than the top of it:
+
+    parent   anon_pipe_read     <- NORMAL: the $( ) substitution reading the child
+    child    do_wait            <- NORMAL: waiting on its own child
+    grandkid hrtimer_nanosleep  <- NORMAL: a case sleeping on purpose
+
+`anon_pipe_read` on the **parent alone** proves nothing — that is what a healthy
+command substitution always looks like. The distinguishing evidence is whether there
+are live descendants and whether any of them accumulates CPU. A genuinely wedged run
+has no children and flat CPU; a slow one has children cycling through sleeps.
+
+**Before calling a quiet suite hung, check three things**: does the harness buffer its
+output (grep for `$(`), does the process have descendants, and is total CPU still
+climbing. The worklist suite alone takes about four minutes and prints ~880 lines the
+instant it finishes.
+
+Related hygiene, which is worth doing anyway but was NOT the cause here: a case helper
+should close its own stdin (`</dev/null`) rather than inherit the harness's, because
+the harness does not redirect it. `18-identity.sh` already did this in three places.
+
+## (superseded) A test helper that inherits stdin — the stdin hygiene is real, the hang diagnosis was not
+Trap-Id: case-helper-inherits-stdin
+Enforced-By: file:.claude/hooks/stop/worklist-cases/25-first-touch.sh
+Residue: Any case helper driving a hook. A hook that READS its event from stdin must not have stdin redirected away, and one that does not read stdin should close it.
+
+**This entry originally claimed inherited stdin caused a hang. That was wrong**, and
+the entry above it records what the evidence actually showed. The stdin point stands
+on its own merits and is kept for that reason, not as a post-mortem.
+
+`test-hooks.sh:2328` runs the worklist suite with no stdin redirect, so a helper that
+does not close its own stdin inherits the harness's. From a terminal that is harmless;
+from a backgrounded job stdin is a pipe nobody closes, and a helper that reads it would
+block. No case in this tree was observed doing so — the fix is prophylactic.
+
+What makes this expensive is that the symptom is *silence*, and silence is what a
+long suite looks like too. Measured while it was happening: 7 minutes elapsed,
+**5 seconds of CPU**, zero children, no new output — and the last line printed was a
+perfectly normal `ok`. Nothing says "stuck". Two full battery runs were killed on a
+10-minute timeout before the cause was even suspected, and the first guess (a case
+file created mid-run) was wrong, because the suite's case list is explicit rather
+than a glob.
+
+**The diagnostic that actually settles it** is `/proc/<pid>/wchan`, which said
+`anon_pipe_read`, plus scanning `/proc/*/fd` for the pipe's other end — which nobody
+held. A blocked read on a pipe with no writer and no children is not a slow test.
+
+**The rule**: every case helper closes its own stdin (`</dev/null`) rather than
+trusting the caller. `18-identity.sh` already did this in three places; the case file
+that hung was the one that did not. Do not "fix" this by adding the redirect at the
+call site in `test-hooks.sh` only — that repairs one caller and leaves every helper
+still depending on an inherited fd.
+
+Related: the same "healthy-looking wait" failure mode is why
+`.claude/hooks/pre-bash/block-self-matching-pgrep.sh` exists. A loop that cannot exit
+and a loop that is being patient are indistinguishable from outside.
+
+## An exact-string edit after `ruff format` matches nothing, and the assert fires before the write
+Trap-Id: exact-anchor-after-formatter
+Enforced-By: JUDGMENT-ONLY
+Residue: Any scripted edit whose `old` text spans a call the formatter may re-wrap. Formatters change whitespace, quotes and line breaks without changing meaning, and a byte-exact anchor is a claim about all three.
+
+Four times in one session the same shape: write a module, run `ruff format`, then
+try to edit it with a Python heredoc doing `assert s.count(old) == 1; s = s.replace(...)`.
+The assert fires, `write_text` is never reached, the file is UNCHANGED — and the
+verification that follows in the same call runs the *old* file and reports green.
+The selftest said `0 failure(s)` for code that had not been written.
+
+What makes it expensive is the order: the assert is correct and loud, but the green
+line after it is louder, and it is answering a different question.
+
+**Rules that held once adopted:** anchor on something the formatter cannot touch (a
+unique string literal, a `def` name, a comment line) and replace by regex or by index
+range; or replace the whole function between two `def` lines; never anchor on a
+multi-line call. And put the verification in a SEPARATE step from the edit, so a
+skipped write cannot borrow the previous run's pass.
+
+
+## A profiler measures its own test, and the finding is correct
+Trap-Id: profiler-measures-its-own-fixture
+Enforced-By: file:scripts/ci-runner/manifest.ts
+Residue: Any instrument that observes every process. A fixture that plants a defect on purpose is a real defect to the instrument, and a fixture that spawns the instrumented shell gets instrumented.
+
+Two instances in one afternoon, both from the resource profiler landing default-on.
+The tree sampler's selftest spawned a `bash` tree to sample -- and with `BASH_ENV`
+live that bash was re-exec'd under the profiler's own supervisor, so every depth
+assertion shifted by one; three controls failed under the hook battery while passing
+standalone. Then `check:ci-resprofile` ran the deriver's selftest, whose E6 fixture
+deliberately leaves four zombies under a live parent -- and the sampler attached to
+that gate reported a live E6. **Both findings were correct.** That is what makes the
+trap: nothing was wrong except that the thing being measured was the measurer.
+
+The fix is never to weaken the predicate. Fixtures opt out (`WORKLIST_PROFILE=off` for
+anything that spawns a shell), gates that PLANT defects carry `noProfile: true` in the
+manifest so `exec.ts` does not attach a sampler, and -- the one design consequence --
+the deriver treats a single-child `bashcov-sup` root as transparent, because under the
+supervisor every capture has that shape and a child-counting predicate would otherwise
+be permanently blind.
+
+Related to "buffered-suite-looks-hung" above: both are cases where the instrument's own
+mechanics produce the signal it was built to detect.
+
+## A waiter armed on a GUESSED threshold outlives the thing it waits for
+Trap-Id: waiter-threshold-guessed-not-derived
+Enforced-By: JUDGMENT-ONLY
+Residue: Any `until <numeric condition>` wait. A threshold picked to be "safely past" the expected value is a threshold that can sit one short of it forever.
+
+I armed `until [ "$(wc -l < log)" -gt 480 ]` to wait for a hook battery to print its
+summary. The battery finished normally at **477 lines** with `PASS=2043 FAIL=0`. The
+condition could never be met, so the waiter spun for 30 minutes after its work was
+already done, and the background check-in correctly reported it as "silent but its OS
+process is VERIFIED ALIVE" — which is true, and is exactly what a healthy long wait
+looks like too.
+
+The number was a guess. I had no reason to believe the log would exceed 480 lines; I
+picked it because it felt safely past the 472 the file had been sitting at, and 472 was
+itself the *buffered* count, not the final one.
+
+**Wait on the CONTENT that signals completion, never on a count:**
+
+    until grep -q 'PASS=[0-9]* FAIL=' log; do sleep 10; done     # the thing you want
+    until [ "$(wc -l < log)" -gt 480 ]; do sleep 10; done          # a number you invented
+
+Better still, do not write the waiter: a Bash call with `run_in_background: true`
+notifies on exit by itself, and the harness verifies that process rather than believing
+a loop's claim about it. Related: "buffered-suite-looks-hung" above (why the line count
+was frozen at 472 in the first place) and the self-matching-pgrep guard (the same
+failure mode with a different unsatisfiable condition).

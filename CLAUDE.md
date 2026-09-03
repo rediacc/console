@@ -124,6 +124,20 @@ them silently is the failure this rule exists to prevent.
   deadlocks: it cannot do those items without racing live work in the same tree, and
   it must not tick or delete another session's tracking. Never tick or remove an item
   that is not yours.
+- **A COMPACTION is the one case where a peer is really you, and `--adopt` is how you
+  say so.** A compaction can hand one continuous conversation a new session id, and the
+  rule above then fires against the session's own work. On 2026-09-02 that left four
+  settled decisions open all night, reported to the operator every stop as a peer's,
+  while the session reasoned about a peer that did not exist. If open items are
+  attributed to a prefix you believe was you before a compaction, run
+  `worklist.py --adopt <me> <prev>`. It records the edge only on harness evidence -- a
+  `compact_boundary` your transcript opens with, plus conversational record uuids both
+  transcripts share -- and there is deliberately no `--force`: two genuinely concurrent
+  sessions share zero such records, which is what makes the check a refutation rather
+  than a formality. Nothing is rewritten, so the `(<prefix>)` tag keeps naming whoever
+  really wrote the item. **Do not guess.** Same cwd, same branch and adjacent times are
+  ROUTINE for concurrent sessions in this tree, so they prove nothing; if `--adopt`
+  refuses, the items are not yours.
 - **Defer as a QUESTION, not a note.** Four states, and only four: `- [ ]` open,
   `- [x]` done, `- [?]` needs an operator decision, and `- [>]` in-flight on
   BACKGROUND work. A `- [>]` lease carries a UTC expiry (max 120 min ahead) AND a

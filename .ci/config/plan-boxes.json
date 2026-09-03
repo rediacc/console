@@ -602,20 +602,29 @@
     "agent/PLAN-session-onboarding-marker.md": {
       "status": "draft",
       "owner": "74de73ca",
-      "open": 10,
-      "done": 0,
+      "open": 6,
+      "done": 4,
       "open_sigs": [
-        "1ad3ed01",
         "1cf39aeb",
         "44e0a390",
-        "864ba50b",
         "94b8a59d",
-        "9eb50a71",
-        "a07d0f8a",
         "ac008cf3",
         "c9c3f81c",
         "fdd528a8"
       ],
+      "done_sigs": [
+        "37cb2af4",
+        "864ba50b",
+        "9eb50a71",
+        "a07d0f8a"
+      ]
+    },
+    "agent/PLAN-shell-resource-profiling.md": {
+      "status": "landed",
+      "owner": "unowned",
+      "open": 0,
+      "done": 0,
+      "open_sigs": [],
       "done_sigs": []
     },
     "agent/PLAN-skip-release-gates-r2-manifest.md": {
@@ -762,25 +771,26 @@
     "agent/PLAN-worklist-ownership-continuity.md": {
       "status": "draft",
       "owner": "74de73ca",
-      "open": 14,
-      "done": 0,
+      "open": 3,
+      "done": 11,
       "open_sigs": [
+        "1723d977",
+        "9359b9a8",
+        "e51783cd"
+      ],
+      "done_sigs": [
         "0334d7da",
         "08882392",
-        "1723d977",
         "2050cad2",
         "32b0de11",
         "3c48feda",
         "54c9dedd",
-        "9359b9a8",
         "cf66e636",
         "d91f1dfa",
-        "e51783cd",
         "e7de6bab",
         "f1655deb",
         "fcad1560"
-      ],
-      "done_sigs": []
+      ]
     },
     "agent/PLAN-www-bundle-determinism.md": {
       "status": "draft",
