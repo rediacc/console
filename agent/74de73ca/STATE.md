@@ -1,54 +1,61 @@
-## SESSION 74de73ca 2026-09-03T16:29:06Z
+## SESSION 74de73ca 2026-09-03T17:57:26Z
 
-Branch `0903-1`, PR #585, epic `24c98380`. **PUSHED** through `6cedf5f02`; renet submodule
+Branch `0903-1`, PR #585, epic `24c98380`. **PUSHED** through `4f7f9dd59`; renet submodule
 through `6c85007` (its PR is rediacc/renet#110, same branch). Tree CLEAN. `ci:quick`
-293/293 exit 0 on the committed tree.
+294/294 exit 0 on the committed tree.
 
 ## Where CI stands
 
-Cycle for `6cedf5f02` is IN PROGRESS, watched by bg `b2opfcvbe` (`ci-trace.py --wait`).
-A run shown CANCELLED on an older SHA was superseded by a push, not failed.
+The cycle for `4f7f9dd59` is IN PROGRESS, watched by bg `byhty8d4b`
+(`ci-trace.py --wait`). **No cycle has been green yet on this branch.**
 
-**No cycle has been green yet on this branch**, and eight distinct reds have been fixed.
-Each one's cause was NOT what its error named, which is the pattern to expect from the
-next one too:
+Runs shown CANCELLED are usually SUPERSEDED by a later push, not failed -- check the
+JOB conclusions, not the run's. Verified today: `affb53fa` had 0 failed jobs (my own
+docs push superseded it), `07c5e1c7` had 1 (the external-links red, since fixed).
 
-`4e74eba82` format-scope mis-tiered · `04dfbe4a7` sm-action's one-shot download killing
-`Initialize` (its cargo fallback could never work here) · `8fbf15c73` check:i18n
-truncating history with `git fetch --depth=50` · `dd2b2633e`/`d7ffdbfda` renet's go
-directive six patches behind the Dockerfile · `dad3748d3` two `qs` advisories in
-PRODUCTION deps · `652233865` age-check reading suppression ages off a graft ·
-`433925cca` bare fixtures with no branch pin · `6cedf5f02` `quality-security` using
-`${PYYAML_VERSION}` with no step providing it (pip reported it, three steps later).
+Eleven distinct reds have been diagnosed and fixed, and the pattern is the thing worth
+carrying: **the error named the wrong subject every single time.** If the next cycle is
+red, expect a new cause and disbelieve the subject of the message while believing its
+verdict. The full narrative is `docs/ci-overhaul/06-progress.md`, "Wave 3".
 
 ## Live facts a fresh session would get wrong
 
-- **This checkout is UNSHALLOWED** (2466 commits) and must stay that way: several gates
-  answer differently on a truncated one. `check:ci-plan-housekeeping` defers instead of
-  verdicting, and `check:ci-go-deps` cannot see real suppression ages.
-- **`ci:quick` runs 293 gates, not 295**: `check:ci-format-scope` and
-  `gate-test:fetch-depth-safety` are `slow: true`. Run those two directly when touching
-  them.
+- **This checkout is UNSHALLOWED** (2466 commits) and must stay so: `check:ci-plan-housekeeping`
+  defers instead of verdicting on a truncated one, and `check:ci-go-deps` cannot see real
+  suppression ages. Nothing in the tree may `git fetch --depth` without first asking
+  `git rev-parse --is-shallow-repository` -- `gate-test:fetch-depth-safety` enforces it.
+- **`ci:quick` runs 294 gates**; `check:ci-format-scope` and `gate-test:fetch-depth-safety`
+  are `slow: true` and deferred. Run those two directly when touching them.
 - **The push guard rejects a compound command containing `git push`** -- it silently stops
-  `ci:quick` from running. Two separate Bash calls, always.
-- **`./run.sh devbox exec` splits its args on whitespace**: `bash -lc '...'` loses the
-  quoting. Pass the command directly (`devbox exec -- go -C <dir> mod tidy`).
-- **Lockfile edits need `npx -y npm@10`** (CI pins 10), and an `overrides` change needs
+  `ci:quick` from running. Two separate Bash calls, always. `git commit --amend` is also
+  hook-blocked; correct a bad commit with a NEW commit.
+- **`./run.sh devbox exec` splits args on whitespace**: `bash -lc '...'` loses the quoting.
+  Pass the command directly (`devbox exec -- go -C <dir> mod tidy`).
+- **Lockfile edits need `npx -y npm@10`**, and an `overrides` change needs
   `npm update <pkg> --package-lock-only` -- plain `install --package-lock-only` answers
   "up to date" because this lockfile's root carries no `overrides` key.
+- **This sandbox has NO IPv6 egress**, so a bare `curl` to a dual-stack host can answer
+  000 for reasons that have nothing to do with the host. Use `curl -4` before concluding
+  anything about reachability.
 - `gh pr edit --body` is hook-blocked; `--body-file` hits a Projects-classic GraphQL
   deprecation. Working form:
   `gh api repos/rediacc/console/pulls/585 -X PATCH -F body=@file`.
 
+## Operator instructions this session is holding
+
+- **"ignore pexels related"** -- the operator killed the peer session that raised it.
+  `private/growth` is untouched and that item is closed. Do not reopen it.
+- **GitHub `pr-N` deployments: both halves are DONE.** 25 empty environments deleted with
+  `.ci/scripts/housekeeping/cleanup-pr-environments.sh` (operator-run; CI can never hold
+  Administration:write), and `ci.yml`'s deploy-preview no longer declares an
+  `environment:`. Cloudflare-side publish and cleanup were deliberately left alone.
+
 ## Next action
 
-1. **`[?] #13d281a2`** -- org-secret cutover, precondition ONE GREEN CYCLE. When
-   `6cedf5f02` is green: `scripts/dev/derive-shadow-pass-list.sh --branch 0903-1`, then
-   run exactly the `gh secret delete` lines it prints -- four, unchanged across every
+1. **`[?] #13d281a2` is the ONLY open item**, and its precondition is ONE GREEN CYCLE.
+   When `4f7f9dd59` is green: `scripts/dev/derive-shadow-pass-list.sh --branch 0903-1`,
+   then run exactly the `gh secret delete` lines it prints -- four, unchanged across every
    re-derivation (ACCOUNT_ED25519_PUBLIC_KEY, APP_PRIVATE_KEY, CLOUDFLARE_API_TOKEN,
    DOCKERHUB_TOKEN). No more than it names.
-2. **`[?] #475f728c`** -- operator-only. A live 56-char Pexels key is hardcoded at
-   `private/growth/video_pipeline/pexels_lib.py:22`. Nothing is published today. Never
-   print the value, and do NOT delete the line without the rotation: it is in that repo's
-   history from `64167a5`, so deletion buys nothing and breaks a documented fallback.
-3. Read a failing JOB's conclusion, never the run's. A cancelled run did not report.
+2. If CI is red, read the failing JOB's log before concluding anything, and look EARLIER
+   in the job than the step that failed.
