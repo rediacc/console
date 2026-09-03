@@ -3819,7 +3819,10 @@ def run_stop(event, event_ok, worklist, hook_file):
             root, plan_records(root), fold, session_id, plan_owner
         )
         if _pf_rows:
-            _pf_text = wl_planfile.render(_pf_rows[0], len(_pf_rows) - 1, _pf_unread)
+            # S2: up to PLAN_PLANS_SHOW plans, sharing ONE quote budget. `render_all`
+            # owns both the cap and the remainder line that `render`'s n_more_plans
+            # used to carry, so the call site no longer does that arithmetic.
+            _pf_text = wl_planfile.render_all(_pf_rows, _pf_unread)
             if _pf_text:
                 outq_add(worklist, session_id, state_doc, "plan-tasks", _pf_text, 2)
     except Exception:  # noqa: BLE001 -- a plan read must never wedge a stop

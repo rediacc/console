@@ -236,12 +236,37 @@ for st in ("done", "superseded", "landed", "implemented"):
         rows_for(plan_body(status=st, open_tasks=[TASK_A]), []),
         [],
     )
+# S3 CHANGED THIS CONTRACT ON PURPOSE, so the controls assert the new one and say
+# what moved. A not-started plan used to be EXEMPT -- dropped before plan_rows
+# opened it. It is now a CENSUS row: counted, named, and demanding nothing. The
+# premise that justified the exemption ("a proposal's boxes are a sketch") stopped
+# holding here, because `draft` became this repo's default header on plans under
+# active execution and was hiding 72 of 88 open boxes.
 for st in ("draft", "proposal", "design"):
+    got = rows_for(plan_body(status=st, open_tasks=[TASK_A]), [])
+    control("a %s plan yields exactly one CENSUS row" % st, len(got), 1)
+    control("  and it is marked census, not a finding", got[0].get("census") if got else None, True)
+    # THE PAIR, and it is the whole point of the tier: a census row must DEMAND
+    # nothing. If it carried untracked tasks it would be the full treatment under
+    # another name, and the wall design note 2 warns about would be back.
     control(
-        "CONTROL: a %s plan is a proposal, not checked" % st,
-        rows_for(plan_body(status=st, open_tasks=[TASK_A]), []),
-        [],
+        "  CONTROL: a census row carries no untracked tasks and no recipes",
+        (got[0]["untracked"], got[0]["stale_open"], got[0]["reopened"]) if got else None,
+        ([], [], 0),
     )
+    body = F.render(got[0]) if got else ""
+    truthy(
+        "  and renders one line that says no action is demanded",
+        "No action is demanded here." in body and "worklist.py --add" not in body,
+    )
+
+# A not-started plan with NO open boxes stays silent -- otherwise every prose
+# sketch in the tree grows a census line it does not need.
+control(
+    "CONTROL: a not-started plan with no OPEN boxes yields no census row",
+    rows_for(plan_body(status="draft", done_tasks=[TASK_A]), []),
+    [],
+)
 # PAIR for both blocklists: the in-scope statuses, INCLUDING words the parser
 # does not recognise. The blocklist design means a new status is noisy, never
 # invisible -- copying plan_drift's executing-only whitelist would have made
@@ -434,6 +459,66 @@ truthy("  and its line grows no box suffix", "open box(es)" not in block4)
 
 
 # ---------------------------------------------------------------------------
+# 8ter. S2 -- THREE PLANS PER STOP, ONE SHARED QUOTE BUDGET. Design note 2 capped
+#    this at one plan, and its ARGUMENT was that quoted lines are a wall. So the
+#    number moves and the reason is kept by sharing PLAN_TASK_SHOW across the
+#    plans shown. The assertion that matters is therefore not "three plans
+#    appear" -- it is "the number of quoted recipes did NOT go up".
+# ---------------------------------------------------------------------------
+def fake_row(rel, n_untracked, census=False):
+    return {
+        "rel": rel,
+        "status": "draft" if census else "ready",
+        "n_open": n_untracked or 1,
+        "n_done": 0,
+        "untracked": ["task number %d of the fixture set" % i for i in range(n_untracked)],
+        "stale_open": [],
+        "reopened": 0,
+        "blind": None,
+        "census": census,
+    }
+
+
+three = [
+    fake_row("agent/PLAN-a.md", 5),
+    fake_row("agent/PLAN-b.md", 5),
+    fake_row("agent/PLAN-c.md", 5),
+]
+body = F.render_all(three)
+control("S2: all three plans are NAMED", sum(body.count(r["rel"]) for r in three), 3)
+control(
+    "S2 THE POINT: the shared budget holds total recipes to PLAN_TASK_SHOW",
+    body.count("worklist.py --add"),
+    F.PLAN_TASK_SHOW,
+)
+# THE PAIR. Without the budget this would be 3x. Proven by rendering the same rows
+# with each plan given its OWN allowance, which is what the code did before S2.
+per_plan = sum(F.render(r).count("worklist.py --add") for r in three)
+truthy(
+    "  CONTROL: per-plan budgets WOULD have tripled it, so the shared one is load-bearing",
+    per_plan > body.count("worklist.py --add"),
+)
+# A plan whose budget ran out is NAMED, not hidden -- a cap that silences is the
+# failure this whole check exists to stop.
+truthy(
+    "  and a budget-exhausted plan still shows its header and counts",
+    "agent/PLAN-c.md" in body and "open box(es)" in body,
+)
+control(
+    "S2: a fourth plan is counted in the remainder line, not dropped silently",
+    "+ 1 more plan file(s) with findings" in F.render_all([*three, fake_row("agent/PLAN-d.md", 1)]),
+    True,
+)
+# A census row must not consume budget -- it quotes nothing, so spending on it
+# would starve a real finding behind it.
+mixed = [fake_row("agent/PLAN-x.md", 0, census=True), fake_row("agent/PLAN-y.md", 5)]
+control(
+    "S2: a census row spends no budget, so the finding behind it keeps its quotes",
+    F.render_all(mixed).count("worklist.py --add"),
+    F.PLAN_TASK_SHOW,
+)
+
+# ---------------------------------------------------------------------------
 # 9. THE CONTROL FOR THE CONTROLS. A green run over fixtures that produced no
 #    tasks proves nothing at all -- this is assertion 5 of test-always-tier.py
 #    in a different suit.
@@ -442,7 +527,7 @@ control("the fixtures really do parse as tasks", len(P.plan_tasks(live)), 3)
 truthy(
     "wl_planfid's calibration is what is being reused", P.TASK_MATCH > 0 and P.MIN_MATCH_TOKENS > 0
 )
-if Tally.count < 53:
+if Tally.count < 60:
     Tally.fails += 1
     print(
         "FAIL  only %d control(s) ran; the file is not being executed as written" % Tally.count,

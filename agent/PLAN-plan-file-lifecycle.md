@@ -407,6 +407,18 @@ Three points each, plus two easy-to-forget fourths.
       already imports wl_planfile at module level, so the arm was UNREACHABLE and the
       control had to fake sys.modules to reach it -- a control for a branch production
       cannot take. Both removed rather than kept as decoration.
-- [ ] Ship S2 and S3, and amend `wl_planfile`'s design notes 2 and 4 to cite the measurement that overtook them
+- [x] Ship S2 and S3, and amend `wl_planfile`'s design notes 2 and 4 to cite the measurement that overtook them
+      DONE 2026-09-03, and BOTH design notes amended rather than left behind.
+      S2: render_all shows up to PLAN_PLANS_SHOW plans sharing ONE PLAN_TASK_SHOW
+      budget -- three plans now cost exactly as many quoted recipes as one did.
+      Note 2's NUMBER moves, its REASON (the wall is quoted lines, not headers) is
+      what the shared budget preserves. Proven load-bearing: removing the spend
+      makes it 9 recipes instead of 3.
+      S3: NOT_STARTED becomes a third tier, not an exemption -- a one-line census
+      row that demands nothing. Note 4's blocklist SHAPE and its FINISHED half are
+      untouched; what stopped holding is "a proposal's boxes are a sketch".
+      Three existing controls asserting "a draft plan is not checked" now assert the
+      new contract instead, each with the pair that a census row DEMANDS nothing --
+      otherwise it is the full treatment under another name. 119 controls pass.
 - [ ] Pull forward the prior plan's parser refactor (`plan_task_marks`, `[?]`/`[>]` as first-class marks); A1's "parked, not vanished" exit needs it
 - [ ] Confirm cheat 13's exposure against the branch ruleset before treating it as closed

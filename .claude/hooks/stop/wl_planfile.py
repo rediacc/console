@@ -40,11 +40,19 @@ THE FOUR DESIGN CHOICES, each of which had a worse obvious alternative.
    `REPORT_REFRESH_MIN` (6h) and re-fires IMMEDIATELY when the body changes.
    That is exactly the "only when the plan changed" policy, for free and
    already tested, without a second suppression ledger to go silently stale.
-   On top of it: ONE plan per stop (the newest-mtime in-scope plan that has
-   something to say) and at most PLAN_TASK_SHOW untracked lines quoted, with
-   the remainder COUNTED. Eighteen quoted lines every stop is a wall, and a
-   wall is how a check gets switched off; a count plus three is a reader's
-   entry point into a file they can open.
+   On top of it: at most PLAN_TASK_SHOW untracked lines quoted, with the
+   remainder COUNTED. Eighteen quoted lines every stop is a wall, and a wall is
+   how a check gets switched off; a count plus three is a reader's entry point
+   into a file they can open.
+
+   S2 (2026-09-03) MOVED THE PLAN CAP FROM ONE TO PLAN_PLANS_SHOW AND KEPT THIS
+   REASON. The note said ONE plan per stop, and the number was wrong while the
+   argument was right: the wall is made of QUOTED LINES, not of headers. So
+   render_all shares one PLAN_TASK_SHOW budget ACROSS the plans it shows -- three
+   plans now cost exactly as many recipes as one plan did, proven by a control
+   that reds at 9 instead of 3 the moment the budget stops being spent. A plan
+   whose budget ran out still gets its header and its counts: named, not hidden,
+   which is the difference between a cap and a silence.
 
 3. SCOPE IS OWNERSHIP, LIKE EVERY OTHER SIGNATURE HERE. A plan whose header
    names a PEER as `Owner:` is skipped outright. An unowned plan stays in scope
@@ -55,6 +63,16 @@ THE FOUR DESIGN CHOICES, each of which had a worse obvious alternative.
    says, so it is declined.
 
 4. THE STATUS FILTER IS A BLOCKLIST, NOT A WHITELIST, AND THAT IS DELIBERATE.
+   AMENDED BY S3 (2026-09-03): NOT_STARTED is no longer an EXEMPTION, it is a
+   third tier. The blocklist SHAPE below is still right and the FINISHED half is
+   untouched. What stopped holding is the empirical premise for the other half --
+   "a proposal's boxes are a sketch". Measured on this repo 2026-09-02, `Status:
+   draft` is the DEFAULT header on plans under active execution: six of the eight
+   box-carrying files carried it, hiding 72 of 88 open boxes, and an audit found
+   five DONE-but-unticked boxes inside `draft` files. Those plans now get a
+   one-line census row -- counted, named, demanding nothing -- instead of being
+   dropped before plan_rows opens them. The full treatment still costs a status
+   that claims to be running.
    `plan_drift_rows` next door admits only `executing`/`UNKNOWN`. Copying it
    here would have made this check VACUOUS on the very plan it was written for:
    that plan reads `Status: ready`. Measured over the 62 plans in this tree the
@@ -122,6 +140,11 @@ import wl_planfid as P
 PLAN_MAX_READ = int(os.environ.get("WORKLIST_PLANFILE_MAX_READ", "40"))
 # Untracked tasks QUOTED. The rest are counted. See design note 2.
 PLAN_TASK_SHOW = int(os.environ.get("WORKLIST_PLANFILE_SHOW", "3"))
+# S2: plans rendered per stop. Design note 2 capped this at 1 and its ARGUMENT was
+# about quoted lines being a wall -- so the number moves and the reason is kept by
+# making PLAN_TASK_SHOW a budget shared ACROSS the plans shown, not a per-plan
+# allowance. Three one-line headers is not a wall; nine quoted `--add` recipes is.
+PLAN_PLANS_SHOW = int(os.environ.get("WORKLIST_PLANFILE_PLANS_SHOW", "3"))
 # Stale-box examples quoted in the reverse direction.
 PLAN_STALE_SHOW = int(os.environ.get("WORKLIST_PLANFILE_STALE_SHOW", "2"))
 # A plan bigger than this is not read. 400 KB is ~10x the largest plan here.
@@ -374,11 +397,23 @@ def plan_rows(root, recs, fold, session_id, plan_owner):
     # Status first because it is free (plan_records already parsed it), then
     # ownership, which costs a header read. Only what survives both is capped,
     # so the cap counts plans this session actually had a reason to open.
-    scoped = [
+    # S3: THREE tiers, not two. FINISHED is still skipped outright -- demanding that
+    # history stay in step with a live worklist is how a check earns its way into
+    # being ignored, and design note 4 is right about that half. NOT_STARTED is no
+    # longer EXEMPT though: it becomes a one-line census row with no quotes and no
+    # recipes. The premise that made it an exemption ("a proposal's boxes are a
+    # sketch") stopped being true here -- measured 2026-09-02, `draft` is this repo's
+    # default header on plans under ACTIVE execution, and six of eight box-carrying
+    # files carried it, hiding 72 of 88 open boxes. One line each is the price of
+    # seeing them; the full treatment stays for plans that claim to be running.
+    owned = [
         rec
         for rec in list(recs)
-        if in_scope_status(rec[1]) and C.owned_by_me(_owner(plan_owner, root, rec[0]), session_id)
+        if str(rec[1] or "").strip().lower() not in FINISHED_STATES
+        and C.owned_by_me(_owner(plan_owner, root, rec[0]), session_id)
     ]
+    scoped = [rec for rec in owned if in_scope_status(rec[1])]
+    census_only = [rec for rec in owned if not in_scope_status(rec[1])]
     unread = max(0, len(scoped) - PLAN_MAX_READ)
     out = []
     for rec in scoped[:PLAN_MAX_READ]:
@@ -411,6 +446,33 @@ def plan_rows(root, recs, fold, session_id, plan_owner):
                 "blind": blind,
             }
         )
+    # The census tier. Counts only, and only when the plan HAS open boxes -- a
+    # not-started plan with nothing open is silent, or every prose sketch in the
+    # tree grows a line.
+    for rec in census_only[:PLAN_MAX_READ]:
+        rel, status = rec[0], rec[1]
+        text = _read(pathlib.Path(root) / rel)
+        if text is None or len(text) < P.MIN_PLAN_CHARS:
+            continue
+        try:
+            open_tasks, done_tasks = plan_boxes(text)
+        except Exception:  # noqa: BLE001 -- same contract as the loop above
+            open_tasks, done_tasks = [], []
+        if not open_tasks:
+            continue
+        out.append(
+            {
+                "rel": rel,
+                "status": status,
+                "n_open": len(open_tasks),
+                "n_done": len(done_tasks),
+                "untracked": [],
+                "stale_open": [],
+                "reopened": 0,
+                "blind": None,
+                "census": True,
+            }
+        )
     return out, unread
 
 
@@ -419,15 +481,30 @@ def _quote(t):
     return t if len(t) <= TASK_QUOTE_CHARS else t[: TASK_QUOTE_CHARS - 3] + "..."
 
 
-def render(row, n_more_plans=0, unread=0):
+def render(row, n_more_plans=0, unread=0, budget=None):
     """The advisory body for ONE plan, or "" when there is nothing to say.
 
     Prints the SHAPE (boxes seen, open, done, items scanned is implicit in the
     verdicts) and not merely the verdict, so a reader can tell a real finding
     from a parser that saw nothing.
+
+    `budget` is S2's SHARED quote allowance: render_all hands each plan whatever
+    is left of PLAN_TASK_SHOW rather than giving every plan its own. That is what
+    lets three plans be shown without tripling the wall design note 2 was about --
+    the note's number moves, its reason does not.
     """
     if not row:
         return ""
+    if row.get("census"):
+        # S3's third tier: one line, no quotes, no recipes. It exists to make a
+        # not-started plan's boxes VISIBLE, not to demand anything about them.
+        return (
+            "PLAN FILE (census) -- %s [Status: %s], %d open box(es), %d ticked.\n"
+            "  Not-started plans are exempt from the checks above, so this is the only\n"
+            "  place their boxes are counted. No action is demanded here."
+            % (row["rel"], row["status"], row["n_open"], row["n_done"])
+        )
+    show = PLAN_TASK_SHOW if budget is None else max(0, budget)
     lines = [
         "PLAN FILE vs WORKLIST -- %s [Status: %s], %d open box(es), %d ticked"
         % (row["rel"], row["status"], row["n_open"], row["n_done"])
@@ -444,10 +521,8 @@ def render(row, n_more_plans=0, unread=0):
             "  record, and a box with no item is untraceable the moment this context\n"
             "  ends -- nobody can tell which of them are live. Track them:" % n
         )
-        lines.extend(
-            '    worklist.py --add <me> "%s"' % _quote(t) for t in row["untracked"][:PLAN_TASK_SHOW]
-        )
-        rest = n - min(n, PLAN_TASK_SHOW)
+        lines.extend('    worklist.py --add <me> "%s"' % _quote(t) for t in row["untracked"][:show])
+        rest = n - min(n, show)
         if rest:
             lines.append("    + %d more open task(s) in that file, same verdict" % rest)
     if row["stale_open"]:
@@ -469,8 +544,9 @@ def render(row, n_more_plans=0, unread=0):
     lines.append(
         "  ADVISORY, never a block: this plan's tasks must not become open items\n"
         "  that wedge every stop until a multi-week migration finishes. Only\n"
-        "  plans you own or that name no Owner are checked, and finished or\n"
-        "  not-started plans are exempt."
+        "  plans you own or that name no Owner are checked. FINISHED plans are\n"
+        "  exempt; NOT-STARTED ones get a one-line census instead of this, so\n"
+        "  their boxes are counted without demanding anything about them."
     )
     if unread:
         lines.append(
@@ -482,6 +558,32 @@ def render(row, n_more_plans=0, unread=0):
             "  + %d more in-scope plan file(s) with findings, not shown this stop." % n_more_plans
         )
     return "\n".join(lines)
+
+
+def render_all(rows, unread=0):
+    """S2: up to PLAN_PLANS_SHOW plans in one advisory, sharing ONE quote budget.
+
+    The budget is why three plans is not three times the noise. Each plan spends
+    what it needs of PLAN_TASK_SHOW and the next one gets the remainder, so the
+    total number of quoted `--add` recipes is the same as it was when exactly one
+    plan was rendered. A plan whose budget has run out still gets its header and
+    its counts -- it is named, not hidden, which is the difference between a cap
+    and a silence.
+    """
+    if not rows:
+        return ""
+    shown, budget, out = rows[:PLAN_PLANS_SHOW], PLAN_TASK_SHOW, []
+    for i, row in enumerate(shown):
+        body = render(row, 0, unread if i == 0 else 0, budget)
+        if not body:
+            continue
+        out.append(body)
+        if not row.get("census"):
+            budget = max(0, budget - min(len(row["untracked"]), budget))
+    rest = len(rows) - len(shown)
+    if rest:
+        out.append("  + %d more plan file(s) with findings, not shown this stop." % rest)
+    return "\n".join(out)
 
 
 # ---------------------------------------------------------------------------

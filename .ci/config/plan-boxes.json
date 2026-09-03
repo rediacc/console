@@ -397,8 +397,8 @@
     "agent/PLAN-plan-file-lifecycle.md": {
       "status": "ready",
       "owner": "74de73ca",
-      "open": 12,
-      "done": 1,
+      "open": 11,
+      "done": 2,
       "open_sigs": [
         "24fbc5fc",
         "35f8115e",
@@ -409,12 +409,12 @@
         "86185c7e",
         "9d65a096",
         "a69a55a5",
-        "e77bfe5f",
         "f27685d2",
         "ff0c1fc4"
       ],
       "done_sigs": [
-        "daffe83e"
+        "daffe83e",
+        "e77bfe5f"
       ]
     },
     "agent/PLAN-promote-mutation-runner.md": {
