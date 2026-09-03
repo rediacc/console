@@ -1,67 +1,56 @@
-## SESSION 74de73ca 2026-09-03T05:28:58Z
+## SESSION 74de73ca 2026-09-03T06:06:22Z
 
-## The force push LANDED. That chapter is closed.
+## Pushed and verified; unpushed work sits on top
 
-The operator ran it. All four remotes now match local, verified by fetch:
-
-    console 6ba240362   account 1d506ea   renet 106db89   elite 12cae3c
-
-Every commit on every one of those PRs now attributes to `mfbayraktar`. The gate
-proved it both ways -- before: console 30 unattributed, account 7, renet 2, elite 1;
-after: 48/48, 9/9, 2/2, 1/1. That before/after is recorded in
-`.ci/scripts/quality/check-commit-identity.sh`'s header.
-
-`refs/original/` in all four repos is now DELETABLE -- it was the pre-rewrite safety
-net and the push succeeded:
+The operator force-pushed the rewritten history. All four remotes matched local when
+checked, and every commit on every PR now attributes to `mfbayraktar` (console #585
+48/48, account #85 9/9, renet #110 2/2, elite #16 1/1). `refs/original/` in all four
+repos is now DELETABLE:
 `git -C <repo> update-ref -d refs/original/refs/heads/0903-1`.
 
-## Uncommitted work in the tree right now
+Since that push, several commits have landed locally and are NOT pushed. Tip
+`4efe0cec8`. `ci:quick` is 291/291. Branch `0903-1`, PR #585, epic `24c98380`; every
+commit needs `PR-TASK: 24c98380`, and ci:quick needs a token:
 
-- `agent/PLAN-worklist-ownership-continuity.md` (new) + regenerated
-  `.ci/config/plan-boxes.json`
-- `.ci/scripts/quality/check-commit-identity.sh` -- before/after proof in the header
-- `packages/www/src/scripts/tutorial-video-hydrate.ts` -- the operator's chosen
-  IntersectionObserver change
-- `.claude/hooks/test-hooks.sh` -- fixture fix (it listed only `good@example.com`, so
-  the real author failed it and even the ALLOW controls were refused; the guard was
-  right, the fixture was wrong)
+    GH_TOKEN="$(gh auth token)" GITHUB_TOKEN="$(gh auth token)" npm run ci:quick
 
-## The bundle measurement, so nobody re-derives it
+## Two www findings that are easy to confuse -- they are DIFFERENT
 
-The operator chose IntersectionObserver over poster+click-to-load. It is implemented
-and MEASURED: 576,673 B, essentially unmoved. That is not a failure -- the gate walks
-import-graph REACHABILITY, not eagerness, so a runtime deferral is invisible to it.
-What the change does buy is that the eager/deferred split in
-`agent/PLAN-www-bundle-determinism.md` section 3a is now HONEST, which it was not
-while hydration fired on DOMContentLoaded. Do not "fix" this by reverting it.
+1. **The player's JS (122,110 B).** `check:ci-client-bundle-budget` is RED at ~576 KB
+   against a 500,000 B target, and that red is CORRECT. The operator chose an
+   IntersectionObserver over poster+click-to-load. It is implemented, and MEASURED in
+   a browser across all 44 English mount pages at two viewports: it defers NOTHING,
+   because every mount is above the fold (mount docTop 143-806 vs a 1500/1444
+   threshold). Controls proved the observer is alive, not broken. Do not revert it and
+   do not raise the budget. Tracked as `[?] #da11407e`, the operator's call.
+2. **The player's CSS (37,018 B) -- SOLVED.** A separate defect: the sheet was linked
+   on 1,366 pages while only 572 had a player. Fixed by loading it at runtime via Vite
+   `?url`; `check:ci-player-css-scope` went 794 -> 0. Do not "re-tidy" the imports back
+   into `TutorialVideoPlayer.tsx` -- that is the defect, and the gate will catch it.
 
-`check:ci-client-bundle-budget` is therefore still RED at ~576 KB and that red is
-CORRECT. Do not raise the budget; do not soften the gate.
+## Plans on disk
 
-## Plans on disk, and where each stands
-
-- `PLAN-commit-author-identity.md` -- tasks 1-10 DONE and committed. Remaining: the
-  self-audit regression case (a message DESCRIBING `--author=` must be allowed), and
-  the final ledger update.
-- `PLAN-worklist-ownership-continuity.md` -- designed, nothing implemented. It proves
-  `a276391d -> 74de73ca` is ONE conversation (467 shared message uuids), so the four
-  `[?]` items tagged `a276391d` are this session's own and become tickable via a new
-  `--adopt` verb.
-- `PLAN-www-bundle-determinism.md` -- the measurement fix landed; section 3a's split
-  is the open half.
+- `PLAN-plyr-css-on-demand-loading.md` -- IMPLEMENTED this session.
+- `PLAN-commit-author-identity.md` -- tasks 1-10 done. Remaining: the self-audit
+  regression case (a message DESCRIBING `--author=` must be allowed).
+- `PLAN-worklist-ownership-continuity.md` -- designed, NOT implemented. Proves
+  `a276391d -> 74de73ca` is one conversation (467 shared message uuids), so the four
+  `[?]` items tagged `a276391d` are this session's own. A `--adopt` verb makes them
+  tickable.
+- `PLAN-session-onboarding-marker.md` -- designed, NOT implemented. Carries a measured
+  baseline: 3 of 4 sessions were refused at a stop before they had ever written to the
+  worklist; one edited for 19h37m without recording an item.
+- `PLAN-www-bundle-determinism.md` -- measurement fix landed; section 3a's split open.
 
 ## Next action
 
-1. Commit the four uncommitted paths above (`ci:quick` first, with
-   `GH_TOKEN="$(gh auth token)" GITHUB_TOKEN="$(gh auth token)"` or `check:actions`
-   reds on the anonymous rate limit).
-2. Implement `PLAN-worklist-ownership-continuity.md`. Its highest-value task is
-   `--adopt`, because it unblocks `#119d740a #3c8d2d34 #51bbba34 #7bd69fa8` -- four
-   items this session has been reporting as a phantom peer's all night. Do NOT skip
-   the `wl_store.compact()` carry-forward: without it the next `--compact` silently
+1. Implement `PLAN-worklist-ownership-continuity.md`, highest-value task first:
+   `--adopt`, which unblocks `#119d740a #3c8d2d34 #51bbba34 #7bd69fa8`. Do NOT skip
+   the `wl_store.compact()` carry-forward -- without it the next `--compact` silently
    deletes every adoption.
-3. Attribute two `raw-pr-body` failures in the hook battery. They are NOT mine as far
-   as I know, but I have not proven that, and "pre-existing" is a claim.
-4. Background agents may still report: a session-onboarding-marker plan, and a
-   browser probe verifying the video player visually (the operator asked for that
-   explicitly -- I changed hydration timing and had only measured bytes).
+2. Then `PLAN-session-onboarding-marker.md`.
+3. A hook-battery run is capturing the ONE remaining failure (PASS=1957 FAIL=1); its
+   identity is not yet known. Do not call it pre-existing without evidence -- two
+   earlier "not mine" failures turned out to be this session's own.
+4. Pushing is the operator's; they force-push. Nothing here pushes.
+5. There is NO peer session. An uncommitted file in this tree is yours.

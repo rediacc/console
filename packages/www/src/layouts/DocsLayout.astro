@@ -1371,6 +1371,29 @@ for (const entry of toc as TocEntry[]) {
       margin-inline: auto;
     }
 
+    /* RESERVE THE BOX BEFORE THE PLAYER ARRIVES, the way solution-video.css:94 does for
+       `.video-player-mount`. Without this the container had only a max-inline-size and
+       therefore ZERO height until hydration, so all 234 docs tutorial pages shifted by
+       the full player height when the chunk landed. Found 2026-09-03 while designing
+       the CSS-scope fix, and it is older than that change rather than caused by it.
+
+       No media query here, unlike the solution-page rule, and the difference is real
+       rather than an omission: `remark-tutorial-embed.ts` emits no `data-vertical-src`,
+       so a docs tutorial has no portrait cut and is 16:9 at every width. The comment
+       beside the solution rule warns that its breakpoint must track the player's own
+       `matchMedia`; here there is no breakpoint to keep in step.
+
+       `:not([data-hydrated])` so the reservation releases the instant React mounts --
+       the hydrator sets that attribute immediately before `createRoot`. */
+    .docs-shell:not(.docs-shell-browse):not(.docs-shell-embed)
+      .article-content
+      > :global(.tutorial-video-container:not([data-hydrated])) {
+      display: block;
+      aspect-ratio: 16 / 9;
+      border-radius: var(--radius-md);
+      background: var(--color-bg-light);
+    }
+
     /* Fallback Notice */
     .fallback-notice {
       display: flex;
