@@ -1,3 +1,4 @@
+# shellcheck shell=bash
 # 25-first-touch.sh -- the onboarding notice, and above all when it stays QUIET.
 #
 # WHY. The Stop hook already tells a session what to do, but only once it tries to

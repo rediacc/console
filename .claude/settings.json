@@ -176,8 +176,7 @@
           },
           {
             "type": "command",
-            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/pre-edit/block-agent-state-shape.sh\"",
-            "type": "command"
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/pre-edit/block-agent-state-shape.sh\""
           },
           {
             "type": "command",
@@ -243,6 +242,14 @@
             "type": "command",
             "command": "python3 \"$CLAUDE_PROJECT_DIR/.claude/hooks/context/band-notice.py\"",
             "timeout": 15
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$CLAUDE_PROJECT_DIR/.claude/hooks/context/onboard.py\""
           }
         ]
       }
@@ -314,6 +321,14 @@
             "timeout": 15
           }
         ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$CLAUDE_PROJECT_DIR/.claude/hooks/context/onboard.py\" --arm"
+          }
+        ]
       }
     ],
     "SessionStart": [
@@ -330,6 +345,14 @@
           {
             "type": "command",
             "command": "python3 \"$CLAUDE_PROJECT_DIR/.claude/hooks/stop/wl_report.py\" --session-start"
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$CLAUDE_PROJECT_DIR/.claude/hooks/context/onboard.py\" --arm"
           }
         ]
       }

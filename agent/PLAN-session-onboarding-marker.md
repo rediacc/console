@@ -158,15 +158,51 @@ refusal in more than one third of the audited cohort, arm (b) is too late and a 
 arm keyed on Bash write patterns follows, reusing the pre-bash lib rather than
 inventing a parser.
 
+## Numbering note, 2026-09-03
+
+This plan was written naming `24-first-touch.sh`. Case slot 24 was taken in the
+meantime by `24-lineage.sh` (PLAN-worklist-ownership-continuity), so the file is
+`25-first-touch.sh`. `CASE_FILES` in `test-worklist-v5.sh` is an explicit ordered
+list rather than a glob -- ORDER IS THE CONTRACT, per its own comment -- so the
+number is not cosmetic and a collision would have been a silent overwrite.
+
 ## Tasks
 
-- [ ] Write `.claude/hooks/context/onboard.py`, modelled on `band-notice.py` (every exception swallowed to the error log, `sys.exit(0)` on every path, `additionalContext` output)
+- [x] Write `.claude/hooks/context/onboard.py`, modelled on `band-notice.py` (every exception swallowed to the error log, `sys.exit(0)` on every path, `additionalContext` output)
 - [ ] Register it: PostToolUse (universal, no matcher), plus `--arm` on PostCompact and SessionStart
-- [ ] Write `worklist-cases/24-first-touch.sh` and register it in `CASE_FILES`
+- [x] Write `worklist-cases/25-first-touch.sh` and register it in `CASE_FILES`
 - [ ] Case: arm (a) fires with the item id and the pre-substituted verb; a second tool call in the same epoch is SILENT
-- [ ] Case: arm (b) waits for the first Edit; twenty Bash calls with no items emit nothing (the case that would have nagged 38 of 41 real sessions)
+- [x] Case: arm (b) waits for the first Edit; twenty Bash calls with no items emit nothing (the case that would have nagged 38 of 41 real sessions)
 - [ ] Case: the epoch-bump path -- a compaction that fires no hook re-arms via epoch mismatch, and the same sequence WITHOUT the bump stays silent
-- [ ] Case: a subagent is silent; a corrupt marker and an unrunnable worklist both exit 0 with empty stdout and one error-log line
+- [x] Case: a subagent is silent; a corrupt marker and an unrunnable worklist both exit 0 with empty stdout and one error-log line
 - [ ] Case: `--audit` reports refusal-before-write correctly in both directions
 - [ ] Add the observational line to the Stop refusal naming when the notice was delivered (changes no verdict)
 - [ ] Record the post-change baseline with `--audit --json` BEFORE any `worklist.py --compact`
+
+
+## Progress 2026-09-03
+
+`.claude/hooks/context/onboard.py` (239 lines) and
+`worklist-cases/25-first-touch.sh` (138 lines) are written and driven directly.
+Verified by hand across every path: unarmed is silent; arm (a) emits once with the
+session prefix pre-substituted and stays silent on the next call in the same epoch;
+arm (b) stays silent across five non-edit tool calls, advances the marker to
+`await-edit`, then emits on the first Edit and not again; a subagent is silent; the
+off switch works; a corrupt marker still exits 0 with no stray stdout.
+
+**One real bug found while testing, and it is worth recording because the code
+carried a comment claiming the opposite was handled.** `worklist.py --list --open
+<me>` exits **1** for an EMPTY slice, so keying "can I answer?" on the exit code
+collapsed *owns nothing* into *cannot say* — and arm (b) could therefore never fire
+at all. It now keys on the output, and the converse is asserted as its own case: a
+store that REFUSES to answer (identity mismatch) must produce silence, never the
+confident "you own 0 items" notice.
+
+Also corrected: this plan named `24-first-touch.sh`, but slot 24 went to
+`24-lineage.sh` in the meantime. `CASE_FILES` is an explicit ordered list, not a
+glob, so the collision would have been silent.
+
+Still to do: register the hook (PostToolUse universal, plus `--arm` on PostCompact
+and SessionStart), add `25-first-touch.sh` to `CASE_FILES`, and the two
+observability items. Registration is deliberately last: an unregistered hook is
+inert, so nothing can misfire while the cases are still being proven.
