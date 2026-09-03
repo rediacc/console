@@ -1,62 +1,60 @@
-## SESSION 74de73ca 2026-09-03T18:58:08Z
+## SESSION 74de73ca 2026-09-03T21:15:19Z
 
-Branch `0903-1`, PR #585, epic `24c98380`. **PUSHED** through `f1a1f55e1`; renet submodule
-through `6c85007` (its PR is rediacc/renet#110). `ci:quick` 294/294 exit 0 on the committed
-tree; the full gate battery is 128 passed, 0 failed (1462 assertions).
+Branch `0903-1`, PR #585, epic `24c98380`. **PUSHED** through `5216e20bb`; renet submodule
+through `6c85007` (PR rediacc/renet#110). `ci:quick` 294/294 on the committed tree. The
+operator is away, asked for full autonomy, no questions until they run `/ask`, CI reds
+first. STATE.md left UNCOMMITTED on purpose: pushing bookkeeping cancels the live cycle.
 
-**This file is intentionally left UNCOMMITTED.** Every STATE refresh used to be pushed, and
-each push cancels the in-flight cycle and restarts the clock on the one thing still
-blocking. Four cycles went that way. Commit it with the next real change.
+## The thing that would do real damage
+
+**Do NOT delete the three org secrets** (APP_PRIVATE_KEY, CLOUDFLARE_API_TOKEN,
+DOCKERHUB_TOKEN) even though `derive-shadow-pass-list.sh` prints them. It proves each has
+an equal Bitwarden twin -- necessary, NOT sufficient. 178 live `secrets.*` reads remain,
+and two findings say why this is not a substitution:
+
+1. **It is a REORDERING.** In every shadowed job `app-token` reads the key BEFORE the
+   bws-secrets fetch, because app-token is needed to check out the repo and the local
+   fetch action needs the repo checked out. Flipping in place hands it an EMPTY key. It
+   resolves only where the sparse cone already carries `.github/actions` + `.ci/config`,
+   so the fetch can move ahead of it. Proven on one job in `5216e20bb`.
+2. **Only 155 of 178 reads are reachable.** The other 23 are passed into REUSABLE
+   workflows through `secrets:` blocks, where env context does not exist. The called
+   workflow's jobs must fetch from Bitwarden before the caller's block can go. So a
+   complete flip still does not free the secrets -- that is a second wave.
 
 ## Where CI stands
 
-The cycle for `f1a1f55e1` is IN PROGRESS, watched by bg `b58ze2hbq`. **No cycle has been
-green yet on this branch;** thirteen distinct reds fixed so far.
+Cycle for `5216e20bb` watched by bg `biccb7uwp`. **No cycle green yet;** sixteen distinct
+reds fixed. That run is the proof of (1): it either mints an app token from the Bitwarden
+value or it does not, and the answer generalises to the other 72 job/name pairs. A
+CANCELLED run is usually SUPERSEDED -- read JOB conclusions, never the run's.
 
-A run shown CANCELLED is usually SUPERSEDED by a later push -- read the JOB conclusions,
-never the run's. A `--wait` worker printing `head-moved:` was overtaken by my own push and
-needs re-arming; that has happened four times.
+## Profiling wave 2 -- DONE, all six pieces (`#bc6a0b20` ticked)
 
-**The pattern to carry: the error named the wrong subject every single time.** Disbelieve
-the SUBJECT of a failure while believing its verdict, and look EARLIER in the job than the
-step that failed. Narrative: `docs/ci-overhaul/06-progress.md`, "Wave 3".
+`agent/PLAN-resprofile-wave2.md`. Landed: plain `python3` is recorded at last
+(`sitecustomize.py` on PYTHONPATH; before it, 3x `python3 -c pass` added zero records);
+the devbox builds `bashcov-sup`, which it had never had, so the container recorded no bash
+at all; `BASHCOV_SHAPE` from `$0` so `bash.jsonl` is attributable; run-delay PROBED not
+sysctl-read; the blocked share reads the tree not the supervisor (0% for 291/291 captures
+before, 80/54/10% on real gates now); per-thread states (the leader reads idle for 59/62
+ticks on go); and E7, which ABSTAINS on 678 pre-change captures rather than emit findings
+it cannot validate. The gate is still unseeded and report-only, deliberately.
 
 ## Live facts a fresh session would get wrong
 
-- **The battery asserts it leaves no mark on the tree** (`run-all.sh` snapshots tracked
-  files before/after). A gate test must work on a COPY; give the validator a path seam, as
-  `check-devcontainer-pin-freshness.ts` takes `DEVCONTAINER_DOCKERFILE`. That guard shipped
-  broken once: under `set -euo pipefail` a `grep` filtering everything out exits 1, so on a
-  CLEAN checkout it aborted the battery before its first line. CI's tree is always clean.
-- **Solution-page video players are DEFERRED on purpose**: those mounts carry
-  `data-click-to-load` and render a server-side poster, so `.tvp-root video` is absent
-  until clicked. Docs mounts still build immediately. A test asserting an immediate
-  solution-page player asserts the OLD contract.
-- **This checkout is UNSHALLOWED** (2466 commits) and must stay so; nothing may
-  `git fetch --depth` without first asking `git rev-parse --is-shallow-repository`.
-- **`ci:quick` runs 294 gates**; `check:ci-format-scope` and `gate-test:fetch-depth-safety`
-  are `slow: true`, so run those two directly when touching them.
-- **The push guard rejects a compound command containing `git push`** (it silently skips
-  `ci:quick`), so use two Bash calls. `git commit --amend` is hook-blocked.
-- **`devbox exec` splits args on whitespace**; **lockfile edits need `npx -y npm@10`** plus
-  `npm update <pkg> --package-lock-only` for an overrides change; **no IPv6 egress here**,
-  so use `curl -4` before judging a host unreachable.
-
-## Operator instructions being held
-
-- **"ignore pexels related"** -- the peer session that raised it was killed;
-  `private/growth` is untouched and the item is closed. Do not reopen it.
-- **GitHub `pr-N` deployments: BOTH halves DONE.** 25 empty environments deleted with
-  `.ci/scripts/housekeeping/cleanup-pr-environments.sh` (operator-run; CI can never hold
-  Administration:write), and `ci.yml`'s deploy-preview declares no `environment:`.
-  Cloudflare-side publish and cleanup were deliberately left alone.
+- `ci:quick` runs 294 gates. `check:lint`, `check:ci-format-scope`,
+  `gate-test:fetch-depth-safety` and `gate-test:workflow-pr-environment` are slow-lane, so
+  a max-lines overrun or a slow-gate tier can only surface in CI.
+- The battery asserts it leaves no tracked file modified; a gate test must work on a COPY.
+- Solution-page video players are DEFERRED behind a poster on purpose.
+- Hook-blocked: a compound command containing `git push`; `git commit --amend`; polling CI
+  with sleep+gh (use `ci-trace.py --wait`).
+- No IPv6 egress here -- `curl -4` before judging a host unreachable.
 
 ## Next action
 
-1. **`[?] #13d281a2` is the ONLY open item.** Run
-   `scripts/dev/derive-shadow-pass-list.sh --branch 0903-1` and execute exactly the
-   `gh secret delete` lines it prints -- four, unchanged across every re-derivation
-   (ACCOUNT_ED25519_PUBLIC_KEY, APP_PRIVATE_KEY, CLOUDFLARE_API_TOKEN, DOCKERHUB_TOKEN),
-   no more. The script refuses unless a passing compare exists, so it is safe to run now
-   and will say so if the green cycle has not landed.
-2. Do not push bookkeeping-only commits while a cycle is in flight.
+1. **`[?] #13d281a2` is the only open item.** Its DEFAULT is the work: continue the flip
+   file by file, each one moving the bws-secrets fetch ahead of its first consumer before
+   flipping that job's reads. 17 files, 72 job/name pairs remain. Delete nothing.
+2. If CI is red, read the failing JOB's log and look EARLIER in the job than the step that
+   failed -- sixteen for sixteen so far, the error named the wrong subject.

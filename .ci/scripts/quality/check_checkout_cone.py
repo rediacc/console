@@ -40,7 +40,13 @@ MIN_JOBS = 60
 
 # A path at the start of a command, or right after a pipe / && / ; / `then`.
 INVOKE = re.compile(
-    r"(?:^|\||&&|;|\bthen\b|\bdo\b|\bexec\b|\bbash\b|\bsh\b|\bsudo\b)\s*"
+    # INTERPRETERS COUNT, and leaving them out was a hole in this gate's first
+    # version: `python3 .ci/scripts/x.py` is every bit an invocation as `./x.sh`,
+    # and 3 of the repo's shadow-carrying steps invoke a checker exactly that way.
+    # A cone gate that only sees shell scripts is anchored to the paths its author
+    # expected rather than to the invocation sites that exist.
+    r"(?:^|\||&&|;|\bthen\b|\bdo\b|\bexec\b|\bbash\b|\bsh\b|\bsudo\b"
+    r"|\bpython3?\b|\bnode\b|\bnpx\b|\btsx\b|\bgo\s+run\b|\bruby\b)\s*"
     r"((?:\./)?(?:\.ci|scripts|\.github)/[\w./-]+\.(?:sh|py|cjs|mjs|js|ts))",
     re.MULTILINE,
 )
@@ -149,6 +155,12 @@ def selftest() -> int:
     check(
         "and after a pipe or &&",
         len(INVOKE.findall("true && .ci/scripts/a.sh | scripts/b.py")) == 2,
+    )
+    check(
+        "an INTERPRETER invocation counts (python3 x.py, node y.cjs, npx tsx z.ts)",
+        INVOKE.findall("python3 .ci/scripts/a.py") == [".ci/scripts/a.py"]
+        and INVOKE.findall("node scripts/b.cjs") == ["scripts/b.cjs"]
+        and INVOKE.findall("npx tsx scripts/c.ts") == ["scripts/c.ts"],
     )
     check(
         "CONTROL: a MENTION inside an echo is not an invocation",
