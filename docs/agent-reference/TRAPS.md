@@ -1944,3 +1944,42 @@ the defect the gate was written to catch, reintroduced inside the catcher.
 just the answer YES.** Two of the seven controls here assert non-matches, and
 they are the two that found this. Translate the glob explicitly instead of
 reaching for `fnmatch`: `**/` to `(?:.*/)?`, `**` to `.*`, `*` to `[^/]*`.
+
+## A lockfile regeneration reads the WORKING TREE, so it commits every other session's uncommitted manifest
+Trap-Id: lock-regen-eats-a-peers-uncommitted-manifest
+Enforced-By: JUDGMENT-ONLY
+Residue: `npm ci` may not notice. A range the lock records that is merely WIDER or NEWER than the committed one can still install, so the contradiction sits in the repository looking like a decision somebody made.
+
+Found 2026-09-03, by diffing a restored lockfile against the one already committed.
+
+This checkout is shared, and it usually holds other sessions' uncommitted work.
+`.claude/hooks/pre-bash/block-blanket-git-add.sh` exists precisely so a sweep
+cannot ship a peer's half-finished file. It guards `git add`. It cannot guard npm.
+
+`npm install --package-lock-only` resolves from the **working tree's**
+package.json files, not from HEAD. A peer had `packages/www/package.json` open with
+
+    -    "@astrojs/sitemap": "^3.7.3",
+    +    "@astrojs/sitemap": "^3.7.4",
+
+uncommitted. The regenerated lockfile recorded `"@astrojs/sitemap": "^3.7.4"` under
+`packages/www`, that lockfile was committed, and the committed `package.json` next
+to it still said `^3.7.3`. Half of someone else's change, in a commit about
+something entirely different, authored by someone who had never read it.
+
+It hides well. The resolved VERSION was the same either way, so no dependency
+appeared to move; the only trace was one line in a 300-line lockfile diff, in a
+`packages` entry rather than a `node_modules` one, and every gate stayed green.
+
+**Before committing a regenerated lockfile, diff it against one regenerated from
+HEAD's manifests**, not just against the previous lockfile:
+
+    git stash list                       # NOT the tool -- never stash a shared tree
+    git show HEAD:packages/x/package.json > packages/x/package.json   # transient
+    npx -y npm@10 install --package-lock-only --ignore-scripts
+    # ... then restore the peer's bytes from a copy taken FIRST, and md5 both ends
+
+The same hazard applies to anything that reads manifests off disk to produce a
+committed artifact: syncpack writes, generated dependency tables, embed manifests.
+The rule generalises to: **a generator that reads the working tree inherits the
+working tree's owners.**

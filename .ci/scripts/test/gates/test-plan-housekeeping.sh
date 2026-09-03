@@ -32,29 +32,43 @@ CFG="$REPO_ROOT/.ci/config/plan-lifecycle.json"
 # A fixture repo with N plans committed `days` ago, plus enough filler plans to
 # clear the floor. The filler is committed TODAY so it can never be the thing a
 # case is measuring.
-make_repo() { # <dir> <days-ago> <name...>
-    local d="$1" days="$2"
-    shift 2
-    mkdir -p "$d/agent"
-    git -C "$d" init -q
-    git -C "$d" config user.email t@example.com
-    git -C "$d" config user.name t
+# The filler corpus is IDENTICAL in every case -- 32 plans committed today, there
+# only to clear the gate's 30-plan floor -- so it is built once and copied. Doing
+# it per case cost a git init, 32 writes and a commit thirteen times over, and a
+# `python3` start each for the date. That is the whole reason this file measured
+# ~20s under a parallel lane and ~7s alone: nothing about it is inherently slow.
+TEMPLATE=""
+make_template() {
+    [[ -n "$TEMPLATE" ]] && return 0
+    TEMPLATE="$(mktemp -d)"
+    mkdir -p "$TEMPLATE/agent"
+    git -C "$TEMPLATE" init -q
+    git -C "$TEMPLATE" config user.email t@example.com
+    git -C "$TEMPLATE" config user.name t
     local i
     for i in $(seq 1 32); do
         printf 'Status: draft\n\n# filler %s\n\n- [ ] a task long enough to parse\n' "$i" \
-            >"$d/agent/PLAN-filler-$i.md"
+            >"$TEMPLATE/agent/PLAN-filler-$i.md"
     done
-    git -C "$d" add -A
-    git -C "$d" -c commit.gpgsign=false commit -qm filler
+    git -C "$TEMPLATE" add -A -- .
+    git -C "$TEMPLATE" -c commit.gpgsign=false commit -qm filler
+}
+trap '[[ -n "$TEMPLATE" ]] && rm -rf "$TEMPLATE"' EXIT
+
+make_repo() { # <dir> <days-ago> <name...>
+    local d="$1" days="$2"
+    shift 2
+    make_template
+    mkdir -p "$(dirname "$d")"
+    cp -r "$TEMPLATE" "$d"
     local n
     for n in "$@"; do
         printf 'Status: draft\n\n# %s\n\n- [ ] a task long enough to parse\n' "$n" >"$d/agent/$n"
     done
-    git -C "$d" add -A
+    git -C "$d" add -A -- .
+    # `date -d` rather than a python3 start per case; this runs 13 times.
     local when
-    when=$(python3 -c "
-import datetime as dt,sys
-print((dt.datetime.now(dt.UTC) - dt.timedelta(days=int(sys.argv[1]))).strftime('%Y-%m-%dT%H:%M:%S+0000'))" "$days")
+    when="$(date -u -d "$days days ago" +%Y-%m-%dT%H:%M:%S+0000)"
     GIT_AUTHOR_DATE="$when" GIT_COMMITTER_DATE="$when" \
         git -C "$d" -c commit.gpgsign=false commit -qm "aged plans"
 }

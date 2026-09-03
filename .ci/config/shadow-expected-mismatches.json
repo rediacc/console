@@ -44,5 +44,37 @@
       "found_in_run": "33704079162",
       "door": "operator-only"
     }
-  }
+  },
+  "$resolution": [
+    "WHAT THE OPERATOR ACTUALLY HAS TO DO, so this is not rediscovered.",
+    "",
+    "There is no command that reads a GitHub secret. They are write-only: `gh` can list",
+    "names and never contents. So no session can compare the two copies or repair either;",
+    "the comparison in CI is the ONLY place both values exist at once, and it sees them",
+    "as hashes. That is why all three carry door:operator-only rather than a plan.",
+    "",
+    "For each name below, decide which copy is authoritative and overwrite the other:",
+    "",
+    "  * If BITWARDEN is right (likeliest -- it is the migration target and was seeded",
+    "    deliberately): `gh secret set <GITHUB_NAME> --org rediacc` with the Bitwarden",
+    "    value. The shadow goes green on the next run and the entry here is deleted.",
+    "",
+    "  * If GITHUB is right: update the secret in the ci-shared Bitwarden project. Same",
+    "    outcome.",
+    "",
+    "Either way the LAST step is deleting that name's entry from this file, and the gate",
+    "makes that non-optional: an excused name that starts MATCHING fails its job until",
+    "the entry goes. Nothing here can be left tidy-looking but stale.",
+    "",
+    "ANTHROPIC_CLAUDE_CODE_OAUTH_TOKEN -- CHECK THIS ONE FIRST, it may explain itself.",
+    "GitHub calls it CLAUDE_CODE_OAUTH_TOKEN (see github-secret-preimage.json) while the",
+    "shadow name carries the ANTHROPIC_ prefix. A rotation applied under one name would",
+    "never have reached the other, which would make this drift a rotation that only half",
+    "landed rather than a seeding error -- and the fix is then simply to re-apply the",
+    "current token to whichever side is behind.",
+    "",
+    "ACCOUNT_SERVER_API_KEY and STRIPE_SANDBOX_WEBHOOK_SECRET have no such story; they",
+    "were found together in the same compare step (run 33691632299) and are most likely",
+    "two independent seedings that were never reconciled."
+  ]
 }

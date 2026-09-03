@@ -5248,6 +5248,12 @@ export const GATES: readonly GateSpec[] = [
   {
     id: 'gate-test:plan-housekeeping',
     run: '.ci/scripts/test/gates/test-plan-housekeeping.sh',
+    // 7.6s alone, ~20s in the pre-push lane, and the lane is what the tier is
+    // about. It drives the REAL gate against 13 fixture git repositories, so its
+    // cost is 13 process trees rather than anything it computes -- exactly the
+    // shape that stretches under 20x contention. It was already borderline
+    // (samples 19.9-23.0s) and a 13th case tipped it.
+    slow: true,
     gate: true,
     qualityGateTest: true,
     leaves: ['.ci/scripts/test/gates/test-plan-housekeeping.sh'],
