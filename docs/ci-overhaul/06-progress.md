@@ -6761,3 +6761,67 @@ expensive half — three of these were in gates written earlier in this same ses
 one of them, `gate-test:fetch-depth-safety`, managed to be vacuous and green at the same
 time on its first run. A gate being new is not evidence that it is right; a gate being
 green is not evidence that it ran.
+
+## Wave 4 — 2026-09-03 night: the gates started catching their own author
+
+Thirteen commits. The wave-3 lesson was that the instrument is usually right about
+THAT something is wrong and usually wrong about WHAT. This wave narrows it again, and
+less comfortably: **four of these defects were in gates written earlier the same
+night, and in three of them the gate's own control is what caught it.**
+
+### The class that runs through all of it: parts each correct, combination wrong
+
+`Stripe Sandbox` failed with `.ci/scripts/ci/shadow-compare.sh: No such file or
+directory`. Every individual fact was true — the sparse cone was well-formed, the
+script existed, the step was correctly written. Extracting an 18-line inline body
+into a script, which `check:ci-workflows` was right to demand, silently broke three
+jobs whose cone stopped at `.ci/config`. Nothing in the tree looked at combinations.
+
+`check:ci-checkout-cone` now does: it walks each job's steps in order, tracks the cone
+in effect, and asserts every repo-relative script a `run:` step INVOKES is inside it.
+359 invocation sites across 106 jobs. Its first version was blind to
+`python3 x.py` — a cone gate anchored to the paths its author expected, which is the
+same defect one level up — and its own controls caught `path.lstrip("./")` eating the
+leading dot, a trap this very file had recorded two hours earlier.
+
+### The guard that broke what it guarded
+
+`run-all.sh` gained a snapshot asserting the battery leaves no tracked file modified,
+after `test-devcontainer-pin-freshness.sh` was found rewriting the real
+`.devcontainer/Dockerfile` and reddening an unrelated gate. The snapshot then took the
+whole battery down in CI: under `set -euo pipefail` a `grep` that filters everything
+out exits 1, and `grep -v '^??'` finds nothing exactly when there are no MODIFIED
+tracked files — a clean checkout. It passed locally three times because a developer's
+tree is never clean. `check:ci-battery-clean-tree` exists so that cannot return.
+
+### Signals that reported numbers nobody could use
+
+- **Run-delay was reported dead and is not.** `avail.run_delay` came from
+  `kernel.sched_schedstats`, 0 on this kernel, while field 2 of
+  `/proc/<pid>/schedstat` is live regardless: two burners pinned to one core read
+  752ms where a third alone read 0. Read it on an IDLE process and it returns 0, which
+  looks exactly like the sysctl being right.
+- **The blocked share was 0% for 291 of 291 captures**, because `rank()` read the tree
+  ROOT — which under the supervisor IS the supervisor, parked waiting on its one
+  child. Reading the tree instead gives 80% for `check_format`, the highest-CPU gate.
+- **The leader thread lies about every threaded tool**: go reads `futex_do_wait` for
+  59 of 62 ticks while tree CPU climbs to 9,051.
+
+### What "every invocation is recorded" actually meant
+
+This file claimed it. Measured: three `python3 -c pass` calls added ZERO records,
+because coverage was "processes that import wl_core". The devbox recorded no bash at
+all — `bashcov-sup` was absent there and the env file skips silently. And
+`bash.jsonl`, 35 MB a day, had exactly one mention in the tree: its own writer.
+
+All three are closed, and the layer's retirement trigger — which could not fire,
+being evaluated after a return the unseeded baseline always takes — now can.
+
+### What a reader should take from this wave
+
+A gate is not exempt from the rule it enforces. Three of tonight's were caught by
+their own planted controls before CI ever saw them, and the two that reached CI
+(`max-lines`, the clean-tree abort) were both in slow-lane gates the fast lane
+defers by design. Write the control first, and prefer the resolver that reports
+MORE — `lstrip` for `removeprefix` was made twice tonight, and the direction that
+reports less would have been silent both times.
