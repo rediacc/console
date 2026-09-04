@@ -6943,3 +6943,95 @@ also deletes 73 comparator steps, 23 passthroughs and their `workflow_call`
 declarations. `retire-shadowed-secrets.py` writes that change out, applies nothing, and
 prints the `gh secret delete` lines rather than running them. Its inventory was
 cross-checked against the independent survey and agrees at 72 comparator reads.
+
+## Wave 6 — 2026-09-04: the gates started catching each other
+
+Fifteen commits, and the shape of the night changed. Wave 5's theme was reds with no
+commit behind them. This one's is **gates catching gates** — four times a gate written
+hours earlier refused the next change, and every refusal was correct.
+
+### The cutover finished, and finishing it changed the answer
+
+All four proven twins are flipped: `APP_PRIVATE_KEY`, `CLOUDFLARE_API_TOKEN`,
+`DOCKERHUB_TOKEN` and `ACCOUNT_ED25519_PUBLIC_KEY`. 89 `env.BWS_*` reads, each with its
+fetch above it in its own job. Then the retirement's reversible half ran — 73 comparator
+halves, 4 whole comparator steps, 23 passthroughs and their `workflow_call` declarations,
+across 16 files.
+
+**And that is when the tool was caught doing the thing it exists to prevent.** After the
+rewrite it printed `gh secret delete` for all three names, while TWO of them still had a
+live read: `breakpoint.yml:238` (that job hands a human a shell, so it deliberately never
+fetches from Bitwarden) and `watchdog-monitor.yml:139` (its fetch cannot move ahead of
+the monitor without `continue-on-error`, which is banned). Both survivals were designed.
+Printing a delete line for them was not. The tool now asks which names are free AFTER the
+rewrite and names file:line for the rest. **Only `DOCKERHUB_TOKEN` is deletable**, and the
+other two were one keystroke away.
+
+### Two gates disagreed, and I had written one of them
+
+Moving the watchdog's Bitwarden fetch ahead of its monitor needed `continue-on-error`.
+CHECK 6 of `check-workflow-gates.sh` accepted it **on exactly that property** — because I
+had just rewritten CHECK 6 to admit a step carrying `continue-on-error` plus a bounded
+`timeout-minutes`. Four minutes into CI, `check-workflows.sh` refused the same line:
+`continue-on-error` is banned outright.
+
+The ban wins, and not on seniority. The value at stake is the tier-1 classifier's token,
+and tier 1 returns HTTP 402 continuously — the workflow says so two lines below. Flipping
+a dead code path is not worth a policy exception, and `# security: approved` is a marker
+about fork exposure, not a general override to borrow. CHECK 6 keeps the property rule but
+now **says the door is closed here**, so the next reader does not find two gates telling
+opposite stories.
+
+### `check:ci-enumeration-vacuity`, and the rebuttal that was too narrow
+
+The stop-gate judge asked for a gate; I rebutted that "every string constant needs a
+zero-match refusal" would false-positive on sentinels and fixtures. True — and beside the
+point, because the property it named was about the **call site**: a scan that returns zero
+and is then used as if it succeeded. Stated that way it is gateable, and it is the most
+common way a gate here has gone blind — four times, each found by hand, each invisible to
+the others.
+
+Seeded shrink-only at 47 unguarded enumerating checks out of 367 scanned. A wall of 47 is
+a gate somebody disables.
+
+### `check:ci-environment-names`, and the gate that cannot exist
+
+The judge then asked for a gate comparing `/deployments` records against live
+environments. That one **cannot exist**: orphaned records for retired environments are
+GitHub history, no commit clears them, and clearing them means deleting production
+deployment history. A gate on it is red forever on a condition the repo cannot satisfy.
+
+The gateable property is recurrence. A job-level `environment:` creates an object
+`Administration:write` is needed to delete — a permission the CI App is deliberately
+forbidden. 25 `pr-*` environments with zero deployments had accumulated before the block
+was removed BY HAND, leaving a comment where a gate belonged. The plant is that exact
+block restored to that exact job.
+
+### The npm-pin gate missed the biggest population, and CI found it
+
+`check:ci-docker-npm-pins` shipped scanning **Dockerfiles only**, caught three unpinned
+installs there, and reported clean while `ci-quality.yml` ran `npm install -g
+agent-browser@latest` on every run of the tutorial-player gate. Scoping a gate by FILE
+TYPE rather than by the thing it forbids left the largest population of `npm install -g`
+lines unscanned. Widening it cost three bugs, each caught by a control: a bare `npm
+install` means something different in a workflow (a checkout carries the lockfile), the
+matcher missed `run: npm install …` without an `&&`, and `--prefix private/account` was
+read as an unpinned package.
+
+### What the devbox was telling us was a lie
+
+The tutorial-player gate failed in CI. Probing it locally "reproduced" three failures —
+which turned out to be the devbox's **agent-browser pinned at 0.26.0** against CI's
+0.36.0, ten minors apart. The local failures were the pin talking. Worse, the version
+could not be overridden for an experiment: `run.sh devbox exec` uses `bash -lc`, and the
+login shell re-sources the profile AFTER any PATH the caller exports, so `command -v`
+resolved to the image's copy however PATH was set. Both are fixed at the declaration, and
+the consequence is now documented where a caller will look.
+
+### Two re-run forms that cannot answer
+
+`gh run rerun --job` re-ran only `CI Complete`, which read the STALE
+`RESULT_QUALITY: cancelled` from attempt 1. `gh run rerun --failed` re-ran everything
+else to success and **still** could not reset a cancelled reusable-workflow CALLER, so
+the aggregator re-read the same stale scalar on all three attempts. Only a push produces
+a fresh Quality result. Neither form is worth trying again on that shape.
