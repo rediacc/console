@@ -3,6 +3,8 @@
 # step: www build token
 # needs: none
 # lane: quality-code
+# why: every www build must pass github.token. Found and fixed by hand at two of
+#      three call sites, twice, before the third reddened job 99839065246
 # ---- end gate ----
 
 # Every www build in CI must pass GITHUB_TOKEN. All of them, not most of them.

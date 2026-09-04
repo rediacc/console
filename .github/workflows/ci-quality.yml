@@ -202,10 +202,6 @@ jobs:
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: .ci/scripts/quality/check-mutate-check.sh
 
-      - name: Shell format
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: .ci/scripts/security/shfmt.sh
-
       - name: Python lint + format (ruff)
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: .ci/scripts/quality/check-python-lint.sh
@@ -972,12 +968,6 @@ jobs:
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: npm run check:ci-enumeration-vacuity
 
-      # The binder's own check, and it declares itself through the same header it
-      # reads -- so the first thing it verifies is that IT is registered correctly.
-      - name: Gate binding
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: npm run check:ci-gate-bind
-
       - name: Format
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: npm run check:format
@@ -1003,11 +993,6 @@ jobs:
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: npm run check:ci-account-layer-isolation
 
-      # knip's own ignore entries are BLOCKER-gated.
-      - name: knip BLOCKER reasons
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: npm run check:ci-knip-blockers
-
       # Bash had no dead-code detector at all; this is the analogue of the knip
       # run above. It is a `tsx` gate (needs node_modules, CI died with
       # `tsx: not found`, exit 127) and its corpus includes private/**, so
@@ -1019,33 +1004,6 @@ jobs:
       # Before TypeScript, not after: this asserts the chain below actually POINTS at
       # every tsconfig in the repo. A project nobody runs cannot fail, so a green
       # TypeScript step says nothing about it.
-      # The Nth copy of a shape. SEEDED at scripts/data/shape-duplication-seed.json, so
-      # the 219-span standing backlog is silent and only a NEW shape reaching 3 copies
-      # reports. Draining that backlog is separate, measured work.
-      # Every www build must pass github.token. Found and fixed by hand at two of
-      # three call sites, twice, before the third reddened job 99839065246.
-      # A calibrated rubric may not change without being re-calibrated. Editing one
-      # is cheap and silent; re-calibrating costs 14 live model calls.
-      - name: Rubric calibration
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: npm run check:ci-rubric-calibration
-
-      - name: www build token
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: npm run check:ci-www-build-token
-
-      - name: Fetch retry
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: npm run check:ci-fetch-retry
-
-      - name: Judged rule wiring
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: npm run check:ci-judged-rule-wiring
-
-      - name: Review prompt render
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: npm run check:ci-review-prompt-render
-
       - name: Typecheck scope coverage
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: npm run check:ci-typecheck-scope-coverage

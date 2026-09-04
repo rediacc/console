@@ -21,7 +21,8 @@
  * needs: node
  * selftest: true
  * why: four hand-written registrations per gate, each with a convention that only
- *      announces itself as a red gate
+ *      announces itself as a red gate. The binder declares itself through the same
+ *      header it reads, so the first thing it verifies is that IT is registered right
  * ---- end gate ----
  */
 import { execFileSync } from 'node:child_process';
@@ -68,6 +69,57 @@ const tracked = (): string[] =>
   execFileSync('git', ['-C', ROOT, 'ls-files', '.ci/scripts', 'scripts'], { encoding: 'utf-8' })
     .split('\n')
     .filter((f) => f !== '' && SUBJECT.test(f) && !NOT_SUBJECT.test(f));
+
+/** One extraction attempt: every guard, no I/O decision. `next` is null when refused. */
+export function planExtract(
+  manifestText: string,
+  id: string,
+  readFile: (f: string) => string,
+  pkgRun: string,
+  caps: ReturnType<typeof laneCapabilities>,
+  strip: boolean
+): { file: string; next: string; step: string; job: string } | { error: string } {
+  const reg = registered(manifestText, id);
+  if ('error' in reg) return { error: reg.error };
+  if (!inScope(reg.file)) {
+    return {
+      error: `${reg.file} is outside the scan (.ci/scripts, scripts); stays hand-registered`,
+    };
+  }
+  const sharers = (
+    manifestText.match(
+      new RegExp(`step: '${reg.step.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}'`, 'g')
+    ) ?? []
+  ).length;
+  if (sharers > 1) {
+    return { error: `step "${reg.step}" is shared by ${sharers} entries; no one gate owns it` };
+  }
+  reg.run = pkgRun;
+  let src: string;
+  try {
+    src = readFile(reg.file);
+  } catch {
+    return { error: `${reg.file} could not be read` };
+  }
+  if (strip) src = stripHeader(src);
+  const needs = inferredNeeds(src);
+  const placed = placeGate(caps, needs);
+  const pinLane = !('lane' in placed) || placed.lane !== reg.job;
+  const next = insertHeader(reg.file, src, headerLines(reg, needs, pinLane, id));
+  if (typeof next !== 'string') return { error: `${reg.file}: ${next.error}` };
+  const rb = bind(reg.file, next);
+  const runOk = reg.run === '' || rb?.run === reg.run;
+  if (rb === null || rb.id !== id || rb.step !== reg.step || !runOk) {
+    const got = rb === null ? 'nothing' : `${rb.id} / "${rb.step}" / ${rb.run}`;
+    return { error: `${reg.file}: header re-derives ${got}, not ${id} / "${reg.step}"` };
+  }
+  return { file: reg.file, next, step: reg.step, job: reg.job };
+}
+
+/** Every gate id the manifest declares, in file order. */
+export const manifestIds = (manifestText: string): string[] => [
+  ...new Set((manifestText.match(/id: '([^']+)'/g) ?? []).map((m) => m.slice(5, -1))),
+];
 
 /** The paths this gate reads, so `--extract` can refuse to write outside them. */
 export const inScope = (f: string): boolean =>
@@ -121,6 +173,24 @@ export function regionAfterSetup(workflow: string, job: string): boolean {
   );
   if (setup === -1 || region === -1) return true;
   return region > setup;
+}
+
+/**
+ * How many times does this step name appear in this job?
+ *
+ * A gate that becomes DECLARED gets its step emitted inside the lane's region -- but its
+ * original hand-written step is still sitting further down the same job. `stepInJob` only
+ * asks whether the step EXISTS, so both copies pass it, and the gate then runs twice per
+ * CI job: silent, green, and paid for on every run. With 174 gates extractable in one
+ * command, this is the difference between a migration and 174 duplicated steps.
+ */
+export function stepCountInJob(workflow: string, job: string, step: string): number {
+  const lines = workflow.split('\n');
+  const j = lines.findIndex((l) => l.trim() === `${job}:`);
+  if (j === -1) return 0;
+  const nextJob = lines.findIndex((l, i) => i > j && /^  [a-z][a-z0-9-]*:$/.test(l));
+  const end = nextJob === -1 ? lines.length : nextJob;
+  return lines.slice(j, end).filter((l) => l.trim() === `- name: ${step}`).length;
 }
 
 export function stepInJob(workflow: string, job: string, step: string): boolean {
@@ -607,6 +677,27 @@ function selftest(): number {
       '        run: x.py'
     )
   );
+  const DUP = [
+    '  a:',
+    '    steps:',
+    '      - name: X',
+    '        run: x',
+    '      - name: X',
+    '        run: x',
+    '',
+  ].join('\n');
+  ck(
+    'two steps of the same name in one job are counted as two',
+    stepCountInJob(DUP, 'a', 'X') === 2
+  );
+  ck(
+    'CONTROL: one is one, so an ordinary emitted step is not accused',
+    stepCountInJob('  a:\n    steps:\n      - name: X\n        run: x\n', 'a', 'X') === 1
+  );
+  ck(
+    'CONTROL: a duplicate in a DIFFERENT job is not this job’s problem',
+    stepCountInJob(`${DUP.replace('  a:', '  b:')}`, 'a', 'X') === 0
+  );
   ck('a gate under scripts/ is in scope', inScope('scripts/check-deps.ts'));
   ck(
     'CONTROL: packages/cli/scripts is NOT -- a header there is never read',
@@ -670,6 +761,53 @@ function main(argv: string[]): void {
     const n = selftest();
     console.log(`${n === 0 ? '✓' : '✗'} gate-bind selftest: ${n} failure(s)`);
     process.exit(n === 0 ? 0 : 1);
+  }
+
+  // --extract-all: one process for the whole manifest.
+  //
+  // WHY THIS EXISTS AS A MODE RATHER THAN A SHELL LOOP. Extracting 20 gates with
+  // `for id in ...; do npx tsx gate-bind.ts --extract $id; done` cost ~40s, and about
+  // 38 of those were node and tsx starting up 20 times. The scan itself is ~1s over 603
+  // files. Batching removes the only cost that mattered; nothing here is CPU-bound
+  // enough for workers to beat one pass.
+  if (argv.includes('--extract-all')) {
+    const dry = argv.includes('--dry-run');
+    const manifestText = read('scripts/ci-runner/manifest.ts');
+    const pkg = (JSON.parse(read('package.json')) as { scripts: Record<string, string> }).scripts;
+    const caps = laneCapabilities(read(WORKFLOW));
+    const done: string[] = [];
+    const refused = new Map<string, string[]>();
+    for (const id of manifestIds(manifestText)) {
+      const plan = planExtract(manifestText, id, read, pkg[id] ?? '', caps, false);
+      if ('error' in plan) {
+        // Grouped by REASON, not listed per gate: ~200 refusals of four shapes is a
+        // wall, and a wall is what stops anyone reading the handful that matter.
+        const key = plan.error.includes('is shared by')
+          ? 'shares a step with other gates (sub-gate of an aggregate)'
+          : plan.error.includes('outside the scan')
+            ? 'outside .ci/scripts and scripts'
+            : plan.error.includes('already declares')
+              ? 'already declares a header'
+              : plan.error.includes('re-derives')
+                ? 'registration does not round-trip from the path'
+                : 'other';
+        refused.set(key, [...(refused.get(key) ?? []), id]);
+        continue;
+      }
+      if (!dry) fs.writeFileSync(path.join(ROOT, plan.file), plan.next);
+      done.push(`${id} -> ${plan.job} / "${plan.step}"`);
+    }
+    console.log(`${dry ? 'would extract' : 'extracted'}: ${done.length}`);
+    for (const line of done) console.log(`    ${line}`);
+    console.log(`refused: ${[...refused.values()].reduce((a, b) => a + b.length, 0)}`);
+    for (const [why, ids] of [...refused].sort((a, b) => b[1].length - a[1].length)) {
+      console.log(`    ${String(ids.length).padStart(4)}  ${why}`);
+    }
+    if (!dry && done.length > 0) {
+      console.log('\nNow run `--write`, and place a `# >>> gate-bind` region in any lane');
+      console.log('that has none. Then re-run with no flags to verify every binding.');
+    }
+    process.exit(0);
   }
 
   const rbAt = argv.indexOf('--rebind');
@@ -840,6 +978,13 @@ function main(argv: string[]): void {
       problems.push(
         `${b.file}: job '${job}' has its \`# >>> gate-bind\` region ABOVE its \`- id: setup\` ` +
           "step, so every emitted step's `steps.setup.outcome` guard is empty and they all skip"
+      );
+    }
+    const copies = stepCountInJob(workflow, job, b.step);
+    if (copies > 1) {
+      problems.push(
+        `${b.file}: job '${job}' has ${copies} steps named "${b.step}" -- the emitted one ` +
+          'and a hand-written leftover. Delete the hand-written copy; the region owns it now.'
       );
     }
     if (!stepInJob(workflow, job, b.step)) {

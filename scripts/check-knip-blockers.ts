@@ -21,6 +21,7 @@
  * ---- gate ----
  * step: knip BLOCKER reasons
  * needs: node
+// why: knip's own ignore entries are BLOCKER-gated
  * ---- end gate ----
  */
 
