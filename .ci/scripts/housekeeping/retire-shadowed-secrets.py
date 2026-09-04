@@ -192,6 +192,12 @@ def selftest() -> int:
     got2, ch2 = retire_in_text(live, {"DROP_ME"})
     check("CONTROL: a live consumer read is left alone", got2 == live and not ch2, ch2)
 
+    # NO LIVE-TREE ASSERTION HERE, deliberately, and the first draft had one. A
+    # selftest proves the INSTRUMENT on planted text; whether the anchor still matches
+    # the real tree is a fact about the tree, and main() owns that verdict. With both,
+    # a renamed step exited 2 with "control failed" and never reached the message that
+    # explains what actually happened -- one check made the clearer one unreachable.
+
     # A caller's passthrough goes; a same-shaped line NOT under `secrets:` does not.
     call = (
         "jobs:\n"
@@ -230,6 +236,29 @@ def main(argv: list[str]) -> int:
         print(__doc__, file=sys.stderr)
         return 1
 
+    # THE ANCHOR, CHECKED BEFORE THE VERDICT. Every edit this tool makes is found by
+    # matching one literal step name, so a rename of that step turns the whole tool
+    # into a silent no-op -- and its own --selftest would keep passing, because that
+    # runs against planted fixtures rather than the tree.
+    #
+    # This is the difference between "already retired" and "I can no longer see the
+    # thing I edit", which the report used to collapse into one ambiguous line. The
+    # operator runs this against production secrets; the two answers must not look
+    # alike.
+    anchors = sum(
+        1 for f in files() if COMPARE_STEP in f.read_text(encoding="utf-8", errors="replace")
+    )
+    if anchors == 0:
+        print(
+            "✗ CANNOT PROCEED: no file carries a step named %r.\n"
+            "  Every edit below is found by that literal, so a rename makes this tool\n"
+            "  edit nothing while reporting success. Either the cutover is fully retired\n"
+            "  (in which case delete this script) or the step was renamed and COMPARE_STEP\n"
+            "  needs updating." % COMPARE_STEP,
+            file=sys.stderr,
+        )
+        return 1
+
     touched = 0
     for f in files():
         text = f.read_text(encoding="utf-8")
@@ -243,7 +272,12 @@ def main(argv: list[str]) -> int:
         if apply:
             f.write_text(new, encoding="utf-8")
     if not touched:
-        print("nothing references %s as scaffolding; already retired?" % ", ".join(sorted(names)))
+        print(
+            "nothing references %s as scaffolding, though %d file(s) still carry the\n"
+            "comparator step -- so these three names are already retired and the others\n"
+            "are not. That is a clean answer, not a broken scan."
+            % (", ".join(sorted(names)), anchors)
+        )
         return 1
 
     print("\n%s %d file(s)." % ("REWROTE" if apply else "WOULD REWRITE", touched))
