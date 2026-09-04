@@ -9,6 +9,15 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# nfpm IS FETCHED BY THIS SCRIPT, not by the job that calls it. Both workflows
+# used to install it inline, so on a developer machine or inside the devbox this
+# test died in phase 1 with nothing built and no explanation. The pin lives in
+# .ci/config/constants.sh and ensure-nfpm.sh is its only reader.
+if ! command -v nfpm >/dev/null 2>&1; then
+    PATH="$("$SCRIPT_DIR/../build/ensure-nfpm.sh"):$PATH"
+    export PATH
+fi
 source "$SCRIPT_DIR/../lib/common.sh"
 source "$SCRIPT_DIR/../../config/constants.sh"
 

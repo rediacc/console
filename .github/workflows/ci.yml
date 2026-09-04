@@ -855,15 +855,8 @@ jobs:
 
       - name: Install packaging tools
         run: |
-          sudo apt-get update -qq && sudo apt-get install -y -qq createrepo-c
-          source .ci/config/constants.sh
-          TARBALL="nfpm_${NFPM_VERSION}_Linux_x86_64.tar.gz"
-          curl -sfL -o "$TARBALL" \
-            "https://github.com/goreleaser/nfpm/releases/download/v${NFPM_VERSION}/${TARBALL}"
-          # Verify BEFORE extracting: this used to pipe straight into `sudo tar`.
-          echo "${NFPM_SHA256_LINUX_X86_64}  ${TARBALL}" | sha256sum -c -
-          sudo tar xzf "$TARBALL" -C /usr/local/bin nfpm
-          rm -f "$TARBALL"
+          sudo apt-get update -qq && sudo apt-get install -y -qq createrepo-c rpm
+          .ci/scripts/build/ensure-nfpm.sh >>"$GITHUB_PATH"
 
       - name: Run Linux package tests
         run: .ci/scripts/test/test-linux-packages.sh

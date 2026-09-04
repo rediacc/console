@@ -335,6 +335,27 @@ RUN apt-get update && \
     rm -rf /var/lib/apt/lists/*
 
 # =============================================================================
+# Linux packaging toolchain
+# =============================================================================
+# WHY THESE ARE IN THE IMAGE. .ci/scripts/test/test-linux-packages.sh is a CI
+# gate that builds .deb/.rpm/.apk/.pkg.tar.zst packages and a signed apt/rpm
+# repository. Measured 2026-09-04: neither the host nor this image carried `rpm`
+# or `createrepo_c`, so the gate could not complete ANYWHERE off a GitHub
+# runner -- and block-host-toolchain-run.sh, whose whole job is routing such a
+# command into this container, cannot route to a container that lacks the tool
+# either. The gate is CI's, so the toolchain that decides its verdict belongs
+# where a session can run it.
+#
+# Distro packages, deliberately unpinned like the playwright deps above: they
+# come from Ubuntu's pool, not a release page, and nothing in this repo encodes
+# a version of them. nfpm is the opposite case and is NOT here -- it is pinned
+# with a checksum in .ci/config/constants.sh and installed by
+# .ci/scripts/build/ensure-nfpm.sh, which keeps that pin a single site.
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends rpm createrepo-c && \
+    rm -rf /var/lib/apt/lists/*
+
+# =============================================================================
 # Global npm tools
 # =============================================================================
 # PINNED, and the pin is not bureaucracy. This line read `npm install -g
