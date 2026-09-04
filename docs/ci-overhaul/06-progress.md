@@ -7035,3 +7035,83 @@ the consequence is now documented where a caller will look.
 else to success and **still** could not reset a cancelled reusable-workflow CALLER, so
 the aggregator re-read the same stale scalar on all three attempts. Only a push produces
 a fresh Quality result. Neither form is worth trying again on that shape.
+
+## Wave 7 — 2026-09-04: the binder, and a babysit whose reds were all about dates and quoting
+
+Two threads landed on `0903-1` after wave 6 without a progress entry, and this one
+records both: the gate BINDER built by session 74de73ca (eleven commits, 74b926351 to
+76a82a60a) and the babysit rounds that took PR #585 from its first red to green
+(session 472cf53d, a78ad9e36 onward). Its `agent/74de73ca/STATE.md` carries the binder's
+own next actions; the commit bodies carry the evidence and are not repeated here.
+
+### The binder: four registrations derived from one header
+
+Every gate needed four hand-written registrations — the package.json key, the manifest
+entry, the workflow step, and the silent fourth, its JOB — and a wrong job was invisible
+until CI (check:ci-docker-npm-pins in a lane with no submodules, job 100870135489). The
+binder makes them generate-and-check from a `---- gate ----` header in the gate's own
+file:
+
+- `scripts/lib/gate-header.ts` (74b926351) parses the header and derives id, run command
+  and needs by convention; `stripProse` drops docstrings and comments before inferring
+  needs, because a gate that merely MENTIONED `private/account/Dockerfile` in its prose
+  was pushed out of the slim lane.
+- `scripts/ci-runner/lanes.ts` (666d409f3) derives lane capabilities by READING
+  `ci-quality.yml`; only the cost order is declared. It committed the bug it prevents
+  while being written — it matched `PyYAML` and `setup-go` in comments — and the test
+  pins that case both ways.
+- `scripts/gate-bind.ts` `--check` (9c9b1935d, = `check:ci-gate-bind`) found a real
+  mis-placement on its first run; `--write` (5eea0af11) emits the workflow step into a
+  `# >>> gate-bind` region, and the round trip is the proof: byte-identical on a correct
+  tree, a hand-mangled step caught and repaired.
+- `--extract`/`--rebind` (e98689233, 1e8026bdb) lift hand-registered gates into headers
+  and refuse unless the emitted header re-derives the registration it came from; 2
+  declared gates became 13. `--extract-all` (8faba232c) plans all 174 eligible gates in
+  1.26s in one process — a shell loop had spent 38 of its 40 seconds starting node — and
+  exposed 8 duplicate workflow steps.
+- Alongside: `check:ci-allowlist-key-matching` gates the MATCHER (`==`, never `in`), not
+  the key shape (332a98af6); check B's settle poll is scoped to the delta paths
+  (8910403c5); the judge got a log, a streak counter that counts ITS answers rather than
+  every block in the battery, and one question per stop (1269d8aad); and a trap for "a
+  gate that fails once inside ci:quick is not automatically a flake" (76a82a60a).
+
+**Two commits shipped almost empty** (332a98af6, 8910403c5): a PreToolUse hook rejected
+the combined `git add … && git commit`, the add never ran, and the retries committed
+whatever was staged. e98689233 carries their content. Staging is its own tool call now.
+
+### The babysit: four rounds, none of them about the wave's code
+
+- **Round 1, knip.** Three exports nobody imported: `LANE_ORDER`, `readWorkflow`,
+  `stripProse`. `LANE_ORDER`'s only consumer was the tsx heredoc in
+  `test-gate-lanes.sh`, which knip cannot see; rather than excuse it in knip.jsonc the
+  constant is private and the test asserts completeness through `placeGate`, which
+  refuses when any entry is absent (a78ad9e36).
+- **Found on the way: `devbox exec` ate its arguments.** `devbox_exec` joined argv with
+  `$*` and re-parsed it in a login shell, so `devbox exec -- bash -c 'npm run -s
+  check:ci-shell-lint'` ran `bash -c npm`: npm printed its usage, the gate never ran, and
+  the exit code was npm's. The in-file probes pass ONE string that is already shell
+  syntax and keep that shape; a multi-argument call is re-quoted with `printf %q`
+  (020ac616b).
+- **Round 2, a calendar bomb.** `Quality / Security` — the CANCELLED sibling of round
+  1's run, so it first reported a round late — failed two `test-report-inbox.sh`
+  assertions with an empty change window. The fixture's constant
+  `2026-08-05T10:00:00.500Z` had aged past `RETENTION_DAYS=30` that morning, and `scan()`
+  prunes in the same call that captures, so the body was gone before the test read it.
+  Stamps are relative now (ba15aece0); TRAPS.md carries
+  `absolute-date-fixture-crosses-retention-window` and `TRAP_FLOOR` moved 71 → 72 by the
+  registry's own ratchet (230731443).
+- **Two guards disagreed about the PR body.** `block-raw-pr-body-edit.sh` prescribed
+  `gh pr edit --body-file`; `block-adhoc-sanctioned.sh` refuses exactly that (measured on
+  #574: exit 1 on the deprecated projectCards field, body unchanged) and prescribes
+  `gh api …/pulls/<n> -X PATCH -F body=@<file>` — which replaces the whole body just the
+  same and had NO marker check. The raw-body guard now has a PATCH arm under the edit
+  arm's rule (every generated marker visible, unreadable body refused, a path behind a
+  shell variable counts as unreadable), one shared refusal that names the PATCH form
+  with a literal path, and ten harness cases (7a69a89e6). The pr-epics skill doc says
+  the same thing, so the two doors finally agree.
+
+The pattern across the babysit: the run's first red hides the second (knip stood in
+front of the calendar bomb for a full round), and the instruments that misled were
+each answering a different question than the one asked — `devbox exec` reported npm's
+exit code, `--show` reported a body pruned by the test's own date, and a guard's
+message pointed at a command another guard refuses.
