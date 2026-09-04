@@ -121,25 +121,34 @@ function selftest(): void {
   }
   console.log('  PASS  CONTROL: an emission inside the shared builder is allowed');
 
-  // THE PLANT: the exact defect, a second rebuild path of its own.
-  const planted = path.join(tmp, 'planted.py');
-  fs.writeFileSync(
-    planted,
-    [
-      'def some_other_rebuild(fold):',
-      '    out = []',
-      '    for r in fold.items:',
-      '        out.append({"ev": "lease", "id": r["id"]})',
-      '    return out',
-      '',
-    ].join('\n')
-  );
-  const found = scan([planted]);
-  if (found.length !== 1 || found[0]?.fn !== 'some_other_rebuild' || found[0]?.ev !== 'lease') {
-    console.error(`  FAIL  the planted second builder was NOT caught: ${JSON.stringify(found)}`);
-    process.exit(1);
+  // EVERY DECLARED VARIANT, not a sample. The plant is the exact defect -- a
+  // second rebuild path of its own -- but running it for `lease` alone leaves
+  // the rest of STATEFUL untested, and a kind added to that set later would
+  // arrive with no control. The set is the test plan.
+  for (const kind of STATEFUL) {
+    const planted = path.join(tmp, `planted-${kind}.py`);
+    fs.writeFileSync(
+      planted,
+      [
+        'def some_other_rebuild(fold):',
+        '    out = []',
+        '    for r in fold.items:',
+        `        out.append({"ev": "${kind}", "id": r["id"]})`,
+        '    return out',
+        '',
+      ].join('\n')
+    );
+    const found = scan([planted]);
+    if (found.length !== 1 || found[0]?.fn !== 'some_other_rebuild' || found[0]?.ev !== kind) {
+      console.error(
+        `  FAIL  the planted "${kind}" builder was NOT caught: ${JSON.stringify(found)}`
+      );
+      process.exit(1);
+    }
   }
-  console.log('  PASS  a second hand-rolled builder is caught, and named');
+  console.log(
+    `  PASS  a second hand-rolled builder is caught for all ${STATEFUL.size} stateful kind(s)`
+  );
 
   // A non-stateful event must not be policed: over-blocking teaches people to
   // route around the gate, which is how a guard dies.

@@ -22,6 +22,30 @@
 # live session idle, and migrated it. Every case below depends on this.
 wlcli() { TMPDIR="$BASE/tmp" CLAUDE_PROJECT_DIR="$BASE/proj" python3 "$HOOK" "$@"; }
 
+# Age EVERY event in the store, and the peer's .lastevent with it. A case that
+# leases or defers as the peer writes a FRESH event, which makes liveness say
+# "wrote to the store 0 min ago" -- correctly, that is a session still acting --
+# and the migration is then refused. Re-age after such a write to model a peer
+# that has since stopped.
+age_store() { # age_store <prefix> [minutes-old]
+    local pfx="$1" mins="${2:-180}"
+    python3 - "$WORKLIST_STORE_DIR" "$mins" <<'PYEOF'
+import datetime, json, pathlib, sys
+d = pathlib.Path(sys.argv[1])
+old = (datetime.datetime.now(datetime.timezone.utc)
+       - datetime.timedelta(minutes=int(sys.argv[2]))).strftime("%Y-%m-%dT%H:%M:%SZ")
+for f in d.glob("*.jsonl"):
+    lines = [json.dumps({**json.loads(l), "at": old}, separators=(",", ":"))
+             for l in f.read_text().splitlines() if l.strip()]
+    f.write_text("\n".join(lines) + "\n")
+PYEOF
+    : >"${WL%.md}.lastevent-${pfx:0:8}.json"
+    python3 - "${WL%.md}.lastevent-${pfx:0:8}.json" "$mins" <<'PYEOF'
+import os, sys, time
+os.utime(sys.argv[1], (time.time() - int(sys.argv[2]) * 60,) * 2)
+PYEOF
+}
+
 mig_peer() { # mig_peer <prefix> <text> [minutes-old]
     local pfx="$1" text="$2" mins="${3:-180}"
     WORKLIST_SESSION_ID="$pfx" wlcli --add "$pfx" "$text" >/dev/null 2>&1
@@ -183,6 +207,7 @@ mig_peer leasesess "(leasesess) leased to a worker that died with its session"
 ITEM="$(wlcli --list 2>/dev/null | grep 'leased to a worker' | grep -o '#[0-9a-f]\{8,\}' | head -1 | tr -d '#')"
 [[ -n "$ITEM" ]] || echo "  FAIL: could not find the peer's item to lease"
 WORKLIST_SESSION_ID=leasesess wlcli --lease leasesess "$ITEM" +60 worker:ghost1 "held" >/dev/null 2>&1
+age_store leasesess # the lease above was a FRESH write; the peer must read as stopped
 mig leasesess >/dev/null
 if wlcli --list --open deadbeef 2>/dev/null | grep -q '\[ \].*leased to a worker'; then
     echo "  PASS: the lease is reset, so the liveness ladder can ask about it again"
@@ -201,6 +226,7 @@ ITEM="$(wlcli --list 2>/dev/null | grep 'a question for the operator' | grep -o 
 [[ -n "$ITEM" ]] || echo "  FAIL: could not find the peer's item to defer"
 WORKLIST_SESSION_ID=defersess wlcli --defer defersess "$ITEM" \
     "which branch? DEFAULT: use main WHY: it is the base HOW: rerun the gate" >/dev/null 2>&1
+age_store defersess # same reason as the lease case above
 mig defersess >/dev/null
 # The window is measured from `upd`. Carried, the item is already ~180 min old
 # (mig_peer aged it) and its default is due; restarted, it would read as fresh.
@@ -347,5 +373,56 @@ if [[ "$N" -eq 3 ]]; then
     PASS=$((PASS + 1))
 else
     echo "  FAIL: compaction lost items (found $N of 3)"
+    FAIL=$((FAIL + 1))
+fi
+
+echo "== 202. THE TIED CASE: same second, and file order contradicts write order =="
+setup
+say "done for now"
+brief_now
+# `at` has SECOND resolution, so a judge reopen and a session tick inside one
+# second TIE. Sorting on `at` alone left the tie to file-glob order, and a
+# ticked item came back OPEN (case 150 caught it live). The nanosecond sequence
+# is what restores real write order -- and the file names below deliberately
+# contradict it, so a sort that ignored `ns` would get this backwards.
+python3 - "$WORKLIST_STORE_DIR" <<'PYEOF'
+import datetime, json, pathlib, sys, time
+d = pathlib.Path(sys.argv[1])
+# ONE second for both events, on purpose -- but DERIVED, not a literal. What the
+# case needs is that the two stamps are equal, not that they name a fixed day,
+# and a literal here would age exactly as the two fixtures did earlier in this
+# wave (a retention window, then a fold order).
+at = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+later = time.time_ns()
+(d / "zzz.jsonl").write_text(
+    json.dumps({"ev": "add", "id": "tiecase001", "at": at, "ns": later - 1000,
+                "by": "deadbeef", "s": " ", "o": "deadbeef",
+                "t": "(deadbeef) written first, in the name-LATER file"}) + "\n")
+(d / "aaa.jsonl").write_text(
+    json.dumps({"ev": "state", "id": "tiecase001", "at": at, "ns": later,
+                "by": "judge", "s": "x", "note": "closed later in the same second"}) + "\n")
+PYEOF
+if wlcli --list 2>/dev/null | grep -q '\[x\].*written first'; then
+    echo "  PASS: within one second the LATER write wins, whatever the filename"
+    PASS=$((PASS + 1))
+else
+    echo "  FAIL: the tie was broken by filename, not by write order"
+    FAIL=$((FAIL + 1))
+fi
+# CONTROL ON THE CONTROL: strip `ns` and the same two events must fold the OTHER
+# way. Without this the case would pass just as well if `ns` did nothing.
+python3 - "$WORKLIST_STORE_DIR" <<'PYEOF'
+import json, pathlib, sys
+for name in ("aaa.jsonl", "zzz.jsonl"):
+    p = pathlib.Path(sys.argv[1]) / name
+    e = json.loads(p.read_text())
+    e.pop("ns", None)
+    p.write_text(json.dumps(e) + "\n")
+PYEOF
+if wlcli --list 2>/dev/null | grep -q '\[ \].*written first'; then
+    echo "  PASS: CONTROL: without ns the tie really does fall back to file order"
+    PASS=$((PASS + 1))
+else
+    echo "  FAIL: CONTROL: ns is not the deciding field, so this case proves nothing"
     FAIL=$((FAIL + 1))
 fi

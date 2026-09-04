@@ -107,17 +107,24 @@ function selftest(): void {
     return p;
   };
 
-  // THE PLANT: the exact 189c defect.
-  const bad = w(
-    'bad.sh',
-    'fh.write(json.dumps({"ev": "state", "id": i, "at": "2026-08-05T00:00:00Z"}))\n'
-  );
-  const b = scan([bad]);
-  if (b.length !== 1 || b[0]?.ev !== 'state') {
-    console.error(`  FAIL  a literal-dated state event was not caught: ${JSON.stringify(b)}`);
-    process.exit(1);
+  // EVERY DECLARED VARIANT, not a sample. The plant is the exact 189c defect,
+  // but running it for `state` alone leaves the other seven kinds in FOLDED
+  // untested -- and a kind added to that set later would arrive with no control
+  // at all. Looping over the set itself makes the set the test plan.
+  for (const kind of FOLDED) {
+    const bad = w(
+      `bad-${kind}.sh`,
+      `fh.write(json.dumps({"ev": "${kind}", "id": i, "at": "2026-08-05T00:00:00Z"}))\n`
+    );
+    const b = scan([bad]);
+    if (b.length !== 1 || b[0]?.ev !== kind) {
+      console.error(`  FAIL  a literal-dated "${kind}" event was not caught: ${JSON.stringify(b)}`);
+      process.exit(1);
+    }
   }
-  console.log('  PASS  a literal-dated fold event is caught, and named');
+  console.log(
+    `  PASS  a literal-dated fold event is caught for all ${FOLDED.length} declared kind(s)`
+  );
 
   // Wrapped across two lines, which is how the formatter leaves them.
   const wrapped = w('wrap.sh', '{"ev": "lease", "id": i,\n "at": "2026-01-01T00:00:00Z"}\n');
