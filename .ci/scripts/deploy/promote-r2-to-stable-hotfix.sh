@@ -65,6 +65,17 @@ for dir in cli apt rpm apk archlinux; do
     # Purge every uploaded URL to flush any previously-cached body
     # under the same filename; channel paths reuse filenames across
     # releases.
+    # VACUITY FLOOR. `find "$TMP" -type f` after the sync above is how the purge list
+    # is built, and an EMPTY $TMP means this dir promoted nothing -- the sync had no
+    # source. That is indistinguishable from "promoted fine, nothing mutable to purge"
+    # unless it is said out loud: the loop adds no URLs, the purge below is skipped
+    # because the array is empty, and the run prints "R2 promotion complete".
+    tmp_files=$(find "$TMP" -type f | wc -l || true)
+    if [[ "$tmp_files" -eq 0 ]]; then
+        echo "VACUOUS: ${dir} staged 0 file(s) for promotion; refusing to report a promotion that moved nothing" >&2
+        exit 1
+    fi
+
     while IFS= read -r f; do
         PURGE_URLS+=("https://releases.rediacc.com/${dir}/stable/${f#"$TMP"/}")
     done < <(find "$TMP" -type f)

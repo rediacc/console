@@ -58,6 +58,10 @@ done
 count=$(find "$dest" -type f 2>/dev/null | wc -l)
 echo "drill diagnostics collected: $count file(s) under $dest"
 find "$dest" -type f -printf '  %10s bytes  %p\n' 2>/dev/null || true
+# A VACUOUS collection is REPORTED, not fatal, and that is a deliberate choice rather
+# than an oversight: this script runs in an `if: always()` diagnostics step, so exiting
+# non-zero here would replace the real failure the operator came to read with a
+# complaint about its diagnostics. The floor is the message.
 if [[ "$count" -eq 0 ]]; then
     echo "  (nothing collected -- check that the drills ran with --keep-work)"
 fi

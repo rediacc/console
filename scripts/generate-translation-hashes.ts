@@ -114,6 +114,18 @@ function processLocaleDir(config: LocaleConfig): Record<string, string> | null {
     return null;
   }
 
+  // VACUITY FLOOR, placed once for BOTH branches below: each reads the same directory
+  // and either would hash zero namespaces into an empty hash file, which the next run
+  // then compares against happily. A lost corpus must not read as "nothing changed".
+  const MIN_NAMESPACES = 1;
+  const sourceFiles = fs.readdirSync(englishDir).filter((f) => f.endsWith('.json'));
+  if (sourceFiles.length < MIN_NAMESPACES) {
+    throw new Error(
+      `VACUOUS: ${englishDir} holds ${sourceFiles.length} source file(s), floor ${MIN_NAMESPACES}. ` +
+        'Refusing to write hashes for a corpus that was not read.'
+    );
+  }
+
   const allHashes: Record<string, string> = {};
 
   if (multipleNamespaces) {

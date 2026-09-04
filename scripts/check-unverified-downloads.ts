@@ -113,9 +113,42 @@ export function scan(file: string, src: string): Finding[] {
   return found;
 }
 
-/** An allowlist entry matches a finding when its token appears in the URL or ref. */
-function isAllowed(f: Finding, tokens: string[]): boolean {
-  return tokens.some((t) => f.url.includes(t));
+/**
+ * Does an allowlist entry cover this finding?
+ *
+ * ANCHORED AT A HOST OR PATH BOUNDARY, never a bare substring. This was
+ * `tokens.some((t) => f.url.includes(t))`, and the allowlist holds bare hosts
+ * (`awscli.amazonaws.com`, `download.docker.com/linux/ubuntu/gpg`). A substring test
+ * therefore allowed
+ *
+ *     https://awscli.amazonaws.com.attacker.net/x.tgz
+ *
+ * because the token appears in it -- in the one gate whose entire job is refusing an
+ * unverified download. private/account/src/services/email.service.ts:225 already got
+ * this right for email domains (`domain === d || domain.endsWith('.' + d)`); this did
+ * not, and nothing compared the two.
+ *
+ * A token matches when, against the URL's `host + pathname`:
+ *   - it equals the host, or the host is a SUBDOMAIN of it (`.` + token suffix), or
+ *   - it is a host+path prefix ending at a `/` boundary.
+ * A URL that will not parse matches nothing: an entry cannot cover what cannot be read.
+ */
+export function isAllowed(f: Finding, tokens: string[]): boolean {
+  let host: string;
+  let hostPath: string;
+  try {
+    const u = new URL(f.url);
+    host = u.host.toLowerCase();
+    hostPath = host + u.pathname;
+  } catch {
+    return false;
+  }
+  return tokens.some((raw) => {
+    const t = raw.trim().toLowerCase().replace(/\/+$/, '');
+    if (t === '') return false;
+    if (t === host || host.endsWith(`.${t}`)) return true;
+    return hostPath === t || hostPath.startsWith(`${t}/`);
+  });
 }
 
 // ─── Controls: prove the detector can fail before believing it passed ────────
@@ -138,6 +171,36 @@ function runControls(): string[] {
 
   const stage = `COPY --from=builder /out/app /app\n`;
   if (scan('c', stage).length !== 0) bad.push('a build-stage COPY was flagged as a registry ref');
+
+  // ALLOWLIST ANCHORING. The entries are bare hosts, so a substring test let a
+  // lookalike host carry a real entry inside it. Each negative below passed under
+  // the old `url.includes(token)` form.
+  const at = (url: string): Finding => ({ file: 'c', line: 1, url, kind: 'download' }) as Finding;
+  const host = ['awscli.amazonaws.com'];
+  const withPath = ['download.docker.com/linux/ubuntu/gpg'];
+
+  if (!isAllowed(at('https://awscli.amazonaws.com/x.tgz'), host)) {
+    bad.push('an exact allowlisted host was NOT allowed');
+  }
+  if (!isAllowed(at('https://eu.awscli.amazonaws.com/x.tgz'), host)) {
+    bad.push('a SUBDOMAIN of an allowlisted host was not allowed');
+  }
+  if (isAllowed(at('https://awscli.amazonaws.com.attacker.net/x.tgz'), host)) {
+    bad.push('a LOOKALIKE host carrying the token as a prefix was allowed');
+  }
+  if (isAllowed(at('https://evil.example/?u=awscli.amazonaws.com'), host)) {
+    bad.push('a token in the QUERY STRING was allowed');
+  }
+  if (isAllowed(at('https://notawscli.amazonaws.com/x.tgz'), host)) {
+    bad.push('a host merely ENDING in the token was allowed without a dot boundary');
+  }
+  if (!isAllowed(at('https://download.docker.com/linux/ubuntu/gpg'), withPath)) {
+    bad.push('an exact host+path entry was NOT allowed');
+  }
+  if (isAllowed(at('https://download.docker.com/linux/ubuntu/gpg-evil'), withPath)) {
+    bad.push('a path continuing past the entry without a / boundary was allowed');
+  }
+  if (isAllowed(at('not a url at all'), host)) bad.push('an unparseable URL was allowed');
 
   return bad;
 }

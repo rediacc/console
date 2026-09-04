@@ -95,6 +95,22 @@ python3 - "$MANIFEST" <<PY
 import json, sys
 live = json.loads('''$live''')
 rec = json.load(open(sys.argv[1]))["rubrics"]
+# THE OTHER DIRECTION, and it was missing. The loop below walks the rubrics found in
+# SOURCE and looks each up in the manifest; a manifest entry naming a rubric that no
+# longer exists is never visited. Probed 2026-09-04 by planting NO_SUCH_RUBRIC_XYZ:
+# the gate printed "all 4 calibrated rubric(s) match" while the file held five, so a
+# calibration could outlive the rubric it measured and read as coverage. Its sibling
+# .ci/scripts/ci/shadow-compare.sh already refuses the same shape ("is in
+# SHADOW_EXPECTED_MISMATCH but not in SHADOW_NAMES -- it excuses nothing here").
+orphans = sorted(set(rec) - set(live))
+if orphans:
+    for k in orphans:
+        print(f"✗ {k} is calibrated in the manifest but no such rubric exists in source", file=sys.stderr)
+    print("", file=sys.stderr)
+    print("  A calibration for a rubric that is gone measures nothing and reads as", file=sys.stderr)
+    print(f"  coverage. Delete the entry from {sys.argv[1]}.", file=sys.stderr)
+    sys.exit(1)
+
 bad = [k for k, v in live.items() if rec.get(k, {}).get("sha") != v]
 if bad:
     for k in bad:
@@ -105,5 +121,6 @@ if bad:
     print("    python3 .claude/hooks/stop/calibrate-judge-rules.py --live", file=sys.stderr)
     print(f"  Require the full pass, then update {sys.argv[1]}.", file=sys.stderr)
     sys.exit(1)
-print(f"✓ all {len(live)} calibrated rubric(s) match the text they were measured on")
+print(f"✓ all {len(live)} calibrated rubric(s) match the text they were measured on, "
+      "and no manifest entry names a rubric that is gone")
 PY

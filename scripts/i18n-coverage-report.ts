@@ -79,6 +79,15 @@ function getLocaleKeysByNamespace(): Map<string, string[]> {
   }
 
   const jsonFiles = globSync(`${LOCALES_DIR}/*.json`);
+  // VACUITY FLOOR: a coverage report over zero locale files reports full coverage of
+  // nothing, which is the most convincing shape a broken glob can take.
+  const MIN_LOCALE_FILES = 1;
+  if (jsonFiles.length < MIN_LOCALE_FILES) {
+    throw new Error(
+      `VACUOUS: ${LOCALES_DIR} matched ${jsonFiles.length} file(s), floor ${MIN_LOCALE_FILES}. ` +
+        'Refusing to report coverage for a corpus that was not read.'
+    );
+  }
 
   for (const file of jsonFiles) {
     const namespace = path.basename(file, '.json');

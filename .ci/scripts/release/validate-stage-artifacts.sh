@@ -79,8 +79,12 @@ echo "**Channel:** ${CHANNEL}" >>"$GITHUB_STEP_SUMMARY"
 
 FAILED=false
 
+# THESE ARE THE VACUITY FLOORS for the six `find | wc -l` counts above, and they were
+# already here -- only unnamed, which made them invisible to a grep and to
+# check:ci-enumeration-vacuity. A staging validator that counts zero artifacts and
+# reports success is the exact defect that gate exists for; this one refuses instead.
 if [[ "$CLI_COUNT" -eq 0 ]]; then
-    echo "::error::No CLI artifacts found"
+    echo "::error::VACUOUS: No CLI artifacts found under dist/cli"
     FAILED=true
 fi
 if [[ "$PKG_COUNT" -eq 0 ]]; then

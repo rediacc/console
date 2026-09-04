@@ -47,6 +47,19 @@ function collectFiles(root: string): string[] {
     }
   }
 
+  // VACUITY FLOOR. Both loops above are guarded by `existsSync`, so a wrong `githubDir`
+  // returns [] rather than throwing, and every consumer -- the action freshness gate and
+  // the liveness probe -- then reports a clean bill of health over nothing. Measured
+  // 2026-09-04: 27 workflows plus the composite actions. The floor catches a bad root,
+  // not today's file count.
+  const MIN_ACTION_FILES = 10;
+  if (files.length < MIN_ACTION_FILES) {
+    throw new Error(
+      `VACUOUS: ${githubDir} yielded ${files.length} workflow/action file(s), floor ` +
+        `${MIN_ACTION_FILES}. The enumeration lost its corpus; refusing to return it.`
+    );
+  }
+
   return files;
 }
 

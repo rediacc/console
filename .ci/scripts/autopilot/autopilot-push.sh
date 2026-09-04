@@ -298,6 +298,10 @@ stage_and_validate_console() {
     # files someone flattened into the parent).
     while read -r sub sub_sha _; do
         [[ -z "$sub" ]] && continue
+        # A VACUOUS `git ls-files` -- the submodule not staged at all -- is already
+        # fatal two lines down: staged_mode is empty, the 160000 test fails, and the
+        # error prints "<absent>". The floor is that test; naming it here so a reader
+        # (and check:ci-enumeration-vacuity) can see the empty case is handled.
         entry="$(git ls-files -s -- "$sub")"
         staged_mode="$(awk '{print $1}' <<<"$entry")"
         staged_sha="$(awk '{print $2}' <<<"$entry")"

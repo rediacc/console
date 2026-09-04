@@ -120,6 +120,17 @@ for dir in apt rpm apk archlinux; do
     # old immutable policy. Once every CI cycle has re-uploaded
     # with no-cache, CF won't cache anything and subsequent purges
     # are cheap no-ops.
+    # VACUITY FLOOR, scoped deliberately narrower than "PURGE_URLS is empty". A
+    # MISSING dist/repos/<dir> is legitimate and already `continue`s above -- not every
+    # channel builds every repo type. A dir that EXISTS and holds nothing is not: the
+    # sync uploaded nothing, the loop below adds no URLs, and the run still reports
+    # success. That is the enumeration losing its corpus, one directory at a time.
+    dir_files=$(find "dist/repos/$dir" -type f | wc -l || true)
+    if [[ "$dir_files" -eq 0 ]]; then
+        echo "VACUOUS: dist/repos/${dir} exists but holds 0 file(s); refusing to report an upload that moved nothing" >&2
+        exit 1
+    fi
+
     while IFS= read -r f; do
         PURGE_URLS+=("https://releases.rediacc.com/${dir}/${CHANNEL}/${f#dist/repos/$dir/}")
     done < <(find "dist/repos/$dir" -type f)

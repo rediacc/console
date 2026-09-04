@@ -41,11 +41,24 @@ ROOT = Path(os.environ.get("RETIRE_ROOT") or Path(__file__).resolve().parents[3]
 COMPARE_STEP = "Compare shadow secrets against GitHub"
 
 
+# A wrong RETIRE_ROOT makes the glob below return nothing, and every edit this script
+# performs is then a silent no-op that still reports "already retired?" -- which is this
+# script's own entry in the WHY block of scripts/check-enumeration-vacuity.ts. Measured
+# 2026-09-04: 33 workflow files. The floor catches a bad root, not today's count.
+MIN_WORKFLOWS = int(os.environ.get("RETIRE_MIN_WORKFLOWS", "20"))
+
+
 def files() -> list[Path]:
     out = sorted((ROOT / ".github" / "workflows").glob("*.yml"))
     tpl = ROOT / ".ci" / "breakpoint" / "workflow" / "breakpoint.yml"
     if tpl.is_file():
         out.append(tpl)
+    if len(out) < MIN_WORKFLOWS:
+        raise SystemExit(
+            f"VACUOUS: {ROOT}/.github/workflows matched {len(out)} file(s), floor "
+            f"{MIN_WORKFLOWS}. The enumeration lost its corpus; refusing to report "
+            "anything retired."
+        )
     return out
 
 

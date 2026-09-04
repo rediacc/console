@@ -43,6 +43,7 @@ import argparse
 import datetime as dt
 import difflib
 import json
+import os
 import re
 import subprocess
 import sys
@@ -105,6 +106,10 @@ SKIP_SUFFIXES = (
 )
 # Same limit check_secret_reachability.py enforces on itself.
 REACH_MAX_AGE_DAYS = 45
+
+# Measured 2026-09-04: the walk yields thousands of files. The floor catches a bare
+# index or a wrong cwd, not today's count.
+MIN_FILES = int(os.environ.get("SECRET_RENAME_MIN_FILES", "500"))
 
 # Untracked files that are part of the surface.
 EXTRA = ["private/account/.env", "private/account/.env.bench"]
@@ -221,6 +226,16 @@ def files() -> list[Path]:
             and not rel.endswith(("package-lock.json", ".min.js", ".map"))
         ):
             out.append(p)
+    # VACUITY FLOOR. This walk decides what a RENAME rewrites, so an empty or
+    # truncated one does not fail -- it silently renames nothing and reports every
+    # occurrence handled. `git ls-files` returning nothing (wrong cwd, a bare or
+    # broken index) is exactly that shape, and the blind-spot comment above this
+    # function records what one missed sibling repo already cost.
+    if len(out) < MIN_FILES:
+        raise SystemExit(
+            f"VACUOUS: the walk yielded {len(out)} file(s), floor {MIN_FILES}. "
+            "Refusing to report a rename over a corpus that was not read."
+        )
     return out
 
 

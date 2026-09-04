@@ -43,8 +43,33 @@ import { commitBaseline } from './lib/shrink-only-baseline.js';
 const ROOT = path.resolve(import.meta.dirname, '..');
 const BASELINE = path.join(ROOT, 'scripts/data/enumeration-vacuity-baseline.json');
 
-/** Scripts this gate judges: the check and gate-test families, any language. */
-const SUBJECT_RE = /\/(check|test)[-_][\w-]+\.(py|sh|ts)$/;
+/**
+ * Scripts this gate judges: EVERY tracked script under the two roots, any language.
+ *
+ * This was `/\/(check|test)[-_][\w-]+\.(py|sh|ts)$/` -- a NAMING heuristic standing in
+ * for a role, and scripts/gate-bind.ts carries a note about removing the identical
+ * pattern for the identical reason. Measured 2026-09-04: it hid 234 of the 610 tracked
+ * scripts under `.ci/scripts` and `scripts`; 21 of those enumerate and 16 carried no
+ * vacuity guard, while this gate printed "376 scanned ... all baselined".
+ *
+ * The sharpest case was this file's own WHY block, which cites
+ * `retire-shadowed-secrets.py` as a script that went blind and reported "already
+ * retired?". It is named `retire-`, so the pattern could not see the example the gate
+ * was written from. It has a MIN_WORKFLOWS floor now.
+ *
+ * All 16 were guarded before this widened, so the baseline did NOT grow -- which
+ * matters, because the shrink-only module refuses a reseed that absorbs findings, and
+ * it refused this one when it was tried the other way round. Of the 16, five already
+ * refused an empty result and only lacked the vocabulary to say so (autopilot-push.sh,
+ * update-homebrew-tap.sh, validate-stage-artifacts.sh, collect-drill-diagnostics.sh --
+ * whose zero is deliberately non-fatal in an `if: always()` step -- and the per-name
+ * check in the tap script); eleven got a real floor.
+ *
+ * A vacuity guard is owed by anything that ENUMERATES, which is a property of the code
+ * and not of its filename. `enumerates()` already decides that; the corpus must not
+ * second-guess it.
+ */
+const SUBJECT_RE = /\.(py|sh|ts)$/;
 
 /**
  * Does this source ENUMERATE a corpus? Deliberately narrow: a script that reads one named
@@ -127,6 +152,19 @@ function selftest(): number {
   check(
     'CONTROL: an UNQUOTED heredoc is left alone, because the shell interpolates it',
     enumerates(['cat <<TS', 'files = root.glob("*.py")', 'TS'].join('\n'))
+  );
+  check(
+    'a script the OLD name pattern hid is in scope: role is code, not filename',
+    SUBJECT_RE.test('.ci/scripts/housekeeping/retire-shadowed-secrets.py') &&
+      SUBJECT_RE.test('.ci/scripts/security/shfmt.sh')
+  );
+  check(
+    'CONTROL: a conventionally-named gate is still in scope',
+    SUBJECT_RE.test('.ci/scripts/quality/check_environment_names.py')
+  );
+  check(
+    'CONTROL: a non-script is still out of scope',
+    !SUBJECT_RE.test('.ci/config/thing.json') && !SUBJECT_RE.test('docs/x.md')
   );
   check(
     'CONTROL: reading ONE named config is not enumeration',
@@ -231,6 +269,14 @@ function main(argv: string[]): void {
   console.log(
     '  Blind spot: this proves a guard EXISTS, never that its floor is high enough. A floor ' +
       'of 1 passes here and still reports a clean tree for a corpus of one.'
+  );
+  console.log(
+    '  Nor that it is WIRED. A `MIN_X` that nothing compares refuses nothing and still ' +
+      'satisfies the detector. A static check for that was written and DISCARDED on ' +
+      '2026-09-04: it was wrong on all six it flagged -- names inside string literals and ' +
+      'comments, an env var compared by a different script, and one floor wired ' +
+      'indirectly (`needed = observed * MIN_HEADROOM`, and `needed` is what is compared). ' +
+      'The eleven floors added that day were each confirmed wired by hand instead.'
   );
 }
 

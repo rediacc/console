@@ -122,6 +122,9 @@ calculate_local_checksums() {
 
     local names=("rdc-mac-arm64" "rdc-mac-x64" "rdc-linux-arm64" "rdc-linux-x64")
 
+    # A VACUOUS find is already fatal per NAME, three lines down: an empty $found is
+    # a missing binary and exits 1. The floor is that test, and it is per-artifact
+    # rather than aggregate, which is stricter -- three of four present still fails.
     for name in "${names[@]}"; do
         local found
         found=$(find "$dir" -name "${name}*" ! -name "*.sha256" -type f | head -1 || true)

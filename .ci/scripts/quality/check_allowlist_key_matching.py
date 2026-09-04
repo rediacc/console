@@ -32,6 +32,7 @@ from __future__ import annotations
 
 import ast
 import pathlib
+import re
 import subprocess
 import sys
 
@@ -46,9 +47,45 @@ TEXTISH = ("line", "raw", "src", "text", "content", "body", "haystack")
 MIN_CONSUMERS = 2
 
 
+# TypeScript says the same thing with different words: `.includes(` and `.startsWith(`
+# are its substring tests. A TS arm is here because this gate scanned ONLY Python, and
+# that blind spot let a live one survive: scripts/check-unverified-downloads.ts matched
+# its allowlist with `f.url.includes(t)` over bare hosts, so
+# https://awscli.amazonaws.com.attacker.net/x.tgz carried the token and was waved through
+# by the gate whose entire job is refusing an unverified download. Fixed 2026-09-04, and
+# a Python-only sweep would not have found it.
+TS_TEXTISH = ("line", "raw", "src", "text", "content", "body", "haystack", "url", "ref")
+TS_KEYISH = ("k", "key", "t", "tok", "token", "excl", "entry", "pat", "prefix", "allow")
+
+TS_SUBSTRING = re.compile(
+    r"\b(?:\w+\.)?(" + "|".join(TS_TEXTISH) + r")\.(includes|startsWith)\(\s*(\w+)\s*\)",
+    re.IGNORECASE,
+)
+
+
+def ts_substring_matches(src: str) -> list[str]:
+    """`<textish>.includes(<keyish>)` in a file that reads an allowlist.
+
+    Deliberately name-driven, exactly like the Python arm, and stated as a blind spot
+    rather than hidden: `.includes(` is far too common in TypeScript to flag on its own.
+    """
+    out: list[str] = []
+    for i, line in enumerate(src.split("\n"), 1):
+        stripped = line.lstrip()
+        if stripped.startswith(("//", "*", "/*")):
+            continue  # a comment is not code -- the same trap this repo has paid for twice
+        for m in TS_SUBSTRING.finditer(line):
+            recv, op, arg = m.group(1), m.group(2), m.group(3)
+            if arg.lower().startswith(TS_KEYISH):
+                out.append(
+                    f"line {i}: `{recv}.{op}({arg})` matches an allowlist entry by substring"
+                )
+    return sorted(set(out))
+
+
 def loads_config(src: str) -> bool:
-    """Does this script read a file under .ci/config/?"""
-    return ".ci/config/" in src
+    """Does this script read a file under .ci/config/, or its own allowlist file?"""
+    return ".ci/config/" in src or "allowlist" in src.lower()
 
 
 def _name(node: ast.AST) -> str:
@@ -110,6 +147,32 @@ def selftest() -> int:
         substring_matches("if name in seen:\n    pass\n") == [],
     )
     ck("CONTROL: unparseable source yields no verdict", substring_matches("def (:") == [])
+
+    # THE TYPESCRIPT ARM, and the live defect that proved it was needed.
+    ck(
+        "THE REAL TS DEFECT is found: url.includes(t) over allowlist tokens",
+        len(ts_substring_matches("return tokens.some((t) => f.url.includes(t));")) == 1,
+    )
+    ck(
+        "a startsWith prefix test is found too",
+        len(ts_substring_matches("if (line.startsWith(key)) return true;")) == 1,
+    )
+    ck(
+        "CONTROL: an anchored host/boundary test is silent",
+        ts_substring_matches("return host === t || host.endsWith(`.${t}`);") == [],
+    )
+    ck(
+        "CONTROL: an ordinary .includes on a non-key argument is NOT flagged",
+        ts_substring_matches("if (SNAPSHOT_LANGS.includes(lang)) return lang;") == [],
+    )
+    ck(
+        "CONTROL: the same call inside a COMMENT is not code",
+        ts_substring_matches("// return tokens.some((t) => f.url.includes(t));") == [],
+    )
+    ck(
+        "CONTROL: a jsdoc line describing it is not code either",
+        ts_substring_matches(" * An entry matches when url.includes(token) is true.") == [],
+    )
     return bad
 
 
@@ -134,7 +197,7 @@ def main(argv: list[str]) -> int:
     consumers = [
         f
         for f in listed
-        if f.endswith(".py")
+        if f.endswith((".py", ".ts"))
         and loads_config((ROOT / f).read_text(encoding="utf-8", errors="replace"))
     ]
 
@@ -149,7 +212,8 @@ def main(argv: list[str]) -> int:
     findings: list[str] = []
     for f in consumers:
         src = (ROOT / f).read_text(encoding="utf-8", errors="replace")
-        findings.extend(f"{f}: {hit}" for hit in substring_matches(src))
+        hits = ts_substring_matches(src) if f.endswith(".ts") else substring_matches(src)
+        findings.extend(f"{f}: {hit}" for hit in hits)
 
     if findings:
         print(f"✗ {len(findings)} allowlist key(s) matched by substring:", file=sys.stderr)

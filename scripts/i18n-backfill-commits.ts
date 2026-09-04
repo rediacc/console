@@ -181,6 +181,19 @@ function backfillMarkdownDocs(): BackfillResult[] {
     }
   }
 
+  // VACUITY FLOOR, aggregate rather than per directory. A missing language dir is
+  // legitimately skipped above, so a floor inside walkDir would fire on a correct
+  // tree. Zero files across EVERY collection and language is different: the backfill
+  // prints its banner, walks nothing, and reports success having touched no file.
+  const MIN_BACKFILL_FILES = 1;
+  if (results.length < MIN_BACKFILL_FILES) {
+    throw new Error(
+      `VACUOUS: walked 0 file(s) across ${COLLECTIONS.length} collection(s) and ` +
+        `${SUPPORTED_LANGUAGES.length} language(s), floor ${MIN_BACKFILL_FILES}. ` +
+        'The enumeration lost its corpus; refusing to report a backfill that ran over nothing.'
+    );
+  }
+
   return results;
 }
 

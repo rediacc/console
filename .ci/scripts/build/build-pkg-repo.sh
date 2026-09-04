@@ -204,6 +204,18 @@ find "$LOCAL_PKGS" -name "*.deb" -exec cp {} "$APT_POOL_DIR/" \;
 DEB_COUNT=$(find "$APT_POOL_DIR" -name "*.deb" | wc -l || true)
 log_info "APT: generating metadata for $DEB_COUNT packages (packages served via R2)"
 
+# VACUITY FLOOR. dpkg-scanpackages over an EMPTY pool succeeds and writes a valid,
+# empty Packages file, so the repository publishes and `apt update` reports no error --
+# it just offers nothing to install. That is the most convincing shape a broken
+# $LOCAL_PKGS path can take, and nothing above this line would have said so: the copy
+# on the previous line is `find ... -exec cp`, which is silent when it matches nothing.
+MIN_DEBS="${PKG_REPO_MIN_DEBS:-1}"
+if [[ "$DEB_COUNT" -lt "$MIN_DEBS" ]]; then
+    log_error "VACUOUS: $APT_POOL_DIR holds $DEB_COUNT .deb file(s), floor $MIN_DEBS."
+    log_error "Refusing to publish an APT repository that offers nothing to install."
+    exit 1
+fi
+
 if [[ "$DRY_RUN" == "true" ]]; then
     log_info "[DRY-RUN] Would generate APT repository metadata"
 else

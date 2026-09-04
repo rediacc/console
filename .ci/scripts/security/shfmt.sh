@@ -62,6 +62,20 @@ main() {
 
     "$SHFMT_BIN" --version
 
+    # VACUITY FLOOR. Every check below is `find ... -exec shfmt`, and find that
+    # matches nothing runs shfmt on nothing and exits 0. A green then means "no
+    # formatting problems" and "the enumeration lost its corpus" equally, which is
+    # the shape check:ci-enumeration-vacuity exists to refuse. Measured 2026-09-04:
+    # 568 .sh files across the four scopes. The floor is well under that so it
+    # catches a broken find, not today's file count.
+    MIN_SHELL_FILES="${SHFMT_MIN_FILES:-200}"
+    shell_seen=$(find .ci .claude scripts -name "*.sh" -type f 2>/dev/null | wc -l || true)
+    if [[ "$shell_seen" -lt "$MIN_SHELL_FILES" ]]; then
+        log_error "VACUOUS: found $shell_seen shell script(s), floor $MIN_SHELL_FILES."
+        log_error "The enumeration lost its corpus; refusing to report formatting clean."
+        exit 1
+    fi
+
     # Check all shell scripts in .ci directory
     log_info "Checking .ci/**/*.sh"
     # BLOCKER: SHFMT_OPTS is a space-separated set of CLI flags; word-splitting is intentional so shfmt receives each flag as its own argv entry
