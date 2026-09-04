@@ -143,6 +143,9 @@
     },
     ".ci/breakpoint/workflow/breakpoint.yml#session": {
       "reason": "BLOCKER: the frozen template the .github copy above is vendored from; check-breakpoint-drift.sh requires the two to be byte-identical, so the exemption has to name both. Same reason, same job."
+    },
+    ".github/workflows/watchdog-monitor.yml#monitor": {
+      "reason": "BLOCKER: this job cannot consume a Bitwarden value without moving its fetch ahead of 'Monitor jobs and cancel on failure', and a step there is only safe with continue-on-error, which check-workflows.sh bans outright ('Silently ignores step/job failures'). Tried on 2026-09-04 and reverted in 90cc4367b: CHECK 6 of check-workflow-gates.sh accepted it on the property, the banned-patterns gate refused it four minutes into CI. The trade is not worth it -- the value is the tier-1 classifier's Cloudflare token and tier 1 has been returning HTTP 402 continuously, so flipping a dead code path would buy a policy exception. This job keeps reading GitHub and its secret retires with the last of them."
     }
   }
 }

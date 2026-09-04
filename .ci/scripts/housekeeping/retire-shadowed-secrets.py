@@ -271,6 +271,36 @@ def main(argv: list[str]) -> int:
             print("      - %s" % c)
         if apply:
             f.write_text(new, encoding="utf-8")
+    # WHICH NAMES ARE ACTUALLY FREE, asked AFTER the rewrite rather than assumed from
+    # the argument list. This tool exists to stop a deletion from blanking a live read,
+    # and it was printing three delete lines while TWO of the names still had one:
+    # breakpoint.yml's app-token (that job hands a human a shell, so it deliberately
+    # never fetches from Bitwarden) and watchdog-monitor.yml's tier-1 classifier (its
+    # fetch cannot move ahead of the monitor without `continue-on-error`, which
+    # check-workflows.sh bans). Both survivals are correct and documented; printing
+    # `gh secret delete` for them was not.
+    live = {}
+    for f in files():
+        text = f.read_text(encoding="utf-8", errors="replace")
+        for i, line in enumerate(text.split("\n"), 1):
+            if line.lstrip().startswith("#"):
+                continue
+            for n in names:
+                if "secrets.%s" % n in line:
+                    live.setdefault(n, []).append("%s:%d" % (f.relative_to(ROOT), i))
+    free = sorted(n for n in names if n not in live)
+
+    if live:
+        print("\nNOT DELETABLE -- these names still have a live read, and deleting one")
+        print("blanks it silently rather than failing:")
+        for n in sorted(live):
+            print("    %s" % n)
+            for where in live[n][:4]:
+                print("        %s" % where)
+        print("  Each is either a job that must not fetch from Bitwarden or one the")
+        print("  cutover deliberately skipped. Retire the READ first, or leave the")
+        print("  secret in place; do not delete around a consumer.")
+
     if not touched:
         print(
             "nothing references %s as scaffolding, though %d file(s) still carry the\n"
@@ -278,14 +308,29 @@ def main(argv: list[str]) -> int:
             "are not. That is a clean answer, not a broken scan."
             % (", ".join(sorted(names)), anchors)
         )
+        # STILL SAY WHICH NAMES ARE FREE. "Nothing to rewrite" is exactly the state
+        # after a successful --apply, and it is the moment somebody reaches for the
+        # delete commands -- so this path must answer the deletion question rather
+        # than only reporting that the edit is done.
+        if free:
+            print("\nFree to delete now (CI green first):")
+            for n in free:
+                print("    gh secret delete %s --org rediacc" % n)
+        else:
+            print("\nNo name is free to delete. Nothing further to run.")
         return 1
 
     print("\n%s %d file(s)." % ("REWROTE" if apply else "WOULD REWRITE", touched))
+
+    if not free:
+        print("\nNo name is free to delete. Nothing further to run.")
+        return 0
+
     if not apply:
-        print("Re-run with --apply to write. Then, and ONLY after CI is green on the result:")
+        print("\nRe-run with --apply to write. Then, and ONLY after CI is green:")
     else:
-        print("Land this, wait for CI to go green, and ONLY then run:")
-    for n in sorted(names):
+        print("\nLand this, wait for CI to go green, and ONLY then run:")
+    for n in free:
         print("    gh secret delete %s --org rediacc" % n)
     print(
         "\nThose commands are printed, never run: an org secret cannot be restored and its\n"

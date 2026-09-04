@@ -218,13 +218,11 @@ jobs:
           access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
           secrets: |
             ANTHROPIC_CLAUDE_CODE_OAUTH_TOKEN > BWS_ANTHROPIC_CLAUDE_CODE_OAUTH_TOKEN
-            CLOUDFLARE_API_TOKEN > BWS_CLOUDFLARE_API_TOKEN
 
       - name: Compare shadow secrets against GitHub
         if: always()
         shell: bash
         env:
-          SHADOW_NAMES: ANTHROPIC_CLAUDE_CODE_OAUTH_TOKEN CLOUDFLARE_API_TOKEN
+          SHADOW_NAMES: ANTHROPIC_CLAUDE_CODE_OAUTH_TOKEN
           GH_ANTHROPIC_CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
-          GH_CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
         run: .ci/scripts/ci/shadow-compare.sh

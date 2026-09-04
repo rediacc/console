@@ -100,8 +100,6 @@ on:
       # (.github/actions/bws-secrets). Every caller must pass it.
       BWS_ACCESS_TOKEN:
         required: true
-      APP_PRIVATE_KEY:
-        required: false
       CLOUDFLARE_R2_MEDIA_ACCESS_KEY_ID:
         required: false
       CLOUDFLARE_R2_MEDIA_SECRET_ACCESS_KEY:
@@ -112,9 +110,6 @@ on:
       # anonymous rate limit, and its own logic REFUSES on a limited response rather than
       # reporting everything current. A fork without the secret gets an honest failure, not
       # a vacuous pass.
-      DOCKERHUB_TOKEN:
-        required: false
-
 permissions:
   contents: read
 
@@ -144,15 +139,6 @@ jobs:
           secrets: |
             GITHUB_APP_PRIVATE_KEY > BWS_APP_PRIVATE_KEY
 
-      - name: Compare shadow secrets against GitHub
-        shell: bash
-        env:
-          SHADOW_NAMES: APP_PRIVATE_KEY
-          GH_APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
-        run: .ci/scripts/ci/shadow-compare.sh
-
-      # Only pr-description needs a token, and only on a PR. Minting it here
-      # keeps the lane at the narrowest preset any member requires.
       - uses: ./.github/actions/app-token
         id: app-token
         if: ${{ !cancelled() && steps.setup.outcome == 'success' && github.event_name == 'pull_request' }}
@@ -599,12 +585,6 @@ jobs:
           secrets: |
             GITHUB_APP_PRIVATE_KEY > BWS_APP_PRIVATE_KEY
 
-      - name: Compare shadow secrets against GitHub
-        shell: bash
-        env:
-          SHADOW_NAMES: APP_PRIVATE_KEY
-          GH_APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
-        run: .ci/scripts/ci/shadow-compare.sh
       - uses: ./.github/actions/app-token
         id: app-token
         with:
@@ -653,15 +633,6 @@ jobs:
           secrets: |
             GITHUB_APP_PRIVATE_KEY > BWS_APP_PRIVATE_KEY
 
-      - name: Compare shadow secrets against GitHub
-        shell: bash
-        env:
-          SHADOW_NAMES: APP_PRIVATE_KEY
-          GH_APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
-        run: .ci/scripts/ci/shadow-compare.sh
-
-      # Runs before node on purpose: it reads .npmrc as text, and a broken
-      # .npmrc is exactly what would make the install below lie.
       - name: Block legacy-peer-deps workarounds
         run: .ci/scripts/quality/check-npmrc.sh
 
@@ -1198,13 +1169,6 @@ jobs:
             GITHUB_APP_PRIVATE_KEY > BWS_APP_PRIVATE_KEY
             DOCKERHUB_TOKEN > BWS_DOCKERHUB_TOKEN
 
-      - name: Compare shadow secrets against GitHub
-        shell: bash
-        env:
-          SHADOW_NAMES: APP_PRIVATE_KEY DOCKERHUB_TOKEN
-          GH_APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
-          GH_DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
-        run: .ci/scripts/ci/shadow-compare.sh
       - uses: ./.github/actions/app-token
         id: app-token
         with:
@@ -1497,12 +1461,6 @@ jobs:
           secrets: |
             GITHUB_APP_PRIVATE_KEY > BWS_APP_PRIVATE_KEY
 
-      - name: Compare shadow secrets against GitHub
-        shell: bash
-        env:
-          SHADOW_NAMES: APP_PRIVATE_KEY
-          GH_APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
-        run: .ci/scripts/ci/shadow-compare.sh
       - uses: ./.github/actions/app-token
         id: app-token
         with:
@@ -1698,8 +1656,7 @@ jobs:
       - name: Compare shadow secrets against GitHub
         shell: bash
         env:
-          SHADOW_NAMES: APP_PRIVATE_KEY CLOUDFLARE_R2_MEDIA_ACCESS_KEY_ID CLOUDFLARE_R2_MEDIA_ENDPOINT CLOUDFLARE_R2_MEDIA_SECRET_ACCESS_KEY
-          GH_APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
+          SHADOW_NAMES: CLOUDFLARE_R2_MEDIA_ACCESS_KEY_ID CLOUDFLARE_R2_MEDIA_ENDPOINT CLOUDFLARE_R2_MEDIA_SECRET_ACCESS_KEY
           GH_CLOUDFLARE_R2_MEDIA_ACCESS_KEY_ID: ${{ secrets.CLOUDFLARE_R2_MEDIA_ACCESS_KEY_ID }}
           GH_CLOUDFLARE_R2_MEDIA_ENDPOINT: ${{ secrets.CLOUDFLARE_R2_MEDIA_ENDPOINT }}
           GH_CLOUDFLARE_R2_MEDIA_SECRET_ACCESS_KEY: ${{ secrets.CLOUDFLARE_R2_MEDIA_SECRET_ACCESS_KEY }}
@@ -1877,16 +1834,6 @@ jobs:
           secrets: |
             GITHUB_APP_PRIVATE_KEY > BWS_APP_PRIVATE_KEY
 
-      - name: Compare shadow secrets against GitHub
-        shell: bash
-        env:
-          SHADOW_NAMES: APP_PRIVATE_KEY
-          GH_APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
-        run: .ci/scripts/ci/shadow-compare.sh
-
-      # Submodules are for the workers/www tests below, not for the www build:
-      # workers/www/src/index.ts imports private/account/src/{app,db/schema,types/env}.js
-      # directly, so vitest cannot resolve them without the account submodule.
       - uses: ./.github/actions/app-token
         id: app-token
         with:
@@ -2020,23 +1967,6 @@ jobs:
           secrets: |
             GITHUB_APP_PRIVATE_KEY > BWS_APP_PRIVATE_KEY
 
-      - name: Compare shadow secrets against GitHub
-        shell: bash
-        env:
-          SHADOW_NAMES: APP_PRIVATE_KEY
-          GH_APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
-        run: .ci/scripts/ci/shadow-compare.sh
-
-      # Submodules are load-bearing here, not incidental. Without them this job
-      # ran FIVE degraded checks and reported success for all of them:
-      #   - test-embed-asset-freshness.sh, test-embed-credits.sh and
-      #     test-renet-deadcode.sh each printed "renet submodule not present --
-      #     skipping" and exited 0, so they had never asserted anything in CI;
-      #   - check:ci-suppression-liveness skipped its .go-deps-upgrade-blocklist
-      #     and .embed-assets-upgrade-blocklist probes (oracles are renet's
-      #     go.mod and Dockerfile), leaving 4 entries "NOT proven clean".
-      # The three tests only became visible once run-all.sh started failing a
-      # test that exits 0 without a single assertion.
       - uses: ./.github/actions/app-token
         id: app-token
         with:
@@ -2217,12 +2147,6 @@ jobs:
           secrets: |
             GITHUB_APP_PRIVATE_KEY > BWS_APP_PRIVATE_KEY
 
-      - name: Compare shadow secrets against GitHub
-        shell: bash
-        env:
-          SHADOW_NAMES: APP_PRIVATE_KEY
-          GH_APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
-        run: .ci/scripts/ci/shadow-compare.sh
       - uses: ./.github/actions/app-token
         id: app-token
         with:

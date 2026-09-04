@@ -25,8 +25,6 @@ on:
       # (.github/actions/bws-secrets). Every caller must pass it.
       BWS_ACCESS_TOKEN:
         required: true
-      APP_PRIVATE_KEY:
-        required: false
       ACCOUNT_ED25519_PUBLIC_KEY:
         required: false
       # OTLP_AUTH_TOKEN is no longer needed: renet resolves credentials at
@@ -74,9 +72,8 @@ jobs:
       - name: Compare shadow secrets against GitHub
         shell: bash
         env:
-          SHADOW_NAMES: ACCOUNT_ED25519_PUBLIC_KEY APP_PRIVATE_KEY
+          SHADOW_NAMES: ACCOUNT_ED25519_PUBLIC_KEY
           GH_ACCOUNT_ED25519_PUBLIC_KEY: ${{ secrets.ACCOUNT_ED25519_PUBLIC_KEY }}
-          GH_APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
         run: .ci/scripts/ci/shadow-compare.sh
       - uses: ./.github/actions/app-token
         id: app-token
@@ -205,12 +202,6 @@ jobs:
           secrets: |
             GITHUB_APP_PRIVATE_KEY > BWS_APP_PRIVATE_KEY
 
-      - name: Compare shadow secrets against GitHub
-        shell: bash
-        env:
-          SHADOW_NAMES: APP_PRIVATE_KEY
-          GH_APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
-        run: .ci/scripts/ci/shadow-compare.sh
       - uses: ./.github/actions/app-token
         id: app-token
         with:
@@ -282,12 +273,6 @@ jobs:
           secrets: |
             GITHUB_APP_PRIVATE_KEY > BWS_APP_PRIVATE_KEY
 
-      - name: Compare shadow secrets against GitHub
-        shell: bash
-        env:
-          SHADOW_NAMES: APP_PRIVATE_KEY
-          GH_APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
-        run: .ci/scripts/ci/shadow-compare.sh
       - uses: ./.github/actions/app-token
         id: app-token
         with:
@@ -374,12 +359,6 @@ jobs:
           secrets: |
             GITHUB_APP_PRIVATE_KEY > BWS_APP_PRIVATE_KEY
 
-      - name: Compare shadow secrets against GitHub
-        shell: bash
-        env:
-          SHADOW_NAMES: APP_PRIVATE_KEY
-          GH_APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
-        run: .ci/scripts/ci/shadow-compare.sh
       - uses: ./.github/actions/app-token
         id: app-token
         with:

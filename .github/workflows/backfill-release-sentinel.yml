@@ -118,11 +118,10 @@ jobs:
       - name: Compare shadow secrets against GitHub
         shell: bash
         env:
-          SHADOW_NAMES: CLOUDFLARE_R2_ACCESS_KEY_ID CLOUDFLARE_R2_ENDPOINT CLOUDFLARE_R2_SECRET_ACCESS_KEY APP_PRIVATE_KEY
+          SHADOW_NAMES: CLOUDFLARE_R2_ACCESS_KEY_ID CLOUDFLARE_R2_ENDPOINT CLOUDFLARE_R2_SECRET_ACCESS_KEY
           GH_CLOUDFLARE_R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
           GH_CLOUDFLARE_R2_ENDPOINT: ${{ secrets.R2_ENDPOINT }}
           GH_CLOUDFLARE_R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
-          GH_APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
         run: .ci/scripts/ci/shadow-compare.sh
       - name: Install jq
         run: command -v jq >/dev/null || sudo apt-get install -y -qq jq

@@ -82,12 +82,6 @@ jobs:
           secrets: |
             GITHUB_APP_PRIVATE_KEY > BWS_APP_PRIVATE_KEY
 
-      - name: Compare shadow secrets against GitHub
-        shell: bash
-        env:
-          SHADOW_NAMES: APP_PRIVATE_KEY
-          GH_APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
-        run: .ci/scripts/ci/shadow-compare.sh
       - uses: ./.github/actions/app-token
         id: app-token
         with:
@@ -250,13 +244,11 @@ jobs:
       - name: Compare shadow secrets against GitHub
         shell: bash
         env:
-          SHADOW_NAMES: APP_PRIVATE_KEY CLOUDFLARE_R2_ACCESS_KEY_ID CLOUDFLARE_R2_ENDPOINT CLOUDFLARE_R2_SECRET_ACCESS_KEY STRIPE_SECRET_KEY CLOUDFLARE_API_TOKEN
-          GH_APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
+          SHADOW_NAMES: CLOUDFLARE_R2_ACCESS_KEY_ID CLOUDFLARE_R2_ENDPOINT CLOUDFLARE_R2_SECRET_ACCESS_KEY STRIPE_SECRET_KEY
           GH_CLOUDFLARE_R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
           GH_CLOUDFLARE_R2_ENDPOINT: ${{ secrets.R2_ENDPOINT }}
           GH_CLOUDFLARE_R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
           GH_STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY_EU }}
-          GH_CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
         run: .ci/scripts/ci/shadow-compare.sh
       - uses: ./.github/actions/app-token
         if: needs.init.outputs.workers_only != 'true'
@@ -435,8 +427,6 @@ jobs:
       version: ${{ needs.init.outputs.next_version }}
     secrets:
       BWS_ACCESS_TOKEN: ${{ secrets.BWS_ACCESS_TOKEN }}
-      APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
-      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
       ACCOUNT_ED25519_PRIVATE_KEY: ${{ secrets.ACCOUNT_ED25519_PRIVATE_KEY }}
       ACCOUNT_ED25519_PUBLIC_KEY: ${{ secrets.ACCOUNT_ED25519_PUBLIC_KEY }}
       ACCOUNT_X25519_PRIVATE_KEY: ${{ secrets.ACCOUNT_X25519_PRIVATE_KEY }}
@@ -465,8 +455,6 @@ jobs:
       ref: ${{ needs.init.outputs.ci_sha }}
     secrets:
       BWS_ACCESS_TOKEN: ${{ secrets.BWS_ACCESS_TOKEN }}
-      APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
-      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
       ACCOUNT_ED25519_PRIVATE_KEY: ${{ secrets.ACCOUNT_ED25519_PRIVATE_KEY }}
       ACCOUNT_ED25519_PUBLIC_KEY: ${{ secrets.ACCOUNT_ED25519_PUBLIC_KEY }}
       ACCOUNT_X25519_PRIVATE_KEY: ${{ secrets.ACCOUNT_X25519_PRIVATE_KEY }}
@@ -518,8 +506,6 @@ jobs:
       version: ${{ needs.init.outputs.next_version }}
     secrets:
       BWS_ACCESS_TOKEN: ${{ secrets.BWS_ACCESS_TOKEN }}
-      APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
-      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
       ACCOUNT_ED25519_PRIVATE_KEY: ${{ secrets.ACCOUNT_ED25519_PRIVATE_KEY }}
       ACCOUNT_ED25519_PUBLIC_KEY: ${{ secrets.ACCOUNT_ED25519_PUBLIC_KEY }}
       ACCOUNT_X25519_PRIVATE_KEY: ${{ secrets.ACCOUNT_X25519_PRIVATE_KEY }}
@@ -551,8 +537,6 @@ jobs:
       ref: ${{ needs.init.outputs.workers_only == 'true' && needs.init.outputs.ci_sha || format('v{0}', needs.init.outputs.next_version) }}
     secrets:
       BWS_ACCESS_TOKEN: ${{ secrets.BWS_ACCESS_TOKEN }}
-      APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
-      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
       ACCOUNT_ED25519_PRIVATE_KEY: ${{ secrets.ACCOUNT_ED25519_PRIVATE_KEY }}
       ACCOUNT_ED25519_PUBLIC_KEY: ${{ secrets.ACCOUNT_ED25519_PUBLIC_KEY }}
       ACCOUNT_X25519_PRIVATE_KEY: ${{ secrets.ACCOUNT_X25519_PRIVATE_KEY }}
@@ -674,8 +658,7 @@ jobs:
       - name: Compare shadow secrets against GitHub
         shell: bash
         env:
-          SHADOW_NAMES: APP_PRIVATE_KEY CLOUDFLARE_R2_ACCESS_KEY_ID CLOUDFLARE_R2_ENDPOINT CLOUDFLARE_R2_SECRET_ACCESS_KEY
-          GH_APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
+          SHADOW_NAMES: CLOUDFLARE_R2_ACCESS_KEY_ID CLOUDFLARE_R2_ENDPOINT CLOUDFLARE_R2_SECRET_ACCESS_KEY
           GH_CLOUDFLARE_R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
           GH_CLOUDFLARE_R2_ENDPOINT: ${{ secrets.R2_ENDPOINT }}
           GH_CLOUDFLARE_R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}

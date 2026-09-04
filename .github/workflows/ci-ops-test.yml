@@ -5,13 +5,8 @@ on:
     secrets:
       BWS_ACCESS_TOKEN:
         required: true
-      APP_PRIVATE_KEY:
-        required: true
       DOCKERHUB_USERNAME:
         required: true
-      DOCKERHUB_TOKEN:
-        required: true
-
 jobs:
   # ── Full VM provisioning test (KVM available) ──────────────────
   ops-vm-provision:
@@ -62,10 +57,8 @@ jobs:
       - name: Compare shadow secrets against GitHub
         shell: bash
         env:
-          SHADOW_NAMES: DOCKERHUB_TOKEN DOCKERHUB_USERNAME APP_PRIVATE_KEY
-          GH_DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+          SHADOW_NAMES: DOCKERHUB_USERNAME
           GH_DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
-          GH_APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
         run: .ci/scripts/ci/shadow-compare.sh
       - uses: ./.github/actions/app-token
         id: app-token

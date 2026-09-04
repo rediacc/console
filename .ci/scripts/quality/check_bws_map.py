@@ -578,6 +578,17 @@ def shadow_triple_problems() -> tuple[list[str], int]:
 
     Set equality, not containment, in both directions: an orphan `GH_X` with no
     SHADOW_NAMES entry is a leg that will never be compared, which is the silent half.
+
+    ONE EXEMPTION, AND THE CUTOVER IS WHY. This assertion was written when every fetch
+    was a SHADOW -- fetched only to be compared -- so a fetched name absent from
+    SHADOW_NAMES could only mean a broken triple. After a name is cut over that is no
+    longer true: the fetch feeds a LIVE READ (`${{ env.BWS_X }}`) and its comparator is
+    deleted along with the GitHub secret it compared against. Reported 26 such names
+    the moment the first three were retired, every one of them correct.
+    So a fetched name is accounted for when it is EITHER compared (in SHADOW_NAMES) or
+    CONSUMED (read in that file). Not neither -- that is still the silent case this
+    assertion exists for, and assertion 13 separately proves each consumer has its
+    fetch above it.
     """
     problems: list[str] = []
     files = call_sites()
@@ -587,6 +598,7 @@ def shadow_triple_problems() -> tuple[list[str], int]:
         shadow = {w for line in SHADOW_NAMES_RE.findall(text) for w in line.split()}
         gh = set(GH_ENV_RE.findall(text)) - GH_CLI_ENV
         bws = set(BWS_TARGET_RE.findall(text)) - {"ACCESS_TOKEN"}
+        consumed = {n[len("BWS_") :] for n in BWS_READ_RE.findall(text)}
         if not (shadow or gh or bws):
             continue
         checked += 1
@@ -608,9 +620,10 @@ def shadow_triple_problems() -> tuple[list[str], int]:
             for missing in sorted(shadow - bws)
         )
         problems.extend(
-            f"{rel}: fetches into BWS_{orphan} but SHADOW_NAMES does not list "
-            f"{orphan!r}, so the value is fetched and never checked"
-            for orphan in sorted(bws - shadow)
+            f"{rel}: fetches into BWS_{orphan} but nothing lists {orphan!r} in "
+            f"SHADOW_NAMES and nothing reads ${{{{ env.BWS_{orphan} }}}} -- the value "
+            f"is fetched, never compared and never used"
+            for orphan in sorted(bws - shadow - consumed)
         )
     return problems, checked
 
@@ -880,7 +893,17 @@ def coverage_problems(secrets: dict, exemptions: dict, no_fetch: dict | None = N
             "no job reads any mapped secret directly; the per-job scan lost its subject"
         )
     for key, rec in sorted(no_fetch.items()):
-        reason = (rec or {}).get("reason", "")
+        # A MALFORMED ENTRY MUST REPORT, NOT CRASH. Writing the reason as a bare string
+        # instead of {"reason": ...} raised AttributeError out of this gate, which reads
+        # as a broken gate rather than a broken config -- and the traceback names this
+        # line, not the file the author actually edited.
+        if not isinstance(rec, dict):
+            problems.append(
+                f"no_fetch_jobs entry {key!r} is a {type(rec).__name__}, not an object. "
+                f'Write it as {{"reason": "BLOCKER: ..."}}.'
+            )
+            continue
+        reason = rec.get("reason", "")
         if not reason.startswith("BLOCKER:") or len(reason) < 60:
             problems.append(
                 f"no_fetch_jobs entry {key!r} carries no substantive reason. It must start "

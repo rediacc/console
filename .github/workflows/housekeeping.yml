@@ -61,13 +61,11 @@ jobs:
       - name: Compare shadow secrets against GitHub
         shell: bash
         env:
-          SHADOW_NAMES: APP_PRIVATE_KEY CLOUDFLARE_BREAKPOINT_TUNNEL_TOKEN CLOUDFLARE_R2_ACCESS_KEY_ID CLOUDFLARE_R2_ENDPOINT CLOUDFLARE_R2_SECRET_ACCESS_KEY CLOUDFLARE_API_TOKEN
-          GH_APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
+          SHADOW_NAMES: CLOUDFLARE_BREAKPOINT_TUNNEL_TOKEN CLOUDFLARE_R2_ACCESS_KEY_ID CLOUDFLARE_R2_ENDPOINT CLOUDFLARE_R2_SECRET_ACCESS_KEY
           GH_CLOUDFLARE_BREAKPOINT_TUNNEL_TOKEN: ${{ secrets.BREAKPOINT_TUNNEL_TOKEN }}
           GH_CLOUDFLARE_R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
           GH_CLOUDFLARE_R2_ENDPOINT: ${{ secrets.R2_ENDPOINT }}
           GH_CLOUDFLARE_R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
-          GH_CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
         run: .ci/scripts/ci/shadow-compare.sh
       - uses: ./.github/actions/app-token
         id: app-token
@@ -145,10 +143,8 @@ jobs:
       - name: Compare shadow secrets against GitHub
         shell: bash
         env:
-          SHADOW_NAMES: APP_PRIVATE_KEY STRIPE_SANDBOX_SECRET_KEY CLOUDFLARE_API_TOKEN
-          GH_APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
+          SHADOW_NAMES: STRIPE_SANDBOX_SECRET_KEY
           GH_STRIPE_SANDBOX_SECRET_KEY: ${{ secrets.STRIPE_SANDBOX_SECRET_KEY }}
-          GH_CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
         run: .ci/scripts/ci/shadow-compare.sh
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7.0.0
         with:
