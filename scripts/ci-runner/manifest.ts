@@ -5326,6 +5326,23 @@ export const GATES: readonly GateSpec[] = [
     },
   },
   {
+    // Lane capabilities are DERIVED from ci-quality.yml, and the derivation can be
+    // wrong in two opposite ways: too generous places a gate in a lane that lacks what
+    // it needs (the mis-placement that cost CI), too mean loses a lane entirely. Both
+    // are pinned, including the comment case this module itself got wrong first.
+    id: 'gate-test:gate-lanes',
+    run: '.ci/scripts/test/gates/test-gate-lanes.sh',
+    gate: true,
+    qualityGateTest: true,
+    leaves: ['.ci/scripts/test/gates/test-gate-lanes.sh'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-security',
+      step: 'Quality-gate unit tests',
+    },
+  },
+  {
     // The binder's source of truth. A parser that silently returns null makes the
     // binder emit nothing for that gate, which reads like "not declared yet" -- so its
     // NEGATIVES (no block, unterminated block, no step) are the assertions that matter.
