@@ -221,6 +221,31 @@ def main() -> int:
     except (OSError, ValueError):
         excl = {}
 
+    # THE TREE MUST BE ALL THERE BEFORE ANY VERDICT IS HONEST, and this gate learned
+    # it the same way check_syncpack_sources.py did -- from CI, on its first run.
+    #
+    # quality-static checks out NO submodules. private/account/Dockerfile then simply
+    # vanishes from the enumeration, its two exclusions match nothing, and the
+    # dead-scaffold arm fires: two confident findings telling the reader to delete
+    # entries that are entirely correct (job 100870135489). A missing file is
+    # "cannot verify", never "your entry is dead".
+    #
+    # Checked against the paths the CONFIG names, not against what the scan found:
+    # asking the enumeration whether the enumeration is complete answers itself.
+    absent = sorted({k.split(":", 1)[0] for k in excl} - set(dockerfiles()))
+    if absent:
+        print(
+            "✗ CANNOT VERIFY: these Dockerfiles are named by "
+            + EXCLUSIONS.name
+            + " but are not present in this checkout:\n"
+            + "".join(f"    {d}\n" for d in absent)
+            + "  They are in submodules. Each one drops silently out of the enumeration,\n"
+            "  which turns a correct exclusion into a 'dead entry' finding.\n"
+            "  Fix: run this gate in a job whose checkout sets `submodules: true`.",
+            file=sys.stderr,
+        )
+        return 1
+
     found = dockerfiles()
     if len(found) < MIN_DOCKERFILES:
         print(

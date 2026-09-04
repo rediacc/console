@@ -137,6 +137,7 @@ MIN_MAP_ENTRIES = int(os.environ.get("BWS_MIN_MAP_ENTRIES", "30"))
 # written here rather than in a commit nobody re-reads.
 MIN_CALLERS = int(os.environ.get("BWS_MIN_CALLERS", "20"))  # files, not jobs; see the docstring
 
+BWS_READ_RE = re.compile(r"\$\{\{\s*env\.(BWS_[A-Z0-9_]+)\s*\}\}")
 UUID_RE = re.compile(r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$")
 ENV_NAME_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
 
@@ -726,6 +727,80 @@ def load_exemptions(path: Path | None = None) -> tuple[dict, list[str]]:
     return ex, problems
 
 
+def read_order_problems() -> tuple[list[str], int]:
+    """Assertion 13: every `${{ env.BWS_X }}` read has a fetch of X EARLIER in its job.
+
+    THE CONVERSE OF ASSERTION 12, and the one the cutover can actually break. That one
+    asks whether a job that reads a GitHub secret also fetches its twin; this asks
+    whether a job that reads a BITWARDEN value ever fetched it. The failure it catches
+    is silent by construction: `env.BWS_APP_PRIVATE_KEY` with no fetch is an EMPTY
+    STRING, not an error, and app-token's complaint then names the App rather than the
+    key.
+
+    ORDER, not just presence, because seven jobs on this branch had the fetch step
+    AFTER app-token -- the shape that made the cutover a reordering rather than a
+    substitution. A fetch that runs later supplies nothing to a read above it.
+
+    It matters most for what CI never runs. Nine of these files are cron- or
+    dispatch-only (cd-deploy-*, promote-stable, housekeeping, edge-clone-d1,
+    cleanup-preview, backfill-release-sentinel); a mistake there ships and waits.
+    """
+    problems: list[str] = []
+    n = 0
+    for f in call_sites():
+        try:
+            lines = f.read_text(encoding="utf-8").split("\n")
+        except OSError:
+            continue
+        ps, k = read_order_in(lines, str(f.relative_to(ROOT)))
+        problems += ps
+        n += k
+    if n == 0:
+        problems.append(
+            "no ${{ env.BWS_* }} read anywhere: either the cutover was reverted or this "
+            "scan lost its subject; refusing to pass vacuously"
+        )
+    return problems, n
+
+
+def read_order_in(lines: list[str], label: str) -> tuple[list[str], int]:
+    """The pure half of assertion 13, so the controls can plant a workflow instead of
+    a repo. Returns (problems, reads seen)."""
+    problems: list[str] = []
+    n = 0
+    index = job_index(lines)
+    for i, line in enumerate(lines):
+        if line.lstrip().startswith("#"):
+            continue
+        for name in BWS_READ_RE.findall(line):
+            n += 1
+            job = job_at(index, i)
+            if job is None:
+                problems.append(
+                    f"{label}:{i + 1} reads {name} outside any job, where the "
+                    f"env context a fetch writes to does not exist"
+                )
+                continue
+            supply = [
+                k
+                for k, ln in enumerate(lines)
+                if job_at(index, k) == job and re.match(rf"^\s+\S+\s*>\s*{name}\s*$", ln)
+            ]
+            if not supply:
+                problems.append(
+                    f"{label}:{i + 1} job {job!r} reads {name} but no "
+                    f"bws-secrets step in that job fetches it -- that is an empty string at "
+                    f"run time, not an error"
+                )
+            elif min(supply) > i:
+                problems.append(
+                    f"{label}:{i + 1} job {job!r} reads {name} but the fetch "
+                    f"that supplies it is at line {min(supply) + 1}, AFTER the read. The "
+                    f"step needs to move above its first consumer."
+                )
+    return problems, n
+
+
 def coverage_problems(secrets: dict, exemptions: dict, no_fetch: dict | None = None) -> list[str]:
     """Assertions 5, 6 and 7. Every one is the converse of assertion 1.
 
@@ -1111,6 +1186,47 @@ jobs:
     if not ok12b:
         bad += 1
 
+    # ASSERTION 13, all four answers. It is the only check that looks at the BITWARDEN
+    # side of a read, and its failure mode is an EMPTY STRING rather than an error, so
+    # a control set that only proved the happy path would prove nothing worth having.
+    good = [
+        "jobs:",
+        "  j:",
+        "    steps:",
+        "      - uses: ./.github/actions/bws-secrets",
+        "        with:",
+        "          secrets: |",
+        "            GITHUB_APP_PRIVATE_KEY > BWS_APP_PRIVATE_KEY",
+        "      - uses: ./.github/actions/app-token",
+        "        with:",
+        "          private-key: ${{ env.BWS_APP_PRIVATE_KEY }}",
+    ]
+    r13 = [
+        ("read order CONTROL: a fetch above its consumer is silent", good, None),
+        (
+            "read order: a fetch BELOW its consumer is reported (the seven-job shape)",
+            good[:3] + good[7:] + good[3:7],
+            "AFTER the read",
+        ),
+        (
+            "read order: a read with no fetch at all is reported, not read as empty",
+            good[:3] + good[7:],
+            "fetches it",
+        ),
+        (
+            "read order: a fetch in ANOTHER job does not supply this one",
+            [*good[:7], "  k:", "    steps:", *good[7:]],
+            "fetches it",
+        ),
+    ]
+    for label, doc, needle in r13:
+        got, seen = read_order_in(doc, "x.yml")
+        ok = (got == [] and seen == 1) if needle is None else any(needle in m for m in got)
+        print(f"  {'PASS' if ok else 'FAIL'}  {label}")
+        if not ok:
+            bad += 1
+            print(f"        got {got}")
+
     missing_file = load_exemptions(Path("/nonexistent/ex.json"))[1]
     ok4 = any("refusing to pass vacuously" in m for m in missing_file)
     print(f"  {'PASS' if ok4 else 'FAIL'}  a missing allowlist refuses rather than passing")
@@ -1195,12 +1311,16 @@ def main() -> int:
         problems.append(f"only {callers} workflow(s) use {ACTION_REF}; floor is {MIN_CALLERS}")
 
     # 5, 6, 7. Coverage -- the converse direction. See the docstring.
+    reads_seen = 0
     exemptions, ex_problems = load_exemptions()
     problems += ex_problems
     alias, alias_problems = load_preimage()
     problems += alias_problems
     if not ex_problems:
         problems += coverage_problems(secrets, exemptions, load_no_fetch_jobs())
+        ro_problems, n_reads = read_order_problems()
+        problems += ro_problems
+        reads_seen = n_reads
         rep_problems, represented = represented_problems(secrets, exemptions)
         problems += rep_problems
         read_problems, n_read, read = unmapped_read_problems(secrets, exemptions, alias)
@@ -1228,7 +1348,8 @@ def main() -> int:
 
     exemptions, _ = load_exemptions()
     print(
-        f"✓ bws map: {len(secrets)} secret(s) mapped, {callers} caller file(s) all resolve (floor {MIN_CALLERS})"
+        f"✓ bws map: {len(secrets)} secret(s) mapped, {callers} caller file(s) all resolve "
+        f"(floor {MIN_CALLERS}), {reads_seen} env.BWS_* read(s) each supplied by a fetch above it"
     )
     print(
         f"✓ coverage: every mapped name is requested or exempt ({len(exemptions)} exemption(s), "

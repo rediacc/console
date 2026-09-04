@@ -266,15 +266,6 @@ jobs:
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: .ci/scripts/quality/check_dockerfile_mirror_resilience.py
 
-      # Beside the mirror check because it is the same subject from the other side:
-      # that one asks whether a base image can still be fetched, this one whether a
-      # package version is a fixed point or whatever npm published this hour. Added
-      # after 2026-09-04, when private/account's image stopped building with no
-      # commit behind it -- a package published that morning crashed npm's arborist.
-      - name: Dockerfile npm pins
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: .ci/scripts/quality/check_docker_npm_pins.py
-
       # A job that READS submodule source must CHECK IT OUT. Tests + Infra /
       # Unit parsed private/renet/pkg/prune/datastore.go with a bare checkout,
       # failed on a file it never fetched, and cancelled 26 siblings; the ENOENT
@@ -928,6 +919,16 @@ jobs:
       - name: syncpack source coverage
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: npm run check:ci-syncpack-sources
+
+      # HERE RATHER THAN IN quality-static, and for the identical reason the comment
+      # above gives about quality-branch. It first landed in quality-static, which
+      # checks out no submodules; private/account/Dockerfile vanished from the
+      # enumeration and its two correct exclusions were reported as dead scaffold
+      # (job 100870135489). The gate now refuses rather than mis-reporting, but a
+      # refusal is still a red -- so it belongs in a job that has the tree.
+      - name: Dockerfile npm pins
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: .ci/scripts/quality/check_docker_npm_pins.py
 
       - name: Format
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}

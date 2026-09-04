@@ -5355,7 +5355,7 @@ export const GATES: readonly GateSpec[] = [
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
-      job: 'quality-static',
+      job: 'quality-code',
       step: 'Dockerfile npm pins',
     },
   },

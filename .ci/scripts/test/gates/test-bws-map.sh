@@ -65,6 +65,14 @@ jobs:
           SHADOW_NAMES: ALPHA_TOKEN
           GH_ALPHA_TOKEN: ${{ secrets.ALPHA_TOKEN }}
         run: echo hi
+      # A CUT-OVER CONSUMER, and it is not decoration either: assertion 13 refuses to
+      # pass a tree with no `${{ env.BWS_* }}` read at all, because "nothing reads
+      # Bitwarden" is what a scan that lost its subject looks like. A fixture without
+      # one made the whole coherent-tree control fail, which is the control every case
+      # below is measured against.
+      - env:
+          USED: ${{ env.BWS_ALPHA_TOKEN }}
+        run: echo consumed
 WF
     # PREFIX_EU must be mapped or exempt, and ALPHA_TOKEN/ORPHAN_TOKEN must be
     # spelled somewhere the corpus scan can see.
