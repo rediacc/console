@@ -4534,6 +4534,11 @@ export const GATES: readonly GateSpec[] = [
   {
     id: 'gate-test:devcontainer-pin-freshness',
     run: '.ci/scripts/test/gates/test-devcontainer-pin-freshness.sh',
+    // 21.3s measured (EWMA of five runs, 19-28s): every one of its 6 cases is
+    // its own `npx tsx` start of the validator, so the floor is interpreter
+    // start-up, not work. Offline and deterministic; CI's quality-security
+    // lane still runs it. Marked 2026-09-04 when the EWMA crossed the 20s line.
+    slow: true,
     gate: true,
     qualityGateTest: true,
     leaves: ['.ci/scripts/test/gates/test-devcontainer-pin-freshness.sh'],
