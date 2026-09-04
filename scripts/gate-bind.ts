@@ -48,12 +48,30 @@ const WORKFLOW = '.github/workflows/ci-quality.yml';
  */
 const SUBJECT = /\.(py|sh|ts)$/;
 
+/**
+ * ...but NOT the gate-test tree. Two reasons, and the second is the load-bearing one:
+ *
+ *   1. .ci/scripts/test/gates/test-gate-header.sh carries a sample header as FIXTURE
+ *      data -- quoted array elements it feeds to the parser. Widening SUBJECT read it
+ *      as a real declaration for `step: Dockerfile npm pins',` (trailing quote included).
+ *      Same class as the heredoc false positive already recorded in
+ *      scripts/check-enumeration-vacuity.ts: a quoted body is data, not code.
+ *   2. All 132 gate-tests share the single step 'Quality-gate unit tests'. None of them
+ *      owns a step, so none of them can legitimately declare one -- see the shared-step
+ *      guard in --extract. Excluding the tree states that once instead of per file.
+ */
+const NOT_SUBJECT = /\/test\/gates\//;
+
 const read = (rel: string): string => fs.readFileSync(path.join(ROOT, rel), 'utf-8');
 
 const tracked = (): string[] =>
   execFileSync('git', ['-C', ROOT, 'ls-files', '.ci/scripts', 'scripts'], { encoding: 'utf-8' })
     .split('\n')
-    .filter((f) => f !== '' && SUBJECT.test(f));
+    .filter((f) => f !== '' && SUBJECT.test(f) && !NOT_SUBJECT.test(f));
+
+/** The paths this gate reads, so `--extract` can refuse to write outside them. */
+export const inScope = (f: string): boolean =>
+  /^(\.ci\/scripts|scripts)\//.test(f) && SUBJECT.test(f) && !NOT_SUBJECT.test(f);
 
 /** Every declared gate: its path, its header, and what convention derives from them. */
 export interface Bound {
@@ -80,6 +98,31 @@ export function bind(file: string, source: string): Bound | null {
 }
 
 /** Does the workflow contain this step name, in this job? */
+/**
+ * Is the lane's `# >>> gate-bind` region placed AFTER that lane's `- id: setup` step?
+ *
+ * Every emitted step guards on `steps.setup.outcome == 'success'`. A region placed above
+ * that step references a step that has not run: the expression evaluates empty, every
+ * gate in the region SKIPS, and the job reports green having run none of them. That is
+ * the worst shape a CI change can take, and it is invisible in a diff -- the steps are
+ * all there, correctly written, in the wrong place.
+ *
+ * Placed once per lane by hand, so checked once per lane here.
+ */
+export function regionAfterSetup(workflow: string, job: string): boolean {
+  const lines = workflow.split('\n');
+  const j = lines.findIndex((l) => l.trim() === `${job}:`);
+  if (j === -1) return true;
+  const nextJob = lines.findIndex((l, i) => i > j && /^  [a-z][a-z0-9-]*:$/.test(l));
+  const end = nextJob === -1 ? lines.length : nextJob;
+  const setup = lines.findIndex((l, i) => i > j && i < end && l.trim() === '- id: setup');
+  const region = lines.findIndex(
+    (l, i) => i > j && i < end && l.trim().startsWith('# >>> gate-bind')
+  );
+  if (setup === -1 || region === -1) return true;
+  return region > setup;
+}
+
 export function stepInJob(workflow: string, job: string, step: string): boolean {
   const lines = workflow.split('\n');
   let cur = '';
@@ -106,12 +149,33 @@ const CLOSE_RE = /^\s*# <<< gate-bind\s*$/;
  * carry it, and a gate step without it runs after its own job's setup has failed and
  * reports a confusing second failure instead of the real one.
  */
+/**
+ * A DECLARED NEED IS ACQUIRED, not merely used to pick a lane.
+ *
+ * check_git_history_depth.py declares `needs: python-yaml`, and placement duly sent it to
+ * quality-static -- the only lane that installs PyYAML. But that lane installs it INSIDE
+ * each step's own `run` block, and the gate-bind region sits above all of them, so the
+ * emitted step ran before any install existed. check:ci-python-gate-deps caught it: a
+ * script importing yaml in a job whose earlier steps never name it dies with
+ * ModuleNotFoundError on a clean runner and passes on any machine that happens to have
+ * the module. The lane answers WHERE; this answers WITH WHAT.
+ */
+const ACQUIRE: Record<string, string[]> = {
+  'python-yaml': [
+    '          python3 -m pip install --user --disable-pip-version-check "PyYAML==${PYYAML_VERSION}"',
+    '          python3 -c "import yaml; print(\'PyYAML\', yaml.__version__)"',
+  ],
+};
+
 export function emitStep(b: Bound): string[] {
-  return [
+  const cmd = b.run.startsWith('tsx ') ? `npm run ${b.id}` : b.run;
+  const acquire = b.needs.flatMap((n) => ACQUIRE[n] ?? []);
+  const head = [
     `      - name: ${b.step}`,
     "        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}",
-    `        run: ${b.run.startsWith('tsx ') ? `npm run ${b.id}` : b.run}`,
   ];
+  if (acquire.length === 0) return [...head, `        run: ${cmd}`];
+  return [...head, '        run: |', ...acquire, `          ${cmd}`];
 }
 
 /**
@@ -164,6 +228,8 @@ export interface Registered {
   file: string;
   step: string;
   job: string;
+  /** package.json's script body -- the real command. The manifest only holds `npm run <id>`. */
+  run: string;
   /** The `//` prose above the entry. This IS the `why:`, so extraction loses nothing. */
   why: string[];
 }
@@ -187,7 +253,7 @@ export function registered(manifest: string, id: string): Registered | { error: 
     .split('\n')
     .filter((l) => /^\s*\/\//.test(l))
     .map((l) => l.replace(/^\s*\/\/\s?/, '').trimEnd());
-  const out: Registered = { file, step: field('step'), job: field('job'), why };
+  const out: Registered = { file, step: field('step'), job: field('job'), run: '', why };
   if (out.file === '' || out.step === '' || out.job === '') {
     return { error: `entry '${id}' is missing leaves, ci.step or ci.job` };
   }
@@ -211,6 +277,16 @@ export function headerLines(
   // check:ci-shell-format. 308 of 378 ids need no override, and writing one into all of
   // them would turn a convention into 378 restatements of itself.
   if (id !== undefined && derivedId(r.file) !== id) out.push(`id: ${id}`);
+  // `run:` likewise. Three registered shapes do not derive: `tsx X --selftest` alone,
+  // `tsx X --selftest && tsx X`, and `tsx X && tsx <a different control file>`. The
+  // second is `selftest: true`; the other two are genuinely per-gate, and inventing
+  // derivation rules for them would encode five gates' habits as a convention.
+  const wanted = r.run ?? '';
+  if (wanted !== '' && wanted === derivedRun(r.file, true)) {
+    out.push('selftest: true');
+  } else if (wanted !== '' && wanted !== derivedRun(r.file)) {
+    out.push(`run: ${wanted}`);
+  }
   if (pinLane) out.push(`lane: ${r.job}`);
   if (r.why.length > 0) {
     out.push(`why: ${r.why[0]}`);
@@ -226,6 +302,23 @@ export function headerLines(
  * comment block under the shebang, a TypeScript block comment. Falls back to a
  * standalone line-comment block, which the parser accepts in every one of them.
  */
+/**
+ * Remove a declared header, so `--rebind` can re-emit one that matches a registration
+ * that has since moved. Without it the only repair for a header written wrong is a hand
+ * edit, which is the thing this tool exists to stop asking for.
+ */
+export function stripHeader(source: string): string {
+  const lines = source.split('\n');
+  const open = lines.findIndex((l) => /^\s*(?:#|\/\/|\*)?\s*-{2,}\s*gate\s*-{2,}\s*$/.test(l));
+  if (open === -1) return source;
+  const close = lines.findIndex((l, i) => i > open && /-{2,}\s*end gate\s*-{2,}\s*$/.test(l));
+  if (close === -1) return source;
+  const rest = lines.slice(close + 1);
+  // The blank line the emitter added after the block goes with it.
+  if (rest[0] === '' || rest[0]?.trim() === '*') rest.shift();
+  return [...lines.slice(0, open), ...rest].join('\n');
+}
+
 export function insertHeader(
   file: string,
   source: string,
@@ -244,19 +337,33 @@ export function insertHeader(
       }
     }
   }
-  if (file.endsWith('.ts') && lines[0]?.startsWith('/**')) {
-    const close = lines.findIndex((l) => l.trim() === '*/');
-    if (close !== -1) {
-      return [
-        ...lines.slice(0, close),
-        ' *',
-        ...body.map((l) => ` * ${l}`),
-        ...lines.slice(close),
-      ].join('\n');
-    }
-  }
-  // Fallback, and the normal path for .sh: a comment block under the shebang.
+  // A JS/TS FILE NEVER TAKES THE `#` FALLBACK. `#` is a comment in Python and shell and
+  // a SYNTAX ERROR in TypeScript, and the fallback reached eight scripts that open with
+  // `#!/usr/bin/env node`: the block-comment branch wanted `/**` on line 0, the shebang
+  // is on line 0, so each was written with `# ` and stopped parsing. They are all
+  // `tsx`-invoked gates, so the breakage was total and immediate.
+  const js = /\.(ts|js|cjs|mjs)$/.test(file);
   const after = lines[0]?.startsWith('#!') ? 1 : 0;
+  if (js) {
+    if (lines[after]?.startsWith('/**')) {
+      const close = lines.findIndex((l, i) => i > after && l.trim() === '*/');
+      if (close !== -1) {
+        return [
+          ...lines.slice(0, close),
+          ' *',
+          ...body.map((l) => ` * ${l}`),
+          ...lines.slice(close),
+        ].join('\n');
+      }
+    }
+    return [
+      ...lines.slice(0, after),
+      ...body.map((l) => `// ${l}`),
+      '',
+      ...lines.slice(after),
+    ].join('\n');
+  }
+  // The normal path for .sh, and the fallback for anything else that takes `#`.
   return [...lines.slice(0, after), ...body.map((l) => `# ${l}`), '', ...lines.slice(after)].join(
     '\n'
   );
@@ -284,7 +391,7 @@ function selftest(): number {
     bind(
       '.ci/scripts/quality/check_a.py',
       `${py}\ngit ls-files --recurse-submodules`
-    )?.needs.includes('submodules')
+    )?.needs.includes('submodules') === true
   );
   // Both controls below are regressions, found by wiring ONE gate through this binder.
   // Each mis-inference is silent: it does not fail, it moves the gate to a fatter lane.
@@ -293,7 +400,7 @@ function selftest(): number {
     !bind(
       '.ci/scripts/quality/check_a.py',
       `${py}\n# explains a defect in private/account/Dockerfile\nx = 1`
-    )?.needs.includes('submodules')
+    )?.needs.includes('submodules') === true
   );
   ck(
     'CONTROL: a variable named `node` is not a node runtime',
@@ -304,7 +411,8 @@ function selftest(): number {
   );
   ck(
     'CONTROL: but an actual `node script.js` invocation still is',
-    bind('.ci/scripts/quality/check_a.sh', `${py}\nnode scripts/x.js`)?.needs.includes('node')
+    bind('.ci/scripts/quality/check_a.sh', `${py}\nnode scripts/x.js`)?.needs.includes('node') ===
+      true
   );
   const MANIFEST_FIXTURE = [
     '  {',
@@ -327,6 +435,7 @@ function selftest(): number {
       reg.file === '.ci/scripts/quality/check_a_b.py' &&
       reg.step === 'A B' &&
       reg.job === 'quality-static' &&
+      reg.run === '' &&
       reg.why.join('|') === 'why it exists, line one|and line two',
     reg
   );
@@ -352,7 +461,7 @@ function selftest(): number {
   ck(
     'an id the path does not imply is emitted as an explicit override',
     headerLines(
-      { file: '.ci/scripts/security/shfmt.sh', step: 'S', job: 'q', why: [] },
+      { file: '.ci/scripts/security/shfmt.sh', step: 'S', job: 'q', run: '', why: [] },
       [],
       false,
       'check:ci-shell-format'
@@ -361,11 +470,28 @@ function selftest(): number {
   ck(
     'CONTROL: an id the path DOES imply is left to the convention',
     !headerLines(
-      { file: '.ci/scripts/quality/check_a_b.py', step: 'S', job: 'q', why: [] },
+      { file: '.ci/scripts/quality/check_a_b.py', step: 'S', job: 'q', run: '', why: [] },
       [],
       false,
       'check:ci-a-b'
     ).some((l) => l.startsWith('id:'))
+  );
+  ck(
+    'stripHeader removes a declared block and leaves the rest intact',
+    (() => {
+      const withHdr = insertHeader(
+        'scripts/check-a.ts',
+        '#!/usr/bin/env node\nexport const x = 1;\n',
+        ['---- gate ----', 'step: A', '---- end gate ----']
+      );
+      if (typeof withHdr !== 'string') return false;
+      const back = stripHeader(withHdr);
+      return parseGateHeader(back) === null && back.includes('export const x = 1;');
+    })()
+  );
+  ck(
+    'CONTROL: stripHeader leaves a file with no header alone',
+    stripHeader('const x = 1;\n') === 'const x = 1;\n'
   );
   ck(
     'CONTROL: extracting into a file that already declares one is refused',
@@ -374,7 +500,7 @@ function selftest(): number {
   ck(
     'a shell script carries the header as # comments under its shebang',
     (() => {
-      const r2 = { file: 'x', step: 'A B', job: 'quality-static', why: [] };
+      const r2 = { file: 'x', step: 'A B', job: 'quality-static', run: '', why: [] };
       const next = insertHeader(
         '.ci/scripts/quality/check-a-b.sh',
         '#!/usr/bin/env bash\nset -e\n',
@@ -384,6 +510,43 @@ function selftest(): number {
         typeof next === 'string' && next.startsWith('#!') && parseGateHeader(next)?.step === 'A B'
       );
     })()
+  );
+  ck(
+    'a .ts file with a SHEBANG gets // comments, never #, and still parses',
+    (() => {
+      const r2 = { file: 'scripts/check-a.ts', step: 'A', job: 'q', run: '', why: [] };
+      const next = insertHeader(
+        'scripts/check-a.ts',
+        '#!/usr/bin/env node\nexport const x = 1;\n',
+        headerLines(r2, [], false)
+      );
+      return (
+        typeof next === 'string' &&
+        !next.includes('# ---- gate ----') &&
+        next.includes('// ---- gate ----') &&
+        parseGateHeader(next)?.step === 'A'
+      );
+    })()
+  );
+  ck(
+    'CONTROL: a .sh file still gets # comments',
+    (() => {
+      const r2 = { file: '.ci/scripts/quality/check-a.sh', step: 'A', job: 'q', run: '', why: [] };
+      const next = insertHeader(
+        '.ci/scripts/quality/check-a.sh',
+        '#!/usr/bin/env bash\nset -e\n',
+        headerLines(r2, [], false)
+      );
+      return typeof next === 'string' && next.includes('# ---- gate ----');
+    })()
+  );
+  ck(
+    'a gate-test is out of scope: its header is fixture data and it owns no step',
+    NOT_SUBJECT.test('.ci/scripts/test/gates/test-gate-header.sh')
+  );
+  ck(
+    'CONTROL: a real gate under .ci/scripts is still in scope',
+    !NOT_SUBJECT.test('.ci/scripts/quality/check_environment_names.py')
   );
   ck(
     'CONTROL: a header in a file the naming convention does not cover is still bound',
@@ -396,6 +559,59 @@ function selftest(): number {
 
   const wf =
     'jobs:\n  quality-code:\n    steps:\n      - name: Gate binding\n        run: x\n  other:\n    steps:\n      - name: Elsewhere\n';
+  const WF_OK = [
+    '  a:',
+    '    steps:',
+    '      - id: setup',
+    '      # >>> gate-bind',
+    '      # <<< gate-bind',
+    '',
+  ].join('\n');
+  const WF_BAD = [
+    '  a:',
+    '    steps:',
+    '      # >>> gate-bind',
+    '      # <<< gate-bind',
+    '      - id: setup',
+    '',
+  ].join('\n');
+  ck('a region below `id: setup` is accepted', regionAfterSetup(WF_OK, 'a'));
+  ck(
+    'CONTROL: a region ABOVE `id: setup` is refused -- its steps would silently skip',
+    !regionAfterSetup(WF_BAD, 'a')
+  );
+  ck(
+    'CONTROL: a lane with no region at all is not this check’s business',
+    regionAfterSetup(['  a:', '    steps:', '      - id: setup', ''].join('\n'), 'a')
+  );
+  ck(
+    'a declared python-yaml need is ACQUIRED in the emitted step, at the pin',
+    (() => {
+      const out = emitStep({
+        file: 'x.py',
+        id: 'check:ci-x',
+        run: 'x.py',
+        step: 'X',
+        needs: ['python-yaml'],
+      });
+      return (
+        out.includes('        run: |') &&
+        out.some((l) => l.includes('PyYAML==${PYYAML_VERSION}')) &&
+        out[out.length - 1] === '          x.py'
+      );
+    })()
+  );
+  ck(
+    'CONTROL: a gate that needs nothing gets a one-line run, not a block',
+    emitStep({ file: 'x.py', id: 'check:ci-x', run: 'x.py', step: 'X', needs: [] }).includes(
+      '        run: x.py'
+    )
+  );
+  ck('a gate under scripts/ is in scope', inScope('scripts/check-deps.ts'));
+  ck(
+    'CONTROL: packages/cli/scripts is NOT -- a header there is never read',
+    !inScope('packages/cli/scripts/check-cli-i18n-help-render.ts')
+  );
   ck('stepInJob finds a step in its own job', stepInJob(wf, 'quality-code', 'Gate binding'));
   ck('CONTROL: it does NOT find it in a different job', !stepInJob(wf, 'other', 'Gate binding'));
   ck('CONTROL: a step that is not there is not found', !stepInJob(wf, 'quality-code', 'Nope'));
@@ -456,19 +672,53 @@ function main(argv: string[]): void {
     process.exit(n === 0 ? 0 : 1);
   }
 
-  const exAt = argv.indexOf('--extract');
+  const rbAt = argv.indexOf('--rebind');
+  const exAt = rbAt !== -1 ? rbAt : argv.indexOf('--extract');
   if (exAt !== -1) {
     const id = argv[exAt + 1];
     if (id === undefined || id.startsWith('--')) {
       console.error('✗ --extract needs a gate id, e.g. --extract check:ci-shell-format');
       process.exit(1);
     }
-    const reg = registered(read('scripts/ci-runner/manifest.ts'), id);
+    const manifestText = read('scripts/ci-runner/manifest.ts');
+    const reg = registered(manifestText, id);
     if ('error' in reg) {
       console.error(`✗ ${reg.error}`);
       process.exit(1);
     }
-    const src = read(reg.file);
+    const pkgScripts = (JSON.parse(read('package.json')) as { scripts: Record<string, string> })
+      .scripts;
+    reg.run = pkgScripts[id] ?? '';
+    // A HEADER THE BINDER WILL NEVER READ IS WORSE THAN NO HEADER. The scan is
+    // `git ls-files .ci/scripts scripts`; extraction wrote valid headers into
+    // packages/cli/scripts/ and packages/www/scripts/, which sit outside it, and they
+    // were simply never seen -- the same silent-ignore this gate already closed once
+    // for file NAMES, returning through file PATHS.
+    if (!inScope(reg.file)) {
+      console.error(
+        `✗ ${id}: ${reg.file} is outside this gate's scan (.ci/scripts, scripts), so a ` +
+          'header there would never be read. It stays hand-registered.'
+      );
+      process.exit(1);
+    }
+    // A GATE WITH NO STEP OF ITS OWN CANNOT DECLARE ONE. 132 gate-tests share the single
+    // step 'Quality-gate unit tests' and 10 i18n checks share 'i18n': they are sub-gates
+    // of one aggregate command, not steps. Emitting a header for each would write the
+    // same step name N times into a lane. This is the ceiling on what --extract can
+    // ever cover, and it is better stated here than discovered per gate.
+    const sharers = (
+      manifestText.match(
+        new RegExp(`step: '${reg.step.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}'`, 'g')
+      ) ?? []
+    ).length;
+    if (sharers > 1) {
+      console.error(
+        `✗ ${id}: step "${reg.step}" is shared by ${sharers} manifest entries, so no one ` +
+          'gate owns it. Sub-gates of an aggregate step stay hand-registered.'
+      );
+      process.exit(1);
+    }
+    const src = rbAt !== -1 ? stripHeader(read(reg.file)) : read(reg.file);
     const needs = inferredNeeds(src);
     // PIN THE LANE ONLY WHEN THE INFERENCE DISAGREES. Emitting `lane:` unconditionally
     // would freeze today's placement into 129 files and make the derivation decorative.
@@ -482,8 +732,12 @@ function main(argv: string[]): void {
     // THE EXTRACTION MUST ROUND-TRIP. A header that re-derives something OTHER than what
     // is registered would move the gate silently, which is the class this tool closes.
     const rb = bind(reg.file, next);
-    if (rb === null || rb.id !== id || rb.step !== reg.step) {
-      const got = rb === null ? 'nothing' : `${rb.id} / "${rb.step}"`;
+    // RUN IS PART OF THE ROUND TRIP. Checking only id and step let six headers be
+    // written whose `run` disagreed with package.json -- the gate then reported them as
+    // binding problems, which is the tool creating the work it exists to remove.
+    const runOk = reg.run === '' || rb?.run === reg.run;
+    if (rb === null || rb.id !== id || rb.step !== reg.step || !runOk) {
+      const got = rb === null ? 'nothing' : `${rb.id} / "${rb.step}" / ${rb.run}`;
       console.error(
         `✗ ${reg.file}: emitted header re-derives ${got}, not ${id} / "${reg.step}". Not written.`
       );
@@ -581,6 +835,12 @@ function main(argv: string[]): void {
     }
     if (!satisfies(lane, b.needs)) {
       problems.push(`${b.file}: lane '${job}' does not provide all of ${JSON.stringify(b.needs)}`);
+    }
+    if (!regionAfterSetup(workflow, job)) {
+      problems.push(
+        `${b.file}: job '${job}' has its \`# >>> gate-bind\` region ABOVE its \`- id: setup\` ` +
+          "step, so every emitted step's `steps.setup.outcome` guard is empty and they all skip"
+      );
     }
     if (!stepInJob(workflow, job, b.step)) {
       problems.push(`${b.file}: ${WORKFLOW} job '${job}' has no step named "${b.step}"`);

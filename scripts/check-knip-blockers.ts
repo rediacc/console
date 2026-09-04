@@ -17,6 +17,11 @@
  * runs knip with --treat-config-hints-as-errors.
  *
  * Usage: tsx scripts/check-knip-blockers.ts [--config <path>]
+ *
+ * ---- gate ----
+ * step: knip BLOCKER reasons
+ * needs: node
+ * ---- end gate ----
  */
 
 import { execFileSync } from 'node:child_process';

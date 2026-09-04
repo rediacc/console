@@ -1,4 +1,10 @@
 #!/bin/bash
+# ---- gate ----
+# step: Rubric calibration
+# needs: none
+# lane: quality-code
+# ---- end gate ----
+
 # A calibrated rubric may not change without being re-calibrated.
 #
 # THE GAP. Three prompt constants drive the stop judge's rules, and each has a fixture set

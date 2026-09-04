@@ -363,7 +363,7 @@ export const GATES: readonly GateSpec[] = [
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
-      job: 'quality-code',
+      job: 'quality-static',
       step: 'Git history depth',
     },
   },

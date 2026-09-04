@@ -16,6 +16,14 @@
  * Exit codes:
  *   0 - All dependencies are up-to-date (or blocked), or upgrade succeeded
  *   1 - Outdated dependencies found (check mode) or upgrade failed
+ *
+ * ---- gate ----
+ * step: External dependency freshness
+ * needs: node
+ * id: check:deps
+ * selftest: true
+ * lane: quality-content
+ * ---- end gate ----
  */
 
 import { execSync, spawnSync } from 'node:child_process';

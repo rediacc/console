@@ -1,4 +1,10 @@
 #!/bin/bash
+# ---- gate ----
+# step: www build token
+# needs: none
+# lane: quality-code
+# ---- end gate ----
+
 # Every www build in CI must pass GITHUB_TOKEN. All of them, not most of them.
 #
 # THE DEFECT, twice. `packages/www/src/pages/[lang]/downloads.astro` fetches the latest

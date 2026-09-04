@@ -29,6 +29,12 @@ those are implementation. It checks the BEHAVIOUR that failed -- that substituti
 containing a newline, a `|`, an `&` and a backslash still produces a rendered prompt with
 no placeholder left behind. A future refactor that drops the escaping fails here even if it
 spells the helper differently or drops it entirely.
+
+---- gate ----
+step: Review prompt render
+needs: none
+lane: quality-code
+---- end gate ----
 """
 
 import os

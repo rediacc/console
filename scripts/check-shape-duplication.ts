@@ -60,6 +60,12 @@
  * Usage:
  *   npx tsx scripts/check-shape-duplication.ts [--selftest]
  *   npx tsx scripts/check-shape-duplication.ts --seed    # rewrite the baseline
+ *
+ * ---- gate ----
+ * step: Shape duplication
+ * needs: node
+ * selftest: true
+ * ---- end gate ----
  */
 import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';

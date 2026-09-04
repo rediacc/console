@@ -223,6 +223,12 @@ const RULES = [
   // the whole VM matrix in anyway; full is both cheaper and honest.
   { name: 'scripts-drills', match: matchPrefix('scripts/drills/'), full: 'harness' },
 
+  // The GATE BINDER, which is executed by a gated job and also WRITES ci-quality.yml.
+  // It is the one file under scripts/ that both runs as a gate and generates the
+  // workflow other gates are stepped from, so a delta touching only it changes what
+  // every lane runs. check:ci-scope-scripts-reachability caught it as 'reduced'.
+  { name: 'scripts-gate-bind', match: matchPrefix('scripts/gate-bind.ts'), full: 'harness' },
+
   // The shape-duplication SEED, and it must force full CI for a reason that is easy
   // to get backwards. The seed is not an input the gate reads for reference -- it IS
   // the gate's baseline: every hash in it is a shape the gate has agreed to stay

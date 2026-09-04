@@ -21,6 +21,12 @@ constant and an `apply_verdict` function is a judged rule. Each one must be impo
 and CALLED from, the stop path (`wl_checks.py` or `wl_judge.py`). The set is discovered,
 never listed: a hand-maintained list of wired rules is the same unkept promise this gate
 exists to distrust, and a new rule added without wiring would simply be absent from it.
+
+---- gate ----
+step: Judged rule wiring
+needs: none
+lane: quality-code
+---- end gate ----
 """
 
 import os
