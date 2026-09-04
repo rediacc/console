@@ -22,6 +22,8 @@
 #     with no body flag at all -- create is the one call with no block to
 #     destroy, so it is judged on what it produces, not on being a whole-body
 #     write;
+#   - `gh api .../pulls/<n> -X PATCH` that carries no body field (a title or
+#     state change), for the same reason;
 #   - `gh pr edit` for anything that is not the body: --title, --add-label,
 #     --add-reviewer, --milestone. The guard keys on the body flags alone,
 #     because a guard whose usual outcome is a false positive teaches people to
@@ -64,6 +66,39 @@ BEGIN_MARKER='<!-- worklist-epics:begin -->'
 # ALL, because `gh pr edit --body` writes the whole body and anything absent is gone.
 # Measured on PR #585, 2026-09-03: the body carries worklist-epics AND pushed-head.
 GENERATED_MARKERS='worklist-epics pushed-head'
+
+refuse_whole_body_edit() {
+    cat >&2 <<'MSG'
+BLOCKED: do not write a PR body by hand.
+
+The description carries generated `<!-- worklist-epics:begin -->` and
+`<!-- pushed-head:begin -->` blocks, and a whole-body write (`gh pr edit --body`,
+or `gh api .../pulls/<n> -X PATCH -F body=...`) replaces the WHOLE body, so any
+block absent from what you send is gone. CI then fails on a missing block,
+minutes later, naming nothing that would point back here.
+
+Use the tool, which strips and rebuilds only its own markers and leaves your
+prose alone:
+
+  worklist.py --publish <me> <branch>          # refresh the snapshot
+  .ci/scripts/pr/sync-epic-block.sh <pr> <branch>   # sync it into the PR
+
+To change the narrative part of the description, keep EVERY marker in the body
+you write -- a body that already carries them all is not refused, because it
+cannot be the thing that drops them. Read the current body, change your prose,
+leave the marker sections alone, and send it with the PATCH form (`gh pr edit
+--body` is refused by block-adhoc-sanctioned.sh: it exits 1 on a deprecated
+GraphQL field and leaves the body unchanged). Give the file by its LITERAL path;
+a path behind a shell variable is unreadable here and is refused, not trusted:
+
+  gh pr view <pr> --json body -q .body > /abs/path/body.md   # keeps the blocks
+  # edit the prose in body.md, leave the worklist-epics and pushed-head sections untouched
+  gh api repos/<owner>/<repo>/pulls/<pr> -X PATCH -F body=@/abs/path/body.md
+
+`gh pr edit --title`, `--add-label` and friends are not affected by this guard.
+MSG
+    exit 2
+}
 
 # Read whatever body text this command makes visible: --body is in the command,
 # --body-file is on disk. Shared by both arms, because both ask the same
@@ -123,32 +158,52 @@ if [ -n "$EDIT_SEG" ] &&
     if [ "$EDIT_OK" = 1 ]; then
         exit 0
     fi
-    cat >&2 <<'MSG'
-BLOCKED: do not write a PR body by hand.
+    refuse_whole_body_edit
+fi
 
-The description carries a generated `<!-- worklist-epics:begin -->` block built
-from agent/pr/<branch>.md, and a raw `gh pr edit --body` replaces the WHOLE body,
-so the block goes with it. CI then fails on a missing block, minutes later,
-naming nothing that would point back here.
-
-Use the tool, which strips and rebuilds only its own markers and leaves your
-prose alone:
-
-  worklist.py --publish <me> <branch>          # refresh the snapshot
-  .ci/scripts/pr/sync-epic-block.sh <pr> <branch>   # sync it into the PR
-
-To change the narrative part of the description, keep the block in the body you
-write -- an edit whose body already CARRIES the block is not refused, because it
-cannot be the thing that drops it. Read the current body, change your prose,
-leave the markers alone:
-
-  gh pr view <pr> --json body -q .body > body.md   # keeps the block
-  # edit the prose in body.md, leave the worklist-epics markers untouched
-  gh pr edit <pr> --body-file body.md
-
-`gh pr edit --title`, `--add-label` and friends are not affected by this guard.
-MSG
-    exit 2
+# ---- the SANCTIONED body write is a whole-body write too -------------------
+# block-adhoc-sanctioned.sh refuses `gh pr edit --body` (it exits 1 on the
+# deprecated projectCards GraphQL field with the body UNCHANGED) and prescribes
+# `gh api repos/<o>/<r>/pulls/<n> -X PATCH -F body=@<file>` instead. That form
+# replaces the whole body exactly as `gh pr edit --body` does, and until
+# 2026-09-04 it walked past this guard unread: this file's own message pointed
+# at `gh pr edit --body-file`, the sanctioned guard refused that, and the door
+# it pointed to instead had no marker check at all. Same rule as the edit arm:
+# every generated marker must be visible in the body this call writes, and an
+# unreadable body is refused, because it can silently replace one that exists.
+API_SEGS=$(printf '%s' "$SCAN" | sed -e 's/[;&|()`]/\n/g' |
+    grep -E '^[[:space:]]*gh[[:space:]]+api([[:space:]]|$)' |
+    grep -E 'pulls/[0-9]+' | grep -E '(^|[[:space:]])(-X|--method)[[:space:]]+PATCH([[:space:]]|$)')
+if [ -n "$API_SEGS" ] && printf '%s' "$API_SEGS" |
+    grep -qE -- '(^|[[:space:]])(-F|-f|--field|--raw-field)[[:space:]]+body=|(^|[[:space:]])--input([[:space:]]|=)'; then
+    PATCH_BODY="$CMD"
+    ROOT="${CLAUDE_PROJECT_DIR:-$(git rev-parse --show-toplevel 2>/dev/null)}"
+    SAW=0
+    NEED=0
+    while IFS= read -r f; do
+        [ -n "$f" ] || continue
+        NEED=1
+        for cand in "$f" "$ROOT/$f"; do
+            if [ -f "$cand" ]; then
+                SAW=1
+                PATCH_BODY="$PATCH_BODY
+$(cat "$cand" 2>/dev/null)"
+                break
+            fi
+        done
+    done < <(printf '%s' "$API_SEGS" |
+        grep -oE -- '((-F|--field)[[:space:]]+body=@|--input([[:space:]]+|=))[^[:space:];|&]+' |
+        sed -E 's/^((-F|--field)[[:space:]]+body=@|--input([[:space:]]+|=))//')
+    PATCH_OK=1
+    if [ "$NEED" = 1 ] && [ "$SAW" = 0 ]; then
+        PATCH_OK=0
+    else
+        for _m in $GENERATED_MARKERS; do
+            printf '%s' "$PATCH_BODY" | grep -qF -- "<!-- ${_m}:begin -->" || PATCH_OK=0
+        done
+    fi
+    [ "$PATCH_OK" = 1 ] && exit 0
+    refuse_whole_body_edit
 fi
 
 # ---- `gh pr create` was the hole, and it is the one that bit -------------

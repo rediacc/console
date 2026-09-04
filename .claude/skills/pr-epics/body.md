@@ -43,6 +43,10 @@ rendering. Do not bypass it, and do not "clean up" the odd-looking replacement.
 ## Do not hand-edit the block
 
 `.claude/hooks/pre-bash/block-raw-pr-body-edit.sh` refuses a `gh pr edit --body`
-that would write the markers directly. Regenerate from the snapshot instead: a
+or a `gh api .../pulls/<n> -X PATCH -F body=@<file>` whose body does not carry
+every generated marker (the PATCH form is the one to use for prose edits, since
+`block-adhoc-sanctioned.sh` refuses `gh pr edit --body` outright; give the file
+by its literal path, because a path behind a shell variable is unreadable to
+the guard and refused). Regenerate from the snapshot instead: a
 hand-written block is one the gate will diff against the store and reject, and
 the round trip is slower than republishing.

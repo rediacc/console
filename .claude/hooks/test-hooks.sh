@@ -232,6 +232,32 @@ check 2 pre-bash/block-raw-pr-body-edit.sh \
 check 0 pre-bash/block-raw-pr-body-edit.sh \
     "$(bash_json "gh pr create --draft --body \"x $PB_M y\" && gh pr edit 42 --add-label a")" \
     "raw-pr-body CONTROL: the edit's --add-label is not the create's --body"
+# THE SANCTIONED FORM IS A WHOLE-BODY WRITE TOO. Found 2026-09-04 while
+# babysitting #585: this guard's message prescribed `gh pr edit --body-file`,
+# block-adhoc-sanctioned.sh refused that and prescribed the `gh api ... -X PATCH
+# -F body=@file` form, and that form had no marker check at all. Same rule as
+# the edit arm, both directions.
+printf 'prose\n\n%s\n- epic\n<!-- worklist-epics:end -->\n<!-- pushed-head:begin -->\nhead\n<!-- pushed-head:end -->\n' "$PB_M" >"$PB_DIR/both.md"
+check 2 pre-bash/block-raw-pr-body-edit.sh "$(bash_json "gh api repos/o/r/pulls/42 -X PATCH -F body=@$PB_DIR/without.md")" \
+    "raw-pr-body: PATCH -F body=@file with no block is refused (was allowed)"
+check 2 pre-bash/block-raw-pr-body-edit.sh "$(bash_json "gh api repos/o/r/pulls/42 -X PATCH -F body=@$PB_DIR/with.md")" \
+    "raw-pr-body: PATCH carrying ONLY the epic block still drops pushed-head"
+check 0 pre-bash/block-raw-pr-body-edit.sh "$(bash_json "gh api repos/o/r/pulls/42 -X PATCH -F body=@$PB_DIR/both.md")" \
+    "raw-pr-body CONTROL: PATCH whose file carries EVERY generated marker passes"
+check 2 pre-bash/block-raw-pr-body-edit.sh "$(bash_json "gh api repos/o/r/pulls/42 -X PATCH -F body=@$PB_DIR/absent.md")" \
+    "raw-pr-body: PATCH with an unreadable body file is refused, not trusted"
+check 2 pre-bash/block-raw-pr-body-edit.sh "$(bash_json 'gh api repos/o/r/pulls/42 -X PATCH -F body=@$S/body.md')" \
+    "raw-pr-body: PATCH with a path behind a shell variable is unreadable, refused"
+check 2 pre-bash/block-raw-pr-body-edit.sh "$(bash_json 'gh api repos/o/r/pulls/42 -X PATCH -f body="prose only"')" \
+    "raw-pr-body: PATCH with an inline body and no block is refused"
+check 0 pre-bash/block-raw-pr-body-edit.sh "$(bash_json "gh api repos/o/r/pulls/42 --method PATCH -f body=\"x $PB_M y <!-- pushed-head:begin --> z\"")" \
+    "raw-pr-body CONTROL: PATCH inline body carrying every marker passes"
+check 0 pre-bash/block-raw-pr-body-edit.sh "$(bash_json 'gh api repos/o/r/pulls/42 -X PATCH -F title=t')" \
+    "raw-pr-body CONTROL: PATCH that touches no body is out of scope"
+check 0 pre-bash/block-raw-pr-body-edit.sh "$(bash_json 'gh api repos/o/r/pulls/42 --jq .body')" \
+    "raw-pr-body CONTROL: a GET of the body is not a write"
+check_out 2 pre-bash/block-raw-pr-body-edit.sh "$(bash_json 'gh pr edit 42 --body "prose"')" \
+    "raw-pr-body: the refusal prescribes the PATCH form the sanctioned guard accepts" "-X PATCH -F body=@"
 rm -rf "$PB_DIR"
 unset PB_M PB_DIR
 
