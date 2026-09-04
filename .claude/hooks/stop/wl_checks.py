@@ -3501,21 +3501,17 @@ def run_stop(event, event_ok, worklist, hook_file):
                         "  <- silent but its OS process is VERIFIED ALIVE"
                         " (a loop that prints only at the end is healthy)"
                     )
-                elif stale and _bg_verd.get(tid) == "suspect":
-                    # A SHELL TASK WITH NO PROCESS IS NOT STUCK, it is over. Stuck means
-                    # running and not progressing, and a shell task that is running still
-                    # HAS a process -- that is what 'confirmed' above measures. 'suspect'
-                    # is the OS saying the process is gone, so the stream is final and
-                    # there is nothing to restart. Fired live 2026-09-04 on a completed
-                    # one-shot `--answer`, where "restart or replace" would have re-sent a
-                    # peer request that had already landed. The harness kept reporting it
-                    # as `running`, which is the same stale roster the v18 note above
-                    # describes for teammates.
-                    _suffix = (
-                        "  <- its process is GONE: finished, or died mid-run."
-                        " Read the stream; it is final, and nothing is left to restart"
-                    )
                 elif stale:
+                    # DO NOT soften this to "finished, or died". It was tried on
+                    # 2026-09-04 after a completed one-shot `--answer` was accused, and
+                    # cases 163f and 180e caught it within the hour: 163f's control KILLS
+                    # a live waiter and requires the verdict to flip back to POSSIBLY
+                    # STUCK, which is the only proof the alive-detection is not vacuous.
+                    # A vanished process is a DEAD WORKER and a FINISHED one-shot alike,
+                    # and nothing here can tell them apart -- so the accusation stays and
+                    # the reader disambiguates from the stream. The real defect behind the
+                    # false positive is the harness reporting a completed task as
+                    # `running`; see the v18 note above, same shape for teammates.
                     _suffix = "  <- POSSIBLY STUCK, investigate or restart"
                 else:
                     _suffix = ""
