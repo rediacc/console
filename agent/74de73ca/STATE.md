@@ -50,10 +50,36 @@ gate-tests (they need no header: id, run and the shared battery step are convent
 
 ## Repo state
 
-origin/0903-1 at `53a52e8ed`; THIRTEEN commits local and unpushed -- nothing rides an
-old run, so push them. Tree clean, ci:quick 302/302. CI on 53a52e8ed had the watchdog
-retrying `Quality / Code`; every other Quality job succeeded.
+origin/0903-1 at `396156b53`, pushed, tree clean, ci:quick 303/303.
+
+## What this session built after the compaction
+
+- **check:ci-allowlist-key-matching** gates the MATCHER, not the key shape. A first draft
+  gated key PREFIXES and flagged two live, correct, harmless keys -- key shapes are the
+  symptom, `k in line` is the defect. Planting the old matcher back at
+  check_docker_npm_pins.py:399 reproduces it at that line.
+- **gate-bind --extract / --rebind / --extract-all.** 13 gates now declare their own
+  binding; 174 more are extractable in ONE command (1.26s, versus ~6 minutes as a shell
+  loop -- the cost was 20 node startups, not the work). Running it found seven of its own
+  bugs, every one silent: `#` comments written into nine .ts files; the region placed
+  above `- id: setup`, which makes every step in it SKIP while the job stays green; a
+  declared need used only for placement and never acquired; a naming heuristic standing in
+  for correctness; a gate-test FIXTURE read as a declaration; headers written where the
+  binder never looks; and an unbounded first manifest entry.
+- **stepCountInJob** caught 8 gates already shipped running TWICE per CI job -- emitted
+  into the region while their hand-written step stayed below it.
+- **check_git_history_depth.py moved quality-code -> quality-static.** It imports yaml and
+  exits 1 without it; quality-code installs PyYAML nowhere. It had been passing on the
+  runner image's system PyYAML.
+- **The judge has a log, its own streak, and one question per stop.** The prompt said
+  "times this gate has said continue" and was handed the count of ALL stop blocks: it read
+  69. Brave-default now steps aside on a regression-gate stop.
+- **One token variable.** `GH_TOKEN="$(gh auth token)" GITHUB_TOKEN="$(gh auth token)"`
+  was never a requirement -- three gates fell back between the names and
+  check-external-links.ts read only GITHUB_TOKEN, so setting both is what hid the gap.
+  `env -u GITHUB_TOKEN GH_TOKEN=... npm run ci:quick` is 303/303.
 
 ## Remaining
 
 - Optional, operator-only: `gh secret delete DOCKERHUB_TOKEN --org rediacc`.
+- CI on `396156b53` is still running; no failures at the time of writing.
