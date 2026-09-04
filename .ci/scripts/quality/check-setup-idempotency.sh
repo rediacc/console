@@ -111,6 +111,17 @@ tree_snapshot() {
         grep -vE '(^|/)\.[a-z0-9-]+-fixture\.[0-9]+\.[a-z]+$' | sort
 }
 
+# The two halves of the scoped settle test, at top level so B-scope can drive them
+# with synthetic snapshots instead of racing a real one.
+delta_paths() { # delta_paths <before> <after>
+    diff <(printf '%s\n' "$1") <(printf '%s\n' "$2") |
+        sed -n 's/^[<>] *//p' | awk '{print $NF}' | sort -u
+}
+scoped_to() { # scoped_to <snapshot> <paths>
+    [ -z "$2" ] && return 0
+    grep -F -f <(printf '%s\n' "$2") <<<"$1" | sort
+}
+
 check_b() {
     local out rc before after
     before="$(tree_snapshot)"
@@ -137,11 +148,22 @@ check_b() {
     # ours. This keeps the assertion able to fail -- a real mutation never reverts, so it
     # burns the full window and is then reported -- while removing a false accusation
     # that names the wrong command and sends the reader hunting through run.sh.
+    #
+    # THE POLL IS SCOPED TO THE DELTA PATHS, not to the whole tree, and that is the
+    # difference between a settle test that can succeed and one that cannot. Comparing
+    # the WHOLE snapshot means any unrelated neighbour among the 300 gates sharing this
+    # tree -- one that touches a file this delta never mentioned -- keeps the equality
+    # false for the rest of the window. B then reports "delta persisted 15s" about a
+    # path that settled in one, which is the same false accusation the paragraph above
+    # exists to remove, arriving by a second door.
     if [ "$before" != "$after" ]; then
-        local settled=0 i
+        local settled=0 i paths
+        # Paths named by EITHER snapshot: a file that appeared and one that vanished are
+        # both ours to watch. The last field of a porcelain line; `?? p` and ` M p` alike.
+        paths="$(delta_paths "$before" "$after")"
         for i in $(seq 1 15); do
             sleep 1
-            if [ "$(tree_snapshot)" = "$before" ]; then
+            if [ "$(scoped_to "$(tree_snapshot)" "$paths")" = "$(scoped_to "$before" "$paths")" ]; then
                 settled=1
                 break
             fi
@@ -387,6 +409,25 @@ check_d && pass "ensure_renet_built checks the build's exit code"
 check_e && pass "no status label contradicts its HTTP code"
 check_f && pass "no path-scoped redirect leaves its method unscoped"
 check_g && pass "setup initialises submodules before any phase that reads one"
+
+# B-scope controls: the settle poll must ignore a NEIGHBOUR and still catch a real one.
+#
+# The unscoped form compared whole snapshots, so any of the ~300 gates sharing this tree
+# touching an unrelated file kept the equality false for the whole window. B then blamed
+# `setup --check` for a path that had settled in one second.
+b_before=$'?? a.txt'
+b_after=$'?? a.txt\n?? scratch.tmp' # a neighbour's scratch appeared
+b_paths="$(delta_paths "$b_before" "$b_after")"
+b_settled=$'?? a.txt\n?? unrelated-neighbour.tmp' # scratch gone, a DIFFERENT one arrived
+if [ "$(scoped_to "$b_settled" "$b_paths")" != "$(scoped_to "$b_before" "$b_paths")" ]; then
+    echo "${RED}CONTROL FAILED${NC}: B-scope -- an unrelated neighbour still blocks settling." >&2
+    control_fails=1
+fi
+b_persisted=$'?? a.txt\n?? scratch.tmp'
+if [ "$(scoped_to "$b_persisted" "$b_paths")" = "$(scoped_to "$b_before" "$b_paths")" ]; then
+    echo "${RED}CONTROL FAILED${NC}: B-scope -- a PERSISTING delta was reported as settled." >&2
+    control_fails=1
+fi
 
 # C-control: a random slot must be rejected.
 sed 's/digest="$(printf .*$/digest=$RANDOM/' "$LIB/find-port.sh" >"$TMP/fp-broken.sh"
