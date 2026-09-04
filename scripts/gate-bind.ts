@@ -83,6 +83,69 @@ export function stepInJob(workflow: string, job: string, step: string): boolean 
   return false;
 }
 
+const OPEN_RE = /^\s*# >>> gate-bind\b/;
+const CLOSE_RE = /^\s*# <<< gate-bind\s*$/;
+
+/**
+ * The emitted step for one gate, in the shape every hand-written gate step already has.
+ *
+ * The `if:` guard is not optional decoration: 189 of the 258 steps in ci-quality.yml
+ * carry it, and a gate step without it runs after its own job's setup has failed and
+ * reports a confusing second failure instead of the real one.
+ */
+export function emitStep(b: Bound): string[] {
+  return [
+    `      - name: ${b.step}`,
+    "        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}",
+    `        run: ${b.run.startsWith('tsx ') ? `npm run ${b.id}` : b.run}`,
+  ];
+}
+
+/**
+ * Replace each lane's gate-bind region with the steps its gates derive to.
+ *
+ * REGION-SCOPED, and the prose inside the opening marker is PRESERVED: the marker block
+ * explains itself to whoever opens the file, and a generator that ate its own
+ * explanation every run would train people to stop reading it.
+ */
+export function rewriteRegions(
+  workflow: string,
+  byLane: Map<string, Bound[]>
+): { text: string; lanes: string[] } {
+  const lines = workflow.split('\n');
+  const out: string[] = [];
+  const touched: string[] = [];
+  let job = '';
+  let i = 0;
+  while (i < lines.length) {
+    const raw = lines[i];
+    const m = /^ {2}([A-Za-z0-9_-]+):\s*$/.exec(raw);
+    if (m) job = m[1];
+    if (!OPEN_RE.test(raw)) {
+      out.push(raw);
+      i += 1;
+      continue;
+    }
+    // keep the marker and its explanatory comment lines, drop the emitted steps
+    out.push(raw);
+    i += 1;
+    while (i < lines.length && /^\s*#/.test(lines[i]) && !CLOSE_RE.test(lines[i])) {
+      out.push(lines[i]);
+      i += 1;
+    }
+    for (const b of (byLane.get(job) ?? []).slice().sort((a, z) => a.step.localeCompare(z.step))) {
+      out.push(...emitStep(b));
+    }
+    while (i < lines.length && !CLOSE_RE.test(lines[i])) i += 1;
+    if (i < lines.length) {
+      out.push(lines[i]);
+      i += 1;
+    }
+    touched.push(job);
+  }
+  return { text: out.join('\n'), lanes: touched };
+}
+
 function selftest(): number {
   let bad = 0;
   const ck = (label: string, ok: boolean, detail?: unknown): void => {
@@ -117,10 +180,57 @@ function selftest(): number {
   ck('stepInJob finds a step in its own job', stepInJob(wf, 'quality-code', 'Gate binding'));
   ck('CONTROL: it does NOT find it in a different job', !stepInJob(wf, 'other', 'Gate binding'));
   ck('CONTROL: a step that is not there is not found', !stepInJob(wf, 'quality-code', 'Nope'));
+
+  const b2: Bound = {
+    file: 'x/check_a.py',
+    id: 'check:ci-a',
+    run: 'x/check_a.py',
+    step: 'A',
+    needs: [],
+  };
+  ck(
+    'an emitted step carries the if: guard 189 of 258 steps already have',
+    emitStep(b2)[1].includes("!cancelled() && steps.setup.outcome == 'success'"),
+    emitStep(b2)
+  );
+  ck(
+    'a .ts gate is emitted as `npm run <id>`, a script as its bare path',
+    emitStep({ ...b2, run: 'tsx x/check-a.ts' })[2].trim() === 'run: npm run check:ci-a' &&
+      emitStep(b2)[2].trim() === 'run: x/check_a.py'
+  );
+
+  const region = [
+    'jobs:',
+    '  quality-static:',
+    '    steps:',
+    '      # >>> gate-bind (generated)',
+    '      # explanatory prose',
+    '      - name: STALE',
+    '        run: old',
+    '      # <<< gate-bind',
+    '      - name: hand-written after',
+  ].join('\n');
+  const rw = rewriteRegions(region, new Map([['quality-static', [b2]]]));
+  ck(
+    'rewriting replaces the region body but KEEPS its prose',
+    rw.text.includes('# explanatory prose') &&
+      !rw.text.includes('STALE') &&
+      rw.text.includes('- name: A'),
+    rw.text
+  );
+  ck(
+    'and leaves hand-written steps outside it alone',
+    rw.text.includes('- name: hand-written after')
+  );
+  ck(
+    'rewriting is IDEMPOTENT -- the second pass changes nothing',
+    rewriteRegions(rw.text, new Map([['quality-static', [b2]]])).text === rw.text
+  );
   return bad;
 }
 
 function main(argv: string[]): void {
+  const write = argv.includes('--write');
   if (argv.includes('--selftest')) {
     const n = selftest();
     console.log(`${n === 0 ? '✓' : '✗'} gate-bind selftest: ${n} failure(s)`);
@@ -152,6 +262,37 @@ function main(argv: string[]): void {
         'parser stopped matching or the declarations were removed; refusing a verdict.'
     );
     process.exit(1);
+  }
+
+  if (write) {
+    const byLane = new Map<string, Bound[]>();
+    for (const b of declared) {
+      const placed = placeGate(caps, b.needs);
+      const job = b.lane ?? ('lane' in placed ? placed.lane : '');
+      if (job === '') {
+        console.error(`✗ ${b.file}: ${'error' in placed ? placed.error : 'no lane'}`);
+        process.exit(1);
+      }
+      byLane.set(job, [...(byLane.get(job) ?? []), b]);
+    }
+    const { text, lanes } = rewriteRegions(workflow, byLane);
+    // EVERY LANE WITH GATES MUST HAVE A REGION. Emitting into a file that has none
+    // would silently drop the step and report success -- the vacuity shape again.
+    const missing = [...byLane.keys()].filter((j) => !lanes.includes(j));
+    if (missing.length > 0) {
+      console.error(
+        `✗ no \`# >>> gate-bind\` region in ${missing.join(', ')}. Place one by hand ` +
+          "after that lane's setup steps; the binder never moves a region."
+      );
+      process.exit(1);
+    }
+    if (text === workflow) {
+      console.log(`gate-bind --write: ${WORKFLOW} already matches (${declared.length} gate(s))`);
+    } else {
+      fs.writeFileSync(path.join(ROOT, WORKFLOW), text);
+      console.log(`gate-bind --write: rewrote ${lanes.length} region(s) in ${WORKFLOW}`);
+    }
+    return;
   }
 
   const problems: string[] = [];
