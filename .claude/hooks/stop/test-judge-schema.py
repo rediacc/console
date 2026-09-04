@@ -498,6 +498,7 @@ class FakeProc:
 def fake_run(cmd, **_kw):
     CAPTURED["prompt"] = cmd[cmd.index("-p") + 1]
     CAPTURED["schema"] = json.loads(cmd[cmd.index("--json-schema") + 1])
+    CAPTURED["argv"] = list(cmd)
     return FakeProc(json.dumps({"is_error": False, "structured_output": CAPTURED["answer"]}))
 
 
@@ -518,9 +519,66 @@ def judged(extra, ans, remaining=None):
     return verdict
 
 
+# 2z. THE RETRY, all three directions. cef71b636 added it and shipped WITHOUT these,
+#     which a plan review caught: the commit message described three behaviours and
+#     nothing asserted any of them. The envelope shape below is the real one recorded
+#     on 2026-09-04 -- exit 0, is_error false, subtype success, well inside budget, and
+#     no schema.
+def _envelope(cost, out):
+    return json.dumps(
+        {
+            "is_error": False,
+            "subtype": "success",
+            "stop_reason": "end_turn",
+            "num_turns": 2,
+            "total_cost_usd": cost,
+            "structured_output": out,
+        }
+    )
+
+
+def _retry_probe(payloads):
+    """Run run_judge against a scripted sequence of child envelopes."""
+    calls = {"n": 0}
+
+    def scripted(_cmd, **_kw):
+        calls["n"] += 1
+        return FakeProc(payloads[min(calls["n"] - 1, len(payloads) - 1)])
+
+    real, wl_judge.subprocess.run = wl_judge.subprocess.run, scripted
+    try:
+        verdict, err = wl_judge.run_judge(["- [ ] x"], 0, "msg", 0, "(none)")
+    finally:
+        wl_judge.subprocess.run = real
+    return calls["n"], verdict, err
+
+
+GOOD = _envelope(0.05, {"verdict": "stop", "reason": "r", "next_action": "n"})
+BAD = _envelope(0.1317, None)
+EXHAUSTED = _envelope(0.24, None)
+
+n, v, err = _retry_probe([BAD, GOOD])
+control("one bad sample then a good one RECOVERS", (n, err, v["verdict"]), (2, None, "stop"))
+
+n, v, err = _retry_probe([BAD, BAD])
+control("two bad samples still BLOCK", (n, v, bool(err)), (2, None, True))
+control("and the block says it retried", "RETRIED ONCE" in (err or ""), True)
+
+n, v, err = _retry_probe([EXHAUSTED])
+control("a budget-exhausted call is NOT retried", n, 1)
+control("and it still names the cause", "BUDGET EXHAUSTED" in (err or ""), True)
+
+
 # 3a. A fix stop: the section is in the prompt, the field is in the schema, and
 #     the planted answer turns the stop into a block.
 v = judged(FIXSIG, answer())
+control(
+    "the judge child is given NO TOOLS",
+    CAPTURED["argv"][CAPTURED["argv"].index("--tools") + 1]
+    if "--tools" in CAPTURED["argv"]
+    else "MISSING",
+    "",
+)
 control(
     "the fix signal puts the rubric in the prompt",
     wl_classsweep.SWEEP_MARKER in CAPTURED["prompt"],

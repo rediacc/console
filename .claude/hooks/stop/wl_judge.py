@@ -320,6 +320,21 @@ def run_triage(finding, context):
                 json.dumps(TRIAGE_SCHEMA),
                 "--model",
                 JUDGE_MODEL,
+                # NO TOOLS. A judge reads a prompt and returns a verdict; it has never needed
+                # Bash, Read or Grep, and it was being handed all three in a cwd
+                # (/tmp/claude-worklist/.judge) that contains nothing -- while the sweep prompt
+                # told it "every path it names must actually exist in this repo". Tonight 8 of
+                # 21 sweep verdicts were DROPPED for naming paths that do not exist; a model
+                # that cannot look must be told the paths instead of inventing them.
+                #
+                # WHAT THIS IS NOT: a fix for the no-output failure. That theory was that the
+                # model spent turn 1 on a tool call and ended on turn 2. Probed 2026-09-04
+                # against the real CLI -- `--tools ""` with `--json-schema` returns a valid
+                # verdict and STILL reports turns=2. So turn 2 is the normal shape here and
+                # proves nothing about tools. The retry below remains the thing that handles a
+                # missing verdict.
+                "--tools",
+                "",
                 "--max-budget-usd",
                 JUDGE_BUDGET_USD,
             ],
@@ -410,6 +425,21 @@ def _run_structured(label, prompt, schema, extract):
                 json.dumps(schema),
                 "--model",
                 JUDGE_MODEL,
+                # NO TOOLS. A judge reads a prompt and returns a verdict; it has never needed
+                # Bash, Read or Grep, and it was being handed all three in a cwd
+                # (/tmp/claude-worklist/.judge) that contains nothing -- while the sweep prompt
+                # told it "every path it names must actually exist in this repo". Tonight 8 of
+                # 21 sweep verdicts were DROPPED for naming paths that do not exist; a model
+                # that cannot look must be told the paths instead of inventing them.
+                #
+                # WHAT THIS IS NOT: a fix for the no-output failure. That theory was that the
+                # model spent turn 1 on a tool call and ended on turn 2. Probed 2026-09-04
+                # against the real CLI -- `--tools ""` with `--json-schema` returns a valid
+                # verdict and STILL reports turns=2. So turn 2 is the normal shape here and
+                # proves nothing about tools. The retry below remains the thing that handles a
+                # missing verdict.
+                "--tools",
+                "",
                 "--max-budget-usd",
                 JUDGE_BUDGET_USD,
             ],
@@ -510,6 +540,21 @@ def run_admission(message):
                 json.dumps(ADMISSION_SCHEMA),
                 "--model",
                 JUDGE_MODEL,
+                # NO TOOLS. A judge reads a prompt and returns a verdict; it has never needed
+                # Bash, Read or Grep, and it was being handed all three in a cwd
+                # (/tmp/claude-worklist/.judge) that contains nothing -- while the sweep prompt
+                # told it "every path it names must actually exist in this repo". Tonight 8 of
+                # 21 sweep verdicts were DROPPED for naming paths that do not exist; a model
+                # that cannot look must be told the paths instead of inventing them.
+                #
+                # WHAT THIS IS NOT: a fix for the no-output failure. That theory was that the
+                # model spent turn 1 on a tool call and ended on turn 2. Probed 2026-09-04
+                # against the real CLI -- `--tools ""` with `--json-schema` returns a valid
+                # verdict and STILL reports turns=2. So turn 2 is the normal shape here and
+                # proves nothing about tools. The retry below remains the thing that handles a
+                # missing verdict.
+                "--tools",
+                "",
                 "--max-budget-usd",
                 JUDGE_BUDGET_USD,
             ],
@@ -692,6 +737,21 @@ def run_judge(
         json.dumps(judge_schema_for(extra)),
         "--model",
         JUDGE_MODEL,
+        # NO TOOLS. A judge reads a prompt and returns a verdict; it has never needed
+        # Bash, Read or Grep, and it was being handed all three in a cwd
+        # (/tmp/claude-worklist/.judge) that contains nothing -- while the sweep prompt
+        # told it "every path it names must actually exist in this repo". Tonight 8 of
+        # 21 sweep verdicts were DROPPED for naming paths that do not exist; a model
+        # that cannot look must be told the paths instead of inventing them.
+        #
+        # WHAT THIS IS NOT: a fix for the no-output failure. That theory was that the
+        # model spent turn 1 on a tool call and ended on turn 2. Probed 2026-09-04
+        # against the real CLI -- `--tools ""` with `--json-schema` returns a valid
+        # verdict and STILL reports turns=2. So turn 2 is the normal shape here and
+        # proves nothing about tools. The retry below remains the thing that handles a
+        # missing verdict.
+        "--tools",
+        "",
         "--max-budget-usd",
         JUDGE_BUDGET_USD,
     ]
