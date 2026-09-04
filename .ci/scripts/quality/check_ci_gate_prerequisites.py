@@ -215,7 +215,12 @@ _BROWSER_NEEDS_RE = re.compile(r"(^|[\n;&|(])\s*agent-browser(\s|$)")
 # (execFileSync('agent-browser', ...)), which is not at "command position" in
 # any shell sense. See _needs_via_run_pattern's docstring for the asymmetry.
 _BROWSER_NEEDS_FILE_RE = re.compile(r"\bagent-browser\b")
-_BROWSER_PROVIDE_RE = re.compile(r"npm\s+install\s+(-g|--global)\s+agent-browser")
+# The optional quote is not cosmetic: pinning the version turned the install into
+# `npm install -g "agent-browser@$AGENT_BROWSER_VERSION"`, and this pattern stopped
+# matching, so the gate reported that quality-packages uses agent-browser without
+# installing it -- one step below the install. A provider test that keys on the
+# EXACT spelling of a command breaks every time somebody improves the command.
+_BROWSER_PROVIDE_RE = re.compile(r"npm\s+install\s+(-g|--global)\s+[\"']?agent-browser")
 
 
 def _step_provides_agent_browser(step: dict) -> bool:
@@ -238,7 +243,7 @@ RESOURCES = (
         needs=_needs_via_run_pattern(_BROWSER_NEEDS_RE, _BROWSER_NEEDS_FILE_RE),
         provides=_step_provides_agent_browser,
         fix=(
-            'add a step running `cd "$HOME" && npm install -g agent-browser@latest '
+            'add a step running `cd "$HOME" && npm install -g "agent-browser@<version>" '
             "--ignore-scripts=false` to that job, BEFORE the step (not from inside\n"
             "  the checkout -- this repo's ignore-scripts=true .npmrc silently skips\n"
             "  the postinstall that selects the platform binary)."
@@ -367,6 +372,27 @@ def main() -> int:
         '      - run: cd "$HOME" && npm install -g agent-browser@latest --ignore-scripts=false\n',
         True,
         "agent-browser install AFTER the gate still fires -- order is the point here too",
+    )
+    # THE PINNED, QUOTED SPELLING, which is what the real workflow uses since
+    # 2026-09-04 and what this provider test failed to recognise the moment it
+    # appeared: the pattern required `-g agent-browser` with nothing between, so
+    # `-g "agent-browser@$AGENT_BROWSER_VERSION"` read as no install at all and the
+    # gate reported a missing setup one step below the setup. A provider test keyed
+    # on the exact spelling of a command breaks every time the command improves, so
+    # both spellings are pinned here rather than only the one in the tree today.
+    ok &= ctl(
+        "jobs:\n  a:\n    steps:\n"
+        '      - run: cd "$HOME" && npm install -g "agent-browser@$AGENT_BROWSER_VERSION" --ignore-scripts=false\n'
+        "      - name: Browser gate\n        run: agent-browser open http://x\n",
+        False,
+        "a PINNED, QUOTED install still counts as providing agent-browser",
+    )
+    ok &= ctl(
+        "jobs:\n  a:\n    steps:\n"
+        "      - run: echo agent-browser would be useful here\n"
+        "      - name: Browser gate\n        run: agent-browser open http://x\n",
+        True,
+        "CONTROL: prose naming agent-browser is not an install, quoted or not",
     )
     ok &= ctl(
         "jobs:\n  a:\n    steps:\n      - uses: actions/checkout@v4\n"

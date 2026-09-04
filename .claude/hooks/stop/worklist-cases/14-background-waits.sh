@@ -878,3 +878,48 @@ if [[ ! -f "${WL%.md}.waiternudge-deadbeef" ]]; then
 else
     fail "163w-c8 CONTROL: the counter is stuck at $(cut -d' ' -f1 <"${WL%.md}.waiternudge-deadbeef")"
 fi
+
+echo "== 163w-c9. the CI-waiting force must not claim a reason the item denies =="
+# THE FAILURE, 2026-09-04. When the only in-flight work is a CI watch, the force
+# tells a session to execute an aged deferral's DEFAULT "because the wait was the
+# only reason to hold it". For a JUSTIFIED deferral that is backwards: a justified
+# one is precisely the one whose reason is written down, and the reason is usually
+# not the run. An item deferred with "what blocks it is not the wait, it is that the
+# remaining act is irreversible and outward-facing" was told to execute its DEFAULT
+# four stops running -- each time the session declined and re-justified, a round trip
+# spent arguing with a template.
+#
+# The classifier is asserted directly rather than through a rendered stop, because
+# what is being pinned is the READING of a WHY, and a full-stop fixture would prove
+# it only for whatever phrasing that fixture happened to use.
+C9OUT="$(
+    WORKLIST_JUDGE=off python3 - "$(dirname "$HOOK")" <<'PY'
+import sys
+sys.path.insert(0, sys.argv[1])
+import wl_checks as W
+
+cases = [
+    # (WHY text, expected "the wait holds it", label)
+    ("what blocks it is not the wait, it is that the remaining act is irreversible",
+     False, "a WHY that DENIES the wait"),
+    ("this deferral is NOT waiting on a CI run -- the mechanical half is finished",
+     False, "the exact phrasing the failure used"),
+    ("the packaging is yours because the sweep touches 17 files at once",
+     False, "a WHY that never mentions a run"),
+    ("blocked until the CI run on this head reports", True, "a WHY that really is the wait"),
+    ("waiting for the pipeline to go green before landing it", True, "another wait-shaped WHY"),
+    ("", False, "an empty WHY falls to the safe side, which asks rather than orders"),
+]
+bad = []
+for why, want, label in cases:
+    rec = {"just": {"why": why, "how": "h"}, "text": "q DEFAULT: d WHY: %s HOW: h" % why}
+    if W.deferral_waits_on_ci(rec) != want:
+        bad.append(label)
+print("BAD:" + ("|".join(bad) if bad else "none"))
+PY
+)"
+if [[ "$C9OUT" == *"BAD:none"* ]]; then
+    pass "163w-c9: a deferral is only told 'the wait was the only reason' when its WHY says so"
+else
+    fail "163w-c9: misread WHY(s): ${C9OUT#*BAD:}"
+fi

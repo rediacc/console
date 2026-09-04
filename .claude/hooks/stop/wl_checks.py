@@ -676,6 +676,48 @@ def issue_only_evidence(root, text):
     return not completion_evidence(root, ISSUE_REF_RE.sub(" ", text))
 
 
+# Does this deferral's own WHY depend on the CI wait, or on something the wait
+# cannot remove? The CI-waiting force below tells a session to execute a DEFAULT
+# "because the wait was the only reason to hold it", and for a justified deferral
+# that sentence is BACKWARDS: a justified one is precisely the one whose reason is
+# written down, and the reason is usually not the run.
+#
+# THE FAILURE, 2026-09-04: an item deferred with "the remaining act is irreversible
+# and outward-facing, gh secret delete cannot be undone" was told, four stops
+# running, to execute its DEFAULT because the wait was all that held it. The
+# session had to decline each time and re-justify, which is a round trip spent
+# arguing with a template.
+#
+# Textual, not a model call: this runs on every stop and the question is cheap. The
+# test is deliberately asymmetric -- only a WHY that NAMES the wait gets the
+# "execute it now" instruction, so an unparseable or unusual reason falls to the
+# safe side and asks the session rather than ordering it.
+_WAIT_WHY = re.compile(
+    r"\b(wait(ing)?|in flight|CI run|the run|pipeline|until (CI|the run)|green)\b",
+    re.IGNORECASE,
+)
+# CHECKED FIRST, because a bare keyword match reads a DENIAL as an admission. The
+# real deferral that exposed this opens "what blocks it is not the wait, it is that
+# the remaining act is irreversible" -- and the positive pattern above happily finds
+# `wait` in it. A session that writes down why the run is NOT its blocker must not be
+# told the run was its only blocker.
+_NOT_WAIT_WHY = re.compile(
+    r"\bnot\s+(?:the\s+)?(?:wait(?:ing)?|blocked\s+on|waiting\s+on)\b"
+    r"|\bis\s+NOT\s+waiting\b"
+    r"|\bdoes\s+not\s+depend\s+on\s+(?:the\s+)?(?:run|wait|CI)\b"
+    r"|\bnot\s+blocked\s+on\s+(?:any\s+)?run\b",
+    re.IGNORECASE,
+)
+
+
+def deferral_waits_on_ci(rec):
+    """True only when the deferral's WHY itself points at the run in progress."""
+    why = (S.deferral_justification(rec) or {}).get("why") or ""
+    if _NOT_WAIT_WHY.search(why):
+        return False
+    return bool(_WAIT_WHY.search(why))
+
+
 def deferral_is_justified(rec):
     """Does this [?] carry a usable WHY and HOW (event field or inline
     tokens)? The shape test only; whether the justification is TRUE is the
@@ -4883,10 +4925,26 @@ def run_stop(event, event_ok, worklist, hook_file):
                         "do it now and --tick %s %s '<evidence>', or justify "
                         "it with --defer (WHY/HOW)" % (me8, r["id"])
                     )
-                else:
+                elif deferral_waits_on_ci(r):
                     verb = (
                         "execute its DEFAULT now and --tick %s %s "
                         "'<evidence>'; the wait was the only reason to hold it" % (me8, r["id"])
+                    )
+                else:
+                    # Its WHY names something the run cannot settle, so ordering the
+                    # DEFAULT here would order past a reason this session already
+                    # wrote down and the judge already audited.
+                    verb = (
+                        "the WAIT is not what holds this one -- its WHY says: %s. "
+                        "Advance whatever part of it you own and --update %s %s, or "
+                        "--tick it if that part is finished. Do not execute a DEFAULT "
+                        "whose WHY reserves the act."
+                        % (
+                            ((S.deferral_justification(r) or {}).get("why") or "")[:110].strip()
+                            or "(unreadable)",
+                            me8,
+                            r["id"],
+                        )
                     )
                 rows.append(
                     "    #%s (sat %dm) %s\n        NEXT: %s"

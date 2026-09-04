@@ -50,31 +50,94 @@ MIN_REASON_CHARS = 40
 # comment carried -- it counts untracked and node_modules copies that CI never sees.
 # The floor guards the ENUMERATION, not the population.
 MIN_DOCKERFILES = int(os.environ.get("DOCKER_NPM_PINS_MIN", "6"))
+# Workflows are the bigger half of the corpus and the half this gate originally
+# missed, so they get their own floor rather than hiding inside a combined one.
+MIN_WORKFLOWS = int(os.environ.get("DOCKER_NPM_PINS_MIN_WORKFLOWS", "20"))
+
+# Long flags that are BOOLEAN, so the token after them really is a package.
+# Listed rather than guessed: treating every long flag as value-taking would
+# swallow the package in `npm install --ignore-scripts foo@latest`.
+_VALUELESS_LONG_FLAGS = frozenset(
+    {
+        "--ignore-scripts",
+        "--no-save",
+        "--save",
+        "--save-dev",
+        "--save-exact",
+        "--global",
+        "--force",
+        "--no-audit",
+        "--no-fund",
+        "--package-lock-only",
+        "--dry-run",
+        "--legacy-peer-deps",
+        "--include-workspace-root",
+        "--workspaces",
+    }
+)
 
 MOVING_TAGS = ("latest", "next", "beta", "canary", "rc", "dev")
-NPM_RE = re.compile(r"(?:^|&&|;|\|\||\bRUN\s+)\s*npm\s+(install|i|add)\b([^&;|\n]*)")
+# `run:` joins the lead-ins for the workflow arm. Without it the gate matched
+# `run: cd "$HOME" && npm install -g x@latest` (via the `&&`) but NOT the plainer
+# `run: npm install -g x@latest` -- caught by this file's own control, which is
+# the whole reason the workflow cases plant both shapes.
+NPM_RE = re.compile(r"(?:^|&&|;|\|\||\bRUN\s+|\brun:\s*)\s*npm\s+(install|i|add)\b([^&;|\n]*)")
 
 
-def dockerfiles() -> list[str]:
+def _tracked() -> list[str]:
     r = subprocess.run(
         ["git", "-C", str(ROOT), "ls-files", "--recurse-submodules"],
         capture_output=True,
         text=True,
         check=False,
     )
-    if r.returncode != 0:
-        return []
+    return [] if r.returncode != 0 else [p for p in r.stdout.split() if "node_modules/" not in p]
+
+
+def dockerfiles() -> list[str]:
+    return [p for p in _tracked() if Path(p).name.startswith("Dockerfile")]
+
+
+def workflows() -> list[str]:
+    """WORKFLOWS TOO, since 2026-09-04, and the omission cost a red the same night.
+
+    This gate shipped scanning Dockerfiles only, caught three unpinned installs there,
+    and reported a clean tree while `.github/workflows/ci-quality.yml` ran
+    `npm install -g agent-browser@latest` on every run of the tutorial-player gate. A
+    version that moves on its own is a CI result that changes with no commit behind
+    it -- the exact class this gate exists for -- and scoping it by FILE TYPE rather
+    than by the thing it forbids left the largest population of `npm install -g` lines
+    in the repo unscanned.
+    """
     return [
         p
-        for p in r.stdout.split()
-        if "node_modules/" not in p and Path(p).name.startswith("Dockerfile")
+        for p in _tracked()
+        if (p.startswith(".github/workflows/") and p.endswith((".yml", ".yaml")))
+        or (p.startswith(".github/actions/") and p.endswith("action.yml"))
     ]
+
+
+def scanned() -> list[str]:
+    return dockerfiles() + workflows()
 
 
 def unpinned_specs(args: str) -> list[str]:
     """Package specs in an npm-install argument string that name no fixed version."""
     out = []
+    prev_flag_wants_value = False
     for tok in args.split():
+        # A FLAG'S ARGUMENT IS NOT A PACKAGE. `npm install --prefix private/account`
+        # read `private/account` as an unpinned package name and reported
+        # cleanup-preview.yml as a finding -- caught the moment the gate started
+        # scanning workflows, where `--prefix` and `-w` are common and Dockerfiles
+        # had none. A long flag with no `=` takes the next token; that one rule
+        # covers --prefix, --workspace, --registry, --omit and the rest.
+        if prev_flag_wants_value:
+            prev_flag_wants_value = False
+            continue
+        if tok.startswith("--") and "=" not in tok:
+            prev_flag_wants_value = tok not in _VALUELESS_LONG_FLAGS
+            continue
         if tok.startswith("-") or ("=" in tok and tok.startswith("--")):
             continue
         if tok in ("&&", "\\", "|"):
@@ -99,7 +162,7 @@ LOCK_COPY_RE = re.compile(r"^\s*COPY\b.*\b(package-lock\.json|package\*\.json)\b
 FROM_RE = re.compile(r"^\s*FROM\b", re.IGNORECASE)
 
 
-def findings_for(text: str) -> tuple[list[tuple[str, str]], int]:
+def findings_for(text: str, kind: str = "dockerfile") -> tuple[list[tuple[str, str]], int]:
     """([(line, why)], number of npm-install lines seen) for one Dockerfile.
 
     A bare `npm install` with no package list is judged on whether a LOCKFILE reached
@@ -134,6 +197,17 @@ def findings_for(text: str) -> tuple[list[tuple[str, str]], int]:
         # with no package list resolves from package.json, which is only reproducible
         # if a lockfile came with it.
         specs = unpinned_specs(args)
+        if kind == "workflow":
+            # A BARE `npm install` MEANS SOMETHING ELSE IN A WORKFLOW, and treating
+            # the two alike produced four false findings the moment this gate was
+            # widened. A Dockerfile stage sees only what it COPYs, so `npm install`
+            # with no lockfile beside it really does resolve live. A workflow step
+            # runs against a full checkout with package-lock.json already on disk.
+            # What still applies here is the half that broke CI: a package spec that
+            # names no fixed version.
+            if specs:
+                out.append((line, "unpinned package(s): " + ", ".join(specs)))
+            continue
         if not specs and "-g" not in args.split():
             if has_lock:
                 continue  # package.json plus its lockfile: reproducible enough
@@ -187,6 +261,47 @@ def selftest() -> int:
         got = len(findings_for(line)[0])
         check(label, got == want, "got %d finding(s), want %d" % (got, want))
 
+    check(
+        "a long flag's ARGUMENT is not read as a package",
+        len(findings_for("      - run: npm install --prefix private/account", "workflow")[0]) == 0,
+        findings_for("      - run: npm install --prefix private/account", "workflow")[0],
+    )
+    check(
+        "CONTROL: a boolean long flag does not swallow the package after it",
+        len(findings_for("      - run: npm install -g --ignore-scripts x@latest", "workflow")[0])
+        == 1,
+        findings_for("      - run: npm install -g --ignore-scripts x@latest", "workflow")[0],
+    )
+
+    # THE WORKFLOW ARM, both directions. It was added after the gate shipped
+    # Dockerfile-only and reported a clean tree while ci-quality.yml installed
+    # `agent-browser@latest` on every run -- so the case that matters most is the one
+    # this gate could not see, and the case beside it is the false finding that
+    # widening produced on the first try.
+    wf_bad = "      - run: npm install -g agent-browser@latest"
+    check(
+        "workflow: an unpinned GLOBAL install is a finding",
+        len(findings_for(wf_bad, "workflow")[0]) == 1,
+        findings_for(wf_bad, "workflow")[0],
+    )
+    wf_ok = '      - run: npm install -g "agent-browser@$AGENT_BROWSER_VERSION"'
+    check(
+        "workflow CONTROL: a version from an env var is a pin",
+        len(findings_for(wf_ok, "workflow")[0]) == 0,
+        findings_for(wf_ok, "workflow")[0],
+    )
+    wf_bare = "      - run: cd private/account && npm install"
+    check(
+        "workflow: a BARE install is NOT a finding (a checkout carries the lockfile)",
+        len(findings_for(wf_bare, "workflow")[0]) == 0,
+        findings_for(wf_bare, "workflow")[0],
+    )
+    check(
+        "and the same bare line in a DOCKERFILE still is",
+        len(findings_for(wf_bare, "dockerfile")[0]) == 1,
+        findings_for(wf_bare, "dockerfile")[0],
+    )
+
     # THE LOCKFILE ARM, both answers, because it is the one that decides whether
     # tonight's actual break is reported or forgiven.
     with_lock = "COPY package*.json ./\nRUN npm install --ignore-scripts"
@@ -232,7 +347,7 @@ def main() -> int:
     #
     # Checked against the paths the CONFIG names, not against what the scan found:
     # asking the enumeration whether the enumeration is complete answers itself.
-    absent = sorted({k.split(":", 1)[0] for k in excl} - set(dockerfiles()))
+    absent = sorted({k.split(":", 1)[0] for k in excl} - set(scanned()))
     if absent:
         print(
             "✗ CANNOT VERIFY: these Dockerfiles are named by "
@@ -246,7 +361,17 @@ def main() -> int:
         )
         return 1
 
-    found = dockerfiles()
+    n_wf = len(workflows())
+    if n_wf < MIN_WORKFLOWS:
+        print(
+            "VACUOUS INPUT: git listed %d workflow/action file(s), floor is %d. The "
+            "enumeration lost the half of the corpus this gate was widened to cover."
+            % (n_wf, MIN_WORKFLOWS),
+            file=sys.stderr,
+        )
+        return 1
+
+    found = scanned()
     if len(found) < MIN_DOCKERFILES:
         print(
             "VACUOUS INPUT: git listed %d Dockerfile(s), floor is %d. The enumeration lost "
@@ -263,7 +388,7 @@ def main() -> int:
             text = (ROOT / rel).read_text(encoding="utf-8", errors="replace")
         except OSError:
             continue
-        hits, seen = findings_for(text)
+        hits, seen = findings_for(text, "workflow" if rel.startswith(".github/") else "dockerfile")
         n_install += seen
         for line, why in hits:
             # EXACT line, not a substring, and the difference is not style. The two
@@ -308,9 +433,10 @@ def main() -> int:
         return 1
 
     print(
-        "✓ docker npm pins: %d tracked Dockerfile(s) scanned (floor %d), %d npm install "
-        "line(s) inspected, every package version fixed or excluded with a stated reason"
-        % (len(found), MIN_DOCKERFILES, n_install)
+        "✓ npm pins: %d file(s) scanned -- %d Dockerfile(s) (floor %d) and %d workflow/action "
+        "file(s) (floor %d) -- %d npm install line(s) inspected, every package version fixed "
+        "or excluded with a stated reason"
+        % (len(found), len(dockerfiles()), MIN_DOCKERFILES, n_wf, MIN_WORKFLOWS, n_install)
     )
     print(
         "  Blind spot: this proves a VERSION is named. Whether that version still exists, "

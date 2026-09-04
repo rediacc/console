@@ -1545,9 +1545,20 @@ jobs:
       # already has it. Installed from $HOME, not the repo checkout: this
       # repo's own .npmrc sets ignore-scripts=true, which silently skips the
       # postinstall that selects and chmods the platform binary.
+      #
+      # PINNED, and `@latest` here was the last unpinned npm install in the tree.
+      # check:ci-docker-npm-pins caught the same shape in three Dockerfiles on
+      # 2026-09-04; it scans Dockerfiles only, so this line -- a workflow -- sat
+      # outside it. A version that moves on its own is a CI result that changes with
+      # no commit behind it, which is the class that produced four separate reds that
+      # night. 0.36.0 is what `@latest` resolved to on the last GREEN run of this job
+      # (run 33809699552) as well as on the red one, so this pin changes nothing today
+      # and stops the next silent move.
       - name: Install agent-browser
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: cd "$HOME" && npm install -g agent-browser@latest --ignore-scripts=false
+        env:
+          AGENT_BROWSER_VERSION: '0.36.0'
+        run: cd "$HOME" && npm install -g "agent-browser@$AGENT_BROWSER_VERSION" --ignore-scripts=false
 
       # A silent-install failure (a broken postinstall, a PATH the shell that
       # ran npm install cannot see, a platform binary that never got selected)
