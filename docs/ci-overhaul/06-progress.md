@@ -7115,3 +7115,104 @@ front of the calendar bomb for a full round), and the instruments that misled we
 each answering a different question than the one asked — `devbox exec` reported npm's
 exit code, `--show` reported a body pruned by the test's own date, and a guard's
 message pointed at a command another guard refuses.
+
+## Wave 8 — 2026-09-04 night: the worklist store moves into git, and a compaction bug surfaces
+
+The operator's ask was continuity across machines: *"that's common case for me when I
+switch to another machine … generate '/migrate' custom command to migrate all the
+remaining tasks of a session"*, plus *"you must set with stop hook what's remaining from
+other session for compaction."* Four decisions were theirs and are not re-argued here:
+the store moves into git, migrated items are RE-TAGGED (originals ticked "migrated to"),
+the Stop hook folds a stopped predecessor's items in automatically, and the scope is
+open/in-flight items with leases reset, deferrals with their DEFAULT windows preserved,
+and the predecessor's next action. Design: `agent/PLAN-migrate-command.md`.
+
+### The store is now `agent/worklist/<writer>.jsonl`, one file per writer
+
+It lived in `TMPDIR`, which does not survive a machine — so on the new box every open
+item, deferral and lease simply did not exist. Per-writer files rather than one shared
+file is the whole merge story: both sides of a merge append at EOF, so one file conflicts
+on every concurrent append, while a session id exists in exactly one process, so each
+file has exactly one appender and two machines write disjoint paths.
+
+**A conflict is resolved by UNION, never by picking a side.** The reader sorts every
+event by timestamp before folding, so the union of two histories folds to the same state
+as one history; dropping a side silently loses whatever that machine tracked. Only the
+LOG moved — locks, caches, transcripts, briefs and `.lastevent-*` are per-machine runtime
+state and stay in `TMPDIR`, including the flock, which is exactly the scope a lock can
+cover. The reader still unions the legacy `TMPDIR` log, so no item stopped blocking
+merely because the code changed under it; `--import-tmp` snapshots that log into the
+tracked store once per host and renames rather than deletes what it read.
+
+### Liveness, defined once, from artifacts
+
+`session_liveness()` returns live / idle / remote / unknown **with the evidence that
+decided it** (`.lastevent-<p>.json written 4 min ago`). `remote` says plainly that this
+machine cannot tell whether the session is still running elsewhere, because the
+alternative is a check that pretends to know; the safeguard is the operator, not a timer.
+One definition is shared by `/migrate`'s refusal, the Stop-hook block and compaction — two
+definitions of "is that session still running" drift, and the expensive direction is
+silent.
+
+### `/migrate` and the Stop-hook block
+
+`--migrate <me> --candidates` lists sessions whose remaining work is not live here;
+`--migrate <me> <prefix>` moves it. There is deliberately **no `--all`**: "continue
+everything you find" is the shape that sweeps up a colleague's session. Re-tag rather
+than alias means the items become MINE, so the Stop hook blocks on them exactly as on
+work I typed, while the `(prefix)` tag still names who wrote them. A lease is reset (its
+worker was a background task of the previous session on the previous machine); a
+deferral keeps its `upd` so its DEFAULT window does not restart.
+
+`HANDOFF CANDIDATES` now appears on every allow path. It is distinct from the existing
+peer note on purpose: that one stays quiet about a LIVE colleague, which is right, and
+says nothing about a session that STOPPED — the case a compaction loses.
+
+Exercised on the case that prompted it: `#6f84d8d8`, stranded on `472cf53d` by a harness
+restart, migrated to this session; a second run moves nothing; a live session is refused
+naming the artifact and its age.
+
+### The finding: every compaction was reopening finished work
+
+Found by **verifying the importer rather than reading it**. Before letting `--import-tmp`
+rename a 501 KB log, the snapshot was folded in an isolated store and diffed item by item
+against the live fold: **39 of 189 items had flipped `[x]` → `[>]`**, open count 5 → 44.
+
+The cause was in shipped code. The snapshot re-emitted a `lease` event for any item still
+carrying `until`/`worker`, and the fold's lease arm sets state `">"` unconditionally —
+those fields survive on a DONE item as history, so re-emitting the lease resurrects it.
+`compact()` carried the identical construction, so **every compaction of the event log
+had been quietly reopening old work**, at exactly the moment nobody reads item states
+closely. Both call sites now share one `snapshot_events()`; two hand-rolled copies of one
+shape had already diverged in the way that mattered. Re-verified after: 189 items, zero
+changed.
+
+Compaction of the tracked store then landed with the gate that makes it safe: only this
+session's own file and files whose writer is neither live nor recent are cleared, the
+fold stays global, and a kept file prints why.
+
+### `--doctor`, for failure modes a tracked file introduces
+
+Three, all silent: a merge-conflict marker (the reader skips unparseable lines *by
+contract*, so it costs events and says nothing), a torn line, and a secret-shaped string
+— which mattered little in `TMPDIR` and matters now that these files are pushed. The
+findings name the shape, never the value.
+
+### Two fixture defects worth recording
+
+A tracked store **dirties the working tree**, which broke cases that build a git repo at
+the fixture root and assert on its state; fixtures now keep their store outside it. And
+repointing assertions at the whole store had converted one WRITE into
+`open(<(wl_events), "a")` — a process substitution is a read-only pipe, so those ticks
+went into a pipe nobody reads and the control accused a session that had in fact been
+closed. Reads and writes are two different paths.
+
+### Alongside, from the same night's babysit
+
+The devcontainer image gained `rpm` and `createrepo-c`, and `nfpm` is installed by
+`.ci/scripts/build/ensure-nfpm.sh` from the single pin in `constants.sh` rather than by
+two inline workflow copies that had already drifted (one kept an unverified
+`| sudo tar` after the other was fixed). The Linux package gate could not complete
+anywhere off a GitHub runner before this. And the signing-key check was swept from
+`build-pkg-repo.sh` to `build-linux-pkg.sh`, which handed a key to nfpm with no proof it
+was the key the repository publishes.
