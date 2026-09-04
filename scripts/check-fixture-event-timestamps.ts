@@ -18,7 +18,8 @@
  * captured (test-report-inbox.sh case 12, same wave). Both are one rule -- a
  * fixture that hard-codes a date is a bomb with a date on it.
  *
- * SCOPE. Only kinds the ITEM FOLD reads, in the worklist case files. A `report`
+ * SCOPE. Only kinds the ITEM FOLD reads, across BOTH fixture directories (see
+ * fixtureFiles below -- scoping it to one was a real hole). A `report`
  * event goes to a different store, and a `bgwait` timestamp is a state-doc
  * field, not an event; policing those would be a false positive, and a guard
  * whose usual outcome is a false positive gets routed around.
@@ -28,7 +29,31 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 const ROOT = path.resolve(import.meta.dirname, '..');
-const CASES = path.join(ROOT, '.claude', 'hooks', 'stop', 'worklist-cases');
+const STOP = path.join(ROOT, '.claude', 'hooks', 'stop');
+const CASES = path.join(STOP, 'worklist-cases');
+
+/**
+ * THE CORPUS IS BOTH DIRECTORIES, and scoping it to worklist-cases/ was a real
+ * hole: the OTHER instance of this class lived in
+ * .claude/hooks/stop/test-report-inbox.sh, whose case 12 carried a constant
+ * that drifted past the 30-day retention window. A gate that could not see the
+ * sibling it was written for is the vacuity trap wearing a narrower path.
+ */
+function fixtureFiles(): string[] {
+  const out: string[] = [];
+  if (fs.existsSync(CASES)) {
+    out.push(...fs.readdirSync(CASES).filter((n) => n.endsWith('.sh')).map((n) => path.join(CASES, n)));
+  }
+  if (fs.existsSync(STOP)) {
+    out.push(
+      ...fs
+        .readdirSync(STOP)
+        .filter((n) => n.startsWith('test-') && n.endsWith('.sh'))
+        .map((n) => path.join(STOP, n)),
+    );
+  }
+  return out.sort();
+}
 
 /** Event kinds the item fold reads. `report` is deliberately absent. */
 const FOLDED = ['state', 'lease', 'add', 'md', 'update', 'unlease', 'tomb', 'triage'];
@@ -114,10 +139,7 @@ function main(): void {
     console.error(`✗ ${path.relative(ROOT, CASES)} does not exist, so this gate checked NOTHING`);
     process.exit(1);
   }
-  const files = fs
-    .readdirSync(CASES)
-    .filter((n) => n.endsWith('.sh'))
-    .map((n) => path.join(CASES, n));
+  const files = fixtureFiles();
   if (files.length === 0) {
     console.error('✗ no case files found; refusing a verdict');
     process.exit(1);
