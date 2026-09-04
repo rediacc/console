@@ -6825,3 +6825,121 @@ their own planted controls before CI ever saw them, and the two that reached CI
 defers by design. Write the control first, and prefer the resolver that reports
 MORE — `lstrip` for `removeprefix` was made twice tonight, and the direction that
 reports less would have been silent both times.
+
+## Wave 5 — 2026-09-04: the cutover went live, and three reds arrived without a commit
+
+Ten commits. The night's thesis, if it has one: **the cause of a red is very often not
+in the diff at all.** Three of tonight's reds had no commit behind them, and the fourth
+was found by a gate written two hours earlier.
+
+### The cutover is live, and CI proved it rather than the plan
+
+79 consumer reads flipped from `secrets.{APP_PRIVATE_KEY,CLOUDFLARE_API_TOKEN,
+DOCKERHUB_TOKEN}` to `env.BWS_*` across 16 workflow files. The claim that mattered was
+never "it typechecks" — it was "a runner mints a token from a Bitwarden value", and run
+33815742382 answered it: `Fetch secrets from Bitwarden` succeeded, then
+`./.github/actions/app-token` succeeded, then the checkout that uses the token
+succeeded.
+
+Four populations, and only one of them is a consumer. The 73 `GH_<NAME>:` halves of the
+`Compare shadow secrets against GitHub` steps were deliberately left alone: flipping
+those makes the shadow compare a Bitwarden value against itself and pass forever. 23
+more are passed into reusable workflows through `secrets:` blocks where the env context
+does not exist. A find-and-replace would have destroyed the first group and silently
+failed on the second.
+
+Seven jobs needed the fetch step **moved above app-token** before their read could be
+flipped at all. That is the shape of this change: a reordering, not a substitution.
+Flipping in place hands app-token an empty string, which is not an error — it is a mint
+that fails later with a message about the App.
+
+### Three reds with no commit behind them
+
+- **private/account's image stopped building.** `npm error Cannot read properties of
+  null (reading 'edgesOut')`, an arborist crash inside `#loadPeerSet` walking vitest 4's
+  peer graph. Reproduced identically on a laptop with nothing in the repo changed: a
+  package published that morning was enough, because all three stages resolved live from
+  the registry. Fixed two ways, because the two halves are different problems —
+  `shared-build` now installs from the root workspace lockfile, and the two account
+  stages pin `npm@12.0.2`, because `npm ci` there genuinely refuses (EUSAGE, with the
+  lockfile present and `/packages/shared` in place; it is the `"../../packages/shared"`
+  key npm cannot reconcile). The old comment saying so was right, and doubting it cost
+  one experiment worth running.
+- **`inquirer 14.2.0 -> 14.2.1` and `klauspost/compress v1.19.2 -> v1.20.0`** both went
+  red at the UTC day boundary. That is `minimum-release-age` working as designed: a
+  version is held for 24h and then the batch surfaces at once. A tree green at 23:59 is
+  red at 00:01 with nothing edited.
+
+### A run that went red wearing "cancelled"
+
+`Quality / Code` came back `cancelled` and `CI Complete` failed with "QUALITY:
+cancelled (soft-required)". In a repo whose watchdog cancels superseded runs, that reads
+like supersession. It was a **timeout**: the job hit its own `timeout-minutes: 15` at
+15m19s.
+
+The step that ate it was `Unused exports (knip)` at **671 seconds against 21s, 23s, 24s,
+27s and 29s on the five runs before it** — and not knip. `lint:unused` runs
+`typecheck-workers.sh --install` first, which is four `npm ci`/`npm install` calls
+against the live registry with no timeout and no retry. Locally the same command takes
+31s because those `node_modules` already exist. Forty gates after that step never ran,
+and nothing anywhere printed the word *timeout*.
+
+Bounded at two levels: npm's own `--fetch-timeout`/`--fetch-retries` in the script (not
+coreutils `timeout` — `check:ci-shell-commands` refuses it because the minimal image
+does not ship it, and it caught the first version of this fix), and
+`timeout-minutes: 8` on the step so a stall names itself and the other forty gates keep
+their budget.
+
+### The gates kept catching their author, and one caught the gate
+
+- **CHECK 6 refused the watchdog change, correctly.** Moving the Bitwarden fetch ahead
+  of `Monitor jobs and cancel on failure` is exactly what CHECK 6 exists to prevent. So
+  the rule now states the PROPERTY its name-allowlist stood for: a step ahead of the
+  monitor is admitted when it carries both `continue-on-error: true` and
+  `timeout-minutes: <= 5`, both as literals. Stricter, not looser — a name proves
+  somebody once thought about a step; those two prove it cannot take the watchdog down
+  whatever it does. CHECK 6 had **no test at all**; it has nine assertions now, and the
+  checker is extracted from the live gate so a copy cannot outlive the original.
+- **`check_docker_npm_pins.py` nearly shipped the false negative it exists to catch.**
+  Its first draft asked "does this FILE copy a lockfile", and private/account had just
+  gained one in its first stage — so a whole-file scan read that COPY as forgiveness for
+  the two later stages that still resolve live. The gate written to catch the break
+  would have called the break clean. Per-stage now, reset at every `FROM`.
+- **And CI put it in the right job.** It landed in `quality-static`, which checks out no
+  submodules; `private/account/Dockerfile` vanished from the enumeration and its two
+  correct exclusions were reported as dead scaffold (job 100870135489) — the identical
+  trap `check_syncpack_sources.py` records from its own first run. It now refuses with
+  "cannot verify" rather than blaming the config, and sits beside the syncpack gate.
+- **The resprofile retirement trigger counted talk about the layer as work**, found by
+  its own first `Resprofile:` trailer one commit after it was written. `acts_outside()`
+  now excludes `.md` anywhere and everything under `agent/` and `docs/`. Re-run against
+  real history the count went 1 → 0, which is the honest number.
+
+### What the shadow was doing to the debug shell
+
+`breakpoint.yml` was the last unflipped read, and looking at it properly changed the
+answer from "flip it" to "remove the fetch". `bws-secrets` exports through `GITHUB_ENV`,
+which reaches every later step of the job — and this job's later steps are `Start debug
+shell`, a tunnel, and a hold. The shadow was promoting the GitHub App private key, the
+Cloudflare tunnel token and the SES EU pair from step scope into a shell a human sits
+at. Every real consumer in that job keeps its credential in its own step `env:`.
+
+`check_bws_map.py` could not express "this ONE job must never fetch", because its escape
+hatch is keyed by secret NAME and would have quieted `APP_PRIVATE_KEY` in all twenty
+files. It has `no_fetch_jobs` now, keyed `<path>#<job>`, refusing an entry that forgives
+nothing.
+
+### Assertion 13: the Bitwarden side of a read
+
+Nothing asked whether a job that reads a Bitwarden value ever fetched it. That failure
+is silent by construction — an unfetched `env.BWS_*` is an empty string. It matters most
+where CI never looks: nine of the twenty caller files are cron- or dispatch-only, so a
+mistake there ships and waits for a release. All 81 reads pass, order included.
+
+### What is left
+
+One irreversible act, and it is the operator's: deleting the three org secrets, which
+also deletes 73 comparator steps, 23 passthroughs and their `workflow_call`
+declarations. `retire-shadowed-secrets.py` writes that change out, applies nothing, and
+prints the `gh secret delete` lines rather than running them. Its inventory was
+cross-checked against the independent survey and agrees at 72 comparator reads.
