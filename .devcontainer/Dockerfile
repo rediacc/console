@@ -503,7 +503,19 @@ RUN ARCH=$(dpkg --print-architecture) \
 # Installed via npm so the package's postinstall picks the right native binary
 # for the host arch; the standalone GitHub release binary is missing its
 # daemon/playwright support files and cannot run on its own.
-ARG AGENT_BROWSER_VERSION=0.26.0
+#
+# 0.36.0 SINCE 2026-09-04, MATCHING CI, and the drift was not cosmetic. This sat at
+# 0.26.0 while ci-quality.yml installed whatever `@latest` gave it -- ten minors
+# apart -- and the tutorial-player release gate fails three of its scenarios on
+# 0.26.0 ("start did not enter playing state", "resume did not re-enter", "fullscreen
+# not active") while passing them in CI. A browser gate that cannot be judged in the
+# devbox defeats the reason agent-browser is in this image, and a session probing a
+# CI failure locally reads three failures that are the PIN talking, not the code.
+#
+# Both sides are pinned now: the workflow names a version instead of `@latest`, and
+# this ARG names the same one. They must move together -- a devbox that disagrees
+# with CI is worse than one that is merely behind, because it answers confidently.
+ARG AGENT_BROWSER_VERSION=0.36.0
 RUN npm install -g agent-browser@${AGENT_BROWSER_VERSION} \
     && npm cache clean --force
 
