@@ -191,6 +191,22 @@ TRIAGE_SCHEMA = {
 TRIAGE_VERDICTS = ("inline", "plan-subagent", "operator-only")
 
 
+def _budget_headroom(env_out):
+    """True when this call ended well inside its budget, so a retry is not a re-wander.
+
+    A budget-exhausted call that produced nothing will exhaust it again; asking twice
+    just doubles the bill for the same silence. Below 80% of the cap, whatever went
+    wrong was not the cap.
+    """
+    cost = (env_out or {}).get("total_cost_usd")
+    if not isinstance(cost, (int, float)):
+        return False
+    try:
+        return cost < float(JUDGE_BUDGET_USD) * 0.8
+    except (TypeError, ValueError):
+        return False
+
+
 def _explain_no_output(label, env_out, out):
     """Exit 0, is_error false, and no usable structured_output: say WHY.
 
@@ -711,7 +727,48 @@ def run_judge(
         )
     out = env_out.get("structured_output")
     if not isinstance(out, dict) or out.get("verdict") not in ("stop", "continue"):
-        return None, _explain_no_output("judge", env_out, out)
+        # ONE RETRY, and only on THIS path. The call succeeded at every level the
+        # code can check -- exit 0, is_error false, subtype success -- and simply
+        # ended its turn without emitting the schema. That is a sample, not a broken
+        # gate, and treating it as a broken gate is worse than the flake: the message
+        # this would otherwise print ends by offering to set WORKLIST_JUDGE=off.
+        #
+        # Measured 2026-09-04, which is why this exists: a stop returned
+        # `stop_reason=end_turn; turns=2; cost=$0.1317 of budget $0.25` and no output.
+        # The identical call, same schema and same budget, answered correctly on the
+        # very next attempt -- so the session was blocked, and pointed at a disable
+        # switch, by one sample.
+        #
+        # NOT a contradiction of the "sanitise rather than re-ask" rule below: that
+        # one is about a verdict that ARRIVED carrying a forbidden instruction, where
+        # a second sample buys nothing a rewrite cannot do deterministically. Here
+        # nothing arrived at all, so there is nothing to rewrite.
+        #
+        # Bounded three ways: exactly once, never after a transport failure, and never
+        # when the budget was the likely cause.
+        if _budget_headroom(env_out):
+            first = _explain_no_output("judge", env_out, out)
+            try:
+                proc = _call()
+            except (subprocess.TimeoutExpired, OSError):
+                return None, first + "; the single retry could not be launched"
+            if proc.returncode == 0:
+                try:
+                    env_out = json.loads(proc.stdout)
+                except ValueError:
+                    env_out = {}
+                out = env_out.get("structured_output") if isinstance(env_out, dict) else None
+            if not isinstance(out, dict) or out.get("verdict") not in ("stop", "continue"):
+                return (
+                    None,
+                    "%s; RETRIED ONCE and it produced no verdict either, so this is not one bad sample -- %s"
+                    % (
+                        first,
+                        _explain_no_output("retry", env_out, out),
+                    ),
+                )
+        else:
+            return None, _explain_no_output("judge", env_out, out)
     # BEFORE sanitize_next_action, deliberately: the search command and the
     # braver default are the MODEL's text, so they go through the operator-only
     # filter like any other next_action rather than around it.
