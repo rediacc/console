@@ -911,7 +911,23 @@ devbox_exec() {
     # the intent survives the next person who "fixes the quoting".
     local -a dk
     read -r -a dk <<<"$d"
-    "${dk[@]}" "${flags[@]}" "$cid" bash -lc "$*"
+
+    # TWO CALL SHAPES, and `$*` served only one of them. The in-file probes below
+    # pass ONE argument that is already shell syntax ("test -f x && git ...") and
+    # need it re-parsed verbatim. The CLI (`./run.sh devbox exec -- <argv...>`)
+    # passes real argv, and joining that with spaces re-parses it too: on
+    # 2026-09-04 `devbox exec -- bash -c 'npm run -s check:ci-shell-lint'` ran
+    # `bash -c npm` inside the box -- npm printed its usage, the gate never ran,
+    # and the exit code was npm's, not the gate's. A multi-argument call is
+    # therefore re-quoted word by word, so the login shell sees exactly the argv
+    # the caller typed.
+    local cmd
+    if [[ $# -eq 1 ]]; then
+        cmd="$1"
+    else
+        cmd="$(printf '%q ' "$@")"
+    fi
+    "${dk[@]}" "${flags[@]}" "$cid" bash -lc "$cmd"
 }
 
 # THE THREE PROBES. Each catches a different way the container can look healthy
