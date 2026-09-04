@@ -257,7 +257,7 @@ def classify_requests(reqs, session_id):
     is addressed to everyone, but only until THIS session responds) and
     acting on answers to what it asked. Never on another session's silence."""
     to_me, bcast, answered_mine, open_mine = [], [], [], []
-    for r in sorted(reqs.values(), key=lambda x: x["at"]):
+    for r in sorted(reqs.values(), key=lambda x: (x["at"], x.get("id", ""))):
         mine = bool(session_id) and C.same_session(r["from"], session_id)
         resolved = request_resolved(r)
         if mine:
@@ -325,7 +325,7 @@ def request_cli(argv, worklist):
         if not reqs:
             print("no requests recorded (%s)" % S.requests_path(worklist))
             return
-        for r in sorted(reqs.values(), key=lambda x: x["at"]):
+        for r in sorted(reqs.values(), key=lambda x: (x["at"], x.get("id", ""))):
             state = (
                 "acked"
                 if r["acked"]

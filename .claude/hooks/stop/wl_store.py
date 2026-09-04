@@ -853,6 +853,15 @@ def append_events(worklist, payloads, writer=None, root=None):
             ev.setdefault("h", hh)
             if br:
                 ev.setdefault("br", br)
+            # A SUB-SECOND SEQUENCE, because `at` has second resolution and the
+            # sort below would otherwise break ties by FILENAME. Measured: the
+            # stop-gate judge reopens an item and the session ticks it in the
+            # same second; the reopen is written by writer `judge` and the tick
+            # by the session, so sorting on `at` alone put judge.jsonl last and
+            # the reopen won -- the item stayed open and an allowed stop became
+            # a block. Events written before this field sort as 0, which keeps
+            # their existing (stable, file-order) behaviour.
+            ev.setdefault("ns", time.time_ns())
     target = writer_path(_writer_for(payloads, writer), root)
     with contextlib.suppress(OSError):
         target.parent.mkdir(parents=True, exist_ok=True)
@@ -898,7 +907,10 @@ def _read_events(worklist, root=None):
     if legacy.exists():
         with contextlib.suppress(OSError):
             out.extend(_parse_events(legacy.read_text(encoding="utf-8", errors="replace")))
-    out.sort(key=lambda e: str(e.get("at") or ""))
+    # (at, ns): the stamp orders across machines and the nanosecond counter
+    # orders within a second on this one. A missing ns sorts first inside its
+    # second, which is where an older event belongs.
+    out.sort(key=lambda e: (str(e.get("at") or ""), int(e.get("ns") or 0)))
     return out
 
 

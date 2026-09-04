@@ -4960,7 +4960,7 @@ def run_stop(event, event_ok, worklist, hook_file):
             r for r in deferred_recs if (C.stamp_age_min(r.get("upd", "")) or 0) >= CI_FORCE_MIN_AGE
         ]
         if backlog:
-            backlog.sort(key=lambda r: -(C.stamp_age_min(r.get("upd", "")) or 0))
+            backlog.sort(key=lambda r: (-(C.stamp_age_min(r.get("upd", "")) or 0), r.get("id", "")))
             rows = []
             for r in backlog[:CI_FORCE_PER_STOP]:
                 if not C.DEFAULT_TOKEN.search(r["line"]):
@@ -5461,7 +5461,10 @@ def run_stop(event, event_ok, worklist, hook_file):
         del audit_cache[k]  # its item is gone; a banked verdict for it is litter
     audit_batch = []
     if not wl_judge.JUDGE_DISABLED:
-        for r in sorted(deferred_recs, key=lambda r: -(C.stamp_age_min(r.get("upd", "")) or 0)):
+        for r in sorted(
+            deferred_recs,
+            key=lambda r: (-(C.stamp_age_min(r.get("upd", "")) or 0), r.get("id", "")),
+        ):
             age = C.stamp_age_min(r.get("upd", "")) or 0
             if age < S.DEFER_AUDIT_MIN:
                 break  # sorted oldest-first: everything after is younger

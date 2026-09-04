@@ -1021,7 +1021,7 @@ def _reassign_cli(argv):
         )
     reqs = R.read_requests(worklist)
     moved_reqs = []
-    for r in sorted(reqs.values(), key=lambda x: x["at"]):
+    for r in sorted(reqs.values(), key=lambda x: (x["at"], x.get("id", ""))):
         if r["acked"] or R.request_resolved(r):
             continue
         ev = {"ev": "reassign", "id": r["id"], "at": stamp, "by": me}
