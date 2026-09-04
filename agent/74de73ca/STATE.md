@@ -1,49 +1,59 @@
-## SESSION 74de73ca 2026-09-04T00:48:35Z
+## SESSION 74de73ca 2026-09-04T05:31:53Z
 
 # Session 74de73ca -- state
 
-Branch `0903-1`, PR #585, epic `24c98380`. Head 8d17dc201, pushed, tree clean.
-CI is mid-flight on it.
+Branch `0903-1`, PR #585, epic `24c98380`. The operator's live request is the BINDER.
 
-## What landed tonight
+## The binder: Steps 0, 1 and half of 2 are DONE
 
-- **Secret cutover, wave 1.** 79 consumer reads flipped from
-  `secrets.{APP_PRIVATE_KEY,CLOUDFLARE_API_TOKEN,DOCKERHUB_TOKEN}` to
-  `env.BWS_*` across 16 workflow files (c770b8ebc). VERIFIED IN CI, which is the
-  claim that mattered: in run 33815742382 the fetch step succeeded and
-  `./.github/actions/app-token` minted a token from the Bitwarden value. The 73
-  `GH_<NAME>:` comparator halves were deliberately NOT flipped -- flipping them
-  makes the shadow compare a value against itself.
-- **breakpoint.yml lost its shadow** rather than gaining a flip (cc3b468ed):
-  bws-secrets exports through GITHUB_ENV and that job's later steps hand a human
-  a shell, so the fetch was promoting four credentials into it.
-- **CHECK 6 of check-workflow-gates.sh** now states a property (`continue-on-error`
-  AND a small `timeout-minutes`, both literals) instead of a name allowlist, and
-  has its first test ever -- nine assertions, checker extracted from the live gate.
-- **Two Docker builds fixed and their class swept.** private/account's image
-  stopped building on an npm 10 arborist crash from a package published that
-  morning; fixed in the submodule (b0924d1). `check:ci-docker-npm-pins` (502dabe48)
-  is the regression test for the class, and it caught two more unpinned installs.
-- **The run that went red wearing "cancelled"** (f6a43e635): `Quality / Code` hit
-  its own 15-minute ceiling because `lint:unused` runs four npm installs first and
-  they took 671s against 21-29s on the five runs before. Bounded and retried.
-- **Resprofile wave 2 complete**; `rank()` reads bash.jsonl at last, and the
-  retirement trigger stopped counting prose about the layer as work.
-- **The retirement tool** (873cce233) writes out the last, irreversible step and
-  applies nothing.
+Goal: stop hand-writing the four registrations every gate needs (package.json key,
+manifest entry, workflow step, and the silent one -- the JOB). Design:
+generate-and-check with a `---- gate ----` header in each gate script. NOT a big-bang:
+three tools regex `manifest.ts` as TEXT, so it must keep containing every entry.
+
+- `daed53572` gate-spec.ts + surface.ts split out of manifest.ts (re-exports both).
+- `74b926351` `scripts/lib/gate-header.ts` -- parses the header; derives id/run/needs.
+- `666d409f3` `scripts/ci-runner/lanes.ts` -- lane capabilities DERIVED from the
+  workflow.
+- `9c9b1935d` `scripts/gate-bind.ts` `--check` (= `check:ci-gate-bind`).
+- `5eea0af11` `--write` emits the workflow step into a `# >>> gate-bind` region.
+  Round trip proven: write on a correct tree is byte-identical; a hand edit is caught
+  by --check and repaired by --write.
+
+`npm run gate:bind` is the write verb. ONE gate declares a header so far:
+`.ci/scripts/quality/check_environment_names.py`.
 
 ## Next action
 
-Re-derive the shadow pass list from the CI run now finishing and check it against
-`retire-shadowed-secrets.py`'s report: the tool names 16 files, 73 comparator
-halves, 4 whole comparator steps and 23 passthroughs, and that inventory should
-agree with which names the comparators actually proved equal on this run. A
-disagreement means one of the two is reading the tree wrong, and the tool is the
-thing an operator would run against production secrets.
+`--extract <id>` was drafted this turn and did NOT land (a patch assertion failed
+before writing, so scripts/gate-bind.ts is unchanged and green). Re-do it:
+read one manifest entry by id as TEXT, derive id/run from its script leaf, and REFUSE
+with a field-by-field diff if extraction would CHANGE anything -- that refusal is the
+whole safety property, because a drain that rewrites as it moves cannot tell a move
+from an edit. Then `manifest.legacy.ts` frozen shrink-only, then drain the 129
+gate-tests (they need no header: id, run and the shared battery step are convention).
+
+## Facts not to re-derive
+
+- **The tutorial-player failure was TRANSIENT.** `Quality / Packages` succeeded on run
+  53a52e8ed with no www change; it had failed once on cef71b63. Item ticked.
+- **gate-bind found a real mis-placement on its first run**: check:ci-environment-names
+  was hand-registered in quality-code; its needs put it in quality-static.
+- **lanes.ts committed the bug it prevents** before its controls existed: it matched
+  `PyYAML`/`setup-go` anywhere, and quality-code MENTIONS both in comments while
+  installing neither. Comment lines are skipped now.
+- **The secret cutover is COMPLETE and ticked.** `DOCKERHUB_TOKEN` has zero reads, so
+  deletion is optional hygiene needing operator powers. `APP_PRIVATE_KEY` and
+  `CLOUDFLARE_API_TOKEN` must NOT be deleted -- live reads at `breakpoint.yml:238` and
+  `watchdog-monitor.yml:139`, both deliberate.
+- **Neither `gh run rerun` form clears a cancelled reusable-workflow CALLER.**
+
+## Repo state
+
+origin/0903-1 at `53a52e8ed`; THIRTEEN commits local and unpushed -- nothing rides an
+old run, so push them. Tree clean, ci:quick 302/302. CI on 53a52e8ed had the watchdog
+retrying `Quality / Code`; every other Quality job succeeded.
 
 ## Remaining
 
-- `[?] #13d281a2` -- retire the three org secrets, or hold. DEFAULT is HOLD; it
-  parks no work, everything mechanical is committed.
-- `[?] #3838ee4f` -- docker SDK v25 -> v28 in renet. DEFAULT is to land it as the
-  first change after #585 merges, so the E2E matrix judges it alone.
+- Optional, operator-only: `gh secret delete DOCKERHUB_TOKEN --org rediacc`.

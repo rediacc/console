@@ -19,6 +19,7 @@
  * ---- gate ----
  * step: Gate binding
  * needs: node
+ * selftest: true
  * why: four hand-written registrations per gate, each with a convention that only
  *      announces itself as a red gate
  * ---- end gate ----
@@ -33,7 +34,19 @@ import { derivedId, derivedRun, inferredNeeds, parseGateHeader } from './lib/gat
 
 const ROOT = path.resolve(import.meta.dirname, '..');
 const WORKFLOW = '.github/workflows/ci-quality.yml';
-const SUBJECT = /\/(check|test)[-_][\w-]+\.(py|sh|ts)$/;
+/**
+ * EVERY tracked script, not just conventionally-named ones.
+ *
+ * This was `/(check|test)[-_][\w-]+\.(py|sh|ts)$/`, a naming heuristic standing in for
+ * correctness. `--extract check:ci-shell-format` wrote a valid header into
+ * .ci/scripts/security/shfmt.sh -- which matches no such name -- and this gate then
+ * reported "2 declared gate(s)" and a clean bill of health while ignoring the third
+ * entirely. A declaration that is silently not read is worse than one that is rejected.
+ *
+ * `bind()` returns null for a file with no header, so the filter costs a read per file
+ * and buys the guarantee that a header anywhere is a header that counts.
+ */
+const SUBJECT = /\.(py|sh|ts)$/;
 
 const read = (rel: string): string => fs.readFileSync(path.join(ROOT, rel), 'utf-8');
 
@@ -146,6 +159,109 @@ export function rewriteRegions(
   return { text: out.join('\n'), lanes: touched };
 }
 
+/** What the manifest already says about a hand-registered gate. */
+export interface Registered {
+  file: string;
+  step: string;
+  job: string;
+  /** The `//` prose above the entry. This IS the `why:`, so extraction loses nothing. */
+  why: string[];
+}
+
+export function registered(manifest: string, id: string): Registered | { error: string } {
+  // Padded so the FIRST entry in the file is bounded like every other one: without this
+  // the backward search for `\n  {` finds nothing at offset 0 and the entry reads as
+  // unbounded. Caught by this gate's own fixture, which is exactly that shape.
+  const text = `\n${manifest}\n`;
+  const at = text.indexOf(`id: '${id}'`);
+  if (at === -1) return { error: `no manifest entry with id '${id}'` };
+  const start = text.lastIndexOf('\n  {\n', at);
+  const end = text.indexOf('\n  },\n', at);
+  if (start === -1 || end === -1) return { error: `could not bound the entry for '${id}'` };
+  const block = text.slice(start, end);
+  const field = (k: string): string => new RegExp(`\\b${k}: '([^']*)'`).exec(block)?.[1] ?? '';
+  const file = /leaves: \[\s*'([^']+)'/.exec(block)?.[1] ?? '';
+  // Only the prose ABOVE `id:`. A comment further down explains a later field.
+  const head = block.slice(0, block.indexOf('id:'));
+  const why = head
+    .split('\n')
+    .filter((l) => /^\s*\/\//.test(l))
+    .map((l) => l.replace(/^\s*\/\/\s?/, '').trimEnd());
+  const out: Registered = { file, step: field('step'), job: field('job'), why };
+  if (out.file === '' || out.step === '' || out.job === '') {
+    return { error: `entry '${id}' is missing leaves, ci.step or ci.job` };
+  }
+  return out;
+}
+
+/** The header body, unprefixed. The caller decides how each language carries a comment. */
+export function headerLines(
+  r: Registered,
+  needs: string[],
+  pinLane: boolean,
+  id?: string
+): string[] {
+  const out = [
+    '---- gate ----',
+    `step: ${r.step}`,
+    `needs: ${needs.length ? needs.join(', ') : 'none'}`,
+  ];
+  // `id:` is an OVERRIDE, emitted only where the path does not imply the registered id:
+  // .ci/scripts/security/shfmt.sh derives check:ci-shfmt and is registered as
+  // check:ci-shell-format. 308 of 378 ids need no override, and writing one into all of
+  // them would turn a convention into 378 restatements of itself.
+  if (id !== undefined && derivedId(r.file) !== id) out.push(`id: ${id}`);
+  if (pinLane) out.push(`lane: ${r.job}`);
+  if (r.why.length > 0) {
+    out.push(`why: ${r.why[0]}`);
+    for (const line of r.why.slice(1)) out.push(`     ${line}`);
+  }
+  out.push('---- end gate ----');
+  return out;
+}
+
+/**
+ * Put the header where the file already keeps its prose, so extraction reads as
+ * documentation rather than as a machine stamp: a Python module docstring, a shell
+ * comment block under the shebang, a TypeScript block comment. Falls back to a
+ * standalone line-comment block, which the parser accepts in every one of them.
+ */
+export function insertHeader(
+  file: string,
+  source: string,
+  body: string[]
+): string | { error: string } {
+  if (parseGateHeader(source) !== null) return { error: 'already declares a header' };
+  const lines = source.split('\n');
+
+  if (file.endsWith('.py')) {
+    const open = lines.findIndex((l) => /^\s*(?:[rub]*)"""/.test(l));
+    if (open !== -1) {
+      const close = lines.findIndex((l, i) => i > open && l.includes('"""'));
+      if (close !== -1) {
+        const at = lines[close].trim() === '"""' ? close : close;
+        return [...lines.slice(0, at), '', ...body, ...lines.slice(at)].join('\n');
+      }
+    }
+  }
+  if (file.endsWith('.ts') && lines[0]?.startsWith('/**')) {
+    const close = lines.findIndex((l) => l.trim() === '*/');
+    if (close !== -1) {
+      return [
+        ...lines.slice(0, close),
+        ' *',
+        ...body.map((l) => ` * ${l}`),
+        ...lines.slice(close),
+      ].join('\n');
+    }
+  }
+  // Fallback, and the normal path for .sh: a comment block under the shebang.
+  const after = lines[0]?.startsWith('#!') ? 1 : 0;
+  return [...lines.slice(0, after), ...body.map((l) => `# ${l}`), '', ...lines.slice(after)].join(
+    '\n'
+  );
+}
+
 function selftest(): number {
   let bad = 0;
   const ck = (label: string, ok: boolean, detail?: unknown): void => {
@@ -169,6 +285,109 @@ function selftest(): number {
       '.ci/scripts/quality/check_a.py',
       `${py}\ngit ls-files --recurse-submodules`
     )?.needs.includes('submodules')
+  );
+  // Both controls below are regressions, found by wiring ONE gate through this binder.
+  // Each mis-inference is silent: it does not fail, it moves the gate to a fatter lane.
+  ck(
+    'CONTROL: private/account named in PROSE infers nothing (a comment is not code)',
+    !bind(
+      '.ci/scripts/quality/check_a.py',
+      `${py}\n# explains a defect in private/account/Dockerfile\nx = 1`
+    )?.needs.includes('submodules')
+  );
+  ck(
+    'CONTROL: a variable named `node` is not a node runtime',
+    !bind(
+      '.ci/scripts/quality/check_a.py',
+      `${py}\nfor node in ast.walk(t):\n    pass`
+    )?.needs.includes('node')
+  );
+  ck(
+    'CONTROL: but an actual `node script.js` invocation still is',
+    bind('.ci/scripts/quality/check_a.sh', `${py}\nnode scripts/x.js`)?.needs.includes('node')
+  );
+  const MANIFEST_FIXTURE = [
+    '  {',
+    '    // why it exists, line one',
+    '    // and line two',
+    "    id: 'check:ci-a-b',",
+    "    leaves: ['.ci/scripts/quality/check_a_b.py'],",
+    '    ci: {',
+    "      kind: 'step',",
+    "      job: 'quality-static',",
+    "      step: 'A B',",
+    '    },',
+    '  },',
+    '',
+  ].join('\n');
+  const reg = registered(MANIFEST_FIXTURE, 'check:ci-a-b');
+  ck(
+    'a manifest entry yields its file, step, job and the prose above it',
+    !('error' in reg) &&
+      reg.file === '.ci/scripts/quality/check_a_b.py' &&
+      reg.step === 'A B' &&
+      reg.job === 'quality-static' &&
+      reg.why.join('|') === 'why it exists, line one|and line two',
+    reg
+  );
+  ck(
+    'CONTROL: an id the manifest does not carry is an error, not an empty entry',
+    'error' in registered(MANIFEST_FIXTURE, 'check:ci-nope')
+  );
+  ck(
+    'an extracted header round-trips: what it derives is what was registered',
+    (() => {
+      if ('error' in reg) return false;
+      const doc = `"""Doc.\n\nMore.\n"""\nx = 1\n`;
+      const next = insertHeader(
+        '.ci/scripts/quality/check_a_b.py',
+        doc,
+        headerLines(reg, [], false)
+      );
+      if (typeof next !== 'string') return false;
+      const b2 = bind('.ci/scripts/quality/check_a_b.py', next);
+      return b2?.id === 'check:ci-a-b' && b2?.step === 'A B';
+    })()
+  );
+  ck(
+    'an id the path does not imply is emitted as an explicit override',
+    headerLines(
+      { file: '.ci/scripts/security/shfmt.sh', step: 'S', job: 'q', why: [] },
+      [],
+      false,
+      'check:ci-shell-format'
+    ).includes('id: check:ci-shell-format')
+  );
+  ck(
+    'CONTROL: an id the path DOES imply is left to the convention',
+    !headerLines(
+      { file: '.ci/scripts/quality/check_a_b.py', step: 'S', job: 'q', why: [] },
+      [],
+      false,
+      'check:ci-a-b'
+    ).some((l) => l.startsWith('id:'))
+  );
+  ck(
+    'CONTROL: extracting into a file that already declares one is refused',
+    typeof insertHeader('.ci/scripts/quality/check_a_b.py', py, ['---- gate ----']) !== 'string'
+  );
+  ck(
+    'a shell script carries the header as # comments under its shebang',
+    (() => {
+      const r2 = { file: 'x', step: 'A B', job: 'quality-static', why: [] };
+      const next = insertHeader(
+        '.ci/scripts/quality/check-a-b.sh',
+        '#!/usr/bin/env bash\nset -e\n',
+        headerLines(r2, [], false)
+      );
+      return (
+        typeof next === 'string' && next.startsWith('#!') && parseGateHeader(next)?.step === 'A B'
+      );
+    })()
+  );
+  ck(
+    'CONTROL: a header in a file the naming convention does not cover is still bound',
+    bind('.ci/scripts/security/shfmt.sh', `${py}`) !== null
   );
   ck(
     'a file with no header is not this gate’s business',
@@ -235,6 +454,45 @@ function main(argv: string[]): void {
     const n = selftest();
     console.log(`${n === 0 ? '✓' : '✗'} gate-bind selftest: ${n} failure(s)`);
     process.exit(n === 0 ? 0 : 1);
+  }
+
+  const exAt = argv.indexOf('--extract');
+  if (exAt !== -1) {
+    const id = argv[exAt + 1];
+    if (id === undefined || id.startsWith('--')) {
+      console.error('✗ --extract needs a gate id, e.g. --extract check:ci-shell-format');
+      process.exit(1);
+    }
+    const reg = registered(read('scripts/ci-runner/manifest.ts'), id);
+    if ('error' in reg) {
+      console.error(`✗ ${reg.error}`);
+      process.exit(1);
+    }
+    const src = read(reg.file);
+    const needs = inferredNeeds(src);
+    // PIN THE LANE ONLY WHEN THE INFERENCE DISAGREES. Emitting `lane:` unconditionally
+    // would freeze today's placement into 129 files and make the derivation decorative.
+    const placed = placeGate(laneCapabilities(read(WORKFLOW)), needs);
+    const pinLane = !('lane' in placed) || placed.lane !== reg.job;
+    const next = insertHeader(reg.file, src, headerLines(reg, needs, pinLane, id));
+    if (typeof next !== 'string') {
+      console.error(`✗ ${reg.file}: ${next.error}`);
+      process.exit(1);
+    }
+    // THE EXTRACTION MUST ROUND-TRIP. A header that re-derives something OTHER than what
+    // is registered would move the gate silently, which is the class this tool closes.
+    const rb = bind(reg.file, next);
+    if (rb === null || rb.id !== id || rb.step !== reg.step) {
+      const got = rb === null ? 'nothing' : `${rb.id} / "${rb.step}"`;
+      console.error(
+        `✗ ${reg.file}: emitted header re-derives ${got}, not ${id} / "${reg.step}". Not written.`
+      );
+      process.exit(1);
+    }
+    fs.writeFileSync(path.join(ROOT, reg.file), next);
+    console.log(`✓ ${reg.file} now declares its own binding (step "${reg.step}", lane ${reg.job})`);
+    console.log('  Re-run with no flags to confirm it still matches its registration.');
+    process.exit(0);
   }
 
   console.log('gate binding: controls first, then the verdict');

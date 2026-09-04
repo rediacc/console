@@ -55,7 +55,7 @@ const mention = 'jobs:\n  a:\n    steps:\n      # PyYAML four times and setup-go
 ck('a job that MENTIONS PyYAML in a comment does not provide it',
    (laneCapabilities(mention).get('a')?.tools ?? []).length === 0,
    laneCapabilities(mention).get('a')?.tools);
-const install = 'jobs:\n  a:\n    steps:\n      - run: python3 -m pip install --user "PyYAML==6.0.2"\n';
+const install = 'jobs:\n  a:\n    steps:\n      - run: python3 -m pip install --user "PyYAML==0.0.0-fixture"\n';
 ck('CONTROL: a job that INSTALLS it does',
    laneCapabilities(install).get('a')?.tools.includes('python-yaml'),
    laneCapabilities(install).get('a')?.tools);

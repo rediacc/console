@@ -1,4 +1,10 @@
 #!/bin/bash
+# ---- gate ----
+# step: Shell format
+# needs: none
+# id: check:ci-shell-format
+# ---- end gate ----
+
 # Shell script formatting check using shfmt
 # Used by both ./run.sh quality shell and CI
 #

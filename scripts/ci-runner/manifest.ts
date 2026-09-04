@@ -5276,6 +5276,22 @@ export const GATES: readonly GateSpec[] = [
     },
   },
   {
+    // docker-npm-pin-exclusions.json was matched with `k in line`, so the bare
+    // `npm install` key claimed the `npm install --omit=dev` line and the correct entry
+    // was reported as dead scaffolding. The invariant is the MATCHER, not the key shape:
+    // a first draft gated key prefixes and flagged two live, correct, harmless keys.
+    id: 'check:ci-allowlist-key-matching',
+    run: 'npm run check:ci-allowlist-key-matching',
+    gate: true,
+    leaves: ['.ci/scripts/quality/check_allowlist_key_matching.py'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-static',
+      step: 'Allowlist key matching',
+    },
+  },
+  {
     // 25 orphaned `pr-*` environments accumulated because a job-level `environment:`
     // creates an object CI has no permission to delete. The block was removed by hand
     // and only a comment stood in its place.

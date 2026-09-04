@@ -261,6 +261,9 @@ jobs:
       # generator that owns the whole file would fight 258 hand-written steps, and this
       # repo's other generate-and-check pairs (contract.generated.ts) are region-scoped
       # for the same reason.
+      - name: Allowlist key matching
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: .ci/scripts/quality/check_allowlist_key_matching.py
       - name: Environment names
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: .ci/scripts/quality/check_environment_names.py

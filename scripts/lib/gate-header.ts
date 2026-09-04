@@ -118,13 +118,46 @@ export function derivedRun(repoPath: string, selftest = false): string {
  * gate enumerating with it, placed in a lane with no submodules, silently loses the
  * files it exists to judge.
  */
-export function inferredNeeds(source: string): string[] {
+/**
+ * Strip PROSE: `#` and `//` line comments, `/* *\/` blocks, and Python docstrings.
+ *
+ * A comment is not code, and this helper read it as code. check_allowlist_key_matching.py
+ * mentions `private/account/Dockerfile` in its docstring to explain the defect it gates;
+ * nothing in it reads that file, yet the mention alone inferred a `submodules` need and
+ * pushed the gate out of the slim lane into quality-code. scripts/ci-runner/lanes.ts:91
+ * carries a note about the identical bug, found the identical way -- which is the whole
+ * argument for fixing it HERE rather than rewording one docstring.
+ *
+ * A gate that genuinely needs a submodule but only says so in prose declares it in its
+ * header's `needs:`, which is what that field is for.
+ */
+export function stripProse(source: string): string {
+  return source
+    .replace(/("""|''')[\s\S]*?\1/g, '')
+    .replace(/\/\*[\s\S]*?\*\//g, '')
+    .replace(/(^|[^:'"\\])\/\/.*$/gm, '$1')
+    .replace(/(^|\s)#.*$/gm, '$1');
+}
+
+export function inferredNeeds(rawSource: string): string[] {
+  const source = stripProse(rawSource);
   const out = new Set<string>();
   if (/--recurse-submodules|private\/(renet|account|elite|homebrew-tap)\//.test(source)) {
     out.add('submodules');
   }
   if (/^\s*import\s+yaml\b|\byaml\.safe_load\b/m.test(source)) out.add('python-yaml');
-  if (/\btsx\b|\bnode\b|require\(|import .* from ['"]/.test(source)) out.add('node');
+  // `\bnode\b` alone matched the Python AST variable `node` in
+  // check_allowlist_key_matching.py and inferred a node runtime for a pure-Python gate.
+  // A RUNTIME need is an invocation or an ES import, never a bare identifier.
+  // ...and `node\s+[\w./]` then matched `for node in ast.walk(tree)`. A runtime need
+  // means node in COMMAND position: line start, or after a shell operator.
+  if (
+    /\bnpx\s|\btsx\s|(?:^|[|&;(]|\$\()\s*node\s+[\w./]|require\(|^\s*import .* from ['"]/m.test(
+      source
+    )
+  ) {
+    out.add('node');
+  }
   if (/\bgo\s+(build|vet|test)\b/.test(source)) out.add('go');
   return [...out].sort();
 }

@@ -31,7 +31,6 @@ why: docker-npm-pin-exclusions.json was matched with `k in line`, so the bare
 from __future__ import annotations
 
 import ast
-import json
 import pathlib
 import subprocess
 import sys
@@ -49,7 +48,7 @@ MIN_CONSUMERS = 2
 
 def loads_config(src: str) -> bool:
     """Does this script read a file under .ci/config/?"""
-    return ".ci/config/" in src or '"config"' in src and "EXCLUSIONS" in src
+    return ".ci/config/" in src
 
 
 def _name(node: ast.AST) -> str:
@@ -149,8 +148,8 @@ def main(argv: list[str]) -> int:
 
     findings: list[str] = []
     for f in consumers:
-        for hit in substring_matches((ROOT / f).read_text(encoding="utf-8", errors="replace")):
-            findings.append(f"{f}: {hit}")
+        src = (ROOT / f).read_text(encoding="utf-8", errors="replace")
+        findings.extend(f"{f}: {hit}" for hit in substring_matches(src))
 
     if findings:
         print(f"✗ {len(findings)} allowlist key(s) matched by substring:", file=sys.stderr)
