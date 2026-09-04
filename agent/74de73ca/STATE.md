@@ -1,64 +1,49 @@
-## SESSION 74de73ca 2026-09-03T23:42:35Z
+## SESSION 74de73ca 2026-09-04T00:48:35Z
 
 # Session 74de73ca -- state
 
-Branch `0903-1`, PR #585, epic `24c98380`. Head as of this write: 873cce233
-(pushed through c770b8ebc; three commits are LOCAL AND UNPUSHED, deliberately --
-see "Why the tail is unpushed").
+Branch `0903-1`, PR #585, epic `24c98380`. Head 8d17dc201, pushed, tree clean.
+CI is mid-flight on it.
 
 ## What landed tonight
 
-- **The secret cutover's wave 1.** 79 consumer reads flipped from
+- **Secret cutover, wave 1.** 79 consumer reads flipped from
   `secrets.{APP_PRIVATE_KEY,CLOUDFLARE_API_TOKEN,DOCKERHUB_TOKEN}` to
-  `env.BWS_*` across 16 workflow files (c770b8ebc). The survey that drove it
-  separates four populations, and the one a find-and-replace would have
-  destroyed is the 73 `GH_<NAME>:` halves of the comparator steps: flipping
-  those makes the shadow compare a value against itself and pass forever.
-  Seven jobs needed the Bitwarden fetch MOVED ahead of app-token first.
-- **CHECK 6 of check-workflow-gates.sh now states a property, not a name.** A
-  step ahead of the watchdog's monitor is admitted when it carries BOTH
-  `continue-on-error: true` and `timeout-minutes: <= 5`, both as literals. It
-  had no test at all; it has nine assertions now
-  (`gate-test:watchdog-monitor-ordering`), and the checker is EXTRACTED from
-  the live gate so a copy cannot outlive the original.
-- **breakpoint.yml lost its shadow rather than gaining a flip** (cc3b468ed).
-  bws-secrets exports through GITHUB_ENV, and this job's later steps hand a
-  human a shell -- so the shadow was promoting the App private key, the tunnel
-  token and the SES EU pair from step scope to that shell. `check_bws_map.py`
-  gained a `no_fetch_jobs` key to say so per-JOB, since its old escape hatch is
-  keyed by secret NAME and would have quieted all 20 files.
-- **private/account's Dockerfile stopped building today** on an npm 10 arborist
-  crash from a package published this morning; fixed in the submodule (b0924d1)
-  by installing from the root workspace lockfile where npm can, and pinning
-  npm@12.0.2 in the two stages where `npm ci` genuinely refuses.
-- **Resprofile wave 2 is complete.** `rank()` folds `bash.jsonl` (246 shell
-  shapes, and `sh:-c` is now the largest row in the corpus at 57,718 CPU
-  seconds); an empty bash corpus is UNJUDGEABLE rather than clean; and the
-  retirement trigger no longer counts prose about the layer as work -- caught by
-  its own first trailer, one commit after it was written.
+  `env.BWS_*` across 16 workflow files (c770b8ebc). VERIFIED IN CI, which is the
+  claim that mattered: in run 33815742382 the fetch step succeeded and
+  `./.github/actions/app-token` minted a token from the Bitwarden value. The 73
+  `GH_<NAME>:` comparator halves were deliberately NOT flipped -- flipping them
+  makes the shadow compare a value against itself.
+- **breakpoint.yml lost its shadow** rather than gaining a flip (cc3b468ed):
+  bws-secrets exports through GITHUB_ENV and that job's later steps hand a human
+  a shell, so the fetch was promoting four credentials into it.
+- **CHECK 6 of check-workflow-gates.sh** now states a property (`continue-on-error`
+  AND a small `timeout-minutes`, both literals) instead of a name allowlist, and
+  has its first test ever -- nine assertions, checker extracted from the live gate.
+- **Two Docker builds fixed and their class swept.** private/account's image
+  stopped building on an npm 10 arborist crash from a package published that
+  morning; fixed in the submodule (b0924d1). `check:ci-docker-npm-pins` (502dabe48)
+  is the regression test for the class, and it caught two more unpinned installs.
+- **The run that went red wearing "cancelled"** (f6a43e635): `Quality / Code` hit
+  its own 15-minute ceiling because `lint:unused` runs four npm installs first and
+  they took 671s against 21-29s on the five runs before. Bounded and retried.
+- **Resprofile wave 2 complete**; `rank()` reads bash.jsonl at last, and the
+  retirement trigger stopped counting prose about the layer as work.
 - **The retirement tool** (873cce233) writes out the last, irreversible step and
   applies nothing.
 
-## Why the tail is unpushed
-
-CI is mid-flight on c770b8ebc, which is the first run where 79 flipped reads
-actually mint tokens from Bitwarden. Every push supersedes that run, and the
-answer it is producing is the one that matters. The three commits after it
-(cc3b468ed, 2e6877c50, dd4be3790, 873cce233) are green on ci:quick 296/296 and
-go out the moment that run reports.
-
 ## Next action
 
-Pin the two unpinned global npm installs, which are the same class as tonight's
-Docker break: `.devcontainer/Dockerfile:340` installs `@openai/codex` and
-`@google/gemini-cli` with no version at all, and `.ci/docker/web/Dockerfile:33`
-installs `agent-browser@latest`. Both resolve live at build time, so a package
-published this morning breaks the image -- which is exactly what happened to
-private/account's shared-build stage today. `gate-test:devcontainer-pin-freshness`
-already enforces a pinning discipline these two lines sit outside; check whether
-its scope should widen rather than adding two pins it does not watch.
+Re-derive the shadow pass list from the CI run now finishing and check it against
+`retire-shadowed-secrets.py`'s report: the tool names 16 files, 73 comparator
+halves, 4 whole comparator steps and 23 passthroughs, and that inventory should
+agree with which names the comparators actually proved equal on this run. A
+disagreement means one of the two is reading the tree wrong, and the tool is the
+thing an operator would run against production secrets.
 
 ## Remaining
 
-- `[?] #13d281a2` -- retire the three org secrets, or hold. DEFAULT is HOLD and
-  it parks no work: everything mechanical is committed and the tool exists.
+- `[?] #13d281a2` -- retire the three org secrets, or hold. DEFAULT is HOLD; it
+  parks no work, everything mechanical is committed.
+- `[?] #3838ee4f` -- docker SDK v25 -> v28 in renet. DEFAULT is to land it as the
+  first change after #585 merges, so the E2E matrix judges it alone.
