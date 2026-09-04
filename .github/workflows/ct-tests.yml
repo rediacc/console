@@ -1937,7 +1937,7 @@ jobs:
         run: .ci/scripts/test/run-account-e2e.sh
         env:
           ACCOUNT_ED25519_PRIVATE_KEY: ${{ secrets.ACCOUNT_ED25519_PRIVATE_KEY }}
-          ACCOUNT_ED25519_PUBLIC_KEY: ${{ secrets.ACCOUNT_ED25519_PUBLIC_KEY }}
+          ACCOUNT_ED25519_PUBLIC_KEY: ${{ env.BWS_ACCOUNT_ED25519_PUBLIC_KEY }}
           ACCOUNT_SERVER_API_KEY: ${{ secrets.ACCOUNT_SERVER_API_KEY }}
           ACCOUNT_JWT_SECRET: ${{ secrets.ACCOUNT_JWT_SECRET }}
           ROOT_EMAIL: ${{ vars.ROOT_EMAIL }}

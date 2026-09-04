@@ -275,7 +275,7 @@ jobs:
       - name: Build & push (amd64)
         run: .ci/scripts/build/buildx-push-web.sh
         env:
-          ACCOUNT_ED25519_PUBLIC_KEY: ${{ secrets.ACCOUNT_ED25519_PUBLIC_KEY }}
+          ACCOUNT_ED25519_PUBLIC_KEY: ${{ env.BWS_ACCOUNT_ED25519_PUBLIC_KEY }}
           PLATFORM: linux/amd64
           VARIANT: ${{ matrix.variant }}
           IMAGE_PATH: ${{ steps.resolve.outputs.image_path }}
@@ -376,7 +376,7 @@ jobs:
       - name: Build & push (arm64)
         run: .ci/scripts/build/buildx-push-web.sh
         env:
-          ACCOUNT_ED25519_PUBLIC_KEY: ${{ secrets.ACCOUNT_ED25519_PUBLIC_KEY }}
+          ACCOUNT_ED25519_PUBLIC_KEY: ${{ env.BWS_ACCOUNT_ED25519_PUBLIC_KEY }}
           PLATFORM: linux/arm64
           VARIANT: ${{ matrix.variant }}
           IMAGE_PATH: ${{ steps.resolve.outputs.image_path }}

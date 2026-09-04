@@ -135,7 +135,7 @@ jobs:
 
       - name: Build full renet with embedded assets (release)
         env:
-          ACCOUNT_ED25519_PUBLIC_KEY: ${{ secrets.ACCOUNT_ED25519_PUBLIC_KEY }}
+          ACCOUNT_ED25519_PUBLIC_KEY: ${{ env.BWS_ACCOUNT_ED25519_PUBLIC_KEY }}
           # OTLP credentials are NOT baked at build time any more — renet
           # resolves them from env vars at runtime (renet#51).
         run: |

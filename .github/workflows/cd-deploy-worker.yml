@@ -199,7 +199,7 @@ jobs:
           # EXACTLY the stored spelling. HEAD carried an older contract
           # (SECRET_ED25519_*, STRIPE_KEY_EU) that the deploy script no longer reads.
           ACCOUNT_ED25519_PRIVATE_KEY: ${{ secrets.ACCOUNT_ED25519_PRIVATE_KEY }}
-          ACCOUNT_ED25519_PUBLIC_KEY: ${{ secrets.ACCOUNT_ED25519_PUBLIC_KEY }}
+          ACCOUNT_ED25519_PUBLIC_KEY: ${{ env.BWS_ACCOUNT_ED25519_PUBLIC_KEY }}
           ACCOUNT_JWT_SECRET: ${{ secrets.ACCOUNT_JWT_SECRET }}
           ACCOUNT_SERVER_API_KEY: ${{ secrets.ACCOUNT_SERVER_API_KEY }}
           ACCOUNT_X25519_PRIVATE_KEY: ${{ secrets.ACCOUNT_X25519_PRIVATE_KEY }}
