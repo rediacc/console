@@ -123,6 +123,29 @@ test_control_ledger_is_the_variable() {
     log_pass "CONTROL: the ledger, and nothing else, flips the verdict"
 }
 
+# ── 8. The verdict names WHICH KIND of mismatch, without leaking a byte ─────
+# RELEASE_GPG_PRIVATE_KEY mismatched on run 33904687989 while both copies were
+# the same key; only a trailing newline could differ, and the line could not say
+# so. Both kinds are asserted, and in both the verdict stays a failure.
+test_mismatch_kind_is_named() {
+    local rc=0
+    run_body "A" "" GH_A=$'one\n' BWS_A=one || rc=$?
+    assert_exit_code 1 "$rc" "a whitespace-only mismatch is STILL a mismatch"
+    assert_contains "$LAST_OUT" "[whitespace-only" "and is named as one"
+    assert_contains "$LAST_OUT" "github ends with newline: yes, bitwarden: no" "with the side that carries the newline"
+    rc=0
+    run_body "A" "" GH_A=one BWS_A=two || rc=$?
+    assert_exit_code 1 "$rc" "a content mismatch fails"
+    assert_contains "$LAST_OUT" "[content differs]" "and is named as content"
+    case "$LAST_OUT" in *one* | *two*) log_fail "the diagnostic printed a value" ;; esac
+    rc=0
+    run_body "A" "A" GH_A=$'one\n' BWS_A=one || rc=$?
+    assert_exit_code 0 "$rc" "an excused whitespace-only mismatch passes"
+    assert_contains "$LAST_OUT" "EXPECTED" "and still says it mismatched"
+    assert_contains "$LAST_OUT" "[whitespace-only" "carrying the kind"
+    log_pass "the mismatch kind is named, both directions, with no value printed"
+}
+
 log_test "test-shadow-compare"
 test_match_passes
 test_mismatch_fails
@@ -131,6 +154,7 @@ test_expected_but_matching_fails
 test_empty_still_fatal_when_expected
 test_expected_not_in_names
 test_control_ledger_is_the_variable
+test_mismatch_kind_is_named
 
 echo ""
 log_pass "all tests passed"

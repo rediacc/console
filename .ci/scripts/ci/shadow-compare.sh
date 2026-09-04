@@ -54,15 +54,39 @@ for n in "${names[@]}"; do
             echo "shadow $n matches, but is still excused by SHADOW_EXPECTED_MISMATCH -- the drift is resolved; delete it here and in shadow-expected-mismatches.json"
             rc=1
         else echo "shadow $n match"; fi
-    elif is_expected "$n"; then
-        # Known drift, recorded with its evidence and its door. It does not stop
-        # this job (the ledger is .ci/config/shadow-expected-mismatches.json):
-        # blocking on it took the CI watchdog down on 2026-09-03 without
-        # it monitoring anything, and the finding is already the operator's.
-        echo "shadow $n MISMATCH (EXPECTED -- shadow-expected-mismatches.json, operator-only)"
     else
-        echo "shadow $n MISMATCH"
-        rc=1
+        # WHICH KIND OF MISMATCH, said without printing a byte of either value.
+        # RELEASE_GPG_PRIVATE_KEY mismatched on run 33904687989 while the key it
+        # carries was PROVEN identical on both sides (same fingerprints as the
+        # committed public key; releases CD signed with the GitHub copy verify
+        # against it). The only remaining difference was bytes -- an armored
+        # block stored with or without its trailing newline -- and the verdict
+        # line could not say so, which turned a one-line normalisation into an
+        # operator ticket. A sha of each side would be reversible for a short
+        # secret, so the diagnostic is limited to: equal once trailing
+        # whitespace is stripped, and whether each side ends in a newline.
+        # Neither is secret material. The verdict is unchanged either way; a
+        # whitespace-only drift is still a drift, because the same value fed to
+        # a header or a URL would break on that byte.
+        gs="${!gv-}"
+        bs="${!bv-}"
+        while [ "${gs: -1}" = $'\n' ] || [ "${gs: -1}" = $'\r' ]; do gs="${gs%?}"; done
+        while [ "${bs: -1}" = $'\n' ] || [ "${bs: -1}" = $'\r' ]; do bs="${bs%?}"; done
+        if [ "$(sha "$gs")" = "$(sha "$bs")" ]; then
+            kind="whitespace-only: equal once trailing newlines are stripped (github ends with newline: $([ "${!gv: -1}" = $'\n' ] && echo yes || echo no), bitwarden: $([ "${!bv: -1}" = $'\n' ] && echo yes || echo no))"
+        else
+            kind="content differs"
+        fi
+        if is_expected "$n"; then
+            # Known drift, recorded with its evidence and its door. It does not stop
+            # this job (the ledger is .ci/config/shadow-expected-mismatches.json):
+            # blocking on it took the CI watchdog down on 2026-09-03 without
+            # it monitoring anything, and the finding is already the operator's.
+            echo "shadow $n MISMATCH (EXPECTED -- shadow-expected-mismatches.json, operator-only) [$kind]"
+        else
+            echo "shadow $n MISMATCH [$kind]"
+            rc=1
+        fi
     fi
 done
 exit "$rc"
