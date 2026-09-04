@@ -2245,3 +2245,33 @@ remove, arriving by a second door. Fixed by scoping the poll to the delta paths.
 So: when a gate fails once, capture the real output, spend the one second refuting the
 obvious cause, and read the assertion. Two of those three paid, and neither was the
 flake.
+
+## A fixture with an absolute date walks across a retention window on its own
+Trap-Id: absolute-date-fixture-crosses-retention-window
+Enforced-By: file:.claude/hooks/stop/test-report-inbox.sh
+Residue: The instrument is the one suite that was bitten, rewritten to relative stamps. Any other fixture that feeds an age-based prune, lookback or expiry with a constant date is still a calendar bomb until the day it fires, and no gate scans for the shape.
+
+`Quality / Security` went red on 2026-09-04 with NO change in the window: two
+assertions in `test-report-inbox.sh` case 12 failed, "body holds the SendMessage
+payload" and "body also holds the sign-off". The suite had been green for a
+month. `--show` said why: "indexed but its body is gone (pruned after 30 days)".
+
+The fixture's transcript records carried `"timestamp": "2026-08-05T10:00:00.500Z"`,
+a constant. `scan()` captures the body under that `at` and then, in the same
+call, prunes every body older than `RETENTION_DAYS` (30). On 2026-09-04 the
+constant aged past the window, so the very scan that captured the report deleted
+its body before the test could read it. Nothing in the code moved; the calendar
+did.
+
+Two things make this worth an entry rather than a fix note. First, the failure
+surfaced as a mid-branch regression on an unrelated PR, and the babysit rule
+"it passed earlier is not a classifier" is exactly right here in the wrong
+direction: the window was empty of relevant commits, which is the affirmative
+evidence for an environmental cause, and the environment was the date. Second,
+the job it lives in had been the CANCELLED sibling of the previous run, so it
+first reported the day after the bomb went off, looking like a consequence of
+that run's real red.
+
+Fixtures that feed anything age-based (retention, lookback, lease expiry,
+staleness) take stamps computed from now, never constants. Sweep with
+`grep -rn '"timestamp": "20' --include='test*'` when adding one.
