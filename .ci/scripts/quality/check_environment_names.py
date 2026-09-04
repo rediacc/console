@@ -26,6 +26,13 @@ history is outward-facing and the operator's call -- a gate on them would be red
 forever on a condition this repo cannot satisfy.
 
 Exit 1 on an unbounded environment name, 2 on a failed control.
+
+---- gate ----
+step: Environment names
+needs: none
+why: 25 orphaned pr-* environments accumulated because a job-level environment: creates
+     an object CI has no permission to delete
+---- end gate ----
 """
 
 from __future__ import annotations

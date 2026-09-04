@@ -5286,8 +5286,23 @@ export const GATES: readonly GateSpec[] = [
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
-      job: 'quality-code',
+      job: 'quality-static',
       step: 'Environment names',
+    },
+  },
+  {
+    // Re-derives every declared gate's registration and compares. It found a real
+    // mis-placement on its first run against the tree: check:ci-environment-names was
+    // hand-registered in quality-code when its needs put it in quality-static.
+    id: 'check:ci-gate-bind',
+    run: 'npm run check:ci-gate-bind',
+    gate: true,
+    leaves: ['scripts/gate-bind.ts'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-code',
+      step: 'Gate binding',
     },
   },
   {

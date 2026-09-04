@@ -252,6 +252,20 @@ jobs:
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: .ci/scripts/quality/check_dockerfile_mirror_resilience.py
 
+      # HERE, not quality-code, and the BINDER chose it. This gate reads workflow YAML
+      # with a hand parser and needs neither node nor submodules, so the cheapest lane
+      # runs it; it was hand-registered one lane too expensive and gate-bind said so on
+      # its first run against the tree.
+      #
+      # A job-level `environment:` makes GitHub create the environment OBJECT, and
+      # deleting one needs Administration:write, which check-no-app-admin-perm.sh
+      # forbids the CI App from holding. 25 orphaned `pr-*` environments accumulated
+      # by 2026-09-03 before the block that minted them was deleted BY HAND, leaving a
+      # comment where a gate belongs.
+      - name: Environment names
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: .ci/scripts/quality/check_environment_names.py
+
       # A job that READS submodule source must CHECK IT OUT. Tests + Infra /
       # Unit parsed private/renet/pkg/prune/datastore.go with a bare checkout,
       # failed on a file it never fetched, and cancelled 26 siblings; the ENOENT
@@ -911,14 +925,11 @@ jobs:
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: npm run check:ci-enumeration-vacuity
 
-      # A job-level `environment:` makes GitHub create the environment OBJECT, and
-      # deleting one needs Administration:write, which check-no-app-admin-perm.sh
-      # forbids the CI App from holding. 25 orphaned `pr-*` environments had
-      # accumulated by 2026-09-03 before the block that minted them was deleted BY
-      # HAND -- leaving a comment where a gate belongs.
-      - name: Environment names
+      # The binder's own check, and it declares itself through the same header it
+      # reads -- so the first thing it verifies is that IT is registered correctly.
+      - name: Gate binding
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: .ci/scripts/quality/check_environment_names.py
+        run: npm run check:ci-gate-bind
 
       - name: Format
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
