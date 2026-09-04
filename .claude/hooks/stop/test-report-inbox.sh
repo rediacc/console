@@ -321,16 +321,26 @@ proj.mkdir(parents=True)
 aid = "asender-7777777777777777"
 (proj / ("agent-%s.meta.json" % aid)).write_text(json.dumps(
     {"agentType": "sender", "name": "sender", "taskKind": "in_process_teammate"}))
+# RELATIVE, NOT ABSOLUTE. These records carried "2026-08-05T10:00:00.500Z" and
+# the case went red on 2026-09-04 with no code change: scan() captures the body
+# and then prunes every body whose `at` is older than RETENTION_DAYS (30), so on
+# the calendar day the fixture aged past the window, --show reported the body
+# "gone (pruned after 30 days)" and both body assertions failed. A fixture
+# whose date is a constant walks across a retention window on its own.
+import datetime
+_t0 = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(minutes=10)
+def ts(minutes):
+    return (_t0 + datetime.timedelta(minutes=minutes)).strftime("%Y-%m-%dT%H:%M:%S.500Z")
 recs = [{
     "type": "assistant", "agentId": aid, "sessionId": "sess1", "gitBranch": "testbr",
-    "timestamp": "2026-08-05T10:00:00.500Z", "cwd": str(root),
+    "timestamp": ts(0), "cwd": str(root),
     "message": {"content": [
         {"type": "tool_use", "name": "SendMessage",
          "input": {"to": "team-lead", "summary": "the report",
                    "message": "THE ACTUAL REPORT\n" + "detail. " * 200}}]},
 }, {
     "type": "assistant", "agentId": aid, "sessionId": "sess1", "gitBranch": "testbr",
-    "timestamp": "2026-08-05T10:01:00.500Z", "cwd": str(root),
+    "timestamp": ts(1), "cwd": str(root),
     "message": {"content": [{"type": "text", "text": "Released. Task complete."}]},
 }]
 p = proj / ("agent-%s.jsonl" % aid)
@@ -373,10 +383,14 @@ T = pathlib.Path(sys.argv[1])
 root = T / "repo"
 proj = T / "claude" / "projects" / re.sub(r"[^A-Za-z0-9]", "-", str(root)) / "sess1" / "subagents"
 proj.mkdir(parents=True)
+import datetime
+# Relative for the same reason as case 12: an absolute date ages past the
+# retention window and the body is pruned in the very scan that captured it.
+_ts = (datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(minutes=10)).strftime("%Y-%m-%dT%H:%M:%S.500Z")
 def agent(aid, atype, text):
     (proj / ("agent-%s.meta.json" % aid)).write_text(json.dumps({"agentType": atype, "name": atype}))
     rec = {"type": "assistant", "agentId": aid, "sessionId": "sess1", "gitBranch": "testbr",
-           "timestamp": "2026-08-05T10:00:00.500Z", "cwd": str(root),
+           "timestamp": _ts, "cwd": str(root),
            "message": {"content": [{"type": "text", "text": text}]}}
     p = proj / ("agent-%s.jsonl" % aid)
     p.write_text(json.dumps(rec) + "\n")
