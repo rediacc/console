@@ -21,10 +21,8 @@
  * in the cheapest lane and one that needs submodules cannot land in a lane without them.
  */
 
-import fs from 'node:fs';
-
 /** Cheapest first. A job absent from the workflow is an error, never a skip. */
-export const LANE_ORDER = [
+const LANE_ORDER = [
   'quality-static',
   'quality-branch',
   'quality-submodule-branches',
@@ -167,5 +165,3 @@ export function placeGate(
   }
   return { error: `no lane provides all of: ${needs.join(', ')}` };
 }
-
-export const readWorkflow = (p: string): string => fs.readFileSync(p, 'utf-8');

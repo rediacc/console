@@ -131,7 +131,7 @@ export function derivedRun(repoPath: string, selftest = false): string {
  * A gate that genuinely needs a submodule but only says so in prose declares it in its
  * header's `needs:`, which is what that field is for.
  */
-export function stripProse(source: string): string {
+function stripProse(source: string): string {
   return source
     .replace(/("""|''')[\s\S]*?\1/g, '')
     .replace(/\/\*[\s\S]*?\*\//g, '')

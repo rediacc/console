@@ -27,7 +27,7 @@ source "$SCRIPT_DIR/../lib/test-helpers.sh"
 OUT="$(
     cd "$REPO_ROOT" && npx tsx - <<'TS' 2>&1
 import fs from 'node:fs';
-import { LANE_ORDER, laneCapabilities, placeGate, satisfies } from './scripts/ci-runner/lanes.js';
+import { laneCapabilities, placeGate, satisfies } from './scripts/ci-runner/lanes.js';
 
 let bad = 0;
 const ck = (label: string, ok: boolean, detail?: unknown): void => {
@@ -40,8 +40,10 @@ const ck = (label: string, ok: boolean, detail?: unknown): void => {
 
 const caps = laneCapabilities(fs.readFileSync('.github/workflows/ci-quality.yml', 'utf-8'));
 
-ck('every lane in LANE_ORDER exists in the workflow', LANE_ORDER.every((j) => caps.has(j)),
-   LANE_ORDER.filter((j) => !caps.has(j)));
+// LANE_ORDER is module-private; placeGate refuses outright when any entry is absent from
+// the workflow (the `gone` case below), so a lane coming back is the proof it is complete.
+ck('every lane in LANE_ORDER exists in the workflow', !('error' in placeGate(caps, [])),
+   placeGate(caps, []));
 ck('the slim lanes have no node', !caps.get('quality-static')?.node && !caps.get('quality-branch')?.node);
 ck('quality-static takes NO submodules -- the mis-placement that cost CI',
    caps.get('quality-static')?.submodules.length === 0);
