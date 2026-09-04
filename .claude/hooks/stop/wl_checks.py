@@ -2254,17 +2254,11 @@ def phantom_identities(worklist, session_id, fold, reqs):
         )
     stopped = {p.name.split(".lastevent-")[-1][:-5] for p in seen}
     counts, first_at = {}, {}
-    try:
-        raw = S.events_path(worklist).read_text(encoding="utf-8", errors="replace")
-    except OSError:
-        return [], ""
-    for line in raw.splitlines():
-        if not line.strip():
-            continue
-        try:
-            ev = json.loads(line)
-        except ValueError:
-            continue
+    # THE WHOLE STORE, not the legacy file. The log moved to agent/worklist/
+    # and reading one path here would have made every identity in the tracked
+    # store invisible to the phantom check -- a check that silently sees
+    # nothing, which is the failure mode its own BLIND message exists to name.
+    for ev in S._read_events(worklist):
         by = str(ev.get("by") or "")
         if not by or by in PHANTOM_NOT_IDENTITIES or not C.PREFIX_RE.match(by):
             continue

@@ -9,7 +9,6 @@
 
 echo "== 164. --triage refuses an empty finding and appends NO event =="
 setup
-EVENTS="${WL%.md}.events.jsonl"
 OUT=$(triage off deadbeef 2>&1)
 RC=$?
 if [[ "$RC" -ne 0 ]] && grep -qF "usage:" <<<"$OUT"; then
@@ -24,23 +23,22 @@ if [[ "$RC" -ne 0 ]] && grep -qF "empty finding triages nothing" <<<"$OUT"; then
 else
     fail "blank-text --triage was accepted (rc=$RC): ${OUT:0:200}"
 fi
-if [[ ! -s "$EVENTS" ]]; then
+if [[ -z "$(wl_events)" ]]; then
     pass "both refusals appended NO event (a rejected write is not a delivered one)"
 else
-    fail "a refused triage still wrote an event: $(head -c 200 "$EVENTS")"
+    fail "a refused triage still wrote an event: $(wl_events | head -c 200)"
 fi
 # CONTROL: the same verb WITH a finding does append, so the assertion above
 # could have failed. Without this the no-event check passes on a dead verb.
 triage off deadbeef "the retry loop swallows the exit code" >/dev/null 2>&1
-if [[ -s "$EVENTS" ]] && grep -q '"ev":"add"' "$EVENTS"; then
+if [[ -n "$(wl_events)" ]] && grep -q '"ev":"add"' <(wl_events); then
     pass "164 CONTROL: a real finding DOES append an add event"
 else
-    fail "164 CONTROL: the verb appends nothing at all: $(head -c 200 "$EVENTS")"
+    fail "164 CONTROL: the verb appends nothing at all: $(wl_events | head -c 200)"
 fi
 
 echo "== 165. --triage degrades to a self-assessment and claims NO verdict =="
 setup
-EVENTS="${WL%.md}.events.jsonl"
 OUT=$(triage off deadbeef "the fork path copies .env into the child repo" 2>&1)
 RC=$?
 if [[ "$RC" -eq 0 ]] && grep -qF "INLINE" <<<"$OUT" && grep -qF "PLAN+SUBAGENT" <<<"$OUT" &&
@@ -49,20 +47,19 @@ if [[ "$RC" -eq 0 ]] && grep -qF "INLINE" <<<"$OUT" && grep -qF "PLAN+SUBAGENT" 
 else
     fail "degraded triage wrong (rc=$RC): ${OUT:0:300}"
 fi
-if grep -q '"ev":"add"' "$EVENTS"; then
+if grep -q '"ev":"add"' <(wl_events); then
     pass "the finding is TRACKED even when no verdict could be produced"
 else
-    fail "the degraded triage tracked nothing: $(head -c 200 "$EVENTS")"
+    fail "the degraded triage tracked nothing: $(wl_events | head -c 200)"
 fi
-if ! grep -q '"ev":"triage"' "$EVENTS"; then
+if ! grep -q '"ev":"triage"' <(wl_events); then
     pass "165 CONTROL: degraded mode records NO triage event, so the machinery never claims a verdict it did not produce"
 else
-    fail "degraded mode recorded a verdict: $(grep '"ev":"triage"' "$EVENTS")"
+    fail "degraded mode recorded a verdict: $(grep '"ev":"triage"' <(wl_events))"
 fi
 
 echo "== 166. --triage --id refuses another session's item =="
 setup
-EVENTS="${WL%.md}.events.jsonl"
 NID=$(as_peer other123 reqcli --add other123 "their finding" | sed -n 's/^added #\([0-9a-f]*\).*/\1/p')
 OUT=$(triage off deadbeef --id "$NID" "my take on their finding" 2>&1)
 RC=$?
@@ -71,10 +68,10 @@ if [[ "$RC" -ne 0 ]] && grep -qF "is owned by other123" <<<"$OUT"; then
 else
     fail "cross-session triage was accepted (rc=$RC): ${OUT:0:200}"
 fi
-if ! grep -q '"ev":"triage"' "$EVENTS"; then
+if ! grep -q '"ev":"triage"' <(wl_events); then
     pass "166 CONTROL: the refused triage recorded nothing"
 else
-    fail "a refused triage still recorded a verdict: $(grep '"ev":"triage"' "$EVENTS")"
+    fail "a refused triage still recorded a verdict: $(grep '"ev":"triage"' <(wl_events))"
 fi
 # The same item, triaged by its OWNER, reaches the degraded printout: the
 # refusal is about ownership and not about --id being broken.
@@ -87,7 +84,6 @@ fi
 
 echo "== 167. --triage judge path: verdict, recipe, recorded event, ONE call =="
 setup
-EVENTS="${WL%.md}.events.jsonl"
 : >"$BASE/judgecalls"
 shim_judge_out '{"verdict":"plan-subagent","reason":"multi-file","plan_slug":"fix-x"}'
 OUT=$(triage on deadbeef "renet forks inherit the parent buildkit session" 2>&1)
@@ -98,11 +94,11 @@ if [[ "$RC" -eq 0 ]] && grep -qF "PLAN+SUBAGENT" <<<"$OUT" &&
 else
     fail "plan-subagent recipe wrong (rc=$RC): ${OUT:0:300}"
 fi
-if grep -q '"ev":"triage"' "$EVENTS" && grep -qF '"v":"plan-subagent"' "$EVENTS" &&
-    grep -qF '"plan":"agent/PLAN-fix-x.md"' "$EVENTS"; then
+if grep -q '"ev":"triage"' <(wl_events) && grep -qF '"v":"plan-subagent"' <(wl_events) &&
+    grep -qF '"plan":"agent/PLAN-fix-x.md"' <(wl_events); then
     pass "the verdict is RECORDED with its plan path"
 else
-    fail "triage event missing or wrong: $(tail -c 300 "$EVENTS")"
+    fail "triage event missing or wrong: $(wl_events | tail -c 300)"
 fi
 if [[ "$(wc -l <"$BASE/judgecalls")" -eq 1 ]]; then
     pass "the judge was called exactly once (no retry loop, no double spend)"
@@ -111,21 +107,20 @@ else
 fi
 # CONTROL: one different verdict from the same shim takes the other branch.
 setup
-EVENTS="${WL%.md}.events.jsonl"
 : >"$BASE/judgecalls"
 shim_judge_out '{"verdict":"inline","reason":"one line and one check","plan_slug":""}'
 OUT=$(triage on deadbeef "the error message names the wrong flag" 2>&1)
 TID=$(sed -n 's/^triaging #\([0-9a-f]*\).*/\1/p' <<<"$OUT")
 if grep -qF "TRIAGE VERDICT: INLINE" <<<"$OUT" && grep -qF -- "--tick deadbeef $TID" <<<"$OUT" &&
-    grep -qF '"v":"inline"' "$EVENTS" && ! grep -qF '"plan":' "$EVENTS"; then
+    grep -qF '"v":"inline"' <(wl_events) && ! grep -qF '"plan":' <(wl_events); then
     pass "167 CONTROL: an inline verdict orders the fix now and records no plan"
 else
     fail "167 CONTROL: inline branch wrong: ${OUT:0:300}"
 fi
 
+EVENTS="${WL%.md}.events.jsonl"  # write target only; reads go through wl_events
 echo "== 168. a TRIAGED BIG item with no plan file on disk is demanded =="
 setup
-EVENTS="${WL%.md}.events.jsonl"
 NOW=$(date -u +%Y-%m-%dT%H:%M:%SZ)
 printf '{"ev":"add","id":"deadbee1","at":"%s","by":"deadbeef","s":" ","o":"deadbeef","t":"forks leak the parent secrets"}\n' \
     "$NOW" >>"$EVENTS"
@@ -151,7 +146,6 @@ fi
 
 echo "== 169. --tick refuses evidence that is ONLY an issue reference =="
 setup
-EVENTS="${WL%.md}.events.jsonl"
 reg_repo
 SHA=$(cd "$BASE/proj" && git rev-parse HEAD)
 NID=$(reqcli --add deadbeef "the retry loop swallows the exit code" | sed -n 's/^added #\([0-9a-f]*\).*/\1/p')
@@ -163,13 +157,13 @@ if [[ "$RC" -ne 0 ]] && grep -qF "door:operator-only" <<<"$OUT" &&
 else
     fail "the bare-issue tick was accepted (rc=$RC): ${OUT:0:300}"
 fi
-if ! grep -q '"ev":"state"' "$EVENTS"; then
+if ! grep -q '"ev":"state"' <(wl_events); then
     pass "the refused tick wrote NO state event"
 else
-    fail "a refused tick still closed the item: $(grep '"ev":"state"' "$EVENTS")"
+    fail "a refused tick still closed the item: $(grep '"ev":"state"' <(wl_events))"
 fi
 OUT=$(reqcli --tick deadbeef "$NID" "filed as https://github.com/x/y/issues/560 door:no-write-access, that repo is not writable here" 2>&1)
-if [[ $? -eq 0 ]] && grep -q '"ev":"state"' "$EVENTS"; then
+if [[ $? -eq 0 ]] && grep -q '"ev":"state"' <(wl_events); then
     pass "the SAME evidence naming its door is accepted (the door is the exit)"
 else
     fail "a door-carrying tick was refused: ${OUT:0:300}"

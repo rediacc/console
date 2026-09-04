@@ -747,6 +747,121 @@ def _annotated_running(ids, me):
     return ", ".join(out)
 
 
+def _migrate_cli(argv):
+    """`--migrate <me> --candidates [--json]` and `--migrate <me> <prev>...`.
+
+    THE VERB BEHIND /migrate. Its whole reason to exist is a machine switch: the
+    event log now travels in git, so a session's remaining work arrives on the
+    new machine, but it arrives OWNED BY A SESSION THAT IS NOT RUNNING THERE --
+    visible, and blocking nobody. This re-tags it to the session in front of the
+    operator.
+
+    RE-TAG, chosen by the operator over an alias, and the consequence is the
+    point: after the move the items are MINE, so the Stop hook blocks on them
+    exactly as it would on work I typed myself. The originals are ticked with a
+    note naming the new id; nothing is deleted, and the log still says who did
+    the work.
+
+    NOTHING MOVES WITHOUT A NAMED PREDECESSOR. There is no `--all`: the listing
+    is one command and the move is another, because "continue everything you
+    find" is precisely the shape that would sweep up a colleague's session.
+    """
+    if len(argv) < 2:
+        sys.stderr.write(M.CLI_MIGRATE_USAGE)
+        sys.exit(2)
+    me = argv[1]
+    if not C.PREFIX_RE.match(me):
+        sys.stderr.write(M.CLI_MIGRATE_USAGE)
+        sys.exit(2)
+    _identity_or_die(me, _die2)
+    worklist = C.worklist_for(C.project_root(C.project_start()))
+    root = C.project_root(C.project_start())
+    projects = C.projects_dir(root)
+    fold = S.load(worklist, sync=True)
+    rest = argv[2:]
+
+    if not rest or rest[0] == "--candidates":
+        as_json = "--json" in rest
+        cands = S.migrate_candidates(worklist, fold, me, projects)
+        if as_json:
+            print(json.dumps(cands, separators=(",", ":")))
+            return
+        if not cands:
+            print(
+                "no session has un-migrated remaining work that is not live here.\n"
+                "  (a LIVE session is excluded on purpose: its work is not yours to take)"
+            )
+            return
+        print("SESSIONS WITH REMAINING WORK (nothing moves until you name one):")
+        for c in cands:
+            n = c["counts"]
+            print(
+                "  %s  %d item(s) [open %d, in-flight %d, deferred %d]  %s  %s%s"
+                % (
+                    c["prefix"],
+                    n["open"] + n["inflight"] + n["deferred"],
+                    n["open"],
+                    n["inflight"],
+                    n["deferred"],
+                    c["host"],
+                    ("branch %s  " % c["branch"]) if c["branch"] else "",
+                    "  (already handed off)" if c["handed_off"] else "",
+                )
+            )
+            print("      %s: %s" % (c["verdict"], c["evidence"]))
+            for it in c["items"][:3]:
+                print("      - [%s] #%s %s" % (it["state"], it["id"], it["text"][:110]))
+        print("\ncontinue one:  worklist.py --migrate %s <prefix> [<prefix>...]" % me)
+        return
+
+    total_moved = 0
+    for prev in rest:
+        if not C.PREFIX_RE.match(prev):
+            sys.stderr.write("not a session prefix: %s\n" % prev)
+            sys.exit(2)
+        try:
+            moved, refused = S.migrate_items(worklist, fold, me, prev, projects)
+        except ValueError as exc:
+            sys.stderr.write("REFUSED (%s): %s\n" % (prev, exc))
+            sys.exit(2)
+        if not moved:
+            print("nothing left to migrate from %s (%d already migrated)" % (prev, len(refused)))
+            continue
+        print("migrated %d item(s) from %s:" % (len(moved), prev))
+        for old, new, st in moved:
+            print("  [%s] #%s -> #%s" % (st, old, new))
+        if refused:
+            print("  skipped %d already-migrated item(s)" % len(refused))
+        # THE PREDECESSOR'S NEXT ACTION, printed rather than merged: its STATE.md
+        # is a peer's document, which this session reads and never writes. The
+        # section is quoted whole -- the operator asked for the next action to
+        # come across, and a one-line lead is not that.
+        try:
+            st = S.agent_session_dir(root, prev) / "STATE.md"
+            text = st.read_text(encoding="utf-8", errors="replace")
+            i = text.find("## Next action")
+            if i >= 0:
+                body = text[i + len("## Next action") :]
+                j = body.find("\n## ")
+                section = (body[:j] if j >= 0 else body).strip()
+                if section:
+                    print(
+                        "\n  HANDED OFF NEXT ACTION from %s (agent/%s/STATE.md):" % (prev, prev)
+                    )
+                    for line in section[:1500].splitlines():
+                        print("    %s" % line)
+        except (OSError, AttributeError):
+            pass  # no STATE.md for that session: the items are the handoff
+        print("\n  requests addressed to %s are NOT moved; read them with --requests" % prev)
+        total_moved += len(moved)
+        fold = S.load(worklist, sync=False)
+    if total_moved:
+        print(
+            "\nnow: worklist.py --list --open %s, fold the handed-off next action into "
+            "your own STATE.md, and commit agent/worklist/%s.jsonl by name." % (me, me[:8])
+        )
+
+
 def _adopt_cli(argv):
     """`--adopt <me> <prev>`: record that a compaction split one conversation.
 
@@ -1625,6 +1740,9 @@ def main():
             _teammate_idle_cli()
         except Exception as exc:  # noqa: BLE001 -- see above: never block a teammate
             sys.stderr.write("teammate-idle journal skipped: %s\n" % exc)
+        return
+    if sys.argv[1:2] == ["--migrate"]:
+        _migrate_cli(sys.argv[1:])
         return
     if sys.argv[1:2] == ["--adopt"]:
         _adopt_cli(sys.argv[1:])

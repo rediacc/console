@@ -31,10 +31,10 @@ if [[ "$ok" == 1 ]] && ! grep -qF 'tombstoned relic' <<<"$LIST"; then
 else
     fail "markdown sync lost or resurrected items: $LIST"
 fi
-if grep -q '"ev":"md"' "${WL%.md}.events.jsonl"; then
+if grep -q '"ev":"md"' <(wl_events); then
     pass "the sync left an md event in the log (the store is real, not a re-parse)"
 else
-    fail "no md event was appended: $(cat "${WL%.md}.events.jsonl" 2>/dev/null)"
+    fail "no md event was appended: $(wl_events)"
 fi
 
 echo "== 133. in-place markdown edits are honoured; CLI state survives md churn =="
@@ -78,14 +78,14 @@ else
     fail "resurrection or lost item: ${out:0:260}"
 fi
 
+EV="${WL%.md}.events.jsonl"  # write target only; reads go through wl_events
 echo "== 134. a torn event-log tail is healed, never merged into the next event =="
 setup
 reqcli --add deadbeef "first item" >/dev/null
-EV="${WL%.md}.events.jsonl"
 printf '{"ev":"add","id":"tornado1","at":"' >>"$EV" # a crash mid-write: no newline
 reqcli --add deadbeef "second item" >/dev/null
 OUT=$(
-    python3 - "$EV" <<'PYEOF'
+    python3 - <(wl_events) <<'PYEOF'
 import json, sys
 adds, bad, merged = 0, 0, 0
 for line in open(sys.argv[1]):
@@ -122,7 +122,7 @@ for i in $(seq 1 16); do
 done
 wait
 OUT=$(
-    python3 - "${WL%.md}.events.jsonl" <<'PYEOF'
+    python3 - <(wl_events) <<'PYEOF'
 import json, sys
 ids, bad, n = set(), 0, 0
 for line in open(sys.argv[1]):
@@ -153,7 +153,7 @@ AID="$(sed -n 's/^added #\([0-9a-f]\{8\}\).*/\1/p' <<<"$ADDOUT")"
 if reqcli --tick deadbeef "$AID" "done i guess" >/dev/null 2>"$BASE/tick.err"; then
     fail "an evidence-free tick was accepted"
 else
-    if grep -qF "REFUSED" "$BASE/tick.err" && ! grep -q '"ev":"state"' "${WL%.md}.events.jsonl"; then
+    if grep -qF "REFUSED" "$BASE/tick.err" && ! grep -q '"ev":"state"' <(wl_events); then
         pass "refused loudly (exit nonzero) and wrote nothing"
     else
         fail "refusal was silent or leaked an event: $(head -c 160 "$BASE/tick.err")"
@@ -170,7 +170,6 @@ echo "== 137. LADDER rung 1 (45 min): a quiet lease pings, report-only =="
 setup
 brief_now
 hand_now
-EV="${WL%.md}.events.jsonl"
 OLD=$(date -u -d '-50 minutes' +%Y-%m-%dT%H:%M:%SZ)
 UNTIL=$(date -u -d '+30 minutes' +%Y-%m-%dT%H:%MZ)
 printf '{"ev":"add","id":"aaaa1111","at":"%s","by":"deadbeef","s":" ","o":"deadbeef","t":"long docs job"}\n{"ev":"lease","id":"aaaa1111","at":"%s","by":"deadbeef","until":"%s","worker":"bw1"}\n' \

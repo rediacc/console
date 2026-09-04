@@ -227,7 +227,7 @@ say "answer
 - the operator question"
 run >/dev/null
 if ! grep -q '"ev":"escalate"' "${WL%.md}.requests" &&
-    ! grep -q 'aaaa1111' "${WL%.md}.events.jsonl" 2>/dev/null; then
+    ! grep -q 'aaaa1111' <(wl_events) 2>/dev/null; then
     pass "159d: a 300-minute-old operator request is not cloned into a [?]"
 else
     fail "159d: the operator request escalated: $(grep escalate "${WL%.md}.requests" | head -c 200)"
@@ -241,7 +241,7 @@ say "answer
 ## Remaining
 - the operator question and the dead-recipient one"
 run >/dev/null
-if grep -q '"ev":"escalate"' "${WL%.md}.requests" && grep -q 'bbbb2222' "${WL%.md}.events.jsonl"; then
+if grep -q '"ev":"escalate"' "${WL%.md}.requests" && grep -q 'bbbb2222' <(wl_events); then
     pass "159d CONTROL: an ordinary request to a silent session still escalates"
 else
     fail "159d CONTROL: dead-recipient escalation stopped working"

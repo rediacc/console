@@ -769,6 +769,15 @@ CLI_REASSIGN_DONE = (
     "    worklist.py --list --open %s"
 )
 
+CLI_MIGRATE_USAGE = (
+    "usage: worklist.py --migrate <me> --candidates [--json]\n"
+    "       worklist.py --migrate <me> <prev> [<prev>...]\n"
+    "List sessions whose remaining work is not live here, then continue the ones\n"
+    "you name: their open, in-flight and deferred items are re-tagged to you and\n"
+    "the originals are ticked 'migrated to'. Nothing is deleted; a LIVE session is\n"
+    "refused. Use it after a restart or a machine switch (/migrate wraps it).\n"
+)
+
 CLI_ADOPT_USAGE = (
     "usage: --adopt <my-prefix> <predecessor-prefix>\n"
     "Records that a compaction gave ONE conversation two session ids, so you can "

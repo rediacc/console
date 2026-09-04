@@ -770,7 +770,7 @@ say "all done, nothing outstanding"
 run >/dev/null
 phantom_store phantom1 90
 # tick every phantom-owned item: it still WROTE the events, it just owns nothing open
-python3 - "${WL%.md}.events.jsonl" <<'PYEOF'
+python3 - <(wl_events) <<'PYEOF'
 import json, sys
 path = sys.argv[1]
 ids = [json.loads(l)["id"] for l in open(path) if l.strip()
@@ -878,8 +878,8 @@ else
 fi
 # The history must still say the phantom wrote them. A tidy log that lies about
 # who did what is worse than an untidy one.
-if grep -q '"by": *"phantom1"' "${WL%.md}.events.jsonl" ||
-    grep -q '"by":"phantom1"' "${WL%.md}.events.jsonl"; then
+if grep -q '"by": *"phantom1"' <(wl_events) ||
+    grep -q '"by":"phantom1"' <(wl_events); then
     pass "190: the event log still records phantom1 as the writer"
 else
     fail "190: --reassign rewrote history instead of appending to it"

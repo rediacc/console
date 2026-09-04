@@ -246,10 +246,10 @@ if [[ "$RC" -ne 0 ]] && grep -qF "WHY:" <<<"$OUT" && grep -qF "HOW:" <<<"$OUT"; 
 else
     fail "unjustified --defer was accepted (rc=$RC): ${OUT:0:200}"
 fi
-if ! grep -q '"ev":"state"' "${WL%.md}.events.jsonl"; then
+if ! grep -q '"ev":"state"' <(wl_events); then
     pass "the refused defer wrote NO state event (a rejected write is not a delivered one)"
 else
-    fail "a refused defer still wrote an event: $(grep '"ev":"state"' "${WL%.md}.events.jsonl")"
+    fail "a refused defer still wrote an event: $(grep '"ev":"state"' <(wl_events))"
 fi
 OUT=$(reqcli --defer deadbeef "$NID" "keep the flag? DEFAULT: keep it WHY: did not get to it yet HOW: revisit next week" 2>&1)
 RC=$?
@@ -260,12 +260,12 @@ else
 fi
 OUT=$(reqcli --defer deadbeef "$NID" "keep the flag? DEFAULT: keep it WHY: flipping it changes billing for live users, an operator-only call HOW: operator confirms, or the DEFAULT keeps it TRIED: read the pricing doc BLOCKED_ON: operator" 2>&1)
 RC=$?
-if [[ "$RC" -eq 0 ]] && grep -q '"j":{' "${WL%.md}.events.jsonl" &&
-    grep -qF '"why":"flipping it changes billing' "${WL%.md}.events.jsonl" &&
-    grep -qF '"blocked_on":"operator"' "${WL%.md}.events.jsonl"; then
+if [[ "$RC" -eq 0 ]] && grep -q '"j":{' <(wl_events) &&
+    grep -qF '"why":"flipping it changes billing' <(wl_events) &&
+    grep -qF '"blocked_on":"operator"' <(wl_events); then
     pass "a justified defer lands with WHY/HOW/TRIED/BLOCKED_ON as real JSON fields"
 else
-    fail "justified defer rc=$RC or fields missing: $(tail -c 300 "${WL%.md}.events.jsonl")"
+    fail "justified defer rc=$RC or fields missing: $(wl_events | tail -c 300)"
 fi
 
 echo "== 148. an AGED [?] with no justification is demanded, bounded =="

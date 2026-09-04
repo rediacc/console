@@ -278,7 +278,7 @@ def agent_root(root):
 # slug -- so they are named. Getting this wrong is quiet: a listing that counted
 # `archive` as a peer would report a session that does not exist, and one that
 # missed a real peer would report nobody there.
-AGENT_RESERVED_DIRS = frozenset({"archive", "programs"})
+AGENT_RESERVED_DIRS = frozenset({"archive", "programs", "worklist"})
 
 
 def agent_session_slug(me):
@@ -750,28 +750,160 @@ def _append_lines(path, lock_path, payloads):
             os.close(fd)
 
 
-def append_events(worklist, payloads):
+# ---------------------------------------------------------------------------
+# THE TRACKED STORE. agent/worklist/<writer8>.jsonl, one append-only file per
+# WRITER identity, committed like every other artifact under agent/.
+#
+# WHY IT LEFT TMPDIR. The log held the only record of what a session still owed,
+# and TMPDIR does not survive a machine. The operator switches machines mid-wave;
+# on the new one every open item, every deferral and every lease simply did not
+# exist. Moving it into git is what makes `git pull` carry the work.
+#
+# WHY PER WRITER AND NOT ONE FILE. Both sides of a merge append at EOF, so a
+# single shared file conflicts on every concurrent append from two branches. A
+# session id exists in exactly one harness process, so a per-writer file has
+# exactly one appender and two machines produce disjoint paths that git merges
+# without ever consulting content. When a conflict does happen (the same writer
+# on two machines, or a compaction), the resolution is UNION -- keep both sides,
+# drop the markers -- because the reader sorts by timestamp before folding, so
+# the union of two histories is a valid history. That property is the whole
+# design; do not "optimise" the sort away.
+#
+# ONLY THE LOG MOVED. Every sidecar named in this module's docstring is
+# per-machine runtime state (locks, caches, transcripts, briefs, .lastevent) and
+# stays in TMPDIR. The lock is still the TMPDIR one: one machine, N sessions,
+# one flock, which is exactly the scope a lock can cover.
+STORE_DIR_NAME = "worklist"
+
+
+def store_dir(root=None):
+    """The tracked event-log directory. $WORKLIST_STORE_DIR overrides it, which
+    is what lets a test fixture point the store somewhere disposable."""
+    override = os.environ.get("WORKLIST_STORE_DIR")
+    if override:
+        return pathlib.Path(override)
+    if root is None:
+        root = C.project_root(C.project_start())
+    return agent_root(root) / STORE_DIR_NAME
+
+
+def writer_path(writer, root=None):
+    return store_dir(root) / ("%s.jsonl" % agent_session_slug(writer))
+
+
+# Writer names that are not session identities. They get their own file rather
+# than being forced onto whichever session happened to trigger them, so a
+# machine-level write never lands in a person's file.
+_NON_SESSION_WRITERS = frozenset({"compact", "unknown", "md", "import"})
+
+
+def _writer_for(payloads, explicit=None):
+    if explicit:
+        return agent_session_slug(explicit)
+    for ev in payloads:
+        by = str((ev or {}).get("by") or "")
+        if by and by not in _NON_SESSION_WRITERS and C.PREFIX_RE.match(by):
+            return agent_session_slug(by)
+    me = C.resolve_session_id()
+    return agent_session_slug(me[:8]) if me else "_shared"
+
+
+_BRANCH_CACHE = {}
+
+
+def _branch_of(root):
+    """Cached: git_branch shells out, and this runs on every append."""
+    key = str(root)
+    if key not in _BRANCH_CACHE:
+        try:
+            _BRANCH_CACHE[key] = C.git_branch(root) or ""
+        except Exception:  # noqa: BLE001 -- a branch is context, never a reason to lose an event
+            _BRANCH_CACHE[key] = ""
+    return _BRANCH_CACHE[key]
+
+
+_HOST_HASH = None
+
+
+def host_hash():
+    """A HASH of the hostname, never the hostname. This file is tracked and
+    public; which machine an event came from is needed to tell "this box" from
+    "another box", and the name itself is not."""
+    global _HOST_HASH
+    if _HOST_HASH is None:
+        try:
+            import socket
+
+            _HOST_HASH = hashlib.sha1(
+                socket.gethostname().encode("utf-8", "replace")
+            ).hexdigest()[:8]
+        except Exception:  # noqa: BLE001
+            _HOST_HASH = "unknown0"
+    return _HOST_HASH
+
+
+def append_events(worklist, payloads, writer=None, root=None):
     if not payloads:
         return
-    _append_lines(events_path(worklist), events_lock_path(worklist), payloads)
-
-
-def _read_events(worklist):
-    p = events_path(worklist)
-    if not p.exists():
-        return []
+    if root is None:
+        root = C.project_root(C.project_start())
+    br = _branch_of(root)
+    hh = host_hash()
+    for ev in payloads:
+        if isinstance(ev, dict):
+            ev.setdefault("h", hh)
+            if br:
+                ev.setdefault("br", br)
+    target = writer_path(_writer_for(payloads, writer), root)
     try:
-        lines = p.read_text(encoding="utf-8", errors="replace").splitlines()
+        target.parent.mkdir(parents=True, exist_ok=True)
     except OSError:
-        return []
+        pass
+    _append_lines(target, events_lock_path(worklist), payloads)
+
+
+def _parse_events(text):
     out = []
-    for line in lines:
+    for line in text.splitlines():
         try:
             ev = json.loads(line)
         except ValueError:
-            continue  # torn tail or garbage: skipped by contract
+            continue  # torn tail, or a conflict marker: skipped by contract
         if isinstance(ev, dict):
             out.append(ev)
+    return out
+
+
+def _read_events(worklist, root=None):
+    """Every tracked writer file, PLUS the legacy TMPDIR log while it exists,
+    folded in timestamp order.
+
+    THE LEGACY UNION IS WHAT MAKES THE MOVE GAP-FREE. Until `--import-tmp` has
+    run on this host, the old log still holds open items; reading both means no
+    item stops blocking merely because the code changed under it. The writer
+    never appends to the legacy file again, so the two cannot diverge.
+
+    THE SORT IS LOAD-BEARING. File name order is not time order, and after a
+    merge one file can hold events older than another's first line. Sorting by
+    the stamp (which is `%Y-%m-%dT%H:%M:%SZ`, so lexical order is chronological)
+    is what makes a union of histories fold to the same state as one history.
+    """
+    out = []
+    try:
+        for f in sorted(store_dir(root).glob("*.jsonl")):
+            try:
+                out.extend(_parse_events(f.read_text(encoding="utf-8", errors="replace")))
+            except OSError:
+                continue
+    except OSError:
+        pass
+    legacy = events_path(worklist)
+    if legacy.exists():
+        try:
+            out.extend(_parse_events(legacy.read_text(encoding="utf-8", errors="replace")))
+        except OSError:
+            pass
+    out.sort(key=lambda e: str(e.get("at") or ""))
     return out
 
 
@@ -1129,8 +1261,16 @@ def load(worklist, sync=True):
                     if dele:
                         ev["del"] = dele
                     # Append INSIDE the held lock via the raw writer (the
-                    # public append_events would deadlock re-taking it).
-                    fd = os.open(events_path(worklist), os.O_RDWR | os.O_CREAT | os.O_APPEND, 0o644)
+                    # public append_events would deadlock re-taking it). The
+                    # TARGET is the tracked store, same as every other write;
+                    # only the locking differs.
+                    ev.setdefault("h", host_hash())
+                    _md_target = writer_path(_writer_for([ev]))
+                    try:
+                        _md_target.parent.mkdir(parents=True, exist_ok=True)
+                    except OSError:
+                        pass
+                    fd = os.open(_md_target, os.O_RDWR | os.O_CREAT | os.O_APPEND, 0o644)
                     try:
                         size = os.fstat(fd).st_size
                         blob = b"" if not size or os.pread(fd, 1, size - 1) == b"\n" else b"\n"
@@ -1348,6 +1488,281 @@ def owner_age_hours(owner, projects_dir):
     return (time.time() - newest) / 3600.0
 
 
+# ---------------------------------------------------------------------------
+# LIVENESS, from artifacts and nothing else.
+#
+# ONE definition, shared by /migrate's refusal and the Stop hook's handoff
+# block, because two definitions of "is that session still running" drift and
+# the expensive direction is the silent one: moving work out from under a
+# session that is still doing it.
+#
+# The four verdicts and what each MEANS, stated because "remote" is the one
+# that surprises people:
+#   live    an artifact on THIS machine says it acted recently -> never migrate
+#   idle    artifacts exist here, all older than LIVE_MIN       -> migratable
+#   remote  no local artifact at all; its events carry a foreign host hash. It
+#           may well still be running over there. This machine CANNOT know, and
+#           pretending otherwise would be the vacuous check this repo keeps
+#           finding. The safeguard is not a timer, it is the operator: /migrate
+#           lists it, says so in the option text, and moves nothing unasked.
+#   unknown no events by that prefix anywhere -> nothing to migrate
+LIVE_MIN = int(os.environ.get("WORKLIST_LIVE_MIN", "30"))
+
+
+def session_liveness(worklist, prefix, projects_dir=None, events=None):
+    """(verdict, evidence). Evidence names the artifact and its age, never a
+    bare verdict: a refusal a reader cannot check is a refusal they will route
+    around."""
+    p = str(prefix or "")[:8]
+    if not p:
+        return "unknown", "no prefix given"
+
+    # 1. .lastevent-<p>.json -- written on EVERY full stop, so a running
+    #    session always has a fresh one.
+    le = worklist.with_suffix(".lastevent-%s.json" % p)
+    try:
+        if le.exists():
+            age_min = (time.time() - le.stat().st_mtime) / 60.0
+            if age_min <= LIVE_MIN:
+                return "live", ".lastevent-%s.json written %d min ago" % (p, age_min)
+    except OSError:
+        pass
+
+    # 2. the .sessions brief, the oracle the brief check already forces every
+    #    live session to refresh.
+    try:
+        when, _txt = read_briefs(worklist).get(p, (None, ""))
+        if when is not None:
+            age_min = (C.utcnow() - when).total_seconds() / 60.0
+            if age_min <= SESSION_BRIEF_STALE_MIN:
+                return "live", "session brief refreshed %d min ago" % age_min
+    except Exception:  # noqa: BLE001 -- a brief is evidence, never a crash
+        pass
+
+    # 3. its transcript on this machine.
+    try:
+        h = owner_age_hours(p, projects_dir)
+    except Exception:  # noqa: BLE001
+        h = None
+    if h is not None and h * 60.0 <= LIVE_MIN:
+        return "live", "transcript written %d min ago" % (h * 60.0)
+
+    # 4. its own newest event, but only when that event came from THIS host --
+    #    a foreign host's timestamp says nothing about a process here.
+    if events is None:
+        events = _read_events(worklist)
+    mine_host, newest, newest_host = host_hash(), "", ""
+    for ev in events:
+        if str(ev.get("by") or "")[:8] != p:
+            continue
+        at = str(ev.get("at") or "")
+        if at > newest:
+            newest, newest_host = at, str(ev.get("h") or "")
+    if not newest:
+        return "unknown", "no events by %s in the store" % p
+    if newest_host and newest_host == mine_host:
+        try:
+            age_min = (C.utcnow() - C.parse_stamp(newest)).total_seconds() / 60.0
+        except Exception:  # noqa: BLE001
+            age_min = None
+        if age_min is not None and age_min <= LIVE_MIN:
+            return "live", "wrote to the store %d min ago on this machine" % age_min
+
+    # REMOTE requires POSITIVE evidence of another host. Without a host stamp
+    # the honest answer is `idle` (no artifact here), not a claim about a
+    # machine this one has never seen.
+    if h is None and not le.exists() and newest_host and newest_host != mine_host:
+        return "remote", (
+            "last seen %s on another host; this machine cannot tell whether it "
+            "is still running" % newest
+        )
+    return "idle", "no artifact here newer than %d min (newest event %s)" % (LIVE_MIN, newest)
+
+
+def migrate_candidates(worklist, fold, me, projects_dir=None, events=None):
+    """Sessions with un-migrated remaining work that are not demonstrably live.
+
+    Returns a list of dicts, richest first: the operator picks from this and
+    nothing moves until they do.
+    """
+    me8 = str(me or "")[:8]
+    mine = {me8} | set(fold.aliases_of(me8) if hasattr(fold, "aliases_of") else [])
+    if events is None:
+        events = _read_events(worklist)
+    already = {
+        str((r.get("mg") or {}).get("from") or "") for r in fold.items if r.get("mg")
+    }
+    handed = set()
+    for ev in events:
+        if str(ev.get("ev") or "") == "brief" and ev.get("about"):
+            handed.add(str(ev["about"])[:8])
+
+    by_owner = {}
+    for rec in fold.items:
+        st = rec.get("state", " ")
+        if st not in (" ", ">", "?"):
+            continue
+        owner = str(rec.get("owner") or "")[:8]
+        rid = str(rec.get("id") or "")
+        if not owner or owner in mine or rid in already:
+            continue
+        by_owner.setdefault(owner, []).append((rid, rec))
+
+    my_branch = _branch_of(C.project_root(C.project_start()))
+    out = []
+    for owner, items in by_owner.items():
+        verdict, why = session_liveness(worklist, owner, projects_dir, events)
+        if verdict in ("live", "unknown"):
+            continue
+        newest, branch, hh = "", "", ""
+        for ev in events:
+            if str(ev.get("by") or "")[:8] != owner:
+                continue
+            at = str(ev.get("at") or "")
+            if at > newest:
+                newest, branch, hh = at, str(ev.get("br") or ""), str(ev.get("h") or "")
+        counts = {"open": 0, "inflight": 0, "deferred": 0}
+        for _rid, rec in items:
+            counts[{" ": "open", ">": "inflight", "?": "deferred"}[rec["state"]]] += 1
+        out.append(
+            {
+                "prefix": owner,
+                "verdict": verdict,
+                "evidence": why,
+                "counts": counts,
+                "newest": newest,
+                "branch": branch,
+                # AN EVENT WITH NO HOST STAMP IS NOT "ANOTHER HOST". Every
+                # event written before the tracked store existed carries no
+                # `h`, and calling those foreign would tell the operator a
+                # session ran somewhere it did not.
+                "host": (
+                    "this machine"
+                    if hh == host_hash()
+                    else ("another host" if hh else "host unrecorded")
+                ),
+                "handed_off": owner in handed,
+                "items": [
+                    {"id": rid, "state": rec["state"], "text": brief_text(rec)[:160]}
+                    for rid, rec in sorted(items, key=lambda kv: kv[0])
+                ],
+            }
+        )
+    out.sort(
+        key=lambda c: (
+            0 if c["branch"] == my_branch else 1,
+            0 if c["host"] == "this machine" else 1,
+            c["newest"],
+        )
+    )
+    return out
+
+
+def migrate_items(worklist, fold, me, prev, projects_dir=None, events=None):
+    """Re-tag prev's remaining items to me. (moved, refused) or raises ValueError.
+
+    RE-TAG, not alias: the operator chose it, and it has the property that
+    matters here -- after the move the items are MINE, so the Stop hook blocks
+    on them exactly as it would on work I typed myself. An alias would have left
+    them owned by a session that no longer exists.
+
+    The originals are ticked `[x]` with a note naming the new id. Nothing is
+    deleted and nothing is rewritten; both facts stay in an append-only log, so
+    the history still says who really did the work.
+    """
+    me8, prev8 = str(me or "")[:8], str(prev or "")[:8]
+    if not me8 or not prev8:
+        raise ValueError("both a session and a predecessor are required")
+    mine = {me8} | set(fold.aliases_of(me8) if hasattr(fold, "aliases_of") else [])
+    if prev8 in mine:
+        raise ValueError(
+            "%s is already yours (same session, or a proven lineage edge); "
+            "there is nothing to migrate" % prev8
+        )
+    if events is None:
+        events = _read_events(worklist)
+    verdict, why = session_liveness(worklist, prev8, projects_dir, events)
+    if verdict == "live":
+        raise ValueError(
+            "%s is LIVE here (%s). Migrating would move work out from under a "
+            "running session. Re-check with the same rule once it stops." % (prev8, why)
+        )
+    if verdict == "unknown":
+        raise ValueError("no events by %s in the store (%s)" % (prev8, why))
+
+    already = {
+        str((r.get("mg") or {}).get("from") or "") for r in fold.items if r.get("mg")
+    }
+    at = C.stamp_now()
+    payloads, moved, refused = [], [], []
+    for rec in sorted(fold.items, key=lambda r: str(r.get("id") or "")):
+        rid = str(rec.get("id") or "")
+        if str(rec.get("owner") or "")[:8] != prev8:
+            continue
+        st = rec.get("state", " ")
+        if st not in (" ", ">", "?"):
+            continue
+        if rid in already:
+            refused.append((rid, "already migrated"))
+            continue
+        text = str(rec.get("text") or "")
+        new_id = new_item_id(text + at + rid)
+        note = "migrated from #%s (%s)" % (rid, prev8)
+        if st == ">":
+            # THE LEASE IS NOT CARRIED. Its worker was a background task of the
+            # PREVIOUS session, on the previous machine; re-leasing would claim
+            # a live worker that cannot exist and stop the liveness ladder from
+            # ever asking about it.
+            note += "; lease on worker:%s reset by migration" % (rec.get("worker") or "?")
+        add = {
+            "ev": "add",
+            "id": new_id,
+            "at": at,
+            "by": me8,
+            "s": "?" if st == "?" else " ",
+            "o": me8,
+            "t": text,
+            "bt": str(rec.get("basetext") or text),
+            "ln": (note + (": " + str(rec.get("lastnote"))) if rec.get("lastnote") else note)[:400],
+            "mg": {
+                "from": rid,
+                "o": prev8,
+                "first": str(rec.get("first") or ""),
+                "was": st,
+                "worker": str(rec.get("worker") or ""),
+                "until": str(rec.get("until") or ""),
+            },
+        }
+        if st == "?":
+            # THE DEFERRAL WINDOW IS PRESERVED, which is the whole point of
+            # carrying `upd`: a [?] whose clock restarted would hand the
+            # operator's default another full window before it executes.
+            add["upd"] = str(rec.get("upd") or at)
+        if rec.get("triage"):
+            add["tr"] = rec["triage"]
+        if rec.get("just"):
+            add["ju"] = rec["just"]
+        payloads.append(add)
+        payloads.append(
+            {
+                "ev": "state",
+                "id": rid,
+                "at": at,
+                "by": me8,
+                "s": "x",
+                "note": "migrated to #%s (%s) by /migrate" % (new_id, me8),
+                "mg": {"to": new_id},
+            }
+        )
+        moved.append((rid, new_id, st))
+    if payloads:
+        payloads.append(
+            {"ev": "brief", "by": me8, "about": prev8, "at": at, "t": "handed off to %s" % me8}
+        )
+        append_events(worklist, payloads, writer=me8)
+    return moved, refused
+
+
 def cleanup_dead_sessions(worklist, fold, session_id, projects_dir):
     """Tombstone dead sessions' items. Markdown lines are flipped to `~` IN
     PLACE (os.pwrite of one byte, v4 discipline: file length only grows, so
@@ -1487,8 +1902,23 @@ def compact(worklist):
         print("nothing to compact: %s absent" % worklist)
 
     # Event-log compaction: fold, then rewrite as one snapshot-shaped set.
+    #
+    # THE TRACKED STORE IS NOT COMPACTED HERE YET, and refusing is the honest
+    # shape. Compaction rewrites a file wholesale, and in agent/worklist/ the
+    # files belong to OTHER sessions and other machines; rewriting one a live
+    # peer is still appending to would lose whatever it wrote between the read
+    # and the write. The gate that makes it safe is session_liveness (own file
+    # plus demonstrably dead writers only), tracked as a task in
+    # agent/PLAN-migrate-command.md. Until it lands, this compacts the legacy
+    # TMPDIR log if one is still present and says why it did nothing otherwise.
     ep = events_path(worklist)
     if not ep.exists():
+        if any(store_dir().glob("*.jsonl")):
+            print(
+                "event log: tracked store at %s not compacted -- needs the "
+                "liveness gate so a live peer's file is never rewritten "
+                "(agent/PLAN-migrate-command.md)" % store_dir()
+            )
         return
     with open(events_lock_path(worklist), "w") as lock:
         _flock(lock, LOCK_EX)

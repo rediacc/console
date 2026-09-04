@@ -9,7 +9,26 @@
 # convenience: the cases assume one definition of setup() and one pair of
 # counters.
 
+# THE STORE IS A DIRECTORY NOW, so an assertion that greps one file is asserting
+# about a path the tool may not have written. wl_events prints the whole store:
+# every tracked writer file under agent/worklist/ plus the legacy TMPDIR log
+# that _read_events still unions. Fixtures PLANT events by appending to the
+# legacy path (still read, so still effective) and ASSERT through this.
+wl_events() {
+    cat "${WORKLIST_STORE_DIR:-$BASE/proj/agent/worklist}"/*.jsonl "${WL%.md}.events.jsonl" 2>/dev/null
+}
+
 setup() {
+    # THE STORE GOES OUTSIDE THE FIXTURE REPO. In production the event log is
+    # tracked at <root>/agent/worklist/, which means writing one dirties the
+    # working tree -- and several cases build a real git repo at $BASE/proj and
+    # assert on ITS state (the regression-gate marker walks HEAD). A store
+    # written inside that repo made those cases fail for a reason that had
+    # nothing to do with what they test. The layout under test is unchanged
+    # (one directory, one file per writer); only its location moves.
+    export WORKLIST_STORE_DIR="$BASE/store"
+    rm -rf "$WORKLIST_STORE_DIR"
+    mkdir -p "$WORKLIST_STORE_DIR"
     # Reset EVERY knob run() reads. A plain `BG=...` in one case leaked into the
     # next two and silently suppressed a check, which cost a debugging round.
     BG='[]'
