@@ -1750,6 +1750,15 @@ def main():
         if tgt is not None:
             print("commit it by name:  git add %s" % tgt)
         sys.exit(0 if tgt is not None else 1)
+    if sys.argv[1:2] == ["--doctor"]:
+        probs, nfiles, nevents = S.doctor(C.project_root(C.project_start()))
+        for msg in probs:
+            print(msg)
+        if probs:
+            print("\n%d problem(s) in %d store file(s)" % (len(probs), nfiles))
+            sys.exit(1)
+        print("store OK: %d file(s), %d event(s), no conflict markers, nothing unparseable, no secret shapes" % (nfiles, nevents))
+        return
     if sys.argv[1:2] == ["--store"]:
         print(S.store_dir(C.project_root(C.project_start())))
         return

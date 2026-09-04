@@ -1654,6 +1654,83 @@ def snapshot_events(fold, by="compact"):
     return out
 
 
+# Shapes that must never reach a TRACKED file. Not an exhaustive secret
+# detector and not sold as one: it catches the classes that have actually
+# turned up in this repo's own artifacts, at the door, where the cost of a
+# false positive is retyping one note.
+_SECRET_SHAPES = (
+    re.compile(r"-----BEGIN [A-Z ]*PRIVATE KEY"),
+    re.compile(r"\bghp_[A-Za-z0-9]{36}\b"),
+    re.compile(r"\bgithub_pat_[A-Za-z0-9_]{20,}"),
+    re.compile(r"\bAKIA[A-Z0-9]{16}\b"),
+    re.compile(r"\bxox[baprs]-[A-Za-z0-9-]{10,}"),
+    re.compile(r"\bwhsec_[A-Za-z0-9]{24,}"),
+    re.compile(r"\bsk-[A-Za-z0-9]{32,}"),
+)
+
+_CONFLICT_RE = re.compile(r"^(<<<<<<<|=======|>>>>>>>)")
+
+
+def secret_shapes_in(text):
+    """Which secret shapes a string carries. Names the SHAPE, never the match:
+    echoing the value back is the thing being prevented."""
+    return [r.pattern for r in _SECRET_SHAPES if r.search(str(text or ""))]
+
+
+def doctor(root=None):
+    """(problems, files, events) over the tracked store.
+
+    WHAT IT EXISTS TO CATCH, all three of which are silent by default:
+      * a merge conflict left in a store file -- `_read_events` skips
+        unparseable lines by contract, so `<<<<<<<` costs you events and says
+        nothing at all;
+      * a torn or garbage line, same silence;
+      * a secret-shaped string, which matters now in a way it never did in
+        TMPDIR: these files are committed and pushed.
+    """
+    problems, nfiles, nevents = [], 0, 0
+    d = store_dir(root)
+    try:
+        files = sorted(d.glob("*.jsonl"))
+    except OSError as exc:
+        return ["cannot read %s (%s)" % (d, exc)], 0, 0
+    for f in files:
+        nfiles += 1
+        try:
+            lines = f.read_text(encoding="utf-8", errors="replace").splitlines()
+        except OSError as exc:
+            problems.append("%s: unreadable (%s)" % (f.name, exc))
+            continue
+        for i, line in enumerate(lines, 1):
+            if not line.strip():
+                continue
+            if _CONFLICT_RE.match(line):
+                problems.append(
+                    "%s:%d: merge conflict marker -- resolve by UNION (keep both "
+                    "sides, delete the markers); the fold sorts by timestamp, so "
+                    "the union of two histories is a valid history" % (f.name, i)
+                )
+                continue
+            try:
+                ev = json.loads(line)
+            except ValueError:
+                problems.append(
+                    "%s:%d: unparseable, so this event is SKIPPED on every read" % (f.name, i)
+                )
+                continue
+            if not isinstance(ev, dict):
+                problems.append("%s:%d: not a JSON object" % (f.name, i))
+                continue
+            nevents += 1
+            shapes = secret_shapes_in(line)
+            if shapes:
+                problems.append(
+                    "%s:%d: carries a secret-shaped string (%s) and this file is "
+                    "TRACKED -- rotate it, then rewrite the line" % (f.name, i, ", ".join(shapes))
+                )
+    return problems, nfiles, nevents
+
+
 def import_legacy(worklist, again=False, root=None):
     """Snapshot the legacy TMPDIR log into the tracked store, once per host.
 

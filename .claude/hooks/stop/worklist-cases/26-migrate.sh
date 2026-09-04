@@ -235,3 +235,42 @@ else
     FAIL=$((FAIL + 1))
 fi
 unset WORKLIST_REPORT_PER_STOP
+
+echo "== 200. --doctor catches what a TRACKED file makes possible =="
+setup
+say "done for now"
+brief_now
+# Every plant is a shape that is SILENT by default: the reader skips
+# unparseable lines by contract, so a conflict marker costs events and says
+# nothing, and a secret in TMPDIR was private while a secret here is pushed.
+printf '<<<<<<< HEAD\n{"ev":"add","id":"docok1","at":"2026-09-04T00:00:00Z","by":"deadbeef","s":" ","o":"deadbeef","t":"fine"}\nnot json at all\n{"ev":"add","id":"docok2","at":"2026-09-04T00:00:01Z","by":"deadbeef","s":" ","o":"deadbeef","t":"tok ghp_abcdefghijklmnopqrstuvwxyz0123456789"}\n' >"$WORKLIST_STORE_DIR/planted.jsonl"
+OUT="$(python3 "$HOOK" --doctor 2>&1)"
+RC=$?
+if [[ "$RC" -ne 0 ]] && [[ "$OUT" == *"merge conflict marker"* ]] &&
+    [[ "$OUT" == *"unparseable"* ]] && [[ "$OUT" == *"secret-shaped"* ]]; then
+    echo "  PASS: conflict markers, torn lines and a secret shape are all named"
+    PASS=$((PASS + 1))
+else
+    echo "  FAIL: --doctor missed a planted defect (rc=$RC): ${OUT:0:200}"
+    FAIL=$((FAIL + 1))
+fi
+# The secret SHAPE is named and the value is not echoed back: printing it would
+# be the leak this check exists to prevent.
+if [[ "$OUT" != *"ghp_abcdefghijklmnopqrstuvwxyz0123456789"* ]]; then
+    echo "  PASS: the finding names the shape, never the value"
+    PASS=$((PASS + 1))
+else
+    echo "  FAIL: --doctor echoed the secret it was reporting"
+    FAIL=$((FAIL + 1))
+fi
+# CONTROL: without the plants it must pass, or case 200 proves only that
+# --doctor always fails.
+rm -f "$WORKLIST_STORE_DIR/planted.jsonl"
+OUT="$(python3 "$HOOK" --doctor 2>&1)"
+if [[ $? -eq 0 ]] && [[ "$OUT" == *"store OK"* ]]; then
+    echo "  PASS: CONTROL: a clean store passes"
+    PASS=$((PASS + 1))
+else
+    echo "  FAIL: CONTROL: --doctor fails even on a clean store: ${OUT:0:200}"
+    FAIL=$((FAIL + 1))
+fi
