@@ -186,6 +186,23 @@ if [[ "$FORMAT" == "rpm" || "$FORMAT" == "deb" ]] && [[ -n "${RELEASE_GPG_PRIVAT
     GPG_KEY_FILE="$BUILD_DIR/signing-key.gpg"
     echo "$RELEASE_GPG_PRIVATE_KEY" >"$GPG_KEY_FILE"
 
+    # THE PACKAGE SIGNING KEY MUST BE THE PUBLISHED PUBLIC KEY. Same check as
+    # build-pkg-repo.sh, same day, same reason: dnf verifies every rpm against
+    # the gpg.key the repository publishes, so a package signed with any other
+    # key installs nowhere, and nothing here would have said so. The published
+    # key defaults to the committed .asc; RELEASE_GPG_PUBLIC_KEY_FILE overrides
+    # it (the package test publishes its throwaway key's public half).
+    PUBLIC_KEY_FILE="${RELEASE_GPG_PUBLIC_KEY_FILE:-$(get_repo_root)/.ci/keys/gpg-public.asc}"
+    if [[ -f "$PUBLIC_KEY_FILE" ]]; then
+        want_fpr=$(gpg --show-keys --with-colons --with-fingerprint "$PUBLIC_KEY_FILE" 2>/dev/null | awk -F: '$1=="fpr"{print $10; exit}')
+        have_fpr=$(gpg --show-keys --with-colons --with-fingerprint "$GPG_KEY_FILE" 2>/dev/null | awk -F: '$1=="fpr"{print $10; exit}')
+        if [[ -z "$want_fpr" || -z "$have_fpr" || "$want_fpr" != "$have_fpr" ]]; then
+            log_error "signing key ${have_fpr:-<unreadable>} is not the published public key ${want_fpr:-<unreadable>} ($PUBLIC_KEY_FILE); a $FORMAT signed with it would fail verification on every client"
+            exit 1
+        fi
+        log_info "Signing key matches the published public key ($want_fpr)"
+    fi
+
     # nfpm reads key_file from YAML config which references these env vars
     if [[ "$FORMAT" == "rpm" ]]; then
         export NFPM_RPM_KEY_FILE="$GPG_KEY_FILE"

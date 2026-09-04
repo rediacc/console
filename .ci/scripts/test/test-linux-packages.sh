@@ -218,7 +218,21 @@ phase1_validate_deb_metadata() {
 
 phase1_validate_rpm_metadata() {
     local rpm_file="$TEST_DIR/packages/${PKG_NAME}-${TEST_VERSION}-1.x86_64.rpm"
-    [[ -f "$rpm_file" ]] || return 1
+    [[ -f "$rpm_file" ]] || {
+        log_error "$rpm_file was not built"
+        return 1
+    }
+
+    # NAME THE MISSING TOOL. Without this the function returns 1 in silence when
+    # `rpm` is absent: the query is redirected to /dev/null and every field grep
+    # then fails, so a missing toolchain and a genuinely malformed package are
+    # the same bare FAIL line. Measured on this host 2026-09-04, where neither
+    # the host nor the devbox carries rpm; CI installs it, so this never fires
+    # there and the check is not weakened.
+    command -v rpm >/dev/null 2>&1 || {
+        log_error "rpm is not installed, so the .rpm metadata was never read (CI installs it; locally: sudo apt-get install -y rpm)"
+        return 1
+    }
 
     local info
     info=$(rpm -qip "$rpm_file" 2>/dev/null)
@@ -374,6 +388,24 @@ phase4_validate_apt_metadata() {
     fi
     log_info "CONTROL: a signing key that is not the published public key is refused"
 
+    # THE SIBLING: per-package signing in build-linux-pkg.sh makes the same
+    # check. Signed build with the throwaway key's public half must pass; the
+    # same build against the COMMITTED public key must refuse.
+    if ! "$SCRIPT_DIR/../build/build-linux-pkg.sh" \
+        --binary "$TEST_DIR/rdc-dummy" --version "$TEST_VERSION" --arch amd64 \
+        --format deb --output "$TEST_DIR/packages-signed" >/dev/null 2>&1; then
+        log_error "a signed deb build with the matching public key failed"
+        return 1
+    fi
+    if RELEASE_GPG_PUBLIC_KEY_FILE="$SCRIPT_DIR/../../../.ci/keys/gpg-public.asc" \
+        "$SCRIPT_DIR/../build/build-linux-pkg.sh" \
+        --binary "$TEST_DIR/rdc-dummy" --version "$TEST_VERSION" --arch amd64 \
+        --format deb --output "$TEST_DIR/packages-control" >/dev/null 2>&1; then
+        log_error "CONTROL FAILED: build-linux-pkg.sh signed a deb with a key that is not the published public key"
+        return 1
+    fi
+    log_info "CONTROL: build-linux-pkg.sh refuses a signing key that is not the published public key"
+
     unset GNUPGHOME RELEASE_GPG_PRIVATE_KEY RELEASE_GPG_PUBLIC_KEY_FILE
     rm -rf "$gnupg_tmp"
 
@@ -433,7 +465,15 @@ phase4_validate_rpm_metadata() {
     # Check repomd.xml
     local repomd="$repo_out/rpm/repodata/repomd.xml"
     [[ -f "$repomd" ]] || {
-        log_error "repomd.xml missing"
+        # Same class as the rpm check above: build-pkg-repo.sh says
+        # "Required command 'createrepo_c' is not available" and carries on, so
+        # the absent metadata surfaces here as a missing FILE and the reader
+        # goes looking for a build bug that is not there.
+        if ! command -v createrepo_c >/dev/null 2>&1; then
+            log_error "createrepo_c is not installed, so no rpm repodata was generated (CI installs it; locally: sudo apt-get install -y createrepo-c)"
+        else
+            log_error "repomd.xml missing"
+        fi
         return 1
     }
     grep -q "<repomd" "$repomd" || {
