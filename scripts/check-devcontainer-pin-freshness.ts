@@ -61,6 +61,7 @@ import {
 import { parseDockerfileVersions } from './lib/dockerfile-versions.js';
 import { getMinReleaseAgeMs, isWithinFreshnessWindow } from './lib/release-age.js';
 import { GREEN, NC, RED, YELLOW } from './utils/console.js';
+import { githubToken } from './lib/github-token.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const CONSOLE_ROOT = path.resolve(__dirname, '..');
@@ -122,7 +123,7 @@ async function fetchJson(url: string): Promise<unknown> {
   // Unauthenticated GitHub is 60 requests/hour per IP, which one CI runner shared
   // between jobs can exhaust. A token raises it; its absence is not fatal because
   // the caller treats a rate-limit as could-not-check.
-  const token = process.env.GITHUB_TOKEN || process.env.GH_TOKEN;
+  const token = githubToken();
   if (token) headers.Authorization = `Bearer ${token}`;
   const ctl = new AbortController();
   const t = setTimeout(() => ctl.abort(), HTTP_TIMEOUT_MS);

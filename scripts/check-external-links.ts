@@ -22,6 +22,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { globSync } from 'glob';
+import { githubToken } from './lib/github-token.js';
 
 // Every markdown tree whose external links are load-bearing. Each root is
 // guarded independently below: a root that matches zero files is a moved or
@@ -346,7 +347,9 @@ function buildHeaders(url: string): Record<string, string> {
       'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
     Accept: 'text/html,application/xhtml+xml,*/*',
   };
-  const token = process.env.GITHUB_TOKEN;
+  // Either name: this site read only GITHUB_TOKEN and was the reason every local
+  // invocation set the same value twice. See scripts/lib/github-token.ts.
+  const token = githubToken();
   if (token && /^https:\/\/api\.github\.com\//.test(url)) {
     headers['Authorization'] = `Bearer ${token}`;
     headers['Accept'] = 'application/vnd.github+json';
@@ -392,7 +395,7 @@ async function checkUrl(
 ): Promise<{ ok: boolean; status: number | string }> {
   // Rewrite github.com HTML URLs to api.github.com so GITHUB_TOKEN actually
   // authorises the request. Only used when GITHUB_TOKEN is available.
-  if (process.env.GITHUB_TOKEN) {
+  if (githubToken()) {
     const api = toApiUrl(url);
     if (api) url = api;
   }

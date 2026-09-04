@@ -79,7 +79,7 @@
     "check:ci-e2e-coverage": ".ci/scripts/quality/check-e2e-coverage.sh",
     "check:ci-e2e-skip-hygiene": "tsx scripts/check-e2e-skip-hygiene.ts",
     "check:ci-embed-credits": "tsx scripts/check-embed-credits.ts",
-    "check:ci-embed-asset-freshness": "tsx scripts/check-embed-asset-freshness.ts",
+    "check:ci-embed-asset-freshness": "tsx scripts/check-embed-asset-freshness.ts && tsx scripts/__tests__/github-token.control.ts",
     "check:ci-devcontainer-pins": "tsx scripts/check-devcontainer-pin-freshness.ts",
     "check:ci-unverified-downloads": "tsx scripts/check-unverified-downloads.ts",
     "check:ci-embed-asset-versions": "tsx scripts/check-embed-asset-versions.ts",

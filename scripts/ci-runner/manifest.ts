@@ -2594,7 +2594,7 @@ export const GATES: readonly GateSpec[] = [
     id: 'check:ci-embed-asset-freshness',
     run: 'npm run check:ci-embed-asset-freshness',
     gate: true,
-    leaves: ['scripts/check-embed-asset-freshness.ts'],
+    leaves: ['scripts/check-embed-asset-freshness.ts', 'scripts/__tests__/github-token.control.ts'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',

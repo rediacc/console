@@ -26,6 +26,7 @@ import { collectActionRefs } from './lib/action-refs.js';
 import { parseBlockeredList, verifyAllBlockers } from './lib/blocker-validator.js';
 import { getMinReleaseAgeMs, isWithinFreshnessWindow } from './lib/release-age.js';
 import { BLUE, DIM, GREEN, NC, RED, YELLOW } from './utils/console.js';
+import { githubToken } from './lib/github-token.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const CONSOLE_ROOT = path.resolve(__dirname, '..');
@@ -37,7 +38,7 @@ const showHelp = args.includes('--help') || args.includes('-h');
 const verboseMode = args.includes('--verbose') || args.includes('-v');
 
 // GitHub token from environment (optional, increases rate limit)
-const GITHUB_TOKEN = process.env.GITHUB_TOKEN ?? process.env.GH_TOKEN;
+const GITHUB_TOKEN = githubToken();
 
 interface ParsedVersion {
   major: number;
