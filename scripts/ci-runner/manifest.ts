@@ -5417,6 +5417,25 @@ export const GATES: readonly GateSpec[] = [
     },
   },
   {
+    // check:ci-enumeration-vacuity proves a floor is PRESENT, which is a source shape.
+    // Whether it REFUSES is behaviour, and a check-*.ts asserting the source still looks
+    // right is not the same claim -- the testing skill says so, and a static version of
+    // this was written and DISCARDED for being wrong on all six names it flagged.
+    // Covers only the floors whose corpus is addressable from outside; the file names
+    // the seven it cannot reach and why.
+    id: 'gate-test:vacuity-floors',
+    run: '.ci/scripts/test/gates/test-vacuity-floors.sh',
+    gate: true,
+    qualityGateTest: true,
+    leaves: ['.ci/scripts/test/gates/test-vacuity-floors.sh'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-security',
+      step: 'Quality-gate unit tests',
+    },
+  },
+  {
     // Lane capabilities are DERIVED from ci-quality.yml, and the derivation can be
     // wrong in two opposite ways: too generous places a gate in a lane that lacks what
     // it needs (the mis-placement that cost CI), too mean loses a lane entirely. Both
