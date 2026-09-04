@@ -205,6 +205,44 @@ test_mandatory_invisible_cell_hard_fails() {
     log_pass "the invisible cell hard-fails: planned-run leaf skipped, siblings green (case 25)"
 }
 
+test_planned_run_but_cancelled_is_named() {
+    # A CANCELLED JOB DID NOT RUN, and reconcile used to record it as having run:
+    # the branch complained only on `skipped`, so `cancelled` took the silent path
+    # under a comment that said "any non-skipped conclusion counts as 'it ran'".
+    #
+    # Both real shapes produce it. The watchdog force-cancels siblings when one job
+    # fails, and a job over its own timeout-minutes reports `cancelled` too --
+    # Quality / Code did exactly that at 15m19s on 2026-09-03 with 52 of 92 steps
+    # executed, and no message anywhere said "timeout".
+    mutate "$WORK/jobs.json" "$WORK/jobs-unit-cancelled.json" \
+        'data.jobs.find((j) => j.name === "Tests + Infra / Unit").conclusion = "cancelled"'
+    assert_eq "$(run_reconcile "$WORK/plan.json" "$WORK/jobs-unit-cancelled.json")" "0" \
+        "a cancelled planned job WARNS rather than failing (assert-ci-complete already reds it)"
+    assert_contains "$(out)" "planned-run-but-cancelled: 'unit' -> 'Tests + Infra / Unit'" \
+        "and it is named, with the key and the leaf"
+
+    # CONTROL, and it is the whole point: the SAME fixture with the SAME job left at
+    # success says nothing, so the assertion above is not passing against a
+    # reconciler that warns about everything.
+    run_reconcile "$WORK/plan.json" "$WORK/jobs.json" >/dev/null
+    assert_not_contains "$(out)" "planned-run-but-cancelled" \
+        "the untouched fixture warns about no cancellation"
+
+    # AND THE TWO CONCLUSIONS MUST STAY APART. Asserted through the EXIT CODES rather
+    # than a second absence check, because that is the difference that matters and an
+    # absence proves only that one string is missing: a skip is a hard failure (1),
+    # a cancellation is a warning (0). A rewrite that collapsed them would satisfy
+    # every assertion above and still be wrong.
+    # Its own fixture, not the one test_mandatory_invisible_cell_hard_fails leaves
+    # behind: a case that only passes when a sibling ran first is a case that fails
+    # the day somebody reorders the list, and it would fail looking like a real find.
+    mutate "$WORK/jobs.json" "$WORK/jobs-unit-skipped-here.json" \
+        'data.jobs.find((j) => j.name === "Tests + Infra / Unit").conclusion = "skipped"'
+    assert_eq "$(run_reconcile "$WORK/plan.json" "$WORK/jobs-unit-skipped-here.json")" "1" \
+        "a skipped planned job still hard-fails while a cancelled one does not"
+    log_pass "a cancelled planned job is named as producing no evidence, never as having run"
+}
+
 test_healthy_eleven_must_not_fire() {
     # Section E: the plan is the allowlist. First prove the fixture SHAPE
     # (the eleven structural skips are really in there), or the silence below
@@ -776,6 +814,7 @@ test_usage_errors_are_loud() {
 
 log_test "test-skip-plan-reconcile"
 test_mandatory_invisible_cell_hard_fails
+test_planned_run_but_cancelled_is_named
 test_healthy_eleven_must_not_fire
 test_planned_job_missing_hard_fails
 test_over_running_warns_only

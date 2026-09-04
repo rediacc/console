@@ -486,12 +486,36 @@ function reconcile(plan, jobs, ctx = {}) {
       for (const job of matched) {
         // Case 25, THE invisible cell: the plan said run, the leaf
         // self-skipped, the siblings succeeded, and the caller scalar reads
-        // success. Only here does that become red. Any non-skipped
-        // conclusion (success, failure, cancelled) counts as "it ran";
-        // failures are ci-complete's tiers' business, not a reconcile
-        // violation.
+        // success. Only here does that become red. A `failure` conclusion is
+        // ci-complete's tiers' business, not a reconcile violation -- the job
+        // RAN and produced evidence, it just did not like it.
         if (job.conclusion === 'skipped') {
           failures.push(`planned-run-but-skipped: '${key}' -> '${job.name}'${strictNote}`);
+        } else if (job.conclusion === 'cancelled') {
+          // A CANCELLED JOB DID NOT RUN, and this line used to say it did. The
+          // comment above once read "any non-skipped conclusion (success,
+          // failure, cancelled) counts as 'it ran'", which is false for exactly
+          // one of the three and false in the direction that stays quiet: a
+          // cancelled job produced no evidence for the thing the plan attested
+          // to, and reconcile recorded it as satisfied.
+          //
+          // Two shapes reach here and both are real. The watchdog force-cancels
+          // siblings when one job fails, which rewrites their conclusion from
+          // nothing to `cancelled`. And a job that exceeds its own
+          // `timeout-minutes` reports `cancelled` too -- Quality / Code did that
+          // at 15m19s on 2026-09-03, having executed 52 of its 92 steps, and the
+          // only word anywhere for it was "cancelled".
+          //
+          // A WARNING rather than a failure, deliberately: assert-ci-complete
+          // already refuses `cancelled` for every required job, so making this
+          // red would duplicate that verdict and blame the plan for it. What is
+          // NOT already covered is a planned job outside the required set -- its
+          // attestation goes unverified and, until now, unmentioned.
+          warnings.push(
+            `planned-run-but-cancelled: '${key}' -> '${job.name}' produced no evidence ` +
+              `(a cancelled job did not run; check whether it was force-cancelled for a ` +
+              `sibling's failure or hit its own timeout-minutes)${strictNote}`
+          );
         }
       }
     } else {
