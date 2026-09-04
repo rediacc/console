@@ -799,6 +799,49 @@ def writer_path(writer, root=None):
 _NON_SESSION_WRITERS = frozenset({"compact", "unknown", "md", "import"})
 
 
+def identity_activity(worklist, root=None):
+    """{prefix: (n_events, first_at)} for every SESSION identity this store
+    carries, counted from the writer (`by`) AND the owner (`o`).
+
+    WHY BOTH FIELDS, and it was measured on the operator's own store on
+    2026-09-04 rather than imagined. compact() re-emits the entire fold through
+    snapshot_events(by="compact"), so a compaction ERASES the writer of every
+    historical event while preserving its owner. Both readers of "which
+    identities does this store know about" -- the phantom backstop in
+    wl_checks.phantom_identities and the age gate in --reassign -- scanned `by`
+    alone. After any compaction they therefore saw NO identities at all, while
+    the code that actually moves the work, three lines below the age gate,
+    selects on `owner`.
+
+    That disagreement is not academic. Three fixture items reached the live
+    store owned by prefixes that had never written under their own name, and
+    the result was an item unreachable through every sanctioned verb at once:
+    --tick refused it ("owned by deadpeer; never tick another session's
+    tracking"), and --reassign, the designated repair verb, refused the same
+    item as "has written no events at all". Counting an identity's OWNED events
+    as its own is what makes the derivation agree with the selection it exists
+    to serve.
+
+    ONE SET OF NON-SESSION NAMES, shared with _writer_for. wl_checks kept its
+    own copy that omitted "import", so an imported store could surface the
+    importer as a phantom identity; two spellings of "this name is not a
+    person" is the same drift in miniature.
+    """
+    counts, first_at = {}, {}
+    for ev in _read_events(worklist, root):
+        at = str(ev.get("at") or "")
+        # A SET PER EVENT: `by` and `o` are usually the same prefix, and
+        # counting such an event twice would inflate the event count the
+        # backstop reports to the operator.
+        for who in {str(ev.get("by") or ""), str(ev.get("o") or "")}:
+            if not who or who in _NON_SESSION_WRITERS or not C.PREFIX_RE.match(who):
+                continue
+            counts[who] = counts.get(who, 0) + 1
+            if who not in first_at or (at and at < first_at[who]):
+                first_at[who] = at
+    return {k: (n, first_at.get(k, "")) for k, n in counts.items()}
+
+
 def _writer_for(payloads, explicit=None):
     if explicit:
         return agent_session_slug(explicit)

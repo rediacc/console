@@ -426,3 +426,57 @@ else
     echo "  FAIL: CONTROL: ns is not the deciding field, so this case proves nothing"
     FAIL=$((FAIL + 1))
 fi
+
+echo "== 203. the fixture owns BOTH halves of the store, so no call can straddle them =="
+# WHAT THIS CATCHES, and it is not hypothetical -- it happened to the operator's
+# own worklist on 2026-09-04. The store has two halves that resolve from
+# DIFFERENT places: the tracked writer files come from WORKLIST_STORE_DIR, while
+# the legacy event log, the markdown mirror and the `.lastevent-*` liveness
+# artifacts all resolve from the worklist path under TMPDIR. setup() exported
+# only the first and left TMPDIR to a per-invocation prefix at seven call sites.
+# One call without that prefix therefore read items from the FIXTURE store and
+# resolved the legacy half against the REAL /tmp/claude-worklist -- and since
+# compact() folds both halves and rewrites the legacy file from the union, three
+# fixture items from this file's own neighbourhood ("my own item", "a dead peer
+# item", "a LIVE peer item", added at the lines above) were written into the
+# operator's real worklist, where the Stop hook reported them as open work every
+# round. Worse, they arrived owned by prefixes that never wrote under their own
+# name, which put them beyond every sanctioned verb at once: --tick refuses
+# another session's item, and --reassign refused the same item as having
+# "written no events at all".
+#
+# THE ASSERTION IS ON `--path`, DELIBERATELY. The first version of this case
+# asserted that a bare `--compact` wrote the fixture's legacy event log, and it
+# FAILED for a reason that had nothing to do with the straddle: compact()
+# returns early when that file does not exist yet, so the case tested an
+# artifact the fix never produces, and its inverted control "passed" for the
+# same empty reason. `--path` prints the resolved worklist, which is the one
+# thing the straddle actually gets wrong, and it is the shortest statement of
+# what must be true.
+#
+# It is also deliberately about a BARE invocation. Fixing the seven call sites
+# would leave the eighth free to reintroduce this; exporting both halves
+# together is what makes the straddle unrepresentable, and this case fails if
+# anyone unpairs them again.
+setup
+OUT="$(CLAUDE_PROJECT_DIR="$BASE/proj" python3 "$HOOK" --path 2>/dev/null)"
+if [[ "$OUT" == "$BASE"/* ]]; then
+    echo "  PASS: a bare invocation resolved the worklist inside the fixture"
+    PASS=$((PASS + 1))
+else
+    echo "  FAIL: a bare invocation resolved the worklist to $OUT, outside \$BASE -- it straddled"
+    FAIL=$((FAIL + 1))
+fi
+# CONTROL ON THE CONTROL: the assertion above must actually be sensitive to
+# TMPDIR, or it would pass just as well if TMPDIR did nothing here -- which is
+# precisely the false comfort that let the original leak through. Point one
+# invocation at a THIRD directory and the resolved path must follow it.
+mkdir -p "$BASE/other"
+OUT="$(TMPDIR="$BASE/other" CLAUDE_PROJECT_DIR="$BASE/proj" python3 "$HOOK" --path 2>/dev/null)"
+if [[ "$OUT" == "$BASE/other"/* ]]; then
+    echo "  PASS: CONTROL: TMPDIR really is what steers the worklist half"
+    PASS=$((PASS + 1))
+else
+    echo "  FAIL: CONTROL: TMPDIR does not steer the worklist ($OUT), so 203 proves nothing"
+    FAIL=$((FAIL + 1))
+fi

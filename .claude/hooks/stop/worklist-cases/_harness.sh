@@ -73,6 +73,21 @@ setup() {
     # correctly refused.
     export WORKLIST_STORE_DIR="$BASE/store"
     mkdir -p "$WORKLIST_STORE_DIR"
+    # EXPORTED BESIDE IT, and the pairing is the point. The store now has TWO
+    # halves: the tracked writer files under WORKLIST_STORE_DIR, and everything
+    # still resolved from the worklist path under TMPDIR -- the legacy event
+    # log, the markdown mirror, the `.lastevent-*` liveness artifacts. This
+    # export was the only one of the pair, passed per-invocation at seven call
+    # sites instead, so ONE call without the `TMPDIR=` prefix straddled the two:
+    # it read items from the fixture store and resolved the legacy log against
+    # the OPERATOR'S REAL /tmp/claude-worklist. `compact()` folds both and
+    # rewrites the legacy file from the union, so three fixture items
+    # ("my own item", "a dead peer item", "a LIVE peer item", planted by
+    # 26-migrate.sh:341-343) landed in the operator's real worklist and were
+    # reported as open work on every stop. Moving both halves together is what
+    # makes the straddle unrepresentable rather than merely unlikely; case 203
+    # is the control, and the per-invocation prefixes stay as belt and braces.
+    export TMPDIR="$BASE/tmp"
     # The fixture .git is a plain directory, so `git symbolic-ref` exits 128
     # and every branch-dependent check would be SKIPPED as no-branch across
     # the whole suite -- a gate that never fires in its own tests. The env

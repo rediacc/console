@@ -991,11 +991,17 @@ def _reassign_cli(argv):
     # Same threshold and same derivation as the advisory backstop
     # (wl_checks.phantom_identities), deliberately: two different answers to
     # "is this identity a phantom" is how the two drift apart.
+    # BOTH the writer and the owner, via the derivation shared with the
+    # backstop. Scanning `by` alone made this gate refuse every phantom in a
+    # store that had ever been compacted, because compact() rewrites the writer
+    # of the whole history to "compact" and keeps only the owner -- and the
+    # selection three statements below matches on `owner`. The two disagreed,
+    # so the repair verb reported "has written no events at all" about items
+    # it could see and would have moved.
     _first = ""
-    for _ev in S._read_events(worklist):
-        _by, _at = str(_ev.get("by") or ""), str(_ev.get("at") or "")
-        if _by and _at and C.same_session(_by, phantom) and (not _first or _at < _first):
-            _first = _at
+    for _who, (_n, _at0) in S.identity_activity(worklist).items():
+        if _at0 and C.same_session(_who, phantom) and (not _first or _at0 < _first):
+            _first = _at0
     _age = C.stamp_age_min(_first)
     if _age is None:
         # No events at all under that prefix: there is nothing to move, and

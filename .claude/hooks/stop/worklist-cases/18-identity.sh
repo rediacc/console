@@ -1011,3 +1011,49 @@ if [[ "$RC" -ne 0 ]] && grep -qF "identity mismatch" <<<"$OUT"; then
 else
     fail "190a CONTROL: --reassign accepted a foreign <me> (rc=$RC): ${OUT:0:200}"
 fi
+
+echo "== 190b. --reassign survives a COMPACTION, which erases every writer name =="
+# THE DEFECT, measured on the operator's live store on 2026-09-04. compact()
+# re-emits the whole fold through snapshot_events(by="compact"), so after any
+# compaction NO event carries its original writer any more -- only the owner
+# survives. Both readers of "which identities does this store know about" (the
+# phantom backstop, and this verb's own age gate) scanned `by` alone, while the
+# code that actually moves the work, three statements further down, selects on
+# `owner`. So on a compacted store --reassign refused with "has written no
+# events at all" about items it could see perfectly well, and --tick refused
+# the same items as another session's. Three real items sat in the operator's
+# worklist unreachable through EVERY sanctioned verb at once, reported as open
+# work on every stop, with hand-editing the store the only way out -- which the
+# standing rules forbid, correctly, because the store is shared.
+#
+# Compaction is automatic, so this was not an edge case: it is the state every
+# store reaches. Case 190 above cannot catch it, because its fixture has never
+# been compacted.
+setup
+brief_now
+hand_now
+say "all done, nothing outstanding"
+run >/dev/null
+phantom_store phantom1 90
+reqcli --compact >/dev/null 2>&1
+# CONTROL FIRST, and it is what makes the assert below mean anything: prove the
+# compaction really did erase the writer. Without this the case would pass on a
+# store where `by` still said phantom1, i.e. on the pre-compaction shape it is
+# supposed to be testing, and the bug would sail straight through it.
+if wl_events | grep -q '"o":"phantom1"' && ! wl_events | grep -q '"by":"phantom1"'; then
+    pass "190b CONTROL: the compaction erased the writer and kept the owner"
+else
+    fail "190b CONTROL: the store is not in the post-compaction shape, so this proves nothing"
+fi
+OUT=$(reqcli --reassign deadbeef phantom1 2>&1)
+RC=$?
+if [[ "$RC" -eq 0 ]] && grep -qF "reassigned phantom1 -> deadbeef" <<<"$OUT"; then
+    pass "190b: the phantom is still reachable when only its OWNED events name it"
+else
+    fail "190b: --reassign went blind after a compaction (rc=$RC): ${OUT:0:300}"
+fi
+if grep -qF "phantom-owned item" <<<"$(reqcli --list --open deadbeef 2>&1)"; then
+    pass "190b: and the work really moved, so the verb is not merely exiting 0"
+else
+    fail "190b: --reassign reported success but moved nothing"
+fi

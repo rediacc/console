@@ -2297,3 +2297,43 @@ ONLY the lines you need (fingerprints, counts, verdicts), and never let a blanke
 `head` or `grep -v` be the thing standing between a secret and the log. If the value
 itself is the question, reduce it to a digest or a fingerprint inside the same
 process that fetched it.
+
+## Local gates read the WORKING TREE, CI reads the TRACKED tree, so a half-staged pair passes here and fails there
+Trap-Id: working-tree-green-tracked-tree-red
+Enforced-By: gate:check:ci-parity
+Residue: Both directions of the split are now gated -- `check:ci-parity` catches a tracked file with no manifest entry, and `check:ci-gate-manifest`'s `leaf-tracked` arm catches a manifest entry naming an untracked file. Neither can fire before you commit, because until then the working tree is consistent by construction. The residue is the habit: `git diff --cached --stat` before every commit.
+
+`npm run ci:quick` was 307/307 and CI came back red on the commit it had just
+blessed. The failing step was "Validate parity between the local gate set and
+the CI quality surface":
+
+> `.ci/scripts/test/gates/test-vacuity-floors.sh` exists on disk and run-all.sh
+> runs it, but no manifest entry is tagged qualityGateTest for it
+
+Both statements were true locally too, and the gate still passed, because the
+manifest entry DID exist -- as an uncommitted edit belonging to another session
+in the shared worktree. The test file had been committed without it, by a commit
+whose message describes one unrelated file and whose `--stat` shows two.
+
+**The asymmetry is the trap, and it is structural.** Every local gate reads the
+working tree, which holds committed and uncommitted content indistinguishably.
+CI checks out the pushed commit, which holds only what is tracked. Any pair
+whose halves land on opposite sides of that line -- a file and its registration,
+a script and its allowlist entry, a fixture and its expected output -- is
+CONSISTENT locally and BROKEN on CI, and no amount of local running finds it.
+The green is not a false green about the tree; it is a true green about a tree
+CI will never see.
+
+This is the shared-worktree failure mode, so it does not need two sessions
+editing one file to bite. It needs one `git add` wider than intended, or a
+`git commit` run while somebody else's work sat staged. The repair is forward
+only: `git rm --cached` puts the file back to untracked without deleting the
+bytes, which matters because the bytes were not the committer's to destroy.
+Do not "complete" the pair by committing the other half either -- committing
+more of another session's uncommitted work to fix having committed some of it
+is the same mistake twice.
+
+Before every commit in this tree, read `git diff --cached --stat` and confirm
+every path is one you touched this round. In a worktree that normally carries
+dozens of dirty paths from other sessions, "what I staged" and "what is staged"
+are different questions.

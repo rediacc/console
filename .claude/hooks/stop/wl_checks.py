@@ -2253,19 +2253,19 @@ def phantom_identities(worklist, session_id, fold, reqs):
             "is being flagged. A wiped TMPDIR is the usual cause." % worklist.parent
         )
     stopped = {p.name.split(".lastevent-")[-1][:-5] for p in seen}
-    counts, first_at = {}, {}
-    # THE WHOLE STORE, not the legacy file. The log moved to agent/worklist/
-    # and reading one path here would have made every identity in the tracked
-    # store invisible to the phantom check -- a check that silently sees
-    # nothing, which is the failure mode its own BLIND message exists to name.
-    for ev in S._read_events(worklist):
-        by = str(ev.get("by") or "")
-        if not by or by in PHANTOM_NOT_IDENTITIES or not C.PREFIX_RE.match(by):
-            continue
-        counts[by] = counts.get(by, 0) + 1
-        at = ev.get("at") or ""
-        if by not in first_at or (at and at < first_at[by]):
-            first_at[by] = at
+    # THE WHOLE STORE, not the legacy file, and BOTH the writer and the owner
+    # of each event. Reading one path here would have made every identity in
+    # the tracked store invisible; reading `by` alone made every identity
+    # invisible after a COMPACTION, which rewrites the writer of the entire
+    # history to "compact" while preserving the owner. The derivation now lives
+    # in wl_store.identity_activity, shared with --reassign's age gate, because
+    # two different answers to "is this identity a phantom" is how the backstop
+    # and its repair verb drifted apart in the first place -- the backstop saw
+    # nobody to report while --reassign refused the very items it was pointed
+    # at as "has written no events at all".
+    _act = S.identity_activity(worklist)
+    counts = {k: n for k, (n, _) in _act.items()}
+    first_at = {k: at for k, (_, at) in _act.items()}
     out = []
     for by, n in sorted(counts.items()):
         if C.same_session(by, session_id) or by[:8] in stopped:

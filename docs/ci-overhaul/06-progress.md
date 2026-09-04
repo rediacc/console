@@ -7277,3 +7277,75 @@ it closed. Same rule, two mechanisms, now gated.
 
 **Editing a script bash is executing corrupts the run.** The pre-bash guard refused an
 append to a case file the suite was reading — correctly, and the item waited.
+
+## Wave 10 — 2026-09-04 night: a peer's file half-landed, and two bugs found while blocked
+
+CI run 33924398787 went red on head c5538ac5c at "Validate parity between the local gate
+set and the CI quality surface":
+
+> `.ci/scripts/test/gates/test-vacuity-floors.sh` exists on disk and run-all.sh runs it,
+> but no manifest entry is tagged qualityGateTest for it
+
+### The trap: local gates read the working tree, CI reads the tracked tree
+
+The file was not this session's. Commit 3049f36cb describes a one-file seed change and
+carried two files: that seed, and a peer session's 114-line gate test, already staged when
+the commit ran. The test's manifest entry — the half that makes it legal — was part of the
+peer's UNCOMMITTED work.
+
+So the branch landed one half of an atomic pair, and **that split is invisible to
+`ci:quick` by construction**: every local gate reads the working tree, which had both
+halves, while CI checks out tracked files only. No amount of local running finds it. The
+gate that names the class already exists and is right — `check:ci-gate-manifest`'s
+`leaf-tracked` arm says "CI checks out only tracked files, so that step would run against
+a file that is not there" — but it fires on the *other* direction of the same split.
+
+Repaired forward, never with checkout/restore: `git rm --cached` on the one path, so the
+file stayed on disk untracked, byte for byte, and the peer's work was untouched. Their
+manifest hunk was NOT committed — committing more of someone's uncommitted work to fix
+having committed some of it is the same mistake twice. They were told, with the fingerprint
+and the one command; they verified it themselves and landed both halves properly.
+
+**The cheap habit that would have prevented all of it: read `git diff --cached --stat`
+before every commit.** A shared worktree makes "what I staged" and "what is staged"
+different questions.
+
+### Two bugs found while blocked, both in this wave's own machinery
+
+1. **The test harness wrote into the operator's real worklist.** `_harness.sh` exported
+   `WORKLIST_STORE_DIR` process-wide but passed `TMPDIR` per-invocation at seven call
+   sites. The store has two halves that resolve from different places: tracked writer files
+   from the first, and the legacy event log, the markdown mirror and the `.lastevent-*`
+   liveness artifacts from the second. One bare call straddled them — fixture store in,
+   real legacy log out — and `compact()` folds both halves and rewrites the legacy file
+   from the union. Three fixture items landed in the operator's worklist and were reported
+   as open work on every stop. Fixed by exporting both halves together, which makes the
+   straddle unrepresentable rather than merely unlikely.
+
+2. **`--reassign` is blind on any compacted store, which is every store eventually.**
+   `compact()` re-emits the whole fold through `snapshot_events(by="compact")`, erasing the
+   writer of every historical event and keeping only the owner. Both readers of "which
+   identities does this store know about" scanned `by`, while the code that moves the work
+   — three statements below one of them — selects on `owner`. The result was an item
+   unreachable through **every sanctioned verb at once**: `--tick` refused it as another
+   session's, and `--reassign`, the designated repair verb, refused the same item as
+   "has written no events at all". Hand-editing the store is forbidden, correctly, so there
+   was no way out at all. One shared derivation now serves both readers.
+
+### Three things worth keeping
+
+**An unreachable item is worse than a wrong one.** Two guards were each individually right
+— do not tick another session's work; do not reassign from an identity with no history —
+and their intersection was a trap with no exit. When adding a refusal, ask which verb is
+left holding the case it refuses.
+
+**A control can pass for the same empty reason the test does.** The first version of the
+straddle case asserted that a bare `--compact` wrote the fixture's legacy log; `compact()`
+returns early when that file does not exist, so the case tested an artifact the fix never
+produces — and its inverted control "passed" identically. The suite caught it. The
+rewrite asserts on `--path`, which is the one thing the straddle actually gets wrong.
+
+**Test the post-fix shape, not the pre-fix one.** The reassign control compacts FIRST and
+asserts that the writer really was erased before exercising the verb. Without that
+assertion it would pass on the uncompacted shape it exists to test, and the bug would sail
+through its own regression test.
