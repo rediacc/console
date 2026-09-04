@@ -176,7 +176,12 @@ setup
 say "done for now"
 brief_now
 mig_peer leasesess "(leasesess) leased to a worker that died with its session"
-ITEM="$(wlcli --list 2>/dev/null | grep -o '#[0-9a-f]\{8,\}' | head -1 | tr -d '#')"
+# BY THE ITEM'S OWN TEXT, not `head -1` over the whole listing: that took the
+# first id that happened to sort first, which is another session's item as often
+# as the peer's, so the lease landed on the wrong thing and the migration then
+# had nothing leased to carry.
+ITEM="$(wlcli --list 2>/dev/null | grep 'leased to a worker' | grep -o '#[0-9a-f]\{8,\}' | head -1 | tr -d '#')"
+[[ -n "$ITEM" ]] || echo "  FAIL: could not find the peer's item to lease"
 WORKLIST_SESSION_ID=leasesess wlcli --lease leasesess "$ITEM" +60 worker:ghost1 "held" >/dev/null 2>&1
 mig leasesess >/dev/null
 if wlcli --list --open deadbeef 2>/dev/null | grep -q '\[ \].*leased to a worker'; then
@@ -192,7 +197,8 @@ setup
 say "done for now"
 brief_now
 mig_peer defersess "(defersess) a question for the operator"
-ITEM="$(wlcli --list 2>/dev/null | grep -o '#[0-9a-f]\{8,\}' | head -1 | tr -d '#')"
+ITEM="$(wlcli --list 2>/dev/null | grep 'a question for the operator' | grep -o '#[0-9a-f]\{8,\}' | head -1 | tr -d '#')"
+[[ -n "$ITEM" ]] || echo "  FAIL: could not find the peer's item to defer"
 WORKLIST_SESSION_ID=defersess wlcli --defer defersess "$ITEM" \
     "which branch? DEFAULT: use main WHY: it is the base HOW: rerun the gate" >/dev/null 2>&1
 mig defersess >/dev/null
@@ -285,9 +291,14 @@ else
     echo "  FAIL: --doctor echoed the secret it was reporting"
     FAIL=$((FAIL + 1))
 fi
-# CONTROL: without the plants it must pass, or case 200 proves only that
-# --doctor always fails.
+# CONTROL: without the PLANTS it must pass, or case 200 proves only that
+# --doctor always fails. The store must still hold a VALID file: --doctor
+# refuses an empty store outright (a check that scanned nothing is not a pass),
+# so deleting the plant and leaving the directory bare would test that refusal
+# instead of the clean-store path.
 rm -f "$WORKLIST_STORE_DIR/planted.jsonl"
+printf '{"ev":"add","id":"docclean1","at":"%s","by":"deadbeef","s":" ","o":"deadbeef","t":"a clean event"}\n' \
+    "$NOW_TS" >"$WORKLIST_STORE_DIR/clean.jsonl"
 OUT="$(wlcli --doctor 2>&1)"
 if [[ $? -eq 0 ]] && [[ "$OUT" == *"store OK"* ]]; then
     echo "  PASS: CONTROL: a clean store passes"
