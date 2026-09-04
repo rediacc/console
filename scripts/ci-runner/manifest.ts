@@ -20,77 +20,13 @@
  * `qualityGateTest` set against the on-disk glob run-all.sh itself uses.
  */
 
-import fs from 'node:fs';
-import path from 'node:path';
+// RE-EXPORTED, not redefined: every existing importer of GateSpec/CiCoverage/
+// paritySurface keeps working unchanged, which is what makes this split
+// non-behavioural and safe to land on its own.
+export { paritySurface } from './surface.js';
+export type { CiCoverage, GateSpec } from './gate-spec.js';
 
-export interface GateSpec {
-  /**
-   * Skip the per-gate process-tree sampler for this gate. Only for gates that
-   * PLANT structural defects on purpose: check:ci-resprofile's selftest spawns an
-   * unreaping parent with four zombies, and the sampler caught it on the first
-   * default-on run -- a correct finding on a fixture, which would have poisoned
-   * the E6 fire rate in any seed. The profiler must not profile its own test.
-   */
-  noProfile?: boolean;
-  /** npm script key, or a synthetic node id like 'build:packages'. */
-  id: string;
-  /** Exact command to run, and the exact rerun line printed on failure. */
-  run: string;
-  /**
-   * false for prerequisite nodes (build:*) that validate nothing, and for the
-   * CI-side aggregate check:ci-quality-gates whose 62 constituents are
-   * scheduled individually. A false entry runs only when something that
-   * `needs` it is in the selected set, so an aggregate with no dependents
-   * never runs locally.
-   */
-  gate: boolean;
-  /** Ordering edges: ids that must succeed first. */
-  needs?: string[];
-  /** Mutual-exclusion groups: no two gates sharing a group overlap. */
-  mutex?: string[];
-  /** Scheduler slots. Default 1. */
-  weight?: number;
-  /** Memory-hungry (>=4 GB heap). Bounded by --heavy-limit. */
-  heavy?: boolean;
-  /** Repo-relative globs this gate validates; powers --changed. */
-  paths?: string[];
-  /**
-   * Too expensive for the pre-push lane. ABSENT MEANS FAST, deliberately: a
-   * new gate is enforced before a push until someone takes it out on purpose,
-   * which is the fail-safe direction. Opting out is the one mechanism -- there
-   * is no second exemption file -- so the reason lives in a comment beside it.
-   *
-   * The threshold is measured, not judged: `.ci/cache/gate-durations.json`
-   * holds per-gate timings from real runs, and check:ci-gate-manifest's tier
-   * oracle asserts this field against them in BOTH directions. (It named a
-   * `check:ci-gate-tiers` until 2026-09-02; no such gate has ever existed, so
-   * a reader looking for the guard found nothing and could conclude the field
-   * was unasserted. The guard is real, it just lives in the manifest gate.) A gate marked slow that is in
-   * fact cheap fails just as loudly as the converse, because the cheap-marked-
-   * slow direction is the invisible one: the push stays fast and the coverage
-   * quietly shrinks.
-   */
-  slow?: true;
-  /** Set on the 62 entries flattened out of .ci/scripts/test/gates/. Their set
-   *  must equal the on-disk glob; see assertion 7 in section 6.3. */
-  qualityGateTest?: boolean;
-  /** Leaf commands this gate ultimately executes. The parity oracle compares
-   *  these, not the npm key, because CI frequently invokes the same underlying
-   *  script under a different key or by bare path. */
-  leaves: string[];
-  /** How CI runs this gate. See section 6 for every variant and its rules. */
-  ci: CiCoverage;
-}
-
-export type CiCoverage =
-  /** A workflow step runs it. Verified against the parsed workflow. */
-  | { kind: 'step'; workflow: string; job: string; step: string }
-  /** A gate test under .ci/scripts/test/gates/ drives its REAL scan against the
-   *  REAL tree, and run-all.sh runs in CI. Requires `test` plus a BLOCKER
-   *  reason naming the line that proves the real scan runs. Never inferred. */
-  | { kind: 'test'; test: string; blocker: string }
-  /** Deliberately local-only. Requires a BLOCKER reason. */
-  | { kind: 'local-only'; blocker: string };
+import type { GateSpec } from './gate-spec.js';
 
 /**
  * NO `paths` ARE DECLARED YET, and that is the safe state. An entry without
@@ -5579,76 +5515,3 @@ export const GATES: readonly GateSpec[] = [
 ];
 
 /** The root workflow every CI run enters through. */
-const ENTRY_WORKFLOW = '.github/workflows/ci.yml';
-/** Jobs of ENTRY_WORKFLOW that are themselves part of the quality surface. */
-const ENTRY_JOBS = ['quality', 'review-gate'];
-
-/**
- * Workflows outside this set are not part of the parity surface.
- *
- * COMPUTED, NEVER HAND-LISTED. Direction B produced 14 release/CD/E2E scripts
- * that are correctly out of scope; listing them as exemptions would be 14
- * permanent lies in a suppression file. So scope is structural: the transitive
- * closure of `uses: ./.github/workflows/*` reachable from ci.yml's `quality`
- * job, plus the `review-gate` job's own steps. Iterating `uses:` rather than
- * matching names is what stops a new lane workflow escaping the gate, and is
- * the same technique test-scope-engine.sh is registered in the anti-vacuity
- * harness for.
- *
- * An entry is a repo-relative workflow path, optionally suffixed `#<jobId>` to
- * scope the surface to a single job of that file. review-gate is job-scoped
- * because the rest of ci.yml (build, release, E2E) is out of scope.
- *
- * AN ENTRY JOB THAT IS NOT THERE COLLAPSES THE SURFACE, ON PURPOSE. If `quality`
- * were renamed, a version of this that quietly emitted a job-scoped stub would
- * hand the caller a non-empty surface containing nothing, and the reverse
- * direction would go silent over the entire quality tier while still reporting
- * a clean run. That is the vacuity failure this file exists to prevent, so a
- * missing entry job returns the empty surface and the caller's preflight
- * refuses to run.
- */
-export function paritySurface(repoRoot: string): string[] {
-  const entryPath = path.join(repoRoot, ENTRY_WORKFLOW);
-  if (!fs.existsSync(entryPath)) return [];
-
-  const out: string[] = [];
-  const seen = new Set<string>();
-  const queue: string[] = [];
-
-  // job id -> reusable workflow it calls (or '' when it has its own steps), for
-  // the jobs of ci.yml only.
-  const calls = new Map<string, string>();
-  let job = '';
-  for (const raw of fs.readFileSync(entryPath, 'utf-8').split('\n')) {
-    const jobMatch = raw.match(/^ {2}([\w-]+):\s*$/);
-    if (jobMatch) {
-      job = jobMatch[1];
-      calls.set(job, '');
-      continue;
-    }
-    const uses = raw.match(/^ {4}uses:\s*(\.\/\.github\/workflows\/[\w.-]+)\s*$/);
-    if (uses && job) calls.set(job, uses[1].replace(/^\.\//, ''));
-  }
-
-  for (const j of ENTRY_JOBS) {
-    const called = calls.get(j);
-    if (called === undefined) return [];
-    if (called) queue.push(called);
-    else out.push(`${ENTRY_WORKFLOW}#${j}`);
-  }
-
-  while (queue.length > 0) {
-    const file = queue.shift();
-    if (file === undefined || seen.has(file)) continue;
-    seen.add(file);
-    const abs = path.join(repoRoot, file);
-    if (!fs.existsSync(abs)) continue;
-    out.push(file);
-    for (const m of fs
-      .readFileSync(abs, 'utf-8')
-      .matchAll(/^ {4}uses:\s*(\.\/\.github\/workflows\/[\w.-]+)\s*$/gm)) {
-      queue.push(m[1].replace(/^\.\//, ''));
-    }
-  }
-  return out;
-}
