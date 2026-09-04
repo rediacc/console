@@ -7216,3 +7216,64 @@ two inline workflow copies that had already drifted (one kept an unverified
 anywhere off a GitHub runner before this. And the signing-key check was swept from
 `build-pkg-repo.sh` to `build-linux-pkg.sh`, which handed a key to nfpm with no proof it
 was the key the repository publishes.
+
+## Wave 9 — 2026-09-04 night: four gates, and the six bugs that writing them found
+
+Wave 8 recorded the tracked worklist store and `/migrate`. This is what came out of
+*proving* that work: four new CI gates, and six defects none of which was found by
+reading. Every one surfaced because something was RUN — a snapshot folded and diffed, a
+plant re-introduced, a fixture driven end to end.
+
+### The four gates, each of which caught a live instance on its first run
+
+| gate | the rule | what it found immediately |
+|---|---|---|
+| `check:ci-worklist-event-builders` | only named functions may construct a state-bearing event; a rebuild from a fold goes through `snapshot_events()` | two legitimate emitters, so the allowlist names them with reasons instead of matching a pattern that would let a real third builder through |
+| `check:ci-worklist-path-resolution` | `worklist_for()` takes `project_start()`, never `os.getcwd()` or `project_root(project_start())` | three call sites passing a variable — all correct, which forced the rule to PROVE the binding rather than demand the call be inline |
+| `check:ci-fixture-event-timestamps` | a fixture's event derives its `at` from now, never a literal | one live instance in my own `--doctor` control |
+| `check:ci-gate-cwd-independence` | no gate names cwd to build a path | two real instances (`check-dkim-notify`, `check-locale-currency-integrity`), and it flagged ITSELF twice — its plants are code lines, not comments |
+
+All four are wired at three points and live in `quality-code`. They were first registered
+in `quality-static`, which has **no node at all**, so every one would have died on the
+runner rather than reported; `check:ci-gate-prerequisites` named that exactly. Planting
+the defect back proves that gate still fires.
+
+### The six bugs
+
+1. **Every compaction was reopening finished work.** Two hand-rolled snapshot builders
+   each re-emitted a `lease` for any item still carrying `until`/`worker`, and the fold's
+   lease arm sets state `">"` unconditionally — so a DONE item that had once been leased
+   came back in-flight. **39 of 189 items**, open count 5 → 44. Found by folding the
+   importer's snapshot in an isolated store and diffing it against the live fold, before
+   letting `--import-tmp` rename anything. Both call sites now share one builder.
+2. **`import_legacy` would have crashed**, on an undefined name, *after* writing its
+   snapshot — the worst possible moment.
+3. **`--doctor` passed on an empty store**, printing `store OK: 0 file(s)` and exiting 0.
+   Its own control caught it. A check that scanned nothing is not a pass.
+4. **`--migrate` resolved its worklist path unlike every other verb**, so under the
+   harness it read items from the fixture store while checking liveness against artifacts
+   beside the operator's real one — found none, called a demonstrably LIVE session idle,
+   and migrated its work. Sweeping found two more verbs resolving from cwd alone.
+5. **Same-second events tied, and the tie broke by FILENAME.** `at` has second
+   resolution; the stop-gate judge reopens an item and the session ticks it inside one
+   second; the judge writes `judge.jsonl`, so sorting on `at` alone let the reopen win and
+   **a ticked item came back open**. Events now carry `ns` and the fold sorts on
+   `(at, ns)`. Swept: 11 sort sites, one state-affecting (this), two already tie-broken,
+   four display sorts given an id tiebreak, three where a tie is not expressible.
+6. **Two gates' selftests tested one member of a declared set** — 1 of 8 kinds, and 1 of
+   4. Both now loop over the set, so the set IS the test plan: extend it and the selftest
+   fails until the matcher handles the new kind.
+
+### Three things worth keeping
+
+**A rule the tree does not hold is a migration, not a gate.** The cwd gate's first version
+also required every gate to anchor on its own file. That flagged 45 — the majority — and
+they are correct, because a gate here runs from the workspace root by contract. Narrowed
+to the unambiguous defect, it found two.
+
+**A fixture that hard-codes a date is a bomb with a date on it.** Twice in one wave: one
+crossed a retention window so the capture pruned its own body; one folded before the item
+it closed. Same rule, two mechanisms, now gated.
+
+**Editing a script bash is executing corrupts the run.** The pre-bash guard refused an
+append to a case file the suite was reading — correctly, and the item waited.
