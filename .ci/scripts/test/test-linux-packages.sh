@@ -348,6 +348,12 @@ phase4_validate_apt_metadata() {
     key_id=$(gpg --list-keys --with-colons 2>/dev/null | grep '^pub' | head -1 | cut -d: -f5 || true)
     RELEASE_GPG_PRIVATE_KEY=$(gpg --armor --export-secret-keys "$key_id" 2>/dev/null)
     export RELEASE_GPG_PRIVATE_KEY
+    # The build refuses a signing key that is not the published public key, so
+    # the throwaway key's public half is published for this run. Pointing it at
+    # the committed .asc instead would be the exact mismatch the check exists for.
+    RELEASE_GPG_PUBLIC_KEY_FILE="$gnupg_tmp/public.asc"
+    gpg --armor --export "$key_id" >"$RELEASE_GPG_PUBLIC_KEY_FILE" 2>/dev/null
+    export RELEASE_GPG_PUBLIC_KEY_FILE
 
     "$SCRIPT_DIR/../build/build-pkg-repo.sh" \
         --version "$TEST_VERSION" \
@@ -355,7 +361,20 @@ phase4_validate_apt_metadata() {
         --output "$repo_out" \
         --channel test
 
-    unset GNUPGHOME RELEASE_GPG_PRIVATE_KEY
+    # CONTROL: the same build against the COMMITTED public key must refuse,
+    # or the check above is decoration. Dry-run is not enough (it skips GPG).
+    if RELEASE_GPG_PUBLIC_KEY_FILE="$SCRIPT_DIR/../../../.ci/keys/gpg-public.asc" \
+        "$SCRIPT_DIR/../build/build-pkg-repo.sh" \
+        --version "$TEST_VERSION" \
+        --local-pkgs "$TEST_DIR/packages" \
+        --output "$TEST_DIR/repo-control" \
+        --channel test >/dev/null 2>&1; then
+        log_error "CONTROL FAILED: build-pkg-repo.sh accepted a signing key that is not the published public key"
+        return 1
+    fi
+    log_info "CONTROL: a signing key that is not the published public key is refused"
+
+    unset GNUPGHOME RELEASE_GPG_PRIVATE_KEY RELEASE_GPG_PUBLIC_KEY_FILE
     rm -rf "$gnupg_tmp"
 
     # Validate APT structure

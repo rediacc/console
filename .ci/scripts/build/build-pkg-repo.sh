@@ -14,6 +14,9 @@
 # Environment:
 #   RELEASE_GPG_PRIVATE_KEY     GPG private key for signing (base64 or armored)
 #   RELEASE_GPG_PASSPHRASE      GPG key passphrase (optional)
+#   RELEASE_GPG_PUBLIC_KEY_FILE Public key PUBLISHED as apt/gpg.key and rpm/gpg.key
+#                               (default .ci/keys/gpg-public.asc). The imported
+#                               private key MUST be this key; see the check below.
 #
 # Prerequisites: dpkg-dev, createrepo-c, gnupg, curl, jq
 
@@ -142,7 +145,27 @@ else
 
     # Export public key
     REPO_ROOT="$(get_repo_root)"
-    PUBLIC_KEY_FILE="$REPO_ROOT/.ci/keys/gpg-public.asc"
+    PUBLIC_KEY_FILE="${RELEASE_GPG_PUBLIC_KEY_FILE:-$REPO_ROOT/.ci/keys/gpg-public.asc}"
+
+    # THE PUBLISHED PUBLIC KEY MUST BE THE SIGNING KEY. Until 2026-09-04 nothing
+    # checked that: whatever key RELEASE_GPG_PRIVATE_KEY imported signed the
+    # repository, and the committed .asc was copied out beside it as gpg.key.
+    # A private key that is not that key (a rotation applied to the secret store
+    # and not to the file, or the reverse) would have shipped a repository every
+    # apt and dnf client rejects, and this script would have said "GPG private
+    # key imported" and exited 0. Found while a shadow compare flagged the two
+    # stored copies of the key as different bytes: proving them the SAME key
+    # meant verifying a shipped Release.gpg against the committed .asc by hand,
+    # which is exactly the check the build should have been making itself.
+    if [[ -f "$PUBLIC_KEY_FILE" ]]; then
+        want_fpr=$(gpg --show-keys --with-colons --with-fingerprint "$PUBLIC_KEY_FILE" 2>/dev/null | awk -F: '$1=="fpr"{print $10; exit}')
+        have_fpr=$(gpg --list-keys --with-colons --with-fingerprint "$GPG_KEY_ID" 2>/dev/null | awk -F: '$1=="fpr"{print $10; exit}')
+        if [[ -z "$want_fpr" || -z "$have_fpr" || "$want_fpr" != "$have_fpr" ]]; then
+            log_error "signing key ${have_fpr:-<none>} is not the published public key ${want_fpr:-<unreadable>} ($PUBLIC_KEY_FILE); a repository signed with it would fail verification on every client"
+            exit 1
+        fi
+        log_info "Signing key matches the published public key ($want_fpr)"
+    fi
 
     if [[ -f "$PUBLIC_KEY_FILE" ]]; then
         cp "$PUBLIC_KEY_FILE" "$OUTPUT_DIR/apt/gpg.key"
