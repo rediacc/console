@@ -1677,6 +1677,90 @@ def secret_shapes_in(text):
     return [r.pattern for r in _SECRET_SHAPES if r.search(str(text or ""))]
 
 
+def compact_store(worklist, root=None, me=None, projects_dir=None):
+    """Compact the TRACKED store: one snapshot, and only files nobody else can
+    still be appending to are cleared.
+
+    THE HAZARD, and why this is not just "rewrite the directory". Each file in
+    agent/worklist/ belongs to a different session, possibly on a different
+    machine. Rewriting one that a LIVE peer is appending to loses whatever it
+    wrote between this read and this write -- silently, because an append to a
+    file that has since been replaced simply lands in the old inode or past the
+    truncation point.
+
+    So: the fold is GLOBAL (an item added by one session and ticked by another
+    only folds correctly when every file is read), the snapshot is written to
+    the compactor's own file, and the ONLY files cleared are this session's own
+    and those whose writer is demonstrably not live. A live peer's file is left
+    exactly as it is; its events then simply outrank the snapshot's, which is
+    correct, because they are the newer truth.
+
+    The snapshot's `add` events carry each item's ORIGINAL `first` timestamp, so
+    a straggling event from a peer sorts after them and still wins.
+    """
+    if root is None:
+        root = C.project_root(C.project_start())
+    d = store_dir(root)
+    try:
+        files = sorted(d.glob("*.jsonl"))
+    except OSError:
+        return
+    if not files:
+        return
+    me8 = agent_session_slug((me or C.resolve_session_id() or "compact")[:8])
+    fold = load(worklist, sync=False)
+    events = _read_events(worklist, root)
+    dead_h = float(os.environ.get("WORKLIST_DEAD_HOURS", "24"))
+    keep, clear = [], []
+    for f in files:
+        writer = f.stem
+        if writer == me8 or writer.startswith("_"):
+            clear.append(f)
+            continue
+        verdict, why = session_liveness(worklist, writer, projects_dir, events)
+        newest = ""
+        for ev in events:
+            if str(ev.get("by") or "")[:8] == writer and str(ev.get("at") or "") > newest:
+                newest = str(ev.get("at") or "")
+        old_enough = True
+        if newest:
+            try:
+                old_enough = (
+                    C.utcnow() - C.parse_stamp(newest)
+                ).total_seconds() / 3600.0 >= dead_h
+            except Exception:  # noqa: BLE001
+                old_enough = False
+        if verdict in ("idle", "remote", "unknown") and old_enough:
+            clear.append(f)
+        else:
+            keep.append((f, verdict, why))
+
+    payload = snapshot_events(fold, by="compact")
+    for ev in payload:
+        ev.setdefault("h", host_hash())
+    target = writer_path(me8, root)
+    with open(events_lock_path(worklist), "w") as lock:
+        _flock(lock, LOCK_EX)
+        fd, tmp = tempfile.mkstemp(dir=str(d), prefix="compact")
+        with os.fdopen(fd, "w", encoding="utf-8") as f:
+            for ev in payload:
+                f.write(json.dumps(ev, separators=(",", ":")) + "\n")
+        os.replace(tmp, target)
+        for f in clear:
+            if f == target:
+                continue
+            try:
+                f.unlink()
+            except OSError:
+                pass
+    print(
+        "event log: compacted %d file(s) into %s (%d event(s) for %d item(s))"
+        % (len(clear), target.name, len(payload), len(fold.items))
+    )
+    for f, verdict, why in keep:
+        print("  kept %s: writer is %s (%s)" % (f.name, verdict, why))
+
+
 def doctor(root=None):
     """(problems, files, events) over the tracked store.
 
@@ -2104,23 +2188,9 @@ def compact(worklist):
         print("nothing to compact: %s absent" % worklist)
 
     # Event-log compaction: fold, then rewrite as one snapshot-shaped set.
-    #
-    # THE TRACKED STORE IS NOT COMPACTED HERE YET, and refusing is the honest
-    # shape. Compaction rewrites a file wholesale, and in agent/worklist/ the
-    # files belong to OTHER sessions and other machines; rewriting one a live
-    # peer is still appending to would lose whatever it wrote between the read
-    # and the write. The gate that makes it safe is session_liveness (own file
-    # plus demonstrably dead writers only), tracked as a task in
-    # agent/PLAN-migrate-command.md. Until it lands, this compacts the legacy
-    # TMPDIR log if one is still present and says why it did nothing otherwise.
     ep = events_path(worklist)
     if not ep.exists():
-        if any(store_dir().glob("*.jsonl")):
-            print(
-                "event log: tracked store at %s not compacted -- needs the "
-                "liveness gate so a live peer's file is never rewritten "
-                "(agent/PLAN-migrate-command.md)" % store_dir()
-            )
+        compact_store(worklist)
         return
     with open(events_lock_path(worklist), "w") as lock:
         _flock(lock, LOCK_EX)
