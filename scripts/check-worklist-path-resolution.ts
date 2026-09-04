@@ -38,6 +38,8 @@ const HOOKS = path.join(ROOT, '.claude', 'hooks');
 const OK = /worklist_for\(\s*(?:[A-Za-z_][A-Za-z0-9_]*\.)?project_start\(/;
 /** Its own definition and self-contained twin are not call sites. */
 const DEFINITION = /def\s+(worklist_for|_local_worklist_path)\b/;
+/** Floor for the corpus: see the VACUOUS refusal in main(). */
+const MIN_CALL_SITES = 10;
 
 interface Finding {
   file: string;
@@ -121,7 +123,10 @@ function selftest(): void {
   console.log('  PASS  CONTROL: project_start(event) is accepted too');
 
   // PLANT 1: the exact --migrate defect.
-  const doubled = w('doubled.py', 'def f():\n    wl = C.worklist_for(C.project_root(C.project_start()))\n');
+  const doubled = w(
+    'doubled.py',
+    'def f():\n    wl = C.worklist_for(C.project_root(C.project_start()))\n'
+  );
   const d = scan([doubled]);
   if (d.length !== 1 || !d[0]?.why.includes('project_root')) {
     console.error(`  FAIL  the doubled form was not caught: ${JSON.stringify(d)}`);
@@ -139,7 +144,10 @@ function selftest(): void {
   console.log('  PASS  the getcwd form is caught, and named');
 
   // The definition itself, and prose about the rule, must not be policed.
-  const def = w('def.py', 'def worklist_for(start):\n    return start\n# use worklist_for(os.getcwd()) is WRONG, says this comment\n');
+  const def = w(
+    'def.py',
+    'def worklist_for(start):\n    return start\n# use worklist_for(os.getcwd()) is WRONG, says this comment\n'
+  );
   if (scan([def]).length !== 0) {
     console.error('  FAIL  CONTROL: the definition or a comment was policed');
     process.exit(1);
@@ -167,31 +175,41 @@ function main(): void {
   // rather than the tree being clean. Zero call sites must FAIL.
   const sites = files.reduce(
     (n, f) => n + (fs.readFileSync(f, 'utf-8').match(/worklist_for\s*\(/g) ?? []).length,
-    0,
+    0
   );
-  if (sites === 0) {
-    console.error('✗ found no worklist_for() call at all; the matcher is broken, not the tree');
+  // A NAMED FLOOR, not merely "> 0". Zero is the obvious collapse; the quiet one
+  // is a matcher that still finds three call sites after a rename silently took
+  // the other seventeen out of view. The floor is well under the real count
+  // (20 at the time of writing) so ordinary churn does not trip it, and any
+  // drop past it says VACUOUS rather than printing a tick.
+  if (sites < MIN_CALL_SITES) {
+    console.error(
+      `✗ VACUOUS: found only ${sites} worklist_for() call site(s), below the floor of ` +
+        `${MIN_CALL_SITES}. The matcher is broken, not the tree.`
+    );
     process.exit(1);
   }
 
   const findings = scan(files);
   if (findings.length > 0) {
-    console.error(`✗ ${findings.length} worklist path resolution(s) bypassing the shared ladder:\n`);
+    console.error(
+      `✗ ${findings.length} worklist path resolution(s) bypassing the shared ladder:\n`
+    );
     for (const f of findings) {
       console.error(`  ${f.file}:${f.line}  ${f.text}`);
       console.error(`      ${f.why}`);
     }
     console.error(
-      '\n  Use C.worklist_for(C.project_start()) -- project_start()\'s ladder ENDS at cwd,\n' +
+      "\n  Use C.worklist_for(C.project_start()) -- project_start()'s ladder ENDS at cwd,\n" +
         '  so the shared form is a superset of every other spelling and never resolves\n' +
         '  worse. On 2026-09-04 the doubled form made --migrate read a fixture store while\n' +
-        '  checking liveness against the real one, so it moved a LIVE session\'s work.',
+        "  checking liveness against the real one, so it moved a LIVE session's work."
     );
     process.exit(1);
   }
   console.log(
     `✓ worklist path resolution: ${sites} call site(s) across ${files.length} hook file(s), ` +
-      'all through project_start()',
+      'all through project_start()'
   );
 }
 

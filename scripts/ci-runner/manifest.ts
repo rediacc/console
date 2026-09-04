@@ -1860,7 +1860,7 @@ export const GATES: readonly GateSpec[] = [
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
-      job: 'quality-static',
+      job: 'quality-code',
       step: 'Gate cwd independence',
     },
   },
@@ -1874,7 +1874,7 @@ export const GATES: readonly GateSpec[] = [
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
-      job: 'quality-static',
+      job: 'quality-code',
       step: 'Fixture event timestamps',
     },
   },
@@ -1888,7 +1888,7 @@ export const GATES: readonly GateSpec[] = [
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
-      job: 'quality-static',
+      job: 'quality-code',
       step: 'Worklist path resolution',
     },
   },
@@ -1901,7 +1901,7 @@ export const GATES: readonly GateSpec[] = [
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
-      job: 'quality-static',
+      job: 'quality-code',
       step: 'Worklist event builders',
     },
   },

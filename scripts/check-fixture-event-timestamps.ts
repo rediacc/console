@@ -42,14 +42,19 @@ const CASES = path.join(STOP, 'worklist-cases');
 function fixtureFiles(): string[] {
   const out: string[] = [];
   if (fs.existsSync(CASES)) {
-    out.push(...fs.readdirSync(CASES).filter((n) => n.endsWith('.sh')).map((n) => path.join(CASES, n)));
+    out.push(
+      ...fs
+        .readdirSync(CASES)
+        .filter((n) => n.endsWith('.sh'))
+        .map((n) => path.join(CASES, n))
+    );
   }
   if (fs.existsSync(STOP)) {
     out.push(
       ...fs
         .readdirSync(STOP)
         .filter((n) => n.startsWith('test-') && n.endsWith('.sh'))
-        .map((n) => path.join(STOP, n)),
+        .map((n) => path.join(STOP, n))
     );
   }
   return out.sort();
@@ -58,6 +63,9 @@ function fixtureFiles(): string[] {
 /** Event kinds the item fold reads. `report` is deliberately absent. */
 const FOLDED = ['state', 'lease', 'add', 'md', 'update', 'unlease', 'tomb', 'triage'];
 const LITERAL_AT = /["']at["']\s*:\s*["'](\d{4}-\d{2}-\d{2}T[^"']*)["']/;
+
+/** Floor for the corpus: see the VACUOUS refusal in main(). */
+const MIN_LITERALS = 30;
 
 interface Finding {
   file: string;
@@ -80,7 +88,12 @@ function scan(files: string[]): Finding[] {
       const ctx = `${lines[i - 1] ?? ''}\n${line}`;
       const ev = /["']ev["']\s*:\s*["']([a-z_]+)["']/.exec(ctx);
       if (!ev || !FOLDED.includes(ev[1] as string)) return;
-      out.push({ file: path.relative(ROOT, f), line: i + 1, ev: ev[1] as string, at: at[1] as string });
+      out.push({
+        file: path.relative(ROOT, f),
+        line: i + 1,
+        ev: ev[1] as string,
+        at: at[1] as string,
+      });
     });
   }
   return out;
@@ -95,7 +108,10 @@ function selftest(): void {
   };
 
   // THE PLANT: the exact 189c defect.
-  const bad = w('bad.sh', 'fh.write(json.dumps({"ev": "state", "id": i, "at": "2026-08-05T00:00:00Z"}))\n');
+  const bad = w(
+    'bad.sh',
+    'fh.write(json.dumps({"ev": "state", "id": i, "at": "2026-08-05T00:00:00Z"}))\n'
+  );
   const b = scan([bad]);
   if (b.length !== 1 || b[0]?.ev !== 'state') {
     console.error(`  FAIL  a literal-dated state event was not caught: ${JSON.stringify(b)}`);
@@ -112,7 +128,10 @@ function selftest(): void {
   console.log('  PASS  it reads the kind from the previous line too');
 
   // CONTROL: derived from now is the correct shape and must pass.
-  const good = w('good.sh', 'now = datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")\nfh.write(json.dumps({"ev": "state", "at": now}))\n');
+  const good = w(
+    'good.sh',
+    'now = datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")\nfh.write(json.dumps({"ev": "state", "at": now}))\n'
+  );
   if (scan([good]).length !== 0) {
     console.error('  FAIL  CONTROL: a now-derived timestamp was reported');
     process.exit(1);
@@ -147,11 +166,18 @@ function main(): void {
   // ANTI-VACUITY: the corpus must actually contain event literals, or the
   // matcher is broken rather than the fixtures being clean.
   const literals = files.reduce(
-    (n, f) => n + (fs.readFileSync(f, 'utf-8').match(/["']ev["']\s*:\s*["'][a-z_]+["']/g) ?? []).length,
-    0,
+    (n, f) =>
+      n + (fs.readFileSync(f, 'utf-8').match(/["']ev["']\s*:\s*["'][a-z_]+["']/g) ?? []).length,
+    0
   );
-  if (literals === 0) {
-    console.error('✗ found no event literals in the case files; the matcher is broken');
+  // A NAMED FLOOR, not merely "> 0": the quiet collapse is a matcher that
+  // still finds a handful after a rename hid the rest. The floor sits well
+  // under the real count (89 at the time of writing).
+  if (literals < MIN_LITERALS) {
+    console.error(
+      `✗ VACUOUS: found only ${literals} event literal(s), below the floor of ${MIN_LITERALS}. ` +
+        'The matcher is broken, not the tree.'
+    );
     process.exit(1);
   }
 
@@ -166,13 +192,13 @@ function main(): void {
         '  fold order: a tick dated in the past folds before the item it closes and does\n' +
         '  nothing, and the case then blames the code. Derive `at` from now.\n' +
         '  (The sibling failure is expiry: a constant date that drifts past a retention\n' +
-        '  window makes the capture prune its own body. Same rule, same fix.)',
+        '  window makes the capture prune its own body. Same rule, same fix.)'
     );
     process.exit(1);
   }
   console.log(
     `✓ fixture event timestamps: ${literals} event literal(s) across ${files.length} case file(s); ` +
-      'every folded one derives its date from now',
+      'every folded one derives its date from now'
   );
 }
 

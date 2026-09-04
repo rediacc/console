@@ -26,9 +26,6 @@ setup() {
     # written inside that repo made those cases fail for a reason that had
     # nothing to do with what they test. The layout under test is unchanged
     # (one directory, one file per writer); only its location moves.
-    export WORKLIST_STORE_DIR="$BASE/store"
-    rm -rf "$WORKLIST_STORE_DIR"
-    mkdir -p "$WORKLIST_STORE_DIR"
     # Reset EVERY knob run() reads. A plain `BG=...` in one case leaked into the
     # next two and silently suppressed a check, which cost a debugging round.
     BG='[]'
@@ -68,6 +65,14 @@ setup() {
     GHA=''
     rm -rf "$BASE"
     mkdir -p "$BASE/proj/.git" "$BASE/tmp/claude-worklist" "$BASE/tasks/session-deadbeef"
+    # AFTER the `rm -rf "$BASE"` above, not before it. This export used to sit at
+    # the top of setup(), so the directory it created was deleted moments later
+    # with the rest of the fixture and every case that planted a store file
+    # wrote into a path that no longer existed -- the file vanished silently and
+    # --doctor then reported an EMPTY store, which its own anti-vacuity arm
+    # correctly refused.
+    export WORKLIST_STORE_DIR="$BASE/store"
+    mkdir -p "$WORKLIST_STORE_DIR"
     # The fixture .git is a plain directory, so `git symbolic-ref` exits 128
     # and every branch-dependent check would be SKIPPED as no-branch across
     # the whole suite -- a gate that never fires in its own tests. The env

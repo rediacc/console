@@ -580,9 +580,14 @@ const CLOSURES = {
       '.ci/scripts/build/build-linux-pkg.sh',
       '.ci/scripts/build/build-pkg-repo.sh',
       '.ci/scripts/lib/common.sh',
-      // Sourced by all three scripts and read inline at ci.yml:714 for the
-      // nfpm version and its checksum.
+      // Sourced by all three scripts. It carries the nfpm version and its
+      // checksum, which ensure-nfpm.sh below is now the only reader of --
+      // ci.yml used to inline that fetch, and so did cd-stage.yml, and the two
+      // copies had already drifted (one verified the checksum, one did not).
       '.ci/config/constants.sh',
+      // Installs the pinned nfpm. Called by test-linux-packages.sh when nfpm is
+      // absent, which is what lets that gate run off a GitHub runner at all.
+      '.ci/scripts/build/ensure-nfpm.sh',
       // build-linux-pkg.sh:218-223 renders packages from it.
       '.ci/config/nfpm.yaml',
       // build-pkg-repo.sh:145-149 signs the repo metadata against it.

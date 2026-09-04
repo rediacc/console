@@ -52,8 +52,12 @@ const ALLOWED: Record<string, string> = {
   add_item: 'the --add verb: a genuinely new item, with a fresh id',
   set_state: 'the --tick/--defer verbs: one real state change to one named item',
   lease_item: 'the --lease verb: a real, newly created lease, not a re-emitted one',
-  migrate_items: 'the --migrate verb: its `add` is a NEW item and its `state` closes the original; both are real changes, not a reconstruction',
+  migrate_items:
+    'the --migrate verb: its `add` is a NEW item and its `state` closes the original; both are real changes, not a reconstruction',
 };
+
+/** Floor for the corpus: see the VACUOUS refusal in main(). */
+const MIN_EMISSIONS = 10;
 
 interface Finding {
   file: string;
@@ -103,9 +107,13 @@ function selftest(): void {
   const clean = path.join(tmp, 'clean.py');
   fs.writeFileSync(
     clean,
-    ['def snapshot_events(fold):', '    out = []', '    out.append({"ev": "lease", "id": 1})', '    return out', ''].join(
-      '\n',
-    ),
+    [
+      'def snapshot_events(fold):',
+      '    out = []',
+      '    out.append({"ev": "lease", "id": 1})',
+      '    return out',
+      '',
+    ].join('\n')
   );
   if (scan([clean]).length !== 0) {
     console.error('  FAIL  CONTROL: the shared builder itself was reported');
@@ -124,7 +132,7 @@ function selftest(): void {
       '        out.append({"ev": "lease", "id": r["id"]})',
       '    return out',
       '',
-    ].join('\n'),
+    ].join('\n')
   );
   const found = scan([planted]);
   if (found.length !== 1 || found[0]?.fn !== 'some_other_rebuild' || found[0]?.ev !== 'lease') {
@@ -136,7 +144,10 @@ function selftest(): void {
   // A non-stateful event must not be policed: over-blocking teaches people to
   // route around the gate, which is how a guard dies.
   const brief = path.join(tmp, 'brief.py');
-  fs.writeFileSync(brief, ['def anything(x):', '    return {"ev": "brief", "by": x}', ''].join('\n'));
+  fs.writeFileSync(
+    brief,
+    ['def anything(x):', '    return {"ev": "brief", "by": x}', ''].join('\n')
+  );
   if (scan([brief]).length !== 0) {
     console.error('  FAIL  CONTROL: a non-stateful event was policed');
     process.exit(1);
@@ -170,8 +181,14 @@ function main(): void {
     const src = fs.readFileSync(f, 'utf-8');
     return n + (src.match(/["']ev["']\s*:\s*["'][a-z_]+["']/g) ?? []).length;
   }, 0);
-  if (emissions === 0) {
-    console.error('✗ found no event emissions at all; the matcher is broken, not the tree');
+  // A NAMED FLOOR, not merely "> 0": the quiet collapse is a matcher that
+  // still finds a handful after a rename hid the rest. The floor sits well
+  // under the real count (26 at the time of writing).
+  if (emissions < MIN_EMISSIONS) {
+    console.error(
+      `✗ VACUOUS: found only ${emissions} event emission(s), below the floor of ${MIN_EMISSIONS}. ` +
+        'The matcher is broken, not the tree.'
+    );
     process.exit(1);
   }
 
@@ -187,13 +204,13 @@ function main(): void {
         '  item carrying until/worker, and the fold reads a lease as ">", so finished work\n' +
         '  came back as in-flight (39 of 189 items, 2026-09-04).\n' +
         '  If this really is a new legitimate emitter, add it to ALLOWED in\n' +
-        '  scripts/check-worklist-event-builders.ts with the reason it is not a rebuild.',
+        '  scripts/check-worklist-event-builders.ts with the reason it is not a rebuild.'
     );
     process.exit(1);
   }
   console.log(
     `✓ worklist event builders: ${emissions} emission(s) across ${files.length} file(s); ` +
-      `every stateful one is inside ${Object.keys(ALLOWED).length} allowed function(s)`,
+      `every stateful one is inside ${Object.keys(ALLOWED).length} allowed function(s)`
   );
 }
 

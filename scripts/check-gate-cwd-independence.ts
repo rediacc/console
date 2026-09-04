@@ -52,6 +52,9 @@ const DIRS = [
  *  the gate's own inputs. */
 const FROM_CWD =
   /(?:path\.(?:resolve|join)\(\s*process\.cwd\(\)|os\.path\.join\(\s*os\.getcwd\(\)|Path\(\s*os\.getcwd\(\)|cd\s+"?\$PWD)/;
+/** Floor for the corpus: see the VACUOUS refusal in main(). */
+const MIN_GATES = 100;
+
 interface Finding {
   file: string;
   why: string;
@@ -80,7 +83,10 @@ function scan(files: string[]): Finding[] {
       .join('\n');
     const rel = path.relative(ROOT, f);
     if (FROM_CWD.test(code)) {
-      out.push({ file: rel, why: 'resolves a path from the working directory instead of its own location' });
+      out.push({
+        file: rel,
+        why: 'resolves a path from the working directory instead of its own location',
+      });
       continue;
     }
   }
@@ -95,7 +101,10 @@ function selftest(): void {
     return p;
   };
 
-  const good = w('check-good.ts', "const R = path.resolve(import.meta.dirname, '..');\nfs.readFileSync(R + '/.ci/x');\n");
+  const good = w(
+    'check-good.ts',
+    "const R = path.resolve(import.meta.dirname, '..');\nfs.readFileSync(R + '/.ci/x');\n"
+  );
   if (scan([good]).length !== 0) {
     console.error('  FAIL  CONTROL: a self-anchored gate was reported');
     process.exit(1);
@@ -104,7 +113,10 @@ function selftest(): void {
 
   // PLANT 1: the negative clause.
   const CWD_CALL = ['pro', 'cess.', 'cwd', '()'].join(''); // spelled indirectly: see above
-  const cwd = w('check-cwd.ts', `const R = path.resolve(${CWD_CALL}, '..');\nfs.readFileSync('.ci/x');\n`);
+  const cwd = w(
+    'check-cwd.ts',
+    `const R = path.resolve(${CWD_CALL}, '..');\nfs.readFileSync('.ci/x');\n`
+  );
   const c = scan([cwd]);
   if (c.length !== 1 || !c[0]?.why.includes('working directory')) {
     console.error(`  FAIL  the cwd-derived path was not caught: ${JSON.stringify(c)}`);
@@ -125,7 +137,7 @@ function selftest(): void {
   // CONTROL: prose about the rule must not trip it.
   const prose = w(
     'check-prose.sh',
-    `SCRIPT_DIR="$(dirname "\${BASH_SOURCE[0]}")"\n# never use path.resolve(${CWD_CALL}, "..") in a gate\ngrep x "$SCRIPT_DIR/../.ci/y"\n`,
+    `SCRIPT_DIR="$(dirname "\${BASH_SOURCE[0]}")"\n# never use path.resolve(${CWD_CALL}, "..") in a gate\ngrep x "$SCRIPT_DIR/../.ci/y"\n`
   );
   if (scan([prose]).length !== 0) {
     console.error('  FAIL  CONTROL: a comment about the rule was policed');
@@ -150,9 +162,16 @@ function main(): void {
     return;
   }
   const files = gateFiles();
-  // ANTI-VACUITY: an empty corpus is a broken matcher, not a clean tree.
-  if (files.length === 0) {
-    console.error('✗ found no gate scripts to check; refusing a verdict');
+  // A NAMED FLOOR, not merely "> 0". Zero is the obvious collapse; the quiet one
+  // is a directory rename that leaves the glob finding a handful of gates while
+  // the rest go unchecked, and a tick over 8 files reads exactly like a tick
+  // over 230. The floor sits well under the real count (230 at the time of
+  // writing) so ordinary churn does not trip it.
+  if (files.length < MIN_GATES) {
+    console.error(
+      `✗ VACUOUS: found only ${files.length} gate script(s), below the floor of ` +
+        `${MIN_GATES}. The corpus is wrong, not the tree.`
+    );
     process.exit(1);
   }
   const findings = scan(files);
@@ -165,11 +184,13 @@ function main(): void {
         '  `pathlib.Path(__file__).resolve().parents[N]`. A gate runs from the\n' +
         '  workspace root under npm, from elsewhere under the runner, and from\n' +
         '  wherever a session typed it -- test-gate-lanes.sh passed by hand and\n' +
-        '  exited 127 under run-all.sh for exactly this.',
+        '  exited 127 under run-all.sh for exactly this.'
     );
     process.exit(1);
   }
-  console.log(`✓ gate cwd independence: ${files.length} gate script(s), all anchored on their own location`);
+  console.log(
+    `✓ gate cwd independence: ${files.length} gate script(s), all anchored on their own location`
+  );
 }
 
 main();
