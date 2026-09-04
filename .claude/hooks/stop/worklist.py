@@ -774,7 +774,13 @@ def _migrate_cli(argv):
         sys.stderr.write(M.CLI_MIGRATE_USAGE)
         sys.exit(2)
     _identity_or_die(me, _die2)
-    worklist = C.worklist_for(C.project_root(C.project_start()))
+    # C.worklist_for(C.project_start()), NOT worklist_for(project_root(...)).
+    # The doubled form resolves to the REPO root and ignores CLAUDE_PROJECT_DIR,
+    # so under the test harness this verb read its items from the fixture store
+    # (which the env var does redirect) while looking for `.lastevent-*` beside
+    # the OPERATOR'S REAL worklist -- found none, called a live session idle, and
+    # migrated it. Every other verb here uses the single form; so does this one.
+    worklist = C.worklist_for(C.project_start())
     root = C.project_root(C.project_start())
     projects = C.projects_dir(root)
     fold = S.load(worklist, sync=True)
@@ -1368,7 +1374,12 @@ def main():
         me = sys.argv[2]
         _identity_or_die(me, _die2)
         branch = sys.argv[3]
-        wl = C.worklist_for(os.getcwd())
+        # project_start(), not getcwd(): its ladder ends AT cwd, so this only
+        # adds the CLAUDE_PROJECT_DIR rung every other verb already honours.
+        # Resolving from cwd alone walks into a nested repo (private/renet,
+        # private/growth) and reads the wrong store, which is the incident
+        # project_start was written for.
+        wl = C.worklist_for(C.project_start())
         fold = S.load(wl, sync=False)
         body = E.render(wl, fold)
         # WORKLIST_PUBLISH_ROOT lets a test point the snapshot somewhere
@@ -1404,7 +1415,7 @@ def main():
 
         me = sys.argv[2]
         _identity_or_die(me, _die2)
-        wl = C.worklist_for(os.getcwd())
+        wl = C.worklist_for(C.project_start())  # see the note on --publish above
         sub = sys.argv[3]
         rest = sys.argv[4:]
         if sub == "new":
@@ -1742,7 +1753,7 @@ def main():
     if sys.argv[1:2] == ["--import-tmp"]:
         # IDENTITY-FREE, like --path and --compact: it moves no item and claims
         # no ownership, it relocates bytes this machine already had.
-        wl = C.worklist_for(C.project_root(C.project_start()))
+        wl = C.worklist_for(C.project_start())
         tgt, msg = S.import_legacy(wl, again="--again" in sys.argv[2:])
         print(msg)
         if tgt is not None:

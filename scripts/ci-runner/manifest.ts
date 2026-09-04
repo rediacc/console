@@ -1851,6 +1851,20 @@ export const GATES: readonly GateSpec[] = [
     },
   },
   {
+    id: 'check:ci-worklist-path-resolution',
+    run: 'npm run check:ci-worklist-path-resolution',
+    gate: true,
+    // why: three verbs each spelled "find the worklist" differently and only the
+    // unlucky one was ever wrong; a per-site test cannot see a cross-site rule
+    leaves: ['scripts/check-worklist-path-resolution.ts'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-static',
+      step: 'Worklist path resolution',
+    },
+  },
+  {
     id: 'check:ci-worklist-event-builders',
     run: 'npm run check:ci-worklist-event-builders',
     gate: true,

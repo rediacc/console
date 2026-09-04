@@ -184,6 +184,10 @@ jobs:
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: npm run check:ci-worklist-event-builders
 
+      - name: Worklist path resolution
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: npm run check:ci-worklist-path-resolution
+
       - name: Compose env
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: .ci/scripts/quality/check-compose-env.sh
