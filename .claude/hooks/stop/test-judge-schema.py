@@ -1446,4 +1446,45 @@ finally:
 if Tally.fails:
     print(f"FAIL: {Tally.fails} of {Tally.count} control(s) failed", file=sys.stderr)
     sys.exit(1)
+# --------------------------------------------------------------------------
+# THE JUDGE LOG and the streak it exists to make honest.
+# --------------------------------------------------------------------------
+with tempfile.TemporaryDirectory() as _jd:
+    _jl = pathlib.Path(_jd) / "wl.judge-abc.jsonl"
+    control("a log that does not exist yet is a streak of zero", wl_judge.continue_streak(_jl), 0)
+    wl_judge.log_verdict(_jl, "continue", "do the thing")
+    wl_judge.log_verdict(_jl, "continue", "still")
+    control("two continues in a row read as 2", wl_judge.continue_streak(_jl), 2)
+    wl_judge.log_verdict(_jl, "stop", "fine")
+    control("a stop ENDS the run -- the advice landed", wl_judge.continue_streak(_jl), 0)
+    wl_judge.log_verdict(_jl, "continue", "again")
+    control("and a later continue starts a new run of 1", wl_judge.continue_streak(_jl), 1)
+    wl_judge.log_verdict(_jl, "unavailable", "", "boom")
+    control("an unavailable judge is not a continue", wl_judge.continue_streak(_jl), 0)
+    control(
+        "the log records the reason, so what the judge said survives the session",
+        "do the thing" in _jl.read_text(),
+        True,
+    )
+    # A log that cannot be written must never take a stop with it.
+    wl_judge.log_verdict(pathlib.Path(_jd) / "no-such-dir" / "x.jsonl", "continue", "r")
+    control("an unwritable log is swallowed, not raised", True, True)
+    control(
+        "the path convention matches the block counter's",
+        wl_judge.judge_log_path(pathlib.Path("/t/wl.md"), "abc").name,
+        "wl.judge-abc.jsonl",
+    )
+
+control(
+    "a regression-gate stop is a fix stop, so brave-default steps aside",
+    wl_judge.is_fix_stop(wl_judge._REGGATE_MARKER + " ...more prompt..."),
+    True,
+)
+control(
+    "CONTROL: an ordinary stop is not, so the brave-default rule still fires",
+    wl_judge.is_fix_stop("some other section"),
+    False,
+)
+control("CONTROL: an empty extra is not a fix stop", wl_judge.is_fix_stop(""), False)
+
 print(f"{Tally.count} control(s) passed")

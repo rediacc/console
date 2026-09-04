@@ -5477,6 +5477,13 @@ def run_stop(event, event_ok, worklist, hook_file):
     judge_cached = False
     if (something_remains or reg_signals) and not wl_judge.JUDGE_DISABLED:
         streak = int(counter.read_text()) if counter.exists() else 0
+        # THE JUDGE IS ASKED ABOUT ITS OWN HISTORY, not the battery's. `counter`
+        # counts every stop block from every check; the prompt calls the number
+        # "times this gate has already said continue" and tells the judge to
+        # distrust itself above 3. On 2026-09-04 it read 69 while the judge had
+        # spoken a handful of times. See wl_judge.continue_streak.
+        judge_log = wl_judge.judge_log_path(worklist, me8)
+        judge_streak = wl_judge.continue_streak(judge_log)
         reg_scripts = wl_reggate.package_scripts(root) if reg_signals else {}
         reg_extra = ""
         if reg_signals:
@@ -5566,7 +5573,7 @@ def run_stop(event, event_ok, worklist, hook_file):
                 remaining_lines,
                 len(in_flight),
                 last_msg,
-                streak,
+                judge_streak,
                 loop_desc,
                 cited_excerpts(root, last_msg),
                 extra=reg_extra
@@ -5603,6 +5610,7 @@ def run_stop(event, event_ok, worklist, hook_file):
             # FAIL CLOSED, by operator instruction. A judge that cannot answer
             # must not become the way out.
             counter.write_text(str(streak + 1))
+            wl_judge.log_verdict(judge_log, "unavailable", "", err)
             C.emit(
                 {
                     "systemMessage": "Stop hook: judge unavailable (%s). Blocking, per "
@@ -5771,12 +5779,13 @@ def run_stop(event, event_ok, worklist, hook_file):
                     }
                 )
         judged_ok = verdict["verdict"] == "stop"
+        wl_judge.log_verdict(judge_log, verdict["verdict"], verdict.get("reason", ""))
         if verdict["verdict"] == "continue":
             counter.write_text(str(streak + 1))
             C.emit(
                 {
                     "systemMessage": "Stop hook: judge says continue (%d in a row). %s"
-                    % (streak + 1, verdict["reason"][:110]),
+                    % (judge_streak + 1, verdict["reason"][:110]),
                     "decision": "block",
                     "reason": M.R_JUDGE_CONTINUE
                     % (

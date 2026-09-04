@@ -1992,8 +1992,11 @@ session's write access, and the issue carries evidence plus a ready-to-run
 brief. An issue with no named door is a report wearing a resolution's clothes:
 answer "continue" and direct the session to fix the finding.
 
-Consecutive times this gate has already said continue: %(streak)d. If that number
-is above 3, weigh heavily whether your advice is actually actionable.
+Consecutive times THIS GATE has already said continue: %(streak)d. If that number
+is above 3, weigh heavily whether your advice is actually actionable: three stops
+in a row where the session did not do what you told it means the advice, not the
+session, is what has not worked. Say what would be different this time, or say
+stop.
 
 Remaining work the harness is tracking:
 %(remaining)s

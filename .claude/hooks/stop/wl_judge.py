@@ -662,6 +662,75 @@ def bank_stop_verdict(state_doc, sig, message, reason):
 _REGGATE_MARKER = "A FIX LANDED THIS TURN"
 
 
+# --------------------------------------------------------------------------
+# THE JUDGE LOG, and the only honest source of the judge's own streak.
+#
+# The prompt used to say "Consecutive times this gate has already said
+# continue: N" and was handed `worklist.blocks-<me8>` -- the count of ALL stop
+# blocks, from every check in the battery. On 2026-09-04 that number read 69
+# while the judge itself had spoken a handful of times. The sentence asks the
+# judge to distrust its own advice after 3, so a counter that runs 20x fast
+# turns a useful brake into permanent self-doubt about a history that did not
+# happen.
+#
+# A verdict log fixes the number and is worth having on its own: it is the only
+# record of what the judge actually said, which until now existed nowhere.
+# --------------------------------------------------------------------------
+
+JUDGE_LOG_CAP = 400
+
+
+def judge_log_path(worklist, me8):
+    """Per-session, beside the store, same convention as the block counter."""
+    return worklist.with_suffix(".judge-%s.jsonl" % me8)
+
+
+def log_verdict(path, verdict, reason, error=None):
+    """Append one line. Best-effort: a log that cannot be written must never
+    take a stop with it, so every failure here is swallowed deliberately."""
+    try:
+        rec = {
+            "ts": int(time.time()),
+            "verdict": verdict,
+            "reason": (reason or "")[:400],
+        }
+        if error:
+            rec["error"] = str(error)[:200]
+        with open(path, "a", encoding="utf-8") as fh:
+            fh.write(json.dumps(rec, sort_keys=True) + "\n")
+        # Bounded: the file is per session, but a long autonomous night is long.
+        lines = path.read_text(encoding="utf-8").splitlines()
+        if len(lines) > JUDGE_LOG_CAP * 2:
+            path.write_text("\n".join(lines[-JUDGE_LOG_CAP:]) + "\n", encoding="utf-8")
+    except (OSError, ValueError, TypeError):
+        pass
+
+
+def continue_streak(path):
+    """Consecutive trailing `continue` verdicts. Anything else -- a stop, an
+    unavailable judge -- ends the run, because the sentence in the prompt is
+    about advice that kept not landing, and a stop means it landed."""
+    try:
+        lines = pathlib.Path(path).read_text(encoding="utf-8").splitlines()
+    except OSError:
+        return 0
+    n = 0
+    for line in reversed(lines):
+        try:
+            rec = json.loads(line)
+        except ValueError:
+            break
+        if rec.get("verdict") != "continue":
+            break
+        n += 1
+    return n
+
+
+def is_fix_stop(extra):
+    """Is this stop already asking the regression-gate question?"""
+    return _REGGATE_MARKER in (extra or "")
+
+
 def judge_schema_for(extra):
     """JUDGE_SCHEMA, with each optional object required iff the prompt asks for it.
 
@@ -712,7 +781,15 @@ def run_judge(
     # THE BRAVE-DEFAULT rule rides the same call on its own trigger: a parked
     # decision whose DEFAULT does nothing. Its trigger is the remaining list, not
     # `extra`, so the two rules are independent and either may be asked alone.
-    brave_extra = BD.prompt_section(remaining_lines)
+    #
+    # NOT ON A FIX STOP. A regression-gate stop is already asking the judge to
+    # rule on a fix's test coverage AND its sibling sweep; adding "and by the
+    # way, is that parked question's DEFAULT brave enough" makes one call carry
+    # three unrelated judgements, and the parked question is the one least
+    # connected to what the session just did. It is not dropped, only deferred:
+    # the trigger is the remaining list, which does not go away, so the same
+    # item is asked about on the next stop that is not a fix stop.
+    brave_extra = "" if is_fix_stop(extra) else BD.prompt_section(remaining_lines)
     extra = (extra or "") + sweep_extra + brave_extra
     prompt = M.JUDGE_PROMPT % {
         "streak": streak,
