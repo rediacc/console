@@ -9,21 +9,6 @@
 # Minor/patch updates for non-blocked packages will fail CI. Major updates
 # are always reported but never auto-upgraded regardless of this list.
 
-# Docker SDK — RE-REVIEWED 2026-09-04 by running the upgrade, and the previous reason
-# was half wrong. It claimed "v26+ breaks client.NewClientWithOpts signature ... requires
-# rewrite of renet docker client". Measured against v28.5.2+incompatible with
-# go-connections v0.8.1: NewClientWithOpts, WithHost, WithAPIVersionNegotiation, Close,
-# Info, ContainerList(ctx, container.ListOptions{}) and ContainerStats all compile
-# unchanged. There is no client rewrite in this.
-#
-# What DOES break is seven call sites in three files, all of them type RENAMES:
-#   pkg/stats/stats.go:39,105        types.StatsJSON
-#   pkg/hub/containers.go:40,41,392,404  types.ExecConfig, types.ExecStartCheck
-#   pkg/hub/audit.go:84              types.EventsOptions
-# each moved out of api/types into api/types/container and api/types/events.
-github.com/docker/docker  # BLOCKER: v28 moves seven types renet uses out of api/types (StatsJSON, ExecConfig, ExecStartCheck, EventsOptions); the edit is small but it changes what renet sends to a live daemon, so it lands with an E2E run behind it rather than beside an unrelated PR
-github.com/docker/go-connections  # BLOCKER: v0.8.1 builds fine on its own, but it is only reachable together with docker/docker v28 above; unpinning it alone leaves v25 without sockets.DialPipe, so the two move as one
-
 # go-landlock — sandbox isolation primitive (security-critical)
 github.com/landlock-lsm/go-landlock  # BLOCKER: v0.9.0 is a 0.x minor that can change the Landlock config API; this gates repo-sandbox isolation, so adoption needs sandbox-behavior validation on a live cluster before bumping
 

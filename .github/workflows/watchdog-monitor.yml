@@ -74,37 +74,6 @@ jobs:
             .github/actions
             .ci/config
 
-      # THE FETCH RUNS FIRST HERE, AND THAT ORDERING IS THE POINT -- both halves of it.
-      #
-      # It must be EARLY, because the monitor below now CONSUMES this value: the
-      # tier-1 classifier reads CLOUDFLARE_API_TOKEN from Bitwarden. While nothing
-      # consumed it, the step sat LAST under always(), and that was right at the time:
-      # on 2026-09-03 ANTHROPIC_CLAUDE_CODE_OAUTH_TOKEN came back MISMATCH, the step
-      # exited 1, and run 33704079162 reported "failure" having monitored nothing at
-      # all -- a migration scaffold had switched off the mechanism that watches every
-      # other CI run, and the only symptom was a red watchdog, which reads like the
-      # watchdog doing its job.
-      #
-      # continue-on-error is what keeps that lesson intact after the move. This job is
-      # the net under every other run, so a Bitwarden outage must not take it out: a
-      # failed fetch leaves BWS_CLOUDFLARE_API_TOKEN empty, tier 1 is skipped, and the
-      # Anthropic tier classifies -- exactly what already happens when tier 1 returns
-      # HTTP 402. The comparator still runs LAST under always(), so a mismatch is just
-      # as loud as before and still cannot stop the monitor from running.
-      - name: Fetch secrets from Bitwarden
-        # Both lines are load-bearing and CHECK 6 of check-workflow-gates.sh
-        # enforces them: continue-on-error means this step cannot fail the job,
-        # timeout-minutes means it cannot hang it either. A step ahead of the
-        # monitor that merely blocks kills the watch as dead as one that exits 1.
-        continue-on-error: true
-        timeout-minutes: 2
-        uses: ./.github/actions/bws-secrets
-        with:
-          access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
-          secrets: |
-            ANTHROPIC_CLAUDE_CODE_OAUTH_TOKEN > BWS_ANTHROPIC_CLAUDE_CODE_OAUTH_TOKEN
-            CLOUDFLARE_API_TOKEN > BWS_CLOUDFLARE_API_TOKEN
-
       # Deterministic attempt-cap backstop, deliberately OUTSIDE the AI-driven
       # monitor process it guards: a misclassification loop cannot talk its way
       # past a separate step that just reads run_attempt. Writes
@@ -167,7 +136,7 @@ jobs:
           # very action taken in response to it.
           WATCHDOG_LOG_CAPTURE_DIR: ${{ runner.temp }}/watchdog-logs
           # Classifier tier 1: Cloudflare / DeepSeek V4 Pro.
-          CLOUDFLARE_API_TOKEN: ${{ env.BWS_CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
           # Classifier tier 2: Anthropic, on the org's OAuth token. Tier 1 has
           # been returning HTTP 402 (billing) continuously, which is an
@@ -223,6 +192,33 @@ jobs:
           .ci/scripts/ci/dispatch-watchdog.sh --run-id "$TARGET_RUN_ID" \
             --generation "$NEXT" --pending-rerun "${PENDING_RERUN:-false}" \
             --pr-number "$PR_NUMBER" --head-ref "$HEAD_REF"
+
+      # THE SHADOW RUNS LAST HERE, AND THAT ORDERING IS THE POINT.
+      #
+      # On 2026-09-03 this step sat BEFORE "Monitor jobs and cancel on failure",
+      # ANTHROPIC_CLAUDE_CODE_OAUTH_TOKEN came back MISMATCH, the step exited 1, and
+      # run 33704079162 reported "failure" having monitored NOTHING. A temporary
+      # migration scaffold had switched off the mechanism that watches every other CI
+      # run, and the only symptom was a red watchdog, which reads like the watchdog
+      # doing its job. Last + always() keeps a mismatch just as loud while the monitor,
+      # the artifact upload and the generation dispatch have all already happened.
+      #
+      # THIS JOB IS ALSO THE ONE JOB THE CUTOVER SKIPS, deliberately. Consuming the
+      # Bitwarden value would mean moving this fetch ahead of the monitor, and a step
+      # there can only be made harmless with `continue-on-error`, which
+      # check-workflows.sh bans outright. The trade is not worth it: the value in
+      # question is the tier-1 classifier's token, and tier 1 has been returning HTTP
+      # 402 continuously (see the comment on the Anthropic tier below), so flipping it
+      # buys a dead code path a policy exception. The read below stays on GitHub, and
+      # this job's org secret retires with the last of them rather than before.
+      - name: Fetch shadow secrets from Bitwarden
+        if: always()
+        uses: ./.github/actions/bws-secrets
+        with:
+          access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
+          secrets: |
+            ANTHROPIC_CLAUDE_CODE_OAUTH_TOKEN > BWS_ANTHROPIC_CLAUDE_CODE_OAUTH_TOKEN
+            CLOUDFLARE_API_TOKEN > BWS_CLOUDFLARE_API_TOKEN
 
       - name: Compare shadow secrets against GitHub
         if: always()

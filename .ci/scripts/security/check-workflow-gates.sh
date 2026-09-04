@@ -812,6 +812,18 @@ fi
 # somebody once thought about a step, these two prove the step cannot take the
 # watchdog down no matter what it does. PREREQS stays for the steps that must be
 # allowed to fail, because the monitor cannot run correctly without them.
+#
+# THE continue-on-error DOOR IS CURRENTLY CLOSED IN THIS REPO, and saying so here
+# matters more than the door itself. check-workflows.sh bans the keyword outright
+# ("Silently ignores step/job failures"), so no workflow can walk through it today
+# -- as this session found by trying: the watchdog's Bitwarden fetch was moved ahead
+# of the monitor with continue-on-error, this check accepted it on the property, and
+# the banned-patterns gate refused it four minutes into CI. The move was reverted.
+#
+# The rule stays as written rather than being narrowed back to a name list, because
+# the property is the thing that is actually true and the other gate's ban is a
+# policy on top of it. If that ban is ever relaxed, this admits the case correctly
+# and its test already proves both answers. Until then, PREREQS is the only way in.
 # =============================================================================
 log_info "Checking that nothing optional precedes the watchdog's monitor step"
 
