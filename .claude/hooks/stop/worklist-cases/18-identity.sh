@@ -788,12 +788,18 @@ phantom_store phantom1 90
 # silently do not happen -- which made this control accuse a phantom that had in
 # fact been closed.
 python3 - <(wl_events) "${WL%.md}.events.jsonl" <<'PYEOF'
-import json, sys
+import datetime, json, sys
+now = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 ids = [json.loads(l)["id"] for l in open(sys.argv[1]) if l.strip()
        and json.loads(l).get("by") == "phantom1"]
 with open(sys.argv[2], "a", encoding="utf-8") as fh:
     for i in ids:
-        fh.write(json.dumps({"ev": "state", "id": i, "at": "2026-08-05T00:00:00Z",
+        # NOW, not a constant. The store reader sorts by timestamp before
+        # folding (that is what makes a union of two machines' histories
+        # correct), so a tick dated 2026-08-05 folds BEFORE the add it is
+        # meant to close and has no effect. Append order stopped being fold
+        # order the day the store became a directory.
+        fh.write(json.dumps({"ev": "state", "id": i, "at": now,
                              "by": "phantom1", "s": "x", "note": "done"}) + "\n")
 PYEOF
 newturn
