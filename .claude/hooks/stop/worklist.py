@@ -1741,6 +1741,18 @@ def main():
         except Exception as exc:  # noqa: BLE001 -- see above: never block a teammate
             sys.stderr.write("teammate-idle journal skipped: %s\n" % exc)
         return
+    if sys.argv[1:2] == ["--import-tmp"]:
+        # IDENTITY-FREE, like --path and --compact: it moves no item and claims
+        # no ownership, it relocates bytes this machine already had.
+        wl = C.worklist_for(C.project_root(C.project_start()))
+        tgt, msg = S.import_legacy(wl, again="--again" in sys.argv[2:])
+        print(msg)
+        if tgt is not None:
+            print("commit it by name:  git add %s" % tgt)
+        sys.exit(0 if tgt is not None else 1)
+    if sys.argv[1:2] == ["--store"]:
+        print(S.store_dir(C.project_root(C.project_start())))
+        return
     if sys.argv[1:2] == ["--migrate"]:
         _migrate_cli(sys.argv[1:])
         return

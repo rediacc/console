@@ -1579,6 +1579,131 @@ def session_liveness(worklist, prefix, projects_dir=None, events=None):
     return "idle", "no artifact here newer than %d min (newest event %s)" % (LIVE_MIN, newest)
 
 
+def snapshot_events(fold, by="compact"):
+    """The minimal, LOSSLESS set of events that folds back to `fold`.
+
+    Extracted from compact() so the importer writes exactly what a compaction
+    would: the same carry-over of bt/ln/upd/tr/ju (whose loss turned a justified
+    deferral into an unjustified one, and collapsed every liveness age onto
+    creation time) and the same lease re-emission. Two writers of this shape
+    would drift; one is the point.
+    """
+    at = C.stamp_now()
+    out = []
+    md_add = [
+        {"k": r["id"], "s": r["state"], "o": r["owner"], "t": r["text"], "at": r["first"]}
+        for r in fold.items
+        if r["origin"] == "md"
+    ]
+    if md_add:
+        out.append({"ev": "md", "at": at, "h": fold.md_hash, "add": md_add})
+    for e in fold.lineage:
+        out.append(
+            {
+                "ev": "lineage",
+                "at": e.get("at", at),
+                "by": by,
+                "prev": e["prev"],
+                "next": e["next"],
+                "via": e.get("via", ""),
+                "ev_id": e.get("ev_id", ""),
+                "shared": e.get("shared"),
+                "prev_tx": e.get("prev_tx", ""),
+                "next_tx": e.get("next_tx", ""),
+            }
+        )
+    for r in fold.items:
+        if r["origin"] != "cli":
+            continue
+        add_ev = {
+            "ev": "add",
+            "id": r["id"],
+            "at": r["first"],
+            "by": by,
+            "s": r["state"],
+            "o": r["owner"],
+            "t": r["text"],
+        }
+        for key, field in (("bt", "basetext"), ("ln", "lastnote"), ("tr", "triage"), ("ju", "just")):
+            if r.get(field) and not (field == "basetext" and r["basetext"] == r["text"]):
+                add_ev[key] = r[field]
+        if r.get("upd") and r["upd"] != r["first"]:
+            add_ev["upd"] = r["upd"]
+        if r.get("mg"):
+            add_ev["mg"] = r["mg"]
+        out.append(add_ev)
+        # ONLY FOR AN ITEM THAT IS ACTUALLY IN FLIGHT. The fold's lease arm sets
+        # state = ">" unconditionally, and a DONE item that was leased at some
+        # point still carries `until`/`worker` as history -- so re-emitting the
+        # lease for it RESURRECTS it. Measured on this repo's own store while
+        # verifying the importer: 39 of 189 items flipped from [x] to [>] and
+        # the open count went from 5 to 44. compact() carried the identical
+        # construction, so every compaction had been quietly reopening old
+        # work; folding both onto this one builder fixes it in both places.
+        if r["state"] == ">" and (r.get("until") or r.get("worker")):
+            out.append(
+                {
+                    "ev": "lease",
+                    "id": r["id"],
+                    "at": r["upd"],
+                    "by": by,
+                    "until": r.get("until", ""),
+                    "worker": r.get("worker", ""),
+                }
+            )
+    return out
+
+
+def import_legacy(worklist, again=False, root=None):
+    """Snapshot the legacy TMPDIR log into the tracked store, once per host.
+
+    THE MOVE IS GAP-FREE WITHOUT THIS, and that is exactly why it is a separate
+    verb rather than something that happens on its own. `_read_events` unions
+    the legacy file, so every open item keeps blocking from the moment the code
+    changes; what the union does NOT do is make that history portable, because
+    it lives in TMPDIR on one machine. This is the step that puts it in git.
+
+    Per host, because two machines each have their own TMPDIR log and a shared
+    filename would collide; the host hash keeps them apart and the union folds
+    both. The legacy file is RENAMED rather than deleted -- an import that got
+    something wrong should be recoverable from the bytes it read.
+    """
+    if root is None:
+        root = C.project_root(C.project_start())
+    legacy = events_path(worklist)
+    if not legacy.exists():
+        return None, "no legacy log at %s; nothing to import" % legacy
+    target = store_dir(root) / ("_import-%s.jsonl" % host_hash())
+    if target.exists() and not again:
+        return None, (
+            "%s already exists, so this host has been imported; pass --again to "
+            "redo it (the existing file is left in place)" % target
+        )
+    fold = load(worklist, sync=False)
+    payload = snapshot_events(fold, by="import")
+    for ev in payload:
+        ev.setdefault("h", host_hash())
+    target.parent.mkdir(parents=True, exist_ok=True)
+    with open(target, "w", encoding="utf-8") as f:
+        for ev in payload:
+            f.write(json.dumps(ev, separators=(",", ":")) + "\n")
+    moved = legacy.with_suffix(".jsonl.imported-%s" % _FS_RE.sub("", C.stamp_now()))
+    try:
+        legacy.rename(moved)
+    except OSError as exc:
+        return target, "wrote %s but could NOT rename %s (%s): it is still being read" % (
+            target,
+            legacy,
+            exc,
+        )
+    return target, "imported %d item(s) and %d lineage edge(s) into %s; legacy log kept at %s" % (
+        len([e for e in payload if e.get("ev") == "add"]),
+        len(fold.lineage),
+        target,
+        moved,
+    )
+
+
 def migrate_candidates(worklist, fold, me, projects_dir=None, events=None):
     """Sessions with un-migrated remaining work that are not demonstrably live.
 
@@ -1930,90 +2055,14 @@ def compact(worklist):
         # markdown state in memory, and the rewrite below records it with the
         # current markdown hash, so nothing raced is lost.
         fold = load(worklist, sync=False)
-        at = C.stamp_now()
-        out = []
-        md_add = [
-            {"k": r["id"], "s": r["state"], "o": r["owner"], "t": r["text"], "at": r["first"]}
-            for r in fold.items
-            if r["origin"] == "md"
-        ]
-        out.append({"ev": "md", "at": at, "h": fold.md_hash, "add": md_add})
-        # CARRY THE LINEAGE EDGES, and this is the pitfall the plan called out.
-        #
-        # This rewrite emits the minimal event set reproducing the current fold,
-        # and `lineage` is not an item event -- so without these lines a compact
-        # would SILENTLY DELETE every adoption, and every item a session adopted
-        # from its pre-compaction self would revert to "a peer's", which is the
-        # exact bug lineage exists to fix. Re-emitted verbatim: the evidence
-        # fields (ev_id, shared, prev_tx, next_tx) are the audit trail that lets
-        # anyone re-derive the claim from the named transcripts later.
-        out.extend(
-            {
-                "ev": "lineage",
-                "at": e.get("at", at),
-                "by": "compact",
-                "prev": e["prev"],
-                "next": e["next"],
-                "via": e.get("via", ""),
-                "ev_id": e.get("ev_id", ""),
-                "shared": e.get("shared"),
-                "prev_tx": e.get("prev_tx", ""),
-                "next_tx": e.get("next_tx", ""),
-            }
-            for e in fold.lineage
-        )
-        for r in fold.items:
-            if r["origin"] != "cli":
-                continue
-            # CARRY THE DERIVED STATE; do not let the rewrite destroy it.
-            #
-            # This used to emit only {id, at, by, s, o, t}, losing four things
-            # on every compact. Measured on this repo 2026-08-26: item #6e9c94eb
-            # went from basetext=103 chars with a LATEST note, to basetext=1152
-            # chars with none, i.e. brief_text() refolded to the WHOLE
-            # accumulation and every display (now including the PR body) became
-            # a wall of concatenated notes.
-            #   bt/ln  the v14 display identity
-            #   tr     triage verdict and its plan file
-            #   ju     a deferral's WHY/HOW, which the machinery AUDITS at 45
-            #          minutes, so losing it turns a justified [?] into an
-            #          unjustified one purely by having been compacted
-            #   upd    last-touch, whose loss collapses every liveness age onto
-            #          creation time
-            # Short keys: this log is append-only and read hot. The fold falls
-            # back to the old behaviour when they are absent, so logs written
-            # before this change still load.
-            add_ev = {
-                "ev": "add",
-                "id": r["id"],
-                "at": r["first"],
-                "by": "compact",
-                "s": r["state"],
-                "o": r["owner"],
-                "t": r["text"],
-            }
-            if r.get("basetext") and r["basetext"] != r["text"]:
-                add_ev["bt"] = r["basetext"]
-            if r.get("lastnote"):
-                add_ev["ln"] = r["lastnote"]
-            if r.get("upd") and r["upd"] != r["first"]:
-                add_ev["upd"] = r["upd"]
-            if r.get("triage"):
-                add_ev["tr"] = r["triage"]
-            if r.get("just"):
-                add_ev["ju"] = r["just"]
-            out.append(add_ev)
-            if r.get("until") or r.get("worker"):
-                out.append(
-                    {
-                        "ev": "lease",
-                        "id": r["id"],
-                        "at": r["upd"],
-                        "by": "compact",
-                        "until": r.get("until", ""),
-                        "worker": r.get("worker", ""),
-                    }
-                )
+        # ONE SNAPSHOT BUILDER, shared with import_legacy. This was a second
+        # hand-rolled copy, and the copies had already diverged in the way that
+        # matters: it re-emitted a lease for any item carrying `until`/`worker`,
+        # which the fold reads as state ">", so every compaction quietly
+        # reopened work that was already done. Measured on this repo's own
+        # store while verifying the importer: 39 of 189 items would have
+        # flipped from [x] to [>], taking the open count from 5 to 44.
+        out = snapshot_events(fold, by="compact")
         fd, tmp = tempfile.mkstemp(dir=str(ep.parent), prefix=ep.name)
         with os.fdopen(fd, "w", encoding="utf-8") as f:
             for ev in out:

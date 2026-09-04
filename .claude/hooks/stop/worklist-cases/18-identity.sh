@@ -332,6 +332,7 @@ L1_TABLE=(
     "--brief|--brief @ME@ l1-brief-text|brief recorded"
     "--intent|--intent @ME@ l1-intent-text --for 30|intent recorded"
     "--reap|--reap @ME@ l1task9|reaped 1 task"
+    "--migrate|--migrate @ME@ --candidates|no session has"
     "--ask|--ask @ME@ cafe1234 l1-table-ask|request #"
     "--answer|--answer @ME@ $R_ANSWER l1-my-answer|answered #"
     "--decline|--decline @ME@ $R_DECLINE l1-my-decline|declined #"
@@ -770,12 +771,16 @@ say "all done, nothing outstanding"
 run >/dev/null
 phantom_store phantom1 90
 # tick every phantom-owned item: it still WROTE the events, it just owns nothing open
-python3 - <(wl_events) <<'PYEOF'
+# READS the whole store, WRITES to the legacy log (still unioned by the reader).
+# Those must be two different paths: a process substitution is a read-only pipe,
+# so appending to <(wl_events) writes into a pipe nobody reads and the ticks
+# silently do not happen -- which made this control accuse a phantom that had in
+# fact been closed.
+python3 - <(wl_events) "${WL%.md}.events.jsonl" <<'PYEOF'
 import json, sys
-path = sys.argv[1]
-ids = [json.loads(l)["id"] for l in open(path) if l.strip()
+ids = [json.loads(l)["id"] for l in open(sys.argv[1]) if l.strip()
        and json.loads(l).get("by") == "phantom1"]
-with open(path, "a", encoding="utf-8") as fh:
+with open(sys.argv[2], "a", encoding="utf-8") as fh:
     for i in ids:
         fh.write(json.dumps({"ev": "state", "id": i, "at": "2026-08-05T00:00:00Z",
                              "by": "phantom1", "s": "x", "note": "done"}) + "\n")

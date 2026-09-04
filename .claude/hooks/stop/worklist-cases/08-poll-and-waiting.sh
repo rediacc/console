@@ -501,6 +501,7 @@ ARITY = {
     # the boundary uuid, how many items just became mine, and me again for the
     # follow-up command.
     "CLI_ADOPT_USAGE": None,
+    "CLI_MIGRATE_USAGE": None,
     "CLI_ADOPT_REFUSED": ("me", "prev", "why"),
     "CLI_ADOPT_SELF": ("prev",),
     "CLI_ADOPT_DONE": ("me", "prev", "continued-in", "1 shared record", "bde8bb05", 3, "me"),

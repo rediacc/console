@@ -103,6 +103,7 @@ CASE_FILES=(
     23-priority-ladder.sh
     24-lineage.sh
     25-first-touch.sh
+    26-migrate.sh
 )
 
 # A case file that nothing sources is an orphan the same way a test file that
