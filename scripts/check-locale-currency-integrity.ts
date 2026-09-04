@@ -18,7 +18,9 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
-const DIR = path.join(process.cwd(), 'packages/www/src/i18n/translations');
+// ANCHORED ON THIS FILE, not on cwd: the same gate would otherwise read a
+// different translations directory depending on where it was started.
+const DIR = path.resolve(import.meta.dirname, '..', 'packages/www/src/i18n/translations');
 
 type Leaf = [string, string];
 function leaves(node: unknown, prefix = ''): Leaf[] {

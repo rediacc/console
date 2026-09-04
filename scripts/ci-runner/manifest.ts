@@ -1851,6 +1851,20 @@ export const GATES: readonly GateSpec[] = [
     },
   },
   {
+    id: 'check:ci-gate-cwd-independence',
+    run: 'npm run check:ci-gate-cwd-independence',
+    gate: true,
+    // why: a gate that names cwd to build a path means something different
+    // under every caller, and "it passed locally" is then true and useless
+    leaves: ['scripts/check-gate-cwd-independence.ts'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-static',
+      step: 'Gate cwd independence',
+    },
+  },
+  {
     id: 'check:ci-fixture-event-timestamps',
     run: 'npm run check:ci-fixture-event-timestamps',
     gate: true,

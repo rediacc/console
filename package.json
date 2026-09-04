@@ -177,6 +177,7 @@
     "check:ci-environment-names": ".ci/scripts/quality/check_environment_names.py",
     "check:ci-gate-bind": "tsx scripts/gate-bind.ts --selftest && tsx scripts/gate-bind.ts",
     "gate:bind": "tsx scripts/gate-bind.ts --write",
+    "check:ci-gate-cwd-independence": "tsx scripts/check-gate-cwd-independence.ts --selftest && tsx scripts/check-gate-cwd-independence.ts",
     "check:ci-fixture-event-timestamps": "tsx scripts/check-fixture-event-timestamps.ts --selftest && tsx scripts/check-fixture-event-timestamps.ts",
     "check:ci-worklist-path-resolution": "tsx scripts/check-worklist-path-resolution.ts --selftest && tsx scripts/check-worklist-path-resolution.ts",
     "check:ci-worklist-event-builders": "tsx scripts/check-worklist-event-builders.ts --selftest && tsx scripts/check-worklist-event-builders.ts",

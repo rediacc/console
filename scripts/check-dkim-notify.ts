@@ -136,7 +136,10 @@ async function resolveMxWithRetry(
 }
 
 async function main(): Promise<number> {
-  const manifestPath = path.resolve(process.cwd(), MANIFEST_PATH);
+  // ANCHORED ON THIS FILE, not on cwd. process.cwd() is the workspace root
+  // under `npm run` and something else under any other caller, so the same
+  // gate would read a different manifest depending on where it was started.
+  const manifestPath = path.resolve(import.meta.dirname, '..', MANIFEST_PATH);
   let manifest: Manifest;
   try {
     const raw = readFileSync(manifestPath, 'utf-8');
