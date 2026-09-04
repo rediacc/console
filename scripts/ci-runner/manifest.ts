@@ -5326,6 +5326,22 @@ export const GATES: readonly GateSpec[] = [
     },
   },
   {
+    // The binder's source of truth. A parser that silently returns null makes the
+    // binder emit nothing for that gate, which reads like "not declared yet" -- so its
+    // NEGATIVES (no block, unterminated block, no step) are the assertions that matter.
+    id: 'gate-test:gate-header',
+    run: '.ci/scripts/test/gates/test-gate-header.sh',
+    gate: true,
+    qualityGateTest: true,
+    leaves: ['.ci/scripts/test/gates/test-gate-header.sh'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-security',
+      step: 'Quality-gate unit tests',
+    },
+  },
+  {
     // CHECK 6 of check-workflow-gates.sh is the rule that keeps the watchdog
     // watching, and it had no test at all: its only evidence of working was that
     // it was green. It now admits a step on two PROPERTIES rather than on a name,

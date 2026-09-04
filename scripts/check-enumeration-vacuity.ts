@@ -52,8 +52,35 @@ const SUBJECT_RE = /\/(check|test)[-_][\w-]+\.(py|sh|ts)$/;
  */
 export const enumerates = (src: string): boolean =>
   /git\s+ls-files|\.glob\(|\.rglob\(|globSync\(|readdirSync\(|find\s+\S+\s+-(name|type)\b/.test(
-    src
+    stripHeredocs(src)
   );
+
+/**
+ * A shell heredoc body is DATA, not code this file executes.
+ *
+ * Caught by this gate on its own author: a gate-test whose heredoc carries fixture text
+ * containing `.glob(` was reported as an unguarded enumerating check. It enumerates
+ * nothing -- the string is an argument to a probe. Reading a quoted body as source is
+ * the same class of mistake as reading a comment as code, which this repo already has
+ * a trap written down for.
+ *
+ * Only `<<'TAG'` and `<<"TAG"` are stripped: an UNQUOTED heredoc is interpolated by the
+ * shell and can legitimately carry a command, so leaving it in is the safe direction.
+ */
+export const stripHeredocs = (src: string): string => {
+  const out: string[] = [];
+  let tag: string | null = null;
+  for (const line of src.split('\n')) {
+    if (tag === null) {
+      const open = /<<-?\s*['"]([A-Za-z_][A-Za-z0-9_]*)['"]/.exec(line);
+      out.push(line);
+      if (open) tag = open[1];
+      continue;
+    }
+    if (line.trim() === tag) tag = null;
+  }
+  return out.join('\n');
+};
 
 /**
  * Does it carry a vacuity guard? Any of the three shapes this repo already uses, because
@@ -89,6 +116,18 @@ function selftest(): number {
   check('a git ls-files scan counts as enumeration', enumerates('out = git ls-files .ci'));
   check('a python glob counts', enumerates('for p in root.glob("*.yml"):'));
   check('a shell find counts', enumerates('find .ci/scripts -name "*.sh"'));
+  check(
+    'a QUOTED heredoc body is data, not an enumeration',
+    !enumerates(["cat <<'TS'", 'files = root.glob("*.py")', 'TS', 'echo done'].join('\n'))
+  );
+  check(
+    'CONTROL: the same call OUTSIDE a heredoc still counts',
+    enumerates(["cat <<'TS'", 'x', 'TS', 'files = root.glob("*.py")'].join('\n'))
+  );
+  check(
+    'CONTROL: an UNQUOTED heredoc is left alone, because the shell interpolates it',
+    enumerates(['cat <<TS', 'files = root.glob("*.py")', 'TS'].join('\n'))
+  );
   check(
     'CONTROL: reading ONE named config is not enumeration',
     !enumerates('data = json.load(open(".ci/config/thing.json"))')
