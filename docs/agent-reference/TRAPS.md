@@ -2212,3 +2212,36 @@ So when a topology gate reports a shallow checkout, do not start at the checkout
 which EARLIER step in that job ran git, and grep the job for `--depth`. And never hand
 `--depth` to a fetch without first asking `git rev-parse --is-shallow-repository`: the
 flag is only ever an optimisation for a repository that is already shallow.
+
+## A gate that fails once inside `ci:quick` and passes alone is not automatically a flake
+Trap-Id: once-failing-gate-is-not-automatically-a-flake
+Enforced-By: gate:check:ci-setup-idempotency
+Residue: nothing can force a session to capture a failing run's full output instead of
+  piping it through `tail`, nor to spend the one second refuting the obvious cause. The
+  instrument covers the defect that was FOUND; the discipline that found it is judgment.
+
+`check:ci-setup-idempotency` failed once in a `ci:quick` run on 2026-09-04 and passed
+standalone and on ten consecutive full runs after. The tempting conclusion — parallel
+flake, move on — was wrong twice over.
+
+**The evidence was lost to `| tail -12`, not swallowed by the runner.** `ci-runner`
+asserts in its own selftest (`scripts/ci-runner/run.ts:547-548`) that a failing gate's
+stdout AND stderr are printed. They were; the pipe cut them off. When a gate fails
+inside `ci:quick`, redirect the WHOLE run to a file and grep it. A summary line naming
+the gate is not the gate's message.
+
+**One hypothesis was refuted by a one-line experiment.** The failing run was the only
+one with a modified `package.json`, so a deps stamp refreshed by `setup --check` looked
+likely. Touching `package.json` and running `./run.sh setup --check` leaves the tree
+byte-identical. That took a second and removed the story.
+
+**And reading the gate found a defect the flake had nothing to do with.** Check B
+compared whole `git status` snapshots and waited for the tree to return to `before`. Any
+of the ~300 gates sharing the tree touching an unrelated file kept that equality false
+for the rest of the 15s window, and B then reported "delta persisted 15s" about a path
+that had settled in one — the same false accusation its own comment block was written to
+remove, arriving by a second door. Fixed by scoping the poll to the delta paths.
+
+So: when a gate fails once, capture the real output, spend the one second refuting the
+obvious cause, and read the assertion. Two of those three paid, and neither was the
+flake.
