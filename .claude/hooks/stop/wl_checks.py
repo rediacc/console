@@ -2899,6 +2899,58 @@ def run_stop(event, event_ok, worklist, hook_file):
             "  %d open item(s) owned by session %s" % (len(v), k) for k, v in sorted(others.items())
         )
 
+    def handoff_note():
+        """Work owned by a session that is NOT running here.
+
+        WHY THIS IS SEPARATE FROM other_sessions_note. That one reports a live
+        colleague and is correct to stay quiet about: their items are theirs,
+        and blocking on them would deadlock two sessions in one tree. This one
+        reports the opposite case -- a session that has STOPPED (a restart, a
+        machine switch, a crash) whose remaining work is now owned by nobody
+        present. It is the case a compaction loses: the items are in the store,
+        they block nobody, and the summary that would have mentioned them is
+        the thing being summarised.
+
+        Still never a block. It names /migrate, which asks before it moves.
+        """
+        try:
+            cands = S.migrate_candidates(worklist, fold, session_id, projects_dir)
+        except Exception:  # noqa: BLE001 -- an advisory must never wedge a stop
+            return ""
+        cands = [c for c in cands if not c.get("handed_off")][:6]
+        if not cands:
+            return ""
+        lines = [
+            "HANDOFF CANDIDATES (not yours, and never blocking): %d session(s) with "
+            "remaining work and no live process here." % len(cands)
+        ]
+        for c in cands:
+            n = c["counts"]
+            lines.append(
+                "  %s  %d item(s) [open %d, in-flight %d, deferred %d]  %s%s  -- %s"
+                % (
+                    c["prefix"],
+                    n["open"] + n["inflight"] + n["deferred"],
+                    n["open"],
+                    n["inflight"],
+                    n["deferred"],
+                    ("branch %s  " % c["branch"]) if c["branch"] else "",
+                    c["host"],
+                    c["evidence"],
+                )
+            )
+            for it in c["items"][:3]:
+                lines.append("      - [%s] #%s %s" % (it["state"], it["id"], it["text"][:110]))
+        lines.append(
+            "  Continue one or more: /migrate  (it lists them, ASKS which, and moves "
+            "nothing unasked)."
+        )
+        lines.append(
+            "  Until then list them under '## Remaining' as \"inherited from <prefix>, "
+            "unclaimed\" so a compaction summary carries them."
+        )
+        return "\n".join(lines)
+
     # ---- v7: regression-gate detection (see wl_reggate). Never breaks gating.
     reg_marker = wl_reggate.reggate_path(worklist, session_id)
     reg_signals, reg_ids, reg_new_ticks, reg_sig, reg_head, reg_banked = [], [], [], "", "", []
@@ -5959,6 +6011,12 @@ def run_stop(event, event_ok, worklist, hook_file):
             + relay,
             2,
         )
+    # THE HANDOFF BLOCK, on every allow path and not only when I am idle. A
+    # stopped session's work is invisible precisely when I am busy, which is
+    # when a compaction is most likely.
+    _handoff = handoff_note()
+    if _handoff:
+        outq_add(worklist, session_id, state_doc, "handoff", _handoff, 1, refresh_min=60)
     if others:
         # Reported, never blocked on. Blocking one session on another's
         # items deadlocks it: it cannot do them without racing live work in
