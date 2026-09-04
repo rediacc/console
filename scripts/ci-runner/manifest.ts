@@ -1851,6 +1851,20 @@ export const GATES: readonly GateSpec[] = [
     },
   },
   {
+    id: 'check:ci-fixture-event-timestamps',
+    run: 'npm run check:ci-fixture-event-timestamps',
+    gate: true,
+    // why: the store sorts by timestamp, so a fixture's literal past date folds
+    // before the item it closes and silently does nothing
+    leaves: ['scripts/check-fixture-event-timestamps.ts'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-static',
+      step: 'Fixture event timestamps',
+    },
+  },
+  {
     id: 'check:ci-worklist-path-resolution',
     run: 'npm run check:ci-worklist-path-resolution',
     gate: true,

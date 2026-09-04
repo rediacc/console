@@ -263,7 +263,9 @@ brief_now
 # Every plant is a shape that is SILENT by default: the reader skips
 # unparseable lines by contract, so a conflict marker costs events and says
 # nothing, and a secret in TMPDIR was private while a secret here is pushed.
-printf '<<<<<<< HEAD\n{"ev":"add","id":"docok1","at":"2026-09-04T00:00:00Z","by":"deadbeef","s":" ","o":"deadbeef","t":"fine"}\nnot json at all\n{"ev":"add","id":"docok2","at":"2026-09-04T00:00:01Z","by":"deadbeef","s":" ","o":"deadbeef","t":"tok ghp_abcdefghijklmnopqrstuvwxyz0123456789"}\n' >"$WORKLIST_STORE_DIR/planted.jsonl"
+NOW_TS="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+printf '<<<<<<< HEAD\n{"ev":"add","id":"docok1","at":"%s","by":"deadbeef","s":" ","o":"deadbeef","t":"fine"}\nnot json at all\n{"ev":"add","id":"docok2","at":"%s","by":"deadbeef","s":" ","o":"deadbeef","t":"tok ghp_abcdefghijklmnopqrstuvwxyz0123456789"}\n' "$NOW_TS" "$NOW_TS" >"$WORKLIST_STORE_DIR/planted.jsonl"
+ls -la "$WORKLIST_STORE_DIR" >/dev/null
 OUT="$(wlcli --doctor 2>&1)"
 RC=$?
 if [[ "$RC" -ne 0 ]] && [[ "$OUT" == *"merge conflict marker"* ]] &&

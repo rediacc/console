@@ -188,6 +188,10 @@ jobs:
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: npm run check:ci-worklist-path-resolution
 
+      - name: Fixture event timestamps
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: npm run check:ci-fixture-event-timestamps
+
       - name: Compose env
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: .ci/scripts/quality/check-compose-env.sh
