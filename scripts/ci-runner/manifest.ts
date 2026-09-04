@@ -1851,6 +1851,19 @@ export const GATES: readonly GateSpec[] = [
     },
   },
   {
+    id: 'check:ci-worklist-event-builders',
+    run: 'npm run check:ci-worklist-event-builders',
+    gate: true,
+    // why: a second hand-rolled snapshot builder silently reopened finished work
+    leaves: ['scripts/check-worklist-event-builders.ts'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-static',
+      step: 'Worklist event builders',
+    },
+  },
+  {
     id: 'check:ci-workflows',
     run: 'npm run check:ci-workflows',
     slow: true, // 12.0s measured
