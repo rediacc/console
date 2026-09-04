@@ -2275,3 +2275,25 @@ that run's real red.
 Fixtures that feed anything age-based (retention, lookback, lease expiry,
 staleness) take stamps computed from now, never constants. Sweep with
 `grep -rn '"timestamp": "20' --include='test*'` when adding one.
+
+## Running a secrets action outside Actions prints the secret
+Trap-Id: secrets-action-outside-actions-prints-the-secret
+Enforced-By: JUDGMENT-ONLY
+Residue: Nothing scans a session transcript for secret material, and the masking that makes `::add-mask::` safe exists only inside a GitHub runner. The only protection is knowing the shape before running the binary locally.
+
+`bitwarden/sm-action` delivers each secret to the job by writing it to `GITHUB_ENV`
+AND emitting `::add-mask::<value>` on stdout so the runner redacts it from every later
+log line. Inside Actions that line is consumed by the runner and never shown. Outside
+Actions it is just stdout: on 2026-09-04 a babysit ran the pinned binary locally to
+fingerprint a GPG key the shadow had flagged, filtered stderr for lines containing
+"token", and the whole armored private key block came back in the tool output --
+into the session transcript, where nothing masks anything. The scratch copies were
+shredded; the transcript cannot be.
+
+The same shape applies to any tool whose safety depends on the runner: `::add-mask::`,
+`::set-secret::`, `$GITHUB_ENV` heredocs. Run it locally only with stdout and stderr
+redirected to a file you will shred, read that file through a filter that keeps
+ONLY the lines you need (fingerprints, counts, verdicts), and never let a blanket
+`head` or `grep -v` be the thing standing between a secret and the log. If the value
+itself is the question, reduce it to a digest or a fingerprint inside the same
+process that fetched it.
