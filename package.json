@@ -173,6 +173,7 @@
     "check:ci-breakpoint-drift": ".ci/breakpoint/scripts/check-breakpoint-drift.sh",
     "check:ci-docker-npm-pins": ".ci/scripts/quality/check_docker_npm_pins.py",
     "check:ci-enumeration-vacuity": "tsx scripts/check-enumeration-vacuity.ts",
+    "check:ci-environment-names": ".ci/scripts/quality/check_environment_names.py",
     "check:ci-workflows": ".ci/scripts/quality/check-workflows.sh",
     "check:ci-release-state": ".ci/scripts/quality/check-release-state.sh",
     "check:ci-account-portal": ".ci/scripts/quality/check-account-portal.sh",

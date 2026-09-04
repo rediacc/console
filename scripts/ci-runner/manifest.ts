@@ -5276,6 +5276,21 @@ export const GATES: readonly GateSpec[] = [
     },
   },
   {
+    // 25 orphaned `pr-*` environments accumulated because a job-level `environment:`
+    // creates an object CI has no permission to delete. The block was removed by hand
+    // and only a comment stood in its place.
+    id: 'check:ci-environment-names',
+    run: 'npm run check:ci-environment-names',
+    gate: true,
+    leaves: ['.ci/scripts/quality/check_environment_names.py'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-code',
+      step: 'Environment names',
+    },
+  },
+  {
     // A gate that scans and finds nothing prints a tick indistinguishable from a
     // clean tree. Seeded shrink-only: 47 enumerating checks carry no vacuity guard
     // today, and a wall of 47 is a gate somebody disables.

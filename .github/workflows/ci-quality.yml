@@ -911,6 +911,15 @@ jobs:
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: npm run check:ci-enumeration-vacuity
 
+      # A job-level `environment:` makes GitHub create the environment OBJECT, and
+      # deleting one needs Administration:write, which check-no-app-admin-perm.sh
+      # forbids the CI App from holding. 25 orphaned `pr-*` environments had
+      # accumulated by 2026-09-03 before the block that minted them was deleted BY
+      # HAND -- leaving a comment where a gate belongs.
+      - name: Environment names
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: .ci/scripts/quality/check_environment_names.py
+
       - name: Format
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: npm run check:format
