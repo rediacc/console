@@ -937,8 +937,17 @@ jobs:
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: npm run check:lint
 
+      # timeout-minutes, because this step is the only one in the job that talks to
+      # the npm registry: `lint:unused` runs typecheck-workers.sh --install first, and
+      # on run 33815742382 those four installs took 671s against 21-29s on the five
+      # runs before it. The job hit its own 15-minute ceiling at 15m19s, forty later
+      # gates never ran, and the conclusion was `cancelled` -- indistinguishable from
+      # a superseded run. A step-level ceiling makes the stall name itself and leaves
+      # the rest of the job its budget. The script now bounds and retries each install
+      # too; this is the backstop for the case where that is not enough.
       - name: Unused exports (knip)
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        timeout-minutes: 8
         run: npm run lint:unused
 
       - name: Check account route layer isolation

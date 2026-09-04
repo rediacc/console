@@ -63,12 +63,30 @@ for config in "${CONFIGS[@]}"; do
         # `npm ci` when there is a lockfile to be exact about, `npm install` when there is
         # not. --ignore-scripts matches .npmrc's repo-wide setting; none of these workers
         # has a native dependency, so nothing needs `install:natives` afterwards.
+        #
+        # BOUNDED AND RETRIED, because this is a NETWORK call standing in front of a
+        # lint gate. On 2026-09-03 run 33815742382 the four installs here took 671
+        # SECONDS against 21-29s on the five runs before it, ate the whole remaining
+        # budget of Quality / Code, and the job hit `timeout-minutes: 15` at 15m19s.
+        # Forty gates after this step never ran, and the only trace was a conclusion
+        # of `cancelled` -- which reads exactly like a superseded run, not like a
+        # stalled registry.
+        #
+        # The bound is NPM'S OWN, not coreutils` timeout(1): check:ci-shell-commands
+        # refuses `timeout` because the minimal CI image does not ship it, and a
+        # portable script must not depend on a binary half the runners lack.
+        # --fetch-timeout caps a single request, --fetch-retries makes a slow socket
+        # recoverable, and neither hides a real failure -- a genuinely broken install
+        # still exits non-zero, it just does it in bounded time. The step-level
+        # timeout-minutes in ci-quality.yml is the backstop above this.
+        NPM_NET=(--fetch-timeout=120000 --fetch-retries=5
+            --fetch-retry-mintimeout=2000 --fetch-retry-maxtimeout=30000)
         if [ -f "$dir/package-lock.json" ]; then
             echo "typecheck-workers: installing $dir (npm ci)"
-            npm ci --prefix "$dir" --ignore-scripts >/dev/null
+            npm ci --prefix "$dir" --ignore-scripts "${NPM_NET[@]}" >/dev/null
         else
             echo "typecheck-workers: installing $dir (npm install, no lockfile)"
-            npm install --prefix "$dir" --ignore-scripts >/dev/null
+            npm install --prefix "$dir" --ignore-scripts "${NPM_NET[@]}" >/dev/null
         fi
     fi
 
