@@ -893,6 +893,16 @@ devbox_exec() {
 
     # bash -lc, not bash -c: PATH for go and node comes from /etc/environment,
     # which only a login shell reads.
+    #
+    # THE COST OF THAT, stated because it is invisible and was paid for: the login
+    # shell re-sources the profile AFTER any PATH the caller exported, so
+    # `devbox exec -- bash -c 'export PATH=/my/bin:$PATH; tool --version'` runs the
+    # IMAGE's tool, not yours. On 2026-09-04 a session tried to reproduce a CI failure
+    # against a newer agent-browser this way and got the pinned 0.26.0 every time --
+    # `command -v` resolved to the nvm copy however PATH was set, and the four runs
+    # that "reproduced" the bug were the image's own version talking. To probe an
+    # alternative version, invoke its ABSOLUTE path (/tmp/x/node_modules/.bin/tool)
+    # rather than trying to win a PATH argument with the login shell.
     # devbox_docker answers TWO WORDS when the docker group is not active in
     # this shell yet ("sudo docker", line 63). Quoting that as one command name
     # produces `sudo docker: command not found` -- measured 2026-08-26 running
