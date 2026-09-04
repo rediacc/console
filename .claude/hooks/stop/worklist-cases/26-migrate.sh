@@ -204,12 +204,24 @@ say "done for now"
 brief_now
 OUT="$(mig deadbeef)"
 [[ "$OUT" == *"already yours"* ]] &&
-    { echo "  PASS: migrating from myself is refused"; PASS=$((PASS + 1)); } ||
-    { echo "  FAIL: self-migration was allowed: $OUT"; FAIL=$((FAIL + 1)); }
+    {
+        echo "  PASS: migrating from myself is refused"
+        PASS=$((PASS + 1))
+    } ||
+    {
+        echo "  FAIL: self-migration was allowed: $OUT"
+        FAIL=$((FAIL + 1))
+    }
 OUT="$(mig nosuchse)"
 [[ "$OUT" == *"REFUSED"* ]] &&
-    { echo "  PASS: a prefix with no events is refused"; PASS=$((PASS + 1)); } ||
-    { echo "  FAIL: migrated from a session that never existed: $OUT"; FAIL=$((FAIL + 1)); }
+    {
+        echo "  PASS: a prefix with no events is refused"
+        PASS=$((PASS + 1))
+    } ||
+    {
+        echo "  FAIL: migrated from a session that never existed: $OUT"
+        FAIL=$((FAIL + 1))
+    }
 
 echo "== 199. the Stop hook names a stopped session's work, and never blocks on it =="
 setup
@@ -272,5 +284,47 @@ if [[ $? -eq 0 ]] && [[ "$OUT" == *"store OK"* ]]; then
     PASS=$((PASS + 1))
 else
     echo "  FAIL: CONTROL: --doctor fails even on a clean store: ${OUT:0:200}"
+    FAIL=$((FAIL + 1))
+fi
+
+echo "== 201. compaction NEVER rewrites a file a live peer is appending to =="
+setup
+say "done for now"
+brief_now
+python3 "$HOOK" --add deadbeef "my own item" >/dev/null 2>&1
+WORKLIST_SESSION_ID=deadpeer python3 "$HOOK" --add deadpeer "a dead peer item" >/dev/null 2>&1
+WORKLIST_SESSION_ID=livepeer python3 "$HOOK" --add livepeer "a LIVE peer item" >/dev/null 2>&1
+# deadpeer's events aged past WORKLIST_DEAD_HOURS; livepeer left fresh.
+python3 - "$WORKLIST_STORE_DIR" <<'PYEOF'
+import datetime, json, pathlib, sys
+f = pathlib.Path(sys.argv[1]) / "deadpeer.jsonl"
+old = (datetime.datetime.now(datetime.timezone.utc)
+       - datetime.timedelta(hours=48)).strftime("%Y-%m-%dT%H:%M:%SZ")
+f.write_text("\n".join(json.dumps({**json.loads(l), "at": old}, separators=(",", ":"))
+                       for l in f.read_text().splitlines() if l.strip()) + "\n")
+PYEOF
+: >"${WL%.md}.lastevent-livepeer.json"
+OUT="$(python3 "$HOOK" --compact 2>&1)"
+if [[ -f "$WORKLIST_STORE_DIR/livepeer.jsonl" ]] && [[ "$OUT" == *"kept livepeer.jsonl"* ]]; then
+    echo "  PASS: the live peer's file is untouched, and the reason is printed"
+    PASS=$((PASS + 1))
+else
+    echo "  FAIL: compaction rewrote a file a live session is still appending to"
+    FAIL=$((FAIL + 1))
+fi
+if [[ ! -f "$WORKLIST_STORE_DIR/deadpeer.jsonl" ]]; then
+    echo "  PASS: the dead writer's file is absorbed"
+    PASS=$((PASS + 1))
+else
+    echo "  FAIL: nothing was compacted, so this case proves nothing"
+    FAIL=$((FAIL + 1))
+fi
+# THE PROPERTY THAT MATTERS: no item may be lost, whichever files moved.
+N="$(python3 "$HOOK" --list 2>/dev/null | grep -c 'own item\|dead peer item\|LIVE peer item')"
+if [[ "$N" -eq 3 ]]; then
+    echo "  PASS: all three items survive the compaction"
+    PASS=$((PASS + 1))
+else
+    echo "  FAIL: compaction lost items (found $N of 3)"
     FAIL=$((FAIL + 1))
 fi

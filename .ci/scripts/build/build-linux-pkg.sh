@@ -192,6 +192,10 @@ if [[ "$FORMAT" == "rpm" || "$FORMAT" == "deb" ]] && [[ -n "${RELEASE_GPG_PRIVAT
     # key installs nowhere, and nothing here would have said so. The published
     # key defaults to the committed .asc; RELEASE_GPG_PUBLIC_KEY_FILE overrides
     # it (the package test publishes its throwaway key's public half).
+    # DECLARED, because the check below runs it inside a command substitution:
+    # under `set -euo pipefail` a missing gpg exits 127 with no message, before
+    # any log_error, so the signing check would silently not happen.
+    require_cmd gpg
     PUBLIC_KEY_FILE="${RELEASE_GPG_PUBLIC_KEY_FILE:-$(get_repo_root)/.ci/keys/gpg-public.asc}"
     if [[ -f "$PUBLIC_KEY_FILE" ]]; then
         want_fpr=$(gpg --show-keys --with-colons --with-fingerprint "$PUBLIC_KEY_FILE" 2>/dev/null | awk -F: '$1=="fpr"{print $10; exit}')

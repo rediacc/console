@@ -845,9 +845,7 @@ def _migrate_cli(argv):
                 j = body.find("\n## ")
                 section = (body[:j] if j >= 0 else body).strip()
                 if section:
-                    print(
-                        "\n  HANDED OFF NEXT ACTION from %s (agent/%s/STATE.md):" % (prev, prev)
-                    )
+                    print("\n  HANDED OFF NEXT ACTION from %s (agent/%s/STATE.md):" % (prev, prev))
                     for line in section[:1500].splitlines():
                         print("    %s" % line)
         except (OSError, AttributeError):
@@ -1757,7 +1755,22 @@ def main():
         if probs:
             print("\n%d problem(s) in %d store file(s)" % (len(probs), nfiles))
             sys.exit(1)
-        print("store OK: %d file(s), %d event(s), no conflict markers, nothing unparseable, no secret shapes" % (nfiles, nevents))
+        # ANTI-VACUITY, and its own control caught this: the first version
+        # printed "store OK: 0 file(s), 0 event(s)" and exited 0. A check that
+        # scanned NOTHING must not read as a pass -- that is the exact shape
+        # this repo keeps paying for, and a doctor is the worst place for it
+        # because its whole job is to be believed.
+        if nfiles == 0 or nevents == 0:
+            print(
+                "store at %s holds %d file(s) and %d event(s): there was nothing to "
+                "check, so this is NOT a pass" % (S.store_dir(), nfiles, nevents),
+                file=sys.stderr,
+            )
+            sys.exit(1)
+        print(
+            "store OK: %d file(s), %d event(s), no conflict markers, nothing unparseable, no secret shapes"
+            % (nfiles, nevents)
+        )
         return
     if sys.argv[1:2] == ["--store"]:
         print(S.store_dir(C.project_root(C.project_start())))

@@ -65,12 +65,14 @@ try:
 except ImportError:  # Windows: no POSIX advisory locking
     fcntl = None
 import calendar
+import contextlib
 import glob as _glob
 import hashlib
 import json
 import os
 import pathlib
 import re
+import socket
 import tempfile
 import time
 
@@ -822,24 +824,21 @@ def _branch_of(root):
     return _BRANCH_CACHE[key]
 
 
-_HOST_HASH = None
+_HOST_CACHE = {}
 
 
 def host_hash():
     """A HASH of the hostname, never the hostname. This file is tracked and
     public; which machine an event came from is needed to tell "this box" from
     "another box", and the name itself is not."""
-    global _HOST_HASH
-    if _HOST_HASH is None:
+    if "h" not in _HOST_CACHE:
         try:
-            import socket
-
-            _HOST_HASH = hashlib.sha1(
+            _HOST_CACHE["h"] = hashlib.sha1(
                 socket.gethostname().encode("utf-8", "replace")
             ).hexdigest()[:8]
         except Exception:  # noqa: BLE001
-            _HOST_HASH = "unknown0"
-    return _HOST_HASH
+            _HOST_CACHE["h"] = "unknown0"
+    return _HOST_CACHE["h"]
 
 
 def append_events(worklist, payloads, writer=None, root=None):
@@ -855,10 +854,8 @@ def append_events(worklist, payloads, writer=None, root=None):
             if br:
                 ev.setdefault("br", br)
     target = writer_path(_writer_for(payloads, writer), root)
-    try:
+    with contextlib.suppress(OSError):
         target.parent.mkdir(parents=True, exist_ok=True)
-    except OSError:
-        pass
     _append_lines(target, events_lock_path(worklist), payloads)
 
 
@@ -899,10 +896,8 @@ def _read_events(worklist, root=None):
         pass
     legacy = events_path(worklist)
     if legacy.exists():
-        try:
+        with contextlib.suppress(OSError):
             out.extend(_parse_events(legacy.read_text(encoding="utf-8", errors="replace")))
-        except OSError:
-            pass
     out.sort(key=lambda e: str(e.get("at") or ""))
     return out
 
@@ -1266,10 +1261,8 @@ def load(worklist, sync=True):
                     # only the locking differs.
                     ev.setdefault("h", host_hash())
                     _md_target = writer_path(_writer_for([ev]))
-                    try:
+                    with contextlib.suppress(OSError):
                         _md_target.parent.mkdir(parents=True, exist_ok=True)
-                    except OSError:
-                        pass
                     fd = os.open(_md_target, os.O_RDWR | os.O_CREAT | os.O_APPEND, 0o644)
                     try:
                         size = os.fstat(fd).st_size
@@ -1597,8 +1590,8 @@ def snapshot_events(fold, by="compact"):
     ]
     if md_add:
         out.append({"ev": "md", "at": at, "h": fold.md_hash, "add": md_add})
-    for e in fold.lineage:
-        out.append(
+    out.extend(
+        [
             {
                 "ev": "lineage",
                 "at": e.get("at", at),
@@ -1611,7 +1604,9 @@ def snapshot_events(fold, by="compact"):
                 "prev_tx": e.get("prev_tx", ""),
                 "next_tx": e.get("next_tx", ""),
             }
-        )
+            for e in fold.lineage
+        ]
+    )
     for r in fold.items:
         if r["origin"] != "cli":
             continue
@@ -1624,7 +1619,12 @@ def snapshot_events(fold, by="compact"):
             "o": r["owner"],
             "t": r["text"],
         }
-        for key, field in (("bt", "basetext"), ("ln", "lastnote"), ("tr", "triage"), ("ju", "just")):
+        for key, field in (
+            ("bt", "basetext"),
+            ("ln", "lastnote"),
+            ("tr", "triage"),
+            ("ju", "just"),
+        ):
             if r.get(field) and not (field == "basetext" and r["basetext"] == r["text"]):
                 add_ev[key] = r[field]
         if r.get("upd") and r["upd"] != r["first"]:
@@ -1725,9 +1725,7 @@ def compact_store(worklist, root=None, me=None, projects_dir=None):
         old_enough = True
         if newest:
             try:
-                old_enough = (
-                    C.utcnow() - C.parse_stamp(newest)
-                ).total_seconds() / 3600.0 >= dead_h
+                old_enough = (C.utcnow() - C.parse_stamp(newest)).total_seconds() / 3600.0 >= dead_h
             except Exception:  # noqa: BLE001
                 old_enough = False
         if verdict in ("idle", "remote", "unknown") and old_enough:
@@ -1749,10 +1747,8 @@ def compact_store(worklist, root=None, me=None, projects_dir=None):
         for f in clear:
             if f == target:
                 continue
-            try:
+            with contextlib.suppress(OSError):
                 f.unlink()
-            except OSError:
-                pass
     print(
         "event log: compacted %d file(s) into %s (%d event(s) for %d item(s))"
         % (len(clear), target.name, len(payload), len(fold.items))
@@ -1848,7 +1844,7 @@ def import_legacy(worklist, again=False, root=None):
     with open(target, "w", encoding="utf-8") as f:
         for ev in payload:
             f.write(json.dumps(ev, separators=(",", ":")) + "\n")
-    moved = legacy.with_suffix(".jsonl.imported-%s" % _FS_RE.sub("", C.stamp_now()))
+    moved = legacy.with_suffix(".jsonl.imported-%s" % re.sub(r"[^0-9A-Za-z]", "", C.stamp_now()))
     try:
         legacy.rename(moved)
     except OSError as exc:
@@ -1875,9 +1871,7 @@ def migrate_candidates(worklist, fold, me, projects_dir=None, events=None):
     mine = {me8} | set(fold.aliases_of(me8) if hasattr(fold, "aliases_of") else [])
     if events is None:
         events = _read_events(worklist)
-    already = {
-        str((r.get("mg") or {}).get("from") or "") for r in fold.items if r.get("mg")
-    }
+    already = {str((r.get("mg") or {}).get("from") or "") for r in fold.items if r.get("mg")}
     handed = set()
     for ev in events:
         if str(ev.get("ev") or "") == "brief" and ev.get("about"):
@@ -1976,9 +1970,7 @@ def migrate_items(worklist, fold, me, prev, projects_dir=None, events=None):
     if verdict == "unknown":
         raise ValueError("no events by %s in the store (%s)" % (prev8, why))
 
-    already = {
-        str((r.get("mg") or {}).get("from") or "") for r in fold.items if r.get("mg")
-    }
+    already = {str((r.get("mg") or {}).get("from") or "") for r in fold.items if r.get("mg")}
     at = C.stamp_now()
     payloads, moved, refused = [], [], []
     for rec in sorted(fold.items, key=lambda r: str(r.get("id") or "")):

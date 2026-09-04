@@ -50,7 +50,10 @@ fi
 # names the missing pin rather than a silently unchecked download.
 ARCH="$(uname -m)"
 case "$ARCH" in
-    x86_64 | amd64) TARBALL="nfpm_${NFPM_VERSION}_Linux_x86_64.tar.gz"; WANT="$NFPM_SHA256_LINUX_X86_64" ;;
+    x86_64 | amd64)
+        TARBALL="nfpm_${NFPM_VERSION}_Linux_x86_64.tar.gz"
+        WANT="$NFPM_SHA256_LINUX_X86_64"
+        ;;
     *)
         echo "ensure-nfpm: no pinned checksum for $ARCH in .ci/config/constants.sh -- add one rather than downloading unverified bytes" >&2
         exit 1

@@ -118,7 +118,7 @@ else
     fail "167 CONTROL: inline branch wrong: ${OUT:0:300}"
 fi
 
-EVENTS="${WL%.md}.events.jsonl"  # write target only; reads go through wl_events
+EVENTS="${WL%.md}.events.jsonl" # write target only; reads go through wl_events
 echo "== 168. a TRIAGED BIG item with no plan file on disk is demanded =="
 setup
 NOW=$(date -u +%Y-%m-%dT%H:%M:%SZ)

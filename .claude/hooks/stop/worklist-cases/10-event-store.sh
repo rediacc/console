@@ -78,7 +78,7 @@ else
     fail "resurrection or lost item: ${out:0:260}"
 fi
 
-EV="${WL%.md}.events.jsonl"  # write target only; reads go through wl_events
+EV="${WL%.md}.events.jsonl" # write target only; reads go through wl_events
 echo "== 134. a torn event-log tail is healed, never merged into the next event =="
 setup
 reqcli --add deadbeef "first item" >/dev/null

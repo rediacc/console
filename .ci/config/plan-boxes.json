@@ -400,6 +400,26 @@
       "open_sigs": [],
       "done_sigs": []
     },
+    "agent/PLAN-migrate-command.md": {
+      "status": "draft",
+      "owner": "d1589e0b",
+      "open": 11,
+      "done": 0,
+      "open_sigs": [
+        "1a4237d8",
+        "495eeef4",
+        "745963a1",
+        "94d62fbf",
+        "a28d2960",
+        "a37cfd9c",
+        "bf76ff0e",
+        "cc23e610",
+        "ce6db9c4",
+        "d42bb50d",
+        "d6bccaeb"
+      ],
+      "done_sigs": []
+    },
     "agent/PLAN-nightly-retry-and-watchdog-noise.md": {
       "status": "done",
       "owner": "854ac1c6",
@@ -486,6 +506,14 @@
     "agent/PLAN-require-testid-sweep.md": {
       "status": "done",
       "owner": "97604f47",
+      "open": 0,
+      "done": 0,
+      "open_sigs": [],
+      "done_sigs": []
+    },
+    "agent/PLAN-resprofile-wave2.md": {
+      "status": "approved",
+      "owner": "74de73ca",
       "open": 0,
       "done": 0,
       "open_sigs": [],
@@ -794,14 +822,6 @@
     },
     "agent/PLAN-www-bundle-determinism.md": {
       "status": "draft",
-      "owner": "74de73ca",
-      "open": 0,
-      "done": 0,
-      "open_sigs": [],
-      "done_sigs": []
-    },
-    "agent/PLAN-resprofile-wave2.md": {
-      "status": "approved",
       "owner": "74de73ca",
       "open": 0,
       "done": 0,

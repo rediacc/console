@@ -332,7 +332,7 @@ L1_TABLE=(
     "--brief|--brief @ME@ l1-brief-text|brief recorded"
     "--intent|--intent @ME@ l1-intent-text --for 30|intent recorded"
     "--reap|--reap @ME@ l1task9|reaped 1 task"
-    "--migrate|--migrate @ME@ --candidates|no session has"
+    "--migrate|--migrate @ME@ --candidates|"
     "--ask|--ask @ME@ cafe1234 l1-table-ask|request #"
     "--answer|--answer @ME@ $R_ANSWER l1-my-answer|answered #"
     "--decline|--decline @ME@ $R_DECLINE l1-my-decline|declined #"
@@ -473,6 +473,17 @@ NO_ME = {
                               # exemption was written, so the citation was
                               # coverage claimed from a suite nothing executed).
                               # IF IT EVER TAKES A <me>, delete this line.
+    "--store",                # prints the tracked store's directory. Reads no
+                              # item and writes none, exactly like --path: there
+                              # is no identity for an L1_TABLE row to substitute.
+    "--doctor",               # parses the store files and reports conflict
+                              # markers, torn lines and secret shapes. It never
+                              # writes, and its subject is the FILES rather than
+                              # any session's items.
+    "--import-tmp",           # relocates bytes this machine already had, from
+                              # the legacy TMPDIR log into the tracked store. It
+                              # claims no ownership: every item keeps the owner
+                              # it already carried, which is why it takes no <me>.
     "--help", "-h", "help",   # prints the catalogue
     "--path", "--compact",    # store-level queries, no identity
     "--requests",             # unfiltered listing of everybody's requests

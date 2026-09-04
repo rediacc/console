@@ -2939,15 +2939,17 @@ def run_stop(event, event_ok, worklist, hook_file):
                     c["evidence"],
                 )
             )
-            for it in c["items"][:3]:
-                lines.append("      - [%s] #%s %s" % (it["state"], it["id"], it["text"][:110]))
+            lines.extend(
+                "      - [%s] #%s %s" % (it["state"], it["id"], it["text"][:110])
+                for it in c["items"][:3]
+            )
         lines.append(
             "  Continue one or more: /migrate  (it lists them, ASKS which, and moves "
             "nothing unasked)."
         )
         lines.append(
             "  Until then list them under '## Remaining' as \"inherited from <prefix>, "
-            "unclaimed\" so a compaction summary carries them."
+            'unclaimed" so a compaction summary carries them.'
         )
         return "\n".join(lines)
 
