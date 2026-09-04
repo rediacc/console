@@ -5340,6 +5340,21 @@ export const GATES: readonly GateSpec[] = [
     },
   },
   {
+    // A gate that scans and finds nothing prints a tick indistinguishable from a
+    // clean tree. Seeded shrink-only: 47 enumerating checks carry no vacuity guard
+    // today, and a wall of 47 is a gate somebody disables.
+    id: 'check:ci-enumeration-vacuity',
+    run: 'npm run check:ci-enumeration-vacuity',
+    gate: true,
+    leaves: ['scripts/check-enumeration-vacuity.ts'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-code',
+      step: 'Enumeration vacuity',
+    },
+  },
+  {
     // A build that broke with no commit behind it: private/account's image resolved
     // its whole dep tree live, and a package published that morning crashed npm's
     // arborist. This is the regression test for the CLASS, not for that package.

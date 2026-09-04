@@ -930,6 +930,16 @@ jobs:
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: .ci/scripts/quality/check_docker_npm_pins.py
 
+      # Beside the pin gate because it is the same failure wearing different clothes:
+      # that one catches a version that moves on its own, this one catches a check
+      # that stops looking. A gate whose scan comes back empty prints a tick, and the
+      # tick reads exactly like a clean tree -- which is how four separate gates in
+      # this repo went briefly blind, each found by hand and each invisible to the
+      # others.
+      - name: Enumeration vacuity
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: npm run check:ci-enumeration-vacuity
+
       - name: Format
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: npm run check:format

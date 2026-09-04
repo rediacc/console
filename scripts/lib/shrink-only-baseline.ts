@@ -178,6 +178,65 @@ export const renderRefusal = (
  * by a function that returns [] for everything, which is precisely the no-op this module
  * was written to replace.
  */
+/**
+ * The WHOLE `--write-baseline` path, in one call.
+ *
+ * EXTRACTED 2026-09-04, and by the duplication gate rather than by taste: adding a fourth
+ * consumer put the read-previous / verdict / refuse / write / log sequence over three
+ * copies, in files that had each retyped it. `writeBaselineVerdict` above was already the
+ * shared DECISION; this is the shared PLUMBING around it, which is the half that actually
+ * gets copied. A consumer that hand-rolls it can still drift -- forgetting the refusal, or
+ * logging a smaller number after absorbing an addition -- which is the exact failure the
+ * module's own header opens with.
+ *
+ * Returns true when the baseline was written; on a refusal it prints and returns false, and
+ * the caller exits non-zero without writing anything.
+ */
+export const commitBaseline = (input: {
+  path: string;
+  label: string;
+  noun: string;
+  key: string;
+  note: string;
+  current: readonly string[];
+  firstSeed: boolean;
+  read: (p: string) => string | null;
+  write: (p: string, body: string) => void;
+  log?: (line: string) => void;
+  err?: (line: string) => void;
+}): boolean => {
+  const raw = input.read(input.path);
+  const had = raw !== null;
+  const previous: string[] = had ? (JSON.parse(raw)[input.key] ?? []) : [];
+  const verdict = writeBaselineVerdict({
+    baselineExists: had,
+    firstSeedFlag: input.firstSeed,
+    additions: had ? baselineAdditions(previous, [...input.current]) : [],
+  });
+  if (verdict !== null) {
+    (input.err ?? console.error)(
+      `\n\u001b[31m\u2717\u001b[0m ${renderRefusal(verdict, {
+        baselineLabel: input.label,
+        noun: input.noun,
+        previousCount: previous.length,
+        newCount: input.current.length,
+        rekeyHint: false,
+      })}`
+    );
+    return false;
+  }
+  input.write(
+    input.path,
+    `${JSON.stringify({ note: input.note, [input.key]: input.current }, null, 2)}\n`
+  );
+  const drained = previous.filter((f) => !input.current.includes(f)).length;
+  (input.log ?? console.log)(
+    `baseline written: ${input.current.length} entr(ies) (${previous.length} before, ` +
+      `${drained} drained, 0 added)`
+  );
+  return true;
+};
+
 export const sharedSelftestCases = (): { name: string; ok: boolean; detail?: string }[] => {
   const old = ['a.json:k1', 'a.json:k2', 'a.json:k3'];
   const v = (o: Partial<Parameters<typeof writeBaselineVerdict>[0]>) =>
