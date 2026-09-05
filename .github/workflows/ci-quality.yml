@@ -1447,13 +1447,6 @@ jobs:
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: npm run check:ci-e2e-skip-hygiene
 
-      # external_quality (not the old inline label expression): hard on a
-      # normal PR, absent on a labelled one, soft on the nightly. The old
-      # guard was PR-only, so this gate never ran on schedule at all; now it
-      # runs there too, warning instead of blocking.
-        env:
-          EXTERNAL_QUALITY_MODE: ${{ inputs.external_quality }}
-
       - name: External links
         if: ${{ !cancelled() && steps.setup.outcome == 'success' && inputs.external_quality != 'skip' }}
         run: .ci/scripts/quality/run-external-gate.sh npm run check:ci-external-links
