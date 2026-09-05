@@ -5756,6 +5756,15 @@ def run_stop(event, event_ok, worklist, hook_file):
                 )
                 wl_reggate.save_reggate(reg_marker, reg_state)
                 reg_settled = (payload, detail)
+                # SPEND THE BUDGET, and only here. `proven` is the one settle
+                # that cost a real artifact and a real CI round; the cheap
+                # settles (covered/one-off/not-applicable/deferred) cost neither,
+                # and charging them would let a session farm the budget with five
+                # honest one-offs to buy a pass on the sixth, real gate.
+                # Suppressed on failure: the ledger must never raise into gating.
+                if payload == "proven":
+                    with contextlib.suppress(Exception):
+                        wl_reggate.charge(C.git_branch(root), reg_sig, "proven")
                 # STICKY: the fixset is persisted, so every later stop absorbs
                 # this verdict silently and the text never returns.
                 outq_add(
@@ -5769,15 +5778,73 @@ def run_stop(event, event_ok, worklist, hook_file):
                     sticky=True,
                 )
             if kind == "block":
-                counter.write_text(str(streak + 1))
-                C.emit(
-                    {
-                        "systemMessage": "Stop hook: a fix landed with no "
-                        "regression gate (fix-set %s). Blocking." % reg_sig[:8],
-                        "decision": "block",
-                        "reason": payload + guide_tail,
-                    }
-                )
+                # ---- THE EFFORT CAP (operator ruling 2026-09-05T01:55Z) ------
+                # The judge was still ASKED and still ANSWERED: the finding above
+                # is fully computed and every claim already verified against
+                # artifacts. Only its SCHEDULE changes here. A cap that skipped
+                # the question would produce a debt with no content, which is
+                # indistinguishable from the machinery breaking.
+                #
+                # Failure is suppressed and falls through to the normal block:
+                # if the ledger cannot be read, the cap does not fire, so a
+                # broken ledger can only make the hook STRICTER, never laxer.
+                capped = False
+                with contextlib.suppress(Exception):
+                    br = C.git_branch(root)
+                    charged, remaining, _debts, forgot = wl_reggate.budget_state(br, root)
+                    if not forgot and remaining <= 0:
+                        rg = verdict.get("regression_gate") or {}
+                        wl_reggate.append_ledger(
+                            br,
+                            {
+                                "kind": "debt",
+                                "sig": reg_sig,
+                                "blind_spot": str(rg.get("blind_spot", ""))[:300],
+                                "surface": str(rg.get("surface", ""))[:20],
+                                "artifact": str(rg.get("artifact", ""))[:200],
+                                "charged": charged,
+                            },
+                            root=root,
+                        )
+                        wl_reggate.charge(br, reg_sig, "capped")
+                        reg_state["fixsets"][reg_sig] = {
+                            "verdict": "capped",
+                            "existing_gate": "",
+                            "blind_spot": str(rg.get("blind_spot", ""))[:300],
+                            "surface": str(rg.get("surface", ""))[:20],
+                            "artifact": str(rg.get("artifact", ""))[:200],
+                            "at": C.stamp_now(),
+                        }
+                        wl_reggate.save_reggate(reg_marker, reg_state)
+                        outq_add(
+                            worklist,
+                            session_id,
+                            state_doc,
+                            "reg-capped",
+                            "Regression gate CAPPED at %d/%d on branch %s: fix-set %s "
+                            "is now a tracked DEBT, not a dropped finding. It returns "
+                            "as a hard block when the branch lands or after %dm."
+                            % (
+                                charged,
+                                wl_reggate.REGGATE_CAP,
+                                br,
+                                reg_sig[:8],
+                                wl_reggate.REGGATE_DEBT_GRACE_MIN,
+                            ),
+                            1,
+                            sticky=True,
+                        )
+                        capped = True
+                if not capped:
+                    counter.write_text(str(streak + 1))
+                    C.emit(
+                        {
+                            "systemMessage": "Stop hook: a fix landed with no "
+                            "regression gate (fix-set %s). Blocking." % reg_sig[:8],
+                            "decision": "block",
+                            "reason": payload + guide_tail,
+                        }
+                    )
         # v12: the audit verdicts are processed BEFORE stop/continue, same
         # precedence argument as the regression gate: a banked "valid" must
         # persist, and a do_now must fire, whatever the judge said about the
