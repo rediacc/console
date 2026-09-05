@@ -33,7 +33,19 @@
  *                           value from Bitwarden, so it cannot come from
  *                           Bitwarden itself. agent/PLAN-github-secrets-removal.md:17
  *                           names it the sole survivor.
- *   BREAKPOINT_TUNNEL_TOKEN repo-scoped debug tunnel, deliberately not org-wide
+ *   BREAKPOINT_TUNNEL_TOKEN NOT because it is repo-scoped -- that was the wrong
+ *                           reason, corrected 2026-09-05. It is fully backed up
+ *                           (Secrets Manager as CLOUDFLARE_BREAKPOINT_TUNNEL_TOKEN,
+ *                           and the vault), so recovery is not the issue. Its main
+ *                           consumer breakpoint.yml deliberately has NO Bitwarden
+ *                           fetch: the bws-secrets action exports through
+ *                           GITHUB_ENV, and that job's later steps include
+ *                           `Start debug shell` -- a human on a shell in the runner
+ *                           -- so fetching would promote credentials from step
+ *                           scope to something that human can read. See
+ *                           .github/workflows/breakpoint.yml:188-207, which says a
+ *                           cutover "needs a DIFFERENT shape than the others".
+ *                           Until that shape exists, these reads must stay.
  *   CLAUDE_CODE_OAUTH_TOKEN repo-scoped on renet/account/elite
  */
 import { existsSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
