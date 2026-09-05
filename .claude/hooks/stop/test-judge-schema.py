@@ -1628,24 +1628,62 @@ finally:
 # added to the code and NOT to this list is what the corpus floor below catches.
 # ---------------------------------------------------------------------------
 
+# EVERY SCHEMA DEFINITION IN THE HOOK TREE, not just the five that reach the CLI
+# as a payload. The first version of this listed the five call sites, and that was
+# too narrow twice over: CLASS_SWEEP_SCHEMA and BRAVE_DEFAULT_SCHEMA are composed
+# INTO judge_schema_for's output rather than passed directly, and JUDGE_SCHEMA is
+# the reference that judge_schema_for deep-copies. A drift in any of those is a
+# drift in what the model is actually held to, and none of them was covered.
 SCHEMA_SITES = {
+    "JUDGE_SCHEMA": wl_judge.JUDGE_SCHEMA,
     "TRIAGE_SCHEMA": wl_judge.TRIAGE_SCHEMA,
     "PLANFID_SCHEMA": wl_judge.PLANFID_SCHEMA,
     "ADMISSION_SCHEMA": wl_judge.ADMISSION_SCHEMA,
     "judge_schema_for()": wl_judge.judge_schema_for(""),
+    "wl_shapedup.SHAPE_SCHEMA": _stubbed_shapedup.SHAPE_SCHEMA,
     "wl_shapedup.ASK_SCHEMA": _stubbed_shapedup.ASK_SCHEMA,
+    "wl_classsweep.CLASS_SWEEP_SCHEMA": wl_classsweep.CLASS_SWEEP_SCHEMA,
+    "wl_bravedefault.BRAVE_DEFAULT_SCHEMA": wl_bravedefault.BRAVE_DEFAULT_SCHEMA,
 }
 
 # ANTI-VACUITY: an empty or shrunken set would pass every assertion below while
 # checking nothing, which is the failure this whole file exists to distrust.
-control("PART 6: the schema corpus is all five sites", len(SCHEMA_SITES), 5)
+control("PART 6: the schema corpus is all nine definitions", len(SCHEMA_SITES), 9)
+
+
+def _object_subschemas(node, path=""):
+    """[(path, node)] for every nested object schema, root included.
+
+    THE TOP LEVEL IS NOT THE WHOLE SCHEMA. Checking only the root would have
+    passed a JUDGE_SCHEMA whose `admission` object had lost its constraint while
+    the root kept one -- and the nested objects are where the model's actual
+    answer shape is pinned down. 22 of them across this corpus, against 9 roots.
+    """
+    out = []
+    if isinstance(node, dict):
+        if node.get("type") == "object" and isinstance(node.get("properties"), dict):
+            out.append((path or "<root>", node))
+        for k, v in node.items():
+            out.extend(_object_subschemas(v, f"{path}.{k}" if path else k))
+    elif isinstance(node, list):
+        for i, v in enumerate(node):
+            out.extend(_object_subschemas(v, f"{path}[{i}]"))
+    return out
+
+
+_ALL_SUBS = [(n, p, sub) for n, sch in SCHEMA_SITES.items() for p, sub in _object_subschemas(sch)]
+# A NAMED FLOOR, not "> 0": the quiet collapse is a walker that still finds a
+# handful after a rename hides the rest. 22 at the time of writing.
+control("PART 6: the walk reaches every nested object schema", len(_ALL_SUBS) >= 20, True)
+for _n, _p, _sub in _ALL_SUBS:
+    control(f"{_n} at {_p} refuses unknown keys", _sub.get("additionalProperties"), False)
 
 for _name, _sch in SCHEMA_SITES.items():
     control(f"{_name} is an object schema", _sch.get("type"), "object")
     control(f"{_name} declares properties", bool(_sch.get("properties")), True)
-    # THE DRIFT ITSELF. Without this, the shapedup wrapper's missing constraint
-    # is invisible: it is valid JSON Schema and the CLI accepts it happily.
-    control(f"{_name} refuses unknown top-level keys", _sch.get("additionalProperties"), False)
+    # The additionalProperties clause lives in the RECURSIVE walk above, which
+    # covers each root as well as its nested objects; asserting it twice here
+    # would just inflate the count.
     # It has to survive json.dumps, because that is literally the next thing the
     # call site does with it, and a TypeError there raises inside a Stop hook.
     try:
