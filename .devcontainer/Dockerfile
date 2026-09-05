@@ -32,7 +32,17 @@ ARG GO_VERSION=1.26.6
 # otherwise. It is kept because it widens cover to errors curl does not class as transient
 # (a truncated body, a DNS hiccup mid-transfer), which cost nothing here. Requires curl
 # >= 7.71; the base image is ubuntu-24.04, which ships 8.x.
-ARG CURL_RETRY="--retry 5 --retry-delay 3 --retry-all-errors --retry-max-time 180"
+# THE 180s BUDGET WAS UNREACHABLE, and the fix is a deletion. `--retry-delay 3`
+# pins a FIXED delay, which switches curl's exponential backoff OFF: 5 attempts
+# three seconds apart spend ~15s and then stop, so `--retry-max-time 180` never
+# governed anything. Measured 2026-09-05, devcontainer arm64 job 101297291339:
+# gitlab.com answered 502 to the glab .deb at 0.177s, 3.190, 6.206, 9.220, 12.23,
+# 15.25 -- six attempts inside sixteen seconds, then the build failed. Any outage
+# outliving fifteen seconds beat this every time.
+# Dropping the fixed delay restores curl's default backoff (1s, 2s, 4s, 8s, ...,
+# doubling) and raising the count lets it actually reach the declared ceiling:
+# ~127s of waiting across 8 attempts, bounded by --retry-max-time.
+ARG CURL_RETRY="--retry 8 --retry-all-errors --retry-max-time 180"
 
 # Align the vscode user with the Rediacc universal UID/GID (7111). This matches
 # common.RediaccUID in renet and the host-side ownership of /mnt/rediacc/...
