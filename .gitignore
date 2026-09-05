@@ -146,6 +146,13 @@ audit-report.json
 # i18n naturalization-ledger flock sidecar (private/growth/i18n_pipeline ledger.update)
 packages/www/src/i18n/translations/*.lock
 
+# reggate effort-cap ledger flock sidecar. The LEDGER itself
+# (agent/reggate/<branch>.jsonl) is deliberately TRACKED -- it rides the PR so a
+# reviewer sees the deferred gate debts in the diff, and a CI gate can read it.
+# Only the lock is an artifact. Third instance of this same shape; no .lock file
+# is tracked anywhere in this repo.
+agent/reggate/*.lock
+
 # NO RULE FOR AGENT WORKING NOTES, deliberately, and this note is here so the
 # absence reads as a decision rather than an oversight. They used to live in a
 # gitignored `.agent/`; they now live in the TRACKED `agent/<session-prefix>/`
