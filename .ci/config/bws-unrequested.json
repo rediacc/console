@@ -125,16 +125,6 @@
       "worklist": "481f326d",
       "expires": "2026-11-01",
       "reason": "REAL GAP, as OBS_OTLP_CREDENTIALS_EU. Create with `./run.sh rotation rotate otlp-asia`."
-    },
-    "AWS_SES_ACCESS_KEY_ID_ASIA": {
-      "kind": "superseded-at-runtime",
-      "superseded_by": "EU",
-      "reason": "set-account-worker-secrets.sh:123-131 reads this name and then unconditionally overwrites it with the EU pair whenever SUFFIX is ASIA, because ap-northeast-1 production access has not been granted. The org secret exists and is reachable, but its value reaches a deploy environment and is discarded. Operator ruling 2026-09-02: do not mint an ASIA IAM key."
-    },
-    "AWS_SES_SECRET_ACCESS_KEY_ASIA": {
-      "kind": "superseded-at-runtime",
-      "superseded_by": "EU",
-      "reason": "set-account-worker-secrets.sh:123-131 reads this name and then unconditionally overwrites it with the EU pair whenever SUFFIX is ASIA, because ap-northeast-1 production access has not been granted. The org secret exists and is reachable, but its value reaches a deploy environment and is discarded. Operator ruling 2026-09-02: do not mint an ASIA IAM key."
     }
   },
   "no_fetch_jobs": {
