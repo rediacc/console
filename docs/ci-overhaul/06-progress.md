@@ -7441,3 +7441,92 @@ skipped is the round that cost a CI red.
 summary, which has no replies endpoint — the answer must be a NEW top-level comment. A
 resolved thread and a replied comment are different facts, and passing one says nothing
 about the other.
+
+## Wave 12 — the wave landed, and the machinery that was supposed to bound it
+
+PR #585 merged at 07:32Z. Four stacked PRs (renet #110, account #85, elite #16, console
+#585); `main` went `079edc5d4` → `35933a303` → `afc146913`.
+
+### `gh pr merge --rebase` refuses past a size threshold
+
+`GraphQL: This branch can't be rebased`, on a PR whose `mergeable_state` read `clean`.
+GitHub computes `rebaseable` separately and gives up on it somewhere above 193 commits:
+`{mergeable: true, mergeable_state: "clean", rebaseable: false}`. Not a conflict, and not
+the unresolved-thread or stale-head case.
+
+The recovery is a plain fast-forward push of the branch tip onto `main`, and it is only
+safe after **proving** the ancestry: `git rev-list --left-right --count origin/main...HEAD`
+answered `0 191`, so nothing needed replaying. GitHub then flips the PR to `MERGED` itself
+and deletes the branch. Not `--merge` (adds a merge commit) and not `--squash` (rejected
+repo-wide).
+
+### An exemption ledger that documents but does not switch
+
+`Release to Edge` failed in FOUR jobs on one step — all three account regions plus the
+marketing worker — because GitHub and Bitwarden disagree on three secrets. The drift
+**pre-dated** the shadow: the previous edge deploy ran ZERO comparisons (no
+`shadow <NAME> match|MISMATCH` line anywhere in its log), because those names were first
+shadowed by this very merge. Nothing regressed; the comparison simply ran for the first
+time.
+
+The trap is worth stating plainly, because fixing it wrongly looks identical to fixing it:
+**`.ci/config/shadow-expected-mismatches.json` is documentation.** The compare reads
+`SHADOW_EXPECTED_MISMATCH`, a literal env var written per workflow, and
+`cd-deploy-account.yml` set it not at all. Editing only the ledger produces a change that
+reviews well, passes locally and alters nothing. Both halves are wired now, and
+`check_bws_map.py` assertion 12 binds them in both directions — an exemption nobody wrote
+down fails, and a reason that outlived its exemption fails too.
+
+Class swept afterwards: 40 shadow-compare steps across 19 workflow files, exactly 4 shadow
+a drifted name, all 4 excuse it. Zero exposed siblings. The first sweep script reported one
+and was **wrong** — it paired `SHADOW_NAMES` to `SHADOW_EXPECTED_MISMATCH` by index, and a
+file with eleven of the former and one of the latter fell through to empty.
+
+### The effort cap exists now, and a compacted session needs to know
+
+Operator ruling, 2026-09-05T01:55Z: cap runaway regression-gate work, and **on the hook
+side, not by a session deciding it has complied enough**. Steps 2-3 of
+`agent/PLAN-reggate-effort-cap.md` are in:
+
+- `agent/reggate/<branch>.jsonl` — append-only, **tracked**, scoped to the BRANCH. Not the
+  session: `reggate_path` is session-keyed, so a per-session budget evaporates exactly when
+  a long night makes compaction likely.
+- `REGGATE_CAP` 7. Only a `proven` settle charges it — the cheap settles cost no artifact
+  and no CI round, and charging them would let a session farm the budget with five honest
+  one-offs to buy a pass on the sixth, real gate.
+- The cap sits at the CALLER's block site. `apply_regression_verdict` is untouched, so it
+  stays a pure verdict-to-action mapping. The judge is still asked and still answers; only
+  the schedule changes.
+- The whole thing is inside `contextlib.suppress` and falls through to the normal block, so
+  a broken ledger can only make the hook **stricter**.
+
+The counter resets when the branch lands; debts do not. A merge resets the counter and
+simultaneously makes every debt due — merging is what makes you pay.
+
+### Four defects, none visible by reading
+
+`_append_lines` serialises payloads itself, so a pre-encoded string double-encoded every
+record and read back as nothing — an empty ledger is an empty budget. Caught only because
+the proof asserted a read-BACK count. `C._git` takes root first and returns stdout, so
+`merge-base --is-ancestor`, which answers through its exit code, made a merged branch and a
+broken git the same empty string. The branch helper is `git_branch`, not `current_branch`.
+And the ledger wrote into the operator's real tree during suite runs until it learned
+`$WORKLIST_STORE_DIR`, which is the same footgun the harness paid for once already.
+
+### A retry that declared 180s and spent 15
+
+`gitlab.com` 502'd the glab `.deb` and took the devcontainer arm64 build, `CI Complete` and
+`Pipeline Sentinel` with it. `CURL_RETRY` read
+`--retry 5 --retry-delay 3 --retry-all-errors --retry-max-time 180`, and the fixed
+`--retry-delay` switches curl's exponential backoff **off**: five attempts three seconds
+apart, ~15s, and the 180s ceiling never governed anything. The log's timestamps say it —
+0.177s, 3.190, 6.206, 9.220, 12.23, 15.25. Any outage outliving fifteen seconds beat it
+every time. The fix is a deletion; measured against a refused port, fixed is 9.1s and
+default backoff is 7.0s for three retries, so the backoff is real.
+
+### One more oracle that lies by omission
+
+`check:ci-python-lint` prints `All checks passed!` on **stdout** while a format failure goes
+to **stderr**. Running it directly and reading what appeared showed a pass; only the runner,
+which captures both streams, showed the red. Same shape as the Review Gate's reply oracle
+above: the stream you read is not necessarily the stream that decides.
