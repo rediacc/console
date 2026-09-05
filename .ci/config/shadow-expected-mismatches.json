@@ -38,6 +38,21 @@
       "reason": "BLOCKER: the two copies are the SAME KEY stored as different bytes. Proven 2026-09-04 without reading the GitHub value: the Bitwarden copy (uuid b6c8d767-...-b4b900b82d3a, fetched with the pinned sm-action) carries primary fingerprint 42EAD1408A684AB8F185F03F49BA687F0527C72B and subkey A9B4F1271093AC04C9DF310C29D8083F0A34F01D, identical to .ci/keys/gpg-public.asc; and https://releases.rediacc.com/apt/edge/dists/stable/Release.gpg (signed 2026-09-02 by CD with the GITHUB copy, org secret GPG_PRIVATE_KEY mapped in ci.yml:947-975) gives 'Good signature' with that committed public key, using that subkey. RELEASE_GPG_PASSPHRASE matches. So signing works from either copy and the drift is byte-level -- an armored block stored with or without its trailing newline is the likely shape; the compare now prints which kind it saw ([whitespace-only ...] or [content differs]) without exposing a byte. GitHub secrets are write-only, so which side to normalise cannot be decided from here; the babysit did not overwrite an unreadable org secret on its own authority.",
       "found_in_run": "33904687989 (Stage Artifacts, job 101132642274: 'shadow RELEASE_GPG_PRIVATE_KEY MISMATCH', the four other names in the job match)",
       "door": "operator-only"
+    },
+    "ACCOUNT_BACKUP_S3_ACCESS_KEY_ID": {
+      "reason": "BLOCKER: the two copies hold DIFFERENT VALUES, verdict [content differs] (not [whitespace-only], so no normalisation can reconcile them from here). Found on the shadow's FIRST EVER run in this job: the 2026-09-02 edge deploy (run 33584863376, job 100108997744) ran ZERO shadow comparisons -- checked, the log contains no 'shadow <NAME> match|MISMATCH' line at all -- so cd-deploy-account.yml:243 shadowing this name arrived with 35933a303. The drift therefore PRE-DATES the shadow and was merely invisible; nothing regressed on 2026-09-05. Its blast radius is the whole edge deploy: all three regions plus the marketing worker failed on this one step, before any deploy work ran.",
+      "found_in_run": "33955200168 (Release to Edge; Deploy edge eu job 101278066946, and identically in edge us, edge asia and Deploy edge Worker -- 4 jobs, same step)",
+      "door": "operator-only"
+    },
+    "ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY": {
+      "reason": "BLOCKER: same finding and same run as ACCOUNT_BACKUP_S3_ACCESS_KEY_ID, and the pair is almost certainly one fact: an S3 key id and its secret are rotated together, so one side holds an older credential PAIR. Verdict [content differs] on both. Note ACCOUNT_BACKUP_S3_ENDPOINT MATCHES in the same run, which is what makes the pair reading likely rather than a wholesale config divergence.",
+      "found_in_run": "33955200168 (Release to Edge; Deploy edge eu job 101278066946, and identically in edge us, edge asia and Deploy edge Worker -- 4 jobs, same step)",
+      "door": "operator-only"
+    },
+    "CLOUDFLARE_TURNSTILE_SECRET_KEY": {
+      "reason": "BLOCKER: the two copies hold DIFFERENT VALUES, verdict [content differs]. Independent of the S3 pair above -- different provider, different rotation path -- but found in the same first shadow run. Worth the operator knowing which side is live: this is the Turnstile server-side verification key, so the copy that is NOT deployed will silently reject every human challenge if it is ever picked as authoritative.",
+      "found_in_run": "33955200168 (Release to Edge; Deploy edge eu job 101278066946, and identically in edge us, edge asia and Deploy edge Worker -- 4 jobs, same step)",
+      "door": "operator-only"
     }
   },
   "$resolution": [
