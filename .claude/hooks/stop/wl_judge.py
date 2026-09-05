@@ -213,7 +213,7 @@ def _budget_headroom(env_out):
 SCHEMA_EXHAUSTION = "error_max_structured_output_retries"
 
 
-def _retry_schema_exhaustion(label, proc, call):
+def retry_schema_exhaustion(label, proc, call):
     """(proc, None) to carry on, or (None, why) to give up, for a NON-ZERO exit.
 
     THE BUG THIS FIXES, measured 2026-09-04. A stop was blocked with
@@ -410,7 +410,7 @@ def run_triage(finding, context):
     except OSError as exc:
         return None, "triage could not be launched: %s" % exc
     if proc.returncode != 0:
-        proc, _why = _retry_schema_exhaustion("triage", proc, _call)
+        proc, _why = retry_schema_exhaustion("triage", proc, _call)
         if proc is None:
             return None, _why
     try:
@@ -521,7 +521,7 @@ def _run_structured(label, prompt, schema, extract):
     except OSError as exc:
         return None, "%s could not be launched: %s" % (label, exc)
     if proc.returncode != 0:
-        proc, _why = _retry_schema_exhaustion(label, proc, _call)
+        proc, _why = retry_schema_exhaustion(label, proc, _call)
         if proc is None:
             return None, _why
     try:
@@ -642,7 +642,7 @@ def run_admission(message):
     except OSError as exc:
         return None, "admission could not be launched: %s" % exc
     if proc.returncode != 0:
-        proc, _why = _retry_schema_exhaustion("admission", proc, _call)
+        proc, _why = retry_schema_exhaustion("admission", proc, _call)
         if proc is None:
             return None, _why
     try:
@@ -925,7 +925,7 @@ def run_judge(
     except OSError as exc:
         return None, "judge could not be launched: %s" % exc
     if proc.returncode != 0:
-        proc, _why = _retry_schema_exhaustion("judge", proc, _call)
+        proc, _why = retry_schema_exhaustion("judge", proc, _call)
         if proc is None:
             return None, _why
     try:

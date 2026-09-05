@@ -1,63 +1,59 @@
-## SESSION d1589e0b 2026-09-04T23:33:29Z
+## SESSION d1589e0b 2026-09-05T00:03:50Z
 
 # d1589e0b — babysit 0903-1, then merge, then main, then the prod release
 
 ## Next action
-Read worker b1r0q48tl (worklist suite, greps FAIL). It names the two assertions
-that regressed from the 922/0 baseline, and it doubles as an experiment: a PEER
-suite has been running concurrently, so a clean result means those two were
-contention, not regressions. Then `ci:quick`, commit my uncommitted work, push.
-Separately, CI cannot go green until peer 74de73ca lands four floors (below);
-waiter bl6kfap9j is armed on request #1eb71e3b.
+Read worker **bb020xg9j** (`ci-trace --wait --until-final`) on head **786117ee5**.
+Green: PR 585 is already non-draft and mergeable, so the Claude review fires by
+itself; address its threads, resolve them, then `/pr-merge` (#e9ad31ad). Red:
+read the FULL failed-step log with
+`gh api repos/rediacc/console/actions/jobs/<id>/logs --allow-escape-sequences`,
+fix, `GH_TOKEN=$(gh auth token) npm run ci:quick`, push.
 
 ## Where the branch is
-HEAD == origin/0903-1 == **780b96cdb**. Console CI run **33928012450** is RED on
-it. Read the JOB conclusions, never the run's: 1 failure, 5 cancelled alongside
-= watchdog kill. The ddc4fa17d run also reads `cancelled` but is the SUPERSEDED
-shape (0 failures, newer commit exists).
+HEAD == origin/0903-1 == **786117ee5**. My working tree holds nothing of mine.
+PR #585, non-draft, mergeable, no review yet on this head.
 
-## THE BLOCKER: four floors committed-test-without-implementation
-Job 101201197468: `FAIL: retire-shadowed-secrets: an impossible MIN_WORKFLOWS
-was accepted`. The peer's test is RIGHT and the tree is wrong — the whole floor
-is UNCOMMITTED while the test requiring it is tracked. The test exits on first
-failure, so THREE MORE REDS are queued. All four are uncommitted:
+Recent chain: 780b96cdb (mine) -> 840185431 (peer: 16 vacuity floors) ->
+385bb06bb (peer: revert of the wl_checks softening) -> 786117ee5 (mine).
 
-  .ci/scripts/housekeeping/retire-shadowed-secrets.py  MIN_WORKFLOWS    failing
-  .ci/scripts/security/shfmt.sh                        MIN_SHELL_FILES  masked by the 77 SKIP
-  scripts/dev/secret-rename.py                         MIN_FILES        next
-  scripts/lib/action-refs.ts                           MIN_ACTION_FILES after
-
-They are the peer's. Do NOT commit them; #1eb71e3b asks them to land all four in
-ONE commit and offers to land them on their word. If they go silent for a long
-stretch, that offer is the escalation, not a unilateral commit.
-
-## The rule this branch has now paid for three times
-**Every local gate reads the WORKING TREE; CI checks out only TRACKED files.** A
-committed test may not depend on uncommitted behaviour, and no local gate can
-see it. Round 9's sweep reported 0 siblings but only checked tests against
-MANIFEST entries, never against the CODE they exercise — same class, missed.
-TRAPS `working-tree-green-tracked-tree-red`. Read `git diff --cached --stat`
-before every commit. Also: do not edit a file a running suite reads (cost two
-restarts tonight).
-
-## Uncommitted, mine alone
-1. **wl_judge.py + test-judge-schema.py** — the judge exited 1 on
+## What 786117ee5 carries
+1. **The stop-gate judge retry.** It exited 1 on
    `error_max_structured_output_retries` and skipped the retry the identical
-   exit-0 failure already gets, so a flake was reported as a broken gate offering
-   WORKLIST_JUDGE=off. Real call verified 3/3 valid at 4-5x the failing cost. One
-   shared helper at all four call sites; 9 paired controls; judge left ARMED.
-2. **26-migrate.sh case 204** — fold(store) == fold(compact(store)) across every
-   record key, all four states, with anti-vacuity and an inverted control. Passes.
+   exit-0 failure already gets, so a flake was reported as a broken gate and the
+   session was offered `WORKLIST_JUDGE=off`. Verified otherwise: the model
+   answers, and the real call returned a valid verdict 3/3 at 4-5x the failing
+   run's cost. `_retry_schema_exhaustion` now serves all four judge call sites.
+   9 paired controls. **The judge is ARMED, never disabled.**
+2. **Case 204**, the compaction property: `fold(store) == fold(compact(store))`
+   over every record key, all four states, with anti-vacuity and a control that
+   strips `o` and requires the same comparison to fire.
+3. **check-unverified-downloads.ts:178**, TS2352. Its fixture used
+   `kind: 'download'`, absent from the `'fetch' | 'image'` union, with a cast
+   hiding it. Committed code failing CI, so I fixed it and told the peer
+   (#d50c13eb) rather than leaving the branch red.
 
-## The three orders
+Verified before pushing: suite 925/0, ci:quick 307/307, tsc clean on
+scripts/tsconfig.json, check:ci-unverified-downloads green with controls firing.
+
+## Open threads with the peer (74de73ca, live in this same worktree)
+- #d50c13eb: told them I edited their committed file; they may object.
+- Their `agent/worklist/74de73ca.jsonl` is UNTRACKED and theirs. A blanket
+  `git add -- agent/` swept it into my index this round; `git diff --cached
+  --stat` caught it and `git rm --cached` undid it without touching the file.
+
+## The three operator orders, in sequence
 1. **#e9ad31ad** green + reviewed + threads resolved, then `/pr-merge`.
-2. **#dfe46a93** then follow main, fixing DIRECTLY ON MAIN (operator override).
-   Pre-diagnosed: qs/fast-uri advisories already fixed here.
-3. **#624e1863** then `Release to Production -f force=true`. Failure expected.
-   Verified the 6x failure is already fixed here (promote-stable.yml:74-76,
-   assert-edge-tag-exists.sh:83/:90-91), so the NEXT failure is the real work.
+2. **#dfe46a93** then follow main and fix DIRECTLY ON MAIN (explicit operator
+   override of never-push-main). Pre-diagnosed: main is red from qs/fast-uri
+   advisories already fixed here (dad3748d3, 9c4a029d0), so the merge should
+   clear it. Verify rather than assume.
+3. **#624e1863** then `gh workflow run "Release to Production" -f force=true`,
+   soak skipped. Failure expected. Verified read-only that the 6x failure is
+   already fixed on this branch: promote-stable.yml:74-76 passes the three
+   CLOUDFLARE_R2_* vars into the assert step, and assert-edge-tag-exists.sh:83
+   requires them with :90-91 exporting onto AWS_*. So the NEXT failure is the
+   real work.
 
-## Constraints
-Peer 74de73ca is live in this worktree and branch. Stage HUNKS not files. No
-Co-Authored-By/Generated-with trailers; every commit needs `PR-TASK: 24c98380`.
-Cron 49fa57a0 drives this loop; tear it down only when prod release is green.
+Cron 49fa57a0 wakes this loop every 45 min; tear it down only once the
+production release is green.

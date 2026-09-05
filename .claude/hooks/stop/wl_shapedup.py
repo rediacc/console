@@ -247,8 +247,9 @@ def ask(instances):
     # THE RECURSION GUARD, same as run_judge and run_triage: `claude -p` fires the Stop
     # hook, and without this the rule would ask itself about itself.
     env["STOPHOOK_CHILD"] = "1"
-    try:
-        proc = subprocess.run(
+
+    def _call():
+        return subprocess.run(
             [
                 exe,
                 "-p",
@@ -275,8 +276,23 @@ def ask(instances):
             check=False,
             stdin=subprocess.DEVNULL,
         )
+
+    try:
+        proc = _call()
     except (OSError, subprocess.SubprocessError) as exc:
         return None, "shape_dup model call failed: %s" % exc
+    if proc.returncode != 0:
+        # THE FIFTH SCHEMA-CONSTRAINED CALL SITE, and it was missed when the other
+        # four were fixed. `error_max_structured_output_retries` is one SAMPLE
+        # failing to emit a conforming object, not a broken gate -- measured
+        # 2026-09-04, where the real call answered 3/3 at 4-5x the failing run's
+        # cost. This branch treats every non-zero exit as final, and the comment
+        # below explains why that is expensive HERE in particular: one erroring
+        # case blanks the whole rubric. Retried on exactly that subtype, with
+        # budget headroom, once. Everything else still falls through and reports.
+        proc, _why = wl_judge.retry_schema_exhaustion("shape_dup model call", proc, _call)
+        if proc is None:
+            return None, _why
     if proc.returncode != 0:
         # The TAIL OF THE CHILD'S OUTPUT, because the exit code alone says nothing.
         # The counter path in this same file already does it (see the run_counter
