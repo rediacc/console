@@ -280,9 +280,12 @@ def _snapshot(root, ref, cache, allow_branch=False):
         elif (c.get("status") or "").upper() != "COMPLETED":
             waiting += 1
 
-    # CANCELLED IS NOT A PASS, and the two shapes mean opposites. A cancelled
-    # context beside a real failure is the watchdog killing the run for that
-    # failure; cancelled with nothing failing means a newer push superseded it.
+    # CANCELLED IS NOT A PASS, and the two shapes mean different things. A
+    # cancelled context beside a real failure is the watchdog killing the run for
+    # that failure. Cancelled with nothing failing is a gate that did NOT report:
+    # a newer push is the usual cause, but it is NOT proof of one -- on 2026-09-05
+    # a032863c7 had a cancelled Review Status while being the branch head itself.
+    # Confirm a newer head exists before concluding one does.
     cancelled = [
         c.get("name") or c.get("context") or "?"
         for c in info.get("contexts") or []
@@ -303,10 +306,10 @@ def _snapshot(root, ref, cache, allow_branch=False):
     elif cancelled:
         verdict = "red"
         detail = (
-            # DO NOT assert a newer push here. This said "a newer push superseded"
-            # this run. Trace the newer head." unconditionally, and on 2026-09-05 it
-            # said that for a032863c7, which WAS the branch head -- there was no newer
-            # head to trace. Console CI had succeeded on attempt 2; the cancelled
+            # DO NOT assert a newer push here. This unconditionally said "a newer
+            # push superseded this run. Trace the newer head." -- and on 2026-09-05
+            # it said that for a032863c7, which WAS the branch head, so there was no
+            # newer head to trace. Console CI had succeeded on attempt 2; the cancelled
             # context was Review Status, a gate that genuinely did not report. The
             # cause is a guess, so the message names the observation and leaves the
             # guess to the reader.
