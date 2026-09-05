@@ -1855,12 +1855,38 @@ CTX_POSTCOMPACT_BRIEFING = (
 
 # ---- judge prompts -----------------------------------------------------------
 
+REGGATE_GATE_MAINTENANCE = """
+GATE-MAINTENANCE FIX-SET: every non-bookkeeping file here is a CI gate artifact
+(a check script, a gate test, a gate-support library, a seed, the ci-runner
+manifest, or a ci-* workflow). Derived from `git diff-tree`, not from prose.
+
+That makes question (0) the FIRST one to answer, not the last. A fix to the
+gating machinery is very often a defect an existing gate ALREADY caught, and a
+second gate for it buys nothing. It is not automatically covered -- decide -- but
+do not reach for `gate_needed: true` here by reflex.
+"""
+
 REGGATE_PROMPT = """
 
 A FIX LANDED THIS TURN, so ALSO fill the `regression_gate` object. The fix-set:
 %(fixset)s
 
-Answer FOUR questions about it:
+Answer FIVE questions about it, and question (0) comes first because it is the
+one that was missing:
+
+(0) WAS THIS DEFECT FOUND BY A GATE? If a CI gate or a test FAILED against the
+tree and this fix is what makes it pass, then that gate ALREADY covers this
+defect -- it caught it once and will catch it again. Answer `gate_needed: false`
+and name that gate in `existing_gate`. Do NOT demand a second gate for a defect
+the first one found.
+
+MEASURED 2026-09-04/05, which is why this question exists. Two sessions spent
+roughly 8 and 3 rounds respectively in a self-generating loop: writing gate A
+produced finding B (A's own selftest tail tripped check:ci-shape-duplication,
+A's new file tripped check:ci-gate-manifest leaf-tracked), and fixing B produced
+C. Every one of those findings had ALREADY been caught by an existing gate, so
+the correct verdict was `covered` naming that gate. Each unnecessary round cost a
+full CI cycle on a PR that was already green, reviewed and threads-resolved.
 
 (1) BLIND SPOT: state the property of this defect that made every existing
 check blind to it. This repo's own example: every i18n gate compared a locale

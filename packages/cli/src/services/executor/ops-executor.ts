@@ -7,12 +7,22 @@
  */
 
 import { execSync, spawn } from 'node:child_process';
+import { existsSync } from 'node:fs';
 import { DEFAULTS } from '@rediacc/shared/config';
 import { configService } from '../config/config-resources.js';
 import { extractRenetToLocal, isSEA } from '../core/embedded-assets.js';
 
-/** Default timeout for ops commands (15 minutes — Ceph provisioning needs ~10 min) */
-const OPS_COMMAND_TIMEOUT = 900_000;
+/**
+ * Default timeout for ops commands: 30 minutes, matching the E2E harness's own
+ * budget for the same `renet ops up` (packages/provisioning OpsVMLifecycle).
+ *
+ * It was 15 minutes on the premise that "Ceph provisioning needs ~10 min". It
+ * does not: a measured local cephadm bootstrap runs ~21 minutes, so the cap
+ * killed the very operation it was sized for, and a killed `ops up` is worse
+ * than a slow one -- renet cancels its root context, whatever ssh is in flight
+ * dies as "signal: killed", and the fleet is left half-provisioned.
+ */
+const OPS_COMMAND_TIMEOUT = 1_800_000;
 // Grace between SIGTERM and SIGKILL when an ops command overruns its timeout.
 const OPS_SIGKILL_GRACE = 10_000;
 
@@ -64,11 +74,22 @@ class OpsExecutorService {
       return extractRenetToLocal();
     }
 
+    let staleConfiguredPath: string | null = null;
+
     // Try context-configured renetPath directly (avoids requiring machines/SSH)
     try {
       const context = await configService.getCurrent();
       if (context?.renetPath && context.renetPath !== DEFAULTS.CONTEXT.RENET_BINARY) {
-        return context.renetPath;
+        // Only if it is actually there. A configured renetPath outlives the
+        // checkout it was written from -- this repo uses worktrees, and a
+        // config carrying another worktree's absolute path made `rdc ops
+        // status` die with a bare `spawn /some/other/tree/bin/renet ENOENT`
+        // one line after ./rdc.sh printed "Renet available at:" a DIFFERENT
+        // path it had just built. Naming the stale setting is the whole fix.
+        if (existsSync(context.renetPath)) {
+          return context.renetPath;
+        }
+        staleConfiguredPath = context.renetPath;
       }
     } catch {
       // Context may not be set; fall through to PATH lookup
@@ -79,6 +100,11 @@ class OpsExecutorService {
       const whichCmd = process.platform === 'win32' ? 'where.exe renet' : 'which renet';
       return execSync(whichCmd, { encoding: 'utf-8' }).trim().split('\n')[0];
     } catch {
+      if (staleConfiguredPath) {
+        throw new Error(
+          `renet binary not found. The config's renetPath points at ${staleConfiguredPath}, which does not exist, and renet is not in your PATH. Update renetPath (it is likely left over from a different checkout) or put renet on your PATH.`
+        );
+      }
       throw new Error(
         'renet binary not found. Ensure renet is in your PATH or set renetPath in the config file.'
       );

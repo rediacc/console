@@ -503,6 +503,8 @@ ARITY = {
     "CLI_ADOPT_USAGE": None,
     "CLI_MIGRATE_USAGE": None,
     "CLI_ADOPT_REFUSED": ("me", "prev", "why"),
+    # No format args: it is appended to REGGATE_PROMPT verbatim, never % -ed.
+    "REGGATE_GATE_MAINTENANCE": None,
     "CLI_ADOPT_SELF": ("prev",),
     "CLI_ADOPT_DONE": ("me", "prev", "continued-in", "1 shared record", "bde8bb05", 3, "me"),
 }

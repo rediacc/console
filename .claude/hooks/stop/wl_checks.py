@@ -5555,6 +5555,14 @@ def run_stop(event, event_ok, worklist, hook_file):
                 )
                 or "  (none)",
             }
+            # ARTIFACT-DERIVED HINT, appended only when git says every
+            # non-bookkeeping file in the fix-set is gate machinery. It never
+            # skips a fix-set; it gives question (0) something to bite on.
+            # See wl_reggate.gate_only_fixset. Suppressed on any failure: a
+            # hint must never raise into the stop path.
+            with contextlib.suppress(Exception):
+                if wl_reggate.gate_only_fixset(root, reg_ids):
+                    reg_extra += M.REGGATE_GATE_MAINTENANCE
         audit_extra = ""
         if audit_batch:
             arows = []

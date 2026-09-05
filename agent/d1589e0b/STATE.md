@@ -1,71 +1,63 @@
-## SESSION d1589e0b 2026-09-05T01:33:31Z
+## SESSION d1589e0b 2026-09-05T03:12:42Z
 
-# d1589e0b — babysit 0903-1, then merge, then main, then the prod release
+# d1589e0b — babysit 0903-1: CI RED on Ceph, local repro under way
 
 ## Next action
-Read worker **bfdw1cehl** (`ci-trace --wait --until-final`) on Console CI run
-**33936429438**, head **03190f70c**. **THE REVIEW IS ALREADY DONE**, so green is
-the last gate before `/pr-merge` (#e9ad31ad). Red: read the FULL failed-step log
-via `gh api repos/rediacc/console/actions/jobs/<id>/logs --allow-escape-sequences`,
-fix, `GH_TOKEN=$(gh auth token) npm run ci:quick`, push. **Do not push otherwise**
-— six pushes have already superseded runs mid-flight.
+Read the ops-vms agent's verdict on the Ceph reproduction (it is running; the
+operator asked for a LOCAL repro rather than another CI round). Then read worker
+bws3n07ox, the ci-trace on run **33937342780**, head **3148399c9**.
+Do NOT push while the Ceph cause is unattributed.
 
-## Where the branch is
-HEAD == origin/0903-1 == **03190f70c**. Nothing of mine is uncommitted anywhere,
-including submodules. ci:quick 308/308 on the committed tree.
+## The red, and what is established
+Run 33937342780: `E2E Ceph Workers` (job 101229554338) and `E2E K8s Ceph`
+(101229554379) FAILED; `E2E Ceph` was CANCELLED, which is NOT passed — it never
+reported, so this run gives no same-infrastructure control. Fatal line:
 
-## The review: FIRED, ANSWERED, VERIFIED (this is the new thing)
-The previous run went red on `Review Gate -> Check unreplied review comments`.
-That is NOT a code failure; it means feedback was outstanding.
+    failed to install Docker on node 21: ssh command failed: signal: killed
 
-- Review = issue comment **5546059788**. Verdict: no blocking defects across 352
-  files, ONE real finding.
-- The finding was true: `1e8026bd` extracted a step from ci-quality.yml and left
-  its `env:` block plus the comment above it, so `EXTERNAL_QUALITY_MODE` silently
-  became a key of the PREVIOUS step under a comment describing a step that is
-  gone. Verified before deleting: `scripts/check-e2e-skip-hygiene.ts` has ZERO
-  references to it, and the var stays wired at the 7 sites that do read it.
-  Fixed in **03190f70c**.
-- Replied substantively as issue comment **5548433511**. The gate's own script
-  now prints `answered by comment 5548433511 - OK`.
-- SECOND, INDEPENDENT FACT also checked (a resolved thread and a replied comment
-  are different things): GraphQL reports **0 review threads, 0 unresolved**.
+with the node's own log showing `Available memory: 2204 MB` mid apt install. A
+separate NON-fatal warning: `ghcr.io/rediacc/elite/bridge:latest` manifest
+unknown (I probed: manifest 403, org package listing 404 Package not found).
 
-So the finish line reduces to: this run going green.
+THREE FINDINGS, all negative for the branch being at fault:
+1. `VM_RAM_CEPH: '2560'` on BOTH main (ct-tests.yml:556, :833) and this branch
+   (:623, :940, :1103). The ceiling is NOT new and matches the 2204 MB reported.
+2. The only Ceph-relevant branch change is the renet pointer
+   fcd03347e..23943df5f (commits 90cc4367b, 9f612f4e6): 23 files of Docker SDK
+   v25->v28 CLIENT upgrade, go 1.26.0->1.26.6, dep bumps. Grepping its file list
+   for install/setup/memory/ceph/provision returns NOTHING. build.sh's +16 is a
+   warning message only.
+3. These jobs pass on main across the last three Console CI runs.
 
-## If the Review Gate reds again
-It never auto-retries and cancels the run instantly, so it shows as one failed
-job plus cancelled siblings. No commit is needed: satisfy the oracle, then
-`gh run rerun <id> --failed`. Satisfy the gate's OWN script
-(`.ci/scripts/quality/check-review-comments.sh`), not the API you would reach for
-first — a top-level summary has no replies endpoint, so the answer must be a NEW
-top-level comment.
+**Still UNATTRIBUTED, not environmental.** The open question, which changes the
+fix completely: is `signal: killed` an OOM kill, or renet's OWN ssh timeout
+killing a slow apt install? This box has 56 GB / 24 cores against a 2560 MB CI
+node, so a genuine OOM may need deliberate constraint to reproduce.
 
-## Earlier this round (mine unless noted)
-- **45dd63875** a vacuity floor fired on a fixture built small on purpose:
-  MIN_ACTION_FILES was the only floor in its family with no env override, and the
-  throw also pre-empted the gate's own VACUOUS verdict with a stack trace.
-- **89189c0b5 / 898e55b34 / 49d850a6a** the schema sweep: 5 of 9 definitions were
-  covered and none recursed; the one schema built as an inline literal was the
-  only one missing `additionalProperties: False`. Controls 289 -> 358.
-- **32e191e6c** PEER's `check:ci-schema-call-sites`, complementary to mine.
-- RESOLVED and ticked: private/account's lockfile had drifted 69 packages
-  (not the "reserialisation" I first called it); restored by writing HEAD's blob
-  back, submodule now byte-clean.
+## Uncommitted here (mine)
+The reggate cap's Layer 1: question (0) in REGGATE_PROMPT, `gate_only_fixset` in
+wl_reggate read from `git diff-tree`, its wiring in wl_checks, the
+REGGATE_GATE_MAINTENANCE message and its arity entry, and case 95a.
+Design: agent/PLAN-reggate-effort-cap.md (317 lines, 4 claims verified at source).
 
-## Peer 74de73ca, live in this same worktree
-`agent/worklist/74de73ca.jsonl` is untracked and theirs; leave it. Stage
-explicitly and read `git diff --cached --stat` before every commit.
+**Case 95a has had FIVE defects, every one invisible to reading**: a colliding
+case number; a missing session brief; an unregistered message-constant arity; fix
+commits made BEFORE the marker initialised; and the root of the last three — a
+bare `check` with no `shim_judge`, so no verdict existed and the stop simply
+ALLOWED. Cases 82/83 use package.json + `run` init + `shim_judge` + `checkj`.
+
+## The finish line, otherwise met
+Review = issue comment 5546059788, answered by 5548433511; the gate's own script
+prints `answered by comment 5548433511 - OK`. GraphQL: 0 threads, 0 unresolved.
+The operator ruled out a /code-review ultra pass. So only CI green remains.
+
+## Loops
+45-minute wake `23,8 * * * *`; cross-session mail poll `13,43 * * * *`. Both
+session-only, expiring after 7 days. Tear the wake down only once the production
+release is green.
 
 ## The three operator orders
-1. **#e9ad31ad** green, then `/pr-merge` (review + threads already satisfied).
+1. **#e9ad31ad** green, then `/pr-merge`.
 2. **#dfe46a93** then follow main, fixing DIRECTLY ON MAIN (operator override).
-   Pre-diagnosed: qs/fast-uri advisories already fixed here (dad3748d3,
-   9c4a029d0). Verify, do not assume.
-3. **#624e1863** then `Release to Production -f force=true`, soak skipped.
-   Failure expected; the 6x failure is already fixed here
-   (promote-stable.yml:74-76, assert-edge-tag-exists.sh:83 and :90-91), so the
-   NEXT failure is the real work.
-
-Leased to bfdw1cehl until 03:02Z. Cron 49fa57a0 wakes this every 45 min; tear it
-down only once the production release is green.
+3. **#624e1863** then `Release to Production -f force=true`, soak skipped;
+   failure expected and the release process itself is the work.

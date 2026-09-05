@@ -22,6 +22,7 @@ settled.
 """
 
 import contextlib
+import fnmatch
 import glob
 import hashlib
 import json
@@ -160,6 +161,105 @@ def tick_touches_code(line):
     if not paths:
         return True
     return not all(p.startswith("docs/") or p.endswith(".md") for p in paths)
+
+
+# Paths that are CI-gate MAINTENANCE rather than product code. Derived by
+# checking real commits, not guessed: the first version of this list omitted
+# .github/workflows and scripts/data and therefore answered False for
+# 3148399c9, a commit that is nothing BUT gate maintenance.
+GATE_ARTIFACT_PREFIXES = (
+    "scripts/check-",
+    "scripts/data/",  # gate seeds and baselines
+    "scripts/lib/",  # gate-support libraries: verified 2026-09-05 that
+    # every consumer is a check script or a test, never
+    # product runtime (action-refs, blocker-validator,
+    # gate-header, shrink-only-baseline, controls...)
+    # NOT "packages/" -- that was the first version and it is WRONG in the most
+    # expensive direction: it marks EVERY file under packages/ as gate
+    # maintenance, so all product code would earn the hint. Caught by case 96 in
+    # a fixture repo, where packages/cli/src/real.ts came back True. Sampling 7
+    # real commits had missed it because none touched product code under
+    # packages/ -- testing against the data you happen to have is how a rule
+    # ships inverted. Package-local gates are matched by GLOB below instead.
+    ".ci/scripts/quality/",
+    ".ci/scripts/security/",
+    ".ci/scripts/test/",
+    ".claude/hooks/",
+    ".github/workflows/ci-",  # the quality workflows a gate is wired into
+)
+GATE_ARTIFACT_EXACT = ("scripts/ci-runner/manifest.ts", "package.json")
+# Package-local gates live beside their package, so they need a GLOB, not a
+# prefix. CHECK_SCRIPT_GLOBS' own header records why they must be reachable at
+# all: omitting them made the gate probe structurally blind to nine real gates.
+GATE_ARTIFACT_GLOBS = (
+    "packages/*/scripts/check-*.ts",
+    "packages/*/scripts/check-*.sh",
+)
+
+# BOOKKEEPING, ignored rather than counted. Every commit in this repo carries
+# agent/ session state and often docs; requiring them to be gate artifacts made
+# the probe answer False for 89189c0b5, which touches one hook file and two
+# agent files. This mirrors the docs-only skip below: prose is not the subject.
+GATE_NEUTRAL_PREFIXES = ("agent/", "docs/")
+
+
+def gate_only_fixset(root, shas):
+    """True when every NON-BOOKKEEPING file in the fix-set is a CI-gate artifact.
+
+    ARTIFACTS, NEVER PROSE -- this reads `git diff-tree`, not a commit subject,
+    the same rule fix_signals states for its docs-only skip below.
+
+    WHY IT IS A HINT AND NOT A SKIP. A gate-maintenance fix can still deserve a
+    gate of its own, so this never suppresses a fix-set; it tells the judge what
+    it is looking at, so question (0) has something to bite on. Measured
+    2026-09-04/05: two sessions ran a self-generating loop where writing gate A
+    produced the finding that gate B was needed, and every one of those findings
+    had ALREADY been caught by an existing gate. Nothing told the judge the
+    fix-set was gate machinery.
+
+    Fails toward saying nothing extra: any git error, an empty fix-set, or a
+    fix-set that is ONLY bookkeeping returns False rather than skipping the
+    question. That includes a TICK-BASED fix-set: fix_signals' ids are commit
+    shas OR tick ids, and a tick id is not a tree-ish, so `git diff-tree` fails
+    and this answers False. Correct by construction -- an uncommitted fix has no
+    file list to classify -- and it means the hint is a commit-fix-set feature.
+    """
+    if not shas:
+        return False
+    seen = False
+    for sha in shas:
+        try:
+            files = C._git(
+                root, "diff-tree", "--no-commit-id", "--name-only", "-r", sha
+            ).splitlines()
+        except Exception:  # noqa: BLE001 -- a hint must never raise into the stop path
+            return False
+        if not files:
+            # A ROOT commit has no parent, so `diff-tree` prints nothing. Retry
+            # with --root, which does list a root commit's files. Caught by case
+            # 96, whose fixture repo's first commit IS the root. Still False if
+            # that yields nothing: an unreadable ref says nothing extra.
+            try:
+                files = C._git(
+                    root, "diff-tree", "--root", "--no-commit-id", "--name-only", "-r", sha
+                ).splitlines()
+            except Exception:  # noqa: BLE001
+                return False
+            if not files:
+                return False
+        for raw in files:
+            path = raw.strip()
+            if not path or any(path.startswith(pre) for pre in GATE_NEUTRAL_PREFIXES):
+                continue
+            if (
+                path in GATE_ARTIFACT_EXACT
+                or any(path.startswith(pre) for pre in GATE_ARTIFACT_PREFIXES)
+                or any(fnmatch.fnmatch(path, pat) for pat in GATE_ARTIFACT_GLOBS)
+            ):
+                seen = True
+                continue
+            return False
+    return seen
 
 
 def fix_signals(root, lines, session_id, state):

@@ -84,6 +84,14 @@ export interface CommandResult {
   stdout: string;
   stderr: string;
   code: number;
+  /**
+   * True when the runner killed the child because its timeout expired, rather
+   * than the child exiting on its own. Distinguishable from a genuine non-zero
+   * exit only here: a killed `renet ops up` still prints "Cluster started
+   * successfully" (its Ceph step is non-fatal), so stdout alone reads as a
+   * success. Console run 33937342780 lost 30 minutes to exactly that.
+   */
+  timedOut?: boolean;
 }
 
 /**

@@ -261,3 +261,94 @@ else
     echo "  FAIL: a nonexistent path citation was not caught: ${OUT:0:220}"
     FAIL=$((FAIL + 1))
 fi
+
+echo "== 95a. the GATE-MAINTENANCE hint: artifact-derived, and it never skips =="
+# WHY THIS EXISTS, measured 2026-09-04/05 across TWO sessions independently.
+# Writing gate A produced the finding that gate B was needed (A's own selftest
+# tail tripped check:ci-shape-duplication; A's new file tripped
+# check:ci-gate-manifest leaf-tracked), and fixing B produced C. Roughly 8 rounds
+# in one session and 3 in a peer's, each costing a full CI cycle on a PR that was
+# already green, reviewed and threads-resolved. EVERY one of those findings had
+# already been caught by an existing gate, so the correct verdict was `covered`
+# naming that gate -- but nothing told the judge it was looking at gate
+# machinery. gate_only_fixset is that signal, read from `git diff-tree` and never
+# from a commit subject.
+#
+# IT IS A HINT, NOT A SKIP, and that is the assertion that matters most here: a
+# gate-maintenance fix can still deserve a gate of its own, so this must never
+# suppress a fix-set. The last control below is what proves it.
+setup
+# say + brief_now BEFORE reg_repo: without them the first stop blocks on "session
+# brief is missing" and never reaches the reggate surface, so the final assertion
+# below would pass on the wrong block. Case 81 sets up the same way.
+say "done for now"
+brief_now
+reg_repo
+# A package.json with a real `ci` key, then marker init, in that order. Cases 82
+# and 83 set up identically. The marker initialises on the FIRST stop at whatever
+# HEAD it finds, so commits made before it are already behind it and never read
+# as fix signals -- which is why the final assertion here came back `allow` and
+# proved nothing until this line existed.
+printf '{"name":"p","version":"0.0.0","scripts":{"ci":"npm run check:ci-real","check:ci-real":"true"}}\n' >"$BASE/proj/package.json"
+run >/dev/null # marker init
+GOF() {        # GOF <sha> -> prints True/False
+    TMPDIR="$BASE/tmp" CLAUDE_PROJECT_DIR="$BASE/proj" python3 - "$HOOK" "$1" <<'PYEOF'
+import pathlib, sys
+sys.path.insert(0, str(pathlib.Path(sys.argv[1]).parent))
+import wl_reggate as R
+
+print(R.gate_only_fixset(pathlib.Path(sys.argv[1]).parent.parent.parent.parent, []) if False
+      else R.gate_only_fixset(__import__("os").environ["CLAUDE_PROJECT_DIR"], [sys.argv[2]]))
+PYEOF
+}
+fixcommit scripts/check-thing.ts "fix(gate): a gate artifact"
+SHA_GATE="$(git -C "$BASE/proj" rev-parse HEAD)"
+fixcommit packages/cli/src/real.ts "fix(cli): product code"
+SHA_PROD="$(git -C "$BASE/proj" rev-parse HEAD)"
+fixcommit agent/d1589e0b/STATE.md "fix(state): bookkeeping only"
+SHA_BOOK="$(git -C "$BASE/proj" rev-parse HEAD)"
+
+if [[ "$(GOF "$SHA_GATE")" == "True" ]]; then
+    echo "  PASS: a fix-set of gate artifacts is recognised"
+    PASS=$((PASS + 1))
+else
+    echo "  FAIL: a gate-artifact fix-set was not recognised"
+    FAIL=$((FAIL + 1))
+fi
+# CONTROL: product code must NOT be called gate maintenance, or the hint would
+# be appended to every fix-set and say nothing.
+if [[ "$(GOF "$SHA_PROD")" == "False" ]]; then
+    echo "  PASS: CONTROL: product code is not gate maintenance"
+    PASS=$((PASS + 1))
+else
+    echo "  FAIL: CONTROL: product code was called gate maintenance"
+    FAIL=$((FAIL + 1))
+fi
+# CONTROL: bookkeeping ALONE is not gate maintenance either. agent/ and docs/ are
+# ignored when they accompany real files, but a fix-set that is nothing else has
+# no gate artifact in it and must not earn the hint.
+if [[ "$(GOF "$SHA_BOOK")" == "False" ]]; then
+    echo "  PASS: CONTROL: bookkeeping alone does not earn the hint"
+    PASS=$((PASS + 1))
+else
+    echo "  FAIL: CONTROL: a bookkeeping-only fix-set was called gate maintenance"
+    FAIL=$((FAIL + 1))
+fi
+# CONTROL: an unreadable ref fails toward saying NOTHING, never toward skipping.
+if [[ "$(GOF 0000000000000000000000000000000000000000)" == "False" ]]; then
+    echo "  PASS: CONTROL: an unreadable ref yields no hint rather than raising"
+    PASS=$((PASS + 1))
+else
+    echo "  FAIL: CONTROL: a bad ref did not fail toward silence"
+    FAIL=$((FAIL + 1))
+fi
+# THE ASSERTION THAT MATTERS: the hint INFORMS the judge, it does not suppress
+# the demand. A gate-artifact fix-set must still reach a block when the judge
+# says a gate is needed and unproven.
+#
+# It needs shim_judge + checkj, not a bare `check`. Without a shimmed verdict
+# there is no judge answer at all, so the stop simply ALLOWS -- which is how the
+# first three versions of this assertion passed for the wrong reason and then
+# failed for the right one. Cases 82 and 83 use the same pair.
+shim_judge '{"applicable":true,"blind_spot":"gate machinery had no guard","existing_gate":"","recurring":true,"gate_needed":true,"gate_proven":false,"instruction":"write the gate"}'
+checkj "a gate-maintenance fix STILL asks; the hint informs, it does not skip" block "A FIX LANDED"

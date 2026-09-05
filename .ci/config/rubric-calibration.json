@@ -6,9 +6,9 @@
       "sha": "4204d33d1267ffca"
     },
     "REGGATE_PROMPT": {
-      "calibrated": "2026-09-01",
-      "note": "SWEEP_PROMPT re-calibrated after eb34b3a47; the run is the evidence, this file only proves the text matches",
-      "sha": "4c76bee71ce4494a"
+      "calibrated": "2026-09-05",
+      "note": "Re-calibrated after question (0) was added: 'was this defect FOUND BY A GATE?' If a CI gate failed and the fix makes it pass, that gate already covers the defect -- answer covered and name it, rather than demanding a second gate for a defect the first one found. Added because two sessions spent roughly 8 and 3 rounds in a self-generating loop on 2026-09-04/05: writing gate A produced finding B (A's own selftest tail tripped check:ci-shape-duplication, A's new file tripped check:ci-gate-manifest leaf-tracked), and fixing B produced C, each round costing a full CI cycle on a PR already green and reviewed. Every one of those findings had ALREADY been caught by an existing gate. LIVE RUN 2026-09-05: ALL 8 SWEEP cases pass (5 fire, 3 silent) -- sweep is the rule that reads this prompt, via calibrate-judge-rules.py:174 sweep_extra. All 6 BRAVE cases pass. The 3 non-matches are all SHAPEDUP, a different rubric this change does not touch: two are error_max_budget_usd (35 and 29 turns at $0.2571 and $0.2522 against a $0.25 cap) rather than verdicts at all, and one is a reasoned MISS on the mktemp/with_temp_dir case. Same shape as the 2026-09-02 BRAVE_PROMPT note, which recorded cross-rubric misses as flake in other rubrics rather than drift in this one. 16/19 overall.",
+      "sha": "5b96b4643cda6ca2"
     },
     "SHAPE_PROMPT": {
       "calibrated": "2026-09-02",

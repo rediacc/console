@@ -2,6 +2,19 @@ import type { OpsCommandRunner } from './OpsCommandRunner';
 import type { OpsVMExecutor } from './OpsVMExecutor';
 
 /**
+ * Wall-clock budget for one `renet ops up --force --parallel`, covering VM
+ * creation, bridge/worker setup and (when VM_CEPH_NODES is set) the whole Ceph
+ * bootstrap. 30 minutes is generous against the ~13 minutes a healthy 6-VM
+ * ceph run takes, and it is deliberately a HARD budget rather than a hint:
+ * overrunning it means the fleet is half-built, and OPS_RESET_TIMEOUT_MS exists
+ * so a knowingly-slow host can raise it rather than have the suite lie about
+ * what it provisioned.
+ */
+function resetTimeoutMs(): number {
+  return Number(process.env.OPS_RESET_TIMEOUT_MS) || 1800000;
+}
+
+/**
  * OpsVMLifecycle - Manages VM lifecycle operations
  *
  * Handles starting, stopping, resetting, and waiting for VMs.
@@ -66,10 +79,23 @@ export class OpsVMLifecycle {
     if (options.parallel) args.push('--parallel');
 
     console.warn('[OpsVMLifecycle] Starting VMs...');
-    // 30 minutes: a ceph-pool topology bootstraps cephadm (mon+mgr+OSDs) inside `ops up`,
-    // which exceeds 10 minutes on loaded hosts — and startVMs({force}) recreates the VMs
-    // on every attempt, so a shorter cap makes ceph clusters unprovisionable rather than slow.
-    const result = await this.commandRunner.runWithEnv(['up'], args, this.groupEnv, 1_800_000);
+    // Same budget as resetVMs, and for the same reason: a ceph-pool topology
+    // bootstraps cephadm (mon+mgr+OSDs) inside `ops up`, which exceeds 10
+    // minutes on loaded hosts — and startVMs({force}) recreates the VMs on
+    // every attempt, so a shorter cap makes ceph clusters unprovisionable
+    // rather than slow.
+    const result = await this.commandRunner.runWithEnv(
+      ['up'],
+      args,
+      this.groupEnv,
+      resetTimeoutMs()
+    );
+
+    if (result.timedOut) {
+      console.error(
+        `[OpsVMLifecycle] ops up EXCEEDED its ${(resetTimeoutMs() / 1000).toFixed(0)}s budget and was killed`
+      );
+    }
 
     return {
       success: result.code === 0,
@@ -128,18 +154,35 @@ export class OpsVMLifecycle {
     const startTime = Date.now();
 
     console.warn('[OpsVMLifecycle] Performing soft reset (renet ops up --force --parallel)...');
-    // 30 min timeout to allow Ceph provisioning to complete fully
     // Note: Ceph provisioning is automatically enabled when VM_CEPH_NODES is configured
     const result = await this.commandRunner.runWithEnv(
       ['up'],
       ['--force', '--parallel'],
       this.groupEnv,
-      1800000
+      resetTimeoutMs()
     );
 
     // Check for infrastructure errors that should fail fast
     if (result.code !== 0) {
       const combinedOutput = `${result.stdout} ${result.stderr}`;
+
+      // A reset we KILLED is not a reset that failed on its own, and it must
+      // never fall through to the readiness probe below. `renet ops up` treats
+      // Ceph provisioning as non-fatal, so a SIGTERM landing in the middle of
+      // it leaves SSH-reachable VMs, prints "Cluster started successfully",
+      // and passes the probe -- the reset then reports SUCCESS at 1800.8s and
+      // the suite dies a second later on a Ceph error that names Ceph rather
+      // than the budget. That is console run 33937342780.
+      if (result.timedOut) {
+        console.error(
+          `[OpsVMLifecycle] ops up EXCEEDED its ${(resetTimeoutMs() / 1000).toFixed(0)}s budget and was killed - failing the reset`
+        );
+        console.error(
+          '[OpsVMLifecycle] The fleet is half-provisioned; any error after this point describes the wreckage, not the cause.'
+        );
+        console.error('[OpsVMLifecycle] Last output:', combinedOutput.slice(-1000));
+        return { success: false, duration: Date.now() - startTime };
+      }
 
       if (this.isInfrastructureError(combinedOutput)) {
         console.error('[OpsVMLifecycle] Infrastructure error - KVM/libvirt not available');
