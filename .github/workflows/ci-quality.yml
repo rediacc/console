@@ -2104,6 +2104,14 @@ jobs:
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: .ci/scripts/quality/check_scope_completeness.py
 
+      # Offline by construction, and deliberately so: it reads the workflow
+      # files, never the GitHub API. Verifying the org secrets are actually GONE
+      # needs the admin:org scope, which GITHUB_TOKEN does not have, so this
+      # checks the half that breaks jobs -- the reads that now resolve empty.
+      - name: Secret scope
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: npm run check:ci-secret-scope
+
       # Offline by construction: compares the committed record against the
       # secrets each workflow references. The network lives only in --refresh.
       - name: Secret reachability

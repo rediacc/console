@@ -142,6 +142,7 @@
     "check:ci-plan-housekeeping": ".ci/scripts/quality/check-plan-housekeeping.sh",
     "check:ci-plan-boxes": ".ci/scripts/quality/check_plan_boxes.py",
     "check:ci-syncpack-sources": ".ci/scripts/quality/check_syncpack_sources.py",
+    "check:ci-secret-scope": "tsx scripts/check-secret-scope.ts",
     "check:ci-secret-reachability": ".ci/scripts/quality/check_secret_reachability.py",
     "check:ci-scope-completeness": ".ci/scripts/quality/check_scope_completeness.py",
     "check:ci-hooks-resolvable": ".ci/scripts/quality/check_hooks_resolvable.py",
