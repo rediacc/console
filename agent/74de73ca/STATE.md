@@ -1,47 +1,49 @@
-## SESSION 74de73ca 2026-09-04T21:21:36Z
+## SESSION 74de73ca 2026-09-05T01:16:09Z
 
 ## Where things stand
 
-CI is **GREEN** on PR #585 @ `bb507ff0` (branch `0903-1`, epic `24c98380`).
+Branch `0903-1`, PR #585, epic `24c98380`. Everything of mine is COMMITTED AND PUSHED;
+the working tree holds nothing of mine. CI runs continuously; `d1589e0b` is holding
+`/pr-merge` until the head is green.
 
-**Everything I built is pushed through `c9e350576`.** Three files remain UNCOMMITTED
-because `d1589e0b` has ~12 commits unpushed ahead of `origin/bb507ff06` and pushing
-would carry their in-flight `/migrate` work:
+My commits, newest first: `32e191e6c` (check:ci-schema-call-sites + gate-bind refuses to
+delete a registered step), `385bb06bb` (revert), `840185431` (16 vacuity floors + the
+enumeration-vacuity widening), `ddc4fa17d`, `3fe226463`, `1269d8aad` (judge log),
+`8faba232c`, `1e8026bdb`, `332a98af6`.
 
-- `.ci/scripts/quality/check_allowlist_key_matching.py` -- widened to TypeScript
-  (corpus 11 -> 40 scripts), 6 new controls.
-- `scripts/check-unverified-downloads.ts` -- its allowlist matched with
-  `url.includes(token)` over bare hosts, so `https://awscli.amazonaws.com.attacker.net/`
-  was waved through by the gate whose job is refusing unverified downloads. Now anchored
-  at host/path boundaries, 8 controls, 4 of them negatives that each passed under the old
-  form.
-- `scripts/check-enumeration-vacuity.ts` -- comment-only: records the measured naming
-  blind spot (see the deferral below) plus a control asserting it is real.
+## The two things that keep biting, both mine
 
-All three lint and format clean; `ci:quick` reds on the shared tree are `d1589e0b`'s,
-not mine, and they have acknowledged all of them.
+- **The shared git index.** Three times tonight my STAGED files were swept into
+  `d1589e0b`'s commits, because I stage, run a 55-second `ci:quick`, then commit, and
+  `git add` writes an index both sessions share. THE FIX I KEEP FORGETTING: run
+  `ci:quick` FIRST, then `git add && git commit` as ONE command. Nothing of mine should
+  ever sit staged across a slow run.
+- **Checking a family instance by instance.** I gave three vacuity floors an env
+  override and not the fourth; a per-site sweep of the judge call sites missed the
+  fifth. The gates I wrote for this exist because I kept doing it: `check:ci-schema-call-sites`
+  enumerates from source, and `gate-test:vacuity-floors` drives each floor.
 
-## What is easy to get wrong here
+## Live collaboration
 
-- **The tree is shared and busy.** `d1589e0b` is mid-`/migrate` (wl_store.py,
-  wl_checks.py, worklist.py, worklist-cases/*.sh); `472cf53d` is the pr-babysit loop.
-  A red `ci:quick` here is usually theirs -- attribute before diagnosing, then
-  `worklist.py --ask`, never edit their file.
-- **`gate-bind --extract-all` plans 174 gates in 1.26s but does NOT remove the
-  hand-written step it replaces.** `stepCountInJob` now refuses the duplicate, so a
-  real migration must delete the old step in the same pass. Eight such duplicates
-  already shipped once and were cleaned up in `8faba232c`.
+`d1589e0b` is mid-`/migrate` (tracked worklist store under `agent/worklist/`, `wl_store.py`,
+`worklist-cases/*.sh`). Their files are theirs: attribute a red before diagnosing, then
+`worklist.py --ask`, never edit. That has paid off every time tonight. They have fixed
+three of my defects (`45dd63875` action-refs floor, the TS2352, the half-landed floors)
+and I have fixed none of theirs by editing -- only by telling them.
+
+`gate-bind --write` now REFUSES to drop a step that the manifest still registers. It ate
+four of theirs before that guard existed; hand-registered steps belong BELOW the
+`# <<< gate-bind` marker.
 
 ## Next action
 
 Nothing of mine is in flight. In order:
 
-1. Watch CI (`.ci/scripts/ci/ci-trace.py`); it is green, so this costs nothing.
-2. When `d1589e0b` pushes their chain, `git fetch`, re-run
-   `GH_TOKEN="$(gh auth token)" npm run ci:quick` (ONE token variable is enough now --
-   that was verified, 303/303 with `GITHUB_TOKEN` unset), then commit and push the
-   three files above with `PR-TASK: 24c98380`.
-3. Deferral `#e5704fbc` executes its DEFAULT after 120 min: widen
-   `check:ci-enumeration-vacuity` from the name pattern to every tracked `.py/.sh/.ts`
-   AND add the 16 vacuity guards that surfaces. Do not attempt a `--first-seed` reseed
-   to absorb them -- it was tried and the shrink-only module correctly refused it.
+1. Watch CI (`.ci/scripts/ci/ci-trace.py`). If red, attribute the failing job before
+   diagnosing -- most reds tonight were a peer's in-flight work, and two of mine were
+   caught by their sweeps first.
+2. Poll the mailbox (`worklist.py --poll 74de73ca`) and answer anything from `d1589e0b`.
+   Check `ps -eo pid,args | grep "[w]l_wait.py 74de73ca"` BEFORE relaunching a waiter;
+   they accumulate.
+3. `GH_TOKEN="$(gh auth token)" npm run ci:quick` needs ONE token variable, not two --
+   verified 303/303 with `GITHUB_TOKEN` unset.

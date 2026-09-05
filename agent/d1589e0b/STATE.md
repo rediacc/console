@@ -1,63 +1,64 @@
-## SESSION d1589e0b 2026-09-05T03:12:42Z
+## SESSION d1589e0b 2026-09-05T11:05:28Z
 
-# d1589e0b — babysit 0903-1: CI RED on Ceph, local repro under way
+# MERGED and on main. Chasing the edge release; 3 secrets need the OPERATOR
 
 ## Next action
-Read the ops-vms agent's verdict on the Ceph reproduction (it is running; the
-operator asked for a LOCAL repro rather than another CI round). Then read worker
-bws3n07ox, the ci-trace on run **33937342780**, head **3148399c9**.
-Do NOT push while the Ceph cause is unattributed.
+Read worker **blumwhdqo** (`ci-trace.py --wait --until-final --ref main`) on
+Console CI **33962302989**, head `d7b313a73`.
 
-## The red, and what is established
-Run 33937342780: `E2E Ceph Workers` (job 101229554338) and `E2E K8s Ceph`
-(101229554379) FAILED; `E2E Ceph` was CANCELLED, which is NOT passed — it never
-reported, so this run gives no same-infrastructure control. Fatal line:
+Green ⇒ it dispatches **Release to Edge**. Watch that BY RUN ID
+(`ci-trace.py --run <id> --wait`), never by branch: a `workflow_dispatch` run's
+check-runs are absent from the branch rollup, so `--ref main` reports GREEN while
+the release is still mid-flight. Edge green ⇒ re-sync main (CD pushes two
+`[skip ci]` commits back), then order #624e1863:
+`gh workflow run "Release to Production" -f force=true`.
 
-    failed to install Docker on node 21: ssh command failed: signal: killed
+**Operator cap in force: at most 3 background workers.** Currently 2.
 
-with the node's own log showing `Available memory: 2204 MB` mid apt install. A
-separate NON-fatal warning: `ghcr.io/rediacc/elite/bridge:latest` manifest
-unknown (I probed: manifest 403, org package listing 404 Package not found).
+## Done and irreversible
+PR #585 **MERGED 07:32:41Z**; all four stacked PRs landed. `main` went
+`079edc5d4` → `35933a303` → **`d7b313a73`** (4 commits pushed directly to main,
+which order #dfe46a93 authorises).
 
-THREE FINDINGS, all negative for the branch being at fault:
-1. `VM_RAM_CEPH: '2560'` on BOTH main (ct-tests.yml:556, :833) and this branch
-   (:623, :940, :1103). The ceiling is NOT new and matches the 2204 MB reported.
-2. The only Ceph-relevant branch change is the renet pointer
-   fcd03347e..23943df5f (commits 90cc4367b, 9f612f4e6): 23 files of Docker SDK
-   v25->v28 CLIENT upgrade, go 1.26.0->1.26.6, dep bumps. Grepping its file list
-   for install/setup/memory/ceph/provision returns NOTHING. build.sh's +16 is a
-   warning message only.
-3. These jobs pass on main across the last three Console CI runs.
+  c55d906f7  stale-comment class, 3 sites
+  bdde69f1f  shadow drift record — THE RELEASE BLOCKER
+  51b2f1064  killed-reset regression test (first test file for either ops module)
+  d7b313a73  5 blank lines in ci-quality.yml
 
-**Still UNATTRIBUTED, not environmental.** The open question, which changes the
-fix completely: is `signal: killed` an OOM kill, or renet's OWN ssh timeout
-killing a slow apt install? This box has 56 GB / 24 cores against a 2560 MB CI
-node, so a genuine OOM may need deliberate constraint to reproduce.
+## THREE SECRETS NEED THE OPERATOR — nothing else can resolve them
+Release to Edge `33955200168` failed in FOUR jobs (all 3 account regions +
+marketing worker) on "Compare shadow secrets against GitHub". GitHub and
+Bitwarden disagree, verdict `[content differs]`, on:
+`ACCOUNT_BACKUP_S3_ACCESS_KEY_ID`, `ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY`,
+`CLOUDFLARE_TURNSTILE_SECRET_KEY`.
 
-## Uncommitted here (mine)
-The reggate cap's Layer 1: question (0) in REGGATE_PROMPT, `gate_only_fixset` in
-wl_reggate read from `git diff-tree`, its wiring in wl_checks, the
-REGGATE_GATE_MAINTENANCE message and its arity entry, and case 95a.
-Design: agent/PLAN-reggate-effort-cap.md (317 lines, 4 claims verified at source).
+The drift PRE-DATES the shadow: the last good edge deploy ran ZERO comparisons
+(no `shadow <NAME> match|MISMATCH` line in its log at all) because those names
+were first shadowed in `35933a303`. Nothing regressed.
 
-**Case 95a has had FIVE defects, every one invisible to reading**: a colliding
-case number; a missing session brief; an unregistered message-constant arity; fix
-commits made BEFORE the marker initialised; and the root of the last three — a
-bare `check` with no `shim_judge`, so no verdict existed and the stop simply
-ALLOWED. Cases 82/83 use package.json + `run` init + `shim_judge` + `checkj`.
+GitHub secrets are write-only, so no session can read the other side to pick a
+winner — `door: operator-only`. Recorded in
+`.ci/config/shadow-expected-mismatches.json`; CD is unblocked but the values are
+still wrong on one side.
 
-## The finish line, otherwise met
-Review = issue comment 5546059788, answered by 5548433511; the gate's own script
-prints `answered by comment 5548433511 - OK`. GraphQL: 0 threads, 0 unresolved.
-The operator ruled out a /code-review ultra pass. So only CI green remains.
+**Trap that nearly cost a fake fix:** that JSON is DOCUMENTATION. The compare
+reads `SHADOW_EXPECTED_MISMATCH`, a literal env var per workflow, and
+`cd-deploy-account.yml` set it not at all. Editing the ledger alone changes
+nothing. Both halves are wired now; `check_bws_map.py` assertion 12 binds them
+bidirectionally.
 
-## Loops
-45-minute wake `23,8 * * * *`; cross-session mail poll `13,43 * * * *`. Both
-session-only, expiring after 7 days. Tear the wake down only once the production
-release is green.
+## Local state
+On `main`, clean of mine. Dirty and NOT mine, never stage: `package-lock.json`
+(npm11 cosmetic flip), `agent/74de73ca/*`.
 
-## The three operator orders
-1. **#e9ad31ad** green, then `/pr-merge`.
-2. **#dfe46a93** then follow main, fixing DIRECTLY ON MAIN (operator override).
-3. **#624e1863** then `Release to Production -f force=true`, soak skipped;
-   failure expected and the release process itself is the work.
+## Queue
+**#dfe46a93** follow main (active) · **#624e1863** production release ·
+**#10719055** cap steps 2-6 of `agent/PLAN-reggate-effort-cap.md` ·
+**#76761e31** `wl_wait` wakes on every branch sub-agent report, no filter flag.
+
+Ticked this phase: #0638d947, #a5d9f490, #5d223f33.
+
+## Peers
+`74de73ca` stopped and verified. `8f55d4f0` live on a large read-only audit
+(~100 sub-agent reports); never ran `--brief` so it cannot be addressed
+directly. Tree verified untouched at every check.

@@ -2337,3 +2337,29 @@ Before every commit in this tree, read `git diff --cached --stat` and confirm
 every path is one you touched this round. In a worktree that normally carries
 dozens of dirty paths from other sessions, "what I staged" and "what is staged"
 are different questions.
+
+## A timeout placed after the operation it guards is dead code, and no gate sees it
+Trap-Id: timeout-after-the-operation-it-guards
+Enforced-By: JUDGMENT-ONLY
+Residue: everything. A `sleep` or `--max-time` is syntactically valid wherever it sits,
+  so shellcheck, shfmt and every source-shape gate pass it. Deciding whether it runs
+  BEFORE the thing it protects is reachability analysis over shell control flow, and
+  whether it protects anything at all is per-machine timing. Neither is a property of the
+  text. `check:ci-swallowed-failures` catches a discarded status and
+  `check:ci-silent-failures` an unguarded pipeline, but a guard in the wrong PLACE is
+  well-formed, reachable-looking and inert.
+
+Found on 2026-09-05 in the devcontainer setup: a 180-second curl budget that could never
+apply, because it sat after the fetch it was written for. The fix (`8a720b7eb`, "the 180s
+curl budget was unreachable, so delete the delay") removed the delay rather than moving
+it, which is why `.devcontainer/devcontainer.json` now contains zero `sleep` or `timeout`
+directives -- a grep for the defect's shape finds nothing, in a tree where it was real an
+hour earlier.
+
+The reviewer's question is not "is there a timeout" but "what runs between this guard and
+the thing it guards, and can that ever be nothing". A guard reached only after its
+subject has already completed is indistinguishable, in every artifact, from one that
+works.
+
+Recorded by a session that did NOT make the fix: the failing case belongs to `8a720b7eb`
+and its evidence is there, not here.
