@@ -480,3 +480,94 @@ else
     echo "  FAIL: CONTROL: TMPDIR does not steer the worklist ($OUT), so 203 proves nothing"
     FAIL=$((FAIL + 1))
 fi
+
+echo "== 204. compaction is LOSSLESS: the fold before equals the fold after =="
+# WHY THIS EXISTS, and why it is a property and not another example. Compaction
+# rewrites the whole log as a fresh snapshot, so every field the fold reads has
+# to survive a round trip through snapshot_events. The suite tested compaction
+# by its OUTPUTS -- items consolidated, a live peer's file untouched, three
+# items still present -- and an output test only ever checks the fields the
+# author happened to name. The field that went missing was the one nobody
+# asserted: `by` is rewritten to "compact", which is deliberate, and `o` is the
+# only thing left naming whose work an item is. Two readers scanned `by` and
+# went blind on every compacted store (case 190b), and the cost was an item that
+# --tick refused as another session's while --reassign refused it as having
+# written no events at all.
+#
+# So this case asserts the INVARIANT rather than a field: fold(store) must equal
+# fold(compact(store)), across every key a record carries -- basetext, first,
+# id, lastnote, line, origin, owner, state, text, upd -- for an item in every
+# state the store can hold. A field added to the fold later is covered the day
+# it is added, with no edit here, which is the property an example-based case
+# cannot have.
+setup
+IID_OPEN=$(wlcli --add deadbeef "an open item" 2>/dev/null | grep -oE '#[0-9a-f]+' | tr -d '#')
+IID_DONE=$(wlcli --add deadbeef "a done item" 2>/dev/null | grep -oE '#[0-9a-f]+' | tr -d '#')
+IID_DEFER=$(wlcli --add deadbeef "a deferred item" 2>/dev/null | grep -oE '#[0-9a-f]+' | tr -d '#')
+IID_LEASE=$(wlcli --add deadbeef "a leased item" 2>/dev/null | grep -oE '#[0-9a-f]+' | tr -d '#')
+wlcli --tick deadbeef "$IID_DONE" 'closed at abc1234 with exit 0' >/dev/null 2>&1
+wlcli --defer deadbeef "$IID_DEFER" 'which way DEFAULT: do-it WHY: operator-call HOW: they-answer' >/dev/null 2>&1
+wlcli --lease deadbeef "$IID_LEASE" +60 worker:bg1 note >/dev/null 2>&1
+
+# EVERY KEY OF EVERY RECORD, sorted, so the comparison cannot silently narrow to
+# the fields this case's author thought of.
+fold_dump() {
+    TMPDIR="$BASE/tmp" CLAUDE_PROJECT_DIR="$BASE/proj" python3 - "$HOOK" <<'PYEOF'
+import json, pathlib, sys
+sys.path.insert(0, str(pathlib.Path(sys.argv[1]).parent))
+import wl_core as C
+import wl_store as S
+
+fold = S.load(C.worklist_for(C.project_start()), sync=False)
+for rec in sorted(fold.items, key=lambda r: r["id"]):
+    print(json.dumps({k: rec[k] for k in sorted(rec)}, sort_keys=True))
+PYEOF
+}
+
+fold_dump >"$BASE/fold-before.txt" 2>/dev/null
+BEFORE_N=$(grep -c . "$BASE/fold-before.txt" 2>/dev/null || echo 0)
+# ANTI-VACUITY: two empty dumps compare equal, and that is the shape this whole
+# file exists to distrust. Four items were planted; fewer means the fixture, not
+# the invariant, is what is being measured.
+if [[ "$BEFORE_N" -eq 4 ]]; then
+    echo "  PASS: the fixture really holds 4 items across open/done/deferred/leased"
+    PASS=$((PASS + 1))
+else
+    echo "  FAIL: the fixture holds $BEFORE_N item(s), not 4 -- the comparison below would be vacuous"
+    FAIL=$((FAIL + 1))
+fi
+wlcli --compact >/dev/null 2>&1
+fold_dump >"$BASE/fold-after.txt" 2>/dev/null
+if diff -q "$BASE/fold-before.txt" "$BASE/fold-after.txt" >/dev/null 2>&1; then
+    echo "  PASS: every field of every item survives a compaction unchanged"
+    PASS=$((PASS + 1))
+else
+    echo "  FAIL: compaction changed the fold: $(diff "$BASE/fold-before.txt" "$BASE/fold-after.txt" | head -4 | tr '\n' ' ')"
+    FAIL=$((FAIL + 1))
+fi
+# CONTROL ON THE CONTROL: a passing diff proves nothing unless a real loss makes
+# it fail. Strip `o` from the compacted add events -- the exact field whose
+# absence caused the incident -- and the same comparison must fire. Without this
+# the case would pass just as well if fold_dump silently printed nothing, which
+# is how a green assertion ends up guarding an empty set.
+python3 - "$WORKLIST_STORE_DIR" <<'PYEOF'
+import json, pathlib, sys
+for f in pathlib.Path(sys.argv[1]).glob("*.jsonl"):
+    out = []
+    for line in f.read_text().splitlines():
+        if not line.strip():
+            continue
+        ev = json.loads(line)
+        if ev.get("ev") == "add":
+            ev.pop("o", None)
+        out.append(json.dumps(ev, separators=(",", ":")))
+    f.write_text("\n".join(out) + "\n")
+PYEOF
+fold_dump >"$BASE/fold-lossy.txt" 2>/dev/null
+if diff -q "$BASE/fold-before.txt" "$BASE/fold-lossy.txt" >/dev/null 2>&1; then
+    echo "  FAIL: CONTROL: dropping the owner changed nothing, so 204 proves nothing"
+    FAIL=$((FAIL + 1))
+else
+    echo "  PASS: CONTROL: a genuinely dropped owner DOES fail the same comparison"
+    PASS=$((PASS + 1))
+fi

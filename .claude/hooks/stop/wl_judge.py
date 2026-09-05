@@ -207,6 +207,61 @@ def _budget_headroom(env_out):
         return False
 
 
+# The CLI's own name for "the model could not produce an object matching the
+# schema, and I gave up re-asking". It is a SAMPLE failing, not a transport or a
+# configuration failing, which is why it is retried below rather than reported.
+SCHEMA_EXHAUSTION = "error_max_structured_output_retries"
+
+
+def _retry_schema_exhaustion(label, proc, call):
+    """(proc, None) to carry on, or (None, why) to give up, for a NON-ZERO exit.
+
+    THE BUG THIS FIXES, measured 2026-09-04. A stop was blocked with
+    "judge exited 1; subtype=error_max_structured_output_retries; turns=6;
+    cost=$0.0112 of budget $0.25", and the message that follows such a failure
+    tells the session the gate is broken and offers WORKLIST_JUDGE=off.
+
+    Neither claim was true. The model was reachable (a probe answered), and the
+    REAL call -- same schema, same model, same budget -- returned a valid verdict
+    three times out of three at $0.05-0.06 each, which is five times what the
+    failing run spent. So the run did not hit its cap and the schema is not
+    unsatisfiable: one sample simply failed to emit a conforming object.
+
+    That is the SAME condition the exit-0 path a few lines down already retries,
+    and calls "a sample, not a broken gate". The two differ only in how the CLI
+    reports them: wandering to the end of the turn exits 0 with
+    structured_output null, while exhausting the CLI's own schema retries exits
+    1 with this subtype. Keying the retry on the exit code rather than on what
+    actually happened meant the identical failure was a flake in one spelling
+    and a "BUG in the gate" in the other -- and the harsher spelling is the one
+    that points a session at the disable switch.
+
+    Bounded exactly as the other retry is: only this subtype, only with budget
+    headroom (a call that spent its cap will spend it again), only once, and
+    never after a transport failure -- a launch error or a timeout raises before
+    reaching here and is not routed through this path at all.
+    """
+    first = _explain_failed_exit(label, proc)
+    env_out = None
+    try:
+        env_out = json.loads(proc.stdout or "")
+    except ValueError:
+        env_out = None
+    if not isinstance(env_out, dict) or env_out.get("subtype") != SCHEMA_EXHAUSTION:
+        return None, first
+    if not _budget_headroom(env_out):
+        return None, first + "; not retried: the call had already spent its budget"
+    try:
+        retried = call()
+    except (subprocess.TimeoutExpired, OSError):
+        return None, first + "; the single retry could not be launched"
+    if retried.returncode != 0:
+        return None, first + "; and the single retry also failed: " + _explain_failed_exit(
+            label, retried
+        )
+    return retried, None
+
+
 def _explain_no_output(label, env_out, out):
     """Exit 0, is_error false, and no usable structured_output: say WHY.
 
@@ -308,8 +363,9 @@ def run_triage(finding, context):
     env = dict(os.environ)
     # THE RECURSION GUARD, same as run_judge: `claude -p` fires the Stop hook.
     env["STOPHOOK_CHILD"] = "1"
-    try:
-        proc = subprocess.run(
+
+    def _call():
+        return subprocess.run(
             [
                 exe,
                 "-p",
@@ -346,12 +402,17 @@ def run_triage(finding, context):
             cwd=str(workdir),
             stdin=subprocess.DEVNULL,
         )
+
+    try:
+        proc = _call()
     except subprocess.TimeoutExpired:
         return None, "triage timed out after %ds" % JUDGE_TIMEOUT_S
     except OSError as exc:
         return None, "triage could not be launched: %s" % exc
     if proc.returncode != 0:
-        return None, _explain_failed_exit("triage", proc)
+        proc, _why = _retry_schema_exhaustion("triage", proc, _call)
+        if proc is None:
+            return None, _why
     try:
         env_out = json.loads(proc.stdout)
     except ValueError:
@@ -413,8 +474,9 @@ def _run_structured(label, prompt, schema, extract):
     env = dict(os.environ)
     # THE RECURSION GUARD, same as run_judge: `claude -p` fires the Stop hook.
     env["STOPHOOK_CHILD"] = "1"
-    try:
-        proc = subprocess.run(
+
+    def _call():
+        return subprocess.run(
             [
                 exe,
                 "-p",
@@ -451,12 +513,17 @@ def _run_structured(label, prompt, schema, extract):
             cwd=str(workdir),
             stdin=subprocess.DEVNULL,
         )
+
+    try:
+        proc = _call()
     except subprocess.TimeoutExpired:
         return None, "%s timed out after %ds" % (label, JUDGE_TIMEOUT_S)
     except OSError as exc:
         return None, "%s could not be launched: %s" % (label, exc)
     if proc.returncode != 0:
-        return None, _explain_failed_exit(label, proc)
+        proc, _why = _retry_schema_exhaustion(label, proc, _call)
+        if proc is None:
+            return None, _why
     try:
         env_out = json.loads(proc.stdout)
     except ValueError:
@@ -528,8 +595,9 @@ def run_admission(message):
     prompt = M.ADMISSION_PROMPT + "\n\nMESSAGE:\n" + message[-8000:]
     env = dict(os.environ)
     env["STOPHOOK_CHILD"] = "1"
-    try:
-        proc = subprocess.run(
+
+    def _call():
+        return subprocess.run(
             [
                 exe,
                 "-p",
@@ -566,12 +634,17 @@ def run_admission(message):
             cwd=str(workdir),
             stdin=subprocess.DEVNULL,
         )
+
+    try:
+        proc = _call()
     except subprocess.TimeoutExpired:
         return None, "admission timed out after %ds" % JUDGE_TIMEOUT_S
     except OSError as exc:
         return None, "admission could not be launched: %s" % exc
     if proc.returncode != 0:
-        return None, _explain_failed_exit("admission", proc)
+        proc, _why = _retry_schema_exhaustion("admission", proc, _call)
+        if proc is None:
+            return None, _why
     try:
         env_out = json.loads(proc.stdout)
     except ValueError:
@@ -852,7 +925,9 @@ def run_judge(
     except OSError as exc:
         return None, "judge could not be launched: %s" % exc
     if proc.returncode != 0:
-        return None, _explain_failed_exit("judge", proc)
+        proc, _why = _retry_schema_exhaustion("judge", proc, _call)
+        if proc is None:
+            return None, _why
     try:
         env_out = json.loads(proc.stdout)
     except ValueError:

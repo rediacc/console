@@ -1488,3 +1488,94 @@ control(
 control("CONTROL: an empty extra is not a fix stop", wl_judge.is_fix_stop(""), False)
 
 print(f"{Tally.count} control(s) passed")
+
+
+# ---------------------------------------------------------------------------
+# PART 4: a schema-exhausted sample is a FLAKE, not a broken gate.
+#
+# THE INCIDENT, 2026-09-04. A stop was blocked with "judge exited 1;
+# subtype=error_max_structured_output_retries; turns=6; cost=$0.0112 of budget
+# $0.25", and that message ends by telling the session the gate is broken and
+# offering WORKLIST_JUDGE=off. Neither half was true: the model was reachable,
+# and the real call with the same schema, model and budget returned a valid
+# verdict 3/3 at $0.05-0.06 each -- five times what the failing run spent, so
+# it did not hit its cap either.
+#
+# The exit-0 path already retries exactly this condition and calls it "a sample,
+# not a broken gate". The two spellings differ only in how the CLI reports them:
+# wandering to the end of the turn exits 0 with structured_output null, while
+# exhausting the CLI's own schema retries exits 1 with this subtype. Keying the
+# retry on the exit code made one failure a flake and the other an accusation.
+#
+# Each control below is a PAIR for the reason PART 1 gives: asserting that the
+# retry fires proves nothing unless something also proves it does NOT fire where
+# it should not, or a helper that retried everything would pass half of this.
+# ---------------------------------------------------------------------------
+
+
+class _FakeProc:
+    """Just the two attributes the helper reads. A real subprocess here would
+    make these controls depend on the network, which is the thing they exist to
+    stop mattering."""
+
+    def __init__(self, returncode, stdout):
+        self.returncode = returncode
+        self.stdout = stdout
+        self.stderr = ""
+
+
+def _envelope(subtype, cost, **extra):
+    return json.dumps({"subtype": subtype, "total_cost_usd": cost, **extra})
+
+
+_EXHAUSTED = _FakeProc(1, _envelope(wl_judge.SCHEMA_EXHAUSTION, 0.0112))
+_GOOD = _FakeProc(0, _envelope("success", 0.05))
+
+# 1. The incident's exact envelope: retried, and the retry's result is carried on.
+_proc, _why = wl_judge._retry_schema_exhaustion("judge", _EXHAUSTED, lambda: _GOOD)
+control("a schema-exhausted sample is retried, not reported", _proc is _GOOD, True)
+control("and a successful retry reports no error", _why, None)
+
+# 2. CONTROL: a DIFFERENT non-zero exit must still be reported, never retried.
+#    Without this the helper could retry everything -- including a real
+#    misconfiguration -- and control 1 would not notice.
+_calls = []
+
+
+def _counting():
+    _calls.append(1)
+    return _GOOD
+
+
+_other = _FakeProc(1, _envelope("error_during_execution", 0.01))
+_proc, _why = wl_judge._retry_schema_exhaustion("judge", _other, _counting)
+control("CONTROL: another failure subtype is not retried", (_proc, len(_calls)), (None, 0))
+control("CONTROL: and it is reported with its subtype", "error_during_execution" in _why, True)
+
+# 3. CONTROL: the same subtype, but the budget was spent. A call that hit its cap
+#    hits it again, so retrying doubles the bill for the same silence.
+_calls.clear()
+_broke = _FakeProc(1, _envelope(wl_judge.SCHEMA_EXHAUSTION, 0.24))
+_proc, _why = wl_judge._retry_schema_exhaustion("judge", _broke, _counting)
+control("CONTROL: a budget-exhausted call is not retried", (_proc, len(_calls)), (None, 0))
+control("CONTROL: and the refusal says the budget was why", "budget" in _why, True)
+
+# 4. EXACTLY ONCE. A retry that also fails reports both, and does not go a third time.
+_calls.clear()
+
+
+def _always_exhausted():
+    _calls.append(1)
+    return _FakeProc(1, _envelope(wl_judge.SCHEMA_EXHAUSTION, 0.0112))
+
+
+_proc, _why = wl_judge._retry_schema_exhaustion("judge", _EXHAUSTED, _always_exhausted)
+control("a failing retry gives up rather than looping", (_proc, len(_calls)), (None, 1))
+control("and the message names both attempts", "the single retry also failed" in _why, True)
+
+# 5. CONTROL: stdout that is not an envelope at all (a crash before any JSON) is
+#    reported, not retried -- there is nothing to read a subtype from.
+_calls.clear()
+_garbage = _FakeProc(1, "Killed")
+_proc, _why = wl_judge._retry_schema_exhaustion("judge", _garbage, _counting)
+control("CONTROL: unparseable stdout is reported, not retried", (_proc, len(_calls)), (None, 0))

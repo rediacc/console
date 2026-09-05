@@ -175,7 +175,11 @@ function runControls(): string[] {
   // ALLOWLIST ANCHORING. The entries are bare hosts, so a substring test let a
   // lookalike host carry a real entry inside it. Each negative below passed under
   // the old `url.includes(token)` form.
-  const at = (url: string): Finding => ({ file: 'c', line: 1, url, kind: 'download' }) as Finding;
+  // `kind` is 'fetch' | 'image'; 'download' is not a member, and the `as Finding`
+  // cast was hiding that rather than expressing intent -- TS2352 refused it because
+  // the two types do not overlap. isAllowed reads only f.url (see :136-152), so the
+  // value is arbitrary here; it just has to be one the type actually admits.
+  const at = (url: string): Finding => ({ file: 'c', line: 1, url, kind: 'fetch' });
   const host = ['awscli.amazonaws.com'];
   const withPath = ['download.docker.com/linux/ubuntu/gpg'];
 

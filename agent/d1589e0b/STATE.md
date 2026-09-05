@@ -1,67 +1,63 @@
-## SESSION d1589e0b 2026-09-04T22:45:16Z
+## SESSION d1589e0b 2026-09-04T23:33:29Z
 
 # d1589e0b — babysit 0903-1, then merge, then main, then the prod release
 
 ## Next action
-Read the tail of the `ci-trace.py --wait --until-final` already running on Console
-CI run **33925722555** (head 3fe226463). Red: pull the FULL failed-step log via
-`gh api repos/rediacc/console/actions/jobs/<id>/logs --allow-escape-sequences`,
-fix, `GH_TOKEN=$(gh auth token) npm run ci:quick`, push. Green: `/pr-merge`
-(#e9ad31ad). Also uncommitted here: the two hook fixes below, needing their own
-ci:quick and push.
+Read worker b1r0q48tl (worklist suite, greps FAIL). It names the two assertions
+that regressed from the 922/0 baseline, and it doubles as an experiment: a PEER
+suite has been running concurrently, so a clean result means those two were
+contention, not regressions. Then `ci:quick`, commit my uncommitted work, push.
+Separately, CI cannot go green until peer 74de73ca lands four floors (below);
+waiter bl6kfap9j is armed on request #1eb71e3b.
 
 ## Where the branch is
-HEAD == origin/0903-1 == **3fe226463**. Earlier head c5538ac5c was red on parity,
-now resolved.
+HEAD == origin/0903-1 == **780b96cdb**. Console CI run **33928012450** is RED on
+it. Read the JOB conclusions, never the run's: 1 failure, 5 cancelled alongside
+= watchdog kill. The ddc4fa17d run also reads `cancelled` but is the SUPERSEDED
+shape (0 failures, newer commit exists).
 
-## The parity red, and the trap behind it
-Run 33924398787 failed "Validate parity between the local gate set and the CI
-quality surface": test-vacuity-floors.sh was tracked with no manifest entry tagged
-qualityGateTest. The file was NOT mine — 3049f36cb swept in peer 74de73ca's gate
-test, already staged when I committed, while its manifest entry stayed in that
-session's uncommitted work.
+## THE BLOCKER: four floors committed-test-without-implementation
+Job 101201197468: `FAIL: retire-shadowed-secrets: an impossible MIN_WORKFLOWS
+was accepted`. The peer's test is RIGHT and the tree is wrong — the whole floor
+is UNCOMMITTED while the test requiring it is tracked. The test exits on first
+failure, so THREE MORE REDS are queued. All four are uncommitted:
 
-**Why it looked clean locally: CI checks out TRACKED files only; every local gate
-reads the WORKING TREE.** A split between a committed file and an uncommitted one
-is invisible to ci:quick by construction.
+  .ci/scripts/housekeeping/retire-shadowed-secrets.py  MIN_WORKFLOWS    failing
+  .ci/scripts/security/shfmt.sh                        MIN_SHELL_FILES  masked by the 77 SKIP
+  scripts/dev/secret-rename.py                         MIN_FILES        next
+  scripts/lib/action-refs.ts                           MIN_ACTION_FILES after
 
-Repaired forward (never checkout/restore): aea608dd9 `git rm --cached` on that one
-path, leaving the file on disk untracked, byte for byte. I did NOT commit their
-manifest hunk; I messaged them (#6b21eb94) and they landed both halves in
-3fe226463.
+They are the peer's. Do NOT commit them; #1eb71e3b asks them to land all four in
+ONE commit and offers to land them on their word. If they go silent for a long
+stretch, that offer is the escalation, not a unilateral commit.
 
-## Two bugs found while blocked, both mine, both fixed, both UNCOMMITTED
-1. **The harness wrote into the operator's REAL worklist.** `_harness.sh` exported
-   WORKLIST_STORE_DIR process-wide but passed TMPDIR per-invocation; the store has
-   two halves (writer files from the first, legacy log + markdown + `.lastevent-*`
-   from the second). A bare call straddled them and compact() rewrote the real
-   legacy file from the union, so three fixture items showed as the operator's open
-   work every stop. Fixed `_harness.sh:90`; control case 203 at `26-migrate.sh:430`
-   asserts `--path` from a bare call, plus an inverted control.
-2. **`--reassign` is blind on any compacted store.** compact() re-emits the fold
-   with `by="compact"`, erasing every writer, keeping the owner. The phantom
-   backstop and the age gate scanned `by` while the selection matches `owner`, so
-   the polluted items were unreachable through EVERY verb: --tick refused them as
-   another session's, --reassign as "has written no events at all". One shared
-   derivation now: `wl_store.identity_activity` at `wl_store.py:802`. Control: case
-   190b ending `18-identity.sh`, compacting FIRST and asserting the erasure before
-   testing the verb. All three items ticked; open list clean.
+## The rule this branch has now paid for three times
+**Every local gate reads the WORKING TREE; CI checks out only TRACKED files.** A
+committed test may not depend on uncommitted behaviour, and no local gate can
+see it. Round 9's sweep reported 0 siblings but only checked tests against
+MANIFEST entries, never against the CODE they exercise — same class, missed.
+TRAPS `working-tree-green-tracked-tree-red`. Read `git diff --cached --stat`
+before every commit. Also: do not edit a file a running suite reads (cost two
+restarts tonight).
 
-## The three orders, in sequence
-1. **#e9ad31ad** green+reviewed+threads resolved, then `/pr-merge`, never by hand.
-2. **#dfe46a93** then follow main, fixing DIRECTLY ON MAIN (explicit operator
-   override). Pre-diagnosed: main is red from qs/fast-uri advisories already fixed
-   here (dad3748d3, 9c4a029d0), so the merge should clear it. Verify, don't assume.
-3. **#624e1863** then `gh workflow run "Release to Production" -f force=true`, soak
-   skipped. Failure expected; fix the release process. Pre-diagnosed: 6 failures at
-   "Assert the edge version is actually released" because on main that step passes
-   no env and the R2 probe dies on NoCredentials. This branch already fixes it
-   (promote-stable.yml:74-76, assert-edge-tag-exists.sh:90-91), so the NEXT failure
-   is the real work.
+## Uncommitted, mine alone
+1. **wl_judge.py + test-judge-schema.py** — the judge exited 1 on
+   `error_max_structured_output_retries` and skipped the retry the identical
+   exit-0 failure already gets, so a flake was reported as a broken gate offering
+   WORKLIST_JUDGE=off. Real call verified 3/3 valid at 4-5x the failing cost. One
+   shared helper at all four call sites; 9 paired controls; judge left ARMED.
+2. **26-migrate.sh case 204** — fold(store) == fold(compact(store)) across every
+   record key, all four states, with anti-vacuity and an inverted control. Passes.
+
+## The three orders
+1. **#e9ad31ad** green + reviewed + threads resolved, then `/pr-merge`.
+2. **#dfe46a93** then follow main, fixing DIRECTLY ON MAIN (operator override).
+   Pre-diagnosed: qs/fast-uri advisories already fixed here.
+3. **#624e1863** then `Release to Production -f force=true`. Failure expected.
+   Verified the 6x failure is already fixed here (promote-stable.yml:74-76,
+   assert-edge-tag-exists.sh:83/:90-91), so the NEXT failure is the real work.
 
 ## Constraints
-Peer **74de73ca** is live in this worktree and branch with uncommitted files. Stage
-HUNKS not files, especially `scripts/ci-runner/manifest.ts`. **Check `git diff
---cached --stat` before every commit** — skipping it cost this CI round.
-`ci-trace.py --wait --until-final` is the only sanctioned CI watch. No
+Peer 74de73ca is live in this worktree and branch. Stage HUNKS not files. No
 Co-Authored-By/Generated-with trailers; every commit needs `PR-TASK: 24c98380`.
+Cron 49fa57a0 drives this loop; tear it down only when prod release is green.
