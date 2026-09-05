@@ -3375,6 +3375,23 @@ export const GATES: readonly GateSpec[] = [
     },
   },
   {
+    // Structural, not semantic. "every declared env var must be referenced" was
+    // measured first and rejected: 290 of 849 step env vars have no textual
+    // reference, because gh and aws read theirs implicitly. This checks the one
+    // shape that is unambiguously a defect -- a step key after a step-boundary
+    // comment, left behind when the step itself was deleted.
+    id: 'check:ci-workflow-orphan-step-keys',
+    run: 'npm run check:ci-workflow-orphan-step-keys',
+    gate: true,
+    leaves: ['scripts/check-workflow-orphan-step-keys.ts'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-code',
+      step: 'Workflow orphan step keys',
+    },
+  },
+  {
     id: 'check:ci-workflow-invariants',
     run: 'npm run check:ci-workflow-invariants',
     gate: true,

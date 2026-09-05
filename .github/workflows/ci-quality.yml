@@ -854,6 +854,9 @@ jobs:
       - name: Review prompt render
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: .ci/scripts/quality/check_review_prompt_render.py
+      - name: Workflow orphan step keys
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: npm run check:ci-workflow-orphan-step-keys
       - name: Rubric calibration
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: .ci/scripts/quality/check-rubric-calibration.sh

@@ -33,6 +33,7 @@
     "check:ci-renet-tiers": ".ci/scripts/quality/check-renet-tier-map.sh",
     "check:ci-app-admin-perm": ".ci/scripts/quality/check-no-app-admin-perm.sh",
     "check:ci-autopilot-workflow": ".ci/scripts/security/check-autopilot-workflow-invariants.sh",
+    "check:ci-workflow-orphan-step-keys": "tsx scripts/check-workflow-orphan-step-keys.ts --selftest && tsx scripts/check-workflow-orphan-step-keys.ts",
     "check:ci-workflow-invariants": ".ci/scripts/security/check-ci-workflow-invariants.sh",
     "check:ci-tracked-sidecars": ".ci/scripts/quality/check-tracked-sidecars.sh",
     "check:ci-silent-failures": ".ci/scripts/quality/check-silent-failure-patterns.sh",
