@@ -238,6 +238,25 @@ def demand_for(shape_hash):
     )
 
 
+# THE WRAPPER THIS MODULE HANDS TO `--json-schema`, as a NAMED constant rather
+# than a dict literal inside the argv. wl_judge's four schemas are all module
+# constants (TRIAGE_SCHEMA, PLANFID_SCHEMA, ADMISSION_SCHEMA, and the one
+# judge_schema_for builds), and this fifth one was the only inline literal --
+# which is exactly why it was the one that drifted: it alone omitted
+# `additionalProperties: False`, so the wrapper accepted top-level keys the other
+# four refuse. SHAPE_SCHEMA itself was correctly constrained all along; the
+# defect was only in the envelope built at the call site.
+#
+# Being a constant is half the fix. The other half is that test-judge-schema.py
+# now checks all five TOGETHER, which is the thing no per-site test could do.
+ASK_SCHEMA = {
+    "type": "object",
+    "properties": {"shape_dup": SHAPE_SCHEMA},
+    "required": ["shape_dup"],
+    "additionalProperties": False,
+}
+
+
 def ask(instances):
     """Its OWN `claude -p`. (verdict_dict, error). Never raises."""
     exe = wl_judge.resolve_claude()
@@ -257,13 +276,7 @@ def ask(instances):
                 "--output-format",
                 "json",
                 "--json-schema",
-                json.dumps(
-                    {
-                        "type": "object",
-                        "properties": {"shape_dup": SHAPE_SCHEMA},
-                        "required": ["shape_dup"],
-                    }
-                ),
+                json.dumps(ASK_SCHEMA),
                 "--model",
                 wl_judge.JUDGE_MODEL,
                 "--max-budget-usd",

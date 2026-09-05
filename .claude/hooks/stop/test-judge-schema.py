@@ -1610,6 +1610,59 @@ finally:
     _shapedup.subprocess.run = _real_run
 
 
+# ---------------------------------------------------------------------------
+# PART 6: EVERY schema handed to `--json-schema`, checked TOGETHER.
+#
+# Five call sites reach the CLI with a schema -- TRIAGE_SCHEMA, PLANFID_SCHEMA
+# (through _run_structured), ADMISSION_SCHEMA, judge_schema_for(), and
+# wl_shapedup's wrapper. Four were module constants and one was a dict literal
+# written inline in the argv, and that fifth was the one that drifted: it alone
+# omitted `additionalProperties: False`, so it accepted top-level keys the other
+# four refuse. SHAPE_SCHEMA inside it was correctly constrained the whole time.
+#
+# NO PER-SITE TEST CAN CATCH THAT. Each schema is individually plausible; the
+# defect only exists in the COMPARISON. So this iterates the set, and the set is
+# built from the modules rather than retyped here -- a sixth site added to
+# SCHEMA_SITES gets the same assertions with no new control to write, and one
+# added to the code and NOT to this list is what the corpus floor below catches.
+# ---------------------------------------------------------------------------
+
+SCHEMA_SITES = {
+    "TRIAGE_SCHEMA": wl_judge.TRIAGE_SCHEMA,
+    "PLANFID_SCHEMA": wl_judge.PLANFID_SCHEMA,
+    "ADMISSION_SCHEMA": wl_judge.ADMISSION_SCHEMA,
+    "judge_schema_for()": wl_judge.judge_schema_for(""),
+    "wl_shapedup.ASK_SCHEMA": _stubbed_shapedup.ASK_SCHEMA,
+}
+
+# ANTI-VACUITY: an empty or shrunken set would pass every assertion below while
+# checking nothing, which is the failure this whole file exists to distrust.
+control("PART 6: the schema corpus is all five sites", len(SCHEMA_SITES), 5)
+
+for _name, _sch in SCHEMA_SITES.items():
+    control(f"{_name} is an object schema", _sch.get("type"), "object")
+    control(f"{_name} declares properties", bool(_sch.get("properties")), True)
+    # THE DRIFT ITSELF. Without this, the shapedup wrapper's missing constraint
+    # is invisible: it is valid JSON Schema and the CLI accepts it happily.
+    control(f"{_name} refuses unknown top-level keys", _sch.get("additionalProperties"), False)
+    # It has to survive json.dumps, because that is literally the next thing the
+    # call site does with it, and a TypeError there raises inside a Stop hook.
+    try:
+        json.dumps(_sch)
+        _ser = True
+    except (TypeError, ValueError):
+        _ser = False
+    control(f"{_name} is JSON-serialisable", _ser, True)
+
+# CONTROL: the additionalProperties assertion must be able to fail, or the four
+# above are decoration. This is the exact shape the wrapper had before the fix.
+_drifted = {"type": "object", "properties": {"x": {"type": "string"}}, "required": ["x"]}
+control(
+    "CONTROL: a schema missing additionalProperties is caught",
+    _drifted.get("additionalProperties") is False,
+    False,
+)
+
 # EVERYTHING ABOVE THIS LINE IS COUNTED AND CAN FAIL THE SCRIPT. Blocks appended
 # BELOW the verdict at `if Tally.fails:` and the summary print are decorative: they
 # still run and still print "  FAIL", but nothing reads Tally.fails again, so the
