@@ -83,7 +83,19 @@ REGGATE_DEBT_GRACE_MIN = max(1, int(os.environ.get("WORKLIST_REGGATE_DEBT_GRACE_
 
 
 def debt_dir(root=None):
-    """Directory holding the per-branch ledgers. See wl_store.AGENT_RESERVED_DIRS."""
+    """Directory holding the per-branch ledgers. See wl_store.AGENT_RESERVED_DIRS.
+
+    HONOURS $WORKLIST_STORE_DIR, exactly as wl_store.store_dir does, and for the
+    same reason it had to learn it: without the override the test harness runs
+    the hook against the REAL repo root, so every suite run appended a ledger to
+    the operator's own tree. Caught the first time this shipped -- an untracked
+    agent/reggate/agenttest.jsonl appeared in `git status` from a suite run,
+    which is the same footgun as the harness once writing the operator's real
+    worklist. A sibling of the store, so one export redirects both.
+    """
+    override = os.environ.get("WORKLIST_STORE_DIR")
+    if override:
+        return pathlib.Path(override).parent / "reggate"
     return pathlib.Path(root or ".") / "agent" / "reggate"
 
 
