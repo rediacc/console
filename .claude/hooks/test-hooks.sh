@@ -2266,7 +2266,8 @@ for mod in context/test-context-bands.py \
     pre-bash/test-block-host-toolchain-run.py \
     stop/test-completion-evidence.py \
     stop/test-always-tier.py \
-    stop/test-planfile.py; do
+    stop/test-planfile.py \
+    stop/test-reggate-ledger.py; do
     if [[ ! -f "$DIR/$mod" ]]; then
         FAIL=$((FAIL + 1))
         echo "FAIL [1] $mod missing"
