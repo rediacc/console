@@ -1607,14 +1607,24 @@ consumers, not the field.
 
 ### Outcome — executed 2026-09-02, all five minted
 
+> **REDACTED 2026-09-05.** The table below originally carried four AWS access
+> key IDs and a Cloudflare token id verbatim. This file is TRACKED and this repo
+> is PUBLIC, so they were credential identifiers published to the internet. The
+> secret halves were never here, and an access key id cannot authenticate alone
+> — but it names the account, pairs with any leaked secret half, and is exactly
+> what GitHub's own secret scanning alerts on. Redaction alone does not undo the
+> exposure, because the values are already in git history and on a public remote,
+> so `ses-eu` and `ses-us` were ROTATED in the same change. Record identifiers by
+> SLUG and DATE here, never by value.
+
 Three `rotate` runs, each exit 0, in this order. Predecessors are `grace` and NOTHING was
 deactivated or deleted; `sweep` was never run.
 
 | slug | new id | pushed to |
 |------|--------|-----------|
-| `ses-eu` | `AKIAWXE5TUDQ3BKBVCE5` (prev `AKIAWXE5TUDQ4T2EY5KV` → grace until 2026-09-09) | 4 Workers (eu, edge-eu, asia, edge-asia), `local:.env`, `ci-shared`, GitHub `AWS_SES_{ACCESS_KEY_ID,SECRET_ACCESS_KEY}_EU` |
-| `ses-us` | `AKIAWXE5TUDQXRAPZBCP` (prev `AKIAWXE5TUDQ66PGNX7A` → grace until 2026-09-09) | 2 Workers (us, edge-us), `ci-shared`, GitHub `AWS_SES_{ACCESS_KEY_ID,SECRET_ACCESS_KEY}_US` |
-| `cf-cd` | token `af23e9600c96a055421dd3da405e58c9` `rediacc-cd-20260902T152043Z` (prev `8f36d9c1…` → grace until 2026-09-09) | `ci-shared`, GitHub `CLOUDFLARE_API_TOKEN` |
+| `ses-eu` | `AKIA…redacted` (prev `AKIA…redacted` → grace until 2026-09-09) | 4 Workers (eu, edge-eu, asia, edge-asia), `local:.env`, `ci-shared`, GitHub `AWS_SES_{ACCESS_KEY_ID,SECRET_ACCESS_KEY}_EU` |
+| `ses-us` | `AKIA…redacted` (prev `AKIA…redacted` → grace until 2026-09-09) | 2 Workers (us, edge-us), `ci-shared`, GitHub `AWS_SES_{ACCESS_KEY_ID,SECRET_ACCESS_KEY}_US` |
+| `cf-cd` | token `…redacted` `rediacc-cd-20260902T152043Z` (prev `…redacted` → grace until 2026-09-09) | `ci-shared`, GitHub `CLOUDFLARE_API_TOKEN` |
 
 All five were Bitwarden **creates**, as predicted — `ci-shared` went 48 → 53 secrets and the
 map gained five entries. `check:ci-bws-map` reports `53 secret(s) mapped, 20 caller file(s)`.
