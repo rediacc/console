@@ -1,63 +1,71 @@
-## SESSION d1589e0b 2026-09-05T00:43:13Z
+## SESSION d1589e0b 2026-09-05T01:33:31Z
 
 # d1589e0b — babysit 0903-1, then merge, then main, then the prod release
 
 ## Next action
-Read worker **b4qeqsqf7** (`ci-trace --wait --until-final`), on Console CI run
-**33933838752**, head **898e55b34**. Green: PR 585 is non-draft and mergeable, so
-the Claude review fires by itself; address its threads, resolve them, then
-`/pr-merge` (#e9ad31ad). Red: read the FULL failed-step log with
-`gh api repos/rediacc/console/actions/jobs/<id>/logs --allow-escape-sequences`,
-fix, `GH_TOKEN=$(gh auth token) npm run ci:quick`, push.
+Read worker **bfdw1cehl** (`ci-trace --wait --until-final`) on Console CI run
+**33936429438**, head **03190f70c**. **THE REVIEW IS ALREADY DONE**, so green is
+the last gate before `/pr-merge` (#e9ad31ad). Red: read the FULL failed-step log
+via `gh api repos/rediacc/console/actions/jobs/<id>/logs --allow-escape-sequences`,
+fix, `GH_TOKEN=$(gh auth token) npm run ci:quick`, push. **Do not push otherwise**
+— six pushes have already superseded runs mid-flight.
 
 ## Where the branch is
-HEAD == origin/0903-1 == **898e55b34**. Nothing of mine is uncommitted in the
-console repo. PR #585 non-draft, mergeable, no review yet on this head.
-ci:quick 308/308 on the committed tree.
+HEAD == origin/0903-1 == **03190f70c**. Nothing of mine is uncommitted anywhere,
+including submodules. ci:quick 308/308 on the committed tree.
 
-## The last four commits, newest first
-- **898e55b34** (mine) PART 7 of test-judge-schema.py: a `--json-schema` payload
-  must be a NAMED reference, never an object literal built in the argv. PART 6
-  enumerates schemas BY NAME, so it structurally cannot see a new inline literal;
-  this closes that. Proven on the real defect (restoring the literal fails with
-  the file and line, exit 1). 328 controls.
-- **32e191e6c** (peer 74de73ca) their `check:ci-schema-call-sites`, three-point
-  wired. Complementary, confirmed by them: theirs says the five model-call sites
-  RETRY alike, mine says the five schemas are SHAPED alike.
-- **49d850a6a** (mine) the drift itself: wl_shapedup built its schema wrapper as
-  an inline literal while the other four are module constants, and it alone
-  omitted `additionalProperties: False`. Now ASK_SCHEMA.
-- **25feb0dae** (mine) the syncpack i18next pin moved to ^26.4.2, after
-  check:deps demanded the bump and check:version forbade it until the pin
-  followed.
+## The review: FIRED, ANSWERED, VERIFIED (this is the new thing)
+The previous run went red on `Review Gate -> Check unreplied review comments`.
+That is NOT a code failure; it means feedback was outstanding.
 
-## #1191a731 — DEFERRED, and the one thing I could not clean
-`check:deps -- --upgrade` also edited **private/account** (vitest 4.1.11 ->
-5.0.0, a MAJOR, plus biome and wrangler). I restored all three declared ranges,
-so its package.json is byte-identical to HEAD and the major is gone. Its
-**package-lock.json is still reserialised** (~1650 insertions): regenerating
-under npm 11 and under npx npm@10 both reshape the file rather than reproduce
-the committed form. It is valid (check:ci-lockfile passes on all 11) and rides
-no PR, since nothing is committed in the submodule so its pointer never moves.
-**Do not commit it.** DEFAULT if the operator does not answer: leave it dirty
-and hand it on.
+- Review = issue comment **5546059788**. Verdict: no blocking defects across 352
+  files, ONE real finding.
+- The finding was true: `1e8026bd` extracted a step from ci-quality.yml and left
+  its `env:` block plus the comment above it, so `EXTERNAL_QUALITY_MODE` silently
+  became a key of the PREVIOUS step under a comment describing a step that is
+  gone. Verified before deleting: `scripts/check-e2e-skip-hygiene.ts` has ZERO
+  references to it, and the var stays wired at the 7 sites that do read it.
+  Fixed in **03190f70c**.
+- Replied substantively as issue comment **5548433511**. The gate's own script
+  now prints `answered by comment 5548433511 - OK`.
+- SECOND, INDEPENDENT FACT also checked (a resolved thread and a replied comment
+  are different things): GraphQL reports **0 review threads, 0 unresolved**.
+
+So the finish line reduces to: this run going green.
+
+## If the Review Gate reds again
+It never auto-retries and cancels the run instantly, so it shows as one failed
+job plus cancelled siblings. No commit is needed: satisfy the oracle, then
+`gh run rerun <id> --failed`. Satisfy the gate's OWN script
+(`.ci/scripts/quality/check-review-comments.sh`), not the API you would reach for
+first — a top-level summary has no replies endpoint, so the answer must be a NEW
+top-level comment.
+
+## Earlier this round (mine unless noted)
+- **45dd63875** a vacuity floor fired on a fixture built small on purpose:
+  MIN_ACTION_FILES was the only floor in its family with no env override, and the
+  throw also pre-empted the gate's own VACUOUS verdict with a stack trace.
+- **89189c0b5 / 898e55b34 / 49d850a6a** the schema sweep: 5 of 9 definitions were
+  covered and none recursed; the one schema built as an inline literal was the
+  only one missing `additionalProperties: False`. Controls 289 -> 358.
+- **32e191e6c** PEER's `check:ci-schema-call-sites`, complementary to mine.
+- RESOLVED and ticked: private/account's lockfile had drifted 69 packages
+  (not the "reserialisation" I first called it); restored by writing HEAD's blob
+  back, submodule now byte-clean.
 
 ## Peer 74de73ca, live in this same worktree
-Their `agent/worklist/74de73ca.jsonl` is untracked and theirs; leave it. The
-shared git index crossed us three times tonight (their file staged when I came to
-commit). They have switched to ci:quick-then-add+commit; I stage explicitly and
-read `git diff --cached --stat` before every commit.
+`agent/worklist/74de73ca.jsonl` is untracked and theirs; leave it. Stage
+explicitly and read `git diff --cached --stat` before every commit.
 
-## The three operator orders, in sequence
-1. **#e9ad31ad** green + reviewed + threads resolved, then `/pr-merge`.
-2. **#dfe46a93** then follow main and fix DIRECTLY ON MAIN (explicit operator
-   override). Pre-diagnosed: main is red from qs/fast-uri advisories already
-   fixed here (dad3748d3, 9c4a029d0). Verify, do not assume.
-3. **#624e1863** then `gh workflow run "Release to Production" -f force=true`,
-   soak skipped. Failure expected. Verified read-only that the 6x failure is
-   already fixed here: promote-stable.yml:74-76 passes the three
-   CLOUDFLARE_R2_* vars into the assert step, assert-edge-tag-exists.sh:83
-   requires them and :90-91 exports onto AWS_*. So the NEXT failure is the work.
+## The three operator orders
+1. **#e9ad31ad** green, then `/pr-merge` (review + threads already satisfied).
+2. **#dfe46a93** then follow main, fixing DIRECTLY ON MAIN (operator override).
+   Pre-diagnosed: qs/fast-uri advisories already fixed here (dad3748d3,
+   9c4a029d0). Verify, do not assume.
+3. **#624e1863** then `Release to Production -f force=true`, soak skipped.
+   Failure expected; the 6x failure is already fixed here
+   (promote-stable.yml:74-76, assert-edge-tag-exists.sh:83 and :90-91), so the
+   NEXT failure is the real work.
 
-All three leased to worker b4qeqsqf7 until 02:12Z. Cron 49fa57a0 wakes this loop
-every 45 min; tear it down only once the production release is green.
+Leased to bfdw1cehl until 03:02Z. Cron 49fa57a0 wakes this every 45 min; tear it
+down only once the production release is green.

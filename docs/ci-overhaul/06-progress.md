@@ -7349,3 +7349,95 @@ rewrite asserts on `--path`, which is the one thing the straddle actually gets w
 asserts that the writer really was erased before exercising the verb. Without that
 assertion it would pass on the uncompacted shape it exists to test, and the bug would sail
 through its own regression test.
+
+## Wave 11 — 2026-09-05: the sweeps that kept finding the sweeper
+
+Eleven commits across two sessions, and the shape of the wave is unusual enough to
+record: almost every defect was found by a gate or a stop-gate judge asking whether
+the *previous* fix had siblings, and the answer was repeatedly "yes, and one of them
+is the thing you just wrote".
+
+### The judge was broken, and the message it printed was an accusation
+
+A stop was blocked with `judge exited 1; subtype=error_max_structured_output_retries;
+turns=6; cost=$0.0112 of budget $0.25`, and the text that follows such a failure tells
+the session the gate is broken and offers `WORKLIST_JUDGE=off`. Neither claim held: the
+model answered a probe, and the *real* call — same schema, model and budget — returned a
+valid verdict 3/3 at four to five times the failing run's cost.
+
+The defect was that the retry keyed on the **exit code** rather than on what happened.
+The exit-0 path already retried this exact condition, calling it "a sample, not a broken
+gate". The CLI simply reports the same failure two ways: wandering to the end of a turn
+exits 0 with a null payload, while exhausting its own schema retries exits 1 with that
+subtype. One spelling was a flake and the other an accusation — and the accusation is the
+one that points a session at the disable switch.
+
+**A gate that cannot say "this was probably noise" will eventually be turned off.** The
+retry now covers both spellings, with every existing bound kept: that subtype only,
+budget headroom only, exactly once, never after a transport failure.
+
+### Then: the fifth call site, and the schema that drifted
+
+Sweeping for siblings found `wl_shapedup.ask()`, a fifth schema-constrained model call in
+a different module, with no retry at all — and its own comment says why that costs more
+there: *one erroring case blanks the whole rubric*.
+
+Sweeping the schemas themselves found the real prize. Four are module constants; one was a
+dict literal written inline in an argv, and that fifth was the only one missing
+`additionalProperties: False`. Its nested schema had been correct all along; the drift was
+in the envelope built at the call site.
+
+**Being a literal is not incidental to being wrong.** A constant is something a reader and
+a test can both name. A literal inside an argument list is visible only to whoever is
+already reading that call, which is exactly why it stayed the odd one out.
+
+### And the gate written for that was itself too narrow, twice
+
+The first version enumerated the five schemas that reach the CLI as a payload, and checked
+only their roots. It missed the two composed *into* the judge's schema rather than passed
+to it, missed the reference the dynamic builder deep-copies, and never looked at the 22
+nested objects where the answer shape is actually pinned. Now nine definitions, recursive,
+with a named floor rather than a bare positive count. Planting the drift in a schema the
+old set never touched fails in two places at once, naming the composition path.
+
+### The worst one, because it was mine and I called it proof
+
+Fourteen controls sat **below** `if Tally.fails: sys.exit(1)` in their test file. They ran.
+They would have printed `FAIL`. And nothing reads that counter again, so the script exits
+0 and the harness reports `ok ... control(s) passed`.
+
+The control **count** is what exposed it — it did not move when five more were added.
+Both blocks now sit above the verdict with a comment naming the trap for the next person
+who appends. Controls across the wave: **289 → 358**.
+
+### A floor that fired on the one corpus that is small on purpose
+
+`MIN_ACTION_FILES` was the only floor in its family without an env override, and it is the
+one a fixture must lower. Worse, it *threw*, and the fixture it broke exists to prove that
+a run with entries and no working oracle is VACUOUS and fails — so the exception replaced
+the gate's own verdict with a stack trace. The probe now returns null for that one error,
+which makes the floor **stronger**: a wrong root becomes an unavailable oracle and the run
+fails as vacuous instead of crashing.
+
+Class swept: 19 root-configurable files carry a floor, 8 hard-coded, 3 of those are
+string-length or ratio rather than corpus size, and the remaining 4 have root overrides
+nothing in the repo ever sets. No live sibling.
+
+### Three things worth keeping
+
+**"Cosmetic" is a measurement, not an impression.** A submodule lockfile was described here
+as a harmless reserialisation. Comparing resolved versions showed 69 packages changed, 57
+removed, 30 added — an install there would have produced a tree nobody reviewed. The
+measurement took one command. Repaired by writing the committed blob back, which is a
+read-and-write rather than the checkout the guard blocks, and that difference is the whole
+point: it repairs forward instead of discarding whatever else was uncommitted.
+
+**A shared git index crosses sessions three times a night.** `git add` writes an index both
+sessions share, so a peer's staged file arrives in your commit. Reading
+`git diff --cached --stat` before every commit caught it every time; the round it was
+skipped is the round that cost a CI red.
+
+**Satisfy the oracle the gate uses.** The Review Gate's reply check reads the top-level
+summary, which has no replies endpoint — the answer must be a NEW top-level comment. A
+resolved thread and a replied comment are different facts, and passing one says nothing
+about the other.
