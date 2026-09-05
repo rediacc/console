@@ -36,7 +36,76 @@ import worklist_messages as M
 
 FIX_SUBJECT = re.compile(r"^(fix|revert)[(!:]")
 REGGATE_TIMEOUT_S = int(os.environ.get("WORKLIST_REGGATE_TIMEOUT_S", "120"))
-REGGATE_VERDICTS = ("not-applicable", "covered", "one-off", "proven", "deferred")
+REGGATE_VERDICTS = (
+    "not-applicable",
+    "covered",
+    "one-off",
+    "proven",
+    "deferred",
+    # Written ONLY by the cap, never by the judge. It says "the finding was
+    # computed and verified, then deferred as debt" -- which is a different fact
+    # from every verdict above, all of which mean the question was answered.
+    # Collapsing it into "deferred" would make a capped demand indistinguishable
+    # from one the session argued its way out of.
+    "capped",
+)
+
+# ---------------------------------------------------------------------------
+# THE EFFORT CAP (operator ruling 2026-09-05T01:55Z).
+#
+# "This is a general problem. Lets employ a planning agent to have a limit for
+# that. Maybe we can limit new gate work after some point to 7 times? But that
+# check should be done on stop hook side instead of ignoring."
+#
+# The ruling's second sentence is the load-bearing one: the cap belongs HERE, in
+# the machinery, not in a session deciding it has complied enough. A session that
+# stops complying is indistinguishable from a session that is wrong.
+#
+# WHAT IS COUNTED (plan Q1): a fix-set this BRANCH settled by writing a new gate
+# (`proven`), plus one for each fix-set the cap itself deferred. NOT demands,
+# blocks or stops -- counting those lets a session outwait a legitimate demand by
+# stopping N times, which is the ignoring the ruling forbids. NOT the cheap
+# settles (`covered`/`one-off`/`not-applicable`/`deferred`) -- those cost no
+# artifact and no CI round, and counting them would let a session farm the budget
+# with five honest one-offs to buy a pass on the sixth, real gate.
+#
+# SCOPE IS THE BRANCH, not the session. `reggate_path` is keyed on session id, so
+# a per-session budget would evaporate at exactly the moment a long night makes
+# compaction likely. A branch maps one-to-one onto one PR and one CI queue, which
+# is where the cost actually lands; two sessions sharing a branch share the
+# budget, correctly, because they share the queue.
+# ---------------------------------------------------------------------------
+REGGATE_CAP = max(1, int(os.environ.get("WORKLIST_REGGATE_CAP", "7")))
+# A branch may never merge, so the merge probe alone could hold a debt open
+# forever. due = min(merge_detected, at + grace): the grace clock can only make a
+# debt due SOONER, never never.
+REGGATE_DEBT_GRACE_MIN = max(1, int(os.environ.get("WORKLIST_REGGATE_DEBT_GRACE_MIN", "720")))
+
+
+def debt_dir(root=None):
+    """Directory holding the per-branch ledgers. See wl_store.AGENT_RESERVED_DIRS."""
+    return pathlib.Path(root or ".") / "agent" / "reggate"
+
+
+def _branch_slug(branch):
+    """A branch name flattened to one safe filename component.
+
+    Branch names carry '/' and worse; one file per branch means the name IS the
+    filename, so it is sanitised rather than trusted.
+    """
+    slug = re.sub(r"[^A-Za-z0-9._-]+", "-", (branch or "detached").strip()) or "detached"
+    return slug[:100]
+
+
+def debt_path(branch, root=None):
+    """ONE FILE PER BRANCH, following wl_store's per-writer rule verbatim.
+
+    Both sides of a merge append at EOF, so a single shared ledger conflicts on
+    every concurrent append. Per-branch files never do.
+    """
+    return debt_dir(root) / (_branch_slug(branch) + ".jsonl")
+
+
 # Where a freshly written gate leaves its artifact. Both shapes exist in this
 # repo; anything else is not a gate the ci chain can run.
 # The hook and gate test suites count as gate artifacts too: a fix inside
@@ -98,6 +167,104 @@ def load_reggate(path):
     if not ok:
         return default, True
     return d, False
+
+
+def append_ledger(branch, record, root=None):
+    """Append ONE ledger record under a blocking flock, via the store's own primitive.
+
+    Append-only JSONL, folded on read, NEVER edited. It is deliberately not an
+    `ev:` kind in the item store: wl_epic.py's header records why, and it learned
+    it the hard way -- `compact()` rewrites that log down to the minimal
+    item-reproducing set, so a novel event kind there is SILENTLY DESTROYED.
+    `.requests`, `.intents` and `.epics` are the precedents this follows.
+    """
+    import wl_store as S
+
+    path = debt_path(branch, root)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    rec = dict(record)
+    rec.setdefault("at", C.stamp_now())
+    rec.setdefault("br", branch or "")
+    # Pass the DICT: _append_lines serialises each payload itself. Handing it a
+    # pre-encoded string double-encodes it into a JSON string containing JSON,
+    # which read_ledger then rejects as malformed -- silently emptying the
+    # ledger and, with it, the budget.
+    S._append_lines(path, path.with_suffix(".lock"), [rec])
+    return rec
+
+
+def read_ledger(branch, root=None):
+    """(records, forgot), same FAIL SAFE contract as load_reggate.
+
+    `forgot` means the ledger could not be read as written. It is reported rather
+    than swallowed, because a budget computed from an unreadable ledger reads as
+    a FRESH budget -- the most permissive answer possible, and exactly the shape
+    that would let the cap silently stop capping.
+    """
+    path = debt_path(branch, root)
+    if not path.exists():
+        return [], False
+    records, forgot = [], False
+    try:
+        for line in path.read_text(encoding="utf-8").splitlines():
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                d = json.loads(line)
+            except ValueError:
+                forgot = True
+                continue
+            if isinstance(d, dict) and isinstance(d.get("kind"), str):
+                records.append(d)
+            else:
+                forgot = True
+    except OSError:
+        return [], True
+    return records, forgot
+
+
+def branch_merged(branch, root=None):
+    """Has this branch landed on origin/main?
+
+    A FAILED PROBE IS NOT A MERGE. It returns False, so the grace clock alone
+    governs the debt -- making it due sooner, never never. A probe that answered
+    True on failure would discharge every debt on any git hiccup.
+    """
+    if not branch:
+        return False
+    # NOT `merge-base --is-ancestor`: it answers through its EXIT CODE and prints
+    # nothing, while C._git returns stdout and collapses every failure to "".
+    # Through that helper a merged branch and a broken git are the same empty
+    # string. `rev-list --count origin/main..HEAD` puts the answer on stdout:
+    # "0" means HEAD carries nothing origin/main lacks, i.e. it landed.
+    return C._git(root or ".", "rev-list", "--count", "origin/main..HEAD") == "0"
+
+
+def budget_state(branch, root=None):
+    """(charged, remaining, debts, forgot) folded from the ledger.
+
+    THE COUNTER RESETS WHEN THE BRANCH LANDS; DEBTS DO NOT. A merge resets the
+    counter and simultaneously makes every outstanding debt DUE. That inversion
+    is the point: merging is what makes you pay, and there is no ordering in
+    which a merge discharges a debt.
+    """
+    records, forgot = read_ledger(branch, root)
+    discharged = {r.get("sig") for r in records if r.get("kind") == "discharge"}
+    charged = sum(1 for r in records if r.get("kind") == "charge")
+    debts = [
+        r
+        for r in records
+        if r.get("kind") == "debt" and r.get("sig") not in discharged
+    ]
+    if branch_merged(branch, root):
+        charged = 0
+    return charged, max(0, REGGATE_CAP - charged), debts, forgot
+
+
+def charge(branch, sig, reason, root=None):
+    """Spend one unit of budget. Called ONLY on a `proven` settle or at the cap."""
+    return append_ledger(branch, {"kind": "charge", "sig": sig, "why": reason}, root=root)
 
 
 def save_reggate(path, state):

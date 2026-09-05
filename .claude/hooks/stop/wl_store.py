@@ -280,7 +280,13 @@ def agent_root(root):
 # slug -- so they are named. Getting this wrong is quiet: a listing that counted
 # `archive` as a peer would report a session that does not exist, and one that
 # missed a real peer would report nobody there.
-AGENT_RESERVED_DIRS = frozenset({"archive", "programs", "worklist"})
+# "reggate" holds the per-branch effort-cap ledger (agent/reggate/<branch>.jsonl).
+# It MUST be reserved: agent_session_dirs treats every other directory under
+# agent/ as a session prefix, so omitting it makes the hook report a peer session
+# named "reggate" that does not exist. That is the one silent failure the
+# effort-cap change can cause, and it is why this name is here and not only in
+# wl_reggate.
+AGENT_RESERVED_DIRS = frozenset({"archive", "programs", "worklist", "reggate"})
 
 
 def agent_session_slug(me):
