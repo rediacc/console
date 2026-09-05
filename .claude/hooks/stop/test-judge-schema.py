@@ -28,6 +28,7 @@ first fix-signal stop poison every later call in the same process.
 import json
 import os
 import pathlib
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -1662,6 +1663,69 @@ control(
     _drifted.get("additionalProperties") is False,
     False,
 )
+
+# ---------------------------------------------------------------------------
+# PART 7: no `--json-schema` payload may be an INLINE OBJECT LITERAL.
+#
+# THE HOLE PART 6 LEAVES, and it is real. SCHEMA_SITES enumerates schemas by
+# NAME, so it can only check schemas that are reachable as module attributes. A
+# SIXTH site added as a dict literal inside an argv would not appear in that dict
+# at all, and every assertion above would pass while the new literal drifted --
+# which is exactly how the wl_shapedup wrapper stayed the odd one out: it was
+# invisible to anything but a reader of that call.
+#
+# So this clause is SOURCE-LEVEL, not value-level. It reads the hook sources and
+# requires the payload handed to `--json-schema` to be a NAMED reference. A name
+# is something a test can enumerate and a reader can find; a literal is visible
+# only to whoever is already reading that call.
+#
+# It is deliberately NOT a second copy of 74de73ca's check_schema_call_sites.py,
+# which enforces the neighbouring invariant over the same corpus (that each site
+# ROUTES THROUGH retry_schema_exhaustion). Theirs is about behaviour, this is
+# about definition shape. If the two are merged later this clause should move
+# there rather than be duplicated.
+# ---------------------------------------------------------------------------
+
+_HOOKS_ROOT = pathlib.Path(wl_judge.__file__).resolve().parent.parent
+
+
+def _literal_schema_payloads(root):
+    """[(file, line)] where the argument after "--json-schema" opens a dict."""
+    out = []
+    for src in sorted(root.rglob("*.py")):
+        lines = src.read_text(encoding="utf-8", errors="replace").split("\n")
+        for i, line in enumerate(lines):
+            if '"--json-schema"' not in line or line.lstrip().startswith("#"):
+                continue
+            # The payload is the next non-blank, non-comment line.
+            for nxt in lines[i + 1 :]:
+                if not nxt.strip() or nxt.lstrip().startswith("#"):
+                    continue
+                # json.dumps(NAME) / json.dumps(call(...)) are fine; a trailing
+                # "(" or "{" means the object is being built right here.
+                if nxt.rstrip().endswith(("{", "json.dumps(")):
+                    out.append((src.name, i + 1))
+                break
+    return out
+
+
+control(
+    "PART 7: the real hook tree has no inline schema payload",
+    _literal_schema_payloads(_HOOKS_ROOT),
+    [],
+)
+
+# CONTROL: the scanner must FIRE on the exact shape wl_shapedup had before the
+# fix, or the assertion above is a tick over nothing. Planted in a temp tree so
+# the control tests the scanner, not today's source.
+_tmp = pathlib.Path(tempfile.mkdtemp(prefix="schemalit-"))
+(_tmp / "planted.py").write_text(
+    'argv = [\n    "--json-schema",\n    json.dumps(\n        {"type": "object"}\n    ),\n]\n'
+)
+control("CONTROL: a planted inline literal IS caught", len(_literal_schema_payloads(_tmp)), 1)
+(_tmp / "planted.py").write_text('argv = [\n    "--json-schema",\n    json.dumps(ASK_SCHEMA),\n]\n')
+control("CONTROL: a named payload is accepted", _literal_schema_payloads(_tmp), [])
+shutil.rmtree(_tmp, ignore_errors=True)
 
 # EVERYTHING ABOVE THIS LINE IS COUNTED AND CAN FAIL THE SCRIPT. Blocks appended
 # BELOW the verdict at `if Tally.fails:` and the summary print are decorative: they
