@@ -94,5 +94,28 @@
     "The resolution is to mint a real endpoint signing secret for the edge-eu sandbox",
     "destination and store THAT; the published E2E fixture must not be used, because edge is",
     "internet-reachable and a known secret would let anyone forge sandbox webhooks against it."
+  ],
+  "$operator_ruling": [
+    "OPERATOR RULING 2026-09-05T16:24Z, asked directly and answered verbatim:",
+    "\"Bitwarden wins. We can't see github side. It's readonly. Get rid of them.",
+    "We should not have github secrets at all.\"",
+    "",
+    "That settles every open name in this file at once, and it settles them the same",
+    "way: BITWARDEN IS AUTHORITATIVE. The three 2026-09-05 drifts",
+    "(ACCOUNT_BACKUP_S3_ACCESS_KEY_ID, ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY,",
+    "CLOUDFLARE_TURNSTILE_SECRET_KEY) need no per-name investigation any more, and",
+    "neither does RELEASE_GPG_PRIVATE_KEY: the question this file was built to ask --",
+    "'which copy is authoritative?' -- now has one standing answer.",
+    "",
+    "AND THE END STATE IS REMOVAL, not reconciliation. The operator does not want the",
+    "GitHub copies overwritten; they want them GONE. This whole file is deleted with",
+    "the org secrets, exactly as its header already said it would be.",
+    "",
+    "EXECUTION IS NOT FREEHAND: agent/PLAN-github-secrets-removal.md (46 KB, draft,",
+    "owner 74de73ca) is the procedure, and it establishes the one thing that must",
+    "survive -- BWS_ACCESS_TOKEN stays a GitHub secret, because it is what fetches",
+    "everything else and nothing can be read without it. Deleting org secrets is",
+    "irreversible and every workflow still reading `secrets.*` breaks the moment it",
+    "happens, so it runs from that plan, not from this note."
   ]
 }
